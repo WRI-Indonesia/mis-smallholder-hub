@@ -8,7 +8,7 @@ import { Footer } from "@/components/layout/footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "MIS Smallholder Hub",
+  title: "Smallholder Hub",
   description: "Empowering smallholders through data and community.",
 };
 
