@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 py-16 text-center">
       <h1 className="text-4xl font-bold tracking-tight sm:text-6xl mb-6">
-        Welcome to MIS Smallholder Hub
+        Welcome to Smallholder Hub
       </h1>
       <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
         Empowering smallholder farmers with data-driven insights, community support, and market access.
