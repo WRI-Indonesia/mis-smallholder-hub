@@ -18,3 +18,14 @@
 - [x] Media Page
 - [x] Dashboard Page
 - [x] Footer
+
+## Phase 2 : Scaffolding Authentication Pages + Admin Dashboard
+
+- [x] Login Page
+- [x] Register Page
+- [x] Admin Dashboard Page (Private Route) use `npx shadcn@latest add sidebar-07`
+
+## Phase 3 : setup prisma schema & seed core data (user, menu, province, district, sub-district, village, training type)
+
+- [ ] setup prisma schema
+- [ ] setup seed core data
