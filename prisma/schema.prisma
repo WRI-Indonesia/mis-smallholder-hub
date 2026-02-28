@@ -69,7 +69,7 @@ model District {
   name String
 
   provinceId String
-  province   Province @relation(fields: [provinceId], references: [id])
+  province   Province @relation(fields: [provinceId], references: [id], onDelete: Cascade)
 
   subDistricts SubDistrict[]
 }
@@ -80,7 +80,7 @@ model SubDistrict {
   name String
 
   districtId String
-  district   District @relation(fields: [districtId], references: [id])
+  district   District @relation(fields: [districtId], references: [id], onDelete: Cascade)
 
   villages Village[]
 }
@@ -91,7 +91,7 @@ model Village {
   name String
 
   subDistrictId String
-  subDistrict   SubDistrict @relation(fields: [subDistrictId], references: [id])
+  subDistrict   SubDistrict @relation(fields: [subDistrictId], references: [id], onDelete: Cascade)
 }
 
 // -----------------------------------------------------------------------------

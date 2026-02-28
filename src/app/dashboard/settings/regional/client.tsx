@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown, ChevronRight, FileDown, Map, MoreHorizontal, Plus, Trash, Search, Loader2 } from "lucide-react"
+import { ChevronDown, ChevronRight, FileDown, Map, MapPin, Building2, Home, MoreHorizontal, Plus, Trash, Search, Loader2 } from "lucide-react"
 
 import { Tree } from "@/components/ui/tree"
 import { Button } from "@/components/ui/button"
@@ -38,6 +38,13 @@ type RegionalNode = {
 
 interface RegionalTreeClientProps {
   initialProvinces: RegionalNode[]
+}
+
+const TYPE_COLORS = {
+  province: "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400",
+  district: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400",
+  subdistrict: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400",
+  village: "bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-500/20 dark:text-purple-400",
 }
 
 export function RegionalTreeClient({ initialProvinces }: RegionalTreeClientProps) {
@@ -152,17 +159,18 @@ export function RegionalTreeClient({ initialProvinces }: RegionalTreeClientProps
     toggleExpand: () => void
   ) => {
     const isLeaf = node.type === "village" 
+    const Icon = node.type === 'province' ? Map : node.type === 'district' ? MapPin : node.type === 'subdistrict' ? Building2 : Home
 
     return (
       <div 
-         className="group relative flex items-center justify-between rounded-md py-1.5 px-2 hover:bg-muted/50 transition-colors"
+         className="group relative flex items-center justify-between rounded-lg py-2 px-2 hover:bg-muted/60 border border-transparent hover:border-border/60 transition-colors my-0.5"
          style={{ paddingLeft: `${depth * 1.5 + 0.5}rem` }}
       >
         <div className="flex items-center gap-2 overflow-hidden">
           <button 
              onClick={toggleExpand} 
              disabled={isLeaf}
-             className="h-6 w-6 shrink-0 flex items-center justify-center text-muted-foreground hover:bg-muted rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-30 disabled:hover:bg-transparent"
+             className="h-6 w-6 shrink-0 flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
           >
             {!isLeaf ? (
               isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
@@ -171,15 +179,15 @@ export function RegionalTreeClient({ initialProvinces }: RegionalTreeClientProps
             )}
           </button>
           
-          <Map className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground/70" />
           
-          <span className="font-medium text-sm truncate">
+          <span className="font-semibold text-sm truncate ml-1 text-foreground/90">
             {node.name}
           </span>
-          <span className="text-xs text-muted-foreground ml-2 font-mono bg-muted px-1.5 py-0.5 rounded-sm shrink-0">
+          <span className="hidden sm:inline-flex text-[11px] font-mono font-medium text-muted-foreground bg-muted/60 border px-1.5 py-0.5 rounded-md shadow-sm shrink-0 ml-2">
              {node.code}
           </span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 ml-2 font-semibold shrink-0">
+          <span className={`hidden xs:inline-flex text-[10px] uppercase tracking-wider font-semibold border px-1.5 py-0.5 rounded-md shrink-0 ml-2 ${TYPE_COLORS[node.type]}`}>
              {node.type}
           </span>
         </div>
@@ -228,21 +236,21 @@ export function RegionalTreeClient({ initialProvinces }: RegionalTreeClientProps
   }
 
   return (
-    <div className="w-full max-w-5xl bg-card rounded-lg border shadow-sm p-4 relative">
-      <div className="flex items-center justify-between border-b pb-3 mb-3 px-2">
-         <div className="text-sm font-semibold text-muted-foreground">Regional Hierarchy</div>
-         <div className="flex items-center gap-3">
-           <div className="relative w-64">
+    <div className="w-full max-w-7xl mx-auto bg-card rounded-lg border shadow-sm p-4 relative overflow-x-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 mb-3 px-2">
+         <div className="text-sm font-semibold text-muted-foreground shrink-0">Regional Hierarchy</div>
+         <div className="flex flex-col w-full sm:w-auto sm:flex-row items-center gap-3">
+           <div className="relative w-full sm:w-64">
              <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
              <Input 
                placeholder="Search area name..." 
-               className="pl-8 h-8 text-sm"
+               className="pl-8 h-8 text-sm w-full"
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
              />
              {isSearching && <Loader2 className="absolute right-2 top-2 h-4 w-4 animate-spin text-muted-foreground" />}
            </div>
-           <Button size="sm" onClick={handleAddProvince}>
+           <Button size="sm" onClick={handleAddProvince} className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Add Province
            </Button>
@@ -257,17 +265,20 @@ export function RegionalTreeClient({ initialProvinces }: RegionalTreeClientProps
                <div className="text-sm text-muted-foreground italic">No areas found matching "{searchQuery}"</div>
             ) : (
                <div className="space-y-1.5 flex flex-col items-start w-full">
-                  {searchResults.map((resNode) => (
-                     <div key={resNode.id} className="w-full group relative flex items-center justify-between rounded-md py-1.5 px-2 hover:bg-muted/50 border border-transparent hover:border-border transition-colors">
-                        <div className="flex items-center gap-2 overflow-hidden w-full">
-                          <Map className="h-4 w-4 shrink-0 text-muted-foreground/50" />
-                          <div className="flex flex-col overflow-hidden text-left flex-1 items-start">
-                             <div className="flex items-center truncate gap-2 w-full">
-                               <span className="font-medium text-sm truncate">{resNode.name}</span>
-                               <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 shrink-0">{resNode.type}</span>
-                               <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded-sm shrink-0">{resNode.code}</span>
+                  {searchResults.map((resNode) => {
+                     const ResIcon = resNode.type === 'province' ? Map : resNode.type === 'district' ? MapPin : resNode.type === 'subdistrict' ? Building2 : Home
+                     
+                     return (
+                     <div key={resNode.id} className="w-full group relative flex items-center justify-between rounded-lg py-2 px-3 hover:bg-muted/60 border border-transparent hover:border-border/60 transition-colors">
+                        <div className="flex items-center gap-3 overflow-hidden w-full">
+                          <ResIcon className="h-4 w-4 shrink-0 text-muted-foreground/70" />
+                          <div className="flex flex-col overflow-hidden text-left flex-1 items-start gap-0.5">
+                             <div className="flex flex-wrap items-center gap-2 w-full">
+                               <span className="font-semibold text-sm text-foreground/90">{resNode.name}</span>
+                               <span className={`text-[10px] uppercase tracking-wider font-semibold border px-1.5 py-0.5 rounded-md shrink-0 ${TYPE_COLORS[resNode.type as keyof typeof TYPE_COLORS]}`}>{resNode.type}</span>
+                               <span className="hidden sm:inline-flex text-[11px] font-mono font-medium text-muted-foreground bg-muted/60 border px-1.5 py-0.5 rounded-md shadow-sm shrink-0">{resNode.code}</span>
                              </div>
-                             <div className="text-[11px] text-muted-foreground/70 truncate w-full">{resNode.path}</div>
+                             <div className="text-[11px] text-muted-foreground/70 truncate w-full break-all">{resNode.path}</div>
                           </div>
                         </div>
 
@@ -305,7 +316,8 @@ export function RegionalTreeClient({ initialProvinces }: RegionalTreeClientProps
                           </DropdownMenu>
                         </div>
                      </div>
-                  ))}
+                     )
+                  })}
                </div>
             )}
          </div>
