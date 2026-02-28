@@ -25,3 +25,16 @@
 - [ ] Test Regional Data constraints (Province -> District -> SubDistrict -> Village)
 - [ ] Test `training-type` data structure retrieval
 - [ ] Test CSV Seeding script parsing logic and data deduplication (`upsert`)
+
+## Task 5: Setup Master Data Management (CRUD)
+
+- [ ] Test React Hook Form validation limits via Zod schemas across entities.
+- [ ] Test CRUD logic execution (Create, Read, Update, Delete) for Users, Menus, and Training Types.
+- [ ] Test Modal UI toggling state and Data Table pagination edge cases.
+
+## Task 6: Unified Regional Tree
+
+- [ ] Test Lazy-Loading behavior: ensure Tree only calls `getRegionalTreeLevel` when expanding closed nodes.
+- [ ] Test auto-prefix string logic inside `<RegionalFormModal>` components across District, SubDistrict, and Village tiers.
+- [ ] Test Server-Side Search action: mock database queries and assert fuzzy match flat results mappings.
+- [ ] Ensure Delete action cleanly removes sub-tier nodes (Cascade Delete simulation).

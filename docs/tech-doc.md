@@ -60,6 +60,13 @@ The application features a responsive admin dashboard generated via Shadcn's `si
 
 - A custom Node script (`generate_pages.mjs`) is used during development to read the `src/lib/dummy-data/sidebar-list.ts` configuration, extract all URLs using regex, and programmatically generate basic `page.tsx` React component files inside `/app/dashboard/...` if they don't yet exist.
 
+### Regional Hierarchy Tree
+
+- **Unified Management**: The 4 core regional tiers (`Province`, `District`, `SubDistrict`, `Village`) have been consolidated off of 4 separate pages into one unified Tree view at `/dashboard/settings/regional`.
+- **Lazy-Loading**: To support potentially thousands of `Villages` without crashing the browser, the Tree implements asynchronous child fetching. Clicking the expand arrow on a node fires a `getRegionalTreeLevel` Server Action that hits Prisma for just those immediate children.
+- **Cascading Context Forms**: Forms (Modals) to Add/Edit specific regions are embedded directly into the Tree nodes via a dropdown menu. The node automatically injects its `code` as an uneditable prefix badge into the Form so users only input segmented additions (e.g. `08`) while the Server strictly enforces foreign-key bounds (`provinceId`, `districtId`).
+- **Global Search**: The Regional page includes a live search bar that executes a parallel 4-table query to find Regions by name, returning a flat list with the full `path` to immediately contextualize the result.
+
 ### Database Seeding Strategy
 
 - The project uses a custom seeding strategy located in `prisma/seed.ts`. Instead of hardcoding records, master and core datasets (like Users, Provinces, Districts, Training Types) are stored in `.csv` format under `prisma/seeds/csv`.

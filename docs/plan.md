@@ -33,21 +33,25 @@
 
 ## Task 5: Setup Master Data Management (CRUD)
 
-- [ ] **Infrastructure & Validation**
-  - [ ] Implement Server Actions or API Routes for database interactions
-  - [ ] Implement Zod schemas for strict data validation (create & update)
-  - [ ] Integrate React Hook Form for client-side form handling
+- [x] **Infrastructure & Validation**
+  - [x] Implement Server Actions or API Routes for database interactions
+  - [x] Implement Zod schemas for strict data validation (create & update)
+  - [x] Integrate React Hook Form for client-side form handling
 
-- [ ] **UI Components & Features**
-  - [ ] Build dynamic Data Tables (Shadcn UI) with pagination & search
-  - [ ] Build Add/Edit Dialogs (Modals) or separate full pages
-  - [ ] Implement "Delete" confirmation dialogues
+- [x] **UI Components & Features**
+  - [x] Build dynamic Data Tables (Shadcn UI) with pagination & search
+  - [x] Build Add/Edit Dialogs (Modals) or separate full pages
+  - [x] Implement "Delete" confirmation dialogues
 
-- [ ] **Implement Core Entity Pages**
-  - [ ] User Management
-  - [ ] Menu settings
-  - [ ] Regional: Province
-  - [ ] Regional: District
-  - [ ] Regional: Sub District
-  - [ ] Regional: Village
-  - [ ] Master: Training Type
+- [x] **Implement Core Entity Pages**
+  - [x] User Management
+  - [x] Menu settings
+  - [x] Master: Training Type
+
+## Task 6: Unified Regional Hierarchy (Tree View)
+
+- [x] Consolidate Province, District, SubDistrict, and Village into a single page (`/dashboard/settings/regional`).
+- [x] Build a Lazy-Loaded `Tree` component to recursively render regions.
+- [x] Implement inline CRUD Modal Actions (Add Child, Edit, Delete) accessible via node dropdowns.
+- [x] Implement intelligent cascading Code inputs (auto-prefixing parent codes).
+- [x] Integrate global Server-Side DB Search covering all regional tiers.
