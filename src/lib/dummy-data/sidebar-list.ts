@@ -5,6 +5,8 @@ import {
   Wrench,
   PanelTop,
   Settings,
+  Settings2,
+  Trash2,
   Map,
   LineChart,
   GraduationCap,
@@ -80,16 +82,25 @@ export const SIDEBAR_DATA = [
   },
   {
     title: "Settings",
-    url: "/dashboard/settings",
-    icon: Settings,
+    url: "#",
+    icon: Settings2,
     items: [
-      { title: "User", url: "/dashboard/settings/user", icon: UserCog },
-      { title: "Menu", url: "/dashboard/settings/menu", icon: MenuSquare },
-      { title: "Province", url: "/dashboard/settings/province", icon: MapPin },
-      { title: "District", url: "/dashboard/settings/district", icon: MapPin },
-      { title: "Sub District", url: "/dashboard/settings/sub-district", icon: MapPin },
-      { title: "Village", url: "/dashboard/settings/village", icon: MapPin },
-      { title: "Training Type", url: "/dashboard/settings/training-type", icon: BookKey },
+      {
+        title: "User Management",
+        url: "/dashboard/settings/user",
+      },
+      {
+         title: "Menu Structure",
+         url: "/dashboard/settings/menu",
+      },
+      {
+        title: "Regional Hierarchy",
+        url: "/dashboard/settings/regional",
+      },
+      {
+        title: "Training Types",
+        url: "/dashboard/settings/training-type",
+      },
     ],
   },
 ]

@@ -58,13 +58,27 @@ export function DistrictFormModal({
 
   React.useEffect(() => {
     if (isOpen) {
-      form.reset(initialData || { code: "", name: "", provinceId: "" })
+      if (initialData) {
+        form.reset({
+          ...initialData,
+          code: initialData.code.split('.').pop() || ""
+        })
+      } else {
+        form.reset({ code: "", name: "", provinceId: "" })
+      }
     }
   }, [isOpen, initialData, form])
 
   async function onSubmit(data: DistrictFormValues) {
     setIsLoading(true)
-    const result = await upsertDistrict(data)
+
+    // Append the parent province's code prefix dynamically
+    const parentNode = provinces.find(p => p.id === data.provinceId)
+    const finalCode = parentNode && !data.code.includes(parentNode.code) 
+      ? `${parentNode.code}.${data.code}` 
+      : data.code
+
+    const result = await upsertDistrict({ ...data, code: finalCode })
     setIsLoading(false)
 
     if (result.success) {
@@ -114,15 +128,27 @@ export function DistrictFormModal({
             <FormField
               control={form.control}
               name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>District Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. 3171" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const selectedProvId = form.watch("provinceId")
+                const selectedProv = provinces.find(p => p.id === selectedProvId)
+                
+                return (
+                  <FormItem>
+                    <FormLabel>District Code</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-2">
+                        {selectedProv && (
+                          <span className="text-sm text-muted-foreground bg-muted px-2 py-1.5 rounded-md border shrink-0">
+                            {selectedProv.code}.
+                          </span>
+                        )}
+                        <Input className="flex-1" placeholder="e.g. 08" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
             />
             <FormField
               control={form.control}

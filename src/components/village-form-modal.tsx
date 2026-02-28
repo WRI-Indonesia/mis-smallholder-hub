@@ -58,13 +58,26 @@ export function VillageFormModal({
 
   React.useEffect(() => {
     if (isOpen) {
-      form.reset(initialData || { code: "", name: "", subDistrictId: "" })
+      if (initialData) {
+        form.reset({
+          ...initialData,
+          code: initialData.code.split('.').pop() || ""
+        })
+      } else {
+        form.reset({ code: "", name: "", subDistrictId: "" })
+      }
     }
   }, [isOpen, initialData, form])
 
   async function onSubmit(data: VillageFormValues) {
     setIsLoading(true)
-    const result = await upsertVillage(data)
+
+    const parentNode = subDistricts.find(sd => sd.id === data.subDistrictId)
+    const finalCode = parentNode && !data.code.includes(parentNode.code) 
+      ? `${parentNode.code}.${data.code}` 
+      : data.code
+
+    const result = await upsertVillage({ ...data, code: finalCode })
     setIsLoading(false)
 
     if (result.success) {
@@ -114,15 +127,27 @@ export function VillageFormModal({
             <FormField
               control={form.control}
               name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Village Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. 3171011001" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const selectedSubDistId = form.watch("subDistrictId")
+                const selectedSubDist = subDistricts.find(sd => sd.id === selectedSubDistId)
+                
+                return (
+                  <FormItem>
+                    <FormLabel>Village Code</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-2">
+                        {selectedSubDist && (
+                          <span className="text-sm text-muted-foreground bg-muted px-2 py-1.5 rounded-md border shrink-0">
+                            {selectedSubDist.code}.
+                          </span>
+                        )}
+                        <Input className="flex-1" placeholder="e.g. 2001" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
             />
             <FormField
               control={form.control}

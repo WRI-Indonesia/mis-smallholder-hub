@@ -58,13 +58,26 @@ export function SubDistrictFormModal({
 
   React.useEffect(() => {
     if (isOpen) {
-      form.reset(initialData || { code: "", name: "", districtId: "" })
+      if (initialData) {
+        form.reset({
+          ...initialData,
+          code: initialData.code.split('.').pop() || ""
+        })
+      } else {
+        form.reset({ code: "", name: "", districtId: "" })
+      }
     }
   }, [isOpen, initialData, form])
 
   async function onSubmit(data: SubDistrictFormValues) {
     setIsLoading(true)
-    const result = await upsertSubDistrict(data)
+
+    const parentNode = districts.find(d => d.id === data.districtId)
+    const finalCode = parentNode && !data.code.includes(parentNode.code) 
+      ? `${parentNode.code}.${data.code}` 
+      : data.code
+
+    const result = await upsertSubDistrict({ ...data, code: finalCode })
     setIsLoading(false)
 
     if (result.success) {
@@ -114,15 +127,27 @@ export function SubDistrictFormModal({
             <FormField
               control={form.control}
               name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sub-District Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. 317101" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const selectedDistId = form.watch("districtId")
+                const selectedDist = districts.find(d => d.id === selectedDistId)
+                
+                return (
+                  <FormItem>
+                    <FormLabel>Sub-District Code</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-2">
+                        {selectedDist && (
+                          <span className="text-sm text-muted-foreground bg-muted px-2 py-1.5 rounded-md border shrink-0">
+                            {selectedDist.code}.
+                          </span>
+                        )}
+                        <Input className="flex-1" placeholder="e.g. 06" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
             />
             <FormField
               control={form.control}
