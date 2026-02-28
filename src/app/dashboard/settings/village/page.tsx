@@ -1,12 +1,27 @@
-export default function VillagePage() {
+import { getVillages } from "@/lib/actions/village"
+import { getSubDistricts } from "@/lib/actions/sub-district"
+import { VillageClient } from "./client"
+
+export default async function VillagePage() {
+  const [villageRes, subDistrictRes] = await Promise.all([
+    getVillages(),
+    getSubDistricts() // We fetch sub-districts so user can select them in the village form
+  ])
+
+  if (villageRes.error || subDistrictRes.error) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-6 text-red-500">
+        Error loading data: {villageRes.error || subDistrictRes.error}
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Village</h2>
+    <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 w-full max-w-full overflow-hidden">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Village Management</h1>
       </div>
-      <div className="bg-muted/50 min-h-[50vh] flex-1 rounded-xl flex items-center justify-center">
-        <p className="text-muted-foreground">This is a dummy page for Village. Content goes here.</p>
-      </div>
+      <VillageClient data={villageRes.data} subDistricts={subDistrictRes.data} />
     </div>
   )
 }

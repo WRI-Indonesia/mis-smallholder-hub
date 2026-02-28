@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { USER_DATA } from '@/lib/dummy-data/user';
+import { loginUser } from '@/lib/actions/auth';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -36,19 +36,18 @@ export function LoginForm() {
     const email = target.email.value;
     const password = target.password.value;
 
-    // Simulate authentication delay
-    setTimeout(() => {
-      const user = USER_DATA[0];
-      if (email === user.email && password === user.password) {
-        // Success
-        localStorage.setItem('user', JSON.stringify(user));
-        router.push('/dashboard');
-      } else {
-        // Failed
-        setError('Invalid email or password');
-        setIsLoading(false);
-      }
-    }, 1000);
+    // Validate using actual database Server Action
+    const result = await loginUser(email, password)
+
+    if (result.success && result.user) {
+      // Success
+      localStorage.setItem('user', JSON.stringify(result.user));
+      router.push('/dashboard');
+    } else {
+      // Failed
+      setError(result.error || 'Invalid email or password');
+      setIsLoading(false);
+    }
   }
 
   return (

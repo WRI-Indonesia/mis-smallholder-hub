@@ -1,12 +1,23 @@
-export default function MenuPage() {
+import { getMenus } from "@/lib/actions/menu"
+import { MenuClient } from "./client"
+
+export default async function MenuPage() {
+  const { data, error } = await getMenus()
+
+  if (error) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-6 text-red-500">
+        Error loading data: {error}
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Menu</h2>
+    <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 w-full max-w-full overflow-hidden">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Menu Settings</h1>
       </div>
-      <div className="bg-muted/50 min-h-[50vh] flex-1 rounded-xl flex items-center justify-center">
-        <p className="text-muted-foreground">This is a dummy page for Menu. Content goes here.</p>
-      </div>
+      <MenuClient data={data} />
     </div>
   )
 }

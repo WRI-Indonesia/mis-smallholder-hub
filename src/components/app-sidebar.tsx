@@ -5,7 +5,6 @@ import Link from "next/link"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { USER_DATA } from "@/lib/dummy-data/user"
 import { SIDEBAR_DATA } from "@/lib/dummy-data/sidebar-list"
 import { Logo } from "@/components/ui/logo"
 import {
@@ -19,19 +18,38 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// This is sample data.
-const data = {
+// Default fallback data
+const fallbackData = {
   user: {
-    name: USER_DATA[0].name,
-    email: USER_DATA[0].email,
-    avatar: "/avatars/shadcn.jpg", // Using default avatar for now
-    role: USER_DATA[0].role,
-    region: USER_DATA[0].region,
+    name: "Guest User",
+    email: "guest@example.com",
+    avatar: "/avatars/shadcn.jpg", 
+    role: "Guest",
   },
   navMain: SIDEBAR_DATA,
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [activeUser, setActiveUser] = React.useState(fallbackData.user)
+
+  // Load user data securely from local storage upon client mount
+  React.useEffect(() => {
+    try {
+       const userStr = localStorage.getItem('user')
+       if (userStr) {
+          const parsed = JSON.parse(userStr)
+          setActiveUser({
+             name: parsed.name || "Unknown",
+             email: parsed.email || "",
+             avatar: "/avatars/shadcn.jpg",
+             role: parsed.role || "User"
+          })
+       }
+    } catch (e) {
+       console.error("Failed to parse local user profile", e)
+    }
+  }, [])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -51,10 +69,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={fallbackData.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={activeUser} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

@@ -1,4 +1,14 @@
+"use client"
+
+import { usePathname } from "next/navigation"
+
 export function Footer() {
+  const pathname = usePathname()
+
+  if (pathname?.startsWith("/dashboard")) {
+    return null
+  }
+
   return (
     <footer className="border-t bg-background">
       <div className="container mx-auto px-4 py-8 md:py-12">

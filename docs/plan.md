@@ -29,3 +29,25 @@
 
 - [x] setup prisma schema
 - [x] setup seed core data
+
+
+## Task 5: Setup Master Data Management (CRUD)
+
+- [ ] **Infrastructure & Validation**
+  - [ ] Implement Server Actions or API Routes for database interactions
+  - [ ] Implement Zod schemas for strict data validation (create & update)
+  - [ ] Integrate React Hook Form for client-side form handling
+
+- [ ] **UI Components & Features**
+  - [ ] Build dynamic Data Tables (Shadcn UI) with pagination & search
+  - [ ] Build Add/Edit Dialogs (Modals) or separate full pages
+  - [ ] Implement "Delete" confirmation dialogues
+
+- [ ] **Implement Core Entity Pages**
+  - [ ] User Management
+  - [ ] Menu settings
+  - [ ] Regional: Province
+  - [ ] Regional: District
+  - [ ] Regional: Sub District
+  - [ ] Regional: Village
+  - [ ] Master: Training Type

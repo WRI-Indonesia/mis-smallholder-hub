@@ -1,0 +1,150 @@
+"use client"
+
+import * as React from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { subDistrictSchema, SubDistrictFormValues } from "@/lib/zod/sub-district"
+import { upsertSubDistrict } from "@/lib/actions/sub-district"
+import { District } from "@prisma/client"
+
+interface SubDistrictFormModalProps {
+  isOpen: boolean
+  onClose: () => void
+  initialData?: SubDistrictFormValues | null
+  districts: District[]
+}
+
+export function SubDistrictFormModal({
+  isOpen,
+  onClose,
+  initialData,
+  districts,
+}: SubDistrictFormModalProps) {
+  const [isLoading, setIsLoading] = React.useState(false)
+
+  const form = useForm<SubDistrictFormValues>({
+    resolver: zodResolver(subDistrictSchema),
+    defaultValues: initialData || {
+      code: "",
+      name: "",
+      districtId: "",
+    },
+  })
+
+  React.useEffect(() => {
+    if (isOpen) {
+      form.reset(initialData || { code: "", name: "", districtId: "" })
+    }
+  }, [isOpen, initialData, form])
+
+  async function onSubmit(data: SubDistrictFormValues) {
+    setIsLoading(true)
+    const result = await upsertSubDistrict(data)
+    setIsLoading(false)
+
+    if (result.success) {
+      onClose()
+    } else {
+      alert(result.error)
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{initialData ? "Edit" : "Add"} Sub District</DialogTitle>
+          <DialogDescription>
+            {initialData
+              ? "Make changes to the sub-district here."
+              : "Add a new sub-district linked to a parent district."}
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="districtId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Parent District</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a district" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {districts.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.code} - {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sub-District Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. 317101" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sub-District Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Tebet" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
