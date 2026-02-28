@@ -38,9 +38,9 @@ Configuration and setup details for the MIS Smallholder Hub application.
 
 ## 3. Architecture Notes
 
-### Authentication (Phase 2 MVP)
+### Authentication (Task 3 MVP)
 
-For the current development phase, authentication is handled client-side using a dummy user profile stored in `src/lib/dummy-data/user.ts`. Upon a successful login simulation, the user object is stored in `localStorage` under the key `user`. The `Navbar` and `Sidebar` check this local storage entry to toggle the UI from a "Login" state to a logged-in User Menu state.
+For the current development stage, authentication is handled client-side using a dummy user profile stored in `src/lib/dummy-data/user.ts`. Upon a successful login simulation, the user object is stored in `localStorage` under the key `user`. The `Navbar` and `Sidebar` check this local storage entry to toggle the UI from a "Login" state to a logged-in User Menu state.
 
 ### Admin Dashboard Layout
 
@@ -60,6 +60,11 @@ The application features a responsive admin dashboard generated via Shadcn's `si
 
 - A custom Node script (`generate_pages.mjs`) is used during development to read the `src/lib/dummy-data/sidebar-list.ts` configuration, extract all URLs using regex, and programmatically generate basic `page.tsx` React component files inside `/app/dashboard/...` if they don't yet exist.
 
+### Database Seeding Strategy
+
+- The project uses a custom seeding strategy located in `prisma/seed.ts`. Instead of hardcoding records, master and core datasets (like Users, Provinces, Districts, Training Types) are stored in `.csv` format under `prisma/seeds/csv`.
+- CSV files are parsed at runtime by separate seeding scripts (e.g., `user.ts`, `regional.ts`) to programmatically upsert the data into the PostgreSQL database, preserving foreign key relationships and avoiding duplicate key constraints.
+
 ## 4. Setup & Commands
 
 ### Prerequisites
@@ -78,9 +83,12 @@ npm install
 ### Database Setup
 
 1. Configure `.env` with your `DATABASE_URL`.
-2. Run migrations (when schema is ready):
+2. Ensure connection settings are imported in `prisma.config.ts` (Required for Prisma v7+).
+3. Run migrations and execute the seed scripts:
+
    ```bash
    npx prisma migrate dev
+   npx prisma db seed
    ```
 
 ### Development

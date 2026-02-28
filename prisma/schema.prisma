@@ -5,10 +5,104 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum Role {
+  ADMINISTRATOR
+  MANAGEMENT
+  OPERATOR
+}
+
+// -----------------------------------------------------------------------------
+// CORE MODELS
+// -----------------------------------------------------------------------------
+
+model User {
+  id           String @id @default(uuid())
+  email        String @unique
+  passwordHash String
+  name         String
+  role         Role   @default(OPERATOR)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Menu {
+  id       String  @id @default(uuid())
+  title    String
+  url      String
+  icon     String?
+  parentId String?
+  parent   Menu?   @relation("SubMenus", fields: [parentId], references: [id])
+  children Menu[]  @relation("SubMenus")
+  order    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// REGIONAL DATA
+// -----------------------------------------------------------------------------
+
+model Province {
+  id   String @id @default(uuid())
+  code String @unique // e.g., "31" for DKI Jakarta
+  name String
+
+  districts District[]
+}
+
+model District {
+  id   String @id @default(uuid())
+  code String @unique // e.g., "31.71" for Jakarta Pusat
+  name String
+
+  provinceId String
+  province   Province @relation(fields: [provinceId], references: [id])
+
+  subDistricts SubDistrict[]
+}
+
+model SubDistrict {
+  id   String @id @default(uuid())
+  code String @unique // e.g., "31.71.01" for Gambir
+  name String
+
+  districtId String
+  district   District @relation(fields: [districtId], references: [id])
+
+  villages Village[]
+}
+
+model Village {
+  id   String @id @default(uuid())
+  code String @unique // e.g., "31.71.01.1001"
+  name String
+
+  subDistrictId String
+  subDistrict   SubDistrict @relation(fields: [subDistrictId], references: [id])
+}
+
+// -----------------------------------------------------------------------------
+// MASTER DATA
+// -----------------------------------------------------------------------------
+
+model TrainingType {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

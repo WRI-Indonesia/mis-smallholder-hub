@@ -1,0 +1,5 @@
+name,email,password,role
+Sofyan,sofyan.salim@wri.org,pass123,ADMINISTRATOR
+Project Manager,management@mis.com,pass123,MANAGEMENT
+Field Operator One,operator1@mis.com,pass123,OPERATOR
+Field Operator Two,operator2@mis.com,pass123,OPERATOR
