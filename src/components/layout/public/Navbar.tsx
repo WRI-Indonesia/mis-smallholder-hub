@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [lang, setLang] = useState("ID");
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +48,15 @@ export function Navbar() {
               )}
               <span className="sr-only">Toggle theme</span>
             </Button>
+            
+            <Button 
+              variant="ghost" 
+              className="w-10 px-0 font-bold text-muted-foreground hover:text-foreground"
+              onClick={() => setLang(lang === "ID" ? "EN" : "ID")}
+            >
+              {lang}
+            </Button>
+
             <Link href="/dashboard" className={buttonVariants({ variant: "default" })}>
               Login
             </Link>
