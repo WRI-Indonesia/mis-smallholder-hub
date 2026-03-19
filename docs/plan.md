@@ -17,11 +17,12 @@
 - [x] **1.3. Inisiasi Shadcn UI**
   - [x] Jalankan: `npx shadcn@latest init` (Pilih: Default, CSS Variables).
   - [x] Jalankan instalasi komponen wajib berulang: `npx shadcn@latest add button input form select table dialog sonner card popover calendar checkbox separator scroll-area alert badge dropdown-menu`
-- [ ] **1.4. Setup Folder Structure**
-  - [ ] Buat `/src/components/layout/` (Sidebar, Header, MainContainer).
-  - [ ] Buat `/src/lib/` (prisma.ts, utils.ts, map-utils.ts).
-  - [ ] Buat `/src/server/actions/` (direktori *Server Actions* Next.js).
-  - [ ] Buat `/src/validations/` (untuk Zod Schemas).
+- [x] **1.4. Setup Folder Structure & Multi-Layout**
+  - [x] Instalasi theme provider: `npm i next-themes lucide-react`.
+  - [x] Setup `ThemeProvider` (Dark mode default) di `src/app/layout.tsx` / komponen global.
+  - [x] Setup **Public Layout** di `src/app/(public)/layout.tsx` (dengan Navbar, menu Home, Community, Knowledge Management, & tombol Login/Theme).
+  - [x] Setup **Admin Layout** di `src/app/(admin)/layout.tsx` dengan integrasi Sidebar Shadcn (`npx shadcn@latest add sidebar-07`).
+  - [x] Buat direktori inti backend/utilitas: `/src/lib/`, `/src/server/actions/`, `/src/validations/`.
 
 ## FASE 2: DATABASE SCHEMA & MIGRATIONS (`prisma/schema.prisma`)
 
