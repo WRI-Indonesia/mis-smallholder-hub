@@ -8,12 +8,12 @@
 - [x] **1.1. Inisiasi Proyek Next.js**
   - [x] Jalankan: `npx create-next-app@latest smallholder-hub --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
   - [x] Buat file konfigurasi `.env`, `.env.example`, `.prettierrc.json`.
-- [ ] **1.2. Instalasi Dependensi Inti**
-  - [ ] *Database & ORM*: `npm i prisma --save-dev` & `npm i @prisma/client`
-  - [ ] *Autentikasi*: `npm i next-auth@beta bcryptjs` & `npm i -D @types/bcryptjs`
-  - [ ] *Form & Validasi*: `npm i react-hook-form zod @hookform/resolvers`
-  - [ ] *GIS & Peta*: `npm i maplibre-gl react-map-gl @turf/turf`
-  - [ ] *Charts & Date*: `npm i recharts date-fns`
+- [x] **1.2. Instalasi Dependensi Inti**
+  - [x] *Database & ORM*: `npm i prisma --save-dev` & `npm i @prisma/client`
+  - [x] *Autentikasi*: `npm i next-auth@beta bcryptjs` & `npm i -D @types/bcryptjs`
+  - [x] *Form & Validasi*: `npm i react-hook-form zod @hookform/resolvers`
+  - [x] *GIS & Peta*: `npm i maplibre-gl react-map-gl @turf/turf`
+  - [x] *Charts & Date*: `npm i recharts date-fns`
 - [ ] **1.3. Inisiasi Shadcn UI**
   - [ ] Jalankan: `npx shadcn@latest init` (Pilih: Default, CSS Variables).
   - [ ] Jalankan instalasi komponen wajib berulang: `npx shadcn@latest add button input form select table dialog toast card popover calendar checkbox separator scroll-area alert badge dropdown-menu`
