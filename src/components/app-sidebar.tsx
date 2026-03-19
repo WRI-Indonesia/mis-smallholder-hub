@@ -3,12 +3,14 @@
 import * as React from "react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { LayoutDashboardIcon, DatabaseIcon, MonitorIcon, WrenchIcon, SettingsIcon, SproutIcon } from "lucide-react"
@@ -23,9 +25,6 @@ const data = {
   teams: [
     {
       name: "Smallholder HUB",
-      logo: (
-        <SproutIcon />
-      ),
       plan: "Admin Panel",
     },
   ],
@@ -98,7 +97,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" render={<a href="/dashboard" />}>
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <SproutIcon className="size-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-bold text-base">Smallholder HUB</span>
+                  <span className="text-xs text-muted-foreground">Admin Panel</span>
+                </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
