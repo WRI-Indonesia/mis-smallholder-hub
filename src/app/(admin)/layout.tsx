@@ -13,6 +13,7 @@ function useBreadcrumbs() {
   const segments = pathname.split("/").filter(Boolean)
   
   const labelMap: Record<string, string> = {
+    admin: "Admin",
     dashboard: "Dashboard",
     "master-data": "Master Data",
     farmers: "Data Petani",
@@ -56,8 +57,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           {/* Breadcrumb — left-aligned, full grow */}
           <nav className="flex items-center gap-1 text-sm min-w-0">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-primary font-medium transition-colors shrink-0">
-              Admin
+            <Link href="/admin/dashboard" className="text-muted-foreground hover:text-primary font-medium transition-colors shrink-0">
+              AdminPanel
             </Link>
             {breadcrumbs.map((crumb) => (
               <span key={crumb.href} className="flex items-center gap-1">

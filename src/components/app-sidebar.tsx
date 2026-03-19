@@ -31,14 +31,11 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: "/admin/dashboard",
       icon: (
         <LayoutDashboardIcon />
       ),
       isActive: true,
-      items: [
-        { title: "Statistik Utama", url: "/dashboard" },
-      ],
     },
     {
       title: "Master Data",
@@ -47,10 +44,10 @@ const data = {
         <DatabaseIcon />
       ),
       items: [
-        { title: "Data Petani", url: "/master-data/farmers" },
-        { title: "Kelompok Tani", url: "/master-data/groups" },
-        { title: "Data Lahan", url: "/master-data/parcels" },
-        { title: "Region / Wilayah", url: "/master-data/regions" },
+        { title: "Data Petani", url: "/admin/master-data/farmers" },
+        { title: "Kelompok Tani", url: "/admin/master-data/groups" },
+        { title: "Data Lahan", url: "/admin/master-data/parcels" },
+        { title: "Region / Wilayah", url: "/admin/master-data/regions" },
       ],
     },
     {
@@ -60,10 +57,10 @@ const data = {
         <MonitorIcon />
       ),
       items: [
-        { title: "Berita & Pengumuman", url: "/cms/news" },
-        { title: "Knowledge Management", url: "/cms/knowledge" },
-        { title: "Manajemen Komunitas", url: "/cms/community" },
-        { title: "Konfigurasi Halaman", url: "/cms/pages" },
+        { title: "Berita & Pengumuman", url: "/admin/cms/news" },
+        { title: "Knowledge Management", url: "/admin/cms/knowledge" },
+        { title: "Manajemen Komunitas", url: "/admin/cms/community" },
+        { title: "Konfigurasi Halaman", url: "/admin/cms/pages" },
       ],
     },
     {
@@ -73,9 +70,9 @@ const data = {
         <WrenchIcon />
       ),
       items: [
-        { title: "Import Data Massal", url: "/tools/import" },
-        { title: "Export Laporan", url: "/tools/export" },
-        { title: "Geospatial Tools", url: "/tools/geo" },
+        { title: "Import Data Massal", url: "/admin/tools/import" },
+        { title: "Export Laporan", url: "/admin/tools/export" },
+        { title: "Geospatial Tools", url: "/admin/tools/geo" },
       ],
     },
     {
@@ -85,9 +82,9 @@ const data = {
         <SettingsIcon />
       ),
       items: [
-        { title: "User Management", url: "/settings/users" },
-        { title: "Role & Permission", url: "/settings/roles" },
-        { title: "Konfigurasi Sistem", url: "/settings/system" },
+        { title: "User Management", url: "/admin/settings/users" },
+        { title: "Role & Permission", url: "/admin/settings/roles" },
+        { title: "Konfigurasi Sistem", url: "/admin/settings/system" },
       ],
     },
   ],

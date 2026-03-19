@@ -57,7 +57,7 @@ export function Navbar() {
               {lang}
             </Button>
 
-            <Link href="/dashboard" className={buttonVariants({ variant: "default" })}>
+            <Link href="/admin/dashboard" className={buttonVariants({ variant: "default" })}>
               Login
             </Link>
           </div>
