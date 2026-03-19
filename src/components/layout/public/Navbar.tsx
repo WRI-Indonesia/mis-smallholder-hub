@@ -24,7 +24,7 @@ export function Navbar() {
             <span className="font-bold text-lg md:text-xl inline-block text-primary">Smallholder HUB</span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+        <div className="flex flex-1 items-center justify-end space-x-2">
           <div className="hidden md:flex space-x-4 mr-4">
             <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
               Home
@@ -67,8 +67,8 @@ export function Navbar() {
             {/* Mobile Nav Hamburger */}
             <div className="md:hidden">
               <Sheet>
-                <SheetTrigger className={buttonVariants({ variant: "outline", size: "icon" })}>
-                  <Menu className="h-5 w-5" />
+                <SheetTrigger className={buttonVariants({ variant: "ghost", size: "icon" })}>
+                  <Menu className="h-6 w-6" />
                   <span className="sr-only">Toggle navigation menu</span>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[300px] sm:w-[400px]">
