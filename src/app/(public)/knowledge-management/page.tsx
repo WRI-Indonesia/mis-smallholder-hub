@@ -51,6 +51,7 @@ export default function KnowledgeManagementPage() {
               <SelectItem value="All">Semua Format</SelectItem>
               <SelectItem value="Artikel">Artikel</SelectItem>
               <SelectItem value="Dokumentasi Kegiatan">Dokumentasi Kegiatan</SelectItem>
+              <SelectItem value="Toolkit Training">Toolkit Training</SelectItem>
               <SelectItem value="Video">Video</SelectItem>
             </SelectContent>
           </Select>

@@ -2,7 +2,7 @@ export type KnowledgeModule = {
   id: string;
   category: string;
   title: string;
-  type: "Artikel" | "Dokumentasi Kegiatan" | "Video";
+  type: "Artikel" | "Dokumentasi Kegiatan" | "Video" | "Toolkit Training";
   thumbnail: string;
   description: string;
   videoUrl?: string;
@@ -39,5 +39,11 @@ export const mockModules: KnowledgeModule[] = [
     thumbnail: "https://images.unsplash.com/photo-1592982537447-6f2c5c5ebddb?auto=format&fit=crop&q=80&w=800",
     description: "Prinsip-prinsip Good Agricultural Practices (GAP) untuk rotasi perawaran gulma di ring piringan agar unsur hara tidak tersedot dan terhindar dari jamur ganoderma.",
     content: "Metode melingkar (circle weeding) selebar 1.5 - 2 meter dari bonggol harus bersih total dari pakis maupun ilalang liar. Penyemprotan herbisida sistemik hanya disarankan pada musim curah hujan rendah agar obat tidak memuai.",
+  },
+  { 
+    id: "km-006", category: "Modul Pelatihan", title: "Paket Training of Trainers (ToT)", type: "Toolkit Training", 
+    thumbnail: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800",
+    description: "Kumpulan bahan presentasi, silabus, dan lembar kerja untuk membimbing dan melatih kader tani (ToT) baru terkait teknik penyuluhan pertanian modern.",
+    content: "Toolkit ini merangkum kompendium yang komprehensif, mulai dari metode pengajaran orang dewasa (Andragogi), susunan pertemuan rutin lapang, matriks evaluasi kompetensi praktek dasar, hingga kuesioner adopsi teknologi bagi petani peserta binaan.",
   },
 ];
