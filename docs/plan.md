@@ -24,10 +24,11 @@
   - [x] Setup **Admin Layout** di `src/app/(admin)/layout.tsx` dengan integrasi Sidebar Shadcn (`npx shadcn@latest add sidebar-07`).
   - [x] Buat direktori inti backend/utilitas: `/src/lib/`, `/src/server/actions/`, `/src/validations/`.
 - [x] **1.5. Scaffolding UI Statis (Mockup)**
-  - [x] Halaman `Home` publik (Hero, features).
+  - [x] Halaman `Home` publik (Hero, features, tombol toggle Dark Mode & Language (ID/EN)).
   - [x] Halaman `Community` publik (List diskusi statis).
   - [x] Halaman `Knowledge Management` publik (Katalog modul).
-  - [x] Halaman `Dashboard` admin (Statistik summary statis).
+  - [x] Customisasi `Sidebar Admin` (Hierarki Menu Lengkap) & Logout Redirect ke Home.
+  - [x] Halaman Mockup Admin (`Dashboard Summary`, `Data Petani`, `CMS Berita`).
 
 ## FASE 2: DATABASE SCHEMA & MIGRATIONS (`prisma/schema.prisma`)
 
