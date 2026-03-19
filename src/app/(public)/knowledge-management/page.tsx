@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Card, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Search } from "lucide-react"
+import { Search } from "lucide-react"
 import { mockModules } from "@/lib/static-data/knowledge-management"
 
 export default function KnowledgeManagementPage() {
@@ -20,7 +20,7 @@ export default function KnowledgeManagementPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="mb-12 text-center max-w-2xl mx-auto">
         <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
           Knowledge <span className="text-primary">Management</span>
@@ -49,31 +49,63 @@ export default function KnowledgeManagementPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">Semua Format</SelectItem>
-              <SelectItem value="PDF">PDF</SelectItem>
-              <SelectItem value="Dokumen">Dokumen</SelectItem>
-              <SelectItem value="Video">Video Tutorial</SelectItem>
+              <SelectItem value="Artikel">Artikel</SelectItem>
+              <SelectItem value="Dokumentasi Kegiatan">Dokumentasi Kegiatan</SelectItem>
+              <SelectItem value="Video">Video</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredModules.map((mod) => (
-          <Card key={mod.id} className="flex flex-col shadow-sm border-primary/10 hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 hover:shadow-xl bg-card/60 backdrop-blur-sm group cursor-pointer">
-            <CardHeader className="flex flex-col items-center text-center">
-              <div className="mb-4 bg-muted p-4 rounded-full group-hover:bg-primary/10 transition-colors">{mod.icon}</div>
-              <p className="text-xs font-bold text-primary/80 uppercase tracking-wider">{mod.category}</p>
-              <CardTitle className="text-lg leading-tight mt-2 group-hover:text-primary transition-colors">{mod.title}</CardTitle>
-            </CardHeader>
-            <CardFooter className="mt-auto pt-4 flex gap-2">
-              <Button variant="outline" size="sm" className="w-full font-semibold border-primary/30 hover:bg-primary/10 hover:text-primary">
-                {mod.type === "Video" ? "Tonton" : "Baca"}
-              </Button>
-              <Button variant="secondary" size="icon" className="shrink-0 hover:bg-primary/20 hover:text-primary">
-                <Download className="w-4 h-4" />
-              </Button>
-            </CardFooter>
-          </Card>
+          mod.type === "Video" ? (
+             <Card key={mod.id} className="flex flex-col shadow-sm border-primary/10 overflow-hidden bg-card/60 backdrop-blur-sm group">
+               <div className="w-full aspect-video bg-black relative">
+                 <iframe 
+                   className="w-full h-full" 
+                   src={mod.videoUrl} 
+                   title={mod.title} 
+                   frameBorder="0" 
+                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                   allowFullScreen
+                 />
+               </div>
+               <CardHeader className="p-4 flex-1 flex flex-col">
+                <div className="flex justify-between items-start mb-3">
+                  <span className="text-xs font-bold text-red-500 uppercase tracking-wider px-2 py-0.5 bg-red-500/10 rounded-md border border-red-500/20">
+                    {mod.type}
+                  </span>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">{mod.category}</span>
+                </div>
+                 <CardTitle className="text-lg leading-tight">{mod.title}</CardTitle>
+                 <p className="line-clamp-2 mt-2 text-sm text-foreground/80 leading-relaxed">
+                   {mod.description}
+                 </p>
+               </CardHeader>
+             </Card>
+          ) : (
+            <Link href={`/knowledge-management/${mod.id}`} key={mod.id} className="block group h-full">
+              <Card className="h-full flex flex-col shadow-sm border-primary/10 hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 hover:shadow-xl bg-card/60 backdrop-blur-sm overflow-hidden">
+                <div className="w-full aspect-video bg-muted overflow-hidden relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={mod.thumbnail} alt={mod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                </div>
+                <CardHeader className="p-4 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="text-xs font-bold text-primary uppercase tracking-wider px-2 py-0.5 bg-primary/10 rounded-md border border-primary/20">
+                      {mod.type}
+                    </span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase">{mod.category}</span>
+                  </div>
+                  <CardTitle className="text-lg leading-tight group-hover:text-primary transition-colors">{mod.title}</CardTitle>
+                  <p className="line-clamp-2 mt-2 text-sm text-foreground/80 leading-relaxed">
+                    {mod.description}
+                  </p>
+                </CardHeader>
+              </Card>
+            </Link>
+          )
         ))}
         
         {filteredModules.length === 0 && (
