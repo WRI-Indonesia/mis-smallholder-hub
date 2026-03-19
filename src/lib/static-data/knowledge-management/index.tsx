@@ -30,7 +30,7 @@ export const mockModules: KnowledgeModule[] = [
   },
   { 
     id: "km-004", category: "Hama & Penyakit", title: "Katalog Penyakit Tanaman Padi", type: "Artikel", 
-    thumbnail: "https://images.unsplash.com/photo-1595844781498-842b03fb4b35?auto=format&fit=crop&q=80&w=800",
+    thumbnail: "https://images.unsplash.com/photo-1500937386664-56d1dfefcb19?auto=format&fit=crop&q=80&w=800",
     description: "Identifikasi jenis-jenis penyakit yang paling umum menyerang tanaman padi unggul, beserta rekomendasi penanganan organiknya.",
     content: "Penyakit Hawar Daun Bakteri (HDB) yang disebabkan oleh Xanthomonas campestris pv. oryzae merupakan ancaman utama. Pengendaliannya bisa menggunakan varietas tahan hama, jarak tanam legowo, dan menghindari genangan air yang terlalu menetap.",
   },
