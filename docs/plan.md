@@ -14,9 +14,9 @@
   - [x] *Form & Validasi*: `npm i react-hook-form zod @hookform/resolvers`
   - [x] *GIS & Peta*: `npm i maplibre-gl react-map-gl @turf/turf`
   - [x] *Charts & Date*: `npm i recharts date-fns`
-- [ ] **1.3. Inisiasi Shadcn UI**
-  - [ ] Jalankan: `npx shadcn@latest init` (Pilih: Default, CSS Variables).
-  - [ ] Jalankan instalasi komponen wajib berulang: `npx shadcn@latest add button input form select table dialog toast card popover calendar checkbox separator scroll-area alert badge dropdown-menu`
+- [x] **1.3. Inisiasi Shadcn UI**
+  - [x] Jalankan: `npx shadcn@latest init` (Pilih: Default, CSS Variables).
+  - [x] Jalankan instalasi komponen wajib berulang: `npx shadcn@latest add button input form select table dialog sonner card popover calendar checkbox separator scroll-area alert badge dropdown-menu`
 - [ ] **1.4. Setup Folder Structure**
   - [ ] Buat `/src/components/layout/` (Sidebar, Header, MainContainer).
   - [ ] Buat `/src/lib/` (prisma.ts, utils.ts, map-utils.ts).
