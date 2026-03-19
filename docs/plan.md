@@ -23,6 +23,11 @@
   - [x] Setup **Public Layout** di `src/app/(public)/layout.tsx` (dengan Navbar, menu Home, Community, Knowledge Management, & tombol Login/Theme).
   - [x] Setup **Admin Layout** di `src/app/(admin)/layout.tsx` dengan integrasi Sidebar Shadcn (`npx shadcn@latest add sidebar-07`).
   - [x] Buat direktori inti backend/utilitas: `/src/lib/`, `/src/server/actions/`, `/src/validations/`.
+- [x] **1.5. Scaffolding UI Statis (Mockup)**
+  - [x] Halaman `Home` publik (Hero, features).
+  - [x] Halaman `Community` publik (List diskusi statis).
+  - [x] Halaman `Knowledge Management` publik (Katalog modul).
+  - [x] Halaman `Dashboard` admin (Statistik summary statis).
 
 ## FASE 2: DATABASE SCHEMA & MIGRATIONS (`prisma/schema.prisma`)
 

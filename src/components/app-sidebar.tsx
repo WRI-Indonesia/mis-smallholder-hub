@@ -1,9 +1,7 @@
 "use client"
 
 import * as React from "react"
-
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
@@ -13,164 +11,85 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, MapIcon } from "lucide-react"
+import { LayoutDashboardIcon, DatabaseIcon, MonitorIcon, WrenchIcon, SettingsIcon, SproutIcon } from "lucide-react"
 
-// This is sample data.
+// Data Navigation Sidebar
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "Admin Super",
+    email: "admin@sh-hub.id",
+    avatar: "/avatars/user.jpg",
   },
   teams: [
     {
-      name: "Acme Inc",
+      name: "Smallholder HUB",
       logo: (
-        <GalleryVerticalEndIcon
-        />
+        <SproutIcon />
       ),
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: (
-        <AudioLinesIcon
-        />
-      ),
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: (
-        <TerminalIcon
-        />
-      ),
-      plan: "Free",
+      plan: "Admin Panel",
     },
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
+      title: "Dashboard",
+      url: "/dashboard",
       icon: (
-        <TerminalSquareIcon
-        />
+        <LayoutDashboardIcon />
       ),
       isActive: true,
       items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
+        { title: "Statistik Utama", url: "/dashboard" },
       ],
     },
     {
-      title: "Models",
+      title: "Master Data",
       url: "#",
       icon: (
-        <BotIcon
-        />
+        <DatabaseIcon />
       ),
       items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
+        { title: "Data Petani", url: "/master-data/farmers" },
+        { title: "Kelompok Tani", url: "/master-data/groups" },
+        { title: "Data Lahan", url: "/master-data/parcels" },
+        { title: "Region / Wilayah", url: "/master-data/regions" },
       ],
     },
     {
-      title: "Documentation",
+      title: "CMS",
       url: "#",
       icon: (
-        <BookOpenIcon
-        />
+        <MonitorIcon />
       ),
       items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
+        { title: "Berita & Pengumuman", url: "/cms/news" },
+        { title: "Knowledge Management", url: "/cms/knowledge" },
+        { title: "Manajemen Komunitas", url: "/cms/community" },
+        { title: "Konfigurasi Halaman", url: "/cms/pages" },
       ],
     },
     {
-      title: "Settings",
+      title: "Tools",
       url: "#",
       icon: (
-        <Settings2Icon
-        />
+        <WrenchIcon />
       ),
       items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
+        { title: "Import Data Massal", url: "/tools/import" },
+        { title: "Export Laporan", url: "/tools/export" },
+        { title: "Geospatial Tools", url: "/tools/geo" },
       ],
     },
-  ],
-  projects: [
     {
-      name: "Design Engineering",
+      title: "Setting",
       url: "#",
       icon: (
-        <FrameIcon
-        />
+        <SettingsIcon />
       ),
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: (
-        <PieChartIcon
-        />
-      ),
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: (
-        <MapIcon
-        />
-      ),
+      items: [
+        { title: "User Management", url: "/settings/users" },
+        { title: "Role & Permission", url: "/settings/roles" },
+        { title: "Konfigurasi Sistem", url: "/settings/system" },
+      ],
     },
   ],
 }
@@ -183,7 +102,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
