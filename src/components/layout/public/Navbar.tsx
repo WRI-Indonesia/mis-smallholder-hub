@@ -19,9 +19,9 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md shadow-sm">
       <div className="container flex h-16 items-center mx-auto px-4 md:px-6">
-        <div className="mr-8 flex items-center md:mx-auto lg:mx-0">
+        <div className="mr-4 flex items-center md:mx-auto lg:mx-0 shrink-0">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold text-xl inline-block text-primary">Smallholder HUB</span>
+            <span className="font-bold text-lg md:text-xl inline-block text-primary">Smallholder HUB</span>
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
@@ -58,9 +58,11 @@ export function Navbar() {
               {lang}
             </Button>
 
-            <Link href="/admin/dashboard" className={buttonVariants({ variant: "default" })}>
-              Login
-            </Link>
+            <div className="hidden md:block">
+              <Link href="/admin/dashboard" className={buttonVariants({ variant: "default" })}>
+                Login
+              </Link>
+            </div>
 
             {/* Mobile Nav Hamburger */}
             <div className="md:hidden">
