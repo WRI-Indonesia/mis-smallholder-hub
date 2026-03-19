@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 
 export function Navbar() {
@@ -60,6 +61,33 @@ export function Navbar() {
             <Link href="/admin/dashboard" className={buttonVariants({ variant: "default" })}>
               Login
             </Link>
+
+            {/* Mobile Nav Hamburger */}
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger className={buttonVariants({ variant: "outline", size: "icon" })}>
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                  <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
+                  <div className="flex flex-col gap-6 pt-10">
+                    <Link href="/" className="text-lg font-semibold hover:text-primary transition-colors">
+                      Home
+                    </Link>
+                    <Link href="/community" className="text-lg font-semibold hover:text-primary transition-colors">
+                      Community
+                    </Link>
+                    <Link href="/knowledge-management" className="text-lg font-semibold hover:text-primary transition-colors">
+                      Knowledge Management
+                    </Link>
+                    <Link href="/admin/dashboard" className={buttonVariants({ variant: "default", className: "w-full justify-center" })}>
+                      Login Admin
+                    </Link>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </div>

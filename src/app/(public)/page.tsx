@@ -22,9 +22,9 @@ export default function HomePage() {
           <p className="mx-auto mt-4 max-w-[700px] text-lg text-muted-foreground">
             Platform terpadu untuk memberdayakan petani kecil melalui manajemen data, komunitas, dan pengetahuan praktik pertanian terbaik.
           </p>
-          <div className="mt-8 flex justify-center gap-4">
-            <Button size="lg" className="font-semibold shadow-md">Daftar Sekarang</Button>
-            <Button variant="outline" size="lg" className="font-semibold">Pelajari Lebih Lanjut</Button>
+          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+            <Button size="lg" className="w-full sm:w-auto font-semibold shadow-md">Daftar Sekarang</Button>
+            <Button variant="outline" size="lg" className="w-full sm:w-auto font-semibold">Pelajari Lebih Lanjut</Button>
           </div>
         </div>
       </section>

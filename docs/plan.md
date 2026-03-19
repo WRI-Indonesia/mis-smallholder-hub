@@ -29,9 +29,13 @@
   - [x] Halaman `Knowledge Management` publik (Katalog modul).
   - [x] Customisasi `Sidebar Admin` (Hierarki Menu Lengkap) & Logout Redirect ke Home.
   - [x] Halaman Mockup Admin (`Dashboard Summary`, `Data Petani`, `CMS Berita`).
-- [ ] **1.6. UI Statis with static-data**
-  - [ ] Sentralisasi mock data ke `/src/lib/static-data/`.
-  - [ ] Pembaruan komponen menggunakan data tersentralisasi.
+- [x] **1.6. UI Statis with static-data**
+  - [x] Sentralisasi mock data ke `/src/lib/static-data/`.
+  - [x] Pembaruan komponen menggunakan data tersentralisasi.
+- [ ] **1.7. Responsivitas Layar (Mobile Friendly)**
+  - [ ] Navbar Mobile (Hamburger Menu / Shadcn Sheet).
+  - [ ] Layout grid responsif untuk Halaman Home, Community, dan Knowledge Management.
+  - [ ] Penyesuaian padding dan font size di layar kecil.
 
 ## FASE 2: DATABASE SCHEMA & MIGRATIONS (`prisma/schema.prisma`)
 

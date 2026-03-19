@@ -55,8 +55,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <SidebarTrigger className="-ml-1 shrink-0" />
             <Separator orientation="vertical" className="h-5 shrink-0" />
           </div>
-          {/* Breadcrumb — left-aligned, full grow */}
-          <nav className="flex items-center gap-1 text-sm min-w-0">
+          {/* Breadcrumb — left-aligned, full grow, scrollable on mobile */}
+          <nav className="flex items-center gap-1 text-sm min-w-0 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <Link href="/admin/dashboard" className="text-muted-foreground hover:text-primary font-medium transition-colors shrink-0">
               AdminPanel
             </Link>
