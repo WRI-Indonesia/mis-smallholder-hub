@@ -21,28 +21,31 @@ export default function CommunityPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8 text-center sm:text-left">
-        <h1 className="text-4xl font-bold tracking-tight text-primary">Direktori Komunitas</h1>
-        <p className="mt-2 text-lg text-muted-foreground">
-          Temukan direktori Koperasi dan Asosiasi Petani di 4 Distrik Utama Smallholder HUB.
+      <div className="mb-12 text-center max-w-2xl mx-auto">
+        <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+          Direktori <span className="text-primary">Komunitas</span>
+        </h1>
+        <p className="mt-4 text-lg text-muted-foreground">
+          Temukan dan jalin kemitraan dengan Koperasi serta Asosiasi Petani di 4 Distrik Utama Smallholder HUB.
         </p>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-8 bg-card p-4 rounded-xl border shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row items-center gap-2 mb-12 bg-card p-3 rounded-2xl border shadow-sm max-w-4xl mx-auto">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
-            className="pl-9 bg-background" 
-            placeholder="Cari nama koperasi atau asosiasi..." 
+            className="pl-12 h-14 bg-transparent border-none shadow-none text-base focus-visible:ring-0 rounded-xl" 
+            placeholder="Ketik nama komunitas atau kata kunci..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="w-full sm:w-[240px]">
+        <div className="h-8 w-px bg-border/60 hidden sm:block mx-2" />
+        <div className="w-full sm:w-[280px] shrink-0">
           <Select value={regionFilter} onValueChange={(val) => setRegionFilter(val || "All")}>
-            <SelectTrigger className="bg-background">
-              <SelectValue placeholder="Pilih Distrik..." />
+            <SelectTrigger className="h-14 w-full bg-transparent border-none shadow-none text-base focus:ring-0 rounded-xl font-medium">
+              <SelectValue placeholder="Semua Distrik" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">Semua Distrik</SelectItem>
