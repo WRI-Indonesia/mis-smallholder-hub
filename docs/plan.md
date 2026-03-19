@@ -29,6 +29,9 @@
   - [x] Halaman `Knowledge Management` publik (Katalog modul).
   - [x] Customisasi `Sidebar Admin` (Hierarki Menu Lengkap) & Logout Redirect ke Home.
   - [x] Halaman Mockup Admin (`Dashboard Summary`, `Data Petani`, `CMS Berita`).
+- [ ] **1.6. UI Statis with static-data**
+  - [ ] Sentralisasi mock data ke `/src/lib/static-data/`.
+  - [ ] Pembaruan komponen menggunakan data tersentralisasi.
 
 ## FASE 2: DATABASE SCHEMA & MIGRATIONS (`prisma/schema.prisma`)
 

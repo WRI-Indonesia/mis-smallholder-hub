@@ -40,7 +40,7 @@ export default function CommunityPage() {
           />
         </div>
         <div className="w-full sm:w-[240px]">
-          <Select value={regionFilter} onValueChange={setRegionFilter}>
+          <Select value={regionFilter} onValueChange={(val) => setRegionFilter(val || "All")}>
             <SelectTrigger className="bg-background">
               <SelectValue placeholder="Pilih Distrik..." />
             </SelectTrigger>
@@ -59,7 +59,7 @@ export default function CommunityPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredGroups.map((group) => (
           <Link href={`/community/${group.id}`} key={group.id} className="block group">
-            <Card className="h-full hover:border-primary/50 transition-all hover:shadow-md cursor-pointer flex flex-col bg-card/60 backdrop-blur-sm">
+            <Card className="h-full hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 hover:shadow-xl cursor-pointer flex flex-col bg-card/60 backdrop-blur-sm border-border/50">
               <CardHeader>
                 <div className="flex justify-between items-start mb-3">
                   <span className="text-xs font-bold text-primary uppercase tracking-wider px-2 py-1 bg-primary/10 rounded border border-primary/10">

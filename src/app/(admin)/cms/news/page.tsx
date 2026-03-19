@@ -2,14 +2,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PlusCircle, Edit } from "lucide-react"
+import { mockArticles } from "@/lib/static-data/news"
 
 export default function CMSNewsPage() {
-  const articles = [
-    { title: "Panen Raya Padi Organik Desa Sukamaju", status: "Published", date: "12 Mar 2026", author: "Admin Cabang" },
-    { title: "Sosialisasi Penggunaan Pupuk Non-Subsidi", status: "Draft", date: "15 Mar 2026", author: "Super Admin" },
-    { title: "Laporan Dampak El Nino 2026", status: "Published", date: "18 Mar 2026", author: "Tim Agronomi" },
-  ]
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -24,8 +19,8 @@ export default function CMSNewsPage() {
       </div>
 
       <div className="grid gap-4">
-        {articles.map((item, idx) => (
-          <Card key={idx} className="hover:border-primary/40 transition-colors shadow-sm">
+        {mockArticles.map((item, idx) => (
+          <Card key={item.id} className="hover:border-primary/40 transition-colors shadow-sm">
             <CardContent className="flex items-center justify-between p-6">
               <div className="space-y-1">
                 <h3 className="font-semibold text-lg text-foreground">{item.title}</h3>

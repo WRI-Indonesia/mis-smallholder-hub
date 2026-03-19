@@ -1,15 +1,9 @@
 import { Card, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Download, PlayCircle } from "lucide-react"
+import { Download } from "lucide-react"
+import { mockModules } from "@/lib/static-data/knowledge"
 
 export default function KnowledgeManagementPage() {
-  const modules = [
-    { id: 1, category: "SOP Budidaya", title: "Panduan Pemupukan Berimbang", type: "PDF", icon: <FileText className="text-blue-500 w-8 h-8" /> },
-    { id: 2, category: "Sertifikasi", title: "Checklist Kelayakan RSPO", type: "Dokumen", icon: <FileText className="text-green-500 w-8 h-8" /> },
-    { id: 3, category: "Tutorial", title: "Video Penggunaan Traktor Mini", type: "Video", icon: <PlayCircle className="text-red-500 w-8 h-8" /> },
-    { id: 4, category: "Hama & Penyakit", title: "Katalog Penyakit Tanaman Padi", type: "PDF", icon: <FileText className="text-blue-500 w-8 h-8" /> },
-  ]
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-12">
@@ -18,7 +12,7 @@ export default function KnowledgeManagementPage() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {modules.map((mod) => (
+        {mockModules.map((mod) => (
           <Card key={mod.id} className="flex flex-col shadow-sm border-primary/10 hover:border-primary/40 transition-colors">
             <CardHeader className="flex flex-col items-center text-center">
               <div className="mb-4 bg-muted p-4 rounded-full">{mod.icon}</div>

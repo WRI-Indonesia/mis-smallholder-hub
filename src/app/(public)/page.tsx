@@ -6,10 +6,18 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="w-full py-20 bg-primary/10">
-        <div className="container px-4 md:px-6 mx-auto text-center">
-          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-primary drop-shadow-sm">
-            Smallholder HUB
+      <section className="relative w-full py-24 lg:py-32 overflow-hidden flex items-center justify-center min-h-[85vh]">
+        {/* Abstract Background Shapes */}
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/10 to-background -z-20" />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] -z-10" />
+        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] -z-10" />
+
+        <div className="container px-4 md:px-6 mx-auto text-center relative z-10">
+          <div className="inline-block mb-6 px-4 py-1.5 rounded-full bg-primary/10 text-primary font-semibold text-sm border border-primary/20 tracking-wider">
+            🌿 DIGITALISASI PERTANIAN
+          </div>
+          <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl text-foreground drop-shadow-sm max-w-5xl mx-auto">
+            Smallholder <span className="text-primary">HUB</span>
           </h1>
           <p className="mx-auto mt-4 max-w-[700px] text-lg text-muted-foreground">
             Platform terpadu untuk memberdayakan petani kecil melalui manajemen data, komunitas, dan pengetahuan praktik pertanian terbaik.

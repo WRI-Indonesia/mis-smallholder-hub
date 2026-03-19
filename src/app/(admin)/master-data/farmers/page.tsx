@@ -3,14 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PlusCircle, Search, Edit, Trash2 } from "lucide-react"
+import { mockFarmers } from "@/lib/static-data/farmers"
 
 export default function MasterDataFarmersPage() {
-  const mockFarmers = [
-    { id: "PET-001", name: "Budi Santoso", nik: "320101...", group: "Tani Maju", region: "Desa Suka Makmur" },
-    { id: "PET-002", name: "Siti Aminah", nik: "320102...", group: "Tani Sejahtera", region: "Desa Suka Makmur" },
-    { id: "PET-003", name: "Asep Sunandar", nik: "320103...", group: "Tani Harapan", region: "Desa Cibinong" },
-  ]
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
