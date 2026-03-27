@@ -1,0 +1,20 @@
+id,parentId,title,url,icon,isActive,roles,groups,jobDescs,regions
+dashboard,,Dashboard,/admin/dashboard,LayoutDashboardIcon,true,all,all,all,all
+master-data,,Master Data,#,DatabaseIcon,false,admin|operator,WRI|UL|ICS,all,all
+md-farmers,master-data,Data Petani,/admin/master-data/farmers,,false,all,all,all,all
+md-groups,master-data,Kelompok Tani,/admin/master-data/groups,,false,all,all,all,all
+md-parcels,master-data,Data Lahan,/admin/master-data/parcels,,false,all,all,all,all
+md-regions,master-data,Region / Wilayah,/admin/master-data/regions,,false,admin,all,all,all
+cms,,CMS,#,MonitorIcon,false,admin,all,all,all
+cms-news,cms,Berita & Pengumuman,/admin/cms/news,,false,all,all,all,all
+cms-knowledge,cms,Knowledge Management,/admin/cms/knowledge,,false,all,all,all,all
+cms-community,cms,Manajemen Komunitas,/admin/cms/community,,false,all,all,all,all
+cms-pages,cms,Konfigurasi Halaman,/admin/cms/pages,,false,all,all,all,all
+tools,,Tools,#,WrenchIcon,false,admin|operator,all,all,all
+tools-import,tools,Import Data Massal,/admin/tools/import,,false,admin,all,all,all
+tools-export,tools,Export Laporan,/admin/tools/export,,false,admin|operator,all,all,all
+tools-geo,tools,Geospatial Tools,/admin/tools/geo,,false,all,all,agronomis|manager,all
+settings,,Setting,#,SettingsIcon,false,admin,all,all,all
+settings-users,settings,User Management,/admin/settings/users,,false,all,all,all,all
+settings-roles,settings,Role & Permission,/admin/settings/roles,,false,all,all,all,all
+settings-system,settings,Konfigurasi Sistem,/admin/settings/system,,false,all,all,all,all

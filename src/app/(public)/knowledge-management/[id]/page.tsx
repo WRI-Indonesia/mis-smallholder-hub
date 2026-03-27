@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, FileText, Download, Share2 } from "lucide-react"
-import { mockModules } from "@/lib/static-data/knowledge-management"
+import { mockModules } from "@/lib/static-data"
 
 export default async function KnowledgeDetailPage({ params }: { params: { id: string } }) {
   const { id } = await params;

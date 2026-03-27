@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Smallholder HUB",
+  title: "SMALLHOLDER HUB",
   description: "Management Information System for Smallholder HUB",
 };
 

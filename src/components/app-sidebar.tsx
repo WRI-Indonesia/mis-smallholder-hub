@@ -13,9 +13,10 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { LayoutDashboardIcon, DatabaseIcon, MonitorIcon, WrenchIcon, SettingsIcon, SproutIcon } from "lucide-react"
+import { adminMenu, filterNavItems, type UserContext } from "@/lib/static-data/admin/menu"
+import { SproutIcon } from "lucide-react"
 
-// Data Navigation Sidebar
+// Data Navigation Sidebar User Profile
 const data = {
   user: {
     name: "Admin Super",
@@ -28,67 +29,15 @@ const data = {
       plan: "Admin Panel",
     },
   ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/admin/dashboard",
-      icon: (
-        <LayoutDashboardIcon />
-      ),
-      isActive: true,
-    },
-    {
-      title: "Master Data",
-      url: "#",
-      icon: (
-        <DatabaseIcon />
-      ),
-      items: [
-        { title: "Data Petani", url: "/admin/master-data/farmers" },
-        { title: "Kelompok Tani", url: "/admin/master-data/groups" },
-        { title: "Data Lahan", url: "/admin/master-data/parcels" },
-        { title: "Region / Wilayah", url: "/admin/master-data/regions" },
-      ],
-    },
-    {
-      title: "CMS",
-      url: "#",
-      icon: (
-        <MonitorIcon />
-      ),
-      items: [
-        { title: "Berita & Pengumuman", url: "/admin/cms/news" },
-        { title: "Knowledge Management", url: "/admin/cms/knowledge" },
-        { title: "Manajemen Komunitas", url: "/admin/cms/community" },
-        { title: "Konfigurasi Halaman", url: "/admin/cms/pages" },
-      ],
-    },
-    {
-      title: "Tools",
-      url: "#",
-      icon: (
-        <WrenchIcon />
-      ),
-      items: [
-        { title: "Import Data Massal", url: "/admin/tools/import" },
-        { title: "Export Laporan", url: "/admin/tools/export" },
-        { title: "Geospatial Tools", url: "/admin/tools/geo" },
-      ],
-    },
-    {
-      title: "Setting",
-      url: "#",
-      icon: (
-        <SettingsIcon />
-      ),
-      items: [
-        { title: "User Management", url: "/admin/settings/users" },
-        { title: "Role & Permission", url: "/admin/settings/roles" },
-        { title: "Konfigurasi Sistem", url: "/admin/settings/system" },
-      ],
-    },
-  ],
 }
+
+// Mock User Context (This will later come from NextAuth session)
+const currentUserContext: UserContext = {
+  role: "admin",      // Try changing to "operator" or "user"
+  group: "WRI",       // Try changing to "UL"
+  jobDesc: "manager", // Try changing to "fasilitator"
+  region: "all"
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -109,7 +58,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={filterNavItems(adminMenu, currentUserContext)} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

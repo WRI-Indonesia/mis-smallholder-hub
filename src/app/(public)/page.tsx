@@ -17,15 +17,11 @@ export default function HomePage() {
             🌿 DIGITALISASI PERTANIAN
           </div>
           <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl text-foreground drop-shadow-sm max-w-5xl mx-auto">
-            Smallholder <span className="text-primary">HUB</span>
+            SMALLHOLDER <span className="text-primary">HUB</span>
           </h1>
           <p className="mx-auto mt-4 max-w-[700px] text-lg text-muted-foreground">
             Platform terpadu untuk memberdayakan petani kecil melalui manajemen data, komunitas, dan pengetahuan praktik pertanian terbaik.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            <Button size="lg" className="w-full sm:w-auto font-semibold shadow-md">Daftar Sekarang</Button>
-            <Button variant="outline" size="lg" className="w-full sm:w-auto font-semibold">Pelajari Lebih Lanjut</Button>
-          </div>
         </div>
       </section>
 

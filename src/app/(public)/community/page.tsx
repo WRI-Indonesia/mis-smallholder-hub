@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { farmerGroups } from "@/lib/static-data/community"
+import { farmerGroups } from "@/lib/static-data"
 import { Search, MapPin, Users, Calendar } from "lucide-react"
 
 export default function CommunityPage() {

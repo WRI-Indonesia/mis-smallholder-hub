@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PlusCircle, Edit } from "lucide-react"
-import { mockArticles } from "@/lib/static-data/news"
+import { mockArticles } from "@/lib/static-data"
 
 export default function CMSNewsPage() {
   return (

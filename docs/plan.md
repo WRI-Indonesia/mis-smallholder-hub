@@ -1,5 +1,5 @@
 
-# Smallholder HUB - Ekstrem Atomic Task Plan (Developer Guide)
+# Smallholder HUB - Developer Guide
 
 *Dokumen ini menjabarkan implementasi dari level arsitektur ke level kode sumber (source code) dan command eksekusi.*
 
@@ -29,9 +29,18 @@
   - [x] Halaman `Knowledge Management` publik (Katalog modul).
   - [x] Customisasi `Sidebar Admin` (Hierarki Menu Lengkap) & Logout Redirect ke Home.
   - [x] Halaman Mockup Admin (`Dashboard Summary`, `Data Petani`, `CMS Berita`).
-- [x] **1.6. UI Statis with static-data**
-  - [x] Sentralisasi mock data ke `/src/lib/static-data/`.
-  - [x] Pembaruan komponen menggunakan data tersentralisasi.
+- [ ] **1.6. UI Statis with static-data (Detailed per Page)**
+  - [ ] **Public Pages (`src/lib/static-data/public/`)**
+    - [ ] `home`: Hero config, features, FAQ, footer links.
+    - [ ] `community`: Forums, discussions, member lists.
+    - [ ] `knowledge-management`: Modules, categories, articles.
+  - [ ] **Admin Pages (`src/lib/static-data/admin/`)**
+    - [ ] `dashboard`: Summary stats, charts, recent activities.
+    - [ ] `master-data`: Farmers (`farmers`), Groups (`groups`), Land (`parcels`), Regions (`regions`).
+    - [ ] `cms`: News/Articles (`news`), Custom Pages (`pages`).
+    - [ ] `geo`: Spatial map configurations (`geo`).
+    - [ ] `tools`: Import logs (`import`), Export configurations (`export`).
+    - [ ] `settings`: Users (`users`), Roles (`roles`), System (`system`).
 - [ ] **1.7. Responsivitas Layar (Mobile Friendly)**
   - [ ] Navbar Mobile (Hamburger Menu / Shadcn Sheet).
   - [ ] Layout grid responsif untuk Halaman Home, Community, dan Knowledge Management.
@@ -71,7 +80,7 @@
   - [ ] Buat action `signInWrapper.ts` untuk *Server Actions* otentikasi.
 - [ ] **3.4. Layout Utama (`/src/app/(admin)/layout.tsx`)**
   - [ ] Buat `<Sidebar />`: Menu dinamis berdasarkan role (SuperAdmin liat semua, Admin Koperasi tidak lihat menu Settings).
-  - [ ] Buat `<Header />`: Render breadcrumb otomatis (`usePathname`) dan User Menu Dropdown (panggil `signOut`).
+  - [x] Buat `<Header />`: Render breadcrumb otomatis (`usePathname`) dan User Menu Dropdown (panggil `signOut`), beserta integrasi Theme & Language toggle.
 
 ## FASE 4: MASTER DATA MANAGEMENT (CRUD LENGKAP)
 
@@ -112,7 +121,7 @@
   - [ ] Server Action pembungkus `prisma.$transaction([])` untuk menyimpan skor penilaian sekaligus.
 - [ ] **6.3. Dashboard Analitik (Landing Admin)**
   - [ ] API Fetcher: `getDashboardStats()` menggunakan `prisma.$count` dan agregasi luas.
-  - [ ] `<StatCard />` untuk metrik: Jumlah Petani, Luas Total Lahan Terdaftar (Sum Ha), Jumlah Koperasi.
+  - [x] `<StatCard />` untuk metrik: Jumlah Petani, Luas Total Lahan Terdaftar (Sum Ha), Jumlah Koperasi (Desain UI Selesai & Compact).
   - [ ] `<BarChart />` (Recharts) memvisualisasikan `Petani terdaftar per bulan berjalan`.
 
 ## FASE 7: PASCA-MVP LAYER 1 (HCV, HSE, GHG)

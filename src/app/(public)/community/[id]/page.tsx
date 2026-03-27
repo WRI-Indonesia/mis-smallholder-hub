@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin, Users, Calendar, Phone, ArrowLeft } from "lucide-react"
-import { farmerGroups } from "@/lib/static-data/community"
+import { farmerGroups } from "@/lib/static-data"
 
 export default async function CommunityDetailPage({ params }: { params: { id: string } }) {
   const { id } = await params;

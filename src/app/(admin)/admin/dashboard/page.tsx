@@ -1,13 +1,13 @@
-import { dashboardStats } from "@/lib/static-data/dashboard"
+import { dashboardStats } from "@/lib/static-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Map, Tractor, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const statIcons = [
-  <Users key="users" className="h-5 w-5" />,
-  <Map key="map" className="h-5 w-5" />,
-  <Tractor key="tractor" className="h-5 w-5" />,
-  <AlertTriangle key="alert" className="h-5 w-5" />,
+  <Users key="users" className="h-7 w-7" />,
+  <Map key="map" className="h-7 w-7" />,
+  <Tractor key="tractor" className="h-7 w-7" />,
+  <AlertTriangle key="alert" className="h-7 w-7" />,
 ]
 
 export default function DashboardPage() {
@@ -27,13 +27,13 @@ export default function DashboardPage() {
             )}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-foreground/80">{stat.label}</CardTitle>
+              <CardTitle className="text-xl font-semibold text-foreground/80">{stat.label}</CardTitle>
               <span className={stat.variant === "destructive" ? "text-destructive" : "text-primary"}>
                 {statIcons[idx]}
               </span>
             </CardHeader>
             <CardContent>
-              <div className={cn("text-3xl font-bold", stat.variant === "destructive" ? "text-destructive" : "text-foreground")}>
+              <div className={cn("text-4xl font-bold", stat.variant === "destructive" ? "text-destructive" : "text-foreground")}>
                 {stat.value}
               </div>
               <p className={cn("text-xs font-medium", stat.variant === "destructive" ? "text-destructive/80" : "text-primary/80")}>

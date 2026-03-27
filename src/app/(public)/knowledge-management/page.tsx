@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, FileText, BookOpen, Video, Wrench } from "lucide-react"
-import { mockModules, type KnowledgeType } from "@/lib/static-data/knowledge-management"
+import { mockModules, type KnowledgeType } from "@/lib/static-data"
 
 // Icon mapping by type — no JSX in data layer
 const typeIconMap: Record<KnowledgeType, React.ReactNode> = {
