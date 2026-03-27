@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, FileText, Download, Share2 } from "lucide-react"
 import { mockModules } from "@/lib/static-data"
 
-export default async function KnowledgeDetailPage({ params }: { params: { id: string } }) {
+export default async function KnowledgeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const mod = mockModules.find((m) => m.id === id)
 

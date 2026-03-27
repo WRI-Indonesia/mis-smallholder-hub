@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin, Users, Calendar, Phone, ArrowLeft } from "lucide-react"
 import { farmerGroups } from "@/lib/static-data"
 
-export default async function CommunityDetailPage({ params }: { params: { id: string } }) {
+export default async function CommunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const group = farmerGroups.find(g => g.id === id)
 

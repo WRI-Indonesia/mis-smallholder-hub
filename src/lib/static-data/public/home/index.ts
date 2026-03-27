@@ -1,1 +1,1 @@
-export const pending = true;
+export {}
