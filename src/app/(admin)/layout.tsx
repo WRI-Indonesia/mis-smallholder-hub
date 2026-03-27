@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { ChevronRight } from "lucide-react"
+import { AdminHeaderActions } from "@/components/admin-header-actions"
 
 // Build a readable breadcrumb from the current pathname
 function useBreadcrumbs() {
@@ -50,29 +51,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <AppSidebar />
       <div className="flex flex-col flex-1 min-h-screen overflow-hidden">
         {/* Admin Top Header */}
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background/80 backdrop-blur-sm px-4 sticky top-0 z-40">
-          <div className="flex items-center gap-2">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/80 backdrop-blur-sm px-4 sticky top-0 z-40">
+          <div className="flex items-center gap-2 min-w-0 pr-2">
             <SidebarTrigger className="-ml-1 shrink-0" />
             <Separator orientation="vertical" className="h-5 shrink-0" />
+            {/* Breadcrumb — left-aligned, full grow, scrollable on mobile */}
+            <nav className="flex items-center gap-1 text-sm min-w-0 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <Link href="/admin/dashboard" className="text-muted-foreground hover:text-primary font-medium transition-colors shrink-0">
+                AdminPanel
+              </Link>
+              {breadcrumbs.map((crumb) => (
+                <span key={crumb.href} className="flex items-center gap-1">
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+                  {crumb.isLast ? (
+                    <span className="font-semibold text-foreground whitespace-nowrap">{crumb.label}</span>
+                  ) : (
+                    <Link href={crumb.href} className="text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">
+                      {crumb.label}
+                    </Link>
+                  )}
+                </span>
+              ))}
+            </nav>
           </div>
-          {/* Breadcrumb — left-aligned, full grow, scrollable on mobile */}
-          <nav className="flex items-center gap-1 text-sm min-w-0 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <Link href="/admin/dashboard" className="text-muted-foreground hover:text-primary font-medium transition-colors shrink-0">
-              AdminPanel
-            </Link>
-            {breadcrumbs.map((crumb) => (
-              <span key={crumb.href} className="flex items-center gap-1">
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
-                {crumb.isLast ? (
-                  <span className="font-semibold text-foreground whitespace-nowrap">{crumb.label}</span>
-                ) : (
-                  <Link href={crumb.href} className="text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">
-                    {crumb.label}
-                  </Link>
-                )}
-              </span>
-            ))}
-          </nav>
+          <AdminHeaderActions />
         </header>
         {/* Page Content */}
         <main className="flex-1 p-6 overflow-auto">
