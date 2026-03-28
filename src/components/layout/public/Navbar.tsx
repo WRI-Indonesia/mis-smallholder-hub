@@ -62,7 +62,7 @@ export function Navbar() {
             </Button>
 
             <div className="hidden md:block">
-              <Link href="/admin/dashboard" className={buttonVariants({ variant: "default" })}>
+              <Link href="/login" className={buttonVariants({ variant: "default" })}>
                 Login
               </Link>
             </div>
@@ -86,7 +86,7 @@ export function Navbar() {
                     <Link href="/knowledge-management" className="text-lg font-semibold hover:text-primary transition-colors">
                       Knowledge Management
                     </Link>
-                    <Link href="/admin/dashboard" className={buttonVariants({ variant: "default", className: "w-full justify-center" })}>
+                    <Link href="/login" className={buttonVariants({ variant: "default", className: "w-full justify-center" })}>
                       Login Admin
                     </Link>
                   </div>
