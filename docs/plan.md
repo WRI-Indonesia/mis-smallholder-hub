@@ -25,6 +25,7 @@
   - [x] Buat direktori inti backend/utilitas: `/src/lib/`, `/src/server/actions/`, `/src/validations/`.
 - [x] **1.5. Scaffolding UI Statis (Mockup)**
   - [x] Halaman `Home` publik (Hero, features, tombol toggle Dark Mode & Language (ID/EN)).
+    - [x] **Revisi Layout Non-Hero**: Stats cards individual dengan ikon, region cards compact (icon+nama inline), news cards tanpa overlap (-mt-10 dihapus), partners section dengan featured partner, Activities section header split-layout.
   - [x] Halaman `Community` publik (List diskusi statis).
   - [x] Halaman `Knowledge Management` publik (Katalog modul).
   - [x] Customisasi `Sidebar Admin` (Hierarki Menu Lengkap) & Logout Redirect ke Home.
@@ -179,7 +180,7 @@
   - [ ] Integrasi layer tile WMS dari Hutan Global ke `MapViewer.tsx` (Maplibre `RasterLayer`).
 - [ ] **10.2. Generic Form Builder (Opsional)**
   - [ ] DB struktur JsonB: Tabel `DynamicFormTemplate`.
-- [ ] **10.3. Public Website (`/src/app/(public)/`)**
-  - [ ] `page.tsx`: Animasi hero section "Smallholder HUB".
+- [x] **10.3. Public Website (`/src/app/(public)/`)**
+  - [x] `page.tsx`: Hero section carousel + semua section non-hero (Community, Activities, Partners) dengan layout yang diperbaiki.
   - [ ] `community/page.tsx`: Fetch Next.js SSR konten pelatihan publik.
   - [ ] Setup *Service Worker* dan file `manifest.json` untuk membuat PWA installable.
