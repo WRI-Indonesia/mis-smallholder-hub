@@ -59,7 +59,7 @@ type FlatMenuItem = {
   regions: string;
 };
 
-const parsedData = Papa.parse<FlatMenuItem>(csvRaw, { header: true }).data;
+const parsedData = Papa.parse<FlatMenuItem>(csvRaw, { header: true, skipEmptyLines: true }).data;
 
 export const adminMenu: MenuItem[] = [];
 const itemMap: Record<string, MenuItem> = {};

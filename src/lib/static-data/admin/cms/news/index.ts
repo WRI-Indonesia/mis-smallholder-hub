@@ -9,4 +9,4 @@ export type NewsArticle = {
 import Papa from "papaparse";
 import csvRaw from "./data.csv";
 
-export const mockArticles: NewsArticle[] = Papa.parse(csvRaw, { header: true }).data as NewsArticle[];
+export const mockArticles: NewsArticle[] = Papa.parse(csvRaw, { header: true, skipEmptyLines: true }).data as NewsArticle[];

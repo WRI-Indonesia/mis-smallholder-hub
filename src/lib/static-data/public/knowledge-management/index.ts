@@ -15,4 +15,4 @@ export type KnowledgeModule = {
 import Papa from "papaparse";
 import csvRaw from "./data.csv";
 
-export const mockModules: KnowledgeModule[] = Papa.parse(csvRaw, { header: true }).data as KnowledgeModule[];
+export const mockModules: KnowledgeModule[] = Papa.parse(csvRaw, { header: true, skipEmptyLines: true }).data as KnowledgeModule[];

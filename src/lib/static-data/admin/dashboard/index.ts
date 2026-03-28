@@ -9,4 +9,4 @@ export type DashboardStat = {
 import Papa from "papaparse";
 import csvRaw from "./data.csv";
 
-export const dashboardStats: DashboardStat[] = Papa.parse(csvRaw, { header: true }).data as DashboardStat[];
+export const dashboardStats: DashboardStat[] = Papa.parse(csvRaw, { header: true, skipEmptyLines: true }).data as DashboardStat[];

@@ -9,4 +9,4 @@ export type Farmer = {
 import Papa from "papaparse";
 import csvRaw from "./data.csv";
 
-export const mockFarmers: Farmer[] = Papa.parse(csvRaw, { header: true }).data as Farmer[];
+export const mockFarmers: Farmer[] = Papa.parse(csvRaw, { header: true, skipEmptyLines: true }).data as Farmer[];
