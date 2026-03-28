@@ -16,7 +16,7 @@
   - [x] *Charts & Date*: `npm i recharts date-fns`
 - [x] **1.3. Inisiasi Shadcn UI**
   - [x] Jalankan: `npx shadcn@latest init` (Pilih: Default, CSS Variables).
-  - [x] Jalankan instalasi komponen wajib berulang: `npx shadcn@latest add button input form select table dialog sonner card popover calendar checkbox separator scroll-area alert badge dropdown-menu`
+  - [x] Jalankan instalasi komponen wajib berulang: `npx shadcn@latest add button input form select table dialog sonner card popover calendar checkbox separator scroll-area alert badge dropdown-menu label`
 - [x] **1.4. Setup Folder Structure & Multi-Layout**
   - [x] Instalasi theme provider: `npm i next-themes lucide-react`.
   - [x] Setup `ThemeProvider` (Dark mode default) di `src/app/layout.tsx` / komponen global.
@@ -56,6 +56,8 @@
         - [x] Data CSV diperkaya: `author`, `published_date`, `read_time_min`, `tags` (7 konten)
         - [x] `generateMetadata` dinamis pada detail page untuk SEO
         - [x] `next.config.ts` sudah mendukung domain gambar Unsplash (dari sesi Community)
+      - [x] `Login Page`: UI Login modern (Split layout, branding, input email/password, demo credentials toggle).
+      - [x] `User Static Data`: Profil user mockup (SuperAdmin, Admin Koperasi, Field Officer, Stakeholder) di `src/lib/static-data/user/`.
   - [ ] **Admin Pages (`src/lib/static-data/admin/`)**
     - [ ] `dashboard`: Summary stats, charts, recent activities.
     - [ ] `master-data`: Farmers (`farmers`), Groups (`groups`), Land (`parcels`), Regions (`regions`).
