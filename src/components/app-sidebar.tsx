@@ -14,7 +14,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { adminMenu, filterNavItems, type UserContext } from "@/lib/static-data/admin/menu"
-import { SproutIcon } from "lucide-react"
+import { Leaf } from "lucide-react"
 
 // Data Navigation Sidebar User Profile
 const data = {
@@ -46,12 +46,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<a href="/dashboard" />}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <SproutIcon className="size-4" />
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-[#166534] shadow-sm ring-1 ring-border/20">
+                  <Leaf className="size-5" strokeWidth={2.5} />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-bold text-base">Smallholder HUB</span>
-                  <span className="text-xs text-muted-foreground">Admin Panel</span>
+                  <span className="font-extrabold text-base tracking-tight">Smallholder HUB</span>
                 </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

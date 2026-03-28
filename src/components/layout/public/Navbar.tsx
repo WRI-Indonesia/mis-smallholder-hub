@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Menu } from "lucide-react";
+import { Moon, Sun, Menu, Leaf } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 
@@ -20,8 +20,11 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md shadow-sm">
       <div className="container flex h-16 items-center mx-auto px-4 md:px-6">
         <div className="mr-4 flex items-center md:mx-auto lg:mx-0 shrink-0">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold text-lg md:text-xl inline-block text-primary">Smallholder HUB</span>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-white flex shrink-0 items-center justify-center text-[#166534] shadow-sm ring-1 ring-border/20">
+              <Leaf className="w-5 h-5" strokeWidth={2.5} />
+            </div>
+            <span className="font-extrabold text-lg md:text-xl inline-block text-foreground tracking-tight">Smallholder HUB</span>
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">

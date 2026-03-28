@@ -29,11 +29,21 @@
   - [x] Halaman `Knowledge Management` publik (Katalog modul).
   - [x] Customisasi `Sidebar Admin` (Hierarki Menu Lengkap) & Logout Redirect ke Home.
   - [x] Halaman Mockup Admin (`Dashboard Summary`, `Data Petani`, `CMS Berita`).
-- [ ] **1.6. UI Statis with static-data (Detailed per Page)**
-  - [ ] **Public Pages (`src/lib/static-data/public/`)**
-    - [ ] `home`: Hero config, features, FAQ, footer links.
-    - [ ] `community`: Forums, discussions, member lists.
-    - [ ] `knowledge-management`: Modules, categories, articles.
+  - [x] **1.6. UI Statis with static-data (Detailed per Page)**
+    - [x] **Public Pages (`src/lib/static-data/public/`)**
+      - [x] `home`: Hero config, features, FAQ, footer links. (Completed: Fading Carousel, Themed Cards, Dark UI Footer)
+      - [x] `community`: Split-screen layout (60% Map / 40% List). Fitur:
+        - [x] Integrasi MapLibre (react-map-gl) dengan basemap Carto Dark/Positron sinkron tema
+        - [x] Marker & Popup interaktif di peta
+        - [x] Filter distrik + pencarian teks dengan animasi `.flyTo()` ke sentrum distrik
+        - [x] Optimasi filter dengan `useMemo`
+        - [x] Arsitektur SSR/Client split: `page.tsx` sebagai Server Component, `CommunityDirectoryClient.tsx` sebagai Client
+        - [x] Card komunitas dengan thumbnail gambar, komoditas badge, nama desa
+        - [x] Detail page promosi: Hero banner, 4 Key Stats, Tentang, Komoditas, Sertifikasi, Contact Card + Mini Map
+        - [x] Data CSV diperkaya: `village`, `commodities`, `image_url`, `chairman_name`, `whatsapp`, `total_land_ha`, `annual_production_ton`, `certifications`
+        - [x] `ProfileMiniMap.tsx` komponen peta mini terpisah di detail page
+        - [x] `next.config.ts` dikonfigurasi untuk domain gambar Unsplash
+      - [ ] `knowledge-management`: Modules, categories, articles.
   - [ ] **Admin Pages (`src/lib/static-data/admin/`)**
     - [ ] `dashboard`: Summary stats, charts, recent activities.
     - [ ] `master-data`: Farmers (`farmers`), Groups (`groups`), Land (`parcels`), Regions (`regions`).
