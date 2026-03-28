@@ -43,7 +43,18 @@
         - [x] Data CSV diperkaya: `village`, `commodities`, `image_url`, `chairman_name`, `whatsapp`, `total_land_ha`, `annual_production_ton`, `certifications`
         - [x] `ProfileMiniMap.tsx` komponen peta mini terpisah di detail page
         - [x] `next.config.ts` dikonfigurasi untuk domain gambar Unsplash
-      - [ ] `knowledge-management`: Modules, categories, articles.
+      - [x] `knowledge-management`: Modul, kategori, artikel. Fitur:
+        - [x] Arsitektur SSR/Client split: `page.tsx` sebagai Server Component, `KnowledgeDirectoryClient.tsx` sebagai Client
+        - [x] Hero section dengan statistik konten (Artikel, Video, Toolkit, Dokumentasi)
+        - [x] Tab filter pill sticky (Semua | Artikel | Video | Dokumentasi | Toolkit)
+        - [x] Search bar terintegrasi dengan counter hasil & filter berdasarkan judul, kategori, penulis, tag
+        - [x] Optimasi filter dengan `useMemo`
+        - [x] Card premium dengan thumbnail, badge tipe berwarna, tag, meta (penulis, durasi baca), hover animasi
+        - [x] Detail page: hero banner, meta info bar, highlight deskripsi, tag, CTA download
+        - [x] Sidebar "Konten Terkait" pada detail page (filter by kategori/tipe)
+        - [x] Data CSV diperkaya: `author`, `published_date`, `read_time_min`, `tags` (7 konten)
+        - [x] `generateMetadata` dinamis pada detail page untuk SEO
+        - [x] `next.config.ts` sudah mendukung domain gambar Unsplash (dari sesi Community)
   - [ ] **Admin Pages (`src/lib/static-data/admin/`)**
     - [ ] `dashboard`: Summary stats, charts, recent activities.
     - [ ] `master-data`: Farmers (`farmers`), Groups (`groups`), Land (`parcels`), Regions (`regions`).
