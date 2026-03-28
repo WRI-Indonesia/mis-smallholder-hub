@@ -1,0 +1,161 @@
+program,distrik,label,value
+2025,Kampar,Total Kelompok Tani,7
+2025,Kampar,Total Petani,166
+2025,Kampar,Total Petani Laki-Laki,116
+2025,Kampar,Total Petani Perempuan,50
+2025,Kampar,Total Persil Lahan,202
+2025,Kampar,Total Luasan Lahan,604
+2025,Kampar,Paket 1 (BMP / P&C RSPO / NKT),42
+2025,Kampar,Paket 2 - MK,27
+2025,Kampar,Paket 2 - HSE / K3,24
+2025,Kampar,"Paket 3 & 4 (GEDSI, FL, AL, BD)",20
+2025,Siak,Total Kelompok Tani,4
+2025,Siak,Total Petani,100
+2025,Siak,Total Petani Laki-Laki,70
+2025,Siak,Total Petani Perempuan,30
+2025,Siak,Total Persil Lahan,122
+2025,Siak,Total Luasan Lahan,365
+2025,Siak,Paket 1 (BMP / P&C RSPO / NKT),25
+2025,Siak,Paket 2 - MK,16
+2025,Siak,Paket 2 - HSE / K3,14
+2025,Siak,"Paket 3 & 4 (GEDSI, FL, AL, BD)",12
+2025,Pelalawan,Total Kelompok Tani,5
+2025,Pelalawan,Total Petani,138
+2025,Pelalawan,Total Petani Laki-Laki,97
+2025,Pelalawan,Total Petani Perempuan,41
+2025,Pelalawan,Total Persil Lahan,168
+2025,Pelalawan,Total Luasan Lahan,502
+2025,Pelalawan,Paket 1 (BMP / P&C RSPO / NKT),35
+2025,Pelalawan,Paket 2 - MK,22
+2025,Pelalawan,Paket 2 - HSE / K3,19
+2025,Pelalawan,"Paket 3 & 4 (GEDSI, FL, AL, BD)",16
+2025,Rokan Hulu,Total Kelompok Tani,3
+2025,Rokan Hulu,Total Petani,71
+2025,Rokan Hulu,Total Petani Laki-Laki,50
+2025,Rokan Hulu,Total Petani Perempuan,21
+2025,Rokan Hulu,Total Persil Lahan,86
+2025,Rokan Hulu,Total Luasan Lahan,258
+2025,Rokan Hulu,Paket 1 (BMP / P&C RSPO / NKT),18
+2025,Rokan Hulu,Paket 2 - MK,11
+2025,Rokan Hulu,Paket 2 - HSE / K3,10
+2025,Rokan Hulu,"Paket 3 & 4 (GEDSI, FL, AL, BD)",8
+2026,Kampar,Total Kelompok Tani,5
+2026,Kampar,Total Petani,127
+2026,Kampar,Total Petani Laki-Laki,89
+2026,Kampar,Total Petani Perempuan,38
+2026,Kampar,Total Persil Lahan,155
+2026,Kampar,Total Luasan Lahan,462
+2026,Kampar,Paket 1 (BMP / P&C RSPO / NKT),32
+2026,Kampar,Paket 2 - MK,20
+2026,Kampar,Paket 2 - HSE / K3,18
+2026,Kampar,"Paket 3 & 4 (GEDSI, FL, AL, BD)",15
+2026,Siak,Total Kelompok Tani,3
+2026,Siak,Total Petani,76
+2026,Siak,Total Petani Laki-Laki,53
+2026,Siak,Total Petani Perempuan,23
+2026,Siak,Total Persil Lahan,93
+2026,Siak,Total Luasan Lahan,278
+2026,Siak,Paket 1 (BMP / P&C RSPO / NKT),19
+2026,Siak,Paket 2 - MK,12
+2026,Siak,Paket 2 - HSE / K3,11
+2026,Siak,"Paket 3 & 4 (GEDSI, FL, AL, BD)",9
+2026,Pelalawan,Total Kelompok Tani,4
+2026,Pelalawan,Total Petani,105
+2026,Pelalawan,Total Petani Laki-Laki,74
+2026,Pelalawan,Total Petani Perempuan,31
+2026,Pelalawan,Total Persil Lahan,128
+2026,Pelalawan,Total Luasan Lahan,383
+2026,Pelalawan,Paket 1 (BMP / P&C RSPO / NKT),27
+2026,Pelalawan,Paket 2 - MK,17
+2026,Pelalawan,Paket 2 - HSE / K3,15
+2026,Pelalawan,"Paket 3 & 4 (GEDSI, FL, AL, BD)",12
+2026,Rokan Hulu,Total Kelompok Tani,2
+2026,Rokan Hulu,Total Petani,54
+2026,Rokan Hulu,Total Petani Laki-Laki,38
+2026,Rokan Hulu,Total Petani Perempuan,16
+2026,Rokan Hulu,Total Persil Lahan,66
+2026,Rokan Hulu,Total Luasan Lahan,197
+2026,Rokan Hulu,Paket 1 (BMP / P&C RSPO / NKT),14
+2026,Rokan Hulu,Paket 2 - MK,9
+2026,Rokan Hulu,Paket 2 - HSE / K3,8
+2026,Rokan Hulu,"Paket 3 & 4 (GEDSI, FL, AL, BD)",7
+2027,Kampar,Total Kelompok Tani,3
+2027,Kampar,Total Petani,92
+2027,Kampar,Total Petani Laki-Laki,64
+2027,Kampar,Total Petani Perempuan,28
+2027,Kampar,Total Persil Lahan,112
+2027,Kampar,Total Luasan Lahan,335
+2027,Kampar,Paket 1 (BMP / P&C RSPO / NKT),23
+2027,Kampar,Paket 2 - MK,15
+2027,Kampar,Paket 2 - HSE / K3,13
+2027,Kampar,"Paket 3 & 4 (GEDSI, FL, AL, BD)",11
+2027,Siak,Total Kelompok Tani,2
+2027,Siak,Total Petani,55
+2027,Siak,Total Petani Laki-Laki,39
+2027,Siak,Total Petani Perempuan,16
+2027,Siak,Total Persil Lahan,67
+2027,Siak,Total Luasan Lahan,201
+2027,Siak,Paket 1 (BMP / P&C RSPO / NKT),14
+2027,Siak,Paket 2 - MK,9
+2027,Siak,Paket 2 - HSE / K3,8
+2027,Siak,"Paket 3 & 4 (GEDSI, FL, AL, BD)",6
+2027,Pelalawan,Total Kelompok Tani,3
+2027,Pelalawan,Total Petani,76
+2027,Pelalawan,Total Petani Laki-Laki,53
+2027,Pelalawan,Total Petani Perempuan,23
+2027,Pelalawan,Total Persil Lahan,93
+2027,Pelalawan,Total Luasan Lahan,277
+2027,Pelalawan,Paket 1 (BMP / P&C RSPO / NKT),19
+2027,Pelalawan,Paket 2 - MK,12
+2027,Pelalawan,Paket 2 - HSE / K3,11
+2027,Pelalawan,"Paket 3 & 4 (GEDSI, FL, AL, BD)",9
+2027,Rokan Hulu,Total Kelompok Tani,1
+2027,Rokan Hulu,Total Petani,39
+2027,Rokan Hulu,Total Petani Laki-Laki,27
+2027,Rokan Hulu,Total Petani Perempuan,12
+2027,Rokan Hulu,Total Persil Lahan,48
+2027,Rokan Hulu,Total Luasan Lahan,142
+2027,Rokan Hulu,Paket 1 (BMP / P&C RSPO / NKT),10
+2027,Rokan Hulu,Paket 2 - MK,6
+2027,Rokan Hulu,Paket 2 - HSE / K3,5
+2027,Rokan Hulu,"Paket 3 & 4 (GEDSI, FL, AL, BD)",4
+2028,Kampar,Total Kelompok Tani,2
+2028,Kampar,Total Petani,52
+2028,Kampar,Total Petani Laki-Laki,37
+2028,Kampar,Total Petani Perempuan,15
+2028,Kampar,Total Persil Lahan,63
+2028,Kampar,Total Luasan Lahan,189
+2028,Kampar,Paket 1 (BMP / P&C RSPO / NKT),13
+2028,Kampar,Paket 2 - MK,8
+2028,Kampar,Paket 2 - HSE / K3,7
+2028,Kampar,"Paket 3 & 4 (GEDSI, FL, AL, BD)",6
+2028,Siak,Total Kelompok Tani,1
+2028,Siak,Total Petani,31
+2028,Siak,Total Petani Laki-Laki,22
+2028,Siak,Total Petani Perempuan,9
+2028,Siak,Total Persil Lahan,38
+2028,Siak,Total Luasan Lahan,113
+2028,Siak,Paket 1 (BMP / P&C RSPO / NKT),8
+2028,Siak,Paket 2 - MK,5
+2028,Siak,Paket 2 - HSE / K3,4
+2028,Siak,"Paket 3 & 4 (GEDSI, FL, AL, BD)",4
+2028,Pelalawan,Total Kelompok Tani,2
+2028,Pelalawan,Total Petani,43
+2028,Pelalawan,Total Petani Laki-Laki,30
+2028,Pelalawan,Total Petani Perempuan,13
+2028,Pelalawan,Total Persil Lahan,52
+2028,Pelalawan,Total Luasan Lahan,156
+2028,Pelalawan,Paket 1 (BMP / P&C RSPO / NKT),11
+2028,Pelalawan,Paket 2 - MK,7
+2028,Pelalawan,Paket 2 - HSE / K3,6
+2028,Pelalawan,"Paket 3 & 4 (GEDSI, FL, AL, BD)",5
+2028,Rokan Hulu,Total Kelompok Tani,1
+2028,Rokan Hulu,Total Petani,23
+2028,Rokan Hulu,Total Petani Laki-Laki,16
+2028,Rokan Hulu,Total Petani Perempuan,7
+2028,Rokan Hulu,Total Persil Lahan,28
+2028,Rokan Hulu,Total Luasan Lahan,84
+2028,Rokan Hulu,Paket 1 (BMP / P&C RSPO / NKT),7
+2028,Rokan Hulu,Paket 2 - MK,5
+2028,Rokan Hulu,Paket 2 - HSE / K3,4
+2028,Rokan Hulu,"Paket 3 & 4 (GEDSI, FL, AL, BD)",3

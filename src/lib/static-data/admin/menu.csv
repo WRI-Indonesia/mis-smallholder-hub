@@ -1,5 +1,7 @@
 id,parentId,title,url,icon,isActive,roles,groups,jobDescs,regions
-dashboard,,Dashboard,/admin/dashboard,LayoutDashboardIcon,true,all,all,all,all
+dashboard,,Dashboard,#,LayoutDashboardIcon,true,all,all,all,all
+dashboard-kpi,dashboard,Basic Data,/admin/dashboard,,false,all,all,all,all
+dashboard-workplan,dashboard,Workplan Tracker,/admin/dashboard/workplan,,false,all,all,all,all
 master-data,,Master Data,#,DatabaseIcon,false,admin|operator,WRI|UL|ICS,all,all
 md-farmers,master-data,Data Petani,/admin/master-data/farmers,,false,all,all,all,all
 md-groups,master-data,Kelompok Tani,/admin/master-data/groups,,false,all,all,all,all

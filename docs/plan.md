@@ -58,17 +58,19 @@
         - [x] `next.config.ts` sudah mendukung domain gambar Unsplash (dari sesi Community)
       - [x] `Login Page`: UI Login modern (Split layout, branding, input email/password, demo credentials toggle).
       - [x] `User Static Data`: Profil user mockup (SuperAdmin, Admin Koperasi, Field Officer, Stakeholder) di `src/lib/static-data/user/`.
-  - [ ] **Admin Pages (`src/lib/static-data/admin/`)**
-    - [ ] `dashboard`: Summary stats, charts, recent activities.
-    - [ ] `master-data`: Farmers (`farmers`), Groups (`groups`), Land (`parcels`), Regions (`regions`).
-    - [ ] `cms`: News/Articles (`news`), Custom Pages (`pages`).
-    - [ ] `geo`: Spatial map configurations (`geo`).
-    - [ ] `tools`: Import logs (`import`), Export configurations (`export`).
-    - [ ] `settings`: Users (`users`), Roles (`roles`), System (`system`).
-- [ ] **1.7. Responsivitas Layar (Mobile Friendly)**
-  - [ ] Navbar Mobile (Hamburger Menu / Shadcn Sheet).
-  - [ ] Layout grid responsif untuk Halaman Home, Community, dan Knowledge Management.
-  - [ ] Penyesuaian padding dan font size di layar kecil.
+  - [x] **Admin Pages (`src/lib/static-data/admin/`)**
+    - [x] `dashboard`: Summary stats, charts, recent activities.
+      - [ ] `KPI`
+      - [ ] `Workplan Tracker`
+    - [x] `master-data`: Farmers (`farmers`), Groups (`groups`), Land (`parcels`), Regions (`regions`).
+    - [x] `cms`: News/Articles (`news`), Custom Pages (`pages`).
+    - [x] `geo`: Spatial map configurations (`geo`).
+    - [x] `tools`: Import logs (`import`), Export configurations (`export`).
+    - [x] `settings`: Users (`users`), Roles (`roles`), System (`system`).
+- [x] **1.7. Responsivitas Layar (Mobile Friendly)**
+  - [x] Navbar Mobile (Hamburger Menu / Shadcn Sheet).
+  - [x] Layout grid responsif untuk Halaman Home, Community, dan Knowledge Management.
+  - [x] Penyesuaian padding dan font size di layar kecil.
 
 ## FASE 2: DATABASE SCHEMA & MIGRATIONS (`prisma/schema.prisma`)
 
@@ -99,11 +101,11 @@
   - [ ] Integrasikan tipe `Session` bawaan untuk memasukkan `user.role` & `user.institutionId`.
 - [ ] **3.2. Middleware Proteksi**
   - [ ] Buat file `/src/middleware.ts` untuk memblokir rute `/((?!login|api|_next/static|_next/image|favicon.ico).*)` jika `!session`.
-- [ ] **3.3. Halaman Login (`/src/app/login/page.tsx`)**
-  - [ ] Buat `LoginForm.tsx` (Card, Input Email, Input Password, Button submit).
+- [x] **3.3. Halaman Login (`/src/app/login/page.tsx`)**
+  - [x] Buat `LoginForm.tsx` (Card, Input Email, Input Password, Button submit).
   - [ ] Buat action `signInWrapper.ts` untuk *Server Actions* otentikasi.
-- [ ] **3.4. Layout Utama (`/src/app/(admin)/layout.tsx`)**
-  - [ ] Buat `<Sidebar />`: Menu dinamis berdasarkan role (SuperAdmin liat semua, Admin Koperasi tidak lihat menu Settings).
+- [x] **3.4. Layout Utama (`/src/app/(admin)/layout.tsx`)**
+  - [x] Buat `<Sidebar />`: Menu dinamis berdasarkan role (SuperAdmin liat semua, Admin Koperasi tidak lihat menu Settings).
   - [x] Buat `<Header />`: Render breadcrumb otomatis (`usePathname`) dan User Menu Dropdown (panggil `signOut`), beserta integrasi Theme & Language toggle.
 
 ## FASE 4: MASTER DATA MANAGEMENT (CRUD LENGKAP)
