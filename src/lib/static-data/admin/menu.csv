@@ -1,0 +1,24 @@
+id,parentId,title,url,icon,isActive,roles,groups,jobDescs,regions
+dashboard,,Dashboard,#,LayoutDashboardIcon,TRUE,all,all,all,all
+dashboard-kpi,dashboard,Basic Data,/admin/dashboard,,FALSE,all,all,all,all
+dashboard-workplan,dashboard,Workplan Tracker,/admin/dashboard/workplan,,FALSE,all,all,all,all
+master-data,,Master Data,#,DatabaseIcon,FALSE,admin|operator,WRI|UL|ICS,all,all
+md-ouput,master-data,Output,/admin/master-data/ouputs,,FALSE,admin|operator,WRI,admin,all
+md-activities,master-data,Activities,/admin/master-data/activities,,FALSE,admin|operator,WRI,admin,all
+md-groups,master-data,Kelompok Tani,/admin/master-data/groups,,FALSE,all,all,all,all
+md-farmers,master-data,Data Petani,/admin/master-data/farmers,,FALSE,all,all,all,all
+md-parcels,master-data,Data Lahan,/admin/master-data/parcels,,FALSE,all,all,all,all
+md-regions,master-data,Region / Wilayah,/admin/master-data/regions,,FALSE,admin,all,all,all
+cms,,CMS,#,MonitorIcon,FALSE,admin,all,all,all
+cms-news,cms,Berita & Pengumuman,/admin/cms/news,,FALSE,all,all,all,all
+cms-knowledge,cms,Knowledge Management,/admin/cms/knowledge,,FALSE,all,all,all,all
+cms-community,cms,Manajemen Komunitas,/admin/cms/community,,FALSE,all,all,all,all
+cms-pages,cms,Konfigurasi Halaman,/admin/cms/pages,,FALSE,all,all,all,all
+tools,,Tools,#,WrenchIcon,FALSE,admin|operator,all,all,all
+tools-import,tools,Import Data Massal,/admin/tools/import,,FALSE,admin,all,all,all
+tools-export,tools,Export Laporan,/admin/tools/export,,FALSE,admin|operator,all,all,all
+tools-geo,tools,Geospatial Tools,/admin/tools/geo,,FALSE,all,all,agronomis|manager,all
+settings,,Setting,#,SettingsIcon,FALSE,admin,all,all,all
+settings-users,settings,User Management,/admin/settings/users,,FALSE,admin,all,all,all
+settings-roles,settings,Role & Permission,/admin/settings/roles,,FALSE,admin,all,all,all
+settings-system,settings,Konfigurasi Sistem,/admin/settings/system,,FALSE,admin,all,all,all
