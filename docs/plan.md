@@ -1,5 +1,5 @@
 
-# Smallholder HUB - Ekstrem Atomic Task Plan (Developer Guide)
+# Smallholder HUB - Developer Guide
 
 *Dokumen ini menjabarkan implementasi dari level arsitektur ke level kode sumber (source code) dan command eksekusi.*
 
@@ -16,12 +16,61 @@
   - [x] *Charts & Date*: `npm i recharts date-fns`
 - [x] **1.3. Inisiasi Shadcn UI**
   - [x] Jalankan: `npx shadcn@latest init` (Pilih: Default, CSS Variables).
-  - [x] Jalankan instalasi komponen wajib berulang: `npx shadcn@latest add button input form select table dialog sonner card popover calendar checkbox separator scroll-area alert badge dropdown-menu`
-- [ ] **1.4. Setup Folder Structure**
-  - [ ] Buat `/src/components/layout/` (Sidebar, Header, MainContainer).
-  - [ ] Buat `/src/lib/` (prisma.ts, utils.ts, map-utils.ts).
-  - [ ] Buat `/src/server/actions/` (direktori *Server Actions* Next.js).
-  - [ ] Buat `/src/validations/` (untuk Zod Schemas).
+  - [x] Jalankan instalasi komponen wajib berulang: `npx shadcn@latest add button input form select table dialog sonner card popover calendar checkbox separator scroll-area alert badge dropdown-menu label`
+- [x] **1.4. Setup Folder Structure & Multi-Layout**
+  - [x] Instalasi theme provider: `npm i next-themes lucide-react`.
+  - [x] Setup `ThemeProvider` (Dark mode default) di `src/app/layout.tsx` / komponen global.
+  - [x] Setup **Public Layout** di `src/app/(public)/layout.tsx` (dengan Navbar, menu Home, Community, Knowledge Management, & tombol Login/Theme).
+  - [x] Setup **Admin Layout** di `src/app/(admin)/layout.tsx` dengan integrasi Sidebar Shadcn (`npx shadcn@latest add sidebar-07`).
+  - [x] Buat direktori inti backend/utilitas: `/src/lib/`, `/src/server/actions/`, `/src/validations/`.
+- [x] **1.5. Scaffolding UI Statis (Mockup)**
+  - [x] Halaman `Home` publik (Hero, features, tombol toggle Dark Mode & Language (ID/EN)).
+    - [x] **Revisi Layout Non-Hero**: Stats cards individual dengan ikon, region cards compact (icon+nama inline), news cards tanpa overlap (-mt-10 dihapus), partners section dengan featured partner, Activities section header split-layout.
+  - [x] Halaman `Community` publik (List diskusi statis).
+  - [x] Halaman `Knowledge Management` publik (Katalog modul).
+  - [x] Customisasi `Sidebar Admin` (Hierarki Menu Lengkap) & Logout Redirect ke Home.
+  - [x] Halaman Mockup Admin (`Dashboard Summary`, `Data Petani`, `CMS Berita`).
+  - [x] **1.6. UI Statis with static-data (Detailed per Page)**
+    - [x] **Public Pages (`src/lib/static-data/public/`)**
+      - [x] `home`: Hero config, features, FAQ, footer links. (Completed: Fading Carousel, Themed Cards, Dark UI Footer)
+      - [x] `community`: Split-screen layout (60% Map / 40% List). Fitur:
+        - [x] Integrasi MapLibre (react-map-gl) dengan basemap Carto Dark/Positron sinkron tema
+        - [x] Marker & Popup interaktif di peta
+        - [x] Filter distrik + pencarian teks dengan animasi `.flyTo()` ke sentrum distrik
+        - [x] Optimasi filter dengan `useMemo`
+        - [x] Arsitektur SSR/Client split: `page.tsx` sebagai Server Component, `CommunityDirectoryClient.tsx` sebagai Client
+        - [x] Card komunitas dengan thumbnail gambar, komoditas badge, nama desa
+        - [x] Detail page promosi: Hero banner, 4 Key Stats, Tentang, Komoditas, Sertifikasi, Contact Card + Mini Map
+        - [x] Data CSV diperkaya: `village`, `commodities`, `image_url`, `chairman_name`, `whatsapp`, `total_land_ha`, `annual_production_ton`, `certifications`
+        - [x] `ProfileMiniMap.tsx` komponen peta mini terpisah di detail page
+        - [x] `next.config.ts` dikonfigurasi untuk domain gambar Unsplash
+      - [x] `knowledge-management`: Modul, kategori, artikel. Fitur:
+        - [x] Arsitektur SSR/Client split: `page.tsx` sebagai Server Component, `KnowledgeDirectoryClient.tsx` sebagai Client
+        - [x] Hero section dengan statistik konten (Artikel, Video, Toolkit, Dokumentasi)
+        - [x] Tab filter pill sticky (Semua | Artikel | Video | Dokumentasi | Toolkit)
+        - [x] Search bar terintegrasi dengan counter hasil & filter berdasarkan judul, kategori, penulis, tag
+        - [x] Optimasi filter dengan `useMemo`
+        - [x] Card premium dengan thumbnail, badge tipe berwarna, tag, meta (penulis, durasi baca), hover animasi
+        - [x] Detail page: hero banner, meta info bar, highlight deskripsi, tag, CTA download
+        - [x] Sidebar "Konten Terkait" pada detail page (filter by kategori/tipe)
+        - [x] Data CSV diperkaya: `author`, `published_date`, `read_time_min`, `tags` (7 konten)
+        - [x] `generateMetadata` dinamis pada detail page untuk SEO
+        - [x] `next.config.ts` sudah mendukung domain gambar Unsplash (dari sesi Community)
+      - [x] `Login Page`: UI Login modern (Split layout, branding, input email/password, demo credentials toggle).
+      - [x] `User Static Data`: Profil user mockup (SuperAdmin, Admin Koperasi, Field Officer, Stakeholder) di `src/lib/static-data/user/`.
+  - [x] **Admin Pages (`src/lib/static-data/admin/`)**
+    - [x] `dashboard`: Summary stats, charts, recent activities.
+      - [ ] `KPI`
+      - [ ] `Workplan Tracker`
+    - [x] `master-data`: Farmers (`farmers`), Groups (`groups`), Land (`parcels`), Regions (`regions`).
+    - [x] `cms`: News/Articles (`news`), Custom Pages (`pages`).
+    - [x] `geo`: Spatial map configurations (`geo`).
+    - [x] `tools`: Import logs (`import`), Export configurations (`export`).
+    - [x] `settings`: Users (`users`), Roles (`roles`), System (`system`).
+- [x] **1.7. Responsivitas Layar (Mobile Friendly)**
+  - [x] Navbar Mobile (Hamburger Menu / Shadcn Sheet).
+  - [x] Layout grid responsif untuk Halaman Home, Community, dan Knowledge Management.
+  - [x] Penyesuaian padding dan font size di layar kecil.
 
 ## FASE 2: DATABASE SCHEMA & MIGRATIONS (`prisma/schema.prisma`)
 
@@ -52,12 +101,12 @@
   - [ ] Integrasikan tipe `Session` bawaan untuk memasukkan `user.role` & `user.institutionId`.
 - [ ] **3.2. Middleware Proteksi**
   - [ ] Buat file `/src/middleware.ts` untuk memblokir rute `/((?!login|api|_next/static|_next/image|favicon.ico).*)` jika `!session`.
-- [ ] **3.3. Halaman Login (`/src/app/login/page.tsx`)**
-  - [ ] Buat `LoginForm.tsx` (Card, Input Email, Input Password, Button submit).
+- [x] **3.3. Halaman Login (`/src/app/login/page.tsx`)**
+  - [x] Buat `LoginForm.tsx` (Card, Input Email, Input Password, Button submit).
   - [ ] Buat action `signInWrapper.ts` untuk *Server Actions* otentikasi.
-- [ ] **3.4. Layout Utama (`/src/app/(admin)/layout.tsx`)**
-  - [ ] Buat `<Sidebar />`: Menu dinamis berdasarkan role (SuperAdmin liat semua, Admin Koperasi tidak lihat menu Settings).
-  - [ ] Buat `<Header />`: Render breadcrumb otomatis (`usePathname`) dan User Menu Dropdown (panggil `signOut`).
+- [x] **3.4. Layout Utama (`/src/app/(admin)/layout.tsx`)**
+  - [x] Buat `<Sidebar />`: Menu dinamis berdasarkan role (SuperAdmin liat semua, Admin Koperasi tidak lihat menu Settings).
+  - [x] Buat `<Header />`: Render breadcrumb otomatis (`usePathname`) dan User Menu Dropdown (panggil `signOut`), beserta integrasi Theme & Language toggle.
 
 ## FASE 4: MASTER DATA MANAGEMENT (CRUD LENGKAP)
 
@@ -98,7 +147,7 @@
   - [ ] Server Action pembungkus `prisma.$transaction([])` untuk menyimpan skor penilaian sekaligus.
 - [ ] **6.3. Dashboard Analitik (Landing Admin)**
   - [ ] API Fetcher: `getDashboardStats()` menggunakan `prisma.$count` dan agregasi luas.
-  - [ ] `<StatCard />` untuk metrik: Jumlah Petani, Luas Total Lahan Terdaftar (Sum Ha), Jumlah Koperasi.
+  - [x] `<StatCard />` untuk metrik: Jumlah Petani, Luas Total Lahan Terdaftar (Sum Ha), Jumlah Koperasi (Desain UI Selesai & Compact).
   - [ ] `<BarChart />` (Recharts) memvisualisasikan `Petani terdaftar per bulan berjalan`.
 
 ## FASE 7: PASCA-MVP LAYER 1 (HCV, HSE, GHG)
@@ -135,7 +184,7 @@
   - [ ] Integrasi layer tile WMS dari Hutan Global ke `MapViewer.tsx` (Maplibre `RasterLayer`).
 - [ ] **10.2. Generic Form Builder (Opsional)**
   - [ ] DB struktur JsonB: Tabel `DynamicFormTemplate`.
-- [ ] **10.3. Public Website (`/src/app/(public)/`)**
-  - [ ] `page.tsx`: Animasi hero section "Smallholder HUB".
+- [x] **10.3. Public Website (`/src/app/(public)/`)**
+  - [x] `page.tsx`: Hero section carousel + semua section non-hero (Community, Activities, Partners) dengan layout yang diperbaiki.
   - [ ] `community/page.tsx`: Fetch Next.js SSR konten pelatihan publik.
   - [ ] Setup *Service Worker* dan file `manifest.json` untuk membuat PWA installable.

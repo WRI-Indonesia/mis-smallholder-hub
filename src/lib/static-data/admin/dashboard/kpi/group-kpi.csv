@@ -1,0 +1,6 @@
+id,name,region,lat,lng,totalPetani,petaniLaki,petaniPerempuan,totalPersil,totalLuasan,trainingPaket1,trainingPaket2MK,trainingPaket2HSE,trainingPaket34
+g-001,Koperasi Tani Makmur Jaya,Kampar,0.337,101.4394,120,82,38,145,450 Ha,45,30,28,18
+g-002,Asosiasi Petani Plasma Siak,Siak,0.8143,102.0494,85,60,25,102,320 Ha,32,20,18,12
+g-003,KUD Bina Usaha Pelalawan,Pelalawan,0.3541,101.8893,250,175,75,310,780 Ha,80,55,48,35
+g-004,Asosiasi Petani Swadaya Rokan,Rokan Hulu,0.8519,100.3204,60,42,18,78,210 Ha,22,14,10,8
+g-005,Koperasi Agro Lestari,Kampar,0.321,101.35,95,68,27,115,390 Ha,38,25,20,15

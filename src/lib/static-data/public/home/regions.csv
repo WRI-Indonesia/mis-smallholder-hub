@@ -1,0 +1,5 @@
+id,name,description,groupsCount,membersCount,areaCount,iconColor
+kampar,Kampar,,8,"2,770","7,795.86",bg-primary
+rokan-hulu,Rokan Hulu,,10,"1,340","3,585.66",bg-cyan-500
+siak,Siak,,10,"3,107","7,703.32",bg-blue-500
+pelalawan,Pelalawan,,1,457,"1,000",bg-indigo-500
