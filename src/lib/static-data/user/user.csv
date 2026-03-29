@@ -1,0 +1,5 @@
+id,name,email,password,role,institutionId,isActive
+1,Super Administrator,admin@wri.org,admin123,SUPERADMIN,,true
+2,Budi Santoso,admin@koperasi.id,koperasi123,ADMIN_KOPERASI,inst-1,true
+3,Siti Aminah,siti@field.org,field123,FIELD_OFFICER,inst-1,true
+4,Agus Susanto,agus@stakeholder.com,stake123,STAKEHOLDER,,true
