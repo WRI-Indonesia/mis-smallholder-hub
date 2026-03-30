@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { getKpiStats, farmerGroupKPI, type GroupKPI } from "@/lib/static-data";
+import { getBasicDataStats, farmerGroupData, type FarmerGroupData } from "@/lib/static-data";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -33,10 +33,10 @@ const REGION_COORDINATES: Record<string, { longitude: number; latitude: number; 
   "Rokan Hulu": { longitude: 100.32, latitude: 0.84, zoom: 9 },
 };
 
-export default function KPIDashboardPage() {
+export default function BasicDataDashboardPage() {
   const [program, setProgram] = useState("All");
   const [distrik, setDistrik] = useState("All");
-  const [selectedGroup, setSelectedGroup] = useState<GroupKPI | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<FarmerGroupData | null>(null);
   const [mapSearch, setMapSearch] = useState("");
   const [mounted, setMounted] = useState(false);
   const { resolvedTheme } = useTheme();
@@ -49,7 +49,7 @@ export default function KPIDashboardPage() {
     : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
   const filteredGroups = useMemo(() =>
-    farmerGroupKPI.filter(g => {
+    farmerGroupData.filter(g => {
       const matchDistrik = distrik === "All" || g.region === distrik;
       const matchSearch = !mapSearch || g.name.toLowerCase().includes(mapSearch.toLowerCase());
       return matchDistrik && matchSearch;
@@ -70,12 +70,12 @@ export default function KPIDashboardPage() {
     mapRef.current?.flyTo({ center: [t.longitude, t.latitude], zoom: t.zoom, duration: 1200, essential: true });
   };
 
-  const handleMarkerClick = (group: GroupKPI) => {
+  const handleMarkerClick = (group: FarmerGroupData) => {
     setSelectedGroup(group);
     mapRef.current?.flyTo({ center: [group.lng, group.lat], zoom: 11, duration: 1000, essential: true });
   };
 
-  const allStats = useMemo(() => getKpiStats(program, distrik), [program, distrik]);
+  const allStats = useMemo(() => getBasicDataStats(program, distrik), [program, distrik]);
 
   return (
     <div className="-m-6 flex flex-col bg-muted/30" style={{ height: "calc(100vh - 56px)" }}>
@@ -105,7 +105,7 @@ export default function KPIDashboardPage() {
       {/* ── BODY ── */}
       <div className="flex-1 flex flex-col min-h-0 p-4 gap-4">
 
-        {/* KPI CARDS — 2 rows × 5 cols */}
+        {/* BASIC DATA CARDS — 2 rows × 5 cols */}
         <div className="grid grid-cols-5 grid-rows-2 gap-3 shrink-0">
           {allStats.map((stat) => (
             <div key={stat.label} className="bg-background border rounded-lg px-4 py-3 flex flex-col justify-between min-h-[88px]">
@@ -216,7 +216,7 @@ export default function KPIDashboardPage() {
                 </div>
                 <p className="text-xs font-bold text-foreground mb-0.5">Detail Kelompok Tani</p>
                 <p className="text-[11px] text-muted-foreground max-w-[160px] leading-relaxed">
-                  Klik titik pada peta untuk melihat detail KPI.
+                  Klik titik pada peta untuk melihat detail.
                 </p>
               </div>
             )}

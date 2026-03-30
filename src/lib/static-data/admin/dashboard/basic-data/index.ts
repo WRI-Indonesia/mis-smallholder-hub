@@ -1,43 +1,43 @@
-// KPI Dashboard data - score cards & farmer group KPI for map
+// Basic Data Dashboard - score cards & farmer group data for map
 import Papa from "papaparse";
-import kpiCsvRaw from "./kpi.csv";
-import kpiMetaCsvRaw from "./kpi-meta.csv";
-import groupKpiCsvRaw from "./group-kpi.csv";
+import basicDataCsvRaw from "./basic-data.csv";
+import basicDataMetaCsvRaw from "./basic-data-meta.csv";
+import groupBasicDataCsvRaw from "./group-basic-data.csv";
 
-// KPI Metadata from kpi-meta.csv
-export type KpiMeta = {
+// Basic Data Metadata from basic-data-meta.csv
+export type BasicDataMeta = {
   label: string;
   icon: string;
   group: "base" | "training";
   suffix: string;
 };
 
-export type KpiDataRow = {
+export type BasicDataRow = {
   program: string;
   distrik: string;
   label: string;
   value: string;
 };
 
-export type KpiStat = KpiMeta & {
+export type BasicDataStat = BasicDataMeta & {
   value: string;
 };
 
-const kpiMeta: KpiMeta[] = Papa.parse(kpiMetaCsvRaw, {
+const basicDataMeta: BasicDataMeta[] = Papa.parse(basicDataMetaCsvRaw, {
   header: true,
   skipEmptyLines: true,
-}).data as KpiMeta[];
+}).data as BasicDataMeta[];
 
-const kpiData: KpiDataRow[] = Papa.parse(kpiCsvRaw, {
+const basicDataRows: BasicDataRow[] = Papa.parse(basicDataCsvRaw, {
   header: true,
   skipEmptyLines: true,
-}).data as KpiDataRow[];
+}).data as BasicDataRow[];
 
-/** Filter and aggregate KPI stats by program and distrik */
-export function getKpiStats(program: string, distrik: string): KpiStat[] {
-  return kpiMeta.map(meta => {
+/** Filter and aggregate Basic Data stats by program and distrik */
+export function getBasicDataStats(program: string, distrik: string): BasicDataStat[] {
+  return basicDataMeta.map(meta => {
     // Filter rows matching program and distrik, summing them up
-    const filteredRows = kpiData.filter(row => {
+    const filteredRows = basicDataRows.filter(row => {
       const matchProgram = program === "All" || row.program === program;
       const matchDistrik = distrik === "All" || row.distrik === distrik;
       return matchProgram && matchDistrik && row.label === meta.label;
@@ -61,8 +61,8 @@ export function getKpiStats(program: string, distrik: string): KpiStat[] {
   });
 }
 
-// Farmer group KPI for map
-export type GroupKPI = {
+// Farmer group data for map
+export type FarmerGroupData = {
   id: string;
   name: string;
   region: string;
@@ -79,12 +79,12 @@ export type GroupKPI = {
   trainingPaket34: number;
 };
 
-const rawGroups = Papa.parse(groupKpiCsvRaw, {
+const rawGroups = Papa.parse(groupBasicDataCsvRaw, {
   header: true,
   skipEmptyLines: true,
 }).data as Record<string, string>[];
 
-export const farmerGroupKPI: GroupKPI[] = rawGroups.map((row) => ({
+export const farmerGroupData: FarmerGroupData[] = rawGroups.map((row) => ({
   id: row.id,
   name: row.name,
   region: row.region,
