@@ -94,7 +94,7 @@
   - [ ] Jalankan `npx prisma migrate dev --name init_core`
   - [ ] Buat script `/prisma/seed.ts` berisi `await prisma.user.create(...)` untuk SuperAdmin.
 
-## FASE 3: AUTENTIKASI & LAYOUT SISTEM (ADMIN)
+## FASE 3: AUTENTIKASI & RABC FOR MENU & DATA
 
 - [ ] **3.1. Konfigurasi NextAuth.js (Auth.js)**
   - [ ] Buat file `/src/auth.ts` (Credentials Provider dengan konfirmasi bcrypt `compareSync`).

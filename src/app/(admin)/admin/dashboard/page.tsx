@@ -84,17 +84,17 @@ export default function KPIDashboardPage() {
       <div className="flex items-center justify-between px-6 h-14 bg-background border-b shrink-0">
         <div className="flex items-center gap-2.5">
           <Target className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-extrabold tracking-tight text-foreground">Basic Data</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-foreground">Basic Data</h1>
         </div>
         <div className="flex items-center gap-2">
           <Select value={program} onValueChange={(v) => setProgram(v ?? "All")}>
-            <SelectTrigger className="w-[140px] h-8 text-xs bg-background"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[140px] h-8 text-sm bg-background"><SelectValue /></SelectTrigger>
             <SelectContent>
               {programOptions.map(o => <SelectItem key={o} value={o}>{o === "All" ? "Semua Program" : o}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={distrik} onValueChange={(v) => setDistrik(v ?? "All")}>
-            <SelectTrigger className="w-[150px] h-8 text-xs bg-background"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[150px] h-8 text-sm bg-background"><SelectValue /></SelectTrigger>
             <SelectContent>
               {distrikOptions.map(o => <SelectItem key={o} value={o}>{o === "All" ? "Semua Distriks" : o}</SelectItem>)}
             </SelectContent>
@@ -110,12 +110,12 @@ export default function KPIDashboardPage() {
           {allStats.map((stat) => (
             <div key={stat.label} className="bg-background border rounded-lg px-4 py-3 flex flex-col justify-between min-h-[88px]">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight max-w-[80%]">{stat.label}</p>
+                <p className="text-[14px] font-bold text-muted-foreground uppercase tracking-widest leading-tight max-w-[80%]">{stat.label}</p>
                 <div className="p-1.5 rounded-md bg-muted text-muted-foreground shrink-0">
                   {iconMap[stat.icon]}
                 </div>
               </div>
-              <p className="text-2xl font-black tracking-tight text-foreground">{stat.value}</p>
+              <p className="text-4xl font-black tracking-tight text-foreground">{stat.value}</p>
             </div>
           ))}
         </div>
@@ -182,8 +182,8 @@ export default function KPIDashboardPage() {
                 {/* Title */}
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-[9px] font-bold text-primary uppercase tracking-widest mb-0.5">{selectedGroup.region}</p>
-                    <h3 className="text-sm font-extrabold text-foreground leading-tight">{selectedGroup.name}</h3>
+                    <p className="text-[12px] font-bold text-primary uppercase tracking-widest mb-0.5">{selectedGroup.region}</p>
+                    <h3 className="text-lg font-extrabold text-foreground leading-tight">{selectedGroup.name}</h3>
                   </div>
                   <button onClick={() => setSelectedGroup(null)} className="p-1 rounded-md hover:bg-muted text-muted-foreground">
                     <X className="h-3.5 w-3.5" />
@@ -193,19 +193,19 @@ export default function KPIDashboardPage() {
                 {/* Stats */}
                 <div className="space-y-3">
                   <DetailSection title="Petani" rows={[
-                    { icon: <Users className="h-3.5 w-3.5" />, label: "Total", value: selectedGroup.totalPetani, highlight: true },
-                    { icon: <UserCheck className="h-3.5 w-3.5" />, label: "Laki-Laki", value: selectedGroup.petaniLaki },
-                    { icon: <UserCheck className="h-3.5 w-3.5" />, label: "Perempuan", value: selectedGroup.petaniPerempuan },
+                    { icon: <Users className="h-4 w-4" />, label: "Total", value: selectedGroup.totalPetani, highlight: true },
+                    { icon: <UserCheck className="h-4 w-4" />, label: "Laki-Laki", value: selectedGroup.petaniLaki },
+                    { icon: <UserCheck className="h-4 w-4" />, label: "Perempuan", value: selectedGroup.petaniPerempuan },
                   ]} />
                   <DetailSection title="Lahan" rows={[
-                    { icon: <MapPinned className="h-3.5 w-3.5" />, label: "Persil", value: selectedGroup.totalPersil, highlight: true },
-                    { icon: <LandPlot className="h-3.5 w-3.5" />, label: "Luasan", value: selectedGroup.totalLuasan },
+                    { icon: <MapPinned className="h-4 w-4" />, label: "Persil", value: selectedGroup.totalPersil, highlight: true },
+                    { icon: <LandPlot className="h-4 w-4" />, label: "Luasan", value: selectedGroup.totalLuasan },
                   ]} />
                   <DetailSection title="Training" rows={[
-                    { icon: <GraduationCap className="h-3.5 w-3.5" />, label: "Paket 1", value: selectedGroup.trainingPaket1 },
-                    { icon: <GraduationCap className="h-3.5 w-3.5" />, label: "Paket 2 — MK", value: selectedGroup.trainingPaket2MK },
-                    { icon: <GraduationCap className="h-3.5 w-3.5" />, label: "Paket 2 — HSE", value: selectedGroup.trainingPaket2HSE },
-                    { icon: <GraduationCap className="h-3.5 w-3.5" />, label: "Paket 3 & 4", value: selectedGroup.trainingPaket34 },
+                    { icon: <GraduationCap className="h-4 w-4" />, label: "Paket 1", value: selectedGroup.trainingPaket1 },
+                    { icon: <GraduationCap className="h-4 w-4" />, label: "Paket 2 — MK", value: selectedGroup.trainingPaket2MK },
+                    { icon: <GraduationCap className="h-4 w-4" />, label: "Paket 2 — HSE", value: selectedGroup.trainingPaket2HSE },
+                    { icon: <GraduationCap className="h-4 w-4" />, label: "Paket 3 & 4", value: selectedGroup.trainingPaket34 },
                   ]} />
                 </div>
               </div>
@@ -240,9 +240,9 @@ function DetailSection({ title, rows }: { title: string; rows: DetailRowData[] }
           <div key={i} className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-muted-foreground">
               {row.icon}
-              <span className="text-xs font-medium">{row.label}</span>
+              <span className="text-md font-medium">{row.label}</span>
             </div>
-            <span className={`font-black text-foreground ${row.highlight ? "text-xl" : "text-sm"}`}>{row.value}</span>
+            <span className={`font-black text-foreground ${row.highlight ? "text-2xl" : "text-md"}`}>{row.value}</span>
           </div>
         ))}
       </div>
