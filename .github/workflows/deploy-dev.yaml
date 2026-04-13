@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - dev
-  workflow_dispatch:
 
 concurrency:
   group: deploy-dev
@@ -24,6 +23,8 @@ jobs:
           username: ${{ secrets.STAGING_SSH_USER }}
           key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           port: ${{ secrets.STAGING_SSH_PORT }}
+          timeout: 60s
+          command_timeout: 45m
           script: |
             set -Eeuo pipefail
 
