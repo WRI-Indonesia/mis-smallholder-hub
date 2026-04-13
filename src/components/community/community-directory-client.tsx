@@ -11,15 +11,9 @@ import Map, { Marker, Popup, MapRef } from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { useTheme } from "next-themes"
 import { FarmerGroup } from "@/lib/static-data/public/community"
+import { REGION_COORDINATES } from "@/lib/map-utils"
+import { DISTRIK_OPTIONS } from "@/lib/constants"
 
-// Define rough bounding center for our regions for flyTo animation
-const REGION_COORDINATES: Record<string, { longitude: number; latitude: number; zoom: number }> = {
-  "All": { longitude: 101.44, latitude: 0.53, zoom: 6.8 }, // Riau Center
-  "Kampar": { longitude: 101.03, latitude: 0.33, zoom: 9 },
-  "Siak": { longitude: 102.04, latitude: 0.75, zoom: 9 },
-  "Pelalawan": { longitude: 101.99, latitude: 0.30, zoom: 9 },
-  "Rokan Hulu": { longitude: 100.32, latitude: 0.84, zoom: 9 },
-}
 
 interface CommunityDirectoryClientProps {
   initialGroups: FarmerGroup[]
@@ -110,29 +104,26 @@ export default function CommunityDirectoryClient({ initialGroups }: CommunityDir
                        offset={30}
                        onClose={() => setSelectedPin(null)}
                        closeButton={false}
-                       className="z-50 rounded-2xl overflow-hidden shadow-2xl"
+                       className="z-50"
                      >
-                       <div className="p-0 bg-card text-foreground rounded-xl border min-w-[240px] overflow-hidden">
-                         <div className="h-24 w-full relative bg-muted">
-                            <Image 
-                              src={activeNode.image_url} 
-                              alt={activeNode.name}
-                              fill
-                              sizes="240px"
-                              className="object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                            <span className="absolute bottom-2 left-3 text-[10px] font-bold text-white uppercase tracking-wider px-2 py-0.5 bg-primary/80 backdrop-blur-sm rounded-sm">
-                              {activeNode.type}
-                            </span>
-                         </div>
+                       <div className="w-[240px] text-foreground">
+                         <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/60 to-primary/20" />
                          <div className="p-4">
-                           <h3 className="font-bold text-[15px] leading-tight mb-2 line-clamp-2">{activeNode.name}</h3>
-                           <div className="flex items-center text-xs text-muted-foreground mb-4 font-medium">
-                             <MapPin className="w-3.5 h-3.5 mr-1 text-primary/70" /> {activeNode.village}, {activeNode.region}
+                           <span className="inline-block text-[9px] font-extrabold text-primary uppercase tracking-widest px-2.5 py-1 bg-primary/10 rounded-full border border-primary/20 mb-3">
+                             {activeNode.type}
+                           </span>
+                           <h3 className="font-extrabold text-[14px] leading-snug mb-2 text-foreground line-clamp-2">
+                             {activeNode.name}
+                           </h3>
+                           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-4">
+                             <MapPin className="w-3 h-3 shrink-0 text-primary" />
+                             <span className="truncate">{activeNode.village}, {activeNode.region}</span>
                            </div>
-                           <Link href={`/community/${activeNode.id}`} className="text-xs font-bold text-primary flex items-center bg-primary/10 w-full py-2.5 justify-center rounded-lg hover:bg-primary/20 transition-colors">
-                             Lihat Detail <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                           <Link
+                             href={`/community/${activeNode.id}`}
+                             className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] font-bold hover:opacity-90 transition-opacity"
+                           >
+                             Lihat Detail <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                            </Link>
                          </div>
                        </div>
@@ -179,11 +170,11 @@ export default function CommunityDirectoryClient({ initialGroups }: CommunityDir
                   <SelectValue placeholder="Semua Distrik" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border/80 shadow-lg text-sm">
-                  <SelectItem value="All">Semua Distrik</SelectItem>
-                  <SelectItem value="Kampar">Kampar</SelectItem>
-                  <SelectItem value="Siak">Siak</SelectItem>
-                  <SelectItem value="Pelalawan">Pelalawan</SelectItem>
-                  <SelectItem value="Rokan Hulu">Rokan Hulu</SelectItem>
+                  {DISTRIK_OPTIONS.map((distrik) => (
+                    <SelectItem key={distrik} value={distrik}>
+                      {distrik === "All" ? "Semua Distrik" : distrik}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

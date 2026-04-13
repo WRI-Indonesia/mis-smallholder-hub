@@ -1,4 +1,4 @@
-import KnowledgeDirectoryClient from "@/components/knowledge/KnowledgeDirectoryClient"
+import KnowledgeDirectoryClient from "@/components/knowledge/knowledge-directory-client"
 import { mockModules } from "@/lib/static-data/public/knowledge-management"
 
 export const metadata = {

@@ -1,6 +1,6 @@
 id,parentId,title,url,icon,isActive,roles,groups,jobDescs,regions
 dashboard,,Dashboard,#,LayoutDashboardIcon,TRUE,all,all,all,all
-dashboard-kpi,dashboard,Basic Data,/admin/dashboard,,FALSE,all,all,all,all
+dashboard-basic-data,dashboard,Basic Data,/admin/dashboard,,FALSE,all,all,all,all
 dashboard-workplan,dashboard,Workplan Tracker,/admin/dashboard/workplan,,FALSE,all,all,all,all
 master-data,,Master Data,#,DatabaseIcon,FALSE,admin|operator,WRI|UL|ICS,all,all
 md-ouput,master-data,Output,/admin/master-data/ouputs,,FALSE,admin|operator,WRI,admin,all

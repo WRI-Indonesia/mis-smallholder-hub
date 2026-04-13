@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button"
-import { HeroCarousel } from "@/components/hero-carousel"
-import { heroImages, homeStats, homeRegions, homePartners, homeContent, homeNewsList } from "@/lib/static-data"
+import { HeroCarousel } from "@/components/layout/public/hero-carousel"
+import { heroImages, homeStats, homeRegions, homePartners, homeContent, homeNewsList } from "@/lib/static-data/public/home"
 import { MapPin, ArrowRight, Building2, Leaf, ShieldCheck, Landmark, Lightbulb, Handshake, Calendar, Sprout, Users, TreePine, ChevronRight } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 const partnerIconMap: Record<string, any> = {
   wri: Leaf,
@@ -29,10 +30,14 @@ export default function HomePage() {
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/50 via-background/40 to-background -z-20" />
 
         <div className="container px-4 md:px-6 mx-auto text-center relative z-10 flex flex-col items-center">
-          <h1
-            className="text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl text-white drop-shadow-lg max-w-4xl mx-auto leading-tight"
-            dangerouslySetInnerHTML={{ __html: homeContent['hero']?.title || "" }}
-          />
+          <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl text-white drop-shadow-lg max-w-4xl mx-auto leading-tight">
+            {homeContent['hero']?.title?.split('<br/>').map((part, i, arr) => (
+              <span key={i}>
+                {part}
+                {i < arr.length - 1 && <br />}
+              </span>
+            ))}
+          </h1>
           <p className="mx-auto mt-6 max-w-[700px] text-lg text-gray-200 drop-shadow-md font-medium">
             {homeContent['hero']?.subtitle}
           </p>
@@ -137,8 +142,7 @@ export default function HomePage() {
               <Link key={article.id} href={`/news/${article.id}`} className="group">
                 <article className="bg-card rounded-2xl overflow-hidden border border-border/60 hover:border-primary/40 hover:shadow-xl transition-all duration-300 flex flex-col h-full">
                   <div className="w-full aspect-[16/10] bg-muted overflow-hidden relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={article.thumbnail} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <Image src={article.thumbnail} alt={article.title} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-700" />
                   </div>
                   <div className="p-6 flex flex-col flex-grow">
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">

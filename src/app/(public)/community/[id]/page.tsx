@@ -9,7 +9,7 @@ import {
   Wheat, Award, MessageCircle, TrendingUp, User, LayoutGrid
 } from "lucide-react"
 import { farmerGroups } from "@/lib/static-data/public/community"
-import ProfileMiniMap from "@/components/maps/ProfileMiniMap"
+import ProfileMiniMap from "@/components/maps/profile-mini-map"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

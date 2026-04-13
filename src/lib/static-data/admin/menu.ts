@@ -1,11 +1,4 @@
-import {
-  LayoutDashboardIcon,
-  DatabaseIcon,
-  MonitorIcon,
-  WrenchIcon,
-  SettingsIcon,
-} from "lucide-react"
-import React from "react"
+// No JSX imports needed
 
 export type RbacRole = "admin" | "operator" | "user" | "all";
 export type RbacGroup = "WRI" | "UL" | "ICS" | "public" | "all";
@@ -22,7 +15,7 @@ export interface RbacPolicy {
 export interface MenuItem {
   title: string;
   url: string;
-  icon?: React.ReactNode;
+  icon?: string;
   isActive?: boolean;
   items?: Omit<MenuItem, "icon" | "items">[];
   rbac?: RbacPolicy;
@@ -38,13 +31,7 @@ export interface UserContext {
 import Papa from "papaparse";
 import csvRaw from "./menu.csv";
 
-const iconMap: Record<string, React.ReactNode> = {
-  LayoutDashboardIcon: <LayoutDashboardIcon />,
-  DatabaseIcon: <DatabaseIcon />,
-  MonitorIcon: <MonitorIcon />,
-  WrenchIcon: <WrenchIcon />,
-  SettingsIcon: <SettingsIcon />,
-};
+// Icon mapping is handled in the UI Layer (NavMain.tsx)
 
 type FlatMenuItem = {
   id: string;
@@ -71,7 +58,7 @@ parsedData.forEach(row => {
   const menuItem: MenuItem = {
     title: row.title,
     url: row.url,
-    icon: row.icon ? iconMap[row.icon] : undefined,
+    icon: row.icon || undefined,
     isActive: row.isActive === "true",
     rbac: {
       roles: row.roles ? row.roles.split("|") as RbacRole[] : ["all"],

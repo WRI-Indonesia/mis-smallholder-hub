@@ -1,4 +1,4 @@
-import CommunityDirectoryClient from "@/components/community/CommunityDirectoryClient"
+import CommunityDirectoryClient from "@/components/community/community-directory-client"
 import { farmerGroups } from "@/lib/static-data/public/community"
 
 export const metadata = {

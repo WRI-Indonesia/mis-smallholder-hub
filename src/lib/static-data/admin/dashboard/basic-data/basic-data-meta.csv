@@ -1,0 +1,11 @@
+label,icon,group,suffix
+Total Kelompok Tani,UsersRound,base,
+Total Petani,Users,base,
+Total Petani Laki-Laki,UserCheck,base,
+Total Petani Perempuan,UserCheck,base,
+Total Persil Lahan,MapPinned,base,
+Total Luasan Lahan,LandPlot,base,Ha
+P1 (BMP | P&C RSPO | NKT),GraduationCap,training,
+P2 - MK,GraduationCap,training,
+P2 - HSE / K3,GraduationCap,training,
+P3&4 (GEDSI | FL | AL | BD),GraduationCap,training,

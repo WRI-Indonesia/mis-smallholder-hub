@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PlusCircle, Search, Edit, Trash2 } from "lucide-react"
-import { mockFarmers } from "@/lib/static-data"
+import { mockFarmers } from "@/lib/static-data/admin/master-data/farmers"
 
 export default function MasterDataFarmersPage() {
   return (

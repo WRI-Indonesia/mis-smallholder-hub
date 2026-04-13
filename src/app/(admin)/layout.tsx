@@ -1,51 +1,18 @@
-"use client"
-
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Metadata } from "next"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/layout/admin/app-sidebar"
 import { Separator } from "@/components/ui/separator"
-import { ChevronRight } from "lucide-react"
-import { AdminHeaderActions } from "@/components/admin-header-actions"
+import { AdminHeaderActions } from "@/components/layout/admin/admin-header-actions"
+import { AdminBreadcrumb } from "@/components/layout/admin/admin-breadcrumb"
 
-// Build a readable breadcrumb from the current pathname
-function useBreadcrumbs() {
-  const pathname = usePathname()
-  const segments = pathname.split("/").filter(Boolean)
-  
-  const labelMap: Record<string, string> = {
-    admin: "Admin",
-    dashboard: "Dashboard",
-    "master-data": "Master Data",
-    farmers: "Data Petani",
-    groups: "Kelompok Tani",
-    parcels: "Data Lahan",
-    regions: "Region / Wilayah",
-    cms: "CMS",
-    news: "Berita",
-    knowledge: "Knowledge Management",
-    community: "Komunitas",
-    pages: "Konfigurasi Halaman",
-    tools: "Tools",
-    import: "Import Data",
-    export: "Export Laporan",
-    geo: "Geospatial",
-    settings: "Setting",
-    users: "User Management",
-    roles: "Role & Permission",
-    system: "Konfigurasi Sistem",
-  }
-
-  return segments.map((seg, idx) => ({
-    label: labelMap[seg] ?? seg,
-    href: "/" + segments.slice(0, idx + 1).join("/"),
-    isLast: idx === segments.length - 1,
-  }))
+export const metadata: Metadata = {
+  title: {
+    template: "%s | Admin - Smallholder HUB",
+    default: "Admin - Smallholder HUB",
+  },
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const breadcrumbs = useBreadcrumbs()
-
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -55,24 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-2 min-w-0 pr-2">
             <SidebarTrigger className="-ml-1 shrink-0" />
             <Separator orientation="vertical" className="h-5 shrink-0" />
-            {/* Breadcrumb — left-aligned, full grow, scrollable on mobile */}
-            <nav className="flex items-center gap-1 text-sm min-w-0 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <Link href="/admin/dashboard" className="text-muted-foreground hover:text-primary font-medium transition-colors shrink-0">
-                AdminPanel
-              </Link>
-              {breadcrumbs.map((crumb) => (
-                <span key={crumb.href} className="flex items-center gap-1">
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
-                  {crumb.isLast ? (
-                    <span className="font-semibold text-foreground whitespace-nowrap">{crumb.label}</span>
-                  ) : (
-                    <Link href={crumb.href} className="text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">
-                      {crumb.label}
-                    </Link>
-                  )}
-                </span>
-              ))}
-            </nav>
+            <AdminBreadcrumb />
           </div>
           <AdminHeaderActions />
         </header>
