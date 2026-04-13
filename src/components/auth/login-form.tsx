@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { usersData } from "@/lib/static-data";
+import { usersData } from "@/lib/static-data/user";
 import { toast } from "sonner"; // If sonner is present, we'll try to use it else just ignore
 
 export function LoginForm() {

@@ -69,14 +69,14 @@ export type FarmerGroupData = {
   lat: number;
   lng: number;
   totalPetani: number;
-  petaniLaki: number;
-  petaniPerempuan: number;
-  totalPersil: number;
-  totalLuasan: string;
-  trainingPaket1: number;
-  trainingPaket2MK: number;
-  trainingPaket2HSE: number;
-  trainingPaket34: number;
+  maleFarmers: number;
+  femaleFarmers: number;
+  totalParcels: number;
+  totalArea: string;
+  trainingPackage1: number;
+  trainingPackage2MK: number;
+  trainingPackage2HSE: number;
+  trainingPackage34: number;
 };
 
 const rawGroups = Papa.parse(groupBasicDataCsvRaw, {
@@ -91,12 +91,12 @@ export const farmerGroupData: FarmerGroupData[] = rawGroups.map((row) => ({
   lat: parseFloat(row.lat),
   lng: parseFloat(row.lng),
   totalPetani: parseInt(row.totalPetani, 10),
-  petaniLaki: parseInt(row.petaniLaki, 10),
-  petaniPerempuan: parseInt(row.petaniPerempuan, 10),
-  totalPersil: parseInt(row.totalPersil, 10),
-  totalLuasan: row.totalLuasan,
-  trainingPaket1: parseInt(row.trainingPaket1, 10),
-  trainingPaket2MK: parseInt(row.trainingPaket2MK, 10),
-  trainingPaket2HSE: parseInt(row.trainingPaket2HSE, 10),
-  trainingPaket34: parseInt(row.trainingPaket34, 10),
+  maleFarmers: parseInt(row.petaniLaki, 10),
+  femaleFarmers: parseInt(row.petaniPerempuan, 10),
+  totalParcels: parseInt(row.totalPersil, 10),
+  totalArea: row.totalLuasan,
+  trainingPackage1: parseInt(row.trainingPaket1, 10),
+  trainingPackage2MK: parseInt(row.trainingPaket2MK, 10),
+  trainingPackage2HSE: parseInt(row.trainingPaket2HSE, 10),
+  trainingPackage34: parseInt(row.trainingPaket34, 10),
 }));

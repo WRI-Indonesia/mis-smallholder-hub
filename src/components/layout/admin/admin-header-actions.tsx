@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Moon, Sun, LogOut, User as UserIcon } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,17 +13,24 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function AdminHeaderActions() {
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
   const [lang, setLang] = React.useState<"ID" | "EN">("ID")
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  function handleLogout() {
+    localStorage.removeItem("sh_mock_user")
+    router.push("/")
+  }
 
   return (
     <div className="flex items-center gap-1 md:gap-2">
@@ -62,22 +70,28 @@ export function AdminHeaderActions() {
           <span className="text-sm font-medium leading-none hidden sm:block">Admin User</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 mt-2">
-          <DropdownMenuLabel>
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">Admin User</p>
-              <p className="text-xs leading-none text-muted-foreground">admin@smallholderhub.com</p>
-            </div>
-          </DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">Admin User</p>
+                <p className="text-xs leading-none text-muted-foreground">admin@smallholderhub.com</p>
+              </div>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <UserIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>Profile</span>
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem>
+              <UserIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive focus:text-destructive">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

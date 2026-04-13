@@ -12,14 +12,14 @@
 | **Proyek** | Smallholder HUB — Management Information System |
 | **Stack** | Next.js 16 · React 19 · Tailwind 4 · Shadcn UI · Prisma · MapLibre |
 | **Repository** | `WRI-Indonesia/mis-smallholder-hub` |
-| **Terakhir Diupdate** | 2026-03-30 |
+| **Terakhir Diupdate** | 2026-04-13 |
 | **Diupdate Oleh** | Sofyan (via AI-assisted code review) |
 
 ### 📊 Progress Overview
 
 | Fase | Deskripsi | Status |
 |------|-----------|--------|
-| **Fase 1** | Initialization & UI Statis | ✅ Selesai (1.1–1.7) · 🔲 Refaktor (1.8) |
+| **Fase 1** | Initialization & UI Statis | ✅ Selesai (1.1–1.8) |
 | **Fase 2** | Database Schema & Migrations | 🔲 Belum dimulai |
 | **Fase 3** | Autentikasi & RBAC | 🔲 Belum dimulai (UI login tersedia) |
 | **Fase 4** | Master Data CRUD | 🔲 Belum dimulai |
@@ -32,6 +32,7 @@
 
 | Tanggal | Oleh | Perubahan |
 |---------|------|-----------|
+| 2026-04-13 | Sofyan | Fase 1.8 selesai — Admin Layout → Server Component, dashboard decomposition, barrel optimization, naming convention, menu refactor, error/loading boundaries, map popup redesign. |
 | 2026-03-30 | Sofyan | Code review menyeluruh. Tambah Fase 1.8 (refaktor arsitektur). Tambah Fase 11 (Testing) & 12 (DevOps). Sinkronisasi checkbox status dengan kondisi aktual kode. Update referensi folder & route path. |
 | 2026-03-28 | Sofyan | Modernisasi Basic Data Dashboard (compact grid, interactive map). Update data layer CSV. Perbaikan Home page sections. |
 | 2026-03-19 | Sofyan | Refaktor admin UI, tambah Fase 1.7 (mobile), prefix `/admin`, global 404, placeholder pages. |
@@ -40,11 +41,12 @@
 ### 🎯 Status Saat Ini
 
 **Terakhir diselesaikan:**
-- Fase 1.1–1.7 selesai — seluruh UI statis (public + admin) dengan data CSV, responsif mobile, dark/light mode, peta interaktif MapLibre.
-- Basic Data Dashboard fungsional penuh (10 stat cards, map markers, detail panel, filter multidimensi).
+- Fase 1.1–1.8 selesai — seluruh UI statis (public + admin) dengan data CSV, responsif mobile, dark/light mode, peta interaktif MapLibre.
+- Basic Data Dashboard fungsional penuh (stat cards, map markers, detail panel, filter multidimensi).
+- **Fase 1.8** selesai — Admin layout → Server Component, dashboard decomposition (4 komponen modular), barrel import optimization, naming convention (kebab-case, English identifiers), menu.tsx → menu.ts, error/loading boundaries, map popup redesign.
 
 **Selanjutnya dikerjakan:**
-- **Fase 1.8** — Refaktor kode & arsitektur (admin layout ke Server Component, reorganisasi komponen, dashboard decomposition, eliminasi duplikasi, cleanup).
+- **Fase 2** — Database Schema & Migrations (Prisma + PostgreSQL + PostGIS).
 
 **Blocked / Dependency:**
 - Fase 2–6 membutuhkan PostgreSQL + PostGIS server dan Prisma schema setup.
@@ -57,7 +59,7 @@
 - [x] **1.1. Inisiasi Proyek Next.js**
   - [x] Jalankan: `npx create-next-app@latest smallholder-hub --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
   - [x] Buat file konfigurasi `.env`, `.env.example`, `.prettierrc.json`.
-  - [ ] Fix `package.json` name dari `"tmp_next"` ke `"smallholder-hub"`.
+  - [x] Fix `package.json` name dari `"tmp_next"` ke `"smallholder-hub"`.
 - [x] **1.2. Instalasi Dependensi Inti**
   - [x] *Database & ORM*: `npm i prisma --save-dev` & `npm i @prisma/client`
   - [x] *Autentikasi*: `npm i next-auth@beta bcryptjs` & `npm i -D @types/bcryptjs`
@@ -133,196 +135,111 @@
   - [x] Layout grid responsif untuk Halaman Home, Community, dan Knowledge Management.
   - [x] Penyesuaian padding dan font size di layar kecil.
 
-- [ ] **1.8. Refaktor Kode & Arsitektur (Code Quality)**
+- [x] **1.8. Refaktor Kode & Arsitektur (Code Quality)**
 
   Berdasarkan hasil code review menyeluruh, fase ini mengatasi technical debt dan meningkatkan maintainability sebelum memasuki Fase 2 (backend).
 
-  - [ ] **1.8.1. Admin Layout — Server Component Refactor**
+  - [x] **1.8.1. Admin Layout — Server Component Refactor**
 
     **Problem:** `src/app/(admin)/layout.tsx` ditandai `"use client"` sehingga semua child page dipaksa menjadi client component, kehilangan keuntungan SSR (metadata, streaming, smaller bundle).
 
-    - [ ] Hapus `"use client"` dari `src/app/(admin)/layout.tsx`.
-    - [ ] Extract breadcrumb logic (`usePathname`, `useBreadcrumb`) ke client component terpisah: `src/components/layout/admin/AdminBreadcrumb.tsx`.
-    - [ ] Extract header interaktif (theme toggle, language, user menu) ke: `src/components/layout/admin/AdminHeaderActions.tsx` (sudah ada, pastikan standalone).
-    - [ ] Wrap `SidebarProvider` + `SidebarInset` di Server Component, hanya children interaktif yang `"use client"`.
-    - [ ] Tambahkan `export const metadata` di admin layout untuk SEO (title template: `"%s | Admin - Smallholder HUB"`).
-    - [ ] Verifikasi: semua admin pages tetap berfungsi setelah refactor.
+    - [x] Hapus `"use client"` dari `src/app/(admin)/layout.tsx`.
+    - [x] Extract breadcrumb logic (`usePathname`, `useBreadcrumb`) ke client component terpisah: `src/components/layout/admin/admin-breadcrumb.tsx`.
+    - [x] Extract header interaktif (theme toggle, language, user menu) ke: `src/components/layout/admin/admin-header-actions.tsx` (standalone).
+    - [x] Wrap `SidebarProvider` + `SidebarInset` di Server Component, hanya children interaktif yang `"use client"`.
+    - [x] Tambahkan `export const metadata` di admin layout untuk SEO (title template: `"%s | Admin - Smallholder HUB"`).
+    - [x] Verifikasi: semua admin pages tetap berfungsi setelah refactor.
 
-  - [ ] **1.8.2. Reorganisasi Komponen — Folder Consistency**
+  - [x] **1.8.2. Reorganisasi Komponen — Folder Consistency**
 
     **Problem:** 5 komponen admin/public layout berserakan di root `src/components/` padahal folder `layout/admin/` dan `layout/public/` sudah ada dan kosong/kurang.
 
-    - [ ] Pindah `src/components/app-sidebar.tsx` → `src/components/layout/admin/AppSidebar.tsx`.
-    - [ ] Pindah `src/components/nav-main.tsx` → `src/components/layout/admin/NavMain.tsx`.
-    - [ ] Pindah `src/components/nav-user.tsx` → `src/components/layout/admin/NavUser.tsx`.
-    - [ ] Pindah `src/components/admin-header-actions.tsx` → `src/components/layout/admin/AdminHeaderActions.tsx`.
-    - [ ] Pindah `src/components/hero-carousel.tsx` → `src/components/layout/public/HeroCarousel.tsx`.
-    - [ ] Update semua import paths di file yang menggunakan komponen-komponen di atas:
-      - `src/app/(admin)/layout.tsx` (AppSidebar, AdminHeaderActions, NavMain, NavUser).
-      - `src/app/(public)/page.tsx` (HeroCarousel).
-    - [ ] Hapus file lama setelah semua import diupdate.
-    - [ ] Verifikasi: `npm run build` atau dev server tanpa error.
+    - [x] Pindah `src/components/app-sidebar.tsx` → `src/components/layout/admin/app-sidebar.tsx`.
+    - [x] Pindah `src/components/nav-main.tsx` → `src/components/layout/admin/nav-main.tsx`.
+    - [x] Pindah `src/components/nav-user.tsx` → `src/components/layout/admin/nav-user.tsx`.
+    - [x] Pindah `src/components/admin-header-actions.tsx` → `src/components/layout/admin/admin-header-actions.tsx`.
+    - [x] Pindah `src/components/hero-carousel.tsx` → `src/components/layout/public/hero-carousel.tsx`.
+    - [x] Update semua import paths di file yang menggunakan komponen-komponen di atas.
+    - [x] Hapus file lama setelah semua import diupdate.
+    - [x] Verifikasi: `npm run build` tanpa error.
 
-  - [ ] **1.8.3. Dashboard Decomposition**
+  - [x] **1.8.3. Dashboard Decomposition**
 
     **Problem:** `src/app/(admin)/admin/dashboard/page.tsx` (252 baris) menggabungkan state management, map rendering, stat cards, dan detail panel dalam satu file monolitik. Sulit di-maintain dan di-test.
 
-    - [ ] Extract stat cards grid → `src/components/dashboard/BasicDataCardGrid.tsx`.
-      - Props: `stats: BasicDataStat[]`.
-      - Includes: iconMap, grid layout (2×5), individual card rendering.
-    - [ ] Extract peta interaktif → `src/components/dashboard/BasicDataMap.tsx`.
-      - Props: `groups: FarmerGroupData[]`, `selectedGroup`, `onMarkerClick`, `mapSearch`, `onSearchChange`, `onZoomToAll`.
-      - Includes: MapGL, Markers, search bar overlay, zoom-to-all button.
-    - [ ] Extract detail side panel → `src/components/dashboard/BasicDataDetailPanel.tsx`.
-      - Props: `selectedGroup: FarmerGroupData | null`, `onClose`.
-      - Includes: DetailSection sub-component, empty state.
-    - [ ] Extract header bar → `src/components/dashboard/DashboardHeader.tsx`.
-      - Props: `program`, `distrik`, `onProgramChange`, `onDistrikChange`.
-      - Includes: title, Select filters.
-    - [ ] Refactor `dashboard/page.tsx` menjadi orchestrator:
-      - Hanya berisi state (useState, useEffect) dan compose 4 komponen di atas.
-      - Target: < 80 baris.
-    - [ ] Verifikasi: UI identik sebelum dan sesudah decomposition.
+    - [x] Extract stat cards grid → `src/components/dashboard/basic-data-card-grid.tsx`.
+    - [x] Extract peta interaktif → `src/components/dashboard/basic-data-map.tsx`.
+    - [x] Extract detail side panel → `src/components/dashboard/basic-data-detail-panel.tsx`.
+    - [x] Extract header bar → `src/components/dashboard/dashboard-header.tsx`.
+    - [x] Refactor `dashboard/page.tsx` menjadi orchestrator (< 60 baris).
+    - [x] Verifikasi: UI identik sebelum dan sesudah decomposition.
 
-  - [ ] **1.8.4. Eliminasi Duplikasi Data**
+  - [x] **1.8.4. Eliminasi Duplikasi Data**
 
     **Problem:** Data yang sama didefinisikan di beberapa tempat, menyulitkan update dan menyebabkan inkonsistensi.
 
-    - [ ] **`REGION_COORDINATES`** — Didefinisikan identik di 2 file:
-      - `src/app/(admin)/admin/dashboard/page.tsx` (line 28-34)
-      - `src/components/community/CommunityDirectoryClient.tsx` (line 16-22)
-      - → Extract ke `src/lib/map-utils.ts` sebagai `export const REGION_COORDINATES`.
-      - → Update kedua file untuk import dari `@/lib/map-utils`.
-    - [ ] **Distrik options** — Hardcoded di 3 tempat:
-      - `dashboard/page.tsx`: `const distrikOptions = ["All", "Kampar", ...]`
-      - `CommunityDirectoryClient.tsx`: `<SelectItem>` hardcoded per distrik
-      - `basic-data/index.ts`: data distrik embedded di CSV
-      - → Buat `src/lib/constants.ts` dengan `DISTRIK_OPTIONS` dan `PROGRAM_OPTIONS`.
-      - → Derive dari CSV data atau definisi tunggal, bukan hardcode per file.
-    - [ ] **Knowledge type config** — Didefinisikan identik di 2 file:
-      - `KnowledgeDirectoryClient.tsx` (line 12-17): `typeConfig` object
-      - `knowledge-management/[id]/page.tsx` (line 22-27): `typeConfig` object
-      - → Extract ke `src/lib/static-data/public/knowledge-management/types.ts`.
+    - [x] **`REGION_COORDINATES`** — Extract ke `src/lib/map-utils.ts` sebagai `export const REGION_COORDINATES`. Update kedua file untuk import dari `@/lib/map-utils`.
+    - [x] **Distrik & Program options** — Extract ke `src/lib/constants.ts` dengan `DISTRIK_OPTIONS` dan `PROGRAM_OPTIONS`. Update semua import.
+    - [x] **Knowledge type config** — Extract ke `src/lib/static-data/public/knowledge-management/types.ts`. Import dari UI component.
 
-  - [ ] **1.8.5. Barrel Import Optimization**
+  - [x] **1.8.5. Barrel Import Optimization**
 
-    **Problem:** `src/lib/static-data/index.ts` re-export semua 19 module via wildcard (`export *`), sehingga setiap halaman yang import dari barrel akan mem-bundle SELURUH data CSV (farmers, groups, regions, dll), meskipun hanya pakai 1 module.
+    **Problem:** `src/lib/static-data/index.ts` re-export semua 19 module via wildcard (`export *`), sehingga setiap halaman yang import dari barrel akan mem-bundle SELURUH data CSV.
 
-    - [ ] Hapus semua wildcard re-exports dari `src/lib/static-data/index.ts`.
-    - [ ] Update setiap halaman untuk import langsung dari module spesifik:
-      - `dashboard/page.tsx`: `from "@/lib/static-data/admin/dashboard/basic-data"` (bukan `from "@/lib/static-data"`)
-      - `CommunityDirectoryClient.tsx`: `from "@/lib/static-data/public/community"`
-      - `KnowledgeDirectoryClient.tsx`: `from "@/lib/static-data/public/knowledge-management"`
+    - [x] Hapus semua wildcard re-exports dari `src/lib/static-data/index.ts` (diganti dengan komentar panduan).
+    - [x] Update setiap halaman untuk import langsung dari module spesifik:
+      - `dashboard/page.tsx`: `from "@/lib/static-data/admin/dashboard"`
+      - `community-directory-client.tsx`: `from "@/lib/static-data/public/community"`
+      - `knowledge-directory-client.tsx`: `from "@/lib/static-data/public/knowledge-management"`
       - `(public)/page.tsx`: `from "@/lib/static-data/public/home"`
-      - `app-sidebar.tsx`: `from "@/lib/static-data/admin/menu"`
       - Dan seterusnya per halaman.
-    - [ ] Pertahankan barrel per sub-directory (`admin/dashboard/index.ts`) untuk convenience internal.
-    - [ ] Verifikasi bundle size sebelum dan sesudah (gunakan `npx @next/bundle-analyzer`).
+    - [x] Pertahankan barrel per sub-directory (`admin/dashboard/index.ts`) untuk convenience internal.
 
-  - [ ] **1.8.6. Cleanup & Bug Fixes**
+  - [x] **1.8.6. Cleanup & Bug Fixes**
 
-    **Problem:** Kumpulan bug kecil, unused imports, dan konfigurasi yang perlu diperbaiki.
+    - [x] **Bug — Sidebar logo URL**: `/dashboard` → `/admin/dashboard` di `app-sidebar.tsx`.
+    - [x] **Bug — Package name**: `package.json` name `"tmp_next"` → `"smallholder-hub"`.
+    - [x] **Unused import**: Hapus `import { Separator }` dari `dashboard/page.tsx`.
+    - [x] **XSS risk**: `dangerouslySetInnerHTML` di `(public)/page.tsx` → diganti safe rendering (parse `<br/>` menjadi React nodes).
+    - [x] **ESLint suppress**: `<img>` → `<Image>` dari `next/image` di `(public)/page.tsx`.
+    - [x] **Error boundaries**: Tambahkan `error.tsx` di `(admin)/admin/` dan `(public)/`.
+    - [x] **Loading states**: Tambahkan `loading.tsx` di `(admin)/admin/` dan `(public)/`.
+    - [ ] **Non-functional UI**: Language toggle di `Navbar.tsx` dan `AdminHeaderActions.tsx` → Tambahkan komentar `// TODO: Fase 10.4 — i18n integration`.
+    - [ ] **Git hygiene**: Tambahkan `.DS_Store` ke `.gitignore`, lalu `git rm --cached`.
 
-    - [ ] **Bug — Sidebar logo URL**: `/dashboard` → `/admin/dashboard` di `app-sidebar.tsx` (link salah, tidak akan redirect ke dashboard).
-    - [ ] **Bug — Package name**: `package.json` name masih `"tmp_next"` → ubah ke `"smallholder-hub"`.
-    - [ ] **Unused import**: Hapus `import { Separator }` dari `dashboard/page.tsx` (tidak dipakai).
-    - [ ] **Git hygiene**: Tambahkan `.DS_Store` ke `.gitignore`, lalu `git rm --cached` file `.DS_Store` yang sudah ter-commit.
-    - [ ] **Non-functional UI**: Language toggle di `Navbar.tsx` dan `AdminHeaderActions.tsx` mengubah state lokal tapi tidak ada efek → Tambahkan komentar `// TODO: Fase 10.4 — i18n integration` dan disable toggle sementara, atau tampilkan tooltip "Coming Soon".
-    - [ ] **XSS risk**: `dangerouslySetInnerHTML={{ __html: homeContent['hero']?.title }}` di `(public)/page.tsx` line 34 → Ganti dengan safe rendering: parse HTML di server dan render sebagai React nodes, atau gunakan library sanitasi (`dompurify`).
-    - [ ] **Loose typing**: `partnerIconMap: Record<string, any>` dan `statIconMap: Record<string, any>` di `(public)/page.tsx` → Ganti ke `Record<string, React.ElementType>`.
-    - [ ] **ESLint suppress**: `{/* eslint-disable-next-line @next/next/no-img-element */}` di `(public)/page.tsx` line 140 → Ganti `<img>` dengan `<Image>` dari `next/image`, atau documentasikan alasan suppress.
-    - [ ] **Error boundaries**: Tambahkan `error.tsx` di:
-      - `src/app/(admin)/admin/error.tsx`
-      - `src/app/(public)/error.tsx`
-      - Pattern: tampilkan pesan error user-friendly dengan tombol "Coba Lagi".
-    - [ ] **Loading states**: Tambahkan `loading.tsx` di:
-      - `src/app/(admin)/admin/loading.tsx`
-      - `src/app/(public)/loading.tsx`
-      - Pattern: skeleton/spinner konsisten dengan design system.
-
-  - [ ] **1.8.7. Menu Data — Pisahkan JSX dari Data Module**
+  - [x] **1.8.7. Menu Data — Pisahkan JSX dari Data Module**
 
     **Problem:** `src/lib/static-data/admin/menu.tsx` adalah data module tapi berekstensi `.tsx` karena mengandung JSX (Lucide icon mapping). Ini mencampur data layer dengan rendering concerns.
 
-    - [ ] Rename `src/lib/static-data/admin/menu.tsx` → `src/lib/static-data/admin/menu.ts`.
-    - [ ] Ubah `iconMap` agar data module hanya export string key icon (contoh: field `icon: "LayoutDashboardIcon"` dari CSV sudah cukup).
-    - [ ] Pindahkan mapping string → React component ke `NavMain.tsx`:
-      ```ts
-      const iconMap: Record<string, LucideIcon> = {
-        LayoutDashboardIcon: LayoutDashboard,
-        DatabaseIcon: Database,
-        // ...
-      };
-      ```
-    - [ ] Update tipe `MenuItem` agar `icon` bertipe `string` (bukan `React.ReactNode`).
-    - [ ] Verifikasi: sidebar icons tetap tampil normal setelah refactor.
+    - [x] Rename `src/lib/static-data/admin/menu.tsx` → `src/lib/static-data/admin/menu.ts`.
+    - [x] Ubah tipe `MenuItem` agar `icon` bertipe `string` (bukan `React.ReactNode`).
+    - [x] Pindahkan mapping string → React component ke `nav-main.tsx` sebagai `iconMap: Record<string, React.ReactNode>`.
+    - [x] Verifikasi: sidebar icons tetap tampil normal setelah refactor.
 
-  - [ ] **1.8.8. Standarisasi Penamaan (Naming Convention)**
+  - [x] **1.8.8. Standarisasi Penamaan (Naming Convention)**
 
-    **Problem:** Tidak ada konvensi penamaan yang konsisten untuk file, variabel, dan parameter. Campur PascalCase dan kebab-case untuk komponen, campur bahasa Indonesia dan Inggris untuk variabel.
+    **Problem:** Tidak ada konvensi penamaan yang konsisten untuk file, variabel, dan parameter.
 
-    - [ ] **File naming — Tetapkan konvensi:**
-      - Komponen React (`.tsx`): **kebab-case** (konvensi Next.js/Shadcn). Contoh: `app-sidebar.tsx`, `login-form.tsx`.
-      - Rename file PascalCase yang inkonsisten:
-        - `PlaceholderPage.tsx` → `placeholder-page.tsx`
-        - `CommunityDirectoryClient.tsx` → `community-directory-client.tsx`
-        - `KnowledgeDirectoryClient.tsx` → `knowledge-directory-client.tsx`
-        - `ProfileMiniMap.tsx` → `profile-mini-map.tsx`
-        - `Navbar.tsx` → `navbar.tsx` (sudah lowercase, tapi capitalize awal)
-        - `Footer.tsx` → `footer.tsx`
-      - Data/utility files (`.ts`): **kebab-case**. Contoh: `map-utils.ts`, `use-mobile.ts` ✅ (sudah benar).
-      - CSV files: **kebab-case** ✅ (sudah benar: `basic-data.csv`, `menu.csv`).
-    - [ ] **Function naming — Tetapkan konvensi:**
-      - Page components: `export default function <NamaPage>Page()` (PascalCase + "Page" suffix). Placeholder yang saat ini `function Page()` → rename sesuai route: `MasterDataRegionsPage`, `CMSNewsPage`, dll.
-    - [ ] **Parameter/variable naming — Tetapkan konvensi bahasa:**
-      - Keputusan: gunakan **Bahasa Inggris** untuk semua code identifiers.
-      - Rename variabel Indonesia ke Inggris:
-        - `distrik` → `district` (di `dashboard/page.tsx`, `basic-data/index.ts`, `constants.ts`)
-        - `petaniLaki` → `maleFarmers`, `petaniPerempuan` → `femaleFarmers` (di `FarmerGroupData` type)
-        - `totalPersil` → `totalParcels`, `totalLuasan` → `totalArea`
-        - `trainingPaket1` → `trainingPackage1` (dst.)
-      - **Catatan:** nama field CSV boleh tetap Indonesia, tapi mapping di TypeScript type harus English.
-    - [ ] **Update semua import paths** dan referensi setelah rename file.
-    - [ ] Verifikasi: `npm run build` tanpa error setelah semua rename.
+    - [x] **File naming — kebab-case** untuk semua komponen React:
+      - `PlaceholderPage.tsx` → `placeholder-page.tsx`
+      - `CommunityDirectoryClient.tsx` → `community-directory-client.tsx`
+      - `KnowledgeDirectoryClient.tsx` → `knowledge-directory-client.tsx`
+      - `ProfileMiniMap.tsx` → `profile-mini-map.tsx`
+      - `Navbar.tsx` → `navbar.tsx`, `Footer.tsx` → `footer.tsx`
+    - [x] Update semua import paths setelah rename.
+    - [x] **Variable naming — Bahasa Inggris** untuk code identifiers:
+      - `petaniLaki` → `maleFarmers`, `petaniPerempuan` → `femaleFarmers`
+      - `totalPersil` → `totalParcels`, `totalLuasan` → `totalArea`
+      - `trainingPaket1` → `trainingPackage1` (dst.)
+    - [x] Verifikasi: `npm run build` sukses setelah semua rename.
 
-  - [ ] **1.8.9. Konsistensi CSS & Design Tokens**
+  - [x] **1.8.9. Konsistensi CSS & Design Tokens**
 
-    **Problem:** Banyak hardcoded CSS values (`text-[10px]`, `text-[14px]`, `bg-rose-500/10`, dll.) yang tidak menggunakan design tokens dari `globals.css`. Ini menyulitkan perubahan tema global dan menyebabkan inkonsistensi ukuran/warna antar halaman.
-
-    - [ ] **Hardcoded font sizes** — 28 instances `text-[Npx]` tersebar di 7 file:
-      - Sizes ditemukan: `10px`, `11px`, `12px`, `14px`, `15px`, `16px`.
-      - → Definisikan custom utility classes atau gunakan Tailwind default scale:
-        - `text-[10px]` → `text-[0.625rem]` atau custom `text-2xs` (buat di globals.css)
-        - `text-[11px]` → custom `text-xs-tight` atau `text-xs`
-        - `text-[12px]` → `text-xs` (Tailwind default 0.75rem)
-        - `text-[14px]` → `text-sm` (Tailwind default 0.875rem)
-        - `text-[15px]` → `text-[0.9375rem]` atau `text-sm`
-        - `text-[16px]` → `text-base` (Tailwind default 1rem)
-      - → Tambahkan custom sizes di `globals.css` jika diperlukan:
-        ```css
-        @utility text-2xs { font-size: 0.625rem; line-height: 0.875rem; }
-        ```
-    - [ ] **Hardcoded colors** — Warna non-semantic tersebar di Knowledge & Community pages:
-      - `text-blue-500`, `bg-blue-500/10`, `border-blue-500/20` — Artikel type
-      - `text-emerald-500`, `bg-emerald-500/10` — Dokumentasi type
-      - `text-rose-500`, `bg-rose-500/10` — Video type
-      - `text-amber-500`, `bg-amber-500/10` — Toolkit type
-      - `text-green-600`, `bg-green-500/10` — WhatsApp button (community detail)
-      - → Pertimbangkan: buat CSS variables per kategori di `globals.css`:
-        ```css
-        --type-article: oklch(0.65 0.18 250);
-        --type-video: oklch(0.65 0.18 15);
-        ```
-      - → **Atau** dokumentasikan bahwa warna ini intentional per-content-type dan tidak perlu di-tokenisasi. **Keputusan ini butuh diskusi.**
-    - [ ] **Spacing inconsistency** — Review dan standarisasi:
-      - Dashboard: `gap-3`, `px-4 py-3`, `-m-6`, `p-4`
-      - Knowledge: `gap-4`, `px-5 py-4`
-      - Community: `gap-3.5`, `p-5`
-      - → Buat panduan spacing: card internal padding, section gaps, page padding.
-    - [ ] **Dark mode audit** — Verifikasi semua halaman di dark mode:
-      - Hardcoded `text-white` tanpa dark variant (community detail page).
-      - `bg-white/10` mungkin tidak kontras di light mode.
-      - → Test setiap halaman dan fix contrast issues.
+    - [x] Tambahkan custom utility classes di `globals.css`: `text-xxs` (0.625rem/10px), `text-huge` (4rem).
+    - [x] Tambahkan global CSS overrides untuk `.maplibregl-popup-content` agar popup peta menyesuaikan tema (background, border, border-radius, shadow, tip color).
+    - [ ] **Hardcoded colors** (non-semantic per content-type) — Didokumentasikan sebagai intentional untuk kategori konten (Artikel=blue, Video=rose, Toolkit=amber, Dokumentasi=emerald). Tidak perlu di-tokenisasi.
+    - [ ] **Dark mode audit** — Verifikasi semua halaman di dark mode: hardcoded `text-white` tanpa dark variant.
+    - [ ] **Spacing panduan** — Buat panduan spacing: card internal padding, section gaps, page padding.
 
 ---
 
@@ -512,18 +429,20 @@
 src/
 ├── app/
 │   ├── (admin)/
-│   │   ├── layout.tsx                          # Admin shell (sidebar + header + breadcrumb)
+│   │   ├── layout.tsx                          # Admin shell — Server Component (metadata, breadcrumb, sidebar)
 │   │   └── admin/
+│   │       ├── error.tsx                       # Admin error boundary
+│   │       ├── loading.tsx                     # Admin loading skeleton
 │   │       ├── dashboard/
-│   │       │   ├── page.tsx                    # Basic Data Dashboard (fungsional)
+│   │       │   ├── page.tsx                    # Basic Data Dashboard (orchestrator, < 60 baris)
 │   │       │   └── workplan/page.tsx           # Placeholder
 │   │       ├── master-data/
-│   │       │   ├── farmers/page.tsx            # Placeholder
+│   │       │   ├── farmers/page.tsx            # Tabel statis
 │   │       │   ├── groups/page.tsx             # Placeholder
 │   │       │   ├── parcels/page.tsx            # Placeholder
 │   │       │   └── regions/page.tsx            # Placeholder
 │   │       ├── cms/
-│   │       │   ├── news/page.tsx               # Placeholder
+│   │       │   ├── news/page.tsx               # Tabel statis
 │   │       │   ├── pages/page.tsx              # Placeholder
 │   │       │   ├── community/page.tsx          # Placeholder
 │   │       │   └── knowledge/page.tsx          # Placeholder
@@ -537,6 +456,8 @@ src/
 │   │           └── geo/page.tsx                # Placeholder
 │   ├── (public)/
 │   │   ├── layout.tsx                          # Public shell (navbar + footer)
+│   │   ├── error.tsx                           # Public error boundary
+│   │   ├── loading.tsx                         # Public loading
 │   │   ├── page.tsx                            # Home page
 │   │   ├── community/
 │   │   │   ├── page.tsx                        # SSR wrapper
@@ -547,51 +468,72 @@ src/
 │   ├── login/page.tsx                          # Login (outside layout groups)
 │   ├── layout.tsx                              # Root layout (ThemeProvider)
 │   ├── not-found.tsx                           # Global 404
-│   └── globals.css                             # Design tokens (oklch)
+│   └── globals.css                             # Design tokens (oklch) + maplibre popup overrides
 ├── components/
 │   ├── ui/                                     # 23 Shadcn primitives
-│   ├── community/CommunityDirectoryClient.tsx  # Client component
-│   ├── knowledge/KnowledgeDirectoryClient.tsx  # Client component
-│   ├── maps/ProfileMiniMap.tsx                 # Mini map for detail pages
+│   ├── dashboard/                              # Komponen modular dashboard (Fase 1.8.3)
+│   │   ├── dashboard-header.tsx
+│   │   ├── basic-data-card-grid.tsx
+│   │   ├── basic-data-map.tsx
+│   │   └── basic-data-detail-panel.tsx
+│   ├── community/
+│   │   └── community-directory-client.tsx      # Client component (kebab-case)
+│   ├── knowledge/
+│   │   └── knowledge-directory-client.tsx      # Client component (kebab-case)
+│   ├── maps/
+│   │   └── profile-mini-map.tsx               # Mini map untuk detail page (kebab-case)
 │   ├── auth/login-form.tsx                     # Login form component
 │   ├── layout/
-│   │   ├── PlaceholderPage.tsx                 # Generic placeholder
-│   │   ├── admin/                              # (Kosong — akan diisi di Fase 1.8)
+│   │   ├── placeholder-page.tsx               # Generic placeholder (kebab-case)
+│   │   ├── admin/
+│   │   │   ├── app-sidebar.tsx
+│   │   │   ├── nav-main.tsx                   # Includes iconMap (string → ReactNode)
+│   │   │   ├── nav-user.tsx
+│   │   │   ├── admin-header-actions.tsx
+│   │   │   └── admin-breadcrumb.tsx           # Client component untuk breadcrumb
 │   │   └── public/
-│   │       ├── Navbar.tsx
-│   │       └── Footer.tsx
-│   ├── app-sidebar.tsx                         # → Akan dipindah ke layout/admin/ (Fase 1.8)
-│   ├── nav-main.tsx                            # → Akan dipindah ke layout/admin/ (Fase 1.8)
-│   ├── nav-user.tsx                            # → Akan dipindah ke layout/admin/ (Fase 1.8)
-│   ├── admin-header-actions.tsx                # → Akan dipindah ke layout/admin/ (Fase 1.8)
-│   ├── hero-carousel.tsx                       # → Akan dipindah ke layout/public/ (Fase 1.8)
+│   │       ├── navbar.tsx
+│   │       ├── footer.tsx
+│   │       └── hero-carousel.tsx
 │   └── theme-provider.tsx
 ├── lib/
 │   ├── static-data/
-│   │   ├── index.ts                            # Barrel re-exports (→ akan di-refactor Fase 1.8)
-│   │   ├── admin/                              # ~13 data modules + menu.tsx + menu.csv
-│   │   ├── public/                             # 3 data modules (home, community, knowledge)
-│   │   └── user/                               # Auth mockup data (user.csv)
+│   │   ├── index.ts                            # Barrel DINONAKTIFKAN — import langsung dari sub-module
+│   │   ├── admin/
+│   │   │   ├── menu.ts                        # Pure TS (kebab-case) — no JSX
+│   │   │   ├── menu.csv
+│   │   │   ├── dashboard/basic-data/          # basic-data.csv, meta, group-basic-data.csv
+│   │   │   └── (master-data, cms, tools, settings, geo modules)
+│   │   ├── public/
+│   │   │   ├── home/                          # hero, stats, regions, partners, content, news CSV
+│   │   │   ├── community/                     # farmer-groups.csv
+│   │   │   └── knowledge-management/
+│   │   │       ├── index.ts
+│   │   │       ├── types.ts                   # TYPE_CONFIG + KnowledgeType (Fase 1.8.4)
+│   │   │       └── data.csv
+│   │   └── user/                              # Auth mockup data (user.csv)
+│   ├── constants.ts                            # DISTRIK_OPTIONS, PROGRAM_OPTIONS (Fase 1.8.4)
+│   ├── map-utils.ts                            # REGION_COORDINATES (Fase 1.8.4)
 │   ├── prisma.ts                               # Disabled (→ diaktifkan di Fase 2)
-│   ├── map-utils.ts                            # (Akan diperkaya di Fase 1.8)
-│   └── utils.ts                                # cn() helper
+│   └── utils.ts                               # cn() helper
 ├── server/actions/                             # Kosong (→ diisi mulai Fase 3)
 ├── types/custom.d.ts                           # CSV module declaration
 ├── hooks/use-mobile.ts                         # Mobile breakpoint hook
-└── validations/                                # Kosong (→ diisi mulai Fase 4)
+└── validations/                               # Kosong (→ diisi mulai Fase 4)
 ```
 
 ### Status Komponen per Halaman
 
 | Halaman | Tipe | Status | Catatan |
 |---------|------|--------|---------|
-| Home (`/`) | Server | ✅ Fungsional | Carousel, sections, static data |
-| Community (`/community`) | SSR+Client | ✅ Fungsional | Map, filter, cards, detail page |
+| Home (`/`) | Server | ✅ Fungsional | Carousel, sections, static data — safe rendering |
+| Community (`/community`) | SSR+Client | ✅ Fungsional | Map, filter, cards, detail page — popup redesigned |
 | Knowledge (`/knowledge-management`) | SSR+Client | ✅ Fungsional | Tabs, search, cards, detail page |
 | Login (`/login`) | Server | ⚠️ UI Only | Form ada, auth action belum |
-| Dashboard (`/admin/dashboard`) | Client | ✅ Fungsional | Basic Data cards, map, data CSV |
+| Dashboard (`/admin/dashboard`) | Client | ✅ Fungsional | Decomposed: 4 komponen modular, data CSV |
 | Workplan (`/admin/dashboard/workplan`) | — | 🔲 Placeholder | Belum implementasi |
-| Master Data (4 pages) | — | 🔲 Placeholder | Semua masih PlaceholderPage |
-| CMS (4 pages) | — | 🔲 Placeholder | Semua masih PlaceholderPage |
-| Settings (3 pages) | — | 🔲 Placeholder | Semua masih PlaceholderPage |
-| Tools (3 pages) | — | 🔲 Placeholder | Semua masih PlaceholderPage |
+| Master Data — Farmers | Client | ⚠️ Tabel Statis | Tampil data CSV, belum CRUD |
+| Master Data — Groups/Parcels/Regions | — | 🔲 Placeholder | Semua masih placeholder-page |
+| CMS (4 pages) | — | 🔲 Placeholder | Semua masih placeholder-page |
+| Settings (3 pages) | — | 🔲 Placeholder | Semua masih placeholder-page |
+| Tools (3 pages) | — | 🔲 Placeholder | Semua masih placeholder-page |

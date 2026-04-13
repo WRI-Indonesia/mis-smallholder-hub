@@ -1,5 +1,6 @@
 // Knowledge Management static data — NO JSX/ReactNode, pure TypeScript
-export type KnowledgeType = "Artikel" | "Dokumentasi Kegiatan" | "Video" | "Toolkit Training";
+export type { KnowledgeType } from "./types";
+import { KnowledgeType } from "./types";
 
 export interface KnowledgeModule {
   id: string;
