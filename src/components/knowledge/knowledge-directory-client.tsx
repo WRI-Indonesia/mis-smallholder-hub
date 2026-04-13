@@ -6,15 +6,10 @@ import Image from "next/image"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Search, FileText, BookOpen, Video, Wrench, Clock, User, Tag, ChevronRight, Play } from "lucide-react"
-import { KnowledgeModule, KnowledgeType } from "@/lib/static-data/public/knowledge-management"
+import { KnowledgeModule } from "@/lib/static-data/public/knowledge-management"
+import { KnowledgeType, TYPE_CONFIG } from "@/lib/static-data/public/knowledge-management/types"
 
-// ── Type config ─────────────────────────────────────────────
-const TYPE_CONFIG: Record<KnowledgeType, { icon: React.ElementType; color: string; bg: string; border: string }> = {
-  "Artikel":               { icon: FileText,  color: "text-blue-500",    bg: "bg-blue-500/10",    border: "border-blue-500/20" },
-  "Dokumentasi Kegiatan":  { icon: BookOpen,  color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-  "Video":                 { icon: Play,      color: "text-rose-500",    bg: "bg-rose-500/10",    border: "border-rose-500/20" },
-  "Toolkit Training":      { icon: Wrench,    color: "text-amber-500",   bg: "bg-amber-500/10",   border: "border-amber-500/20" },
-}
+
 
 const TABS: { label: string; value: string }[] = [
   { label: "Semua",               value: "All" },

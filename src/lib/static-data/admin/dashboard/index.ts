@@ -1,2 +1,2 @@
 // Dashboard data barrel file
-export * from "./kpi";
+export * from "./basic-data";

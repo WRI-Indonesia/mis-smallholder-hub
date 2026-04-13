@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/layout/admin/nav-main"
+import { NavUser } from "@/components/layout/admin/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -45,7 +45,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<a href="/dashboard" />}>
+            <SidebarMenuButton size="lg" render={<a href="/admin/dashboard" />}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white text-[#166534] shadow-sm ring-1 ring-border/20">
                   <Leaf className="size-5" strokeWidth={2.5} />
                 </div>

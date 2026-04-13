@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { HeroImage } from "@/lib/static-data"
+import { HeroImage } from "@/lib/static-data/public/home"
 
 export function HeroCarousel({ images }: { images: HeroImage[] }) {
   const [currentIndex, setCurrentIndex] = useState(0)

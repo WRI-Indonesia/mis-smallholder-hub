@@ -1,4 +1,4 @@
-import PlaceholderPage from "@/components/layout/PlaceholderPage";
+import PlaceholderPage from "@/components/layout/placeholder-page";
 
 export default function DashboardWorkplanPage() {
   return (
