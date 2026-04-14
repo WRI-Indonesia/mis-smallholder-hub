@@ -9,6 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: MAIN_ENV_MIS_SMALLHOLDER
+    timeout-minutes: 20
 
     steps:
       - name: Deploy over SSH
@@ -18,6 +19,8 @@ jobs:
           username: ${{ secrets.MAIN_SSH_USER }}
           key: ${{ secrets.MAIN_SSH_PRIVATE_KEY }}
           port: ${{ secrets.MAIN_SSH_PORT }}
+          timeout: 60s
+          command_timeout: 45m
           script: |
             set -e
 
