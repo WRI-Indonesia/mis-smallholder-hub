@@ -279,6 +279,18 @@
   - [x] Phase 2.3: `maintenance-types`, `certification-types`, `training-packages`, `audit-types`.
   - [x] Semua seeder menggunakan `upsert` (idempotent), password di-hash dengan bcrypt.
 
+- [ ] **2.4. Test Integrasi CRUD User (`/admin/settings/users`)**
+
+  Validasi bahwa Prisma Client dapat membaca & menulis ke database sebelum melanjutkan ke Fase 3 (auth). Gunakan halaman `/admin/settings/users` sebagai sandbox CRUD pertama.
+
+  - [ ] Upgrade `/src/app/(admin)/admin/settings/users/page.tsx` dari `PlaceholderPage` ke halaman fungsional.
+  - [ ] **Read**: Fetch daftar user dari DB via `prisma.user.findMany()` — render sebagai tabel (Nama, Email, Role, Status).
+  - [ ] **Create**: Form modal tambah user baru (Nama, Email, Password, Role, isActive) dengan Server Action `createUser`.
+  - [ ] **Update**: Inline edit Role & isActive status via Server Action `updateUser`.
+  - [ ] **Delete**: Tombol hapus dengan konfirmasi dialog via Server Action `deleteUser`.
+  - [ ] Password hashing: gunakan `bcrypt.hashSync` di Server Action sebelum `prisma.user.create`.
+  - [ ] Validasi form dengan Zod schema di `src/validations/user.schema.ts`.
+
 ## FASE 3: AUTENTIKASI & RBAC FOR MENU & DATA
 
 - [ ] **3.1. Konfigurasi NextAuth.js (Auth.js)**
