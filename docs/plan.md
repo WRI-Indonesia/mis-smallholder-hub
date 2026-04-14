@@ -12,7 +12,7 @@
 | **Proyek** | Smallholder HUB — Management Information System |
 | **Stack** | Next.js 16 · React 19 · Tailwind 4 · Shadcn UI · Prisma · MapLibre |
 | **Repository** | `WRI-Indonesia/mis-smallholder-hub` |
-| **Terakhir Diupdate** | 2026-04-13 |
+| **Terakhir Diupdate** | 2026-04-14 |
 | **Diupdate Oleh** | Sofyan (via AI-assisted code review) |
 
 ### 📊 Progress Overview
@@ -20,11 +20,11 @@
 | Fase | Deskripsi | Status |
 |------|-----------|--------|
 | **Fase 1** | Initialization & UI Statis | ✅ Selesai (1.1–1.8) |
-| **Fase 2** | Database Schema & Migrations | 🔲 Belum dimulai |
+| **Fase 2** | Database Schema & Migrations | ✅ Selesai |
 | **Fase 3** | Autentikasi & RBAC | 🔲 Belum dimulai (UI login tersedia) |
 | **Fase 4** | Master Data CRUD | 🔲 Belum dimulai |
 | **Fase 5** | Core Entity (Petani & Lahan) | 🔲 Belum dimulai |
-| **Fase 6** | MVP Modules (Dashboard, Training, BMP) | 🔲 Belum dimulai (Basic Data UI tersedia) |
+| **Fase 6** | MVP Modules (Dashboard, Training, Agronomy) | 🔲 Belum dimulai (Basic Data UI tersedia) |
 | **Fase 7–10** | Pasca-MVP & Integrasi | 🔲 Belum dimulai |
 | **Fase 11–12** | Testing & Deployment | 🔲 Belum dimulai |
 
@@ -32,6 +32,7 @@
 
 | Tanggal | Oleh | Perubahan |
 |---------|------|-----------|
+| 2026-04-14 | Sofyan | Fase 2 selesai — Prisma 7 schema modular (`prisma/schema/`), 3 migrasi PostgreSQL + PostGIS, sistem seeding modular (`prisma/seeds/seed-*.ts` + `data/*.csv`), driver adapter `@prisma/adapter-pg`, audit & cleanup struktur folder dan naming conventions. |
 | 2026-04-13 | Sofyan | Fase 1.8 selesai — Admin Layout → Server Component, dashboard decomposition, barrel optimization, naming convention, menu refactor, error/loading boundaries, map popup redesign. |
 | 2026-03-30 | Sofyan | Code review menyeluruh. Tambah Fase 1.8 (refaktor arsitektur). Tambah Fase 11 (Testing) & 12 (DevOps). Sinkronisasi checkbox status dengan kondisi aktual kode. Update referensi folder & route path. |
 | 2026-03-28 | Sofyan | Modernisasi Basic Data Dashboard (compact grid, interactive map). Update data layer CSV. Perbaikan Home page sections. |
@@ -42,15 +43,14 @@
 
 **Terakhir diselesaikan:**
 - Fase 1.1–1.8 selesai — seluruh UI statis (public + admin) dengan data CSV, responsif mobile, dark/light mode, peta interaktif MapLibre.
-- Basic Data Dashboard fungsional penuh (stat cards, map markers, detail panel, filter multidimensi).
-- **Fase 1.8** selesai — Admin layout → Server Component, dashboard decomposition (4 komponen modular), barrel import optimization, naming convention (kebab-case, English identifiers), menu.tsx → menu.ts, error/loading boundaries, map popup redesign.
+- **Fase 2** selesai — Database schema modular Prisma 7 (9 file `.prisma` per domain), 3 migrasi PostgreSQL + PostGIS berhasil diterapkan, sistem seeding modular (12 pasang `seed-*.ts` + `data/*.csv`), `PrismaClient` dengan driver adapter `@prisma/adapter-pg`.
 
 **Selanjutnya dikerjakan:**
-- **Fase 2** — Database Schema & Migrations (Prisma + PostgreSQL + PostGIS).
+- **Fase 3** — Autentikasi & RBAC (NextAuth.js dengan database session).
 
 **Blocked / Dependency:**
-- Fase 2–6 membutuhkan PostgreSQL + PostGIS server dan Prisma schema setup.
-- Fase 3 (auth) membutuhkan Fase 2 (database) selesai terlebih dahulu.
+- Fase 3 (auth) membutuhkan Fase 2 (database) selesai — ✅ sudah terpenuhi.
+- Fase 4–6 membutuhkan Fase 3 (auth) selesai terlebih dahulu.
 
 ---
 
@@ -243,32 +243,53 @@
 
 ---
 
-## FASE 2: DATABASE SCHEMA & MIGRATIONS (`prisma/schema.prisma`)
+## FASE 2: DATABASE SCHEMA & MIGRATIONS
 
-- [ ] **2.0. Inisiasi Prisma**
-  - [ ] Jalankan `npx prisma init` untuk membuat folder `prisma/` dan `schema.prisma`.
-  - [ ] Konfigurasi `DATABASE_URL` di `.env` dengan PostgreSQL connection string.
-  - [ ] Aktifkan kembali `src/lib/prisma.ts` (hapus komentar, enable singleton client).
-- [ ] **2.1. Ekstensi PostGIS**
-  - [ ] Tambahkan perintah raw SQL di migrasi awal untuk PostgreSQL: `CREATE EXTENSION IF NOT EXISTS postgis;`
-- [ ] **2.2. Master Data Schema**
-  - [ ] `enum Role { SUPERADMIN, ADMIN_KOPERASI, FIELD_OFFICER, STAKEHOLDER }`
-  - [ ] Model `User` (id `cuid`, name `String`, email `String @unique`, password `String`, role `Role`, institutionId `String?`, isActive `Boolean`).
-  - [ ] Model `Region` (id `String`, name `String`, level `Int` (1-Prov, 2-Kab, 3-Kec, 4-Desa), parentId `String?`).
-  - [ ] Model `Institution` (id `cuid`, name `String`, type `String`, address `String`, regionId `String?`).
-- [ ] **2.3. Core Entities (Petani & Lahan)**
-  - [ ] Model `Farmer` (id `cuid`, nik `String @db.VarChar(16) @unique`, name `String`, gender `String`, dob `DateTime`, phone `String?`, address `String`, institutionId `String`, regionId `String`).
-  - [ ] Model `LandParcel` (id `cuid`, farmerId `String`, areaPolygon `Unsupported("geometry(Polygon, 4326)")` (atau JsonB simpan lintasan/GeoJSON), areaHectares `Float`, plantingYear `Int`, ownershipStatus `String`).
-- [ ] **2.4. Schema Module MVP (Training & BMP)**
-  - [ ] Model `Training` (id `cuid`, topic `String`, startDate `DateTime`, endDate `DateTime`, location `String`, tutor `String`).
-  - [ ] Model `TrainingAttendance` (id `cuid`, trainingId `String`, farmerId `String`, status `Boolean`).
-  - [ ] Model `BmpChecklist` (id `cuid`, category `String`, indicator `String`, description `String`).
-  - [ ] Model `BmpAssessment` (id `cuid`, landParcelId `String`, assessorId `String`, assessmentDate `DateTime`).
-  - [ ] Model `BmpScore` (id `cuid`, assessmentId `String`, checklistId `String`, score `Int`, notes `String?`).
-- [ ] **2.5. Eksekusi Migrasi & Seed**
-  - [ ] Jalankan `npx prisma migrate dev --name init_core`
-  - [ ] Buat script `/prisma/seed.ts` berisi `await prisma.user.create(...)` untuk SuperAdmin.
-  - [ ] Konfigurasi `package.json`: `"prisma": { "seed": "ts-node prisma/seed.ts" }`.
+> ✅ **Selesai** — Prisma 7, PostgreSQL + PostGIS, modular schema & seeding.
+
+- [x] **2.0. Inisiasi Prisma & Konfigurasi**
+  - [x] Jalankan `npx prisma init` → generate `prisma/` dan konfigurasi awal.
+  - [x] Konfigurasi `DATABASE_URL` di `.env` (PostgreSQL `localhost:1234`).
+  - [x] Aktifkan `src/lib/prisma.ts` — singleton client dengan `PrismaPg` driver adapter.
+  - [x] Install: `@prisma/adapter-pg`, `pg`, `@types/pg`, `tsx`.
+  - [x] Setup `prisma.config.ts` (Prisma 7): `schema: "prisma/schema"`, `seed: "tsx prisma/seed.ts"`.
+
+- [x] **2.1. Modular Schema (`prisma/schema/`)**
+  - [x] `_config.prisma` — generator, datasource db (PostgreSQL + PostGIS extension), enum `Role`.
+  - [x] `user.prisma` — Model `User` (Role: SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT).
+  - [x] `geography.prisma` — Model `Province`, `District` (kode wilayah pemerintah sebagai unique field).
+  - [x] `farmer-group.prisma` — Model `FarmerGroup`, `FarmerGroupType`, `FarmerGroupDetail`.
+  - [x] `farmer.prisma` — Model `Batch`, `Commodity`, `Farmer` (NIK unique), `LandParcel` (PostGIS polygon + centerPoint).
+  - [x] `agronomy.prisma` — Model `AgronomyProduction`, `AgronomyMaintenance`, `MaintenanceType`.
+  - [x] `training.prisma` — Model `TrainingPackage`, `TrainingActivity` (relasi `FarmerGroup`), `TrainingParticipant`, `TrainingEvidence`.
+  - [x] `certification.prisma` — Model `CertificationType`, `Certification` (relasi `FarmerGroup`), `AuditType`, `AuditActivity`, `AuditEvidence`.
+  - [x] `hse.prisma` — Model `HseWorker`, `HseDetail`.
+
+- [x] **2.2. Migrasi Database (3 tahap)**
+  - [x] `20260414032404_init_foundations` — User, Geography, FarmerGroup.
+  - [x] `20260414034201_add_core_entities` — Batch, Commodity, Farmer, LandParcel.
+  - [x] `20260414035352_add_activities_production` — Agronomy, Training, Certification, Audit, HSE.
+  - [x] `fix_missing_relations` — Tambah relasi `FarmerGroup` ke `Certification` & `TrainingActivity`.
+
+- [x] **2.3. Sistem Seeding Modular (`prisma/seeds/`)**
+  - [x] Struktur: `seed-[tabel].ts` + `data/[tabel].csv` (12 pasang file).
+  - [x] `prisma/seed.ts` — master orchestrator, urutan sesuai dependency FK.
+  - [x] Phase 2.1: `users`, `provinces`, `districts`.
+  - [x] Phase 2.2: `farmer-group-types`, `farmer-groups`, `batches`, `commodities`, `farmers`.
+  - [x] Phase 2.3: `maintenance-types`, `certification-types`, `training-packages`, `audit-types`.
+  - [x] Semua seeder menggunakan `upsert` (idempotent), password di-hash dengan bcrypt.
+
+- [ ] **2.4. Test Integrasi CRUD User (`/admin/settings/users`)**
+
+  Validasi bahwa Prisma Client dapat membaca & menulis ke database sebelum melanjutkan ke Fase 3 (auth). Gunakan halaman `/admin/settings/users` sebagai sandbox CRUD pertama.
+
+  - [ ] Upgrade `/src/app/(admin)/admin/settings/users/page.tsx` dari `PlaceholderPage` ke halaman fungsional.
+  - [ ] **Read**: Fetch daftar user dari DB via `prisma.user.findMany()` — render sebagai tabel (Nama, Email, Role, Status).
+  - [ ] **Create**: Form modal tambah user baru (Nama, Email, Password, Role, isActive) dengan Server Action `createUser`.
+  - [ ] **Update**: Inline edit Role & isActive status via Server Action `updateUser`.
+  - [ ] **Delete**: Tombol hapus dengan konfirmasi dialog via Server Action `deleteUser`.
+  - [ ] Password hashing: gunakan `bcrypt.hashSync` di Server Action sebelum `prisma.user.create`.
+  - [ ] Validasi form dengan Zod schema di `src/validations/user.schema.ts`.
 
 ## FASE 3: AUTENTIKASI & RBAC FOR MENU & DATA
 

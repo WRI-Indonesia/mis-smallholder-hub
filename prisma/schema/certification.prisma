@@ -1,0 +1,57 @@
+// certification.prisma — Certification, audit type, activity, and evidence models
+
+model CertificationType {
+  id             String          @id @default(cuid())
+  code           String          @unique
+  name           String
+  desc           String?
+  certifications Certification[]
+
+  @@map("ref-certification")
+}
+
+model Certification {
+  id                String            @id @default(cuid())
+  typeId            String            @map("ref_certification_id")
+  type              CertificationType @relation(fields: [typeId], references: [id])
+  farmerGroupId     String            @map("farmer_group_id")
+  farmerGroup       FarmerGroup       @relation(fields: [farmerGroupId], references: [id])
+  certificationDate DateTime          @map("certification_date")
+  audits            AuditActivity[]
+
+  @@map("tbl-certification")
+}
+
+model AuditType {
+  id         String          @id @default(cuid())
+  code       String          @unique
+  name       String
+  desc       String?
+  activities AuditActivity[]
+
+  @@map("ref-audit")
+}
+
+model AuditEvidence {
+  id         String          @id @default(cuid())
+  code       String?
+  name       String
+  type       String?
+  desc       String?
+  uri        String
+  activities AuditActivity[] @relation("AuditActivityEvidences")
+
+  @@map("ref-audit-evidence")
+}
+
+model AuditActivity {
+  id              String          @id @default(cuid())
+  certificationId String          @map("tbl_certification_id")
+  certification   Certification   @relation(fields: [certificationId], references: [id])
+  auditTypeId     String          @map("ref_audit_id")
+  auditType       AuditType       @relation(fields: [auditTypeId], references: [id])
+  auditDate       DateTime        @map("audit_date")
+  evidences       AuditEvidence[] @relation("AuditActivityEvidences")
+
+  @@map("tbl-audit-activity")
+}

@@ -1,0 +1,61 @@
+// farmer.prisma — Farmer, Batch, Commodity, and LandParcel models
+
+model Batch {
+  id      String   @id @default(cuid())
+  code    String   @unique
+  name    String
+  desc    String?
+  farmers Farmer[]
+
+  @@map("ref-batch")
+}
+
+model Commodity {
+  code    String       @id
+  name    String
+  desc    String?
+  parcels LandParcel[]
+
+  @@map("ref-commodity")
+}
+
+model Farmer {
+  id            String               @id @default(cuid())
+  farmerGroupId String               @map("farmer_group_id")
+  farmerGroup   FarmerGroup          @relation(fields: [farmerGroupId], references: [id])
+  batchId       String?              @map("batch_id")
+  batch         Batch?               @relation(fields: [batchId], references: [id])
+  wriFarmerId   String?              @map("wri_farmer_id")
+  uiFarmerId    String?              @map("ui_farmer_id")
+  name          String
+  nik           String               @unique @db.VarChar(16)
+  gender        String
+  birthdate     DateTime
+  status        String?
+  parcels       LandParcel[]
+  trainings     TrainingParticipant[]
+  hseWorkers    HseWorker[]
+
+  @@map("tbl-farmer")
+}
+
+model LandParcel {
+  id            String                @id @default(cuid())
+  farmerId      String                @map("farmer_id")
+  farmer        Farmer                @relation(fields: [farmerId], references: [id])
+  commodityCode String?               @map("commodity_code")
+  commodity     Commodity?            @relation(fields: [commodityCode], references: [code])
+  wriParcelId   String?               @map("wri_land_parcel_id")
+  parcelCode    String?               @map("parcel_code")
+  revision      Int                   @default(0)
+  polygon       Unsupported("geometry(Polygon, 4326)")?
+  centerPoint   Unsupported("geometry(Point, 4326)")?
+  polygonSizeHa Float?                @map("polygon_size_ha")
+  legalId       String?               @map("legal_id")
+  legalSizeHa   Float?                @map("legal_size_ha")
+  status        String?
+  productions   AgronomyProduction[]
+  maintenances  AgronomyMaintenance[]
+
+  @@map("tbl-land-parcel")
+}

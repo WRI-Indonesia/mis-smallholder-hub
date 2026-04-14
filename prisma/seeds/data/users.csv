@@ -1,0 +1,6 @@
+# DEV ONLY — DO NOT USE IN PRODUCTION. Passwords are hashed at seed time.
+id,name,email,password,role,isActive
+user-superadmin,Super Administrator,admin@wri.org,admin123,SUPERADMIN,true
+user-admin,Budi Santoso,admin@koperasi.id,koperasi123,ADMIN,true
+user-operator,Siti Aminah,siti@field.org,field123,OPERATOR,true
+user-management,Agus Susanto,agus@stakeholder.com,stake123,MANAGEMENT,true

@@ -1,0 +1,22 @@
+// hse.prisma — Health, Safety & Environment worker models
+
+model HseWorker {
+  id       String      @id @default(cuid())
+  farmerId String      @map("farmer_id")
+  farmer   Farmer      @relation(fields: [farmerId], references: [id])
+  name     String
+  nik      String?
+  details  HseDetail[]
+
+  @@map("tbl-hse-worker")
+}
+
+model HseDetail {
+  id       String    @id @default(cuid())
+  workerId String    @map("hse_worker_id")
+  worker   HseWorker @relation(fields: [workerId], references: [id])
+  date     DateTime?
+  note     String?
+
+  @@map("tbl-hse-detail")
+}

@@ -1,0 +1,5 @@
+id,districtId,code,abrv,name,locationLat,locationLong
+fg-001,dist-kampar,KT-KPR-001,SATRIA,Kelompok Tani Satria,0.3150,101.4648
+fg-002,dist-siak,KT-SIAK-001,MAJU,Kelompok Tani Maju Bersama,1.0256,102.0183
+fg-003,dist-rohul,KT-RHL-001,SEJAHTERA,Kelompok Tani Sejahtera,0.9195,100.3533
+fg-004,dist-pelalawan,KT-PLW-001,HARAPAN,Kelompok Tani Harapan Jaya,0.0076,102.1127
