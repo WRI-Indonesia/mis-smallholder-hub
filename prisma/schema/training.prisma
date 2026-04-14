@@ -1,0 +1,48 @@
+// training.prisma — Training package, activity, participant, and evidence models
+
+model TrainingPackage {
+  id         String             @id @default(cuid())
+  code       String             @unique
+  name       String
+  desc       String?
+  activities TrainingActivity[]
+
+  @@map("ref-training-package")
+}
+
+model TrainingEvidence {
+  id         String             @id @default(cuid())
+  code       String?
+  name       String
+  type       String?
+  desc       String?
+  uri        String
+  activities TrainingActivity[] @relation("ActivityEvidences")
+
+  @@map("ref-training-evidence")
+}
+
+model TrainingActivity {
+  id               String               @id @default(cuid())
+  packageId        String               @map("ref_training_package_id")
+  package          TrainingPackage      @relation(fields: [packageId], references: [id])
+  farmerGroupId    String?              @map("farmer_group_id")
+  farmerGroup      FarmerGroup?         @relation(fields: [farmerGroupId], references: [id])
+  location         String?
+  trainingDate     DateTime             @map("training_date")
+  totalParticipant Int                  @default(0) @map("total_participant")
+  participants     TrainingParticipant[]
+  evidences        TrainingEvidence[]   @relation("ActivityEvidences")
+
+  @@map("tbl-training-activity")
+}
+
+model TrainingParticipant {
+  id         String           @id @default(cuid())
+  activityId String           @map("training_activity_id")
+  activity   TrainingActivity @relation(fields: [activityId], references: [id])
+  farmerId   String           @map("farmer_id")
+  farmer     Farmer           @relation(fields: [farmerId], references: [id])
+
+  @@map("tbl-training-participant")
+}

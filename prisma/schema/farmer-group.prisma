@@ -1,0 +1,37 @@
+// farmer-group.prisma — Farmer group organisation models
+
+model FarmerGroupType {
+  code    String              @id
+  name    String
+  details FarmerGroupDetail[]
+
+  @@map("ref-farmer-group-type")
+}
+
+model FarmerGroup {
+  id           String              @id @default(cuid())
+  districtId   String              @map("district_id")
+  district     District            @relation(fields: [districtId], references: [id])
+  code         String?
+  abrv         String?
+  name         String
+  locationLat  Float?              @map("location_lat")
+  locationLong Float?              @map("location_long")
+  details      FarmerGroupDetail[]
+  farmers      Farmer[]
+  trainings    TrainingActivity[]
+  certifications Certification[]
+
+  @@map("tbl-farmer-group")
+}
+
+model FarmerGroupDetail {
+  id            String          @id @default(cuid())
+  farmerGroupId String          @map("farmer_group_id")
+  farmerGroup   FarmerGroup     @relation(fields: [farmerGroupId], references: [id])
+  typeCode      String          @map("ref_farmer_group_type")
+  type          FarmerGroupType @relation(fields: [typeCode], references: [code])
+  about         String?
+
+  @@map("tbl-farmer-group-detail")
+}

@@ -1,0 +1,4 @@
+code,name,desc
+INTERNAL,Internal Audit,Audit internal oleh tim internal
+EKSTERNAL,Eksternal Audit,Audit oleh lembaga eksternal independen
+SURVEILLANCE,Surveillance Audit,Audit pengawasan tahunan
