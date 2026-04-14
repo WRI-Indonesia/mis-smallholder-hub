@@ -5,10 +5,15 @@ on:
     branches:
       - dev
 
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: STAGING_ENV_MIS_SMALLHOLDER
+    timeout-minutes: 20
 
     steps:
       - name: Deploy over SSH
@@ -18,8 +23,10 @@ jobs:
           username: ${{ secrets.STAGING_SSH_USER }}
           key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           port: ${{ secrets.STAGING_SSH_PORT }}
+          timeout: 60s
+          command_timeout: 45m
           script: |
-            set -e
+            set -Eeuo pipefail
 
             cd ~/mis-smallholder-hub-dev
             git fetch origin
@@ -31,6 +38,11 @@ jobs:
             EOF
             chmod 600 ~/mis-smallholder-hub-dev/.env.production
 
+            cat > ~/mis-smallholder-hub-dev/.env.development <<'EOF'
+            ${{ secrets.MIS_DEV_ENV }}
+            EOF
+            chmod 600 ~/mis-smallholder-hub-dev/.env.development
+
             cat > ~/.env <<'EOF'
             POSTGRES_DB=${{ secrets.POSTGRES_DB }}
             POSTGRES_USER=${{ secrets.POSTGRES_USER }}
@@ -39,5 +51,5 @@ jobs:
             chmod 600 ~/.env
 
             cd ~
-            podman-compose build mis-smallholder-dev
-            podman-compose up -d --no-deps mis-smallholder-dev
+            podman-compose build --no-cache mis-smallholder-dev
+            podman-compose up -d --no-deps --force-recreate mis-smallholder-dev
