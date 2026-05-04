@@ -14,6 +14,7 @@ model FarmerGroup {
   district     District            @relation(fields: [districtId], references: [id])
   code         String?
   abrv         String?
+  abrv3id      String?             @map("abrv_3id") @db.VarChar(50)
   name         String
   locationLat  Float?              @map("location_lat")
   locationLong Float?              @map("location_long")
