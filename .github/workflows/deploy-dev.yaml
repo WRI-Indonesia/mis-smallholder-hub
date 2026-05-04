@@ -53,3 +53,4 @@ jobs:
             cd ~
             podman-compose build --no-cache mis-smallholder-dev
             podman-compose up -d --no-deps --force-recreate mis-smallholder-dev
+            podman-compose restart nginx
