@@ -7,6 +7,8 @@ import { Pool } from "pg";
 import { seedUsers } from "./seeds/seed-users";
 import { seedProvinces } from "./seeds/seed-provinces";
 import { seedDistricts } from "./seeds/seed-districts";
+import { seedSubdistricts } from "./seeds/seed-subdistricts";
+import { seedVillages } from "./seeds/seed-villages";
 
 // Phase 2.2 — Core Entities
 import { seedFarmerGroupTypes } from "./seeds/seed-farmer-group-types";
@@ -34,6 +36,8 @@ async function main() {
     await seedUsers(prisma);
     await seedProvinces(prisma);
     await seedDistricts(prisma);
+    await seedSubdistricts(prisma);
+    await seedVillages(prisma);
 
     // Phase 2.2 — Core Entities (depends on Phase 2.1)
     console.log("\n--- Phase 2.2: Core Entities ---");

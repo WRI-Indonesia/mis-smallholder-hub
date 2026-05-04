@@ -15,7 +15,29 @@ model District {
   province     Province      @relation(fields: [provinceId], references: [id])
   code         String        @unique // Kode wilayah pemerintah
   name         String
+  subdistricts Subdistrict[]
   farmerGroups FarmerGroup[]
 
   @@map("reg-district")
+}
+
+model Subdistrict {
+  id         String     @id @default(cuid())
+  districtId String     @map("district_id")
+  district   District   @relation(fields: [districtId], references: [id])
+  code       String     @unique 
+  name       String
+  villages   Village[]
+
+  @@map("reg-subdistrict")
+}
+
+model Village {
+  id            String      @id @default(cuid())
+  subdistrictId String      @map("subdistrict_id")
+  subdistrict   Subdistrict @relation(fields: [subdistrictId], references: [id])
+  code          String      @unique 
+  name          String
+
+  @@map("reg-village")
 }
