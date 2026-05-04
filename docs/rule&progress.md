@@ -1,7 +1,7 @@
 # Smallholder HUB — Developer Guide & Progress
 
-> Dokumen ini adalah panduan utama untuk development Smallholder HUB MIS.
-> Berisi aturan kerja, status progress, dan referensi arsitektur.
+> Panduan utama development Smallholder HUB MIS.
+> Detail setiap issue ada di [GitHub Issues](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues).
 
 ---
 
@@ -57,36 +57,36 @@ Setiap unit kerja **wajib** mengikuti alur berikut:
 
 ---
 
-## 📊 Progress Overview
-
-### Milestone Summary
-
-| Milestone | Deskripsi | Status |
-|-----------|-----------|--------|
-| **Fase 1** | Initialization & UI Statis | ✅ Selesai |
-| **Fase 2** | Database Schema & Migrations | ✅ Selesai |
-| **Fase 3** | Autentikasi & RBAC | 🔲 Belum dimulai |
-| **Fase 4** | Master Data CRUD | 🔲 Belum dimulai |
-| **Fase 5** | CMS & Content Management | 🔲 Belum dimulai |
-| **Fase 6** | Tools (Import/Export/GIS) | 🔲 Belum dimulai |
-| **Fase 7** | Dashboard & Reporting (DB) | 🔲 Belum dimulai |
-| **Fase 8** | Community & Knowledge (DB) | 🔲 Belum dimulai |
-| **Fase 9** | Workplan Tracker | 🔲 Belum dimulai |
-| **Fase 10** | Polish (i18n, Accessibility) | 🔲 Belum dimulai |
-| **Fase 11** | Testing & QA | 🔲 Belum dimulai |
-| **Fase 12** | DevOps & Deployment | 🔲 Belum dimulai |
+## 📊 Milestone & Issues
 
 ### Dependency Chain
 
 ```
-Fase 1 ✅ → Fase 2 ✅ → Fase 3 (Auth) → Fase 4–6 → Fase 7–9 → Fase 10–12
+Fase 1 ✅ → Fase 2 ✅ → Fase 4 (Master Data) → Fase 3 (Auth) → Fase 5–6 → Fase 7–9 → Fase 10–12
 ```
+
+### Tracking
+
+| Fase | Deskripsi | Status | Issues | GitHub |
+|------|-----------|--------|--------|--------|
+| **1** | Initialization & UI Statis | ✅ Selesai | — | — |
+| **2** | Database Schema & Migrations | ✅ Selesai | — | — |
+| **3** | Autentikasi & RBAC | ⏭️ Skipped | — | — |
+| **4** | Master Data CRUD | 🚧 In Progress | [#17](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/17) Shared Infra · [#18](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/18) Regions · [#19](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/19) Groups · [#20](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/20) Farmers · [#21](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/21) Parcels · [#22](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/22) Final QA | [Milestone #3](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/3) |
+| **5** | CMS & Content Management | 🔲 | — | — |
+| **6** | Tools (Import/Export/GIS) | 🔲 | — | — |
+| **7** | Dashboard & Reporting (DB) | 🔲 | — | — |
+| **8** | Community & Knowledge (DB) | 🔲 | — | — |
+| **9** | Workplan Tracker | 🔲 | — | — |
+| **10** | Polish (i18n, Accessibility) | 🔲 | — | — |
+| **11** | Testing & QA | 🔲 | — | — |
+| **12** | DevOps & Deployment | 🔲 | — | — |
 
 ### Changelog
 
 | Tanggal | Perubahan |
 |---------|-----------|
-| 2026-05-04 | Restrukturisasi dokumen untuk fase implementasi. Tambah GitHub Issue Workflow rules. |
+| 2026-05-04 | Restrukturisasi dokumen. Tambah rules. Skip Fase 3, mulai Fase 4. GitHub Issues & Milestone dibuat. |
 | 2026-04-14 | Fase 2 selesai — Prisma 7 modular schema, 3 migrasi PostgreSQL + PostGIS, seeding modular. |
 | 2026-04-13 | Fase 1.8 selesai — Refaktor arsitektur (server component, decomposition, naming, barrel). |
 | 2026-03-30 | Code review menyeluruh. Sinkronisasi status. |
@@ -95,168 +95,10 @@ Fase 1 ✅ → Fase 2 ✅ → Fase 3 (Auth) → Fase 4–6 → Fase 7–9 → Fa
 
 ---
 
-## ✅ Fase 1 — Initialization & UI Statis (SELESAI)
-
-<details>
-<summary>Klik untuk melihat detail Fase 1</summary>
-
-### Ringkasan
-
-Seluruh UI statis (public + admin) selesai dengan data CSV, responsif mobile, dark/light mode, dan peta interaktif MapLibre.
-
-### Sub-fase yang Diselesaikan
-
-| Sub-fase | Deskripsi |
-|----------|-----------|
-| 1.1 | Inisiasi proyek Next.js, konfigurasi environment |
-| 1.2 | Instalasi dependensi (Prisma, NextAuth, MapLibre, Recharts, dll.) |
-| 1.3 | Inisiasi Shadcn UI (23 komponen primitif) |
-| 1.4 | Setup folder structure, multi-layout (public + admin), design system oklch |
-| 1.5 | Scaffolding UI statis (Home, Community, Knowledge, Admin sidebar, 404) |
-| 1.6 | UI statis dengan static-data CSV (semua halaman public + admin) |
-| 1.7 | Responsivitas mobile (hamburger menu, grid responsif) |
-| 1.8 | Refaktor arsitektur (server component, decomposition, naming, barrel, cleanup) |
-
-### Halaman Public
-
-- **Home** (`/`) — Hero carousel, features, stats, regions, partners, news
-- **Community** (`/community`) — Split-screen map/list, filter distrik, detail page dengan mini map
-- **Knowledge** (`/knowledge-management`) — Tab filter, search, cards premium, detail page
-- **Login** (`/login`) — UI form (auth action belum aktif)
-
-### Halaman Admin
-
-- **Dashboard** (`/admin/dashboard`) — 10 stat cards, peta interaktif, detail panel, filter multidimensi
-- **Master Data** — Farmers (tabel statis), Groups/Parcels/Regions (placeholder)
-- **CMS** — News (tabel statis), Pages/Community/Knowledge (placeholder)
-- **Settings** — Users/Roles/System (placeholder)
-- **Tools** — Import/Export/Geo (placeholder)
-
-</details>
-
----
-
-## ✅ Fase 2 — Database Schema & Migrations (SELESAI)
-
-<details>
-<summary>Klik untuk melihat detail Fase 2</summary>
-
-### Ringkasan
-
-Prisma 7 dengan PostgreSQL + PostGIS. Schema modular (9 file `.prisma` per domain), 3 migrasi berhasil, sistem seeding modular (12 pasang `seed-*.ts` + `data/*.csv`).
-
-### Schema Models
-
-| File | Models |
-|------|--------|
-| `_config.prisma` | Generator, datasource, enum `Role` |
-| `user.prisma` | `User` (SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT) |
-| `geography.prisma` | `Province`, `District` |
-| `farmer-group.prisma` | `FarmerGroup`, `FarmerGroupType`, `FarmerGroupDetail` |
-| `farmer.prisma` | `Batch`, `Commodity`, `Farmer`, `LandParcel` |
-| `agronomy.prisma` | `AgronomyProduction`, `AgronomyMaintenance`, `MaintenanceType` |
-| `training.prisma` | `TrainingPackage`, `TrainingActivity`, `TrainingParticipant`, `TrainingEvidence` |
-| `certification.prisma` | `CertificationType`, `Certification`, `AuditType`, `AuditActivity`, `AuditEvidence` |
-| `hse.prisma` | `HseWorker`, `HseDetail` |
-
-### Migrasi
-
-1. `init_foundations` — User, Geography, FarmerGroup
-2. `add_core_entities` — Batch, Commodity, Farmer, LandParcel
-3. `add_activities_production` — Agronomy, Training, Certification, Audit, HSE
-4. `fix_missing_relations` — Relasi FarmerGroup ke Certification & TrainingActivity
-
-### Konfigurasi
-
-- `prisma.config.ts` → schema: `"prisma/schema"`, seed: `"tsx prisma/seed.ts"`
-- `src/lib/prisma.ts` → singleton client dengan `PrismaPg` driver adapter
-- Semua seeder menggunakan `upsert` (idempotent), password di-hash bcrypt
-
-</details>
-
----
-
-## 🚧 Fase 3 — Autentikasi & RBAC (NEXT)
-
-> **Dependency:** Fase 2 ✅ terpenuhi.
-
-### GitHub Issues untuk Fase 3
-
-| # | Issue Title | Scope | Priority |
-|---|-------------|-------|----------|
-| — | CRUD User Management | Upgrade `/admin/settings/users` dari placeholder ke fungsional (Read, Create, Update, Delete). Zod validation, bcrypt hashing, Server Actions. | 🔴 High |
-| — | NextAuth.js Setup | Konfigurasi NextAuth.js dengan database session (Prisma adapter). Login flow fungsional. | 🔴 High |
-| — | RBAC Middleware | Route protection berdasarkan role. Middleware untuk admin routes. | 🔴 High |
-| — | Session UI Integration | User menu di sidebar menampilkan data session. Logout fungsional. | 🟡 Medium |
-
-### Detail: CRUD User Management
-
-Validasi Prisma Client sebelum melanjutkan auth. Sandbox CRUD pertama.
-
-- Upgrade `users/page.tsx` dari `PlaceholderPage` ke halaman fungsional.
-- **Read**: `prisma.user.findMany()` → tabel (Nama, Email, Role, Status).
-- **Create**: Form modal (Nama, Email, Password, Role, isActive) + Server Action `createUser`.
-- **Update**: Inline edit Role & isActive via Server Action `updateUser`.
-- **Delete**: Hapus dengan konfirmasi dialog via Server Action `deleteUser`.
-- Password hashing: `bcrypt.hashSync` di Server Action.
-- Validasi: Zod schema di `src/validations/user.schema.ts`.
-
----
-
-## 🔲 Fase 4–12 — Roadmap
-
-### Fase 4 — Master Data CRUD
-
-CRUD lengkap untuk: Farmers, Groups, Land Parcels, Regions.
-Migrasi data dari CSV ke database. Pagination, search, filter.
-
-### Fase 5 — CMS & Content Management
-
-CRUD untuk: News/Articles, Custom Pages, Community, Knowledge.
-Rich text editor. Media upload.
-
-### Fase 6 — Tools (Import/Export/GIS)
-
-CSV/Excel import dengan validasi. Export data ke CSV/PDF.
-GIS tools: peta editor, polygon drawing, geocoding.
-
-### Fase 7 — Dashboard & Reporting (Database-driven)
-
-Migrasi dashboard dari CSV ke query database real-time.
-Tambah chart/grafik interaktif. Filter lanjutan.
-
-### Fase 8 — Community & Knowledge (Database-driven)
-
-Migrasi public pages dari static CSV ke database.
-Search, pagination, dan konten dinamis.
-
-### Fase 9 — Workplan Tracker
-
-Implementasi halaman `/admin/dashboard/workplan/`.
-Progress tracking, timeline, assignment.
-
-### Fase 10 — Polish
-
-- i18n (Bahasa Indonesia / English)
-- Accessibility audit (WCAG)
-- Dark mode audit
-- Spacing & design consistency
-
-### Fase 11 — Testing & QA
-
-Unit tests, integration tests, E2E tests.
-Performance benchmarking.
-
-### Fase 12 — DevOps & Deployment
-
-CI/CD pipeline. Docker optimization.
-Monitoring, logging, backup strategy.
-
----
-
 ## 📁 Referensi Arsitektur
 
-### Struktur Folder
+<details>
+<summary>Struktur Folder</summary>
 
 ```
 src/
@@ -282,6 +124,7 @@ src/
 │   └── globals.css                       # Design tokens (oklch)
 ├── components/
 │   ├── ui/                               # 23 Shadcn primitives
+│   ├── shared/                           # Reusable (DataTable, DeleteDialog) — Fase 4
 │   ├── dashboard/                        # Modular dashboard components
 │   ├── community/                        # Community client component
 │   ├── knowledge/                        # Knowledge client component
@@ -296,13 +139,16 @@ src/
 │   ├── constants.ts                      # Shared constants
 │   ├── map-utils.ts                      # Map utilities & coordinates
 │   └── utils.ts                          # cn() helper
-├── server/actions/                       # Server Actions (diisi mulai Fase 3)
-├── validations/                          # Zod schemas (diisi mulai Fase 3)
-├── types/custom.d.ts                     # CSV module declaration
+├── server/actions/                       # Server Actions
+├── validations/                          # Zod schemas
+├── types/                                # Custom types (action-result, csv module declaration)
 └── hooks/use-mobile.ts                   # Mobile breakpoint hook
 ```
 
-### Tech Stack Detail
+</details>
+
+<details>
+<summary>Tech Stack</summary>
 
 | Layer | Technology |
 |-------|-----------|
@@ -316,6 +162,45 @@ src/
 | Charts | Recharts |
 | Validation | Zod + React Hook Form |
 | Font | Acumin Pro Condensed + Geist fallback |
+
+</details>
+
+<details>
+<summary>Fase 1 — Detail (Selesai)</summary>
+
+Seluruh UI statis (public + admin) selesai dengan data CSV, responsif mobile, dark/light mode, peta interaktif MapLibre.
+
+| Sub-fase | Deskripsi |
+|----------|-----------|
+| 1.1 | Inisiasi proyek Next.js, konfigurasi environment |
+| 1.2 | Instalasi dependensi (Prisma, NextAuth, MapLibre, Recharts, dll.) |
+| 1.3 | Inisiasi Shadcn UI (23 komponen primitif) |
+| 1.4 | Setup folder structure, multi-layout, design system oklch |
+| 1.5 | Scaffolding UI statis (Home, Community, Knowledge, Admin sidebar, 404) |
+| 1.6 | UI statis dengan static-data CSV (semua halaman public + admin) |
+| 1.7 | Responsivitas mobile (hamburger menu, grid responsif) |
+| 1.8 | Refaktor arsitektur (server component, decomposition, naming, barrel, cleanup) |
+
+</details>
+
+<details>
+<summary>Fase 2 — Detail (Selesai)</summary>
+
+Prisma 7 + PostgreSQL + PostGIS. Schema modular (9 file `.prisma`), 4 migrasi, seeding modular (12 pasang file).
+
+| File | Models |
+|------|--------|
+| `_config.prisma` | Generator, datasource, enum `Role` |
+| `user.prisma` | `User` (SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT) |
+| `geography.prisma` | `Province`, `District` |
+| `farmer-group.prisma` | `FarmerGroup`, `FarmerGroupType`, `FarmerGroupDetail` |
+| `farmer.prisma` | `Batch`, `Commodity`, `Farmer`, `LandParcel` |
+| `agronomy.prisma` | `AgronomyProduction`, `AgronomyMaintenance`, `MaintenanceType` |
+| `training.prisma` | `TrainingPackage`, `TrainingActivity`, `TrainingParticipant`, `TrainingEvidence` |
+| `certification.prisma` | `CertificationType`, `Certification`, `AuditType`, `AuditActivity`, `AuditEvidence` |
+| `hse.prisma` | `HseWorker`, `HseDetail` |
+
+</details>
 
 ### Outstanding Technical Debt
 
