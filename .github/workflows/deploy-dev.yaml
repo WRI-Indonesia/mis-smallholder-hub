@@ -38,17 +38,19 @@ jobs:
 
             # 2. Update .env files for the specific dev directory
             echo "Updating environment variables..."
+            cat > .env <<'EOF'
+            ${{ secrets.MIS_DEV_ENV }}
+            EOF
             cat > .env.production <<'EOF'
             ${{ secrets.MIS_DEV_ENV }}
             EOF
+            chmod 600 .env
             chmod 600 .env.production
 
             # 3. Build and recreate container on the VM
-            export DATABASE_URL="postgresql://mis_user:${{ secrets.STAGING_DB_PASSWORD }}@postgres:5432/mis-dev"
-
             echo "Building image..."
             cd ~
-            podman-compose build --build-arg DATABASE_URL="$DATABASE_URL" mis-smallholder-dev
+            podman-compose build mis-smallholder-dev
 
             echo "Restarting container..."
             podman-compose up -d --no-deps --force-recreate mis-smallholder-dev
