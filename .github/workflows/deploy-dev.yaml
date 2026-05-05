@@ -18,9 +18,24 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Start SSH Tunnel to Staging Postgres
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p "${{ secrets.STAGING_SSH_PORT }}" "${{ secrets.STAGING_HOST }}" >> ~/.ssh/known_hosts
+          ssh -f -N \
+            -i ~/.ssh/id_rsa \
+            -p "${{ secrets.STAGING_SSH_PORT }}" \
+            -o ExitOnForwardFailure=yes \
+            -L 15432:postgres:5432 \
+            "${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_HOST }}"
+
       - name: Build Image on GitHub
         run: |
           docker build \
+            --network host \
+            --build-arg DATABASE_URL=postgresql://mis_user:${{ secrets.STAGING_DB_PASSWORD }}@127.0.0.1:15432/mis-dev \
             --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
             -t localhost/datalab_mis-smallholder-dev:latest . 
           docker save localhost/datalab_mis-smallholder-dev:latest | gzip > mis-dev.tar.gz
@@ -65,5 +80,4 @@ jobs:
             
             # 4. Refresh Nginx 
             echo "Cleaning up and reloading Nginx..."
-            podman exec mis-smallholder-nginx nginx -s reload
-            # podman image prune -f
+            podman-compose restart nginx
