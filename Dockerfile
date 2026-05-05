@@ -9,6 +9,9 @@ RUN npm ci --no-audit --no-fund
 FROM node:24-slim AS builder
 WORKDIR /app
 
+ARG DATABASE_URL=postgresql://postgres:postgres@localhost:5432/smallholder_hub
+ENV DATABASE_URL=${DATABASE_URL}
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
