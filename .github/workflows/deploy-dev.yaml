@@ -2,59 +2,51 @@ name: Deploy Dev
 
 on:
   push:
-    branches: [dev]
+    branches:
+      - dev
 
 concurrency:
   group: deploy-dev
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     environment: STAGING_ENV_MIS_SMALLHOLDER
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Build and Deploy on VM
+      - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_SSH_USER }}
           key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           port: ${{ secrets.STAGING_SSH_PORT }}
+          timeout: 60s
           command_timeout: 45m
           script: |
             set -Eeuo pipefail
 
-            # 1. Update repository
-            echo "Updating repository..."
-            cd ~/mis-smallholder-hub-dev
+            # CD
+            cd /var/www/html/mis-dev
+
+            # Pull
             git fetch origin
             git checkout dev
             git reset --hard origin/dev
 
-            # 2. Update .env files for the specific dev directory
-            echo "Updating environment variables..."
+            # ENV
+            # Note: We use .env here as Next.js picks it up by default
             cat > .env <<'EOF'
             ${{ secrets.MIS_DEV_ENV }}
             EOF
-            cat > .env.production <<'EOF'
-            ${{ secrets.MIS_DEV_ENV }}
-            EOF
             chmod 600 .env
-            chmod 600 .env.production
 
-            # 3. Build and recreate container on the VM
-            echo "Building image..."
-            cd ~
-            podman-compose build mis-smallholder-dev
+            # Build 
+            npm install
+            npx prisma generate
+            npm run build
 
-            echo "Restarting container..."
-            podman-compose up -d --no-deps --force-recreate mis-smallholder-dev
-
-            # 4. Refresh Nginx 
-            echo "Cleaning up and reloading Nginx..."
-            podman-compose restart nginx
+            #Reload
+            pm2 reload mis-dev || pm2 start npm --name "mis-dev" -- start -- -p 3001
