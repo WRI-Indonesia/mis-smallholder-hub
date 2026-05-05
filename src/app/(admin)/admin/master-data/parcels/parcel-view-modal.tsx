@@ -45,25 +45,79 @@ function DetailRow({
 
 // ─── Map style config ─────────────────────────────────────────────────────────
 
-type MapStyleKey = "light" | "dark" | "satellite";
+type MapStyleKey = "light" | "dark" | "satellite" | "hybrid";
 
-const MAP_STYLES: Record<MapStyleKey, { label: string; url: string }> = {
+/**
+ * Vector styles (CartoDB) are passed directly as a URL string.
+ * Raster styles (Google) are built as an inline MapLibre style object
+ * using Google's public XYZ tile endpoints — no API key required.
+ *
+ * Google tile URLs used here are the same ones browsers use when
+ * visiting Google Maps. They are publicly accessible but unofficial;
+ * for a production app with high traffic, use the Maps Tiles API with a key.
+ */
+
+const GOOGLE_SATELLITE_TILES = [
+  "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+  "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+  "https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+  "https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+];
+
+const GOOGLE_HYBRID_TILES = [
+  "https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+  "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+  "https://mt2.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+  "https://mt3.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+];
+
+function buildRasterStyle(tiles: string[]): object {
+  return {
+    version: 8,
+    sources: {
+      "raster-tiles": {
+        type: "raster",
+        tiles,
+        tileSize: 256,
+        attribution: "© Google",
+      },
+    },
+    layers: [
+      {
+        id: "raster-layer",
+        type: "raster",
+        source: "raster-tiles",
+        minzoom: 0,
+        maxzoom: 22,
+      },
+    ],
+  };
+}
+
+type StyleValue = string | object;
+
+const MAP_STYLES: Record<MapStyleKey, { label: string; style: StyleValue; isRaster: boolean }> = {
   light: {
     label: "Light",
-    url: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+    style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+    isRaster: false,
   },
   dark: {
     label: "Dark",
-    url: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+    style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+    isRaster: false,
   },
   satellite: {
     label: "Satellite",
-    url: "https://api.maptiler.com/maps/satellite/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL",
+    style: buildRasterStyle(GOOGLE_SATELLITE_TILES),
+    isRaster: true,
+  },
+  hybrid: {
+    label: "Hybrid",
+    style: buildRasterStyle(GOOGLE_HYBRID_TILES),
+    isRaster: true,
   },
 };
-
-// Satellite uses MapTiler public demo key — replace with project key in production.
-// For seeded/demo data without a key, falls back gracefully to an empty map.
 
 // ─── Map panel ────────────────────────────────────────────────────────────────
 
@@ -100,9 +154,11 @@ function ParcelMap({ detail }: { detail: LandParcelDetail }) {
 
   const hasGeometry = !!(detail.polygonGeoJson || detail.centerPointGeoJson);
 
-  // Polygon stroke is white on satellite for contrast, green on light/dark
-  const strokeColor = currentStyle === "satellite" ? "#ffffff" : "#16a34a";
-  const fillColor = currentStyle === "satellite" ? "#ffffff" : "#22c55e";
+  // On raster (satellite/hybrid) use white overlay for visibility
+  const isRaster = MAP_STYLES[currentStyle].isRaster;
+  const strokeColor = isRaster ? "#ffffff" : "#16a34a";
+  const fillColor   = isRaster ? "#ffffff" : "#22c55e";
+  const fillOpacity = isRaster ? 0.15 : 0.25;
 
   if (!mounted) {
     return <Skeleton className="h-full w-full rounded-none" />;
@@ -112,7 +168,7 @@ function ParcelMap({ detail }: { detail: LandParcelDetail }) {
     <div className="relative h-full w-full">
       <Map
         initialViewState={initialView}
-        mapStyle={MAP_STYLES[currentStyle].url}
+        mapStyle={MAP_STYLES[currentStyle].style as any}
         attributionControl={false}
         style={{ width: "100%", height: "100%" }}
       >
@@ -130,12 +186,12 @@ function ParcelMap({ detail }: { detail: LandParcelDetail }) {
             <Layer
               id="parcel-fill"
               type="fill"
-              paint={{ "fill-color": fillColor, "fill-opacity": 0.25 }}
+              paint={{ "fill-color": fillColor, "fill-opacity": fillOpacity }}
             />
             <Layer
               id="parcel-outline"
               type="line"
-              paint={{ "line-color": strokeColor, "line-width": 2 }}
+              paint={{ "line-color": strokeColor, "line-width": 2.5 }}
             />
           </Source>
         )}
@@ -157,7 +213,7 @@ function ParcelMap({ detail }: { detail: LandParcelDetail }) {
               paint={{
                 "circle-radius": 8,
                 "circle-color": "#16a34a",
-                "circle-opacity": 0.8,
+                "circle-opacity": 0.9,
                 "circle-stroke-width": 2,
                 "circle-stroke-color": "#fff",
               }}
@@ -198,7 +254,7 @@ function ParcelMap({ detail }: { detail: LandParcelDetail }) {
 
       {/* Attribution */}
       <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-[10px] font-medium border shadow-sm pointer-events-none">
-        © CartoDB / MapTiler
+        {isRaster ? "© Google" : "© CartoDB"}
       </div>
     </div>
   );
