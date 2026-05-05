@@ -25,7 +25,7 @@ jobs:
           username: ${{ secrets.STAGING_SSH_USER }}
           key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           port: ${{ secrets.STAGING_SSH_PORT }}
-          command_timeout: 20m
+          command_timeout: 45m
           script: |
             set -Eeuo pipefail
 
@@ -44,9 +44,11 @@ jobs:
             chmod 600 .env.production
 
             # 3. Build and recreate container on the VM
+            export DATABASE_URL="postgresql://mis_user:${{ secrets.STAGING_DB_PASSWORD }}@postgres:5432/mis-dev"
+
             echo "Building image..."
             cd ~
-            podman-compose build --no-cache mis-smallholder-dev
+            podman-compose build --build-arg DATABASE_URL="$DATABASE_URL" mis-smallholder-dev
 
             echo "Restarting container..."
             podman-compose up -d --no-deps --force-recreate mis-smallholder-dev
