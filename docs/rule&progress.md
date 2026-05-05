@@ -12,8 +12,9 @@
 | **Proyek** | Smallholder HUB — Management Information System |
 | **Stack** | Next.js 16 · React 19 · Tailwind 4 · Shadcn UI · Prisma 7 · MapLibre |
 | **Repository** | `WRI-Indonesia/mis-smallholder-hub` |
-| **Terakhir Diupdate** | 2026-05-04 |
+| **Terakhir Diupdate** | 2026-05-05 |
 | **Diupdate Oleh** | Sofyan (via AI-assisted development) |
+| **Branch Aktif** | `dev-phase-4` |
 
 ---
 
@@ -88,7 +89,7 @@ Fase 1 ✅ → Fase 2 ✅ → Fase 4 (Master Data) → Fase 3 (Auth) → Fase 5�
 | **1** | Initialization & UI Statis | ✅ Selesai | — | — |
 | **2** | Database Schema & Migrations | ✅ Selesai | — | — |
 | **3** | Autentikasi & RBAC | ⏭️ Skipped | — | — |
-| **4** | Master Data CRUD | 🚧 In Progress | [#17](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/17) Shared Infra ✅ · [#18](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/18) Regions ✅ · [#19](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/19) Groups ✅ · [#20](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/20) Farmers · [#21](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/21) Parcels · [#22](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/22) Final QA | [Milestone #3](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/3) |
+| **4** | Master Data CRUD | 🚧 In Progress | [#17](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/17) Shared Infra ✅ · [#18](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/18) Regions ✅ · [#19](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/19) Groups ✅ · [#20](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/20) Farmers · [#21](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/21) Parcels ✅ · [#22](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/22) Final QA | [Milestone #3](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/3) |
 | **5** | CMS & Content Management | 🔲 | — | — |
 | **6** | Tools (Import/Export/GIS) | 🔲 | — | — |
 | **7** | Dashboard & Reporting (DB) | 🔲 | — | — |
@@ -102,6 +103,7 @@ Fase 1 ✅ → Fase 2 ✅ → Fase 4 (Master Data) → Fase 3 (Auth) → Fase 5�
 
 | Tanggal | Perubahan |
 |---------|-----------|
+| 2026-05-05 | Issue #21 selesai — Parcels CRUD lengkap: Zod schema, server actions (PostGIS raw SQL), page, list client (filter kelompok tani, search, pagination), form modal (petani searchable), view modal (detail + peta MapLibre dengan switcher Light/Dark/Satellite), 16 unit tests. |
 | 2026-05-04 | Restrukturisasi dokumen. Tambah rules. Skip Fase 3, mulai Fase 4. GitHub Issues & Milestone dibuat. |
 | 2026-04-14 | Fase 2 selesai — Prisma 7 modular schema, 3 migrasi PostgreSQL + PostGIS, seeding modular. |
 | 2026-04-13 | Fase 1.8 selesai — Refaktor arsitektur (server component, decomposition, naming, barrel). |
