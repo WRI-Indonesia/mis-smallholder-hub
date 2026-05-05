@@ -2,55 +2,67 @@ name: Deploy Dev
 
 on:
   push:
-    branches:
-      - dev
+    branches: [dev]
 
 concurrency:
   group: deploy-dev
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     environment: STAGING_ENV_MIS_SMALLHOLDER
-    timeout-minutes: 20
-
+    timeout-minutes: 30
+    
     steps:
-      - name: Deploy over SSH
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Image on GitHub
+        run: |
+          # The tag must match what podman-compose expects
+          docker build -t localhost/datalab_mis-smallholder-dev:latest ./mis-smallholder-hub-dev
+          docker save localhost/datalab_mis-smallholder-dev:latest | gzip > mis-dev.tar.gz
+
+      - name: Transfer Image to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT }}
+          source: "mis-dev.tar.gz"
+          target: "~/"
+
+      - name: Deploy and Cleanup via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_SSH_USER }}
           key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           port: ${{ secrets.STAGING_SSH_PORT }}
-          timeout: 60s
-          command_timeout: 45m
+          command_timeout: 20m
           script: |
             set -Eeuo pipefail
 
-            cd ~/mis-smallholder-hub-dev
-            git fetch origin
-            git checkout dev
-            git reset --hard origin/dev
+            # 1. Load the new image into Podman
+            echo "Loading image..."
+            gunzip -c ~/mis-dev.tar.gz | podman load
+            rm ~/mis-dev.tar.gz
 
+            # 2. Update .env files for the specific dev directory
+            echo "Updating environment variables..."
             cat > ~/mis-smallholder-hub-dev/.env.production <<'EOF'
             ${{ secrets.MIS_DEV_ENV }}
             EOF
             chmod 600 ~/mis-smallholder-hub-dev/.env.production
 
-            cat > ~/mis-smallholder-hub-dev/.env.development <<'EOF'
-            ${{ secrets.MIS_DEV_ENV }}
-            EOF
-            chmod 600 ~/mis-smallholder-hub-dev/.env.development
-
-            cat > ~/.env <<'EOF'
-            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            EOF
-            chmod 600 ~/.env
-
+            # 3. Force recreate
+            echo "Restarting container..."
             cd ~
-            podman-compose build --no-cache mis-smallholder-dev
             podman-compose up -d --no-deps --force-recreate mis-smallholder-dev
-            podman-compose restart nginx
+            
+            # 4. Refresh Nginx 
+            echo "Cleaning up and reloading Nginx..."
+            podman exec mis-smallholder-nginx nginx -s reload
+            # podman image prune -f
