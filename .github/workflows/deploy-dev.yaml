@@ -28,25 +28,28 @@ jobs:
           script: |
             set -Eeuo pipefail
 
+            # LOAD NVM
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
             # CD
             cd /var/www/html/mis-dev
 
-            # Pull
+            # PULL
             git fetch origin
             git checkout dev
             git reset --hard origin/dev
 
             # ENV
-            # Note: We use .env here as Next.js picks it up by default
             cat > .env <<'EOF'
             ${{ secrets.MIS_DEV_ENV }}
             EOF
             chmod 600 .env
 
-            # Build 
+            # BUILD
             npm install
             npx prisma generate
             npm run build
 
-            #Reload
+            # RELOAD
             pm2 reload mis-dev || pm2 start npm --name "mis-dev" -- start -- -p 3001
