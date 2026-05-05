@@ -30,7 +30,7 @@ model Farmer {
   name          String
   nik           String               @unique @db.VarChar(16)
   gender        String
-  birthdate     DateTime
+  birthdate     DateTime?
   status        String?
   parcels       LandParcel[]
   trainings     TrainingParticipant[]
