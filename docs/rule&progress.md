@@ -55,6 +55,22 @@ Setiap unit kerja **wajib** mengikuti alur berikut:
 - **Validasi:** Zod schema di `src/validations/`.
 - **Server Actions:** Di `src/server/actions/`.
 
+### UI/UX Consistency & Layout Rules
+
+- **Design System:** Selalu gunakan komponen Shadcn UI dan utility class Tailwind 4. Hindari styling *hardcoded*, prioritaskan penggunaan token desain aplikasi.
+- **Warna & Tipografi:** Gunakan variabel `oklch` di `globals.css`. Teks utamakan gaya responsif dengan standar hierarki heading yang seragam. Font utama 'Acumin Pro Condensed'.
+- **Layout Halaman Admin:**
+  - Header halaman (judul & deksripsi) wajib selalu ada untuk memberikan konteks kepada pengguna.
+  - Pembungkus data (tabel, metrik) menggunakan komponen `<Card>`.
+  - Form kompleks dengan banyak isian harus dibuat rapi: pisahkan menjadi beberapa seksi, hindari *scroll* bertumpuk pada modal, jika perlu gunakan halaman detail penuh atau *Tabs*.
+- **Tabel & Filter Data:**
+  - Search dan input filter diletakkan berdampingan di atas tabel, berbaris (*stack*) di layar mobile dan sebaris (*inline*) di desktop.
+  - Aksi (*actions*) konsisten menggunakan desain minimal (contoh: ikon pada tabel, menu dropdown jika lebih dari 2 aksi).
+- **Responsive Design:** Wajib mendukung *breakpoint* standar (mobile, tablet, desktop).
+- **State & Feedback:** 
+  - Wajib menyediakan *Loading state* (contoh: indikator loading atau *Skeleton*) pada data fetching.
+  - Notifikasi visual (Toast) wajib ditampilkan setelah *Server Actions* berhasil atau gagal.
+
 ---
 
 ## 📊 Milestone & Issues
