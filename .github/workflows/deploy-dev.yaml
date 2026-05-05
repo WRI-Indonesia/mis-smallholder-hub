@@ -13,44 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: STAGING_ENV_MIS_SMALLHOLDER
     timeout-minutes: 30
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Start SSH Tunnel to Staging Postgres
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.STAGING_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p "${{ secrets.STAGING_SSH_PORT }}" "${{ secrets.STAGING_HOST }}" >> ~/.ssh/known_hosts
-          ssh -f -N \
-            -i ~/.ssh/id_rsa \
-            -p "${{ secrets.STAGING_SSH_PORT }}" \
-            -o ExitOnForwardFailure=yes \
-            -L 15432:postgres:5432 \
-            "${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_HOST }}"
-
-      - name: Build Image on GitHub
-        run: |
-          docker build \
-            --network host \
-            --build-arg DATABASE_URL=postgresql://mis_user:${{ secrets.STAGING_DB_PASSWORD }}@127.0.0.1:15432/mis-dev \
-            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
-            -t localhost/datalab_mis-smallholder-dev:latest . 
-          docker save localhost/datalab_mis-smallholder-dev:latest | gzip > mis-dev.tar.gz
-
-      - name: Transfer Image to VM
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_SSH_USER }}
-          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.STAGING_SSH_PORT }}
-          source: "mis-dev.tar.gz"
-          target: "~/"
-
-      - name: Deploy and Cleanup via SSH
+      - name: Build and Deploy on VM
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.STAGING_HOST }}
@@ -61,23 +29,28 @@ jobs:
           script: |
             set -Eeuo pipefail
 
-            # 1. Load the new image into Podman
-            echo "Loading image..."
-            gunzip -c ~/mis-dev.tar.gz | podman load
-            rm ~/mis-dev.tar.gz
+            # 1. Update repository
+            echo "Updating repository..."
+            cd ~/mis-smallholder-hub-dev
+            git fetch origin
+            git checkout dev
+            git reset --hard origin/dev
 
             # 2. Update .env files for the specific dev directory
             echo "Updating environment variables..."
-            cat > ~/mis-smallholder-hub-dev/.env.production <<'EOF'
+            cat > .env.production <<'EOF'
             ${{ secrets.MIS_DEV_ENV }}
             EOF
-            chmod 600 ~/mis-smallholder-hub-dev/.env.production
+            chmod 600 .env.production
 
-            # 3. Force recreate
-            echo "Restarting container..."
+            # 3. Build and recreate container on the VM
+            echo "Building image..."
             cd ~
+            podman-compose build --no-cache mis-smallholder-dev
+
+            echo "Restarting container..."
             podman-compose up -d --no-deps --force-recreate mis-smallholder-dev
-            
+
             # 4. Refresh Nginx 
             echo "Cleaning up and reloading Nginx..."
             podman-compose restart nginx
