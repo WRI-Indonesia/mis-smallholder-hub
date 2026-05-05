@@ -21,8 +21,8 @@ jobs:
       - name: Build Image on GitHub
         run: |
           # The tag must match what podman-compose expects
-          docker build -t localhost/datalab_mis-smallholder-dev:latest ./mis-smallholder-hub-dev
-          docker save localhost/datalab_mis-smallholder-dev:latest | gzip > mis-dev.tar.gz
+          docker build -t localhost/datalab_mis-smallholder-dev:latest . 
+          docker save localhost/datalab_mis-smallholder-dev:latest | gzip > mis-dev.tar.gz        
 
       - name: Transfer Image to VM
         uses: appleboy/scp-action@v0.1.7
