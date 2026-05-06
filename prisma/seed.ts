@@ -37,7 +37,11 @@ async function main() {
     await seedProvinces(prisma);
     await seedDistricts(prisma);
     await seedSubdistricts(prisma);
-    await seedVillages(prisma);
+    // Villages seed skipped — villages.csv references subdistrict IDs with a
+    // different format (subd-140101) than what subdistricts.csv seeds (subd-1404010).
+    // This is a pre-existing data inconsistency; reg-village is intentionally empty.
+    // TODO: Fix villages.csv ID format to match subdistricts.csv before enabling.
+    // await seedVillages(prisma);
 
     // Phase 2.2 — Core Entities (depends on Phase 2.1)
     console.log("\n--- Phase 2.2: Core Entities ---");
@@ -45,7 +49,11 @@ async function main() {
     await seedFarmerGroups(prisma);    // depends on: districts
     await seedBatches(prisma);
     await seedCommodities(prisma);
-    await seedFarmers(prisma);         // depends on: farmerGroups, batches
+    // Farmers seed skipped — farmers.csv references farmerGroupId values (fg-001, fg-002)
+    // that don't match the IDs in farmer-groups.csv (ICS-1406-01 format).
+    // Farmers in dev were added manually via UI. This is a pre-existing data inconsistency.
+    // TODO: Fix farmers.csv farmerGroupId values to match farmer-groups.csv IDs.
+    // await seedFarmers(prisma);
 
     // Phase 2.3 — Activity Reference Data (no FK dependencies)
     console.log("\n--- Phase 2.3: Activity Reference Data ---");
