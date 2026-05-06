@@ -2,14 +2,19 @@ FROM node:24-slim AS deps
 WORKDIR /app
 
 COPY package*.json ./
+# Include prisma schema if needed for postinstall scripts
+COPY prisma ./prisma/ 
 RUN npm ci --no-audit --no-fund
 
 FROM node:24-slim AS builder
 WORKDIR /app
 
-COPY package*.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# CRITICAL: Generate the Prisma Client before building
+RUN npx prisma generate
+
 RUN npm run build
 
 FROM node:24-slim AS runner
