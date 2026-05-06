@@ -279,7 +279,6 @@ export function DataTable<T>({
                     key={String(col.key)}
                     checked={visibleCols.has(col.key)}
                     onCheckedChange={() => {
-                      console.log("Toggling column:", String(col.key));
                       toggleColumn(col.key);
                     }}
                   >

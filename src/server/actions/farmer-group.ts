@@ -56,14 +56,6 @@ export async function getFarmerGroups(
       },
     });
 
-    console.log(`SERVER DEBUG - Found ${groups.length} groups`);
-    if (groups.length > 0) {
-      const first = groups[0] as any;
-      console.log("SERVER DEBUG - First group keys:", Object.keys(first));
-      console.log("SERVER DEBUG - First group abrv3id:", first.abrv3id);
-      console.log("SERVER DEBUG - First group abrv_3id:", first.abrv_3id);
-    }
-
     return { success: true, data: groups as unknown as FarmerGroupRow[] };
   } catch (error) {
     console.error("Failed to fetch farmer groups:", error);

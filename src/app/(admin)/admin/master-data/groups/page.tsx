@@ -9,13 +9,6 @@ export default async function GroupsPage() {
     getDistrictsForDropdown(),
   ]);
 
-  if (groupsResult.success) {
-    console.log(`PAGE DEBUG - Groups count: ${groupsResult.data?.length}`);
-    if (groupsResult.data && groupsResult.data.length > 0) {
-      console.log("PAGE DEBUG - First group abrv3id:", groupsResult.data[0].abrv3id);
-    }
-  }
-
   return (
     <div className="p-6">
       <GroupListClient

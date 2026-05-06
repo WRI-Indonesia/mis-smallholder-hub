@@ -12,14 +12,6 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import Map from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 interface GroupDetailClientProps {
   group: FarmerGroupRow;
@@ -31,6 +23,7 @@ export function GroupDetailClient({ group }: GroupDetailClientProps) {
   const [isInfoOpen, setIsInfoOpen] = useState(true);
 
   // Placeholder calculations based on farmer count
+  // TODO Fase 5–6: Replace with real DB queries (parcels, hseWorkers, productions)
   const totalAnggota = group._count.farmers;
   const pekerja = totalAnggota * 2;
   const polygon = totalAnggota;
@@ -214,28 +207,9 @@ export function GroupDetailClient({ group }: GroupDetailClientProps) {
               <CardDescription>Daftar kegiatan pelatihan yang pernah dilaksanakan untuk kelompok ini.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Nama Pelatihan</TableHead>
-                      <TableHead>Tanggal</TableHead>
-                      <TableHead>Instruktur</TableHead>
-                      <TableHead className="text-right">Peserta Hadir</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {/* Placeholder Data */}
-                    {[1, 2, 3].map((i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">Pelatihan Good Agricultural Practices (GAP) Batch {i}</TableCell>
-                        <TableCell>12-05-2026</TableCell>
-                        <TableCell>Tim Agronomi</TableCell>
-                        <TableCell className="text-right">{(25 - i * 2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 text-sm">
+                <Tag className="h-4 w-4" />
+                <span>Modul pelatihan akan tersedia di Fase 6. Data pelatihan belum tersedia.</span>
               </div>
             </CardContent>
           </Card>
@@ -248,32 +222,9 @@ export function GroupDetailClient({ group }: GroupDetailClientProps) {
               <CardDescription>Rincian status kelulusan dan kehadiran pelatihan per petani anggota.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>ID Petani</TableHead>
-                      <TableHead>Nama Petani</TableHead>
-                      <TableHead>Total Hadir</TableHead>
-                      <TableHead>Status Kelulusan</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {/* Placeholder Data */}
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-mono text-xs">P-100{i}</TableCell>
-                        <TableCell className="font-medium">Petani Dummy {i}</TableCell>
-                        <TableCell>{Math.floor(Math.random() * 5) + 1} Sesi</TableCell>
-                        <TableCell>
-                          <Badge variant={i % 2 === 0 ? "default" : "outline"} className={i % 2 === 0 ? "bg-green-600 hover:bg-green-700" : ""}>
-                            {i % 2 === 0 ? "Lulus" : "Belum Lulus"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 text-sm">
+                <Tag className="h-4 w-4" />
+                <span>Modul pelatihan akan tersedia di Fase 6. Data training anggota belum tersedia.</span>
               </div>
             </CardContent>
           </Card>
@@ -286,27 +237,9 @@ export function GroupDetailClient({ group }: GroupDetailClientProps) {
               <CardDescription>Informasi seputar produksi dan perawatan lahan per anggota.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Nama Petani</TableHead>
-                      <TableHead>Total Produksi (Ton)</TableHead>
-                      <TableHead>Aplikasi Pupuk (Kg)</TableHead>
-                      <TableHead>Status Perawatan</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[1, 2, 3].map((i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">Petani Dummy {i}</TableCell>
-                        <TableCell>{(Math.random() * 10 + 5).toFixed(2)}</TableCell>
-                        <TableCell>{(Math.random() * 100 + 50).toFixed(0)}</TableCell>
-                        <TableCell>Sesuai Standar</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500 text-sm">
+                <Tag className="h-4 w-4" />
+                <span>Modul BMP akan tersedia di Fase 6. Data BMP belum tersedia.</span>
               </div>
             </CardContent>
           </Card>

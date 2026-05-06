@@ -50,15 +50,6 @@ export function GroupListClient({
   initialGroups,
   districts,
 }: GroupListClientProps) {
-  console.log("CLIENT DEBUG - initialGroups count:", initialGroups.length);
-  if (initialGroups.length > 0) {
-    console.log("CLIENT DEBUG - first group:", {
-      id: initialGroups[0].id,
-      name: initialGroups[0].name,
-      abrv3id: (initialGroups[0] as any).abrv3id,
-    });
-  }
-
   const [modalOpen, setModalOpen] = useState(false);
   const [viewGroup, setViewGroup] = useState<FarmerGroupRow | null>(null);
   const [editGroup, setEditGroup] = useState<FarmerGroupRow | null>(null);
