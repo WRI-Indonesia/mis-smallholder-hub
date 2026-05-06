@@ -7,6 +7,13 @@ model Batch {
   desc    String?
   farmers Farmer[]
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("BatchCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("BatchModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("ref-batch")
 }
 
@@ -15,6 +22,13 @@ model Commodity {
   name    String
   desc    String?
   parcels LandParcel[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("CommodityCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("CommodityModifiedBy", fields: [modifiedBy], references: [id])
 
   @@map("ref-commodity")
 }
@@ -36,6 +50,13 @@ model Farmer {
   trainings     TrainingParticipant[]
   hseWorkers    HseWorker[]
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("FarmerCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("FarmerModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("tbl-farmer")
 }
 
@@ -56,6 +77,13 @@ model LandParcel {
   status        String?
   productions   AgronomyProduction[]
   maintenances  AgronomyMaintenance[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("LandParcelCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("LandParcelModifiedBy", fields: [modifiedBy], references: [id])
 
   @@map("tbl-land-parcel")
 }

@@ -7,6 +7,13 @@ model TrainingPackage {
   desc       String?
   activities TrainingActivity[]
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("TrainingPackageCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("TrainingPackageModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("ref-training-package")
 }
 
@@ -18,6 +25,13 @@ model TrainingEvidence {
   desc       String?
   uri        String
   activities TrainingActivity[] @relation("ActivityEvidences")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("TrainingEvidenceCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("TrainingEvidenceModifiedBy", fields: [modifiedBy], references: [id])
 
   @@map("ref-training-evidence")
 }
@@ -34,6 +48,13 @@ model TrainingActivity {
   participants     TrainingParticipant[]
   evidences        TrainingEvidence[]   @relation("ActivityEvidences")
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("TrainingActivityCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("TrainingActivityModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("tbl-training-activity")
 }
 
@@ -43,6 +64,13 @@ model TrainingParticipant {
   activity   TrainingActivity @relation(fields: [activityId], references: [id])
   farmerId   String           @map("farmer_id")
   farmer     Farmer           @relation(fields: [farmerId], references: [id])
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("TrainingParticipantCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("TrainingParticipantModifiedBy", fields: [modifiedBy], references: [id])
 
   @@map("tbl-training-participant")
 }

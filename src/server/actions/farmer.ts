@@ -139,6 +139,9 @@ export async function createFarmer(data: FarmerFormValues): Promise<ActionResult
         status: validated.status || null,
         wriFarmerId: validated.wriFarmerId || null,
         uiFarmerId: validated.uiFarmerId || null,
+        // Audit trail — auth not yet implemented, will be filled with session.user.id in Fase 3
+        createdBy: null,
+        modifiedBy: null,
       },
     });
 
@@ -171,6 +174,8 @@ export async function updateFarmer(id: string, data: FarmerFormValues): Promise<
         status: validated.status || null,
         wriFarmerId: validated.wriFarmerId || null,
         uiFarmerId: validated.uiFarmerId || null,
+        // Audit trail — modifiedBy will be filled with session.user.id in Fase 3
+        modifiedBy: null,
       },
     });
 

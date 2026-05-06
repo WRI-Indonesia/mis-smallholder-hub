@@ -225,6 +225,9 @@ export async function createLandParcel(
         legalId: validated.legalId || null,
         legalSizeHa: validated.legalSizeHa ?? null,
         status: validated.status || null,
+        // Audit trail — auth not yet implemented, will be filled with session.user.id in Fase 3
+        createdBy: null,
+        modifiedBy: null,
       },
     });
 
@@ -255,6 +258,8 @@ export async function updateLandParcel(
         legalId: validated.legalId || null,
         legalSizeHa: validated.legalSizeHa ?? null,
         status: validated.status || null,
+        // Audit trail — modifiedBy will be filled with session.user.id in Fase 3
+        modifiedBy: null,
       },
     });
 
