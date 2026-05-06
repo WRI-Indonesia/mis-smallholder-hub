@@ -28,28 +28,28 @@ jobs:
           script: |
             set -Eeuo pipefail
 
-            cd ~/mis-smallholder-hub-dev
+            # LOAD NVM
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # CD
+            cd /var/www/html/mis-dev
+
+            # PULL
             git fetch origin
             git checkout dev
             git reset --hard origin/dev
 
-            cat > ~/mis-smallholder-hub-dev/.env.production <<'EOF'
+            # ENV
+            cat > .env <<'EOF'
             ${{ secrets.MIS_DEV_ENV }}
             EOF
-            chmod 600 ~/mis-smallholder-hub-dev/.env.production
+            chmod 600 .env
 
-            cat > ~/mis-smallholder-hub-dev/.env.development <<'EOF'
-            ${{ secrets.MIS_DEV_ENV }}
-            EOF
-            chmod 600 ~/mis-smallholder-hub-dev/.env.development
+            # BUILD
+            npm install
+            npx prisma generate
+            npm run build
 
-            cat > ~/.env <<'EOF'
-            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            EOF
-            chmod 600 ~/.env
-
-            cd ~
-            podman-compose build --no-cache mis-smallholder-dev
-            podman-compose up -d --no-deps --force-recreate mis-smallholder-dev
+            # RELOAD
+            pm2 reload mis-dev || pm2 start npm --name "mis-dev" -- start -- -p 3001

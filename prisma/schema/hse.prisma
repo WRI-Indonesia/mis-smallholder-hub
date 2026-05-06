@@ -1,0 +1,36 @@
+// hse.prisma — Health, Safety & Environment worker models
+
+model HseWorker {
+  id       String      @id @default(cuid())
+  farmerId String      @map("farmer_id")
+  farmer   Farmer      @relation(fields: [farmerId], references: [id])
+  name     String
+  nik      String?
+  details  HseDetail[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("HseWorkerCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("HseWorkerModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("tbl-hse-worker")
+}
+
+model HseDetail {
+  id       String    @id @default(cuid())
+  workerId String    @map("hse_worker_id")
+  worker   HseWorker @relation(fields: [workerId], references: [id])
+  date     DateTime?
+  note     String?
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("HseDetailCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("HseDetailModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("tbl-hse-detail")
+}

@@ -1,0 +1,81 @@
+// user.prisma — User & authentication models
+
+model User {
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       Role     @default(OPERATOR)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  createdBy  String?  @map("created_by")
+  modifiedBy String?  @map("modified_by")
+
+  // ─── Audit trail back-relations ───────────────────────────────────────────
+  // FarmerGroup
+  farmerGroupsCreated   FarmerGroup[]       @relation("FarmerGroupCreatedBy")
+  farmerGroupsModified  FarmerGroup[]       @relation("FarmerGroupModifiedBy")
+  // FarmerGroupDetail
+  farmerGroupDetailsCreated  FarmerGroupDetail[] @relation("FarmerGroupDetailCreatedBy")
+  farmerGroupDetailsModified FarmerGroupDetail[] @relation("FarmerGroupDetailModifiedBy")
+  // Farmer
+  farmersCreated   Farmer[] @relation("FarmerCreatedBy")
+  farmersModified  Farmer[] @relation("FarmerModifiedBy")
+  // LandParcel
+  landParcelsCreated   LandParcel[] @relation("LandParcelCreatedBy")
+  landParcelsModified  LandParcel[] @relation("LandParcelModifiedBy")
+  // AgronomyProduction
+  agronomyProductionsCreated   AgronomyProduction[] @relation("AgronomyProductionCreatedBy")
+  agronomyProductionsModified  AgronomyProduction[] @relation("AgronomyProductionModifiedBy")
+  // AgronomyMaintenance
+  agronomyMaintenancesCreated   AgronomyMaintenance[] @relation("AgronomyMaintenanceCreatedBy")
+  agronomyMaintenancesModified  AgronomyMaintenance[] @relation("AgronomyMaintenanceModifiedBy")
+  // TrainingActivity
+  trainingActivitiesCreated   TrainingActivity[] @relation("TrainingActivityCreatedBy")
+  trainingActivitiesModified  TrainingActivity[] @relation("TrainingActivityModifiedBy")
+  // TrainingParticipant
+  trainingParticipantsCreated   TrainingParticipant[] @relation("TrainingParticipantCreatedBy")
+  trainingParticipantsModified  TrainingParticipant[] @relation("TrainingParticipantModifiedBy")
+  // Certification
+  certificationsCreated   Certification[] @relation("CertificationCreatedBy")
+  certificationsModified  Certification[] @relation("CertificationModifiedBy")
+  // AuditActivity
+  auditActivitiesCreated   AuditActivity[] @relation("AuditActivityCreatedBy")
+  auditActivitiesModified  AuditActivity[] @relation("AuditActivityModifiedBy")
+  // HseWorker
+  hseWorkersCreated   HseWorker[] @relation("HseWorkerCreatedBy")
+  hseWorkersModified  HseWorker[] @relation("HseWorkerModifiedBy")
+  // HseDetail
+  hseDetailsCreated   HseDetail[] @relation("HseDetailCreatedBy")
+  hseDetailsModified  HseDetail[] @relation("HseDetailModifiedBy")
+  // Batch
+  batchesCreated   Batch[] @relation("BatchCreatedBy")
+  batchesModified  Batch[] @relation("BatchModifiedBy")
+  // Commodity
+  commoditiesCreated   Commodity[] @relation("CommodityCreatedBy")
+  commoditiesModified  Commodity[] @relation("CommodityModifiedBy")
+  // FarmerGroupType
+  farmerGroupTypesCreated   FarmerGroupType[] @relation("FarmerGroupTypeCreatedBy")
+  farmerGroupTypesModified  FarmerGroupType[] @relation("FarmerGroupTypeModifiedBy")
+  // MaintenanceType
+  maintenanceTypesCreated   MaintenanceType[] @relation("MaintenanceTypeCreatedBy")
+  maintenanceTypesModified  MaintenanceType[] @relation("MaintenanceTypeModifiedBy")
+  // TrainingPackage
+  trainingPackagesCreated   TrainingPackage[] @relation("TrainingPackageCreatedBy")
+  trainingPackagesModified  TrainingPackage[] @relation("TrainingPackageModifiedBy")
+  // TrainingEvidence
+  trainingEvidencesCreated   TrainingEvidence[] @relation("TrainingEvidenceCreatedBy")
+  trainingEvidencesModified  TrainingEvidence[] @relation("TrainingEvidenceModifiedBy")
+  // CertificationType
+  certificationTypesCreated   CertificationType[] @relation("CertificationTypeCreatedBy")
+  certificationTypesModified  CertificationType[] @relation("CertificationTypeModifiedBy")
+  // AuditType
+  auditTypesCreated   AuditType[] @relation("AuditTypeCreatedBy")
+  auditTypesModified  AuditType[] @relation("AuditTypeModifiedBy")
+  // AuditEvidence
+  auditEvidencesCreated   AuditEvidence[] @relation("AuditEvidenceCreatedBy")
+  auditEvidencesModified  AuditEvidence[] @relation("AuditEvidenceModifiedBy")
+
+  @@map("tbl-user")
+}

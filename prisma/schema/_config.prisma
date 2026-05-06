@@ -1,0 +1,18 @@
+// base.prisma — generator, datasource, and shared enums
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [postgis]
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  OPERATOR
+  MANAGEMENT
+}

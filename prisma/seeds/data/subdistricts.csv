@@ -1,0 +1,64 @@
+id,districtId,code,name
+subd-1404010,dist-pelalawan,1404010,Langgam
+subd-1404011,dist-pelalawan,1404011,Pangkalan Kerinci
+subd-1404012,dist-pelalawan,1404012,Bandar Sei Kijang
+subd-1404020,dist-pelalawan,1404020,Pangkalan Kuras
+subd-1404021,dist-pelalawan,1404021,Ukui
+subd-1404022,dist-pelalawan,1404022,Pangkalan Lesung
+subd-1404030,dist-pelalawan,1404030,Bunut
+subd-1404031,dist-pelalawan,1404031,Pelalawan
+subd-1404032,dist-pelalawan,1404032,Bandar Petalangan
+subd-1404040,dist-pelalawan,1404040,Kuala Kampar
+subd-1404041,dist-pelalawan,1404041,Kerumutan
+subd-1404042,dist-pelalawan,1404042,Teluk Meranti
+subd-1405010,dist-siak,1405010,Minas
+subd-1405011,dist-siak,1405011,Sungai Mandau
+subd-1405012,dist-siak,1405012,Kandis
+subd-1405020,dist-siak,1405020,Siak
+subd-1405021,dist-siak,1405021,Kerinci Kanan
+subd-1405022,dist-siak,1405022,Tualang
+subd-1405023,dist-siak,1405023,Dayun
+subd-1405024,dist-siak,1405024,Lubuk Dalam
+subd-1405025,dist-siak,1405025,Koto Gasib
+subd-1405026,dist-siak,1405026,Mempura
+subd-1405030,dist-siak,1405030,Sungai Apit
+subd-1405031,dist-siak,1405031,Bunga Raya
+subd-1405032,dist-siak,1405032,Sabak Auh
+subd-1405033,dist-siak,1405033,Pusako
+subd-1406010,dist-kampar,1406010,Kampar Kiri
+subd-1406011,dist-kampar,1406011,Kampar Kiri Hulu
+subd-1406012,dist-kampar,1406012,Kampar Kiri Hilir
+subd-1406013,dist-kampar,1406013,Gunung Sahilan
+subd-1406014,dist-kampar,1406014,Kampar Kiri Tengah
+subd-1406020,dist-kampar,1406020,Xiii Koto Kampar
+subd-1406021,dist-kampar,1406021,Koto Kampar Hulu
+subd-1406030,dist-kampar,1406030,Kuok
+subd-1406031,dist-kampar,1406031,Salo
+subd-1406040,dist-kampar,1406040,Tapung
+subd-1406041,dist-kampar,1406041,Tapung Hulu
+subd-1406042,dist-kampar,1406042,Tapung Hilir
+subd-1406050,dist-kampar,1406050,Bangkinang Kota
+subd-1406051,dist-kampar,1406051,Bangkinang
+subd-1406060,dist-kampar,1406060,Kampar
+subd-1406061,dist-kampar,1406061,Kampa
+subd-1406062,dist-kampar,1406062,Rumbio Jaya
+subd-1406063,dist-kampar,1406063,Kampar Utara
+subd-1406070,dist-kampar,1406070,Tambang
+subd-1406080,dist-kampar,1406080,Siak Hulu
+subd-1406081,dist-kampar,1406081,Perhentian Raja
+subd-1407010,dist-rohul,1407010,Rokan Iv Koto
+subd-1407011,dist-rohul,1407011,Pendalian Iv Koto
+subd-1407020,dist-rohul,1407020,Tandun
+subd-1407021,dist-rohul,1407021,Kabun
+subd-1407022,dist-rohul,1407022,Ujung Batu
+subd-1407030,dist-rohul,1407030,Rambah Samo
+subd-1407040,dist-rohul,1407040,Rambah
+subd-1407041,dist-rohul,1407041,Rambah Hilir
+subd-1407042,dist-rohul,1407042,Bangun Purba
+subd-1407050,dist-rohul,1407050,Tambusai
+subd-1407051,dist-rohul,1407051,Tambusai Utara
+subd-1407060,dist-rohul,1407060,Kepenuhan
+subd-1407061,dist-rohul,1407061,Kepenuhan Hulu
+subd-1407070,dist-rohul,1407070,Kunto Darussalam
+subd-1407071,dist-rohul,1407071,Pagaran Tapah Darussalam
+subd-1407072,dist-rohul,1407072,Bonai Darussalam

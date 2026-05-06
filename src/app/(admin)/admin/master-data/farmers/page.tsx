@@ -1,71 +1,30 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { PlusCircle, Search, Edit, Trash2 } from "lucide-react"
-import { mockFarmers } from "@/lib/static-data/admin/master-data/farmers"
+import { getFarmers, getBatchesForDropdown } from "@/server/actions/farmer";
+import { getFarmerGroups } from "@/server/actions/farmer-group";
+import { FarmerListClient } from "./farmer-list-client";
 
-export default function MasterDataFarmersPage() {
+export const metadata = { title: "Data Petani" };
+
+export default async function MasterDataFarmersPage(props: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = await props.searchParams;
+  const page = Number(searchParams?.page) || 1;
+  const search = typeof searchParams?.search === "string" ? searchParams.search : undefined;
+  const groupId = typeof searchParams?.group === "string" ? searchParams.group : undefined;
+
+  const [farmersResult, groupsResult, batchesResult] = await Promise.all([
+    getFarmers(page, 10, search, groupId),
+    getFarmerGroups(),
+    getBatchesForDropdown(),
+  ]);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-primary">Data Petani</h1>
-          <p className="text-muted-foreground">Kelola direktori profil petani terdaftar.</p>
-        </div>
-        <Button className="w-full sm:w-auto font-semibold">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Tambah Petani
-        </Button>
-      </div>
-
-      <Card className="shadow-sm border-primary/20">
-        <CardHeader className="py-4">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Cari nama atau NIK petani..."
-                className="pl-8"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead>ID Petani</TableHead>
-                <TableHead>Nama</TableHead>
-                <TableHead>Dugaan NIK</TableHead>
-                <TableHead>Kelompok Tani</TableHead>
-                <TableHead>Wilayah</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockFarmers.map((f) => (
-                <TableRow key={f.id}>
-                  <TableCell className="font-medium text-primary">{f.id}</TableCell>
-                  <TableCell>{f.name}</TableCell>
-                  <TableCell>{f.nik}</TableCell>
-                  <TableCell>{f.group}</TableCell>
-                  <TableCell>{f.region}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+    <div className="p-6">
+      <FarmerListClient
+        initialData={farmersResult.success && farmersResult.data ? farmersResult.data : { data: [], total: 0, page: 1, totalPages: 1 }}
+        groups={groupsResult.success ? (groupsResult.data ?? []) : []}
+        batches={batchesResult.success ? (batchesResult.data ?? []) : []}
+      />
     </div>
-  )
+  );
 }

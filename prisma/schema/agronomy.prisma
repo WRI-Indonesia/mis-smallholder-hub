@@ -1,0 +1,55 @@
+// agronomy.prisma — Production and maintenance activity models
+
+model AgronomyProduction {
+  id           String     @id @default(cuid())
+  landParcelId String     @map("land_parcel_id")
+  landParcel   LandParcel @relation(fields: [landParcelId], references: [id])
+  date         DateTime
+  yieldKg      Float      @map("yield_kg")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("AgronomyProductionCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("AgronomyProductionModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("tbl-agronomy-production")
+}
+
+model MaintenanceType {
+  id           String                @id @default(cuid())
+  code         String                @unique
+  name         String
+  desc         String?
+  maintenances AgronomyMaintenance[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("MaintenanceTypeCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("MaintenanceTypeModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("ref-maintenance-type")
+}
+
+model AgronomyMaintenance {
+  id                String          @id @default(cuid())
+  landParcelId      String          @map("land_parcel_id")
+  landParcel        LandParcel      @relation(fields: [landParcelId], references: [id])
+  maintenanceTypeId String          @map("ref_maintenance_type_id")
+  maintenanceType   MaintenanceType @relation(fields: [maintenanceTypeId], references: [id])
+  date              DateTime
+  value             Float?
+  note              String?
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("AgronomyMaintenanceCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("AgronomyMaintenanceModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("tbl-agronomy-maintenance")
+}

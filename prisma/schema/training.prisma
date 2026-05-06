@@ -1,0 +1,76 @@
+// training.prisma — Training package, activity, participant, and evidence models
+
+model TrainingPackage {
+  id         String             @id @default(cuid())
+  code       String             @unique
+  name       String
+  desc       String?
+  activities TrainingActivity[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("TrainingPackageCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("TrainingPackageModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("ref-training-package")
+}
+
+model TrainingEvidence {
+  id         String             @id @default(cuid())
+  code       String?
+  name       String
+  type       String?
+  desc       String?
+  uri        String
+  activities TrainingActivity[] @relation("ActivityEvidences")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("TrainingEvidenceCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("TrainingEvidenceModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("ref-training-evidence")
+}
+
+model TrainingActivity {
+  id               String               @id @default(cuid())
+  packageId        String               @map("ref_training_package_id")
+  package          TrainingPackage      @relation(fields: [packageId], references: [id])
+  farmerGroupId    String?              @map("farmer_group_id")
+  farmerGroup      FarmerGroup?         @relation(fields: [farmerGroupId], references: [id])
+  location         String?
+  trainingDate     DateTime             @map("training_date")
+  totalParticipant Int                  @default(0) @map("total_participant")
+  participants     TrainingParticipant[]
+  evidences        TrainingEvidence[]   @relation("ActivityEvidences")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("TrainingActivityCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("TrainingActivityModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("tbl-training-activity")
+}
+
+model TrainingParticipant {
+  id         String           @id @default(cuid())
+  activityId String           @map("training_activity_id")
+  activity   TrainingActivity @relation(fields: [activityId], references: [id])
+  farmerId   String           @map("farmer_id")
+  farmer     Farmer           @relation(fields: [farmerId], references: [id])
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("TrainingParticipantCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("TrainingParticipantModifiedBy", fields: [modifiedBy], references: [id])
+
+  @@map("tbl-training-participant")
+}
