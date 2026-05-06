@@ -8,6 +8,13 @@ model HseWorker {
   nik      String?
   details  HseDetail[]
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("HseWorkerCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("HseWorkerModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("tbl-hse-worker")
 }
 
@@ -17,6 +24,13 @@ model HseDetail {
   worker   HseWorker @relation(fields: [workerId], references: [id])
   date     DateTime?
   note     String?
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("HseDetailCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("HseDetailModifiedBy", fields: [modifiedBy], references: [id])
 
   @@map("tbl-hse-detail")
 }

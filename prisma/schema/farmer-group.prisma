@@ -5,6 +5,13 @@ model FarmerGroupType {
   name    String
   details FarmerGroupDetail[]
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("FarmerGroupTypeCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("FarmerGroupTypeModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("ref-farmer-group-type")
 }
 
@@ -23,6 +30,13 @@ model FarmerGroup {
   trainings    TrainingActivity[]
   certifications Certification[]
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("FarmerGroupCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("FarmerGroupModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("tbl-farmer-group")
 }
 
@@ -33,6 +47,13 @@ model FarmerGroupDetail {
   typeCode      String          @map("ref_farmer_group_type")
   type          FarmerGroupType @relation(fields: [typeCode], references: [code])
   about         String?
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("FarmerGroupDetailCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("FarmerGroupDetailModifiedBy", fields: [modifiedBy], references: [id])
 
   @@map("tbl-farmer-group-detail")
 }

@@ -134,6 +134,9 @@ export async function createFarmerGroup(
         districtId: validated.districtId,
         locationLat: validated.locationLat ?? null,
         locationLong: validated.locationLong ?? null,
+        // Audit trail — auth not yet implemented, will be filled with session.user.id in Fase 3
+        createdBy: null,
+        modifiedBy: null,
       },
     });
 
@@ -166,6 +169,8 @@ export async function updateFarmerGroup(
         districtId: validated.districtId,
         locationLat: validated.locationLat ?? null,
         locationLong: validated.locationLong ?? null,
+        // Audit trail — modifiedBy will be filled with session.user.id in Fase 3
+        modifiedBy: null,
       },
     });
 

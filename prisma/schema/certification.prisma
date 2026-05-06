@@ -7,6 +7,13 @@ model CertificationType {
   desc           String?
   certifications Certification[]
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("CertificationTypeCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("CertificationTypeModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("ref-certification")
 }
 
@@ -19,6 +26,13 @@ model Certification {
   certificationDate DateTime          @map("certification_date")
   audits            AuditActivity[]
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("CertificationCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("CertificationModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("tbl-certification")
 }
 
@@ -28,6 +42,13 @@ model AuditType {
   name       String
   desc       String?
   activities AuditActivity[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("AuditTypeCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("AuditTypeModifiedBy", fields: [modifiedBy], references: [id])
 
   @@map("ref-audit")
 }
@@ -41,6 +62,13 @@ model AuditEvidence {
   uri        String
   activities AuditActivity[] @relation("AuditActivityEvidences")
 
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("AuditEvidenceCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("AuditEvidenceModifiedBy", fields: [modifiedBy], references: [id])
+
   @@map("ref-audit-evidence")
 }
 
@@ -52,6 +80,13 @@ model AuditActivity {
   auditType       AuditType       @relation(fields: [auditTypeId], references: [id])
   auditDate       DateTime        @map("audit_date")
   evidences       AuditEvidence[] @relation("AuditActivityEvidences")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  createdBy      String?  @map("created_by")
+  createdByUser  User?    @relation("AuditActivityCreatedBy", fields: [createdBy], references: [id])
+  modifiedAt     DateTime @updatedAt @map("modified_at")
+  modifiedBy     String?  @map("modified_by")
+  modifiedByUser User?    @relation("AuditActivityModifiedBy", fields: [modifiedBy], references: [id])
 
   @@map("tbl-audit-activity")
 }
