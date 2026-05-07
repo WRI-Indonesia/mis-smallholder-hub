@@ -23,6 +23,9 @@ import { seedCertificationTypes } from "./seeds/seed-certification-types";
 import { seedTrainingPackages } from "./seeds/seed-training-packages";
 import { seedAuditTypes } from "./seeds/seed-audit-types";
 
+// Phase 4.a Infra — Dynamic Menu Management
+import { seedMenu } from "./seeds/seed-menu";
+
 async function main() {
   console.log("🌱 Starting seeding process...\n");
 
@@ -61,6 +64,10 @@ async function main() {
     await seedCertificationTypes(prisma);
     await seedTrainingPackages(prisma);
     await seedAuditTypes(prisma);
+
+    // Phase 4.a Infra — Dynamic Menu Management (no FK dependencies)
+    console.log("\n--- Phase 4.a Infra: Menu Management ---");
+    await seedMenu(prisma);
 
     console.log("\n✅ All seeding completed successfully.");
   } catch (error) {
