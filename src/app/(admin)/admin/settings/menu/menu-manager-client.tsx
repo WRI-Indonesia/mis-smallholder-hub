@@ -324,8 +324,17 @@ function MenuFormModal({
                 <FormItem>
                   <FormLabel>URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="/admin/dashboard atau #" {...field} />
+                    <Input
+                      placeholder="/admin/dashboard atau #"
+                      disabled={isEditing}
+                      {...field}
+                    />
                   </FormControl>
+                  {isEditing && (
+                    <p className="text-xs text-muted-foreground">
+                      URL tidak dapat diubah. Buat menu baru jika membutuhkan URL berbeda.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
