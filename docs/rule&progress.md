@@ -12,7 +12,7 @@
 | **Proyek** | Smallholder HUB — Management Information System |
 | **Stack** | Next.js 16 · React 19 · Tailwind 4 · Shadcn UI · Prisma 7 · MapLibre |
 | **Repository** | `WRI-Indonesia/mis-smallholder-hub` |
-| **Terakhir Diupdate** | 2026-05-06 |
+| **Terakhir Diupdate** | 2026-05-07 |
 | **Diupdate Oleh** | Sofyan (via AI-assisted development) |
 | **Branch Aktif** | `dev-phase-4` |
 
@@ -91,6 +91,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 | **DB** | Database Schema Hardening | ✅ Selesai | [#29](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/29) Audit Trail Fields ✅ · [#31](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/31) Sync Production DB ✅ | [Milestone #4](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/4) |
 | **3** | Autentikasi & RBAC | ⏭️ Skipped | — | — |
 | **4** | Master Data CRUD | ✅ Selesai | [#17](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/17) Shared Infra ✅ · [#18](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/18) Regions ✅ · [#19](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/19) Groups ✅ · [#20](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/20) Farmers ✅ · [#21](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/21) Parcels ✅ · [#22](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/22) Final QA ✅ | [Milestone #3](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/3) |
+| **4.a Infra** | Dynamic Menu Management — DB-driven Sidebar + Menu CRUD Settings | 🔲 | [#35](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/35) Dynamic Menu Management 🔲 | [Milestone #6](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/6) |
 | **4.a** | Master Data CRUD - Phase 2 (Training, Agronomy) | 🔲 | — | — |
 | **4.b** | Master Data CRUD - Phase 3 (HCV, BUSDEV) | 🔲 | — | — |
 | **4.c** | Master Data CRUD - Phase 4 (IMPACT, Workplan) | 🔲 | — | — |
@@ -109,8 +110,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 
 | Tanggal | Perubahan |
 |---------|-----------|
-| Tanggal | Perubahan |
-|---------|-----------|
+| 2026-05-07 | Issue #35 dibuat — Dynamic Menu Management: migrasi menu sidebar dari CSV statis ke DB (Prisma schema `MenuItem`, migration, seed, Server Actions CRUD, dynamic sidebar, scaffold 9 halaman baru, Settings → Menu Management UI). Milestone #6 dibuat. |
 | 2026-05-06 | Issue #22 selesai — Final QA Fase 4: hapus semua debug logs (SERVER/PAGE/CLIENT DEBUG) dari 4 file, lokalisasi teks bahasa Inggris di farmer detail page, ganti badge status hardcoded dengan data real (parcel count), hapus placeholder data `Math.random()` di group detail tabs (training/BMP), hapus external image URL wikimedia. Build ✅, Tests 81/81 ✅, Perf: Groups 324ms, Farmers 335ms, Parcels 100ms, Provinces 33ms, Districts 63ms — semua < 500ms. |
 | 2026-05-06 | Issue #31 selesai — mis-main di-sync: 6 migrations applied via `prisma migrate deploy`, schema drift fixes (abrv_3id + birthdate nullable), seed berhasil (users 4, provinces 2, districts 12, subdistricts 63, farmer-groups 29, batches 2, commodities 3, ref data lengkap). 2 pre-existing seed bugs ditemukan & didokumentasikan (villages.csv & farmers.csv ID mismatch). Build ✅, Tests 81/81 ✅, Perf: Groups 0.33ms, Farmers 0.20ms. |
 | 2026-05-06 | Issue #31 dibuat — Sync production database (mis-main): apply 6 migrations + seed data referensi. mis-main saat ini kosong (0 tabel aplikasi). |
