@@ -260,7 +260,7 @@ export function FarmerListClient({
       <div className="rounded-md border bg-card relative">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/70 border-b-2">
+            <TableRow className="bg-muted/70 border-b-2 border-border">
               {visibleCols.has("wriFarmerId") && <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ID Petani</TableHead>}
               {visibleCols.has("name") && <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</TableHead>}
               {visibleCols.has("nik") && <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">NIK</TableHead>}
@@ -282,12 +282,12 @@ export function FarmerListClient({
             ) : (
               initialData.data.map((row) => (
                 <TableRow key={row.id}>
-                  {visibleCols.has("wriFarmerId") && <TableCell className="font-mono text-muted-foreground">{row.wriFarmerId || "—"}</TableCell>}
-                  {visibleCols.has("name") && <TableCell className="font-medium">{row.name}</TableCell>}
-                  {visibleCols.has("nik") && <TableCell className="font-mono text-muted-foreground">{maskNik(row.nik)}</TableCell>}
-                  {visibleCols.has("gender") && <TableCell>{row.gender === "L" ? "Laki-laki" : row.gender === "P" ? "Perempuan" : row.gender}</TableCell>}
-                  {visibleCols.has("group") && <TableCell>{row.farmerGroup?.name}</TableCell>}
-                  {visibleCols.has("district") && <TableCell>{row.farmerGroup?.district?.name}</TableCell>}
+                  {visibleCols.has("wriFarmerId") && <TableCell className="text-sm font-mono text-muted-foreground">{row.wriFarmerId || "—"}</TableCell>}
+                  {visibleCols.has("name") && <TableCell className="text-sm font-medium">{row.name}</TableCell>}
+                  {visibleCols.has("nik") && <TableCell className="text-sm font-mono text-muted-foreground">{maskNik(row.nik)}</TableCell>}
+                  {visibleCols.has("gender") && <TableCell className="text-sm text-muted-foreground">{row.gender === "L" ? "Laki-laki" : row.gender === "P" ? "Perempuan" : row.gender}</TableCell>}
+                  {visibleCols.has("group") && <TableCell className="text-sm font-medium">{row.farmerGroup?.name}</TableCell>}
+                  {visibleCols.has("district") && <TableCell className="text-sm text-muted-foreground">{row.farmerGroup?.district?.name}</TableCell>}
                   {visibleCols.has("batch") && (
                     <TableCell>
                       {row.batch?.name ? (

@@ -52,6 +52,7 @@ export function AppSidebarClient({ menuItems, ...props }: AppSidebarClientProps)
       items: item.children.map((child) => ({
         title: child.title,
         url: child.url,
+        icon: child.icon ?? undefined,
         rbac: {
           roles: child.roles.split("|") as never[],
           groups: child.groups.split("|") as never[],

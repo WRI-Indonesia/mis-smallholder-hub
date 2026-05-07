@@ -86,35 +86,35 @@ export function GroupListClient({
     {
       key: "code",
       label: "Kode",
-      cellClassName: "font-mono text-primary",
+      cellClassName: "text-sm font-mono text-muted-foreground",
       render: (row) => <span>{row.code || "—"}</span>,
     },
     {
       key: "abrv",
       label: "Singkatan",
+      cellClassName: "text-sm text-muted-foreground",
       render: (row) => <span>{row.abrv || "—"}</span>,
     },
     {
       key: "name",
       label: "Nama Kelompok",
-      cellClassName: "font-medium",
+      cellClassName: "text-sm font-medium",
     },
     {
       key: "abrv3id",
       label: "3ID",
+      cellClassName: "text-sm text-muted-foreground",
       render: (row) => (
-        <span className={!row.abrv3id ? "text-muted-foreground italic text-xs" : ""}>
-          {row.abrv3id || "n/a"}
-        </span>
+        <span>{row.abrv3id || "—"}</span>
       ),
     },
     {
       key: "district",
       label: "Kabupaten",
       render: (row) => (
-        <div className="flex flex-col">
-          <span>{row.district.name}</span>
-          <span className="text-xs text-muted-foreground">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm">{row.district.name}</span>
+          <span className="text-sm text-muted-foreground">
             {row.district.province.name}
           </span>
         </div>
@@ -138,7 +138,7 @@ export function GroupListClient({
             {row.locationLat.toFixed(4)}, {row.locationLong.toFixed(4)}
           </span>
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-sm text-muted-foreground">—</span>
         ),
     },
   ];

@@ -61,6 +61,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -68,6 +81,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteDialog } from "@/components/shared/delete-dialog";
+import { ICON_LIST, ICON_MAP } from "@/lib/icon-map";
 import {
   Plus,
   MoreHorizontal,
@@ -77,6 +91,9 @@ import {
   Eye,
   EyeOff,
   Search,
+  Check,
+  ChevronsUpDown,
+  X,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -131,25 +148,25 @@ function SortableMenuRow({
 
       {/* Title + key */}
       <td className="px-3 py-3">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium leading-none">
             {item.parentKey && (
               <span className="text-muted-foreground mr-1">└─</span>
             )}
             {item.title}
           </span>
-          <span className="text-xs text-muted-foreground font-mono">{item.key}</span>
+          <span className="text-xs text-muted-foreground leading-none">{item.key}</span>
         </div>
       </td>
 
       {/* URL */}
-      <td className="px-3 py-3 text-sm text-muted-foreground font-mono hidden md:table-cell">
+      <td className="px-3 py-3 text-sm text-muted-foreground hidden md:table-cell">
         {item.url}
       </td>
 
       {/* Parent */}
       <td className="px-3 py-3 text-sm text-muted-foreground hidden lg:table-cell">
-        {item.parentKey ?? <span className="italic text-xs">root</span>}
+        {item.parentKey ?? <span className="text-sm text-muted-foreground italic">root</span>}
       </td>
 
       {/* Status badges */}
@@ -399,19 +416,95 @@ function MenuFormModal({
             <FormField
               control={form.control}
               name="icon"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Icon (opsional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="contoh: LayoutDashboardIcon"
-                      {...field}
-                      value={field.value ?? ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const [open, setOpen] = useState(false);
+                const [iconSearch, setIconSearch] = useState("");
+                const selectedIcon = field.value ?? null;
+                const SelectedIconComponent = selectedIcon ? ICON_MAP[selectedIcon] : null;
+
+                const filtered = iconSearch
+                  ? ICON_LIST.filter((name) =>
+                      name.toLowerCase().includes(iconSearch.toLowerCase())
+                    )
+                  : ICON_LIST;
+
+                return (
+                  <FormItem>
+                    <FormLabel>Icon (opsional)</FormLabel>
+                    <div className="flex gap-2">
+                      <Popover open={open} onOpenChange={setOpen}>
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={open}
+                              className="flex-1 justify-between font-normal"
+                            />
+                          }
+                        >
+                          <span className="flex items-center gap-2">
+                            {SelectedIconComponent && (
+                              <SelectedIconComponent className="size-4 shrink-0" />
+                            )}
+                            <span className={!selectedIcon ? "text-muted-foreground" : ""}>
+                              {selectedIcon || "Pilih icon..."}
+                            </span>
+                          </span>
+                          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0" align="start">
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Cari icon..."
+                              value={iconSearch}
+                              onValueChange={setIconSearch}
+                            />
+                            <CommandList className="max-h-[220px]">
+                              <CommandEmpty>Icon tidak ditemukan.</CommandEmpty>
+                              <CommandGroup>
+                                {filtered.map((name) => {
+                                  const IconComp = ICON_MAP[name];
+                                  return (
+                                    <CommandItem
+                                      key={name}
+                                      value={name}
+                                      onSelect={() => {
+                                        field.onChange(name);
+                                        setOpen(false);
+                                        setIconSearch("");
+                                      }}
+                                    >
+                                      <IconComp className="size-4 mr-2 shrink-0" />
+                                      <span className="text-sm">{name}</span>
+                                      {selectedIcon === name && (
+                                        <Check className="size-4 ml-auto" />
+                                      )}
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      {selectedIcon && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={() => field.onChange(null)}
+                          title="Hapus icon"
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             {/* isActive + isVisible */}
