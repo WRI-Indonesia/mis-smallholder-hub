@@ -12,7 +12,7 @@
 | **Proyek** | Smallholder HUB — Management Information System |
 | **Stack** | Next.js 16 · React 19 · Tailwind 4 · Shadcn UI · Prisma 7 · MapLibre |
 | **Repository** | `WRI-Indonesia/mis-smallholder-hub` |
-| **Terakhir Diupdate** | 2026-05-07 |
+| **Terakhir Diupdate** | 2026-05-08 |
 | **Diupdate Oleh** | Sofyan (via AI-assisted development) |
 | **Branch Aktif** | `dev-phase-4` |
 
@@ -102,8 +102,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 | **3** | Autentikasi & RBAC | ⏭️ Skipped | — | — |
 | **4** | Master Data CRUD | ✅ Selesai | [#17](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/17) Shared Infra ✅ · [#18](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/18) Regions ✅ · [#19](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/19) Groups ✅ · [#20](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/20) Farmers ✅ · [#21](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/21) Parcels ✅ · [#22](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/22) Final QA ✅ | [Milestone #3](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/3) |
 | **4.a Infra** | Dynamic Menu Management — DB-driven Sidebar + Menu CRUD Settings | ✅ Selesai | [#35](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/35) Dynamic Menu Management ✅ | [Milestone #6](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/6) |
-| **4.a** | Master Data CRUD - Phase 2 (Training, Agronomy) | 🔲 | — | — |
-| **4.b** | Master Data CRUD - Phase 3 (HCV, BUSDEV) | 🔲 | — | — |
+| **4.a** | Master Data CRUD - Phase 2 (Training, Agronomy) | 🔄 In Progress | [#39](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/39) Training List & Detail ✅ | — || **4.b** | Master Data CRUD - Phase 3 (HCV, BUSDEV) | 🔲 | — | — |
 | **4.c** | Master Data CRUD - Phase 4 (IMPACT, Workplan) | 🔲 | — | — |
 | **5** | CMS & Content Management | 🔲 | — | — |
 | **6** | Tools (Import/Export/GIS) | 🔲 | — | — |
@@ -120,6 +119,8 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 
 | Tanggal & Waktu | Perubahan |
 |-----------------|-----------|
+| 2026-05-08 21:00 | Issue #39 selesai (final) — Training module lengkap: List page (DataTable + filter KT searchable combobox + tombol Tambah Kegiatan), Form modal create/edit (KT + paket searchable, tanggal, lokasi, upload PDF evidence ke S3 bucket mis-dev dengan presigned URL), Detail page (summary card + daftar peserta + tombol Tambah Peserta dual-panel modal + hapus peserta), server actions: `getTrainingActivities`, `getTrainingActivityById`, `createTrainingActivity`, `updateTrainingActivity`, `deleteTrainingActivity`, `addParticipants`, `removeParticipant`, `getFarmersByGroup`, `uploadTrainingEvidence`. S3 lib (`src/lib/s3.ts`): presigned URL 7 hari. Build ✅, Tests 116/116 ✅. |
+| 2026-05-08 19:45 | Issue #39 selesai — Master Data Training List & Detail: server action `getTrainingActivities` + `getTrainingActivityById` + `deleteTrainingActivity`, list page dengan DataTable (6 kolom: KT, paket, tanggal, lokasi, peserta, evidence link), detail page (summary card + tabel peserta dengan NIK masking), delete dengan konfirmasi dialog + router.refresh, placeholder Edit (toast info), 17 unit tests baru (schema validation, pagination, date formatting, NIK masking). Build ✅, Tests 117/117 ✅. |
 | 2026-05-08 16:45 | Issue #37 selesai — Interactive Map Dashboard: filter kabupaten + multi-select KT mempengaruhi map & ringkasan, panel section jadi collapsible (Filter/Layer/Basemap), marker KT non-cluster pakai icon. Build ✅, Tests 100/100 ✅. |
 | 2026-05-07 14:55 | Issue #37 dibuat — Interactive Map Dashboard: full-screen GIS map, marker KT (29 titik), polygon lahan (10 PostGIS), layer control panel, basemap switcher, popup on click. Milestone #7 dibuat. |
 | 2026-05-07 14:35 | Post-merge polish #35 — fix form edit kosong (useEffect reset), action icon (titik 3 → Edit2+Trash2), search tabel menu, icon support child menu sidebar, `src/lib/icon-map.tsx` (ICON_MAP + ICON_LIST), icon picker combobox dengan search, URL field disabled saat edit, typography audit & standarisasi semua tabel admin, dark mode contrast fix (--muted token), fix double header Data Lahan, pindah Regions ke `settings/regions`, table style rule di rule&progress.md. Build ✅, Tests 95/95 ✅. |
@@ -259,6 +260,7 @@ Prisma 7 + PostgreSQL + PostGIS. Schema modular (9 file `.prisma`), 4 migrasi, s
 | `villages.csv` ID mismatch | `prisma/seeds/data/villages.csv` | subdistrictId format `subd-140101` tidak cocok dengan `subd-1404010` di subdistricts.csv — `reg-village` selalu kosong |
 | `farmers.csv` ID mismatch | `prisma/seeds/data/farmers.csv` | farmerGroupId format `fg-001` tidak cocok dengan `ICS-1406-01` di farmer-groups.csv — seed farmers selalu gagal |
 | Schema drift baseline | `prisma/migrations/` | `abrv_3id` dan `birthdate` nullable ditambahkan manual ke mis-dev tanpa migration — perlu migration baseline |
+| S3 orphan files — evidence tidak terhapus dari bucket | `src/lib/s3.ts`, `src/server/actions/training.ts` | Saat delete kegiatan training atau ganti evidence, file PDF lama di bucket `mis-dev` tidak ikut terhapus. Perlu tools cleanup (list orphan keys vs DB records) — ditunda ke fase Tools. |
 | `window.location.reload()` di menu CRUD | `settings/menu/menu-manager-client.tsx` | Ganti dengan `router.refresh()` dari `next/navigation` untuk avoid full page reload |
 | Unused DropdownMenu imports | `settings/menu/menu-manager-client.tsx` | `DropdownMenu`, `DropdownMenuContent`, `DropdownMenuTrigger` tidak terpakai setelah refactor action ke icon button |
 | `getMenuItems()` tidak di-cache | `server/actions/menu.ts` | Dipanggil per halaman tanpa cache — tambahkan `unstable_cache` atau React `cache()` saat halaman bertambah banyak |
