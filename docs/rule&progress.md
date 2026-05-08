@@ -67,6 +67,16 @@ Setiap unit kerja **wajib** mengikuti alur berikut:
 - **Tabel & Filter Data:**
   - Search dan input filter diletakkan berdampingan di atas tabel, berbaris (*stack*) di layar mobile dan sebaris (*inline*) di desktop.
   - Aksi (*actions*) konsisten menggunakan desain minimal (contoh: ikon pada tabel, menu dropdown jika lebih dari 2 aksi).
+- **Table Typography Standard** — Wajib konsisten di semua tabel admin:
+  - **Header row:** `bg-muted/70 border-b-2 border-border` · setiap `<TableHead>`: `text-xs font-semibold uppercase tracking-wider text-muted-foreground`
+  - **Nama / data utama:** `text-sm font-medium`
+  - **Kode / ID teknis** (kode kelompok, NIK, kode persil, ID legal): `text-sm font-mono text-muted-foreground`
+  - **Data sekunder / deskriptif** (kabupaten, provinsi, kelompok): `text-sm text-muted-foreground`
+  - **Angka / luas:** `text-sm tabular-nums` (kanan: tambah `text-right`)
+  - **Nilai kosong / null:** karakter `—` dengan `text-muted-foreground`
+  - **Kategori / status:** gunakan komponen `<Badge>` (bukan teks biasa)
+  - **Koordinat / info tambahan kecil:** boleh `text-xs font-mono text-muted-foreground`
+  - **Jangan gunakan** `text-primary`, `font-bold`, atau `italic` di body cell tabel — kecuali ada alasan desain yang eksplisit.
 - **Responsive Design:** Wajib mendukung *breakpoint* standar (mobile, tablet, desktop).
 - **State & Feedback:** 
   - Wajib menyediakan *Loading state* (contoh: indikator loading atau *Skeleton*) pada data fetching.
@@ -99,7 +109,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 | **6** | Tools (Import/Export/GIS) | 🔲 | — | — |
 | **7** | Dashboard & Reporting (DB) | 🔲 | — | — |
 | **7.a** | Dashboard & Reporting (DB) - Basic Data | 🔲 | — | — |
-| **7.a** | Dashboard & Reporting (DB) - Interactive Map| 🔲 | — | — |
+| **7.a** | Dashboard & Reporting (DB) - Interactive Map | ✅ Selesai | [#37](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/37) Interactive Map ✅ | [Milestone #7](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/7) |
 | **8** | Community & Knowledge (DB) | 🔲 | — | — |
 | **9** | Workplan Tracker | 🔲 | — | — |
 | **10** | Polish (i18n, Accessibility) | 🔲 | — | — |
@@ -108,21 +118,25 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 
 ### Changelog
 
-| Tanggal | Perubahan |
-|---------|-----------|
-| 2026-05-07 | Issue #35 selesai — Dynamic Menu Management: Prisma schema `MenuItem`, migration SQL manual (workaround schema drift), seed 31 items, 7 server actions, async Server Component sidebar, `menu-utils.ts` RBAC refactor, 9 scaffold pages, Settings → Menu Management UI (CRUD + drag-and-drop + search). Build ✅, Tests 95/95 ✅, Perf: `getMenuItems` ~46ms warm, MenuManagementPage ~339ms. |
-| 2026-05-07 | Issue #35 dibuat — Dynamic Menu Management: migrasi menu sidebar dari CSV statis ke DB (Prisma schema `MenuItem`, migration, seed, Server Actions CRUD, dynamic sidebar, scaffold 9 halaman baru, Settings → Menu Management UI). Milestone #6 dibuat. |
-| 2026-05-06 | Issue #22 selesai — Final QA Fase 4: hapus semua debug logs (SERVER/PAGE/CLIENT DEBUG) dari 4 file, lokalisasi teks bahasa Inggris di farmer detail page, ganti badge status hardcoded dengan data real (parcel count), hapus placeholder data `Math.random()` di group detail tabs (training/BMP), hapus external image URL wikimedia. Build ✅, Tests 81/81 ✅, Perf: Groups 324ms, Farmers 335ms, Parcels 100ms, Provinces 33ms, Districts 63ms — semua < 500ms. |
-| 2026-05-06 | Issue #31 selesai — mis-main di-sync: 6 migrations applied via `prisma migrate deploy`, schema drift fixes (abrv_3id + birthdate nullable), seed berhasil (users 4, provinces 2, districts 12, subdistricts 63, farmer-groups 29, batches 2, commodities 3, ref data lengkap). 2 pre-existing seed bugs ditemukan & didokumentasikan (villages.csv & farmers.csv ID mismatch). Build ✅, Tests 81/81 ✅, Perf: Groups 0.33ms, Farmers 0.20ms. |
-| 2026-05-06 | Issue #31 dibuat — Sync production database (mis-main): apply 6 migrations + seed data referensi. mis-main saat ini kosong (0 tabel aplikasi). |
-| 2026-05-06 | Issue #29 selesai — Audit trail fields (createdAt, createdBy, modifiedAt, modifiedBy) ditambahkan ke 22 tabel. Migration SQL manual (ADD COLUMN IF NOT EXISTS + FK constraints). Prisma client di-regenerate. Server actions (farmer, farmer-group, land-parcel) diupdate. 12 unit tests baru (audit-trail.test.ts). Build ✅, Tests 81/81 ✅, Perf: Farmers 0.41ms, Parcels 0.32ms. |
-| 2026-05-06 | Milestone #4 "Database Schema Hardening" dibuat. Issue #29 dibuat — audit trail fields (createdAt, createdBy, modifiedAt, modifiedBy) untuk 22 tabel. |
-| 2026-05-05 | Issue #21 selesai — Parcels CRUD lengkap: Zod schema, server actions (PostGIS raw SQL), page, list client (filter kelompok tani, search, pagination), form modal (petani searchable), view modal (detail + peta MapLibre dengan switcher Light/Dark/Satellite), 16 unit tests. |
-| 2026-05-04 | Restrukturisasi dokumen. Tambah rules. Skip Fase 3, mulai Fase 4. GitHub Issues & Milestone dibuat. |
-| 2026-04-14 | Fase 2 selesai — Prisma 7 modular schema, 3 migrasi PostgreSQL + PostGIS, seeding modular. |
-| 2026-04-13 | Fase 1.8 selesai — Refaktor arsitektur (server component, decomposition, naming, barrel). |
-| 2026-03-30 | Code review menyeluruh. Sinkronisasi status. |
-| 2026-03-28 | Modernisasi Basic Data Dashboard. Perbaikan Home page. |
+| Tanggal & Waktu | Perubahan |
+|-----------------|-----------|
+| 2026-05-08 16:45 | Issue #37 selesai — Interactive Map Dashboard: filter kabupaten + multi-select KT mempengaruhi map & ringkasan, panel section jadi collapsible (Filter/Layer/Basemap), marker KT non-cluster pakai icon. Build ✅, Tests 100/100 ✅. |
+| 2026-05-07 14:55 | Issue #37 dibuat — Interactive Map Dashboard: full-screen GIS map, marker KT (29 titik), polygon lahan (10 PostGIS), layer control panel, basemap switcher, popup on click. Milestone #7 dibuat. |
+| 2026-05-07 14:35 | Post-merge polish #35 — fix form edit kosong (useEffect reset), action icon (titik 3 → Edit2+Trash2), search tabel menu, icon support child menu sidebar, `src/lib/icon-map.tsx` (ICON_MAP + ICON_LIST), icon picker combobox dengan search, URL field disabled saat edit, typography audit & standarisasi semua tabel admin, dark mode contrast fix (--muted token), fix double header Data Lahan, pindah Regions ke `settings/regions`, table style rule di rule&progress.md. Build ✅, Tests 95/95 ✅. |
+| 2026-05-07 09:12 | Issue #35 selesai — Dynamic Menu Management: Prisma schema `MenuItem`, migration SQL manual (workaround schema drift), seed 31 items, 7 server actions, async Server Component sidebar, `menu-utils.ts` RBAC refactor, 9 scaffold pages, Settings → Menu Management UI (CRUD + drag-and-drop + search). Build ✅, Tests 95/95 ✅, Perf: `getMenuItems` ~46ms warm, MenuManagementPage ~339ms. |
+| 2026-05-07 08:30 | Issue #35 dibuat — Dynamic Menu Management: migrasi menu sidebar dari CSV statis ke DB (Prisma schema `MenuItem`, migration, seed, Server Actions CRUD, dynamic sidebar, scaffold 9 halaman baru, Settings → Menu Management UI). Milestone #6 dibuat. |
+| 2026-05-06 23:45 | Issue #22 selesai — Final QA Fase 4: hapus semua debug logs (SERVER/PAGE/CLIENT DEBUG) dari 4 file, lokalisasi teks bahasa Inggris di farmer detail page, ganti badge status hardcoded dengan data real (parcel count), hapus placeholder data `Math.random()` di group detail tabs (training/BMP), hapus external image URL wikimedia. Build ✅, Tests 81/81 ✅, Perf: Groups 324ms, Farmers 335ms, Parcels 100ms, Provinces 33ms, Districts 63ms — semua < 500ms. |
+| 2026-05-06 22:10 | Issue #31 selesai — mis-main di-sync: 6 migrations applied via `prisma migrate deploy`, schema drift fixes (abrv_3id + birthdate nullable), seed berhasil (users 4, provinces 2, districts 12, subdistricts 63, farmer-groups 29, batches 2, commodities 3, ref data lengkap). 2 pre-existing seed bugs ditemukan & didokumentasikan (villages.csv & farmers.csv ID mismatch). Build ✅, Tests 81/81 ✅, Perf: Groups 0.33ms, Farmers 0.20ms. |
+| 2026-05-06 20:00 | Issue #31 dibuat — Sync production database (mis-main): apply 6 migrations + seed data referensi. mis-main saat ini kosong (0 tabel aplikasi). |
+| 2026-05-06 18:30 | Issue #29 selesai — Audit trail fields (createdAt, createdBy, modifiedAt, modifiedBy) ditambahkan ke 22 tabel. Migration SQL manual (ADD COLUMN IF NOT EXISTS + FK constraints). Prisma client di-regenerate. Server actions (farmer, farmer-group, land-parcel) diupdate. 12 unit tests baru (audit-trail.test.ts). Build ✅, Tests 81/81 ✅, Perf: Farmers 0.41ms, Parcels 0.32ms. |
+| 2026-05-06 16:00 | Milestone #4 "Database Schema Hardening" dibuat. Issue #29 dibuat — audit trail fields (createdAt, createdBy, modifiedAt, modifiedBy) untuk 22 tabel. |
+| 2026-05-05 21:00 | Issue #21 selesai — Parcels CRUD lengkap: Zod schema, server actions (PostGIS raw SQL), page, list client (filter kelompok tani, search, pagination), form modal (petani searchable), view modal (detail + peta MapLibre dengan switcher Light/Dark/Satellite), 16 unit tests. |
+| 2026-05-04 10:00 | Restrukturisasi dokumen. Tambah rules. Skip Fase 3, mulai Fase 4. GitHub Issues & Milestone dibuat. |
+| 2026-04-14 15:00 | Fase 2 selesai — Prisma 7 modular schema, 3 migrasi PostgreSQL + PostGIS, seeding modular. |
+| 2026-04-13 14:00 | Fase 1.8 selesai — Refaktor arsitektur (server component, decomposition, naming, barrel). |
+| 2026-03-30 11:00 | Code review menyeluruh. Sinkronisasi status. |
+| 2026-03-28 09:00 | Modernisasi Basic Data Dashboard. Perbaikan Home page. |
+| 2026-03-18 08:00 | Inisiasi proyek. Setup Next.js, Shadcn, static data, public pages. |
 | 2026-03-18 | Inisiasi proyek. Setup Next.js, Shadcn, static data, public pages. |
 
 ---

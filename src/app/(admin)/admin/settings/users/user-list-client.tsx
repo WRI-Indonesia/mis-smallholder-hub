@@ -90,12 +90,12 @@ export function UserListClient({ initialUsers }: UserListClientProps) {
       <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nama</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Peran</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+            <TableRow className="bg-muted/70 border-b-2 border-border">
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Peran</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -108,8 +108,8 @@ export function UserListClient({ initialUsers }: UserListClientProps) {
             ) : (
               initialUsers.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell className="text-sm font-medium">{user.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{user.role}</Badge>
                   </TableCell>

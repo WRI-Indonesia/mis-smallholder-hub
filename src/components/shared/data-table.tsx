@@ -295,7 +295,7 @@ export function DataTable<T>({
       <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/70 hover:bg-muted/70 border-b-2">
+            <TableRow className="bg-muted/70 hover:bg-muted/70 border-b-2 border-border">
               {activeColumns.map((col) => {
                 const isSortable = col.sortable !== false;
                 return (

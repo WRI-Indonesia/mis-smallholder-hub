@@ -341,7 +341,7 @@ export function ParcelListClient({
       <div className="rounded-md border bg-card relative">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/70 border-b-2">
+            <TableRow className="bg-muted/70 border-b-2 border-border">
               {visibleCols.has("parcelCode") && (
                 <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Kode Persil
@@ -401,17 +401,17 @@ export function ParcelListClient({
               initialData.data.map((row) => (
                 <TableRow key={row.id}>
                   {visibleCols.has("parcelCode") && (
-                    <TableCell className="font-mono text-primary">
+                    <TableCell className="text-sm font-mono text-muted-foreground">
                       {row.parcelCode || "—"}
                     </TableCell>
                   )}
                   {visibleCols.has("farmer") && (
-                    <TableCell className="font-medium">
+                    <TableCell className="text-sm font-medium">
                       {row.farmer.name}
                     </TableCell>
                   )}
                   {visibleCols.has("group") && (
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-sm text-muted-foreground">
                       {row.farmer.farmerGroup.name}
                     </TableCell>
                   )}
@@ -420,22 +420,22 @@ export function ParcelListClient({
                       {row.commodity ? (
                         <Badge variant="outline">{row.commodity.name}</Badge>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-sm text-muted-foreground">—</span>
                       )}
                     </TableCell>
                   )}
                   {visibleCols.has("polygonSizeHa") && (
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-sm text-right tabular-nums">
                       {formatHa(row.polygonSizeHa)}
                     </TableCell>
                   )}
                   {visibleCols.has("legalSizeHa") && (
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-sm text-right tabular-nums">
                       {formatHa(row.legalSizeHa)}
                     </TableCell>
                   )}
                   {visibleCols.has("legalId") && (
-                    <TableCell className="font-mono text-muted-foreground text-xs">
+                    <TableCell className="text-sm font-mono text-muted-foreground">
                       {row.legalId || "—"}
                     </TableCell>
                   )}
@@ -444,7 +444,7 @@ export function ParcelListClient({
                       {row.status ? (
                         <Badge variant="secondary">{row.status}</Badge>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-sm text-muted-foreground">—</span>
                       )}
                     </TableCell>
                   )}

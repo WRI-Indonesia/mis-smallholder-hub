@@ -51,8 +51,8 @@ export function RegionListClient({
   // ─── Province columns ──────────────────────────────────────────────────────
 
   const provinceColumns: DataTableColumn<ProvinceRow>[] = [
-    { key: "code", label: "Kode", cellClassName: "font-mono font-medium text-primary" },
-    { key: "name", label: "Nama Provinsi" },
+    { key: "code", label: "Kode", cellClassName: "text-sm font-mono text-muted-foreground" },
+    { key: "name", label: "Nama Provinsi", cellClassName: "text-sm font-medium" },
     {
       key: "_count",
       label: "Kabupaten",
@@ -65,11 +65,12 @@ export function RegionListClient({
   // ─── District columns ──────────────────────────────────────────────────────
 
   const districtColumns: DataTableColumn<DistrictRow>[] = [
-    { key: "code", label: "Kode", cellClassName: "font-mono font-medium text-primary" },
-    { key: "name", label: "Nama Kabupaten" },
+    { key: "code", label: "Kode", cellClassName: "text-sm font-mono text-muted-foreground" },
+    { key: "name", label: "Nama Kabupaten", cellClassName: "text-sm font-medium" },
     {
       key: "province",
       label: "Provinsi",
+      cellClassName: "text-sm text-muted-foreground",
       render: (row) => <span>{row.province.name}</span>,
     },
     {

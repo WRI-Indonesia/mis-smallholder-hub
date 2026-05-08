@@ -1,32 +1,32 @@
 key,parentKey,title,url,icon,order,isActive,isVisible,roles,groups,jobDescs,regions
 dashboard,,Dashboard,#,LayoutDashboardIcon,10,true,true,all,all,all,all
-dashboard-basic-data,dashboard,Basic Data,/admin/dashboard,,11,true,true,all,all,all,all
-dashboard-workplan,dashboard,Workplan Tracker,/admin/dashboard/workplan,,12,true,true,all,all,all,all
-dashboard-training,dashboard,Training,/admin/dashboard/training,,13,true,true,all,all,all,all
-dashboard-bmp,dashboard,BMP,/admin/dashboard/bmp,,14,true,true,all,all,all,all
-dashboard-reg-ag,dashboard,Regenerative Agriculture,/admin/dashboard/reg-ag,,15,true,true,all,all,all,all
-dashboard-map,dashboard,Interactive Map,/admin/dashboard/map,,16,true,true,all,all,all,all
-dashboard-impact,dashboard,Impact Indicator,/admin/dashboard/impact,,17,true,true,all,all,all,all
-dashboard-palm-impact,dashboard,Palm Impact Assessment,/admin/dashboard/palm-impact,,18,true,true,all,all,all,all
+dashboard-basic-data,dashboard,Basic Data,/admin/dashboard,BarChart2,11,true,true,all,all,all,all
+dashboard-workplan,dashboard,Workplan Tracker,/admin/dashboard/workplan,ClipboardList,12,true,true,all,all,all,all
+dashboard-training,dashboard,Training,/admin/dashboard/training,GraduationCap,13,true,true,all,all,all,all
+dashboard-bmp,dashboard,BMP,/admin/dashboard/bmp,Sprout,14,true,true,all,all,all,all
+dashboard-reg-ag,dashboard,Regenerative Agriculture,/admin/dashboard/reg-ag,Leaf,15,true,true,all,all,all,all
+dashboard-map,dashboard,Interactive Map,/admin/dashboard/map,Map,16,true,true,all,all,all,all
+dashboard-impact,dashboard,Impact Indicator,/admin/dashboard/impact,TrendingUp,17,true,true,all,all,all,all
+dashboard-palm-impact,dashboard,Palm Impact Assessment,/admin/dashboard/palm-impact,BarChart3,18,true,true,all,all,all,all
 master-data,,Master Data,#,DatabaseIcon,20,true,true,admin|operator,WRI|UL|ICS,all,all
-md-groups,master-data,Kelompok Tani,/admin/master-data/groups,,21,true,true,all,all,all,all
-md-farmers,master-data,Data Petani,/admin/master-data/farmers,,22,true,true,all,all,all,all
-md-parcels,master-data,Data Lahan,/admin/master-data/parcels,,23,true,true,all,all,all,all
-md-regions,master-data,Region / Wilayah,/admin/master-data/regions,,24,true,true,admin,all,all,all
-md-training,master-data,Training,/admin/master-data/training,,25,true,true,admin|operator,all,all,all
-md-bmp,master-data,Best Management Practices,/admin/master-data/bmp,,26,true,true,admin|operator,all,all,all
-md-reg-ag,master-data,Regenerative Agriculture,/admin/master-data/reg-ag,,27,true,true,admin|operator,all,all,all
+md-groups,master-data,Kelompok Tani,/admin/master-data/groups,Users2,21,true,true,all,all,all,all
+md-farmers,master-data,Data Petani,/admin/master-data/farmers,User,22,true,true,all,all,all,all
+md-parcels,master-data,Data Lahan,/admin/master-data/parcels,MapPin,23,true,true,all,all,all,all
+md-regions,master-data,Region / Wilayah,/admin/settings/regions,Globe,24,true,true,admin,all,all,all
+md-training,master-data,Training,/admin/master-data/training,GraduationCap,25,true,true,admin|operator,all,all,all
+md-bmp,master-data,Best Management Practices,/admin/master-data/bmp,BookMarked,26,true,true,admin|operator,all,all,all
+md-reg-ag,master-data,Regenerative Agriculture,/admin/master-data/reg-ag,Flower2,27,true,true,admin|operator,all,all,all
 cms,,CMS,#,MonitorIcon,30,true,true,admin,all,all,all
-cms-news,cms,Berita & Pengumuman,/admin/cms/news,,31,true,true,all,all,all,all
-cms-knowledge,cms,Knowledge Management,/admin/cms/knowledge,,32,true,true,all,all,all,all
-cms-community,cms,Manajemen Komunitas,/admin/cms/community,,33,true,true,all,all,all,all
-cms-pages,cms,Konfigurasi Halaman,/admin/cms/pages,,34,true,true,all,all,all,all
+cms-news,cms,Berita & Pengumuman,/admin/cms/news,FileText,31,true,true,all,all,all,all
+cms-knowledge,cms,Knowledge Management,/admin/cms/knowledge,BookOpen,32,true,true,all,all,all,all
+cms-community,cms,Manajemen Komunitas,/admin/cms/community,Users,33,true,true,all,all,all,all
+cms-pages,cms,Konfigurasi Halaman,/admin/cms/pages,Monitor,34,true,true,all,all,all,all
 tools,,Tools,#,WrenchIcon,40,true,true,admin|operator,all,all,all
-tools-import,tools,Import Data Massal,/admin/tools/import,,41,true,true,admin,all,all,all
-tools-export,tools,Export Laporan,/admin/tools/export,,42,true,true,admin|operator,all,all,all
-tools-geo,tools,Geospatial Tools,/admin/tools/geo,,43,true,true,all,all,agronomis|manager,all
+tools-import,tools,Import Data Massal,/admin/tools/import,Upload,41,true,true,admin,all,all,all
+tools-export,tools,Export Laporan,/admin/tools/export,Download,42,true,true,admin|operator,all,all,all
+tools-geo,tools,Geospatial Tools,/admin/tools/geo,Compass,43,true,true,all,all,agronomis|manager,all
 settings,,Setting,#,SettingsIcon,50,true,true,admin,all,all,all
-settings-users,settings,User Management,/admin/settings/users,,51,true,true,admin,all,all,all
-settings-roles,settings,Role & Permission,/admin/settings/roles,,52,true,true,admin,all,all,all
-settings-system,settings,Konfigurasi Sistem,/admin/settings/system,,53,true,true,admin,all,all,all
-settings-menu,settings,Menu Management,/admin/settings/menu,,54,true,true,admin,all,all,all
+settings-users,settings,User Management,/admin/settings/users,Users,51,true,true,admin,all,all,all
+settings-roles,settings,Role & Permission,/admin/settings/roles,Shield,52,true,true,admin,all,all,all
+settings-system,settings,Konfigurasi Sistem,/admin/settings/system,SlidersHorizontal,53,true,true,admin,all,all,all
+settings-menu,settings,Menu Management,/admin/settings/menu,Menu,54,true,true,admin,all,all,all

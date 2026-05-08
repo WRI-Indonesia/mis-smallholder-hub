@@ -1,29 +1,23 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Map } from "lucide-react";
+import { getMapData } from "@/server/actions/map";
+import { InteractiveMap } from "@/components/maps/interactive-map";
 
 export const metadata = { title: "Interactive Map" };
 
-export default function DashboardMapPage() {
+export default async function InteractiveMapPage() {
+  const result = await getMapData();
+
+  const data = result.success && result.data
+    ? result.data
+    : {
+        farmerGroups: [],
+        landParcels: [],
+        stats: { totalGroups: 0, totalFarmers: 0, totalParcels: 0, groupsWithCoords: 0, parcelsWithPolygon: 0 },
+      };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Interactive Map</h1>
-        <p className="text-muted-foreground">
-          Peta interaktif distribusi petani, lahan, dan kelompok tani.
-        </p>
-      </div>
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-3">
-          <Map className="size-5 text-muted-foreground" />
-          <CardTitle className="text-base">Segera Hadir</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Halaman ini sedang dalam pengembangan. Interactive Map akan menampilkan
-            visualisasi geospasial seluruh data petani dan lahan menggunakan MapLibre GL.
-          </p>
-        </CardContent>
-      </Card>
+    // Full-screen: override -m-6 padding dari admin layout, sama seperti dashboard/page.tsx
+    <div className="-m-6" style={{ height: "calc(100vh - 56px)" }}>
+      <InteractiveMap data={data} />
     </div>
   );
 }
