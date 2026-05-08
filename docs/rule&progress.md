@@ -109,7 +109,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 | **6** | Tools (Import/Export/GIS) | 🔲 | — | — |
 | **7** | Dashboard & Reporting (DB) | 🔲 | — | — |
 | **7.a** | Dashboard & Reporting (DB) - Basic Data | 🔲 | — | — |
-| **7.a** | Dashboard & Reporting (DB) - Interactive Map| 🔲 | — | — |
+| **7.a** | Dashboard & Reporting (DB) - Interactive Map | ✅ Selesai | [#37](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/37) Interactive Map ✅ | [Milestone #7](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/7) |
 | **8** | Community & Knowledge (DB) | 🔲 | — | — |
 | **9** | Workplan Tracker | 🔲 | — | — |
 | **10** | Polish (i18n, Accessibility) | 🔲 | — | — |
@@ -120,6 +120,8 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 
 | Tanggal & Waktu | Perubahan |
 |-----------------|-----------|
+| 2026-05-08 16:45 | Issue #37 selesai — Interactive Map Dashboard: filter kabupaten + multi-select KT mempengaruhi map & ringkasan, panel section jadi collapsible (Filter/Layer/Basemap), marker KT non-cluster pakai icon. Build ✅, Tests 100/100 ✅. |
+| 2026-05-07 14:55 | Issue #37 dibuat — Interactive Map Dashboard: full-screen GIS map, marker KT (29 titik), polygon lahan (10 PostGIS), layer control panel, basemap switcher, popup on click. Milestone #7 dibuat. |
 | 2026-05-07 14:35 | Post-merge polish #35 — fix form edit kosong (useEffect reset), action icon (titik 3 → Edit2+Trash2), search tabel menu, icon support child menu sidebar, `src/lib/icon-map.tsx` (ICON_MAP + ICON_LIST), icon picker combobox dengan search, URL field disabled saat edit, typography audit & standarisasi semua tabel admin, dark mode contrast fix (--muted token), fix double header Data Lahan, pindah Regions ke `settings/regions`, table style rule di rule&progress.md. Build ✅, Tests 95/95 ✅. |
 | 2026-05-07 09:12 | Issue #35 selesai — Dynamic Menu Management: Prisma schema `MenuItem`, migration SQL manual (workaround schema drift), seed 31 items, 7 server actions, async Server Component sidebar, `menu-utils.ts` RBAC refactor, 9 scaffold pages, Settings → Menu Management UI (CRUD + drag-and-drop + search). Build ✅, Tests 95/95 ✅, Perf: `getMenuItems` ~46ms warm, MenuManagementPage ~339ms. |
 | 2026-05-07 08:30 | Issue #35 dibuat — Dynamic Menu Management: migrasi menu sidebar dari CSV statis ke DB (Prisma schema `MenuItem`, migration, seed, Server Actions CRUD, dynamic sidebar, scaffold 9 halaman baru, Settings → Menu Management UI). Milestone #6 dibuat. |

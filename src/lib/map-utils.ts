@@ -2,6 +2,8 @@
  * Utility functions for MapLibre & Turf.js
  */
 
+export type MapStyleKey = "light" | "dark" | "satellite" | "hybrid";
+
 export const REGION_COORDINATES: Record<string, { longitude: number; latitude: number; zoom: number }> = {
   "All": { longitude: 101.44, latitude: 0.53, zoom: 7.2 },
   "Kampar": { longitude: 101.03, latitude: 0.33, zoom: 9 },
