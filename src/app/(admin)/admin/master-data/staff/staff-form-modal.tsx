@@ -48,15 +48,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 // ─── JobDesk Combobox ─────────────────────────────────────────────────────────
 
@@ -229,16 +221,6 @@ export function StaffFormModal({
     });
   }
 
-  function selectAllFarmerGroupsByDistrict(districtId: string) {
-    const ids = farmerGroups
-      .filter((g) => g.district.name === districts.find((d) => d.id === districtId)?.name)
-      .map((g) => g.id);
-    setSelectedFarmerGroupIds((prev) => {
-      const next = new Set(prev);
-      ids.forEach((id) => next.add(id));
-      return next;
-    });
-  }
 
   // ─── Submit ────────────────────────────────────────────────────────────
 

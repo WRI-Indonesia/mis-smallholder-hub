@@ -16,3 +16,10 @@ enum Role {
   OPERATOR
   MANAGEMENT
 }
+
+enum ActivityStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}

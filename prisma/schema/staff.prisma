@@ -23,6 +23,8 @@ model Staff {
   // Many-to-many assignments
   districts    StaffDistrict[]
   farmerGroups StaffFarmerGroup[]
+  activities   StaffActivity[]
+  approvedActivities StaffActivity[] @relation("ActivityApprovedBy")
 
   createdAt      DateTime @default(now()) @map("created_at")
   createdBy      String?  @map("created_by")
@@ -54,4 +56,40 @@ model StaffFarmerGroup {
 
   @@unique([staffId, farmerGroupId])
   @@map("tbl-staff-farmer-group")
+}
+
+model StaffActivity {
+  id             String         @id @default(cuid())
+  staffId        String         @map("staff_id")
+  staff          Staff          @relation(fields: [staffId], references: [id])
+  activityDate   DateTime       @map("activity_date") @db.Date
+  planning       String         // Rencana kegiatan hari ini
+  realization    String?        // Realisasi / hasil kegiatan
+  comment        String?
+  status         ActivityStatus @default(DRAFT)
+  approvedById   String?        @map("approved_by_id")
+  approvedBy     Staff?         @relation("ActivityApprovedBy", fields: [approvedById], references: [id])
+  approvedAt     DateTime?      @map("approved_at")
+  rejectionNote  String?        @map("rejection_note")
+  photos         StaffActivityPhoto[]
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  @@unique([staffId, activityDate])
+  @@map("tbl-staff-activity")
+}
+
+model StaffActivityPhoto {
+  id         String        @id @default(cuid())
+  activityId String        @map("activity_id")
+  activity   StaffActivity @relation(fields: [activityId], references: [id])
+  s3Key      String        @map("s3_key")
+  filename   String
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("tbl-staff-activity-photo")
 }
