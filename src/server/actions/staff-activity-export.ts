@@ -189,7 +189,7 @@ export async function exportActivitiesToExcel(
           if (!thumb) continue;
 
           const imageId = workbook.addImage({
-            buffer: thumb.buffer,
+            buffer: thumb.buffer as any,
             extension: thumb.ext,
           });
 

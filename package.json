@@ -9,7 +9,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "s3:get-link": "node scripts/get-link.js"
+    "s3:get-link": "node scripts/get-link.js",
+    "pdf:manage": "node scripts/pdf-manager.js",
+    "pdf:list": "node scripts/pdf-manager.js list",
+    "pdf:cleanup": "node scripts/pdf-manager.js cleanup"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",

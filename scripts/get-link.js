@@ -4,16 +4,16 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 // Initialize S3 Client for IDCloudHost
 const client = new S3Client({
     endpoint: "https://is3.cloudhost.id",
-    region: "id-jkt-1", 
+    region: "us-east-1", 
     credentials: {
-        accessKeyId: process.env.S3_KEY,
-        secretAccessKey: process.env.S3_SECRET
+        accessKeyId: process.env.S3_ACCESS_KEY_ID,
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
     },
     forcePathStyle: true 
 });
 
 async function main() {
-    const bucketName = process.env.S3_BUCKET || "mis-dev";
+    const bucketName = process.env.S3_BUCKET_NAME || "mis-dev";
     const fileKey = process.argv[2];
 
     if (!fileKey) {
@@ -24,8 +24,8 @@ async function main() {
         process.exit(1);
     }
 
-    if (!process.env.S3_KEY || !process.env.S3_SECRET) {
-        console.log("Error: S3_KEY or S3_SECRET environment variables are not set.");
+    if (!process.env.S3_ACCESS_KEY_ID || !process.env.S3_SECRET_ACCESS_KEY) {
+        console.log("Error: S3_ACCESS_KEY_ID or S3_SECRET_ACCESS_KEY environment variables are not set.");
         process.exit(1);
     }
 
