@@ -66,3 +66,53 @@ export async function uploadTrainingEvidence(
     return { success: false, error: "Gagal mengupload file. Coba lagi." };
   }
 }
+
+/**
+ * Upload a photo (JPG/PNG/PDF) for a staff activity.
+ * Returns the S3 object key.
+ */
+export async function uploadActivityPhoto(
+  formData: FormData
+): Promise<ActionResult<{ key: string; filename: string }>> {
+  try {
+    const file = formData.get("file") as File | null;
+    const activityId = formData.get("activityId") as string | null;
+
+    if (!file) return { success: false, error: "File tidak ditemukan." };
+    if (!activityId) return { success: false, error: "Activity ID diperlukan." };
+
+    const ALLOWED = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
+    if (!ALLOWED.includes(file.type)) {
+      return { success: false, error: "Hanya JPG, PNG, atau PDF yang diizinkan." };
+    }
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (file.size > MAX_SIZE) {
+      return { success: false, error: "Ukuran file maksimal 5 MB." };
+    }
+
+    const timestamp = Date.now();
+    const safeName = file.name
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-+/g, "-")
+      .toLowerCase();
+    const key = `staff-activity/${activityId}/${timestamp}-${safeName}`;
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+        ContentDisposition: `inline; filename="${file.name}"`,
+      })
+    );
+
+    return { success: true, data: { key, filename: file.name } };
+  } catch (error) {
+    console.error("Failed to upload activity photo:", error);
+    return { success: false, error: "Gagal mengupload foto. Coba lagi." };
+  }
+}
