@@ -29,6 +29,7 @@ model FarmerGroup {
   farmers      Farmer[]
   trainings    TrainingActivity[]
   certifications Certification[]
+  staffs       StaffFarmerGroup[]
 
   createdAt      DateTime @default(now()) @map("created_at")
   createdBy      String?  @map("created_by")

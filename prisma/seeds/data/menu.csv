@@ -14,8 +14,9 @@ md-farmers,master-data,Data Petani,/admin/master-data/farmers,User,22,true,true,
 md-parcels,master-data,Data Lahan,/admin/master-data/parcels,MapPin,23,true,true,all,all,all,all
 md-regions,master-data,Region / Wilayah,/admin/settings/regions,Globe,24,true,true,admin,all,all,all
 md-training,master-data,Training,/admin/master-data/training,GraduationCap,25,true,true,admin|operator,all,all,all
-md-bmp,master-data,Best Management Practices,/admin/master-data/bmp,BookMarked,26,true,true,admin|operator,all,all,all
-md-reg-ag,master-data,Regenerative Agriculture,/admin/master-data/reg-ag,Flower2,27,true,true,admin|operator,all,all,all
+md-staff,master-data,Staff WRI,/admin/master-data/staff,UserCheck,26,true,true,admin|operator,all,all,all
+md-bmp,master-data,Best Management Practices,/admin/master-data/bmp,BookMarked,27,true,true,admin|operator,all,all,all
+md-reg-ag,master-data,Regenerative Agriculture,/admin/master-data/reg-ag,Flower2,28,true,true,admin|operator,all,all,all
 cms,,CMS,#,MonitorIcon,30,true,true,admin,all,all,all
 cms-news,cms,Berita & Pengumuman,/admin/cms/news,FileText,31,true,true,all,all,all,all
 cms-knowledge,cms,Knowledge Management,/admin/cms/knowledge,BookOpen,32,true,true,all,all,all,all

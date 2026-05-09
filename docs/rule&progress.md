@@ -12,7 +12,7 @@
 | **Proyek** | Smallholder HUB — Management Information System |
 | **Stack** | Next.js 16 · React 19 · Tailwind 4 · Shadcn UI · Prisma 7 · MapLibre |
 | **Repository** | `WRI-Indonesia/mis-smallholder-hub` |
-| **Terakhir Diupdate** | 2026-05-08 |
+| **Terakhir Diupdate** | 2026-05-09 |
 | **Diupdate Oleh** | Sofyan (via AI-assisted development) |
 | **Branch Aktif** | `dev-phase-4` |
 
@@ -102,7 +102,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 | **3** | Autentikasi & RBAC | ⏭️ Skipped | — | — |
 | **4** | Master Data CRUD | ✅ Selesai | [#17](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/17) Shared Infra ✅ · [#18](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/18) Regions ✅ · [#19](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/19) Groups ✅ · [#20](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/20) Farmers ✅ · [#21](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/21) Parcels ✅ · [#22](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/22) Final QA ✅ | [Milestone #3](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/3) |
 | **4.a Infra** | Dynamic Menu Management — DB-driven Sidebar + Menu CRUD Settings | ✅ Selesai | [#35](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/35) Dynamic Menu Management ✅ | [Milestone #6](https://github.com/WRI-Indonesia/mis-smallholder-hub/milestone/6) |
-| **4.a** | Master Data CRUD - Phase 2 (Training, Agronomy) | 🔄 In Progress | [#39](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/39) Training List & Detail ✅ | — || **4.b** | Master Data CRUD - Phase 3 (HCV, BUSDEV) | 🔲 | — | — |
+| **4.a** | Master Data CRUD - Phase 2 (Training, Agronomy) | 🔄 In Progress | [#39](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/39) Training List & Detail ✅ · [#41](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/41) Staff WRI List & Detail ✅ | — || **4.b** | Master Data CRUD - Phase 3 (HCV, BUSDEV) | 🔲 | — | — |
 | **4.c** | Master Data CRUD - Phase 4 (IMPACT, Workplan) | 🔲 | — | — |
 | **5** | CMS & Content Management | 🔲 | — | — |
 | **6** | Tools (Import/Export/GIS) | 🔲 | — | — |
@@ -119,6 +119,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening → Fase 4 (Master Data) → Fase 3 (
 
 | Tanggal & Waktu | Perubahan |
 |-----------------|-----------|
+| 2026-05-09 12:20 | Issue #41 selesai — Master Data Staff WRI: Prisma schema 4 model baru (`JobDesk`, `Staff`, `StaffDistrict`, `StaffFarmerGroup`), migration SQL manual, seed 8 job desks, seed menu entry `md-staff`. Server actions: `getStaff`, `getStaffById`, `createStaff`, `updateStaff`, `deleteStaff`, `getJobDesksForDropdown`, `getStaffForDropdown`. List page (DataTable + filter Job Desk searchable combobox + tombol Tambah Staff). Form modal create/edit: Job Desk combobox (`shouldFilter=false`), Line Manager searchable (exclude self), multi-select Distrik + KT dengan Pilih Semua shortcut + badge preview, pre-populate saat edit via `getStaffById`. Detail page: profil + direct reports clickable + tabel distrik + tabel KT. Kosong = semua (distrik/KT). 14 unit tests. Build ✅, Tests 130/130 ✅. |
 | 2026-05-08 21:00 | Issue #39 selesai (final) — Training module lengkap: List page (DataTable + filter KT searchable combobox + tombol Tambah Kegiatan), Form modal create/edit (KT + paket searchable, tanggal, lokasi, upload PDF evidence ke S3 bucket mis-dev dengan presigned URL), Detail page (summary card + daftar peserta + tombol Tambah Peserta dual-panel modal + hapus peserta), server actions: `getTrainingActivities`, `getTrainingActivityById`, `createTrainingActivity`, `updateTrainingActivity`, `deleteTrainingActivity`, `addParticipants`, `removeParticipant`, `getFarmersByGroup`, `uploadTrainingEvidence`. S3 lib (`src/lib/s3.ts`): presigned URL 7 hari. Build ✅, Tests 116/116 ✅. |
 | 2026-05-08 19:45 | Issue #39 selesai — Master Data Training List & Detail: server action `getTrainingActivities` + `getTrainingActivityById` + `deleteTrainingActivity`, list page dengan DataTable (6 kolom: KT, paket, tanggal, lokasi, peserta, evidence link), detail page (summary card + tabel peserta dengan NIK masking), delete dengan konfirmasi dialog + router.refresh, placeholder Edit (toast info), 17 unit tests baru (schema validation, pagination, date formatting, NIK masking). Build ✅, Tests 117/117 ✅. |
 | 2026-05-08 16:45 | Issue #37 selesai — Interactive Map Dashboard: filter kabupaten + multi-select KT mempengaruhi map & ringkasan, panel section jadi collapsible (Filter/Layer/Basemap), marker KT non-cluster pakai icon. Build ✅, Tests 100/100 ✅. |

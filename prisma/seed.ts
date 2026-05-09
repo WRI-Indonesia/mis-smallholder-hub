@@ -26,6 +26,9 @@ import { seedAuditTypes } from "./seeds/seed-audit-types";
 // Phase 4.a Infra — Dynamic Menu Management
 import { seedMenu } from "./seeds/seed-menu";
 
+// Phase 4.a — Staff WRI
+import { seedJobDesks } from "./seeds/seed-job-desks";
+
 async function main() {
   console.log("🌱 Starting seeding process...\n");
 
@@ -68,6 +71,10 @@ async function main() {
     // Phase 4.a Infra — Dynamic Menu Management (no FK dependencies)
     console.log("\n--- Phase 4.a Infra: Menu Management ---");
     await seedMenu(prisma);
+
+    // Phase 4.a — Staff WRI (depends on: job desks)
+    console.log("\n--- Phase 4.a: Staff WRI Reference Data ---");
+    await seedJobDesks(prisma);
 
     console.log("\n✅ All seeding completed successfully.");
   } catch (error) {

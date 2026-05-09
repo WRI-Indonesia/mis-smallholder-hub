@@ -17,6 +17,7 @@ model District {
   name         String
   subdistricts Subdistrict[]
   farmerGroups FarmerGroup[]
+  staffs       StaffDistrict[]
 
   @@map("reg-district")
 }

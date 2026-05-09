@@ -76,6 +76,9 @@ model User {
   // AuditEvidence
   auditEvidencesCreated   AuditEvidence[] @relation("AuditEvidenceCreatedBy")
   auditEvidencesModified  AuditEvidence[] @relation("AuditEvidenceModifiedBy")
+  // Staff
+  staffCreated   Staff[] @relation("StaffCreatedBy")
+  staffModified  Staff[] @relation("StaffModifiedBy")
 
   @@map("tbl-user")
 }
