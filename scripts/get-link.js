@@ -4,7 +4,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 // Initialize S3 Client for IDCloudHost
 const client = new S3Client({
     endpoint: "https://is3.cloudhost.id",
-    region: "us-east-1", 
+    region: "id-jkt-1", 
     credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY_ID,
         secretAccessKey: process.env.S3_SECRET_ACCESS_KEY

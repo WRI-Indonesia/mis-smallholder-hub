@@ -113,7 +113,7 @@ npm run pdf:cleanup
 ### S3 Configuration
 
 - **Endpoint**: `https://is3.cloudhost.id`
-- **Region**: `us-east-1`
+- **Region**: `id-jkt-1`
 - **Bucket**: `mis-dev` (default)
 - **Force Path Style**: `true`
 

@@ -86,16 +86,26 @@ export async function getTrainingActivities(): Promise<
       },
     });
 
-    // Resolve presigned URLs for all evidences in parallel
+    async function resolveEvidenceUrl(uri: string): Promise<string> {
+      if (!isS3Key(uri)) return uri;
+      try {
+        return await getPresignedUrl(uri);
+      } catch (error) {
+        console.warn("Failed to presign training evidence URL:", { uri, error });
+        // Don't fail the whole page if S3 credentials/config are missing on server.
+        // Returning the raw key keeps the training rows visible.
+        return uri;
+      }
+    }
+
+    // Resolve presigned URLs for all evidences in parallel (best-effort)
     const resolved = await Promise.all(
       activities.map(async (a) => ({
         ...a,
         evidences: await Promise.all(
           a.evidences.map(async (e) => ({
             ...e,
-            presignedUrl: isS3Key(e.uri)
-              ? await getPresignedUrl(e.uri)
-              : e.uri,
+            presignedUrl: await resolveEvidenceUrl(e.uri),
           }))
         ),
       }))
@@ -151,15 +161,23 @@ export async function getTrainingActivityById(
       return { success: false, error: "Data training tidak ditemukan." };
     }
 
-    // Resolve presigned URLs for evidences
+    async function resolveEvidenceUrl(uri: string): Promise<string> {
+      if (!isS3Key(uri)) return uri;
+      try {
+        return await getPresignedUrl(uri);
+      } catch (error) {
+        console.warn("Failed to presign training evidence URL:", { uri, error });
+        return uri;
+      }
+    }
+
+    // Resolve presigned URLs for evidences (best-effort)
     const resolved = {
       ...activity,
       evidences: await Promise.all(
         activity.evidences.map(async (e) => ({
           ...e,
-          presignedUrl: isS3Key(e.uri)
-            ? await getPresignedUrl(e.uri)
-            : e.uri,
+          presignedUrl: await resolveEvidenceUrl(e.uri),
         }))
       ),
     };

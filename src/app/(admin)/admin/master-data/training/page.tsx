@@ -6,6 +6,7 @@ import {
 import { TrainingListClient } from "./training-list-client";
 
 export const metadata = { title: "Master Data Training" };
+export const dynamic = "force-dynamic";
 
 export default async function TrainingPage() {
   const [activitiesResult, groupsResult, packagesResult] = await Promise.all([
