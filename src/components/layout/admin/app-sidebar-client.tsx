@@ -28,7 +28,7 @@ const currentUserContext: UserContext = {
 const userData = {
   name: "Admin Super",
   email: "admin@sh-hub.id",
-  avatar: "/avatars/user.jpg",
+  avatar: "/avatars/user.svg",
 };
 
 interface AppSidebarClientProps extends React.ComponentProps<typeof Sidebar> {
