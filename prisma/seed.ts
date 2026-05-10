@@ -21,6 +21,7 @@ import { seedFarmers } from "./seeds/seed-farmers";
 import { seedMaintenanceTypes } from "./seeds/seed-maintenance-types";
 import { seedCertificationTypes } from "./seeds/seed-certification-types";
 import { seedTrainingPackages } from "./seeds/seed-training-packages";
+import { seedTrainingActivities } from "./seeds/seed-training-activities";
 import { seedAuditTypes } from "./seeds/seed-audit-types";
 
 // Phase 4.a Infra — Dynamic Menu Management
@@ -66,6 +67,7 @@ async function main() {
     await seedMaintenanceTypes(prisma);
     await seedCertificationTypes(prisma);
     await seedTrainingPackages(prisma);
+    await seedTrainingActivities(prisma);
     await seedAuditTypes(prisma);
 
     // Phase 4.a Infra — Dynamic Menu Management (no FK dependencies)
