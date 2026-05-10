@@ -12,14 +12,23 @@ export async function seedTrainingActivities(prisma: PrismaClient) {
   });
 
   for (const row of data as any[]) {
+    // Find the training package by code to get the ID
+    const trainingPackage = await prisma.trainingPackage.findUnique({
+      where: { code: row.packageId },
+      select: { id: true },
+    });
+
+    if (!trainingPackage) {
+      console.warn(`Training package with code ${row.packageId} not found, skipping...`);
+      continue;
+    }
+
     await prisma.trainingActivity.create({
       data: {
         farmerGroupId: row.farmerGroupId,
-        trainingPackageId: row.trainingPackageId,
+        packageId: trainingPackage.id, // Use the actual ID, not the code
         trainingDate: new Date(row.trainingDate),
         location: row.location,
-        facilitator: row.facilitator || null,
-        notes: row.notes || null,
         createdAt: new Date(),
         modifiedAt: new Date(),
       },
