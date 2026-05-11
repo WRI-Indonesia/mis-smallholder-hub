@@ -21,10 +21,10 @@ model Staff {
   directReports Staff[] @relation("StaffLineManager")
 
   // Many-to-many assignments
-  districts    StaffDistrict[]
-  farmerGroups StaffFarmerGroup[]
-  activities   StaffActivity[]
-  approvedActivities StaffActivity[] @relation("ActivityApprovedBy")
+  districts          StaffDistrict[]
+  farmerGroups       StaffFarmerGroup[]
+  activities         StaffActivity[]
+  approvedActivities StaffActivity[]    @relation("ActivityApprovedBy")
 
   createdAt      DateTime @default(now()) @map("created_at")
   createdBy      String?  @map("created_by")
@@ -59,19 +59,19 @@ model StaffFarmerGroup {
 }
 
 model StaffActivity {
-  id             String         @id @default(cuid())
-  staffId        String         @map("staff_id")
-  staff          Staff          @relation(fields: [staffId], references: [id])
-  activityDate   DateTime       @map("activity_date") @db.Date
-  planning       String         // Rencana kegiatan hari ini
-  realization    String?        // Realisasi / hasil kegiatan
-  comment        String?
-  status         ActivityStatus @default(DRAFT)
-  approvedById   String?        @map("approved_by_id")
-  approvedBy     Staff?         @relation("ActivityApprovedBy", fields: [approvedById], references: [id])
-  approvedAt     DateTime?      @map("approved_at")
-  rejectionNote  String?        @map("rejection_note")
-  photos         StaffActivityPhoto[]
+  id            String               @id @default(cuid())
+  staffId       String               @map("staff_id")
+  staff         Staff                @relation(fields: [staffId], references: [id])
+  activityDate  DateTime             @map("activity_date") @db.Date
+  planning      String // Rencana kegiatan hari ini
+  realization   String? // Realisasi / hasil kegiatan
+  comment       String?
+  status        ActivityStatus       @default(DRAFT)
+  approvedById  String?              @map("approved_by_id")
+  approvedBy    Staff?               @relation("ActivityApprovedBy", fields: [approvedById], references: [id])
+  approvedAt    DateTime?            @map("approved_at")
+  rejectionNote String?              @map("rejection_note")
+  photos        StaffActivityPhoto[]
 
   createdAt  DateTime @default(now()) @map("created_at")
   createdBy  String?  @map("created_by")

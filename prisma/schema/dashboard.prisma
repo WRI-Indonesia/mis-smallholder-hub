@@ -1,0 +1,60 @@
+// dashboard.prisma — Dashboard statistics cache tables
+
+model DashboardStats {
+  id         String @id @default(cuid())
+  districtId String @map("district_id") // "GLOBAL" for all districts, actual ID for specific district
+  batchId    String @map("batch_id") // "ALL" for all batches, actual ID for specific batch
+
+  // Basic stats
+  totalGroups   Int   @default(0) @map("total_groups")
+  totalFarmers  Int   @default(0) @map("total_farmers")
+  maleFarmers   Int   @default(0) @map("male_farmers")
+  femaleFarmers Int   @default(0) @map("female_farmers")
+  totalParcels  Int   @default(0) @map("total_parcels")
+  totalAreaHa   Float @default(0) @map("total_area_ha")
+
+  // Training stats (for future use)
+  trainingPKT            Int @default(0) @map("training_pkt")
+  trainingBMPGAP         Int @default(0) @map("training_bmpgap")
+  trainingPreSertifikasi Int @default(0) @map("training_pre_sertifikasi")
+
+  // Metadata
+  calculatedAt DateTime @default(now()) @map("calculated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([districtId, batchId]) // One record per district-batch combination
+  @@map("cache-dashboard-stats")
+}
+
+model DashboardGroupStats {
+  id            String      @id @default(cuid())
+  farmerGroupId String      @map("farmer_group_id")
+  farmerGroup   FarmerGroup @relation(fields: [farmerGroupId], references: [id], onDelete: Cascade)
+  batchId       String      @map("batch_id") // "ALL" for all batches, actual ID for specific batch
+
+  // Location coordinates (cached from farmer group)
+  locationLat  Float? @map("location_lat")
+  locationLong Float? @map("location_long")
+  districtName String @map("district_name") // Cached district name
+
+  // Basic stats for this group
+  farmerCount   Int   @default(0) @map("farmer_count")
+  maleFarmers   Int   @default(0) @map("male_farmers")
+  femaleFarmers Int   @default(0) @map("female_farmers")
+  parcelCount   Int   @default(0) @map("parcel_count")
+  totalAreaHa   Float @default(0) @map("total_area_ha")
+
+  // Training stats (for future use)
+  trainingPKT            Int @default(0) @map("training_pkt")
+  trainingBMPGAP         Int @default(0) @map("training_bmpgap")
+  trainingPreSertifikasi Int @default(0) @map("training_pre_sertifikasi")
+
+  // Metadata
+  calculatedAt DateTime @default(now()) @map("calculated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([farmerGroupId, batchId]) // One record per group-batch combination
+  @@map("cache-dashboard-group-stats")
+}

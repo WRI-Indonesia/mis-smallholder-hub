@@ -14,71 +14,71 @@ model User {
 
   // ─── Audit trail back-relations ───────────────────────────────────────────
   // FarmerGroup
-  farmerGroupsCreated   FarmerGroup[]       @relation("FarmerGroupCreatedBy")
-  farmerGroupsModified  FarmerGroup[]       @relation("FarmerGroupModifiedBy")
+  farmerGroupsCreated          FarmerGroup[]         @relation("FarmerGroupCreatedBy")
+  farmerGroupsModified         FarmerGroup[]         @relation("FarmerGroupModifiedBy")
   // FarmerGroupDetail
-  farmerGroupDetailsCreated  FarmerGroupDetail[] @relation("FarmerGroupDetailCreatedBy")
-  farmerGroupDetailsModified FarmerGroupDetail[] @relation("FarmerGroupDetailModifiedBy")
+  farmerGroupDetailsCreated    FarmerGroupDetail[]   @relation("FarmerGroupDetailCreatedBy")
+  farmerGroupDetailsModified   FarmerGroupDetail[]   @relation("FarmerGroupDetailModifiedBy")
   // Farmer
-  farmersCreated   Farmer[] @relation("FarmerCreatedBy")
-  farmersModified  Farmer[] @relation("FarmerModifiedBy")
+  farmersCreated               Farmer[]              @relation("FarmerCreatedBy")
+  farmersModified              Farmer[]              @relation("FarmerModifiedBy")
   // LandParcel
-  landParcelsCreated   LandParcel[] @relation("LandParcelCreatedBy")
-  landParcelsModified  LandParcel[] @relation("LandParcelModifiedBy")
+  landParcelsCreated           LandParcel[]          @relation("LandParcelCreatedBy")
+  landParcelsModified          LandParcel[]          @relation("LandParcelModifiedBy")
   // AgronomyProduction
-  agronomyProductionsCreated   AgronomyProduction[] @relation("AgronomyProductionCreatedBy")
-  agronomyProductionsModified  AgronomyProduction[] @relation("AgronomyProductionModifiedBy")
+  agronomyProductionsCreated   AgronomyProduction[]  @relation("AgronomyProductionCreatedBy")
+  agronomyProductionsModified  AgronomyProduction[]  @relation("AgronomyProductionModifiedBy")
   // AgronomyMaintenance
-  agronomyMaintenancesCreated   AgronomyMaintenance[] @relation("AgronomyMaintenanceCreatedBy")
-  agronomyMaintenancesModified  AgronomyMaintenance[] @relation("AgronomyMaintenanceModifiedBy")
+  agronomyMaintenancesCreated  AgronomyMaintenance[] @relation("AgronomyMaintenanceCreatedBy")
+  agronomyMaintenancesModified AgronomyMaintenance[] @relation("AgronomyMaintenanceModifiedBy")
   // TrainingActivity
-  trainingActivitiesCreated   TrainingActivity[] @relation("TrainingActivityCreatedBy")
-  trainingActivitiesModified  TrainingActivity[] @relation("TrainingActivityModifiedBy")
+  trainingActivitiesCreated    TrainingActivity[]    @relation("TrainingActivityCreatedBy")
+  trainingActivitiesModified   TrainingActivity[]    @relation("TrainingActivityModifiedBy")
   // TrainingParticipant
-  trainingParticipantsCreated   TrainingParticipant[] @relation("TrainingParticipantCreatedBy")
-  trainingParticipantsModified  TrainingParticipant[] @relation("TrainingParticipantModifiedBy")
+  trainingParticipantsCreated  TrainingParticipant[] @relation("TrainingParticipantCreatedBy")
+  trainingParticipantsModified TrainingParticipant[] @relation("TrainingParticipantModifiedBy")
   // Certification
-  certificationsCreated   Certification[] @relation("CertificationCreatedBy")
-  certificationsModified  Certification[] @relation("CertificationModifiedBy")
+  certificationsCreated        Certification[]       @relation("CertificationCreatedBy")
+  certificationsModified       Certification[]       @relation("CertificationModifiedBy")
   // AuditActivity
-  auditActivitiesCreated   AuditActivity[] @relation("AuditActivityCreatedBy")
-  auditActivitiesModified  AuditActivity[] @relation("AuditActivityModifiedBy")
+  auditActivitiesCreated       AuditActivity[]       @relation("AuditActivityCreatedBy")
+  auditActivitiesModified      AuditActivity[]       @relation("AuditActivityModifiedBy")
   // HseWorker
-  hseWorkersCreated   HseWorker[] @relation("HseWorkerCreatedBy")
-  hseWorkersModified  HseWorker[] @relation("HseWorkerModifiedBy")
+  hseWorkersCreated            HseWorker[]           @relation("HseWorkerCreatedBy")
+  hseWorkersModified           HseWorker[]           @relation("HseWorkerModifiedBy")
   // HseDetail
-  hseDetailsCreated   HseDetail[] @relation("HseDetailCreatedBy")
-  hseDetailsModified  HseDetail[] @relation("HseDetailModifiedBy")
+  hseDetailsCreated            HseDetail[]           @relation("HseDetailCreatedBy")
+  hseDetailsModified           HseDetail[]           @relation("HseDetailModifiedBy")
   // Batch
-  batchesCreated   Batch[] @relation("BatchCreatedBy")
-  batchesModified  Batch[] @relation("BatchModifiedBy")
+  batchesCreated               Batch[]               @relation("BatchCreatedBy")
+  batchesModified              Batch[]               @relation("BatchModifiedBy")
   // Commodity
-  commoditiesCreated   Commodity[] @relation("CommodityCreatedBy")
-  commoditiesModified  Commodity[] @relation("CommodityModifiedBy")
+  commoditiesCreated           Commodity[]           @relation("CommodityCreatedBy")
+  commoditiesModified          Commodity[]           @relation("CommodityModifiedBy")
   // FarmerGroupType
-  farmerGroupTypesCreated   FarmerGroupType[] @relation("FarmerGroupTypeCreatedBy")
-  farmerGroupTypesModified  FarmerGroupType[] @relation("FarmerGroupTypeModifiedBy")
+  farmerGroupTypesCreated      FarmerGroupType[]     @relation("FarmerGroupTypeCreatedBy")
+  farmerGroupTypesModified     FarmerGroupType[]     @relation("FarmerGroupTypeModifiedBy")
   // MaintenanceType
-  maintenanceTypesCreated   MaintenanceType[] @relation("MaintenanceTypeCreatedBy")
-  maintenanceTypesModified  MaintenanceType[] @relation("MaintenanceTypeModifiedBy")
+  maintenanceTypesCreated      MaintenanceType[]     @relation("MaintenanceTypeCreatedBy")
+  maintenanceTypesModified     MaintenanceType[]     @relation("MaintenanceTypeModifiedBy")
   // TrainingPackage
-  trainingPackagesCreated   TrainingPackage[] @relation("TrainingPackageCreatedBy")
-  trainingPackagesModified  TrainingPackage[] @relation("TrainingPackageModifiedBy")
+  trainingPackagesCreated      TrainingPackage[]     @relation("TrainingPackageCreatedBy")
+  trainingPackagesModified     TrainingPackage[]     @relation("TrainingPackageModifiedBy")
   // TrainingEvidence
-  trainingEvidencesCreated   TrainingEvidence[] @relation("TrainingEvidenceCreatedBy")
-  trainingEvidencesModified  TrainingEvidence[] @relation("TrainingEvidenceModifiedBy")
+  trainingEvidencesCreated     TrainingEvidence[]    @relation("TrainingEvidenceCreatedBy")
+  trainingEvidencesModified    TrainingEvidence[]    @relation("TrainingEvidenceModifiedBy")
   // CertificationType
-  certificationTypesCreated   CertificationType[] @relation("CertificationTypeCreatedBy")
-  certificationTypesModified  CertificationType[] @relation("CertificationTypeModifiedBy")
+  certificationTypesCreated    CertificationType[]   @relation("CertificationTypeCreatedBy")
+  certificationTypesModified   CertificationType[]   @relation("CertificationTypeModifiedBy")
   // AuditType
-  auditTypesCreated   AuditType[] @relation("AuditTypeCreatedBy")
-  auditTypesModified  AuditType[] @relation("AuditTypeModifiedBy")
+  auditTypesCreated            AuditType[]           @relation("AuditTypeCreatedBy")
+  auditTypesModified           AuditType[]           @relation("AuditTypeModifiedBy")
   // AuditEvidence
-  auditEvidencesCreated   AuditEvidence[] @relation("AuditEvidenceCreatedBy")
-  auditEvidencesModified  AuditEvidence[] @relation("AuditEvidenceModifiedBy")
+  auditEvidencesCreated        AuditEvidence[]       @relation("AuditEvidenceCreatedBy")
+  auditEvidencesModified       AuditEvidence[]       @relation("AuditEvidenceModifiedBy")
   // Staff
-  staffCreated   Staff[] @relation("StaffCreatedBy")
-  staffModified  Staff[] @relation("StaffModifiedBy")
+  staffCreated                 Staff[]               @relation("StaffCreatedBy")
+  staffModified                Staff[]               @relation("StaffModifiedBy")
 
   @@map("tbl-user")
 }
