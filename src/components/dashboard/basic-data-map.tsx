@@ -5,6 +5,7 @@ import { Search, Locate, Leaf, Compass, Layers } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { REGION_COORDINATES, type MapStyleKey } from "@/lib/map-utils"
+import * as GeoJSON from "geojson"
 
 interface FarmerGroupData {
   id: string;
@@ -110,7 +111,7 @@ export function BasicDataMap({ groups, distrik, selectedGroup, setSelectedGroup,
           isolationScore: Math.min(100, Math.round(nearest[g.id] * 10) / 10),
         },
       })),
-    } as const;
+    } as GeoJSON.FeatureCollection;
   })();
 
   const ensureIcons = () => {
