@@ -21,6 +21,7 @@ import { seedFarmers } from "./seeds/seed-farmers";
 import { seedMaintenanceTypes } from "./seeds/seed-maintenance-types";
 import { seedCertificationTypes } from "./seeds/seed-certification-types";
 import { seedTrainingPackages } from "./seeds/seed-training-packages";
+import { seedTrainingActivities } from "./seeds/seed-training-activities";
 import { seedAuditTypes } from "./seeds/seed-audit-types";
 
 // Phase 4.a Infra — Dynamic Menu Management
@@ -55,17 +56,14 @@ async function main() {
     await seedFarmerGroups(prisma);    // depends on: districts
     await seedBatches(prisma);
     await seedCommodities(prisma);
-    // Farmers seed skipped — farmers.csv references farmerGroupId values (fg-001, fg-002)
-    // that don't match the IDs in farmer-groups.csv (ICS-1406-01 format).
-    // Farmers in dev were added manually via UI. This is a pre-existing data inconsistency.
-    // TODO: Fix farmers.csv farmerGroupId values to match farmer-groups.csv IDs.
-    // await seedFarmers(prisma);
+    await seedFarmers(prisma);    // depends on: farmer groups, batches
 
     // Phase 2.3 — Activity Reference Data (no FK dependencies)
     console.log("\n--- Phase 2.3: Activity Reference Data ---");
     await seedMaintenanceTypes(prisma);
     await seedCertificationTypes(prisma);
     await seedTrainingPackages(prisma);
+    await seedTrainingActivities(prisma);
     await seedAuditTypes(prisma);
 
     // Phase 4.a Infra — Dynamic Menu Management (no FK dependencies)

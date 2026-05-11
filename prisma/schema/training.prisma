@@ -37,16 +37,16 @@ model TrainingEvidence {
 }
 
 model TrainingActivity {
-  id               String               @id @default(cuid())
-  packageId        String               @map("ref_training_package_id")
-  package          TrainingPackage      @relation(fields: [packageId], references: [id])
-  farmerGroupId    String?              @map("farmer_group_id")
-  farmerGroup      FarmerGroup?         @relation(fields: [farmerGroupId], references: [id])
+  id               String                @id @default(cuid())
+  packageId        String                @map("ref_training_package_id")
+  package          TrainingPackage       @relation(fields: [packageId], references: [id])
+  farmerGroupId    String?               @map("farmer_group_id")
+  farmerGroup      FarmerGroup?          @relation(fields: [farmerGroupId], references: [id])
   location         String?
-  trainingDate     DateTime             @map("training_date")
-  totalParticipant Int                  @default(0) @map("total_participant")
+  trainingDate     DateTime              @map("training_date")
+  totalParticipant Int                   @default(0) @map("total_participant")
   participants     TrainingParticipant[]
-  evidences        TrainingEvidence[]   @relation("ActivityEvidences")
+  evidences        TrainingEvidence[]    @relation("ActivityEvidences")
 
   createdAt      DateTime @default(now()) @map("created_at")
   createdBy      String?  @map("created_by")
