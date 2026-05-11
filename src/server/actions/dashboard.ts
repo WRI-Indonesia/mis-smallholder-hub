@@ -32,56 +32,42 @@ export interface DashboardGroupMarker {
 
 export interface DashboardFilters {
   districtId?: string;
+  batchId?: string;
 }
 
 export async function getDashboardStats(
   filters: DashboardFilters = {}
 ): Promise<ActionResult<DashboardStats>> {
   try {
-    const { districtId } = filters;
+    const { districtId, batchId } = filters;
 
-    // Build where clauses for different entities
-    const groupWhere = districtId ? { districtId } : {};
-    const farmerWhere = districtId ? { farmerGroup: { districtId } } : {};
-    const parcelWhere = districtId ? { farmer: { farmerGroup: { districtId } } } : {};
-    const trainingWhere = districtId ? { farmer: { farmerGroup: { districtId } } } : {};
+    // Get stats from cache table
+    const cachedStats = await prisma.dashboardStats.findUnique({
+      where: { 
+        districtId_batchId: {
+          districtId: districtId || "GLOBAL",
+          batchId: batchId || "ALL"
+        }
+      },
+    });
 
-    // Execute all queries in parallel
-    const [
-      totalGroups,
-      totalFarmers,
-      maleFarmers,
-      femaleFarmers,
-      totalParcels,
-      totalAreaResult,
-    ] = await Promise.all([
-      // Group counts
-      prisma.farmerGroup.count({ where: groupWhere }),
-      
-      // Farmer counts
-      prisma.farmer.count({ where: farmerWhere }),
-      prisma.farmer.count({ where: { ...farmerWhere, gender: "L" } }),
-      prisma.farmer.count({ where: { ...farmerWhere, gender: "P" } }),
-      
-      // Parcel counts and area
-      prisma.landParcel.count({ where: parcelWhere }),
-      prisma.landParcel.aggregate({
-        _sum: { polygonSizeHa: true },
-        where: parcelWhere,
-      }),
-    ]);
+    if (!cachedStats) {
+      return {
+        success: false,
+        error: `Dashboard stats not found for ${districtId ? `district ${districtId}` : 'global'} and ${batchId ? `batch ${batchId}` : 'all batches'}. Please refresh cache.`,
+      };
+    }
 
     const stats: DashboardStats = {
-      totalGroups,
-      totalFarmers,
-      maleFarmers,
-      femaleFarmers,
-      totalParcels,
-      totalAreaHa: totalAreaResult._sum.polygonSizeHa ?? 0,
-      // Training stats hardcoded to 0 for now
-      trainingPKT: 0,
-      trainingBMPGAP: 0,
-      trainingPreSertifikasi: 0,
+      totalGroups: cachedStats.totalGroups,
+      totalFarmers: cachedStats.totalFarmers,
+      maleFarmers: cachedStats.maleFarmers,
+      femaleFarmers: cachedStats.femaleFarmers,
+      totalParcels: cachedStats.totalParcels,
+      totalAreaHa: cachedStats.totalAreaHa ?? 0,
+      trainingPKT: cachedStats.trainingPKT,
+      trainingBMPGAP: cachedStats.trainingBMPGAP,
+      trainingPreSertifikasi: cachedStats.trainingPreSertifikasi,
     };
 
     return { success: true, data: stats };
@@ -97,60 +83,42 @@ export async function getDashboardGroupMarkers(
   filters: DashboardFilters = {}
 ): Promise<ActionResult<DashboardGroupMarker[]>> {
   try {
-    const { districtId } = filters;
+    const { districtId, batchId } = filters;
 
-    // Fetch farmer groups with district info
-    const groups = await prisma.farmerGroup.findMany({
-      where: districtId ? { districtId } : {},
-      include: {
-        district: { select: { name: true } },
+    // Fetch cached group stats directly with coordinates
+    const groupStats = await prisma.dashboardGroupStats.findMany({
+      where: {
+        batchId: batchId || "ALL",
+        ...(districtId && {
+          farmerGroup: { districtId }
+        })
       },
-      orderBy: { name: "asc" },
+      include: {
+        farmerGroup: {
+          select: { id: true, name: true }
+        }
+      },
+      orderBy: {
+        farmerGroup: { name: "asc" }
+      }
     });
 
-    // Calculate stats for each group in parallel
-    const markers = await Promise.all(
-      groups.map(async (group) => {
-        const [
-          farmerCount,
-          maleFarmers,
-          femaleFarmers,
-          parcelCount,
-          totalAreaResult,
-        ] = await Promise.all([
-          // Farmer counts for this group
-          prisma.farmer.count({ where: { farmerGroupId: group.id } }),
-          prisma.farmer.count({ where: { farmerGroupId: group.id, gender: "L" } }),
-          prisma.farmer.count({ where: { farmerGroupId: group.id, gender: "P" } }),
-          
-          // Parcel counts and area for this group
-          prisma.landParcel.count({ where: { farmer: { farmerGroupId: group.id } } }),
-          prisma.landParcel.aggregate({
-            _sum: { polygonSizeHa: true },
-            where: { farmer: { farmerGroupId: group.id } },
-          }),
-        ]);
-
-        const marker: DashboardGroupMarker = {
-          id: group.id,
-          name: group.name,
-          districtName: group.district.name,
-          locationLat: group.locationLat,
-          locationLong: group.locationLong,
-          farmerCount,
-          maleFarmers,
-          femaleFarmers,
-          parcelCount,
-          totalAreaHa: totalAreaResult._sum.polygonSizeHa ?? 0,
-          // Training stats hardcoded to 0 for now
-          trainingPKT: 0,
-          trainingBMPGAP: 0,
-          trainingPreSertifikasi: 0,
-        };
-
-        return marker;
-      })
-    );
+    // Map cached stats to markers
+    const markers: DashboardGroupMarker[] = groupStats.map((stats) => ({
+      id: stats.farmerGroup.id,
+      name: stats.farmerGroup.name,
+      districtName: stats.districtName,
+      locationLat: stats.locationLat,
+      locationLong: stats.locationLong,
+      farmerCount: stats.farmerCount,
+      maleFarmers: stats.maleFarmers,
+      femaleFarmers: stats.femaleFarmers,
+      parcelCount: stats.parcelCount,
+      totalAreaHa: stats.totalAreaHa,
+      trainingPKT: stats.trainingPKT,
+      trainingBMPGAP: stats.trainingBMPGAP,
+      trainingPreSertifikasi: stats.trainingPreSertifikasi,
+    }));
 
     return { success: true, data: markers };
   } catch (error) {
@@ -174,6 +142,22 @@ export async function getDistrictsForDashboard(): Promise<ActionResult<{ id: str
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to fetch districts for dashboard",
+    };
+  }
+}
+
+export async function getBatchesForDashboard(): Promise<ActionResult<{ id: string; name: string }[]>> {
+  try {
+    const batches = await prisma.batch.findMany({
+      orderBy: { code: "asc" },
+      select: { id: true, name: true },
+    });
+
+    return { success: true, data: batches };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch batches for dashboard",
     };
   }
 }

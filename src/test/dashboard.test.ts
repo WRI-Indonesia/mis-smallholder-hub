@@ -3,18 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mock Prisma first
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    farmerGroup: {
-      count: vi.fn(),
-      findMany: vi.fn(),
+    dashboardStats: {
+      findUnique: vi.fn(),
     },
-    farmer: {
-      count: vi.fn(),
-    },
-    landParcel: {
-      count: vi.fn(),
-      aggregate: vi.fn(),
-    },
-    trainingParticipant: {
+    dashboardGroupStats: {
       findMany: vi.fn(),
     },
     district: {
@@ -34,15 +26,16 @@ describe("Dashboard Actions", () => {
 
   describe("getDashboardStats", () => {
     it("TC-1: should return dashboard stats without filter", async () => {
-      // Mock all the parallel queries
-      (prisma.farmerGroup.count as any).mockResolvedValue(10);
-      (prisma.farmer.count as any)
-        .mockResolvedValueOnce(50) // total farmers
-        .mockResolvedValueOnce(30) // male farmers
-        .mockResolvedValueOnce(20); // female farmers
-      (prisma.landParcel.count as any).mockResolvedValue(75);
-      (prisma.landParcel.aggregate as any).mockResolvedValue({
-        _sum: { polygonSizeHa: 125.5 },
+      (prisma.dashboardStats.findUnique as any).mockResolvedValue({
+        totalGroups: 10,
+        totalFarmers: 50,
+        maleFarmers: 30,
+        femaleFarmers: 20,
+        totalParcels: 75,
+        totalAreaHa: 125.5,
+        trainingPKT: 0,
+        trainingBMPGAP: 0,
+        trainingPreSertifikasi: 0,
       });
 
       const result = await getDashboardStats();
@@ -60,39 +53,47 @@ describe("Dashboard Actions", () => {
         expect(result.data.trainingBMPGAP).toBe(0);
         expect(result.data.trainingPreSertifikasi).toBe(0);
       }
+      expect(prisma.dashboardStats.findUnique).toHaveBeenCalledWith({
+        where: {
+          districtId_batchId: { districtId: "GLOBAL", batchId: "ALL" },
+        },
+      });
     });
 
     it("TC-2: should filter by districtId", async () => {
-      (prisma.farmerGroup.count as any).mockResolvedValue(5);
-      (prisma.farmer.count as any)
-        .mockResolvedValueOnce(25)
-        .mockResolvedValueOnce(15)
-        .mockResolvedValueOnce(10);
-      (prisma.landParcel.count as any).mockResolvedValue(30);
-      (prisma.landParcel.aggregate as any).mockResolvedValue({
-        _sum: { polygonSizeHa: 60.0 },
+      (prisma.dashboardStats.findUnique as any).mockResolvedValue({
+        totalGroups: 5,
+        totalFarmers: 25,
+        maleFarmers: 15,
+        femaleFarmers: 10,
+        totalParcels: 30,
+        totalAreaHa: 60,
+        trainingPKT: 0,
+        trainingBMPGAP: 0,
+        trainingPreSertifikasi: 0,
       });
 
       const result = await getDashboardStats({ districtId: "dist-1" });
 
       expect(result.success).toBe(true);
-      expect(prisma.farmerGroup.count).toHaveBeenCalledWith({
-        where: { districtId: "dist-1" },
-      });
-      expect(prisma.farmer.count).toHaveBeenCalledWith({
-        where: { farmerGroup: { districtId: "dist-1" } },
+      expect(prisma.dashboardStats.findUnique).toHaveBeenCalledWith({
+        where: {
+          districtId_batchId: { districtId: "dist-1", batchId: "ALL" },
+        },
       });
     });
 
     it("TC-3: should handle null totalAreaHa", async () => {
-      (prisma.farmerGroup.count as any).mockResolvedValue(1);
-      (prisma.farmer.count as any)
-        .mockResolvedValueOnce(5)
-        .mockResolvedValueOnce(3)
-        .mockResolvedValueOnce(2);
-      (prisma.landParcel.count as any).mockResolvedValue(5);
-      (prisma.landParcel.aggregate as any).mockResolvedValue({
-        _sum: { polygonSizeHa: null }, // All parcels have null area
+      (prisma.dashboardStats.findUnique as any).mockResolvedValue({
+        totalGroups: 1,
+        totalFarmers: 5,
+        maleFarmers: 3,
+        femaleFarmers: 2,
+        totalParcels: 5,
+        totalAreaHa: null,
+        trainingPKT: 0,
+        trainingBMPGAP: 0,
+        trainingPreSertifikasi: 0,
       });
 
       const result = await getDashboardStats();
@@ -104,7 +105,7 @@ describe("Dashboard Actions", () => {
     });
 
     it("TC-7: should handle errors", async () => {
-      (prisma.farmerGroup.count as any).mockRejectedValue(new Error("Database error"));
+      (prisma.dashboardStats.findUnique as any).mockRejectedValue(new Error("Database error"));
 
       const result = await getDashboardStats();
 
@@ -115,41 +116,38 @@ describe("Dashboard Actions", () => {
 
   describe("getDashboardGroupMarkers", () => {
     it("TC-5: should return group markers with all fields", async () => {
-      const mockGroups = [
+      const mockGroupStats = [
         {
-          id: "group-1",
-          name: "KT Maju",
+          farmerGroup: { id: "group-1", name: "KT Maju" },
           locationLat: -6.2,
           locationLong: 106.8,
-          district: { name: "Jakarta Pusat" },
+          districtName: "Jakarta Pusat",
+          farmerCount: 10,
+          maleFarmers: 6,
+          femaleFarmers: 4,
+          parcelCount: 15,
+          totalAreaHa: 25.5,
+          trainingPKT: 0,
+          trainingBMPGAP: 0,
+          trainingPreSertifikasi: 0,
         },
         {
-          id: "group-2",
-          name: "KT Sejahtera",
+          farmerGroup: { id: "group-2", name: "KT Sejahtera" },
           locationLat: null,
           locationLong: null,
-          district: { name: "Jakarta Selatan" },
+          districtName: "Jakarta Selatan",
+          farmerCount: 8,
+          maleFarmers: 5,
+          femaleFarmers: 3,
+          parcelCount: 12,
+          totalAreaHa: 20,
+          trainingPKT: 0,
+          trainingBMPGAP: 0,
+          trainingPreSertifikasi: 0,
         },
       ];
 
-      (prisma.farmerGroup.findMany as any).mockResolvedValue(mockGroups);
-      
-      // Mock stats for each group
-      (prisma.farmer.count as any)
-        .mockResolvedValueOnce(10) // group-1 total
-        .mockResolvedValueOnce(6)  // group-1 male
-        .mockResolvedValueOnce(4)  // group-1 female
-        .mockResolvedValueOnce(8)  // group-2 total
-        .mockResolvedValueOnce(5)  // group-2 male
-        .mockResolvedValueOnce(3); // group-2 female
-
-      (prisma.landParcel.count as any)
-        .mockResolvedValueOnce(15) // group-1 parcels
-        .mockResolvedValueOnce(12); // group-2 parcels
-
-      (prisma.landParcel.aggregate as any)
-        .mockResolvedValueOnce({ _sum: { polygonSizeHa: 25.5 } }) // group-1 area
-        .mockResolvedValueOnce({ _sum: { polygonSizeHa: 20.0 } }); // group-2 area
+      (prisma.dashboardGroupStats.findMany as any).mockResolvedValue(mockGroupStats);
 
       const result = await getDashboardGroupMarkers();
 
@@ -180,6 +178,12 @@ describe("Dashboard Actions", () => {
         expect(marker2.trainingBMPGAP).toBe(0);
         expect(marker2.trainingPreSertifikasi).toBe(0);
       }
+
+      expect(prisma.dashboardGroupStats.findMany).toHaveBeenCalledWith({
+        where: { batchId: "ALL" },
+        include: { farmerGroup: { select: { id: true, name: true } } },
+        orderBy: { farmerGroup: { name: "asc" } },
+      });
     });
   });
 
