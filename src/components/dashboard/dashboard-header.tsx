@@ -30,7 +30,11 @@ export function DashboardHeader({ program, distrik, setProgram, setDistrik, dist
       </div>
       <div className="flex items-center gap-2">
         <Select value={program} onValueChange={(v) => setProgram(v ?? "All")}>
-          <SelectTrigger className="w-[140px] h-8 text-sm bg-background"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[140px] h-8 text-sm bg-background">
+            <SelectValue placeholder="Semua Program">
+              {program === "All" ? "Semua Program" : batches.find(b => b.id === program)?.name || program}
+            </SelectValue>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="All">Semua Program</SelectItem>
             {batches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}

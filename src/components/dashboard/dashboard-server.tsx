@@ -1,5 +1,27 @@
-import { getDashboardStats, getDashboardGroupMarkers, getDistrictsForDashboard, getBatchesForDashboard } from "@/server/actions/dashboard";
+import { getDashboardStats, getDashboardGroupMarkers, getDistrictsForDashboard, getBatchesForDashboard, getTrainingPackagesForDashboard } from "@/server/actions/dashboard";
 import { DashboardClient } from "./dashboard-client";
+import { trimTrainingName } from "@/lib/text-utils";
+
+// Helper function to get training value based on package code
+function getTrainingValue(stats: any, packageCode: string, index: number): string {
+  // Map package codes to existing stats fields
+  const packageCodeMap: Record<string, keyof typeof stats> = {
+    'PKT': 'trainingPKT',
+    'BMPGAP': 'trainingBMPGAP', 
+    'PRE-SERTIFIKASI': 'trainingPreSertifikasi',
+  };
+  
+  const statKey = packageCodeMap[packageCode.toUpperCase()];
+  if (statKey && stats[statKey] !== undefined) {
+    return stats[statKey].toLocaleString("id-ID");
+  }
+  
+  // Fallback to index-based mapping for unknown codes
+  const fallbackStats = ['trainingPKT', 'trainingBMPGAP', 'trainingPreSertifikasi'];
+  const fallbackKey = fallbackStats[index % fallbackStats.length] as keyof typeof stats;
+  
+  return stats[fallbackKey]?.toLocaleString("id-ID") || "0";
+}
 
 interface DashboardServerProps {
   searchParams?: {
@@ -15,11 +37,12 @@ export async function DashboardServer({ searchParams }: DashboardServerProps) {
   };
 
   // Fetch data in parallel
-  const [statsResult, markersResult, districtsResult, batchesResult] = await Promise.all([
+  const [statsResult, markersResult, districtsResult, batchesResult, trainingPackagesResult] = await Promise.all([
     getDashboardStats(filters),
     getDashboardGroupMarkers(filters),
     getDistrictsForDashboard(),
     getBatchesForDashboard(),
+    getTrainingPackagesForDashboard(),
   ]);
 
   if (!statsResult.success) {
@@ -61,6 +84,17 @@ export async function DashboardServer({ searchParams }: DashboardServerProps) {
         <div className="text-center">
           <p className="text-lg font-semibold text-destructive">Error loading batches</p>
           <p className="text-sm text-muted-foreground">{batchesResult.error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!trainingPackagesResult.success) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-destructive">Error loading training packages</p>
+          <p className="text-sm text-muted-foreground">{trainingPackagesResult.error}</p>
         </div>
       </div>
     );
@@ -110,21 +144,12 @@ export async function DashboardServer({ searchParams }: DashboardServerProps) {
       label: "Luas Lahan",
       value: `${stats.totalAreaHa.toLocaleString("id-ID", { maximumFractionDigits: 1 })} Ha`,
     },
-    {
+    // Dynamic training cards based on ref-training-package
+    ...(trainingPackagesResult.data || []).map((pkg, index) => ({
       icon: "GraduationCap",
-      label: "Training PKT",
-      value: stats.trainingPKT.toLocaleString("id-ID"),
-    },
-    {
-      icon: "GraduationCap", 
-      label: "Training BMP/GAP",
-      value: stats.trainingBMPGAP.toLocaleString("id-ID"),
-    },
-    {
-      icon: "GraduationCap",
-      label: "Training Pre-Sertifikasi", 
-      value: stats.trainingPreSertifikasi.toLocaleString("id-ID"),
-    },
+      label: trimTrainingName(pkg.name),
+      value: getTrainingValue(stats, pkg.code, index),
+    })),
   ];
 
   // Transform markers to match expected format - only include groups with valid coordinates
