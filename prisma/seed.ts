@@ -56,11 +56,7 @@ async function main() {
     await seedFarmerGroups(prisma);    // depends on: districts
     await seedBatches(prisma);
     await seedCommodities(prisma);
-    // Farmers seed skipped — farmers.csv references farmerGroupId values (fg-001, fg-002)
-    // that don't match the IDs in farmer-groups.csv (ICS-1406-01 format).
-    // Farmers in dev were added manually via UI. This is a pre-existing data inconsistency.
-    // TODO: Fix farmers.csv farmerGroupId values to match farmer-groups.csv IDs.
-    // await seedFarmers(prisma);
+    await seedFarmers(prisma);    // depends on: farmer groups, batches
 
     // Phase 2.3 — Activity Reference Data (no FK dependencies)
     console.log("\n--- Phase 2.3: Activity Reference Data ---");

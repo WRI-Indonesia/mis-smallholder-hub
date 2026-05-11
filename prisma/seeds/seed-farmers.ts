@@ -24,7 +24,7 @@ export async function seedFarmers(prisma: PrismaClient) {
     }
 
     await prisma.farmer.upsert({
-      where: { nik: row.nik },
+      where: { nik: row.nik.substring(0, 16) },
       update: {
         name: row.name,
         gender: row.gender,
@@ -39,7 +39,7 @@ export async function seedFarmers(prisma: PrismaClient) {
         wriFarmerId: row.wriFarmerId || null,
         uiFarmerId: row.uiFarmerId || null,
         name: row.name,
-        nik: row.nik,
+        nik: row.nik.substring(0, 16),
         gender: row.gender,
         birthdate: new Date(row.birthdate),
         status: row.status || null,
