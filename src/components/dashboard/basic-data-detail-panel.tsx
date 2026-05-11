@@ -1,5 +1,21 @@
 import { X, Users, UserCheck, MapPinned, LandPlot, GraduationCap, MapPin } from "lucide-react"
-import { FarmerGroupData } from "@/lib/static-data/admin/dashboard"
+
+interface FarmerGroupData {
+  id: string;
+  name: string;
+  region: string;
+  lat: number;
+  lng: number;
+  totalPetani: number;
+  maleFarmers: number;
+  femaleFarmers: number;
+  totalParcels: number;
+  totalArea: string;
+  trainingPackage1: number;
+  trainingPackage2MK: number;
+  trainingPackage2HSE: number;
+  trainingPackage34: number;
+}
 
 interface BasicDataDetailPanelProps {
   selectedGroup: FarmerGroupData | null
