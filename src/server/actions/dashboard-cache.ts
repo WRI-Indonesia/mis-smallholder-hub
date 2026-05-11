@@ -2,6 +2,23 @@
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types/action-result";
 
+// Helper function to get training participant count by package code
+async function getTrainingParticipantCount(packageCode: string): Promise<number> {
+  try {
+    const result = await prisma.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COALESCE(SUM(ta.total_participant), 0)::bigint as count
+      FROM "tbl-training-activity" ta
+      JOIN "ref-training-package" tpkg ON ta.ref_training_package_id = tpkg.id
+      WHERE UPPER(tpkg.code) = UPPER(${packageCode})
+    `;
+    
+    return Number(result[0]?.count || 0);
+  } catch (error) {
+    console.error(`Error getting training participant count for ${packageCode}:`, error);
+    return 0;
+  }
+}
+
 export async function refreshDashboardCache(): Promise<ActionResult<{ message: string }>> {
   try {
     console.log("🔄 Starting dashboard cache refresh...");
@@ -43,9 +60,9 @@ export async function refreshDashboardCache(): Promise<ActionResult<{ message: s
         femaleFarmers: Number(global.female_farmers),
         totalParcels: Number(global.total_parcels),
         totalAreaHa: global.total_area_ha || 0,
-        trainingPKT: 0, // Hardcoded for now
-        trainingBMPGAP: 0,
-        trainingPreSertifikasi: 0,
+        trainingPKT: await getTrainingParticipantCount('PKT'),
+        trainingBMPGAP: await getTrainingParticipantCount('BMPGAP'),
+        trainingPreSertifikasi: await getTrainingParticipantCount('PRE-SERTIFIKASI'),
         calculatedAt: new Date(),
       },
       create: {
@@ -104,9 +121,9 @@ export async function refreshDashboardCache(): Promise<ActionResult<{ message: s
           femaleFarmers: Number(district.female_farmers),
           totalParcels: Number(district.total_parcels),
           totalAreaHa: district.total_area_ha || 0,
-          trainingPKT: 0,
-          trainingBMPGAP: 0,
-          trainingPreSertifikasi: 0,
+          trainingPKT: await getTrainingParticipantCount('PKT'),
+          trainingBMPGAP: await getTrainingParticipantCount('BMPGAP'),
+          trainingPreSertifikasi: await getTrainingParticipantCount('PRE-SERTIFIKASI'),
           calculatedAt: new Date(),
         },
         create: {
@@ -118,9 +135,9 @@ export async function refreshDashboardCache(): Promise<ActionResult<{ message: s
           femaleFarmers: Number(district.female_farmers),
           totalParcels: Number(district.total_parcels),
           totalAreaHa: district.total_area_ha || 0,
-          trainingPKT: 0,
-          trainingBMPGAP: 0,
-          trainingPreSertifikasi: 0,
+          trainingPKT: await getTrainingParticipantCount('PKT'),
+          trainingBMPGAP: await getTrainingParticipantCount('BMPGAP'),
+          trainingPreSertifikasi: await getTrainingParticipantCount('PRE-SERTIFIKASI'),
           calculatedAt: new Date(),
         },
       });
@@ -173,9 +190,9 @@ export async function refreshDashboardCache(): Promise<ActionResult<{ message: s
           femaleFarmers: Number(group.female_farmers),
           parcelCount: Number(group.parcel_count),
           totalAreaHa: group.total_area_ha || 0,
-          trainingPKT: 0,
-          trainingBMPGAP: 0,
-          trainingPreSertifikasi: 0,
+          trainingPKT: await getTrainingParticipantCount('PKT'),
+          trainingBMPGAP: await getTrainingParticipantCount('BMPGAP'),
+          trainingPreSertifikasi: await getTrainingParticipantCount('PRE-SERTIFIKASI'),
           calculatedAt: new Date(),
         },
         create: {
@@ -189,9 +206,9 @@ export async function refreshDashboardCache(): Promise<ActionResult<{ message: s
           femaleFarmers: Number(group.female_farmers),
           parcelCount: Number(group.parcel_count),
           totalAreaHa: group.total_area_ha || 0,
-          trainingPKT: 0,
-          trainingBMPGAP: 0,
-          trainingPreSertifikasi: 0,
+          trainingPKT: await getTrainingParticipantCount('PKT'),
+          trainingBMPGAP: await getTrainingParticipantCount('BMPGAP'),
+          trainingPreSertifikasi: await getTrainingParticipantCount('PRE-SERTIFIKASI'),
           calculatedAt: new Date(),
         },
       });

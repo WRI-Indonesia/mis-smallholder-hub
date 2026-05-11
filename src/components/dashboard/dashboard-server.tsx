@@ -2,26 +2,6 @@ import { getDashboardStats, getDashboardGroupMarkers, getDistrictsForDashboard, 
 import { DashboardClient } from "./dashboard-client";
 import { trimTrainingName } from "@/lib/text-utils";
 
-// Helper function to get training value based on package code
-function getTrainingValue(stats: any, packageCode: string, index: number): string {
-  // Map package codes to existing stats fields
-  const packageCodeMap: Record<string, keyof typeof stats> = {
-    'PKT': 'trainingPKT',
-    'BMPGAP': 'trainingBMPGAP', 
-    'PRE-SERTIFIKASI': 'trainingPreSertifikasi',
-  };
-  
-  const statKey = packageCodeMap[packageCode.toUpperCase()];
-  if (statKey && stats[statKey] !== undefined) {
-    return stats[statKey].toLocaleString("id-ID");
-  }
-  
-  // Fallback to index-based mapping for unknown codes
-  const fallbackStats = ['trainingPKT', 'trainingBMPGAP', 'trainingPreSertifikasi'];
-  const fallbackKey = fallbackStats[index % fallbackStats.length] as keyof typeof stats;
-  
-  return stats[fallbackKey]?.toLocaleString("id-ID") || "0";
-}
 
 interface DashboardServerProps {
   searchParams?: {
@@ -112,6 +92,27 @@ export async function DashboardServer({ searchParams }: DashboardServerProps) {
       </div>
     );
   }
+
+  // Helper function to get training value based on package code
+  const getTrainingValue = (packageCode: string, index: number): string => {
+    // Map package codes to existing stats fields
+    const packageCodeMap: Record<string, keyof typeof stats> = {
+      'PKT': 'trainingPKT',
+      'BMPGAP': 'trainingBMPGAP', 
+      'PRE-SERTIFIKASI': 'trainingPreSertifikasi',
+    };
+    
+    const statKey = packageCodeMap[packageCode.toUpperCase()];
+    if (statKey && stats[statKey] !== undefined) {
+      return stats[statKey].toLocaleString("id-ID");
+    }
+    
+    // Fallback to index-based mapping for unknown codes
+    const fallbackStats = ['trainingPKT', 'trainingBMPGAP', 'trainingPreSertifikasi'];
+    const fallbackKey = fallbackStats[index % fallbackStats.length] as keyof typeof stats;
+    
+    return stats[fallbackKey]?.toLocaleString("id-ID") || "0";
+  };
   
   const formattedStats = [
     {
@@ -148,7 +149,7 @@ export async function DashboardServer({ searchParams }: DashboardServerProps) {
     ...(trainingPackagesResult.data || []).map((pkg, index) => ({
       icon: "GraduationCap",
       label: trimTrainingName(pkg.name),
-      value: getTrainingValue(stats, pkg.code, index),
+      value: getTrainingValue(pkg.code, index),
     })),
   ];
 
