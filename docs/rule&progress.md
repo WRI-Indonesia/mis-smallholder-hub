@@ -12,7 +12,7 @@
 | **Proyek** | Smallholder HUB — Management Information System |
 | **Stack** | Next.js 16 · React 19 · Tailwind 4 · Shadcn UI · Prisma 7 · MapLibre |
 | **Repository** | `WRI-Indonesia/mis-smallholder-hub` |
-| **Terakhir Diupdate** | 2026-05-09 |
+| **Terakhir Diupdate** | 2026-05-13 |
 | **Diupdate Oleh** | Sofyan (via AI-assisted development) |
 | **Branch Aktif** | `dev-phase-4` |
 
@@ -254,9 +254,18 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 (Master Data) ✅ → 
 | Phase | Description | Priority | Issues | Status |
 |-------|-------------|----------|--------|--------|
 | **4.a** | Master Data CRUD - Phase 2 (Training, Agronomy) | **HIGH** | [#44](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/44) Telegram Notification 🔲 | 🟡 **In Progress** |
+| **7.c** | Dashboard BMP (Best Management Practice) | **HIGH** | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) Dashboard BMP 🟡 | 🟡 **In Progress** |
 
 **Active Issues:**
 - 🔔 **#44** - Telegram Notification System (Training Activities)
+- 📊 **#48** - Dashboard BMP: Score Cards, Combo Chart, Monev Cards, Filter Distrik+KT
+
+**Scaffold Issues Created (🔲 Pending):**
+- 📊 [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49) - Dashboard Training: Scaffold UI Lengkap
+- 📋 [#50](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/50) - Kelompok Tani Detail: Tab BMP Scaffold UI
+- 📋 [#51](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/51) - Data Petani Detail: Tab Pelatihan & Produksi Scaffold UI
+- 🔧 [#52](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/52) - Import Data Massal: Agronomy Produksi Scaffold UI
+- 🔧 [#53](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/53) - Import Data Massal: Agronomy Monev BMP Scaffold UI
 
 </details>
 
@@ -406,10 +415,12 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 (Master Data) ✅ → 
 ### Changelog
 
 <details>
-<summary><strong>🗓️ Mei 2026</strong> (17 entries)</summary>
+<summary><strong>🗓️ Mei 2026</strong> (19 entries)</summary>
 
 | Tanggal & Waktu | Perubahan |
-|-----------------|-----------|
+|-----------------|-----------||
+| 2026-05-13 00:36 | Issue #48 in progress — Dashboard BMP: Scaffold UI lengkap dengan static CSV data. 5 score cards (Total Petani, Persil, Luas Lahan, Produksi, Produktivitas). Combo chart Recharts (Bar produksi + Line produktivitas, dual Y-axis). Monev BMP cards 4 kategori (Teladan/Praktisi/Pemula/Belum) dengan progress bar. Filter Distrik + Kelompok Tani (dependent). Layout mengikuti Basic Data Dashboard (full viewport, header bar, no scroll). 3 file CSV data (30 KT, 4 distrik). Build ✅, Tests 181/181 ✅. |
+| 2026-05-12 23:52 | 6 GitHub Issues dibuat (#48–#53): #48 Dashboard BMP, #49 Dashboard Training, #50 KT Detail Tab BMP, #51 Petani Detail Tab Pelatihan+Produksi, #52 Import Agronomy Produksi, #53 Import Agronomy Monev BMP. Semua scaffold only, tanpa perubahan DB/Prisma. |
 | 2026-05-11 17:37 | Dashboard Implementation Complete - Full Database-Driven System: Issue #34 selesai dengan implementasi komprehensif. **Server Actions**: `getDashboardStats()`, `getDashboardGroupMarkers()`, `getDistrictsForDashboard()` dengan Promise.all parallel execution. **UI Components**: dashboard-client.tsx (state management), dashboard-server.tsx (server orchestration), enhanced basic-data-detail-panel.tsx. **Map Controls**: Reset north & tilt button, basemap selector (Light/Dark/Satellite/Hybrid), auto theme switching dengan manual override. **Database**: Prisma schema enhancements, batch relationships, dashboard cache tables untuk performance optimization. **Assets**: Custom map markers (3 states), seed data updates. **Testing**: 7 unit tests, performance benchmarks (<100ms all functions). **Development Tools**: Debug utilities, testing scripts, cache refresh system. **TypeScript**: All errors fixed, proper null safety, GeoJSON type compliance. Total 10 commits, 174/174 tests passing, build successful. GitHub issue #34 closed dengan comprehensive comment. |
 | 2026-05-09 22:30 | Issue #45 selesai — Training PDF Management: Implementasi lengkap PDF management untuk training evidence. Server actions: `uploadTrainingPDF`, `getTrainingPDFs`, `generatePDFLink`, `deleteTrainingPDF`, `listAllTrainingPDFs`, `cleanupOrphanedPDFs`. UI component `PDFManager` dengan upload modal, thumbnail preview, link generation, delete confirmation. CLI tools: `pdf-manager.js` (link/list/download/delete/cleanup) + `get-link.js` (simple presigned URL). File organization: `training/evidence/YYYY/MM/activity-id/timestamp-filename.pdf`. Enhanced S3 metadata tracking, presigned URL dengan custom expiry, download links dengan custom filename. Utility functions: validation, safe filename generation, S3 key parsing, file size formatting, URL expiry detection. 20 unit tests. Environment variables disesuaikan dengan existing `.env` (S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME). Build ✅, Tests 174/174 ✅. |
 | 2026-05-09 20:30 | Issue #45 dibuat — Training PDF Management: Implementasi script S3 untuk PDF upload dan read di Kegiatan Training. Script `get-link.js` untuk generate presigned URL dengan IDCloudHost S3 endpoint (is3.cloudhost.id), region id-jkt-1, bucket mis-dev. Support environment variables S3_KEY, S3_SECRET, S3_BUCKET. Generate signed URL valid 1 jam untuk akses PDF evidence training. Integrasi dengan existing training evidence system untuk better PDF handling dan link generation. |
