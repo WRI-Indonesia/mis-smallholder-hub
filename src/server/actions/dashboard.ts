@@ -83,12 +83,12 @@ export async function getDashboardGroupMarkers(
   filters: DashboardFilters = {}
 ): Promise<ActionResult<DashboardGroupMarker[]>> {
   try {
-    const { districtId, batchId } = filters;
+    const { districtId } = filters;
 
-    // Fetch cached group stats directly with coordinates
+    // Fetch cached group stats directly with coordinates - ignore batch filter for map
     const groupStats = await prisma.dashboardGroupStats.findMany({
       where: {
-        batchId: batchId || "ALL",
+        batchId: "ALL", // Always use ALL for map to show all groups regardless of batch selection
         ...(districtId && {
           farmerGroup: { districtId }
         })
@@ -158,6 +158,22 @@ export async function getBatchesForDashboard(): Promise<ActionResult<{ id: strin
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to fetch batches for dashboard",
+    };
+  }
+}
+
+export async function getTrainingPackagesForDashboard(): Promise<ActionResult<{ id: string; name: string; code: string }[]>> {
+  try {
+    const packages = await prisma.trainingPackage.findMany({
+      orderBy: { code: "asc" },
+      select: { id: true, name: true, code: true },
+    });
+
+    return { success: true, data: packages };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch training packages for dashboard",
     };
   }
 }
