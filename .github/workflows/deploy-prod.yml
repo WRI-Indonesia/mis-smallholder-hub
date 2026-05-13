@@ -1,0 +1,55 @@
+name: Deploy Main
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: MAIN_ENV_MIS_SMALLHOLDER
+    timeout-minutes: 20
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.MAIN_HOST }}
+          username: ${{ secrets.MAIN_SSH_USER }}
+          key: ${{ secrets.MAIN_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.MAIN_SSH_PORT }}
+          timeout: 60s
+          command_timeout: 45m
+          script: |
+            set -Eeuo pipefail
+
+            # LOAD NVM
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # CD
+            cd /var/www/html/mis-prod
+
+            # PULL
+            git fetch origin
+            git checkout main
+            git reset --hard origin/main
+
+            # ENV
+            cat > .env <<'EOF'
+            ${{ secrets.MIS_MAIN_ENV }}
+            EOF
+            chmod 600 .env
+
+            # BUILD
+            npm install
+            npx prisma generate
+            npm run build
+
+            # RELOAD
+            pm2 reload mis-prod || pm2 start npm --name "mis-prod" -- start -- -p 3000

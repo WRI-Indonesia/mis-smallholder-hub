@@ -1,28 +1,26 @@
-name: Deploy Main
+name: Deploy Staging
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
-  group: deploy-main
+  group: deploy-staging
   cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: MAIN_ENV_MIS_SMALLHOLDER
+    environment: STAGING_ENV_MIS_SMALLHOLDER
     timeout-minutes: 20
 
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.MAIN_HOST }}
-          username: ${{ secrets.MAIN_SSH_USER }}
-          key: ${{ secrets.MAIN_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.MAIN_SSH_PORT }}
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT }}
           timeout: 60s
           command_timeout: 45m
           script: |
@@ -33,16 +31,16 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
             # CD
-            cd /var/www/html/mis-main-branch
+            cd /var/www/html/mis-staging
 
             # PULL
             git fetch origin
-            git checkout main
-            git reset --hard origin/main
+            git checkout staging
+            git reset --hard origin/staging
 
             # ENV
             cat > .env <<'EOF'
-            ${{ secrets.MIS_MAIN_ENV }}
+            ${{ secrets.MIS_STAGING_ENV }}
             EOF
             chmod 600 .env
 
@@ -52,4 +50,4 @@ jobs:
             npm run build
 
             # RELOAD
-            pm2 reload mis-main || pm2 start npm --name "mis-main" -- start -- -p 3000
+            pm2 reload mis-staging || pm2 start npm --name "mis-staging" -- start -- -p 3000
