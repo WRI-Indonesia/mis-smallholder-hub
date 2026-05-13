@@ -19,6 +19,7 @@ interface BMPDashboardClientProps {
   kelompokTaniList: BMPKelompokTani[];
   currentDistrik: string;
   currentKT: string;
+  currentChartKategori: string;
 }
 
 export function BMPDashboardClient({
@@ -29,11 +30,13 @@ export function BMPDashboardClient({
   kelompokTaniList,
   currentDistrik,
   currentKT,
+  currentChartKategori,
 }: BMPDashboardClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [distrik, setDistrikLocal] = useState(currentDistrik);
   const [kt, setKTLocal] = useState(currentKT);
+  const [chartKategori, setChartKategoriLocal] = useState(currentChartKategori);
 
   // Filter KT list by selected distrik
   const filteredKTList = useMemo(() => {
@@ -41,10 +44,11 @@ export function BMPDashboardClient({
     return kelompokTaniList.filter((k) => k.distrik === distrik);
   }, [distrik, kelompokTaniList]);
 
-  const updateURL = (newDistrik: string, newKT: string) => {
+  const updateURL = (newDistrik: string, newKT: string, newChartKategori: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newDistrik === "All") params.delete("districtId"); else params.set("districtId", newDistrik);
     if (newKT === "All") params.delete("kt"); else params.set("kt", newKT);
+    if (newChartKategori === "All") params.delete("chartKategori"); else params.set("chartKategori", newChartKategori);
     router.push(`?${params.toString()}`);
   };
 
@@ -52,13 +56,19 @@ export function BMPDashboardClient({
     const newDistrik = value ?? "All";
     setDistrikLocal(newDistrik);
     setKTLocal("All"); // reset KT when distrik changes
-    updateURL(newDistrik, "All");
+    updateURL(newDistrik, "All", chartKategori);
   };
 
   const handleKTChange = (value: string | null) => {
     const newKT = value ?? "All";
     setKTLocal(newKT);
-    updateURL(distrik, newKT);
+    updateURL(distrik, newKT, chartKategori);
+  };
+
+  const handleChartKategoriChange = (value: string | null) => {
+    const newCat = value ?? "All";
+    setChartKategoriLocal(newCat);
+    updateURL(distrik, kt, newCat);
   };
 
   return (
@@ -108,11 +118,23 @@ export function BMPDashboardClient({
         <div className="flex-1 flex gap-4 min-h-0">
           {/* Chart — 3/4 width */}
           <Card className="flex-[3] flex flex-col min-h-0">
-            <CardHeader className="pb-2 shrink-0">
+            <CardHeader className="pb-2 shrink-0 flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-base">
                 <BarChart3 className="h-5 w-5 text-muted-foreground" />
                 Tren Produksi &amp; Produktivitas Bulanan
               </CardTitle>
+              <Select value={chartKategori} onValueChange={handleChartKategoriChange}>
+                <SelectTrigger className="w-[200px] h-8 text-sm bg-background">
+                  <SelectValue>
+                    {chartKategori === "All" ? "Semua Kategori" : chartKategori}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">Semua Kategori</SelectItem>
+                  <SelectItem value="Kelompok Tani Ex Plasma">Kelompok Tani Ex Plasma</SelectItem>
+                  <SelectItem value="Kelompok Tani Swadaya">Kelompok Tani Swadaya</SelectItem>
+                </SelectContent>
+              </Select>
             </CardHeader>
             <CardContent className="flex-1 min-h-0 pb-4">
               <BMPProductionChart data={productionData} />

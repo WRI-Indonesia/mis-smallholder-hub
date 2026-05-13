@@ -16,7 +16,9 @@ export type BMPScoreData = {
 
 export type BMPMonthlyProduction = {
   month: string;
-  productionTon: number;
+  productionTonMuda: number;
+  productionTonDewasa: number;
+  productionTonTua: number;
   productivityTonPerHa: number;
 };
 
@@ -47,8 +49,10 @@ type ProductionRow = {
   distrik: string;
   kelompokTani: string;
   month: string;
-  productionKg: string;
-  areaHa: string;
+  productionKgMuda: string;
+  productionKgDewasa: string;
+  productionKgTua: string;
+  areaHaDewasa: string;
 };
 
 type MonevRow = {
@@ -114,16 +118,26 @@ export function getBMPScoreData(distrik?: string, kelompokTani?: string): BMPSco
 }
 
 /** Get monthly production + productivity trend */
-export function getBMPMonthlyProduction(distrik?: string, kelompokTani?: string): BMPMonthlyProduction[] {
-  const filtered = productionRows.filter((r) => matchFilter(r, distrik, kelompokTani));
+export function getBMPMonthlyProduction(distrik?: string, kelompokTani?: string, kategori?: string): BMPMonthlyProduction[] {
+  let filtered = productionRows.filter((r) => matchFilter(r, distrik, kelompokTani));
+
+  if (kategori && kategori !== "All") {
+    // Scaffold: Assign kategori deterministically based on KT name length
+    filtered = filtered.filter((r) => {
+      const cat = r.kelompokTani.length % 2 === 0 ? "Kelompok Tani Ex Plasma" : "Kelompok Tani Swadaya";
+      return cat === kategori;
+    });
+  }
 
   const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monthMap = new Map<string, { productionKg: number; areaHa: number }>();
+  const monthMap = new Map<string, { pMuda: number; pDewasa: number; pTua: number; aDewasa: number }>();
 
   for (const row of filtered) {
-    const current = monthMap.get(row.month) || { productionKg: 0, areaHa: 0 };
-    current.productionKg += parseFloat(row.productionKg);
-    current.areaHa += parseFloat(row.areaHa);
+    const current = monthMap.get(row.month) || { pMuda: 0, pDewasa: 0, pTua: 0, aDewasa: 0 };
+    current.pMuda += parseFloat(row.productionKgMuda);
+    current.pDewasa += parseFloat(row.productionKgDewasa);
+    current.pTua += parseFloat(row.productionKgTua);
+    current.aDewasa += parseFloat(row.areaHaDewasa);
     monthMap.set(row.month, current);
   }
 
@@ -133,8 +147,10 @@ export function getBMPMonthlyProduction(distrik?: string, kelompokTani?: string)
       const d = monthMap.get(m)!;
       return {
         month: m,
-        productionTon: +(d.productionKg / 1000).toFixed(2),
-        productivityTonPerHa: d.areaHa > 0 ? +((d.productionKg / 1000) / d.areaHa).toFixed(3) : 0,
+        productionTonMuda: +(d.pMuda / 1000).toFixed(2),
+        productionTonDewasa: +(d.pDewasa / 1000).toFixed(2),
+        productionTonTua: +(d.pTua / 1000).toFixed(2),
+        productivityTonPerHa: d.aDewasa > 0 ? +((d.pDewasa / 1000) / d.aDewasa).toFixed(3) : 0,
       };
     });
 }
