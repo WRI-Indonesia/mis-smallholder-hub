@@ -1,4 +1,4 @@
-name: Deploy Staging
+name: Deploy staging
 
 on:
   workflow_dispatch:
@@ -10,17 +10,17 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: STAGING_ENV_MIS_SMALLHOLDER
+    environment: DEV_ENV_MIS_SMALLHOLDER
     timeout-minutes: 20
 
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_SSH_USER }}
-          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.STAGING_SSH_PORT }}
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.DEV_SSH_USER }}
+          key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.DEV_SSH_PORT }}
           timeout: 60s
           command_timeout: 45m
           script: |
@@ -40,7 +40,7 @@ jobs:
 
             # ENV
             cat > .env <<'EOF'
-            ${{ secrets.MIS_STAGING_ENV }}
+            ${{ secrets.MIS_DEV_ENV }}
             EOF
             chmod 600 .env
 
