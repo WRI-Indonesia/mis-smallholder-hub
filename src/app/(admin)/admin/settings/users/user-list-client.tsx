@@ -160,6 +160,7 @@ export function UserListClient({ initialUsers }: { initialUsers: User[] }) {
       </Card>
 
       <UserFormModal
+        key={editUser?.id ?? "new"}
         open={showForm}
         onClose={() => { setShowForm(false); setEditUser(null); }}
         user={editUser}
