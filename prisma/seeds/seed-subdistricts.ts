@@ -1,32 +1,24 @@
 import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
-import Papa from "papaparse";
+import { parse } from "csv-parse/sync";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export async function seedSubdistricts(prisma: PrismaClient) {
-  console.log("Seeding subdistricts...");
-  const csvFilePath = path.resolve(__dirname, "data/subdistricts.csv");
-  const fileContent = fs.readFileSync(csvFilePath, "utf8");
+  const csv = readFileSync(join(__dirname, "data/subdistricts.csv"), "utf-8");
+  const records = parse(csv, { columns: true, skip_empty_lines: true });
 
-  const { data } = Papa.parse(fileContent, {
-    header: true,
-    skipEmptyLines: true,
-  });
-
-  for (const row of data as any[]) {
+  for (const row of records) {
     await prisma.subdistrict.upsert({
-      where: { code: row.code },
-      update: {
-        name: row.name,
-        districtId: row.districtId,
-      },
+      where: { id: row.id },
+      update: {},
       create: {
         id: row.id,
+        districtId: row.district_id,
         code: row.code,
         name: row.name,
-        districtId: row.districtId,
       },
     });
   }
-  console.log(`Seeded ${data.length} subdistricts.`);
+
+  console.log(`  ✓ Subdistricts: ${records.length} records`);
 }

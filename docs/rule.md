@@ -104,6 +104,31 @@ Untuk multi-step task, buat plan singkat:
 | Validation | Zod di `src/validations/` |
 | Server Actions | Di `src/server/actions/` |
 
+### Data Access & Soft Delete
+
+- **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app.
+- **Data filtering** — Setiap query di server actions wajib filter berdasarkan context user:
+  - `isActive: true` (exclude soft-deleted records)
+  - Region sesuai assignment user (Province → District → KT)
+  - Kelompok Tani sesuai assignment user
+  - Role & Permission menentukan level akses (view/edit/delete)
+- **Pattern** — Gunakan helper function untuk inject where clause RBAC, jangan copy-paste manual di setiap action.
+
+### RBAC Data Access Hierarchy
+
+```
+UserProvince → semua District di province → semua KT di district
+UserDistrict → semua KT di district tersebut
+UserFarmerGroup → hanya KT spesifik
+SUPERADMIN → skip semua filter
+```
+
+Konvensi:
+- `UserFarmerGroup` ada → filter ke KT tersebut saja
+- `UserFarmerGroup` kosong + `UserDistrict` ada → semua KT di district
+- `UserDistrict` kosong + `UserProvince` ada → semua district di province → semua KT
+- SUPERADMIN → akses semua tanpa filter
+
 ---
 
 ## UI/UX

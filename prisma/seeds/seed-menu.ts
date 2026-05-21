@@ -1,101 +1,28 @@
 import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
-import Papa from "papaparse";
-
-interface MenuCsvRow {
-  key: string;
-  parentKey: string;
-  title: string;
-  url: string;
-  icon: string;
-  order: string;
-  isActive: string;
-  isVisible: string;
-  roles: string;
-  groups: string;
-  jobDescs: string;
-  regions: string;
-}
+import { parse } from "csv-parse/sync";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export async function seedMenu(prisma: PrismaClient) {
-  console.log("Seeding menu items...");
+  const csv = readFileSync(join(__dirname, "data/menu.csv"), "utf-8");
+  const records = parse(csv, { columns: true, skip_empty_lines: true });
 
-  const filePath = path.resolve(__dirname, "data/menu.csv");
-  const { data } = Papa.parse<MenuCsvRow>(fs.readFileSync(filePath, "utf8"), {
-    header: true,
-    skipEmptyLines: true,
-  });
-
-  // Step 1: Upsert all root items first (no parentKey) to satisfy FK constraint
-  const roots = data.filter((row) => !row.parentKey);
-  for (const row of roots) {
+  for (const row of records) {
     await prisma.menuItem.upsert({
       where: { key: row.key },
-      update: {
-        title: row.title,
-        url: row.url,
-        icon: row.icon || null,
-        order: parseInt(row.order, 10),
-        isActive: row.isActive === "true",
-        isVisible: row.isVisible === "true",
-        roles: row.roles,
-        groups: row.groups,
-        jobDescs: row.jobDescs,
-        regions: row.regions,
-        parentKey: null,
-      },
+      update: {},
       create: {
         key: row.key,
-        parentKey: null,
+        parentKey: row.parent_key || null,
         title: row.title,
         url: row.url,
         icon: row.icon || null,
         order: parseInt(row.order, 10),
-        isActive: row.isActive === "true",
-        isVisible: row.isVisible === "true",
-        roles: row.roles,
-        groups: row.groups,
-        jobDescs: row.jobDescs,
-        regions: row.regions,
+        isActive: row.is_active === "true",
+        isVisible: row.is_visible === "true",
       },
     });
   }
 
-  // Step 2: Upsert child items (with parentKey)
-  const children = data.filter((row) => !!row.parentKey);
-  for (const row of children) {
-    await prisma.menuItem.upsert({
-      where: { key: row.key },
-      update: {
-        title: row.title,
-        url: row.url,
-        icon: row.icon || null,
-        order: parseInt(row.order, 10),
-        isActive: row.isActive === "true",
-        isVisible: row.isVisible === "true",
-        roles: row.roles,
-        groups: row.groups,
-        jobDescs: row.jobDescs,
-        regions: row.regions,
-        parentKey: row.parentKey,
-      },
-      create: {
-        key: row.key,
-        parentKey: row.parentKey,
-        title: row.title,
-        url: row.url,
-        icon: row.icon || null,
-        order: parseInt(row.order, 10),
-        isActive: row.isActive === "true",
-        isVisible: row.isVisible === "true",
-        roles: row.roles,
-        groups: row.groups,
-        jobDescs: row.jobDescs,
-        regions: row.regions,
-      },
-    });
-  }
-
-  console.log(`Seeded ${data.length} menu items (${roots.length} root, ${children.length} children).`);
+  console.log(`  ✓ Menu items: ${records.length} records`);
 }

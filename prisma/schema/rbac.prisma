@@ -1,0 +1,85 @@
+// rbac.prisma — Role-Based Access Control
+
+// Default permissions per role per menu item
+model RolePermission {
+  id         String          @id @default(cuid())
+  role       Role
+  menuKey    String          @map("menu_key")
+  menu       MenuItem        @relation(fields: [menuKey], references: [key])
+  permission PermissionLevel
+  isActive   Boolean         @default(true) @map("is_active")
+  createdAt  DateTime        @default(now()) @map("created_at")
+  createdBy  String?         @map("created_by")
+  modifiedAt DateTime        @updatedAt @map("modified_at")
+  modifiedBy String?         @map("modified_by")
+
+  @@unique([role, menuKey, permission])
+  @@map("rbac_role_permission")
+}
+
+// User ↔ Province assignment (data-level access — all districts in province)
+model UserProvince {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  provinceId String   @map("province_id")
+  province   Province @relation(fields: [provinceId], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  @@unique([userId, provinceId])
+  @@map("rbac_user_province")
+}
+
+// User ↔ District assignment (data-level access)
+model UserDistrict {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  districtId String   @map("district_id")
+  district   District @relation(fields: [districtId], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  @@unique([userId, districtId])
+  @@map("rbac_user_district")
+}
+
+// User ↔ FarmerGroup assignment (data-level access)
+model UserFarmerGroup {
+  id            String      @id @default(cuid())
+  userId        String      @map("user_id")
+  user          User        @relation(fields: [userId], references: [id])
+  farmerGroupId String      @map("farmer_group_id")
+  farmerGroup   FarmerGroup @relation(fields: [farmerGroupId], references: [id])
+  createdAt     DateTime    @default(now()) @map("created_at")
+  createdBy     String?     @map("created_by")
+  modifiedAt    DateTime    @updatedAt @map("modified_at")
+  modifiedBy    String?     @map("modified_by")
+
+  @@unique([userId, farmerGroupId])
+  @@map("rbac_user_farmer_group")
+}
+
+// Per-user permission override (exception from role default)
+model UserPermissionOverride {
+  id         String          @id @default(cuid())
+  userId     String          @map("user_id")
+  user       User            @relation(fields: [userId], references: [id])
+  menuKey    String          @map("menu_key")
+  menu       MenuItem        @relation(fields: [menuKey], references: [key])
+  permission PermissionLevel
+  granted    Boolean         @default(true) // true = grant, false = revoke
+  isActive   Boolean         @default(true) @map("is_active")
+  createdAt  DateTime        @default(now()) @map("created_at")
+  createdBy  String?         @map("created_by")
+  modifiedAt DateTime        @updatedAt @map("modified_at")
+  modifiedBy String?         @map("modified_by")
+
+  @@unique([userId, menuKey, permission])
+  @@map("rbac_user_permission_override")
+}

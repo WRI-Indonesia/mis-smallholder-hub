@@ -1,8 +1,8 @@
-// menu.prisma — Menu management model
+// menu.prisma — Navigation menu management
 
 model MenuItem {
   id        String  @id @default(cuid())
-  key       String  @unique // slug unik, e.g. "dashboard-training"
+  key       String  @unique // slug unik, e.g. "dashboard-bmp"
   parentKey String? @map("parent_key")
   title     String
   url       String
@@ -11,22 +11,19 @@ model MenuItem {
   isActive  Boolean @default(true) @map("is_active")
   isVisible Boolean @default(true) @map("is_visible")
 
-  // RBAC (pipe-separated string, e.g. "admin|operator")
-  // Will be refactored to proper relations in the RBAC milestone
-  roles    String @default("all")
-  groups   String @default("all")
-  jobDescs String @default("all") @map("job_descs")
-  regions  String @default("all")
-
   // Self-relation for hierarchy
   parent   MenuItem?  @relation("MenuHierarchy", fields: [parentKey], references: [key])
   children MenuItem[] @relation("MenuHierarchy")
 
-  // Audit trail
+  // RBAC relations
+  rolePermissions RolePermission[]
+  userOverrides   UserPermissionOverride[]
+
+  // Audit
   createdAt  DateTime @default(now()) @map("created_at")
-  modifiedAt DateTime @updatedAt @map("modified_at")
   createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
   modifiedBy String?  @map("modified_by")
 
-  @@map("tbl-menu-item")
+  @@map("tbl_menu_item")
 }

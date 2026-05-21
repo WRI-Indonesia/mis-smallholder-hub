@@ -39,6 +39,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | # | Deskripsi | Status |
 |---|-----------|--------|
+| [#55](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/55) | DB & Prisma Schema Clean Up | 🟡 |
 | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) | Dashboard BMP | 🟡 |
 | [#44](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/44) | Telegram Notification | 🔲 |
 | [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49) | Dashboard Training Scaffold | 🔲 |
@@ -88,6 +89,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | Tanggal | Perubahan |
 |---------|-----------|
+| 05-22 | #55 in progress — Schema reset: 6 file baru (User, Geography, FarmerGroup, Menu, RBAC), RBAC system (RolePermission, UserProvince/District/FarmerGroup, PermissionOverride), soft delete + audit trail semua tabel, seed files + CSV templates, hapus migration lama, backup schema/seed lama |
 | 05-13 | #48 — Update UI/UX Grafik BMP: filter Kategori, grouped bar, warna hijau vibrant, legenda override |
 | 05-13 | #48 — Dashboard BMP scaffold: 5 score cards, combo chart, monev cards, filter distrik+KT |
 | 05-12 | Issues #48–#53 dibuat (scaffold only) |

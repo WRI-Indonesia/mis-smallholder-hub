@@ -1,4 +1,4 @@
-// base.prisma — generator, datasource, and shared enums
+// _config.prisma — generator, datasource, enums
 
 generator client {
   provider        = "prisma-client-js"
@@ -17,9 +17,21 @@ enum Role {
   MANAGEMENT
 }
 
+enum PermissionLevel {
+  CREATE
+  VIEW
+  EDIT
+  DELETE
+}
+
 enum ActivityStatus {
   DRAFT
   PENDING_APPROVAL
   APPROVED
   REJECTED
+}
+
+enum FarmerGroupCategory {
+  EX_PLASMA
+  SWADAYA
 }
