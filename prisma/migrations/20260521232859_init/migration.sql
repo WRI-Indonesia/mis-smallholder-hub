@@ -22,7 +22,7 @@ CREATE TABLE "tbl_farmer_group" (
     "abrv_3id" VARCHAR(50),
     "name" TEXT NOT NULL,
     "category" "FarmerGroupCategory" NOT NULL DEFAULT 'SWADAYA',
-    "established_year" INTEGER,
+    "join_year" INTEGER,
     "location_lat" DOUBLE PRECISION,
     "location_long" DOUBLE PRECISION,
     "is_active" BOOLEAN NOT NULL DEFAULT true,

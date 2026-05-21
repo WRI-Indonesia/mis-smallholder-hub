@@ -81,7 +81,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | Tanggal | Perubahan |
 |---------|-----------|
-| 05-22 | #56 in progress — Login (NextAuth), User Management CRUD, Menu Management CRUD, Role & Permission matrix, RBAC sidebar filter, Profile page, 41/41 tests |
+| 05-22 | #56 in progress — Login (NextAuth), User Management CRUD, Menu Management CRUD, Role & Permission matrix, Kelompok Tani CRUD (list+filter+pagination+detail+RBAC actions), Profile page, 41/41 tests |
 | 05-22 | #55 selesai — Schema reset: 6 file baru, RBAC system, soft delete + audit trail, seed + CSV, migration fresh |
 | 05-13 | #48 — Update UI/UX Grafik BMP: filter Kategori, grouped bar, warna hijau vibrant, legenda override |
 | 05-13 | #48 — Dashboard BMP scaffold: 5 score cards, combo chart, monev cards, filter distrik+KT |

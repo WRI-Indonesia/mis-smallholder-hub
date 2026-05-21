@@ -19,7 +19,7 @@ export async function seedFarmerGroups(prisma: PrismaClient) {
         abrv3id: row.abrv_3id || null,
         name: row.name,
         category: row.category as FarmerGroupCategory,
-        establishedYear: row.established_year ? parseInt(row.established_year, 10) : null,
+        joinYear: row.join_year ? parseInt(row.join_year, 10) : null,
         locationLat: row.location_lat ? parseFloat(row.location_lat) : null,
         locationLong: row.location_long ? parseFloat(row.location_long) : null,
       },

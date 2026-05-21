@@ -1,4 +1,4 @@
-id,district_id,code,abrv,abrv_3id,name,category,established_year,location_lat,location_long
+id,district_id,code,abrv,abrv_3id,name,category,join_year,location_lat,location_long
 ICS-1401-01,1401,ICS-1401-01,APSS,APSS,APSS - Sei Galuh,SWADAYA,2025,0.517449,101.202585
 ICS-1401-02,1401,ICS-1401-02,KARSEM,KSM,KUD Karya Sembada,EX_PLASMA,2025,0.4895,101.1486111
 ICS-1401-03,1401,ICS-1401-03,HJP,HJP,KUD Hasrat Jaya Pagaruyung,EX_PLASMA,2025,0.480721206,101.2387226

@@ -42,3 +42,26 @@ export async function requirePermission(menuKey: string) {
 
   return session;
 }
+
+/**
+ * Get permission levels the current user has for a specific menu key.
+ * Returns array of granted permissions: ["VIEW", "EDIT", "DELETE", "CREATE"]
+ */
+export async function getUserPermissionsForMenu(menuKey: string): Promise<string[]> {
+  const session = await auth();
+  if (!session?.user) return [];
+
+  const role = session.user.role;
+  if (role === "SUPERADMIN") return ["CREATE", "VIEW", "EDIT", "DELETE"];
+
+  const permissions = await prisma.rolePermission.findMany({
+    where: {
+      role: role as never,
+      menuKey,
+      isActive: true,
+    },
+    select: { permission: true },
+  });
+
+  return permissions.map((p) => p.permission);
+}
