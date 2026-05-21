@@ -45,3 +45,5 @@ next-env.d.ts
 /tmp*
 
 /prisma/backup/*
+/docs/issues/*
+/docs/old_stuff/*

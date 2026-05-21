@@ -10,10 +10,9 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      {/* Left pane: branding/image side */}
-      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
-        <div className="absolute inset-0 bg-primary" />
+    <div className="relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      {/* Left pane: branding */}
+      <div className="relative hidden h-full flex-col bg-[#166534] p-10 text-white lg:flex">
         <div className="relative z-20 flex items-center gap-2 font-extrabold text-2xl tracking-tight">
           <div className="w-10 h-10 rounded-xl bg-white flex shrink-0 items-center justify-center text-[#166534] shadow-md">
             <Leaf className="w-6 h-6" strokeWidth={2.5} />
@@ -23,24 +22,24 @@ export default function LoginPage() {
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-4">
             <p className="text-xl font-medium leading-relaxed">
-              "Memberdayakan petani sawit swadaya untuk produksi kelapa sawit berkelanjutan dan kehidupan yang lebih baik."
+              &ldquo;Memberdayakan petani sawit swadaya untuk produksi kelapa sawit berkelanjutan dan kehidupan yang lebih baik.&rdquo;
             </p>
             <footer className="text-sm font-semibold opacity-80">Sawit Swadaya Program - WRI Indonesia</footer>
           </blockquote>
         </div>
       </div>
-      
-      {/* Right pane: form side */}
-      <div className="p-8">
+
+      {/* Right pane: form */}
+      <div className="flex items-center justify-center p-8 bg-background">
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[380px]">
           <div className="flex flex-col space-y-2 text-center lg:hidden items-center justify-center mb-6">
-             <div className="w-12 h-12 rounded-xl bg-primary flex shrink-0 items-center justify-center text-white shadow-md">
-                <Leaf className="w-7 h-7" strokeWidth={2.5} />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight mt-2">Smallholder HUB</h1>
+            <div className="w-12 h-12 rounded-xl bg-[#166534] flex shrink-0 items-center justify-center text-white shadow-md">
+              <Leaf className="w-7 h-7" strokeWidth={2.5} />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight mt-2">Smallholder HUB</h1>
           </div>
           <div className="flex flex-col space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Selamat Datang Kembali
             </h1>
             <p className="text-sm text-muted-foreground">

@@ -1,13 +1,8 @@
-import CommunityDirectoryClient from "@/components/community/community-directory-client"
-import { farmerGroups } from "@/lib/static-data/public/community"
-
-export const metadata = {
-  title: "Peta & Direktori Komunitas | Smallholder HUB",
-  description: "Eksplorasi ribuan koperasi dan asosiasi petani swadaya dalam ekosistem Riau berkelanjutan.",
-}
-
-export default async function CommunityPage() {
+export default function CommunityPage() {
   return (
-    <CommunityDirectoryClient initialGroups={farmerGroups} />
-  )
+    <div className="container mx-auto py-12">
+      <h1 className="text-3xl font-bold">Community</h1>
+      <p className="text-muted-foreground mt-2">Coming soon</p>
+    </div>
+  );
 }

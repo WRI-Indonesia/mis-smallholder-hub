@@ -31,11 +31,15 @@ async function main() {
     await seedSubdistricts(prisma);
     await seedVillages(prisma);
 
-    // 3. Menu (no dependencies)
+    // 3. Farmer Groups (depends on districts)
+    console.log("\n--- Farmer Groups ---");
+    await seedFarmerGroups(prisma);
+
+    // 4. Menu (no dependencies)
     console.log("\n--- Menu ---");
     await seedMenu(prisma);
 
-    // 4. RBAC (depends on menu)
+    // 5. RBAC (depends on menu)
     console.log("\n--- RBAC ---");
     await seedRolePermissions(prisma);
 

@@ -1,20 +1,8 @@
-import { getProvinces, getDistricts } from "@/server/actions/region";
-import { RegionTreeClient } from "./region-tree-client";
-
-export const metadata = { title: "Manajemen Wilayah" };
-
-export default async function RegionsPage() {
-  const [provincesResult, districtsResult] = await Promise.all([
-    getProvinces(),
-    getDistricts(),
-  ]);
-
+export default function RegionsPage() {
   return (
     <div className="p-6">
-      <RegionTreeClient
-        initialProvinces={provincesResult.success ? (provincesResult.data ?? []) : []}
-        initialDistricts={districtsResult.success ? (districtsResult.data ?? []) : []}
-      />
+      <h1 className="text-2xl font-bold">Regions</h1>
+      <p className="text-muted-foreground">Coming soon</p>
     </div>
   );
 }

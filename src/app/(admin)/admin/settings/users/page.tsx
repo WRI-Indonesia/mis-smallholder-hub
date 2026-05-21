@@ -1,17 +1,8 @@
-import { getUsers } from "@/server/actions/user";
-import { UserListClient } from "./user-list-client";
-
-export const metadata = {
-  title: "Manajemen Pengguna",
-};
-
-export default async function UsersPage() {
-  const result = await getUsers();
-  const users = result.success ? result.data : [];
-
+export default function UsersPage() {
   return (
     <div className="p-6">
-      <UserListClient initialUsers={users || []} />
+      <h1 className="text-2xl font-bold">User Management</h1>
+      <p className="text-muted-foreground">Coming soon</p>
     </div>
   );
 }
