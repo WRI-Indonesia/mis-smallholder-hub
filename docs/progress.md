@@ -22,7 +22,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 | 4 | Master Data CRUD (Regions, Groups, Farmers, Parcels) | ✅ |
 | 4.a Infra | Dynamic Menu Management | ✅ |
 | 4.a | Master Data Phase 2 (Training, Staff, Agronomy) | ✅ |
-| 3 | Autentikasi & RBAC | ⏭️ Skipped |
+| 3 | Autentikasi & RBAC | ✅ |
 | 7 | Dashboard Basic Data | ✅ |
 | 7.a | Dashboard Server Actions | ✅ |
 | 7.b | Interactive Map | ✅ |
@@ -39,7 +39,8 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | # | Deskripsi | Status |
 |---|-----------|--------|
-| [#55](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/55) | DB & Prisma Schema Clean Up | 🟡 |
+| [#55](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/55) | DB & Prisma Schema Clean Up | ✅ |
+| [#56](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/56) | Core Pages (Login, Settings, Master Data KT) | 🟡 |
 | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) | Dashboard BMP | 🟡 |
 | [#44](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/44) | Telegram Notification | 🔲 |
 | [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49) | Dashboard Training Scaffold | 🔲 |
@@ -56,27 +57,18 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | Issue | Location |
 |-------|----------|
-| Schema drift baseline | `prisma/migrations/` — `abrv_3id` & `birthdate` nullable tanpa migration |
 | S3 orphan cleanup | File PDF lama tidak terhapus saat delete/ganti evidence |
-| `villages.csv` ID mismatch | subdistrictId format tidak cocok — reg-village selalu kosong |
 
 ### Medium Priority
 
 | Issue | Location |
 |-------|----------|
-| `getMenuItems()` tidak di-cache | `server/actions/menu.ts` |
-| Dashboard cache belum terintegrasi | `dashboard-cache.ts` |
-| `window.location.reload()` → `router.refresh()` | `menu-manager-client.tsx` |
-| `prisma/seed.ts` masih `ts-node` | Perlu ganti `tsx` |
 | Dark mode hardcoded `text-white` | Beberapa halaman |
-| Circular ref check hanya 1 level | `server/actions/menu.ts` |
 
 ### Low Priority
 
 | Issue | Location |
 |-------|----------|
-| Unused imports | `menu-manager-client.tsx` |
-| Drag-and-drop flat list | Idealnya per parent group |
 | `.DS_Store` in git | Perlu `git rm --cached` |
 | Language toggle non-functional | Fase 10 (i18n) |
 | Spacing guideline belum formal | `globals.css` |
@@ -89,7 +81,8 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | Tanggal | Perubahan |
 |---------|-----------|
-| 05-22 | #55 in progress — Schema reset: 6 file baru (User, Geography, FarmerGroup, Menu, RBAC), RBAC system (RolePermission, UserProvince/District/FarmerGroup, PermissionOverride), soft delete + audit trail semua tabel, seed files + CSV templates, hapus migration lama, backup schema/seed lama |
+| 05-22 | #56 in progress — Login (NextAuth), User Management CRUD, Menu Management CRUD, Role & Permission matrix, RBAC sidebar filter, Profile page, 41/41 tests |
+| 05-22 | #55 selesai — Schema reset: 6 file baru, RBAC system, soft delete + audit trail, seed + CSV, migration fresh |
 | 05-13 | #48 — Update UI/UX Grafik BMP: filter Kategori, grouped bar, warna hijau vibrant, legenda override |
 | 05-13 | #48 — Dashboard BMP scaffold: 5 score cards, combo chart, monev cards, filter distrik+KT |
 | 05-12 | Issues #48–#53 dibuat (scaffold only) |
