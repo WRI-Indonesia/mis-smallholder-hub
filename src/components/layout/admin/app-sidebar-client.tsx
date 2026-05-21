@@ -25,15 +25,10 @@ interface MenuItem {
 
 interface AppSidebarClientProps extends React.ComponentProps<typeof Sidebar> {
   menuItems: MenuItem[];
+  user: { name: string; email: string };
 }
 
-const userData = {
-  name: "Admin",
-  email: "admin@wri.org",
-  avatar: "/avatars/user.svg",
-};
-
-export function AppSidebarClient({ menuItems, ...props }: AppSidebarClientProps) {
+export function AppSidebarClient({ menuItems, user, ...props }: AppSidebarClientProps) {
   const navItems = menuItems.map((item) => ({
     title: item.title,
     url: item.url,
@@ -68,7 +63,7 @@ export function AppSidebarClient({ menuItems, ...props }: AppSidebarClientProps)
         <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={userData} />
+        <NavUser user={{ name: user.name, email: user.email, avatar: "" }} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

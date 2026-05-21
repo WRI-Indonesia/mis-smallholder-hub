@@ -41,8 +41,10 @@ import {
   // People & Organization
   Users,
   User,
+  UserCog,
   Users2,
   UserCheck,
+  Briefcase,
   Building2,
   // Maps & Location
   Map,
@@ -83,11 +85,15 @@ import type { LucideIcon } from "lucide-react";
 
 export const ICON_MAP: Record<string, LucideIcon> = {
   // Navigation & Layout
+  LayoutDashboard: LayoutDashboard,
   LayoutDashboardIcon: LayoutDashboard,
+  Database: Database,
   DatabaseIcon: Database,
-  MonitorIcon: Monitor,
   Monitor: Monitor,
+  MonitorIcon: Monitor,
+  Wrench: Wrench,
   WrenchIcon: Wrench,
+  Settings: Settings,
   SettingsIcon: Settings,
   Menu: Menu,
   Home: Home,
@@ -114,8 +120,10 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   // People & Organization
   Users: Users,
   User: User,
+  UserCog: UserCog,
   Users2: Users2,
   UserCheck: UserCheck,
+  Briefcase: Briefcase,
   Building2: Building2,
   // Maps & Location
   Map: Map,

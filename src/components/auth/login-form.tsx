@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -33,6 +34,7 @@ export function LoginForm() {
       return;
     }
 
+    toast.success("Login berhasil");
     router.push("/admin");
     router.refresh();
   }
