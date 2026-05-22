@@ -6,10 +6,15 @@ import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer
 import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
 import { hasPermission } from "@/lib/rbac";
 
-async function getAccessibleDistrictIds(): Promise<string[] | "ALL"> {
+type AccessContext =
+  | { mode: "ALL" }
+  | { mode: "BY_FARMER_GROUP"; ids: string[] }
+  | { mode: "BY_DISTRICT"; ids: string[] };
+
+async function getAccessContext(): Promise<AccessContext> {
   const session = await auth();
-  if (!session?.user) return [];
-  if (session.user.role === "SUPERADMIN") return "ALL";
+  if (!session?.user) return { mode: "BY_DISTRICT", ids: [] };
+  if (session.user.role === "SUPERADMIN") return { mode: "ALL" };
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -20,20 +25,26 @@ async function getAccessibleDistrictIds(): Promise<string[] | "ALL"> {
     },
   });
 
-  if (!user) return [];
+  if (!user) return { mode: "BY_DISTRICT", ids: [] };
 
   // No assignments at all → unrestricted (show all)
   if (user.provinces.length === 0 && user.districts.length === 0 && user.farmerGroups.length === 0) {
-    return "ALL";
+    return { mode: "ALL" };
   }
 
+  // FarmerGroup-only assignment → filter by specific KT IDs (rule.md: UserFarmerGroup ada → hanya KT spesifik)
+  if (user.farmerGroups.length > 0 && user.provinces.length === 0 && user.districts.length === 0) {
+    return { mode: "BY_FARMER_GROUP", ids: user.farmerGroups.map((f) => f.farmerGroupId) };
+  }
+
+  // Province/District assignment → resolve to district IDs
   const ids = new Set<string>();
   for (const up of user.provinces) {
     for (const d of up.province.districts) ids.add(d.id);
   }
   for (const ud of user.districts) ids.add(ud.districtId);
 
-  return [...ids];
+  return { mode: "BY_DISTRICT", ids: [...ids] };
 }
 
 export async function getFarmerGroups(search?: string) {
@@ -41,10 +52,15 @@ export async function getFarmerGroups(search?: string) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
-  const districtIds = await getAccessibleDistrictIds();
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
 
   const where = {
-    ...(districtIds !== "ALL" ? { districtId: { in: districtIds } } : {}),
+    ...accessFilter,
     ...(search
       ? {
           OR: [

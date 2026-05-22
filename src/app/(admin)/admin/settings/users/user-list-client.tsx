@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, Database } from "lucide-react";
 import { UserFormModal } from "./user-form-modal";
+import { UserDataAccessModal } from "./user-data-access-modal";
 import { toggleUserActive } from "@/server/actions/user";
 import { toast } from "sonner";
 import { TableActions } from "@/components/shared";
@@ -34,11 +35,43 @@ interface User {
   role: string;
   isActive: boolean;
   createdAt: Date;
+  provinces: { province: { name: string } }[];
+  districts: { district: { name: string } }[];
+  farmerGroups: { farmerGroup: { name: string; abrv: string | null } }[];
 }
 
 interface Props {
   initialUsers: User[];
   permissions: string[];
+}
+// ─── Access Summary Cell ──────────────────────────────────────────────────────
+
+function AccessSummaryCell({ user }: { user: User }) {
+  const hasAny = user.provinces.length > 0 || user.districts.length > 0 || user.farmerGroups.length > 0;
+
+  if (!hasAny) {
+    return <span className="text-sm text-muted-foreground">—</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {user.provinces.map((p, i) => (
+        <Badge key={i} variant="outline" className="text-xs font-normal py-0">
+          {p.province.name}
+        </Badge>
+      ))}
+      {user.districts.map((d, i) => (
+        <Badge key={i} variant="outline" className="text-xs font-normal py-0">
+          {d.district.name}
+        </Badge>
+      ))}
+      {user.farmerGroups.map((f, i) => (
+        <Badge key={i} variant="outline" className="text-xs font-normal py-0">
+          {f.farmerGroup.abrv ?? f.farmerGroup.name}
+        </Badge>
+      ))}
+    </div>
+  );
 }
 
 export function UserListClient({ initialUsers, permissions }: Props) {
@@ -46,9 +79,11 @@ export function UserListClient({ initialUsers, permissions }: Props) {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [accessUser, setAccessUser] = useState<User | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const router = useRouter();
+  const [, startTransition] = useTransition();
 
   const filtered = initialUsers.filter((u) => {
     const matchSearch =
@@ -146,6 +181,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Role</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Akses Data</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -153,23 +189,35 @@ export function UserListClient({ initialUsers, permissions }: Props) {
             {paginatedData.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="w-[1%] whitespace-nowrap">
-                  <TableActions
-                    permissions={permissions}
-                    actions={[
-                      {
-                        type: "edit",
-                        onClick: () => {
-                          setEditUser(user);
-                          setShowForm(true);
+                  <div className="flex items-center">
+                    <TableActions
+                      permissions={permissions}
+                      actions={[
+                        {
+                          type: "edit",
+                          onClick: () => {
+                            setEditUser(user);
+                            setShowForm(true);
+                          },
                         },
-                      },
-                      {
-                        type: "delete",
-                        isActive: user.isActive,
-                        onClick: () => handleToggleActive(user.id),
-                      },
-                    ]}
-                  />
+                        {
+                          type: "delete",
+                          isActive: user.isActive,
+                          onClick: () => handleToggleActive(user.id),
+                        },
+                      ]}
+                    />
+                    {permissions.includes("EDIT") && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Akses Data"
+                        onClick={() => setAccessUser(user)}
+                      >
+                        <Database className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm font-medium">{user.name}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
@@ -177,6 +225,9 @@ export function UserListClient({ initialUsers, permissions }: Props) {
                   <Badge variant="secondary" className={roleColor[user.role] ?? ""}>
                     {user.role}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <AccessSummaryCell user={user} />
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.isActive ? "default" : "outline"}>
@@ -187,7 +238,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   Tidak ada data
                 </TableCell>
               </TableRow>
@@ -259,6 +310,19 @@ export function UserListClient({ initialUsers, permissions }: Props) {
         onClose={() => { setShowForm(false); setEditUser(null); }}
         user={editUser}
       />
+
+      {accessUser && (
+        <UserDataAccessModal
+          open={!!accessUser}
+          onClose={() => {
+            setAccessUser(null);
+            startTransition(() => router.refresh());
+          }}
+          onDataChange={() => startTransition(() => router.refresh())}
+          userId={accessUser.id}
+          userName={accessUser.name}
+        />
+      )}
     </>
   );
 }

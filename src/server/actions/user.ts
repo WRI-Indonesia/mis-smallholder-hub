@@ -31,6 +31,9 @@ export async function getUsers(search?: string) {
       role: true,
       isActive: true,
       createdAt: true,
+      provinces: { select: { province: { select: { name: true } } } },
+      districts: { select: { district: { select: { name: true } } } },
+      farmerGroups: { select: { farmerGroup: { select: { name: true, abrv: true } } } },
     },
     orderBy: { name: "asc" },
   });

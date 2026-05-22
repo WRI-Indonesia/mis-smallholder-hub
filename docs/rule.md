@@ -118,17 +118,47 @@ Untuk multi-step task, buat plan singkat:
 ### RBAC Data Access Hierarchy
 
 ```
-UserProvince → semua District di province → semua KT di district
-UserDistrict → semua KT di district tersebut
-UserFarmerGroup → hanya KT spesifik
-SUPERADMIN → skip semua filter
+SUPERADMIN        → skip semua filter (akses ALL)
+No assignment     → unrestricted (akses ALL)
+UserFarmerGroup   → hanya KT spesifik (filter by FarmerGroup.id)
+UserDistrict      → semua KT di district (filter by districtId)
+UserProvince      → semua district di province → semua KT (filter by districtId)
 ```
 
-Konvensi:
-- `UserFarmerGroup` ada → filter ke KT tersebut saja
-- `UserFarmerGroup` kosong + `UserDistrict` ada → semua KT di district
-- `UserDistrict` kosong + `UserProvince` ada → semua district di province → semua KT
-- SUPERADMIN → akses semua tanpa filter
+Konvensi (urutan prioritas):
+1. SUPERADMIN → `ALL`
+2. Tidak ada assignment sama sekali → `ALL` (unrestricted)
+3. **Hanya** `UserFarmerGroup` ada (tanpa Province/District) → filter `id IN [farmerGroupIds]`
+4. `UserProvince` dan/atau `UserDistrict` ada → resolve ke district IDs → filter `districtId IN [...]`
+
+> [!IMPORTANT]
+> Jika user memiliki assignment campuran (Province + FarmerGroup), mode **BY_DISTRICT** yang berlaku — bukan BY_FARMER_GROUP. Rule #3 hanya aktif jika Province dan District **sama-sama kosong**.
+
+**Implementation Pattern** — Gunakan discriminated union `AccessContext` di server action:
+
+```ts
+type AccessContext =
+  | { mode: "ALL" }
+  | { mode: "BY_FARMER_GROUP"; ids: string[] }
+  | { mode: "BY_DISTRICT"; ids: string[] };
+
+// Resolusi where clause:
+const accessFilter =
+  access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+  access.mode === "BY_DISTRICT"     ? { districtId: { in: access.ids } } :
+  {};
+```
+
+> [!WARNING]
+> **Bug pattern lama** — Jangan filter hanya berdasarkan `districtId` tanpa handle case `BY_FARMER_GROUP`. Jika user hanya assign KT dan code menghasilkan `districtId: { in: [] }`, semua data KT akan hilang dari query.
+
+### User Data Access Assignment UI
+
+Untuk assign data access per user (Province/District/KT):
+- **Server Actions** — di `src/server/actions/user-data-access.ts`: `getUserDataAccess`, `getRegionsForSelect`, `assignUserProvince/District/FarmerGroup`, `removeUserProvince/District/FarmerGroup`
+- **Modal** — `UserDataAccessModal` (Tabs: Provinsi | Distrik | KT) dengan live-save checkbox per item
+- **Table Summary** — Gunakan komponen `AccessSummaryCell` di kolom "Akses Data": badge per assignment, `—` jika kosong
+- **Real-time refresh** — Pass `onDataChange` callback ke modal → panggil `startTransition(() => router.refresh())` setiap toggle berhasil
 
 ---
 
