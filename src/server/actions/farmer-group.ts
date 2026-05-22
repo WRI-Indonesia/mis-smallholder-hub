@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer-group.schema";
 import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
+import { hasPermission } from "@/lib/rbac";
 
 async function getAccessibleDistrictIds(): Promise<string[] | "ALL"> {
   const session = await auth();
@@ -36,6 +37,10 @@ async function getAccessibleDistrictIds(): Promise<string[] | "ALL"> {
 }
 
 export async function getFarmerGroups(search?: string) {
+  if (!(await hasPermission("master-data-groups", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   const districtIds = await getAccessibleDistrictIds();
 
   const where = {
@@ -59,6 +64,10 @@ export async function getFarmerGroups(search?: string) {
 }
 
 export async function getFarmerGroupById(id: string) {
+  if (!(await hasPermission("master-data-groups", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   return prisma.farmerGroup.findUnique({
     where: { id },
     include: { district: { select: { id: true, name: true } } },
@@ -66,6 +75,10 @@ export async function getFarmerGroupById(id: string) {
 }
 
 export async function createFarmerGroup(input: FarmerGroupInput) {
+  if (!(await hasPermission("master-data-groups", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah kelompok tani" };
+  }
+
   const parsed = farmerGroupSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
@@ -82,6 +95,10 @@ export async function createFarmerGroup(input: FarmerGroupInput) {
 }
 
 export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
+  if (!(await hasPermission("master-data-groups", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah kelompok tani" };
+  }
+
   const parsed = updateFarmerGroupSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
@@ -97,6 +114,10 @@ export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
 }
 
 export async function toggleFarmerGroupActive(id: string) {
+  if (!(await hasPermission("master-data-groups", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan kelompok tani" };
+  }
+
   const group = await prisma.farmerGroup.findUnique({ where: { id }, select: { isActive: true } });
   if (!group) return { success: false, error: "Kelompok Tani tidak ditemukan" };
 

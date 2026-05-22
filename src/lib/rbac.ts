@@ -65,3 +65,13 @@ export async function getUserPermissionsForMenu(menuKey: string): Promise<string
 
   return permissions.map((p) => p.permission);
 }
+
+/**
+ * Verify if current user has a specific permission for a menu key.
+ * Used inside Server Actions.
+ */
+export async function hasPermission(menuKey: string, permission: string): Promise<boolean> {
+  const permissions = await getUserPermissionsForMenu(menuKey);
+  return permissions.includes(permission);
+}
+

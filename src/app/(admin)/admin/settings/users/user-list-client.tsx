@@ -14,10 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronLeft, ChevronRight, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { UserFormModal } from "./user-form-modal";
 import { toggleUserActive } from "@/server/actions/user";
 import { toast } from "sonner";
+import { TableActions } from "@/components/shared";
 import {
   Select,
   SelectContent,
@@ -141,7 +142,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/70 border-b-2 border-border">
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
+              <TableHead className="w-[1%] whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Role</TableHead>
@@ -151,38 +152,24 @@ export function UserListClient({ initialUsers, permissions }: Props) {
           <TableBody>
             {paginatedData.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="space-x-1">
-                  {permissions.includes("EDIT") && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Edit"
-                      onClick={() => { setEditUser(user); setShowForm(true); }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {permissions.includes("DELETE") && (
-                    user.isActive ? (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Nonaktifkan"
-                        onClick={() => handleToggleActive(user.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Aktifkan kembali"
-                        onClick={() => handleToggleActive(user.id)}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                    )
-                  )}
+                <TableCell className="w-[1%] whitespace-nowrap">
+                  <TableActions
+                    permissions={permissions}
+                    actions={[
+                      {
+                        type: "edit",
+                        onClick: () => {
+                          setEditUser(user);
+                          setShowForm(true);
+                        },
+                      },
+                      {
+                        type: "delete",
+                        isActive: user.isActive,
+                        onClick: () => handleToggleActive(user.id),
+                      },
+                    ]}
+                  />
                 </TableCell>
                 <TableCell className="text-sm font-medium">{user.name}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>

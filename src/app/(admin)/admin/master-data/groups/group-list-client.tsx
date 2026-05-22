@@ -21,10 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Eye, Pencil, Trash2, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { GroupFormModal } from "./group-form-modal";
 import { toggleFarmerGroupActive } from "@/server/actions/farmer-group";
 import { toast } from "sonner";
+import { TableActions } from "@/components/shared";
 
 interface FarmerGroup {
   id: string;
@@ -121,7 +122,7 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/70 border-b-2 border-border">
-                <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kode</TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Distrik</TableHead>
@@ -132,28 +133,28 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
             <TableBody>
               {paginatedData.map((group) => (
                 <TableRow key={group.id}>
-                  <TableCell className="space-x-1">
-                    {permissions.includes("VIEW") && (
-                      <Button variant="ghost" size="icon" title="Lihat" onClick={() => router.push(`/admin/master-data/groups/${group.id}`)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {permissions.includes("EDIT") && (
-                      <Button variant="ghost" size="icon" title="Edit" onClick={() => { setEditGroup(group); setShowForm(true); }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {permissions.includes("DELETE") && (
-                      group.isActive ? (
-                        <Button variant="ghost" size="icon" title="Nonaktifkan" onClick={() => handleToggleActive(group.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <Button variant="ghost" size="icon" title="Aktifkan kembali" onClick={() => handleToggleActive(group.id)}>
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                      )
-                    )}
+                  <TableCell className="w-[1%] whitespace-nowrap">
+                    <TableActions
+                      permissions={permissions}
+                      actions={[
+                        {
+                          type: "view",
+                          onClick: () => router.push(`/admin/master-data/groups/${group.id}`),
+                        },
+                        {
+                          type: "edit",
+                          onClick: () => {
+                            setEditGroup(group);
+                            setShowForm(true);
+                          },
+                        },
+                        {
+                          type: "delete",
+                          isActive: group.isActive,
+                          onClick: () => handleToggleActive(group.id),
+                        },
+                      ]}
+                    />
                   </TableCell>
                   <TableCell className="text-sm font-mono text-muted-foreground">{group.code ?? "—"}</TableCell>
                   <TableCell className="text-sm font-medium">{group.name}</TableCell>

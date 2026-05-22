@@ -4,8 +4,13 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createUserSchema, updateUserSchema } from "@/validations/user.schema";
 import type { CreateUserInput, UpdateUserInput } from "@/validations/user.schema";
+import { hasPermission } from "@/lib/rbac";
 
 export async function getUsers(search?: string) {
+  if (!(await hasPermission("settings-users", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   const where = {
     ...(search
       ? {
@@ -32,6 +37,10 @@ export async function getUsers(search?: string) {
 }
 
 export async function getUserById(id: string) {
+  if (!(await hasPermission("settings-users", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   return prisma.user.findUnique({
     where: { id },
     select: {
@@ -49,6 +58,10 @@ export async function getUserById(id: string) {
 }
 
 export async function createUser(input: CreateUserInput) {
+  if (!(await hasPermission("settings-users", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah user" };
+  }
+
   const parsed = createUserSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
@@ -70,6 +83,10 @@ export async function createUser(input: CreateUserInput) {
 }
 
 export async function updateUser(input: UpdateUserInput) {
+  if (!(await hasPermission("settings-users", "EDIT"))) {
+     return { success: false, error: "Tidak memiliki izin untuk mengubah user" };
+  }
+
   const parsed = updateUserSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
@@ -89,6 +106,10 @@ export async function updateUser(input: UpdateUserInput) {
 }
 
 export async function toggleUserActive(id: string) {
+  if (!(await hasPermission("settings-users", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan user" };
+  }
+
   const user = await prisma.user.findUnique({ where: { id }, select: { isActive: true } });
   if (!user) return { success: false, error: "User tidak ditemukan" };
 

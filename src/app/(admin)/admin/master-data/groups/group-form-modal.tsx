@@ -79,7 +79,11 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
     setIsLoading(false);
 
     if (!result.success) {
-      setErrors((result.error as Record<string, string[]>) ?? {});
+      if (typeof result.error === "string") {
+        toast.error(result.error);
+      } else {
+        setErrors((result.error as Record<string, string[]>) ?? {});
+      }
       return;
     }
 
