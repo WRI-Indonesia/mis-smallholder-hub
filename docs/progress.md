@@ -42,7 +42,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 | [#59](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/59) | Standardize Permissions-Based Table Actions & Create Buttons | ✅ |
 | [#60](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/60) | Table Actions Abstraction & Authorization Hardening | ✅ |
 | [#55](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/55) | DB & Prisma Schema Clean Up | ✅ |
-| [#56](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/56) | Core Pages (Login, Settings, Master Data KT) | 🟡 |
+| [#58](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/58) | Region Management — CRUD Province, District, Subdistrict, Village | ✅ |
 | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) | Dashboard BMP | 🟡 |
 | [#44](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/44) | Telegram Notification | 🔲 |
 | [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49) | Dashboard Training Scaffold | 🔲 |
@@ -86,6 +86,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 |---------|-----------|
 | 05-22 | #59 selesai — Standardisasi visibilitas aksi tabel (View, Edit, Delete) dan tombol Tambah berbasis Role & Permission, serta dokumentasi di `docs/rule.md` |
 | 05-22 | #60 selesai — Abstraksi aksi tabel dengan komponen TableActions, implementasi TableSkeleton, loading.tsx untuk modul User & Kelompok Tani, dan pengamanan server actions dengan helper hasPermission |
+| 05-22 | #58 selesai — Region Management: tree view 4-level hierarchy, CRUD Province/District/Subdistrict/Village, search, status filter, cascade muting, loading skeleton, backend hasPermission hardening |
 | 05-22 | #56 in progress — Login (NextAuth), User Management CRUD, Menu Management CRUD, Role & Permission matrix, Kelompok Tani CRUD (list+filter+pagination+detail+RBAC actions), Profile page, 41/41 tests |
 | 05-22 | #55 selesai — Schema reset: 6 file baru, RBAC system, soft delete + audit trail, seed + CSV, migration fresh |
 | 05-13 | #48 — Update UI/UX Grafik BMP: filter Kategori, grouped bar, warna hijau vibrant, legenda override |
