@@ -39,6 +39,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | # | Deskripsi | Status |
 |---|-----------|--------|
+| [#59](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/59) | Standardize Permissions-Based Table Actions & Create Buttons | ✅ |
 | [#55](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/55) | DB & Prisma Schema Clean Up | ✅ |
 | [#56](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/56) | Core Pages (Login, Settings, Master Data KT) | 🟡 |
 | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) | Dashboard BMP | 🟡 |
@@ -48,6 +49,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 | [#51](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/51) | Petani Detail Tab Pelatihan & Produksi | 🔲 |
 | [#52](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/52) | Import Agronomy Produksi | 🔲 |
 | [#53](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/53) | Import Agronomy Monev BMP | 🔲 |
+
 
 ---
 
@@ -81,6 +83,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | Tanggal | Perubahan |
 |---------|-----------|
+| 05-22 | #59 selesai — Standardisasi visibilitas aksi tabel (View, Edit, Delete) dan tombol Tambah berbasis Role & Permission, serta dokumentasi di `docs/rule.md` |
 | 05-22 | #56 in progress — Login (NextAuth), User Management CRUD, Menu Management CRUD, Role & Permission matrix, Kelompok Tani CRUD (list+filter+pagination+detail+RBAC actions), Profile page, 41/41 tests |
 | 05-22 | #55 selesai — Schema reset: 6 file baru, RBAC system, soft delete + audit trail, seed + CSV, migration fresh |
 | 05-13 | #48 — Update UI/UX Grafik BMP: filter Kategori, grouped bar, warna hijau vibrant, legenda override |

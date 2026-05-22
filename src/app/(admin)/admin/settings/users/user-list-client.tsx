@@ -14,10 +14,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { UserFormModal } from "./user-form-modal";
 import { toggleUserActive } from "@/server/actions/user";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface User {
   id: string;
@@ -28,11 +35,18 @@ interface User {
   createdAt: Date;
 }
 
-export function UserListClient({ initialUsers }: { initialUsers: User[] }) {
+interface Props {
+  initialUsers: User[];
+  permissions: string[];
+}
+
+export function UserListClient({ initialUsers, permissions }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
   const router = useRouter();
 
   const filtered = initialUsers.filter((u) => {
@@ -45,6 +59,11 @@ export function UserListClient({ initialUsers }: { initialUsers: User[] }) {
       (statusFilter === "inactive" && !u.isActive);
     return matchSearch && matchStatus;
   });
+
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const paginatedData = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
 
   async function handleToggleActive(id: string) {
     const result = await toggleUserActive(id);
@@ -72,7 +91,10 @@ export function UserListClient({ initialUsers }: { initialUsers: User[] }) {
             <Input
               placeholder="Cari nama atau email..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
               className="pl-9"
             />
           </div>
@@ -80,44 +102,88 @@ export function UserListClient({ initialUsers }: { initialUsers: User[] }) {
             <Button
               variant={statusFilter === "all" ? "default" : "outline"}
               size="sm"
-              onClick={() => setStatusFilter("all")}
+              onClick={() => {
+                setStatusFilter("all");
+                setPage(0);
+              }}
             >
               Semua
             </Button>
             <Button
               variant={statusFilter === "active" ? "default" : "outline"}
               size="sm"
-              onClick={() => setStatusFilter("active")}
+              onClick={() => {
+                setStatusFilter("active");
+                setPage(0);
+              }}
             >
               Aktif
             </Button>
             <Button
               variant={statusFilter === "inactive" ? "default" : "outline"}
               size="sm"
-              onClick={() => setStatusFilter("inactive")}
+              onClick={() => {
+                setStatusFilter("inactive");
+                setPage(0);
+              }}
             >
               Nonaktif
             </Button>
           </div>
-          <Button onClick={() => { setEditUser(null); setShowForm(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tambah User
-          </Button>
+          {permissions.includes("CREATE") && (
+            <Button onClick={() => { setEditUser(null); setShowForm(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Tambah User
+            </Button>
+          )}
         </div>
 
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/70 border-b-2 border-border">
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Role</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((user) => (
+            {paginatedData.map((user) => (
               <TableRow key={user.id}>
+                <TableCell className="space-x-1">
+                  {permissions.includes("EDIT") && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Edit"
+                      onClick={() => { setEditUser(user); setShowForm(true); }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {permissions.includes("DELETE") && (
+                    user.isActive ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Nonaktifkan"
+                        onClick={() => handleToggleActive(user.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Aktifkan kembali"
+                        onClick={() => handleToggleActive(user.id)}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    )
+                  )}
+                </TableCell>
                 <TableCell className="text-sm font-medium">{user.name}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
                 <TableCell>
@@ -130,22 +196,6 @@ export function UserListClient({ initialUsers }: { initialUsers: User[] }) {
                     {user.isActive ? "Aktif" : "Nonaktif"}
                   </Badge>
                 </TableCell>
-                <TableCell className="space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setEditUser(user); setShowForm(true); }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggleActive(user.id)}
-                  >
-                    {user.isActive ? "Nonaktifkan" : "Aktifkan"}
-                  </Button>
-                </TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
@@ -157,6 +207,63 @@ export function UserListClient({ initialUsers }: { initialUsers: User[] }) {
             )}
           </TableBody>
         </Table>
+
+        {totalItems > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground mt-4 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <span>Tampilkan</span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(v) => {
+                  setPageSize(Number(v));
+                  setPage(0);
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 25, 50, 100].map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span>dari {totalItems} data</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span>
+                Halaman {safePage + 1} dari {totalPages}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={safePage === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Sebelumnya</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  disabled={safePage >= totalPages - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Selanjutnya</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       <UserFormModal

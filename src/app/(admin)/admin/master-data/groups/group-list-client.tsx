@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { GroupFormModal } from "./group-form-modal";
 import { toggleFarmerGroupActive } from "@/server/actions/farmer-group";
 import { toast } from "sonner";
@@ -55,11 +55,11 @@ interface Props {
 export function GroupListClient({ initialGroups, districts, permissions }: Props) {
   const [search, setSearch] = useState("");
   const [districtFilter, setDistrictFilter] = useState("all");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
   const [showForm, setShowForm] = useState(false);
   const [editGroup, setEditGroup] = useState<FarmerGroup | null>(null);
   const router = useRouter();
-  const perPage = 10;
 
   const filtered = initialGroups.filter((g) => {
     const matchSearch =
@@ -70,8 +70,10 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
     return matchSearch && matchDistrict;
   });
 
-  const totalPages = Math.ceil(filtered.length / perPage);
-  const paginated = filtered.slice((page - 1) * perPage, page * perPage);
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const paginatedData = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
 
   async function handleToggleActive(id: string) {
     const result = await toggleFarmerGroupActive(id);
@@ -92,11 +94,11 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
             <Input
               placeholder="Cari nama, kode, atau singkatan..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
               className="pl-9"
             />
           </div>
-          <Select value={districtFilter} onValueChange={(v) => { setDistrictFilter(v ?? "all"); setPage(1); }}>
+          <Select value={districtFilter} onValueChange={(v) => { setDistrictFilter(v ?? "all"); setPage(0); }}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Semua Distrik" />
             </SelectTrigger>
@@ -128,12 +130,14 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginated.map((group) => (
+              {paginatedData.map((group) => (
                 <TableRow key={group.id}>
                   <TableCell className="space-x-1">
-                    <Button variant="ghost" size="icon" title="Lihat" onClick={() => router.push(`/admin/master-data/groups/${group.id}`)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    {permissions.includes("VIEW") && (
+                      <Button variant="ghost" size="icon" title="Lihat" onClick={() => router.push(`/admin/master-data/groups/${group.id}`)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
                     {permissions.includes("EDIT") && (
                       <Button variant="ghost" size="icon" title="Edit" onClick={() => { setEditGroup(group); setShowForm(true); }}>
                         <Pencil className="h-4 w-4" />
@@ -173,8 +177,8 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
                   </TableCell>
                 </TableRow>
               )}
-              {paginated.length > 0 && paginated.length < perPage &&
-                Array.from({ length: perPage - paginated.length }).map((_, i) => (
+              {paginatedData.length > 0 && paginatedData.length < pageSize &&
+                Array.from({ length: pageSize - paginatedData.length }).map((_, i) => (
                   <TableRow key={`empty-${i}`}>
                     <TableCell colSpan={6} className="h-[49px]">&nbsp;</TableCell>
                   </TableRow>
@@ -184,19 +188,62 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
           </Table>
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t mt-4">
-          <p className="text-sm text-muted-foreground">
-            {filtered.length === 0 ? "0 data" : `Menampilkan ${(page - 1) * perPage + 1}–${Math.min(page * perPage, filtered.length)} dari ${filtered.length}`}
-          </p>
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>
-              Prev
-            </Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-              Next
-            </Button>
+        {totalItems > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground mt-4 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <span>Tampilkan</span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(v) => {
+                  setPageSize(Number(v));
+                  setPage(0);
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 25, 50, 100].map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span>dari {totalItems} data</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span>
+                Halaman {safePage + 1} dari {totalPages}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={safePage === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Sebelumnya</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages - 1, p + 1))
+                  }
+                  disabled={safePage >= totalPages - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Selanjutnya</span>
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       <GroupFormModal
