@@ -40,6 +40,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 | # | Deskripsi | Status |
 |---|-----------|--------|
 | [#59](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/59) | Standardize Permissions-Based Table Actions & Create Buttons | ✅ |
+| [#60](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/60) | Table Actions Abstraction & Authorization Hardening | 🔲 |
 | [#55](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/55) | DB & Prisma Schema Clean Up | ✅ |
 | [#56](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/56) | Core Pages (Login, Settings, Master Data KT) | 🟡 |
 | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) | Dashboard BMP | 🟡 |
