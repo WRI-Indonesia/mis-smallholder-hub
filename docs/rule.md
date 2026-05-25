@@ -160,6 +160,15 @@ Untuk assign data access per user (Province/District/KT):
 - **Table Summary** — Gunakan komponen `AccessSummaryCell` di kolom "Akses Data": badge per assignment, `—` jika kosong
 - **Real-time refresh** — Pass `onDataChange` callback ke modal → panggil `startTransition(() => router.refresh())` setiap toggle berhasil
 
+### User Menu Access Override UI
+
+Untuk melakukan override permission menu per user (grant/revoke):
+- **Server Actions** — di `src/server/actions/user-menu-access.ts`: `getUserMenuOverrides`, `getMenuItemsForSelect`, `getUserEffectivePermissions`, `setUserMenuOverride`, `removeUserMenuOverride`
+- **Modal** — `UserMenuAccessModal` dengan matrix C | V | E | D per menu, visual code status (`role` | `granted` | `revoked`), dan interactive toggle saving.
+- **Keamanan** — Pengecekan di server action wajib menolak override terhadap user berkole `SUPERADMIN`.
+- **Soft Delete** — Penghapusan override menggunakan update `isActive: false` (bukan physical delete).
+- **Optimasi Caching** — Fungsi pembacaan permission di `src/lib/rbac.ts` wajib dibungkus dengan React `cache` untuk mereduksi kueri ganda pada render lifecycle.
+
 ---
 
 ## UI/UX

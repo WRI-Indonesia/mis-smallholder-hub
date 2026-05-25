@@ -42,6 +42,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 | [#57](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/57) | User Data Access Assignment — Manage Province/District/KT per User | ✅ |
 | [#59](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/59) | Standardize Permissions-Based Table Actions & Create Buttons | ✅ |
 | [#60](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/60) | Table Actions Abstraction & Authorization Hardening | ✅ |
+| [#61](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/61) | User Menu Access — Per-User Permission Override (Grant/Revoke per Menu) | ✅ |
 | [#55](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/55) | DB & Prisma Schema Clean Up | ✅ |
 | [#58](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/58) | Region Management — CRUD Province, District, Subdistrict, Village | ✅ |
 | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) | Dashboard BMP | 🟡 |
@@ -85,6 +86,7 @@ Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ 
 
 | Tanggal | Perubahan |
 |---------|-----------|
+| 05-25 | #61 selesai — User Menu Access Override: Server actions, matrix override modal, rbac helper caching & soft delete, integration, 111/111 tests |
 | 05-22 | #57 follow-up — Kolom ringkasan akses data di tabel User Management; bug fix RBAC KT-only (farmerGroup-only assignment sekarang filter by `id` bukan `districtId`); live refresh tabel saat toggle di modal; 105/105 tests |
 | 05-22 | #57 selesai — User Data Access Assignment: 7 server actions (assign/remove Province/District/KT), UserDataAccessModal (Tabs UI, visual hierarchy badges, live toggle, search), integrasi ke User Management, 104/104 tests |
 | 05-22 | #59 selesai — Standardisasi visibilitas aksi tabel (View, Edit, Delete) dan tombol Tambah berbasis Role & Permission, serta dokumentasi di `docs/rule.md` |

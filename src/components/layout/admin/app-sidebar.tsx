@@ -24,7 +24,7 @@ export async function AppSidebar(
   }
 
   // Other roles: filter by permission
-  const accessibleKeys = await getAccessibleMenuKeys(role);
+  const accessibleKeys = await getAccessibleMenuKeys(role, session?.user?.id);
 
   const filteredMenuItems = allMenuItems
     .filter((item) => accessibleKeys.includes(item.key))

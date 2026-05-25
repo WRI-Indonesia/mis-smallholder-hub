@@ -14,9 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronLeft, ChevronRight, Database } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, Database, Shield } from "lucide-react";
 import { UserFormModal } from "./user-form-modal";
 import { UserDataAccessModal } from "./user-data-access-modal";
+import { UserMenuAccessModal } from "./user-menu-access-modal";
 import { toggleUserActive } from "@/server/actions/user";
 import { toast } from "sonner";
 import { TableActions } from "@/components/shared";
@@ -38,6 +39,7 @@ interface User {
   provinces: { province: { name: string } }[];
   districts: { district: { name: string } }[];
   farmerGroups: { farmerGroup: { name: string; abrv: string | null } }[];
+  permissionOverrides: { id: string; granted: boolean }[];
 }
 
 interface Props {
@@ -80,6 +82,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [accessUser, setAccessUser] = useState<User | null>(null);
+  const [menuAccessUser, setMenuAccessUser] = useState<User | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const router = useRouter();
@@ -182,6 +185,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Role</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Akses Data</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Akses Menu</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -217,6 +221,16 @@ export function UserListClient({ initialUsers, permissions }: Props) {
                         <Database className="h-4 w-4" />
                       </Button>
                     )}
+                    {permissions.includes("EDIT") && user.role !== "SUPERADMIN" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Hak Akses Menu"
+                        onClick={() => setMenuAccessUser(user)}
+                      >
+                        <Shield className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm font-medium">{user.name}</TableCell>
@@ -230,6 +244,15 @@ export function UserListClient({ initialUsers, permissions }: Props) {
                   <AccessSummaryCell user={user} />
                 </TableCell>
                 <TableCell>
+                  {user.permissionOverrides.length > 0 ? (
+                    <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-300 font-normal">
+                      {user.permissionOverrides.length} Override
+                    </Badge>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
                   <Badge variant={user.isActive ? "default" : "outline"}>
                     {user.isActive ? "Aktif" : "Nonaktif"}
                   </Badge>
@@ -238,7 +261,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   Tidak ada data
                 </TableCell>
               </TableRow>
@@ -321,6 +344,20 @@ export function UserListClient({ initialUsers, permissions }: Props) {
           onDataChange={() => startTransition(() => router.refresh())}
           userId={accessUser.id}
           userName={accessUser.name}
+        />
+      )}
+
+      {menuAccessUser && (
+        <UserMenuAccessModal
+          open={!!menuAccessUser}
+          onClose={() => {
+            setMenuAccessUser(null);
+            startTransition(() => router.refresh());
+          }}
+          onDataChange={() => startTransition(() => router.refresh())}
+          userId={menuAccessUser.id}
+          userName={menuAccessUser.name}
+          userRole={menuAccessUser.role}
         />
       )}
     </>

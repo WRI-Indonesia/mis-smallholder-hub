@@ -1,12 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 /**
- * Get menu keys that a role has VIEW permission for
+ * Get menu keys that a role has VIEW permission for, considering user permission overrides.
+ * Cached per-request to avoid redundant database calls.
  */
-export async function getAccessibleMenuKeys(role: string): Promise<string[]> {
-  const permissions = await prisma.rolePermission.findMany({
+export const getAccessibleMenuKeys = cache(async (role: string, userId?: string): Promise<string[]> => {
+  let targetUserId = userId;
+  if (!targetUserId) {
+    const session = await auth();
+    targetUserId = session?.user?.id;
+  }
+
+  const rolePermissions = await prisma.rolePermission.findMany({
     where: {
       role: role as never,
       permission: "VIEW",
@@ -15,8 +23,31 @@ export async function getAccessibleMenuKeys(role: string): Promise<string[]> {
     select: { menuKey: true },
   });
 
-  return permissions.map((p) => p.menuKey);
-}
+  let accessibleKeys = rolePermissions.map((p) => p.menuKey);
+
+  if (targetUserId && role !== "SUPERADMIN") {
+    const overrides = await prisma.userPermissionOverride.findMany({
+      where: {
+        userId: targetUserId,
+        permission: "VIEW",
+        isActive: true,
+      },
+      select: { menuKey: true, granted: true },
+    });
+
+    for (const override of overrides) {
+      if (override.granted) {
+        if (!accessibleKeys.includes(override.menuKey)) {
+          accessibleKeys.push(override.menuKey);
+        }
+      } else {
+        accessibleKeys = accessibleKeys.filter((key) => key !== override.menuKey);
+      }
+    }
+  }
+
+  return accessibleKeys;
+});
 
 /**
  * Check if current user can access a specific menu key.
@@ -29,16 +60,8 @@ export async function requirePermission(menuKey: string) {
   const role = session.user.role;
   if (role === "SUPERADMIN") return session;
 
-  const hasPermission = await prisma.rolePermission.findFirst({
-    where: {
-      role: role as never,
-      menuKey,
-      permission: "VIEW",
-      isActive: true,
-    },
-  });
-
-  if (!hasPermission) redirect("/admin");
+  const isAllowed = await hasPermission(menuKey, "VIEW");
+  if (!isAllowed) redirect("/admin");
 
   return session;
 }
@@ -46,25 +69,48 @@ export async function requirePermission(menuKey: string) {
 /**
  * Get permission levels the current user has for a specific menu key.
  * Returns array of granted permissions: ["VIEW", "EDIT", "DELETE", "CREATE"]
+ * Cached per-request to avoid redundant database calls.
  */
-export async function getUserPermissionsForMenu(menuKey: string): Promise<string[]> {
+export const getUserPermissionsForMenu = cache(async (menuKey: string): Promise<string[]> => {
   const session = await auth();
   if (!session?.user) return [];
 
   const role = session.user.role;
   if (role === "SUPERADMIN") return ["CREATE", "VIEW", "EDIT", "DELETE"];
 
-  const permissions = await prisma.rolePermission.findMany({
-    where: {
-      role: role as never,
-      menuKey,
-      isActive: true,
-    },
-    select: { permission: true },
-  });
+  const [rolePermissions, overrides] = await Promise.all([
+    prisma.rolePermission.findMany({
+      where: {
+        role: role as never,
+        menuKey,
+        isActive: true,
+      },
+      select: { permission: true },
+    }),
+    prisma.userPermissionOverride.findMany({
+      where: {
+        userId: session.user.id,
+        menuKey,
+        isActive: true,
+      },
+      select: { permission: true, granted: true },
+    }),
+  ]);
 
-  return permissions.map((p) => p.permission);
-}
+  let effective = rolePermissions.map((p) => p.permission as string);
+
+  for (const override of overrides) {
+    if (override.granted) {
+      if (!effective.includes(override.permission)) {
+        effective.push(override.permission);
+      }
+    } else {
+      effective = effective.filter((p) => p !== override.permission);
+    }
+  }
+
+  return effective;
+});
 
 /**
  * Verify if current user has a specific permission for a menu key.
