@@ -35,21 +35,23 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Platform foundation | 🟡 Mostly Ready | Auth, RBAC, menu, user management, region, dan farmer group sudah ada. Schema hardening belum sepenuhnya mencakup sync/lifecycle.          |
 | Master data inti    | 🔴 At Risk      | Farmer, Parcels, Training, Production, Staff, dan HCV belum punya Prisma model, route, server actions, atau validation schema.             |
-| Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`.                                           |
+| Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`. Issues #62, #63 dibuat.                   |
+| Report              | 🔲 Not Started   | Belum ada report module. Issues #64–#67 dibuat (menu setup + placeholder + implementasi).                                                  |
+| Bulk Upload         | 🔲 Not Started   | Belum ada bulk upload module. Issues #68–#70 dibuat (menu setup + placeholder + implementasi).                                              |
 | Navigation health   | 🔴 Broken Link  | `/admin/master-data` redirect ke `/admin/master-data/farmers`, tetapi route `farmers` belum ada.                                           |
 | Testing             | 🟡 Partial      | Unit tests tersedia dan lulus, tetapi coverage masih fokus pada auth/RBAC/menu/user/region; belum ada dashboard atau master data lanjutan. |
 
 ### Progress Snapshot
 
-| Metrik         | Jumlah         | Catatan                                   |
-| -------------- | -------------- | ----------------------------------------- |
-| Total phase    | 26 fase        | PLATFORM, MD, DASH, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 6 fase         | PLATFORM-01/02/04/05, MD-01/02            |
-| 🟠 Partial     | 4 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02     |
-| 🔲 Not Started | 4 fase         | DASH-01, MD-03, CMS-01, COMM-01           |
-| 🔲 Planned     | 11 fase        | MD-04–11, DASH-02/03, COMM-02             |
-| 🔴 Blocked     | 1 fase         | DASH-04                                   |
-| 🎯 Now         | 2 fase + 2 bug | DASH-01, MD-03, BUG-001, BUG-002          |
+| Metrik         | Jumlah         | Catatan                                              |
+| -------------- | -------------- | ---------------------------------------------------- |
+| Total phase    | 32 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
+| ✅ Done        | 6 fase         | PLATFORM-01/02/04/05, MD-01/02                       |
+| 🟠 Partial     | 4 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02                |
+| 🔲 Not Started | 10 fase        | DASH-01, MD-03, CMS-01, COMM-01, RPT-01/02/03, BULK-01/02 |
+| 🔲 Planned     | 11 fase        | MD-04–11, DASH-02/03, COMM-02                        |
+| 🔴 Blocked     | 1 fase         | DASH-04                                              |
+| 🎯 Now         | 4 fase + 2 bug | DASH-01, RPT-01, BULK-01, MD-03, BUG-001, BUG-002   |
 
 ### Management Talking Points
 
@@ -75,8 +77,10 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | P0       | BUG-001: fix broken master-data redirect    | `/admin/master-data` tidak lagi mengarah ke route yang tidak ada                                              |
 | P0       | BUG-002: cleanup stale dashboard references | Script/debug docs tidak mengarah ke `src/server/actions/dashboard.ts` yang belum ada, atau file action dibuat |
-| P0       | DASH-01 dashboard basic                     | `/admin/dashboard` tidak lagi `Coming soon`; minimal menampilkan data foundation yang ada                     |
+| P0       | #62 #63 DASH-01 dashboard basic             | `/admin/dashboard` menampilkan summary cards dengan filter district                                           |
 | P0       | MD-03 Farmer kickoff                        | Issue + schema design + implementation plan berdasarkan existing Region dan FarmerGroup                       |
+| P1       | #64 RPT-01 menu & placeholder report        | Menu Report + sub-menu + placeholder pages terdaftar di sidebar                                               |
+| P1       | #68 BULK-01 menu & placeholder bulk upload  | Menu Bulk Upload + sub-menu + placeholder pages terdaftar di sidebar                                          |
 | P1       | Testing scope expansion                     | Tambah test untuk dashboard basic / redirect / MD-03 setelah implementasi                                     |
 
 </details>
@@ -140,6 +144,8 @@ Format phase: `STREAM-NN`.
 | PLATFORM | Platform Foundation    | Init project, schema DB, auth, RBAC, menu infra                                            |
 | MD       | Master Data            | Regions, groups, farmer, parcels, training, staff, agronomy, HCV, BUSDEV, IMPACT, workplan |
 | DASH     | Dashboard              | Basic dashboard, server actions, interactive map, BMP                                      |
+| RPT      | Report                 | Report User, Region, Kelompok Tani; summary tabel + export Excel/PDF                      |
+| BULK     | Bulk Upload            | Bulk upload CSV untuk Region dan Kelompok Tani; validasi, preview, insert                  |
 | TOOLS    | Tools & Utility        | Import, export, GIS, S3/PDF utility                                                        |
 | CMS      | Content Management     | Pages, media, knowledge base                                                               |
 | COMM     | Community & Engagement | Community, i18n                                                                            |
@@ -165,10 +171,15 @@ Format phase: `STREAM-NN`.
 | MD-09       | BUSDEV                       | 🔲 Planned     | Later   | No BUSDEV model/route/action/UI                                                                   | Define scope                                                                     |
 | MD-10       | IMPACT                       | 🔲 Planned     | Later   | No IMPACT model/route/action/UI                                                                   | Define scope                                                                     |
 | MD-11       | Workplan                     | 🔲 Planned     | Later   | No workplan model/route/action/UI                                                                 | Define scope                                                                     |
-| DASH-01     | Dashboard: Basic Data        | 🔲 Not Started | Now     | `/admin/dashboard` exists but only `Coming soon`                                                  | Implement basic cards/charts from existing Region/FarmerGroup/User data          |
+| DASH-01     | Dashboard: Basic Data        | 🔲 Not Started | Now     | `/admin/dashboard` exists but only `Coming soon`; **#62 #63 dibuat**                              | #62 menu setup + #63 summary cards dengan filter district                        |
 | DASH-02     | Dashboard: Server Actions    | 🔲 Planned     | Next    | No `src/server/actions/dashboard.ts`                                                              | Create dashboard server actions after DASH-01 scope agreed                       |
 | DASH-03     | Interactive Map              | 🔲 Planned     | Next    | Map deps/CSS/markers exist, but no dashboard map route/component                                  | Implement after dashboard data actions exist                                     |
 | DASH-04     | Dashboard BMP                | 🔴 Blocked     | Blocked | No dashboard implementation; scripts reference missing dashboard action                           | Unblock by completing DASH-01 and DASH-02 first                                  |
+| RPT-01      | Report: Menu & User          | 🔲 Not Started | Now     | Tidak ada report module; **#64 #65 dibuat**                                                       | #64 menu + placeholder + #65 report user tabel & export Excel                    |
+| RPT-02      | Report: Region               | 🔲 Not Started | Next    | Tidak ada report region; **#66 dibuat**                                                            | #66 report region tabel & export Excel; dependency #64                           |
+| RPT-03      | Report: Kelompok Tani        | 🔲 Not Started | Next    | Tidak ada report KT; **#67 dibuat**                                                                | #67 report KT tabel & export Excel; cascade filter; dependency #64               |
+| BULK-01     | Bulk Upload: Menu & KT       | 🔲 Not Started | Now     | Tidak ada bulk upload module; **#68 #69 dibuat**                                                   | #68 menu + placeholder + #69 CSV upload KT dengan validasi & preview             |
+| BULK-02     | Bulk Upload: Region          | 🔲 Not Started | Next    | Tidak ada bulk upload region; **#70 dibuat**                                                       | #70 CSV upload District/Subdistrict/Village dengan validasi hierarchy             |
 | TOOLS-01    | Tools Import/Export/GIS/S3   | 🟠 Partial     | Next    | `scripts/export-csv.ts`, S3/PDF CLI, dashboard cache/debug scripts                                | Separate CLI utilities from app tools; remove/fix stale dashboard scripts        |
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
@@ -193,19 +204,29 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | -------- | ----------- | -------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | P0       | BUG-001     | Fix broken master-data redirect        | `src/app/(admin)/admin/master-data/page.tsx` redirect ke missing `/admin/master-data/farmers` | Ubah redirect ke `/admin/master-data/groups` atau implement route Farmer |
 | P0       | BUG-002     | Fix stale dashboard tooling references | `scripts/debug/*dashboard*` import `src/server/actions/dashboard` yang tidak ada              | Hapus/fix script atau buat dashboard action                              |
-| P0       | DASH-01     | Dashboard basic tidak lagi placeholder | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`                                | Implement dashboard dasar dari data existing                             |
+| P0       | DASH-01     | Dashboard summary cards + filter       | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`                                | #62 menu setup → #63 summary cards + district filter                     |
 | P0       | MD-03       | Kickoff Farmer                         | Tidak ada `Farmer` model/route/action/validation                                              | Buat issue schema, CRUD actions, UI, RBAC, tests                         |
+| P1       | RPT-01      | Menu & placeholder Report              | Tidak ada report module                                                                       | #64 menu setup + placeholder → #65 Report User tabel & Excel            |
+| P1       | BULK-01     | Menu & placeholder Bulk Upload         | Tidak ada bulk upload module                                                                  | #68 menu setup + placeholder → #69 Bulk Upload KT CSV                   |
 | P1       | PLATFORM-03 | Clarify schema hardening               | Audit fields ada; sync/lifecycle belum jelas                                                  | Definisikan hardening checklist untuk model baru                         |
 
 ### Active Issues / Work Items
 
-| Work Item                                    | Phase              | Status  | Assignee | Target | Next Action                                                       |
-| -------------------------------------------- | ------------------ | ------- | -------- | ------ | ----------------------------------------------------------------- |
-| BUG-001 Broken `/admin/master-data` redirect | MD-03 / Navigation | 🔲 Todo | TBD      | TBD    | Decide temporary redirect vs implement Farmer route               |
-| BUG-002 Stale dashboard scripts              | DASH-02 / TOOLS-01 | 🔲 Todo | TBD      | TBD    | Align scripts with actual dashboard action availability           |
-| Issue belum dibuat: dashboard basic          | DASH-01            | 🔲 Todo | TBD      | TBD    | Define dashboard cards/data from existing User/Region/FarmerGroup |
-| Issue belum dibuat: Farmer schema            | MD-03              | 🔲 Todo | TBD      | TBD    | Define model fields and relation to FarmerGroup/Village           |
-| Issue belum dibuat: Farmer CRUD + UI         | MD-03              | 🔲 Todo | TBD      | TBD    | Implement list/detail/form after schema accepted                  |
+| Work Item                                       | Phase              | Status  | Assignee | Target | Next Action                                                       |
+| ----------------------------------------------- | ------------------ | ------- | -------- | ------ | ----------------------------------------------------------------- |
+| BUG-001 Broken `/admin/master-data` redirect    | MD-03 / Navigation | 🔲 Todo | TBD      | TBD    | Decide temporary redirect vs implement Farmer route               |
+| BUG-002 Stale dashboard scripts                 | DASH-02 / TOOLS-01 | 🔲 Todo | TBD      | TBD    | Align scripts with actual dashboard action availability           |
+| #62 Menu & Route Setup Dashboard                | DASH-01            | 🔲 Todo | TBD      | TBD    | Seed menu + route structure + redirect                            |
+| #63 Dashboard Basic — Summary Cards + Filter    | DASH-01            | 🔲 Todo | TBD      | TBD    | Server action + summary cards + district filter; depends #62      |
+| #64 Menu & Route Setup Report + Placeholder     | RPT-01             | 🔲 Todo | TBD      | TBD    | Seed menu + route structure + placeholder pages                   |
+| #65 Report User — Tabel & Export Excel          | RPT-01             | 🔲 Todo | TBD      | TBD    | Server action + DataTable + exceljs export; depends #64           |
+| #66 Report Region — Tabel & Export Excel        | RPT-02             | 🔲 Todo | TBD      | TBD    | Region hierarchy tabel + export; depends #64                      |
+| #67 Report Kelompok Tani — Tabel & Export Excel | RPT-03             | 🔲 Todo | TBD      | TBD    | KT tabel + cascade filter + export; depends #64                   |
+| #68 Menu & Route Setup Bulk Upload + Placeholder| BULK-01            | 🔲 Todo | TBD      | TBD    | Seed menu + route structure + placeholder pages                   |
+| #69 Bulk Upload KT — CSV Validasi Preview Insert| BULK-01            | 🔲 Todo | TBD      | TBD    | CSV upload + Zod validasi + preview + bulk insert; depends #68    |
+| #70 Bulk Upload Region — CSV Hierarchy Validasi | BULK-02            | 🔲 Todo | TBD      | TBD    | CSV upload per level + hierarchy validasi; depends #68 #69        |
+| Issue belum dibuat: Farmer schema                | MD-03              | 🔲 Todo | TBD      | TBD    | Define model fields and relation to FarmerGroup/Village           |
+| Issue belum dibuat: Farmer CRUD + UI             | MD-03              | 🔲 Todo | TBD      | TBD    | Implement list/detail/form after schema accepted                  |
 
 ### Issue Workflow
 
@@ -300,18 +321,27 @@ flowchart LR
     DASH01["DASH-01 Basic Dashboard"] --> DASH02["DASH-02 Server Actions"]
     DASH02 --> DASH03["DASH-03 Interactive Map"]
     DASH02 --> DASH04["DASH-04 BMP"]
+    RPT01["RPT-01 Report Menu + User"] --> RPT02["RPT-02 Report Region"]
+    RPT01 --> RPT03["RPT-03 Report KT"]
+    BULK01["BULK-01 Bulk Upload Menu + KT"] --> BULK02["BULK-02 Bulk Upload Region"]
 ```
 
 ### Recommended Implementation Order
 
-| Step | Phase / Bug | Scope Minimal                                   | Prasyarat                        | Catatan Tech Lead                               |
-| ---- | ----------- | ----------------------------------------------- | -------------------------------- | ----------------------------------------------- |
-| 1    | BUG-001     | Fix `/admin/master-data` redirect               | Existing routes                  | Pilih redirect ke groups atau implement farmer  |
-| 2    | DASH-01     | Basic dashboard from existing data              | Existing User/Region/FarmerGroup | Jangan langsung BMP sebelum dashboard dasar ada |
-| 3    | MD-03       | Farmer schema, CRUD, list, detail, form, RBAC   | MD-01, MD-02                     | Mulai dari field minimal                        |
-| 4    | MD-05       | Training schema, CRUD, participants, attendance | MD-03                            | Jangan mulai sebelum Farmer jelas               |
-| 5    | MD-04       | Parcel schema, CRUD, map context                | MD-03                            | Penting untuk Production/GIS                    |
-| 6    | MD-06       | Production schema, period, chart/import awal    | MD-03 + kemungkinan MD-04        | Validasi per Farmer vs per Parcel               |
+| Step | Phase / Bug | Scope Minimal                                          | Prasyarat                        | Catatan Tech Lead                                        |
+| ---- | ----------- | ------------------------------------------------------ | -------------------------------- | -------------------------------------------------------- |
+| 1    | BUG-001     | Fix `/admin/master-data` redirect                      | Existing routes                  | Pilih redirect ke groups atau implement farmer           |
+| 2    | DASH-01     | #62 menu + #63 summary cards + district filter         | Existing User/Region/FarmerGroup | Jangan langsung BMP sebelum dashboard dasar ada          |
+| 3    | RPT-01      | #64 menu + placeholder report pages                    | Menu system existing             | Bisa paralel dengan DASH-01                              |
+| 4    | BULK-01     | #68 menu + placeholder bulk upload pages               | Menu system existing             | Bisa paralel dengan DASH-01 dan RPT-01                   |
+| 5    | RPT-01      | #65 Report User — tabel + export Excel                 | #64 selesai                      | Install exceljs, buat reusable export pattern            |
+| 6    | RPT-02/03   | #66 Report Region + #67 Report KT                      | #64 #65 selesai                  | Reuse export pattern dari #65                            |
+| 7    | BULK-01     | #69 Bulk Upload KT — CSV validasi preview insert       | #68 selesai                      | Buat reusable CSV upload components                      |
+| 8    | BULK-02     | #70 Bulk Upload Region — hierarchy validasi             | #68 #69 selesai                  | Reuse CSV components, tambah hierarchy validation        |
+| 9    | MD-03       | Farmer schema, CRUD, list, detail, form, RBAC          | MD-01, MD-02                     | Mulai dari field minimal                                 |
+| 10   | MD-05       | Training schema, CRUD, participants, attendance        | MD-03                            | Jangan mulai sebelum Farmer jelas                        |
+| 11   | MD-04       | Parcel schema, CRUD, map context                       | MD-03                            | Penting untuk Production/GIS                             |
+| 12   | MD-06       | Production schema, period, chart/import awal           | MD-03 + kemungkinan MD-04        | Validasi per Farmer vs per Parcel                        |
 
 ### MD-03 Farmer — Suggested Issue Breakdown
 
@@ -436,6 +466,12 @@ npm test
 | 2026-06-06 | BUG-002/TD-005 ditambahkan untuk stale dashboard scripts yang refer ke action dashboard missing.                               |
 | 2026-06-06 | OPS-01 dinilai Partial karena test tersedia dan lulus 111/111, tetapi coverage belum mencakup modul baru/dashboard.            |
 | 2026-06-06 | OPS-02 dinilai Partial karena Dockerfile dan GitHub deploy workflows ada, tetapi deployment readiness belum diverifikasi.      |
+| 2026-06-06 | Stream RPT (Report) dan BULK (Bulk Upload) ditambahkan ke Phase Encoding Taxonomy.                                             |
+| 2026-06-06 | 9 GitHub Issues dibuat (#62–#70) untuk Dashboard, Report, dan Bulk Upload.                                                     |
+| 2026-06-06 | RBAC sementara SUPERADMIN-only untuk Dashboard, Report, Bulk Upload; role lain via User/Menu Management.                       |
+| 2026-06-06 | Dashboard scope diputuskan: summary cards + filter district (bukan chart/map).                                                  |
+| 2026-06-06 | Report scope diputuskan: Excel only di Phase 1, PDF ditunda.                                                                   |
+| 2026-06-06 | Bulk Upload scope diputuskan: KT implementasi penuh, Region placeholder dulu.                                                  |
 
 ### Changelog
 
@@ -443,6 +479,9 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-06   | Buat 9 GitHub Issues (#62–#70): Dashboard menu+cards, Report menu+placeholder+tabel+export, Bulk Upload menu+placeholder+CSV. |
+| 06-06   | Tambah stream RPT (Report) dan BULK (Bulk Upload) ke Phase Encoding Taxonomy dan Phase Status.                   |
+| 06-06   | Update Sprint Focus, Active Issues, Dependency Map, dan Recommended Implementation Order.                        |
 | 06-06   | Audit seluruh folder dan update `progress.md` berdasarkan source code aktual.                                    |
 | 06-06   | Koreksi status dashboard dan master data lanjutan sesuai bukti route/schema/action yang ada.                     |
 | 06-06   | Tambah Bug Register untuk broken redirect dan stale dashboard references.                                        |
