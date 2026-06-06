@@ -21,5 +21,9 @@ model FarmerGroup {
   // RBAC
   users UserFarmerGroup[]
 
+  @@index([districtId])
+  @@index([isActive])
+  @@index([code])
+
   @@map("tbl_farmer_group")
 }
