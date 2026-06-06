@@ -45,13 +45,13 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
-| Total phase    | 32 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 6 fase         | PLATFORM-01/02/04/05, MD-01/02                       |
+| Total phase    | 33 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
+| ✅ Done        | 7 fase         | PLATFORM-01/02/04/05/06, MD-01/02                    |
 | 🟠 Partial     | 4 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02                |
 | 🔲 Not Started | 10 fase        | DASH-01, MD-03, CMS-01, COMM-01, RPT-01/02/03, BULK-01/02 |
 | 🔲 Planned     | 11 fase        | MD-04–11, DASH-02/03, COMM-02                        |
 | 🔴 Blocked     | 1 fase         | DASH-04                                              |
-| 🎯 Now         | 4 fase + 2 bug | DASH-01, RPT-01, BULK-01, MD-03, BUG-001, BUG-002   |
+| 🎯 Now         | 4 fase + 2 bug | DASH-01, RPT-01, BULK-01, MD-03, BUG-001, BUG-002    |
 
 ### Management Talking Points
 
@@ -160,6 +160,7 @@ Format phase: `STREAM-NN`.
 | PLATFORM-03 | Schema Hardening             | 🟠 Partial     | Next    | Audit fields and soft-delete style exist on active models; no clear sync model/lifecycle coverage | Define sync requirement; verify all future models follow audit/soft-delete rules |
 | PLATFORM-04 | Autentikasi & RBAC           | ✅ Done        | Done    | NextAuth credentials, RBAC helpers, role permissions, data access, menu override                  | Maintain and test regression                                                     |
 | PLATFORM-05 | Dynamic Menu Management      | ✅ Done        | Done    | `MenuItem` schema, seed, menu server actions, sidebar, menu management page                       | Maintain                                                                         |
+| PLATFORM-06 | Table Refactor & Export Excel | ✅ Done        | Done    | DataTable diperbarui dengan filter kolom & export Excel, list user/KT direfactor | Maintain dan perluas ke modul baru jika ditambahkan |
 | MD-01       | Regions                      | ✅ Done        | Done    | Region schema, server actions, region page, tree UI, validation, tests                            | Maintain                                                                         |
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
 | MD-03       | Farmer                       | 🔲 Not Started | Now     | No `Farmer` model, route, actions, validation, or UI                                              | Create schema + CRUD + list/detail/form + RBAC                                   |
@@ -225,6 +226,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | #68 Menu & Route Setup Bulk Upload + Placeholder| BULK-01            | 🔲 Todo | TBD      | TBD    | Seed menu + route structure + placeholder pages                   |
 | #69 Bulk Upload KT — CSV Validasi Preview Insert| BULK-01            | 🔲 Todo | TBD      | TBD    | CSV upload + Zod validasi + preview + bulk insert; depends #68    |
 | #70 Bulk Upload Region — CSV Hierarchy Validasi | BULK-02            | 🔲 Todo | TBD      | TBD    | CSV upload per level + hierarchy validasi; depends #68 #69        |
+| #71 Refactor Tabel ke DataTable + Show/Hide Kolom & Export Excel | PLATFORM-06 | ✅ Done | TBD | TBD | Selesai direfaktor ke DataTable dan mendukung export Excel serta visibilitas kolom |
 | Issue belum dibuat: Farmer schema                | MD-03              | 🔲 Todo | TBD      | TBD    | Define model fields and relation to FarmerGroup/Village           |
 | Issue belum dibuat: Farmer CRUD + UI             | MD-03              | 🔲 Todo | TBD      | TBD    | Implement list/detail/form after schema accepted                  |
 
@@ -472,6 +474,7 @@ npm test
 | 2026-06-06 | Dashboard scope diputuskan: summary cards + filter district (bukan chart/map).                                                  |
 | 2026-06-06 | Report scope diputuskan: Excel only di Phase 1, PDF ditunda.                                                                   |
 | 2026-06-06 | Bulk Upload scope diputuskan: KT implementasi penuh, Region placeholder dulu.                                                  |
+| 2026-06-06 | Tambah phase PLATFORM-06 dan buat Issue #71 untuk refactor list tabel ke DataTable dan integrasi Excel export + show/hide kolom. |
 
 ### Changelog
 
@@ -480,6 +483,7 @@ npm test
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
 | 06-06   | Buat 9 GitHub Issues (#62–#70): Dashboard menu+cards, Report menu+placeholder+tabel+export, Bulk Upload menu+placeholder+CSV. |
+| 06-06   | Buat GitHub Issue #71 untuk DataTable refactor + Excel export. Tambah phase PLATFORM-06 ke progress.md. |
 | 06-06   | Tambah stream RPT (Report) dan BULK (Bulk Upload) ke Phase Encoding Taxonomy dan Phase Status.                   |
 | 06-06   | Update Sprint Focus, Active Issues, Dependency Map, dan Recommended Implementation Order.                        |
 | 06-06   | Audit seluruh folder dan update `progress.md` berdasarkan source code aktual.                                    |

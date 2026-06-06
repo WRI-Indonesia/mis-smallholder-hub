@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -35,6 +35,7 @@ import {
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
+  Download,
 } from "lucide-react";
 
 /** Column definition for DataTable */
@@ -83,6 +84,12 @@ export interface DataTableProps<T> {
   pageSizeOptions?: number[];
   /** Optional toolbar content to render before the search input */
   toolbarLeft?: React.ReactNode;
+  /** Optional toolbar content to render at the far right (e.g. Add Button) */
+  toolbarRight?: React.ReactNode;
+  /** Filename for Excel export (if provided, shows export button) */
+  exportFilename?: string;
+  /** Custom export row transformer */
+  getExportRow?: (row: T) => Record<string, any>;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -105,6 +112,9 @@ export function DataTable<T>({
   defaultPageSize = 10,
   pageSizeOptions = [10, 25, 50, 100],
   toolbarLeft,
+  toolbarRight,
+  exportFilename,
+  getExportRow,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
@@ -203,11 +213,10 @@ export function DataTable<T>({
     return sortedData.slice(start, start + pageSize);
   }, [sortedData, safePage, pageSize]);
 
-  // Reset page when data changes
-  const resetPage = useCallback(() => setPage(0), []);
-  useMemo(() => {
-    resetPage();
-  }, [filteredData.length, resetPage]);
+  // Reset page when data or search changes
+  useEffect(() => {
+    setPage(0);
+  }, [search, data]);
 
   // ─── Sort handler ───────────────────────────────────────────────────────
 
@@ -223,6 +232,34 @@ export function DataTable<T>({
       setSortDir("asc");
     }
     setPage(0);
+  };
+
+  const handleExport = async () => {
+    if (!exportFilename) return;
+    const { exportToExcel } = await import("@/lib/xlsx");
+
+    const exportCols = activeColumns.map((col) => ({
+      header: col.label,
+      key: String(col.key),
+    }));
+
+    const exportRows = sortedData.map((row) => {
+      if (getExportRow) {
+        return getExportRow(row);
+      }
+      const exportRow: Record<string, any> = {};
+      activeColumns.forEach((col) => {
+        const val = row[col.key];
+        exportRow[String(col.key)] = val instanceof Date ? val.toLocaleDateString("id-ID") : val;
+      });
+      return exportRow;
+    });
+
+    await exportToExcel({
+      filename: exportFilename,
+      columns: exportCols,
+      data: exportRows,
+    });
   };
 
   const hasActions = !!renderActions;
@@ -263,32 +300,47 @@ export function DataTable<T>({
           </div>
         )}
 
-        {/* Column visibility toggle */}
-        {toggleableColumns.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md bg-background hover:bg-accent hover:text-accent-foreground outline-none transition-colors ml-auto h-9">
-              <SlidersHorizontal className="h-4 w-4" />
-              Kolom
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Tampilkan Kolom</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {toggleableColumns.map((col) => (
-                  <DropdownMenuCheckboxItem
-                    key={String(col.key)}
-                    checked={visibleCols.has(col.key)}
-                    onCheckedChange={() => {
-                      toggleColumn(col.key);
-                    }}
-                  >
-                    {col.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        <div className="flex items-center gap-2 ml-auto">
+          {exportFilename && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="flex items-center gap-2 h-9"
+            >
+              <Download className="h-4 w-4" />
+              Excel
+            </Button>
+          )}
+
+          {toggleableColumns.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md bg-background hover:bg-accent hover:text-accent-foreground outline-none transition-colors h-9">
+                <SlidersHorizontal className="h-4 w-4" />
+                Kolom
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Tampilkan Kolom</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {toggleableColumns.map((col) => (
+                    <DropdownMenuCheckboxItem
+                      key={String(col.key)}
+                      checked={visibleCols.has(col.key)}
+                      onCheckedChange={() => {
+                        toggleColumn(col.key);
+                      }}
+                    >
+                      {col.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {toolbarRight}
+        </div>
       </div>
 
       {/* Table */}
@@ -296,6 +348,11 @@ export function DataTable<T>({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/70 hover:bg-muted/70 border-b-2 border-border">
+              {hasActions && (
+                <TableHead className="w-[1%] whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Aksi
+                </TableHead>
+              )}
               {activeColumns.map((col) => {
                 const isSortable = col.sortable !== false;
                 return (
@@ -317,11 +374,6 @@ export function DataTable<T>({
                   </TableHead>
                 );
               })}
-              {hasActions && (
-                <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Aksi
-                </TableHead>
-              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -337,6 +389,11 @@ export function DataTable<T>({
             ) : (
               paginatedData.map((row) => (
                 <TableRow key={rowKey(row)}>
+                  {hasActions && (
+                    <TableCell className="w-[1%] whitespace-nowrap">
+                      {renderActions(row)}
+                    </TableCell>
+                  )}
                   {activeColumns.map((col) => (
                     <TableCell
                       key={String(col.key)}
@@ -347,11 +404,6 @@ export function DataTable<T>({
                         : String(row[col.key] ?? "")}
                     </TableCell>
                   ))}
-                  {hasActions && (
-                    <TableCell className="text-right">
-                      {renderActions(row)}
-                    </TableCell>
-                  )}
                 </TableRow>
               ))
             )}

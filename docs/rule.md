@@ -228,6 +228,16 @@ Untuk tabel dengan pagination, ikuti aturan layout dan state berikut untuk konsi
   - Bagian Kiri: Dropdown pemilihan ukuran halaman ("Tampilkan [dropdown] dari [total] data").
   - Bagian Kanan: Indikator halaman ("Halaman [aktif] dari [total_halaman]") beserta tombol navigasi sebelumnya/selanjutnya menggunakan `<Button variant="outline" size="icon" className="h-8 w-8">` dan icon `<ChevronLeft>` / `<ChevronRight>` berukuran `h-4 w-4`.
 
+### Table Export & Column Selection (DataTable)
+
+Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus didukung:
+- **Show/Hide Kolom**: Disediakan tombol dropdown "Kolom" untuk memilih visibilitas kolom.
+- **Export Excel**:
+  - Disediakan tombol "Excel" untuk mengunduh data tabel saat ini (hasil pencarian/filter aktif).
+  - Diaktifkan dengan menyertakan prop `exportFilename` (misalnya `exportFilename="data-users"`).
+  - Kustomisasi mapping baris dilakukan melalui prop `getExportRow` untuk meratakan relasi atau data kompleks.
+- **Posisi Tombol Tambah**: Tombol "Tambah / Create" di-render secara konsisten di paling kanan toolbar menggunakan prop `toolbarRight` dari `<DataTable>`.
+
 ### State & Feedback
 
 - Loading state wajib (skeleton/spinner)
