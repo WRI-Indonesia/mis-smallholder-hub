@@ -1,294 +1,504 @@
 # Smallholder HUB — Progress
 
-> Tracking progress development. Detail issue: [GitHub Issues](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues)
+> Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
+
+**Last updated:** 2026-06-06 (re-verified terhadap working tree commit `5667a44`)
+
+**Next management review:** 2026-06-20
+
+**Source of truth:** tabel **Phase Status** di Section 2.
+
+**Audit basis:** source code, Prisma schema, route files, server actions, scripts, GitHub workflow, dan hasil test lokal.
 
 ---
 
 <details open>
-<summary><strong>1. 🗺️ Big Picture — Roadmap</strong> — untuk management / stakeholder</summary>
+<summary><strong>1. Biweekly Management Brief</strong> — ringkasan stakeholder</summary>
 
-### Aturan Governance
+## 1. Biweekly Management Brief
 
-- **Source of truth** untuk status delivery adalah tabel **Phase Status** di bawah.
-- Ringkasan roadmap harus selalu diturunkan dari tabel status; tidak boleh ada status yang berdiri sendiri di luar tabel.
-- Setiap issue aktif harus dipetakan ke phase dan horizon (Now / Next / Later).
-- Status fase di tabel Phase Status bersifat **mengikat** — jika suatu fase bertuliskan ✅ Completed, maka seluruh komponennya sudah terimplementasi di codebase.
+Gunakan section ini untuk presentasi management setiap dua minggu. Section ini sengaja dibuat ringkas: posisi delivery, risiko, keputusan, dan target dua minggu berikutnya.
+
+### Reporting Window
+
+| Item               | Nilai                                                       |
+| ------------------ | ----------------------------------------------------------- |
+| Periode laporan    | 2026-06-06 s.d. 2026-06-20                                  |
+| Status keseluruhan | 🔴 At Risk                                                  |
+| Basis review       | Existing source code per 2026-06-06                         |
+| Test lokal         | ✅ `npm test` — 10 files / 111 tests passed                 |
+| Fokus koreksi      | Menyamakan roadmap dengan implementasi aktual di repository |
+
+### Executive Summary
+
+| Area                | Status          | Ringkasan                                                                                                                                  |
+| ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Platform foundation | 🟡 Mostly Ready | Auth, RBAC, menu, user management, region, dan farmer group sudah ada. Schema hardening belum sepenuhnya mencakup sync/lifecycle.          |
+| Master data inti    | 🔴 At Risk      | Farmer, Parcels, Training, Production, Staff, dan HCV belum punya Prisma model, route, server actions, atau validation schema.             |
+| Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`.                                           |
+| Navigation health   | 🔴 Broken Link  | `/admin/master-data` redirect ke `/admin/master-data/farmers`, tetapi route `farmers` belum ada.                                           |
+| Testing             | 🟡 Partial      | Unit tests tersedia dan lulus, tetapi coverage masih fokus pada auth/RBAC/menu/user/region; belum ada dashboard atau master data lanjutan. |
+
+### Progress Snapshot
+
+| Metrik         | Jumlah         | Catatan                                   |
+| -------------- | -------------- | ----------------------------------------- |
+| Total phase    | 26 fase        | PLATFORM, MD, DASH, TOOLS, CMS, COMM, OPS |
+| ✅ Done        | 6 fase         | PLATFORM-01/02/04/05, MD-01/02            |
+| 🟠 Partial     | 4 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02     |
+| 🔲 Not Started | 4 fase         | DASH-01, MD-03, CMS-01, COMM-01           |
+| 🔲 Planned     | 11 fase        | MD-04–11, DASH-02/03, COMM-02             |
+| 🔴 Blocked     | 1 fase         | DASH-04                                   |
+| 🎯 Now         | 2 fase + 2 bug | DASH-01, MD-03, BUG-001, BUG-002          |
+
+### Management Talking Points
+
+| Topik               | Pesan Utama                                                              | Dampak                                                                                    |
+| ------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Roadmap correction  | Status lama terlalu optimistis untuk dashboard dan master data lanjutan. | Management perlu membaca progress dari Phase Status terbaru.                              |
+| Immediate priority  | Perbaiki broken navigation dan mulai MD-03 Farmer.                       | Menghindari demo/admin flow yang patah dan membuka dependency Training/Parcel/Production. |
+| Dashboard reality   | Dashboard source saat ini belum implementatif.                           | DASH-04 BMP tidak bisa dinilai In Progress dari code; harus dimulai dari DASH-01.         |
+| Delivery confidence | Test existing lulus 111/111.                                             | Foundation cukup stabil untuk lanjut, tetapi feature coverage belum menyentuh modul baru. |
+
+### Decisions Needed
+
+| Keputusan                  | Owner                   | Dibutuhkan Kapan     | Rekomendasi Tech Lead                                                                       |
+| -------------------------- | ----------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| Arah `/admin/master-data`  | Engineering Lead        | Segera               | Pilih: redirect sementara ke `/admin/master-data/groups` atau implement MD-03 Farmer route. |
+| Scope minimal MD-03 Farmer | Product + Engineering   | Sebelum implementasi | Tetapkan field wajib, relasi FarmerGroup/Village, RBAC, dan acceptance criteria.            |
+| Dashboard MVP              | Product + Engineering   | Sprint berjalan      | Definisikan ulang DASH-01 sebelum membahas DASH-04 BMP.                                     |
+| Model data Production      | Product + Domain Expert | Sebelum MD-06        | Putuskan production dicatat per Farmer, per Parcel, atau per season/periode.                |
+
+### Next Two Weeks
+
+| Priority | Target                                      | Output                                                                                                        |
+| -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| P0       | BUG-001: fix broken master-data redirect    | `/admin/master-data` tidak lagi mengarah ke route yang tidak ada                                              |
+| P0       | BUG-002: cleanup stale dashboard references | Script/debug docs tidak mengarah ke `src/server/actions/dashboard.ts` yang belum ada, atau file action dibuat |
+| P0       | DASH-01 dashboard basic                     | `/admin/dashboard` tidak lagi `Coming soon`; minimal menampilkan data foundation yang ada                     |
+| P0       | MD-03 Farmer kickoff                        | Issue + schema design + implementation plan berdasarkan existing Region dan FarmerGroup                       |
+| P1       | Testing scope expansion                     | Tambah test untuk dashboard basic / redirect / MD-03 setelah implementasi                                     |
+
+</details>
+
+---
+
+<details>
+<summary><strong>2. Roadmap Source of Truth</strong> — status resmi phase berdasarkan code</summary>
+
+## 2. Roadmap Source of Truth
+
+Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara changelog, issue, dan tabel ini, gunakan tabel **Phase Status** sebagai kebenaran utama.
+
+### Governance Rules
+
+- **Phase Status adalah source of truth** untuk reporting management dan planning developer.
+- Status fase hanya boleh naik jika implementasi bisa diverifikasi lewat file/code, route, schema, server action, test, atau workflow.
+- Changelog tidak boleh dijadikan bukti status selesai; changelog hanya catatan historis.
+- Placeholder `Coming soon` tidak dihitung sebagai implementasi feature.
+- Script/debug tool tidak dihitung sebagai implementasi UI/module, kecuali phase memang scope-nya CLI/tooling.
+- Jika status berubah karena audit code, catat di **Decision Log**.
+
+### Status Definition
+
+| Status         | Arti                      | Kapan Dipakai                                                           |
+| -------------- | ------------------------- | ----------------------------------------------------------------------- |
+| ✅ Done        | Selesai dan terverifikasi | Schema/route/action/UI tersedia sesuai completion criteria minimal      |
+| 🟠 Partial     | Sebagian ada              | Ada sebagian implementasi, tetapi belum cukup untuk dianggap selesai    |
+| 🔲 Not Started | Belum dimulai             | Route/schema/action utama belum ada, tetapi phase masuk prioritas dekat |
+| 🔲 Planned     | Masuk roadmap             | Belum ada implementasi dan belum menjadi prioritas sprint               |
+| 🔴 Blocked     | Terhambat                 | Ada dependency atau kondisi yang membuat phase belum layak dieksekusi   |
+
+### Horizon Definition
+
+| Horizon | Arti                        | Aturan                                         |
+| ------- | --------------------------- | ---------------------------------------------- |
+| Done    | Selesai                     | Semua completion criteria fase sudah terpenuhi |
+| Now     | Fokus dua minggu berjalan   | Maksimal 2–4 phase agar tim tidak melebar      |
+| Next    | Kandidat sprint berikutnya  | Masuk setelah dependency jelas                 |
+| Later   | Backlog roadmap             | Jangan dieksekusi sebelum Now stabil           |
+| Blocked | Tidak bisa dieksekusi sehat | Perlu dependency/keputusan/phase sebelumnya    |
+
+### Code Audit Evidence
+
+| Area           | Bukti di Codebase                                                                                                                                                                  | Kesimpulan                                                                             |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Prisma models  | `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup` | Schema aktif hanya mencakup platform, RBAC, region, dan farmer group                   |
+| Admin routes   | Dashboard placeholder, Settings Users/Roles/Menu/Regions, Master Data Groups, Profile                                                                                              | Admin foundation ada; dashboard dan farmer belum implementatif                         |
+| Server actions | `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `farmer-group`, `profile`, `role-permission`                                                                     | Tidak ada action untuk dashboard, farmer, training, parcel, production                 |
+| Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
+| Scripts        | S3/PDF CLI, export CSV, dashboard cache/debug scripts                                                                                                                              | Tools partial; beberapa dashboard scripts stale karena action dashboard tidak ada      |
+| Tests          | `npm test` lulus 10 files / 111 tests                                                                                                                                              | Testing partial dan belum mencakup dashboard/master data lanjutan                      |
+| DevOps         | Dockerfile + `.github/workflows/deploy-dev.yaml` + `deploy-main.yml`                                                                                                               | DevOps partial; workflow ada tetapi deployment readiness belum diverifikasi di dokumen |
 
 ### Phase Encoding Taxonomy
 
-Setiap phase menggunakan format `STREAM-NN`:
+Format phase: `STREAM-NN`.
 
-| Stream | Arti | Cakupan |
-|--------|------|---------|
-| **PLATFORM** | Platform Foundation | Init project, Schema DB, Auth, RBAC, Menu Infra |
-| **MD** | Master Data | Regions, Groups, Farmer, Parcels, Training, Staff, Agronomy, HCV, BUSDEV, IMPACT, Workplan |
-| **DASH** | Dashboard | Basic Dashboard, BMP, Interactive Map |
-| **TOOLS** | Tools & Utility | Import, Export, GIS |
-| **CMS** | Content Management | Pages, Media, Knowledge Base |
-| **COMM** | Community & Engagement | Community, i18n |
-| **OPS** | Operations & DevOps | Testing, CI/CD, Deployment |
+| Stream   | Arti                   | Cakupan                                                                                    |
+| -------- | ---------------------- | ------------------------------------------------------------------------------------------ |
+| PLATFORM | Platform Foundation    | Init project, schema DB, auth, RBAC, menu infra                                            |
+| MD       | Master Data            | Regions, groups, farmer, parcels, training, staff, agronomy, HCV, BUSDEV, IMPACT, workplan |
+| DASH     | Dashboard              | Basic dashboard, server actions, interactive map, BMP                                      |
+| TOOLS    | Tools & Utility        | Import, export, GIS, S3/PDF utility                                                        |
+| CMS      | Content Management     | Pages, media, knowledge base                                                               |
+| COMM     | Community & Engagement | Community, i18n                                                                            |
+| OPS      | Operations & DevOps    | Testing, CI/CD, deployment                                                                 |
 
-Aturan penomoran:
-- Nomor module dalam satu stream bersifat **fixed** — tidak berubah meski ada penyisipan di stream lain.
-- Sub-module opsional menggunakan dot: `MD-03.1` = Farmer List, `MD-03.2` = Farmer Detail.
-- Status fase adalah **sumber kebenaran tunggal**.
+### Phase Status
 
-### Ringkasan Progress
-
-| Metrik | Jumlah |
-|--------|--------|
-| ✅ **Completed** | 11 fase (PLATFORM-01–05, MD-01/02, DASH-01–03) |
-| 🟡 **In Progress** | 1 fase (DASH-04 Dashboard BMP) |
-| 🔲 **Now (Prioritas)** | 2 fase (MD-03 Farmer, MD-05 Training) |
-| 🔲 **Next** | 5 fase (MD-04, MD-06, MD-07, MD-08, TOOLS-01) |
-| 🔲 **Later** | 7 fase (MD-09–11, CMS-01, COMM-01/02, OPS-01/02) |
-
-### Phase Status (Source of Truth)
-
-| Phase | Deskripsi | Status | Horizon |
-|-------|-----------|--------|---------|
-| **PLATFORM-01** | Initialization & UI Statis | ✅ Completed | Done |
-| **PLATFORM-02** | Database Schema & Migrations | ✅ Completed | Done |
-| **PLATFORM-03** | Schema Hardening (Audit Trail, Sync) | ✅ Completed | Done |
-| **PLATFORM-04** | Autentikasi & RBAC | ✅ Completed | Done |
-| **PLATFORM-05** | Dynamic Menu Management | ✅ Completed | Done |
-| **MD-01** | Regions (Province/District/Subdistrict/Village) | ✅ Completed | Done |
-| **MD-02** | Farmer Groups (Kelompok Tani) | ✅ Completed | Done |
-| **MD-03** | **Farmer (Individu)** | 🔲 **Belum Dimulai** | **Now** |
-| **MD-04** | **Parcels (Lahan)** | 🔲 **Belum Dimulai** | **Next** |
-| **MD-05** | **Training & Pelatihan** | 🔲 **Belum Dimulai** | **Now** |
-| **MD-06** | **Agronomy / Data Produksi** | 🔲 **Belum Dimulai** | **Next** |
-| MD-07 | Staff | 🔲 Planned | Next |
-| MD-08 | HCV | 🔲 Planned | Next |
-| MD-09 | BUSDEV | 🔲 Planned | Later |
-| MD-10 | IMPACT | 🔲 Planned | Later |
-| MD-11 | Workplan | 🔲 Planned | Later |
-| **DASH-01** | Dashboard: Basic Data | ✅ Completed | Done |
-| **DASH-02** | Dashboard: Server Actions | ✅ Completed | Done |
-| **DASH-03** | Interactive Map | ✅ Completed | Done |
-| **DASH-04** | Dashboard BMP | 🟡 In Progress | Now |
-| **TOOLS-01** | Tools (Import/Export/GIS) | 🔲 Planned | Next |
-| **CMS-01** | CMS & Content Management | 🔲 Planned | Later |
-| **COMM-01** | Community | 🔲 Planned | Later |
-| **COMM-02** | i18n | 🔲 Planned | Later |
-| **OPS-01** | Testing | 🔲 Planned | Later |
-| **OPS-02** | DevOps & Deployment | 🔲 Planned | Later |
-
-### Delivery Horizon (Issue Lanes)
-
-| Horizon | Fokus | Issues |
-|---------|-------|--------|
-| **Now** | Selesaikan DASH-04 (Dashboard BMP) + mulai **MD-03** (Farmer) + **MD-05** (Training) | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48), [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49), [#50](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/50), [#51](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/51), #New-Farmer, #New-Training |
-| **Next** | **MD-04** (Parcels) + **MD-06** (Agronomy/Produksi) + TOOLS-01 (Import) + MD-07 (Staff) + MD-08 (HCV) | [#52](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/52), [#53](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/53) |
-| **Later** | Backlog non-kritis: MD-09–MD-11, CMS-01, COMM-01/02, OPS-01/02 | [#44](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/44) |
-
-### Delivery Plan: Farmer, Training & Production (MD-03, MD-05, MD-06)
-
-#### Dependensi Modul
-
-```mermaid
-flowchart LR
-    MD-01[MD-01 Regions] --> MD-02[MD-02 Groups]
-    MD-01 --> MD-03[MD-03 Farmer]
-    MD-02 --> MD-03
-    MD-03 --> MD-04[MD-04 Parcels]
-    MD-03 --> MD-05[MD-05 Training]
-    MD-03 --> MD-06[MD-06 Agronomy/Production]
-```
-
-#### Urutan Implementasi
-
-| Step | Modul | Prasyarat | Estimasi |
-|------|-------|-----------|----------|
-| 1 | **MD-03 Farmer** (Schema + CRUD) | MD-01, MD-02 ✅ | — |
-| 2 | **MD-05 Training** (Schema + CRUD + Participants) | MD-03 | — |
-| 3 | **MD-06 Agronomy** (Schema + CRUD + Period/Reporting) | MD-03 | — |
-| 4 | **MD-04 Parcels** (Schema + CRUD + Map) | MD-03 | — |
-
-#### Definisi Per Modul
-
-| Modul | Prisma Model Baru | Server Actions | Halaman |
-|-------|-------------------|----------------|---------|
-| **MD-03 Farmer** | `Farmer` (relasi ke FarmerGroup, Village) | CRUD + RBAC filter | List, Detail, Form |
-| **MD-05 Training** | `Training`, `TrainingParticipant` (relasi ke Farmer) | CRUD + attendance | List, Detail, Form |
-| **MD-06 Agronomy** | `Production` (relasi ke Farmer, period) | CRUD + batch import | List, Detail, Form, Chart |
+| Phase       | Deskripsi                    | Status         | Horizon | Evidence from Code                                                                                | Completion Criteria / Next Step                                                  |
+| ----------- | ---------------------------- | -------------- | ------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| PLATFORM-01 | Initialization & UI Statis   | ✅ Done        | Done    | Next.js app, public home, login, admin shell, UI components                                       | Maintain                                                                         |
+| PLATFORM-02 | Database Schema & Migrations | ✅ Done        | Done    | Modular Prisma schema + migration + seed files                                                    | Maintain                                                                         |
+| PLATFORM-03 | Schema Hardening             | 🟠 Partial     | Next    | Audit fields and soft-delete style exist on active models; no clear sync model/lifecycle coverage | Define sync requirement; verify all future models follow audit/soft-delete rules |
+| PLATFORM-04 | Autentikasi & RBAC           | ✅ Done        | Done    | NextAuth credentials, RBAC helpers, role permissions, data access, menu override                  | Maintain and test regression                                                     |
+| PLATFORM-05 | Dynamic Menu Management      | ✅ Done        | Done    | `MenuItem` schema, seed, menu server actions, sidebar, menu management page                       | Maintain                                                                         |
+| MD-01       | Regions                      | ✅ Done        | Done    | Region schema, server actions, region page, tree UI, validation, tests                            | Maintain                                                                         |
+| MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
+| MD-03       | Farmer                       | 🔲 Not Started | Now     | No `Farmer` model, route, actions, validation, or UI                                              | Create schema + CRUD + list/detail/form + RBAC                                   |
+| MD-04       | Parcels                      | 🔲 Planned     | Next    | No parcel model/route/action/UI                                                                   | Start after MD-03                                                                |
+| MD-05       | Training                     | 🔲 Planned     | Next    | No training model/route/action/UI; S3/PDF CLI only                                                | Start after MD-03; define participants/evidence model                            |
+| MD-06       | Agronomy / Production        | 🔲 Planned     | Next    | No production/agronomy model/route/action/UI                                                      | Validate dependency to Farmer/Parcel first                                       |
+| MD-07       | Staff                        | 🔲 Planned     | Later   | No staff model/route/action/UI                                                                    | Define scope                                                                     |
+| MD-08       | HCV                          | 🔲 Planned     | Later   | No HCV model/route/action/UI                                                                      | Define scope                                                                     |
+| MD-09       | BUSDEV                       | 🔲 Planned     | Later   | No BUSDEV model/route/action/UI                                                                   | Define scope                                                                     |
+| MD-10       | IMPACT                       | 🔲 Planned     | Later   | No IMPACT model/route/action/UI                                                                   | Define scope                                                                     |
+| MD-11       | Workplan                     | 🔲 Planned     | Later   | No workplan model/route/action/UI                                                                 | Define scope                                                                     |
+| DASH-01     | Dashboard: Basic Data        | 🔲 Not Started | Now     | `/admin/dashboard` exists but only `Coming soon`                                                  | Implement basic cards/charts from existing Region/FarmerGroup/User data          |
+| DASH-02     | Dashboard: Server Actions    | 🔲 Planned     | Next    | No `src/server/actions/dashboard.ts`                                                              | Create dashboard server actions after DASH-01 scope agreed                       |
+| DASH-03     | Interactive Map              | 🔲 Planned     | Next    | Map deps/CSS/markers exist, but no dashboard map route/component                                  | Implement after dashboard data actions exist                                     |
+| DASH-04     | Dashboard BMP                | 🔴 Blocked     | Blocked | No dashboard implementation; scripts reference missing dashboard action                           | Unblock by completing DASH-01 and DASH-02 first                                  |
+| TOOLS-01    | Tools Import/Export/GIS/S3   | 🟠 Partial     | Next    | `scripts/export-csv.ts`, S3/PDF CLI, dashboard cache/debug scripts                                | Separate CLI utilities from app tools; remove/fix stale dashboard scripts        |
+| CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
+| COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
+| COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest setup + 10 test files + 111 passing tests                                                  | Expand coverage for dashboard, redirects, and future MD modules                  |
+| OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile + GitHub deploy workflows                                                              | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
 
+---
+
 <details>
-<summary><strong>2. 🎯 Active Sprint — Issue Control</strong> — untuk tim developer</summary>
+<summary><strong>3. Current Sprint & Issue Control</strong> — pekerjaan aktif developer</summary>
+
+## 3. Current Sprint & Issue Control
+
+Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Karena progress sekarang disesuaikan dengan code, prioritas sprint difokuskan ke gap yang terbukti ada.
+
+### Sprint Focus
+
+| Priority | ID / Phase  | Tujuan                                 | Evidence                                                                                      | Next Action                                                              |
+| -------- | ----------- | -------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| P0       | BUG-001     | Fix broken master-data redirect        | `src/app/(admin)/admin/master-data/page.tsx` redirect ke missing `/admin/master-data/farmers` | Ubah redirect ke `/admin/master-data/groups` atau implement route Farmer |
+| P0       | BUG-002     | Fix stale dashboard tooling references | `scripts/debug/*dashboard*` import `src/server/actions/dashboard` yang tidak ada              | Hapus/fix script atau buat dashboard action                              |
+| P0       | DASH-01     | Dashboard basic tidak lagi placeholder | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`                                | Implement dashboard dasar dari data existing                             |
+| P0       | MD-03       | Kickoff Farmer                         | Tidak ada `Farmer` model/route/action/validation                                              | Buat issue schema, CRUD actions, UI, RBAC, tests                         |
+| P1       | PLATFORM-03 | Clarify schema hardening               | Audit fields ada; sync/lifecycle belum jelas                                                  | Definisikan hardening checklist untuk model baru                         |
+
+### Active Issues / Work Items
+
+| Work Item                                    | Phase              | Status  | Assignee | Target | Next Action                                                       |
+| -------------------------------------------- | ------------------ | ------- | -------- | ------ | ----------------------------------------------------------------- |
+| BUG-001 Broken `/admin/master-data` redirect | MD-03 / Navigation | 🔲 Todo | TBD      | TBD    | Decide temporary redirect vs implement Farmer route               |
+| BUG-002 Stale dashboard scripts              | DASH-02 / TOOLS-01 | 🔲 Todo | TBD      | TBD    | Align scripts with actual dashboard action availability           |
+| Issue belum dibuat: dashboard basic          | DASH-01            | 🔲 Todo | TBD      | TBD    | Define dashboard cards/data from existing User/Region/FarmerGroup |
+| Issue belum dibuat: Farmer schema            | MD-03              | 🔲 Todo | TBD      | TBD    | Define model fields and relation to FarmerGroup/Village           |
+| Issue belum dibuat: Farmer CRUD + UI         | MD-03              | 🔲 Todo | TBD      | TBD    | Implement list/detail/form after schema accepted                  |
 
 ### Issue Workflow
 
-Setiap GitHub Issue mengikuti alur berikut:
-
 ```mermaid
 flowchart LR
-    TODO[🔲 Todo] --> IP[🟡 In Progress]
-    IP --> RV[🔍 Review]
-    RV --> DONE[✅ Done]
+    TODO["🔲 Todo"] --> IP["🟡 In Progress"]
+    IP --> RV["🔍 Review"]
+    RV --> DONE["✅ Done"]
     RV --> IP
 ```
 
-| Status | Label GitHub | Arti | Refleksi di Phase Status |
-|--------|-------------|------|--------------------------|
-| 🔲 **Todo** | `status:todo` | Belum dikerjakan, siap diambil | 🔲 Planned / Belum Dimulai |
-| 🟡 **In Progress** | `status:in-progress` | Sedang dikerjakan | 🟡 In Progress |
-| 🔍 **Review** | `status:review` | Selesai coding, butuh QA / approval | 🟡 In Progress (masuk hitungan issue aktif) |
-| ✅ **Done** | `status:done` | Selesai, sudah di-merge ke branch aktif | ✅ Completed |
+| Workflow       | Label GitHub         | Arti                                   | Efek ke Phase Status                              |
+| -------------- | -------------------- | -------------------------------------- | ------------------------------------------------- |
+| 🔲 Todo        | `status:todo`        | Siap dikerjakan, belum aktif           | Fase tetap Not Started / Planned                  |
+| 🟡 In Progress | `status:in-progress` | Sedang dikerjakan                      | Fase menjadi In Progress / Partial                |
+| 🔍 Review      | `status:review`      | Selesai coding, menunggu QA / approval | Fase tetap In Progress / Partial                  |
+| ✅ Done        | `status:done`        | Selesai dan merged                     | Fase bisa Done jika completion criteria terpenuhi |
 
-### Issue & Label Convention
+### Issue Convention
 
-**Format judul issue:**
-```
-[Phase-Code] Deskripsi singkat (B. Indonesia)
+Format judul:
+
+```text
+[Phase-Code] Deskripsi singkat dalam Bahasa Indonesia
 ```
 
 Contoh:
-```
+
+```text
+[BUG] Fix redirect /admin/master-data ke route yang valid
+[DASH-01] Dashboard basic untuk summary data existing
 [MD-03] Prisma schema & migration untuk Farmer
-[MD-05] Training CRUD server actions
-[DASH-04] Perbaikan filter grafik BMP
+[MD-03] Farmer list, detail, dan form
 ```
 
-**Wajib labels:**
+Label wajib:
 
-| Label | Contoh Nilai | Kegunaan |
-|-------|-------------|----------|
-| `phase` | `phase:MD-03`, `phase:DASH-04` | Filter issue per fase |
-| `status` | `status:todo`, `status:in-progress`, `status:review`, `status:done` | Workflow tracking |
-| `type` | `type:feat`, `type:bug`, `type:debt` | Kategorisasi |
-
-**Catatan:** Label `phase` dan `status` wajib ada di setiap issue. Label `type` opsional tapi dianjurkan.
-
-### Active Sprint
-
-| Issue | Phase | Workflow | Assignee | Target |
-|-------|-------|----------|----------|--------|
-| [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) | DASH-04 | 🟡 In Progress | — | — |
-| [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49) | DASH-04 | 🟡 In Progress | — | — |
-| [#50](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/50) | DASH-04 | 🟡 In Progress | — | — |
-| [#51](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/51) | DASH-04 | 🟡 In Progress | — | — |
-| — | MD-03 | 🔲 Todo | — | — |
-| — | MD-05 | 🔲 Todo | — | — |
-| — | MD-06 | 🔲 Todo | — | — |
-
-> **Catatan**: Issue baru untuk MD-03, MD-05, MD-06 akan dibuat setelah desain schema disepakati. Kolom `Assignee` dan `Target` diisi saat issue masuk ke **In Progress**.
-
-### Hubungan Issue ↔ Phase Status
-
-```
-Phase Status (progress.md)         GitHub Issue Board
-─────────────────────────          ─────────────────
-🔲 Planned / Belum Dimulai  ───→    🔲 Todo (beberapa issue)
-🟡 In Progress              ───→    🟡 In Progress + 🔍 Review
-✅ Completed                ───→    ✅ Done (semua issue fase ditutup)
-```
-
-- Satu fase bisa memiliki **banyak issue** (misal: MD-03 butuh issue schema, issue CRUD, issue UI)
-- Fase dianggap **✅ Completed** hanya jika **semua issue** fase tersebut sudah **✅ Done**
-- Fase sedang **🟡 In Progress** jika minimal satu issue fase tersebut sedang **🟡 In Progress** atau **🔍 Review**
+| Label      | Contoh                               | Wajib?             | Catatan                                           |
+| ---------- | ------------------------------------ | ------------------ | ------------------------------------------------- |
+| `phase`    | `phase:MD-03`                        | Ya                 | Harus sama dengan Phase Status jika terkait phase |
+| `status`   | `status:todo`                        | Ya                 | Harus mengikuti Issue Workflow                    |
+| `type`     | `type:feat`, `type:bug`, `type:debt` | Ya                 | Minimal satu type                                 |
+| `priority` | `priority:P0`, `priority:P1`         | Untuk sprint aktif | Dipakai untuk sorting pekerjaan                   |
 
 </details>
 
+---
+
 <details>
-<summary><strong>3. 🧹 Technical Debt</strong> — untuk tech lead</summary>
+<summary><strong>4. Junior Developer Update Guide</strong> — cara update dokumen tanpa bingung</summary>
+
+## 4. Junior Developer Update Guide
+
+Section ini dibuat supaya junior developer bisa update dokumen dengan aman dan konsisten.
+
+### Golden Rule
+
+Jika tidak ada bukti di code, jangan naikkan status fase.
+
+Contoh bukti yang valid:
+
+- Prisma model / migration
+- Route file di `src/app`
+- Server action di `src/server/actions`
+- Validation schema di `src/validations`
+- UI component/page yang bukan placeholder
+- Test yang relevan
+- Script/workflow jika phase memang tooling/devops
+
+### 5-Minute Update Checklist
+
+| Step | Bagian yang Diupdate | Pertanyaan Cek                                                         |
+| ---- | -------------------- | ---------------------------------------------------------------------- |
+| 1    | Active Issues        | Apakah status issue, assignee, target, dan next action sudah benar?    |
+| 2    | Phase Status         | Apakah status fase berubah berdasarkan file/code nyata?                |
+| 3    | Code Audit Evidence  | Apakah ada route/schema/action baru atau hilang?                       |
+| 4    | Progress Snapshot    | Apakah angka Done/Partial/Not Started/Planned/Blocked masih konsisten? |
+| 5    | Management Brief     | Apakah risiko/decision/next two weeks masih relevan?                   |
+| 6    | Changelog            | Apakah perubahan penting sudah dicatat dengan tanggal?                 |
+
+### Dependency Map
+
+```mermaid
+flowchart LR
+    MD01["MD-01 Regions"] --> MD02["MD-02 Farmer Groups"]
+    MD01 --> MD03["MD-03 Farmer"]
+    MD02 --> MD03
+    MD03 --> MD05["MD-05 Training"]
+    MD03 --> MD04["MD-04 Parcels"]
+    MD04 -. "perlu divalidasi" .-> MD06["MD-06 Production"]
+    MD03 --> MD06
+    DASH01["DASH-01 Basic Dashboard"] --> DASH02["DASH-02 Server Actions"]
+    DASH02 --> DASH03["DASH-03 Interactive Map"]
+    DASH02 --> DASH04["DASH-04 BMP"]
+```
+
+### Recommended Implementation Order
+
+| Step | Phase / Bug | Scope Minimal                                   | Prasyarat                        | Catatan Tech Lead                               |
+| ---- | ----------- | ----------------------------------------------- | -------------------------------- | ----------------------------------------------- |
+| 1    | BUG-001     | Fix `/admin/master-data` redirect               | Existing routes                  | Pilih redirect ke groups atau implement farmer  |
+| 2    | DASH-01     | Basic dashboard from existing data              | Existing User/Region/FarmerGroup | Jangan langsung BMP sebelum dashboard dasar ada |
+| 3    | MD-03       | Farmer schema, CRUD, list, detail, form, RBAC   | MD-01, MD-02                     | Mulai dari field minimal                        |
+| 4    | MD-05       | Training schema, CRUD, participants, attendance | MD-03                            | Jangan mulai sebelum Farmer jelas               |
+| 5    | MD-04       | Parcel schema, CRUD, map context                | MD-03                            | Penting untuk Production/GIS                    |
+| 6    | MD-06       | Production schema, period, chart/import awal    | MD-03 + kemungkinan MD-04        | Validasi per Farmer vs per Parcel               |
+
+### MD-03 Farmer — Suggested Issue Breakdown
+
+| Issue                               | Scope                                                        | Definition of Done                                        |
+| ----------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------- |
+| `[MD-03] Farmer schema & migration` | Prisma model, relation ke FarmerGroup dan Village, migration | Migration berhasil dan relasi bisa di-query               |
+| `[MD-03] Farmer server actions`     | Create, read, update, soft delete, validation, RBAC filter   | Action aman dari akses tidak sah dan error handling jelas |
+| `[MD-03] Farmer list page`          | Tabel, search, filter, pagination, action buttons            | Data tampil benar sesuai permission                       |
+| `[MD-03] Farmer form page`          | Create/edit form, field validation, submit state             | Form menyimpan data dan memberi feedback jelas            |
+| `[MD-03] Farmer detail page`        | Ringkasan profil, group, wilayah, metadata                   | Detail bisa dibuka dari list dan tidak bocor akses        |
+| `[MD-03] Farmer tests / QA`         | Unit/integration test prioritas dan smoke test manual        | Test relevan lulus dan checklist QA tercatat              |
+
+### Acceptance Criteria Umum
+
+- Data mengikuti RBAC dan data access yang sudah ada.
+- Semua form memiliki validation error yang jelas.
+- List page memiliki search/filter/pagination jika datanya berpotensi besar.
+- Server action tidak hanya mengandalkan guard UI; permission tetap dicek di backend.
+- Placeholder `Coming soon` tidak dihitung sebagai selesai.
+- Setelah phase selesai, update **Phase Status**, **Active Issues**, **Progress Snapshot**, dan **Changelog**.
+
+### Minimum Validation
+
+| Area           | Validasi Minimal                                               |
+| -------------- | -------------------------------------------------------------- |
+| Schema         | Migration berjalan dan tidak merusak seed/data existing        |
+| Server actions | Happy path, invalid input, unauthorized access                 |
+| UI             | Empty state, loading state, error state, dark/light mode dasar |
+| RBAC           | Role tanpa permission tidak bisa melihat/menulis data          |
+| Test           | `npm test` lulus                                               |
+| Build          | `npm run build` lulus sebelum fase ditandai Done               |
+
+### Update Templates
+
+Gunakan template berikut saat menambah issue baru.
+
+```text
+Issue:
+Phase:
+Status:
+Assignee:
+Target:
+Evidence:
+Next Action:
+```
+
+Gunakan template berikut saat menambah changelog.
+
+```text
+| YYYY-MM-DD | [Phase/Issue] Ringkasan perubahan singkat berdasarkan code |
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>5. Technical Debt & Bug Register</strong> — risiko teknis aktual</summary>
+
+## 5. Technical Debt & Bug Register
+
+Debt/bug di section ini berasal dari audit code. Item masuk sprint jika sudah punya owner, priority, dan definition of done.
+
+### Bug Register
+
+| ID      | Bug                                                                         | Priority | Evidence                                                                                                                                                            | Owner | Status  | Definition of Done                                                  |
+| ------- | --------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------- | ------------------------------------------------------------------- |
+| BUG-001 | `/admin/master-data` redirect ke route missing `/admin/master-data/farmers` | P0       | `src/app/(admin)/admin/master-data/page.tsx`                                                                                                                        | TBD   | 🔲 Todo | Route tidak 404; redirect ke route valid atau Farmer route tersedia |
+| BUG-002 | Dashboard debug scripts import action yang tidak ada                        | P0       | `scripts/debug/debug-dashboard-data.js`, `scripts/debug/test-dashboard-api.js`, `scripts/debug/perf-dashboard.ts` import `src/server/actions/dashboard` (tidak ada) | TBD   | 🔲 Todo | Script diperbaiki/dihapus atau `dashboard.ts` dibuat                |
 
 ### Debt Register
 
-| Debt Item | Severity | Impact Area | Owner | Deadline | Validation Method | Linked Issue | Status |
-|-----------|----------|-------------|-------|----------|-------------------|--------------|--------|
-| S3 orphan cleanup (file PDF lama tidak terhapus saat delete/ganti evidence) | High | Data consistency, storage cost | Backend/Storage Lead | 2026-06-20 | Uji delete/replace evidence lalu verifikasi object lama terhapus dan tidak muncul di listing cleanup | TD-001 | 🔲 Planned |
-| Dark mode hardcoded `text-white` di beberapa halaman | Medium | UI consistency, accessibility | Frontend Lead | 2026-07-04 | Visual QA dark/light mode pada halaman terdampak tanpa text contrast regression | TD-002 | 🔲 Planned |
-| `.DS_Store` tracked di git | Low | Repository hygiene | Repository Maintainer | 2026-06-06 | `git --no-pager ls-files \| grep '\\.DS_Store$'` harus kosong | TD-003 | ✅ Closed |
-| Language toggle non-functional | Low | i18n readiness | i18n Lead | 2026-08-14 | Toggle bahasa harus mengubah locale dan persist state antar navigasi | TD-004 | 🔲 Planned |
-| Spacing guideline belum formal (`globals.css`) | Low | Design system consistency | Design System Lead | 2026-07-18 | Publish guideline spacing + mapping token agar implementasi UI konsisten | TD-005 | 🔲 Planned |
+| ID     | Debt Item                                                           | Priority | Evidence                                                                                     | Owner                 | Status                     | Validation Method                                                |
+| ------ | ------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------- | --------------------- | -------------------------- | ---------------------------------------------------------------- |
+| TD-001 | S3/PDF utility belum terintegrasi ke modul Training                 | P1       | `scripts/get-link.js`, `scripts/pdf-manager.js`; tidak ada Training model/UI                 | Backend/Storage Lead  | 🔲 Planned                 | Training evidence flow jelas setelah MD-05                       |
+| TD-002 | Hardcoded `text-white` perlu visual audit                           | P2       | Ada di login, footer, user menu access modal; sebagian mungkin valid karena background solid | Frontend Lead         | 🔲 Planned                 | Visual QA dark/light mode tanpa contrast regression              |
+| TD-003 | `.DS_Store` tidak tracked, tetapi masih ada di working tree         | P2       | `git ls-files` kosong; `find` menemukan file lokal                                           | Repository Maintainer | ✅ Closed for git tracking | `.DS_Store` tetap ignored dan tidak masuk git                    |
+| TD-004 | Language toggle / i18n belum ada                                    | P2       | Tidak ada locale switch/persistence                                                          | i18n Lead             | 🔲 Planned                 | Toggle mengubah locale dan persist state antar navigasi          |
+| TD-005 | Dashboard cache/debug scripts tampak berasal dari implementasi lama | P1       | Script menyebut dashboard stats/markers/batches yang tidak ada di source action              | Engineering Lead      | 🔲 Planned                 | Script selaras dengan source code aktif atau dipindah ke archive |
+| TD-006 | `docs/rule.md` menyebut folder dashboard components yang tidak ada  | P2       | `docs/rule.md` mencantumkan `components/dashboard`; folder tidak ada                         | Tech Lead             | 🔲 Planned                 | Docs arsitektur sinkron dengan struktur repo                     |
 
-### Phase B — Issue-Level Execution Plan
+### Debt Sequencing
 
-| Issue | Scope Eksekusi | Assigned Owner | Deadline | Deliverables | Definition of Done |
-|-------|----------------|----------------|----------|--------------|--------------------|
-| TD-001 | Perbaikan lifecycle file evidence agar orphan object tidak tertinggal saat replace/delete | Backend/Storage Lead | 2026-06-20 | Patch cleanup logic + safeguard test case replace/delete + catatan risiko rollback | Semua skenario replace/delete evidence lulus test, object lama tidak tersisa di storage/listing, `npm test` dan `npm run build` lulus |
-| TD-002 | Standardisasi text color dark mode untuk komponen/halaman terdampak hardcoded `text-white` | Frontend Lead | 2026-07-04 | Daftar halaman terdampak + patch tokenized text color + visual regression checklist | Tidak ada hardcoded `text-white` di area terdampak, kontras tetap terbaca di dark mode, verifikasi visual tercatat |
-| TD-003 | Kebersihan repository terkait `.DS_Store` | Repository Maintainer | 2026-06-06 | Verifikasi tracking git + guard `.gitignore` bila diperlukan | Query tracked file `.DS_Store` kosong dan status ditutup |
-| TD-004 | Aktivasi language toggle agar locale benar-benar berubah dan tersimpan antar navigasi | i18n Lead | 2026-08-14 | Implementasi toggle locale + persistence state + smoke test navigasi | Toggle memengaruhi locale aktif, state bertahan setelah refresh/navigasi, tidak merusak flow existing |
-| TD-005 | Formalisasi spacing guideline berbasis token pada `globals.css` dan contoh pemakaian | Design System Lead | 2026-07-18 | Dokumen guideline spacing + mapping token + referensi implementasi di komponen shared | Guideline dipublikasikan dan dipakai sebagai referensi resmi untuk task UI berikutnya |
-
-### Phase B Sequencing
-
-- **Week 1** (hingga 2026-06-20): selesaikan **TD-001** (high severity) dan tutup administratif **TD-003**.
-- **Week 2–4** (hingga 2026-07-18): eksekusi **TD-002** dan **TD-005** paralel dengan prioritas konsistensi UI.
-- **Milestone i18n** (hingga 2026-08-14): eksekusi **TD-004** agar sinkron dengan fase pengembangan i18n.
+| Waktu                | Fokus                  | Catatan                                                    |
+| -------------------- | ---------------------- | ---------------------------------------------------------- |
+| Immediate / P0       | BUG-001, BUG-002       | Perbaiki flow yang patah atau stale sebelum menambah fitur |
+| Sprint berjalan / P1 | DASH-01, MD-03, TD-005 | Sinkronkan dashboard dan mulai master data inti            |
+| Later / P2           | TD-002, TD-004, TD-006 | Bisa menunggu setelah feature inti stabil                  |
 
 </details>
 
+---
+
 <details>
-<summary><strong>4. 📜 Log — History</strong> — untuk semua</summary>
+<summary><strong>6. Appendix & History</strong> — keputusan dan changelog</summary>
+
+## 6. Appendix & History
+
+Section ini menyimpan konteks historis. Jangan gunakan changelog sebagai acuan status; gunakan tabel **Phase Status**.
+
+### Audit Commands
+
+Audit terakhir menggunakan:
+
+```text
+find src/app -type f
+find src/server src/lib src/components src/validations src/test -type f
+find prisma -type f
+rg "Dashboard|BMP|Training|Farmer|Parcel|Production|Staff|HCV|Coming soon" src prisma scripts docs
+git ls-files | grep '\.DS_Store$'
+npm test
+```
 
 ### Decision Log
 
-| Tanggal | Keputusan |
-|---------|-----------|
-| 2026-06-06 | Model roadmap dikonsolidasikan: tabel Phase Status menjadi sumber kebenaran tunggal untuk mencegah kontradiksi status. |
-| 2026-06-06 | Eksekusi diprioritaskan ke lane **Now** (Dashboard BMP), sementara issue import diposisikan sebagai **Next**. |
-| 2026-06-06 | Technical debt dipindah ke debt register operasional dengan owner, due window, dan metode validasi. |
-| **2026-06-06** | **Phase encoding diubah ke sistem `STREAM-NN` (PLATFORM, MD, DASH, TOOLS, CMS, COMM, OPS) untuk skalabilitas. Lihat tabel taxonomy di Section 1.** |
-| **2026-06-06** | **Koreksi status: MD-03 (Farmer), MD-04 (Parcels), MD-05 (Training), MD-06 (Agronomy/Produksi), MD-07 (Staff) diubah dari ✅ Completed → 🔲 Belum Dimulai, karena belum ada implementasi di codebase. Fase 4 lama dipecah menjadi MD-01 s.d. MD-11.** |
-| **2026-06-06** | **Restrukturisasi `progress.md` menjadi 4 section: Big Picture, Active Sprint, Technical Debt, Log — untuk membedakan audiens (management, developer, tech lead, semua).** |
+| Tanggal    | Keputusan                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-06-06 | `progress.md` disinkronkan ulang berdasarkan existing file/code, bukan changelog historis.                                     |
+| 2026-06-06 | DASH-01/DASH-02/DASH-03/DASH-04 diturunkan statusnya karena dashboard source masih placeholder dan action dashboard tidak ada. |
+| 2026-06-06 | MD-03–MD-08 dikonfirmasi belum implementatif karena tidak ada Prisma model, route, server action, validation, atau UI.         |
+| 2026-06-06 | BUG-001 ditambahkan untuk redirect `/admin/master-data` ke route missing `/admin/master-data/farmers`.                         |
+| 2026-06-06 | BUG-002/TD-005 ditambahkan untuk stale dashboard scripts yang refer ke action dashboard missing.                               |
+| 2026-06-06 | OPS-01 dinilai Partial karena test tersedia dan lulus 111/111, tetapi coverage belum mencakup modul baru/dashboard.            |
+| 2026-06-06 | OPS-02 dinilai Partial karena Dockerfile dan GitHub deploy workflows ada, tetapi deployment readiness belum diverifikasi.      |
 
 ### Changelog
 
 #### Juni 2026
 
-| Tanggal | Perubahan |
-|---------|-----------|
-| **06-06** | **Restrukturisasi `progress.md` ke format 4 section + encoding phase `STREAM-NN` + koreksi status fase (lihat Decision Log)** |
-| 06-06 | Konsolidasi `docs/progress.md`: canonical roadmap model (source-of-truth status + delivery horizon), decision log, dan technical debt register operasional |
-| 06-06 | Eksekusi Fase B: technical debt dikonversi ke issue-level execution plan (TD-001 s.d. TD-005) dengan assigned owner, deadline, deliverables, definition of done, dan sequencing |
+| Tanggal | Perubahan                                                                                                        |
+| ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-06   | Audit seluruh folder dan update `progress.md` berdasarkan source code aktual.                                    |
+| 06-06   | Koreksi status dashboard dan master data lanjutan sesuai bukti route/schema/action yang ada.                     |
+| 06-06   | Tambah Bug Register untuk broken redirect dan stale dashboard references.                                        |
+| 06-06   | Validasi test lokal: `npm test` lulus 10 files / 111 tests.                                                      |
+| 06-06   | Restrukturisasi `progress.md` agar setiap section collapsible dan siap untuk presentasi management dua mingguan. |
 
 #### Mei 2026
 
-| Tanggal | Perubahan |
-|---------|-----------|
-| 05-25 | #61 selesai — User Menu Access Override: Server actions, matrix override modal, rbac helper caching & soft delete, integration, 111/111 tests |
-| 05-22 | #57 follow-up — Kolom ringkasan akses data di tabel User Management; bug fix RBAC KT-only (farmerGroup-only assignment sekarang filter by `id` bukan `districtId`); live refresh tabel saat toggle di modal; 105/105 tests |
-| 05-22 | #57 selesai — User Data Access Assignment: 7 server actions (assign/remove Province/District/KT), UserDataAccessModal (Tabs UI, visual hierarchy badges, live toggle, search), integrasi ke User Management, 104/104 tests |
-| 05-22 | #59 selesai — Standardisasi visibilitas aksi tabel (View, Edit, Delete) dan tombol Tambah berbasis Role & Permission, serta dokumentasi di `docs/rule.md` |
-| 05-22 | #60 selesai — Abstraksi aksi tabel dengan komponen TableActions, implementasi TableSkeleton, loading.tsx untuk modul User & Kelompok Tani, dan pengamanan server actions dengan helper hasPermission |
-| 05-22 | #58 selesai — Region Management: tree view 4-level hierarchy, CRUD Province/District/Subdistrict/Village, search, status filter, cascade muting, loading skeleton, backend hasPermission hardening |
-| 05-22 | #56 selesai — Login (NextAuth), User Management CRUD, Menu Management CRUD, Role & Permission matrix, Kelompok Tani CRUD (list+filter+pagination+detail+RBAC actions), Profile page, 41/41 tests |
-| 05-22 | #55 selesai — Schema reset: 6 file baru, RBAC system, soft delete + audit trail, seed + CSV, migration fresh |
-| 05-13 | #48 — Update UI/UX Grafik BMP: filter Kategori, grouped bar, warna hijau vibrant, legenda override |
-| 05-13 | #48 — Dashboard BMP scaffold: 5 score cards, combo chart, monev cards, filter distrik+KT |
-| 05-12 | Issues #48–#53 dibuat (scaffold only) |
-| 05-11 | #34 selesai — Dashboard full DB-driven: server actions, map controls, cache tables, 174/174 tests |
-| 05-08 | #37 selesai — Interactive Map: filter KT, collapsible panel, icon markers, 100/100 tests |
-| 05-07 | #35 selesai — Dynamic Menu Management: Prisma, CRUD, sidebar, drag-and-drop, 95/95 tests |
-| 05-06 | #31 selesai — Sync production DB: 6 migrations, seed data |
-| 05-06 | #29 selesai — Audit trail 22 tabel, 81/81 tests |
-| 05-06 | #22 selesai — Final QA Fase 4: hapus debug, lokalisasi, cleanup placeholders |
-| 05-04 | Restrukturisasi dokumen, skip Fase 3, mulai Fase 4 |
+| Tanggal | Perubahan                                                                                                                                                 |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 05-25   | #61 selesai — User Menu Access Override: server actions, matrix override modal, RBAC helper caching & soft delete, integration, 111/111 tests             |
+| 05-22   | #57 follow-up — Kolom ringkasan akses data di tabel User Management; bug fix RBAC KT-only; live refresh tabel saat toggle di modal; 105/105 tests         |
+| 05-22   | #57 selesai — User Data Access Assignment: assign/remove Province/District/KT, modal tabs UI, visual hierarchy badges, live toggle, search, 104/104 tests |
+| 05-22   | #59 selesai — Standardisasi visibilitas aksi tabel dan tombol Tambah berbasis Role & Permission, dokumentasi di `docs/rule.md`                            |
+| 05-22   | #60 selesai — Abstraksi TableActions, TableSkeleton, loading state, dan pengamanan server actions dengan `hasPermission`                                  |
+| 05-22   | #58 selesai — Region Management: tree view 4-level hierarchy, CRUD region, search, status filter, cascade muting                                          |
+| 05-22   | #56 selesai — Login, User Management, Menu Management, Role & Permission matrix, Kelompok Tani CRUD, Profile page, 41/41 tests                            |
+| 05-22   | #55 selesai — Schema reset, RBAC system, soft delete, audit trail, seed, migration fresh                                                                  |
+| 05-13   | #48 — Update UI/UX Grafik BMP: filter kategori, grouped bar, warna hijau vibrant, legenda override                                                        |
+| 05-13   | #48 — Dashboard BMP scaffold: score cards, combo chart, monev cards, filter distrik dan KT                                                                |
+| 05-12   | Issues #48–#53 dibuat sebagai scaffold                                                                                                                    |
+| 05-11   | #34 selesai — Dashboard full DB-driven: server actions, map controls, cache tables, 174/174 tests                                                         |
+| 05-08   | #37 selesai — Interactive Map: filter KT, collapsible panel, icon markers, 100/100 tests                                                                  |
+| 05-07   | #35 selesai — Dynamic Menu Management: Prisma, CRUD, sidebar, drag-and-drop, 95/95 tests                                                                  |
+| 05-06   | #31 selesai — Sync production DB: 6 migrations, seed data                                                                                                 |
+| 05-06   | #29 selesai — Audit trail 22 tabel, 81/81 tests                                                                                                           |
+| 05-06   | #22 selesai — Final QA Fase 4: hapus debug, lokalisasi, cleanup placeholders                                                                              |
+| 05-04   | Restrukturisasi dokumen, skip Fase 3, mulai Fase 4                                                                                                        |
 
-> **Catatan koreksi**: Beberapa entri changelog Mei 2026 di bawah ini mencantumkan status "selesai" untuk modul yang **tidak ditemukan implementasinya di codebase** (tidak ada model Prisma, server actions, atau halaman). Status tersebut telah dikoreksi di tabel Phase Status (Section 1) menjadi **🔲 Belum Dimulai** dan akan dijadwalkan ulang.
+### Historical Correction
 
-~~| 05-09 | #45 selesai — Training PDF Management: S3 upload, presigned URL, CLI tools, 174/174 tests |~~
-~~| 05-09 | #43 selesai — Staff Activity: daily log, approval, calendar, export Excel, 154/154 tests |~~
-~~| 05-09 | #41 selesai — Staff WRI: CRUD, job desk, multi-select distrik/KT, 130/130 tests |~~
-~~| 05-08 | #39 selesai — Training module lengkap: list, form, detail, S3 upload, 116/116 tests |~~
-~~| 05-05 | #21 selesai — Parcels CRUD + MapLibre view |~~
+Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk modul yang tidak ditemukan implementasinya di source code aktif. Status resmi sudah dikoreksi di **Phase Status**.
+
+| Tanggal | Entri Historis yang Dikoreksi                                                                          |
+| ------- | ------------------------------------------------------------------------------------------------------ |
+| 05-13   | Dashboard BMP scaffold/update tidak tercermin di source `/admin/dashboard`, yang masih `Coming soon`.  |
+| 05-11   | Dashboard full DB-driven tidak tercermin di source aktif; tidak ada `src/server/actions/dashboard.ts`. |
+| 05-08   | Interactive Map tidak tercermin sebagai route/component dashboard aktif.                               |
+| 05-09   | #45 — Training PDF Management: hanya ada CLI S3/PDF, belum ada modul Training app/schema.              |
+| 05-09   | #43 — Staff Activity: tidak ada Staff Activity model/route/action/UI.                                  |
+| 05-09   | #41 — Staff WRI: tidak ada Staff model/route/action/UI.                                                |
+| 05-08   | #39 — Training module lengkap: tidak ada Training model/route/action/UI.                               |
+| 05-05   | #21 — Parcels CRUD + MapLibre view: tidak ada Parcel model/route/action/UI.                            |
 
 #### April 2026
 
-| Tanggal | Perubahan |
-|---------|-----------|
-| 04-14 | PLATFORM-02 selesai — Prisma 7 modular schema, 3 migrasi PostgreSQL + PostGIS |
+| Tanggal | Perubahan                                                                     |
+| ------- | ----------------------------------------------------------------------------- |
+| 04-14   | PLATFORM-02 selesai — Prisma 7 modular schema, 3 migrasi PostgreSQL + PostGIS |
 
 #### Maret 2026
 
-| Tanggal | Perubahan |
-|---------|-----------|
-| 03-30 | Code review & sync status |
-| 03-28 | Modernisasi Dashboard, perbaikan Home |
-| 03-18 | Inisiasi proyek — Next.js, Shadcn, static data |
+| Tanggal | Perubahan                                      |
+| ------- | ---------------------------------------------- |
+| 03-30   | Code review & sync status                      |
+| 03-28   | Modernisasi Dashboard dan perbaikan Home       |
+| 03-18   | Inisiasi proyek — Next.js, Shadcn, static data |
 
 </details>
