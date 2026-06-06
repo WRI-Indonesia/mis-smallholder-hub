@@ -43,7 +43,3 @@ next-env.d.ts
 
 /src/generated/prisma
 /tmp*
-
-/prisma/backup/*
-/docs/issues/*
-/docs/old_stuff/*
