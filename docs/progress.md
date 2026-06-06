@@ -4,83 +4,85 @@
 
 ---
 
-## Roadmap
+## Roadmap Model (Canonical)
 
-```
-Fase 1 ✅ → Fase 2 ✅ → DB Hardening ✅ → Fase 4 ✅ → Fase 3 ⏭️ → Fase 7 ✅ → Fase 5–6 → Fase 8–12
-```
+### Rules
 
----
+- **Source of truth** untuk status delivery adalah tabel **Phase Status** di bawah.
+- Ringkasan roadmap harus selalu diturunkan dari tabel status; tidak boleh ada status yang berdiri sendiri di luar tabel.
+- Setiap issue aktif harus dipetakan ke phase dan horizon (Now/Next/Later).
 
-## Status
+### Phase Status (Source of Truth)
 
-| Phase | Deskripsi | Status |
-|-------|-----------|--------|
-| 1 | Initialization & UI Statis | ✅ |
-| 2 | Database Schema & Migrations | ✅ |
-| DB | Schema Hardening (Audit Trail, Sync) | ✅ |
-| 4 | Master Data CRUD (Regions, Groups, Farmers, Parcels) | ✅ |
-| 4.a Infra | Dynamic Menu Management | ✅ |
-| 4.a | Master Data Phase 2 (Training, Staff, Agronomy) | ✅ |
-| 3 | Autentikasi & RBAC | ✅ |
-| 7 | Dashboard Basic Data | ✅ |
-| 7.a | Dashboard Server Actions | ✅ |
-| 7.b | Interactive Map | ✅ |
-| 7.c | Dashboard BMP | 🟡 In Progress |
-| 4.b | Master Data Phase 3 (HCV, BUSDEV) | 🔲 |
-| 4.c | Master Data Phase 4 (IMPACT, Workplan) | 🔲 |
-| 5 | CMS & Content Management | 🔲 |
-| 6 | Tools (Import/Export/GIS) | 🔲 |
-| 8–12 | Community, Workplan, i18n, Testing, DevOps | 🔲 |
+| Phase | Deskripsi | Status | Horizon | Linked Active Issues |
+|-------|-----------|--------|---------|----------------------|
+| 1 | Initialization & UI Statis | ✅ Completed | Done | — |
+| 2 | Database Schema & Migrations | ✅ Completed | Done | — |
+| DB | Schema Hardening (Audit Trail, Sync) | ✅ Completed | Done | — |
+| 3 | Autentikasi & RBAC | ✅ Completed | Done | — |
+| 4 | Master Data CRUD (Regions, Groups, Farmers, Parcels) | ✅ Completed | Done | — |
+| 4.a Infra | Dynamic Menu Management | ✅ Completed | Done | — |
+| 4.a | Master Data Phase 2 (Training, Staff, Agronomy) | ✅ Completed | Done | — |
+| 4.b | Master Data Phase 3 (HCV, BUSDEV) | 🔲 Planned | Next | — |
+| 4.c | Master Data Phase 4 (IMPACT, Workplan) | 🔲 Planned | Later | — |
+| 5 | CMS & Content Management | 🔲 Planned | Later | — |
+| 6 | Tools (Import/Export/GIS) | 🔲 Planned | Next | [#52](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/52), [#53](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/53) |
+| 7 | Dashboard Basic Data | ✅ Completed | Done | — |
+| 7.a | Dashboard Server Actions | ✅ Completed | Done | — |
+| 7.b | Interactive Map | ✅ Completed | Done | — |
+| 7.c | Dashboard BMP | 🟡 In Progress | Now | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48), [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49), [#50](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/50), [#51](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/51) |
+| 8–12 | Community, Workplan, i18n, Testing, DevOps | 🔲 Planned | Later | [#44](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/44) |
 
----
+### Delivery Horizon (Issue Lanes)
 
-## Active Issues
+| Horizon | Fokus | Issues |
+|---------|-------|--------|
+| Now | Menyelesaikan stream Dashboard BMP end-to-end | [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48), [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49), [#50](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/50), [#51](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/51) |
+| Next | Menyiapkan lane Tools import untuk data agronomy | [#52](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/52), [#53](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/53) |
+| Later | Backlog lintas fase non-kritis saat ini | [#44](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/44) |
 
-| # | Deskripsi | Status |
-|---|-----------|--------|
-| [#57](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/57) | User Data Access Assignment — Manage Province/District/KT per User | ✅ |
-| [#59](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/59) | Standardize Permissions-Based Table Actions & Create Buttons | ✅ |
-| [#60](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/60) | Table Actions Abstraction & Authorization Hardening | ✅ |
-| [#61](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/61) | User Menu Access — Per-User Permission Override (Grant/Revoke per Menu) | ✅ |
-| [#55](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/55) | DB & Prisma Schema Clean Up | ✅ |
-| [#58](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/58) | Region Management — CRUD Province, District, Subdistrict, Village | ✅ |
-| [#48](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/48) | Dashboard BMP | 🟡 |
-| [#44](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/44) | Telegram Notification | 🔲 |
-| [#49](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/49) | Dashboard Training Scaffold | 🔲 |
-| [#50](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/50) | KT Detail Tab BMP | 🔲 |
-| [#51](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/51) | Petani Detail Tab Pelatihan & Produksi | 🔲 |
-| [#52](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/52) | Import Agronomy Produksi | 🔲 |
-| [#53](https://github.com/WRI-Indonesia/mis-smallholder-hub/issues/53) | Import Agronomy Monev BMP | 🔲 |
+### Decision Log
 
+- **2026-06-06** — Model roadmap dikonsolidasikan: tabel Phase Status menjadi sumber kebenaran tunggal untuk mencegah kontradiksi status.
+- **2026-06-06** — Eksekusi diprioritaskan ke lane **Now** (Dashboard BMP), sementara issue import diposisikan sebagai **Next**.
+- **2026-06-06** — Technical debt dipindah ke debt register operasional dengan owner, due window, dan metode validasi.
 
 ---
 
-## Technical Debt
+## Technical Debt Register
+| Debt Item | Severity | Impact Area | Owner | Deadline | Validation Method | Linked Issue | Status |
+|-----------|----------|-------------|-------|----------|-------------------|--------------|--------|
+| S3 orphan cleanup (file PDF lama tidak terhapus saat delete/ganti evidence) | High | Data consistency, storage cost | Backend/Storage Lead | 2026-06-20 | Uji delete/replace evidence lalu verifikasi object lama terhapus dan tidak muncul di listing cleanup | TD-001 | Planned |
+| Dark mode hardcoded `text-white` di beberapa halaman | Medium | UI consistency, accessibility | Frontend Lead | 2026-07-04 | Visual QA dark/light mode pada halaman terdampak tanpa text contrast regression | TD-002 | Planned |
+| `.DS_Store` tracked di git | Low | Repository hygiene | Repository Maintainer | 2026-06-06 | `git --no-pager ls-files | grep '\\.DS_Store$'` harus kosong | TD-003 | ✅ Closed |
+| Language toggle non-functional | Low | i18n readiness | i18n Lead | 2026-08-14 | Toggle bahasa harus mengubah locale dan persist state antar navigasi | TD-004 | Planned |
+| Spacing guideline belum formal (`globals.css`) | Low | Design system consistency | Design System Lead | 2026-07-18 | Publish guideline spacing + mapping token agar implementasi UI konsisten | TD-005 | Planned |
 
-### High Priority
+### Phase B — Issue-Level Execution Plan
 
-| Issue | Location |
-|-------|----------|
-| S3 orphan cleanup | File PDF lama tidak terhapus saat delete/ganti evidence |
+| Issue | Scope Eksekusi | Assigned Owner | Deadline | Deliverables | Definition of Done |
+|-------|----------------|----------------|----------|--------------|--------------------|
+| TD-001 | Perbaikan lifecycle file evidence agar orphan object tidak tertinggal saat replace/delete | Backend/Storage Lead | 2026-06-20 | Patch cleanup logic + safeguard test case replace/delete + catatan risiko rollback | Semua skenario replace/delete evidence lulus test, object lama tidak tersisa di storage/listing, `npm test` dan `npm run build` lulus |
+| TD-002 | Standardisasi text color dark mode untuk komponen/halaman terdampak hardcoded `text-white` | Frontend Lead | 2026-07-04 | Daftar halaman terdampak + patch tokenized text color + visual regression checklist | Tidak ada hardcoded `text-white` di area terdampak, kontras tetap terbaca di dark mode, verifikasi visual tercatat |
+| TD-003 | Kebersihan repository terkait `.DS_Store` | Repository Maintainer | 2026-06-06 | Verifikasi tracking git + guard `.gitignore` bila diperlukan | Query tracked file `.DS_Store` kosong dan status ditutup |
+| TD-004 | Aktivasi language toggle agar locale benar-benar berubah dan tersimpan antar navigasi | i18n Lead | 2026-08-14 | Implementasi toggle locale + persistence state + smoke test navigasi | Toggle memengaruhi locale aktif, state bertahan setelah refresh/navigasi, tidak merusak flow existing |
+| TD-005 | Formalisasi spacing guideline berbasis token pada `globals.css` dan contoh pemakaian | Design System Lead | 2026-07-18 | Dokumen guideline spacing + mapping token + referensi implementasi di komponen shared | Guideline dipublikasikan dan dipakai sebagai referensi resmi untuk task UI berikutnya |
 
-### Medium Priority
+### Phase B Sequencing
 
-| Issue | Location |
-|-------|----------|
-| Dark mode hardcoded `text-white` | Beberapa halaman |
-
-### Low Priority
-
-| Issue | Location |
-|-------|----------|
-| `.DS_Store` in git | Perlu `git rm --cached` |
-| Language toggle non-functional | Fase 10 (i18n) |
-| Spacing guideline belum formal | `globals.css` |
+- Week 1 (hingga 2026-06-20): selesaikan TD-001 (high severity) dan tutup administratif TD-003.
+- Week 2–4 (hingga 2026-07-18): eksekusi TD-002 dan TD-005 paralel dengan prioritas konsistensi UI.
+- Milestone i18n (hingga 2026-08-14): eksekusi TD-004 agar sinkron dengan fase pengembangan i18n.
 
 ---
 
 ## Changelog
+### Juni 2026
+
+| Tanggal | Perubahan |
+|---------|-----------|
+| 06-06 | Konsolidasi `docs/progress.md`: canonical roadmap model (source-of-truth status + delivery horizon), decision log, dan technical debt register operasional |
+| 06-06 | Eksekusi Fase B: technical debt dikonversi ke issue-level execution plan (TD-001 s.d. TD-005) dengan assigned owner, deadline, deliverables, definition of done, dan sequencing |
 
 ### Mei 2026
 
