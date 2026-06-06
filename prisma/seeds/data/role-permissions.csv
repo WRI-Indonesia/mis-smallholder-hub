@@ -23,3 +23,13 @@ SUPERADMIN,master-data-groups,CREATE
 SUPERADMIN,master-data-groups,VIEW
 SUPERADMIN,master-data-groups,EDIT
 SUPERADMIN,master-data-groups,DELETE
+SUPERADMIN,settings-roles,CREATE
+SUPERADMIN,settings-roles,VIEW
+SUPERADMIN,settings-roles,EDIT
+SUPERADMIN,settings-roles,DELETE
+MANAGEMENT,master-data,VIEW
+MANAGEMENT,master-data-groups,VIEW
+OPERATOR,master-data,VIEW
+OPERATOR,master-data-groups,VIEW
+ADMIN,master-data,VIEW
+ADMIN,master-data-groups,VIEW
