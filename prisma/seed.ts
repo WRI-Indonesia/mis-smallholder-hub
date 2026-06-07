@@ -9,6 +9,7 @@ import { seedDistricts } from "./seeds/seed-districts";
 import { seedSubdistricts } from "./seeds/seed-subdistricts";
 import { seedVillages } from "./seeds/seed-villages";
 import { seedFarmerGroups } from "./seeds/seed-farmer-groups";
+import { seedFarmers } from "./seeds/seed-farmers";
 import { seedMenu } from "./seeds/seed-menu";
 import { seedRolePermissions } from "./seeds/seed-role-permissions";
 
@@ -34,6 +35,10 @@ async function main() {
     // 3. Farmer Groups (depends on districts)
     console.log("\n--- Farmer Groups ---");
     await seedFarmerGroups(prisma);
+
+    // Farmers (depends on farmer groups)
+    console.log("\n--- Farmers ---");
+    await seedFarmers(prisma);
 
     // 4. Menu (no dependencies)
     console.log("\n--- Menu ---");

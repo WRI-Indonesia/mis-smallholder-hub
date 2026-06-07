@@ -1,6 +1,7 @@
 key,parent_key,title,url,icon,order,is_active,is_visible
 master-data,,Master Data,/admin/master-data,Database,1,TRUE,TRUE
 master-data-groups,master-data,Kelompok Tani,/admin/master-data/groups,Users,1,TRUE,TRUE
+master-data-farmers,master-data,Petani,/admin/master-data/farmers,User,2,TRUE,TRUE
 settings,,Settings,/admin/settings,Settings,2,TRUE,TRUE
 settings-users,settings,User Management,/admin/settings/users,UserCog,1,TRUE,TRUE
 settings-menu,settings,Menu Management,/admin/settings/menu,Menu,2,TRUE,TRUE

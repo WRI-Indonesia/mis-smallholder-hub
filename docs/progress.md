@@ -46,12 +46,12 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
 | Total phase    | 33 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 7 fase         | PLATFORM-01/02/04/05/06, MD-01/02                    |
+| ✅ Done        | 8 fase         | PLATFORM-01/02/04/05/06, MD-01/02/03                 |
 | 🟠 Partial     | 4 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02                |
-| 🔲 Not Started | 10 fase        | DASH-01, MD-03, CMS-01, COMM-01, RPT-01/02/03, BULK-01/02 |
+| 🔲 Not Started | 9 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03, BULK-01/02  |
 | 🔲 Planned     | 11 fase        | MD-04–11, DASH-02/03, COMM-02                        |
 | 🔴 Blocked     | 1 fase         | DASH-04                                              |
-| 🎯 Now         | 4 fase + 2 bug | DASH-01, RPT-01, BULK-01, MD-03, BUG-001, BUG-002    |
+| 🎯 Now         | 3 fase + 1 bug | DASH-01, RPT-01, BULK-01, BUG-002                    |
 
 ### Management Talking Points
 
@@ -127,9 +127,9 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 
 | Area           | Bukti di Codebase                                                                                                                                                                  | Kesimpulan                                                                             |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Prisma models  | `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup` | Schema aktif hanya mencakup platform, RBAC, region, dan farmer group                   |
-| Admin routes   | Dashboard placeholder, Settings Users/Roles/Menu/Regions, Master Data Groups, Profile                                                                                              | Admin foundation ada; dashboard dan farmer belum implementatif                         |
-| Server actions | `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `farmer-group`, `profile`, `role-permission`                                                                     | Tidak ada action untuk dashboard, farmer, training, parcel, production                 |
+| Prisma models  | `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer` | Schema mencakup platform, RBAC, region, farmer group, dan farmer (MD-03) |
+| Admin routes   | Dashboard placeholder, Settings Users/Roles/Menu/Regions, Master Data Groups + Farmers (list/detail/form), Profile                                                                  | Admin foundation ada; farmer tersedia; dashboard belum implementatif                   |
+| Server actions | `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `farmer-group`, `farmer`, `profile`, `role-permission`                                                           | Action farmer tersedia; dashboard, training, parcel, production belum ada              |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
 | Scripts        | S3/PDF CLI, export CSV, dashboard cache/debug scripts                                                                                                                              | Tools partial; beberapa dashboard scripts stale karena action dashboard tidak ada      |
 | Tests          | `npm test` lulus 10 files / 111 tests                                                                                                                                              | Testing partial dan belum mencakup dashboard/master data lanjutan                      |
@@ -163,7 +163,7 @@ Format phase: `STREAM-NN`.
 | PLATFORM-06 | Table Refactor & Export Excel | ✅ Done        | Done    | DataTable diperbarui dengan filter kolom & export Excel, list user/KT direfactor | Maintain dan perluas ke modul baru jika ditambahkan |
 | MD-01       | Regions                      | ✅ Done        | Done    | Region schema, server actions, region page, tree UI, validation, tests                            | Maintain                                                                         |
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
-| MD-03       | Farmer                       | 🔲 Not Started | Now     | No `Farmer` model, route, actions, validation, or UI                                              | Create schema + CRUD + list/detail/form + RBAC                                   |
+| MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model, migration, server actions, validation, list/detail/form UI, RBAC, menu — #72 #73 #74 #75 | Maintain dan perluas ke MD-04/05 jika dibutuhkan                        |
 | MD-04       | Parcels                      | 🔲 Planned     | Next    | No parcel model/route/action/UI                                                                   | Start after MD-03                                                                |
 | MD-05       | Training                     | 🔲 Planned     | Next    | No training model/route/action/UI; S3/PDF CLI only                                                | Start after MD-03; define participants/evidence model                            |
 | MD-06       | Agronomy / Production        | 🔲 Planned     | Next    | No production/agronomy model/route/action/UI                                                      | Validate dependency to Farmer/Parcel first                                       |
@@ -215,7 +215,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 | Work Item                                       | Phase              | Status  | Assignee | Target | Next Action                                                       |
 | ----------------------------------------------- | ------------------ | ------- | -------- | ------ | ----------------------------------------------------------------- |
-| BUG-001 Broken `/admin/master-data` redirect    | MD-03 / Navigation | 🔲 Todo | TBD      | TBD    | Decide temporary redirect vs implement Farmer route               |
+| BUG-001 Broken `/admin/master-data` redirect    | MD-03 / Navigation | ✅ Done | -        | 06-07  | Redirect diubah ke `/admin/master-data/farmers` — route tersedia  |
 | BUG-002 Stale dashboard scripts                 | DASH-02 / TOOLS-01 | 🔲 Todo | TBD      | TBD    | Align scripts with actual dashboard action availability           |
 | #62 Menu & Route Setup Dashboard                | DASH-01            | 🔲 Todo | TBD      | TBD    | Seed menu + route structure + redirect                            |
 | #63 Dashboard Basic — Summary Cards + Filter    | DASH-01            | 🔲 Todo | TBD      | TBD    | Server action + summary cards + district filter; depends #62      |
@@ -227,10 +227,10 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | #69 Bulk Upload KT — CSV Validasi Preview Insert| BULK-01            | 🔲 Todo | TBD      | TBD    | CSV upload + Zod validasi + preview + bulk insert; depends #68    |
 | #70 Bulk Upload Region — CSV Hierarchy Validasi | BULK-02            | 🔲 Todo | TBD      | TBD    | CSV upload per level + hierarchy validasi; depends #68 #69        |
 | #71 Refactor Tabel ke DataTable + Show/Hide Kolom & Export Excel | PLATFORM-06 | ✅ Done | TBD | TBD | Selesai direfaktor ke DataTable dan mendukung export Excel serta visibilitas kolom |
-| #72 Farmer Schema & Migration                   | MD-03              | 🔲 Todo | TBD      | TBD    | Prisma model, enum Gender, migration, seed structure (1-2 jam)    |
-| #73 Farmer Server Actions & Validation          | MD-03              | 🔲 Todo | TBD      | TBD    | Zod validation, CRUD actions, RBAC filter, unit tests (3-4 jam)   |
-| #74 Farmer UI - List, Form, Menu                | MD-03              | 🔲 Todo | TBD      | TBD    | DataTable, form modal, cascade filter, menu setup (4-5 jam)       |
-| #75 Update Documentation & Progress Tracking    | MD-03              | 🔲 Todo | TBD      | TBD    | Update progress.md, screenshots, debt tracking (30 min - 1 jam)   |
+| #72 Farmer Schema & Migration                   | MD-03              | ✅ Done | -        | 06-07  | `prisma/schema/farmer.prisma`, enum Gender, relasi FarmerGroup, seeder CSV |
+| #73 Farmer Server Actions & Validation          | MD-03              | ✅ Done | -        | 06-07  | `farmer.schema.ts` Zod, `farmer.ts` server actions, `farmer.test.ts` unit tests |
+| #74 Farmer UI - List, Form, Menu                | MD-03              | ✅ Done | -        | 06-07  | `page.tsx`, `farmer-list-client.tsx`, `farmer-form-modal.tsx`, `[id]/page.tsx`, `loading.tsx`, menu entry CSV |
+| #75 Update Documentation & Progress Tracking    | MD-03              | ✅ Done | -        | 06-07  | progress.md diupdate: Phase Status, Active Issues, Snapshot, Audit Evidence, Changelog |
 
 ### Issue Workflow
 
@@ -499,6 +499,11 @@ npm test
 | 06-06   | Validasi test lokal: `npm test` lulus 10 files / 111 tests.                                                      |
 | 06-06   | Restrukturisasi `progress.md` agar setiap section collapsible dan siap untuk presentasi management dua mingguan. |
 | 06-07   | Buat 4 GitHub Issues (#72–#75) untuk MD-03 Farmer: schema+migration, server actions+validation, UI (list/form/menu), docs. Estimasi 8-12 jam dev. |
+| 06-07   | #72 selesai — `prisma/schema/farmer.prisma`: model Farmer + enum Gender + relasi FarmerGroup + seeder `seed-farmers.ts` dari CSV + menu entry Petani. |
+| 06-07   | #73 selesai — `farmer.schema.ts` Zod (create+update), `src/server/actions/farmer.ts` CRUD+RBAC access context, `farmer.test.ts` unit tests. |
+| 06-07   | #74 selesai — `farmers/page.tsx`, `farmer-list-client.tsx` DataTable+filter KT+Excel export, `farmer-form-modal.tsx`, `[id]/page.tsx` detail, `loading.tsx`. Menu CSV diupdate. |
+| 06-07   | #75 selesai — `progress.md` diupdate: MD-03 Done, BUG-001 Done, Active Issues #72-75 Done, Snapshot, Audit Evidence, Changelog. |
+| 06-07   | BUG-001 selesai — Redirect `/admin/master-data` diubah ke `/admin/master-data/farmers` (route sudah tersedia). |
 
 #### Mei 2026
 

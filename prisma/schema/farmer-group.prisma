@@ -20,6 +20,7 @@ model FarmerGroup {
 
   // RBAC
   users UserFarmerGroup[]
+  farmers Farmer[]
 
   @@index([districtId])
   @@index([isActive])

@@ -1,0 +1,29 @@
+// farmer.prisma — Farmer models
+
+enum Gender {
+  M
+  F
+}
+
+model Farmer {
+  id            String      @id @default(cuid())
+  farmerGroupId String      @map("farmer_group_id")
+  farmerGroup   FarmerGroup @relation(fields: [farmerGroupId], references: [id])
+  gender        Gender
+  name          String      @map("name")
+  farmerId      String      @map("farmer_id")
+  nik           String?     @map("nik")
+  address       String?     @map("address")
+  birthPlace    String?     @map("birth_place")
+  birthDate     DateTime?   @map("birth_date")
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  createdBy     String?     @map("created_by")
+  modifiedAt    DateTime    @updatedAt @map("modified_at")
+  modifiedBy    String?     @map("modified_by")
+
+  @@index([farmerGroupId])
+  @@index([isActive])
+  @@index([farmerId])
+  @@map("tbl_farmer")
+}
