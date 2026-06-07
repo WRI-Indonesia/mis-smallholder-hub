@@ -78,7 +78,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | P0       | BUG-001: fix broken master-data redirect    | `/admin/master-data` tidak lagi mengarah ke route yang tidak ada                                              |
 | P0       | BUG-002: cleanup stale dashboard references | Script/debug docs tidak mengarah ke `src/server/actions/dashboard.ts` yang belum ada, atau file action dibuat |
 | P0       | #62 #63 DASH-01 dashboard basic             | `/admin/dashboard` menampilkan summary cards dengan filter district                                           |
-| P0       | MD-03 Farmer kickoff                        | Issue + schema design + implementation plan berdasarkan existing Region dan FarmerGroup                       |
+| P0       | #72 #73 #74 #75 MD-03 Farmer                | Issues dibuat; schema, server actions, UI, docs (estimasi 2 hari dev + QA)                                    |
 | P1       | #64 RPT-01 menu & placeholder report        | Menu Report + sub-menu + placeholder pages terdaftar di sidebar                                               |
 | P1       | #68 BULK-01 menu & placeholder bulk upload  | Menu Bulk Upload + sub-menu + placeholder pages terdaftar di sidebar                                          |
 | P1       | Testing scope expansion                     | Tambah test untuk dashboard basic / redirect / MD-03 setelah implementasi                                     |
@@ -227,8 +227,10 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | #69 Bulk Upload KT — CSV Validasi Preview Insert| BULK-01            | 🔲 Todo | TBD      | TBD    | CSV upload + Zod validasi + preview + bulk insert; depends #68    |
 | #70 Bulk Upload Region — CSV Hierarchy Validasi | BULK-02            | 🔲 Todo | TBD      | TBD    | CSV upload per level + hierarchy validasi; depends #68 #69        |
 | #71 Refactor Tabel ke DataTable + Show/Hide Kolom & Export Excel | PLATFORM-06 | ✅ Done | TBD | TBD | Selesai direfaktor ke DataTable dan mendukung export Excel serta visibilitas kolom |
-| Issue belum dibuat: Farmer schema                | MD-03              | 🔲 Todo | TBD      | TBD    | Define model fields and relation to FarmerGroup/Village           |
-| Issue belum dibuat: Farmer CRUD + UI             | MD-03              | 🔲 Todo | TBD      | TBD    | Implement list/detail/form after schema accepted                  |
+| #72 Farmer Schema & Migration                   | MD-03              | 🔲 Todo | TBD      | TBD    | Prisma model, enum Gender, migration, seed structure (1-2 jam)    |
+| #73 Farmer Server Actions & Validation          | MD-03              | 🔲 Todo | TBD      | TBD    | Zod validation, CRUD actions, RBAC filter, unit tests (3-4 jam)   |
+| #74 Farmer UI - List, Form, Menu                | MD-03              | 🔲 Todo | TBD      | TBD    | DataTable, form modal, cascade filter, menu setup (4-5 jam)       |
+| #75 Update Documentation & Progress Tracking    | MD-03              | 🔲 Todo | TBD      | TBD    | Update progress.md, screenshots, debt tracking (30 min - 1 jam)   |
 
 ### Issue Workflow
 
@@ -477,6 +479,8 @@ npm test
 | 2026-06-06 | Report scope diputuskan: Excel only di Phase 1, PDF ditunda.                                                                   |
 | 2026-06-06 | Bulk Upload scope diputuskan: KT implementasi penuh, Region placeholder dulu.                                                  |
 | 2026-06-06 | Tambah phase PLATFORM-06 dan buat Issue #71 untuk refactor list tabel ke DataTable dan integrasi Excel export + show/hide kolom. |
+| 2026-06-07 | MD-03 Farmer scope diputuskan: MVP Phase 1 tanpa CSV import, NIK optional, Village optional, focus CRUD + RBAC + UI.           |
+| 2026-06-07 | MD-03 Farmer breakdown: #72 (schema), #73 (actions+validation), #74 (UI), #75 (docs). Total estimasi 8-12 jam development.     |
 
 ### Changelog
 
@@ -494,6 +498,7 @@ npm test
 | 06-06   | Tambah Bug Register untuk broken redirect dan stale dashboard references.                                        |
 | 06-06   | Validasi test lokal: `npm test` lulus 10 files / 111 tests.                                                      |
 | 06-06   | Restrukturisasi `progress.md` agar setiap section collapsible dan siap untuk presentasi management dua mingguan. |
+| 06-07   | Buat 4 GitHub Issues (#72–#75) untuk MD-03 Farmer: schema+migration, server actions+validation, UI (list/form/menu), docs. Estimasi 8-12 jam dev. |
 
 #### Mei 2026
 
