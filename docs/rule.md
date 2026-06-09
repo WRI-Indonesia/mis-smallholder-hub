@@ -257,6 +257,10 @@ Untuk fitur bulk upload data massal (misalnya Petani, Kelompok Tani, atau Region
 - **Download Feedback**:
   - Pengguna wajib diberikan opsi untuk mengunduh laporan hasil validasi baik data penuh (*full data*) maupun baris yang gagal saja (*error-only*), dengan menyertakan kolom "Keterangan" penjelasan error.
 
+### Searchable Kelompok Tani Filters
+
+- **Wajib menggunakan Combobox**: Untuk mempermudah pencarian dan penyaringan data di semua halaman list master data (terutama data Petani) atau alur lainnya, semua komponen filter/dropdown **Kelompok Tani** wajib menggunakan komponen **searchable Combobox** (kombinasi Popover & Command Shadcn UI) dengan kemampuan pencarian teks, dan tidak diperbolehkan menggunakan dropdown Select box standar.
+
 ---
 
 ## Arsitektur

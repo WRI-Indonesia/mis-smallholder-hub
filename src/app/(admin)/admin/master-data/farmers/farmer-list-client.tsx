@@ -12,11 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Check, ChevronsUpDown } from "lucide-react";
 import { FarmerFormModal } from "./farmer-form-modal";
 import { toggleFarmerActive } from "@/server/actions/farmer";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 interface Farmer {
   id: string;
@@ -50,6 +53,7 @@ interface Props {
 
 export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: Props) {
   const [groupFilter, setGroupFilter] = useState("all");
+  const [comboOpen, setComboOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editFarmer, setEditFarmer] = useState<Farmer | null>(null);
   const router = useRouter();
@@ -166,21 +170,70 @@ export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: 
     };
   };
 
+  const selectedGroup = farmerGroups.find((g) => g.id === groupFilter);
+
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
-      <Select value={groupFilter} onValueChange={(v) => setGroupFilter(v ?? "all")}>
-        <SelectTrigger className="w-[200px] h-9">
-          <SelectValue placeholder="Semua Kelompok Tani" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Kelompok Tani</SelectItem>
-          {farmerGroups.map((g) => (
-            <SelectItem key={g.id} value={g.id}>
-              {g.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover open={comboOpen} onOpenChange={setComboOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={comboOpen}
+            className="w-[230px] justify-between h-9 font-normal text-left"
+          >
+            {groupFilter === "all" ? (
+              <span>Semua Kelompok Tani</span>
+            ) : (
+              <span>{selectedGroup?.name}</span>
+            )}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Cari kelompok tani..." />
+            <CommandList className="max-h-[300px]">
+              <CommandEmpty>Kelompok Tani tidak ditemukan.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="all"
+                  onSelect={() => {
+                    setGroupFilter("all");
+                    setComboOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      groupFilter === "all" ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  Semua Kelompok Tani
+                </CommandItem>
+                {farmerGroups.map((g) => (
+                  <CommandItem
+                    key={g.id}
+                    value={`${g.name} ${g.code || ""}`}
+                    onSelect={() => {
+                      setGroupFilter(g.id);
+                      setComboOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        groupFilter === g.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {g.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 
