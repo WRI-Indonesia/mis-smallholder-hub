@@ -26,7 +26,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Periode laporan    | 2026-06-08 s.d. 2026-06-22                                  |
 | Status keseluruhan | 🟡 Mostly On Track                                          |
 | Basis review       | Existing source code per 2026-06-08 (full code audit)       |
-| Test lokal         | ✅ `npm test` — 11 files / 121 tests passed                 |
+| Test lokal         | ✅ `npm test` — 12 files / 130 tests passed                 |
 | Fokus koreksi      | Fix BUG-001 redirect + dashboard scope + stale scripts      |
 
 ### Executive Summary
@@ -46,12 +46,12 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
 | Total phase    | 34 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 9 fase         | PLATFORM-01/02/04/05/06, MD-01/02/03 ✅ Updated     |
-| 🟠 Partial     | 4 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02                |
-| 🔲 Not Started | 9 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03, BULK-01/02/03 |
+| ✅ Done        | 10 fase        | PLATFORM-01/02/04/05/06, MD-01/02/03, BULK-03 ✅ Updated |
+| 🟠 Partial     | 5 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02, BULK-01       |
+| 🔲 Not Started | 7 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03, BULK-02      |
 | 🔲 Planned     | 11 fase        | MD-04–11, DASH-02/03, COMM-02                        |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
-| 🎯 Now         | 3 fase + 1 bug | DASH-01, RPT-01, BULK-01, BULK-03, BUG-002 (stale scripts) |
+| 🎯 Now         | 2 fase + 1 bug | DASH-01, RPT-01, BULK-01, BUG-002 (stale scripts)    |
 
 ### Management Talking Points
 
@@ -132,10 +132,10 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Prisma models  | `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer` | Schema mencakup platform, RBAC, region, farmer group, dan farmer (MD-03) |
 | Admin routes   | ✅ Dashboard, Settings (Users/Roles/Menu/Regions), Master Data (Farmers list/detail/form + Groups list/detail/form), Profile | ✅ Admin foundation ada + Farmer CRUD complete; Dashboard placeholder only |
-| Server actions | `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `farmer-group`, `farmer`, `profile`, `role-permission`                                                           | Action farmer tersedia; dashboard, training, parcel, production belum ada              |
+| Server actions | `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `farmer-group`, `farmer`, `profile`, `role-permission`, `bulk-upload`                             | Action farmer & bulk upload tersedia; dashboard, training, parcel, production belum ada              |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
 | Scripts        | S3/PDF CLI, export CSV, ⚠️ stale dashboard scripts in `/scripts/debug/` (BUG-002)                                                                                                 | Tools partial; `/scripts/debug/*dashboard*` reference missing `src/server/actions/dashboard.ts` |
-| Tests          | `npm test` lulus 11 files / 121 tests ✅; test files: auth, farmer, menu-action, middleware, perf, rbac, rbac-permission, region, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer); need dashboard/parcel/training |
+| Tests          | `npm test` lulus 12 files / 130 tests ✅; test files: auth, bulk-upload, farmer, menu-action, middleware, perf, rbac, rbac-permission, region, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer/bulk-upload); need dashboard/parcel/training |
 | DevOps         | Dockerfile + `.github/workflows/deploy-dev.yaml` + `deploy-main.yml`                                                                                                               | DevOps partial; workflow ada tetapi deployment readiness belum diverifikasi di dokumen |
 
 ### Code Compliance Audit vs rule.md (2026-06-08)
@@ -206,14 +206,14 @@ Format phase: `STREAM-NN`.
 | RPT-01      | Report: Menu & User          | 🔲 Not Started | Now     | Tidak ada report module; **#64 #65 dibuat**                                                       | #64 menu + placeholder + #65 report user tabel & export Excel                    |
 | RPT-02      | Report: Region               | 🔲 Not Started | Next    | Tidak ada report region; **#66 dibuat**                                                            | #66 report region tabel & export Excel; dependency #64                           |
 | RPT-03      | Report: Kelompok Tani        | 🔲 Not Started | Next    | Tidak ada report KT; **#67 dibuat**                                                                | #67 report KT tabel & export Excel; cascade filter; dependency #64               |
-| BULK-01     | Bulk Upload: Menu & KT       | 🔲 Not Started | Now     | Tidak ada bulk upload module; **#68 #69 dibuat**                                                   | #68 menu + placeholder + #69 CSV upload KT dengan validasi & preview             |
+| BULK-01     | Bulk Upload: Menu & KT       | 🟠 Partial     | Now     | Menu & route setup done; placeholder pages ready | #68 menu + placeholder + #69 CSV upload KT dengan validasi & preview             |
 | BULK-02     | Bulk Upload: Region          | 🔲 Not Started | Next    | Tidak ada bulk upload region; **#70 dibuat**                                                       | #70 CSV upload District/Subdistrict/Village dengan validasi hierarchy             |
-| BULK-03     | Bulk Upload: Farmer          | 🔲 Not Started | Now     | Tidak ada bulk upload farmer; **#76 dibuat** (template-less + column mapping)                     | #76 Excel upload dengan auto column mapping, validasi, preview, download error rows; depends #68 |
+| BULK-03     | Bulk Upload: Farmer          | ✅ Done        | Done    | `bulk-upload.ts` server action, dynamic mapping UI, Exceljs upload & smart validations, preview table, full/error download options | #76 Excel upload dengan auto column mapping, validasi, preview, download error rows; depends #68 |
 | TOOLS-01    | Tools Import/Export/GIS/S3   | 🟠 Partial     | Next    | `scripts/export-csv.ts`, S3/PDF CLI exist; **stale scripts in `/scripts/debug/*`** (BUG-002)     | Remove/fix stale dashboard scripts; separate CLI utilities from app tools        |
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟡 Partial     | Later   | Vitest: 11 test files + **121 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer     | Expand to dashboard, redirect, parcel, training                                  |
+| OPS-01      | Testing                      | 🟡 Partial     | Later   | Vitest: 12 test files + **130 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/bulk-upload | Expand to dashboard, redirect, parcel, training                                  |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile + GitHub deploy workflows                                                              | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
@@ -249,10 +249,10 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | #65 Report User — Tabel & Export Excel          | RPT-01             | 🔲 Todo | TBD      | TBD    | Server action + DataTable + exceljs export; depends #64           |
 | #66 Report Region — Tabel & Export Excel        | RPT-02             | 🔲 Todo | TBD      | TBD    | Region hierarchy tabel + export; depends #64                      |
 | #67 Report Kelompok Tani — Tabel & Export Excel | RPT-03             | 🔲 Todo | TBD      | TBD    | KT tabel + cascade filter + export; depends #64                   |
-| #68 Menu & Route Setup Bulk Upload + Placeholder| BULK-01            | 🔲 Todo | TBD      | TBD    | Seed menu + route structure + placeholder pages                   |
+| **✅ #68 Menu & Route Setup Bulk Upload**       | BULK-01            | ✅ Done | -        | 06-09  | Menu registration in CSV & seed + route setup & parent redirect  |
 | #69 Bulk Upload KT — CSV Validasi Preview Insert| BULK-01            | 🔲 Todo | TBD      | TBD    | CSV upload + Zod validasi + preview + bulk insert; depends #68    |
 | #70 Bulk Upload Region — CSV Hierarchy Validasi | BULK-02            | 🔲 Todo | TBD      | TBD    | CSV upload per level + hierarchy validasi; depends #68 #69        |
-| #76 BULK-03: Bulk Upload Farmer (Column Mapping)| BULK-03            | 🔲 Todo | TBD      | TBD    | Template-less Excel upload + auto column mapping + validation + preview + insert valid data; depends #68 |
+| **✅ #76 BULK-03: Bulk Upload Farmer (Mapping)**| BULK-03            | ✅ Done | -        | 06-09  | Exceljs template-less dynamic column mapping, smart validation, preview & export, bulk insert transaction-based |
 | **✅ #71 Refactor Tabel ke DataTable + Export** | PLATFORM-06 | ✅ Done | TBD | 06-07 | **Complete** — DataTable refactor + column visibility + Excel export |
 | **✅ #72 Farmer Schema & Migration**             | MD-03              | ✅ Done | -        | 06-07  | `prisma/schema/farmer.prisma` — model, enums, relations, seeder   |
 | **✅ #73 Farmer Server Actions & Validation**    | MD-03              | ✅ Done | -        | 06-07  | `src/server/actions/farmer.ts` + Zod schemas + 10 unit tests ✅   |
@@ -518,6 +518,8 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-09   | #76 selesai — Implementasi Bulk Upload Petani (BULK-03): dynamic column mapping UI, smart validation, validation preview table, download full/error data Excel, dan bulk transactional save. |
+| 06-09   | #68 selesai — Route Setup dan parent redirect `/admin/bulk-upload` ke `/farmers`. Menu seed updated.             |
 | 06-06   | #71 selesai — Refactor tabel ke DataTable, menambahkan ekspor Excel dengan exceljs dan visibilitas kolom di list User & Kelompok Tani |
 | 06-06   | Buat 9 GitHub Issues (#62–#70): Dashboard menu+cards, Report menu+placeholder+tabel+export, Bulk Upload menu+placeholder+CSV. |
 | 06-08   | Buat GitHub Issue #76 (BULK-03): Bulk Upload Farmer dengan template-less approach, column matching UI, auto-mapping, validasi smart, preview, download invalid rows. Estimasi 20-28 jam (3-4 hari kerja). |

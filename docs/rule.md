@@ -243,6 +243,20 @@ Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus d
 - Loading state wajib (skeleton/spinner)
 - Toast setelah action berhasil/gagal
 
+### Bulk Upload UI/UX & Validation Pattern
+
+Untuk fitur bulk upload data massal (misalnya Petani, Kelompok Tani, atau Region), ikuti aturan alur dan antarmuka berikut:
+- **Alur Step-by-Step**:
+  1. Pilih context / parent entity (misalnya Kelompok Tani) di paling atas menggunakan searchable Combobox. Pilihan file input harus tetap *disabled* sampai context dipilih.
+  2. Pilih berkas Excel (`.xlsx`) atau CSV. Input file dinonaktifkan jika context di atas belum dipilih.
+  3. Pemetaan kolom dinamis (*Dynamic Column Mapping*): sediakan pemetaan drop-down kolom file dengan field target database, lengkap dengan aturan auto-matching.
+  4. Hasil validasi dan review: Tampilkan status per baris, jumlah ringkasan valid vs error, serta filter tampilan data.
+- **Smart Validations**:
+  - Validasi keunikan ID: Cek keunikan baik di tingkat berkas (*file-level*) maupun terhadap database (*DB-level*).
+  - Normalisasi data: Konversi format gender (L/P -> M/F), bersihkan format NIK (hanya angka 16 digit), dan parse berbagai format tanggal (Excel serial number atau string tanggal).
+- **Download Feedback**:
+  - Pengguna wajib diberikan opsi untuk mengunduh laporan hasil validasi baik data penuh (*full data*) maupun baris yang gagal saja (*error-only*), dengan menyertakan kolom "Keterangan" penjelasan error.
+
 ---
 
 ## Arsitektur

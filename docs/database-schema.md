@@ -1,7 +1,7 @@
 # Database Schema — ERD
 
 > Visualisasi Entity Relationship Diagram untuk schema aktif.
-> Update terakhir: 2026-05-20
+> Update terakhir: 2026-06-09
 
 ---
 
@@ -93,7 +93,7 @@ erDiagram
         String abrv_3id
         String name
         FarmerGroupCategory category
-        Int established_year
+        Int join_year
         Float location_lat
         Float location_long
         Boolean is_active
@@ -104,6 +104,29 @@ erDiagram
     }
 
     District ||--o{ FarmerGroup : "has"
+
+    %% ═══════════════════════════════════════════
+    %% FARMER
+    %% ═══════════════════════════════════════════
+
+    Farmer {
+        String id PK
+        String farmer_group_id FK
+        Gender gender
+        String name
+        String farmer_id
+        String nik
+        String address
+        String birth_place
+        DateTime birth_date
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    FarmerGroup ||--o{ Farmer : "has"
 
     %% ═══════════════════════════════════════════
     %% MENU
@@ -233,6 +256,11 @@ classDiagram
         SWADAYA
     }
 
+    class Gender {
+        M
+        F
+    }
+
     class ActivityStatus {
         DRAFT
         PENDING_APPROVAL
@@ -327,6 +355,7 @@ prisma/schema/
 ├── user.prisma           # User identity
 ├── geography.prisma      # Province → District → Subdistrict → Village
 ├── farmer-group.prisma   # FarmerGroup
+├── farmer.prisma         # Farmer
 ├── rbac.prisma           # RolePermission, UserProvince, UserDistrict, UserFarmerGroup, UserPermissionOverride
 └── menu.prisma           # MenuItem
 ```

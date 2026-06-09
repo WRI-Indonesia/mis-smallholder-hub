@@ -7,3 +7,5 @@ settings-users,settings,User Management,/admin/settings/users,UserCog,1,TRUE,TRU
 settings-menu,settings,Menu Management,/admin/settings/menu,Menu,2,TRUE,TRUE
 settings-roles,settings,Role & Permission,/admin/settings/roles,Shield,3,TRUE,TRUE
 settings-regions,settings,Regions,/admin/settings/regions,MapPin,4,TRUE,TRUE
+bulk-upload,,Bulk Upload,/admin/bulk-upload,Upload,3,TRUE,TRUE
+bulk-upload-farmers,bulk-upload,Upload Petani,/admin/bulk-upload/farmers,User,1,TRUE,TRUE

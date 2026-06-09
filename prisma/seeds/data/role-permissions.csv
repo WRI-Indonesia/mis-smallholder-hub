@@ -33,3 +33,17 @@ OPERATOR,master-data,VIEW
 OPERATOR,master-data-groups,VIEW
 ADMIN,master-data,VIEW
 ADMIN,master-data-groups,VIEW
+SUPERADMIN,bulk-upload,CREATE
+SUPERADMIN,bulk-upload,VIEW
+SUPERADMIN,bulk-upload,EDIT
+SUPERADMIN,bulk-upload,DELETE
+SUPERADMIN,bulk-upload-farmers,CREATE
+SUPERADMIN,bulk-upload-farmers,VIEW
+SUPERADMIN,bulk-upload-farmers,EDIT
+SUPERADMIN,bulk-upload-farmers,DELETE
+ADMIN,bulk-upload,VIEW
+ADMIN,bulk-upload-farmers,VIEW
+ADMIN,bulk-upload-farmers,CREATE
+OPERATOR,bulk-upload,VIEW
+OPERATOR,bulk-upload-farmers,VIEW
+OPERATOR,bulk-upload-farmers,CREATE
