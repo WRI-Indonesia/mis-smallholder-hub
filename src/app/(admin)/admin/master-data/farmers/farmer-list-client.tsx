@@ -180,7 +180,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: 
             variant="outline"
             role="combobox"
             aria-expanded={comboOpen}
-            className="w-[230px] justify-between h-9 font-normal text-left"
+            className="w-[330px] justify-between h-9 font-normal text-left"
           >
             {groupFilter === "all" ? (
               <span>Semua Kelompok Tani</span>
@@ -190,7 +190,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: 
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0" align="start">
+        <PopoverContent className="w-[330px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Cari kelompok tani..." />
             <CommandList className="max-h-[300px]">
