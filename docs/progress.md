@@ -37,7 +37,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Master data inti    | 🟡 Mostly Ready | Farmer ✅ complete (model + action + UI + test). Parcels, Training, Production, Staff, HCV belum ada.                                    |
 | Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`. Stale scripts ada di `/scripts/debug/`.  |
 | Report              | 🔲 Not Started   | Belum ada report module. Issues #64–#67 dibuat (menu setup + placeholder + implementasi).                                                  |
-| Bulk Upload         | 🔲 Not Started   | Belum ada bulk upload module. Issues #68–#70 dibuat (menu setup + placeholder + implementasi).                                              |
+| Bulk Upload         | 🔲 Not Started   | Belum ada bulk upload module. Issues #68–#70, #76 dibuat (menu setup + placeholder + implementasi Farmer dengan column mapping). |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
 | Testing             | 🟡 Partial      | Vitest: 11 files / 121 tests passed. Coverage: auth/RBAC/menu/user/region/farmer ✅; belum dashboard, parcel, training.                 |
 
@@ -45,13 +45,13 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
-| Total phase    | 33 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
+| Total phase    | 34 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
 | ✅ Done        | 9 fase         | PLATFORM-01/02/04/05/06, MD-01/02/03 ✅ Updated     |
 | 🟠 Partial     | 4 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02                |
-| 🔲 Not Started | 8 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03, BULK-01/02  |
+| 🔲 Not Started | 9 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03, BULK-01/02/03 |
 | 🔲 Planned     | 11 fase        | MD-04–11, DASH-02/03, COMM-02                        |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
-| 🎯 Now         | 2 fase + 1 bug | DASH-01, RPT-01, BULK-01, BUG-002 (stale scripts)   |
+| 🎯 Now         | 3 fase + 1 bug | DASH-01, RPT-01, BULK-01, BULK-03, BUG-002 (stale scripts) |
 
 ### Management Talking Points
 
@@ -83,6 +83,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | **P1**   | **#62-63 DASH-01: implement after scope**   | After scope agreed: server action + summary cards + district filter implementation                            |
 | **P1**   | **#64-67 RPT-01: menu & placeholder**       | Menu Report setup + placeholder pages structure (3 sub-menu)                                                  |
 | **P1**   | **#68-70 BULK-01: menu & placeholder**      | Menu Bulk Upload setup + placeholder pages structure (2 sub-menu)                                             |
+| **P1**   | **#76 BULK-03: Farmer bulk upload**         | Template-less Excel upload dengan column mapping, validasi smart, preview, download error rows; estimasi 20-28 jam |
 | **P1**   | **Testing: Farmer coverage**                | Add test untuk redirect, Farmer CRUD edge-cases, RBAC filtering                                              |
 
 </details>
@@ -207,6 +208,7 @@ Format phase: `STREAM-NN`.
 | RPT-03      | Report: Kelompok Tani        | 🔲 Not Started | Next    | Tidak ada report KT; **#67 dibuat**                                                                | #67 report KT tabel & export Excel; cascade filter; dependency #64               |
 | BULK-01     | Bulk Upload: Menu & KT       | 🔲 Not Started | Now     | Tidak ada bulk upload module; **#68 #69 dibuat**                                                   | #68 menu + placeholder + #69 CSV upload KT dengan validasi & preview             |
 | BULK-02     | Bulk Upload: Region          | 🔲 Not Started | Next    | Tidak ada bulk upload region; **#70 dibuat**                                                       | #70 CSV upload District/Subdistrict/Village dengan validasi hierarchy             |
+| BULK-03     | Bulk Upload: Farmer          | 🔲 Not Started | Now     | Tidak ada bulk upload farmer; **#76 dibuat** (template-less + column mapping)                     | #76 Excel upload dengan auto column mapping, validasi, preview, download error rows; depends #68 |
 | TOOLS-01    | Tools Import/Export/GIS/S3   | 🟠 Partial     | Next    | `scripts/export-csv.ts`, S3/PDF CLI exist; **stale scripts in `/scripts/debug/*`** (BUG-002)     | Remove/fix stale dashboard scripts; separate CLI utilities from app tools        |
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
@@ -232,7 +234,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | P0       | BUG-002     | Fix stale dashboard tooling references | `scripts/debug/*dashboard*` import `src/server/actions/dashboard` yang tidak ada              | ✅ **BUG-001 FIXED** — redirect ke farmers works; **Remove/fix script** |
 | P0       | DASH-01     | Dashboard scope agreement + impl       | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`; **BLOCKING scope undefined** | **URGENT: Define scope in 48h** — cards, metrics, filters, wireframe    |
 | P1       | RPT-01      | Menu & placeholder Report              | Tidak ada report module; issue #64-#67 siap untuk diimplementasi                             | #64 menu + placeholder → #65-#67 tabel & export                         |
-| P1       | BULK-01     | Menu & placeholder Bulk Upload         | Tidak ada bulk upload module; issue #68-#70 siap untuk diimplementasi                        | #68 menu + placeholder → #69-#70 CSV upload & validasi                  |
+| P1       | BULK-01     | Menu & placeholder Bulk Upload         | Tidak ada bulk upload module; issue #68-#70, #76 siap untuk diimplementasi                   | #68 menu + placeholder → #69-#70 CSV upload & validasi → #76 Farmer column mapping |
 
 ### Active Issues / Work Items
 
@@ -250,6 +252,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | #68 Menu & Route Setup Bulk Upload + Placeholder| BULK-01            | 🔲 Todo | TBD      | TBD    | Seed menu + route structure + placeholder pages                   |
 | #69 Bulk Upload KT — CSV Validasi Preview Insert| BULK-01            | 🔲 Todo | TBD      | TBD    | CSV upload + Zod validasi + preview + bulk insert; depends #68    |
 | #70 Bulk Upload Region — CSV Hierarchy Validasi | BULK-02            | 🔲 Todo | TBD      | TBD    | CSV upload per level + hierarchy validasi; depends #68 #69        |
+| #76 BULK-03: Bulk Upload Farmer (Column Mapping)| BULK-03            | 🔲 Todo | TBD      | TBD    | Template-less Excel upload + auto column mapping + validation + preview + insert valid data; depends #68 |
 | **✅ #71 Refactor Tabel ke DataTable + Export** | PLATFORM-06 | ✅ Done | TBD | 06-07 | **Complete** — DataTable refactor + column visibility + Excel export |
 | **✅ #72 Farmer Schema & Migration**             | MD-03              | ✅ Done | -        | 06-07  | `prisma/schema/farmer.prisma` — model, enums, relations, seeder   |
 | **✅ #73 Farmer Server Actions & Validation**    | MD-03              | ✅ Done | -        | 06-07  | `src/server/actions/farmer.ts` + Zod schemas + 10 unit tests ✅   |
@@ -507,6 +510,7 @@ npm test
 | 2026-06-06 | Tambah phase PLATFORM-06 dan buat Issue #71 untuk refactor list tabel ke DataTable dan integrasi Excel export + show/hide kolom. |
 | 2026-06-07 | MD-03 Farmer scope diputuskan: MVP Phase 1 tanpa CSV import, NIK optional, Village optional, focus CRUD + RBAC + UI.           |
 | 2026-06-07 | MD-03 Farmer breakdown: #72 (schema), #73 (actions+validation), #74 (UI), #75 (docs). Total estimasi 8-12 jam development.     |
+| 2026-06-08 | BULK-03 Farmer scope diputuskan: Template-less Excel upload dengan column mapping UI, auto-matching logic, smart validation (gender normalization, date parsing, NIK), preview table dengan filter valid/error, download invalid rows only untuk user perbaiki, bulk insert transaction-based. Issue #76 dibuat dengan estimasi 20-28 jam (3-4 hari kerja). |
 
 ### Changelog
 
@@ -516,6 +520,7 @@ npm test
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
 | 06-06   | #71 selesai — Refactor tabel ke DataTable, menambahkan ekspor Excel dengan exceljs dan visibilitas kolom di list User & Kelompok Tani |
 | 06-06   | Buat 9 GitHub Issues (#62–#70): Dashboard menu+cards, Report menu+placeholder+tabel+export, Bulk Upload menu+placeholder+CSV. |
+| 06-08   | Buat GitHub Issue #76 (BULK-03): Bulk Upload Farmer dengan template-less approach, column matching UI, auto-mapping, validasi smart, preview, download invalid rows. Estimasi 20-28 jam (3-4 hari kerja). |
 | 06-06   | Buat GitHub Issue #71 untuk DataTable refactor + Excel export. Tambah phase PLATFORM-06 ke progress.md. |
 | 06-06   | Tambah stream RPT (Report) dan BULK (Bulk Upload) ke Phase Encoding Taxonomy dan Phase Status.                   |
 | 06-06   | Update Sprint Focus, Active Issues, Dependency Map, dan Recommended Implementation Order.                        |
