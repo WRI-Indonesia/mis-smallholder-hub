@@ -65,6 +65,10 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tanggal Lahir</p>
             <p className="text-sm font-medium mt-1">{formatDate(farmer.birthDate)}</p>
           </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tahun Bergabung</p>
+            <p className="text-sm font-medium mt-1">{farmer.joinedYear ?? "—"}</p>
+          </div>
           <div className="sm:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alamat</p>
             <p className="text-sm font-medium mt-1">{farmer.address ?? "—"}</p>

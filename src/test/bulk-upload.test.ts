@@ -38,6 +38,7 @@ const TARGET_FIELDS = [
   { key: "name", label: "Nama Petani", required: true },
   { key: "gender", label: "Jenis Kelamin", required: true },
   { key: "nik", label: "NIK", required: false },
+  { key: "joinedYear", label: "Tahun Bergabung", required: false },
 ];
 
 const AUTO_MATCH_RULES: Record<string, string[]> = {
@@ -45,6 +46,7 @@ const AUTO_MATCH_RULES: Record<string, string[]> = {
   name: ["nama", "name", "nama petani", "farmer name", "fullname"],
   gender: ["jenis kelamin", "gender", "sex", "lp", "l/p", "jk"],
   nik: ["nik", "no. ktp", "ktp", "national id"],
+  joinedYear: ["tahun bergabung", "joined year", "joinedyear", "tahun_bergabung", "thn bergabung", "thn_bergabung"],
 };
 
 // 3. Auto column mapping logic
@@ -124,6 +126,19 @@ function validateRow(
     normalized.nik = null;
   }
 
+  // Joined Year check
+  const rawJoinedYear = row[mapping["joinedYear"]];
+  if (rawJoinedYear !== undefined && rawJoinedYear !== null && rawJoinedYear !== "") {
+    const parsedYear = parseInt(rawJoinedYear.toString().trim(), 10);
+    if (isNaN(parsedYear) || parsedYear < 1900 || parsedYear > 2100) {
+      errors.push(`Tahun bergabung tidak valid: "${rawJoinedYear}" (Gunakan tahun antara 1900-2100)`);
+    } else {
+      normalized.joinedYear = parsedYear;
+    }
+  } else {
+    normalized.joinedYear = null;
+  }
+
   return { isValid: errors.length === 0, errors, data: normalized };
 }
 
@@ -187,6 +202,7 @@ describe("Bulk Upload — Row Validations & Normalization", () => {
     name: "Nama",
     gender: "L/P",
     nik: "KTP",
+    joinedYear: "Tahun",
   };
 
   it("accepts a perfectly valid row", () => {
@@ -195,12 +211,26 @@ describe("Bulk Upload — Row Validations & Normalization", () => {
       Nama: "Budi Santoso",
       "L/P": "Laki-laki",
       KTP: "1234567890123456",
+      Tahun: 2022,
     };
     const res = validateRow(row, mapping, new Set(), ["FMR-001"]);
     expect(res.isValid).toBe(true);
     expect(res.errors).toHaveLength(0);
     expect(res.data.gender).toBe("M");
     expect(res.data.nik).toBe("1234567890123456");
+    expect(res.data.joinedYear).toBe(2022);
+  });
+
+  it("rejects invalid joinedYear format/range", () => {
+    const row = {
+      ID: "FMR-995",
+      Nama: "Hendra",
+      "L/P": "L",
+      Tahun: 1850,
+    };
+    const res = validateRow(row, mapping, new Set(), []);
+    expect(res.isValid).toBe(false);
+    expect(res.errors[0]).toContain("Tahun bergabung tidak valid");
   });
 
   it("normalizes female gender", () => {

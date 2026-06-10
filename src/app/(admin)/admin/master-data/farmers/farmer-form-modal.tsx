@@ -32,6 +32,7 @@ interface Farmer {
   address: string | null;
   birthPlace: string | null;
   birthDate: Date | string | null;
+  joinedYear: number | null;
 }
 
 interface FarmerGroup {
@@ -65,6 +66,8 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
     setErrors({});
 
     const form = new FormData(e.currentTarget);
+    const birthDateRaw = form.get("birthDate") as string;
+    const joinedYearRaw = form.get("joinedYear") as string;
 
     const data = {
       farmerGroupId: form.get("farmerGroupId") as string,
@@ -74,7 +77,8 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
       nik: (form.get("nik") as string) || null,
       address: (form.get("address") as string) || null,
       birthPlace: (form.get("birthPlace") as string) || null,
-      birthDate: form.get("birthDate") ? (form.get("birthDate") as string) : null,
+      birthDate: birthDateRaw ? new Date(birthDateRaw) : null,
+      joinedYear: joinedYearRaw ? parseInt(joinedYearRaw, 10) : null,
     };
 
     const result = isEdit
@@ -176,6 +180,20 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
           <div className="space-y-2">
             <Label htmlFor="address">Alamat</Label>
             <Input id="address" name="address" defaultValue={farmer?.address ?? ""} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="joinedYear">Tahun Bergabung</Label>
+            <Input
+              id="joinedYear"
+              name="joinedYear"
+              type="number"
+              min={1900}
+              max={2100}
+              placeholder="Contoh: 2020"
+              defaultValue={farmer?.joinedYear ?? ""}
+            />
+            {errors.joinedYear && <p className="text-sm text-destructive">{errors.joinedYear[0]}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

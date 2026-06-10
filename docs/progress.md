@@ -260,7 +260,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | **✅ #75 Farmer RBAC & Menu Integration**        | MD-03              | ✅ Done | -        | 06-07  | RBAC filter by district/group; sidebar menu registration          |
 | #74 Farmer UI - List, Form, Menu                | MD-03              | ✅ Done | -        | 06-07  | `page.tsx`, `farmer-list-client.tsx`, `farmer-form-modal.tsx`, `[id]/page.tsx`, `loading.tsx`, menu entry CSV |
 | #75 Update Documentation & Progress Tracking    | MD-03              | ✅ Done | -        | 06-07  | progress.md diupdate: Phase Status, Active Issues, Snapshot, Audit Evidence, Changelog |
-| #86 Tambah Field Tahun Bergabung (joinedYear)   | MD-03              | 🔲 Todo | TBD      | TBD    | Schema + validation + CRUD + UI + bulk upload + tests; field optional Integer 1900-2100 |
+| #86 Tambah Field Tahun Bergabung (joinedYear)   | MD-03              | ✅ Done | -        | 06-10  | Schema + validation + CRUD + UI + bulk upload + tests; field optional Integer 1900-2100 |
 
 ### Issue Workflow
 
@@ -520,7 +520,7 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
-| 06-10   | Issue #86 dibuat — Tambah field joinedYear (Tahun Bergabung) pada master data Petani untuk analisis senioritas dan segmentasi. Field optional Integer range 1900-2100. Mencakup: schema, validation Zod, CRUD, UI (form/list/detail), bulk upload column mapping, dan 5 unit tests baru. Estimasi 4-6 jam. |
+| 06-10   | #86 selesai — Tambah field joinedYear (Tahun Bergabung) pada master data Petani: schema, validation Zod, CRUD, UI (form/list/detail), bulk upload column mapping, 4 unit tests baru, serta penambahan filter by District menggunakan searchable combobox. |
 | 06-09   | #76 selesai — Implementasi Bulk Upload Petani (BULK-03): dynamic column mapping UI, smart validation, validation preview table, download full/error data Excel, dan bulk transactional save. |
 | 06-09   | #68 selesai — Route Setup dan parent redirect `/admin/bulk-upload` ke `/farmers`. Menu seed updated.             |
 | 06-06   | #71 selesai — Refactor tabel ke DataTable, menambahkan ekspor Excel dengan exceljs dan visibilitas kolom di list User & Kelompok Tani |

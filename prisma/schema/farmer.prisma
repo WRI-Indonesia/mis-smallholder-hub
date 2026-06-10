@@ -16,6 +16,7 @@ model Farmer {
   address       String?     @map("address")
   birthPlace    String?     @map("birth_place")
   birthDate     DateTime?   @map("birth_date")
+  joinedYear    Int?        @map("joined_year")
   isActive      Boolean     @default(true) @map("is_active")
   createdAt     DateTime    @default(now()) @map("created_at")
   createdBy     String?     @map("created_by")

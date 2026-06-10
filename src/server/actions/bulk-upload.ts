@@ -42,7 +42,7 @@ export async function bulkCreateFarmers(dataList: any[]) {
   const userId = session?.user?.id ?? null;
 
   // Validate all records before saving
-  const validatedRecords = [];
+  const validatedRecords: any[] = [];
   for (const item of dataList) {
     const parsed = farmerSchema.safeParse(item);
     if (!parsed.success) {

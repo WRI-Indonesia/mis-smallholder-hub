@@ -27,6 +27,7 @@ interface Farmer {
   farmerGroup: {
     name: string;
     district: {
+      id: string;
       name: string;
     };
   };
@@ -37,10 +38,18 @@ interface Farmer {
   address: string | null;
   birthPlace: string | null;
   birthDate: Date | string | null;
+  joinedYear: number | null;
   isActive: boolean;
+  district?: any;
 }
 
 interface FarmerGroup {
+  id: string;
+  name: string;
+  code?: string | null;
+}
+
+interface District {
   id: string;
   name: string;
 }
@@ -48,10 +57,13 @@ interface FarmerGroup {
 interface Props {
   initialFarmers: Farmer[];
   farmerGroups: FarmerGroup[];
+  districts: District[];
   permissions: string[];
 }
 
-export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: Props) {
+export function FarmerListClient({ initialFarmers, farmerGroups, districts, permissions }: Props) {
+  const [districtFilter, setDistrictFilter] = useState("all");
+  const [districtComboOpen, setDistrictComboOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState("all");
   const [comboOpen, setComboOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -59,7 +71,9 @@ export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: 
   const router = useRouter();
 
   const filtered = initialFarmers.filter((f) => {
-    return groupFilter === "all" || f.farmerGroupId === groupFilter;
+    const matchGroup = groupFilter === "all" || f.farmerGroupId === groupFilter;
+    const matchDistrict = districtFilter === "all" || f.farmerGroup.district.id === districtFilter;
+    return matchGroup && matchDistrict;
   });
 
   async function handleToggleActive(id: string) {
@@ -141,6 +155,13 @@ export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: 
       render: (row) => row.farmerGroup.name,
     },
     {
+      key: "joinedYear",
+      label: "Tahun Bergabung",
+      sortable: true,
+      cellClassName: "text-sm text-muted-foreground tabular-nums",
+      render: (row) => row.joinedYear ?? "—",
+    },
+    {
       key: "district",
       label: "Distrik",
       sortable: true,
@@ -155,6 +176,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: 
       name: f.name,
       gender: f.gender === "M" ? "Laki-laki" : "Perempuan",
       farmerGroup: f.farmerGroup.name,
+      joinedYear: f.joinedYear ?? "—",
       district: f.farmerGroup.district.name,
       nik: f.nik ?? "—",
       address: f.address ?? "—",
@@ -171,25 +193,91 @@ export function FarmerListClient({ initialFarmers, farmerGroups, permissions }: 
   };
 
   const selectedGroup = farmerGroups.find((g) => g.id === groupFilter);
+  const selectedDistrict = districts.find((d) => d.id === districtFilter);
 
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
+      <Popover open={districtComboOpen} onOpenChange={setDistrictComboOpen}>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={districtComboOpen}
+              className="w-[200px] justify-between h-9 font-normal text-left"
+            >
+              {districtFilter === "all" ? (
+                <span>Semua Distrik</span>
+              ) : (
+                <span>{selectedDistrict?.name}</span>
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
+        <PopoverContent className="w-[200px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Cari distrik..." />
+            <CommandList className="max-h-[300px]">
+              <CommandEmpty>Distrik tidak ditemukan.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="all"
+                  onSelect={() => {
+                    setDistrictFilter("all");
+                    setDistrictComboOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      districtFilter === "all" ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  Semua Distrik
+                </CommandItem>
+                {districts.map((d) => (
+                  <CommandItem
+                    key={d.id}
+                    value={d.name}
+                    onSelect={() => {
+                      setDistrictFilter(d.id);
+                      setDistrictComboOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        districtFilter === d.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {d.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
       <Popover open={comboOpen} onOpenChange={setComboOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={comboOpen}
-            className="w-[330px] justify-between h-9 font-normal text-left"
-          >
-            {groupFilter === "all" ? (
-              <span>Semua Kelompok Tani</span>
-            ) : (
-              <span>{selectedGroup?.name}</span>
-            )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={comboOpen}
+              className="w-[330px] justify-between h-9 font-normal text-left"
+            >
+              {groupFilter === "all" ? (
+                <span>Semua Kelompok Tani</span>
+              ) : (
+                <span>{selectedGroup?.name}</span>
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
         <PopoverContent className="w-[330px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Cari kelompok tani..." />

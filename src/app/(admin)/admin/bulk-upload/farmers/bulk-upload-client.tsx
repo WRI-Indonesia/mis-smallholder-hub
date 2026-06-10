@@ -61,6 +61,7 @@ const TARGET_FIELDS = [
   { key: "birthPlace", label: "Tempat Lahir", required: false, desc: "Opsional" },
   { key: "birthDate", label: "Tanggal Lahir", required: false, desc: "Format tanggal (opsional)" },
   { key: "address", label: "Alamat", required: false, desc: "Opsional" },
+  { key: "joinedYear", label: "Tahun Bergabung", required: false, desc: "Tahun 1900-2100 (opsional)" },
 ];
 
 const AUTO_MATCH_RULES: Record<string, string[]> = {
@@ -71,6 +72,7 @@ const AUTO_MATCH_RULES: Record<string, string[]> = {
   birthPlace: ["tempat lahir", "birth place", "birthplace", "tempat_lahir"],
   birthDate: ["tanggal lahir", "birth date", "birthdate", "tanggal_lahir", "tgl lahir", "tgl_lahir"],
   address: ["alamat", "address", "domisili"],
+  joinedYear: ["tahun bergabung", "joined year", "joinedyear", "tahun_bergabung", "thn bergabung", "thn_bergabung"],
 };
 
 export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds }: Props) {
@@ -215,6 +217,19 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
       normalized.birthDate = null;
     }
 
+    // 9. Joined Year
+    const rawJoinedYear = row[mapping["joinedYear"]];
+    if (rawJoinedYear !== undefined && rawJoinedYear !== null && rawJoinedYear !== "") {
+      const parsedYear = parseInt(rawJoinedYear.toString().trim(), 10);
+      if (isNaN(parsedYear) || parsedYear < 1900 || parsedYear > 2100) {
+        errors.push(`Tahun bergabung tidak valid: "${rawJoinedYear}" (Gunakan tahun antara 1900-2100)`);
+      } else {
+        normalized.joinedYear = parsedYear;
+      }
+    } else {
+      normalized.joinedYear = null;
+    }
+ 
     normalized._isValid = errors.length === 0;
     normalized._errors = errors;
     return { data: normalized, errors };
@@ -353,6 +368,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
       { header: "Kelompok Tani", key: "farmerGroup", width: 25 },
       { header: "Tempat Lahir", key: "birthPlace", width: 20 },
       { header: "Tanggal Lahir", key: "birthDate", width: 18 },
+      { header: "Tahun Bergabung", key: "joinedYear", width: 18 },
       { header: "Alamat", key: "address", width: 30 },
       { header: "Status", key: "status", width: 12 },
       { header: "Keterangan / Detail Error", key: "keterangan", width: 45 },
@@ -387,6 +403,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
         farmerGroup: row._farmerGroupName || "",
         birthPlace: row.birthPlace || row._original.birthPlace || "",
         birthDate: birthDateStr,
+        joinedYear: row.joinedYear || row._original.joinedYear || "",
         address: row.address || row._original.address || "",
         status: row._isValid ? "VALID" : "ERROR",
         keterangan: row._errors.join("; "),
@@ -424,6 +441,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
       address: d.address,
       birthPlace: d.birthPlace,
       birthDate: d.birthDate,
+      joinedYear: d.joinedYear,
     }));
 
     const result = await bulkCreateFarmers(toSave);
@@ -460,23 +478,25 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
           </p>
 
           <Popover open={comboOpen} onOpenChange={setComboOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={comboOpen}
-                className="w-full justify-between h-10 mt-1 font-normal text-left"
-              >
-                {selectedGroupId ? (
-                  <span>
-                    {selectedGroup?.name} {selectedGroup?.code ? `(${selectedGroup.code})` : ""}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Pilih Kelompok Tani...</span>
-                )}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboOpen}
+                  className="w-full justify-between h-10 mt-1 font-normal text-left"
+                >
+                  {selectedGroupId ? (
+                    <span>
+                      {selectedGroup?.name} {selectedGroup?.code ? `(${selectedGroup.code})` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Pilih Kelompok Tani...</span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              }
+            />
             <PopoverContent className="w-[400px] p-0" align="start">
               <Command>
                 <CommandInput placeholder="Cari Kelompok Tani berdasarkan nama atau kode..." />
@@ -565,7 +585,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
                 </div>
                 <Select
                   value={mapping[f.key] || ""}
-                  onValueChange={(val) => setMapping((prev) => ({ ...prev, [f.key]: val }))}
+                  onValueChange={(val) => setMapping((prev) => ({ ...prev, [f.key]: val || "" }))}
                 >
                   <SelectTrigger className="w-full h-9">
                     <SelectValue placeholder="Pilih kolom..." />
@@ -705,6 +725,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
                   <TableHead className="w-[80px]">L/P</TableHead>
                   <TableHead>NIK</TableHead>
                   <TableHead>Kelompok Tani</TableHead>
+                  <TableHead>Tahun Bergabung</TableHead>
                   <TableHead>Tanggal Lahir</TableHead>
                   <TableHead className="w-[100px]">Status</TableHead>
                   <TableHead className="min-w-[200px]">Keterangan / Detail Error</TableHead>
@@ -736,6 +757,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
                       </TableCell>
                       <TableCell className="font-mono">{row.nik || row._original.nik || "—"}</TableCell>
                       <TableCell>{row._farmerGroupName || "—"}</TableCell>
+                      <TableCell className="font-mono">{row.joinedYear || row._original.joinedYear || "—"}</TableCell>
                       <TableCell className="tabular-nums">
                         {row.birthDate
                           ? new Date(row.birthDate).toLocaleDateString("id-ID")

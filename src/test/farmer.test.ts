@@ -52,6 +52,57 @@ describe("Farmer Schema - Create Validation", () => {
     expect(r.success).toBe(false);
     expect(r.error?.flatten().fieldErrors.name).toBeDefined();
   });
+
+  it("accepts valid joinedYear within range", () => {
+    const data = {
+      farmerGroupId: "group-1",
+      gender: "M" as const,
+      name: "Abdi Wijaya",
+      farmerId: "FMR-001",
+      joinedYear: 2020,
+    };
+    const r = farmerSchema.safeParse(data);
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects joinedYear below 1900", () => {
+    const data = {
+      farmerGroupId: "group-1",
+      gender: "M" as const,
+      name: "Abdi Wijaya",
+      farmerId: "FMR-001",
+      joinedYear: 1899,
+    };
+    const r = farmerSchema.safeParse(data);
+    expect(r.success).toBe(false);
+    expect(r.error?.flatten().fieldErrors.joinedYear).toBeDefined();
+  });
+
+  it("rejects joinedYear above 2100", () => {
+    const data = {
+      farmerGroupId: "group-1",
+      gender: "M" as const,
+      name: "Abdi Wijaya",
+      farmerId: "FMR-001",
+      joinedYear: 2101,
+    };
+    const r = farmerSchema.safeParse(data);
+    expect(r.success).toBe(false);
+    expect(r.error?.flatten().fieldErrors.joinedYear).toBeDefined();
+  });
+
+  it("coerces empty string/null joinedYear to null", () => {
+    const data = {
+      farmerGroupId: "group-1",
+      gender: "M" as const,
+      name: "Abdi Wijaya",
+      farmerId: "FMR-001",
+      joinedYear: "",
+    };
+    const r = farmerSchema.safeParse(data);
+    expect(r.success).toBe(true);
+    expect(r.data?.joinedYear).toBeNull();
+  });
 });
 
 describe("Farmer Schema - Update Validation", () => {
