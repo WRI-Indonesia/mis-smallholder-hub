@@ -10,7 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 .kilo/*
-
+.kiro/*
 # testing
 /coverage
 
