@@ -192,7 +192,7 @@ Format phase: `STREAM-NN`.
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
 | MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model ✅, `src/server/actions/farmer.ts` ✅, validation ✅, UI (list/detail/form) ✅, test ✅ | Maintain; expand MD-04/05/06 dependency                                          |
 | MD-04       | Parcels                      | 🔲 Planned     | Next    | No parcel model/route/action/UI                                                                   | Start after MD-03; determine data access model (per farmer vs per group)         |
-| MD-05       | Training                     | 🔲 Planned     | Next    | No training model/route/action/UI; S3/PDF CLI only                                                | Define participants/evidence model; may depend on Farmer/Parcel                  |
+| MD-05       | Training                     | 🔲 Planned     | Next    | No training model/route/action/UI; **#77-#82 dibuat** (schema, actions, UI, participants, docs)  | #77 schema → #78 actions → #79 UI → #80 participants → #82 docs; skip #81 (S3) MVP |
 | MD-06       | Agronomy / Production        | 🔲 Planned     | Next    | No production/agronomy model/route/action/UI                                                      | Validate dependency to Farmer/Parcel first; define per-farmer vs per-parcel      |
 | MD-07       | Staff                        | 🔲 Planned     | Later   | No staff model/route/action/UI                                                                    | Define scope                                                                     |
 | MD-08       | HCV                          | 🔲 Planned     | Later   | No HCV model/route/action/UI                                                                      | Define scope                                                                     |
@@ -260,6 +260,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | **✅ #75 Farmer RBAC & Menu Integration**        | MD-03              | ✅ Done | -        | 06-07  | RBAC filter by district/group; sidebar menu registration          |
 | #74 Farmer UI - List, Form, Menu                | MD-03              | ✅ Done | -        | 06-07  | `page.tsx`, `farmer-list-client.tsx`, `farmer-form-modal.tsx`, `[id]/page.tsx`, `loading.tsx`, menu entry CSV |
 | #75 Update Documentation & Progress Tracking    | MD-03              | ✅ Done | -        | 06-07  | progress.md diupdate: Phase Status, Active Issues, Snapshot, Audit Evidence, Changelog |
+| #86 Tambah Field Tahun Bergabung (joinedYear)   | MD-03              | 🔲 Todo | TBD      | TBD    | Schema + validation + CRUD + UI + bulk upload + tests; field optional Integer 1900-2100 |
 
 ### Issue Workflow
 
@@ -511,6 +512,7 @@ npm test
 | 2026-06-07 | MD-03 Farmer scope diputuskan: MVP Phase 1 tanpa CSV import, NIK optional, Village optional, focus CRUD + RBAC + UI.           |
 | 2026-06-07 | MD-03 Farmer breakdown: #72 (schema), #73 (actions+validation), #74 (UI), #75 (docs). Total estimasi 8-12 jam development.     |
 | 2026-06-08 | BULK-03 Farmer scope diputuskan: Template-less Excel upload dengan column mapping UI, auto-matching logic, smart validation (gender normalization, date parsing, NIK), preview table dengan filter valid/error, download invalid rows only untuk user perbaiki, bulk insert transaction-based. Issue #76 dibuat dengan estimasi 20-28 jam (3-4 hari kerja). |
+| 2026-06-10 | Issue #86 dibuat untuk tambah field joinedYear (Tahun Bergabung) pada master data Petani: schema, validation, CRUD, UI (form/list/detail), bulk upload, tests. Field optional Integer 1900-2100. Estimasi 4-6 jam (1 hari kerja). |
 
 ### Changelog
 
@@ -518,6 +520,7 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-10   | Issue #86 dibuat — Tambah field joinedYear (Tahun Bergabung) pada master data Petani untuk analisis senioritas dan segmentasi. Field optional Integer range 1900-2100. Mencakup: schema, validation Zod, CRUD, UI (form/list/detail), bulk upload column mapping, dan 5 unit tests baru. Estimasi 4-6 jam. |
 | 06-09   | #76 selesai — Implementasi Bulk Upload Petani (BULK-03): dynamic column mapping UI, smart validation, validation preview table, download full/error data Excel, dan bulk transactional save. |
 | 06-09   | #68 selesai — Route Setup dan parent redirect `/admin/bulk-upload` ke `/farmers`. Menu seed updated.             |
 | 06-06   | #71 selesai — Refactor tabel ke DataTable, menambahkan ekspor Excel dengan exceljs dan visibilitas kolom di list User & Kelompok Tani |
