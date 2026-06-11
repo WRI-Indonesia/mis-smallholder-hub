@@ -39,7 +39,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Report              | 🔲 Not Started   | Belum ada report module. Issues #64–#67 dibuat (menu setup + placeholder + implementasi).                                                  |
 | Bulk Upload         | 🔲 Not Started   | Belum ada bulk upload module. Issues #68–#70, #76 dibuat (menu setup + placeholder + implementasi Farmer dengan column mapping). |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
-| Testing             | 🟡 Partial      | Vitest: 13 files / 150 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/training ✅; belum dashboard, parcel. |
+| Testing             | 🟡 Partial      | Vitest: 13 files / 155 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/training ✅; belum dashboard, parcel. |
 
 ### Progress Snapshot
 
@@ -132,10 +132,10 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Prisma models  | `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer` | Schema mencakup platform, RBAC, region, farmer group, dan farmer (MD-03) |
 | Admin routes   | ✅ Dashboard, Settings (Users/Roles/Menu/Regions), Master Data (Farmers list/detail/form + Groups list/detail/form), Profile | ✅ Admin foundation ada + Farmer CRUD complete; Dashboard placeholder only |
-| Server actions | `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `farmer-group`, `farmer`, `profile`, `role-permission`, `bulk-upload`                             | Action farmer & bulk upload tersedia; dashboard, training, parcel, production belum ada              |
+| Server actions | `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `farmer-group`, `farmer`, `profile`, `role-permission`, `bulk-upload`, `training`, `upload` | Action farmer, training, bulk upload tersedia; dashboard, parcel, production belum ada |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
 | Scripts        | S3/PDF CLI, export CSV, ⚠️ stale dashboard scripts in `/scripts/debug/` (BUG-002)                                                                                                 | Tools partial; `/scripts/debug/*dashboard*` reference missing `src/server/actions/dashboard.ts` |
-| Tests          | `npm test` lulus 12 files / 130 tests ✅; test files: auth, bulk-upload, farmer, menu-action, middleware, perf, rbac, rbac-permission, region, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer/bulk-upload); need dashboard/parcel/training |
+| Tests          | `npm test` lulus 13 files / 155 tests ✅; test files: auth, bulk-upload, farmer, menu-action, middleware, perf, rbac, rbac-permission, region, training-activity, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer/training/bulk-upload); need dashboard/parcel |
 | DevOps         | Dockerfile + `.github/workflows/deploy-dev.yaml` + `deploy-main.yml`                                                                                                               | DevOps partial; workflow ada tetapi deployment readiness belum diverifikasi di dokumen |
 
 ### Code Compliance Audit vs rule.md (2026-06-08)
@@ -260,6 +260,12 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | **✅ #75 Farmer RBAC & Menu Integration**        | MD-03              | ✅ Done | -        | 06-07  | RBAC filter by district/group; sidebar menu registration          |
 | #74 Farmer UI - List, Form, Menu                | MD-03              | ✅ Done | -        | 06-07  | `page.tsx`, `farmer-list-client.tsx`, `farmer-form-modal.tsx`, `[id]/page.tsx`, `loading.tsx`, menu entry CSV |
 | #75 Update Documentation & Progress Tracking    | MD-03              | ✅ Done | -        | 06-07  | progress.md diupdate: Phase Status, Active Issues, Snapshot, Audit Evidence, Changelog |
+| **✅ #77 Training Schema & Migration**          | MD-05              | ✅ Done | -        | 06-10  | `prisma/schema/training.prisma` — TrainingPackage, TrainingActivity, TrainingParticipant + enum TrainingCategory + migration + seed |
+| **✅ #78 Training Server Actions & Validation** | MD-05              | ✅ Done | -        | 06-10  | `src/server/actions/training.ts` — 10 server actions + `training-activity.schema.ts` Zod + RBAC access context + 16 unit tests |
+| **✅ #79 Training UI - List, Detail, Form**     | MD-05              | ✅ Done | -        | 06-10  | `training-list-client.tsx` DataTable + `training-form-modal.tsx` + `[id]/training-detail-client.tsx` + Excel export |
+| **✅ #80 Training Participants Management**     | MD-05              | ✅ Done | -        | 06-10  | `add-participants-modal.tsx` — dual-panel farmer search + add/remove participants + upload peserta via Excel/CSV + 3-tier validation |
+| **✅ #81 Training Evidence Upload (S3)**        | MD-05              | ✅ Done | -        | 06-11  | `src/server/actions/upload.ts` — S3 presigned upload + evidence PDF field in schema + form modal + detail page link |
+| **✅ #82 Update Documentation & Progress**      | MD-05              | ✅ Done | -        | 06-11  | progress.md updated: Phase Status MD-05 Done, Active Issues #77-#82, Changelog, Code Audit Evidence |
 | #86 Tambah Field Tahun Bergabung (joinedYear)   | MD-03              | ✅ Done | -        | 06-10  | Schema + validation + CRUD + UI + bulk upload + tests; field optional Integer 1900-2100 |
 
 ### Issue Workflow
