@@ -12,6 +12,7 @@ import { seedFarmerGroups } from "./seeds/seed-farmer-groups";
 import { seedFarmers } from "./seeds/seed-farmers";
 import { seedMenu } from "./seeds/seed-menu";
 import { seedRolePermissions } from "./seeds/seed-role-permissions";
+import { seedTrainingPackages } from "./seeds/seed-training-packages";
 
 async function main() {
   console.log("🌱 Starting seed...\n");
@@ -39,6 +40,10 @@ async function main() {
     // Farmers (depends on farmer groups)
     console.log("\n--- Farmers ---");
     await seedFarmers(prisma);
+
+    // Training Packages (no dependencies)
+    console.log("\n--- Training Packages ---");
+    await seedTrainingPackages(prisma);
 
     // 4. Menu (no dependencies)
     console.log("\n--- Menu ---");

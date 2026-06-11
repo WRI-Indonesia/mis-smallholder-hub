@@ -22,6 +22,7 @@ model Farmer {
   createdBy     String?     @map("created_by")
   modifiedAt    DateTime    @updatedAt @map("modified_at")
   modifiedBy    String?     @map("modified_by")
+  trainingParticipants TrainingParticipant[]
 
   @@index([farmerGroupId])
   @@index([isActive])

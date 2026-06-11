@@ -1,0 +1,62 @@
+// training.prisma — Training models
+
+model TrainingPackage {
+  id         String             @id @default(cuid())
+  code       TrainingCategory   @unique
+  name       String
+  desc       String?
+  isActive   Boolean            @default(true) @map("is_active")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  createdBy  String?            @map("created_by")
+  modifiedAt DateTime           @updatedAt @map("modified_at")
+  modifiedBy String?            @map("modified_by")
+  
+  activities TrainingActivity[]
+
+  @@map("ref_training_package")
+}
+
+model TrainingActivity {
+  id            String          @id @default(cuid())
+  packageId     String          @map("ref_training_package_id")
+  package       TrainingPackage @relation(fields: [packageId], references: [id])
+  farmerGroupId String          @map("farmer_group_id")
+  farmerGroup   FarmerGroup     @relation(fields: [farmerGroupId], references: [id])
+  location      String?         @map("location")
+  trainingDate  DateTime        @map("training_date")
+  evidenceKey   String?         @map("evidence_key")
+  evidenceName  String?         @map("evidence_name")
+  
+  isActive   Boolean            @default(true) @map("is_active")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  createdBy  String?            @map("created_by")
+  modifiedAt DateTime           @updatedAt @map("modified_at")
+  modifiedBy String?            @map("modified_by")
+
+  participants TrainingParticipant[]
+
+  @@index([packageId])
+  @@index([farmerGroupId])
+  @@index([isActive])
+  @@map("tbl_training_activity")
+}
+
+model TrainingParticipant {
+  id         String           @id @default(cuid())
+  activityId String           @map("training_activity_id")
+  activity   TrainingActivity @relation(fields: [activityId], references: [id])
+  farmerId   String           @map("farmer_id")
+  farmer     Farmer           @relation(fields: [farmerId], references: [id])
+  
+  isActive   Boolean          @default(true) @map("is_active")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  createdBy  String?          @map("created_by")
+  modifiedAt DateTime         @updatedAt @map("modified_at")
+  modifiedBy String?          @map("modified_by")
+
+  @@index([activityId])
+  @@index([farmerId])
+  @@index([isActive])
+  @@unique([activityId, farmerId])
+  @@map("tbl_training_participant")
+}

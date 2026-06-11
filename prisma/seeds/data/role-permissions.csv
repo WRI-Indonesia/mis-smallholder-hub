@@ -47,3 +47,16 @@ ADMIN,bulk-upload-farmers,CREATE
 OPERATOR,bulk-upload,VIEW
 OPERATOR,bulk-upload-farmers,VIEW
 OPERATOR,bulk-upload-farmers,CREATE
+SUPERADMIN,master-data-training,CREATE
+SUPERADMIN,master-data-training,VIEW
+SUPERADMIN,master-data-training,EDIT
+SUPERADMIN,master-data-training,DELETE
+ADMIN,master-data-training,VIEW
+ADMIN,master-data-training,CREATE
+ADMIN,master-data-training,EDIT
+ADMIN,master-data-training,DELETE
+OPERATOR,master-data-training,VIEW
+OPERATOR,master-data-training,CREATE
+OPERATOR,master-data-training,EDIT
+OPERATOR,master-data-training,DELETE
+MANAGEMENT,master-data-training,VIEW

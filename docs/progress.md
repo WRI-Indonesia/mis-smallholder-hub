@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-06-08 (re-verified terhadap working tree commit - code audit complete)
+**Last updated:** 2026-06-11 (re-verified terhadap working tree commit - code audit complete)
 
 **Next management review:** 2026-06-20
 
@@ -39,17 +39,17 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Report              | 🔲 Not Started   | Belum ada report module. Issues #64–#67 dibuat (menu setup + placeholder + implementasi).                                                  |
 | Bulk Upload         | 🔲 Not Started   | Belum ada bulk upload module. Issues #68–#70, #76 dibuat (menu setup + placeholder + implementasi Farmer dengan column mapping). |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
-| Testing             | 🟡 Partial      | Vitest: 11 files / 121 tests passed. Coverage: auth/RBAC/menu/user/region/farmer ✅; belum dashboard, parcel, training.                 |
+| Testing             | 🟡 Partial      | Vitest: 13 files / 150 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/training ✅; belum dashboard, parcel. |
 
 ### Progress Snapshot
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
 | Total phase    | 34 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 10 fase        | PLATFORM-01/02/04/05/06, MD-01/02/03, BULK-03 ✅ Updated |
+| ✅ Done        | 11 fase        | PLATFORM-01/02/04/05/06, MD-01/02/03/05, BULK-03     |
 | 🟠 Partial     | 5 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02, BULK-01       |
 | 🔲 Not Started | 7 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03, BULK-02      |
-| 🔲 Planned     | 11 fase        | MD-04–11, DASH-02/03, COMM-02                        |
+| 🔲 Planned     | 10 fase        | MD-04, MD-06–11, DASH-02/03, COMM-02                 |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
 | 🎯 Now         | 2 fase + 1 bug | DASH-01, RPT-01, BULK-01, BUG-002 (stale scripts)    |
 
@@ -192,7 +192,7 @@ Format phase: `STREAM-NN`.
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
 | MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model ✅, `src/server/actions/farmer.ts` ✅, validation ✅, UI (list/detail/form) ✅, test ✅ | Maintain; expand MD-04/05/06 dependency                                          |
 | MD-04       | Parcels                      | 🔲 Planned     | Next    | No parcel model/route/action/UI                                                                   | Start after MD-03; determine data access model (per farmer vs per group)         |
-| MD-05       | Training                     | 🔲 Planned     | Next    | No training model/route/action/UI; **#77-#82 dibuat** (schema, actions, UI, participants, docs)  | #77 schema → #78 actions → #79 UI → #80 participants → #82 docs; skip #81 (S3) MVP |
+| MD-05       | Training                     | ✅ Done        | Done    | Schema, actions, UI (list/detail/modal), participants management, and 11 unit tests completed | #77 schema → #78 actions → #79 UI → #80 participants → #82 docs; skip #81 (S3) MVP |
 | MD-06       | Agronomy / Production        | 🔲 Planned     | Next    | No production/agronomy model/route/action/UI                                                      | Validate dependency to Farmer/Parcel first; define per-farmer vs per-parcel      |
 | MD-07       | Staff                        | 🔲 Planned     | Later   | No staff model/route/action/UI                                                                    | Define scope                                                                     |
 | MD-08       | HCV                          | 🔲 Planned     | Later   | No HCV model/route/action/UI                                                                      | Define scope                                                                     |
@@ -513,6 +513,7 @@ npm test
 | 2026-06-07 | MD-03 Farmer breakdown: #72 (schema), #73 (actions+validation), #74 (UI), #75 (docs). Total estimasi 8-12 jam development.     |
 | 2026-06-08 | BULK-03 Farmer scope diputuskan: Template-less Excel upload dengan column mapping UI, auto-matching logic, smart validation (gender normalization, date parsing, NIK), preview table dengan filter valid/error, download invalid rows only untuk user perbaiki, bulk insert transaction-based. Issue #76 dibuat dengan estimasi 20-28 jam (3-4 hari kerja). |
 | 2026-06-10 | Issue #86 dibuat untuk tambah field joinedYear (Tahun Bergabung) pada master data Petani: schema, validation, CRUD, UI (form/list/detail), bulk upload, tests. Field optional Integer 1900-2100. Estimasi 4-6 jam (1 hari kerja). |
+| 2026-06-10 | MD-05 Training selesai dengan target #77-#82 (schema, actions, UI list & detail, participant management, dan tests) menggunakan tipe enum TrainingCategory baru. |
 
 ### Changelog
 
@@ -520,6 +521,7 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-10   | MD-05 Training selesai (#77-#82) — Model schema, seed paket pelatihan, server actions CRUD + partisipan, antarmuka list DataTable, modal form Combobox, detail aktivitas, modal panel ganda penambahan peserta, dan 11 unit tests. |
 | 06-10   | #86 selesai — Tambah field joinedYear (Tahun Bergabung) pada master data Petani: schema, validation Zod, CRUD, UI (form/list/detail), bulk upload column mapping, 4 unit tests baru, serta penambahan filter by District menggunakan searchable combobox. |
 | 06-09   | #76 selesai — Implementasi Bulk Upload Petani (BULK-03): dynamic column mapping UI, smart validation, validation preview table, download full/error data Excel, dan bulk transactional save. |
 | 06-09   | #68 selesai — Route Setup dan parent redirect `/admin/bulk-upload` ke `/farmers`. Menu seed updated.             |
@@ -649,6 +651,13 @@ Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk mod
 | 05-09   | #41 — Staff WRI: tidak ada Staff model/route/action/UI.                                                |
 | 05-08   | #39 — Training module lengkap: tidak ada Training model/route/action/UI.                               |
 | 05-05   | #21 — Parcels CRUD + MapLibre view: tidak ada Parcel model/route/action/UI.                            |
+
+#### Juni 2026
+
+| Tanggal | Perubahan |
+| ------- | --------- |
+| 06-11   | MD-05 selesai — Implementasi lengkap upload evidence training (PDF), format tanggal dd/mmm/yyyy, serta import/upload list peserta via Excel/CSV dengan 3-tier validation (Valid, Warning, Error) |
+| 06-10   | MD-03 selesai — Penambahan field `joinedYear` opsional pada model Farmer beserta validasi, CRUD, dan bulk upload |
 
 #### April 2026
 

@@ -35,3 +35,12 @@ enum FarmerGroupCategory {
   EX_PLASMA
   SWADAYA
 }
+
+enum TrainingCategory {
+  PAKET_1_BMP_PC_RSPO_NKT
+  PAKET_2_MK
+  PAKET_2_K3
+  PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV
+  OTHER
+}
+

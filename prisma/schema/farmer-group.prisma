@@ -21,6 +21,7 @@ model FarmerGroup {
   // RBAC
   users UserFarmerGroup[]
   farmers Farmer[]
+  activities TrainingActivity[]
 
   @@index([districtId])
   @@index([isActive])

@@ -9,3 +9,4 @@ settings-roles,settings,Role & Permission,/admin/settings/roles,Shield,3,TRUE,TR
 settings-regions,settings,Regions,/admin/settings/regions,MapPin,4,TRUE,TRUE
 bulk-upload,,Bulk Upload,/admin/bulk-upload,Upload,3,TRUE,TRUE
 bulk-upload-farmers,bulk-upload,Upload Petani,/admin/bulk-upload/farmers,User,1,TRUE,TRUE
+master-data-training,master-data,Pelatihan,/admin/master-data/training,GraduationCap,3,TRUE,TRUE
