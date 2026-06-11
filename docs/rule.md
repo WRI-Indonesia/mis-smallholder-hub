@@ -169,6 +169,37 @@ Untuk melakukan override permission menu per user (grant/revoke):
 - **Soft Delete** — Penghapusan override menggunakan update `isActive: false` (bukan physical delete).
 - **Optimasi Caching** — Fungsi pembacaan permission di `src/lib/rbac.ts` wajib dibungkus dengan React `cache` untuk mereduksi kueri ganda pada render lifecycle.
 
+### Hierarchical Menu Management (3-Level Support)
+
+Sistem menu mendukung hierarki sampai **3 level maksimal**:
+- **Level 1:** Menu Besar (e.g., Master Data, Settings, Dashboard)
+- **Level 2:** Sub Menu (e.g., Petani, Kelompok Tani, Pelatihan, User Management)
+- **Level 3:** Detail Sub Menu (e.g., Peserta Pelatihan, Bukti Pelatihan, Land Parcel, Training Record)
+
+**RBAC Permission Inheritance:**
+- Permission di **level 1** berlaku untuk semua level 2 dan level 3 di bawahnya (cascade)
+- Permission di **level 2** berlaku untuk semua level 3 di bawahnya
+- **Override eksplisit** di level lebih dalam meng-override inheritance (revoke atau grant)
+- Contoh: User punya VIEW di "Pelatihan" (level 2) → otomatis VIEW di "Peserta Pelatihan" (level 3), kecuali ada explicit REVOKE
+
+**UI Guidelines:**
+- **Max children:** Level 2 maksimal 5 children (level 3) — hindari clutter, pertimbangkan pagination/search jika > 5
+- **Dynamic route:** Level 3 gunakan dynamic route jika context-specific: `/admin/master-data/training/[id]/participants`
+- **Max depth:** Level 3 tidak boleh punya children (max depth = 3 level)
+- **Sidebar visual:**
+  - Level 2: `pl-4`, normal text size, collapsible jika punya children
+  - Level 3: `pl-8`, `text-xs`, `ChevronRight` icon atau bullet `•`
+- **Menu Management table visual:**
+  - Level 1: **Bold** text
+  - Level 2: `— ` prefix + normal weight
+  - Level 3: `—— ` prefix + `text-muted-foreground`
+
+**Technical Implementation:**
+- Helper function `buildMenuTree(items, parentKey, currentDepth, maxDepth)` di `src/lib/menu-utils.ts` untuk recursive tree building
+- Validation: `validateMenuDepth()` reject jika depth > 3
+- RBAC: `getEffectiveMenuPermissions()` dengan fallback ke parent/grandparent
+- Server action: Validate depth sebelum create/update menu item
+
 ---
 
 ## UI/UX

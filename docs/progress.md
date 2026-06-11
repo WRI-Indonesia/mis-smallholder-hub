@@ -45,13 +45,13 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
-| Total phase    | 34 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
+| Total phase    | 35 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
 | ✅ Done        | 11 fase        | PLATFORM-01/02/04/05/06, MD-01/02/03/05, BULK-03     |
 | 🟠 Partial     | 5 fase         | PLATFORM-03, TOOLS-01, OPS-01, OPS-02, BULK-01       |
 | 🔲 Not Started | 7 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03, BULK-02      |
-| 🔲 Planned     | 10 fase        | MD-04, MD-06–11, DASH-02/03, COMM-02                 |
+| 🔲 Planned     | 11 fase        | PLATFORM-07, MD-04, MD-06–11, DASH-02/03, COMM-02    |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
-| 🎯 Now         | 2 fase + 1 bug | DASH-01, RPT-01, BULK-01, BUG-002 (stale scripts)    |
+| 🎯 Now         | 3 fase + 1 bug | PLATFORM-07, DASH-01, RPT-01, BULK-01, BUG-002       |
 
 ### Management Talking Points
 
@@ -188,6 +188,7 @@ Format phase: `STREAM-NN`.
 | PLATFORM-04 | Autentikasi & RBAC           | ✅ Done        | Done    | NextAuth credentials, RBAC helpers, role permissions, data access, menu override — 5 auth tests  | Maintain and test regression                                                     |
 | PLATFORM-05 | Dynamic Menu Management      | ✅ Done        | Done    | `MenuItem` schema, seed, menu server actions, sidebar, menu management page                       | Maintain                                                                         |
 | PLATFORM-06 | Table Refactor & Export Excel | ✅ Done        | Done    | DataTable diperbarui dengan filter kolom & export Excel, list user/KT direfactor | Maintain dan perluas ke modul baru jika ditambahkan |
+| PLATFORM-07 | Hierarchical Menu (3-Level)  | 🔲 Planned     | Next    | Schema support recursive self-relation; UI & RBAC hanya handle 2 level | Implement level 3 menu: sidebar, RBAC inheritance, menu mgmt UI, validation depth |
 | MD-01       | Regions                      | ✅ Done        | Done    | Region schema, server actions, region page, tree UI, validation, 1 test file (391 LOC)           | Maintain                                                                         |
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
 | MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model ✅, `src/server/actions/farmer.ts` ✅, validation ✅, UI (list/detail/form) ✅, test ✅ | Maintain; expand MD-04/05/06 dependency                                          |
@@ -229,12 +230,13 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Sprint Focus
 
-| Priority | ID / Phase  | Tujuan                                 | Evidence                                                                                      | Next Action                                                              |
-| -------- | ----------- | -------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| P0       | BUG-002     | Fix stale dashboard tooling references | `scripts/debug/*dashboard*` import `src/server/actions/dashboard` yang tidak ada              | ✅ **BUG-001 FIXED** — redirect ke farmers works; **Remove/fix script** |
-| P0       | DASH-01     | Dashboard scope agreement + impl       | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`; **BLOCKING scope undefined** | **URGENT: Define scope in 48h** — cards, metrics, filters, wireframe    |
-| P1       | RPT-01      | Menu & placeholder Report              | Tidak ada report module; issue #64-#67 siap untuk diimplementasi                             | #64 menu + placeholder → #65-#67 tabel & export                         |
-| P1       | BULK-01     | Menu & placeholder Bulk Upload         | Tidak ada bulk upload module; issue #68-#70, #76 siap untuk diimplementasi                   | #68 menu + placeholder → #69-#70 CSV upload & validasi → #76 Farmer column mapping |
+| Priority | ID / Phase   | Tujuan                                 | Evidence                                                                                      | Next Action                                                              |
+| -------- | ------------ | -------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| P0       | BUG-002      | Fix stale dashboard tooling references | `scripts/debug/*dashboard*` import `src/server/actions/dashboard` yang tidak ada              | ✅ **BUG-001 FIXED** — redirect ke farmers works; **Remove/fix script** |
+| P0       | DASH-01      | Dashboard scope agreement + impl       | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`; **BLOCKING scope undefined** | **URGENT: Define scope in 48h** — cards, metrics, filters, wireframe    |
+| P1       | PLATFORM-07  | Hierarchical Menu (3-Level)            | Schema support recursive; UI & RBAC hanya 2 level; Training Participants butuh level 3       | #87 — Implement sidebar level 3, RBAC inheritance, validation depth max 3 |
+| P1       | RPT-01       | Menu & placeholder Report              | Tidak ada report module; issue #64-#67 siap untuk diimplementasi                             | #64 menu + placeholder → #65-#67 tabel & export                         |
+| P1       | BULK-01      | Menu & placeholder Bulk Upload         | Tidak ada bulk upload module; issue #68-#70, #76 siap untuk diimplementasi                   | #68 menu + placeholder → #69-#70 CSV upload & validasi → #76 Farmer column mapping |
 
 ### Active Issues / Work Items
 
@@ -267,6 +269,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | **✅ #81 Training Evidence Upload (S3)**        | MD-05              | ✅ Done | -        | 06-11  | `src/server/actions/upload.ts` — S3 presigned upload + evidence PDF field in schema + form modal + detail page link |
 | **✅ #82 Update Documentation & Progress**      | MD-05              | ✅ Done | -        | 06-11  | progress.md updated: Phase Status MD-05 Done, Active Issues #77-#82, Changelog, Code Audit Evidence |
 | #86 Tambah Field Tahun Bergabung (joinedYear)   | MD-03              | ✅ Done | -        | 06-10  | Schema + validation + CRUD + UI + bulk upload + tests; field optional Integer 1900-2100 |
+| #87 Hierarchical Menu Enhancement (3-Level)     | PLATFORM-07        | 🔲 Todo | TBD      | TBD    | Support 3-level menu struktur: sidebar render, RBAC inheritance, menu mgmt UI, validation depth max 3; estimasi 12-16 jam |
 
 ### Issue Workflow
 
@@ -501,6 +504,7 @@ npm test
 
 | Tanggal    | Keputusan                                                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-06-11 | Issue #87 dibuat untuk PLATFORM-07: Hierarchical Menu Enhancement (3-Level Support) — untuk manage detail sub menu seperti Training Participants, Farmer Parcel/Training/Production, dengan RBAC inheritance logic dan validation depth max 3. Estimasi 12-16 jam (2-3 hari kerja). |
 | 2026-06-06 | `progress.md` disinkronkan ulang berdasarkan existing file/code, bukan changelog historis.                                     |
 | 2026-06-06 | DASH-01/DASH-02/DASH-03/DASH-04 diturunkan statusnya karena dashboard source masih placeholder dan action dashboard tidak ada. |
 | 2026-06-06 | MD-03–MD-08 dikonfirmasi belum implementatif karena tidak ada Prisma model, route, server action, validation, atau UI.         |
@@ -527,6 +531,7 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-11   | Issue #87 dibuat (PLATFORM-07) — Hierarchical Menu Enhancement: support 3-level menu struktur (Menu Besar → Sub Menu → Detail Sub Menu) untuk Training Participants, Farmer detail pages (Parcel/Training/Production), dengan sidebar collapsible, RBAC inheritance logic, validation depth max 3, dan update menu management UI. Estimasi 12-16 jam. |
 | 06-10   | MD-05 Training selesai (#77-#82) — Model schema, seed paket pelatihan, server actions CRUD + partisipan, antarmuka list DataTable, modal form Combobox, detail aktivitas, modal panel ganda penambahan peserta, dan 11 unit tests. |
 | 06-10   | #86 selesai — Tambah field joinedYear (Tahun Bergabung) pada master data Petani: schema, validation Zod, CRUD, UI (form/list/detail), bulk upload column mapping, 4 unit tests baru, serta penambahan filter by District menggunakan searchable combobox. |
 | 06-09   | #76 selesai — Implementasi Bulk Upload Petani (BULK-03): dynamic column mapping UI, smart validation, validation preview table, download full/error data Excel, dan bulk transactional save. |
