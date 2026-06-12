@@ -103,6 +103,7 @@ Untuk multi-step task, buat plan singkat:
 | Data layer | CSV = static, Prisma = dynamic |
 | Validation | Zod di `src/validations/` |
 | Server Actions | Di `src/server/actions/` |
+| Database Schema | Lihat [database-schema.md](./database-schema.md) untuk ERD, indexes, constraints, migrations, security |
 
 ### Data Access & Soft Delete
 
