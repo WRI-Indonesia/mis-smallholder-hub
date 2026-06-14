@@ -193,7 +193,7 @@ Format phase: `STREAM-NN`.
 | MD-01       | Regions                      | ✅ Done        | Done    | Region schema, server actions, region page, tree UI, validation, 1 test file (391 LOC)           | Maintain                                                                         |
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
 | MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model ✅, `src/server/actions/farmer.ts` (188 LOC) ✅, validation ✅, UI (list/detail/form) ✅, test ✅ | Maintain; expand MD-04/05/06 dependency                                          |
-| MD-04       | Parcels                      | 🔲 Planned     | Next    | No parcel model/route/action/UI                                                                   | Start after MD-03; determine data access model (per farmer vs per group)         |
+| MD-04       | Parcels                      | ✅ Done        | Done    | `LandParcel` model, `src/server/actions/land-parcel.ts`, `src/server/actions/bulk-upload-parcel.ts`, validation schema, UI list/detail/form, ZIP Shapefile bulk upload, 14 unit tests | Maintain |
 | MD-05       | Training                     | ✅ Done        | Done    | Schema (TrainingPackage/Activity/Participant) ✅, actions (231 LOC) ✅, UI (list/detail/modal) ✅, participants management ✅, 11 unit tests ✅ | Maintain; #77-#82 complete; skip #81 (S3) MVP |
 | MD-06       | Agronomy / Production        | 🔲 Planned     | Next    | No production/agronomy model/route/action/UI                                                      | Validate dependency to Farmer/Parcel first; define per-farmer vs per-parcel      |
 | MD-07       | Staff                        | 🔲 Planned     | Later   | No staff model/route/action/UI                                                                    | Define scope                                                                     |
@@ -674,6 +674,7 @@ Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk mod
 
 | Tanggal | Perubahan |
 | ------- | --------- |
+| 06-14   | MD-04 selesai — Implementasi lengkap master data Lahan (Land Parcels) (#88): CRUD, UI list DataTable dengan filter, UI detail MapLibre polygon, modal form Zod, ZIP Shapefile bulk upload dengan column mapping & smart validation, unit testing, dan seeding menu. |
 | 06-11   | MD-05 selesai — Implementasi lengkap upload evidence training (PDF), format tanggal dd/mmm/yyyy, serta import/upload list peserta via Excel/CSV dengan 3-tier validation (Valid, Warning, Error) |
 | 06-10   | MD-03 selesai — Penambahan field `joinedYear` opsional pada model Farmer beserta validasi, CRUD, dan bulk upload |
 
