@@ -127,6 +127,7 @@ export function MenuFormModal({ open, onClose, item, parentOptions }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.parentKey && <p className="text-sm text-destructive">{errors.parentKey[0]}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="icon">Icon</Label>

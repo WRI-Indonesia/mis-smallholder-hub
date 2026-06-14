@@ -4,6 +4,80 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 /**
+ * Get effective permissions for all menu items, considering default role permissions,
+ * user overrides, and cascading inheritance (from level 1 to level 2 to level 3).
+ * Cached per-request to avoid redundant database calls.
+ */
+export const getEffectiveMenuPermissions = cache(async (role: string, userId?: string): Promise<Record<string, string[]>> => {
+  const menuItems = await prisma.menuItem.findMany({
+    where: { isActive: true },
+    select: { key: true, parentKey: true }
+  });
+
+  const rolePermissions = await prisma.rolePermission.findMany({
+    where: { role: role as any, isActive: true },
+    select: { menuKey: true, permission: true }
+  });
+
+  const userOverrides = userId
+    ? await prisma.userPermissionOverride.findMany({
+        where: { userId, isActive: true },
+        select: { menuKey: true, permission: true, granted: true }
+      })
+    : [];
+
+  const effectiveMap: Record<string, Set<string>> = {};
+
+  // Build tree structures to traverse top-down
+  const rootKeys = menuItems.filter(item => !item.parentKey).map(item => item.key);
+  const childrenMap: Record<string, string[]> = {};
+  menuItems.forEach(item => {
+    if (item.parentKey) {
+      if (!childrenMap[item.parentKey]) {
+        childrenMap[item.parentKey] = [];
+      }
+      childrenMap[item.parentKey].push(item.key);
+    }
+  });
+
+  // Traverse tree top-down to resolve permissions
+  function traverse(key: string, parentPermissions: Set<string> = new Set()) {
+    const currentPerms = new Set(parentPermissions);
+
+    // Apply default role permissions for current node
+    const defaults = rolePermissions.filter(rp => rp.menuKey === key).map(rp => rp.permission);
+    defaults.forEach(p => currentPerms.add(p));
+
+    // Apply user overrides for current node
+    const overrides = userOverrides.filter(uo => uo.menuKey === key);
+    overrides.forEach(override => {
+      if (override.granted) {
+        currentPerms.add(override.permission);
+      } else {
+        currentPerms.delete(override.permission);
+      }
+    });
+
+    effectiveMap[key] = currentPerms;
+
+    // Resolve children
+    const children = childrenMap[key] || [];
+    children.forEach(childKey => {
+      traverse(childKey, currentPerms);
+    });
+  }
+
+  rootKeys.forEach(rootKey => traverse(rootKey));
+
+  // Convert Sets to arrays
+  const result: Record<string, string[]> = {};
+  for (const key in effectiveMap) {
+    result[key] = Array.from(effectiveMap[key]);
+  }
+  return result;
+});
+
+/**
  * Get menu keys that a role has VIEW permission for, considering user permission overrides.
  * Cached per-request to avoid redundant database calls.
  */
@@ -14,38 +88,21 @@ export const getAccessibleMenuKeys = cache(async (role: string, userId?: string)
     targetUserId = session?.user?.id;
   }
 
-  const rolePermissions = await prisma.rolePermission.findMany({
-    where: {
-      role: role as never,
-      permission: "VIEW",
-      isActive: true,
-    },
-    select: { menuKey: true },
-  });
-
-  let accessibleKeys = rolePermissions.map((p) => p.menuKey);
-
-  if (targetUserId && role !== "SUPERADMIN") {
-    const overrides = await prisma.userPermissionOverride.findMany({
-      where: {
-        userId: targetUserId,
-        permission: "VIEW",
-        isActive: true,
-      },
-      select: { menuKey: true, granted: true },
+  if (role === "SUPERADMIN") {
+    const activeMenus = await prisma.menuItem.findMany({
+      where: { isActive: true },
+      select: { key: true }
     });
-
-    for (const override of overrides) {
-      if (override.granted) {
-        if (!accessibleKeys.includes(override.menuKey)) {
-          accessibleKeys.push(override.menuKey);
-        }
-      } else {
-        accessibleKeys = accessibleKeys.filter((key) => key !== override.menuKey);
-      }
-    }
+    return activeMenus.map(m => m.key);
   }
 
+  const effective = await getEffectiveMenuPermissions(role, targetUserId);
+  const accessibleKeys: string[] = [];
+  for (const key in effective) {
+    if (effective[key].includes("VIEW")) {
+      accessibleKeys.push(key);
+    }
+  }
   return accessibleKeys;
 });
 
@@ -78,38 +135,8 @@ export const getUserPermissionsForMenu = cache(async (menuKey: string): Promise<
   const role = session.user.role;
   if (role === "SUPERADMIN") return ["CREATE", "VIEW", "EDIT", "DELETE"];
 
-  const [rolePermissions, overrides] = await Promise.all([
-    prisma.rolePermission.findMany({
-      where: {
-        role: role as never,
-        menuKey,
-        isActive: true,
-      },
-      select: { permission: true },
-    }),
-    prisma.userPermissionOverride.findMany({
-      where: {
-        userId: session.user.id,
-        menuKey,
-        isActive: true,
-      },
-      select: { permission: true, granted: true },
-    }),
-  ]);
-
-  let effective = rolePermissions.map((p) => p.permission as string);
-
-  for (const override of overrides) {
-    if (override.granted) {
-      if (!effective.includes(override.permission)) {
-        effective.push(override.permission);
-      }
-    } else {
-      effective = effective.filter((p) => p !== override.permission);
-    }
-  }
-
-  return effective;
+  const effective = await getEffectiveMenuPermissions(role, session.user.id);
+  return effective[menuKey] || [];
 });
 
 /**
@@ -120,4 +147,5 @@ export async function hasPermission(menuKey: string, permission: string): Promis
   const permissions = await getUserPermissionsForMenu(menuKey);
   return permissions.includes(permission);
 }
+
 

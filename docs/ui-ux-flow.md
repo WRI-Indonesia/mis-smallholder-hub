@@ -9,12 +9,12 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **13 files / 155 tests passing** | Full coverage: auth, RBAC, menu, user, region, farmer, training, bulk upload |
-| **Completed Modules** | ✅ 12 phases done | Platform (1-6), MD (1-3, 5), BULK (1, 3) |
+| **Test Status** | ✅ **13 files / 161 tests passing** | Full coverage: auth, RBAC, menu, user, region, farmer, training, bulk upload |
+| **Completed Modules** | ✅ 13 phases done | Platform (1-7), MD (1-3, 5), BULK (1, 3) |
 | **Server Actions** | ✅ 12 files / 1600 LOC | user, menu, region, farmer-group, farmer, training, bulk-upload, upload, etc. |
 | **Prisma Models** | ✅ 8 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, Training (3) |
 | **Priority P0** | 🔴 **DASH-01 scope** | Dashboard scope agreement needed in 48h (BLOCKING) |
-| **Priority P1** | 🔲 RPT-01, PLATFORM-07 | Report module + 3-level menu hierarchy |
+| **Priority P1** | 🔲 RPT-01 | Report module foundation |
 
 ---
 
@@ -106,7 +106,7 @@
 ⚙️ Settings
    ├── ✅ User Management (PLATFORM-04) — CRUD + data access + menu override
    ├── ✅ Role & Permission (PLATFORM-04) — Matrix C/V/E/D
-   ├── ✅ Menu Management (PLATFORM-05) — Dynamic sidebar (2-level, 3-level planned)
+   ├── ✅ Menu Management (PLATFORM-05/07) — Dynamic sidebar (3-level support)
    └── ✅ Region Settings (MD-01) — Tree hierarchy
 
 🔧 Tools (🟠 TOOLS-01)
@@ -358,8 +358,8 @@ User Access Bulk Upload
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 12 Phases)
-
+## Completed Modules (✅ 13 Phases)
+ 
 | Phase | Module | Key Features | LOC |
 |-------|--------|--------------|-----|
 | PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup | — |
@@ -368,15 +368,16 @@ User Access Bulk Upload
 | PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides | 647 LOC (user + access + menu) |
 | PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child | 110 LOC |
 | PLATFORM-06 | DataTable & Export | Column visibility, Excel export (exceljs) | — |
+| PLATFORM-07 | 3-Level Menu | Sidebar, RBAC inheritance, validation depth max 3 | — |
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD | 104 LOC |
 | MD-02 | Farmer Groups | List, detail, CRUD, RBAC filtering | 145 LOC |
 | MD-03 | Farmers | Full CRUD, RBAC, joinedYear field | 188 LOC |
 | MD-05 | Training | 3 models, activities, participants, evidence upload | 231 LOC |
 | BULK-01 | Bulk Upload Menu | Route setup, redirect to /farmers | — |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors | 177 LOC |
-
+ 
 **Total Server Actions**: 12 files, **1600 LOC**  
-**Total Tests**: 13 files, **155 tests passing** ✅
+**Total Tests**: 13 files, **161 tests passing** ✅
 
 ## In Progress (🟠 2 Phases)
 
@@ -385,13 +386,12 @@ User Access Bulk Upload
 | TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager |
 | OPS-01 | Testing | Partial | Dashboard, parcel, production test coverage |
 
-## Planned - Now (🔲 3 Phases Priority)
-
+## Planned - Now (🔲 2 Phases Priority)
+ 
 | Phase | Module | Next Steps | Blocker |
 |-------|--------|------------|---------|
 | DASH-01 | Dashboard Basic | **URGENT**: Define scope in 48h | ❌ Scope not agreed |
 | RPT-01 | Report Module | Menu + placeholder → User/Region/KT reports | — |
-| PLATFORM-07 | 3-Level Menu | Sidebar, RBAC inheritance, validation depth max 3 | — |
 
 ## Planned - Next (🔲 5 Phases)
 
@@ -460,12 +460,11 @@ All code follows:
 ---
 
 ## Priority Actions (Next 2 Weeks)
-
+ 
 | Priority | Action | Owner | Deadline | Impact |
 |----------|--------|-------|----------|--------|
 | **P0** | **DASH-01 Scope Agreement** | Product + Engineering | **2026-06-14 (48h)** | **BLOCKING** — Dashboard cannot start without scope |
 | P1 | RPT-01 Implementation | Engineering | 2026-06-20 | Report module foundation (menu + placeholder + User report) |
-| P1 | PLATFORM-07 Implementation | Engineering | 2026-06-22 | 3-level menu for Training Participants, etc. |
 | P2 | BUG-002 Fix Stale Scripts | Engineering | 2026-06-20 | Remove `/scripts/debug/*dashboard*` or create skeleton `dashboard.ts` |
 
 ---

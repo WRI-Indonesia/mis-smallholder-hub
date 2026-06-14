@@ -46,12 +46,12 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
 | Total phase    | 35 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 12 fase        | PLATFORM-01/02/03/04/05/06, MD-01/02/03/05, BULK-01/03     |
+| ✅ Done        | 13 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/05, BULK-01/03     |
 | 🟠 Partial     | 2 fase         | TOOLS-01, OPS-01 |
 | 🔲 Not Started | 6 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03      |
-| 🔲 Planned     | 14 fase        | PLATFORM-07, MD-04/06/07/08/09/10/11, DASH-02/03, COMM-02, BULK-02, OPS-02    |
+| 🔲 Planned     | 13 fase        | MD-04/06/07/08/09/10/11, DASH-02/03, COMM-02, BULK-02, OPS-02    |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
-| 🎯 Now         | 3 fase         | PLATFORM-07, DASH-01, RPT-01       |
+| 🎯 Now         | 2 fase         | DASH-01, RPT-01       |
 
 ### Management Talking Points
 
@@ -189,7 +189,7 @@ Format phase: `STREAM-NN`.
 | PLATFORM-04 | Autentikasi & RBAC           | ✅ Done        | Done    | NextAuth credentials, RBAC helpers, role permissions, data access, menu override — 5 auth tests  | Maintain and test regression                                                     |
 | PLATFORM-05 | Dynamic Menu Management      | ✅ Done        | Done    | `MenuItem` schema, seed, menu server actions, sidebar, menu management page                       | Maintain                                                                         |
 | PLATFORM-06 | Table Refactor & Export Excel | ✅ Done        | Done    | DataTable diperbarui dengan filter kolom & export Excel, list user/KT direfactor | Maintain dan perluas ke modul baru jika ditambahkan |
-| PLATFORM-07 | Hierarchical Menu (3-Level)  | 🔲 Planned     | Next    | Schema support recursive self-relation; UI & RBAC hanya handle 2 level | Implement level 3 menu: sidebar, RBAC inheritance, menu mgmt UI, validation depth |
+| PLATFORM-07 | Hierarchical Menu (3-Level)  | ✅ Done        | Done    | Schema support recursive self-relation; UI & RBAC supporting 3-level | Implement sidebar level 3, RBAC inheritance, validation depth max 3 |
 | MD-01       | Regions                      | ✅ Done        | Done    | Region schema, server actions, region page, tree UI, validation, 1 test file (391 LOC)           | Maintain                                                                         |
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
 | MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model ✅, `src/server/actions/farmer.ts` (188 LOC) ✅, validation ✅, UI (list/detail/form) ✅, test ✅ | Maintain; expand MD-04/05/06 dependency                                          |
@@ -235,7 +235,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | -------- | ------------ | -------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | P0       | BUG-002      | Fix stale dashboard tooling references | `scripts/debug/*dashboard*` import `src/server/actions/dashboard` yang tidak ada              | ✅ **BUG-001 FIXED** — redirect ke farmers works; **Remove/fix script** |
 | P0       | DASH-01      | Dashboard scope agreement + impl       | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`; **BLOCKING scope undefined** | **URGENT: Define scope in 48h** — cards, metrics, filters, wireframe    |
-| P1       | PLATFORM-07  | Hierarchical Menu (3-Level)            | Schema support recursive; UI & RBAC hanya 2 level; Training Participants butuh level 3       | #87 — Implement sidebar level 3, RBAC inheritance, validation depth max 3 |
+| P1       | PLATFORM-07  | Hierarchical Menu (3-Level)            | Schema support recursive; UI & RBAC supporting 3-level           | #87 — Implement sidebar level 3, RBAC inheritance, validation depth max 3 |
 | P1       | RPT-01       | Menu & placeholder Report              | Tidak ada report module; issue #64-#67 siap untuk diimplementasi                             | #64 menu + placeholder → #65-#67 tabel & export                         |
 | P1       | BULK-01      | Menu & placeholder Bulk Upload         | Tidak ada bulk upload module; issue #68-#70, #76 siap untuk diimplementasi                   | #68 menu + placeholder → #69-#70 CSV upload & validasi → #76 Farmer column mapping |
 
@@ -271,7 +271,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | **✅ #81 Training Evidence Upload (S3)**        | MD-05              | ✅ Done | -        | 06-11  | `src/server/actions/upload.ts` — S3 presigned upload + evidence PDF field in schema + form modal + detail page link |
 | **✅ #82 Update Documentation & Progress**      | MD-05              | ✅ Done | -        | 06-11  | progress.md updated: Phase Status MD-05 Done, Active Issues #77-#82, Changelog, Code Audit Evidence |
 | #86 Tambah Field Tahun Bergabung (joinedYear)   | MD-03              | ✅ Done | -        | 06-10  | Schema + validation + CRUD + UI + bulk upload + tests; field optional Integer 1900-2100 |
-| #87 Hierarchical Menu Enhancement (3-Level)     | PLATFORM-07        | 🔲 Todo | TBD      | TBD    | Support 3-level menu struktur: sidebar render, RBAC inheritance, menu mgmt UI, validation depth max 3; estimasi 12-16 jam |
+| **✅ #87 Hierarchical Menu (3-Level)**          | PLATFORM-07        | ✅ Done | -        | 06-14  | Support 3-level menu struktur: sidebar render, RBAC inheritance, menu mgmt UI, validation depth max 3 |
 
 ### Issue Workflow
 
@@ -535,6 +535,7 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-14   | PLATFORM-07 selesai (#87) — Hierarchical Menu (3-Level): recursive tree building, validation depth max 3, cascading permission inheritance, sidebar 3-level collapsible styling, and updated Menu Management UI. |
 | 06-12   | **CODE AUDIT COMPLETE** — Comprehensive audit seluruh codebase dan update keempat dokumen utama: progress.md (phase status verified), rule.md (compliance audit), database-schema.md (P0 sections), ui-ux-flow.md (compact collapsible format). Verified: 13 test files/155 tests ✅, Training MD-05 complete ✅, Bulk Upload BULK-03 complete ✅, 12 server actions/1600 LOC, 6 validation schemas, 8 Prisma models. Dashboard masih placeholder (DASH-01 scope needed). |
 | 06-12   | Database Schema Documentation — Added P0 critical sections: Index Strategy (primary/secondary indexes dengan performance targets), Constraint & Data Integrity (FK behaviors, business rules, soft delete pattern, referential integrity flowchart), Migration Strategy (workflow, risk levels, migration history, pre-deployment checklist, breaking changes policy, data backfill examples), Security Considerations (auth/RBAC, password security, SQL injection prevention, data access patterns, sensitive data protection, audit trail, OWASP Top 10 compliance), dan Performance & Data Volume (3-year projections, table size estimates, query optimization, pagination strategies, N+1 prevention, connection pooling, caching strategy). Dokumentasi sekarang production-ready dengan 112 MB estimasi Year 3 dan query performance targets < 300ms. |
 | 06-11   | Issue #87 dibuat (PLATFORM-07) — Hierarchical Menu Enhancement: support 3-level menu struktur (Menu Besar → Sub Menu → Detail Sub Menu) untuk Training Participants, Farmer detail pages (Parcel/Training/Production), dengan sidebar collapsible, RBAC inheritance logic, validation depth max 3, dan update menu management UI. Estimasi 12-16 jam. |

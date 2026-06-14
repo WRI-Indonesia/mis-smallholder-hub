@@ -14,19 +14,13 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Leaf } from "lucide-react";
-
-interface MenuItem {
-  key: string;
-  title: string;
-  url: string;
-  icon: string | null;
-  children: MenuItem[];
-}
-
+import type { MenuItem } from "@/lib/menu-utils";
+ 
 interface AppSidebarClientProps extends React.ComponentProps<typeof Sidebar> {
   menuItems: MenuItem[];
   user: { name: string; email: string };
 }
+
 
 export function AppSidebarClient({ menuItems, user, ...props }: AppSidebarClientProps) {
   const navItems = menuItems.map((item) => ({
@@ -34,12 +28,18 @@ export function AppSidebarClient({ menuItems, user, ...props }: AppSidebarClient
     url: item.url,
     icon: item.icon ?? undefined,
     isActive: true,
-    items: item.children.map((child) => ({
+    items: (item.children || []).map((child) => ({
       title: child.title,
       url: child.url,
       icon: child.icon ?? undefined,
+      items: child.children?.map((gchild) => ({
+        title: gchild.title,
+        url: gchild.url,
+        icon: gchild.icon ?? undefined,
+      })),
     })),
   }));
+
 
   return (
     <Sidebar collapsible="icon" {...props}>

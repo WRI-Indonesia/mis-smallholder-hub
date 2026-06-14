@@ -25,14 +25,19 @@ export async function AppSidebar(
 
   // Other roles: filter by permission
   const accessibleKeys = await getAccessibleMenuKeys(role, session?.user?.id);
-
-  const filteredMenuItems = allMenuItems
-    .filter((item) => accessibleKeys.includes(item.key))
-    .map((item) => ({
-      ...item,
-      children: item.children.filter((child) => accessibleKeys.includes(child.key)),
-    }))
-    .filter((item) => item.children.length > 0 || accessibleKeys.includes(item.key));
-
+ 
+  function filterMenuTree(items: any[]): any[] {
+    return items
+      .filter((item) => accessibleKeys.includes(item.key))
+      .map((item) => ({
+        ...item,
+        children: filterMenuTree(item.children || []),
+      }))
+      .filter((item) => (item.children && item.children.length > 0) || accessibleKeys.includes(item.key));
+  }
+ 
+  const filteredMenuItems = filterMenuTree(allMenuItems);
+ 
   return <AppSidebarClient menuItems={filteredMenuItems} user={user} {...props} />;
 }
+
