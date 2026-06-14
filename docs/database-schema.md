@@ -1,7 +1,7 @@
 # Database Schema — ERD
 
 > Visualisasi Entity Relationship Diagram untuk schema aktif.
-> Update terakhir: 2026-06-11
+> Update terakhir: 2026-06-14 (Post-MD-04 Land Parcel Implementation — Issue #88)
 
 ---
 
@@ -17,6 +17,9 @@ erDiagram
     %% FARMER GROUP & FARMER
     District ||--o{ FarmerGroup : "located in"
     FarmerGroup ||--o{ Farmer : "has members"
+    
+    %% LAND PARCEL
+    Farmer ||--o{ LandParcel : "owns parcels"
     
     %% TRAINING MODULE
     TrainingPackage ||--o{ TrainingActivity : "used in"
@@ -41,7 +44,7 @@ erDiagram
 
 ## Quick Summary
 
-### Implemented Models (7 Categories)
+### Implemented Models (8 Categories)
 
 | Category | Tables | Key Features |
 |----------|--------|--------------|
@@ -51,11 +54,11 @@ erDiagram
 | **Menu** | MenuItem | Recursive parent-child (3-level), dynamic menu management |
 | **Farmer Group** | FarmerGroup | District-based, location coordinates, category (EX_PLASMA/SWADAYA) |
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
+| **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
 
-### Planned Models (7 Categories)
+### Planned Models (6 Categories)
 
-- **Parcel** (MD-04) — Land management per farmer
 - **Production** (MD-06) — Agronomy & production records
 - **Staff** (MD-07) — Staff activity tracking
 - **HCV** (MD-08) — High Conservation Value assessments
@@ -78,7 +81,8 @@ erDiagram
 
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
-| **2.0.0** | 2026-06-11 | Training module, Farmer.joinedYear | Medium (new tables + optional field) |
+| **2.1.0** | 2026-06-14 | Land Parcel module (#88): LandParcel model, ZIP Shapefile bulk upload | Medium (new table + geospatial features) |
+| 2.0.0 | 2026-06-11 | Training module, Farmer.joinedYear | Medium (new tables + optional field) |
 | 1.5.0 | 2026-05-22 | RBAC overrides, User data access | High (new RBAC tables) |
 | 1.0.0 | 2026-04-14 | Initial schema | — |
 
@@ -210,6 +214,30 @@ erDiagram
     }
 
     FarmerGroup ||--o{ Farmer : "has"
+
+    %% ═══════════════════════════════════════════
+    %% LAND PARCEL
+    %% ═══════════════════════════════════════════
+
+    LandParcel {
+        String id PK
+        String farmer_id FK
+        String parcel_id
+        Float location_lat
+        Float location_long
+        Json polygon
+        Float area
+        Int planting_year
+        Int revision
+        String notes
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    Farmer ||--o{ LandParcel : "owns"
 
     %% ═══════════════════════════════════════════
     %% TRAINING
@@ -369,13 +397,13 @@ erDiagram
 | **Menu** | MenuItem | ✅ Complete with recursive parent-child (3-level support) |
 | **Farmer Group** | FarmerGroup | ✅ Complete with location & category |
 | **Farmer** | Farmer | ✅ Complete with demographics & joinedYear field |
+| **Land Parcel** | LandParcel | ✅ Complete with geolocation, polygon geometry (GeoJSON), area tracking, revision history |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | ✅ Complete with evidence upload & participant management |
 
 ### 🔲 Planned (Roadmap)
 
 | Category | Tables | Target Phase |
 |----------|--------|--------------|
-| **Parcel** | LandParcel | MD-04 |
 | **Production** | ProductionRecord | MD-06 |
 | **Staff** | Staff, StaffActivity | MD-07 |
 | **HCV** | HCVAssessment | MD-08 |
@@ -597,6 +625,9 @@ flowchart LR
 | **TrainingParticipant** | `activityId` | Get participants for an activity (list view) | HIGH |
 | TrainingParticipant | `farmerId` | Get all trainings attended by a farmer | HIGH |
 | TrainingParticipant | `isActive` | Filter active participants | MEDIUM |
+| **LandParcel** | `farmerId` | Get all parcels for a farmer | HIGH — list parcels, map view |
+| LandParcel | `isActive` | Filter active parcels | HIGH |
+| LandParcel | `parcelId` | Search parcel by ID | MEDIUM — lookup operations |
 
 ### Index Maintenance Notes
 
@@ -611,6 +642,7 @@ flowchart LR
 | Login (email lookup) | < 100ms | UNIQUE index on `User.email` |
 | List KT by district | < 200ms | Index on `FarmerGroup.districtId` + `isActive` |
 | List farmers in KT | < 300ms | Index on `Farmer.farmerGroupId` + `isActive` |
+| List parcels by farmer | < 300ms | Index on `LandParcel.farmerId` + `isActive` |
 | Training participant list | < 300ms | Index on `TrainingParticipant.activityId` |
 | RBAC permission check | < 150ms | Composite unique indexes on RBAC tables |
 | Geography hierarchy lookup | < 100ms | UNIQUE code indexes on all geography tables |
@@ -636,6 +668,8 @@ flowchart LR
 | FarmerGroup | `districtId` | District | `id` | RESTRICT | CASCADE |
 | **Farmer** | | | | | |
 | Farmer | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
+| **LandParcel** | | | | | |
+| LandParcel | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
 | **Training** | | | | | |
 | TrainingActivity | `packageId` | TrainingPackage | `id` | RESTRICT | CASCADE |
 | TrainingActivity | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
@@ -769,6 +803,7 @@ flowchart LR
 | `20260607000000_add_farmer` | 2026-06-07 | Add Farmer model (demographics, farmerId, nik) | HIGH (new table) |
 | `20260610085445_init_training` | 2026-06-10 | Add Training module (Package, Activity, Participant) | HIGH (3 new tables) |
 | `20260610091207_add_training_evidence` | 2026-06-10 | Add evidence upload fields to TrainingActivity (evidenceKey, evidenceName) | LOW (nullable fields) |
+| `20260614075754_add_land_parcel` | 2026-06-14 | Add LandParcel model (#88): geolocation, polygon, area, planting year, revision tracking | HIGH (new table with geospatial features) |
 
 ### Pre-Deployment Checklist
 

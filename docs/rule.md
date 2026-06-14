@@ -116,6 +116,23 @@ Untuk multi-step task, buat plan singkat:
 - **Pattern** — Gunakan helper function untuk inject where clause RBAC, jangan copy-paste manual di setiap action.
 - **Backend Permission Validation** — Setiap Server Action (terutama mutasi data) wajib divalidasi ulang di level server menggunakan helper `hasPermission(menuCode, permission)` sebelum melakukan query/mutasi database, untuk mencegah eksekusi request langsung yang tidak sah (bypass UI).
 
+### Revision Tracking Pattern
+
+Untuk data yang memerlukan tracking perubahan historical (contoh: Land Parcel update):
+- **Field `revision`**: Tambahkan field `revision Int @default(1)` di model
+- **Auto-increment on update**: Setiap update record, increment revision number
+- **Soft delete old version**: Saat update dengan parcel ID sama, set old record `isActive = false` dan create new record dengan `revision += 1`
+- **History tracking**: User bisa melihat historical changes melalui filter `isActive = false` dengan order by revision
+- **Duplicate detection**: 
+  - Check uniqueness constraint (misalnya: `parcelId` per `farmerId`)
+  - Jika duplicate found dengan `isActive = true` → reject
+  - Jika duplicate found dengan `isActive = false` → allow update (increment revision)
+- **Bulk upload handling**: 
+  - Detect duplicate parcel dalam file dan database
+  - Auto-increment revision untuk update existing parcel
+  - Preserve audit trail dengan `modified_by` dan `modified_at`
+- **Implementasi Reference**: Lihat `LandParcel` model dan `bulk-upload-parcel.ts` (issue #88)
+
 ### RBAC Data Access Hierarchy
 
 ```
@@ -289,9 +306,59 @@ Untuk fitur bulk upload data massal (misalnya Petani, Kelompok Tani, atau Region
 - **Download Feedback**:
   - Pengguna wajib diberikan opsi untuk mengunduh laporan hasil validasi baik data penuh (*full data*) maupun baris yang gagal saja (*error-only*), dengan menyertakan kolom "Keterangan" penjelasan error.
 
+### Shapefile Bulk Upload Pattern (Geospatial Data)
+
+Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ikuti pattern berikut:
+- **Format Input**: ZIP file berisi `.shp`, `.shx`, `.dbf`, dan file pendukung lainnya
+- **Parsing**: Gunakan library `shapefile` untuk membaca geometri dan atribut dari Shapefile
+- **Column Mapping**: 
+  - Sediakan dropdown mapping untuk setiap kolom dari DBF attributes ke field database target
+  - Auto-match kolom berdasarkan similarity name (fuzzy matching)
+  - Wajib mapping: Farmer ID/Name, Parcel ID, dan geometry field
+- **Geometry Validation**:
+  - Validasi tipe geometry (Polygon/MultiPolygon untuk land parcel)
+  - Extract centroid untuk location_lat/location_long
+  - Convert geometry ke GeoJSON format untuk field polygon
+  - Hitung area otomatis dari polygon geometry
+- **Smart Validations**:
+  - Validasi farmerId terhadap database (must exist & active)
+  - Check uniqueness parcelId per farmer (file-level + DB-level)
+  - Validasi geometry: tidak boleh null, harus valid polygon
+  - Optional fields: planting year (1900-2100), notes
+- **Preview & Save**:
+  - Tampilkan preview tabel dengan status validasi per row
+  - Show geometry info: area (ha), centroid coordinates, polygon complexity
+  - Bulk insert dengan transaction-based (all-or-nothing)
+  - Auto-increment revision untuk update parcel yang sudah ada
+- **Implementasi Reference**: Lihat `src/server/actions/bulk-upload-parcel.ts` (issue #88)
+
 ### Searchable Kelompok Tani Filters
 
 - **Wajib menggunakan Combobox**: Untuk mempermudah pencarian dan penyaringan data di semua halaman list master data (terutama data Petani) atau alur lainnya, semua komponen filter/dropdown **Kelompok Tani** wajib menggunakan komponen **searchable Combobox** (kombinasi Popover & Command Shadcn UI) dengan kemampuan pencarian teks, dan tidak diperbolehkan menggunakan dropdown Select box standar.
+
+### Geospatial Features (MapLibre Integration)
+
+Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (koordinat, polygon, area):
+- **Map Display**: Gunakan MapLibre GL JS untuk menampilkan peta interaktif
+- **Polygon Viewer**: 
+  - Parse GeoJSON polygon dari database
+  - Render polygon sebagai layer di map dengan styling (fill color, stroke)
+  - Auto-fit bounds ke polygon extent
+  - Show centroid marker untuk reference point
+- **Coordinate Display**: Format koordinat sebagai `lat, long` dengan presisi 6 desimal
+- **Area Display**: Format area dalam hektar (ha) dengan 2 desimal, contoh: "2.50 ha"
+- **Geometry Storage**: Simpan polygon sebagai GeoJSON di field `Json` type Prisma
+- **Geospatial Calculations**:
+  - Centroid extraction dari polygon untuk lat/long fields
+  - Area calculation dari polygon geometry (dalam satuan hektar)
+  - Geometry validation (harus valid Polygon atau MultiPolygon)
+- **Component Pattern**: 
+  - Buat reusable `MapViewer` component untuk display polygon
+  - Support props: `polygon` (GeoJSON), `center` (lat/long), `zoom`, `height`
+  - Lazy load MapLibre untuk optimize bundle size
+- **Implementasi Reference**: 
+  - Map viewer: `src/components/shared/map-viewer.tsx`
+  - Land parcel detail: `src/app/(admin)/admin/master-data/parcels/[id]/page.tsx`
 
 ---
 

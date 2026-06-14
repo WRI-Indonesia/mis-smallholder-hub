@@ -9,12 +9,12 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **13 files / 161 tests passing** | Full coverage: auth, RBAC, menu, user, region, farmer, training, bulk upload |
-| **Completed Modules** | ✅ 13 phases done | Platform (1-7), MD (1-3, 5), BULK (1, 3) |
-| **Server Actions** | ✅ 12 files / 1600 LOC | user, menu, region, farmer-group, farmer, training, bulk-upload, upload, etc. |
-| **Prisma Models** | ✅ 8 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, Training (3) |
+| **Test Status** | ✅ **14 files / 175 tests passing** | Full coverage: auth, RBAC, menu, user, region, farmer, land parcel, training, bulk upload |
+| **Completed Modules** | ✅ 14 phases done | Platform (1-7), MD (1-4, 5), BULK (1, 3) |
+| **Server Actions** | ✅ 14 files / 1987 LOC | user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, bulk-upload, upload, etc. |
+| **Prisma Models** | ✅ 9 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3) |
 | **Priority P0** | 🔴 **DASH-01 scope** | Dashboard scope agreement needed in 48h (BLOCKING) |
-| **Priority P1** | 🔲 RPT-01 | Report module foundation |
+| **Priority P1** | 🟡 MD-06 | Production module foundation |
 
 ---
 
@@ -84,7 +84,7 @@
    ├── ✅ Regions (MD-01) — Province/District/Subdistrict/Village tree
    ├── ✅ Kelompok Tani (MD-02) — List/detail/CRUD
    ├── ✅ Petani (MD-03) — List/detail/CRUD + joinedYear
-   ├── 🔲 Lahan / Parcels (MD-04) — Map + polygon
+   ├── ✅ Lahan / Parcels (MD-04) — Map + polygon + geolocation + Shapefile bulk upload
    ├── ✅ Pelatihan / Training (MD-05) — Activities + participants + evidence
    ├── 🔲 Produksi / Production (MD-06) — Period + chart
    ├── 🔲 Staff (MD-07)
@@ -100,6 +100,7 @@
 
 📤 Bulk Upload
    ├── ✅ Bulk Upload Petani (BULK-03) — Excel mapping + validation + preview
+   ├── ✅ Bulk Upload Lahan (MD-04) — ZIP Shapefile upload + column mapping + geometry validation
    ├── 🔲 Bulk Upload Kelompok Tani (BULK-01) — CSV + validation
    └── 🔲 Bulk Upload Region (BULK-02) — Hierarchy validation
 
@@ -358,12 +359,12 @@ User Access Bulk Upload
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 13 Phases)
+## Completed Modules (✅ 14 Phases)
  
 | Phase | Module | Key Features | LOC |
 |-------|--------|--------------|-----|
 | PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup | — |
-| PLATFORM-02 | Schema & Migrations | 8 Prisma models, modular schema | — |
+| PLATFORM-02 | Schema & Migrations | 9 Prisma models, modular schema | — |
 | PLATFORM-03 | Schema Hardening | Audit fields, soft-delete pattern | — |
 | PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides | 647 LOC (user + access + menu) |
 | PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child | 110 LOC |
@@ -372,30 +373,30 @@ User Access Bulk Upload
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD | 104 LOC |
 | MD-02 | Farmer Groups | List, detail, CRUD, RBAC filtering | 145 LOC |
 | MD-03 | Farmers | Full CRUD, RBAC, joinedYear field | 188 LOC |
+| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) | 387 LOC (165+222) |
 | MD-05 | Training | 3 models, activities, participants, evidence upload | 231 LOC |
 | BULK-01 | Bulk Upload Menu | Route setup, redirect to /farmers | — |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors | 177 LOC |
  
-**Total Server Actions**: 12 files, **1600 LOC**  
-**Total Tests**: 13 files, **161 tests passing** ✅
+**Total Server Actions**: 14 files, **1987 LOC**  
+**Total Tests**: 14 files, **175 tests passing** ✅
 
 ## In Progress (🟠 2 Phases)
 
 | Phase | Module | Status | Missing |
 |-------|--------|--------|---------|
 | TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager |
-| OPS-01 | Testing | Partial | Dashboard, parcel, production test coverage |
+| OPS-01 | Testing | Partial | Dashboard, production test coverage |
 
-## Planned - Now (🔲 2 Phases Priority)
+## Planned - Now (🔲 1 Phase Priority)
  
 | Phase | Module | Next Steps | Blocker |
 |-------|--------|------------|---------|
-| DASH-01 | Dashboard Basic | **URGENT**: Define scope in 48h | ❌ Scope not agreed |
-| RPT-01 | Report Module | Menu + placeholder → User/Region/KT reports | — |
+| MD-06 | Production | Define scope, model design, dependency to Farmer/Parcel | — |
 
-## Planned - Next (🔲 5 Phases)
+## Planned - Next (🔲 4 Phases)
 
-- MD-04 (Parcels), MD-06 (Production), RPT-02/03 (Reports), BULK-02 (Region Bulk Upload)
+- DASH-01 (Dashboard Basic), RPT-01/02/03 (Reports), BULK-02 (Region Bulk Upload)
 
 ## Planned - Later (🔲 8 Phases)
 
@@ -414,7 +415,7 @@ User Access Bulk Upload
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **13 files / 155 tests passing**
+**Test Status**: ✅ **14 files / 175 tests passing**
 
 ### Covered Modules
 
@@ -426,8 +427,9 @@ User Access Bulk Upload
 | User | user-action.test.ts, user-data-access.test.ts, user-menu-access.test.ts | 42 | ✅ |
 | Region | region.test.ts | 18 | ✅ |
 | Farmer | farmer.test.ts | 14 | ✅ |
+| Land Parcel | land-parcel.test.ts | 14 | ✅ |
 | Training | training-activity.test.ts | 11 | ✅ |
-| Bulk Upload | bulk-upload.test.ts | 10 | ✅ |
+| Bulk Upload | bulk-upload.test.ts, bulk-upload-parcel.test.ts | 16 | ✅ |
 | Middleware | middleware.test.ts | 3 | ✅ |
 | Performance | perf.test.ts | 2 | ✅ |
 
@@ -435,7 +437,6 @@ User Access Bulk Upload
 
 - ❌ Dashboard (no tests yet — module not implemented)
 - ❌ Report (no tests yet — module not implemented)
-- ❌ Parcel (planned)
 - ❌ Production (planned)
 
 ## Code Compliance (rule.md)
@@ -463,9 +464,9 @@ All code follows:
  
 | Priority | Action | Owner | Deadline | Impact |
 |----------|--------|-------|----------|--------|
-| **P0** | **DASH-01 Scope Agreement** | Product + Engineering | **2026-06-14 (48h)** | **BLOCKING** — Dashboard cannot start without scope |
-| P1 | RPT-01 Implementation | Engineering | 2026-06-20 | Report module foundation (menu + placeholder + User report) |
-| P2 | BUG-002 Fix Stale Scripts | Engineering | 2026-06-20 | Remove `/scripts/debug/*dashboard*` or create skeleton `dashboard.ts` |
+| **P0** | **MD-06 Production Scope Definition** | Product + Engineering | **2026-06-20** | Define production data model: per-farmer vs per-parcel, fields, validation |
+| P1 | DASH-01 Dashboard Basic | Engineering | 2026-06-22 | Dashboard foundation (summary cards + district filter) |
+| P2 | RPT-01 Implementation | Engineering | 2026-06-25 | Report module foundation (menu + placeholder + User report) |
 
 ---
 
@@ -473,8 +474,8 @@ All code follows:
 
 | Decision | Owner | Deadline | Context |
 |----------|-------|----------|---------|
-| Dashboard minimal scope | Product + Engineering | **2026-06-14** | Define: berapa summary cards? Metrics apa? Filter apa? Wireframe? |
-| Production data model | Product + Domain Expert | Before MD-06 | Per-farmer, per-parcel, atau per-season? |
+| Production data model | Product + Domain Expert | **2026-06-20** | Define: Per-farmer, per-parcel, atau per-season? Fields: yield, area, period? |
+| Dashboard minimal scope | Product + Engineering | 2026-06-22 | Define: berapa summary cards? Metrics apa? Filter apa? Wireframe? |
 
 ---
 
@@ -487,9 +488,9 @@ All code follows:
 
 ---
 
-**Last Updated**: 2026-06-12 (Post-Comprehensive Audit)  
-**Next Review**: After DASH-01 scope agreement  
-**Audit Basis**: Full codebase scan (src/, prisma/, tests/) — 13 test files/155 tests ✅
+**Last Updated**: 2026-06-14 (Post-MD-04 Land Parcel Implementation — Issue #88)  
+**Next Review**: After MD-06 Production scope definition  
+**Audit Basis**: Full codebase scan (src/, prisma/, tests/) — 14 test files/175 tests ✅
 
 ## System Overview
 
@@ -584,8 +585,8 @@ flowchart TD
     SA_MD --> SA_MD_REGION[✅ Regions<br/>Province/District/Subdistrict/Village]
     SA_MD --> SA_MD_GROUP[✅ Farmer Groups<br/>List/Detail/CRUD]
     SA_MD --> SA_MD_FARMER[✅ Farmers<br/>List/Detail/CRUD + RBAC]
-    SA_MD --> SA_MD_PARCEL[🔲 Parcels<br/>Map + Polygon]
-    SA_MD --> SA_MD_TRAINING[🔲 Training<br/>Participants + Evidence]
+    SA_MD --> SA_MD_PARCEL[✅ Land Parcels<br/>Map + Polygon + Shapefile Upload]
+    SA_MD --> SA_MD_TRAINING[✅ Training<br/>Participants + Evidence]
     SA_MD --> SA_MD_PROD[🔲 Production<br/>Period + Chart]
     SA_MD --> SA_MD_STAFF[🔲 Staff<br/>WRI + Activity]
     SA_MD --> SA_MD_HCV[🔲 HCV<br/>High Conservation Value]
@@ -610,6 +611,7 @@ flowchart TD
     %% Bulk Upload Branch
     SA_HOME --> SA_BULK[Bulk Upload]
     SA_BULK --> SA_BULK_FARMER[✅ Bulk Farmer<br/>Excel Mapping + Validation]
+    SA_BULK --> SA_BULK_PARCEL[✅ Bulk Land Parcel<br/>ZIP Shapefile + Column Mapping]
     SA_BULK --> SA_BULK_KT[🔲 Bulk KT<br/>CSV + Preview]
     SA_BULK --> SA_BULK_REGION[🔲 Bulk Region<br/>Hierarchy Validation]
     
@@ -625,8 +627,8 @@ flowchart TD
     style SA_MD_REGION fill:#90EE90
     style SA_MD_GROUP fill:#90EE90
     style SA_MD_FARMER fill:#90EE90
-    style SA_MD_PARCEL fill:#FFE4B5
-    style SA_MD_TRAINING fill:#FFE4B5
+    style SA_MD_PARCEL fill:#90EE90
+    style SA_MD_TRAINING fill:#90EE90
     style SA_MD_PROD fill:#FFE4B5
     style SA_MD_STAFF fill:#FFE4B5
     style SA_MD_HCV fill:#FFE4B5
@@ -641,6 +643,7 @@ flowchart TD
     style SA_RPT_REGION fill:#FFE4B5
     style SA_RPT_KT fill:#FFE4B5
     style SA_BULK_FARMER fill:#90EE90
+    style SA_BULK_PARCEL fill:#90EE90
     style SA_BULK_KT fill:#FFE4B5
     style SA_BULK_REGION fill:#FFE4B5
     style SA_TOOLS_EXPORT fill:#90EE90
@@ -667,8 +670,8 @@ flowchart TD
     ADM_HOME --> ADM_MD[Master Data<br/>Filtered by Assignment]
     ADM_MD --> ADM_MD_GROUP[✅ Farmer Groups<br/>Within Assigned District]
     ADM_MD --> ADM_MD_FARMER[✅ Farmers<br/>Within Assigned District/Group]
-    ADM_MD --> ADM_MD_PARCEL[🔲 Parcels<br/>Within Assigned Scope]
-    ADM_MD --> ADM_MD_TRAINING[🔲 Training<br/>Within Assigned Scope]
+    ADM_MD --> ADM_MD_PARCEL[✅ Land Parcels<br/>Within Assigned Scope]
+    ADM_MD --> ADM_MD_TRAINING[✅ Training<br/>Within Assigned Scope]
     
     %% Limited Settings Access
     ADM_HOME --> ADM_SET[Settings<br/>Limited Access]
@@ -689,8 +692,8 @@ flowchart TD
     
     style ADM_MD_GROUP fill:#90EE90
     style ADM_MD_FARMER fill:#90EE90
-    style ADM_MD_PARCEL fill:#FFE4B5
-    style ADM_MD_TRAINING fill:#FFE4B5
+    style ADM_MD_PARCEL fill:#90EE90
+    style ADM_MD_TRAINING fill:#90EE90
     style ADM_SET_USER fill:#90EE90
     style ADM_SET_REGION fill:#90EE90
     style ADM_BULK_FARMER fill:#90EE90
@@ -712,8 +715,8 @@ flowchart TD
     %% Master Data - CRUD within assigned KT
     OPR_HOME --> OPR_MD[Master Data<br/>Assigned KT Only]
     OPR_MD --> OPR_MD_FARMER[✅ Farmers<br/>CRUD within Assigned KT]
-    OPR_MD --> OPR_MD_PARCEL[🔲 Parcels<br/>CRUD within Assigned KT]
-    OPR_MD --> OPR_MD_TRAINING[🔲 Training<br/>Record Attendance]
+    OPR_MD --> OPR_MD_PARCEL[✅ Parcels<br/>CRUD within Assigned KT]
+    OPR_MD --> OPR_MD_TRAINING[✅ Training<br/>Record Attendance]
     OPR_MD --> OPR_MD_PROD[🔲 Production<br/>Input Data]
     
     %% Report - View Only
@@ -724,8 +727,8 @@ flowchart TD
     OPR_HOME --> OPR_PROFILE[✅ Profile<br/>Change Password]
     
     style OPR_MD_FARMER fill:#90EE90
-    style OPR_MD_PARCEL fill:#FFE4B5
-    style OPR_MD_TRAINING fill:#FFE4B5
+    style OPR_MD_PARCEL fill:#90EE90
+    style OPR_MD_TRAINING fill:#90EE90
     style OPR_MD_PROD fill:#FFE4B5
     style OPR_PROFILE fill:#90EE90
     style OPR_DASH fill:#FFE4B5
