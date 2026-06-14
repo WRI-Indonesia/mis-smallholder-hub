@@ -71,7 +71,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | -------------------------- | ----------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
 | ✅ Arah `/admin/master-data` | — (RESOLVED)            | ✅ DONE              | Redirect ke `/admin/master-data/farmers` — **route tersedia & functional**.                 |
 | ✅ MD-04 Land Parcel (#88)  | — (RESOLVED)            | ✅ DONE              | Implementasi complete: model, actions, UI, tests, Shapefile bulk upload ✅                   |
-| Scope minimal Production (MD-06) | Product + Engineering | **URGENT** (1 week)  | Define: Per-farmer vs per-parcel? Fields: yield, area, period? Validation rules?           |
+| Scope minimal Production (MD-06) | Product + Engineering | ✅ DONE (Issue #89)  | Scope defined: ProductionRecord model with per-farmer tracking, optional parcel, max 4 harvests/month |
 | Dashboard Server Actions   | Engineering Lead        | Setelah scope agreed | Create `src/server/actions/dashboard.ts` dengan queries minimal sesuai scope DASH-01.       |
 
 ### Next Two Weeks (2026-06-08 s.d. 2026-06-22)
@@ -80,7 +80,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | **P0**   | **✅ BUG-001: fix redirect** — COMPLETE    | `/admin/master-data` → `/admin/master-data/farmers` — route & tests sudah ada ✅                              |
 | **P0**   | **✅ MD-04: Land Parcel** — COMPLETE       | Model, actions, UI, Shapefile bulk upload, 14 tests — fully implemented ✅ (#88 closed) |
-| **P1**   | **MD-06: Production module scope**          | **BLOCKING ISSUE** — define scope: per-farmer/per-parcel? fields? validation? — **MUST RESOLVE IN 1 WEEK**   |
+| **P1**   | **✅ MD-06: Production module issue created (#89)** | Issue #89 created with full spec: ProductionRecord model, per-farmer tracking with optional parcel, max 4 harvests/month |
 | **P1**   | **#64-67 RPT-01: menu & placeholder**       | Menu Report setup + placeholder pages structure (3 sub-menu)                                                  |
 | **P2**   | **BUG-002: cleanup stale dashboard scripts**| Remove/update `/scripts/debug/*dashboard*` yang reference missing action; atau create `dashboard.ts` skeleton |
 | **P2**   | **Testing: Coverage expansion**             | Add test untuk dashboard, production module edge-cases                                                        |
@@ -194,7 +194,7 @@ Format phase: `STREAM-NN`.
 | MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model ✅, `src/server/actions/farmer.ts` (188 LOC) ✅, validation ✅, UI (list/detail/form) ✅, test ✅ | Maintain; expand MD-04/05/06 dependency                                          |
 | MD-04       | Parcels                      | ✅ Done        | Done    | `LandParcel` model ✅, `src/server/actions/land-parcel.ts` (165 LOC) ✅, `src/server/actions/bulk-upload-parcel.ts` (222 LOC) ✅, validation schema ✅, UI list/detail/form ✅, ZIP Shapefile bulk upload dengan column mapping ✅, 14 unit tests ✅ | Maintain; expand to Production dependency |
 | MD-05       | Training                     | ✅ Done        | Done    | Schema (TrainingPackage/Activity/Participant) ✅, actions (231 LOC) ✅, UI (list/detail/modal) ✅, participants management ✅, 11 unit tests ✅ | Maintain; #77-#82 complete; skip #81 (S3) MVP |
-| MD-06       | Agronomy / Production        | 🔲 Planned     | Next    | No production/agronomy model/route/action/UI                                                      | Validate dependency to Farmer/Parcel first; define per-farmer vs per-parcel      |
+| MD-06       | Agronomy / Production        | 🔲 Planned     | Next    | No production/agronomy model/route/action/UI; **Issue #89 created**                               | Issue #89: Production module scope defined; implement model + CRUD + UI          |
 | MD-07       | Staff                        | 🔲 Planned     | Later   | No staff model/route/action/UI                                                                    | Define scope                                                                     |
 | MD-08       | HCV                          | 🔲 Planned     | Later   | No HCV model/route/action/UI                                                                      | Define scope                                                                     |
 | MD-09       | BUSDEV                       | 🔲 Planned     | Later   | No BUSDEV model/route/action/UI                                                                   | Define scope                                                                     |
@@ -244,6 +244,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | ----------------------------------------------- | ------------------ | ------- | -------- | ------ | ----------------------------------------------------------------- |
 | **✅ Database Schema Documentation Enhancement** | PLATFORM-02        | ✅ Done | -        | 06-12  | Added P0 sections: Index Strategy, Constraints & Data Integrity, Migration Strategy, Security, Performance |
 | **✅ BUG-001 Fixed: `/admin/master-data` redirect** | MD-03 / Navigation | ✅ Done | -        | 06-08  | Redirect to `/admin/master-data/farmers` — **route exists & works** |
+| **✅ Issue #89: MD-06 Production Module**        | MD-06              | ✅ Done | -        | 06-14  | **Issue created** — Full spec with model, CRUD, UI, validation, tests (16-20 hours estimate) |
 | **BUG-002 Stale dashboard scripts (OPEN)**       | DASH-02 / TOOLS-01 | 🔴 Open | TBD      | 06-10  | **Remove or update** `/scripts/debug/*dashboard*` references       |
 | **⏸️ DASH-01 Scope Blocking** (CRITICAL)         | DASH-01            | 🔴 Open | TBD      | **06-09**| **MUST DEFINE SCOPE** — wireframe, metrics, filters, summary cards|
 | #62 Menu & Route Setup Dashboard (depends scope)| DASH-01            | 🔲 Todo | TBD      | TBD    | Seed menu + route after scope agreed                              |
