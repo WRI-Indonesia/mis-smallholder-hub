@@ -10,11 +10,10 @@
 | Category | Status | Details |
 |----------|--------|---------|
 | **Test Status** | ✅ **14 files / 175 tests passing** | Full coverage: auth, RBAC, menu, user, region, farmer, land parcel, training, bulk upload |
-| **Completed Modules** | ✅ 14 phases done | Platform (1-7), MD (1-4, 5), BULK (1, 3) |
-| **Server Actions** | ✅ 14 files / 1987 LOC | user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, bulk-upload, upload, etc. |
-| **Prisma Models** | ✅ 9 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3) |
+| **Completed Modules** | ✅ 15 phases done | Platform (1-7), MD (1-6), BULK (1, 3) |
+| **Server Actions** | ✅ 15 files / 2187 LOC | user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, production, bulk-upload, upload, etc. |
+| **Prisma Models** | ✅ 10 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord |
 | **Priority P0** | 🔴 **DASH-01 scope** | Dashboard scope agreement needed in 48h (BLOCKING) |
-| **Priority P1** | 🟡 MD-06 | Production module foundation |
 
 ---
 
@@ -86,7 +85,7 @@
    ├── ✅ Petani (MD-03) — List/detail/CRUD + joinedYear
    ├── ✅ Lahan / Parcels (MD-04) — Map + polygon + geolocation + Shapefile bulk upload
    ├── ✅ Pelatihan / Training (MD-05) — Activities + participants + evidence
-   ├── 🔲 Produksi / Production (MD-06) — Period + chart
+   ├── ✅ Produksi / Production (MD-06) — Period + yield tracking
    ├── 🔲 Staff (MD-07)
    ├── 🔲 HCV (MD-08)
    ├── 🔲 BUSDEV (MD-09)
@@ -1039,9 +1038,9 @@ flowchart TD
 ├── ✅ Regions (MD-01)
 ├── ✅ Kelompok Tani (MD-02)
 ├── ✅ Petani (MD-03)
-├── 🔲 Lahan / Parcels (MD-04)
-├── 🔲 Pelatihan / Training (MD-05)
-├── 🔲 Produksi / Production (MD-06)
+├── ✅ Lahan / Parcels (MD-04)
+├── ✅ Pelatihan / Training (MD-05)
+├── ✅ Produksi / Production (MD-06)
 ├── 🔲 Staff (MD-07)
 ├── 🔲 HCV (MD-08)
 ├── 🔲 BUSDEV (MD-09)

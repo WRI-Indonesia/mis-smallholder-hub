@@ -24,6 +24,7 @@ model Farmer {
   modifiedBy    String?     @map("modified_by")
   trainingParticipants TrainingParticipant[]
   landParcels          LandParcel[]
+  productionRecords    ProductionRecord[]
 
   @@index([farmerGroupId])
   @@index([isActive])

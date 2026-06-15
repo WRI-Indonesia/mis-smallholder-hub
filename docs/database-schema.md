@@ -44,7 +44,7 @@ erDiagram
 
 ## Quick Summary
 
-### Implemented Models (8 Categories)
+### Implemented Models (9 Categories)
 
 | Category | Tables | Key Features |
 |----------|--------|--------------|
@@ -56,10 +56,10 @@ erDiagram
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
 | **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
+| **Production** | ProductionRecord | MD-06 Production yield tracking per farmer & parcel |
 
-### Planned Models (6 Categories)
+### Planned Models (5 Categories)
 
-- **Production** (MD-06) — Agronomy & production records
 - **Staff** (MD-07) — Staff activity tracking
 - **HCV** (MD-08) — High Conservation Value assessments
 - **BUSDEV** (MD-09) — Business development tracking
@@ -399,12 +399,12 @@ erDiagram
 | **Farmer** | Farmer | ✅ Complete with demographics & joinedYear field |
 | **Land Parcel** | LandParcel | ✅ Complete with geolocation, polygon geometry (GeoJSON), area tracking, revision history |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | ✅ Complete with evidence upload & participant management |
+| **Production** | ProductionRecord | ✅ Complete with yield tracking per farmer/parcel and duplicate validation |
 
 ### 🔲 Planned (Roadmap)
 
 | Category | Tables | Target Phase |
 |----------|--------|--------------|
-| **Production** | ProductionRecord | MD-06 |
 | **Staff** | Staff, StaffActivity | MD-07 |
 | **HCV** | HCVAssessment | MD-08 |
 | **Business Development** | BusinessDevelopment | MD-09 |

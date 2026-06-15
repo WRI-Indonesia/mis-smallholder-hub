@@ -17,6 +17,7 @@ model LandParcel {
   createdBy     String?     @map("created_by")
   modifiedAt    DateTime    @updatedAt @map("modified_at")
   modifiedBy    String?     @map("modified_by")
+  productionRecords ProductionRecord[]
 
   @@index([farmerId])
   @@index([isActive])
