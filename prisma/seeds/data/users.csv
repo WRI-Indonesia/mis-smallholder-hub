@@ -1,7 +1,7 @@
 id,name,email,password,role,is_active
 SH-0001,Bukti Bagja,bukti.bagja@wri.org,P@ssword123,MANAGEMENT,TRUE
 SH-0002,Ahmad Zuhdi,ahmad.zuhdi@wri.org,P@ssword123,MANAGEMENT,TRUE
-SH-0003,Hirasman Tanjung,hirasman.Tanjung@wri.org,P@ssword123,MANAGEMENT,TRUE
+SH-0003,Hirasman Tanjung,hirasman.tanjung@wri.org,P@ssword123,MANAGEMENT,TRUE
 SH-0004,Sofyan,sofyan.salim@wri.org,P@ssword123,SUPERADMIN,TRUE
 SH-0005,Novia Hagnas,novia.hagnas@wri.org,P@ssword123,OPERATOR,TRUE
 SH-0006,Delia Arinda,delia.arinda@wri.org,P@ssword123,MANAGEMENT,TRUE
@@ -26,4 +26,4 @@ SH-0024,Jefrico,jefrico.rico@wri.org,P@ssword123,OPERATOR,TRUE
 SH-0025,Muhammad Rizqi Akbar,muhammad.zulnunsitorus@wri.org,P@ssword123,OPERATOR,TRUE
 SH-0026,Tasniah Fauzi,tasniah.fauzi@wri.org,P@ssword123,OPERATOR,TRUE
 SH-0027,Jefri Nurrahman,jefri.nurrahman@wri.org,P@ssword123,OPERATOR,TRUE
-cmphkg9mv000z800xim67kguv,Fajri Taswin,zulfajri.taswin@wri.org,admin123,MANAGEMENT,TRUE
+SH-0028,Fajri Taswin,zulfajri.taswin@wri.org,admin123,MANAGEMENT,TRUE
