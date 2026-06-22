@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-06-14 (post-MD-04 Land Parcel implementation — issue #88 complete)
+**Last updated:** 2026-06-22 (scripts reorganized — debug scripts local-only, BUG-002 & TD-005 resolved)
 
 **Next management review:** 2026-06-20
 
@@ -35,7 +35,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Platform foundation | ✅ Ready        | Auth, RBAC, menu, user management, region, dan farmer group sudah implementatif. Schema dengan audit fields, soft-delete, RBAC patterns.  |
 | Master data inti    | ✅ Complete     | Farmer ✅, Land Parcel ✅, Training ✅ complete (model + action + UI + test). Production (MD-06) masih planned.                            |
-| Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`. Stale scripts ada di `/scripts/debug/`.  |
+| Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`. Debug/stale scripts sudah dipindah ke `scripts/local/` (local-only). |
 | Report              | 🔲 Not Started   | Belum ada report module. Issues #64–#67 dibuat (menu setup + placeholder + implementasi).                                                  |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅. Region bulk upload belum ada. |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
@@ -62,7 +62,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Farmer ✅ Complete  | MD-03 Farmer sudah implementatif (model + action + UI + 10 tests).       | Ready untuk dependency downstream (dashboard, parcel, training).                          |
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
 | Dashboard priority  | `/admin/dashboard` masih placeholder; scope & wireframe perlu disepakati. | Scope DASH-01 minimal harus ditetapkan sebelum dev dimulai.                               |
-| Stale scripts alert | `/scripts/debug/*dashboard*` reference missing actions — perlu cleanup.   | Run build/scripts di CI bisa fail; rekomendasi remove/fix scripts BUG-002.                |
+| ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
 | Delivery confidence | Tests 175/175 passed; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/bulk-upload ✅.    | Foundation & core features stabil; siap lanjut ke production & dashboard.                    |
 
 ### Decisions Needed
@@ -134,7 +134,7 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | Server actions | `user` (259 LOC), `user-data-access` (193 LOC), `user-menu-access` (195 LOC), `menu` (110 LOC), `region` (104 LOC), `farmer-group` (145 LOC), `farmer` (188 LOC), `land-parcel` (165 LOC), `bulk-upload-parcel` (222 LOC), `profile` (47 LOC), `role-permission` (74 LOC), `bulk-upload` (177 LOC), `training` (231 LOC), `upload` (77 LOC) — **Total 1987 LOC** | Training, farmer, land parcel, bulk upload tersedia ✅; dashboard, production belum ada |
 | Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `menu.schema.ts`, `region.schema.ts`, `training-activity.schema.ts`, `user.schema.ts` — **7 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training ✅ |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
-| Scripts        | S3/PDF CLI, export CSV, ⚠️ stale dashboard scripts in `/scripts/debug/` (BUG-002)                                                                                                 | Tools partial; `/scripts/debug/*dashboard*` reference missing `src/server/actions/dashboard.ts` |
+| Scripts        | `scripts/get-link.js`, `scripts/pdf-manager.js` (tracked, npm commands aktif ✅); debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only) | BUG-002 resolved — stale scripts tidak ada di repo/CI. |
 | Tests          | `npm test` lulus **14 files / 175 tests** ✅; test files: auth, bulk-upload, bulk-upload-parcel, farmer, land-parcel, menu-action, middleware, perf, rbac, rbac-permission, region, training-activity, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer/land-parcel/training/bulk-upload); need dashboard/production |
 | DevOps         | Dockerfile + `.github/workflows/` (`deploy-dev.yaml`, `deploy-main.yml`, `semgrep.yml`, `gitleaks.yml`)                                                                            | DevOps partial; workflow CI/CD dan security scan (Gitleaks, Semgrep) ditambahkan |
 
@@ -210,7 +210,7 @@ Format phase: `STREAM-NN`.
 | BULK-01     | Bulk Upload: Menu & KT       | ✅ Done     | Done     | Menu & route setup ✅; redirect `/admin/bulk-upload` → `/farmers` implemented ✅ | Maintain; #68 complete |
 | BULK-02     | Bulk Upload: Region          | 🔲 Not Started | Next    | Tidak ada bulk upload region; **#70 dibuat**                                                       | #70 CSV upload District/Subdistrict/Village dengan validasi hierarchy             |
 | BULK-03     | Bulk Upload: Farmer          | ✅ Done        | Done    | `bulk-upload.ts` server action (177 LOC) ✅, dynamic mapping UI ✅, Exceljs upload & smart validations ✅, preview table ✅, full/error download options ✅ | Maintain; #76 Excel upload complete dengan auto column mapping, validasi, preview, download error rows |
-| TOOLS-01    | Tools Import/Export/GIS/S3   | 🟠 Partial     | Next    | `scripts/export-csv.ts`, S3/PDF CLI exist; **stale scripts in `/scripts/debug/*`** (BUG-002)     | Remove/fix stale dashboard scripts; separate CLI utilities from app tools        |
+| TOOLS-01    | Tools Import/Export/GIS/S3   | 🟠 Partial     | Next    | `scripts/get-link.js` & `scripts/pdf-manager.js` tracked ✅ (npm `s3:get-link`, `pdf:*` aktif); debug/stale scripts → `scripts/local/` (gitignored) ✅ | ✅ BUG-002 resolved — stale scripts tidak ada di repo/CI. Utility scripts tetap functional. |
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
@@ -455,8 +455,8 @@ Debt/bug di section ini berasal dari audit code. Item masuk sprint jika sudah pu
 
 | ID      | Bug                                                                         | Priority | Evidence                                                                                                                                                            | Owner | Status  | Definition of Done                                                  |
 | ------- | --------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------- | ------------------------------------------------------------------- |
-| BUG-001 | `/admin/master-data` redirect ke route missing `/admin/master-data/farmers` | P0       | `src/app/(admin)/admin/master-data/page.tsx`                                                                                                                        | TBD   | 🔲 Todo | Route tidak 404; redirect ke route valid atau Farmer route tersedia |
-| BUG-002 | Dashboard debug scripts import action yang tidak ada                        | P0       | `scripts/debug/debug-dashboard-data.js`, `scripts/debug/test-dashboard-api.js`, `scripts/debug/perf-dashboard.ts` import `src/server/actions/dashboard` (tidak ada) | TBD   | 🔲 Todo | Script diperbaiki/dihapus atau `dashboard.ts` dibuat                |
+| BUG-001 | `/admin/master-data` redirect ke route missing `/admin/master-data/farmers` | P0       | `src/app/(admin)/admin/master-data/page.tsx`                                                                                                                        | -   | ✅ Done | Redirect ke `/admin/master-data/farmers` — route exists & functional |
+| BUG-002 | Dashboard debug scripts import action yang tidak ada                        | P0       | `scripts/debug/debug-dashboard-data.js`, `scripts/debug/test-dashboard-api.js`, `scripts/debug/perf-dashboard.ts` import `src/server/actions/dashboard` (tidak ada) | -   | ✅ Done (2026-06-22) | Debug scripts dipindah ke `scripts/local/` (gitignored) — tidak ada di repo/CI. |
 
 ### Debt Register
 
@@ -466,7 +466,7 @@ Debt/bug di section ini berasal dari audit code. Item masuk sprint jika sudah pu
 | TD-002 | Hardcoded `text-white` perlu visual audit                           | P2       | Ada di login, footer, user menu access modal; sebagian mungkin valid karena background solid | Frontend Lead         | 🔲 Planned                 | Visual QA dark/light mode tanpa contrast regression              |
 | TD-003 | `.DS_Store` tidak tracked, tetapi masih ada di working tree         | P2       | `git ls-files` kosong; `find` menemukan file lokal                                           | Repository Maintainer | ✅ Closed for git tracking | `.DS_Store` tetap ignored dan tidak masuk git                    |
 | TD-004 | Language toggle / i18n belum ada                                    | P2       | Tidak ada locale switch/persistence                                                          | i18n Lead             | 🔲 Planned                 | Toggle mengubah locale dan persist state antar navigasi          |
-| TD-005 | Dashboard cache/debug scripts tampak berasal dari implementasi lama | P1       | Script menyebut dashboard stats/markers/batches yang tidak ada di source action              | Engineering Lead      | 🔲 Planned                 | Script selaras dengan source code aktif atau dipindah ke archive |
+| TD-005 | Dashboard cache/debug scripts tampak berasal dari implementasi lama | P1       | Script menyebut dashboard stats/markers/batches yang tidak ada di source action              | -      | ✅ Closed (2026-06-22)     | Debug scripts dipindah ke `scripts/local/` (gitignored). Tidak ada di repo/CI. |
 | TD-006 | `docs/rule.md` menyebut folder dashboard components yang tidak ada  | P2       | `docs/rule.md` mencantumkan `components/dashboard`; folder tidak ada                         | Tech Lead             | 🔲 Planned                 | Docs arsitektur sinkron dengan struktur repo                     |
 | TD-007 | FarmerGroup Server Actions tidak memfilter `isActive: true`         | P1       | `src/server/actions/farmer-group.ts`                                                         | Backend Lead          | 🔲 Planned                 | Tambahkan filter `{ isActive: true }` untuk mematuhi soft delete rule                    |
 | TD-008 | Form data parsing berpotensi `NaN` pada field kosong/whitespace     | P2       | `src/app/(admin)/admin/master-data/groups/group-form-modal.tsx`                              | Frontend Lead         | 🔲 Planned                 | Gunakan helper untuk memproses string kosong/whitespace sebelum parsing numerik          |
@@ -536,6 +536,7 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-22   | **Scripts reorganization** — Debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root agar npm commands (`s3:get-link`, `pdf:*`) tetap berfungsi. BUG-002 & TD-005 resolved: stale scripts tidak ada di repo/CI. |
 | 06-22   | Login Page Enhancement: Case-insensitive email login (`src/lib/auth.ts`) and show/hide password visibility toggle with eye icon (`src/components/auth/login-form.tsx`). |
 | 06-14   | PLATFORM-07 selesai (#87) — Hierarchical Menu (3-Level): recursive tree building, validation depth max 3, cascading permission inheritance, sidebar 3-level collapsible styling, and updated Menu Management UI. |
 | 06-12   | **CODE AUDIT COMPLETE** — Comprehensive audit seluruh codebase dan update keempat dokumen utama: progress.md (phase status verified), rule.md (compliance audit), database-schema.md (P0 sections), ui-ux-flow.md (compact collapsible format). Verified: 13 test files/155 tests ✅, Training MD-05 complete ✅, Bulk Upload BULK-03 complete ✅, 12 server actions/1600 LOC, 6 validation schemas, 8 Prisma models. Dashboard masih placeholder (DASH-01 scope needed). |
@@ -676,6 +677,7 @@ Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk mod
 
 | Tanggal | Perubahan |
 | ------- | --------- |
+| 06-22   | **Scripts reorganization** — Debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. BUG-002 & TD-005 resolved. |
 | 06-22   | Menambahkan konfigurasi keamanan statis CI: Semgrep (`semgrep.yml`) dan Gitleaks (`gitleaks.yml`) untuk scan celah keamanan dan kebocoran rahasia (secrets). |
 | 06-14   | MD-04 selesai — Implementasi lengkap master data Lahan / Land Parcels (#88): CRUD (create/read/update/delete), UI list DataTable dengan filter & Excel export, UI detail dengan MapLibre polygon viewer, modal form dengan Zod validation, ZIP Shapefile bulk upload dengan column mapping & smart validation, 14 unit tests, menu seeding, dan full RBAC integration. **Key Features:** (1) Geospatial support dengan lat/long + GeoJSON polygon, (2) Revision tracking untuk update parcel, (3) Shapefile (.shp dalam ZIP) bulk upload dengan auto column mapping, (4) Area calculation & planting year tracking, (5) Full integration dengan Farmer master data. |
 | 06-11   | MD-05 selesai — Implementasi lengkap upload evidence training (PDF), format tanggal dd/mmm/yyyy, serta import/upload list peserta via Excel/CSV dengan 3-tier validation (Valid, Warning, Error) |
