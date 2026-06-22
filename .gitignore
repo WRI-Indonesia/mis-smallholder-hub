@@ -47,3 +47,4 @@ next-env.d.ts
 /tmp*
 /developer-log
 /draft-issue
+/scripts/local
