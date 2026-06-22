@@ -1,304 +1,178 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  farmerGroupSchema,
-  FarmerGroupFormValues,
-} from "@/validations/farmer-group.schema";
-import {
-  createFarmerGroup,
-  updateFarmerGroup,
-  type FarmerGroupRow,
-  type DistrictDropdownItem,
-} from "@/server/actions/farmer-group";
-import { toast } from "sonner";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createFarmerGroup, updateFarmerGroup } from "@/server/actions/farmer-group";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface GroupFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  group?: FarmerGroupRow | null;
-  districts: DistrictDropdownItem[];
+interface FarmerGroup {
+  id: string;
+  code: string | null;
+  abrv: string | null;
+  abrv3id: string | null;
+  name: string;
+  category: string;
+  districtId: string;
+  joinYear: number | null;
+  locationLat: number | null;
+  locationLong: number | null;
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+interface District {
+  id: string;
+  name: string;
+}
 
-export function GroupFormModal({
-  isOpen,
-  onClose,
-  group,
-  districts,
-}: GroupFormModalProps) {
-  const [isPending, setIsPending] = useState(false);
-  const isEditing = !!group;
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  group: FarmerGroup | null;
+  districts: District[];
+}
 
-  // ─── Group districts by province ──────────────────────────────────────
+export function GroupFormModal({ open, onClose, group, districts }: Props) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const router = useRouter();
+  const isEdit = !!group;
 
-  const districtsByProvince = useMemo(() => {
-    const map = new Map<
-      string,
-      { provinceName: string; districts: DistrictDropdownItem[] }
-    >();
-    for (const d of districts) {
-      const key = d.province.id;
-      if (!map.has(key)) {
-        map.set(key, { provinceName: d.province.name, districts: [] });
-      }
-      map.get(key)!.districts.push(d);
-    }
-    return Array.from(map.values()).sort((a, b) =>
-      a.provinceName.localeCompare(b.provinceName)
-    );
-  }, [districts]);
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrors({});
 
-  // ─── Form ─────────────────────────────────────────────────────────────
+    const form = new FormData(e.currentTarget);
 
-  const form = useForm<FarmerGroupFormValues>({
-    resolver: zodResolver(farmerGroupSchema as any),
-    defaultValues: {
-      name: group?.name ?? "",
-      code: group?.code ?? "",
-      abrv: group?.abrv ?? "",
-      abrv3id: group?.abrv3id ?? "",
-      districtId: group?.districtId ?? "",
-      locationLat: group?.locationLat ?? undefined,
-      locationLong: group?.locationLong ?? undefined,
-    },
-  });
+    const data = {
+      districtId: form.get("districtId") as string,
+      code: (form.get("code") as string) || null,
+      abrv: (form.get("abrv") as string) || null,
+      abrv3id: (form.get("abrv3id") as string) || null,
+      name: form.get("name") as string,
+      category: form.get("category") as "EX_PLASMA" | "SWADAYA",
+      joinYear: form.get("joinYear") ? parseInt(form.get("joinYear") as string, 10) : null,
+      locationLat: form.get("locationLat") ? parseFloat(form.get("locationLat") as string) : null,
+      locationLong: form.get("locationLong") ? parseFloat(form.get("locationLong") as string) : null,
+    };
 
-  async function onSubmit(data: FarmerGroupFormValues) {
-    setIsPending(true);
-    const result = isEditing
-      ? await updateFarmerGroup(group!.id, data)
+    const result = isEdit
+      ? await updateFarmerGroup({ id: group.id, ...data })
       : await createFarmerGroup(data);
-    setIsPending(false);
 
-    if (result.success) {
-      toast.success(
-        isEditing
-          ? "Kelompok tani diperbarui."
-          : "Kelompok tani berhasil dibuat."
-      );
-      onClose();
-    } else {
-      toast.error(result.error);
+    setIsLoading(false);
+
+    if (!result.success) {
+      if (typeof result.error === "string") {
+        toast.error(result.error);
+      } else {
+        setErrors((result.error as Record<string, string[]>) ?? {});
+      }
+      return;
     }
+
+    toast.success(isEdit ? "Kelompok Tani diupdate" : "Kelompok Tani dibuat");
+    onClose();
+    router.refresh();
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing
-              ? "Edit Kelompok Tani"
-              : "Tambah Kelompok Tani Baru"}
-          </DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Kelompok Tani" : "Tambah Kelompok Tani"}</DialogTitle>
         </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nama KT</Label>
+            <Input id="name" name="name" defaultValue={group?.name ?? ""} required />
+            {errors.name && <p className="text-sm text-destructive">{errors.name[0]}</p>}
+          </div>
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 pt-4"
-          >
-            {/* Kabupaten */}
-            <FormField
-              control={form.control}
-              name="districtId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Kabupaten *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih Kabupaten" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {districtsByProvince.map((group) => (
-                        <SelectGroup key={group.provinceName}>
-                          <SelectLabel>{group.provinceName}</SelectLabel>
-                          {group.districts.map((d) => (
-                            <SelectItem key={d.id} value={d.id}>
-                              {d.name} ({d.code})
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Nama */}
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nama Kelompok *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Kelompok Tani Makmur" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Kode & Singkatan Row */}
-            <div className="grid grid-cols-3 gap-3">
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Kode</FormLabel>
-                    <FormControl>
-                      <Input placeholder="KT001" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="abrv"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Singkatan</FormLabel>
-                    <FormControl>
-                      <Input placeholder="KTM" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="abrv3id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Singkatan 3ID</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="3ID"
-                        maxLength={50}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="code">Kode</Label>
+              <Input id="code" name="code" defaultValue={group?.code ?? ""} />
             </div>
-
-            {/* Koordinat Row */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="locationLat"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Latitude</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="any"
-                        placeholder="-0.5332"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value === "" ? undefined : e.target.value
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="locationLong"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Longitude</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="any"
-                        placeholder="102.1455"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value === "" ? undefined : e.target.value
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-2">
+              <Label htmlFor="abrv">Singkatan</Label>
+              <Input id="abrv" name="abrv" defaultValue={group?.abrv ?? ""} />
             </div>
+          </div>
 
-            <DialogFooter className="pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isPending}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="districtId">Distrik</Label>
+              <Select name="districtId" defaultValue={group?.districtId ?? ""}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih distrik" />
+                </SelectTrigger>
+                <SelectContent>
+                  {districts.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.districtId && <p className="text-sm text-destructive">{errors.districtId[0]}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Kategori</Label>
+              <Select name="category" defaultValue={group?.category ?? "SWADAYA"}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EX_PLASMA">Ex Plasma</SelectItem>
+                  <SelectItem value="SWADAYA">Swadaya</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="joinYear">Tahun</Label>
+              <Input id="joinYear" name="joinYear" type="number" defaultValue={group?.joinYear ?? ""} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="locationLat">Latitude</Label>
+              <Input id="locationLat" name="locationLat" type="number" step="any" defaultValue={group?.locationLat ?? ""} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="locationLong">Longitude</Label>
+              <Input id="locationLong" name="locationLong" type="number" step="any" defaultValue={group?.locationLong ?? ""} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="abrv3id">Abrv 3ID</Label>
+            <Input id="abrv3id" name="abrv3id" defaultValue={group?.abrv3id ?? ""} />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEdit ? "Simpan" : "Buat"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

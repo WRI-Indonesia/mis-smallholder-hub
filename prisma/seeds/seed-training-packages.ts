@@ -1,22 +1,26 @@
-import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
-import Papa from "papaparse";
+import { PrismaClient, TrainingCategory } from "@prisma/client";
+import { parse } from "csv-parse/sync";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export async function seedTrainingPackages(prisma: PrismaClient) {
-  console.log("Seeding training packages...");
-  const filePath = path.resolve(__dirname, "data/training-packages.csv");
-  const { data } = Papa.parse(fs.readFileSync(filePath, "utf8"), {
-    header: true,
-    skipEmptyLines: true,
-  });
+  const csv = readFileSync(join(__dirname, "data/training-packages.csv"), "utf-8");
+  const records = parse(csv, { columns: true, skip_empty_lines: true });
 
-  for (const row of data as any[]) {
+  for (const row of records) {
     await prisma.trainingPackage.upsert({
-      where: { code: row.code },
-      update: { name: row.name, desc: row.desc || null },
-      create: { code: row.code, name: row.name, desc: row.desc || null },
+      where: { code: row.code as TrainingCategory },
+      update: {
+        name: row.name,
+        desc: row.desc || null,
+      },
+      create: {
+        code: row.code as TrainingCategory,
+        name: row.name,
+        desc: row.desc || null,
+      },
     });
   }
-  console.log(`Seeded ${data.length} training packages.`);
+
+  console.log(`  ✓ Training packages: ${records.length} records`);
 }

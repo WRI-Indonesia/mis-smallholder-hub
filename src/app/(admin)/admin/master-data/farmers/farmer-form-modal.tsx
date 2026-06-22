@@ -1,29 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { farmerSchema, FarmerFormValues } from "@/validations/farmer.schema";
-import { createFarmer, updateFarmer, type FarmerRow, type BatchDropdownItem } from "@/server/actions/farmer";
-import { type FarmerGroupRow } from "@/server/actions/farmer-group";
-import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -31,333 +18,194 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { Check, ChevronsUpDown, CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { createFarmer, updateFarmer } from "@/server/actions/farmer";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
-interface FarmerFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  farmer?: FarmerRow | null;
-  groups: FarmerGroupRow[];
-  batches: BatchDropdownItem[];
+interface Farmer {
+  id: string;
+  farmerGroupId: string;
+  gender: "M" | "F";
+  name: string;
+  farmerId: string;
+  nik: string | null;
+  address: string | null;
+  birthPlace: string | null;
+  birthDate: Date | string | null;
+  joinedYear: number | null;
 }
 
-export function FarmerFormModal({
-  isOpen,
-  onClose,
-  farmer,
-  groups,
-  batches,
-}: FarmerFormModalProps) {
-  const [isPending, setIsPending] = useState(false);
-  const [openGroup, setOpenGroup] = useState(false);
-  const [openBatch, setOpenBatch] = useState(false);
-  const isEditing = !!farmer;
+interface FarmerGroup {
+  id: string;
+  name: string;
+}
 
-  const form = useForm<FarmerFormValues>({
-    resolver: zodResolver(farmerSchema as any),
-    defaultValues: {
-      name: farmer?.name ?? "",
-      nik: farmer?.nik ?? "",
-      gender: (farmer?.gender as any) ?? undefined,
-      birthdate: farmer?.birthdate ? new Date(farmer.birthdate) : undefined,
-      farmerGroupId: farmer?.farmerGroupId ?? "",
-      batchId: farmer?.batchId ?? "",
-      wriFarmerId: farmer?.wriFarmerId ?? "",
-      uiFarmerId: farmer?.uiFarmerId ?? "",
-      status: farmer?.status ?? "",
-    },
-  });
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  farmer: Farmer | null;
+  farmerGroups: FarmerGroup[];
+}
 
-  async function onSubmit(data: FarmerFormValues) {
-    setIsPending(true);
-    const result = isEditing
-      ? await updateFarmer(farmer!.id, data)
+export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const router = useRouter();
+  const isEdit = !!farmer;
+
+  const formatDateForInput = (dateVal: Date | string | null | undefined) => {
+    if (!dateVal) return "";
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().split("T")[0];
+  };
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrors({});
+
+    const form = new FormData(e.currentTarget);
+    const birthDateRaw = form.get("birthDate") as string;
+    const joinedYearRaw = form.get("joinedYear") as string;
+
+    const data = {
+      farmerGroupId: form.get("farmerGroupId") as string,
+      gender: form.get("gender") as "M" | "F",
+      name: form.get("name") as string,
+      farmerId: form.get("farmerId") as string,
+      nik: (form.get("nik") as string) || null,
+      address: (form.get("address") as string) || null,
+      birthPlace: (form.get("birthPlace") as string) || null,
+      birthDate: birthDateRaw ? new Date(birthDateRaw) : null,
+      joinedYear: joinedYearRaw ? parseInt(joinedYearRaw, 10) : null,
+    };
+
+    const result = isEdit
+      ? await updateFarmer({ id: farmer.id, ...data })
       : await createFarmer(data);
-    setIsPending(false);
 
-    if (result.success) {
-      toast.success(
-        isEditing ? "Data petani diperbarui." : "Data petani berhasil dibuat."
-      );
-      onClose();
-    } else {
-      if (result.error === "NIK sudah terdaftar") {
-        form.setError("nik", { message: result.error });
-      } else {
+    setIsLoading(false);
+
+    if (!result.success) {
+      if (typeof result.error === "string") {
         toast.error(result.error);
+      } else {
+        setErrors((result.error as Record<string, string[]>) ?? {});
       }
+      return;
     }
+
+    toast.success(isEdit ? "Data petani diupdate" : "Data petani dibuat");
+    onClose();
+    router.refresh();
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Petani" : "Tambah Petani Baru"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Petani" : "Tambah Petani"}</DialogTitle>
         </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="farmerId">ID Petani</Label>
+              <Input id="farmerId" name="farmerId" defaultValue={farmer?.farmerId ?? ""} required />
+              {errors.farmerId && <p className="text-sm text-destructive">{errors.farmerId[0]}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nik">NIK</Label>
+              <Input id="nik" name="nik" defaultValue={farmer?.nik ?? ""} />
+              {errors.nik && <p className="text-sm text-destructive">{errors.nik[0]}</p>}
+            </div>
+          </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nama *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nama Petani" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <div className="space-y-2">
+            <Label htmlFor="name">Nama Petani</Label>
+            <Input id="name" name="name" defaultValue={farmer?.name ?? ""} required />
+            {errors.name && <p className="text-sm text-destructive">{errors.name[0]}</p>}
+          </div>
 
-              <FormField
-                control={form.control}
-                name="nik"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>NIK (16 digit) *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="1234567890123456" maxLength={16} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="gender">Jenis Kelamin</Label>
+              <Select name="gender" defaultValue={farmer?.gender ?? "M"}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="M">Laki-laki</SelectItem>
+                  <SelectItem value="F">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.gender && <p className="text-sm text-destructive">{errors.gender[0]}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="farmerGroupId">Kelompok Tani</Label>
+              <Select name="farmerGroupId" defaultValue={farmer?.farmerGroupId ?? ""}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Kelompok Tani" />
+                </SelectTrigger>
+                <SelectContent>
+                  {farmerGroups.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.farmerGroupId && (
+                <p className="text-sm text-destructive">{errors.farmerGroupId[0]}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="birthPlace">Tempat Lahir</Label>
+              <Input id="birthPlace" name="birthPlace" defaultValue={farmer?.birthPlace ?? ""} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">Tanggal Lahir</Label>
+              <Input
+                id="birthDate"
+                name="birthDate"
+                type="date"
+                defaultValue={formatDateForInput(farmer?.birthDate)}
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="gender"
-                render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Jenis Kelamin *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih Jenis Kelamin" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="L">Laki-laki</SelectItem>
-                      <SelectItem value="P">Perempuan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-                )}
-              />
+          <div className="space-y-2">
+            <Label htmlFor="address">Alamat</Label>
+            <Input id="address" name="address" defaultValue={farmer?.address ?? ""} />
+          </div>
 
-              <FormField
-                control={form.control}
-                name="birthdate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col justify-end">
-                    <FormLabel>Tanggal Lahir (Opsional)</FormLabel>
-                    <Popover>
-                      <PopoverTrigger 
-                        render={
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          />
-                        }
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pilih Tanggal</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value === "" ? undefined : field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="joinedYear">Tahun Bergabung</Label>
+            <Input
+              id="joinedYear"
+              name="joinedYear"
+              type="number"
+              min={1900}
+              max={2100}
+              placeholder="Contoh: 2020"
+              defaultValue={farmer?.joinedYear ?? ""}
+            />
+            {errors.joinedYear && <p className="text-sm text-destructive">{errors.joinedYear[0]}</p>}
+          </div>
 
-              <FormField
-                control={form.control}
-                name="farmerGroupId"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Kelompok Tani *</FormLabel>
-                    <Popover open={openGroup} onOpenChange={setOpenGroup}>
-                      <PopoverTrigger
-                        render={
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openGroup}
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          />
-                        }
-                      >
-                        {field.value
-                          ? groups.find((g) => g.id === field.value)?.name
-                          : "Pilih Kelompok Tani"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command>
-                          <CommandInput placeholder="Cari kelompok..." />
-                          <CommandList>
-                            <CommandEmpty>Kelompok tani tidak ditemukan.</CommandEmpty>
-                            <CommandGroup>
-                              {groups.map((g) => (
-                                <CommandItem
-                                  key={g.id}
-                                  value={g.name}
-                                  onSelect={() => {
-                                    form.setValue("farmerGroupId", g.id);
-                                    setOpenGroup(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      g.id === field.value ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {g.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="batchId"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Batch (Opsional)</FormLabel>
-                    <Popover open={openBatch} onOpenChange={setOpenBatch}>
-                      <PopoverTrigger
-                        render={
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openBatch}
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          />
-                        }
-                      >
-                        {field.value && field.value !== "none"
-                          ? batches.find((b) => b.id === field.value)?.name
-                          : "Pilih Batch"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command>
-                          <CommandInput placeholder="Cari batch..." />
-                          <CommandList>
-                            <CommandEmpty>Batch tidak ditemukan.</CommandEmpty>
-                            <CommandGroup>
-                              <CommandItem
-                                value="none"
-                                onSelect={() => {
-                                  form.setValue("batchId", "none");
-                                  setOpenBatch(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    field.value === "none" || !field.value ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                Tanpa Batch
-                              </CommandItem>
-                              {batches.map((b) => (
-                                <CommandItem
-                                  key={b.id}
-                                  value={`${b.name} ${b.code}`}
-                                  onSelect={() => {
-                                    form.setValue("batchId", b.id);
-                                    setOpenBatch(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      b.id === field.value ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {b.name} ({b.code})
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status (Opsional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Aktif / Tidak Aktif" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
-                Batal
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEdit ? "Simpan" : "Buat"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

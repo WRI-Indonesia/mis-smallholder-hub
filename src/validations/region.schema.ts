@@ -1,36 +1,71 @@
 import { z } from "zod";
 
+// ─── Province ───────────────────────────────────────────────────────────────
+
 export const provinceSchema = z.object({
-  id: z.string().optional(),
-  code: z.string().min(2, "Kode minimal 2 karakter"),
+  code: z.string().min(1, "Kode wajib diisi"),
   name: z.string().min(2, "Nama minimal 2 karakter"),
 });
 
-export type ProvinceFormValues = z.infer<typeof provinceSchema>;
+export const updateProvinceSchema = z.object({
+  id: z.string(),
+  code: z.string().min(1, "Kode wajib diisi"),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+});
+
+export type ProvinceInput = z.infer<typeof provinceSchema>;
+export type UpdateProvinceInput = z.infer<typeof updateProvinceSchema>;
+
+// ─── District ───────────────────────────────────────────────────────────────
 
 export const districtSchema = z.object({
-  id: z.string().optional(),
-  code: z.string().min(4, "Kode minimal 4 karakter"),
-  name: z.string().min(2, "Nama minimal 2 karakter"),
   provinceId: z.string().min(1, "Provinsi wajib dipilih"),
+  code: z.string().min(1, "Kode wajib diisi"),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
 });
 
-export type DistrictFormValues = z.infer<typeof districtSchema>;
+export const updateDistrictSchema = z.object({
+  id: z.string(),
+  provinceId: z.string().min(1, "Provinsi wajib dipilih"),
+  code: z.string().min(1, "Kode wajib diisi"),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+});
+
+export type DistrictInput = z.infer<typeof districtSchema>;
+export type UpdateDistrictInput = z.infer<typeof updateDistrictSchema>;
+
+// ─── Subdistrict ────────────────────────────────────────────────────────────
 
 export const subdistrictSchema = z.object({
-  id: z.string().optional(),
-  code: z.string().min(6, "Kode minimal 6 karakter"),
+  districtId: z.string().min(1, "Distrik wajib dipilih"),
+  code: z.string().min(1, "Kode wajib diisi"),
   name: z.string().min(2, "Nama minimal 2 karakter"),
-  districtId: z.string().min(1, "Kabupaten wajib dipilih"),
 });
 
-export type SubdistrictFormValues = z.infer<typeof subdistrictSchema>;
+export const updateSubdistrictSchema = z.object({
+  id: z.string(),
+  districtId: z.string().min(1, "Distrik wajib dipilih"),
+  code: z.string().min(1, "Kode wajib diisi"),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+});
+
+export type SubdistrictInput = z.infer<typeof subdistrictSchema>;
+export type UpdateSubdistrictInput = z.infer<typeof updateSubdistrictSchema>;
+
+// ─── Village ─────────────────────────────────────────────────────────────────
 
 export const villageSchema = z.object({
-  id: z.string().optional(),
-  code: z.string().min(10, "Kode minimal 10 karakter"),
-  name: z.string().min(2, "Nama minimal 2 karakter"),
   subdistrictId: z.string().min(1, "Kecamatan wajib dipilih"),
+  code: z.string().min(1, "Kode wajib diisi"),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
 });
 
-export type VillageFormValues = z.infer<typeof villageSchema>;
+export const updateVillageSchema = z.object({
+  id: z.string(),
+  subdistrictId: z.string().min(1, "Kecamatan wajib dipilih"),
+  code: z.string().min(1, "Kode wajib diisi"),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+});
+
+export type VillageInput = z.infer<typeof villageSchema>;
+export type UpdateVillageInput = z.infer<typeof updateVillageSchema>;

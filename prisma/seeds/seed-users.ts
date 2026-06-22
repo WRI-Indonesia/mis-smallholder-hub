@@ -1,38 +1,29 @@
 import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
-import Papa from "papaparse";
+import { parse } from "csv-parse/sync";
+import { readFileSync } from "fs";
+import { join } from "path";
 import bcrypt from "bcryptjs";
 
 export async function seedUsers(prisma: PrismaClient) {
-  console.log("Seeding users...");
-  const csvFilePath = path.resolve(__dirname, "data/users.csv");
-  const fileContent = fs.readFileSync(csvFilePath, "utf8");
+  const csv = readFileSync(join(__dirname, "data/users.csv"), "utf-8");
+  const records = parse(csv, { columns: true, skip_empty_lines: true });
 
-  const { data } = Papa.parse(fileContent, {
-    header: true,
-    skipEmptyLines: true,
-    comments: "#",
-  });
+  for (const row of records) {
+    const hashedPassword = await bcrypt.hash(row.password, 10);
 
-  for (const row of data as any[]) {
-    const hashedPassword = bcrypt.hashSync(row.password, 10);
     await prisma.user.upsert({
-      where: { email: row.email },
-      update: {
-        name: row.name,
-        role: row.role,
-        isActive: row.isActive === "true",
-      },
+      where: { id: row.id },
+      update: {},
       create: {
         id: row.id,
         name: row.name,
         email: row.email,
         password: hashedPassword,
         role: row.role,
-        isActive: row.isActive === "true",
+        isActive: row.is_active === "TRUE",
       },
     });
   }
-  console.log(`Seeded ${data.length} users.`);
+
+  console.log(`  ✓ Users: ${records.length} records`);
 }

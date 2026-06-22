@@ -1,0 +1,35 @@
+// production.prisma — ProductionRecord model
+
+model ProductionRecord {
+  id String @id @default(cuid())
+
+  // Relations
+  farmerId String @map("farmer_id")
+  farmer   Farmer @relation(fields: [farmerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  parcelId String?     @map("parcel_id")
+  parcel   LandParcel? @relation(fields: [parcelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  // Production Data
+  period        String   // Format: YYYY-MM (e.g., "2026-06")
+  harvestDate   DateTime @map("harvest_date")
+  harvestNumber Int      @map("harvest_number")
+  yieldKg       Float    @map("yield_kg")
+
+  notes String? @db.Text
+
+  // Soft Delete & Audit
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  @@unique([farmerId, period, harvestNumber], name: "production_record_unique")
+  @@index([farmerId])
+  @@index([parcelId])
+  @@index([period])
+  @@index([isActive])
+  @@map("tbl_production_record")
+}

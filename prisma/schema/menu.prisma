@@ -1,0 +1,29 @@
+// menu.prisma — Navigation menu management
+
+model MenuItem {
+  id        String  @id @default(cuid())
+  key       String  @unique // slug unik, e.g. "dashboard-bmp"
+  parentKey String? @map("parent_key")
+  title     String
+  url       String
+  icon      String?
+  order     Int     @default(0)
+  isActive  Boolean @default(true) @map("is_active")
+  isVisible Boolean @default(true) @map("is_visible")
+
+  // Self-relation for hierarchy
+  parent   MenuItem?  @relation("MenuHierarchy", fields: [parentKey], references: [key])
+  children MenuItem[] @relation("MenuHierarchy")
+
+  // RBAC relations
+  rolePermissions RolePermission[]
+  userOverrides   UserPermissionOverride[]
+
+  // Audit
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  @@map("tbl_menu_item")
+}

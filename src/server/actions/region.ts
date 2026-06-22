@@ -1,531 +1,218 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { hasPermission } from "@/lib/rbac";
 import {
-  provinceSchema,
-  districtSchema,
-  ProvinceFormValues,
-  DistrictFormValues,
-  subdistrictSchema,
-  villageSchema,
-  SubdistrictFormValues,
-  VillageFormValues,
+  provinceSchema, updateProvinceSchema,
+  districtSchema, updateDistrictSchema,
+  subdistrictSchema, updateSubdistrictSchema,
+  villageSchema, updateVillageSchema,
 } from "@/validations/region.schema";
-import { revalidatePath } from "next/cache";
-import type { ActionResult } from "@/types/action-result";
+import type {
+  ProvinceInput, UpdateProvinceInput,
+  DistrictInput, UpdateDistrictInput,
+  SubdistrictInput, UpdateSubdistrictInput,
+  VillageInput, UpdateVillageInput,
+} from "@/validations/region.schema";
 
-const REVALIDATE_PATH = "/admin/master-data/regions";
+// ─── Region Tree ──────────────────────────────────────────────────────────────
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-export interface ProvinceRow {
-  id: string;
-  code: string;
-  name: string;
-  _count: { districts: number };
-}
-
-export interface DistrictRow {
-  id: string;
-  code: string;
-  name: string;
-  provinceId: string;
-  province: { name: string };
-  _count: { subdistricts: number; farmerGroups: number };
-}
-
-export interface SubdistrictRow {
-  id: string;
-  code: string;
-  name: string;
-  districtId: string;
-  _count: { villages: number };
-}
-
-export interface VillageRow {
-  id: string;
-  code: string;
-  name: string;
-  subdistrictId: string;
-}
-
-export type RegionType = "province" | "district" | "subdistrict" | "village";
-
-export interface RegionSearchResult {
-  id: string;
-  type: RegionType;
-  code: string;
-  name: string;
-  path: string;
-  data: any; // Raw data for editing
-}
-
-// ─── Province Actions ────────────────────────────────────────────────────────
-
-export async function getProvinces(): Promise<ActionResult<ProvinceRow[]>> {
-  try {
-    const provinces = await prisma.province.findMany({
-      orderBy: { code: "asc" },
-      include: {
-        _count: { select: { districts: true } },
-      },
-    });
-    return { success: true, data: provinces };
-  } catch (error) {
-    console.error("Failed to fetch provinces:", error);
-    return { success: false, error: "Gagal memuat data provinsi." };
+export async function getRegionTree() {
+  if (!(await hasPermission("settings-regions", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
-}
 
-export async function createProvince(
-  data: ProvinceFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = provinceSchema.parse(data);
-
-    const existing = await prisma.province.findUnique({
-      where: { code: validated.code },
-    });
-    if (existing) {
-      return { success: false, error: `Kode provinsi "${validated.code}" sudah digunakan.` };
-    }
-
-    await prisma.province.create({
-      data: { code: validated.code, name: validated.name },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to create province:", error);
-    const message = error instanceof Error ? error.message : "Gagal membuat provinsi.";
-    return { success: false, error: message };
-  }
-}
-
-export async function updateProvince(
-  id: string,
-  data: ProvinceFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = provinceSchema.parse(data);
-
-    // Check unique code (exclude self)
-    const existing = await prisma.province.findFirst({
-      where: { code: validated.code, NOT: { id } },
-    });
-    if (existing) {
-      return { success: false, error: `Kode provinsi "${validated.code}" sudah digunakan.` };
-    }
-
-    await prisma.province.update({
-      where: { id },
-      data: { code: validated.code, name: validated.name },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to update province:", error);
-    const message = error instanceof Error ? error.message : "Gagal mengupdate provinsi.";
-    return { success: false, error: message };
-  }
-}
-
-export async function deleteProvince(id: string): Promise<ActionResult> {
-  try {
-    // Check for child districts
-    const districtCount = await prisma.district.count({
-      where: { provinceId: id },
-    });
-    if (districtCount > 0) {
-      return {
-        success: false,
-        error: `Tidak dapat menghapus. Masih ada ${districtCount} kabupaten terkait.`,
-      };
-    }
-
-    await prisma.province.delete({ where: { id } });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to delete province:", error);
-    return { success: false, error: "Gagal menghapus provinsi." };
-  }
-}
-
-// ─── District Actions ────────────────────────────────────────────────────────
-
-export async function getDistricts(
-  provinceId?: string
-): Promise<ActionResult<DistrictRow[]>> {
-  try {
-    const where = provinceId ? { provinceId } : {};
-    const districts = await prisma.district.findMany({
-      where,
-      orderBy: { code: "asc" },
-      include: {
-        province: { select: { name: true } },
-        _count: { select: { subdistricts: true, farmerGroups: true } },
-      },
-    });
-    return { success: true, data: districts };
-  } catch (error) {
-    console.error("Failed to fetch districts:", error);
-    return { success: false, error: "Gagal memuat data kabupaten." };
-  }
-}
-
-export async function createDistrict(
-  data: DistrictFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = districtSchema.parse(data);
-
-    const existing = await prisma.district.findUnique({
-      where: { code: validated.code },
-    });
-    if (existing) {
-      return { success: false, error: `Kode kabupaten "${validated.code}" sudah digunakan.` };
-    }
-
-    await prisma.district.create({
-      data: {
-        code: validated.code,
-        name: validated.name,
-        provinceId: validated.provinceId,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to create district:", error);
-    const message = error instanceof Error ? error.message : "Gagal membuat kabupaten.";
-    return { success: false, error: message };
-  }
-}
-
-export async function updateDistrict(
-  id: string,
-  data: DistrictFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = districtSchema.parse(data);
-
-    // Check unique code (exclude self)
-    const existing = await prisma.district.findFirst({
-      where: { code: validated.code, NOT: { id } },
-    });
-    if (existing) {
-      return { success: false, error: `Kode kabupaten "${validated.code}" sudah digunakan.` };
-    }
-
-    await prisma.district.update({
-      where: { id },
-      data: {
-        code: validated.code,
-        name: validated.name,
-        provinceId: validated.provinceId,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to update district:", error);
-    const message = error instanceof Error ? error.message : "Gagal mengupdate kabupaten.";
-    return { success: false, error: message };
-  }
-}
-
-export async function deleteDistrict(id: string): Promise<ActionResult> {
-  try {
-    // Check for child subdistricts
-    const subdistrictCount = await prisma.subdistrict.count({
-      where: { districtId: id },
-    });
-    if (subdistrictCount > 0) {
-      return {
-        success: false,
-        error: `Tidak dapat menghapus. Masih ada ${subdistrictCount} kecamatan terkait.`,
-      };
-    }
-
-    // Check for child farmer groups
-    const groupCount = await prisma.farmerGroup.count({
-      where: { districtId: id },
-    });
-    if (groupCount > 0) {
-      return {
-        success: false,
-        error: `Tidak dapat menghapus. Masih ada ${groupCount} kelompok tani terkait.`,
-      };
-    }
-
-    await prisma.district.delete({ where: { id } });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to delete district:", error);
-    return { success: false, error: "Gagal menghapus kabupaten." };
-  }
-}
-
-// ─── Subdistrict Actions ─────────────────────────────────────────────────────
-
-export async function getSubdistricts(
-  districtId: string
-): Promise<ActionResult<SubdistrictRow[]>> {
-  try {
-    const subdistricts = await prisma.subdistrict.findMany({
-      where: { districtId },
-      orderBy: { code: "asc" },
-      include: {
-        _count: { select: { villages: true } },
-      },
-    });
-    return { success: true, data: subdistricts };
-  } catch (error) {
-    console.error("Failed to fetch subdistricts:", error);
-    return { success: false, error: "Gagal memuat data kecamatan." };
-  }
-}
-
-export async function createSubdistrict(
-  data: SubdistrictFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = subdistrictSchema.parse(data);
-
-    const existing = await prisma.subdistrict.findUnique({
-      where: { code: validated.code },
-    });
-    if (existing) {
-      return { success: false, error: `Kode kecamatan "${validated.code}" sudah digunakan.` };
-    }
-
-    await prisma.subdistrict.create({
-      data: {
-        code: validated.code,
-        name: validated.name,
-        districtId: validated.districtId,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to create subdistrict:", error);
-    const message = error instanceof Error ? error.message : "Gagal membuat kecamatan.";
-    return { success: false, error: message };
-  }
-}
-
-export async function updateSubdistrict(
-  id: string,
-  data: SubdistrictFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = subdistrictSchema.parse(data);
-
-    const existing = await prisma.subdistrict.findFirst({
-      where: { code: validated.code, NOT: { id } },
-    });
-    if (existing) {
-      return { success: false, error: `Kode kecamatan "${validated.code}" sudah digunakan.` };
-    }
-
-    await prisma.subdistrict.update({
-      where: { id },
-      data: {
-        code: validated.code,
-        name: validated.name,
-        districtId: validated.districtId,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to update subdistrict:", error);
-    const message = error instanceof Error ? error.message : "Gagal mengupdate kecamatan.";
-    return { success: false, error: message };
-  }
-}
-
-export async function deleteSubdistrict(id: string): Promise<ActionResult> {
-  try {
-    const villageCount = await prisma.village.count({
-      where: { subdistrictId: id },
-    });
-    if (villageCount > 0) {
-      return {
-        success: false,
-        error: `Tidak dapat menghapus. Masih ada ${villageCount} desa terkait.`,
-      };
-    }
-
-    await prisma.subdistrict.delete({ where: { id } });
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to delete subdistrict:", error);
-    return { success: false, error: "Gagal menghapus kecamatan." };
-  }
-}
-
-// ─── Village Actions ─────────────────────────────────────────────────────────
-
-export async function getVillages(
-  subdistrictId: string
-): Promise<ActionResult<VillageRow[]>> {
-  try {
-    const villages = await prisma.village.findMany({
-      where: { subdistrictId },
-      orderBy: { code: "asc" },
-    });
-    return { success: true, data: villages };
-  } catch (error) {
-    console.error("Failed to fetch villages:", error);
-    return { success: false, error: "Gagal memuat data desa." };
-  }
-}
-
-export async function createVillage(
-  data: VillageFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = villageSchema.parse(data);
-
-    const existing = await prisma.village.findUnique({
-      where: { code: validated.code },
-    });
-    if (existing) {
-      return { success: false, error: `Kode desa "${validated.code}" sudah digunakan.` };
-    }
-
-    await prisma.village.create({
-      data: {
-        code: validated.code,
-        name: validated.name,
-        subdistrictId: validated.subdistrictId,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to create village:", error);
-    const message = error instanceof Error ? error.message : "Gagal membuat desa.";
-    return { success: false, error: message };
-  }
-}
-
-export async function updateVillage(
-  id: string,
-  data: VillageFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = villageSchema.parse(data);
-
-    const existing = await prisma.village.findFirst({
-      where: { code: validated.code, NOT: { id } },
-    });
-    if (existing) {
-      return { success: false, error: `Kode desa "${validated.code}" sudah digunakan.` };
-    }
-
-    await prisma.village.update({
-      where: { id },
-      data: {
-        code: validated.code,
-        name: validated.name,
-        subdistrictId: validated.subdistrictId,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to update village:", error);
-    const message = error instanceof Error ? error.message : "Gagal mengupdate desa.";
-    return { success: false, error: message };
-  }
-}
-
-export async function deleteVillage(id: string): Promise<ActionResult> {
-  try {
-    await prisma.village.delete({ where: { id } });
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to delete village:", error);
-    return { success: false, error: "Gagal menghapus desa." };
-  }
-}
-
-// ─── Global Search ───────────────────────────────────────────────────────────
-
-export async function searchRegions(
-  query: string
-): Promise<ActionResult<RegionSearchResult[]>> {
-  if (!query || query.length < 3) return { success: true, data: [] };
-
-  try {
-    const [provinces, districts, subdistricts, villages] = await Promise.all([
-      prisma.province.findMany({
-        where: { name: { contains: query, mode: "insensitive" } },
-        take: 10,
-      }),
-      prisma.district.findMany({
-        where: { name: { contains: query, mode: "insensitive" } },
-        include: { province: { select: { name: true } } },
-        take: 15,
-      }),
-      prisma.subdistrict.findMany({
-        where: { name: { contains: query, mode: "insensitive" } },
-        include: { district: { include: { province: { select: { name: true } } } } },
-        take: 20,
-      }),
-      prisma.village.findMany({
-        where: { name: { contains: query, mode: "insensitive" } },
+  return prisma.province.findMany({
+    orderBy: { name: "asc" },
+    include: {
+      districts: {
+        orderBy: { name: "asc" },
         include: {
-          subdistrict: {
-            include: { district: { include: { province: { select: { name: true } } } } },
+          subdistricts: {
+            orderBy: { name: "asc" },
+            include: {
+              villages: { orderBy: { name: "asc" } },
+            },
           },
         },
-        take: 50,
-      }),
-    ]);
+      },
+    },
+  });
+}
 
-    const results: RegionSearchResult[] = [];
+// ─── Province ─────────────────────────────────────────────────────────────────
 
-    for (const p of provinces) {
-      results.push({ id: p.id, type: "province", code: p.code, name: p.name, path: "Provinsi", data: p });
-    }
-    for (const d of districts) {
-      results.push({ id: d.id, type: "district", code: d.code, name: d.name, path: `Prov. ${d.province.name}`, data: d });
-    }
-    for (const s of subdistricts) {
-      results.push({ id: s.id, type: "subdistrict", code: s.code, name: s.name, path: `Kab. ${s.district.name}, Prov. ${s.district.province.name}`, data: s });
-    }
-    for (const v of villages) {
-      results.push({
-        id: v.id,
-        type: "village",
-        code: v.code,
-        name: v.name,
-        path: `Kec. ${v.subdistrict.name}, Kab. ${v.subdistrict.district.name}, Prov. ${v.subdistrict.district.province.name}`,
-        data: v,
-      });
-    }
-
-    return { success: true, data: results };
-  } catch (error) {
-    console.error("Failed to search regions:", error);
-    return { success: false, error: "Pencarian gagal." };
+export async function createProvince(input: ProvinceInput) {
+  if (!(await hasPermission("settings-regions", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah provinsi" };
   }
+  const parsed = provinceSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const existing = await prisma.province.findUnique({ where: { code: parsed.data.code } });
+  if (existing) return { success: false, error: { code: ["Kode sudah digunakan"] } };
+
+  const session = await auth();
+  await prisma.province.create({ data: { ...parsed.data, createdBy: session?.user?.id ?? null } });
+  return { success: true };
+}
+
+export async function updateProvince(input: UpdateProvinceInput) {
+  if (!(await hasPermission("settings-regions", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah provinsi" };
+  }
+  const parsed = updateProvinceSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const { id, ...data } = parsed.data;
+  const existing = await prisma.province.findFirst({ where: { code: data.code, NOT: { id } } });
+  if (existing) return { success: false, error: { code: ["Kode sudah digunakan"] } };
+
+  const session = await auth();
+  await prisma.province.update({ where: { id }, data: { ...data, modifiedBy: session?.user?.id ?? null } });
+  return { success: true };
+}
+
+export async function toggleProvinceActive(id: string) {
+  if (!(await hasPermission("settings-regions", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah status provinsi" };
+  }
+  const item = await prisma.province.findUnique({ where: { id }, select: { isActive: true } });
+  if (!item) return { success: false, error: "Provinsi tidak ditemukan" };
+
+  await prisma.province.update({ where: { id }, data: { isActive: !item.isActive } });
+  return { success: true };
+}
+
+// ─── District ─────────────────────────────────────────────────────────────────
+
+export async function createDistrict(input: DistrictInput) {
+  if (!(await hasPermission("settings-regions", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah distrik" };
+  }
+  const parsed = districtSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const existing = await prisma.district.findUnique({ where: { code: parsed.data.code } });
+  if (existing) return { success: false, error: { code: ["Kode sudah digunakan"] } };
+
+  const session = await auth();
+  await prisma.district.create({ data: { ...parsed.data, createdBy: session?.user?.id ?? null } });
+  return { success: true };
+}
+
+export async function updateDistrict(input: UpdateDistrictInput) {
+  if (!(await hasPermission("settings-regions", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah distrik" };
+  }
+  const parsed = updateDistrictSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const { id, ...data } = parsed.data;
+  const existing = await prisma.district.findFirst({ where: { code: data.code, NOT: { id } } });
+  if (existing) return { success: false, error: { code: ["Kode sudah digunakan"] } };
+
+  const session = await auth();
+  await prisma.district.update({ where: { id }, data: { ...data, modifiedBy: session?.user?.id ?? null } });
+  return { success: true };
+}
+
+export async function toggleDistrictActive(id: string) {
+  if (!(await hasPermission("settings-regions", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah status distrik" };
+  }
+  const item = await prisma.district.findUnique({ where: { id }, select: { isActive: true } });
+  if (!item) return { success: false, error: "Distrik tidak ditemukan" };
+
+  await prisma.district.update({ where: { id }, data: { isActive: !item.isActive } });
+  return { success: true };
+}
+
+// ─── Subdistrict ──────────────────────────────────────────────────────────────
+
+export async function createSubdistrict(input: SubdistrictInput) {
+  if (!(await hasPermission("settings-regions", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah kecamatan" };
+  }
+  const parsed = subdistrictSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const existing = await prisma.subdistrict.findUnique({ where: { code: parsed.data.code } });
+  if (existing) return { success: false, error: { code: ["Kode sudah digunakan"] } };
+
+  const session = await auth();
+  await prisma.subdistrict.create({ data: { ...parsed.data, createdBy: session?.user?.id ?? null } });
+  return { success: true };
+}
+
+export async function updateSubdistrict(input: UpdateSubdistrictInput) {
+  if (!(await hasPermission("settings-regions", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah kecamatan" };
+  }
+  const parsed = updateSubdistrictSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const { id, ...data } = parsed.data;
+  const existing = await prisma.subdistrict.findFirst({ where: { code: data.code, NOT: { id } } });
+  if (existing) return { success: false, error: { code: ["Kode sudah digunakan"] } };
+
+  const session = await auth();
+  await prisma.subdistrict.update({ where: { id }, data: { ...data, modifiedBy: session?.user?.id ?? null } });
+  return { success: true };
+}
+
+export async function toggleSubdistrictActive(id: string) {
+  if (!(await hasPermission("settings-regions", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah status kecamatan" };
+  }
+  const item = await prisma.subdistrict.findUnique({ where: { id }, select: { isActive: true } });
+  if (!item) return { success: false, error: "Kecamatan tidak ditemukan" };
+
+  await prisma.subdistrict.update({ where: { id }, data: { isActive: !item.isActive } });
+  return { success: true };
+}
+
+// ─── Village ──────────────────────────────────────────────────────────────────
+
+export async function createVillage(input: VillageInput) {
+  if (!(await hasPermission("settings-regions", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah desa" };
+  }
+  const parsed = villageSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const existing = await prisma.village.findUnique({ where: { code: parsed.data.code } });
+  if (existing) return { success: false, error: { code: ["Kode sudah digunakan"] } };
+
+  const session = await auth();
+  await prisma.village.create({ data: { ...parsed.data, createdBy: session?.user?.id ?? null } });
+  return { success: true };
+}
+
+export async function updateVillage(input: UpdateVillageInput) {
+  if (!(await hasPermission("settings-regions", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah desa" };
+  }
+  const parsed = updateVillageSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const { id, ...data } = parsed.data;
+  const existing = await prisma.village.findFirst({ where: { code: data.code, NOT: { id } } });
+  if (existing) return { success: false, error: { code: ["Kode sudah digunakan"] } };
+
+  const session = await auth();
+  await prisma.village.update({ where: { id }, data: { ...data, modifiedBy: session?.user?.id ?? null } });
+  return { success: true };
+}
+
+export async function toggleVillageActive(id: string) {
+  if (!(await hasPermission("settings-regions", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah status desa" };
+  }
+  const item = await prisma.village.findUnique({ where: { id }, select: { isActive: true } });
+  if (!item) return { success: false, error: "Desa tidak ditemukan" };
+
+  await prisma.village.update({ where: { id }, data: { isActive: !item.isActive } });
+  return { success: true };
 }

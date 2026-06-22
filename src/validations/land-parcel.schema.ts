@@ -1,23 +1,27 @@
 import { z } from "zod";
 
-/**
- * Preprocessor that converts empty strings and null to undefined/null,
- * and coerces valid values to positive numbers.
- */
-const optionalPositiveNumber = z
-  .union([z.null(), z.literal(""), z.coerce.number().positive("Luas harus positif")])
-  .optional()
-  .transform((val) => (val === "" ? null : val));
-
 export const landParcelSchema = z.object({
-  id: z.string().optional(),
   farmerId: z.string().min(1, "Petani wajib dipilih"),
-  commodityCode: z.string().optional().or(z.literal("")),
-  parcelCode: z.string().optional().or(z.literal("")),
-  polygonSizeHa: optionalPositiveNumber,
-  legalId: z.string().optional().or(z.literal("")),
-  legalSizeHa: optionalPositiveNumber,
-  status: z.string().optional().or(z.literal("")),
+  parcelId: z.string().min(1, "ID Lahan wajib diisi"),
+  geometry: z.any().nullable().optional(),
+  area: z.preprocess((val) => {
+    if (val === "" || val === undefined || val === null) return null;
+    const parsed = parseFloat(val as string);
+    return isNaN(parsed) ? null : parsed;
+  }, z.number().positive("Luas harus lebih dari 0").nullable().optional()),
+  landStatus: z.string().nullable().optional(),
+  cropType: z.string().nullable().optional(),
+  plantingYear: z.preprocess((val) => {
+    if (val === "" || val === undefined || val === null) return null;
+    const parsed = parseInt(val as string, 10);
+    return isNaN(parsed) ? null : parsed;
+  }, z.number().int().min(1900, "Tahun tanam minimal 1900").max(2100, "Tahun tanam maksimal 2100").nullable().optional()),
+  notes: z.string().nullable().optional(),
 });
 
-export type LandParcelFormValues = z.infer<typeof landParcelSchema>;
+export const updateLandParcelSchema = landParcelSchema.extend({
+  id: z.string(),
+});
+
+export type LandParcelInput = z.infer<typeof landParcelSchema>;
+export type UpdateLandParcelInput = z.infer<typeof updateLandParcelSchema>;

@@ -1,21 +1,28 @@
 import { z } from "zod";
 
 export const farmerSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(2, "Nama minimal 2 karakter"),
-  nik: z.string()
-    .length(16, "NIK harus 16 digit")
-    .regex(/^\d+$/, "NIK hanya angka"),
-  gender: z.enum(["L", "P"], { message: "Pilih jenis kelamin" }),
-  birthdate: z.coerce.date({ message: "Tanggal lahir tidak valid" })
-    .refine((d) => d <= new Date(), { message: "Tanggal lahir tidak boleh di masa depan" })
-    .optional()
-    .or(z.literal("")),
   farmerGroupId: z.string().min(1, "Kelompok tani wajib dipilih"),
-  batchId: z.string().optional().or(z.literal("")),
-  wriFarmerId: z.string().optional().or(z.literal("")),
-  uiFarmerId: z.string().optional().or(z.literal("")),
-  status: z.string().optional().or(z.literal("")),
+  gender: z.enum(["M", "F"], { message: "Jenis kelamin wajib dipilih" }),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+  farmerId: z.string().min(2, "ID Petani minimal 2 karakter"),
+  nik: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  birthPlace: z.string().nullable().optional(),
+  birthDate: z.preprocess((val) => {
+    if (!val || val === "") return null;
+    if (typeof val === "string") return new Date(val);
+    return val;
+  }, z.date().nullable().optional()),
+  joinedYear: z.preprocess((val) => {
+    if (val === "" || val === undefined || val === null) return null;
+    const parsed = parseInt(val as string, 10);
+    return isNaN(parsed) ? null : parsed;
+  }, z.number().int().min(1900, "Tahun bergabung minimal 1900").max(2100, "Tahun bergabung maksimal 2100").nullable().optional()),
 });
 
-export type FarmerFormValues = z.infer<typeof farmerSchema>;
+export const updateFarmerSchema = farmerSchema.extend({
+  id: z.string(),
+});
+
+export type FarmerInput = z.infer<typeof farmerSchema>;
+export type UpdateFarmerInput = z.infer<typeof updateFarmerSchema>;

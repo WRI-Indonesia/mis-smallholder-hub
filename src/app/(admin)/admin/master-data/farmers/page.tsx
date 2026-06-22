@@ -1,29 +1,29 @@
-import { getFarmers, getBatchesForDropdown } from "@/server/actions/farmer";
-import { getFarmerGroups } from "@/server/actions/farmer-group";
+import { requirePermission } from "@/lib/rbac";
+import { getUserPermissionsForMenu } from "@/lib/rbac";
+import { getFarmers, getFarmerGroupsForSelect } from "@/server/actions/farmer";
+import { getDistrictsForSelect } from "@/server/actions/farmer-group";
 import { FarmerListClient } from "./farmer-list-client";
 
-export const metadata = { title: "Data Petani" };
-
-export default async function MasterDataFarmersPage(props: {
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const searchParams = await props.searchParams;
-  const page = Number(searchParams?.page) || 1;
-  const search = typeof searchParams?.search === "string" ? searchParams.search : undefined;
-  const groupId = typeof searchParams?.group === "string" ? searchParams.group : undefined;
-
-  const [farmersResult, groupsResult, batchesResult] = await Promise.all([
-    getFarmers(page, 10, search, groupId),
-    getFarmerGroups(),
-    getBatchesForDropdown(),
+export default async function FarmersPage() {
+  await requirePermission("master-data-farmers");
+  const [farmers, farmerGroups, districts, permissions] = await Promise.all([
+    getFarmers(),
+    getFarmerGroupsForSelect(),
+    getDistrictsForSelect(),
+    getUserPermissionsForMenu("master-data-farmers"),
   ]);
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Petani</h1>
+        <p className="text-muted-foreground">Data petani (smallholder) yang terdaftar</p>
+      </div>
       <FarmerListClient
-        initialData={farmersResult.success && farmersResult.data ? farmersResult.data : { data: [], total: 0, page: 1, totalPages: 1 }}
-        groups={groupsResult.success ? (groupsResult.data ?? []) : []}
-        batches={batchesResult.success ? (batchesResult.data ?? []) : []}
+        initialFarmers={farmers}
+        farmerGroups={farmerGroups}
+        districts={districts}
+        permissions={permissions}
       />
     </div>
   );

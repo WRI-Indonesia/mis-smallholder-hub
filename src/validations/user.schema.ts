@@ -1,17 +1,19 @@
 import { z } from "zod";
-import { Role } from "@prisma/client";
 
-export const userSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters." })
-    .optional()
-    .or(z.literal("")), // Optional for updates
-  role: z.nativeEnum(Role),
-  isActive: z.boolean(),
+export const createUserSchema = z.object({
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+  email: z.string().email("Email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+  role: z.enum(["SUPERADMIN", "ADMIN", "OPERATOR", "MANAGEMENT"]),
 });
 
-export type UserFormValues = z.infer<typeof userSchema>;
+export const updateUserSchema = z.object({
+  id: z.string(),
+  name: z.string().min(2, "Nama minimal 2 karakter"),
+  email: z.string().email("Email tidak valid"),
+  role: z.enum(["SUPERADMIN", "ADMIN", "OPERATOR", "MANAGEMENT"]),
+  password: z.string().min(6).optional().or(z.literal("")),
+});
+
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;

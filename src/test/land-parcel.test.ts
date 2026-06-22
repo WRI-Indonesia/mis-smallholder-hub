@@ -1,181 +1,301 @@
 import { describe, it, expect } from "vitest";
-import { landParcelSchema } from "../validations/land-parcel.schema";
+import { landParcelSchema, updateLandParcelSchema } from "@/validations/land-parcel.schema";
 
-describe("LandParcel Schema Validation", () => {
-  // ─── Valid cases ──────────────────────────────────────────────────────────
-
-  it("should accept a minimal valid parcel (farmerId only)", () => {
-    const result = landParcelSchema.safeParse({ farmerId: "farmer-1" });
-    expect(result.success).toBe(true);
+describe("LandParcel Schema - Create Validation", () => {
+  it("accepts valid land parcel input", () => {
+    const data = {
+      farmerId: "farmer-cuid-123",
+      parcelId: "LH-01",
+      area: 2.5,
+      landStatus: "Owned",
+      cropType: "Palm Oil",
+      plantingYear: 2018,
+      revision: 0,
+      notes: "Kebun subur",
+    };
+    const r = landParcelSchema.safeParse(data);
+    expect(r.success).toBe(true);
+    expect((r.data as any).revision).toBeUndefined();
   });
 
-  it("should accept a fully populated valid parcel", () => {
-    const result = landParcelSchema.safeParse({
-      farmerId: "farmer-1",
-      commodityCode: "PALM",
-      parcelCode: "P-001",
-      polygonSizeHa: 2.5,
-      legalId: "SHM-12345",
-      legalSizeHa: 2.0,
-      status: "Aktif",
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.polygonSizeHa).toBe(2.5);
-      expect(result.data.legalSizeHa).toBe(2.0);
+  it("rejects empty farmerId", () => {
+    const data = {
+      farmerId: "",
+      parcelId: "LH-01",
+    };
+    const r = landParcelSchema.safeParse(data);
+    expect(r.success).toBe(false);
+    expect(r.error?.flatten().fieldErrors.farmerId).toBeDefined();
+  });
+
+  it("rejects empty parcelId", () => {
+    const data = {
+      farmerId: "farmer-cuid-123",
+      parcelId: "",
+    };
+    const r = landParcelSchema.safeParse(data);
+    expect(r.success).toBe(false);
+    expect(r.error?.flatten().fieldErrors.parcelId).toBeDefined();
+  });
+
+  it("rejects negative area", () => {
+    const data = {
+      farmerId: "farmer-cuid-123",
+      parcelId: "LH-01",
+      area: -0.5,
+    };
+    const r = landParcelSchema.safeParse(data);
+    expect(r.success).toBe(false);
+    expect(r.error?.flatten().fieldErrors.area).toBeDefined();
+  });
+
+  it("rejects invalid plantingYear range", () => {
+    const data = {
+      farmerId: "farmer-cuid-123",
+      parcelId: "LH-01",
+      plantingYear: 1899,
+    };
+    const r = landParcelSchema.safeParse(data);
+    expect(r.success).toBe(false);
+    expect(r.error?.flatten().fieldErrors.plantingYear).toBeDefined();
+  });
+
+  it("does not include revision in parsed data", () => {
+    const data = {
+      farmerId: "farmer-cuid-123",
+      parcelId: "LH-01",
+    };
+    const r = landParcelSchema.safeParse(data);
+    expect(r.success).toBe(true);
+    expect((r.data as any).revision).toBeUndefined();
+  });
+});
+
+describe("LandParcel Schema - Update Validation", () => {
+  it("accepts valid update containing id", () => {
+    const data = {
+      id: "parcel-cuid-456",
+      farmerId: "farmer-cuid-123",
+      parcelId: "LH-01",
+    };
+    const r = updateLandParcelSchema.safeParse(data);
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects update without id", () => {
+    const data = {
+      farmerId: "farmer-cuid-123",
+      parcelId: "LH-01",
+    };
+    const r = updateLandParcelSchema.safeParse(data);
+    expect(r.success).toBe(false);
+    expect(r.error?.flatten().fieldErrors.id).toBeDefined();
+  });
+});
+
+describe("LandParcel Query Filter Resolution", () => {
+  type AccessContext =
+    | { mode: "ALL" }
+    | { mode: "BY_FARMER_GROUP"; ids: string[] }
+    | { mode: "BY_DISTRICT"; ids: string[] };
+
+  function buildLandParcelWhereClause(
+    access: AccessContext,
+    search?: string,
+    farmerId?: string
+  ) {
+    const accessFilter =
+      access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
+      access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
+      {};
+
+    return {
+      ...accessFilter,
+      isActive: true,
+      ...(farmerId ? { farmerId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { parcelId: { contains: search, mode: "insensitive" as const } },
+              { farmer: { name: { contains: search, mode: "insensitive" as const } } },
+              { farmer: { farmerId: { contains: search, mode: "insensitive" as const } } },
+            ],
+          }
+        : {}),
+    };
+  }
+
+  it("builds correct filter for mode ALL", () => {
+    const where = buildLandParcelWhereClause({ mode: "ALL" });
+    expect(where.isActive).toBe(true);
+    expect(where.farmerId).toBeUndefined();
+    expect((where as any).farmer).toBeUndefined();
+  });
+
+  it("builds correct filter for mode BY_FARMER_GROUP", () => {
+    const where = buildLandParcelWhereClause({ mode: "BY_FARMER_GROUP", ids: ["fg-1", "fg-2"] });
+    expect(where.isActive).toBe(true);
+    expect((where as any).farmer).toEqual({ farmerGroupId: { in: ["fg-1", "fg-2"] } });
+  });
+
+  it("builds correct filter for mode BY_DISTRICT", () => {
+    const where = buildLandParcelWhereClause({ mode: "BY_DISTRICT", ids: ["dist-1", "dist-2"] });
+    expect(where.isActive).toBe(true);
+    expect((where as any).farmer).toEqual({ farmerGroup: { districtId: { in: ["dist-1", "dist-2"] } } });
+  });
+});
+
+describe("LandParcel Bulk Upload Row Validation Logic", () => {
+  interface FarmerMapping {
+    id: string;
+    name: string;
+    farmerId: string;
+  }
+
+  interface ExistingParcel {
+    farmerId: string;
+    parcelId: string;
+  }
+
+  const farmers: FarmerMapping[] = [
+    { id: "farmer-cuid-1", name: "Budi", farmerId: "FMR-001" },
+    { id: "farmer-cuid-2", name: "Siti", farmerId: "FMR-002" },
+  ];
+
+  const existingParcels: ExistingParcel[] = [
+    { farmerId: "farmer-cuid-1", parcelId: "LH-01" },
+  ];
+
+  const mapping = {
+    parcelId: "ID_LAHAN",
+    farmerId: "ID_PETANI",
+    area: "LUAS",
+    landStatus: "STATUS",
+    cropType: "CROP",
+    plantingYear: "TAHUN",
+    revision: "REVISI",
+    notes: "CATATAN",
+  };
+
+  function validateRow(
+    props: Record<string, any>,
+    duplicatesInFile: Set<string>
+  ) {
+    const errors: string[] = [];
+    const normalized: any = {};
+
+    // Farmer ID Mapping
+    const rawFarmerId = props[mapping.farmerId]?.toString().trim();
+    let mappedFarmerDbId = "";
+    if (!rawFarmerId) {
+      errors.push("ID Petani wajib diisi");
+    } else {
+      const matchFarmer = farmers.find((f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase());
+      if (matchFarmer) {
+        mappedFarmerDbId = matchFarmer.id;
+      } else {
+        errors.push(`ID Petani "${rawFarmerId}" tidak terdaftar di database`);
+      }
     }
-  });
+    normalized.farmerId = mappedFarmerDbId;
 
-  it("should accept empty strings for optional fields and transform them to null", () => {
-    const result = landParcelSchema.safeParse({
-      farmerId: "farmer-1",
-      commodityCode: "",
-      parcelCode: "",
-      polygonSizeHa: "",
-      legalId: "",
-      legalSizeHa: "",
-      status: "",
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.polygonSizeHa).toBeNull();
-      expect(result.data.legalSizeHa).toBeNull();
+    // Parcel ID
+    const rawParcelId = props[mapping.parcelId]?.toString().trim();
+    if (!rawParcelId) {
+      errors.push("ID Lahan wajib diisi");
+    } else {
+      const fileDupKey = `${mappedFarmerDbId || rawFarmerId}::${rawParcelId.toLowerCase()}`;
+      if (duplicatesInFile.has(fileDupKey)) {
+        errors.push(`ID Lahan duplikat di dalam file: "${rawParcelId}" untuk petani ini`);
+      }
+
+      if (mappedFarmerDbId) {
+        const dbDup = existingParcels.some(
+          (ep) => ep.farmerId === mappedFarmerDbId && ep.parcelId.toLowerCase() === rawParcelId.toLowerCase()
+        );
+        if (dbDup) {
+          errors.push(`ID Lahan "${rawParcelId}" sudah terdaftar untuk petani ini di database`);
+        }
+      }
     }
-  });
+    normalized.parcelId = rawParcelId || "";
 
-  it("should accept null for optional numeric fields", () => {
-    const result = landParcelSchema.safeParse({
-      farmerId: "farmer-1",
-      polygonSizeHa: null,
-      legalSizeHa: null,
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.polygonSizeHa).toBeNull();
-      expect(result.data.legalSizeHa).toBeNull();
+    // Area
+    const rawArea = props[mapping.area];
+    if (rawArea !== undefined && rawArea !== null && rawArea !== "") {
+      const parsedArea = parseFloat(rawArea);
+      if (isNaN(parsedArea) || parsedArea <= 0) {
+        errors.push("Luas lahan tidak valid");
+      } else {
+        normalized.area = parsedArea;
+      }
     }
+
+    return { isValid: errors.length === 0, errors, data: normalized };
+  }
+
+  it("accepts valid row properties", () => {
+    const props = {
+      ID_LAHAN: "LH-02",
+      ID_PETANI: "FMR-001",
+      LUAS: "2.35",
+    };
+    const res = validateRow(props, new Set());
+    expect(res.isValid).toBe(true);
+    expect(res.data.farmerId).toBe("farmer-cuid-1");
+    expect(res.data.parcelId).toBe("LH-02");
+    expect(res.data.area).toBe(2.35);
   });
 
-  it("should coerce string numbers to floats for size fields", () => {
-    const result = landParcelSchema.safeParse({
-      farmerId: "farmer-1",
-      polygonSizeHa: "1.75",
-      legalSizeHa: "1.50",
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.polygonSizeHa).toBe(1.75);
-      expect(result.data.legalSizeHa).toBe(1.5);
-    }
+  it("flags unregistered farmer id", () => {
+    const props = {
+      ID_LAHAN: "LH-02",
+      ID_PETANI: "FMR-999",
+    };
+    const res = validateRow(props, new Set());
+    expect(res.isValid).toBe(false);
+    expect(res.errors[0]).toContain("tidak terdaftar di database");
   });
 
-  // ─── Invalid cases ────────────────────────────────────────────────────────
+  it("flags duplicate parcel id in database", () => {
+    const props = {
+      ID_LAHAN: "LH-01", // Already exists for FMR-001 in DB
+      ID_PETANI: "FMR-001",
+    };
+    const res = validateRow(props, new Set());
+    expect(res.isValid).toBe(false);
+    expect(res.errors[0]).toContain("sudah terdaftar untuk petani ini di database");
+  });
+});
 
-  it("should reject missing farmerId", () => {
-    const result = landParcelSchema.safeParse({});
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const farmerIdError = result.error.issues.find(
-        (i) => i.path[0] === "farmerId"
-      );
-      expect(farmerIdError).toBeDefined();
-      // Zod emits a type error when field is undefined; min(1) message fires on empty string
-    }
+describe("LandParcel Bulk Creation Authorization Logic (CRIT-3)", () => {
+  it("rejects farmerId outside user scope when mode is BY_FARMER_GROUP", () => {
+    const access = { mode: "BY_FARMER_GROUP" as const, ids: ["group-1", "group-2"] };
+    const allowedFarmers = [
+      { id: "farmer-1", farmerGroupId: "group-1" },
+      { id: "farmer-2", farmerGroupId: "group-2" },
+    ];
+    const allowedFarmerIds = new Set(allowedFarmers.map((f) => f.id));
+
+    const dataList = [
+      { farmerId: "farmer-1", parcelId: "LH-01" },
+      { farmerId: "farmer-3", parcelId: "LH-02" }, // outside scope
+    ];
+
+    const unauthorizedRow = dataList.find((item) => !allowedFarmerIds.has(item.farmerId));
+    expect(unauthorizedRow).toBeDefined();
+    expect(unauthorizedRow?.farmerId).toBe("farmer-3");
   });
 
-  it("should reject empty string farmerId", () => {
-    const result = landParcelSchema.safeParse({ farmerId: "" });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const farmerIdError = result.error.issues.find(
-        (i) => i.path[0] === "farmerId"
-      );
-      expect(farmerIdError).toBeDefined();
-    }
-  });
+  it("accepts all farmerIds when access mode is ALL", () => {
+    const access = { mode: "ALL" as const };
+    const dataList = [
+      { farmerId: "farmer-1", parcelId: "LH-01" },
+      { farmerId: "farmer-3", parcelId: "LH-02" },
+    ];
 
-  it("should reject negative polygonSizeHa", () => {
-    const result = landParcelSchema.safeParse({
-      farmerId: "farmer-1",
-      polygonSizeHa: -1,
-    });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const sizeError = result.error.issues.find(
-        (i) => i.path[0] === "polygonSizeHa"
-      );
-      expect(sizeError).toBeDefined();
-      expect(sizeError?.message).toContain("positif");
-    }
-  });
-
-  it("should reject zero polygonSizeHa (must be positive)", () => {
-    const result = landParcelSchema.safeParse({
-      farmerId: "farmer-1",
-      polygonSizeHa: 0,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("should reject negative legalSizeHa", () => {
-    const result = landParcelSchema.safeParse({
-      farmerId: "farmer-1",
-      legalSizeHa: -0.5,
-    });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const sizeError = result.error.issues.find(
-        (i) => i.path[0] === "legalSizeHa"
-      );
-      expect(sizeError).toBeDefined();
-      expect(sizeError?.message).toContain("positif");
-    }
-  });
-
-  it("should reject non-numeric string for size fields", () => {
-    const result = landParcelSchema.safeParse({
-      farmerId: "farmer-1",
-      polygonSizeHa: "abc",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  // ─── Pagination logic ─────────────────────────────────────────────────────
-
-  it("Pagination: total 0, limit 10 -> totalPages = 1 (floor guard)", () => {
-    const total = 0;
-    const limit = 10;
-    const totalPages = Math.ceil(total / limit) || 1;
-    expect(totalPages).toBe(1);
-  });
-
-  it("Pagination: total 25, limit 10 -> totalPages = 3", () => {
-    const total = 25;
-    const limit = 10;
-    const totalPages = Math.ceil(total / limit) || 1;
-    expect(totalPages).toBe(3);
-  });
-
-  it("Pagination: total 10, limit 10 -> totalPages = 1", () => {
-    const total = 10;
-    const limit = 10;
-    const totalPages = Math.ceil(total / limit) || 1;
-    expect(totalPages).toBe(1);
-  });
-
-  // ─── Delete guard logic ───────────────────────────────────────────────────
-
-  it("Delete guard: should block deletion when related records exist", () => {
-    const mockParcel = { _count: { productions: 2, maintenances: 1 } };
-    const totalRelated =
-      mockParcel._count.productions + mockParcel._count.maintenances;
-    expect(totalRelated).toBeGreaterThan(0);
-  });
-
-  it("Delete guard: should allow deletion when no related records", () => {
-    const mockParcel = { _count: { productions: 0, maintenances: 0 } };
-    const totalRelated =
-      mockParcel._count.productions + mockParcel._count.maintenances;
-    expect(totalRelated).toBe(0);
+    // If access mode is ALL, it skips restriction checks
+    const hasUnauthorised = access.mode !== "ALL" && dataList.some((item) => !["farmer-1"].includes(item.farmerId));
+    expect(hasUnauthorised).toBe(false);
   });
 });

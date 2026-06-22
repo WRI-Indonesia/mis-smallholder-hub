@@ -1,6 +1,29 @@
-# DEV ONLY — DO NOT USE IN PRODUCTION. Passwords are hashed at seed time.
-id,name,email,password,role,isActive
-user-superadmin,Super Administrator,admin@wri.org,admin123,SUPERADMIN,true
-user-admin,Budi Santoso,admin@koperasi.id,koperasi123,ADMIN,true
-user-operator,Siti Aminah,siti@field.org,field123,OPERATOR,true
-user-management,Agus Susanto,agus@stakeholder.com,stake123,MANAGEMENT,true
+id,name,email,password,role,is_active
+SH-0001,Bukti Bagja,bukti.bagja@wri.org,P@ssword123,MANAGEMENT,TRUE
+SH-0002,Ahmad Zuhdi,ahmad.zuhdi@wri.org,P@ssword123,MANAGEMENT,TRUE
+SH-0003,Hirasman Tanjung,hirasman.Tanjung@wri.org,P@ssword123,MANAGEMENT,TRUE
+SH-0004,Sofyan,sofyan.salim@wri.org,P@ssword123,SUPERADMIN,TRUE
+SH-0005,Novia Hagnas,novia.hagnas@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0006,Delia Arinda,delia.arinda@wri.org,P@ssword123,MANAGEMENT,TRUE
+SH-0007,Ermaliza,ermaliza.ermaliza@wri.org,P@ssword123,MANAGEMENT,TRUE
+SH-0008,Fachri Husaini,fachri.husaini@wri.org,P@ssword123,MANAGEMENT,TRUE
+SH-0009,Muhammad Usman,rusydi.usman@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0010,Rudi Hidayat,rudi.hidayat@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0011,Didik,didik.hariyanto@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0012,Annisa Rahmadhani,annisa.rahmadhani@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0013,Karya Rizki,karya.rizki@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0014,Soniman Waruwu,soniman.waruwu@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0015,Ismail,mail.ismail@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0016,Jaya Syahputra,jaya.syahputra@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0017,Winda Auliza,winda.auliza@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0018,Syahrial Effendi,syahrial.efendi@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0019,Tsamara Hanindhiya,tsamara.hanindhiya@wri.org,P@ssword123,ADMIN,TRUE
+SH-0020,Sigit Utama,sigit.utama@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0021,Yoga Krissetya,yoga.krissetya@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0022,Muhammad Iqbal Rivai,muhammad.rivai@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0023,Muhammad Imran,muhammad.imran@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0024,Jefrico,jefrico.rico@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0025,Muhammad Rizqi Akbar,muhammad.zulnunsitorus@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0026,Tasniah Fauzi,tasniah.fauzi@wri.org,P@ssword123,OPERATOR,TRUE
+SH-0027,Jefri Nurrahman,jefri.nurrahman@wri.org,P@ssword123,OPERATOR,TRUE
+cmphkg9mv000z800xim67kguv,Fajri Taswin,zulfajri.taswin@wri.org,admin123,MANAGEMENT,TRUE

@@ -1,0 +1,16 @@
+key,parent_key,title,url,icon,order,is_active,is_visible
+master-data,,Master Data,/admin/master-data,Database,1,TRUE,TRUE
+master-data-groups,master-data,Kelompok Tani,/admin/master-data/groups,Users,1,TRUE,TRUE
+master-data-farmers,master-data,Petani,/admin/master-data/farmers,User,2,TRUE,TRUE
+settings,,Settings,/admin/settings,Settings,2,TRUE,TRUE
+settings-users,settings,User Management,/admin/settings/users,UserCog,1,TRUE,TRUE
+settings-menu,settings,Menu Management,/admin/settings/menu,Menu,2,TRUE,TRUE
+settings-roles,settings,Role & Permission,/admin/settings/roles,Shield,3,TRUE,TRUE
+settings-regions,settings,Regions,/admin/settings/regions,MapPin,4,TRUE,TRUE
+bulk-upload,,Bulk Upload,/admin/bulk-upload,Upload,3,TRUE,TRUE
+bulk-upload-farmers,bulk-upload,Upload Petani,/admin/bulk-upload/farmers,User,1,TRUE,TRUE
+bulk-upload-production,bulk-upload,Upload Produksi,/admin/bulk-upload/production,TrendingUp,2,TRUE,TRUE
+master-data-training,master-data,Pelatihan,/admin/master-data/training,GraduationCap,3,TRUE,TRUE
+master-data-parcels,master-data,Lahan,/admin/master-data/parcels,Map,4,TRUE,TRUE
+bulk-upload-parcels,bulk-upload,Lahan,/admin/bulk-upload/parcels,Map,3,TRUE,TRUE
+master-data-production,master-data,Produksi,/admin/master-data/production,TrendingUp,5,TRUE,TRUE

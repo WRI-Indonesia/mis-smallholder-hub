@@ -1,217 +1,115 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import {
-  farmerGroupSchema,
-  FarmerGroupFormValues,
-} from "@/validations/farmer-group.schema";
-import { revalidatePath } from "next/cache";
-import type { ActionResult } from "@/types/action-result";
+import { auth } from "@/lib/auth";
+import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer-group.schema";
+import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
+import { hasPermission } from "@/lib/rbac";
 
-const REVALIDATE_PATH = "/admin/master-data/groups";
+import { getAccessContext } from "@/lib/access-context";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+export async function getFarmerGroups(search?: string) {
+  if (!(await hasPermission("master-data-groups", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
 
-export interface FarmerGroupRow {
-  id: string;
-  name: string;
-  code: string | null;
-  abrv: string | null;
-  abrv3id: string | null;
-  districtId: string;
-  locationLat: number | null;
-  locationLong: number | null;
-  district: {
-    name: string;
-    province: { name: string };
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+
+  const where = {
+    ...accessFilter,
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { code: { contains: search, mode: "insensitive" as const } },
+            { abrv: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
   };
-  _count: { farmers: number };
+
+  return prisma.farmerGroup.findMany({
+    where,
+    include: { district: { select: { name: true } } },
+    orderBy: { name: "asc" },
+  });
 }
 
-export interface DistrictDropdownItem {
-  id: string;
-  code: string;
-  name: string;
-  province: { id: string; name: string };
-}
-
-// ─── Read ────────────────────────────────────────────────────────────────────
-
-export async function getFarmerGroups(
-  districtId?: string
-): Promise<ActionResult<FarmerGroupRow[]>> {
-  try {
-    const where = districtId ? { districtId } : {};
-    const groups = await prisma.farmerGroup.findMany({
-      where,
-      orderBy: { name: "asc" },
-      include: {
-        district: {
-          select: {
-            name: true,
-            province: { select: { name: true } },
-          },
-        },
-        _count: { select: { farmers: true } },
-      },
-    });
-
-    console.log(`SERVER DEBUG - Found ${groups.length} groups`);
-    if (groups.length > 0) {
-      const first = groups[0] as any;
-      console.log("SERVER DEBUG - First group keys:", Object.keys(first));
-      console.log("SERVER DEBUG - First group abrv3id:", first.abrv3id);
-      console.log("SERVER DEBUG - First group abrv_3id:", first.abrv_3id);
-    }
-
-    return { success: true, data: groups as unknown as FarmerGroupRow[] };
-  } catch (error) {
-    console.error("Failed to fetch farmer groups:", error);
-    return { success: false, error: "Gagal memuat data kelompok tani." };
+export async function getFarmerGroupById(id: string) {
+  if (!(await hasPermission("master-data-groups", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+
+  return prisma.farmerGroup.findUnique({
+    where: { id },
+    include: { district: { select: { id: true, name: true } } },
+  });
 }
 
-export async function getFarmerGroupById(
-  id: string
-): Promise<ActionResult<FarmerGroupRow>> {
-  try {
-    const group = await prisma.farmerGroup.findUnique({
-      where: { id },
-      include: {
-        district: {
-          select: {
-            name: true,
-            province: { select: { name: true } },
-          },
-        },
-        _count: { select: { farmers: true } },
-      },
-    });
-
-    if (!group) return { success: false, error: "Kelompok tani tidak ditemukan." };
-
-    return { success: true, data: group as unknown as FarmerGroupRow };
-  } catch (error) {
-    console.error("Failed to fetch farmer group by id:", error);
-    return { success: false, error: "Gagal memuat data kelompok tani." };
+export async function createFarmerGroup(input: FarmerGroupInput) {
+  if (!(await hasPermission("master-data-groups", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah kelompok tani" };
   }
+
+  const parsed = farmerGroupSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const session = await auth();
+
+  await prisma.farmerGroup.create({
+    data: {
+      ...parsed.data,
+      createdBy: session?.user?.id ?? null,
+    },
+  });
+
+  return { success: true };
 }
 
-export async function getDistrictsForDropdown(): Promise<
-  ActionResult<DistrictDropdownItem[]>
-> {
-  try {
-    const districts = await prisma.district.findMany({
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        province: { select: { id: true, name: true } },
-      },
-    });
-    return { success: true, data: districts };
-  } catch (error) {
-    console.error("Failed to fetch districts for dropdown:", error);
-    return { success: false, error: "Gagal memuat data kabupaten." };
+export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
+  if (!(await hasPermission("master-data-groups", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah kelompok tani" };
   }
+
+  const parsed = updateFarmerGroupSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const session = await auth();
+  const { id, ...data } = parsed.data;
+
+  await prisma.farmerGroup.update({
+    where: { id },
+    data: { ...data, modifiedBy: session?.user?.id ?? null },
+  });
+
+  return { success: true };
 }
 
-// ─── Create ──────────────────────────────────────────────────────────────────
-
-export async function createFarmerGroup(
-  data: FarmerGroupFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = farmerGroupSchema.parse(data);
-
-    await prisma.farmerGroup.create({
-      data: {
-        name: validated.name,
-        code: validated.code || null,
-        abrv: validated.abrv || null,
-        abrv3id: validated.abrv3id || null,
-        districtId: validated.districtId,
-        locationLat: validated.locationLat ?? null,
-        locationLong: validated.locationLong ?? null,
-        // Audit trail — auth not yet implemented, will be filled with session.user.id in Fase 3
-        createdBy: null,
-        modifiedBy: null,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to create farmer group:", error);
-    const message =
-      error instanceof Error ? error.message : "Gagal membuat kelompok tani.";
-    return { success: false, error: message };
+export async function toggleFarmerGroupActive(id: string) {
+  if (!(await hasPermission("master-data-groups", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan kelompok tani" };
   }
+
+  const group = await prisma.farmerGroup.findUnique({ where: { id }, select: { isActive: true } });
+  if (!group) return { success: false, error: "Kelompok Tani tidak ditemukan" };
+
+  await prisma.farmerGroup.update({
+    where: { id },
+    data: { isActive: !group.isActive },
+  });
+
+  return { success: true };
 }
 
-// ─── Update ──────────────────────────────────────────────────────────────────
-
-export async function updateFarmerGroup(
-  id: string,
-  data: FarmerGroupFormValues
-): Promise<ActionResult> {
-  try {
-    const validated = farmerGroupSchema.parse(data);
-
-    await prisma.farmerGroup.update({
-      where: { id },
-      data: {
-        name: validated.name,
-        code: validated.code || null,
-        abrv: validated.abrv || null,
-        abrv3id: validated.abrv3id || null,
-        districtId: validated.districtId,
-        locationLat: validated.locationLat ?? null,
-        locationLong: validated.locationLong ?? null,
-        // Audit trail — modifiedBy will be filled with session.user.id in Fase 3
-        modifiedBy: null,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: unknown) {
-    console.error("Failed to update farmer group:", error);
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Gagal mengupdate kelompok tani.";
-    return { success: false, error: message };
-  }
-}
-
-// ─── Delete ──────────────────────────────────────────────────────────────────
-
-export async function deleteFarmerGroup(id: string): Promise<ActionResult> {
-  try {
-    // Check for related farmers — reject if any exist
-    const farmerCount = await prisma.farmer.count({
-      where: { farmerGroupId: id },
-    });
-    if (farmerCount > 0) {
-      return {
-        success: false,
-        error: `Tidak dapat menghapus. Masih ada ${farmerCount} petani terkait.`,
-      };
-    }
-
-    // Delete related details first (cascade not automatic)
-    await prisma.farmerGroupDetail.deleteMany({
-      where: { farmerGroupId: id },
-    });
-
-    await prisma.farmerGroup.delete({ where: { id } });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to delete farmer group:", error);
-    return { success: false, error: "Gagal menghapus kelompok tani." };
-  }
+export async function getDistrictsForSelect() {
+  return prisma.district.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 }

@@ -1,24 +1,16 @@
 import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
-import Papa from "papaparse";
+import { parse } from "csv-parse/sync";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export async function seedProvinces(prisma: PrismaClient) {
-  console.log("Seeding provinces...");
-  const csvFilePath = path.resolve(__dirname, "data/provinces.csv");
-  const fileContent = fs.readFileSync(csvFilePath, "utf8");
+  const csv = readFileSync(join(__dirname, "data/provinces.csv"), "utf-8");
+  const records = parse(csv, { columns: true, skip_empty_lines: true });
 
-  const { data } = Papa.parse(fileContent, {
-    header: true,
-    skipEmptyLines: true,
-  });
-
-  for (const row of data as any[]) {
+  for (const row of records) {
     await prisma.province.upsert({
-      where: { code: row.code },
-      update: {
-        name: row.name,
-      },
+      where: { id: row.id },
+      update: {},
       create: {
         id: row.id,
         code: row.code,
@@ -26,5 +18,6 @@ export async function seedProvinces(prisma: PrismaClient) {
       },
     });
   }
-  console.log(`Seeded ${data.length} provinces.`);
+
+  console.log(`  ✓ Provinces: ${records.length} records`);
 }

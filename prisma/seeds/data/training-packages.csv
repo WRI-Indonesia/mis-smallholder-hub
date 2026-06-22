@@ -1,4 +1,6 @@
 code,name,desc
-PKT,Pelatihan Kelompok Tani,Paket pelatihan dasar kelompok tani
-BMPGAP,BMP & GAP,Paket pelatihan BMP dan Good Agricultural Practice
-PRE_SERTIFIKASI,Pre-Sertifikasi,Pelatihan persiapan menuju sertifikasi
+PAKET_1_BMP_PC_RSPO_NKT,"Paket 1 - BMP + P&C RSPO + NKT",Pelatihan dasar Best Management Practice + Principles & Criteria RSPO + Nilai Konservasi Tinggi
+PAKET_2_MK,"Paket 2 - MK (Manajemen Kebun)",Pelatihan Manajemen Kebun untuk Petani Mandiri
+PAKET_2_K3,"Paket 2 - K3 (Keselamatan & Kesehatan Kerja)",Pelatihan Keselamatan & Kesehatan Kerja
+PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV,Paket 3&4,"Pelatihan GEDSI, Financial Livelihood, & Business Development"
+OTHER,Lainnya,Pelatihan lainnya yang tidak diklasifikasikan

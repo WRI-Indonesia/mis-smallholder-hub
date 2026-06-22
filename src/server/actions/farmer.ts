@@ -1,226 +1,143 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { farmerSchema, FarmerFormValues } from "@/validations/farmer.schema";
-import { revalidatePath } from "next/cache";
-import type { ActionResult } from "@/types/action-result";
-import { Prisma } from "@prisma/client";
+import { auth } from "@/lib/auth";
+import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
+import type { FarmerInput, UpdateFarmerInput } from "@/validations/farmer.schema";
+import { hasPermission } from "@/lib/rbac";
 
-const REVALIDATE_PATH = "/admin/master-data/farmers";
+import { getAccessContext } from "@/lib/access-context";
 
-export interface FarmerRow {
-  id: string;
-  name: string;
-  nik: string;
-  gender: string;
-  birthdate: Date;
-  status: string | null;
-  farmerGroupId: string;
-  batchId: string | null;
-  wriFarmerId: string | null;
-  uiFarmerId: string | null;
-  farmerGroup: {
-    name: string;
-    district: { name: string };
+export async function getFarmers(search?: string, farmerGroupId?: string) {
+  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
+    {};
+
+  const where = {
+    ...accessFilter,
+    isActive: true, // Only show active farmers (soft-delete rule)
+    ...(farmerGroupId ? { farmerGroupId } : {}),
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { farmerId: { contains: search, mode: "insensitive" as const } },
+            { nik: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
   };
-  batch: { name: string } | null;
-  _count: { parcels: number };
-}
 
-export interface PaginatedFarmers {
-  data: FarmerRow[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export interface BatchDropdownItem {
-  id: string;
-  code: string;
-  name: string;
-}
-
-export async function getFarmers(
-  page: number = 1,
-  limit: number = 10,
-  search?: string,
-  farmerGroupId?: string
-): Promise<ActionResult<PaginatedFarmers>> {
-  try {
-    const where: Prisma.FarmerWhereInput = {};
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { nik: { contains: search } },
-      ];
-    }
-
-    if (farmerGroupId) {
-      where.farmerGroupId = farmerGroupId;
-    }
-
-    const total = await prisma.farmer.count({ where });
-    const totalPages = Math.ceil(total / limit) || 1;
-    const offset = (page - 1) * limit;
-
-    const data = await prisma.farmer.findMany({
-      where,
-      orderBy: { name: "asc" },
-      skip: offset,
-      take: limit,
-      include: {
-        farmerGroup: {
-          select: {
-            name: true,
-            district: { select: { name: true } },
-          },
+  return prisma.farmer.findMany({
+    where,
+    include: {
+      farmerGroup: {
+        include: {
+          district: true,
         },
-        batch: { select: { name: true } },
-        _count: { select: { parcels: true } },
       },
-    });
-
-    return {
-      success: true,
-      data: {
-        data: data as unknown as FarmerRow[],
-        total,
-        page,
-        totalPages,
-      },
-    };
-  } catch (error) {
-    console.error("Failed to fetch farmers:", error);
-    return { success: false, error: "Gagal memuat data petani." };
-  }
+    },
+    orderBy: { name: "asc" },
+  });
 }
 
-export async function getFarmerById(id: string): Promise<ActionResult<FarmerRow>> {
-  try {
-    const data = await prisma.farmer.findUnique({
-      where: { id },
-      include: {
-        farmerGroup: {
-          select: {
-            name: true,
-            district: { select: { name: true } },
-          },
+export async function getFarmerById(id: string) {
+  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  return prisma.farmer.findUnique({
+    where: { id, isActive: true },
+    include: {
+      farmerGroup: {
+        include: {
+          district: true,
         },
-        batch: { select: { name: true } },
-        _count: { select: { parcels: true } },
       },
-    });
-    if (!data) return { success: false, error: "Petani tidak ditemukan." };
-    return { success: true, data: data as unknown as FarmerRow };
-  } catch (error) {
-    console.error("Failed to fetch farmer:", error);
-    return { success: false, error: "Gagal memuat data petani." };
-  }
+    },
+  });
 }
 
-export async function createFarmer(data: FarmerFormValues): Promise<ActionResult> {
-  try {
-    const validated = farmerSchema.parse(data);
-
-    const existingNik = await prisma.farmer.findUnique({ where: { nik: validated.nik } });
-    if (existingNik) {
-      return { success: false, error: "NIK sudah terdaftar" };
-    }
-
-    await prisma.farmer.create({
-      data: {
-        name: validated.name,
-        nik: validated.nik,
-        gender: validated.gender,
-        birthdate: validated.birthdate,
-        farmerGroupId: validated.farmerGroupId,
-        batchId: validated.batchId || null,
-        status: validated.status || null,
-        wriFarmerId: validated.wriFarmerId || null,
-        uiFarmerId: validated.uiFarmerId || null,
-        // Audit trail — auth not yet implemented, will be filled with session.user.id in Fase 3
-        createdBy: null,
-        modifiedBy: null,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: any) {
-    console.error("Failed to create farmer:", error);
-    return { success: false, error: error.message || "Gagal membuat petani." };
+export async function createFarmer(input: FarmerInput) {
+  if (!(await hasPermission("master-data-farmers", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah petani" };
   }
+
+  const parsed = farmerSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const session = await auth();
+
+  await prisma.farmer.create({
+    data: {
+      ...parsed.data,
+      createdBy: session?.user?.id ?? null,
+    },
+  });
+
+  return { success: true };
 }
 
-export async function updateFarmer(id: string, data: FarmerFormValues): Promise<ActionResult> {
-  try {
-    const validated = farmerSchema.parse(data);
-
-    const existingNik = await prisma.farmer.findUnique({ where: { nik: validated.nik } });
-    if (existingNik && existingNik.id !== id) {
-      return { success: false, error: "NIK sudah terdaftar" };
-    }
-
-    await prisma.farmer.update({
-      where: { id },
-      data: {
-        name: validated.name,
-        nik: validated.nik,
-        gender: validated.gender,
-        birthdate: validated.birthdate,
-        farmerGroupId: validated.farmerGroupId,
-        batchId: validated.batchId || null,
-        status: validated.status || null,
-        wriFarmerId: validated.wriFarmerId || null,
-        uiFarmerId: validated.uiFarmerId || null,
-        // Audit trail — modifiedBy will be filled with session.user.id in Fase 3
-        modifiedBy: null,
-      },
-    });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: any) {
-    console.error("Failed to update farmer:", error);
-    return { success: false, error: error.message || "Gagal mengupdate petani." };
+export async function updateFarmer(input: UpdateFarmerInput) {
+  if (!(await hasPermission("master-data-farmers", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah petani" };
   }
+
+  const parsed = updateFarmerSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const session = await auth();
+  const { id, ...data } = parsed.data;
+
+  // Verify farmer exists and is active before updating
+  const existing = await prisma.farmer.findUnique({ where: { id, isActive: true } });
+  if (!existing) return { success: false, error: "Petani tidak ditemukan atau sudah tidak aktif" };
+
+  await prisma.farmer.update({
+    where: { id },
+    data: { ...data, modifiedBy: session?.user?.id ?? null },
+  });
+
+  return { success: true };
 }
 
-export async function deleteFarmer(id: string): Promise<ActionResult> {
-  try {
-    const parcelCount = await prisma.landParcel.count({
-      where: { farmerId: id },
-    });
-    if (parcelCount > 0) {
-      return {
-        success: false,
-        error: `Tidak dapat menghapus. Petani masih memiliki ${parcelCount} land parcel.`,
-      };
-    }
-    
-    await prisma.trainingParticipant.deleteMany({ where: { farmerId: id }});
-    await prisma.hseWorker.deleteMany({ where: { farmerId: id }});
-
-    await prisma.farmer.delete({ where: { id } });
-
-    revalidatePath(REVALIDATE_PATH);
-    return { success: true };
-  } catch (error: any) {
-    console.error("Failed to delete farmer:", error);
-    return { success: false, error: "Gagal menghapus petani." };
+export async function toggleFarmerActive(id: string) {
+  if (!(await hasPermission("master-data-farmers", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan petani" };
   }
+
+  const farmer = await prisma.farmer.findUnique({ where: { id }, select: { isActive: true } });
+  if (!farmer) return { success: false, error: "Petani tidak ditemukan" };
+
+  await prisma.farmer.update({
+    where: { id },
+    data: { isActive: !farmer.isActive },
+  });
+
+  return { success: true };
 }
 
-export async function getBatchesForDropdown(): Promise<ActionResult<BatchDropdownItem[]>> {
-  try {
-    const batches = await prisma.batch.findMany({
-      orderBy: { code: "asc" },
-      select: { id: true, code: true, name: true },
-    });
-    return { success: true, data: batches };
-  } catch (error) {
-    console.error("Failed to fetch batches:", error);
-    return { success: false, error: "Gagal memuat data batch." };
-  }
+export async function getFarmerGroupsForSelect() {
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+
+  return prisma.farmerGroup.findMany({
+    where: {
+      ...accessFilter,
+      isActive: true,
+    },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 }

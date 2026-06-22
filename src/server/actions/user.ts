@@ -1,116 +1,126 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { userSchema, UserFormValues } from "@/validations/user.schema";
-import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
-import { Role } from "@prisma/client";
+import { createUserSchema, updateUserSchema } from "@/validations/user.schema";
+import type { CreateUserInput, UpdateUserInput } from "@/validations/user.schema";
+import { hasPermission } from "@/lib/rbac";
 
-export async function getUsers() {
-  try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-      },
-    });
-    return { success: true, data: users };
-  } catch (error) {
-    console.error("Failed to fetch users:", error);
-    return { success: false, error: "Failed to fetch users" };
+export async function getUsers(search?: string) {
+  if (!(await hasPermission("settings-users", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+
+  const where = {
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { email: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  return prisma.user.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      provinces: { select: { province: { select: { name: true } } } },
+      districts: { select: { district: { select: { name: true } } } },
+      farmerGroups: { select: { farmerGroup: { select: { name: true, abrv: true } } } },
+      permissionOverrides: { select: { id: true, granted: true } },
+    },
+    orderBy: { name: "asc" },
+  });
 }
 
-export async function createUser(data: UserFormValues) {
-  try {
-    const validatedData = userSchema.parse(data);
-
-    if (!validatedData.password) {
-      return { success: false, error: "Password is required for new users." };
-    }
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email },
-    });
-
-    if (existingUser) {
-      return { success: false, error: "Email already exists." };
-    }
-
-    const hashedPassword = bcrypt.hashSync(validatedData.password, 10);
-
-    await prisma.user.create({
-      data: {
-        name: validatedData.name,
-        email: validatedData.email,
-        password: hashedPassword,
-        role: validatedData.role,
-        isActive: validatedData.isActive,
-      },
-    });
-
-    revalidatePath("/admin/settings/users");
-    return { success: true };
-  } catch (error: any) {
-    console.error("Failed to create user:", error);
-    return { success: false, error: error?.message || "Failed to create user" };
+export async function getUserById(id: string) {
+  if (!(await hasPermission("settings-users", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+
+  return prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      provinces: { select: { provinceId: true } },
+      districts: { select: { districtId: true } },
+      farmerGroups: { select: { farmerGroupId: true } },
+    },
+  });
 }
 
-export async function updateUser(id: string, data: Partial<UserFormValues>) {
-  try {
-    const updateData: any = {
-      name: data.name,
-      email: data.email,
-      role: data.role as Role,
-      isActive: data.isActive,
-    };
-
-    if (data.password && data.password.length >= 6) {
-      updateData.password = bcrypt.hashSync(data.password, 10);
-    }
-
-    await prisma.user.update({
-      where: { id },
-      data: updateData,
-    });
-
-    revalidatePath("/admin/settings/users");
-    return { success: true };
-  } catch (error: any) {
-    console.error("Failed to update user:", error);
-    return { success: false, error: error?.message || "Failed to update user" };
+export async function createUser(input: CreateUserInput) {
+  if (!(await hasPermission("settings-users", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah user" };
   }
+
+  const parsed = createUserSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  if (existing) return { success: false, error: { email: ["Email sudah terdaftar"] } };
+
+  const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      name: parsed.data.name,
+      email: parsed.data.email,
+      password: hashedPassword,
+      role: parsed.data.role,
+    },
+  });
+
+  return { success: true, data: { id: user.id } };
 }
 
-export async function deleteUser(id: string) {
-  try {
-    await prisma.user.delete({
-      where: { id },
-    });
-
-    revalidatePath("/admin/settings/users");
-    return { success: true };
-  } catch (error) {
-    console.error("Failed to delete user:", error);
-    return { success: false, error: "Failed to delete user" };
+export async function updateUser(input: UpdateUserInput) {
+  if (!(await hasPermission("settings-users", "EDIT"))) {
+     return { success: false, error: "Tidak memiliki izin untuk mengubah user" };
   }
+
+  const parsed = updateUserSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  const data: Record<string, unknown> = {
+    name: parsed.data.name,
+    email: parsed.data.email,
+    role: parsed.data.role,
+  };
+
+  if (parsed.data.password && parsed.data.password.length > 0) {
+    data.password = await bcrypt.hash(parsed.data.password, 10);
+  }
+
+  await prisma.user.update({ where: { id: parsed.data.id }, data });
+
+  return { success: true };
 }
 
-export async function toggleUserStatus(id: string, currentStatus: boolean) {
-  try {
-    await prisma.user.update({
-      where: { id },
-      data: { isActive: !currentStatus },
-    });
-    revalidatePath("/admin/settings/users");
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Failed to toggle status" };
+export async function toggleUserActive(id: string) {
+  if (!(await hasPermission("settings-users", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan user" };
   }
+
+  const user = await prisma.user.findUnique({ where: { id }, select: { isActive: true } });
+  if (!user) return { success: false, error: "User tidak ditemukan" };
+
+  await prisma.user.update({
+    where: { id },
+    data: { isActive: !user.isActive },
+  });
+
+  return { success: true };
 }

@@ -1,50 +1,72 @@
 import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
-import Papa from "papaparse";
+import { parse } from "csv-parse/sync";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+function parseBirthDate(dateStr: string): Date | null {
+  if (!dateStr || dateStr.trim() === "") return null;
+  
+  const parts = dateStr.split("/");
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // 0-based month
+    let year = parseInt(parts[2], 10);
+    
+    if (year < 100) {
+      year = year > 30 ? 1900 + year : 2000 + year;
+    }
+    
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+  return null;
+}
 
 export async function seedFarmers(prisma: PrismaClient) {
-  console.log("Seeding farmers...");
-  const csvFilePath = path.resolve(__dirname, "data/farmers.csv");
-  const fileContent = fs.readFileSync(csvFilePath, "utf8");
+  const csv = readFileSync(join(__dirname, "data/farmer.csv"), "utf-8");
+  const records = parse(csv, { columns: true, skip_empty_lines: true });
 
-  const { data } = Papa.parse(fileContent, {
-    header: true,
-    skipEmptyLines: true,
-  });
+  let count = 0;
+  for (const row of records) {
+    const id = row.id?.trim();
+    if (!id) continue;
 
-  for (const row of data as any[]) {
-    // Look up the batch by code to get the actual ID
-    let batchId: string | null = null;
-    if (row.batchId) {
-      const batch = await prisma.batch.findUnique({
-        where: { code: row.batchId },
+    const groupId = row.tbl_farmer_group_id?.trim();
+    // Validate if the farmer group exists in the database
+    if (groupId) {
+      const groupExists = await prisma.farmerGroup.findUnique({
+        where: { id: groupId }
       });
-      batchId = batch?.id ?? null;
+      if (!groupExists) {
+        // Skip or warn
+        continue;
+      }
+    } else {
+      continue;
     }
 
+    const rawGender = row.Gender?.trim();
+    const gender = rawGender === "F" ? "F" : "M";
+
     await prisma.farmer.upsert({
-      where: { nik: row.nik },
-      update: {
-        name: row.name,
-        gender: row.gender,
-        status: row.status || null,
-        farmerGroupId: row.farmerGroupId,
-        batchId,
-      },
+      where: { id },
+      update: {},
       create: {
-        id: row.id,
-        farmerGroupId: row.farmerGroupId,
-        batchId,
-        wriFarmerId: row.wriFarmerId || null,
-        uiFarmerId: row.uiFarmerId || null,
-        name: row.name,
-        nik: row.nik,
-        gender: row.gender,
-        birthdate: new Date(row.birthdate),
-        status: row.status || null,
+        id,
+        farmerGroupId: groupId,
+        gender,
+        name: row["Farmers Name"] || "Unnamed Farmer",
+        farmerId: row.FarmerID || id,
+        nik: row.NIK || null,
+        address: row.Address || null,
+        birthPlace: row["Tempat Lahir"] || null,
+        birthDate: parseBirthDate(row["Tanggal Lahir"]),
       },
     });
+    count++;
   }
-  console.log(`Seeded ${data.length} farmers.`);
+
+  console.log(`  ✓ Farmers: ${count} records seeded`);
 }

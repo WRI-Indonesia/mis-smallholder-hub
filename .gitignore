@@ -3,13 +3,15 @@
 # dependencies
 /node_modules
 /.pnp
+.vscode/*
 .pnp.*
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+.kilo/*
+.kiro/*
 # testing
 /coverage
 
@@ -41,3 +43,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+/tmp*
+/developer-log
+/draft-issue
