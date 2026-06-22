@@ -47,9 +47,9 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | -------------- | -------------- | ---------------------------------------------------- |
 | Total phase    | 35 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
 | ✅ Done        | 14 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/04/05, BULK-01/03     |
-| 🟠 Partial     | 2 fase         | TOOLS-01, OPS-01 |
+| 🟠 Partial     | 3 fase         | TOOLS-01, OPS-01, OPS-02 |
 | 🔲 Not Started | 5 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03      |
-| 🔲 Planned     | 13 fase        | MD-06/07/08/09/10/11, DASH-02/03, COMM-02, BULK-02, OPS-02    |
+| 🔲 Planned     | 12 fase        | MD-06/07/08/09/10/11, DASH-02/03, COMM-02, BULK-02    |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
 | 🎯 Now         | 1 fase         | MD-06       |
 
@@ -136,7 +136,7 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
 | Scripts        | S3/PDF CLI, export CSV, ⚠️ stale dashboard scripts in `/scripts/debug/` (BUG-002)                                                                                                 | Tools partial; `/scripts/debug/*dashboard*` reference missing `src/server/actions/dashboard.ts` |
 | Tests          | `npm test` lulus **14 files / 175 tests** ✅; test files: auth, bulk-upload, bulk-upload-parcel, farmer, land-parcel, menu-action, middleware, perf, rbac, rbac-permission, region, training-activity, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer/land-parcel/training/bulk-upload); need dashboard/production |
-| DevOps         | Dockerfile + `.github/workflows/deploy-dev.yaml` + `deploy-main.yml`                                                                                                               | DevOps partial; workflow ada tetapi deployment readiness belum diverifikasi di dokumen |
+| DevOps         | Dockerfile + `.github/workflows/` (`deploy-dev.yaml`, `deploy-main.yml`, `semgrep.yml`, `gitleaks.yml`)                                                                            | DevOps partial; workflow CI/CD dan security scan (Gitleaks, Semgrep) ditambahkan |
 
 ### Code Compliance Audit vs rule.md (2026-06-08)
 
@@ -215,7 +215,7 @@ Format phase: `STREAM-NN`.
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
 | OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **14 test files + 175 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/bulk-upload/bulk-upload-parcel | Expand to dashboard, production, report modules |
-| OPS-02      | DevOps & Deployment          | 🔲 Planned | Later   | Dockerfile + GitHub deploy workflows                                                              | Verify deployment, env matrix, rollback, and CI status                           |
+| OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
 
@@ -676,6 +676,7 @@ Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk mod
 
 | Tanggal | Perubahan |
 | ------- | --------- |
+| 06-22   | Menambahkan konfigurasi keamanan statis CI: Semgrep (`semgrep.yml`) dan Gitleaks (`gitleaks.yml`) untuk scan celah keamanan dan kebocoran rahasia (secrets). |
 | 06-14   | MD-04 selesai — Implementasi lengkap master data Lahan / Land Parcels (#88): CRUD (create/read/update/delete), UI list DataTable dengan filter & Excel export, UI detail dengan MapLibre polygon viewer, modal form dengan Zod validation, ZIP Shapefile bulk upload dengan column mapping & smart validation, 14 unit tests, menu seeding, dan full RBAC integration. **Key Features:** (1) Geospatial support dengan lat/long + GeoJSON polygon, (2) Revision tracking untuk update parcel, (3) Shapefile (.shp dalam ZIP) bulk upload dengan auto column mapping, (4) Area calculation & planting year tracking, (5) Full integration dengan Farmer master data. |
 | 06-11   | MD-05 selesai — Implementasi lengkap upload evidence training (PDF), format tanggal dd/mmm/yyyy, serta import/upload list peserta via Excel/CSV dengan 3-tier validation (Valid, Warning, Error) |
 | 06-10   | MD-03 selesai — Penambahan field `joinedYear` opsional pada model Farmer beserta validasi, CRUD, dan bulk upload |
