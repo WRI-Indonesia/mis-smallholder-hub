@@ -1,7 +1,7 @@
 # Database Schema — ERD
 
 > Visualisasi Entity Relationship Diagram untuk schema aktif.
-> Update terakhir: 2026-06-14 (Post-MD-04 Land Parcel Implementation — Issue #88)
+> Update terakhir: 2026-06-22 (Post-MD-06 Production Implementation — Full codebase audit)
 
 ---
 
@@ -20,6 +20,10 @@ erDiagram
     
     %% LAND PARCEL
     Farmer ||--o{ LandParcel : "owns parcels"
+    
+    %% PRODUCTION RECORD
+    Farmer ||--o{ ProductionRecord : "records production"
+    LandParcel ||--o{ ProductionRecord : "from parcel"
     
     %% TRAINING MODULE
     TrainingPackage ||--o{ TrainingActivity : "used in"
@@ -44,7 +48,7 @@ erDiagram
 
 ## Quick Summary
 
-### Implemented Models (9 Categories)
+### Implemented Models (10 Categories)
 
 | Category | Tables | Key Features |
 |----------|--------|--------------|
@@ -56,7 +60,7 @@ erDiagram
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
 | **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
-| **Production** | ProductionRecord | MD-06 Production yield tracking per farmer & parcel |
+| **Production** | ProductionRecord | Yield tracking per farmer/parcel with period (YYYY-MM), harvest number (1-4), duplicate validation |
 
 ### Planned Models (5 Categories)
 
@@ -81,7 +85,8 @@ erDiagram
 
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
-| **2.1.0** | 2026-06-14 | Land Parcel module (#88): LandParcel model, ZIP Shapefile bulk upload | Medium (new table + geospatial features) |
+| **2.2.0** | 2026-06-22 | Production module (#89): ProductionRecord model, per-farmer/parcel yield tracking, bulk upload | Medium (new table + production tracking features) |
+| 2.1.0 | 2026-06-14 | Land Parcel module (#88): LandParcel model, ZIP Shapefile bulk upload | Medium (new table + geospatial features) |
 | 2.0.0 | 2026-06-11 | Training module, Farmer.joinedYear | Medium (new tables + optional field) |
 | 1.5.0 | 2026-05-22 | RBAC overrides, User data access | High (new RBAC tables) |
 | 1.0.0 | 2026-04-14 | Initial schema | — |
@@ -238,6 +243,29 @@ erDiagram
     }
 
     Farmer ||--o{ LandParcel : "owns"
+
+    %% ═══════════════════════════════════════════
+    %% PRODUCTION RECORD
+    %% ═══════════════════════════════════════════
+
+    ProductionRecord {
+        String id PK
+        String farmer_id FK
+        String parcel_id FK
+        String period
+        DateTime harvest_date
+        Int harvest_number
+        Float yield_kg
+        String notes
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    Farmer ||--o{ ProductionRecord : "records"
+    LandParcel ||--o{ ProductionRecord : "from"
 
     %% ═══════════════════════════════════════════
     %% TRAINING
@@ -398,8 +426,8 @@ erDiagram
 | **Farmer Group** | FarmerGroup | ✅ Complete with location & category |
 | **Farmer** | Farmer | ✅ Complete with demographics & joinedYear field |
 | **Land Parcel** | LandParcel | ✅ Complete with geolocation, polygon geometry (GeoJSON), area tracking, revision history |
+| **Production** | ProductionRecord | ✅ Complete with yield tracking per farmer/parcel, period validation (YYYY-MM), max 4 harvests/month, duplicate prevention |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | ✅ Complete with evidence upload & participant management |
-| **Production** | ProductionRecord | ✅ Complete with yield tracking per farmer/parcel and duplicate validation |
 
 ### 🔲 Planned (Roadmap)
 
@@ -597,6 +625,9 @@ flowchart LR
 | TrainingActivity | PK | `id` (CUID) | Primary key |
 | TrainingParticipant | PK | `id` (CUID) | Primary key |
 | TrainingParticipant | UNIQUE | `(activityId, farmerId)` | Prevent duplicate participant registration |
+| **Production** | | | |
+| ProductionRecord | PK | `id` (CUID) | Primary key |
+| ProductionRecord | UNIQUE | `(farmerId, period, harvestNumber)` | Prevent duplicate production entry for same farmer/period/harvest |
 | **RBAC** | | | |
 | RolePermission | PK | `id` (CUID) | Primary key |
 | RolePermission | UNIQUE | `(role, menuKey, permission)` | Prevent duplicate role permissions |
@@ -628,6 +659,10 @@ flowchart LR
 | **LandParcel** | `farmerId` | Get all parcels for a farmer | HIGH — list parcels, map view |
 | LandParcel | `isActive` | Filter active parcels | HIGH |
 | LandParcel | `parcelId` | Search parcel by ID | MEDIUM — lookup operations |
+| **ProductionRecord** | `farmerId` | Get all production records for a farmer | HIGH — list production, farmer summary |
+| ProductionRecord | `parcelId` | Get production records by parcel | MEDIUM — parcel-level analysis |
+| ProductionRecord | `period` | Filter production by period (YYYY-MM) | HIGH — monthly/yearly reports |
+| ProductionRecord | `isActive` | Filter active production records | HIGH |
 
 ### Index Maintenance Notes
 
