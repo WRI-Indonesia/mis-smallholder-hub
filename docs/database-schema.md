@@ -302,6 +302,8 @@ erDiagram
         String id PK
         String training_activity_id FK
         String farmer_id FK
+        Int pre_test_score "nullable, 0-100"
+        Int post_test_score "nullable, 0-100"
         Boolean is_active
         DateTime created_at
         String created_by

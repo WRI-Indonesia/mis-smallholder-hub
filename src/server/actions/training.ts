@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { trainingActivitySchema, updateTrainingActivitySchema } from "@/validations/training-activity.schema";
 import type { TrainingActivityInput, UpdateTrainingActivityInput } from "@/validations/training-activity.schema";
+import { trainingParticipantScoreSchema } from "@/validations/training-participant.schema";
+import type { TrainingParticipantScoreInput } from "@/validations/training-participant.schema";
 import { hasPermission } from "@/lib/rbac";
 import { getPresignedUrl } from "@/lib/s3";
 
@@ -224,12 +226,20 @@ export async function getFarmersByGroup(farmerGroupId: string) {
   });
 }
 
-export async function addParticipants(activityId: string, farmerIds: string[]) {
+export async function addParticipants(
+  activityId: string,
+  participants: {
+    farmerId: string;
+    preTestScore?: number | null;
+    postTestScore?: number | null;
+  }[]
+) {
   if (!(await hasPermission("master-data-training", "EDIT"))) {
     return { success: false, error: "Tidak memiliki izin untuk mengubah peserta pelatihan" };
   }
 
   const session = await auth();
+  const farmerIds = participants.map((p) => p.farmerId);
 
   // We do bulk upsert or find and create to avoid duplicate active relations
   const existing = await prisma.trainingParticipant.findMany({
@@ -242,18 +252,25 @@ export async function addParticipants(activityId: string, farmerIds: string[]) {
   const existingMap = new Map(existing.map((p) => [p.farmerId, p]));
 
   await prisma.$transaction(
-    farmerIds.map((farmerId) => {
-      const exist = existingMap.get(farmerId);
+    participants.map((p) => {
+      const exist = existingMap.get(p.farmerId);
       if (exist) {
         return prisma.trainingParticipant.update({
           where: { id: exist.id },
-          data: { isActive: true, modifiedBy: session?.user?.id ?? null },
+          data: {
+            isActive: true,
+            preTestScore: p.preTestScore ?? null,
+            postTestScore: p.postTestScore ?? null,
+            modifiedBy: session?.user?.id ?? null,
+          },
         });
       } else {
         return prisma.trainingParticipant.create({
           data: {
             activityId,
-            farmerId,
+            farmerId: p.farmerId,
+            preTestScore: p.preTestScore ?? null,
+            postTestScore: p.postTestScore ?? null,
             createdBy: session?.user?.id ?? null,
           },
         });
@@ -281,6 +298,59 @@ export async function removeParticipant(participantId: string) {
   await prisma.trainingParticipant.update({
     where: { id: participantId },
     data: { isActive: false, modifiedBy: session?.user?.id ?? null },
+  });
+
+  return { success: true };
+}
+
+export async function removeParticipants(participantIds: string[]) {
+  if (!(await hasPermission("master-data-training", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menghapus peserta pelatihan" };
+  }
+
+  const session = await auth();
+
+  await prisma.trainingParticipant.updateMany({
+    where: { id: { in: participantIds }, isActive: true },
+    data: { isActive: false, modifiedBy: session?.user?.id ?? null },
+  });
+
+  return { success: true };
+}
+
+export async function updateParticipantScores(
+  participantId: string,
+  input: TrainingParticipantScoreInput
+) {
+  if (!(await hasPermission("master-data-training", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah nilai peserta" };
+  }
+
+  const parsed = trainingParticipantScoreSchema.safeParse(input);
+  if (!parsed.success) {
+    const errors = parsed.error.flatten().fieldErrors;
+    const firstError = Object.values(errors)[0]?.[0] || "Validasi gagal";
+    return { success: false, error: firstError };
+  }
+
+  const session = await auth();
+
+  const participant = await prisma.trainingParticipant.findUnique({
+    where: { id: participantId },
+    select: { isActive: true },
+  });
+
+  if (!participant || !participant.isActive) {
+    return { success: false, error: "Peserta tidak ditemukan atau sudah tidak aktif" };
+  }
+
+  await prisma.trainingParticipant.update({
+    where: { id: participantId },
+    data: {
+      preTestScore: parsed.data.preTestScore ?? null,
+      postTestScore: parsed.data.postTestScore ?? null,
+      modifiedBy: session?.user?.id ?? null,
+    },
   });
 
   return { success: true };

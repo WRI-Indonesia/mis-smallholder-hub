@@ -43,6 +43,8 @@ interface ParsedRow {
   status: "VALID" | "WARNING" | "ERROR";
   errorReason: string;
   resolvedId?: string;
+  preTestScore?: number | null;
+  postTestScore?: number | null;
 }
 
 interface Props {
@@ -127,7 +129,8 @@ export function AddParticipantsModal({
     }
 
     setIsSaving(true);
-    const result = await addParticipants(activityId, selectedIds);
+    const formattedParticipants = selectedIds.map((id) => ({ farmerId: id }));
+    const result = await addParticipants(activityId, formattedParticipants);
     setIsSaving(false);
 
     if (result.success) {
@@ -203,6 +206,14 @@ export function AddParticipantsModal({
       ["id petani", "farmer id", "id", "farmer_id", "kode petani", "kode_petani", "farmerid"].includes(h.toLowerCase().trim())
     ) || detectedHeaders[0];
 
+    const preTestKey = detectedHeaders.find((h) =>
+      ["nilai pre-test", "nilai pre test", "pre-test score", "pre-test", "pretest", "pretestscore", "nilai_pre_test"].includes(h.toLowerCase().trim())
+    );
+
+    const postTestKey = detectedHeaders.find((h) =>
+      ["nilai post-test", "nilai post test", "post-test score", "post-test", "posttest", "posttestscore", "nilai_post_test"].includes(h.toLowerCase().trim())
+    );
+
     if (!idKey) {
       toast.error("Kolom ID Petani tidak ditemukan di file");
       return;
@@ -235,16 +246,44 @@ export function AddParticipantsModal({
       let errorReason = "";
       let resolvedId = "";
       let name = "—";
+      let preTestScore: number | null = null;
+      let postTestScore: number | null = null;
+
+      if (preTestKey) {
+        const rawVal = row[preTestKey];
+        if (rawVal !== undefined && rawVal !== null && rawVal.toString().trim() !== "") {
+          const parsedVal = parseInt(rawVal.toString().trim(), 10);
+          if (isNaN(parsedVal) || parsedVal < 0 || parsedVal > 100) {
+            status = "ERROR";
+            errorReason = "Nilai Pre-Test harus berupa angka 0-100";
+          } else {
+            preTestScore = parsedVal;
+          }
+        }
+      }
+
+      if (postTestKey) {
+        const rawVal = row[postTestKey];
+        if (rawVal !== undefined && rawVal !== null && rawVal.toString().trim() !== "") {
+          const parsedVal = parseInt(rawVal.toString().trim(), 10);
+          if (isNaN(parsedVal) || parsedVal < 0 || parsedVal > 100) {
+            status = "ERROR";
+            errorReason = (errorReason ? errorReason + "; " : "") + "Nilai Post-Test harus berupa angka 0-100";
+          } else {
+            postTestScore = parsedVal;
+          }
+        }
+      }
 
       if (!matchedGroupFarmer) {
         status = "ERROR";
-        errorReason = "ID Petani tidak ditemukan di kelompok tani ini";
+        errorReason = (errorReason ? errorReason + "; " : "") + "ID Petani tidak ditemukan di kelompok tani ini";
       } else {
         name = matchedGroupFarmer.name;
         resolvedId = matchedGroupFarmer.id;
         if (currentParticipantFarmerIds.includes(matchedGroupFarmer.id)) {
           status = "ERROR";
-          errorReason = "Petani sudah terdaftar sebagai peserta";
+          errorReason = (errorReason ? errorReason + "; " : "") + "Petani sudah terdaftar sebagai peserta";
         } else {
           // Check if already attended the same package in a different activity
           const previousParticipation = matchedGroupFarmer.trainingParticipants?.find(
@@ -253,7 +292,7 @@ export function AddParticipantsModal({
           if (previousParticipation) {
             status = "WARNING";
             const formattedPrevDate = formatDateWarning(previousParticipation.activity.trainingDate);
-            errorReason = `Sudah pernah mengikuti training ${previousParticipation.activity.package.name} di tanggal : ${formattedPrevDate}`;
+            errorReason = (errorReason ? errorReason + "; " : "") + `Sudah pernah mengikuti training ${previousParticipation.activity.package.name} di tanggal : ${formattedPrevDate}`;
           }
         }
       }
@@ -264,6 +303,8 @@ export function AddParticipantsModal({
         status,
         errorReason,
         resolvedId: resolvedId || undefined,
+        preTestScore,
+        postTestScore,
       });
     });
 
@@ -273,21 +314,25 @@ export function AddParticipantsModal({
 
   // Save parsed list
   async function handleSaveUpload() {
-    const validIds = parsedRows
+    const validParticipants = parsedRows
       .filter((r) => (r.status === "VALID" || r.status === "WARNING") && r.resolvedId)
-      .map((r) => r.resolvedId!);
+      .map((r) => ({
+        farmerId: r.resolvedId!,
+        preTestScore: r.preTestScore,
+        postTestScore: r.postTestScore,
+      }));
 
-    if (validIds.length === 0) {
+    if (validParticipants.length === 0) {
       toast.error("Tidak ada peserta valid untuk ditambahkan");
       return;
     }
 
     setIsSaving(true);
-    const result = await addParticipants(activityId, validIds);
+    const result = await addParticipants(activityId, validParticipants);
     setIsSaving(false);
 
     if (result.success) {
-      toast.success(`${validIds.length} peserta berhasil ditambahkan`);
+      toast.success(`${validParticipants.length} peserta berhasil ditambahkan`);
       onClose();
       router.refresh();
     } else {
@@ -299,8 +344,12 @@ export function AddParticipantsModal({
   async function downloadTemplate() {
     const exportWorkbook = new Excel.Workbook();
     const sheet = exportWorkbook.addWorksheet("Template Peserta");
-    sheet.columns = [{ header: "ID Petani", key: "farmerId", width: 25 }];
-    sheet.addRow({ farmerId: "APSS.14.01.10.2012.0001" });
+    sheet.columns = [
+      { header: "ID Petani", key: "farmerId", width: 25 },
+      { header: "Nilai Pre-Test", key: "preTestScore", width: 15 },
+      { header: "Nilai Post-Test", key: "postTestScore", width: 15 },
+    ];
+    sheet.addRow({ farmerId: "APSS.14.01.10.2012.0001", preTestScore: 80, postTestScore: 90 });
 
     const buffer = await exportWorkbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
@@ -487,6 +536,8 @@ export function AddParticipantsModal({
                         <tr className="bg-muted/60 border-b sticky top-0">
                           <th className="p-2 font-semibold">ID Petani</th>
                           <th className="p-2 font-semibold">Nama</th>
+                          <th className="p-2 font-semibold">Pre-Test</th>
+                          <th className="p-2 font-semibold">Post-Test</th>
                           <th className="p-2 font-semibold">Status</th>
                           <th className="p-2 font-semibold">Keterangan</th>
                         </tr>
@@ -502,6 +553,8 @@ export function AddParticipantsModal({
                           >
                             <td className="p-2 font-mono">{r.farmerId}</td>
                             <td className="p-2">{r.name}</td>
+                            <td className="p-2">{r.preTestScore ?? "—"}</td>
+                            <td className="p-2">{r.postTestScore ?? "—"}</td>
                             <td className="p-2">
                               <Badge
                                 variant={r.status === "VALID" ? "default" : r.status === "WARNING" ? "secondary" : "destructive"}

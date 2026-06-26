@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-06-23 (Comprehensive codebase audit — all 16 server actions, 192 tests, ProductionRecord model verified ✅)
+**Last updated:** 2026-06-26 (Audit Issue #94 fixes, isActive filters, onBlur deduplication, 16 test files / 199 tests passed ✅)
 
 **Next management review:** 2026-06-30
 
@@ -23,10 +23,10 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Item               | Nilai                                                       |
 | ------------------ | ----------------------------------------------------------- |
-| Periode laporan    | 2026-06-08 s.d. 2026-06-23                                  |
+| Periode laporan    | 2026-06-08 s.d. 2026-06-26                                  |
 | Status keseluruhan | 🟢 On Track                                          |
-| Basis review       | Full codebase audit 2026-06-23 (16 server actions, 15 test files, all MD modules complete)       |
-| Test lokal         | ✅ `npm test` — 15 files / 192 tests passed                 |
+| Basis review       | Full codebase audit 2026-06-26 (17 server actions, 16 test files, all MD modules complete)       |
+| Test lokal         | ✅ `npm test` — 16 files / 199 tests passed                 |
 | Fokus berikutnya   | Dashboard module foundation + Report module foundation      |
 
 ### Executive Summary
@@ -39,7 +39,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Report              | 🔲 Not Started   | Belum ada report module. Issues #64–#67 dibuat (menu setup + placeholder + implementasi).                                                  |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region bulk upload belum ada. |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
-| Testing             | ✅ Strong       | Vitest: 15 files / 192 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload ✅; need dashboard/report. |
+| Testing             | ✅ Strong       | Vitest: 16 files / 199 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload ✅; need dashboard/report. |
 
 ### Progress Snapshot
 
@@ -64,7 +64,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
 | Dashboard priority  | `/admin/dashboard` masih placeholder; scope & wireframe perlu disepakati. | Scope DASH-01 minimal harus ditetapkan sebelum dev dimulai.                               |
 | ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests 192/192 passed; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload ✅.    | Foundation & core features stabil; siap lanjut ke dashboard & report.                    |
+| Delivery confidence | Tests 199/199 passed; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload ✅.    | Foundation & core features stabil; siap lanjut ke dashboard & report.                    |
 
 ### Decisions Needed
 
@@ -134,11 +134,11 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Prisma models  | `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer`, `LandParcel`, `TrainingPackage`, `TrainingActivity`, `TrainingParticipant`, `ProductionRecord` | Schema mencakup platform, RBAC, region, farmer group, farmer (MD-03), land parcel (MD-04), training (MD-05), dan production (MD-06) ✅ |
 | Admin routes   | ✅ Dashboard, Settings (Users/Roles/Menu/Regions), Master Data (Farmers list/detail/form + Groups list/detail/form + Parcels list/detail/form + Training list/detail/participants + Production list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Profile | ✅ Admin foundation complete + Farmer CRUD + Land Parcel CRUD + Training CRUD + Production CRUD complete; Dashboard placeholder only |
-| Server actions | `user` (259 LOC), `user-data-access` (193 LOC), `user-menu-access` (195 LOC), `menu` (110 LOC), `region` (104 LOC), `farmer-group` (145 LOC), `farmer` (188 LOC), `land-parcel` (165 LOC), `bulk-upload-parcel` (222 LOC), `profile` (47 LOC), `role-permission` (74 LOC), `bulk-upload` (177 LOC), `training` (231 LOC), `production` (180 LOC), `bulk-upload-production` (95 LOC), `upload` (77 LOC) — **Total 2433 LOC** | Training, farmer, land parcel, production, bulk upload tersedia ✅; dashboard belum ada |
-| Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `menu.schema.ts`, `region.schema.ts`, `training-activity.schema.ts`, `production.schema.ts`, `user.schema.ts` — **8 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training, production ✅ |
+| Server actions | `user` (259 LOC), `user-data-access` (193 LOC), `user-menu-access` (195 LOC), `menu` (110 LOC), `region` (104 LOC), `farmer-group` (145 LOC), `farmer` (188 LOC), `land-parcel` (165 LOC), `bulk-upload-parcel` (222 LOC), `profile` (47 LOC), `role-permission` (74 LOC), `bulk-upload` (177 LOC), `training` (355 LOC), `production` (180 LOC), `bulk-upload-production` (95 LOC), `upload` (77 LOC) — **Total 2557 LOC** | Training, farmer, land parcel, production, bulk upload tersedia ✅; dashboard belum ada |
+| Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `menu.schema.ts`, `region.schema.ts`, `training-activity.schema.ts`, `training-participant.schema.ts`, `production.schema.ts`, `user.schema.ts` — **9 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training, production ✅ |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
 | Scripts        | `scripts/get-link.js`, `scripts/pdf-manager.js` (tracked, npm commands aktif ✅); debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only) | BUG-002 resolved — stale scripts tidak ada di repo/CI. |
-| Tests          | `npm test` lulus **15 files / 192 tests** ✅; test files: auth, bulk-upload, bulk-upload-parcel, farmer, land-parcel, menu-action, middleware, perf, production, rbac, rbac-permission, region, training-activity, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload); need dashboard/report |
+| Tests          | `npm test` lulus **16 files / 199 tests** ✅; test files: auth, bulk-upload, bulk-upload-parcel, farmer, land-parcel, menu-action, middleware, perf, production, rbac, rbac-permission, region, training-activity, training-participant, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload); need dashboard/report |
 | DevOps         | Dockerfile + `.github/workflows/` (`deploy-dev.yaml`, `deploy-main.yml`, `semgrep.yml`, `gitleaks.yml`)                                                                            | DevOps partial; workflow CI/CD dan security scan (Gitleaks, Semgrep) ditambahkan |
 
 ### Code Compliance Audit vs rule.md (2026-06-08)
@@ -196,7 +196,7 @@ Format phase: `STREAM-NN`.
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
 | MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model ✅, `src/server/actions/farmer.ts` (188 LOC) ✅, validation ✅, UI (list/detail/form) ✅, test ✅ | Maintain; expand MD-04/05/06 dependency                                          |
 | MD-04       | Parcels                      | ✅ Done        | Done    | `LandParcel` model ✅, `src/server/actions/land-parcel.ts` (165 LOC) ✅, `src/server/actions/bulk-upload-parcel.ts` (222 LOC) ✅, validation schema ✅, UI list/detail/form ✅, ZIP Shapefile bulk upload dengan column mapping ✅, 14 unit tests ✅ | Maintain; expand to Production dependency |
-| MD-05       | Training                     | ✅ Done        | Done    | Schema (TrainingPackage/Activity/Participant) ✅, actions (231 LOC) ✅, UI (list/detail/modal) ✅, participants management ✅, 11 unit tests ✅ | Maintain; #77-#82 complete; skip #81 (S3) MVP |
+| MD-05       | Training                     | ✅ Done        | Done    | Schema (TrainingPackage/Activity/Participant) ✅, actions (355 LOC) ✅, UI (list/detail/modal) ✅, participants management ✅, pre/post-test scores ✅, bulk participant removal ✅, 18 unit tests ✅ | Maintain; #77-#82, #94 complete |
 | MD-06       | Agronomy / Production        | ✅ Done        | Done    | ProductionRecord model ✅, `src/server/actions/production.ts` (180 LOC) ✅, `src/server/actions/bulk-upload-production.ts` (95 LOC) ✅, validation schema ✅, UI list/detail/form pages ✅, 13 unit tests ✅ | Maintain; #89 complete (per-farmer/parcel tracking, period validation, bulk upload)                      |
 | MD-07       | Staff                        | 🔲 Planned     | Later   | No staff model/route/action/UI                                                                    | Define scope                                                                     |
 | MD-08       | HCV                          | 🔲 Planned     | Later   | No HCV model/route/action/UI                                                                      | Define scope                                                                     |
@@ -218,7 +218,7 @@ Format phase: `STREAM-NN`.
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **15 test files + 192 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/bulk-upload-parcel | Expand to dashboard, report modules |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **16 test files + 199 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/bulk-upload-parcel | Expand to dashboard, report modules |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
@@ -238,7 +238,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | -------- | ------------ | -------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | P0       | BUG-002      | Fix stale dashboard tooling references | `scripts/debug/*dashboard*` import `src/server/actions/dashboard` yang tidak ada              | ✅ **BUG-001 FIXED** — redirect ke farmers works; **Remove/fix script** |
 | P0       | DASH-01      | Dashboard scope agreement + impl       | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`; **BLOCKING scope undefined** | **URGENT: Define scope in 48h** — cards, metrics, filters, wireframe    |
-| P1       | #94          | Training Participant Pre/Post-test Scores | TrainingParticipant model tidak ada field nilai pre-test dan post-test | Add `preTestScore` & `postTestScore` nullable Integer fields (0-100), update validation, UI, bulk upload |
+| ✅ Done  | #94          | Training Participant Pre/Post-test Scores | ✅ preTestScore & postTestScore fields, validation, inline editing UI, bulk upload parsing, bulk participant removal | #94 complete |
 | P1       | PLATFORM-07  | Hierarchical Menu (3-Level)            | Schema support recursive; UI & RBAC supporting 3-level           | #87 — Implement sidebar level 3, RBAC inheritance, validation depth max 3 |
 | P1       | RPT-01       | Menu & placeholder Report              | Tidak ada report module; issue #64-#67 siap untuk diimplementasi                             | #64 menu + placeholder → #65-#67 tabel & export                         |
 | P1       | BULK-01      | Menu & placeholder Bulk Upload         | Tidak ada bulk upload module; issue #68-#70, #76 siap untuk diimplementasi                   | #68 menu + placeholder → #69-#70 CSV upload & validasi → #76 Farmer column mapping |
@@ -543,6 +543,7 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-26   | Issue #94 complete — Pre/Post-Test Scores: Tambah `preTestScore` & `postTestScore` (nullable Int 0-100) pada TrainingParticipant. Zod validation (`training-participant.schema.ts`), server actions (`updateParticipantScores`, `removeParticipants`), inline editing UI, bulk upload Excel/CSV parsing dengan score columns, bulk participant removal dengan checkbox selection. 7 unit tests. Audit: isActive filter fix, onBlur handler deduplication. |
 | 06-25   | Issue #94 dibuat — Tambah field nilai Pre-Test dan Post-Test pada Training Participant: `preTestScore` & `postTestScore` nullable Integer (0-100), update schema, validation, server actions, UI form/table, bulk upload enhancement. Estimasi 4-6 jam (1 hari kerja). |
 | 06-22   | **Scripts reorganization** — Debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root agar npm commands (`s3:get-link`, `pdf:*`) tetap berfungsi. BUG-002 & TD-005 resolved: stale scripts tidak ada di repo/CI. |
 | 06-22   | Login Page Enhancement: Case-insensitive email login (`src/lib/auth.ts`) and show/hide password visibility toggle with eye icon (`src/components/auth/login-form.tsx`). |
