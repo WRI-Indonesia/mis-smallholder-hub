@@ -42,11 +42,13 @@ model TrainingActivity {
 }
 
 model TrainingParticipant {
-  id         String           @id @default(cuid())
-  activityId String           @map("training_activity_id")
-  activity   TrainingActivity @relation(fields: [activityId], references: [id])
-  farmerId   String           @map("farmer_id")
-  farmer     Farmer           @relation(fields: [farmerId], references: [id])
+  id            String           @id @default(cuid())
+  activityId    String           @map("training_activity_id")
+  activity      TrainingActivity @relation(fields: [activityId], references: [id])
+  farmerId      String           @map("farmer_id")
+  farmer        Farmer           @relation(fields: [farmerId], references: [id])
+  preTestScore  Int?             @map("pre_test_score")
+  postTestScore Int?             @map("post_test_score")
   
   isActive   Boolean          @default(true) @map("is_active")
   createdAt  DateTime         @default(now()) @map("created_at")
