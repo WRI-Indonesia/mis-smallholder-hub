@@ -47,6 +47,7 @@ interface ExistingRecord {
   farmerId: string;
   period: string;
   harvestNumber: number;
+  parcelId: string | null;
 }
 
 interface Props {
@@ -238,7 +239,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     // Duplicate checks
     if (mappedFarmerDbId && isPeriodFormatValid && harvestNumber !== null) {
       // Duplicates within this file
-      const dupKey = `${mappedFarmerDbId}::${rawPeriod}::${harvestNumber}`;
+      const dupKey = `${mappedFarmerDbId}::${normalized.parcelId || ""}::${rawPeriod}::${harvestNumber}`;
       if (duplicatesInFile.has(dupKey)) {
         errors.push(
           `Data panen ke-${harvestNumber} periode ${rawPeriod} terdeteksi ganda di dalam file`
@@ -250,7 +251,8 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
         (er) =>
           er.farmerId === mappedFarmerDbId &&
           er.period === rawPeriod &&
-          er.harvestNumber === harvestNumber
+          er.harvestNumber === harvestNumber &&
+          er.parcelId === normalized.parcelId
       );
       if (dbDup) {
         errors.push(
@@ -366,13 +368,14 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       const rawFarmerId = row[mapping["farmerId"]]?.toString().trim();
       const rawPeriod = row[mapping["period"]]?.toString().trim();
       const rawHarvestNumber = row[mapping["harvestNumber"]]?.toString().trim();
+      const rawParcelId = row[mapping["parcelId"]]?.toString().trim() || "";
 
       if (rawFarmerId && rawPeriod && rawHarvestNumber) {
         const matchFarmer = farmers.find(
           (f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase()
         );
         const farmerDbId = matchFarmer ? matchFarmer.id : rawFarmerId;
-        const key = `${farmerDbId}::${rawPeriod}::${rawHarvestNumber}`;
+        const key = `${farmerDbId}::${rawParcelId}::${rawPeriod}::${rawHarvestNumber}`;
         if (seen.has(key)) {
           duplicates.add(key);
         }

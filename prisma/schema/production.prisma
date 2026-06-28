@@ -26,7 +26,7 @@ model ProductionRecord {
   modifiedAt DateTime @updatedAt @map("modified_at")
   modifiedBy String?  @map("modified_by")
 
-  @@unique([farmerId, period, harvestNumber], name: "production_record_unique")
+  @@unique([farmerId, parcelId, period, harvestNumber], name: "production_record_unique")
   @@index([farmerId])
   @@index([parcelId])
   @@index([period])

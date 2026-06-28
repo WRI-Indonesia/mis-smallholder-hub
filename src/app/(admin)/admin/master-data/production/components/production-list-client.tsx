@@ -147,16 +147,14 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
 
   const getExportRow = (r: any) => {
     return {
-      farmerName: r.farmer.name,
-      farmerId: r.farmer.farmerId,
-      groupName: r.farmer.farmerGroup.name,
-      parcelId: r.parcel?.parcelId ?? "—",
+      farmer: r.farmer.name,
+      farmerGroupId: r.farmer.farmerGroup.name,
+      parcel: r.parcel?.parcelId ?? "—",
       period: r.period,
       harvestDate: new Date(r.harvestDate).toLocaleDateString("id-ID"),
       harvestNumber: r.harvestNumber,
       yieldKg: r.yieldKg,
-      status: r.isActive ? "Aktif" : "Nonaktif",
-      notes: r.notes ?? "",
+      isActive: r.isActive ? "Aktif" : "Nonaktif",
     };
   };
 

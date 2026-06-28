@@ -47,6 +47,7 @@ export async function getExistingProductionRecords() {
       farmerId: true,
       period: true,
       harvestNumber: true,
+      parcelId: true,
     },
   });
 }
@@ -104,6 +105,7 @@ export async function bulkCreateProductionRecords(dataList: any[]) {
         const duplicate = await tx.productionRecord.findFirst({
           where: {
             farmerId: record.farmerId,
+            parcelId: record.parcelId || null,
             period: record.period,
             harvestNumber: record.harvestNumber,
             isActive: true,
