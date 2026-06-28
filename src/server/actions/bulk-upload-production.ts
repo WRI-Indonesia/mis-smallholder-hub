@@ -48,6 +48,11 @@ export async function getExistingProductionRecords() {
       period: true,
       harvestNumber: true,
       parcelId: true,
+      parcel: {
+        select: {
+          parcelId: true
+        }
+      }
     },
   });
 }
@@ -101,11 +106,30 @@ export async function bulkCreateProductionRecords(dataList: any[]) {
   try {
     await prisma.$transaction(async (tx) => {
       for (const record of validatedRecords) {
+        let mappedParcelId = record.parcelId;
+        
+        // Validate parcel ownership if provided
+        if (record.parcelId) {
+          const parcel = await tx.landParcel.findFirst({
+            where: {
+              OR: [{ id: record.parcelId }, { parcelId: record.parcelId }],
+              isActive: true 
+            },
+          });
+          if (!parcel) {
+            throw new Error(`ID Lahan "${record.parcelId}" tidak ditemukan atau tidak aktif`);
+          }
+          if (parcel.farmerId !== record.farmerId) {
+            throw new Error(`ID Lahan "${record.parcelId}" tidak dimiliki oleh petani terpilih`);
+          }
+          mappedParcelId = parcel.id;
+        }
+
         // Double-check duplicate in transaction
         const duplicate = await tx.productionRecord.findFirst({
           where: {
             farmerId: record.farmerId,
-            parcelId: record.parcelId || null,
+            parcelId: mappedParcelId || null,
             period: record.period,
             harvestNumber: record.harvestNumber,
             isActive: true,
@@ -118,22 +142,10 @@ export async function bulkCreateProductionRecords(dataList: any[]) {
           );
         }
 
-        // Validate parcel ownership if provided
-        if (record.parcelId) {
-          const parcel = await tx.landParcel.findFirst({
-            where: { id: record.parcelId, isActive: true },
-          });
-          if (!parcel) {
-            throw new Error(`ID Lahan "${record.parcelId}" tidak ditemukan atau tidak aktif`);
-          }
-          if (parcel.farmerId !== record.farmerId) {
-            throw new Error(`ID Lahan "${record.parcelId}" tidak dimiliki oleh petani terpilih`);
-          }
-        }
-
         await tx.productionRecord.create({
           data: {
             ...record,
+            parcelId: mappedParcelId || null,
             createdBy: userId,
           },
         });
