@@ -104,7 +104,7 @@ export function ParcelListClient({ initialParcels, farmers, permissions }: Props
   const getExportRow = (p: LandParcel) => {
     return {
       parcelId: p.parcelId,
-      farmerName: p.farmer.name,
+      farmer: p.farmer.name,
       farmerId: p.farmer.farmerId,
       area: p.area !== null ? p.area : "—",
       landStatus: p.landStatus ?? "—",
