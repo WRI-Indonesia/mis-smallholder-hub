@@ -48,6 +48,7 @@ interface ExistingRecord {
   period: string;
   harvestNumber: number;
   parcelId: string | null;
+  parcel?: { parcelId: string } | null;
 }
 
 interface Props {
@@ -252,7 +253,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
           er.farmerId === mappedFarmerDbId &&
           er.period === rawPeriod &&
           er.harvestNumber === harvestNumber &&
-          er.parcelId === normalized.parcelId
+          (er.parcel?.parcelId === normalized.parcelId || (!er.parcelId && !normalized.parcelId))
       );
       if (dbDup) {
         errors.push(

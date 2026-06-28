@@ -2,9 +2,9 @@ import { z } from "zod";
 
 // Base object schema
 export const productionBaseSchema = z.object({
-  farmerId: z.string().cuid("ID petani tidak valid"),
+  farmerId: z.string().min(1, "ID petani tidak valid"),
   
-  parcelId: z.string().cuid("ID lahan tidak valid").optional().nullable(),
+  parcelId: z.string().optional().nullable(),
   
   period: z
     .string()
