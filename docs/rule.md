@@ -360,6 +360,21 @@ Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (ko
   - Map viewer: `src/components/shared/map-viewer.tsx`
   - Land parcel detail: `src/app/(admin)/admin/master-data/parcels/[id]/page.tsx`
 
+### Dashboard Snapshot Pattern
+
+Untuk snapshot dashboard yang menyimpan historical state:
+- **Separate Table Per Dashboard**: Setiap dashboard punya snapshot table sendiri (e.g., `tbl_snapshot_main_dashboard`, `tbl_snapshot_production_dashboard`)
+- **Naming Convention**: `tbl_snapshot_<dashboard_name>` dengan model `<Dashboard>Snapshot`
+- **Common Fields**: `id`, `snapshotDate`, filter fields (nullable), `data` (Json), audit trail (`createdBy`, `isActive`, timestamps)
+- **Unique Constraint**: Kombinasi `snapshotDate` + filter fields untuk prevent duplicate snapshot
+- **Data Structure**: Store aggregated data di field `data Json` dengan struktur spesifik per dashboard
+- **RBAC Integration**: Apply RBAC filter saat generate snapshot, store only accessible data
+- **Why Not Single Table**: Type safety, query performance, maintainability, independent migrations
+- **Implementation Reference**: 
+  - Issue #99: DASH-01 Dashboard Snapshot
+  - Database schema doc: `docs/database-schema.md` section "Dashboard Snapshot Pattern"
+  - Server actions: `src/server/actions/snapshot.ts` (untuk pattern reference)
+
 ---
 
 ## Arsitektur

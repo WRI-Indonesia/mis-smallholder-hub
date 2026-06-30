@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-06-26 (Audit Issue #94 fixes, isActive filters, onBlur deduplication, 16 test files / 199 tests passed ✅)
+**Last updated:** 2026-06-30 (Total petani di tabel list kelompok tani, 16 test files / 199 tests passed ✅)
 
 **Next management review:** 2026-06-30
 
@@ -543,6 +543,7 @@ npm test
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| 06-30   | Master Data Kelompok Tani: Menampilkan total petani di masing-masing kelompok pada tabel daftar kelompok tani (kolom `Total Petani`), mendukung sorting, dan menyertakan properti `farmersCount` pada saat mengekspor data ke Excel. |
 | 06-26   | Issue #94 complete — Pre/Post-Test Scores: Tambah `preTestScore` & `postTestScore` (nullable Int 0-100) pada TrainingParticipant. Zod validation (`training-participant.schema.ts`), server actions (`updateParticipantScores`, `removeParticipants`), inline editing UI, bulk upload Excel/CSV parsing dengan score columns, bulk participant removal dengan checkbox selection. 7 unit tests. Audit: isActive filter fix, onBlur handler deduplication. |
 | 06-25   | Issue #94 dibuat — Tambah field nilai Pre-Test dan Post-Test pada Training Participant: `preTestScore` & `postTestScore` nullable Integer (0-100), update schema, validation, server actions, UI form/table, bulk upload enhancement. Estimasi 4-6 jam (1 hari kerja). |
 | 06-22   | **Scripts reorganization** — Debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root agar npm commands (`s3:get-link`, `pdf:*`) tetap berfungsi. BUG-002 & TD-005 resolved: stale scripts tidak ada di repo/CI. |
