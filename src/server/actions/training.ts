@@ -47,6 +47,12 @@ export async function getTrainingActivities(search?: string, farmerGroupId?: str
           district: true,
         },
       },
+      participants: {
+        where: { isActive: true },
+        select: {
+          farmerId: true,
+        },
+      },
       _count: {
         select: {
           participants: {

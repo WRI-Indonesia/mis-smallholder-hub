@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Plus, Check, ChevronsUpDown } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus, Check, ChevronsUpDown, Building, GraduationCap, Users, UserCheck } from "lucide-react";
 import { TrainingFormModal } from "./training-form-modal";
 import { toggleTrainingActivityActive } from "@/server/actions/training";
 import { toast } from "sonner";
@@ -42,6 +42,9 @@ interface TrainingActivity {
   location: string | null;
   trainingDate: Date | string;
   isActive: boolean;
+  participants: {
+    farmerId: string;
+  }[];
   _count: {
     participants: number;
   };
@@ -82,6 +85,8 @@ export function TrainingListClient({
   const [districtComboOpen, setDistrictComboOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState("all");
   const [comboOpen, setComboOpen] = useState(false);
+  const [packageFilter, setPackageFilter] = useState("all");
+  const [packageComboOpen, setPackageComboOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editActivity, setEditActivity] = useState<TrainingActivity | null>(null);
   const router = useRouter();
@@ -89,7 +94,8 @@ export function TrainingListClient({
   const filtered = initialActivities.filter((a) => {
     const matchGroup = groupFilter === "all" || a.farmerGroupId === groupFilter;
     const matchDistrict = districtFilter === "all" || a.farmerGroup.district.id === districtFilter;
-    return matchGroup && matchDistrict;
+    const matchPackage = packageFilter === "all" || a.packageId === packageFilter;
+    return matchGroup && matchDistrict && matchPackage;
   });
 
   async function handleToggleActive(id: string) {
@@ -149,6 +155,7 @@ export function TrainingListClient({
       key: "isActive",
       label: "Status",
       sortable: true,
+      defaultVisible: false,
       render: (row) => (
         <Badge variant={row.isActive ? "default" : "outline"}>
           {row.isActive ? "Aktif" : "Nonaktif"}
@@ -308,6 +315,72 @@ export function TrainingListClient({
           </Command>
         </PopoverContent>
       </Popover>
+
+      <Popover open={packageComboOpen} onOpenChange={setPackageComboOpen}>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={packageComboOpen}
+              className="w-[230px] justify-between h-9 font-normal text-left"
+            >
+              {packageFilter === "all" ? (
+                <span>Semua Paket Pelatihan</span>
+              ) : (
+                <span>
+                  {TRAINING_CATEGORY_LABELS[packages.find((p) => p.id === packageFilter)?.code ?? ""] ||
+                    packages.find((p) => p.id === packageFilter)?.name}
+                </span>
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
+        <PopoverContent className="w-[230px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Cari paket pelatihan..." />
+            <CommandList className="max-h-[300px]">
+              <CommandEmpty>Paket pelatihan tidak ditemukan.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="all"
+                  onSelect={() => {
+                    setPackageFilter("all");
+                    setPackageComboOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      packageFilter === "all" ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  Semua Paket Pelatihan
+                </CommandItem>
+                {packages.map((pkg) => (
+                  <CommandItem
+                    key={pkg.id}
+                    value={TRAINING_CATEGORY_LABELS[pkg.code] || pkg.name}
+                    onSelect={() => {
+                      setPackageFilter(pkg.id);
+                      setPackageComboOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        packageFilter === pkg.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {TRAINING_CATEGORY_LABELS[pkg.code] || pkg.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 
@@ -318,8 +391,63 @@ export function TrainingListClient({
     </Button>
   ) : undefined;
 
+  const totalKelompokTani = new Set(filtered.map((a) => a.farmerGroupId)).size;
+  const totalKegiatanTraining = filtered.length;
+  const totalPeserta = filtered.reduce((sum, a) => sum + (a._count?.participants ?? 0), 0);
+  const totalPesertaUnik = new Set(filtered.flatMap((a) => (a.participants ?? []).map((p) => p.farmerId))).size;
+
   return (
     <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Kelompok Tani</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKelompokTani}</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Building className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Kegiatan Training</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKegiatanTraining}</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Peserta</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPeserta} orang</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Users className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Peserta Unik</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPesertaUnik} orang</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <UserCheck className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="p-4">
         <DataTable
           columns={columns}
