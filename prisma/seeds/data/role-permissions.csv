@@ -94,3 +94,11 @@ OPERATOR,master-data-production,CREATE
 OPERATOR,master-data-production,VIEW
 OPERATOR,master-data-production,EDIT
 MANAGEMENT,master-data-production,VIEW
+SUPERADMIN,data-analyst,VIEW
+SUPERADMIN,data-analyst-farmer-summary,VIEW
+ADMIN,data-analyst,VIEW
+ADMIN,data-analyst-farmer-summary,VIEW
+OPERATOR,data-analyst,VIEW
+OPERATOR,data-analyst-farmer-summary,VIEW
+MANAGEMENT,data-analyst,VIEW
+MANAGEMENT,data-analyst-farmer-summary,VIEW
