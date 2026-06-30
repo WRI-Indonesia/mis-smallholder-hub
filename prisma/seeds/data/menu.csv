@@ -14,3 +14,5 @@ master-data-training,master-data,Pelatihan,/admin/master-data/training,Graduatio
 master-data-parcels,master-data,Lahan,/admin/master-data/parcels,Map,4,TRUE,TRUE
 bulk-upload-parcels,bulk-upload,Lahan,/admin/bulk-upload/parcels,Map,3,TRUE,TRUE
 master-data-production,master-data,Produksi,/admin/master-data/production,TrendingUp,5,TRUE,TRUE
+data-analyst,,Data Analyst,/admin/data-analyst,BarChart3,4,TRUE,TRUE
+data-analyst-farmer-summary,data-analyst,Ringkasan Petani,/admin/data-analyst/farmer-summary,Users,1,TRUE,TRUE
