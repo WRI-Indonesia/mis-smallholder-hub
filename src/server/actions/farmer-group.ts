@@ -37,15 +37,39 @@ export async function getFarmerGroups(search?: string) {
     where,
     include: {
       district: { select: { name: true } },
-      _count: { select: { farmers: true } },
+      farmers: {
+        where: { isActive: true },
+        select: {
+          landParcels: {
+            where: { isActive: true },
+            select: {
+              area: true,
+            },
+          },
+        },
+      },
     },
     orderBy: { name: "asc" },
   });
 
-  return groups.map((g) => ({
-    ...g,
-    farmersCount: g._count.farmers,
-  }));
+  return groups.map((g) => {
+    const farmersCount = g.farmers.length;
+    const parcelsCount = g.farmers.reduce(
+      (sum, f) => sum + f.landParcels.length,
+      0
+    );
+    const totalArea = g.farmers.reduce(
+      (sum, f) => sum + f.landParcels.reduce((pSum, p) => pSum + (p.area ?? 0), 0),
+      0
+    );
+
+    return {
+      ...g,
+      farmersCount,
+      parcelsCount,
+      totalArea,
+    };
+  });
 }
 
 export async function getFarmerGroupById(id: string) {
