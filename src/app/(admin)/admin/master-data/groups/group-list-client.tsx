@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Building, Users, Layers, Trees } from "lucide-react";
 import { GroupFormModal } from "./group-form-modal";
 import { toggleFarmerGroupActive } from "@/server/actions/farmer-group";
 import { toast } from "sonner";
@@ -147,6 +147,7 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
       key: "isActive",
       label: "Status",
       sortable: true,
+      defaultVisible: false,
       render: (row) => (
         <Badge variant={row.isActive ? "default" : "outline"}>
           {row.isActive ? "Aktif" : "Nonaktif"}
@@ -171,11 +172,17 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
     };
   };
 
+  const selectedDistrictName = districtFilter === "all"
+    ? "Semua Distrik"
+    : districts.find((d) => d.id === districtFilter)?.name ?? districtFilter;
+
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
       <Select value={districtFilter} onValueChange={(v) => setDistrictFilter(v ?? "all")}>
         <SelectTrigger className="w-[180px] h-9">
-          <SelectValue placeholder="Semua Distrik" />
+          <SelectValue placeholder="Semua Distrik">
+            {selectedDistrictName}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Semua Distrik</SelectItem>
@@ -194,8 +201,63 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
     </Button>
   ) : undefined;
 
+  const totalKT = filtered.length;
+  const totalPetani = filtered.reduce((sum, g) => sum + g.farmersCount, 0);
+  const totalPersil = filtered.reduce((sum, g) => sum + g.parcelsCount, 0);
+  const totalLuas = filtered.reduce((sum, g) => sum + g.totalArea, 0);
+
   return (
     <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Kelompok Tani</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKT}</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Building className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Petani</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPetani} orang</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Users className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Persil Lahan</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPersil} persil</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Layers className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Luas Lahan</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalLuas.toFixed(2)} Ha</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Trees className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="p-4">
         <DataTable
           columns={columns}
