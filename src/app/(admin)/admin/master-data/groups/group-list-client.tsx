@@ -31,6 +31,7 @@ interface FarmerGroup {
   locationLat: number | null;
   locationLong: number | null;
   isActive: boolean;
+  farmersCount: number;
 }
 
 interface District {
@@ -96,6 +97,13 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
       ),
     },
     {
+      key: "farmersCount",
+      label: "Total Petani",
+      sortable: true,
+      cellClassName: "text-sm text-muted-foreground tabular-nums",
+      render: (row) => `${row.farmersCount} orang`,
+    },
+    {
       key: "joinYear",
       label: "Tahun Bergabung",
       sortable: true,
@@ -137,6 +145,7 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
       name: g.name,
       district: g.district.name,
       category: g.category === "EX_PLASMA" ? "Ex Plasma" : "Swadaya",
+      farmersCount: g.farmersCount,
       joinYear: g.joinYear ?? "—",
       locationLat: g.locationLat ?? "—",
       locationLong: g.locationLong ?? "—",

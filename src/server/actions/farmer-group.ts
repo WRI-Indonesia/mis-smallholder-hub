@@ -33,11 +33,19 @@ export async function getFarmerGroups(search?: string) {
       : {}),
   };
 
-  return prisma.farmerGroup.findMany({
+  const groups = await prisma.farmerGroup.findMany({
     where,
-    include: { district: { select: { name: true } } },
+    include: {
+      district: { select: { name: true } },
+      _count: { select: { farmers: true } },
+    },
     orderBy: { name: "asc" },
   });
+
+  return groups.map((g) => ({
+    ...g,
+    farmersCount: g._count.farmers,
+  }));
 }
 
 export async function getFarmerGroupById(id: string) {
