@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, FileText, Download, GraduationCap, Users, UserCheck, Calendar, BookOpen, BarChart3, Printer } from "lucide-react";
+import { Check, ChevronsUpDown, FileText, Download, GraduationCap, Users, UserCheck, Calendar, BookOpen, BarChart3, Printer, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,8 +50,11 @@ export function TrainingReportClient({ districts }: Props) {
   const [isPending, startTransition] = useTransition();
 
   // Tab 2 specific training filter for PDF / display
-  const [selectedTrainingActivityId, setSelectedTrainingActivityId] = useState<string>("all");
-  const [trainingComboOpen, setTrainingComboOpen] = useState(false);
+  const [selectedPackageCode, setSelectedPackageCode] = useState<string>("all");
+  const [packageComboOpen, setPackageComboOpen] = useState(false);
+  const [selectedActivityDate, setSelectedActivityDate] = useState<string | null>(null);
+  const [dateComboOpen, setDateComboOpen] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   // Fetch groups when district selection changes
   useEffect(() => {
@@ -96,7 +99,8 @@ export function TrainingReportClient({ districts }: Props) {
           farmerGroupId: selectedFarmerGroup,
         });
         setReportData(data);
-        setSelectedTrainingActivityId("all"); // Reset training filter
+        setSelectedPackageCode("all"); // Reset package filter
+        setSelectedActivityDate(null); // Reset date filter
         toast.success("Laporan berhasil dimuat");
       } catch (err: any) {
         toast.error(err.message || "Gagal memuat laporan");
@@ -229,11 +233,73 @@ export function TrainingReportClient({ districts }: Props) {
     };
   };
 
-  // Tab 2: Specific Training participant list
-  const selectedTraining = reportData?.activities.find((a) => a.id === selectedTrainingActivityId);
-  const selectedTrainingDate = selectedTraining
+  const packagesList = [
+    { code: "all", name: "Semua Pelatihan (Cakupan per Petani)" },
+    { code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1 - BMP + P&C RSPO + NKT" },
+    { code: "PAKET_2_MK", name: "Paket 2 - MK" },
+    { code: "PAKET_2_K3", name: "Paket 2 - HSE (K3)" },
+    { code: "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV", name: "Paket 3 & 4" },
+  ];
+
+  const availablePackages = useMemo(() => {
+    if (!reportData) return [];
+    const codesInActivities = new Set(reportData.activities.map((a) => a.packageCode));
+    return packagesList.filter((p) => p.code === "all" || codesInActivities.has(p.code));
+  }, [reportData]);
+
+  // Extract unique dates of activities matching selectedPackageCode
+  const availableDatesForPackage = useMemo(() => {
+    if (!reportData || selectedPackageCode === "all") return [];
+    const matching = reportData.activities.filter((a) => a.packageCode === selectedPackageCode);
+    const sorted = [...matching].sort(
+      (a, b) => new Date(b.trainingDate).getTime() - new Date(a.trainingDate).getTime()
+    );
+    const dates = sorted.map((act) => formatDateDMY(act.trainingDate, "—")).filter((d) => d !== "—");
+    const unique = Array.from(new Set(dates));
+    return ["all", ...unique];
+  }, [reportData, selectedPackageCode]);
+
+  // Auto-select first date when package changes
+  useEffect(() => {
+    if (selectedPackageCode !== "all" && availableDatesForPackage.length > 0) {
+      if (!selectedActivityDate || !availableDatesForPackage.includes(selectedActivityDate)) {
+        setSelectedActivityDate("all");
+      }
+    } else {
+      setSelectedActivityDate(null);
+    }
+  }, [selectedPackageCode, availableDatesForPackage, selectedActivityDate]);
+
+  // Tab 2: Specific Training activity participants resolution (handles all dates combined or single date)
+  const selectedTrainingParticipants = useMemo(() => {
+    if (!reportData || selectedPackageCode === "all") return [];
+    if (selectedActivityDate === "all") {
+      const matching = reportData.activities.filter((a) => a.packageCode === selectedPackageCode);
+      return matching.flatMap((act) =>
+        act.participants.map((p) => ({
+          ...p,
+          trainingDate: act.trainingDate,
+        }))
+      );
+    } else {
+      const target = reportData.activities.find(
+        (a) => a.packageCode === selectedPackageCode && formatDateDMY(a.trainingDate, "—") === selectedActivityDate
+      );
+      return target?.participants ?? [];
+    }
+  }, [reportData, selectedPackageCode, selectedActivityDate]);
+
+  // Tab 2: Specific Training activity resolution (only when a single date is selected)
+  const selectedTraining = useMemo(() => {
+    if (!reportData || selectedPackageCode === "all" || !selectedActivityDate || selectedActivityDate === "all") return undefined;
+    return reportData.activities.find(
+      (a) => a.packageCode === selectedPackageCode && formatDateDMY(a.trainingDate, "—") === selectedActivityDate
+    );
+  }, [reportData, selectedPackageCode, selectedActivityDate]);
+
+  const selectedTrainingDate = selectedActivityDate === "all" ? "Semua Tanggal" : (selectedTraining
     ? formatDateDMY(selectedTraining.trainingDate, "—")
-    : "";
+    : "");
 
   const specificTrainingColumns: DataTableColumn<any>[] = [
     {
@@ -330,18 +396,21 @@ export function TrainingReportClient({ districts }: Props) {
   const handleExportPDF = () => {
     if (!reportData) return;
 
-    if (selectedTrainingActivityId !== "all" && selectedTraining) {
+    if (selectedPackageCode !== "all" && (selectedTraining || selectedActivityDate === "all")) {
       // Export single training participant list: NO, Nama Petani, Farmer ID, Tanggal, Pre-Test, Post-Test
+      const packageNameVal = packagesList.find((p) => p.code === selectedPackageCode)?.name ?? "—";
+      const locationVal = selectedActivityDate === "all" ? "Semua Lokasi" : (selectedTraining?.location ?? "—");
+
       exportToPDF({
-        filename: `Laporan_Pelatihan_Kegiatan_${selectedTraining.packageName.replace(/\s+/g, "_")}`,
+        filename: `Laporan_Pelatihan_${packageNameVal.replace(/\s+/g, "_")}`,
         title: "LAPORAN KEGIATAN PELATIHAN",
         subtitle: "Smallholder HUB Management Information System",
         metadata: [
           { label: "Distrik", value: selectedDistrictObj?.name ?? "—" },
           { label: "Kelompok Tani", value: selectedGroupObj?.name ?? "—" },
-          { label: "Jenis Pelatihan", value: TRAINING_CATEGORY_LABELS[selectedTraining.packageCode] || selectedTraining.packageName },
+          { label: "Jenis Pelatihan", value: packageNameVal },
           { label: "Tanggal", value: selectedTrainingDate },
-          { label: "Lokasi", value: selectedTraining.location ?? "—" },
+          { label: "Lokasi", value: locationVal },
         ],
         columns: [
           { header: "NO", key: "no" },
@@ -351,7 +420,7 @@ export function TrainingReportClient({ districts }: Props) {
           { header: "Pre-Test", key: "preTestScore" },
           { header: "Post-Test", key: "postTestScore" },
         ],
-        data: selectedTraining.participants.map((p, idx) => getSpecificTrainingExportRow(p, idx)),
+        data: selectedTrainingParticipants.map((p, idx) => getSpecificTrainingExportRow(p, idx)),
       });
     } else {
       // Export overall coverage report
@@ -384,115 +453,128 @@ export function TrainingReportClient({ districts }: Props) {
   return (
     <div className="space-y-6">
       {/* Filters Area */}
-      <Card className="print:hidden">
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-muted-foreground">Distrik <span className="text-red-500">*</span></label>
-              <Popover open={districtComboOpen} onOpenChange={setDistrictComboOpen}>
-                <PopoverTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={districtComboOpen}
-                      className="w-[220px] justify-between h-9 font-normal text-left"
-                    >
-                      {selectedDistrict ? (
-                        <span>{selectedDistrictObj?.name}</span>
-                      ) : (
-                        <span className="text-muted-foreground">Pilih Distrik</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  }
-                />
-                <PopoverContent className="w-[220px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Cari distrik..." />
-                    <CommandList>
-                      <CommandEmpty>Distrik tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        {districts.map((d) => (
-                          <CommandItem
-                            key={d.id}
-                            value={d.name}
-                            onSelect={() => handleDistrictSelect(d.id)}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedDistrict === d.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {d.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
+      <Card className="print:hidden border border-border/60 shadow-sm">
+        <CardHeader
+          className="flex flex-row items-center justify-between pb-2 pt-4 px-6 cursor-pointer select-none"
+          onClick={() => setFiltersExpanded(!filtersExpanded)}
+        >
+          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" /> Parameter Laporan
+          </CardTitle>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            {filtersExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </CardHeader>
+        {filtersExpanded && (
+          <CardContent className="pb-6 pt-2 px-6">
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground">Distrik <span className="text-red-500">*</span></label>
+                <Popover open={districtComboOpen} onOpenChange={setDistrictComboOpen}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={districtComboOpen}
+                        className="w-[220px] justify-between h-9 font-normal text-left"
+                      >
+                        {selectedDistrict ? (
+                          <span>{selectedDistrictObj?.name}</span>
+                        ) : (
+                          <span className="text-muted-foreground">Pilih Distrik</span>
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    }
+                  />
+                  <PopoverContent className="w-[220px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Cari distrik..." />
+                      <CommandList>
+                        <CommandEmpty>Distrik tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                          {districts.map((d) => (
+                            <CommandItem
+                              key={d.id}
+                              value={d.name}
+                              onSelect={() => handleDistrictSelect(d.id)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedDistrict === d.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {d.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-muted-foreground">Kelompok Tani <span className="text-red-500">*</span></label>
-              <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
-                <PopoverTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={groupComboOpen}
-                      className="w-[220px] justify-between h-9 font-normal text-left"
-                      disabled={!selectedDistrict}
-                    >
-                      {selectedFarmerGroup ? (
-                        <span>{selectedGroupObj?.name}</span>
-                      ) : (
-                        <span className="text-muted-foreground">Pilih Kelompok Tani</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  }
-                />
-                <PopoverContent className="w-[220px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Cari kelompok tani..." />
-                    <CommandList>
-                      <CommandEmpty>Kelompok tani tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        {farmerGroups.map((g) => (
-                          <CommandItem
-                            key={g.id}
-                            value={g.name}
-                            onSelect={() => handleFarmerGroupSelect(g.id)}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedFarmerGroup === g.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {g.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground">Kelompok Tani <span className="text-red-500">*</span></label>
+                <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={groupComboOpen}
+                        className="w-[220px] justify-between h-9 font-normal text-left"
+                        disabled={!selectedDistrict}
+                      >
+                        {selectedFarmerGroup ? (
+                          <span>{selectedGroupObj?.name}</span>
+                        ) : (
+                          <span className="text-muted-foreground">Pilih Kelompok Tani</span>
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    }
+                  />
+                  <PopoverContent className="w-[220px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Cari kelompok tani..." />
+                      <CommandList>
+                        <CommandEmpty>Kelompok tani tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                          {farmerGroups.map((g) => (
+                            <CommandItem
+                              key={g.id}
+                              value={g.name}
+                              onSelect={() => handleFarmerGroupSelect(g.id)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  selectedFarmerGroup === g.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {g.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-            <Button
-              onClick={handleLoadReport}
-              disabled={isPending || !selectedDistrict || !selectedFarmerGroup}
-              className="h-9 px-5"
-            >
-              Tampilkan Laporan
-            </Button>
-          </div>
-        </CardContent>
+              <Button
+                onClick={handleLoadReport}
+                disabled={isPending || !selectedDistrict || !selectedFarmerGroup}
+                className="h-9 px-5"
+              >
+                Tampilkan Laporan
+              </Button>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Print Document Header */}
@@ -511,94 +593,96 @@ export function TrainingReportClient({ districts }: Props) {
       {reportData ? (
         <div className="space-y-6">
           {/* Summary Cards */}
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="shadow-sm border border-border/60">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Kegiatan</CardTitle>
-                  <Calendar className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold">{formatNumber(reportData.summary.totalKegiatan)}</div>
-                  <Badge variant="outline" className="mt-1 bg-blue-50 text-blue-700 border-blue-100">
-                    Kegiatan
-                  </Badge>
-                </CardContent>
-              </Card>
+          {filtersExpanded && (
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card className="shadow-sm border border-border/60">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Kegiatan</CardTitle>
+                    <Calendar className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl font-bold">{formatNumber(reportData.summary.totalKegiatan)}</div>
+                    <Badge variant="outline" className="mt-1 bg-blue-50 text-blue-700 border-blue-100">
+                      Kegiatan
+                    </Badge>
+                  </CardContent>
+                </Card>
 
-              <Card className="shadow-sm border border-border/60">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Peserta</CardTitle>
-                  <Users className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold">{formatNumber(reportData.summary.totalPeserta)}</div>
-                  <Badge variant="outline" className="mt-1 bg-amber-50 text-amber-700 border-amber-100">
-                    Peserta
-                  </Badge>
-                </CardContent>
-              </Card>
+                <Card className="shadow-sm border border-border/60">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Peserta</CardTitle>
+                    <Users className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl font-bold">{formatNumber(reportData.summary.totalPeserta)}</div>
+                    <Badge variant="outline" className="mt-1 bg-amber-50 text-amber-700 border-amber-100">
+                      Peserta
+                    </Badge>
+                  </CardContent>
+                </Card>
 
-              <Card className="shadow-sm border border-border/60">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Unik</CardTitle>
-                  <UserCheck className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold">{formatNumber(reportData.summary.totalPesertaUnik)}</div>
-                  <Badge variant="outline" className="mt-1 bg-emerald-50 text-emerald-700 border-emerald-100">
-                    Petani
-                  </Badge>
-                </CardContent>
-              </Card>
+                <Card className="shadow-sm border border-border/60">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Unik</CardTitle>
+                    <UserCheck className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl font-bold">{formatNumber(reportData.summary.totalPesertaUnik)}</div>
+                    <Badge variant="outline" className="mt-1 bg-emerald-50 text-emerald-700 border-emerald-100">
+                      Petani
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card className="shadow-sm border border-border/60">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Paket 1</CardTitle>
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl font-bold">{reportData.summary.pctPaket1}%</div>
+                    <div className="text-xs text-muted-foreground mt-1 font-medium">{reportData.summary.totalUnikPaket1} dari {reportData.summary.totalPetani}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm border border-border/60">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Paket 2 - MK</CardTitle>
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl font-bold">{reportData.summary.pctPaket2MK}%</div>
+                    <div className="text-xs text-muted-foreground mt-1 font-medium">{reportData.summary.totalUnikPaket2MK} dari {reportData.summary.totalPetani}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm border border-border/60">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Paket 2 - HSE (K3)</CardTitle>
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl font-bold">{reportData.summary.pctPaket2K3}%</div>
+                    <div className="text-xs text-muted-foreground mt-1 font-medium">{reportData.summary.totalUnikPaket2K3} dari {reportData.summary.totalPetani}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm border border-border/60">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan P3 & 4</CardTitle>
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl font-bold">{reportData.summary.pctPaket34}%</div>
+                    <div className="text-xs text-muted-foreground mt-1 font-medium">{reportData.summary.totalUnikPaket34} dari {reportData.summary.totalPetani}</div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-4">
-              <Card className="shadow-sm border border-border/60">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Paket 1</CardTitle>
-                  <BookOpen className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold">{reportData.summary.pctPaket1}%</div>
-                  <div className="text-xs text-muted-foreground mt-1 font-medium">{reportData.summary.totalUnikPaket1} dari {reportData.summary.totalPetani}</div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm border border-border/60">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Paket 2 - MK</CardTitle>
-                  <BookOpen className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold">{reportData.summary.pctPaket2MK}%</div>
-                  <div className="text-xs text-muted-foreground mt-1 font-medium">{reportData.summary.totalUnikPaket2MK} dari {reportData.summary.totalPetani}</div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm border border-border/60">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Paket 2 - HSE (K3)</CardTitle>
-                  <BookOpen className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold">{reportData.summary.pctPaket2K3}%</div>
-                  <div className="text-xs text-muted-foreground mt-1 font-medium">{reportData.summary.totalUnikPaket2K3} dari {reportData.summary.totalPetani}</div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-sm border border-border/60">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan P3 & 4</CardTitle>
-                  <BookOpen className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold">{reportData.summary.pctPaket34}%</div>
-                  <div className="text-xs text-muted-foreground mt-1 font-medium">{reportData.summary.totalUnikPaket34} dari {reportData.summary.totalPetani}</div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          )}
 
           {/* Tabs Container */}
           <Tabs defaultValue="activities" className="w-full">
@@ -651,71 +735,48 @@ export function TrainingReportClient({ districts }: Props) {
             </TabsContent>
 
             <TabsContent value="farmers" className="mt-6 space-y-6">
-              {/* Tab 2 specific training dropdown filter */}
-              <div className="flex flex-wrap items-center gap-4 bg-muted/40 p-4 rounded-lg border print:hidden">
+              <div className="flex flex-wrap items-center gap-6 bg-muted/40 p-4 rounded-lg border print:hidden">
+                {/* 1. Filter Jenis Pelatihan */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
                     <GraduationCap className="h-4 w-4" /> Filter Jenis Pelatihan:
                   </span>
-                  <Popover open={trainingComboOpen} onOpenChange={setTrainingComboOpen}>
+                  <Popover open={packageComboOpen} onOpenChange={setPackageComboOpen}>
                     <PopoverTrigger
                       render={
                         <Button
                           variant="outline"
                           role="combobox"
-                          aria-expanded={trainingComboOpen}
+                          aria-expanded={packageComboOpen}
                           className="w-[300px] justify-between h-9 font-normal text-left bg-background"
                         >
-                          {selectedTrainingActivityId === "all" ? (
-                            <span>Semua Pelatihan (Cakupan per Petani)</span>
-                          ) : (
-                            <span className="truncate">
-                              {TRAINING_CATEGORY_LABELS[selectedTraining?.packageCode ?? ""] || selectedTraining?.packageName}
-                            </span>
-                          )}
+                          <span>{packagesList.find(p => p.code === selectedPackageCode)?.name || "Pilih Pelatihan"}</span>
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       }
                     />
                     <PopoverContent className="w-[300px] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Cari kegiatan..." />
+                        <CommandInput placeholder="Cari jenis pelatihan..." />
                         <CommandList>
-                          <CommandEmpty>Kegiatan tidak ditemukan.</CommandEmpty>
+                          <CommandEmpty>Jenis pelatihan tidak ditemukan.</CommandEmpty>
                           <CommandGroup>
-                            <CommandItem
-                              value="all"
-                              onSelect={() => {
-                                setSelectedTrainingActivityId("all");
-                                setTrainingComboOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  selectedTrainingActivityId === "all" ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              Semua Pelatihan (Cakupan per Petani)
-                            </CommandItem>
-                            {reportData.activities.map((act) => (
+                            {availablePackages.map((pkg) => (
                               <CommandItem
-                                key={act.id}
-                                value={TRAINING_CATEGORY_LABELS[act.packageCode] || act.packageName}
+                                key={pkg.code}
+                                value={pkg.name}
                                 onSelect={() => {
-                                  setSelectedTrainingActivityId(act.id);
-                                  setTrainingComboOpen(false);
+                                  setSelectedPackageCode(pkg.code);
+                                  setPackageComboOpen(false);
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    selectedTrainingActivityId === act.id ? "opacity-100" : "opacity-0"
+                                    selectedPackageCode === pkg.code ? "opacity-100" : "opacity-0"
                                   )}
                                 />
-                                <span className="truncate">
-                                  {TRAINING_CATEGORY_LABELS[act.packageCode] || act.packageName} ({formatDateDMY(act.trainingDate, "—")})
-                                </span>
+                                {pkg.name}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -724,9 +785,61 @@ export function TrainingReportClient({ districts }: Props) {
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                {/* 2. Filter Tanggal Pelatihan (only enabled/visible when a specific package is selected) */}
+                {selectedPackageCode !== "all" && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4" /> Filter Tanggal Pelatihan:
+                    </span>
+                    <Popover open={dateComboOpen} onOpenChange={setDateComboOpen}>
+                      <PopoverTrigger
+                        render={
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={dateComboOpen}
+                            className="w-[200px] justify-between h-9 font-normal text-left bg-background"
+                          >
+                            <span>{selectedActivityDate === "all" ? "Semua Tanggal" : (selectedActivityDate || "Pilih Tanggal")}</span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        }
+                      />
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Cari tanggal..." />
+                          <CommandList>
+                            <CommandEmpty>Tanggal tidak ditemukan.</CommandEmpty>
+                            <CommandGroup>
+                              {availableDatesForPackage.map((dateStr) => (
+                                <CommandItem
+                                  key={dateStr}
+                                  value={dateStr}
+                                  onSelect={() => {
+                                    setSelectedActivityDate(dateStr);
+                                    setDateComboOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedActivityDate === dateStr ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {dateStr === "all" ? "Semua Tanggal" : dateStr}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
               </div>
 
-              {selectedTrainingActivityId === "all" ? (
+              {selectedPackageCode === "all" ? (
                 <DataTable
                   columns={coverageColumns}
                   data={reportData.farmers}
@@ -755,7 +868,7 @@ export function TrainingReportClient({ districts }: Props) {
                       <tbody>
                         <tr>
                           <td className="w-1/4 font-semibold pb-1">Jenis Pelatihan</td>
-                          <td className="pb-1">: {TRAINING_CATEGORY_LABELS[selectedTraining?.packageCode ?? ""] || selectedTraining?.packageName}</td>
+                          <td className="pb-1">: {packagesList.find(p => p.code === selectedPackageCode)?.name}</td>
                         </tr>
                         <tr>
                           <td className="font-semibold pb-1">Tanggal</td>
@@ -763,18 +876,18 @@ export function TrainingReportClient({ districts }: Props) {
                         </tr>
                         <tr>
                           <td className="font-semibold">Lokasi</td>
-                          <td>: {selectedTraining?.location ?? "—"}</td>
+                          <td>: {selectedActivityDate === "all" ? "Semua Lokasi" : (selectedTraining?.location ?? "—")}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                   <DataTable
                     columns={specificTrainingColumns}
-                    data={(selectedTraining?.participants ?? []).map((p, idx) => ({ ...p, no: idx + 1 }))}
+                    data={selectedTrainingParticipants.map((p, idx) => ({ ...p, no: idx + 1 }))}
                     rowKey={(row) => row.farmerId}
                     searchKey="name"
                     searchPlaceholder="Cari nama peserta..."
-                    exportFilename={`Laporan_Pelatihan_Kegiatan_${selectedTraining?.packageName.replace(/\s+/g, "_")}`}
+                    exportFilename={`Laporan_Pelatihan_${(packagesList.find(p => p.code === selectedPackageCode)?.name ?? "").replace(/\s+/g, "_")}`}
                     getExportRow={getSpecificTrainingExportRow}
                     toolbarRight={
                       <Button

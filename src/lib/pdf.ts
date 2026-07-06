@@ -59,21 +59,31 @@ export function exportToPDF({
     doc.setFontSize(10);
     doc.setTextColor(51, 65, 85); // Slate-700
     
+    const itemsPerRow = 2;
+    const colWidth = 90;
+    
     metadata.forEach((m, idx) => {
+      const row = Math.floor(idx / itemsPerRow);
+      const col = idx % itemsPerRow;
+      const x = 14 + (col * colWidth);
+      const y = currentY + (row * 6);
+      
       // Label (Bold)
       doc.setFont("helvetica", "bold");
       const labelText = `${m.label}:`;
       
       // Measure width while bold font is active
       const labelWidth = doc.getTextWidth(labelText);
-      doc.text(labelText, 14 + (idx * 80), currentY);
+      doc.text(labelText, x, y);
       
       // Value (Normal)
       doc.setFont("helvetica", "normal");
       const valueText = m.value;
-      doc.text(valueText, 14 + (idx * 80) + labelWidth + 2, currentY);
+      doc.text(valueText, x + labelWidth + 2, y);
     });
-    currentY += 10;
+    
+    const totalRows = Math.ceil(metadata.length / itemsPerRow);
+    currentY += (totalRows * 6) + 4;
   }
 
   // Table columns
