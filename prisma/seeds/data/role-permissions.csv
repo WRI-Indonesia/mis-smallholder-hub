@@ -104,9 +104,13 @@ MANAGEMENT,data-analyst,VIEW
 MANAGEMENT,data-analyst-farmer-summary,VIEW
 SUPERADMIN,report,VIEW
 SUPERADMIN,report-farmer,VIEW
+SUPERADMIN,report-training,VIEW
 ADMIN,report,VIEW
 ADMIN,report-farmer,VIEW
+ADMIN,report-training,VIEW
 OPERATOR,report,VIEW
 OPERATOR,report-farmer,VIEW
+OPERATOR,report-training,VIEW
 MANAGEMENT,report,VIEW
 MANAGEMENT,report-farmer,VIEW
+MANAGEMENT,report-training,VIEW

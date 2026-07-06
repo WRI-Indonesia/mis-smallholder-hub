@@ -18,3 +18,4 @@ data-analyst,,Data Analyst,/admin/data-analyst,BarChart3,4,TRUE,TRUE
 data-analyst-farmer-summary,data-analyst,Ringkasan Petani,/admin/data-analyst/farmer-summary,Users,1,TRUE,TRUE
 report,,Report,/admin/report,FileText,5,TRUE,TRUE
 report-farmer,report,Petani,/admin/report/farmer,User,1,TRUE,TRUE
+report-training,report,Pelatihan,/admin/report/training,GraduationCap,2,TRUE,TRUE
