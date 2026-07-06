@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-07-06 (Issue #107 RPT-01 Petani completed ✅; #108 RPT-02 Pelatihan, #109 RPT-03 Produksi siap dikerjakan)
+**Last updated:** 2026-07-06 (Issue #107 RPT-01 Petani completed ✅; #108 RPT-02 Pelatihan completed ✅; #109 RPT-03 Produksi siap dikerjakan)
 
 **Next management review:** 2026-07-14
 
@@ -206,7 +206,7 @@ Format phase: `STREAM-NN`.
 | DASH-03     | Interactive Map              | 🔲 Planned     | Next    | Map deps/CSS/markers exist, but no dashboard map route/component                                  | Implement after dashboard data actions exist                                     |
 | DASH-04     | Dashboard BMP                | 🔴 Blocked     | Blocked | No dashboard implementation; requires DASH-01/02 to complete first                                | Unblock by completing DASH-01 and DASH-02 first                                  |
 | RPT-01      | Report: Petani               | ✅ Done        | Done    | Menu Level 1 `report` + sub-menu `report-farmer` ✅, `src/server/actions/report.ts` (145 LOC) ✅, halaman `/admin/report/farmer` UI + filter wajib + export Excel & PDF ✅, 3 unit tests ✅ | Implement #107 completed |
-| RPT-02      | Report: Pelatihan            | 🔲 Not Started | Now     | Tidak ada report pelatihan; **#108 dibuat 2026-07-06** dengan spec lengkap (2 tab: kegiatan + cakupan per petani) | Implement #108: extend `report.ts` + halaman `/admin/report/training` + unit tests; dependency RPT-01 |
+| RPT-02      | Report: Pelatihan            | ✅ Done        | Done    | Halaman `/admin/report/training` dengan 6 summary cards, 2 tab (Kegiatan Pelatihan & Cakupan per Petani), ekspor Excel 2-sheet, filter jenis training, dan ekspor PDF. | Implement #108 completed |
 | RPT-03      | Report: Produksi             | 🔲 Not Started | Now     | Tidak ada report produksi; **#109 dibuat 2026-07-06** dengan spec lengkap (filter periode, rekap + detail panen) | Implement #109: extend `report.ts` + halaman `/admin/report/production` + unit tests; dependency RPT-01 |
 | BULK-01     | Bulk Upload: Menu & KT       | ✅ Done        | Done    | Menu & route setup ✅; redirect `/admin/bulk-upload` → `/farmers` implemented ✅ | Maintain; #68 complete |
 | BULK-02     | Bulk Upload: Region          | 🔲 Not Started | Next    | Tidak ada bulk upload region; **#70 dibuat**                                                       | #70 CSV upload District/Subdistrict/Village dengan validasi hierarchy             |
@@ -255,7 +255,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | **✅ #76 BULK-03: Bulk Upload Farmer**          | BULK-03 | ✅ Done     | -        | —      | Dynamic column mapping, smart validation, preview, export, bulk insert ✅                |
 | **⏸️ DASH-01 Scope Blocking** (CRITICAL)        | DASH-01 | 🔴 Open     | TBD      | URGENT | **MUST DEFINE SCOPE** — wireframe, metrics, filters, summary cards                       |
 | **✅ #107 RPT-01: Report Petani**              | RPT-01  | ✅ Done     | -        | —      | Menu, server actions, UI, Excel & PDF export, unit tests ✅ |
-| **#108 RPT-02: Report Pelatihan**               | RPT-02  | 🔲 Todo     | TBD      | 07-16  | Extend `report.ts` + halaman `/admin/report/training` + unit tests; depends #107         |
+| **✅ #108 RPT-02: Report Pelatihan**           | RPT-02  | ✅ Done     | -        | 07-06  | Halaman `/admin/report/training` + 6 cards + 2 tab + Excel export + PDF export & filter + unit tests |
 | **#109 RPT-03: Report Produksi**                | RPT-03  | 🔲 Todo     | TBD      | 07-20  | Extend `report.ts` + halaman `/admin/report/production` + unit tests; depends #107       |
 | #69 Bulk Upload KT — CSV Validasi Preview Insert | BULK-01 | 🔲 Todo     | TBD      | TBD    | CSV upload + Zod validasi + preview + bulk insert; depends #68                           |
 | #70 Bulk Upload Region — CSV Hierarchy Validasi  | BULK-02 | 🔲 Todo     | TBD      | TBD    | CSV upload per level + hierarchy validasi; depends #68 #69                               |

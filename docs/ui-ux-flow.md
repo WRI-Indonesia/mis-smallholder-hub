@@ -94,7 +94,7 @@
 
 📈 Report (🟠 Partial)
    ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
-   ├── 🔲 Laporan Pelatihan (RPT-02) — Activities & unique participants
+   ├── ✅ Laporan Pelatihan (RPT-02) — Activities, unique participants & coverage
    └── 🔲 Laporan Produksi (RPT-03) — Yield details & periods
 
 📤 Bulk Upload
@@ -1049,7 +1049,7 @@ flowchart TD
 
 📈 Report (🟠 Partial)
 ├── ✅ Laporan Petani (RPT-01)
-├── 🔲 Laporan Pelatihan (RPT-02)
+├── ✅ Laporan Pelatihan (RPT-02)
 └── 🔲 Laporan Produksi (RPT-03)
 
 📤 Bulk Upload (🟡 BULK-01)
@@ -1088,6 +1088,7 @@ flowchart TD
 | User Management | PLATFORM-04 | CRUD, Data Access, Permission Override |
 | Settings | PLATFORM-04/05 | Role/Permission matrix, Menu management, Region settings |
 | Report Petani | RPT-01 | Menu, cascading filters, 4 summary cards, DataTable, Excel & PDF export |
+| Report Pelatihan | RPT-02 | Halaman /admin/report/training, 7 summary cards (2 rows), 2 tab, ekspor Excel 2-sheet, filter jenis training, dan ekspor PDF. |
 
 ### In Progress (🟡)
 
@@ -1101,7 +1102,6 @@ flowchart TD
 | Module | Phase | Next Steps |
 |--------|-------|-----------|
 | Dashboard | DASH-01 | **URGENT**: Define scope (cards, metrics, filters) in 48h |
-| Report Pelatihan | RPT-02 | Sub-menu `report-training` + extend `report.ts` + UI |
 | Report Produksi | RPT-03 | Sub-menu `report-production` + extend `report.ts` + UI |
 | Bulk Upload KT | BULK-01 | CSV upload with validation & preview |
 
