@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Check, ChevronsUpDown, Building, Users, User, UserCheck } from "lucide-react";
 import { FarmerFormModal } from "./farmer-form-modal";
 import { toggleFarmerActive } from "@/server/actions/farmer";
 import { toast } from "sonner";
@@ -332,8 +332,63 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
     </Button>
   ) : undefined;
 
+  const totalKelompokTani = new Set(filtered.map((f) => f.farmerGroupId)).size;
+  const totalPetani = filtered.length;
+  const totalLakiLaki = filtered.filter((f) => f.gender === "M").length;
+  const totalPerempuan = filtered.filter((f) => f.gender === "F").length;
+
   return (
     <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Kelompok Tani</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKelompokTani}</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Building className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Petani</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPetani} Petani</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Users className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Petani Laki-laki</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalLakiLaki} Petani</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <User className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Petani Perempuan</p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPerempuan} Petani</h3>
+            </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <UserCheck className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="p-4">
         <DataTable
           columns={columns}
