@@ -427,7 +427,7 @@ export function TrainingListClient({
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Peserta</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPeserta} orang</h3>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPeserta} Peserta</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Users className="h-5 w-5" />
@@ -439,7 +439,7 @@ export function TrainingListClient({
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Peserta Unik</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPesertaUnik} orang</h3>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPesertaUnik} Petani</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <UserCheck className="h-5 w-5" />
