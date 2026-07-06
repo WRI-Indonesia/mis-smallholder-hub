@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-07-06 (3 GitHub Issues dibuat untuk Report module: #107 RPT-01 Petani, #108 RPT-02 Pelatihan, #109 RPT-03 Produksi)
+**Last updated:** 2026-07-06 (Issue #107 RPT-01 Petani completed ✅; #108 RPT-02 Pelatihan, #109 RPT-03 Produksi siap dikerjakan)
 
 **Next management review:** 2026-07-14
 
@@ -26,8 +26,8 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Periode laporan    | 2026-06-30 s.d. 2026-07-06                                  |
 | Status keseluruhan | 🟢 On Track                                          |
 | Basis review       | Issue planning 2026-07-06 (3 Report issues dibuat: #107 #108 #109)       |
-| Test lokal         | ✅ `npm test` — 17 files / 203 tests passed                 |
-| Fokus berikutnya   | Report module implementation (RPT-01/02/03) + Dashboard module (DASH-01)      |
+| Test lokal         | ✅ `npm test` — 18 files / 206 tests passed                 |
+| Fokus berikutnya   | Report module implementation (RPT-02/03) + Dashboard module (DASH-01)      |
 
 ### Executive Summary
 
@@ -36,22 +36,22 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Platform foundation | ✅ Ready        | Auth, RBAC, menu, user management, region, dan farmer group sudah implementatif. Schema dengan audit fields, soft-delete, RBAC patterns.  |
 | Master data inti    | ✅ Complete     | Farmer ✅, Land Parcel ✅, Training ✅, Production (MD-06) ✅ complete (model + action + UI + test).                            |
 | Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`. Debug/stale scripts sudah dipindah ke `scripts/local/` (local-only). |
-| Report              | 🔲 Not Started   | Belum ada report module. **Issues #107 (RPT-01 Petani), #108 (RPT-02 Pelatihan), #109 (RPT-03 Produksi) dibuat 2026-07-06** — siap dikerjakan.                                                  |
+| Report              | 🟠 Partial      | RPT-01 Report Petani selesai (#107) ✅. **Issues #108 (RPT-02 Pelatihan), #109 (RPT-03 Produksi) siap dikerjakan.** |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region bulk upload belum ada. |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
-| Testing             | ✅ Strong       | Vitest: 16 files / 199 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload ✅; need dashboard/report. |
+| Testing             | ✅ Strong       | Vitest: 18 files / 206 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅; need dashboard. |
 
 ### Progress Snapshot
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
 | Total phase    | 35 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 16 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/04/05/06, BULK-01/03, DA-01     |
+| ✅ Done        | 17 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/04/05/06, RPT-01, BULK-01/03, DA-01 |
 | 🟠 Partial     | 3 fase         | TOOLS-01, OPS-01, OPS-02 |
-| 🔲 Not Started | 5 fase         | DASH-01, CMS-01, COMM-01, RPT-01/02/03 (issues #107-#109 sudah dibuat) |
+| 🔲 Not Started | 4 fase         | DASH-01, CMS-01, COMM-01, RPT-02/03 (issues #108-#109 sudah dibuat) |
 | 🔲 Planned     | 10 fase        | MD-07/08/09/10/11, DASH-02/03, COMM-02, BULK-02, BULK-04    |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
-| 🎯 Now         | 3 fase         | RPT-01 (#107), RPT-02 (#108), RPT-03 (#109) — issues siap dikerjakan |
+| 🎯 Now         | 2 fase         | RPT-02 (#108), RPT-03 (#109) — issues siap dikerjakan |
 
 ### Management Talking Points
 
@@ -80,7 +80,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Priority | Target                                      | Output                                                                                                        |
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **P1**   | **#107 RPT-01: Report Petani**              | Menu Level 1 `report` + sub-menu `report-farmer` + server actions (`report.ts`) + UI + unit tests            |
+| **✅ Done**| **#107 RPT-01: Report Petani**              | Menu Level 1 `report` + sub-menu `report-farmer` + server actions (`report.ts`) + UI + unit tests ✅        |
 | **P1**   | **#108 RPT-02: Report Pelatihan**           | Sub-menu `report-training` + extend `report.ts` + UI (2 tab) + unit tests                                    |
 | **P1**   | **#109 RPT-03: Report Produksi**            | Sub-menu `report-production` + extend `report.ts` + UI (filter periode + 2 tab) + unit tests                 |
 | **P1**   | **DASH-01: Dashboard scope agreement**      | Define minimal scope: summary cards + metrics + filter — **BLOCKING** dashboard implementation                |
@@ -205,7 +205,7 @@ Format phase: `STREAM-NN`.
 | DASH-02     | Dashboard: Server Actions    | 🔲 Planned     | Next    | No `src/server/actions/dashboard.ts`; `/scripts/debug/*dashboard*` reference missing actions      | Create after DASH-01 scope agreed + BUG-002 fixed                                |
 | DASH-03     | Interactive Map              | 🔲 Planned     | Next    | Map deps/CSS/markers exist, but no dashboard map route/component                                  | Implement after dashboard data actions exist                                     |
 | DASH-04     | Dashboard BMP                | 🔴 Blocked     | Blocked | No dashboard implementation; requires DASH-01/02 to complete first                                | Unblock by completing DASH-01 and DASH-02 first                                  |
-| RPT-01      | Report: Petani               | 🔲 Not Started | Now     | Tidak ada report module; **#107 dibuat 2026-07-06** dengan spec lengkap (filter distrik+KT wajib, server actions, UI, tests) | Implement #107: menu Level 1 `report` + server action `report.ts` + halaman `/admin/report/farmer` + unit tests |
+| RPT-01      | Report: Petani               | ✅ Done        | Done    | Menu Level 1 `report` + sub-menu `report-farmer` ✅, `src/server/actions/report.ts` (145 LOC) ✅, halaman `/admin/report/farmer` UI + filter wajib + export Excel & PDF ✅, 3 unit tests ✅ | Implement #107 completed |
 | RPT-02      | Report: Pelatihan            | 🔲 Not Started | Now     | Tidak ada report pelatihan; **#108 dibuat 2026-07-06** dengan spec lengkap (2 tab: kegiatan + cakupan per petani) | Implement #108: extend `report.ts` + halaman `/admin/report/training` + unit tests; dependency RPT-01 |
 | RPT-03      | Report: Produksi             | 🔲 Not Started | Now     | Tidak ada report produksi; **#109 dibuat 2026-07-06** dengan spec lengkap (filter periode, rekap + detail panen) | Implement #109: extend `report.ts` + halaman `/admin/report/production` + unit tests; dependency RPT-01 |
 | BULK-01     | Bulk Upload: Menu & KT       | ✅ Done        | Done    | Menu & route setup ✅; redirect `/admin/bulk-upload` → `/farmers` implemented ✅ | Maintain; #68 complete |
@@ -254,7 +254,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 | **✅ #68 Bulk Upload Menu & Route**             | BULK-01 | ✅ Done     | -        | —      | Menu seed + route + parent redirect ✅                                                   |
 | **✅ #76 BULK-03: Bulk Upload Farmer**          | BULK-03 | ✅ Done     | -        | —      | Dynamic column mapping, smart validation, preview, export, bulk insert ✅                |
 | **⏸️ DASH-01 Scope Blocking** (CRITICAL)        | DASH-01 | 🔴 Open     | TBD      | URGENT | **MUST DEFINE SCOPE** — wireframe, metrics, filters, summary cards                       |
-| **#107 RPT-01: Report Petani**                  | RPT-01  | 🔲 Todo     | TBD      | 07-13  | Implement menu `report` + server action `report.ts` + halaman `/admin/report/farmer` + unit tests |
+| **✅ #107 RPT-01: Report Petani**              | RPT-01  | ✅ Done     | -        | —      | Menu, server actions, UI, Excel & PDF export, unit tests ✅ |
 | **#108 RPT-02: Report Pelatihan**               | RPT-02  | 🔲 Todo     | TBD      | 07-16  | Extend `report.ts` + halaman `/admin/report/training` + unit tests; depends #107         |
 | **#109 RPT-03: Report Produksi**                | RPT-03  | 🔲 Todo     | TBD      | 07-20  | Extend `report.ts` + halaman `/admin/report/production` + unit tests; depends #107       |
 | #69 Bulk Upload KT — CSV Validasi Preview Insert | BULK-01 | 🔲 Todo     | TBD      | TBD    | CSV upload + Zod validasi + preview + bulk insert; depends #68                           |
@@ -540,6 +540,7 @@ npm test
 
 | Tanggal | Perubahan |
 | ------- | --------- |
+| 07-06   | **Issue #107 RPT-01: Report Petani complete** — Implementasi menu `report` dan `report-farmer`, server action `report.ts` dengan access context check, halaman laporan `/admin/report/farmer` dengan filter cascading wajib (tanpa "Semua"), 4 summary cards, tabel petani, tombol ekspor Excel & PDF (window.print() clean styles), serta 3 unit tests di `report.test.ts`. |
 | 07-06   | **3 GitHub Issues dibuat untuk Report module** — #107 [RPT-01] Report Petani: halaman `/admin/report/farmer`, filter distrik+KT wajib (no "Semua"), 4 summary cards, tabel petani + Export Excel, ~18 unit tests, estimasi 16–20 jam. #108 [RPT-02] Report Pelatihan: halaman `/admin/report/training`, 6 summary cards, 2 Tab (Kegiatan Pelatihan & Cakupan per Petani), Export Excel 2-sheet, exclude paket OTHER, ~16 unit tests, estimasi 18–24 jam. #109 [RPT-03] Report Produksi: halaman `/admin/report/production`, filter periode opsional (tahun/bulan), 4 summary cards, 2 Tab (Rekap per Petani & Detail Panen), Export Excel 2-sheet, ~18 unit tests, estimasi 16–20 jam. Semua issue menggunakan pola extend server action `report.ts` (RPT-02 & RPT-03 tidak membuat file baru). |
 
 #### Juni 2026

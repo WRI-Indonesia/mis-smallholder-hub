@@ -313,6 +313,8 @@ export function DataTable<T>({
             </Button>
           )}
 
+          {toolbarRight}
+
           {toggleableColumns.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-md bg-background hover:bg-accent hover:text-accent-foreground outline-none transition-colors h-9">
@@ -338,8 +340,6 @@ export function DataTable<T>({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-
-          {toolbarRight}
         </div>
       </div>
 
