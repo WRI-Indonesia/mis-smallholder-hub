@@ -92,10 +92,10 @@
    ├── 🔲 IMPACT (MD-10)
    └── 🔲 Workplan (MD-11)
 
-📈 Report (🔲 RPT-01)
-   ├── 🔲 Report User — Table + Excel export
-   ├── 🔲 Report Region — Hierarchy + export
-   └── 🔲 Report Kelompok Tani — Cascade filter + export
+📈 Report (🟠 Partial)
+   ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
+   ├── 🔲 Laporan Pelatihan (RPT-02) — Activities & unique participants
+   └── 🔲 Laporan Produksi (RPT-03) — Yield details & periods
 
 📤 Bulk Upload
    ├── ✅ Bulk Upload Petani (BULK-03) — Excel mapping + validation + preview
@@ -1047,10 +1047,10 @@ flowchart TD
 ├── 🔲 IMPACT (MD-10)
 └── 🔲 Workplan (MD-11)
 
-📈 Report (🔲 RPT-01)
-├── 🔲 Report User
-├── 🔲 Report Region
-└── 🔲 Report Kelompok Tani
+📈 Report (🟠 Partial)
+├── ✅ Laporan Petani (RPT-01)
+├── 🔲 Laporan Pelatihan (RPT-02)
+└── 🔲 Laporan Produksi (RPT-03)
 
 📤 Bulk Upload (🟡 BULK-01)
 ├── ✅ Bulk Upload Petani (BULK-03)
@@ -1087,6 +1087,7 @@ flowchart TD
 | Bulk Upload Farmer | BULK-03 | Excel mapping, smart validation, preview, error download |
 | User Management | PLATFORM-04 | CRUD, Data Access, Permission Override |
 | Settings | PLATFORM-04/05 | Role/Permission matrix, Menu management, Region settings |
+| Report Petani | RPT-01 | Menu, cascading filters, 4 summary cards, DataTable, Excel & PDF export |
 
 ### In Progress (🟡)
 
@@ -1100,7 +1101,8 @@ flowchart TD
 | Module | Phase | Next Steps |
 |--------|-------|-----------|
 | Dashboard | DASH-01 | **URGENT**: Define scope (cards, metrics, filters) in 48h |
-| Report | RPT-01 | Menu setup + placeholder pages → User/Region/KT reports |
+| Report Pelatihan | RPT-02 | Sub-menu `report-training` + extend `report.ts` + UI |
+| Report Produksi | RPT-03 | Sub-menu `report-production` + extend `report.ts` + UI |
 | Bulk Upload KT | BULK-01 | CSV upload with validation & preview |
 
 ### Planned - Next (🔲)

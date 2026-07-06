@@ -15,10 +15,12 @@ export const metadata: Metadata = {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <div className="print:hidden">
+        <AppSidebar />
+      </div>
       <div className="flex flex-col flex-1 min-h-screen overflow-hidden">
         {/* Admin Top Header */}
-        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/80 backdrop-blur-sm px-4 sticky top-0 z-40">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-background/80 backdrop-blur-sm px-4 sticky top-0 z-40 print:hidden">
           <div className="flex items-center gap-2 min-w-0 pr-2">
             <SidebarTrigger className="-ml-1 shrink-0" />
             <Separator orientation="vertical" className="h-5 shrink-0" />

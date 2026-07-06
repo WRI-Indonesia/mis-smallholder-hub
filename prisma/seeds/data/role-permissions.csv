@@ -102,3 +102,11 @@ OPERATOR,data-analyst,VIEW
 OPERATOR,data-analyst-farmer-summary,VIEW
 MANAGEMENT,data-analyst,VIEW
 MANAGEMENT,data-analyst-farmer-summary,VIEW
+SUPERADMIN,report,VIEW
+SUPERADMIN,report-farmer,VIEW
+ADMIN,report,VIEW
+ADMIN,report-farmer,VIEW
+OPERATOR,report,VIEW
+OPERATOR,report-farmer,VIEW
+MANAGEMENT,report,VIEW
+MANAGEMENT,report-farmer,VIEW
