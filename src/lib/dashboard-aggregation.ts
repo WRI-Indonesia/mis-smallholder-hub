@@ -4,6 +4,7 @@ import type {
   DashboardSnapshotData,
   DashboardStats,
   KTDetails,
+  KTYearStats,
   TrainingCounts,
 } from "@/types/dashboard";
 
@@ -19,6 +20,8 @@ export interface RawGroup {
   id: string;
   name: string;
   code: string | null;
+  districtId: string | null;
+  districtName: string | null;
   locationLat: number | null;
   locationLong: number | null;
 }
@@ -27,10 +30,32 @@ export interface RawFarmer {
   id: string;
   farmerGroupId: string;
   gender: "M" | "F";
+  joinedYear: number | null;
   landParcels: { area: number | null }[];
   trainingParticipants: {
     activity: { isActive: boolean; package: { code: string } };
   }[];
+}
+
+function emptyYearStats(): KTYearStats {
+  return {
+    totalFarmers: 0,
+    totalFarmersMale: 0,
+    totalFarmersFemale: 0,
+    totalParcels: 0,
+    totalArea: 0,
+    trainingCoverage: emptyCounts(),
+  };
+}
+
+/** Accumulate one farmer's contribution into a KTYearStats bucket. */
+function addFarmerToBucket(bucket: KTYearStats, f: RawFarmer): void {
+  bucket.totalFarmers += 1;
+  if (f.gender === "M") bucket.totalFarmersMale += 1;
+  else if (f.gender === "F") bucket.totalFarmersFemale += 1;
+  bucket.totalParcels += f.landParcels.length;
+  bucket.totalArea += f.landParcels.reduce((sum, p) => sum + (p.area ?? 0), 0);
+  for (const code of farmerPackageCodes(f)) bucket.trainingCoverage[code] += 1;
 }
 
 function emptyCounts(): TrainingCounts {
@@ -76,32 +101,35 @@ export function buildDashboardData(groups: RawGroup[], farmers: RawFarmer[]): Da
 
   const kelompokTaniList: KTDetails[] = groups.map((g) => {
     const groupFarmers = farmersByGroup.get(g.id) ?? [];
-    const coverage = emptyCounts();
-    let totalParcels = 0;
-    let totalArea = 0;
-    let totalFarmersMale = 0;
-    let totalFarmersFemale = 0;
+    const agg = emptyYearStats();
+    const byYearBuckets: Record<string, KTYearStats> = {};
 
     for (const f of groupFarmers) {
-      if (f.gender === "M") totalFarmersMale += 1;
-      else if (f.gender === "F") totalFarmersFemale += 1;
-      totalParcels += f.landParcels.length;
-      totalArea += f.landParcels.reduce((sum, p) => sum + (p.area ?? 0), 0);
-      for (const code of farmerPackageCodes(f)) coverage[code] += 1;
+      addFarmerToBucket(agg, f);
+      if (f.joinedYear != null) {
+        const key = String(f.joinedYear);
+        byYearBuckets[key] ??= emptyYearStats();
+        addFarmerToBucket(byYearBuckets[key], f);
+      }
+    }
+
+    agg.totalArea = round2(agg.totalArea);
+    const byYear: Record<string, KTYearStats> = {};
+    for (const [key, bucket] of Object.entries(byYearBuckets)) {
+      bucket.totalArea = round2(bucket.totalArea);
+      byYear[key] = bucket;
     }
 
     return {
       id: g.id,
       name: g.name,
       code: g.code,
+      districtId: g.districtId,
+      districtName: g.districtName,
       locationLat: g.locationLat,
       locationLong: g.locationLong,
-      totalFarmers: groupFarmers.length,
-      totalFarmersMale,
-      totalFarmersFemale,
-      totalParcels,
-      totalArea: round2(totalArea),
-      trainingCoverage: coverage,
+      ...agg,
+      byYear,
     };
   });
 
@@ -156,6 +184,25 @@ export function normalizeSnapshotData(raw: unknown): DashboardSnapshotData {
     totalLuasLahan: s.totalLuasLahan ?? 0,
     trainingCounts: s.trainingCounts ?? emptyCounts(),
     kelompokTaniList: (obj.kelompokTaniList as KTDetails[]) ?? [],
+  };
+}
+
+/**
+ * Resolve a KT's displayed stats for a selected joined year.
+ * `year = null` → all-years aggregate; a year with no farmers → zeros.
+ * Returns a KTDetails whose top-level totals reflect the chosen year.
+ */
+export function ktStatsForYear(kt: KTDetails, year: number | null): KTDetails {
+  if (year == null) return kt;
+  const y = kt.byYear?.[String(year)] ?? emptyYearStats();
+  return {
+    ...kt,
+    totalFarmers: y.totalFarmers,
+    totalFarmersMale: y.totalFarmersMale,
+    totalFarmersFemale: y.totalFarmersFemale,
+    totalParcels: y.totalParcels,
+    totalArea: y.totalArea,
+    trainingCoverage: y.trainingCoverage,
   };
 }
 

@@ -3,6 +3,7 @@ import {
   buildDashboardData,
   farmerPackageCodes,
   sumKelompokTaniStats,
+  ktStatsForYear,
   normalizeSnapshotData,
   toSnapshotData,
   type RawFarmer,
@@ -15,12 +16,14 @@ function farmer(
   farmerGroupId: string,
   areas: (number | null)[],
   packages: { code: string; active?: boolean }[],
-  gender: "M" | "F" = "M"
+  gender: "M" | "F" = "M",
+  joinedYear: number | null = null
 ): RawFarmer {
   return {
     id,
     farmerGroupId,
     gender,
+    joinedYear,
     landParcels: areas.map((area) => ({ area })),
     trainingParticipants: packages.map((p) => ({
       activity: { isActive: p.active ?? true, package: { code: p.code } },
@@ -29,8 +32,8 @@ function farmer(
 }
 
 const groups: RawGroup[] = [
-  { id: "g1", name: "KT Alpha", code: "A1", locationLat: 1, locationLong: 101 },
-  { id: "g2", name: "KT Beta", code: "B1", locationLat: null, locationLong: null },
+  { id: "g1", name: "KT Alpha", code: "A1", districtId: "d1", districtName: "Distrik 1", locationLat: 1, locationLong: 101 },
+  { id: "g2", name: "KT Beta", code: "B1", districtId: "d2", districtName: "Distrik 2", locationLat: null, locationLong: null },
 ];
 
 describe("dashboard aggregation", () => {
@@ -50,9 +53,9 @@ describe("dashboard aggregation", () => {
   describe("buildDashboardData", () => {
     it("aggregates totals, per-KT details, and training counts", () => {
       const farmers: RawFarmer[] = [
-        farmer("f1", "g1", [1.25, 0.75], [{ code: "PAKET_1_BMP_PC_RSPO_NKT" }, { code: "PAKET_2_MK" }], "M"),
-        farmer("f2", "g1", [2.5], [{ code: "PAKET_1_BMP_PC_RSPO_NKT" }, { code: "OTHER" }], "M"),
-        farmer("f3", "g2", [], [{ code: "PAKET_2_K3" }], "F"),
+        farmer("f1", "g1", [1.25, 0.75], [{ code: "PAKET_1_BMP_PC_RSPO_NKT" }, { code: "PAKET_2_MK" }], "M", 2025),
+        farmer("f2", "g1", [2.5], [{ code: "PAKET_1_BMP_PC_RSPO_NKT" }, { code: "OTHER" }], "M", 2026),
+        farmer("f3", "g2", [], [{ code: "PAKET_2_K3" }], "F", 2025),
       ];
 
       const { stats, kelompokTaniList } = buildDashboardData(groups, farmers);
@@ -71,6 +74,8 @@ describe("dashboard aggregation", () => {
 
       // Per-KT
       const g1 = kelompokTaniList.find((k) => k.id === "g1")!;
+      expect(g1.districtId).toBe("d1");
+      expect(g1.districtName).toBe("Distrik 1");
       expect(g1.totalFarmers).toBe(2);
       expect(g1.totalFarmersMale).toBe(2);
       expect(g1.totalFarmersFemale).toBe(0);
@@ -78,6 +83,13 @@ describe("dashboard aggregation", () => {
       expect(g1.totalArea).toBe(4.5);
       expect(g1.trainingCoverage.PAKET_1_BMP_PC_RSPO_NKT).toBe(2);
       expect(g1.trainingCoverage.PAKET_2_MK).toBe(1);
+
+      // Per-year breakdown: f1 (2025) + f2 (2026) in g1
+      expect(g1.byYear["2025"].totalFarmers).toBe(1);
+      expect(g1.byYear["2025"].totalArea).toBe(2);
+      expect(g1.byYear["2025"].trainingCoverage.PAKET_2_MK).toBe(1);
+      expect(g1.byYear["2026"].totalFarmers).toBe(1);
+      expect(g1.byYear["2026"].totalArea).toBe(2.5);
 
       const g2 = kelompokTaniList.find((k) => k.id === "g2")!;
       expect(g2.totalFarmers).toBe(1);
@@ -115,17 +127,22 @@ describe("dashboard aggregation", () => {
     });
   });
 
-  describe("sumKelompokTaniStats", () => {
+  describe("sumKelompokTaniStats & ktStatsForYear", () => {
+    const emptyCov = { PAKET_1_BMP_PC_RSPO_NKT: 0, PAKET_2_MK: 0, PAKET_2_K3: 0, PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0 };
     const kts: KTDetails[] = [
       {
-        id: "g1", name: "KT Alpha", code: "A1", locationLat: 1, locationLong: 101,
+        id: "g1", name: "KT Alpha", code: "A1", districtId: "d1", districtName: "Distrik 1", locationLat: 1, locationLong: 101,
         totalFarmers: 2, totalFarmersMale: 1, totalFarmersFemale: 1, totalParcels: 3, totalArea: 4.5,
         trainingCoverage: { PAKET_1_BMP_PC_RSPO_NKT: 2, PAKET_2_MK: 1, PAKET_2_K3: 0, PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0 },
+        byYear: {
+          "2025": { totalFarmers: 1, totalFarmersMale: 1, totalFarmersFemale: 0, totalParcels: 2, totalArea: 2, trainingCoverage: { ...emptyCov, PAKET_2_MK: 1 } },
+        },
       },
       {
-        id: "g2", name: "KT Beta", code: "B1", locationLat: null, locationLong: null,
+        id: "g2", name: "KT Beta", code: "B1", districtId: "d2", districtName: "Distrik 2", locationLat: null, locationLong: null,
         totalFarmers: 1, totalFarmersMale: 0, totalFarmersFemale: 1, totalParcels: 0, totalArea: 0,
         trainingCoverage: { PAKET_1_BMP_PC_RSPO_NKT: 0, PAKET_2_MK: 0, PAKET_2_K3: 1, PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0 },
+        byYear: {},
       },
     ];
 
@@ -145,6 +162,21 @@ describe("dashboard aggregation", () => {
       expect(one.totalPetani).toBe(2);
       expect(one.trainingCounts.PAKET_2_MK).toBe(1);
       expect(one.trainingCounts.PAKET_2_K3).toBe(0);
+    });
+
+    it("ktStatsForYear resolves all-years vs a specific year vs a missing year", () => {
+      // year null → all-years aggregate unchanged
+      expect(ktStatsForYear(kts[0], null).totalFarmers).toBe(2);
+      // specific year → uses byYear bucket
+      const y2025 = ktStatsForYear(kts[0], 2025);
+      expect(y2025.totalFarmers).toBe(1);
+      expect(y2025.totalArea).toBe(2);
+      expect(y2025.trainingCoverage.PAKET_2_MK).toBe(1);
+      // year with no bucket → zeros (but keeps identity fields)
+      const y2099 = ktStatsForYear(kts[0], 2099);
+      expect(y2099.totalFarmers).toBe(0);
+      expect(y2099.name).toBe("KT Alpha");
+      expect(y2099.trainingCoverage.PAKET_2_MK).toBe(0);
     });
   });
 

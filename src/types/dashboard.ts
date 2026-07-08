@@ -25,18 +25,27 @@ export interface DashboardStats {
   trainingCounts: TrainingCounts;
 }
 
-export interface KTDetails {
-  id: string;
-  name: string;
-  code: string | null;
-  locationLat: number | null;
-  locationLong: number | null;
+/** Farmer-derived stats for one KT, sliceable by joined year. */
+export interface KTYearStats {
   totalFarmers: number;
   totalFarmersMale: number;
   totalFarmersFemale: number;
   totalParcels: number;
   totalArea: number;
   trainingCoverage: TrainingCounts;
+}
+
+export interface KTDetails extends KTYearStats {
+  id: string;
+  name: string;
+  code: string | null;
+  districtId: string | null;
+  districtName: string | null;
+  locationLat: number | null;
+  locationLong: number | null;
+  // Per-joined-year breakdown (key = year as string). Farmers with no joined year
+  // are only counted in the all-years aggregate above, not in any byYear bucket.
+  byYear: Record<string, KTYearStats>;
 }
 
 export interface DashboardSnapshotData extends DashboardStats {

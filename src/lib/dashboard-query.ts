@@ -25,6 +25,8 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
       id: true,
       name: true,
       code: true,
+      districtId: true,
+      district: { select: { name: true } },
       locationLat: true,
       locationLong: true,
     },
@@ -46,6 +48,7 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
             id: true,
             farmerGroupId: true,
             gender: true,
+            joinedYear: true,
             landParcels: {
               where: { isActive: true },
               select: { area: true },
@@ -64,7 +67,17 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
           },
         });
 
-  return buildDashboardData(groups as RawGroup[], farmers as RawFarmer[]);
+  const rawGroups: RawGroup[] = groups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    code: g.code,
+    districtId: g.districtId,
+    districtName: g.district?.name ?? null,
+    locationLat: g.locationLat,
+    locationLong: g.locationLong,
+  }));
+
+  return buildDashboardData(rawGroups, farmers as RawFarmer[]);
 }
 
 /** Districts and joined-years available to the user for the filter bar. No permission check. */

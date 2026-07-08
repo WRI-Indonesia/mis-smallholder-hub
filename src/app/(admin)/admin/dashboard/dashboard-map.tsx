@@ -196,6 +196,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
         mapStyle={MAP_STYLES[styleKey] as any}
         interactiveLayerIds={["clusters", "unclustered-point"]}
+        onLoad={() => fitAll()}
         onClick={handleClick}
         onMouseEnter={(e) => (e.target.getCanvas().style.cursor = "pointer")}
         onMouseLeave={(e) => (e.target.getCanvas().style.cursor = "")}
