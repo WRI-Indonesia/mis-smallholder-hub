@@ -1383,7 +1383,9 @@ model MainDashboardSnapshot {
   district District? @relation(fields: [districtId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   // Aggregated Data (JSON) — flat DashboardSnapshotData
-  data Json // { totalKelompokTani, totalPetani, totalPetaniLaki, totalPetaniPerempuan, totalPersilLahan, totalLuasLahan, trainingCounts, kelompokTaniList }
+  data Json // Flat DashboardSnapshotData: { totalKelompokTani, totalPetani, totalPetaniLaki, totalPetaniPerempuan, totalPersilLahan, totalLuasLahan, trainingCounts, kelompokTaniList }
+  // Each kelompokTaniList[] entry: { id, name, code, districtId, districtName, locationLat, locationLong, <all-years stats>, byYear: { "<year>": KTYearStats } }
+  // → the dashboard slices this single master snapshot client-side by Distrik / Tahun Bergabung / Kelompok Tani
 
   // Audit Trail
   createdBy String @map("created_by")
