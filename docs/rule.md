@@ -359,6 +359,8 @@ Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (ko
 - **Implementasi Reference**: 
   - Map viewer: `src/components/shared/map-viewer.tsx`
   - Land parcel detail: `src/app/(admin)/admin/master-data/parcels/[id]/page.tsx`
+  - Map explorer (MAP-01): `src/app/(admin)/admin/map/parcel/` (peta full-bleed + filter floating + layer toggle + info popup accordion), server actions `src/server/actions/map.ts`
+  - Farm Passport PDF: `src/lib/farm-passport.ts` (jsPDF A4: identitas, layout lahan/polygon vektor, pelatihan, produksi) — di-generate dari `getParcelPassport`
 
 ### Dashboard Snapshot Pattern
 

@@ -1,7 +1,7 @@
 # Smallholder HUB — UI/UX Flow
 
 > Dokumentasi alur navigasi dan user journey berdasarkan role.
-> **Last updated**: 2026-07-08 (Post-DASH-01 #99 — Main Dashboard snapshot-backed + Tools › Dashboard Snapshot)
+> **Last updated**: 2026-07-08 (MAP-01 #113 — Map › Peta Lahan: peta interaktif + info popup accordion + Farm Passport PDF)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **19 files / 216 tests passing** | Coverage: auth, RBAC, menu, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard |
-| **Completed Modules** | ✅ 18 phases done | Platform (1-7), MD (1-6), DASH-01, RPT-01/02, BULK (1, 3), DA-01 |
-| **Server Actions** | ✅ dashboard, snapshot, report + user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, production, bulk-upload, upload, data-analyst |
-| **Prisma Models** | ✅ 11 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot |
+| **Test Status** | ✅ **20 files / 231 tests passing** | Coverage: auth, RBAC, menu, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, map |
+| **Completed Modules** | ✅ 19 phases done | Platform (1-7), MD (1-6), DASH-01, RPT-01/02, BULK (1, 3), DA-01, MAP-01 |
+| **Server Actions** | ✅ dashboard, snapshot, report, map + user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, production, bulk-upload, upload, data-analyst |
+| **Prisma Models** | ✅ 11 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
 | **Priority Next** | 🎯 **RPT-03** | Report Produksi (#109); DASH-01 ✅ done (snapshot-backed dashboard + Tools snapshot) |
 
 ---
@@ -113,6 +113,9 @@
    ├── ✅ Export CSV — Static data export
    ├── 🟠 S3/PDF Manager — CLI tools (partial)
    └── 🔲 GIS Utilities — Planned
+
+🗺️ Map (✅ MAP-01)
+   └── ✅ Peta Lahan — Peta full-bleed MapLibre + panel filter floating collapsible (Provinsi→Distrik→KT + Muat Data, auto-collapse) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count). Klik feature → info popup: KT (identitas) · Lahan = accordion (Detail Lahan + Pelatihan Petani lazy-load + Produksi grafik dummy) + tombol "Print Profil Petani" → Farm Passport PDF (identitas, layout lahan/polygon, pelatihan, produksi data asli). Read-only atas FarmerGroup + LandParcel
 
 👤 Profile
    └── ✅ Change Password
