@@ -1,7 +1,7 @@
 # Database Schema — ERD
 
 > Visualisasi Entity Relationship Diagram untuk schema aktif.
-> Update terakhir: 2026-06-22 (Post-MD-06 Production Implementation — Full codebase audit)
+> Update terakhir: 2026-07-08 (Post-DASH-01 #99 — MainDashboardSnapshot table implemented)
 
 ---
 
@@ -42,6 +42,10 @@ erDiagram
     MenuItem ||--o{ MenuItem : "parent-child"
     MenuItem ||--o{ RolePermission : "default perms"
     MenuItem ||--o{ UserPermissionOverride : "override perms"
+
+    %% DASHBOARD SNAPSHOT
+    District ||--o{ MainDashboardSnapshot : "scoped snapshots"
+    User ||--o{ MainDashboardSnapshot : "creates"
 ```
 
 ---
@@ -1371,27 +1375,29 @@ model MainDashboardSnapshot {
   id String @id @default(cuid())
 
   // Snapshot Metadata
-  snapshotDate DateTime
-  districtId   String?
-  joinedYear   Int?
+  snapshotDate DateTime @map("snapshot_date")
+  districtId   String?  @map("district_id") // NULL = all districts
+  joinedYear   Int?     @map("joined_year") // NULL = all years
 
   // Relations
   district District? @relation(fields: [districtId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
-  // Aggregated Data (JSON)
-  data Json // Structure: { totalKelompokTani, totalPetani, totalPersilLahan, totalLuasLahan, trainingCounts, kelompokTaniList }
+  // Aggregated Data (JSON) — flat DashboardSnapshotData
+  data Json // Flat DashboardSnapshotData: { totalKelompokTani, totalPetani, totalPetaniLaki, totalPetaniPerempuan, totalPersilLahan, totalLuasLahan, trainingCounts, kelompokTaniList }
+  // Each kelompokTaniList[] entry: { id, name, code, districtId, districtName, locationLat, locationLong, <all-years stats>, byYear: { "<year>": KTYearStats } }
+  // → the dashboard slices this single master snapshot client-side by Distrik / Tahun Bergabung / Kelompok Tani
 
   // Audit Trail
-  createdBy String
-  createdByUser User @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy String @map("created_by")
+  createdByUser User @relation("MainDashboardSnapshots", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
-  isActive Boolean @default(true)
+  isActive Boolean @default(true) @map("is_active")
 
   createdAt  DateTime @default(now()) @map("created_at")
   modifiedAt DateTime @updatedAt @map("modified_at")
   modifiedBy String?  @map("modified_by")
 
-  @@unique([snapshotDate, districtId, joinedYear], name: "snapshot_unique")
+  @@unique([snapshotDate, districtId, joinedYear], name: "main_dashboard_snapshot_unique")
   @@index([snapshotDate])
   @@index([createdBy])
   @@index([isActive])

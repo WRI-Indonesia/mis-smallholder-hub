@@ -1,4 +1,6 @@
 key,parent_key,title,url,icon,order,is_active,is_visible
+dashboard,,Dashboard,/admin/dashboard,LayoutDashboard,0,TRUE,TRUE
+dashboard-main,dashboard,Main Dashboard,/admin/dashboard/main,LayoutDashboard,1,TRUE,TRUE
 master-data,,Master Data,/admin/master-data,Database,1,TRUE,TRUE
 master-data-groups,master-data,Kelompok Tani,/admin/master-data/groups,Users,1,TRUE,TRUE
 master-data-farmers,master-data,Petani,/admin/master-data/farmers,User,2,TRUE,TRUE
@@ -19,3 +21,5 @@ data-analyst-farmer-summary,data-analyst,Ringkasan Petani,/admin/data-analyst/fa
 report,,Report,/admin/report,FileText,5,TRUE,TRUE
 report-farmer,report,Petani,/admin/report/farmer,User,1,TRUE,TRUE
 report-training,report,Pelatihan,/admin/report/training,GraduationCap,2,TRUE,TRUE
+tools,,Tools,/admin/tools,Wrench,6,TRUE,TRUE
+dashboard-snapshot,tools,Dashboard Snapshot,/admin/tools/snapshot,Camera,1,TRUE,TRUE

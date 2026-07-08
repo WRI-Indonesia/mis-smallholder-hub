@@ -11,7 +11,7 @@
 |-----|-------|
 | **Stack** | Next.js 16 · React 19 · Tailwind 4 · Shadcn UI · Prisma 7 · MapLibre |
 | **Repository** | `WRI-Indonesia/mis-smallholder-hub` |
-| **Branch Aktif** | `dev-phase-4` |
+| **Branch Aktif** | `mvp` |
 
 ---
 

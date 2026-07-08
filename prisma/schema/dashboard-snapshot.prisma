@@ -1,0 +1,33 @@
+// dashboard-snapshot.prisma — Main dashboard snapshot (historical state capture)
+// Separate table per dashboard convention: tbl_snapshot_<dashboard_name>
+
+model MainDashboardSnapshot {
+  id String @id @default(cuid())
+
+  // Snapshot metadata
+  snapshotDate DateTime @map("snapshot_date") // Timestamp when snapshot was created
+  districtId   String?  @map("district_id") // Filter: District (NULL = all districts)
+  joinedYear   Int?     @map("joined_year") // Filter: Joined Year (NULL = all years)
+
+  // Relations
+  district District? @relation(fields: [districtId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  // Aggregated data (JSON): DashboardSnapshotData
+  data Json
+
+  // Audit trail
+  createdBy     String @map("created_by")
+  createdByUser User   @relation("MainDashboardSnapshots", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  @@unique([snapshotDate, districtId, joinedYear], name: "main_dashboard_snapshot_unique")
+  @@index([snapshotDate])
+  @@index([createdBy])
+  @@index([isActive])
+  @@map("tbl_snapshot_main_dashboard")
+}

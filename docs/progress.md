@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-07-06 (Issue #107 RPT-01 Petani completed ✅; #108 RPT-02 Pelatihan completed ✅; #109 RPT-03 Produksi siap dikerjakan)
+**Last updated:** 2026-07-08 (#99 DASH-01 Dashboard Snapshot selesai: Main Dashboard `/admin/dashboard/main` + peta MapLibre + snapshot module `/admin/tools/snapshot` + `MainDashboardSnapshot` model/migration; test lokal 19 files / 216 tests ✅. Sebelumnya: #107 RPT-01 & #108 RPT-02 ✅; #109 RPT-03 siap dikerjakan)
 
 **Next management review:** 2026-07-14
 
@@ -26,8 +26,8 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Periode laporan    | 2026-06-30 s.d. 2026-07-06                                  |
 | Status keseluruhan | 🟢 On Track                                          |
 | Basis review       | Issue planning 2026-07-06 (3 Report issues dibuat: #107 #108 #109)       |
-| Test lokal         | ✅ `npm test` — 18 files / 206 tests passed                 |
-| Fokus berikutnya   | Report module implementation (RPT-02/03) + Dashboard module (DASH-01)      |
+| Test lokal         | ✅ `npm test` — 18 files / 208 tests passed                 |
+| Fokus berikutnya   | Report module (RPT-03 Produksi) + Dashboard module (DASH-01)      |
 
 ### Executive Summary
 
@@ -36,22 +36,22 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Platform foundation | ✅ Ready        | Auth, RBAC, menu, user management, region, dan farmer group sudah implementatif. Schema dengan audit fields, soft-delete, RBAC patterns.  |
 | Master data inti    | ✅ Complete     | Farmer ✅, Land Parcel ✅, Training ✅, Production (MD-06) ✅ complete (model + action + UI + test).                            |
 | Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`. Debug/stale scripts sudah dipindah ke `scripts/local/` (local-only). |
-| Report              | 🟠 Partial      | RPT-01 Report Petani selesai (#107) ✅. **Issues #108 (RPT-02 Pelatihan), #109 (RPT-03 Produksi) siap dikerjakan.** |
+| Report              | 🟠 Partial      | RPT-01 Petani (#107) ✅ & RPT-02 Pelatihan (#108) ✅ selesai (route + `report.ts` + UI + test). **Issue #109 (RPT-03 Produksi) siap dikerjakan.** |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region bulk upload belum ada. |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
-| Testing             | ✅ Strong       | Vitest: 18 files / 206 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅; need dashboard. |
+| Testing             | ✅ Strong       | Vitest: 18 files / 208 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅; need dashboard. |
 
 ### Progress Snapshot
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
-| Total phase    | 35 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 17 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/04/05/06, RPT-01, BULK-01/03, DA-01 |
+| Total phase    | 36 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS, DA |
+| ✅ Done        | 18 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/04/05/06, RPT-01, RPT-02, BULK-01/03, DA-01 |
 | 🟠 Partial     | 3 fase         | TOOLS-01, OPS-01, OPS-02 |
-| 🔲 Not Started | 4 fase         | DASH-01, CMS-01, COMM-01, RPT-02/03 (issues #108-#109 sudah dibuat) |
+| 🔲 Not Started | 4 fase         | DASH-01, CMS-01, COMM-01, RPT-03 (issue #109 sudah dibuat) |
 | 🔲 Planned     | 10 fase        | MD-07/08/09/10/11, DASH-02/03, COMM-02, BULK-02, BULK-04    |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
-| 🎯 Now         | 2 fase         | RPT-02 (#108), RPT-03 (#109) — issues siap dikerjakan |
+| 🎯 Now         | 1 fase         | RPT-03 (#109) — issue siap dikerjakan |
 
 ### Management Talking Points
 
@@ -64,7 +64,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
 | Dashboard priority  | `/admin/dashboard` masih placeholder; scope & wireframe perlu disepakati. | Scope DASH-01 minimal harus ditetapkan sebelum dev dimulai.                               |
 | ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests 199/199 passed; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload ✅.    | Foundation & core features stabil; siap lanjut ke dashboard & report.                    |
+| Delivery confidence | Tests 208/208 passed; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅.    | Foundation & core features stabil; siap lanjut ke dashboard & RPT-03.                    |
 
 ### Decisions Needed
 
@@ -81,7 +81,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Priority | Target                                      | Output                                                                                                        |
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | **✅ Done**| **#107 RPT-01: Report Petani**              | Menu Level 1 `report` + sub-menu `report-farmer` + server actions (`report.ts`) + UI + unit tests ✅        |
-| **P1**   | **#108 RPT-02: Report Pelatihan**           | Sub-menu `report-training` + extend `report.ts` + UI (2 tab) + unit tests                                    |
+| **✅ Done**| **#108 RPT-02: Report Pelatihan**           | Sub-menu `report-training` + `report.ts` (`getTrainingReport`) + UI (2 tab) + Excel/PDF export + unit tests ✅        |
 | **P1**   | **#109 RPT-03: Report Produksi**            | Sub-menu `report-production` + extend `report.ts` + UI (filter periode + 2 tab) + unit tests                 |
 | **P1**   | **DASH-01: Dashboard scope agreement**      | Define minimal scope: summary cards + metrics + filter — **BLOCKING** dashboard implementation                |
 
@@ -201,10 +201,10 @@ Format phase: `STREAM-NN`.
 | MD-09       | BUSDEV                       | 🔲 Planned     | Later   | No BUSDEV model/route/action/UI                                                                   | Define scope                                                                     |
 | MD-10       | IMPACT                       | 🔲 Planned     | Later   | No IMPACT model/route/action/UI                                                                   | Define scope                                                                     |
 | MD-11       | Workplan                     | 🔲 Planned     | Later   | No workplan model/route/action/UI                                                                 | Define scope                                                                     |
-| DASH-01     | Dashboard: Basic Data        | 🔲 Not Started | Now     | `/admin/dashboard` exists but only `Coming soon`; **BLOCKING: scope not agreed**                 | **URGENT: Define scope in 48h** — then implement summary cards + filter district |
-| DASH-02     | Dashboard: Server Actions    | 🔲 Planned     | Next    | No `src/server/actions/dashboard.ts`; `/scripts/debug/*dashboard*` reference missing actions      | Create after DASH-01 scope agreed + BUG-002 fixed                                |
-| DASH-03     | Interactive Map              | 🔲 Planned     | Next    | Map deps/CSS/markers exist, but no dashboard map route/component                                  | Implement after dashboard data actions exist                                     |
-| DASH-04     | Dashboard BMP                | 🔴 Blocked     | Blocked | No dashboard implementation; requires DASH-01/02 to complete first                                | Unblock by completing DASH-01 and DASH-02 first                                  |
+| DASH-01     | Dashboard: Basic Data        | ✅ Done        | Done    | Menu `dashboard` (parent) + `dashboard-main` (Main Dashboard) ✅; `/admin/dashboard/main` UI (8 summary cards + filter Distrik/Kelompok Tani/Tahun) ✅; `MainDashboardSnapshot` model + `tbl_snapshot_main_dashboard` migration ✅; snapshot module `/admin/tools/snapshot` (generate/list/detail) ✅; 5 unit tests ✅ | Implement #99 completed (DASH-01) |
+| DASH-02     | Dashboard: Server Actions    | ✅ Done        | Done    | `src/server/actions/dashboard.ts` (RBAC-scoped aggregation) + `src/server/actions/snapshot.ts` (CRUD) + `src/lib/dashboard-aggregation.ts` (pure, tested) + `src/lib/dashboard-query.ts` ✅ | Implement #99 completed |
+| DASH-03     | Interactive Map              | ✅ Done        | Done    | `src/app/(admin)/admin/dashboard/dashboard-map.tsx` — MapLibre (react-map-gl) clustered KT markers, auto-fit bounds, click-to-select info panel, NULL-coordinate empty state ✅ | Implement #99 completed |
+| DASH-04     | Dashboard BMP                | 🔲 Planned     | Next    | Dependencies DASH-01/02 complete (#99); BMP-specific dashboard not yet implemented                | Define BMP dashboard scope; reuse snapshot pattern                               |
 | RPT-01      | Report: Petani               | ✅ Done        | Done    | Menu Level 1 `report` + sub-menu `report-farmer` ✅, `src/server/actions/report.ts` (145 LOC) ✅, halaman `/admin/report/farmer` UI + filter wajib + export Excel & PDF ✅, 3 unit tests ✅ | Implement #107 completed |
 | RPT-02      | Report: Pelatihan            | ✅ Done        | Done    | Halaman `/admin/report/training` dengan 6 summary cards, 2 tab (Kegiatan Pelatihan & Cakupan per Petani), ekspor Excel 2-sheet, filter jenis training, dan ekspor PDF. | Implement #108 completed |
 | RPT-03      | Report: Produksi             | 🔲 Not Started | Now     | Tidak ada report produksi; **#109 dibuat 2026-07-06** dengan spec lengkap (filter periode, rekap + detail panen) | Implement #109: extend `report.ts` + halaman `/admin/report/production` + unit tests; dependency RPT-01 |
@@ -217,7 +217,7 @@ Format phase: `STREAM-NN`.
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **16 test files + 199 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/bulk-upload-parcel | Expand to dashboard, report modules |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **19 test files + 216 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard | Expand to RPT-03 |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
@@ -540,6 +540,7 @@ npm test
 
 | Tanggal | Perubahan |
 | ------- | --------- |
+| 07-08   | **Issue #99 DASH-01: Dashboard Snapshot complete** — Menu `dashboard` (parent) + `dashboard-main` (Main Dashboard, `/admin/dashboard/main`) + `tools` (parent) + `dashboard-snapshot` (`/admin/tools/snapshot`). **Main Dashboard bersifat snapshot-backed**: membaca snapshot terakhir dari `tbl_snapshot_main_dashboard` (bukan real-time), subtitle menampilkan "Nilai di bawah di-generate pada dd-MMM-yy HH:mm"; jika belum ada snapshot → empty state + link ke Tools. Dashboard memuat **1 snapshot master (Semua Distrik/Semua Tahun)**; filter di header (kanan sejajar judul) **Distrik + Tahun Bergabung + Kelompok Tani** menyaring isi snapshot **sepenuhnya client-side** (recompute cards/peta/info panel, tanpa panggilan server per filter). Snapshot menyimpan per-KT `districtId` + `byYear` (rincian petani/gender/persil/luas/cakupan per tahun bergabung), helper `ktStatsForYear`. **10 summary cards (5 per baris)**: baris 1 = Total KT, Total Petani, Petani Laki-laki, Petani Perempuan, Total Persil; baris 2 = Total Luas, Paket 1 BMP/NKT/RSPO, Paket 2-MK, Paket 2-HSE, Paket 3&4 GEDSI/BUSDEV (revisi management: tambah gender). Peta MapLibre (`react-map-gl`) clustering marker KT, basemap light/dark/hybrid (default ikut tema), search KT + tombol "Lihat Semua", info panel per-KT. Snapshot: model `MainDashboardSnapshot` → tabel `tbl_snapshot_main_dashboard` (migration additive), **generate hanya lewat Tools**, menyimpan data flat `DashboardSnapshotData` (incl. gender) + `normalizeSnapshotData` untuk baca snapshot lama, server actions `dashboard.ts` (baca snapshot) + `snapshot.ts` (generate/list/detail/delete, 3 layer RBAC), lib `dashboard-aggregation.ts` (pure, teruji) + `dashboard-query.ts`, Excel export (incl. Petani L/P) + soft delete, PDF placeholder. 8 unit test baru (`dashboard.test.ts`). Build ✅, 19 files / 216 tests ✅. |
 | 07-06   | **Issue #107 RPT-01: Report Petani complete** — Implementasi menu `report` dan `report-farmer`, server action `report.ts` dengan access context check, halaman laporan `/admin/report/farmer` dengan filter cascading wajib (tanpa "Semua"), 4 summary cards, tabel petani, tombol ekspor Excel & PDF (window.print() clean styles), serta 3 unit tests di `report.test.ts`. |
 | 07-06   | **3 GitHub Issues dibuat untuk Report module** — #107 [RPT-01] Report Petani: halaman `/admin/report/farmer`, filter distrik+KT wajib (no "Semua"), 4 summary cards, tabel petani + Export Excel, ~18 unit tests, estimasi 16–20 jam. #108 [RPT-02] Report Pelatihan: halaman `/admin/report/training`, 6 summary cards, 2 Tab (Kegiatan Pelatihan & Cakupan per Petani), Export Excel 2-sheet, exclude paket OTHER, ~16 unit tests, estimasi 18–24 jam. #109 [RPT-03] Report Produksi: halaman `/admin/report/production`, filter periode opsional (tahun/bulan), 4 summary cards, 2 Tab (Rekap per Petani & Detail Panen), Export Excel 2-sheet, ~18 unit tests, estimasi 16–20 jam. Semua issue menggunakan pola extend server action `report.ts` (RPT-02 & RPT-03 tidak membuat file baru). |
 

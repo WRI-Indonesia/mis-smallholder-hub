@@ -164,7 +164,7 @@ src/
 ├── validations/              # Zod schemas (8 files)
 ├── types/                    # TypeScript types
 ├── hooks/                    # React hooks
-└── test/                     # Test files (15 files, 192 tests)
+└── test/                     # Test files (18 files, 208 tests)
 
 prisma/
 ├── schema/                   # Modular Prisma schema files
@@ -193,15 +193,16 @@ npm test
 npm run test:watch
 ```
 
-**Test Coverage**: ✅ 15 files, 192 tests, ALL PASSING
+**Test Coverage**: ✅ 18 files, 208 tests, ALL PASSING
 
 Coverage includes:
-- Authentication & RBAC (40 tests)
-- User Management (42 tests)
-- Master Data modules (52 tests)
-- Regions & Menu (33 tests)
-- Bulk Upload (8 tests)
-- Middleware & Performance (5 tests)
+- Authentication & RBAC (auth, rbac, rbac-permission)
+- User Management (user actions, data access, menu access)
+- Master Data modules (farmer, land-parcel, training, production)
+- Regions & Menu
+- Bulk Upload
+- Report & Data Analyst
+- Middleware & Performance
 
 ---
 
@@ -278,20 +279,22 @@ npm run pdf:cleanup    # Cleanup old PDF files
 
 ## 🚧 Roadmap
 
-### ✅ Completed (15 phases)
+### ✅ Completed (18 phases)
 - Platform foundation (auth, RBAC, menu, user management)
 - All master data modules (Regions, Groups, Farmers, Parcels, Training, Production)
 - Bulk upload system (Farmers, Parcels, Production)
+- **DA-01**: Data Analyst (Farmer Summary)
+- **RPT-01**: Report Petani (summary + detail, Excel/PDF export)
+- **RPT-02**: Report Pelatihan (2 tab, Excel 2-sheet + PDF export)
 
 ### 🔲 In Progress (Priority)
-- **DASH-01**: Dashboard Basic (summary cards + filters) — **P0**
-- **RPT-01**: Report User (table + Excel export) — **P1**
+- **RPT-03**: Report Produksi (#109) — **P1**, siap dikerjakan (extend `report.ts` + `/admin/report/production`)
+- **DASH-01**: Dashboard Basic (summary cards + filters) — **P0**, blocking on scope agreement
 
 ### 🔲 Planned
 - DASH-02: Dashboard Server Actions
 - DASH-03: Interactive Map Dashboard
-- RPT-02: Report Region
-- RPT-03: Report Kelompok Tani
+- DASH-04: (blocked — waits DASH-01/02)
 - BULK-02: Bulk Upload Region
 - MD-07 to MD-11: Staff, HCV, BUSDEV, IMPACT, Workplan modules
 - CMS-01: Content Management System
@@ -331,6 +334,6 @@ Tech Lead: [Add contact info]
 
 ---
 
-**Last Updated**: 2026-06-23  
+**Last Updated**: 2026-07-08  
 **Version**: 0.1.0  
 **Status**: Production-Ready (Core Modules)

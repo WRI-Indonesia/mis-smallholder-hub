@@ -41,3 +41,28 @@ export async function getAccessContext(): Promise<AccessContext> {
 
   return { mode: "BY_DISTRICT", ids: [...ids] };
 }
+
+/** Prisma `where` fragment scoping a FarmerGroup query to the user's data-access. */
+export function farmerGroupAccessFilter(access: AccessContext) {
+  return access.mode === "BY_FARMER_GROUP"
+    ? { id: { in: access.ids } }
+    : access.mode === "BY_DISTRICT"
+    ? { districtId: { in: access.ids } }
+    : {};
+}
+
+/**
+ * District ids the user may access, or `null` for unrestricted (ALL).
+ * BY_FARMER_GROUP resolves to the districts of the assigned groups.
+ */
+export async function getAccessibleDistrictIds(access: AccessContext): Promise<string[] | null> {
+  if (access.mode === "ALL") return null;
+  if (access.mode === "BY_DISTRICT") return access.ids;
+
+  if (access.ids.length === 0) return [];
+  const groups = await prisma.farmerGroup.findMany({
+    where: { id: { in: access.ids } },
+    select: { districtId: true },
+  });
+  return [...new Set(groups.map((g) => g.districtId))];
+}
