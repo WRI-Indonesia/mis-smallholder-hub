@@ -132,3 +132,11 @@ ADMIN,dashboard-snapshot,CREATE
 ADMIN,dashboard-snapshot,VIEW
 ADMIN,dashboard-snapshot,DELETE
 MANAGEMENT,dashboard-snapshot,VIEW
+SUPERADMIN,map,VIEW
+SUPERADMIN,map-parcel,VIEW
+ADMIN,map,VIEW
+ADMIN,map-parcel,VIEW
+OPERATOR,map,VIEW
+OPERATOR,map-parcel,VIEW
+MANAGEMENT,map,VIEW
+MANAGEMENT,map-parcel,VIEW
