@@ -10,7 +10,7 @@ import type { FeatureCollection } from "geojson";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getFarmerTraining } from "@/server/actions/map";
+import { getFarmerTraining, getParcelPassport } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem } from "@/types/map";
 import type { LayerVisibility } from "./map-control-panel";
 
@@ -292,7 +292,7 @@ export function MapCanvas({ data, layers }: Props) {
                   ) : null}
                   <ParcelProductionSection />
                 </div>
-                <ParcelFooter />
+                <ParcelFooter landParcelId={String(selected.props.id)} />
               </div>
             )}
           </Popup>
@@ -381,18 +381,33 @@ function ParcelHeader({
   );
 }
 
-/** Parcel popup footer: print/download farmer profile (PDF — scaffolding). */
-function ParcelFooter() {
+/** Parcel popup footer: download the Farm Passport PDF for the parcel owner. */
+function ParcelFooter({ landParcelId }: { landParcelId: string }) {
+  const [generating, setGenerating] = useState(false);
+
+  const handlePrint = async () => {
+    if (generating) return;
+    setGenerating(true);
+    try {
+      const res = await getParcelPassport(landParcelId);
+      if (!res.success || !res.data) {
+        toast.error(res.success ? "Data tidak ditemukan" : res.error);
+        return;
+      }
+      const { generateFarmPassportPdf } = await import("@/lib/farm-passport");
+      generateFarmPassportPdf(res.data);
+    } catch {
+      toast.error("Gagal membuat PDF profil petani");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="border-t px-3.5 py-2.5">
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8 w-full gap-2"
-        onClick={() => toast.info("Fitur cetak Profil Petani (PDF) akan segera tersedia")}
-      >
-        <Printer className="h-3.5 w-3.5" />
-        Print Profil Petani
+      <Button variant="outline" size="sm" className="h-8 w-full gap-2" onClick={handlePrint} disabled={generating}>
+        {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
+        {generating ? "Menyiapkan..." : "Print Profil Petani"}
       </Button>
     </div>
   );

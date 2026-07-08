@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMapData, type RawGroup, type RawParcel } from "@/lib/map-data";
+import { buildMapData, monthlyAverageYield, type RawGroup, type RawParcel } from "@/lib/map-data";
 
 const group = (over: Partial<RawGroup> = {}): RawGroup => ({
   id: "g1",
@@ -109,5 +109,35 @@ describe("buildMapData", () => {
     expect(result.kelompokTani).toEqual([]);
     expect(result.parcels).toEqual([]);
     expect(result.counts).toEqual({ kt: 0, parcelPoints: 0, parcelAreas: 0 });
+  });
+});
+
+describe("monthlyAverageYield", () => {
+  it("returns 12 zeros for no records", () => {
+    const result = monthlyAverageYield([]);
+    expect(result).toHaveLength(12);
+    expect(result.every((v) => v === 0)).toBe(true);
+  });
+
+  it("sums records within the same period, then places them by calendar month", () => {
+    const result = monthlyAverageYield([
+      { period: "2025-03", yieldKg: 100 },
+      { period: "2025-03", yieldKg: 50 },
+    ]);
+    expect(result[2]).toBe(150); // March index 2
+    expect(result[0]).toBe(0);
+  });
+
+  it("averages the same calendar month across multiple years", () => {
+    const result = monthlyAverageYield([
+      { period: "2024-06", yieldKg: 200 },
+      { period: "2025-06", yieldKg: 100 },
+    ]);
+    expect(result[5]).toBe(150); // (200 + 100) / 2 years
+  });
+
+  it("ignores malformed periods gracefully", () => {
+    const result = monthlyAverageYield([{ period: "bad", yieldKg: 999 }]);
+    expect(result.every((v) => v === 0)).toBe(true);
   });
 });

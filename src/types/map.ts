@@ -54,3 +54,36 @@ export type FarmerTrainingItem = {
   /** ISO date of the earliest attendance for this package, or null. */
   date: string | null;
 };
+
+/** Everything needed to render the Farm Passport PDF for one parcel. */
+export type ParcelPassport = {
+  farmer: {
+    name: string;
+    code: string;
+    gender: string;
+    birthPlace: string | null;
+    birthDate: string | null;
+    nik: string | null;
+    address: string | null;
+    joinedYear: number | null;
+  };
+  group: {
+    name: string;
+    code: string | null;
+    districtName: string;
+    provinceName: string;
+  };
+  parcel: {
+    parcelId: string;
+    area: number | null;
+    landStatus: string | null;
+    cropType: string | null;
+    plantingYear: number | null;
+    notes: string | null;
+    centroid: [number, number];
+    geometry: Polygon | MultiPolygon;
+  };
+  training: FarmerTrainingItem[];
+  /** Monthly average yield (kg), index 0 = Jan … 11 = Des; plus totals. */
+  production: { monthly: number[]; totalKg: number; recordCount: number };
+};

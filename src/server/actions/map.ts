@@ -1,6 +1,8 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import { centroid } from "@turf/turf";
+import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import {
@@ -8,7 +10,7 @@ import {
   farmerGroupAccessFilter,
   getAccessibleDistrictIds,
 } from "@/lib/access-context";
-import { buildMapData } from "@/lib/map-data";
+import { buildMapData, monthlyAverageYield } from "@/lib/map-data";
 import { mapFilterSchema } from "@/validations/map.schema";
 import type { ActionResult } from "@/types/action-result";
 import type {
@@ -17,6 +19,7 @@ import type {
   MapSelectOption,
   MapGroupOption,
   FarmerTrainingItem,
+  ParcelPassport,
 } from "@/types/map";
 
 const VIEW = "VIEW";
@@ -179,18 +182,8 @@ const TRAINING_PACKAGES: { code: string; label: string }[] = [
  * "Pelatihan Petani" section of the parcel popup is expanded. Returns one entry
  * per main package with the earliest attendance date, if any.
  */
-export async function getFarmerTraining(farmerId: string): Promise<FarmerTrainingItem[]> {
-  await requireView();
-
-  const access = await getAccessContext();
-  const farmer = await prisma.farmer.findFirst({
-    where: { id: farmerId, isActive: true, farmerGroup: farmerGroupAccessFilter(access) },
-    select: { id: true },
-  });
-  if (!farmer) {
-    throw new Error("Petani tidak ditemukan atau Anda tidak memiliki akses");
-  }
-
+/** Training completion items for a farmer (no permission/scope check). */
+async function computeFarmerTrainingItems(farmerId: string): Promise<FarmerTrainingItem[]> {
   const participations = await prisma.trainingParticipant.findMany({
     where: {
       farmerId,
@@ -200,7 +193,6 @@ export async function getFarmerTraining(farmerId: string): Promise<FarmerTrainin
     select: { activity: { select: { trainingDate: true, package: { select: { code: true } } } } },
   });
 
-  // earliest date per package code
   const earliest = new Map<string, Date>();
   for (const p of participations) {
     const code = p.activity.package.code;
@@ -213,4 +205,130 @@ export async function getFarmerTraining(farmerId: string): Promise<FarmerTrainin
     const date = earliest.get(code);
     return { code, label, completed: date != null, date: date ? date.toISOString() : null };
   });
+}
+
+export async function getFarmerTraining(farmerId: string): Promise<FarmerTrainingItem[]> {
+  await requireView();
+
+  const access = await getAccessContext();
+  const farmer = await prisma.farmer.findFirst({
+    where: { id: farmerId, isActive: true, farmerGroup: farmerGroupAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!farmer) {
+    throw new Error("Petani tidak ditemukan atau Anda tidak memiliki akses");
+  }
+
+  return computeFarmerTrainingItems(farmerId);
+}
+
+/**
+ * All data for the Farm Passport PDF of a single parcel: farmer identity, land
+ * info + geometry, training completion, and real monthly-average production.
+ * RBAC-scoped via the parcel's farmer group.
+ */
+export async function getParcelPassport(landParcelId: string): Promise<ActionResult<ParcelPassport>> {
+  if (!(await hasPermission(MENU_KEY, VIEW))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  }
+
+  const access = await getAccessContext();
+  const parcel = await prisma.landParcel.findFirst({
+    where: {
+      id: landParcelId,
+      isActive: true,
+      farmer: { isActive: true, farmerGroup: farmerGroupAccessFilter(access) },
+    },
+    select: {
+      parcelId: true,
+      area: true,
+      landStatus: true,
+      cropType: true,
+      plantingYear: true,
+      notes: true,
+      geometry: true,
+      farmer: {
+        select: {
+          id: true,
+          name: true,
+          farmerId: true,
+          gender: true,
+          birthPlace: true,
+          birthDate: true,
+          nik: true,
+          address: true,
+          joinedYear: true,
+          farmerGroup: {
+            select: {
+              name: true,
+              code: true,
+              district: { select: { name: true, province: { select: { name: true } } } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!parcel) {
+    return { success: false, error: "Lahan tidak ditemukan atau Anda tidak memiliki akses" };
+  }
+  const geometry = parcel.geometry as unknown as Polygon | MultiPolygon | null;
+  if (!geometry) {
+    return { success: false, error: "Lahan tidak memiliki geometri" };
+  }
+  let center: [number, number];
+  try {
+    const c = centroid(geometry as never).geometry.coordinates;
+    center = [c[0], c[1]];
+  } catch {
+    return { success: false, error: "Geometri lahan tidak valid" };
+  }
+
+  const farmer = parcel.farmer;
+  const [training, prodRecords] = await Promise.all([
+    computeFarmerTrainingItems(farmer.id),
+    prisma.productionRecord.findMany({
+      where: { farmerId: farmer.id, isActive: true },
+      select: { period: true, yieldKg: true },
+    }),
+  ]);
+
+  return {
+    success: true,
+    data: {
+      farmer: {
+        name: farmer.name,
+        code: farmer.farmerId,
+        gender: farmer.gender,
+        birthPlace: farmer.birthPlace,
+        birthDate: farmer.birthDate ? farmer.birthDate.toISOString() : null,
+        nik: farmer.nik,
+        address: farmer.address,
+        joinedYear: farmer.joinedYear,
+      },
+      group: {
+        name: farmer.farmerGroup.name,
+        code: farmer.farmerGroup.code,
+        districtName: farmer.farmerGroup.district?.name ?? "—",
+        provinceName: farmer.farmerGroup.district?.province?.name ?? "—",
+      },
+      parcel: {
+        parcelId: parcel.parcelId,
+        area: parcel.area,
+        landStatus: parcel.landStatus,
+        cropType: parcel.cropType,
+        plantingYear: parcel.plantingYear,
+        notes: parcel.notes,
+        centroid: center,
+        geometry,
+      },
+      training,
+      production: {
+        monthly: monthlyAverageYield(prodRecords),
+        totalKg: prodRecords.reduce((s, r) => s + r.yieldKg, 0),
+        recordCount: prodRecords.length,
+      },
+    },
+  };
 }

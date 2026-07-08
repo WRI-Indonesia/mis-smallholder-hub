@@ -79,3 +79,25 @@ export function buildMapData(groups: RawGroup[], parcels: RawParcel[]): MapData 
     },
   };
 }
+
+/**
+ * Average yield (kg) per calendar month (index 0 = Jan … 11 = Des). Records are
+ * first summed per period (YYYY-MM), then averaged across the years that have
+ * data for each month. Months with no data return 0.
+ */
+export function monthlyAverageYield(records: { period: string; yieldKg: number }[]): number[] {
+  const perPeriod = new Map<string, number>();
+  for (const r of records) {
+    perPeriod.set(r.period, (perPeriod.get(r.period) ?? 0) + r.yieldKg);
+  }
+  const sums = new Array(12).fill(0);
+  const counts = new Array(12).fill(0);
+  for (const [period, total] of perPeriod) {
+    const month = Number.parseInt(period.slice(5, 7), 10) - 1;
+    if (month >= 0 && month < 12) {
+      sums[month] += total;
+      counts[month] += 1;
+    }
+  }
+  return sums.map((s, i) => (counts[i] > 0 ? s / counts[i] : 0));
+}
