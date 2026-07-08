@@ -199,10 +199,27 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     if (feature.properties?.cluster) {
       const source: any = map?.getSource("kt-source");
       const clusterId = feature.properties.cluster_id;
-      source?.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
-        if (err) return;
-        map?.easeTo({ center: feature.geometry.coordinates, zoom });
-      });
+      const count = feature.properties.point_count ?? 1000;
+      // Fit to ALL points inside the cluster. maplibre-gl v5 returns a Promise
+      // (the old callback form is gone), so Promise.resolve handles both.
+      Promise.resolve(source?.getClusterLeaves(clusterId, count, 0))
+        .then((leaves: any[]) => {
+          if (!leaves?.length) return;
+          let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+          for (const leaf of leaves) {
+            const [lng, lat] = leaf.geometry.coordinates;
+            minLng = Math.min(minLng, lng);
+            maxLng = Math.max(maxLng, lng);
+            minLat = Math.min(minLat, lat);
+            maxLat = Math.max(maxLat, lat);
+          }
+          if (minLng === maxLng && minLat === maxLat) {
+            map?.easeTo({ center: [minLng, minLat], zoom: 15, duration: 600 });
+          } else {
+            map?.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 80, maxZoom: 16, duration: 600 });
+          }
+        })
+        .catch(() => {});
       return;
     }
     if (feature.properties?.id) onSelect(feature.properties.id);
