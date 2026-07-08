@@ -1,7 +1,7 @@
 # Smallholder HUB — UI/UX Flow
 
 > Dokumentasi alur navigasi dan user journey berdasarkan role.
-> **Last updated**: 2026-06-12 (Post-Audit)
+> **Last updated**: 2026-07-08 (Post-DASH-01 #99 — Main Dashboard snapshot-backed + Tools › Dashboard Snapshot)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **14 files / 175 tests passing** | Full coverage: auth, RBAC, menu, user, region, farmer, land parcel, training, bulk upload |
-| **Completed Modules** | ✅ 15 phases done | Platform (1-7), MD (1-6), BULK (1, 3) |
-| **Server Actions** | ✅ 15 files / 2187 LOC | user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, production, bulk-upload, upload, etc. |
-| **Prisma Models** | ✅ 10 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord |
-| **Priority P0** | 🔴 **DASH-01 scope** | Dashboard scope agreement needed in 48h (BLOCKING) |
+| **Test Status** | ✅ **19 files / 216 tests passing** | Coverage: auth, RBAC, menu, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard |
+| **Completed Modules** | ✅ 18 phases done | Platform (1-7), MD (1-6), DASH-01, RPT-01/02, BULK (1, 3), DA-01 |
+| **Server Actions** | ✅ dashboard, snapshot, report + user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, production, bulk-upload, upload, data-analyst |
+| **Prisma Models** | ✅ 11 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot |
+| **Priority Next** | 🎯 **RPT-03** | Report Produksi (#109); DASH-01 ✅ done (snapshot-backed dashboard + Tools snapshot) |
 
 ---
 
@@ -74,10 +74,9 @@
 ## Admin Sidebar Menu (Compact View)
 
 ```
-📊 Dashboard (🔲 DASH-01)
-   ├── 🔲 Basic Dashboard — Summary cards + district filter
-   ├── 🔲 Interactive Map — KT markers + location
-   └── 🔲 Dashboard BMP — Best Management Practice metrics
+📊 Dashboard (✅ DASH-01)
+   ├── ✅ Main Dashboard — Snapshot-backed: 10 summary cards (5/baris, incl. Petani L/P) + filter Distrik/KT/Tahun + peta MapLibre (cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
+   └── 🔲 Dashboard BMP (DASH-04) — Best Management Practice metrics
 
 📁 Master Data
    ├── ✅ Regions (MD-01) — Province/District/Subdistrict/Village tree
@@ -110,6 +109,7 @@
    └── ✅ Region Settings (MD-01) — Tree hierarchy
 
 🔧 Tools (🟠 TOOLS-01)
+   ├── ✅ Dashboard Snapshot (DASH-01) — Generate/list/detail snapshot + Excel export + soft delete
    ├── ✅ Export CSV — Static data export
    ├── 🟠 S3/PDF Manager — CLI tools (partial)
    └── 🔲 GIS Utilities — Planned
@@ -317,39 +317,39 @@ User Access Bulk Upload
 
 ## SUPERADMIN
 
-- **Dashboard**: ✅ Full access (all data, no filters)
+- **Dashboard**: ✅ Main Dashboard (semua snapshot, semua data)
 - **Master Data**: ✅ Full CRUD, all regions/groups/farmers
 - **Settings**: ✅ User/Role/Menu/Region management
 - **Report**: ✅ All reports, all data
 - **Bulk Upload**: ✅ All modules
-- **Tools**: ✅ Export, S3/PDF, GIS
+- **Tools**: ✅ Dashboard Snapshot (generate/view/delete), Export, S3/PDF, GIS
 
 ## ADMIN (District/Province Level)
 
-- **Dashboard**: 🔲 Filtered by assigned district/province
+- **Dashboard**: ✅ Main Dashboard (snapshot dalam scope distrik + org-wide)
 - **Master Data**: ✅ CRUD within assigned district (Groups, Farmers, Training)
 - **Settings**: 🟠 Limited (View/Edit users based on permission)
 - **Report**: 🔲 Filtered reports (User, KT within scope)
 - **Bulk Upload**: ✅ Farmer (assigned groups only)
-- **Tools**: 🟠 Limited access
+- **Tools**: ✅ Dashboard Snapshot (generate/view/delete, scope distrik)
 
 ## OPERATOR (Field Level)
 
-- **Dashboard**: 🔲 View summary (assigned KT only)
+- **Dashboard**: ✅ Main Dashboard (VIEW; snapshot dalam scope KT + org-wide)
 - **Master Data**: ✅ CRUD Farmers/Parcels/Training/Production within assigned KT
 - **Settings**: ❌ No access
 - **Report**: 🔲 View reports (assigned KT only)
 - **Bulk Upload**: ❌ No access
-- **Tools**: ❌ No access
+- **Tools**: ❌ No access (tidak diberi akses Dashboard Snapshot)
 
 ## MANAGEMENT (Read-Only)
 
-- **Dashboard**: 🔲 View all metrics (organization-wide)
+- **Dashboard**: ✅ Main Dashboard (view all metrics, organization-wide)
 - **Master Data**: ❌ Read-only (no CRUD)
 - **Settings**: ❌ No access
 - **Report**: 🔲 View all reports (all data)
 - **Bulk Upload**: ❌ No access
-- **Tools**: ❌ No access
+- **Tools**: 🟠 Dashboard Snapshot (view-only, tanpa generate/delete)
 
 </details>
 
@@ -377,15 +377,14 @@ User Access Bulk Upload
 | BULK-01 | Bulk Upload Menu | Route setup, redirect to /farmers | — |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors | 177 LOC |
  
-**Total Server Actions**: 14 files, **1987 LOC**  
-**Total Tests**: 14 files, **175 tests passing** ✅
+**Total Tests**: 19 files, **216 tests passing** ✅ (incl. dashboard aggregation + report)
 
 ## In Progress (🟠 2 Phases)
 
 | Phase | Module | Status | Missing |
 |-------|--------|--------|---------|
 | TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager |
-| OPS-01 | Testing | Partial | Dashboard, production test coverage |
+| OPS-01 | Testing | Partial | RPT-03 test coverage (dashboard + production now covered) |
 
 ## Planned - Now (🔲 1 Phase Priority)
  
@@ -393,9 +392,9 @@ User Access Bulk Upload
 |-------|--------|------------|---------|
 | MD-06 | Production | Define scope, model design, dependency to Farmer/Parcel | — |
 
-## Planned - Next (🔲 4 Phases)
+## Planned - Next
 
-- DASH-01 (Dashboard Basic), RPT-01/02/03 (Reports), BULK-02 (Region Bulk Upload)
+- RPT-03 (Report Produksi #109), BULK-02 (Region Bulk Upload), DASH-04 (Dashboard BMP)
 
 ## Planned - Later (🔲 8 Phases)
 
@@ -414,7 +413,7 @@ User Access Bulk Upload
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **14 files / 175 tests passing**
+**Test Status**: ✅ **19 files / 216 tests passing**
 
 ### Covered Modules
 
@@ -432,11 +431,16 @@ User Access Bulk Upload
 | Middleware | middleware.test.ts | 3 | ✅ |
 | Performance | perf.test.ts | 2 | ✅ |
 
+### Covered (added since audit)
+
+- ✅ Dashboard — `dashboard.test.ts` (aggregation, gender, snapshot data shape/normalize)
+- ✅ Report — `report.test.ts` (farmer & training summary)
+- ✅ Production — `production.test.ts`
+
 ### Need Coverage
 
-- ❌ Dashboard (no tests yet — module not implemented)
-- ❌ Report (no tests yet — module not implemented)
-- ❌ Production (planned)
+- 🔲 RPT-03 Report Produksi (belum diimplementasi)
+- 🔲 Server-action level tests untuk snapshot RBAC (kini hanya fungsi murni)
 
 ## Code Compliance (rule.md)
 

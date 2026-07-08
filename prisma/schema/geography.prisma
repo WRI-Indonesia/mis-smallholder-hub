@@ -29,6 +29,7 @@ model District {
   subdistricts Subdistrict[]
   users        UserDistrict[]
   farmerGroups FarmerGroup[]
+  dashboardSnapshots MainDashboardSnapshot[]
 
   @@map("reg_district")
 }
