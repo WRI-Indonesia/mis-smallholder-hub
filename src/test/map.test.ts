@@ -34,7 +34,7 @@ const parcel = (over: Partial<RawParcel> = {}): RawParcel => ({
   plantingYear: 2020,
   cropType: "Kelapa Sawit",
   landStatus: "Milik",
-  farmer: { name: "Budi", farmerGroup: { name: "KT Maju" } },
+  farmer: { name: "Budi", farmerId: "FMR-01", farmerGroup: { name: "KT Maju" } },
   ...over,
 });
 

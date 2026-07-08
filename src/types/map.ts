@@ -23,6 +23,8 @@ export type ParcelFeature = {
   parcelId: string;
   /** Farmer.id (relation key) of the parcel owner — used to lazy-load training. */
   farmerId: string;
+  /** Farmer.farmerId business code (e.g. "FMR-01") shown in the popup header. */
+  farmerCode: string;
   farmerName: string;
   farmerGroupName: string;
   area: number | null;

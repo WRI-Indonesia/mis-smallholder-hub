@@ -157,7 +157,7 @@ export async function getMapData(
         cropType: true,
         landStatus: true,
         farmer: {
-          select: { name: true, farmerGroup: { select: { name: true } } },
+          select: { name: true, farmerId: true, farmerGroup: { select: { name: true } } },
         },
       },
     }),

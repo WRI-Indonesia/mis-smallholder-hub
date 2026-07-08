@@ -20,7 +20,7 @@ export type RawParcel = {
   plantingYear: number | null;
   cropType: string | null;
   landStatus: string | null;
-  farmer: { name: string; farmerGroup: { name: string } | null } | null;
+  farmer: { name: string; farmerId: string; farmerGroup: { name: string } | null } | null;
 };
 
 /**
@@ -57,6 +57,7 @@ export function buildMapData(groups: RawGroup[], parcels: RawParcel[]): MapData 
       id: p.id,
       parcelId: p.parcelId,
       farmerId: p.farmerId,
+      farmerCode: p.farmer?.farmerId ?? "—",
       farmerName: p.farmer?.name ?? "—",
       farmerGroupName: p.farmer?.farmerGroup?.name ?? "—",
       area: p.area,

@@ -4,9 +4,11 @@ import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } fro
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, Sprout, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2 } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer } from "lucide-react";
+import { toast } from "sonner";
 import type { FeatureCollection } from "geojson";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getFarmerTraining } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem } from "@/types/map";
@@ -267,15 +269,18 @@ export function MapCanvas({ data, layers }: Props) {
                 />
               </div>
             ) : (
-              <div className="w-[252px]">
-                <PopupHeader accent="blue" icon={<Sprout className="h-4 w-4" />} title={`Lahan ${String(selected.props.parcelId ?? "—")}`} subtitle="Persil Lahan Petani" />
+              <div className="w-[340px]">
+                <ParcelHeader
+                  name={String(selected.props.farmerName ?? "—")}
+                  farmerCode={String(selected.props.farmerCode ?? "—")}
+                  parcelId={String(selected.props.parcelId ?? "—")}
+                  groupName={String(selected.props.farmerGroupName ?? "—")}
+                />
                 <PopupHighlight label="Luas Lahan" value={formatArea(selected.props.area as number | null)} />
                 <div className="divide-y">
                   <PopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
                     <AttrRows
                       rows={[
-                        { label: "Petani", value: selected.props.farmerName },
-                        { label: "Kelompok Tani", value: selected.props.farmerGroupName },
                         { label: "Tahun Tanam", value: selected.props.plantingYear },
                         { label: "Komoditas", value: selected.props.cropType },
                         { label: "Status Lahan", value: selected.props.landStatus },
@@ -287,6 +292,7 @@ export function MapCanvas({ data, layers }: Props) {
                   ) : null}
                   <ParcelProductionSection />
                 </div>
+                <ParcelFooter />
               </div>
             )}
           </Popup>
@@ -332,6 +338,62 @@ function PopupHeader({ accent, icon, title, subtitle }: { accent: keyof typeof A
         <p className="text-sm font-semibold leading-tight truncate">{title}</p>
         <p className={cn("text-[10px] font-semibold uppercase tracking-wider", c.text)}>{subtitle}</p>
       </div>
+    </div>
+  );
+}
+
+/** Parcel popup header: farmer photo placeholder + identity fields. */
+function ParcelHeader({
+  name,
+  farmerCode,
+  parcelId,
+  groupName,
+}: {
+  name: string;
+  farmerCode: string;
+  parcelId: string;
+  groupName: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 bg-blue-500/10 px-3.5 py-3 pr-8">
+      {/* TODO: replace placeholder with farmer photo when a photo field exists */}
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+        <User className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <div className="min-w-0 space-y-0.5">
+        <p className="truncate text-sm font-semibold leading-tight">{name}</p>
+        <div className="space-y-0.5 text-[11px] text-muted-foreground">
+          <p>
+            <span>ID Petani: </span>
+            <span className="font-mono text-foreground/80 break-all">{farmerCode}</span>
+          </p>
+          <p>
+            <span>ID Lahan: </span>
+            <span className="font-mono text-foreground/80 break-all">{parcelId}</span>
+          </p>
+          <p>
+            <span>KT: </span>
+            <span className="text-foreground/80">{groupName}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Parcel popup footer: print/download farmer profile (PDF — scaffolding). */
+function ParcelFooter() {
+  return (
+    <div className="border-t px-3.5 py-2.5">
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 w-full gap-2"
+        onClick={() => toast.info("Fitur cetak Profil Petani (PDF) akan segera tersedia")}
+      >
+        <Printer className="h-3.5 w-3.5" />
+        Print Profil Petani
+      </Button>
     </div>
   );
 }
@@ -499,6 +561,7 @@ function parcelProps(p: ParcelFeature) {
     id: p.id,
     parcelId: p.parcelId,
     farmerId: p.farmerId,
+    farmerCode: p.farmerCode,
     farmerName: p.farmerName,
     farmerGroupName: p.farmerGroupName,
     area: p.area,
