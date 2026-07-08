@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
-import Map, { Source, Layer, type MapRef } from "react-map-gl/maplibre";
+import Map, { Source, Layer, Popup, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPin, Search, Check, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -77,6 +77,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
   }, [resolvedTheme]);
 
   const [searchOpen, setSearchOpen] = useState(false);
+  const [hoverInfo, setHoverInfo] = useState<{ longitude: number; latitude: number; name: string } | null>(null);
 
   const mapped = useMemo(
     () => kelompokTaniList.filter((kt) => kt.locationLat != null && kt.locationLong != null),
@@ -172,6 +173,24 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     },
   };
 
+  const handleMouseMove = (e: any) => {
+    const feature = e.features?.[0];
+    if (!feature) {
+      setHoverInfo(null);
+      e.target.getCanvas().style.cursor = "";
+      return;
+    }
+    const [longitude, latitude] = feature.geometry.coordinates;
+    if (feature.properties?.cluster) {
+      setHoverInfo({ longitude, latitude, name: `${feature.properties.point_count} Kelompok Tani` });
+    } else if (feature.properties?.id) {
+      setHoverInfo({ longitude, latitude, name: feature.properties.name });
+    } else {
+      setHoverInfo(null);
+    }
+    e.target.getCanvas().style.cursor = "pointer";
+  };
+
   const handleClick = (e: any) => {
     const feature = e.features?.[0];
     if (!feature) return;
@@ -198,14 +217,31 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
         interactiveLayerIds={["clusters", "unclustered-point"]}
         onLoad={() => fitAll()}
         onClick={handleClick}
-        onMouseEnter={(e) => (e.target.getCanvas().style.cursor = "pointer")}
-        onMouseLeave={(e) => (e.target.getCanvas().style.cursor = "")}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={(e) => {
+          setHoverInfo(null);
+          e.target.getCanvas().style.cursor = "";
+        }}
       >
         <Source id="kt-source" type="geojson" data={geojson} cluster clusterMaxZoom={14} clusterRadius={50}>
           <Layer {...clusterLayer} />
           <Layer {...clusterCountLayer} />
           <Layer {...pointLayer} />
         </Source>
+
+        {hoverInfo && (
+          <Popup
+            longitude={hoverInfo.longitude}
+            latitude={hoverInfo.latitude}
+            closeButton={false}
+            closeOnClick={false}
+            offset={14}
+            anchor="bottom"
+            className="dashboard-kt-popup"
+          >
+            <span className="text-xs font-semibold">{hoverInfo.name}</span>
+          </Popup>
+        )}
       </Map>
 
       {/* Top-left controls: search KT + see all */}

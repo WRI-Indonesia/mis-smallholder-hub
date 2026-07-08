@@ -5,11 +5,12 @@ import {
   sumKelompokTaniStats,
   ktStatsForYear,
   normalizeSnapshotData,
+  scopeSnapshotData,
   toSnapshotData,
   type RawFarmer,
   type RawGroup,
 } from "@/lib/dashboard-aggregation";
-import type { KTDetails } from "@/types/dashboard";
+import type { DashboardSnapshotData, KTDetails } from "@/types/dashboard";
 
 function farmer(
   id: string,
@@ -218,6 +219,39 @@ describe("dashboard aggregation", () => {
       const empty = normalizeSnapshotData(null);
       expect(empty.trainingCounts.PAKET_2_MK).toBe(0);
       expect(empty.kelompokTaniList).toEqual([]);
+    });
+  });
+
+  describe("scopeSnapshotData (RBAC read-time scoping)", () => {
+    const emptyCov = { PAKET_1_BMP_PC_RSPO_NKT: 0, PAKET_2_MK: 0, PAKET_2_K3: 0, PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0 };
+    const kt = (id: string, districtId: string, farmers: number): KTDetails => ({
+      id, name: id, code: null, districtId, districtName: districtId, locationLat: null, locationLong: null,
+      totalFarmers: farmers, totalFarmersMale: farmers, totalFarmersFemale: 0, totalParcels: 0, totalArea: 0,
+      trainingCoverage: { ...emptyCov }, byYear: {},
+    });
+    const data: DashboardSnapshotData = {
+      totalKelompokTani: 2, totalPetani: 5, totalPetaniLaki: 5, totalPetaniPerempuan: 0,
+      totalPersilLahan: 0, totalLuasLahan: 0, trainingCounts: { ...emptyCov },
+      kelompokTaniList: [kt("ktA", "d1", 3), kt("ktB", "d2", 2)],
+    };
+
+    it("ALL → unchanged", () => {
+      const r = scopeSnapshotData(data, { mode: "ALL" });
+      expect(r.totalKelompokTani).toBe(2);
+      expect(r.totalPetani).toBe(5);
+    });
+
+    it("BY_DISTRICT → only KTs in accessible districts, totals recomputed", () => {
+      const r = scopeSnapshotData(data, { mode: "BY_DISTRICT", districtIds: ["d1"] });
+      expect(r.kelompokTaniList.map((k) => k.id)).toEqual(["ktA"]);
+      expect(r.totalKelompokTani).toBe(1);
+      expect(r.totalPetani).toBe(3);
+    });
+
+    it("BY_FARMER_GROUP → only accessible KT ids", () => {
+      const r = scopeSnapshotData(data, { mode: "BY_FARMER_GROUP", groupIds: ["ktB"] });
+      expect(r.kelompokTaniList.map((k) => k.id)).toEqual(["ktB"]);
+      expect(r.totalPetani).toBe(2);
     });
   });
 });

@@ -165,6 +165,33 @@ export function toSnapshotData(data: DashboardData): DashboardSnapshotData {
   return { ...data.stats, kelompokTaniList: data.kelompokTaniList };
 }
 
+export type SnapshotAccessScope =
+  | { mode: "ALL" }
+  | { mode: "BY_DISTRICT"; districtIds: string[] }
+  | { mode: "BY_FARMER_GROUP"; groupIds: string[] };
+
+/**
+ * Restrict a stored snapshot's data to the viewer's data-access scope.
+ * A snapshot stores per-KT `districtId`, so an org-wide snapshot can be sliced
+ * down to only the KTs a limited user may see — then totals are recomputed.
+ * This enforces RBAC at read time regardless of who generated the snapshot.
+ */
+export function scopeSnapshotData(
+  data: DashboardSnapshotData,
+  scope: SnapshotAccessScope
+): DashboardSnapshotData {
+  if (scope.mode === "ALL") return data;
+
+  const kts =
+    scope.mode === "BY_DISTRICT"
+      ? data.kelompokTaniList.filter(
+          (kt) => kt.districtId != null && scope.districtIds.includes(kt.districtId)
+        )
+      : data.kelompokTaniList.filter((kt) => scope.groupIds.includes(kt.id));
+
+  return { ...sumKelompokTaniStats(kts), kelompokTaniList: kts };
+}
+
 /**
  * Read a snapshot's stored `data` JSON into DashboardSnapshotData, tolerating both
  * the flat shape and the older nested `{ stats, kelompokTaniList }` shape.
