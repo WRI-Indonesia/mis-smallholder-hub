@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-07-06 (Issue #107 RPT-01 Petani completed ✅; #108 RPT-02 Pelatihan completed ✅; #109 RPT-03 Produksi siap dikerjakan)
+**Last updated:** 2026-07-08 (audit sinkronisasi terhadap code: #107 RPT-01 Petani ✅ & #108 RPT-02 Pelatihan ✅ terverifikasi di route + `report.ts` + test; #109 RPT-03 Produksi siap dikerjakan)
 
 **Next management review:** 2026-07-14
 
@@ -26,8 +26,8 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Periode laporan    | 2026-06-30 s.d. 2026-07-06                                  |
 | Status keseluruhan | 🟢 On Track                                          |
 | Basis review       | Issue planning 2026-07-06 (3 Report issues dibuat: #107 #108 #109)       |
-| Test lokal         | ✅ `npm test` — 18 files / 206 tests passed                 |
-| Fokus berikutnya   | Report module implementation (RPT-02/03) + Dashboard module (DASH-01)      |
+| Test lokal         | ✅ `npm test` — 18 files / 208 tests passed                 |
+| Fokus berikutnya   | Report module (RPT-03 Produksi) + Dashboard module (DASH-01)      |
 
 ### Executive Summary
 
@@ -36,22 +36,22 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Platform foundation | ✅ Ready        | Auth, RBAC, menu, user management, region, dan farmer group sudah implementatif. Schema dengan audit fields, soft-delete, RBAC patterns.  |
 | Master data inti    | ✅ Complete     | Farmer ✅, Land Parcel ✅, Training ✅, Production (MD-06) ✅ complete (model + action + UI + test).                            |
 | Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`. Debug/stale scripts sudah dipindah ke `scripts/local/` (local-only). |
-| Report              | 🟠 Partial      | RPT-01 Report Petani selesai (#107) ✅. **Issues #108 (RPT-02 Pelatihan), #109 (RPT-03 Produksi) siap dikerjakan.** |
+| Report              | 🟠 Partial      | RPT-01 Petani (#107) ✅ & RPT-02 Pelatihan (#108) ✅ selesai (route + `report.ts` + UI + test). **Issue #109 (RPT-03 Produksi) siap dikerjakan.** |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region bulk upload belum ada. |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
-| Testing             | ✅ Strong       | Vitest: 18 files / 206 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅; need dashboard. |
+| Testing             | ✅ Strong       | Vitest: 18 files / 208 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅; need dashboard. |
 
 ### Progress Snapshot
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
-| Total phase    | 35 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS |
-| ✅ Done        | 17 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/04/05/06, RPT-01, BULK-01/03, DA-01 |
+| Total phase    | 36 fase        | PLATFORM, MD, DASH, RPT, BULK, TOOLS, CMS, COMM, OPS, DA |
+| ✅ Done        | 18 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/04/05/06, RPT-01, RPT-02, BULK-01/03, DA-01 |
 | 🟠 Partial     | 3 fase         | TOOLS-01, OPS-01, OPS-02 |
-| 🔲 Not Started | 4 fase         | DASH-01, CMS-01, COMM-01, RPT-02/03 (issues #108-#109 sudah dibuat) |
+| 🔲 Not Started | 4 fase         | DASH-01, CMS-01, COMM-01, RPT-03 (issue #109 sudah dibuat) |
 | 🔲 Planned     | 10 fase        | MD-07/08/09/10/11, DASH-02/03, COMM-02, BULK-02, BULK-04    |
 | 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
-| 🎯 Now         | 2 fase         | RPT-02 (#108), RPT-03 (#109) — issues siap dikerjakan |
+| 🎯 Now         | 1 fase         | RPT-03 (#109) — issue siap dikerjakan |
 
 ### Management Talking Points
 
@@ -64,7 +64,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
 | Dashboard priority  | `/admin/dashboard` masih placeholder; scope & wireframe perlu disepakati. | Scope DASH-01 minimal harus ditetapkan sebelum dev dimulai.                               |
 | ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests 199/199 passed; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload ✅.    | Foundation & core features stabil; siap lanjut ke dashboard & report.                    |
+| Delivery confidence | Tests 208/208 passed; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅.    | Foundation & core features stabil; siap lanjut ke dashboard & RPT-03.                    |
 
 ### Decisions Needed
 
@@ -81,7 +81,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Priority | Target                                      | Output                                                                                                        |
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | **✅ Done**| **#107 RPT-01: Report Petani**              | Menu Level 1 `report` + sub-menu `report-farmer` + server actions (`report.ts`) + UI + unit tests ✅        |
-| **P1**   | **#108 RPT-02: Report Pelatihan**           | Sub-menu `report-training` + extend `report.ts` + UI (2 tab) + unit tests                                    |
+| **✅ Done**| **#108 RPT-02: Report Pelatihan**           | Sub-menu `report-training` + `report.ts` (`getTrainingReport`) + UI (2 tab) + Excel/PDF export + unit tests ✅        |
 | **P1**   | **#109 RPT-03: Report Produksi**            | Sub-menu `report-production` + extend `report.ts` + UI (filter periode + 2 tab) + unit tests                 |
 | **P1**   | **DASH-01: Dashboard scope agreement**      | Define minimal scope: summary cards + metrics + filter — **BLOCKING** dashboard implementation                |
 
@@ -217,7 +217,7 @@ Format phase: `STREAM-NN`.
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **16 test files + 199 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/bulk-upload-parcel | Expand to dashboard, report modules |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **18 test files + 208 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report | Expand to dashboard, RPT-03 |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
