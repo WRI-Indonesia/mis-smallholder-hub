@@ -10,8 +10,8 @@
 | Category | Status | Details |
 |----------|--------|---------|
 | **Test Status** | ✅ **20 files / 231 tests passing** | Coverage: auth, RBAC, menu, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, map |
-| **Completed Modules** | ✅ 19 phases done | Platform (1-7), MD (1-6), DASH-01, RPT-01/02, BULK (1, 3), DA-01, MAP-01 |
-| **Server Actions** | ✅ dashboard, snapshot, report, map + user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, production, bulk-upload, upload, data-analyst |
+| **Completed Modules** | ✅ 20 phases done | Platform (1-7), MD (1-6), DASH-01, RPT-01/02, BULK (1, 3), DA-01/02, MAP-01 |
+| **Server Actions** | ✅ dashboard, snapshot, report, map + user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, production, bulk-upload, upload, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
 | **Priority Next** | 🎯 **RPT-03** | Report Produksi (#109); DASH-01 ✅ done (snapshot-backed dashboard + Tools snapshot) |
 
@@ -90,6 +90,10 @@
    ├── 🔲 BUSDEV (MD-09)
    ├── 🔲 IMPACT (MD-10)
    └── 🔲 Workplan (MD-11)
+
+📉 Data Analyst (✅ DA-01, DA-02)
+   ├── ✅ Ringkasan Petani (DA-01) — Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel export
+   └── ✅ Analisa Ketersediaan Data (DA-02) — Pilih distrik → KT → Analisa: skor kesehatan data + 5 section collapsible (Profil KT, Petani, Lahan, Pelatihan, Produksi) deteksi anomali & data belum lengkap (NIK kosong/invalid, petani tanpa lahan, belum pelatihan, tanpa produksi, dll) + Excel multi-sheet
 
 📈 Report (🟠 Partial)
    ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
