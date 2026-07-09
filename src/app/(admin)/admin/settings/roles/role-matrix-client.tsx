@@ -65,8 +65,8 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
         </thead>
         <tbody>
           {parents.map((parent) => (
-            <>
-              <tr key={parent.key} className="bg-muted/30 border-b border-border/50">
+            <React.Fragment key={parent.key}>
+              <tr className="bg-muted/30 border-b border-border/50">
                 <td className="p-2 font-medium">{parent.title}</td>
                 {ROLES.map((role) =>
                   PERMISSIONS.map((perm) => (
@@ -106,7 +106,7 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                   )}
                 </tr>
               ))}
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </table>

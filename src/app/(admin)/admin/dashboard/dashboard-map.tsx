@@ -13,6 +13,12 @@ import type { KTDetails } from "@/types/dashboard";
 
 const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
 
+// Single font only: fonts.openmaptiles.org does not serve *combined* fontstacks
+// (e.g. "Open Sans Regular,Noto Sans Regular" returns its HTML landing page,
+// which MapLibre then fails to parse as PBF → "Unable to load glyph range /
+// Unimplemented type: 4"). "Open Sans Regular" is served as a valid glyph PBF.
+const TEXT_FONT = ["Open Sans Regular"];
+
 const MAP_STYLES = {
   light: {
     version: 8 as const,
@@ -154,7 +160,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     filter: ["has", "point_count"] as any,
     layout: {
       "text-field": ["get", "point_count_abbreviated"] as any,
-      "text-font": ["Open Sans Regular", "Noto Sans Regular"],
+      "text-font": TEXT_FONT,
       "text-size": 12,
     },
     paint: { "text-color": "#ffffff" },
@@ -186,7 +192,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     filter: ["!", ["has", "point_count"]] as any,
     layout: {
       "text-field": ["get", "name"] as any,
-      "text-font": ["Open Sans Regular", "Noto Sans Regular"],
+      "text-font": TEXT_FONT,
       "text-size": 11,
       "text-anchor": "top" as const,
       "text-offset": [0, 0.9] as [number, number],

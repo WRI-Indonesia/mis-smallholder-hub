@@ -200,6 +200,9 @@ Sistem menu mendukung hierarki sampai **3 level maksimal**:
 - **Override eksplisit** di level lebih dalam meng-override inheritance (revoke atau grant)
 - Contoh: User punya VIEW di "Pelatihan" (level 2) → otomatis VIEW di "Peserta Pelatihan" (level 3), kecuali ada explicit REVOKE
 
+> [!WARNING]
+> **Cascade = risiko over-grant.** Grant pada menu **induk** mewariskan permission ke **semua** anak (termasuk menu sensitif seperti User/Role/Menu Management). Untuk akses **granular**, grant di level **anak**, jangan induk. Sidebar (`filterMenuTreeByAccess` di `menu-utils.ts`) tetap menampilkan induk sebagai **container** selama salah satu anaknya ter-grant — jadi grant per-anak **tidak** memerlukan grant induk. Konsekuensi: jangan mensyaratkan induk ter-grant hanya agar anak tampil. (Audit lintas-role: `scripts/local/audit-cascade.ts`.)
+
 **UI Guidelines:**
 - **Max children:** Level 2 maksimal 5 children (level 3) — hindari clutter, pertimbangkan pagination/search jika > 5
 - **Dynamic route:** Level 3 gunakan dynamic route jika context-specific: `/admin/master-data/training/[id]/participants`
@@ -340,6 +343,7 @@ Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ik
 
 Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (koordinat, polygon, area):
 - **Map Display**: Gunakan MapLibre GL JS untuk menampilkan peta interaktif
+- **Fonts/Glyphs**: `text-font` pada symbol layer wajib **font tunggal** yang tersedia di server glyph (`fonts.openmaptiles.org`), mis. `["Open Sans Regular"]`. **Jangan** pakai fontstack gabungan (mis. `["Open Sans Regular", "Noto Sans Regular"]`) — server tidak melayaninya dan malah membalas HTML, sehingga MapLibre gagal parse PBF: `Unable to load glyph range 0, 0-255 / Unimplemented type: 4`.
 - **Polygon Viewer**: 
   - Parse GeoJSON polygon dari database
   - Render polygon sebagai layer di map dengan styling (fill color, stroke)
