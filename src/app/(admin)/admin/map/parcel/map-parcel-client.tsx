@@ -14,6 +14,7 @@ import type {
   MapGroupOption,
 } from "@/types/map";
 import { MapControlPanel, type LayerVisibility } from "./map-control-panel";
+import { DEFAULT_OVERLAY_STATE, type OverlayState } from "./map-overlays";
 
 const MapCanvas = dynamic(
   () => import("./map-canvas").then((m) => m.MapCanvas),
@@ -42,6 +43,7 @@ export function MapParcelClient({ provinces }: Props) {
     parcelPoints: true,
     parcelAreas: true,
   });
+  const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAY_STATE);
   const [isPending, startTransition] = useTransition();
 
   // Refetch districts when province changes.
@@ -106,7 +108,7 @@ export function MapParcelClient({ provinces }: Props) {
 
   return (
     <div className="relative -m-6 h-[calc(100vh-3.5rem)] w-auto overflow-hidden">
-      <MapCanvas data={mapData} layers={layers} />
+      <MapCanvas data={mapData} layers={layers} overlays={overlays} />
 
       <MapControlPanel
         provinces={provinces}
@@ -125,6 +127,8 @@ export function MapParcelClient({ provinces }: Props) {
         counts={mapData?.counts ?? null}
         layers={layers}
         onLayersChange={setLayers}
+        overlays={overlays}
+        onOverlaysChange={setOverlays}
       />
     </div>
   );

@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { getFarmerTraining, getParcelPassport } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem } from "@/types/map";
 import type { LayerVisibility } from "./map-control-panel";
+import { MAP_OVERLAYS, overlayTileUrl, type OverlayState } from "./map-overlays";
 
 const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
 
@@ -73,9 +74,10 @@ type SelectedFeature = {
 interface Props {
   data: MapData | null;
   layers: LayerVisibility;
+  overlays: OverlayState;
 }
 
-export function MapCanvas({ data, layers }: Props) {
+export function MapCanvas({ data, layers, overlays }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -195,6 +197,26 @@ export function MapCanvas({ data, layers }: Props) {
           e.target.getCanvas().style.cursor = e.features?.length ? "pointer" : "";
         }}
       >
+        {/* Peta lainnya (raster overlay) — below farmer data layers.
+            Rendered in reverse so the first entry in MAP_OVERLAYS ends up on top. */}
+        {[...MAP_OVERLAYS].reverse().map((o) => (
+          <Source
+            key={o.key}
+            id={`overlay-${o.key}`}
+            type="raster"
+            tiles={[overlayTileUrl(o.key)]}
+            tileSize={256}
+            attribution="SIGAP KLHK / Kementerian Kehutanan"
+          >
+            <Layer
+              id={`overlay-${o.key}-layer`}
+              type="raster"
+              layout={vis(!!overlays.visible[o.key])}
+              paint={{ "raster-opacity": overlays.opacity }}
+            />
+          </Source>
+        ))}
+
         {/* Area lahan (polygon) — bottom */}
         <Source id="parcel-area-source" type="geojson" data={parcelAreaGeojson}>
           <Layer
