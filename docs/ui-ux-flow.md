@@ -75,7 +75,7 @@
 
 ```
 📊 Dashboard (✅ DASH-01)
-   ├── ✅ Main Dashboard — Snapshot-backed: 10 summary cards (5/baris, incl. Petani L/P) + filter Distrik/KT/Tahun + peta MapLibre (cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
+   ├── ✅ Main Dashboard — Snapshot-backed: 10 summary cards (5/baris, incl. Petani L/P) + filter Distrik/KT/Tahun + peta MapLibre (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
    └── 🔲 Dashboard BMP (DASH-04) — Best Management Practice metrics
 
 📁 Master Data
