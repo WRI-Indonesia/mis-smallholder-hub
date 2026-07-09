@@ -3,6 +3,7 @@ import { AppSidebarClient } from "@/components/layout/admin/app-sidebar-client";
 import { getMenuItems } from "@/server/actions/menu";
 import { getAccessibleMenuKeys } from "@/lib/rbac";
 import { auth } from "@/lib/auth";
+import { filterMenuTreeByAccess } from "@/lib/menu-utils";
 import type { Sidebar } from "@/components/ui/sidebar";
 
 export async function AppSidebar(
@@ -23,21 +24,12 @@ export async function AppSidebar(
     return <AppSidebarClient menuItems={allMenuItems} user={user} {...props} />;
   }
 
-  // Other roles: filter by permission
-  const accessibleKeys = await getAccessibleMenuKeys(role, session?.user?.id);
- 
-  function filterMenuTree(items: any[]): any[] {
-    return items
-      .filter((item) => accessibleKeys.includes(item.key))
-      .map((item) => ({
-        ...item,
-        children: filterMenuTree(item.children || []),
-      }))
-      .filter((item) => (item.children && item.children.length > 0) || accessibleKeys.includes(item.key));
-  }
- 
-  const filteredMenuItems = filterMenuTree(allMenuItems);
- 
+  // Other roles: filter by permission (Set → O(1) membership per node).
+  const accessibleKeys = new Set(
+    await getAccessibleMenuKeys(role, session?.user?.id)
+  );
+  const filteredMenuItems = filterMenuTreeByAccess(allMenuItems, accessibleKeys);
+
   return <AppSidebarClient menuItems={filteredMenuItems} user={user} {...props} />;
 }
 

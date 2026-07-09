@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { usePathname } from "next/navigation";
 import { NavMain } from "@/components/layout/admin/nav-main";
+import { NavSearch } from "@/components/layout/admin/nav-search";
 import { NavUser } from "@/components/layout/admin/nav-user";
 import {
   Sidebar,
@@ -40,6 +42,31 @@ export function AppSidebarClient({ menuItems, user, ...props }: AppSidebarClient
     })),
   }));
 
+  const pathname = usePathname();
+
+  // Open-state for top-level groups; shared so "Tutup semua" can close them all.
+  // Initialised once: open only groups that contain the active route.
+  const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(
+    () => {
+      const initial: Record<string, boolean> = {};
+      for (const item of navItems) {
+        if (!item.items || item.items.length === 0) continue;
+        initial[item.title] =
+          !!item.isActive ||
+          item.items.some((subItem) => pathname.startsWith(subItem.url));
+      }
+      return initial;
+    }
+  );
+
+  const collapseAll = () =>
+    setOpenGroups((prev) => {
+      const next: Record<string, boolean> = {};
+      for (const key of Object.keys(prev)) next[key] = false;
+      return next;
+    });
+
+  const [query, setQuery] = React.useState("");
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -58,9 +85,19 @@ export function AppSidebarClient({ menuItems, user, ...props }: AppSidebarClient
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <NavSearch
+          query={query}
+          setQuery={setQuery}
+          onCollapseAll={collapseAll}
+        />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} />
+        <NavMain
+          items={navItems}
+          openGroups={openGroups}
+          setOpenGroups={setOpenGroups}
+          query={query}
+        />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={{ name: user.name, email: user.email, avatar: "" }} />

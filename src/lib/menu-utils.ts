@@ -34,6 +34,31 @@ export function buildMenuTree(
 }
 
 /**
+ * Filter a menu tree down to what a user may access. A node is kept if its own
+ * key is accessible OR it still has an accessible descendant — so a parent can
+ * render purely as a container when only a specific child is granted, without
+ * granting the parent (which would cascade VIEW to every sibling).
+ *
+ * `accessibleKeys` is a Set for O(1) membership checks (the tree is walked once
+ * per node, so a linear `Array.includes` would be O(n·k)).
+ */
+export function filterMenuTreeByAccess(
+  items: MenuItem[],
+  accessibleKeys: Set<string>
+): MenuItem[] {
+  return items
+    .map((item) => ({
+      ...item,
+      children: filterMenuTreeByAccess(item.children || [], accessibleKeys),
+    }))
+    .filter(
+      (item) =>
+        accessibleKeys.has(item.key) ||
+        (item.children != null && item.children.length > 0)
+    );
+}
+
+/**
  * Validates if adding/updating a menu item under a parentKey does not exceed maxDepth (3).
  * If the menu tree would have a depth > 3, it should return false.
  * Items is the list of all existing menu items.

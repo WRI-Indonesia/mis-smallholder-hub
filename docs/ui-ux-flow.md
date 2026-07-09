@@ -73,6 +73,8 @@
 
 ## Admin Sidebar Menu (Compact View)
 
+> **Perilaku sidebar:** header punya **filter pencarian menu** (input, fokus via Ctrl/⌘K, hapus via Esc/✕) yang memfilter pohon menu secara live + tombol **Tutup semua** (collapse-all). Menu induk otomatis tampil sebagai **container** bila salah satu anaknya ter-grant meski induk tak di-grant (lihat `rule.md` §RBAC Permission Inheritance). Pencarian hanya menampilkan menu sesuai hak akses user.
+
 ```
 📊 Dashboard (✅ DASH-01)
    ├── ✅ Main Dashboard — Snapshot-backed: 10 summary cards (5/baris, incl. Petani L/P) + filter Distrik/KT/Tahun + peta MapLibre (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT

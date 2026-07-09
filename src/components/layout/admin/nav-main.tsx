@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -10,7 +11,6 @@ import {
 } from "@/components/ui/collapsible"
 import {
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,34 +20,39 @@ import {
 } from "@/components/ui/sidebar"
 import { ChevronRightIcon } from "lucide-react"
 import { ICON_MAP } from "@/lib/icon-map"
+import type { NavItem } from "@/components/layout/admin/nav-types"
+import { filterNavByQuery } from "@/components/layout/admin/nav-filter"
 
 export function NavMain({
   items,
+  openGroups,
+  setOpenGroups,
+  query,
 }: {
-  items: {
-    title: string
-    url: string
-    icon?: string
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-      icon?: string
-      items?: {
-        title: string
-        url: string
-        icon?: string
-      }[]
-    }[]
-  }[]
+  items: NavItem[]
+  openGroups: Record<string, boolean>
+  setOpenGroups: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  query: string
 }) {
   const pathname = usePathname()
- 
+
+  const filtering = query.trim().length > 0
+  const displayItems = filterNavByQuery(items, query)
+
+  if (filtering && displayItems.length === 0) {
+    return (
+      <SidebarGroup>
+        <p className="px-2 py-4 text-sm text-muted-foreground">
+          Menu tidak ditemukan.
+        </p>
+      </SidebarGroup>
+    )
+  }
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Menu Admin</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => {
+        {displayItems.map((item) => {
           const RootIcon = item.icon ? ICON_MAP[item.icon] : null
  
           // If no sub-items, render a simple link
@@ -66,12 +71,13 @@ export function NavMain({
             )
           }
  
-          const isCollapsibleOpen = item.isActive || item.items?.some((subItem) => pathname.startsWith(subItem.url))
- 
           return (
             <Collapsible
               key={item.title}
-              defaultOpen={isCollapsibleOpen}
+              open={filtering || (openGroups[item.title] ?? false)}
+              onOpenChange={(open) =>
+                setOpenGroups((prev) => ({ ...prev, [item.title]: open }))
+              }
               className="group/collapsible"
               render={<SidebarMenuItem />}
             >
@@ -107,8 +113,8 @@ export function NavMain({
 
                     return (
                       <Collapsible
-                        key={subItem.title}
-                        defaultOpen={isSubCollapsibleOpen}
+                        key={subItem.title + (filtering ? "-f" : "")}
+                        defaultOpen={filtering || isSubCollapsibleOpen}
                         className="group/subcollapsible w-full"
                         render={<SidebarMenuSubItem />}
                       >

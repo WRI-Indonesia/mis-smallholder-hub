@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-07-09 (MAP-01 #113: section **Peta Lainnya** (overlay referensi SIGAP KLHK/Kemenhut via proxy tile `api/map-overlay/[key]`) + section **Tambah Data GIS Lain** (user tambah layer WMS/Shapefile/GeoJSON, parse di browser) ditambahkan ke Peta Lahan. Sebelumnya, #99 DASH-01 Dashboard Snapshot selesai: Main Dashboard `/admin/dashboard/main` + peta MapLibre + snapshot module `/admin/tools/snapshot` + `MainDashboardSnapshot` model/migration; test lokal 19 files / 216 tests ✅. Sebelumnya: #107 RPT-01 & #108 RPT-02 ✅; #109 RPT-03 siap dikerjakan. Baru: stream `MAP` + **MAP-01 Map/Peta Lahan (#113) selesai** — peta full-bleed + filter floating + info popup accordion (Detail/Pelatihan lazy-load/Produksi dummy); test 20 files / 227 ✅)
+**Last updated:** 2026-07-09 (MAP-01 #113: section **Peta Lainnya** (overlay referensi SIGAP KLHK/Kemenhut via proxy tile `api/map-overlay/[key]`) + section **Tambah Data GIS Lain** (user tambah layer WMS/Shapefile/GeoJSON, parse di browser) ditambahkan ke Peta Lahan. Sebelumnya, #99 DASH-01 Dashboard Snapshot selesai: Main Dashboard `/admin/dashboard/main` + peta MapLibre + snapshot module `/admin/tools/snapshot` + `MainDashboardSnapshot` model/migration; test lokal 19 files / 216 tests ✅. Sebelumnya: #107 RPT-01 & #108 RPT-02 ✅; #109 RPT-03 siap dikerjakan. Baru: stream `MAP` + **MAP-01 Map/Peta Lahan (#113) selesai** — peta full-bleed + filter floating + info popup accordion (Detail/Pelatihan lazy-load/Produksi dummy); test 20 files / 227 ✅. **Navigation/RBAC hardening (2026-07-09):** sidebar dapat **filter pencarian menu** (Ctrl/⌘K) + tombol **Tutup semua**; `filterMenuTreeByAccess` (menu-utils) menampilkan induk sebagai container tanpa perlu grant induk → menutup **cascade over-grant** (role MANAGEMENT sempat bocor akses Settings→User/Role/Menu Mgmt); MapLibre glyph fix (single-font); +10 test `menu-filter`; test 22 files / 264 ✅)
 
 **Next management review:** 2026-07-14
 
@@ -39,7 +39,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Report              | 🟠 Partial      | RPT-01 Petani (#107) ✅ & RPT-02 Pelatihan (#108) ✅ selesai (route + `report.ts` + UI + test). **Issue #109 (RPT-03 Produksi) siap dikerjakan.** |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region bulk upload belum ada. |
 | Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
-| Testing             | ✅ Strong       | Vitest: 18 files / 208 tests passed. Coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅; need dashboard. |
+| Testing             | ✅ Strong       | Vitest: 22 files / 264 tests passed. Coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅; need dashboard. |
 
 ### Progress Snapshot
 
