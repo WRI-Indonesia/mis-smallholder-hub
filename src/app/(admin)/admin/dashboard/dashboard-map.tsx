@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
-import Map, { Source, Layer, Popup, type MapRef } from "react-map-gl/maplibre";
+import Map, { Source, Layer, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPin, Search, Check, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -77,7 +77,6 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
   }, [resolvedTheme]);
 
   const [searchOpen, setSearchOpen] = useState(false);
-  const [hoverInfo, setHoverInfo] = useState<{ longitude: number; latitude: number; name: string } | null>(null);
 
   const mapped = useMemo(
     () => kelompokTaniList.filter((kt) => kt.locationLat != null && kt.locationLong != null),
@@ -173,22 +172,35 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     },
   };
 
+  // Label warna mengikuti basemap agar tetap terbaca (light/dark/satelit).
+  const labelColors =
+    styleKey === "dark"
+      ? { text: "#f8fafc", halo: "#0f172a" }
+      : styleKey === "hybrid"
+        ? { text: "#ffffff", halo: "#000000" }
+        : { text: "#1f2937", halo: "#ffffff" };
+
+  const pointLabelLayer = {
+    id: "unclustered-label",
+    type: "symbol" as const,
+    filter: ["!", ["has", "point_count"]] as any,
+    layout: {
+      "text-field": ["get", "name"] as any,
+      "text-font": ["Open Sans Regular", "Noto Sans Regular"],
+      "text-size": 11,
+      "text-anchor": "top" as const,
+      "text-offset": [0, 0.9] as [number, number],
+      "text-allow-overlap": false,
+    },
+    paint: {
+      "text-color": labelColors.text,
+      "text-halo-color": labelColors.halo,
+      "text-halo-width": 1.5,
+    },
+  };
+
   const handleMouseMove = (e: any) => {
-    const feature = e.features?.[0];
-    if (!feature) {
-      setHoverInfo(null);
-      e.target.getCanvas().style.cursor = "";
-      return;
-    }
-    const [longitude, latitude] = feature.geometry.coordinates;
-    if (feature.properties?.cluster) {
-      setHoverInfo({ longitude, latitude, name: `${feature.properties.point_count} Kelompok Tani` });
-    } else if (feature.properties?.id) {
-      setHoverInfo({ longitude, latitude, name: feature.properties.name });
-    } else {
-      setHoverInfo(null);
-    }
-    e.target.getCanvas().style.cursor = "pointer";
+    e.target.getCanvas().style.cursor = e.features?.[0] ? "pointer" : "";
   };
 
   const handleClick = (e: any) => {
@@ -236,7 +248,6 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={(e) => {
-          setHoverInfo(null);
           e.target.getCanvas().style.cursor = "";
         }}
       >
@@ -244,21 +255,8 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
           <Layer {...clusterLayer} />
           <Layer {...clusterCountLayer} />
           <Layer {...pointLayer} />
+          <Layer {...pointLabelLayer} />
         </Source>
-
-        {hoverInfo && (
-          <Popup
-            longitude={hoverInfo.longitude}
-            latitude={hoverInfo.latitude}
-            closeButton={false}
-            closeOnClick={false}
-            offset={14}
-            anchor="bottom"
-            className="dashboard-kt-popup"
-          >
-            <span className="text-xs font-semibold">{hoverInfo.name}</span>
-          </Popup>
-        )}
       </Map>
 
       {/* Top-left controls: search KT + see all */}
