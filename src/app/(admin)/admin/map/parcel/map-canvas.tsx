@@ -13,7 +13,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { getFarmerTraining, getParcelPassport } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem } from "@/types/map";
 import type { LayerVisibility } from "./map-control-panel";
-import { MAP_OVERLAYS, overlayTileUrl, type OverlayState } from "./map-overlays";
+import {
+  MAP_OVERLAYS,
+  overlayTileUrl,
+  geojsonBounds,
+  type OverlayState,
+  type CustomLayer,
+} from "./map-overlays";
 
 const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
 
@@ -75,9 +81,10 @@ interface Props {
   data: MapData | null;
   layers: LayerVisibility;
   overlays: OverlayState;
+  customLayers: CustomLayer[];
 }
 
-export function MapCanvas({ data, layers, overlays }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -159,6 +166,19 @@ export function MapCanvas({ data, layers, overlays }: Props) {
     fitAll();
   }, [fitAll]);
 
+  // Zoom to a newly-added vector GIS layer so the user can see where it landed.
+  const fittedLayerIds = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    for (const l of customLayers) {
+      if (l.kind !== "vector" || fittedLayerIds.current.has(l.id)) continue;
+      fittedLayerIds.current.add(l.id);
+      const bounds = geojsonBounds(l.data);
+      if (bounds) map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 600 });
+    }
+  }, [customLayers]);
+
   const vis = (on: boolean) => ({ visibility: (on ? "visible" : "none") as "visible" | "none" });
 
   const handleClick = (e: any) => {
@@ -196,6 +216,11 @@ export function MapCanvas({ data, layers, overlays }: Props) {
         onMouseMove={(e) => {
           e.target.getCanvas().style.cursor = e.features?.length ? "pointer" : "";
         }}
+        onError={(e) => {
+          // Swallow tile/source fetch failures (e.g. upstream WMS down or no CORS)
+          // so they don't surface as a fatal dev overlay; log for diagnostics.
+          console.warn("Map source error:", e.error?.message ?? e.error);
+        }}
       >
         {/* Peta lainnya (raster overlay) — below farmer data layers.
             Rendered in reverse so the first entry in MAP_OVERLAYS ends up on top. */}
@@ -216,6 +241,48 @@ export function MapCanvas({ data, layers, overlays }: Props) {
             />
           </Source>
         ))}
+
+        {/* GIS tambahan dari user ("Tambah Data GIS Lain") — di atas overlay referensi,
+            di bawah data petani. WMS → raster; vektor → fill+line+circle. */}
+        {customLayers.map((l) =>
+          l.kind === "wms" ? (
+            <Source
+              key={l.id}
+              id={`custom-${l.id}`}
+              type="raster"
+              tiles={[l.tileUrl]}
+              tileSize={256}
+            >
+              <Layer id={`custom-${l.id}-raster`} type="raster" layout={vis(l.visible)} />
+            </Source>
+          ) : (
+            <Source key={l.id} id={`custom-${l.id}`} type="geojson" data={l.data}>
+              <Layer
+                id={`custom-${l.id}-fill`}
+                type="fill"
+                layout={vis(l.visible)}
+                paint={{ "fill-color": l.color, "fill-opacity": 0.25 }}
+              />
+              <Layer
+                id={`custom-${l.id}-line`}
+                type="line"
+                layout={vis(l.visible)}
+                paint={{ "line-color": l.color, "line-width": 1.5 }}
+              />
+              <Layer
+                id={`custom-${l.id}-circle`}
+                type="circle"
+                layout={vis(l.visible)}
+                paint={{
+                  "circle-color": l.color,
+                  "circle-radius": 4,
+                  "circle-stroke-width": 1,
+                  "circle-stroke-color": "#ffffff",
+                }}
+              />
+            </Source>
+          )
+        )}
 
         {/* Area lahan (polygon) — bottom */}
         <Source id="parcel-area-source" type="geojson" data={parcelAreaGeojson}>
@@ -330,11 +397,10 @@ export function MapCanvas({ data, layers, overlays }: Props) {
               userPickedStyle.current = true;
               setStyleKey(key);
             }}
-            className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
-              styleKey === key
+            className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${styleKey === key
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
+              }`}
           >
             {key}
           </button>

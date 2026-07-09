@@ -11,7 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { MapData, MapSelectOption, MapGroupOption } from "@/types/map";
-import { MAP_OVERLAYS, type OverlayDef, type OverlayState } from "./map-overlays";
+import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } from "./map-overlays";
+import { CustomGisSection } from "./map-custom-gis";
 
 export type LayerVisibility = {
   kt: boolean;
@@ -38,6 +39,10 @@ interface Props {
   onLayersChange: (layers: LayerVisibility) => void;
   overlays: OverlayState;
   onOverlaysChange: (overlays: OverlayState) => void;
+  customLayers: CustomLayer[];
+  onAddCustomLayer: (layer: CustomLayer) => void;
+  onRemoveCustomLayer: (id: string) => void;
+  onToggleCustomLayer: (id: string, visible: boolean) => void;
 }
 
 interface ComboboxProps {
@@ -166,6 +171,7 @@ export function MapControlPanel(props: Props) {
     onLoad, isLoading, filterOpen, onFilterOpenChange,
     counts, layers, onLayersChange,
     overlays, onOverlaysChange,
+    customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer,
   } = props;
 
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -312,6 +318,15 @@ export function MapControlPanel(props: Props) {
           </div>
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Tambah GIS Lain section — user-added WMS / Shapefile / GeoJSON layers */}
+      <Separator />
+      <CustomGisSection
+        layers={customLayers}
+        onAdd={onAddCustomLayer}
+        onRemove={onRemoveCustomLayer}
+        onToggle={onToggleCustomLayer}
+      />
     </Card>
   );
 }

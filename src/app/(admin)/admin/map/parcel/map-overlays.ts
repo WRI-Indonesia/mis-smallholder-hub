@@ -7,6 +7,8 @@
  * so MapLibre can overlay them beneath the farmer data layers.
  */
 
+import type { FeatureCollection, Feature, Geometry } from "geojson";
+
 const SIGAP_BASE =
   "https://geoportal.menlhk.go.id/server/rest/services/SIGAP_Interaktif";
 
@@ -81,3 +83,97 @@ export const DEFAULT_OVERLAY_STATE: OverlayState = {
   visible: {},
   opacity: 0.7,
 };
+
+// ---------------------------------------------------------------------------
+// User-added GIS layers ("Tambah Data GIS Lain") — session-only, not persisted.
+// ---------------------------------------------------------------------------
+
+/** A layer added by the user at runtime: a WMS/tile URL or a parsed vector set. */
+export type CustomLayer = {
+  id: string;
+  name: string;
+  /** Swatch / vector styling color. */
+  color: string;
+  visible: boolean;
+} & (
+    | { kind: "wms"; tileUrl: string }
+    | { kind: "vector"; data: FeatureCollection }
+  );
+
+/** Palette cycled for user-added layers so each is visually distinct. */
+export const CUSTOM_LAYER_COLORS = [
+  "#8b5cf6",
+  "#ec4899",
+  "#14b8a6",
+  "#f59e0b",
+  "#6366f1",
+  "#ef4444",
+];
+
+/**
+ * Build a MapLibre raster tile URL from a user-provided WMS endpoint. If the
+ * URL is already a tile template (contains `{z}` or `{bbox...}`), it is used
+ * as-is; otherwise standard WMS 1.1.1 GetMap params are appended with the
+ * `{bbox-epsg-3857}` token.
+ */
+export function buildWmsTileUrl(url: string, layers: string): string {
+  if (/\{(z|bbox)/i.test(url)) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  const params =
+    `service=WMS&request=GetMap&version=1.1.1` +
+    `&layers=${encodeURIComponent(layers)}&styles=` +
+    `&format=image/png&transparent=true&srs=EPSG:3857` +
+    `&width=256&height=256&bbox={bbox-epsg-3857}`;
+  return `${url}${sep}${params}`;
+}
+
+/** Normalize any GeoJSON object (FeatureCollection/Feature/Geometry) into a FeatureCollection. */
+export function toFeatureCollection(raw: unknown): FeatureCollection {
+  const obj = raw as { type?: string; features?: unknown; geometry?: unknown };
+  if (!obj || typeof obj !== "object" || !obj.type) {
+    throw new Error("Bukan objek GeoJSON yang valid");
+  }
+  if (obj.type === "FeatureCollection") {
+    if (!Array.isArray(obj.features)) throw new Error("FeatureCollection tanpa 'features'");
+    return raw as FeatureCollection;
+  }
+  if (obj.type === "Feature") {
+    return { type: "FeatureCollection", features: [raw as Feature] };
+  }
+  // Bare geometry → wrap as a single feature.
+  return {
+    type: "FeatureCollection",
+    features: [{ type: "Feature", properties: {}, geometry: raw as Geometry }],
+  };
+}
+
+/** Bounding box of a FeatureCollection as [[minLng,minLat],[maxLng,maxLat]], or null if empty. */
+export function geojsonBounds(
+  fc: FeatureCollection
+): [[number, number], [number, number]] | null {
+  let minLng = Infinity,
+    minLat = Infinity,
+    maxLng = -Infinity,
+    maxLat = -Infinity;
+  const walk = (coords: unknown) => {
+    if (Array.isArray(coords)) {
+      if (typeof coords[0] === "number" && typeof coords[1] === "number") {
+        const [lng, lat] = coords as [number, number];
+        minLng = Math.min(minLng, lng);
+        maxLng = Math.max(maxLng, lng);
+        minLat = Math.min(minLat, lat);
+        maxLat = Math.max(maxLat, lat);
+      } else {
+        for (const c of coords) walk(c);
+      }
+    }
+  };
+  for (const f of fc.features) {
+    if (f.geometry && "coordinates" in f.geometry) walk(f.geometry.coordinates);
+  }
+  if (minLng === Infinity) return null;
+  return [
+    [minLng, minLat],
+    [maxLng, maxLat],
+  ];
+}
