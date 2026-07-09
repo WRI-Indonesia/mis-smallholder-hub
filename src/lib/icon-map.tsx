@@ -58,6 +58,7 @@ import {
   File,
   FolderOpen,
   ClipboardList,
+  ClipboardCheck,
   // Tools & Actions
   Upload,
   Download,
@@ -139,6 +140,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   File: File,
   FolderOpen: FolderOpen,
   ClipboardList: ClipboardList,
+  ClipboardCheck: ClipboardCheck,
   // Tools & Actions
   Upload: Upload,
   Download: Download,
