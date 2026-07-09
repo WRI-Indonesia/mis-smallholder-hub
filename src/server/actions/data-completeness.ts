@@ -61,6 +61,13 @@ export async function analyzeFarmerGroupCompleteness(
     throw new Error("Tidak memiliki akses ke Kelompok Tani ini");
   }
 
+  // Paket wajib (isActive, exclude OTHER) — kolom matriks & basis cakupan pelatihan.
+  const trainingPackages = await prisma.trainingPackage.findMany({
+    where: { isActive: true, code: { not: "OTHER" } },
+    select: { code: true, name: true },
+    orderBy: { code: "asc" },
+  });
+
   const group = await prisma.farmerGroup.findFirst({
     where: {
       id: farmerGroupId,
@@ -76,7 +83,10 @@ export async function analyzeFarmerGroupCompleteness(
       locationLat: true,
       locationLong: true,
       district: { select: { id: true, name: true } },
-      activities: { where: { isActive: true }, select: { id: true } },
+      activities: {
+        where: { isActive: true },
+        select: { package: { select: { code: true } } },
+      },
       farmers: {
         where: { isActive: true },
         orderBy: { name: "asc" },
@@ -99,9 +109,15 @@ export async function analyzeFarmerGroupCompleteness(
               landStatus: true,
             },
           },
+          // Partisipasi hanya dihitung untuk activity KT ini yang aktif (Q3).
           trainingParticipants: {
-            where: { isActive: true },
-            select: { id: true, preTestScore: true, postTestScore: true },
+            where: { isActive: true, activity: { isActive: true, farmerGroupId } },
+            select: {
+              id: true,
+              preTestScore: true,
+              postTestScore: true,
+              activity: { select: { package: { select: { code: true } } } },
+            },
           },
           productionRecords: {
             where: { isActive: true },
@@ -116,5 +132,21 @@ export async function analyzeFarmerGroupCompleteness(
     throw new Error("Kelompok Tani tidak ditemukan atau di luar akses Anda");
   }
 
-  return computeCompleteness(group as CompletenessGroupInput);
+  // Flatten nested activity→package into the shape expected by the pure logic.
+  const input: CompletenessGroupInput = {
+    ...group,
+    trainingPackages,
+    activities: group.activities.map((a) => ({ packageCode: a.package.code })),
+    farmers: group.farmers.map((f) => ({
+      ...f,
+      trainingParticipants: f.trainingParticipants.map((tp) => ({
+        id: tp.id,
+        preTestScore: tp.preTestScore,
+        postTestScore: tp.postTestScore,
+        packageCode: tp.activity.package.code,
+      })),
+    })),
+  };
+
+  return computeCompleteness(input);
 }

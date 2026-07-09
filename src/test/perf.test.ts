@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import bcrypt from "bcryptjs";
+import { computeCompleteness, computePelatihanDomain } from "@/lib/data-completeness";
+import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
@@ -76,5 +78,74 @@ describe("Performance - Auth operations", () => {
     console.log(`  RBAC resolve (50 districts): ${duration.toFixed(3)}ms`);
     expect(duration).toBeLessThan(1);
     expect(ids.size).toBe(32); // 30 from provinces + 2 direct
+  });
+});
+
+describe("Performance - DA-02b Training coverage (pure logic)", () => {
+  const PACKAGES = [
+    { code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1 - BMP" },
+    { code: "PAKET_2_MK", name: "Paket 2 - MK" },
+    { code: "PAKET_2_K3", name: "Paket 2 - K3" },
+    { code: "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV", name: "Paket 3 & 4" },
+  ];
+
+  // Deterministic synthetic farmers (no RNG) with partial, varied coverage.
+  function makeFarmers(n: number): CompletenessFarmerInput[] {
+    return Array.from({ length: n }, (_, i) => ({
+      id: `db-${i}`,
+      farmerId: `F-${i}`,
+      name: `Petani ${i}`,
+      nik: i % 2 === 0 ? "1234567890123456" : null,
+      address: i % 3 === 0 ? null : "Jl. Mawar",
+      birthDate: new Date("1990-01-01"),
+      joinedYear: 2020,
+      landParcels: i % 2 === 0 ? [{ parcelId: `P-${i}`, geometry: { type: "Polygon" }, area: 1.5, plantingYear: 2018, cropType: "Palm", landStatus: "Owned" }] : [],
+      // Each farmer attends a rotating subset of packages → mix of complete/partial.
+      trainingParticipants: PACKAGES.filter((_, pi) => (i + pi) % 4 !== 0).map((p) => ({
+        id: `tp-${i}-${p.code}`,
+        preTestScore: i % 2 === 0 ? 80 : null,
+        postTestScore: i % 3 === 0 ? 90 : null,
+        packageCode: p.code,
+      })),
+      productionRecords: i % 2 === 0 ? [{ id: `pr-${i}`, parcelId: `P-${i}` }] : [],
+    }));
+  }
+
+  it("computePelatihanDomain handles 5000 farmers × 4 packages under 100ms", () => {
+    const farmers = makeFarmers(5000);
+    const activities = PACKAGES.map((p) => ({ packageCode: p.code }));
+
+    const start = performance.now();
+    const d = computePelatihanDomain(farmers, PACKAGES, activities);
+    const duration = performance.now() - start;
+
+    console.log(`  pelatihan coverage (5000 petani × 4 paket): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(100);
+    expect(d.training!.matrix.length).toBe(5000);
+    expect(d.training!.packageCoverage).toHaveLength(4);
+  });
+
+  it("computeCompleteness (all 5 domains, 5000 farmers) under 200ms", () => {
+    const grp: CompletenessGroupInput = {
+      id: "kt-perf",
+      name: "KT Perf",
+      code: "KTPERF",
+      abrv: "KP",
+      joinYear: 2015,
+      locationLat: 1.23,
+      locationLong: 103.4,
+      district: { id: "d-1", name: "Distrik A" },
+      activities: PACKAGES.map((p) => ({ packageCode: p.code })),
+      trainingPackages: PACKAGES,
+      farmers: makeFarmers(5000),
+    };
+
+    const start = performance.now();
+    const result = computeCompleteness(grp);
+    const duration = performance.now() - start;
+
+    console.log(`  computeCompleteness (5 domain, 5000 petani): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(200);
+    expect(result.totalFarmers).toBe(5000);
   });
 });

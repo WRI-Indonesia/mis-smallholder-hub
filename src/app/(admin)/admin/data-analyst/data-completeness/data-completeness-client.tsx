@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   AlertTriangle,
   CheckCircle2,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { analyzeFarmerGroupCompleteness, getFarmerGroupsForCompleteness } from "@/server/actions/data-completeness";
-import type { AnomalyItem, DataCompletenessResult, DomainResult } from "@/types/data-completeness";
+import type {
+  AnomalyItem,
+  DataCompletenessResult,
+  DomainResult,
+  TrainingCoverageDetail,
+} from "@/types/data-completeness";
 
 interface District {
   id: string;
@@ -113,7 +119,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
     const ringkasanRows = [
       { metrik: "Kelompok Tani", nilai: `${result.group.name}${result.group.code ? ` (${result.group.code})` : ""}` },
       { metrik: "District", nilai: result.group.districtName },
-      { metrik: "Skor Kesehatan Data", nilai: `${result.healthScore}%` },
+      { metrik: "Index Ketersediaan Data", nilai: `${result.healthScore}%` },
       { metrik: "Total Petani", nilai: result.totalFarmers },
       { metrik: "Total Anomali", nilai: result.totalAnomalies },
       { metrik: "Skor Profil KT", nilai: `${result.profileScore}%` },
@@ -135,11 +141,47 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
       ),
     }));
 
+    // Sheet tambahan untuk cakupan pelatihan per paket (DA-02b).
+    const training = result.domains.find((d) => d.domain === "pelatihan")?.training;
+    const trainingSheets = training
+      ? [
+          {
+            name: "Matriks Pelatihan",
+            columns: [
+              { header: "ID Petani", key: "farmerId" },
+              { header: "Nama Petani", key: "farmerName" },
+              ...training.packages.map((p) => ({ header: p.label, key: p.code })),
+            ],
+            data: training.matrix.map((row) => ({
+              farmerId: row.farmerId,
+              farmerName: row.farmerName,
+              ...Object.fromEntries(row.cells.map((c) => [c.code, c.done ? "Ya" : "Belum"])),
+            })),
+          },
+          {
+            name: "Petani Belum Lengkap",
+            columns: [
+              { header: "ID Petani", key: "farmerId" },
+              { header: "Nama Petani", key: "farmerName" },
+              { header: "Cakupan", key: "coverage" },
+              { header: "Paket yang Masih Kurang", key: "missing" },
+            ],
+            data: training.incompleteFarmers.map((f) => ({
+              farmerId: f.farmerId,
+              farmerName: f.farmerName,
+              coverage: `${f.doneCount}/${f.total} (${f.coveragePct}%)`,
+              missing: f.missing.join(", "),
+            })),
+          },
+        ]
+      : [];
+
     await exportMultiSheetToExcel({
       filename: `analisa-ketersediaan-${result.group.code || result.group.name}-${format(new Date(), "yyyyMMdd")}`,
       sheets: [
         { name: "Ringkasan", columns: [{ header: "Metrik", key: "metrik" }, { header: "Nilai", key: "nilai" }], data: ringkasanRows },
         ...domainSheets,
+        ...trainingSheets,
       ],
     });
   };
@@ -259,7 +301,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground">Skor Kesehatan Data</div>
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">Index Ketersediaan Data</div>
                     <div className={cn("text-3xl font-bold tabular-nums", scoreTone(result.healthScore).split(" ").slice(1).join(" "))}>
                       {result.healthScore}%
                     </div>
@@ -300,10 +342,14 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
           {/* Section 1: Profil KT */}
           <ProfileSection result={result} />
 
-          {/* Sections 2-5: domains */}
-          {result.domains.map((d) => (
-            <DomainSection key={d.domain} domain={d} />
-          ))}
+          {/* Sections 2-5: domains (Pelatihan pakai tampilan cakupan per paket) */}
+          {result.domains.map((d) =>
+            d.domain === "pelatihan" && d.training ? (
+              <TrainingSection key={d.domain} domain={d} />
+            ) : (
+              <DomainSection key={d.domain} domain={d} />
+            )
+          )}
         </div>
       )}
     </div>
@@ -446,25 +492,300 @@ function DomainSection({ domain }: { domain: DomainResult }) {
         ))}
       </div>
 
-      {/* Anomalies */}
+      {/* Anomalies — satu nested collapse per jenis anomali (analisa) */}
       {domain.anomalies.length === 0 ? (
         <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           Tidak ada anomali pada domain ini.
         </p>
       ) : (
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-3">
           {domain.anomalies.map((a) => (
-            <div key={a.key}>
-              <div className="mb-1.5 flex items-center gap-2">
-                <span className="text-sm font-medium">{a.label}</span>
-                <Badge variant="destructive">{a.count}</Badge>
-              </div>
-              {a.items.length > 0 && <AnomalyItemsTable items={a.items} />}
-            </div>
+            <SubCollapsible
+              key={a.key}
+              title={a.label}
+              defaultOpen={false}
+              badge={<Badge variant="destructive">{a.count}</Badge>}
+            >
+              {a.items.length > 0 ? (
+                <AnomalyItemsTable items={a.items} />
+              ) : (
+                <p className="text-sm text-muted-foreground">Tidak ada rincian entitas.</p>
+              )}
+            </SubCollapsible>
           ))}
         </div>
       )}
     </SectionShell>
+  );
+}
+
+// ── DA-02b: Domain Pelatihan dengan cakupan per paket (nested collapse per analisa) ──
+
+// Sub-section collapsible di dalam Domain Pelatihan (4a/4b/4c).
+function SubCollapsible({
+  title,
+  badge,
+  defaultOpen,
+  children,
+}: {
+  title: string;
+  badge?: React.ReactNode;
+  defaultOpen: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-lg border">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger
+          render={
+            <button className="flex w-full items-center justify-between gap-3 rounded-lg bg-muted/40 px-4 py-2.5 text-left">
+              <span className="text-sm font-semibold">{title}</span>
+              <span className="flex items-center gap-2">
+                {badge}
+                <ChevronDown className={cn("h-4 w-4 transition-transform", open ? "rotate-180" : "")} />
+              </span>
+            </button>
+          }
+        />
+        <CollapsibleContent>
+          <div className="border-t p-4">{children}</div>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+}
+
+function TrainingSection({ domain }: { domain: DomainResult }) {
+  const t = domain.training!;
+  const noActivityPackages = t.packageCoverage.filter((p) => !p.hasActivity);
+  return (
+    <SectionShell
+      title={domain.label}
+      icon={GraduationCap}
+      score={domain.score}
+      anomalyCount={domain.totalAnomalies}
+      defaultOpen={domain.totalAnomalies > 0}
+    >
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {domain.cards.map((card) => (
+          <div key={card.label} className="rounded-lg border bg-muted/30 p-3">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">{card.label}</div>
+            <div className="text-xl font-bold tabular-nums">{card.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Banner: paket tanpa aktivitas di KT */}
+      {noActivityPackages.length > 0 && (
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Belum ada aktivitas pelatihan di KT ini untuk paket:{" "}
+            {noActivityPackages.map((p) => p.label).join(", ")}.
+          </span>
+        </div>
+      )}
+
+      {t.packages.length === 0 ? (
+        <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          Belum ada paket pelatihan wajib terdaftar.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {/* 4a — Ringkasan per Paket */}
+          <SubCollapsible title="Ringkasan per Paket" defaultOpen>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {t.packageCoverage.map((p) => (
+                <PackageCoverageCard key={p.code} pkg={p} />
+              ))}
+            </div>
+          </SubCollapsible>
+
+          {/* 4b — Matriks Cakupan */}
+          <SubCollapsible
+            title="Matriks Cakupan"
+            defaultOpen={false}
+            badge={<Badge variant="secondary">{t.matrix.length} petani</Badge>}
+          >
+            <CoverageMatrix training={t} />
+          </SubCollapsible>
+
+          {/* 4c — Petani Belum Lengkap */}
+          <SubCollapsible
+            title="Petani Belum Lengkap"
+            defaultOpen={t.incompleteCount > 0}
+            badge={
+              t.incompleteCount > 0 ? (
+                <Badge variant="destructive">{t.incompleteCount}</Badge>
+              ) : (
+                <Badge variant="secondary" className="gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Lengkap
+                </Badge>
+              )
+            }
+          >
+            <IncompleteFarmersTable training={t} />
+          </SubCollapsible>
+        </div>
+      )}
+    </SectionShell>
+  );
+}
+
+function PackageCoverageCard({ pkg }: { pkg: TrainingCoverageDetail["packageCoverage"][number] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg border">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger
+          render={
+            <button className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left">
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">{pkg.label}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {pkg.covered}/{pkg.totalFarmers} sudah ikut · {pkg.notCovered} belum
+                </span>
+              </span>
+              <span className="flex items-center gap-2">
+                <ScoreBadge score={pkg.coveragePct} />
+                {pkg.notCovered > 0 && (
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", open ? "rotate-180" : "")} />
+                )}
+              </span>
+            </button>
+          }
+        />
+        {pkg.notCovered > 0 && (
+          <CollapsibleContent>
+            <div className="border-t px-3 py-2">
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">Petani belum ikut paket ini</p>
+              <AnomalyItemsTable items={pkg.notCoveredFarmers} />
+            </div>
+          </CollapsibleContent>
+        )}
+      </Collapsible>
+    </div>
+  );
+}
+
+const INITIAL_MATRIX_ROWS = 50;
+
+function CoverageMatrix({ training }: { training: TrainingCoverageDetail }) {
+  const [showAll, setShowAll] = useState(false);
+  const rows = showAll ? training.matrix : training.matrix.slice(0, INITIAL_MATRIX_ROWS);
+  const hasMore = training.matrix.length > INITIAL_MATRIX_ROWS;
+
+  if (training.matrix.length === 0) {
+    return <p className="text-sm text-muted-foreground">Belum ada petani aktif.</p>;
+  }
+
+  return (
+    <div className="rounded-md border">
+      <div className="max-h-96 overflow-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-10 bg-muted/70">
+            <tr className="border-b-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <th className="sticky left-0 z-10 bg-muted/70 px-3 py-2">Petani</th>
+              {training.packages.map((p) => (
+                <th key={p.code} className="px-3 py-2 text-center" title={p.label}>
+                  {p.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.farmerDbId} className="border-b last:border-0">
+                <td className="sticky left-0 bg-background px-3 py-1.5">
+                  <span className="font-medium">{row.farmerName}</span>
+                  <span className="ml-2 font-mono text-xs text-muted-foreground">{row.farmerId}</span>
+                </td>
+                {row.cells.map((c) => (
+                  <td key={c.code} className="px-3 py-1.5 text-center">
+                    {c.done ? (
+                      <Check className="mx-auto h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <X className="mx-auto h-4 w-4 text-red-500/70" />
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {hasMore && (
+        <div className="flex items-center justify-between border-t bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <span>Menampilkan {rows.length} dari {training.matrix.length} petani</span>
+          <Button variant="ghost" size="sm" className="h-7" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? "Ringkas" : `Tampilkan semua (${training.matrix.length})`}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IncompleteFarmersTable({ training }: { training: TrainingCoverageDetail }) {
+  const [showAll, setShowAll] = useState(false);
+  const rows = showAll ? training.incompleteFarmers : training.incompleteFarmers.slice(0, INITIAL_ANOMALY_ROWS);
+  const hasMore = training.incompleteFarmers.length > INITIAL_ANOMALY_ROWS;
+
+  if (training.incompleteFarmers.length === 0) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+        Semua petani sudah mengikuti seluruh paket wajib.
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-md border">
+      <div className="max-h-96 overflow-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-muted/70">
+            <tr className="border-b-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <th className="px-3 py-2">ID Petani</th>
+              <th className="px-3 py-2">Nama Petani</th>
+              <th className="px-3 py-2 text-center">Cakupan</th>
+              <th className="px-3 py-2">Paket yang Masih Kurang</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((f) => (
+              <tr key={f.farmerDbId} className="border-b last:border-0">
+                <td className="px-3 py-1.5 font-mono text-muted-foreground">{f.farmerId}</td>
+                <td className="px-3 py-1.5 font-medium">{f.farmerName}</td>
+                <td className="px-3 py-1.5 text-center tabular-nums">
+                  {f.doneCount}/{f.total} ({f.coveragePct}%)
+                </td>
+                <td className="px-3 py-1.5">
+                  <span className="flex flex-wrap gap-1">
+                    {f.missing.map((m) => (
+                      <Badge key={m} variant="outline" className="font-normal">
+                        {m}
+                      </Badge>
+                    ))}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {hasMore && (
+        <div className="flex items-center justify-between border-t bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <span>Menampilkan {rows.length} dari {training.incompleteFarmers.length} petani</span>
+          <Button variant="ghost" size="sm" className="h-7" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? "Ringkas" : `Tampilkan semua (${training.incompleteFarmers.length})`}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

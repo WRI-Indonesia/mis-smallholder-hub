@@ -95,7 +95,7 @@
 
 📉 Data Analyst (✅ DA-01, DA-02)
    ├── ✅ Ringkasan Petani (DA-01) — Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel export
-   └── ✅ Analisa Ketersediaan Data (DA-02) — Pilih distrik → KT → Analisa: skor kesehatan data + 5 section collapsible (Profil KT, Petani, Lahan, Pelatihan, Produksi) deteksi anomali & data belum lengkap (NIK kosong/invalid, petani tanpa lahan, belum pelatihan, tanpa produksi, dll) + Excel multi-sheet
+   └── ✅ Analisa Ketersediaan Data (DA-02) — Pilih distrik → KT → Analisa: Index Ketersediaan Data + 5 section collapsible (Profil KT, Petani, Lahan, Pelatihan, Produksi) deteksi anomali & data belum lengkap (NIK kosong/invalid, petani tanpa lahan, belum pelatihan, tanpa produksi, dll) + Excel multi-sheet
 
 📈 Report (🟠 Partial)
    ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
