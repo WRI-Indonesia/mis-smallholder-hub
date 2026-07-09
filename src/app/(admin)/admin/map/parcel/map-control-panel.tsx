@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { MapData, MapSelectOption, MapGroupOption } from "@/types/map";
+import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } from "./map-overlays";
+import { CustomGisSection } from "./map-custom-gis";
 
 export type LayerVisibility = {
   kt: boolean;
@@ -35,6 +37,12 @@ interface Props {
   counts: MapData["counts"] | null;
   layers: LayerVisibility;
   onLayersChange: (layers: LayerVisibility) => void;
+  overlays: OverlayState;
+  onOverlaysChange: (overlays: OverlayState) => void;
+  customLayers: CustomLayer[];
+  onAddCustomLayer: (layer: CustomLayer) => void;
+  onRemoveCustomLayer: (id: string) => void;
+  onToggleCustomLayer: (id: string, visible: boolean) => void;
 }
 
 interface ComboboxProps {
@@ -131,6 +139,30 @@ function LegendRow({ color, label, count, checked, onToggle, variant = "dot" }: 
   );
 }
 
+function OverlayRow({
+  def,
+  checked,
+  onToggle,
+}: {
+  def: OverlayDef;
+  checked: boolean;
+  onToggle: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex items-start gap-2.5 py-1.5 cursor-pointer">
+      <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} className="mt-0.5" />
+      <span
+        className="mt-0.5 inline-block h-3 w-3 shrink-0 rounded-sm border-2"
+        style={{ backgroundColor: `${def.color}33`, borderColor: def.color }}
+      />
+      <span className="min-w-0">
+        <span className="block text-sm leading-tight">{def.label}</span>
+        <span className="block text-[11px] leading-snug text-muted-foreground">{def.description}</span>
+      </span>
+    </label>
+  );
+}
+
 export function MapControlPanel(props: Props) {
   const {
     provinces, districts, farmerGroups,
@@ -138,7 +170,12 @@ export function MapControlPanel(props: Props) {
     onProvinceChange, onDistrictChange, onFarmerGroupChange,
     onLoad, isLoading, filterOpen, onFilterOpenChange,
     counts, layers, onLayersChange,
+    overlays, onOverlaysChange,
+    customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer,
   } = props;
+
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const anyOverlayOn = Object.values(overlays.visible).some(Boolean);
 
   return (
     <Card className="absolute top-4 left-4 z-10 w-80 max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-y-auto shadow-lg gap-0 py-0">
@@ -230,6 +267,66 @@ export function MapControlPanel(props: Props) {
           </div>
         </>
       )}
+
+      {/* Peta Lainnya section — reference raster overlays (always available, bottom) */}
+      <Separator />
+      <Collapsible open={overlayOpen} onOpenChange={setOverlayOpen}>
+        <CollapsibleTrigger
+          render={
+            <button className="flex w-full items-center justify-between px-4 py-3 text-left">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <Layers className="h-4 w-4" />
+                Peta Lainnya
+              </span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", overlayOpen ? "rotate-180" : "")} />
+            </button>
+          }
+        />
+        <CollapsibleContent>
+          <div className="px-4 pb-4">
+            {MAP_OVERLAYS.map((o) => (
+              <OverlayRow
+                key={o.key}
+                def={o}
+                checked={!!overlays.visible[o.key]}
+                onToggle={(v) =>
+                  onOverlaysChange({ ...overlays, visible: { ...overlays.visible, [o.key]: v } })
+                }
+              />
+            ))}
+            {anyOverlayOn && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="shrink-0 text-xs text-muted-foreground">Transparansi</span>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.1}
+                  value={overlays.opacity}
+                  onChange={(e) => onOverlaysChange({ ...overlays, opacity: Number(e.target.value) })}
+                  className="h-1 flex-1 cursor-pointer accent-primary"
+                  aria-label="Transparansi overlay"
+                />
+                <span className="w-8 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                  {Math.round(overlays.opacity * 100)}%
+                </span>
+              </div>
+            )}
+            <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
+              Sumber: SIGAP KLHK / Kementerian Kehutanan.
+            </p>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Tambah GIS Lain section — user-added WMS / Shapefile / GeoJSON layers */}
+      <Separator />
+      <CustomGisSection
+        layers={customLayers}
+        onAdd={onAddCustomLayer}
+        onRemove={onRemoveCustomLayer}
+        onToggle={onToggleCustomLayer}
+      />
     </Card>
   );
 }

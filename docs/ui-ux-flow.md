@@ -1,7 +1,7 @@
 # Smallholder HUB — UI/UX Flow
 
 > Dokumentasi alur navigasi dan user journey berdasarkan role.
-> **Last updated**: 2026-07-08 (MAP-01 #113 — Map › Peta Lahan: peta interaktif + info popup accordion + Farm Passport PDF)
+> **Last updated**: 2026-07-09 (MAP-01 #113 — Map › Peta Lahan: peta interaktif + info popup accordion + Farm Passport PDF + section "Peta Lainnya" overlay referensi SIGAP KLHK + section "Tambah Data GIS Lain" WMS/Shapefile/GeoJSON)
 
 ---
 
@@ -75,7 +75,7 @@
 
 ```
 📊 Dashboard (✅ DASH-01)
-   ├── ✅ Main Dashboard — Snapshot-backed: 10 summary cards (5/baris, incl. Petani L/P) + filter Distrik/KT/Tahun + peta MapLibre (cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
+   ├── ✅ Main Dashboard — Snapshot-backed: 10 summary cards (5/baris, incl. Petani L/P) + filter Distrik/KT/Tahun + peta MapLibre (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
    └── 🔲 Dashboard BMP (DASH-04) — Best Management Practice metrics
 
 📁 Master Data
@@ -115,7 +115,7 @@
    └── 🔲 GIS Utilities — Planned
 
 🗺️ Map (✅ MAP-01)
-   └── ✅ Peta Lahan — Peta full-bleed MapLibre + panel filter floating collapsible (Provinsi→Distrik→KT + Muat Data, auto-collapse) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count). Klik feature → info popup: KT (identitas) · Lahan = accordion (Detail Lahan + Pelatihan Petani lazy-load + Produksi grafik dummy) + tombol "Print Profil Petani" → Farm Passport PDF (identitas, layout lahan/polygon, pelatihan, produksi data asli). Read-only atas FarmerGroup + LandParcel
+   └── ✅ Peta Lahan — Peta full-bleed MapLibre + panel filter floating collapsible (Provinsi→Distrik→KT + Muat Data, auto-collapse) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count) + section **Peta Lainnya** (paling bawah panel) = overlay raster referensi SIGAP KLHK/Kemenhut (Kawasan Hutan, Pelepasan Kawasan Hutan, Fungsi Ekosistem Gambut, PIPPIB/Moratorium, Penutupan Lahan 2022) dengan toggle per-layer + slider transparansi, di-render di bawah layer data petani; tile di-proxy same-origin via `/api/map-overlay/[key]` (atasi CORS + TLS chain upstream) + section **Tambah Data GIS Lain** = user tambah layer sendiri via 3 mode (WMS URL / ZIP Shapefile / GeoJSON), Shapefile & GeoJSON diparse di browser (`shpjs`), toggle + hapus + auto-fit ke bounds layer baru; WMS user di-fetch langsung (butuh CORS). Klik feature → info popup: KT (identitas) · Lahan = accordion (Detail Lahan + Pelatihan Petani lazy-load + Produksi grafik dummy) + tombol "Print Profil Petani" → Farm Passport PDF (identitas, layout lahan/polygon, pelatihan, produksi data asli). Read-only atas FarmerGroup + LandParcel
 
 👤 Profile
    └── ✅ Change Password

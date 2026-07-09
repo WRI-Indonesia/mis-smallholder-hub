@@ -14,6 +14,7 @@ import type {
   MapGroupOption,
 } from "@/types/map";
 import { MapControlPanel, type LayerVisibility } from "./map-control-panel";
+import { DEFAULT_OVERLAY_STATE, type OverlayState, type CustomLayer } from "./map-overlays";
 
 const MapCanvas = dynamic(
   () => import("./map-canvas").then((m) => m.MapCanvas),
@@ -42,6 +43,14 @@ export function MapParcelClient({ provinces }: Props) {
     parcelPoints: true,
     parcelAreas: true,
   });
+  const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAY_STATE);
+  const [customLayers, setCustomLayers] = useState<CustomLayer[]>([]);
+
+  const addCustomLayer = (layer: CustomLayer) => setCustomLayers((prev) => [...prev, layer]);
+  const removeCustomLayer = (id: string) =>
+    setCustomLayers((prev) => prev.filter((l) => l.id !== id));
+  const toggleCustomLayer = (id: string, visible: boolean) =>
+    setCustomLayers((prev) => prev.map((l) => (l.id === id ? { ...l, visible } : l)));
   const [isPending, startTransition] = useTransition();
 
   // Refetch districts when province changes.
@@ -106,7 +115,7 @@ export function MapParcelClient({ provinces }: Props) {
 
   return (
     <div className="relative -m-6 h-[calc(100vh-3.5rem)] w-auto overflow-hidden">
-      <MapCanvas data={mapData} layers={layers} />
+      <MapCanvas data={mapData} layers={layers} overlays={overlays} customLayers={customLayers} />
 
       <MapControlPanel
         provinces={provinces}
@@ -125,6 +134,12 @@ export function MapParcelClient({ provinces }: Props) {
         counts={mapData?.counts ?? null}
         layers={layers}
         onLayersChange={setLayers}
+        overlays={overlays}
+        onOverlaysChange={setOverlays}
+        customLayers={customLayers}
+        onAddCustomLayer={addCustomLayer}
+        onRemoveCustomLayer={removeCustomLayer}
+        onToggleCustomLayer={toggleCustomLayer}
       />
     </div>
   );

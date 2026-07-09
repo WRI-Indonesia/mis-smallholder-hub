@@ -356,10 +356,16 @@ Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (ko
   - Buat reusable `MapViewer` component untuk display polygon
   - Support props: `polygon` (GeoJSON), `center` (lat/long), `zoom`, `height`
   - Lazy load MapLibre untuk optimize bundle size
+- **Reference/Overlay Layers (WMS/tile pihak ketiga)**:
+  - Definisikan overlay sebagai daftar deklaratif (`MAP_OVERLAYS` di `map-overlays.ts`): `key`, `label`, `color`, `service` (ArcGIS REST MapServer). Render sebagai `<Source type="raster">` MapLibre di bawah layer data, toggle per-layer + slider opacity bersama.
+  - **Wajib proxy tile via route same-origin** bila server upstream tidak mengirim header CORS atau menyajikan TLS chain tak lengkap (kasus SIGAP KLHK/Kemenhut). Ini pengecualian sempit atas aturan "no REST API layer" — endpoint gambar biner tidak bisa jadi Server Action. Gunakan whitelist per-`key` (bukan open proxy), `runtime = "nodejs"`, validasi param `bbox`, dan set `Cache-Control`.
+- **User-added GIS layers (bring-your-own)**: dukung penambahan layer runtime oleh user (state session, tak dipersist) via 3 mode — WMS URL (raster), ZIP Shapefile & GeoJSON (vektor). Shapefile/GeoJSON **diparse di browser** (`shpjs` dynamic import, `JSON.parse`) → GeoJSON → render `<Source type="geojson">` (fill+line+circle agar semua tipe geometri tertangani). WMS user di-fetch **langsung tanpa proxy** (hindari open-proxy/SSRF) sehingga server WMS harus CORS-enabled. Auto-fit ke bounds layer vektor baru. Pasang `onError` pada `<Map>` agar kegagalan fetch tile tidak jadi error fatal.
 - **Implementasi Reference**: 
   - Map viewer: `src/components/shared/map-viewer.tsx`
   - Land parcel detail: `src/app/(admin)/admin/master-data/parcels/[id]/page.tsx`
-  - Map explorer (MAP-01): `src/app/(admin)/admin/map/parcel/` (peta full-bleed + filter floating + layer toggle + info popup accordion), server actions `src/server/actions/map.ts`
+  - Map explorer (MAP-01): `src/app/(admin)/admin/map/parcel/` (peta full-bleed + filter floating + layer toggle + section "Peta Lainnya" overlay referensi + section "Tambah Data GIS Lain" + info popup accordion), server actions `src/server/actions/map.ts`, definisi overlay + helper GIS `src/app/(admin)/admin/map/parcel/map-overlays.ts`
+  - User-added GIS section: `src/app/(admin)/admin/map/parcel/map-custom-gis.tsx` (form WMS/Shapefile/GeoJSON + daftar layer)
+  - Tile proxy overlay: `src/app/api/map-overlay/[key]/route.ts` (forward ke ArcGIS `export`, toleran TLS chain upstream, whitelist per-overlay)
   - Farm Passport PDF: `src/lib/farm-passport.ts` (jsPDF A4: identitas, layout lahan/polygon vektor, pelatihan, produksi) — di-generate dari `getParcelPassport`
 
 ### Dashboard Snapshot Pattern
