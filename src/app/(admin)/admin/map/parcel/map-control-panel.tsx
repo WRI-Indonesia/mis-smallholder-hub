@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, Loader2, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { MapData, MapSelectOption, MapGroupOption } from "@/types/map";
 import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } from "./map-overlays";
+import {
+  HOTSPOT_RECENT_COLOR,
+  HOTSPOT_OLDER_COLOR,
+  type HotspotState,
+  type HotspotDayRange,
+} from "./map-hotspot";
 import { CustomGisSection } from "./map-custom-gis";
 
 export type LayerVisibility = {
@@ -43,6 +49,10 @@ interface Props {
   onAddCustomLayer: (layer: CustomLayer) => void;
   onRemoveCustomLayer: (id: string) => void;
   onToggleCustomLayer: (id: string, visible: boolean) => void;
+  hotspot: HotspotState;
+  onHotspotChange: (hotspot: HotspotState) => void;
+  hotspotLoading: boolean;
+  hotspotCount: number;
 }
 
 interface ComboboxProps {
@@ -172,9 +182,11 @@ export function MapControlPanel(props: Props) {
     counts, layers, onLayersChange,
     overlays, onOverlaysChange,
     customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer,
+    hotspot, onHotspotChange, hotspotLoading, hotspotCount,
   } = props;
 
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [hotspotOpen, setHotspotOpen] = useState(false);
   const anyOverlayOn = Object.values(overlays.visible).some(Boolean);
 
   return (
@@ -314,6 +326,75 @@ export function MapControlPanel(props: Props) {
             )}
             <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
               Sumber: SIGAP KLHK / Kementerian Kehutanan.
+            </p>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Titik Api (Hotspot) section — NASA FIRMS active-fire points */}
+      <Separator />
+      <Collapsible open={hotspotOpen} onOpenChange={setHotspotOpen}>
+        <CollapsibleTrigger
+          render={
+            <button className="flex w-full items-center justify-between px-4 py-3 text-left">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <Flame className="h-4 w-4" />
+                Titik Api (Hotspot)
+              </span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", hotspotOpen ? "rotate-180" : "")} />
+            </button>
+          }
+        />
+        <CollapsibleContent>
+          <div className="px-4 pb-4">
+            <label className="flex items-center gap-2.5 py-1 cursor-pointer">
+              <Checkbox
+                checked={hotspot.visible}
+                onCheckedChange={(v) => onHotspotChange({ ...hotspot, visible: !!v })}
+              />
+              <Flame className="h-4 w-4 shrink-0 text-red-500" />
+              <span className="text-sm flex-1">Tampilkan titik api</span>
+              {hotspot.visible && hotspotLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              ) : (
+                hotspot.visible && (
+                  <span className="text-xs font-mono text-muted-foreground tabular-nums">{hotspotCount}</span>
+                )
+              )}
+            </label>
+
+            {/* Time window selector */}
+            <div className="mt-3 flex gap-1 rounded-md border p-0.5">
+              {([1, 5] as HotspotDayRange[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => onHotspotChange({ ...hotspot, dayRange: d })}
+                  className={cn(
+                    "flex-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+                    hotspot.dayRange === d
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  {d === 1 ? "24 jam" : "5 hari"}
+                </button>
+              ))}
+            </div>
+
+            {/* Recency legend */}
+            <div className="mt-3 flex flex-col gap-1.5">
+              <span className="flex items-center gap-2 text-xs">
+                <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: HOTSPOT_RECENT_COLOR }} />
+                <span className="text-muted-foreground">&lt; 24 jam terakhir</span>
+              </span>
+              <span className="flex items-center gap-2 text-xs">
+                <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: HOTSPOT_OLDER_COLOR }} />
+                <span className="text-muted-foreground">1–5 hari terakhir</span>
+              </span>
+            </div>
+
+            <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
+              Deteksi anomali panas VIIRS 375 m, bukan konfirmasi kebakaran. Sumber: NASA FIRMS · jeda ±3 jam.
             </p>
           </div>
         </CollapsibleContent>

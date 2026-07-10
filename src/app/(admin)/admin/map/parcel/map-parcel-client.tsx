@@ -13,8 +13,15 @@ import type {
   MapSelectOption,
   MapGroupOption,
 } from "@/types/map";
+import type { FeatureCollection } from "geojson";
 import { MapControlPanel, type LayerVisibility } from "./map-control-panel";
 import { DEFAULT_OVERLAY_STATE, type OverlayState, type CustomLayer } from "./map-overlays";
+import {
+  DEFAULT_HOTSPOT_STATE,
+  fetchHotspots,
+  RIAU_BBOX,
+  type HotspotState,
+} from "./map-hotspot";
 
 const MapCanvas = dynamic(
   () => import("./map-canvas").then((m) => m.MapCanvas),
@@ -45,6 +52,9 @@ export function MapParcelClient({ provinces }: Props) {
   });
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAY_STATE);
   const [customLayers, setCustomLayers] = useState<CustomLayer[]>([]);
+  const [hotspot, setHotspot] = useState<HotspotState>(DEFAULT_HOTSPOT_STATE);
+  const [hotspotData, setHotspotData] = useState<FeatureCollection | null>(null);
+  const [hotspotLoading, setHotspotLoading] = useState(false);
 
   const addCustomLayer = (layer: CustomLayer) => setCustomLayers((prev) => [...prev, layer]);
   const removeCustomLayer = (id: string) =>
@@ -78,6 +88,30 @@ export function MapParcelClient({ provinces }: Props) {
       active = false;
     };
   }, [districtId]);
+
+  // Fetch fire hotspots when the layer is toggled on or the time window changes.
+  // Query area is fixed to Riau province.
+  useEffect(() => {
+    if (!hotspot.visible) {
+      setHotspotData(null);
+      return;
+    }
+    let active = true;
+    setHotspotLoading(true);
+    fetchHotspots(RIAU_BBOX, hotspot.dayRange, Date.now())
+      .then((fc) => {
+        if (!active) return;
+        setHotspotData(fc);
+        if (fc.features.length === 0) {
+          toast.info("Tidak ada titik api pada area & rentang waktu ini");
+        }
+      })
+      .catch(() => active && toast.error("Gagal memuat titik api"))
+      .finally(() => active && setHotspotLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [hotspot.visible, hotspot.dayRange]);
 
   const handleProvinceChange = (val: string | null) => {
     setProvinceId(val);
@@ -115,7 +149,14 @@ export function MapParcelClient({ provinces }: Props) {
 
   return (
     <div className="relative -m-6 h-[calc(100vh-3.5rem)] w-auto overflow-hidden">
-      <MapCanvas data={mapData} layers={layers} overlays={overlays} customLayers={customLayers} />
+      <MapCanvas
+        data={mapData}
+        layers={layers}
+        overlays={overlays}
+        customLayers={customLayers}
+        hotspot={hotspot}
+        hotspotData={hotspotData}
+      />
 
       <MapControlPanel
         provinces={provinces}
@@ -140,6 +181,10 @@ export function MapParcelClient({ provinces }: Props) {
         onAddCustomLayer={addCustomLayer}
         onRemoveCustomLayer={removeCustomLayer}
         onToggleCustomLayer={toggleCustomLayer}
+        hotspot={hotspot}
+        onHotspotChange={setHotspot}
+        hotspotLoading={hotspotLoading}
+        hotspotCount={hotspotData?.features.length ?? 0}
       />
     </div>
   );
