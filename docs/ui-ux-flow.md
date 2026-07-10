@@ -1,7 +1,7 @@
 # Smallholder HUB — UI/UX Flow
 
 > Dokumentasi alur navigasi dan user journey berdasarkan role.
-> **Last updated**: 2026-07-09 (MAP-01 #113 — Map › Peta Lahan: peta interaktif + info popup accordion + Farm Passport PDF + section "Peta Lainnya" overlay referensi SIGAP KLHK + section "Tambah Data GIS Lain" WMS/Shapefile/GeoJSON)
+> **Last updated**: 2026-07-10 (**Audit menyeluruh**: sinkronisasi angka test (24 file/296), status fase (24 Done), menu aktual (Bulk Upload Produksi ✅, Tools = Dashboard Snapshot + CLI lokal), koreksi klaim compliance, dan **penghapusan blok legacy duplikat** di bagian bawah dokumen — detail temuan di `audit-report/audit-2026-07-10.md` (internal, gitignored). Sebelumnya: MAP-01 enhancement — Map › Peta Lahan: **layer Titik Api/Hotspot NASA FIRMS** (24 jam/5 hari, bbox Riau, proxy auth-guarded) + **tool Ruler** (jarak & luas geodesik) + **label nama KT & petani** (petani hanya bila muat di poligon); 2026-07-09: MAP-01 #113 — peta interaktif + info popup accordion + Farm Passport PDF + section "Peta Lainnya" overlay referensi SIGAP KLHK + section "Tambah Data GIS Lain" WMS/Shapefile/GeoJSON)
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **20 files / 231 tests passing** | Coverage: auth, RBAC, menu, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, map |
-| **Completed Modules** | ✅ 20 phases done | Platform (1-7), MD (1-6), DASH-01, RPT-01/02, BULK (1, 3), DA-01/02, MAP-01 |
-| **Server Actions** | ✅ dashboard, snapshot, report, map + user, menu, region, farmer-group, farmer, land-parcel, bulk-upload-parcel, training, production, bulk-upload, upload, data-analyst, data-completeness |
-| **Prisma Models** | ✅ 11 schemas | User, Menu, RBAC (5 models), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
-| **Priority Next** | 🎯 **RPT-03** | Report Produksi (#109); DASH-01 ✅ done (snapshot-backed dashboard + Tools snapshot) |
+| **Test Status** | ✅ **24 files / 296 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map, map-geo, firms, middleware, perf |
+| **Completed Modules** | ✅ **24 phases done** | Platform (1-7), MD (1-6), DASH-01/02/03, RPT-01/02, BULK (1, 3, 4), DA-01/02, MAP-01 |
+| **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
+| **Prisma Models** | ✅ 11 file schema / **19 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
+| **Priority Next** | 🎯 **Remediasi audit P0 + RPT-03** | P0: guard/scope RBAC server actions + lint merah (audit 2026-07-10); lalu Report Produksi (#109) |
 
 ---
 
@@ -81,7 +81,6 @@
    └── 🔲 Dashboard BMP (DASH-04) — Best Management Practice metrics
 
 📁 Master Data
-   ├── ✅ Regions (MD-01) — Province/District/Subdistrict/Village tree
    ├── ✅ Kelompok Tani (MD-02) — List/detail/CRUD
    ├── ✅ Petani (MD-03) — List/detail/CRUD + joinedYear
    ├── ✅ Lahan / Parcels (MD-04) — Map + polygon + geolocation + Shapefile bulk upload
@@ -95,7 +94,7 @@
 
 📉 Data Analyst (✅ DA-01, DA-02)
    ├── ✅ Ringkasan Petani (DA-01) — Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel export
-   └── ✅ Analisa Ketersediaan Data (DA-02) — Pilih distrik → KT → Analisa: skor kesehatan data + 5 section collapsible (Profil KT, Petani, Lahan, Pelatihan, Produksi) deteksi anomali & data belum lengkap (NIK kosong/invalid, petani tanpa lahan, belum pelatihan, tanpa produksi, dll) + Excel multi-sheet
+   └── ✅ Analisa Ketersediaan Data (DA-02) — Pilih distrik → KT → Analisa: Index Ketersediaan Data + 5 section collapsible (Profil KT, Petani, Lahan, Pelatihan, Produksi) deteksi anomali & data belum lengkap (NIK kosong/invalid, petani tanpa lahan, belum pelatihan, tanpa produksi, dll) + Excel multi-sheet
 
 📈 Report (🟠 Partial)
    ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
@@ -104,9 +103,10 @@
 
 📤 Bulk Upload
    ├── ✅ Bulk Upload Petani (BULK-03) — Excel mapping + validation + preview
+   ├── ✅ Bulk Upload Produksi (BULK-04) — Excel mapping + period/harvest validation + preview
    ├── ✅ Bulk Upload Lahan (MD-04) — ZIP Shapefile upload + column mapping + geometry validation
-   ├── 🔲 Bulk Upload Kelompok Tani (BULK-01) — CSV + validation
-   └── 🔲 Bulk Upload Region (BULK-02) — Hierarchy validation
+   ├── 🔲 Bulk Upload Kelompok Tani (#69) — CSV + validation (belum ada menu/route)
+   └── 🔲 Bulk Upload Region (BULK-02, #70) — Hierarchy validation (belum ada menu/route)
 
 ⚙️ Settings
    ├── ✅ User Management (PLATFORM-04) — CRUD + data access + menu override
@@ -115,13 +115,12 @@
    └── ✅ Region Settings (MD-01) — Tree hierarchy
 
 🔧 Tools (🟠 TOOLS-01)
-   ├── ✅ Dashboard Snapshot (DASH-01) — Generate/list/detail snapshot + Excel export + soft delete
-   ├── ✅ Export CSV — Static data export
-   ├── 🟠 S3/PDF Manager — CLI tools (partial)
+   ├── ✅ Dashboard Snapshot (DASH-01) — Generate/list/detail snapshot + Excel export + soft delete (satu-satunya sub-menu Tools di app)
+   ├── 🟠 CLI lokal (bukan menu app): S3 get-link & PDF manager (`scripts/`, npm `s3:get-link` `pdf:*`); export CSV di `scripts/local/` (gitignored)
    └── 🔲 GIS Utilities — Planned
 
 🗺️ Map (✅ MAP-01)
-   └── ✅ Peta Lahan — Peta full-bleed MapLibre + panel filter floating collapsible (Provinsi→Distrik→KT + Muat Data, auto-collapse) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count) + section **Peta Lainnya** (paling bawah panel) = overlay raster referensi SIGAP KLHK/Kemenhut (Kawasan Hutan, Pelepasan Kawasan Hutan, Fungsi Ekosistem Gambut, PIPPIB/Moratorium, Penutupan Lahan 2022) dengan toggle per-layer + slider transparansi, di-render di bawah layer data petani; tile di-proxy same-origin via `/api/map-overlay/[key]` (atasi CORS + TLS chain upstream) + section **Tambah Data GIS Lain** = user tambah layer sendiri via 3 mode (WMS URL / ZIP Shapefile / GeoJSON), Shapefile & GeoJSON diparse di browser (`shpjs`), toggle + hapus + auto-fit ke bounds layer baru; WMS user di-fetch langsung (butuh CORS). Klik feature → info popup: KT (identitas) · Lahan = accordion (Detail Lahan + Pelatihan Petani lazy-load + Produksi grafik dummy) + tombol "Print Profil Petani" → Farm Passport PDF (identitas, layout lahan/polygon, pelatihan, produksi data asli). Read-only atas FarmerGroup + LandParcel
+   └── ✅ Peta Lahan — Peta full-bleed MapLibre + panel filter floating collapsible (Provinsi→Distrik→KT + Muat Data, auto-collapse) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count) + section **Peta Lainnya** (paling bawah panel) = overlay raster referensi SIGAP KLHK/Kemenhut (Kawasan Hutan, Pelepasan Kawasan Hutan, Fungsi Ekosistem Gambut, PIPPIB/Moratorium, Penutupan Lahan 2022) dengan toggle per-layer + slider transparansi, di-render di bawah layer data petani; tile di-proxy same-origin via `/api/map-overlay/[key]` (atasi CORS + TLS chain upstream) + section **Tambah Data GIS Lain** = user tambah layer sendiri via 3 mode (WMS URL / ZIP Shapefile / GeoJSON), Shapefile & GeoJSON diparse di browser (`shpjs`), toggle + hapus + auto-fit ke bounds layer baru; WMS user di-fetch langsung (butuh CORS). Klik feature → info popup: KT (identitas) · Lahan = accordion (Detail Lahan + Pelatihan Petani lazy-load + Produksi grafik dummy) + tombol "Print Profil Petani" → Farm Passport PDF (identitas, layout lahan/polygon, pelatihan, produksi data asli). Read-only atas FarmerGroup + LandParcel + section **Titik Api (Hotspot)** = layer NASA FIRMS VIIRS 375 m (toggle 24 jam / 5 hari, warna by kebaruan <24 jam merah / 1–5 hari oranye, popup detail + disclaimer "deteksi anomali panas", area **Riau**, tile via proxy same-origin `/api/map-hotspot` auth-guarded) + **tool Ruler** (kanan atas di bawah basemap switcher) = ukur jarak & luas **geodesik** (klik menaruh titik, label per-segmen, undo/hapus/Esc) + **label nama** (nama KT pada titik + nama petani pada poligon, **hanya bila teks muat di poligon** pada zoom aktif, wrap otomatis)
 
 👤 Profile
    └── ✅ Change Password
@@ -367,51 +366,63 @@ User Access Bulk Upload
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 14 Phases)
+## Completed Modules (✅ 24 Phases)
  
-| Phase | Module | Key Features | LOC |
-|-------|--------|--------------|-----|
-| PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup | — |
-| PLATFORM-02 | Schema & Migrations | 9 Prisma models, modular schema | — |
-| PLATFORM-03 | Schema Hardening | Audit fields, soft-delete pattern | — |
-| PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides | 647 LOC (user + access + menu) |
-| PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child | 110 LOC |
-| PLATFORM-06 | DataTable & Export | Column visibility, Excel export (exceljs) | — |
-| PLATFORM-07 | 3-Level Menu | Sidebar, RBAC inheritance, validation depth max 3 | — |
-| MD-01 | Regions | 4-level hierarchy, tree UI, CRUD | 104 LOC |
-| MD-02 | Farmer Groups | List, detail, CRUD, RBAC filtering | 145 LOC |
-| MD-03 | Farmers | Full CRUD, RBAC, joinedYear field | 188 LOC |
-| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) | 387 LOC (165+222) |
-| MD-05 | Training | 3 models, activities, participants, evidence upload | 231 LOC |
-| BULK-01 | Bulk Upload Menu | Route setup, redirect to /farmers | — |
-| BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors | 177 LOC |
+| Phase | Module | Key Features |
+|-------|--------|--------------|
+| PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup |
+| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 19 model / 10 migrasi) |
+| PLATFORM-03 | Schema Hardening | Audit fields, soft-delete pattern |
+| PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides |
+| PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child |
+| PLATFORM-06 | DataTable & Export | Column visibility, Excel export (exceljs) |
+| PLATFORM-07 | 3-Level Menu | Sidebar, RBAC inheritance, validation depth max 3 |
+| MD-01 | Regions | 4-level hierarchy, tree UI, CRUD |
+| MD-02 | Farmer Groups | List, detail, CRUD, RBAC filtering, agregat petani/persil/luas |
+| MD-03 | Farmers | Full CRUD, RBAC, joinedYear field |
+| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) |
+| MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |
+| MD-06 | Production | ProductionRecord, period + harvest number, duplicate validation (#89) |
+| DASH-01 | Main Dashboard | Snapshot-backed, 10 summary cards, filter client-side (#99) |
+| DASH-02 | Dashboard Server Actions | `dashboard.ts` + `snapshot.ts` + aggregation lib (teruji) |
+| DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
+| MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113) |
+| RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
+| RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
+| BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
+| BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
+| BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
+| DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
+| DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: 19 files, **216 tests passing** ✅ (incl. dashboard aggregation + report)
+**Total Tests**: **24 files / 296 tests passing** ✅
 
-## In Progress (🟠 2 Phases)
+## In Progress (🟠 3 Phases)
 
 | Phase | Module | Status | Missing |
 |-------|--------|--------|---------|
-| TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager |
-| OPS-01 | Testing | Partial | RPT-03 test coverage (dashboard + production now covered) |
+| TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager (CLI sudah ada) |
+| OPS-01 | Testing | Partial | RPT-03 coverage; integration test route hotspot |
+| OPS-02 | DevOps | Partial | Verifikasi deployment/rollback; status Dockerfile vs CI |
 
-## Planned - Now (🔲 1 Phase Priority)
+## Planned - Now (🔲 Priority)
  
 | Phase | Module | Next Steps | Blocker |
 |-------|--------|------------|---------|
-| MD-06 | Production | Define scope, model design, dependency to Farmer/Parcel | — |
+| — | **Remediasi Audit P0** | Guard `hasPermission` (role-permission/menu/upload) + scope (`getFarmerById`, `bulkCreateFarmers`) + lint merah — lihat `audit-report/audit-2026-07-10.md` §8 | — |
+| RPT-03 | Report Produksi | Extend `report.ts` + halaman `/admin/report/production` + unit tests (#109) | — |
 
 ## Planned - Next
 
-- RPT-03 (Report Produksi #109), BULK-02 (Region Bulk Upload), DASH-04 (Dashboard BMP)
+- BULK-02 (Region Bulk Upload #70), #69 (Bulk Upload KT), DASH-04 (Dashboard BMP — dependency DASH-01/02 sudah selesai)
 
-## Planned - Later (🔲 8 Phases)
+## Planned - Later (🔲)
 
-- MD-07/08/09/10/11 (Staff, HCV, BUSDEV, IMPACT, Workplan), CMS-01, COMM-01/02, OPS-02
+- MD-07/08/09/10/11 (Staff, HCV, BUSDEV, IMPACT, Workplan), CMS-01, COMM-01/02
 
-## Blocked (🔴 1 Phase)
+## Blocked (🔴)
 
-- DASH-04 (Dashboard BMP) — requires DASH-01/02 complete first
+- Tidak ada (DASH-04 sudah tidak terblokir — DASH-01/02 selesai; kini berstatus Planned)
 
 </details>
 
@@ -422,51 +433,45 @@ User Access Bulk Upload
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **19 files / 216 tests passing**
+**Test Status**: ✅ **24 files / 296 tests passing** (verifikasi audit 2026-07-10)
 
 ### Covered Modules
 
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
-| Auth | auth.test.ts | 12 | ✅ |
-| RBAC | rbac.test.ts, rbac-permission.test.ts | 28 | ✅ |
-| Menu | menu-action.test.ts | 15 | ✅ |
-| User | user-action.test.ts, user-data-access.test.ts, user-menu-access.test.ts | 42 | ✅ |
-| Region | region.test.ts | 18 | ✅ |
+| Region | region.test.ts | 42 | ✅ |
+| Data Completeness (DA-02) | data-completeness.test.ts | 31 | ✅ |
+| User | user-action.test.ts, user-data-access.test.ts, user-menu-access.test.ts | 39 | ✅ |
+| Training | training-activity.test.ts, training-participant.test.ts | 23 | ✅ |
+| Land Parcel | land-parcel.test.ts | 16 | ✅ |
+| Production | production.test.ts | 15 | ✅ |
 | Farmer | farmer.test.ts | 14 | ✅ |
-| Land Parcel | land-parcel.test.ts | 14 | ✅ |
-| Training | training-activity.test.ts | 11 | ✅ |
-| Bulk Upload | bulk-upload.test.ts, bulk-upload-parcel.test.ts | 16 | ✅ |
-| Middleware | middleware.test.ts | 3 | ✅ |
-| Performance | perf.test.ts | 2 | ✅ |
-
-### Covered (added since audit)
-
-- ✅ Dashboard — `dashboard.test.ts` (aggregation, gender, snapshot data shape/normalize)
-- ✅ Report — `report.test.ts` (farmer & training summary)
-- ✅ Production — `production.test.ts`
+| Bulk Upload | bulk-upload.test.ts | 14 | ✅ |
+| Map Geo (ruler/label) | map-geo.test.ts | 13 | ✅ |
+| Dashboard | dashboard.test.ts | 12 | ✅ |
+| RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
+| Map (MAP-01) | map.test.ts | 11 | ✅ |
+| Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |
+| Hotspot FIRMS | firms.test.ts | 9 | ✅ |
+| Performance | perf.test.ts | 6 | ✅ |
+| Report | report.test.ts | 5 | ✅ |
+| Middleware | middleware.test.ts | 5 | ✅ |
+| Auth | auth.test.ts | 5 | ✅ |
+| Data Analyst (DA-01) | data-analyst.test.ts | 4 | ✅ |
 
 ### Need Coverage
 
 - 🔲 RPT-03 Report Produksi (belum diimplementasi)
 - 🔲 Server-action level tests untuk snapshot RBAC (kini hanya fungsi murni)
+- 🔲 Integration test route `api/map-hotspot` (follow-up MAP-01)
 
 ## Code Compliance (rule.md)
 
-**Status**: ✅ **14/14 rules FULLY COMPLIANT**
+**Status per audit 2026-07-10**: 🟠 **7 PASS · 4 PARTIAL · 3 FAIL** (dari 14 kategori) — detail lengkap + bukti `file:line` di `audit-report/audit-2026-07-10.md`
 
-All code follows:
-- ✅ Kebab-case file naming
-- ✅ English variable naming
-- ✅ Zod validation in `src/validations/`
-- ✅ Server actions in `src/server/actions/`
-- ✅ RBAC patterns (`AccessContext` discriminated union)
-- ✅ Soft delete (`isActive` field)
-- ✅ Data filtering (`isActive: true` + RBAC)
-- ✅ UI/UX standards (loading states, table actions, Shadcn UI)
-- ✅ Backend permission validation (`hasPermission()`)
-- ✅ No barrel index imports
-- ✅ Server Component default
+- ✅ PASS: kebab-case naming, Server Component default, Zod di `src/validations/`, actions di `src/server/actions/`, pola `AccessContext`, soft delete `isActive` di schema, Shadcn+Tailwind
+- 🟠 PARTIAL: variable English (istilah domain ID di lib/types), filter `isActive` (farmer-group reads), loading.tsx (4 halaman tabel belum ada), Table Actions (menu-list-client belum gating/posisi kiri)
+- ❌ FAIL: backend `hasPermission` (role-permission/menu/upload + helper select tanpa guard), no-barrel-imports (13 file pakai barrel `@/components/shared` — kini diresmikan sebagai pengecualian di rule.md), QA gate lint (`npm run lint` 190 error)
 
 </details>
 
@@ -476,9 +481,10 @@ All code follows:
  
 | Priority | Action | Owner | Deadline | Impact |
 |----------|--------|-------|----------|--------|
-| **P0** | **MD-06 Production Scope Definition** | Product + Engineering | **2026-06-20** | Define production data model: per-farmer vs per-parcel, fields, validation |
-| P1 | DASH-01 Dashboard Basic | Engineering | 2026-06-22 | Dashboard foundation (summary cards + district filter) |
-| P2 | RPT-01 Implementation | Engineering | 2026-06-25 | Report module foundation (menu + placeholder + User report) |
+| **P0** | **Remediasi audit — guard/scope RBAC** (`role-permission.ts`, `menu.ts`, `upload.ts`, `getFarmerById`, `bulkCreateFarmers`, menuKey Roles) | Engineering | ASAP | Menutup celah pemanggilan server action langsung (UI-bypass) |
+| P1 | **Lint hijau kembali** (ignore `scripts/**`, unused vars, cicil `no-explicit-any`) | Engineering | 2026-07-17 | Quality gate `npm run lint` kembali ditegakkan |
+| P1 | RPT-03 Report Produksi (#109) | Engineering | 2026-07-20 | Melengkapi modul Report |
+| P2 | Cleanup dead code & deps (audit §8 P2) | Engineering | 2026-07-24 | Dependency & file mati terhapus, bundle lebih ramping |
 
 ---
 
@@ -486,8 +492,8 @@ All code follows:
 
 | Decision | Owner | Deadline | Context |
 |----------|-------|----------|---------|
-| Production data model | Product + Domain Expert | **2026-06-20** | Define: Per-farmer, per-parcel, atau per-season? Fields: yield, area, period? |
-| Dashboard minimal scope | Product + Engineering | 2026-06-22 | Define: berapa summary cards? Metrics apa? Filter apa? Wireframe? |
+| Pola restore soft-delete | Product + Engineering | 2026-07-17 | List KT menampilkan record nonaktif (bisa restore), list Petani menyembunyikannya (tidak bisa restore) — pilih satu pola & seragamkan |
+| Nasib `recharts` & `Dockerfile` | Engineering | 2026-07-24 | recharts 0 pemakaian (rencana chart produksi); Dockerfile tampak tak dipakai pipeline CI (deploy via SSH build) |
 
 ---
 
@@ -500,715 +506,6 @@ All code follows:
 
 ---
 
-**Last Updated**: 2026-06-14 (Post-MD-04 Land Parcel Implementation — Issue #88)  
-**Next Review**: After MD-06 Production scope definition  
-**Audit Basis**: Full codebase scan (src/, prisma/, tests/) — 14 test files/175 tests ✅
-
-## System Overview
-
-```mermaid
-flowchart TD
-    START([User Access System]) --> AUTH{Authenticated?}
-    AUTH -->|No| PUBLIC[Public Routes]
-    AUTH -->|Yes| ROLE{Check Role}
-    
-    PUBLIC --> HOME[✅ Home Page]
-    PUBLIC --> COMM[🔲 Community]
-    PUBLIC --> KNOW[🔲 Knowledge Management]
-    
-    ROLE -->|SUPERADMIN| SA[SUPERADMIN Panel]
-    ROLE -->|ADMIN| ADM[ADMIN Panel]
-    ROLE -->|OPERATOR| OPR[OPERATOR Panel]
-    ROLE -->|MANAGEMENT| MGT[MANAGEMENT Panel]
-    
-    SA --> DASH_SA[Full Dashboard Access]
-    SA --> MD_SA[Full Master Data Access]
-    SA --> SET_SA[Full Settings Access]
-    SA --> RPT_SA[Full Report Access]
-    SA --> BULK_SA[Full Bulk Upload Access]
-    SA --> TOOLS_SA[Full Tools Access]
-    
-    ADM --> DASH_ADM[Limited Dashboard]
-    ADM --> MD_ADM[Filtered Master Data]
-    ADM --> SET_ADM[Limited Settings]
-    ADM --> RPT_ADM[Limited Report]
-    ADM --> BULK_ADM[Limited Bulk Upload]
-    
-    OPR --> DASH_OPR[View Dashboard]
-    OPR --> MD_OPR[CRUD within scope]
-    OPR --> RPT_OPR[View Reports]
-    
-    MGT --> DASH_MGT[View Dashboard]
-    MGT --> RPT_MGT[View Reports]
-    
-    style HOME fill:#90EE90
-    style COMM fill:#FFE4B5
-    style KNOW fill:#FFE4B5
-    style SA fill:#90EE90
-    style ADM fill:#90EE90
-    style OPR fill:#90EE90
-    style MGT fill:#90EE90
-```
-
----
-
-## Public User Flow
-
-```mermaid
-flowchart LR
-    subgraph PUBLIC["✅ Public Routes"]
-        HOME[✅ Home Page<br/>Hero + Info Cards]
-        
-        COMM[🔲 Community<br/>Placeholder - Coming Soon]
-        KNOW[🔲 Knowledge Management<br/>Placeholder - Coming Soon]
-        LOGIN[✅ Login Page<br/>NextAuth Credentials]
-        
-        HOME --> LOGIN
-        HOME --> COMM
-        HOME --> KNOW
-    end
-    
-    LOGIN --> ADMIN_PANEL[Admin Panel<br/>Based on Role]
-    
-    style HOME fill:#90EE90
-    style LOGIN fill:#90EE90
-    style COMM fill:#FFE4B5
-    style KNOW fill:#FFE4B5
-```
-
----
-
-## SUPERADMIN Flow
-
-**Full system access - no data filtering, all permissions granted**
-
-```mermaid
-flowchart TD
-    SA_HOME([SUPERADMIN Login]) --> SA_DASH[Dashboard]
-    
-    %% Dashboard Branch
-    SA_DASH --> SA_DASH_BASIC[🔲 Basic Dashboard<br/>Summary Cards + Filter]
-    SA_DASH --> SA_DASH_MAP[🔲 Interactive Map<br/>KT Markers + Filter]
-    SA_DASH --> SA_DASH_BMP[🔲 Dashboard BMP<br/>Best Management Practice]
-    
-    %% Master Data Branch
-    SA_HOME --> SA_MD[Master Data]
-    
-    SA_MD --> SA_MD_REGION[✅ Regions<br/>Province/District/Subdistrict/Village]
-    SA_MD --> SA_MD_GROUP[✅ Farmer Groups<br/>List/Detail/CRUD]
-    SA_MD --> SA_MD_FARMER[✅ Farmers<br/>List/Detail/CRUD + RBAC]
-    SA_MD --> SA_MD_PARCEL[✅ Land Parcels<br/>Map + Polygon + Shapefile Upload]
-    SA_MD --> SA_MD_TRAINING[✅ Training<br/>Participants + Evidence]
-    SA_MD --> SA_MD_PROD[🔲 Production<br/>Period + Chart]
-    SA_MD --> SA_MD_STAFF[🔲 Staff<br/>WRI + Activity]
-    SA_MD --> SA_MD_HCV[🔲 HCV<br/>High Conservation Value]
-    SA_MD --> SA_MD_BUSDEV[🔲 BUSDEV<br/>Business Development]
-    SA_MD --> SA_MD_IMPACT[🔲 IMPACT<br/>Impact Metrics]
-    SA_MD --> SA_MD_WORKPLAN[🔲 Workplan<br/>Annual Planning]
-    
-    %% Settings Branch
-    SA_HOME --> SA_SET[Settings]
-    SA_SET --> SA_SET_USER[✅ User Management<br/>CRUD + Data Access]
-    SA_SET --> SA_SET_ROLE[✅ Role & Permission<br/>Matrix Management]
-    SA_SET --> SA_SET_MENU[✅ Menu Management<br/>Dynamic Sidebar]
-    SA_SET --> SA_SET_REGION[✅ Region Settings<br/>Tree Hierarchy]
-    
-    %% Report Branch
-    SA_HOME --> SA_RPT[Report]
-    
-    SA_RPT --> SA_RPT_USER[🔲 Report User<br/>Table + Excel Export]
-    SA_RPT --> SA_RPT_REGION[🔲 Report Region<br/>Hierarchy + Export]
-    SA_RPT --> SA_RPT_KT[🔲 Report Kelompok Tani<br/>Cascade Filter + Export]
-    
-    %% Bulk Upload Branch
-    SA_HOME --> SA_BULK[Bulk Upload]
-    SA_BULK --> SA_BULK_FARMER[✅ Bulk Farmer<br/>Excel Mapping + Validation]
-    SA_BULK --> SA_BULK_PARCEL[✅ Bulk Land Parcel<br/>ZIP Shapefile + Column Mapping]
-    SA_BULK --> SA_BULK_KT[🔲 Bulk KT<br/>CSV + Preview]
-    SA_BULK --> SA_BULK_REGION[🔲 Bulk Region<br/>Hierarchy Validation]
-    
-    %% Tools Branch
-    SA_HOME --> SA_TOOLS[🟡 Tools]
-    SA_TOOLS --> SA_TOOLS_EXPORT[✅ Export CSV]
-    SA_TOOLS --> SA_TOOLS_S3[🟡 S3/PDF Manager]
-    SA_TOOLS --> SA_TOOLS_GIS[🔲 GIS Utilities]
-    
-    %% Profile
-    SA_HOME --> SA_PROFILE[✅ Profile<br/>Change Password]
-    
-    style SA_MD_REGION fill:#90EE90
-    style SA_MD_GROUP fill:#90EE90
-    style SA_MD_FARMER fill:#90EE90
-    style SA_MD_PARCEL fill:#90EE90
-    style SA_MD_TRAINING fill:#90EE90
-    style SA_MD_PROD fill:#FFE4B5
-    style SA_MD_STAFF fill:#FFE4B5
-    style SA_MD_HCV fill:#FFE4B5
-    style SA_MD_BUSDEV fill:#FFE4B5
-    style SA_MD_IMPACT fill:#FFE4B5
-    style SA_MD_WORKPLAN fill:#FFE4B5
-    style SA_SET_USER fill:#90EE90
-    style SA_SET_ROLE fill:#90EE90
-    style SA_SET_MENU fill:#90EE90
-    style SA_SET_REGION fill:#90EE90
-    style SA_RPT_USER fill:#FFE4B5
-    style SA_RPT_REGION fill:#FFE4B5
-    style SA_RPT_KT fill:#FFE4B5
-    style SA_BULK_FARMER fill:#90EE90
-    style SA_BULK_PARCEL fill:#90EE90
-    style SA_BULK_KT fill:#FFE4B5
-    style SA_BULK_REGION fill:#FFE4B5
-    style SA_TOOLS_EXPORT fill:#90EE90
-    style SA_TOOLS_S3 fill:#FFFF99
-    style SA_TOOLS_GIS fill:#FFE4B5
-    style SA_PROFILE fill:#90EE90
-    style SA_DASH_BASIC fill:#FFE4B5
-    style SA_DASH_MAP fill:#FFE4B5
-    style SA_DASH_BMP fill:#FFE4B5
-```
-
----
-
-## ADMIN Flow
-
-**District/Province level access - filtered by UserDistrict/UserProvince**
-
-```mermaid
-flowchart TD
-    
-    ADM_HOME([ADMIN Login]) --> ADM_DASH[Dashboard<br/>🔲 Filtered by District]
-    
-    %% Master Data - Filtered
-    ADM_HOME --> ADM_MD[Master Data<br/>Filtered by Assignment]
-    ADM_MD --> ADM_MD_GROUP[✅ Farmer Groups<br/>Within Assigned District]
-    ADM_MD --> ADM_MD_FARMER[✅ Farmers<br/>Within Assigned District/Group]
-    ADM_MD --> ADM_MD_PARCEL[✅ Land Parcels<br/>Within Assigned Scope]
-    ADM_MD --> ADM_MD_TRAINING[✅ Training<br/>Within Assigned Scope]
-    
-    %% Limited Settings Access
-    ADM_HOME --> ADM_SET[Settings<br/>Limited Access]
-    ADM_SET --> ADM_SET_USER[View/Edit Users<br/>Based on Permission]
-    ADM_SET --> ADM_SET_REGION[View Region Hierarchy]
-    
-    %% Report Access
-    ADM_HOME --> ADM_RPT[Report<br/>🔲 Filtered Data]
-    ADM_RPT --> ADM_RPT_USER[Report User<br/>Within Scope]
-    ADM_RPT --> ADM_RPT_KT[Report KT<br/>Within District]
-    
-    %% Bulk Upload - Limited
-    ADM_HOME --> ADM_BULK[Bulk Upload<br/>Within Scope]
-    ADM_BULK --> ADM_BULK_FARMER[✅ Bulk Farmer<br/>Assigned Groups Only]
-    
-    %% Profile
-    ADM_HOME --> ADM_PROFILE[✅ Profile<br/>Change Password]
-    
-    style ADM_MD_GROUP fill:#90EE90
-    style ADM_MD_FARMER fill:#90EE90
-    style ADM_MD_PARCEL fill:#90EE90
-    style ADM_MD_TRAINING fill:#90EE90
-    style ADM_SET_USER fill:#90EE90
-    style ADM_SET_REGION fill:#90EE90
-    style ADM_BULK_FARMER fill:#90EE90
-    style ADM_PROFILE fill:#90EE90
-    style ADM_DASH fill:#FFE4B5
-    style ADM_RPT fill:#FFE4B5
-```
-
----
-
-## OPERATOR Flow
-
-**Field-level access - filtered by UserFarmerGroup**
-
-```mermaid
-flowchart TD
-    OPR_HOME([OPERATOR Login]) --> OPR_DASH[Dashboard<br/>🔲 View Summary]
-    
-    %% Master Data - CRUD within assigned KT
-    OPR_HOME --> OPR_MD[Master Data<br/>Assigned KT Only]
-    OPR_MD --> OPR_MD_FARMER[✅ Farmers<br/>CRUD within Assigned KT]
-    OPR_MD --> OPR_MD_PARCEL[✅ Parcels<br/>CRUD within Assigned KT]
-    OPR_MD --> OPR_MD_TRAINING[✅ Training<br/>Record Attendance]
-    OPR_MD --> OPR_MD_PROD[🔲 Production<br/>Input Data]
-    
-    %% Report - View Only
-    OPR_HOME --> OPR_RPT[Report<br/>🔲 View Only]
-    OPR_RPT --> OPR_RPT_KT[Report KT<br/>Assigned Groups Only]
-    
-    %% Profile
-    OPR_HOME --> OPR_PROFILE[✅ Profile<br/>Change Password]
-    
-    style OPR_MD_FARMER fill:#90EE90
-    style OPR_MD_PARCEL fill:#90EE90
-    style OPR_MD_TRAINING fill:#90EE90
-    style OPR_MD_PROD fill:#FFE4B5
-    style OPR_PROFILE fill:#90EE90
-    style OPR_DASH fill:#FFE4B5
-    style OPR_RPT fill:#FFE4B5
-```
-
----
-
-## MANAGEMENT Flow
-
-**Read-only dashboard and reports**
-
-```mermaid
-flowchart TD
-    MGT_HOME([MANAGEMENT Login]) --> MGT_DASH[Dashboard<br/>🔲 View All Metrics]
-    
-    MGT_DASH --> MGT_DASH_SUMMARY[Summary Cards<br/>Organization-wide]
-    MGT_DASH --> MGT_DASH_MAP[🔲 Interactive Map<br/>All KT Locations]
-    MGT_DASH --> MGT_DASH_BMP[🔲 BMP Dashboard<br/>Performance Metrics]
-    
-    %% Report Access
-    MGT_HOME --> MGT_RPT[Report<br/>🔲 View All Reports]
-    MGT_RPT --> MGT_RPT_USER[Report User<br/>All Users]
-    MGT_RPT --> MGT_RPT_REGION[Report Region<br/>All Regions]
-    MGT_RPT --> MGT_RPT_KT[Report KT<br/>All Groups]
-    MGT_RPT --> MGT_RPT_TRAINING[🔲 Report Training<br/>Summary]
-    MGT_RPT --> MGT_RPT_PROD[🔲 Report Production<br/>Charts + Export]
-    
-    %% Profile
-    MGT_HOME --> MGT_PROFILE[✅ Profile<br/>Change Password]
-    
-    style MGT_PROFILE fill:#90EE90
-    style MGT_DASH fill:#FFE4B5
-    style MGT_RPT fill:#FFE4B5
-    style MGT_DASH_MAP fill:#FFE4B5
-    style MGT_DASH_BMP fill:#FFE4B5
-```
-
----
-
-## RBAC & Data Access Pattern
-
-### Permission Resolution Flow
-
-```mermaid
-flowchart TD
-    START([User Action Request]) --> AUTH{Authenticated?}
-    AUTH -->|No| DENY[❌ Redirect to Login]
-    AUTH -->|Yes| SUPER{Role = SUPERADMIN?}
-    
-    SUPER -->|Yes| GRANT[✅ Grant Full Access<br/>Skip all filters]
-    SUPER -->|No| MENU{Has Menu Access?}
-    
-    MENU -->|No| HIDE[🚫 Hide Menu Item]
-    MENU -->|Yes| PERM{Has Required Permission?}
-    
-    PERM -->|No| FORBID[❌ Forbidden]
-    PERM -->|Yes| OVERRIDE{Has Override?}
-    
-    OVERRIDE -->|Granted| GRANT
-    OVERRIDE -->|Revoked| FORBID
-    OVERRIDE -->|No Override| ROLE_PERM[Check Role Permission]
-    
-    ROLE_PERM --> DATA_SCOPE{Resolve Data Scope}
-    
-    DATA_SCOPE --> UP{UserProvince<br/>Assigned?}
-    UP -->|Yes| EXPAND_PROV[Expand to Districts<br/>Get all KT in Province]
-    UP -->|No| UD{UserDistrict<br/>Assigned?}
-    
-    UD -->|Yes| EXPAND_DIST[Filter by Districts<br/>Get all KT in Districts]
-    UD -->|No| UFG{UserFarmerGroup<br/>Assigned?}
-    
-    UFG -->|Yes| FILTER_KT[Filter by KT<br/>Only Assigned Groups]
-    UFG -->|No| NO_ACCESS[🚫 No Data Access]
-    
-    EXPAND_PROV --> QUERY[Execute Query<br/>with Filter]
-    EXPAND_DIST --> QUERY
-    FILTER_KT --> QUERY
-    QUERY --> GRANT
-    
-    style GRANT fill:#90EE90
-    style DENY fill:#FFB6C1
-    style FORBID fill:#FFB6C1
-    style HIDE fill:#D3D3D3
-    style NO_ACCESS fill:#FFB6C1
-```
-
-### Data Access Hierarchy
-
-```mermaid
-flowchart LR
-    subgraph "Access Context Resolution"
-        USER[User] --> CHECK{Check Assignments}
-        
-        CHECK --> CASE1[Case 1:<br/>SUPERADMIN]
-        CHECK --> CASE2[Case 2:<br/>No Assignment]
-        CHECK --> CASE3[Case 3:<br/>UserProvince]
-        CHECK --> CASE4[Case 4:<br/>UserDistrict]
-        CHECK --> CASE5[Case 5:<br/>UserFarmerGroup Only]
-        
-        CASE1 --> MODE1[Mode: ALL<br/>✅ Full Access]
-        CASE2 --> MODE2[Mode: ALL<br/>✅ Unrestricted]
-        CASE3 --> MODE3[Mode: BY_DISTRICT<br/>🔍 Province → Districts]
-        CASE4 --> MODE4[Mode: BY_DISTRICT<br/>🔍 Assigned Districts]
-        CASE5 --> MODE5[Mode: BY_FARMER_GROUP<br/>🔍 Specific Groups]
-        
-        MODE1 --> RESULT[Query Execution]
-        MODE2 --> RESULT
-        MODE3 --> RESULT
-        MODE4 --> RESULT
-        MODE5 --> RESULT
-    end
-    
-    style MODE1 fill:#90EE90
-    style MODE2 fill:#90EE90
-    style MODE3 fill:#87CEEB
-    style MODE4 fill:#87CEEB
-    style MODE5 fill:#FFD700
-```
-
----
-
-## Master Data CRUD Flow
-
-### Standard CRUD Pattern (Farmer Example)
-
-```mermaid
-flowchart TD
-    START([User Access Farmer Module]) --> LIST[Farmer List Page]
-    
-    LIST --> FILTER[Apply Filters<br/>Search + KT + Status]
-    FILTER --> TABLE[✅ DataTable<br/>Pagination + Sort]
-    
-    TABLE --> VIEW_BTN{Action: View?}
-    TABLE --> EDIT_BTN{Action: Edit?}
-    TABLE --> DELETE_BTN{Action: Delete?}
-    TABLE --> ADD_BTN{Add Button?}
-    
-    VIEW_BTN -->|Has VIEW Permission| DETAIL[✅ Detail Page<br/>Read-only Info]
-    EDIT_BTN -->|Has EDIT Permission| EDIT_MODAL[✅ Edit Modal<br/>Form + Validation]
-    DELETE_BTN -->|Has DELETE Permission| DELETE_MODAL[✅ Soft Delete<br/>Confirmation Dialog]
-    ADD_BTN -->|Has CREATE Permission| ADD_MODAL[✅ Create Modal<br/>Form + Validation]
-    
-    EDIT_MODAL --> VALIDATE{Zod Validation}
-    ADD_MODAL --> VALIDATE
-    
-    VALIDATE -->|Error| SHOW_ERROR[Show Error Messages]
-    VALIDATE -->|Success| SERVER_ACTION[Server Action]
-    
-    SERVER_ACTION --> BACKEND_CHECK{Permission Check<br/>at Backend}
-    BACKEND_CHECK -->|Denied| FORBIDDEN[❌ Forbidden]
-    BACKEND_CHECK -->|Allowed| QUERY[Execute Query<br/>with RBAC Filter]
-    
-    QUERY --> AUDIT[Add Audit Trail<br/>created_by/modified_by]
-    AUDIT --> SUCCESS[✅ Success Toast]
-    SUCCESS --> REFRESH[Refresh Data]
-    REFRESH --> TABLE
-    
-    DELETE_MODAL --> SOFT_DELETE[Update isActive = false]
-    SOFT_DELETE --> AUDIT
-    
-    style TABLE fill:#90EE90
-    style DETAIL fill:#90EE90
-    style EDIT_MODAL fill:#90EE90
-    style ADD_MODAL fill:#90EE90
-    style DELETE_MODAL fill:#90EE90
-    style SUCCESS fill:#90EE90
-    style FORBIDDEN fill:#FFB6C1
-```
-
----
-
-## Bulk Upload Flow
-
-### Farmer Bulk Upload Pattern (✅ Implemented)
-
-```mermaid
-flowchart TD
-    START([User Access Bulk Upload]) --> SELECT_KT[Select Farmer Group<br/>✅ Searchable Combobox]
-    
-    SELECT_KT --> UPLOAD_FILE[Upload Excel File<br/>✅ .xlsx format]
-    
-    UPLOAD_FILE --> PARSE[Parse Excel<br/>✅ Detect Columns]
-    
-    PARSE --> MAP[✅ Dynamic Column Mapping<br/>Auto-match + Manual Select]
-    
-    MAP --> VALIDATE[✅ Smart Validation]
-    
-    VALIDATE --> NORM[Normalize Data<br/>Gender L/P → M/F<br/>NIK format<br/>Date parsing]
-    
-    NORM --> CHECK[File-level + DB-level<br/>Uniqueness Check]
-    
-    CHECK --> PREVIEW[✅ Preview Table<br/>Valid + Error Rows]
-    
-    PREVIEW --> FILTER{User Action}
-    
-    FILTER -->|Download Full| EXCEL_FULL[✅ Export All Rows<br/>With Status Column]
-    FILTER -->|Download Errors Only| EXCEL_ERROR[✅ Export Invalid Rows<br/>With Error Messages]
-    FILTER -->|Save Valid Data| SAVE{Confirm Save?}
-    
-    SAVE -->|Yes| TRANSACTION[✅ Bulk Insert<br/>Transaction-based]
-    SAVE -->|No| PREVIEW
-    
-    TRANSACTION --> SUCCESS[✅ Success Toast<br/>X records saved]
-    SUCCESS --> REDIRECT[Redirect to Farmer List]
-    
-    EXCEL_FULL --> PREVIEW
-    EXCEL_ERROR --> PREVIEW
-    
-    style SELECT_KT fill:#90EE90
-    style UPLOAD_FILE fill:#90EE90
-    style MAP fill:#90EE90
-    style VALIDATE fill:#90EE90
-    style PREVIEW fill:#90EE90
-    style TRANSACTION fill:#90EE90
-    style EXCEL_FULL fill:#90EE90
-    style EXCEL_ERROR fill:#90EE90
-    style SUCCESS fill:#90EE90
-```
-
----
-
-## Report Export Flow
-
-### Report Generation Pattern (🔲 Planned)
-
-```mermaid
-flowchart TD
-    START([User Access Report Module]) --> MENU[Report Menu]
-    
-    MENU --> RPT_USER[🔲 Report User]
-    MENU --> RPT_REGION[🔲 Report Region]
-    MENU --> RPT_KT[🔲 Report KT]
-    
-    RPT_USER --> FILTER_USER[Filter Options<br/>Role, Status, Region]
-    RPT_REGION --> FILTER_REGION[Filter Options<br/>Province, District]
-    RPT_KT --> FILTER_KT[Cascade Filter<br/>Province → District → KT]
-    
-    FILTER_USER --> TABLE_USER[DataTable<br/>User Summary]
-    FILTER_REGION --> TABLE_REGION[DataTable<br/>Region Hierarchy]
-    FILTER_KT --> TABLE_KT[DataTable<br/>KT Details]
-    
-    TABLE_USER --> EXPORT{Export Action}
-    TABLE_REGION --> EXPORT
-    TABLE_KT --> EXPORT
-    
-    EXPORT -->|Excel| GEN_EXCEL[Generate Excel<br/>exceljs]
-    EXPORT -->|PDF| GEN_PDF[Generate PDF<br/>Future Phase]
-    
-    GEN_EXCEL --> DOWNLOAD[✅ Download File]
-    GEN_PDF --> DOWNLOAD
-    
-    style RPT_USER fill:#FFE4B5
-    style RPT_REGION fill:#FFE4B5
-    style RPT_KT fill:#FFE4B5
-    style GEN_EXCEL fill:#FFE4B5
-    style GEN_PDF fill:#D3D3D3
-```
-
----
-
-## Dashboard Flow (🔲 Planned)
-
-```mermaid
-flowchart TD
-    START([User Access Dashboard]) --> RESOLVE{Resolve Data Scope}
-    
-    RESOLVE -->|SUPERADMIN| ALL[All Data]
-    RESOLVE -->|BY_DISTRICT| DIST[District Filter]
-    RESOLVE -->|BY_FARMER_GROUP| KT[KT Filter]
-    
-    ALL --> DASH[🔲 Dashboard Page]
-    DIST --> DASH
-    KT --> DASH
-    
-    DASH --> CARDS[🔲 Summary Cards<br/>Users, KT, Farmers, etc]
-    DASH --> FILTER[🔲 District Filter Dropdown]
-    DASH --> MAP[🔲 Interactive Map<br/>KT Markers]
-    DASH --> BMP[🔲 BMP Charts<br/>Best Management Practice]
-    
-    FILTER --> REFRESH[Reload Dashboard Data]
-    REFRESH --> CARDS
-    
-    MAP --> POPUP[Click KT Marker<br/>Show Info]
-    
-    BMP --> CATEGORY[Filter by Category<br/>Grouped Bar Chart]
-    
-    style DASH fill:#FFE4B5
-    style CARDS fill:#FFE4B5
-    style FILTER fill:#FFE4B5
-    style MAP fill:#FFE4B5
-    style BMP fill:#FFE4B5
-```
-
----
-
-## Navigation Structure
-
-### Admin Sidebar Menu Hierarchy
-
-```
-📊 Dashboard (🔲 DASH-01)
-├── Basic Dashboard
-├── Interactive Map
-└── Dashboard BMP
-
-📁 Master Data
-├── ✅ Regions (MD-01)
-├── ✅ Kelompok Tani (MD-02)
-├── ✅ Petani (MD-03)
-├── ✅ Lahan / Parcels (MD-04)
-├── ✅ Pelatihan / Training (MD-05)
-├── ✅ Produksi / Production (MD-06)
-├── 🔲 Staff (MD-07)
-├── 🔲 HCV (MD-08)
-├── 🔲 BUSDEV (MD-09)
-├── 🔲 IMPACT (MD-10)
-└── 🔲 Workplan (MD-11)
-
-📈 Report (🟠 Partial)
-├── ✅ Laporan Petani (RPT-01)
-├── ✅ Laporan Pelatihan (RPT-02)
-└── 🔲 Laporan Produksi (RPT-03)
-
-📤 Bulk Upload (🟡 BULK-01)
-├── ✅ Bulk Upload Petani (BULK-03)
-├── 🔲 Bulk Upload Kelompok Tani
-└── 🔲 Bulk Upload Region
-
-⚙️ Settings
-├── ✅ User Management (PLATFORM-04)
-├── ✅ Role & Permission (PLATFORM-04)
-├── ✅ Menu Management (PLATFORM-05)
-└── ✅ Region Settings (MD-01)
-
-🔧 Tools (🟡 TOOLS-01)
-├── ✅ Export CSV
-├── 🟡 S3/PDF Manager
-└── 🔲 GIS Utilities
-
-👤 Profile
-└── ✅ Change Password
-```
-
----
-
-## Implementation Status Summary
-
-### Completed Modules (✅)
-
-| Module | Phase | Features |
-|--------|-------|----------|
-| Platform Foundation | PLATFORM-01/02/03/04/05 | Next.js setup, Prisma schema, Auth, RBAC, Menu system |
-| Regions | MD-01 | Tree hierarchy, CRUD, Province/District/Subdistrict/Village |
-| Farmer Groups | MD-02 | List, Detail, CRUD, RBAC filtering |
-| Farmers | MD-03 | Full CRUD, RBAC, DataTable, Excel export |
-| Bulk Upload Farmer | BULK-03 | Excel mapping, smart validation, preview, error download |
-| User Management | PLATFORM-04 | CRUD, Data Access, Permission Override |
-| Settings | PLATFORM-04/05 | Role/Permission matrix, Menu management, Region settings |
-| Report Petani | RPT-01 | Menu, cascading filters, 4 summary cards, DataTable, Excel & PDF export |
-| Report Pelatihan | RPT-02 | Halaman /admin/report/training, 7 summary cards (2 rows), 2 tab, ekspor Excel 2-sheet, filter jenis training, dan ekspor PDF. |
-
-### In Progress (🟡)
-
-| Module | Phase | Status |
-|--------|-------|--------|
-| Tools | TOOLS-01 | Export CSV ✅, S3/PDF CLI partial |
-| Bulk Upload Menu | BULK-01 | Menu & route setup done, KT/Region pending |
-
-### Planned - Now (🔲)
-
-| Module | Phase | Next Steps |
-|--------|-------|-----------|
-| Dashboard | DASH-01 | **URGENT**: Define scope (cards, metrics, filters) in 48h |
-| Report Produksi | RPT-03 | Sub-menu `report-production` + extend `report.ts` + UI |
-| Bulk Upload KT | BULK-01 | CSV upload with validation & preview |
-
-### Planned - Next (🔲)
-
-| Module | Phase | Dependencies |
-|--------|-------|--------------|
-| Parcels | MD-04 | After MD-03 (Farmer) |
-| Training | MD-05 | After MD-03/04 |
-| Production | MD-06 | After MD-03, validate per-farmer vs per-parcel |
-| Bulk Upload Region | BULK-02 | After BULK-01 (KT) |
-
-### Planned - Later (🔲)
-
-
-| Module | Phase | Notes |
-|--------|-------|-------|
-| Staff | MD-07 | Scope to be defined |
-| HCV | MD-08 | High Conservation Value tracking |
-| BUSDEV | MD-09 | Business Development module |
-| IMPACT | MD-10 | Impact metrics & reporting |
-| Workplan | MD-11 | Annual planning |
-| CMS | CMS-01 | Content Management System |
-| Community | COMM-01 | Community engagement features |
-| i18n | COMM-02 | Internationalization |
-
-### Blocked (🔴)
-
-| Module | Phase | Blocker |
-|--------|-------|---------|
-| Dashboard BMP | DASH-04 | Requires DASH-01 & DASH-02 completion |
-
----
-
-## Notes
-
-### Current Priorities (2026-06-10)
-
-1. **P0 - BUG-002**: Fix stale dashboard scripts in `/scripts/debug/`
-2. **P0 - DASH-01**: Dashboard scope agreement (BLOCKING) - define in 48h
-3. **P1 - RPT-01**: Menu & placeholder for Report module
-4. **P1 - BULK-01**: Complete KT & Region bulk upload implementation
-
-### Key Decisions Needed
-
-| Decision | Owner | Deadline | Impact |
-|----------|-------|----------|--------|
-| Dashboard minimal scope | Product + Engineering | 2026-06-11 | DASH-01 implementation can start |
-| Production data model | Product + Domain Expert | Before MD-06 | Per-farmer vs per-parcel structure |
-
-### Testing Coverage
-
-
-**Test Status**: 130 tests passing ✅
-
-Covered modules:
-- ✅ Auth & RBAC
-- ✅ Menu system
-- ✅ User management
-- ✅ Region management
-- ✅ Farmer management
-- ✅ Bulk upload
-
-Need coverage:
-- Dashboard
-- Report
-- Training
-- Parcel
-- Production
-
-### Code Compliance
-
-**14/14 rules FULLY COMPLIANT** ✅
-
-All code follows:
-- Kebab-case naming
-- English variables
-- Zod validation
-- Server actions in correct directory
-- RBAC patterns (AccessContext discriminated union)
-- Soft delete (isActive field)
-- Proper data filtering
-- UI/UX standards (loading states, table actions, Shadcn UI)
-
----
-
-## Related Documentation
-
-- [progress.md](./progress.md) - Detailed phase status & roadmap
-- [rule.md](./rule.md) - Development rules & standards
-- [database-schema.md](./database-schema.md) - ERD & schema documentation
-- [general-rule.md](./general-rule.md) - Behavioral principles
-
----
-
-**Last Updated**: 2026-06-10  
-**Next Review**: After DASH-01 scope agreement
+**Last Updated**: 2026-07-10 (Audit menyeluruh — sinkronisasi penuh dengan code + penghapusan blok legacy duplikat)  
+**Next Review**: Setelah remediasi audit P0 + RPT-03 (#109)  
+**Audit Basis**: Full codebase scan (src/, prisma/, scripts/, config) — 24 test files / 296 tests ✅ · build ✅ · lint ❌ 190 error — detail di `audit-report/audit-2026-07-10.md`

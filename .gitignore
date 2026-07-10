@@ -50,3 +50,4 @@ next-env.d.ts
 /scripts/local
 /documentation
 CLAUDE.md
+/audit-report

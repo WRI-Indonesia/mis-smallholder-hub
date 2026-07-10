@@ -33,6 +33,51 @@ export type DomainResult = {
   totalAnomalies: number;
   cards: DomainCard[];
   anomalies: DomainAnomaly[];
+  training?: TrainingCoverageDetail; // hanya pada domain "pelatihan"
+};
+
+// ── DA-02b: detail cakupan pelatihan per paket (Domain Pelatihan) ──
+
+// Ringkasan satu paket wajib untuk KT terpilih (4a)
+export type TrainingPackageCoverage = {
+  code: string;
+  label: string;                 // ref_training_package.name
+  totalFarmers: number;
+  covered: number;               // petani sudah ikut paket ini
+  notCovered: number;            // petani belum ikut
+  coveragePct: number;           // 0-100
+  activityCount: number;         // jumlah TrainingActivity aktif paket ini di KT
+  hasActivity: boolean;
+  notCoveredFarmers: AnomalyItem[]; // daftar petani belum ikut paket ini
+};
+
+// Satu baris matriks cakupan (petani × paket) — 4b
+export type TrainingCoverageRow = {
+  farmerDbId: string;
+  farmerId: string;
+  farmerName: string;
+  cells: { code: string; done: boolean }[];
+};
+
+// Petani yang belum mengikuti seluruh paket wajib — 4c
+export type IncompleteTrainingFarmer = {
+  farmerDbId: string;
+  farmerId: string;
+  farmerName: string;
+  doneCount: number;
+  total: number;
+  coveragePct: number;           // 0-100
+  missing: string[];             // label paket yang masih kurang
+};
+
+export type TrainingCoverageDetail = {
+  packages: { code: string; label: string }[];
+  packageCoverage: TrainingPackageCoverage[];   // 4a
+  matrix: TrainingCoverageRow[];                 // 4b
+  incompleteFarmers: IncompleteTrainingFarmer[]; // 4c (urut cakupan terendah)
+  completeFarmers: number;
+  incompleteCount: number;
+  coverageScore: number;         // rata-rata coveragePct petani (0-100) = skor domain
 };
 
 // A single check on the KT profile record (Domain 1)
@@ -75,7 +120,8 @@ export type CompletenessGroupInput = {
   locationLat: number | null;
   locationLong: number | null;
   district: { id: string; name: string };
-  activities: { id: string }[];
+  activities: { packageCode: string }[]; // aktivitas pelatihan aktif KT ini (per paket)
+  trainingPackages: { code: string; name: string }[]; // paket wajib (isActive, exclude OTHER)
   farmers: CompletenessFarmerInput[];
 };
 
@@ -99,6 +145,7 @@ export type CompletenessFarmerInput = {
     id: string;
     preTestScore: number | null;
     postTestScore: number | null;
+    packageCode: string; // kode paket dari activity terkait (this-KT, aktif)
   }[];
   productionRecords: {
     id: string;

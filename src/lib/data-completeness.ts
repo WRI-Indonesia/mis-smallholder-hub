@@ -167,39 +167,122 @@ export function computeLahanDomain(farmers: CompletenessFarmerInput[]): DomainRe
   };
 }
 
-// ── Domain 4: Pelatihan ──
+// ── Domain 4: Pelatihan (DA-02b — cakupan per paket) ──
+// Aturan bisnis: setiap petani wajib mengikuti SELURUH paket wajib (isActive, exclude OTHER).
+// "Ikut paket X" = ada ≥1 partisipasi aktif pada activity KT ini bertaut paket X (kehadiran cukup,
+// nilai pre/post-test tidak diperhitungkan untuk cakupan). Skor domain = rata-rata % cakupan petani.
 export function computePelatihanDomain(
   farmers: CompletenessFarmerInput[],
-  trainingActivityCount: number
+  requiredPackages: { code: string; name: string }[],
+  activities: { packageCode: string }[]
 ): DomainResult {
   const total = farmers.length;
-  const trained = farmers.filter((f) => f.trainingParticipants.length > 0);
-  const noTraining = farmers.filter((f) => f.trainingParticipants.length === 0);
+  const requiredCodes = requiredPackages.map((p) => p.code);
+  const labelOf = new Map(requiredPackages.map((p) => [p.code, p.name]));
+
+  // Per-farmer coverage terhadap paket wajib.
+  const coverage = farmers.map((f) => {
+    const done = new Set(
+      f.trainingParticipants
+        .map((tp) => tp.packageCode)
+        .filter((code) => labelOf.has(code))
+    );
+    const doneCount = requiredCodes.filter((c) => done.has(c)).length;
+    const totalPkg = requiredCodes.length;
+    const complete = doneCount === totalPkg;
+    // Tanpa paket wajib → tidak ada yang bisa "kurang" (100%).
+    const coveragePct = totalPkg > 0 ? (doneCount / totalPkg) * 100 : 100;
+    const missing = requiredCodes.filter((c) => !done.has(c));
+    return { f, done, doneCount, totalPkg, complete, coveragePct, missing };
+  });
+
+  const completeFarmers = coverage.filter((c) => c.complete).length;
+  const incompleteCount = total - completeFarmers;
+  const coverageScore = total > 0 ? coverage.reduce((s, c) => s + c.coveragePct, 0) / total : 0;
+
+  // 4a — ringkasan per paket + daftar petani belum ikut.
+  const activityCountByCode = new Map<string, number>();
+  for (const a of activities) {
+    if (labelOf.has(a.packageCode)) {
+      activityCountByCode.set(a.packageCode, (activityCountByCode.get(a.packageCode) ?? 0) + 1);
+    }
+  }
+  const packageCoverage = requiredPackages.map((pkg) => {
+    const notCoveredFarmers = coverage.filter((c) => !c.done.has(pkg.code)).map((c) => toItem(c.f));
+    const covered = total - notCoveredFarmers.length;
+    const activityCount = activityCountByCode.get(pkg.code) ?? 0;
+    return {
+      code: pkg.code,
+      label: pkg.name,
+      totalFarmers: total,
+      covered,
+      notCovered: notCoveredFarmers.length,
+      coveragePct: scorePercent(covered, total),
+      activityCount,
+      hasActivity: activityCount > 0,
+      notCoveredFarmers,
+    };
+  });
+
+  // 4b — matriks petani × paket.
+  const matrix = coverage.map((c) => ({
+    farmerDbId: c.f.id,
+    farmerId: c.f.farmerId,
+    farmerName: c.f.name,
+    cells: requiredCodes.map((code) => ({ code, done: c.done.has(code) })),
+  }));
+
+  // 4c — petani belum lengkap (urut cakupan terendah dulu).
+  const incompleteFarmers = coverage
+    .filter((c) => !c.complete)
+    .sort((a, b) => a.coveragePct - b.coveragePct)
+    .map((c) => ({
+      farmerDbId: c.f.id,
+      farmerId: c.f.farmerId,
+      farmerName: c.f.name,
+      doneCount: c.doneCount,
+      total: c.totalPkg,
+      coveragePct: Math.round(c.coveragePct),
+      missing: c.missing.map((code) => labelOf.get(code) ?? code),
+    }));
+
+  // Anomali domain: belum-ikut per paket + kelengkapan nilai (pre/post-test) + KT tanpa aktivitas.
   const noPreTest = farmers.filter((f) => f.trainingParticipants.some((p) => p.preTestScore == null));
   const noPostTest = farmers.filter((f) => f.trainingParticipants.some((p) => p.postTestScore == null));
 
   const anomalies: DomainAnomaly[] = [
-    anomaly("petani-belum-pelatihan", "Petani belum pernah ikut pelatihan", noTraining.map((f) => toItem(f))),
+    ...packageCoverage
+      .filter((p) => p.notCovered > 0)
+      .map((p) => anomaly(`belum-paket-${p.code}`, `Belum ikut ${p.label}`, p.notCoveredFarmers)),
     anomaly("peserta-tanpa-pretest", "Peserta tanpa nilai pre-test", noPreTest.map((f) => toItem(f))),
     anomaly("peserta-tanpa-posttest", "Peserta tanpa nilai post-test", noPostTest.map((f) => toItem(f))),
   ].filter((a) => a.count > 0);
 
-  if (trainingActivityCount === 0) {
+  if (activities.length === 0) {
     anomalies.unshift({ key: "kt-tanpa-aktivitas", label: "KT belum memiliki aktivitas pelatihan", count: 1, items: [] });
   }
 
   return {
     domain: "pelatihan",
     label: "Pelatihan",
-    score: scorePercent(trained.length, total),
+    score: coverageScore,
     totalAnomalies: anomalies.reduce((s, a) => s + a.count, 0),
     cards: [
       { label: "Total Petani", value: total },
-      { label: "Sudah Pernah Pelatihan", value: trained.length },
-      { label: "Belum Pernah Pelatihan", value: noTraining.length },
-      { label: "% Cakupan Pelatihan", value: `${scorePercent(trained.length, total).toFixed(1)}%` },
+      { label: "Petani Lengkap", value: completeFarmers },
+      { label: "Belum Lengkap", value: incompleteCount },
+      { label: "% Cakupan Paket", value: `${coverageScore.toFixed(1)}%` },
     ],
     anomalies,
+    training: {
+      packages: requiredPackages.map((p) => ({ code: p.code, label: p.name })),
+      packageCoverage,
+      matrix,
+      incompleteFarmers,
+      completeFarmers,
+      incompleteCount,
+      coverageScore,
+    },
   };
 }
 
@@ -245,7 +328,7 @@ export function computeCompleteness(group: CompletenessGroupInput): DataComplete
 
   const petani = computePetaniDomain(farmers);
   const lahan = computeLahanDomain(farmers);
-  const pelatihan = computePelatihanDomain(farmers, group.activities.length);
+  const pelatihan = computePelatihanDomain(farmers, group.trainingPackages, group.activities);
   const produksi = computeProduksiDomain(farmers);
 
   const healthScore =

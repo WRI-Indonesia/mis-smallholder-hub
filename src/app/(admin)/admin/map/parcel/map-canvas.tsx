@@ -4,7 +4,7 @@ import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } fro
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection } from "geojson";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,24 @@ import {
   type OverlayState,
   type CustomLayer,
 } from "./map-overlays";
+import {
+  HOTSPOT_RECENT_COLOR,
+  HOTSPOT_OLDER_COLOR,
+  type HotspotState,
+} from "./map-hotspot";
+import {
+  PARCEL_LABEL_FONT_PX,
+  haversineMeters,
+  pathMeters,
+  sphericalAreaM2,
+  formatDistance,
+  formatMeasureArea,
+  geomBounds,
+  parcelLabelFit,
+  type LngLat,
+} from "./map-geo";
+
+const EMPTY_FC: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
 
@@ -70,10 +88,12 @@ const MAP_STYLES = {
 const formatArea = (n: number | null | undefined) =>
   n == null ? "—" : `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
 
+const MEASURE_COLOR = "#f59e0b";
+
 type SelectedFeature = {
   longitude: number;
   latitude: number;
-  kind: "kt" | "parcel";
+  kind: "kt" | "parcel" | "hotspot";
   props: Record<string, unknown>;
 };
 
@@ -82,9 +102,11 @@ interface Props {
   layers: LayerVisibility;
   overlays: OverlayState;
   customLayers: CustomLayer[];
+  hotspot: HotspotState;
+  hotspotData: FeatureCollection | null;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotspotData }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -97,6 +119,90 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
   }, [resolvedTheme]);
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
+
+  // Ruler tool: while active, map clicks drop vertices and the running
+  // geodesic distance along the path is shown.
+  const [measuring, setMeasuring] = useState(false);
+  const [measurePts, setMeasurePts] = useState<LngLat[]>([]);
+
+  const measureLineFc = useMemo<FeatureCollection>(
+    () => ({
+      type: "FeatureCollection",
+      features:
+        measurePts.length >= 2
+          ? [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: measurePts } }]
+          : [],
+    }),
+    [measurePts]
+  );
+  const measurePointsFc = useMemo<FeatureCollection>(
+    () => ({
+      type: "FeatureCollection",
+      features: measurePts.map((p, i) => ({
+        type: "Feature",
+        properties: { idx: i },
+        geometry: { type: "Point", coordinates: p },
+      })),
+    }),
+    [measurePts]
+  );
+  const measureMeters = useMemo(() => pathMeters(measurePts), [measurePts]);
+  const measureAreaM2 = useMemo(() => sphericalAreaM2(measurePts), [measurePts]);
+
+  // Per-segment distance labels at each segment midpoint.
+  const measureSegmentFc = useMemo<FeatureCollection>(() => {
+    const features = [];
+    for (let i = 1; i < measurePts.length; i++) {
+      const a = measurePts[i - 1];
+      const b = measurePts[i];
+      features.push({
+        type: "Feature" as const,
+        properties: { label: formatDistance(haversineMeters(a, b)) },
+        geometry: { type: "Point" as const, coordinates: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] },
+      });
+    }
+    return { type: "FeatureCollection", features };
+  }, [measurePts]);
+
+  // Closed polygon fill once there are ≥3 points (enables area readout).
+  const measurePolygonFc = useMemo<FeatureCollection>(
+    () => ({
+      type: "FeatureCollection",
+      features:
+        measurePts.length >= 3
+          ? [
+              {
+                type: "Feature",
+                properties: {},
+                geometry: { type: "Polygon", coordinates: [[...measurePts, measurePts[0]]] },
+              },
+            ]
+          : [],
+    }),
+    [measurePts]
+  );
+
+  const removeLastMeasure = () => setMeasurePts((prev) => prev.slice(0, -1));
+
+  const toggleMeasure = () => {
+    setMeasuring((on) => {
+      if (!on) {
+        setMeasurePts([]); // fresh measurement when entering
+        setSelected(null);
+      }
+      return !on;
+    });
+  };
+
+  // Esc finishes the current measurement (keeps the drawing, stops adding points).
+  useEffect(() => {
+    if (!measuring) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMeasuring(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [measuring]);
 
   const parcelAreaGeojson = useMemo<FeatureCollection>(
     () => ({
@@ -121,6 +227,38 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
     }),
     [data]
   );
+
+  // Current zoom drives the "does the label fit inside the polygon" test.
+  const [zoom, setZoom] = useState(9);
+
+  // Bounds + centroid per named parcel — computed once per dataset (zoom-independent),
+  // so the per-zoom label pass only runs the cheap fit math.
+  const namedParcels = useMemo(
+    () =>
+      (data?.parcels ?? []).flatMap((p) => {
+        const name = p.farmerName?.trim();
+        const bounds = name ? geomBounds(p.geometry) : null;
+        return name && bounds ? [{ name, bounds, centroid: p.centroid }] : [];
+      }),
+    [data]
+  );
+
+  // Parcel name labels: only those whose (wrapped) name fits at the current zoom.
+  const parcelLabelGeojson = useMemo<FeatureCollection>(() => {
+    const features = namedParcels.flatMap((p) => {
+      const fit = parcelLabelFit(p.name, p.bounds, zoom);
+      return fit
+        ? [
+            {
+              type: "Feature" as const,
+              geometry: { type: "Point" as const, coordinates: p.centroid },
+              properties: { farmerName: p.name, maxWidthEms: fit.maxWidthEms },
+            },
+          ]
+        : [];
+    });
+    return { type: "FeatureCollection", features };
+  }, [namedParcels, zoom]);
 
   const ktGeojson = useMemo<FeatureCollection>(
     () => ({
@@ -181,7 +319,19 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
 
   const vis = (on: boolean) => ({ visibility: (on ? "visible" : "none") as "visible" | "none" });
 
+  // Label colors follow the basemap so they stay legible (matches DASH-03).
+  const labelColors =
+    styleKey === "dark"
+      ? { text: "#f8fafc", halo: "#0f172a" }
+      : styleKey === "hybrid"
+        ? { text: "#ffffff", halo: "#000000" }
+        : { text: "#1f2937", halo: "#ffffff" };
+
   const handleClick = (e: any) => {
+    if (measuring) {
+      setMeasurePts((prev) => [...prev, [e.lngLat.lng, e.lngLat.lat]]);
+      return;
+    }
     const feature = e.features?.[0];
     if (!feature) {
       setSelected(null);
@@ -201,6 +351,9 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
         kind: "parcel",
         props: feature.properties ?? {},
       });
+    } else if (layerId === "hotspot-point") {
+      const [longitude, latitude] = feature.geometry.coordinates;
+      setSelected({ longitude, latitude, kind: "hotspot", props: feature.properties ?? {} });
     }
   };
 
@@ -210,12 +363,21 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
         mapStyle={MAP_STYLES[styleKey] as any}
-        interactiveLayerIds={["kt-point", "parcel-point", "parcel-fill"]}
-        onLoad={() => fitAll()}
+        interactiveLayerIds={["kt-point", "parcel-point", "parcel-fill", "hotspot-point"]}
+        onLoad={(e) => {
+          fitAll();
+          setZoom(e.target.getZoom());
+        }}
+        onZoomEnd={(e) => setZoom(e.viewState.zoom)}
         onClick={handleClick}
         onMouseMove={(e) => {
-          e.target.getCanvas().style.cursor = e.features?.length ? "pointer" : "";
+          e.target.getCanvas().style.cursor = measuring
+            ? "crosshair"
+            : e.features?.length
+              ? "pointer"
+              : "";
         }}
+        doubleClickZoom={!measuring}
         onError={(e) => {
           // Swallow tile/source fetch failures (e.g. upstream WMS down or no CORS)
           // so they don't surface as a fatal dev overlay; log for diagnostics.
@@ -300,6 +462,27 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
           />
         </Source>
 
+        {/* Parcel farmer-name labels — only where the name fits inside the polygon */}
+        <Source id="parcel-label-source" type="geojson" data={parcelLabelGeojson}>
+          <Layer
+            id="parcel-label"
+            type="symbol"
+            layout={{
+              ...vis(layers.parcelAreas),
+              "text-field": ["get", "farmerName"],
+              "text-font": ["Open Sans Regular"],
+              "text-size": PARCEL_LABEL_FONT_PX,
+              "text-max-width": ["get", "maxWidthEms"],
+              "text-optional": true,
+            }}
+            paint={{
+              "text-color": labelColors.text,
+              "text-halo-color": labelColors.halo,
+              "text-halo-width": 1.5,
+            }}
+          />
+        </Source>
+
         {/* Point lahan (centroid) */}
         <Source id="parcel-point-source" type="geojson" data={parcelPointGeojson}>
           <Layer
@@ -328,6 +511,94 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
               "circle-stroke-color": "#ffffff",
             }}
           />
+          <Layer
+            id="kt-label"
+            type="symbol"
+            layout={{
+              ...vis(layers.kt),
+              "text-field": ["get", "name"],
+              "text-font": ["Open Sans Regular"],
+              "text-size": 11,
+              "text-anchor": "top",
+              "text-offset": [0, 0.9],
+              "text-max-width": 10,
+              "text-optional": true,
+            }}
+            paint={{
+              "text-color": labelColors.text,
+              "text-halo-color": labelColors.halo,
+              "text-halo-width": 1.5,
+            }}
+          />
+        </Source>
+
+        {/* Titik Api (Hotspot) — NASA FIRMS, top layer; colored by recency */}
+        <Source
+          id="hotspot-source"
+          type="geojson"
+          data={hotspotData ?? EMPTY_FC}
+          attribution="Titik api: NASA FIRMS (LANCE/EOSDIS)"
+        >
+          <Layer
+            id="hotspot-point"
+            type="circle"
+            layout={vis(hotspot.visible)}
+            paint={{
+              "circle-color": [
+                "match",
+                ["get", "ageBucket"],
+                "recent",
+                HOTSPOT_RECENT_COLOR,
+                HOTSPOT_OLDER_COLOR,
+              ],
+              "circle-radius": 5,
+              "circle-opacity": 0.85,
+              "circle-stroke-width": 1,
+              "circle-stroke-color": "#ffffff",
+            }}
+          />
+        </Source>
+
+        {/* Ruler measure tool — drawn on top of everything */}
+        <Source id="measure-polygon-source" type="geojson" data={measurePolygonFc}>
+          <Layer
+            id="measure-fill"
+            type="fill"
+            paint={{ "fill-color": MEASURE_COLOR, "fill-opacity": 0.12 }}
+          />
+        </Source>
+        <Source id="measure-line-source" type="geojson" data={measureLineFc}>
+          <Layer
+            id="measure-line"
+            type="line"
+            layout={{ "line-cap": "round", "line-join": "round" }}
+            paint={{ "line-color": MEASURE_COLOR, "line-width": 2.5, "line-dasharray": [2, 1] }}
+          />
+        </Source>
+        <Source id="measure-segment-source" type="geojson" data={measureSegmentFc}>
+          <Layer
+            id="measure-segment-label"
+            type="symbol"
+            layout={{
+              "text-field": ["get", "label"],
+              "text-font": ["Open Sans Regular"],
+              "text-size": 10,
+              "text-allow-overlap": true,
+            }}
+            paint={{ "text-color": labelColors.text, "text-halo-color": labelColors.halo, "text-halo-width": 1.5 }}
+          />
+        </Source>
+        <Source id="measure-point-source" type="geojson" data={measurePointsFc}>
+          <Layer
+            id="measure-point"
+            type="circle"
+            paint={{
+              "circle-radius": 4,
+              "circle-color": MEASURE_COLOR,
+              "circle-stroke-width": 1.5,
+              "circle-stroke-color": "#ffffff",
+            }}
+          />
         </Source>
 
         {selected && (
@@ -341,7 +612,39 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
             maxWidth="none"
             className="map-parcel-popup"
           >
-            {selected.kind === "kt" ? (
+            {selected.kind === "hotspot" ? (
+              <div className="w-[264px]">
+                <PopupHeader
+                  accent="red"
+                  icon={<Flame className="h-4 w-4" />}
+                  title="Titik Api"
+                  subtitle={selected.props.ageBucket === "recent" ? "< 24 jam" : "1–5 hari"}
+                />
+                <AttrRows
+                  className="border-t px-3.5 py-3"
+                  rows={[
+                    { label: "Waktu Deteksi", value: formatWib(selected.props.acqDatetime as string) },
+                    { label: "Satelit", value: satelliteLabel(selected.props.satellite) },
+                    { label: "Keyakinan", value: confidenceLabel(selected.props.confidence) },
+                    {
+                      label: "FRP",
+                      value:
+                        selected.props.frp == null
+                          ? "—"
+                          : `${Number(selected.props.frp).toFixed(1)} MW`,
+                    },
+                    {
+                      label: "Koordinat",
+                      value: `${selected.latitude.toFixed(5)}, ${selected.longitude.toFixed(5)}`,
+                      mono: true,
+                    },
+                  ]}
+                />
+                <p className="px-3.5 pb-3 text-[10px] leading-snug text-muted-foreground">
+                  Deteksi anomali panas (VIIRS 375 m), bukan konfirmasi kebakaran. Sumber: NASA FIRMS · jeda ±3 jam.
+                </p>
+              </div>
+            ) : selected.kind === "kt" ? (
               <div className="w-[252px]">
                 <PopupHeader accent="emerald" icon={<MapPin className="h-4 w-4" />} title={String(selected.props.name ?? "—")} subtitle="Kelompok Tani" />
                 <AttrRows
@@ -388,23 +691,88 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
         )}
       </Map>
 
-      {/* Basemap switcher */}
-      <div className="absolute top-4 right-4 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-        {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
-          <button
-            key={key}
-            onClick={() => {
-              userPickedStyle.current = true;
-              setStyleKey(key);
-            }}
-            className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${styleKey === key
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-          >
-            {key}
-          </button>
-        ))}
+      {/* Top-right controls: basemap switcher + ruler tool */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
+        <div className="bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
+          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+            <button
+              key={key}
+              onClick={() => {
+                userPickedStyle.current = true;
+                setStyleKey(key);
+              }}
+              className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${styleKey === key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+
+        {/* Ruler / measure tool */}
+        <button
+          onClick={toggleMeasure}
+          title="Ukur jarak & luas"
+          aria-pressed={measuring}
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-md border shadow-md backdrop-blur-sm transition-colors",
+            measuring
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background/90 text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <Ruler className="h-4 w-4" />
+        </button>
+
+        {(measuring || measurePts.length > 0) && (
+          <div className="w-48 rounded-md border bg-background/95 backdrop-blur-sm shadow-md px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-semibold">
+                <Ruler className="h-3.5 w-3.5" />
+                Ukur
+              </span>
+              {measurePts.length > 0 && (
+                <span className="flex items-center gap-0.5">
+                  <button
+                    onClick={removeLastMeasure}
+                    title="Hapus titik terakhir"
+                    className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Undo2 className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setMeasurePts([])}
+                    title="Hapus ukuran"
+                    className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
+              )}
+            </div>
+            <dl className="mt-1.5 space-y-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Jarak</dt>
+                <dd className="font-mono text-sm font-bold tabular-nums">
+                  {measurePts.length >= 2 ? formatDistance(measureMeters) : "—"}
+                </dd>
+              </div>
+              {measurePts.length >= 3 && (
+                <div className="flex items-baseline justify-between gap-2">
+                  <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Luas</dt>
+                  <dd className="font-mono text-sm font-bold tabular-nums">{formatMeasureArea(measureAreaM2)}</dd>
+                </div>
+              )}
+            </dl>
+            <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+              {measurePts.length === 0
+                ? "Klik pada peta untuk mulai mengukur."
+                : `${measurePts.length} titik · klik menambah · Esc selesai.`}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -413,7 +781,39 @@ export function MapCanvas({ data, layers, overlays, customLayers }: Props) {
 const ACCENTS = {
   emerald: { bar: "bg-emerald-500", tint: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400" },
   blue: { bar: "bg-blue-500", tint: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
+  red: { bar: "bg-red-500", tint: "bg-red-500/10", text: "text-red-600 dark:text-red-400" },
 };
+
+/** Format a FIRMS acquisition timestamp (UTC ISO) as local Jakarta time. */
+function formatWib(iso: string | null | undefined) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return (
+    new Intl.DateTimeFormat("id-ID", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Jakarta",
+    }).format(d) + " WIB"
+  );
+}
+
+/** VIIRS confidence codes (l/n/h) → Bahasa labels; pass through anything else. */
+function confidenceLabel(v: unknown) {
+  const s = String(v ?? "").toLowerCase();
+  if (s === "l") return "Rendah";
+  if (s === "n") return "Nominal";
+  if (s === "h") return "Tinggi";
+  return v == null || v === "" ? "—" : String(v);
+}
+
+/** FIRMS satellite code → readable name (VIIRS S-NPP / NOAA-20). */
+function satelliteLabel(v: unknown) {
+  const s = String(v ?? "").toUpperCase();
+  if (s === "N") return "Suomi NPP";
+  if (s === "1" || s === "NOAA-20") return "NOAA-20";
+  return v == null || v === "" ? "—" : String(v);
+}
 
 type InfoRow = { label: string; value: unknown; mono?: boolean };
 

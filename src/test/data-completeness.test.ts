@@ -35,6 +35,9 @@ const validParcel = {
   landStatus: "Owned",
 };
 
+const P1 = { code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1 - BMP" };
+const P2 = { code: "PAKET_2_MK", name: "Paket 2 - MK" };
+
 function group(overrides: Partial<CompletenessGroupInput> = {}): CompletenessGroupInput {
   return {
     id: "kt-1",
@@ -45,7 +48,8 @@ function group(overrides: Partial<CompletenessGroupInput> = {}): CompletenessGro
     locationLat: 1.23,
     locationLong: 103.4,
     district: { id: "d-1", name: "Distrik A" },
-    activities: [{ id: "act-1" }],
+    activities: [{ packageCode: P1.code }],
+    trainingPackages: [P1],
     farmers: [],
     ...overrides,
   };
@@ -137,23 +141,119 @@ describe("computeLahanDomain", () => {
   });
 });
 
-describe("computePelatihanDomain", () => {
-  it("flags farmers who never participated", () => {
-    const d = computePelatihanDomain([farmer({ trainingParticipants: [] })], 1);
-    expect(d.anomalies.find((a) => a.key === "petani-belum-pelatihan")!.count).toBe(1);
+function participant(packageCode: string, pre: number | null = 80, post: number | null = 90) {
+  return { id: `tp-${packageCode}`, preTestScore: pre, postTestScore: post, packageCode };
+}
+
+describe("computePelatihanDomain (cakupan per paket)", () => {
+  it("flags farmers who have not attended a required package", () => {
+    const d = computePelatihanDomain([farmer({ trainingParticipants: [] })], [P1], [{ packageCode: P1.code }]);
+    expect(d.anomalies.find((a) => a.key === `belum-paket-${P1.code}`)!.count).toBe(1);
     expect(d.score).toBe(0);
   });
-  it("flags participants missing pre/post test scores", () => {
+
+  it("marks a farmer covered when active participation for the package exists", () => {
+    const d = computePelatihanDomain([farmer({ trainingParticipants: [participant(P1.code)] })], [P1], [{ packageCode: P1.code }]);
+    expect(d.training!.completeFarmers).toBe(1);
+    expect(d.training!.incompleteCount).toBe(0);
+    expect(d.score).toBe(100);
+  });
+
+  it("ignores participation for a package outside the required set (e.g. OTHER)", () => {
+    const d = computePelatihanDomain([farmer({ trainingParticipants: [participant("OTHER")] })], [P1], [{ packageCode: P1.code }]);
+    expect(d.training!.incompleteCount).toBe(1);
+    expect(d.training!.incompleteFarmers[0].missing).toEqual([P1.name]);
+    expect(d.score).toBe(0);
+  });
+
+  it("computes per-farmer coverage across multiple packages (partial = belum lengkap)", () => {
     const d = computePelatihanDomain(
-      [farmer({ trainingParticipants: [{ id: "tp-1", preTestScore: null, postTestScore: null }] })],
-      1
+      [farmer({ trainingParticipants: [participant(P1.code)] })],
+      [P1, P2],
+      [{ packageCode: P1.code }, { packageCode: P2.code }]
+    );
+    const inc = d.training!.incompleteFarmers[0];
+    expect(inc.doneCount).toBe(1);
+    expect(inc.total).toBe(2);
+    expect(inc.coveragePct).toBe(50);
+    expect(inc.missing).toEqual([P2.name]);
+    expect(d.score).toBe(50);
+  });
+
+  it("computes package coverage covered/notCovered + notCoveredFarmers", () => {
+    const d = computePelatihanDomain(
+      [
+        farmer({ id: "a", farmerId: "F-A", trainingParticipants: [participant(P1.code)] }),
+        farmer({ id: "b", farmerId: "F-B", trainingParticipants: [] }),
+      ],
+      [P1],
+      [{ packageCode: P1.code }]
+    );
+    const p1 = d.training!.packageCoverage.find((p) => p.code === P1.code)!;
+    expect(p1.covered).toBe(1);
+    expect(p1.notCovered).toBe(1);
+    expect(p1.coveragePct).toBe(50);
+    expect(p1.notCoveredFarmers.map((f) => f.farmerId)).toEqual(["F-B"]);
+  });
+
+  it("computes coverageScore as the average of per-farmer coverage", () => {
+    const d = computePelatihanDomain(
+      [
+        farmer({ id: "a", farmerId: "F-A", trainingParticipants: [participant(P1.code), participant(P2.code)] }), // 100%
+        farmer({ id: "b", farmerId: "F-B", trainingParticipants: [] }), // 0%
+      ],
+      [P1, P2],
+      [{ packageCode: P1.code }, { packageCode: P2.code }]
+    );
+    expect(d.training!.coverageScore).toBe(50);
+  });
+
+  it("sorts incompleteFarmers by coverage ascending", () => {
+    const d = computePelatihanDomain(
+      [
+        farmer({ id: "a", farmerId: "F-A", trainingParticipants: [participant(P1.code)] }), // 50%
+        farmer({ id: "b", farmerId: "F-B", trainingParticipants: [] }), // 0%
+      ],
+      [P1, P2],
+      [{ packageCode: P1.code }, { packageCode: P2.code }]
+    );
+    expect(d.training!.incompleteFarmers.map((f) => f.farmerId)).toEqual(["F-B", "F-A"]);
+  });
+
+  it("marks a package with no active activity in the KT (hasActivity=false)", () => {
+    const d = computePelatihanDomain([farmer({ trainingParticipants: [] })], [P1, P2], [{ packageCode: P1.code }]);
+    const p2 = d.training!.packageCoverage.find((p) => p.code === P2.code)!;
+    expect(p2.hasActivity).toBe(false);
+    expect(p2.activityCount).toBe(0);
+    expect(d.training!.packageCoverage.find((p) => p.code === P1.code)!.hasActivity).toBe(true);
+  });
+
+  it("builds a coverage matrix cell per required package", () => {
+    const d = computePelatihanDomain(
+      [farmer({ trainingParticipants: [participant(P1.code)] })],
+      [P1, P2],
+      [{ packageCode: P1.code }, { packageCode: P2.code }]
+    );
+    const cells = d.training!.matrix[0].cells;
+    expect(cells).toEqual([
+      { code: P1.code, done: true },
+      { code: P2.code, done: false },
+    ]);
+  });
+
+  it("still flags participants missing pre/post test scores (data completeness)", () => {
+    const d = computePelatihanDomain(
+      [farmer({ trainingParticipants: [participant(P1.code, null, null)] })],
+      [P1],
+      [{ packageCode: P1.code }]
     );
     expect(d.anomalies.find((a) => a.key === "peserta-tanpa-pretest")!.count).toBe(1);
     expect(d.anomalies.find((a) => a.key === "peserta-tanpa-posttest")!.count).toBe(1);
-    expect(d.score).toBe(100); // participated → covered
+    expect(d.score).toBe(100); // hadir → covered, nilai tidak memengaruhi cakupan
   });
-  it("flags a group with no training activity", () => {
-    const d = computePelatihanDomain([farmer({ trainingParticipants: [{ id: "tp-1", preTestScore: 80, postTestScore: 90 }] })], 0);
+
+  it("flags a group with no training activity at all", () => {
+    const d = computePelatihanDomain([farmer({ trainingParticipants: [participant(P1.code)] })], [P1], []);
     expect(d.anomalies.find((a) => a.key === "kt-tanpa-aktivitas")!.count).toBe(1);
   });
 });
@@ -177,7 +277,7 @@ describe("computeCompleteness (orchestrator)", () => {
   it("returns a perfect clean result for fully complete data", () => {
     const clean = farmer({
       landParcels: [validParcel],
-      trainingParticipants: [{ id: "tp-1", preTestScore: 80, postTestScore: 90 }],
+      trainingParticipants: [{ id: "tp-1", preTestScore: 80, postTestScore: 90, packageCode: P1.code }],
       productionRecords: [{ id: "pr-1", parcelId: "P-1" }],
     });
     const result = computeCompleteness(group({ farmers: [clean] }));

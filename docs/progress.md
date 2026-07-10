@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-07-09 (MAP-01 #113: section **Peta Lainnya** (overlay referensi SIGAP KLHK/Kemenhut via proxy tile `api/map-overlay/[key]`) + section **Tambah Data GIS Lain** (user tambah layer WMS/Shapefile/GeoJSON, parse di browser) ditambahkan ke Peta Lahan. Sebelumnya, #99 DASH-01 Dashboard Snapshot selesai: Main Dashboard `/admin/dashboard/main` + peta MapLibre + snapshot module `/admin/tools/snapshot` + `MainDashboardSnapshot` model/migration; test lokal 19 files / 216 tests ✅. Sebelumnya: #107 RPT-01 & #108 RPT-02 ✅; #109 RPT-03 siap dikerjakan. Baru: stream `MAP` + **MAP-01 Map/Peta Lahan (#113) selesai** — peta full-bleed + filter floating + info popup accordion (Detail/Pelatihan lazy-load/Produksi dummy); test 20 files / 227 ✅. **Navigation/RBAC hardening (2026-07-09):** sidebar dapat **filter pencarian menu** (Ctrl/⌘K) + tombol **Tutup semua**; `filterMenuTreeByAccess` (menu-utils) menampilkan induk sebagai container tanpa perlu grant induk → menutup **cascade over-grant** (role MANAGEMENT sempat bocor akses Settings→User/Role/Menu Mgmt); MapLibre glyph fix (single-font); +10 test `menu-filter`; test 22 files / 264 ✅)
+**Last updated:** 2026-07-10 (**AUDIT MENYELURUH (2026-07-10):** audit folder/file/code vs docs — hasil: `npm test` **24 file / 296 ✅**, `npm run build` ✅, **`npm run lint` ❌ 190 error** (gate QA merah), **6 temuan HIGH RBAC** (guard `hasPermission` absen di `role-permission.ts`/`menu.ts`/`upload.ts`; scope absen di `getFarmerById` & `bulkCreateFarmers`; menuKey halaman Roles keliru) → **remediasi P0 sebelum fitur baru**; laporan lengkap + saran cleanup di `audit-report/audit-2026-07-10.md` (internal, gitignored); keempat docs disinkronkan ke kondisi code. **MAP-01 enhancement (2026-07-10):** layer **Titik Api (Hotspot)** NASA FIRMS VIIRS 375 m via proxy same-origin `api/map-hotspot` (auth-guarded, bbox **Riau**, window **24 jam / 5 hari** — batas FIRMS `[1..5]`) + **tool Ruler** ukur jarak & luas **geodesik** (label segmen, undo, Esc) + **label nama KT & petani** (petani hanya bila teks **muat di poligon**, wrap otomatis). Helper murni `lib/firms.ts` + `map-geo.ts` + client `map-hotspot.ts`; **+22 unit test**; glyph single-font `["Open Sans Regular"]`. Build ✅ / **test 24 files · 296 ✅**. Sebelumnya (2026-07-09) MAP-01 #113: section **Peta Lainnya** (overlay referensi SIGAP KLHK/Kemenhut via proxy tile `api/map-overlay/[key]`) + section **Tambah Data GIS Lain** (user tambah layer WMS/Shapefile/GeoJSON, parse di browser) ditambahkan ke Peta Lahan. Sebelumnya, #99 DASH-01 Dashboard Snapshot selesai: Main Dashboard `/admin/dashboard/main` + peta MapLibre + snapshot module `/admin/tools/snapshot` + `MainDashboardSnapshot` model/migration; test lokal 19 files / 216 tests ✅. Sebelumnya: #107 RPT-01 & #108 RPT-02 ✅; #109 RPT-03 siap dikerjakan. Baru: stream `MAP` + **MAP-01 Map/Peta Lahan (#113) selesai** — peta full-bleed + filter floating + info popup accordion (Detail/Pelatihan lazy-load/Produksi dummy); test 20 files / 227 ✅. **Navigation/RBAC hardening (2026-07-09):** sidebar dapat **filter pencarian menu** (Ctrl/⌘K) + tombol **Tutup semua**; `filterMenuTreeByAccess` (menu-utils) menampilkan induk sebagai container tanpa perlu grant induk → menutup **cascade over-grant** (role MANAGEMENT sempat bocor akses Settings→User/Role/Menu Mgmt); MapLibre glyph fix (single-font); +10 test `menu-filter`; test 22 files / 264 ✅)
 
 **Next management review:** 2026-07-14
 
@@ -23,11 +23,11 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Item               | Nilai                                                       |
 | ------------------ | ----------------------------------------------------------- |
-| Periode laporan    | 2026-06-30 s.d. 2026-07-06                                  |
-| Status keseluruhan | 🟢 On Track                                          |
-| Basis review       | Issue planning 2026-07-06 (3 Report issues dibuat: #107 #108 #109)       |
-| Test lokal         | ✅ `npm test` — 18 files / 208 tests passed                 |
-| Fokus berikutnya   | Report module (RPT-03 Produksi) + Dashboard module (DASH-01)      |
+| Periode laporan    | 2026-07-07 s.d. 2026-07-10                                  |
+| Status keseluruhan | 🟡 On Track dengan catatan (temuan audit P0 wajib diremediasi) |
+| Basis review       | **Audit menyeluruh 2026-07-10** (`audit-report/audit-2026-07-10.md`) |
+| Test lokal         | ✅ `npm test` — **24 files / 296 tests passed** · build ✅ · **lint ❌ 190 error** |
+| Fokus berikutnya   | **Remediasi audit P0 (guard/scope RBAC + lint)** → RPT-03 Produksi (#109) |
 
 ### Executive Summary
 
@@ -35,36 +35,37 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Platform foundation | ✅ Ready        | Auth, RBAC, menu, user management, region, dan farmer group sudah implementatif. Schema dengan audit fields, soft-delete, RBAC patterns.  |
 | Master data inti    | ✅ Complete     | Farmer ✅, Land Parcel ✅, Training ✅, Production (MD-06) ✅ complete (model + action + UI + test).                            |
-| Dashboard           | 🔴 At Risk      | `/admin/dashboard` masih placeholder `Coming soon`; tidak ada `src/server/actions/dashboard.ts`. Debug/stale scripts sudah dipindah ke `scripts/local/` (local-only). |
+| Dashboard           | ✅ Complete     | DASH-01/02/03 selesai (#99): `/admin/dashboard/main` snapshot-backed + peta MapLibre + `dashboard.ts`/`snapshot.ts` + Tools Snapshot. DASH-04 (BMP) menyusul. |
 | Report              | 🟠 Partial      | RPT-01 Petani (#107) ✅ & RPT-02 Pelatihan (#108) ✅ selesai (route + `report.ts` + UI + test). **Issue #109 (RPT-03 Produksi) siap dikerjakan.** |
-| Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region bulk upload belum ada. |
-| Navigation health   | ✅ Fixed        | `/admin/master-data` redirect ke `/admin/master-data/farmers` — **route exists & functional** ✅                                         |
-| Testing             | ✅ Strong       | Vitest: 22 files / 264 tests passed. Coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅; need dashboard. |
+| Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region & KT bulk upload belum ada (#69, #70). |
+| Map & Data Analyst  | ✅ Complete     | MAP-01 (#113 + hotspot/ruler/label) ✅; DA-01 (#103) & DA-02 (#118, #122) ✅. |
+| **Keamanan (audit)** | 🔴 **Action needed** | Audit 2026-07-10: **5 celah guard/scope RBAC** di server actions (`role-permission`, `menu`, `upload`, `getFarmerById`, `bulkCreateFarmers`) + menuKey Roles keliru — bisa dipanggil langsung tanpa UI. **Remediasi P0.** |
+| Testing & QA        | 🟠 Strong tapi lint merah | Vitest: **24 files / 296 tests passed** ✅ · build ✅ · **`npm run lint` ❌ 226 masalah (190 error)** — mayoritas `no-explicit-any` + `scripts/` ikut ter-lint. |
 
 ### Progress Snapshot
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
-| Total phase    | 37 fase        | PLATFORM, MD, DASH, MAP, RPT, BULK, TOOLS, CMS, COMM, OPS, DA |
-| ✅ Done        | 20 fase        | PLATFORM-01/02/03/04/05/06/07, MD-01/02/03/04/05/06, RPT-01, RPT-02, BULK-01/03, DA-01/02, MAP-01 |
+| Total phase    | 38 fase        | PLATFORM(7), MD(11), DASH(4), MAP(1), RPT(3), BULK(4), DA(2), TOOLS(1), CMS(1), COMM(2), OPS(2) |
+| ✅ Done        | **24 fase**    | PLATFORM-01…07, MD-01…06, DASH-01/02/03, MAP-01, RPT-01/02, BULK-01/03/04, DA-01/02 |
 | 🟠 Partial     | 3 fase         | TOOLS-01, OPS-01, OPS-02 |
-| 🔲 Not Started | 3 fase         | CMS-01, COMM-01, RPT-03 (issue #109 sudah dibuat) |
-| 🔲 Planned     | 10 fase        | MD-07/08/09/10/11, DASH-02/03, COMM-02, BULK-02, BULK-04    |
-| 🔴 Blocked     | 1 fase         | DASH-04 (wait DASH-01/02)                            |
-| 🎯 Now         | 1 fase         | RPT-03 (#109) — issue siap dikerjakan |
+| 🔲 Not Started | 4 fase         | RPT-03 (issue #109 siap), BULK-02 (#70), CMS-01, COMM-01 |
+| 🔲 Planned     | 7 fase         | MD-07/08/09/10/11, DASH-04, COMM-02 |
+| 🔴 Blocked     | 0 fase         | — (DASH-04 tidak lagi terblokir; DASH-01/02 selesai) |
+| 🎯 Now         | 2 fokus        | **Remediasi audit P0** (guard/scope RBAC + lint) + RPT-03 (#109) |
 
 ### Management Talking Points
 
 | Topik               | Pesan Utama                                                              | Dampak                                                                                    |
 | ------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| **Code Quality ✅**  | **14/14 rule.md requirements FULLY COMPLIANT** — RBAC, soft-delete, validation, UI/UX all correct. | Production-ready quality; zero rule violations; ready for scaling. |
+| **Code Quality 🟠 (audit 2026-07-10)** | Audit menyeluruh: fondasi sehat (35/35 page ter-guard, DataTable/API route/seed compliant, 296 test ✅) TAPI **7 PASS / 4 PARTIAL / 3 FAIL** dari 14 kategori rule.md — 5 celah guard/scope server action + lint merah. | Remediasi P0 dijadwalkan sebelum fitur baru; detail & saran cleanup di `audit-report/audit-2026-07-10.md`. |
 | **Production ✅ Complete** | MD-06 Production sudah implementatif (#89): ProductionRecord model + actions + UI + 13 tests + bulk upload | Yield tracking per farmer/parcel ready; foundation untuk impact reporting. |
 | **Land Parcel ✅ Complete** | MD-04 Land Parcel sudah implementatif (#88): model + actions + UI + 14 tests + Shapefile bulk upload | Geospatial features ready; foundation untuk Production module. |
 | Farmer ✅ Complete  | MD-03 Farmer sudah implementatif (model + action + UI + 10 tests).       | Ready untuk dependency downstream (dashboard, parcel, training, production).                          |
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
-| Dashboard priority  | `/admin/dashboard` masih placeholder; scope & wireframe perlu disepakati. | Scope DASH-01 minimal harus ditetapkan sebelum dev dimulai.                               |
+| Dashboard ✅ Complete | DASH-01/02/03 selesai (#99): Main Dashboard snapshot-backed + peta + Tools Snapshot. | Fondasi dashboard siap; DASH-04 (BMP) tinggal reuse pola snapshot. |
 | ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests 208/208 passed; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report ✅.    | Foundation & core features stabil; siap lanjut ke dashboard & RPT-03.                    |
+| Delivery confidence | Tests **296/296** passed (24 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms ✅. | Foundation & core features stabil; setelah remediasi P0, lanjut RPT-03. |
 
 ### Decisions Needed
 
@@ -73,17 +74,19 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | ✅ Arah `/admin/master-data` | — (RESOLVED)            | ✅ DONE              | Redirect ke `/admin/master-data/farmers` — **route tersedia & functional**.                 |
 | ✅ MD-04 Land Parcel (#88)  | — (RESOLVED)            | ✅ DONE              | Implementasi complete: model, actions, UI, tests, Shapefile bulk upload ✅                   |
 | ✅ MD-06 Production (#89) | — (RESOLVED)            | ✅ DONE              | Implementasi complete: ProductionRecord model, CRUD actions, UI, 13 tests, bulk upload ✅ |
-| Dashboard Scope DASH-01   | Product + Engineering        | URGENT (48h)    | Define minimal scope: summary cards, metrics, filters, wireframe sebelum implementation.       |
-| Dashboard Server Actions   | Engineering Lead        | Setelah scope agreed | Create `src/server/actions/dashboard.ts` dengan queries minimal sesuai scope DASH-01.       |
+| ✅ Dashboard Scope DASH-01 | — (RESOLVED)            | ✅ DONE (#99)        | Main Dashboard snapshot-backed + `dashboard.ts`/`snapshot.ts` sudah diimplementasi & teruji. |
+| **Pola restore soft-delete** | Product + Engineering | 2026-07-17 | Audit: list KT menampilkan record nonaktif (bisa restore), list Petani menyembunyikan (tidak bisa restore). Pilih satu pola, seragamkan (`getFarmers` vs `getFarmerGroups`). |
+| **Nasib `recharts` & `Dockerfile`** | Engineering Lead | 2026-07-24 | recharts 0 pemakaian (ditunda sampai chart produksi?); Dockerfile tampak tak dipakai pipeline (deploy via SSH build). Hapus atau dokumentasikan. |
 
-### Next Two Weeks (2026-07-06 s.d. 2026-07-20)
+### Next Two Weeks (2026-07-10 s.d. 2026-07-24)
 
 | Priority | Target                                      | Output                                                                                                        |
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | **✅ Done**| **#107 RPT-01: Report Petani**              | Menu Level 1 `report` + sub-menu `report-farmer` + server actions (`report.ts`) + UI + unit tests ✅        |
 | **✅ Done**| **#108 RPT-02: Report Pelatihan**           | Sub-menu `report-training` + `report.ts` (`getTrainingReport`) + UI (2 tab) + Excel/PDF export + unit tests ✅        |
+| **P0**   | **Remediasi audit 2026-07-10 (keamanan)**   | Guard `hasPermission` di `role-permission.ts`/`menu.ts`/`upload.ts` + scope `getFarmerById`/`bulkCreateFarmers` + menuKey Roles + unit test RBAC — lihat `audit-report/audit-2026-07-10.md` §8 |
+| **P1**   | **Lint hijau kembali**                      | eslint ignore `scripts/**` + bereskan `no-unused-vars` (32) + cicil `no-explicit-any` di `src/` |
 | **P1**   | **#109 RPT-03: Report Produksi**            | Sub-menu `report-production` + extend `report.ts` + UI (filter periode + 2 tab) + unit tests                 |
-| **P1**   | **DASH-01: Dashboard scope agreement**      | Define minimal scope: summary cards + metrics + filter — **BLOCKING** dashboard implementation                |
 
 </details>
 
@@ -129,38 +132,37 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 
 | Area           | Bukti di Codebase                                                                                                                                                                  | Kesimpulan                                                                             |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Prisma models  | `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer`, `LandParcel`, `TrainingPackage`, `TrainingActivity`, `TrainingParticipant`, `ProductionRecord` | Schema mencakup platform, RBAC, region, farmer group, farmer (MD-03), land parcel (MD-04), training (MD-05), dan production (MD-06) ✅ |
-| Admin routes   | ✅ Dashboard, Settings (Users/Roles/Menu/Regions), Master Data (Farmers list/detail/form + Groups list/detail/form + Parcels list/detail/form + Training list/detail/participants + Production list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Profile, Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data) | ✅ Admin foundation complete + Farmer CRUD + Land Parcel CRUD + Training CRUD + Production CRUD + Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data) complete; Dashboard placeholder only |
-| Server actions | `user` (259 LOC), `user-data-access` (193 LOC), `user-menu-access` (195 LOC), `menu` (110 LOC), `region` (104 LOC), `farmer-group` (145 LOC), `farmer` (188 LOC), `land-parcel` (165 LOC), `bulk-upload-parcel` (222 LOC), `profile` (47 LOC), `role-permission` (74 LOC), `bulk-upload` (177 LOC), `training` (355 LOC), `production` (180 LOC), `bulk-upload-production` (95 LOC), `upload` (77 LOC), `data-analyst` (140 LOC), `data-completeness` (120 LOC, + logika murni `src/lib/data-completeness.ts` 286 LOC) — **Total 2817 LOC** | Training, farmer, land parcel, production, bulk upload, data analyst (Ringkasan Petani + Analisa Ketersediaan Data) tersedia ✅; dashboard belum ada |
-| Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `menu.schema.ts`, `region.schema.ts`, `training-activity.schema.ts`, `training-participant.schema.ts`, `production.schema.ts`, `user.schema.ts` — **9 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training, production ✅ |
+| Prisma models  | **19 model / 10 migrasi**: `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer`, `LandParcel`, `TrainingPackage`, `TrainingActivity`, `TrainingParticipant`, `ProductionRecord`, `MainDashboardSnapshot` | Schema mencakup platform, RBAC, region, farmer group, farmer (MD-03), land parcel (MD-04), training (MD-05), production (MD-06), dan dashboard snapshot (DASH-01) ✅ |
+| Admin routes   | **35 page.tsx**: Dashboard (Main, snapshot-backed), Settings (Users/Roles/Menu/Regions), Master Data (Farmers + Groups + Parcels + Training + Production, list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Report (Petani + Pelatihan), Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data), Map (Peta Lahan), Tools (Dashboard Snapshot), Profile | ✅ Semua page konten ter-guard `requirePermission` (27) + 8 justified (redirect-only/profile) — verifikasi audit 2026-07-10 |
+| Server actions | **22 file — total 3.894 LOC** (audit `wc -l` 2026-07-10): `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `role-permission`, `farmer-group`, `farmer` (143), `land-parcel` (216), `bulk-upload` (76), `bulk-upload-parcel` (223), `bulk-upload-production` (160), `training` (363), `production` (375), `upload`, `profile`, `report` (392), `dashboard` (70), `snapshot` (204), `map`, `data-analyst` (187), `data-completeness` | Semua modul (incl. dashboard, snapshot, map, report) tersedia ✅ — catatan audit: 5 celah guard/scope, lihat `audit-report/audit-2026-07-10.md` §2 |
+| Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `map.schema.ts`, `menu.schema.ts`, `production.schema.ts`, `region.schema.ts`, `snapshot.schema.ts`, `training-activity.schema.ts`, `training-participant.schema.ts`, `user.schema.ts` — **11 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training, production, map, snapshot ✅ |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
 | Scripts        | `scripts/get-link.js`, `scripts/pdf-manager.js` (tracked, npm commands aktif ✅); debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only) | BUG-002 resolved — stale scripts tidak ada di repo/CI. |
-| Tests          | `npm test` lulus **21 test files / 254 tests** ✅; test files: auth, bulk-upload, bulk-upload-parcel, dashboard, data-analyst, data-completeness, farmer, land-parcel, map, menu-action, middleware, perf, production, rbac, rbac-permission, region, report, training-activity, training-participant, user-action, user-data-access, user-menu-access | Testing solid untuk core features (auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/data-analyst/data-completeness); need dashboard/report expansion |
+| Tests          | `npm test` lulus **24 test files / 296 tests** ✅ (audit 2026-07-10); test files: auth, bulk-upload, dashboard, data-analyst, data-completeness, farmer, firms, land-parcel, map, map-geo, menu-action, menu-filter, middleware, perf, production, rbac, rbac-permission, region, report, training-activity, training-participant, user-action, user-data-access, user-menu-access | Testing solid untuk semua core features; gap tersisa: RPT-03 (belum ada) + integration test route hotspot |
 | DevOps         | Dockerfile + `.github/workflows/` (`deploy-dev.yaml`, `deploy-main.yml`, `semgrep.yml`, `gitleaks.yml`)                                                                            | DevOps partial; workflow CI/CD dan security scan (Gitleaks, Semgrep) ditambahkan |
 
-### Code Compliance Audit vs rule.md (2026-06-08)
+### Code Compliance Audit vs rule.md (2026-07-10)
 
-**Audit Scope:** Keseluruhan codebase terhadap `docs/rule.md` requirements
+**Audit Scope:** Keseluruhan codebase (src/, prisma/, scripts/, config) terhadap `docs/rule.md` — detail lengkap + bukti `file:line` di **`audit-report/audit-2026-07-10.md`** (internal, gitignored). Menggantikan audit 2026-06-08 yang sudah stale.
 
 | Rule Category | Requirement | Actual | Status | Evidence |
 |---|---|---|---|---|
-| **Code Standards** | File naming: kebab-case | All files use kebab-case | ✅ PASS | 129 source files reviewed; no violations |
-| **Code Standards** | Variable naming: English | All variables in English | ✅ PASS | grep: no Indonesian var names found |
-| **Code Standards** | Imports: from sub-module | No barrel index imports | ✅ PASS | grep `from.*index`: 0 results |
-| **Code Standards** | Default: Server Component | Minimal use client (11 files) | ✅ PASS | Use client only where needed (modals, state) |
-| **Code Standards** | Validation: Zod schemas | Schemas in src/validations/ | ✅ PASS | 5 schema files: farmer, farmer-group, menu, region, user |
-| **Code Standards** | Server Actions: src/server/actions/ | All actions in correct dir | ✅ PASS | 9 action files: 1130 LOC total; proper structure |
-| **RBAC Pattern** | AccessContext discriminated union | Implemented in farmer.ts | ✅ PASS | `type AccessContext = \| { mode: "ALL" } \| BY_FARMER_GROUP \| BY_DISTRICT` |
-| **RBAC Pattern** | hasPermission backend validation | Used in all actions | ✅ PASS | farmer.ts, farmer-group.ts, user-menu-access.ts, etc. — all actions call `hasPermission()` |
-| **Soft Delete** | isActive field @default(true) | All models have isActive | ✅ PASS | grep isActive: found in all schema files (8 results) |
-| **Data Filtering** | Filter isActive: true in queries | Filtering in all queries | ✅ PASS | Checked farmer.ts, region.ts, farmer-group.ts |
-| **UI/UX** | Loading state (loading.tsx) | Present in 5 routes | ✅ PASS | loading.tsx found: public, regions, users, farmers, groups |
-| **UI/UX** | Shadcn UI + Tailwind | Used throughout | ✅ PASS | Imports: Button, Card, Dialog, Modal from shadcn |
-| **UI/UX** | Table Actions positioning | Actions in first column | ✅ PASS | farmer-list-client.tsx, user-list-client.tsx — actions first |
-| **Safety & Approval** | No destructive changes | Only docs updated today | ✅ PASS | Changes: progress.md only (no schema/data mutations) |
-| **Issue Workflow** | QA before approval | Tests 121/121 passing | ✅ PASS | `npm test` verified; no build/lint errors |
+| **Code Standards** | File naming: kebab-case | 100% kebab-case; 1 inkonsistensi suffix (`land-parcel.types.ts`) | ✅ PASS | audit §5 |
+| **Code Standards** | Variable naming: English | Istilah domain ID di lib/types (`computePetaniDomain`, `totalPetani`, dll) | 🟠 PARTIAL | `data-completeness.ts`, `types/dashboard.ts` — audit §5 |
+| **Code Standards** | Imports: from sub-module | 13 file pakai barrel `@/components/shared` vs 8 sub-path; barrel `shared` kini diresmikan sebagai pengecualian di rule.md | ❌→✅ (rule direvisi) | audit §4 U-5 |
+| **Code Standards** | Default: Server Component | 78 file `"use client"` (29 = shadcn `ui/`), semua page.tsx RSC | ✅ PASS | audit §9 |
+| **Code Standards** | Validation: Zod schemas | 11 schema files di `src/validations/` | ✅ PASS | audit §9 |
+| **Code Standards** | Server Actions: src/server/actions/ | 22 action files (3.894 LOC) | ✅ PASS | audit §3 |
+| **RBAC Pattern** | AccessContext discriminated union | Diimplementasi & dipakai luas (`access-context.ts`) | ✅ PASS | audit §3 |
+| **RBAC Pattern** | hasPermission backend validation | **5 celah**: `role-permission.ts`, `menu.ts`, `upload.ts` tanpa guard; scope absen `getFarmerById`/`bulkCreateFarmers`; + helper select tanpa guard | ❌ **FAIL — P0** | audit §2 |
+| **Soft Delete** | isActive field @default(true) | Semua model (join-table assignment by design tanpa isActive) | ✅ PASS | audit §3 |
+| **Data Filtering** | Filter isActive: true in queries | `getFarmerGroups/ById` tanpa filter isActive level KT; inkonsistensi pola restore KT vs Petani | 🟠 PARTIAL | audit §3.2 |
+| **UI/UX** | Loading state (loading.tsx) | 4 halaman tabel belum punya (training, settings/menu, report ×2) | 🟠 PARTIAL | audit §4 U-4 |
+| **UI/UX** | Shadcn UI + Tailwind | Dipakai konsisten; DataTable/TableActions shared 100% patuh | ✅ PASS | audit §4 |
+| **UI/UX** | Table Actions positioning | Patuh di semua list KECUALI `menu-list-client.tsx` (kanan, tanpa gating izin) | 🟠 PARTIAL | audit §4 U-1/U-2 |
+| **Issue Workflow** | QA gates (test/build/lint) | Test 296 ✅ · build ✅ · **lint ❌ 226 masalah (190 error)** | ❌ **FAIL** | audit §1 |
 
-**Summary:** 14 dari 14 rules **FULLY COMPLIANT** ✅ — Codebase follows rule.md strictly
+**Summary:** **7 PASS · 4 PARTIAL · 3 FAIL** — fondasi arsitektur sehat, tetapi klaim lama "14/14 fully compliant" tidak lagi berlaku. Remediasi P0/P1 terjadwal di Sprint Focus.
 
 
 
@@ -195,7 +197,7 @@ Format phase: `STREAM-NN`.
 | MD-02       | Farmer Groups                | ✅ Done        | Done    | `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter                              | Add/maintain tests if needed                                                     |
 | MD-03       | Farmer                       | ✅ Done        | Done    | `Farmer` model ✅, `src/server/actions/farmer.ts` (188 LOC) ✅, validation ✅, UI (list/detail/form) ✅, test ✅ | Maintain; expand MD-04/05/06 dependency                                          |
 | MD-04       | Parcels                      | ✅ Done        | Done    | `LandParcel` model ✅, `src/server/actions/land-parcel.ts` (165 LOC) ✅, `src/server/actions/bulk-upload-parcel.ts` (222 LOC) ✅, validation schema ✅, UI list/detail/form ✅, ZIP Shapefile bulk upload dengan column mapping ✅, 14 unit tests ✅ | Maintain; expand to Production dependency |
-| MD-05       | Training                     | ✅ Done        | Done    | Schema (TrainingPackage/Activity/Participant) ✅, actions (355 LOC) ✅, UI (list/detail/modal) ✅, participants management ✅, pre/post-test scores ✅, bulk participant removal ✅, 18 unit tests ✅ | Maintain; #77-#82, #94 complete |
+| MD-05       | Training                     | ✅ Done        | Done    | Schema (TrainingPackage/Activity/Participant) ✅, actions (363 LOC) ✅, UI (list/detail/modal) ✅, participants management ✅, pre/post-test scores ✅, bulk participant removal ✅, 23 unit tests (activity 16 + participant 7) ✅ | Maintain; #77-#82, #94 complete |
 | MD-06       | Agronomy / Production        | ✅ Done        | Done    | ProductionRecord model ✅, `src/server/actions/production.ts` (180 LOC) ✅, `src/server/actions/bulk-upload-production.ts` (95 LOC) ✅, validation schema ✅, UI list/detail/form pages ✅, 13 unit tests ✅ | Maintain; #89 complete (per-farmer/parcel tracking, period validation, bulk upload)                      |
 | MD-07       | Staff                        | 🔲 Planned     | Later   | No staff model/route/action/UI                                                                    | Define scope                                                                     |
 | MD-08       | HCV                          | 🔲 Planned     | Later   | No HCV model/route/action/UI                                                                      | Define scope                                                                     |
@@ -206,7 +208,7 @@ Format phase: `STREAM-NN`.
 | DASH-02     | Dashboard: Server Actions    | ✅ Done        | Done    | `src/server/actions/dashboard.ts` (RBAC-scoped aggregation) + `src/server/actions/snapshot.ts` (CRUD) + `src/lib/dashboard-aggregation.ts` (pure, tested) + `src/lib/dashboard-query.ts` ✅ | Implement #99 completed |
 | DASH-03     | Interactive Map              | ✅ Done        | Done    | `src/app/(admin)/admin/dashboard/dashboard-map.tsx` — MapLibre (react-map-gl) clustered KT markers + label nama KT pada titik non-cluster, auto-fit bounds, click-to-select info panel, NULL-coordinate empty state ✅ | Implement #99 completed |
 | DASH-04     | Dashboard BMP                | 🔲 Planned     | Next    | Dependencies DASH-01/02 complete (#99); BMP-specific dashboard not yet implemented                | Define BMP dashboard scope; reuse snapshot pattern                               |
-| MAP-01      | Map: Peta Lahan              | ✅ Done        | Done    | #113 ✅ (scaffolding): menu `map`+`map-parcel` (seed CSV + DB) ✅; `/admin/map/parcel` peta full-bleed MapLibre (`react-map-gl`) + panel filter floating collapsible (Province→District→KT + Muat Data) + legend layer toggle (point KT / centroid lahan / polygon lahan) + info popup accordion (Detail Lahan / Pelatihan Petani lazy-load / Produksi grafik **dummy scaffolding**) ✅; `src/server/actions/map.ts` (`getMapData` + dropdowns + `getFarmerTraining`, 3-layer RBAC) + `src/lib/map-data.ts` (pure, teruji) + `src/types/map.ts` + `src/validations/map.schema.ts` ✅; centroid lahan via `@turf`; 7 unit test ✅; section **Peta Lainnya** = overlay raster referensi SIGAP KLHK/Kemenhut (Kawasan Hutan / Pelepasan / Gambut / PIPPIB / Penutupan Lahan) via proxy tile `api/map-overlay/[key]` (atasi CORS + TLS upstream) ✅; section **Tambah Data GIS Lain** = user tambah layer WMS/Shapefile/GeoJSON (parse browser via `shpjs`, `map-custom-gis.tsx`) ✅ | Implement #113 completed. Follow-up: data produksi asli + Recharts, refine info popup, analisis spasial overlap parcel↔kawasan hutan (PostGIS `ST_Intersects`) |
+| MAP-01      | Map: Peta Lahan              | ✅ Done        | Done    | #113 ✅ (scaffolding): menu `map`+`map-parcel` (seed CSV + DB) ✅; `/admin/map/parcel` peta full-bleed MapLibre (`react-map-gl`) + panel filter floating collapsible (Province→District→KT + Muat Data) + legend layer toggle (point KT / centroid lahan / polygon lahan) + info popup accordion (Detail Lahan / Pelatihan Petani lazy-load / Produksi grafik **dummy scaffolding**) ✅; `src/server/actions/map.ts` (`getMapData` + dropdowns + `getFarmerTraining`, 3-layer RBAC) + `src/lib/map-data.ts` (pure, teruji) + `src/types/map.ts` + `src/validations/map.schema.ts` ✅; centroid lahan via `@turf`; 7 unit test ✅; section **Peta Lainnya** = overlay raster referensi SIGAP KLHK/Kemenhut (Kawasan Hutan / Pelepasan / Gambut / PIPPIB / Penutupan Lahan) via proxy tile `api/map-overlay/[key]` (atasi CORS + TLS upstream) ✅; section **Tambah Data GIS Lain** = user tambah layer WMS/Shapefile/GeoJSON (parse browser via `shpjs`, `map-custom-gis.tsx`) ✅; **enhancement 2026-07-10:** layer **Titik Api (Hotspot)** NASA FIRMS VIIRS 375 m (proxy `api/map-hotspot` auth-guarded + `lib/firms.ts`, bbox **Riau**, window **24 jam / 5 hari**) + **tool Ruler** ukur jarak & luas geodesik (label segmen/undo/Esc) + **label nama KT & petani** (petani hanya bila **muat di poligon**, wrap otomatis, bounds precomputed) ✅; helper murni `map-geo.ts` + **22 unit test** ✅ | Implement #113 completed. Follow-up: data produksi asli + Recharts, refine info popup, analisis spasial overlap parcel↔kawasan hutan (PostGIS `ST_Intersects`); **hotspot follow-up:** proximity alert KT/parcel↔hotspot, integration test route |
 | RPT-01      | Report: Petani               | ✅ Done        | Done    | Menu Level 1 `report` + sub-menu `report-farmer` ✅, `src/server/actions/report.ts` (145 LOC) ✅, halaman `/admin/report/farmer` UI + filter wajib + export Excel & PDF ✅, 3 unit tests ✅ | Implement #107 completed |
 | RPT-02      | Report: Pelatihan            | ✅ Done        | Done    | Halaman `/admin/report/training` dengan 6 summary cards, 2 tab (Kegiatan Pelatihan & Cakupan per Petani), ekspor Excel 2-sheet, filter jenis training, dan ekspor PDF. | Implement #108 completed |
 | RPT-03      | Report: Produksi             | 🔲 Not Started | Now     | Tidak ada report produksi; **#109 dibuat 2026-07-06** dengan spec lengkap (filter periode, rekap + detail panen) | Implement #109: extend `report.ts` + halaman `/admin/report/production` + unit tests; dependency RPT-01 |
@@ -215,12 +217,12 @@ Format phase: `STREAM-NN`.
 | BULK-03     | Bulk Upload: Farmer          | ✅ Done        | Done    | `bulk-upload.ts` server action (177 LOC) ✅, dynamic mapping UI ✅, Exceljs upload & smart validations ✅, preview table ✅, full/error download options ✅ | Maintain; #76 Excel upload complete dengan auto column mapping, validasi, preview, download error rows |
 | BULK-04     | Bulk Upload: Production      | ✅ Done        | Done    | `bulk-upload-production.ts` server action (95 LOC) ✅, dynamic mapping UI ✅, period validation ✅, preview table ✅ | Maintain; bulk production upload complete with period/harvest validation |
 | DA-01       | Farmer Summary Analytics     | ✅ Done        | Done    | `src/types/data-analyst.ts` ✅, `src/server/actions/data-analyst.ts` (140 LOC) ✅, `src/app/(admin)/admin/data-analyst/farmer-summary` UI list/tabs/Excel export ✅, 4 unit tests ✅ | Maintain; #103 complete |
-| DA-02       | Analisa Ketersediaan Data KT | ✅ Done        | Done    | `src/types/data-completeness.ts` ✅, `src/lib/data-completeness.ts` (pure logic) ✅, `src/server/actions/data-completeness.ts` (scope-checked) ✅, `src/app/(admin)/admin/data-analyst/data-completeness` UI (filter → 5 collapsible sections: Profil KT/Petani/Lahan/Pelatihan/Produksi + health score + multi-sheet Excel) ✅, 23 unit tests ✅ | Maintain; #118 complete |
+| DA-02       | Analisa Ketersediaan Data KT | ✅ Done        | Done    | `src/types/data-completeness.ts` ✅, `src/lib/data-completeness.ts` (pure logic) ✅, `src/server/actions/data-completeness.ts` (scope-checked) ✅, `src/app/(admin)/admin/data-analyst/data-completeness` UI (filter → 5 collapsible sections: Profil KT/Petani/Lahan/Pelatihan/Produksi + health score + multi-sheet Excel) ✅, 31 unit tests ✅ | Maintain; #118 complete. **DA-02b (#122):** Domain Pelatihan diperdetail → cakupan per paket (4a Ringkasan per Paket / 4b Matriks / 4c Petani Belum Lengkap, nested collapse), skor domain = rata-rata % cakupan paket, +2 sheet Excel |
 | TOOLS-01    | Tools Import/Export/GIS/S3   | 🟠 Partial     | Next    | `scripts/get-link.js` & `scripts/pdf-manager.js` tracked ✅ (npm `s3:get-link`, `pdf:*` aktif); debug/stale scripts → `scripts/local/` (gitignored) ✅ | ✅ BUG-002 resolved — stale scripts tidak ada di repo/CI. Utility scripts tetap functional. |
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **19 test files + 216 passing tests** ✅; coverage: auth/RBAC/menu/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard | Expand to RPT-03 |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **24 test files / 296 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms/middleware/perf | Expand to RPT-03 + integration test route hotspot |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
@@ -238,17 +240,17 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 | Priority | ID / Phase   | Tujuan                                 | Evidence                                                                                      | Next Action                                                              |
 | -------- | ------------ | -------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| P0       | BUG-002      | Fix stale dashboard tooling references | `scripts/debug/*dashboard*` import `src/server/actions/dashboard` yang tidak ada              | ✅ **BUG-001 FIXED** — redirect ke farmers works; **Remove/fix script** |
-| P0       | DASH-01      | Dashboard scope agreement + impl       | `src/app/(admin)/admin/dashboard/page.tsx` masih `Coming soon`; **BLOCKING scope undefined** | **URGENT: Define scope in 48h** — cards, metrics, filters, wireframe    |
-| ✅ Done  | #94          | Training Participant Pre/Post-test Scores | ✅ preTestScore & postTestScore fields, validation, inline editing UI, bulk upload parsing, bulk participant removal | #94 complete |
-| P1       | PLATFORM-07  | Hierarchical Menu (3-Level)            | Schema support recursive; UI & RBAC supporting 3-level           | #87 — Implement sidebar level 3, RBAC inheritance, validation depth max 3 |
-| P1       | RPT-01       | Menu & placeholder Report              | Tidak ada report module; issue #64-#67 siap untuk diimplementasi                             | #64 menu + placeholder → #65-#67 tabel & export                         |
-| P1       | BULK-01      | Menu & placeholder Bulk Upload         | Tidak ada bulk upload module; issue #68-#70, #76 siap untuk diimplementasi                   | #68 menu + placeholder → #69-#70 CSV upload & validasi → #76 Farmer column mapping |
+| **P0**   | AUDIT-P0     | **Remediasi keamanan audit 2026-07-10 (#125)** | 5 celah guard/scope server action + menuKey Roles keliru — `audit-report/audit-2026-07-10.md` §2 & §8 | Tambah `hasPermission` (`role-permission.ts`, `menu.ts`, `upload.ts`) + scope (`getFarmerById`, `bulkCreateFarmers`) + `requirePermission("settings-roles")` + unit test RBAC |
+| **P1**   | AUDIT-P1     | Lint hijau kembali (gate QA) (#126)    | `npm run lint` ❌ 226 masalah (190 error); `scripts/**` ikut ter-lint                          | eslint ignore `scripts/**` → hapus unused vars (32) → cicil `no-explicit-any` di src |
+| P1       | RPT-03       | Report Produksi                        | Issue #109 dengan spec lengkap; RPT-01/02 sudah jadi pola                                     | Extend `report.ts` + halaman `/admin/report/production` + unit tests |
+| P2       | AUDIT-P2     | Cleanup dead code & deps (#129)        | 1 file lib + 6 komponen + 5–9 dependency mati (audit §5 & §8 P2)                              | PR terpisah: hapus deps/file mati, konsolidasi helper duplikat |
 
 ### Active Issues / Work Items
 
 | Work Item                                        | Phase   | Status      | Assignee | Target | Next Action                                                                              |
 | ------------------------------------------------ | ------- | ----------- | -------- | ------ | ---------------------------------------------------------------------------------------- |
+| **🔴 #125 AUDIT-P0: Remediasi guard/scope RBAC** | —       | 🔲 Todo     | TBD      | ASAP   | 6 item P0 di `audit-report/audit-2026-07-10.md` §8 (role-permission, menu, upload, farmer scope, bulk scope, menuKey Roles) |
+| **🟠 #126/#127/#128 AUDIT-P1: Lint + scope by-id/restore + konvensi UI** | — | 🔲 Todo | TBD | 07-17 | eslint ignore scripts/** + unused vars + any; menu-list-client gating/TableActions; farmer-form-modal Combobox; 4 loading.tsx |
 | **✅ BUG-001: fix redirect** — COMPLETE         | —       | ✅ Done     | -        | —      | `/admin/master-data` → `/admin/master-data/farmers` ✅                                   |
 | **✅ BUG-002: stale scripts** — COMPLETE        | —       | ✅ Done     | -        | —      | Debug/stale scripts moved to `scripts/local/` (gitignored) ✅                            |
 | **✅ MD-04: Land Parcel** — COMPLETE (#88)      | MD-04   | ✅ Done     | -        | —      | Model, actions, UI, Shapefile bulk upload, 14 tests ✅                                   |
@@ -463,27 +465,35 @@ Debt/bug di section ini berasal dari audit code. Item masuk sprint jika sudah pu
 | ------- | --------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------- | ------------------------------------------------------------------- |
 | BUG-001 | `/admin/master-data` redirect ke route missing `/admin/master-data/farmers` | P0       | `src/app/(admin)/admin/master-data/page.tsx`                                                                                                                        | -   | ✅ Done | Redirect ke `/admin/master-data/farmers` — route exists & functional |
 | BUG-002 | Dashboard debug scripts import action yang tidak ada                        | P0       | `scripts/debug/debug-dashboard-data.js`, `scripts/debug/test-dashboard-api.js`, `scripts/debug/perf-dashboard.ts` import `src/server/actions/dashboard` (tidak ada) | -   | ✅ Done (2026-06-22) | Debug scripts dipindah ke `scripts/local/` (gitignored) — tidak ada di repo/CI. |
+| BUG-003 | Server actions tanpa guard `hasPermission`: `role-permission.ts` (toggle/get — **privilege escalation**), `menu.ts` (create/update/delete), `upload.ts` (S3 write) | **P0** | Audit 2026-07-10 — `audit-report/audit-2026-07-10.md` §2 H-1/H-2/H-3 · **Issue #125** | TBD | 🔲 Open | Guard semua action + unit test RBAC; tolak override role SUPERADMIN di role-permission |
+| BUG-004 | Scope `getAccessContext` absen: `farmer.ts getFarmerById` (PII lintas scope) & `bulk-upload.ts bulkCreateFarmers` (insert ke KT luar scope); mutasi by-id farmer/group/training juga tanpa cek scope | **P0** | Audit 2026-07-10 §2 H-4/H-5 + §3 M-1 · **Issue #125** (MED by-id: #127) | TBD | 🔲 Open | Terapkan pola scope dari `land-parcel.ts:68` / `bulk-upload-production.ts:69-88` |
+| BUG-005 | Halaman Role & Permission di-guard `requirePermission("settings-users")` padahal menu key = `settings-roles` → user ber-grant `settings-roles` melihat menu tapi ditolak halamannya | P1 | `settings/roles/page.tsx:7` vs `menu.csv` · **Issue #125** | TBD | 🔲 Open | Selaraskan ke `settings-roles` (page + actions role-permission) |
+| BUG-006 | Gate QA lint merah: `npm run lint` 226 masalah (190 error) — mayoritas `no-explicit-any` + `scripts/` (gitignored) ikut ter-lint | P1 | Audit 2026-07-10 §1 · **Issue #126** | TBD | 🔲 Open | eslint ignore `scripts/**` + bereskan unused-vars + cicil any |
 
 ### Debt Register
 
 | ID     | Debt Item                                                           | Priority | Evidence                                                                                     | Owner                 | Status                     | Validation Method                                                |
 | ------ | ------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------- | --------------------- | -------------------------- | ---------------------------------------------------------------- |
-| TD-001 | S3/PDF utility belum terintegrasi ke modul Training                 | P1       | `scripts/get-link.js`, `scripts/pdf-manager.js`; tidak ada Training model/UI                 | Backend/Storage Lead  | 🔲 Planned                 | Training evidence flow jelas setelah MD-05                       |
+| TD-001 | S3/PDF utility belum terintegrasi ke modul Training                 | P1       | Training + evidence upload S3 sudah terintegrasi via `upload.ts` (#81); CLI `get-link`/`pdf-manager` tetap sebagai utilitas | Backend/Storage Lead  | ✅ Closed (2026-07-10, audit) | Evidence upload berfungsi di app; sisa: CLI tak load dotenv (TD-011) |
 | TD-002 | Hardcoded `text-white` perlu visual audit                           | P2       | Ada di login, footer, user menu access modal; sebagian mungkin valid karena background solid | Frontend Lead         | 🔲 Planned                 | Visual QA dark/light mode tanpa contrast regression              |
 | TD-003 | `.DS_Store` tidak tracked, tetapi masih ada di working tree         | P2       | `git ls-files` kosong; `find` menemukan file lokal                                           | Repository Maintainer | ✅ Closed for git tracking | `.DS_Store` tetap ignored dan tidak masuk git                    |
 | TD-004 | Language toggle / i18n belum ada                                    | P2       | Tidak ada locale switch/persistence                                                          | i18n Lead             | 🔲 Planned                 | Toggle mengubah locale dan persist state antar navigasi          |
 | TD-005 | Dashboard cache/debug scripts tampak berasal dari implementasi lama | P1       | Script menyebut dashboard stats/markers/batches yang tidak ada di source action              | -      | ✅ Closed (2026-06-22)     | Debug scripts dipindah ke `scripts/local/` (gitignored). Tidak ada di repo/CI. |
-| TD-006 | `docs/rule.md` menyebut folder dashboard components yang tidak ada  | P2       | `docs/rule.md` mencantumkan `components/dashboard`; folder tidak ada                         | Tech Lead             | 🔲 Planned                 | Docs arsitektur sinkron dengan struktur repo                     |
-| TD-007 | FarmerGroup Server Actions tidak memfilter `isActive: true`         | P1       | `src/server/actions/farmer-group.ts`                                                         | Backend Lead          | 🔲 Planned                 | Tambahkan filter `{ isActive: true }` untuk mematuhi soft delete rule                    |
+| TD-006 | `docs/rule.md` menyebut folder dashboard components yang tidak ada  | P2       | Tree arsitektur rule.md sudah disinkronkan (audit 2026-07-10): `components/dashboard` dihapus, `hooks/`+`api/` ditambah | Tech Lead             | ✅ Closed (2026-07-10, audit) | Docs arsitektur sinkron dengan struktur repo                     |
+| TD-007 | Inkonsistensi soft-delete/restore: `getFarmerGroups/ById` tanpa filter `isActive` level KT, sebaliknya `getFarmers` menyembunyikan petani nonaktif sehingga tak bisa di-restore dari UI | P1 | `farmer-group.ts:23,75` vs `farmer.ts:11` — audit 2026-07-10 §3.2 · **Issue #127** | Backend Lead + Product | 🔲 Planned | Putuskan satu pola (tampilkan nonaktif + badge + toggle Aktifkan, atau sembunyikan total) lalu seragamkan |
 | TD-008 | Form data parsing berpotensi `NaN` pada field kosong/whitespace     | P2       | `src/app/(admin)/admin/master-data/groups/group-form-modal.tsx`                              | Frontend Lead         | 🔲 Planned                 | Gunakan helper untuk memproses string kosong/whitespace sebelum parsing numerik          |
+| TD-009 | Dead code & deps: `lib/constants.ts`, 6 komponen ui/layout tak terpakai (`alert`, `breadcrumb`, `form`, `scroll-area`, `sonner`, `placeholder-page`), deps 0-usage (`@dnd-kit`×3, `recharts`, `adm-zip`, `react-hook-form`+`@hookform/resolvers`, `ts-node`, `@types/sharp`), export mati (`isS3Key`), duplikasi helper (`getFarmerGroupsForSelect`/`getFarmersForSelect` ×2, ternary accessFilter ±25×) | P2 | Audit 2026-07-10 §5 & §8 P2 · **Issue #129** | Engineering | 🔲 Planned | PR cleanup terpisah; konsolidasi helper `farmerAccessFilter` di `access-context.ts` |
+| TD-010 | Audit fields tidak diisi di sebagian mutasi (`user.ts`, `menu.ts`, `role-permission.ts`, toggle region, assignment) + return `ActionResult` ad-hoc | P2 | Audit 2026-07-10 §3.4 & LOW · **Issue #130** (ActionResult: #129) | Backend Lead | 🔲 Planned | Isi `createdBy`/`modifiedBy` konsisten; standardisasi `ActionResult<T>` |
+| TD-011 | Env & tooling drift: `FIRMS_MAP_KEY_FREE` tidak ada di `.env.example`; `.dockerignore` tidak exclude `.env`; CLI `get-link`/`pdf-manager` tidak load dotenv; `NEXT_PUBLIC_S3_PUBLIC_URL` tak terpakai | P2 | Audit 2026-07-10 §6 · **Issue #129** | DevOps | 🔲 Planned | Tambah placeholder env, exclude `.env` di dockerignore, `require("dotenv/config")` di 2 CLI |
+| TD-012 | Identifier Bahasa Indonesia di code (`computePetaniDomain` dkk, field types `totalPetani`…) vs rule "variable English" | P3 | Audit 2026-07-10 §5 · **Issue #130** | Tech Lead | 🔲 Planned | Rename bertahap ATAU resmikan istilah domain sebagai pengecualian di rule.md |
 
 ### Debt Sequencing
 
 | Waktu                | Fokus                  | Catatan                                                    |
 | -------------------- | ---------------------- | ---------------------------------------------------------- |
-| Immediate / P0       | BUG-001, BUG-002       | Perbaiki flow yang patah atau stale sebelum menambah fitur |
-| Sprint berjalan / P1 | DASH-01, MD-03, TD-005 | Sinkronkan dashboard dan mulai master data inti            |
-| Later / P2           | TD-002, TD-004, TD-006 | Bisa menunggu setelah feature inti stabil                  |
+| Immediate / P0       | **BUG-003, BUG-004**   | Celah guard/scope RBAC (audit 2026-07-10) — remediasi sebelum fitur baru |
+| Sprint berjalan / P1 | BUG-005, BUG-006, TD-007 | menuKey Roles, lint hijau, keputusan pola restore          |
+| Later / P2–P3        | TD-002, TD-004, TD-008, TD-009, TD-010, TD-011, TD-012 | Cleanup dead code/deps, audit fields, env drift, naming    |
 
 </details>
 
@@ -513,6 +523,8 @@ npm test
 
 | Tanggal    | Keputusan                                                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-07-10 | **AUDIT MENYELURUH codebase vs docs** — dijalankan atas seluruh folder/file/code (22 server actions dibaca penuh, 35 pages, lib/deps/config, drift 5 file docs). Hasil: test 24/296 ✅, build ✅, **lint ❌ 190 error**; **6 temuan HIGH** (guard `hasPermission` absen di `role-permission.ts`/`menu.ts`/`upload.ts`; scope absen `getFarmerById`/`bulkCreateFarmers`; gate lint merah) + 21 MED + ±25 LOW (dead code/deps). **Keputusan:** (1) remediasi P0 keamanan sebelum fitur baru (BUG-003/004/005); (2) barrel `@/components/shared` diresmikan sebagai pengecualian tunggal di rule.md; (3) klaim "14/14 compliant" dicabut, diganti tabel compliance 2026-07-10 (7 PASS/4 PARTIAL/3 FAIL); (4) keempat docs disinkronkan (angka test/fase/LOC, migrasi DB, menu, arsitektur, `shapefile`→`shpjs`, revision `@default(0)`, blok legacy ui-ux-flow dihapus); (5) laporan lengkap disimpan **di luar git** di `audit-report/audit-2026-07-10.md` (folder di-gitignore). Pending decisions: pola restore soft-delete; nasib `recharts` & `Dockerfile`. |
+| 2026-07-10 | **MAP-01 enhancement — Titik Api (Hotspot) + Ruler + Label KT/Petani** (permintaan langsung, di luar scope #113). Layer hotspot **NASA FIRMS VIIRS 375 m** via proxy same-origin baru `src/app/api/map-hotspot/route.ts` (`runtime=nodejs`, validasi `bbox`+`dayRange`, cache 1 jam, `FIRMS_MAP_KEY_FREE` server-only, **auth guard `hasPermission("map-parcel","VIEW")`**). **Keputusan teknis:** (1) window **24 jam / 5 hari** — FIRMS free tier menolak `dayRange>5` (`Expects [1..5]`), jadi opsi "7 hari" awal diturunkan ke 5 (sempat dicoba 2-panggilan untuk 7 hari lalu disederhanakan atas permintaan "sesuaikan data available"); (2) area query dikunci **bbox Riau** (`RIAU_BBOX`); (3) titik diwarnai by kebaruan (<24 jam merah / 1–5 hari oranye) + popup detail + disclaimer "deteksi anomali panas, bukan konfirmasi kebakaran" + atribusi **NASA FIRMS**. **Ruler** (tanpa dependensi baru): ukur jarak & luas **geodesik** (haversine + spherical-excess) multi-titik, label per-segmen, fill poligon, undo/hapus/Esc. **Label**: nama KT (titik) + nama petani (poligon, **hanya bila teks muat di poligon pada zoom aktif**, wrap otomatis; `geomBounds` dihitung sekali per dataset). **Glyph single-font** `["Open Sans Regular"]` (patuh `rule.md:346`; "Noto Sans Regular" tak dilayani server). Logika murni diekstrak ke `src/lib/firms.ts` + `src/app/(admin)/admin/map/parcel/map-geo.ts` (+ client `map-hotspot.ts`) dengan **+22 unit test** (`firms.test.ts`, `map-geo.test.ts`). Perf: route cold ~1,7s (FIRMS-bound), warm ~5ms (cache). Follow-up: proximity alert KT/parcel↔hotspot, integration test route handler, clustering musim kering, sumber ganda (NOAA-20). Build ✅, **296 test** ✅. |
 | 2026-07-09 | **MAP-01 #113 — section "Tambah Data GIS Lain" (bring-your-own GIS)** ditambahkan ke Peta Lahan. User bisa menambah layer sendiri via 3 mode: **WMS URL** (raster), **ZIP Shapefile** & **GeoJSON** (vektor). Shapefile/GeoJSON **diparse di browser** (`shpjs` dynamic import / `JSON.parse`) → render `<Source geojson>` (fill+line+circle). **Keputusan teknis:** WMS user di-fetch **langsung tanpa proxy** untuk hindari open-proxy/SSRF (server WMS harus CORS-enabled) — beda dari overlay SIGAP yang di-whitelist proxy. Layer bersifat session-only (tak dipersist). Auto-fit ke bounds layer vektor baru; `onError` handler pada `<Map>` agar tile gagal tidak jadi error fatal. File: `map-custom-gis.tsx` (baru) + helper di `map-overlays.ts` (`buildWmsTileUrl`/`toFeatureCollection`/`geojsonBounds`) + `map-canvas.tsx`/`map-control-panel.tsx`/`map-parcel-client.tsx`. |
 | 2026-07-09 | **MAP-01 #113 — section "Peta Lainnya" (overlay referensi) ditambahkan** ke Peta Lahan. Overlay raster tematik dari SIGAP KLHK/Kementerian Kehutanan (ArcGIS REST `export`): Kawasan Hutan, Pelepasan Kawasan Hutan, Fungsi Ekosistem Gambut, PIPPIB/Moratorium, Penutupan Lahan 2022 — toggle per-layer + slider transparansi, di-render di bawah layer data petani. **Keputusan teknis:** tile di-proxy same-origin via route baru `src/app/api/map-overlay/[key]/route.ts` karena server KLHK tidak mengirim header CORS dan TLS chain tak lengkap; ini pengecualian sempit atas aturan "no REST API layer" (endpoint gambar biner tak bisa jadi Server Action), dengan whitelist per-overlay + cache 24 jam. Overlay bersifat **referensi visual**, bukan dasar penetapan resmi. Follow-up terpisah: analisis spasial akurat (overlap parcel ↔ kawasan hutan via PostGIS `ST_Intersects`, ingest data resmi ke DB). File: `map-overlays.ts` (baru), `map-canvas.tsx`, `map-control-panel.tsx`, `map-parcel-client.tsx`, `api/map-overlay/[key]/route.ts` (baru). |
 | 2026-07-08 | **Stream `MAP` ditambahkan + Issue #113 [MAP-01] dibuat** — menu Level-1 baru **Map** + sub-menu **Peta Lahan** (`/admin/map/parcel`). Scope scaffolding: peta full-bleed MapLibre (`react-map-gl`), panel filter floating kiri (Province→District→KT, collapsible, tombol Muat Data), legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan), klik feature → info floating. Read-only dari `FarmerGroup` (`locationLat/Long`) + `LandParcel` (`geometry`) — **tanpa tabel/migration baru**; centroid lahan dihitung dari polygon via `@turf`. Filter District wajib (batasi payload). RBAC 3 layer (`hasPermission("map-parcel","VIEW")` + `getAccessContext` scope via `farmer→farmerGroup→district` + `isActive`). Estimasi 20–28 jam. Draft: `draft-issue/issue-map-peta-lahan-map-01.md`. |
@@ -547,6 +559,9 @@ npm test
 
 | Tanggal | Perubahan |
 | ------- | --------- |
+| 07-10   | **AUDIT MENYELURUH + sinkronisasi docs** — Audit folder/file/code terhadap rule di `docs/`: QA (test 24/296 ✅ · build ✅ · lint ❌ 190 error), matriks kepatuhan 22 server actions, 35 pages, hygiene/deps, drift docs. 6 temuan HIGH → BUG-003/004/005/006 + TD-009…TD-012 didaftarkan; compliance table diperbarui (7 PASS/4 PARTIAL/3 FAIL); `database-schema.md` (+4 migrasi, unique ProductionRecord, index/FK snapshot), `rule.md` (shpjs, arsitektur, revision default 0, pengecualian barrel `@/components/shared`, catatan font), `ui-ux-flow.md` (angka test/fase, menu aktual, blok legacy duplikat dihapus), `progress.md` (angka & kontradiksi internal, struktur section 6 dirapikan). Laporan: `audit-report/audit-2026-07-10.md` (internal, gitignored). **6 GitHub issue dibuat: #125 (P0 keamanan RBAC), #126 (P1 lint), #127 (P1 scope by-id + pola restore), #128 (P1 konvensi UI), #129 (P2 cleanup deps/dead code), #130 (P3 kualitas berkelanjutan).** |
+| 07-10   | **MAP-01 enhancement — Hotspot · Ruler · Label KT/Petani** (permintaan langsung, di luar #113). Layer **Titik Api (Hotspot)** NASA FIRMS VIIRS 375 m: proxy `api/map-hotspot` (**auth-guarded**, cache 1 jam, key server-only), **bbox Riau**, window **24 jam / 5 hari** (batas FIRMS `[1..5]`), warna by kebaruan + popup detail + disclaimer + atribusi. **Tool Ruler**: jarak & luas **geodesik** (haversine/spherical), label segmen, fill poligon, undo/Esc. **Label**: nama KT (titik) + nama petani (poligon, **hanya bila muat**, wrap otomatis, bounds precomputed per-zoom). Helper murni `lib/firms.ts` + `map-geo.ts`; **+22 unit test** (`firms.test.ts` 10, `map-geo.test.ts` 12). Improvement pasca-audit: auth guard route, attribution NASA FIRMS, optimasi label. Perf: route cold ~1,7s (FIRMS-bound) / warm ~5ms (cache), payload 61 titik ~15KB. `npm run build` ✅, `npm test` **296 pass** ✅. |
+| 07-09   | **DA-02b complete (#122)** — Enhancement Domain Pelatihan pada DA-02 (modul & route **sama**, tanpa menu/permission baru). Aturan bisnis: setiap petani wajib mengikuti **seluruh paket pelatihan** wajib (`ref_training_package` aktif, **exclude OTHER**; kehadiran cukup, nilai pre/post-test tidak memengaruhi cakupan; partisipasi hanya dihitung untuk activity **KT ini**). Section Pelatihan kini menampilkan cakupan **per paket** dengan collapse **bersarang per analisa**: **4a Ringkasan per Paket** (kartu per paket + nested daftar petani belum ikut), **4b Matriks Cakupan** (petani × paket, ✓/✗, sticky header/kolom, bounded 50 baris), **4c Petani Belum Lengkap** (paket yang masih kurang, urut cakupan terendah). Skor Domain Pelatihan diubah ke **rata-rata % cakupan paket per petani** (ikut memengaruhi skor kesehatan KT). Export Excel DA-02 +2 sheet (Matriks Pelatihan, Petani Belum Lengkap). **UI konsistensi:** nested collapse **per anomali** juga diterapkan ke domain lain (Petani/Lahan/Produksi) via `SubCollapsible` (default tertutup, badge count terlihat). Perubahan surgical di `data-completeness.ts` (fetch paket + participant map), pure logic `computePelatihanDomain` (cakupan/matriks/belum-lengkap), types, dan client — logika domain lain tak berubah. +8 unit test (`data-completeness.test.ts` 23→31) + 2 perf test (`computePelatihanDomain` 5.000 petani × 4 paket ~13ms; `computeCompleteness` 5 domain 5.000 petani ~11ms). `npm run build` ✅, `npm test` **274 pass** ✅. |
 | 07-08   | **MAP-01 Farm Passport PDF** — tombol "Print Profil Petani" di popup lahan → `getParcelPassport` (RBAC-scoped) + `src/lib/farm-passport.ts` (jsPDF A4): identitas petani, layout lahan (polygon vektor dari GeoJSON), Data Petani + Informasi Lahan, tabel Pelatihan, dan grafik Produksi rata-rata bulanan **dari data asli `ProductionRecord`** (`monthlyAverageYield`, 4 unit test). jsPDF di-lazy-import. Build ✅, 231 test ✅. |
 | 07-08   | **MAP-01 selesai (#113)** — stream baru `MAP`. Menu **Map** + **Peta Lahan** (`/admin/map/parcel`). Peta full-bleed MapLibre (`react-map-gl`) + panel filter floating kiri collapsible (Province→District→KT + Muat Data, auto-collapse saat load) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count). Klik feature → info popup: KT (nama/kode/distrik/koordinat); Lahan = accordion **Detail Lahan** + **Pelatihan Petani** (lazy-load per petani, `getFarmerTraining`, 3-layer RBAC) + **Produksi** (grafik rata-rata bulanan Jan–Des, **dummy scaffolding**). Read-only `FarmerGroup`+`LandParcel` (tanpa tabel/migration baru); centroid lahan dihitung via `@turf`. `map.ts` (`getMapData` + dropdown fetchers + `getFarmerTraining`) + `map-data.ts` (pure, 7 unit test) + types + Zod. Seed menu+permission via `scripts/local` (upsert, DB tidak di-reset). Build ✅, 20 files / 227 test ✅. Follow-up: data produksi asli + Recharts. |
 | 07-08   | **Issue #113 [MAP-01] dibuat** — stream baru `MAP`. Menu **Map** + sub-menu **Peta Lahan** (`/admin/map/parcel`, scaffolding): peta full-bleed MapLibre (`react-map-gl`) + panel filter floating kiri (Province/District/KT + Muat Data, collapsible) + legend layer toggle (Point KT / centroid lahan / polygon lahan) + info floating on click. Read-only `FarmerGroup`+`LandParcel`, tanpa tabel baru, centroid via `@turf`. RBAC 3 layer. Belum diimplementasi (Not Started). |
@@ -567,6 +582,9 @@ npm test
 | 06-25   | Issue #94 dibuat — Tambah field nilai Pre-Test dan Post-Test pada Training Participant: `preTestScore` & `postTestScore` nullable Integer (0-100), update schema, validation, server actions, UI form/table, bulk upload enhancement. Estimasi 4-6 jam (1 hari kerja). |
 | 06-22   | **Scripts reorganization** — Debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root agar npm commands (`s3:get-link`, `pdf:*`) tetap berfungsi. BUG-002 & TD-005 resolved: stale scripts tidak ada di repo/CI. |
 | 06-22   | Login Page Enhancement: Case-insensitive email login (`src/lib/auth.ts`) and show/hide password visibility toggle with eye icon (`src/components/auth/login-form.tsx`). |
+| 06-22   | Menambahkan konfigurasi keamanan statis CI: Semgrep (`semgrep.yml`) dan Gitleaks (`gitleaks.yml`) untuk scan celah keamanan dan kebocoran rahasia (secrets). |
+| 06-14   | MD-04 selesai — Implementasi lengkap master data Lahan / Land Parcels (#88): CRUD, UI list DataTable dengan filter & Excel export, UI detail dengan MapLibre polygon viewer, modal form dengan Zod validation, ZIP Shapefile bulk upload dengan column mapping & smart validation, 14 unit tests, menu seeding, dan full RBAC integration. |
+| 06-11   | MD-05 — Upload evidence training (PDF), format tanggal dd/mmm/yyyy, serta import/upload list peserta via Excel/CSV dengan 3-tier validation (Valid, Warning, Error). |
 | 06-14   | PLATFORM-07 selesai (#87) — Hierarchical Menu (3-Level): recursive tree building, validation depth max 3, cascading permission inheritance, sidebar 3-level collapsible styling, and updated Menu Management UI. |
 | 06-12   | **CODE AUDIT COMPLETE** — Comprehensive audit seluruh codebase dan update keempat dokumen utama: progress.md (phase status verified), rule.md (compliance audit), database-schema.md (P0 sections), ui-ux-flow.md (compact collapsible format). Verified: 13 test files/155 tests ✅, Training MD-05 complete ✅, Bulk Upload BULK-03 complete ✅, 12 server actions/1600 LOC, 6 validation schemas, 8 Prisma models. Dashboard masih placeholder (DASH-01 scope needed). |
 | 06-12   | Database Schema Documentation — Added P0 critical sections: Index Strategy (primary/secondary indexes dengan performance targets), Constraint & Data Integrity (FK behaviors, business rules, soft delete pattern, referential integrity flowchart), Migration Strategy (workflow, risk levels, migration history, pre-deployment checklist, breaking changes policy, data backfill examples), Security Considerations (auth/RBAC, password security, SQL injection prevention, data access patterns, sensitive data protection, audit trail, OWASP Top 10 compliance), dan Performance & Data Volume (3-year projections, table size estimates, query optimization, pagination strategies, N+1 prevention, connection pooling, caching strategy). Dokumentasi sekarang production-ready dengan 112 MB estimasi Year 3 dan query performance targets < 300ms. |
@@ -618,76 +636,9 @@ npm test
 
 ---
 
-## 4. Implementation Guidelines (Rule.md Compliance)
-
-### Checklist untuk Setiap Implementasi Fase Baru
-
-Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pastikan semua items terchecklist sebelum merge.
-
-#### Schema & Database
-
-- [ ] **Prisma Model**: Buat model dengan field audit (`created_at`, `created_by`, `modified_at`, `modified_by`) dan soft-delete (`isActive`)
-- [ ] **Migration**: Generate migration dengan `npx prisma migrate dev --name <feature>`
-- [ ] **Seeder**: Tambah seed CSV dan/atau TypeScript seeder di `prisma/seed/`
-- [ ] **Indexes**: Tambah `@@index` untuk foreign keys dan filter fields (`isActive`, `districtId`, dll)
-
-#### Validation & Types
-
-- [ ] **Zod Schema**: Buat schema di `src/validations/<feature>.schema.ts`
-- [ ] **Types**: Define TypeScript types di `src/types/` jika diperlukan
-- [ ] **Error Handling**: Implement zod error messages yang user-friendly
-
-#### Server Actions
-
-- [ ] **Access Control**: Implementasikan `getAccessContext()` dan gunakan `AccessContext` discriminated union
-- [ ] **Permission Validation**: Panggil `hasPermission(menuCode, permission)` di setiap action (terutama CREATE/EDIT/DELETE)
-- [ ] **Data Filtering**: Filter by `isActive: true` + RBAC context (BY_DISTRICT / BY_FARMER_GROUP)
-- [ ] **Soft Delete**: Gunakan `update { isActive: false }` bukan `delete()`
-
-#### UI Components
-
-- [ ] **Server Component Default**: Page root adalah server component; client hanya saat needed
-- [ ] **Loading State**: Implement `loading.tsx` dengan `<TableSkeleton>` atau spinner
-- [ ] **Table Actions**: Gunakan `<TableActions>` component; tampilkan based on `permissions`
-- [ ] **Form Modal**: Gunakan Shadcn `Dialog` + `Form` (React Hook Form)
-
-#### Testing
-
-- [ ] **Unit Tests**: Minimal 10 test per feature (happy path, validation, RBAC, error cases)
-- [ ] **RBAC Tests**: Test access control (SUPERADMIN, BY_DISTRICT, BY_FARMER_GROUP, forbidden)
-- [ ] **Integration Test**: Test flow: create → list → detail → edit → soft-delete
-- [ ] **Coverage**: Aim for ≥80% coverage
-
-#### Documentation
-
-- [ ] **Code Comments**: Minimal; hanya untuk complex logic
-- [ ] **Naming**: File kebab-case; variables English; functions self-documenting
-- [ ] **Progress Update**: Update `docs/progress.md` Phase Status with evidence
-- [ ] **Changelog**: Add entry dengan timestamp, issue number, dan deliverables
-
-#### Quality Gates (Before Merge)
-
-1. ✅ **Tests**: `npm test` — all pass, no skipped tests
-2. ✅ **Build**: `npm run build` — no errors or warnings
-3. ✅ **Lint**: `npm run lint` — no violations
-4. ✅ **Code Review**: Implementation matches rule.md requirements
-5. ✅ **Rule Compliance**: 14 items in "Code Compliance Audit" table all ✅ PASS
-
-### Common Pitfalls & Fixes
-
-| Pitfall | Why Bad | Fix |
-|---------|---------|-----|
-| Filter only by `districtId` in BY_FARMER_GROUP mode | User KT-only returns empty results | Implement discriminated union pattern; test all 3 modes |
-| Hard delete with `delete()` | Breaks audit trail; data loss risk | Always use soft delete: `update { isActive: false }` |
-| Barrel index imports (`from @/components`) | Circular deps; build issues | Import directly: `from @/components/ui/button` |
-| Missing `hasPermission()` check | Bypasses UI protection; security risk | **Every** CREATE/EDIT/DELETE action must call it |
-| Forgot `loading.tsx` | Layout shift; poor UX | Use `<TableSkeleton>` for tables, `<Skeleton>` for cards |
-| Commented-out code | Technical debt; confusing | Delete dead code; use git history if needed later |
-| Speculative features | Over-engineer; maintenance burden | Implement only what's in the issue scope |
-
----
 
 
+#### Koreksi Entri Historis (Mei 2026)
 
 Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk modul yang tidak ditemukan implementasinya di source code aktif. Status resmi sudah dikoreksi di **Phase Status**.
 
@@ -702,16 +653,6 @@ Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk mod
 | 05-08   | #39 — Training module lengkap: tidak ada Training model/route/action/UI.                               |
 | 05-05   | #21 — Parcels CRUD + MapLibre view: tidak ada Parcel model/route/action/UI.                            |
 
-#### Juni 2026
-
-| Tanggal | Perubahan |
-| ------- | --------- |
-| 06-22   | **Scripts reorganization** — Debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. BUG-002 & TD-005 resolved. |
-| 06-22   | Menambahkan konfigurasi keamanan statis CI: Semgrep (`semgrep.yml`) dan Gitleaks (`gitleaks.yml`) untuk scan celah keamanan dan kebocoran rahasia (secrets). |
-| 06-14   | MD-04 selesai — Implementasi lengkap master data Lahan / Land Parcels (#88): CRUD (create/read/update/delete), UI list DataTable dengan filter & Excel export, UI detail dengan MapLibre polygon viewer, modal form dengan Zod validation, ZIP Shapefile bulk upload dengan column mapping & smart validation, 14 unit tests, menu seeding, dan full RBAC integration. **Key Features:** (1) Geospatial support dengan lat/long + GeoJSON polygon, (2) Revision tracking untuk update parcel, (3) Shapefile (.shp dalam ZIP) bulk upload dengan auto column mapping, (4) Area calculation & planting year tracking, (5) Full integration dengan Farmer master data. |
-| 06-11   | MD-05 selesai — Implementasi lengkap upload evidence training (PDF), format tanggal dd/mmm/yyyy, serta import/upload list peserta via Excel/CSV dengan 3-tier validation (Valid, Warning, Error) |
-| 06-10   | MD-03 selesai — Penambahan field `joinedYear` opsional pada model Farmer beserta validasi, CRUD, dan bulk upload |
-
 #### April 2026
 
 | Tanggal | Perubahan                                                                     |
@@ -725,5 +666,76 @@ Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk mod
 | 03-30   | Code review & sync status                      |
 | 03-28   | Modernisasi Dashboard dan perbaikan Home       |
 | 03-18   | Inisiasi proyek — Next.js, Shadcn, static data |
+
+---
+
+### Implementation Guidelines (Rule.md Compliance)
+
+#### Checklist untuk Setiap Implementasi Fase Baru
+
+Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pastikan semua items terchecklist sebelum merge.
+
+**Schema & Database**
+
+- [ ] **Prisma Model**: Buat model dengan field audit (`created_at`, `created_by`, `modified_at`, `modified_by`) dan soft-delete (`isActive`)
+- [ ] **Migration**: Generate migration dengan `npx prisma migrate dev --name <feature>`
+- [ ] **Seeder**: Tambah seed CSV dan/atau TypeScript seeder di `prisma/seeds/` (pakai `upsert` agar idempotent)
+- [ ] **Indexes**: Tambah `@@index` untuk foreign keys dan filter fields (`isActive`, `districtId`, dll)
+
+**Validation & Types**
+
+- [ ] **Zod Schema**: Buat schema di `src/validations/<feature>.schema.ts`
+- [ ] **Types**: Define TypeScript types di `src/types/` jika diperlukan
+- [ ] **Error Handling**: Implement zod error messages yang user-friendly
+
+**Server Actions**
+
+- [ ] **Access Control**: Implementasikan `getAccessContext()` dan gunakan `AccessContext` discriminated union — juga pada read **by-id** dan validasi target mutasi (pelajaran audit 2026-07-10)
+- [ ] **Permission Validation**: Panggil `hasPermission(menuCode, permission)` di **setiap** action, termasuk helper "for select" (pelajaran audit 2026-07-10)
+- [ ] **Data Filtering**: Filter by `isActive: true` + RBAC context (BY_DISTRICT / BY_FARMER_GROUP)
+- [ ] **Soft Delete**: Gunakan `update { isActive: false }` bukan `delete()`
+
+**UI Components**
+
+- [ ] **Server Component Default**: Page root adalah server component; client hanya saat needed
+- [ ] **Loading State**: Implement `loading.tsx` dengan `<TableSkeleton>` atau spinner
+- [ ] **Table Actions**: Gunakan `<TableActions>` component; tampilkan based on `permissions`
+- [ ] **Form Modal**: Gunakan Shadcn `Dialog` + form manual (FormData/useState) + Zod di server action
+
+**Testing**
+
+- [ ] **Unit Tests**: Minimal 10 test per feature (happy path, validation, RBAC, error cases)
+- [ ] **RBAC Tests**: Test access control (SUPERADMIN, BY_DISTRICT, BY_FARMER_GROUP, forbidden)
+- [ ] **Integration Test**: Test flow: create → list → detail → edit → soft-delete
+- [ ] **Coverage**: Aim for ≥80% coverage
+
+**Documentation**
+
+- [ ] **Code Comments**: Minimal; hanya untuk complex logic
+- [ ] **Naming**: File kebab-case; variables English; functions self-documenting
+- [ ] **Progress Update**: Update `docs/progress.md` Phase Status with evidence
+- [ ] **Changelog**: Add entry dengan timestamp, issue number, dan deliverables
+
+**Quality Gates (Before Merge)**
+
+1. ✅ **Tests**: `npm test` — all pass, no skipped tests
+2. ✅ **Build**: `npm run build` — no errors or warnings
+3. ✅ **Lint**: `npm run lint` — no violations (per audit 2026-07-10 gate ini merah — lihat BUG-006; wajib hijau kembali)
+4. ✅ **Code Review**: Implementation matches rule.md requirements
+5. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" (Section 2) berstatus PASS
+
+#### Common Pitfalls & Fixes
+
+| Pitfall | Why Bad | Fix |
+|---------|---------|-----|
+| Filter only by `districtId` in BY_FARMER_GROUP mode | User KT-only returns empty results | Implement discriminated union pattern; test all 3 modes |
+| Guard `hasPermission` hanya di page.tsx | Server action = endpoint HTTP; bisa dipanggil langsung (UI-bypass) | Guard **di dalam action**, bukan hanya page (temuan audit: role-permission/menu/upload) |
+| Read/mutasi **by-id** tanpa scope check | User ter-scope bisa akses data lintas wilayah via id | Terapkan `getAccessContext` juga pada `getXById`/update/toggle (pola `land-parcel.ts:68`) |
+| Hard delete with `delete()` | Breaks audit trail; data loss risk | Always use soft delete: `update { isActive: false }` |
+| Barrel index imports (`from @/components`) | Circular deps; build issues | Import directly dari sub-module; pengecualian resmi hanya `@/components/shared` |
+| Missing `hasPermission()` check | Bypasses UI protection; security risk | **Every** action (read & mutasi, termasuk helper select) must call it |
+| Forgot `loading.tsx` | Layout shift; poor UX | Use `<TableSkeleton>` for tables, `<Skeleton>` for cards |
+| Commented-out code | Technical debt; confusing | Delete dead code; use git history if needed later |
+| Speculative features | Over-engineer; maintenance burden | Implement only what's in the issue scope |
 
 </details>

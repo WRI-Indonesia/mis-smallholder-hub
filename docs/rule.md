@@ -98,7 +98,7 @@ Untuk multi-step task, buat plan singkat:
 |------|--------|
 | File naming | `kebab-case` |
 | Variable naming | Bahasa Inggris |
-| Import | Langsung dari sub-module, bukan barrel index |
+| Import | Langsung dari sub-module, bukan barrel index. **Pengecualian resmi:** barrel `@/components/shared` (entry point DataTable/TableActions/TableSkeleton/DeleteDialog) |
 | Default | Server Component, `"use client"` hanya jika perlu |
 | Data layer | CSV = static, Prisma = dynamic |
 | Validation | Zod di `src/validations/` |
@@ -119,7 +119,7 @@ Untuk multi-step task, buat plan singkat:
 ### Revision Tracking Pattern
 
 Untuk data yang memerlukan tracking perubahan historical (contoh: Land Parcel update):
-- **Field `revision`**: Tambahkan field `revision Int @default(1)` di model
+- **Field `revision`**: Tambahkan field `revision Int @default(0)` di model (lihat `LandParcel`)
 - **Auto-increment on update**: Setiap update record, increment revision number
 - **Soft delete old version**: Saat update dengan parcel ID sama, set old record `isActive = false` dan create new record dengan `revision += 1`
 - **History tracking**: User bisa melihat historical changes melalui filter `isActive = false` dengan order by revision
@@ -201,7 +201,7 @@ Sistem menu mendukung hierarki sampai **3 level maksimal**:
 - Contoh: User punya VIEW di "Pelatihan" (level 2) → otomatis VIEW di "Peserta Pelatihan" (level 3), kecuali ada explicit REVOKE
 
 > [!WARNING]
-> **Cascade = risiko over-grant.** Grant pada menu **induk** mewariskan permission ke **semua** anak (termasuk menu sensitif seperti User/Role/Menu Management). Untuk akses **granular**, grant di level **anak**, jangan induk. Sidebar (`filterMenuTreeByAccess` di `menu-utils.ts`) tetap menampilkan induk sebagai **container** selama salah satu anaknya ter-grant — jadi grant per-anak **tidak** memerlukan grant induk. Konsekuensi: jangan mensyaratkan induk ter-grant hanya agar anak tampil. (Audit lintas-role: `scripts/local/audit-cascade.ts`.)
+> **Cascade = risiko over-grant.** Grant pada menu **induk** mewariskan permission ke **semua** anak (termasuk menu sensitif seperti User/Role/Menu Management). Untuk akses **granular**, grant di level **anak**, jangan induk. Sidebar (`filterMenuTreeByAccess` di `menu-utils.ts`) tetap menampilkan induk sebagai **container** selama salah satu anaknya ter-grant — jadi grant per-anak **tidak** memerlukan grant induk. Konsekuensi: jangan mensyaratkan induk ter-grant hanya agar anak tampil. (Audit lintas-role: `scripts/local/audit-cascade.ts` — local-only; folder `scripts/local/` gitignored, tidak tersedia di clone baru.)
 
 **UI Guidelines:**
 - **Max children:** Level 2 maksimal 5 children (level 3) — hindari clutter, pertimbangkan pagination/search jika > 5
@@ -229,7 +229,7 @@ Sistem menu mendukung hierarki sampai **3 level maksimal**:
 
 - Komponen **Shadcn UI** + utility **Tailwind 4**
 - Warna pakai variabel `oklch` di `globals.css`
-- Font: Acumin Pro Condensed
+- Font: Acumin Pro Condensed (catatan audit 2026-07-10: baru deklarasi `font-family` di `globals.css` tanpa `@font-face`/file font — efektif jatuh ke fallback; `layout.tsx` memuat Geist via `next/font`. Perlu dimuat benar atau diputuskan diganti)
 - Mobile-first responsive
 
 ### Layout Admin
@@ -313,7 +313,7 @@ Untuk fitur bulk upload data massal (misalnya Petani, Kelompok Tani, atau Region
 
 Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ikuti pattern berikut:
 - **Format Input**: ZIP file berisi `.shp`, `.shx`, `.dbf`, dan file pendukung lainnya
-- **Parsing**: Gunakan library `shapefile` untuk membaca geometri dan atribut dari Shapefile
+- **Parsing**: Gunakan library `shpjs` untuk membaca geometri dan atribut dari Shapefile (parse buffer ZIP langsung, tanpa ekstraksi manual)
 - **Column Mapping**: 
   - Sediakan dropdown mapping untuk setiap kolom dari DBF attributes ke field database target
   - Auto-match kolom berdasarkan similarity name (fuzzy matching)
@@ -357,19 +357,23 @@ Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (ko
   - Area calculation dari polygon geometry (dalam satuan hektar)
   - Geometry validation (harus valid Polygon atau MultiPolygon)
 - **Component Pattern**: 
-  - Buat reusable `MapViewer` component untuk display polygon
+  - Komponen map viewer per-konteks: `parcel-map-view.tsx` (detail/form lahan) dan `map-canvas.tsx` (Map Explorer) — belum ada satu `MapViewer` shared
   - Support props: `polygon` (GeoJSON), `center` (lat/long), `zoom`, `height`
   - Lazy load MapLibre untuk optimize bundle size
 - **Reference/Overlay Layers (WMS/tile pihak ketiga)**:
   - Definisikan overlay sebagai daftar deklaratif (`MAP_OVERLAYS` di `map-overlays.ts`): `key`, `label`, `color`, `service` (ArcGIS REST MapServer). Render sebagai `<Source type="raster">` MapLibre di bawah layer data, toggle per-layer + slider opacity bersama.
   - **Wajib proxy tile via route same-origin** bila server upstream tidak mengirim header CORS atau menyajikan TLS chain tak lengkap (kasus SIGAP KLHK/Kemenhut). Ini pengecualian sempit atas aturan "no REST API layer" — endpoint gambar biner tidak bisa jadi Server Action. Gunakan whitelist per-`key` (bukan open proxy), `runtime = "nodejs"`, validasi param `bbox`, dan set `Cache-Control`.
 - **User-added GIS layers (bring-your-own)**: dukung penambahan layer runtime oleh user (state session, tak dipersist) via 3 mode — WMS URL (raster), ZIP Shapefile & GeoJSON (vektor). Shapefile/GeoJSON **diparse di browser** (`shpjs` dynamic import, `JSON.parse`) → GeoJSON → render `<Source type="geojson">` (fill+line+circle agar semua tipe geometri tertangani). WMS user di-fetch **langsung tanpa proxy** (hindari open-proxy/SSRF) sehingga server WMS harus CORS-enabled. Auto-fit ke bounds layer vektor baru. Pasang `onError` pada `<Map>` agar kegagalan fetch tile tidak jadi error fatal.
+- **Layer titik api / hotspot (NASA FIRMS)**: deteksi kebakaran aktif VIIRS 375 m di-fetch server-side via **proxy same-origin** baru `api/map-hotspot` (bukan Server Action — `<Source>` MapLibre butuh GET URL). Proxy **wajib auth-guard** (`hasPermission("map-parcel","VIEW")`) agar bukan proxy anonim, menyembunyikan `FIRMS_MAP_KEY_FREE`, validasi `bbox`+`dayRange`, cache 1 jam. **FIRMS free tier membatasi `dayRange` ke `[1..5]`** (respons error teks `Expects [1..5]`, bukan CSV) → window UI = **24 jam / 5 hari** (bukan 7). Parsing CSV→GeoJSON di helper murni `src/lib/firms.ts` (teruji). Titik diwarnai per kebaruan + popup detail + disclaimer **"deteksi anomali panas, bukan konfirmasi kebakaran"** + atribusi `NASA FIRMS`. Area query dikunci ke bbox provinsi (mis. `RIAU_BBOX`).
+- **Tool ukur (ruler)**: ukur jarak & luas **geodesik** (haversine + spherical-excess) **tanpa dependensi tambahan** — klik menaruh titik, label per-segmen, undo/hapus/Esc. Helper murni di `map-geo.ts` (teruji); di sini juga `parcelLabelFit`/`geomBounds` untuk **label nama** (KT pada titik, petani pada poligon **hanya bila teks muat di dalam poligon** pada zoom aktif, wrap otomatis; `geomBounds` dihitung sekali per dataset).
 - **Implementasi Reference**: 
-  - Map viewer: `src/components/shared/map-viewer.tsx`
+  - Map viewer (detail/form lahan): `src/app/(admin)/admin/master-data/parcels/components/parcel-map-view.tsx`
   - Land parcel detail: `src/app/(admin)/admin/master-data/parcels/[id]/page.tsx`
   - Map explorer (MAP-01): `src/app/(admin)/admin/map/parcel/` (peta full-bleed + filter floating + layer toggle + section "Peta Lainnya" overlay referensi + section "Tambah Data GIS Lain" + info popup accordion), server actions `src/server/actions/map.ts`, definisi overlay + helper GIS `src/app/(admin)/admin/map/parcel/map-overlays.ts`
   - User-added GIS section: `src/app/(admin)/admin/map/parcel/map-custom-gis.tsx` (form WMS/Shapefile/GeoJSON + daftar layer)
   - Tile proxy overlay: `src/app/api/map-overlay/[key]/route.ts` (forward ke ArcGIS `export`, toleran TLS chain upstream, whitelist per-overlay)
+  - Hotspot NASA FIRMS: proxy `src/app/api/map-hotspot/route.ts` (auth-guarded) + helper murni `src/lib/firms.ts` + client `src/app/(admin)/admin/map/parcel/map-hotspot.ts`; unit test `src/test/firms.test.ts`
+  - Ruler & label fit: `src/app/(admin)/admin/map/parcel/map-geo.ts` (jarak/luas geodesik + `parcelLabelFit`/`geomBounds`); unit test `src/test/map-geo.test.ts`
   - Farm Passport PDF: `src/lib/farm-passport.ts` (jsPDF A4: identitas, layout lahan/polygon vektor, pelatihan, produksi) — di-generate dari `getParcelPassport`
 
 ### Dashboard Snapshot Pattern
@@ -394,18 +398,21 @@ Untuk snapshot dashboard yang menyimpan historical state:
 ```
 src/
 ├── app/
-│   ├── (admin)/admin/        # Dashboard, master-data, settings, tools
+│   ├── (admin)/admin/        # dashboard, master-data, data-analyst, map, report, bulk-upload, settings, tools, profile
 │   ├── (public)/             # Home, community, knowledge
+│   ├── api/                  # NextAuth + proxy tile peta (map-overlay, map-hotspot)
 │   └── globals.css           # Design tokens
 ├── components/
 │   ├── ui/                   # Shadcn primitives
-│   ├── shared/               # DataTable, DeleteDialog
-│   ├── dashboard/            # Dashboard components
+│   ├── shared/               # DataTable, TableActions, TableSkeleton, DeleteDialog
+│   ├── auth/                 # Login form
 │   └── layout/               # Admin & public layout
-├── lib/                      # Prisma, utils, static-data
+├── hooks/                    # Custom hooks (use-mobile)
+├── lib/                      # Prisma, rbac, access-context, utils, helper murni (firms, map-data, dsb)
 ├── server/actions/           # Server Actions
 ├── validations/              # Zod schemas
-└── types/                    # Custom types
+├── types/                    # Custom types
+└── middleware.ts             # NextAuth guard /admin/* & /login
 ```
 
 ### Tech Stack
@@ -419,4 +426,4 @@ src/
 | ORM | Prisma 7 (modular schema) |
 | Maps | MapLibre GL JS |
 | Charts | Recharts |
-| Validation | Zod + React Hook Form |
+| Validation | Zod (server: `safeParse` di actions; form client ditangani manual via FormData/useState — React Hook Form tidak dipakai) |
