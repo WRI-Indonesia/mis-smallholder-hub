@@ -1,7 +1,7 @@
 # Database Schema — ERD
 
 > Visualisasi Entity Relationship Diagram untuk schema aktif.
-> Update terakhir: 2026-07-08 (Post-DASH-01 #99 — MainDashboardSnapshot table implemented)
+> Update terakhir: 2026-07-10 (audit menyeluruh — sinkronisasi migrations history [10 migrasi], unique ProductionRecord `(farmerId, parcelId, period, harvestNumber)`, index/FK MainDashboardSnapshot & ProductionRecord, enum ActivityStatus ditandai reserved. Sebelumnya 2026-07-08: Post-DASH-01 #99 — MainDashboardSnapshot table implemented)
 
 ---
 
@@ -95,7 +95,8 @@ erDiagram
 
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
-| **2.3.0** | 2026-06-29 | Dashboard snapshot (#99): MainDashboardSnapshot model, separate table per dashboard pattern | MEDIUM (new table + pattern establishment) |
+| **2.3.0** | 2026-07-08 | Dashboard snapshot (#99): MainDashboardSnapshot model, separate table per dashboard pattern | MEDIUM (new table + pattern establishment) |
+| 2.2.1 | 2026-06-28 | Training participant pre/post-test scores (#94) + unique ProductionRecord ditambah `parcelId` | LOW–MEDIUM (nullable fields + constraint change) |
 | 2.2.0 | 2026-06-22 | Production module (#89): ProductionRecord model, per-farmer/parcel yield tracking, bulk upload | Medium (new table + production tracking features) |
 | 2.1.0 | 2026-06-14 | Land Parcel module (#88): LandParcel model, ZIP Shapefile bulk upload | Medium (new table + geospatial features) |
 | 2.0.0 | 2026-06-11 | Training module, Farmer.joinedYear | Medium (new tables + optional field) |
@@ -499,6 +500,7 @@ classDiagram
     }
 
     class ActivityStatus {
+        <<reserved — belum dipakai model manapun>>
         DRAFT
         PENDING_APPROVAL
         APPROVED
@@ -529,7 +531,8 @@ classDiagram
 | `reg_` | Reference data regional | `reg_province`, `reg_district` |
 | `ref_` | Reference data domain | `ref_training_package` |
 | `rbac_` | Tabel RBAC / permission | `rbac_role_permission`, `rbac_user_district` |
-| `cache_` | Cache / materialized view | `cache_dashboard_stats` |
+| `tbl_snapshot_` | Snapshot dashboard (separate table per dashboard) | `tbl_snapshot_main_dashboard` |
+| `cache_` | Cache / materialized view (reserved — belum ada tabelnya) | `cache_dashboard_stats` (contoh rencana) |
 
 </details>
 
@@ -640,7 +643,10 @@ flowchart LR
 | TrainingParticipant | UNIQUE | `(activityId, farmerId)` | Prevent duplicate participant registration |
 | **Production** | | | |
 | ProductionRecord | PK | `id` (CUID) | Primary key |
-| ProductionRecord | UNIQUE | `(farmerId, period, harvestNumber)` | Prevent duplicate production entry for same farmer/period/harvest |
+| ProductionRecord | UNIQUE | `(farmerId, parcelId, period, harvestNumber)` | Prevent duplicate production entry for same farmer/parcel/period/harvest (parcelId ditambahkan via migration 20260628214742) |
+| **Dashboard Snapshot** | | | |
+| MainDashboardSnapshot | PK | `id` (CUID) | Primary key |
+| MainDashboardSnapshot | UNIQUE | `(snapshotDate, districtId, joinedYear)` | Prevent duplicate snapshot untuk kombinasi tanggal + filter |
 | **RBAC** | | | |
 | RolePermission | PK | `id` (CUID) | Primary key |
 | RolePermission | UNIQUE | `(role, menuKey, permission)` | Prevent duplicate role permissions |
@@ -676,6 +682,9 @@ flowchart LR
 | ProductionRecord | `parcelId` | Get production records by parcel | MEDIUM — parcel-level analysis |
 | ProductionRecord | `period` | Filter production by period (YYYY-MM) | HIGH — monthly/yearly reports |
 | ProductionRecord | `isActive` | Filter active production records | HIGH |
+| **MainDashboardSnapshot** | `snapshotDate` | Ambil snapshot terbaru (dashboard read) | HIGH |
+| MainDashboardSnapshot | `createdBy` | Audit/list snapshot per user | LOW |
+| MainDashboardSnapshot | `isActive` | Filter snapshot aktif (soft delete) | MEDIUM |
 
 ### Index Maintenance Notes
 
@@ -718,6 +727,12 @@ flowchart LR
 | Farmer | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
 | **LandParcel** | | | | | |
 | LandParcel | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
+| **Production** | | | | | |
+| ProductionRecord | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
+| ProductionRecord | `parcelId` (nullable) | LandParcel | `id` | RESTRICT | CASCADE |
+| **Dashboard Snapshot** | | | | | |
+| MainDashboardSnapshot | `districtId` (nullable) | District | `id` | SET NULL | CASCADE |
+| MainDashboardSnapshot | `createdBy` | User | `id` | RESTRICT | CASCADE |
 | **Training** | | | | | |
 | TrainingActivity | `packageId` | TrainingPackage | `id` | RESTRICT | CASCADE |
 | TrainingActivity | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
@@ -852,6 +867,10 @@ flowchart LR
 | `20260610085445_init_training` | 2026-06-10 | Add Training module (Package, Activity, Participant) | HIGH (3 new tables) |
 | `20260610091207_add_training_evidence` | 2026-06-10 | Add evidence upload fields to TrainingActivity (evidenceKey, evidenceName) | LOW (nullable fields) |
 | `20260614075754_add_land_parcel` | 2026-06-14 | Add LandParcel model (#88): geolocation, polygon, area, planting year, revision tracking | HIGH (new table with geospatial features) |
+| `20260615050657_add_production_record` | 2026-06-15 | Add ProductionRecord model (#89): yield tracking per farmer/parcel, period, harvest number | HIGH (new table) |
+| `20260628211657_add_training_participant_scores` | 2026-06-28 | Add `preTestScore` & `postTestScore` (nullable Int) ke TrainingParticipant (#94) | LOW (nullable fields) |
+| `20260628214742_add_parcelid_to_production_unique` | 2026-06-28 | Ubah unique ProductionRecord: tambah `parcelId` → `(farmerId, parcelId, period, harvestNumber)` | MEDIUM (constraint change) |
+| `20260708042109_add_main_dashboard_snapshot` | 2026-07-08 | Add MainDashboardSnapshot → `tbl_snapshot_main_dashboard` (#99, DASH-01) | HIGH (new table + snapshot pattern) |
 
 ### Pre-Deployment Checklist
 
