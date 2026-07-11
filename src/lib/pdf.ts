@@ -13,6 +13,11 @@ export function exportToPDF({
   metadata,
   columns,
   data,
+  orientation = "portrait",
+  headFontSize = 10,
+  bodyFontSize = 9,
+  cellPadding = 3,
+  columnStyles,
 }: {
   filename: string;
   title: string;
@@ -20,16 +25,25 @@ export function exportToPDF({
   metadata?: { label: string; value: string }[];
   columns: PDFExportField[];
   data: Record<string, any>[];
+  orientation?: "portrait" | "landscape";
+  headFontSize?: number;
+  bodyFontSize?: number;
+  cellPadding?: number;
+  /** autoTable columnStyles keyed by column index (e.g. widths/alignment for wide matrices). */
+  columnStyles?: Record<number, Record<string, string | number>>;
 }) {
   const doc = new jsPDF({
-    orientation: "portrait",
+    orientation,
     unit: "mm",
     format: "a4",
   });
 
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
   // Header WRI Green Accent Line
   doc.setFillColor(16, 185, 129); // Emerald 500
-  doc.rect(0, 0, 210, 4, "F");
+  doc.rect(0, 0, pageWidth, 4, "F");
 
   // Title
   doc.setFontSize(16);
@@ -51,7 +65,7 @@ export function exportToPDF({
   // Divider Line
   doc.setDrawColor(226, 232, 240); // Slate-200
   doc.setLineWidth(0.5);
-  doc.line(14, currentY, 196, currentY);
+  doc.line(14, currentY, pageWidth - 14, currentY);
   currentY += 8;
 
   // Metadata Info (e.g. Distrik: X, KT: Y)
@@ -99,23 +113,24 @@ export function exportToPDF({
     body: tableRows,
     startY: currentY,
     theme: "striped",
-    headStyles: { 
+    headStyles: {
       fillColor: [16, 185, 129], // Emerald-500 WRI Green
       textColor: [255, 255, 255],
-      fontSize: 10,
+      fontSize: headFontSize,
       fontStyle: "bold",
     },
     bodyStyles: {
-      fontSize: 9,
+      fontSize: bodyFontSize,
       textColor: [51, 65, 85], // Slate-700
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252], // Slate-50
     },
+    columnStyles,
     margin: { top: 20, left: 14, right: 14 },
     styles: {
       font: "helvetica",
-      cellPadding: 3,
+      cellPadding,
     },
   });
 
@@ -129,7 +144,7 @@ export function exportToPDF({
     
     const pageText = `Halaman ${i} dari ${pageCount}`;
     const pageTextWidth = doc.getTextWidth(pageText);
-    doc.text(pageText, 210 - 14 - pageTextWidth, 288); // A4 dimensions: 210mm x 297mm
+    doc.text(pageText, pageWidth - 14 - pageTextWidth, pageHeight - 9);
   }
 
   // Save the PDF file directly

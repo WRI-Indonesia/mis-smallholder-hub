@@ -104,55 +104,90 @@ export async function bulkCreateProductionRecords(dataList: any[]) {
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      for (const record of validatedRecords) {
-        let mappedParcelId = record.parcelId;
-        
-        // Validate parcel ownership if provided
-        if (record.parcelId) {
-          const parcel = await tx.landParcel.findFirst({
-            where: {
-              OR: [{ id: record.parcelId }, { parcelId: record.parcelId }],
-              isActive: true 
-            },
-          });
-          if (!parcel) {
-            throw new Error(`ID Lahan "${record.parcelId}" tidak ditemukan atau tidak aktif`);
-          }
-          if (parcel.farmerId !== record.farmerId) {
-            throw new Error(`ID Lahan "${record.parcelId}" tidak dimiliki oleh petani terpilih`);
-          }
-          mappedParcelId = parcel.id;
-        }
-
-        // Double-check duplicate in transaction
-        const duplicate = await tx.productionRecord.findFirst({
-          where: {
-            farmerId: record.farmerId,
-            parcelId: mappedParcelId || null,
-            period: record.period,
-            harvestNumber: record.harvestNumber,
-            isActive: true,
-          },
-        });
-
-        if (duplicate) {
-          throw new Error(
-            `Data panen ke-${record.harvestNumber} periode ${record.period} untuk petani tersebut sudah terdaftar`
-          );
-        }
-
-        await tx.productionRecord.create({
-          data: {
-            ...record,
-            parcelId: mappedParcelId || null,
-            createdBy: userId,
-          },
-        });
+    // Resolve all referenced parcels in a single query (id OR human parcelId).
+    const parcelRefs = [
+      ...new Set(
+        validatedRecords.map((r) => r.parcelId).filter((p): p is string => Boolean(p))
+      ),
+    ];
+    const parcelByRef = new Map<string, { id: string; farmerId: string }>();
+    if (parcelRefs.length > 0) {
+      const parcels = await prisma.landParcel.findMany({
+        where: {
+          OR: [{ id: { in: parcelRefs } }, { parcelId: { in: parcelRefs } }],
+          isActive: true,
+        },
+        select: { id: true, parcelId: true, farmerId: true },
+      });
+      for (const p of parcels) {
+        parcelByRef.set(p.id, { id: p.id, farmerId: p.farmerId });
+        parcelByRef.set(p.parcelId, { id: p.id, farmerId: p.farmerId });
       }
-    });
+    }
 
-    return { success: true, count: validatedRecords.length };
+    // Fetch existing (active) records for the involved farmers in one query.
+    const farmerIds = [...new Set(validatedRecords.map((r) => r.farmerId))];
+    const existing = await prisma.productionRecord.findMany({
+      where: { farmerId: { in: farmerIds }, isActive: true },
+      select: { farmerId: true, parcelId: true, period: true, harvestNumber: true },
+    });
+    const dupKey = (
+      farmerId: string,
+      parcelId: string | null,
+      period: string,
+      harvestNumber: number
+    ) => `${farmerId}::${parcelId ?? ""}::${period}::${harvestNumber}`;
+    const seen = new Set(
+      existing.map((e) => dupKey(e.farmerId, e.parcelId, e.period, e.harvestNumber))
+    );
+
+    // Resolve parcels, validate ownership, and check duplicates in memory.
+    const toInsert: any[] = [];
+    for (const record of validatedRecords) {
+      let mappedParcelId: string | null = null;
+
+      if (record.parcelId) {
+        const parcel = parcelByRef.get(record.parcelId);
+        if (!parcel) {
+          return {
+            success: false,
+            error: `ID Lahan "${record.parcelId}" tidak ditemukan atau tidak aktif`,
+          };
+        }
+        if (parcel.farmerId !== record.farmerId) {
+          return {
+            success: false,
+            error: `ID Lahan "${record.parcelId}" tidak dimiliki oleh petani terpilih`,
+          };
+        }
+        mappedParcelId = parcel.id;
+      }
+
+      const key = dupKey(record.farmerId, mappedParcelId, record.period, record.harvestNumber);
+      if (seen.has(key)) {
+        return {
+          success: false,
+          error: `Data panen ke-${record.harvestNumber} periode ${record.period} untuk petani "${record.farmerId}" sudah terdaftar`,
+        };
+      }
+      seen.add(key);
+
+      toInsert.push({
+        farmerId: record.farmerId,
+        parcelId: mappedParcelId,
+        period: record.period,
+        harvestDate: record.harvestDate,
+        harvestNumber: record.harvestNumber,
+        yieldKg: record.yieldKg,
+        notes: record.notes ?? null,
+        createdBy: userId,
+      });
+    }
+
+    // Single bulk insert — fast, atomic, and well within the transaction timeout.
+    await prisma.productionRecord.createMany({ data: toInsert });
+
+    return { success: true, count: toInsert.length };
   } catch (error: any) {
     console.error("Bulk save production error:", error);
     return { success: false, error: error.message || "Gagal menyimpan data ke database" };

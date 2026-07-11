@@ -22,6 +22,7 @@ data-analyst-data-completeness,data-analyst,Analisa Ketersediaan Data,/admin/dat
 report,,Report,/admin/report,FileText,5,TRUE,TRUE
 report-farmer,report,Petani,/admin/report/farmer,User,1,TRUE,TRUE
 report-training,report,Pelatihan,/admin/report/training,GraduationCap,2,TRUE,TRUE
+report-production,report,Produksi,/admin/report/production,TrendingUp,3,TRUE,TRUE
 tools,,Tools,/admin/tools,Wrench,6,TRUE,TRUE
 dashboard-snapshot,tools,Dashboard Snapshot,/admin/tools/snapshot,Camera,1,TRUE,TRUE
 map,,Map,/admin/map,Map,7,TRUE,TRUE

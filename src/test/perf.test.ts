@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import bcrypt from "bcryptjs";
 import { computeCompleteness, computePelatihanDomain } from "@/lib/data-completeness";
 import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
+import { buildProductionMatrix, enumeratePeriods, type ProductionMatrixRecord } from "@/lib/report-production";
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
@@ -147,5 +148,48 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
     console.log(`  computeCompleteness (5 domain, 5000 petani): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(200);
     expect(result.totalFarmers).toBe(5000);
+  });
+});
+
+describe("Performance - RPT-03 Production report pivot (pure logic)", () => {
+  // Deterministic synthetic records (no RNG): N farmers × 2 parcels × full month
+  // range × 2 harvests/month — the worst realistic case for one Kelompok Tani.
+  function makeRecords(farmerCount: number, periods: string[]): ProductionMatrixRecord[] {
+    const records: ProductionMatrixRecord[] = [];
+    for (let f = 0; f < farmerCount; f++) {
+      for (let p = 0; p < 2; p++) {
+        for (const period of periods) {
+          for (let h = 0; h < 2; h++) {
+            records.push({
+              farmerDbId: `db-${f}`,
+              farmerCode: `ITM.${f}`,
+              farmerName: `Petani ${f}`,
+              parcelDbId: `parcel-${f}-${p}`,
+              parcelCode: `L-${f}-${p}`,
+              parcelArea: 1.5,
+              period,
+              yieldKg: 100 + h,
+            });
+          }
+        }
+      }
+    }
+    return records;
+  }
+
+  it("pivots 500 petani × 2 lahan × 24 bulan × 2 panen (~48k records) under 150ms", () => {
+    const periods = enumeratePeriods("2023-01", "2024-12"); // 24 months
+    const records = makeRecords(500, periods);
+
+    const start = performance.now();
+    const result = buildProductionMatrix(records, periods);
+    const duration = performance.now() - start;
+
+    console.log(`  production pivot (${records.length} records → ${result.rows.length} rows × ${periods.length} kolom): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(150);
+    expect(result.rows.length).toBe(1000); // 500 farmers × 2 parcels
+    expect(result.summary.totalPetani).toBe(500);
+    // 1000 rows × 24 months × (100 + 101) = 4,824,000 kg
+    expect(result.grandTotal).toBe(4_824_000);
   });
 });

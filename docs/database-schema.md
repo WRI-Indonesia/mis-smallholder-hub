@@ -736,34 +736,38 @@ flowchart LR
 | **Training** | | | | | |
 | TrainingActivity | `packageId` | TrainingPackage | `id` | RESTRICT | CASCADE |
 | TrainingActivity | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
-| TrainingParticipant | `activityId` | TrainingActivity | `id` | CASCADE | CASCADE |
+| TrainingParticipant | `activityId` | TrainingActivity | `id` | RESTRICT | CASCADE |
 | TrainingParticipant | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
 | **RBAC** | | | | | |
-| RolePermission | `menuKey` | MenuItem | `key` | CASCADE | CASCADE |
-| UserProvince | `userId` | User | `id` | CASCADE | CASCADE |
-| UserProvince | `provinceId` | Province | `id` | CASCADE | CASCADE |
-| UserDistrict | `userId` | User | `id` | CASCADE | CASCADE |
-| UserDistrict | `districtId` | District | `id` | CASCADE | CASCADE |
-| UserFarmerGroup | `userId` | User | `id` | CASCADE | CASCADE |
-| UserFarmerGroup | `farmerGroupId` | FarmerGroup | `id` | CASCADE | CASCADE |
-| UserPermissionOverride | `userId` | User | `id` | CASCADE | CASCADE |
-| UserPermissionOverride | `menuKey` | MenuItem | `key` | CASCADE | CASCADE |
+| RolePermission | `menuKey` | MenuItem | `key` | RESTRICT | CASCADE |
+| UserProvince | `userId` | User | `id` | RESTRICT | CASCADE |
+| UserProvince | `provinceId` | Province | `id` | RESTRICT | CASCADE |
+| UserDistrict | `userId` | User | `id` | RESTRICT | CASCADE |
+| UserDistrict | `districtId` | District | `id` | RESTRICT | CASCADE |
+| UserFarmerGroup | `userId` | User | `id` | RESTRICT | CASCADE |
+| UserFarmerGroup | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
+| UserPermissionOverride | `userId` | User | `id` | RESTRICT | CASCADE |
+| UserPermissionOverride | `menuKey` | MenuItem | `key` | RESTRICT | CASCADE |
 | **Menu Hierarchy** | | | | | |
-| MenuItem | `parentKey` | MenuItem | `key` | CASCADE | CASCADE |
+| MenuItem | `parentKey` | MenuItem | `key` | SET NULL | CASCADE |
+
+> Koreksi audit 2026-07-10: nilai On Delete di atas diverifikasi langsung ke SQL di `prisma/migrations/*`. Seluruh FK memakai **RESTRICT** kecuali dua **SET NULL** (`MenuItem.parentKey`, `MainDashboardSnapshot.districtId`). Tidak ada FK CASCADE on-delete di schema — soft delete (`isActive`) yang dipakai, bukan hard delete berantai; versi dokumen sebelumnya keliru menandai RBAC/TrainingParticipant/MenuItem sebagai CASCADE.
 
 ### Cascade Behavior Explanation
 
-**RESTRICT (Default Prisma)**:
-- Mencegah penghapusan parent jika ada child yang masih reference
-- Digunakan untuk data master (Geography, TrainingPackage, Farmer, FarmerGroup)
-- Error: `Foreign key constraint failed`
+**RESTRICT (Default Prisma untuk relasi wajib)**:
+- Mencegah penghapusan parent jika ada child yang masih mereferensikan
+- Dipakai pada **hampir semua** FK (geography, farmer group/farmer, land parcel, production, training, RBAC assignment, role permission, override)
+- Error bila dilanggar: `Foreign key constraint failed`
+- Konsisten dengan pola **soft delete** aplikasi: record tidak pernah di-hard-delete dari app, sehingga cascade delete tidak dibutuhkan
+
+**SET NULL (relasi opsional)**:
+- `MenuItem.parentKey` → bila parent menu dihapus, `parentKey` anak menjadi NULL (anak tidak ikut terhapus)
+- `MainDashboardSnapshot.districtId` → bila district dihapus, filter snapshot menjadi NULL (snapshot tetap ada)
 
 **CASCADE**:
-- Otomatis menghapus/update child saat parent dihapus/diupdate
-- Digunakan untuk data transaksional dan relasi dependency kuat:
-  - `TrainingParticipant.activityId` → jika training activity dihapus, semua participant records juga dihapus
-  - RBAC assignments → jika user dihapus, semua assignment & overrides juga dihapus
-  - Menu hierarchy → jika parent menu dihapus, child menu juga dihapus
+- Hanya berlaku untuk **On Update** (propagasi perubahan primary key), bukan On Delete
+- Tidak ada FK dengan On Delete CASCADE di schema ini
 
 ### Business Rules & Validation
 
