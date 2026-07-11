@@ -13,7 +13,7 @@
 | **Completed Modules** | ✅ **24 phases done** | Platform (1-7), MD (1-6), DASH-01/02/03, RPT-01/02, BULK (1, 3, 4), DA-01/02, MAP-01 |
 | **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 file schema / **19 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
-| **Priority Next** | 🎯 **Remediasi audit P0 + RPT-03** | P0: guard/scope RBAC server actions + lint merah (audit 2026-07-10); lalu Report Produksi (#109) |
+| **Priority Next** | 🎯 **Remediasi audit P0** | P0: guard/scope RBAC server actions + lint merah (audit 2026-07-10, #126/#127) — RPT-03 Report Produksi (#132) ✅ selesai |
 
 ---
 
@@ -99,7 +99,7 @@
 📈 Report (🟠 Partial)
    ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
    ├── ✅ Laporan Pelatihan (RPT-02) — Activities, unique participants & coverage
-   └── 🔲 Laporan Produksi (RPT-03) — Yield details & periods
+   └── ✅ Laporan Produksi (RPT-03) — Matriks bulanan per petani/lahan + Excel & PDF export (#132)
 
 📤 Bulk Upload
    ├── ✅ Bulk Upload Petani (BULK-03) — Excel mapping + validation + preview
@@ -402,7 +402,7 @@ User Access Bulk Upload
 | Phase | Module | Status | Missing |
 |-------|--------|--------|---------|
 | TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager (CLI sudah ada) |
-| OPS-01 | Testing | Partial | RPT-03 coverage; integration test route hotspot |
+| OPS-01 | Testing | Partial | RPT-03 (#132) ✅ tercakup (14 unit test); gap tersisa: integration test route hotspot |
 | OPS-02 | DevOps | Partial | Verifikasi deployment/rollback; status Dockerfile vs CI |
 
 ## Planned - Now (🔲 Priority)
@@ -410,7 +410,6 @@ User Access Bulk Upload
 | Phase | Module | Next Steps | Blocker |
 |-------|--------|------------|---------|
 | — | **Remediasi Audit P0** | Guard `hasPermission` (role-permission/menu/upload) + scope (`getFarmerById`, `bulkCreateFarmers`) + lint merah — lihat `audit-report/audit-2026-07-10.md` §8 | — |
-| RPT-03 | Report Produksi | Extend `report.ts` + halaman `/admin/report/production` + unit tests (#109) | — |
 
 ## Planned - Next
 
@@ -461,7 +460,6 @@ User Access Bulk Upload
 
 ### Need Coverage
 
-- 🔲 RPT-03 Report Produksi (belum diimplementasi)
 - 🔲 Server-action level tests untuk snapshot RBAC (kini hanya fungsi murni)
 - 🔲 Integration test route `api/map-hotspot` (follow-up MAP-01)
 
@@ -483,7 +481,6 @@ User Access Bulk Upload
 |----------|--------|-------|----------|--------|
 | **P0** | **Remediasi audit — guard/scope RBAC** (`role-permission.ts`, `menu.ts`, `upload.ts`, `getFarmerById`, `bulkCreateFarmers`, menuKey Roles) | Engineering | ASAP | Menutup celah pemanggilan server action langsung (UI-bypass) |
 | P1 | **Lint hijau kembali** (ignore `scripts/**`, unused vars, cicil `no-explicit-any`) | Engineering | 2026-07-17 | Quality gate `npm run lint` kembali ditegakkan |
-| P1 | RPT-03 Report Produksi (#109) | Engineering | 2026-07-20 | Melengkapi modul Report |
 | P2 | Cleanup dead code & deps (audit §8 P2) | Engineering | 2026-07-24 | Dependency & file mati terhapus, bundle lebih ramping |
 
 ---
@@ -506,6 +503,6 @@ User Access Bulk Upload
 
 ---
 
-**Last Updated**: 2026-07-10 (Audit menyeluruh — sinkronisasi penuh dengan code + penghapusan blok legacy duplikat)  
-**Next Review**: Setelah remediasi audit P0 + RPT-03 (#109)  
+**Last Updated**: 2026-07-11 (RPT-03 Report Produksi #132 selesai — sinkronisasi status; audit menyeluruh 2026-07-10 tetap berlaku)  
+**Next Review**: Setelah remediasi audit P0 (#126/#127)  
 **Audit Basis**: Full codebase scan (src/, prisma/, scripts/, config) — 24 test files / 296 tests ✅ · build ✅ · lint ❌ 190 error — detail di `audit-report/audit-2026-07-10.md`

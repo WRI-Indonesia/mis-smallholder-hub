@@ -2,7 +2,7 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-07-10 (**AUDIT MENYELURUH (2026-07-10):** audit folder/file/code vs docs — hasil: `npm test` **24 file / 296 ✅**, `npm run build` ✅, **`npm run lint` ❌ 190 error** (gate QA merah), **6 temuan HIGH RBAC** (guard `hasPermission` absen di `role-permission.ts`/`menu.ts`/`upload.ts`; scope absen di `getFarmerById` & `bulkCreateFarmers`; menuKey halaman Roles keliru) → **remediasi P0 sebelum fitur baru**; laporan lengkap + saran cleanup di `audit-report/audit-2026-07-10.md` (internal, gitignored); keempat docs disinkronkan ke kondisi code. **MAP-01 enhancement (2026-07-10):** layer **Titik Api (Hotspot)** NASA FIRMS VIIRS 375 m via proxy same-origin `api/map-hotspot` (auth-guarded, bbox **Riau**, window **24 jam / 5 hari** — batas FIRMS `[1..5]`) + **tool Ruler** ukur jarak & luas **geodesik** (label segmen, undo, Esc) + **label nama KT & petani** (petani hanya bila teks **muat di poligon**, wrap otomatis). Helper murni `lib/firms.ts` + `map-geo.ts` + client `map-hotspot.ts`; **+22 unit test**; glyph single-font `["Open Sans Regular"]`. Build ✅ / **test 24 files · 296 ✅**. Sebelumnya (2026-07-09) MAP-01 #113: section **Peta Lainnya** (overlay referensi SIGAP KLHK/Kemenhut via proxy tile `api/map-overlay/[key]`) + section **Tambah Data GIS Lain** (user tambah layer WMS/Shapefile/GeoJSON, parse di browser) ditambahkan ke Peta Lahan. Sebelumnya, #99 DASH-01 Dashboard Snapshot selesai: Main Dashboard `/admin/dashboard/main` + peta MapLibre + snapshot module `/admin/tools/snapshot` + `MainDashboardSnapshot` model/migration; test lokal 19 files / 216 tests ✅. Sebelumnya: #107 RPT-01 & #108 RPT-02 ✅; #109 RPT-03 siap dikerjakan. Baru: stream `MAP` + **MAP-01 Map/Peta Lahan (#113) selesai** — peta full-bleed + filter floating + info popup accordion (Detail/Pelatihan lazy-load/Produksi dummy); test 20 files / 227 ✅. **Navigation/RBAC hardening (2026-07-09):** sidebar dapat **filter pencarian menu** (Ctrl/⌘K) + tombol **Tutup semua**; `filterMenuTreeByAccess` (menu-utils) menampilkan induk sebagai container tanpa perlu grant induk → menutup **cascade over-grant** (role MANAGEMENT sempat bocor akses Settings→User/Role/Menu Mgmt); MapLibre glyph fix (single-font); +10 test `menu-filter`; test 22 files / 264 ✅)
+**Last updated:** 2026-07-11 (**RPT-03 Report Produksi (#132) SELESAI (2026-07-11)** — matriks produksi bulanan per petani/lahan (route `/admin/report/production` + `report.ts` + `lib/report-production.ts` + Excel/PDF landscape + 14 unit test); detail di changelog 2026-07-11. **AUDIT MENYELURUH (2026-07-10):** audit folder/file/code vs docs — hasil: `npm test` **24 file / 296 ✅**, `npm run build` ✅, **`npm run lint` ❌ 190 error** (gate QA merah), **6 temuan HIGH RBAC** (guard `hasPermission` absen di `role-permission.ts`/`menu.ts`/`upload.ts`; scope absen di `getFarmerById` & `bulkCreateFarmers`; menuKey halaman Roles keliru) → **remediasi P0 sebelum fitur baru**; laporan lengkap + saran cleanup di `audit-report/audit-2026-07-10.md` (internal, gitignored); keempat docs disinkronkan ke kondisi code. **MAP-01 enhancement (2026-07-10):** layer **Titik Api (Hotspot)** NASA FIRMS VIIRS 375 m via proxy same-origin `api/map-hotspot` (auth-guarded, bbox **Riau**, window **24 jam / 5 hari** — batas FIRMS `[1..5]`) + **tool Ruler** ukur jarak & luas **geodesik** (label segmen, undo, Esc) + **label nama KT & petani** (petani hanya bila teks **muat di poligon**, wrap otomatis). Helper murni `lib/firms.ts` + `map-geo.ts` + client `map-hotspot.ts`; **+22 unit test**; glyph single-font `["Open Sans Regular"]`. Build ✅ / **test 24 files · 296 ✅**. Sebelumnya (2026-07-09) MAP-01 #113: section **Peta Lainnya** (overlay referensi SIGAP KLHK/Kemenhut via proxy tile `api/map-overlay/[key]`) + section **Tambah Data GIS Lain** (user tambah layer WMS/Shapefile/GeoJSON, parse di browser) ditambahkan ke Peta Lahan. Sebelumnya, #99 DASH-01 Dashboard Snapshot selesai: Main Dashboard `/admin/dashboard/main` + peta MapLibre + snapshot module `/admin/tools/snapshot` + `MainDashboardSnapshot` model/migration; test lokal 19 files / 216 tests ✅. Sebelumnya: #107 RPT-01 & #108 RPT-02 ✅; RPT-03 Produksi kini selesai via #132. Baru: stream `MAP` + **MAP-01 Map/Peta Lahan (#113) selesai** — peta full-bleed + filter floating + info popup accordion (Detail/Pelatihan lazy-load/Produksi dummy); test 20 files / 227 ✅. **Navigation/RBAC hardening (2026-07-09):** sidebar dapat **filter pencarian menu** (Ctrl/⌘K) + tombol **Tutup semua**; `filterMenuTreeByAccess` (menu-utils) menampilkan induk sebagai container tanpa perlu grant induk → menutup **cascade over-grant** (role MANAGEMENT sempat bocor akses Settings→User/Role/Menu Mgmt); MapLibre glyph fix (single-font); +10 test `menu-filter`; test 22 files / 264 ✅)
 
 **Next management review:** 2026-07-14
 
@@ -27,7 +27,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Status keseluruhan | 🟡 On Track dengan catatan (temuan audit P0 wajib diremediasi) |
 | Basis review       | **Audit menyeluruh 2026-07-10** (`audit-report/audit-2026-07-10.md`) |
 | Test lokal         | ✅ `npm test` — **24 files / 296 tests passed** · build ✅ · **lint ❌ 190 error** |
-| Fokus berikutnya   | **Remediasi audit P0 (guard/scope RBAC + lint)** → RPT-03 Produksi (#109) |
+| Fokus berikutnya   | **Remediasi audit P0 (guard/scope RBAC + lint)** (#126/#127) — RPT-03 Produksi (#132) ✅ selesai |
 
 ### Executive Summary
 
@@ -52,7 +52,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | 🔲 Not Started | 3 fase         | BULK-02 (#70), CMS-01, COMM-01 |
 | 🔲 Planned     | 7 fase         | MD-07/08/09/10/11, DASH-04, COMM-02 |
 | 🔴 Blocked     | 0 fase         | — (DASH-04 tidak lagi terblokir; DASH-01/02 selesai) |
-| 🎯 Now         | 2 fokus        | **Remediasi audit P0** (guard/scope RBAC + lint) + RPT-03 (#109) |
+| 🎯 Now         | 1 fokus        | **Remediasi audit P0** (guard/scope RBAC + lint) (#126/#127) — RPT-03 (#132) ✅ selesai |
 
 ### Management Talking Points
 
@@ -65,7 +65,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
 | Dashboard ✅ Complete | DASH-01/02/03 selesai (#99): Main Dashboard snapshot-backed + peta + Tools Snapshot. | Fondasi dashboard siap; DASH-04 (BMP) tinggal reuse pola snapshot. |
 | ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests **296/296** passed (24 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms ✅. | Foundation & core features stabil; setelah remediasi P0, lanjut RPT-03. |
+| Delivery confidence | Tests **296/296** passed (24 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms ✅. | Foundation & core features stabil; RPT-03 (#132) selesai, lanjut remediasi audit P0. |
 
 ### Decisions Needed
 
@@ -138,7 +138,7 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `map.schema.ts`, `menu.schema.ts`, `production.schema.ts`, `region.schema.ts`, `snapshot.schema.ts`, `training-activity.schema.ts`, `training-participant.schema.ts`, `user.schema.ts` — **11 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training, production, map, snapshot ✅ |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
 | Scripts        | `scripts/get-link.js`, `scripts/pdf-manager.js` (tracked, npm commands aktif ✅); debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only) | BUG-002 resolved — stale scripts tidak ada di repo/CI. |
-| Tests          | `npm test` lulus **24 test files / 296 tests** ✅ (audit 2026-07-10); test files: auth, bulk-upload, dashboard, data-analyst, data-completeness, farmer, firms, land-parcel, map, map-geo, menu-action, menu-filter, middleware, perf, production, rbac, rbac-permission, region, report, training-activity, training-participant, user-action, user-data-access, user-menu-access | Testing solid untuk semua core features; gap tersisa: RPT-03 (belum ada) + integration test route hotspot |
+| Tests          | `npm test` lulus **24 test files / 296 tests** ✅ (audit 2026-07-10); test files: auth, bulk-upload, dashboard, data-analyst, data-completeness, farmer, firms, land-parcel, map, map-geo, menu-action, menu-filter, middleware, perf, production, rbac, rbac-permission, region, report, training-activity, training-participant, user-action, user-data-access, user-menu-access | Testing solid untuk semua core features (termasuk RPT-03/#132: 14 unit test); gap tersisa: integration test route hotspot |
 | DevOps         | Dockerfile + `.github/workflows/` (`deploy-dev.yaml`, `deploy-main.yml`, `semgrep.yml`, `gitleaks.yml`)                                                                            | DevOps partial; workflow CI/CD dan security scan (Gitleaks, Semgrep) ditambahkan |
 
 ### Code Compliance Audit vs rule.md (2026-07-10)
@@ -222,7 +222,7 @@ Format phase: `STREAM-NN`.
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **24 test files / 296 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms/middleware/perf | Expand to RPT-03 + integration test route hotspot |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **24 test files / 296 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms/middleware/perf | RPT-03 (#132) ✅ tercakup; gap tersisa: integration test route hotspot |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
@@ -375,7 +375,7 @@ flowchart LR
     DASH02 --> DASH03["DASH-03 Interactive Map"]
     DASH02 --> DASH04["DASH-04 BMP"]
     RPT01["RPT-01 Report Petani (#107)"] --> RPT02["RPT-02 Report Pelatihan (#108)"]
-    RPT01 --> RPT03["RPT-03 Report Produksi (#109)"]
+    RPT01 --> RPT03["RPT-03 Report Produksi (#132) ✅"]
     BULK01["BULK-01 Bulk Upload Menu + KT"] --> BULK02["BULK-02 Bulk Upload Region"]
 ```
 
