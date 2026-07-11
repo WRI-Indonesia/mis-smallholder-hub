@@ -166,6 +166,7 @@ describe("Performance - RPT-03 Production report pivot (pure logic)", () => {
               farmerName: `Petani ${f}`,
               parcelDbId: `parcel-${f}-${p}`,
               parcelCode: `L-${f}-${p}`,
+              parcelArea: 1.5,
               period,
               yieldKg: 100 + h,
             });

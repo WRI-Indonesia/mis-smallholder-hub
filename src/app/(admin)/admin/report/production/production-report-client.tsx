@@ -119,6 +119,15 @@ export function ProductionReportClient({ districts }: Props) {
     return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(num);
   };
 
+  const formatArea = (num: number | null | undefined) => {
+    if (num == null) return "-";
+    return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+  };
+
+  const totalArea = reportData
+    ? reportData.rows.reduce((sum, row) => sum + (row.parcelArea ?? 0), 0)
+    : 0;
+
   const handleExportExcel = async () => {
     if (!reportData) return;
     const { exportToExcel } = await import("@/lib/xlsx");
@@ -128,6 +137,7 @@ export function ProductionReportClient({ districts }: Props) {
       { header: "Nama Petani", key: "name" },
       { header: "Id Petani", key: "farmerCode" },
       { header: "Id Lahan", key: "parcelCode" },
+      { header: "Luas (Ha)", key: "parcelArea" },
       ...reportData.periods.map((p) => ({ header: formatPeriodLabel(p), key: p })),
       { header: "Total", key: "total" },
     ];
@@ -138,6 +148,7 @@ export function ProductionReportClient({ districts }: Props) {
         name: row.name,
         farmerCode: row.farmerCode,
         parcelCode: row.parcelCode ?? "-",
+        parcelArea: row.parcelArea != null ? row.parcelArea : "",
       };
       reportData.periods.forEach((p) => {
         rec[p] = row.values[p] != null ? row.values[p] : "";
@@ -152,6 +163,7 @@ export function ProductionReportClient({ districts }: Props) {
       name: "Total per Bulan",
       farmerCode: "",
       parcelCode: "",
+      parcelArea: parseFloat(totalArea.toFixed(2)),
     };
     reportData.periods.forEach((p) => {
       totalRow[p] = reportData.columnTotals[p] ?? 0;
@@ -175,6 +187,7 @@ export function ProductionReportClient({ districts }: Props) {
       { header: "Nama Petani", key: "name" },
       { header: "Id Petani", key: "farmerCode" },
       { header: "Id Lahan", key: "parcelCode" },
+      { header: "Luas (Ha)", key: "parcelArea" },
       ...reportData.periods.map((p) => ({ header: formatPeriodLabel(p), key: p })),
       { header: "Total", key: "total" },
     ];
@@ -186,6 +199,7 @@ export function ProductionReportClient({ districts }: Props) {
         name: row.name,
         farmerCode: row.farmerCode,
         parcelCode: row.parcelCode ?? "-",
+        parcelArea: formatArea(row.parcelArea),
       };
       reportData.periods.forEach((p) => {
         rec[p] = formatCell(row.values[p]);
@@ -199,6 +213,7 @@ export function ProductionReportClient({ districts }: Props) {
       name: "Total per Bulan",
       farmerCode: "",
       parcelCode: "",
+      parcelArea: formatArea(totalArea),
     };
     reportData.periods.forEach((p) => {
       totalRow[p] = formatCell(reportData.columnTotals[p]);
@@ -210,15 +225,17 @@ export function ProductionReportClient({ districts }: Props) {
     // numeric columns — keeps numbers/headers on one line. Denser font when the
     // range is wide (many month columns).
     const monthCount = reportData.periods.length;
-    const totalIdx = 4 + monthCount;
+    const firstMonthIdx = 5; // after No, Nama, Id Petani, Id Lahan, Luas
+    const totalIdx = firstMonthIdx + monthCount;
     const columnStyles: Record<number, Record<string, string | number>> = {
       0: { cellWidth: 7, halign: "right" }, // No
-      1: { cellWidth: 26 }, // Nama Petani
-      2: { cellWidth: 30 }, // Id Petani
-      3: { cellWidth: 32 }, // Id Lahan
-      [totalIdx]: { halign: "right", fontStyle: "bold" }, // Total
+      1: { cellWidth: 25 }, // Nama Petani
+      2: { cellWidth: 31, fontSize: 6 }, // Id Petani (smaller font keeps long codes on one line)
+      3: { cellWidth: 33, fontSize: 6 }, // Id Lahan
+      4: { cellWidth: 12, halign: "right" }, // Luas (Ha)
+      [totalIdx]: { cellWidth: 15, halign: "right", fontStyle: "bold" }, // Total
     };
-    for (let i = 4; i < totalIdx; i++) {
+    for (let i = firstMonthIdx; i < totalIdx; i++) {
       columnStyles[i] = { halign: "right" }; // month columns
     }
 
@@ -480,6 +497,7 @@ export function ProductionReportClient({ districts }: Props) {
                     <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Nama Petani</th>
                     <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Id Petani</th>
                     <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Id Lahan</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Luas (Ha)</th>
                     {reportData.periods.map((p) => (
                       <th key={p} className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">
                         {formatPeriodLabel(p)}
@@ -495,6 +513,7 @@ export function ProductionReportClient({ districts }: Props) {
                       <td className="px-3 py-2 font-medium whitespace-nowrap">{row.name}</td>
                       <td className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">{row.farmerCode}</td>
                       <td className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">{row.parcelCode ?? "-"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap text-muted-foreground">{formatArea(row.parcelArea)}</td>
                       {reportData.periods.map((p) => (
                         <td key={p} className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                           {formatCell(row.values[p])}
@@ -508,6 +527,7 @@ export function ProductionReportClient({ districts }: Props) {
                   <tr className="border-t-2 border-border bg-muted/50 font-semibold">
                     <td className="px-3 py-2 sticky left-0 bg-muted/50 z-10" />
                     <td className="px-3 py-2 whitespace-nowrap" colSpan={3}>Total per Bulan</td>
+                    <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatArea(totalArea)}</td>
                     {reportData.periods.map((p) => (
                       <td key={p} className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                         {formatCell(reportData.columnTotals[p])}

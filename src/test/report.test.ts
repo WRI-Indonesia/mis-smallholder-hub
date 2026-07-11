@@ -306,11 +306,11 @@ describe("Production Report (RPT-03) helpers", () => {
     const periods = ["2024-03", "2024-04", "2024-05"];
 
     const records: ProductionMatrixRecord[] = [
-      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", period: "2024-03", yieldKg: 100 },
-      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", period: "2024-03", yieldKg: 50 }, // 2nd harvest same month -> summed
-      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", period: "2024-05", yieldKg: 200 },
-      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p2", parcelCode: "L-B", period: "2024-04", yieldKg: 80 }, // same farmer, 2nd parcel -> 2nd row
-      { farmerDbId: "f2", farmerCode: "ITM.0002", farmerName: "Ani", parcelDbId: "p3", parcelCode: "L-C", period: "2024-04", yieldKg: 40 },
+      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", parcelArea: 1.5, period: "2024-03", yieldKg: 100 },
+      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", parcelArea: 1.5, period: "2024-03", yieldKg: 50 }, // 2nd harvest same month -> summed
+      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", parcelArea: 1.5, period: "2024-05", yieldKg: 200 },
+      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p2", parcelCode: "L-B", parcelArea: 2, period: "2024-04", yieldKg: 80 }, // same farmer, 2nd parcel -> 2nd row
+      { farmerDbId: "f2", farmerCode: "ITM.0002", farmerName: "Ani", parcelDbId: "p3", parcelCode: "L-C", parcelArea: null, period: "2024-04", yieldKg: 40 },
     ];
 
     it("pivots records per farmer/parcel and sums duplicate months", () => {
@@ -329,6 +329,10 @@ describe("Production Report (RPT-03) helpers", () => {
       expect(budiA.values["2024-04"]).toBeUndefined(); // empty month absent, not 0
       expect(budiA.values["2024-05"]).toBe(200);
       expect(budiA.total).toBe(350);
+      expect(budiA.parcelArea).toBe(1.5); // parcel area carried onto the row
+
+      const ani = result.rows.find((r) => r.key === "f2::p3")!;
+      expect(ani.parcelArea).toBeNull(); // null area preserved
     });
 
     it("computes column totals, grand total, and summary", () => {

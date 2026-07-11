@@ -513,7 +513,7 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
         select: { id: true, farmerId: true, name: true },
       },
       parcel: {
-        select: { id: true, parcelId: true },
+        select: { id: true, parcelId: true, area: true },
       },
     },
   });
@@ -524,6 +524,7 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
     farmerName: r.farmer.name,
     parcelDbId: r.parcel?.id ?? null,
     parcelCode: r.parcel?.parcelId ?? null,
+    parcelArea: r.parcel?.area ?? null,
     period: r.period,
     yieldKg: r.yieldKg,
   }));

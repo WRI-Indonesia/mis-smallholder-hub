@@ -60,6 +60,7 @@ export interface ProductionMatrixRecord {
   farmerName: string;
   parcelDbId: string | null;
   parcelCode: string | null;
+  parcelArea: number | null;
   period: string;
   yieldKg: number;
 }
@@ -89,6 +90,7 @@ export function buildProductionMatrix(
         name: rec.farmerName,
         parcelId: rec.parcelDbId,
         parcelCode: rec.parcelCode,
+        parcelArea: rec.parcelArea,
         values: {},
         total: 0,
       };

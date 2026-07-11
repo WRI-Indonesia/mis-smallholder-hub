@@ -100,6 +100,8 @@ export interface ProductionReportRow {
   parcelId: string | null;
   /** Human-facing parcel code / Id Lahan (null when unassigned). */
   parcelCode: string | null;
+  /** Land parcel area in hectares (null when unassigned/unknown). */
+  parcelArea: number | null;
   /** period (YYYY-MM) → summed yield (kg). Missing months are absent, not 0. */
   values: Record<string, number>;
   /** Sum of all months for this row. */
