@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { computeCompleteness, computePelatihanDomain } from "@/lib/data-completeness";
 import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
 import { buildProductionMatrix, enumeratePeriods, type ProductionMatrixRecord } from "@/lib/report-production";
+import { summarizeProduction } from "@/lib/map-data";
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
@@ -191,5 +192,29 @@ describe("Performance - RPT-03 Production report pivot (pure logic)", () => {
     expect(result.summary.totalPetani).toBe(500);
     // 1000 rows × 24 months × (100 + 101) = 4,824,000 kg
     expect(result.grandTotal).toBe(4_824_000);
+  });
+});
+
+describe("Performance - MAP-01 parcel production summary (pure logic)", () => {
+  // Popup/PDF summarize production for ONE parcel. Real datasets are tiny (a few
+  // years × 12 months), so this stresses far past any realistic parcel to prove
+  // the aggregation stays linear and cheap.
+  it("summarizes ~60k records (30 years × 12 months × 166 harvests) under 50ms", () => {
+    const records: { period: string; yieldKg: number }[] = [];
+    for (let y = 2000; y < 2030; y++) {
+      for (let m = 1; m <= 12; m++) {
+        const period = `${y}-${String(m).padStart(2, "0")}`;
+        for (let h = 0; h < 166; h++) records.push({ period, yieldKg: 100 + h });
+      }
+    }
+
+    const start = performance.now();
+    const result = summarizeProduction(records);
+    const duration = performance.now() - start;
+
+    console.log(`  production summary (${records.length} records → ${result.byYear.length} tahun): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(50);
+    expect(result.byYear.length).toBe(30);
+    expect(result.recordCount).toBe(records.length);
   });
 });

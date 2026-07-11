@@ -55,6 +55,19 @@ export type FarmerTrainingItem = {
   date: string | null;
 };
 
+/** One year's monthly yield (kg): index 0 = Jan … 11 = Des, plus the year total. */
+export type ProductionYear = { year: number; monthly: number[]; total: number };
+
+/** Production summary for a parcel: cross-year monthly average + per-year breakdown. */
+export type ProductionSummary = {
+  /** Monthly average yield (kg) across all years with data; index 0 = Jan … 11 = Des. */
+  monthly: number[];
+  /** Per-year monthly yield (kg), sorted by year descending. */
+  byYear: ProductionYear[];
+  totalKg: number;
+  recordCount: number;
+};
+
 /** Everything needed to render the Farm Passport PDF for one parcel. */
 export type ParcelPassport = {
   farmer: {
@@ -84,6 +97,5 @@ export type ParcelPassport = {
     geometry: Polygon | MultiPolygon;
   };
   training: FarmerTrainingItem[];
-  /** Monthly average yield (kg), index 0 = Jan … 11 = Des; plus totals. */
-  production: { monthly: number[]; totalKg: number; recordCount: number };
+  production: ProductionSummary;
 };
