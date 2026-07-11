@@ -10,7 +10,7 @@ import {
   farmerGroupAccessFilter,
   getAccessibleDistrictIds,
 } from "@/lib/access-context";
-import { buildMapData, monthlyAverageYield } from "@/lib/map-data";
+import { buildMapData, summarizeProduction } from "@/lib/map-data";
 import { mapFilterSchema } from "@/validations/map.schema";
 import type { ActionResult } from "@/types/action-result";
 import type {
@@ -20,6 +20,7 @@ import type {
   MapGroupOption,
   FarmerTrainingItem,
   ParcelPassport,
+  ProductionSummary,
 } from "@/types/map";
 
 const VIEW = "VIEW";
@@ -224,10 +225,18 @@ export async function getFarmerTraining(farmerId: string): Promise<FarmerTrainin
 
 /**
  * All data for the Farm Passport PDF of a single parcel: farmer identity, land
- * info + geometry, training completion, and real monthly-average production.
+ * info + geometry, training completion, and real per-year production.
  * RBAC-scoped via the parcel's farmer group.
+ *
+ * Pass `includeProduction: false` when the caller already holds the parcel's
+ * production (e.g. the popup fetched it via `getParcelProduction`) to skip the
+ * redundant query — the returned `production` is then an empty placeholder the
+ * caller is expected to overwrite before rendering.
  */
-export async function getParcelPassport(landParcelId: string): Promise<ActionResult<ParcelPassport>> {
+export async function getParcelPassport(
+  landParcelId: string,
+  includeProduction = true
+): Promise<ActionResult<ParcelPassport>> {
   if (!(await hasPermission(MENU_KEY, VIEW))) {
     return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
   }
@@ -288,10 +297,12 @@ export async function getParcelPassport(landParcelId: string): Promise<ActionRes
   const farmer = parcel.farmer;
   const [training, prodRecords] = await Promise.all([
     computeFarmerTrainingItems(farmer.id),
-    prisma.productionRecord.findMany({
-      where: { farmerId: farmer.id, isActive: true },
-      select: { period: true, yieldKg: true },
-    }),
+    includeProduction
+      ? prisma.productionRecord.findMany({
+          where: { parcelId: landParcelId, isActive: true },
+          select: { period: true, yieldKg: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   return {
@@ -324,11 +335,34 @@ export async function getParcelPassport(landParcelId: string): Promise<ActionRes
         geometry,
       },
       training,
-      production: {
-        monthly: monthlyAverageYield(prodRecords),
-        totalKg: prodRecords.reduce((s, r) => s + r.yieldKg, 0),
-        recordCount: prodRecords.length,
-      },
+      production: summarizeProduction(prodRecords),
     },
   };
+}
+
+/**
+ * Production summary for a single parcel (Peta Lahan popup): cross-year monthly
+ * average + per-year breakdown. RBAC-scoped via the parcel's farmer group.
+ */
+export async function getParcelProduction(landParcelId: string): Promise<ProductionSummary> {
+  await requireView();
+
+  const access = await getAccessContext();
+  const parcel = await prisma.landParcel.findFirst({
+    where: {
+      id: landParcelId,
+      isActive: true,
+      farmer: { isActive: true, farmerGroup: farmerGroupAccessFilter(access) },
+    },
+    select: { id: true },
+  });
+  if (!parcel) {
+    throw new Error("Lahan tidak ditemukan atau Anda tidak memiliki akses");
+  }
+
+  const records = await prisma.productionRecord.findMany({
+    where: { parcelId: landParcelId, isActive: true },
+    select: { period: true, yieldKg: true },
+  });
+  return summarizeProduction(records);
 }

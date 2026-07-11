@@ -1,7 +1,7 @@
 # Smallholder HUB — UI/UX Flow
 
 > Dokumentasi alur navigasi dan user journey berdasarkan role.
-> **Last updated**: 2026-07-10 (**Audit menyeluruh**: sinkronisasi angka test (24 file/296), status fase (24 Done), menu aktual (Bulk Upload Produksi ✅, Tools = Dashboard Snapshot + CLI lokal), koreksi klaim compliance, dan **penghapusan blok legacy duplikat** di bagian bawah dokumen — detail temuan di `audit-report/audit-2026-07-10.md` (internal, gitignored). Sebelumnya: MAP-01 enhancement — Map › Peta Lahan: **layer Titik Api/Hotspot NASA FIRMS** (24 jam/5 hari, bbox Riau, proxy auth-guarded) + **tool Ruler** (jarak & luas geodesik) + **label nama KT & petani** (petani hanya bila muat di poligon); 2026-07-09: MAP-01 #113 — peta interaktif + info popup accordion + Farm Passport PDF + section "Peta Lainnya" overlay referensi SIGAP KLHK + section "Tambah Data GIS Lain" WMS/Shapefile/GeoJSON)
+> **Last updated**: 2026-07-11 (**MAP-01 Produksi Peta & PDF (#134) + Panel Daftar Lahan (#135)**: popup Peta Lahan pakai produksi asli per-lahan + selektor Rata-rata/tahun; Farm Passport PDF → matriks tahun×bulan×Total & rebrand "Profil Lahan"; panel kanan daftar lahan (search + zoom); legenda collapsible; fix popup refresh + dedup fetch produksi; test 24 file/311; tech debt #136. Sebelumnya **Audit menyeluruh 2026-07-10**: sinkronisasi angka test (24 file/296), status fase (24 Done), menu aktual (Bulk Upload Produksi ✅, Tools = Dashboard Snapshot + CLI lokal), koreksi klaim compliance, dan **penghapusan blok legacy duplikat** di bagian bawah dokumen — detail temuan di `audit-report/audit-2026-07-10.md` (internal, gitignored). Sebelumnya: MAP-01 enhancement — Map › Peta Lahan: **layer Titik Api/Hotspot NASA FIRMS** (24 jam/5 hari, bbox Riau, proxy auth-guarded) + **tool Ruler** (jarak & luas geodesik) + **label nama KT & petani** (petani hanya bila muat di poligon); 2026-07-09: MAP-01 #113 — peta interaktif + info popup accordion + Farm Passport PDF + section "Peta Lainnya" overlay referensi SIGAP KLHK + section "Tambah Data GIS Lain" WMS/Shapefile/GeoJSON)
 
 ---
 
@@ -120,7 +120,7 @@
    └── 🔲 GIS Utilities — Planned
 
 🗺️ Map (✅ MAP-01)
-   └── ✅ Peta Lahan — Peta full-bleed MapLibre + panel filter floating collapsible (Provinsi→Distrik→KT + Muat Data, auto-collapse) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count) + section **Peta Lainnya** (paling bawah panel) = overlay raster referensi SIGAP KLHK/Kemenhut (Kawasan Hutan, Pelepasan Kawasan Hutan, Fungsi Ekosistem Gambut, PIPPIB/Moratorium, Penutupan Lahan 2022) dengan toggle per-layer + slider transparansi, di-render di bawah layer data petani; tile di-proxy same-origin via `/api/map-overlay/[key]` (atasi CORS + TLS chain upstream) + section **Tambah Data GIS Lain** = user tambah layer sendiri via 3 mode (WMS URL / ZIP Shapefile / GeoJSON), Shapefile & GeoJSON diparse di browser (`shpjs`), toggle + hapus + auto-fit ke bounds layer baru; WMS user di-fetch langsung (butuh CORS). Klik feature → info popup: KT (identitas) · Lahan = accordion (Detail Lahan + Pelatihan Petani lazy-load + Produksi grafik dummy) + tombol "Print Profil Petani" → Farm Passport PDF (identitas, layout lahan/polygon, pelatihan, produksi data asli). Read-only atas FarmerGroup + LandParcel + section **Titik Api (Hotspot)** = layer NASA FIRMS VIIRS 375 m (toggle 24 jam / 5 hari, warna by kebaruan <24 jam merah / 1–5 hari oranye, popup detail + disclaimer "deteksi anomali panas", area **Riau**, tile via proxy same-origin `/api/map-hotspot` auth-guarded) + **tool Ruler** (kanan atas di bawah basemap switcher) = ukur jarak & luas **geodesik** (klik menaruh titik, label per-segmen, undo/hapus/Esc) + **label nama** (nama KT pada titik + nama petani pada poligon, **hanya bila teks muat di poligon** pada zoom aktif, wrap otomatis)
+   └── ✅ Peta Lahan — Peta full-bleed MapLibre + panel filter floating collapsible (Provinsi→Distrik→KT + Muat Data, auto-collapse) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count) + section **Peta Lainnya** (paling bawah panel) = overlay raster referensi SIGAP KLHK/Kemenhut (Kawasan Hutan, Pelepasan Kawasan Hutan, Fungsi Ekosistem Gambut, PIPPIB/Moratorium, Penutupan Lahan 2022) dengan toggle per-layer + slider transparansi, di-render di bawah layer data petani; tile di-proxy same-origin via `/api/map-overlay/[key]` (atasi CORS + TLS chain upstream) + section **Tambah Data GIS Lain** = user tambah layer sendiri via 3 mode (WMS URL / ZIP Shapefile / GeoJSON), Shapefile & GeoJSON diparse di browser (`shpjs`), toggle + hapus + auto-fit ke bounds layer baru; WMS user di-fetch langsung (butuh CORS). Klik feature → info popup: KT (identitas) · Lahan = accordion (Detail Lahan + Pelatihan Petani lazy-load + **Produksi data asli per-lahan** dengan **selektor Rata-rata/tahun**, grafik sumbu-Y kanan + tooltip hover) + tombol **"Profil Lahan"** → Farm Passport PDF (identitas, layout lahan/polygon, pelatihan, **produksi matriks tahun×bulan×Total**; header/file di-rebrand "Profil Lahan"). Produksi popup & PDF berbagi satu fetch (dedup). **Panel kanan Daftar Lahan** (toggle) = daftar lahan hasil Muat Data dengan **text search** (nama/ID petani/ID lahan) + tabel beraksi **zoom ke lahan** (kolom paling kiri). Legenda **collapsible**. Read-only atas FarmerGroup + LandParcel + section **Titik Api (Hotspot)** = layer NASA FIRMS VIIRS 375 m (toggle 24 jam / 5 hari, warna by kebaruan <24 jam merah / 1–5 hari oranye, popup detail + disclaimer "deteksi anomali panas", area **Riau**, tile via proxy same-origin `/api/map-hotspot` auth-guarded) + **tool Ruler** (kanan atas di bawah basemap switcher) = ukur jarak & luas **geodesik** (klik menaruh titik, label per-segmen, undo/hapus/Esc) + **label nama** (nama KT pada titik + nama petani pada poligon, **hanya bila teks muat di poligon** pada zoom aktif, wrap otomatis)
 
 👤 Profile
    └── ✅ Change Password
@@ -386,7 +386,7 @@ User Access Bulk Upload
 | DASH-01 | Main Dashboard | Snapshot-backed, 10 summary cards, filter client-side (#99) |
 | DASH-02 | Dashboard Server Actions | `dashboard.ts` + `snapshot.ts` + aggregation lib (teruji) |
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
-| MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113) |
+| MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible |
 | RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
 | RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
@@ -449,10 +449,10 @@ User Access Bulk Upload
 | Map Geo (ruler/label) | map-geo.test.ts | 13 | ✅ |
 | Dashboard | dashboard.test.ts | 12 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
-| Map (MAP-01) | map.test.ts | 11 | ✅ |
+| Map (MAP-01) | map.test.ts | 15 | ✅ |
 | Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |
 | Hotspot FIRMS | firms.test.ts | 9 | ✅ |
-| Performance | perf.test.ts | 6 | ✅ |
+| Performance | perf.test.ts | 8 | ✅ |
 | Report | report.test.ts | 5 | ✅ |
 | Middleware | middleware.test.ts | 5 | ✅ |
 | Auth | auth.test.ts | 5 | ✅ |

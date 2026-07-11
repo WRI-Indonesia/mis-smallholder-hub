@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMapData, monthlyAverageYield, type RawGroup, type RawParcel } from "@/lib/map-data";
+import { buildMapData, monthlyAverageYield, summarizeProduction, type RawGroup, type RawParcel } from "@/lib/map-data";
 
 const group = (over: Partial<RawGroup> = {}): RawGroup => ({
   id: "g1",
@@ -139,5 +139,47 @@ describe("monthlyAverageYield", () => {
   it("ignores malformed periods gracefully", () => {
     const result = monthlyAverageYield([{ period: "bad", yieldKg: 999 }]);
     expect(result.every((v) => v === 0)).toBe(true);
+  });
+});
+
+describe("summarizeProduction", () => {
+  it("returns empty breakdown for no records", () => {
+    const result = summarizeProduction([]);
+    expect(result.byYear).toEqual([]);
+    expect(result.monthly).toHaveLength(12);
+    expect(result.totalKg).toBe(0);
+    expect(result.recordCount).toBe(0);
+  });
+
+  it("groups yield per year and month, sorts years descending, and totals each year", () => {
+    const result = summarizeProduction([
+      { period: "2024-06", yieldKg: 200 },
+      { period: "2025-06", yieldKg: 100 },
+      { period: "2025-06", yieldKg: 50 }, // same period → summed
+      { period: "2025-01", yieldKg: 30 },
+    ]);
+    expect(result.byYear.map((y) => y.year)).toEqual([2025, 2024]);
+    const y2025 = result.byYear[0];
+    expect(y2025.monthly[5]).toBe(150); // June 2025 = 100 + 50
+    expect(y2025.monthly[0]).toBe(30); // January 2025
+    expect(y2025.total).toBe(180);
+    expect(result.byYear[1].monthly[5]).toBe(200); // June 2024
+    expect(result.totalKg).toBe(380);
+    expect(result.recordCount).toBe(4);
+  });
+
+  it("keeps monthly as the cross-year average (same as monthlyAverageYield)", () => {
+    const records = [
+      { period: "2024-06", yieldKg: 200 },
+      { period: "2025-06", yieldKg: 100 },
+    ];
+    expect(summarizeProduction(records).monthly).toEqual(monthlyAverageYield(records));
+  });
+
+  it("ignores malformed periods but still counts them in recordCount/totalKg", () => {
+    const result = summarizeProduction([{ period: "bad", yieldKg: 999 }]);
+    expect(result.byYear).toEqual([]);
+    expect(result.recordCount).toBe(1);
+    expect(result.totalKg).toBe(999);
   });
 });

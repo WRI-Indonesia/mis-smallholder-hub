@@ -1,6 +1,6 @@
 import { centroid } from "@turf/turf";
 import type { Polygon, MultiPolygon } from "geojson";
-import type { MapData, KTPoint, ParcelFeature } from "@/types/map";
+import type { MapData, KTPoint, ParcelFeature, ProductionSummary } from "@/types/map";
 
 export type RawGroup = {
   id: string;
@@ -100,4 +100,36 @@ export function monthlyAverageYield(records: { period: string; yieldKg: number }
     }
   }
   return sums.map((s, i) => (counts[i] > 0 ? s / counts[i] : 0));
+}
+
+/**
+ * Summarize production records for a parcel: a cross-year monthly average plus a
+ * per-year breakdown (yield summed per calendar month within each year, with the
+ * year total). Years are sorted descending. Records with an unparseable period
+ * are ignored (but still counted toward recordCount to mirror the raw total).
+ */
+export function summarizeProduction(records: { period: string; yieldKg: number }[]): ProductionSummary {
+  const byYearMonth = new Map<number, number[]>();
+  for (const r of records) {
+    const year = Number.parseInt(r.period.slice(0, 4), 10);
+    const month = Number.parseInt(r.period.slice(5, 7), 10) - 1;
+    if (!Number.isFinite(year) || month < 0 || month > 11) continue;
+    let monthly = byYearMonth.get(year);
+    if (!monthly) {
+      monthly = new Array(12).fill(0);
+      byYearMonth.set(year, monthly);
+    }
+    monthly[month] += r.yieldKg;
+  }
+
+  const byYear = [...byYearMonth.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([year, monthly]) => ({ year, monthly, total: monthly.reduce((s, v) => s + v, 0) }));
+
+  return {
+    monthly: monthlyAverageYield(records),
+    byYear,
+    totalKg: records.reduce((s, r) => s + r.yieldKg, 0),
+    recordCount: records.length,
+  };
 }

@@ -4,14 +4,15 @@ import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } fro
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2 } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection } from "geojson";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getFarmerTraining, getParcelPassport } from "@/server/actions/map";
-import type { MapData, ParcelFeature, FarmerTrainingItem } from "@/types/map";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
+import type { MapData, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
 import type { LayerVisibility } from "./map-control-panel";
 import {
   MAP_OVERLAYS,
@@ -119,6 +120,10 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
   }, [resolvedTheme]);
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
+
+  // Right-side parcel list panel (searchable list of the currently-shown parcels).
+  const [showParcelList, setShowParcelList] = useState(false);
+  const [parcelSearch, setParcelSearch] = useState("");
 
   // Ruler tool: while active, map clicks drop vertices and the running
   // geodesic distance along the path is shown.
@@ -356,6 +361,28 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
       setSelected({ longitude, latitude, kind: "hotspot", props: feature.properties ?? {} });
     }
   };
+
+  const filteredParcels = useMemo(() => {
+    const parcels = data?.parcels ?? [];
+    const q = parcelSearch.trim().toLowerCase();
+    if (!q) return parcels;
+    return parcels.filter(
+      (p) =>
+        p.farmerName.toLowerCase().includes(q) ||
+        p.farmerCode.toLowerCase().includes(q) ||
+        p.parcelId.toLowerCase().includes(q)
+    );
+  }, [data, parcelSearch]);
+
+  // Zoom the map to a parcel's extent and open its popup.
+  const zoomToParcel = useCallback((p: ParcelFeature) => {
+    setSelected({ longitude: p.centroid[0], latitude: p.centroid[1], kind: "parcel", props: parcelProps(p) });
+    const map = mapRef.current;
+    if (!map) return;
+    const b = geomBounds(p.geometry);
+    if (b) map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 80, maxZoom: 17, duration: 600 });
+    else map.easeTo({ center: p.centroid, zoom: 16, duration: 600 });
+  }, []);
 
   return (
     <div className="absolute inset-0">
@@ -603,6 +630,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
 
         {selected && (
           <Popup
+            key={`${selected.kind}:${selected.props.id ?? `${selected.longitude},${selected.latitude}`}`}
             longitude={selected.longitude}
             latitude={selected.latitude}
             anchor="bottom"
@@ -661,31 +689,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
                 />
               </div>
             ) : (
-              <div className="w-[340px]">
-                <ParcelHeader
-                  name={String(selected.props.farmerName ?? "—")}
-                  farmerCode={String(selected.props.farmerCode ?? "—")}
-                  parcelId={String(selected.props.parcelId ?? "—")}
-                  groupName={String(selected.props.farmerGroupName ?? "—")}
-                />
-                <PopupHighlight label="Luas Lahan" value={formatArea(selected.props.area as number | null)} />
-                <div className="divide-y">
-                  <PopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
-                    <AttrRows
-                      rows={[
-                        { label: "Tahun Tanam", value: selected.props.plantingYear },
-                        { label: "Komoditas", value: selected.props.cropType },
-                        { label: "Status Lahan", value: selected.props.landStatus },
-                      ]}
-                    />
-                  </PopupSection>
-                  {selected.props.farmerId ? (
-                    <ParcelTrainingSection farmerId={String(selected.props.farmerId)} />
-                  ) : null}
-                  <ParcelProductionSection />
-                </div>
-                <ParcelFooter landParcelId={String(selected.props.id)} />
-              </div>
+              <ParcelPopupBody props={selected.props} />
             )}
           </Popup>
         )}
@@ -725,6 +729,88 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
         >
           <Ruler className="h-4 w-4" />
         </button>
+
+        {/* Parcel list toggle */}
+        {data && data.parcels.length > 0 && (
+          <button
+            onClick={() => setShowParcelList((v) => !v)}
+            title="Daftar lahan"
+            aria-pressed={showParcelList}
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-md border shadow-md backdrop-blur-sm transition-colors",
+              showParcelList
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background/90 text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <List className="h-4 w-4" />
+          </button>
+        )}
+
+        {showParcelList && data && (
+          <div className="flex w-80 flex-col overflow-hidden rounded-md border bg-background/95 shadow-md backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+              <span className="flex items-center gap-1.5 text-xs font-semibold">
+                <List className="h-3.5 w-3.5" />
+                Daftar Lahan
+                <span className="text-muted-foreground">({filteredParcels.length})</span>
+              </span>
+              <button
+                onClick={() => setShowParcelList(false)}
+                title="Tutup"
+                className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="border-b p-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={parcelSearch}
+                  onChange={(e) => setParcelSearch(e.target.value)}
+                  placeholder="Cari nama / ID petani / ID lahan"
+                  className="h-8 w-full rounded-md border bg-background pr-2 pl-7 text-xs outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
+            </div>
+            <div className="max-h-[50vh] overflow-y-auto">
+              {filteredParcels.length === 0 ? (
+                <p className="px-3 py-4 text-center text-xs text-muted-foreground">Tidak ada lahan.</p>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-muted/95 backdrop-blur-sm">
+                    <tr className="border-b text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <th className="w-[1%] px-2 py-1.5 text-left whitespace-nowrap">Aksi</th>
+                      <th className="px-2 py-1.5 text-left">Petani</th>
+                      <th className="px-2 py-1.5 text-left">ID Lahan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredParcels.map((p) => (
+                      <tr key={p.id} className="border-b last:border-0 hover:bg-muted/40">
+                        <td className="w-[1%] px-2 py-1.5 whitespace-nowrap">
+                          <button
+                            onClick={() => zoomToParcel(p)}
+                            title="Zoom ke lahan"
+                            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <Crosshair className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <p className="leading-tight font-medium">{p.farmerName}</p>
+                          <p className="font-mono text-[10px] text-muted-foreground">{p.farmerCode}</p>
+                        </td>
+                        <td className="px-2 py-1.5 font-mono text-muted-foreground">{p.parcelId}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
 
         {(measuring || measurePts.length > 0) && (
           <div className="w-48 rounded-md border bg-background/95 backdrop-blur-sm shadow-md px-3 py-2">
@@ -870,22 +956,102 @@ function ParcelHeader({
 }
 
 /** Parcel popup footer: download the Farm Passport PDF for the parcel owner. */
-function ParcelFooter({ landParcelId }: { landParcelId: string }) {
+/**
+ * Parcel popup body. Owns the parcel's production summary so the "Produksi"
+ * section and the "Profil Lahan" (passport) button share a single fetch:
+ * whichever loads it first fills the cache, and the other reuses it.
+ */
+function ParcelPopupBody({ props }: { props: Record<string, unknown> }) {
+  const landParcelId = String(props.id);
+  const [production, setProduction] = useState<ProductionSummary | null>(null);
+  const [prodLoading, setProdLoading] = useState(false);
+  const [prodError, setProdError] = useState(false);
+  const inFlight = useRef<Promise<ProductionSummary> | null>(null);
+
+  // Fetch production at most once per popup; concurrent/repeat calls share the promise.
+  const loadProduction = useCallback(() => {
+    if (production) return Promise.resolve(production);
+    if (inFlight.current) return inFlight.current;
+    setProdLoading(true);
+    setProdError(false);
+    const p = getParcelProduction(landParcelId)
+      .then((res) => {
+        setProduction(res);
+        return res;
+      })
+      .catch((e) => {
+        setProdError(true);
+        throw e;
+      })
+      .finally(() => {
+        setProdLoading(false);
+        inFlight.current = null;
+      });
+    inFlight.current = p;
+    return p;
+  }, [landParcelId, production]);
+
+  return (
+    <div className="w-[340px]">
+      <ParcelHeader
+        name={String(props.farmerName ?? "—")}
+        farmerCode={String(props.farmerCode ?? "—")}
+        parcelId={String(props.parcelId ?? "—")}
+        groupName={String(props.farmerGroupName ?? "—")}
+      />
+      <PopupHighlight label="Luas Lahan" value={formatArea(props.area as number | null)} />
+      <div className="divide-y">
+        <PopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
+          <AttrRows
+            rows={[
+              { label: "Tahun Tanam", value: props.plantingYear },
+              { label: "Komoditas", value: props.cropType },
+              { label: "Status Lahan", value: props.landStatus },
+            ]}
+          />
+        </PopupSection>
+        {props.farmerId ? <ParcelTrainingSection farmerId={String(props.farmerId)} /> : null}
+        <ParcelProductionSection
+          production={production}
+          loading={prodLoading}
+          error={prodError}
+          onRequest={() => {
+            void loadProduction().catch(() => {});
+          }}
+        />
+      </div>
+      <ParcelFooter landParcelId={landParcelId} production={production} onProductionLoaded={setProduction} />
+    </div>
+  );
+}
+
+function ParcelFooter({
+  landParcelId,
+  production,
+  onProductionLoaded,
+}: {
+  landParcelId: string;
+  production: ProductionSummary | null;
+  onProductionLoaded: (p: ProductionSummary) => void;
+}) {
   const [generating, setGenerating] = useState(false);
 
   const handlePrint = async () => {
     if (generating) return;
     setGenerating(true);
     try {
-      const res = await getParcelPassport(landParcelId);
+      // Skip the passport's production query when the popup already loaded it.
+      const res = await getParcelPassport(landParcelId, production == null);
       if (!res.success || !res.data) {
         toast.error(res.success ? "Data tidak ditemukan" : res.error);
         return;
       }
+      const data = production ? { ...res.data, production } : res.data;
+      if (!production) onProductionLoaded(res.data.production);
       const { generateFarmPassportPdf } = await import("@/lib/farm-passport");
-      generateFarmPassportPdf(res.data);
+      generateFarmPassportPdf(data);
     } catch {
-      toast.error("Gagal membuat PDF profil petani");
+      toast.error("Gagal membuat PDF profil lahan");
     } finally {
       setGenerating(false);
     }
@@ -895,7 +1061,7 @@ function ParcelFooter({ landParcelId }: { landParcelId: string }) {
     <div className="border-t px-3.5 py-2.5">
       <Button variant="outline" size="sm" className="h-8 w-full gap-2" onClick={handlePrint} disabled={generating}>
         {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
-        {generating ? "Menyiapkan..." : "Print Profil Petani"}
+        {generating ? "Menyiapkan..." : "Profil Lahan"}
       </Button>
     </div>
   );
@@ -1020,41 +1186,116 @@ function ParcelTrainingSection({ farmerId }: { farmerId: string }) {
   );
 }
 
-// SCAFFOLDING: dummy monthly average production (Jan–Des). Replace with a real
-// server action + chart (Recharts) when production data wiring is defined.
-const PRODUCTION_DUMMY = [12, 18, 22, 30, 28, 35, 40, 33, 26, 20, 15, 10];
 const MONTHS_SHORT = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+const fmtKg = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(n);
 
-function ParcelProductionSection() {
+/** Collapsible "Produksi" section: lazy-loads real yield, with an Average/year selector. */
+function ParcelProductionSection({
+  production: data,
+  loading,
+  error,
+  onRequest,
+}: {
+  production: ProductionSummary | null;
+  loading: boolean;
+  error: boolean;
+  onRequest: () => void;
+}) {
+  const [view, setView] = useState("average");
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) onRequest();
+  };
+
+  const selectedYear = view === "average" ? null : data?.byYear.find((y) => String(y.year) === view);
+  const monthly = view === "average" ? data?.monthly : selectedYear?.monthly;
+
   return (
-    <PopupSection icon={<BarChart3 className="h-3.5 w-3.5" />} title="Produksi">
-      <ProductionChart />
+    <PopupSection icon={<BarChart3 className="h-3.5 w-3.5" />} title="Produksi" onOpenChange={handleOpenChange}>
+      {loading && (
+        <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Memuat...
+        </div>
+      )}
+      {error && <p className="py-1 text-xs text-destructive">Gagal memuat produksi.</p>}
+      {data && data.recordCount === 0 && <p className="py-1 text-xs text-muted-foreground">Belum ada data produksi.</p>}
+      {data && data.recordCount > 0 && monthly && (
+        <div>
+          <Select value={view} onValueChange={(v) => setView(v ?? "average")}>
+            <SelectTrigger className="mb-2 h-7 w-full text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="average">Rata-rata</SelectItem>
+              {data.byYear.map((y) => (
+                <SelectItem key={y.year} value={String(y.year)}>
+                  {y.year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ProductionChart monthly={monthly} />
+          <p className="mt-2 text-[10px] italic text-muted-foreground">
+            {view === "average" ? "Rata-rata bulanan (kg)" : `Produksi bulanan ${view} (kg)`}
+            {selectedYear ? ` · Total ${fmtKg(selectedYear.total)} kg` : ""}
+          </p>
+        </div>
+      )}
     </PopupSection>
   );
 }
 
-function ProductionChart() {
-  const max = Math.max(...PRODUCTION_DUMMY, 1);
+/** Round up to the nearest multiple of 100 for a tidy chart ceiling. */
+const niceCeil = (max: number) => (max <= 0 ? 100 : Math.ceil(max / 100) * 100);
+
+function ProductionChart({ monthly }: { monthly: number[] }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const top = niceCeil(Math.max(...monthly));
+  const mid = top / 2;
   return (
-    <div>
-      <div className="flex h-20 items-end gap-[3px]">
-        {PRODUCTION_DUMMY.map((v, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-t-sm bg-blue-500/80 transition-colors hover:bg-blue-500"
-            style={{ height: `${(v / max) * 100}%` }}
-            title={`${MONTHS_ID[i]}: ${v} ton`}
-          />
-        ))}
+    <div className="flex gap-1">
+      <div className="min-w-0 flex-1">
+        <div className="relative h-20">
+          <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-muted-foreground/20" />
+          <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-muted-foreground/20" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 border-t border-muted-foreground/25" />
+          <div className="flex h-full items-end gap-[3px]">
+            {monthly.map((v, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "flex-1 rounded-t-sm bg-blue-500/80 transition-colors hover:bg-blue-500",
+                  hover === i && "bg-blue-500"
+                )}
+                style={{ height: `${(v / top) * 100}%` }}
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(null)}
+              />
+            ))}
+          </div>
+          {hover !== null && (
+            <div
+              className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded bg-foreground px-1.5 py-0.5 text-[9px] font-medium whitespace-nowrap text-background"
+              style={{ left: `${((hover + 0.5) / monthly.length) * 100}%` }}
+            >
+              {MONTHS_ID[hover]}: {fmtKg(monthly[hover])} kg
+            </div>
+          )}
+        </div>
+        <div className="mt-1 flex gap-[3px]">
+          {MONTHS_SHORT.map((m, i) => (
+            <span key={i} className="flex-1 text-center text-[8px] text-muted-foreground">
+              {m}
+            </span>
+          ))}
+        </div>
       </div>
-      <div className="mt-1 flex gap-[3px]">
-        {MONTHS_SHORT.map((m, i) => (
-          <span key={i} className="flex-1 text-center text-[8px] text-muted-foreground">
-            {m}
-          </span>
-        ))}
+      <div className="flex h-20 w-9 flex-col justify-between text-left text-[8px] tabular-nums text-muted-foreground">
+        <span>{fmtKg(top)}</span>
+        <span>{fmtKg(mid)}</span>
+        <span>0</span>
       </div>
-      <p className="mt-2 text-[10px] italic text-muted-foreground">Rata-rata bulanan (ton) · data dummy (scaffolding)</p>
     </div>
   );
 }

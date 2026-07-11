@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, Loader2, Flame } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -187,6 +187,7 @@ export function MapControlPanel(props: Props) {
 
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [hotspotOpen, setHotspotOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(true);
   const anyOverlayOn = Object.values(overlays.visible).some(Boolean);
 
   return (
@@ -244,39 +245,51 @@ export function MapControlPanel(props: Props) {
       {counts && (
         <>
           <Separator />
-          <div className="px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              Legenda
-            </p>
-            {counts.kt + counts.parcelAreas === 0 ? (
-              <p className="text-sm text-muted-foreground py-1">Tidak ada data untuk filter ini.</p>
-            ) : (
-              <div>
-                <LegendRow
-                  color="#22c55e"
-                  label="Point Kelompok Tani"
-                  count={counts.kt}
-                  checked={layers.kt}
-                  onToggle={(v) => onLayersChange({ ...layers, kt: v })}
-                />
-                <LegendRow
-                  color="#3b82f6"
-                  label="Point Lahan Petani"
-                  count={counts.parcelPoints}
-                  checked={layers.parcelPoints}
-                  onToggle={(v) => onLayersChange({ ...layers, parcelPoints: v })}
-                />
-                <LegendRow
-                  color="#16a34a"
-                  label="Area Lahan Petani"
-                  count={counts.parcelAreas}
-                  checked={layers.parcelAreas}
-                  onToggle={(v) => onLayersChange({ ...layers, parcelAreas: v })}
-                  variant="area"
-                />
+          <Collapsible open={legendOpen} onOpenChange={setLegendOpen}>
+            <CollapsibleTrigger
+              render={
+                <button className="flex w-full items-center justify-between px-4 py-3 text-left">
+                  <span className="flex items-center gap-2 text-sm font-semibold">
+                    <List className="h-4 w-4" />
+                    Legenda
+                  </span>
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", legendOpen ? "rotate-180" : "")} />
+                </button>
+              }
+            />
+            <CollapsibleContent>
+              <div className="px-4 pb-4">
+                {counts.kt + counts.parcelAreas === 0 ? (
+                  <p className="text-sm text-muted-foreground py-1">Tidak ada data untuk filter ini.</p>
+                ) : (
+                  <div>
+                    <LegendRow
+                      color="#22c55e"
+                      label="Point Kelompok Tani"
+                      count={counts.kt}
+                      checked={layers.kt}
+                      onToggle={(v) => onLayersChange({ ...layers, kt: v })}
+                    />
+                    <LegendRow
+                      color="#3b82f6"
+                      label="Point Lahan Petani"
+                      count={counts.parcelPoints}
+                      checked={layers.parcelPoints}
+                      onToggle={(v) => onLayersChange({ ...layers, parcelPoints: v })}
+                    />
+                    <LegendRow
+                      color="#16a34a"
+                      label="Area Lahan Petani"
+                      count={counts.parcelAreas}
+                      checked={layers.parcelAreas}
+                      onToggle={(v) => onLayersChange({ ...layers, parcelAreas: v })}
+                      variant="area"
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         </>
       )}
 

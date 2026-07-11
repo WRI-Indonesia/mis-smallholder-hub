@@ -10,7 +10,6 @@ const SLATE_400: [number, number, number] = [148, 163, 184];
 const SLATE_200: [number, number, number] = [226, 232, 240];
 const AREA_FILL: [number, number, number] = [209, 240, 224];
 
-const MONTHS_SHORT = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 const PAGE_W = 210;
@@ -111,23 +110,6 @@ function attrList(doc: jsPDF, items: { label: string; value: string }[], x: numb
   return cy;
 }
 
-function productionChart(doc: jsPDF, monthly: number[], box: { x: number; y: number; w: number; h: number }) {
-  const max = Math.max(...monthly, 1);
-  const n = 12;
-  const gap = 2;
-  const barW = (box.w - gap * (n - 1)) / n;
-  const baseY = box.y + box.h;
-  doc.setFillColor(...EMERALD);
-  for (let i = 0; i < n; i++) {
-    const h = (monthly[i] / max) * box.h;
-    const x = box.x + i * (barW + gap);
-    if (h > 0) doc.rect(x, baseY - h, barW, h, "F");
-    doc.setFontSize(6);
-    doc.setTextColor(...SLATE_400);
-    doc.text(MONTHS_SHORT[i], x + barW / 2, baseY + 3, { align: "center" });
-  }
-}
-
 /** Generate and download the Farm Passport PDF for one parcel. */
 export function generateFarmPassportPdf(data: ParcelPassport) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -140,11 +122,11 @@ export function generateFarmPassportPdf(data: ParcelPassport) {
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...SLATE_800);
-  doc.text("Farm Passport", MARGIN, 16);
+  doc.text("Profil Lahan", MARGIN, 16);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
-  doc.text("Smallholder HUB — Profil Petani", MARGIN, 21);
+  doc.text("Smallholder HUB — Profil Lahan", MARGIN, 21);
 
   doc.setFontSize(9);
   doc.setTextColor(...SLATE_400);
@@ -263,13 +245,32 @@ export function generateFarmPassportPdf(data: ParcelPassport) {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_600);
     doc.text(
-      `Rata-rata panen bulanan (kg)  •  Total tercatat: ${fmtNum(production.totalKg)} kg dari ${production.recordCount} catatan`,
+      `Produksi panen (kg)  •  Total tercatat: ${fmtNum(production.totalKg)} kg dari ${production.recordCount} catatan`,
       MARGIN,
       y
     );
     y += 3;
-    productionChart(doc, production.monthly, { x: MARGIN, y, w: CONTENT_W, h: 26 });
-    y += 34;
+    const cell = (n: number) => (n > 0 ? fmtNum(n) : "");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const monthCols: Record<number, any> = {};
+    for (let i = 1; i <= 12; i++) monthCols[i] = { halign: "right" };
+    autoTable(doc, {
+      head: [["Tahun", ...MONTHS_ID, "Total"]],
+      body: production.byYear.map((yr) => [
+        String(yr.year),
+        ...yr.monthly.map(cell),
+        fmtNum(yr.total),
+      ]),
+      startY: y,
+      theme: "grid",
+      headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 6.5, fontStyle: "bold", halign: "right" },
+      bodyStyles: { fontSize: 6.5, textColor: SLATE_600, halign: "right" },
+      columnStyles: { 0: { halign: "left", fontStyle: "bold" }, ...monthCols, 13: { halign: "right", fontStyle: "bold" } },
+      margin: { left: MARGIN, right: MARGIN },
+      styles: { font: "helvetica", cellPadding: 1.4, overflow: "linebreak" },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 8;
   }
 
   // Catatan + footer
@@ -289,5 +290,5 @@ export function generateFarmPassportPdf(data: ParcelPassport) {
   doc.text("Smallholder HUB", PAGE_W - MARGIN, 288, { align: "right" });
 
   const safe = (s: string) => s.replace(/[^a-z0-9]+/gi, "_");
-  doc.save(`Farm_Passport_${safe(group.name)}_${safe(farmer.name)}_${safe(parcel.parcelId)}.pdf`);
+  doc.save(`Profil_Lahan_${safe(group.name)}_${safe(farmer.name)}_${safe(parcel.parcelId)}.pdf`);
 }
