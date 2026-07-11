@@ -3,13 +3,22 @@
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
-import type { 
-  FarmerReportFilters, 
-  FarmerReportResult, 
+import type {
+  FarmerReportFilters,
+  FarmerReportResult,
   FarmerReportRow,
   TrainingReportFilters,
-  TrainingReportResult
+  TrainingReportResult,
+  ProductionReportFilters,
+  ProductionReportResult
 } from "@/types/report";
+import {
+  enumeratePeriods,
+  buildProductionMatrix,
+  isValidPeriod,
+  PRODUCTION_REPORT_MAX_MONTHS,
+  type ProductionMatrixRecord,
+} from "@/lib/report-production";
 
 export async function getDistrictsForReport() {
   if (!(await hasPermission("report-farmer", "VIEW"))) {
@@ -389,4 +398,135 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
     activities: activityRows,
     farmers: farmerRows,
   };
+}
+
+export async function getDistrictsForProductionReport() {
+  if (!(await hasPermission("report-production", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const where: any = { isActive: true };
+
+  if (access.mode === "BY_DISTRICT") {
+    where.id = { in: access.ids };
+  } else if (access.mode === "BY_FARMER_GROUP") {
+    where.farmerGroups = {
+      some: {
+        id: { in: access.ids },
+        isActive: true,
+      },
+    };
+  }
+
+  return prisma.district.findMany({
+    where,
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getFarmerGroupsForProductionReport(districtId?: string | null) {
+  if (!(await hasPermission("report-production", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+
+  const where = {
+    isActive: true,
+    ...accessFilter,
+    ...(districtId ? { districtId } : {}),
+  };
+
+  return prisma.farmerGroup.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      code: true,
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getProductionReport(filters: ProductionReportFilters): Promise<ProductionReportResult> {
+  if (!(await hasPermission("report-production", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  if (!filters.districtId || !filters.farmerGroupId) {
+    throw new Error("Filter Distrik dan Kelompok Tani wajib diisi");
+  }
+
+  if (!isValidPeriod(filters.periodStart) || !isValidPeriod(filters.periodEnd)) {
+    throw new Error("Periode Awal dan Periode Akhir wajib diisi dengan format bulan yang benar");
+  }
+
+  const periods = enumeratePeriods(filters.periodStart, filters.periodEnd);
+  if (periods.length === 0) {
+    throw new Error("Periode Akhir harus sama dengan atau setelah Periode Awal");
+  }
+  if (periods.length > PRODUCTION_REPORT_MAX_MONTHS) {
+    throw new Error(`Rentang periode maksimal ${PRODUCTION_REPORT_MAX_MONTHS} bulan`);
+  }
+
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+
+  // Verify group is within access boundaries
+  const group = await prisma.farmerGroup.findFirst({
+    where: {
+      id: filters.farmerGroupId,
+      districtId: filters.districtId,
+      isActive: true,
+      ...accessFilter,
+    },
+  });
+
+  if (!group) {
+    throw new Error("Kelompok Tani tidak ditemukan atau Anda tidak memiliki akses");
+  }
+
+  // Single query: all active production records in the group within the range.
+  // period is stored zero-padded YYYY-MM, so string comparison is chronological.
+  const records = await prisma.productionRecord.findMany({
+    where: {
+      isActive: true,
+      period: { gte: filters.periodStart, lte: filters.periodEnd },
+      farmer: {
+        isActive: true,
+        farmerGroupId: filters.farmerGroupId,
+      },
+    },
+    select: {
+      period: true,
+      yieldKg: true,
+      farmer: {
+        select: { id: true, farmerId: true, name: true },
+      },
+      parcel: {
+        select: { id: true, parcelId: true },
+      },
+    },
+  });
+
+  const matrixRecords: ProductionMatrixRecord[] = records.map((r) => ({
+    farmerDbId: r.farmer.id,
+    farmerCode: r.farmer.farmerId,
+    farmerName: r.farmer.name,
+    parcelDbId: r.parcel?.id ?? null,
+    parcelCode: r.parcel?.parcelId ?? null,
+    period: r.period,
+    yieldKg: r.yieldKg,
+  }));
+
+  return buildProductionMatrix(matrixRecords, periods);
 }

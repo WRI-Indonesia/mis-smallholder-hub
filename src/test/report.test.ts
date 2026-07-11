@@ -1,4 +1,11 @@
 import { describe, it, expect } from "vitest";
+import {
+  enumeratePeriods,
+  formatPeriodLabel,
+  isValidPeriod,
+  buildProductionMatrix,
+  type ProductionMatrixRecord,
+} from "@/lib/report-production";
 
 // Pure business logic helper functions to calculate report stats
 export function calculateFarmerReportSummary(farmers: any[]) {
@@ -255,6 +262,106 @@ describe("Training Report Statistics Calculations", () => {
       expect(result.totalPeserta).toBe(0);
       expect(result.totalPesertaUnik).toBe(0);
       expect(result.pctPaket1).toBe(0);
+    });
+  });
+});
+
+describe("Production Report (RPT-03) helpers", () => {
+  describe("isValidPeriod", () => {
+    it("accepts well-formed YYYY-MM and rejects bad input", () => {
+      expect(isValidPeriod("2024-03")).toBe(true);
+      expect(isValidPeriod("2024-12")).toBe(true);
+      expect(isValidPeriod("2024-13")).toBe(false);
+      expect(isValidPeriod("2024-00")).toBe(false);
+      expect(isValidPeriod("24-03")).toBe(false);
+      expect(isValidPeriod("")).toBe(false);
+    });
+  });
+
+  describe("enumeratePeriods", () => {
+    it("enumerates inclusive range across a year boundary", () => {
+      const periods = enumeratePeriods("2023-11", "2024-02");
+      expect(periods).toEqual(["2023-11", "2023-12", "2024-01", "2024-02"]);
+    });
+
+    it("returns a single month when start equals end", () => {
+      expect(enumeratePeriods("2024-05", "2024-05")).toEqual(["2024-05"]);
+    });
+
+    it("returns empty when end is before start or input is invalid", () => {
+      expect(enumeratePeriods("2024-05", "2024-04")).toEqual([]);
+      expect(enumeratePeriods("bad", "2024-04")).toEqual([]);
+    });
+  });
+
+  describe("formatPeriodLabel", () => {
+    it("formats YYYY-MM as MMM-YY in Indonesian", () => {
+      expect(formatPeriodLabel("2024-03")).toBe("Mar-24");
+      expect(formatPeriodLabel("2024-12")).toBe("Des-24");
+      expect(formatPeriodLabel("2023-05")).toBe("Mei-23");
+    });
+  });
+
+  describe("buildProductionMatrix", () => {
+    const periods = ["2024-03", "2024-04", "2024-05"];
+
+    const records: ProductionMatrixRecord[] = [
+      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", period: "2024-03", yieldKg: 100 },
+      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", period: "2024-03", yieldKg: 50 }, // 2nd harvest same month -> summed
+      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p1", parcelCode: "L-A", period: "2024-05", yieldKg: 200 },
+      { farmerDbId: "f1", farmerCode: "ITM.0001", farmerName: "Budi", parcelDbId: "p2", parcelCode: "L-B", period: "2024-04", yieldKg: 80 }, // same farmer, 2nd parcel -> 2nd row
+      { farmerDbId: "f2", farmerCode: "ITM.0002", farmerName: "Ani", parcelDbId: "p3", parcelCode: "L-C", period: "2024-04", yieldKg: 40 },
+    ];
+
+    it("pivots records per farmer/parcel and sums duplicate months", () => {
+      const result = buildProductionMatrix(records, periods);
+
+      // 3 rows: Budi/L-A, Budi/L-B, Ani/L-C — sorted by name then parcel
+      expect(result.rows.length).toBe(3);
+      expect(result.rows.map((r) => `${r.name}/${r.parcelCode}`)).toEqual([
+        "Ani/L-C",
+        "Budi/L-A",
+        "Budi/L-B",
+      ]);
+
+      const budiA = result.rows.find((r) => r.key === "f1::p1")!;
+      expect(budiA.values["2024-03"]).toBe(150); // 100 + 50 summed
+      expect(budiA.values["2024-04"]).toBeUndefined(); // empty month absent, not 0
+      expect(budiA.values["2024-05"]).toBe(200);
+      expect(budiA.total).toBe(350);
+    });
+
+    it("computes column totals, grand total, and summary", () => {
+      const result = buildProductionMatrix(records, periods);
+
+      expect(result.columnTotals["2024-03"]).toBe(150);
+      expect(result.columnTotals["2024-04"]).toBe(120); // 80 + 40
+      expect(result.columnTotals["2024-05"]).toBe(200);
+      expect(result.grandTotal).toBe(470);
+
+      expect(result.summary.totalPetani).toBe(2); // f1, f2
+      expect(result.summary.totalLahan).toBe(3); // 3 rows
+      expect(result.summary.totalProduksi).toBe(470);
+      expect(result.summary.totalBulan).toBe(3);
+    });
+
+    it("ignores records outside the enumerated periods", () => {
+      const extra: ProductionMatrixRecord[] = [
+        ...records,
+        { farmerDbId: "f9", farmerCode: "ITM.0009", farmerName: "Zaki", parcelDbId: "p9", parcelCode: "L-Z", period: "2024-12", yieldKg: 999 },
+      ];
+      const result = buildProductionMatrix(extra, periods);
+      expect(result.rows.some((r) => r.name === "Zaki")).toBe(false);
+      expect(result.grandTotal).toBe(470);
+    });
+
+    it("returns empty structure when there are no records", () => {
+      const result = buildProductionMatrix([], periods);
+      expect(result.rows).toEqual([]);
+      expect(result.grandTotal).toBe(0);
+      expect(result.summary.totalPetani).toBe(0);
+      expect(result.summary.totalBulan).toBe(3);
+      expect(result.columnTotals).toEqual({ "2024-03": 0, "2024-04": 0, "2024-05": 0 });
     });
   });
 });

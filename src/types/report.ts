@@ -80,3 +80,45 @@ export interface TrainingReportResult {
   activities: TrainingActivityReportRow[];
   farmers: TrainingFarmerReportRow[];
 }
+
+export interface ProductionReportFilters {
+  districtId: string;
+  farmerGroupId: string;
+  periodStart: string; // YYYY-MM
+  periodEnd: string; // YYYY-MM
+}
+
+export interface ProductionReportRow {
+  /** Unique key per farmer/parcel combination (a farmer with 2 parcels = 2 rows). */
+  key: string;
+  /** Farmer database id. */
+  farmerId: string;
+  /** Human-facing farmer code (e.g. ITM.14.06.06.2017.0001). */
+  farmerCode: string;
+  name: string;
+  /** Land parcel database id (null when the record has no parcel). */
+  parcelId: string | null;
+  /** Human-facing parcel code / Id Lahan (null when unassigned). */
+  parcelCode: string | null;
+  /** period (YYYY-MM) → summed yield (kg). Missing months are absent, not 0. */
+  values: Record<string, number>;
+  /** Sum of all months for this row. */
+  total: number;
+}
+
+export interface ProductionReportSummary {
+  totalPetani: number;
+  totalLahan: number;
+  totalProduksi: number;
+  totalBulan: number;
+}
+
+export interface ProductionReportResult {
+  /** Ordered list of YYYY-MM columns produced from the selected range. */
+  periods: string[];
+  rows: ProductionReportRow[];
+  /** period (YYYY-MM) → column total across all rows. */
+  columnTotals: Record<string, number>;
+  grandTotal: number;
+  summary: ProductionReportSummary;
+}
