@@ -2,11 +2,12 @@
 
 import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useTheme } from "next-themes";
-import Map, { Source, Layer, Popup, type MapRef } from "react-map-gl/maplibre";
+import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
+import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair } from "lucide-react";
 import { toast } from "sonner";
-import type { FeatureCollection } from "geojson";
+import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -111,15 +112,19 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
-  const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("light");
-  const userPickedStyle = useRef(false);
-  useEffect(() => {
-    if (!userPickedStyle.current) {
-      setStyleKey(resolvedTheme === "dark" ? "dark" : "light");
-    }
-  }, [resolvedTheme]);
+  // Basemap follows the app theme until the user picks one explicitly (override).
+  const [styleOverride, setStyleOverride] = useState<keyof typeof MAP_STYLES | null>(null);
+  const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
+
+  // Close any open popup when a new dataset loads (adjusts state during render on
+  // prop change — the React-endorsed alternative to a setState-in-effect).
+  const [prevData, setPrevData] = useState(data);
+  if (prevData !== data) {
+    setPrevData(data);
+    setSelected(null);
+  }
 
   // Right-side parcel list panel (searchable list of the currently-shown parcels).
   const [showParcelList, setShowParcelList] = useState(false);
@@ -305,7 +310,6 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
   }, [data]);
 
   useEffect(() => {
-    setSelected(null);
     fitAll();
   }, [fitAll]);
 
@@ -332,7 +336,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
         ? { text: "#ffffff", halo: "#000000" }
         : { text: "#1f2937", halo: "#ffffff" };
 
-  const handleClick = (e: any) => {
+  const handleClick = (e: MapLayerMouseEvent) => {
     if (measuring) {
       setMeasurePts((prev) => [...prev, [e.lngLat.lng, e.lngLat.lat]]);
       return;
@@ -344,10 +348,10 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
     }
     const layerId = feature.layer?.id;
     if (layerId === "kt-point") {
-      const [longitude, latitude] = feature.geometry.coordinates;
+      const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "kt", props: feature.properties ?? {} });
     } else if (layerId === "parcel-point") {
-      const [longitude, latitude] = feature.geometry.coordinates;
+      const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "parcel", props: feature.properties ?? {} });
     } else if (layerId === "parcel-fill") {
       setSelected({
@@ -357,7 +361,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
         props: feature.properties ?? {},
       });
     } else if (layerId === "hotspot-point") {
-      const [longitude, latitude] = feature.geometry.coordinates;
+      const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "hotspot", props: feature.properties ?? {} });
     }
   };
@@ -389,7 +393,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey] as any}
+        mapStyle={MAP_STYLES[styleKey] as StyleSpecification}
         interactiveLayerIds={["kt-point", "parcel-point", "parcel-fill", "hotspot-point"]}
         onLoad={(e) => {
           fitAll();
@@ -701,10 +705,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
           {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
             <button
               key={key}
-              onClick={() => {
-                userPickedStyle.current = true;
-                setStyleKey(key);
-              }}
+              onClick={() => setStyleOverride(key)}
               className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${styleKey === key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"

@@ -70,9 +70,9 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | **UI/UX** | Loading state (loading.tsx) | 4 halaman tabel belum punya (training, settings/menu, report ×2) | 🟠 PARTIAL | audit §4 U-4 |
 | **UI/UX** | Shadcn UI + Tailwind | Dipakai konsisten; DataTable/TableActions shared 100% patuh | ✅ PASS | audit §4 |
 | **UI/UX** | Table Actions positioning | Patuh di semua list KECUALI `menu-list-client.tsx` (kanan, tanpa gating izin) | 🟠 PARTIAL | audit §4 U-1/U-2 |
-| **Issue Workflow** | QA gates (test/build/lint) | Test 328 ✅ · build ✅ · **lint ❌ 229 masalah (193 error)** | ❌ **FAIL** | audit §1 |
+| **Issue Workflow** | QA gates (test/build/lint) | Test 328 ✅ · build ✅ · **lint ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 ✅ 2026-07-12 | ✅ **PASS** | audit §1 · #126 |
 
-**Summary:** **7 PASS · 4 PARTIAL · 3 FAIL** — fondasi arsitektur sehat, tetapi klaim lama "14/14 fully compliant" tidak lagi berlaku. Remediasi P0/P1 terjadwal di Sprint Focus.
+**Summary:** **8 PASS · 4 PARTIAL · 2 FAIL** (lint gate ✅ via #126, 2026-07-12) — fondasi arsitektur sehat, tetapi klaim lama "14/14 fully compliant" tidak lagi berlaku. Remediasi P0/P1 terjadwal di Sprint Focus.
 
 
 

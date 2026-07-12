@@ -126,7 +126,7 @@ export async function setUserMenuOverride(
       },
     });
     return { success: true };
-  } catch (error) {
+  } catch {
     return { success: false, error: "Gagal menyimpan override" };
   }
 }
@@ -155,7 +155,7 @@ export async function removeUserMenuOverride(
       },
     });
     return { success: true };
-  } catch (error) {
+  } catch {
     // If record is not found or already disabled, count as success
     return { success: true };
   }

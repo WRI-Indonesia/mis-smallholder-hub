@@ -74,12 +74,10 @@ export function MapParcelClient({ provinces }: Props) {
     };
   }, [provinceId]);
 
-  // Refetch farmer groups when district changes.
+  // Refetch farmer groups when district changes. The list is cleared eagerly in
+  // the province/district change handlers so we never setState synchronously here.
   useEffect(() => {
-    if (!districtId) {
-      setFarmerGroups([]);
-      return;
-    }
+    if (!districtId) return;
     let active = true;
     getFarmerGroupsForMap(districtId)
       .then((g) => active && setFarmerGroups(g))
@@ -90,14 +88,11 @@ export function MapParcelClient({ provinces }: Props) {
   }, [districtId]);
 
   // Fetch fire hotspots when the layer is toggled on or the time window changes.
-  // Query area is fixed to Riau province.
+  // Query area is fixed to Riau province. Data is cleared in handleHotspotChange
+  // when the layer is turned off, so no synchronous setState is needed here.
   useEffect(() => {
-    if (!hotspot.visible) {
-      setHotspotData(null);
-      return;
-    }
+    if (!hotspot.visible) return;
     let active = true;
-    setHotspotLoading(true);
     fetchHotspots(RIAU_BBOX, hotspot.dayRange, Date.now())
       .then((fc) => {
         if (!active) return;
@@ -117,11 +112,22 @@ export function MapParcelClient({ provinces }: Props) {
     setProvinceId(val);
     setDistrictId(null);
     setFarmerGroupId(null);
+    setFarmerGroups([]);
   };
 
   const handleDistrictChange = (val: string | null) => {
     setDistrictId(val);
     setFarmerGroupId(null);
+    if (!val) setFarmerGroups([]);
+  };
+
+  // Drive hotspot data/loading resets from the change handler so the fetch effect
+  // holds no synchronous setState. Turning the layer off clears the data; any
+  // change that keeps it on (toggle-on or day-range) re-enters the loading state.
+  const handleHotspotChange = (next: HotspotState) => {
+    setHotspot(next);
+    if (!next.visible) setHotspotData(null);
+    else setHotspotLoading(true);
   };
 
   const handleLoad = () => {
@@ -182,7 +188,7 @@ export function MapParcelClient({ provinces }: Props) {
         onRemoveCustomLayer={removeCustomLayer}
         onToggleCustomLayer={toggleCustomLayer}
         hotspot={hotspot}
-        onHotspotChange={setHotspot}
+        onHotspotChange={handleHotspotChange}
         hotspotLoading={hotspotLoading}
         hotspotCount={hotspotData?.features.length ?? 0}
       />

@@ -51,6 +51,69 @@ const LEVEL_ICONS = {
   village: <Home className="h-3.5 w-3.5 text-purple-500" />,
 };
 
+type RegionNodeLevel = "province" | "district" | "subdistrict" | "village";
+
+const CHILD_LEVEL: Record<RegionNodeLevel, RegionLevel | null> = {
+  province: "district",
+  district: "subdistrict",
+  subdistrict: "village",
+  village: null,
+};
+
+// ─── Row renderers ─────────────────────────────────────────────────────────────
+// Declared at module scope (not inside the component) so React doesn't recreate
+// the component type on every render.
+
+function ActionCell({
+  level, item, isActive, parentId, parentName, permissions, onCreate, onEdit, onToggle,
+}: {
+  level: RegionNodeLevel;
+  item: { id: string; code: string; name: string };
+  isActive: boolean;
+  parentId?: string;
+  parentName?: string;
+  permissions: string[];
+  onCreate: (level: RegionLevel, parentId?: string, parentName?: string) => void;
+  onEdit: (level: RegionLevel, item: { id: string; code: string; name: string }, parentId?: string, parentName?: string) => void;
+  onToggle: (level: RegionNodeLevel, id: string) => void;
+}) {
+  const childLvl = CHILD_LEVEL[level];
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {childLvl && permissions.includes("CREATE") && (
+        <Button
+          variant="ghost" size="icon"
+          title={`Tambah ${childLvl === "district" ? "Distrik" : childLvl === "subdistrict" ? "Kecamatan" : "Desa"}`}
+          onClick={() => onCreate(childLvl, item.id, item.name)}
+        >
+          <Plus className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      )}
+      {permissions.includes("EDIT") && (
+        <Button
+          variant="ghost" size="icon"
+          title="Edit"
+          onClick={() => onEdit(level as RegionLevel, item, parentId, parentName)}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
+      {permissions.includes("DELETE") && (
+        <Button
+          variant="ghost" size="icon"
+          title={isActive ? "Nonaktifkan" : "Aktifkan kembali"}
+          onClick={() => onToggle(level, item.id)}
+        >
+          {isActive
+            ? <Trash2 className="h-4 w-4" />
+            : <RotateCcw className="h-4 w-4 text-muted-foreground" />}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function RegionListClient({ initialData, permissions }: RegionListClientProps) {
@@ -69,7 +132,8 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
   function toggleExpand(id: string) {
     setExpandedIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -157,60 +221,6 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
     );
   });
 
-  // ─── Row renderers ───────────────────────────────────────────────────────────
-
-  function ActionCell({
-    level, item, isActive, parentId, parentName,
-  }: {
-    level: "province" | "district" | "subdistrict" | "village";
-    item: { id: string; code: string; name: string };
-    isActive: boolean;
-    parentId?: string;
-    parentName?: string;
-  }) {
-    const childLevel: Record<string, RegionLevel | null> = {
-      province: "district",
-      district: "subdistrict",
-      subdistrict: "village",
-      village: null,
-    };
-    const childLvl = childLevel[level] as RegionLevel | null;
-
-    return (
-      <div className="flex items-center gap-0.5">
-        {childLvl && permissions.includes("CREATE") && (
-          <Button
-            variant="ghost" size="icon"
-            title={`Tambah ${childLvl === "district" ? "Distrik" : childLvl === "subdistrict" ? "Kecamatan" : "Desa"}`}
-            onClick={() => openCreate(childLvl, item.id, item.name)}
-          >
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        )}
-        {permissions.includes("EDIT") && (
-          <Button
-            variant="ghost" size="icon"
-            title="Edit"
-            onClick={() => openEdit(level as RegionLevel, item, parentId, parentName)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-        )}
-        {permissions.includes("DELETE") && (
-          <Button
-            variant="ghost" size="icon"
-            title={isActive ? "Nonaktifkan" : "Aktifkan kembali"}
-            onClick={() => handleToggle(level, item.id)}
-          >
-            {isActive
-              ? <Trash2 className="h-4 w-4" />
-              : <RotateCcw className="h-4 w-4 text-muted-foreground" />}
-          </Button>
-        )}
-      </div>
-    );
-  }
-
   // ─── Render rows ─────────────────────────────────────────────────────────────
 
   const rows: React.ReactNode[] = [];
@@ -222,7 +232,7 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
     rows.push(
       <TableRow key={province.id} className={provMuted ? "opacity-50" : ""}>
         <TableCell className="w-[1%] whitespace-nowrap">
-          <ActionCell level="province" item={province} isActive={province.isActive} />
+          <ActionCell level="province" item={province} isActive={province.isActive} permissions={permissions} onCreate={openCreate} onEdit={openEdit} onToggle={handleToggle} />
         </TableCell>
         <TableCell>
           <div className="flex items-center gap-1.5" style={{ paddingLeft: 0 }}>
@@ -257,7 +267,7 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
       rows.push(
         <TableRow key={district.id} className={distMuted ? "opacity-50" : ""}>
           <TableCell className="w-[1%] whitespace-nowrap">
-            <ActionCell level="district" item={district} isActive={district.isActive} parentId={province.id} parentName={province.name} />
+            <ActionCell level="district" item={district} isActive={district.isActive} parentId={province.id} parentName={province.name} permissions={permissions} onCreate={openCreate} onEdit={openEdit} onToggle={handleToggle} />
           </TableCell>
           <TableCell>
             <div className="flex items-center gap-1.5" style={{ paddingLeft: 24 }}>
@@ -292,7 +302,7 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
         rows.push(
           <TableRow key={sub.id} className={subMuted ? "opacity-50" : ""}>
             <TableCell className="w-[1%] whitespace-nowrap">
-              <ActionCell level="subdistrict" item={sub} isActive={sub.isActive} parentId={district.id} parentName={district.name} />
+              <ActionCell level="subdistrict" item={sub} isActive={sub.isActive} parentId={district.id} parentName={district.name} permissions={permissions} onCreate={openCreate} onEdit={openEdit} onToggle={handleToggle} />
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-1.5" style={{ paddingLeft: 48 }}>
@@ -326,7 +336,7 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
           rows.push(
             <TableRow key={village.id} className={vilMuted ? "opacity-50" : ""}>
               <TableCell className="w-[1%] whitespace-nowrap">
-                <ActionCell level="village" item={village} isActive={village.isActive} parentId={sub.id} parentName={sub.name} />
+                <ActionCell level="village" item={village} isActive={village.isActive} parentId={sub.id} parentName={sub.name} permissions={permissions} onCreate={openCreate} onEdit={openEdit} onToggle={handleToggle} />
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1.5" style={{ paddingLeft: 72 }}>

@@ -1,3 +1,5 @@
+import type { Geometry } from "geojson";
+
 export interface LandParcelFarmer {
   id: string;
   name: string;
@@ -15,7 +17,7 @@ export interface LandParcel {
   farmerId: string;
   farmer: LandParcelFarmer;
   parcelId: string;
-  geometry: any;
+  geometry: Geometry;
   area: number | null;
   landStatus: string | null;
   cropType: string | null;

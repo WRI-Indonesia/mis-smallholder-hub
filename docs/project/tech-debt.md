@@ -18,7 +18,7 @@ Debt/bug di section ini berasal dari audit code. Item masuk sprint jika sudah pu
 | BUG-003 | Server actions tanpa guard `hasPermission`: `role-permission.ts` (toggle/get — **privilege escalation**), `menu.ts` (create/update/delete), `upload.ts` (S3 write) | **P0** | Audit 2026-07-10 — `audit-report/audit-2026-07-10.md` §2 H-1/H-2/H-3 · **Issue #125** | - | ✅ Done (2026-07-12) | Guard `settings-roles`/`settings-menu`/`master-data-training` ditambah; `role-permission` tolak perubahan role SUPERADMIN; `getAllMenuItems` dual-key (menu OR roles). Test di `rbac-server-guards.test.ts`. |
 | BUG-004 | Scope `getAccessContext` absen: `farmer.ts getFarmerById` (PII lintas scope) & `bulk-upload.ts bulkCreateFarmers` (insert ke KT luar scope); mutasi by-id farmer/group/training juga tanpa cek scope | **P0** | Audit 2026-07-10 §2 H-4/H-5 + §3 M-1 · **Issue #125** (MED by-id: #127) | - | ✅ Done (2026-07-12) | Scope diterapkan di `getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers` (pola `land-parcel.ts:68` / `bulk-upload-production.ts`). **Sisa scope by-id KT/pelatihan → #127.** |
 | BUG-005 | Halaman Role & Permission di-guard `requirePermission("settings-users")` padahal menu key = `settings-roles` → user ber-grant `settings-roles` melihat menu tapi ditolak halamannya | P1 | `settings/roles/page.tsx:7` vs `menu.csv` · **Issue #125** | - | ✅ Done (2026-07-12) | Diselaraskan ke `settings-roles` (page + actions `role-permission`). |
-| BUG-006 | Gate QA lint merah: `npm run lint` 229 masalah (193 error) — mayoritas `no-explicit-any` + `scripts/` (gitignored) ikut ter-lint | P1 | Audit 2026-07-10 §1 · **Issue #126** | TBD | 🔲 Open | eslint ignore `scripts/**` + bereskan unused-vars + cicil any |
+| BUG-006 | Gate QA lint merah: `npm run lint` 229 masalah (193 error) — mayoritas `no-explicit-any` + `scripts/` (gitignored) ikut ter-lint | P1 | Audit 2026-07-10 §1 · **Issue #126** | - | ✅ Done (2026-07-12) | `npm run lint` **exit 0** (0 error). eslint ignore `scripts/**`; semua unused-vars/prefer-const/no-unused-expressions dibersihkan; `no-explicit-any` diganti tipe nyata (`Prisma.*WhereInput`, `geojson`, maplibre `LayerProps`/`MapLayerMouseEvent`, `unknown`+narrowing); react-hooks `set-state-in-effect`×6 & `static-components`×4 diperbaiki tanpa disable. Sisa **3 warning `exhaustive-deps`** sengaja ditahan (risiko regresi zoom/memo) — disepakati terpisah per AC. Build ✅, test 25/328 ✅. |
 
 ### Debt Register
 
@@ -42,7 +42,7 @@ Debt/bug di section ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Waktu                | Fokus                  | Catatan                                                    |
 | --------------------- | ---------------------- | ------------------------------------------------------------ |
 | Immediate / P0       | ✅ **BUG-003, BUG-004** (selesai 2026-07-12, #125) | Celah guard/scope RBAC ditutup sebelum fitur baru |
-| Sprint berjalan / P1 | BUG-006, TD-007 (BUG-005 ✅) | lint hijau (#126), keputusan pola restore + scope by-id KT/pelatihan (#127) |
+| Sprint berjalan / P1 | TD-007 (BUG-005 ✅, **BUG-006 ✅**) | lint hijau (#126 ✅), keputusan pola restore + scope by-id KT/pelatihan (#127) |
 | Later / P2–P3        | TD-002, TD-004, TD-008, TD-009, TD-010, TD-011, TD-012 | Cleanup dead code/deps, audit fields, env drift, naming    |
 
 </details>

@@ -2,7 +2,9 @@
 
 import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
-import Map, { Source, Layer, type MapRef } from "react-map-gl/maplibre";
+import Map, { Source, Layer, type MapRef, type LayerProps, type MapLayerMouseEvent } from "react-map-gl/maplibre";
+import { GeoJSONSource, type StyleSpecification } from "maplibre-gl";
+import type { Point } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPin, Search, Check, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -73,14 +75,9 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
-  // Basemap defaults to the app theme; user can still override via the switcher.
-  const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("light");
-  const userPickedStyle = useRef(false);
-  useEffect(() => {
-    if (!userPickedStyle.current) {
-      setStyleKey(resolvedTheme === "dark" ? "dark" : "light");
-    }
-  }, [resolvedTheme]);
+  // Basemap follows the app theme until the user picks one explicitly (override).
+  const [styleOverride, setStyleOverride] = useState<keyof typeof MAP_STYLES | null>(null);
+  const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
 
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -143,35 +140,35 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     );
   }
 
-  const clusterLayer = {
+  const clusterLayer: LayerProps = {
     id: "clusters",
-    type: "circle" as const,
-    filter: ["has", "point_count"] as any,
+    type: "circle",
+    filter: ["has", "point_count"],
     paint: {
       "circle-color": "#2563eb",
       "circle-opacity": 0.85,
-      "circle-radius": ["step", ["get", "point_count"], 16, 10, 22, 50, 28] as any,
+      "circle-radius": ["step", ["get", "point_count"], 16, 10, 22, 50, 28],
     },
   };
 
-  const clusterCountLayer = {
+  const clusterCountLayer: LayerProps = {
     id: "cluster-count",
-    type: "symbol" as const,
-    filter: ["has", "point_count"] as any,
+    type: "symbol",
+    filter: ["has", "point_count"],
     layout: {
-      "text-field": ["get", "point_count_abbreviated"] as any,
+      "text-field": ["get", "point_count_abbreviated"],
       "text-font": TEXT_FONT,
       "text-size": 12,
     },
     paint: { "text-color": "#ffffff" },
   };
 
-  const pointLayer = {
+  const pointLayer: LayerProps = {
     id: "unclustered-point",
-    type: "circle" as const,
-    filter: ["!", ["has", "point_count"]] as any,
+    type: "circle",
+    filter: ["!", ["has", "point_count"]],
     paint: {
-      "circle-color": ["case", ["==", ["get", "id"], selectedId ?? ""], "#f59e0b", "#22c55e"] as any,
+      "circle-color": ["case", ["==", ["get", "id"], selectedId ?? ""], "#f59e0b", "#22c55e"],
       "circle-radius": 8,
       "circle-stroke-width": 2,
       "circle-stroke-color": "#ffffff",
@@ -186,16 +183,16 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
         ? { text: "#ffffff", halo: "#000000" }
         : { text: "#1f2937", halo: "#ffffff" };
 
-  const pointLabelLayer = {
+  const pointLabelLayer: LayerProps = {
     id: "unclustered-label",
-    type: "symbol" as const,
-    filter: ["!", ["has", "point_count"]] as any,
+    type: "symbol",
+    filter: ["!", ["has", "point_count"]],
     layout: {
-      "text-field": ["get", "name"] as any,
+      "text-field": ["get", "name"],
       "text-font": TEXT_FONT,
       "text-size": 11,
-      "text-anchor": "top" as const,
-      "text-offset": [0, 0.9] as [number, number],
+      "text-anchor": "top",
+      "text-offset": [0, 0.9],
       "text-allow-overlap": false,
     },
     paint: {
@@ -205,27 +202,29 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     },
   };
 
-  const handleMouseMove = (e: any) => {
+  const handleMouseMove = (e: MapLayerMouseEvent) => {
     e.target.getCanvas().style.cursor = e.features?.[0] ? "pointer" : "";
   };
 
-  const handleClick = (e: any) => {
+  const handleClick = (e: MapLayerMouseEvent) => {
     const feature = e.features?.[0];
     if (!feature) return;
     const map = mapRef.current;
 
     if (feature.properties?.cluster) {
-      const source: any = map?.getSource("kt-source");
+      const source = map?.getSource("kt-source");
       const clusterId = feature.properties.cluster_id;
       const count = feature.properties.point_count ?? 1000;
       // Fit to ALL points inside the cluster. maplibre-gl v5 returns a Promise
       // (the old callback form is gone), so Promise.resolve handles both.
-      Promise.resolve(source?.getClusterLeaves(clusterId, count, 0))
-        .then((leaves: any[]) => {
+      Promise.resolve(
+        source instanceof GeoJSONSource ? source.getClusterLeaves(clusterId, count, 0) : []
+      )
+        .then((leaves) => {
           if (!leaves?.length) return;
           let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
           for (const leaf of leaves) {
-            const [lng, lat] = leaf.geometry.coordinates;
+            const [lng, lat] = (leaf.geometry as Point).coordinates;
             minLng = Math.min(minLng, lng);
             maxLng = Math.max(maxLng, lng);
             minLat = Math.min(minLat, lat);
@@ -248,7 +247,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey] as any}
+        mapStyle={MAP_STYLES[styleKey] as StyleSpecification}
         interactiveLayerIds={["clusters", "unclustered-point"]}
         onLoad={() => fitAll()}
         onClick={handleClick}
@@ -323,10 +322,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
         {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
           <button
             key={key}
-            onClick={() => {
-              userPickedStyle.current = true;
-              setStyleKey(key);
-            }}
+            onClick={() => setStyleOverride(key)}
             className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
               styleKey === key
                 ? "bg-primary text-primary-foreground"

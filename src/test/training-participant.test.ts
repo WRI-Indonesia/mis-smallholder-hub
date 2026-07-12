@@ -48,7 +48,7 @@ describe("Training Participant File Import Validation with Scores", () => {
   }
 
   function matchAndValidateParticipant(
-    row: Record<string, any>,
+    row: Record<string, string>,
     detectedHeaders: string[],
     groupFarmers: FarmerMock[]
   ) {

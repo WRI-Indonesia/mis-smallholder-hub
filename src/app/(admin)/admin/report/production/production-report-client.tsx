@@ -103,8 +103,8 @@ export function ProductionReportClient({ districts }: Props) {
         });
         setReportData(data);
         toast.success("Laporan berhasil dimuat");
-      } catch (err: any) {
-        toast.error(err.message || "Gagal memuat laporan");
+      } catch (err) {
+        toast.error((err instanceof Error && err.message) || "Gagal memuat laporan");
       }
     });
   };

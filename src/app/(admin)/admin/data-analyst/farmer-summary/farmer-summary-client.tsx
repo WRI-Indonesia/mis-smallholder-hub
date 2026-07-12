@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Check, ChevronsUpDown, Search, Building, Users, Layers, Trees } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -51,7 +51,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
       try {
         const groups = await getFarmerGroupsForAnalyst(selectedDistrict);
         setFarmerGroups(groups);
-      } catch (err) {
+      } catch {
         toast.error("Gagal memuat Kelompok Tani");
       }
     }
@@ -75,8 +75,8 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
         setNoParcelsData(noParcels);
         setHasAnalyzed(true);
         toast.success("Analisis data berhasil dimuat");
-      } catch (err: any) {
-        toast.error(err.message || "Gagal memuat analisis data");
+      } catch (err) {
+        toast.error((err instanceof Error && err.message) || "Gagal memuat analisis data");
       }
     });
   };

@@ -118,20 +118,20 @@ describe("Training Activity Query Filter Resolution", () => {
     const where = buildTrainingWhereClause({ mode: "ALL" });
     expect(where.isActive).toBe(true);
     expect(where.farmerGroupId).toBeUndefined();
-    expect((where as any).farmerGroup).toBeUndefined();
+    expect((where as Record<string, unknown>).farmerGroup).toBeUndefined();
   });
 
   it("builds correct filter for mode BY_FARMER_GROUP", () => {
     const where = buildTrainingWhereClause({ mode: "BY_FARMER_GROUP", ids: ["fg-1", "fg-2"] });
     expect(where.isActive).toBe(true);
     expect(where.farmerGroupId).toEqual({ in: ["fg-1", "fg-2"] });
-    expect((where as any).farmerGroup).toBeUndefined();
+    expect((where as Record<string, unknown>).farmerGroup).toBeUndefined();
   });
 
   it("builds correct filter for mode BY_DISTRICT", () => {
     const where = buildTrainingWhereClause({ mode: "BY_DISTRICT", ids: ["dist-1", "dist-2"] });
     expect(where.isActive).toBe(true);
-    expect((where as any).farmerGroup).toEqual({ districtId: { in: ["dist-1", "dist-2"] } });
+    expect((where as Record<string, unknown>).farmerGroup).toEqual({ districtId: { in: ["dist-1", "dist-2"] } });
     expect(where.farmerGroupId).toBeUndefined();
   });
 
@@ -143,7 +143,7 @@ describe("Training Activity Query Filter Resolution", () => {
     );
     expect(where.isActive).toBe(true);
     expect(where.farmerGroupId).toBe("fg-3");
-    expect((where as any).farmerGroup).toEqual({ districtId: { in: ["dist-1"] } });
+    expect((where as Record<string, unknown>).farmerGroup).toEqual({ districtId: { in: ["dist-1"] } });
     expect(where.OR).toHaveLength(3);
   });
 });

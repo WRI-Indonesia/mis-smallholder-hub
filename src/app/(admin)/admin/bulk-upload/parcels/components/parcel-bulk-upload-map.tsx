@@ -2,14 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Map, { Source, Layer, Popup } from "react-map-gl/maplibre";
+import type { MapLayerMouseEvent, LayerProps } from "react-map-gl/maplibre";
+import type { Feature, Polygon, MultiPolygon, Position } from "geojson";
+import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target } from "lucide-react";
 
-interface Props {
-  data: any[];
+interface ParcelPreviewRow {
+  geometry?: { type?: string; coordinates?: unknown } | null;
+  parcelId?: string;
+  _isValid?: boolean;
+  _farmerName?: string;
+  _errors?: string[];
 }
 
-const MAP_STYLES = {
+interface Props {
+  data: ParcelPreviewRow[];
+}
+
+const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecification> = {
   hybrid: {
     version: 8,
     sources: {
@@ -135,15 +146,16 @@ export function ParcelBulkUploadMap({ data }: Props) {
         }
       }
 
-      let coords = parsed.coordinates;
-      if (parsed.type === "Polygon") {
-        coords = parsed.coordinates[0];
-      } else if (parsed.type === "MultiPolygon") {
-        coords = parsed.coordinates[0][0];
+      const geom = parsed as Polygon | MultiPolygon;
+      let coords: Position[] | Position[][] | Position[][][] = geom.coordinates;
+      if (geom.type === "Polygon") {
+        coords = geom.coordinates[0];
+      } else if (geom.type === "MultiPolygon") {
+        coords = geom.coordinates[0][0];
       }
 
       if (Array.isArray(coords)) {
-        coords.forEach((c: any) => {
+        (coords as Position[]).forEach((c: Position) => {
           if (Array.isArray(c) && c.length >= 2 && c[0] !== null && c[1] !== null) {
             sumLng += c[0];
             sumLat += c[1];
@@ -169,7 +181,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
 
   // Construct GeoJSON FeatureCollection from data list
   const featureCollection = (() => {
-    const features: any[] = [];
+    const features: Feature[] = [];
     data.forEach((row) => {
       if (!row.geometry) return;
       let parsed = row.geometry;
@@ -182,11 +194,12 @@ export function ParcelBulkUploadMap({ data }: Props) {
       }
 
       // Check if coordinate is null
-      let coords = parsed.coordinates;
-      if (parsed.type === "Polygon") {
-        coords = parsed.coordinates[0];
-      } else if (parsed.type === "MultiPolygon") {
-        coords = parsed.coordinates[0][0];
+      const geom = parsed as Polygon | MultiPolygon;
+      let coords: Position[] | Position[][] | Position[][][] = geom.coordinates;
+      if (geom.type === "Polygon") {
+        coords = geom.coordinates[0];
+      } else if (geom.type === "MultiPolygon") {
+        coords = geom.coordinates[0][0];
       }
       if (!Array.isArray(coords) || coords.length === 0) return;
       const firstCoord = coords[0];
@@ -196,7 +209,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
 
       features.push({
         type: "Feature",
-        geometry: parsed,
+        geometry: geom,
         properties: {
           isValid: !!row._isValid,
           parcelId: row.parcelId || "—",
@@ -219,7 +232,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
   }
 
   // Dynamic layers to style depending on row validation status (isValid)
-  const layerStyle: any = {
+  const layerStyle: LayerProps = {
     id: "bulk-parcels-fill",
     type: "fill",
     paint: {
@@ -228,7 +241,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
     }
   };
 
-  const borderStyle: any = {
+  const borderStyle: LayerProps = {
     id: "bulk-parcels-border",
     type: "line",
     paint: {
@@ -237,7 +250,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
     }
   };
 
-  const onMapClick = (event: any) => {
+  const onMapClick = (event: MapLayerMouseEvent) => {
     const features = event.features;
     if (features && features.length > 0) {
       const feat = features[0];
@@ -253,11 +266,11 @@ export function ParcelBulkUploadMap({ data }: Props) {
     }
   };
 
-  const onMouseEnter = (event: any) => {
+  const onMouseEnter = (event: MapLayerMouseEvent) => {
     event.target.getCanvas().style.cursor = "pointer";
   };
 
-  const onMouseLeave = (event: any) => {
+  const onMouseLeave = (event: MapLayerMouseEvent) => {
     event.target.getCanvas().style.cursor = "";
   };
 
@@ -266,7 +279,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
       <Map
         {...viewport}
         onMove={(evt) => setViewport(evt.viewState)}
-        mapStyle={MAP_STYLES[styleKey] as any}
+        mapStyle={MAP_STYLES[styleKey]}
         onClick={onMapClick}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}

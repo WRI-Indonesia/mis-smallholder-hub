@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Plus, Check, ChevronsUpDown } from "lucide-react";
 import { ParcelFormModal } from "./parcel-form-modal";
@@ -17,7 +16,7 @@ import { cn } from "@/lib/utils";
 import type { LandParcel, FarmerSelect } from "@/types/land-parcel.types";
 
 interface Props {
-  initialParcels: any[];
+  initialParcels: unknown[];
   farmers: FarmerSelect[];
   permissions: string[];
 }

@@ -1,12 +1,17 @@
 import { describe, it, expect } from "vitest";
 
+interface FarmerWithParcels {
+  farmerGroup: { name: string };
+  landParcels?: Array<{ area?: number | null }>;
+}
+
 // Pure business logic helper functions to calculate stats
-export function calculateFarmerSummaryStats(farmers: any[]) {
+export function calculateFarmerSummaryStats(farmers: FarmerWithParcels[]) {
   const distinctKT     = new Set(farmers.map(f => f.farmerGroup.name)).size;
   const totalPetani    = farmers.length;
   const totalPersil    = farmers.reduce((sum, f) => sum + (f.landParcels?.length ?? 0), 0);
   const totalLuasLahan = farmers.reduce(
-    (sum, f) => sum + (f.landParcels?.reduce((s: number, p: any) => s + (p.area ?? 0), 0) ?? 0),
+    (sum, f) => sum + (f.landParcels?.reduce((s: number, p) => s + (p.area ?? 0), 0) ?? 0),
     0
   );
   return {
@@ -17,7 +22,7 @@ export function calculateFarmerSummaryStats(farmers: any[]) {
   };
 }
 
-export function calculateFarmersWithoutParcelsStats(farmersWithoutParcels: any[], totalPetaniScope: number) {
+export function calculateFarmersWithoutParcelsStats(farmersWithoutParcels: FarmerWithParcels[], totalPetaniScope: number) {
   const distinctKT = new Set(farmersWithoutParcels.map(f => f.farmerGroup.name)).size;
   const percentage = totalPetaniScope > 0
     ? (farmersWithoutParcels.length / totalPetaniScope) * 100

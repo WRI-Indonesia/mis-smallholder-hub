@@ -12,7 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getFarmerGroupsForTrainingReport, getTrainingReport } from "@/server/actions/report";
-import type { TrainingReportResult, TrainingActivityReportRow, TrainingFarmerReportRow } from "@/types/report";
+import type { TrainingReportResult, TrainingActivityReportRow, TrainingFarmerReportRow, TrainingActivityParticipant } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
 
 interface District {
@@ -29,6 +29,12 @@ interface FarmerGroup {
 interface Props {
   districts: District[];
 }
+
+/** Row shape for the per-activity participant table (adds display-only fields). */
+type SpecificTrainingRow = TrainingActivityParticipant & {
+  no?: number;
+  trainingDate?: string;
+};
 
 export const TRAINING_CATEGORY_LABELS: Record<string, string> = {
   PAKET_1_BMP_PC_RSPO_NKT: "Paket 1 - BMP + P&C RSPO + NKT",
@@ -66,7 +72,7 @@ export function TrainingReportClient({ districts }: Props) {
       try {
         const groups = await getFarmerGroupsForTrainingReport(selectedDistrict);
         setFarmerGroups(groups);
-      } catch (err) {
+      } catch {
         toast.error("Gagal memuat Kelompok Tani");
       }
     }
@@ -102,8 +108,8 @@ export function TrainingReportClient({ districts }: Props) {
         setSelectedPackageCode("all"); // Reset package filter
         setSelectedActivityDate(null); // Reset date filter
         toast.success("Laporan berhasil dimuat");
-      } catch (err: any) {
-        toast.error(err.message || "Gagal memuat laporan");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Gagal memuat laporan");
       }
     });
   };
@@ -301,7 +307,7 @@ export function TrainingReportClient({ districts }: Props) {
     ? formatDateDMY(selectedTraining.trainingDate, "—")
     : "");
 
-  const specificTrainingColumns: DataTableColumn<any>[] = [
+  const specificTrainingColumns: DataTableColumn<SpecificTrainingRow>[] = [
     {
       key: "no",
       label: "NO",
@@ -342,7 +348,7 @@ export function TrainingReportClient({ districts }: Props) {
     },
   ];
 
-  const getSpecificTrainingExportRow = (row: any, idx?: number) => {
+  const getSpecificTrainingExportRow = (row: SpecificTrainingRow, idx?: number) => {
     return {
       no: idx !== undefined ? idx + 1 : "",
       name: row.name,

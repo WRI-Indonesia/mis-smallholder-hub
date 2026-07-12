@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { getFarmersByGroup, addParticipants } from "@/server/actions/training";
 import { toast } from "sonner";
-import { Loader2, Search, ArrowRight, ArrowLeft, Check, Upload, Download } from "lucide-react";
+import { Loader2, Search, ArrowRight, ArrowLeft, Upload, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Excel from "exceljs";
 import Papa from "papaparse";
@@ -83,7 +83,7 @@ export function AddParticipantsModal({
         // Exclude farmers already in the activity
         const candidates = farmers.filter((f) => !currentParticipantFarmerIds.includes(f.id));
         setAllFarmers(candidates);
-      } catch (err) {
+      } catch {
         toast.error("Gagal memuat data petani");
       } finally {
         setIsLoadingFarmers(false);
@@ -154,7 +154,7 @@ export function AddParticipantsModal({
         skipEmptyLines: true,
         complete: (results) => {
           if (results.meta.fields) {
-            processParsedData(results.meta.fields, results.data);
+            processParsedData(results.meta.fields, results.data as Record<string, unknown>[]);
           } else {
             toast.error("Gagal membaca header file CSV");
           }
@@ -174,15 +174,15 @@ export function AddParticipantsModal({
           return;
         }
 
-        const rows: any[] = [];
+        const rows: Record<string, unknown>[] = [];
         let sheetHeaders: string[] = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
           const values = Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values);
           if (rowNumber === 1) {
-            sheetHeaders = values.map((v: any) => v?.toString().trim() || "");
+            sheetHeaders = values.map((v) => (v == null ? "" : String(v).trim()));
           } else {
-            const rowData: Record<string, any> = {};
+            const rowData: Record<string, unknown> = {};
             sheetHeaders.forEach((header, index) => {
               rowData[header] = values[index];
             });
@@ -201,7 +201,7 @@ export function AddParticipantsModal({
   }
 
   // Common processing and validation logic for parsed rows
-  function processParsedData(detectedHeaders: string[], dataRows: any[]) {
+  function processParsedData(detectedHeaders: string[], dataRows: Record<string, unknown>[]) {
     const idKey = detectedHeaders.find((h) =>
       ["id petani", "farmer id", "id", "farmer_id", "kode petani", "kode_petani", "farmerid"].includes(h.toLowerCase().trim())
     ) || detectedHeaders[0];
@@ -232,7 +232,7 @@ export function AddParticipantsModal({
     const seen = new Set<string>();
 
     dataRows.forEach((row) => {
-      const rawId = row[idKey]?.toString().trim();
+      const rawId = row[idKey] != null ? String(row[idKey]).trim() : "";
       if (!rawId) return;
 
       if (seen.has(rawId.toLowerCase())) return;

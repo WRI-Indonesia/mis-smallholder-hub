@@ -102,7 +102,7 @@ describe("ProductionRecord Schema - Update Validation", () => {
       farmerId: "cix1234567890123456789012",
     };
     const r = productionUpdateSchema.safeParse(data);
-    expect((r.data as any)?.farmerId).toBeUndefined();
+    expect((r.data as Record<string, unknown>)?.farmerId).toBeUndefined();
   });
 });
 
@@ -165,19 +165,19 @@ describe("ProductionRecord Query Filter Resolution", () => {
   it("builds correct filter for mode ALL", () => {
     const where = buildProductionWhereClause({ mode: "ALL" });
     expect(where.isActive).toBe(true);
-    expect((where as any).farmer).toBeUndefined();
+    expect((where as Record<string, unknown>).farmer).toBeUndefined();
   });
 
   it("builds correct filter for mode BY_FARMER_GROUP", () => {
     const where = buildProductionWhereClause({ mode: "BY_FARMER_GROUP", ids: ["fg-1", "fg-2"] });
     expect(where.isActive).toBe(true);
-    expect((where as any).farmer).toEqual({ farmerGroupId: { in: ["fg-1", "fg-2"] } });
+    expect((where as Record<string, unknown>).farmer).toEqual({ farmerGroupId: { in: ["fg-1", "fg-2"] } });
   });
 
   it("builds correct filter for mode BY_DISTRICT", () => {
     const where = buildProductionWhereClause({ mode: "BY_DISTRICT", ids: ["dist-1", "dist-2"] });
     expect(where.isActive).toBe(true);
-    expect((where as any).farmer).toEqual({ farmerGroup: { districtId: { in: ["dist-1", "dist-2"] } } });
+    expect((where as Record<string, unknown>).farmer).toEqual({ farmerGroup: { districtId: { in: ["dist-1", "dist-2"] } } });
   });
 
   it("builds correct hasParcel filter", () => {
@@ -202,13 +202,13 @@ describe("ProductionRecord Query Filter Resolution", () => {
       { farmerGroupId: "fg-1" }
     );
     // Both RBAC district scoping AND farmerGroupId filter must coexist
-    expect((where as any).farmer.farmerGroup).toEqual({ districtId: { in: ["dist-1", "dist-2"] } });
-    expect((where as any).farmer.farmerGroupId).toBe("fg-1");
+    expect(((where as Record<string, unknown>).farmer as Record<string, unknown>).farmerGroup).toEqual({ districtId: { in: ["dist-1", "dist-2"] } });
+    expect(((where as Record<string, unknown>).farmer as Record<string, unknown>).farmerGroupId).toBe("fg-1");
   });
 
   it("does not add farmer filter for mode ALL without farmerGroupId", () => {
     const where = buildProductionWhereClause({ mode: "ALL" }, { period: "2026-06" });
-    expect((where as any).farmer).toBeUndefined();
-    expect((where as any).period).toBe("2026-06");
+    expect((where as Record<string, unknown>).farmer).toBeUndefined();
+    expect((where as Record<string, unknown>).period).toBe("2026-06");
   });
 });

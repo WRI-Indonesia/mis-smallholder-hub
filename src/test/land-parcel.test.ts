@@ -15,7 +15,7 @@ describe("LandParcel Schema - Create Validation", () => {
     };
     const r = landParcelSchema.safeParse(data);
     expect(r.success).toBe(true);
-    expect((r.data as any).revision).toBeUndefined();
+    expect((r.data as Record<string, unknown>).revision).toBeUndefined();
   });
 
   it("rejects empty farmerId", () => {
@@ -67,7 +67,7 @@ describe("LandParcel Schema - Create Validation", () => {
     };
     const r = landParcelSchema.safeParse(data);
     expect(r.success).toBe(true);
-    expect((r.data as any).revision).toBeUndefined();
+    expect((r.data as Record<string, unknown>).revision).toBeUndefined();
   });
 });
 
@@ -129,19 +129,19 @@ describe("LandParcel Query Filter Resolution", () => {
     const where = buildLandParcelWhereClause({ mode: "ALL" });
     expect(where.isActive).toBe(true);
     expect(where.farmerId).toBeUndefined();
-    expect((where as any).farmer).toBeUndefined();
+    expect((where as Record<string, unknown>).farmer).toBeUndefined();
   });
 
   it("builds correct filter for mode BY_FARMER_GROUP", () => {
     const where = buildLandParcelWhereClause({ mode: "BY_FARMER_GROUP", ids: ["fg-1", "fg-2"] });
     expect(where.isActive).toBe(true);
-    expect((where as any).farmer).toEqual({ farmerGroupId: { in: ["fg-1", "fg-2"] } });
+    expect((where as Record<string, unknown>).farmer).toEqual({ farmerGroupId: { in: ["fg-1", "fg-2"] } });
   });
 
   it("builds correct filter for mode BY_DISTRICT", () => {
     const where = buildLandParcelWhereClause({ mode: "BY_DISTRICT", ids: ["dist-1", "dist-2"] });
     expect(where.isActive).toBe(true);
-    expect((where as any).farmer).toEqual({ farmerGroup: { districtId: { in: ["dist-1", "dist-2"] } } });
+    expect((where as Record<string, unknown>).farmer).toEqual({ farmerGroup: { districtId: { in: ["dist-1", "dist-2"] } } });
   });
 });
 
@@ -178,11 +178,11 @@ describe("LandParcel Bulk Upload Row Validation Logic", () => {
   };
 
   function validateRow(
-    props: Record<string, any>,
+    props: Record<string, string>,
     duplicatesInFile: Set<string>
   ) {
     const errors: string[] = [];
-    const normalized: any = {};
+    const normalized: Record<string, unknown> = {};
 
     // Farmer ID Mapping
     const rawFarmerId = props[mapping.farmerId]?.toString().trim();
@@ -270,7 +270,6 @@ describe("LandParcel Bulk Upload Row Validation Logic", () => {
 
 describe("LandParcel Bulk Creation Authorization Logic (CRIT-3)", () => {
   it("rejects farmerId outside user scope when mode is BY_FARMER_GROUP", () => {
-    const access = { mode: "BY_FARMER_GROUP" as const, ids: ["group-1", "group-2"] };
     const allowedFarmers = [
       { id: "farmer-1", farmerGroupId: "group-1" },
       { id: "farmer-2", farmerGroupId: "group-2" },

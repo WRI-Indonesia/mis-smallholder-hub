@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
-import { farmerSchema } from "@/validations/farmer.schema";
+import { farmerSchema, type FarmerInput } from "@/validations/farmer.schema";
 
 export async function getFarmerGroupsForMapping() {
   if (!(await hasPermission("bulk-upload-farmers", "VIEW"))) {
@@ -34,7 +34,7 @@ export async function getExistingFarmerIds() {
   return farmers.map((f) => f.farmerId);
 }
 
-export async function bulkCreateFarmers(dataList: any[]) {
+export async function bulkCreateFarmers(dataList: Record<string, unknown>[]) {
   if (!(await hasPermission("bulk-upload-farmers", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
   }
@@ -43,7 +43,7 @@ export async function bulkCreateFarmers(dataList: any[]) {
   const userId = session?.user?.id ?? null;
 
   // Validate all records before saving
-  const validatedRecords: any[] = [];
+  const validatedRecords: FarmerInput[] = [];
   for (const item of dataList) {
     const parsed = farmerSchema.safeParse(item);
     if (!parsed.success) {
@@ -88,8 +88,9 @@ export async function bulkCreateFarmers(dataList: any[]) {
     });
 
     return { success: true, count: validatedRecords.length };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Bulk save error:", error);
-    return { success: false, error: error.message || "Gagal menyimpan data ke database" };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: message || "Gagal menyimpan data ke database" };
   }
 }

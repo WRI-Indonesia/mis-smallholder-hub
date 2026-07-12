@@ -15,7 +15,7 @@ export async function exportToExcel({
   filename: string;
   sheetName?: string;
   columns: ExportColumn[];
-  data: Record<string, any>[];
+  data: Record<string, unknown>[];
 }) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(sheetName);
@@ -70,7 +70,7 @@ export async function exportToExcel({
 export interface ExportSheet {
   name: string;
   columns: ExportColumn[];
-  data: Record<string, any>[];
+  data: Record<string, unknown>[];
 }
 
 export async function exportMultiSheetToExcel({

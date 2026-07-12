@@ -15,8 +15,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+interface ProductionRecord {
+  id: string;
+  isActive: boolean;
+  period: string;
+  parcelId: string | null;
+  harvestDate: Date | string;
+  harvestNumber: number;
+  yieldKg: number;
+  // Column-key placeholder for the "Kelompok Tani" column (rendered from
+  // farmer.farmerGroup.name); not populated on the row itself.
+  farmerGroupId?: string;
+  farmer: {
+    name: string;
+    farmerId: string;
+    farmerGroupId: string;
+    farmerGroup: { name: string };
+  };
+  parcel: { parcelId: string } | null;
+}
+
 interface Props {
-  initialRecords: any[];
+  initialRecords: ProductionRecord[];
   farmerGroups: { id: string; name: string }[];
   permissions: string[];
 }
@@ -58,7 +78,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
     }
   }
 
-  const columns: DataTableColumn<any>[] = [
+  const columns: DataTableColumn<ProductionRecord>[] = [
     {
       key: "farmer",
       label: "Petani",
@@ -145,7 +165,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
     },
   ];
 
-  const getExportRow = (r: any) => {
+  const getExportRow = (r: ProductionRecord) => {
     return {
       farmer: r.farmer.name,
       farmerGroupId: r.farmer.farmerGroup.name,

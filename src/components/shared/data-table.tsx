@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -89,7 +89,7 @@ export interface DataTableProps<T> {
   /** Filename for Excel export (if provided, shows export button) */
   exportFilename?: string;
   /** Custom export row transformer */
-  getExportRow?: (row: T) => Record<string, any>;
+  getExportRow?: (row: T) => Record<string, unknown>;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -247,7 +247,7 @@ export function DataTable<T>({
       if (getExportRow) {
         return getExportRow(row);
       }
-      const exportRow: Record<string, any> = {};
+      const exportRow: Record<string, unknown> = {};
       activeColumns.forEach((col) => {
         const val = row[col.key];
         exportRow[String(col.key)] = val instanceof Date ? val.toLocaleDateString("id-ID") : val;

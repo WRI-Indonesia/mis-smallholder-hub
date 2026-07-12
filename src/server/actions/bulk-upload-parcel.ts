@@ -3,8 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
-import { landParcelSchema } from "@/validations/land-parcel.schema";
+import { landParcelSchema, type LandParcelInput } from "@/validations/land-parcel.schema";
 import { getAccessContext } from "@/lib/access-context";
+import type { Feature } from "geojson";
 
 export async function parseShapefile(base64Data: string) {
   if (!(await hasPermission("bulk-upload-parcels", "VIEW"))) {
@@ -13,7 +14,7 @@ export async function parseShapefile(base64Data: string) {
 
   // Polyfill self to avoid ReferenceError: self is not defined when running shpjs on the server
   if (typeof self === "undefined") {
-    (globalThis as any).self = globalThis;
+    (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
   }
 
   // Register cylindrical_equal_area alias to cea projection in proj4
@@ -23,19 +24,19 @@ export async function parseShapefile(base64Data: string) {
     if (cea) {
       if (!cea.names.includes("cylindrical_equal_area")) {
         cea.names.push("cylindrical_equal_area");
-        (proj4.Proj.projections as any).add(cea);
+        (proj4.Proj.projections as unknown as { add: (proj: unknown) => void }).add(cea);
       }
       // Override init to handle missing lat_ts (latitude of true scale) in WKT
-      if (!(cea as any)._initOverridden) {
+      if (!(cea as unknown as { _initOverridden?: boolean })._initOverridden) {
         const originalInit = cea.init;
         cea.init = function () {
-          const self = this as any;
+          const self = this as unknown as { lat_ts?: number; lat1?: number; lat0?: number };
           if (self.lat_ts === undefined) {
             self.lat_ts = self.lat1 ?? self.lat0 ?? 0;
           }
           originalInit.apply(this);
         };
-        (cea as any)._initOverridden = true;
+        (cea as unknown as { _initOverridden?: boolean })._initOverridden = true;
       }
     }
   } catch (projError) {
@@ -48,7 +49,7 @@ export async function parseShapefile(base64Data: string) {
     // shpjs can parse a zip buffer containing shapefiles directly
     const geojson = await shp(buffer);
 
-    const features: any[] = [];
+    const features: Feature[] = [];
     if (Array.isArray(geojson)) {
       for (const gc of geojson) {
         if (gc.type === "FeatureCollection") {
@@ -67,9 +68,10 @@ export async function parseShapefile(base64Data: string) {
         geometry: f.geometry || null,
       })),
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Shapefile parsing error:", error);
-    return { success: false, error: error.message || "Gagal mengurai file shapefile" };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: message || "Gagal mengurai file shapefile" };
   }
 }
 
@@ -119,20 +121,18 @@ export async function getExistingParcelIds() {
   });
 }
 
-function isGeometryEqual(g1: any, g2: any) {
+function isGeometryEqual(g1: unknown, g2: unknown) {
   if (!g1 || !g2) return false;
   try {
-    const obj1 = typeof g1 === "string" ? JSON.parse(g1) : g1;
-    const obj2 = typeof g2 === "string" ? JSON.parse(g2) : g2;
-    const c1 = obj1.coordinates;
-    const c2 = obj2.coordinates;
-    return JSON.stringify(c1) === JSON.stringify(c2);
+    const obj1 = (typeof g1 === "string" ? JSON.parse(g1) : g1) as { coordinates?: unknown };
+    const obj2 = (typeof g2 === "string" ? JSON.parse(g2) : g2) as { coordinates?: unknown };
+    return JSON.stringify(obj1.coordinates) === JSON.stringify(obj2.coordinates);
   } catch {
     return false;
   }
 }
 
-export async function bulkCreateLandParcels(dataList: any[]) {
+export async function bulkCreateLandParcels(dataList: Record<string, unknown>[]) {
   if (!(await hasPermission("bulk-upload-parcels", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
   }
@@ -153,17 +153,17 @@ export async function bulkCreateLandParcels(dataList: any[]) {
     });
     const allowedFarmerIds = new Set(allowedFarmers.map((f) => f.id));
 
-    const unauthorizedRow = dataList.find((item) => !allowedFarmerIds.has(item.farmerId));
+    const unauthorizedRow = dataList.find((item) => !allowedFarmerIds.has(item.farmerId as string));
     if (unauthorizedRow) {
       return {
         success: false,
-        error: `Tidak memiliki izin untuk membuat lahan bagi petani dengan ID: "${unauthorizedRow.farmerId}"`,
+        error: `Tidak memiliki izin untuk membuat lahan bagi petani dengan ID: "${String(unauthorizedRow.farmerId)}"`,
       };
     }
   }
 
   // Validate all records before saving
-  const validatedRecords: any[] = [];
+  const validatedRecords: Array<LandParcelInput & { revision?: number }> = [];
   for (const item of dataList) {
     const parsed = landParcelSchema.safeParse(item);
     if (!parsed.success) {
@@ -216,8 +216,9 @@ export async function bulkCreateLandParcels(dataList: any[]) {
     });
 
     return { success: true, count: validatedRecords.length };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Bulk save land parcels error:", error);
-    return { success: false, error: error.message || "Gagal menyimpan data ke database" };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: message || "Gagal menyimpan data ke database" };
   }
 }

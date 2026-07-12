@@ -117,7 +117,7 @@ describe("RBAC - Cascading permission inheritance logic simulation", () => {
       currentKey = item ? item.parentKey : null;
     }
 
-    let effective = new Set<string>();
+    const effective = new Set<string>();
 
     for (const key of path) {
       // Apply defaults for this level

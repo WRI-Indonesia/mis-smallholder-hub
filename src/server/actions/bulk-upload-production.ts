@@ -1,10 +1,11 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
-import { productionSchema } from "@/validations/production.schema";
+import { productionSchema, type ProductionInput } from "@/validations/production.schema";
 
 export async function getFarmersForProductionMapping() {
   if (!(await hasPermission("bulk-upload-production", "VIEW"))) {
@@ -57,7 +58,7 @@ export async function getExistingProductionRecords() {
   });
 }
 
-export async function bulkCreateProductionRecords(dataList: any[]) {
+export async function bulkCreateProductionRecords(dataList: Record<string, unknown>[]) {
   if (!(await hasPermission("bulk-upload-production", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
   }
@@ -78,17 +79,17 @@ export async function bulkCreateProductionRecords(dataList: any[]) {
     });
     const allowedFarmerIds = new Set(allowedFarmers.map((f) => f.id));
 
-    const unauthorizedRow = dataList.find((item) => !allowedFarmerIds.has(item.farmerId));
+    const unauthorizedRow = dataList.find((item) => !allowedFarmerIds.has(item.farmerId as string));
     if (unauthorizedRow) {
       return {
         success: false,
-        error: `Tidak memiliki izin untuk membuat data produksi bagi petani dengan ID: "${unauthorizedRow.farmerId}"`,
+        error: `Tidak memiliki izin untuk membuat data produksi bagi petani dengan ID: "${String(unauthorizedRow.farmerId)}"`,
       };
     }
   }
 
   // Validate all records before saving (zod validation)
-  const validatedRecords: any[] = [];
+  const validatedRecords: ProductionInput[] = [];
   for (const item of dataList) {
     // Make sure date properties are parsed or preprocess works
     const parsed = productionSchema.safeParse(item);
@@ -142,7 +143,7 @@ export async function bulkCreateProductionRecords(dataList: any[]) {
     );
 
     // Resolve parcels, validate ownership, and check duplicates in memory.
-    const toInsert: any[] = [];
+    const toInsert: Prisma.ProductionRecordCreateManyInput[] = [];
     for (const record of validatedRecords) {
       let mappedParcelId: string | null = null;
 
@@ -188,8 +189,9 @@ export async function bulkCreateProductionRecords(dataList: any[]) {
     await prisma.productionRecord.createMany({ data: toInsert });
 
     return { success: true, count: toInsert.length };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Bulk save production error:", error);
-    return { success: false, error: error.message || "Gagal menyimpan data ke database" };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: message || "Gagal menyimpan data ke database" };
   }
 }
