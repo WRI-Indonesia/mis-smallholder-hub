@@ -13,10 +13,22 @@
 
 1. **Pick Issue** — Ambil GitHub Issue yang sudah di-approve
 2. **Implement** — Kerjakan **hanya** scope issue
-3. **QA Lokal** — `npm run build` dan `npm test`
+3. **QA Lokal** — `npm run lint`, `npm run build`, dan `npm test` (lihat Pre-Commit Gate)
 4. **Performance Test** — Pastikan tidak ada regresi
 5. **Report** — Changed files, hasil verifikasi, QA notes, risk
 6. **Approval** — Tunggu approval sebelum push
+
+### Pre-Commit Gate (wajib, dijalankan lokal)
+
+Sebelum **setiap commit dari lokal**, ketiga gate ini **wajib hijau** — jangan commit bila ada yang merah (akar BUG-006/#126: `lint` tak pernah dienforce lalu drift ke 193 error):
+
+| Gate | Perintah | Lolos bila |
+|------|----------|------------|
+| Lint | `npm run lint` | **exit 0** — 0 error (warning boleh, tapi disepakati terpisah) |
+| Typecheck/Build | `npm run build` (atau `npx tsc --noEmit` untuk cek cepat) | 0 type error |
+| Test | `npm test` | semua lulus, **tidak ada** test di-skip |
+
+Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `scripts/**` diperbolehkan — bukan kode aplikasi). Enforcement melalui disiplin lokal (bukan CI), sesuai keputusan project owner.
 
 ---
 
