@@ -18,9 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { createFarmer, updateFarmer } from "@/server/actions/farmer";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Farmer {
   id: string;
@@ -50,8 +53,11 @@ interface Props {
 export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [farmerGroupId, setFarmerGroupId] = useState(farmer?.farmerGroupId ?? "");
+  const [comboOpen, setComboOpen] = useState(false);
   const router = useRouter();
   const isEdit = !!farmer;
+  const selectedGroup = farmerGroups.find((g) => g.id === farmerGroupId);
 
   const formatDateForInput = (dateVal: Date | string | null | undefined) => {
     if (!dateVal) return "";
@@ -70,7 +76,7 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
     const joinedYearRaw = form.get("joinedYear") as string;
 
     const data = {
-      farmerGroupId: form.get("farmerGroupId") as string,
+      farmerGroupId,
       gender: form.get("gender") as "M" | "F",
       name: form.get("name") as string,
       farmerId: form.get("farmerId") as string,
@@ -141,20 +147,56 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
               </Select>
               {errors.gender && <p className="text-sm text-destructive">{errors.gender[0]}</p>}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 flex flex-col">
               <Label htmlFor="farmerGroupId">Kelompok Tani</Label>
-              <Select name="farmerGroupId" defaultValue={farmer?.farmerGroupId ?? ""}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Kelompok Tani" />
-                </SelectTrigger>
-                <SelectContent>
-                  {farmerGroups.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      {g.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={comboOpen} onOpenChange={setComboOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={comboOpen}
+                      className="w-full justify-between h-10 font-normal text-left"
+                    >
+                      {farmerGroupId ? (
+                        <span>{selectedGroup?.name}</span>
+                      ) : (
+                        <span className="text-muted-foreground">Pilih Kelompok Tani</span>
+                      )}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  }
+                />
+                <PopoverContent className="w-[220px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Cari kelompok tani..." />
+                    <CommandList className="max-h-[250px]">
+                      <CommandEmpty>Kelompok Tani tidak ditemukan.</CommandEmpty>
+                      <CommandGroup>
+                        {farmerGroups.map((g) => (
+                          <CommandItem
+                            key={g.id}
+                            value={g.name}
+                            onSelect={() => {
+                              setFarmerGroupId(g.id);
+                              setComboOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                farmerGroupId === g.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {g.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {errors.farmerGroupId && (
                 <p className="text-sm text-destructive">{errors.farmerGroupId[0]}</p>
               )}

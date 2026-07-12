@@ -14,11 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { MenuFormModal } from "./menu-form-modal";
 import { deleteMenuItem } from "@/server/actions/menu";
 import { toast } from "sonner";
 import { ICON_MAP } from "@/lib/icon-map";
+import { TableActions, DeleteDialog } from "@/components/shared";
 
 interface MenuItemData {
   id: string;
@@ -32,14 +33,22 @@ interface MenuItemData {
   isVisible: boolean;
 }
 
-export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] }) {
+export function MenuListClient({
+  initialItems,
+  permissions,
+}: {
+  initialItems: MenuItemData[];
+  permissions: string[];
+}) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<MenuItemData | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MenuItemData | null>(null);
+  const [search, setSearch] = useState("");
   const router = useRouter();
- 
+
   const parents = initialItems.filter((i) => !i.parentKey);
   const getChildren = (key: string) => initialItems.filter((i) => i.parentKey === key);
- 
+
   const getAllowedParentOptions = () => {
     const descendants = new Set<string>();
     if (editItem) {
@@ -54,7 +63,7 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
       };
       addDescendants(editItem.key);
     }
- 
+
     const options: { key: string; title: string }[] = [];
     const lvl1 = initialItems.filter((i) => !i.parentKey && !descendants.has(i.key));
     lvl1.forEach((p) => {
@@ -66,24 +75,47 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
     });
     return options;
   };
- 
-  async function handleDelete(id: string) {
-    if (!confirm("Nonaktifkan menu item ini?")) return;
-    const result = await deleteMenuItem(id);
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const result = await deleteMenuItem(deleteTarget.id);
     if (result.success) {
       toast.success("Menu item dinonaktifkan");
+      setDeleteTarget(null);
       router.refresh();
+    } else {
+      toast.error(typeof result.error === "string" ? result.error : "Gagal menonaktifkan menu item");
     }
   }
- 
+
   function renderIcon(name: string | null) {
     if (!name) return null;
     const Icon = ICON_MAP[name];
     return Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null;
   }
- 
-  const [search, setSearch] = useState("");
- 
+
+  function rowActions(item: MenuItemData) {
+    return (
+      <TableActions
+        permissions={permissions}
+        actions={[
+          {
+            type: "edit",
+            onClick: () => {
+              setEditItem(item);
+              setShowForm(true);
+            },
+          },
+          {
+            type: "delete",
+            isActive: item.isActive,
+            onClick: () => setDeleteTarget(item),
+          },
+        ]}
+      />
+    );
+  }
+
   const filteredParents = parents.filter((p) => {
     const children = getChildren(p.key);
     const matchSelf = p.title.toLowerCase().includes(search.toLowerCase()) || p.key.includes(search.toLowerCase());
@@ -95,7 +127,7 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
     });
     return matchSelf || matchChild;
   });
- 
+
   return (
     <>
       <Card className="p-4">
@@ -109,27 +141,30 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
               className="pl-9"
             />
           </div>
-          <Button onClick={() => { setEditItem(null); setShowForm(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tambah Menu
-          </Button>
+          {permissions.includes("CREATE") && (
+            <Button onClick={() => { setEditItem(null); setShowForm(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Tambah Menu
+            </Button>
+          )}
         </div>
- 
+
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/70 border-b-2 border-border">
+              <TableHead className="w-[1%] whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Menu</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Key</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">URL</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Order</TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredParents.map((parent) => (
               <React.Fragment key={parent.id}>
                 <TableRow className="bg-muted/30">
+                  <TableCell className="w-[1%] whitespace-nowrap">{rowActions(parent)}</TableCell>
                   <TableCell className="text-sm font-bold">
                     <div className="flex items-center gap-2">
                       {renderIcon(parent.icon)}
@@ -144,18 +179,11 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
                       {parent.isActive ? "Aktif" : "Nonaktif"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => { setEditItem(parent); setShowForm(true); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(parent.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
                 </TableRow>
                 {getChildren(parent.key).map((child) => (
                   <React.Fragment key={child.id}>
                     <TableRow>
+                      <TableCell className="w-[1%] whitespace-nowrap">{rowActions(child)}</TableCell>
                       <TableCell className="text-sm font-normal pl-8">
                         <div className="flex items-center gap-2">
                           — {renderIcon(child.icon)}
@@ -170,17 +198,10 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
                           {child.isActive ? "Aktif" : "Nonaktif"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="space-x-1">
-                        <Button variant="ghost" size="icon" onClick={() => { setEditItem(child); setShowForm(true); }}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(child.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
                     </TableRow>
                     {getChildren(child.key).map((gchild) => (
                       <TableRow key={gchild.id}>
+                        <TableCell className="w-[1%] whitespace-nowrap">{rowActions(gchild)}</TableCell>
                         <TableCell className="text-sm font-normal text-muted-foreground pl-14">
                           <div className="flex items-center gap-2">
                             —— {renderIcon(gchild.icon)}
@@ -195,14 +216,6 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
                             {gchild.isActive ? "Aktif" : "Nonaktif"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="space-x-1">
-                          <Button variant="ghost" size="icon" onClick={() => { setEditItem(gchild); setShowForm(true); }}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(gchild.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </React.Fragment>
@@ -212,7 +225,7 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
           </TableBody>
         </Table>
       </Card>
- 
+
       <MenuFormModal
         key={editItem?.id ?? "new"}
         open={showForm}
@@ -220,7 +233,14 @@ export function MenuListClient({ initialItems }: { initialItems: MenuItemData[] 
         item={editItem}
         parentOptions={getAllowedParentOptions()}
       />
+
+      <DeleteDialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Nonaktifkan Menu"
+        description="Menu item akan dinonaktifkan (soft delete) dan tidak lagi muncul di navigasi. Lanjutkan?"
+      />
     </>
   );
 }
-
