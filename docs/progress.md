@@ -4,7 +4,7 @@
 
 **Last updated:** 2026-07-12 · **Next management review:** 2026-07-14
 
-**Perubahan terakhir (2026-07-11):** MAP-01 Produksi Peta & PDF "Profil Lahan" (#134) + Panel Daftar Lahan (#135) ✅ · RPT-03 Laporan Produksi (#132) ✅. QA: `npm test` **24 file / 311 ✅** · build ✅ · lint ❌ 193 error (verifikasi 2026-07-12, lihat BUG-006). Fokus berikutnya: remediasi audit P0 (guard/scope RBAC) — #125/#126. Riwayat lengkap → [`progress-changelog.md`](./progress-changelog.md).
+**Perubahan terakhir (2026-07-12):** AUDIT-P0 Remediasi keamanan RBAC (#125) ✅ — guard `hasPermission` (`role-permission`/`menu`/`upload`) + scope `getAccessContext` (`getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`) + menuKey Roles → `settings-roles` + 17 test RBAC/perf baru. QA: `npm test` **25 file / 328 ✅** · build ✅ · lint ❌ 193 error (belum disentuh, lihat BUG-006). Fokus berikutnya: lint hijau (#126) + scope by-id KT/pelatihan & pola restore (#127). Riwayat lengkap → [`progress-changelog.md`](./progress-changelog.md).
 
 **Source of truth:** tabel **Phase Status** di Section 2. **Panduan update & checklist:** [`contributing.md`](./contributing.md).
 
@@ -26,8 +26,8 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Periode laporan    | 2026-07-07 s.d. 2026-07-10                                  |
 | Status keseluruhan | 🟡 On Track dengan catatan (temuan audit P0 wajib diremediasi) |
 | Basis review       | **Audit menyeluruh 2026-07-10** (`audit-report/audit-2026-07-10.md`) |
-| Test lokal         | ✅ `npm test` — **24 files / 311 tests passed** · build ✅ · **lint ❌ 193 error** |
-| Fokus berikutnya   | **Remediasi audit P0 (guard/scope RBAC + lint)** (#126/#127) — RPT-03 Produksi (#132) ✅ selesai |
+| Test lokal         | ✅ `npm test` — **25 files / 328 tests passed** · build ✅ · **lint ❌ 193 error** |
+| Fokus berikutnya   | **Lint hijau (#126) + scope by-id/restore (#127)** — AUDIT-P0 keamanan (#125) ✅ selesai |
 
 ### Executive Summary
 
@@ -39,8 +39,8 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Report              | ✅ Complete     | RPT-01 Petani (#107) ✅, RPT-02 Pelatihan (#108) ✅ & RPT-03 Produksi (#132) ✅ selesai (route + `report.ts` + UI + test). |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region & KT bulk upload belum ada (#69, #70). |
 | Map & Data Analyst  | ✅ Complete     | MAP-01 (#113 + hotspot/ruler/label) ✅; DA-01 (#103) & DA-02 (#118, #122) ✅. |
-| **Keamanan (audit)** | 🔴 **Action needed** | Audit 2026-07-10: **5 celah guard/scope RBAC** di server actions (`role-permission`, `menu`, `upload`, `getFarmerById`, `bulkCreateFarmers`) + menuKey Roles keliru — bisa dipanggil langsung tanpa UI. **Remediasi P0.** |
-| Testing & QA        | 🟠 Strong tapi lint merah | Vitest: **24 files / 311 tests passed** ✅ · build ✅ · **`npm run lint` ❌ 229 masalah (193 error)** — mayoritas `no-explicit-any` + `scripts/` ikut ter-lint. |
+| **Keamanan (audit)** | ✅ **Remediated (#125, 2026-07-12)** | 5 celah guard/scope RBAC + menuKey Roles **ditutup**: guard `hasPermission` di `role-permission`/`menu`/`upload`, scope `getAccessContext` di `getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`, `requirePermission("settings-roles")`. Sisa scope by-id KT/pelatihan → #127. |
+| Testing & QA        | 🟠 Strong tapi lint merah | Vitest: **25 files / 328 tests passed** ✅ · build ✅ · **`npm run lint` ❌ 229 masalah (193 error)** — mayoritas `no-explicit-any` + `scripts/` ikut ter-lint. |
 
 ### Progress Snapshot
 
@@ -52,7 +52,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | 🔲 Not Started | 3 fase         | BULK-02 (#70), CMS-01, COMM-01 |
 | 🔲 Planned     | 7 fase         | MD-07/08/09/10/11, DASH-04, COMM-02 |
 | 🔴 Blocked     | 0 fase         | — (DASH-04 tidak lagi terblokir; DASH-01/02 selesai) |
-| 🎯 Now         | 1 fokus        | **Remediasi audit P0** (guard/scope RBAC + lint) (#126/#127) — RPT-03 (#132) ✅ selesai |
+| 🎯 Now         | 1 fokus        | **Lint hijau (#126) + scope by-id/restore (#127)** — AUDIT-P0 keamanan (#125) ✅ selesai |
 
 ### Management Talking Points
 
@@ -65,7 +65,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
 | Dashboard ✅ Complete | DASH-01/02/03 selesai (#99): Main Dashboard snapshot-backed + peta + Tools Snapshot. | Fondasi dashboard siap; DASH-04 (BMP) tinggal reuse pola snapshot. |
 | ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests **311/311** passed (24 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms ✅. | Foundation & core features stabil; RPT-03 (#132) selesai, lanjut remediasi audit P0. |
+| Delivery confidence | Tests **328/328** passed (25 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms + rbac-server-guards (#125) ✅. | Foundation & core features stabil; AUDIT-P0 keamanan (#125) selesai, lanjut lint (#126). |
 
 ### Decisions Needed
 
@@ -160,7 +160,7 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | **UI/UX** | Loading state (loading.tsx) | 4 halaman tabel belum punya (training, settings/menu, report ×2) | 🟠 PARTIAL | audit §4 U-4 |
 | **UI/UX** | Shadcn UI + Tailwind | Dipakai konsisten; DataTable/TableActions shared 100% patuh | ✅ PASS | audit §4 |
 | **UI/UX** | Table Actions positioning | Patuh di semua list KECUALI `menu-list-client.tsx` (kanan, tanpa gating izin) | 🟠 PARTIAL | audit §4 U-1/U-2 |
-| **Issue Workflow** | QA gates (test/build/lint) | Test 311 ✅ · build ✅ · **lint ❌ 229 masalah (193 error)** | ❌ **FAIL** | audit §1 |
+| **Issue Workflow** | QA gates (test/build/lint) | Test 328 ✅ · build ✅ · **lint ❌ 229 masalah (193 error)** | ❌ **FAIL** | audit §1 |
 
 **Summary:** **7 PASS · 4 PARTIAL · 3 FAIL** — fondasi arsitektur sehat, tetapi klaim lama "14/14 fully compliant" tidak lagi berlaku. Remediasi P0/P1 terjadwal di Sprint Focus.
 
@@ -222,7 +222,7 @@ Format phase: `STREAM-NN`.
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **24 test files / 311 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms/middleware/perf | RPT-03 (#132) ✅ tercakup; gap tersisa: integration test route hotspot |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **25 test files / 328 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms/middleware/perf + rbac-server-guards (#125) | RPT-03 (#132) ✅ tercakup; gap tersisa: integration test route hotspot |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>
@@ -240,7 +240,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 | Priority | ID / Phase   | Tujuan                                 | Evidence                                                                                      | Next Action                                                              |
 | -------- | ------------ | -------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **P0**   | AUDIT-P0     | **Remediasi keamanan audit 2026-07-10 (#125)** | 5 celah guard/scope server action + menuKey Roles keliru — `audit-report/audit-2026-07-10.md` §2 & §8 | Tambah `hasPermission` (`role-permission.ts`, `menu.ts`, `upload.ts`) + scope (`getFarmerById`, `bulkCreateFarmers`) + `requirePermission("settings-roles")` + unit test RBAC |
+| ✅ **P0** | AUDIT-P0     | **Remediasi keamanan audit 2026-07-10 (#125) — ✅ Done 2026-07-12** | 5 celah guard/scope server action + menuKey Roles **ditutup** — `audit-report/audit-2026-07-10.md` §2 & §8 | Selesai: guard `hasPermission` + scope `getAccessContext` + `requirePermission("settings-roles")` + 17 test RBAC/perf. Lanjut ke #126/#127. |
 | **P1**   | AUDIT-P1     | Lint hijau kembali (gate QA) (#126)    | `npm run lint` ❌ 229 masalah (193 error); `scripts/**` ikut ter-lint                          | eslint ignore `scripts/**` → hapus unused vars (32) → cicil `no-explicit-any` di src |
 | P2       | AUDIT-P2     | Cleanup dead code & deps (#129)        | 1 file lib + 6 komponen + 5–9 dependency mati (audit §5 & §8 P2)                              | PR terpisah: hapus deps/file mati, konsolidasi helper duplikat |
 
@@ -248,7 +248,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 | Work Item                                        | Phase   | Status      | Assignee | Target | Next Action                                                                              |
 | ------------------------------------------------ | ------- | ----------- | -------- | ------ | ---------------------------------------------------------------------------------------- |
-| **🔴 #125 AUDIT-P0: Remediasi guard/scope RBAC** | —       | 🔲 Todo     | TBD      | ASAP   | 6 item P0 di `audit-report/audit-2026-07-10.md` §8 (role-permission, menu, upload, farmer scope, bulk scope, menuKey Roles) |
+| **✅ #125 AUDIT-P0: Remediasi guard/scope RBAC** — COMPLETE | —       | ✅ Done     | -      | 2026-07-12 | 6 item P0 selesai (role-permission, menu, upload, farmer scope, bulk scope, menuKey Roles) + 17 test RBAC/perf; gate `npm test` 328 ✅ / build ✅ |
 | **🟠 #126/#127/#128 AUDIT-P1: Lint + scope by-id/restore + konvensi UI** | — | 🔲 Todo | TBD | 07-17 | eslint ignore scripts/** + unused vars + any; menu-list-client gating/TableActions; farmer-form-modal Combobox; 4 loading.tsx |
 | **✅ BUG-001: fix redirect** — COMPLETE         | —       | ✅ Done     | -        | —      | `/admin/master-data` → `/admin/master-data/farmers` ✅                                   |
 | **✅ BUG-002: stale scripts** — COMPLETE        | —       | ✅ Done     | -        | —      | Debug/stale scripts moved to `scripts/local/` (gitignored) ✅                            |
@@ -341,9 +341,9 @@ Debt/bug di section ini berasal dari audit code. Item masuk sprint jika sudah pu
 | ------- | --------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------- | ------------------------------------------------------------------- |
 | BUG-001 | `/admin/master-data` redirect ke route missing `/admin/master-data/farmers` | P0       | `src/app/(admin)/admin/master-data/page.tsx`                                                                                                                        | -   | ✅ Done | Redirect ke `/admin/master-data/farmers` — route exists & functional |
 | BUG-002 | Dashboard debug scripts import action yang tidak ada                        | P0       | `scripts/debug/debug-dashboard-data.js`, `scripts/debug/test-dashboard-api.js`, `scripts/debug/perf-dashboard.ts` import `src/server/actions/dashboard` (tidak ada) | -   | ✅ Done (2026-06-22) | Debug scripts dipindah ke `scripts/local/` (gitignored) — tidak ada di repo/CI. |
-| BUG-003 | Server actions tanpa guard `hasPermission`: `role-permission.ts` (toggle/get — **privilege escalation**), `menu.ts` (create/update/delete), `upload.ts` (S3 write) | **P0** | Audit 2026-07-10 — `audit-report/audit-2026-07-10.md` §2 H-1/H-2/H-3 · **Issue #125** | TBD | 🔲 Open | Guard semua action + unit test RBAC; tolak override role SUPERADMIN di role-permission |
-| BUG-004 | Scope `getAccessContext` absen: `farmer.ts getFarmerById` (PII lintas scope) & `bulk-upload.ts bulkCreateFarmers` (insert ke KT luar scope); mutasi by-id farmer/group/training juga tanpa cek scope | **P0** | Audit 2026-07-10 §2 H-4/H-5 + §3 M-1 · **Issue #125** (MED by-id: #127) | TBD | 🔲 Open | Terapkan pola scope dari `land-parcel.ts:68` / `bulk-upload-production.ts:69-88` |
-| BUG-005 | Halaman Role & Permission di-guard `requirePermission("settings-users")` padahal menu key = `settings-roles` → user ber-grant `settings-roles` melihat menu tapi ditolak halamannya | P1 | `settings/roles/page.tsx:7` vs `menu.csv` · **Issue #125** | TBD | 🔲 Open | Selaraskan ke `settings-roles` (page + actions role-permission) |
+| BUG-003 | Server actions tanpa guard `hasPermission`: `role-permission.ts` (toggle/get — **privilege escalation**), `menu.ts` (create/update/delete), `upload.ts` (S3 write) | **P0** | Audit 2026-07-10 — `audit-report/audit-2026-07-10.md` §2 H-1/H-2/H-3 · **Issue #125** | - | ✅ Done (2026-07-12) | Guard `settings-roles`/`settings-menu`/`master-data-training` ditambah; `role-permission` tolak perubahan role SUPERADMIN; `getAllMenuItems` dual-key (menu OR roles). Test di `rbac-server-guards.test.ts`. |
+| BUG-004 | Scope `getAccessContext` absen: `farmer.ts getFarmerById` (PII lintas scope) & `bulk-upload.ts bulkCreateFarmers` (insert ke KT luar scope); mutasi by-id farmer/group/training juga tanpa cek scope | **P0** | Audit 2026-07-10 §2 H-4/H-5 + §3 M-1 · **Issue #125** (MED by-id: #127) | - | ✅ Done (2026-07-12) | Scope diterapkan di `getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers` (pola `land-parcel.ts:68` / `bulk-upload-production.ts`). **Sisa scope by-id KT/pelatihan → #127.** |
+| BUG-005 | Halaman Role & Permission di-guard `requirePermission("settings-users")` padahal menu key = `settings-roles` → user ber-grant `settings-roles` melihat menu tapi ditolak halamannya | P1 | `settings/roles/page.tsx:7` vs `menu.csv` · **Issue #125** | - | ✅ Done (2026-07-12) | Diselaraskan ke `settings-roles` (page + actions `role-permission`). |
 | BUG-006 | Gate QA lint merah: `npm run lint` 229 masalah (193 error) — mayoritas `no-explicit-any` + `scripts/` (gitignored) ikut ter-lint | P1 | Audit 2026-07-10 §1 · **Issue #126** | TBD | 🔲 Open | eslint ignore `scripts/**` + bereskan unused-vars + cicil any |
 
 ### Debt Register
@@ -367,8 +367,8 @@ Debt/bug di section ini berasal dari audit code. Item masuk sprint jika sudah pu
 
 | Waktu                | Fokus                  | Catatan                                                    |
 | -------------------- | ---------------------- | ---------------------------------------------------------- |
-| Immediate / P0       | **BUG-003, BUG-004**   | Celah guard/scope RBAC (audit 2026-07-10) — remediasi sebelum fitur baru |
-| Sprint berjalan / P1 | BUG-005, BUG-006, TD-007 | menuKey Roles, lint hijau, keputusan pola restore          |
+| Immediate / P0       | ✅ **BUG-003, BUG-004** (selesai 2026-07-12, #125) | Celah guard/scope RBAC ditutup sebelum fitur baru |
+| Sprint berjalan / P1 | BUG-006, TD-007 (BUG-005 ✅) | lint hijau (#126), keputusan pola restore + scope by-id KT/pelatihan (#127) |
 | Later / P2–P3        | TD-002, TD-004, TD-008, TD-009, TD-010, TD-011, TD-012 | Cleanup dead code/deps, audit fields, env drift, naming    |
 
 </details>

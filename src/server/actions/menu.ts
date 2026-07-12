@@ -1,6 +1,7 @@
 "use server";
  
 import { prisma } from "@/lib/prisma";
+import { hasPermission } from "@/lib/rbac";
 import { menuItemSchema, updateMenuItemSchema } from "@/validations/menu.schema";
 import type { MenuItemInput, UpdateMenuItemInput } from "@/validations/menu.schema";
 import { buildMenuTree, validateMenuDepth } from "@/lib/menu-utils";
@@ -21,12 +22,24 @@ export async function getMenuItems(): Promise<{ success: boolean; data?: MenuIte
 }
  
 export async function getAllMenuItems() {
+  // Dipakai halaman Menu Management (settings-menu) & Role & Permission (settings-roles).
+  if (
+    !(await hasPermission("settings-menu", "VIEW")) &&
+    !(await hasPermission("settings-roles", "VIEW"))
+  ) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   return prisma.menuItem.findMany({
     orderBy: [{ order: "asc" }, { title: "asc" }],
   });
 }
  
 export async function createMenuItem(input: MenuItemInput) {
+  if (!(await hasPermission("settings-menu", "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah menu" };
+  }
+
   const parsed = menuItemSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
  
@@ -55,6 +68,10 @@ export async function createMenuItem(input: MenuItemInput) {
 }
  
 export async function updateMenuItem(input: UpdateMenuItemInput) {
+  if (!(await hasPermission("settings-menu", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah menu" };
+  }
+
   const parsed = updateMenuItemSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
  
@@ -81,6 +98,10 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
 }
  
 export async function deleteMenuItem(id: string) {
+  if (!(await hasPermission("settings-menu", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menghapus menu" };
+  }
+
   await prisma.menuItem.update({
     where: { id },
     data: { isActive: false, isVisible: false },

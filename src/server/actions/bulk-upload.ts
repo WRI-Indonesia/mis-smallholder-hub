@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { farmerSchema } from "@/validations/farmer.schema";
 
 export async function getFarmerGroupsForMapping() {
@@ -54,6 +55,24 @@ export async function bulkCreateFarmers(dataList: any[]) {
       };
     }
     validatedRecords.push(parsed.data);
+  }
+
+  // Validasi semua kelompok tani target berada dalam scope data-access user.
+  const access = await getAccessContext();
+  if (access.mode !== "ALL") {
+    const allowedGroups = await prisma.farmerGroup.findMany({
+      where: { ...farmerGroupAccessFilter(access), isActive: true },
+      select: { id: true },
+    });
+    const allowedGroupIds = new Set(allowedGroups.map((g) => g.id));
+
+    const unauthorized = validatedRecords.find((r) => !allowedGroupIds.has(r.farmerGroupId));
+    if (unauthorized) {
+      return {
+        success: false,
+        error: `Tidak memiliki izin untuk menambah petani ke kelompok tani dengan ID: "${unauthorized.farmerGroupId}"`,
+      };
+    }
   }
 
   try {
