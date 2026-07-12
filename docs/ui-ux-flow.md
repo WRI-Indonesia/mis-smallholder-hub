@@ -9,7 +9,7 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **24 files / 296 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map, map-geo, firms, middleware, perf |
+| **Test Status** | ✅ **24 files / 311 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map, map-geo, firms, middleware, perf |
 | **Completed Modules** | ✅ **24 phases done** | Platform (1-7), MD (1-6), DASH-01/02/03, RPT-01/02, BULK (1, 3, 4), DA-01/02, MAP-01 |
 | **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 file schema / **19 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
@@ -366,7 +366,9 @@ User Access Bulk Upload
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 24 Phases)
+## Completed Modules (✅ 25 Phases)
+
+> Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`progress.md`](./progress.md). Perbarui angka di sana lebih dulu.
  
 | Phase | Module | Key Features |
 |-------|--------|--------------|
@@ -389,13 +391,14 @@ User Access Bulk Upload
 | MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible |
 | RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
 | RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
+| RPT-03 | Report Produksi | Matriks bulanan per petani/lahan + Excel + PDF landscape (#132) |
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
 | BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **24 files / 296 tests passing** ✅
+**Total Tests**: **24 files / 311 tests passing** ✅ (angka kanonis di [`progress.md`](./progress.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -432,7 +435,7 @@ User Access Bulk Upload
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **24 files / 296 tests passing** (verifikasi audit 2026-07-10)
+**Test Status**: ✅ **24 files / 311 tests passing** (angka kanonis di [`progress.md`](./progress.md))
 
 ### Covered Modules
 
