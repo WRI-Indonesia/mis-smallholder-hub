@@ -1,16 +1,16 @@
-import { requirePermission } from "@/lib/rbac";
-import { getUserPermissionsForMenu } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/lib/rbac";
 import { getFarmers, getFarmerGroupsForSelect } from "@/server/actions/farmer";
 import { getDistrictsForSelect } from "@/server/actions/farmer-group";
 import { FarmerListClient } from "./farmer-list-client";
 
 export default async function FarmersPage() {
   await requirePermission("master-data-farmers");
-  const [farmers, farmerGroups, districts, permissions] = await Promise.all([
+  const [farmers, farmerGroups, districts, permissions, superAdmin] = await Promise.all([
     getFarmers(),
     getFarmerGroupsForSelect(),
     getDistrictsForSelect(),
     getUserPermissionsForMenu("master-data-farmers"),
+    isSuperAdmin(),
   ]);
 
   return (
@@ -24,6 +24,7 @@ export default async function FarmersPage() {
         farmerGroups={farmerGroups}
         districts={districts}
         permissions={permissions}
+        isSuperAdmin={superAdmin}
       />
     </div>
   );

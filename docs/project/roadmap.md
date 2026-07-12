@@ -64,15 +64,15 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | **Code Standards** | Validation: Zod schemas | 11 schema files di `src/validations/` | ✅ PASS | audit §9 |
 | **Code Standards** | Server Actions: src/server/actions/ | 22 action files (3.894 LOC) | ✅ PASS | audit §3 |
 | **RBAC Pattern** | AccessContext discriminated union | Diimplementasi & dipakai luas (`access-context.ts`) | ✅ PASS | audit §3 |
-| **RBAC Pattern** | hasPermission backend validation | **5 celah**: `role-permission.ts`, `menu.ts`, `upload.ts` tanpa guard; scope absen `getFarmerById`/`bulkCreateFarmers`; + helper select tanpa guard | ❌ **FAIL — P0** | audit §2 |
+| **RBAC Pattern** | hasPermission backend validation | Guard P0 (`role-permission`/`menu`/`upload`) + scope `getFarmerById`/`bulkCreateFarmers` ditutup #125; scope by-id KT/pelatihan/lahan + guard semua helper "for select" ditutup #127 (2026-07-12) | ❌→✅ **PASS** (#125 + #127) | audit §2 |
 | **Soft Delete** | isActive field @default(true) | Semua model (join-table assignment by design tanpa isActive) | ✅ PASS | audit §3 |
-| **Data Filtering** | Filter isActive: true in queries | `getFarmerGroups/ById` tanpa filter isActive level KT; inkonsistensi pola restore KT vs Petani | 🟠 PARTIAL | audit §3.2 |
+| **Data Filtering** | Filter isActive: true in queries | Pola restore soft-delete diseragamkan #127 (2026-07-12): **SUPERADMIN** melihat nonaktif + badge + filter Status (default Aktif) + toggle Aktifkan; **user lain dibatasi ke record aktif** (server & UI). Mutasi tetap butuh isActive | 🟠→✅ **PASS** (#127) | audit §3.2 · TD-007 |
 | **UI/UX** | Loading state (loading.tsx) | 4 halaman tabel belum punya (training, settings/menu, report ×2) | 🟠 PARTIAL | audit §4 U-4 |
 | **UI/UX** | Shadcn UI + Tailwind | Dipakai konsisten; DataTable/TableActions shared 100% patuh | ✅ PASS | audit §4 |
 | **UI/UX** | Table Actions positioning | Patuh di semua list KECUALI `menu-list-client.tsx` (kanan, tanpa gating izin) | 🟠 PARTIAL | audit §4 U-1/U-2 |
 | **Issue Workflow** | QA gates (test/build/lint) | Test 328 ✅ · build ✅ · **lint ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 ✅ 2026-07-12 | ✅ **PASS** | audit §1 · #126 |
 
-**Summary:** **8 PASS · 4 PARTIAL · 2 FAIL** (lint gate ✅ via #126, 2026-07-12) — fondasi arsitektur sehat, tetapi klaim lama "14/14 fully compliant" tidak lagi berlaku. Remediasi P0/P1 terjadwal di Sprint Focus.
+**Summary:** **10 PASS · 3 PARTIAL · 1 FAIL** (lint gate ✅ #126; RBAC guard/scope ✅ #125+#127; pola restore soft-delete ✅ #127 — semua 2026-07-12) — fondasi arsitektur sehat, tetapi klaim lama "14/14 fully compliant" tidak lagi berlaku. Remediasi P0/P1 terjadwal di Sprint Focus.
 
 
 
@@ -132,7 +132,7 @@ Format phase: `STREAM-NN`.
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **25 test files / 328 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms/middleware/perf + rbac-server-guards (#125) | RPT-03 (#132) ✅ tercakup; gap tersisa: integration test route hotspot |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **26 test files / 346 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) | RPT-03 (#132) ✅ tercakup; gap tersisa: integration test route hotspot |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>

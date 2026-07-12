@@ -147,9 +147,10 @@ describe("Farmer Query Filter Resolution", () => {
       access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
       {};
 
+    // #127: list master data memuat record aktif & nonaktif (filter Status di UI,
+    // default "Aktif") agar record nonaktif bisa di-restore — tidak lagi hard-filter isActive.
     return {
       ...accessFilter,
-      isActive: true,
       ...(farmerGroupId ? { farmerGroupId } : {}),
       ...(search
         ? {
@@ -165,21 +166,19 @@ describe("Farmer Query Filter Resolution", () => {
 
   it("builds correct filter for mode ALL", () => {
     const where = buildFarmerWhereClause({ mode: "ALL" });
-    expect(where.isActive).toBe(true);
+    expect((where as Record<string, unknown>).isActive).toBeUndefined();
     expect(where.farmerGroupId).toBeUndefined();
     expect((where as Record<string, unknown>).farmerGroup).toBeUndefined();
   });
 
   it("builds correct filter for mode BY_FARMER_GROUP", () => {
     const where = buildFarmerWhereClause({ mode: "BY_FARMER_GROUP", ids: ["fg-1", "fg-2"] });
-    expect(where.isActive).toBe(true);
     expect(where.farmerGroupId).toEqual({ in: ["fg-1", "fg-2"] });
     expect((where as Record<string, unknown>).farmerGroup).toBeUndefined();
   });
 
   it("builds correct filter for mode BY_DISTRICT", () => {
     const where = buildFarmerWhereClause({ mode: "BY_DISTRICT", ids: ["dist-1", "dist-2"] });
-    expect(where.isActive).toBe(true);
     expect((where as Record<string, unknown>).farmerGroup).toEqual({ districtId: { in: ["dist-1", "dist-2"] } });
     expect(where.farmerGroupId).toBeUndefined();
   });
@@ -190,7 +189,6 @@ describe("Farmer Query Filter Resolution", () => {
       "Budi",
       "fg-3"
     );
-    expect(where.isActive).toBe(true);
     expect(where.farmerGroupId).toBe("fg-3");
     expect((where as Record<string, unknown>).farmerGroup).toEqual({ districtId: { in: ["dist-1"] } });
     expect(where.OR).toHaveLength(3);

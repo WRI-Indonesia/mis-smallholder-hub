@@ -19,12 +19,35 @@
 
 - **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app.
 - **Data filtering** — Setiap query di server actions wajib filter berdasarkan context user:
-  - `isActive: true` (exclude soft-deleted records)
   - Region sesuai assignment user (Province → District → KT)
   - Kelompok Tani sesuai assignment user
   - Role & Permission menentukan level akses (view/edit/delete)
 - **Pattern** — Gunakan helper function untuk inject where clause RBAC, jangan copy-paste manual di setiap action.
-- **Backend Permission Validation** — Setiap Server Action (terutama mutasi data) wajib divalidasi ulang di level server menggunakan helper `hasPermission(menuCode, permission)` sebelum melakukan query/mutasi database, untuk mencegah eksekusi request langsung yang tidak sah (bypass UI).
+- **Backend Permission Validation** — Setiap Server Action (terutama mutasi data) wajib divalidasi ulang di level server menggunakan helper `hasPermission(menuCode, permission)` sebelum melakukan query/mutasi database, untuk mencegah eksekusi request langsung yang tidak sah (bypass UI). **Termasuk** read/mutasi **by-id** dan helper "for select" (pelajaran audit #125/#127).
+
+#### Access-filter helpers (`src/lib/access-context.ts`)
+
+Terjemahkan `AccessContext` (dari `getAccessContext()`) ke Prisma `where` fragment lewat helper — **jangan tulis ulang ternary di tiap action** (#127):
+
+| Helper | Untuk query pada model | Hasil BY_FARMER_GROUP | Hasil BY_DISTRICT |
+|--------|------------------------|-----------------------|-------------------|
+| `farmerGroupAccessFilter` | `FarmerGroup` (punya `id`/`districtId`) | `{ id: { in } }` | `{ districtId: { in } }` |
+| `farmerAccessFilter` | `Farmer`, `TrainingActivity` (punya `farmerGroupId`) | `{ farmerGroupId: { in } }` | `{ farmerGroup: { districtId: { in } } }` |
+| `farmerRelationAccessFilter` | `LandParcel`, `ProductionRecord` (punya relasi `farmer`) | `{ farmer: { farmerGroupId: { in } } }` | `{ farmer: { farmerGroup: { districtId: { in } } } }` |
+
+Mode `ALL` → `{}` (tanpa batasan).
+
+> ⚠️ **Pitfall key-collision** — `farmerGroupAccessFilter` mengembalikan `{ id: { in } }`. Saat digabung dengan literal `id` (mis. cek by-id `getFarmerGroupById`, atau validasi KT target `createFarmer`), **jangan** spread (`{ id, ...filter }`) karena `id` tertimpa dan scope bocor. Gunakan `AND`: `{ id, AND: farmerGroupAccessFilter(access) }`.
+
+#### Soft-delete: pola tampil & restore record nonaktif (keputusan #127)
+
+Pola tunggal untuk **semua list master data** (Petani, Kelompok Tani, Pelatihan, Lahan, Produksi). **Akses record nonaktif dibatasi ke SUPERADMIN** (helper `isSuperAdmin()` di `rbac.ts`); user lain hanya boleh mengakses record aktif:
+
+- **Server action list & read by-id** — untuk **SUPERADMIN** mengembalikan record aktif & nonaktif dalam scope; untuk **user lain** dipaksa `isActive: true`. Pola: `...((await isSuperAdmin()) ? {} : { isActive: true })`.
+- **Client list** — kolom **badge Status** + **filter Status** (`Semua`/`Aktif`/`Nonaktif`, default **`Aktif`**) **hanya dirender untuk SUPERADMIN** (prop `isSuperAdmin` dari page). User lain: kolom & filter di-hide, data sudah aktif-only dari server.
+- **Aksi baris** memakai `toggleXActive` (bukan delete-only) sehingga baris nonaktif menampilkan tombol **"Aktifkan kembali"** (`<TableActions>` otomatis via prop `isActive`). Restore = toggle `isActive` (tetap soft-delete, tidak pernah hard delete).
+- **Mutasi** (update) tetap mensyaratkan `isActive: true` — restore dulu sebelum edit.
+- Query lain di luar list (dropdown "for select", dashboard, report) **tetap** memfilter `isActive: true` untuk semua role.
 
 ### Revision Tracking Pattern
 

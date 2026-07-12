@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export const TRAINING_CATEGORY_LABELS: Record<string, string> = {
@@ -72,6 +73,7 @@ interface Props {
   farmerGroups: FarmerGroup[];
   districts: District[];
   permissions: string[];
+  isSuperAdmin: boolean;
 }
 
 export function TrainingListClient({
@@ -80,6 +82,7 @@ export function TrainingListClient({
   farmerGroups,
   districts,
   permissions,
+  isSuperAdmin,
 }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [districtComboOpen, setDistrictComboOpen] = useState(false);
@@ -87,6 +90,7 @@ export function TrainingListClient({
   const [comboOpen, setComboOpen] = useState(false);
   const [packageFilter, setPackageFilter] = useState("all");
   const [packageComboOpen, setPackageComboOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
   const [editActivity, setEditActivity] = useState<TrainingActivity | null>(null);
   const router = useRouter();
@@ -95,7 +99,10 @@ export function TrainingListClient({
     const matchGroup = groupFilter === "all" || a.farmerGroupId === groupFilter;
     const matchDistrict = districtFilter === "all" || a.farmerGroup.district.id === districtFilter;
     const matchPackage = packageFilter === "all" || a.packageId === packageFilter;
-    return matchGroup && matchDistrict && matchPackage;
+    // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
+    const matchStatus =
+      !isSuperAdmin ? true : statusFilter === "all" ? true : statusFilter === "active" ? a.isActive : !a.isActive;
+    return matchGroup && matchDistrict && matchPackage && matchStatus;
   });
 
   async function handleToggleActive(id: string) {
@@ -155,7 +162,6 @@ export function TrainingListClient({
       key: "isActive",
       label: "Status",
       sortable: true,
-      defaultVisible: false,
       render: (row) => (
         <Badge variant={row.isActive ? "default" : "outline"}>
           {row.isActive ? "Aktif" : "Nonaktif"}
@@ -381,6 +387,20 @@ export function TrainingListClient({
           </Command>
         </PopoverContent>
       </Popover>
+
+      {/* Status filter — hanya SUPERADMIN */}
+      {isSuperAdmin && (
+        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
+          <SelectTrigger className="w-[140px] h-9">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Status</SelectItem>
+            <SelectItem value="active">Aktif</SelectItem>
+            <SelectItem value="inactive">Nonaktif</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 
@@ -450,7 +470,7 @@ export function TrainingListClient({
 
       <Card className="p-4">
         <DataTable
-          columns={columns}
+          columns={isSuperAdmin ? columns : columns.filter((c) => c.key !== "isActive")}
           data={filtered}
           rowKey={(a) => a.id}
           searchPlaceholder="Cari lokasi, kelompok tani atau paket..."

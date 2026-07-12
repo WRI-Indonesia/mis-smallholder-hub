@@ -109,9 +109,9 @@ describe("LandParcel Query Filter Resolution", () => {
       access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
       {};
 
+    // #127: list memuat record aktif & nonaktif (filter Status di UI) — tidak lagi hard-filter isActive.
     return {
       ...accessFilter,
-      isActive: true,
       ...(farmerId ? { farmerId } : {}),
       ...(search
         ? {
@@ -127,20 +127,18 @@ describe("LandParcel Query Filter Resolution", () => {
 
   it("builds correct filter for mode ALL", () => {
     const where = buildLandParcelWhereClause({ mode: "ALL" });
-    expect(where.isActive).toBe(true);
+    expect((where as Record<string, unknown>).isActive).toBeUndefined();
     expect(where.farmerId).toBeUndefined();
     expect((where as Record<string, unknown>).farmer).toBeUndefined();
   });
 
   it("builds correct filter for mode BY_FARMER_GROUP", () => {
     const where = buildLandParcelWhereClause({ mode: "BY_FARMER_GROUP", ids: ["fg-1", "fg-2"] });
-    expect(where.isActive).toBe(true);
     expect((where as Record<string, unknown>).farmer).toEqual({ farmerGroupId: { in: ["fg-1", "fg-2"] } });
   });
 
   it("builds correct filter for mode BY_DISTRICT", () => {
     const where = buildLandParcelWhereClause({ mode: "BY_DISTRICT", ids: ["dist-1", "dist-2"] });
-    expect(where.isActive).toBe(true);
     expect((where as Record<string, unknown>).farmer).toEqual({ farmerGroup: { districtId: { in: ["dist-1", "dist-2"] } } });
   });
 });

@@ -52,6 +52,31 @@ export function farmerGroupAccessFilter(access: AccessContext) {
 }
 
 /**
+ * Prisma `where` fragment scoping a query on a model that carries a
+ * `farmerGroupId` field + `farmerGroup` relation (e.g. `Farmer`,
+ * `TrainingActivity`). Replaces the hand-written ternary repeated across actions.
+ */
+export function farmerAccessFilter(access: AccessContext) {
+  return access.mode === "BY_FARMER_GROUP"
+    ? { farmerGroupId: { in: access.ids } }
+    : access.mode === "BY_DISTRICT"
+    ? { farmerGroup: { districtId: { in: access.ids } } }
+    : {};
+}
+
+/**
+ * Prisma `where` fragment scoping a query on a model that owns a `farmer`
+ * relation (e.g. `LandParcel`, `ProductionRecord`, `TrainingParticipant`).
+ */
+export function farmerRelationAccessFilter(access: AccessContext) {
+  return access.mode === "BY_FARMER_GROUP"
+    ? { farmer: { farmerGroupId: { in: access.ids } } }
+    : access.mode === "BY_DISTRICT"
+    ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } }
+    : {};
+}
+
+/**
  * District ids the user may access, or `null` for unrestricted (ALL).
  * BY_FARMER_GROUP resolves to the districts of the assigned groups.
  */

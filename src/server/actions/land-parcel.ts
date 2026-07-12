@@ -4,9 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { landParcelSchema, updateLandParcelSchema } from "@/validations/land-parcel.schema";
 import type { LandParcelInput, UpdateLandParcelInput } from "@/validations/land-parcel.schema";
-import { hasPermission } from "@/lib/rbac";
+import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 
-import { getAccessContext } from "@/lib/access-context";
+import {
+  getAccessContext,
+  farmerAccessFilter,
+  farmerGroupAccessFilter,
+  farmerRelationAccessFilter,
+} from "@/lib/access-context";
 
 export async function getLandParcels(search?: string, farmerId?: string) {
   if (!(await hasPermission("master-data-parcels", "VIEW"))) {
@@ -15,14 +20,11 @@ export async function getLandParcels(search?: string, farmerId?: string) {
 
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
-    access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
-    {};
-
+  // Soft-delete: hanya SUPERADMIN yang boleh melihat record nonaktif (badge +
+  // filter Status di UI, untuk restore). User lain dibatasi ke record aktif.
   const where = {
-    ...accessFilter,
-    isActive: true,
+    ...farmerRelationAccessFilter(access),
+    ...((await isSuperAdmin()) ? {} : { isActive: true }),
     ...(farmerId ? { farmerId } : {}),
     ...(search
       ? {
@@ -59,14 +61,10 @@ export async function getLandParcelById(id: string) {
 
   const access = await getAccessContext();
 
-  // Build scope filter untuk memastikan lahan milik petani dalam jurisdiksi user
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
-    access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
-    {};
-
+  // Scope enforced (lahan milik petani dalam jurisdiksi user). Hanya SUPERADMIN
+  // yang boleh membuka detail lahan nonaktif; user lain dibatasi ke aktif.
   return prisma.landParcel.findFirst({
-    where: { id, isActive: true, ...accessFilter },
+    where: { id, ...farmerRelationAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
     include: {
       farmer: {
         include: {
@@ -88,6 +86,16 @@ export async function createLandParcel(input: LandParcelInput) {
 
   const parsed = landParcelSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
+
+  // Pastikan petani target berada dalam scope data-access user.
+  const access = await getAccessContext();
+  const targetFarmer = await prisma.farmer.findFirst({
+    where: { id: parsed.data.farmerId, isActive: true, ...farmerAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!targetFarmer) {
+    return { success: false, error: { farmerId: ["Tidak memiliki izin untuk menambah lahan ke petani ini"] } };
+  }
 
   const session = await auth();
 
@@ -128,15 +136,21 @@ export async function updateLandParcel(input: UpdateLandParcelInput) {
 
   const access = await getAccessContext();
 
-  const ownershipFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
-    access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
-    {};
-
   const existing = await prisma.landParcel.findFirst({
-    where: { id, isActive: true, ...ownershipFilter },
+    where: { id, isActive: true, ...farmerRelationAccessFilter(access) },
   });
   if (!existing) return { success: false, error: "Lahan tidak ditemukan atau tidak dalam akses Anda" };
+
+  // Cegah pemindahan lahan ke petani di luar scope user.
+  if (data.farmerId !== existing.farmerId) {
+    const targetFarmer = await prisma.farmer.findFirst({
+      where: { id: data.farmerId, isActive: true, ...farmerAccessFilter(access) },
+      select: { id: true },
+    });
+    if (!targetFarmer) {
+      return { success: false, error: { farmerId: ["Tidak memiliki izin untuk memindahkan lahan ke petani ini"] } };
+    }
+  }
 
   // Check unique parcelId per farmer if parcelId or farmerId is changing
   if (data.parcelId !== existing.parcelId || data.farmerId !== existing.farmerId) {
@@ -173,14 +187,9 @@ export async function deleteLandParcel(id: string) {
 
   const access = await getAccessContext();
 
-  const ownershipFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
-    access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
-    {};
-
   const existing = await prisma.landParcel.findFirst({
-    where: { id, ...ownershipFilter },
-    select: { isActive: true },
+    where: { id, isActive: true, ...farmerRelationAccessFilter(access) },
+    select: { id: true },
   });
   if (!existing) return { success: false, error: "Lahan tidak ditemukan atau tidak dalam akses Anda" };
 
@@ -197,20 +206,61 @@ export async function deleteLandParcel(id: string) {
   return { success: true };
 }
 
-export async function getFarmersForSelect() {
+/** Toggle aktif/nonaktif lahan (restore-capable) untuk aksi baris pada list. */
+export async function toggleLandParcelActive(id: string) {
+  if (!(await hasPermission("master-data-parcels", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan lahan" };
+  }
+
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
+  const existing = await prisma.landParcel.findFirst({
+    where: { id, ...farmerRelationAccessFilter(access) },
+    select: { isActive: true },
+  });
+  if (!existing) return { success: false, error: "Lahan tidak ditemukan atau tidak dalam akses Anda" };
+
+  const session = await auth();
+
+  await prisma.landParcel.update({
+    where: { id },
+    data: { isActive: !existing.isActive, modifiedBy: session?.user?.id ?? null },
+  });
+
+  return { success: true };
+}
+
+export async function getFarmersForSelect() {
+  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  const access = await getAccessContext();
 
   return prisma.farmer.findMany({
     where: {
-      ...accessFilter,
+      ...farmerAccessFilter(access),
       isActive: true,
     },
     select: { id: true, name: true, farmerId: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+/** Kelompok Tani dalam scope user — untuk filter list Lahan. */
+export async function getFarmerGroupsForSelect() {
+  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  const access = await getAccessContext();
+
+  return prisma.farmerGroup.findMany({
+    where: {
+      ...farmerGroupAccessFilter(access),
+      isActive: true,
+    },
+    select: { id: true, name: true, code: true },
     orderBy: { name: "asc" },
   });
 }

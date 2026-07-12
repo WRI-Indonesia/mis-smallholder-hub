@@ -149,4 +149,14 @@ export async function hasPermission(menuKey: string, permission: string): Promis
   return permissions.includes(permission);
 }
 
+/**
+ * True bila user aktif berperan SUPERADMIN. Dipakai untuk gating fitur yang
+ * hanya untuk SUPERADMIN (mis. tampil/filter record nonaktif di list master data —
+ * user lain hanya boleh mengakses record aktif). Cached per-request.
+ */
+export const isSuperAdmin = cache(async (): Promise<boolean> => {
+  const session = await auth();
+  return session?.user?.role === "SUPERADMIN";
+});
+
 

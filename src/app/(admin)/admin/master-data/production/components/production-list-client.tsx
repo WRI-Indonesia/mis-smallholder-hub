@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Plus, Check, ChevronsUpDown } from "lucide-react";
-import { deleteProductionRecord } from "@/server/actions/production";
+import { toggleProductionRecordActive } from "@/server/actions/production";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -39,9 +39,10 @@ interface Props {
   initialRecords: ProductionRecord[];
   farmerGroups: { id: string; name: string }[];
   permissions: string[];
+  isSuperAdmin: boolean;
 }
 
-export function ProductionListClient({ initialRecords, farmerGroups, permissions }: Props) {
+export function ProductionListClient({ initialRecords, farmerGroups, permissions, isSuperAdmin }: Props) {
   const [farmerGroupFilter, setFarmerGroupFilter] = useState("all");
   const [farmerGroupComboOpen, setFarmerGroupComboOpen] = useState(false);
   const [periodFilter, setPeriodFilter] = useState("");
@@ -58,8 +59,11 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
         : hasParcelFilter === "true"
         ? r.parcelId !== null
         : r.parcelId === null;
+    // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
     const matchStatus =
-      statusFilter === "all"
+      !isSuperAdmin
+        ? true
+        : statusFilter === "all"
         ? true
         : statusFilter === "active"
         ? r.isActive === true
@@ -68,13 +72,13 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
     return matchGroup && matchPeriod && matchParcel && matchStatus;
   });
 
-  async function handleDelete(id: string) {
-    const result = await deleteProductionRecord(id);
+  async function handleToggleActive(id: string) {
+    const result = await toggleProductionRecordActive(id);
     if (result.success) {
-      toast.success("Data produksi berhasil dinonaktifkan");
+      toast.success("Status berhasil diubah");
       router.refresh();
     } else {
-      toast.error(typeof result.error === "string" ? result.error : "Gagal menonaktifkan data produksi");
+      toast.error(typeof result.error === "string" ? result.error : "Gagal mengubah status");
     }
   }
 
@@ -266,17 +270,19 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
         </SelectContent>
       </Select>
 
-      {/* Status filter */}
-      <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
-        <SelectTrigger className="w-[140px] h-9">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Status</SelectItem>
-          <SelectItem value="active">Aktif</SelectItem>
-          <SelectItem value="inactive">Nonaktif</SelectItem>
-        </SelectContent>
-      </Select>
+      {/* Status filter — hanya SUPERADMIN */}
+      {isSuperAdmin && (
+        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
+          <SelectTrigger className="w-[140px] h-9">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Status</SelectItem>
+            <SelectItem value="active">Aktif</SelectItem>
+            <SelectItem value="inactive">Nonaktif</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 
@@ -290,7 +296,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
   return (
     <Card className="p-4">
       <DataTable
-        columns={columns}
+        columns={isSuperAdmin ? columns : columns.filter((c) => c.key !== "isActive")}
         data={filtered}
         rowKey={(r) => r.id}
         searchPlaceholder="Cari nama petani atau ID petani..."
@@ -319,7 +325,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
               {
                 type: "delete",
                 isActive: row.isActive,
-                onClick: () => handleDelete(row.id),
+                onClick: () => handleToggleActive(row.id),
               },
             ]}
           />

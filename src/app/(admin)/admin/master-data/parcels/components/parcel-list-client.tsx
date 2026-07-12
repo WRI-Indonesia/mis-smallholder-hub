@@ -3,42 +3,51 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Plus, Check, ChevronsUpDown } from "lucide-react";
 import { ParcelFormModal } from "./parcel-form-modal";
-import { deleteLandParcel } from "@/server/actions/land-parcel";
+import { toggleLandParcelActive } from "@/server/actions/land-parcel";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-import type { LandParcel, FarmerSelect } from "@/types/land-parcel.types";
+import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel.types";
 
 interface Props {
   initialParcels: unknown[];
   farmers: FarmerSelect[];
+  farmerGroups: FarmerGroupSelect[];
   permissions: string[];
+  isSuperAdmin: boolean;
 }
 
-export function ParcelListClient({ initialParcels, farmers, permissions }: Props) {
-  const [farmerFilter, setFarmerFilter] = useState("all");
-  const [farmerComboOpen, setFarmerComboOpen] = useState(false);
+export function ParcelListClient({ initialParcels, farmers, farmerGroups, permissions, isSuperAdmin }: Props) {
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [groupComboOpen, setGroupComboOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
   const [editParcel, setEditParcel] = useState<LandParcel | null>(null);
   const router = useRouter();
 
   const filtered = (initialParcels as LandParcel[]).filter((p) => {
-    return farmerFilter === "all" || p.farmerId === farmerFilter;
+    const matchGroup = groupFilter === "all" || p.farmer.farmerGroup.id === groupFilter;
+    // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
+    const matchStatus =
+      !isSuperAdmin ? true : statusFilter === "all" ? true : statusFilter === "active" ? p.isActive : !p.isActive;
+    return matchGroup && matchStatus;
   });
 
-  async function handleDelete(id: string) {
-    const result = await deleteLandParcel(id);
+  async function handleToggleActive(id: string) {
+    const result = await toggleLandParcelActive(id);
     if (result.success) {
-      toast.success("Lahan berhasil dinonaktifkan");
+      toast.success("Status berhasil diubah");
       router.refresh();
     } else {
-      toast.error(typeof result.error === "string" ? result.error : "Gagal menonaktifkan lahan");
+      toast.error(typeof result.error === "string" ? result.error : "Gagal mengubah status");
     }
   }
 
@@ -62,6 +71,13 @@ export function ParcelListClient({ initialParcels, farmers, permissions }: Props
       sortable: true,
       cellClassName: "text-sm font-mono text-muted-foreground",
       render: (row) => row.farmer.farmerId,
+    },
+    {
+      key: "farmerGroupName",
+      label: "Kelompok Tani",
+      sortable: true,
+      cellClassName: "text-sm text-muted-foreground",
+      render: (row) => row.farmer.farmerGroup.name,
     },
     {
       key: "area",
@@ -98,6 +114,16 @@ export function ParcelListClient({ initialParcels, farmers, permissions }: Props
       cellClassName: "text-sm tabular-nums text-muted-foreground",
       render: (row) => row.revision,
     },
+    {
+      key: "isActive",
+      label: "Status",
+      sortable: true,
+      render: (row) => (
+        <Badge variant={row.isActive ? "default" : "outline"}>
+          {row.isActive ? "Aktif" : "Nonaktif"}
+        </Badge>
+      ),
+    },
   ];
 
   const getExportRow = (p: LandParcel) => {
@@ -115,65 +141,65 @@ export function ParcelListClient({ initialParcels, farmers, permissions }: Props
     };
   };
 
-  const selectedFarmer = farmers.find((f) => f.id === farmerFilter);
+  const selectedGroup = farmerGroups.find((g) => g.id === groupFilter);
 
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
-      <Popover open={farmerComboOpen} onOpenChange={setFarmerComboOpen}>
+      <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
         <PopoverTrigger
           render={
             <Button
               variant="outline"
               role="combobox"
-              aria-expanded={farmerComboOpen}
-              className="w-[280px] justify-between h-9 font-normal text-left"
+              aria-expanded={groupComboOpen}
+              className="w-[330px] justify-between h-9 font-normal text-left"
             >
-              {farmerFilter === "all" ? (
-                <span>Semua Petani</span>
+              {groupFilter === "all" ? (
+                <span>Semua Kelompok Tani</span>
               ) : (
-                <span>{selectedFarmer?.name} ({selectedFarmer?.farmerId})</span>
+                <span>{selectedGroup?.name}</span>
               )}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           }
         />
-        <PopoverContent className="w-[280px] p-0" align="start">
+        <PopoverContent className="w-[330px] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Cari petani..." />
+            <CommandInput placeholder="Cari kelompok tani..." />
             <CommandList className="max-h-[300px]">
-              <CommandEmpty>Petani tidak ditemukan.</CommandEmpty>
+              <CommandEmpty>Kelompok Tani tidak ditemukan.</CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   value="all"
                   onSelect={() => {
-                    setFarmerFilter("all");
-                    setFarmerComboOpen(false);
+                    setGroupFilter("all");
+                    setGroupComboOpen(false);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      farmerFilter === "all" ? "opacity-100" : "opacity-0"
+                      groupFilter === "all" ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  Semua Petani
+                  Semua Kelompok Tani
                 </CommandItem>
-                {farmers.map((f) => (
+                {farmerGroups.map((g) => (
                   <CommandItem
-                    key={f.id}
-                    value={`${f.name} ${f.farmerId}`}
+                    key={g.id}
+                    value={`${g.name} ${g.code || ""}`}
                     onSelect={() => {
-                      setFarmerFilter(f.id);
-                      setFarmerComboOpen(false);
+                      setGroupFilter(g.id);
+                      setGroupComboOpen(false);
                     }}
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        farmerFilter === f.id ? "opacity-100" : "opacity-0"
+                        groupFilter === g.id ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    {f.name} ({f.farmerId})
+                    {g.name}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -181,6 +207,20 @@ export function ParcelListClient({ initialParcels, farmers, permissions }: Props
           </Command>
         </PopoverContent>
       </Popover>
+
+      {/* Status filter — hanya SUPERADMIN */}
+      {isSuperAdmin && (
+        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
+          <SelectTrigger className="w-[140px] h-9">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Status</SelectItem>
+            <SelectItem value="active">Aktif</SelectItem>
+            <SelectItem value="inactive">Nonaktif</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 
@@ -195,7 +235,7 @@ export function ParcelListClient({ initialParcels, farmers, permissions }: Props
     <>
       <Card className="p-4">
         <DataTable
-          columns={columns}
+          columns={isSuperAdmin ? columns : columns.filter((c) => c.key !== "isActive")}
           data={filtered}
           rowKey={(p) => p.id}
           searchPlaceholder="Cari ID Lahan atau nama petani..."
@@ -228,7 +268,7 @@ export function ParcelListClient({ initialParcels, farmers, permissions }: Props
                 {
                   type: "delete",
                   isActive: parcel.isActive,
-                  onClick: () => handleDelete(parcel.id),
+                  onClick: () => handleToggleActive(parcel.id),
                 },
               ]}
             />

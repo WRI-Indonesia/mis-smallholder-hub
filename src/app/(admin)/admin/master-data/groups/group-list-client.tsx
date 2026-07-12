@@ -45,16 +45,22 @@ interface Props {
   initialGroups: FarmerGroup[];
   districts: District[];
   permissions: string[];
+  isSuperAdmin: boolean;
 }
 
-export function GroupListClient({ initialGroups, districts, permissions }: Props) {
+export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
   const [editGroup, setEditGroup] = useState<FarmerGroup | null>(null);
   const router = useRouter();
 
   const filtered = initialGroups.filter((g) => {
-    return districtFilter === "all" || g.districtId === districtFilter;
+    const matchDistrict = districtFilter === "all" || g.districtId === districtFilter;
+    // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
+    const matchStatus =
+      !isSuperAdmin ? true : statusFilter === "all" ? true : statusFilter === "active" ? g.isActive : !g.isActive;
+    return matchDistrict && matchStatus;
   });
 
   async function handleToggleActive(id: string) {
@@ -147,7 +153,6 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
       key: "isActive",
       label: "Status",
       sortable: true,
-      defaultVisible: false,
       render: (row) => (
         <Badge variant={row.isActive ? "default" : "outline"}>
           {row.isActive ? "Aktif" : "Nonaktif"}
@@ -191,6 +196,20 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
           ))}
         </SelectContent>
       </Select>
+
+      {/* Status filter — hanya SUPERADMIN */}
+      {isSuperAdmin && (
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "active")}>
+          <SelectTrigger className="w-[140px] h-9">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Status</SelectItem>
+            <SelectItem value="active">Aktif</SelectItem>
+            <SelectItem value="inactive">Nonaktif</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 
@@ -260,7 +279,7 @@ export function GroupListClient({ initialGroups, districts, permissions }: Props
 
       <Card className="p-4">
         <DataTable
-          columns={columns}
+          columns={isSuperAdmin ? columns : columns.filter((c) => c.key !== "isActive")}
           data={filtered}
           rowKey={(g) => g.id}
           searchPlaceholder="Cari nama, kode, atau singkatan..."
