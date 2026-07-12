@@ -15,7 +15,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel.types";
+import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel";
 
 interface Props {
   initialParcels: unknown[];

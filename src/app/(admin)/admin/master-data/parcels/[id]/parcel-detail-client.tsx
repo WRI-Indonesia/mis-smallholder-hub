@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ParcelFormModal } from "../components/parcel-form-modal";
 import { ParcelMapView } from "../components/parcel-map-view";
 
-import type { LandParcel, FarmerSelect } from "@/types/land-parcel.types";
+import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
 
 interface Props {
   parcel: LandParcel;

@@ -4,7 +4,7 @@ import { getLandParcelById } from "@/server/actions/land-parcel";
 import { getFarmerOptions } from "@/lib/select-options";
 import { notFound } from "next/navigation";
 import { ParcelDetailClient } from "./parcel-detail-client";
-import type { LandParcel } from "@/types/land-parcel.types";
+import type { LandParcel } from "@/types/land-parcel";
 
 export default async function ParcelDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission("master-data-parcels");

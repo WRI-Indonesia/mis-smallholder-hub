@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { trainingActivitySchema, updateTrainingActivitySchema } from "@/validations/training-activity.schema";
 import type { TrainingActivityInput, UpdateTrainingActivityInput } from "@/validations/training-activity.schema";
-import { trainingParticipantScoreSchema } from "@/validations/training-participant.schema";
+import { trainingParticipantScoreSchema, addParticipantsSchema } from "@/validations/training-participant.schema";
 import type { TrainingParticipantScoreInput } from "@/validations/training-participant.schema";
 import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import { getPresignedUrl } from "@/lib/s3";
@@ -279,6 +279,12 @@ export async function addParticipants(
   if (!(await hasPermission("master-data-training", "EDIT"))) {
     return { success: false, error: "Tidak memiliki izin untuk mengubah peserta pelatihan" };
   }
+
+  const parsed = addParticipantsSchema.safeParse({ activityId, participants });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Data peserta tidak valid" };
+  }
+  ({ activityId, participants } = parsed.data);
 
   const session = await auth();
   const farmerIds = participants.map((p) => p.farmerId);

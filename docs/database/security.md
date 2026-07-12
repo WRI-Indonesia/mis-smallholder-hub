@@ -67,6 +67,8 @@ Semua tabel memiliki audit fields:
 - `modifiedAt` — timestamp terakhir diupdate
 - `modifiedBy` — user ID yang terakhir update
 
+> `createdBy`/`modifiedBy` **diisi dari `auth()` session (`session.user.id`) di semua Server Action mutasi** — pola `createdBy: session?.user?.id ?? null` (canonical: `farmer.ts`). Gap di mutasi user/menu/role-permission/region-toggle/assignment/override ditutup #130 (TD-010). Tetap `null` hanya untuk data hasil seed.
+
 **Use Case**:
 - Track siapa yang membuat/edit data
 - Debug issue "data tiba-tiba berubah"

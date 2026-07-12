@@ -18,3 +18,16 @@ export const trainingParticipantScoreSchema = z.object({
 });
 
 export type TrainingParticipantScoreInput = z.infer<typeof trainingParticipantScoreSchema>;
+
+export const addParticipantsSchema = z.object({
+  activityId: z.string().min(1, "Aktivitas pelatihan wajib dipilih"),
+  participants: z
+    .array(
+      trainingParticipantScoreSchema.extend({
+        farmerId: z.string().min(1, "Petani wajib dipilih"),
+      })
+    )
+    .min(1, "Minimal satu peserta harus dipilih"),
+});
+
+export type AddParticipantsInput = z.infer<typeof addParticipantsSchema>;

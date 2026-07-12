@@ -8,7 +8,7 @@
 
 - Komponen **Shadcn UI** + utility **Tailwind 4**
 - Warna pakai variabel `oklch` di `globals.css`
-- Font: Acumin Pro Condensed (catatan audit 2026-07-10: baru deklarasi `font-family` di `globals.css` tanpa `@font-face`/file font — efektif jatuh ke fallback; `layout.tsx` memuat Geist via `next/font`. Perlu dimuat benar atau diputuskan diganti)
+- Font: **Acumin Pro Condensed** (brand WRI, lihat `brand.wri.org/fonts`) — dimuat via `@font-face` self-host di `public/fonts/` (`globals.css`, `font-display: swap`), fallback **Arial → Helvetica → sans-serif** sesuai rekomendasi WRI; `--font-sans` diarahkan ke stack ini dan Geist Sans dilepas (Geist Mono tetap untuk `--font-mono`) — #130. Sebelumnya hanya deklarasi `font-family` tanpa `@font-face` sehingga jatuh ke fallback generik. File `.woff2` berlisensi ditaruh manual (`acumin-pro-condensed-regular/bold.woff2`; panduan: `public/fonts/README.md`).
 - Mobile-first responsive
 
 ### Layout Admin

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import type { PermissionLevel } from "@prisma/client";
 
@@ -105,6 +106,7 @@ export async function setUserMenuOverride(
   }
 
   try {
+    const session = await auth();
     await prisma.userPermissionOverride.upsert({
       where: {
         userId_menuKey_permission: {
@@ -116,6 +118,7 @@ export async function setUserMenuOverride(
       update: {
         granted,
         isActive: true,
+        modifiedBy: session?.user?.id ?? null,
       },
       create: {
         userId,
@@ -123,6 +126,7 @@ export async function setUserMenuOverride(
         permission,
         granted,
         isActive: true,
+        createdBy: session?.user?.id ?? null,
       },
     });
     return { success: true };

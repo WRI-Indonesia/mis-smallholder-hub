@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { createUserSchema, updateUserSchema } from "@/validations/user.schema";
 import type { CreateUserInput, UpdateUserInput } from "@/validations/user.schema";
@@ -74,12 +75,14 @@ export async function createUser(input: CreateUserInput) {
 
   const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
 
+  const session = await auth();
   const user = await prisma.user.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
       password: hashedPassword,
       role: parsed.data.role,
+      createdBy: session?.user?.id ?? null,
     },
   });
 
@@ -94,10 +97,12 @@ export async function updateUser(input: UpdateUserInput) {
   const parsed = updateUserSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
+  const session = await auth();
   const data: Record<string, unknown> = {
     name: parsed.data.name,
     email: parsed.data.email,
     role: parsed.data.role,
+    modifiedBy: session?.user?.id ?? null,
   };
 
   if (parsed.data.password && parsed.data.password.length > 0) {
@@ -117,9 +122,10 @@ export async function toggleUserActive(id: string) {
   const user = await prisma.user.findUnique({ where: { id }, select: { isActive: true } });
   if (!user) return { success: false, error: "User tidak ditemukan" };
 
+  const session = await auth();
   await prisma.user.update({
     where: { id },
-    data: { isActive: !user.isActive },
+    data: { isActive: !user.isActive, modifiedBy: session?.user?.id ?? null },
   });
 
   return { success: true };

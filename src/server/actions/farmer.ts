@@ -145,9 +145,10 @@ export async function toggleFarmerActive(id: string) {
   });
   if (!farmer) return { success: false, error: "Petani tidak ditemukan" };
 
+  const session = await auth();
   await prisma.farmer.update({
     where: { id },
-    data: { isActive: !farmer.isActive },
+    data: { isActive: !farmer.isActive, modifiedBy: session?.user?.id ?? null },
   });
 
   return { success: true };

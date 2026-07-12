@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -60,7 +61,8 @@ export async function assignUserProvince(userId: string, provinceId: string) {
   }
 
   try {
-    await prisma.userProvince.create({ data: { userId, provinceId } });
+    const session = await auth();
+    await prisma.userProvince.create({ data: { userId, provinceId, createdBy: session?.user?.id ?? null } });
     return { success: true };
   } catch {
     return { success: false, error: "Gagal menyimpan atau sudah terassign" };
@@ -84,7 +86,8 @@ export async function assignUserDistrict(userId: string, districtId: string) {
   }
 
   try {
-    await prisma.userDistrict.create({ data: { userId, districtId } });
+    const session = await auth();
+    await prisma.userDistrict.create({ data: { userId, districtId, createdBy: session?.user?.id ?? null } });
     return { success: true };
   } catch {
     return { success: false, error: "Gagal menyimpan atau sudah terassign" };
@@ -108,7 +111,8 @@ export async function assignUserFarmerGroup(userId: string, farmerGroupId: strin
   }
 
   try {
-    await prisma.userFarmerGroup.create({ data: { userId, farmerGroupId } });
+    const session = await auth();
+    await prisma.userFarmerGroup.create({ data: { userId, farmerGroupId, createdBy: session?.user?.id ?? null } });
     return { success: true };
   } catch {
     return { success: false, error: "Gagal menyimpan atau sudah terassign" };

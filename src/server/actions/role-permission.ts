@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import type { Role, PermissionLevel } from "@prisma/client";
 import type { ActionResult } from "@/types/action-result";
@@ -35,18 +36,20 @@ export async function toggleRolePermission(
     where: { role, menuKey, permission },
   });
 
+  const session = await auth();
+
   if (existing) {
     // Toggle isActive
     await prisma.rolePermission.update({
       where: { id: existing.id },
-      data: { isActive: !existing.isActive },
+      data: { isActive: !existing.isActive, modifiedBy: session?.user?.id ?? null },
     });
     return { success: true, data: { granted: !existing.isActive } };
   }
 
   // Create new
   await prisma.rolePermission.create({
-    data: { role, menuKey, permission },
+    data: { role, menuKey, permission, createdBy: session?.user?.id ?? null },
   });
   return { success: true, data: { granted: true } };
 }

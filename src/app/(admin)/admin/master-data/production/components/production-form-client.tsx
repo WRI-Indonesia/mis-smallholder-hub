@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { id } from "date-fns/locale";
-import type { FarmerSelect } from "@/types/land-parcel.types";
+import type { FarmerSelect } from "@/types/land-parcel";
 
 interface ProductionRecordInput {
   id: string;
