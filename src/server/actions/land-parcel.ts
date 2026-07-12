@@ -9,7 +9,6 @@ import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import {
   getAccessContext,
   farmerAccessFilter,
-  farmerGroupAccessFilter,
   farmerRelationAccessFilter,
 } from "@/lib/access-context";
 
@@ -228,39 +227,4 @@ export async function toggleLandParcelActive(id: string) {
   });
 
   return { success: true };
-}
-
-export async function getFarmersForSelect() {
-  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  const access = await getAccessContext();
-
-  return prisma.farmer.findMany({
-    where: {
-      ...farmerAccessFilter(access),
-      isActive: true,
-    },
-    select: { id: true, name: true, farmerId: true },
-    orderBy: { name: "asc" },
-  });
-}
-
-/** Kelompok Tani dalam scope user — untuk filter list Lahan. */
-export async function getFarmerGroupsForSelect() {
-  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  const access = await getAccessContext();
-
-  return prisma.farmerGroup.findMany({
-    where: {
-      ...farmerGroupAccessFilter(access),
-      isActive: true,
-    },
-    select: { id: true, name: true, code: true },
-    orderBy: { name: "asc" },
-  });
 }

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/rbac";
-import { getProductionRecordById, getFarmersForSelect } from "@/server/actions/production";
+import { getProductionRecordById } from "@/server/actions/production";
+import { getFarmerOptions } from "@/lib/select-options";
 import { ProductionFormClient } from "../../components/production-form-client";
 
 export default async function EditProductionPage({
@@ -13,7 +14,7 @@ export default async function EditProductionPage({
   const { id } = await params;
   const [record, farmers] = await Promise.all([
     getProductionRecordById(id),
-    getFarmersForSelect(),
+    getFarmerOptions("master-data-production"),
   ]);
 
   if (!record || !record.isActive) {

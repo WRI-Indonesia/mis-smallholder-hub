@@ -1,6 +1,6 @@
 import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/lib/rbac";
 import { getProductionRecords } from "@/server/actions/production";
-import { getFarmerGroupsForSelect } from "@/server/actions/farmer";
+import { getFarmerGroupOptions } from "@/lib/select-options";
 import { ProductionListClient } from "./components/production-list-client";
 
 interface SearchParams {
@@ -30,7 +30,7 @@ export default async function ProductionPage({
       // user lain dibatasi ke aktif oleh action apa pun nilai status ini.
       status: resolvedParams.status ?? "all",
     }),
-    getFarmerGroupsForSelect(),
+    getFarmerGroupOptions("master-data-production"),
     getUserPermissionsForMenu("master-data-production"),
     isSuperAdmin(),
   ]);

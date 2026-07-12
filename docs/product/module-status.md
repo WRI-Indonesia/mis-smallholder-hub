@@ -125,7 +125,7 @@
 |----------|--------|-------|----------|--------|
 | **P0** | **Remediasi audit — guard/scope RBAC** (`role-permission.ts`, `menu.ts`, `upload.ts`, `getFarmerById`, `bulkCreateFarmers`, menuKey Roles) | Engineering | ASAP | Menutup celah pemanggilan server action langsung (UI-bypass) |
 | ✅ P1 | **Lint hijau kembali (#126)** — ✅ Done 2026-07-12 | Engineering | — | `npm run lint` **exit 0**; gate ditegakkan lokal via Pre-Commit Gate (`workflow.md`) |
-| P2 | Cleanup dead code & deps (audit §8 P2) | Engineering | 2026-07-24 | Dependency & file mati terhapus, bundle lebih ramping |
+| ✅ P2 | **Cleanup dead code & deps (#129)** — ✅ Done 2026-07-12 | Engineering | — | 9 deps 0-usage + 7 file mati terhapus, helper "for select" dikonsolidasi. Win = install/supply-chain (−59 paket transitif), **bukan** bundle client (deps mati tak pernah di-import) |
 
 ---
 
@@ -133,5 +133,5 @@
 
 | Decision | Owner | Deadline | Context |
 |----------|-------|----------|---------|
-| Pola restore soft-delete | Product + Engineering | 2026-07-17 | List KT menampilkan record nonaktif (bisa restore), list Petani menyembunyikannya (tidak bisa restore) — pilih satu pola & seragamkan |
-| Nasib `recharts` & `Dockerfile` | Engineering | 2026-07-24 | recharts 0 pemakaian (rencana chart produksi); Dockerfile tampak tak dipakai pipeline CI (deploy via SSH build) |
+| ✅ Pola restore soft-delete (#127) | — (RESOLVED 2026-07-12) | ✅ | Terpilih: tampilkan nonaktif + badge + filter Status (default Aktif) + toggle Aktifkan, **khusus SUPERADMIN**; diseragamkan ke semua list master data (lihat TD-007) |
+| ✅ Nasib `recharts` & `Dockerfile` (#129) | — (RESOLVED 2026-07-12) | ✅ | `recharts` **dihapus** (dipasang lagi saat chart produksi); `Dockerfile` **dipertahankan** (deploy via SSH `npm run build`, bukan Docker — hardening via `.dockerignore`) |

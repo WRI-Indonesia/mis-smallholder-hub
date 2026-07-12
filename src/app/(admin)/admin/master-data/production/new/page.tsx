@@ -1,11 +1,11 @@
 import { requirePermission } from "@/lib/rbac";
-import { getFarmersForSelect } from "@/server/actions/production";
+import { getFarmerOptions } from "@/lib/select-options";
 import { ProductionFormClient } from "../components/production-form-client";
 
 export default async function NewProductionPage() {
   await requirePermission("master-data-production");
 
-  const farmers = await getFarmersForSelect();
+  const farmers = await getFarmerOptions("master-data-production");
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">

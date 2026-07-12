@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { landParcelSchema, type LandParcelInput } from "@/validations/land-parcel.schema";
 import { getAccessContext } from "@/lib/access-context";
+import type { ActionResult } from "@/types/action-result";
 import type { Feature } from "geojson";
 
 export async function parseShapefile(base64Data: string) {
@@ -132,7 +133,9 @@ function isGeometryEqual(g1: unknown, g2: unknown) {
   }
 }
 
-export async function bulkCreateLandParcels(dataList: Record<string, unknown>[]) {
+export async function bulkCreateLandParcels(
+  dataList: Record<string, unknown>[]
+): Promise<ActionResult<{ count: number }>> {
   if (!(await hasPermission("bulk-upload-parcels", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
   }
@@ -215,7 +218,7 @@ export async function bulkCreateLandParcels(dataList: Record<string, unknown>[])
       }
     });
 
-    return { success: true, count: validatedRecords.length };
+    return { success: true, data: { count: validatedRecords.length } };
   } catch (error) {
     console.error("Bulk save land parcels error:", error);
     const message = error instanceof Error ? error.message : String(error);

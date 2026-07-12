@@ -1,6 +1,7 @@
 import { requirePermission } from "@/lib/rbac";
 import { getUserPermissionsForMenu } from "@/lib/rbac";
-import { getLandParcelById, getFarmersForSelect } from "@/server/actions/land-parcel";
+import { getLandParcelById } from "@/server/actions/land-parcel";
+import { getFarmerOptions } from "@/lib/select-options";
 import { notFound } from "next/navigation";
 import { ParcelDetailClient } from "./parcel-detail-client";
 import type { LandParcel } from "@/types/land-parcel.types";
@@ -11,7 +12,7 @@ export default async function ParcelDetailPage({ params }: { params: Promise<{ i
 
   const [parcel, farmers, permissions] = await Promise.all([
     getLandParcelById(id),
-    getFarmersForSelect(),
+    getFarmerOptions("master-data-parcels"),
     getUserPermissionsForMenu("master-data-parcels"),
   ]);
 

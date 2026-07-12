@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { farmerSchema, type FarmerInput } from "@/validations/farmer.schema";
+import type { ActionResult } from "@/types/action-result";
 
 export async function getFarmerGroupsForMapping() {
   if (!(await hasPermission("bulk-upload-farmers", "VIEW"))) {
@@ -34,7 +35,9 @@ export async function getExistingFarmerIds() {
   return farmers.map((f) => f.farmerId);
 }
 
-export async function bulkCreateFarmers(dataList: Record<string, unknown>[]) {
+export async function bulkCreateFarmers(
+  dataList: Record<string, unknown>[]
+): Promise<ActionResult<{ count: number }>> {
   if (!(await hasPermission("bulk-upload-farmers", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
   }
@@ -87,7 +90,7 @@ export async function bulkCreateFarmers(dataList: Record<string, unknown>[]) {
       }
     });
 
-    return { success: true, count: validatedRecords.length };
+    return { success: true, data: { count: validatedRecords.length } };
   } catch (error) {
     console.error("Bulk save error:", error);
     const message = error instanceof Error ? error.message : String(error);

@@ -44,5 +44,5 @@ src/
 | Database | PostgreSQL + PostGIS |
 | ORM | Prisma 7 (modular schema) |
 | Maps | MapLibre GL JS |
-| Charts | Recharts |
+| Charts | — (belum ada; `recharts` dihapus di #129, dipasang lagi saat chart produksi dikerjakan) |
 | Validation | Zod (server: `safeParse` di actions; form client ditangani manual via FormData/useState — React Hook Form tidak dipakai) |

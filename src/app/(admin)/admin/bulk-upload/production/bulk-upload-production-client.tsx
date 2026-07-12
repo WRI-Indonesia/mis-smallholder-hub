@@ -495,7 +495,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     setIsSaving(false);
 
     if (result.success) {
-      toast.success(`Berhasil menyimpan ${result.count} data produksi`);
+      toast.success(`Berhasil menyimpan ${result.data?.count} data produksi`);
       router.push("/admin/master-data/production");
       router.refresh();
     } else {

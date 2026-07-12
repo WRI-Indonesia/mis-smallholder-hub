@@ -219,23 +219,6 @@ export async function getTrainingPackagesForSelect() {
   });
 }
 
-export async function getFarmerGroupsForSelect() {
-  if (!(await hasPermission("master-data-training", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  const access = await getAccessContext();
-
-  return prisma.farmerGroup.findMany({
-    where: {
-      ...farmerGroupAccessFilter(access),
-      isActive: true,
-    },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
-}
-
 export async function getFarmersByGroup(farmerGroupId: string) {
   if (!(await hasPermission("master-data-training", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");

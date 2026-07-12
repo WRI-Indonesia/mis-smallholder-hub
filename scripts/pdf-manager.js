@@ -1,3 +1,4 @@
+require("dotenv/config");
 const { S3Client, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
@@ -65,19 +66,22 @@ async function generateLink(fileKey, expiresInHours = 1) {
 
 async function listTrainingPDFs(activityId = null) {
     try {
-        const prefix = activityId 
-            ? `training/evidence/` 
-            : "training/evidence/";
-
         const command = new ListObjectsV2Command({
             Bucket: bucketName,
-            Prefix: prefix,
+            Prefix: "training/evidence/",
         });
 
         const response = await client.send(command);
-        const files = response.Contents || [];
+        // activityId sits at depth 4 (training/evidence/<year>/<month>/<activityId>/…),
+        // so it can't be used as an S3 prefix — filter the listing client-side instead.
+        const files = (response.Contents || []).filter(
+            (file) => !activityId || parseS3Key(file.Key).activityId === activityId
+        );
 
-        console.log(`\n📋 Training PDF Files (${files.length} found):`);
+        const heading = activityId
+            ? `Training PDF Files for activity ${activityId}`
+            : "Training PDF Files";
+        console.log(`\n📋 ${heading} (${files.length} found):`);
         console.log("=" .repeat(80));
 
         let totalSize = 0;
@@ -150,15 +154,6 @@ async function deleteFile(fileKey, confirm = false) {
     }
 }
 
-async function cleanupOrphaned() {
-    console.log("\n🧹 Starting cleanup of orphaned training PDFs...");
-    
-    // This would require database connection to check which files have DB records
-    // For now, just list files for manual review
-    console.log("⚠️  Manual review required - this command needs database integration");
-    console.log("Use 'list' command to see all files and manually verify which are orphaned.\n");
-}
-
 // ─── Main CLI Handler ────────────────────────────────────────────────────────
 
 async function main() {
@@ -174,7 +169,6 @@ async function main() {
         console.log("  list [activity-id]           List all training PDF files");
         console.log("  download <file-path> [name]  Generate download link");
         console.log("  delete <file-path> --confirm Delete file from S3");
-        console.log("  cleanup                      Clean up orphaned files");
         console.log("  help                         Show this help message");
         console.log("\nExamples:");
         console.log('  node pdf-manager.js link "training/evidence/2026/05/activity-123/report.pdf" 24');
@@ -234,20 +228,15 @@ async function main() {
         case "delete": {
             const fileKey = args[1];
             const confirm = args.includes("--confirm");
-            
+
             if (!fileKey) {
                 console.log("\n❌ Error: No file path provided.");
                 console.log("Usage: node pdf-manager.js delete <file-path> [--confirm]");
                 console.log('Example: node pdf-manager.js delete "training/evidence/2026/05/activity-123/file.pdf" --confirm\n');
                 process.exit(1);
             }
-            
-            await deleteFile(fileKey, confirm);
-            break;
-        }
 
-        case "cleanup": {
-            await cleanupOrphaned();
+            await deleteFile(fileKey, confirm);
             break;
         }
 
