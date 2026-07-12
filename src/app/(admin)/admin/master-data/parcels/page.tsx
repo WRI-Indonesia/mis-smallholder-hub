@@ -1,5 +1,6 @@
 import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/lib/rbac";
-import { getLandParcels, getFarmersForSelect, getFarmerGroupsForSelect } from "@/server/actions/land-parcel";
+import { getLandParcels } from "@/server/actions/land-parcel";
+import { getFarmerOptions, getFarmerGroupOptions } from "@/lib/select-options";
 import { ParcelListClient } from "./components/parcel-list-client";
 
 export default async function ParcelsPage() {
@@ -7,8 +8,8 @@ export default async function ParcelsPage() {
 
   const [parcels, farmers, farmerGroups, permissions, superAdmin] = await Promise.all([
     getLandParcels(),
-    getFarmersForSelect(),
-    getFarmerGroupsForSelect(),
+    getFarmerOptions("master-data-parcels"),
+    getFarmerGroupOptions("master-data-parcels"),
     getUserPermissionsForMenu("master-data-parcels"),
     isSuperAdmin(),
   ]);

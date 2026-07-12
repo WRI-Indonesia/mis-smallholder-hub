@@ -152,20 +152,3 @@ export async function toggleFarmerActive(id: string) {
 
   return { success: true };
 }
-
-export async function getFarmerGroupsForSelect() {
-  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  const access = await getAccessContext();
-
-  return prisma.farmerGroup.findMany({
-    where: {
-      ...farmerGroupAccessFilter(access),
-      isActive: true,
-    },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
-}

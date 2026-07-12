@@ -32,11 +32,3 @@ export async function getPresignedUrl(
   });
   return getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
 }
-
-/**
- * Check whether a stored URI is an S3 object key (not a full URL).
- * Keys start with "training/" — full URLs start with "http".
- */
-export function isS3Key(uri: string): boolean {
-  return !uri.startsWith("http");
-}

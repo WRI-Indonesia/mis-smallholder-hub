@@ -1,5 +1,6 @@
 import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/lib/rbac";
-import { getTrainingActivities, getTrainingPackagesForSelect, getFarmerGroupsForSelect } from "@/server/actions/training";
+import { getTrainingActivities, getTrainingPackagesForSelect } from "@/server/actions/training";
+import { getFarmerGroupOptions } from "@/lib/select-options";
 import { getDistrictsForSelect } from "@/server/actions/farmer-group";
 import { TrainingListClient } from "./training-list-client";
 
@@ -8,7 +9,7 @@ export default async function TrainingPage() {
   const [activities, packages, farmerGroups, districts, permissions, superAdmin] = await Promise.all([
     getTrainingActivities(),
     getTrainingPackagesForSelect(),
-    getFarmerGroupsForSelect(),
+    getFarmerGroupOptions("master-data-training"),
     getDistrictsForSelect(),
     getUserPermissionsForMenu("master-data-training"),
     isSuperAdmin(),

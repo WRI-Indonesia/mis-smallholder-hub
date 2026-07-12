@@ -32,7 +32,7 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
 
     const result = await toggleRolePermission(role, menuKey, permission);
     if (result.success) {
-      toast.success(result.granted ? "Permission ditambahkan" : "Permission dicabut");
+      toast.success(result.data?.granted ? "Permission ditambahkan" : "Permission dicabut");
       router.refresh();
     }
   }

@@ -439,7 +439,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     setIsSaving(false);
 
     if (result.success) {
-      toast.success(`Berhasil menyimpan ${result.count} data lahan`);
+      toast.success(`Berhasil menyimpan ${result.data?.count} data lahan`);
       router.push("/admin/master-data/parcels");
       router.refresh();
     } else {

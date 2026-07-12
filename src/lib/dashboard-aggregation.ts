@@ -9,7 +9,8 @@ import type {
 } from "@/types/dashboard";
 
 // The 4 packages shown on the dashboard — OTHER is intentionally excluded.
-export const DASHBOARD_PACKAGE_CODES: DashboardPackageCode[] = [
+// Internal-only (not re-exported): consumed solely within this module.
+const DASHBOARD_PACKAGE_CODES: DashboardPackageCode[] = [
   "PAKET_1_BMP_PC_RSPO_NKT",
   "PAKET_2_MK",
   "PAKET_2_K3",

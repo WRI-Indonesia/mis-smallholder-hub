@@ -476,7 +476,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
     setIsSaving(false);
 
     if (result.success) {
-      toast.success(`Berhasil menyimpan ${result.count} data petani`);
+      toast.success(`Berhasil menyimpan ${result.data?.count} data petani`);
       router.push("/admin/master-data/farmers");
       router.refresh();
     } else {

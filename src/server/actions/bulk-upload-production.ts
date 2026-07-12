@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
 import { productionSchema, type ProductionInput } from "@/validations/production.schema";
+import type { ActionResult } from "@/types/action-result";
 
 export async function getFarmersForProductionMapping() {
   if (!(await hasPermission("bulk-upload-production", "VIEW"))) {
@@ -58,7 +59,9 @@ export async function getExistingProductionRecords() {
   });
 }
 
-export async function bulkCreateProductionRecords(dataList: Record<string, unknown>[]) {
+export async function bulkCreateProductionRecords(
+  dataList: Record<string, unknown>[]
+): Promise<ActionResult<{ count: number }>> {
   if (!(await hasPermission("bulk-upload-production", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
   }
@@ -188,7 +191,7 @@ export async function bulkCreateProductionRecords(dataList: Record<string, unkno
     // Single bulk insert — fast, atomic, and well within the transaction timeout.
     await prisma.productionRecord.createMany({ data: toInsert });
 
-    return { success: true, count: toInsert.length };
+    return { success: true, data: { count: toInsert.length } };
   } catch (error) {
     console.error("Bulk save production error:", error);
     const message = error instanceof Error ? error.message : String(error);
