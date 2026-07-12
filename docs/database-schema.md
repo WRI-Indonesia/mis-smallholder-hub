@@ -5,6 +5,30 @@
 
 ---
 
+## Daftar Isi
+
+- [High-Level ERD](#high-level-erd)
+- [Quick Summary](#quick-summary)
+- [ERD Overview](#erd-overview)
+- [Schema Implementation Status](#schema-implementation-status)
+- [Common Fields (semua tabel)](#common-fields-semua-tabel)
+- [Enums](#enums)
+- [Table Naming Convention](#table-naming-convention)
+- [RBAC Flow](#rbac-flow)
+- [Data Access Examples](#data-access-examples)
+- [Data Access Pattern](#data-access-pattern)
+- [Index Strategy](#index-strategy)
+- [Constraint & Data Integrity](#constraint--data-integrity)
+- [Migration Strategy](#migration-strategy)
+- [Security Considerations](#security-considerations)
+- [Performance & Data Volume](#performance--data-volume)
+- [Farmer Model Details](#farmer-model-details)
+- [Training Module Architecture](#training-module-architecture)
+- [File Structure](#file-structure)
+- [Dashboard Snapshot Pattern](#dashboard-snapshot-pattern)
+
+---
+
 ## High-Level ERD
 
 ```mermaid

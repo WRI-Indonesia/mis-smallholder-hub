@@ -2,6 +2,7 @@
 
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3, S3_BUCKET } from "@/lib/s3";
+import { hasPermission } from "@/lib/rbac";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -17,6 +18,15 @@ export async function uploadTrainingEvidence(
   formData: FormData
 ): Promise<ActionResult<{ key: string; filename: string }>> {
   try {
+    // Evidence pelatihan hanya boleh diunggah oleh user yang dapat mengelola pelatihan
+    // (menambah kegiatan baru = CREATE, atau melengkapi kegiatan yang ada = EDIT).
+    if (
+      !(await hasPermission("master-data-training", "CREATE")) &&
+      !(await hasPermission("master-data-training", "EDIT"))
+    ) {
+      return { success: false, error: "Tidak memiliki izin untuk mengunggah bukti pelatihan." };
+    }
+
     const file = formData.get("file") as File | null;
     const activityId = formData.get("activityId") as string | null;
 

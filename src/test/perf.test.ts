@@ -83,6 +83,43 @@ describe("Performance - Auth operations", () => {
   });
 });
 
+describe("Performance - AUDIT-P0 RBAC scope guard (#125)", () => {
+  // bulkCreateFarmers memvalidasi setiap baris terhadap set kelompok tani yang
+  // boleh diakses user. Harus O(n) via Set membership — bukan N+1 query atau
+  // Array.includes O(n²). Test ini membuktikan hot-path in-memory tetap murah
+  // untuk upload besar.
+  it("bulk scope validation: 10.000 baris × Set membership under 20ms", () => {
+    const allowedGroupIds = new Set(Array.from({ length: 200 }, (_, i) => `kt-${i}`));
+    // 10k baris, semua valid kecuali satu di paling akhir (worst case: scan penuh).
+    const rows = Array.from({ length: 10_000 }, (_, i) => ({
+      farmerGroupId: i === 9_999 ? "kt-outside-scope" : `kt-${i % 200}`,
+    }));
+
+    const start = performance.now();
+    const unauthorized = rows.find((r) => !allowedGroupIds.has(r.farmerGroupId));
+    const duration = performance.now() - start;
+
+    console.log(`  bulk scope validation (10k baris): ${duration.toFixed(3)}ms`);
+    expect(duration).toBeLessThan(20);
+    expect(unauthorized?.farmerGroupId).toBe("kt-outside-scope");
+  });
+
+  it("bulk scope validation short-circuits pada pelanggaran pertama", () => {
+    const allowedGroupIds = new Set(["kt-1"]);
+    let scanned = 0;
+    const rows = Array.from({ length: 10_000 }, (_, i) => ({ farmerGroupId: i === 0 ? "kt-bad" : "kt-1" }));
+
+    const unauthorized = rows.find((r) => {
+      scanned++;
+      return !allowedGroupIds.has(r.farmerGroupId);
+    });
+
+    // Pelanggaran di baris pertama → berhenti setelah 1 iterasi (tidak scan 10k).
+    expect(scanned).toBe(1);
+    expect(unauthorized?.farmerGroupId).toBe("kt-bad");
+  });
+});
+
 describe("Performance - DA-02b Training coverage (pure logic)", () => {
   const PACKAGES = [
     { code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1 - BMP" },

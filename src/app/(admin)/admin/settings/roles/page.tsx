@@ -4,7 +4,7 @@ import { getAllMenuItems } from "@/server/actions/menu";
 import { RoleMatrixClient } from "./role-matrix-client";
 
 export default async function RolesPage() {
-  await requirePermission("settings-users"); // Only SUPERADMIN
+  await requirePermission("settings-roles");
   const [permissions, menuItems] = await Promise.all([
     getRolePermissions(),
     getAllMenuItems(),
