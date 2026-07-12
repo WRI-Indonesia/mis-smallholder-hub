@@ -16,7 +16,7 @@ export function TableSkeleton({ columnCount, rowCount = 5, hasActions = true }: 
         <TableHeader>
           <TableRow className="bg-muted/70 hover:bg-muted/70 border-b-2 border-border">
             {hasActions && (
-              <TableHead className="w-[100px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <TableHead className="w-[1%] whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Aksi
               </TableHead>
             )}

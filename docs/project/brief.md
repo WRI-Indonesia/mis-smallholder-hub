@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-07-12 · **Next management review:** 2026-07-14
 
-**Perubahan terakhir (2026-07-12):** (1) AUDIT-P0 Remediasi keamanan RBAC (#125) ✅ — guard `hasPermission` (`role-permission`/`menu`/`upload`) + scope `getAccessContext` (`getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`) + menuKey Roles → `settings-roles` + 17 test RBAC/perf baru. (2) **AUDIT-P1 Lint hijau (#126) ✅** — `npm run lint` **exit 0** (229 masalah/193 error → 0 error, 3 warning), gate ditegakkan lokal via Pre-Commit Gate. QA: `npm test` **25 file / 328 ✅** · build ✅ · **lint ✅ exit 0**. Fokus berikutnya: scope by-id KT/pelatihan & pola restore (#127) + konvensi UI (#128). Riwayat lengkap → [`changelog.md`](./changelog.md).
+**Perubahan terakhir (2026-07-12):** (1) AUDIT-P0 Remediasi keamanan RBAC (#125) ✅ — guard `hasPermission` (`role-permission`/`menu`/`upload`) + scope `getAccessContext` (`getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`) + menuKey Roles → `settings-roles` + 17 test RBAC/perf baru. (2) **AUDIT-P1 Lint hijau (#126) ✅** — `npm run lint` **exit 0** (229 masalah/193 error → 0 error, 3 warning), gate ditegakkan lokal via Pre-Commit Gate. (3) **AUDIT-P1 scope by-id + pola restore (#127) ✅** & **konvensi UI (#128) ✅** — gating izin Menu Management + `<TableActions>`/`<DeleteDialog>`, Combobox KT searchable, 4 `loading.tsx`. QA: `npm test` **26 file / 349 ✅** · build ✅ · **lint ✅ exit 0**. AUDIT-P0/P1 tuntas; fokus berikutnya: cleanup deps/dead code (#129) + kualitas berkelanjutan (#130). Riwayat lengkap → [`changelog.md`](./changelog.md).
 
 **Source of truth:** tabel **Phase Status** di [`roadmap.md`](./roadmap.md). **Panduan update & checklist:** [`contributing.md`](./contributing.md).
 
@@ -29,7 +29,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Status keseluruhan | 🟡 On Track dengan catatan (temuan audit P0 wajib diremediasi) |
 | Basis review       | **Audit menyeluruh 2026-07-10** (`audit-report/audit-2026-07-10.md`) |
 | Test lokal         | ✅ `npm test` — **25 files / 328 tests passed** · build ✅ · **lint ✅ exit 0** (#126 selesai 2026-07-12) |
-| Fokus berikutnya   | **Scope by-id/restore (#127) + konvensi UI (#128)** — AUDIT-P0 keamanan (#125) ✅ & lint (#126) ✅ selesai |
+| Fokus berikutnya   | **Cleanup deps/dead code (#129) + kualitas berkelanjutan (#130)** — AUDIT-P0/P1 (#125/#126/#127/#128) ✅ selesai |
 
 ### Executive Summary
 
@@ -54,7 +54,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | 🔲 Not Started | 3 fase         | BULK-02 (#70), CMS-01, COMM-01 |
 | 🔲 Planned     | 7 fase         | MD-07/08/09/10/11, DASH-04, COMM-02 |
 | 🔴 Blocked     | 0 fase         | — (DASH-04 tidak lagi terblokir; DASH-01/02 selesai) |
-| 🎯 Now         | 1 fokus        | **Scope by-id/restore (#127) + konvensi UI (#128)** — AUDIT-P0 keamanan (#125) ✅ & lint (#126) ✅ selesai |
+| 🎯 Now         | 1 fokus        | **Cleanup deps/dead code (#129) + kualitas berkelanjutan (#130)** — AUDIT-P0/P1 (#125/#126/#127/#128) ✅ selesai |
 
 ### Management Talking Points
 
@@ -89,5 +89,6 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | **P0**   | **Remediasi audit 2026-07-10 (keamanan)**   | Guard `hasPermission` di `role-permission.ts`/`menu.ts`/`upload.ts` + scope `getFarmerById`/`bulkCreateFarmers` + menuKey Roles + unit test RBAC — lihat `audit-report/audit-2026-07-10.md` §8 |
 | **✅ Done**| **#126 AUDIT-P1: Lint hijau kembali**       | `npm run lint` **exit 0** — ignore `scripts/**` + `no-unused-vars`/`prefer-const` bersih + `no-explicit-any` diganti tipe nyata + react-hooks set-state/static-components diperbaiki; build & test hijau ✅ |
 | **✅ Done**| **#132 RPT-03: Report Produksi**            | Sub-menu `report-production` + `report.ts` (`getProductionReport`) + matriks bulanan per petani/lahan + filter rentang bulan + Excel + PDF landscape export + unit tests ✅ |
+| **✅ Done**| **#128 AUDIT-P1: Konvensi UI**              | Gating izin Menu Management + `<TableActions>`/Aksi kolom kiri/`<DeleteDialog>`; Combobox KT searchable (`farmer-form-modal`); 4 `loading.tsx` (`<TableSkeleton>`); kosmetik skeleton/snapshot Card ✅ |
 
 </details>

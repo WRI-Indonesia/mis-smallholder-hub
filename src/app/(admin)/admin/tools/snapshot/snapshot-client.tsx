@@ -236,16 +236,18 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
         </Card>
       )}
 
-      <DataTable
-        columns={columns}
-        data={snapshots}
-        rowKey={(row) => row.id}
-        searchKeys={["districtName", "createdByName"]}
-        searchPlaceholder="Cari distrik atau pembuat..."
-        emptyMessage="Belum ada snapshot."
-        exportFilename="dashboard-snapshots"
-        getExportRow={getExportRow}
-      />
+      <Card className="p-4">
+        <DataTable
+          columns={columns}
+          data={snapshots}
+          rowKey={(row) => row.id}
+          searchKeys={["districtName", "createdByName"]}
+          searchPlaceholder="Cari distrik atau pembuat..."
+          emptyMessage="Belum ada snapshot."
+          exportFilename="dashboard-snapshots"
+          getExportRow={getExportRow}
+        />
+      </Card>
 
       <DeleteDialog
         open={deleteTarget !== null}
