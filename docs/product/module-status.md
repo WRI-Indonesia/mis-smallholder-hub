@@ -53,7 +53,7 @@
  
 | Phase | Module | Next Steps | Blocker |
 |-------|--------|------------|---------|
-| — | **Remediasi Audit P0** | Guard `hasPermission` (role-permission/menu/upload) + scope (`getFarmerById`, `bulkCreateFarmers`) + lint merah — lihat `audit-report/audit-2026-07-10.md` §8 | — |
+| — | **Remediasi Audit (#125 ✅ / #126 ✅)** | AUDIT-P0 guard/scope RBAC (#125) & lint gate (#126) selesai 2026-07-12; sisa AUDIT-P1: scope by-id KT/pelatihan & pola restore (#127), konvensi UI (#128) — `audit-report/audit-2026-07-10.md` §8 | — |
 
 ## Planned - Next
 
@@ -109,11 +109,11 @@
 
 ## Code Compliance (rule.md)
 
-**Status per audit 2026-07-10**: 🟠 **7 PASS · 4 PARTIAL · 3 FAIL** (dari 14 kategori) — detail lengkap + bukti `file:line` di `audit-report/audit-2026-07-10.md`
+**Status per audit 2026-07-10** (update lint 2026-07-12): 🟠 **8 PASS · 4 PARTIAL · 2 FAIL** (dari 14 kategori) — detail lengkap + bukti `file:line` di `audit-report/audit-2026-07-10.md`
 
-- ✅ PASS: kebab-case naming, Server Component default, Zod di `src/validations/`, actions di `src/server/actions/`, pola `AccessContext`, soft delete `isActive` di schema, Shadcn+Tailwind
+- ✅ PASS: kebab-case naming, Server Component default, Zod di `src/validations/`, actions di `src/server/actions/`, pola `AccessContext`, soft delete `isActive` di schema, Shadcn+Tailwind, **QA gate lint (`npm run lint` exit 0 — #126 ✅ 2026-07-12)**
 - 🟠 PARTIAL: variable English (istilah domain ID di lib/types), filter `isActive` (farmer-group reads), loading.tsx (4 halaman tabel belum ada), Table Actions (menu-list-client belum gating/posisi kiri)
-- ❌ FAIL: backend `hasPermission` (role-permission/menu/upload + helper select tanpa guard), no-barrel-imports (13 file pakai barrel `@/components/shared` — kini diresmikan sebagai pengecualian di rule.md), QA gate lint (`npm run lint` 190 error)
+- ❌ FAIL: backend `hasPermission` (role-permission/menu/upload + helper select tanpa guard), no-barrel-imports (13 file pakai barrel `@/components/shared` — kini diresmikan sebagai pengecualian di rule.md)
 
 </details>
 
@@ -124,7 +124,7 @@
 | Priority | Action | Owner | Deadline | Impact |
 |----------|--------|-------|----------|--------|
 | **P0** | **Remediasi audit — guard/scope RBAC** (`role-permission.ts`, `menu.ts`, `upload.ts`, `getFarmerById`, `bulkCreateFarmers`, menuKey Roles) | Engineering | ASAP | Menutup celah pemanggilan server action langsung (UI-bypass) |
-| P1 | **Lint hijau kembali** (ignore `scripts/**`, unused vars, cicil `no-explicit-any`) | Engineering | 2026-07-17 | Quality gate `npm run lint` kembali ditegakkan |
+| ✅ P1 | **Lint hijau kembali (#126)** — ✅ Done 2026-07-12 | Engineering | — | `npm run lint` **exit 0**; gate ditegakkan lokal via Pre-Commit Gate (`workflow.md`) |
 | P2 | Cleanup dead code & deps (audit §8 P2) | Engineering | 2026-07-24 | Dependency & file mati terhapus, bundle lebih ramping |
 
 ---

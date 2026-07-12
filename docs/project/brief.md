@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-07-12 · **Next management review:** 2026-07-14
 
-**Perubahan terakhir (2026-07-12):** AUDIT-P0 Remediasi keamanan RBAC (#125) ✅ — guard `hasPermission` (`role-permission`/`menu`/`upload`) + scope `getAccessContext` (`getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`) + menuKey Roles → `settings-roles` + 17 test RBAC/perf baru. QA: `npm test` **25 file / 328 ✅** · build ✅ · lint ❌ 193 error (belum disentuh, lihat BUG-006). Fokus berikutnya: lint hijau (#126) + scope by-id KT/pelatihan & pola restore (#127). Riwayat lengkap → [`changelog.md`](./changelog.md).
+**Perubahan terakhir (2026-07-12):** (1) AUDIT-P0 Remediasi keamanan RBAC (#125) ✅ — guard `hasPermission` (`role-permission`/`menu`/`upload`) + scope `getAccessContext` (`getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`) + menuKey Roles → `settings-roles` + 17 test RBAC/perf baru. (2) **AUDIT-P1 Lint hijau (#126) ✅** — `npm run lint` **exit 0** (229 masalah/193 error → 0 error, 3 warning), gate ditegakkan lokal via Pre-Commit Gate. QA: `npm test` **25 file / 328 ✅** · build ✅ · **lint ✅ exit 0**. Fokus berikutnya: scope by-id KT/pelatihan & pola restore (#127) + konvensi UI (#128). Riwayat lengkap → [`changelog.md`](./changelog.md).
 
 **Source of truth:** tabel **Phase Status** di [`roadmap.md`](./roadmap.md). **Panduan update & checklist:** [`contributing.md`](./contributing.md).
 
@@ -28,8 +28,8 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Periode laporan    | 2026-07-07 s.d. 2026-07-10                                  |
 | Status keseluruhan | 🟡 On Track dengan catatan (temuan audit P0 wajib diremediasi) |
 | Basis review       | **Audit menyeluruh 2026-07-10** (`audit-report/audit-2026-07-10.md`) |
-| Test lokal         | ✅ `npm test` — **25 files / 328 tests passed** · build ✅ · **lint ❌ 193 error** |
-| Fokus berikutnya   | **Lint hijau (#126) + scope by-id/restore (#127)** — AUDIT-P0 keamanan (#125) ✅ selesai |
+| Test lokal         | ✅ `npm test` — **25 files / 328 tests passed** · build ✅ · **lint ✅ exit 0** (#126 selesai 2026-07-12) |
+| Fokus berikutnya   | **Scope by-id/restore (#127) + konvensi UI (#128)** — AUDIT-P0 keamanan (#125) ✅ & lint (#126) ✅ selesai |
 
 ### Executive Summary
 
@@ -42,7 +42,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region & KT bulk upload belum ada (#69, #70). |
 | Map & Data Analyst  | ✅ Complete     | MAP-01 (#113 + hotspot/ruler/label) ✅; DA-01 (#103) & DA-02 (#118, #122) ✅. |
 | **Keamanan (audit)** | ✅ **Remediated (#125, 2026-07-12)** | 5 celah guard/scope RBAC + menuKey Roles **ditutup**: guard `hasPermission` di `role-permission`/`menu`/`upload`, scope `getAccessContext` di `getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`, `requirePermission("settings-roles")`. Sisa scope by-id KT/pelatihan → #127. |
-| Testing & QA        | 🟠 Strong tapi lint merah | Vitest: **25 files / 328 tests passed** ✅ · build ✅ · **`npm run lint` ❌ 229 masalah (193 error)** — mayoritas `no-explicit-any` + `scripts/` ikut ter-lint. |
+| Testing & QA        | ✅ Strong | Vitest: **25 files / 328 tests passed** ✅ · build ✅ · **`npm run lint` ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 selesai 2026-07-12. |
 
 ### Progress Snapshot
 
@@ -54,20 +54,20 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | 🔲 Not Started | 3 fase         | BULK-02 (#70), CMS-01, COMM-01 |
 | 🔲 Planned     | 7 fase         | MD-07/08/09/10/11, DASH-04, COMM-02 |
 | 🔴 Blocked     | 0 fase         | — (DASH-04 tidak lagi terblokir; DASH-01/02 selesai) |
-| 🎯 Now         | 1 fokus        | **Lint hijau (#126) + scope by-id/restore (#127)** — AUDIT-P0 keamanan (#125) ✅ selesai |
+| 🎯 Now         | 1 fokus        | **Scope by-id/restore (#127) + konvensi UI (#128)** — AUDIT-P0 keamanan (#125) ✅ & lint (#126) ✅ selesai |
 
 ### Management Talking Points
 
 | Topik               | Pesan Utama                                                              | Dampak                                                                                    |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Code Quality 🟠 (audit 2026-07-10)** | Audit menyeluruh: fondasi sehat (35/35 page ter-guard, DataTable/API route/seed compliant, 311 test ✅) TAPI **7 PASS / 4 PARTIAL / 3 FAIL** dari 14 kategori rule.md — 5 celah guard/scope server action + lint merah. | Remediasi P0 dijadwalkan sebelum fitur baru; detail & saran cleanup di `audit-report/audit-2026-07-10.md`. |
+| **Code Quality 🟢 (audit 2026-07-10 → update 2026-07-12)** | Audit menyeluruh: fondasi sehat (35/35 page ter-guard, DataTable/API route/seed compliant, 328 test ✅). Kompliansi **8 PASS / 4 PARTIAL / 2 FAIL** — celah guard/scope RBAC (#125) ✅ & lint gate (#126) ✅ ditutup 2026-07-12. | Remediasi P0/P1 selesai; sisa 2 FAIL (barrel resmi + helper guard) → cleanup #127-#129. Detail di `audit-report/audit-2026-07-10.md`. |
 | **Production ✅ Complete** | MD-06 Production sudah implementatif (#89): ProductionRecord model + actions + UI + 13 tests + bulk upload | Yield tracking per farmer/parcel ready; foundation untuk impact reporting. |
 | **Land Parcel ✅ Complete** | MD-04 Land Parcel sudah implementatif (#88): model + actions + UI + 14 tests + Shapefile bulk upload | Geospatial features ready; foundation untuk Production module. |
 | Farmer ✅ Complete  | MD-03 Farmer sudah implementatif (model + action + UI + 10 tests).       | Ready untuk dependency downstream (dashboard, parcel, training, production).                          |
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
 | Dashboard ✅ Complete | DASH-01/02/03 selesai (#99): Main Dashboard snapshot-backed + peta + Tools Snapshot. | Fondasi dashboard siap; DASH-04 (BMP) tinggal reuse pola snapshot. |
 | ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests **328/328** passed (25 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms + rbac-server-guards (#125) ✅. | Foundation & core features stabil; AUDIT-P0 keamanan (#125) selesai, lanjut lint (#126). |
+| Delivery confidence | Tests **328/328** passed (25 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms + rbac-server-guards (#125) ✅. | Foundation & core features stabil; AUDIT-P0 keamanan (#125) ✅ & lint gate (#126) ✅ selesai 2026-07-12. |
 
 ### Decisions Needed
 
@@ -87,7 +87,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | **✅ Done**| **#107 RPT-01: Report Petani**              | Menu Level 1 `report` + sub-menu `report-farmer` + server actions (`report.ts`) + UI + unit tests ✅        |
 | **✅ Done**| **#108 RPT-02: Report Pelatihan**           | Sub-menu `report-training` + `report.ts` (`getTrainingReport`) + UI (2 tab) + Excel/PDF export + unit tests ✅        |
 | **P0**   | **Remediasi audit 2026-07-10 (keamanan)**   | Guard `hasPermission` di `role-permission.ts`/`menu.ts`/`upload.ts` + scope `getFarmerById`/`bulkCreateFarmers` + menuKey Roles + unit test RBAC — lihat `audit-report/audit-2026-07-10.md` §8 |
-| **P1**   | **Lint hijau kembali**                      | eslint ignore `scripts/**` + bereskan `no-unused-vars` (32) + cicil `no-explicit-any` di `src/` |
+| **✅ Done**| **#126 AUDIT-P1: Lint hijau kembali**       | `npm run lint` **exit 0** — ignore `scripts/**` + `no-unused-vars`/`prefer-const` bersih + `no-explicit-any` diganti tipe nyata + react-hooks set-state/static-components diperbaiki; build & test hijau ✅ |
 | **✅ Done**| **#132 RPT-03: Report Produksi**            | Sub-menu `report-production` + `report.ts` (`getProductionReport`) + matriks bulanan per petani/lahan + filter rentang bulan + Excel + PDF landscape export + unit tests ✅ |
 
 </details>

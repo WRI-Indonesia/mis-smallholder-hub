@@ -10,7 +10,7 @@
 | **Completed Modules** | ✅ **24 phases done** | Platform (1-7), MD (1-6), DASH-01/02/03, RPT-01/02, BULK (1, 3, 4), DA-01/02, MAP-01 |
 | **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 file schema / **19 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
-| **Priority Next** | 🎯 **Remediasi audit P0** | P0: guard/scope RBAC server actions + lint merah (audit 2026-07-10, #126/#127) — RPT-03 Report Produksi (#132) ✅ selesai |
+| **Priority Next** | 🎯 **AUDIT-P1 #127/#128** | AUDIT-P0 guard/scope RBAC (#125) ✅ & lint gate (#126) ✅ selesai 2026-07-12; sisa: scope by-id KT/pelatihan & pola restore (#127), konvensi UI (#128) — RPT-03 (#132) ✅ |
 
 ---
 
