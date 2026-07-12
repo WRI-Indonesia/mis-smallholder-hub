@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import type { Role } from "@prisma/client";
 
 /**
  * Get effective permissions for all menu items, considering default role permissions,
@@ -15,7 +16,7 @@ export const getEffectiveMenuPermissions = cache(async (role: string, userId?: s
   });
 
   const rolePermissions = await prisma.rolePermission.findMany({
-    where: { role: role as any, isActive: true },
+    where: { role: role as Role, isActive: true },
     select: { menuKey: true, permission: true }
   });
 
@@ -147,5 +148,15 @@ export async function hasPermission(menuKey: string, permission: string): Promis
   const permissions = await getUserPermissionsForMenu(menuKey);
   return permissions.includes(permission);
 }
+
+/**
+ * True bila user aktif berperan SUPERADMIN. Dipakai untuk gating fitur yang
+ * hanya untuk SUPERADMIN (mis. tampil/filter record nonaktif di list master data —
+ * user lain hanya boleh mengakses record aktif). Cached per-request.
+ */
+export const isSuperAdmin = cache(async (): Promise<boolean> => {
+  const session = await auth();
+  return session?.user?.role === "SUPERADMIN";
+});
 
 

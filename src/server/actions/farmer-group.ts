@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer-group.schema";
 import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
-import { hasPermission } from "@/lib/rbac";
+import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 
-import { getAccessContext } from "@/lib/access-context";
+import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 
 export async function getFarmerGroups(search?: string) {
   if (!(await hasPermission("master-data-groups", "VIEW"))) {
@@ -15,13 +15,11 @@ export async function getFarmerGroups(search?: string) {
 
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
-    {};
-
+  // Soft-delete: hanya SUPERADMIN yang boleh melihat record nonaktif (badge +
+  // filter Status di UI, untuk restore). User lain dibatasi ke record aktif.
   const where = {
-    ...accessFilter,
+    ...farmerGroupAccessFilter(access),
+    ...((await isSuperAdmin()) ? {} : { isActive: true }),
     ...(search
       ? {
           OR: [
@@ -77,8 +75,13 @@ export async function getFarmerGroupById(id: string) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
-  return prisma.farmerGroup.findUnique({
-    where: { id },
+  const access = await getAccessContext();
+
+  // Scope enforced (cegah akses KT lintas wilayah via id). `AND` agar filter scope
+  // `{ id: { in } }` (mode BY_FARMER_GROUP) tidak menimpa literal `id`. Hanya
+  // SUPERADMIN yang boleh membuka detail KT nonaktif; user lain dibatasi ke aktif.
+  return prisma.farmerGroup.findFirst({
+    where: { id, AND: farmerGroupAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
     include: { district: { select: { id: true, name: true } } },
   });
 }
@@ -114,6 +117,15 @@ export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
   const session = await auth();
   const { id, ...data } = parsed.data;
 
+  const access = await getAccessContext();
+
+  // Verify group exists, is active, and is within the user's scope before updating
+  const existing = await prisma.farmerGroup.findFirst({
+    where: { id, isActive: true, AND: farmerGroupAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!existing) return { success: false, error: "Kelompok Tani tidak ditemukan atau tidak dalam akses Anda" };
+
   await prisma.farmerGroup.update({
     where: { id },
     data: { ...data, modifiedBy: session?.user?.id ?? null },
@@ -127,18 +139,35 @@ export async function toggleFarmerGroupActive(id: string) {
     return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan kelompok tani" };
   }
 
-  const group = await prisma.farmerGroup.findUnique({ where: { id }, select: { isActive: true } });
+  const access = await getAccessContext();
+
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id, AND: farmerGroupAccessFilter(access) },
+    select: { isActive: true },
+  });
   if (!group) return { success: false, error: "Kelompok Tani tidak ditemukan" };
+
+  const session = await auth();
 
   await prisma.farmerGroup.update({
     where: { id },
-    data: { isActive: !group.isActive },
+    data: { isActive: !group.isActive, modifiedBy: session?.user?.id ?? null },
   });
 
   return { success: true };
 }
 
 export async function getDistrictsForSelect() {
+  // Dipakai sebagai filter di halaman KT, Petani, & Pelatihan — izinkan bila
+  // user punya VIEW pada salah satu menu tersebut.
+  const allowed =
+    (await hasPermission("master-data-groups", "VIEW")) ||
+    (await hasPermission("master-data-farmers", "VIEW")) ||
+    (await hasPermission("master-data-training", "VIEW"));
+  if (!allowed) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   return prisma.district.findMany({
     where: { isActive: true },
     select: { id: true, name: true },

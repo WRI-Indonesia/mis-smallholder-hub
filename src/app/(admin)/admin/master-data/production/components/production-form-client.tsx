@@ -23,9 +23,20 @@ interface FarmerSelect {
   farmerId: string;
 }
 
+interface ProductionRecordInput {
+  id: string;
+  farmerId: string;
+  parcelId: string | null;
+  period: string;
+  harvestDate: Date | string;
+  harvestNumber: number;
+  yieldKg: number;
+  notes: string | null;
+}
+
 interface Props {
   farmers: FarmerSelect[];
-  initialRecord?: any;
+  initialRecord?: ProductionRecordInput;
 }
 
 export function ProductionFormClient({ farmers, initialRecord }: Props) {
@@ -34,7 +45,7 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
   const [selectedFarmerId, setSelectedFarmerId] = useState(initialRecord?.farmerId ?? "");
   const [farmerComboOpen, setFarmerComboOpen] = useState(false);
   
-  const [parcels, setParcels] = useState<any[]>([]);
+  const [parcels, setParcels] = useState<Awaited<ReturnType<typeof getFarmerParcels>>>([]);
   const [selectedParcelId, setSelectedParcelId] = useState<string>(initialRecord?.parcelId ?? "");
   const [isLoadingParcels, setIsLoadingParcels] = useState(false);
 
@@ -108,7 +119,7 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
     };
 
     const result = isEdit
-      ? await updateProductionRecord(initialRecord.id, data)
+      ? await updateProductionRecord(initialRecord!.id, data)
       : await createProductionRecord(data);
 
     setIsLoading(false);
@@ -123,7 +134,7 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
     }
 
     toast.success(isEdit ? "Data produksi berhasil diubah" : "Data produksi berhasil ditambahkan");
-    router.push(isEdit ? `/admin/master-data/production/${initialRecord.id}` : "/admin/master-data/production");
+    router.push(isEdit ? `/admin/master-data/production/${initialRecord!.id}` : "/admin/master-data/production");
     router.refresh();
   }
 
@@ -312,7 +323,7 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(isEdit ? `/admin/master-data/production/${initialRecord.id}` : "/admin/master-data/production")}
+            onClick={() => router.push(isEdit ? `/admin/master-data/production/${initialRecord!.id}` : "/admin/master-data/production")}
           >
             Batal
           </Button>

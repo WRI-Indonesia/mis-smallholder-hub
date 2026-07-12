@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import {
-  Upload,
   AlertCircle,
   CheckCircle2,
   Download,
@@ -45,15 +44,42 @@ interface FarmerMapping {
 interface ExistingParcel {
   farmerId: string;
   parcelId: string;
-  geometry: any;
+  geometry: unknown;
   revision: number;
 }
 
-function isGeometryEqual(g1: any, g2: any) {
+type ParcelGeometry = { type?: string; coordinates?: unknown } | null;
+
+interface ParcelFeature {
+  index: number;
+  properties: Record<string, Excel.CellValue>;
+  geometry: ParcelGeometry;
+}
+
+interface ParcelValidatedRow {
+  _rowNum: number;
+  geometry: ParcelGeometry;
+  _original: Record<string, string | number | null | undefined>;
+  _isValid: boolean;
+  _errors: string[];
+  _farmerName: string;
+  _farmerIdRaw: string;
+  farmerId: string;
+  parcelId: string;
+  revision?: number;
+  _isNewRevision?: boolean;
+  area: number | null;
+  landStatus: string | null;
+  cropType: string | null;
+  plantingYear?: number | null;
+  notes: string | null;
+}
+
+function isGeometryEqual(g1: unknown, g2: unknown) {
   if (!g1 || !g2) return false;
   try {
-    const obj1 = typeof g1 === "string" ? JSON.parse(g1) : g1;
-    const obj2 = typeof g2 === "string" ? JSON.parse(g2) : g2;
+    const obj1 = (typeof g1 === "string" ? JSON.parse(g1) : g1) as { coordinates?: unknown };
+    const obj2 = (typeof g2 === "string" ? JSON.parse(g2) : g2) as { coordinates?: unknown };
     const c1 = obj1.coordinates;
     const c2 = obj2.coordinates;
     return JSON.stringify(c1) === JSON.stringify(c2);
@@ -94,9 +120,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
-  const [features, setFeatures] = useState<any[]>([]);
+  const [features, setFeatures] = useState<ParcelFeature[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [validatedData, setValidatedData] = useState<any[]>([]);
+  const [validatedData, setValidatedData] = useState<ParcelValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -140,9 +166,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
         } else {
           toast.error(res.error || "Gagal mengurai file shapefile");
         }
-      } catch (err: any) {
+      } catch (err) {
         setIsProcessing(false);
-        toast.error(err.message || "Gagal membaca berkas ZIP");
+        toast.error((err instanceof Error && err.message) || "Gagal membaca berkas ZIP");
       }
     };
     reader.onerror = () => {
@@ -165,16 +191,29 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     setMapping(matched);
   }
 
-  function validateRow(feat: any, idx: number, duplicatesInFile: Set<string>): { data: any; errors: string[] } {
+  function validateRow(feat: ParcelFeature, idx: number, duplicatesInFile: Set<string>): { data: ParcelValidatedRow; errors: string[] } {
     const errors: string[] = [];
     const props = feat.properties;
-    const normalized: any = { _rowNum: idx + 1, geometry: feat.geometry };
+    const normalized: ParcelValidatedRow = {
+      _rowNum: idx + 1,
+      geometry: feat.geometry,
+      _original: {},
+      _isValid: false,
+      _errors: [],
+      farmerId: "",
+      _farmerName: "",
+      _farmerIdRaw: "",
+      parcelId: "",
+      area: null,
+      landStatus: null,
+      cropType: null,
+      notes: null,
+    };
 
     // Original values kept for download
-    normalized._original = {};
     for (const f of TARGET_FIELDS) {
       const mappedCol = mapping[f.key];
-      normalized._original[f.key] = mappedCol ? props[mappedCol] : "";
+      normalized._original[f.key] = (mappedCol ? props[mappedCol] : "") as string | number | null | undefined;
     }
 
     // 1. Farmer ID Mapping
@@ -228,7 +267,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     // 3. Area
     const rawArea = props[mapping["area"]];
     if (rawArea !== undefined && rawArea !== null && rawArea !== "") {
-      const parsedArea = parseFloat(rawArea);
+      const parsedArea = parseFloat(rawArea as string);
       if (isNaN(parsedArea) || parsedArea <= 0) {
         errors.push(`Luas lahan tidak valid: "${rawArea}" (Luas harus berupa angka lebih dari 0)`);
       } else {

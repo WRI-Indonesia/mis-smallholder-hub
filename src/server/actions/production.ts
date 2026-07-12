@@ -4,10 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { productionSchema, productionUpdateSchema } from "@/validations/production.schema";
 import type { ProductionInput, ProductionUpdateInput } from "@/validations/production.schema";
-import { hasPermission } from "@/lib/rbac";
-import { getAccessContext } from "@/lib/access-context";
+import { hasPermission, isSuperAdmin } from "@/lib/rbac";
+import {
+  getAccessContext,
+  farmerAccessFilter,
+  farmerRelationAccessFilter,
+} from "@/lib/access-context";
 
-export async function checkDuplicateProduction(
+// Private helper (bukan server action / endpoint) — hanya dipakai internal oleh
+// create/update yang sudah menjaga permission & scope.
+async function checkDuplicateProduction(
   farmerId: string,
   period: string,
   harvestNumber: number,
@@ -39,23 +45,20 @@ export async function getProductionRecords(params?: {
   const access = await getAccessContext();
 
   // Build nested farmer filter — merge access + farmerGroupId to avoid shallow spread overwrite
-  const farmerAccessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
-
   const farmerGroupFilter = params?.farmerGroupId ? { farmerGroupId: params.farmerGroupId } : {};
 
   const farmerFilter = {
-    ...farmerAccessFilter,
+    ...farmerAccessFilter(access),
     ...farmerGroupFilter,
   };
 
-  const isActiveFilter = 
-    params?.status === "active" ? { isActive: true } :
-    params?.status === "inactive" ? { isActive: false } :
-    params?.status === "all" ? {} :
-    { isActive: true }; // default to active only
+  // Hanya SUPERADMIN yang boleh mengakses record nonaktif; user lain dipaksa aktif.
+  const isActiveFilter = !(await isSuperAdmin())
+    ? { isActive: true }
+    : params?.status === "active" ? { isActive: true } :
+      params?.status === "inactive" ? { isActive: false } :
+      params?.status === "all" ? {} :
+      { isActive: true }; // default to active only
 
   const hasParcelFilter = 
     params?.hasParcel === "true" ? { parcelId: { not: null } } :
@@ -101,16 +104,13 @@ export async function getProductionRecordById(id: string) {
 
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
-    access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
-    {};
-
+  // Scope enforced. Hanya SUPERADMIN yang boleh membuka detail record nonaktif;
+  // user lain dibatasi ke record aktif.
   return prisma.productionRecord.findFirst({
     where: {
       id,
-      isActive: true,
-      ...accessFilter,
+      ...farmerRelationAccessFilter(access),
+      ...((await isSuperAdmin()) ? {} : { isActive: true }),
     },
     include: {
       farmer: {
@@ -207,13 +207,9 @@ export async function updateProductionRecord(id: string, input: ProductionUpdate
   const session = await auth();
 
   const access = await getAccessContext();
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
-    access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
-    {};
 
   const existing = await prisma.productionRecord.findFirst({
-    where: { id, isActive: true, ...accessFilter },
+    where: { id, isActive: true, ...farmerRelationAccessFilter(access) },
   });
   if (!existing) {
     return { success: false, error: "Data produksi tidak ditemukan atau tidak dalam akses Anda" };
@@ -286,13 +282,9 @@ export async function deleteProductionRecord(id: string) {
   }
 
   const access = await getAccessContext();
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmer: { farmerGroupId: { in: access.ids } } } :
-    access.mode === "BY_DISTRICT" ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } } :
-    {};
 
   const existing = await prisma.productionRecord.findFirst({
-    where: { id, ...accessFilter },
+    where: { id, isActive: true, ...farmerRelationAccessFilter(access) },
   });
   if (!existing) {
     return { success: false, error: "Data produksi tidak ditemukan atau tidak dalam akses Anda" };
@@ -311,6 +303,32 @@ export async function deleteProductionRecord(id: string) {
   return { success: true };
 }
 
+/** Toggle aktif/nonaktif data produksi (restore-capable) untuk aksi baris pada list. */
+export async function toggleProductionRecordActive(id: string) {
+  if (!(await hasPermission("master-data-production", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan data produksi" };
+  }
+
+  const access = await getAccessContext();
+
+  const existing = await prisma.productionRecord.findFirst({
+    where: { id, ...farmerRelationAccessFilter(access) },
+    select: { isActive: true },
+  });
+  if (!existing) {
+    return { success: false, error: "Data produksi tidak ditemukan atau tidak dalam akses Anda" };
+  }
+
+  const session = await auth();
+
+  await prisma.productionRecord.update({
+    where: { id },
+    data: { isActive: !existing.isActive, modifiedBy: session?.user?.id ?? null },
+  });
+
+  return { success: true };
+}
+
 export async function getFarmerParcels(farmerId: string) {
   if (!(await hasPermission("master-data-production", "VIEW"))) {
     return [];
@@ -318,13 +336,8 @@ export async function getFarmerParcels(farmerId: string) {
 
   // Validate user has access to this farmer
   const access = await getAccessContext();
-  const farmerAccessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
-
   const farmer = await prisma.farmer.findFirst({
-    where: { id: farmerId, isActive: true, ...farmerAccessFilter },
+    where: { id: farmerId, isActive: true, ...farmerAccessFilter(access) },
   });
   if (!farmer) return [];
 
@@ -339,15 +352,15 @@ export async function getFarmerParcels(farmerId: string) {
 }
 
 export async function getFarmersForSelect() {
+  if (!(await hasPermission("master-data-production", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   const access = await getAccessContext();
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
 
   return prisma.farmer.findMany({
     where: {
-      ...accessFilter,
+      ...farmerAccessFilter(access),
       isActive: true,
     },
     select: { id: true, name: true, farmerId: true },
@@ -356,6 +369,10 @@ export async function getFarmersForSelect() {
 }
 
 export async function getAuditUserNames(createdBy: string | null, modifiedBy: string | null) {
+  if (!(await hasPermission("master-data-production", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   let createdByName = "System/Seed";
   let modifiedByName = "System/Seed";
 

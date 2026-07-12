@@ -11,7 +11,7 @@ import type {
   ProfileCheck,
 } from "@/types/data-completeness";
 
-// Indonesian NIK: exactly 16 digits (mengikuti normalisasi bulk-upload, docs/rule.md).
+// Indonesian NIK: exactly 16 digits (mengikuti normalisasi bulk-upload, docs/standards/code-standards.md).
 export const NIK_REGEX = /^\d{16}$/;
 
 // Weighted contribution of each domain to the overall health score.

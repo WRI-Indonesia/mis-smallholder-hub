@@ -24,7 +24,7 @@ export function exportToPDF({
   subtitle?: string;
   metadata?: { label: string; value: string }[];
   columns: PDFExportField[];
-  data: Record<string, any>[];
+  data: Record<string, unknown>[];
   orientation?: "portrait" | "landscape";
   headFontSize?: number;
   bodyFontSize?: number;

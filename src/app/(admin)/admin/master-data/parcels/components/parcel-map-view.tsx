@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Map, { Source, Layer } from "react-map-gl/maplibre";
+import type { MapLayerMouseEvent, LayerProps } from "react-map-gl/maplibre";
+import type { Geometry, Position } from "geojson";
+import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target } from "lucide-react";
 
 interface Props {
-  geometry: any;
+  geometry: Geometry;
 }
 
-const MAP_STYLES = {
+const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecification> = {
   hybrid: {
     version: 8,
     sources: {
@@ -132,7 +135,7 @@ export function ParcelMapView({ geometry }: Props) {
       let sumLng = 0;
       let sumLat = 0;
       let count = 0;
-      coords.forEach((c: any) => {
+      coords.forEach((c: Position) => {
         // Filter out null coordinates from failed reprojections/parses
         if (Array.isArray(c) && c.length >= 2 && c[0] !== null && c[1] !== null) {
           sumLng += c[0];
@@ -183,7 +186,7 @@ export function ParcelMapView({ geometry }: Props) {
     );
   }
 
-  const layerStyle: any = {
+  const layerStyle: LayerProps = {
     id: "parcel-polygon",
     type: "fill",
     paint: {
@@ -192,7 +195,7 @@ export function ParcelMapView({ geometry }: Props) {
     },
   };
 
-  const borderStyle: any = {
+  const borderStyle: LayerProps = {
     id: "parcel-border",
     type: "line",
     paint: {
@@ -207,11 +210,11 @@ export function ParcelMapView({ geometry }: Props) {
     properties: {},
   };
 
-  const onMouseEnter = (event: any) => {
+  const onMouseEnter = (event: MapLayerMouseEvent) => {
     event.target.getCanvas().style.cursor = "pointer";
   };
 
-  const onMouseLeave = (event: any) => {
+  const onMouseLeave = (event: MapLayerMouseEvent) => {
     event.target.getCanvas().style.cursor = "";
   };
 
@@ -220,7 +223,7 @@ export function ParcelMapView({ geometry }: Props) {
       <Map
         {...viewport}
         onMove={(evt) => setViewport(evt.viewState)}
-        mapStyle={MAP_STYLES[styleKey] as any}
+        mapStyle={MAP_STYLES[styleKey]}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         interactiveLayerIds={["parcel-polygon"]}

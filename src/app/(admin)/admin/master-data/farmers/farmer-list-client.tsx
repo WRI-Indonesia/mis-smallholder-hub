@@ -5,13 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, Check, ChevronsUpDown, Building, Users, User, UserCheck } from "lucide-react";
 import { FarmerFormModal } from "./farmer-form-modal";
 import { toggleFarmerActive } from "@/server/actions/farmer";
@@ -19,6 +12,7 @@ import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 interface Farmer {
@@ -34,13 +28,15 @@ interface Farmer {
   gender: "M" | "F";
   name: string;
   farmerId: string;
+  // Column-key placeholder for the "Distrik" column (rendered from
+  // farmerGroup.district.name); not populated on the row itself.
+  district?: string;
   nik: string | null;
   address: string | null;
   birthPlace: string | null;
   birthDate: Date | string | null;
   joinedYear: number | null;
   isActive: boolean;
-  district?: any;
 }
 
 interface FarmerGroup {
@@ -59,13 +55,15 @@ interface Props {
   farmerGroups: FarmerGroup[];
   districts: District[];
   permissions: string[];
+  isSuperAdmin: boolean;
 }
 
-export function FarmerListClient({ initialFarmers, farmerGroups, districts, permissions }: Props) {
+export function FarmerListClient({ initialFarmers, farmerGroups, districts, permissions, isSuperAdmin }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [districtComboOpen, setDistrictComboOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState("all");
   const [comboOpen, setComboOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
   const [editFarmer, setEditFarmer] = useState<Farmer | null>(null);
   const router = useRouter();
@@ -73,7 +71,10 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
   const filtered = initialFarmers.filter((f) => {
     const matchGroup = groupFilter === "all" || f.farmerGroupId === groupFilter;
     const matchDistrict = districtFilter === "all" || f.farmerGroup.district.id === districtFilter;
-    return matchGroup && matchDistrict;
+    // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
+    const matchStatus =
+      !isSuperAdmin ? true : statusFilter === "all" ? true : statusFilter === "active" ? f.isActive : !f.isActive;
+    return matchGroup && matchDistrict && matchStatus;
   });
 
   async function handleToggleActive(id: string) {
@@ -322,6 +323,20 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
           </Command>
         </PopoverContent>
       </Popover>
+
+      {/* Status filter — hanya SUPERADMIN */}
+      {isSuperAdmin && (
+        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
+          <SelectTrigger className="w-[140px] h-9">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Status</SelectItem>
+            <SelectItem value="active">Aktif</SelectItem>
+            <SelectItem value="inactive">Nonaktif</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 
@@ -391,7 +406,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
 
       <Card className="p-4">
         <DataTable
-          columns={columns}
+          columns={isSuperAdmin ? columns : columns.filter((c) => c.key !== "isActive")}
           data={filtered}
           rowKey={(f) => f.id}
           searchPlaceholder="Cari nama, ID petani, atau NIK..."

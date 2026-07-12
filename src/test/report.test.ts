@@ -7,14 +7,24 @@ import {
   type ProductionMatrixRecord,
 } from "@/lib/report-production";
 
+interface FarmerReportInput {
+  id: string;
+  farmerId: string;
+  name: string;
+  gender: string;
+  nik: string | null;
+  joinedYear: number | null;
+  landParcels?: Array<{ area?: number | null }>;
+}
+
 // Pure business logic helper functions to calculate report stats
-export function calculateFarmerReportSummary(farmers: any[]) {
+export function calculateFarmerReportSummary(farmers: FarmerReportInput[]) {
   let totalPersil = 0;
   let totalLuasLahan = 0;
 
   const rows = farmers.map((f) => {
     const farmerParcelsCount = f.landParcels?.length ?? 0;
-    const farmerAreaSum = f.landParcels?.reduce((sum: number, p: any) => sum + (p.area ?? 0), 0) ?? 0;
+    const farmerAreaSum = f.landParcels?.reduce((sum: number, p) => sum + (p.area ?? 0), 0) ?? 0;
 
     totalPersil += farmerParcelsCount;
     totalLuasLahan += farmerAreaSum;
@@ -126,14 +136,23 @@ describe("Farmer Report Statistics Calculations", () => {
   });
 });
 
-export function calculateTrainingReportSummary(farmers: any[], activities: any[]) {
+interface TrainingReportFarmer {
+  id: string;
+}
+
+interface TrainingReportActivity {
+  package: { code: string };
+  participants?: Array<{ farmerId: string }>;
+}
+
+export function calculateTrainingReportSummary(farmers: TrainingReportFarmer[], activities: TrainingReportActivity[]) {
   // Exclude OTHER package activities
   const filteredActivities = activities.filter((act) => act.package?.code !== "OTHER");
 
   // Calculate package participation maps
   const farmerPackageMap = new Map<string, Set<string>>(); // farmerId -> set of package codes they completed
   filteredActivities.forEach((act) => {
-    act.participants?.forEach((p: any) => {
+    act.participants?.forEach((p) => {
       if (!farmerPackageMap.has(p.farmerId)) {
         farmerPackageMap.set(p.farmerId, new Set());
       }
@@ -144,7 +163,7 @@ export function calculateTrainingReportSummary(farmers: any[], activities: any[]
   // Unique participant counts across ALL training activities (excluding OTHER)
   const uniqueParticipantsSet = new Set<string>();
   filteredActivities.forEach((act) => {
-    act.participants?.forEach((p: any) => {
+    act.participants?.forEach((p) => {
       uniqueParticipantsSet.add(p.farmerId);
     });
   });
@@ -352,7 +371,7 @@ describe("Production Report (RPT-03) helpers", () => {
     it("ignores records outside the enumerated periods", () => {
       const extra: ProductionMatrixRecord[] = [
         ...records,
-        { farmerDbId: "f9", farmerCode: "ITM.0009", farmerName: "Zaki", parcelDbId: "p9", parcelCode: "L-Z", period: "2024-12", yieldKg: 999 },
+        { farmerDbId: "f9", farmerCode: "ITM.0009", farmerName: "Zaki", parcelDbId: "p9", parcelCode: "L-Z", parcelArea: null, period: "2024-12", yieldKg: 999 },
       ];
       const result = buildProductionMatrix(extra, periods);
       expect(result.rows.some((r) => r.name === "Zaki")).toBe(false);

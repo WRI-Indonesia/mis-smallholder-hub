@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
@@ -26,7 +27,7 @@ export async function getDistrictsForReport() {
   }
   const access = await getAccessContext();
 
-  const where: any = { isActive: true };
+  const where: Prisma.DistrictWhereInput = { isActive: true };
 
   if (access.mode === "BY_DISTRICT") {
     where.id = { in: access.ids };
@@ -168,7 +169,7 @@ export async function getDistrictsForTrainingReport() {
   }
   const access = await getAccessContext();
 
-  const where: any = { isActive: true };
+  const where: Prisma.DistrictWhereInput = { isActive: true };
 
   if (access.mode === "BY_DISTRICT") {
     where.id = { in: access.ids };
@@ -406,7 +407,7 @@ export async function getDistrictsForProductionReport() {
   }
   const access = await getAccessContext();
 
-  const where: any = { isActive: true };
+  const where: Prisma.DistrictWhereInput = { isActive: true };
 
   if (access.mode === "BY_DISTRICT") {
     where.id = { in: access.ids };

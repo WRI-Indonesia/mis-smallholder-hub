@@ -171,14 +171,12 @@ prisma/
 ├── migrations/               # Database migrations
 └── seeds/                    # Seed data
 
-docs/                         # Documentation
-├── documentation_plan.md     # Docmost documentation plan
-├── database-schema.md        # ERD, indexes, constraints
-├── progress.md               # Phase status & roadmap
-├── rule.md                   # Development rules & standards
-├── ui-ux-flow.md             # Navigation flows per role
-├── general-rule.md           # Behavioral coding principles
-└── audit-2026-06-23.md       # Latest comprehensive audit
+docs/                         # Documentation (atomic, foldered — see docs/README.md)
+├── README.md                 # Docs index
+├── standards/                # Dev rules, code standards, RBAC, UI/UX, architecture
+├── database/                 # ERD, models, indexes, constraints, migrations, security, perf
+├── product/                  # UI/UX flows per role, access context, CRUD/bulk flows
+└── project/                  # Roadmap, sprint, tech-debt, changelog, contributing
 ```
 
 ---
@@ -234,20 +232,20 @@ Coverage includes:
 - Proper foreign key constraints
 - Secondary indexes for performance
 
-See [docs/database-schema.md](./docs/database-schema.md) for full ERD and details.
+See [docs/database/erd.md](./docs/database/erd.md) for full ERD and details.
 
 ---
 
 ## 📖 Documentation
 
-| Document | Purpose |
-|----------|---------|
-| [documentation_plan.md](./docs/documentation_plan.md) | Docmost 2-space structure (Developer + User Manual) |
-| [database-schema.md](./docs/database-schema.md) | ERD, indexes, migrations, constraints |
-| [progress.md](./docs/progress.md) | Phase status, roadmap, management brief |
-| [rule.md](./docs/rule.md) | Development rules & coding standards |
-| [ui-ux-flow.md](./docs/ui-ux-flow.md) | Navigation flows per role |
-| [audit-2026-06-23.md](./docs/audit-2026-06-23.md) | Latest comprehensive audit report |
+Full index: **[docs/README.md](./docs/README.md)**.
+
+| Area | Purpose |
+|------|---------|
+| [docs/standards/](./docs/standards/) | Development rules, code standards, RBAC, UI/UX, architecture |
+| [docs/database/](./docs/database/) | ERD, models, indexes, migrations, constraints, security, performance |
+| [docs/product/](./docs/product/) | Navigation flows per role, access context, CRUD/bulk flows |
+| [docs/project/](./docs/project/) | Roadmap & phase status, sprint, tech-debt, changelog, contributing |
 
 ---
 
@@ -300,13 +298,13 @@ npm run pdf:cleanup    # Cleanup old PDF files
 - CMS-01: Content Management System
 - COMM-01/02: Community & i18n
 
-See [docs/progress.md](./docs/progress.md) for detailed status.
+See [docs/project/roadmap.md](./docs/project/roadmap.md) for detailed status.
 
 ---
 
 ## 👥 Contributing
 
-Please read [docs/rule.md](./docs/rule.md) for development standards and workflow.
+Please read [docs/standards/](./docs/standards/) for development standards and workflow, and [docs/project/contributing.md](./docs/project/contributing.md) for the contribution guide.
 
 ### Branching Strategy
 - Single active branch (determined by project owner)

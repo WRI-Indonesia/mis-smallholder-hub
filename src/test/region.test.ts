@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   provinceSchema, updateProvinceSchema,
-  districtSchema, updateDistrictSchema,
+  districtSchema,
   subdistrictSchema, updateSubdistrictSchema,
   villageSchema, updateVillageSchema,
 } from "@/validations/region.schema";

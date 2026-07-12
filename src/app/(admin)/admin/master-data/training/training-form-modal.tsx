@@ -70,13 +70,6 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
   const router = useRouter();
   const isEdit = !!activity;
 
-  const formatDateForInput = (dateVal: Date | string | null | undefined) => {
-    if (!dateVal) return "";
-    const d = new Date(dateVal);
-    if (isNaN(d.getTime())) return "";
-    return d.toISOString().split("T")[0];
-  };
-
   const formatDisplayDate = (d: Date | null) => {
     if (!d) return "Pilih Tanggal";
     const date = new Date(d);
@@ -115,7 +108,7 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
       }
     }
 
-    const data: any = {
+    const data = {
       packageId: form.get("packageId") as string,
       farmerGroupId,
       location: (form.get("location") as string) || null,

@@ -29,7 +29,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  Upload,
   AlertCircle,
   CheckCircle2,
   Download,
@@ -51,6 +50,25 @@ interface Props {
   farmerGroups: FarmerGroup[];
   permissions: string[];
   existingFarmerIds: string[];
+}
+
+type RawRow = Record<string, Excel.CellValue>;
+
+interface FarmerValidatedRow {
+  _rowNum: number;
+  _original: Record<string, string | number | null | undefined>;
+  _isValid: boolean;
+  _errors: string[];
+  _farmerGroupName?: string;
+  name: string;
+  farmerId: string;
+  gender?: string;
+  nik: string | null;
+  farmerGroupId?: string;
+  address: string | null;
+  birthPlace: string | null;
+  birthDate: Date | null;
+  joinedYear?: number | null;
 }
 
 const TARGET_FIELDS = [
@@ -81,15 +99,15 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
   const [comboOpen, setComboOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
-  const [rawRows, setRawRows] = useState<any[]>([]);
+  const [rawRows, setRawRows] = useState<RawRow[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [validatedData, setValidatedData] = useState<any[]>([]);
+  const [validatedData, setValidatedData] = useState<FarmerValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Parse Excel Date
-  function parseExcelDate(val: any): Date | null {
+  function parseExcelDate(val: Excel.CellValue): Date | null {
     if (!val) return null;
     if (val instanceof Date && !isNaN(val.getTime())) return val;
     if (typeof val === "number") {
@@ -125,15 +143,25 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
   }
 
   // Smart validation and normalization
-  function validateRow(row: any, index: number, duplicatesInFile: Set<string>): { data: any; errors: string[] } {
+  function validateRow(row: RawRow, index: number, duplicatesInFile: Set<string>): { data: FarmerValidatedRow; errors: string[] } {
     const errors: string[] = [];
-    const normalized: any = { _rowNum: index + 2 }; // Excel rows are 1-based, plus header is 2
+    const normalized: FarmerValidatedRow = {
+      _rowNum: index + 2, // Excel rows are 1-based, plus header is 2
+      _original: {},
+      _isValid: false,
+      _errors: [],
+      name: "",
+      farmerId: "",
+      nik: null,
+      address: null,
+      birthPlace: null,
+      birthDate: null,
+    };
 
     // Original values kept for download
-    normalized._original = {};
     for (const f of TARGET_FIELDS) {
       const mappedCol = mapping[f.key];
-      normalized._original[f.key] = mappedCol ? row[mappedCol] : "";
+      normalized._original[f.key] = (mappedCol ? row[mappedCol] : "") as string | number | null | undefined;
     }
 
     // 1. Name
@@ -249,13 +277,13 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
     const fileType = selectedFile.name.split(".").pop()?.toLowerCase();
 
     if (fileType === "csv") {
-      Papa.parse(selectedFile, {
+      Papa.parse<RawRow>(selectedFile, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
           if (results.meta.fields) {
             setHeaders(results.meta.fields);
-            setRawRows(results.data);
+            setRawRows(results.data as RawRow[]);
             autoMatch(results.meta.fields);
           } else {
             toast.error("Gagal membaca header file CSV");
@@ -277,15 +305,15 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
           return;
         }
 
-        const rows: any[] = [];
+        const rows: RawRow[] = [];
         let sheetHeaders: string[] = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
           const values = Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values);
           if (rowNumber === 1) {
-            sheetHeaders = values.map((v: any) => v?.toString().trim() || "");
+            sheetHeaders = values.map((v) => v?.toString().trim() || "");
           } else {
-            const rowData: Record<string, any> = {};
+            const rowData: RawRow = {};
             sheetHeaders.forEach((header, index) => {
               rowData[header] = values[index];
             });

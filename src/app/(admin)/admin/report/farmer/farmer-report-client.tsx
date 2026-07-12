@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, FileText, Download, Building, Users, Layers, Trees, Printer } from "lucide-react";
+import { Check, ChevronsUpDown, FileText, Building, Users, Layers, Trees, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +50,7 @@ export function FarmerReportClient({ districts }: Props) {
       try {
         const groups = await getFarmerGroupsForReport(selectedDistrict);
         setFarmerGroups(groups);
-      } catch (err) {
+      } catch {
         toast.error("Gagal memuat Kelompok Tani");
       }
     }
@@ -84,8 +84,8 @@ export function FarmerReportClient({ districts }: Props) {
         });
         setReportData(data);
         toast.success("Laporan berhasil dimuat");
-      } catch (err: any) {
-        toast.error(err.message || "Gagal memuat laporan");
+      } catch (err) {
+        toast.error((err instanceof Error && err.message) || "Gagal memuat laporan");
       }
     });
   };

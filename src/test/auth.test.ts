@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import bcrypt from "bcryptjs";
 
 // Unit tests for auth logic (no DB dependency)

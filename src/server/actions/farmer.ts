@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
 import type { FarmerInput, UpdateFarmerInput } from "@/validations/farmer.schema";
-import { hasPermission } from "@/lib/rbac";
+import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 
-import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
+import { getAccessContext, farmerAccessFilter, farmerGroupAccessFilter } from "@/lib/access-context";
 
 export async function getFarmers(search?: string, farmerGroupId?: string) {
   if (!(await hasPermission("master-data-farmers", "VIEW"))) {
@@ -15,14 +15,11 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
 
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
-
+  // Soft-delete: hanya SUPERADMIN yang boleh melihat record nonaktif (badge +
+  // filter Status di UI, untuk restore). User lain dibatasi ke record aktif.
   const where = {
-    ...accessFilter,
-    isActive: true, // Only show active farmers (soft-delete rule)
+    ...farmerAccessFilter(access),
+    ...((await isSuperAdmin()) ? {} : { isActive: true }),
     ...(farmerGroupId ? { farmerGroupId } : {}),
     ...(search
       ? {
@@ -55,13 +52,10 @@ export async function getFarmerById(id: string) {
 
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
-
+  // Scope enforced. Hanya SUPERADMIN yang boleh membuka detail record nonaktif;
+  // user lain dibatasi ke record aktif.
   return prisma.farmer.findFirst({
-    where: { id, isActive: true, ...accessFilter },
+    where: { id, ...farmerAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
     include: {
       farmerGroup: {
         include: {
@@ -83,7 +77,9 @@ export async function createFarmer(input: FarmerInput) {
   // Pastikan kelompok tani target berada dalam scope data-access user.
   const access = await getAccessContext();
   const targetGroup = await prisma.farmerGroup.findFirst({
-    where: { id: parsed.data.farmerGroupId, isActive: true, ...farmerGroupAccessFilter(access) },
+    // `AND` (bukan spread) agar filter scope `{ id: { in } }` pada mode
+    // BY_FARMER_GROUP tidak menimpa literal `id` di atas.
+    where: { id: parsed.data.farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
     select: { id: true },
   });
   if (!targetGroup) {
@@ -115,18 +111,13 @@ export async function updateFarmer(input: UpdateFarmerInput) {
 
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
-
   // Verify farmer exists, is active, and is within the user's scope before updating
-  const existing = await prisma.farmer.findFirst({ where: { id, isActive: true, ...accessFilter } });
+  const existing = await prisma.farmer.findFirst({ where: { id, isActive: true, ...farmerAccessFilter(access) } });
   if (!existing) return { success: false, error: "Petani tidak ditemukan atau sudah tidak aktif" };
 
   // Cegah pemindahan petani ke kelompok tani di luar scope user.
   const targetGroup = await prisma.farmerGroup.findFirst({
-    where: { id: data.farmerGroupId, isActive: true, ...farmerGroupAccessFilter(access) },
+    where: { id: data.farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
     select: { id: true },
   });
   if (!targetGroup) {
@@ -148,13 +139,8 @@ export async function toggleFarmerActive(id: string) {
 
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
-
   const farmer = await prisma.farmer.findFirst({
-    where: { id, ...accessFilter },
+    where: { id, ...farmerAccessFilter(access) },
     select: { isActive: true },
   });
   if (!farmer) return { success: false, error: "Petani tidak ditemukan" };
@@ -168,16 +154,15 @@ export async function toggleFarmerActive(id: string) {
 }
 
 export async function getFarmerGroupsForSelect() {
-  const access = await getAccessContext();
+  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
-    {};
+  const access = await getAccessContext();
 
   return prisma.farmerGroup.findMany({
     where: {
-      ...accessFilter,
+      ...farmerGroupAccessFilter(access),
       isActive: true,
     },
     select: { id: true, name: true },

@@ -63,7 +63,7 @@ export function UserMenuAccessModal({
       ]);
       setMenuItems(items);
       setEffectiveData(eff);
-    } catch (error) {
+    } catch {
       toast.error("Gagal memuat data izin menu");
     } finally {
       setLoading(false);
@@ -124,8 +124,7 @@ export function UserMenuAccessModal({
     menuKey: string,
     permission: PermissionLevel,
     isRoleDefault: boolean,
-    hasOverride: boolean,
-    overrideGranted?: boolean
+    hasOverride: boolean
   ) => {
     const cellId = `${menuKey}-${permission}`;
     setSavingCell(cellId);
@@ -185,7 +184,7 @@ export function UserMenuAccessModal({
           <button
             type="button"
             title="Override: Diberikan (Klik untuk hapus override)"
-            onClick={() => handleToggleCell(item.key, permission, isRoleDefault, true, true)}
+            onClick={() => handleToggleCell(item.key, permission, isRoleDefault, true)}
             className="h-5 w-5 rounded flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm border border-transparent transition-all cursor-pointer mx-auto"
           >
             <Check className="h-3.5 w-3.5 stroke-[3]" />
@@ -197,7 +196,7 @@ export function UserMenuAccessModal({
           <button
             type="button"
             title="Override: Dicabut (Klik untuk hapus override)"
-            onClick={() => handleToggleCell(item.key, permission, isRoleDefault, true, false)}
+            onClick={() => handleToggleCell(item.key, permission, isRoleDefault, true)}
             className="h-5 w-5 rounded flex items-center justify-center bg-rose-500 hover:bg-rose-600 text-white shadow-sm border border-transparent transition-all cursor-pointer mx-auto"
           >
             <X className="h-3.5 w-3.5 stroke-[3]" />

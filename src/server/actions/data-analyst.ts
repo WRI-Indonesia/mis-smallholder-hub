@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
@@ -11,7 +12,7 @@ export async function getDistrictsForAnalyst() {
   }
   const access = await getAccessContext();
 
-  const where: any = { isActive: true };
+  const where: Prisma.DistrictWhereInput = { isActive: true };
 
   if (access.mode === "BY_DISTRICT") {
     where.id = { in: access.ids };

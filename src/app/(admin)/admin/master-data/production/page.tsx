@@ -1,4 +1,4 @@
-import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/lib/rbac";
 import { getProductionRecords } from "@/server/actions/production";
 import { getFarmerGroupsForSelect } from "@/server/actions/farmer";
 import { ProductionListClient } from "./components/production-list-client";
@@ -20,16 +20,19 @@ export default async function ProductionPage({
 
   const resolvedParams = await searchParams;
 
-  const [records, farmerGroups, permissions] = await Promise.all([
+  const [records, farmerGroups, permissions, superAdmin] = await Promise.all([
     getProductionRecords({
       search: resolvedParams.search,
       farmerGroupId: resolvedParams.farmerGroupId,
       period: resolvedParams.period,
       hasParcel: resolvedParams.hasParcel,
-      status: resolvedParams.status,
+      // SUPERADMIN memuat semua status (filter Status di client, default "Aktif");
+      // user lain dibatasi ke aktif oleh action apa pun nilai status ini.
+      status: resolvedParams.status ?? "all",
     }),
     getFarmerGroupsForSelect(),
     getUserPermissionsForMenu("master-data-production"),
+    isSuperAdmin(),
   ]);
 
   return (
@@ -42,6 +45,7 @@ export default async function ProductionPage({
         initialRecords={records}
         farmerGroups={farmerGroups}
         permissions={permissions}
+        isSuperAdmin={superAdmin}
       />
     </div>
   );

@@ -1,8 +1,10 @@
-# Smallholder HUB — Panduan Kontribusi & Update Dokumen
+# Proyek — Panduan Kontribusi & Update Dokumen
+
+> Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [sprint.md](./sprint.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md)
 
 > Panduan proses untuk developer: cara update dokumen status, urutan implementasi, dan checklist kepatuhan `rule.md`.
 > Konten stabil (jarang berubah) — dipisah dari `progress.md` (restrukturisasi 2026-07-12) agar file status tetap ramping.
-> Status delivery aktual ada di [`progress.md`](./progress.md); standar teknis di [`rule.md`](./rule.md).
+> Status delivery aktual ada di [`roadmap.md`](./roadmap.md); standar teknis di [`code-standards.md`](../standards/code-standards.md).
 
 ---
 
@@ -27,7 +29,7 @@ Contoh bukti yang valid:
 ### 5-Minute Update Checklist
 
 | Step | Bagian yang Diupdate | Pertanyaan Cek                                                         |
-| ---- | -------------------- | ---------------------------------------------------------------------- |
+| ---- | --------------------- | -------------------------------------------------------------------------- |
 | 1    | Active Issues        | Apakah status issue, assignee, target, dan next action sudah benar?    |
 | 2    | Phase Status         | Apakah status fase berubah berdasarkan file/code nyata?                |
 | 3    | Code Audit Evidence  | Apakah ada route/schema/action baru atau hilang?                       |
@@ -57,8 +59,8 @@ flowchart LR
 ### Recommended Implementation Order
 
 | Step | Phase / Bug | Scope Minimal                                          | Prasyarat                        | Catatan Tech Lead                                        |
-| ---- | ----------- | ------------------------------------------------------ | -------------------------------- | -------------------------------------------------------- |
-| 1    | BUG-001     | Fix `/admin/master-data` redirect                      | Existing routes                  | Pilih redirect ke groups atau implement farmer           |
+| ---- | ----------- | ---------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------- |
+| 1    | BUG-001     | Fix `/admin/master-data` redirect                      | Existing routes                  | Pilih redirect ke groups atau implement farmer          |
 | 2    | DASH-01     | #62 menu + #63 summary cards + district filter         | Existing User/Region/FarmerGroup | Jangan langsung BMP sebelum dashboard dasar ada          |
 | 3    | RPT-01      | #64 menu + placeholder report pages                    | Menu system existing             | Bisa paralel dengan DASH-01                              |
 | 4    | BULK-01     | #68 menu + placeholder bulk upload pages               | Menu system existing             | Bisa paralel dengan DASH-01 dan RPT-01                   |
@@ -74,13 +76,13 @@ flowchart LR
 ### MD-03 Farmer — Suggested Issue Breakdown
 
 | Issue                               | Scope                                                        | Definition of Done                                        |
-| ----------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------- |
+| ------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------- |
 | `[MD-03] Farmer schema & migration` | Prisma model, relation ke FarmerGroup dan Village, migration | Migration berhasil dan relasi bisa di-query               |
 | `[MD-03] Farmer server actions`     | Create, read, update, soft delete, validation, RBAC filter   | Action aman dari akses tidak sah dan error handling jelas |
 | `[MD-03] Farmer list page`          | Tabel, search, filter, pagination, action buttons            | Data tampil benar sesuai permission                       |
 | `[MD-03] Farmer form page`          | Create/edit form, field validation, submit state             | Form menyimpan data dan memberi feedback jelas            |
 | `[MD-03] Farmer detail page`        | Ringkasan profil, group, wilayah, metadata                   | Detail bisa dibuka dari list dan tidak bocor akses        |
-| `[MD-03] Farmer tests / QA`         | Unit/integration test prioritas dan smoke test manual        | Test relevan lulus dan checklist QA tercatat              |
+| `[MD-03] Farmer tests / QA`         | Unit/integration test prioritas dan smoke test manual        | Test relevan lulus dan checklist QA tercatat               |
 
 ### Acceptance Criteria Umum
 
@@ -94,7 +96,7 @@ flowchart LR
 ### Minimum Validation
 
 | Area           | Validasi Minimal                                               |
-| -------------- | -------------------------------------------------------------- |
+| -------------- | -------------------------------------------------------------------- |
 | Schema         | Migration berjalan dan tidak merusak seed/data existing        |
 | Server actions | Happy path, invalid input, unauthorized access                 |
 | UI             | Empty state, loading state, error state, dark/light mode dasar |
@@ -169,16 +171,16 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 
 - [ ] **Code Comments**: Minimal; hanya untuk complex logic
 - [ ] **Naming**: File kebab-case; variables English; functions self-documenting
-- [ ] **Progress Update**: Update `docs/progress.md` Phase Status with evidence
+- [ ] **Progress Update**: Update `docs/project/roadmap.md` Phase Status with evidence
 - [ ] **Changelog**: Add entry dengan timestamp, issue number, dan deliverables
 
 **Quality Gates (Before Merge)**
 
 1. ✅ **Tests**: `npm test` — all pass, no skipped tests
 2. ✅ **Build**: `npm run build` — no errors or warnings
-3. ✅ **Lint**: `npm run lint` — no violations (per audit 2026-07-10 gate ini merah — lihat BUG-006; wajib hijau kembali)
+3. ✅ **Lint**: `npm run lint` — **exit 0**, 0 error (BUG-006 ✅ selesai 2026-07-12, #126; wajib dijalankan lokal sebelum commit — lihat Pre-Commit Gate di [`workflow.md`](../standards/workflow.md))
 4. ✅ **Code Review**: Implementation matches rule.md requirements
-5. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" (Section 2) berstatus PASS
+5. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
 
 #### Common Pitfalls & Fixes
 
@@ -193,4 +195,3 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 | Forgot `loading.tsx` | Layout shift; poor UX | Use `<TableSkeleton>` for tables, `<Skeleton>` for cards |
 | Commented-out code | Technical debt; confusing | Delete dead code; use git history if needed later |
 | Speculative features | Over-engineer; maintenance burden | Implement only what's in the issue scope |
-

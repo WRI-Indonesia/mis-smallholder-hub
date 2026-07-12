@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 // 1. Helper function for Excel Date Parsing
-function parseExcelDate(val: any): Date | null {
+function parseExcelDate(val: unknown): Date | null {
   if (!val) return null;
   if (val instanceof Date && !isNaN(val.getTime())) return val;
   if (typeof val === "number") {
@@ -66,13 +66,13 @@ function autoMatch(detectedHeaders: string[]) {
 
 // 4. Row Validation logic
 function validateRow(
-  row: Record<string, any>,
+  row: Record<string, string | number | null>,
   mapping: Record<string, string>,
   duplicatesInFile: Set<string>,
   existingFarmerIds: string[]
 ) {
   const errors: string[] = [];
-  const normalized: any = {};
+  const normalized: Record<string, unknown> = {};
 
   // Name check
   const rawName = row[mapping["name"]]?.toString().trim();

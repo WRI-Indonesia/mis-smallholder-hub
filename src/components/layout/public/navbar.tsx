@@ -5,16 +5,20 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Menu, Leaf } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+
+const emptySubscribe = () => () => {};
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  // Hydration-safe "is client" flag: false during SSR/first paint, true after.
+  // Avoids a theme-icon mismatch without a setState-in-effect.
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
   const [lang, setLang] = useState("ID");
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md shadow-sm">

@@ -6,10 +6,14 @@ import { trainingActivitySchema, updateTrainingActivitySchema } from "@/validati
 import type { TrainingActivityInput, UpdateTrainingActivityInput } from "@/validations/training-activity.schema";
 import { trainingParticipantScoreSchema } from "@/validations/training-participant.schema";
 import type { TrainingParticipantScoreInput } from "@/validations/training-participant.schema";
-import { hasPermission } from "@/lib/rbac";
+import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import { getPresignedUrl } from "@/lib/s3";
 
-import { getAccessContext } from "@/lib/access-context";
+import {
+  getAccessContext,
+  farmerAccessFilter,
+  farmerGroupAccessFilter,
+} from "@/lib/access-context";
 
 export async function getTrainingActivities(search?: string, farmerGroupId?: string) {
   if (!(await hasPermission("master-data-training", "VIEW"))) {
@@ -18,14 +22,11 @@ export async function getTrainingActivities(search?: string, farmerGroupId?: str
 
   const access = await getAccessContext();
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { farmerGroupId: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { farmerGroup: { districtId: { in: access.ids } } } :
-    {};
-
+  // Soft-delete: hanya SUPERADMIN yang boleh melihat record nonaktif (badge +
+  // filter Status di UI, untuk restore). User lain dibatasi ke record aktif.
   const where = {
-    ...accessFilter,
-    isActive: true,
+    ...farmerAccessFilter(access),
+    ...((await isSuperAdmin()) ? {} : { isActive: true }),
     ...(farmerGroupId ? { farmerGroupId } : {}),
     ...(search
       ? {
@@ -70,8 +71,12 @@ export async function getTrainingActivityById(id: string) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
-  const activity = await prisma.trainingActivity.findUnique({
-    where: { id, isActive: true },
+  const access = await getAccessContext();
+
+  // Scope enforced (cegah akses pelatihan lintas wilayah via id). Hanya SUPERADMIN
+  // yang boleh membuka detail pelatihan nonaktif; user lain dibatasi ke aktif.
+  const activity = await prisma.trainingActivity.findFirst({
+    where: { id, ...farmerAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
     include: {
       package: true,
       farmerGroup: {
@@ -118,6 +123,18 @@ export async function createTrainingActivity(input: TrainingActivityInput) {
   const parsed = trainingActivitySchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
+  // Pastikan kelompok tani target berada dalam scope data-access user.
+  // `AND` (bukan spread) agar filter scope `{ id: { in } }` (mode
+  // BY_FARMER_GROUP) tidak menimpa literal `id` di atas.
+  const access = await getAccessContext();
+  const targetGroup = await prisma.farmerGroup.findFirst({
+    where: { id: parsed.data.farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!targetGroup) {
+    return { success: false, error: "Tidak memiliki izin untuk menambah pelatihan pada kelompok tani ini" };
+  }
+
   const session = await auth();
 
   const created = await prisma.trainingActivity.create({
@@ -141,8 +158,23 @@ export async function updateTrainingActivity(input: UpdateTrainingActivityInput)
   const session = await auth();
   const { id, ...data } = parsed.data;
 
-  const existing = await prisma.trainingActivity.findUnique({ where: { id, isActive: true } });
-  if (!existing) return { success: false, error: "Pelatihan tidak ditemukan atau sudah tidak aktif" };
+  const access = await getAccessContext();
+
+  // Verify activity exists, is active, and is within the user's scope before updating
+  const existing = await prisma.trainingActivity.findFirst({
+    where: { id, isActive: true, ...farmerAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!existing) return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda" };
+
+  // Cegah pemindahan pelatihan ke kelompok tani di luar scope user.
+  const targetGroup = await prisma.farmerGroup.findFirst({
+    where: { id: data.farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!targetGroup) {
+    return { success: false, error: "Tidak memiliki izin untuk memindahkan pelatihan ke kelompok tani ini" };
+  }
 
   await prisma.trainingActivity.update({
     where: { id },
@@ -157,18 +189,29 @@ export async function toggleTrainingActivityActive(id: string) {
     return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan pelatihan" };
   }
 
-  const activity = await prisma.trainingActivity.findUnique({ where: { id }, select: { isActive: true } });
+  const access = await getAccessContext();
+
+  const activity = await prisma.trainingActivity.findFirst({
+    where: { id, ...farmerAccessFilter(access) },
+    select: { isActive: true },
+  });
   if (!activity) return { success: false, error: "Pelatihan tidak ditemukan" };
+
+  const session = await auth();
 
   await prisma.trainingActivity.update({
     where: { id },
-    data: { isActive: !activity.isActive },
+    data: { isActive: !activity.isActive, modifiedBy: session?.user?.id ?? null },
   });
 
   return { success: true };
 }
 
 export async function getTrainingPackagesForSelect() {
+  if (!(await hasPermission("master-data-training", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
   return prisma.trainingPackage.findMany({
     where: { isActive: true },
     select: { id: true, name: true, code: true },
@@ -177,16 +220,15 @@ export async function getTrainingPackagesForSelect() {
 }
 
 export async function getFarmerGroupsForSelect() {
-  const access = await getAccessContext();
+  if (!(await hasPermission("master-data-training", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
 
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
-    {};
+  const access = await getAccessContext();
 
   return prisma.farmerGroup.findMany({
     where: {
-      ...accessFilter,
+      ...farmerGroupAccessFilter(access),
       isActive: true,
     },
     select: { id: true, name: true },
@@ -197,6 +239,17 @@ export async function getFarmerGroupsForSelect() {
 export async function getFarmersByGroup(farmerGroupId: string) {
   if (!(await hasPermission("master-data-training", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  // Pastikan kelompok tani berada dalam scope data-access user sebelum
+  // mengembalikan daftar petaninya.
+  const access = await getAccessContext();
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id: farmerGroupId, AND: farmerGroupAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!group) {
+    throw new Error("Kelompok Tani tidak ditemukan atau tidak dalam akses Anda");
   }
 
   return prisma.farmer.findMany({
@@ -247,6 +300,25 @@ export async function addParticipants(
   const session = await auth();
   const farmerIds = participants.map((p) => p.farmerId);
 
+  // Pastikan activity dalam scope user, lalu batasi peserta ke petani aktif
+  // milik kelompok tani activity tersebut (cegah injeksi farmerId sembarang).
+  const access = await getAccessContext();
+  const activity = await prisma.trainingActivity.findFirst({
+    where: { id: activityId, isActive: true, ...farmerAccessFilter(access) },
+    select: { farmerGroupId: true },
+  });
+  if (!activity) {
+    return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda" };
+  }
+
+  const validFarmers = await prisma.farmer.findMany({
+    where: { id: { in: farmerIds }, isActive: true, farmerGroupId: activity.farmerGroupId },
+    select: { id: true },
+  });
+  if (validFarmers.length !== farmerIds.length) {
+    return { success: false, error: "Terdapat petani yang tidak valid untuk kelompok tani pelatihan ini" };
+  }
+
   // We do bulk upsert or find and create to avoid duplicate active relations
   const existing = await prisma.trainingParticipant.findMany({
     where: {
@@ -293,13 +365,15 @@ export async function removeParticipant(participantId: string) {
   }
 
   const session = await auth();
+  const access = await getAccessContext();
 
-  const participant = await prisma.trainingParticipant.findUnique({
-    where: { id: participantId },
+  // Scope: peserta hanya bisa diubah bila activity-nya dalam akses user.
+  const participant = await prisma.trainingParticipant.findFirst({
+    where: { id: participantId, activity: farmerAccessFilter(access) },
     select: { isActive: true },
   });
 
-  if (!participant) return { success: false, error: "Peserta tidak ditemukan" };
+  if (!participant) return { success: false, error: "Peserta tidak ditemukan atau tidak dalam akses Anda" };
 
   await prisma.trainingParticipant.update({
     where: { id: participantId },
@@ -315,9 +389,11 @@ export async function removeParticipants(participantIds: string[]) {
   }
 
   const session = await auth();
+  const access = await getAccessContext();
 
+  // Scope: hanya peserta yang activity-nya dalam akses user yang dinonaktifkan.
   await prisma.trainingParticipant.updateMany({
-    where: { id: { in: participantIds }, isActive: true },
+    where: { id: { in: participantIds }, isActive: true, activity: farmerAccessFilter(access) },
     data: { isActive: false, modifiedBy: session?.user?.id ?? null },
   });
 
@@ -340,9 +416,11 @@ export async function updateParticipantScores(
   }
 
   const session = await auth();
+  const access = await getAccessContext();
 
-  const participant = await prisma.trainingParticipant.findUnique({
-    where: { id: participantId },
+  // Scope: nilai peserta hanya bisa diubah bila activity-nya dalam akses user.
+  const participant = await prisma.trainingParticipant.findFirst({
+    where: { id: participantId, activity: farmerAccessFilter(access) },
     select: { isActive: true },
   });
 

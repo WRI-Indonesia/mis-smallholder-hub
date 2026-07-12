@@ -24,10 +24,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  Upload,
   AlertCircle,
   CheckCircle2,
   Download,
@@ -57,6 +55,24 @@ interface Props {
   permissions: string[];
 }
 
+type RawRow = Record<string, Excel.CellValue>;
+
+interface ProductionValidatedRow {
+  _rowNum: number;
+  _original: Record<string, string | number | null | undefined>;
+  _isValid: boolean;
+  _errors: string[];
+  _farmerName: string;
+  _farmerIdRaw: string;
+  farmerId: string;
+  period?: string;
+  harvestDate?: Date;
+  harvestNumber?: number;
+  yieldKg?: number;
+  parcelId: string | null;
+  notes: string | null;
+}
+
 const TARGET_FIELDS = [
   { key: "farmerId", label: "ID Petani", required: true, desc: "ID Petani WRI (contoh: FARMER-001)" },
   { key: "period", label: "Periode", required: true, desc: "Format YYYY-MM (contoh: 2026-06)" },
@@ -81,15 +97,15 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
-  const [rawRows, setRawRows] = useState<any[]>([]);
+  const [rawRows, setRawRows] = useState<RawRow[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [validatedData, setValidatedData] = useState<any[]>([]);
+  const [validatedData, setValidatedData] = useState<ProductionValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Parse Excel Date
-  function parseExcelDate(val: any): Date | null {
+  function parseExcelDate(val: Excel.CellValue): Date | null {
     if (!val) return null;
     if (val instanceof Date && !isNaN(val.getTime())) return val;
     if (typeof val === "number") {
@@ -121,17 +137,26 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
   }
 
   function validateRow(
-    row: any,
+    row: RawRow,
     index: number,
     duplicatesInFile: Set<string>
-  ): { data: any; errors: string[] } {
+  ): { data: ProductionValidatedRow; errors: string[] } {
     const errors: string[] = [];
-    const normalized: any = { _rowNum: index + 2 };
+    const normalized: ProductionValidatedRow = {
+      _rowNum: index + 2,
+      _original: {},
+      _isValid: false,
+      _errors: [],
+      farmerId: "",
+      _farmerName: "",
+      _farmerIdRaw: "",
+      parcelId: null,
+      notes: null,
+    };
 
-    normalized._original = {};
     for (const f of TARGET_FIELDS) {
       const mappedCol = mapping[f.key];
-      normalized._original[f.key] = mappedCol ? row[mappedCol] : "";
+      normalized._original[f.key] = (mappedCol ? row[mappedCol] : "") as string | number | null | undefined;
     }
 
     // 1. Farmer ID mapping lookup
@@ -183,7 +208,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     }
 
     // Cross validation: harvestDate must be within period
-    if (isPeriodFormatValid && parsedHarvestDate) {
+    if (isPeriodFormatValid && parsedHarvestDate && rawPeriod) {
       const [year, month] = rawPeriod.split("-").map(Number);
       const harvestMonth = parsedHarvestDate.getMonth() + 1;
       const harvestYear = parsedHarvestDate.getFullYear();
@@ -281,13 +306,13 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     const fileType = selectedFile.name.split(".").pop()?.toLowerCase();
 
     if (fileType === "csv") {
-      Papa.parse(selectedFile, {
+      Papa.parse<RawRow>(selectedFile, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
           if (results.meta.fields) {
             setHeaders(results.meta.fields);
-            setRawRows(results.data);
+            setRawRows(results.data as RawRow[]);
             autoMatch(results.meta.fields);
           } else {
             toast.error("Gagal membaca header file CSV");
@@ -309,7 +334,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
           return;
         }
 
-        const rows: any[] = [];
+        const rows: RawRow[] = [];
         let sheetHeaders: string[] = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
@@ -317,9 +342,9 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
             ? row.values.slice(1)
             : Object.values(row.values);
           if (rowNumber === 1) {
-            sheetHeaders = values.map((v: any) => v?.toString().trim() || "");
+            sheetHeaders = values.map((v) => v?.toString().trim() || "");
           } else {
-            const rowData: Record<string, any> = {};
+            const rowData: RawRow = {};
             sheetHeaders.forEach((header, index) => {
               rowData[header] = values[index];
             });
