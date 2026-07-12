@@ -109,11 +109,9 @@
 
 ## Code Compliance (rule.md)
 
-**Status per audit 2026-07-10** (update lint 2026-07-12): 🟠 **8 PASS · 4 PARTIAL · 2 FAIL** (dari 14 kategori) — detail lengkap + bukti `file:line` di `audit-report/audit-2026-07-10.md`
+**Status per audit 2026-07-10, ditutup lewat #125–#130 (2026-07-12):** ✅ **14 PASS · 0 PARTIAL · 0 FAIL** (dari 14 kategori) — kanonis di [`roadmap.md`](../project/roadmap.md) §Code Compliance Audit; detail + bukti `file:line` di `audit-report/audit-2026-07-10.md`
 
-- ✅ PASS: kebab-case naming, Server Component default, Zod di `src/validations/`, actions di `src/server/actions/`, pola `AccessContext`, soft delete `isActive` di schema, Shadcn+Tailwind, **QA gate lint (`npm run lint` exit 0 — #126 ✅ 2026-07-12)**
-- 🟠 PARTIAL: variable English (istilah domain ID di lib/types), filter `isActive` (farmer-group reads), loading.tsx (4 halaman tabel belum ada), Table Actions (menu-list-client belum gating/posisi kiri)
-- ❌ FAIL: backend `hasPermission` (role-permission/menu/upload + helper select tanpa guard), no-barrel-imports (13 file pakai barrel `@/components/shared` — kini diresmikan sebagai pengecualian di rule.md)
+- ✅ PASS (semua): kebab-case naming (+suffix `.types.ts` beres #130), variable English (istilah domain diresmikan #130), Server Component default, Zod di `src/validations/`, actions di `src/server/actions/`, pola `AccessContext`, backend `hasPermission` guard/scope (#125+#127), soft delete `isActive` + pola restore (#127), filter `isActive` reads, loading.tsx & Table Actions (#128), Shadcn+Tailwind, **QA gate lint exit 0 (#126)**, no-barrel-imports (barrel `@/components/shared` diresmikan sebagai pengecualian)
 
 </details>
 

@@ -4,6 +4,7 @@ import { computeCompleteness, computePelatihanDomain } from "@/lib/data-complete
 import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
 import { buildProductionMatrix, enumeratePeriods, type ProductionMatrixRecord } from "@/lib/report-production";
 import { summarizeProduction } from "@/lib/map-data";
+import { addParticipantsSchema } from "@/validations/training-participant.schema";
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
@@ -253,5 +254,26 @@ describe("Performance - MAP-01 parcel production summary (pure logic)", () => {
     expect(duration).toBeLessThan(50);
     expect(result.byYear.length).toBe(30);
     expect(result.recordCount).toBe(records.length);
+  });
+});
+
+// #130: addParticipants kini divalidasi Zod sebelum mutasi. Satu pelatihan bisa
+// menambah seluruh anggota KT sekaligus — pastikan validasi array besar tetap murah
+// (bukan regresi terhadap versi tanpa validasi).
+describe("Performance - addParticipants Zod validation (#130)", () => {
+  it("validates 2000 participants under 50ms", () => {
+    const participants = Array.from({ length: 2000 }, (_, i) => ({
+      farmerId: `farmer-${i}`,
+      preTestScore: i % 101,
+      postTestScore: (i + 50) % 101,
+    }));
+
+    const start = performance.now();
+    const r = addParticipantsSchema.safeParse({ activityId: "act-1", participants });
+    const duration = performance.now() - start;
+
+    console.log(`  addParticipants validation (${participants.length} peserta): ${duration.toFixed(2)}ms`);
+    expect(r.success).toBe(true);
+    expect(duration).toBeLessThan(50);
   });
 });

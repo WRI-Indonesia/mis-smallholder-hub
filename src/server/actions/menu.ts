@@ -1,6 +1,7 @@
 "use server";
  
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { menuItemSchema, updateMenuItemSchema } from "@/validations/menu.schema";
 import type { MenuItemInput, UpdateMenuItemInput } from "@/validations/menu.schema";
@@ -51,6 +52,7 @@ export async function createMenuItem(input: MenuItemInput) {
     return { success: false, error: { parentKey: ["Menu depth tidak boleh lebih dari 3 level"] } };
   }
 
+  const session = await auth();
   await prisma.menuItem.create({
     data: {
       key: parsed.data.key,
@@ -61,6 +63,7 @@ export async function createMenuItem(input: MenuItemInput) {
       order: parsed.data.order,
       isActive: parsed.data.isActive,
       isVisible: parsed.data.isVisible,
+      createdBy: session?.user?.id ?? null,
     },
   });
  
@@ -81,6 +84,7 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
     return { success: false, error: { parentKey: ["Menu depth tidak boleh lebih dari 3 level"] } };
   }
 
+  const session = await auth();
   await prisma.menuItem.update({
     where: { id: parsed.data.id },
     data: {
@@ -91,6 +95,7 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
       order: parsed.data.order,
       isActive: parsed.data.isActive,
       isVisible: parsed.data.isVisible,
+      modifiedBy: session?.user?.id ?? null,
     },
   });
  
@@ -102,9 +107,10 @@ export async function deleteMenuItem(id: string) {
     return { success: false, error: "Tidak memiliki izin untuk menghapus menu" };
   }
 
+  const session = await auth();
   await prisma.menuItem.update({
     where: { id },
-    data: { isActive: false, isVisible: false },
+    data: { isActive: false, isVisible: false, modifiedBy: session?.user?.id ?? null },
   });
   return { success: true };
 }

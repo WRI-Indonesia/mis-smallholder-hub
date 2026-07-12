@@ -81,7 +81,8 @@ export async function toggleProvinceActive(id: string) {
   const item = await prisma.province.findUnique({ where: { id }, select: { isActive: true } });
   if (!item) return { success: false, error: "Provinsi tidak ditemukan" };
 
-  await prisma.province.update({ where: { id }, data: { isActive: !item.isActive } });
+  const session = await auth();
+  await prisma.province.update({ where: { id }, data: { isActive: !item.isActive, modifiedBy: session?.user?.id ?? null } });
   return { success: true };
 }
 
@@ -125,7 +126,8 @@ export async function toggleDistrictActive(id: string) {
   const item = await prisma.district.findUnique({ where: { id }, select: { isActive: true } });
   if (!item) return { success: false, error: "Distrik tidak ditemukan" };
 
-  await prisma.district.update({ where: { id }, data: { isActive: !item.isActive } });
+  const session = await auth();
+  await prisma.district.update({ where: { id }, data: { isActive: !item.isActive, modifiedBy: session?.user?.id ?? null } });
   return { success: true };
 }
 
@@ -169,7 +171,8 @@ export async function toggleSubdistrictActive(id: string) {
   const item = await prisma.subdistrict.findUnique({ where: { id }, select: { isActive: true } });
   if (!item) return { success: false, error: "Kecamatan tidak ditemukan" };
 
-  await prisma.subdistrict.update({ where: { id }, data: { isActive: !item.isActive } });
+  const session = await auth();
+  await prisma.subdistrict.update({ where: { id }, data: { isActive: !item.isActive, modifiedBy: session?.user?.id ?? null } });
   return { success: true };
 }
 
@@ -213,6 +216,7 @@ export async function toggleVillageActive(id: string) {
   const item = await prisma.village.findUnique({ where: { id }, select: { isActive: true } });
   if (!item) return { success: false, error: "Desa tidak ditemukan" };
 
-  await prisma.village.update({ where: { id }, data: { isActive: !item.isActive } });
+  const session = await auth();
+  await prisma.village.update({ where: { id }, data: { isActive: !item.isActive, modifiedBy: session?.user?.id ?? null } });
   return { success: true };
 }

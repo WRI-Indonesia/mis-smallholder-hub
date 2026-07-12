@@ -7,13 +7,29 @@
 | Rule | Detail |
 |------|--------|
 | File naming | `kebab-case` |
-| Variable naming | Bahasa Inggris |
+| Variable naming | Bahasa Inggris — **kecuali istilah domain resmi** (lihat di bawah) |
 | Import | Langsung dari sub-module, bukan barrel index. **Pengecualian resmi:** barrel `@/components/shared` (entry point DataTable/TableActions/TableSkeleton/DeleteDialog) |
 | Default | Server Component, `"use client"` hanya jika perlu |
 | Data layer | CSV = static, Prisma = dynamic |
 | Validation | Zod di `src/validations/` |
 | Server Actions | Di `src/server/actions/` |
 | Database Schema | Lihat [database-schema.md](../database/erd.md) untuk ERD, indexes, constraints, migrations, security |
+
+#### Istilah domain resmi (pengecualian naming — keputusan #130 / TD-012)
+
+Identifier **wajib Bahasa Inggris**, dengan **pengecualian resmi** untuk kosakata domain berikut yang boleh dipakai apa adanya pada nama variabel/fungsi/field/tipe (bukan asal Bahasa Indonesia):
+
+| Istilah domain | Makna | Contoh identifier yang sah |
+|----------------|-------|-----------------------------|
+| `petani` | farmer | `computePetaniDomain`, `totalPetani`, `totalPetaniLaki/Perempuan` |
+| `lahan` | land parcel | `computeLahanDomain`, `totalLuasLahan`, `avgLuasLahan` |
+| `pelatihan` | training | `computePelatihanDomain` |
+| `produksi` | production | `computeProduksiDomain` |
+| `kelompok tani` / `KT` | farmer group | `kelompokTani`, `kelompokTaniList` |
+| `persil` | parcel (unit lahan) | `totalPersil`, `totalPersilLahan` |
+| `paket` | training package | `pctPaket1`, prefix enum `PAKET_1_*` |
+
+Alasan: istilah ini adalah **kosakata domain proyek** (WRI Indonesia — data sawit rakyat) yang lebih jelas & konsisten dengan UI copy Bahasa Indonesia daripada terjemahan Inggris paksa. Rename massal ditolak karena melanggar prinsip **Surgical Changes** dan berisiko regresi lintas modul (dashboard/map/report). Nilai **enum DB** (`PAKET_1_*`, dll.) adalah **data**, bukan identifier — di luar aturan ini. Selain istilah di tabel, tetap gunakan Bahasa Inggris.
 
 ### Data Access & Soft Delete
 

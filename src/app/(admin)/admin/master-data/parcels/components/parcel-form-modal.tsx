@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import type { LandParcel, FarmerSelect } from "@/types/land-parcel.types";
+import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
 
 interface Props {
   open: boolean;

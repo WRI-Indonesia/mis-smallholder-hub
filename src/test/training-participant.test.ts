@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { trainingParticipantScoreSchema } from "@/validations/training-participant.schema";
+import {
+  trainingParticipantScoreSchema,
+  addParticipantsSchema,
+} from "@/validations/training-participant.schema";
 
 describe("Training Participant Score Validation", () => {
   it("accepts valid scores", () => {
@@ -37,6 +40,60 @@ describe("Training Participant Score Validation", () => {
     };
     const r = trainingParticipantScoreSchema.safeParse(data);
     expect(r.success).toBe(false);
+  });
+});
+
+describe("addParticipants payload validation (#130)", () => {
+  it("accepts a valid activityId + participants array", () => {
+    const r = addParticipantsSchema.safeParse({
+      activityId: "act-1",
+      participants: [
+        { farmerId: "f-1", preTestScore: 70, postTestScore: 90 },
+        { farmerId: "f-2" },
+      ],
+    });
+    expect(r.success).toBe(true);
+    expect(r.data?.participants).toHaveLength(2);
+    expect(r.data?.participants[1].preTestScore).toBeUndefined();
+  });
+
+  it("rejects an empty participants array", () => {
+    const r = addParticipantsSchema.safeParse({ activityId: "act-1", participants: [] });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects a missing activityId", () => {
+    const r = addParticipantsSchema.safeParse({
+      activityId: "",
+      participants: [{ farmerId: "f-1" }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects a participant without farmerId", () => {
+    const r = addParticipantsSchema.safeParse({
+      activityId: "act-1",
+      participants: [{ farmerId: "", preTestScore: 50 }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects an out-of-range score inside a participant", () => {
+    const r = addParticipantsSchema.safeParse({
+      activityId: "act-1",
+      participants: [{ farmerId: "f-1", postTestScore: 150 }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("keeps null scores as null (no coercion to 0)", () => {
+    const r = addParticipantsSchema.safeParse({
+      activityId: "act-1",
+      participants: [{ farmerId: "f-1", preTestScore: null, postTestScore: null }],
+    });
+    expect(r.success).toBe(true);
+    expect(r.data?.participants[0].preTestScore).toBeNull();
+    expect(r.data?.participants[0].postTestScore).toBeNull();
   });
 });
 
