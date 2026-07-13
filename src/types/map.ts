@@ -46,6 +46,57 @@ export type MapData = {
 export type MapSelectOption = { id: string; name: string };
 export type MapGroupOption = { id: string; name: string; code: string | null };
 
+// ── Peta BMP (MAP-02) ──────────────────────────────────────────────────────
+
+/**
+ * Filter input for the Peta BMP map. Kelompok Tani is required to bound the
+ * query; Provinsi/Distrik are optional and only narrow the KT dropdown.
+ */
+export type BmpMapFilters = {
+  provinceId?: string | null;
+  districtId?: string | null;
+  farmerGroupId: string;
+};
+
+/**
+ * Production-data availability of a single parcel, by longest consecutive-month
+ * run: BAIK (> 24 mo) · CUKUP (12–24) · KURANG (1–11) · NONE (no records).
+ */
+export type ProductionAvailabilityCategory = "BAIK" | "CUKUP" | "KURANG" | "NONE";
+
+/** A land parcel colored by its production-data availability category. */
+export type BmpParcelFeature = {
+  id: string;
+  parcelId: string;
+  /** Farmer.farmerId business code (e.g. "FMR-01"), shown as "ID Petani". */
+  farmerCode: string;
+  farmerName: string;
+  farmerGroupName: string;
+  area: number | null;
+  plantingYear: number | null;
+  cropType: string | null;
+  landStatus: string | null;
+  /** Centroid derived from the polygon, as [long, lat]. */
+  centroid: [number, number];
+  geometry: Polygon | MultiPolygon;
+  category: ProductionAvailabilityCategory;
+  /** Longest run of consecutive months with production data. */
+  streakMonths: number;
+  /** Earliest / latest period (YYYY-MM) with production for this parcel, or null. */
+  firstPeriod: string | null;
+  lastPeriod: string | null;
+  /** Unique sorted periods (YYYY-MM) with production data for this parcel. */
+  periods: string[];
+  /** Total production (kg) per period (YYYY-MM) for this parcel. */
+  production: Record<string, number>;
+};
+
+export type BmpMapData = {
+  parcels: BmpParcelFeature[];
+  kt: KTPoint[];
+  counts: { baik: number; cukup: number; kurang: number; none: number };
+};
+
 /** One training package's completion status for a farmer (parcel popup section). */
 export type FarmerTrainingItem = {
   code: string;

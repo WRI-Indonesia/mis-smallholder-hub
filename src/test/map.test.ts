@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { buildMapData, monthlyAverageYield, summarizeProduction, type RawGroup, type RawParcel } from "@/lib/map-data";
+import {
+  buildMapData,
+  monthlyAverageYield,
+  summarizeProduction,
+  longestConsecutiveMonths,
+  productionAvailabilityCategory,
+  buildBmpMapData,
+  type RawGroup,
+  type RawParcel,
+} from "@/lib/map-data";
 
 const group = (over: Partial<RawGroup> = {}): RawGroup => ({
   id: "g1",
@@ -181,5 +190,200 @@ describe("summarizeProduction", () => {
     expect(result.byYear).toEqual([]);
     expect(result.recordCount).toBe(1);
     expect(result.totalKg).toBe(999);
+  });
+});
+
+// Generate `count` consecutive monthly periods starting at "startYear-startMonth".
+function months(startYear: number, startMonth: number, count: number): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = startYear * 12 + (startMonth - 1) + i;
+    const y = Math.floor(idx / 12);
+    const m = (idx % 12) + 1;
+    out.push(`${y}-${String(m).padStart(2, "0")}`);
+  }
+  return out;
+}
+
+describe("longestConsecutiveMonths", () => {
+  it("returns 0 for an empty list", () => {
+    expect(longestConsecutiveMonths([])).toBe(0);
+  });
+
+  it("returns 1 for a single period", () => {
+    expect(longestConsecutiveMonths(["2025-05"])).toBe(1);
+  });
+
+  it("counts a straight run", () => {
+    expect(longestConsecutiveMonths(months(2025, 1, 11))).toBe(11);
+    expect(longestConsecutiveMonths(months(2025, 1, 12))).toBe(12);
+  });
+
+  it("counts only the longest run when there is a gap", () => {
+    // 6 consecutive, gap, then 13 consecutive → 13
+    const periods = [...months(2023, 1, 6), ...months(2024, 6, 13)];
+    expect(longestConsecutiveMonths(periods)).toBe(13);
+  });
+
+  it("treats a year boundary as consecutive", () => {
+    expect(longestConsecutiveMonths(["2025-12", "2026-01"])).toBe(2);
+  });
+
+  it("de-duplicates repeated periods", () => {
+    expect(longestConsecutiveMonths(["2025-01", "2025-01", "2025-02"])).toBe(2);
+  });
+
+  it("is order-independent (sorts first)", () => {
+    expect(longestConsecutiveMonths(["2025-03", "2025-01", "2025-02"])).toBe(3);
+  });
+
+  it("ignores unparseable periods", () => {
+    expect(longestConsecutiveMonths(["bad", "2025-01", "2025-02"])).toBe(2);
+  });
+});
+
+describe("productionAvailabilityCategory", () => {
+  it("returns NONE for no data", () => {
+    expect(productionAvailabilityCategory([])).toBe("NONE");
+  });
+
+  it("returns KURANG for 1–11 consecutive months", () => {
+    expect(productionAvailabilityCategory(months(2025, 1, 1))).toBe("KURANG");
+    expect(productionAvailabilityCategory(months(2025, 1, 11))).toBe("KURANG");
+  });
+
+  it("returns CUKUP for 12–24 consecutive months", () => {
+    expect(productionAvailabilityCategory(months(2025, 1, 12))).toBe("CUKUP");
+    expect(productionAvailabilityCategory(months(2024, 1, 24))).toBe("CUKUP");
+  });
+
+  it("returns BAIK above 24 consecutive months", () => {
+    expect(productionAvailabilityCategory(months(2023, 1, 25))).toBe("BAIK");
+  });
+});
+
+// BUG-007 / #127: the FarmerGroup scope `where` built by getMapData and
+// getBmpMapData (map.ts) must put the access filter in `AND`, so a required
+// literal `districtId` or a literal `id` can't overwrite the scope's
+// `{ ...: { in } }` and leak groups outside the user's assignment. Mirror of the
+// builder (real module pulls next-auth/prisma that don't resolve in vitest).
+type AccessContext =
+  | { mode: "ALL" }
+  | { mode: "BY_FARMER_GROUP"; ids: string[] }
+  | { mode: "BY_DISTRICT"; ids: string[] };
+
+function farmerGroupAccessFilter(access: AccessContext) {
+  return access.mode === "BY_FARMER_GROUP"
+    ? { id: { in: access.ids } }
+    : access.mode === "BY_DISTRICT"
+      ? { districtId: { in: access.ids } }
+      : {};
+}
+
+function mapGroupWhere(
+  filters: { provinceId?: string | null; districtId?: string | null; farmerGroupId?: string | null },
+  access: AccessContext
+) {
+  const { provinceId, districtId, farmerGroupId } = filters;
+  return {
+    isActive: true,
+    ...(districtId ? { districtId } : {}),
+    ...(farmerGroupId ? { id: farmerGroupId } : {}),
+    ...(provinceId ? { district: { provinceId } } : {}),
+    AND: farmerGroupAccessFilter(access),
+  };
+}
+
+describe("map groupWhere scope (BUG-007)", () => {
+  it("BY_DISTRICT: literal districtId dipertahankan; scope masuk AND (tak menimpa)", () => {
+    const where = mapGroupWhere({ districtId: "d-outside" }, { mode: "BY_DISTRICT", ids: ["d1"] });
+    expect(where.districtId).toBe("d-outside");
+    expect(where.AND).toEqual({ districtId: { in: ["d1"] } });
+  });
+
+  it("BY_FARMER_GROUP: literal id dipertahankan; scope masuk AND (tak menimpa)", () => {
+    const where = mapGroupWhere({ farmerGroupId: "kt-outside" }, { mode: "BY_FARMER_GROUP", ids: ["kt-1"] });
+    expect(where.id).toBe("kt-outside");
+    expect(where.AND).toEqual({ id: { in: ["kt-1"] } });
+  });
+
+  it("ALL: AND no-op, tanpa batasan tambahan", () => {
+    const where = mapGroupWhere({ districtId: "d-x", farmerGroupId: "kt-x" }, { mode: "ALL" });
+    expect(where.AND).toEqual({});
+    expect(where.districtId).toBe("d-x");
+    expect(where.id).toBe("kt-x");
+  });
+});
+
+describe("buildBmpMapData", () => {
+  // Build the productionByParcel map (period → 100 kg each) from period lists.
+  const production = (parcelPeriods: Record<string, string[]>) =>
+    new Map(
+      Object.entries(parcelPeriods).map(([id, ps]) => [id, ps.map((period) => ({ period, kg: 100 }))])
+    );
+
+  it("categorizes each parcel and tallies counts", () => {
+    const parcels = [
+      parcel({ id: "pBaik" }),
+      parcel({ id: "pCukup" }),
+      parcel({ id: "pKurang" }),
+      parcel({ id: "pNone" }),
+    ];
+    const result = buildBmpMapData(
+      [group()],
+      parcels,
+      production({
+        pBaik: months(2022, 1, 30),
+        pCukup: months(2024, 1, 12),
+        pKurang: months(2025, 1, 3),
+        // pNone has no entry
+      })
+    );
+
+    const byId = Object.fromEntries(result.parcels.map((p) => [p.id, p]));
+    expect(byId.pBaik.category).toBe("BAIK");
+    expect(byId.pCukup.category).toBe("CUKUP");
+    expect(byId.pKurang.category).toBe("KURANG");
+    expect(byId.pNone.category).toBe("NONE");
+    expect(result.counts).toEqual({ baik: 1, cukup: 1, kurang: 1, none: 1 });
+    expect(result.kt).toHaveLength(1);
+  });
+
+  it("reports streak and first/last period from the parcel's data", () => {
+    const result = buildBmpMapData(
+      [],
+      [parcel({ id: "p1" })],
+      production({ p1: ["2025-03", "2025-01", "2025-02", "2025-01"] })
+    );
+    const f = result.parcels[0];
+    expect(f.streakMonths).toBe(3);
+    expect(f.firstPeriod).toBe("2025-01");
+    expect(f.lastPeriod).toBe("2025-03");
+    // periods are de-duplicated and sorted (drives the availability grid).
+    expect(f.periods).toEqual(["2025-01", "2025-02", "2025-03"]);
+    expect(f.farmerCode).toBe("FMR-01");
+    // kg summed per period — the duplicate 2025-01 (100 + 100) becomes 200.
+    expect(f.production).toEqual({ "2025-01": 200, "2025-02": 100, "2025-03": 100 });
+  });
+
+  it("parcels with no attributed production fall to NONE", () => {
+    const result = buildBmpMapData([], [parcel({ id: "p1" })], production({}));
+    expect(result.parcels[0].category).toBe("NONE");
+    expect(result.parcels[0].streakMonths).toBe(0);
+    expect(result.parcels[0].firstPeriod).toBeNull();
+    expect(result.counts.none).toBe(1);
+  });
+
+  it("skips parcels with null geometry without affecting counts", () => {
+    const result = buildBmpMapData(
+      [],
+      [parcel({ id: "p1" }), parcel({ id: "p2", geometry: null })],
+      production({ p1: months(2024, 1, 12) })
+    );
+    expect(result.parcels.map((p) => p.id)).toEqual(["p1"]);
+    expect(result.counts).toEqual({ baik: 0, cukup: 1, kurang: 0, none: 0 });
+    const [long, lat] = result.parcels[0].centroid;
+    expect(long).toBeCloseTo(100, 5);
+    expect(lat).toBeCloseTo(0, 5);
   });
 });

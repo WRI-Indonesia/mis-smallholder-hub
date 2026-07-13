@@ -142,9 +142,13 @@ ADMIN,dashboard-snapshot,DELETE
 MANAGEMENT,dashboard-snapshot,VIEW
 SUPERADMIN,map,VIEW
 SUPERADMIN,map-parcel,VIEW
+SUPERADMIN,map-bmp,VIEW
 ADMIN,map,VIEW
 ADMIN,map-parcel,VIEW
+ADMIN,map-bmp,VIEW
 OPERATOR,map,VIEW
 OPERATOR,map-parcel,VIEW
+OPERATOR,map-bmp,VIEW
 MANAGEMENT,map,VIEW
 MANAGEMENT,map-parcel,VIEW
+MANAGEMENT,map-bmp,VIEW

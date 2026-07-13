@@ -30,6 +30,7 @@
 | DASH-02 | Dashboard Server Actions | `dashboard.ts` + `snapshot.ts` + aggregation lib (teruji) |
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
 | MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible |
+| MAP-02 | Map: Peta BMP (Layer 1) | Peta tematik **Ketersediaan Data Produksi** per-lahan, 4 kategori dari run bulan berturut-turut produksi (#144); KT wajib (Prov/Distrik opsional); `getBmpMapData` (groupBy scoped, no N+1) + data-driven color MapLibre. **Poligon saja tanpa titik** (NONE outline-only, lainnya fill). **Cetak** → PDF A4 landscape (hal.1 peta+legend, hal.2+ matriks per lahan × bulan = total kg/latar hijau) + **Download Excel** matriks. **Panel kanan floating minimizable**: matriks ketersediaan per lahan × bulan (true/false) + Zoom to. Seed `map-bmp` menu+VIEW ✅ |
 | RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
 | RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
 | RPT-03 | Report Produksi | Matriks bulanan per petani/lahan + Excel + PDF landscape (#132) |
@@ -39,7 +40,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **24 files / 311 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **27 files / 380 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -76,7 +77,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **24 files / 311 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **27 files / 380 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
@@ -93,10 +94,10 @@
 | Map Geo (ruler/label) | map-geo.test.ts | 13 | ✅ |
 | Dashboard | dashboard.test.ts | 12 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
-| Map (MAP-01) | map.test.ts | 15 | ✅ |
+| Map (MAP-01/02) | map.test.ts | 34 | ✅ |
 | Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |
 | Hotspot FIRMS | firms.test.ts | 9 | ✅ |
-| Performance | perf.test.ts | 8 | ✅ |
+| Performance | perf.test.ts | 13 | ✅ |
 | Report | report.test.ts | 5 | ✅ |
 | Middleware | middleware.test.ts | 5 | ✅ |
 | Auth | auth.test.ts | 5 | ✅ |

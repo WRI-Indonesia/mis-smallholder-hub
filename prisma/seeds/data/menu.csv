@@ -27,3 +27,4 @@ tools,,Tools,/admin/tools,Wrench,6,TRUE,TRUE
 dashboard-snapshot,tools,Dashboard Snapshot,/admin/tools/snapshot,Camera,1,TRUE,TRUE
 map,,Map,/admin/map,Map,7,TRUE,TRUE
 map-parcel,map,Peta Lahan,/admin/map/parcel,MapPinned,1,TRUE,TRUE
+map-bmp,map,Peta BMP,/admin/map/bmp,Sprout,2,TRUE,TRUE
