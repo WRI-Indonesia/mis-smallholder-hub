@@ -70,7 +70,7 @@ Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara change
 | **UI/UX** | Loading state (loading.tsx) | 4 halaman tabel ditambah `loading.tsx` + `<TableSkeleton>` #128 (training, settings/menu, report ×2) | 🟠→✅ **PASS** (#128) | audit §4 U-4 |
 | **UI/UX** | Shadcn UI + Tailwind | Dipakai konsisten; DataTable/TableActions shared 100% patuh | ✅ PASS | audit §4 |
 | **UI/UX** | Table Actions positioning | `menu-list-client` dirapikan #128: `<TableActions>` + gating izin + kolom Aksi kiri | 🟠→✅ **PASS** (#128) | audit §4 U-1/U-2 |
-| **Issue Workflow** | QA gates (test/build/lint) | Test **377** ✅ · build ✅ · **lint ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 ✅ 2026-07-12 | ✅ **PASS** | audit §1 · #126 |
+| **Issue Workflow** | QA gates (test/build/lint) | Test **380** ✅ · build ✅ · **lint ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 ✅ 2026-07-12 | ✅ **PASS** | audit §1 · #126 |
 
 **Summary:** **14 PASS · 0 PARTIAL · 0 FAIL** — seluruh temuan compliance audit 2026-07-10 ditutup lewat remediasi bertahap #125–#130 (2026-07-12): RBAC guard/scope ✅ #125+#127, lint gate ✅ #126, pola restore soft-delete ✅ #127, konvensi UI (loading.tsx/Table Actions) ✅ #128, cleanup dead code/deps ✅ #129, kualitas berkelanjutan (audit fields, Zod, naming istilah domain, rename `.types.ts`, font) ✅ #130. Klaim lama "14/14 fully compliant" digantikan basis bukti #125–#130.
 
@@ -133,7 +133,7 @@ Format phase: `STREAM-NN`.
 | CMS-01      | CMS & Content Management     | 🔲 Not Started | Later   | Public knowledge page exists but only `Coming soon`; no CMS schema/admin                          | Define CMS scope                                                                 |
 | COMM-01     | Community                    | 🔲 Not Started | Later   | Public community page exists but only `Coming soon`                                               | Define community scope                                                           |
 | COMM-02     | i18n                         | 🔲 Planned     | Later   | No locale switch/persistence; only incidental calendar locale prop                                | Define i18n approach                                                             |
-| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **27 test files / 377 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) | RPT-03 (#132) ✅ & MAP-02 (#144) ✅ tercakup; gap tersisa: integration test route hotspot |
+| OPS-01      | Testing                      | 🟠 Partial     | Later   | Vitest: **27 test files / 380 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) | RPT-03 (#132) ✅ & MAP-02 (#144) ✅ tercakup; gap tersisa: integration test route hotspot |
 | OPS-02      | DevOps & Deployment          | 🟠 Partial     | Later   | Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`)                     | Verify deployment, env matrix, rollback, and CI status                           |
 
 </details>

@@ -126,12 +126,15 @@ export async function getMapData(
 
   // Shared scope for FarmerGroup — reused for both the KT layer and, via the
   // farmer relation, the parcel layer (LandParcel has no direct district/group).
+  // The access filter goes in `AND` (not spread) so its `{ districtId/id: { in } }`
+  // can't be overwritten by the required literal `districtId` or the literal
+  // `id` — the key-collision scope-leak (BUG-007, pitfall #127).
   const groupWhere = {
     isActive: true,
-    ...farmerGroupAccessFilter(access),
     districtId,
     ...(farmerGroupId ? { id: farmerGroupId } : {}),
     ...(provinceId ? { district: { provinceId } } : {}),
+    AND: farmerGroupAccessFilter(access),
   };
 
   const [groups, parcelRows] = await Promise.all([

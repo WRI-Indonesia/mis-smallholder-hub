@@ -262,6 +262,59 @@ describe("productionAvailabilityCategory", () => {
   });
 });
 
+// BUG-007 / #127: the FarmerGroup scope `where` built by getMapData and
+// getBmpMapData (map.ts) must put the access filter in `AND`, so a required
+// literal `districtId` or a literal `id` can't overwrite the scope's
+// `{ ...: { in } }` and leak groups outside the user's assignment. Mirror of the
+// builder (real module pulls next-auth/prisma that don't resolve in vitest).
+type AccessContext =
+  | { mode: "ALL" }
+  | { mode: "BY_FARMER_GROUP"; ids: string[] }
+  | { mode: "BY_DISTRICT"; ids: string[] };
+
+function farmerGroupAccessFilter(access: AccessContext) {
+  return access.mode === "BY_FARMER_GROUP"
+    ? { id: { in: access.ids } }
+    : access.mode === "BY_DISTRICT"
+      ? { districtId: { in: access.ids } }
+      : {};
+}
+
+function mapGroupWhere(
+  filters: { provinceId?: string | null; districtId?: string | null; farmerGroupId?: string | null },
+  access: AccessContext
+) {
+  const { provinceId, districtId, farmerGroupId } = filters;
+  return {
+    isActive: true,
+    ...(districtId ? { districtId } : {}),
+    ...(farmerGroupId ? { id: farmerGroupId } : {}),
+    ...(provinceId ? { district: { provinceId } } : {}),
+    AND: farmerGroupAccessFilter(access),
+  };
+}
+
+describe("map groupWhere scope (BUG-007)", () => {
+  it("BY_DISTRICT: literal districtId dipertahankan; scope masuk AND (tak menimpa)", () => {
+    const where = mapGroupWhere({ districtId: "d-outside" }, { mode: "BY_DISTRICT", ids: ["d1"] });
+    expect(where.districtId).toBe("d-outside");
+    expect(where.AND).toEqual({ districtId: { in: ["d1"] } });
+  });
+
+  it("BY_FARMER_GROUP: literal id dipertahankan; scope masuk AND (tak menimpa)", () => {
+    const where = mapGroupWhere({ farmerGroupId: "kt-outside" }, { mode: "BY_FARMER_GROUP", ids: ["kt-1"] });
+    expect(where.id).toBe("kt-outside");
+    expect(where.AND).toEqual({ id: { in: ["kt-1"] } });
+  });
+
+  it("ALL: AND no-op, tanpa batasan tambahan", () => {
+    const where = mapGroupWhere({ districtId: "d-x", farmerGroupId: "kt-x" }, { mode: "ALL" });
+    expect(where.AND).toEqual({});
+    expect(where.districtId).toBe("d-x");
+    expect(where.id).toBe("kt-x");
+  });
+});
+
 describe("buildBmpMapData", () => {
   // Build the productionByParcel map (period → 100 kg each) from period lists.
   const production = (parcelPeriods: Record<string, string[]>) =>
