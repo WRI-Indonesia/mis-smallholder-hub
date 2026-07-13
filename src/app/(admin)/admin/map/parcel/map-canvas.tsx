@@ -5,7 +5,7 @@ import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
@@ -699,23 +699,8 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
         )}
       </Map>
 
-      {/* Top-right controls: basemap switcher + ruler tool */}
+      {/* Top-right controls: ruler + parcel list */}
       <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
-        <div className="bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
-            <button
-              key={key}
-              onClick={() => setStyleOverride(key)}
-              className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${styleKey === key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-            >
-              {key}
-            </button>
-          ))}
-        </div>
-
         {/* Ruler / measure tool */}
         <button
           onClick={toggleMeasure}
@@ -860,6 +845,34 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
             </p>
           </div>
         )}
+      </div>
+
+      {/* Bottom-right controls: zoom-to-all + basemap switcher */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-2">
+        {data && data.parcels.length + data.kelompokTani.length > 0 && (
+          <button
+            onClick={() => fitAll()}
+            title="Zoom ke semua data"
+            aria-label="Zoom ke semua data"
+            className="flex h-9 w-9 items-center justify-center rounded-md border bg-background/90 text-muted-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Maximize className="h-4 w-4" />
+          </button>
+        )}
+        <div className="bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
+          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+            <button
+              key={key}
+              onClick={() => setStyleOverride(key)}
+              className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${styleKey === key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

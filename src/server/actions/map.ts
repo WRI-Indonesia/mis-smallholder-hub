@@ -10,8 +10,8 @@ import {
   farmerGroupAccessFilter,
   getAccessibleDistrictIds,
 } from "@/lib/access-context";
-import { buildMapData, summarizeProduction } from "@/lib/map-data";
-import { mapFilterSchema } from "@/validations/map.schema";
+import { buildMapData, buildBmpMapData, summarizeProduction } from "@/lib/map-data";
+import { mapFilterSchema, bmpMapFilterSchema } from "@/validations/map.schema";
 import type { ActionResult } from "@/types/action-result";
 import type {
   MapData,
@@ -21,6 +21,8 @@ import type {
   FarmerTrainingItem,
   ParcelPassport,
   ProductionSummary,
+  BmpMapData,
+  BmpMapFilters,
 } from "@/types/map";
 
 const VIEW = "VIEW";
@@ -168,6 +170,104 @@ export async function getMapData(
   ]);
 
   return { success: true, data: buildMapData(groups, parcelRows) };
+}
+
+const BMP_MENU_KEY = "map-bmp";
+
+/**
+ * Peta BMP — Layer 1: production-data availability per parcel. Loads land
+ * parcels for the selected Kelompok Tani (RBAC-scoped) and classifies each into
+ * 4 categories by how many consecutive months of production data it has.
+ *
+ * Unlike Peta Lahan, the query is bounded by Kelompok Tani (required); Provinsi
+ * and Distrik only narrow the KT dropdown. Production is fetched once for all
+ * parcels via a scoped groupBy (no N+1). Records with a null `parcelId` cannot
+ * be attributed to a parcel and never affect its color.
+ */
+export async function getBmpMapData(
+  filters: BmpMapFilters
+): Promise<ActionResult<BmpMapData>> {
+  if (!(await hasPermission(BMP_MENU_KEY, VIEW))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  }
+
+  const parsed = bmpMapFilterSchema.safeParse(filters);
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const first = Object.values(fieldErrors).flat()[0];
+    return { success: false, error: first ?? "Filter tidak valid" };
+  }
+  const { provinceId, districtId, farmerGroupId } = parsed.data;
+
+  const access = await getAccessContext();
+
+  // Shared scope for the selected FarmerGroup — reused for the KT layer and,
+  // via the farmer relation, the parcel layer. The access filter goes in `AND`
+  // (not spread) so its `{ id: { in } }` in BY_FARMER_GROUP mode can't be
+  // overwritten by the literal `id` — the key-collision pitfall (see #127).
+  const groupWhere = {
+    isActive: true,
+    id: farmerGroupId,
+    ...(districtId ? { districtId } : {}),
+    ...(provinceId ? { district: { provinceId } } : {}),
+    AND: farmerGroupAccessFilter(access),
+  };
+
+  const [groups, parcelRows] = await Promise.all([
+    prisma.farmerGroup.findMany({
+      where: groupWhere,
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        locationLat: true,
+        locationLong: true,
+        district: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.landParcel.findMany({
+      where: {
+        isActive: true,
+        geometry: { not: Prisma.DbNull },
+        farmer: { isActive: true, farmerGroup: groupWhere },
+      },
+      select: {
+        id: true,
+        parcelId: true,
+        farmerId: true,
+        geometry: true,
+        area: true,
+        plantingYear: true,
+        cropType: true,
+        landStatus: true,
+        farmer: {
+          select: { name: true, farmerId: true, farmerGroup: { select: { name: true } } },
+        },
+      },
+    }),
+  ]);
+
+  // One scoped query for all parcels' production, summed per (parcel, period)
+  // (avoids N+1). The _sum aggregate scans the same rows — no extra query cost.
+  const parcelIds = parcelRows.map((p) => p.id);
+  const productionByParcel = new Map<string, { period: string; kg: number }[]>();
+  if (parcelIds.length > 0) {
+    const rows = await prisma.productionRecord.groupBy({
+      by: ["parcelId", "period"],
+      where: { parcelId: { in: parcelIds }, isActive: true },
+      _sum: { yieldKg: true },
+    });
+    for (const r of rows) {
+      if (!r.parcelId) continue;
+      const entry = { period: r.period, kg: r._sum.yieldKg ?? 0 };
+      const list = productionByParcel.get(r.parcelId);
+      if (list) list.push(entry);
+      else productionByParcel.set(r.parcelId, [entry]);
+    }
+  }
+
+  return { success: true, data: buildBmpMapData(groups, parcelRows, productionByParcel) };
 }
 
 // Main training packages shown in the parcel popup (OTHER excluded).

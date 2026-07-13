@@ -3,7 +3,13 @@ import bcrypt from "bcryptjs";
 import { computeCompleteness, computePelatihanDomain } from "@/lib/data-completeness";
 import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
 import { buildProductionMatrix, enumeratePeriods, type ProductionMatrixRecord } from "@/lib/report-production";
-import { summarizeProduction } from "@/lib/map-data";
+import {
+  summarizeProduction,
+  buildBmpMapData,
+  longestConsecutiveMonths,
+  productionAvailabilityCategory,
+  type RawParcel,
+} from "@/lib/map-data";
 import { addParticipantsSchema } from "@/validations/training-participant.schema";
 
 describe("Performance - Auth operations", () => {
@@ -254,6 +260,57 @@ describe("Performance - MAP-01 parcel production summary (pure logic)", () => {
     expect(duration).toBeLessThan(50);
     expect(result.byYear.length).toBe(30);
     expect(result.recordCount).toBe(records.length);
+  });
+});
+
+describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
+  // getBmpMapData builds the whole payload for ONE Kelompok Tani in JS after two
+  // scoped queries. This stresses buildBmpMapData (per-parcel turf centroid + kg
+  // aggregation + category) far past a realistic KT to prove it stays cheap.
+  function squareAt(lng: number, lat: number): RawParcel["geometry"] {
+    return {
+      type: "Polygon",
+      coordinates: [[[lng, lat], [lng + 0.01, lat], [lng + 0.01, lat + 0.01], [lng, lat + 0.01], [lng, lat]]],
+    };
+  }
+
+  it("buildBmpMapData: 500 lahan × 36 bulan produksi under 200ms", () => {
+    const parcels = Array.from({ length: 500 }, (_, i) => ({
+      id: `p-${i}`,
+      parcelId: `L-${i}`,
+      farmerId: `f-${i}`,
+      geometry: squareAt(100 + (i % 50) * 0.02, Math.floor(i / 50) * 0.02),
+      area: 1.5,
+      plantingYear: 2018,
+      cropType: "Kelapa Sawit",
+      landStatus: "Milik",
+      farmer: { name: `Petani ${i}`, farmerId: `FMR-${i}`, farmerGroup: { name: "KT Perf" } },
+    })) as RawParcel[];
+
+    const periods = enumeratePeriods("2022-01", "2024-12"); // 36 consecutive months
+    const production = new Map<string, { period: string; kg: number }[]>();
+    for (const p of parcels) production.set(p.id, periods.map((period) => ({ period, kg: 120 })));
+
+    const start = performance.now();
+    const result = buildBmpMapData([], parcels, production);
+    const duration = performance.now() - start;
+
+    console.log(`  buildBmpMapData (500 lahan × 36 bulan): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(200);
+    expect(result.parcels.length).toBe(500);
+    expect(result.counts.baik).toBe(500); // 36 consecutive months > 24 → BAIK
+  });
+
+  it("longestConsecutiveMonths: 600-month list under 10ms", () => {
+    const periods = enumeratePeriods("2000-01", "2049-12"); // 600 months
+    const start = performance.now();
+    const streak = longestConsecutiveMonths(periods);
+    const duration = performance.now() - start;
+
+    console.log(`  longestConsecutiveMonths (${periods.length} bulan): ${duration.toFixed(3)}ms`);
+    expect(duration).toBeLessThan(10);
+    expect(streak).toBe(600);
+    expect(productionAvailabilityCategory(periods)).toBe("BAIK");
   });
 });
 

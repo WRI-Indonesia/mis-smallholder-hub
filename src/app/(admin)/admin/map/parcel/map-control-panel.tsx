@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame, Minimize2, MapPinned } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -188,10 +188,41 @@ export function MapControlPanel(props: Props) {
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [hotspotOpen, setHotspotOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(true);
+  const [minimized, setMinimized] = useState(false);
   const anyOverlayOn = Object.values(overlays.visible).some(Boolean);
+
+  // Minimized → just a floating icon button (same pattern as Peta BMP).
+  if (minimized) {
+    return (
+      <button
+        onClick={() => setMinimized(false)}
+        title="Buka panel filter"
+        aria-label="Buka panel filter"
+        className="absolute top-4 left-4 z-10 flex h-9 w-9 items-center justify-center rounded-md border bg-primary text-primary-foreground shadow-md backdrop-blur-sm"
+      >
+        <SlidersHorizontal className="h-4 w-4" />
+      </button>
+    );
+  }
 
   return (
     <Card className="absolute top-4 left-4 z-10 w-80 max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-y-auto shadow-lg gap-0 py-0">
+      {/* Sticky header with minimize button */}
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b bg-card px-4 py-2.5">
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <MapPinned className="h-4 w-4" />
+          Peta Lahan
+        </span>
+        <button
+          onClick={() => setMinimized(true)}
+          title="Minimalkan"
+          aria-label="Minimalkan"
+          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <Minimize2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
       {/* Filter section */}
       <Collapsible open={filterOpen} onOpenChange={onFilterOpenChange}>
         <CollapsibleTrigger
