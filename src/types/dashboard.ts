@@ -85,7 +85,8 @@ export interface SnapshotListItem {
   districtName: string | null;
   joinedYear: number | null;
   createdByName: string;
-  totalKelompokTani: number;
+  totalKelompokTani: number; // = jumlah Lembaga Petani (mislabel legacy)
+  totalKelompokTaniLahan: number; // distinct subGroupLv2 (#148)
   totalPetani: number;
   totalPetaniLaki: number;
   totalPetaniPerempuan: number;

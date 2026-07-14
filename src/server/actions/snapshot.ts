@@ -127,6 +127,7 @@ export async function getSnapshots(): Promise<SnapshotListItem[]> {
       joinedYear: s.joinedYear,
       createdByName: s.createdByUser.name,
       totalKelompokTani: data.totalKelompokTani,
+      totalKelompokTaniLahan: data.totalKelompokTaniLahan,
       totalPetani: data.totalPetani,
       totalPetaniLaki: data.totalPetaniLaki,
       totalPetaniPerempuan: data.totalPetaniPerempuan,

@@ -29,6 +29,13 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
   const columns: DataTableColumn<KTDetails>[] = [
     { key: "name", label: "Nama Lembaga Petani", sortable: true, cellClassName: "text-sm font-medium" },
     {
+      key: "kelompokTaniCount",
+      label: "Kelompok Tani",
+      sortable: true,
+      cellClassName: "text-sm tabular-nums text-right pr-4",
+      render: (row) => row.kelompokTaniCount ?? 0,
+    },
+    {
       key: "totalFarmers",
       label: "Total Petani",
       sortable: true,
@@ -58,6 +65,7 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
 
   const getExportRow = (row: KTDetails) => ({
     name: row.name,
+    kelompokTaniCount: row.kelompokTaniCount ?? 0,
     totalFarmers: row.totalFarmers,
     totalParcels: row.totalParcels,
     totalArea: formatArea(row.totalArea),
