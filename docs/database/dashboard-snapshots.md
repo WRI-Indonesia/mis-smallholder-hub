@@ -108,7 +108,7 @@ model MainDashboardSnapshot {
   // Aggregated Data (JSON) — flat DashboardSnapshotData
   data Json // Flat DashboardSnapshotData: { totalKelompokTani, totalPetani, totalPetaniLaki, totalPetaniPerempuan, totalPersilLahan, totalLuasLahan, trainingCounts, kelompokTaniList }
   // Each kelompokTaniList[] entry: { id, name, code, districtId, districtName, locationLat, locationLong, <all-years stats>, byYear: { "<year>": KTYearStats } }
-  // → the dashboard slices this single master snapshot client-side by Distrik / Tahun Bergabung / Lembaga Tani
+  // → the dashboard slices this single master snapshot client-side by Distrik / Tahun Bergabung / Lembaga Petani
 
   // Audit Trail
   createdBy String @map("created_by")

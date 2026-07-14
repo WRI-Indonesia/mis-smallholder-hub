@@ -14,8 +14,8 @@ export default async function GroupsPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Lembaga Tani</h1>
-        <p className="text-muted-foreground">Data lembaga tani yang terdaftar</p>
+        <h1 className="text-2xl font-bold">Lembaga Petani</h1>
+        <p className="text-muted-foreground">Data lembaga petani yang terdaftar</p>
       </div>
       <GroupListClient initialGroups={groups} districts={districts} permissions={permissions} isSuperAdmin={superAdmin} />
     </div>

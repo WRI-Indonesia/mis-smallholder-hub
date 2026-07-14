@@ -60,7 +60,7 @@ Untuk melakukan override permission menu per user (grant/revoke):
 
 Sistem menu mendukung hierarki sampai **3 level maksimal**:
 - **Level 1:** Menu Besar (e.g., Master Data, Settings, Dashboard)
-- **Level 2:** Sub Menu (e.g., Petani, Lembaga Tani, Pelatihan, User Management)
+- **Level 2:** Sub Menu (e.g., Petani, Lembaga Petani, Pelatihan, User Management)
 - **Level 3:** Detail Sub Menu (e.g., Peserta Pelatihan, Bukti Pelatihan, Land Parcel, Training Record)
 
 **RBAC Permission Inheritance:**

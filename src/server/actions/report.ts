@@ -83,7 +83,7 @@ export async function getFarmerReport(filters: FarmerReportFilters): Promise<Far
   }
 
   if (!filters.districtId || !filters.farmerGroupId) {
-    throw new Error("Filter Distrik dan Lembaga Tani wajib diisi");
+    throw new Error("Filter Distrik dan Lembaga Petani wajib diisi");
   }
 
   const access = await getAccessContext();
@@ -104,7 +104,7 @@ export async function getFarmerReport(filters: FarmerReportFilters): Promise<Far
   });
 
   if (!group) {
-    throw new Error("Lembaga Tani tidak ditemukan atau Anda tidak memiliki akses");
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
   }
 
   const farmers = await prisma.farmer.findMany({
@@ -225,7 +225,7 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
   }
 
   if (!filters.districtId || !filters.farmerGroupId) {
-    throw new Error("Filter Distrik dan Lembaga Tani wajib diisi");
+    throw new Error("Filter Distrik dan Lembaga Petani wajib diisi");
   }
 
   const access = await getAccessContext();
@@ -246,7 +246,7 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
   });
 
   if (!group) {
-    throw new Error("Lembaga Tani tidak ditemukan atau Anda tidak memiliki akses");
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
   }
 
   // Retrieve active training activities in this group, excluding package code 'OTHER'
@@ -463,7 +463,7 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
   }
 
   if (!filters.districtId || !filters.farmerGroupId) {
-    throw new Error("Filter Distrik dan Lembaga Tani wajib diisi");
+    throw new Error("Filter Distrik dan Lembaga Petani wajib diisi");
   }
 
   if (!isValidPeriod(filters.periodStart) || !isValidPeriod(filters.periodEnd)) {
@@ -496,7 +496,7 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
   });
 
   if (!group) {
-    throw new Error("Lembaga Tani tidak ditemukan atau Anda tidak memiliki akses");
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
   }
 
   // Single query: all active production records in the group within the range.

@@ -191,7 +191,7 @@ export function UserDataAccessModal({ open, onClose, onDataChange, userId, userN
 
             {/* Search */}
             <Input
-              placeholder="Cari provinsi, distrik, atau lembaga tani..."
+              placeholder="Cari provinsi, distrik, atau lembaga petani..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 text-sm"
@@ -216,7 +216,7 @@ export function UserDataAccessModal({ open, onClose, onDataChange, userId, userN
                 </TabsTrigger>
                 <TabsTrigger value="farmergroup" className="flex-1 gap-1.5">
                   <Tractor className="h-3.5 w-3.5 text-orange-500" />
-                  Lembaga Tani
+                  Lembaga Petani
                   {assignedFarmerGroupIds.size > 0 && (
                     <Badge variant="default" className="h-4 px-1 text-xs ml-0.5">{assignedFarmerGroupIds.size}</Badge>
                   )}

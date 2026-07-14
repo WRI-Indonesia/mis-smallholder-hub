@@ -134,7 +134,7 @@ export interface KelompokTaniReportRow {
   /** Unique key per (Lembaga × Gapoktan × Kelompok Tani) combination. */
   key: string;
   farmerGroupId: string;
-  /** FarmerGroup.name (= Lembaga Tani). */
+  /** FarmerGroup.name (= Lembaga Petani). */
   lembagaTani: string;
   /** Sub Lv.1 = Gapoktan (LandParcel.subGroupLv1), null bila kosong. */
   gapoktan: string | null;

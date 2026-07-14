@@ -273,16 +273,16 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
                 variant="outline"
                 size="sm"
                 className="h-8 gap-1.5 bg-background/90 backdrop-blur-sm shadow-md"
-                title="Cari Lembaga Tani"
+                title="Cari Lembaga Petani"
               >
                 <Search className="h-3.5 w-3.5" />
-                <span className="text-xs">Cari Lembaga Tani</span>
+                <span className="text-xs">Cari Lembaga Petani</span>
               </Button>
             }
           />
           <PopoverContent className="w-[260px] p-0" align="start">
             <Command>
-              <CommandInput placeholder="Cari lembaga tani..." />
+              <CommandInput placeholder="Cari lembaga petani..." />
               <CommandList>
                 <CommandEmpty>Kelompok tani tidak ditemukan.</CommandEmpty>
                 <CommandGroup>
@@ -309,7 +309,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
           variant="outline"
           size="sm"
           className="h-8 gap-1.5 bg-background/90 backdrop-blur-sm shadow-md"
-          title="Lihat semua Lembaga Tani"
+          title="Lihat semua Lembaga Petani"
           onClick={fitAll}
         >
           <Maximize2 className="h-3.5 w-3.5" />

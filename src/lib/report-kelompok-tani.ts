@@ -8,7 +8,7 @@ export interface KtRawParcel {
   /** Farmer.id — untuk hitung distinct petani. */
   farmerId: string;
   farmerGroupId: string;
-  /** FarmerGroup.name (= Lembaga Tani). */
+  /** FarmerGroup.name (= Lembaga Petani). */
   lembagaTani: string;
   /** Gapoktan (Sub Lv.1). */
   subGroupLv1: string | null;

@@ -256,9 +256,9 @@ export function MapControlPanel(props: Props) {
               onChange={onDistrictChange}
             />
             <FilterCombobox
-              label="Lembaga Tani"
-              placeholder="Pilih Lembaga Tani"
-              emptyText="Lembaga Tani tidak ditemukan."
+              label="Lembaga Petani"
+              placeholder="Pilih Lembaga Petani"
+              emptyText="Lembaga Petani tidak ditemukan."
               options={farmerGroups}
               value={farmerGroupId}
               onChange={onFarmerGroupChange}
@@ -296,7 +296,7 @@ export function MapControlPanel(props: Props) {
                   <div>
                     <LegendRow
                       color="#22c55e"
-                      label="Point Lembaga Tani"
+                      label="Point Lembaga Petani"
                       count={counts.kt}
                       checked={layers.kt}
                       onToggle={(v) => onLayersChange({ ...layers, kt: v })}

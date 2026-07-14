@@ -39,11 +39,11 @@ function scorePercent(complete: number, total: number): number {
   return total > 0 ? (complete / total) * 100 : 0;
 }
 
-// ── Domain 1: Profil Lembaga Tani ──
+// ── Domain 1: Profil Lembaga Petani ──
 export function computeProfileChecks(group: CompletenessGroupInput): ProfileCheck[] {
   const hasCoords = group.locationLat != null && group.locationLong != null;
   return [
-    { key: "code", label: "Kode Lembaga Tani", complete: !isBlank(group.code), value: group.code },
+    { key: "code", label: "Kode Lembaga Petani", complete: !isBlank(group.code), value: group.code },
     {
       key: "coordinates",
       label: "Koordinat Lokasi",
@@ -86,8 +86,8 @@ export function computePetaniDomain(farmers: CompletenessFarmerInput[]): DomainR
   const anomalies: DomainAnomaly[] = [
     anomaly("no-nik", "Petani tanpa NIK", noNik.map((f) => toItem(f))),
     anomaly("invalid-nik", "NIK tidak valid (bukan 16 digit)", invalidNik.map((f) => toItem(f, f.nik ?? undefined))),
-    anomaly("dup-nik", "NIK duplikat dalam Lembaga Tani", dupNik.map((f) => toItem(f, f.nik ?? undefined))),
-    anomaly("dup-farmer-id", "ID Petani duplikat dalam Lembaga Tani", dupFarmerId.map((f) => toItem(f, f.farmerId))),
+    anomaly("dup-nik", "NIK duplikat dalam Lembaga Petani", dupNik.map((f) => toItem(f, f.nik ?? undefined))),
+    anomaly("dup-farmer-id", "ID Petani duplikat dalam Lembaga Petani", dupFarmerId.map((f) => toItem(f, f.farmerId))),
     anomaly("no-address", "Petani tanpa alamat", noAddress.map((f) => toItem(f))),
     anomaly("no-birth-date", "Petani tanpa tanggal lahir", noBirthDate.map((f) => toItem(f))),
     anomaly("no-joined-year", "Petani tanpa tahun bergabung", noJoinedYear.map((f) => toItem(f))),
@@ -259,7 +259,7 @@ export function computePelatihanDomain(
   ].filter((a) => a.count > 0);
 
   if (activities.length === 0) {
-    anomalies.unshift({ key: "kt-tanpa-aktivitas", label: "Lembaga Tani belum memiliki aktivitas pelatihan", count: 1, items: [] });
+    anomalies.unshift({ key: "kt-tanpa-aktivitas", label: "Lembaga Petani belum memiliki aktivitas pelatihan", count: 1, items: [] });
   }
 
   return {

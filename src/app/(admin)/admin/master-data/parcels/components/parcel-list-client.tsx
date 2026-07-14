@@ -82,7 +82,7 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
     },
     {
       key: "farmerGroupName",
-      label: "Lembaga Tani",
+      label: "Lembaga Petani",
       sortable: true,
       cellClassName: "text-sm text-muted-foreground",
       render: (row) => row.farmer.farmerGroup.name,
@@ -182,7 +182,7 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
               className="w-[330px] justify-between h-9 font-normal text-left"
             >
               {groupFilter === "all" ? (
-                <span>Semua Lembaga Tani</span>
+                <span>Semua Lembaga Petani</span>
               ) : (
                 <span>{selectedGroup?.name}</span>
               )}
@@ -192,9 +192,9 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
         />
         <PopoverContent className="w-[330px] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Cari lembaga tani..." />
+            <CommandInput placeholder="Cari lembaga petani..." />
             <CommandList className="max-h-[300px]">
-              <CommandEmpty>Lembaga Tani tidak ditemukan.</CommandEmpty>
+              <CommandEmpty>Lembaga Petani tidak ditemukan.</CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   value="all"
@@ -209,7 +209,7 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
                       groupFilter === "all" ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  Semua Lembaga Tani
+                  Semua Lembaga Petani
                 </CommandItem>
                 {farmerGroups.map((g) => (
                   <CommandItem

@@ -529,7 +529,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
           />
         </Source>
 
-        {/* Point Lembaga Tani — top */}
+        {/* Point Lembaga Petani — top */}
         <Source id="kt-source" type="geojson" data={ktGeojson}>
           <Layer
             id="kt-point"
@@ -678,7 +678,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
               </div>
             ) : selected.kind === "kt" ? (
               <div className="w-[252px]">
-                <PopupHeader accent="emerald" icon={<MapPin className="h-4 w-4" />} title={String(selected.props.name ?? "—")} subtitle="Lembaga Tani" />
+                <PopupHeader accent="emerald" icon={<MapPin className="h-4 w-4" />} title={String(selected.props.name ?? "—")} subtitle="Lembaga Petani" />
                 <AttrRows
                   className="border-t px-3.5 py-3"
                   rows={[
@@ -960,7 +960,7 @@ function ParcelHeader({
             <span className="font-mono text-foreground/80 break-all">{parcelId}</span>
           </p>
           <p>
-            <span>Lembaga Tani: </span>
+            <span>Lembaga Petani: </span>
             <span className="text-foreground/80">{groupName}</span>
           </p>
         </div>
