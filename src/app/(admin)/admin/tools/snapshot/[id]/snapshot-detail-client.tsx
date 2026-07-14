@@ -27,7 +27,7 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
   const router = useRouter();
 
   const columns: DataTableColumn<KTDetails>[] = [
-    { key: "name", label: "Nama Lembaga Tani", sortable: true, cellClassName: "text-sm font-medium" },
+    { key: "name", label: "Nama Lembaga Petani", sortable: true, cellClassName: "text-sm font-medium" },
     {
       key: "totalFarmers",
       label: "Total Petani",
@@ -98,7 +98,7 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
 
       {/* KT table */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Ringkasan per Lembaga Tani</h2>
+        <h2 className="text-lg font-semibold">Ringkasan per Lembaga Petani</h2>
         <Button
           variant="outline"
           size="sm"
@@ -113,8 +113,8 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
         data={snapshot.data.kelompokTaniList}
         rowKey={(row) => row.id}
         searchKey="name"
-        searchPlaceholder="Cari lembaga tani..."
-        emptyMessage="Tidak ada data lembaga tani."
+        searchPlaceholder="Cari lembaga petani..."
+        emptyMessage="Tidak ada data lembaga petani."
         exportFilename={`snapshot-${snapshot.id}-kt`}
         getExportRow={getExportRow}
       />

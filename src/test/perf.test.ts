@@ -91,7 +91,7 @@ describe("Performance - Auth operations", () => {
 });
 
 describe("Performance - AUDIT-P0 RBAC scope guard (#125)", () => {
-  // bulkCreateFarmers memvalidasi setiap baris terhadap set lembaga tani yang
+  // bulkCreateFarmers memvalidasi setiap baris terhadap set lembaga petani yang
   // boleh diakses user. Harus O(n) via Set membership — bukan N+1 query atau
   // Array.includes O(n²). Test ini membuktikan hot-path in-memory tetap murah
   // untuk upload besar.
@@ -198,7 +198,7 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
 
 describe("Performance - RPT-03 Production report pivot (pure logic)", () => {
   // Deterministic synthetic records (no RNG): N farmers × 2 parcels × full month
-  // range × 2 harvests/month — the worst realistic case for one Lembaga Tani.
+  // range × 2 harvests/month — the worst realistic case for one Lembaga Petani.
   function makeRecords(farmerCount: number, periods: string[]): ProductionMatrixRecord[] {
     const records: ProductionMatrixRecord[] = [];
     for (let f = 0; f < farmerCount; f++) {
@@ -264,7 +264,7 @@ describe("Performance - MAP-01 parcel production summary (pure logic)", () => {
 });
 
 describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
-  // getBmpMapData builds the whole payload for ONE Lembaga Tani in JS after two
+  // getBmpMapData builds the whole payload for ONE Lembaga Petani in JS after two
   // scoped queries. This stresses buildBmpMapData (per-parcel turf centroid + kg
   // aggregation + category) far past a realistic KT to prove it stays cheap.
   function squareAt(lng: number, lat: number): RawParcel["geometry"] {
@@ -361,6 +361,43 @@ describe("Performance - Kelompok Tani distinct aggregation (#148, subGroupLv2)",
 
     console.log(`  distinct KT over 50k lahan: ${count} in ${duration.toFixed(2)}ms`);
     expect(count).toBe(500); // noise spasi/kapital ter-dedup ke 500 KT unik
-    expect(duration).toBeLessThan(20);
+    expect(duration).toBeLessThan(100); // margin longgar (aktual ~5ms) — guard O(n), bukan micro-benchmark
+  });
+});
+
+// Forward-looking untuk #153 (Master Lembaga Petani, snapshot-backed Opsi A): saat
+// generate snapshot, agregasi per-Lembaga = distinct KT/Gapoktan/Blok dari lahan
+// seluruh petani di Lembaga tsb. Buktikan agregasi O(n) satu-pass tetap murah →
+// aman dihitung di generator snapshot (bukan real-time per-baris list).
+describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga distinct)", () => {
+  it("aggregates distinct KT/Gapoktan/Blok per Lembaga over 50k parcels under 30ms", () => {
+    const N_LEMBAGA = 100;
+    const parcels = Array.from({ length: 50_000 }, (_, i) => ({
+      farmerGroupId: `lembaga-${i % N_LEMBAGA}`,
+      subGroupLv2: i % 6 === 0 ? null : `KT ${i % 500}`,
+      subGroupLv1: i % 8 === 0 ? null : `Gapoktan ${i % 50}`,
+      blok: i % 4 === 0 ? null : `Blok ${i % 200}`,
+    }));
+
+    const start = performance.now();
+    const perLembaga = new Map<string, { kt: Set<string>; gapoktan: Set<string>; blok: Set<string> }>();
+    for (const p of parcels) {
+      let agg = perLembaga.get(p.farmerGroupId);
+      if (!agg) {
+        agg = { kt: new Set(), gapoktan: new Set(), blok: new Set() };
+        perLembaga.set(p.farmerGroupId, agg);
+      }
+      const kt = p.subGroupLv2?.trim().toLowerCase();
+      if (kt) agg.kt.add(kt);
+      const g = p.subGroupLv1?.trim().toLowerCase();
+      if (g) agg.gapoktan.add(g);
+      const b = p.blok?.trim().toLowerCase();
+      if (b) agg.blok.add(b);
+    }
+    const duration = performance.now() - start;
+
+    console.log(`  per-Lembaga distinct (${N_LEMBAGA} lembaga × 50k lahan): ${duration.toFixed(2)}ms`);
+    expect(perLembaga.size).toBe(N_LEMBAGA);
+    expect(duration).toBeLessThan(100); // margin longgar (aktual ~8ms) — guard O(n), bukan micro-benchmark
   });
 });

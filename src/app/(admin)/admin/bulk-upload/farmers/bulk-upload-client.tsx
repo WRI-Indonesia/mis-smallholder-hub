@@ -220,7 +220,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
     // 5. Farmer Group (from global dropdown)
     const group = farmerGroups.find((g) => g.id === selectedGroupId);
     if (!group) {
-      errors.push("Lembaga Tani wajib dipilih");
+      errors.push("Lembaga Petani wajib dipilih");
     } else {
       normalized.farmerGroupId = group.id;
       normalized._farmerGroupName = group.name;
@@ -393,7 +393,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
       { header: "Nama Petani", key: "name", width: 25 },
       { header: "Jenis Kelamin", key: "gender", width: 15 },
       { header: "NIK", key: "nik", width: 22 },
-      { header: "Lembaga Tani", key: "farmerGroup", width: 25 },
+      { header: "Lembaga Petani", key: "farmerGroup", width: 25 },
       { header: "Tempat Lahir", key: "birthPlace", width: 20 },
       { header: "Tanggal Lahir", key: "birthDate", width: 18 },
       { header: "Tahun Bergabung", key: "joinedYear", width: 18 },
@@ -497,12 +497,12 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
 
   return (
     <div className="space-y-6">
-      {/* Step 1: Select Lembaga Tani (Farmer Group) with search */}
+      {/* Step 1: Select Lembaga Petani (Farmer Group) with search */}
       <Card className="p-6">
         <div className="flex flex-col gap-2 max-w-md">
-          <Label className="text-base font-semibold">1. Pilih Lembaga Tani</Label>
+          <Label className="text-base font-semibold">1. Pilih Lembaga Petani</Label>
           <p className="text-xs text-muted-foreground">
-            Pilih Lembaga Tani tujuan terlebih dahulu sebelum mengunggah data.
+            Pilih Lembaga Petani tujuan terlebih dahulu sebelum mengunggah data.
           </p>
 
           <Popover open={comboOpen} onOpenChange={setComboOpen}>
@@ -519,7 +519,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
                       {selectedGroup?.name} {selectedGroup?.code ? `(${selectedGroup.code})` : ""}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">Pilih Lembaga Tani...</span>
+                    <span className="text-muted-foreground">Pilih Lembaga Petani...</span>
                   )}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -527,9 +527,9 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
             />
             <PopoverContent className="w-[400px] p-0" align="start">
               <Command>
-                <CommandInput placeholder="Cari Lembaga Tani berdasarkan nama atau kode..." />
+                <CommandInput placeholder="Cari Lembaga Petani berdasarkan nama atau kode..." />
                 <CommandList className="max-h-[300px]">
-                  <CommandEmpty>Lembaga Tani tidak ditemukan.</CommandEmpty>
+                  <CommandEmpty>Lembaga Petani tidak ditemukan.</CommandEmpty>
                   <CommandGroup>
                     {farmerGroups.map((g) => (
                       <CommandItem
@@ -582,7 +582,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
             ) : (
               !selectedGroupId && (
                 <span className="text-sm text-destructive font-medium">
-                  * Harap pilih Lembaga Tani di atas terlebih dahulu.
+                  * Harap pilih Lembaga Petani di atas terlebih dahulu.
                 </span>
               )
             )}
@@ -752,7 +752,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
                   <TableHead>Nama</TableHead>
                   <TableHead className="w-[80px]">L/P</TableHead>
                   <TableHead>NIK</TableHead>
-                  <TableHead>Lembaga Tani</TableHead>
+                  <TableHead>Lembaga Petani</TableHead>
                   <TableHead>Tahun Bergabung</TableHead>
                   <TableHead>Tanggal Lahir</TableHead>
                   <TableHead className="w-[100px]">Status</TableHead>

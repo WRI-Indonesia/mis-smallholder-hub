@@ -57,7 +57,7 @@ erDiagram
 | **User & Auth** | User | NextAuth integration, Role-based access |
 | **RBAC** | RolePermission, UserProvince, UserDistrict, UserFarmerGroup, UserPermissionOverride | Permission matrix, data access control, menu override |
 | **Menu** | MenuItem | Recursive parent-child (3-level), dynamic menu management |
-| **Farmer Group** | FarmerGroup | **= Lembaga Tani** (level teratas; label lama "Kelompok Tani" mislabel → relabel TD-013/#147). District-based, location coordinates, category (EX_PLASMA/SWADAYA) |
+| **Farmer Group** | FarmerGroup | **= Lembaga Petani** (level teratas; label lama "Kelompok Tani" mislabel → relabel TD-013/#147). District-based, location coordinates, category (EX_PLASMA/SWADAYA) |
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
 | **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking; `blok` (blok kebun); **sub-kelompok interim** `subGroupLv1` (Gapoktan) + `subGroupLv2` (Kelompok Tani) per-lahan (#146) |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
@@ -93,7 +93,7 @@ erDiagram
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
 | **2.5.0** | 2026-07-14 | `LandParcel.blok` (String?, blok kebun) | LOW (1 nullable column, additive) |
-| 2.4.0 | 2026-07-14 | Sub-kelompok interim per-lahan (#146): `LandParcel.subGroupLv1` (Gapoktan) + `subGroupLv2` (Kelompok Tani); `FarmerGroup` diklarifikasi = **Lembaga Tani** (TD-013/#147) | LOW (2 nullable columns, additive) |
+| 2.4.0 | 2026-07-14 | Sub-kelompok interim per-lahan (#146): `LandParcel.subGroupLv1` (Gapoktan) + `subGroupLv2` (Kelompok Tani); `FarmerGroup` diklarifikasi = **Lembaga Petani** (TD-013/#147) | LOW (2 nullable columns, additive) |
 | 2.3.0 | 2026-07-08 | Dashboard snapshot (#99): MainDashboardSnapshot model, separate table per dashboard pattern | MEDIUM (new table + pattern establishment) |
 | 2.2.1 | 2026-06-28 | Training participant pre/post-test scores (#94) + unique ProductionRecord ditambah `parcelId` | LOW–MEDIUM (nullable fields + constraint change) |
 | 2.2.0 | 2026-06-22 | Production module (#89): ProductionRecord model, per-farmer/parcel yield tracking, bulk upload | Medium (new table + production tracking features) |

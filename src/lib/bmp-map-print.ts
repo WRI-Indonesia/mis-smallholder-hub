@@ -153,7 +153,7 @@ function renderMatrixPages(doc: jsPDF, opts: BmpPrintOptions, margin: number) {
     drawPageTitle();
     doc.setFontSize(10);
     doc.setTextColor(90);
-    doc.text("Belum ada data produksi yang tertaut ke lahan pada Lembaga Tani ini.", margin, 28);
+    doc.text("Belum ada data produksi yang tertaut ke lahan pada Lembaga Petani ini.", margin, 28);
     doc.setTextColor(0);
     return;
   }

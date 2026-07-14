@@ -3,7 +3,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
-import { getAccessContext } from "@/lib/access-context";
+import { getAccessContext, farmerRelationAccessFilter } from "@/lib/access-context";
 import type {
   FarmerReportFilters,
   FarmerReportResult,
@@ -11,7 +11,9 @@ import type {
   TrainingReportFilters,
   TrainingReportResult,
   ProductionReportFilters,
-  ProductionReportResult
+  ProductionReportResult,
+  KelompokTaniReportFilters,
+  KelompokTaniReportResult,
 } from "@/types/report";
 import {
   enumeratePeriods,
@@ -20,6 +22,7 @@ import {
   PRODUCTION_REPORT_MAX_MONTHS,
   type ProductionMatrixRecord,
 } from "@/lib/report-production";
+import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok-tani";
 
 export async function getDistrictsForReport() {
   if (!(await hasPermission("report-farmer", "VIEW"))) {
@@ -80,7 +83,7 @@ export async function getFarmerReport(filters: FarmerReportFilters): Promise<Far
   }
 
   if (!filters.districtId || !filters.farmerGroupId) {
-    throw new Error("Filter Distrik dan Lembaga Tani wajib diisi");
+    throw new Error("Filter Distrik dan Lembaga Petani wajib diisi");
   }
 
   const access = await getAccessContext();
@@ -101,7 +104,7 @@ export async function getFarmerReport(filters: FarmerReportFilters): Promise<Far
   });
 
   if (!group) {
-    throw new Error("Lembaga Tani tidak ditemukan atau Anda tidak memiliki akses");
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
   }
 
   const farmers = await prisma.farmer.findMany({
@@ -222,7 +225,7 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
   }
 
   if (!filters.districtId || !filters.farmerGroupId) {
-    throw new Error("Filter Distrik dan Lembaga Tani wajib diisi");
+    throw new Error("Filter Distrik dan Lembaga Petani wajib diisi");
   }
 
   const access = await getAccessContext();
@@ -243,7 +246,7 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
   });
 
   if (!group) {
-    throw new Error("Lembaga Tani tidak ditemukan atau Anda tidak memiliki akses");
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
   }
 
   // Retrieve active training activities in this group, excluding package code 'OTHER'
@@ -460,7 +463,7 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
   }
 
   if (!filters.districtId || !filters.farmerGroupId) {
-    throw new Error("Filter Distrik dan Lembaga Tani wajib diisi");
+    throw new Error("Filter Distrik dan Lembaga Petani wajib diisi");
   }
 
   if (!isValidPeriod(filters.periodStart) || !isValidPeriod(filters.periodEnd)) {
@@ -493,7 +496,7 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
   });
 
   if (!group) {
-    throw new Error("Lembaga Tani tidak ditemukan atau Anda tidak memiliki akses");
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
   }
 
   // Single query: all active production records in the group within the range.
@@ -531,4 +534,84 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
   }));
 
   return buildProductionMatrix(matrixRecords, periods);
+}
+
+// ─── Report Kelompok Tani (#154) — agregat KT/Gapoktan turunan dari lahan (real-time) ───
+
+export async function getDistrictsForKtReport() {
+  if (!(await hasPermission("report-kelompok-tani", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const where: Prisma.DistrictWhereInput = { isActive: true };
+  if (access.mode === "BY_DISTRICT") {
+    where.id = { in: access.ids };
+  } else if (access.mode === "BY_FARMER_GROUP") {
+    where.farmerGroups = { some: { id: { in: access.ids }, isActive: true } };
+  }
+
+  return prisma.district.findMany({ where, orderBy: { name: "asc" } });
+}
+
+export async function getFarmerGroupsForKtReport(districtId?: string | null) {
+  if (!(await hasPermission("report-kelompok-tani", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+
+  return prisma.farmerGroup.findMany({
+    where: { isActive: true, ...accessFilter, ...(districtId ? { districtId } : {}) },
+    select: { id: true, name: true, code: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getKelompokTaniReport(
+  filters: KelompokTaniReportFilters = {},
+): Promise<KelompokTaniReportResult> {
+  if (!(await hasPermission("report-kelompok-tani", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  // Scope via relasi farmer + filter Distrik/Lembaga (opsional). `AND` agar
+  // beberapa kondisi relasi `farmer` tak saling menimpa (pitfall key-collision).
+  const andFilters: Prisma.LandParcelWhereInput[] = [farmerRelationAccessFilter(access)];
+  if (filters.farmerGroupId) andFilters.push({ farmer: { farmerGroupId: filters.farmerGroupId } });
+  if (filters.districtId) andFilters.push({ farmer: { farmerGroup: { districtId: filters.districtId } } });
+
+  const parcels = await prisma.landParcel.findMany({
+    where: {
+      isActive: true,
+      farmer: { isActive: true },
+      AND: andFilters,
+    },
+    select: {
+      farmerId: true,
+      subGroupLv1: true,
+      subGroupLv2: true,
+      farmer: {
+        select: {
+          farmerGroupId: true,
+          farmerGroup: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  const raw: KtRawParcel[] = parcels.map((p) => ({
+    farmerId: p.farmerId,
+    farmerGroupId: p.farmer.farmerGroupId,
+    lembagaTani: p.farmer.farmerGroup.name,
+    subGroupLv1: p.subGroupLv1,
+    subGroupLv2: p.subGroupLv2,
+  }));
+
+  return buildKelompokTaniReport(raw);
 }

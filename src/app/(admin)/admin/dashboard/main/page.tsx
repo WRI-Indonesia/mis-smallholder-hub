@@ -6,7 +6,7 @@ export default async function MainDashboardPage() {
   await requirePermission("dashboard-main");
 
   // Load the latest "all districts / all years" master snapshot; the dashboard
-  // slices it (Distrik / Tahun / Lembaga Tani) entirely client-side.
+  // slices it (Distrik / Tahun / Lembaga Petani) entirely client-side.
   const initialView = await getLatestDashboardSnapshot();
 
   return (

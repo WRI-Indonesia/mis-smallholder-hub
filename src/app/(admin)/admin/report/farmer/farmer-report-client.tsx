@@ -51,7 +51,7 @@ export function FarmerReportClient({ districts }: Props) {
         const groups = await getFarmerGroupsForReport(selectedDistrict);
         setFarmerGroups(groups);
       } catch {
-        toast.error("Gagal memuat Lembaga Tani");
+        toast.error("Gagal memuat Lembaga Petani");
       }
     }
     updateGroups();
@@ -72,7 +72,7 @@ export function FarmerReportClient({ districts }: Props) {
 
   const handleLoadReport = () => {
     if (!selectedDistrict || !selectedFarmerGroup) {
-      toast.error("Silakan pilih Distrik dan Lembaga Tani terlebih dahulu");
+      toast.error("Silakan pilih Distrik dan Lembaga Petani terlebih dahulu");
       return;
     }
 
@@ -102,7 +102,7 @@ export function FarmerReportClient({ districts }: Props) {
       subtitle: "Smallholder HUB Management Information System",
       metadata: [
         { label: "Distrik", value: selectedDistrictObj?.name ?? "—" },
-        { label: "Lembaga Tani", value: selectedGroupObj?.name ?? "—" },
+        { label: "Lembaga Petani", value: selectedGroupObj?.name ?? "—" },
       ],
       columns: [
         { header: "ID Petani", key: "farmerId" },
@@ -247,7 +247,7 @@ export function FarmerReportClient({ districts }: Props) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-muted-foreground">Lembaga Tani <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-muted-foreground">Lembaga Petani <span className="text-red-500">*</span></label>
               <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
                 <PopoverTrigger
                   render={
@@ -261,7 +261,7 @@ export function FarmerReportClient({ districts }: Props) {
                       {selectedFarmerGroup ? (
                         <span>{selectedGroupObj?.name}</span>
                       ) : (
-                        <span className="text-muted-foreground">Pilih Lembaga Tani</span>
+                        <span className="text-muted-foreground">Pilih Lembaga Petani</span>
                       )}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -269,7 +269,7 @@ export function FarmerReportClient({ districts }: Props) {
                 />
                 <PopoverContent className="w-[220px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Cari lembaga tani..." />
+                    <CommandInput placeholder="Cari lembaga petani..." />
                     <CommandList>
                       <CommandEmpty>Kelompok tani tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
@@ -313,7 +313,7 @@ export function FarmerReportClient({ districts }: Props) {
           <p className="text-sm text-muted-foreground mt-1">Smallholder HUB Management Information System</p>
           <div className="flex justify-center gap-6 mt-3 text-sm font-medium">
             <p><strong>Distrik:</strong> {selectedDistrictObj?.name}</p>
-            <p><strong>Lembaga Tani:</strong> {selectedGroupObj?.name}</p>
+            <p><strong>Lembaga Petani:</strong> {selectedGroupObj?.name}</p>
           </div>
         </div>
       )}
@@ -409,7 +409,7 @@ export function FarmerReportClient({ districts }: Props) {
             <div className="space-y-1">
               <h3 className="font-semibold text-lg">Filter Wajib Belum Lengkap</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Silakan pilih Distrik dan Lembaga Tani untuk memuat ringkasan dan rincian data laporan petani.
+                Silakan pilih Distrik dan Lembaga Petani untuk memuat ringkasan dan rincian data laporan petani.
               </p>
             </div>
           </CardContent>

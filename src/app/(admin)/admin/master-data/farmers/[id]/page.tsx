@@ -40,7 +40,7 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
       <Card className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lembaga Tani</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lembaga Petani</p>
             <p className="text-sm font-medium mt-1">{farmer.farmerGroup.name}</p>
           </div>
           <div>

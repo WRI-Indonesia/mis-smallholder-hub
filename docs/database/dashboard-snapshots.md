@@ -108,7 +108,7 @@ model MainDashboardSnapshot {
   // Aggregated Data (JSON) — flat DashboardSnapshotData
   data Json // Flat DashboardSnapshotData: { totalKelompokTani, totalPetani, totalPetaniLaki, totalPetaniPerempuan, totalPersilLahan, totalLuasLahan, trainingCounts, kelompokTaniList }
   // Each kelompokTaniList[] entry: { id, name, code, districtId, districtName, locationLat, locationLong, <all-years stats>, byYear: { "<year>": KTYearStats } }
-  // → the dashboard slices this single master snapshot client-side by Distrik / Tahun Bergabung / Lembaga Tani
+  // → the dashboard slices this single master snapshot client-side by Distrik / Tahun Bergabung / Lembaga Petani
 
   // Audit Trail
   createdBy String @map("created_by")
@@ -226,3 +226,12 @@ model ProductionDashboardSnapshot {
 - Version snapshot data structure if breaking changes needed
 - Consider retention policies (e.g., delete snapshots older than 2 years)
 - Implement background jobs for automated snapshot generation (future enhancement)
+
+### Agregat Kelompok Tani — hanya count di dashboard (#148); tabular = Report real-time (#154)
+
+**Revisi 2026-07-14:** rencana snapshot-table untuk view **tabular** KT **dibatalkan** — agregasi murah (perf 8ms/50k lahan, #153) → view tabular KT jadi **Report real-time** (**#154**, `getKelompokTaniReport`), bukan snapshot. **#153 di-close (superseded).**
+
+Yang **tetap** memakai dashboard snapshot: **hanya angka count** untuk card **"Total Kelompok Tani" (#148)** — tambah field count (distinct `subGroupLv2`) ke `DashboardSnapshotData` (dashboard snapshot-backed *by design*; `normalizeSnapshotData` default 0 untuk snapshot lama). **Bukan** tabel snapshot baru.
+
+- Detail/tabular KT/Gapoktan/Blok → **real-time** (Report #154; detail Petani #152).
+- Saat KT jadi tabel (**TD-014**), agregasi teks → query relasi.

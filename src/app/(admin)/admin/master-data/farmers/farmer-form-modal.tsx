@@ -148,7 +148,7 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
               {errors.gender && <p className="text-sm text-destructive">{errors.gender[0]}</p>}
             </div>
             <div className="space-y-2 flex flex-col">
-              <Label htmlFor="farmerGroupId">Lembaga Tani</Label>
+              <Label htmlFor="farmerGroupId">Lembaga Petani</Label>
               <Popover open={comboOpen} onOpenChange={setComboOpen}>
                 <PopoverTrigger
                   render={
@@ -162,7 +162,7 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
                       {farmerGroupId ? (
                         <span>{selectedGroup?.name}</span>
                       ) : (
-                        <span className="text-muted-foreground">Pilih Lembaga Tani</span>
+                        <span className="text-muted-foreground">Pilih Lembaga Petani</span>
                       )}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -170,9 +170,9 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
                 />
                 <PopoverContent className="w-[220px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Cari lembaga tani..." />
+                    <CommandInput placeholder="Cari lembaga petani..." />
                     <CommandList className="max-h-[250px]">
-                      <CommandEmpty>Lembaga Tani tidak ditemukan.</CommandEmpty>
+                      <CommandEmpty>Lembaga Petani tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
                         {farmerGroups.map((g) => (
                           <CommandItem

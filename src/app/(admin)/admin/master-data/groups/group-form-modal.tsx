@@ -87,7 +87,7 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
       return;
     }
 
-    toast.success(isEdit ? "Lembaga Tani diupdate" : "Lembaga Tani dibuat");
+    toast.success(isEdit ? "Lembaga Petani diupdate" : "Lembaga Petani dibuat");
     onClose();
     router.refresh();
   }
@@ -96,11 +96,11 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Lembaga Tani" : "Tambah Lembaga Tani"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Lembaga Petani" : "Tambah Lembaga Petani"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nama Lembaga Tani</Label>
+            <Label htmlFor="name">Nama Lembaga Petani</Label>
             <Input id="name" name="name" defaultValue={group?.name ?? ""} required />
             {errors.name && <p className="text-sm text-destructive">{errors.name[0]}</p>}
           </div>

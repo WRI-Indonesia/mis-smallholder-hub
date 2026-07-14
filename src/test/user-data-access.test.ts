@@ -61,7 +61,7 @@ describe("UserDataAccess — visual summary", () => {
       farmerGroups: [
         {
           farmerGroupId: "fg1",
-          farmerGroup: { id: "fg1", name: "Lembaga Tani Sejahtera", abrv: "KTS" },
+          farmerGroup: { id: "fg1", name: "Lembaga Petani Sejahtera", abrv: "KTS" },
         },
       ],
     };
@@ -255,7 +255,7 @@ describe("UserDataAccess — performance", () => {
   it("resolves 50 KT search filter under 1ms", () => {
     const groups = Array.from({ length: 50 }, (_, i) => ({
       id: `fg-${i}`,
-      name: `Lembaga Tani ${i}`,
+      name: `Lembaga Petani ${i}`,
       abrv: `KT-${i}`,
       district: { name: `Distrik ${i % 5}` },
     }));

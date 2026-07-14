@@ -154,7 +154,7 @@ export function generateFarmPassportPdf(data: ParcelPassport) {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
   doc.text(`ID Petani: ${orDash(farmer.code)}`, idX, 42);
-  doc.text(`Lembaga Tani: ${orDash(group.name)}`, idX, 47);
+  doc.text(`Lembaga Petani: ${orDash(group.name)}`, idX, 47);
   doc.text(`${orDash(group.districtName)}, ${orDash(group.provinceName)}`, idX, 52);
 
   // Layout Lahan

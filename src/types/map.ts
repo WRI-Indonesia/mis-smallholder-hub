@@ -7,7 +7,7 @@ export type MapFilters = {
   farmerGroupId?: string | null;
 };
 
-/** A Lembaga Tani point (from FarmerGroup.locationLat/locationLong). */
+/** A Lembaga Petani point (from FarmerGroup.locationLat/locationLong). */
 export type KTPoint = {
   id: string;
   name: string;
@@ -49,7 +49,7 @@ export type MapGroupOption = { id: string; name: string; code: string | null };
 // ── Peta BMP (MAP-02) ──────────────────────────────────────────────────────
 
 /**
- * Filter input for the Peta BMP map. Lembaga Tani is required to bound the
+ * Filter input for the Peta BMP map. Lembaga Petani is required to bound the
  * query; Provinsi/Distrik are optional and only narrow the KT dropdown.
  */
 export type BmpMapFilters = {

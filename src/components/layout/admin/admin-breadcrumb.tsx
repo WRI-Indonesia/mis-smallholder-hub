@@ -13,7 +13,7 @@ export function useBreadcrumbs() {
     dashboard: "Dashboard",
     "master-data": "Master Data",
     farmers: "Data Petani",
-    groups: "Lembaga Tani",
+    groups: "Lembaga Petani",
     parcels: "Data Lahan",
     regions: "Region / Wilayah",
     cms: "CMS",
