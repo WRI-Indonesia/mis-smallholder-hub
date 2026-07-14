@@ -47,6 +47,7 @@ import {
   UserCheck,
   Briefcase,
   Building2,
+  Network,
   // Maps & Location
   Map,
   MapPin,
@@ -129,6 +130,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   UserCheck: UserCheck,
   Briefcase: Briefcase,
   Building2: Building2,
+  Network: Network,
   // Maps & Location
   Map: Map,
   MapPin: MapPin,
