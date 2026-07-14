@@ -17,6 +17,20 @@
 4. **Performance Test** — Pastikan tidak ada regresi
 5. **Report** — Changed files, hasil verifikasi, QA notes, risk
 6. **Approval** — Tunggu approval sebelum push
+7. **Issue Close** — Sebelum menutup issue: **recheck** hasil akhir, lalu tulis **comment retrospektif wajib** (format di bawah)
+
+### Issue Close — Retrospektif wajib (sebelum close)
+
+Sebelum menutup GitHub Issue: (1) **recheck** dulu (rule/gate/konsistensi tercapai), lalu (2) tulis **comment retrospektif** — **compact + section collapsible** (`<details><summary>`), berisi **6 bagian**:
+
+- 💡 **Insight** — temuan / pemahaman kunci
+- 🛠️ **How to solve** — pendekatan solusi
+- 🧗 **Challenge** — tantangan / pitfall
+- 🔄 **Perubahan dari issue dasar** (jika ada) — deviasi dari scope awal
+- 📚 **What we learned** — pelajaran dari issue ini
+- 🧭 **Feedback & improvement** — tindak lanjut / rekomendasi
+
+Contoh penerapan: komentar penutup **#146 / #147 / #149 / #155**.
 
 ### Pre-Commit Gate (wajib, dijalankan lokal)
 
