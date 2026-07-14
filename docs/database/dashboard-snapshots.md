@@ -226,3 +226,12 @@ model ProductionDashboardSnapshot {
 - Version snapshot data structure if breaking changes needed
 - Consider retention policies (e.g., delete snapshots older than 2 years)
 - Implement background jobs for automated snapshot generation (future enhancement)
+
+### Planned: agregat turunan land-parcel (KT/Gapoktan/Blok) — #148/#153
+
+Keputusan **2026-07-14 (Opsi A)**: agregat turunan **jumlah Kelompok Tani / Gapoktan / Blok** per Lembaga Tani (distinct dari `LandParcel.subGroupLv2`/`subGroupLv1`/`blok`, interim #146) **memperluas `MainDashboardSnapshot`/`DashboardSnapshotData`** — **bukan** tabel snapshot baru (satu generator Tools, satu sumber). Konsumen: card dashboard "Total Kelompok Tani" (#148) + kolom drill-down Master Lembaga Tani (#153).
+
+- **Snapshot-backed** karena distinct lintas semua lahan mahal/rawan N+1 bila real-time; snapshot murah dibaca; **stale-until-regenerate** diterima (sama seperti dashboard).
+- **Detail per-record (1 Petani/Lembaga) tetap real-time** (#152) — murah & fresh.
+- Field baru **additive** → `normalizeSnapshotData` beri default 0 untuk snapshot lama. Regenerate snapshot setelah data lahan (#150) terisi.
+- Saat KT jadi tabel (**TD-014**), agregasi teks → `count` relasi.
