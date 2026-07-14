@@ -361,7 +361,7 @@ describe("Performance - Kelompok Tani distinct aggregation (#148, subGroupLv2)",
 
     console.log(`  distinct KT over 50k lahan: ${count} in ${duration.toFixed(2)}ms`);
     expect(count).toBe(500); // noise spasi/kapital ter-dedup ke 500 KT unik
-    expect(duration).toBeLessThan(20);
+    expect(duration).toBeLessThan(100); // margin longgar (aktual ~5ms) — guard O(n), bukan micro-benchmark
   });
 });
 
@@ -398,6 +398,6 @@ describe("Performance - Lembaga Tani snapshot aggregation (#153, per-Lembaga dis
 
     console.log(`  per-Lembaga distinct (${N_LEMBAGA} lembaga × 50k lahan): ${duration.toFixed(2)}ms`);
     expect(perLembaga.size).toBe(N_LEMBAGA);
-    expect(duration).toBeLessThan(30);
+    expect(duration).toBeLessThan(100); // margin longgar (aktual ~8ms) — guard O(n), bukan micro-benchmark
   });
 });

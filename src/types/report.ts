@@ -124,3 +124,37 @@ export interface ProductionReportResult {
   grandTotal: number;
   summary: ProductionReportSummary;
 }
+
+export interface KelompokTaniReportFilters {
+  districtId?: string | null;
+  farmerGroupId?: string | null;
+}
+
+export interface KelompokTaniReportRow {
+  /** Unique key per (Lembaga × Gapoktan × Kelompok Tani) combination. */
+  key: string;
+  farmerGroupId: string;
+  /** FarmerGroup.name (= Lembaga Tani). */
+  lembagaTani: string;
+  /** Sub Lv.1 = Gapoktan (LandParcel.subGroupLv1), null bila kosong. */
+  gapoktan: string | null;
+  /** Sub Lv.2 = Kelompok Tani (LandParcel.subGroupLv2), null bila kosong. */
+  kelompokTani: string | null;
+  /** Distinct petani dengan ≥1 lahan aktif di kombinasi ini. */
+  totalPetani: number;
+  /** Jumlah lahan aktif di kombinasi ini. */
+  totalLahan: number;
+}
+
+export interface KelompokTaniReportSummary {
+  totalKelompokTani: number; // baris dengan Kelompok Tani non-null
+  totalGapoktan: number; // distinct (Lembaga, Gapoktan) non-null
+  totalLembagaTani: number; // distinct Lembaga
+  totalPetani: number; // distinct petani keseluruhan
+  totalLahan: number; // total lahan aktif
+}
+
+export interface KelompokTaniReportResult {
+  summary: KelompokTaniReportSummary;
+  rows: KelompokTaniReportRow[];
+}
