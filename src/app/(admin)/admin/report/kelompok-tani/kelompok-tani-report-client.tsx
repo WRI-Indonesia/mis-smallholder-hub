@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, FileText, Download, Building2, Users, Layers, Sprout, Network, Printer, Search, SlidersHorizontal } from "lucide-react";
+import { Check, ChevronsUpDown, FileText, Download, Building2, Users, Layers, Sprout, Network, Printer, Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,12 +40,13 @@ interface Props {
 
 const UNKNOWN = "(tidak diketahui)";
 
-type ColKey = "gapoktan" | "kelompokTani" | "totalPetani" | "totalLahan";
+type ColKey = "gapoktan" | "kelompokTani" | "totalPetani" | "totalLahan" | "totalLuas";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "gapoktan", label: "Gapoktan/KUD" },
   { key: "kelompokTani", label: "Kelompok Tani" },
   { key: "totalPetani", label: "Total Petani" },
   { key: "totalLahan", label: "Total Lahan" },
+  { key: "totalLuas", label: "Total Luas" },
 ];
 
 export function KelompokTaniReportClient({ districts }: Props) {
@@ -59,7 +60,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
 
   // Kolom yang bisa disembunyikan (mis. Gapoktan/KUD untuk Lembaga tanpa level itu).
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(
-    new Set<ColKey>(["gapoktan", "kelompokTani", "totalPetani", "totalLahan"]),
+    new Set<ColKey>(["gapoktan", "kelompokTani", "totalPetani", "totalLahan", "totalLuas"]),
   );
   const show = (k: ColKey) => visibleCols.has(k);
   const toggleCol = (k: ColKey) =>
@@ -117,6 +118,8 @@ export function KelompokTaniReportClient({ districts }: Props) {
   const selectedGroupObj = farmerGroups.find((g) => g.id === selectedFarmerGroup);
 
   const formatNumber = (num: number) => new Intl.NumberFormat("id-ID").format(num);
+  const formatLuas = (num: number) =>
+    new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
   const displayOrUnknown = (v: string | null) => v ?? UNKNOWN;
 
   const filteredRows = useMemo(() => {
@@ -134,15 +137,17 @@ export function KelompokTaniReportClient({ districts }: Props) {
       (acc, r) => {
         acc.totalPetani += r.totalPetani;
         acc.totalLahan += r.totalLahan;
+        acc.totalLuas += r.totalLuas;
         return acc;
       },
-      { totalPetani: 0, totalLahan: 0 },
+      { totalPetani: 0, totalLahan: 0, totalLuas: 0 },
     );
   }, [filteredRows]);
 
   // Kolom teks yang tampil (untuk colSpan footer & kolom kosong pencarian).
   const textColCount = 1 + (show("gapoktan") ? 1 : 0) + (show("kelompokTani") ? 1 : 0); // Lembaga + opsional
-  const visibleColCount = 1 + textColCount + (show("totalPetani") ? 1 : 0) + (show("totalLahan") ? 1 : 0); // No + teks + numerik
+  const numericColCount = (show("totalPetani") ? 1 : 0) + (show("totalLahan") ? 1 : 0) + (show("totalLuas") ? 1 : 0);
+  const visibleColCount = 1 + textColCount + numericColCount; // No + teks + numerik
 
   const buildExportColumns = () => [
     { header: "No", key: "no" },
@@ -151,6 +156,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
     ...(show("kelompokTani") ? [{ header: "Kelompok Tani", key: "kelompokTani" }] : []),
     ...(show("totalPetani") ? [{ header: "Total Petani", key: "totalPetani" }] : []),
     ...(show("totalLahan") ? [{ header: "Total Lahan", key: "totalLahan" }] : []),
+    ...(show("totalLuas") ? [{ header: "Total Luas (Ha)", key: "totalLuas" }] : []),
   ];
 
   const scopeLabel = () =>
@@ -169,6 +175,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
       kelompokTani: displayOrUnknown(row.kelompokTani),
       totalPetani: row.totalPetani,
       totalLahan: row.totalLahan,
+      totalLuas: Number(row.totalLuas.toFixed(2)),
     }));
 
     data.push({
@@ -178,6 +185,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
       kelompokTani: "",
       totalPetani: filteredTotals.totalPetani,
       totalLahan: filteredTotals.totalLahan,
+      totalLuas: Number(filteredTotals.totalLuas.toFixed(2)),
     });
 
     await exportToExcel({
@@ -198,6 +206,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
       kelompokTani: displayOrUnknown(row.kelompokTani),
       totalPetani: formatNumber(row.totalPetani),
       totalLahan: formatNumber(row.totalLahan),
+      totalLuas: formatLuas(row.totalLuas),
     }));
 
     data.push({
@@ -207,13 +216,14 @@ export function KelompokTaniReportClient({ districts }: Props) {
       kelompokTani: "",
       totalPetani: formatNumber(filteredTotals.totalPetani),
       totalLahan: formatNumber(filteredTotals.totalLahan),
+      totalLuas: formatLuas(filteredTotals.totalLuas),
     });
 
     // Rata kanan untuk No + kolom numerik, dihitung dari posisi kolom aktual.
     const cols = buildExportColumns();
     const columnStyles: Record<number, Record<string, string | number>> = {};
     cols.forEach((c, i) => {
-      if (c.key === "no" || c.key === "totalPetani" || c.key === "totalLahan") {
+      if (c.key === "no" || c.key === "totalPetani" || c.key === "totalLahan" || c.key === "totalLuas") {
         columnStyles[i] = { halign: "right" };
       }
     });
@@ -234,11 +244,12 @@ export function KelompokTaniReportClient({ districts }: Props) {
 
   const summaryCards = reportData
     ? [
-        { label: "Lembaga Petani", value: reportData.summary.totalLembagaTani, icon: Building2, badge: "Lembaga", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-        { label: "Gapoktan/KUD", value: reportData.summary.totalGapoktan, icon: Network, badge: "Gapoktan/KUD", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" },
-        { label: "Kelompok Tani", value: reportData.summary.totalKelompokTani, icon: Layers, badge: "KT", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-        { label: "Total Petani", value: reportData.summary.totalPetani, icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
-        { label: "Total Lahan", value: reportData.summary.totalLahan, icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
+        { label: "Lembaga Petani", value: formatNumber(reportData.summary.totalLembagaTani), icon: Building2, badge: "Lembaga", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+        { label: "Gapoktan/KUD", value: formatNumber(reportData.summary.totalGapoktan), icon: Network, badge: "Gapoktan/KUD", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" },
+        { label: "Kelompok Tani", value: formatNumber(reportData.summary.totalKelompokTani), icon: Layers, badge: "KT", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+        { label: "Total Petani", value: formatNumber(reportData.summary.totalPetani), icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
+        { label: "Total Lahan", value: formatNumber(reportData.summary.totalLahan), icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
+        { label: "Total Luas", value: formatLuas(reportData.summary.totalLuas), icon: MapPin, badge: "Ha", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
       ]
     : [];
 
@@ -355,7 +366,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
 
       {/* Summary Cards */}
       {reportData && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 print:hidden">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 print:hidden">
           {summaryCards.map((c) => (
             <Card key={c.label} className="shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -363,7 +374,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
                 <c.icon className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(c.value)}</div>
+                <div className="text-2xl font-bold">{c.value}</div>
                 <Badge variant="outline" className={cn("mt-1", c.badgeClass)}>{c.badge}</Badge>
               </CardContent>
             </Card>
@@ -441,6 +452,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
                 {show("kelompokTani") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Kelompok Tani</th>}
                 {show("totalPetani") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Petani</th>}
                 {show("totalLahan") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Lahan</th>}
+                {show("totalLuas") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Luas (Ha)</th>}
               </tr>
             </thead>
             <tbody>
@@ -467,6 +479,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
                     )}
                     {show("totalPetani") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(row.totalPetani)}</td>}
                     {show("totalLahan") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(row.totalLahan)}</td>}
+                    {show("totalLuas") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatLuas(row.totalLuas)}</td>}
                   </tr>
                 ))
               )}
@@ -478,6 +491,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
                   <td className="px-3 py-2 whitespace-nowrap" colSpan={textColCount}>Total</td>
                   {show("totalPetani") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(filteredTotals.totalPetani)}</td>}
                   {show("totalLahan") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(filteredTotals.totalLahan)}</td>}
+                  {show("totalLuas") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatLuas(filteredTotals.totalLuas)}</td>}
                 </tr>
               </tfoot>
             )}

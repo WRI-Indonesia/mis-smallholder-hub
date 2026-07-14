@@ -3,6 +3,7 @@ import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok
 
 const P = (o: Partial<KtRawParcel> & { farmerId: string; farmerGroupId: string }): KtRawParcel => ({
   lembagaTani: "Lembaga A",
+  area: 1,
   subGroupLv1: null,
   subGroupLv2: null,
   ...o,
@@ -20,6 +21,7 @@ describe("buildKelompokTaniReport", () => {
     const ktA = r.rows.find((x) => x.kelompokTani === "KT A")!;
     expect(ktA.totalPetani).toBe(2); // f1, f2 (distinct, meski f1 punya 2 lahan)
     expect(ktA.totalLahan).toBe(3);
+    expect(ktA.totalLuas).toBeCloseTo(3); // 3 lahan × 1 Ha (default helper)
     const ktB = r.rows.find((x) => x.kelompokTani === "KT B")!;
     expect(ktB.totalPetani).toBe(1);
     expect(ktB.totalLahan).toBe(1);
@@ -59,6 +61,17 @@ describe("buildKelompokTaniReport", () => {
     expect(r.summary.totalKelompokTani).toBe(3);
     expect(r.summary.totalPetani).toBe(3); // f1,f2,f3 distinct
     expect(r.summary.totalLahan).toBe(4);
+    expect(r.summary.totalLuas).toBeCloseTo(4); // 4 lahan × 1 Ha
+  });
+
+  it("total luas menjumlahkan area (null → 0)", () => {
+    const r = buildKelompokTaniReport([
+      P({ farmerId: "f1", farmerGroupId: "lg1", subGroupLv2: "KT A", area: 2.5 }),
+      P({ farmerId: "f2", farmerGroupId: "lg1", subGroupLv2: "KT A", area: null }),
+      P({ farmerId: "f3", farmerGroupId: "lg1", subGroupLv2: "KT B", area: 1.5 }),
+    ]);
+    expect(r.summary.totalLuas).toBeCloseTo(4);
+    expect(r.rows.find((x) => x.kelompokTani === "KT A")!.totalLuas).toBeCloseTo(2.5);
   });
 
   it("Gapoktan sama-nama di Lembaga berbeda dihitung terpisah", () => {
@@ -78,6 +91,7 @@ describe("buildKelompokTaniReport", () => {
       totalLembagaTani: 0,
       totalPetani: 0,
       totalLahan: 0,
+      totalLuas: 0,
     });
   });
 });

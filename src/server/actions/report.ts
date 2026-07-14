@@ -604,6 +604,7 @@ export async function getKelompokTaniReport(
     },
     select: {
       farmerId: true,
+      area: true,
       subGroupLv1: true,
       subGroupLv2: true,
       farmer: {
@@ -619,6 +620,7 @@ export async function getKelompokTaniReport(
     farmerId: p.farmerId,
     farmerGroupId: p.farmer.farmerGroupId,
     lembagaTani: p.farmer.farmerGroup.name,
+    area: p.area,
     subGroupLv1: p.subGroupLv1,
     subGroupLv2: p.subGroupLv2,
   }));

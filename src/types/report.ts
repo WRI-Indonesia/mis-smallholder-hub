@@ -144,6 +144,8 @@ export interface KelompokTaniReportRow {
   totalPetani: number;
   /** Jumlah lahan aktif di kombinasi ini. */
   totalLahan: number;
+  /** Total luas (Ha) lahan aktif di kombinasi ini. */
+  totalLuas: number;
 }
 
 export interface KelompokTaniReportSummary {
@@ -152,6 +154,7 @@ export interface KelompokTaniReportSummary {
   totalLembagaTani: number; // distinct Lembaga
   totalPetani: number; // distinct petani keseluruhan
   totalLahan: number; // total lahan aktif
+  totalLuas: number; // total luas (Ha) lahan aktif
 }
 
 export interface KelompokTaniReportResult {
