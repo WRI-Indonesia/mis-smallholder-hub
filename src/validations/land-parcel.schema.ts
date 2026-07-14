@@ -17,6 +17,8 @@ export const landParcelSchema = z.object({
     return isNaN(parsed) ? null : parsed;
   }, z.number().int().min(1900, "Tahun tanam minimal 1900").max(2100, "Tahun tanam maksimal 2100").nullable().optional()),
   notes: z.string().nullable().optional(),
+  subGroupLv1: z.string().nullable().optional(), // Gapoktan
+  subGroupLv2: z.string().nullable().optional(), // Kelompok Tani
 });
 
 export const updateLandParcelSchema = landParcelSchema.extend({

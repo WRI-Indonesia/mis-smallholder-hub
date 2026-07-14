@@ -67,6 +67,8 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
       landStatus: (form.get("landStatus") as string) || null,
       cropType: (form.get("cropType") as string) || null,
       plantingYear: plantingYearRaw ? parseInt(plantingYearRaw, 10) : null,
+      subGroupLv1: (form.get("subGroupLv1") as string) || null,
+      subGroupLv2: (form.get("subGroupLv2") as string) || null,
       notes: (form.get("notes") as string) || null,
     };
 
@@ -213,6 +215,29 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
                 {parcel?.revision ?? 0}
                 {parcel && <span className="ml-2 text-xs">(otomatis bertambah saat disimpan)</span>}
               </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="subGroupLv1">Gapoktan</Label>
+              <Input
+                id="subGroupLv1"
+                name="subGroupLv1"
+                defaultValue={parcel?.subGroupLv1 ?? ""}
+                placeholder="Nama Gapoktan"
+              />
+              {errors.subGroupLv1 && <p className="text-sm text-destructive">{errors.subGroupLv1[0]}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="subGroupLv2">Kelompok Tani</Label>
+              <Input
+                id="subGroupLv2"
+                name="subGroupLv2"
+                defaultValue={parcel?.subGroupLv2 ?? ""}
+                placeholder="Nama Kelompok Tani"
+              />
+              {errors.subGroupLv2 && <p className="text-sm text-destructive">{errors.subGroupLv2[0]}</p>}
             </div>
           </div>
 

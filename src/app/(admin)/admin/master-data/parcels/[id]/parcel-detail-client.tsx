@@ -97,6 +97,14 @@ export function ParcelDetailClient({ parcel, farmers, permissions }: Props) {
                 <p className="text-sm font-medium mt-1">{parcel.plantingYear ?? "—"}</p>
               </div>
               <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gapoktan</p>
+                <p className="text-sm font-medium mt-1">{parcel.subGroupLv1 ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kelompok Tani</p>
+                <p className="text-sm font-medium mt-1">{parcel.subGroupLv2 ?? "—"}</p>
+              </div>
+              <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Revisi</p>
                 <p className="text-sm font-medium mt-1">{parcel.revision}</p>
               </div>
