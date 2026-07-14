@@ -59,6 +59,14 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
       cellClassName: "text-sm font-mono text-muted-foreground",
     },
     {
+      key: "blok",
+      label: "Blok",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm text-muted-foreground",
+      render: (row) => row.blok ?? "—",
+    },
+    {
       key: "farmer",
       label: "Nama Petani",
       sortable: true,
@@ -78,6 +86,22 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
       sortable: true,
       cellClassName: "text-sm text-muted-foreground",
       render: (row) => row.farmer.farmerGroup.name,
+    },
+    {
+      key: "subGroupLv1",
+      label: "Gapoktan",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm text-muted-foreground",
+      render: (row) => row.subGroupLv1 ?? "—",
+    },
+    {
+      key: "subGroupLv2",
+      label: "Kelompok Tani",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm text-muted-foreground",
+      render: (row) => row.subGroupLv2 ?? "—",
     },
     {
       key: "area",
@@ -129,14 +153,17 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
   const getExportRow = (p: LandParcel) => {
     return {
       parcelId: p.parcelId,
+      blok: p.blok ?? "—",
       farmer: p.farmer.name,
       farmerId: p.farmer.farmerId,
+      farmerGroupName: p.farmer.farmerGroup.name,
+      subGroupLv1: p.subGroupLv1 ?? "—",
+      subGroupLv2: p.subGroupLv2 ?? "—",
       area: p.area !== null ? p.area : "—",
       landStatus: p.landStatus ?? "—",
       cropType: p.cropType ?? "—",
       plantingYear: p.plantingYear ?? "—",
       revision: p.revision,
-      groupName: p.farmer.farmerGroup.name,
       districtName: p.farmer.farmerGroup.district.name,
     };
   };
