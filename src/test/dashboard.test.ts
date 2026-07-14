@@ -18,14 +18,15 @@ function farmer(
   areas: (number | null)[],
   packages: { code: string; active?: boolean }[],
   gender: "M" | "F" = "M",
-  joinedYear: number | null = null
+  joinedYear: number | null = null,
+  subGroups: (string | null)[] = []
 ): RawFarmer {
   return {
     id,
     farmerGroupId,
     gender,
     joinedYear,
-    landParcels: areas.map((area) => ({ area })),
+    landParcels: areas.map((area, i) => ({ area, subGroupLv2: subGroups[i] ?? null })),
     trainingParticipants: packages.map((p) => ({
       activity: { isActive: p.active ?? true, package: { code: p.code } },
     })),
@@ -126,6 +127,28 @@ describe("dashboard aggregation", () => {
       expect(stats.totalPersilLahan).toBe(2);
       expect(stats.totalLuasLahan).toBe(1.5);
     });
+
+    it("Total Kelompok Tani: distinct subGroupLv2 per Lembaga (trim/case, null diabaikan)", () => {
+      const { stats, kelompokTaniList } = buildDashboardData(groups, [
+        // g1: "KT A" (×2 lahan, beda kapital/spasi → 1) + "KT B" + null → 2 distinct
+        farmer("f1", "g1", [1, 1, 1], [], "M", null, ["KT A", "  kt a ", null]),
+        farmer("f2", "g1", [1], [], "M", null, ["KT B"]),
+        // g2: "KT A" (nama sama dgn g1 tapi Lembaga beda → dihitung terpisah)
+        farmer("f3", "g2", [1], [], "F", null, ["KT A"]),
+      ]);
+      const g1 = kelompokTaniList.find((k) => k.id === "g1")!;
+      const g2 = kelompokTaniList.find((k) => k.id === "g2")!;
+      expect(g1.kelompokTaniCount).toBe(2); // KT A, KT B
+      expect(g2.kelompokTaniCount).toBe(1); // KT A (Lembaga lain)
+      expect(stats.totalKelompokTaniLahan).toBe(3); // 2 + 1 (per-Lembaga)
+    });
+
+    it("Total Kelompok Tani = 0 bila subGroupLv2 kosong semua", () => {
+      const { stats } = buildDashboardData([groups[0]], [
+        farmer("f1", "g1", [1, 2], [{ code: "PAKET_1_BMP_PC_RSPO_NKT" }]), // tanpa subGroupLv2
+      ]);
+      expect(stats.totalKelompokTaniLahan).toBe(0);
+    });
   });
 
   describe("sumKelompokTaniStats & ktStatsForYear", () => {
@@ -224,15 +247,16 @@ describe("dashboard aggregation", () => {
 
   describe("scopeSnapshotData (RBAC read-time scoping)", () => {
     const emptyCov = { PAKET_1_BMP_PC_RSPO_NKT: 0, PAKET_2_MK: 0, PAKET_2_K3: 0, PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0 };
-    const kt = (id: string, districtId: string, farmers: number): KTDetails => ({
+    const kt = (id: string, districtId: string, farmers: number, kelompokTaniCount = 0): KTDetails => ({
       id, name: id, code: null, districtId, districtName: districtId, locationLat: null, locationLong: null,
+      kelompokTaniCount,
       totalFarmers: farmers, totalFarmersMale: farmers, totalFarmersFemale: 0, totalParcels: 0, totalArea: 0,
       trainingCoverage: { ...emptyCov }, byYear: {},
     });
     const data: DashboardSnapshotData = {
-      totalKelompokTani: 2, totalPetani: 5, totalPetaniLaki: 5, totalPetaniPerempuan: 0,
+      totalKelompokTani: 2, totalKelompokTaniLahan: 5, totalPetani: 5, totalPetaniLaki: 5, totalPetaniPerempuan: 0,
       totalPersilLahan: 0, totalLuasLahan: 0, trainingCounts: { ...emptyCov },
-      kelompokTaniList: [kt("ktA", "d1", 3), kt("ktB", "d2", 2)],
+      kelompokTaniList: [kt("ktA", "d1", 3, 3), kt("ktB", "d2", 2, 2)],
     };
 
     it("ALL → unchanged", () => {
@@ -245,6 +269,7 @@ describe("dashboard aggregation", () => {
       const r = scopeSnapshotData(data, { mode: "BY_DISTRICT", districtIds: ["d1"] });
       expect(r.kelompokTaniList.map((k) => k.id)).toEqual(["ktA"]);
       expect(r.totalKelompokTani).toBe(1);
+      expect(r.totalKelompokTaniLahan).toBe(3); // hanya ktA (3 KT) setelah slice scope
       expect(r.totalPetani).toBe(3);
     });
 

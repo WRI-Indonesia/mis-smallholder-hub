@@ -32,7 +32,7 @@ export interface RawFarmer {
   farmerGroupId: string;
   gender: "M" | "F";
   joinedYear: number | null;
-  landParcels: { area: number | null }[];
+  landParcels: { area: number | null; subGroupLv2?: string | null }[];
   trainingParticipants: {
     activity: { isActive: boolean; package: { code: string } };
   }[];
@@ -104,9 +104,16 @@ export function buildDashboardData(groups: RawGroup[], farmers: RawFarmer[]): Da
     const groupFarmers = farmersByGroup.get(g.id) ?? [];
     const agg = emptyYearStats();
     const byYearBuckets: Record<string, KTYearStats> = {};
+    // Distinct KT (subGroupLv2) di Lembaga ini — ternormalisasi trim/case,
+    // abaikan null/kosong (year-independent, seperti count Lembaga).
+    const ktNames = new Set<string>();
 
     for (const f of groupFarmers) {
       addFarmerToBucket(agg, f);
+      for (const p of f.landParcels) {
+        const name = p.subGroupLv2?.trim();
+        if (name) ktNames.add(name.toLowerCase());
+      }
       if (f.joinedYear != null) {
         const key = String(f.joinedYear);
         byYearBuckets[key] ??= emptyYearStats();
@@ -129,6 +136,7 @@ export function buildDashboardData(groups: RawGroup[], farmers: RawFarmer[]): Da
       districtName: g.districtName,
       locationLat: g.locationLat,
       locationLong: g.locationLong,
+      kelompokTaniCount: ktNames.size,
       ...agg,
       byYear,
     };
@@ -150,6 +158,7 @@ export function buildDashboardData(groups: RawGroup[], farmers: RawFarmer[]): Da
   return {
     stats: {
       totalKelompokTani: groups.length,
+      totalKelompokTaniLahan: kelompokTaniList.reduce((s, kt) => s + kt.kelompokTaniCount, 0),
       totalPetani: farmers.length,
       totalPetaniLaki,
       totalPetaniPerempuan,
@@ -204,6 +213,8 @@ export function normalizeSnapshotData(raw: unknown): DashboardSnapshotData {
   const s = base as Partial<DashboardStats>;
   return {
     totalKelompokTani: s.totalKelompokTani ?? 0,
+    // Snapshot lama tak punya count KT per-lahan → default 0 (#148).
+    totalKelompokTaniLahan: s.totalKelompokTaniLahan ?? 0,
     totalPetani: s.totalPetani ?? 0,
     // Older snapshots predate gender tracking → default to 0.
     totalPetaniLaki: s.totalPetaniLaki ?? 0,
@@ -247,12 +258,14 @@ export function sumKelompokTaniStats(kts: KTDetails[]): DashboardStats {
   let totalPersilLahan = 0;
   let totalLuasLahan = 0;
 
+  let totalKelompokTaniLahan = 0;
   for (const kt of kts) {
     totalPetani += kt.totalFarmers;
     totalPetaniLaki += kt.totalFarmersMale ?? 0;
     totalPetaniPerempuan += kt.totalFarmersFemale ?? 0;
     totalPersilLahan += kt.totalParcels;
     totalLuasLahan += kt.totalArea;
+    totalKelompokTaniLahan += kt.kelompokTaniCount ?? 0;
     for (const code of DASHBOARD_PACKAGE_CODES) {
       trainingCounts[code] += kt.trainingCoverage[code];
     }
@@ -260,6 +273,7 @@ export function sumKelompokTaniStats(kts: KTDetails[]): DashboardStats {
 
   return {
     totalKelompokTani: kts.length,
+    totalKelompokTaniLahan,
     totalPetani,
     totalPetaniLaki,
     totalPetaniPerempuan,
