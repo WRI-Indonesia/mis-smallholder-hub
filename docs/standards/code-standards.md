@@ -25,18 +25,21 @@ Identifier **wajib Bahasa Inggris**, dengan **pengecualian resmi** untuk kosakat
 | `lahan` | land parcel | `computeLahanDomain`, `totalLuasLahan`, `avgLuasLahan` |
 | `pelatihan` | training | `computePelatihanDomain` |
 | `produksi` | production | `computeProduksiDomain` |
-| `kelompok tani` / `KT` | farmer group | `kelompokTani`, `kelompokTaniList` |
+| `lembaga tani` (entitas `FarmerGroup`) | farmer institution — level teratas hierarki | `FarmerGroup`, `farmerGroupId`, `kelompokTani`* |
+| `gapoktan` / `kelompok tani` (sub-level) | sub-kelompok — interim di `LandParcel` | `subGroupLv1` (Gapoktan), `subGroupLv2` (Kelompok Tani) |
 | `persil` | parcel (unit lahan) | `totalPersil`, `totalPersilLahan` |
 | `paket` | training package | `pctPaket1`, prefix enum `PAKET_1_*` |
 
 Alasan: istilah ini adalah **kosakata domain proyek** (WRI Indonesia — data sawit rakyat) yang lebih jelas & konsisten dengan UI copy Bahasa Indonesia daripada terjemahan Inggris paksa. Rename massal ditolak karena melanggar prinsip **Surgical Changes** dan berisiko regresi lintas modul (dashboard/map/report). Nilai **enum DB** (`PAKET_1_*`, dll.) adalah **data**, bukan identifier — di luar aturan ini. Selain istilah di tabel, tetap gunakan Bahasa Inggris.
 
+> ⚠️ **Catatan hierarki (`*`):** hierarki domain = **Petani → Kelompok Tani (Gapoktan) → Lembaga Tani**. Identifier `FarmerGroup`/`kelompokTani` secara **semantik = Lembaga Tani** (level teratas); label UI lama "Kelompok Tani" adalah **mislabel** yang di-relabel ke "Lembaga Tani" (TD-013 / #147), sedangkan **identifier tetap** (rename massal ditolak). Sub-level **Kelompok Tani/Gapoktan** disimpan interim sebagai field denormalisasi di `LandParcel.subGroupLv2`/`subGroupLv1` (#146, **per-lahan**); pemodelan tabel penuh = TD-014.
+
 ### Data Access & Soft Delete
 
 - **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app.
 - **Data filtering** — Setiap query di server actions wajib filter berdasarkan context user:
-  - Region sesuai assignment user (Province → District → KT)
-  - Kelompok Tani sesuai assignment user
+  - Region sesuai assignment user (Province → District → Lembaga Tani)
+  - Lembaga Tani sesuai assignment user
   - Role & Permission menentukan level akses (view/edit/delete)
 - **Pattern** — Gunakan helper function untuk inject where clause RBAC, jangan copy-paste manual di setiap action.
 - **Backend Permission Validation** — Setiap Server Action (terutama mutasi data) wajib divalidasi ulang di level server menggunakan helper `hasPermission(menuCode, permission)` sebelum melakukan query/mutasi database, untuk mencegah eksekusi request langsung yang tidak sah (bypass UI). **Termasuk** read/mutasi **by-id** dan helper "for select" (pelajaran audit #125/#127).
@@ -57,7 +60,7 @@ Mode `ALL` → `{}` (tanpa batasan).
 
 #### Soft-delete: pola tampil & restore record nonaktif (keputusan #127)
 
-Pola tunggal untuk **semua list master data** (Petani, Kelompok Tani, Pelatihan, Lahan, Produksi). **Akses record nonaktif dibatasi ke SUPERADMIN** (helper `isSuperAdmin()` di `rbac.ts`); user lain hanya boleh mengakses record aktif:
+Pola tunggal untuk **semua list master data** (Petani, Lembaga Tani, Pelatihan, Lahan, Produksi). **Akses record nonaktif dibatasi ke SUPERADMIN** (helper `isSuperAdmin()` di `rbac.ts`); user lain hanya boleh mengakses record aktif:
 
 - **Server action list & read by-id** — untuk **SUPERADMIN** mengembalikan record aktif & nonaktif dalam scope; untuk **user lain** dipaksa `isActive: true`. Pola: `...((await isSuperAdmin()) ? {} : { isActive: true })`.
 - **Client list** — kolom **badge Status** + **filter Status** (`Semua`/`Aktif`/`Nonaktif`, default **`Aktif`**) **hanya dirender untuk SUPERADMIN** (prop `isSuperAdmin` dari page). User lain: kolom & filter di-hide, data sudah aktif-only dari server.

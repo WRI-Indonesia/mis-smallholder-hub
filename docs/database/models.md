@@ -179,6 +179,19 @@ FarmerGroup (1) ─→ (N) Farmer
 Farmer (1) ─→ (N) TrainingParticipant
 ```
 
+### Hierarki Kelembagaan (Petani → Kelompok Tani → Lembaga Tani)
+
+Hierarki domain: **Petani → Kelompok Tani (Gapoktan) → Lembaga Tani**. Entitas `FarmerGroup` (tabel `tbl_farmer_group`, relasi `Farmer.farmerGroupId`) secara **semantik = Lembaga Tani** (level teratas) — label UI lama "Kelompok Tani" adalah *mislabel*, di-relabel ke "Lembaga Tani" (TD-013 / #147); **identifier tetap** `FarmerGroup` (rename massal ditolak, lihat `code-standards.md`).
+
+Level **Kelompok Tani** & **Gapoktan** belum dimodelkan sebagai tabel. **Interim (#146):** disimpan sebagai field denormalisasi **di `LandParcel`** (bukan `Farmer`), karena satu petani bisa punya beberapa lahan di Kelompok Tani/Gapoktan berbeda → keanggotaan bersifat **per-lahan**:
+
+| Field (`LandParcel`) | Type | Makna |
+|----------------------|--------|-------|
+| `subGroupLv1` | String? | Gapoktan |
+| `subGroupLv2` | String? | Kelompok Tani |
+
+Pemodelan tabel penuh (KT/Gapoktan sebagai entitas + re-parenting `Farmer`) = **TD-014**.
+
 ### RBAC Filter Context
 
 Farmer data difilter berdasarkan:
@@ -210,7 +223,7 @@ Farmer data difilter berdasarkan:
 
 Modul Training menggunakan struktur 3-layer untuk mengelola data pelatihan petani:
 1. **TrainingPackage** (ref) — Katalog paket pelatihan standar
-2. **TrainingActivity** (transactional) — Aktivitas pelatihan yang dilaksanakan per Kelompok Tani
+2. **TrainingActivity** (transactional) — Aktivitas pelatihan yang dilaksanakan per Lembaga Tani
 3. **TrainingParticipant** (many-to-many) — Peserta pelatihan (relasi Farmer ↔ Training Activity)
 
 ### Training Data Flow
