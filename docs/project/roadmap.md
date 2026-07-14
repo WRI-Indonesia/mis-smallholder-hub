@@ -84,7 +84,7 @@ Format phase: `STREAM-NN`.
 | MD       | Master Data            | Regions, groups, farmer, parcels, training, staff, agronomy, HCV, BUSDEV, IMPACT, workplan |
 | DASH     | Dashboard              | Basic dashboard, server actions, interactive map, BMP                                      |
 | MAP      | Geospatial Map Explorer | Peta interaktif sebaran KT & lahan, filter spasial (Province/District/KT), layer toggle    |
-| RPT      | Report                 | Report User, Region, Lembaga Tani; summary tabel + export Excel/PDF                      |
+| RPT      | Report                 | Report User, Region, Lembaga Tani, Kelompok Tani; summary tabel + export Excel/PDF                      |
 | BULK     | Bulk Upload            | Bulk upload CSV untuk Region dan Lembaga Tani; validasi, preview, insert                  |
 | TOOLS    | Tools & Utility        | Import, export, GIS, S3/PDF utility                                                        |
 | DA       | Data Analyst           | Ringkasan Petani, Analisa Ketersediaan Data (anomali/kelengkapan), analytics dashboards    |

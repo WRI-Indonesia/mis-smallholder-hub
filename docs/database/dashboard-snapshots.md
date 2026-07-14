@@ -227,11 +227,11 @@ model ProductionDashboardSnapshot {
 - Consider retention policies (e.g., delete snapshots older than 2 years)
 - Implement background jobs for automated snapshot generation (future enhancement)
 
-### Planned: agregat turunan land-parcel (KT/Gapoktan/Blok) — #148/#153
+### Agregat Kelompok Tani — hanya count di dashboard (#148); tabular = Report real-time (#154)
 
-Keputusan **2026-07-14 (Opsi A)**: agregat turunan **jumlah Kelompok Tani / Gapoktan / Blok** per Lembaga Tani (distinct dari `LandParcel.subGroupLv2`/`subGroupLv1`/`blok`, interim #146) **memperluas `MainDashboardSnapshot`/`DashboardSnapshotData`** — **bukan** tabel snapshot baru (satu generator Tools, satu sumber). Konsumen: card dashboard "Total Kelompok Tani" (#148) + kolom drill-down Master Lembaga Tani (#153).
+**Revisi 2026-07-14:** rencana snapshot-table untuk view **tabular** KT **dibatalkan** — agregasi murah (perf 8ms/50k lahan, #153) → view tabular KT jadi **Report real-time** (**#154**, `getKelompokTaniReport`), bukan snapshot. **#153 di-close (superseded).**
 
-- **Snapshot-backed** karena distinct lintas semua lahan mahal/rawan N+1 bila real-time; snapshot murah dibaca; **stale-until-regenerate** diterima (sama seperti dashboard).
-- **Detail per-record (1 Petani/Lembaga) tetap real-time** (#152) — murah & fresh.
-- Field baru **additive** → `normalizeSnapshotData` beri default 0 untuk snapshot lama. Regenerate snapshot setelah data lahan (#150) terisi.
-- Saat KT jadi tabel (**TD-014**), agregasi teks → `count` relasi.
+Yang **tetap** memakai dashboard snapshot: **hanya angka count** untuk card **"Total Kelompok Tani" (#148)** — tambah field count (distinct `subGroupLv2`) ke `DashboardSnapshotData` (dashboard snapshot-backed *by design*; `normalizeSnapshotData` default 0 untuk snapshot lama). **Bukan** tabel snapshot baru.
+
+- Detail/tabular KT/Gapoktan/Blok → **real-time** (Report #154; detail Petani #152).
+- Saat KT jadi tabel (**TD-014**), agregasi teks → query relasi.
