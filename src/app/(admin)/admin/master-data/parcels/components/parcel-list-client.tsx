@@ -89,7 +89,7 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
     },
     {
       key: "subGroupLv1",
-      label: "Gapoktan",
+      label: "Gapoktan/KUD",
       sortable: true,
       defaultVisible: false,
       cellClassName: "text-sm text-muted-foreground",

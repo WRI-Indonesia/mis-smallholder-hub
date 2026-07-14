@@ -11,7 +11,7 @@ export default async function KelompokTaniReportPage() {
       <div className="print:hidden">
         <h1 className="text-2xl font-bold">Laporan Kelompok Tani</h1>
         <p className="text-muted-foreground">
-          Rekap Gapoktan &amp; Kelompok Tani turunan dari data lahan (per Lembaga Petani)
+          Rekap Gapoktan/KUD &amp; Kelompok Tani turunan dari data lahan (per Lembaga Petani)
         </p>
       </div>
       <KelompokTaniReportClient districts={districts} />

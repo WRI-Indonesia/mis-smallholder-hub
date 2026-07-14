@@ -113,7 +113,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
   const buildExportColumns = () => [
     { header: "No", key: "no" },
     { header: "Lembaga Petani", key: "lembagaTani" },
-    { header: "Gapoktan", key: "gapoktan" },
+    { header: "Gapoktan/KUD", key: "gapoktan" },
     { header: "Kelompok Tani", key: "kelompokTani" },
     { header: "Total Petani", key: "totalPetani" },
     { header: "Total Lahan", key: "totalLahan" },
@@ -196,7 +196,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
   const summaryCards = reportData
     ? [
         { label: "Lembaga Petani", value: reportData.summary.totalLembagaTani, icon: Building2, badge: "Lembaga", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-        { label: "Gapoktan", value: reportData.summary.totalGapoktan, icon: Network, badge: "Gapoktan", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" },
+        { label: "Gapoktan/KUD", value: reportData.summary.totalGapoktan, icon: Network, badge: "Gapoktan/KUD", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" },
         { label: "Kelompok Tani", value: reportData.summary.totalKelompokTani, icon: Layers, badge: "KT", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
         { label: "Total Petani", value: reportData.summary.totalPetani, icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
         { label: "Total Lahan", value: reportData.summary.totalLahan, icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
@@ -302,7 +302,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Lembaga / Gapoktan / KT..."
+                  placeholder="Lembaga / Gapoktan/KUD / KT..."
                   className="w-[240px] h-9 pl-8"
                 />
               </div>
@@ -365,7 +365,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
             <div className="space-y-1">
               <h3 className="font-semibold text-lg">Tidak Ada Data Kelompok Tani</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Belum ada lahan aktif dengan data Gapoktan/Kelompok Tani untuk cakupan yang dipilih.
+                Belum ada lahan aktif dengan data Gapoktan/KUD atau Kelompok Tani untuk cakupan yang dipilih.
               </p>
             </div>
           </CardContent>
@@ -377,7 +377,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
               <tr className="bg-muted/70 border-b-2 border-border">
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">No</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Lembaga Petani</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Gapoktan</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Gapoktan/KUD</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Kelompok Tani</th>
                 <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Petani</th>
                 <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Lahan</th>

@@ -227,12 +227,12 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="subGroupLv1">Gapoktan</Label>
+              <Label htmlFor="subGroupLv1">Gapoktan/KUD</Label>
               <Input
                 id="subGroupLv1"
                 name="subGroupLv1"
                 defaultValue={parcel?.subGroupLv1 ?? ""}
-                placeholder="Nama Gapoktan"
+                placeholder="Nama Gapoktan/KUD"
               />
               {errors.subGroupLv1 && <p className="text-sm text-destructive">{errors.subGroupLv1[0]}</p>}
             </div>
