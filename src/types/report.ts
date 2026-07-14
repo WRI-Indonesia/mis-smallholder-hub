@@ -158,3 +158,52 @@ export interface KelompokTaniReportResult {
   summary: KelompokTaniReportSummary;
   rows: KelompokTaniReportRow[];
 }
+
+// ─── Report Kelompok Tani (Detail) (#154) — roster per Lembaga ───
+
+export interface KtDetailPetani {
+  /** Farmer.id (db). */
+  farmerId: string;
+  /** Farmer.farmerId (kode human-facing). */
+  farmerCode: string;
+  name: string;
+  /** Jumlah lahan aktif petani ini pada kombinasi (Gapoktan × KT). */
+  totalLahan: number;
+  /** Total luas (Ha) lahan petani ini pada kombinasi tsb. */
+  totalLuas: number;
+}
+
+export interface KtDetailKelompokTani {
+  /** Kelompok Tani (subGroupLv2), null bila kosong. */
+  kelompokTani: string | null;
+  totalPetani: number;
+  totalLahan: number;
+  totalLuas: number;
+  petani: KtDetailPetani[];
+}
+
+export interface KtDetailGapoktan {
+  /** Gapoktan/KUD (subGroupLv1), null bila kosong. */
+  gapoktan: string | null;
+  totalKelompokTani: number; // baris KT non-null di Gapoktan ini
+  totalPetani: number; // distinct petani di Gapoktan ini
+  totalLahan: number;
+  totalLuas: number;
+  kelompokTaniList: KtDetailKelompokTani[];
+}
+
+export interface KelompokTaniDetailReportSummary {
+  totalGapoktan: number; // distinct Gapoktan non-null
+  totalKelompokTani: number; // distinct (Gapoktan × KT) non-null
+  totalPetani: number; // distinct petani di Lembaga
+  totalLahan: number;
+  totalLuas: number;
+}
+
+export interface KelompokTaniDetailReportResult {
+  farmerGroupId: string;
+  /** FarmerGroup.name (= Lembaga Petani terpilih). */
+  lembagaTani: string;
+  summary: KelompokTaniDetailReportSummary;
+  gapoktanList: KtDetailGapoktan[];
+}

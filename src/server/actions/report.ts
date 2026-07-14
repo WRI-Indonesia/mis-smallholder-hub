@@ -14,6 +14,7 @@ import type {
   ProductionReportResult,
   KelompokTaniReportFilters,
   KelompokTaniReportResult,
+  KelompokTaniDetailReportResult,
 } from "@/types/report";
 import {
   enumeratePeriods,
@@ -23,6 +24,7 @@ import {
   type ProductionMatrixRecord,
 } from "@/lib/report-production";
 import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok-tani";
+import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
 
 export async function getDistrictsForReport() {
   if (!(await hasPermission("report-farmer", "VIEW"))) {
@@ -538,8 +540,16 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
 
 // ─── Report Kelompok Tani (#154) — agregat KT/Gapoktan turunan dari lahan (real-time) ───
 
+/** Dropdown Distrik/Lembaga dipakai bersama Report KT Summary & Detail. */
+async function canViewKtReportFamily() {
+  return (
+    (await hasPermission("report-kelompok-tani", "VIEW")) ||
+    (await hasPermission("report-kelompok-tani-detail", "VIEW"))
+  );
+}
+
 export async function getDistrictsForKtReport() {
-  if (!(await hasPermission("report-kelompok-tani", "VIEW"))) {
+  if (!(await canViewKtReportFamily())) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
   const access = await getAccessContext();
@@ -555,7 +565,7 @@ export async function getDistrictsForKtReport() {
 }
 
 export async function getFarmerGroupsForKtReport(districtId?: string | null) {
-  if (!(await hasPermission("report-kelompok-tani", "VIEW"))) {
+  if (!(await canViewKtReportFamily())) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
   const access = await getAccessContext();
@@ -614,4 +624,58 @@ export async function getKelompokTaniReport(
   }));
 
   return buildKelompokTaniReport(raw);
+}
+
+/**
+ * Report Kelompok Tani (Detail) — roster 1 Lembaga: hierarki Gapoktan/KUD → KT →
+ * daftar Petani. RBAC 3-layer: `report-kelompok-tani-detail` VIEW + scope
+ * (`farmerRelationAccessFilter` via `AND`) + `isActive`. Lembaga wajib & harus
+ * berada dalam cakupan akses user; bila tak ada lahan, kembalikan roster kosong
+ * dengan nama Lembaga (real-time, sumber `LandParcel.subGroupLv*` — #146).
+ */
+export async function getKelompokTaniDetailReport(
+  farmerGroupId: string,
+): Promise<KelompokTaniDetailReportResult> {
+  if (!(await hasPermission("report-kelompok-tani-detail", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  // Verifikasi Lembaga berada dalam cakupan akses user.
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id: farmerGroupId, isActive: true, ...accessFilter },
+    select: { id: true, name: true },
+  });
+  if (!group) {
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
+  }
+
+  const parcels = await prisma.landParcel.findMany({
+    where: {
+      isActive: true,
+      farmer: { isActive: true },
+      AND: [farmerRelationAccessFilter(access), { farmer: { farmerGroupId } }],
+    },
+    select: {
+      area: true,
+      subGroupLv1: true,
+      subGroupLv2: true,
+      farmer: { select: { id: true, farmerId: true, name: true } },
+    },
+  });
+
+  const raw: KtDetailRawParcel[] = parcels.map((p) => ({
+    farmerId: p.farmer.id,
+    farmerCode: p.farmer.farmerId,
+    farmerName: p.farmer.name,
+    area: p.area,
+    subGroupLv1: p.subGroupLv1,
+    subGroupLv2: p.subGroupLv2,
+  }));
+
+  return buildKelompokTaniDetailReport(group.id, group.name, raw);
 }

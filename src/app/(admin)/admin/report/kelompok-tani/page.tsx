@@ -9,7 +9,7 @@ export default async function KelompokTaniReportPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="print:hidden">
-        <h1 className="text-2xl font-bold">Laporan Kelompok Tani</h1>
+        <h1 className="text-2xl font-bold">Laporan Kelompok Tani (Ringkasan)</h1>
         <p className="text-muted-foreground">
           Rekap Gapoktan/KUD &amp; Kelompok Tani turunan dari data lahan (per Lembaga Petani)
         </p>

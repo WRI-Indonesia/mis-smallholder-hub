@@ -34,7 +34,7 @@
 | RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
 | RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
 | RPT-03 | Report Produksi | Matriks bulanan per petani/lahan + Excel + PDF landscape (#132) |
-| RPT-04 | Report Kelompok Tani | Agregat real-time Lembaga×Gapoktan×KT turunan dari lahan (distinct petani/lahan); filter Distrik/Lembaga opsional + search + 5 summary card + Excel & PDF (#154) |
+| RPT-04 | Report Kelompok Tani | **2 submenu.** **(Summary)** agregat real-time Lembaga×Gapoktan/KUD×KT turunan dari lahan (distinct petani/lahan); filter Distrik/Lembaga opsional + search + 5 card + Excel & PDF. **(Detail)** roster per 1 Lembaga: hierarki Gapoktan/KUD→KT→daftar Petani (jml lahan/luas) + 5 card + Excel & PDF flat (#154) |
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
 | BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
