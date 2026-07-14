@@ -15,7 +15,7 @@ export default async function FarmerSummaryPage() {
       <div>
         <h1 className="text-2xl font-bold">Ringkasan Petani</h1>
         <p className="text-muted-foreground">
-          Analisis data petani berdasarkan district dan Kelompok Tani
+          Analisis data petani berdasarkan district dan Lembaga Tani
         </p>
       </div>
       <FarmerSummaryClient districts={districts} initialFarmerGroups={farmerGroups} />

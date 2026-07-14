@@ -24,7 +24,8 @@ export interface LandParcel {
   farmerId: string;
   farmer: LandParcelFarmer;
   parcelId: string;
-  // Column-key placeholder untuk kolom "Kelompok Tani" (dirender dari
+  blok: string | null;
+  // Column-key placeholder untuk kolom "Lembaga Tani" (dirender dari
   // farmer.farmerGroup.name); tidak diisi pada row-nya sendiri.
   farmerGroupName?: string;
   geometry: Geometry;
@@ -32,6 +33,8 @@ export interface LandParcel {
   landStatus: string | null;
   cropType: string | null;
   plantingYear: number | null;
+  subGroupLv1: string | null; // Gapoktan
+  subGroupLv2: string | null; // Kelompok Tani
   revision: number;
   isActive: boolean;
   notes?: string | null;

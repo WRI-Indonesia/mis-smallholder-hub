@@ -81,7 +81,7 @@ export function MapParcelClient({ provinces }: Props) {
     let active = true;
     getFarmerGroupsForMap(districtId)
       .then((g) => active && setFarmerGroups(g))
-      .catch(() => active && toast.error("Gagal memuat Kelompok Tani"));
+      .catch(() => active && toast.error("Gagal memuat Lembaga Tani"));
     return () => {
       active = false;
     };

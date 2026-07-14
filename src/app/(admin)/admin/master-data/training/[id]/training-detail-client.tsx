@@ -165,7 +165,7 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
       <Card className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kelompok Tani</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lembaga Tani</p>
             <p className="text-sm font-medium mt-1">{activity.farmerGroup.name}</p>
           </div>
           <div>

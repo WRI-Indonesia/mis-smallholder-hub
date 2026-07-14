@@ -277,7 +277,7 @@ export function AddParticipantsModal({
 
       if (!matchedGroupFarmer) {
         status = "ERROR";
-        errorReason = (errorReason ? errorReason + "; " : "") + "ID Petani tidak ditemukan di kelompok tani ini";
+        errorReason = (errorReason ? errorReason + "; " : "") + "ID Petani tidak ditemukan di lembaga tani ini";
       } else {
         name = matchedGroupFarmer.name;
         resolvedId = matchedGroupFarmer.id;

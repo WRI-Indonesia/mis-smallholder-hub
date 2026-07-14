@@ -88,7 +88,7 @@ export async function getFarmerGroupById(id: string) {
 
 export async function createFarmerGroup(input: FarmerGroupInput) {
   if (!(await hasPermission("master-data-groups", "CREATE"))) {
-    return { success: false, error: "Tidak memiliki izin untuk menambah kelompok tani" };
+    return { success: false, error: "Tidak memiliki izin untuk menambah lembaga tani" };
   }
 
   const parsed = farmerGroupSchema.safeParse(input);
@@ -108,7 +108,7 @@ export async function createFarmerGroup(input: FarmerGroupInput) {
 
 export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
   if (!(await hasPermission("master-data-groups", "EDIT"))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengubah kelompok tani" };
+    return { success: false, error: "Tidak memiliki izin untuk mengubah lembaga tani" };
   }
 
   const parsed = updateFarmerGroupSchema.safeParse(input);
@@ -124,7 +124,7 @@ export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
     where: { id, isActive: true, AND: farmerGroupAccessFilter(access) },
     select: { id: true },
   });
-  if (!existing) return { success: false, error: "Kelompok Tani tidak ditemukan atau tidak dalam akses Anda" };
+  if (!existing) return { success: false, error: "Lembaga Tani tidak ditemukan atau tidak dalam akses Anda" };
 
   await prisma.farmerGroup.update({
     where: { id },
@@ -136,7 +136,7 @@ export async function updateFarmerGroup(input: UpdateFarmerGroupInput) {
 
 export async function toggleFarmerGroupActive(id: string) {
   if (!(await hasPermission("master-data-groups", "DELETE"))) {
-    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan kelompok tani" };
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan lembaga tani" };
   }
 
   const access = await getAccessContext();
@@ -145,7 +145,7 @@ export async function toggleFarmerGroupActive(id: string) {
     where: { id, AND: farmerGroupAccessFilter(access) },
     select: { isActive: true },
   });
-  if (!group) return { success: false, error: "Kelompok Tani tidak ditemukan" };
+  if (!group) return { success: false, error: "Lembaga Tani tidak ditemukan" };
 
   const session = await auth();
 

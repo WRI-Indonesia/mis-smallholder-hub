@@ -150,13 +150,13 @@ export function DashboardClient({ initialView }: Props) {
               </PopoverContent>
             </Popover>
 
-            {/* Kelompok Tani */}
+            {/* Lembaga Tani */}
             <Popover open={groupOpen} onOpenChange={setGroupOpen}>
               <PopoverTrigger
                 render={
                   <Button variant="outline" role="combobox" className="w-[200px] justify-between h-9 font-normal">
                     <span className={cn("truncate", !selectedKtId && "text-muted-foreground")}>
-                      {selectedKt?.name ?? "Semua Kelompok Tani"}
+                      {selectedKt?.name ?? "Semua Lembaga Tani"}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -164,13 +164,13 @@ export function DashboardClient({ initialView }: Props) {
               />
               <PopoverContent className="w-[240px] p-0" align="end">
                 <Command>
-                  <CommandInput placeholder="Cari kelompok tani..." />
+                  <CommandInput placeholder="Cari lembaga tani..." />
                   <CommandList>
                     <CommandEmpty>Kelompok tani tidak ditemukan.</CommandEmpty>
                     <CommandGroup>
-                      <CommandItem value="Semua Kelompok Tani" onSelect={() => { setSelectedKtId(null); setGroupOpen(false); }}>
+                      <CommandItem value="Semua Lembaga Tani" onSelect={() => { setSelectedKtId(null); setGroupOpen(false); }}>
                         <Check className={cn("mr-2 h-4 w-4", !selectedKtId ? "opacity-100" : "opacity-0")} />
-                        Semua Kelompok Tani
+                        Semua Lembaga Tani
                       </CommandItem>
                       {activeKts.map((kt) => (
                         <CommandItem key={kt.id} value={kt.name} onSelect={() => { setSelectedKtId(kt.id); setGroupOpen(false); }}>
@@ -193,7 +193,7 @@ export function DashboardClient({ initialView }: Props) {
               }}
             >
               <SelectTrigger className="w-[150px] h-9">
-                <SelectValue />
+                <SelectValue>{(value) => (value === "all" ? "Semua Tahun" : value)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Tahun</SelectItem>
@@ -250,9 +250,9 @@ export function DashboardClient({ initialView }: Props) {
                       <MapPin className="h-6 w-6" />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="font-semibold">Pilih Kelompok Tani</h3>
+                      <h3 className="font-semibold">Pilih Lembaga Tani</h3>
                       <p className="text-sm text-muted-foreground">
-                        Klik marker di peta untuk melihat detail informasi Kelompok Tani dan statistik petani.
+                        Klik marker di peta untuk melihat detail informasi Lembaga Tani dan statistik petani.
                       </p>
                     </div>
                   </CardContent>

@@ -15,7 +15,7 @@ export default async function DataCompletenessPage() {
       <div>
         <h1 className="text-2xl font-bold">Analisa Ketersediaan Data</h1>
         <p className="text-muted-foreground">
-          Periksa kelengkapan dan anomali data satu Kelompok Tani (Petani, Lahan, Pelatihan, Produksi)
+          Periksa kelengkapan dan anomali data satu Lembaga Tani (Petani, Lahan, Pelatihan, Produksi)
         </p>
       </div>
       <DataCompletenessClient districts={districts} initialFarmerGroups={farmerGroups} />

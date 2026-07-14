@@ -60,7 +60,7 @@ export async function bulkCreateFarmers(
     validatedRecords.push(parsed.data);
   }
 
-  // Validasi semua kelompok tani target berada dalam scope data-access user.
+  // Validasi semua lembaga tani target berada dalam scope data-access user.
   const access = await getAccessContext();
   if (access.mode !== "ALL") {
     const allowedGroups = await prisma.farmerGroup.findMany({
@@ -73,7 +73,7 @@ export async function bulkCreateFarmers(
     if (unauthorized) {
       return {
         success: false,
-        error: `Tidak memiliki izin untuk menambah petani ke kelompok tani dengan ID: "${unauthorized.farmerGroupId}"`,
+        error: `Tidak memiliki izin untuk menambah petani ke lembaga tani dengan ID: "${unauthorized.farmerGroupId}"`,
       };
     }
   }

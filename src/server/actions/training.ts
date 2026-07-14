@@ -123,7 +123,7 @@ export async function createTrainingActivity(input: TrainingActivityInput) {
   const parsed = trainingActivitySchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
-  // Pastikan kelompok tani target berada dalam scope data-access user.
+  // Pastikan lembaga tani target berada dalam scope data-access user.
   // `AND` (bukan spread) agar filter scope `{ id: { in } }` (mode
   // BY_FARMER_GROUP) tidak menimpa literal `id` di atas.
   const access = await getAccessContext();
@@ -132,7 +132,7 @@ export async function createTrainingActivity(input: TrainingActivityInput) {
     select: { id: true },
   });
   if (!targetGroup) {
-    return { success: false, error: "Tidak memiliki izin untuk menambah pelatihan pada kelompok tani ini" };
+    return { success: false, error: "Tidak memiliki izin untuk menambah pelatihan pada lembaga tani ini" };
   }
 
   const session = await auth();
@@ -167,13 +167,13 @@ export async function updateTrainingActivity(input: UpdateTrainingActivityInput)
   });
   if (!existing) return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda" };
 
-  // Cegah pemindahan pelatihan ke kelompok tani di luar scope user.
+  // Cegah pemindahan pelatihan ke lembaga tani di luar scope user.
   const targetGroup = await prisma.farmerGroup.findFirst({
     where: { id: data.farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
     select: { id: true },
   });
   if (!targetGroup) {
-    return { success: false, error: "Tidak memiliki izin untuk memindahkan pelatihan ke kelompok tani ini" };
+    return { success: false, error: "Tidak memiliki izin untuk memindahkan pelatihan ke lembaga tani ini" };
   }
 
   await prisma.trainingActivity.update({
@@ -224,7 +224,7 @@ export async function getFarmersByGroup(farmerGroupId: string) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
-  // Pastikan kelompok tani berada dalam scope data-access user sebelum
+  // Pastikan lembaga tani berada dalam scope data-access user sebelum
   // mengembalikan daftar petaninya.
   const access = await getAccessContext();
   const group = await prisma.farmerGroup.findFirst({
@@ -232,7 +232,7 @@ export async function getFarmersByGroup(farmerGroupId: string) {
     select: { id: true },
   });
   if (!group) {
-    throw new Error("Kelompok Tani tidak ditemukan atau tidak dalam akses Anda");
+    throw new Error("Lembaga Tani tidak ditemukan atau tidak dalam akses Anda");
   }
 
   return prisma.farmer.findMany({
@@ -290,7 +290,7 @@ export async function addParticipants(
   const farmerIds = participants.map((p) => p.farmerId);
 
   // Pastikan activity dalam scope user, lalu batasi peserta ke petani aktif
-  // milik kelompok tani activity tersebut (cegah injeksi farmerId sembarang).
+  // milik lembaga tani activity tersebut (cegah injeksi farmerId sembarang).
   const access = await getAccessContext();
   const activity = await prisma.trainingActivity.findFirst({
     where: { id: activityId, isActive: true, ...farmerAccessFilter(access) },
@@ -305,7 +305,7 @@ export async function addParticipants(
     select: { id: true },
   });
   if (validFarmers.length !== farmerIds.length) {
-    return { success: false, error: "Terdapat petani yang tidak valid untuk kelompok tani pelatihan ini" };
+    return { success: false, error: "Terdapat petani yang tidak valid untuk lembaga tani pelatihan ini" };
   }
 
   // We do bulk upsert or find and create to avoid duplicate active relations

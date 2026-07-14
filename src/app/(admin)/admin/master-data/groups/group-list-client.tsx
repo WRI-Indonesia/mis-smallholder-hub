@@ -216,7 +216,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
   const toolbarRight = permissions.includes("CREATE") ? (
     <Button size="sm" onClick={() => { setEditGroup(null); setShowForm(true); }} className="h-9">
       <Plus className="h-4 w-4 mr-2" />
-      Tambah KT
+      Tambah Lembaga Tani
     </Button>
   ) : undefined;
 
@@ -231,7 +231,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Kelompok Tani</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Lembaga Tani</p>
               <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKT}</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">

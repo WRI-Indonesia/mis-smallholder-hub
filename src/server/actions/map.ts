@@ -179,10 +179,10 @@ const BMP_MENU_KEY = "map-bmp";
 
 /**
  * Peta BMP — Layer 1: production-data availability per parcel. Loads land
- * parcels for the selected Kelompok Tani (RBAC-scoped) and classifies each into
+ * parcels for the selected Lembaga Tani (RBAC-scoped) and classifies each into
  * 4 categories by how many consecutive months of production data it has.
  *
- * Unlike Peta Lahan, the query is bounded by Kelompok Tani (required); Provinsi
+ * Unlike Peta Lahan, the query is bounded by Lembaga Tani (required); Provinsi
  * and Distrik only narrow the KT dropdown. Production is fetched once for all
  * parcels via a scoped groupBy (no N+1). Records with a null `parcelId` cannot
  * be attributed to a parcel and never affect its color.

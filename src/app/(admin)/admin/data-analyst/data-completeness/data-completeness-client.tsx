@@ -86,7 +86,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
         const groups = await getFarmerGroupsForCompleteness(selectedDistrict);
         setFarmerGroups(groups);
       } catch {
-        toast.error("Gagal memuat Kelompok Tani");
+        toast.error("Gagal memuat Lembaga Tani");
       }
     }
     updateGroups();
@@ -117,12 +117,12 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
     const { exportMultiSheetToExcel } = await import("@/lib/xlsx");
 
     const ringkasanRows = [
-      { metrik: "Kelompok Tani", nilai: `${result.group.name}${result.group.code ? ` (${result.group.code})` : ""}` },
+      { metrik: "Lembaga Tani", nilai: `${result.group.name}${result.group.code ? ` (${result.group.code})` : ""}` },
       { metrik: "District", nilai: result.group.districtName },
       { metrik: "Index Ketersediaan Data", nilai: `${result.healthScore}%` },
       { metrik: "Total Petani", nilai: result.totalFarmers },
       { metrik: "Total Anomali", nilai: result.totalAnomalies },
-      { metrik: "Skor Profil KT", nilai: `${result.profileScore}%` },
+      { metrik: "Skor Profil Lembaga Tani", nilai: `${result.profileScore}%` },
       ...result.domains.map((d) => ({ metrik: `Skor ${d.label}`, nilai: `${d.score}%` })),
     ];
 
@@ -232,21 +232,21 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
 
             {/* Farmer Group (required) */}
             <div className="flex flex-col gap-1.5 min-w-[250px]">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kelompok Tani</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lembaga Tani</span>
               <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
                 <PopoverTrigger
                   render={
                     <Button variant="outline" role="combobox" aria-expanded={groupComboOpen} className="w-[250px] justify-between h-9 font-normal text-left">
-                      {selectedFarmerGroup === null ? <span className="text-muted-foreground">Pilih Kelompok Tani</span> : <span>{selectedGroupObj?.name}</span>}
+                      {selectedFarmerGroup === null ? <span className="text-muted-foreground">Pilih Lembaga Tani</span> : <span>{selectedGroupObj?.name}</span>}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   }
                 />
                 <PopoverContent className="w-[250px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Cari kelompok tani..." />
+                    <CommandInput placeholder="Cari lembaga tani..." />
                     <CommandList className="max-h-[300px]">
-                      <CommandEmpty>Kelompok Tani tidak ditemukan.</CommandEmpty>
+                      <CommandEmpty>Lembaga Tani tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
                         {farmerGroups.map((g) => (
                           <CommandItem
@@ -281,7 +281,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
       {!result ? (
         <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed">
           <ClipboardCheck className="h-12 w-12 text-muted-foreground opacity-40 mb-4" />
-          <p className="text-muted-foreground font-medium">Pilih District dan Kelompok Tani, lalu klik Analisa</p>
+          <p className="text-muted-foreground font-medium">Pilih District dan Lembaga Tani, lalu klik Analisa</p>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -315,7 +315,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
               {/* Domain chips */}
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs">
-                  <ClipboardCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profil KT <ScoreBadge score={result.profileScore} />
+                  <ClipboardCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profil Lembaga Tani <ScoreBadge score={result.profileScore} />
                 </span>
                 {result.domains.map((d) => {
                   const Icon = DOMAIN_ICONS[d.domain];
@@ -334,7 +334,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
             <Card className="border-amber-500/40 bg-amber-500/5">
               <CardContent className="flex items-center gap-2 py-4 text-sm text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                Kelompok Tani ini belum memiliki data petani aktif — domain Petani, Lahan, Pelatihan, dan Produksi kosong.
+                Lembaga Tani ini belum memiliki data petani aktif — domain Petani, Lahan, Pelatihan, dan Produksi kosong.
               </CardContent>
             </Card>
           )}
@@ -411,7 +411,7 @@ function SectionShell({
 function ProfileSection({ result }: { result: DataCompletenessResult }) {
   const failed = result.profileChecks.filter((c) => !c.complete).length;
   return (
-    <SectionShell title="Profil Kelompok Tani" icon={ClipboardCheck} score={result.profileScore} anomalyCount={failed} defaultOpen={failed > 0}>
+    <SectionShell title="Profil Lembaga Tani" icon={ClipboardCheck} score={result.profileScore} anomalyCount={failed} defaultOpen={failed > 0}>
       <ul className="space-y-2">
         {result.profileChecks.map((c) => (
           <li key={c.key} className="flex items-center justify-between gap-4 text-sm">

@@ -76,9 +76,9 @@ Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus d
 
 ### Bulk Upload UI/UX & Validation Pattern
 
-Untuk fitur bulk upload data massal (misalnya Petani, Kelompok Tani, atau Region), ikuti aturan alur dan antarmuka berikut:
+Untuk fitur bulk upload data massal (misalnya Petani, Lembaga Tani, atau Region), ikuti aturan alur dan antarmuka berikut:
 - **Alur Step-by-Step**:
-  1. Pilih context / parent entity (misalnya Kelompok Tani) di paling atas menggunakan searchable Combobox. Pilihan file input harus tetap *disabled* sampai context dipilih.
+  1. Pilih context / parent entity (misalnya Lembaga Tani) di paling atas menggunakan searchable Combobox. Pilihan file input harus tetap *disabled* sampai context dipilih.
   2. Pilih berkas Excel (`.xlsx`) atau CSV. Input file dinonaktifkan jika context di atas belum dipilih.
   3. Pemetaan kolom dinamis (*Dynamic Column Mapping*): sediakan pemetaan drop-down kolom file dengan field target database, lengkap dengan aturan auto-matching.
   4. Hasil validasi dan review: Tampilkan status per baris, jumlah ringkasan valid vs error, serta filter tampilan data.
@@ -114,9 +114,9 @@ Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ik
   - Auto-increment revision untuk update parcel yang sudah ada
 - **Implementasi Reference**: Lihat `src/server/actions/bulk-upload-parcel.ts` (issue #88)
 
-### Searchable Kelompok Tani Filters
+### Searchable Lembaga Tani Filters
 
-- **Wajib menggunakan Combobox**: Untuk mempermudah pencarian dan penyaringan data di semua halaman list master data (terutama data Petani) atau alur lainnya, semua komponen filter/dropdown **Kelompok Tani** wajib menggunakan komponen **searchable Combobox** (kombinasi Popover & Command Shadcn UI) dengan kemampuan pencarian teks, dan tidak diperbolehkan menggunakan dropdown Select box standar.
+- **Wajib menggunakan Combobox**: Untuk mempermudah pencarian dan penyaringan data di semua halaman list master data (terutama data Petani) atau alur lainnya, semua komponen filter/dropdown **Lembaga Tani** wajib menggunakan komponen **searchable Combobox** (kombinasi Popover & Command Shadcn UI) dengan kemampuan pencarian teks, dan tidak diperbolehkan menggunakan dropdown Select box standar.
 
 ### Geospatial Features (MapLibre Integration)
 

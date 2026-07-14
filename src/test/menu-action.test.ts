@@ -5,7 +5,7 @@ import type { MenuItem } from "@/lib/menu-utils";
 describe("Menu - Tree building logic", () => {
   const mockItems: MenuItem[] = [
     { key: "master-data", parentKey: null, title: "Master Data", url: "/admin/master-data", icon: "Database" },
-    { key: "master-data-groups", parentKey: "master-data", title: "Kelompok Tani", url: "/admin/master-data/groups", icon: "Users" },
+    { key: "master-data-groups", parentKey: "master-data", title: "Lembaga Tani", url: "/admin/master-data/groups", icon: "Users" },
     { key: "master-data-training-participants", parentKey: "master-data-groups", title: "Peserta Pelatihan", url: "/admin/master-data/training/participants", icon: "Users" },
     { key: "settings", parentKey: null, title: "Settings", url: "/admin/settings", icon: "Settings" },
     { key: "settings-users", parentKey: "settings", title: "User Management", url: "/admin/settings/users", icon: "UserCog" },

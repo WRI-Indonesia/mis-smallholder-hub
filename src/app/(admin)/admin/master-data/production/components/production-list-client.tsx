@@ -23,7 +23,7 @@ interface ProductionRecord {
   harvestDate: Date | string;
   harvestNumber: number;
   yieldKg: number;
-  // Column-key placeholder for the "Kelompok Tani" column (rendered from
+  // Column-key placeholder for the "Lembaga Tani" column (rendered from
   // farmer.farmerGroup.name); not populated on the row itself.
   farmerGroupId?: string;
   farmer: {
@@ -97,7 +97,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
     },
     {
       key: "farmerGroupId",
-      label: "Kelompok Tani",
+      label: "Lembaga Tani",
       sortable: true,
       cellClassName: "text-sm text-muted-foreground",
       render: (row) => row.farmer.farmerGroup.name,
@@ -186,7 +186,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
 
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
-      {/* Kelompok Tani filter (Combobox) */}
+      {/* Lembaga Tani filter (Combobox) */}
       <Popover open={farmerGroupComboOpen} onOpenChange={setFarmerGroupComboOpen}>
         <PopoverTrigger
           render={
@@ -197,7 +197,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
               className="w-[240px] justify-between h-9 font-normal text-left"
             >
               {farmerGroupFilter === "all" ? (
-                <span>Semua Kelompok Tani</span>
+                <span>Semua Lembaga Tani</span>
               ) : (
                 <span>{selectedGroup?.name}</span>
               )}
@@ -207,9 +207,9 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
         />
         <PopoverContent className="w-[240px] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Cari kelompok tani..." />
+            <CommandInput placeholder="Cari lembaga tani..." />
             <CommandList className="max-h-[300px]">
-              <CommandEmpty>Kelompok Tani tidak ditemukan.</CommandEmpty>
+              <CommandEmpty>Lembaga Tani tidak ditemukan.</CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   value="all"
@@ -224,7 +224,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
                       farmerGroupFilter === "all" ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  Semua Kelompok Tani
+                  Semua Lembaga Tani
                 </CommandItem>
                 {farmerGroups.map((g) => (
                   <CommandItem

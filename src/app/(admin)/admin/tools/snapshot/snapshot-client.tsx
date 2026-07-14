@@ -116,7 +116,7 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
     },
     {
       key: "totalKelompokTani",
-      label: "Total KT",
+      label: "Total Lembaga Tani",
       sortable: true,
       cellClassName: "text-sm tabular-nums text-right pr-4",
     },

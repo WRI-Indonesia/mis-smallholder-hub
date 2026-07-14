@@ -90,7 +90,7 @@ export default async function ProductionDetailPage({
               <div className="text-sm font-mono text-muted-foreground">{record.farmer.farmerId}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground uppercase font-semibold">Kelompok Tani</div>
+              <div className="text-xs text-muted-foreground uppercase font-semibold">Lembaga Tani</div>
               <div className="text-sm">
                 <Link
                   href={`/admin/master-data/groups/${record.farmer.farmerGroupId}`}

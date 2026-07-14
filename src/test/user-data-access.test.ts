@@ -61,7 +61,7 @@ describe("UserDataAccess — visual summary", () => {
       farmerGroups: [
         {
           farmerGroupId: "fg1",
-          farmerGroup: { id: "fg1", name: "Kelompok Tani Sejahtera", abrv: "KTS" },
+          farmerGroup: { id: "fg1", name: "Lembaga Tani Sejahtera", abrv: "KTS" },
         },
       ],
     };
@@ -255,13 +255,13 @@ describe("UserDataAccess — performance", () => {
   it("resolves 50 KT search filter under 1ms", () => {
     const groups = Array.from({ length: 50 }, (_, i) => ({
       id: `fg-${i}`,
-      name: `Kelompok Tani ${i}`,
+      name: `Lembaga Tani ${i}`,
       abrv: `KT-${i}`,
       district: { name: `Distrik ${i % 5}` },
     }));
 
     const start = performance.now();
-    const q = "kelompok";
+    const q = "lembaga";
     const result = groups.filter(
       (f) =>
         f.name.toLowerCase().includes(q) ||
@@ -272,7 +272,7 @@ describe("UserDataAccess — performance", () => {
 
     console.log(`  data access filter (50 KT): ${duration.toFixed(3)}ms`);
     expect(duration).toBeLessThan(1);
-    expect(result.length).toBe(50); // all match "kelompok"
+    expect(result.length).toBe(50); // all match "lembaga"
   });
 
   it("badge label generation for 20 assignments under 1ms", () => {

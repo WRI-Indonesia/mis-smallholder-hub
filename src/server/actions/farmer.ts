@@ -74,7 +74,7 @@ export async function createFarmer(input: FarmerInput) {
   const parsed = farmerSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
-  // Pastikan kelompok tani target berada dalam scope data-access user.
+  // Pastikan lembaga tani target berada dalam scope data-access user.
   const access = await getAccessContext();
   const targetGroup = await prisma.farmerGroup.findFirst({
     // `AND` (bukan spread) agar filter scope `{ id: { in } }` pada mode
@@ -83,7 +83,7 @@ export async function createFarmer(input: FarmerInput) {
     select: { id: true },
   });
   if (!targetGroup) {
-    return { success: false, error: "Tidak memiliki izin untuk menambah petani ke kelompok tani ini" };
+    return { success: false, error: "Tidak memiliki izin untuk menambah petani ke lembaga tani ini" };
   }
 
   const session = await auth();
@@ -115,13 +115,13 @@ export async function updateFarmer(input: UpdateFarmerInput) {
   const existing = await prisma.farmer.findFirst({ where: { id, isActive: true, ...farmerAccessFilter(access) } });
   if (!existing) return { success: false, error: "Petani tidak ditemukan atau sudah tidak aktif" };
 
-  // Cegah pemindahan petani ke kelompok tani di luar scope user.
+  // Cegah pemindahan petani ke lembaga tani di luar scope user.
   const targetGroup = await prisma.farmerGroup.findFirst({
     where: { id: data.farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
     select: { id: true },
   });
   if (!targetGroup) {
-    return { success: false, error: "Tidak memiliki izin untuk memindahkan petani ke kelompok tani ini" };
+    return { success: false, error: "Tidak memiliki izin untuk memindahkan petani ke lembaga tani ini" };
   }
 
   await prisma.farmer.update({

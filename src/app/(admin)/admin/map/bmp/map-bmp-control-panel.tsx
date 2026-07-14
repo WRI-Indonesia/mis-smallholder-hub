@@ -255,17 +255,17 @@ export function MapBmpControlPanel(props: Props) {
               onChange={onDistrictChange}
             />
             <FilterCombobox
-              label="Kelompok Tani"
+              label="Lembaga Tani"
               required
-              placeholder="Pilih Kelompok Tani"
-              emptyText="Kelompok Tani tidak ditemukan."
+              placeholder="Pilih Lembaga Tani"
+              emptyText="Lembaga Tani tidak ditemukan."
               options={farmerGroups}
               value={farmerGroupId}
               onChange={onFarmerGroupChange}
             />
             <p className="text-[11px] leading-snug text-muted-foreground">
-              Kelompok Tani wajib dipilih. Provinsi &amp; Distrik hanya menyaring
-              daftar Kelompok Tani.
+              Lembaga Tani wajib dipilih. Provinsi &amp; Distrik hanya menyaring
+              daftar Lembaga Tani.
             </p>
             <Button onClick={onLoad} disabled={isLoading || !farmerGroupId} className="mt-1 w-full">
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -347,7 +347,7 @@ export function MapBmpControlPanel(props: Props) {
           <Separator />
           <div className="flex items-start gap-2 px-4 py-3 text-xs text-muted-foreground">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>Pilih Kelompok Tani lalu klik Muat Data untuk menampilkan peta.</span>
+            <span>Pilih Lembaga Tani lalu klik Muat Data untuk menampilkan peta.</span>
           </div>
         </>
       )}

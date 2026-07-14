@@ -225,7 +225,7 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
           </div>
 
           <div className="space-y-2 flex flex-col">
-            <Label htmlFor="farmerGroupId">Kelompok Tani</Label>
+            <Label htmlFor="farmerGroupId">Lembaga Tani</Label>
             <Popover open={comboOpen} onOpenChange={setComboOpen}>
               <PopoverTrigger
                 render={
@@ -238,7 +238,7 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
                     {farmerGroupId ? (
                       <span>{selectedGroup?.name}</span>
                     ) : (
-                      <span className="text-muted-foreground">Pilih Kelompok Tani</span>
+                      <span className="text-muted-foreground">Pilih Lembaga Tani</span>
                     )}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -246,9 +246,9 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
               />
               <PopoverContent className="w-[470px] p-0" align="start">
                 <Command>
-                  <CommandInput placeholder="Cari kelompok tani..." />
+                  <CommandInput placeholder="Cari lembaga tani..." />
                   <CommandList className="max-h-[250px]">
-                    <CommandEmpty>Kelompok Tani tidak ditemukan.</CommandEmpty>
+                    <CommandEmpty>Lembaga Tani tidak ditemukan.</CommandEmpty>
                     <CommandGroup>
                       {farmerGroups.map((g) => (
                         <CommandItem

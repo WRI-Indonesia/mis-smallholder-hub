@@ -89,7 +89,7 @@ describe("farmerRelationAccessFilter", () => {
   });
 });
 
-describe("by-id scope — Kelompok Tani (getFarmerGroupById/update/toggle) tidak bocor lintas wilayah", () => {
+describe("by-id scope — Lembaga Tani (getFarmerGroupById/update/toggle) tidak bocor lintas wilayah", () => {
   // Filter KT dipasang lewat `AND`, bukan spread, agar `{ id: { in } }` (mode
   // BY_FARMER_GROUP) tidak menimpa literal `id` (celah scope-bypass).
   it("BY_DISTRICT: where menyertakan id spesifik + batasan districtId", () => {
