@@ -51,7 +51,7 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
             joinedYear: true,
             landParcels: {
               where: { isActive: true },
-              select: { area: true },
+              select: { area: true, subGroupLv2: true },
             },
             trainingParticipants: {
               where: { isActive: true },

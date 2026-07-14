@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, User, Map, Ruler, BookOpen } from "lucide-react";
+import { Users, User, Map, Ruler, BookOpen, Network } from "lucide-react";
 import type { DashboardStats } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -17,6 +17,7 @@ export function DashboardSummaryCards({ stats }: { stats: DashboardStats }) {
   const cards: CardConfig[] = [
     // Row 1
     { title: "Total Lembaga Petani", value: formatNumber(stats.totalKelompokTani), icon: Users, iconClass: "text-slate-600" },
+    { title: "Total Kelompok Tani", value: formatNumber(stats.totalKelompokTaniLahan ?? 0), icon: Network, iconClass: "text-teal-600" },
     { title: "Total Petani", value: formatNumber(stats.totalPetani), icon: Users, iconClass: "text-blue-600" },
     { title: "Petani Laki-laki", value: formatNumber(stats.totalPetaniLaki ?? 0), icon: User, iconClass: "text-sky-600" },
     { title: "Petani Perempuan", value: formatNumber(stats.totalPetaniPerempuan ?? 0), icon: User, iconClass: "text-pink-600" },

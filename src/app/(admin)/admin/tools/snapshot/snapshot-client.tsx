@@ -33,6 +33,10 @@ const formatDateTime = (iso: string) => {
 const formatArea = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
+// Sementara filter dimatikan — snapshot selalu dibuat untuk Semua Distrik &
+// Semua Tahun. Set `true` untuk mengaktifkan kembali filter generate.
+const FILTERS_ENABLED = false;
+
 export function SnapshotClient({ snapshots, filterOptions, permissions }: Props) {
   const router = useRouter();
 
@@ -48,7 +52,11 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
 
   const handleGenerate = () => {
     startTransition(async () => {
-      const result = await generateSnapshot({ districtId, joinedYear });
+      // Filter dimatikan sementara → selalu Semua Data (null/null).
+      const result = await generateSnapshot({
+        districtId: FILTERS_ENABLED ? districtId : null,
+        joinedYear: FILTERS_ENABLED ? joinedYear : null,
+      });
       if (result.success) {
         toast.success("Snapshot berhasil dibuat");
         router.refresh();
@@ -104,6 +112,7 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
       key: "districtName",
       label: "Distrik",
       sortable: true,
+      defaultVisible: false,
       cellClassName: "text-sm",
       render: (row) => row.districtName ?? <span className="text-muted-foreground">Semua</span>,
     },
@@ -111,12 +120,19 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
       key: "joinedYear",
       label: "Tahun Bergabung",
       sortable: true,
+      defaultVisible: false,
       cellClassName: "text-sm tabular-nums",
       render: (row) => row.joinedYear ?? <span className="text-muted-foreground">Semua</span>,
     },
     {
       key: "totalKelompokTani",
       label: "Total Lembaga Petani",
+      sortable: true,
+      cellClassName: "text-sm tabular-nums text-right pr-4",
+    },
+    {
+      key: "totalKelompokTaniLahan",
+      label: "Total Kelompok Tani",
       sortable: true,
       cellClassName: "text-sm tabular-nums text-right pr-4",
     },
@@ -151,6 +167,7 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
     districtName: row.districtName ?? "Semua",
     joinedYear: row.joinedYear ?? "Semua",
     totalKelompokTani: row.totalKelompokTani,
+    totalKelompokTaniLahan: row.totalKelompokTaniLahan,
     totalPetani: row.totalPetani,
     totalPetaniLaki: row.totalPetaniLaki,
     totalPetaniPerempuan: row.totalPetaniPerempuan,
@@ -175,7 +192,7 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
                 <Popover open={districtOpen} onOpenChange={setDistrictOpen}>
                   <PopoverTrigger
                     render={
-                      <Button variant="outline" role="combobox" className="w-[220px] justify-between h-9 font-normal">
+                      <Button variant="outline" role="combobox" disabled={!FILTERS_ENABLED} className="w-[220px] justify-between h-9 font-normal">
                         <span className={cn(!districtId && "text-muted-foreground")}>
                           {selectedDistrict?.name ?? "Semua Distrik"}
                         </span>
@@ -211,6 +228,7 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
                 <Select
                   value={joinedYear ? String(joinedYear) : "all"}
                   onValueChange={(v) => setJoinedYear(v === "all" ? null : Number(v))}
+                  disabled={!FILTERS_ENABLED}
                 >
                   <SelectTrigger className="w-[160px] h-9">
                     <SelectValue />
@@ -228,10 +246,17 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
                 <Camera className="h-4 w-4" />
                 {isPending ? "Membuat…" : "Generate Snapshot"}
               </Button>
-              <Button variant="outline" onClick={handleReset} disabled={isPending} className="h-9 gap-2">
-                <RotateCcw className="h-4 w-4" /> Reset
-              </Button>
+              {FILTERS_ENABLED && (
+                <Button variant="outline" onClick={handleReset} disabled={isPending} className="h-9 gap-2">
+                  <RotateCcw className="h-4 w-4" /> Reset
+                </Button>
+              )}
             </div>
+            {!FILTERS_ENABLED && (
+              <p className="text-xs text-muted-foreground mt-3">
+                Filter dinonaktifkan sementara — snapshot dibuat untuk <b>Semua Distrik</b> &amp; <b>Semua Tahun</b>.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

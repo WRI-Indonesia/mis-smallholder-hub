@@ -16,7 +16,9 @@ export interface DashboardFilters {
 }
 
 export interface DashboardStats {
-  totalKelompokTani: number;
+  totalKelompokTani: number; // NB: jumlah FarmerGroup (= Lembaga Petani); mislabel legacy
+  /** Distinct Kelompok Tani (LandParcel.subGroupLv2) turunan per-lahan, dijumlah per Lembaga (#148, interim TD-014). */
+  totalKelompokTaniLahan: number;
   totalPetani: number;
   totalPetaniLaki: number;
   totalPetaniPerempuan: number;
@@ -39,6 +41,8 @@ export interface KTDetails extends KTYearStats {
   id: string;
   name: string;
   code: string | null;
+  /** Distinct Kelompok Tani (subGroupLv2) di Lembaga ini — year-independent (#148). */
+  kelompokTaniCount: number;
   districtId: string | null;
   districtName: string | null;
   locationLat: number | null;
@@ -81,7 +85,8 @@ export interface SnapshotListItem {
   districtName: string | null;
   joinedYear: number | null;
   createdByName: string;
-  totalKelompokTani: number;
+  totalKelompokTani: number; // = jumlah Lembaga Petani (mislabel legacy)
+  totalKelompokTaniLahan: number; // distinct subGroupLv2 (#148)
   totalPetani: number;
   totalPetaniLaki: number;
   totalPetaniPerempuan: number;
