@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useMemo, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, FileText, Download, Network, Layers, Users, Sprout, MapPin, Printer } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronRight, FileText, Download, Network, Layers, Users, Sprout, MapPin, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { getFarmerGroupsForKtReport, getKelompokTaniDetailReport } from "@/server/actions/report";
-import type { KelompokTaniDetailReportResult } from "@/types/report";
+import type { KelompokTaniDetailReportResult, KtDetailKelompokTani } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
 
 interface District {
@@ -39,6 +39,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
   const [groupComboOpen, setGroupComboOpen] = useState(false);
 
   const [reportData, setReportData] = useState<KelompokTaniDetailReportResult | null>(null);
+  const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
   // Refresh daftar Lembaga saat Distrik berubah.
@@ -59,6 +60,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
       try {
         const data = await getKelompokTaniDetailReport(farmerGroupId);
         setReportData(data);
+        setOpenKeys(new Set()); // default: semua section tertutup
       } catch (err) {
         toast.error((err instanceof Error && err.message) || "Gagal memuat laporan");
       }
@@ -86,20 +88,64 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
     new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
   const displayOrUnknown = (v: string | null) => v ?? UNKNOWN;
 
-  const summaryCards = reportData
-    ? [
-        { label: "Gapoktan/KUD", value: formatNumber(reportData.summary.totalGapoktan), icon: Network, badge: "Gapoktan/KUD", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" },
-        { label: "Kelompok Tani", value: formatNumber(reportData.summary.totalKelompokTani), icon: Layers, badge: "KT", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-        { label: "Total Petani", value: formatNumber(reportData.summary.totalPetani), icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
-        { label: "Total Lahan", value: formatNumber(reportData.summary.totalLahan), icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
-        { label: "Total Luas", value: formatLuas(reportData.summary.totalLuas), icon: MapPin, badge: "Ha", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-      ]
-    : [];
+  // Auto-sembunyikan level Gapoktan/KUD bila Lembaga terpilih tak punya sama sekali.
+  const hasGapoktan = useMemo(
+    () => (reportData ? reportData.gapoktanList.some((g) => g.gapoktan !== null) : false),
+    [reportData],
+  );
 
-  // Ratakan roster jadi baris petani untuk export (Excel/PDF).
+  // Section top-level: Gapoktan (3 tingkat) atau langsung KT (2 tingkat, auto-hide).
+  const sections = useMemo(() => {
+    if (!reportData) return [];
+    if (hasGapoktan) {
+      return reportData.gapoktanList.map((g, i) => ({
+        key: `g${i}`,
+        label: g.gapoktan,
+        isNull: g.gapoktan == null,
+        kts: g.kelompokTaniList,
+        stats: [
+          `${formatNumber(g.totalKelompokTani)} KT`,
+          `${formatNumber(g.totalPetani)} Petani`,
+          `${formatNumber(g.totalLahan)} Lahan`,
+          `${formatLuas(g.totalLuas)} Ha`,
+        ],
+        flatKt: false as const,
+      }));
+    }
+    // Tanpa Gapoktan → tiap KT jadi section top-level.
+    const only = reportData.gapoktanList[0];
+    return (only?.kelompokTaniList ?? []).map((kt, i) => ({
+      key: `k${i}`,
+      label: kt.kelompokTani,
+      isNull: kt.kelompokTani == null,
+      kts: [kt],
+      stats: [
+        `${formatNumber(kt.totalPetani)} Petani`,
+        `${formatNumber(kt.totalLahan)} Lahan`,
+        `${formatLuas(kt.totalLuas)} Ha`,
+      ],
+      flatKt: true as const,
+    }));
+  }, [reportData, hasGapoktan]);
+
+  const allKeys = useMemo(() => sections.map((s) => s.key), [sections]);
+  const allOpen = allKeys.length > 0 && allKeys.every((k) => openKeys.has(k));
+
+  const toggleSection = (k: string) =>
+    setOpenKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  const setAll = (open: boolean) => setOpenKeys(open ? new Set(allKeys) : new Set());
+
+  const sectionIcon = hasGapoktan ? Network : Layers;
+
+  // ─── Export (flat) ───
   const buildExportColumns = () => [
     { header: "No", key: "no" },
-    { header: "Gapoktan/KUD", key: "gapoktan" },
+    ...(hasGapoktan ? [{ header: "Gapoktan/KUD", key: "gapoktan" }] : []),
     { header: "Kelompok Tani", key: "kelompokTani" },
     { header: "Nama Petani", key: "name" },
     { header: "ID Petani", key: "farmerCode" },
@@ -165,6 +211,13 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
       totalLahan: formatNumber(reportData.summary.totalLahan),
       totalLuas: formatLuas(reportData.summary.totalLuas),
     });
+    const cols = buildExportColumns();
+    const columnStyles: Record<number, Record<string, string | number>> = {};
+    cols.forEach((c, i) => {
+      if (c.key === "no" || c.key === "totalLahan" || c.key === "totalLuas") {
+        columnStyles[i] = { halign: "right" };
+      }
+    });
     exportToPDF({
       filename: `Laporan_Kelompok_Tani_Detail_${scopeLabel()}`,
       title: "LAPORAN KELOMPOK TANI (DETAIL)",
@@ -173,15 +226,50 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
         { label: "Lembaga Petani", value: reportData.lembagaTani },
         { label: "Distrik", value: selectedDistrictObj?.name ?? "—" },
       ],
-      columns: buildExportColumns(),
-      columnStyles: {
-        0: { cellWidth: 10, halign: "right" },
-        5: { halign: "right" },
-        6: { halign: "right" },
-      },
+      columns: cols,
+      columnStyles,
       data,
     });
   };
+
+  const summaryCards = reportData
+    ? [
+        ...(hasGapoktan
+          ? [{ label: "Gapoktan/KUD", value: formatNumber(reportData.summary.totalGapoktan), icon: Network, badge: "Gapoktan/KUD", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" }]
+          : []),
+        { label: "Kelompok Tani", value: formatNumber(reportData.summary.totalKelompokTani), icon: Layers, badge: "KT", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+        { label: "Total Petani", value: formatNumber(reportData.summary.totalPetani), icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
+        { label: "Total Lahan", value: formatNumber(reportData.summary.totalLahan), icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
+        { label: "Total Luas", value: formatLuas(reportData.summary.totalLuas), icon: MapPin, badge: "Ha", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+      ]
+    : [];
+
+  const renderPetaniTable = (kt: KtDetailKelompokTani) => (
+    <div className="overflow-x-auto rounded border">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="bg-muted/40 border-b">
+            <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-10">No</th>
+            <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Nama Petani</th>
+            <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">ID Petani</th>
+            <th className="px-3 py-1.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Jml Lahan</th>
+            <th className="px-3 py-1.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Luas (Ha)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {kt.petani.map((p, pi) => (
+            <tr key={p.farmerId} className="border-b last:border-b-0 hover:bg-muted/20">
+              <td className="px-3 py-1.5 text-muted-foreground tabular-nums">{pi + 1}</td>
+              <td className="px-3 py-1.5 font-medium whitespace-nowrap">{p.name}</td>
+              <td className="px-3 py-1.5 font-mono text-xs text-muted-foreground whitespace-nowrap">{p.farmerCode}</td>
+              <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">{formatNumber(p.totalLahan)}</td>
+              <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">{formatLuas(p.totalLuas)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -261,7 +349,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
 
       {/* Summary Cards */}
       {reportData && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 print:hidden">
+        <div className={cn("grid gap-4 sm:grid-cols-2 print:hidden", hasGapoktan ? "lg:grid-cols-5" : "lg:grid-cols-4")}>
           {summaryCards.map((c) => (
             <Card key={c.label} className="shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -277,12 +365,17 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
         </div>
       )}
 
-      {/* Export toolbar */}
-      {reportData && reportData.gapoktanList.length > 0 && (
-        <div className="flex items-center justify-between gap-2 print:hidden">
-          <p className="text-sm text-muted-foreground">
-            Lembaga Petani: <span className="font-medium text-foreground">{reportData.lembagaTani}</span>
-          </p>
+      {/* Toolbar */}
+      {reportData && sections.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-muted-foreground">
+              Lembaga Petani: <span className="font-medium text-foreground">{reportData.lembagaTani}</span>
+            </p>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setAll(!allOpen)}>
+              {allOpen ? "Tutup semua" : "Buka semua"}
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-9 gap-2">
               <Download className="h-4 w-4" />
@@ -311,7 +404,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
             </div>
           </CardContent>
         </Card>
-      ) : reportData.gapoktanList.length === 0 ? (
+      ) : sections.length === 0 ? (
         <Card className="border-dashed py-12">
           <CardContent className="flex flex-col items-center justify-center text-center space-y-3">
             <div className="p-3 bg-muted rounded-full text-muted-foreground">
@@ -326,71 +419,61 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {reportData.gapoktanList.map((g, gi) => (
-            <div key={`${g.gapoktan ?? "null"}-${gi}`} className="rounded-md border bg-card overflow-hidden">
-              {/* Gapoktan header */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/60 px-4 py-2.5">
-                <div className="flex items-center gap-2">
-                  <Network className="h-4 w-4 text-primary" />
-                  <span className={cn("font-semibold", g.gapoktan == null && "italic text-muted-foreground")}>
-                    {displayOrUnknown(g.gapoktan)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>{formatNumber(g.totalKelompokTani)} KT</span>
-                  <span>{formatNumber(g.totalPetani)} Petani</span>
-                  <span>{formatNumber(g.totalLahan)} Lahan</span>
-                  <span>{formatLuas(g.totalLuas)} Ha</span>
-                </div>
-              </div>
-
-              {/* Kelompok Tani sections */}
-              <div className="divide-y">
-                {g.kelompokTaniList.map((kt, ki) => (
-                  <div key={`${kt.kelompokTani ?? "null"}-${ki}`} className="px-4 py-3">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className={cn("text-sm font-medium", kt.kelompokTani == null && "italic text-muted-foreground")}>
-                          {displayOrUnknown(kt.kelompokTani)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{formatNumber(kt.totalPetani)} Petani</span>
-                        <span>{formatNumber(kt.totalLahan)} Lahan</span>
-                        <span>{formatLuas(kt.totalLuas)} Ha</span>
-                      </div>
-                    </div>
-                    <div className="overflow-x-auto rounded border">
-                      <table className="w-full text-sm border-collapse">
-                        <thead>
-                          <tr className="bg-muted/40 border-b">
-                            <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-10">No</th>
-                            <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Nama Petani</th>
-                            <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">ID Petani</th>
-                            <th className="px-3 py-1.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Jml Lahan</th>
-                            <th className="px-3 py-1.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Luas (Ha)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {kt.petani.map((p, pi) => (
-                            <tr key={p.farmerId} className="border-b last:border-b-0 hover:bg-muted/20">
-                              <td className="px-3 py-1.5 text-muted-foreground tabular-nums">{pi + 1}</td>
-                              <td className="px-3 py-1.5 font-medium whitespace-nowrap">{p.name}</td>
-                              <td className="px-3 py-1.5 font-mono text-xs text-muted-foreground whitespace-nowrap">{p.farmerCode}</td>
-                              <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">{formatNumber(p.totalLahan)}</td>
-                              <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">{formatLuas(p.totalLuas)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+        <div className="space-y-3">
+          {sections.map((s) => {
+            const open = openKeys.has(s.key);
+            const Icon = sectionIcon;
+            return (
+              <div key={s.key} className="rounded-md border bg-card overflow-hidden">
+                {/* Section header (collapsible trigger) */}
+                <button
+                  type="button"
+                  onClick={() => toggleSection(s.key)}
+                  aria-expanded={open}
+                  className="flex w-full flex-wrap items-center justify-between gap-2 bg-muted/60 px-4 py-2.5 text-left hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <div className="flex items-center gap-2">
+                    <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-90")} />
+                    <Icon className="h-4 w-4 text-primary" />
+                    <span className={cn("font-semibold", s.isNull && "italic text-muted-foreground")}>
+                      {displayOrUnknown(s.label)}
+                    </span>
                   </div>
-                ))}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+                    {s.stats.map((t) => (
+                      <span key={t}>{t}</span>
+                    ))}
+                  </div>
+                </button>
+
+                {/* Section content */}
+                {open && (
+                  <div className="divide-y">
+                    {s.flatKt
+                      ? <div className="p-3">{renderPetaniTable(s.kts[0])}</div>
+                      : s.kts.map((kt, ki) => (
+                          <div key={`${kt.kelompokTani ?? "null"}-${ki}`} className="px-4 py-3">
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className={cn("text-sm font-medium", kt.kelompokTani == null && "italic text-muted-foreground")}>
+                                  {displayOrUnknown(kt.kelompokTani)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+                                <span>{formatNumber(kt.totalPetani)} Petani</span>
+                                <span>{formatNumber(kt.totalLahan)} Lahan</span>
+                                <span>{formatLuas(kt.totalLuas)} Ha</span>
+                              </div>
+                            </div>
+                            {renderPetaniTable(kt)}
+                          </div>
+                        ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
