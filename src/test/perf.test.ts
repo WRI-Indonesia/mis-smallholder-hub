@@ -91,7 +91,7 @@ describe("Performance - Auth operations", () => {
 });
 
 describe("Performance - AUDIT-P0 RBAC scope guard (#125)", () => {
-  // bulkCreateFarmers memvalidasi setiap baris terhadap set kelompok tani yang
+  // bulkCreateFarmers memvalidasi setiap baris terhadap set lembaga tani yang
   // boleh diakses user. Harus O(n) via Set membership — bukan N+1 query atau
   // Array.includes O(n²). Test ini membuktikan hot-path in-memory tetap murah
   // untuk upload besar.
@@ -198,7 +198,7 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
 
 describe("Performance - RPT-03 Production report pivot (pure logic)", () => {
   // Deterministic synthetic records (no RNG): N farmers × 2 parcels × full month
-  // range × 2 harvests/month — the worst realistic case for one Kelompok Tani.
+  // range × 2 harvests/month — the worst realistic case for one Lembaga Tani.
   function makeRecords(farmerCount: number, periods: string[]): ProductionMatrixRecord[] {
     const records: ProductionMatrixRecord[] = [];
     for (let f = 0; f < farmerCount; f++) {
@@ -264,7 +264,7 @@ describe("Performance - MAP-01 parcel production summary (pure logic)", () => {
 });
 
 describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
-  // getBmpMapData builds the whole payload for ONE Kelompok Tani in JS after two
+  // getBmpMapData builds the whole payload for ONE Lembaga Tani in JS after two
   // scoped queries. This stresses buildBmpMapData (per-parcel turf centroid + kg
   // aggregation + category) far past a realistic KT to prove it stays cheap.
   function squareAt(lng: number, lat: number): RawParcel["geometry"] {

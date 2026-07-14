@@ -16,7 +16,7 @@ interface CardConfig {
 export function DashboardSummaryCards({ stats }: { stats: DashboardStats }) {
   const cards: CardConfig[] = [
     // Row 1
-    { title: "Total Kelompok Tani", value: formatNumber(stats.totalKelompokTani), icon: Users, iconClass: "text-slate-600" },
+    { title: "Total Lembaga Tani", value: formatNumber(stats.totalKelompokTani), icon: Users, iconClass: "text-slate-600" },
     { title: "Total Petani", value: formatNumber(stats.totalPetani), icon: Users, iconClass: "text-blue-600" },
     { title: "Petani Laki-laki", value: formatNumber(stats.totalPetaniLaki ?? 0), icon: User, iconClass: "text-sky-600" },
     { title: "Petani Perempuan", value: formatNumber(stats.totalPetaniPerempuan ?? 0), icon: User, iconClass: "text-pink-600" },

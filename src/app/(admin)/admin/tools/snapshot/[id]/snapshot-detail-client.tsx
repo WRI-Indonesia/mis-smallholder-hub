@@ -98,7 +98,7 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
 
       {/* KT table */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Ringkasan per Kelompok Tani</h2>
+        <h2 className="text-lg font-semibold">Ringkasan per Lembaga Tani</h2>
         <Button
           variant="outline"
           size="sm"
@@ -113,8 +113,8 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
         data={snapshot.data.kelompokTaniList}
         rowKey={(row) => row.id}
         searchKey="name"
-        searchPlaceholder="Cari kelompok tani..."
-        emptyMessage="Tidak ada data kelompok tani."
+        searchPlaceholder="Cari lembaga tani..."
+        emptyMessage="Tidak ada data lembaga tani."
         exportFilename={`snapshot-${snapshot.id}-kt`}
         getExportRow={getExportRow}
       />

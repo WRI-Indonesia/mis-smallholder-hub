@@ -55,7 +55,7 @@ export function ProductionReportClient({ districts }: Props) {
         const groups = await getFarmerGroupsForProductionReport(selectedDistrict);
         setFarmerGroups(groups);
       } catch {
-        toast.error("Gagal memuat Kelompok Tani");
+        toast.error("Gagal memuat Lembaga Tani");
       }
     }
     updateGroups();
@@ -78,7 +78,7 @@ export function ProductionReportClient({ districts }: Props) {
 
   const handleLoadReport = () => {
     if (!canLoad) {
-      toast.error("Silakan lengkapi Distrik, Kelompok Tani, dan rentang periode");
+      toast.error("Silakan lengkapi Distrik, Lembaga Tani, dan rentang periode");
       return;
     }
 
@@ -250,7 +250,7 @@ export function ProductionReportClient({ districts }: Props) {
       columnStyles,
       metadata: [
         { label: "Distrik", value: selectedDistrictObj?.name ?? "—" },
-        { label: "Kelompok Tani", value: selectedGroupObj?.name ?? "—" },
+        { label: "Lembaga Tani", value: selectedGroupObj?.name ?? "—" },
         { label: "Periode", value: `${formatPeriodLabel(periodStart)} s/d ${formatPeriodLabel(periodEnd)}` },
       ],
       columns,
@@ -313,7 +313,7 @@ export function ProductionReportClient({ districts }: Props) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-muted-foreground">Kelompok Tani <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-muted-foreground">Lembaga Tani <span className="text-red-500">*</span></label>
               <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
                 <PopoverTrigger
                   render={
@@ -327,7 +327,7 @@ export function ProductionReportClient({ districts }: Props) {
                       {selectedFarmerGroup ? (
                         <span>{selectedGroupObj?.name}</span>
                       ) : (
-                        <span className="text-muted-foreground">Pilih Kelompok Tani</span>
+                        <span className="text-muted-foreground">Pilih Lembaga Tani</span>
                       )}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -335,7 +335,7 @@ export function ProductionReportClient({ districts }: Props) {
                 />
                 <PopoverContent className="w-[220px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Cari kelompok tani..." />
+                    <CommandInput placeholder="Cari lembaga tani..." />
                     <CommandList>
                       <CommandEmpty>Kelompok tani tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
@@ -398,7 +398,7 @@ export function ProductionReportClient({ districts }: Props) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Pilih Kelompok Tani dan rentang bulan (maksimal {PRODUCTION_REPORT_MAX_MONTHS} bulan) untuk menampilkan matriks produksi.
+            Pilih Lembaga Tani dan rentang bulan (maksimal {PRODUCTION_REPORT_MAX_MONTHS} bulan) untuk menampilkan matriks produksi.
           </p>
         </CardContent>
       </Card>
@@ -483,7 +483,7 @@ export function ProductionReportClient({ districts }: Props) {
                 <div className="space-y-1">
                   <h3 className="font-semibold text-lg">Tidak Ada Data Produksi</h3>
                   <p className="text-sm text-muted-foreground max-w-sm">
-                    Tidak ada catatan produksi untuk Kelompok Tani dan rentang periode yang dipilih.
+                    Tidak ada catatan produksi untuk Lembaga Tani dan rentang periode yang dipilih.
                   </p>
                 </div>
               </CardContent>
@@ -549,7 +549,7 @@ export function ProductionReportClient({ districts }: Props) {
             <div className="space-y-1">
               <h3 className="font-semibold text-lg">Filter Wajib Belum Lengkap</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Silakan pilih Distrik, Kelompok Tani, dan rentang periode untuk memuat matriks produksi bulanan.
+                Silakan pilih Distrik, Lembaga Tani, dan rentang periode untuk memuat matriks produksi bulanan.
               </p>
             </div>
           </CardContent>

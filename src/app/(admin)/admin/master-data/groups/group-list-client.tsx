@@ -231,7 +231,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Kelompok Tani</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Lembaga Tani</p>
               <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKT}</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">

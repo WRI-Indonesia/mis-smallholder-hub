@@ -58,7 +58,7 @@ export async function analyzeFarmerGroupCompleteness(
 
   // Data-access scope enforcement: the requested KT must be within the user's scope.
   if (access.mode === "BY_FARMER_GROUP" && !access.ids.includes(farmerGroupId)) {
-    throw new Error("Tidak memiliki akses ke Kelompok Tani ini");
+    throw new Error("Tidak memiliki akses ke Lembaga Tani ini");
   }
 
   // Paket wajib (isActive, exclude OTHER) — kolom matriks & basis cakupan pelatihan.
@@ -129,7 +129,7 @@ export async function analyzeFarmerGroupCompleteness(
   });
 
   if (!group) {
-    throw new Error("Kelompok Tani tidak ditemukan atau di luar akses Anda");
+    throw new Error("Lembaga Tani tidak ditemukan atau di luar akses Anda");
   }
 
   // Flatten nested activity→package into the shape expected by the pure logic.

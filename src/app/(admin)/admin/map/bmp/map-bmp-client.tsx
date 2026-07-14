@@ -89,7 +89,7 @@ export function MapBmpClient({ provinces }: Props) {
     let active = true;
     getFarmerGroupsForMap(districtId)
       .then((g) => active && setFarmerGroups(g))
-      .catch(() => active && toast.error("Gagal memuat Kelompok Tani"));
+      .catch(() => active && toast.error("Gagal memuat Lembaga Tani"));
     return () => {
       active = false;
     };
@@ -123,7 +123,7 @@ export function MapBmpClient({ provinces }: Props) {
       const ktName =
         farmerGroups.find((g) => g.id === farmerGroupId)?.name ??
         mapData.kt[0]?.name ??
-        "Kelompok Tani";
+        "Lembaga Tani";
       const dateStr = new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date());
       const c = mapData.counts;
 
@@ -167,7 +167,7 @@ export function MapBmpClient({ provinces }: Props) {
       const ktName =
         farmerGroups.find((g) => g.id === farmerGroupId)?.name ??
         mapData.kt[0]?.name ??
-        "Kelompok Tani";
+        "Lembaga Tani";
       const { periods, rows } = buildAvailabilityMatrix(mapData.parcels);
       const statusLabel = (c: ProductionAvailabilityCategory) =>
         c === "BAIK" ? "Baik" : c === "CUKUP" ? "Cukup" : c === "KURANG" ? "Kurang" : "Tidak ada Data";
@@ -208,7 +208,7 @@ export function MapBmpClient({ provinces }: Props) {
 
   const handleLoad = () => {
     if (!farmerGroupId) {
-      toast.error("Silakan pilih Kelompok Tani terlebih dahulu");
+      toast.error("Silakan pilih Lembaga Tani terlebih dahulu");
       return;
     }
     startTransition(async () => {

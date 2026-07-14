@@ -6,7 +6,7 @@ export default function DataCompletenessLoading() {
       <div>
         <h1 className="text-2xl font-bold">Analisa Ketersediaan Data</h1>
         <p className="text-muted-foreground">
-          Periksa kelengkapan dan anomali data satu Kelompok Tani (Petani, Lahan, Pelatihan, Produksi)
+          Periksa kelengkapan dan anomali data satu Lembaga Tani (Petani, Lahan, Pelatihan, Produksi)
         </p>
       </div>
       <Card className="p-4">

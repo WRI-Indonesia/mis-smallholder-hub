@@ -52,7 +52,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
         const groups = await getFarmerGroupsForAnalyst(selectedDistrict);
         setFarmerGroups(groups);
       } catch {
-        toast.error("Gagal memuat Kelompok Tani");
+        toast.error("Gagal memuat Lembaga Tani");
       }
     }
     updateGroups();
@@ -223,7 +223,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
 
             {/* ICS / Farmer Group Filter */}
             <div className="flex flex-col gap-1.5 min-w-[250px]">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kelompok Tani (ICS)</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lembaga Tani (ICS)</span>
               <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
                 <PopoverTrigger
                   render={
@@ -244,9 +244,9 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                 />
                 <PopoverContent className="w-[250px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Cari kelompok tani..." />
+                    <CommandInput placeholder="Cari lembaga tani..." />
                     <CommandList className="max-h-[300px]">
-                      <CommandEmpty>Kelompok Tani tidak ditemukan.</CommandEmpty>
+                      <CommandEmpty>Lembaga Tani tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
                         <CommandItem
                           value="all"

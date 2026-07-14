@@ -27,7 +27,7 @@ describe("RBAC scope — farmerGroupAccessFilter (create/update/bulk farmer targ
     expect(farmerGroupAccessFilter({ mode: "ALL" })).toEqual({});
   });
 
-  it("BY_FARMER_GROUP → batasi ke id kelompok tani yang diberikan", () => {
+  it("BY_FARMER_GROUP → batasi ke id lembaga tani yang diberikan", () => {
     const access: AccessContext = { mode: "BY_FARMER_GROUP", ids: ["kt-1", "kt-2"] };
     expect(farmerGroupAccessFilter(access)).toEqual({ id: { in: ["kt-1", "kt-2"] } });
   });
@@ -84,7 +84,7 @@ describe("RBAC guard — toggleRolePermission menolak perubahan SUPERADMIN", () 
   });
 });
 
-describe("RBAC scope — validasi kelompok tani target (createFarmer & bulkCreateFarmers)", () => {
+describe("RBAC scope — validasi lembaga tani target (createFarmer & bulkCreateFarmers)", () => {
   // Mirror dari logika "target group in allowed set".
   function isTargetAllowed(mode: AccessContext["mode"], allowedIds: string[], targetId: string): boolean {
     if (mode === "ALL") return true;

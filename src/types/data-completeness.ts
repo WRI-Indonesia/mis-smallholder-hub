@@ -1,4 +1,4 @@
-// Types for DA-02 — Analisa Ketersediaan Data Kelompok Tani (Data Completeness & Anomaly Analysis)
+// Types for DA-02 — Analisa Ketersediaan Data Lembaga Tani (Data Completeness & Anomaly Analysis)
 
 // Domain identifiers (per master data)
 export type CompletenessDomain = "petani" | "lahan" | "pelatihan" | "produksi";

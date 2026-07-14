@@ -197,7 +197,7 @@ describe("Training Participant File Import Validation Matcher", () => {
 
     if (!matchedGroupFarmer) {
       status = "ERROR";
-      errorReason = "ID Petani tidak ditemukan di kelompok tani ini";
+      errorReason = "ID Petani tidak ditemukan di lembaga tani ini";
     } else {
       name = matchedGroupFarmer.name;
       resolvedId = matchedGroupFarmer.id;

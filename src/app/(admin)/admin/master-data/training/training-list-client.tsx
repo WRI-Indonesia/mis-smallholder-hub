@@ -125,7 +125,7 @@ export function TrainingListClient({
     },
     {
       key: "farmerGroup",
-      label: "Kelompok Tani",
+      label: "Lembaga Tani",
       sortable: true,
       cellClassName: "text-sm text-muted-foreground",
       render: (row) => row.farmerGroup.name,
@@ -269,7 +269,7 @@ export function TrainingListClient({
               className="w-[330px] justify-between h-9 font-normal text-left"
             >
               {groupFilter === "all" ? (
-                <span>Semua Kelompok Tani</span>
+                <span>Semua Lembaga Tani</span>
               ) : (
                 <span>{selectedGroup?.name}</span>
               )}
@@ -279,9 +279,9 @@ export function TrainingListClient({
         />
         <PopoverContent className="w-[330px] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Cari kelompok tani..." />
+            <CommandInput placeholder="Cari lembaga tani..." />
             <CommandList className="max-h-[300px]">
-              <CommandEmpty>Kelompok Tani tidak ditemukan.</CommandEmpty>
+              <CommandEmpty>Lembaga Tani tidak ditemukan.</CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   value="all"
@@ -296,7 +296,7 @@ export function TrainingListClient({
                       groupFilter === "all" ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  Semua Kelompok Tani
+                  Semua Lembaga Tani
                 </CommandItem>
                 {farmerGroups.map((g) => (
                   <CommandItem
@@ -422,7 +422,7 @@ export function TrainingListClient({
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Kelompok Tani</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Lembaga Tani</p>
               <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKelompokTani}</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
@@ -473,7 +473,7 @@ export function TrainingListClient({
           columns={isSuperAdmin ? columns : columns.filter((c) => c.key !== "isActive")}
           data={filtered}
           rowKey={(a) => a.id}
-          searchPlaceholder="Cari lokasi, kelompok tani atau paket..."
+          searchPlaceholder="Cari lokasi, lembaga tani atau paket..."
           searchFn={(row, query) => {
             const packageName = (TRAINING_CATEGORY_LABELS[row.package.code] || row.package.name).toLowerCase();
             const location = (row.location || "").toLowerCase();

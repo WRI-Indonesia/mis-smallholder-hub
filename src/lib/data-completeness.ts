@@ -39,7 +39,7 @@ function scorePercent(complete: number, total: number): number {
   return total > 0 ? (complete / total) * 100 : 0;
 }
 
-// ── Domain 1: Profil Kelompok Tani ──
+// ── Domain 1: Profil Lembaga Tani ──
 export function computeProfileChecks(group: CompletenessGroupInput): ProfileCheck[] {
   const hasCoords = group.locationLat != null && group.locationLong != null;
   return [
