@@ -7,7 +7,7 @@
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 25 Phases)
+## Completed Modules (✅ 27 Phases)
 
 > Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`progress.md`](../project/roadmap.md). Perbarui angka di sana lebih dulu.
  
@@ -26,7 +26,7 @@
 | MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) |
 | MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |
 | MD-06 | Production | ProductionRecord, period + harvest number, duplicate validation (#89) |
-| DASH-01 | Main Dashboard | Snapshot-backed, 10 summary cards, filter client-side (#99) |
+| DASH-01 | Main Dashboard | Snapshot-backed, 11 summary cards (+Total Kelompok Tani #148), filter client-side (#99) |
 | DASH-02 | Dashboard Server Actions | `dashboard.ts` + `snapshot.ts` + aggregation lib (teruji) |
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
 | MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible |
@@ -34,21 +34,22 @@
 | RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
 | RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
 | RPT-03 | Report Produksi | Matriks bulanan per petani/lahan + Excel + PDF landscape (#132) |
-| RPT-04 | Report Kelompok Tani | **2 submenu.** **(Summary)** agregat real-time Lembaga×Gapoktan/KUD×KT turunan dari lahan (distinct petani/lahan); filter Distrik/Lembaga opsional + search + 5 card + Excel & PDF. **(Detail)** roster per 1 Lembaga: hierarki Gapoktan/KUD→KT→daftar Petani (jml lahan/luas) + 5 card + Excel & PDF flat (#154) |
+| RPT-04 | Report Kelompok Tani | **2 submenu.** **(Summary)** agregat real-time Lembaga×Gapoktan/KUD×KT turunan dari lahan (distinct petani/lahan/**luas**); filter Distrik/Lembaga opsional + search + **column selector** + 6 card + Excel & PDF. **(Detail)** roster per 1 Lembaga: hierarki Gapoktan/KUD→KT→daftar Petani (jml lahan/luas), **section collapsible** (default tutup) + **auto-hide** Gapoktan bila Lembaga tak punya + 5 card + Excel & PDF flat (#154) |
+| DASH-05 | Card Total Kelompok Tani | Kartu Main Dashboard = distinct `subGroupLv2` per Lembaga (snapshot-backed); filter generate dinonaktifkan (Semua Data); 0 sampai data #150 (#148) |
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
 | BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **27 files / 380 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **29 files / 398 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
 | Phase | Module | Status | Missing |
 |-------|--------|--------|---------|
 | TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager (CLI sudah ada) |
-| OPS-01 | Testing | Partial | RPT-03 (#132) ✅ tercakup (14 unit test); gap tersisa: integration test route hotspot |
+| OPS-01 | Testing | Partial | RPT-03 (#132), RPT-04 (#154, +14 unit) & DASH-05 (#148, +2 unit) ✅ tercakup; gap tersisa: integration test route hotspot |
 | OPS-02 | DevOps | Partial | Verifikasi deployment/rollback; status Dockerfile vs CI |
 
 ## Planned - Now (🔲 Priority)
@@ -78,7 +79,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **27 files / 380 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **29 files / 398 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
@@ -93,7 +94,8 @@
 | Farmer | farmer.test.ts | 14 | ✅ |
 | Bulk Upload | bulk-upload.test.ts | 14 | ✅ |
 | Map Geo (ruler/label) | map-geo.test.ts | 13 | ✅ |
-| Dashboard | dashboard.test.ts | 12 | ✅ |
+| Dashboard | dashboard.test.ts | 14 | ✅ |
+| Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 14 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
 | Map (MAP-01/02) | map.test.ts | 34 | ✅ |
 | Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |
