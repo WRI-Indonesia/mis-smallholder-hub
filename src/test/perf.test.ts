@@ -334,3 +334,33 @@ describe("Performance - addParticipants Zod validation (#130)", () => {
     expect(duration).toBeLessThan(50);
   });
 });
+
+// Forward-looking untuk #148 (card "Total Kelompok Tani"): sub-kelompok interim
+// disimpan denormalisasi per-lahan di LandParcel.subGroupLv2 (#146). Count = distinct
+// nilai ternormalisasi (trim+lowercase, buang null) — buktikan pendekatan O(n) tetap
+// murah pada skala besar & normalisasi meredam noise typo/spasi (dedup benar).
+describe("Performance - Kelompok Tani distinct aggregation (#148, subGroupLv2)", () => {
+  it("counts distinct normalized subGroupLv2 over 50k parcels under 20ms", () => {
+    const KT_POOL = Array.from({ length: 500 }, (_, i) => `Kelompok Tani ${i}`);
+    // 50k lahan: ~1/7 null, sisanya salah satu dari 500 KT + noise spasi/kapital
+    const parcels = Array.from({ length: 50_000 }, (_, i) => ({
+      subGroupLv2:
+        i % 7 === 0
+          ? null
+          : (i % 3 === 0 ? "  " : "") + KT_POOL[i % 500] + (i % 5 === 0 ? " " : ""),
+    }));
+
+    const start = performance.now();
+    const distinct = new Set<string>();
+    for (const p of parcels) {
+      const v = p.subGroupLv2?.trim().toLowerCase();
+      if (v) distinct.add(v);
+    }
+    const count = distinct.size;
+    const duration = performance.now() - start;
+
+    console.log(`  distinct KT over 50k lahan: ${count} in ${duration.toFixed(2)}ms`);
+    expect(count).toBe(500); // noise spasi/kapital ter-dedup ke 500 KT unik
+    expect(duration).toBeLessThan(20);
+  });
+});
