@@ -193,7 +193,7 @@ export function DashboardClient({ initialView }: Props) {
               }}
             >
               <SelectTrigger className="w-[150px] h-9">
-                <SelectValue />
+                <SelectValue>{(value) => (value === "all" ? "Semua Tahun" : value)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Tahun</SelectItem>

@@ -276,7 +276,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
                 title="Cari Lembaga Tani"
               >
                 <Search className="h-3.5 w-3.5" />
-                <span className="text-xs">Cari KT</span>
+                <span className="text-xs">Cari Lembaga Tani</span>
               </Button>
             }
           />

@@ -172,7 +172,7 @@ export function ProductionReportClient({ districts }: Props) {
     data.push(totalRow);
 
     await exportToExcel({
-      filename: `Laporan_Produksi_${selectedGroupObj?.name.replace(/\s+/g, "_") ?? "KT"}_${periodStart}_sd_${periodEnd}`,
+      filename: `Laporan_Produksi_${selectedGroupObj?.name.replace(/\s+/g, "_") ?? "Lembaga_Tani"}_${periodStart}_sd_${periodEnd}`,
       sheetName: "Produksi",
       columns,
       data,
@@ -240,7 +240,7 @@ export function ProductionReportClient({ districts }: Props) {
     }
 
     exportToPDF({
-      filename: `Laporan_Produksi_${selectedGroupObj?.name.replace(/\s+/g, "_") ?? "KT"}_${periodStart}_sd_${periodEnd}`,
+      filename: `Laporan_Produksi_${selectedGroupObj?.name.replace(/\s+/g, "_") ?? "Lembaga_Tani"}_${periodStart}_sd_${periodEnd}`,
       title: "CATATAN PRODUKSI PETANI",
       subtitle: "Smallholder HUB Management Information System",
       orientation: "landscape",

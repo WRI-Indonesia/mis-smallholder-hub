@@ -960,7 +960,7 @@ function ParcelHeader({
             <span className="font-mono text-foreground/80 break-all">{parcelId}</span>
           </p>
           <p>
-            <span>KT: </span>
+            <span>Lembaga Tani: </span>
             <span className="text-foreground/80">{groupName}</span>
           </p>
         </div>

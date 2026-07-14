@@ -99,7 +99,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
   const columnsTab1: DataTableColumn<FarmerDetailRow>[] = [
     {
       key: "farmerGroupName",
-      label: "Nama KT",
+      label: "Nama Lembaga Tani",
       sortable: true,
       cellClassName: "text-sm font-medium",
     },
@@ -128,7 +128,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
   const columnsTab2: DataTableColumn<Tab2Row>[] = [
     {
       key: "farmerGroupName",
-      label: "Nama KT",
+      label: "Nama Lembaga Tani",
       sortable: true,
       cellClassName: "text-sm font-medium",
     },
@@ -327,8 +327,8 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                       <Building className="h-6 w-6" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total KT</span>
-                      <span className="text-2xl font-bold">{formatNumber(summaryData.summary.totalKT)} KT</span>
+                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total Lembaga Tani</span>
+                      <span className="text-2xl font-bold">{formatNumber(summaryData.summary.totalKT)} Lembaga Tani</span>
                     </div>
                   </Card>
 
@@ -396,8 +396,8 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                       <Building className="h-6 w-6" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total KT</span>
-                      <span className="text-2xl font-bold">{formatNumber(noParcelsData.summary.totalKT)} KT</span>
+                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total Lembaga Tani</span>
+                      <span className="text-2xl font-bold">{formatNumber(noParcelsData.summary.totalKT)} Lembaga Tani</span>
                     </div>
                   </Card>
 

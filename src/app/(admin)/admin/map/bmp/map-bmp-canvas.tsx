@@ -475,7 +475,7 @@ function BmpParcelPopupBody({ props }: { props: Record<string, unknown> }) {
               <span className="font-mono text-foreground/80 break-all">{String(props.parcelId ?? "—")}</span>
             </p>
             <p>
-              <span>KT: </span>
+              <span>Lembaga Tani: </span>
               <span className="text-foreground/80">{String(props.farmerGroupName ?? "—")}</span>
             </p>
           </div>

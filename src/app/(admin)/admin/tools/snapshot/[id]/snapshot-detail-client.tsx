@@ -27,7 +27,7 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
   const router = useRouter();
 
   const columns: DataTableColumn<KTDetails>[] = [
-    { key: "name", label: "Nama KT", sortable: true, cellClassName: "text-sm font-medium" },
+    { key: "name", label: "Nama Lembaga Tani", sortable: true, cellClassName: "text-sm font-medium" },
     {
       key: "totalFarmers",
       label: "Total Petani",

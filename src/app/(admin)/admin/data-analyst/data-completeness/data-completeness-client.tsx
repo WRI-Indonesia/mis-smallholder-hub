@@ -122,7 +122,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
       { metrik: "Index Ketersediaan Data", nilai: `${result.healthScore}%` },
       { metrik: "Total Petani", nilai: result.totalFarmers },
       { metrik: "Total Anomali", nilai: result.totalAnomalies },
-      { metrik: "Skor Profil KT", nilai: `${result.profileScore}%` },
+      { metrik: "Skor Profil Lembaga Tani", nilai: `${result.profileScore}%` },
       ...result.domains.map((d) => ({ metrik: `Skor ${d.label}`, nilai: `${d.score}%` })),
     ];
 
@@ -315,7 +315,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
               {/* Domain chips */}
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs">
-                  <ClipboardCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profil KT <ScoreBadge score={result.profileScore} />
+                  <ClipboardCheck className="h-3.5 w-3.5 text-muted-foreground" /> Profil Lembaga Tani <ScoreBadge score={result.profileScore} />
                 </span>
                 {result.domains.map((d) => {
                   const Icon = DOMAIN_ICONS[d.domain];

@@ -216,7 +216,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
   const toolbarRight = permissions.includes("CREATE") ? (
     <Button size="sm" onClick={() => { setEditGroup(null); setShowForm(true); }} className="h-9">
       <Plus className="h-4 w-4 mr-2" />
-      Tambah KT
+      Tambah Lembaga Tani
     </Button>
   ) : undefined;
 

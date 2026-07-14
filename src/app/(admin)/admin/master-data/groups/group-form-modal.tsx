@@ -100,7 +100,7 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nama KT</Label>
+            <Label htmlFor="name">Nama Lembaga Tani</Label>
             <Input id="name" name="name" defaultValue={group?.name ?? ""} required />
             {errors.name && <p className="text-sm text-destructive">{errors.name[0]}</p>}
           </div>

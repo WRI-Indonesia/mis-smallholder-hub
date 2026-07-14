@@ -590,7 +590,7 @@ export function TrainingReportClient({ districts }: Props) {
           <p className="text-sm text-muted-foreground mt-1">Smallholder HUB Management Information System</p>
           <div className="flex justify-center gap-6 mt-3 text-sm font-medium">
             <p><strong>Distrik:</strong> {selectedDistrictObj?.name}</p>
-            <p><strong>Lembaga Tani (KT):</strong> {selectedGroupObj?.name}</p>
+            <p><strong>Lembaga Tani:</strong> {selectedGroupObj?.name}</p>
           </div>
         </div>
       )}
