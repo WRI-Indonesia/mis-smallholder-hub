@@ -3,6 +3,7 @@ import { z } from "zod";
 export const landParcelSchema = z.object({
   farmerId: z.string().min(1, "Petani wajib dipilih"),
   parcelId: z.string().min(1, "ID Lahan wajib diisi"),
+  blok: z.string().nullable().optional(),
   geometry: z.any().nullable().optional(),
   area: z.preprocess((val) => {
     if (val === "" || val === undefined || val === null) return null;

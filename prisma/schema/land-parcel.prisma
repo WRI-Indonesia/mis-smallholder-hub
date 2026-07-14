@@ -5,6 +5,7 @@ model LandParcel {
   farmerId      String      @map("farmer_id")
   farmer        Farmer      @relation(fields: [farmerId], references: [id])
   parcelId      String      @map("parcel_id") // Internal parcel ID (unique per farmer)
+  blok          String?     @map("blok") // Blok kebun
   geometry      Json?       @map("geometry") // GeoJSON polygon
   area          Float?      @map("area") // Area in hectares
   landStatus    String?     @map("land_status") // e.g., "Owned", "Leased", "Shared"

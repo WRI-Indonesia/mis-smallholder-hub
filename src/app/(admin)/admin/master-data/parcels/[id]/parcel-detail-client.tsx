@@ -81,6 +81,10 @@ export function ParcelDetailClient({ parcel, farmers, permissions }: Props) {
                 <p className="text-sm font-mono font-medium mt-1">{parcel.parcelId}</p>
               </div>
               <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Blok</p>
+                <p className="text-sm font-medium mt-1">{parcel.blok ?? "—"}</p>
+              </div>
+              <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Luas</p>
                 <p className="text-sm font-medium mt-1">{parcel.area !== null ? `${parcel.area.toFixed(2)} ha` : "—"}</p>
               </div>
@@ -129,7 +133,7 @@ export function ParcelDetailClient({ parcel, farmers, permissions }: Props) {
                 <p className="text-sm font-mono font-medium mt-1">{parcel.farmer.farmerId}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kelompok Tani</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lembaga Tani</p>
                 <p className="text-sm font-medium mt-1">{parcel.farmer.farmerGroup.name}</p>
               </div>
               <div>

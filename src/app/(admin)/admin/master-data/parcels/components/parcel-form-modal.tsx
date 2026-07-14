@@ -62,6 +62,7 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
     const data = {
       farmerId: selectedFarmerId,
       parcelId: form.get("parcelId") as string,
+      blok: (form.get("blok") as string) || null,
       geometry: parcel?.geometry ?? null,
       area: areaRaw ? parseFloat(areaRaw) : null,
       landStatus: (form.get("landStatus") as string) || null,
@@ -171,6 +172,12 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
               />
               {errors.area && <p className="text-sm text-destructive">{errors.area[0]}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="blok">Blok</Label>
+            <Input id="blok" name="blok" defaultValue={parcel?.blok ?? ""} placeholder="Blok kebun" />
+            {errors.blok && <p className="text-sm text-destructive">{errors.blok[0]}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
