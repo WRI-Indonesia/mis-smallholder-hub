@@ -28,7 +28,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Periode laporan    | 2026-07-07 s.d. 2026-07-10                                  |
 | Status keseluruhan | 🟡 On Track dengan catatan (temuan audit P0 wajib diremediasi) |
 | Basis review       | **Audit menyeluruh 2026-07-10** (`audit-report/audit-2026-07-10.md`) |
-| Test lokal         | ✅ `npm test` — **29 files / 398 tests passed** · build ✅ · **lint ✅ exit 0** (#126 selesai 2026-07-12) |
+| Test lokal         | ✅ `npm test` — **30 files / 405 tests passed** · build ✅ · **lint ✅ exit 0** (#126 selesai 2026-07-12) |
 | Fokus berikutnya   | **AUDIT-P0/P1/P2/P3 (#125–#130) ✅ selesai.** Sisa tech-debt: `ActionResult` `fieldErrors` (TD-010 follow-up), pemecahan file client besar (#130 §5), NaN parsing, visual audit |
 
 ### Executive Summary
@@ -42,7 +42,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region & KT bulk upload belum ada (#69, #70). |
 | Map & Data Analyst  | ✅ Complete     | MAP-01 (#113 + hotspot/ruler/label) ✅; DA-01 (#103) & DA-02 (#118, #122) ✅. |
 | **Keamanan (audit)** | ✅ **Remediated (#125, 2026-07-12)** | 5 celah guard/scope RBAC + menuKey Roles **ditutup**: guard `hasPermission` di `role-permission`/`menu`/`upload`, scope `getAccessContext` di `getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`, `requirePermission("settings-roles")`. Sisa scope by-id KT/pelatihan → #127. |
-| Testing & QA        | ✅ Strong | Vitest: **29 files / 398 tests passed** ✅ · build ✅ · **`npm run lint` ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 selesai 2026-07-12. |
+| Testing & QA        | ✅ Strong | Vitest: **30 files / 405 tests passed** ✅ · build ✅ · **`npm run lint` ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 selesai 2026-07-12. |
 
 ### Progress Snapshot
 
@@ -67,7 +67,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
 | Dashboard ✅ Complete | DASH-01/02/03 selesai (#99): Main Dashboard snapshot-backed + peta + Tools Snapshot. | Fondasi dashboard siap; DASH-04 (BMP) tinggal reuse pola snapshot. |
 | ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests **398/398** passed (29 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms + rbac-server-guards + access-context (#125/#127) ✅. | Foundation & core features stabil; AUDIT-P0/P1/P2 (#125–#129) ✅ selesai 2026-07-12. |
+| Delivery confidence | Tests **405/405** passed (30 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms + rbac-server-guards + access-context (#125/#127) ✅. | Foundation & core features stabil; AUDIT-P0/P1/P2 (#125–#129) ✅ selesai 2026-07-12. |
 
 ### Decisions Needed
 

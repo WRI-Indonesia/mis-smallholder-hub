@@ -23,7 +23,7 @@
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD |
 | MD-02 | Farmer Groups | List, detail, CRUD, RBAC filtering, agregat petani/persil/luas |
 | MD-03 | Farmers | Full CRUD, RBAC, joinedYear field |
-| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) |
+| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping Gapoktan/KUD/KT/Blok (#150) |
 | MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |
 | MD-06 | Production | ProductionRecord, period + harvest number, duplicate validation (#89) |
 | DASH-01 | Main Dashboard | Snapshot-backed, 11 summary cards (+Total Kelompok Tani #148), filter client-side (#99) |
@@ -42,7 +42,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **29 files / 398 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **30 files / 405 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -79,7 +79,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **29 files / 398 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **30 files / 405 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
@@ -96,6 +96,7 @@
 | Map Geo (ruler/label) | map-geo.test.ts | 13 | ✅ |
 | Dashboard | dashboard.test.ts | 14 | ✅ |
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 14 | ✅ |
+| Parcel Bulk Mapping (#150) | parcel-bulk-mapping.test.ts | 7 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
 | Map (MAP-01/02) | map.test.ts | 34 | ✅ |
 | Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |
