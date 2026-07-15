@@ -227,6 +227,86 @@ describe("filterBmpGroups & sumBmpGroups (slicing client-side)", () => {
   });
 });
 
+describe("mode 'full' — hanya LAHAN dengan data lengkap 12 bulan (Jan–Des)", () => {
+  const allMonths = (farmerId: string, parcelId: string, year: number, kgPerMonth: number): BmpRawProduction[] =>
+    Array.from({ length: 12 }, (_, i) => ({
+      farmerId,
+      parcelId,
+      period: `${year}-${String(i + 1).padStart(2, "0")}`,
+      kg: kgPerMonth,
+    }));
+
+  // p1 lapor 12 bulan penuh 2025 → full; p3 hanya Jan–Feb → tidak full;
+  // p4 (g2) 12 bulan penuh → full.
+  const production: BmpRawProduction[] = [
+    ...allMonths("f1", "p1", 2025, 1000), // 12 ton
+    { farmerId: "f2", parcelId: "p3", period: "2025-01", kg: 5000 },
+    { farmerId: "f2", parcelId: "p3", period: "2025-02", kg: 5000 },
+    ...allMonths("f3", "p4", 2025, 100), // 1,2 ton
+  ];
+
+  it("byYearFull/monthlyFull hanya berisi record lahan full 12 bulan; byYear tetap semua", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, production);
+    const g1 = d.groups.find((g) => g.id === "g1")!;
+
+    expect(g1.byYear["2025"].petaniMelapor).toBe(2); // f1 + f2
+    expect(g1.byYear["2025"].produksiTon).toBe(22);
+    expect(g1.byYearFull["2025"]).toEqual({
+      produksiTon: 12, // hanya p1
+      luasMelaporHa: 2, // p1
+      lahanBerData: 1,
+      petaniMelapor: 1,
+    });
+    // Jan: tanpa p3 (p3 tidak full)
+    expect(g1.monthlyFull["2025-01"]).toEqual({ produksiTon: 1, lahanMelapor: 1, luasMelaporHa: 2 });
+
+    const g2 = d.groups.find((g) => g.id === "g2")!;
+    expect(g2.byYearFull["2025"].petaniMelapor).toBe(1); // p4 full
+  });
+
+  it("lahan dengan 11 bulan (bolong 1) tidak full — meski tahun berjalan/parsial", () => {
+    const elevenMonths = allMonths("f1", "p1", 2026, 500).slice(0, 11); // Jan–Nov
+    const d = buildBmpSnapshotData(groups, farmers, parcels, elevenMonths);
+    const g1 = d.groups.find((g) => g.id === "g1")!;
+    expect(g1.byYear["2026"].produksiTon).toBe(5.5);
+    expect(g1.byYearFull["2026"]).toBeUndefined(); // 11 < 12 bulan → bukan full
+  });
+
+  it("kelengkapan dihitung per LAHAN: petani lengkap via 2 lahan bergantian ≠ full", () => {
+    // f1 lapor 12 bulan tapi berganti lahan (Jan–Jun p1, Jul–Des p2) → tak ada lahan full.
+    const split = allMonths("f1", "p1", 2025, 1000).map((r, i) =>
+      i >= 6 ? { ...r, parcelId: "p2" } : r
+    );
+    const d = buildBmpSnapshotData(groups, farmers, parcels, split);
+    const g1 = d.groups.find((g) => g.id === "g1")!;
+    expect(g1.byYear["2025"].produksiTon).toBe(12);
+    expect(g1.byYearFull["2025"]).toBeUndefined();
+  });
+
+  it("record tanpa parcelId tidak pernah masuk subset full", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, [
+      { farmerId: "f3", parcelId: null, period: "2025-01", kg: 9000 },
+    ]);
+    const g2 = d.groups.find((g) => g.id === "g2")!;
+    expect(g2.byYear["2025"].produksiTon).toBe(9);
+    expect(g2.byYearFull).toEqual({});
+  });
+
+  it("sumBmpGroups mode full: cards & produktivitas dari subset; denominator master tetap", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, production);
+    const s = sumBmpGroups(d.groups, 2025, "full");
+    expect(s.totals.produksiTon).toBe(13.2); // p1 12 + p4 1,2
+    expect(s.totals.petaniMelapor).toBe(2); // f1 + f3
+    expect(s.totals.totalPetani).toBe(3); // master data tak berubah
+    expect(s.totals.totalLahan).toBe(4);
+    expect(s.produktivitasTonHa).toBe(2.64); // 13,2 ÷ (2 + 3) ha
+    expect(s.monthly["2025-01"].produksiTon).toBe(1.1); // tanpa p3
+
+    const sAll = sumBmpGroups(d.groups, 2025, "all");
+    expect(sAll.totals.produksiTon).toBe(23.2); // p1 12 + p3 10 + p4 1,2 (semua record)
+  });
+});
+
 describe("bmpProductivity (Ton/Ha per tahun)", () => {
   const entry = (byYear: BmpGroupEntry["byYear"]): BmpGroupEntry => ({
     id: "g",
@@ -237,6 +317,8 @@ describe("bmpProductivity (Ton/Ha per tahun)", () => {
     districtName: null,
     monthly: {},
     byYear,
+    monthlyFull: {},
+    byYearFull: {},
     availability: { baik: 0, cukup: 0, kurang: 0, tidakAda: 0 },
     totals: { produksiTon: 0, luasMelaporHa: 0, lahanBerData: 0, totalLahan: 0, petaniMelapor: 0, totalPetani: 0 },
   });
@@ -304,6 +386,8 @@ describe("normalizeBmpSnapshotData", () => {
       districtName: "Distrik 1",
       monthly: { "2025-01": { produksiTon: 1, lahanMelapor: 1, luasMelaporHa: 2 } },
       byYear: { "2025": { produksiTon: 1, luasMelaporHa: 2, lahanBerData: 1, petaniMelapor: 1 } },
+      monthlyFull: { "2025-01": { produksiTon: 1, lahanMelapor: 1, luasMelaporHa: 2 } },
+      byYearFull: { "2025": { produksiTon: 1, luasMelaporHa: 2, lahanBerData: 1, petaniMelapor: 1 } },
       availability: { baik: 1, cukup: 0, kurang: 0, tidakAda: 0 },
       totals: { produksiTon: 1, luasMelaporHa: 2, lahanBerData: 1, totalLahan: 1, petaniMelapor: 1, totalPetani: 1 },
     };
@@ -314,6 +398,8 @@ describe("normalizeBmpSnapshotData", () => {
     const partial = normalizeBmpSnapshotData({ groups: [{ id: "x", name: "X" }] }).groups[0];
     expect(partial.monthly).toEqual({});
     expect(partial.byYear).toEqual({});
+    expect(partial.monthlyFull).toEqual({});
+    expect(partial.byYearFull).toEqual({});
     expect(partial.availability).toEqual({ baik: 0, cukup: 0, kurang: 0, tidakAda: 0 });
     expect(partial.totals.totalLahan).toBe(0);
   });

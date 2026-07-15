@@ -158,9 +158,19 @@ export interface BmpGroupEntry {
   monthly: Record<string, BmpMonthlyStat>;
   /** Breakdown per tahun (key = tahun) untuk filter Tahun global — pola byYear Main Dashboard. */
   byYear: Record<string, BmpYearStats>;
+  /**
+   * Subset "Full 1 Tahun": hanya record dari LAHAN yang punya data di SEMUA
+   * 12 bulan (Jan–Des) tahun ybs — tahun berjalan belum bisa full sampai
+   * Desember terisi. Record tanpa lahan tidak pernah masuk subset ini.
+   */
+  monthlyFull: Record<string, BmpMonthlyStat>;
+  byYearFull: Record<string, BmpYearStats>;
   availability: BmpAvailabilityCounts;
   totals: BmpGroupTotals;
 }
+
+/** Mode kelengkapan data pada slicing dashboard BMP. */
+export type BmpDataMode = "all" | "full";
 
 export interface BmpSnapshotData {
   groups: BmpGroupEntry[];
