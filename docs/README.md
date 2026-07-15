@@ -10,6 +10,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 |------|-----|
 | [standards/principles.md](./standards/principles.md) | Prinsip development (Think Before Coding, Simplicity, Surgical, Goal-Driven) |
 | [standards/workflow.md](./standards/workflow.md) | Branching, Issue Workflow, Safety & Approval |
+| [standards/versioning.md](./standards/versioning.md) | SemVer aplikasi, kriteria bump versi, alur rilis & tag/GitHub Release |
 | [standards/code-standards.md](./standards/code-standards.md) | Code standards, Data Access & Soft Delete, Revision Tracking |
 | [standards/rbac.md](./standards/rbac.md) | RBAC data-access hierarchy, user assignment & menu-access UI, hierarchical menu |
 | [standards/ui-ux.md](./standards/ui-ux.md) | Prinsip UI/UX, tabel, bulk upload, shapefile, geospatial, dashboard snapshot |
