@@ -93,7 +93,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | DASH-01     | Dashboard: Basic Data               | ✅ Done        | Done    |
 | DASH-02     | Dashboard: Server Actions           | ✅ Done        | Done    |
 | DASH-03     | Interactive Map                     | ✅ Done        | Done    |
-| DASH-04     | Dashboard BMP                       | 🔲 Planned     | Next    |
+| DASH-04     | Dashboard BMP (Produksi)            | ✅ Done        | Done    |
 | DASH-05     | Dashboard: Card Total Kelompok Tani | ✅ Done        | Done    |
 | MAP-01      | Map: Peta Lahan                     | ✅ Done        | Done    |
 | MAP-02      | Map: Peta BMP (Layer 1)             | ✅ Done        | Done    |
@@ -294,10 +294,15 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 </details>
 
 <details>
-<summary><strong>DASH-04</strong> · 🔲 Planned — Dashboard BMP</summary>
+<summary><strong>DASH-04</strong> · ✅ Done — Dashboard BMP (Produksi) (#166)</summary>
 
-- **Evidence:** Dependencies DASH-01/02 complete (#99); BMP-specific dashboard not yet implemented.
-- **Next step:** Define BMP dashboard scope; reuse snapshot pattern.
+- **#166 ✅ (2026-07-15):** **BMP Dashboard (Produksi)** — **snapshot-backed** `/admin/dashboard/bmp` (menu `dashboard-bmp`, rename owner dari "BMP Dashboard"). 4 score cards fokus produksi (Total Produksi Ton, **Produktivitas Ton/Ha per tahun**, Lahan ber-data n/total, Petani melapor n/total), combo chart SVG hand-rolled **bar Produksi + line % lahan melapor** (sumbu Y adaptif dengan tick bulat 1/2/5×10^k — usulan sumbu tetap 0–2000 dibatalkan owner; chart stretch memenuhi card, tooltip), panel **Ketersediaan Data Produksi** 4 kategori (reuse ambang/helper MAP-02) + link Peta BMP.
+- **Filter global 4-serangkai (revisi owner):** Distrik / Lembaga / Kategori (EX_PLASMA/SWADAYA) / **Tahun (default "Rataan" ⇄ tahun tersedia)** — semuanya di header dan memfilter **cards + chart sekaligus**, di-slice **client-side** dari satu snapshot org-wide (pola Main Dashboard). Mode **Rataan** = cards rata-rata per tahun (Σ nilai tahunan ÷ jumlah tahun ber-data) + chart rata-rata bulanan; kumulatif hanya di tools detail.
+- **Definisi Produktivitas (keputusan owner):** **Ton/Ha per tahun** = Σ produksi(tahun terpilih) ÷ Σ luas lahan **melapor**(tahun terpilih) — mode Semua Tahun = rata-rata tahunan tertimbang luas, bukan kumulatif; 0 bila belum ada pelapor; record tanpa lahan masuk pembilang (disclaimer pola #136).
+- **Snapshot & tools:** model `BmpDashboardSnapshot` → `tbl_snapshot_bmp_dashboard` (migration `20260715081831` **applied** + seed menu/permission dijalankan, approval owner); grain JSON **per Lembaga** (`BmpGroupEntry`: monthly per-period + **byYear** per-tahun + availability + totals) di `lib/bmp-dashboard-aggregation.ts` (pure); actions `snapshot-bmp.ts` (generate/list/detail/soft-delete, RBAC 3 lapis + dedup per detik) + `dashboard-bmp.ts` (`getLatestBmpSnapshot`, row-scope + slice per viewer); tools `/admin/tools/snapshot-bmp` (generate Semua Data + list + detail per-Lembaga + Excel export).
+- **Monev BMP (Teladan/Praktisi/Pemula/Belum) out-of-scope** — data belum ada; follow-up issue terpisah saat sumber data monev jelas.
+- **Test:** +27 unit (`dashboard-bmp.test.ts`) +2 perf (`buildBmpSnapshotData` 6k lahan × 36 bln; slice+chart) — total 435 ✅; lint 0; build ✅.
+- **Next step:** regenerate snapshot (snapshot pra-`byYear` menampilkan 0 saat filter Tahun) → verifikasi owner → retro + close #166.
 
 </details>
 

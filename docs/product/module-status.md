@@ -60,7 +60,8 @@
 
 ## Planned - Next
 
-- BULK-02 (Region Bulk Upload #70), #69 (Bulk Upload KT), DASH-04 (Dashboard BMP — dependency DASH-01/02 sudah selesai)
+- BULK-02 (Region Bulk Upload #70), #69 (Bulk Upload KT)
+- DASH-04 (Dashboard BMP #166) — **kode ✅ 2026-07-15**, tinggal apply migration `20260715081831` + seed menu (menunggu approval owner)
 
 ## Planned - Later (🔲)
 
@@ -68,7 +69,7 @@
 
 ## Blocked (🔴)
 
-- Tidak ada (DASH-04 sudah tidak terblokir — DASH-01/02 selesai; kini berstatus Planned)
+- Tidak ada (DASH-04 kode selesai #166; tersisa langkah DB ber-approval)
 
 </details>
 

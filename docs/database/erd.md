@@ -43,6 +43,8 @@ erDiagram
     %% DASHBOARD SNAPSHOT
     District ||--o{ MainDashboardSnapshot : "scoped snapshots"
     User ||--o{ MainDashboardSnapshot : "creates"
+    District ||--o{ BmpDashboardSnapshot : "scoped snapshots"
+    User ||--o{ BmpDashboardSnapshot : "creates"
 ```
 
 ---
@@ -67,7 +69,7 @@ erDiagram
 
 | Category | Tables | Key Features |
 |----------|--------|--------------|
-| **Dashboard Snapshots** | MainDashboardSnapshot (+ future dashboard snapshots) | Historical state capture, filter-based snapshots, JSON data storage, soft-delete |
+| **Dashboard Snapshots** | MainDashboardSnapshot, BmpDashboardSnapshot (#166) | Historical state capture, filter-based snapshots, JSON data storage, soft-delete; separate table per dashboard |
 
 ### Planned Models (5 Categories)
 
@@ -92,7 +94,8 @@ erDiagram
 
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
-| **2.6.0** | 2026-07-15 | Identitas Lembaga Petani (#160): `FarmerGroup.groupType` (enum `FarmerGroupType`) + `establishedYear` + `rspoCertYear` + `rspoCertStatus` (enum `RspoCertStatus`); data `code` ICS→ISH | LOW (4 nullable columns + 2 enums, additive) |
+| **2.7.0** | 2026-07-15 | Dashboard BMP snapshot (#166, DASH-04): BmpDashboardSnapshot → `tbl_snapshot_bmp_dashboard` (snapshot pattern kedua, data JSON per Lembaga) — migration dibuat, **apply pending approval** | MEDIUM (new table, additive) |
+| 2.6.0 | 2026-07-15 | Identitas Lembaga Petani (#160): `FarmerGroup.groupType` (enum `FarmerGroupType`) + `establishedYear` + `rspoCertYear` + `rspoCertStatus` (enum `RspoCertStatus`); data `code` ICS→ISH | LOW (4 nullable columns + 2 enums, additive) |
 | 2.5.0 | 2026-07-14 | `LandParcel.blok` (String?, blok kebun) | LOW (1 nullable column, additive) |
 | 2.4.0 | 2026-07-14 | Sub-kelompok interim per-lahan (#146): `LandParcel.subGroupLv1` (Gapoktan) + `subGroupLv2` (Kelompok Tani); `FarmerGroup` diklarifikasi = **Lembaga Petani** (TD-013/#147) | LOW (2 nullable columns, additive) |
 | 2.3.0 | 2026-07-08 | Dashboard snapshot (#99): MainDashboardSnapshot model, separate table per dashboard pattern | MEDIUM (new table + pattern establishment) |

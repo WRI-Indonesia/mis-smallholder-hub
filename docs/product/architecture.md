@@ -9,7 +9,7 @@
 | **Test Status** | ✅ **30 files / 405 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02), map-geo, firms, middleware, perf |
 | **Completed Modules** | ✅ **24 phases done** | Platform (1-7), MD (1-6), DASH-01/02/03, RPT-01/02, BULK (1, 3, 4), DA-01/02, MAP-01 |
 | **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
-| **Prisma Models** | ✅ 11 file schema / **19 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
+| **Prisma Models** | ✅ 11 file schema / **20 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot, BmpDashboardSnapshot (#166) — MAP-01 read-only (no new table) |
 | **Priority Next** | 🎯 **AUDIT-P1 #127/#128** | AUDIT-P0 guard/scope RBAC (#125) ✅ & lint gate (#126) ✅ selesai 2026-07-12; sisa: scope by-id KT/pelatihan & pola restore (#127), konvensi UI (#128) — RPT-03 (#132) ✅ |
 
 ---
@@ -75,7 +75,7 @@
 ```
 📊 Dashboard (✅ DASH-01)
    ├── ✅ Main Dashboard — Snapshot-backed: 11 summary cards (incl. Petani L/P + Total Kelompok Tani #148) + filter Distrik/KT/Tahun + peta MapLibre (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
-   └── 🔲 Dashboard BMP (DASH-04) — Best Management Practice metrics
+   └── ✅ BMP Dashboard (Produksi) (DASH-04, #166) — Snapshot-backed: 4 card produksi (Produksi, Produktivitas Ton/Ha per tahun, Lahan ber-data, Petani melapor) + combo chart produksi/% lahan melapor + panel Ketersediaan Data Produksi 4 kategori (reuse MAP-02) + filter global Distrik/Lembaga/Kategori/Tahun client-side
 
 📁 Master Data
    ├── ✅ Lembaga Petani (MD-02) — List/detail/CRUD
@@ -112,7 +112,8 @@
    └── ✅ Region Settings (MD-01) — Tree hierarchy
 
 🔧 Tools (🟠 TOOLS-01)
-   ├── ✅ Dashboard Snapshot (DASH-01) — Generate/list/detail snapshot + Excel export + soft delete (satu-satunya sub-menu Tools di app)
+   ├── ✅ Dashboard Snapshot (DASH-01) — Generate/list/detail snapshot + Excel export + soft delete
+   ├── ✅ Dashboard Snapshot BMP (DASH-04, #166) — Generate Semua Data + list + detail per-Lembaga + Excel export + soft delete
    ├── 🟠 CLI lokal (bukan menu app): S3 get-link & PDF manager (`scripts/`, npm `s3:get-link` `pdf:*`); export CSV di `scripts/local/` (gitignored)
    └── 🔲 GIS Utilities — Planned
 
