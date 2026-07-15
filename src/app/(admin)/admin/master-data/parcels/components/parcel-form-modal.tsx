@@ -63,7 +63,8 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
       farmerId: selectedFarmerId,
       parcelId: form.get("parcelId") as string,
       blok: (form.get("blok") as string) || null,
-      geometry: parcel?.geometry ?? null,
+      // Geometry tidak dikirim: undefined = server mempertahankan polygon existing
+      // (payload list tidak membawa geometry, #163).
       area: areaRaw ? parseFloat(areaRaw) : null,
       landStatus: (form.get("landStatus") as string) || null,
       cropType: (form.get("cropType") as string) || null,

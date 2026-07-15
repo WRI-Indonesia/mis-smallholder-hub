@@ -80,15 +80,28 @@ export async function getProductionRecords(params?: {
       : {}),
   };
 
+  // Select ramping sesuai interface ProductionRecord di list client — `parcel`
+  // hanya `parcelId` (tanpa geometry yang berulang per record panen) (#163).
   return prisma.productionRecord.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      isActive: true,
+      period: true,
+      parcelId: true,
+      harvestDate: true,
+      harvestNumber: true,
+      yieldKg: true,
+      farmerId: true,
       farmer: {
-        include: {
-          farmerGroup: true,
+        select: {
+          name: true,
+          farmerId: true,
+          farmerGroupId: true,
+          farmerGroup: { select: { name: true } },
         },
       },
-      parcel: true,
+      parcel: { select: { parcelId: true } },
     },
     orderBy: [
       { period: "desc" },

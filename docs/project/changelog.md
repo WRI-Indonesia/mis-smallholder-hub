@@ -6,6 +6,21 @@
 > **Jangan gunakan file ini sebagai acuan status.** Status resmi ada di tabel **Phase Status** pada [`roadmap.md`](./roadmap.md).
 > Dipisah dari `progress.md` (restrukturisasi 2026-07-12) agar file status tetap ramping.
 
+Format: **Decision Log** dan **Changelog** dikelompokkan **per bulan** dalam section collapsible (`<details>`), bulan terbaru paling atas. Entri baru ditambahkan sebagai baris teratas tabel di dalam section bulan berjalan (buat section `<details>` baru saat ganti bulan).
+
+### Ringkasan Dua Minggu Terakhir (02–15 Juli 2026)
+
+> Snapshot per 2026-07-15 — perbarui/ganti section ini saat menulis ringkasan periode berikutnya.
+
+- **Modul Peta (stream MAP):** Peta Lahan (MAP-01) selesai + enhancement — produksi asli per-lahan di popup, "Profil Lahan" PDF, panel Daftar Lahan, layer Titik Api NASA FIRMS, tool Ruler geodesik, label KT/petani, overlay referensi SIGAP KLHK & tambah GIS sendiri (WMS/Shapefile/GeoJSON). Peta BMP (MAP-02, #144): layer Ketersediaan Data Produksi 4-kategori + cetak PDF & Excel matriks.
+- **Report:** Report Petani (RPT-01, #107), Report Produksi matriks bulanan (RPT-03, #132), dan Report Kelompok Tani real-time Summary + Detail (#154) — semua dengan export Excel/PDF.
+- **Dashboard & Data Analyst:** Main Dashboard snapshot-backed (DASH-01, #99) + card baru "Total Kelompok Tani" (#148); Analisa Ketersediaan Data Lembaga Petani (DA-02, #118) + enhancement domain Pelatihan (DA-02b, #122).
+- **Audit & keamanan:** audit menyeluruh 2026-07-10 → remediasi tuntas #125–#130 (guard RBAC + scope by-id, lint 193 error → 0, konvensi UI, cleanup deps/dead code, audit fields, font brand WRI) + fix scope-leak `getMapData` (BUG-007).
+- **Hierarki kelembagaan:** koreksi domain Petani → Kelompok Tani → Lembaga Petani (#146) — sub-kelompok per-lahan `subGroupLv1`/`subGroupLv2` + `blok`; relabel "Lembaga Petani" (#147/#155); mapping shapefile → Gapoktan/KT/Blok di bulk upload (#150); KT/Gapoktan turunan di detail Petani (#152).
+- **Lembaga Petani (#160):** field Tipe Grup, split Tahun Berdiri vs Bergabung, Sertifikasi RSPO, kode ICS → ISH + pengisian data 31 lembaga.
+- **Docs & proses:** restrukturisasi `docs/` (progress.md → roadmap/sprint/changelog/tech-debt), rule pre-commit "docs sync", rule retrospektif sebelum close issue.
+- **QA:** test tumbuh ~216 → **413** ✅, lint **0 error**, build ✅.
+
 ---
 
 ### Audit Commands
@@ -23,8 +38,12 @@ npm test
 
 ### Decision Log
 
+<details>
+<summary><strong>Juli 2026</strong></summary>
+
 | Tanggal    | Keputusan                                                                                                                      |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-15 | **#163 selesai: perf load list full app — select ramping & agregasi DB (5 Master Data + Region tree)** — audit full app (22 server actions): list action memakai `include` full-row tanpa `select` → payload DB→RSC→browser bengkak; **Lahan & Produksi ikut mengirim `LandParcel.geometry`** (GeoJSON, puluhan–ratusan KB/lahan) yang tak dirender list — di Produksi polygon yang sama terkirim berulang per record panen. **Fix:** `select` eksplisit sesuai interface list client di `getLandParcels`/`getProductionRecords`/`getFarmers`/`getTrainingActivities`/`getRegionTree`; `getFarmerGroups` ganti agregasi include-bersarang (1 baris per petani+lahan) → `farmer.findMany` ringan + `landParcel.groupBy(farmerId, _count+_sum area)` + merge di JS (array mentah tak lagi terkirim ke client). **Guard round-trip form:** form edit Lahan berhenti mengirim `geometry`; `updateLandParcel` kini `undefined` = pertahankan polygon existing (semula ter-null — bug laten bila geometry hilang dari payload); `evidenceKey/Name` pelatihan sengaja tetap di select (di-round-trip form edit). Tipe `LandParcel.geometry` jadi optional (diisi hanya fetch detail); prop `ParcelMapView` menerima null/undefined. Aturan "Payload Trimming" didokumentasikan di `performance.md`. +4 unit test merge agregasi (`farmer-group.test.ts` baru). Gate lint 0 / build / **test 417** ✅ (dari 413). |
 | 2026-07-15 | **#152 selesai: Master Data Petani — KT/Gapoktan turunan (dari lahan) di detail Petani** — sesuai prinsip #146 (keanggotaan sub-kelompok per-lahan), petani **tidak** mendapat field KT sendiri; detail Petani kini menampilkan **Gapoktan/KUD** & **Kelompok Tani** turunan = distinct `subGroupLv1`/`subGroupLv2` dari **lahan aktif** petani (badge, multi-nilai, "—" bila kosong). Derivasi di pure lib baru `src/lib/farmer-sub-groups.ts` (`deriveFarmerSubGroups`; normalisasi trim+case-insensitive konsisten Report KT #154, label = varian pertama trimmed, urut alfabetis; **+6 unit +1 perf** [10k lahan], test 405→**413** bersama +1 perf sort/format RSPO #160). `getFarmerById` include `landParcels` aktif (select 2 field — 1 query, tanpa N+1). **Kolom list Petani (opsional di issue) sengaja di-skip**: payload list membengkak (include lahan semua petani) untuk kolom default-hidden — bila dibutuhkan, jadikan follow-up dgn agregasi di query utama. Saat KT jadi tabel (TD-014), derivasi teks → relasi. Gate lint 0 / build / **test 411** ✅. |
 | 2026-07-15 | **#160 selesai: Lembaga Petani — Tipe Grup, split Tahun, Sertifikasi RSPO, kode ICS → ISH** — 4 kolom nullable baru di `FarmerGroup` (migrasi `20260715040235`): `groupType` (enum `FarmerGroupType` ASOSIASI/KOPERASI — **terpisah** dari `category` Ex Plasma/Swadaya), `establishedYear` ("Tahun Berdiri Lembaga"; `joinYear` di-relabel "Tahun Bergabung Program"), `rspoCertYear` + `rspoCertStatus` (enum `RspoCertStatus` CERTIFIED/PLANNED). **Keputusan tipe data RSPO:** bukan string bebas ("plan 2026") tapi Int+enum agar bisa difilter/direkap; render "2020" / "Plan 2026" via helper baru `src/lib/farmer-group-labels.ts` (dipakai list+detail). **Relaksasi (data riil):** tabel sumber WRI/Unilever punya "Y" tanpa tahun → status **boleh tanpa tahun** (render "Tersertifikasi"/"Plan"); kebalikannya tetap ditolak Zod (tahun tanpa status = ambigu). **Data fix ICS → ISH:** `code` 31 lembaga di DB + seed CSV + label Farmer Summary; **PK `id` sengaja tetap** berpola `ICS-` (ganti PK berisiko ke semua FK); fixture test dibiarkan (kosmetik). **Data lembaga diisi** dari tabel "Details of Smallholder Groups" (31/31 match by `code`; PPKSSM = APKSMB per konfirmasi owner; nama/abrv DB tidak diubah; Registered Farmer tidak disimpan — derived). **DataTable:** properti kolom baru `sortValue` (accessor sort kustom, backward-compatible) — sort kolom RSPO semula no-op karena `row[rspoCertYear]` null utk certified-tanpa-tahun; fix juga key export Excel (`rspoCert` → `rspoCertYear`, semula kolom Excel kosong). UI list: Tipe Grup sebelum Kategori, Total Persil default hidden. Gate lint 0 / build / **test 405** ✅. |
 | 2026-07-15 | **#150 selesai: bulk upload Lahan — mapping atribut shapefile → Gapoktan/KUD/Kelompok Tani/Blok** — 3 field opsional baru (`subGroupLv1`/`subGroupLv2`/`blok`) di dynamic column mapping bulk upload Lahan (Shapefile ZIP). Logika auto-match + normalisasi **dipisah ke pure lib `src/lib/parcel-bulk-mapping.ts`** (`PARCEL_AUTO_MATCH_RULES` alias gapoktan/kud/poktan/kt/nama_kt/blok/blk/dll; `autoMatchColumns` case-insensitive+trim; `normalizeAttr` trim → kosong = null, meredam typo/inflasi distinct KT per analisa #148) agar teruji langsung (+7 unit, test 398→**405**). Preview tabel + download Excel + payload save menyertakan 3 kolom; semua **nullable** (tak memblokir impor); field ikut **revision-tracking** (insert revisi baru membawa `...record`). Backend `bulkCreateLandParcels` & `landParcelSchema` tak berubah (sudah mendukung sejak #146). Melengkapi jalur data untuk Report KT #154 & card dashboard #148. Gate lint 0 / build / **test 405** ✅. |
@@ -52,6 +71,14 @@ npm test
 | 2026-07-09 | **MAP-01 #113 — section "Peta Lainnya" (overlay referensi) ditambahkan** ke Peta Lahan. Overlay raster tematik dari SIGAP KLHK/Kementerian Kehutanan (ArcGIS REST `export`): Kawasan Hutan, Pelepasan Kawasan Hutan, Fungsi Ekosistem Gambut, PIPPIB/Moratorium, Penutupan Lahan 2022 — toggle per-layer + slider transparansi, di-render di bawah layer data petani. **Keputusan teknis:** tile di-proxy same-origin via route baru `src/app/api/map-overlay/[key]/route.ts` karena server KLHK tidak mengirim header CORS dan TLS chain tak lengkap; ini pengecualian sempit atas aturan "no REST API layer" (endpoint gambar biner tak bisa jadi Server Action), dengan whitelist per-overlay + cache 24 jam. Overlay bersifat **referensi visual**, bukan dasar penetapan resmi. Follow-up terpisah: analisis spasial akurat (overlap parcel ↔ kawasan hutan via PostGIS `ST_Intersects`, ingest data resmi ke DB). File: `map-overlays.ts` (baru), `map-canvas.tsx`, `map-control-panel.tsx`, `map-parcel-client.tsx`, `api/map-overlay/[key]/route.ts` (baru). |
 | 2026-07-08 | **Stream `MAP` ditambahkan + Issue #113 [MAP-01] dibuat** — menu Level-1 baru **Map** + sub-menu **Peta Lahan** (`/admin/map/parcel`). Scope scaffolding: peta full-bleed MapLibre (`react-map-gl`), panel filter floating kiri (Province→District→KT, collapsible, tombol Muat Data), legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan), klik feature → info floating. Read-only dari `FarmerGroup` (`locationLat/Long`) + `LandParcel` (`geometry`) — **tanpa tabel/migration baru**; centroid lahan dihitung dari polygon via `@turf`. Filter District wajib (batasi payload). RBAC 3 layer (`hasPermission("map-parcel","VIEW")` + `getAccessContext` scope via `farmer→farmerGroup→district` + `isActive`). Estimasi 20–28 jam. Draft: `draft-issue/issue-map-peta-lahan-map-01.md`. |
 | 2026-07-06 | **3 GitHub Issues dibuat untuk Report module** — #107 (RPT-01 Report Petani), #108 (RPT-02 Report Pelatihan), #109 (RPT-03 Report Produksi). Scope diputuskan: filter Distrik + KT wajib dipilih (tidak ada "Semua"), filter opsional Periode di RPT-03, Export Excel per laporan. Estimasi total 50–64 jam (3 issues). Dependencies: RPT-01 → RPT-02, RPT-03 (RPT-02 & RPT-03 extend `report.ts` dari RPT-01). |
+
+</details>
+
+<details>
+<summary><strong>Juni 2026</strong></summary>
+
+| Tanggal    | Keputusan                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-06-25 | Issue #94 dibuat untuk tambah field Pre-Test dan Post-Test Score pada Training Participant: `preTestScore` & `postTestScore` nullable Integer fields (range 0-100) untuk track evaluasi peserta sebelum dan sesudah pelatihan. Schema, validation, UI (form input + table column), dan bulk upload enhancement. Estimasi 4-6 jam (1 hari kerja). |
 | 2026-06-12 | **CODE AUDIT COMPREHENSIVE** — Audit lengkap seluruh codebase (src/, prisma/, tests/) dan update keempat dokumen utama (progress.md, rule.md, database-schema.md, ui-ux-flow.md) berdasarkan state aktual: 13 test files/155 tests passing ✅, Training module MD-05 fully implemented ✅, Bulk Upload farmers BULK-03 complete ✅, server actions 1600 LOC total, validation schemas 6 files. Status fase diverifikasi ulang terhadap route/schema/action/UI yang benar-benar ada. |
 | 2026-06-12 | Database Schema Documentation (database-schema.md) enhanced dengan P0 critical sections: Index Strategy (primary/secondary indexes, performance targets), Constraint & Data Integrity (FK cascade behaviors, business rules, soft delete, referential integrity check), Migration Strategy (workflow diagram, risk levels, history, pre-deployment checklist, breaking changes policy, backfill strategy), Security Considerations (auth/RBAC, password bcrypt, SQL injection prevention, data access patterns, sensitive data protection, audit trail, PostgreSQL access control, environment variables, OWASP Top 10 compliance), dan Performance & Data Volume (3-year projections, table size estimates Year 3 ~112 MB, critical query optimization targets < 300ms, pagination strategies offset vs cursor, N+1 prevention, connection pooling config, caching strategy per data type, future optimization considerations). Dokumentasi sekarang production-ready dan compliance dengan security/performance best practices. |
@@ -76,12 +103,16 @@ npm test
 | 2026-06-10 | Issue #86 dibuat untuk tambah field joinedYear (Tahun Bergabung) pada master data Petani: schema, validation, CRUD, UI (form/list/detail), bulk upload, tests. Field optional Integer 1900-2100. Estimasi 4-6 jam (1 hari kerja). |
 | 2026-06-10 | MD-05 Training selesai dengan target #77-#82 (schema, actions, UI list & detail, participant management, dan tests) menggunakan tipe enum TrainingCategory baru. |
 
+</details>
+
 ### Changelog
 
-#### Juli 2026
+<details>
+<summary><strong>Juli 2026</strong></summary>
 
 | Tanggal | Perubahan |
 | ------- | --------- |
+| 07-15   | **#163 Perf load list full app — select ramping & agregasi DB** — audit 22 server actions; fix 6 modul: **Lahan** & **Produksi** (buang `geometry` dari payload list — penyebab dominan), **Petani**, **Pelatihan** (select ramping; `evidenceKey/Name` tetap, round-trip form), **Lembaga Petani** (agregasi petani/persil/luas → `groupBy` DB), **Region** (tree 4 level select id/code/name/isActive). Form edit Lahan berhenti mengirim geometry; `updateLandParcel` pertahankan polygon bila field tak dikirim. Modul lain diaudit & sudah lean (Map/Dashboard/Report/DA/Settings/bulk-upload). Aturan "Payload Trimming" → `performance.md`. +4 unit (`farmer-group.test.ts` baru). Gate lint 0 / build ✅ / **test 417** ✅. |
 | 07-14   | **#155 Relabel "Lembaga Tani" → "Lembaga Petani" (revisi manajemen)** — "Tani" kata kerja → noun "Petani". Sweep **hanya "Lembaga Tani"**: 168 label di `src/**` + `menu.csv` + baris menu DB (`tbl_menu_item` key `master-data-groups`) + 59 di docs. **"Kelompok Tani" tetap** (istilah resmi, = `subGroupLv2`); identifier `FarmerGroup` tetap. Gate lint 0 / build ✅ / test 388 ✅. |
 | 07-14   | **#149 Master Lahan: kolom Gapoktan/Kelompok Tani/Blok di list + Excel** — 3 kolom baru (`subGroupLv1`/`subGroupLv2`/`blok`) di `parcel-list-client.tsx`, **default hidden** (toggleable via column-visibility), ikut Excel export saat divisibilitaskan (export mengikuti kolom aktif). Bonus fix: kolom **"Lembaga Petani" export kosong** — `getExportRow` key `groupName`→`farmerGroupName` agar cocok dengan `col.key` (exceljs map by-key). Filter list by KT/Gapoktan (opsional) **ditunda** — data `subGroupLv2` belum terisi. Gate lint 0 / build ✅ / test 381 ✅. |
 | 07-14   | **Hierarki kelembagaan: relabel "Kelompok Tani" → "Lembaga Petani" + sub-kelompok interim per-lahan + field blok (#146, #147)** — Koreksi mislabel: entitas `FarmerGroup` secara semantik = **Lembaga Petani** (hierarki **Petani → Kelompok Tani (Gapoktan) → Lembaga Petani**). **(1) #146 interim:** sub-kelompok disimpan denormalisasi **di `LandParcel`** (`subGroupLv1` Gapoktan + `subGroupLv2` Kelompok Tani, nullable) — **per-lahan** (satu petani bisa punya lahan di KT berbeda), bukan di `Farmer`; migrasi additif `add_land_parcel_sub_group`; form + detail lahan. **(2) #147 relabel:** sweep ~56 file `src/**` + `menu.csv` + **label menu DB** (1 baris terarah `tbl_menu_item`) "Kelompok Tani"→"Lembaga Petani"; label UI "KT" (Cari/Nama/Total/Kode/Profil/tab data-access dst) → "Lembaga Petani"; **dipertahankan** identifier `FarmerGroup`/`farmer_group`/`BY_FARMER_GROUP`, menu-key, kode fase/#issue, dan field `subGroupLv2` (KT asli); "KT" tak di-mass-replace (risiko "NKT"). **(3) Field `LandParcel.blok`** (String?, blok kebun) + migrasi additif `add_land_parcel_blok`. **(4) Fix** filter Tahun dashboard menampilkan "all" → "Semua Tahun" (base-ui `SelectValue` function-child). Docs disinkronkan (models/erd Schema 2.5.0/migrations/code-standards + relabel). **Gate:** lint 0 error / build ✅ / test 380 ✅. |
@@ -100,7 +131,10 @@ npm test
 | 07-09   | **Issue #118 complete** — Data Analyst (DA-02): Analisa Ketersediaan Data Lembaga Petani. Sub-menu baru `data-analyst-data-completeness` di bawah menu Data Analyst. Flow: pilih distrik → lembaga petani → Analisa. Menampilkan skor kesehatan data (tertimbang) + total anomali, lalu 5 section collapsible (Profil KT, Petani, Lahan, Pelatihan, Produksi) berisi kartu ringkasan + daftar entitas anomali per domain (NIK kosong/invalid/duplikat, petani tanpa lahan, persil tanpa geometry/luas, petani belum pelatihan, petani tanpa produksi, berlahan-tanpa-produksi, dst). Logika perhitungan murni di `src/lib/data-completeness.ts` (23 unit tests), server action dengan permission + scope-check AccessContext + filter isActive, export Excel multi-sheet. Registrasi ikon `ClipboardCheck`. |
 | 07-06   | **3 GitHub Issues dibuat untuk Report module** — #107 [RPT-01] Report Petani: halaman `/admin/report/farmer`, filter distrik+KT wajib (no "Semua"), 4 summary cards, tabel petani + Export Excel, ~18 unit tests, estimasi 16–20 jam. #108 [RPT-02] Report Pelatihan: halaman `/admin/report/training`, 6 summary cards, 2 Tab (Kegiatan Pelatihan & Cakupan per Petani), Export Excel 2-sheet, exclude paket OTHER, ~16 unit tests, estimasi 18–24 jam. #109 [RPT-03] Report Produksi: halaman `/admin/report/production`, filter periode opsional (tahun/bulan), 4 summary cards, 2 Tab (Rekap per Petani & Detail Panen), Export Excel 2-sheet, ~18 unit tests, estimasi 16–20 jam. Semua issue menggunakan pola extend server action `report.ts` (RPT-02 & RPT-03 tidak membuat file baru). |
 
-#### Juni 2026
+</details>
+
+<details>
+<summary><strong>Juni 2026</strong></summary>
 
 | Tanggal | Perubahan                                                                                                        |
 | ------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -140,7 +174,10 @@ npm test
 | 06-07   | #75 selesai — `progress.md` diupdate: MD-03 Done, BUG-001 Done, Active Issues #72-75 Done, Snapshot, Audit Evidence, Changelog. |
 | 06-07   | BUG-001 selesai — Redirect `/admin/master-data` diubah ke `/admin/master-data/farmers` (route sudah tersedia). |
 
-#### Mei 2026
+</details>
+
+<details>
+<summary><strong>Mei 2026</strong></summary>
 
 | Tanggal | Perubahan                                                                                                                                                 |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -163,11 +200,10 @@ npm test
 | 05-06   | #22 selesai — Final QA Fase 4: hapus debug, lokalisasi, cleanup placeholders                                                                              |
 | 05-04   | Restrukturisasi dokumen, skip Fase 3, mulai Fase 4                                                                                                        |
 
----
+</details>
 
-
-
-#### Koreksi Entri Historis (Mei 2026)
+<details>
+<summary><strong>Koreksi Entri Historis (Mei 2026)</strong></summary>
 
 Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk modul yang tidak ditemukan implementasinya di source code aktif. Status resmi sudah dikoreksi di **Phase Status**.
 
@@ -182,16 +218,24 @@ Beberapa entri changelog Mei 2026 pernah mencantumkan status "selesai" untuk mod
 | 05-08   | #39 — Training module lengkap: tidak ada Training model/route/action/UI.                               |
 | 05-05   | #21 — Parcels CRUD + MapLibre view: tidak ada Parcel model/route/action/UI.                            |
 
-#### April 2026
+</details>
+
+<details>
+<summary><strong>April 2026</strong></summary>
 
 | Tanggal | Perubahan                                                                     |
 | ------- | ----------------------------------------------------------------------------- |
 | 04-14   | PLATFORM-02 selesai — Prisma 7 modular schema, 3 migrasi PostgreSQL + PostGIS |
 
-#### Maret 2026
+</details>
+
+<details>
+<summary><strong>Maret 2026</strong></summary>
 
 | Tanggal | Perubahan                                      |
 | ------- | ------------------------------------------------ |
 | 03-30   | Code review & sync status                      |
 | 03-28   | Modernisasi Dashboard dan perbaikan Home       |
 | 03-18   | Inisiasi proyek — Next.js, Shadcn, static data |
+
+</details>

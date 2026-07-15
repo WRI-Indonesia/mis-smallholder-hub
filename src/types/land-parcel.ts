@@ -28,7 +28,9 @@ export interface LandParcel {
   // Column-key placeholder untuk kolom "Lembaga Petani" (dirender dari
   // farmer.farmerGroup.name); tidak diisi pada row-nya sendiri.
   farmerGroupName?: string;
-  geometry: Geometry;
+  // Hanya diisi oleh fetch detail (getLandParcelById); payload list tidak
+  // membawa geometry agar ringan (#163).
+  geometry?: Geometry | null;
   area: number | null;
   landStatus: string | null;
   cropType: string | null;

@@ -35,39 +35,47 @@ export async function getFarmerGroups(search?: string) {
     where,
     include: {
       district: { select: { name: true } },
-      farmers: {
-        where: { isActive: true },
-        select: {
-          landParcels: {
-            where: { isActive: true },
-            select: {
-              area: true,
-            },
-          },
-        },
-      },
     },
     orderBy: { name: "asc" },
   });
 
-  return groups.map((g) => {
-    const farmersCount = g.farmers.length;
-    const parcelsCount = g.farmers.reduce(
-      (sum, f) => sum + f.landParcels.length,
-      0
-    );
-    const totalArea = g.farmers.reduce(
-      (sum, f) => sum + f.landParcels.reduce((pSum, p) => pSum + (p.area ?? 0), 0),
-      0
-    );
+  // Agregat turunan (jumlah petani/persil/total luas) diagregasi di DB — hindari
+  // menarik 1 baris per petani + per lahan hanya untuk dihitung di JS, dan array
+  // mentahnya tidak lagi ikut terkirim ke client (#163).
+  const groupIds = groups.map((g) => g.id);
+  const [farmers, parcelAggs] = await Promise.all([
+    prisma.farmer.findMany({
+      where: { isActive: true, farmerGroupId: { in: groupIds } },
+      select: { id: true, farmerGroupId: true },
+    }),
+    prisma.landParcel.groupBy({
+      by: ["farmerId"],
+      where: { isActive: true, farmer: { isActive: true, farmerGroupId: { in: groupIds } } },
+      _count: { _all: true },
+      _sum: { area: true },
+    }),
+  ]);
 
-    return {
-      ...g,
-      farmersCount,
-      parcelsCount,
-      totalArea,
-    };
-  });
+  const farmerToGroup = new Map(farmers.map((f) => [f.id, f.farmerGroupId]));
+  const stats = new Map<string, { farmersCount: number; parcelsCount: number; totalArea: number }>();
+  for (const f of farmers) {
+    const s = stats.get(f.farmerGroupId) ?? { farmersCount: 0, parcelsCount: 0, totalArea: 0 };
+    s.farmersCount += 1;
+    stats.set(f.farmerGroupId, s);
+  }
+  for (const p of parcelAggs) {
+    const s = stats.get(farmerToGroup.get(p.farmerId) ?? "");
+    if (!s) continue;
+    s.parcelsCount += p._count._all;
+    s.totalArea += p._sum.area ?? 0;
+  }
+
+  return groups.map((g) => ({
+    ...g,
+    farmersCount: stats.get(g.id)?.farmersCount ?? 0,
+    parcelsCount: stats.get(g.id)?.parcelsCount ?? 0,
+    totalArea: stats.get(g.id)?.totalArea ?? 0,
+  }));
 }
 
 export async function getFarmerGroupById(id: string) {
