@@ -44,7 +44,7 @@ tbl_snapshot_<dashboard_name>
 
 **Examples**:
 - `tbl_snapshot_main_dashboard` — Main dashboard (DASH-01) ✅
-- `tbl_snapshot_bmp_dashboard` — Dashboard BMP (DASH-04, #166) ✅ — data JSON `BmpSnapshotData` per **Lembaga Petani** (monthly produksi/lahan melapor per period + availability 4 kategori MAP-02 + totals); unique `(snapshot_date, district_id)`; di-slice client-side (Distrik/Lembaga/Kategori/Tahun) via pure `src/lib/bmp-dashboard-aggregation.ts`
+- `tbl_snapshot_bmp_dashboard` — Dashboard BMP (DASH-04, #166) ✅ — data JSON `BmpSnapshotData` per **Lembaga Petani** (monthly + byYear produksi/lahan melapor + subset `monthlyFull`/`byYearFull` lahan-lengkap + availability 4 kategori MAP-02 + totals); unique `(snapshot_date, district_id)`; di-slice client-side (Distrik/Lembaga/Kategori/Tahun) via pure `src/lib/bmp-dashboard-aggregation.ts`
 - `tbl_snapshot_production_dashboard` — Production analytics (future)
 - `tbl_snapshot_training_dashboard` — Training progress (future)
 - `tbl_snapshot_financial_dashboard` — Financial reports (future)

@@ -13,7 +13,7 @@ import { filterBmpGroups, sumBmpGroups } from "@/lib/bmp-dashboard-aggregation";
 import { BmpScoreCards } from "./bmp-score-cards";
 import { BmpTrendChart } from "./bmp-trend-chart";
 import { BmpAvailabilityPanel } from "./bmp-availability-panel";
-import type { BmpFarmerGroupCategory, BmpSnapshotView } from "@/types/dashboard";
+import type { BmpDataMode, BmpFarmerGroupCategory, BmpSnapshotView } from "@/types/dashboard";
 
 interface Props {
   initialView: BmpSnapshotView | null;
@@ -37,6 +37,8 @@ export function BmpDashboardClient({ initialView }: Props) {
   const [category, setCategory] = useState<BmpFarmerGroupCategory | null>(null);
   // Default "Rataan" (rata-rata per tahun) — keputusan owner, bukan kumulatif semua tahun.
   const [year, setYear] = useState<number | "average">("average");
+  // "full" = hanya lahan dengan data 12 bulan penuh Jan–Des pada tahun ybs (anti bias data bolong).
+  const [dataMode, setDataMode] = useState<BmpDataMode>("all");
 
   const [districtOpen, setDistrictOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -74,11 +76,15 @@ export function BmpDashboardClient({ initialView }: Props) {
     [allGroups, districtId, category]
   );
 
-  // Client-side slicing dari satu snapshot org-wide (termasuk filter Tahun global).
+  // Client-side slicing dari satu snapshot org-wide (termasuk filter Tahun + kelengkapan data).
   const sliced = useMemo(
     () =>
-      sumBmpGroups(filterBmpGroups({ groups: allGroups }, { districtId, groupId, category }), year),
-    [allGroups, districtId, groupId, category, year]
+      sumBmpGroups(
+        filterBmpGroups({ groups: allGroups }, { districtId, groupId, category }),
+        year,
+        dataMode
+      ),
+    [allGroups, districtId, groupId, category, year, dataMode]
   );
 
   const selectedDistrict = districtOptions.find((d) => d.id === districtId);
@@ -222,6 +228,22 @@ export function BmpDashboardClient({ initialView }: Props) {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Kelengkapan data (revisi owner): All vs hanya lahan full 1 tahun per periodenya */}
+            <Select
+              value={dataMode}
+              onValueChange={(v) => setDataMode(v === "full" ? "full" : "all")}
+            >
+              <SelectTrigger className="w-[170px] h-9">
+                <SelectValue>
+                  {(value) => (value === "full" ? "Data Full 1 Tahun" : "Semua Data")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Data</SelectItem>
+                <SelectItem value="full">Data Full 1 Tahun</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
@@ -231,7 +253,9 @@ export function BmpDashboardClient({ initialView }: Props) {
           <BmpScoreCards
             totals={sliced.totals}
             produktivitas={sliced.produktivitasTonHa}
-            yearLabel={year === "average" ? "rata-rata per tahun" : `tahun ${year}`}
+            yearLabel={`${year === "average" ? "rata-rata per tahun" : `tahun ${year}`}${
+              dataMode === "full" ? " · lahan full 1 tahun" : ""
+            }`}
           />
 
           <div className="grid gap-4 lg:grid-cols-3">
