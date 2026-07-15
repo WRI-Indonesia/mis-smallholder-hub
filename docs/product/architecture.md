@@ -6,7 +6,7 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **27 files / 380 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02), map-geo, firms, middleware, perf |
+| **Test Status** | ✅ **30 files / 405 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02), map-geo, firms, middleware, perf |
 | **Completed Modules** | ✅ **24 phases done** | Platform (1-7), MD (1-6), DASH-01/02/03, RPT-01/02, BULK (1, 3, 4), DA-01/02, MAP-01 |
 | **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 file schema / **19 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot — MAP-01 read-only (no new table) |
@@ -74,7 +74,7 @@
 
 ```
 📊 Dashboard (✅ DASH-01)
-   ├── ✅ Main Dashboard — Snapshot-backed: 10 summary cards (5/baris, incl. Petani L/P) + filter Distrik/KT/Tahun + peta MapLibre (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
+   ├── ✅ Main Dashboard — Snapshot-backed: 11 summary cards (incl. Petani L/P + Total Kelompok Tani #148) + filter Distrik/KT/Tahun + peta MapLibre (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
    └── 🔲 Dashboard BMP (DASH-04) — Best Management Practice metrics
 
 📁 Master Data
@@ -101,7 +101,7 @@
 📤 Bulk Upload
    ├── ✅ Bulk Upload Petani (BULK-03) — Excel mapping + validation + preview
    ├── ✅ Bulk Upload Produksi (BULK-04) — Excel mapping + period/harvest validation + preview
-   ├── ✅ Bulk Upload Lahan (MD-04) — ZIP Shapefile upload + column mapping + geometry validation
+   ├── ✅ Bulk Upload Lahan (MD-04) — ZIP Shapefile upload + column mapping (incl. Gapoktan/KUD, Kelompok Tani, Blok #150) + geometry validation
    ├── 🔲 Bulk Upload Lembaga Petani (#69) — CSV + validation (belum ada menu/route)
    └── 🔲 Bulk Upload Region (BULK-02, #70) — Hierarchy validation (belum ada menu/route)
 

@@ -185,12 +185,12 @@ Hierarki domain: **Petani → Kelompok Tani (Gapoktan) → Lembaga Petani**. Ent
 
 Level **Kelompok Tani** & **Gapoktan** belum dimodelkan sebagai tabel. **Interim (#146):** disimpan sebagai field denormalisasi **di `LandParcel`** (bukan `Farmer`), karena satu petani bisa punya beberapa lahan di Kelompok Tani/Gapoktan berbeda → keanggotaan bersifat **per-lahan**:
 
-| Field (`LandParcel`) | Type | Makna |
-|----------------------|--------|-------|
-| `subGroupLv1` | String? | Gapoktan |
-| `subGroupLv2` | String? | Kelompok Tani |
+| Field (`LandParcel`) | Type | Makna | Label UI |
+|----------------------|--------|-------|----------|
+| `subGroupLv1` | String? | Gapoktan | **Gapoktan/KUD** (relabel #154) |
+| `subGroupLv2` | String? | Kelompok Tani | Kelompok Tani |
 
-Pemodelan tabel penuh (KT/Gapoktan sebagai entitas + re-parenting `Farmer`) = **TD-014**.
+Konsumen agregat interim: **Report Kelompok Tani** (real-time, #154 — Summary agregat + Detail roster) & **card "Total Kelompok Tani"** di Main Dashboard (snapshot-backed, distinct `subGroupLv2`, #148). Pemodelan tabel penuh (KT/Gapoktan sebagai entitas + re-parenting `Farmer`) = **TD-014**.
 
 ### RBAC Filter Context
 

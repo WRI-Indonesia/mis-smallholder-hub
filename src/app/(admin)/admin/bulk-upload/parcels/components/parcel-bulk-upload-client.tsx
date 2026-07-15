@@ -33,6 +33,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { parseShapefile, bulkCreateLandParcels } from "@/server/actions/bulk-upload-parcel";
+import { PARCEL_AUTO_MATCH_RULES, autoMatchColumns, normalizeAttr } from "@/lib/parcel-bulk-mapping";
 import { ParcelBulkUploadMap } from "./parcel-bulk-upload-map";
 
 interface FarmerMapping {
@@ -73,6 +74,9 @@ interface ParcelValidatedRow {
   cropType: string | null;
   plantingYear?: number | null;
   notes: string | null;
+  subGroupLv1: string | null;
+  subGroupLv2: string | null;
+  blok: string | null;
 }
 
 function isGeometryEqual(g1: unknown, g2: unknown) {
@@ -101,20 +105,15 @@ const TARGET_FIELDS = [
   { key: "landStatus", label: "Status Kepemilikan", required: false, desc: "e.g. Owned, Leased, Shared" },
   { key: "cropType", label: "Komoditas", required: false, desc: "e.g. Kelapa Sawit, Karet" },
   { key: "plantingYear", label: "Tahun Tanam", required: false, desc: "Tahun 1900-2100" },
+  { key: "subGroupLv1", label: "Gapoktan/KUD", required: false, desc: "Nama Gapoktan/KUD" },
+  { key: "subGroupLv2", label: "Kelompok Tani", required: false, desc: "Nama Kelompok Tani" },
+  { key: "blok", label: "Blok", required: false, desc: "Blok kebun" },
   { key: "revision", label: "Revisi", required: false, desc: "Angka revisi (default 0)" },
   { key: "notes", label: "Catatan", required: false, desc: "Catatan tambahan" },
 ];
 
-const AUTO_MATCH_RULES: Record<string, string[]> = {
-  parcelId: ["parcel_id", "parcelid", "lahan_id", "id lahan", "id_lahan", "id", "parcel_code", "kode_lahan", "kd_lahan"],
-  farmerId: ["farmer_id", "farmerid", "petani_id", "id petani", "id_petani", "farmer_code", "kode_petani", "wri_id", "farmer"],
-  area: ["area", "area_ha", "luas", "luas_ha", "hectares", "hektar", "size"],
-  landStatus: ["land_status", "landstatus", "status", "kepemilikan", "status_lahan"],
-  cropType: ["crop_type", "croptype", "crop", "komoditas", "tanaman", "commodity"],
-  plantingYear: ["planting_year", "plantingyear", "tahun_tanam", "thn_tanam", "tanam", "year"],
-  revision: ["revision", "revisi", "rev"],
-  notes: ["notes", "note", "keterangan", "ket", "catatan"],
-};
+// Aturan auto-match + normalisasi dipisah ke `@/lib/parcel-bulk-mapping` (teruji).
+const AUTO_MATCH_RULES = PARCEL_AUTO_MATCH_RULES;
 
 export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }: Props) {
   const router = useRouter();
@@ -178,17 +177,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
   }
 
   function autoMatch(detectedHeaders: string[]) {
-    const matched: Record<string, string> = {};
-    for (const f of TARGET_FIELDS) {
-      const rules = AUTO_MATCH_RULES[f.key] || [];
-      const bestMatch = detectedHeaders.find((h) =>
-        rules.includes(h.toLowerCase().trim())
-      );
-      if (bestMatch) {
-        matched[f.key] = bestMatch;
-      }
-    }
-    setMapping(matched);
+    setMapping(
+      autoMatchColumns(detectedHeaders, TARGET_FIELDS.map((f) => f.key), AUTO_MATCH_RULES),
+    );
   }
 
   function validateRow(feat: ParcelFeature, idx: number, duplicatesInFile: Set<string>): { data: ParcelValidatedRow; errors: string[] } {
@@ -208,6 +199,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       landStatus: null,
       cropType: null,
       notes: null,
+      subGroupLv1: null,
+      subGroupLv2: null,
+      blok: null,
     };
 
     // Original values kept for download
@@ -316,6 +310,11 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     // 8. Notes
     normalized.notes = props[mapping["notes"]]?.toString().trim() || null;
 
+    // 8b. Sub-kelompok interim + blok (#150) — opsional, trim, kosong → null.
+    normalized.subGroupLv1 = normalizeAttr(mapping["subGroupLv1"] ? props[mapping["subGroupLv1"]] : null);
+    normalized.subGroupLv2 = normalizeAttr(mapping["subGroupLv2"] ? props[mapping["subGroupLv2"]] : null);
+    normalized.blok = normalizeAttr(mapping["blok"] ? props[mapping["blok"]] : null);
+
     // 9. Geometry validation
     if (!feat.geometry || (feat.geometry.type !== "Polygon" && feat.geometry.type !== "MultiPolygon")) {
       errors.push("Geometri tidak valid (Harus bertipe Polygon atau MultiPolygon)");
@@ -372,6 +371,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       { header: "Status Kepemilikan", key: "landStatus", width: 20 },
       { header: "Komoditas", key: "cropType", width: 15 },
       { header: "Tahun Tanam", key: "plantingYear", width: 15 },
+      { header: "Gapoktan/KUD", key: "subGroupLv1", width: 20 },
+      { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
+      { header: "Blok", key: "blok", width: 12 },
       { header: "Revisi", key: "revision", width: 12 },
       { header: "Catatan", key: "notes", width: 25 },
       { header: "Status Validasi", key: "status", width: 15 },
@@ -398,6 +400,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
         landStatus: row.landStatus || row._original.landStatus || "",
         cropType: row.cropType || row._original.cropType || "",
         plantingYear: row.plantingYear || row._original.plantingYear || "",
+        subGroupLv1: row.subGroupLv1 || row._original.subGroupLv1 || "",
+        subGroupLv2: row.subGroupLv2 || row._original.subGroupLv2 || "",
+        blok: row.blok || row._original.blok || "",
         revision: row.revision !== undefined ? row.revision : row._original.revision || 0,
         notes: row.notes || row._original.notes || "",
         status: row._isValid ? "VALID" : "ERROR",
@@ -433,6 +438,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       plantingYear: d.plantingYear,
       revision: d.revision,
       notes: d.notes,
+      subGroupLv1: d.subGroupLv1,
+      subGroupLv2: d.subGroupLv2,
+      blok: d.blok,
     }));
 
     const result = await bulkCreateLandParcels(toSave);
@@ -637,6 +645,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                   <TableHead>Status Kepemilikan</TableHead>
                   <TableHead>Komoditas</TableHead>
                   <TableHead>Tahun Tanam</TableHead>
+                  <TableHead>Gapoktan/KUD</TableHead>
+                  <TableHead>Kelompok Tani</TableHead>
+                  <TableHead>Blok</TableHead>
                   <TableHead>Revisi</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[200px]">Detail Error</TableHead>
@@ -645,7 +656,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
               <TableBody>
                 {filteredData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
                       Tidak ada data untuk filter ini.
                     </TableCell>
                   </TableRow>
@@ -660,6 +671,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                       <TableCell>{row.landStatus || row._original.landStatus || "—"}</TableCell>
                       <TableCell>{row.cropType || row._original.cropType || "—"}</TableCell>
                       <TableCell className="font-mono">{row.plantingYear || row._original.plantingYear || "—"}</TableCell>
+                      <TableCell>{row.subGroupLv1 || "—"}</TableCell>
+                      <TableCell>{row.subGroupLv2 || "—"}</TableCell>
+                      <TableCell>{row.blok || "—"}</TableCell>
                       <TableCell className="font-mono">{row.revision}</TableCell>
                       <TableCell>
                         {row._isValid ? (
