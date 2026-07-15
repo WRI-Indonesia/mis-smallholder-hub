@@ -2,6 +2,20 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [sprint.md](./sprint.md) · [changelog.md](./changelog.md) · [contributing.md](./contributing.md)
 
+## Summary
+
+Kondisi per **2026-07-15**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **6 debt aktif**, tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
+
+**Rekomendasi:**
+
+| Horizon | Fokus | Alasan |
+| --- | --- | --- |
+| **Jangka pendek** (sprint berjalan) | **TD-015** (`exportValue` DataTable) & **TD-008** (helper parsing angka form) — kerjakan menumpang saat menyentuh file terkait; **TD-002** (visual audit `text-white`) sekali jalan | Kecil, murah, mencegah silent-fail berulang (TD-015 sudah 2× menggigit di #160) |
+| **Jangka menengah** (1–2 sprint) | **TD-010 sisa** — pisah `error:string` + `fieldErrors` di tipe `ActionResult` (22 titik / 9 action / ~10 form); **TD-004** (i18n) bila jadi kebutuhan produk | Perubahan kontrak lintas form — butuh PR khusus ber-scope jelas, bukan tumpangan; i18n perlu keputusan produk dulu |
+| **Jangka panjang** (menunggu data & keputusan) | **TD-014** refactor hierarki penuh (Jalur B + B2: KT/Gapoktan jadi tabel, `FarmerGroup`→`FarmerInstitution`, export→rebuild→re-import) | Blocker: keputusan **3 vs 4 level** + data KT lengkap; interim per-lahan (#146/#150) sudah menopang report/dashboard/detail sampai saat itu |
+
+---
+
 Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah punya owner, priority, dan definition of done.
 
 **Cara baca:** item yang **masih aktif** tampil langsung di atas (itu yang perlu ditindaklanjuti); item yang **sudah selesai** dipisah ke **Arsip** di bawah (collapsed, dibuka hanya bila perlu riwayat).
