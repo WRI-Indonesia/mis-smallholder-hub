@@ -62,6 +62,11 @@ export async function getFarmerById(id: string) {
           district: true,
         },
       },
+      // KT/Gapoktan turunan (#152): keanggotaan sub-kelompok bersifat per-lahan (#146).
+      landParcels: {
+        where: { isActive: true },
+        select: { subGroupLv1: true, subGroupLv2: true },
+      },
     },
   });
 }

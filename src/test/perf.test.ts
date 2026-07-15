@@ -11,6 +11,8 @@ import {
   type RawParcel,
 } from "@/lib/map-data";
 import { addParticipantsSchema } from "@/validations/training-participant.schema";
+import { deriveFarmerSubGroups } from "@/lib/farmer-sub-groups";
+import { formatRspoCert } from "@/lib/farmer-group-labels";
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
@@ -362,6 +364,65 @@ describe("Performance - Kelompok Tani distinct aggregation (#148, subGroupLv2)",
     console.log(`  distinct KT over 50k lahan: ${count} in ${duration.toFixed(2)}ms`);
     expect(count).toBe(500); // noise spasi/kapital ter-dedup ke 500 KT unik
     expect(duration).toBeLessThan(100); // margin longgar (aktual ~5ms) — guard O(n), bukan micro-benchmark
+  });
+});
+
+// #152: detail Petani menderivasi KT/Gapoktan dari lahan aktif via
+// deriveFarmerSubGroups. Realistisnya satu petani hanya punya beberapa lahan —
+// stress jauh melampaui itu untuk membuktikan derivasi (trim+lowercase dedup +
+// sort) tetap O(n) dan aman dipanggil per-render halaman detail.
+describe("Performance - Farmer sub-group derivation (#152)", () => {
+  it("derives distinct KT/Gapoktan from 10k parcels under 50ms", () => {
+    const parcels = Array.from({ length: 10_000 }, (_, i) => ({
+      subGroupLv1: i % 9 === 0 ? null : `${i % 3 === 0 ? "  " : ""}Gapoktan ${i % 40}`,
+      subGroupLv2: i % 7 === 0 ? null : `KT ${i % 250}${i % 5 === 0 ? " " : ""}`,
+    }));
+
+    const start = performance.now();
+    const result = deriveFarmerSubGroups(parcels);
+    const duration = performance.now() - start;
+
+    console.log(`  deriveFarmerSubGroups (10k lahan): ${result.gapoktan.length} gapoktan / ${result.kelompokTani.length} KT in ${duration.toFixed(2)}ms`);
+    expect(result.gapoktan.length).toBe(40); // noise spasi ter-dedup
+    expect(result.kelompokTani.length).toBe(250);
+    expect(duration).toBeLessThan(50);
+  });
+});
+
+// #160: kolom "Sertifikasi RSPO" di list Lembaga Petani di-sort via sortValue
+// (string rank "0-<tahun>"/"1-<tahun>") dan di-render/export via formatRspoCert.
+// Stress 10k baris (jauh di atas jumlah lembaga riil ~31) — guard bahwa sort
+// kustom + format tetap murah untuk client-side DataTable.
+describe("Performance - RSPO cert sort & format (#160)", () => {
+  it("sortValue rank + formatRspoCert over 10k rows under 100ms", () => {
+    const rows = Array.from({ length: 10_000 }, (_, i) => ({
+      rspoCertStatus: i % 3 === 0 ? null : i % 3 === 1 ? "CERTIFIED" : "PLANNED",
+      rspoCertYear: i % 4 === 0 ? null : 2020 + (i % 8),
+    }));
+    const rank = (r: (typeof rows)[number]) =>
+      r.rspoCertStatus === "CERTIFIED"
+        ? `0-${r.rspoCertYear ?? 9999}`
+        : r.rspoCertStatus === "PLANNED"
+          ? `1-${r.rspoCertYear ?? 9999}`
+          : null;
+
+    const start = performance.now();
+    const sorted = [...rows].sort((a, b) => {
+      const aVal = rank(a);
+      const bVal = rank(b);
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      return aVal.localeCompare(bVal, "id");
+    });
+    const labels = sorted.map((r) => formatRspoCert(r));
+    const duration = performance.now() - start;
+
+    console.log(`  RSPO sort+format (10k baris): ${duration.toFixed(2)}ms`);
+    // Certified tahun terkecil di depan (2021: i%8==0 selalu beririsan dgn year null).
+    expect(labels[0]).toBe("2021");
+    expect(labels[labels.length - 1]).toBe("—"); // kosong selalu di akhir
+    expect(duration).toBeLessThan(100);
   });
 });
 

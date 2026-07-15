@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { deriveFarmerSubGroups } from "@/lib/farmer-sub-groups";
 
 export default async function FarmerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission("master-data-farmers");
@@ -13,6 +14,9 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
   const farmer = await getFarmerById(id);
 
   if (!farmer) notFound();
+
+  // Read-only turunan dari lahan aktif (#152) — petani tidak punya field KT sendiri (#146).
+  const { gapoktan, kelompokTani } = deriveFarmerSubGroups(farmer.landParcels);
 
   const formatDate = (d: Date | null) => {
     if (!d) return "—";
@@ -46,6 +50,30 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Distrik</p>
             <p className="text-sm font-medium mt-1">{farmer.farmerGroup.district.name}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gapoktan/KUD</p>
+            {gapoktan.length === 0 ? (
+              <p className="text-sm font-medium mt-1">—</p>
+            ) : (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {gapoktan.map((name) => (
+                  <Badge key={name} variant="outline">{name}</Badge>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kelompok Tani</p>
+            {kelompokTani.length === 0 ? (
+              <p className="text-sm font-medium mt-1">—</p>
+            ) : (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {kelompokTani.map((name) => (
+                  <Badge key={name} variant="outline">{name}</Badge>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Jenis Kelamin</p>
