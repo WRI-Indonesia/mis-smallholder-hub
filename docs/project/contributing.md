@@ -118,7 +118,7 @@ Evidence:
 Next Action:
 ```
 
-Gunakan template berikut saat menambah changelog.
+Gunakan template berikut saat menambah changelog. Baris ditambahkan di **paling atas tabel** dalam section `<details>` bulan berjalan (Decision Log pakai `YYYY-MM-DD`, Changelog pakai `MM-DD`); saat ganti bulan, buat section `<details><summary><strong>Bulan YYYY</strong></summary>` baru di atas.
 
 ```text
 | YYYY-MM-DD | [Phase/Issue] Ringkasan perubahan singkat berdasarkan code |
