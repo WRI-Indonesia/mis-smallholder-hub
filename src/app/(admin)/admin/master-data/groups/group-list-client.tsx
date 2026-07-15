@@ -17,6 +17,7 @@ import { GroupFormModal } from "./group-form-modal";
 import { toggleFarmerGroupActive } from "@/server/actions/farmer-group";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
+import { GROUP_TYPE_LABELS, formatGroupType, formatRspoCert } from "@/lib/farmer-group-labels";
 
 interface FarmerGroup {
   id: string;
@@ -25,9 +26,13 @@ interface FarmerGroup {
   abrv3id: string | null;
   name: string;
   category: string;
+  groupType: string | null;
   districtId: string;
   district: { name: string };
   joinYear: number | null;
+  establishedYear: number | null;
+  rspoCertYear: number | null;
+  rspoCertStatus: string | null;
   locationLat: number | null;
   locationLong: number | null;
   isActive: boolean;
@@ -47,6 +52,7 @@ interface Props {
   permissions: string[];
   isSuperAdmin: boolean;
 }
+
 
 export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
@@ -95,6 +101,17 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       render: (row) => row.district.name,
     },
     {
+      key: "groupType",
+      label: "Tipe Grup",
+      sortable: true,
+      render: (row) =>
+        row.groupType ? (
+          <Badge variant="outline">{GROUP_TYPE_LABELS[row.groupType] ?? row.groupType}</Badge>
+        ) : (
+          "—"
+        ),
+    },
+    {
       key: "category",
       label: "Kategori",
       sortable: true,
@@ -115,6 +132,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       key: "parcelsCount",
       label: "Total Persil",
       sortable: true,
+      defaultVisible: false,
       cellClassName: "text-sm text-muted-foreground tabular-nums",
       render: (row) => `${row.parcelsCount} persil`,
     },
@@ -127,11 +145,34 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
     },
     {
       key: "joinYear",
-      label: "Tahun Bergabung",
+      label: "Tahun Bergabung Program",
       sortable: true,
       cellClassName: "text-sm text-muted-foreground tabular-nums",
       defaultVisible: true,
       render: (row) => row.joinYear ?? "—",
+    },
+    {
+      key: "establishedYear",
+      label: "Tahun Berdiri Lembaga",
+      sortable: true,
+      cellClassName: "text-sm text-muted-foreground tabular-nums",
+      defaultVisible: true,
+      render: (row) => row.establishedYear ?? "—",
+    },
+    {
+      key: "rspoCertYear",
+      label: "Sertifikasi RSPO",
+      sortable: true,
+      cellClassName: "text-sm text-muted-foreground tabular-nums",
+      defaultVisible: true,
+      render: (row) => formatRspoCert(row),
+      // Urutan: Tersertifikasi (per tahun, tanpa tahun terakhir) → Plan (per tahun) → kosong.
+      sortValue: (row) =>
+        row.rspoCertStatus === "CERTIFIED"
+          ? `0-${row.rspoCertYear ?? 9999}`
+          : row.rspoCertStatus === "PLANNED"
+            ? `1-${row.rspoCertYear ?? 9999}`
+            : null,
     },
     {
       key: "locationLat",
@@ -166,11 +207,14 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       code: g.code ?? "—",
       name: g.name,
       district: g.district.name,
+      groupType: formatGroupType(g.groupType),
       category: g.category === "EX_PLASMA" ? "Ex Plasma" : "Swadaya",
       farmersCount: g.farmersCount,
       parcelsCount: g.parcelsCount,
       totalArea: g.totalArea,
       joinYear: g.joinYear ?? "—",
+      establishedYear: g.establishedYear ?? "—",
+      rspoCertYear: formatRspoCert(g),
       locationLat: g.locationLat ?? "—",
       locationLong: g.locationLong ?? "—",
       isActive: g.isActive ? "Aktif" : "Nonaktif",

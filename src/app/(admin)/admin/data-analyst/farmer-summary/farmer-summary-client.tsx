@@ -221,9 +221,9 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
               </Popover>
             </div>
 
-            {/* ICS / Farmer Group Filter */}
+            {/* ISH / Farmer Group Filter */}
             <div className="flex flex-col gap-1.5 min-w-[250px]">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lembaga Petani (ICS)</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lembaga Petani (ISH)</span>
               <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
                 <PopoverTrigger
                   render={
@@ -234,7 +234,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                       className="w-[250px] justify-between h-9 font-normal text-left"
                     >
                       {selectedFarmerGroup === null ? (
-                        <span>Semua ICS</span>
+                        <span>Semua ISH</span>
                       ) : (
                         <span>{selectedGroupObj?.name}</span>
                       )}
@@ -261,7 +261,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                               selectedFarmerGroup === null ? "opacity-100" : "opacity-0"
                             )}
                           />
-                          Semua ICS
+                          Semua ISH
                         </CommandItem>
                         {farmerGroups.map((g) => (
                           <CommandItem

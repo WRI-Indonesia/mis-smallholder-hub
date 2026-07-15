@@ -39,6 +39,16 @@ classDiagram
         SWADAYA
     }
 
+    class FarmerGroupType {
+        ASOSIASI
+        KOPERASI
+    }
+
+    class RspoCertStatus {
+        CERTIFIED
+        PLANNED
+    }
+
     class Gender {
         M
         F

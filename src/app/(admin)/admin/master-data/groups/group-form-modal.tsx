@@ -29,8 +29,12 @@ interface FarmerGroup {
   abrv3id: string | null;
   name: string;
   category: string;
+  groupType: string | null;
   districtId: string;
   joinYear: number | null;
+  establishedYear: number | null;
+  rspoCertYear: number | null;
+  rspoCertStatus: string | null;
   locationLat: number | null;
   locationLong: number | null;
 }
@@ -67,7 +71,17 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
       abrv3id: (form.get("abrv3id") as string) || null,
       name: form.get("name") as string,
       category: form.get("category") as "EX_PLASMA" | "SWADAYA",
+      groupType:
+        form.get("groupType") && form.get("groupType") !== "NONE"
+          ? (form.get("groupType") as "ASOSIASI" | "KOPERASI")
+          : null,
       joinYear: form.get("joinYear") ? parseInt(form.get("joinYear") as string, 10) : null,
+      establishedYear: form.get("establishedYear") ? parseInt(form.get("establishedYear") as string, 10) : null,
+      rspoCertYear: form.get("rspoCertYear") ? parseInt(form.get("rspoCertYear") as string, 10) : null,
+      rspoCertStatus:
+        form.get("rspoCertStatus") && form.get("rspoCertStatus") !== "NONE"
+          ? (form.get("rspoCertStatus") as "CERTIFIED" | "PLANNED")
+          : null,
       locationLat: form.get("locationLat") ? parseFloat(form.get("locationLat") as string) : null,
       locationLong: form.get("locationLong") ? parseFloat(form.get("locationLong") as string) : null,
     };
@@ -145,9 +159,51 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="groupType">Tipe Grup</Label>
+              <Select name="groupType" defaultValue={group?.groupType ?? "NONE"}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tipe grup" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">—</SelectItem>
+                  <SelectItem value="ASOSIASI">Asosiasi</SelectItem>
+                  <SelectItem value="KOPERASI">Koperasi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="establishedYear">Tahun Berdiri Lembaga</Label>
+              <Input id="establishedYear" name="establishedYear" type="number" defaultValue={group?.establishedYear ?? ""} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="rspoCertStatus">Status Sertifikasi RSPO</Label>
+              <Select name="rspoCertStatus" defaultValue={group?.rspoCertStatus ?? "NONE"}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">—</SelectItem>
+                  <SelectItem value="CERTIFIED">Tersertifikasi</SelectItem>
+                  <SelectItem value="PLANNED">Plan</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.rspoCertStatus && <p className="text-sm text-destructive">{errors.rspoCertStatus[0]}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rspoCertYear">Tahun Sertifikasi RSPO</Label>
+              <Input id="rspoCertYear" name="rspoCertYear" type="number" defaultValue={group?.rspoCertYear ?? ""} />
+              {errors.rspoCertYear && <p className="text-sm text-destructive">{errors.rspoCertYear[0]}</p>}
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="joinYear">Tahun</Label>
+              <Label htmlFor="joinYear">Tahun Bergabung Program</Label>
               <Input id="joinYear" name="joinYear" type="number" defaultValue={group?.joinYear ?? ""} />
             </div>
             <div className="space-y-2">

@@ -36,6 +36,16 @@ enum FarmerGroupCategory {
   SWADAYA
 }
 
+enum FarmerGroupType {
+  ASOSIASI
+  KOPERASI
+}
+
+enum RspoCertStatus {
+  CERTIFIED
+  PLANNED
+}
+
 enum TrainingCategory {
   PAKET_1_BMP_PC_RSPO_NKT
   PAKET_2_MK
