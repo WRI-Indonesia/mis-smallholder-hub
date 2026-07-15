@@ -57,7 +57,7 @@ erDiagram
 | **User & Auth** | User | NextAuth integration, Role-based access |
 | **RBAC** | RolePermission, UserProvince, UserDistrict, UserFarmerGroup, UserPermissionOverride | Permission matrix, data access control, menu override |
 | **Menu** | MenuItem | Recursive parent-child (3-level), dynamic menu management |
-| **Farmer Group** | FarmerGroup | **= Lembaga Petani** (level teratas; label lama "Kelompok Tani" mislabel → relabel TD-013/#147). District-based, location coordinates, category (EX_PLASMA/SWADAYA) |
+| **Farmer Group** | FarmerGroup | **= Lembaga Petani** (level teratas; label lama "Kelompok Tani" mislabel → relabel TD-013/#147). District-based, location coordinates, category (EX_PLASMA/SWADAYA), tipe grup (ASOSIASI/KOPERASI), tahun bergabung program (`join_year`) + tahun berdiri (`established_year`), sertifikasi RSPO (`rspo_cert_status` CERTIFIED/PLANNED + `rspo_cert_year`, status boleh tanpa tahun) (#160) |
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
 | **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking; `blok` (blok kebun); **sub-kelompok interim** `subGroupLv1` (Gapoktan) + `subGroupLv2` (Kelompok Tani) per-lahan (#146) |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
@@ -195,7 +195,11 @@ erDiagram
         String abrv_3id
         String name
         FarmerGroupCategory category
+        FarmerGroupType group_type
         Int join_year
+        Int established_year
+        Int rspo_cert_year
+        RspoCertStatus rspo_cert_status
         Float location_lat
         Float location_long
         Boolean is_active

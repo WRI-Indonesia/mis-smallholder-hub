@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { formatGroupType, formatRspoCert } from "@/lib/farmer-group-labels";
 
 export default async function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission("master-data-groups");
@@ -41,12 +42,24 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
             </Badge>
           </div>
           <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipe Grup</p>
+            <p className="text-sm font-medium mt-1">{formatGroupType(group.groupType)}</p>
+          </div>
+          <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Singkatan</p>
             <p className="text-sm font-medium mt-1">{group.abrv ?? "—"}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tahun Join Program</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tahun Bergabung Program</p>
             <p className="text-sm font-medium mt-1">{group.joinYear ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tahun Berdiri Lembaga</p>
+            <p className="text-sm font-medium mt-1">{group.establishedYear ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sertifikasi RSPO</p>
+            <p className="text-sm font-medium mt-1">{formatRspoCert(group)}</p>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Koordinat</p>

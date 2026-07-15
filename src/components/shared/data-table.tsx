@@ -52,6 +52,8 @@ export interface DataTableColumn<T> {
   cellClassName?: string;
   /** Whether this column is sortable (default: true) */
   sortable?: boolean;
+  /** Optional value accessor used for sorting (defaults to row[key]); return null to sort last */
+  sortValue?: (row: T) => string | number | null;
   /** Whether this column is visible by default (default: true) */
   defaultVisible?: boolean;
   /** Whether this column can be toggled (default: true) */
@@ -180,9 +182,11 @@ export function DataTable<T>({
 
   const sortedData = useMemo(() => {
     if (!sortKey || !sortDir) return filteredData;
+    const sortCol = columns.find((col) => col.key === sortKey);
+    const getSortVal = (row: T) => (sortCol?.sortValue ? sortCol.sortValue(row) : row[sortKey]);
     return [...filteredData].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
+      const aVal = getSortVal(a);
+      const bVal = getSortVal(b);
 
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return 1;
@@ -200,7 +204,7 @@ export function DataTable<T>({
 
       return sortDir === "desc" ? -cmp : cmp;
     });
-  }, [filteredData, sortKey, sortDir]);
+  }, [filteredData, sortKey, sortDir, columns]);
 
   // ─── Pagination ─────────────────────────────────────────────────────────
 

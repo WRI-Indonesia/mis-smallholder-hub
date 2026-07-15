@@ -9,7 +9,11 @@ model FarmerGroup {
   abrv3id      String?             @map("abrv_3id") @db.VarChar(50)
   name         String
   category     FarmerGroupCategory @default(SWADAYA)
+  groupType    FarmerGroupType?    @map("group_type")
   joinYear     Int?                @map("join_year")
+  establishedYear Int?             @map("established_year")
+  rspoCertYear    Int?             @map("rspo_cert_year")
+  rspoCertStatus  RspoCertStatus?  @map("rspo_cert_status")
   locationLat  Float?              @map("location_lat")
   locationLong Float?              @map("location_long")
   isActive     Boolean             @default(true) @map("is_active")
