@@ -30,6 +30,7 @@ model District {
   users        UserDistrict[]
   farmerGroups FarmerGroup[]
   dashboardSnapshots MainDashboardSnapshot[]
+  bmpDashboardSnapshots BmpDashboardSnapshot[]
 
   @@map("reg_district")
 }

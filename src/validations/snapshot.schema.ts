@@ -6,3 +6,10 @@ export const snapshotFiltersSchema = z.object({
 });
 
 export type SnapshotFiltersInput = z.infer<typeof snapshotFiltersSchema>;
+
+// Dashboard BMP snapshot (DASH-04, #166) — tanpa joinedYear; tahun difilter client-side.
+export const bmpSnapshotFiltersSchema = z.object({
+  districtId: z.string().min(1).nullable().optional(),
+});
+
+export type BmpSnapshotFiltersInput = z.infer<typeof bmpSnapshotFiltersSchema>;

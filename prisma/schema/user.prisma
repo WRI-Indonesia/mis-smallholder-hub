@@ -18,6 +18,7 @@ model User {
   farmerGroups        UserFarmerGroup[]
   permissionOverrides UserPermissionOverride[]
   dashboardSnapshots  MainDashboardSnapshot[]  @relation("MainDashboardSnapshots")
+  bmpDashboardSnapshots BmpDashboardSnapshot[] @relation("BmpDashboardSnapshots")
 
   @@map("tbl_user")
 }

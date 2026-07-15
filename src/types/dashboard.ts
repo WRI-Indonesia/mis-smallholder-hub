@@ -105,3 +105,110 @@ export interface SnapshotDetail {
   createdAt: string;
   data: DashboardSnapshotData;
 }
+
+// ── Dashboard BMP (DASH-04, #166) — snapshot-backed, sliceable client-side ──
+
+export type BmpFarmerGroupCategory = "EX_PLASMA" | "SWADAYA";
+
+/** Ketersediaan data produksi per lahan (kategori MAP-02), dihitung saat generate. */
+export interface BmpAvailabilityCounts {
+  baik: number;
+  cukup: number;
+  kurang: number;
+  tidakAda: number;
+}
+
+/** Statistik produksi satu bulan kalender (key = period YYYY-MM). */
+export interface BmpMonthlyStat {
+  produksiTon: number;
+  /** Distinct lahan dengan record produksi pada period ini. */
+  lahanMelapor: number;
+  /** Total luas (ha) lahan yang melapor pada period ini. */
+  luasMelaporHa: number;
+}
+
+export interface BmpGroupTotals {
+  produksiTon: number;
+  /** Luas (ha) lahan dengan ≥1 record produksi — pembagi Produktivitas. */
+  luasMelaporHa: number;
+  /** Distinct lahan dengan ≥1 record produksi. */
+  lahanBerData: number;
+  totalLahan: number;
+  /** Distinct petani dengan ≥1 record produksi. */
+  petaniMelapor: number;
+  totalPetani: number;
+}
+
+/** Statistik produksi satu tahun (subset totals — totalLahan/totalPetani year-independent). */
+export interface BmpYearStats {
+  produksiTon: number;
+  luasMelaporHa: number;
+  lahanBerData: number;
+  petaniMelapor: number;
+}
+
+/** Entri per Lembaga Petani — grain snapshot BMP; semua filter di-slice dari sini. */
+export interface BmpGroupEntry {
+  id: string;
+  name: string;
+  code: string | null;
+  category: BmpFarmerGroupCategory;
+  districtId: string | null;
+  districtName: string | null;
+  monthly: Record<string, BmpMonthlyStat>;
+  /** Breakdown per tahun (key = tahun) untuk filter Tahun global — pola byYear Main Dashboard. */
+  byYear: Record<string, BmpYearStats>;
+  availability: BmpAvailabilityCounts;
+  totals: BmpGroupTotals;
+}
+
+export interface BmpSnapshotData {
+  groups: BmpGroupEntry[];
+}
+
+/** Hasil slicing snapshot (per filter distrik/lembaga/kategori/tahun) — bahan cards, chart, panel. */
+export interface BmpSlicedStats {
+  totals: BmpGroupTotals;
+  availability: BmpAvailabilityCounts;
+  monthly: Record<string, BmpMonthlyStat>;
+  /** Ton/Ha per tahun: Σ produksi ÷ Σ luas melapor pada tahun-tahun terpilih. */
+  produktivitasTonHa: number;
+}
+
+/** Satu titik chart bulanan: bar produksi + line cakupan pelaporan. */
+export interface BmpChartPoint {
+  monthIndex: number; // 0 = Jan … 11 = Des
+  produksiTon: number;
+  lahanMelapor: number;
+  /** % lahan melapor terhadap total lahan slice (0–100). */
+  coveragePct: number;
+}
+
+export interface BmpSnapshotView {
+  snapshotDate: string;
+  createdByName: string;
+  data: BmpSnapshotData;
+}
+
+export interface BmpSnapshotListItem {
+  id: string;
+  snapshotDate: string;
+  districtId: string | null;
+  districtName: string | null;
+  createdByName: string;
+  totalProduksiTon: number;
+  lahanBerData: number;
+  totalLahan: number;
+  petaniMelapor: number;
+  totalPetani: number;
+}
+
+export interface BmpSnapshotDetail {
+  id: string;
+  snapshotDate: string;
+  districtId: string | null;
+  districtName: string | null;
+  createdByName: string;
+  createdAt: string;
+  data: BmpSnapshotData;
+}

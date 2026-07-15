@@ -10,6 +10,12 @@ import {
   productionAvailabilityCategory,
   type RawParcel,
 } from "@/lib/map-data";
+import {
+  buildBmpSnapshotData,
+  filterBmpGroups,
+  sumBmpGroups,
+  bmpChartSeries,
+} from "@/lib/bmp-dashboard-aggregation";
 import { addParticipantsSchema } from "@/validations/training-participant.schema";
 import { deriveFarmerSubGroups } from "@/lib/farmer-sub-groups";
 import { formatRspoCert } from "@/lib/farmer-group-labels";
@@ -313,6 +319,61 @@ describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
     expect(duration).toBeLessThan(10);
     expect(streak).toBe(600);
     expect(productionAvailabilityCategory(periods)).toBe("BAIK");
+  });
+});
+
+// DASH-04 (#166): generateBmpSnapshot agregasi seluruh org dalam JS setelah 3 query
+// scoped + 1 groupBy. Stress buildBmpSnapshotData melampaui skala data riil
+// (~14k lahan) untuk membuktikan agregasi & slicing tetap murah.
+describe("Performance - DASH-04 Dashboard BMP snapshot (pure logic)", () => {
+  const GROUPS = 50;
+  const FARMERS_PER_GROUP = 40;
+  const PARCELS_PER_FARMER = 3; // 6.000 lahan
+
+  const bmpGroups = Array.from({ length: GROUPS }, (_, g) => ({
+    id: `g-${g}`,
+    name: `Lembaga ${g}`,
+    code: `L${g}`,
+    category: (g % 2 === 0 ? "SWADAYA" : "EX_PLASMA") as "SWADAYA" | "EX_PLASMA",
+    districtId: `d-${g % 5}`,
+    districtName: `Distrik ${g % 5}`,
+  }));
+  const bmpFarmers = bmpGroups.flatMap((g, gi) =>
+    Array.from({ length: FARMERS_PER_GROUP }, (_, f) => ({ id: `f-${gi}-${f}`, farmerGroupId: g.id }))
+  );
+  const bmpParcels = bmpFarmers.flatMap((f) =>
+    Array.from({ length: PARCELS_PER_FARMER }, (_, p) => ({ id: `${f.id}-p${p}`, farmerId: f.id, area: 1.5 }))
+  );
+  const periods = enumeratePeriods("2023-01", "2025-12"); // 36 bulan
+  // Tiap petani melapor 36 bulan di lahan pertamanya → 72.000 baris produksi.
+  const bmpProduction = bmpFarmers.flatMap((f) =>
+    periods.map((period) => ({ farmerId: f.id, parcelId: `${f.id}-p0`, period, kg: 120 }))
+  );
+
+  it("buildBmpSnapshotData: 6.000 lahan × 36 bulan (72k baris) under 300ms", () => {
+    const start = performance.now();
+    const result = buildBmpSnapshotData(bmpGroups, bmpFarmers, bmpParcels, bmpProduction);
+    const duration = performance.now() - start;
+
+    console.log(`  buildBmpSnapshotData (6k lahan, 72k baris): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(300);
+    expect(result.groups.length).toBe(GROUPS);
+    expect(result.groups[0].availability.baik).toBe(FARMERS_PER_GROUP); // 36 bln berturut > 24
+    expect(result.groups[0].totals.lahanBerData).toBe(FARMERS_PER_GROUP);
+  });
+
+  it("filterBmpGroups + sumBmpGroups + bmpChartSeries (slice client-side) under 50ms", () => {
+    const data = buildBmpSnapshotData(bmpGroups, bmpFarmers, bmpParcels, bmpProduction);
+
+    const start = performance.now();
+    const sliced = sumBmpGroups(filterBmpGroups(data, { category: "SWADAYA" }));
+    const series = bmpChartSeries(sliced.monthly, null, sliced.totals.totalLahan);
+    const duration = performance.now() - start;
+
+    console.log(`  slice+chart BMP (${data.groups.length} lembaga): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(50);
+    expect(sliced.totals.totalPetani).toBe((GROUPS / 2) * FARMERS_PER_GROUP);
+    expect(series).toHaveLength(12);
   });
 });
 

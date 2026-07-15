@@ -160,3 +160,14 @@ OPERATOR,map-bmp,VIEW
 MANAGEMENT,map,VIEW
 MANAGEMENT,map-parcel,VIEW
 MANAGEMENT,map-bmp,VIEW
+SUPERADMIN,dashboard-bmp,VIEW
+ADMIN,dashboard-bmp,VIEW
+OPERATOR,dashboard-bmp,VIEW
+MANAGEMENT,dashboard-bmp,VIEW
+SUPERADMIN,dashboard-snapshot-bmp,CREATE
+SUPERADMIN,dashboard-snapshot-bmp,VIEW
+SUPERADMIN,dashboard-snapshot-bmp,DELETE
+ADMIN,dashboard-snapshot-bmp,CREATE
+ADMIN,dashboard-snapshot-bmp,VIEW
+ADMIN,dashboard-snapshot-bmp,DELETE
+MANAGEMENT,dashboard-snapshot-bmp,VIEW
