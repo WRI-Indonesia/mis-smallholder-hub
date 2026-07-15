@@ -36,14 +36,34 @@ export async function getLandParcels(search?: string, farmerId?: string) {
       : {}),
   };
 
+  // Select ramping sesuai kolom list client — tanpa `geometry` (GeoJSON polygon
+  // besar, hanya dipakai halaman detail) agar payload list tetap ringan (#163).
   return prisma.landParcel.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      farmerId: true,
+      parcelId: true,
+      blok: true,
+      subGroupLv1: true,
+      subGroupLv2: true,
+      area: true,
+      landStatus: true,
+      cropType: true,
+      plantingYear: true,
+      revision: true,
+      isActive: true,
+      notes: true,
       farmer: {
-        include: {
+        select: {
+          id: true,
+          name: true,
+          farmerId: true,
           farmerGroup: {
-            include: {
-              district: true,
+            select: {
+              id: true,
+              name: true,
+              district: { select: { name: true } },
             },
           },
         },
@@ -170,7 +190,10 @@ export async function updateLandParcel(input: UpdateLandParcelInput) {
     where: { id },
     data: {
       ...data,
-      geometry: data.geometry ?? null,
+      // Geometry hanya ditulis bila client mengirim field-nya (undefined = tidak
+      // diubah). Payload list & form edit tidak membawa geometry (#163), jadi
+      // edit dari list tidak boleh menghapus polygon existing.
+      geometry: data.geometry !== undefined ? data.geometry : undefined,
       revision: existing.revision + 1,  // Auto-increment, abaikan input dari client
       modifiedBy: session?.user?.id ?? null,
     },

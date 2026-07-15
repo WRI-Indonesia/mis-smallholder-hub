@@ -32,12 +32,26 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
       : {}),
   };
 
+  // Select ramping sesuai interface Farmer di list client (+ round-trip form
+  // edit) — hindari full-row farmerGroup/district ikut terkirim per petani (#163).
   return prisma.farmer.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      farmerGroupId: true,
+      name: true,
+      farmerId: true,
+      gender: true,
+      nik: true,
+      address: true,
+      birthPlace: true,
+      birthDate: true,
+      joinedYear: true,
+      isActive: true,
       farmerGroup: {
-        include: {
-          district: true,
+        select: {
+          name: true,
+          district: { select: { id: true, name: true } },
         },
       },
     },

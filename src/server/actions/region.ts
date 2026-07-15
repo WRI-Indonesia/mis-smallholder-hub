@@ -23,16 +23,23 @@ export async function getRegionTree() {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
+  // Select ramping per level (id/code/name/isActive) — tree view tidak butuh
+  // full row + audit fields untuk seluruh hierarki wilayah (#163).
+  const levelSelect = { id: true, code: true, name: true, isActive: true } as const;
+
   return prisma.province.findMany({
     orderBy: { name: "asc" },
-    include: {
+    select: {
+      ...levelSelect,
       districts: {
         orderBy: { name: "asc" },
-        include: {
+        select: {
+          ...levelSelect,
           subdistricts: {
             orderBy: { name: "asc" },
-            include: {
-              villages: { orderBy: { name: "asc" } },
+            select: {
+              ...levelSelect,
+              villages: { orderBy: { name: "asc" }, select: levelSelect },
             },
           },
         },

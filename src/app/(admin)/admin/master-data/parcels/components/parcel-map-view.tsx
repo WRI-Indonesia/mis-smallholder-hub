@@ -9,7 +9,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Target } from "lucide-react";
 
 interface Props {
-  geometry: Geometry;
+  geometry: Geometry | null | undefined;
 }
 
 const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecification> = {

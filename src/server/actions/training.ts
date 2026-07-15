@@ -39,13 +39,25 @@ export async function getTrainingActivities(search?: string, farmerGroupId?: str
       : {}),
   };
 
+  // Select ramping sesuai interface list client (#163). evidenceKey/Name ikut
+  // karena di-round-trip form edit (tanpa upload baru = kirim ulang nilai lama).
   return prisma.trainingActivity.findMany({
     where,
-    include: {
-      package: true,
+    select: {
+      id: true,
+      packageId: true,
+      farmerGroupId: true,
+      location: true,
+      trainingDate: true,
+      isActive: true,
+      evidenceKey: true,
+      evidenceName: true,
+      package: { select: { id: true, code: true, name: true } },
       farmerGroup: {
-        include: {
-          district: true,
+        select: {
+          id: true,
+          name: true,
+          district: { select: { id: true, name: true } },
         },
       },
       participants: {

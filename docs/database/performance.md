@@ -89,6 +89,27 @@ const farmers = await prisma.farmer.findMany({
 });
 ```
 
+#### Payload Trimming — `select` ramping untuk list (#163)
+
+Eager loading via `include` membawa **full row** (audit fields, dan pada `LandParcel` termasuk `geometry` GeoJSON yang bisa puluhan–ratusan KB per lahan) — di halaman list, seluruhnya ikut diserialisasi ke RSC payload menuju browser. Aturan sejak #163:
+
+- **List action wajib `select` eksplisit** sesuai field yang dipakai list client (termasuk field yang di-round-trip form edit, mis. `evidenceKey/Name` pelatihan) — bukan `include` full-row. `geometry` **tidak boleh** ikut payload list (hanya fetch detail by-id).
+- Perhatikan **round-trip form**: field yang tidak dikirim client harus berarti "tidak diubah" di server (`undefined` = skip; lihat `updateLandParcel` geometry), bukan ter-null.
+- **Agregat turunan list** (count/sum lintas relasi) dihitung via `groupBy`/`_count`/`_sum` di DB — jangan menarik 1 baris per child untuk dihitung di JS (lihat `getFarmerGroups`).
+
+```typescript
+// BAD — full row + geometry ikut ke payload list
+prisma.landParcel.findMany({ include: { farmer: { include: { farmerGroup: true } } } });
+
+// GOOD — select ramping sesuai kolom list, tanpa geometry
+prisma.landParcel.findMany({
+  select: {
+    id: true, parcelId: true, area: true, /* …kolom list lain… */
+    farmer: { select: { name: true, farmerId: true, farmerGroup: { select: { name: true } } } },
+  },
+});
+```
+
 ### Database Connection Pooling
 
 Prisma connection pool configuration:
