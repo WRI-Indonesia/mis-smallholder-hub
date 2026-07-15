@@ -14,10 +14,30 @@
 1. **Pick Issue** — Ambil GitHub Issue yang sudah di-approve
 2. **Implement** — Kerjakan **hanya** scope issue
 3. **QA Lokal** — `npm run lint`, `npm run build`, dan `npm test` (lihat Pre-Commit Gate)
-4. **Performance Test** — Pastikan tidak ada regresi
-5. **Report** — Changed files, hasil verifikasi, QA notes, risk
-6. **Approval** — Tunggu approval sebelum push
-7. **Issue Close** — Sebelum menutup issue: **recheck** hasil akhir, lalu tulis **comment retrospektif wajib** (format di bawah)
+4. **Performance Test** — Pastikan tidak ada regresi; **pure logic baru** yang menyentuh hot-path (agregasi, sort, validasi array besar) diberi perf test di `src/test/perf.test.ts`
+5. **Docs Compliance Check** — Recheck hasil kerja terhadap folder `docs/` (format di bawah): patuh **rule**, ikuti **workflow**, **progress** tercermin, dan file docs terdampak ter-update
+6. **Report** — Changed files, hasil verifikasi, QA notes, risk, dan **Analisa Improvement** (format di bawah)
+7. **Approval** — Tunggu approval sebelum push
+8. **Issue Close** — Sebelum menutup issue: **recheck** hasil akhir, lalu tulis **comment retrospektif wajib** (format di bawah)
+
+### Analisa Improvement (wajib di Report & Retro)
+
+Setiap penyelesaian pekerjaan **diakhiri analisa next/recommended improvement** — bukan hanya "selesai":
+
+1. **Kandidat follow-up** — fitur/penyempurnaan lanjutan yang terbuka karena pekerjaan ini (mis. data baru yang siap diagregasi ke dashboard/report).
+2. **Risiko & debt tersisa** — scope yang sengaja di-skip/ditunda beserta alasannya, pitfall yang ditemukan, potensi regresi.
+3. **Akar masalah proses** — bila ada gap proses yang terungkap (docs drift, gate terlewat), usulkan pencegahannya.
+
+Penyaluran: ringkas di **Report** ke owner + section **🧭 Feedback & improvement** pada retro; item yang **actionable** dicatat ke [`../project/tech-debt.md`](../project/tech-debt.md) (TD-xxx) atau diusulkan sebagai **issue baru** — jangan hilang di percakapan.
+
+### Docs Compliance Check (wajib, setelah implement — sebelum commit/close)
+
+Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil kerja terhadap `docs/`:
+
+1. **Rule** — `standards/*` (code-standards, rbac, ui-ux, architecture, principles): perubahan mengikuti konvensi (3 lapis keamanan, `ActionResult`, Zod, soft delete, kebab-case, surgical change).
+2. **Workflow** — file ini: urutan Issue Workflow diikuti (scope issue, Pre-Commit Gate 4 gate, approval DB/destructive, retro sebelum close).
+3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Active Issues), `changelog.md` (Decision Log/Changelog), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
+4. **Identifikasi file `docs/` lain yang terdampak** (peta cepat di Docs sync) dan perbarui **sebelum commit** — di-commit **bersama** kode. Temuan ketidakpatuhan dilaporkan ke owner, bukan didiamkan.
 
 ### Issue Close — Retrospektif wajib (sebelum close)
 
