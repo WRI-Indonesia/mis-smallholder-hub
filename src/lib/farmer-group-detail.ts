@@ -75,6 +75,15 @@ export interface GroupTrainingActivityRow {
   avgPostTest: number | null;
 }
 
+export interface GroupProductionMonthRow {
+  /** Periode "YYYY-MM". */
+  period: string;
+  totalKg: number;
+  recordCount: number;
+  parcelsReporting: number;
+  areaReporting: number;
+}
+
 export interface GroupProductionYearRow {
   year: number;
   totalKg: number;
@@ -85,6 +94,8 @@ export interface GroupProductionYearRow {
   areaReporting: number;
   /** Ton/Ha per tahun = Σ produksi ÷ Σ luas lahan melapor (#166); 0 bila belum ada pelapor ber-lahan. */
   productivityTonHa: number;
+  /** Rincian per bulan (urut naik) — baris collapsible di bawah tahun. */
+  months: GroupProductionMonthRow[];
 }
 
 export type AvailabilityDistribution = Record<"BAIK" | "CUKUP" | "KURANG" | "NONE", number>;
@@ -148,10 +159,16 @@ export function buildFarmerGroupDetail(
   }
 
   // ── Produksi per tahun + ketersediaan per lahan ──
+  interface MonthAcc {
+    totalKg: number;
+    recordCount: number;
+    parcelIds: Set<string>;
+  }
   interface YearAcc {
     totalKg: number;
     recordCount: number;
     parcelIds: Set<string>;
+    months: Map<string, MonthAcc>;
   }
   const years = new Map<number, YearAcc>();
   const periodsByParcel = new Map<string, string[]>();
@@ -168,23 +185,43 @@ export function buildFarmerGroupDetail(
     for (const r of f.productionRecords) {
       const year = parseInt(r.period.slice(0, 4), 10);
       if (Number.isNaN(year)) continue;
-      const acc = years.get(year) ?? { totalKg: 0, recordCount: 0, parcelIds: new Set<string>() };
+      const acc =
+        years.get(year) ??
+        { totalKg: 0, recordCount: 0, parcelIds: new Set<string>(), months: new Map<string, MonthAcc>() };
       acc.totalKg += r.yieldKg;
       acc.recordCount += 1;
+      const month =
+        acc.months.get(r.period) ?? { totalKg: 0, recordCount: 0, parcelIds: new Set<string>() };
+      month.totalKg += r.yieldKg;
+      month.recordCount += 1;
       // Record tanpa lahan tetap masuk pembilang produksi (pola #166),
       // tapi tidak menambah luas pelapor maupun ketersediaan per lahan.
       if (r.parcelId) {
         acc.parcelIds.add(r.parcelId);
+        month.parcelIds.add(r.parcelId);
         periodsByParcel.get(r.parcelId)?.push(r.period);
       }
+      acc.months.set(r.period, month);
       years.set(year, acc);
       productionTotalKg += r.yieldKg;
     }
   }
 
+  const sumParcelArea = (ids: Set<string>) =>
+    [...ids].reduce((s, id) => s + (parcelArea.get(id) ?? 0), 0);
+
   const perYear: GroupProductionYearRow[] = [...years.entries()]
     .map(([year, acc]) => {
-      const areaReporting = [...acc.parcelIds].reduce((s, id) => s + (parcelArea.get(id) ?? 0), 0);
+      const areaReporting = sumParcelArea(acc.parcelIds);
+      const months: GroupProductionMonthRow[] = [...acc.months.entries()]
+        .map(([period, m]) => ({
+          period,
+          totalKg: round2(m.totalKg),
+          recordCount: m.recordCount,
+          parcelsReporting: m.parcelIds.size,
+          areaReporting: round2(sumParcelArea(m.parcelIds)),
+        }))
+        .sort((a, b) => a.period.localeCompare(b.period));
       return {
         year,
         totalKg: round2(acc.totalKg),
@@ -192,6 +229,7 @@ export function buildFarmerGroupDetail(
         parcelsReporting: acc.parcelIds.size,
         areaReporting: round2(areaReporting),
         productivityTonHa: areaReporting > 0 ? round2(acc.totalKg / 1000 / areaReporting) : 0,
+        months,
       };
     })
     .sort((a, b) => b.year - a.year);

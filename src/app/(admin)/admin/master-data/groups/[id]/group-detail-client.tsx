@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, Pencil, Users, Network, Map as MapIcon, TrendingUp, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Users, Network, Map as MapIcon, TrendingUp, ClipboardCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,6 +57,13 @@ const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const formatDate = (d: Date) =>
   new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d));
+
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+// "2025-03" → "Mar 2025"
+const formatPeriod = (period: string) => {
+  const m = parseInt(period.slice(5, 7), 10);
+  return `${MONTH_LABELS[m - 1] ?? period.slice(5, 7)} ${period.slice(0, 4)}`;
+};
 
 // Badge sertifikasi — pola info panel Main Dashboard (#169).
 function CertBadge({ scheme, year, status }: { scheme: string; year: number | null; status: string | null }) {
@@ -119,7 +126,17 @@ const AVAILABILITY_META: { key: "BAIK" | "CUKUP" | "KURANG" | "NONE"; label: str
 
 export function GroupDetailClient({ group, detail, completeness, mapParcels, canEdit, districts }: Props) {
   const [showEdit, setShowEdit] = useState(false);
+  // Tahun yang di-expand pada tabel Produksi per Tahun (rincian bulanan).
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const { summary, struktur, pelatihan, produksi } = detail;
+
+  const toggleYear = (year: number) =>
+    setExpandedYears((prev) => {
+      const next = new Set(prev);
+      if (next.has(year)) next.delete(year);
+      else next.add(year);
+      return next;
+    });
   // Auto-hide kolom Gapoktan/KUD bila Lembaga tak punya level itu — langsung
   // ke Kelompok Tani (pola Report KT Detail #154).
   const hasGapoktan = struktur.gapoktanList.some((g) => g.gapoktan !== null);
@@ -443,22 +460,50 @@ export function GroupDetailClient({ group, detail, completeness, mapParcels, can
                     </tr>
                   </thead>
                   <tbody>
-                    {produksi.perYear.map((y) => (
-                      <tr key={y.year} className="border-b last:border-0">
-                        <td className="py-2 pr-4 font-medium tabular-nums">{y.year}</td>
-                        <td className="py-2 pr-4 text-right tabular-nums">{formatDecimal(y.totalKg)}</td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {formatNumber(y.recordCount)}{pctOf(y.recordCount, totalRecordsAllYears)}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {formatNumber(y.parcelsReporting)}{pctOf(y.parcelsReporting, summary.totalParcels)}
-                        </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">
-                          {formatDecimal(y.areaReporting)}{pctOf(y.areaReporting, summary.totalArea)}
-                        </td>
-                        <td className="py-2 text-right tabular-nums">{formatDecimal(y.productivityTonHa)}</td>
-                      </tr>
-                    ))}
+                    {produksi.perYear.map((y) => {
+                      const expanded = expandedYears.has(y.year);
+                      return [
+                        <tr
+                          key={y.year}
+                          className="border-b last:border-0 cursor-pointer hover:bg-muted/40"
+                          onClick={() => toggleYear(y.year)}
+                        >
+                          <td className="py-2 pr-4 font-medium tabular-nums">
+                            <span className="inline-flex items-center gap-1">
+                              {expanded ? (
+                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                              )}
+                              {y.year}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-4 text-right tabular-nums">{formatDecimal(y.totalKg)}</td>
+                          <td className="py-2 pr-4 text-right tabular-nums">
+                            {formatNumber(y.recordCount)}{pctOf(y.recordCount, totalRecordsAllYears)}
+                          </td>
+                          <td className="py-2 pr-4 text-right tabular-nums">
+                            {formatNumber(y.parcelsReporting)}{pctOf(y.parcelsReporting, summary.totalParcels)}
+                          </td>
+                          <td className="py-2 pr-4 text-right tabular-nums">
+                            {formatDecimal(y.areaReporting)}{pctOf(y.areaReporting, summary.totalArea)}
+                          </td>
+                          <td className="py-2 text-right tabular-nums">{formatDecimal(y.productivityTonHa)}</td>
+                        </tr>,
+                        ...(expanded
+                          ? y.months.map((m) => (
+                              <tr key={m.period} className="border-b last:border-0 bg-muted/30 text-muted-foreground">
+                                <td className="py-1.5 pr-4 pl-6 text-xs">{formatPeriod(m.period)}</td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">{formatDecimal(m.totalKg)}</td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">{formatNumber(m.recordCount)}</td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">{formatNumber(m.parcelsReporting)}</td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">{formatDecimal(m.areaReporting)}</td>
+                                <td className="py-1.5 text-right text-xs">—</td>
+                              </tr>
+                            ))
+                          : []),
+                      ];
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -88,6 +88,18 @@ describe("buildFarmerGroupDetail (#171)", () => {
     const y2024 = d.produksi.perYear[1];
     expect(y2024.areaReporting).toBe(2);
     expect(y2024.productivityTonHa).toBe(0.35); // 0,7 ÷ 2
+
+    // Rincian bulanan: urut naik, agregat per periode, record tanpa lahan tak menambah lahan/luas
+    expect(y2025.months.map((m) => m.period)).toEqual(["2025-01", "2025-02", "2025-03", "2025-04"]);
+    const mar = y2025.months.find((m) => m.period === "2025-03")!;
+    expect(mar.totalKg).toBe(2000);
+    expect(mar.recordCount).toBe(1);
+    expect(mar.parcelsReporting).toBe(1);
+    expect(mar.areaReporting).toBe(3); // p2
+    const apr = y2025.months.find((m) => m.period === "2025-04")!;
+    expect(apr.totalKg).toBe(500);
+    expect(apr.parcelsReporting).toBe(0); // record tanpa lahan
+    expect(apr.areaReporting).toBe(0);
   });
 
   it("ketersediaan per lahan: kategori dari run bulan berturut (aturan MAP-02)", () => {
