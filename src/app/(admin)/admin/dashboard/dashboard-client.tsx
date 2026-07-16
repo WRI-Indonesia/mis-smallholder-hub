@@ -253,8 +253,7 @@ export function DashboardClient({ initialView }: Props) {
                           <StatRow icon={MapIcon} label="Total Persil" value={String(selectedKt.totalParcels)} />
                           <StatRow icon={Ruler} label="Luas Lahan" value={formatArea(selectedKt.totalArea)} />
                         </div>
-                        <div className="border-t pt-3 space-y-1.5 sm:border-t-0 sm:pt-0 sm:border-l sm:pl-4">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Pelatihan</p>
+                        <div className="border-t pt-3 space-y-2 sm:border-t-0 sm:pt-0 sm:border-l sm:pl-4">
                           {PACKAGE_LABELS.map((p) => (
                             <div key={p.key} className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">{p.label}</span>
