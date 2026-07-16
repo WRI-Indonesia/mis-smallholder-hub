@@ -18,7 +18,7 @@ import type { DashboardSnapshotView, KTDetails } from "@/types/dashboard";
 
 const DashboardMap = dynamic(() => import("./dashboard-map").then((m) => m.DashboardMap), {
   ssr: false,
-  loading: () => <div className="h-full min-h-[420px] rounded-md border bg-muted/30 animate-pulse" />,
+  loading: () => <div className="h-full min-h-[360px] rounded-md border bg-muted/30 animate-pulse" />,
 });
 
 interface Props {
@@ -244,7 +244,7 @@ export function DashboardClient({ initialView }: Props) {
                         </div>
                       )}
                     </CardHeader>
-                    <CardContent className="space-y-4 max-h-[360px] overflow-y-auto">
+                    <CardContent className="space-y-4 max-h-[300px] overflow-y-auto">
                       <div className="space-y-2">
                         <StatRow icon={Users} label="Total Petani" value={String(selectedKt.totalFarmers)} />
                         <StatRow icon={Users} label="Laki-laki / Perempuan" value={`${selectedKt.totalFarmersMale} / ${selectedKt.totalFarmersFemale}`} />
@@ -265,7 +265,7 @@ export function DashboardClient({ initialView }: Props) {
                     </CardContent>
                   </>
                 ) : (
-                  <CardContent className="flex flex-col items-center justify-center text-center h-full min-h-[360px] gap-3 py-10">
+                  <CardContent className="flex flex-col items-center justify-center text-center h-full min-h-[300px] gap-3 py-10">
                     <div className="p-3 bg-muted rounded-full text-muted-foreground">
                       <MapPin className="h-6 w-6" />
                     </div>
