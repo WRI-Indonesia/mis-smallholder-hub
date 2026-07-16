@@ -225,11 +225,11 @@ export function DashboardClient({ initialView }: Props) {
         <>
           <DashboardSummaryCards stats={displayedStats} />
 
-          <div className="grid gap-4 lg:grid-cols-4">
+          <div className="grid gap-4 lg:grid-cols-5">
             <div className="lg:col-span-3">
               <DashboardMap kelompokTaniList={activeKts} selectedId={selectedKtId} onSelect={setSelectedKtId} />
             </div>
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <Card className="h-full border border-border/60 shadow-sm">
                 {selectedKt ? (
                   <>
