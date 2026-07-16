@@ -38,6 +38,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 
 1. **Kerja harian di branch aktif** (`mvp`) dengan conventional commits — sesuai [workflow.md](./workflow.md).
 2. **Titik rilis** — setiap **phase roadmap Done** ([roadmap.md](../project/roadmap.md)) atau setiap **ringkasan dua mingguan** di [changelog.md](../project/changelog.md), mana yang lebih dulu terasa utuh. Tidak rilis per commit.
+   - **Maksimal satu rilis per hari.** Bila ada beberapa pemicu dalam sehari (beberapa phase Done / beberapa `feat:`), gabungkan menjadi **satu rilis di akhir hari** dengan bump tertinggi yang berlaku — jangan rilis beruntun seperti 2026-07-15 (v0.9.0 → v0.10.0 → v0.11.0 dalam sehari). Satu-satunya pengecualian: **hotfix kritis produksi** setelah rilis hari itu.
 3. **Gate lokal**: `npm run lint`, `npm run build`, dan `npm test` lulus (Pre-Commit Gate di [workflow.md](./workflow.md)). Tidak ada CI otomatis — gate dijalankan lokal.
 4. **Bump versi**: update `version` di `package.json`, tambah entri rilis di [changelog.md](../project/changelog.md), commit dengan pesan `chore(release): vX.Y.Z`.
 5. **PR `mvp` → `main`**, merge setelah approval.
@@ -47,6 +48,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 
 ### Checklist Rilis
 
+- [ ] Belum ada rilis lain di hari yang sama (aturan **maks. 1 rilis/hari**; kecuali hotfix kritis)
 - [ ] Semua commit sejak rilis terakhir sudah ter-review (issue workflow selesai)
 - [ ] Lint, build, dan test lulus lokal
 - [ ] `package.json` `version` sudah di-bump sesuai kriteria
