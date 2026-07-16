@@ -152,16 +152,18 @@ describe("dashboard aggregation", () => {
 
     it("certStats: hitung Lembaga tersertifikasi/plan per skema; tanpa info tidak dihitung (#169)", () => {
       const certGroups: RawGroup[] = [
-        { ...groups[0], rspoCertStatus: "CERTIFIED", ispoCertStatus: "PLANNED", sapMapAssuranceStatus: null },
+        { ...groups[0], rspoCertStatus: "CERTIFIED", rspoCertYear: 2020, ispoCertStatus: "PLANNED", ispoCertYear: 2026, sapMapAssuranceStatus: null },
         { ...groups[1], rspoCertStatus: "PLANNED" }, // ispo/sapMap tak diisi → tidak dihitung
       ];
       const { stats, kelompokTaniList } = buildDashboardData(certGroups, []);
       expect(stats.certStats.rspo).toEqual({ certified: 1, planned: 1 });
       expect(stats.certStats.ispo).toEqual({ certified: 0, planned: 1 });
       expect(stats.certStats.sapMap).toEqual({ certified: 0, planned: 0 });
-      // Status tersimpan per Lembaga agar scoping snapshot tetap benar.
+      // Status + tahun tersimpan per Lembaga agar scoping snapshot & badge info panel tetap benar.
       const g1 = kelompokTaniList.find((k) => k.id === "g1")!;
       expect(g1.rspoCertStatus).toBe("CERTIFIED");
+      expect(g1.rspoCertYear).toBe(2020);
+      expect(g1.ispoCertYear).toBe(2026);
       expect(g1.sapMapAssuranceStatus).toBeNull();
     });
 

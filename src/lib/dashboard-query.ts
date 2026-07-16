@@ -30,8 +30,11 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
       locationLat: true,
       locationLong: true,
       rspoCertStatus: true,
+      rspoCertYear: true,
       ispoCertStatus: true,
+      ispoCertYear: true,
       sapMapAssuranceStatus: true,
+      sapMapAssuranceYear: true,
     },
     orderBy: { name: "asc" },
   });
@@ -79,8 +82,11 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
     locationLat: g.locationLat,
     locationLong: g.locationLong,
     rspoCertStatus: g.rspoCertStatus,
+    rspoCertYear: g.rspoCertYear,
     ispoCertStatus: g.ispoCertStatus,
+    ispoCertYear: g.ispoCertYear,
     sapMapAssuranceStatus: g.sapMapAssuranceStatus,
+    sapMapAssuranceYear: g.sapMapAssuranceYear,
   }));
 
   return buildDashboardData(rawGroups, farmers as RawFarmer[]);

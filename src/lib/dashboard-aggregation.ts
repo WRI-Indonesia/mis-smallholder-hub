@@ -27,10 +27,13 @@ export interface RawGroup {
   districtName: string | null;
   locationLat: number | null;
   locationLong: number | null;
-  /** Status sertifikasi/assurance per Lembaga (#169) — optional agar caller lama tetap valid. */
+  /** Status + tahun sertifikasi/assurance per Lembaga (#169) — optional agar caller lama tetap valid. */
   rspoCertStatus?: string | null;
+  rspoCertYear?: number | null;
   ispoCertStatus?: string | null;
+  ispoCertYear?: number | null;
   sapMapAssuranceStatus?: string | null;
+  sapMapAssuranceYear?: number | null;
 }
 
 export interface RawFarmer {
@@ -169,11 +172,14 @@ export function buildDashboardData(groups: RawGroup[], farmers: RawFarmer[]): Da
       locationLat: g.locationLat,
       locationLong: g.locationLong,
       kelompokTaniCount: ktNames.size,
-      // Status per Lembaga disimpan di snapshot agar rekap sertifikasi tetap
-      // benar setelah scoping/slicing client-side (#169).
+      // Status + tahun per Lembaga disimpan di snapshot agar rekap sertifikasi
+      // tetap benar setelah scoping/slicing client-side + badge info panel (#169).
       rspoCertStatus: g.rspoCertStatus ?? null,
+      rspoCertYear: g.rspoCertYear ?? null,
       ispoCertStatus: g.ispoCertStatus ?? null,
+      ispoCertYear: g.ispoCertYear ?? null,
       sapMapAssuranceStatus: g.sapMapAssuranceStatus ?? null,
+      sapMapAssuranceYear: g.sapMapAssuranceYear ?? null,
       ...agg,
       byYear,
     };

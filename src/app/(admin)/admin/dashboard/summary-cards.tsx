@@ -26,23 +26,21 @@ export function DashboardSummaryCards({ stats }: { stats: DashboardStats }) {
   });
 
   const cards: CardConfig[] = [
-    // Row 1
     { title: "Total Lembaga Petani", value: formatNumber(stats.totalKelompokTani), icon: Users, iconClass: "text-slate-600" },
     { title: "Total Kelompok Tani", value: formatNumber(stats.totalKelompokTaniLahan ?? 0), icon: Network, iconClass: "text-teal-600" },
+    // Sertifikasi & assurance (#169) — posisi setelah Total Kelompok Tani (permintaan owner)
+    certCard("Sertifikasi RSPO", stats.certStats?.rspo),
+    certCard("Sertifikasi ISPO", stats.certStats?.ispo),
+    certCard("Assurance SAP/MAP", stats.certStats?.sapMap),
     { title: "Total Petani", value: formatNumber(stats.totalPetani), icon: Users, iconClass: "text-blue-600" },
     { title: "Petani Laki-laki", value: formatNumber(stats.totalPetaniLaki ?? 0), icon: User, iconClass: "text-sky-600" },
     { title: "Petani Perempuan", value: formatNumber(stats.totalPetaniPerempuan ?? 0), icon: User, iconClass: "text-pink-600" },
     { title: "Total Persil Lahan", value: formatNumber(stats.totalPersilLahan), icon: Map, iconClass: "text-green-600" },
-    // Row 2
     { title: "Total Luas Lahan", value: formatArea(stats.totalLuasLahan), icon: Ruler, iconClass: "text-green-600" },
     { title: "Paket 1 - BMP/NKT/RSPO", value: `${formatNumber(stats.trainingCounts.PAKET_1_BMP_PC_RSPO_NKT)} petani`, icon: BookOpen, iconClass: "text-orange-600" },
     { title: "Paket 2 - MK", value: `${formatNumber(stats.trainingCounts.PAKET_2_MK)} petani`, icon: BookOpen, iconClass: "text-purple-600" },
     { title: "Paket 2 - HSE", value: `${formatNumber(stats.trainingCounts.PAKET_2_K3)} petani`, icon: BookOpen, iconClass: "text-red-600" },
     { title: "Paket 3 & 4 - GEDSI/BUSDEV", value: `${formatNumber(stats.trainingCounts.PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV)} petani`, icon: BookOpen, iconClass: "text-indigo-600" },
-    // Row 3 — sertifikasi & assurance (#169)
-    certCard("Sertifikasi RSPO", stats.certStats?.rspo),
-    certCard("Sertifikasi ISPO", stats.certStats?.ispo),
-    certCard("Assurance SAP/MAP", stats.certStats?.sapMap),
   ];
 
   return (

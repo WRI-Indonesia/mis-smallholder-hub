@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Check, ChevronsUpDown, MapPin, Users, Map as MapIcon, Ruler, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,6 +13,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DashboardSummaryCards } from "./summary-cards";
 import { ktStatsForYear, sumKelompokTaniStats } from "@/lib/dashboard-aggregation";
+import { formatCertStatus } from "@/lib/farmer-group-labels";
 import type { DashboardSnapshotView, KTDetails } from "@/types/dashboard";
 
 const DashboardMap = dynamic(() => import("./dashboard-map").then((m) => m.DashboardMap), {
@@ -32,6 +34,17 @@ const PACKAGE_LABELS: { key: keyof KTDetails["trainingCoverage"]; label: string 
 
 const formatArea = (n: number) =>
   `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
+
+// Badge sertifikasi di bawah kode Lembaga pada info panel (#169) — hanya tampil
+// bila statusnya ada; CERTIFIED = filled, PLANNED = outline.
+function CertBadge({ scheme, year, status }: { scheme: string; year?: number | null; status?: string | null }) {
+  if (!status) return null;
+  return (
+    <Badge variant={status === "CERTIFIED" ? "default" : "outline"} className="text-[10px] px-1.5 py-0">
+      {scheme} {formatCertStatus(year ?? null, status)}
+    </Badge>
+  );
+}
 
 const formatGeneratedAt = (iso: string) => {
   const d = new Date(iso);
@@ -223,6 +236,13 @@ export function DashboardClient({ initialView }: Props) {
                     <CardHeader>
                       <CardTitle className="text-base font-bold">{selectedKt.name}</CardTitle>
                       {selectedKt.code && <p className="text-xs font-mono text-muted-foreground">{selectedKt.code}</p>}
+                      {(selectedKt.rspoCertStatus || selectedKt.ispoCertStatus || selectedKt.sapMapAssuranceStatus) && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          <CertBadge scheme="RSPO" year={selectedKt.rspoCertYear} status={selectedKt.rspoCertStatus} />
+                          <CertBadge scheme="ISPO" year={selectedKt.ispoCertYear} status={selectedKt.ispoCertStatus} />
+                          <CertBadge scheme="SAP/MAP" year={selectedKt.sapMapAssuranceYear} status={selectedKt.sapMapAssuranceStatus} />
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent className="space-y-4 max-h-[360px] overflow-y-auto">
                       <div className="space-y-2">

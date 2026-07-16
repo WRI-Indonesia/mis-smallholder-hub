@@ -57,10 +57,13 @@ export interface KTDetails extends KTYearStats {
   code: string | null;
   /** Distinct Kelompok Tani (subGroupLv2) di Lembaga ini — year-independent (#148). */
   kelompokTaniCount: number;
-  /** Status sertifikasi/assurance per Lembaga — optional: snapshot pra-#169 tidak memilikinya. */
+  /** Status + tahun sertifikasi/assurance per Lembaga — optional: snapshot pra-#169 tidak memilikinya. */
   rspoCertStatus?: string | null;
+  rspoCertYear?: number | null;
   ispoCertStatus?: string | null;
+  ispoCertYear?: number | null;
   sapMapAssuranceStatus?: string | null;
+  sapMapAssuranceYear?: number | null;
   districtId: string | null;
   districtName: string | null;
   locationLat: number | null;
