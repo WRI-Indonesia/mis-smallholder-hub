@@ -201,7 +201,8 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 
 - **Evidence:** `Farmer` model ✅, `src/server/actions/farmer.ts` (188 LOC) ✅, validation ✅, UI (list/detail/form) ✅, test ✅.
 - **#152 ✅ (2026-07-15):** detail Petani tampilkan Gapoktan/KUD + KT turunan dari lahan aktif (`lib/farmer-sub-groups.ts`).
-- **Next step:** Maintain; expand MD-04/05/06 dependency.
+- **#172 ✅ kode (2026-07-16):** detail Petani = **profil 360° ber-Tabs** — header (avatar placeholder TD-017, badge Lembaga ber-link #171, breadcrumb = ID Petani) + 5 cards (Lahan+Luas, Produksi, Pelatihan n/paket, Kelengkapan Profil 5-cek, Produktivitas terakhir #166) + tabs Ringkasan/Lahan (tabel + peta shared + PDF Profil Lahan #134)/Pelatihan (checklist + riwayat pre→post)/Produksi (per tahun ber-persentase kelengkapan bulanan + bulanan collapsible + 4 kategori); action `getFarmerDetail` + pure lib (+4 unit); **sensor NIK & tanggal lahir di layar** (`lib/mask.ts`, +3 unit).
+- **Next step:** verifikasi visual owner → retro/close #172; field foto petani = TD-017.
 
 </details>
 

@@ -100,7 +100,7 @@
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 14 | ✅ |
 | Parcel Bulk Mapping (#150) | parcel-bulk-mapping.test.ts | 7 | ✅ |
 | Farmer Group (#163/#169/#171) | farmer-group.test.ts, farmer-group-detail.test.ts | 17 | ✅ |
-| Farmer Detail (#172) | farmer-detail.test.ts | 4 | ✅ |
+| Farmer Detail + mask (#172) | farmer-detail.test.ts | 7 | ✅ |
 | Farmer Sub-Groups (#152) | farmer-sub-groups.test.ts | 6 | ✅ |
 | Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
