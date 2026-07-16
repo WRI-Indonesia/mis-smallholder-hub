@@ -26,7 +26,7 @@
 | MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping Gapoktan/KUD/KT/Blok (#150) |
 | MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |
 | MD-06 | Production | ProductionRecord, period + harvest number, duplicate validation (#89) |
-| DASH-01 | Main Dashboard | Snapshot-backed, 14 summary cards (+Total Kelompok Tani #148, +3 card sertifikasi RSPO/ISPO/SAP-MAP #169), filter client-side (#99) |
+| DASH-01 | Main Dashboard | Snapshot-backed, 14 summary cards (+Total Kelompok Tani #148, +3 card sertifikasi RSPO/ISPO/SAP-MAP #169), filter client-side (#99); peta:info panel 60:40, badge sertifikasi + konten 2 kolom di info panel |
 | DASH-02 | Dashboard Server Actions | `dashboard.ts` + `snapshot.ts` + aggregation lib (teruji) |
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
 | DASH-04 | BMP Dashboard (Produksi) | Snapshot-backed `/admin/dashboard/bmp`: 4 card produksi + combo chart produksi/% lahan melapor + panel Ketersediaan Data 4 kategori (reuse MAP-02) + filter global Kategori/Distrik/Lembaga/Tahun/Kelengkapan Data; tools generate `/admin/tools/snapshot-bmp` (#166) |

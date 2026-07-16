@@ -189,7 +189,8 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 
 - **Evidence:** `FarmerGroup` schema, CRUD actions, list/detail/form UI, RBAC filter.
 - **#160 ✅ (2026-07-15):** `groupType` (Asosiasi/Koperasi) + `establishedYear` + sertifikasi RSPO (`rspoCertStatus`+`rspoCertYear`) + kode ICS→ISH + data 31 lembaga terisi.
-- **Next step:** Add/maintain tests if needed.
+- **#169 ✅ kode (2026-07-16):** sertifikasi ISPO + assurance SAP/MAP (`ispoCertYear/Status`, `sapMapAssuranceYear/Status`, enum generik `CertStatus`; migrasi applied) + 3 card sertifikasi & badge info panel di Main Dashboard (snapshot-backed). Sisa: isi data + regenerate snapshot + retro/close.
+- **Next step:** Layout form (15 field) → #170; isi data ISPO/SAP-MAP saat tersedia.
 
 </details>
 
@@ -271,7 +272,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <details>
 <summary><strong>DASH-01</strong> · ✅ Done — Dashboard: Basic Data</summary>
 
-- **Evidence:** Menu `dashboard` (parent) + `dashboard-main` (Main Dashboard) ✅; `/admin/dashboard/main` UI (8 summary cards + filter Distrik/Lembaga Petani/Tahun) ✅.
+- **Evidence:** Menu `dashboard` (parent) + `dashboard-main` (Main Dashboard) ✅; `/admin/dashboard/main` UI (**14 summary cards** — termasuk card Total Kelompok Tani #148 + 3 card sertifikasi RSPO/ISPO/SAP-MAP #169 — + filter Distrik/Lembaga Petani/Tahun; peta:info panel 60:40, badge sertifikasi + konten 2 kolom di info panel) ✅.
 - `MainDashboardSnapshot` model + `tbl_snapshot_main_dashboard` migration ✅; snapshot module `/admin/tools/snapshot` (generate/list/detail) ✅; 5 unit tests ✅.
 - **Next step:** Implement #99 completed (DASH-01).
 
