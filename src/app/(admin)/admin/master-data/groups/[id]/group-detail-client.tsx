@@ -124,6 +124,12 @@ export function GroupDetailClient({ group, detail, completeness, mapParcels, can
   // ke Kelompok Tani (pola Report KT Detail #154).
   const hasGapoktan = struktur.gapoktanList.some((g) => g.gapoktan !== null);
 
+  // Persentase kolom Produksi per Tahun: record thd total record semua tahun;
+  // lahan/luas melapor thd total persil/luas Lembaga.
+  const totalRecordsAllYears = produksi.perYear.reduce((s, y) => s + y.recordCount, 0);
+  const pctOf = (part: number, total: number) =>
+    total > 0 ? ` (${formatDecimal((part / total) * 100)}%)` : "";
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -441,9 +447,15 @@ export function GroupDetailClient({ group, detail, completeness, mapParcels, can
                       <tr key={y.year} className="border-b last:border-0">
                         <td className="py-2 pr-4 font-medium tabular-nums">{y.year}</td>
                         <td className="py-2 pr-4 text-right tabular-nums">{formatDecimal(y.totalKg)}</td>
-                        <td className="py-2 pr-4 text-right tabular-nums">{formatNumber(y.recordCount)}</td>
-                        <td className="py-2 pr-4 text-right tabular-nums">{formatNumber(y.parcelsReporting)}</td>
-                        <td className="py-2 pr-4 text-right tabular-nums">{formatDecimal(y.areaReporting)}</td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {formatNumber(y.recordCount)}{pctOf(y.recordCount, totalRecordsAllYears)}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {formatNumber(y.parcelsReporting)}{pctOf(y.parcelsReporting, summary.totalParcels)}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {formatDecimal(y.areaReporting)}{pctOf(y.areaReporting, summary.totalArea)}
+                        </td>
                         <td className="py-2 text-right tabular-nums">{formatDecimal(y.productivityTonHa)}</td>
                       </tr>
                     ))}
@@ -453,7 +465,8 @@ export function GroupDetailClient({ group, detail, completeness, mapParcels, can
             )}
             <p className="text-xs text-muted-foreground mt-3">
               Produktivitas = Σ produksi tahun tsb ÷ Σ luas lahan yang melapor pada tahun tsb (Ton/Ha). Record tanpa
-              lahan masuk total produksi, tidak menambah luas pelapor.
+              lahan masuk total produksi, tidak menambah luas pelapor. Persentase: Record terhadap total record semua
+              tahun; Lahan/Luas Melapor terhadap total persil/luas Lembaga.
             </p>
           </Card>
 
