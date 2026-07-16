@@ -29,6 +29,9 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
       district: { select: { name: true } },
       locationLat: true,
       locationLong: true,
+      rspoCertStatus: true,
+      ispoCertStatus: true,
+      sapMapAssuranceStatus: true,
     },
     orderBy: { name: "asc" },
   });
@@ -75,6 +78,9 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
     districtName: g.district?.name ?? null,
     locationLat: g.locationLat,
     locationLong: g.locationLong,
+    rspoCertStatus: g.rspoCertStatus,
+    ispoCertStatus: g.ispoCertStatus,
+    sapMapAssuranceStatus: g.sapMapAssuranceStatus,
   }));
 
   return buildDashboardData(rawGroups, farmers as RawFarmer[]);

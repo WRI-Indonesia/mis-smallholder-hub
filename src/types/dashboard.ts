@@ -15,6 +15,19 @@ export interface DashboardFilters {
   joinedYear?: number | null;
 }
 
+/** Jumlah Lembaga per status untuk satu skema sertifikasi/assurance (#169). */
+export interface CertSchemeCounts {
+  certified: number;
+  planned: number;
+}
+
+/** Rekap sertifikasi RSPO/ISPO + Assurance SAP/MAP — year-independent, per Lembaga (#169). */
+export interface CertStats {
+  rspo: CertSchemeCounts;
+  ispo: CertSchemeCounts;
+  sapMap: CertSchemeCounts;
+}
+
 export interface DashboardStats {
   totalKelompokTani: number; // NB: jumlah FarmerGroup (= Lembaga Petani); mislabel legacy
   /** Distinct Kelompok Tani (LandParcel.subGroupLv2) turunan per-lahan, dijumlah per Lembaga (#148, interim TD-014). */
@@ -25,6 +38,7 @@ export interface DashboardStats {
   totalPersilLahan: number;
   totalLuasLahan: number;
   trainingCounts: TrainingCounts;
+  certStats: CertStats;
 }
 
 /** Farmer-derived stats for one KT, sliceable by joined year. */
@@ -43,6 +57,10 @@ export interface KTDetails extends KTYearStats {
   code: string | null;
   /** Distinct Kelompok Tani (subGroupLv2) di Lembaga ini — year-independent (#148). */
   kelompokTaniCount: number;
+  /** Status sertifikasi/assurance per Lembaga — optional: snapshot pra-#169 tidak memilikinya. */
+  rspoCertStatus?: string | null;
+  ispoCertStatus?: string | null;
+  sapMapAssuranceStatus?: string | null;
   districtId: string | null;
   districtName: string | null;
   locationLat: number | null;

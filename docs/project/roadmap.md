@@ -301,8 +301,8 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 - **Definisi Produktivitas (keputusan owner):** **Ton/Ha per tahun** = Σ produksi(tahun terpilih) ÷ Σ luas lahan **melapor**(tahun terpilih) — mode Semua Tahun = rata-rata tahunan tertimbang luas, bukan kumulatif; 0 bila belum ada pelapor; record tanpa lahan masuk pembilang (disclaimer pola #136).
 - **Snapshot & tools:** model `BmpDashboardSnapshot` → `tbl_snapshot_bmp_dashboard` (migration `20260715081831` **applied** + seed menu/permission dijalankan, approval owner); grain JSON **per Lembaga** (`BmpGroupEntry`: monthly per-period + **byYear** per-tahun + availability + totals) di `lib/bmp-dashboard-aggregation.ts` (pure); actions `snapshot-bmp.ts` (generate/list/detail/soft-delete, RBAC 3 lapis + dedup per detik) + `dashboard-bmp.ts` (`getLatestBmpSnapshot`, row-scope + slice per viewer); tools `/admin/tools/snapshot-bmp` (generate Semua Data + list + detail per-Lembaga + Excel export).
 - **Monev BMP (Teladan/Praktisi/Pemula/Belum) out-of-scope** — data belum ada; follow-up issue terpisah saat sumber data monev jelas.
-- **Test:** +27 unit (`dashboard-bmp.test.ts`) +2 perf (`buildBmpSnapshotData` 6k lahan × 36 bln; slice+chart) — total 435 ✅; lint 0; build ✅.
-- **Next step:** regenerate snapshot (snapshot pra-`byYear` menampilkan 0 saat filter Tahun) → verifikasi owner → retro + close #166.
+- **Test:** +27 unit (`dashboard-bmp.test.ts`) +2 perf (`buildBmpSnapshotData` 6k lahan × 36 bln; slice+chart) +5 unit filter Kelengkapan Data — total **441** ✅; lint 0; build ✅.
+- **Status penutupan:** verifikasi visual owner ✅ → retro + **close #166** (2026-07-15). **Sisa operasional:** regenerate snapshot BMP — snapshot pra-`byYear`/`monthlyFull` menampilkan 0 pada filter Tahun & mode Full 1 Tahun.
 
 </details>
 
@@ -478,7 +478,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <details>
 <summary><strong>OPS-01</strong> · 🟠 Partial — Testing</summary>
 
-- **Evidence:** Vitest: **30 test files / 405 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) + **report-kelompok-tani (Summary/Detail) #154** + dashboard KT count #148.
+- **Evidence:** Vitest: **33 test files / 452 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) + **report-kelompok-tani (Summary/Detail) #154** + dashboard KT count #148 + parcel-bulk-mapping (#150) + farmer-sub-groups (#152) + agregasi farmer-group (#163) + **dashboard-bmp (#166)**.
 - **Next step:** RPT-03 (#132) ✅, MAP-02 (#144) ✅, RPT-04 (#154) ✅ & DASH-05 (#148) ✅ tercakup; gap tersisa: integration test route hotspot.
 
 </details>

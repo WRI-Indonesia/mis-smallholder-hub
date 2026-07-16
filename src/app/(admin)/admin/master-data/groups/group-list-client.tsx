@@ -17,7 +17,13 @@ import { GroupFormModal } from "./group-form-modal";
 import { toggleFarmerGroupActive } from "@/server/actions/farmer-group";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
-import { GROUP_TYPE_LABELS, formatGroupType, formatRspoCert } from "@/lib/farmer-group-labels";
+import {
+  GROUP_TYPE_LABELS,
+  formatGroupType,
+  formatRspoCert,
+  formatIspoCert,
+  formatSapMapAssurance,
+} from "@/lib/farmer-group-labels";
 
 interface FarmerGroup {
   id: string;
@@ -33,6 +39,10 @@ interface FarmerGroup {
   establishedYear: number | null;
   rspoCertYear: number | null;
   rspoCertStatus: string | null;
+  ispoCertYear: number | null;
+  ispoCertStatus: string | null;
+  sapMapAssuranceYear: number | null;
+  sapMapAssuranceStatus: string | null;
   locationLat: number | null;
   locationLong: number | null;
   isActive: boolean;
@@ -52,6 +62,11 @@ interface Props {
   permissions: string[];
   isSuperAdmin: boolean;
 }
+
+// Urutan sort kolom sertifikasi/assurance: Tersertifikasi (per tahun, tanpa
+// tahun terakhir) → Plan (per tahun) → kosong. Dipakai RSPO/ISPO/SAP-MAP.
+const certSortValue = (year: number | null, status: string | null) =>
+  status === "CERTIFIED" ? `0-${year ?? 9999}` : status === "PLANNED" ? `1-${year ?? 9999}` : null;
 
 
 export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin }: Props) {
@@ -167,12 +182,25 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       defaultVisible: true,
       render: (row) => formatRspoCert(row),
       // Urutan: Tersertifikasi (per tahun, tanpa tahun terakhir) → Plan (per tahun) → kosong.
-      sortValue: (row) =>
-        row.rspoCertStatus === "CERTIFIED"
-          ? `0-${row.rspoCertYear ?? 9999}`
-          : row.rspoCertStatus === "PLANNED"
-            ? `1-${row.rspoCertYear ?? 9999}`
-            : null,
+      sortValue: (row) => certSortValue(row.rspoCertYear, row.rspoCertStatus),
+    },
+    {
+      key: "ispoCertYear",
+      label: "Sertifikasi ISPO",
+      sortable: true,
+      cellClassName: "text-sm text-muted-foreground tabular-nums",
+      defaultVisible: true,
+      render: (row) => formatIspoCert(row),
+      sortValue: (row) => certSortValue(row.ispoCertYear, row.ispoCertStatus),
+    },
+    {
+      key: "sapMapAssuranceYear",
+      label: "Assurance SAP/MAP",
+      sortable: true,
+      cellClassName: "text-sm text-muted-foreground tabular-nums",
+      defaultVisible: true,
+      render: (row) => formatSapMapAssurance(row),
+      sortValue: (row) => certSortValue(row.sapMapAssuranceYear, row.sapMapAssuranceStatus),
     },
     {
       key: "locationLat",
@@ -215,6 +243,8 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       joinYear: g.joinYear ?? "—",
       establishedYear: g.establishedYear ?? "—",
       rspoCertYear: formatRspoCert(g),
+      ispoCertYear: formatIspoCert(g),
+      sapMapAssuranceYear: formatSapMapAssurance(g),
       locationLat: g.locationLat ?? "—",
       locationLong: g.locationLong ?? "—",
       isActive: g.isActive ? "Aktif" : "Nonaktif",

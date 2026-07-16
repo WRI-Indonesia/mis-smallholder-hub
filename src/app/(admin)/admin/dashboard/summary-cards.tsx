@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, User, Map, Ruler, BookOpen, Network } from "lucide-react";
+import { Users, User, Map, Ruler, BookOpen, Network, BadgeCheck } from "lucide-react";
 import type { DashboardStats } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -9,11 +9,22 @@ const formatArea = (n: number) =>
 interface CardConfig {
   title: string;
   value: string;
+  sub?: string;
   icon: React.ComponentType<{ className?: string }>;
   iconClass: string;
 }
 
 export function DashboardSummaryCards({ stats }: { stats: DashboardStats }) {
+  // Card sertifikasi (#169): angka besar = Lembaga tersertifikasi, sub = jumlah plan.
+  // Year-independent — tidak ikut filter Tahun. Snapshot pra-#169 → 0 sampai regenerate.
+  const certCard = (title: string, counts?: { certified: number; planned: number }): CardConfig => ({
+    title,
+    value: `${formatNumber(counts?.certified ?? 0)} lembaga`,
+    sub: `Tersertifikasi · ${formatNumber(counts?.planned ?? 0)} plan`,
+    icon: BadgeCheck,
+    iconClass: "text-emerald-600",
+  });
+
   const cards: CardConfig[] = [
     // Row 1
     { title: "Total Lembaga Petani", value: formatNumber(stats.totalKelompokTani), icon: Users, iconClass: "text-slate-600" },
@@ -28,6 +39,10 @@ export function DashboardSummaryCards({ stats }: { stats: DashboardStats }) {
     { title: "Paket 2 - MK", value: `${formatNumber(stats.trainingCounts.PAKET_2_MK)} petani`, icon: BookOpen, iconClass: "text-purple-600" },
     { title: "Paket 2 - HSE", value: `${formatNumber(stats.trainingCounts.PAKET_2_K3)} petani`, icon: BookOpen, iconClass: "text-red-600" },
     { title: "Paket 3 & 4 - GEDSI/BUSDEV", value: `${formatNumber(stats.trainingCounts.PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV)} petani`, icon: BookOpen, iconClass: "text-indigo-600" },
+    // Row 3 — sertifikasi & assurance (#169)
+    certCard("Sertifikasi RSPO", stats.certStats?.rspo),
+    certCard("Sertifikasi ISPO", stats.certStats?.ispo),
+    certCard("Assurance SAP/MAP", stats.certStats?.sapMap),
   ];
 
   return (
@@ -44,6 +59,9 @@ export function DashboardSummaryCards({ stats }: { stats: DashboardStats }) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold tabular-nums">{card.value}</div>
+              {card.sub && (
+                <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
+              )}
             </CardContent>
           </Card>
         );

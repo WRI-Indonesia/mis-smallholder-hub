@@ -149,6 +149,30 @@ describe("dashboard aggregation", () => {
       ]);
       expect(stats.totalKelompokTaniLahan).toBe(0);
     });
+
+    it("certStats: hitung Lembaga tersertifikasi/plan per skema; tanpa info tidak dihitung (#169)", () => {
+      const certGroups: RawGroup[] = [
+        { ...groups[0], rspoCertStatus: "CERTIFIED", ispoCertStatus: "PLANNED", sapMapAssuranceStatus: null },
+        { ...groups[1], rspoCertStatus: "PLANNED" }, // ispo/sapMap tak diisi → tidak dihitung
+      ];
+      const { stats, kelompokTaniList } = buildDashboardData(certGroups, []);
+      expect(stats.certStats.rspo).toEqual({ certified: 1, planned: 1 });
+      expect(stats.certStats.ispo).toEqual({ certified: 0, planned: 1 });
+      expect(stats.certStats.sapMap).toEqual({ certified: 0, planned: 0 });
+      // Status tersimpan per Lembaga agar scoping snapshot tetap benar.
+      const g1 = kelompokTaniList.find((k) => k.id === "g1")!;
+      expect(g1.rspoCertStatus).toBe("CERTIFIED");
+      expect(g1.sapMapAssuranceStatus).toBeNull();
+    });
+
+    it("certStats semua 0 bila status tidak pernah diisi (grup lama)", () => {
+      const { stats } = buildDashboardData(groups, []);
+      expect(stats.certStats).toEqual({
+        rspo: { certified: 0, planned: 0 },
+        ispo: { certified: 0, planned: 0 },
+        sapMap: { certified: 0, planned: 0 },
+      });
+    });
   });
 
   describe("sumKelompokTaniStats & ktStatsForYear", () => {
@@ -242,6 +266,10 @@ describe("dashboard aggregation", () => {
       const empty = normalizeSnapshotData(null);
       expect(empty.trainingCounts.PAKET_2_MK).toBe(0);
       expect(empty.kelompokTaniList).toEqual([]);
+
+      // Snapshot pra-#169 tanpa rekap sertifikasi → default 0, bukan undefined
+      expect(empty.certStats.rspo).toEqual({ certified: 0, planned: 0 });
+      expect(nested.certStats.ispo).toEqual({ certified: 0, planned: 0 });
     });
   });
 
@@ -277,6 +305,20 @@ describe("dashboard aggregation", () => {
       const r = scopeSnapshotData(data, { mode: "BY_FARMER_GROUP", groupIds: ["ktB"] });
       expect(r.kelompokTaniList.map((k) => k.id)).toEqual(["ktB"]);
       expect(r.totalPetani).toBe(2);
+    });
+
+    it("certStats dihitung ulang dari subset KT saat scoping (#169)", () => {
+      const scoped: DashboardSnapshotData = {
+        ...data,
+        kelompokTaniList: [
+          { ...kt("ktA", "d1", 3), rspoCertStatus: "CERTIFIED", ispoCertStatus: "PLANNED" },
+          { ...kt("ktB", "d2", 2), rspoCertStatus: "PLANNED", sapMapAssuranceStatus: "CERTIFIED" },
+        ],
+      };
+      const r = scopeSnapshotData(scoped, { mode: "BY_DISTRICT", districtIds: ["d1"] });
+      expect(r.certStats.rspo).toEqual({ certified: 1, planned: 0 }); // hanya ktA
+      expect(r.certStats.ispo).toEqual({ certified: 0, planned: 1 });
+      expect(r.certStats.sapMap).toEqual({ certified: 0, planned: 0 }); // ktB tersaring scope
     });
   });
 });

@@ -35,6 +35,10 @@ interface FarmerGroup {
   establishedYear: number | null;
   rspoCertYear: number | null;
   rspoCertStatus: string | null;
+  ispoCertYear: number | null;
+  ispoCertStatus: string | null;
+  sapMapAssuranceYear: number | null;
+  sapMapAssuranceStatus: string | null;
   locationLat: number | null;
   locationLong: number | null;
 }
@@ -81,6 +85,16 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
       rspoCertStatus:
         form.get("rspoCertStatus") && form.get("rspoCertStatus") !== "NONE"
           ? (form.get("rspoCertStatus") as "CERTIFIED" | "PLANNED")
+          : null,
+      ispoCertYear: form.get("ispoCertYear") ? parseInt(form.get("ispoCertYear") as string, 10) : null,
+      ispoCertStatus:
+        form.get("ispoCertStatus") && form.get("ispoCertStatus") !== "NONE"
+          ? (form.get("ispoCertStatus") as "CERTIFIED" | "PLANNED")
+          : null,
+      sapMapAssuranceYear: form.get("sapMapAssuranceYear") ? parseInt(form.get("sapMapAssuranceYear") as string, 10) : null,
+      sapMapAssuranceStatus:
+        form.get("sapMapAssuranceStatus") && form.get("sapMapAssuranceStatus") !== "NONE"
+          ? (form.get("sapMapAssuranceStatus") as "CERTIFIED" | "PLANNED")
           : null,
       locationLat: form.get("locationLat") ? parseFloat(form.get("locationLat") as string) : null,
       locationLong: form.get("locationLong") ? parseFloat(form.get("locationLong") as string) : null,
@@ -198,6 +212,50 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
               <Label htmlFor="rspoCertYear">Tahun Sertifikasi RSPO</Label>
               <Input id="rspoCertYear" name="rspoCertYear" type="number" defaultValue={group?.rspoCertYear ?? ""} />
               {errors.rspoCertYear && <p className="text-sm text-destructive">{errors.rspoCertYear[0]}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="ispoCertStatus">Status Sertifikasi ISPO</Label>
+              <Select name="ispoCertStatus" defaultValue={group?.ispoCertStatus ?? "NONE"}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">—</SelectItem>
+                  <SelectItem value="CERTIFIED">Tersertifikasi</SelectItem>
+                  <SelectItem value="PLANNED">Plan</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.ispoCertStatus && <p className="text-sm text-destructive">{errors.ispoCertStatus[0]}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ispoCertYear">Tahun Sertifikasi ISPO</Label>
+              <Input id="ispoCertYear" name="ispoCertYear" type="number" defaultValue={group?.ispoCertYear ?? ""} />
+              {errors.ispoCertYear && <p className="text-sm text-destructive">{errors.ispoCertYear[0]}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="sapMapAssuranceStatus">Status Assurance SAP/MAP</Label>
+              <Select name="sapMapAssuranceStatus" defaultValue={group?.sapMapAssuranceStatus ?? "NONE"}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">—</SelectItem>
+                  <SelectItem value="CERTIFIED">Tersertifikasi</SelectItem>
+                  <SelectItem value="PLANNED">Plan</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.sapMapAssuranceStatus && <p className="text-sm text-destructive">{errors.sapMapAssuranceStatus[0]}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sapMapAssuranceYear">Tahun Assurance SAP/MAP</Label>
+              <Input id="sapMapAssuranceYear" name="sapMapAssuranceYear" type="number" defaultValue={group?.sapMapAssuranceYear ?? ""} />
+              {errors.sapMapAssuranceYear && <p className="text-sm text-destructive">{errors.sapMapAssuranceYear[0]}</p>}
             </div>
           </div>
 

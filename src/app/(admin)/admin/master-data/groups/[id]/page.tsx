@@ -6,7 +6,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { formatGroupType, formatRspoCert } from "@/lib/farmer-group-labels";
+import {
+  formatGroupType,
+  formatRspoCert,
+  formatIspoCert,
+  formatSapMapAssurance,
+} from "@/lib/farmer-group-labels";
 
 export default async function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission("master-data-groups");
@@ -60,6 +65,14 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sertifikasi RSPO</p>
             <p className="text-sm font-medium mt-1">{formatRspoCert(group)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sertifikasi ISPO</p>
+            <p className="text-sm font-medium mt-1">{formatIspoCert(group)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Assurance SAP/MAP</p>
+            <p className="text-sm font-medium mt-1">{formatSapMapAssurance(group)}</p>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Koordinat</p>

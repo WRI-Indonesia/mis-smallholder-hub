@@ -97,3 +97,72 @@ describe("getFarmerGroups stats merge (#163)", () => {
     expect(statsFor(stats, "g-kosong")).toEqual({ farmersCount: 0, parcelsCount: 0, totalArea: 0 });
   });
 });
+
+// ——— #169: Sertifikasi ISPO + Assurance SAP/MAP (status + tahun, pola RSPO #160) ———
+
+import { farmerGroupSchema } from "@/validations/farmer-group.schema";
+import { formatCertStatus } from "@/lib/farmer-group-labels";
+
+const validBase = {
+  districtId: "d1",
+  name: "Lembaga Uji",
+  category: "SWADAYA" as const,
+};
+
+describe("farmerGroupSchema — sertifikasi ISPO & SAP/MAP (#169)", () => {
+  it("status tanpa tahun sah (semua skema)", () => {
+    const r = farmerGroupSchema.safeParse({
+      ...validBase,
+      rspoCertStatus: "CERTIFIED",
+      ispoCertStatus: "PLANNED",
+      sapMapAssuranceStatus: "CERTIFIED",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("tahun ISPO tanpa status ditolak (ambigu), path di ispoCertStatus", () => {
+    const r = farmerGroupSchema.safeParse({ ...validBase, ispoCertYear: 2026 });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.flatten().fieldErrors.ispoCertStatus).toBeDefined();
+    }
+  });
+
+  it("tahun SAP/MAP tanpa status ditolak, path di sapMapAssuranceStatus", () => {
+    const r = farmerGroupSchema.safeParse({ ...validBase, sapMapAssuranceYear: 2027 });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.flatten().fieldErrors.sapMapAssuranceStatus).toBeDefined();
+    }
+  });
+
+  it("pasangan lengkap tahun + status sah untuk ketiga skema", () => {
+    const r = farmerGroupSchema.safeParse({
+      ...validBase,
+      rspoCertYear: 2020,
+      rspoCertStatus: "CERTIFIED",
+      ispoCertYear: 2026,
+      ispoCertStatus: "PLANNED",
+      sapMapAssuranceYear: 2024,
+      sapMapAssuranceStatus: "CERTIFIED",
+    });
+    expect(r.success).toBe(true);
+  });
+});
+
+describe("formatCertStatus (label bersama RSPO/ISPO/SAP-MAP)", () => {
+  it("CERTIFIED + tahun → tahun saja", () => {
+    expect(formatCertStatus(2020, "CERTIFIED")).toBe("2020");
+  });
+  it("CERTIFIED tanpa tahun → Tersertifikasi", () => {
+    expect(formatCertStatus(null, "CERTIFIED")).toBe("Tersertifikasi");
+  });
+  it("PLANNED + tahun → Plan <tahun>; tanpa tahun → Plan", () => {
+    expect(formatCertStatus(2026, "PLANNED")).toBe("Plan 2026");
+    expect(formatCertStatus(null, "PLANNED")).toBe("Plan");
+  });
+  it("tanpa status → em dash", () => {
+    expect(formatCertStatus(null, null)).toBe("—");
+    expect(formatCertStatus(2026, null)).toBe("—");
+  });
+});
