@@ -244,23 +244,26 @@ export function DashboardClient({ initialView }: Props) {
                         </div>
                       )}
                     </CardHeader>
-                    <CardContent className="space-y-4 max-h-[300px] overflow-y-auto">
-                      <div className="space-y-2">
-                        <StatRow icon={Users} label="Total Petani" value={String(selectedKt.totalFarmers)} />
-                        <StatRow icon={Users} label="Laki-laki / Perempuan" value={`${selectedKt.totalFarmersMale} / ${selectedKt.totalFarmersFemale}`} />
-                        <StatRow icon={MapIcon} label="Total Persil" value={String(selectedKt.totalParcels)} />
-                        <StatRow icon={Ruler} label="Luas Lahan" value={formatArea(selectedKt.totalArea)} />
-                      </div>
-                      <div className="border-t pt-3 space-y-1.5">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Pelatihan</p>
-                        {PACKAGE_LABELS.map((p) => (
-                          <div key={p.key} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">{p.label}</span>
-                            <span className="tabular-nums font-medium">
-                              {selectedKt.trainingCoverage[p.key]}/{selectedKt.totalFarmers}
-                            </span>
-                          </div>
-                        ))}
+                    <CardContent className="max-h-[300px] overflow-y-auto">
+                      {/* Konten di bawah header (judul/kode/badge) 2 kolom: statistik | cakupan pelatihan */}
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <StatRow icon={Users} label="Total Petani" value={String(selectedKt.totalFarmers)} />
+                          <StatRow icon={Users} label="Laki-laki / Perempuan" value={`${selectedKt.totalFarmersMale} / ${selectedKt.totalFarmersFemale}`} />
+                          <StatRow icon={MapIcon} label="Total Persil" value={String(selectedKt.totalParcels)} />
+                          <StatRow icon={Ruler} label="Luas Lahan" value={formatArea(selectedKt.totalArea)} />
+                        </div>
+                        <div className="border-t pt-3 space-y-1.5 sm:border-t-0 sm:pt-0 sm:border-l sm:pl-4">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cakupan Pelatihan</p>
+                          {PACKAGE_LABELS.map((p) => (
+                            <div key={p.key} className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">{p.label}</span>
+                              <span className="tabular-nums font-medium">
+                                {selectedKt.trainingCoverage[p.key]}/{selectedKt.totalFarmers}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </CardContent>
                   </>
