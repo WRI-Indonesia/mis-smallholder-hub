@@ -12,7 +12,7 @@ interface Props {
   geometry: Geometry | null | undefined;
 }
 
-const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecification> = {
+export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecification> = {
   hybrid: {
     version: 8,
     sources: {

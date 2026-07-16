@@ -21,7 +21,7 @@
 | PLATFORM-06 | DataTable & Export | Column visibility, Excel export (exceljs) |
 | PLATFORM-07 | 3-Level Menu | Sidebar, RBAC inheritance, validation depth max 3 |
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD |
-| MD-02 | Farmer Groups | List, detail, CRUD, RBAC filtering, agregat petani/persil/luas; identitas & sertifikasi: Tipe Grup, Tahun Berdiri/Bergabung, RSPO (#160), ISPO + Assurance SAP/MAP (#169) |
+| MD-02 | Farmer Groups | List, CRUD, RBAC filtering, agregat petani/persil/luas; identitas & sertifikasi: Tipe Grup, Tahun Berdiri/Bergabung, RSPO (#160), ISPO + Assurance SAP/MAP (#169); **detail = profil 360° ber-Tabs** (5 cards incl. skor DA-02, struktur #154, peta sebaran lahan, pelatihan pre→post, produksi Ton/Ha + 4 kategori) (#171) |
 | MD-03 | Farmers | Full CRUD, RBAC, joinedYear field |
 | MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping Gapoktan/KUD/KT/Blok (#150) |
 | MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |

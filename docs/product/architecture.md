@@ -78,7 +78,7 @@
    └── ✅ BMP Dashboard (Produksi) (DASH-04, #166) — Snapshot-backed: 4 card produksi (Produksi, Produktivitas Ton/Ha per tahun, Lahan ber-data, Petani melapor) + combo chart produksi/% lahan melapor + panel Ketersediaan Data Produksi 4 kategori (reuse MAP-02) + filter global Distrik/Lembaga/Kategori/Tahun client-side
 
 📁 Master Data
-   ├── ✅ Lembaga Petani (MD-02) — List/detail/CRUD
+   ├── ✅ Lembaga Petani (MD-02) — List/CRUD + detail profil 360° ber-Tabs (cards + struktur KT + peta sebaran lahan + pelatihan + produksi, #171)
    ├── ✅ Petani (MD-03) — List/detail/CRUD + joinedYear
    ├── ✅ Lahan / Parcels (MD-04) — Map + polygon + geolocation + Shapefile bulk upload
    ├── ✅ Pelatihan / Training (MD-05) — Activities + participants + evidence

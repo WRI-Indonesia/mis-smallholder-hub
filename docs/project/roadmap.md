@@ -191,7 +191,8 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 - **#160 ✅ (2026-07-15):** `groupType` (Asosiasi/Koperasi) + `establishedYear` + sertifikasi RSPO (`rspoCertStatus`+`rspoCertYear`) + kode ICS→ISH + data 31 lembaga terisi.
 - **#169 ✅ kode (2026-07-16):** sertifikasi ISPO + assurance SAP/MAP (`ispoCertYear/Status`, `sapMapAssuranceYear/Status`, enum generik `CertStatus`; migrasi applied) + 3 card sertifikasi & badge info panel di Main Dashboard (snapshot-backed). Sisa: isi data + regenerate snapshot + retro/close.
 - **#170 ✅ kode (2026-07-16):** form dikelompokkan 5 section + fix trigger Select raw value (Base UI `items`).
-- **Next step:** #171 detail Lembaga = profil 360° ber-Tabs (Fase 1); isi data ISPO/SAP-MAP saat tersedia.
+- **#171 ✅ kode Fase 1 (2026-07-16):** detail Lembaga = profil 360° ber-Tabs — header badge sertifikasi + 5 cards (incl. skor DA-02) + tabs Ringkasan/Petani/Lahan (+peta sebaran poligon)/Pelatihan/Produksi; action `getFarmerGroupDetail` real-time + pure lib (+5 unit).
+- **Next step:** #171 Fase 2 (tab Petani/Lahan mendalam — menunggu data memadai); isi data ISPO/SAP-MAP saat tersedia.
 
 </details>
 
