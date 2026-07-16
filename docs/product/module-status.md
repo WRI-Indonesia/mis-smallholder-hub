@@ -22,7 +22,7 @@
 | PLATFORM-07 | 3-Level Menu | Sidebar, RBAC inheritance, validation depth max 3 |
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD |
 | MD-02 | Farmer Groups | List, CRUD, RBAC filtering, agregat petani/persil/luas; identitas & sertifikasi: Tipe Grup, Tahun Berdiri/Bergabung, RSPO (#160), ISPO + Assurance SAP/MAP (#169); **detail = profil 360° ber-Tabs** (5 cards incl. skor DA-02, struktur #154, peta sebaran lahan, pelatihan pre→post, produksi Ton/Ha + 4 kategori) (#171) |
-| MD-03 | Farmers | Full CRUD, RBAC, joinedYear field |
+| MD-03 | Farmers | Full CRUD, RBAC, joinedYear; **detail = profil 360° ber-Tabs** (5 cards incl. Kelengkapan Profil & Produktivitas, lahan + peta shared + PDF Profil Lahan #134, checklist paket, produksi per tahun/bulanan) (#172) |
 | MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping Gapoktan/KUD/KT/Blok (#150) |
 | MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |
 | MD-06 | Production | ProductionRecord, period + harvest number, duplicate validation (#89) |
@@ -43,7 +43,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **34 files / 457 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **35 files / 461 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -81,7 +81,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **34 files / 457 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **35 files / 461 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
@@ -100,6 +100,7 @@
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 14 | ✅ |
 | Parcel Bulk Mapping (#150) | parcel-bulk-mapping.test.ts | 7 | ✅ |
 | Farmer Group (#163/#169/#171) | farmer-group.test.ts, farmer-group-detail.test.ts | 17 | ✅ |
+| Farmer Detail (#172) | farmer-detail.test.ts | 4 | ✅ |
 | Farmer Sub-Groups (#152) | farmer-sub-groups.test.ts | 6 | ✅ |
 | Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |

@@ -6,10 +6,10 @@ import type { LayerProps } from "react-map-gl/maplibre";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target } from "lucide-react";
-import { MAP_STYLES } from "../../parcels/components/parcel-map-view";
-import { geomBounds, parcelLabelFit, PARCEL_LABEL_FONT_PX } from "../../../map/parcel/map-geo";
+import { MAP_STYLES } from "@/app/(admin)/admin/master-data/parcels/components/parcel-map-view";
+import { geomBounds, parcelLabelFit, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
 
-export interface GroupMapParcel {
+export interface DistributionMapParcel {
   id: string;
   parcelId: string;
   farmerName: string;
@@ -22,7 +22,7 @@ export interface GroupMapParcel {
 }
 
 interface Props {
-  parcels: GroupMapParcel[];
+  parcels: DistributionMapParcel[];
 }
 
 /** Palet kategorikal per Kelompok Tani — berulang bila KT > 12; tanpa-KT = abu. */
@@ -82,8 +82,8 @@ const formatArea = (n: number | null) =>
     ? `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} Ha`
     : "—";
 
-/** Peta sebaran seluruh lahan (poligon) satu Lembaga, diwarnai per Kelompok Tani (#171). */
-export function GroupParcelsMap({ parcels }: Props) {
+/** Peta sebaran lahan (poligon) satu Lembaga/Petani, diwarnai per Kelompok Tani (#171/#172). */
+export function ParcelsDistributionMap({ parcels }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
   // KT yang disembunyikan via checklist legenda.

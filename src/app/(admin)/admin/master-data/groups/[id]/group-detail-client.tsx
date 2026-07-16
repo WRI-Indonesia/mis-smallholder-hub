@@ -9,14 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupFormModal } from "../group-form-modal";
+import { BreadcrumbOverride } from "@/components/layout/admin/breadcrumb-override";
 import { formatGroupType, formatCertStatus } from "@/lib/farmer-group-labels";
 import type { FarmerGroupDetailData } from "@/lib/farmer-group-detail";
-import type { GroupMapParcel } from "./group-parcels-map";
+import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
 
-const GroupParcelsMap = dynamic(() => import("./group-parcels-map").then((m) => m.GroupParcelsMap), {
-  ssr: false,
-  loading: () => <div className="h-[768px] rounded-md border bg-muted/30 animate-pulse" />,
-});
+const ParcelsDistributionMap = dynamic(
+  () => import("@/components/shared/parcels-distribution-map").then((m) => m.ParcelsDistributionMap),
+  {
+    ssr: false,
+    loading: () => <div className="h-[768px] rounded-md border bg-muted/30 animate-pulse" />,
+  }
+);
 
 interface GroupRow {
   id: string;
@@ -47,7 +51,7 @@ interface Props {
   group: GroupRow;
   detail: FarmerGroupDetailData;
   completeness: { healthScore: number; totalAnomalies: number };
-  mapParcels: GroupMapParcel[];
+  mapParcels: DistributionMapParcel[];
   canEdit: boolean;
   districts: { id: string; name: string }[];
 }
@@ -141,14 +145,16 @@ export function GroupDetailClient({ group, detail, completeness, mapParcels, can
   // ke Kelompok Tani (pola Report KT Detail #154).
   const hasGapoktan = struktur.gapoktanList.some((g) => g.gapoktan !== null);
 
-  // Persentase kolom Produksi per Tahun: record thd total record semua tahun;
+  // Persentase kolom Produksi per Tahun: Record = kelengkapan pelaporan bulanan
+  // (lahan×bulan melapor ÷ total persil × 12 — mandatory min. 1 panen/bulan);
   // lahan/luas melapor thd total persil/luas Lembaga.
-  const totalRecordsAllYears = produksi.perYear.reduce((s, y) => s + y.recordCount, 0);
   const pctOf = (part: number, total: number) =>
     total > 0 ? ` (${formatDecimal((part / total) * 100)}%)` : "";
 
   return (
     <div className="p-6 space-y-6">
+      {/* Breadcrumb: tampilkan nama Lembaga, bukan id URL */}
+      <BreadcrumbOverride label={group.name} />
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -346,7 +352,7 @@ export function GroupDetailClient({ group, detail, completeness, mapParcels, can
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Sebaran Lahan
             </h2>
-            <GroupParcelsMap parcels={mapParcels} />
+            <ParcelsDistributionMap parcels={mapParcels} />
           </Card>
           <p className="text-sm text-muted-foreground">
             Detail per lahan ada di{" "}
@@ -480,7 +486,7 @@ export function GroupDetailClient({ group, detail, completeness, mapParcels, can
                           </td>
                           <td className="py-2 pr-4 text-right tabular-nums">{formatDecimal(y.totalKg)}</td>
                           <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(y.recordCount)}{pctOf(y.recordCount, totalRecordsAllYears)}
+                            {formatNumber(y.recordCount)}{pctOf(y.reportedParcelMonths, summary.totalParcels * 12)}
                           </td>
                           <td className="py-2 pr-4 text-right tabular-nums">
                             {formatNumber(y.parcelsReporting)}{pctOf(y.parcelsReporting, summary.totalParcels)}
@@ -510,8 +516,9 @@ export function GroupDetailClient({ group, detail, completeness, mapParcels, can
             )}
             <p className="text-xs text-muted-foreground mt-3">
               Produktivitas = Σ produksi tahun tsb ÷ Σ luas lahan yang melapor pada tahun tsb (Ton/Ha). Record tanpa
-              lahan masuk total produksi, tidak menambah luas pelapor. Persentase: Record terhadap total record semua
-              tahun; Lahan/Luas Melapor terhadap total persil/luas Lembaga.
+              lahan masuk total produksi, tidak menambah luas pelapor. Persentase Record = kelengkapan pelaporan
+              bulanan (pasangan lahan×bulan yang melapor ÷ total persil × 12 bulan — pelaporan wajib min. 1 panen per
+              bulan per lahan); Lahan/Luas Melapor terhadap total persil/luas Lembaga.
             </p>
           </Card>
 

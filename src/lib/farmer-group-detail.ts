@@ -5,8 +5,19 @@ import {
   buildKelompokTaniDetailReport,
   type KtDetailRawParcel,
 } from "@/lib/report-kelompok-tani-detail";
-import { productionAvailabilityCategory } from "@/lib/map-data";
+import {
+  buildProductionStats,
+  type AvailabilityDistribution,
+  type ProductionMonthRow,
+  type ProductionYearRow,
+} from "@/lib/production-stats";
 import type { KelompokTaniDetailReportResult } from "@/types/report";
+
+// Agregasi produksi diekstrak ke production-stats.ts (#172, dipakai juga
+// detail Petani) — alias tipe dipertahankan agar konsumen #171 tak berubah.
+export type GroupProductionMonthRow = ProductionMonthRow;
+export type GroupProductionYearRow = ProductionYearRow;
+export type { AvailabilityDistribution };
 
 export interface DetailRawParcel {
   /** LandParcel.id (db) — kunci ketersediaan data produksi per lahan. */
@@ -75,31 +86,6 @@ export interface GroupTrainingActivityRow {
   avgPostTest: number | null;
 }
 
-export interface GroupProductionMonthRow {
-  /** Periode "YYYY-MM". */
-  period: string;
-  totalKg: number;
-  recordCount: number;
-  parcelsReporting: number;
-  areaReporting: number;
-}
-
-export interface GroupProductionYearRow {
-  year: number;
-  totalKg: number;
-  recordCount: number;
-  /** Distinct lahan (ber-`parcelId`) yang melapor pada tahun tsb. */
-  parcelsReporting: number;
-  /** Σ luas lahan melapor (Ha) — penyebut produktivitas (#166). */
-  areaReporting: number;
-  /** Ton/Ha per tahun = Σ produksi ÷ Σ luas lahan melapor (#166); 0 bila belum ada pelapor ber-lahan. */
-  productivityTonHa: number;
-  /** Rincian per bulan (urut naik) — baris collapsible di bawah tahun. */
-  months: GroupProductionMonthRow[];
-}
-
-export type AvailabilityDistribution = Record<"BAIK" | "CUKUP" | "KURANG" | "NONE", number>;
-
 export interface FarmerGroupDetailData {
   summary: GroupDetailSummary;
   struktur: KelompokTaniDetailReportResult;
@@ -158,86 +144,11 @@ export function buildFarmerGroupDetail(
     }
   }
 
-  // ── Produksi per tahun + ketersediaan per lahan ──
-  interface MonthAcc {
-    totalKg: number;
-    recordCount: number;
-    parcelIds: Set<string>;
-  }
-  interface YearAcc {
-    totalKg: number;
-    recordCount: number;
-    parcelIds: Set<string>;
-    months: Map<string, MonthAcc>;
-  }
-  const years = new Map<number, YearAcc>();
-  const periodsByParcel = new Map<string, string[]>();
-  const parcelArea = new Map<string, number>();
-  for (const f of farmers) {
-    for (const p of f.landParcels) {
-      parcelArea.set(p.id, p.area ?? 0);
-      if (!periodsByParcel.has(p.id)) periodsByParcel.set(p.id, []);
-    }
-  }
-
-  let productionTotalKg = 0;
-  for (const f of farmers) {
-    for (const r of f.productionRecords) {
-      const year = parseInt(r.period.slice(0, 4), 10);
-      if (Number.isNaN(year)) continue;
-      const acc =
-        years.get(year) ??
-        { totalKg: 0, recordCount: 0, parcelIds: new Set<string>(), months: new Map<string, MonthAcc>() };
-      acc.totalKg += r.yieldKg;
-      acc.recordCount += 1;
-      const month =
-        acc.months.get(r.period) ?? { totalKg: 0, recordCount: 0, parcelIds: new Set<string>() };
-      month.totalKg += r.yieldKg;
-      month.recordCount += 1;
-      // Record tanpa lahan tetap masuk pembilang produksi (pola #166),
-      // tapi tidak menambah luas pelapor maupun ketersediaan per lahan.
-      if (r.parcelId) {
-        acc.parcelIds.add(r.parcelId);
-        month.parcelIds.add(r.parcelId);
-        periodsByParcel.get(r.parcelId)?.push(r.period);
-      }
-      acc.months.set(r.period, month);
-      years.set(year, acc);
-      productionTotalKg += r.yieldKg;
-    }
-  }
-
-  const sumParcelArea = (ids: Set<string>) =>
-    [...ids].reduce((s, id) => s + (parcelArea.get(id) ?? 0), 0);
-
-  const perYear: GroupProductionYearRow[] = [...years.entries()]
-    .map(([year, acc]) => {
-      const areaReporting = sumParcelArea(acc.parcelIds);
-      const months: GroupProductionMonthRow[] = [...acc.months.entries()]
-        .map(([period, m]) => ({
-          period,
-          totalKg: round2(m.totalKg),
-          recordCount: m.recordCount,
-          parcelsReporting: m.parcelIds.size,
-          areaReporting: round2(sumParcelArea(m.parcelIds)),
-        }))
-        .sort((a, b) => a.period.localeCompare(b.period));
-      return {
-        year,
-        totalKg: round2(acc.totalKg),
-        recordCount: acc.recordCount,
-        parcelsReporting: acc.parcelIds.size,
-        areaReporting: round2(areaReporting),
-        productivityTonHa: areaReporting > 0 ? round2(acc.totalKg / 1000 / areaReporting) : 0,
-        months,
-      };
-    })
-    .sort((a, b) => b.year - a.year);
-
-  const availability: AvailabilityDistribution = { BAIK: 0, CUKUP: 0, KURANG: 0, NONE: 0 };
-  for (const periods of periodsByParcel.values()) {
-    availability[productionAvailabilityCategory(periods)] += 1;
-  }
+  // ── Produksi per tahun + ketersediaan per lahan (shared, #172) ──
+  const prodStats = buildProductionStats(
+    farmers.flatMap((f) => f.landParcels.map((p) => ({ id: p.id, area: p.area }))),
+    farmers.flatMap((f) => f.productionRecords)
+  );
 
   // ── Pelatihan: cakupan per paket + daftar aktivitas ──
   const coverage: GroupTrainingCoverage[] = trainingPackages.map((pkg) => {
@@ -281,11 +192,11 @@ export function buildFarmerGroupDetail(
       blokCount: blokSet.size,
       totalParcels,
       totalArea: round2(totalArea),
-      productionTotalKg: round2(productionTotalKg),
-      productionYears: [...years.keys()].sort((a, b) => a - b),
+      productionTotalKg: prodStats.totalKg,
+      productionYears: prodStats.years,
     },
     struktur,
     pelatihan: { coverage, activities: activityRows },
-    produksi: { perYear, availability },
+    produksi: { perYear: prodStats.perYear, availability: prodStats.availability },
   };
 }

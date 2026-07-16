@@ -7,6 +7,10 @@ import type { FarmerInput, UpdateFarmerInput } from "@/validations/farmer.schema
 import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 
 import { getAccessContext, farmerAccessFilter, farmerGroupAccessFilter } from "@/lib/access-context";
+import { buildFarmerDetail } from "@/lib/farmer-detail";
+import { fetchParcelPassport } from "@/lib/parcel-passport-query";
+import type { ActionResult } from "@/types/action-result";
+import type { ParcelPassport } from "@/types/map";
 
 export async function getFarmers(search?: string, farmerGroupId?: string) {
   if (!(await hasPermission("master-data-farmers", "VIEW"))) {
@@ -83,6 +87,167 @@ export async function getFarmerById(id: string) {
       },
     },
   });
+}
+
+/**
+ * Profil 360° satu Petani (#172): profil + Lahan (tabel + peta) + Pelatihan
+ * (checklist paket + riwayat ber-skor) + Produksi (per tahun + bulanan +
+ * ketersediaan). Real-time (keputusan #153/#154 — detail 1 entitas), agregasi
+ * di pure lib `farmer-detail.ts`.
+ */
+export async function getFarmerDetail(id: string) {
+  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  const access = await getAccessContext();
+
+  const [farmer, trainingPackages] = await Promise.all([
+    prisma.farmer.findFirst({
+      where: { id, ...farmerAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
+      include: {
+        farmerGroup: { include: { district: true } },
+        landParcels: {
+          where: { isActive: true },
+          orderBy: { parcelId: "asc" },
+          select: {
+            id: true,
+            parcelId: true,
+            area: true,
+            subGroupLv1: true,
+            subGroupLv2: true,
+            blok: true,
+            plantingYear: true,
+            cropType: true,
+            landStatus: true,
+            revision: true,
+            // Untuk peta sebaran lahan petani (mapParcels) — tidak dipakai agregasi.
+            geometry: true,
+          },
+        },
+        trainingParticipants: {
+          where: { isActive: true, activity: { isActive: true } },
+          select: {
+            id: true,
+            preTestScore: true,
+            postTestScore: true,
+            activity: {
+              select: {
+                trainingDate: true,
+                location: true,
+                package: { select: { code: true, name: true } },
+              },
+            },
+          },
+        },
+        productionRecords: {
+          where: { isActive: true },
+          select: { parcelId: true, period: true, yieldKg: true },
+        },
+      },
+    }),
+    prisma.trainingPackage.findMany({
+      where: { isActive: true, code: { not: "OTHER" } },
+      select: { code: true, name: true },
+      orderBy: { code: "asc" },
+    }),
+  ]);
+  if (!farmer) return null;
+
+  const detail = buildFarmerDetail(
+    {
+      nik: farmer.nik,
+      address: farmer.address,
+      birthPlace: farmer.birthPlace,
+      birthDate: farmer.birthDate,
+      joinedYear: farmer.joinedYear,
+      landParcels: farmer.landParcels.map((p) => ({
+        id: p.id,
+        parcelId: p.parcelId,
+        area: p.area,
+        subGroupLv1: p.subGroupLv1,
+        subGroupLv2: p.subGroupLv2,
+        blok: p.blok,
+        plantingYear: p.plantingYear,
+        cropType: p.cropType,
+        landStatus: p.landStatus,
+        revision: p.revision,
+      })),
+      trainingParticipants: farmer.trainingParticipants.map((tp) => ({
+        id: tp.id,
+        packageCode: tp.activity.package.code,
+        packageName: tp.activity.package.name,
+        trainingDate: tp.activity.trainingDate,
+        location: tp.activity.location,
+        preTestScore: tp.preTestScore,
+        postTestScore: tp.postTestScore,
+      })),
+      productionRecords: farmer.productionRecords,
+    },
+    trainingPackages
+  );
+
+  return {
+    farmer: {
+      id: farmer.id,
+      farmerGroupId: farmer.farmerGroupId,
+      gender: farmer.gender,
+      name: farmer.name,
+      farmerId: farmer.farmerId,
+      nik: farmer.nik,
+      address: farmer.address,
+      birthPlace: farmer.birthPlace,
+      birthDate: farmer.birthDate,
+      joinedYear: farmer.joinedYear,
+      isActive: farmer.isActive,
+      createdAt: farmer.createdAt,
+      modifiedAt: farmer.modifiedAt,
+      farmerGroup: {
+        id: farmer.farmerGroup.id,
+        name: farmer.farmerGroup.name,
+        district: { name: farmer.farmerGroup.district.name },
+      },
+    },
+    detail,
+    // Tabel persil (tanpa geometry) + poligon peta (pola #171).
+    parcels: farmer.landParcels.map((p) => ({
+      id: p.id,
+      parcelId: p.parcelId,
+      area: p.area,
+      subGroupLv1: p.subGroupLv1,
+      subGroupLv2: p.subGroupLv2,
+      blok: p.blok,
+      plantingYear: p.plantingYear,
+      cropType: p.cropType,
+      landStatus: p.landStatus,
+      revision: p.revision,
+    })),
+    mapParcels: farmer.landParcels.map((p) => ({
+      id: p.id,
+      parcelId: p.parcelId,
+      farmerName: farmer.name,
+      kelompokTani: p.subGroupLv2,
+      gapoktan: p.subGroupLv1,
+      blok: p.blok,
+      area: p.area,
+      geometry: p.geometry,
+    })),
+  };
+}
+
+/**
+ * Data Farm Passport ("Profil Lahan") untuk PDF di tab Lahan detail Petani
+ * (#172) — guard menu petani (bukan action map, beda permission); scope lahan
+ * di-enforce di lib.
+ */
+export async function getFarmerParcelPassport(
+  landParcelId: string
+): Promise<ActionResult<ParcelPassport>> {
+  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  }
+
+  return fetchParcelPassport(landParcelId, true);
 }
 
 export async function createFarmer(input: FarmerInput) {

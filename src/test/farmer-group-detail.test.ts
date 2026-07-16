@@ -81,6 +81,8 @@ describe("buildFarmerGroupDetail (#171)", () => {
     const y2025 = d.produksi.perYear[0];
     expect(y2025.totalKg).toBe(4500);
     expect(y2025.recordCount).toBe(4);
+    // Kelengkapan bulanan: p1-01, p1-02, p2-03 = 3 pasangan lahan×bulan (record tanpa lahan tak dihitung)
+    expect(y2025.reportedParcelMonths).toBe(3);
     expect(y2025.parcelsReporting).toBe(2);
     expect(y2025.areaReporting).toBe(5); // p1 (2) + p2 (3), dedupe
     expect(y2025.productivityTonHa).toBe(0.9); // 4,5 Ton ÷ 5 Ha

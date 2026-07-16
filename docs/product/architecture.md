@@ -6,7 +6,7 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **34 files / 457 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02), map-geo, firms, middleware, perf |
+| **Test Status** | ✅ **35 files / 461 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02), map-geo, firms, middleware, perf |
 | **Completed Modules** | ✅ **29 phases done** | Platform (1-7), MD (1-6), DASH-01…05, RPT-01…04, BULK (1, 3, 4), DA-01/02, MAP-01/02 |
 | **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 file schema / **20 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot, BmpDashboardSnapshot (#166) — MAP-01 read-only (no new table) |
@@ -79,7 +79,7 @@
 
 📁 Master Data
    ├── ✅ Lembaga Petani (MD-02) — List/CRUD + detail profil 360° ber-Tabs (cards + struktur KT + peta sebaran lahan + pelatihan + produksi, #171)
-   ├── ✅ Petani (MD-03) — List/detail/CRUD + joinedYear
+   ├── ✅ Petani (MD-03) — List/CRUD + detail profil 360° ber-Tabs (cards + lahan/peta + PDF Profil Lahan + checklist pelatihan + produksi, #172)
    ├── ✅ Lahan / Parcels (MD-04) — Map + polygon + geolocation + Shapefile bulk upload
    ├── ✅ Pelatihan / Training (MD-05) — Activities + participants + evidence
    ├── ✅ Produksi / Production (MD-06) — Period + yield tracking

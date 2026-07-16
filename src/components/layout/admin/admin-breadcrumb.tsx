@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChevronRight } from "lucide-react"
+import { useBreadcrumbOverride } from "./breadcrumb-override"
 
 export function useBreadcrumbs() {
   const pathname = usePathname()
@@ -39,7 +40,13 @@ export function useBreadcrumbs() {
 }
 
 export function AdminBreadcrumb() {
-  const breadcrumbs = useBreadcrumbs()
+  const crumbs = useBreadcrumbs()
+  // Halaman detail ber-[id] menyetel label pengganti (kode human-facing)
+  // untuk segmen terakhir — CUID di URL tidak informatif (#172).
+  const override = useBreadcrumbOverride()
+  const breadcrumbs = override
+    ? crumbs.map((c) => (c.isLast ? { ...c, label: override } : c))
+    : crumbs
 
   return (
     <nav className="flex items-center gap-1 text-sm min-w-0 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
