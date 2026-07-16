@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { TRAINING_CATEGORY_LABELS } from "../training-list-client";
 import { AddParticipantsModal } from "./add-participants-modal";
 import { Input } from "@/components/ui/input";
+import { maskNik } from "@/lib/mask";
 
 interface Farmer {
   id: string;
@@ -277,7 +278,7 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
                        <td className="p-3 text-sm text-center text-muted-foreground tabular-nums">{idx + 1}</td>
                       <td className="p-3 text-sm font-medium">{p.farmer.name}</td>
                       <td className="p-3 text-sm font-mono text-muted-foreground">{p.farmer.farmerId}</td>
-                      <td className="p-3 text-sm font-mono text-muted-foreground">{p.farmer.nik ?? "—"}</td>
+                      <td className="p-3 text-sm font-mono text-muted-foreground">{maskNik(p.farmer.nik)}</td>
                       <td className="p-3 text-sm">
                         <Badge variant="secondary">
                           {p.farmer.gender === "M" ? "Laki-laki" : "Perempuan"}

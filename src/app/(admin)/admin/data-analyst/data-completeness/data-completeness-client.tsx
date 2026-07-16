@@ -26,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { analyzeFarmerGroupCompleteness, getFarmerGroupsForCompleteness } from "@/server/actions/data-completeness";
+import { maskIfNik } from "@/lib/mask";
 import type {
   AnomalyItem,
   DataCompletenessResult,
@@ -460,7 +461,8 @@ function AnomalyItemsTable({ items }: { items: AnomalyItem[] }) {
               <tr key={`${it.farmerDbId}-${it.detail ?? ""}-${idx}`} className="border-b last:border-0">
                 <td className="px-3 py-1.5 font-mono text-muted-foreground">{it.farmerId}</td>
                 <td className="px-3 py-1.5 font-medium">{it.farmerName}</td>
-                <td className="px-3 py-1.5 text-muted-foreground">{it.detail ?? "—"}</td>
+                {/* Detail NIK-like di-sensor di layar (Excel export tetap penuh). */}
+                <td className="px-3 py-1.5 text-muted-foreground">{maskIfNik(it.detail)}</td>
               </tr>
             ))}
           </tbody>

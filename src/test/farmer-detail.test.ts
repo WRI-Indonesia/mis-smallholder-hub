@@ -127,3 +127,26 @@ describe("buildFarmerDetail (#172)", () => {
     expect(d.produksi.availability).toEqual({ BAIK: 0, CUKUP: 0, KURANG: 0, NONE: 1 });
   });
 });
+
+// ——— Sensor data pribadi di layar (keputusan owner 2026-07-16) ———
+
+import { maskNik, maskIfNik, maskBirthDate } from "@/lib/mask";
+
+describe("mask (sensor NIK & tanggal lahir)", () => {
+  it("maskNik: 4 depan + 2 belakang, sisanya bintang", () => {
+    expect(maskNik("1471234567890156")).toBe("1471**********56");
+    expect(maskNik(null)).toBe("—");
+    expect(maskNik("12345")).toBe("12345"); // terlalu pendek — tampil apa adanya
+  });
+
+  it("maskIfNik: hanya string 10–16 digit yang di-mask", () => {
+    expect(maskIfNik("1471234567890156")).toBe("1471**********56");
+    expect(maskIfNik("LP-1401-001")).toBe("LP-1401-001"); // kode lahan tak disentuh
+    expect(maskIfNik(null)).toBe("—");
+  });
+
+  it("maskBirthDate: tanggal & bulan disensor, tahun tampil", () => {
+    expect(maskBirthDate(new Date("1980-05-12"))).toBe("** *** 1980");
+    expect(maskBirthDate(null)).toBe("—");
+  });
+});

@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { maskNik, maskBirthDate } from "@/lib/mask";
 
 interface Farmer {
   id: string;
@@ -115,7 +116,8 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
       label: "NIK",
       sortable: true,
       cellClassName: "text-sm font-mono text-muted-foreground",
-      render: (row) => row.nik ?? "—",
+      // Sensor di layar (Excel export tetap penuh — bisa di-upload ulang).
+      render: (row) => maskNik(row.nik),
     },
     {
       key: "birthPlace",
@@ -129,14 +131,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
       label: "Tanggal Lahir",
       sortable: true,
       cellClassName: "text-sm text-muted-foreground tabular-nums",
-      render: (row) =>
-        row.birthDate
-          ? new Date(row.birthDate).toLocaleDateString("id-ID", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })
-          : "—",
+      render: (row) => maskBirthDate(row.birthDate),
     },
     {
       key: "isActive",

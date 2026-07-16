@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FarmerFormModal } from "../farmer-form-modal";
 import { BreadcrumbOverride } from "@/components/layout/admin/breadcrumb-override";
 import { getFarmerParcelPassport } from "@/server/actions/farmer";
+import { maskNik, maskBirthDate } from "@/lib/mask";
 import type { FarmerDetailData } from "@/lib/farmer-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
 
@@ -176,7 +177,6 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
   const pctOf = (part: number, total: number) =>
     total > 0 ? ` (${formatDecimal((part / total) * 100)}%)` : "";
 
-  const nikValid = !summary.profile.missing.includes("NIK valid");
   const age = ageFrom(farmer.birthDate);
 
   // Unduh PDF "Profil Lahan" (Farm Passport #134) via action ber-guard menu petani.
@@ -300,15 +300,10 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
                 <Badge variant="secondary">{farmer.gender === "M" ? "Laki-laki" : "Perempuan"}</Badge>
               </FieldItem>
               <FieldItem label="NIK">
-                <span className="font-mono text-muted-foreground mr-2">{farmer.nik ?? "—"}</span>
-                {farmer.nik && (
-                  <Badge variant={nikValid ? "default" : "destructive"} className="text-[10px] px-1.5 py-0">
-                    {nikValid ? "Valid" : "Tidak valid"}
-                  </Badge>
-                )}
+                <span className="font-mono text-muted-foreground">{maskNik(farmer.nik)}</span>
               </FieldItem>
               <FieldItem label="Tempat, Tanggal Lahir">
-                {farmer.birthPlace ?? "—"}, {formatDate(farmer.birthDate)}
+                {farmer.birthPlace ?? "—"}, {maskBirthDate(farmer.birthDate)}
                 {age != null && <span className="text-muted-foreground"> ({age} th)</span>}
               </FieldItem>
               <FieldItem label="Tahun Bergabung">{farmer.joinedYear ?? "—"}</FieldItem>
