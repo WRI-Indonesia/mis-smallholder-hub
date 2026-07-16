@@ -107,9 +107,9 @@ model MainDashboardSnapshot {
   district District? @relation(fields: [districtId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   // Aggregated Data (JSON) — flat DashboardSnapshotData
-  data Json // Flat DashboardSnapshotData: { totalKelompokTani, totalKelompokTaniLahan, totalPetani, totalPetaniLaki, totalPetaniPerempuan, totalPersilLahan, totalLuasLahan, trainingCounts, kelompokTaniList }
+  data Json // Flat DashboardSnapshotData: { totalKelompokTani, totalKelompokTaniLahan, totalPetani, totalPetaniLaki, totalPetaniPerempuan, totalPersilLahan, totalLuasLahan, trainingCounts, certStats, kelompokTaniList }
   // NB label: `totalKelompokTani` = jumlah FarmerGroup (= Lembaga Petani, mislabel legacy); `totalKelompokTaniLahan` = distinct KT (subGroupLv2) turunan per-lahan (#148).
-  // Each kelompokTaniList[] entry: { id, name, code, districtId, districtName, locationLat, locationLong, kelompokTaniCount, <all-years stats>, byYear: { "<year>": KTYearStats } }
+  // Each kelompokTaniList[] entry: { id, name, code, districtId, districtName, locationLat, locationLong, kelompokTaniCount, rspoCertStatus/Year, ispoCertStatus/Year, sapMapAssuranceStatus/Year (#169), <all-years stats>, byYear: { "<year>": KTYearStats } }
   //   kelompokTaniCount = distinct subGroupLv2 (KT) di Lembaga ini (year-independent) → sum lintas Lembaga = totalKelompokTaniLahan; scope-slice recompute via sumKelompokTaniStats.
   // → the dashboard slices this single master snapshot client-side by Distrik / Tahun Bergabung / Lembaga Petani
 
@@ -236,6 +236,8 @@ model ProductionDashboardSnapshot {
 **Revisi 2026-07-14:** rencana snapshot-table untuk view **tabular** KT **dibatalkan** — agregasi murah (perf 8ms/50k lahan, #153) → view tabular KT jadi **Report real-time** (**#154**, `getKelompokTaniReport`), bukan snapshot. **#153 di-close (superseded).**
 
 Yang **tetap** memakai dashboard snapshot: **hanya angka count** untuk card **"Total Kelompok Tani" (#148, ✅ selesai 2026-07-14)** — field `totalKelompokTaniLahan` (global) + `KTDetails.kelompokTaniCount` (per Lembaga, distinct `subGroupLv2` ternormalisasi trim/case, null diabaikan, **year-independent**) ditambah ke `DashboardSnapshotData`; `sumKelompokTaniStats`/`scopeSnapshotData` menjumlah per-Lembaga saat slice scope; `normalizeSnapshotData` default 0 untuk snapshot lama. **Bukan** tabel snapshot baru. Kartu tampil **0 sampai snapshot baru di-generate** + data `subGroupLv2` terisi (#150).
+
+Pola yang sama dipakai **card & badge sertifikasi (#169, 2026-07-16)**: `certStats` (rekap RSPO/ISPO/SAP-MAP: certified+planned) di level stats + status **+ tahun** per Lembaga di `KTDetails` — rekap dihitung ulang `sumKelompokTaniStats` saat scoping/slice (year-independent); `normalizeSnapshotData` default 0/kosong untuk snapshot pra-#169 (card/badge tampil 0/tanpa tahun sampai regenerate).
 
 > **Catatan generate (2026-07-14):** filter Distrik/Tahun pada Tools → Dashboard Snapshot **dinonaktifkan sementara** (`FILTERS_ENABLED=false` di `snapshot-client.tsx`) → snapshot selalu **Semua Data**. Kolom Distrik/Tahun di tabel daftar **default hidden** (toggleable). Set `true` untuk mengaktifkan kembali.
 

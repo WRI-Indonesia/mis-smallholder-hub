@@ -1,4 +1,6 @@
 import type {
+  CertSchemeCounts,
+  CertStats,
   DashboardData,
   DashboardPackageCode,
   DashboardSnapshotData,
@@ -25,6 +27,13 @@ export interface RawGroup {
   districtName: string | null;
   locationLat: number | null;
   locationLong: number | null;
+  /** Status + tahun sertifikasi/assurance per Lembaga (#169) — optional agar caller lama tetap valid. */
+  rspoCertStatus?: string | null;
+  rspoCertYear?: number | null;
+  ispoCertStatus?: string | null;
+  ispoCertYear?: number | null;
+  sapMapAssuranceStatus?: string | null;
+  sapMapAssuranceYear?: number | null;
 }
 
 export interface RawFarmer {
@@ -66,6 +75,32 @@ function emptyCounts(): TrainingCounts {
     PAKET_2_K3: 0,
     PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0,
   };
+}
+
+function emptyCertStats(): CertStats {
+  return {
+    rspo: { certified: 0, planned: 0 },
+    ispo: { certified: 0, planned: 0 },
+    sapMap: { certified: 0, planned: 0 },
+  };
+}
+
+function addCertStatus(counts: CertSchemeCounts, status: string | null | undefined): void {
+  if (status === "CERTIFIED") counts.certified += 1;
+  else if (status === "PLANNED") counts.planned += 1;
+}
+
+/** Rekap jumlah Lembaga tersertifikasi/plan per skema — Lembaga tanpa info tidak dihitung (#169). */
+function buildCertStats(
+  items: Pick<KTDetails, "rspoCertStatus" | "ispoCertStatus" | "sapMapAssuranceStatus">[]
+): CertStats {
+  const certStats = emptyCertStats();
+  for (const item of items) {
+    addCertStatus(certStats.rspo, item.rspoCertStatus);
+    addCertStatus(certStats.ispo, item.ispoCertStatus);
+    addCertStatus(certStats.sapMap, item.sapMapAssuranceStatus);
+  }
+  return certStats;
 }
 
 /**
@@ -137,6 +172,14 @@ export function buildDashboardData(groups: RawGroup[], farmers: RawFarmer[]): Da
       locationLat: g.locationLat,
       locationLong: g.locationLong,
       kelompokTaniCount: ktNames.size,
+      // Status + tahun per Lembaga disimpan di snapshot agar rekap sertifikasi
+      // tetap benar setelah scoping/slicing client-side + badge info panel (#169).
+      rspoCertStatus: g.rspoCertStatus ?? null,
+      rspoCertYear: g.rspoCertYear ?? null,
+      ispoCertStatus: g.ispoCertStatus ?? null,
+      ispoCertYear: g.ispoCertYear ?? null,
+      sapMapAssuranceStatus: g.sapMapAssuranceStatus ?? null,
+      sapMapAssuranceYear: g.sapMapAssuranceYear ?? null,
       ...agg,
       byYear,
     };
@@ -165,6 +208,7 @@ export function buildDashboardData(groups: RawGroup[], farmers: RawFarmer[]): Da
       totalPersilLahan,
       totalLuasLahan: round2(totalLuasLahan),
       trainingCounts,
+      certStats: buildCertStats(kelompokTaniList),
     },
     kelompokTaniList,
   };
@@ -222,6 +266,9 @@ export function normalizeSnapshotData(raw: unknown): DashboardSnapshotData {
     totalPersilLahan: s.totalPersilLahan ?? 0,
     totalLuasLahan: s.totalLuasLahan ?? 0,
     trainingCounts: s.trainingCounts ?? emptyCounts(),
+    // Snapshot pra-#169 tak punya rekap sertifikasi → default 0 (card tampil 0
+    // sampai snapshot baru di-generate).
+    certStats: s.certStats ?? emptyCertStats(),
     kelompokTaniList: (obj.kelompokTaniList as KTDetails[]) ?? [],
   };
 }
@@ -280,5 +327,7 @@ export function sumKelompokTaniStats(kts: KTDetails[]): DashboardStats {
     totalPersilLahan,
     totalLuasLahan: round2(totalLuasLahan),
     trainingCounts,
+    // Dihitung ulang dari status per Lembaga — snapshot lama tanpa status → 0 (#169).
+    certStats: buildCertStats(kts),
   };
 }

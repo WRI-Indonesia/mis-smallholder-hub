@@ -6,11 +6,11 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **30 files / 405 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02), map-geo, firms, middleware, perf |
-| **Completed Modules** | ✅ **24 phases done** | Platform (1-7), MD (1-6), DASH-01/02/03, RPT-01/02, BULK (1, 3, 4), DA-01/02, MAP-01 |
+| **Test Status** | ✅ **35 files / 464 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02), map-geo, firms, middleware, perf |
+| **Completed Modules** | ✅ **29 phases done** | Platform (1-7), MD (1-6), DASH-01…05, RPT-01…04, BULK (1, 3, 4), DA-01/02, MAP-01/02 |
 | **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 file schema / **20 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot, BmpDashboardSnapshot (#166) — MAP-01 read-only (no new table) |
-| **Priority Next** | 🎯 **AUDIT-P1 #127/#128** | AUDIT-P0 guard/scope RBAC (#125) ✅ & lint gate (#126) ✅ selesai 2026-07-12; sisa: scope by-id KT/pelatihan & pola restore (#127), konvensi UI (#128) — RPT-03 (#132) ✅ |
+| **Priority Next** | 🎯 **BULK-02 / #69 / #143** | Kandidat berikut: Bulk Upload Region (#70) & Lembaga Petani (#69), Analisa Data Produksi (#143), #171 Fase 2 (menunggu data). Selesai 2026-07-16: #169 sertifikasi, #170 form layout, #171 detail 360° Fase 1 |
 
 ---
 
@@ -74,12 +74,12 @@
 
 ```
 📊 Dashboard (✅ DASH-01)
-   ├── ✅ Main Dashboard — Snapshot-backed: 11 summary cards (incl. Petani L/P + Total Kelompok Tani #148) + filter Distrik/KT/Tahun + peta MapLibre (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-KT
+   ├── ✅ Main Dashboard — Snapshot-backed: 14 summary cards (incl. Petani L/P, Total Kelompok Tani #148, 3 card sertifikasi RSPO/ISPO/SAP-MAP #169) + filter Distrik/KT/Tahun + peta MapLibre 60:40 dengan info panel (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-Lembaga (badge sertifikasi di bawah kode #169; konten 2 kolom statistik | cakupan pelatihan)
    └── ✅ BMP Dashboard (Produksi) (DASH-04, #166) — Snapshot-backed: 4 card produksi (Produksi, Produktivitas Ton/Ha per tahun, Lahan ber-data, Petani melapor) + combo chart produksi/% lahan melapor + panel Ketersediaan Data Produksi 4 kategori (reuse MAP-02) + filter global Distrik/Lembaga/Kategori/Tahun client-side
 
 📁 Master Data
-   ├── ✅ Lembaga Petani (MD-02) — List/detail/CRUD
-   ├── ✅ Petani (MD-03) — List/detail/CRUD + joinedYear
+   ├── ✅ Lembaga Petani (MD-02) — List/CRUD + detail profil 360° ber-Tabs (cards + struktur KT + peta sebaran lahan + pelatihan + produksi, #171)
+   ├── ✅ Petani (MD-03) — List/CRUD + detail profil 360° ber-Tabs (cards + lahan/peta + PDF Profil Lahan + checklist pelatihan + produksi, #172)
    ├── ✅ Lahan / Parcels (MD-04) — Map + polygon + geolocation + Shapefile bulk upload
    ├── ✅ Pelatihan / Training (MD-05) — Activities + participants + evidence
    ├── ✅ Produksi / Production (MD-06) — Period + yield tracking
@@ -93,10 +93,12 @@
    ├── ✅ Ringkasan Petani (DA-01) — Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel export
    └── ✅ Analisa Ketersediaan Data (DA-02) — Pilih distrik → KT → Analisa: Index Ketersediaan Data + 5 section collapsible (Profil KT, Petani, Lahan, Pelatihan, Produksi) deteksi anomali & data belum lengkap (NIK kosong/invalid, petani tanpa lahan, belum pelatihan, tanpa produksi, dll) + Excel multi-sheet
 
-📈 Report (🟠 Partial)
+📈 Report (✅ RPT-01…04)
    ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
    ├── ✅ Laporan Pelatihan (RPT-02) — Activities, unique participants & coverage
-   └── ✅ Laporan Produksi (RPT-03) — Matriks bulanan per petani/lahan + Excel & PDF export (#132)
+   ├── ✅ Laporan Produksi (RPT-03) — Matriks bulanan per petani/lahan + Excel & PDF export (#132)
+   ├── ✅ Kelompok Tani (Summary) (RPT-04) — Agregat real-time Lembaga×Gapoktan/KUD×KT + column selector + Excel & PDF (#154)
+   └── ✅ Kelompok Tani (Detail) (RPT-04) — Roster per Lembaga: Gapoktan/KUD→KT→Petani collapsible + Excel & PDF (#154)
 
 📤 Bulk Upload
    ├── ✅ Bulk Upload Petani (BULK-03) — Excel mapping + validation + preview

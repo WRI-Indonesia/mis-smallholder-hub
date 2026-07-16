@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, FileText, Building, Users, Layers, Trees, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { maskNik } from "@/lib/mask";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -153,7 +154,8 @@ export function FarmerReportClient({ districts }: Props) {
       label: "NIK",
       sortable: true,
       cellClassName: "text-sm font-mono text-muted-foreground",
-      render: (row) => row.nik ?? "—",
+      // Sensor di layar (Excel/PDF export tetap penuh).
+      render: (row) => maskNik(row.nik),
     },
     {
       key: "joinedYear",

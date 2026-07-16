@@ -46,6 +46,13 @@ enum RspoCertStatus {
   PLANNED
 }
 
+// Status sertifikasi/assurance generik (ISPO, SAP/MAP, skema berikutnya).
+// RspoCertStatus dibiarkan terpisah — rename enum existing butuh migrasi tipe (#169).
+enum CertStatus {
+  CERTIFIED
+  PLANNED
+}
+
 enum TrainingCategory {
   PAKET_1_BMP_PC_RSPO_NKT
   PAKET_2_MK

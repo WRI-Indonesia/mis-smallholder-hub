@@ -131,7 +131,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
 
   if (mapped.length === 0) {
     return (
-      <div className="h-full min-h-[420px] flex flex-col items-center justify-center gap-2 rounded-md border bg-muted/30 text-center p-6">
+      <div className="h-full min-h-[360px] flex flex-col items-center justify-center gap-2 rounded-md border bg-muted/30 text-center p-6">
         <MapPin className="h-8 w-8 text-muted-foreground" />
         <p className="text-sm font-medium text-muted-foreground max-w-sm">
           Tidak ada data lokasi yang tersedia untuk ditampilkan di peta
@@ -243,7 +243,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
   };
 
   return (
-    <div className="relative h-full min-h-[420px] w-full rounded-md overflow-hidden border">
+    <div className="relative h-full min-h-[360px] w-full rounded-md overflow-hidden border">
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}

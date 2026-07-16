@@ -7,7 +7,7 @@
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 27 Phases)
+## Completed Modules (✅ 29 Phases)
 
 > Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`progress.md`](../project/roadmap.md). Perbarui angka di sana lebih dulu.
  
@@ -21,14 +21,15 @@
 | PLATFORM-06 | DataTable & Export | Column visibility, Excel export (exceljs) |
 | PLATFORM-07 | 3-Level Menu | Sidebar, RBAC inheritance, validation depth max 3 |
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD |
-| MD-02 | Farmer Groups | List, detail, CRUD, RBAC filtering, agregat petani/persil/luas |
-| MD-03 | Farmers | Full CRUD, RBAC, joinedYear field |
+| MD-02 | Farmer Groups | List, CRUD, RBAC filtering, agregat petani/persil/luas; identitas & sertifikasi: Tipe Grup, Tahun Berdiri/Bergabung, RSPO (#160), ISPO + Assurance SAP/MAP (#169); **detail = profil 360° ber-Tabs** (5 cards incl. skor DA-02, struktur #154, peta sebaran lahan, pelatihan pre→post, produksi Ton/Ha + 4 kategori) (#171) |
+| MD-03 | Farmers | Full CRUD, RBAC, joinedYear; **detail = profil 360° ber-Tabs** (5 cards incl. Kelengkapan Profil & Produktivitas, lahan + peta shared + PDF Profil Lahan #134, checklist paket, produksi per tahun/bulanan) (#172) |
 | MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping Gapoktan/KUD/KT/Blok (#150) |
 | MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |
 | MD-06 | Production | ProductionRecord, period + harvest number, duplicate validation (#89) |
-| DASH-01 | Main Dashboard | Snapshot-backed, 11 summary cards (+Total Kelompok Tani #148), filter client-side (#99) |
+| DASH-01 | Main Dashboard | Snapshot-backed, 14 summary cards (+Total Kelompok Tani #148, +3 card sertifikasi RSPO/ISPO/SAP-MAP #169), filter client-side (#99); peta:info panel 60:40, badge sertifikasi + konten 2 kolom di info panel |
 | DASH-02 | Dashboard Server Actions | `dashboard.ts` + `snapshot.ts` + aggregation lib (teruji) |
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
+| DASH-04 | BMP Dashboard (Produksi) | Snapshot-backed `/admin/dashboard/bmp`: 4 card produksi + combo chart produksi/% lahan melapor + panel Ketersediaan Data 4 kategori (reuse MAP-02) + filter global Kategori/Distrik/Lembaga/Tahun/Kelengkapan Data; tools generate `/admin/tools/snapshot-bmp` (#166) |
 | MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible |
 | MAP-02 | Map: Peta BMP (Layer 1) | Peta tematik **Ketersediaan Data Produksi** per-lahan, 4 kategori dari run bulan berturut-turut produksi (#144); KT wajib (Prov/Distrik opsional); `getBmpMapData` (groupBy scoped, no N+1) + data-driven color MapLibre. **Poligon saja tanpa titik** (NONE outline-only, lainnya fill). **Cetak** → PDF A4 landscape (hal.1 peta+legend, hal.2+ matriks per lahan × bulan = total kg/latar hijau) + **Download Excel** matriks. **Panel kanan floating minimizable**: matriks ketersediaan per lahan × bulan (true/false) + Zoom to. Seed `map-bmp` menu+VIEW ✅ |
 | RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
@@ -42,7 +43,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **30 files / 405 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **35 files / 464 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -56,12 +57,12 @@
  
 | Phase | Module | Next Steps | Blocker |
 |-------|--------|------------|---------|
-| — | **Remediasi Audit (#125 ✅ / #126 ✅)** | AUDIT-P0 guard/scope RBAC (#125) & lint gate (#126) selesai 2026-07-12; sisa AUDIT-P1: scope by-id KT/pelatihan & pola restore (#127), konvensi UI (#128) — `audit-report/audit-2026-07-10.md` §8 | — |
+| — | **Remediasi Audit (#125–#130)** | ✅ Seluruhnya selesai 2026-07-12 (guard/scope RBAC, lint 0, scope by-id + restore, konvensi UI, cleanup, kualitas berkelanjutan) — `audit-report/audit-2026-07-10.md` | — |
 
 ## Planned - Next
 
 - BULK-02 (Region Bulk Upload #70), #69 (Bulk Upload KT)
-- DASH-04 (Dashboard BMP #166) — **kode ✅ 2026-07-15**, tinggal apply migration `20260715081831` + seed menu (menunggu approval owner)
+- Analisa Data Produksi — ketersediaan data per periode Distrik → KT (#143, belum ada phase di roadmap)
 
 ## Planned - Later (🔲)
 
@@ -69,7 +70,7 @@
 
 ## Blocked (🔴)
 
-- Tidak ada (DASH-04 kode selesai #166; tersisa langkah DB ber-approval)
+- Tidak ada
 
 </details>
 
@@ -80,7 +81,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **30 files / 405 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **35 files / 464 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
@@ -98,6 +99,10 @@
 | Dashboard | dashboard.test.ts | 14 | ✅ |
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 14 | ✅ |
 | Parcel Bulk Mapping (#150) | parcel-bulk-mapping.test.ts | 7 | ✅ |
+| Farmer Group (#163/#169/#171) | farmer-group.test.ts, farmer-group-detail.test.ts | 17 | ✅ |
+| Farmer Detail + mask (#172) | farmer-detail.test.ts | 7 | ✅ |
+| Farmer Sub-Groups (#152) | farmer-sub-groups.test.ts | 6 | ✅ |
+| Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
 | Map (MAP-01/02) | map.test.ts | 34 | ✅ |
 | Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |

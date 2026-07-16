@@ -74,6 +74,15 @@ Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus d
 - Loading state wajib (skeleton/spinner)
 - Toast setelah action berhasil/gagal
 
+### Sensor Data Pribadi Petani (keputusan owner 2026-07-16)
+
+Data pribadi petani **wajib disensor di semua tampilan layar** via helper `src/lib/mask.ts`:
+
+- **NIK** → `maskNik()`: hanya 4 digit depan + 2 belakang yang tampil, sisanya `*` (mis. `1471**********56`). Untuk kolom Detail generik yang bisa berisi NIK atau nilai lain, gunakan `maskIfNik()` (hanya string 10–16 digit yang di-mask).
+- **Tanggal lahir** → `maskBirthDate()`: tanggal & bulan disensor, tahun tampil (`** *** 1980`). Umur boleh ditampilkan.
+- **Excel/PDF export sengaja TIDAK disensor** — hasil export bisa diedit lalu di-upload ulang via bulk; nilai ter-sensor akan merusak data. PDF Farm Passport (dokumen resmi milik petani) juga tetap penuh.
+- Halaman baru yang menampilkan NIK/tanggal lahir wajib memakai helper ini — jangan render nilai mentah.
+
 ### Bulk Upload UI/UX & Validation Pattern
 
 Untuk fitur bulk upload data massal (misalnya Petani, Lembaga Petani, atau Region), ikuti aturan alur dan antarmuka berikut:

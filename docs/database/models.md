@@ -49,6 +49,12 @@ classDiagram
         PLANNED
     }
 
+    class CertStatus {
+        <<generik — ISPO, SAP/MAP (#169)>>
+        CERTIFIED
+        PLANNED
+    }
+
     class Gender {
         M
         F

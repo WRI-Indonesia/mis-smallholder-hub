@@ -4,7 +4,7 @@
 
 ## Summary
 
-Kondisi per **2026-07-15**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **6 debt aktif**, tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
+Kondisi per **2026-07-16**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **8 debt aktif**, tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
 
 **Rekomendasi:**
 
@@ -25,9 +25,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…015) | **6** | 9 | 15 |
+| **Debt** (TD-001…017) | **8** | 9 | 17 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015.
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017.
 
 ## Debt Register — 🔴 Aktif
 
@@ -77,6 +77,18 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Masalah:** kolom yang me-render gabungan beberapa field (mis. Sertifikasi RSPO = status+tahun) gagal **diam-diam**: sort no-op (nilai `row[col.key]` null) dan kolom Excel kosong (`getExportRow` harus menebak key kolom). Sort sudah ditutup properti `sortValue` (#160); export masih rawan — kandidat properti `exportValue?: (row) => unknown` agar simetris.
 - **Evidence:** ditemukan #160 (sort & export kolom RSPO dua-duanya silent-fail); `data-table.tsx` `handleExport` (`exportRow[String(col.key)]`).
 - **Validation:** tambahkan `exportValue` saat menyentuh `DataTable` berikutnya; sampai itu, pastikan key object `getExportRow` = `col.key` persis. · **Owner:** Frontend.
+
+### TD-017 · 🔲 Open — Field foto petani belum ada di schema (P3)
+
+- **Masalah:** detail Petani 360° (#172) butuh foto petani; field/upload belum ada di `Farmer` (keputusan owner 2026-07-16: **pending**, masuk debt).
+- **Interim:** #172 memakai **placeholder avatar** (inisial nama) — siap diganti saat field tersedia.
+- **Validation:** saat diputuskan lanjut — kolom `photoKey` (S3, pola evidence pelatihan) + upload di form Petani + tampil di detail/list. · **Owner:** Backend + Frontend.
+
+### TD-016 · 🔲 Open — Test flaky: 1 test gagal sporadis saat mesin sibuk (P3)
+
+- **Masalah:** pada 2026-07-16 suite gagal **3× (1 test)** lalu hijau saat di-rerun (441→457 pass); loop 3× berturut saat idle bersih — gagal hanya saat run berbarengan proses berat (build/lint). Pola konsisten **perf test ber-ambang waktu** (`perf.test.ts` berisi assert durasi ms).
+- **Evidence:** sesi 2026-07-16 (3 kejadian, selalu lolos di rerun); nama test belum tertangkap — kegagalan berikutnya, simpan output penuh.
+- **Validation:** saat terulang, catat nama test + longgarkan ambang (atau tandai `retry: 1` khusus perf) agar gate pre-commit tidak false-negative. · **Owner:** QA/Dev.
 
 ## Debt Sequencing
 
