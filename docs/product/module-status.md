@@ -43,7 +43,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **33 files / 452 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **34 files / 457 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -81,7 +81,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **33 files / 452 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **34 files / 457 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
@@ -99,6 +99,9 @@
 | Dashboard | dashboard.test.ts | 14 | ✅ |
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 14 | ✅ |
 | Parcel Bulk Mapping (#150) | parcel-bulk-mapping.test.ts | 7 | ✅ |
+| Farmer Group (#163/#169/#171) | farmer-group.test.ts, farmer-group-detail.test.ts | 17 | ✅ |
+| Farmer Sub-Groups (#152) | farmer-sub-groups.test.ts | 6 | ✅ |
+| Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
 | Map (MAP-01/02) | map.test.ts | 34 | ✅ |
 | Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |
