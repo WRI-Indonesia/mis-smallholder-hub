@@ -40,7 +40,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Dashboard           | ✅ Complete     | DASH-01/02/03 selesai (#99): `/admin/dashboard/main` snapshot-backed + peta MapLibre + Tools Snapshot; DASH-05 card Total Kelompok Tani (#148); **DASH-04 BMP Dashboard Produksi (#166) ✅ 2026-07-15** — snapshot-backed + tools generate + filter Kelengkapan Data. |
 | Report              | ✅ Complete     | RPT-01 Petani (#107) ✅, RPT-02 Pelatihan (#108) ✅, RPT-03 Produksi (#132) ✅ & RPT-04 Kelompok Tani Summary+Detail (#154) ✅ (route + `report.ts` + UI + test). |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region & KT bulk upload belum ada (#69, #70). |
-| Map & Data Analyst  | ✅ Complete     | MAP-01 (#113 + hotspot/ruler/label) ✅ & MAP-02 Peta BMP (#144) ✅; DA-01 (#103) & DA-02 (#118, #122) ✅. |
+| Map & Data Analyst  | ✅ Complete     | MAP-01 (#113 + hotspot/ruler/label) ✅, MAP-02 Peta BMP (#144) ✅ & MAP-03 Layer Produktivitas Peta BMP (#174) ✅ 2026-07-17; DA-01 (#103) & DA-02 (#118, #122) ✅. |
 | **Keamanan (audit)** | ✅ **Remediated (#125, 2026-07-12)** | 5 celah guard/scope RBAC + menuKey Roles **ditutup**: guard `hasPermission` di `role-permission`/`menu`/`upload`, scope `getAccessContext` di `getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`, `requirePermission("settings-roles")`. Sisa scope by-id KT/pelatihan → #127. |
 | Testing & QA        | ✅ Strong | Vitest: **33 files / 441 tests passed** ✅ · build ✅ · **`npm run lint` ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 selesai 2026-07-12. |
 

@@ -6,6 +6,8 @@ import { buildProductionMatrix, enumeratePeriods, type ProductionMatrixRecord } 
 import {
   summarizeProduction,
   buildBmpMapData,
+  buildBmpProductivityView,
+  buildBmpProductivityMatrix,
   longestConsecutiveMonths,
   productionAvailabilityCategory,
   type RawParcel,
@@ -319,6 +321,35 @@ describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
     expect(duration).toBeLessThan(10);
     expect(streak).toBe(600);
     expect(productionAvailabilityCategory(periods)).toBe("BAIK");
+  });
+
+  // MAP-03 (#174): the productivity view recomputes client-side on every
+  // Tahun-select change, and the matrix on every print/Excel click — both must
+  // stay cheap far past a realistic Lembaga.
+  it("buildBmpProductivityView + Matrix: 500 lahan × 36 bulan under 100ms", () => {
+    const periods = enumeratePeriods("2022-01", "2024-12"); // 36 months
+    const production: Record<string, number> = {};
+    for (const period of periods) production[period] = 120;
+    const parcels = Array.from({ length: 500 }, (_, i) => ({
+      id: `p-${i}`,
+      parcelId: `L-${i}`,
+      farmerCode: `FMR-${i}`,
+      farmerName: `Petani ${i}`,
+      area: 1.5,
+      production,
+    }));
+
+    const start = performance.now();
+    const view = buildBmpProductivityView(parcels, 2024);
+    const matrix = buildBmpProductivityMatrix(parcels);
+    const duration = performance.now() - start;
+
+    console.log(`  buildBmpProductivityView+Matrix (500 lahan × 36 bulan): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(100);
+    // 12 bulan × 120 kg = 1.440 kg → 1,44 ton ÷ 1,5 ha = 0,96 Ton/Ha → SANGAT_RENDAH
+    expect(view.counts.SANGAT_RENDAH).toBe(500);
+    expect(matrix.rows.length).toBe(500);
+    expect(matrix.years).toEqual([2022, 2023, 2024]);
   });
 });
 

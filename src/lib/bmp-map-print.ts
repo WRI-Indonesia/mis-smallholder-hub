@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable, { type CellHookData, type Styles } from "jspdf-autotable";
+import { BMP_PRODUCTIVITY_CLASSES, productivityClass } from "@/lib/map-data";
+import type { BmpProductivityMatrix, ProductivityClass } from "@/types/map";
 
 export type BmpPrintLegendItem = {
   color: string;
@@ -33,8 +35,12 @@ export type BmpPrintOptions = {
   imageWidthPx: number;
   imageHeightPx: number;
   legend: BmpPrintLegendItem[];
-  /** Optional: appended as landscape page(s) after the map. */
+  /** Legend caption; defaults to the availability wording (MAP-03 passes its own). */
+  legendTitle?: string;
+  /** Optional: availability matrix appended as landscape page(s) after the map. */
   matrix?: BmpPrintMatrix;
+  /** Optional: productivity table instead of the availability matrix (WYSIWYG, MAP-03). */
+  productivityMatrix?: BmpProductivityMatrix;
   fileName?: string;
 };
 
@@ -71,31 +77,57 @@ export function generateBmpMapPdf(opts: BmpPrintOptions) {
   }
   doc.setTextColor(0);
 
-  // ── Legend row (bottom) ─────────────────────────────────────────────────────
-  const legendH = 12;
-  const legendY = pageH - margin - legendH;
-
+  // ── Legend rows (bottom) — items wrap to new lines so long labels (e.g. the
+  // 5 productivity classes) never run off the page.
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  const legendLabel = "Legenda Ketersediaan Data:";
-  const baselineY = legendY + legendH / 2 + 1.5;
-  doc.text(legendLabel, margin, baselineY);
-  let lx = margin + doc.getTextWidth(legendLabel) + 6;
+  const legendLabel = opts.legendTitle ?? "Legenda Ketersediaan Data:";
+  const captionW = doc.getTextWidth(legendLabel);
+  doc.setFont("helvetica", "normal");
 
   const swatch = 4;
-  doc.setFont("helvetica", "normal");
-  for (const item of opts.legend) {
-    const [r, g, b] = hexToRgb(item.color);
-    doc.setDrawColor(r, g, b);
-    if (item.outlineOnly) doc.setFillColor(255, 255, 255);
-    else doc.setFillColor(r, g, b);
-    doc.rect(lx, baselineY - swatch, swatch, swatch, "FD");
-    lx += swatch + 2;
-
+  const itemGap = 8;
+  const startX = margin + captionW + 6;
+  const maxX = pageW - margin;
+  const items = opts.legend.map((item) => {
     const text = `${item.label} (${item.count})`;
-    doc.setTextColor(0);
-    doc.text(text, lx, baselineY);
-    lx += doc.getTextWidth(text) + 8;
+    return { ...item, text, width: swatch + 2 + doc.getTextWidth(text) };
+  });
+  const legendRows: (typeof items)[] = [[]];
+  let cursor = startX;
+  for (const item of items) {
+    const row = legendRows[legendRows.length - 1];
+    if (row.length > 0 && cursor + item.width > maxX) {
+      legendRows.push([item]);
+      cursor = startX + item.width + itemGap;
+    } else {
+      row.push(item);
+      cursor += item.width + itemGap;
+    }
+  }
+
+  const rowH = 6;
+  const legendH = legendRows.length * rowH + 2;
+  const legendY = pageH - margin - legendH;
+
+  let baselineY = legendY + rowH;
+  doc.setFont("helvetica", "bold");
+  doc.text(legendLabel, margin, baselineY);
+  doc.setFont("helvetica", "normal");
+  for (const row of legendRows) {
+    let lx = startX;
+    for (const item of row) {
+      const [r, g, b] = hexToRgb(item.color);
+      doc.setDrawColor(r, g, b);
+      if (item.outlineOnly) doc.setFillColor(255, 255, 255);
+      else doc.setFillColor(r, g, b);
+      doc.rect(lx, baselineY - swatch, swatch, swatch, "FD");
+      lx += swatch + 2;
+      doc.setTextColor(0);
+      doc.text(item.text, lx, baselineY);
+      lx += doc.getTextWidth(item.text) + itemGap;
+    }
+    baselineY += rowH;
   }
 
   // ── Map image (aspect-fit between header and legend) ────────────────────────
@@ -119,10 +151,143 @@ export function generateBmpMapPdf(opts: BmpPrintOptions) {
   doc.setDrawColor(200);
   doc.rect(drawX, drawY, drawW, drawH);
 
-  // ── Availability matrix page(s) ─────────────────────────────────────────────
-  renderMatrixPages(doc, opts, margin);
+  // ── Data page(s): productivity table (WYSIWYG) or availability matrix ───────
+  if (opts.productivityMatrix) renderProductivityPages(doc, opts, margin);
+  else renderMatrixPages(doc, opts, margin);
 
   doc.save(opts.fileName ?? "peta-bmp.pdf");
+}
+
+const fmtNum2 = (n: number) =>
+  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+// Light fill + darker text per productivity class, DERIVED from the single
+// source-of-truth class colors — a palette change updates the PDF tints too.
+// NO_DATA cells stay untinted.
+const tintChannel = (c: number) => Math.round(255 - (255 - c) * 0.2);
+const darkChannel = (c: number) => Math.round(c * 0.55);
+const CLASS_CELL_STYLES: Record<
+  ProductivityClass,
+  { fill: [number, number, number]; text: [number, number, number] } | null
+> = Object.fromEntries(
+  BMP_PRODUCTIVITY_CLASSES.map((c) => {
+    if (c.key === "NO_DATA") return [c.key, null];
+    const [r, g, b] = hexToRgb(c.color);
+    return [
+      c.key,
+      {
+        fill: [tintChannel(r), tintChannel(g), tintChannel(b)],
+        text: [darkChannel(r), darkChannel(g), darkChannel(b)],
+      },
+    ];
+  })
+) as Record<
+  ProductivityClass,
+  { fill: [number, number, number]; text: [number, number, number] } | null
+>;
+
+/** Append the per-parcel productivity table (Ton/Ha per year + average) as landscape page(s). */
+function renderProductivityPages(doc: jsPDF, opts: BmpPrintOptions, margin: number) {
+  const matrix = opts.productivityMatrix;
+  if (!matrix || matrix.rows.length === 0) return;
+
+  const pageW = doc.internal.pageSize.getWidth();
+  doc.addPage("a4", "landscape");
+
+  const drawPageTitle = () => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(20);
+    doc.text(`${opts.title} — Produktivitas per Lahan (Ton/Ha)`, margin, 14);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(90);
+    doc.text(
+      "Ton/Ha = produksi tahun tsb ÷ luas persil · warna sel = kelas produktivitas · produksi tanpa tautan lahan tidak dihitung.",
+      margin,
+      18
+    );
+    doc.setTextColor(0);
+  };
+
+  if (matrix.years.length === 0) {
+    drawPageTitle();
+    doc.setFontSize(10);
+    doc.setTextColor(90);
+    doc.text("Belum ada data produksi yang tertaut ke lahan pada Lembaga Petani ini.", margin, 28);
+    doc.setTextColor(0);
+    return;
+  }
+
+  const head = [
+    ["Nama", "ID Petani", "ID Lahan", "Luas (Ha)", ...matrix.years.map(String), "Rata-rata"],
+  ];
+  const body = matrix.rows.map((r) => [
+    r.name,
+    r.farmerCode,
+    r.parcelId,
+    r.area != null ? fmtNum2(r.area) : "—",
+    ...matrix.years.map((y) => {
+      const v = r.tonHaByYear[String(y)];
+      return v != null ? fmtNum2(v) : "";
+    }),
+    r.avg != null ? fmtNum2(r.avg) : "",
+  ]);
+
+  const idW = [40, 26, 30, 16];
+  const valueCols = matrix.years.length + 1;
+  const valueW = (pageW - margin * 2 - idW.reduce((s, w) => s + w, 0)) / valueCols;
+  const columnStyles: Record<string, Partial<Styles>> = {
+    0: { cellWidth: idW[0], halign: "left" },
+    1: { cellWidth: idW[1], halign: "left" },
+    2: { cellWidth: idW[2], halign: "left" },
+    3: { cellWidth: idW[3], halign: "right" },
+  };
+  for (let i = 0; i < valueCols; i++) {
+    columnStyles[String(4 + i)] = { cellWidth: valueW, halign: "center" };
+  }
+
+  autoTable(doc, {
+    head,
+    body,
+    columnStyles,
+    startY: 22,
+    margin: { top: 20, left: margin, right: margin, bottom: 12 },
+    theme: "grid",
+    styles: {
+      fontSize: 7,
+      cellPadding: 1,
+      halign: "center",
+      valign: "middle",
+      lineColor: [210, 210, 210],
+      lineWidth: 0.1,
+      textColor: 30,
+      overflow: "hidden",
+    },
+    headStyles: {
+      fillColor: [238, 238, 238],
+      textColor: 40,
+      fontStyle: "bold",
+      lineColor: [210, 210, 210],
+      lineWidth: 0.1,
+    },
+    didParseCell: (d: CellHookData) => {
+      // Ton/Ha cell → tint by its productivity class (same thresholds as the map).
+      if (d.section !== "body" || d.column.index < 4) return;
+      const row = matrix.rows[d.row.index];
+      if (!row) return;
+      const valueIdx = d.column.index - 4;
+      const value =
+        valueIdx < matrix.years.length ? row.tonHaByYear[String(matrix.years[valueIdx])] : row.avg;
+      if (value == null) return;
+      const style = CLASS_CELL_STYLES[productivityClass(value)];
+      if (style) {
+        d.cell.styles.fillColor = style.fill;
+        d.cell.styles.textColor = style.text;
+      }
+    },
+    didDrawPage: drawPageTitle,
+  });
 }
 
 /** Append the per-parcel × month availability matrix as landscape page(s). */

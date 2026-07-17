@@ -257,7 +257,7 @@ flowchart LR
 | Code | Nama Paket |
 |------|-----------|
 | `PAKET_1_BMP_PC_RSPO_NKT` | Paket 1: BMP, PC, RSPO, NKT |
-| `PAKET_2_MK` | Paket 2: Manajemen Kebun |
+| `PAKET_2_MK` | Paket 2: Manajemen Kelompok |
 | `PAKET_2_K3` | Paket 2: K3 (Keselamatan dan Kesehatan Kerja) |
 | `PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV` | Paket 3-4: GEDSI, Financial Literacy, Livelihood, Business Development |
 | `OTHER` | Paket lainnya |
