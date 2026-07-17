@@ -10,15 +10,23 @@ import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { summarizeProduction } from "@/lib/map-data";
+import { BMP_PRODUCTIVITY_CLASSES, productivityViewLabel, summarizeProduction } from "@/lib/map-data";
 import type {
   BmpMapData,
   BmpParcelFeature,
+  BmpParcelProductivity,
+  BmpProductivityView,
   ProductionAvailabilityCategory,
   ProductionSummary,
+  ProductivityClass,
 } from "@/types/map";
 import { geomBounds, parcelLabelFit, PARCEL_LABEL_FONT_PX } from "../parcel/map-geo";
-import { BMP_CATEGORIES, type BmpLayerVisibility } from "./map-bmp-control-panel";
+import {
+  BMP_CATEGORIES,
+  type BmpColorMode,
+  type BmpLayerVisibility,
+  type BmpProductivityVisibility,
+} from "./map-bmp-control-panel";
 import { MapBmpDataPanel } from "./map-bmp-data-panel";
 
 const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
@@ -98,6 +106,30 @@ const CATEGORY_META: Record<ProductionAvailabilityCategory, { color: string; sho
   NONE: { color: "#9ca3af", short: "Tidak ada data" },
 };
 
+// Productivity mode (MAP-03): fill/line color by the feature's `productivityClass`
+// property; the NO_DATA entry doubles as the match fallback and is outline-only.
+const NO_DATA_COLOR = BMP_PRODUCTIVITY_CLASSES.find((c) => c.key === "NO_DATA")?.color ?? "#9ca3af";
+
+const PRODUCTIVITY_COLOR_EXPR: ExpressionSpecification = [
+  "match",
+  ["get", "productivityClass"],
+  ...BMP_PRODUCTIVITY_CLASSES.filter((c) => c.key !== "NO_DATA").flatMap((c) => [c.key, c.color]),
+  NO_DATA_COLOR,
+] as unknown as ExpressionSpecification;
+
+const PRODUCTIVITY_FILL_OPACITY_EXPR: ExpressionSpecification = [
+  "match",
+  ["get", "productivityClass"],
+  "NO_DATA",
+  0,
+  0.4,
+];
+
+const PRODUCTIVITY_META: Record<ProductivityClass, { color: string; short: string }> =
+  Object.fromEntries(
+    BMP_PRODUCTIVITY_CLASSES.map((c) => [c.key, { color: c.color, short: c.short }])
+  ) as Record<ProductivityClass, { color: string; short: string }>;
+
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 const formatPeriod = (p: string | null | undefined) => {
   if (!p) return "—";
@@ -121,6 +153,9 @@ export type BmpMapCapture = { dataUrl: string; width: number; height: number };
 interface Props {
   data: BmpMapData | null;
   layers: BmpLayerVisibility;
+  colorMode: BmpColorMode;
+  productivity: BmpProductivityView | null;
+  prodLayers: BmpProductivityVisibility;
   /**
    * Lets the parent grab a PNG snapshot of the current map. The canvas registers
    * its capture fn on mount and clears it on unmount.
@@ -128,7 +163,12 @@ interface Props {
   registerCapture?: (fn: (() => Promise<BmpMapCapture | null>) | null) => void;
 }
 
-function parcelProps(p: BmpParcelFeature) {
+function parcelProps(
+  p: BmpParcelFeature,
+  prod?: BmpParcelProductivity,
+  prodView?: number | "AVG",
+  productionJson?: string
+) {
   return {
     id: p.id,
     parcelId: p.parcelId,
@@ -145,11 +185,23 @@ function parcelProps(p: BmpParcelFeature) {
     lastPeriod: p.lastPeriod,
     // Serialized here because MapLibre feature properties can't hold objects;
     // the popup parses it back to chart the monthly production without a fetch.
-    production: JSON.stringify(p.production),
+    production: productionJson ?? JSON.stringify(p.production),
+    ...(prod && prodView !== undefined
+      ? {
+          productivityClass: prod.cls,
+          productivityTonHa: prod.tonHa,
+          productivityMonths: prod.monthsReported,
+          productivityYears: prod.yearsReported,
+          // Structured discriminator + label: the popup must not infer the
+          // AVG mode from display copy.
+          productivityIsAvg: prodView === "AVG",
+          productivityViewLabel: productivityViewLabel(prodView),
+        }
+      : {}),
   };
 }
 
-export function MapBmpCanvas({ data, layers, registerCapture }: Props) {
+export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers, registerCapture }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -165,23 +217,69 @@ export function MapBmpCanvas({ data, layers, registerCapture }: Props) {
     setSelected(null);
   }
 
+  // Per-parcel production JSON is stable per dataset — computed once so view
+  // changes don't re-stringify hundreds of parcels. (Plain object: `Map` here
+  // resolves to the react-map-gl component.)
+  const productionJsonById = useMemo(() => {
+    const json: Record<string, string> = {};
+    for (const p of data?.parcels ?? []) json[p.id] = JSON.stringify(p.production);
+    return json;
+  }, [data]);
+
+  // Refresh (not just close) an open popup when the productivity view changes,
+  // so its badge/values never contradict the polygon colors underneath.
+  const [prevProductivity, setPrevProductivity] = useState(productivity);
+  if (prevProductivity !== productivity) {
+    setPrevProductivity(productivity);
+    if (selected) {
+      const p = data?.parcels.find((x) => x.id === selected.props.id);
+      setSelected(
+        p
+          ? {
+              ...selected,
+              props: parcelProps(
+                p,
+                productivity?.byParcel[p.id],
+                productivity?.view,
+                productionJsonById[p.id]
+              ),
+            }
+          : null
+      );
+    }
+  }
+
   const parcelAreaGeojson = useMemo<FeatureCollection>(
     () => ({
       type: "FeatureCollection",
       features: (data?.parcels ?? []).map((p) => ({
         type: "Feature",
         geometry: p.geometry as Polygon | MultiPolygon,
-        properties: parcelProps(p),
+        properties: parcelProps(
+          p,
+          productivity?.byParcel[p.id],
+          productivity?.view,
+          productionJsonById[p.id]
+        ),
       })),
     }),
-    [data]
+    [data, productivity, productionJsonById]
   );
 
-  // Category-visibility filter shared by fill + outline + label.
+  // Visibility filter shared by fill + outline + label, driven by the active
+  // coloring mode (availability categories vs productivity classes).
   const categoryFilter = useMemo<FilterSpecification>(() => {
+    if (colorMode === "PRODUCTIVITY") {
+      const visible = BMP_PRODUCTIVITY_CLASSES.filter((c) => prodLayers[c.key]).map((c) => c.key);
+      return ["in", ["get", "productivityClass"], ["literal", visible]] as unknown as FilterSpecification;
+    }
     const visible = BMP_CATEGORIES.filter((c) => layers[c.key]).map((c) => c.key);
     return ["in", ["get", "category"], ["literal", visible]] as unknown as FilterSpecification;
-  }, [layers]);
+  }, [layers, prodLayers, colorMode]);
+
+  const fillColorExpr = colorMode === "PRODUCTIVITY" ? PRODUCTIVITY_COLOR_EXPR : CATEGORY_COLOR_EXPR;
+  const fillOpacityExpr =
+    colorMode === "PRODUCTIVITY" ? PRODUCTIVITY_FILL_OPACITY_EXPR : CATEGORY_FILL_OPACITY_EXPR;
 
   // Current zoom drives the "does the name fit inside the polygon" test.
   const [zoom, setZoom] = useState(9);
@@ -192,27 +290,42 @@ export function MapBmpCanvas({ data, layers, registerCapture }: Props) {
       (data?.parcels ?? []).flatMap((p) => {
         const name = p.farmerName?.trim();
         const bounds = name ? geomBounds(p.geometry) : null;
-        return name && bounds ? [{ name, bounds, centroid: p.centroid, category: p.category }] : [];
+        return name && bounds
+          ? [{ id: p.id, name, bounds, centroid: p.centroid, category: p.category }]
+          : [];
       }),
     [data]
   );
 
-  // Farmer-name labels: only those whose (wrapped) name fits at the current zoom.
-  const parcelLabelGeojson = useMemo<FeatureCollection>(() => {
-    const features = namedParcels.flatMap((p) => {
-      const fit = parcelLabelFit(p.name, p.bounds, zoom);
-      return fit
-        ? [
-            {
-              type: "Feature" as const,
-              geometry: { type: "Point" as const, coordinates: p.centroid },
-              properties: { farmerName: p.name, maxWidthEms: fit.maxWidthEms, category: p.category },
-            },
-          ]
-        : [];
-    });
-    return { type: "FeatureCollection", features };
-  }, [namedParcels, zoom]);
+  // Farmer-name labels: only those whose (wrapped) name fits at the current
+  // zoom. The (expensive) fit test only depends on names/bounds/zoom …
+  const fittedLabels = useMemo(
+    () =>
+      namedParcels.flatMap((p) => {
+        const fit = parcelLabelFit(p.name, p.bounds, zoom);
+        return fit ? [{ ...p, maxWidthEms: fit.maxWidthEms }] : [];
+      }),
+    [namedParcels, zoom]
+  );
+
+  // … while the cheap per-view decoration (both mode properties, so the shared
+  // visibility filter applies) re-runs on productivity changes alone.
+  const parcelLabelGeojson = useMemo<FeatureCollection>(
+    () => ({
+      type: "FeatureCollection",
+      features: fittedLabels.map((p) => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: p.centroid },
+        properties: {
+          farmerName: p.name,
+          maxWidthEms: p.maxWidthEms,
+          category: p.category,
+          productivityClass: productivity?.byParcel[p.id]?.cls ?? "NO_DATA",
+        },
+      })),
+    }),
+    [fittedLabels, productivity]
+  );
 
   // Label colors follow the basemap so they stay legible.
   const labelColors =
@@ -289,7 +402,16 @@ export function MapBmpCanvas({ data, layers, registerCapture }: Props) {
 
   // Zoom the map to a parcel's extent and open its popup (from the data panel).
   const zoomToParcel = (p: BmpParcelFeature) => {
-    setSelected({ longitude: p.centroid[0], latitude: p.centroid[1], props: parcelProps(p) });
+    setSelected({
+      longitude: p.centroid[0],
+      latitude: p.centroid[1],
+      props: parcelProps(
+        p,
+        productivity?.byParcel[p.id],
+        productivity?.view,
+        productionJsonById[p.id]
+      ),
+    });
     const map = mapRef.current;
     if (!map) return;
     const b = geomBounds(p.geometry);
@@ -325,13 +447,13 @@ export function MapBmpCanvas({ data, layers, registerCapture }: Props) {
             id="bmp-parcel-fill"
             type="fill"
             filter={categoryFilter}
-            paint={{ "fill-color": CATEGORY_COLOR_EXPR, "fill-opacity": CATEGORY_FILL_OPACITY_EXPR }}
+            paint={{ "fill-color": fillColorExpr, "fill-opacity": fillOpacityExpr }}
           />
           <Layer
             id="bmp-parcel-outline"
             type="line"
             filter={categoryFilter}
-            paint={{ "line-color": CATEGORY_COLOR_EXPR, "line-width": 1.5 }}
+            paint={{ "line-color": fillColorExpr, "line-width": 1.5 }}
           />
         </Source>
 
@@ -439,11 +561,36 @@ function CategoryBadge({ category }: { category: ProductionAvailabilityCategory 
   );
 }
 
+const formatTonHa = (n: number) =>
+  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+/** Class-only badge — the Ton/Ha value itself lives in the Detail Lahan rows. */
+function ProductivityBadge({ cls }: { cls: ProductivityClass }) {
+  const meta = PRODUCTIVITY_META[cls];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+      style={{ backgroundColor: `${meta.color}22`, color: meta.color }}
+    >
+      <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: meta.color }} />
+      {meta.short}
+    </span>
+  );
+}
+
 function BmpParcelPopupBody({ props }: { props: Record<string, unknown> }) {
   const category = (props.category as ProductionAvailabilityCategory) ?? "NONE";
   const streak = Number(props.streakMonths ?? 0);
   const first = props.firstPeriod as string | null;
   const last = props.lastPeriod as string | null;
+
+  // Productivity (MAP-03) props are only present when a view has been computed.
+  const prodCls = (props.productivityClass as ProductivityClass | undefined) ?? null;
+  const prodTonHa = typeof props.productivityTonHa === "number" ? props.productivityTonHa : null;
+  const prodLabel = String(props.productivityViewLabel ?? "");
+  const prodIsAvg = props.productivityIsAvg === true || props.productivityIsAvg === "true";
+  const prodMonths = Number(props.productivityMonths ?? 0);
+  const prodYears = Number(props.productivityYears ?? 0);
 
   // Chart the monthly production from the embedded per-period kg (no fetch).
   const summary = useMemo<ProductionSummary>(() => {
@@ -486,6 +633,12 @@ function BmpParcelPopupBody({ props }: { props: Record<string, unknown> }) {
         <span className="text-xs text-muted-foreground">Ketersediaan Data</span>
         <CategoryBadge category={category} />
       </div>
+      {prodCls && (
+        <div className="flex items-center justify-between border-b bg-muted/40 px-3.5 py-2">
+          <span className="text-xs text-muted-foreground">Produktivitas {prodLabel && `(${prodLabel})`}</span>
+          <ProductivityBadge cls={prodCls} />
+        </div>
+      )}
 
       <div className="divide-y">
         <PopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
@@ -498,6 +651,17 @@ function BmpParcelPopupBody({ props }: { props: Record<string, unknown> }) {
               { label: "Run Bulan Berturut", value: streak > 0 ? `${streak} bulan` : "—" },
               { label: "Periode Awal", value: formatPeriod(first) },
               { label: "Periode Akhir", value: formatPeriod(last) },
+              ...(prodCls
+                ? [
+                    {
+                      label: `Produktivitas${prodLabel ? ` (${prodLabel})` : ""}`,
+                      value: prodTonHa != null ? `${formatTonHa(prodTonHa)} Ton/Ha` : "—",
+                    },
+                    prodIsAvg
+                      ? { label: "Tahun Melapor", value: prodYears > 0 ? `${prodYears} tahun` : "—" }
+                      : { label: "Bulan Melapor", value: `${prodMonths}/12` },
+                  ]
+                : []),
             ]}
           />
         </PopupSection>

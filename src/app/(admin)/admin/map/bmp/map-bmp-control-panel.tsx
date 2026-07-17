@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Check,
   ChevronsUpDown,
   ChevronDown,
   SlidersHorizontal,
-  List,
   Loader2,
   MapPin,
   Printer,
@@ -22,11 +21,15 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BMP_PRODUCTIVITY_CLASSES } from "@/lib/map-data";
 import type {
   BmpMapData,
+  BmpProductivityView,
   MapSelectOption,
   MapGroupOption,
   ProductionAvailabilityCategory,
+  ProductivityClass,
 } from "@/types/map";
 
 /**
@@ -58,6 +61,19 @@ export const DEFAULT_BMP_VISIBILITY: BmpLayerVisibility = {
   NONE: true,
 };
 
+/** Which thematic coloring drives the parcel fill (MAP-03). */
+export type BmpColorMode = "AVAILABILITY" | "PRODUCTIVITY";
+
+export type BmpProductivityVisibility = Record<ProductivityClass, boolean>;
+
+export const DEFAULT_BMP_PRODUCTIVITY_VISIBILITY: BmpProductivityVisibility = {
+  TINGGI: true,
+  SEDANG: true,
+  RENDAH: true,
+  SANGAT_RENDAH: true,
+  NO_DATA: true,
+};
+
 interface Props {
   provinces: MapSelectOption[];
   districts: MapSelectOption[];
@@ -75,6 +91,13 @@ interface Props {
   counts: BmpMapData["counts"] | null;
   layers: BmpLayerVisibility;
   onLayersChange: (layers: BmpLayerVisibility) => void;
+  colorMode: BmpColorMode;
+  onColorModeChange: (mode: BmpColorMode) => void;
+  productivity: BmpProductivityView | null;
+  prodView: string;
+  onProdViewChange: (view: string) => void;
+  prodLayers: BmpProductivityVisibility;
+  onProdLayersChange: (layers: BmpProductivityVisibility) => void;
   onPrint: () => void;
   printing: boolean;
   onExport: () => void;
@@ -157,6 +180,56 @@ interface LegendRowProps {
   variant?: "dot" | "area";
 }
 
+/**
+ * One thematic layer entry (MAP-03): a radio to make it the active coloring of
+ * the parcel polygons + a collapsible body holding its controls and legend.
+ */
+function LayerSection({
+  title,
+  active,
+  onActivate,
+  children,
+}: {
+  title: string;
+  active: boolean;
+  onActivate: () => void;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="flex items-center gap-2.5 px-4 py-3">
+        <button
+          role="radio"
+          aria-checked={active}
+          title="Aktifkan layer ini"
+          aria-label={`Aktifkan ${title}`}
+          onClick={onActivate}
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+            active ? "border-primary" : "border-muted-foreground/50 hover:border-primary"
+          )}
+        >
+          {active && <span className="h-2 w-2 rounded-full bg-primary" />}
+        </button>
+        <CollapsibleTrigger
+          render={
+            <button className="flex flex-1 items-center justify-between text-left">
+              <span className={cn("text-sm font-semibold", !active && "text-muted-foreground")}>
+                {title}
+              </span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", open ? "rotate-180" : "")} />
+            </button>
+          }
+        />
+      </div>
+      <CollapsibleContent>
+        <div className="px-4 pb-4">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 function LegendRow({ color, label, count, checked, onToggle, variant = "area" }: LegendRowProps) {
   return (
     <label className="flex items-center gap-2.5 py-1 cursor-pointer">
@@ -181,10 +254,12 @@ export function MapBmpControlPanel(props: Props) {
     provinceId, districtId, farmerGroupId,
     onProvinceChange, onDistrictChange, onFarmerGroupChange,
     onLoad, isLoading, filterOpen, onFilterOpenChange,
-    counts, layers, onLayersChange, onPrint, printing, onExport, exporting,
+    counts, layers, onLayersChange,
+    colorMode, onColorModeChange, productivity, prodView, onProdViewChange,
+    prodLayers, onProdLayersChange,
+    onPrint, printing, onExport, exporting,
   } = props;
 
-  const [legendOpen, setLegendOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
 
   const countFor = (key: ProductionAvailabilityCategory, c: BmpMapData["counts"]) =>
@@ -275,69 +350,116 @@ export function MapBmpControlPanel(props: Props) {
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Legend section — only after data is loaded */}
-      {counts && (
+      {/* Layer sections — only after data is loaded. The two layers color the
+          same polygons, so exactly one is active at a time (radio). */}
+      {counts && totalParcels === 0 && (
         <>
           <Separator />
-          <Collapsible open={legendOpen} onOpenChange={setLegendOpen}>
-            <CollapsibleTrigger
-              render={
-                <button className="flex w-full items-center justify-between px-4 py-3 text-left">
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    <List className="h-4 w-4" />
-                    Ketersediaan Data Produksi
-                  </span>
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", legendOpen ? "rotate-180" : "")} />
-                </button>
-              }
-            />
-            <CollapsibleContent>
-              <div className="px-4 pb-4">
-                {totalParcels === 0 ? (
-                  <p className="text-sm text-muted-foreground py-1">Tidak ada lahan untuk filter ini.</p>
-                ) : (
-                  <>
-                    <div>
-                      {BMP_CATEGORIES.map((cat) => (
-                        <LegendRow
-                          key={cat.key}
-                          color={cat.color}
-                          label={cat.label}
-                          count={countFor(cat.key, counts)}
-                          checked={layers[cat.key]}
-                          onToggle={(v) => onLayersChange({ ...layers, [cat.key]: v })}
-                        />
+          <p className="px-4 py-3 text-sm text-muted-foreground">Tidak ada lahan untuk filter ini.</p>
+        </>
+      )}
+      {counts && totalParcels > 0 && (
+        <>
+          <Separator />
+          <LayerSection
+            title="Ketersediaan Data Produksi"
+            active={colorMode === "AVAILABILITY"}
+            onActivate={() => onColorModeChange("AVAILABILITY")}
+          >
+            <div>
+              {BMP_CATEGORIES.map((cat) => (
+                <LegendRow
+                  key={cat.key}
+                  color={cat.color}
+                  label={cat.label}
+                  count={countFor(cat.key, counts)}
+                  checked={layers[cat.key]}
+                  onToggle={(v) => onLayersChange({ ...layers, [cat.key]: v })}
+                />
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+              Kategori dihitung dari run bulan berturut-turut produksi yang
+              tertaut ke lahan.
+            </p>
+          </LayerSection>
+
+          <Separator />
+          <LayerSection
+            title="Produktivitas (Ton/Ha)"
+            active={colorMode === "PRODUCTIVITY"}
+            onActivate={() => onColorModeChange("PRODUCTIVITY")}
+          >
+            {productivity && (
+              <>
+                <div className="mb-2 flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">Tahun</span>
+                  <Select value={prodView} onValueChange={(v) => onProdViewChange(v ?? "AVG")}>
+                    <SelectTrigger className="h-8 w-full text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AVG">Rata-rata</SelectItem>
+                      {productivity.years.map((y) => (
+                        <SelectItem key={y} value={String(y)}>
+                          {y}
+                        </SelectItem>
                       ))}
-                    </div>
-                    <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
-                      Kategori dihitung dari run bulan berturut-turut produksi yang
-                      tertaut ke lahan.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3 h-8 w-full gap-2"
-                      onClick={onPrint}
-                      disabled={printing || totalParcels === 0}
-                    >
-                      {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
-                      {printing ? "Menyiapkan..." : "Cetak Peta dan Matriks Ketersediaan Data"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 h-8 w-full gap-2"
-                      onClick={onExport}
-                      disabled={exporting || totalParcels === 0}
-                    >
-                      {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
-                      {exporting ? "Menyiapkan..." : "Download Ketersediaan Data (Excel)"}
-                    </Button>
-                  </>
-                )}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  {BMP_PRODUCTIVITY_CLASSES.map((c) => (
+                    <LegendRow
+                      key={c.key}
+                      color={c.color}
+                      label={c.label}
+                      count={productivity.counts[c.key]}
+                      checked={prodLayers[c.key]}
+                      onToggle={(v) => onProdLayersChange({ ...prodLayers, [c.key]: v })}
+                    />
+                  ))}
+                </div>
+                <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+                  Produktivitas = produksi tahun terpilih ÷ luas persil (Rata-rata =
+                  rata-rata antar tahun melapor). Produksi tanpa tautan lahan tidak
+                  dihitung.
+                </p>
+              </>
+            )}
+          </LayerSection>
+
+          <Separator />
+          <div className="px-4 py-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-full gap-2"
+              onClick={onPrint}
+              disabled={printing}
+            >
+              {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
+              {printing
+                ? "Menyiapkan..."
+                : colorMode === "PRODUCTIVITY"
+                  ? "Cetak Peta dan Tabel Produktivitas"
+                  : "Cetak Peta dan Matriks Ketersediaan Data"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 h-8 w-full gap-2"
+              onClick={onExport}
+              disabled={exporting}
+            >
+              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
+              {exporting
+                ? "Menyiapkan..."
+                : colorMode === "PRODUCTIVITY"
+                  ? "Download Produktivitas (Excel)"
+                  : "Download Ketersediaan Data (Excel)"}
+            </Button>
+          </div>
         </>
       )}
 

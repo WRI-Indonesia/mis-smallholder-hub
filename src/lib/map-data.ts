@@ -7,7 +7,11 @@ import type {
   ProductionSummary,
   BmpMapData,
   BmpParcelFeature,
+  BmpParcelProductivity,
+  BmpProductivityMatrix,
+  BmpProductivityView,
   ProductionAvailabilityCategory,
+  ProductivityClass,
 } from "@/types/map";
 
 export type RawGroup = {
@@ -277,4 +281,196 @@ export function buildBmpMapData(
   }
 
   return { parcels: parcelFeatures, kt, counts };
+}
+
+// ── Peta BMP — produktivitas per persil (MAP-03) ─────────────────────────────
+
+/**
+ * Class thresholds in Ton/Ha per year (lower bound, inclusive). Exported so the
+ * owner can retune the boundaries in one place; usulan awal 10/15/20 (#174).
+ * The legend labels below derive from these, so a retune updates every surface.
+ */
+export const PRODUCTIVITY_TINGGI_MIN = 20;
+export const PRODUCTIVITY_SEDANG_MIN = 15;
+export const PRODUCTIVITY_RENDAH_MIN = 10;
+
+/**
+ * Single source of truth for productivity-class display metadata: map
+ * fill/outline, panel legend, popup badge, and PDF legend/table tints all
+ * derive from this list. Order = legend order (best → worst). Labels stay
+ * cp1252-safe ("min.", en dash) because jsPDF's core helvetica cannot encode
+ * characters like "≥".
+ */
+export const BMP_PRODUCTIVITY_CLASSES: {
+  key: ProductivityClass;
+  color: string;
+  /** Short badge text (e.g. "Tinggi"). */
+  short: string;
+  label: string;
+}[] = [
+  {
+    key: "TINGGI",
+    color: "#16a34a",
+    short: "Tinggi",
+    label: `Tinggi (min. ${PRODUCTIVITY_TINGGI_MIN} Ton/Ha)`,
+  },
+  {
+    key: "SEDANG",
+    color: "#eab308",
+    short: "Sedang",
+    label: `Sedang (${PRODUCTIVITY_SEDANG_MIN}–${PRODUCTIVITY_TINGGI_MIN} Ton/Ha)`,
+  },
+  {
+    key: "RENDAH",
+    color: "#f97316",
+    short: "Rendah",
+    label: `Rendah (${PRODUCTIVITY_RENDAH_MIN}–${PRODUCTIVITY_SEDANG_MIN} Ton/Ha)`,
+  },
+  {
+    key: "SANGAT_RENDAH",
+    color: "#dc2626",
+    short: "Sangat Rendah",
+    label: `Sangat Rendah (< ${PRODUCTIVITY_RENDAH_MIN} Ton/Ha)`,
+  },
+  { key: "NO_DATA", color: "#9ca3af", short: "Tidak ada data", label: "Tidak ada data" },
+];
+
+/** Human label for a productivity view — the single derivation used by popup, panel, and print. */
+export const productivityViewLabel = (view: number | "AVG") =>
+  view === "AVG" ? "Rata-rata" : String(view);
+
+/** Classify a parcel's Ton/Ha per year; null (not computable) → NO_DATA. */
+export function productivityClass(tonHa: number | null): ProductivityClass {
+  if (tonHa == null) return "NO_DATA";
+  if (tonHa >= PRODUCTIVITY_TINGGI_MIN) return "TINGGI";
+  if (tonHa >= PRODUCTIVITY_SEDANG_MIN) return "SEDANG";
+  if (tonHa >= PRODUCTIVITY_RENDAH_MIN) return "RENDAH";
+  return "SANGAT_RENDAH";
+}
+
+/**
+ * Year sanity window for productivity views. A typo period (e.g. "2924-05" —
+ * the pattern this project hit during training imports) must not become the
+ * default map view or an export column.
+ */
+export const BMP_MIN_PRODUCTION_YEAR = 2000;
+const defaultMaxProductionYear = () => new Date().getFullYear() + 1;
+
+const isSaneProductionYear = (year: number, maxYear: number) =>
+  Number.isFinite(year) && year >= BMP_MIN_PRODUCTION_YEAR && year <= maxYear;
+
+/** Distinct sane years with linked production across parcels, descending (year dropdown). */
+export function bmpProductionYears(
+  parcels: { production: Record<string, number> }[],
+  maxYear = defaultMaxProductionYear()
+): number[] {
+  const years = new Set<number>();
+  for (const p of parcels) {
+    for (const period of Object.keys(p.production)) {
+      const year = Number.parseInt(period.slice(0, 4), 10);
+      if (isSaneProductionYear(year, maxYear)) years.add(year);
+    }
+  }
+  return [...years].sort((a, b) => b - a);
+}
+
+/**
+ * Productivity of one parcel for the selected view, from its per-period kg
+ * totals (only production linked to the parcel — rows without parcelId never
+ * reach here) and its area in hectares.
+ *
+ * - Year view: Ton/Ha = Σ kg(year) ÷ 1000 ÷ area.
+ * - "AVG": average annual Ton/Ha across the years the parcel reported
+ *   (= Σ kg(all) ÷ 1000 ÷ yearsReported ÷ area).
+ * - Missing/zero area or no data in the view → tonHa null (NO_DATA).
+ * Values are as-reported: partial years are not annualized; monthsReported lets
+ * the UI flag incomplete years (keputusan #174).
+ */
+export function parcelProductivity(
+  production: Record<string, number>,
+  area: number | null,
+  view: number | "AVG",
+  maxYear = defaultMaxProductionYear()
+): Omit<BmpParcelProductivity, "cls"> {
+  // Typo years are excluded here too so AVG isn't diluted by a bogus year.
+  const entries = Object.entries(production).filter(([period]) =>
+    isSaneProductionYear(Number.parseInt(period.slice(0, 4), 10), maxYear)
+  );
+
+  if (view === "AVG") {
+    const years = new Set(entries.map(([period]) => period.slice(0, 4)));
+    const yearsReported = years.size;
+    const monthsReported = entries.length;
+    if (area == null || area <= 0 || yearsReported === 0) {
+      return { tonHa: null, monthsReported, yearsReported };
+    }
+    const totalKg = entries.reduce((s, [, kg]) => s + kg, 0);
+    return { tonHa: totalKg / 1000 / yearsReported / area, monthsReported, yearsReported };
+  }
+
+  const inYear = entries.filter(([period]) => Number.parseInt(period.slice(0, 4), 10) === view);
+  const monthsReported = inYear.length;
+  const yearsReported = monthsReported > 0 ? 1 : 0;
+  if (area == null || area <= 0 || monthsReported === 0) {
+    return { tonHa: null, monthsReported, yearsReported };
+  }
+  const totalKg = inYear.reduce((s, [, kg]) => s + kg, 0);
+  return { tonHa: totalKg / 1000 / area, monthsReported, yearsReported };
+}
+
+/**
+ * Pure transform for the productivity coloring mode: per-parcel Ton/Ha + class
+ * for the selected view, per-class counts (legend), and the year options.
+ */
+export function buildBmpProductivityView(
+  parcels: Pick<BmpParcelFeature, "id" | "area" | "production">[],
+  view: number | "AVG"
+): BmpProductivityView {
+  const byParcel: Record<string, BmpParcelProductivity> = {};
+  const counts: Record<ProductivityClass, number> = {
+    TINGGI: 0,
+    SEDANG: 0,
+    RENDAH: 0,
+    SANGAT_RENDAH: 0,
+    NO_DATA: 0,
+  };
+  for (const p of parcels) {
+    const base = parcelProductivity(p.production, p.area, view);
+    const cls = productivityClass(base.tonHa);
+    byParcel[p.id] = { ...base, cls };
+    counts[cls]++;
+  }
+  return { view, years: bmpProductionYears(parcels), byParcel, counts };
+}
+
+/**
+ * Productivity table for the print PDF / Excel export: one row per parcel
+ * (sorted by farmer name, matching the availability matrix), Ton/Ha per
+ * available year (columns ascending) plus the cross-year average.
+ */
+export function buildBmpProductivityMatrix(
+  parcels: Pick<
+    BmpParcelFeature,
+    "id" | "parcelId" | "farmerCode" | "farmerName" | "area" | "production"
+  >[]
+): BmpProductivityMatrix {
+  const years = bmpProductionYears(parcels).slice().reverse();
+  const rows = [...parcels]
+    .sort((a, b) => a.farmerName.localeCompare(b.farmerName, "id"))
+    .map((p) => {
+      const tonHaByYear: Record<string, number | null> = {};
+      for (const year of years) {
+        tonHaByYear[String(year)] = parcelProductivity(p.production, p.area, year).tonHa;
+      }
+      return {
+        id: p.id,
+        name: p.farmerName,
+        farmerCode: p.farmerCode,
+        parcelId: p.parcelId,
+        area: p.area,
+        tonHaByYear,
+        avg: parcelProductivity(p.production, p.area, "AVG").tonHa,
+      };
+    });
+  return { years, rows };
 }
