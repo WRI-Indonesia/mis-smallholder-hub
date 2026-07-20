@@ -80,6 +80,13 @@ const MEDIA_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/;
 
 const YOUTUBE_RE = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{6,})/;
 
+/** Sumber media di S3 privat: `s3://<key>` (#185) — di-presign saat render. */
+export function s3KeyFromSrc(src: string): string | null {
+  const m = /^s3:\/\/(.+)$/.exec(src.trim());
+  const key = m?.[1]?.trim();
+  return key ? key : null;
+}
+
 /**
  * Tebak jenis media dari sumbernya: berkas video (`.mp4`/`.webm`/`.ogv`) →
  * pemutar `<video>`; tautan YouTube/Vimeo → embed; selain itu gambar.

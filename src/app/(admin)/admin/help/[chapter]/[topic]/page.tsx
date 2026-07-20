@@ -9,6 +9,7 @@ import {
   buildHelpNav,
   buildHelpSearchIndex,
 } from "@/lib/help-content";
+import { resolveHelpMedia } from "@/lib/help-media";
 import { HelpSidebar } from "../../help-sidebar";
 import { HelpBlocks } from "../../help-blocks";
 
@@ -34,6 +35,8 @@ export default async function HelpTopicPage({
 
   const { chapter, chapterIndex, topic, number } = found;
   const { prev, next } = getAdjacentHelpTopics(chapterSlug, topicId);
+  // Media `s3://key` di-presign per-request agar tautannya selalu segar (#185).
+  const blocks = await resolveHelpMedia(topic.blocks);
 
   return (
     <div className="p-6 space-y-6">
@@ -64,7 +67,7 @@ export default async function HelpTopicPage({
 
         <div className="min-w-0 space-y-4">
           <article className="rounded-lg border bg-card p-6">
-            <HelpBlocks blocks={topic.blocks} />
+            <HelpBlocks blocks={blocks} />
           </article>
 
           {/* Navigasi antar topik (menyeberang bab bila perlu) */}

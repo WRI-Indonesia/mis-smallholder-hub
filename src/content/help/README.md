@@ -57,4 +57,16 @@ Sintaks media ditulis **berdiri sendiri di satu baris**:
 ![Video pengenalan](https://youtu.be/XXXXXXXXXXX)      → sematan YouTube/Vimeo
 ```
 
-Simpan berkas gambar/video di `public/help/` (lihat `public/help/README.md`). Teks dalam kurung siku dipakai sebagai keterangan sekaligus teks alternatif. Bila ditulis di tengah kalimat, sintaks ini tetap jadi teks paragraf biasa — bukan media.
+Teks dalam kurung siku dipakai sebagai keterangan sekaligus teks alternatif. Bila ditulis di tengah kalimat, sintaks ini tetap jadi teks paragraf biasa — bukan media.
+
+### Menyimpan berkas di mana?
+
+| Sumber | Sintaks | Pakai untuk |
+| ------ | ------- | ----------- |
+| Folder `public/help/` | `![...](/help/nama-file.png)` | Gambar kecil/menengah yang jarang berubah (ikut repo & deploy) |
+| **Bucket S3** | `![...](s3://help/nama-file.mp4)` | **Video tutorial atau aset besar** — tak membebani repo, bisa diganti tanpa deploy ulang |
+| YouTube / Vimeo | `![...](https://youtu.be/XXXX)` | Video panjang yang memang publik |
+
+Bucket proyek ini **privat**: tulis `s3://` diikuti *key* objek, dan aplikasi otomatis membuat tautan bertanda tangan (presigned) yang segar setiap halaman dibuka. Jangan menempel URL S3 bertanda tangan langsung ke Markdown — tautan seperti itu akan kedaluwarsa.
+
+Bila key salah atau kredensial tak tersedia, media tersebut dilewati dan sisa materi tetap tampil (kesalahan dicatat di log server).
