@@ -5,8 +5,14 @@ import {
   splitParcelsIntoGrid,
   fitLabelToBox,
   verticalLabelAnchors,
+  pickScaleBar,
+  resolveLabelCollisions,
   type LpGeoJson,
   type LpMapLayout,
+  type LpMapBox,
+  type LpGridSplit,
+  type LpGridCell,
+  type LpLabelRect,
 } from "@/lib/report-land-parcel";
 
 const EMERALD: [number, number, number] = [16, 185, 129];
@@ -57,42 +63,73 @@ function drawLayoutPolygons(doc: jsPDF, layout: LpMapLayout) {
  * Label digambar setelah semua poligon agar tak tertimpa fill tetangga.
  * Adaptif (#179): blok label di-fit ke bbox poligon — horizontal dulu, putar
  * 90° bila lebih lega, skala font turun (lantai keterbacaan) bila tetap sempit.
+ * Anti-tumpang (#180): posisi final via `resolveLabelCollisions` (geser
+ * vertikal bertahap dalam box) sebelum digambar.
  */
-function drawLayoutLabels(doc: jsPDF, layout: LpMapLayout, linesByNo: Map<number, string[]>) {
+function drawLayoutLabels(
+  doc: jsPDF,
+  layout: LpMapLayout,
+  linesByNo: Map<number, string[]>,
+  box: LpMapBox,
+) {
   const FONT = 6.5;
   const LINE_H = 2.6;
-  for (const poly of layout.polygons) {
+  doc.setFont("helvetica", "bold");
+
+  // Pass 1: hitung dimensi blok tiap label (sebagaimana digambar).
+  const jobs = layout.polygons.map((poly) => {
     const lines = linesByNo.get(poly.no) ?? [String(poly.no)];
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(FONT);
     if (lines.length === 1 && lines[0] === String(poly.no)) {
-      // Ceklis hanya "No" → lingkaran kecil klasik; mengecil di poligon sempit.
       const scale = Math.max(0.6, Math.min(1, Math.min(poly.bboxW, poly.bboxH) / (2 * 2.4 + 1)));
-      doc.setFontSize(FONT * scale);
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(...EMERALD);
-      doc.setLineWidth(0.25);
-      doc.circle(poly.labelX, poly.labelY, 2.4 * scale, "FD");
-      doc.setTextColor(...SLATE_800);
-      doc.text(lines[0], poly.labelX, poly.labelY, { align: "center", baseline: "middle" });
-      continue;
+      const d = 2 * 2.4 * scale;
+      return { poly, lines, circleScale: scale, fit: null, rect: { x: poly.labelX, y: poly.labelY, w: d, h: d } };
     }
-    // Multi-isi → pill putih ber-border, satu baris per item ceklis.
+    doc.setFontSize(FONT);
     const baseW = Math.max(...lines.map((l) => doc.getTextWidth(l))) + 2;
     const baseH = lines.length * LINE_H + 1.2;
     const fit = fitLabelToBox(baseW, baseH, poly.bboxW - 0.8, poly.bboxH - 0.8);
     const w = baseW * fit.scale;
     const h = baseH * fit.scale;
+    const rect: LpLabelRect = fit.vertical
+      ? { x: poly.labelX, y: poly.labelY, w: h, h: w }
+      : { x: poly.labelX, y: poly.labelY, w, h };
+    return { poly, lines, circleScale: null, fit, rect };
+  });
+
+  // Pass 2: resolusi tabrakan → posisi final.
+  const positions = resolveLabelCollisions(
+    jobs.map((j) => j.rect),
+    { y1: box.y, y2: box.y + box.h },
+  );
+
+  jobs.forEach((job, idx) => {
+    const { lines } = job;
+    const cx = positions[idx].x;
+    const cy = positions[idx].y;
+    if (job.circleScale !== null) {
+      const scale = job.circleScale;
+      doc.setFontSize(FONT * scale);
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(...EMERALD);
+      doc.setLineWidth(0.25);
+      doc.circle(cx, cy, 2.4 * scale, "FD");
+      doc.setTextColor(...SLATE_800);
+      doc.text(lines[0], cx, cy, { align: "center", baseline: "middle" });
+      return;
+    }
+    const fit = job.fit!;
     const lineH = LINE_H * fit.scale;
+    const w = fit.vertical ? job.rect.h : job.rect.w;
+    const h = fit.vertical ? job.rect.w : job.rect.h;
     doc.setFontSize(FONT * fit.scale);
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(...EMERALD);
     doc.setLineWidth(0.25);
     doc.setTextColor(...SLATE_800);
     if (!fit.vertical) {
-      doc.roundedRect(poly.labelX - w / 2, poly.labelY - h / 2, w, h, 0.8, 0.8, "FD");
+      doc.roundedRect(cx - w / 2, cy - h / 2, w, h, 0.8, 0.8, "FD");
       lines.forEach((line, i) => {
-        doc.text(line, poly.labelX, poly.labelY - h / 2 + 0.6 * fit.scale + lineH * (i + 0.5), {
+        doc.text(line, cx, cy - h / 2 + 0.6 * fit.scale + lineH * (i + 0.5), {
           align: "center",
           baseline: "middle",
         });
@@ -101,10 +138,10 @@ function drawLayoutLabels(doc: jsPDF, layout: LpMapLayout, linesByNo: Map<number
       // Vertikal: blok diputar 90° (dibaca bawah→atas). Posisi manual via
       // verticalLabelAnchors — `align`/`baseline` jsPDF salah hitung saat
       // ber-`angle` (offset pra-rotasi), teks melenceng keluar pill.
-      doc.roundedRect(poly.labelX - h / 2, poly.labelY - w / 2, h, w, 0.8, 0.8, "FD");
+      doc.roundedRect(cx - h / 2, cy - w / 2, h, w, 0.8, 0.8, "FD");
       const anchors = verticalLabelAnchors(
-        poly.labelX,
-        poly.labelY,
+        cx,
+        cy,
         lineH,
         lines.length,
         0.6 * fit.scale,
@@ -114,7 +151,60 @@ function drawLayoutLabels(doc: jsPDF, layout: LpMapLayout, linesByNo: Map<number
         doc.text(line, anchors[i].x, anchors[i].y, { angle: 90 });
       });
     }
-  }
+  });
+}
+
+/** Skala batang (kiri-bawah) + panah utara "U" (kanan-atas) di dalam box peta (#180). */
+function drawMapDecorations(doc: jsPDF, layout: LpMapLayout, box: LpMapBox) {
+  if (!layout.frame) return;
+
+  // Panah utara.
+  const nx = box.x + box.w - 6;
+  const ny = box.y + 4;
+  doc.setFillColor(...SLATE_800);
+  doc.setDrawColor(...SLATE_800);
+  doc.setLineWidth(0.3);
+  doc.lines([[1.8, 5], [-1.8, -1.4], [-1.8, 1.4]], nx, ny, [1, 1], "F", true);
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  doc.text("U", nx, ny + 7.5, { align: "center" });
+
+  // Skala batang.
+  const bar = pickScaleBar(layout.frame.scale);
+  if (!bar) return;
+  const bx = box.x + 4;
+  const by = box.y + box.h - 4;
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...SLATE_200);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(bx - 1.5, by - 5, bar.mm + 3 + doc.getTextWidth(bar.label) + 3, 7, 0.8, 0.8, "FD");
+  doc.setDrawColor(...SLATE_800);
+  doc.setLineWidth(0.7);
+  doc.line(bx, by, bx + bar.mm, by);
+  doc.setLineWidth(0.3);
+  doc.line(bx, by - 1.5, bx, by);
+  doc.line(bx + bar.mm, by - 1.5, bx + bar.mm, by);
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_800);
+  doc.text(bar.label, bx + bar.mm + 2, by, { baseline: "bottom" });
+}
+
+/** Mini-ikhtisar posisi sel aktif dalam grid (kanan-atas halaman sel, #180). */
+function drawMiniIndex(doc: jsPDF, split: LpGridSplit, active: LpGridCell, pageWidth: number) {
+  const cellSize = Math.min(20 / split.cols, 9 / split.rows);
+  const w = cellSize * split.cols;
+  const h = cellSize * split.rows;
+  const x = pageWidth - MARGIN - w;
+  const y = 4;
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...SLATE_400);
+  doc.setLineWidth(0.2);
+  doc.rect(x, y, w, h, "FD");
+  doc.setFillColor(...EMERALD);
+  doc.rect(x + active.col * cellSize, y + active.row * cellSize, cellSize, cellSize, "F");
+  for (let i = 1; i < split.cols; i++) doc.line(x + i * cellSize, y, x + i * cellSize, y + h);
+  for (let j = 1; j < split.rows; j++) doc.line(x, y + j * cellSize, x + w, y + j * cellSize);
 }
 
 function drawEmptyMapNote(doc: jsPDF, box: { x: number; y: number; w: number; h: number }) {
@@ -202,7 +292,8 @@ export function buildLandParcelReportDoc({
     drawEmptyMapNote(doc, mapBox);
   } else if (!useGrid) {
     drawLayoutPolygons(doc, fullLayout);
-    drawLayoutLabels(doc, fullLayout, linesByNo);
+    drawLayoutLabels(doc, fullLayout, linesByNo, mapBox);
+    drawMapDecorations(doc, fullLayout, mapBox);
   } else {
     // Ikhtisar: poligon tanpa nomor + garis grid + label sel berisi.
     drawLayoutPolygons(doc, fullLayout);
@@ -233,6 +324,7 @@ export function buildLandParcelReportDoc({
       doc.setTextColor(...SLATE_500);
       doc.text(`${cell.parcels.length} lahan`, cx, cy + 6, { align: "center" });
     }
+    drawMapDecorations(doc, fullLayout, mapBox);
   }
 
   doc.setFontSize(8);
@@ -262,7 +354,9 @@ export function buildLandParcelReportDoc({
 
       const cellLayout = buildLandParcelMapLayout(cell.parcels, cellBox);
       drawLayoutPolygons(doc, cellLayout);
-      drawLayoutLabels(doc, cellLayout, linesByNo);
+      drawLayoutLabels(doc, cellLayout, linesByNo, cellBox);
+      drawMapDecorations(doc, cellLayout, cellBox);
+      drawMiniIndex(doc, split!, cell, pageWidth);
     });
   }
 

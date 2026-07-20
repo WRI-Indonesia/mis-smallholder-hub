@@ -400,3 +400,80 @@ export function splitParcelsIntoGrid(
   const cells = Array.from(cellMap.values()).sort((a, b) => a.row - b.row || a.col - b.col);
   return { rows, cols, cells, skippedNos };
 }
+
+// ─── Dekorasi peta cetak (#180): skala batang & anti-tumpang label ───
+
+/** km per derajat lintang (WGS84, valid ~lintang rendah Riau). */
+const KM_PER_DEG_LAT = 110.574;
+
+export interface LpScaleBar {
+  /** Jarak nyata batang. */
+  km: number;
+  /** Panjang batang di kertas/viewBox (mm). */
+  mm: number;
+  /** Label tampil, mis. "500 m" / "2 km". */
+  label: string;
+}
+
+/**
+ * Pilih jarak "nice" untuk skala batang dari skala proyeksi (mm per derajat):
+ * kandidat 100 m – 20 km, ambil terbesar yang muat ≤ 40 mm (fallback kandidat
+ * terkecil). Proyeksi equirectangular sederhana — akurat di lintang rendah.
+ */
+export function pickScaleBar(mmPerDegree: number): LpScaleBar | null {
+  if (!Number.isFinite(mmPerDegree) || mmPerDegree <= 0) return null;
+  const mmPerKm = mmPerDegree / KM_PER_DEG_LAT;
+  const candidates = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20];
+  let pick = candidates[0];
+  for (const km of candidates) {
+    if (km * mmPerKm <= 40) pick = km;
+  }
+  const mm = pick * mmPerKm;
+  if (!Number.isFinite(mm) || mm <= 0) return null;
+  const label = pick < 1 ? `${Math.round(pick * 1000)} m` : `${pick} km`;
+  return { km: pick, mm, label };
+}
+
+export interface LpLabelRect {
+  x: number;
+  y: number;
+  /** Dimensi blok label SEBAGAIMANA digambar (vertikal → sudah ditukar). */
+  w: number;
+  h: number;
+}
+
+function rectsOverlap(a: LpLabelRect, b: LpLabelRect, gap = 0.3): boolean {
+  return (
+    Math.abs(a.x - b.x) * 2 < a.w + b.w + gap &&
+    Math.abs(a.y - b.y) * 2 < a.h + b.h + gap
+  );
+}
+
+/**
+ * Anti-tumpang label (#180): greedy per label (urut input = kolom No) — coba
+ * posisi asli lalu geser vertikal ±step bertahap sampai tak menabrak label
+ * yang sudah ditempatkan; hasil di-clamp ke dalam box. Bila semua kandidat
+ * bentrok, posisi asli dipertahankan (label tetap dekat poligonnya — lebih
+ * baik tumpang sedikit daripada tersesat jauh). Pure — dipakai jsPDF & SVG.
+ */
+export function resolveLabelCollisions(
+  labels: LpLabelRect[],
+  box: { y1: number; y2: number },
+): { x: number; y: number }[] {
+  const placed: LpLabelRect[] = [];
+  return labels.map((label) => {
+    const step = label.h + 0.6;
+    const offsets = [0, step, -step, 2 * step, -2 * step, 3 * step, -3 * step];
+    let chosen = { x: label.x, y: label.y };
+    for (const off of offsets) {
+      const y = Math.min(box.y2 - label.h / 2, Math.max(box.y1 + label.h / 2, label.y + off));
+      const candidate = { ...label, y };
+      if (!placed.some((p) => rectsOverlap(candidate, p))) {
+        chosen = { x: label.x, y };
+        break;
+      }
+    }
+    placed.push({ ...label, x: chosen.x, y: chosen.y });
+    return chosen;
+  });
+}

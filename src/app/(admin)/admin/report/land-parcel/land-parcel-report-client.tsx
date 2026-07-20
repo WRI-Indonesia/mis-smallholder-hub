@@ -29,9 +29,12 @@ import {
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
   fitLabelToBox,
+  pickScaleBar,
+  resolveLabelCollisions,
   type LpGeoJson,
   type LpMapLayout,
   type LpGridSplit,
+  type LpGridCell,
 } from "@/lib/report-land-parcel";
 import { exportLandParcelReportExcel, type LpExcelImage } from "@/lib/report-land-parcel-xlsx";
 
@@ -827,6 +830,50 @@ async function svgToPng(svgMarkup: string): Promise<LpExcelImage> {
   }
 }
 
+/** Skala batang + panah utara (paritas dekorasi PDF, #180). */
+function MapDecorations({ layout }: { layout: LpMapLayout }) {
+  if (!layout.frame) return null;
+  const bar = pickScaleBar(layout.frame.scale);
+  const nx = PREVIEW_BOX.w - 6;
+  const ny = 4;
+  return (
+    <g>
+      <polygon points={`${nx},${ny} ${nx + 1.8},${ny + 5} ${nx - 1.8},${ny + 5}`} fill="#1e293b" transform={`rotate(180 ${nx} ${ny + 2.5})`} />
+      <text x={nx} y={ny + 8.5} fontSize={3} fontWeight={700} fill="#1e293b" textAnchor="middle">U</text>
+      {bar && (
+        <g>
+          <rect x={2.5} y={PREVIEW_BOX.h - 9} width={bar.mm + 3 + bar.label.length * 1.6 + 3} height={7} rx={0.8} fill="#fff" stroke="#e2e8f0" strokeWidth={0.2} />
+          <line x1={4} y1={PREVIEW_BOX.h - 4} x2={4 + bar.mm} y2={PREVIEW_BOX.h - 4} stroke="#1e293b" strokeWidth={0.7} />
+          <line x1={4} y1={PREVIEW_BOX.h - 5.5} x2={4} y2={PREVIEW_BOX.h - 4} stroke="#1e293b" strokeWidth={0.3} />
+          <line x1={4 + bar.mm} y1={PREVIEW_BOX.h - 5.5} x2={4 + bar.mm} y2={PREVIEW_BOX.h - 4} stroke="#1e293b" strokeWidth={0.3} />
+          <text x={4 + bar.mm + 2} y={PREVIEW_BOX.h - 4.5} fontSize={2.6} fill="#1e293b">{bar.label}</text>
+        </g>
+      )}
+    </g>
+  );
+}
+
+/** Mini-ikhtisar posisi sel aktif dalam grid (kanan-atas kartu sel, #180). */
+function MiniIndexSvg({ split, active }: { split: LpGridSplit; active: LpGridCell }) {
+  const cellSize = Math.min(20 / split.cols, 9 / split.rows);
+  const w = cellSize * split.cols;
+  const h = cellSize * split.rows;
+  const x = PREVIEW_BOX.w - w - 12;
+  const y = 3;
+  return (
+    <g>
+      <rect x={x} y={y} width={w} height={h} fill="#fff" stroke="#94a3b8" strokeWidth={0.2} />
+      <rect x={x + active.col * cellSize} y={y + active.row * cellSize} width={cellSize} height={cellSize} fill="#10b981" />
+      {Array.from({ length: split.cols - 1 }, (_, i) => (
+        <line key={`v${i}`} x1={x + (i + 1) * cellSize} y1={y} x2={x + (i + 1) * cellSize} y2={y + h} stroke="#94a3b8" strokeWidth={0.2} />
+      ))}
+      {Array.from({ length: split.rows - 1 }, (_, j) => (
+        <line key={`h${j}`} x1={x} y1={y + (j + 1) * cellSize} x2={x + w} y2={y + (j + 1) * cellSize} stroke="#94a3b8" strokeWidth={0.2} />
+      ))}
+    </g>
+  );
+}
+
 function LayoutSvg({
   layout,
   linesByNo,
@@ -838,6 +885,38 @@ function LayoutSvg({
   overlay?: ReactNode;
 }) {
   const LINE_H = 2.6;
+
+  // Pass 1: dimensi blok label per poligon (sebagaimana digambar) → resolusi
+  // tabrakan (#180) dengan helper yang sama seperti renderer PDF.
+  const jobs = linesByNo
+    ? layout.polygons.map((poly) => {
+        const lines = linesByNo.get(poly.no) ?? [String(poly.no)];
+        const isNoOnly = lines.length === 1 && lines[0] === String(poly.no);
+        if (isNoOnly) {
+          const scale = Math.max(0.6, Math.min(1, Math.min(poly.bboxW, poly.bboxH) / (2 * 2.4 + 1)));
+          const d = 2 * 2.4 * scale;
+          return { poly, lines, isNoOnly, scale, fit: null, rect: { x: poly.labelX, y: poly.labelY, w: d, h: d } };
+        }
+        const baseW = Math.max(...lines.map((l) => l.length)) * 1.5 + 2;
+        const baseH = lines.length * LINE_H + 1.2;
+        const fit = fitLabelToBox(baseW, baseH, poly.bboxW - 0.8, poly.bboxH - 0.8);
+        const w = baseW * fit.scale;
+        const h = baseH * fit.scale;
+        return {
+          poly,
+          lines,
+          isNoOnly,
+          scale: fit.scale,
+          fit,
+          rect: fit.vertical ? { x: poly.labelX, y: poly.labelY, w: h, h: w } : { x: poly.labelX, y: poly.labelY, w, h },
+        };
+      })
+    : [];
+  const positions = resolveLabelCollisions(
+    jobs.map((j) => j.rect),
+    { y1: 0, y2: PREVIEW_BOX.h },
+  );
+
   return (
     <svg
       viewBox={`0 0 ${PREVIEW_BOX.w} ${PREVIEW_BOX.h}`}
@@ -854,54 +933,46 @@ function LayoutSvg({
           />
         )),
       )}
-      {linesByNo &&
-        layout.polygons.map((poly) => {
-          const lines = linesByNo.get(poly.no) ?? [String(poly.no)];
-          const isNoOnly = lines.length === 1 && lines[0] === String(poly.no);
-          if (isNoOnly) {
-            const scale = Math.max(0.6, Math.min(1, Math.min(poly.bboxW, poly.bboxH) / (2 * 2.4 + 1)));
-            return (
-              <g key={poly.no}>
-                <circle cx={poly.labelX} cy={poly.labelY} r={2.4 * scale} fill="#fff" stroke="#10b981" strokeWidth={0.25} />
-                <text x={poly.labelX} y={poly.labelY} fontSize={2.6 * scale} fontWeight={700} fill="#1e293b" textAnchor="middle" dominantBaseline="central">
-                  {lines[0]}
-                </text>
-              </g>
-            );
-          }
-          // Adaptif (#179): fit ke bbox poligon — sama dengan renderer PDF.
-          const baseW = Math.max(...lines.map((l) => l.length)) * 1.5 + 2;
-          const baseH = lines.length * LINE_H + 1.2;
-          const fit = fitLabelToBox(baseW, baseH, poly.bboxW - 0.8, poly.bboxH - 0.8);
-          const w = baseW * fit.scale;
-          const h = baseH * fit.scale;
-          const lineH = LINE_H * fit.scale;
-          const body = (
-            <>
-              <rect x={poly.labelX - w / 2} y={poly.labelY - h / 2} width={w} height={h} rx={0.8} fill="#fff" stroke="#10b981" strokeWidth={0.25} />
-              {lines.map((line, i) => (
-                <text
-                  key={i}
-                  x={poly.labelX}
-                  y={poly.labelY - h / 2 + 0.6 * fit.scale + lineH * (i + 0.5)}
-                  fontSize={2.4 * fit.scale}
-                  fontWeight={700}
-                  fill="#1e293b"
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                >
-                  {line}
-                </text>
-              ))}
-            </>
-          );
+      {jobs.map((job, idx) => {
+        const cx = positions[idx].x;
+        const cy = positions[idx].y;
+        const { lines } = job;
+        if (job.isNoOnly) {
           return (
-            <g key={poly.no} transform={fit.vertical ? `rotate(-90 ${poly.labelX} ${poly.labelY})` : undefined}>
-              {body}
+            <g key={job.poly.no}>
+              <circle cx={cx} cy={cy} r={2.4 * job.scale} fill="#fff" stroke="#10b981" strokeWidth={0.25} />
+              <text x={cx} y={cy} fontSize={2.6 * job.scale} fontWeight={700} fill="#1e293b" textAnchor="middle" dominantBaseline="central">
+                {lines[0]}
+              </text>
             </g>
           );
-        })}
+        }
+        const fit = job.fit!;
+        const w = fit.vertical ? job.rect.h : job.rect.w;
+        const h = fit.vertical ? job.rect.w : job.rect.h;
+        const lineH = LINE_H * fit.scale;
+        return (
+          <g key={job.poly.no} transform={fit.vertical ? `rotate(-90 ${cx} ${cy})` : undefined}>
+            <rect x={cx - w / 2} y={cy - h / 2} width={w} height={h} rx={0.8} fill="#fff" stroke="#10b981" strokeWidth={0.25} />
+            {lines.map((line, i) => (
+              <text
+                key={i}
+                x={cx}
+                y={cy - h / 2 + 0.6 * fit.scale + lineH * (i + 0.5)}
+                fontSize={2.4 * fit.scale}
+                fontWeight={700}
+                fill="#1e293b"
+                textAnchor="middle"
+                dominantBaseline="central"
+              >
+                {line}
+              </text>
+            ))}
+          </g>
+        );
+      })}
       {overlay}
+      <MapDecorations layout={layout} />
     </svg>
   );
 }
@@ -958,7 +1029,11 @@ function LandParcelMapPreview({ mapParcels, rows, cols }: { mapParcels: PreviewP
             <p className="text-xs text-muted-foreground mb-1">
               Peta {cell.label} — {cell.parcels.length} lahan
             </p>
-            <LayoutSvg layout={buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX)} linesByNo={linesByNo} />
+            <LayoutSvg
+              layout={buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX)}
+              linesByNo={linesByNo}
+              overlay={<MiniIndexSvg split={split!} active={cell} />}
+            />
           </div>
         ))}
       </div>

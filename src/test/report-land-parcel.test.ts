@@ -5,6 +5,8 @@ import {
   splitParcelsIntoGrid,
   fitLabelToBox,
   verticalLabelAnchors,
+  pickScaleBar,
+  resolveLabelCollisions,
   exteriorRings,
   type LpRawParcel,
   type LpMapBox,
@@ -293,5 +295,49 @@ describe("verticalLabelAnchors", () => {
     });
     // Baris berurutan dari kiri blok.
     expect(anchors[0].x).toBeLessThan(anchors[1].x);
+  });
+});
+
+describe("pickScaleBar", () => {
+  it("memilih jarak nice terbesar yang muat ≤ 40 mm", () => {
+    // 1 km ≈ scale/110.574 mm; scale 2000 mm/deg → 1 km ≈ 18,1 mm → pilih 2 km (36,2 mm)
+    const bar = pickScaleBar(2000)!;
+    expect(bar.km).toBe(2);
+    expect(bar.mm).toBeGreaterThan(30);
+    expect(bar.mm).toBeLessThanOrEqual(40);
+    expect(bar.label).toBe("2 km");
+  });
+
+  it("area sempit → jarak sub-km ber-label meter; input invalid → null", () => {
+    // scale 200000 mm/deg → 100 m ≈ 180 mm > 40 → fallback kandidat terkecil (100 m)
+    expect(pickScaleBar(200000)!.label).toBe("100 m");
+    expect(pickScaleBar(0)).toBeNull();
+    expect(pickScaleBar(Number.NaN)).toBeNull();
+  });
+});
+
+describe("resolveLabelCollisions", () => {
+  const boxY = { y1: 0, y2: 100 };
+
+  it("label bertumpang digeser vertikal hingga saling lepas", () => {
+    const labels = [
+      { x: 50, y: 50, w: 20, h: 6 },
+      { x: 50, y: 51, w: 20, h: 6 }, // nyaris identik → wajib digeser
+    ];
+    const [a, b] = resolveLabelCollisions(labels, boxY);
+    expect(a).toEqual({ x: 50, y: 50 }); // label pertama tetap
+    expect(Math.abs(b.y - a.y) * 2).toBeGreaterThanOrEqual(6 + 6); // tak lagi overlap
+  });
+
+  it("label tanpa konflik tidak bergeser; hasil di-clamp dalam box", () => {
+    const labels = [
+      { x: 10, y: 10, w: 10, h: 4 },
+      { x: 80, y: 90, w: 10, h: 4 },
+      { x: 80, y: 99, w: 10, h: 4 }, // dekat tepi bawah → geser ke atas/clamp
+    ];
+    const out = resolveLabelCollisions(labels, boxY);
+    expect(out[0]).toEqual({ x: 10, y: 10 });
+    expect(out[1]).toEqual({ x: 80, y: 90 });
+    expect(out[2].y + 4 / 2).toBeLessThanOrEqual(100);
   });
 });

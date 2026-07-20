@@ -37,7 +37,7 @@
 | RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
 | RPT-03 | Report Produksi | Matriks bulanan per petani/lahan + Excel + PDF landscape (#132) |
 | RPT-04 | Report Kelompok Tani | **2 submenu.** **(Summary)** agregat real-time Lembaga×Gapoktan/KUD×KT turunan dari lahan (distinct petani/lahan/**luas**); filter Distrik/Lembaga opsional + search + **column selector** + 6 card + Excel & PDF. **(Detail)** roster per 1 Lembaga: hierarki Gapoktan/KUD→KT→daftar Petani (jml lahan/luas), **section collapsible** (default tutup) + **auto-hide** Gapoktan bila Lembaga tak punya + 5 card + Excel & PDF flat (#154) |
-| RPT-05 | Report Lahan | Roster datar real-time 1 baris = 1 lahan aktif per **Lembaga (wajib)**: Lembaga | Nama Petani | ID Petani | ID Lahan | KT + Tahun Tanam + Luas (kolom ekstra Gapoktan/KUD/Blok/Komoditas/Species/PSR via column selector); **PDF landscape ber-peta poligon vektor** dengan label per ceklis (No/Nama/ID Petani/ID Lahan/KT) **adaptif** (vertikal 90°/auto-scale sesuai bbox poligon) + **grid index fleksibel Baris × Kolom** (ikhtisar A1… + halaman per sel) + **preview SVG on-page** (helper layout sama dengan PDF) + **Excel multi-sheet ber-gambar peta** (sheet Lahan + index; sheet per sel + peta sel) (#177 #179) |
+| RPT-05 | Report Lahan | Roster datar real-time 1 baris = 1 lahan aktif per **Lembaga (wajib)**: Lembaga | Nama Petani | ID Petani | ID Lahan | KT + Tahun Tanam + Luas (kolom ekstra Gapoktan/KUD/Blok/Komoditas/Species/PSR via column selector); **PDF landscape ber-peta poligon vektor** dengan label per ceklis (No/Nama/ID Petani/ID Lahan/KT) **adaptif** (vertikal 90°/auto-scale sesuai bbox poligon) + **grid index fleksibel Baris × Kolom** (ikhtisar A1… + halaman per sel) + **preview SVG on-page** (helper layout sama dengan PDF) + **Excel multi-sheet ber-gambar peta** (sheet Lahan + index; sheet per sel + peta sel); polish #180: anti-tumpang label, skala batang + panah utara, mini-index posisi sel |
 | DASH-05 | Card Total Kelompok Tani | Kartu Main Dashboard = distinct `subGroupLv2` per Lembaga (snapshot-backed); filter generate dinonaktifkan (Semua Data); 0 sampai data #150 (#148) |
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
@@ -45,7 +45,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **38 files / 510 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **39 files / 519 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -100,7 +100,8 @@
 | Map Geo (ruler/label) | map-geo.test.ts | 13 | ✅ |
 | Dashboard | dashboard.test.ts | 14 | ✅ |
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 14 | ✅ |
-| Report Lahan (#177 #179) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts (+1 perf) | 30 | ✅ |
+| Report Lahan (#177 #179 #180) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts (+1 perf) | 34 | ✅ |
+| Exporter PDF build-vs-save (TD-019 #180) | pdf-exporters.test.ts | 5 | ✅ |
 | Parcel Bulk Mapping (#150) | parcel-bulk-mapping.test.ts | 7 | ✅ |
 | Farmer Group (#163/#169/#171) | farmer-group.test.ts, farmer-group-detail.test.ts | 17 | ✅ |
 | Farmer Detail + mask (#172) | farmer-detail.test.ts | 7 | ✅ |

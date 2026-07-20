@@ -53,9 +53,10 @@ function hexToRgb(hex: string): [number, number, number] {
 /**
  * Build a landscape A4 PDF of the BMP thematic map: title/subtitle header, the
  * rendered map image (aspect-fit), and a data-availability legend row with the
- * per-category parcel counts.
+ * per-category parcel counts. Build dipisah dari save (TD-019) agar dokumen
+ * bisa diverifikasi unit test.
  */
-export function generateBmpMapPdf(opts: BmpPrintOptions) {
+export function buildBmpMapDoc(opts: BmpPrintOptions): jsPDF {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth(); // 297
   const pageH = doc.internal.pageSize.getHeight(); // 210
@@ -155,7 +156,11 @@ export function generateBmpMapPdf(opts: BmpPrintOptions) {
   if (opts.productivityMatrix) renderProductivityPages(doc, opts, margin);
   else renderMatrixPages(doc, opts, margin);
 
-  doc.save(opts.fileName ?? "peta-bmp.pdf");
+  return doc;
+}
+
+export function generateBmpMapPdf(opts: BmpPrintOptions) {
+  buildBmpMapDoc(opts).save(opts.fileName ?? "peta-bmp.pdf");
 }
 
 const fmtNum2 = (n: number) =>
