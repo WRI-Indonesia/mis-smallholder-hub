@@ -15,6 +15,8 @@ import type {
   KelompokTaniReportFilters,
   KelompokTaniReportResult,
   KelompokTaniDetailReportResult,
+  LandParcelReportFilters,
+  LandParcelReportResult,
 } from "@/types/report";
 import {
   enumeratePeriods,
@@ -24,6 +26,7 @@ import {
   type ProductionMatrixRecord,
 } from "@/lib/report-production";
 import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok-tani";
+import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
 
 export async function getDistrictsForReport() {
@@ -626,6 +629,102 @@ export async function getKelompokTaniReport(
   }));
 
   return buildKelompokTaniReport(raw);
+}
+
+// ─── Report Lahan (#177) — roster lahan datar per Lembaga Petani (real-time) ───
+
+export async function getDistrictsForLandParcelReport() {
+  if (!(await hasPermission("report-land-parcel", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const where: Prisma.DistrictWhereInput = { isActive: true };
+  if (access.mode === "BY_DISTRICT") {
+    where.id = { in: access.ids };
+  } else if (access.mode === "BY_FARMER_GROUP") {
+    where.farmerGroups = { some: { id: { in: access.ids }, isActive: true } };
+  }
+
+  return prisma.district.findMany({ where, orderBy: { name: "asc" } });
+}
+
+export async function getFarmerGroupsForLandParcelReport(districtId?: string | null) {
+  if (!(await hasPermission("report-land-parcel", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+
+  return prisma.farmerGroup.findMany({
+    where: { isActive: true, ...accessFilter, ...(districtId ? { districtId } : {}) },
+    select: { id: true, name: true, code: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+/**
+ * Report Lahan — roster datar 1 baris per lahan aktif (Lembaga | Petani |
+ * ID Petani | ID Lahan | KT). RBAC 3-layer: `report-land-parcel` VIEW + scope
+ * (`farmerRelationAccessFilter` via `AND`) + `isActive`. KT/Gapoktan = atribut
+ * per-lahan (#146); select ramping tanpa `geometry` (#163).
+ */
+export async function getLandParcelReport(
+  filters: LandParcelReportFilters = {},
+): Promise<LandParcelReportResult> {
+  if (!(await hasPermission("report-land-parcel", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const andFilters: Prisma.LandParcelWhereInput[] = [farmerRelationAccessFilter(access)];
+  if (filters.farmerGroupId) andFilters.push({ farmer: { farmerGroupId: filters.farmerGroupId } });
+  if (filters.districtId) andFilters.push({ farmer: { farmerGroup: { districtId: filters.districtId } } });
+
+  const parcels = await prisma.landParcel.findMany({
+    where: {
+      isActive: true,
+      farmer: { isActive: true },
+      AND: andFilters,
+    },
+    select: {
+      id: true,
+      parcelId: true,
+      subGroupLv1: true,
+      subGroupLv2: true,
+      blok: true,
+      area: true,
+      farmer: {
+        select: {
+          id: true,
+          farmerId: true,
+          name: true,
+          farmerGroupId: true,
+          farmerGroup: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  const raw: LpRawParcel[] = parcels.map((p) => ({
+    id: p.id,
+    parcelCode: p.parcelId,
+    farmerId: p.farmer.id,
+    farmerCode: p.farmer.farmerId,
+    farmerName: p.farmer.name,
+    farmerGroupId: p.farmer.farmerGroupId,
+    lembagaTani: p.farmer.farmerGroup.name,
+    subGroupLv1: p.subGroupLv1,
+    subGroupLv2: p.subGroupLv2,
+    blok: p.blok,
+    area: p.area,
+  }));
+
+  return buildLandParcelReport(raw);
 }
 
 /**

@@ -102,6 +102,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | RPT-02      | Report: Pelatihan                   | ✅ Done        | Done    |
 | RPT-03      | Report: Produksi                    | ✅ Done        | Done    |
 | RPT-04      | Report: Kelompok Tani               | ✅ Done        | Done    |
+| RPT-05      | Report: Lahan                       | ✅ Done        | Done    |
 | BULK-01     | Bulk Upload: Menu & KT              | ✅ Done        | Done    |
 | BULK-02     | Bulk Upload: Region                 | 🔲 Not Started | Next    |
 | BULK-03     | Bulk Upload: Farmer                 | ✅ Done        | Done    |
@@ -401,6 +402,16 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 - **Detail** `report-kelompok-tani-detail` — roster per 1 Lembaga (Gapoktan/KUD→KT→Petani), **section collapsible** (default tutup) + **auto-hide** Gapoktan bila Lembaga tak punya.
 - Keduanya Excel + PDF. Pure `lib/report-kelompok-tani.ts`(+7) & `report-kelompok-tani-detail.ts`(+7); RBAC 3-layer; label "Gapoktan"→"Gapoktan/KUD". Read-only, tanpa migration.
 - **Next step:** Implement #154 completed.
+
+</details>
+
+<details>
+<summary><strong>RPT-05</strong> · ✅ Done — Report: Lahan</summary>
+
+- **#177 ✅ (real-time):** submenu `report-land-parcel` — roster datar **1 baris = 1 lahan aktif**: Lembaga Petani | Nama Petani | ID Petani | ID Lahan | Kelompok Tani; kolom ekstra (Gapoktan/KUD, Blok, Luas) via **column selector** (default 5 kolom sesuai #177).
+- KT/Gapoktan = atribut per-lahan `subGroupLv*` (#146/#152), normalisasi trim + distinct KT case-insensitive per Lembaga (pola #154); KT kosong tampil "-".
+- Filter Distrik/Lembaga opsional + search + 5 card + Excel & PDF (metadata Distrik/Lembaga). Pure `lib/report-land-parcel.ts` (+5 unit); RBAC 3-layer; select ramping tanpa `geometry` (#163). Read-only, tanpa migration.
+- **Next step:** Implement #177 completed.
 
 </details>
 
