@@ -187,6 +187,14 @@ export interface LandParcelReportRow {
   gapoktan: string | null;
   /** Blok kebun, null bila kosong. */
   blok: string | null;
+  /** Komoditas (LandParcel.cropType), null bila kosong. */
+  komoditas: string | null;
+  /** Species komoditas, null bila kosong. */
+  species: string | null;
+  /** PSR (Peremajaan Sawit Rakyat) — lahan sedang replanting. */
+  psr: boolean;
+  /** Tahun tanam, null bila tak diketahui. */
+  tahunTanam: number | null;
   /** Luas (Ha), null bila tak diketahui. */
   luas: number | null;
 }

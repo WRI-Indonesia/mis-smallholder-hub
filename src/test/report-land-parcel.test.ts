@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
+import {
+  buildLandParcelReport,
+  buildLandParcelMapLayout,
+  splitParcelsIntoGrid,
+  exteriorRings,
+  type LpRawParcel,
+  type LpMapBox,
+} from "@/lib/report-land-parcel";
 
 const P = (o: Partial<LpRawParcel> & { id: string; farmerId: string }): LpRawParcel => ({
   parcelCode: `L-${o.id}`,
@@ -10,6 +17,10 @@ const P = (o: Partial<LpRawParcel> & { id: string; farmerId: string }): LpRawPar
   subGroupLv1: null,
   subGroupLv2: null,
   blok: null,
+  cropType: null,
+  species: null,
+  isPsr: false,
+  plantingYear: null,
   area: 1,
   ...o,
 });
@@ -17,7 +28,7 @@ const P = (o: Partial<LpRawParcel> & { id: string; farmerId: string }): LpRawPar
 describe("buildLandParcelReport", () => {
   it("1 baris per lahan dengan kolom Lembaga/Petani/ID Petani/ID Lahan/KT", () => {
     const r = buildLandParcelReport([
-      P({ id: "p1", farmerId: "f1", farmerName: "Budi", farmerCode: "SH-001", parcelCode: "LHN-001", subGroupLv2: "KT Maju" }),
+      P({ id: "p1", farmerId: "f1", farmerName: "Budi", farmerCode: "SH-001", parcelCode: "LHN-001", subGroupLv2: "KT Maju", plantingYear: 2016 }),
       P({ id: "p2", farmerId: "f1", farmerName: "Budi", farmerCode: "SH-001", parcelCode: "LHN-002", subGroupLv2: "KT Maju" }),
     ]);
     expect(r.rows).toHaveLength(2);
@@ -27,6 +38,7 @@ describe("buildLandParcelReport", () => {
       idPetani: "SH-001",
       idLahan: "LHN-001",
       kelompokTani: "KT Maju",
+      tahunTanam: 2016,
     });
   });
 
@@ -79,5 +91,141 @@ describe("buildLandParcelReport", () => {
       totalLembagaTani: 0,
       totalLuas: 0,
     });
+  });
+});
+
+// ─── Layout peta cetak (#179) ───
+
+const square = (lon: number, lat: number, size = 1) => ({
+  type: "Polygon",
+  coordinates: [[[lon, lat], [lon + size, lat], [lon + size, lat + size], [lon, lat + size], [lon, lat]]],
+});
+
+const BOX: LpMapBox = { x: 10, y: 20, w: 100, h: 80, pad: 5 };
+
+describe("exteriorRings", () => {
+  it("Polygon → 1 ring tanpa titik penutup; MultiPolygon → semua exterior ring", () => {
+    expect(exteriorRings(square(0, 0))[0]).toHaveLength(4); // titik penutup dibuang
+    const multi = {
+      type: "MultiPolygon",
+      coordinates: [square(0, 0).coordinates, square(5, 5).coordinates],
+    };
+    expect(exteriorRings(multi)).toHaveLength(2);
+  });
+
+  it("geometri null/invalid/ring < 3 titik → []", () => {
+    expect(exteriorRings(null)).toHaveLength(0);
+    expect(exteriorRings({ type: "Polygon" })).toHaveLength(0);
+    expect(exteriorRings({ type: "Polygon", coordinates: [[[0, 0], [1, 1]]] })).toHaveLength(0);
+    expect(exteriorRings({ type: "Point", coordinates: [0, 0] })).toHaveLength(0);
+  });
+});
+
+describe("buildLandParcelMapLayout", () => {
+  it("semua poligon ter-proyeksi dalam box (aspect-fit bounds bersama, utara di atas)", () => {
+    const layout = buildLandParcelMapLayout(
+      [
+        { no: 1, geometry: square(101, 0.5) },
+        { no: 2, geometry: square(101.5, 1.2) },
+      ],
+      BOX,
+    );
+    expect(layout.polygons).toHaveLength(2);
+    for (const poly of layout.polygons) {
+      for (const [x, y] of poly.rings.flat()) {
+        expect(x).toBeGreaterThanOrEqual(BOX.x + BOX.pad);
+        expect(x).toBeLessThanOrEqual(BOX.x + BOX.w - BOX.pad);
+        expect(y).toBeGreaterThanOrEqual(BOX.y + BOX.pad);
+        expect(y).toBeLessThanOrEqual(BOX.y + BOX.h - BOX.pad);
+      }
+    }
+    // Utara di atas: lahan ber-lat lebih tinggi (no 2) harus tergambar lebih atas (y lebih kecil).
+    const p1 = layout.polygons.find((p) => p.no === 1)!;
+    const p2 = layout.polygons.find((p) => p.no === 2)!;
+    expect(p2.labelY).toBeLessThan(p1.labelY);
+  });
+
+  it("label di centroid ring terbesar untuk MultiPolygon", () => {
+    const multi = {
+      type: "MultiPolygon",
+      coordinates: [square(0, 0, 1).coordinates, square(10, 0, 4).coordinates],
+    };
+    const layout = buildLandParcelMapLayout([{ no: 7, geometry: multi }], BOX);
+    const poly = layout.polygons[0];
+    // Ring terbesar = square(10,0,4) → label harus berada di dalam bbox proyeksinya.
+    const bigRing = poly.rings[1];
+    const xs = bigRing.map((p) => p[0]);
+    const ys = bigRing.map((p) => p[1]);
+    expect(poly.labelX).toBeGreaterThan(Math.min(...xs));
+    expect(poly.labelX).toBeLessThan(Math.max(...xs));
+    expect(poly.labelY).toBeGreaterThan(Math.min(...ys));
+    expect(poly.labelY).toBeLessThan(Math.max(...ys));
+  });
+
+  it("lahan tanpa geometri valid masuk skippedNos, sisanya tetap tergambar", () => {
+    const layout = buildLandParcelMapLayout(
+      [
+        { no: 1, geometry: square(101, 0.5) },
+        { no: 2, geometry: null },
+        { no: 3, geometry: { type: "Polygon", coordinates: [] } },
+      ],
+      BOX,
+    );
+    expect(layout.polygons.map((p) => p.no)).toEqual([1]);
+    expect(layout.skippedNos).toEqual([2, 3]);
+  });
+
+  it("semua lahan tanpa geometri → polygons kosong, tanpa error", () => {
+    const layout = buildLandParcelMapLayout([{ no: 1, geometry: null }], BOX);
+    expect(layout.polygons).toHaveLength(0);
+    expect(layout.skippedNos).toEqual([1]);
+  });
+});
+
+describe("splitParcelsIntoGrid", () => {
+  // 4 lahan di 4 kuadran bounds: BL, BR, TL, TR (lat tinggi = baris atas).
+  const corners = [
+    { no: 1, geometry: square(100, 0) },     // barat-selatan
+    { no: 2, geometry: square(100.9, 0) },   // timur-selatan
+    { no: 3, geometry: square(100, 0.9) },   // barat-utara
+    { no: 4, geometry: square(100.9, 0.9) }, // timur-utara
+  ];
+
+  it("2×2: lahan masuk sel sesuai centroid; label baris-huruf dari utara", () => {
+    const split = splitParcelsIntoGrid(corners, 4);
+    expect(split.dim).toBe(2);
+    expect(split.cells).toHaveLength(4);
+    const byLabel = Object.fromEntries(split.cells.map((c) => [c.label, c.parcels.map((p) => p.no)]));
+    expect(byLabel["A1"]).toEqual([3]); // utara-barat
+    expect(byLabel["A2"]).toEqual([4]); // utara-timur
+    expect(byLabel["B1"]).toEqual([1]); // selatan-barat
+    expect(byLabel["B2"]).toEqual([2]); // selatan-timur
+  });
+
+  it("sel kosong tidak ikut; tiap lahan tepat satu sel", () => {
+    const split = splitParcelsIntoGrid(
+      [
+        { no: 1, geometry: square(100, 0) },
+        { no: 2, geometry: square(100.05, 0.05) },
+      ],
+      16,
+    );
+    const allNos = split.cells.flatMap((c) => c.parcels.map((p) => p.no)).sort();
+    expect(allNos).toEqual([1, 2]);
+    expect(split.cells.length).toBeLessThanOrEqual(2); // sisanya kosong → tak ada
+  });
+
+  it("pieces=1 → satu sel berisi semua; tanpa geometri → skippedNos", () => {
+    const split = splitParcelsIntoGrid(
+      [
+        { no: 1, geometry: square(100, 0) },
+        { no: 2, geometry: null },
+      ],
+      1,
+    );
+    expect(split.dim).toBe(1);
+    expect(split.cells).toHaveLength(1);
+    expect(split.cells[0].parcels.map((p) => p.no)).toEqual([1]);
+    expect(split.skippedNos).toEqual([2]);
   });
 });

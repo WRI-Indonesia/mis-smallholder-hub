@@ -408,10 +408,10 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <details>
 <summary><strong>RPT-05</strong> · ✅ Done — Report: Lahan</summary>
 
-- **#177 ✅ (real-time):** submenu `report-land-parcel` — roster datar **1 baris = 1 lahan aktif**: Lembaga Petani | Nama Petani | ID Petani | ID Lahan | Kelompok Tani; kolom ekstra (Gapoktan/KUD, Blok, Luas) via **column selector** (default 5 kolom sesuai #177).
-- KT/Gapoktan = atribut per-lahan `subGroupLv*` (#146/#152), normalisasi trim + distinct KT case-insensitive per Lembaga (pola #154); KT kosong tampil "-".
-- Filter Distrik/Lembaga opsional + search + 5 card + Excel & PDF (metadata Distrik/Lembaga). Pure `lib/report-land-parcel.ts` (+5 unit); RBAC 3-layer; select ramping tanpa `geometry` (#163). Read-only, tanpa migration.
-- **Next step:** Implement #177 completed.
+- **#177 ✅ (real-time):** submenu `report-land-parcel` — roster datar **1 baris = 1 lahan aktif**: Lembaga Petani | Nama Petani | ID Petani | ID Lahan | Kelompok Tani (+ Tahun Tanam & Luas default; Gapoktan/KUD, Blok, Komoditas, Species, PSR via **column selector**).
+- **#179 ✅ (revisi owner pasca-QC):** **Lembaga wajib** (laporan & cetakan per 1 Lembaga, search dihapus); **PDF landscape ber-halaman peta** — poligon lahan digambar vektor jsPDF (pola farm-passport), **label per ceklis** (No/Nama/ID Petani/ID Lahan); **grid index (atlas)**: pilihan pecah 1/4/9/16 → halaman ikhtisar ber-grid (A1, A2, …) + 1 halaman per sel berisi (sel kosong dilewati); **preview on-page (SVG)** dari helper layout yang sama dengan PDF; geometry di-fetch per-Lembaga terpisah dari payload list (#163).
+- KT/Gapoktan = atribut per-lahan `subGroupLv*` (#146/#152), normalisasi trim + distinct KT case-insensitive per Lembaga (pola #154); KT kosong tampil "-". Pure `lib/report-land-parcel.ts` + `report-land-parcel-pdf.ts` (**19 unit** termasuk verifikasi empiris jsPDF); RBAC 3-layer. Read-only (migration `species`/`isPsr` tercatat di MD-04).
+- **Next step:** Implement #177 + #179 completed.
 
 </details>
 

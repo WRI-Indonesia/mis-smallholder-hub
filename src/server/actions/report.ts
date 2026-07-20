@@ -697,6 +697,10 @@ export async function getLandParcelReport(
       subGroupLv1: true,
       subGroupLv2: true,
       blok: true,
+      cropType: true,
+      species: true,
+      isPsr: true,
+      plantingYear: true,
       area: true,
       farmer: {
         select: {
@@ -721,10 +725,48 @@ export async function getLandParcelReport(
     subGroupLv1: p.subGroupLv1,
     subGroupLv2: p.subGroupLv2,
     blok: p.blok,
+    cropType: p.cropType,
+    species: p.species,
+    isPsr: p.isPsr,
+    plantingYear: p.plantingYear,
     area: p.area,
   }));
 
   return buildLandParcelReport(raw);
+}
+
+/**
+ * Geometri lahan untuk halaman peta PDF Laporan Lahan (#179) — dipanggil hanya
+ * saat cetak agar payload list tetap tanpa `geometry` (#163). Lembaga wajib &
+ * diverifikasi dalam cakupan akses user.
+ */
+export async function getLandParcelReportGeometries(
+  farmerGroupId: string,
+): Promise<{ id: string; geometry: unknown }[]> {
+  if (!(await hasPermission("report-land-parcel", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id: farmerGroupId, isActive: true, ...accessFilter },
+    select: { id: true },
+  });
+  if (!group) {
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
+  }
+
+  return prisma.landParcel.findMany({
+    where: {
+      isActive: true,
+      farmer: { isActive: true, farmerGroupId },
+    },
+    select: { id: true, geometry: true },
+  });
 }
 
 /**
