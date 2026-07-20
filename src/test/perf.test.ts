@@ -554,3 +554,34 @@ describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga d
     expect(duration).toBeLessThan(100); // margin longgar (aktual ~8ms) — guard O(n), bukan micro-benchmark
   });
 });
+
+// #179 (Laporan Lahan): layout peta cetak + grid index adalah pure logic yang
+// memproyeksikan seluruh poligon Lembaga (bisa ribuan lahan × puluhan titik).
+// Guard O(n·titik) — dihitung sekali per render preview / klik cetak.
+describe("Performance - Laporan Lahan map layout + grid (#179)", () => {
+  it("layouts 2k parcels × 64 vertices + 4×5 grid split under 250ms", async () => {
+    const { buildLandParcelMapLayout, splitParcelsIntoGrid } = await import("@/lib/report-land-parcel");
+    const ring = (lon: number, lat: number) =>
+      Array.from({ length: 64 }, (_, k) => [
+        lon + 0.005 * Math.cos((2 * Math.PI * k) / 64),
+        lat + 0.005 * Math.sin((2 * Math.PI * k) / 64),
+      ]);
+    const parcels = Array.from({ length: 2_000 }, (_, i) => ({
+      no: i + 1,
+      geometry: {
+        type: "Polygon",
+        coordinates: [ring(101 + (i % 50) * 0.01, 0.5 + Math.floor(i / 50) * 0.01)],
+      },
+    }));
+
+    const start = performance.now();
+    const layout = buildLandParcelMapLayout(parcels, { x: 0, y: 0, w: 280, h: 180, pad: 6 });
+    const split = splitParcelsIntoGrid(parcels, 4, 5);
+    const duration = performance.now() - start;
+
+    console.log(`  layout+grid (2k lahan × 64 titik): ${duration.toFixed(2)}ms`);
+    expect(layout.polygons).toHaveLength(2_000);
+    expect(split.cells.reduce((a, c) => a + c.parcels.length, 0)).toBe(2_000);
+    expect(duration).toBeLessThan(250); // margin longgar — guard kompleksitas, bukan micro-benchmark
+  });
+});

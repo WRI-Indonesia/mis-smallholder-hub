@@ -102,6 +102,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | RPT-02      | Report: Pelatihan                   | ✅ Done        | Done    |
 | RPT-03      | Report: Produksi                    | ✅ Done        | Done    |
 | RPT-04      | Report: Kelompok Tani               | ✅ Done        | Done    |
+| RPT-05      | Report: Lahan                       | ✅ Done        | Done    |
 | BULK-01     | Bulk Upload: Menu & KT              | ✅ Done        | Done    |
 | BULK-02     | Bulk Upload: Region                 | 🔲 Not Started | Next    |
 | BULK-03     | Bulk Upload: Farmer                 | ✅ Done        | Done    |
@@ -404,6 +405,16 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 
 </details>
 
+<details>
+<summary><strong>RPT-05</strong> · ✅ Done — Report: Lahan</summary>
+
+- **#177 ✅ (real-time):** submenu `report-land-parcel` — roster datar **1 baris = 1 lahan aktif**: Lembaga Petani | Nama Petani | ID Petani | ID Lahan | Kelompok Tani (+ Tahun Tanam & Luas default; Gapoktan/KUD, Blok, Komoditas, Species, PSR via **column selector**).
+- **#179 ✅ (revisi owner pasca-QC):** **Lembaga wajib** (laporan & cetakan per 1 Lembaga, search dihapus); **PDF landscape ber-halaman peta** — poligon lahan digambar vektor jsPDF (pola farm-passport), **label per ceklis** (No/Nama/ID Petani/ID Lahan/KT) **adaptif** (`fitLabelToBox`: horizontal → vertikal 90° → auto-scale lantai 0.55; fix posisi teks vertikal — jsPDF align pra-rotasi, anchor manual `verticalLabelAnchors` diverifikasi dari content stream); **grid index (atlas) fleksibel Baris × Kolom** (input bebas, baris maks 26 = label A–Z) → halaman ikhtisar ber-grid (A1, A2, …) + 1 halaman per sel berisi (sel kosong dilewati); **preview on-page (SVG)** dari helper layout yang sama dengan PDF; **Excel multi-sheet ber-gambar peta** (sheet Lahan + gambar index; satu sheet per sel + peta selnya, SVG→PNG); geometry di-fetch per-Lembaga terpisah dari payload list (#163).
+- KT/Gapoktan = atribut per-lahan `subGroupLv*` (#146/#152), normalisasi trim + distinct KT case-insensitive per Lembaga (pola #154); KT kosong tampil "-". Pure `lib/report-land-parcel.ts` + `report-land-parcel-pdf.ts` + `report-land-parcel-xlsx.ts` (**33 unit + 1 perf** termasuk verifikasi empiris jsPDF & workbook exceljs; #180: anti-tumpang label, skala batang + utara, mini-index sel); RBAC 3-layer. Read-only (migration `species`/`isPsr` tercatat di MD-04).
+- **Next step:** Implement #177 + #179 completed.
+
+</details>
+
 #### BULK — Bulk Upload
 
 <details>
@@ -497,7 +508,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <details>
 <summary><strong>OPS-01</strong> · 🟠 Partial — Testing</summary>
 
-- **Evidence:** Vitest: **35 test files / 480 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02/03)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) + **report-kelompok-tani (Summary/Detail) #154** + dashboard KT count #148 + parcel-bulk-mapping (#150) + farmer-sub-groups (#152) + agregasi farmer-group (#163) + **dashboard-bmp (#166)** + farmer-group-detail (#171) + farmer-detail (#172) + **produktivitas peta BMP (#174)**.
+- **Evidence:** Vitest: **39 test files / 519 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02/03)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) + **report-kelompok-tani (Summary/Detail) #154** + dashboard KT count #148 + parcel-bulk-mapping (#150) + farmer-sub-groups (#152) + agregasi farmer-group (#163) + **dashboard-bmp (#166)** + farmer-group-detail (#171) + farmer-detail (#172) + **produktivitas peta BMP (#174)** + **report-lahan/layout peta/grid/PDF/Excel (#177/#179, termasuk verifikasi empiris jsPDF & workbook exceljs)** + perf layout peta 2k lahan.
 - **Next step:** RPT-03 (#132) ✅, MAP-02 (#144) ✅, RPT-04 (#154) ✅ & DASH-05 (#148) ✅ tercakup; gap tersisa: integration test route hotspot.
 
 </details>
@@ -518,7 +529,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | Area           | Bukti di Codebase                                                                                                                                                                  | Kesimpulan                                                                             |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Prisma models  | **19 model / 13 migrasi** (+2 additif 2026-07-14: `LandParcel.subGroupLv1/Lv2` #146 + `blok`; +1 additif 2026-07-15: identitas `FarmerGroup` #160): `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer`, `LandParcel`, `TrainingPackage`, `TrainingActivity`, `TrainingParticipant`, `ProductionRecord`, `MainDashboardSnapshot` | Schema mencakup platform, RBAC, region, farmer group, farmer (MD-03), land parcel (MD-04), training (MD-05), production (MD-06), dan dashboard snapshot (DASH-01) ✅ |
-| Admin routes   | **38 page.tsx**: Dashboard (Main, snapshot-backed), Settings (Users/Roles/Menu/Regions), Master Data (Farmers + Groups + Parcels + Training + Production, list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Report (Petani + Pelatihan + Produksi + Kelompok Tani Summary/Detail #154), Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data), Map (Peta Lahan + Peta BMP), Tools (Dashboard Snapshot), Profile | ✅ Semua page konten ter-guard `requirePermission` (28) + 8 justified (redirect-only/profile) — verifikasi audit 2026-07-10; `/admin/map/bmp` guard `map-bmp` (#144) |
+| Admin routes   | **39 page.tsx**: Dashboard (Main, snapshot-backed), Settings (Users/Roles/Menu/Regions), Master Data (Farmers + Groups + Parcels + Training + Production, list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Report (Petani + Pelatihan + Produksi + Kelompok Tani Summary/Detail #154 + **Lahan #177/#179**), Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data), Map (Peta Lahan + Peta BMP), Tools (Dashboard Snapshot), Profile | ✅ Semua page konten ter-guard `requirePermission` (29) + 8 justified (redirect-only/profile) — verifikasi audit 2026-07-10; `/admin/map/bmp` guard `map-bmp` (#144) |
 | Server actions | **22 file — total 3.894 LOC** (audit `wc -l` 2026-07-10): `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `role-permission`, `farmer-group`, `farmer` (143), `land-parcel` (216), `bulk-upload` (76), `bulk-upload-parcel` (223), `bulk-upload-production` (160), `training` (363), `production` (375), `upload`, `profile`, `report` (392), `dashboard` (70), `snapshot` (204), `map`, `data-analyst` (187), `data-completeness` | Semua modul (incl. dashboard, snapshot, map, report) tersedia ✅ — catatan audit: 5 celah guard/scope, lihat `audit-report/audit-2026-07-10.md` §2 |
 | Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `map.schema.ts`, `menu.schema.ts`, `production.schema.ts`, `region.schema.ts`, `snapshot.schema.ts`, `training-activity.schema.ts`, `training-participant.schema.ts`, `user.schema.ts` — **11 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training, production, map, snapshot ✅ |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |

@@ -125,6 +125,20 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
       render: (row) => row.cropType ?? "—",
     },
     {
+      key: "species",
+      label: "Species",
+      sortable: true,
+      cellClassName: "text-sm text-muted-foreground",
+      render: (row) => row.species ?? "—",
+    },
+    {
+      key: "isPsr",
+      label: "PSR",
+      sortable: true,
+      render: (row) =>
+        row.isPsr ? <Badge className="bg-amber-100 text-amber-800 border-amber-200">PSR</Badge> : <span className="text-sm text-muted-foreground">Non-PSR</span>,
+    },
+    {
       key: "plantingYear",
       label: "Tahun Tanam",
       sortable: true,
@@ -162,6 +176,8 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
       area: p.area !== null ? p.area : "—",
       landStatus: p.landStatus ?? "—",
       cropType: p.cropType ?? "—",
+      species: p.species ?? "—",
+      isPsr: p.isPsr ? "PSR" : "Non-PSR",
       plantingYear: p.plantingYear ?? "—",
       revision: p.revision,
       districtName: p.farmer.farmerGroup.district.name,

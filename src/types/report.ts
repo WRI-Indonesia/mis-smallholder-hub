@@ -162,6 +162,56 @@ export interface KelompokTaniReportResult {
   rows: KelompokTaniReportRow[];
 }
 
+// ─── Report Lahan (#177) — roster lahan datar per Lembaga Petani ───
+
+export interface LandParcelReportFilters {
+  districtId?: string | null;
+  farmerGroupId?: string | null;
+}
+
+export interface LandParcelReportRow {
+  /** LandParcel.id (DB) — key baris. */
+  id: string;
+  farmerGroupId: string;
+  /** FarmerGroup.name (= Lembaga Petani). */
+  lembagaTani: string;
+  /** Farmer.name. */
+  namaPetani: string;
+  /** Farmer.farmerId (= ID Petani). */
+  idPetani: string;
+  /** LandParcel.parcelId (= ID Lahan). */
+  idLahan: string;
+  /** Sub Lv.2 = Kelompok Tani (LandParcel.subGroupLv2), null bila kosong. */
+  kelompokTani: string | null;
+  /** Sub Lv.1 = Gapoktan/KUD (LandParcel.subGroupLv1), null bila kosong. */
+  gapoktan: string | null;
+  /** Blok kebun, null bila kosong. */
+  blok: string | null;
+  /** Komoditas (LandParcel.cropType), null bila kosong. */
+  komoditas: string | null;
+  /** Species komoditas, null bila kosong. */
+  species: string | null;
+  /** PSR (Peremajaan Sawit Rakyat) — lahan sedang replanting. */
+  psr: boolean;
+  /** Tahun tanam, null bila tak diketahui. */
+  tahunTanam: number | null;
+  /** Luas (Ha), null bila tak diketahui. */
+  luas: number | null;
+}
+
+export interface LandParcelReportSummary {
+  totalLahan: number; // total lahan aktif
+  totalPetani: number; // distinct petani pemilik lahan
+  totalKelompokTani: number; // distinct (Lembaga, KT) non-null
+  totalLembagaTani: number; // distinct Lembaga
+  totalLuas: number; // total luas (Ha), lahan tanpa luas dihitung 0
+}
+
+export interface LandParcelReportResult {
+  summary: LandParcelReportSummary;
+  rows: LandParcelReportRow[];
+}
+
 // ─── Report Kelompok Tani (Detail) (#154) — roster per Lembaga ───
 
 export interface KtDetailPetani {

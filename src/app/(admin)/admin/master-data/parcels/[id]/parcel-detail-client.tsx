@@ -97,6 +97,14 @@ export function ParcelDetailClient({ parcel, farmers, permissions }: Props) {
                 <p className="text-sm font-medium mt-1">{parcel.cropType ?? "—"}</p>
               </div>
               <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Species</p>
+                <p className="text-sm font-medium mt-1">{parcel.species ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">PSR</p>
+                <p className="text-sm font-medium mt-1">{parcel.isPsr ? "PSR (replanting)" : "Non-PSR"}</p>
+              </div>
+              <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tahun Tanam</p>
                 <p className="text-sm font-medium mt-1">{parcel.plantingYear ?? "—"}</p>
               </div>

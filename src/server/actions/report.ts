@@ -15,6 +15,8 @@ import type {
   KelompokTaniReportFilters,
   KelompokTaniReportResult,
   KelompokTaniDetailReportResult,
+  LandParcelReportFilters,
+  LandParcelReportResult,
 } from "@/types/report";
 import {
   enumeratePeriods,
@@ -24,35 +26,32 @@ import {
   type ProductionMatrixRecord,
 } from "@/lib/report-production";
 import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok-tani";
+import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
 
-export async function getDistrictsForReport() {
-  if (!(await hasPermission("report-farmer", "VIEW"))) {
+// ─── Helper dropdown bersama (TD-018) — dedup 5 pasang action per menu report ───
+// Non-exported (bukan server action); permission key per-menu tetap di action pemanggil.
+
+async function districtsForMenus(menuKeys: string[]) {
+  const allowed = (await Promise.all(menuKeys.map((k) => hasPermission(k, "VIEW")))).some(Boolean);
+  if (!allowed) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
   const access = await getAccessContext();
 
   const where: Prisma.DistrictWhereInput = { isActive: true };
-
   if (access.mode === "BY_DISTRICT") {
     where.id = { in: access.ids };
   } else if (access.mode === "BY_FARMER_GROUP") {
-    where.farmerGroups = {
-      some: {
-        id: { in: access.ids },
-        isActive: true,
-      },
-    };
+    where.farmerGroups = { some: { id: { in: access.ids }, isActive: true } };
   }
 
-  return prisma.district.findMany({
-    where,
-    orderBy: { name: "asc" },
-  });
+  return prisma.district.findMany({ where, orderBy: { name: "asc" } });
 }
 
-export async function getFarmerGroupsForReport(districtId?: string | null) {
-  if (!(await hasPermission("report-farmer", "VIEW"))) {
+async function farmerGroupsForMenus(menuKeys: string[], districtId?: string | null) {
+  const allowed = (await Promise.all(menuKeys.map((k) => hasPermission(k, "VIEW")))).some(Boolean);
+  if (!allowed) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
   const access = await getAccessContext();
@@ -62,21 +61,19 @@ export async function getFarmerGroupsForReport(districtId?: string | null) {
     access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
     {};
 
-  const where = {
-    isActive: true,
-    ...accessFilter,
-    ...(districtId ? { districtId } : {}),
-  };
-
   return prisma.farmerGroup.findMany({
-    where,
-    select: {
-      id: true,
-      name: true,
-      code: true,
-    },
+    where: { isActive: true, ...accessFilter, ...(districtId ? { districtId } : {}) },
+    select: { id: true, name: true, code: true },
     orderBy: { name: "asc" },
   });
+}
+
+export async function getDistrictsForReport() {
+  return districtsForMenus(["report-farmer"]);
+}
+
+export async function getFarmerGroupsForReport(districtId?: string | null) {
+  return farmerGroupsForMenus(["report-farmer"], districtId);
 }
 
 export async function getFarmerReport(filters: FarmerReportFilters): Promise<FarmerReportResult> {
@@ -169,56 +166,11 @@ export async function getFarmerReport(filters: FarmerReportFilters): Promise<Far
 }
 
 export async function getDistrictsForTrainingReport() {
-  if (!(await hasPermission("report-training", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-  const access = await getAccessContext();
-
-  const where: Prisma.DistrictWhereInput = { isActive: true };
-
-  if (access.mode === "BY_DISTRICT") {
-    where.id = { in: access.ids };
-  } else if (access.mode === "BY_FARMER_GROUP") {
-    where.farmerGroups = {
-      some: {
-        id: { in: access.ids },
-        isActive: true,
-      },
-    };
-  }
-
-  return prisma.district.findMany({
-    where,
-    orderBy: { name: "asc" },
-  });
+  return districtsForMenus(["report-training"]);
 }
 
 export async function getFarmerGroupsForTrainingReport(districtId?: string | null) {
-  if (!(await hasPermission("report-training", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-  const access = await getAccessContext();
-
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
-    {};
-
-  const where = {
-    isActive: true,
-    ...accessFilter,
-    ...(districtId ? { districtId } : {}),
-  };
-
-  return prisma.farmerGroup.findMany({
-    where,
-    select: {
-      id: true,
-      name: true,
-      code: true,
-    },
-    orderBy: { name: "asc" },
-  });
+  return farmerGroupsForMenus(["report-training"], districtId);
 }
 
 export async function getTrainingReport(filters: TrainingReportFilters): Promise<TrainingReportResult> {
@@ -407,56 +359,11 @@ export async function getTrainingReport(filters: TrainingReportFilters): Promise
 }
 
 export async function getDistrictsForProductionReport() {
-  if (!(await hasPermission("report-production", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-  const access = await getAccessContext();
-
-  const where: Prisma.DistrictWhereInput = { isActive: true };
-
-  if (access.mode === "BY_DISTRICT") {
-    where.id = { in: access.ids };
-  } else if (access.mode === "BY_FARMER_GROUP") {
-    where.farmerGroups = {
-      some: {
-        id: { in: access.ids },
-        isActive: true,
-      },
-    };
-  }
-
-  return prisma.district.findMany({
-    where,
-    orderBy: { name: "asc" },
-  });
+  return districtsForMenus(["report-production"]);
 }
 
 export async function getFarmerGroupsForProductionReport(districtId?: string | null) {
-  if (!(await hasPermission("report-production", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-  const access = await getAccessContext();
-
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
-    {};
-
-  const where = {
-    isActive: true,
-    ...accessFilter,
-    ...(districtId ? { districtId } : {}),
-  };
-
-  return prisma.farmerGroup.findMany({
-    where,
-    select: {
-      id: true,
-      name: true,
-      code: true,
-    },
-    orderBy: { name: "asc" },
-  });
+  return farmerGroupsForMenus(["report-production"], districtId);
 }
 
 export async function getProductionReport(filters: ProductionReportFilters): Promise<ProductionReportResult> {
@@ -540,46 +447,14 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
 
 // ─── Report Kelompok Tani (#154) — agregat KT/Gapoktan turunan dari lahan (real-time) ───
 
-/** Dropdown Distrik/Lembaga dipakai bersama Report KT Summary & Detail. */
-async function canViewKtReportFamily() {
-  return (
-    (await hasPermission("report-kelompok-tani", "VIEW")) ||
-    (await hasPermission("report-kelompok-tani-detail", "VIEW"))
-  );
-}
-
+// Dropdown Distrik/Lembaga dipakai bersama Report KT Summary & Detail
+// (menuKeys ganda: VIEW salah satunya cukup).
 export async function getDistrictsForKtReport() {
-  if (!(await canViewKtReportFamily())) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-  const access = await getAccessContext();
-
-  const where: Prisma.DistrictWhereInput = { isActive: true };
-  if (access.mode === "BY_DISTRICT") {
-    where.id = { in: access.ids };
-  } else if (access.mode === "BY_FARMER_GROUP") {
-    where.farmerGroups = { some: { id: { in: access.ids }, isActive: true } };
-  }
-
-  return prisma.district.findMany({ where, orderBy: { name: "asc" } });
+  return districtsForMenus(["report-kelompok-tani", "report-kelompok-tani-detail"]);
 }
 
 export async function getFarmerGroupsForKtReport(districtId?: string | null) {
-  if (!(await canViewKtReportFamily())) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-  const access = await getAccessContext();
-
-  const accessFilter =
-    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
-    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
-    {};
-
-  return prisma.farmerGroup.findMany({
-    where: { isActive: true, ...accessFilter, ...(districtId ? { districtId } : {}) },
-    select: { id: true, name: true, code: true },
-    orderBy: { name: "asc" },
-  });
+  return farmerGroupsForMenus(["report-kelompok-tani", "report-kelompok-tani-detail"], districtId);
 }
 
 export async function getKelompokTaniReport(
@@ -626,6 +501,118 @@ export async function getKelompokTaniReport(
   }));
 
   return buildKelompokTaniReport(raw);
+}
+
+// ─── Report Lahan (#177) — roster lahan datar per Lembaga Petani (real-time) ───
+
+export async function getDistrictsForLandParcelReport() {
+  return districtsForMenus(["report-land-parcel"]);
+}
+
+export async function getFarmerGroupsForLandParcelReport(districtId?: string | null) {
+  return farmerGroupsForMenus(["report-land-parcel"], districtId);
+}
+
+/**
+ * Report Lahan — roster datar 1 baris per lahan aktif (Lembaga | Petani |
+ * ID Petani | ID Lahan | KT). RBAC 3-layer: `report-land-parcel` VIEW + scope
+ * (`farmerRelationAccessFilter` via `AND`) + `isActive`. KT/Gapoktan = atribut
+ * per-lahan (#146); select ramping tanpa `geometry` (#163).
+ */
+export async function getLandParcelReport(
+  filters: LandParcelReportFilters = {},
+): Promise<LandParcelReportResult> {
+  if (!(await hasPermission("report-land-parcel", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const andFilters: Prisma.LandParcelWhereInput[] = [farmerRelationAccessFilter(access)];
+  if (filters.farmerGroupId) andFilters.push({ farmer: { farmerGroupId: filters.farmerGroupId } });
+  if (filters.districtId) andFilters.push({ farmer: { farmerGroup: { districtId: filters.districtId } } });
+
+  const parcels = await prisma.landParcel.findMany({
+    where: {
+      isActive: true,
+      farmer: { isActive: true },
+      AND: andFilters,
+    },
+    select: {
+      id: true,
+      parcelId: true,
+      subGroupLv1: true,
+      subGroupLv2: true,
+      blok: true,
+      cropType: true,
+      species: true,
+      isPsr: true,
+      plantingYear: true,
+      area: true,
+      farmer: {
+        select: {
+          id: true,
+          farmerId: true,
+          name: true,
+          farmerGroupId: true,
+          farmerGroup: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  const raw: LpRawParcel[] = parcels.map((p) => ({
+    id: p.id,
+    parcelCode: p.parcelId,
+    farmerId: p.farmer.id,
+    farmerCode: p.farmer.farmerId,
+    farmerName: p.farmer.name,
+    farmerGroupId: p.farmer.farmerGroupId,
+    lembagaTani: p.farmer.farmerGroup.name,
+    subGroupLv1: p.subGroupLv1,
+    subGroupLv2: p.subGroupLv2,
+    blok: p.blok,
+    cropType: p.cropType,
+    species: p.species,
+    isPsr: p.isPsr,
+    plantingYear: p.plantingYear,
+    area: p.area,
+  }));
+
+  return buildLandParcelReport(raw);
+}
+
+/**
+ * Geometri lahan untuk halaman peta PDF Laporan Lahan (#179) — dipanggil hanya
+ * saat cetak agar payload list tetap tanpa `geometry` (#163). Lembaga wajib &
+ * diverifikasi dalam cakupan akses user.
+ */
+export async function getLandParcelReportGeometries(
+  farmerGroupId: string,
+): Promise<{ id: string; geometry: unknown }[]> {
+  if (!(await hasPermission("report-land-parcel", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id: farmerGroupId, isActive: true, ...accessFilter },
+    select: { id: true },
+  });
+  if (!group) {
+    throw new Error("Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses");
+  }
+
+  return prisma.landParcel.findMany({
+    where: {
+      isActive: true,
+      farmer: { isActive: true, farmerGroupId },
+    },
+    select: { id: true, geometry: true },
+  });
 }
 
 /**

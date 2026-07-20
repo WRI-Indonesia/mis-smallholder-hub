@@ -110,8 +110,11 @@ function attrList(doc: jsPDF, items: { label: string; value: string }[], x: numb
   return cy;
 }
 
-/** Generate and download the Farm Passport PDF for one parcel. */
-export function generateFarmPassportPdf(data: ParcelPassport) {
+/**
+ * Build dokumen Profil Lahan (tanpa save) — dipisah dari
+ * `generateFarmPassportPdf` agar bisa diverifikasi unit test (TD-019).
+ */
+export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const { farmer, group, parcel, training, production } = data;
 
@@ -289,6 +292,14 @@ export function generateFarmPassportPdf(data: ParcelPassport) {
   doc.setTextColor(...EMERALD);
   doc.text("Smallholder HUB", PAGE_W - MARGIN, 288, { align: "right" });
 
+  return doc;
+}
+
+/** Generate and download the Farm Passport PDF for one parcel. */
+export function generateFarmPassportPdf(data: ParcelPassport) {
+  const { farmer, group, parcel } = data;
   const safe = (s: string) => s.replace(/[^a-z0-9]+/gi, "_");
-  doc.save(`Profil_Lahan_${safe(group.name)}_${safe(farmer.name)}_${safe(parcel.parcelId)}.pdf`);
+  buildFarmPassportDoc(data).save(
+    `Profil_Lahan_${safe(group.name)}_${safe(farmer.name)}_${safe(parcel.parcelId)}.pdf`,
+  );
 }

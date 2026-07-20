@@ -34,6 +34,8 @@ export interface LandParcel {
   area: number | null;
   landStatus: string | null;
   cropType: string | null;
+  species: string | null;
+  isPsr: boolean;
   plantingYear: number | null;
   subGroupLv1: string | null; // Gapoktan
   subGroupLv2: string | null; // Kelompok Tani

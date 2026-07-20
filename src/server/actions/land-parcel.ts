@@ -50,6 +50,8 @@ export async function getLandParcels(search?: string, farmerId?: string) {
       area: true,
       landStatus: true,
       cropType: true,
+      species: true,
+      isPsr: true,
       plantingYear: true,
       revision: true,
       isActive: true,

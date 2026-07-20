@@ -25,6 +25,7 @@ report-training,report,Pelatihan,/admin/report/training,GraduationCap,2,TRUE,TRU
 report-production,report,Produksi,/admin/report/production,TrendingUp,3,TRUE,TRUE
 report-kelompok-tani,report,Kelompok Tani (Summary),/admin/report/kelompok-tani,Network,4,TRUE,TRUE
 report-kelompok-tani-detail,report,Kelompok Tani (Detail),/admin/report/kelompok-tani-detail,ClipboardList,5,TRUE,TRUE
+report-land-parcel,report,Lahan,/admin/report/land-parcel,Sprout,6,TRUE,TRUE
 tools,,Tools,/admin/tools,Wrench,6,TRUE,TRUE
 dashboard-snapshot,tools,Dashboard Snapshot,/admin/tools/snapshot,Camera,1,TRUE,TRUE
 map,,Map,/admin/map,Map,7,TRUE,TRUE

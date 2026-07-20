@@ -6,19 +6,7 @@ export interface PDFExportField {
   key: string;
 }
 
-export function exportToPDF({
-  filename,
-  title,
-  subtitle,
-  metadata,
-  columns,
-  data,
-  orientation = "portrait",
-  headFontSize = 10,
-  bodyFontSize = 9,
-  cellPadding = 3,
-  columnStyles,
-}: {
+export interface PDFExportOptions {
   filename: string;
   title: string;
   subtitle?: string;
@@ -31,7 +19,24 @@ export function exportToPDF({
   cellPadding?: number;
   /** autoTable columnStyles keyed by column index (e.g. widths/alignment for wide matrices). */
   columnStyles?: Record<number, Record<string, string | number>>;
-}) {
+}
+
+/**
+ * Build dokumen (tanpa save) — dipisah dari `exportToPDF` agar bisa
+ * diverifikasi unit test (TD-019, pola build-vs-save #179).
+ */
+export function buildPDF({
+  title,
+  subtitle,
+  metadata,
+  columns,
+  data,
+  orientation = "portrait",
+  headFontSize = 10,
+  bodyFontSize = 9,
+  cellPadding = 3,
+  columnStyles,
+}: Omit<PDFExportOptions, "filename">): jsPDF {
   const doc = new jsPDF({
     orientation,
     unit: "mm",
@@ -147,6 +152,9 @@ export function exportToPDF({
     doc.text(pageText, pageWidth - 14 - pageTextWidth, pageHeight - 9);
   }
 
-  // Save the PDF file directly
-  doc.save(`${filename}.pdf`);
+  return doc;
+}
+
+export function exportToPDF(options: PDFExportOptions) {
+  buildPDF(options).save(`${options.filename}.pdf`);
 }

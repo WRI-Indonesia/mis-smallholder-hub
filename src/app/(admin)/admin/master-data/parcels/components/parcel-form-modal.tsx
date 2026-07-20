@@ -68,6 +68,8 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
       area: areaRaw ? parseFloat(areaRaw) : null,
       landStatus: (form.get("landStatus") as string) || null,
       cropType: (form.get("cropType") as string) || null,
+      species: (form.get("species") as string) || null,
+      isPsr: form.get("isPsr") === "on",
       plantingYear: plantingYearRaw ? parseInt(plantingYearRaw, 10) : null,
       subGroupLv1: (form.get("subGroupLv1") as string) || null,
       subGroupLv2: (form.get("subGroupLv2") as string) || null,
@@ -200,6 +202,27 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
               <Label htmlFor="cropType">Komoditas</Label>
               <Input id="cropType" name="cropType" defaultValue={parcel?.cropType ?? ""} placeholder="Contoh: Kelapa Sawit" />
               {errors.cropType && <p className="text-sm text-destructive">{errors.cropType[0]}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="species">Species</Label>
+              <Input id="species" name="species" defaultValue={parcel?.species ?? ""} placeholder="Contoh: Elaeis guineensis" />
+              {errors.species && <p className="text-sm text-destructive">{errors.species[0]}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="isPsr">PSR (Peremajaan Sawit Rakyat)</Label>
+              <label className="flex items-center gap-2 h-9 px-3 border rounded-md text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="isPsr"
+                  name="isPsr"
+                  defaultChecked={parcel?.isPsr ?? false}
+                  className="h-4 w-4 accent-primary"
+                />
+                Lahan sedang PSR (replanting)
+              </label>
             </div>
           </div>
 
