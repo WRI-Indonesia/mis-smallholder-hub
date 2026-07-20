@@ -4,6 +4,7 @@ import {
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
   fitLabelToBox,
+  verticalLabelAnchors,
   exteriorRings,
   type LpRawParcel,
   type LpMapBox,
@@ -273,5 +274,24 @@ describe("buildLandParcelMapLayout bbox", () => {
     expect(poly.bboxH).toBeGreaterThan(0);
     expect(poly.bboxW).toBeLessThanOrEqual(BOX.w - BOX.pad * 2 + 1e-6);
     expect(poly.bboxH).toBeLessThanOrEqual(BOX.h - BOX.pad * 2 + 1e-6);
+  });
+});
+
+describe("verticalLabelAnchors", () => {
+  it("semua anchor baseline berada di dalam blok pill vertikal", () => {
+    const lineH = 2.6, pad = 0.6;
+    const widths = [2.5, 28.4]; // nomor pendek + ID panjang
+    const anchors = verticalLabelAnchors(100, 100, lineH, 2, pad, widths);
+    const blockH = 2 * lineH + 2 * pad;
+    anchors.forEach((a, i) => {
+      // Kolom baris di dalam tebal blok.
+      expect(a.x).toBeGreaterThan(100 - blockH / 2);
+      expect(a.x).toBeLessThan(100 + blockH / 2);
+      // Teks memanjang ke atas dari anchor → rentang [y - tw, y] mengitari cy.
+      expect(a.y).toBeCloseTo(100 + widths[i] / 2);
+      expect(a.y - widths[i]).toBeCloseTo(100 - widths[i] / 2);
+    });
+    // Baris berurutan dari kiri blok.
+    expect(anchors[0].x).toBeLessThan(anchors[1].x);
   });
 });

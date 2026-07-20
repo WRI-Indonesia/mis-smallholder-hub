@@ -295,6 +295,28 @@ export function fitLabelToBox(
   return { vertical, scale: Math.max(minScale, best) };
 }
 
+/**
+ * Anchor baseline tiap baris label **vertikal** (teks diputar 90° CCW, dibaca
+ * bawah→atas) untuk jsPDF. jsPDF mengabaikan `align`/`baseline` secara benar
+ * saat ber-`angle` (offset dihitung pra-rotasi) → posisi harus manual:
+ * baris ditumpuk sepanjang sumbu-x blok (kolom per baris, baseline ±75% kolom
+ * karena ascent glyph menghadap kiri), teks di-center vertikal di `cy`.
+ */
+export function verticalLabelAnchors(
+  cx: number,
+  cy: number,
+  lineH: number,
+  lineCount: number,
+  pad: number,
+  textWidths: number[],
+): { x: number; y: number }[] {
+  const blockH = lineCount * lineH + pad * 2;
+  return textWidths.map((tw, i) => ({
+    x: cx - blockH / 2 + pad + lineH * (i + 0.75),
+    y: cy + tw / 2,
+  }));
+}
+
 // ─── Grid index (#179): pecah peta jadi beberapa halaman (atlas) ───
 
 export interface LpGridParcel {

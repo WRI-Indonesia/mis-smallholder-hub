@@ -4,6 +4,7 @@ import {
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
   fitLabelToBox,
+  verticalLabelAnchors,
   type LpGeoJson,
   type LpMapLayout,
 } from "@/lib/report-land-parcel";
@@ -97,15 +98,20 @@ function drawLayoutLabels(doc: jsPDF, layout: LpMapLayout, linesByNo: Map<number
         });
       });
     } else {
-      // Vertikal: blok diputar 90° (teks dibaca dari bawah ke atas).
+      // Vertikal: blok diputar 90° (dibaca bawah→atas). Posisi manual via
+      // verticalLabelAnchors — `align`/`baseline` jsPDF salah hitung saat
+      // ber-`angle` (offset pra-rotasi), teks melenceng keluar pill.
       doc.roundedRect(poly.labelX - h / 2, poly.labelY - w / 2, h, w, 0.8, 0.8, "FD");
+      const anchors = verticalLabelAnchors(
+        poly.labelX,
+        poly.labelY,
+        lineH,
+        lines.length,
+        0.6 * fit.scale,
+        lines.map((l) => doc.getTextWidth(l)),
+      );
       lines.forEach((line, i) => {
-        doc.text(
-          line,
-          poly.labelX - h / 2 + 0.6 * fit.scale + lineH * (i + 0.5),
-          poly.labelY,
-          { align: "center", baseline: "middle", angle: 90 },
-        );
+        doc.text(line, anchors[i].x, anchors[i].y, { angle: 90 });
       });
     }
   }

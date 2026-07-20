@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useTransition, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useTransition, type ReactNode, type ReactElement } from "react";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, FileText, Download, Users, Layers, Sprout, Printer, SlidersHorizontal, MapPin, Grid3x3 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,9 @@ import {
   fitLabelToBox,
   type LpGeoJson,
   type LpMapLayout,
+  type LpGridSplit,
 } from "@/lib/report-land-parcel";
+import { exportLandParcelReportExcel, type LpExcelImage } from "@/lib/report-land-parcel-xlsx";
 
 interface District {
   id: string;
@@ -51,12 +53,13 @@ interface Props {
 const EMPTY = "-";
 
 // Ceklis Label Peta: isi label yang dirender di tiap poligon.
-type LabelKey = "no" | "nama" | "idPetani" | "idLahan";
+type LabelKey = "no" | "nama" | "idPetani" | "idLahan" | "kelompokTani";
 const LABEL_PARTS: { key: LabelKey; label: string }[] = [
   { key: "no", label: "No" },
   { key: "nama", label: "Nama" },
   { key: "idPetani", label: "ID Petani" },
   { key: "idLahan", label: "ID Lahan" },
+  { key: "kelompokTani", label: "Kelompok Tani" },
 ];
 
 // Batas input grid: baris maks. 26 (label huruf A–Z), kolom maks. 20.
@@ -202,6 +205,7 @@ export function LandParcelReportClient({ districts }: Props) {
         if (labelParts.has("nama")) lines.push(row.namaPetani);
         if (labelParts.has("idPetani")) lines.push(row.idPetani);
         if (labelParts.has("idLahan")) lines.push(row.idLahan);
+        if (labelParts.has("kelompokTani")) lines.push(row.kelompokTani ?? EMPTY);
         return {
           no: idx + 1,
           geometry: geoms?.get(row.id) ?? null,
@@ -248,11 +252,9 @@ export function LandParcelReportClient({ districts }: Props) {
     selectedDistrictObj?.name.replace(/\s+/g, "_") ??
     "Semua";
 
-  const handleExportExcel = async () => {
-    if (!reportData) return;
-    const { exportToExcel } = await import("@/lib/xlsx");
-
-    const data: Record<string, string | number>[] = filteredRows.map((row, idx) => ({
+  // Baris export (dipakai sheet penuh Excel, subset per sel, dan PDF).
+  const buildExportRows = (): Record<string, string | number>[] =>
+    filteredRows.map((row, idx) => ({
       no: idx + 1,
       lembagaTani: row.lembagaTani,
       namaPetani: row.namaPetani,
@@ -268,30 +270,77 @@ export function LandParcelReportClient({ districts }: Props) {
       luas: row.luas != null ? Number(row.luas.toFixed(2)) : EMPTY,
     }));
 
-    if (show("luas")) {
-      data.push({
-        no: "",
-        lembagaTani: "Total",
-        namaPetani: "",
-        idPetani: "",
-        idLahan: "",
-        kelompokTani: "",
-        gapoktan: "",
-        blok: "",
-        komoditas: "",
-        species: "",
-        psr: "",
-        tahunTanam: "",
-        luas: Number(filteredTotalLuas.toFixed(2)),
-      });
+  const totalRow = (): Record<string, string | number> => ({
+    no: "",
+    lembagaTani: "Total",
+    namaPetani: "",
+    idPetani: "",
+    idLahan: "",
+    kelompokTani: "",
+    gapoktan: "",
+    blok: "",
+    komoditas: "",
+    species: "",
+    psr: "",
+    tahunTanam: "",
+    luas: Number(filteredTotalLuas.toFixed(2)),
+  });
+
+  // Excel (#179): sheet "Lahan" penuh + gambar peta index; grid aktif → tambah
+  // satu sheet per sel grid berisi subset baris sel + gambar peta selnya.
+  const handleExportExcel = async () => {
+    if (!reportData || !selectedFarmerGroup) return;
+    if (!geoms) {
+      toast.error("Geometri lahan masih dimuat — coba lagi sebentar.");
+      return;
     }
 
-    await exportToExcel({
-      filename: `Laporan_Lahan_${scopeLabel()}`,
-      sheetName: "Lahan",
-      columns: buildExportColumns(),
-      data,
-    });
+    const cols = buildExportColumns();
+    const rows = buildExportRows();
+    const fullData = show("luas") ? [...rows, totalRow()] : rows;
+
+    // Render SVG (komponen preview yang sama) → PNG untuk ditempel di sheet.
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const toPng = (el: ReactElement) => svgToPng(renderToStaticMarkup(el));
+
+    const fullLayout = buildLandParcelMapLayout(mapParcels, PREVIEW_BOX);
+    const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines]));
+    const split = gridRows * gridCols > 1 ? splitParcelsIntoGrid(mapParcels, gridRows, gridCols) : null;
+    const useGrid = split !== null && split.cells.length > 0 && !!fullLayout.frame;
+
+    try {
+      let overviewImage: LpExcelImage | null = null;
+      if (fullLayout.polygons.length > 0) {
+        overviewImage = useGrid
+          ? await toPng(<LayoutSvg layout={fullLayout} linesByNo={null} overlay={gridOverlay(fullLayout, split!)} />)
+          : await toPng(<LayoutSvg layout={fullLayout} linesByNo={linesByNo} />);
+      }
+
+      const rowByNo = new Map(rows.map((r) => [r.no as number, r]));
+      const cellSheets = useGrid
+        ? await Promise.all(
+            split!.cells.map(async (cell) => ({
+              label: cell.label,
+              data: cell.parcels
+                .map((p) => rowByNo.get(p.no))
+                .filter((r): r is Record<string, string | number> => r !== undefined),
+              image: await toPng(
+                <LayoutSvg layout={buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX)} linesByNo={linesByNo} />,
+              ),
+            })),
+          )
+        : [];
+
+      await exportLandParcelReportExcel({
+        filename: `Laporan_Lahan_${scopeLabel()}`,
+        columns: cols,
+        fullData,
+        overviewImage,
+        cellSheets,
+      });
+    } catch (err) {
+      toast.error((err instanceof Error && err.message) || "Gagal membuat Excel ber-gambar peta");
+    }
   };
 
   const handleExportPDF = async () => {
@@ -710,6 +759,74 @@ interface PreviewParcel {
 
 const PREVIEW_BOX = { x: 0, y: 0, w: 280, h: 180, pad: 6 };
 
+// Rasterisasi PNG untuk Excel: 4× viewBox agar tajam, ditampilkan 2×.
+const PNG_SCALE = 4;
+const PNG_W = PREVIEW_BOX.w * PNG_SCALE;
+const PNG_H = PREVIEW_BOX.h * PNG_SCALE;
+
+/** Overlay garis grid + label sel (dipakai preview ikhtisar & gambar Excel). */
+function gridOverlay(fullLayout: LpMapLayout, split: LpGridSplit): ReactNode {
+  const f = fullLayout.frame;
+  if (!f) return null;
+  const gx = f.offX;
+  const gy = f.offY;
+  const gw = (f.maxLon - f.minLon || 1e-6) * f.scale;
+  const gh = (f.maxLat - f.minLat || 1e-6) * f.scale;
+  const { rows: gRows, cols: gCols } = split;
+  return (
+    <g>
+      {Array.from({ length: gCols + 1 }, (_, i) => (
+        <line key={`v${i}`} x1={gx + (gw / gCols) * i} y1={gy} x2={gx + (gw / gCols) * i} y2={gy + gh} stroke="#94a3b8" strokeWidth={0.3} />
+      ))}
+      {Array.from({ length: gRows + 1 }, (_, j) => (
+        <line key={`h${j}`} x1={gx} y1={gy + (gh / gRows) * j} x2={gx + gw} y2={gy + (gh / gRows) * j} stroke="#94a3b8" strokeWidth={0.3} />
+      ))}
+      {split.cells.map((cell) => (
+        <g key={cell.label}>
+          <text x={gx + (gw / gCols) * (cell.col + 0.5)} y={gy + (gh / gRows) * (cell.row + 0.5)} fontSize={8} fontWeight={700} fill="#1e293b" textAnchor="middle" dominantBaseline="central" opacity={0.75}>
+            {cell.label}
+          </text>
+          <text x={gx + (gw / gCols) * (cell.col + 0.5)} y={gy + (gh / gRows) * (cell.row + 0.5) + 7} fontSize={3} fill="#64748b" textAnchor="middle">
+            {cell.parcels.length} lahan
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+}
+
+/** SVG markup → PNG (canvas) untuk ditempel ke sheet Excel. */
+async function svgToPng(svgMarkup: string): Promise<LpExcelImage> {
+  const svg = svgMarkup.replace(
+    "<svg",
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${PNG_W}" height="${PNG_H}"`,
+  );
+  const blobUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new Error("Gagal merender peta ke gambar"));
+      im.src = blobUrl;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = PNG_W;
+    canvas.height = PNG_H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas tidak tersedia");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, PNG_W, PNG_H);
+    ctx.drawImage(img, 0, 0, PNG_W, PNG_H);
+    return {
+      base64: canvas.toDataURL("image/png").split(",")[1],
+      widthPx: PNG_W / 2,
+      heightPx: PNG_H / 2,
+    };
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
 function LayoutSvg({
   layout,
   linesByNo,
@@ -806,36 +923,8 @@ function LandParcelMapPreview({ mapParcels, rows, cols }: { mapParcels: PreviewP
     );
   }
 
-  // Overlay garis grid + label sel untuk halaman ikhtisar.
-  let overlay: ReactNode = null;
-  if (useGrid) {
-    const f = fullLayout.frame!;
-    const gx = f.offX;
-    const gy = f.offY;
-    const gw = (f.maxLon - f.minLon || 1e-6) * f.scale;
-    const gh = (f.maxLat - f.minLat || 1e-6) * f.scale;
-    const { rows: gRows, cols: gCols } = split!;
-    overlay = (
-      <g>
-        {Array.from({ length: gCols + 1 }, (_, i) => (
-          <line key={`v${i}`} x1={gx + (gw / gCols) * i} y1={gy} x2={gx + (gw / gCols) * i} y2={gy + gh} stroke="#94a3b8" strokeWidth={0.3} />
-        ))}
-        {Array.from({ length: gRows + 1 }, (_, j) => (
-          <line key={`h${j}`} x1={gx} y1={gy + (gh / gRows) * j} x2={gx + gw} y2={gy + (gh / gRows) * j} stroke="#94a3b8" strokeWidth={0.3} />
-        ))}
-        {split!.cells.map((cell) => (
-          <g key={cell.label}>
-            <text x={gx + (gw / gCols) * (cell.col + 0.5)} y={gy + (gh / gRows) * (cell.row + 0.5)} fontSize={8} fontWeight={700} fill="#1e293b" textAnchor="middle" dominantBaseline="central" opacity={0.75}>
-              {cell.label}
-            </text>
-            <text x={gx + (gw / gCols) * (cell.col + 0.5)} y={gy + (gh / gRows) * (cell.row + 0.5) + 7} fontSize={3} fill="#64748b" textAnchor="middle">
-              {cell.parcels.length} lahan
-            </text>
-          </g>
-        ))}
-      </g>
-    );
-  }
+  // Overlay garis grid + label sel untuk halaman ikhtisar (dipakai juga Excel).
+  const overlay: ReactNode = useGrid ? gridOverlay(fullLayout, split!) : null;
 
   const skippedNote =
     fullLayout.skippedNos.length > 0
