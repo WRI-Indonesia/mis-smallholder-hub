@@ -9,7 +9,9 @@ model LandParcel {
   geometry      Json?       @map("geometry") // GeoJSON polygon
   area          Float?      @map("area") // Area in hectares
   landStatus    String?     @map("land_status") // e.g., "Owned", "Leased", "Shared"
-  cropType      String?     @map("crop_type") // e.g., "Palm Oil", "Rubber"
+  cropType      String?     @map("crop_type") // Komoditas, e.g., "Kelapa Sawit"
+  species       String?     @map("species") // Species komoditas, e.g., "Elaeis guineensis"
+  isPsr         Boolean     @default(false) @map("is_psr") // PSR = Peremajaan Sawit Rakyat (replanting → produksi 0 wajar)
   plantingYear  Int?        @map("planting_year")
   notes         String?     @map("notes")
   // Sub-kelompok interim (denormalisasi, TD-014): hierarki KT belum jadi tabel.

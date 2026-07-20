@@ -12,6 +12,8 @@ export const landParcelSchema = z.object({
   }, z.number().positive("Luas harus lebih dari 0").nullable().optional()),
   landStatus: z.string().nullable().optional(),
   cropType: z.string().nullable().optional(),
+  species: z.string().nullable().optional(),
+  isPsr: z.boolean().optional(),
   plantingYear: z.preprocess((val) => {
     if (val === "" || val === undefined || val === null) return null;
     const parsed = parseInt(val as string, 10);
