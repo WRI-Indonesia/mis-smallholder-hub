@@ -27,7 +27,7 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
 | **Debt** (TD-001…017) | **8** | 9 | 17 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017.
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-018 · TD-019.
 
 ## Debt Register — 🔴 Aktif
 
@@ -71,6 +71,18 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Masalah:** form data parsing berpotensi `NaN` pada field kosong/whitespace.
 - **Evidence:** `src/app/(admin)/admin/master-data/groups/group-form-modal.tsx`.
 - **Validation:** gunakan helper untuk memproses string kosong/whitespace sebelum parsing numerik. · **Owner:** Frontend Lead.
+
+### TD-018 · 🔲 Open — 5 salinan action dropdown Distrik/Lembaga per menu report (P3)
+
+- **Masalah:** `report.ts` berisi 5 pasang action dropdown nyaris identik (`getDistrictsFor*` + `getFarmerGroupsFor*` untuk farmer/training/production/KT/lahan) — beda hanya di permission key menu. Duplikasi sadar demi guard per-menu, tapi tiap report baru menambah salinan ke-6.
+- **Evidence:** ditemukan #177/#179 (retro); `src/server/actions/report.ts`.
+- **Validation:** konsolidasi ke helper generik `getDistrictsForMenu(menuKey)` / `getFarmerGroupsForMenu(menuKey)` ber-guard `hasPermission(menuKey, "VIEW")` — kerjakan menumpang saat menambah report berikutnya. · **Owner:** Backend.
+
+### TD-019 · 🔲 Open — Exporter PDF lama belum pola build-vs-save (P3)
+
+- **Masalah:** `report-land-parcel-pdf.ts` & `report-land-parcel-xlsx.ts` (#179) memisahkan **build dokumen** dari **save/download** sehingga bisa diverifikasi unit test (halaman, orientasi, sheet, gambar) — exporter lama (`pdf.ts`, `farm-passport.ts`, `bmp-map-print.ts`) masih satu fungsi ber-side-effect `doc.save()`, tak teruji empiris (akar bug print #174 & label vertikal #179: jsPDF align pra-rotasi).
+- **Evidence:** #174 (2 bug print lolos gate), #179 (teks vertikal melenceng, tertangkap QC owner bukan test).
+- **Validation:** refactor ke `buildXxxDoc(): jsPDF` + wrapper save saat menyentuh masing-masing file; tambah test struktural minimal (page count/orientation). · **Owner:** Frontend.
 
 ### TD-015 · 🔲 Open — `DataTable` kolom turunan: export mengandalkan tebakan key (P3)
 

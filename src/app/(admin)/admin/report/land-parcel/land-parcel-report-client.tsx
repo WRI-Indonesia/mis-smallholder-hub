@@ -183,7 +183,7 @@ export function LandParcelReportClient({ districts }: Props) {
     new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
   const displayOrEmpty = (v: string | null) => v ?? EMPTY;
 
-  const filteredRows = useMemo(() => reportData?.rows ?? [], [reportData]);
+  const reportRows = useMemo(() => reportData?.rows ?? [], [reportData]);
 
   const toggleLabelPart = (k: LabelKey) =>
     setLabelParts((prev) => {
@@ -199,7 +199,7 @@ export function LandParcelReportClient({ districts }: Props) {
   // Lahan + isi label untuk peta (preview & PDF), urut = kolom No tabel.
   const mapParcels = useMemo(
     () =>
-      filteredRows.map((row, idx) => {
+      reportRows.map((row, idx) => {
         const lines: string[] = [];
         if (labelParts.has("no")) lines.push(String(idx + 1));
         if (labelParts.has("nama")) lines.push(row.namaPetani);
@@ -212,12 +212,12 @@ export function LandParcelReportClient({ districts }: Props) {
           labelLines: lines.length ? lines : [String(idx + 1)],
         };
       }),
-    [filteredRows, geoms, labelParts],
+    [reportRows, geoms, labelParts],
   );
 
-  const filteredTotalLuas = useMemo(
-    () => filteredRows.reduce((sum, r) => sum + (r.luas ?? 0), 0),
-    [filteredRows],
+  const reportTotalLuas = useMemo(
+    () => reportRows.reduce((sum, r) => sum + (r.luas ?? 0), 0),
+    [reportRows],
   );
 
   // Kolom sebelum Luas (untuk colSpan footer; Tahun Tanam ikut grup ini).
@@ -254,7 +254,7 @@ export function LandParcelReportClient({ districts }: Props) {
 
   // Baris export (dipakai sheet penuh Excel, subset per sel, dan PDF).
   const buildExportRows = (): Record<string, string | number>[] =>
-    filteredRows.map((row, idx) => ({
+    reportRows.map((row, idx) => ({
       no: idx + 1,
       lembagaTani: row.lembagaTani,
       namaPetani: row.namaPetani,
@@ -283,7 +283,7 @@ export function LandParcelReportClient({ districts }: Props) {
     species: "",
     psr: "",
     tahunTanam: "",
-    luas: Number(filteredTotalLuas.toFixed(2)),
+    luas: Number(reportTotalLuas.toFixed(2)),
   });
 
   // Excel (#179): sheet "Lahan" penuh + gambar peta index; grid aktif → tambah
@@ -350,7 +350,7 @@ export function LandParcelReportClient({ districts }: Props) {
       return;
     }
 
-    const data: Record<string, string | number>[] = filteredRows.map((row, idx) => ({
+    const data: Record<string, string | number>[] = reportRows.map((row, idx) => ({
       no: idx + 1,
       lembagaTani: row.lembagaTani,
       namaPetani: row.namaPetani,
@@ -380,7 +380,7 @@ export function LandParcelReportClient({ districts }: Props) {
         species: "",
         psr: "",
         tahunTanam: "",
-        luas: formatLuas(filteredTotalLuas),
+        luas: formatLuas(reportTotalLuas),
       });
     }
 
@@ -512,7 +512,7 @@ export function LandParcelReportClient({ districts }: Props) {
 
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Roster real-time dari data lahan aktif (1 baris = 1 lahan). <span className="font-medium">Pilih Lembaga Petani (wajib)</span> — laporan &amp; cetakan selalu per Lembaga; filter Distrik membantu mempersempit daftar. PDF menyertakan peta lahan ber-label nomor sesuai kolom No.
+            Roster real-time dari data lahan aktif (1 baris = 1 lahan). <span className="font-medium">Pilih Lembaga Petani (wajib)</span> — laporan &amp; cetakan selalu per Lembaga; filter Distrik membantu mempersempit daftar. PDF &amp; Excel menyertakan peta lahan — atur pecahan grid dan isi label poligon di panel <span className="font-medium">Peta Cetak</span>.
           </p>
         </CardContent>
       </Card>
@@ -683,7 +683,7 @@ export function LandParcelReportClient({ districts }: Props) {
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row, idx) => (
+              {reportRows.map((row, idx) => (
                   <tr key={row.id} className="border-b last:border-b-0 hover:bg-muted/30">
                     <td className="px-3 py-2 text-muted-foreground tabular-nums">{idx + 1}</td>
                     <td className="px-3 py-2 font-medium whitespace-nowrap">{row.lembagaTani}</td>
@@ -733,12 +733,12 @@ export function LandParcelReportClient({ districts }: Props) {
                   </tr>
               ))}
             </tbody>
-            {filteredRows.length > 0 && show("luas") && (
+            {reportRows.length > 0 && show("luas") && (
               <tfoot>
                 <tr className="border-t-2 border-border bg-muted/50 font-semibold">
                   <td className="px-3 py-2" />
                   <td className="px-3 py-2 whitespace-nowrap" colSpan={textColCount}>Total</td>
-                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatLuas(filteredTotalLuas)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatLuas(reportTotalLuas)}</td>
                 </tr>
               </tfoot>
             )}
