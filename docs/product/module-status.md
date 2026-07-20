@@ -42,7 +42,7 @@
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
 | BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
-| HELP-01 | Bantuan | Panduan penggunaan in-app **statis** (`/admin/help`, menu top-level, 4 role VIEW): 11 section ber-anchor — istilah domain, akun, hak akses & cakupan, Master Data (soft delete/revisi/sensor NIK), Bulk Upload (Excel & Shapefile), Dashboard (+snapshot), Peta, Report, Data Analyst, Tools, FAQ (#182) |
+| HELP-01 | Bantuan | Panduan penggunaan in-app **statis** (`/admin/help`, menu top-level, 4 role VIEW): **tree view 6 bab → 11 topik** ber-nomor `bab.topik` + nav sticky `<details>` native (tanpa JS) — istilah domain, akun, hak akses & cakupan, Master Data (soft delete/revisi/sensor NIK), Bulk Upload (Excel & Shapefile), Dashboard (+snapshot), Peta, Report, Data Analyst, Tools, FAQ (#182 #183) |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  

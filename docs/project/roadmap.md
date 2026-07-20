@@ -423,9 +423,10 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <summary><strong>HELP-01</strong> · ✅ Done — Bantuan: Panduan Penggunaan</summary>
 
 - **#182 ✅ (statis):** menu top-level `help` ("Bantuan", `/admin/help`, order 9) + seed 4 role VIEW; **Server Component statis** (tanpa query DB/server action/`"use client"`), guard `requirePermission("help")`.
-- **11 section ber-anchor + daftar isi**: istilah domain (Petani→KT→Gapoktan/KUD→Lembaga Petani, lahan, produksi), masuk & akun, hak akses & cakupan data per role, Master Data (soft delete/restore, revisi lahan, sensor NIK), Bulk Upload (Excel & Shapefile, baris gagal, data ganda), Dashboard (+kenapa snapshot), Peta, Report (6 laporan incl. grid peta Laporan Lahan), Data Analyst, Tools, FAQ/kendala.
+- **#183 ✅ tree view per bab**: navigasi kiri **sticky** ber-`<details>` native (buka/tutup tanpa JS — tetap Server Component), **6 bab → 11 topik** ber-penomoran `bab.topik` (mis. 3.2 Peta) agar mudah dirujuk; konten dikelompokkan per bab (header bab + kartu topik ber-anchor), responsif stack di layar kecil.
+- **11 topik**: istilah domain (Petani→KT→Gapoktan/KUD→Lembaga Petani, lahan, produksi), masuk & akun, hak akses & cakupan data per role, Master Data (soft delete/restore, revisi lahan, sensor NIK), Bulk Upload (Excel & Shapefile, baris gagal, data ganda), Dashboard (+kenapa snapshot), Peta, Report (6 laporan incl. grid peta Laporan Lahan), Data Analyst, Tools, FAQ/kendala.
 - Konten diturunkan dari `docs/product/*` — perbarui bersama saat alur modul berubah. Tanpa migration; read-only.
-- **Next step:** Implement #182 completed; kandidat lanjutan = screenshot & editor konten non-developer (CMS-01).
+- **Next step:** Implement #182 + #183 completed; kandidat lanjutan = screenshot & editor konten non-developer (CMS-01).
 
 </details>
 
