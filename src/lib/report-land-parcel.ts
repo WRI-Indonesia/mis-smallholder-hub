@@ -179,6 +179,9 @@ export interface LpMapPolygon {
   /** Posisi label nomor (centroid ring terbesar). */
   labelX: number;
   labelY: number;
+  /** Bbox ter-proyeksi ring terbesar (mm) — ruang yang tersedia untuk label. */
+  bboxW: number;
+  bboxH: number;
 }
 
 export interface LpMapLayout {
@@ -241,7 +244,16 @@ export function buildLandParcelMapLayout(
     const pts = largest.map(project);
     const labelX = pts.reduce((a, q) => a + q[0], 0) / pts.length;
     const labelY = pts.reduce((a, q) => a + q[1], 0) / pts.length;
-    return { no: p.no, rings, labelX, labelY };
+    const xs = pts.map((q) => q[0]);
+    const ys = pts.map((q) => q[1]);
+    return {
+      no: p.no,
+      rings,
+      labelX,
+      labelY,
+      bboxW: Math.max(...xs) - Math.min(...xs),
+      bboxH: Math.max(...ys) - Math.min(...ys),
+    };
   });
 
   return {
@@ -249,6 +261,38 @@ export function buildLandParcelMapLayout(
     skippedNos,
     frame: { minLon, minLat, maxLon, maxLat, offX, offY, scale: s },
   };
+}
+
+// ─── Label adaptif (#179): muat di poligon, boleh vertikal ───
+
+export interface LpLabelFit {
+  /** Label diputar 90° (dibaca dari bawah ke atas). */
+  vertical: boolean;
+  /** Faktor skala font/blok label (≤ 1, dibatasi `minScale`). */
+  scale: number;
+}
+
+/**
+ * Pilih orientasi & skala blok label (labelW×labelH) agar muat di bbox poligon:
+ * horizontal dulu; bila tak muat dan posisi vertikal lebih lega → putar 90°;
+ * bila keduanya sempit, skala turun mengikuti orientasi terbaik dengan lantai
+ * `minScale` (keterbacaan > muat sempurna). Keputusan murni angka — dipakai
+ * renderer jsPDF & SVG preview agar identik.
+ */
+export function fitLabelToBox(
+  labelW: number,
+  labelH: number,
+  boxW: number,
+  boxH: number,
+  minScale = 0.55,
+): LpLabelFit {
+  const scaleH = Math.min(boxW / labelW, boxH / labelH);
+  const scaleV = Math.min(boxH / labelW, boxW / labelH);
+  if (scaleH >= 1) return { vertical: false, scale: 1 };
+  if (scaleV >= 1) return { vertical: true, scale: 1 };
+  const vertical = scaleV > scaleH;
+  const best = vertical ? scaleV : scaleH;
+  return { vertical, scale: Math.max(minScale, best) };
 }
 
 // ─── Grid index (#179): pecah peta jadi beberapa halaman (atlas) ───
@@ -268,8 +312,9 @@ export interface LpGridCell {
 }
 
 export interface LpGridSplit {
-  /** Dimensi grid (dim × dim). */
-  dim: number;
+  /** Dimensi grid: baris (utara→selatan) × kolom (barat→timur). */
+  rows: number;
+  cols: number;
   /** Hanya sel yang berisi lahan, urut baris lalu kolom. */
   cells: LpGridCell[];
   skippedNos: number[];
@@ -285,20 +330,22 @@ function parcelCentroid(rings: Position[][]): Position {
 }
 
 /**
- * Bagi lahan ke grid dim×dim di atas bounds bersama — tiap lahan masuk tepat
- * satu sel berdasarkan **centroid**-nya (lahan tak pernah terpotong: halaman
- * per sel me-refit bounds ke lahan anggotanya). Sel kosong tidak ikut.
- * `pieces` dibulatkan ke dim persegi terdekat (1/4/9/16 → 1/2/3/4).
+ * Bagi lahan ke grid baris×kolom (fleksibel, input user) di atas bounds
+ * bersama — tiap lahan masuk tepat satu sel berdasarkan **centroid**-nya
+ * (lahan tak pernah terpotong: halaman per sel me-refit bounds ke lahan
+ * anggotanya). Sel kosong tidak ikut. Baris dibatasi 26 (label huruf A–Z).
  */
 export function splitParcelsIntoGrid(
   parcels: LpGridParcel[],
-  pieces: number,
+  gridRows: number,
+  gridCols: number,
 ): LpGridSplit {
-  const dim = Math.max(1, Math.round(Math.sqrt(pieces)));
+  const rows = Math.min(26, Math.max(1, Math.round(gridRows)));
+  const cols = Math.min(99, Math.max(1, Math.round(gridCols)));
   const withRings = parcels.map((p) => ({ ...p, rings: exteriorRings(p.geometry) }));
   const skippedNos = withRings.filter((p) => p.rings.length === 0).map((p) => p.no);
   const drawable = withRings.filter((p) => p.rings.length > 0);
-  if (drawable.length === 0) return { dim, cells: [], skippedNos };
+  if (drawable.length === 0) return { rows, cols, cells: [], skippedNos };
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
   for (const p of drawable) {
@@ -317,8 +364,8 @@ export function splitParcelsIntoGrid(
   const cellMap = new Map<string, LpGridCell>();
   for (const p of drawable) {
     const [cLon, cLat] = parcelCentroid(p.rings);
-    const col = Math.min(dim - 1, Math.max(0, Math.floor(((cLon - minLon) / spanLon) * dim)));
-    const row = Math.min(dim - 1, Math.max(0, Math.floor(((maxLat - cLat) / spanLat) * dim)));
+    const col = Math.min(cols - 1, Math.max(0, Math.floor(((cLon - minLon) / spanLon) * cols)));
+    const row = Math.min(rows - 1, Math.max(0, Math.floor(((maxLat - cLat) / spanLat) * rows)));
     const key = `${row}-${col}`;
     let cell = cellMap.get(key);
     if (!cell) {
@@ -329,5 +376,5 @@ export function splitParcelsIntoGrid(
   }
 
   const cells = Array.from(cellMap.values()).sort((a, b) => a.row - b.row || a.col - b.col);
-  return { dim, cells, skippedNos };
+  return { rows, cols, cells, skippedNos };
 }

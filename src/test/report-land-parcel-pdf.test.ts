@@ -59,11 +59,17 @@ describe("buildLandParcelReportDoc", () => {
     expect(() => buildLandParcelReportDoc(baseInput(0, true))).not.toThrow();
   });
 
-  it("grid index 9: ikhtisar + halaman per sel berisi + tabel", () => {
-    const doc = buildLandParcelReportDoc({ ...baseInput(60, true), gridSplit: 9 });
+  it("grid index 3×3: ikhtisar + halaman per sel berisi + tabel", () => {
+    const doc = buildLandParcelReportDoc({ ...baseInput(60, true), grid: { rows: 3, cols: 3 } });
     // 60 lahan grid 10×6 sebaran merata pada 3×3 → 9 sel berisi:
     // 1 ikhtisar + 9 halaman sel + ≥1 halaman tabel.
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(11);
+  });
+
+  it("grid non-persegi 2×3 → tetap terbit dengan halaman sel", () => {
+    const doc = buildLandParcelReportDoc({ ...baseInput(60, true), grid: { rows: 2, cols: 3 } });
+    // 6 sel berisi: 1 ikhtisar + 6 sel + ≥1 tabel.
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(8);
   });
 
   it("label multi-baris (ceklis Nama/ID) → tetap terbit tanpa throw", () => {
@@ -72,7 +78,7 @@ describe("buildLandParcelReportDoc", () => {
       ...p,
       labelLines: [String(p.no), `Petani ${i + 1}`, `SH-${i + 1}`, `LHN-${i + 1}`],
     }));
-    const doc = buildLandParcelReportDoc({ ...input, gridSplit: 4 });
+    const doc = buildLandParcelReportDoc({ ...input, grid: { rows: 2, cols: 2 } });
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(3);
   });
 });

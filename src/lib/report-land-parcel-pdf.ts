@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import {
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
+  fitLabelToBox,
   type LpGeoJson,
   type LpMapLayout,
 } from "@/lib/report-land-parcel";
@@ -34,8 +35,8 @@ export interface LpPdfInput {
    * Petani/ID Lahan), satu entri per baris teks.
    */
   mapParcels: { no: number; geometry: LpGeoJson | null; labelLines: string[] }[];
-  /** Grid index: pecah peta jadi n halaman (1 = tanpa pecah; 4/9/16 = 2×2/3×3/4×4). */
-  gridSplit?: number;
+  /** Grid index fleksibel: baris × kolom (1×1 = tanpa pecah). */
+  grid?: { rows: number; cols: number };
 }
 
 function drawLayoutPolygons(doc: jsPDF, layout: LpMapLayout) {
@@ -51,38 +52,62 @@ function drawLayoutPolygons(doc: jsPDF, layout: LpMapLayout) {
   }
 }
 
-/** Label digambar setelah semua poligon agar tak tertimpa fill tetangga. */
+/**
+ * Label digambar setelah semua poligon agar tak tertimpa fill tetangga.
+ * Adaptif (#179): blok label di-fit ke bbox poligon — horizontal dulu, putar
+ * 90° bila lebih lega, skala font turun (lantai keterbacaan) bila tetap sempit.
+ */
 function drawLayoutLabels(doc: jsPDF, layout: LpMapLayout, linesByNo: Map<number, string[]>) {
   const FONT = 6.5;
   const LINE_H = 2.6;
   for (const poly of layout.polygons) {
     const lines = linesByNo.get(poly.no) ?? [String(poly.no)];
-    doc.setFontSize(FONT);
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(FONT);
     if (lines.length === 1 && lines[0] === String(poly.no)) {
-      // Ceklis hanya "No" → lingkaran kecil klasik.
+      // Ceklis hanya "No" → lingkaran kecil klasik; mengecil di poligon sempit.
+      const scale = Math.max(0.6, Math.min(1, Math.min(poly.bboxW, poly.bboxH) / (2 * 2.4 + 1)));
+      doc.setFontSize(FONT * scale);
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(...EMERALD);
       doc.setLineWidth(0.25);
-      doc.circle(poly.labelX, poly.labelY, 2.4, "FD");
+      doc.circle(poly.labelX, poly.labelY, 2.4 * scale, "FD");
       doc.setTextColor(...SLATE_800);
       doc.text(lines[0], poly.labelX, poly.labelY, { align: "center", baseline: "middle" });
       continue;
     }
     // Multi-isi → pill putih ber-border, satu baris per item ceklis.
-    const w = Math.max(...lines.map((l) => doc.getTextWidth(l))) + 2;
-    const h = lines.length * LINE_H + 1.2;
+    const baseW = Math.max(...lines.map((l) => doc.getTextWidth(l))) + 2;
+    const baseH = lines.length * LINE_H + 1.2;
+    const fit = fitLabelToBox(baseW, baseH, poly.bboxW - 0.8, poly.bboxH - 0.8);
+    const w = baseW * fit.scale;
+    const h = baseH * fit.scale;
+    const lineH = LINE_H * fit.scale;
+    doc.setFontSize(FONT * fit.scale);
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(...EMERALD);
     doc.setLineWidth(0.25);
-    doc.roundedRect(poly.labelX - w / 2, poly.labelY - h / 2, w, h, 0.8, 0.8, "FD");
     doc.setTextColor(...SLATE_800);
-    lines.forEach((line, i) => {
-      doc.text(line, poly.labelX, poly.labelY - h / 2 + 0.6 + LINE_H * (i + 0.5), {
-        align: "center",
-        baseline: "middle",
+    if (!fit.vertical) {
+      doc.roundedRect(poly.labelX - w / 2, poly.labelY - h / 2, w, h, 0.8, 0.8, "FD");
+      lines.forEach((line, i) => {
+        doc.text(line, poly.labelX, poly.labelY - h / 2 + 0.6 * fit.scale + lineH * (i + 0.5), {
+          align: "center",
+          baseline: "middle",
+        });
       });
-    });
+    } else {
+      // Vertikal: blok diputar 90° (teks dibaca dari bawah ke atas).
+      doc.roundedRect(poly.labelX - h / 2, poly.labelY - w / 2, h, w, 0.8, 0.8, "FD");
+      lines.forEach((line, i) => {
+        doc.text(
+          line,
+          poly.labelX - h / 2 + 0.6 * fit.scale + lineH * (i + 0.5),
+          poly.labelY,
+          { align: "center", baseline: "middle", angle: 90 },
+        );
+      });
+    }
   }
 }
 
@@ -108,7 +133,7 @@ export function buildLandParcelReportDoc({
   data,
   columnStyles,
   mapParcels,
-  gridSplit = 1,
+  grid = { rows: 1, cols: 1 },
 }: Omit<LpPdfInput, "filename">): jsPDF {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -163,7 +188,8 @@ export function buildLandParcelReportDoc({
 
   const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines]));
   const fullLayout = buildLandParcelMapLayout(mapParcels, mapBox);
-  const split = gridSplit > 1 ? splitParcelsIntoGrid(mapParcels, gridSplit) : null;
+  const split =
+    grid.rows * grid.cols > 1 ? splitParcelsIntoGrid(mapParcels, grid.rows, grid.cols) : null;
   const useGrid = split !== null && split.cells.length > 0 && fullLayout.frame;
 
   if (fullLayout.polygons.length === 0) {
@@ -179,17 +205,19 @@ export function buildLandParcelReportDoc({
     const gy = f.offY;
     const gw = (f.maxLon - f.minLon || 1e-6) * f.scale;
     const gh = (f.maxLat - f.minLat || 1e-6) * f.scale;
-    const dim = split!.dim;
+    const { rows, cols } = split!;
 
     doc.setDrawColor(...SLATE_400);
     doc.setLineWidth(0.3);
-    for (let i = 0; i <= dim; i++) {
-      doc.line(gx + (gw / dim) * i, gy, gx + (gw / dim) * i, gy + gh);
-      doc.line(gx, gy + (gh / dim) * i, gx + gw, gy + (gh / dim) * i);
+    for (let i = 0; i <= cols; i++) {
+      doc.line(gx + (gw / cols) * i, gy, gx + (gw / cols) * i, gy + gh);
+    }
+    for (let j = 0; j <= rows; j++) {
+      doc.line(gx, gy + (gh / rows) * j, gx + gw, gy + (gh / rows) * j);
     }
     for (const cell of split!.cells) {
-      const cx = gx + (gw / dim) * (cell.col + 0.5);
-      const cy = gy + (gh / dim) * (cell.row + 0.5);
+      const cx = gx + (gw / cols) * (cell.col + 0.5);
+      const cy = gy + (gh / rows) * (cell.row + 0.5);
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...SLATE_800);

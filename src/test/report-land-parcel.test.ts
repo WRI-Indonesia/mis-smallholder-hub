@@ -3,6 +3,7 @@ import {
   buildLandParcelReport,
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
+  fitLabelToBox,
   exteriorRings,
   type LpRawParcel,
   type LpMapBox,
@@ -192,8 +193,9 @@ describe("splitParcelsIntoGrid", () => {
   ];
 
   it("2×2: lahan masuk sel sesuai centroid; label baris-huruf dari utara", () => {
-    const split = splitParcelsIntoGrid(corners, 4);
-    expect(split.dim).toBe(2);
+    const split = splitParcelsIntoGrid(corners, 2, 2);
+    expect(split.rows).toBe(2);
+    expect(split.cols).toBe(2);
     expect(split.cells).toHaveLength(4);
     const byLabel = Object.fromEntries(split.cells.map((c) => [c.label, c.parcels.map((p) => p.no)]));
     expect(byLabel["A1"]).toEqual([3]); // utara-barat
@@ -202,30 +204,74 @@ describe("splitParcelsIntoGrid", () => {
     expect(byLabel["B2"]).toEqual([2]); // selatan-timur
   });
 
+  it("grid non-persegi (2×3): kolom & baris dihitung terpisah", () => {
+    // 2 baris × 3 kolom; lahan di pojok timur-utara → baris A, kolom 3.
+    const split = splitParcelsIntoGrid(corners, 2, 3);
+    expect(split.rows).toBe(2);
+    expect(split.cols).toBe(3);
+    const ne = split.cells.find((c) => c.parcels.some((p) => p.no === 4))!;
+    expect(ne.label).toBe("A3");
+    const sw = split.cells.find((c) => c.parcels.some((p) => p.no === 1))!;
+    expect(sw.label).toBe("B1");
+  });
+
   it("sel kosong tidak ikut; tiap lahan tepat satu sel", () => {
     const split = splitParcelsIntoGrid(
       [
         { no: 1, geometry: square(100, 0) },
         { no: 2, geometry: square(100.05, 0.05) },
       ],
-      16,
+      4,
+      4,
     );
     const allNos = split.cells.flatMap((c) => c.parcels.map((p) => p.no)).sort();
     expect(allNos).toEqual([1, 2]);
     expect(split.cells.length).toBeLessThanOrEqual(2); // sisanya kosong → tak ada
   });
 
-  it("pieces=1 → satu sel berisi semua; tanpa geometri → skippedNos", () => {
+  it("1×1 → satu sel berisi semua; tanpa geometri → skippedNos", () => {
     const split = splitParcelsIntoGrid(
       [
         { no: 1, geometry: square(100, 0) },
         { no: 2, geometry: null },
       ],
       1,
+      1,
     );
-    expect(split.dim).toBe(1);
+    expect(split.rows).toBe(1);
+    expect(split.cols).toBe(1);
     expect(split.cells).toHaveLength(1);
     expect(split.cells[0].parcels.map((p) => p.no)).toEqual([1]);
     expect(split.skippedNos).toEqual([2]);
+  });
+});
+
+describe("fitLabelToBox", () => {
+  it("muat horizontal → tanpa rotasi, skala 1", () => {
+    expect(fitLabelToBox(10, 4, 20, 10)).toEqual({ vertical: false, scale: 1 });
+  });
+
+  it("sempit horizontal tapi lega vertikal → putar 90°, skala 1", () => {
+    // Poligon memanjang ke atas: lebar 5 < panjang label 10, tinggi 20 cukup.
+    expect(fitLabelToBox(10, 4, 5, 20)).toEqual({ vertical: true, scale: 1 });
+  });
+
+  it("keduanya sempit → skala turun mengikuti orientasi terbaik, lantai 0.55", () => {
+    const fit = fitLabelToBox(10, 4, 6, 8);
+    expect(fit.vertical).toBe(true); // vertikal 8/10 > horizontal 6/10
+    expect(fit.scale).toBeCloseTo(0.8);
+    // Poligon sangat kecil → skala tak boleh di bawah lantai keterbacaan.
+    expect(fitLabelToBox(10, 4, 1, 1).scale).toBe(0.55);
+  });
+});
+
+describe("buildLandParcelMapLayout bbox", () => {
+  it("polygon menyimpan bboxW/bboxH ter-proyeksi (ruang label)", () => {
+    const layout = buildLandParcelMapLayout([{ no: 1, geometry: square(101, 0.5) }], BOX);
+    const poly = layout.polygons[0];
+    expect(poly.bboxW).toBeGreaterThan(0);
+    expect(poly.bboxH).toBeGreaterThan(0);
+    expect(poly.bboxW).toBeLessThanOrEqual(BOX.w - BOX.pad * 2 + 1e-6);
+    expect(poly.bboxH).toBeLessThanOrEqual(BOX.h - BOX.pad * 2 + 1e-6);
   });
 });

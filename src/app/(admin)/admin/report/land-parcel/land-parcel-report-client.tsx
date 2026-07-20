@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
   getFarmerGroupsForLandParcelReport,
   getLandParcelReport,
@@ -28,6 +28,7 @@ import type { LandParcelReportResult } from "@/types/report";
 import {
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
+  fitLabelToBox,
   type LpGeoJson,
   type LpMapLayout,
 } from "@/lib/report-land-parcel";
@@ -58,12 +59,11 @@ const LABEL_PARTS: { key: LabelKey; label: string }[] = [
   { key: "idLahan", label: "ID Lahan" },
 ];
 
-const GRID_OPTIONS = [
-  { value: 1, label: "1 peta (tanpa pecah)" },
-  { value: 4, label: "4 peta (grid 2×2)" },
-  { value: 9, label: "9 peta (grid 3×3)" },
-  { value: 16, label: "16 peta (grid 4×4)" },
-];
+// Batas input grid: baris maks. 26 (label huruf A–Z), kolom maks. 20.
+const GRID_MAX_ROWS = 26;
+const GRID_MAX_COLS = 20;
+const clampGrid = (v: number, max: number) =>
+  Number.isFinite(v) ? Math.min(max, Math.max(1, Math.round(v))) : 1;
 
 // Kolom default: 5 kolom #177 + Tahun Tanam & Luas (revisi owner #179);
 // Gapoktan/KUD, Blok, Komoditas, Species, PSR opsional via selektor kolom.
@@ -86,8 +86,9 @@ export function LandParcelReportClient({ districts }: Props) {
 
   const [districtComboOpen, setDistrictComboOpen] = useState(false);
   const [groupComboOpen, setGroupComboOpen] = useState(false);
-  // Grid index (#179): pecah peta PDF jadi n halaman (1 = tanpa pecah).
-  const [gridSplit, setGridSplit] = useState(1);
+  // Grid index (#179): pecah peta jadi baris × kolom (fleksibel, input user).
+  const [gridRows, setGridRows] = useState(1);
+  const [gridCols, setGridCols] = useState(1);
   // Ceklis isi label poligon di peta (minimal satu).
   const [labelParts, setLabelParts] = useState<Set<LabelKey>>(new Set<LabelKey>(["no"]));
   // Geometri lahan (id → GeoJSON) — dimuat saat Lembaga dipilih, untuk preview & PDF.
@@ -354,7 +355,7 @@ export function LandParcelReportClient({ districts }: Props) {
       columnStyles,
       data,
       mapParcels,
-      gridSplit,
+      grid: { rows: gridRows, cols: gridCols },
     });
   };
 
@@ -497,19 +498,31 @@ export function LandParcelReportClient({ districts }: Props) {
           <CardContent className="space-y-4">
             <div className="flex flex-wrap items-end gap-6">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-muted-foreground">Jumlah Peta (Grid Index)</label>
-                <Select value={String(gridSplit)} onValueChange={(v) => setGridSplit(Number(v))}>
-                  <SelectTrigger className="w-[220px] h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GRID_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={String(opt.value)}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium text-muted-foreground">Grid Index (Baris × Kolom)</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={GRID_MAX_ROWS}
+                    value={gridRows}
+                    onChange={(e) => setGridRows(clampGrid(e.target.valueAsNumber, GRID_MAX_ROWS))}
+                    className="w-20 h-9 tabular-nums"
+                    aria-label="Jumlah baris grid"
+                  />
+                  <span className="text-sm text-muted-foreground">×</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={GRID_MAX_COLS}
+                    value={gridCols}
+                    onChange={(e) => setGridCols(clampGrid(e.target.valueAsNumber, GRID_MAX_COLS))}
+                    className="w-20 h-9 tabular-nums"
+                    aria-label="Jumlah kolom grid"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {gridRows * gridCols > 1 ? `maks. ${gridRows * gridCols} peta + ikhtisar` : "tanpa pecah"}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-muted-foreground">Label Poligon</span>
@@ -533,7 +546,7 @@ export function LandParcelReportClient({ districts }: Props) {
                 Memuat geometri lahan...
               </div>
             ) : (
-              <LandParcelMapPreview mapParcels={mapParcels} gridSplit={gridSplit} />
+              <LandParcelMapPreview mapParcels={mapParcels} rows={gridRows} cols={gridCols} />
             )}
           </CardContent>
         </Card>
@@ -729,26 +742,32 @@ function LayoutSvg({
           const lines = linesByNo.get(poly.no) ?? [String(poly.no)];
           const isNoOnly = lines.length === 1 && lines[0] === String(poly.no);
           if (isNoOnly) {
+            const scale = Math.max(0.6, Math.min(1, Math.min(poly.bboxW, poly.bboxH) / (2 * 2.4 + 1)));
             return (
               <g key={poly.no}>
-                <circle cx={poly.labelX} cy={poly.labelY} r={2.4} fill="#fff" stroke="#10b981" strokeWidth={0.25} />
-                <text x={poly.labelX} y={poly.labelY} fontSize={2.6} fontWeight={700} fill="#1e293b" textAnchor="middle" dominantBaseline="central">
+                <circle cx={poly.labelX} cy={poly.labelY} r={2.4 * scale} fill="#fff" stroke="#10b981" strokeWidth={0.25} />
+                <text x={poly.labelX} y={poly.labelY} fontSize={2.6 * scale} fontWeight={700} fill="#1e293b" textAnchor="middle" dominantBaseline="central">
                   {lines[0]}
                 </text>
               </g>
             );
           }
-          const w = Math.max(...lines.map((l) => l.length)) * 1.5 + 2;
-          const h = lines.length * LINE_H + 1.2;
-          return (
-            <g key={poly.no}>
+          // Adaptif (#179): fit ke bbox poligon — sama dengan renderer PDF.
+          const baseW = Math.max(...lines.map((l) => l.length)) * 1.5 + 2;
+          const baseH = lines.length * LINE_H + 1.2;
+          const fit = fitLabelToBox(baseW, baseH, poly.bboxW - 0.8, poly.bboxH - 0.8);
+          const w = baseW * fit.scale;
+          const h = baseH * fit.scale;
+          const lineH = LINE_H * fit.scale;
+          const body = (
+            <>
               <rect x={poly.labelX - w / 2} y={poly.labelY - h / 2} width={w} height={h} rx={0.8} fill="#fff" stroke="#10b981" strokeWidth={0.25} />
               {lines.map((line, i) => (
                 <text
                   key={i}
                   x={poly.labelX}
-                  y={poly.labelY - h / 2 + 0.6 + LINE_H * (i + 0.5)}
-                  fontSize={2.4}
+                  y={poly.labelY - h / 2 + 0.6 * fit.scale + lineH * (i + 0.5)}
+                  fontSize={2.4 * fit.scale}
                   fontWeight={700}
                   fill="#1e293b"
                   textAnchor="middle"
@@ -757,6 +776,11 @@ function LayoutSvg({
                   {line}
                 </text>
               ))}
+            </>
+          );
+          return (
+            <g key={poly.no} transform={fit.vertical ? `rotate(-90 ${poly.labelX} ${poly.labelY})` : undefined}>
+              {body}
             </g>
           );
         })}
@@ -765,12 +789,12 @@ function LayoutSvg({
   );
 }
 
-function LandParcelMapPreview({ mapParcels, gridSplit }: { mapParcels: PreviewParcel[]; gridSplit: number }) {
+function LandParcelMapPreview({ mapParcels, rows, cols }: { mapParcels: PreviewParcel[]; rows: number; cols: number }) {
   const linesByNo = useMemo(() => new Map(mapParcels.map((p) => [p.no, p.labelLines])), [mapParcels]);
   const fullLayout = useMemo(() => buildLandParcelMapLayout(mapParcels, PREVIEW_BOX), [mapParcels]);
   const split = useMemo(
-    () => (gridSplit > 1 ? splitParcelsIntoGrid(mapParcels, gridSplit) : null),
-    [mapParcels, gridSplit],
+    () => (rows * cols > 1 ? splitParcelsIntoGrid(mapParcels, rows, cols) : null),
+    [mapParcels, rows, cols],
   );
   const useGrid = split !== null && split.cells.length > 0 && !!fullLayout.frame;
 
@@ -790,21 +814,21 @@ function LandParcelMapPreview({ mapParcels, gridSplit }: { mapParcels: PreviewPa
     const gy = f.offY;
     const gw = (f.maxLon - f.minLon || 1e-6) * f.scale;
     const gh = (f.maxLat - f.minLat || 1e-6) * f.scale;
-    const dim = split!.dim;
+    const { rows: gRows, cols: gCols } = split!;
     overlay = (
       <g>
-        {Array.from({ length: dim + 1 }, (_, i) => (
-          <g key={i}>
-            <line x1={gx + (gw / dim) * i} y1={gy} x2={gx + (gw / dim) * i} y2={gy + gh} stroke="#94a3b8" strokeWidth={0.3} />
-            <line x1={gx} y1={gy + (gh / dim) * i} x2={gx + gw} y2={gy + (gh / dim) * i} stroke="#94a3b8" strokeWidth={0.3} />
-          </g>
+        {Array.from({ length: gCols + 1 }, (_, i) => (
+          <line key={`v${i}`} x1={gx + (gw / gCols) * i} y1={gy} x2={gx + (gw / gCols) * i} y2={gy + gh} stroke="#94a3b8" strokeWidth={0.3} />
+        ))}
+        {Array.from({ length: gRows + 1 }, (_, j) => (
+          <line key={`h${j}`} x1={gx} y1={gy + (gh / gRows) * j} x2={gx + gw} y2={gy + (gh / gRows) * j} stroke="#94a3b8" strokeWidth={0.3} />
         ))}
         {split!.cells.map((cell) => (
           <g key={cell.label}>
-            <text x={gx + (gw / dim) * (cell.col + 0.5)} y={gy + (gh / dim) * (cell.row + 0.5)} fontSize={8} fontWeight={700} fill="#1e293b" textAnchor="middle" dominantBaseline="central" opacity={0.75}>
+            <text x={gx + (gw / gCols) * (cell.col + 0.5)} y={gy + (gh / gRows) * (cell.row + 0.5)} fontSize={8} fontWeight={700} fill="#1e293b" textAnchor="middle" dominantBaseline="central" opacity={0.75}>
               {cell.label}
             </text>
-            <text x={gx + (gw / dim) * (cell.col + 0.5)} y={gy + (gh / dim) * (cell.row + 0.5) + 7} fontSize={3} fill="#64748b" textAnchor="middle">
+            <text x={gx + (gw / gCols) * (cell.col + 0.5)} y={gy + (gh / gRows) * (cell.row + 0.5) + 7} fontSize={3} fill="#64748b" textAnchor="middle">
               {cell.parcels.length} lahan
             </text>
           </g>
