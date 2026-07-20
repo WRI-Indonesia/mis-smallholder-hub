@@ -113,6 +113,8 @@ SUPERADMIN,report-production,VIEW
 SUPERADMIN,report-kelompok-tani,VIEW
 SUPERADMIN,report-kelompok-tani-detail,VIEW
 SUPERADMIN,report-land-parcel,VIEW
+ADMIN,help,VIEW
+SUPERADMIN,help,VIEW
 ADMIN,report,VIEW
 ADMIN,report-farmer,VIEW
 ADMIN,report-training,VIEW
@@ -127,6 +129,7 @@ OPERATOR,report-production,VIEW
 OPERATOR,report-kelompok-tani,VIEW
 OPERATOR,report-kelompok-tani-detail,VIEW
 OPERATOR,report-land-parcel,VIEW
+OPERATOR,help,VIEW
 MANAGEMENT,report,VIEW
 MANAGEMENT,report-farmer,VIEW
 MANAGEMENT,report-training,VIEW
@@ -134,6 +137,7 @@ MANAGEMENT,report-production,VIEW
 MANAGEMENT,report-kelompok-tani,VIEW
 MANAGEMENT,report-kelompok-tani-detail,VIEW
 MANAGEMENT,report-land-parcel,VIEW
+MANAGEMENT,help,VIEW
 SUPERADMIN,dashboard,VIEW
 ADMIN,dashboard,VIEW
 OPERATOR,dashboard,VIEW

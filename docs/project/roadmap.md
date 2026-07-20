@@ -62,6 +62,7 @@ Format phase: `STREAM-NN`.
 | DA       | Data Analyst           | Ringkasan Petani, Analisa Ketersediaan Data (anomali/kelengkapan), analytics dashboards    |
 | CMS      | Content Management     | Pages, media, knowledge base                                                               |
 | COMM     | Community & Engagement | Community, i18n                                                                            |
+| HELP     | Bantuan / Panduan      | Panduan penggunaan in-app (statis): istilah domain, alur per modul, FAQ                     |
 | OPS      | Operations & DevOps    | Testing, CI/CD, deployment                                                                 |
 
 </details>
@@ -103,6 +104,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | RPT-03      | Report: Produksi                    | ✅ Done        | Done    |
 | RPT-04      | Report: Kelompok Tani               | ✅ Done        | Done    |
 | RPT-05      | Report: Lahan                       | ✅ Done        | Done    |
+| HELP-01     | Bantuan: Panduan Penggunaan         | ✅ Done        | Done    |
 | BULK-01     | Bulk Upload: Menu & KT              | ✅ Done        | Done    |
 | BULK-02     | Bulk Upload: Region                 | 🔲 Not Started | Next    |
 | BULK-03     | Bulk Upload: Farmer                 | ✅ Done        | Done    |
@@ -415,6 +417,18 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 
 </details>
 
+#### HELP — Bantuan
+
+<details>
+<summary><strong>HELP-01</strong> · ✅ Done — Bantuan: Panduan Penggunaan</summary>
+
+- **#182 ✅ (statis):** menu top-level `help` ("Bantuan", `/admin/help`, order 9) + seed 4 role VIEW; **Server Component statis** (tanpa query DB/server action/`"use client"`), guard `requirePermission("help")`.
+- **11 section ber-anchor + daftar isi**: istilah domain (Petani→KT→Gapoktan/KUD→Lembaga Petani, lahan, produksi), masuk & akun, hak akses & cakupan data per role, Master Data (soft delete/restore, revisi lahan, sensor NIK), Bulk Upload (Excel & Shapefile, baris gagal, data ganda), Dashboard (+kenapa snapshot), Peta, Report (6 laporan incl. grid peta Laporan Lahan), Data Analyst, Tools, FAQ/kendala.
+- Konten diturunkan dari `docs/product/*` — perbarui bersama saat alur modul berubah. Tanpa migration; read-only.
+- **Next step:** Implement #182 completed; kandidat lanjutan = screenshot & editor konten non-developer (CMS-01).
+
+</details>
+
 #### BULK — Bulk Upload
 
 <details>
@@ -529,7 +543,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | Area           | Bukti di Codebase                                                                                                                                                                  | Kesimpulan                                                                             |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Prisma models  | **19 model / 13 migrasi** (+2 additif 2026-07-14: `LandParcel.subGroupLv1/Lv2` #146 + `blok`; +1 additif 2026-07-15: identitas `FarmerGroup` #160): `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer`, `LandParcel`, `TrainingPackage`, `TrainingActivity`, `TrainingParticipant`, `ProductionRecord`, `MainDashboardSnapshot` | Schema mencakup platform, RBAC, region, farmer group, farmer (MD-03), land parcel (MD-04), training (MD-05), production (MD-06), dan dashboard snapshot (DASH-01) ✅ |
-| Admin routes   | **39 page.tsx**: Dashboard (Main, snapshot-backed), Settings (Users/Roles/Menu/Regions), Master Data (Farmers + Groups + Parcels + Training + Production, list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Report (Petani + Pelatihan + Produksi + Kelompok Tani Summary/Detail #154 + **Lahan #177/#179**), Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data), Map (Peta Lahan + Peta BMP), Tools (Dashboard Snapshot), Profile | ✅ Semua page konten ter-guard `requirePermission` (29) + 8 justified (redirect-only/profile) — verifikasi audit 2026-07-10; `/admin/map/bmp` guard `map-bmp` (#144) |
+| Admin routes   | **40 page.tsx**: Dashboard (Main, snapshot-backed), Settings (Users/Roles/Menu/Regions), Master Data (Farmers + Groups + Parcels + Training + Production, list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Report (Petani + Pelatihan + Produksi + Kelompok Tani Summary/Detail #154 + **Lahan #177/#179**), Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data), Map (Peta Lahan + Peta BMP), Tools (Dashboard Snapshot), **Bantuan #182**, Profile | ✅ Semua page konten ter-guard `requirePermission` (30) + 8 justified (redirect-only/profile) — verifikasi audit 2026-07-10; `/admin/map/bmp` guard `map-bmp` (#144) |
 | Server actions | **22 file — total 3.894 LOC** (audit `wc -l` 2026-07-10): `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `role-permission`, `farmer-group`, `farmer` (143), `land-parcel` (216), `bulk-upload` (76), `bulk-upload-parcel` (223), `bulk-upload-production` (160), `training` (363), `production` (375), `upload`, `profile`, `report` (392), `dashboard` (70), `snapshot` (204), `map`, `data-analyst` (187), `data-completeness` | Semua modul (incl. dashboard, snapshot, map, report) tersedia ✅ — catatan audit: 5 celah guard/scope, lihat `audit-report/audit-2026-07-10.md` §2 |
 | Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `map.schema.ts`, `menu.schema.ts`, `production.schema.ts`, `region.schema.ts`, `snapshot.schema.ts`, `training-activity.schema.ts`, `training-participant.schema.ts`, `user.schema.ts` — **11 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training, production, map, snapshot ✅ |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
