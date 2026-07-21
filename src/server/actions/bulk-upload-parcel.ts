@@ -207,14 +207,27 @@ export async function bulkCreateLandParcels(
           }
         }
 
-        await tx.landParcel.create({
+        const created = await tx.landParcel.create({
           data: {
             ...record,
             geometry: record.geometry ?? null,
             revision: finalRevision,
             createdBy: userId,
           },
+          select: { id: true },
         });
+
+        // Revisi = baris lahan BARU (id baru), baris lama dinonaktifkan. Produksi
+        // masih menunjuk id lama, jadi harus ikut dipindahkan — kalau tidak,
+        // atribusi per-lahan putus: lahan terbaca "tanpa data produksi" padahal
+        // tonasenya tetap masuk pembilang produktivitas BMP (TD-022).
+        // Semua revisi ikut dipindah (bukan hanya yang aktif) agar riwayat utuh.
+        if (duplicate) {
+          await tx.productionRecord.updateMany({
+            where: { parcelId: duplicate.id },
+            data: { parcelId: created.id, modifiedBy: userId },
+          });
+        }
       }
     });
 
