@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Excel from "exceljs";
 import Papa from "papaparse";
@@ -124,6 +124,14 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
   // ID yang sudah dipakai **di lembaga terpilih** — keunikan berlaku per Lembaga
   // (TD-024), jadi daftar ini diambil ulang tiap kali lembaganya berganti.
   const [existingFarmerIds, setExistingFarmerIds] = useState<string[]>([]);
+  // Validasi memakai daftar di atas untuk menandai duplikat. Selama masih
+  // dimuat, tombol Validasi dikunci — kalau tidak, berkas divalidasi terhadap
+  // daftar KOSONG sehingga setiap baris duplikat lolos sebagai "valid", dan
+  // kegagalannya baru muncul sebagai galat constraint saat disimpan.
+  const [loadingExistingIds, setLoadingExistingIds] = useState(false);
+  // Penjaga urutan: memilih lembaga A lalu cepat pindah ke B bisa membuat
+  // jawaban A tiba belakangan dan menimpa daftar milik B.
+  const existingIdsRequest = useRef(0);
   const [comboOpen, setComboOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -570,9 +578,20 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
                           // Daftar ID existing lembaga ini — dipakai menandai
                           // baris duplikat saat validasi berkas.
                           setExistingFarmerIds([]);
+                          setLoadingExistingIds(true);
+                          const reqId = ++existingIdsRequest.current;
                           getExistingFarmerIds(g.id)
-                            .then(setExistingFarmerIds)
-                            .catch(() => toast.error("Gagal memuat daftar ID petani lembaga ini"));
+                            .then((ids) => {
+                              if (reqId === existingIdsRequest.current) setExistingFarmerIds(ids);
+                            })
+                            .catch(() => {
+                              if (reqId === existingIdsRequest.current)
+                                toast.error("Gagal memuat daftar ID petani lembaga ini");
+                            })
+                            .finally(() => {
+                              if (reqId === existingIdsRequest.current)
+                                setLoadingExistingIds(false);
+                            });
                           setFile(null);
                           setHeaders([]);
                           setRawRows([]);
@@ -672,7 +691,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
           <div className="flex justify-end gap-2 pt-2">
             <Button
               onClick={handleValidate}
-              disabled={isProcessing || rawRows.length === 0}
+              disabled={isProcessing || rawRows.length === 0 || loadingExistingIds}
               className="h-10"
             >
               {isProcessing ? (

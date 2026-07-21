@@ -8,9 +8,22 @@
 -- slotnya. Itu dikehendaki: memakai ulang ID milik petani nonaktif akan
 -- memecah riwayatnya alih-alih menyambungkannya kembali.
 --
--- Prasyarat sudah diverifikasi read-only pada mis-prod 2026-07-21
--- (scripts/local/audit-farmer-id-duplicates.ts): 3.448 baris, 0 duplikat
--- (farmer_group_id, farmer_id). Jalankan ulang skrip itu sebelum menerapkan
--- di lingkungan lain.
+-- SEBELUM MENERAPKAN di lingkungan lain, pastikan tidak ada duplikat:
+--
+--   SELECT farmer_group_id, farmer_id, COUNT(*)
+--   FROM tbl_farmer
+--   GROUP BY farmer_group_id, farmer_id
+--   HAVING COUNT(*) > 1;
+--
+-- Harus mengembalikan 0 baris. (Diverifikasi read-only pada mis-prod
+-- 2026-07-21: 3.448 baris, 0 duplikat.)
+--
+-- BILA GAGAL karena duplikat, `migrate deploy` akan menandai migrasi ini gagal
+-- dan MEMBLOKIR seluruh migrasi berikutnya. Pemulihannya:
+--   1. Bersihkan duplikatnya (gabungkan/nonaktifkan salah satu).
+--   2. npx prisma migrate resolve --rolled-back 20260721060000_farmer_id_unique_per_group
+--   3. npx prisma migrate deploy
+--
+-- ROLLBACK: DROP INDEX "tbl_farmer_farmer_group_id_farmer_id_key";
 CREATE UNIQUE INDEX "tbl_farmer_farmer_group_id_farmer_id_key"
   ON "tbl_farmer"("farmer_group_id", "farmer_id");

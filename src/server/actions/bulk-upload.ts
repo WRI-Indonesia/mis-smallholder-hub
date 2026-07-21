@@ -114,6 +114,18 @@ export async function bulkCreateFarmers(
     return { success: true, data: { count: validatedRecords.length } };
   } catch (error) {
     console.error("Bulk save error:", error);
+    // Pesan Prisma memuat nama tabel/kolom internal dan tak bisa ditindaklanjuti
+    // pengguna. Kasus yang paling mungkin — ID Petani bentrok di lembaga yang
+    // sama (@@unique, TD-024) — diterjemahkan ke bahasa yang bisa dikerjakan.
+    if (typeof error === "object" && error !== null && "code" in error) {
+      if ((error as { code?: string }).code === "P2002") {
+        return {
+          success: false,
+          error:
+            "Ada ID Petani yang sudah terdaftar di lembaga ini. Jalankan Validasi Data sekali lagi untuk menandai barisnya, lalu keluarkan dari berkas.",
+        };
+      }
+    }
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: message || "Gagal menyimpan data ke database" };
   }

@@ -67,9 +67,24 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
   // Filter disimpan di query string (TD-021) agar tampilan bisa di-bookmark &
   // dikirim ke rekan, dan bertahan saat halaman dimuat ulang.
   const { get, setMany } = useUrlFilters();
-  const districtId = get("distrik");
-  const groupId = get("lembaga");
-  const category = (get("kategori") as BmpFarmerGroupCategory | null) ?? null;
+  const allGroups = view.data.groups;
+
+  // Nilai dari URL divalidasi terhadap data yang benar-benar ada. Tautan bisa
+  // basi (lembaga dinonaktifkan) atau diketik sembarang; tanpa penjagaan ini
+  // dashboard tampil nol sementara header tetap berbunyi "Semua Lembaga" —
+  // pembaca menyimpulkan datanya kosong, padahal filternyalah yang tak berlaku.
+  const districtParam = get("distrik");
+  const districtId = allGroups.some((g) => g.districtId === districtParam) ? districtParam : null;
+
+  const groupParam = get("lembaga");
+  const groupId = allGroups.some((g) => g.id === groupParam) ? groupParam : null;
+
+  const categoryParam = get("kategori");
+  const category =
+    categoryParam === "EX_PLASMA" || categoryParam === "SWADAYA"
+      ? (categoryParam as BmpFarmerGroupCategory)
+      : null;
+
   // Default "semua tahun" — cakupan program bersifat kumulatif, bukan per tahun.
   const yearParam = get("tahun");
   const year = yearParam != null && /^\d{4}$/.test(yearParam) ? Number(yearParam) : null;
@@ -81,8 +96,6 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
 
   const [districtOpen, setDistrictOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
-
-  const allGroups = view.data.groups;
 
   const districtOptions = useMemo(() => {
     const map = new Map<string, string>();

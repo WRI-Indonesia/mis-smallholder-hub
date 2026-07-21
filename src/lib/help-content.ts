@@ -323,9 +323,9 @@ export function findTutorialForMenu(menuKey: string, chapters: HelpChapter[] = H
   return findTutorialCore(menuKey, chapters);
 }
 
-// Penanda hak akses dipindah ke modul murni agar bisa diuji (berkas ini
-// mengimpor `.md` yang tak bisa dimuat vitest); di-re-export demi kompatibilitas.
-export { isTopicAccessible, type AccessCheckable } from "@/lib/help-access";
+// Penanda hak akses & lookup tutorial ada di `help-access.ts` — modul murni,
+// agar bisa diuji tanpa memuat berkas `.md`. Konsumen mengimpor langsung dari
+// sana; tidak di-re-export di sini supaya hanya ada satu jalur impor.
 import { findTutorialForMenu as findTutorialCore } from "@/lib/help-access";
 
 export function getHelpChapter(slug: string): HelpChapter | undefined {

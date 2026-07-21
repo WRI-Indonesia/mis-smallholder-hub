@@ -44,7 +44,9 @@ Petani muncul di **Master Data → Petani** dengan lembaga yang Anda pilih di La
 
 **Kotak berkas terkunci** — Lembaga Petani di Langkah 1 belum dipilih.
 
-**Banyak baris error "ID Petani sudah terdaftar"** — petani itu memang sudah ada. Keluarkan dari berkas, atau perbarui datanya lewat Master Data.
+**Banyak baris error "ID Petani sudah terdaftar"** — nomor itu sudah dipakai **di lembaga tujuan**. Keluarkan barisnya dari berkas, atau perbarui datanya lewat Master Data.
+
++ Pemeriksaan berlaku **per lembaga**, bukan seluruh sistem: nomor yang sama boleh dipakai lembaga lain. Baris nonaktif ikut dihitung — bila petaninya pernah dinonaktifkan, aktifkan kembali datanya alih-alih mengunggah ulang.
 
 + Unggahan massal ini hanya **menambah**, tidak memperbarui data yang sudah ada. Untuk mengubah data petani lama, gunakan tombol Edit di Master Data satu per satu.
 

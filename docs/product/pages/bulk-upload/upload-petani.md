@@ -49,7 +49,7 @@ Halaman: Upload Petani (/admin/bulk-upload/farmers)
 | File | `src/app/(admin)/admin/bulk-upload/farmers/page.tsx` (Server Component) + `src/app/(admin)/admin/bulk-upload/farmers/bulk-upload-client.tsx` (`"use client"`) |
 | Tipe | Wizard unggah massal 4 langkah (kartu berurutan, bukan stepper terpisah) |
 | Guard | `requirePermission("bulk-upload-farmers")`; aksi data guard `hasPermission("bulk-upload-farmers", "VIEW"\|"CREATE")` |
-| Server action / data | `getFarmerGroupsForMapping()`, `getExistingFarmerIds()`, `bulkCreateFarmers()` — semua di `src/server/actions/bulk-upload.ts` |
+| Server action / data | `getFarmerGroupsForMapping()`, `getExistingFarmerIds(farmerGroupId)`, `bulkCreateFarmers()` — semua di `src/server/actions/bulk-upload.ts` |
 | Format file diterima | `.xlsx` dan `.csv` (`accept=".xlsx,.csv"`); selain itu toast *"Hanya mendukung file Excel (.xlsx) atau CSV"* |
 | Tombol unduh template | **Tidak ada** di halaman ini (hanya unduh hasil validasi) |
 | Redirect setelah simpan | `/admin/master-data/farmers` |
