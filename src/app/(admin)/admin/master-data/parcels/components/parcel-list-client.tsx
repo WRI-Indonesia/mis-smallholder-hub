@@ -25,6 +25,9 @@ interface Props {
   isSuperAdmin: boolean;
 }
 
+const formatArea = (n: number) =>
+  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
 export function ParcelListClient({ initialParcels, farmers, farmerGroups, permissions, isSuperAdmin }: Props) {
   const [groupFilter, setGroupFilter] = useState("all");
   const [groupComboOpen, setGroupComboOpen] = useState(false);
@@ -108,7 +111,7 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
       label: "Luas (ha)",
       sortable: true,
       cellClassName: "text-sm tabular-nums text-right",
-      render: (row) => row.area !== null ? row.area.toFixed(2) : "—",
+      render: (row) => row.area !== null ? formatArea(row.area) : "—",
     },
     {
       key: "landStatus",

@@ -68,6 +68,10 @@ interface Props {
 const certSortValue = (year: number | null, status: string | null) =>
   status === "CERTIFIED" ? `0-${year ?? 9999}` : status === "PLANNED" ? `1-${year ?? 9999}` : null;
 
+const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
+const formatArea = (n: number) =>
+  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
 
 export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
@@ -141,7 +145,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       label: "Total Petani",
       sortable: true,
       cellClassName: "text-sm text-muted-foreground tabular-nums",
-      render: (row) => `${row.farmersCount} orang`,
+      render: (row) => `${formatNumber(row.farmersCount)} orang`,
     },
     {
       key: "parcelsCount",
@@ -149,14 +153,14 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       sortable: true,
       defaultVisible: false,
       cellClassName: "text-sm text-muted-foreground tabular-nums",
-      render: (row) => `${row.parcelsCount} persil`,
+      render: (row) => `${formatNumber(row.parcelsCount)} persil`,
     },
     {
       key: "totalArea",
       label: "Luas Lahan",
       sortable: true,
       cellClassName: "text-sm text-muted-foreground tabular-nums",
-      render: (row) => `${row.totalArea.toFixed(2)} Ha`,
+      render: (row) => `${formatArea(row.totalArea)} Ha`,
     },
     {
       key: "joinYear",
@@ -306,7 +310,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Lembaga Petani</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKT}</h3>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalKT)}</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Building className="h-5 w-5" />
@@ -318,7 +322,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Petani</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPetani} orang</h3>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalPetani)} orang</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Users className="h-5 w-5" />
@@ -330,7 +334,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Persil Lahan</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPersil} persil</h3>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalPersil)} persil</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Layers className="h-5 w-5" />
@@ -342,7 +346,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Luas Lahan</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalLuas.toFixed(2)} Ha</h3>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatArea(totalLuas)} Ha</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Trees className="h-5 w-5" />
