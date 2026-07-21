@@ -51,6 +51,7 @@ flowchart LR
     DASH01["DASH-01 Basic Dashboard"] --> DASH02["DASH-02 Server Actions"]
     DASH02 --> DASH03["DASH-03 Interactive Map"]
     DASH02 --> DASH04["DASH-04 BMP"]
+    MD05 --> DASH06["DASH-06 Dashboard Pelatihan"]
     RPT01["RPT-01 Report Petani (#107)"] --> RPT02["RPT-02 Report Pelatihan (#108)"]
     RPT01 --> RPT03["RPT-03 Report Produksi (#132) ✅"]
     BULK01["BULK-01 Bulk Upload Menu + KT"] --> BULK02["BULK-02 Bulk Upload Region"]
@@ -171,6 +172,7 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 
 - [ ] **Code Comments**: Minimal; hanya untuk complex logic
 - [ ] **Naming**: File kebab-case; variables English; functions self-documenting
+- [ ] **Bantuan**: cek materi di `src/content/help/` — perbarui tutorial/konsep yang jadi keliru karena perubahan ini, dan tambahkan tutorial baru bila alurnya memang baru. Label tombol/kolom dikutip persis dari `docs/product/pages/`
 - [ ] **Progress Update**: Update `docs/project/roadmap.md` Phase Status with evidence
 - [ ] **Changelog**: Add entry dengan timestamp, issue number, dan deliverables
 
@@ -179,6 +181,7 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 1. ✅ **Tests**: `npm test` — all pass, no skipped tests
 2. ✅ **Build**: `npm run build` — no errors or warnings
 3. ✅ **Lint**: `npm run lint` — **exit 0**, 0 error (BUG-006 ✅ selesai 2026-07-12, #126; wajib dijalankan lokal sebelum commit — lihat Pre-Commit Gate di [`workflow.md`](../standards/workflow.md))
+4. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
 4. ✅ **Code Review**: Implementation matches rule.md requirements
 5. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
 
@@ -195,3 +198,6 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 | Forgot `loading.tsx` | Layout shift; poor UX | Use `<TableSkeleton>` for tables, `<Skeleton>` for cards |
 | Commented-out code | Technical debt; confusing | Delete dead code; use git history if needed later |
 | Speculative features | Over-engineer; maintenance burden | Implement only what's in the issue scope |
+| Kelas Tailwind `peer-*` dipasang di elemen **bersarang** | `peer-*` menghasilkan selektor **sibling** (`:where(.peer):checked ~ *`), jadi hanya berlaku pada elemen yang bersibling **setelah** checkbox. Di elemen bersarang aturannya tak pernah cocok — toggle tampak benar di kode tetapi **diam di layar** (2× terjadi di HELP-02) | Pasang kelas `peer-*` di **pembungkus yang bersibling** dengan checkbox, lalu sasar ke dalam lewat `[&_[data-x]]:`/`[&>[data-x]]:`. Verifikasi dengan membaca CSS hasil build (`grep` di `.next/static/css/`), jangan berhenti di "build sukses" |
+| **Pembilang & penyebut beda filter** pada metrik cakupan | Rasio bisa tembus >100%; indikator "tercapai" jadi salah dan aksi lanjutan (drill-down) terkunci — cacat DASH-06 2026-07-21 | Terapkan filter yang **sama persis** di kedua sisi (`isActive` **dan** keanggotaan/scope). Kalau angka ringkas dan daftar rinciannya dihitung di dua tempat (client vs SQL), pastikan predikatnya identik — beda sedikit = angka dan daftar saling bertentangan di depan pengguna |
+| Agregat dijumlah hanya atas kategori yang **sudah ada datanya** | Angka jadi non-monoton: menambah data justru menaikkan "kekurangan", terbaca sebagai kemunduran | Jumlahkan atas seluruh kategori bertarget/kanonis, bukan atas hasil `filter(ada data)` |

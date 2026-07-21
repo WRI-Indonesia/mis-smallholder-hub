@@ -6,7 +6,11 @@ import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
 import type { FarmerInput, UpdateFarmerInput } from "@/validations/farmer.schema";
 import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 
-import { getAccessContext, farmerAccessFilter, farmerGroupAccessFilter } from "@/lib/access-context";
+import {
+  getAccessContext,
+  farmerAccessFilter,
+  farmerGroupAccessFilter,
+} from "@/lib/access-context";
 import { buildFarmerDetail } from "@/lib/farmer-detail";
 import { fetchParcelPassport } from "@/lib/parcel-passport-query";
 import type { ActionResult } from "@/types/action-result";
@@ -73,7 +77,11 @@ export async function getFarmerById(id: string) {
   // Scope enforced. Hanya SUPERADMIN yang boleh membuka detail record nonaktif;
   // user lain dibatasi ke record aktif.
   return prisma.farmer.findFirst({
-    where: { id, ...farmerAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
+    where: {
+      id,
+      ...farmerAccessFilter(access),
+      ...((await isSuperAdmin()) ? {} : { isActive: true }),
+    },
     include: {
       farmerGroup: {
         include: {
@@ -104,7 +112,11 @@ export async function getFarmerDetail(id: string) {
 
   const [farmer, trainingPackages] = await Promise.all([
     prisma.farmer.findFirst({
-      where: { id, ...farmerAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
+      where: {
+        id,
+        ...farmerAccessFilter(access),
+        ...((await isSuperAdmin()) ? {} : { isActive: true }),
+      },
       include: {
         farmerGroup: { include: { district: true } },
         landParcels: {
@@ -184,7 +196,7 @@ export async function getFarmerDetail(id: string) {
       })),
       productionRecords: farmer.productionRecords,
     },
-    trainingPackages
+    trainingPackages,
   );
 
   return {
@@ -241,7 +253,7 @@ export async function getFarmerDetail(id: string) {
  * di-enforce di lib.
  */
 export async function getFarmerParcelPassport(
-  landParcelId: string
+  landParcelId: string,
 ): Promise<ActionResult<ParcelPassport>> {
   if (!(await hasPermission("master-data-farmers", "VIEW"))) {
     return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
@@ -267,7 +279,32 @@ export async function createFarmer(input: FarmerInput) {
     select: { id: true },
   });
   if (!targetGroup) {
-    return { success: false, error: "Tidak memiliki izin untuk menambah petani ke lembaga tani ini" };
+    return {
+      success: false,
+      error: "Tidak memiliki izin untuk menambah petani ke lembaga tani ini",
+    };
+  }
+
+  // Keunikan `farmerId` berlaku **per Lembaga** (TD-024). Ditegakkan juga di DB
+  // lewat `@@unique([farmerGroupId, farmerId])`; cek di sini agar pengguna dapat
+  // pesan yang jelas di kolomnya, bukan galat constraint mentah.
+  // Termasuk baris nonaktif: constraint DB tidak mengenal soft delete, dan
+  // memakai ulang ID milik petani nonaktif memecah riwayatnya.
+  const duplicate = await prisma.farmer.findFirst({
+    where: { farmerGroupId: parsed.data.farmerGroupId, farmerId: parsed.data.farmerId },
+    select: { id: true, isActive: true },
+  });
+  if (duplicate) {
+    return {
+      success: false,
+      error: {
+        farmerId: [
+          duplicate.isActive
+            ? "ID Petani sudah terdaftar di lembaga ini"
+            : "ID Petani dipakai petani nonaktif di lembaga ini — aktifkan kembali datanya",
+        ],
+      },
+    };
   }
 
   const session = await auth();
@@ -296,7 +333,9 @@ export async function updateFarmer(input: UpdateFarmerInput) {
   const access = await getAccessContext();
 
   // Verify farmer exists, is active, and is within the user's scope before updating
-  const existing = await prisma.farmer.findFirst({ where: { id, isActive: true, ...farmerAccessFilter(access) } });
+  const existing = await prisma.farmer.findFirst({
+    where: { id, isActive: true, ...farmerAccessFilter(access) },
+  });
   if (!existing) return { success: false, error: "Petani tidak ditemukan atau sudah tidak aktif" };
 
   // Cegah pemindahan petani ke lembaga tani di luar scope user.
@@ -305,7 +344,34 @@ export async function updateFarmer(input: UpdateFarmerInput) {
     select: { id: true },
   });
   if (!targetGroup) {
-    return { success: false, error: "Tidak memiliki izin untuk memindahkan petani ke lembaga tani ini" };
+    return {
+      success: false,
+      error: "Tidak memiliki izin untuk memindahkan petani ke lembaga tani ini",
+    };
+  }
+
+  // Keunikan per Lembaga (TD-024) — dicek ulang karena ID *dan* lembaga bisa
+  // sama-sama berubah dalam satu penyuntingan. `id: { not: id }` mengecualikan
+  // baris yang sedang diedit agar menyimpan tanpa mengubah ID tidak ditolak.
+  const duplicate = await prisma.farmer.findFirst({
+    where: {
+      id: { not: id },
+      farmerGroupId: data.farmerGroupId,
+      farmerId: data.farmerId,
+    },
+    select: { id: true, isActive: true },
+  });
+  if (duplicate) {
+    return {
+      success: false,
+      error: {
+        farmerId: [
+          duplicate.isActive
+            ? "ID Petani sudah terdaftar di lembaga ini"
+            : "ID Petani dipakai petani nonaktif di lembaga ini — aktifkan kembali datanya",
+        ],
+      },
+    };
   }
 
   await prisma.farmer.update({

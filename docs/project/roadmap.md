@@ -54,7 +54,7 @@ Format phase: `STREAM-NN`.
 | -------- | ---------------------- | ------------------------------------------------------------------------------------------ |
 | PLATFORM | Platform Foundation    | Init project, schema DB, auth, RBAC, menu infra                                            |
 | MD       | Master Data            | Regions, groups, farmer, parcels, training, staff, agronomy, HCV, BUSDEV, IMPACT, workplan |
-| DASH     | Dashboard              | Basic dashboard, server actions, interactive map, BMP                                      |
+| DASH     | Dashboard              | Basic dashboard, server actions, interactive map, BMP, Pelatihan                           |
 | MAP      | Geospatial Map Explorer | Peta interaktif sebaran KT & lahan, filter spasial (Province/District/KT), layer toggle    |
 | RPT      | Report                 | Report User, Region, Lembaga Petani, Kelompok Tani; summary tabel + export Excel/PDF                      |
 | BULK     | Bulk Upload            | Bulk upload CSV untuk Region dan Lembaga Petani; validasi, preview, insert                  |
@@ -62,6 +62,7 @@ Format phase: `STREAM-NN`.
 | DA       | Data Analyst           | Ringkasan Petani, Analisa Ketersediaan Data (anomali/kelengkapan), analytics dashboards    |
 | CMS      | Content Management     | Pages, media, knowledge base                                                               |
 | COMM     | Community & Engagement | Community, i18n                                                                            |
+| HELP     | Bantuan / Panduan      | Panduan penggunaan in-app: tutorial per tugas (2 tingkat kedalaman), konsep & istilah, FAQ |
 | OPS      | Operations & DevOps    | Testing, CI/CD, deployment                                                                 |
 
 </details>
@@ -95,6 +96,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | DASH-03     | Interactive Map                     | ✅ Done        | Done    |
 | DASH-04     | Dashboard BMP (Produksi)            | ✅ Done        | Done    |
 | DASH-05     | Dashboard: Card Total Kelompok Tani | ✅ Done        | Done    |
+| DASH-06     | Dashboard Pelatihan                 | ✅ Done        | Done    |
 | MAP-01      | Map: Peta Lahan                     | ✅ Done        | Done    |
 | MAP-02      | Map: Peta BMP (Layer 1)             | ✅ Done        | Done    |
 | MAP-03      | Map: Peta BMP Layer 2 (Produktivitas) | ✅ Done      | Done    |
@@ -103,6 +105,8 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | RPT-03      | Report: Produksi                    | ✅ Done        | Done    |
 | RPT-04      | Report: Kelompok Tani               | ✅ Done        | Done    |
 | RPT-05      | Report: Lahan                       | ✅ Done        | Done    |
+| HELP-01     | Bantuan: Panduan Penggunaan         | ✅ Done        | Done    |
+| HELP-02     | Bantuan: Tutorial per Tugas         | ✅ Done        | Done    |
 | BULK-01     | Bulk Upload: Menu & KT              | ✅ Done        | Done    |
 | BULK-02     | Bulk Upload: Region                 | 🔲 Not Started | Next    |
 | BULK-03     | Bulk Upload: Farmer                 | ✅ Done        | Done    |
@@ -322,6 +326,22 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 
 </details>
 
+<details>
+<summary><strong>DASH-06</strong> · ✅ Done — Dashboard Pelatihan</summary>
+
+- **✅ (2026-07-21):** **Dashboard Pelatihan** — `/admin/dashboard/training` (menu `dashboard-training`, order 3 di grup Dashboard; VIEW untuk SUPERADMIN/ADMIN/OPERATOR/MANAGEMENT). Menjawab pertanyaan "program sudah sejauh mana, Lembaga/paket mana yang tertinggal" — beda peran dari **Report Pelatihan** (`report-training`) yang wajib pilih Distrik+Lembaga dan berorientasi cetak.
+- **Live query, BUKAN snapshot-backed (keputusan arsitektur):** volume pelatihan kecil (ratusan kegiatan, ribuan baris kehadiran) sehingga `getTrainingDashboardView()` query langsung ke DB dan seluruh agregasi dilakukan client-side. Tidak ada model/migration/tabel snapshot baru — kontras dengan DASH-01/DASH-04 yang snapshot-backed.
+- **Lapisan keamanan:** `requirePermission("dashboard-training")` di page + `hasPermission(...,"VIEW")` di action + `farmerGroupAccessFilter(getAccessContext())` pada query FarmerGroup; `isActive: true` difilter di keempat level (FarmerGroup, Farmer, TrainingActivity, TrainingParticipant) untuk **semua role** termasuk SUPERADMIN (pola dashboard/report).
+- **Isi:** filter global 4-serangkai (Kategori | Distrik | Lembaga | Tahun, default **Semua Tahun** karena cakupan bersifat kumulatif) → **5 KPI card** (Cakupan Petani Terlatih, Total Kegiatan, Kehadiran vs Petani Unik, Partisipasi Perempuan, Rata-rata Kenaikan Skor) → **matriks cakupan Lembaga × Paket** (heatmap 5 tingkat, sel 0% dibedakan merah, sortable, **collapsible** dengan ringkasan saat terlipat) → **chart tren** SVG hand-rolled (stacked bar kehadiran per paket; 12 bucket bulan bila tahun dipilih, 1 bucket per tahun bila "Semua Tahun") + **panel efektivitas pre/post** (per paket, menandai skor turun/tetap sebagai indikasi salah input) → **panel kualitas data** (kegiatan tanpa bukti/lokasi/peserta, peserta tanpa skor lengkap) dengan deep-link ke Master Data Pelatihan.
+- **Denominator cakupan (keputusan owner):** seluruh **petani aktif** di Lembaga terpilih — termasuk Lembaga yang belum tersentuh pelatihan, supaya sisa pekerjaan terlihat jujur. Petani unik dihitung lintas Lembaga (Set `farmerId`) agar tidak double-count.
+- **Evidence:** action `src/server/actions/dashboard-training.ts`; lib murni `src/lib/training-dashboard-aggregation.ts` (7 fungsi + konstanta urutan/label paket); tipe di `src/types/dashboard.ts`; 8 file UI di `src/app/(admin)/admin/dashboard/training/`; seed `menu.csv` + `role-permissions.csv`.
+- **Test:** +33 unit (`dashboard-training.test.ts` — agregasi + RBAC scope where-fragment 3 mode + target/gap + regresi monotonisitas) → total **568** ✅; lint 0 error; build ✅.
+- **Review putaran 2 (2026-07-21) — 5 cacat diperbaiki:** (a) **pembilang cakupan bocor** — peserta tidak memfilter `farmer.isActive` maupun keanggotaan Lembaga, padahal penyebut (`_count.farmers`) memfilter keduanya → sel bisa >100%, `gap`=0, sel jadi **tidak bisa diklik** sehingga petani yang benar-benar belum dilatih tak terjangkau; (b) tooltip kolom "Lainnya" mencetak `target null% tercapai`; (c) `exportToExcel` sudah menambah ekstensi sendiri → nama berkas `…xlsx.xlsx`, plus sanitasi nama Lembaga; (d) ringkasan "kurang N menuju target" dijumlah hanya atas paket ber-kegiatan → **non-monoton** (mencatat kegiatan paket baru menaikkan angka kekurangan); (e) `packageCode`/`year` dari klien tak divalidasi → `PrismaClientValidationError` 500. Persen kini dibulatkan ke bawah agar 999/1.000 tidak terbaca "100%".
+- **Drill-down & target (2026-07-21):** sel matriks yang belum mencapai target bisa **diklik** → modal daftar petani yang belum dilatih (Nama + ID Petani + L/P, **tanpa NIK**) dengan tombol **Salin** & **unduh Excel** — siap jadi daftar undangan. Action `getUntrainedFarmers` memakai `AND: farmerGroupAccessFilter(...)` (bukan spread) untuk menghindari pitfall key-collision, diambil **on-demand** agar payload awal tetap ramping. Target program `TRAINING_COVERAGE_TARGET` = **100% petani aktif per paket** (keputusan owner; konstanta di lib, `OTHER` tanpa target).
+- **Next step:** filter tersimpan di URL, export matriks, deep-link panel kualitas data yang benar-benar terfilter.
+
+</details>
+
 #### MAP — Geospatial Map Explorer
 
 <details>
@@ -412,6 +432,42 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 - **#179 ✅ (revisi owner pasca-QC):** **Lembaga wajib** (laporan & cetakan per 1 Lembaga, search dihapus); **PDF landscape ber-halaman peta** — poligon lahan digambar vektor jsPDF (pola farm-passport), **label per ceklis** (No/Nama/ID Petani/ID Lahan/KT) **adaptif** (`fitLabelToBox`: horizontal → vertikal 90° → auto-scale lantai 0.55; fix posisi teks vertikal — jsPDF align pra-rotasi, anchor manual `verticalLabelAnchors` diverifikasi dari content stream); **grid index (atlas) fleksibel Baris × Kolom** (input bebas, baris maks 26 = label A–Z) → halaman ikhtisar ber-grid (A1, A2, …) + 1 halaman per sel berisi (sel kosong dilewati); **preview on-page (SVG)** dari helper layout yang sama dengan PDF; **Excel multi-sheet ber-gambar peta** (sheet Lahan + gambar index; satu sheet per sel + peta selnya, SVG→PNG); geometry di-fetch per-Lembaga terpisah dari payload list (#163).
 - KT/Gapoktan = atribut per-lahan `subGroupLv*` (#146/#152), normalisasi trim + distinct KT case-insensitive per Lembaga (pola #154); KT kosong tampil "-". Pure `lib/report-land-parcel.ts` + `report-land-parcel-pdf.ts` + `report-land-parcel-xlsx.ts` (**33 unit + 1 perf** termasuk verifikasi empiris jsPDF & workbook exceljs; #180: anti-tumpang label, skala batang + utara, mini-index sel); RBAC 3-layer. Read-only (migration `species`/`isPsr` tercatat di MD-04).
 - **Next step:** Implement #177 + #179 completed.
+
+</details>
+
+#### HELP — Bantuan
+
+<details>
+<summary><strong>HELP-01</strong> · ✅ Done — Bantuan: Panduan Penggunaan</summary>
+
+- **#182 ✅ (statis):** menu top-level `help` ("Bantuan", `/admin/help`, order 9) + seed 4 role VIEW; **Server Component statis** (tanpa query DB/server action/`"use client"`), guard `requirePermission("help")`.
+- **#184 ✅ sub-halaman + Markdown + pencarian**: rute **3 tingkat** — `/admin/help` (indeks 6 kartu bab) → `/admin/help/[chapter]` (ikhtisar topik) → `/admin/help/[chapter]/[topic]` (**satu topik = satu halaman**, siap memuat langkah/tutorial detail) + tombol topik sebelumnya/berikutnya lintas bab. **Konten pindah ke Markdown** `src/content/help/**.md` (di-bundle webpack `asset/source` seperti `.csv`; frontmatter `title`/`icon`/`intro`) — editable lewat GitHub tanpa menyentuh JSX. **Parser subset sendiri tanpa dependency** (`lib/markdown-lite.ts`: heading/paragraf/list/definisi/inline + **gambar, video, sematan YouTube-Vimeo, dan aset S3 privat `s3://key` yang di-presign per-request** #185) dirender ke elemen React (tanpa `dangerouslySetInnerHTML`). **Pencarian client-side** atas indeks ringan (judul+isi) → hasil menautkan langsung ke halaman topik. +12 unit test.
+- **#183 ✅ tree view per bab**: navigasi kiri **sticky** ber-`<details>` native (buka/tutup tanpa JS — tetap Server Component), **6 bab → 11 topik** ber-penomoran `bab.topik` (mis. 3.2 Peta) agar mudah dirujuk; konten dikelompokkan per bab (header bab + kartu topik ber-anchor), responsif stack di layar kecil.
+- **11 topik**: istilah domain (Petani→KT→Gapoktan/KUD→Lembaga Petani, lahan, produksi), masuk & akun, hak akses & cakupan data per role, Master Data (soft delete/restore, revisi lahan, sensor NIK), Bulk Upload (Excel & Shapefile, baris gagal, data ganda), Dashboard (+kenapa snapshot), Peta, Report (6 laporan incl. grid peta Laporan Lahan), Data Analyst, Tools, FAQ/kendala.
+- Konten diturunkan dari `docs/product/*` — perbarui bersama saat alur modul berubah. Tanpa migration; read-only.
+- **Next step:** ✅ isi materi tutorial per topik dikerjakan di **HELP-02**; sisa kandidat = editor konten non-developer (CMS-01).
+
+</details>
+
+<details>
+<summary><strong>HELP-02</strong> · ✅ Done — Bantuan: Tutorial per Tugas</summary>
+
+- **✅ (2026-07-21):** Bantuan lama berisi **definisi** ("X adalah…") dan terorganisasi **mengikuti menu** — itu organisasi referensi. Pengguna datang dengan tujuan ("mau input panen bulan ini") lalu harus menebak sendiri ada di menu mana. Redesain mengubah unit organisasinya jadi **tugas**.
+- **Tiga lapis** lewat `section` pada `HelpChapter`: **tutorial** (per tugas, pintu masuk utama) · **konsep** (istilah & aturan main yang dirujuk tutorial — isi Bantuan lama) · **referensi** (arti kolom/tombol per halaman, kerangka siap, materi menyusul). Rute `/admin/help/[chapter]/[topic]` **tidak berubah** sehingga seluruh tautan lama tetap hidup.
+- **Dua tingkat kedalaman dari SATU sumber**: baris `1.` = versi **Ringkas**, baris `+` di bawahnya = tingkat **Detail**; pembaca memilih lewat toggle. Dua berkas terpisah ditolak karena akan cepat tidak sinkron. Toggle memakai checkbox + CSS **tanpa JavaScript** (konsisten sifat statis #182/#183). Isi Detail **tetap terindeks pencarian** meski sedang disembunyikan.
+- **Parser** `markdown-lite.ts` bertambah: blok `steps` (nomor diturunkan dari **posisi**, bukan angka yang ditulis — menyisipkan langkah di tengah tak menuntut penomoran ulang), `callout` tip/penting/hati-hati, dan baris `+` sebagai detail yang menempel pada langkah di atasnya.
+- **13 tutorial / 4 bab**: Mengelola Data Harian (petani·lahan·pelatihan·produksi) · Unggah Massal (Excel petani & produksi, shapefile lahan) · Memantau & Menindaklanjuti (Main Dashboard, cakupan pelatihan, peta BMP) · Laporan & Perawatan (menyiapkan laporan, Laporan Lahan ber-peta, snapshot).
+- **`docs/product/pages/` dipakai sebagai sumber akurasi, bukan disalin** — katalog itu referensi developer (path file, nama action, seluruh kolom); yang dipanen hanyalah label tombol & kolom yang persis, agar panduan tidak mengarang.
+- **Personalisasi peran**: tutorial yang menunya di luar hak akses pembaca **ditandai, bukan disembunyikan** (panduan tetap berguna saat pelatihan lintas peran). Konsekuensinya halaman indeks memanggil `getAccessibleMenuKeys` — klaim "nol query DB" pada keputusan #182 **tidak lagi berlaku**.
+- **UI**: indeks dibuka dengan "Apa yang ingin Anda lakukan?" (kartu tugas ber-hasil-akhir & estimasi waktu); tiap tutorial punya tombol ke halaman yang dibahas (frontmatter `href`, **dibuka di tab baru** agar panduan tetap terbuka); daftar isi bisa **dilipat** agar materi memakai lebar penuh — tata letak dua kolom diangkat ke komponen bersama `help-layout.tsx`.
+- **Font**: teks tingkat Detail memakai bobot **300 sungguhan** (`acumin-pro-condensed-light`, dikonversi `.otf`→`.woff2` 80 KB→42 KB, didaftarkan di `globals.css`). Tanpa berkas itu `font-light` tak berefek — browser mensintesis huruf tebal, tidak pernah yang lebih tipis.
+- **Pelajaran teknis (2× menggigit):** kelas Tailwind `peer-*` menghasilkan selektor **sibling** (`:where(.peer):checked ~ *`), jadi hanya berlaku pada elemen yang bersibling **setelah** checkbox. Gaya peer karena itu diletakkan di pembungkus lalu menyasar ke dalam lewat atribut `data-*`; CSS hasil build diperiksa langsung, bukan diasumsikan.
+- **Penjaga materi** (`help-content.test.ts`) berlaku otomatis untuk tutorial yang ditambahkan kemudian: frontmatter wajib lengkap, harus ada blok langkah, harus ada bagian **"Kalau bermasalah"** (keputusan owner: inline, bukan halaman terpisah), dan `href` harus rute `/admin/` absolut. Penjaga ini langsung menangkap 2 tutorial yang belum ber-`href`.
+- **Evidence:** `src/content/help/tutorial/*.md` (17) + `referensi/*.md` (4) · `help-layout.tsx` · `help-access.ts` (penanda hak akses, modul murni agar teruji) · `markdown-lite.ts` · `help-content.ts` · `src/content/help/README.md` (format & aturan isi). **Test:** +59 → total **645** ✅; lint 0; build ✅.
+- **Review putaran 2 (2026-07-21) — 9 perbaikan:** (a) **5 materi keliru** dikoreksi setelah diadu dengan kode: form Petani ternyata **tidak** memeriksa duplikat ID (dan bulk upload memeriksa **global**, bukan per Lembaga — kebalikan dari yang tertulis); halaman Lahan tak punya kartu ringkasan; tombol Produksi berbunyi "Tambah Data", bukan "Tambah Data Produksi"; Periode adalah pemilih bulan, bukan ketikan `2026-06`; Panen Ke- dibatasi **4**. (b) **A11y**: `peer-focus-visible` terpasang di `<label>` bersarang → tidak ada indikator fokus keyboard sama sekali (pitfall yang sama, terlewat sekali lagi); lipat daftar isi bisa dipicu di bawah `lg` tempat tombolnya tersembunyi → **jebakan satu arah**, kini dikurung `lg:`; nama aksesibel disamakan dengan label terlihat (WCAG 2.5.3). (c) **Pencarian** yang menemukan teks tingkat Detail kini membuka topik dengan `?detail=1` — sebelumnya kata yang dicari tak terlihat, bahkan oleh Ctrl+F. (d) `permission` di frontmatter selama ini divalidasi test tapi **tak pernah dipakai**; kini penanda memeriksa sampai level izin lewat `getEffectiveMenuPermissions`. (e) `generateStaticParams` dihapus — halaman selalu dinamis karena `auth()`, jadi ia menyesatkan pembaca kode.
+- **Lanjutan (2026-07-21):** **17 tutorial** — 4 bab awal + bab **Analisa & Administrasi** (BMP Dashboard, Peta Lahan, Analisa Ketersediaan Data, User Management) sehingga **seluruh menu utama tercakup**. **Bantuan kontekstual** aktif: komponen `HelpHint` (ikon `?` → tutorial menu ybs, tab baru) dipasang di 7 halaman Master Data & Bulk Upload; lookup-nya `findTutorialForMenu` di modul murni `help-access.ts`. **TD-025 ditutup** — mode Detail tak lagi bergantung urutan sumber CSS (spesifisitas 0,7,0 vs 0,4,0 lewat penanda `data-depth`).
+- **Lapis referensi (2026-07-21):** 4 halaman tersering dipanen dari katalog jadi materi "arti tiap kolom, filter, dan tombol" — Petani, Lahan, Pelatihan, Produksi. Berbasis definisi (bukan langkah), ditulis untuk **dirujuk saat bekerja**, bukan dibaca berurutan. Ditampilkan sebagai seksi tersendiri di indeks Bantuan.
+- **Next step:** perluas lapis referensi ke halaman lain (report, dashboard, settings) mengikuti pola yang sama.
 
 </details>
 
@@ -508,7 +564,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <details>
 <summary><strong>OPS-01</strong> · 🟠 Partial — Testing</summary>
 
-- **Evidence:** Vitest: **39 test files / 519 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02/03)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) + **report-kelompok-tani (Summary/Detail) #154** + dashboard KT count #148 + parcel-bulk-mapping (#150) + farmer-sub-groups (#152) + agregasi farmer-group (#163) + **dashboard-bmp (#166)** + farmer-group-detail (#171) + farmer-detail (#172) + **produktivitas peta BMP (#174)** + **report-lahan/layout peta/grid/PDF/Excel (#177/#179, termasuk verifikasi empiris jsPDF & workbook exceljs)** + perf layout peta 2k lahan.
+- **Evidence:** Vitest: **43 test files / 663 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02/03)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) + **report-kelompok-tani (Summary/Detail) #154** + dashboard KT count #148 + parcel-bulk-mapping (#150) + farmer-sub-groups (#152) + agregasi farmer-group (#163) + **dashboard-bmp (#166)** + farmer-group-detail (#171) + farmer-detail (#172) + **produktivitas peta BMP (#174)** + **report-lahan/layout peta/grid/PDF/Excel (#177/#179, termasuk verifikasi empiris jsPDF & workbook exceljs)** + perf layout peta 2k lahan + **dashboard-training (DASH-06)** + **dashboard-asymmetry (invarian pembilang ≤ penyebut lintas 3 dashboard, 2026-07-21)** + **help-content (parser 2 tingkat + penjaga kelengkapan materi tutorial, HELP-02)**.
 - **Next step:** RPT-03 (#132) ✅, MAP-02 (#144) ✅, RPT-04 (#154) ✅ & DASH-05 (#148) ✅ tercakup; gap tersisa: integration test route hotspot.
 
 </details>
@@ -529,7 +585,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | Area           | Bukti di Codebase                                                                                                                                                                  | Kesimpulan                                                                             |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Prisma models  | **19 model / 13 migrasi** (+2 additif 2026-07-14: `LandParcel.subGroupLv1/Lv2` #146 + `blok`; +1 additif 2026-07-15: identitas `FarmerGroup` #160): `User`, `MenuItem`, `RolePermission`, `UserProvince`, `UserDistrict`, `UserFarmerGroup`, `UserPermissionOverride`, `Province`, `District`, `Subdistrict`, `Village`, `FarmerGroup`, `Farmer`, `LandParcel`, `TrainingPackage`, `TrainingActivity`, `TrainingParticipant`, `ProductionRecord`, `MainDashboardSnapshot` | Schema mencakup platform, RBAC, region, farmer group, farmer (MD-03), land parcel (MD-04), training (MD-05), production (MD-06), dan dashboard snapshot (DASH-01) ✅ |
-| Admin routes   | **39 page.tsx**: Dashboard (Main, snapshot-backed), Settings (Users/Roles/Menu/Regions), Master Data (Farmers + Groups + Parcels + Training + Production, list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Report (Petani + Pelatihan + Produksi + Kelompok Tani Summary/Detail #154 + **Lahan #177/#179**), Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data), Map (Peta Lahan + Peta BMP), Tools (Dashboard Snapshot), Profile | ✅ Semua page konten ter-guard `requirePermission` (29) + 8 justified (redirect-only/profile) — verifikasi audit 2026-07-10; `/admin/map/bmp` guard `map-bmp` (#144) |
+| Admin routes   | **47 page.tsx** (verifikasi `find src/app/(admin) -name page.tsx | wc -l`, 2026-07-21): Dashboard (Main + BMP, snapshot-backed; **Pelatihan, live query**), Settings (Users/Roles/Menu/Regions), Master Data (Farmers + Groups + Parcels + Training + Production, list/detail/form), Bulk Upload (Farmers + Parcels Shapefile + Production), Report (Petani + Pelatihan + Produksi + Kelompok Tani Summary/Detail #154 + **Lahan #177/#179**), Data Analyst (Ringkasan Petani + Analisa Ketersediaan Data), Map (Peta Lahan + Peta BMP), Tools (Dashboard Snapshot), **Bantuan #182/HELP-02**, Profile | ✅ Semua page konten ter-guard `requirePermission` (30) + 8 justified (redirect-only/profile) — verifikasi audit 2026-07-10; `/admin/map/bmp` guard `map-bmp` (#144) |
 | Server actions | **22 file — total 3.894 LOC** (audit `wc -l` 2026-07-10): `user`, `user-data-access`, `user-menu-access`, `menu`, `region`, `role-permission`, `farmer-group`, `farmer` (143), `land-parcel` (216), `bulk-upload` (76), `bulk-upload-parcel` (223), `bulk-upload-production` (160), `training` (363), `production` (375), `upload`, `profile`, `report` (392), `dashboard` (70), `snapshot` (204), `map`, `data-analyst` (187), `data-completeness` | Semua modul (incl. dashboard, snapshot, map, report) tersedia ✅ — catatan audit: 5 celah guard/scope, lihat `audit-report/audit-2026-07-10.md` §2 |
 | Validation schemas | `farmer-group.schema.ts`, `farmer.schema.ts`, `land-parcel.schema.ts`, `map.schema.ts`, `menu.schema.ts`, `production.schema.ts`, `region.schema.ts`, `snapshot.schema.ts`, `training-activity.schema.ts`, `training-participant.schema.ts`, `user.schema.ts` — **11 files** | Validation coverage: user, region, menu, farmer-group, farmer, land-parcel, training, production, map, snapshot ✅ |
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |

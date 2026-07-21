@@ -243,3 +243,126 @@ export interface BmpSnapshotDetail {
   createdAt: string;
   data: BmpSnapshotData;
 }
+
+// ── Dashboard Pelatihan (TRAIN-DASH-01) ─────────────────────────────────────
+// Live-query (bukan snapshot seperti BMP): volume pelatihan kecil, jadi payload
+// per-Lembaga dikirim utuh ke client dan di-slice di sana (Distrik/Lembaga/
+// Kategori/Tahun) — pola filter mengikuti Dashboard BMP.
+
+/** Semua kode paket termasuk OTHER — dashboard menampilkan OTHER hanya bila ada datanya. */
+export type TrainingPackageCode = DashboardPackageCode | "OTHER";
+
+export interface TrainingParticipantEntry {
+  farmerId: string;
+  gender: "M" | "F";
+  preTestScore: number | null;
+  postTestScore: number | null;
+}
+
+export interface TrainingActivityEntry {
+  id: string;
+  packageCode: TrainingPackageCode;
+  /** ISO date (trainingDate) — tahun & bulan diturunkan di client. */
+  date: string;
+  hasEvidence: boolean;
+  hasLocation: boolean;
+  participants: TrainingParticipantEntry[];
+}
+
+export interface TrainingGroupEntry {
+  id: string;
+  name: string;
+  code: string | null;
+  category: BmpFarmerGroupCategory;
+  districtId: string;
+  districtName: string;
+  /** Denominator cakupan: seluruh petani aktif di Lembaga ini. */
+  totalFarmers: number;
+  activities: TrainingActivityEntry[];
+}
+
+export interface TrainingDashboardData {
+  groups: TrainingGroupEntry[];
+}
+
+export interface TrainingSliceFilter {
+  districtId?: string | null;
+  groupId?: string | null;
+  category?: BmpFarmerGroupCategory | null;
+}
+
+/** KPI baris atas. */
+export interface TrainingTotals {
+  totalFarmers: number;
+  /** Petani unik yang pernah ikut ≥1 pelatihan. */
+  trainedFarmers: number;
+  totalActivities: number;
+  /** Baris kehadiran (bukan petani unik) — peserta yang sama dihitung tiap kegiatan. */
+  totalAttendance: number;
+  femaleAttendance: number;
+  /** Peserta dengan pre & post terisi — pembagi avgScoreGain. */
+  scoredAttendance: number;
+  avgPreScore: number;
+  avgPostScore: number;
+  avgScoreGain: number;
+}
+
+/** Satu baris matriks cakupan (Lembaga × Paket). */
+export interface TrainingCoverageRow {
+  groupId: string;
+  groupName: string;
+  groupCode: string | null;
+  districtName: string;
+  totalFarmers: number;
+  /** Petani unik terlatih per paket. */
+  byPackage: Record<TrainingPackageCode, number>;
+  /** Petani unik yang ikut paket apa pun. */
+  anyPackage: number;
+}
+
+/** Satu bucket chart tren (bulan bila tahun dipilih, tahun bila "semua"). */
+export interface TrainingTrendBucket {
+  label: string;
+  activities: number;
+  attendance: number;
+  byPackage: Record<TrainingPackageCode, number>;
+}
+
+/** Ringkasan efektivitas pre/post-test per paket. */
+export interface TrainingScoreRow {
+  packageCode: TrainingPackageCode;
+  /** Peserta dengan pre & post terisi. */
+  scored: number;
+  /** Kehadiran total paket ini (pembanding kelengkapan skor). */
+  attendance: number;
+  avgPre: number;
+  avgPost: number;
+  gain: number;
+  /** Post < pre — hampir selalu salah input, bukan hasil belajar. */
+  declined: number;
+  /** Post == pre. */
+  unchanged: number;
+}
+
+/** Temuan kualitas data — angkanya deep-link ke Master Data Pelatihan. */
+export interface TrainingQualityStats {
+  activitiesWithoutEvidence: number;
+  activitiesWithoutLocation: number;
+  activitiesWithoutParticipants: number;
+  participantsWithoutScores: number;
+  totalActivities: number;
+  totalAttendance: number;
+}
+
+/** Baris modal drill-down "belum dilatih" — tanpa NIK, hanya untuk daftar undangan. */
+export interface UntrainedFarmer {
+  id: string;
+  name: string;
+  farmerId: string;
+  gender: "M" | "F";
+}
+
+export interface TrainingDashboardView {
+  data: TrainingDashboardData;
+  generatedAt: string;
+}

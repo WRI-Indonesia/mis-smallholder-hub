@@ -11,8 +11,21 @@ import { toggleLandParcelActive } from "@/server/actions/land-parcel";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel";
@@ -25,7 +38,16 @@ interface Props {
   isSuperAdmin: boolean;
 }
 
-export function ParcelListClient({ initialParcels, farmers, farmerGroups, permissions, isSuperAdmin }: Props) {
+const formatArea = (n: number) =>
+  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+export function ParcelListClient({
+  initialParcels,
+  farmers,
+  farmerGroups,
+  permissions,
+  isSuperAdmin,
+}: Props) {
   const [groupFilter, setGroupFilter] = useState("all");
   const [groupComboOpen, setGroupComboOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("active");
@@ -36,8 +58,13 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
   const filtered = (initialParcels as LandParcel[]).filter((p) => {
     const matchGroup = groupFilter === "all" || p.farmer.farmerGroup.id === groupFilter;
     // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
-    const matchStatus =
-      !isSuperAdmin ? true : statusFilter === "all" ? true : statusFilter === "active" ? p.isActive : !p.isActive;
+    const matchStatus = !isSuperAdmin
+      ? true
+      : statusFilter === "all"
+        ? true
+        : statusFilter === "active"
+          ? p.isActive
+          : !p.isActive;
     return matchGroup && matchStatus;
   });
 
@@ -108,7 +135,7 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
       label: "Luas (ha)",
       sortable: true,
       cellClassName: "text-sm tabular-nums text-right",
-      render: (row) => row.area !== null ? row.area.toFixed(2) : "—",
+      render: (row) => (row.area !== null ? formatArea(row.area) : "—"),
     },
     {
       key: "landStatus",
@@ -136,7 +163,11 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
       label: "PSR",
       sortable: true,
       render: (row) =>
-        row.isPsr ? <Badge className="bg-amber-100 text-amber-800 border-amber-200">PSR</Badge> : <span className="text-sm text-muted-foreground">Non-PSR</span>,
+        row.isPsr ? (
+          <Badge className="bg-amber-100 text-amber-800 border-amber-200">PSR</Badge>
+        ) : (
+          <span className="text-sm text-muted-foreground">Non-PSR</span>
+        ),
     },
     {
       key: "plantingYear",
@@ -222,7 +253,7 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      groupFilter === "all" ? "opacity-100" : "opacity-0"
+                      groupFilter === "all" ? "opacity-100" : "opacity-0",
                     )}
                   />
                   Semua Lembaga Petani
@@ -239,7 +270,7 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        groupFilter === g.id ? "opacity-100" : "opacity-0"
+                        groupFilter === g.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {g.name}
@@ -268,7 +299,14 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
   );
 
   const toolbarRight = permissions.includes("CREATE") ? (
-    <Button size="sm" onClick={() => { setEditParcel(null); setShowForm(true); }} className="h-9">
+    <Button
+      size="sm"
+      onClick={() => {
+        setEditParcel(null);
+        setShowForm(true);
+      }}
+      className="h-9"
+    >
       <Plus className="h-4 w-4 mr-2" />
       Tambah Lahan
     </Button>
@@ -322,7 +360,10 @@ export function ParcelListClient({ initialParcels, farmers, farmerGroups, permis
       <ParcelFormModal
         key={editParcel?.id ?? "new"}
         open={showForm}
-        onClose={() => { setShowForm(false); setEditParcel(null); }}
+        onClose={() => {
+          setShowForm(false);
+          setEditParcel(null);
+        }}
         parcel={editParcel}
         farmers={farmers}
       />

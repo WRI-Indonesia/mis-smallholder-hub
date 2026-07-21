@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
       test: /\.csv$/,
       type: "asset/source",
     });
+    // Konten Bantuan (#184): file .md di-bundle sebagai string agar ikut
+    // terbawa saat build/deploy (tanpa baca filesystem saat runtime).
+    config.module.rules.push({
+      test: /\.md$/,
+      type: "asset/source",
+    });
     return config;
   },
 };

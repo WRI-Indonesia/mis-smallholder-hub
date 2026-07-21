@@ -4,11 +4,7 @@ import { getProductionRecordById } from "@/server/actions/production";
 import { getFarmerOptions } from "@/lib/select-options";
 import { ProductionFormClient } from "../../components/production-form-client";
 
-export default async function EditProductionPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EditProductionPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission("master-data-production");
 
   const { id } = await params;

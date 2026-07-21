@@ -11,8 +11,21 @@ import { toggleFarmerActive } from "@/server/actions/farmer";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { maskNik, maskBirthDate } from "@/lib/mask";
 
@@ -59,7 +72,15 @@ interface Props {
   isSuperAdmin: boolean;
 }
 
-export function FarmerListClient({ initialFarmers, farmerGroups, districts, permissions, isSuperAdmin }: Props) {
+const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
+
+export function FarmerListClient({
+  initialFarmers,
+  farmerGroups,
+  districts,
+  permissions,
+  isSuperAdmin,
+}: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [districtComboOpen, setDistrictComboOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState("all");
@@ -73,8 +94,13 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
     const matchGroup = groupFilter === "all" || f.farmerGroupId === groupFilter;
     const matchDistrict = districtFilter === "all" || f.farmerGroup.district.id === districtFilter;
     // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
-    const matchStatus =
-      !isSuperAdmin ? true : statusFilter === "all" ? true : statusFilter === "active" ? f.isActive : !f.isActive;
+    const matchStatus = !isSuperAdmin
+      ? true
+      : statusFilter === "all"
+        ? true
+        : statusFilter === "active"
+          ? f.isActive
+          : !f.isActive;
     return matchGroup && matchDistrict && matchStatus;
   });
 
@@ -106,9 +132,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
       label: "L/P",
       sortable: true,
       render: (row) => (
-        <Badge variant="secondary">
-          {row.gender === "M" ? "Laki-laki" : "Perempuan"}
-        </Badge>
+        <Badge variant="secondary">{row.gender === "M" ? "Laki-laki" : "Perempuan"}</Badge>
       ),
     },
     {
@@ -227,7 +251,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      districtFilter === "all" ? "opacity-100" : "opacity-0"
+                      districtFilter === "all" ? "opacity-100" : "opacity-0",
                     )}
                   />
                   Semua Distrik
@@ -244,7 +268,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        districtFilter === d.id ? "opacity-100" : "opacity-0"
+                        districtFilter === d.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {d.name}
@@ -290,7 +314,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      groupFilter === "all" ? "opacity-100" : "opacity-0"
+                      groupFilter === "all" ? "opacity-100" : "opacity-0",
                     )}
                   />
                   Semua Lembaga Petani
@@ -307,7 +331,7 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        groupFilter === g.id ? "opacity-100" : "opacity-0"
+                        groupFilter === g.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {g.name}
@@ -336,7 +360,14 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
   );
 
   const toolbarRight = permissions.includes("CREATE") ? (
-    <Button size="sm" onClick={() => { setEditFarmer(null); setShowForm(true); }} className="h-9">
+    <Button
+      size="sm"
+      onClick={() => {
+        setEditFarmer(null);
+        setShowForm(true);
+      }}
+      className="h-9"
+    >
       <Plus className="h-4 w-4 mr-2" />
       Tambah Petani
     </Button>
@@ -353,8 +384,12 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Lembaga Petani</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalKelompokTani}</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Lembaga Petani
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalKelompokTani)}
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Building className="h-5 w-5" />
@@ -365,8 +400,12 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Petani</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPetani} Petani</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Petani
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalPetani)} Petani
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Users className="h-5 w-5" />
@@ -377,8 +416,12 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Petani Laki-laki</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalLakiLaki} Petani</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Petani Laki-laki
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalLakiLaki)} Petani
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <User className="h-5 w-5" />
@@ -389,8 +432,12 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Petani Perempuan</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{totalPerempuan} Petani</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Petani Perempuan
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalPerempuan)} Petani
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <UserCheck className="h-5 w-5" />
@@ -439,7 +486,10 @@ export function FarmerListClient({ initialFarmers, farmerGroups, districts, perm
       <FarmerFormModal
         key={editFarmer?.id ?? "new"}
         open={showForm}
-        onClose={() => { setShowForm(false); setEditFarmer(null); }}
+        onClose={() => {
+          setShowForm(false);
+          setEditFarmer(null);
+        }}
         farmer={editFarmer}
         farmerGroups={farmerGroups}
       />

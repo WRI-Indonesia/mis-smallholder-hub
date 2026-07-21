@@ -18,12 +18,10 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
     sources: {
       "google-hybrid": {
         type: "raster",
-        tiles: [
-          "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-        ],
+        tiles: ["https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
         tileSize: 256,
-        attribution: "Map data &copy; Google"
-      }
+        attribution: "Map data &copy; Google",
+      },
     },
     layers: [
       {
@@ -31,21 +29,19 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
         type: "raster",
         source: "google-hybrid",
         minzoom: 0,
-        maxzoom: 20
-      }
-    ]
+        maxzoom: 20,
+      },
+    ],
   },
   satellite: {
     version: 8,
     sources: {
       "google-satellite": {
         type: "raster",
-        tiles: [
-          "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-        ],
+        tiles: ["https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"],
         tileSize: 256,
-        attribution: "Map data &copy; Google"
-      }
+        attribution: "Map data &copy; Google",
+      },
     },
     layers: [
       {
@@ -53,21 +49,20 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
         type: "raster",
         source: "google-satellite",
         minzoom: 0,
-        maxzoom: 20
-      }
-    ]
+        maxzoom: 20,
+      },
+    ],
   },
   light: {
     version: 8,
     sources: {
       "carto-light": {
         type: "raster",
-        tiles: [
-          "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-        ],
+        tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
         tileSize: 256,
-        attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors &copy; <a href=\"https://carto.com/attributions\">CARTO</a>"
-      }
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      },
     },
     layers: [
       {
@@ -75,21 +70,20 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
         type: "raster",
         source: "carto-light",
         minzoom: 0,
-        maxzoom: 20
-      }
-    ]
+        maxzoom: 20,
+      },
+    ],
   },
   dark: {
     version: 8,
     sources: {
       "carto-dark": {
         type: "raster",
-        tiles: [
-          "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-        ],
+        tiles: ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
         tileSize: 256,
-        attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors &copy; <a href=\"https://carto.com/attributions\">CARTO</a>"
-      }
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      },
     },
     layers: [
       {
@@ -97,23 +91,26 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
         type: "raster",
         source: "carto-dark",
         minzoom: 0,
-        maxzoom: 20
-      }
-    ]
-  }
+        maxzoom: 20,
+      },
+    ],
+  },
 };
 
 export function ParcelMapView({ geometry }: Props) {
   const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
 
-  const parsedGeometry = typeof geometry === "string" ? (() => {
-    try {
-      return JSON.parse(geometry);
-    } catch (e) {
-      console.error("Failed to parse geometry string:", e);
-      return null;
-    }
-  })() : geometry;
+  const parsedGeometry =
+    typeof geometry === "string"
+      ? (() => {
+          try {
+            return JSON.parse(geometry);
+          } catch (e) {
+            console.error("Failed to parse geometry string:", e);
+            return null;
+          }
+        })()
+      : geometry;
 
   const [viewport, setViewport] = useState({
     longitude: 101.8,
@@ -123,7 +120,7 @@ export function ParcelMapView({ geometry }: Props) {
 
   function zoomToLahan() {
     if (!parsedGeometry) return;
-    
+
     let coords = parsedGeometry.coordinates;
     if (parsedGeometry.type === "Polygon") {
       coords = parsedGeometry.coordinates[0];
@@ -180,7 +177,8 @@ export function ParcelMapView({ geometry }: Props) {
       <div className="h-64 flex items-center justify-center bg-muted/30 border rounded-md text-muted-foreground text-sm flex-col gap-2 p-4 text-center">
         <p className="font-medium">Tidak ada data spasial (geometri) untuk lahan ini</p>
         <p className="text-xs text-muted-foreground max-w-md">
-          Geometri kosong atau koordinat gagal diurai dengan benar saat bulk upload (sebelum perbaikan proyeksi). Silakan upload ulang shapefile.
+          Geometri kosong atau koordinat gagal diurai dengan benar saat bulk upload (sebelum
+          perbaikan proyeksi). Silakan upload ulang shapefile.
         </p>
       </div>
     );

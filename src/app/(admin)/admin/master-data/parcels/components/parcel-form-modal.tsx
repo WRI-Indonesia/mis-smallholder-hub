@@ -6,12 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -20,7 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { createLandParcel, updateLandParcel } from "@/server/actions/land-parcel";
 import { toast } from "sonner";
 import { Loader2, Check, ChevronsUpDown } from "lucide-react";
@@ -116,7 +118,9 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
                     className="w-full justify-between h-9 font-normal text-left"
                   >
                     {selectedFarmerId ? (
-                      <span>{currentFarmer?.name} ({currentFarmer?.farmerId})</span>
+                      <span>
+                        {currentFarmer?.name} ({currentFarmer?.farmerId})
+                      </span>
                     ) : (
                       <span className="text-muted-foreground">Pilih Petani</span>
                     )}
@@ -142,7 +146,7 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              selectedFarmerId === f.id ? "opacity-100" : "opacity-0"
+                              selectedFarmerId === f.id ? "opacity-100" : "opacity-0",
                             )}
                           />
                           {f.name} ({f.farmerId})
@@ -179,7 +183,12 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
 
           <div className="space-y-2">
             <Label htmlFor="blok">Blok</Label>
-            <Input id="blok" name="blok" defaultValue={parcel?.blok ?? ""} placeholder="Blok kebun" />
+            <Input
+              id="blok"
+              name="blok"
+              defaultValue={parcel?.blok ?? ""}
+              placeholder="Blok kebun"
+            />
             {errors.blok && <p className="text-sm text-destructive">{errors.blok[0]}</p>}
           </div>
 
@@ -196,11 +205,18 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
                   <SelectItem value="Shared">Bagi Hasil (Shared)</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.landStatus && <p className="text-sm text-destructive">{errors.landStatus[0]}</p>}
+              {errors.landStatus && (
+                <p className="text-sm text-destructive">{errors.landStatus[0]}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="cropType">Komoditas</Label>
-              <Input id="cropType" name="cropType" defaultValue={parcel?.cropType ?? ""} placeholder="Contoh: Kelapa Sawit" />
+              <Input
+                id="cropType"
+                name="cropType"
+                defaultValue={parcel?.cropType ?? ""}
+                placeholder="Contoh: Kelapa Sawit"
+              />
               {errors.cropType && <p className="text-sm text-destructive">{errors.cropType[0]}</p>}
             </div>
           </div>
@@ -208,7 +224,12 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="species">Species</Label>
-              <Input id="species" name="species" defaultValue={parcel?.species ?? ""} placeholder="Contoh: Elaeis guineensis" />
+              <Input
+                id="species"
+                name="species"
+                defaultValue={parcel?.species ?? ""}
+                placeholder="Contoh: Elaeis guineensis"
+              />
               {errors.species && <p className="text-sm text-destructive">{errors.species[0]}</p>}
             </div>
             <div className="space-y-2">
@@ -238,7 +259,9 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
                 placeholder="Contoh: 2018"
                 defaultValue={parcel?.plantingYear ?? ""}
               />
-              {errors.plantingYear && <p className="text-sm text-destructive">{errors.plantingYear[0]}</p>}
+              {errors.plantingYear && (
+                <p className="text-sm text-destructive">{errors.plantingYear[0]}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Revisi</Label>
@@ -258,7 +281,9 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
                 defaultValue={parcel?.subGroupLv1 ?? ""}
                 placeholder="Nama Gapoktan/KUD"
               />
-              {errors.subGroupLv1 && <p className="text-sm text-destructive">{errors.subGroupLv1[0]}</p>}
+              {errors.subGroupLv1 && (
+                <p className="text-sm text-destructive">{errors.subGroupLv1[0]}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="subGroupLv2">Kelompok Tani</Label>
@@ -268,13 +293,20 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
                 defaultValue={parcel?.subGroupLv2 ?? ""}
                 placeholder="Nama Kelompok Tani"
               />
-              {errors.subGroupLv2 && <p className="text-sm text-destructive">{errors.subGroupLv2[0]}</p>}
+              {errors.subGroupLv2 && (
+                <p className="text-sm text-destructive">{errors.subGroupLv2[0]}</p>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Catatan</Label>
-            <Textarea id="notes" name="notes" defaultValue={parcel?.notes ?? ""} placeholder="Catatan tambahan..." />
+            <Textarea
+              id="notes"
+              name="notes"
+              defaultValue={parcel?.notes ?? ""}
+              placeholder="Catatan tambahan..."
+            />
             {errors.notes && <p className="text-sm text-destructive">{errors.notes[0]}</p>}
           </div>
 

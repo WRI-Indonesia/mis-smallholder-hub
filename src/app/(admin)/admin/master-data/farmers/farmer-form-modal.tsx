@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -19,7 +14,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { createFarmer, updateFarmer } from "@/server/actions/farmer";
 import { toast } from "sonner";
 import { Loader2, Check, ChevronsUpDown } from "lucide-react";
@@ -186,7 +188,7 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
                             <Check
                               className={cn(
                                 "mr-2 h-4 w-4",
-                                farmerGroupId === g.id ? "opacity-100" : "opacity-0"
+                                farmerGroupId === g.id ? "opacity-100" : "opacity-0",
                               )}
                             />
                             {g.name}
@@ -235,7 +237,9 @@ export function FarmerFormModal({ open, onClose, farmer, farmerGroups }: Props) 
               placeholder="Contoh: 2020"
               defaultValue={farmer?.joinedYear ?? ""}
             />
-            {errors.joinedYear && <p className="text-sm text-destructive">{errors.joinedYear[0]}</p>}
+            {errors.joinedYear && (
+              <p className="text-sm text-destructive">{errors.joinedYear[0]}</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

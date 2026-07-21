@@ -8,10 +8,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { createProductionRecord, updateProductionRecord, getFarmerParcels } from "@/server/actions/production";
+import {
+  createProductionRecord,
+  updateProductionRecord,
+  getFarmerParcels,
+} from "@/server/actions/production";
 import { toast } from "sonner";
 import { Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,19 +56,19 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [selectedFarmerId, setSelectedFarmerId] = useState(initialRecord?.farmerId ?? "");
   const [farmerComboOpen, setFarmerComboOpen] = useState(false);
-  
+
   const [parcels, setParcels] = useState<Awaited<ReturnType<typeof getFarmerParcels>>>([]);
   const [selectedParcelId, setSelectedParcelId] = useState<string>(initialRecord?.parcelId ?? "");
   const [isLoadingParcels, setIsLoadingParcels] = useState(false);
 
   const [period, setPeriod] = useState(initialRecord?.period ?? "");
   const [harvestDate, setHarvestDate] = useState<Date>(
-    initialRecord?.harvestDate ? new Date(initialRecord.harvestDate) : new Date()
+    initialRecord?.harvestDate ? new Date(initialRecord.harvestDate) : new Date(),
   );
   const [harvestNumber, setHarvestNumber] = useState<string>(
-    initialRecord?.harvestNumber ? String(initialRecord.harvestNumber) : "1"
+    initialRecord?.harvestNumber ? String(initialRecord.harvestNumber) : "1",
   );
-  
+
   const router = useRouter();
   const isEdit = !!initialRecord;
 
@@ -85,7 +102,20 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
     const date = new Date(d);
     if (isNaN(date.getTime())) return "Pilih Tanggal";
     const day = String(date.getDate()).padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
     const month = months[date.getMonth()];
     return `${day} ${month} ${date.getFullYear()}`;
   };
@@ -129,7 +159,11 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
     }
 
     toast.success(isEdit ? "Data produksi berhasil diubah" : "Data produksi berhasil ditambahkan");
-    router.push(isEdit ? `/admin/master-data/production/${initialRecord!.id}` : "/admin/master-data/production");
+    router.push(
+      isEdit
+        ? `/admin/master-data/production/${initialRecord!.id}`
+        : "/admin/master-data/production",
+    );
     router.refresh();
   }
 
@@ -139,7 +173,7 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
         {/* Section 1: Farmer & Lahan Info */}
         <div className="space-y-4">
           <h2 className="text-lg font-semibold border-b pb-2">Informasi Petani & Lahan</h2>
-          
+
           <div className="space-y-2 flex flex-col">
             <Label>Petani</Label>
             {isEdit ? (
@@ -160,7 +194,9 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
                       className="w-full justify-between h-10 font-normal text-left"
                     >
                       {selectedFarmerId ? (
-                        <span>{currentFarmer?.name} ({currentFarmer?.farmerId})</span>
+                        <span>
+                          {currentFarmer?.name} ({currentFarmer?.farmerId})
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">Pilih Petani</span>
                       )}
@@ -187,7 +223,7 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
                             <Check
                               className={cn(
                                 "mr-2 h-4 w-4",
-                                selectedFarmerId === f.id ? "opacity-100" : "opacity-0"
+                                selectedFarmerId === f.id ? "opacity-100" : "opacity-0",
                               )}
                             />
                             {f.name} ({f.farmerId})
@@ -207,7 +243,9 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
               disabled={!selectedFarmerId || isLoadingParcels}
             >
               <SelectTrigger>
-                <SelectValue placeholder={isLoadingParcels ? "Memuat lahan..." : "— Tidak terpetakan —"} />
+                <SelectValue
+                  placeholder={isLoadingParcels ? "Memuat lahan..." : "— Tidak terpetakan —"}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">— Tidak terpetakan —</SelectItem>
@@ -265,7 +303,9 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
                   />
                 </PopoverContent>
               </Popover>
-              {errors.harvestDate && <p className="text-sm text-destructive">{errors.harvestDate[0]}</p>}
+              {errors.harvestDate && (
+                <p className="text-sm text-destructive">{errors.harvestDate[0]}</p>
+              )}
             </div>
           </div>
 
@@ -283,7 +323,9 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
                   <SelectItem value="4">Panen Ke-4</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.harvestNumber && <p className="text-sm text-destructive">{errors.harvestNumber[0]}</p>}
+              {errors.harvestNumber && (
+                <p className="text-sm text-destructive">{errors.harvestNumber[0]}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -318,7 +360,13 @@ export function ProductionFormClient({ farmers, initialRecord }: Props) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(isEdit ? `/admin/master-data/production/${initialRecord!.id}` : "/admin/master-data/production")}
+            onClick={() =>
+              router.push(
+                isEdit
+                  ? `/admin/master-data/production/${initialRecord!.id}`
+                  : "/admin/master-data/production",
+              )
+            }
           >
             Batal
           </Button>

@@ -10,8 +10,21 @@ import { toggleProductionRecordActive } from "@/server/actions/production";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +55,12 @@ interface Props {
   isSuperAdmin: boolean;
 }
 
-export function ProductionListClient({ initialRecords, farmerGroups, permissions, isSuperAdmin }: Props) {
+export function ProductionListClient({
+  initialRecords,
+  farmerGroups,
+  permissions,
+  isSuperAdmin,
+}: Props) {
   const [farmerGroupFilter, setFarmerGroupFilter] = useState("all");
   const [farmerGroupComboOpen, setFarmerGroupComboOpen] = useState(false);
   const [periodFilter, setPeriodFilter] = useState("");
@@ -57,17 +75,16 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
       hasParcelFilter === "all"
         ? true
         : hasParcelFilter === "true"
-        ? r.parcelId !== null
-        : r.parcelId === null;
+          ? r.parcelId !== null
+          : r.parcelId === null;
     // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
-    const matchStatus =
-      !isSuperAdmin
-        ? true
-        : statusFilter === "all"
+    const matchStatus = !isSuperAdmin
+      ? true
+      : statusFilter === "all"
         ? true
         : statusFilter === "active"
-        ? r.isActive === true
-        : r.isActive === false;
+          ? r.isActive === true
+          : r.isActive === false;
 
     return matchGroup && matchPeriod && matchParcel && matchStatus;
   });
@@ -124,8 +141,18 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
       render: (row) => {
         const [year, month] = row.period.split("-");
         const months = [
-          "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-          "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+          "Januari",
+          "Februari",
+          "Maret",
+          "April",
+          "Mei",
+          "Juni",
+          "Juli",
+          "Agustus",
+          "September",
+          "Oktober",
+          "November",
+          "Desember",
         ];
         return `${months[parseInt(month, 10) - 1]} ${year}`;
       },
@@ -145,9 +172,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
       label: "Panen Ke-",
       sortable: true,
       cellClassName: "text-sm",
-      render: (row) => (
-        <Badge variant="secondary">Ke-{row.harvestNumber}</Badge>
-      ),
+      render: (row) => <Badge variant="secondary">Ke-{row.harvestNumber}</Badge>,
     },
     {
       key: "yieldKg",
@@ -221,7 +246,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      farmerGroupFilter === "all" ? "opacity-100" : "opacity-0"
+                      farmerGroupFilter === "all" ? "opacity-100" : "opacity-0",
                     )}
                   />
                   Semua Lembaga Petani
@@ -238,7 +263,7 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        farmerGroupFilter === g.id ? "opacity-100" : "opacity-0"
+                        farmerGroupFilter === g.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {g.name}
@@ -287,7 +312,11 @@ export function ProductionListClient({ initialRecords, farmerGroups, permissions
   );
 
   const toolbarRight = permissions.includes("CREATE") ? (
-    <Button size="sm" onClick={() => router.push("/admin/master-data/production/new")} className="h-9">
+    <Button
+      size="sm"
+      onClick={() => router.push("/admin/master-data/production/new")}
+      className="h-9"
+    >
       <Plus className="h-4 w-4 mr-2" />
       Tambah Data
     </Button>

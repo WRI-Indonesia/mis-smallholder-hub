@@ -24,16 +24,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Download,
-  Database,
-  ArrowRight,
-  RefreshCw,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
 import { parseShapefile, bulkCreateLandParcels } from "@/server/actions/bulk-upload-parcel";
-import { PARCEL_AUTO_MATCH_RULES, autoMatchColumns, normalizeAttr } from "@/lib/parcel-bulk-mapping";
+import {
+  PARCEL_AUTO_MATCH_RULES,
+  autoMatchColumns,
+  normalizeAttr,
+} from "@/lib/parcel-bulk-mapping";
 import { ParcelBulkUploadMap } from "./parcel-bulk-upload-map";
 
 interface FarmerMapping {
@@ -102,7 +99,12 @@ const TARGET_FIELDS = [
   { key: "parcelId", label: "ID Lahan", required: true, desc: "ID unik Lahan per petani" },
   { key: "farmerId", label: "ID Petani", required: true, desc: "ID Petani WRI (e.g. FARMER-001)" },
   { key: "area", label: "Luas (ha)", required: false, desc: "Angka desimal luas hektar" },
-  { key: "landStatus", label: "Status Kepemilikan", required: false, desc: "e.g. Owned, Leased, Shared" },
+  {
+    key: "landStatus",
+    label: "Status Kepemilikan",
+    required: false,
+    desc: "e.g. Owned, Leased, Shared",
+  },
   { key: "cropType", label: "Komoditas", required: false, desc: "e.g. Kelapa Sawit, Karet" },
   { key: "plantingYear", label: "Tahun Tanam", required: false, desc: "Tahun 1900-2100" },
   { key: "subGroupLv1", label: "Gapoktan/KUD", required: false, desc: "Nama Gapoktan/KUD" },
@@ -158,7 +160,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
             const detectedHeaders = Object.keys(res.features[0].properties);
             setHeaders(detectedHeaders);
             autoMatch(detectedHeaders);
-            toast.success(`Berhasil mengurai shapefile: ${res.features.length} geometri lahan terdeteksi`);
+            toast.success(
+              `Berhasil mengurai shapefile: ${res.features.length} geometri lahan terdeteksi`,
+            );
           } else {
             toast.error("Shapefile tidak mengandung data geometri/fitur");
           }
@@ -178,11 +182,19 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
 
   function autoMatch(detectedHeaders: string[]) {
     setMapping(
-      autoMatchColumns(detectedHeaders, TARGET_FIELDS.map((f) => f.key), AUTO_MATCH_RULES),
+      autoMatchColumns(
+        detectedHeaders,
+        TARGET_FIELDS.map((f) => f.key),
+        AUTO_MATCH_RULES,
+      ),
     );
   }
 
-  function validateRow(feat: ParcelFeature, idx: number, duplicatesInFile: Set<string>): { data: ParcelValidatedRow; errors: string[] } {
+  function validateRow(
+    feat: ParcelFeature,
+    idx: number,
+    duplicatesInFile: Set<string>,
+  ): { data: ParcelValidatedRow; errors: string[] } {
     const errors: string[] = [];
     const props = feat.properties;
     const normalized: ParcelValidatedRow = {
@@ -207,7 +219,8 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     // Original values kept for download
     for (const f of TARGET_FIELDS) {
       const mappedCol = mapping[f.key];
-      normalized._original[f.key] = (mappedCol ? props[mappedCol] : "") as string | number | null | undefined;
+      normalized._original[f.key] = (mappedCol ? props[mappedCol] : "") as
+        string | number | null | undefined;
     }
 
     // 1. Farmer ID Mapping
@@ -218,7 +231,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     if (!rawFarmerId) {
       errors.push("ID Petani wajib diisi");
     } else {
-      const matchFarmer = farmers.find((f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase());
+      const matchFarmer = farmers.find(
+        (f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase(),
+      );
       if (matchFarmer) {
         mappedFarmerDbId = matchFarmer.id;
         mappedFarmerName = matchFarmer.name;
@@ -244,11 +259,15 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       // Check duplicate in database
       if (mappedFarmerDbId) {
         const dbDup = existingParcels.find(
-          (ep) => ep.farmerId === mappedFarmerDbId && ep.parcelId.toLowerCase() === rawParcelId.toLowerCase()
+          (ep) =>
+            ep.farmerId === mappedFarmerDbId &&
+            ep.parcelId.toLowerCase() === rawParcelId.toLowerCase(),
         );
         if (dbDup) {
           if (isGeometryEqual(dbDup.geometry, feat.geometry)) {
-            errors.push(`ID Lahan "${rawParcelId}" sudah terdaftar dengan polygon yang sama di database`);
+            errors.push(
+              `ID Lahan "${rawParcelId}" sudah terdaftar dengan polygon yang sama di database`,
+            );
           } else {
             normalized.revision = dbDup.revision + 1;
             normalized._isNewRevision = true;
@@ -311,12 +330,19 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     normalized.notes = props[mapping["notes"]]?.toString().trim() || null;
 
     // 8b. Sub-kelompok interim + blok (#150) — opsional, trim, kosong → null.
-    normalized.subGroupLv1 = normalizeAttr(mapping["subGroupLv1"] ? props[mapping["subGroupLv1"]] : null);
-    normalized.subGroupLv2 = normalizeAttr(mapping["subGroupLv2"] ? props[mapping["subGroupLv2"]] : null);
+    normalized.subGroupLv1 = normalizeAttr(
+      mapping["subGroupLv1"] ? props[mapping["subGroupLv1"]] : null,
+    );
+    normalized.subGroupLv2 = normalizeAttr(
+      mapping["subGroupLv2"] ? props[mapping["subGroupLv2"]] : null,
+    );
     normalized.blok = normalizeAttr(mapping["blok"] ? props[mapping["blok"]] : null);
 
     // 9. Geometry validation
-    if (!feat.geometry || (feat.geometry.type !== "Polygon" && feat.geometry.type !== "MultiPolygon")) {
+    if (
+      !feat.geometry ||
+      (feat.geometry.type !== "Polygon" && feat.geometry.type !== "MultiPolygon")
+    ) {
       errors.push("Geometri tidak valid (Harus bertipe Polygon atau MultiPolygon)");
     }
 
@@ -342,7 +368,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       const rawParcelId = feat.properties[mapping["parcelId"]]?.toString().trim();
       if (rawFarmerId && rawParcelId) {
         // Find matching farmer DB ID if possible
-        const matchFarmer = farmers.find((f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase());
+        const matchFarmer = farmers.find(
+          (f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase(),
+        );
         const farmerKey = matchFarmer ? matchFarmer.id : rawFarmerId;
         const key = `${farmerKey}::${rawParcelId.toLowerCase()}`;
         if (seen.has(key)) {
@@ -411,7 +439,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     });
 
     const buffer = await exportWorkbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -471,7 +501,8 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
         <div className="flex flex-col gap-2">
           <Label className="text-base font-semibold">1. Pilih ZIP Shapefile</Label>
           <p className="text-xs text-muted-foreground">
-            Unggah arsip ZIP (.zip) yang berisi berkas .shp, .dbf, .shx, dan .prj dari shapefile lahan.
+            Unggah arsip ZIP (.zip) yang berisi berkas .shp, .dbf, .shx, dan .prj dari shapefile
+            lahan.
           </p>
           <div className="flex items-center gap-4 mt-2">
             <Input
@@ -561,7 +592,8 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
             <div className="space-y-1">
               <h3 className="text-lg font-semibold">3. Hasil Validasi & Tinjauan</h3>
               <p className="text-sm text-muted-foreground">
-                Tinjau kembali hasil pemetaan dan validasi spasial/atribut sebelum menyimpannya ke database.
+                Tinjau kembali hasil pemetaan dan validasi spasial/atribut sebelum menyimpannya ke
+                database.
               </p>
               <div className="flex items-center gap-4 mt-2 pt-1 text-sm">
                 <span className="flex items-center gap-1.5 text-emerald-600 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
@@ -576,7 +608,11 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
             </div>
 
             <div className="flex gap-2">
-              <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => setFilter("all")}>
+              <Button
+                variant={filter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter("all")}
+              >
                 Semua ({validatedData.length})
               </Button>
               <Button
@@ -600,7 +636,12 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleDownload("all")} className="h-9">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownload("all")}
+                className="h-9"
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Download Semua Data
               </Button>
@@ -663,14 +704,22 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                 ) : (
                   filteredData.slice(0, 100).map((row, idx) => (
                     <TableRow key={idx} className={row._isValid ? "" : "bg-destructive/5"}>
-                      <TableCell className="font-mono text-muted-foreground">{row._rowNum}</TableCell>
-                      <TableCell className="font-mono">{row.parcelId || row._original.parcelId || "—"}</TableCell>
+                      <TableCell className="font-mono text-muted-foreground">
+                        {row._rowNum}
+                      </TableCell>
+                      <TableCell className="font-mono">
+                        {row.parcelId || row._original.parcelId || "—"}
+                      </TableCell>
                       <TableCell className="font-mono">{row._farmerIdRaw || "—"}</TableCell>
                       <TableCell className="font-medium">{row._farmerName || "—"}</TableCell>
-                      <TableCell className="font-mono text-right">{row.area !== null ? row.area.toFixed(2) : "—"}</TableCell>
+                      <TableCell className="font-mono text-right">
+                        {row.area !== null ? row.area.toFixed(2) : "—"}
+                      </TableCell>
                       <TableCell>{row.landStatus || row._original.landStatus || "—"}</TableCell>
                       <TableCell>{row.cropType || row._original.cropType || "—"}</TableCell>
-                      <TableCell className="font-mono">{row.plantingYear || row._original.plantingYear || "—"}</TableCell>
+                      <TableCell className="font-mono">
+                        {row.plantingYear || row._original.plantingYear || "—"}
+                      </TableCell>
                       <TableCell>{row.subGroupLv1 || "—"}</TableCell>
                       <TableCell>{row.subGroupLv2 || "—"}</TableCell>
                       <TableCell>{row.blok || "—"}</TableCell>
@@ -688,7 +737,9 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-destructive font-medium">{row._errors.join("; ") || "—"}</TableCell>
+                      <TableCell className="text-sm text-destructive font-medium">
+                        {row._errors.join("; ") || "—"}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

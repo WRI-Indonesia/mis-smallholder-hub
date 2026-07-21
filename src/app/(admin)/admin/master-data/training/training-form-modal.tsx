@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -23,7 +18,14 @@ import { uploadTrainingEvidence } from "@/server/actions/upload";
 import { toast } from "sonner";
 import { Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { TRAINING_CATEGORY_LABELS } from "./training-list-client";
 import { Calendar } from "@/components/ui/calendar";
@@ -64,7 +66,7 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
   const [farmerGroupId, setFarmerGroupId] = useState(activity?.farmerGroupId ?? "");
   const [packageId, setPackageId] = useState(activity?.packageId ?? packages[0]?.id ?? "");
   const [trainingDate, setTrainingDate] = useState<Date>(
-    activity?.trainingDate ? new Date(activity.trainingDate) : new Date()
+    activity?.trainingDate ? new Date(activity.trainingDate) : new Date(),
   );
   const [comboOpen, setComboOpen] = useState(false);
   const router = useRouter();
@@ -75,7 +77,20 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
     const date = new Date(d);
     if (isNaN(date.getTime())) return "Pilih Tanggal";
     const day = String(date.getDate()).padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
     const month = months[date.getMonth()];
     return `${day}/${month}/${date.getFullYear()}`;
   };
@@ -172,7 +187,9 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
 
         const uploadRes = await uploadTrainingEvidence(uploadForm);
         if (!uploadRes.success) {
-          toast.warning("Pelatihan berhasil dibuat, tetapi gagal mengupload evidence: " + uploadRes.error);
+          toast.warning(
+            "Pelatihan berhasil dibuat, tetapi gagal mengupload evidence: " + uploadRes.error,
+          );
         } else {
           // Update the training activity with the uploaded key/name
           await updateTrainingActivity({
@@ -262,7 +279,7 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              farmerGroupId === g.id ? "opacity-100" : "opacity-0"
+                              farmerGroupId === g.id ? "opacity-100" : "opacity-0",
                             )}
                           />
                           {g.name}
@@ -304,7 +321,9 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
                   />
                 </PopoverContent>
               </Popover>
-              {errors.trainingDate && <p className="text-sm text-destructive">{errors.trainingDate[0]}</p>}
+              {errors.trainingDate && (
+                <p className="text-sm text-destructive">{errors.trainingDate[0]}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="location">Lokasi</Label>
@@ -329,10 +348,13 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
             />
             {activity?.evidenceName && (
               <p className="text-xs text-muted-foreground mt-1">
-                File saat ini: <span className="font-medium text-primary">{activity.evidenceName}</span>
+                File saat ini:{" "}
+                <span className="font-medium text-primary">{activity.evidenceName}</span>
               </p>
             )}
-            {errors.evidence && <p className="text-sm text-destructive mt-1">{errors.evidence[0]}</p>}
+            {errors.evidence && (
+              <p className="text-sm text-destructive mt-1">{errors.evidence[0]}</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

@@ -178,7 +178,9 @@ export function AddParticipantsModal({
         let sheetHeaders: string[] = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-          const values = Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values);
+          const values = Array.isArray(row.values)
+            ? row.values.slice(1)
+            : Object.values(row.values);
           if (rowNumber === 1) {
             sheetHeaders = values.map((v) => (v == null ? "" : String(v).trim()));
           } else {
@@ -202,16 +204,41 @@ export function AddParticipantsModal({
 
   // Common processing and validation logic for parsed rows
   function processParsedData(detectedHeaders: string[], dataRows: Record<string, unknown>[]) {
-    const idKey = detectedHeaders.find((h) =>
-      ["id petani", "farmer id", "id", "farmer_id", "kode petani", "kode_petani", "farmerid"].includes(h.toLowerCase().trim())
-    ) || detectedHeaders[0];
+    const idKey =
+      detectedHeaders.find((h) =>
+        [
+          "id petani",
+          "farmer id",
+          "id",
+          "farmer_id",
+          "kode petani",
+          "kode_petani",
+          "farmerid",
+        ].includes(h.toLowerCase().trim()),
+      ) || detectedHeaders[0];
 
     const preTestKey = detectedHeaders.find((h) =>
-      ["nilai pre-test", "nilai pre test", "pre-test score", "pre-test", "pretest", "pretestscore", "nilai_pre_test"].includes(h.toLowerCase().trim())
+      [
+        "nilai pre-test",
+        "nilai pre test",
+        "pre-test score",
+        "pre-test",
+        "pretest",
+        "pretestscore",
+        "nilai_pre_test",
+      ].includes(h.toLowerCase().trim()),
     );
 
     const postTestKey = detectedHeaders.find((h) =>
-      ["nilai post-test", "nilai post test", "post-test score", "post-test", "posttest", "posttestscore", "nilai_post_test"].includes(h.toLowerCase().trim())
+      [
+        "nilai post-test",
+        "nilai post test",
+        "post-test score",
+        "post-test",
+        "posttest",
+        "posttestscore",
+        "nilai_post_test",
+      ].includes(h.toLowerCase().trim()),
     );
 
     if (!idKey) {
@@ -223,7 +250,20 @@ export function AddParticipantsModal({
       const date = new Date(dateVal);
       if (isNaN(date.getTime())) return "";
       const day = String(date.getDate()).padStart(2, "0");
-      const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "Mei",
+        "Jun",
+        "Jul",
+        "Agu",
+        "Sep",
+        "Okt",
+        "Nov",
+        "Des",
+      ];
       const month = months[date.getMonth()];
       return `${day} - ${month} - ${date.getFullYear()}`;
     };
@@ -239,7 +279,7 @@ export function AddParticipantsModal({
       seen.add(rawId.toLowerCase());
 
       const matchedGroupFarmer = groupFarmers.find(
-        (f) => f.farmerId.toLowerCase() === rawId.toLowerCase()
+        (f) => f.farmerId.toLowerCase() === rawId.toLowerCase(),
       );
 
       let status: "VALID" | "WARNING" | "ERROR" = "VALID";
@@ -268,7 +308,8 @@ export function AddParticipantsModal({
           const parsedVal = parseInt(rawVal.toString().trim(), 10);
           if (isNaN(parsedVal) || parsedVal < 0 || parsedVal > 100) {
             status = "ERROR";
-            errorReason = (errorReason ? errorReason + "; " : "") + "Nilai Post-Test harus berupa angka 0-100";
+            errorReason =
+              (errorReason ? errorReason + "; " : "") + "Nilai Post-Test harus berupa angka 0-100";
           } else {
             postTestScore = parsedVal;
           }
@@ -277,22 +318,28 @@ export function AddParticipantsModal({
 
       if (!matchedGroupFarmer) {
         status = "ERROR";
-        errorReason = (errorReason ? errorReason + "; " : "") + "ID Petani tidak ditemukan di lembaga tani ini";
+        errorReason =
+          (errorReason ? errorReason + "; " : "") + "ID Petani tidak ditemukan di lembaga tani ini";
       } else {
         name = matchedGroupFarmer.name;
         resolvedId = matchedGroupFarmer.id;
         if (currentParticipantFarmerIds.includes(matchedGroupFarmer.id)) {
           status = "ERROR";
-          errorReason = (errorReason ? errorReason + "; " : "") + "Petani sudah terdaftar sebagai peserta";
+          errorReason =
+            (errorReason ? errorReason + "; " : "") + "Petani sudah terdaftar sebagai peserta";
         } else {
           // Check if already attended the same package in a different activity
           const previousParticipation = matchedGroupFarmer.trainingParticipants?.find(
-            (p) => p.activity.packageId === packageId && p.activity.id !== activityId
+            (p) => p.activity.packageId === packageId && p.activity.id !== activityId,
           );
           if (previousParticipation) {
             status = "WARNING";
-            const formattedPrevDate = formatDateWarning(previousParticipation.activity.trainingDate);
-            errorReason = (errorReason ? errorReason + "; " : "") + `Sudah pernah mengikuti training ${previousParticipation.activity.package.name} di tanggal : ${formattedPrevDate}`;
+            const formattedPrevDate = formatDateWarning(
+              previousParticipation.activity.trainingDate,
+            );
+            errorReason =
+              (errorReason ? errorReason + "; " : "") +
+              `Sudah pernah mengikuti training ${previousParticipation.activity.package.name} di tanggal : ${formattedPrevDate}`;
           }
         }
       }
@@ -378,7 +425,7 @@ export function AddParticipantsModal({
               "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer",
               activeTab === "manual"
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )}
             onClick={() => setActiveTab("manual")}
           >
@@ -390,7 +437,7 @@ export function AddParticipantsModal({
               "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer",
               activeTab === "upload"
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )}
             onClick={() => setActiveTab("upload")}
           >
@@ -402,7 +449,9 @@ export function AddParticipantsModal({
           <div className="flex-1 grid grid-cols-1 md:grid-cols-9 gap-4 my-1 overflow-hidden">
             {/* Panel Kiri: Kandidat */}
             <div className="md:col-span-4 flex flex-col border rounded-md p-3 overflow-hidden">
-              <h3 className="font-semibold text-sm mb-2">Petani Tersedia ({filteredCandidates.length})</h3>
+              <h3 className="font-semibold text-sm mb-2">
+                Petani Tersedia ({filteredCandidates.length})
+              </h3>
               <div className="relative mb-2">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -418,7 +467,9 @@ export function AddParticipantsModal({
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : filteredCandidates.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-12">Tidak ada kandidat petani</p>
+                  <p className="text-xs text-muted-foreground text-center py-12">
+                    Tidak ada kandidat petani
+                  </p>
                 ) : (
                   filteredCandidates.map((f) => (
                     <div
@@ -456,16 +507,25 @@ export function AddParticipantsModal({
             {/* Panel Kanan */}
             <div className="md:col-span-4 flex flex-col border rounded-md p-3 overflow-hidden">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold text-sm">Petani Terpilih ({selectedFarmers.length})</h3>
+                <h3 className="font-semibold text-sm">
+                  Petani Terpilih ({selectedFarmers.length})
+                </h3>
                 {selectedFarmers.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={deselectAll} className="text-xs text-destructive hover:bg-destructive/10 h-7 px-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={deselectAll}
+                    className="text-xs text-destructive hover:bg-destructive/10 h-7 px-2"
+                  >
                     Hapus Semua
                   </Button>
                 )}
               </div>
               <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
                 {selectedFarmers.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-12">Belum ada petani dipilih</p>
+                  <p className="text-xs text-muted-foreground text-center py-12">
+                    Belum ada petani dipilih
+                  </p>
                 ) : (
                   selectedFarmers.map((f) => (
                     <div
@@ -490,7 +550,9 @@ export function AddParticipantsModal({
             <div className="border border-dashed rounded-lg p-5 flex flex-col items-center justify-center bg-muted/20 shrink-0">
               <Upload className="h-8 w-8 text-muted-foreground mb-1.5" />
               <p className="text-xs font-semibold mb-1">Unggah List Peserta Pelatihan</p>
-              <p className="text-[10px] text-muted-foreground mb-3">Mendukung file Excel (.xlsx) atau CSV (.csv)</p>
+              <p className="text-[10px] text-muted-foreground mb-3">
+                Mendukung file Excel (.xlsx) atau CSV (.csv)
+              </p>
               <div className="flex items-center gap-3">
                 <Input
                   type="file"
@@ -515,7 +577,9 @@ export function AddParticipantsModal({
             {parsedRows.length > 0 && (
               <div className="flex-1 flex flex-col min-h-0 overflow-hidden space-y-2">
                 <div className="flex items-center justify-between shrink-0">
-                  <h4 className="text-xs font-semibold">Tinjauan Data ({parsedRows.length} baris)</h4>
+                  <h4 className="text-xs font-semibold">
+                    Tinjauan Data ({parsedRows.length} baris)
+                  </h4>
                   <div className="flex items-center gap-2 text-[10px]">
                     <span className="text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
                       {parsedRows.filter((r) => r.status === "VALID").length} Valid
@@ -548,7 +612,7 @@ export function AddParticipantsModal({
                             key={idx}
                             className={cn(
                               r.status === "ERROR" && "bg-destructive/5",
-                              r.status === "WARNING" && "bg-amber-500/5"
+                              r.status === "WARNING" && "bg-amber-500/5",
                             )}
                           >
                             <td className="p-2 font-mono">{r.farmerId}</td>
@@ -557,10 +621,17 @@ export function AddParticipantsModal({
                             <td className="p-2">{r.postTestScore ?? "—"}</td>
                             <td className="p-2">
                               <Badge
-                                variant={r.status === "VALID" ? "default" : r.status === "WARNING" ? "secondary" : "destructive"}
+                                variant={
+                                  r.status === "VALID"
+                                    ? "default"
+                                    : r.status === "WARNING"
+                                      ? "secondary"
+                                      : "destructive"
+                                }
                                 className={cn(
                                   "text-[9px] py-0 px-1",
-                                  r.status === "WARNING" && "bg-amber-500 text-white hover:bg-amber-600 border-none"
+                                  r.status === "WARNING" &&
+                                    "bg-amber-500 text-white hover:bg-amber-600 border-none",
                                 )}
                               >
                                 {r.status}
@@ -569,7 +640,11 @@ export function AddParticipantsModal({
                             <td
                               className={cn(
                                 "p-2 font-medium",
-                                r.status === "ERROR" ? "text-destructive" : r.status === "WARNING" ? "text-amber-600" : ""
+                                r.status === "ERROR"
+                                  ? "text-destructive"
+                                  : r.status === "WARNING"
+                                    ? "text-amber-600"
+                                    : "",
                               )}
                             >
                               {r.errorReason || "—"}
@@ -598,12 +673,14 @@ export function AddParticipantsModal({
             <Button
               onClick={handleSaveUpload}
               disabled={
-                parsedRows.filter((r) => r.status === "VALID" || r.status === "WARNING").length === 0 ||
-                isSaving
+                parsedRows.filter((r) => r.status === "VALID" || r.status === "WARNING").length ===
+                  0 || isSaving
               }
             >
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Tambahkan {parsedRows.filter((r) => r.status === "VALID" || r.status === "WARNING").length} Peserta
+              Tambahkan{" "}
+              {parsedRows.filter((r) => r.status === "VALID" || r.status === "WARNING").length}{" "}
+              Peserta
             </Button>
           )}
         </DialogFooter>
