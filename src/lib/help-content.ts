@@ -12,6 +12,10 @@ import {
   HelpCircle,
   UserPlus,
   ListChecks,
+  UploadCloud,
+  Telescope,
+  GraduationCap,
+  TrendingUp,
   Rocket,
   FolderInput,
   Eye,
@@ -38,6 +42,18 @@ import kendala from "@/content/help/6-bantuan-lanjutan/6-1-kendala.md";
 
 // Lapis Tutorial (berbasis tugas) — dipisah dari lapis Konsep di bawahnya.
 import tMenambahPetani from "@/content/help/tutorial/t-1-menambah-petani.md";
+import tMenambahLahan from "@/content/help/tutorial/t-2-menambah-lahan.md";
+import tMencatatPelatihan from "@/content/help/tutorial/t-3-mencatat-pelatihan.md";
+import tMencatatProduksi from "@/content/help/tutorial/t-4-mencatat-produksi.md";
+import uUnggahPetani from "@/content/help/tutorial/u-1-unggah-petani.md";
+import uUnggahProduksi from "@/content/help/tutorial/u-2-unggah-produksi.md";
+import uUnggahLahan from "@/content/help/tutorial/u-3-unggah-lahan.md";
+import pMembacaDashboard from "@/content/help/tutorial/p-1-membaca-dashboard.md";
+import pCakupanPelatihan from "@/content/help/tutorial/p-2-cakupan-pelatihan.md";
+import pMembacaPeta from "@/content/help/tutorial/p-3-membaca-peta.md";
+import lMembuatLaporan from "@/content/help/tutorial/l-1-membuat-laporan.md";
+import lLaporanLahan from "@/content/help/tutorial/l-2-laporan-lahan.md";
+import lMemperbaruiDashboard from "@/content/help/tutorial/l-3-memperbarui-dashboard.md";
 
 type IconType = React.ComponentType<{ className?: string }>;
 
@@ -55,6 +71,9 @@ const ICONS: Record<string, IconType> = {
   Wrench,
   HelpCircle,
   UserPlus,
+  GraduationCap,
+  TrendingUp,
+  Printer,
 };
 
 export interface HelpTopic {
@@ -116,7 +135,51 @@ const CHAPTER_SOURCES: ChapterSource[] = [
     summary:
       "Langkah demi langkah pekerjaan yang paling sering dilakukan: mendaftarkan petani, lahan, pelatihan, dan produksi.",
     icon: ListChecks,
-    topics: [{ id: "menambah-petani", source: tMenambahPetani }],
+    topics: [
+      { id: "menambah-petani", source: tMenambahPetani },
+      { id: "menambah-lahan", source: tMenambahLahan },
+      { id: "mencatat-pelatihan", source: tMencatatPelatihan },
+      { id: "mencatat-produksi", source: tMencatatProduksi },
+    ],
+  },
+  {
+    slug: "tutorial-unggah-massal",
+    section: "tutorial",
+    title: "Unggah Massal",
+    summary:
+      "Memasukkan data dalam jumlah besar sekaligus — Excel untuk petani & produksi, shapefile untuk lahan.",
+    icon: UploadCloud,
+    topics: [
+      { id: "unggah-petani", source: uUnggahPetani },
+      { id: "unggah-produksi", source: uUnggahProduksi },
+      { id: "unggah-lahan", source: uUnggahLahan },
+    ],
+  },
+  {
+    slug: "tutorial-memantau",
+    section: "tutorial",
+    title: "Memantau & Menindaklanjuti",
+    summary:
+      "Membaca dashboard dan peta, lalu mengubah temuannya jadi daftar kerja yang bisa ditindaklanjuti.",
+    icon: Telescope,
+    topics: [
+      { id: "membaca-dashboard", source: pMembacaDashboard },
+      { id: "cakupan-pelatihan", source: pCakupanPelatihan },
+      { id: "membaca-peta", source: pMembacaPeta },
+    ],
+  },
+  {
+    slug: "tutorial-laporan",
+    section: "tutorial",
+    title: "Laporan & Perawatan",
+    summary:
+      "Menyiapkan berkas untuk donor atau audit, dan menjaga angka dashboard tetap mutakhir.",
+    icon: Printer,
+    topics: [
+      { id: "membuat-laporan", source: lMembuatLaporan },
+      { id: "laporan-lahan", source: lLaporanLahan },
+      { id: "memperbarui-dashboard", source: lMemperbaruiDashboard },
+    ],
   },
   {
     slug: "memulai",

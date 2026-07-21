@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readdirSync, readFileSync } from "fs";
+import { join } from "path";
 import {
   parseFrontmatter,
   parseInline,
@@ -236,5 +238,46 @@ describe("dua tingkat kedalaman — baris `+`", () => {
     const text = blocksToPlainText(parseBlocks("1. Klik Tambah\n+ Tombolnya di kanan atas"));
     expect(text).toContain("Klik Tambah");
     expect(text).toContain("Tombolnya di kanan atas");
+  });
+});
+
+describe("kelengkapan berkas tutorial", () => {
+  // Berkas .md dibaca langsung dari disk: di runtime Next mereka di-bundle
+  // webpack (`asset/source`), yang tidak tersedia di vitest.
+  const dir = join(process.cwd(), "src/content/help/tutorial");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".md"));
+
+  it("ada berkas tutorial yang dibaca", () => {
+    expect(files.length).toBeGreaterThan(0);
+  });
+
+  it.each(files)("%s punya frontmatter tutorial yang lengkap", (file) => {
+    const { frontmatter } = parseMarkdown(readFileSync(join(dir, file), "utf-8"));
+    // `menuKey` dipakai menandai tutorial di luar hak akses pembaca; `href`
+    // menghasilkan tombol ke halaman terkait; `goal` tampil di kartu indeks.
+    for (const key of ["title", "icon", "menuKey", "permission", "goal", "href"]) {
+      expect(frontmatter[key], `${file} → ${key}`).toBeTruthy();
+    }
+    expect(Number.isInteger(Number(frontmatter.duration)), `${file} → duration`).toBe(true);
+  });
+
+  it.each(files)("%s punya langkah bernomor", (file) => {
+    const { blocks } = parseMarkdown(readFileSync(join(dir, file), "utf-8"));
+    const steps = blocks.filter((b) => b.type === "steps");
+    expect(steps.length, `${file} tidak punya blok langkah`).toBeGreaterThan(0);
+  });
+
+  it.each(files)("%s punya bagian 'Kalau bermasalah'", (file) => {
+    // Keputusan owner: troubleshooting tetap inline di tiap tutorial, bukan
+    // dikumpulkan ke satu halaman terpisah.
+    const source = readFileSync(join(dir, file), "utf-8");
+    expect(source).toContain("## Kalau bermasalah");
+  });
+
+  it("href tiap tutorial menunjuk rute admin yang absolut", () => {
+    for (const file of files) {
+      const { frontmatter } = parseMarkdown(readFileSync(join(dir, file), "utf-8"));
+      expect(frontmatter.href, file).toMatch(/^\/admin\//);
+    }
   });
 });

@@ -41,6 +41,45 @@ Inline: **tebal**, `kode`, dan [tautan](https://contoh.id).
 | `icon`  | tidak | Nama ikon lucide yang terdaftar di `help-content.ts`            |
 | `intro` | tidak | Kalimat pembuka di bawah judul topik                            |
 
+## Tutorial (lapis 1) — `tutorial/`
+
+Tutorial berorganisasi **per tugas**, bukan per menu. Frontmatter tambahan:
+
+```yaml
+menuKey: master-data-farmers   # menandai tutorial di luar hak akses pembaca
+permission: CREATE             # level izin yang dibutuhkan
+duration: 4                    # perkiraan menit
+href: /admin/master-data/farmers
+hrefLabel: Buka halaman Petani # tombol; dibuka di tab baru
+goal: Kalimat hasil akhir yang didapat pembaca.
+```
+
+Blok khusus tutorial:
+
+```text
+1. Langkah pertama.               ← nomor dari POSISI, angka yang ditulis diabaikan
++ Penjelasan tingkat Detail.      ← menempel pada langkah di atasnya
+
+> [!tip] Saran yang mempercepat.
+> [!penting] Hal yang perlu diketahui.
+> [!hati-hati] Risiko bila keliru.
+```
+
+**Dua tingkat kedalaman dari satu sumber.** Baris `1.` adalah versi **Ringkas**;
+baris `+` hanya tampil pada mode **Detail**. Pembaca memilih lewat toggle di
+halaman topik. Versi terpisah sengaja dihindari agar keduanya tak saling
+ketinggalan. Isi Detail tetap terindeks pencarian meski sedang disembunyikan.
+
+Aturan isi (keputusan owner):
+- Langkah utama **satu kalimat**; seluruh "kenapa" dan "apa yang terlihat" ke baris `+`.
+- Bagian **`## Kalau bermasalah` wajib ada** di tiap tutorial — inline, bukan
+  dikumpulkan ke halaman troubleshooting terpisah.
+- **Tanpa tangkapan layar.** Kutip label tombol/kolom **persis** dari
+  `docs/product/pages/`, supaya panduan tidak basi saat tata letak berubah.
+
+`src/test/help-content.test.ts` menjaga kelengkapan frontmatter, keberadaan blok
+langkah, dan bagian "Kalau bermasalah" untuk setiap berkas di folder ini.
+
 ## Catatan
 
 - Nama bab, ringkasan bab, dan ikon bab diatur di `src/lib/help-content.ts`.

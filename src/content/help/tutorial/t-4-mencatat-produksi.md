@@ -15,14 +15,21 @@ Produksi dicatat **per petani, per lahan, per bulan**. Satu bulan boleh punya be
 
 Isi lahannya bila memungkinkan; tanpa lahan, produksi tetap tersimpan tapi tidak bisa dikaitkan ke luas untuk perhitungan produktivitas.
 
++ Tonasenya tetap masuk total produksi, tetapi luasnya tidak masuk penyebut Ton/Ha — sehingga angka produktivitas jadi lebih tinggi daripada seharusnya. Lahannya juga akan terbaca "tanpa data produksi" di Peta BMP.
+
 ## Langkah
 
 1. Buka menu **Master Data → Produksi**, lalu klik **Tambah Data Produksi**.
 2. Pada seksi **Informasi Petani & Lahan**, pilih **Petani** lalu **Lahan** miliknya.
++ Daftar lahan baru terisi setelah petaninya dipilih, dan hanya memuat lahan milik petani itu — jadi tak mungkin salah menempelkan panen ke lahan orang lain.
 3. Isi **Periode** dengan format tahun-bulan, misalnya `2026-06`.
++ Periode inilah sumbu waktu seluruh grafik produksi. Dari sini pula sistem menghitung berapa bulan berturut-turut sebuah lahan punya data — dasar kategori Ketersediaan Data di Peta BMP.
 4. Isi **Tanggal Panen** — tanggal sebenarnya panen dilakukan, harus berada dalam periode yang sama.
++ Tanggal di luar periode akan ditolak. Ini penjagaan sederhana agar panen Juni tidak tercatat pada periode Mei hanya karena salah ketik.
 5. Isi **Panen Ke-**: `1` untuk panen pertama di bulan itu, `2` untuk berikutnya, dan seterusnya.
++ Nomor ini yang membedakan dua panen dalam bulan sama. Bila nomornya diulang untuk kombinasi petani, lahan, dan periode yang sama, sistem menganggapnya duplikat dan menolak.
 6. Isi **Hasil Panen (kg)** dalam kilogram, bukan ton.
++ Dashboard menampilkannya dalam ton, tetapi konversinya dilakukan sistem. Memasukkan angka dalam ton akan membuat produksi terbaca seribu kali lebih kecil.
 7. Klik **Simpan**.
 
 > [!tip] Punya data satu musim penuh dalam Excel? Pakai **Bulk Upload → Upload Produksi** — jauh lebih cepat dan tervalidasi sebelum tersimpan.
@@ -38,3 +45,5 @@ Catatan muncul di daftar Produksi. Angkanya masuk ke Dashboard BMP dan Peta BMP 
 **Muncul pesan data duplikat.** Kombinasi petani, lahan, periode, dan Panen Ke- yang sama sudah ada. Naikkan nomor Panen Ke- bila ini memang panen berbeda.
 
 **Angka tidak berubah di dashboard.** Bukan kegagalan penyimpanan — Dashboard Main dan BMP membaca snapshot berkala, bukan menghitung ulang tiap dibuka.
+
++ Untuk memastikan data benar-benar tersimpan, periksa saja daftar di Master Data → Produksi; daftar itu selalu membaca data terkini. Snapshot dibuat lewat menu Tools — lihat tutorial **Memperbarui angka dashboard**.
