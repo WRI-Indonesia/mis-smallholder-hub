@@ -38,6 +38,7 @@ Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil ker
 2. **Workflow** — file ini: urutan Issue Workflow diikuti (scope issue, Pre-Commit Gate 4 gate, approval DB/destructive, retro sebelum close).
 3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Active Issues), `changelog.md` (Decision Log/Changelog), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
 4. **Identifikasi file `docs/` lain yang terdampak** (peta cepat di Docs sync) dan perbarui **sebelum commit** — di-commit **bersama** kode. Temuan ketidakpatuhan dilaporkan ke owner, bukan didiamkan.
+5. **Bantuan (`src/content/help/`)** — setiap **perubahan atau penambahan fitur** wajib diperiksa dampaknya ke materi Bantuan: apakah ada tutorial/konsep yang jadi **keliru** (label tombol berubah, langkah bertambah, aturan validasi berubah), dan apakah alur baru itu **perlu tutorial baru**. Perbarui bersama kode, jangan ditunda — panduan yang salah lebih berbahaya daripada panduan yang belum ada, karena pengguna terlanjur memercayainya.
 
 ### Issue Close — Retrospektif wajib (sebelum close)
 

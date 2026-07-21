@@ -7,7 +7,7 @@
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 32 Phases)
+## Completed Modules (✅ 33 Phases)
 
 > Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`progress.md`](../project/roadmap.md). Perbarui angka di sana lebih dulu.
  
@@ -47,7 +47,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **43 files / 586 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **43 files / 661 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -85,7 +85,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **43 files / 586 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **43 files / 661 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
@@ -112,6 +112,7 @@
 | Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
 | Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
 | Invarian cakupan 3 dashboard + hulu | dashboard-asymmetry.test.ts | 18 | ✅ |
+| Bantuan: parser, materi, hak akses & lookup (HELP-02) | help-content.test.ts | 87 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
 | Map (MAP-01/02) | map.test.ts | 34 | ✅ |
 | Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |

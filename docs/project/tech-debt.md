@@ -4,7 +4,7 @@
 
 ## Summary
 
-Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **10 debt aktif** (TD-020/TD-021 baru dari DASH-06; TD-022/TD-023 dari audit asimetri sudah ditutup hari yang sama), tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
+Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **10 debt aktif** (TD-020/TD-021 dari DASH-06; TD-022…TD-025 dibuka & ditutup 2026-07-21 — dua dari audit asimetri, dua dari review HELP-02), tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
 
 **Rekomendasi:**
 
@@ -25,7 +25,7 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…023) | **10** | 11 | 21 |
+| **Debt** (TD-001…025) | **10** | 13 | 23 |
 
 Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-020 · TD-021. (TD-018/TD-019 ✅ #180 2026-07-20; TD-020/TD-021 baru dari DASH-06 2026-07-21; **TD-022/TD-023 ✅ selesai 2026-07-21** — hasil audit asimetri pembilang–penyebut lintas dashboard.)
 
@@ -154,10 +154,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 </details>
 
-### Debt Register — Selesai (11 item)
+### Debt Register — Selesai (13 item)
 
 <details>
-<summary><strong>Lihat 11 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 022, 023</summary>
+<summary><strong>Lihat 13 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 022, 023, 024, 025</summary>
 
 | ID | Debt Item | Priority | Selesai |
 | --- | --- | --- | --- |
@@ -172,6 +172,8 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-013 | Mislabel `FarmerGroup` = "Lembaga Petani" (relabel UI) | P2 | ✅ 2026-07-14 (#147) |
 | TD-022 | BMP: produksi jadi orphan saat revisi lahan (asimetri produktivitas) | P2 | ✅ 2026-07-21 |
 | TD-023 | Dua definisi "cakupan pelatihan" antar dashboard | P3 | ✅ 2026-07-21 |
+| TD-024 | `farmerId` tanpa penjaga keunikan + celah scope bulk upload | P2 | ✅ 2026-07-21 |
+| TD-025 | Mode Detail Bantuan bergantung urutan sumber CSS | P3 | ✅ 2026-07-21 |
 
 **TD-001** — S3/PDF utility belum terintegrasi ke modul Training. Evidence: Training + evidence upload S3 sudah terintegrasi via `upload.ts` (#81); CLI `get-link`/`pdf-manager` tetap sebagai utilitas. Owner: Backend/Storage Lead. Validation: evidence upload berfungsi di app; sisa CLI tak load dotenv → TD-011. ✅
 
@@ -182,6 +184,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 **TD-022** — BMP: produksi jadi orphan saat revisi lahan, membuat produktivitas (Ton/Ha) menggelembung. **Akar masalah:** `bulk-upload-parcel.ts` menerapkan revisi dengan menonaktifkan baris lahan lama lalu membuat baris **baru ber-id baru**, sementara `ProductionRecord.parcelId` tetap menunjuk id lama → tonase masuk pembilang, luasnya tidak masuk penyebut, dan lahan terbaca "tanpa data produksi". **Fix:** `updateMany` memindahkan seluruh `ProductionRecord` (termasuk yang nonaktif, agar riwayat utuh) dari id lama ke id baru di dalam transaksi yang sama. `updateLandParcel` tidak terdampak — update in-place, id lestari. **Evidence:** `src/test/dashboard-asymmetry.test.ts` (invarian "tidak ada produksi menunjuk lahan nonaktif" + test perilaku lama sebagai pembanding); audit read-only `mis-prod` 2026-07-21: 17.063 record produksi, **0 orphan** → tidak ada perbaikan data retroaktif yang diperlukan. **Sisa yang SENGAJA dipertahankan:** record `parcelId = null` tetap menyumbang pembilang — itu keputusan owner terdokumentasi (#136, disertai disclaimer), bukan celah; saat ini 0 record. ✅
 
 **TD-023** — Dua definisi "cakupan pelatihan" antar dashboard (Main petani-sentris vs DASH-06 kegiatan-sentris). **Temuan:** divergensi itu **tidak bisa terjadi** — `addParticipants` (`training.ts`) sudah memvalidasi peserta ke `farmerGroupId: activity.farmerGroupId` dan menolak seluruh batch bila ada yang tidak cocok, sehingga himpunan peserta selalu ⊆ anggota Lembaga penyelenggara. Ditambah filter `farmer.isActive` di payload DASH-06 (fix 2026-07-21), kedua definisi **terbukti identik**, bukan kebetulan data bersih. **Evidence:** `src/test/dashboard-asymmetry.test.ts` menguji guard tersebut (tolak lintas-Lembaga, tolak petani nonaktif, tolak seluruh batch bila ada satu tak valid); audit read-only `mis-prod` 2026-07-21: 8.240 baris kehadiran, **0 lintas-Lembaga, 0 petani nonaktif**. **Catatan operasional:** skrip import pelatihan di `scripts/local/` menulis langsung ke DB dan **melewati guard action** — invarian ini bergantung pada skrip tersebut ikut menegakkannya; jalankan `scripts/local/audit-training-attribution.ts` setelah tiap import. ✅
+
+**TD-024** — `farmerId` tanpa penjaga keunikan, dua jalur input beraturan berbeda, plus celah scope. **Keputusan owner 2026-07-21: unik PER LEMBAGA.** Ditegakkan di DB (`@@unique([farmerGroupId, farmerId])`, migrasi `20260721060000_farmer_id_unique_per_group`) **dan** di aplikasi: `createFarmer`/`updateFarmer` kini menolak duplikat dengan pesan per-kolom, membedakan duplikat aktif vs milik petani nonaktif ("aktifkan kembali datanya"). `getExistingFarmerIds` sebelumnya mengambil **seluruh** `farmerId` di database tanpa filter — aturannya lebih ketat dari yang ditegakkan sistem **dan** membocorkan ID di luar wilayah kerja (pelanggaran lapisan data-access); kini menerima `farmerGroupId`, memverifikasi lembaga itu dalam scope, dan hanya mengembalikan ID lembaga tsb. Halaman bulk upload karenanya memuat daftar ID **setelah** lembaga dipilih, bukan di awal. **Prasyarat diverifikasi read-only** (`scripts/local/audit-farmer-id-duplicates.ts`, mis-prod 2026-07-21): 3.448 baris, **0 duplikat** — migrasi aman. Constraint sengaja mencakup baris nonaktif: memakai ulang ID petani nonaktif memecah riwayatnya. Materi Bantuan disesuaikan. ✅
+
+**TD-025** — Mode Detail Bantuan bergantung urutan sumber CSS. Aturan sembunyikan & tampilkan tadinya berspesifisitas sama (`:where()` bernilai 0), sehingga Detail bekerja hanya karena aturan kedua kebetulan muncul belakangan. Ditambahkan penanda `data-depth="ringkas"` pada `<article>` sehingga selektornya jadi **(0,7,0)** vs **(0,4,0)** — menang lewat spesifisitas, bukan urutan. Diverifikasi dengan membaca CSS hasil build. ✅
 
 **TD-006** — `docs/rule.md` menyebut folder dashboard components yang tidak ada. Owner: Tech Lead. Validation: tree arsitektur disinkronkan (audit 2026-07-10): `components/dashboard` dihapus, `hooks/`+`api/` ditambah; docs arsitektur sinkron dengan struktur repo. ✅
 
