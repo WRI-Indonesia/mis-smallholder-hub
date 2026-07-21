@@ -169,6 +169,19 @@ Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (ko
 
 ### Dashboard Snapshot Pattern
 
+> ⚠️ **Putuskan dulu: snapshot atau live query?** Snapshot bukan default otomatis untuk setiap dashboard baru.
+>
+> | Pilih **snapshot** bila | Pilih **live query** bila |
+> |---|---|
+> | Agregasi berat / lintas jutaan baris (produksi bulanan, lahan) | Volume kecil–menengah (ratusan–ribuan baris) |
+> | Perlu jejak historis "angka per tanggal X" | Angka selalu harus mencerminkan kondisi terkini |
+> | Biaya query per request tak terterima | Beban operasional "generate snapshot dulu" tak sepadan |
+>
+> Contoh snapshot: DASH-01 Main (`tbl_snapshot_main_dashboard`), DASH-04 BMP (`tbl_snapshot_bmp_dashboard`).
+> Contoh **live query**: **DASH-06 Dashboard Pelatihan** — `src/server/actions/dashboard-training.ts` query langsung lalu agregasi client-side lewat lib murni `src/lib/training-dashboard-aggregation.ts`; sengaja tanpa tabel snapshot (keputusan 2026-07-21, lihat `changelog.md`). Bila volume tumbuh, pola snapshot di bawah tetap jadi jalur migrasi.
+>
+> Terlepas dari pilihannya, **lapisan RBAC tetap sama** (permission menu + access-context + `isActive`), dan agregasi tetap ditaruh di **lib murni yang bisa dites tanpa DB**.
+
 Untuk snapshot dashboard yang menyimpan historical state:
 - **Separate Table Per Dashboard**: Setiap dashboard punya snapshot table sendiri (e.g., `tbl_snapshot_main_dashboard`, `tbl_snapshot_production_dashboard`)
 - **Naming Convention**: `tbl_snapshot_<dashboard_name>` dengan model `<Dashboard>Snapshot`

@@ -7,7 +7,7 @@
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 31 Phases)
+## Completed Modules (✅ 32 Phases)
 
 > Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`progress.md`](../project/roadmap.md). Perbarui angka di sana lebih dulu.
  
@@ -30,6 +30,7 @@
 | DASH-02 | Dashboard Server Actions | `dashboard.ts` + `snapshot.ts` + aggregation lib (teruji) |
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
 | DASH-04 | BMP Dashboard (Produksi) | Snapshot-backed `/admin/dashboard/bmp`: 4 card produksi + combo chart produksi/% lahan melapor + panel Ketersediaan Data 4 kategori (reuse MAP-02) + filter global Kategori/Distrik/Lembaga/Tahun/Kelengkapan Data; tools generate `/admin/tools/snapshot-bmp` (#166) |
+| DASH-06 | Dashboard Pelatihan | **Live query (bukan snapshot)** `/admin/dashboard/training`: 5 KPI card (cakupan petani terlatih, kegiatan, kehadiran vs unik, partisipasi perempuan, kenaikan skor) + matriks cakupan Lembaga × Paket (heatmap sortable, collapsible) + tren stacked-bar per paket + panel efektivitas pre/post + panel kualitas data ber-deep-link; **drill-down sel → daftar petani belum dilatih (salin/Excel)**; target 100% per paket; filter Kategori/Distrik/Lembaga/Tahun client-side |
 | MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible |
 | MAP-02 | Map: Peta BMP (Layer 1) | Peta tematik **Ketersediaan Data Produksi** per-lahan, 4 kategori dari run bulan berturut-turut produksi (#144); KT wajib (Prov/Distrik opsional); `getBmpMapData` (groupBy scoped, no N+1) + data-driven color MapLibre. **Poligon saja tanpa titik** (NONE outline-only, lainnya fill). **Cetak** → PDF A4 landscape (hal.1 peta+legend, hal.2+ matriks per lahan × bulan = total kg/latar hijau) + **Download Excel** matriks. **Panel kanan floating minimizable**: matriks ketersediaan per lahan × bulan (true/false) + Zoom to. Seed `map-bmp` menu+VIEW ✅ |
 | MAP-03 | Map: Peta BMP Layer 2 (Produktivitas) | Layer tematik kedua di halaman yang sama (#174): **Produktivitas (Ton/Ha) per persil** = Σ produksi tahun ÷ luas persil; panel kiri **2 section layer ber-radio** ("Ketersediaan Data Produksi" / "Produktivitas (Ton/Ha)", satu aktif); selektor **Tahun (default terbaru) + Rata-rata**; 5 kelas warna (≥20 / 15–20 / 10–15 / <10 / tanpa data outline-only, ambang `PRODUCTIVITY_*_MIN`). Hitung **realtime client-side** (pure helper `map-data.ts` atas payload `getBmpMapData` existing — zero query/migration baru). **Cetak & Excel WYSIWYG ikut layer aktif**: layer Produktivitas → PDF legend produktivitas + tabel Ton/Ha per lahan × tahun (sel berwarna kelas) + Excel Produktivitas |
@@ -46,7 +47,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **41 files / 535 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **43 files / 586 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -84,7 +85,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **35 files / 464 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **43 files / 586 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
@@ -109,6 +110,8 @@
 | Farmer Detail + mask (#172) | farmer-detail.test.ts | 7 | ✅ |
 | Farmer Sub-Groups (#152) | farmer-sub-groups.test.ts | 6 | ✅ |
 | Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
+| Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
+| Invarian cakupan 3 dashboard + hulu | dashboard-asymmetry.test.ts | 18 | ✅ |
 | RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
 | Map (MAP-01/02) | map.test.ts | 34 | ✅ |
 | Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |

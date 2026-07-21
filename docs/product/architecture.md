@@ -6,9 +6,9 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **35 files / 464 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02), map-geo, firms, middleware, perf |
-| **Completed Modules** | ✅ **29 phases done** | Platform (1-7), MD (1-6), DASH-01…05, RPT-01…04, BULK (1, 3, 4), DA-01/02, MAP-01/02 |
-| **Server Actions** | ✅ 22 file (3.894 LOC) | dashboard, snapshot, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
+| **Test Status** | ✅ **43 files / 586 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02/03), map-geo, firms, middleware, perf, dashboard-bmp, dashboard-training |
+| **Completed Modules** | ✅ **32 phases done** | Platform (1-7), MD (1-6), DASH-01…06, RPT-01…04, BULK (1, 3, 4), DA-01/02, MAP-01/02 |
+| **Server Actions** | ✅ 25 file | dashboard, dashboard-bmp, dashboard-training, snapshot, snapshot-bmp, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 file schema / **20 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot, BmpDashboardSnapshot (#166) — MAP-01 read-only (no new table) |
 | **Priority Next** | 🎯 **BULK-02 / #69 / #143** | Kandidat berikut: Bulk Upload Region (#70) & Lembaga Petani (#69), Analisa Data Produksi (#143), #171 Fase 2 (menunggu data). Selesai 2026-07-16: #169 sertifikasi, #170 form layout, #171 detail 360° Fase 1 |
 
@@ -75,7 +75,8 @@
 ```
 📊 Dashboard (✅ DASH-01)
    ├── ✅ Main Dashboard — Snapshot-backed: 14 summary cards (incl. Petani L/P, Total Kelompok Tani #148, 3 card sertifikasi RSPO/ISPO/SAP-MAP #169) + filter Distrik/KT/Tahun + peta MapLibre 60:40 dengan info panel (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-Lembaga (badge sertifikasi di bawah kode #169; konten 2 kolom statistik | cakupan pelatihan)
-   └── ✅ BMP Dashboard (Produksi) (DASH-04, #166) — Snapshot-backed: 4 card produksi (Produksi, Produktivitas Ton/Ha per tahun, Lahan ber-data, Petani melapor) + combo chart produksi/% lahan melapor + panel Ketersediaan Data Produksi 4 kategori (reuse MAP-02) + filter global Distrik/Lembaga/Kategori/Tahun client-side
+   ├── ✅ BMP Dashboard (Produksi) (DASH-04, #166) — Snapshot-backed: 4 card produksi (Produksi, Produktivitas Ton/Ha per tahun, Lahan ber-data, Petani melapor) + combo chart produksi/% lahan melapor + panel Ketersediaan Data Produksi 4 kategori (reuse MAP-02) + filter global Distrik/Lembaga/Kategori/Tahun client-side
+   └── ✅ Dashboard Pelatihan (DASH-06) — **Live query (bukan snapshot)**: 5 KPI card (Cakupan Petani Terlatih terhadap seluruh petani aktif, Total Kegiatan, Kehadiran vs Petani Unik, Partisipasi Perempuan, Rata-rata Kenaikan Skor) + matriks cakupan **Lembaga × Paket** (heatmap 5 tingkat, sel 0% merah, sortable, collapsible) + chart tren stacked-bar kehadiran per paket (12 bulan bila Tahun dipilih, per-tahun bila Semua Tahun) + panel efektivitas pre/post (menandai skor turun = indikasi salah input) + panel kualitas data ber-deep-link ke Master Data Pelatihan; filter Kategori/Distrik/Lembaga/Tahun di-slice client-side
 
 📁 Master Data
    ├── ✅ Lembaga Petani (MD-02) — List/CRUD + detail profil 360° ber-Tabs (cards + struktur KT + peta sebaran lahan + pelatihan + produksi, #171)

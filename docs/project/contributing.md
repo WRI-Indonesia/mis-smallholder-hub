@@ -51,6 +51,7 @@ flowchart LR
     DASH01["DASH-01 Basic Dashboard"] --> DASH02["DASH-02 Server Actions"]
     DASH02 --> DASH03["DASH-03 Interactive Map"]
     DASH02 --> DASH04["DASH-04 BMP"]
+    MD05 --> DASH06["DASH-06 Dashboard Pelatihan"]
     RPT01["RPT-01 Report Petani (#107)"] --> RPT02["RPT-02 Report Pelatihan (#108)"]
     RPT01 --> RPT03["RPT-03 Report Produksi (#132) ✅"]
     BULK01["BULK-01 Bulk Upload Menu + KT"] --> BULK02["BULK-02 Bulk Upload Region"]
@@ -195,3 +196,5 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 | Forgot `loading.tsx` | Layout shift; poor UX | Use `<TableSkeleton>` for tables, `<Skeleton>` for cards |
 | Commented-out code | Technical debt; confusing | Delete dead code; use git history if needed later |
 | Speculative features | Over-engineer; maintenance burden | Implement only what's in the issue scope |
+| **Pembilang & penyebut beda filter** pada metrik cakupan | Rasio bisa tembus >100%; indikator "tercapai" jadi salah dan aksi lanjutan (drill-down) terkunci — cacat DASH-06 2026-07-21 | Terapkan filter yang **sama persis** di kedua sisi (`isActive` **dan** keanggotaan/scope). Kalau angka ringkas dan daftar rinciannya dihitung di dua tempat (client vs SQL), pastikan predikatnya identik — beda sedikit = angka dan daftar saling bertentangan di depan pengguna |
+| Agregat dijumlah hanya atas kategori yang **sudah ada datanya** | Angka jadi non-monoton: menambah data justru menaikkan "kekurangan", terbaca sebagai kemunduran | Jumlahkan atas seluruh kategori bertarget/kanonis, bukan atas hasil `filter(ada data)` |

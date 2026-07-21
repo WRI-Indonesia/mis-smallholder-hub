@@ -4,7 +4,7 @@
 
 ## Summary
 
-Kondisi per **2026-07-16**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **8 debt aktif**, tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
+Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **10 debt aktif** (TD-020/TD-021 baru dari DASH-06; TD-022/TD-023 dari audit asimetri sudah ditutup hari yang sama), tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
 
 **Rekomendasi:**
 
@@ -25,9 +25,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…017) | **8** | 9 | 17 |
+| **Debt** (TD-001…023) | **10** | 11 | 21 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017. (TD-018/TD-019 ✅ #180 2026-07-20.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-020 · TD-021. (TD-018/TD-019 ✅ #180 2026-07-20; TD-020/TD-021 baru dari DASH-06 2026-07-21; **TD-022/TD-023 ✅ selesai 2026-07-21** — hasil audit asimetri pembilang–penyebut lintas dashboard.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -102,6 +102,17 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Evidence:** sesi 2026-07-16 (3 kejadian, selalu lolos di rerun); nama test belum tertangkap — kegagalan berikutnya, simpan output penuh.
 - **Validation:** saat terulang, catat nama test + longgarkan ambang (atau tandai `retry: 1` khusus perf) agar gate pre-commit tidak false-negative. · **Owner:** QA/Dev.
 
+### TD-020 · 🔲 Open — Dashboard Pelatihan: live query tanpa paginasi & tanpa ambang perf (P3)
+
+- **Masalah:** `getTrainingDashboardView()` (DASH-06) menarik **seluruh** kegiatan + peserta dalam scope user ke satu payload, lalu diagregasi client-side. Ini keputusan sadar (lihat Decision Log 2026-07-21) dan aman pada volume sekarang (±184 kegiatan / ±4.900 baris kehadiran), tetapi **tidak ada pagar**: tidak ada paginasi, tidak ada perf test ber-ambang, sehingga pertumbuhan volume hanya akan ketahuan lewat keluhan "dashboard lambat".
+- **Validation:** tambahkan perf test bergaya `perf.test.ts` atas `trainingTotals`/`trainingCoverageMatrix` dengan fixture besar (mis. 50k kehadiran) + catat ambang di mana pola snapshot (`tbl_snapshot_training_dashboard`, sudah disiapkan namanya di `docs/database/dashboard-snapshots.md`) menjadi lebih murah. · **Owner:** Backend.
+
+### TD-021 · 🔲 Open — State filter dashboard tidak tersimpan di URL (P3)
+
+- **Masalah:** filter Kategori/Distrik/Lembaga/Tahun pada **ketiga** dashboard (Main, BMP, Pelatihan) hanya `useState` — tampilan tidak bisa di-*bookmark* maupun dikirim ke rekan ("lihat Lembaga X tahun 2025"), dan refresh browser mengembalikan ke default. Sama halnya untuk sort matriks cakupan.
+- **Catatan:** ini pola lintas-halaman, bukan khusus DASH-06 — sebaiknya dikerjakan sekali sebagai helper bersama (`useSearchParams` + `router.replace`), bukan tambal per dashboard.
+- **Validation:** filter tercermin di query string, halaman dibuka ulang dengan query string menghasilkan tampilan identik. · **Owner:** Frontend.
+
 ## Debt Sequencing
 
 | Waktu                | Fokus                  | Catatan                                                    |
@@ -143,10 +154,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 </details>
 
-### Debt Register — Selesai (9 item)
+### Debt Register — Selesai (11 item)
 
 <details>
-<summary><strong>Lihat 9 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013</summary>
+<summary><strong>Lihat 11 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 022, 023</summary>
 
 | ID | Debt Item | Priority | Selesai |
 | --- | --- | --- | --- |
@@ -159,12 +170,18 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-011 | Env & tooling drift | P2 | ✅ 2026-07-12 (#129) |
 | TD-012 | Identifier Bahasa Indonesia vs rule "variable English" | P3 | ✅ 2026-07-12 (#130) |
 | TD-013 | Mislabel `FarmerGroup` = "Lembaga Petani" (relabel UI) | P2 | ✅ 2026-07-14 (#147) |
+| TD-022 | BMP: produksi jadi orphan saat revisi lahan (asimetri produktivitas) | P2 | ✅ 2026-07-21 |
+| TD-023 | Dua definisi "cakupan pelatihan" antar dashboard | P3 | ✅ 2026-07-21 |
 
 **TD-001** — S3/PDF utility belum terintegrasi ke modul Training. Evidence: Training + evidence upload S3 sudah terintegrasi via `upload.ts` (#81); CLI `get-link`/`pdf-manager` tetap sebagai utilitas. Owner: Backend/Storage Lead. Validation: evidence upload berfungsi di app; sisa CLI tak load dotenv → TD-011. ✅
 
 **TD-003** — `.DS_Store` tidak tracked, tetapi masih ada di working tree. Evidence: `git ls-files` kosong; `find` menemukan file lokal. Owner: Repository Maintainer. Validation: `.DS_Store` tetap ignored dan tidak masuk git (closed for git tracking). ✅
 
 **TD-005** — Dashboard cache/debug scripts tampak berasal dari implementasi lama (menyebut dashboard stats/markers/batches yang tidak ada di source action). Validation: debug scripts dipindah ke `scripts/local/` (gitignored), tidak ada di repo/CI. ✅
+
+**TD-022** — BMP: produksi jadi orphan saat revisi lahan, membuat produktivitas (Ton/Ha) menggelembung. **Akar masalah:** `bulk-upload-parcel.ts` menerapkan revisi dengan menonaktifkan baris lahan lama lalu membuat baris **baru ber-id baru**, sementara `ProductionRecord.parcelId` tetap menunjuk id lama → tonase masuk pembilang, luasnya tidak masuk penyebut, dan lahan terbaca "tanpa data produksi". **Fix:** `updateMany` memindahkan seluruh `ProductionRecord` (termasuk yang nonaktif, agar riwayat utuh) dari id lama ke id baru di dalam transaksi yang sama. `updateLandParcel` tidak terdampak — update in-place, id lestari. **Evidence:** `src/test/dashboard-asymmetry.test.ts` (invarian "tidak ada produksi menunjuk lahan nonaktif" + test perilaku lama sebagai pembanding); audit read-only `mis-prod` 2026-07-21: 17.063 record produksi, **0 orphan** → tidak ada perbaikan data retroaktif yang diperlukan. **Sisa yang SENGAJA dipertahankan:** record `parcelId = null` tetap menyumbang pembilang — itu keputusan owner terdokumentasi (#136, disertai disclaimer), bukan celah; saat ini 0 record. ✅
+
+**TD-023** — Dua definisi "cakupan pelatihan" antar dashboard (Main petani-sentris vs DASH-06 kegiatan-sentris). **Temuan:** divergensi itu **tidak bisa terjadi** — `addParticipants` (`training.ts`) sudah memvalidasi peserta ke `farmerGroupId: activity.farmerGroupId` dan menolak seluruh batch bila ada yang tidak cocok, sehingga himpunan peserta selalu ⊆ anggota Lembaga penyelenggara. Ditambah filter `farmer.isActive` di payload DASH-06 (fix 2026-07-21), kedua definisi **terbukti identik**, bukan kebetulan data bersih. **Evidence:** `src/test/dashboard-asymmetry.test.ts` menguji guard tersebut (tolak lintas-Lembaga, tolak petani nonaktif, tolak seluruh batch bila ada satu tak valid); audit read-only `mis-prod` 2026-07-21: 8.240 baris kehadiran, **0 lintas-Lembaga, 0 petani nonaktif**. **Catatan operasional:** skrip import pelatihan di `scripts/local/` menulis langsung ke DB dan **melewati guard action** — invarian ini bergantung pada skrip tersebut ikut menegakkannya; jalankan `scripts/local/audit-training-attribution.ts` setelah tiap import. ✅
 
 **TD-006** — `docs/rule.md` menyebut folder dashboard components yang tidak ada. Owner: Tech Lead. Validation: tree arsitektur disinkronkan (audit 2026-07-10): `components/dashboard` dihapus, `hooks/`+`api/` ditambah; docs arsitektur sinkron dengan struktur repo. ✅
 
