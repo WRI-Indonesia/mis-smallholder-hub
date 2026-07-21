@@ -2,7 +2,11 @@ import { describe, it, expect } from "vitest";
 import bcrypt from "bcryptjs";
 import { computeCompleteness, computePelatihanDomain } from "@/lib/data-completeness";
 import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
-import { buildProductionMatrix, enumeratePeriods, type ProductionMatrixRecord } from "@/lib/report-production";
+import {
+  buildProductionMatrix,
+  enumeratePeriods,
+  type ProductionMatrixRecord,
+} from "@/lib/report-production";
 import {
   summarizeProduction,
   buildBmpMapData,
@@ -124,7 +128,9 @@ describe("Performance - AUDIT-P0 RBAC scope guard (#125)", () => {
   it("bulk scope validation short-circuits pada pelanggaran pertama", () => {
     const allowedGroupIds = new Set(["kt-1"]);
     let scanned = 0;
-    const rows = Array.from({ length: 10_000 }, (_, i) => ({ farmerGroupId: i === 0 ? "kt-bad" : "kt-1" }));
+    const rows = Array.from({ length: 10_000 }, (_, i) => ({
+      farmerGroupId: i === 0 ? "kt-bad" : "kt-1",
+    }));
 
     const unauthorized = rows.find((r) => {
       scanned++;
@@ -155,7 +161,19 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       address: i % 3 === 0 ? null : "Jl. Mawar",
       birthDate: new Date("1990-01-01"),
       joinedYear: 2020,
-      landParcels: i % 2 === 0 ? [{ parcelId: `P-${i}`, geometry: { type: "Polygon" }, area: 1.5, plantingYear: 2018, cropType: "Palm", landStatus: "Owned" }] : [],
+      landParcels:
+        i % 2 === 0
+          ? [
+              {
+                parcelId: `P-${i}`,
+                geometry: { type: "Polygon" },
+                area: 1.5,
+                plantingYear: 2018,
+                cropType: "Palm",
+                landStatus: "Owned",
+              },
+            ]
+          : [],
       // Each farmer attends a rotating subset of packages → mix of complete/partial.
       trainingParticipants: PACKAGES.filter((_, pi) => (i + pi) % 4 !== 0).map((p) => ({
         id: `tp-${i}-${p.code}`,
@@ -240,7 +258,9 @@ describe("Performance - RPT-03 Production report pivot (pure logic)", () => {
     const result = buildProductionMatrix(records, periods);
     const duration = performance.now() - start;
 
-    console.log(`  production pivot (${records.length} records → ${result.rows.length} rows × ${periods.length} kolom): ${duration.toFixed(2)}ms`);
+    console.log(
+      `  production pivot (${records.length} records → ${result.rows.length} rows × ${periods.length} kolom): ${duration.toFixed(2)}ms`,
+    );
     expect(duration).toBeLessThan(150);
     expect(result.rows.length).toBe(1000); // 500 farmers × 2 parcels
     expect(result.summary.totalPetani).toBe(500);
@@ -266,7 +286,9 @@ describe("Performance - MAP-01 parcel production summary (pure logic)", () => {
     const result = summarizeProduction(records);
     const duration = performance.now() - start;
 
-    console.log(`  production summary (${records.length} records → ${result.byYear.length} tahun): ${duration.toFixed(2)}ms`);
+    console.log(
+      `  production summary (${records.length} records → ${result.byYear.length} tahun): ${duration.toFixed(2)}ms`,
+    );
     expect(duration).toBeLessThan(50);
     expect(result.byYear.length).toBe(30);
     expect(result.recordCount).toBe(records.length);
@@ -280,7 +302,15 @@ describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
   function squareAt(lng: number, lat: number): RawParcel["geometry"] {
     return {
       type: "Polygon",
-      coordinates: [[[lng, lat], [lng + 0.01, lat], [lng + 0.01, lat + 0.01], [lng, lat + 0.01], [lng, lat]]],
+      coordinates: [
+        [
+          [lng, lat],
+          [lng + 0.01, lat],
+          [lng + 0.01, lat + 0.01],
+          [lng, lat + 0.01],
+          [lng, lat],
+        ],
+      ],
     };
   }
 
@@ -299,7 +329,11 @@ describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
 
     const periods = enumeratePeriods("2022-01", "2024-12"); // 36 consecutive months
     const production = new Map<string, { period: string; kg: number }[]>();
-    for (const p of parcels) production.set(p.id, periods.map((period) => ({ period, kg: 120 })));
+    for (const p of parcels)
+      production.set(
+        p.id,
+        periods.map((period) => ({ period, kg: 120 })),
+      );
 
     const start = performance.now();
     const result = buildBmpMapData([], parcels, production);
@@ -344,7 +378,9 @@ describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
     const matrix = buildBmpProductivityMatrix(parcels);
     const duration = performance.now() - start;
 
-    console.log(`  buildBmpProductivityView+Matrix (500 lahan × 36 bulan): ${duration.toFixed(2)}ms`);
+    console.log(
+      `  buildBmpProductivityView+Matrix (500 lahan × 36 bulan): ${duration.toFixed(2)}ms`,
+    );
     expect(duration).toBeLessThan(100);
     // 12 bulan × 120 kg = 1.440 kg → 1,44 ton ÷ 1,5 ha = 0,96 Ton/Ha → SANGAT_RENDAH
     expect(view.counts.SANGAT_RENDAH).toBe(500);
@@ -370,15 +406,22 @@ describe("Performance - DASH-04 Dashboard BMP snapshot (pure logic)", () => {
     districtName: `Distrik ${g % 5}`,
   }));
   const bmpFarmers = bmpGroups.flatMap((g, gi) =>
-    Array.from({ length: FARMERS_PER_GROUP }, (_, f) => ({ id: `f-${gi}-${f}`, farmerGroupId: g.id }))
+    Array.from({ length: FARMERS_PER_GROUP }, (_, f) => ({
+      id: `f-${gi}-${f}`,
+      farmerGroupId: g.id,
+    })),
   );
   const bmpParcels = bmpFarmers.flatMap((f) =>
-    Array.from({ length: PARCELS_PER_FARMER }, (_, p) => ({ id: `${f.id}-p${p}`, farmerId: f.id, area: 1.5 }))
+    Array.from({ length: PARCELS_PER_FARMER }, (_, p) => ({
+      id: `${f.id}-p${p}`,
+      farmerId: f.id,
+      area: 1.5,
+    })),
   );
   const periods = enumeratePeriods("2023-01", "2025-12"); // 36 bulan
   // Tiap petani melapor 36 bulan di lahan pertamanya → 72.000 baris produksi.
   const bmpProduction = bmpFarmers.flatMap((f) =>
-    periods.map((period) => ({ farmerId: f.id, parcelId: `${f.id}-p0`, period, kg: 120 }))
+    periods.map((period) => ({ farmerId: f.id, parcelId: `${f.id}-p0`, period, kg: 120 })),
   );
 
   it("buildBmpSnapshotData: 6.000 lahan × 36 bulan (72k baris) under 300ms", () => {
@@ -423,7 +466,9 @@ describe("Performance - addParticipants Zod validation (#130)", () => {
     const r = addParticipantsSchema.safeParse({ activityId: "act-1", participants });
     const duration = performance.now() - start;
 
-    console.log(`  addParticipants validation (${participants.length} peserta): ${duration.toFixed(2)}ms`);
+    console.log(
+      `  addParticipants validation (${participants.length} peserta): ${duration.toFixed(2)}ms`,
+    );
     expect(r.success).toBe(true);
     expect(duration).toBeLessThan(50);
   });
@@ -474,7 +519,9 @@ describe("Performance - Farmer sub-group derivation (#152)", () => {
     const result = deriveFarmerSubGroups(parcels);
     const duration = performance.now() - start;
 
-    console.log(`  deriveFarmerSubGroups (10k lahan): ${result.gapoktan.length} gapoktan / ${result.kelompokTani.length} KT in ${duration.toFixed(2)}ms`);
+    console.log(
+      `  deriveFarmerSubGroups (10k lahan): ${result.gapoktan.length} gapoktan / ${result.kelompokTani.length} KT in ${duration.toFixed(2)}ms`,
+    );
     expect(result.gapoktan.length).toBe(40); // noise spasi ter-dedup
     expect(result.kelompokTani.length).toBe(250);
     expect(duration).toBeLessThan(50);
@@ -533,7 +580,10 @@ describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga d
     }));
 
     const start = performance.now();
-    const perLembaga = new Map<string, { kt: Set<string>; gapoktan: Set<string>; blok: Set<string> }>();
+    const perLembaga = new Map<
+      string,
+      { kt: Set<string>; gapoktan: Set<string>; blok: Set<string> }
+    >();
     for (const p of parcels) {
       let agg = perLembaga.get(p.farmerGroupId);
       if (!agg) {
@@ -549,7 +599,9 @@ describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga d
     }
     const duration = performance.now() - start;
 
-    console.log(`  per-Lembaga distinct (${N_LEMBAGA} lembaga × 50k lahan): ${duration.toFixed(2)}ms`);
+    console.log(
+      `  per-Lembaga distinct (${N_LEMBAGA} lembaga × 50k lahan): ${duration.toFixed(2)}ms`,
+    );
     expect(perLembaga.size).toBe(N_LEMBAGA);
     expect(duration).toBeLessThan(100); // margin longgar (aktual ~8ms) — guard O(n), bukan micro-benchmark
   });
@@ -560,7 +612,8 @@ describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga d
 // Guard O(n·titik) — dihitung sekali per render preview / klik cetak.
 describe("Performance - Laporan Lahan map layout + grid (#179)", () => {
   it("layouts 2k parcels × 64 vertices + 4×5 grid split under 250ms", async () => {
-    const { buildLandParcelMapLayout, splitParcelsIntoGrid } = await import("@/lib/report-land-parcel");
+    const { buildLandParcelMapLayout, splitParcelsIntoGrid } =
+      await import("@/lib/report-land-parcel");
     const ring = (lon: number, lat: number) =>
       Array.from({ length: 64 }, (_, k) => [
         lon + 0.005 * Math.cos((2 * Math.PI * k) / 64),
@@ -583,5 +636,90 @@ describe("Performance - Laporan Lahan map layout + grid (#179)", () => {
     expect(layout.polygons).toHaveLength(2_000);
     expect(split.cells.reduce((a, c) => a + c.parcels.length, 0)).toBe(2_000);
     expect(duration).toBeLessThan(250); // margin longgar — guard kompleksitas, bukan micro-benchmark
+  });
+});
+
+/**
+ * TD-020 — Dashboard Pelatihan sengaja **live query** tanpa paginasi: seluruh
+ * kegiatan + peserta dalam scope ditarik ke satu payload lalu diagregasi di
+ * client. Aman pada volume sekarang (±184 kegiatan / ±8.240 kehadiran), tetapi
+ * tanpa pagar pertumbuhannya hanya ketahuan lewat keluhan "dashboard lambat".
+ *
+ * Ambang di bawah dipasang pada volume ~6× data produksi hari ini. Bila test ini
+ * mulai merah, itu sinyal untuk menimbang pola snapshot (nama tabelnya sudah
+ * disiapkan di `docs/database/dashboard-snapshots.md`), bukan sekadar
+ * melonggarkan ambangnya.
+ */
+describe("Performance — agregasi Dashboard Pelatihan (TD-020)", () => {
+  const GROUPS = 40;
+  const FARMERS_PER_GROUP = 120;
+  const ACTIVITIES_PER_GROUP = 30;
+
+  const PACKAGES = [
+    "PAKET_1_BMP_PC_RSPO_NKT",
+    "PAKET_2_MK",
+    "PAKET_2_K3",
+    "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV",
+  ] as const;
+
+  const groups = Array.from({ length: GROUPS }, (_, g) => ({
+    id: `g${g}`,
+    name: `Lembaga ${g}`,
+    code: `L${g}`,
+    category: (g % 2 === 0 ? "SWADAYA" : "EX_PLASMA") as "SWADAYA" | "EX_PLASMA",
+    districtId: `d${g % 5}`,
+    districtName: `Distrik ${g % 5}`,
+    totalFarmers: FARMERS_PER_GROUP,
+    activities: Array.from({ length: ACTIVITIES_PER_GROUP }, (_, a) => ({
+      id: `g${g}-a${a}`,
+      packageCode: PACKAGES[a % PACKAGES.length],
+      date: `${2023 + (a % 3)}-${String((a % 12) + 1).padStart(2, "0")}-10`,
+      hasEvidence: a % 4 !== 0,
+      hasLocation: a % 5 !== 0,
+      // 50 peserta per kegiatan → 40 × 30 × 50 = 60.000 baris kehadiran
+      participants: Array.from({ length: 50 }, (_, p) => ({
+        farmerId: `g${g}-f${(a * 7 + p) % FARMERS_PER_GROUP}`,
+        gender: (p % 3 === 0 ? "F" : "M") as "F" | "M",
+        preTestScore: p % 6 === 0 ? null : 40 + (p % 30),
+        postTestScore: p % 6 === 0 ? null : 55 + (p % 40),
+      })),
+    })),
+  }));
+
+  it("payload 60.000 baris kehadiran: KPI + matriks + tren + skor < 1200 ms", async () => {
+    const {
+      trainingTotals,
+      trainingCoverageMatrix,
+      trainingTrendSeries,
+      trainingScoreRows,
+      trainingQualityStats,
+    } = await import("@/lib/training-dashboard-aggregation");
+
+    const attendance = groups.reduce(
+      (n, g) => n + g.activities.reduce((m, a) => m + a.participants.length, 0),
+      0,
+    );
+    expect(attendance).toBe(60_000);
+
+    const start = performance.now();
+    // Seluruh agregat yang dihitung ulang tiap kali filter berubah.
+    trainingTotals(groups, null);
+    trainingCoverageMatrix(groups, null);
+    trainingTrendSeries(groups, null);
+    trainingScoreRows(groups, null);
+    trainingQualityStats(groups, null);
+    const duration = performance.now() - start;
+
+    expect(duration).toBeLessThan(1200);
+  });
+
+  it("matriks cakupan tetap benar pada volume besar (bukan hanya cepat)", async () => {
+    const { trainingCoverageMatrix } = await import("@/lib/training-dashboard-aggregation");
+    const rows = trainingCoverageMatrix(groups, null);
+    expect(rows).toHaveLength(GROUPS);
+    // Invarian inti: petani terlatih tak pernah melebihi jumlah petani aktif.
+    for (const r of rows) {
+      expect(r.anyPackage).toBeLessThanOrEqual(r.totalFarmers);
+    }
   });
 });

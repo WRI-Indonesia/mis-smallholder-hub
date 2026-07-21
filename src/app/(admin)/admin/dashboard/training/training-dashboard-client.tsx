@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useUrlFilters } from "@/hooks/use-url-filters";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -63,11 +64,20 @@ const formatGeneratedAt = (iso: string) => {
 };
 
 export function TrainingDashboardClient({ view }: { view: TrainingDashboardView }) {
-  const [districtId, setDistrictId] = useState<string | null>(null);
-  const [groupId, setGroupId] = useState<string | null>(null);
-  const [category, setCategory] = useState<BmpFarmerGroupCategory | null>(null);
+  // Filter disimpan di query string (TD-021) agar tampilan bisa di-bookmark &
+  // dikirim ke rekan, dan bertahan saat halaman dimuat ulang.
+  const { get, setMany } = useUrlFilters();
+  const districtId = get("distrik");
+  const groupId = get("lembaga");
+  const category = (get("kategori") as BmpFarmerGroupCategory | null) ?? null;
   // Default "semua tahun" — cakupan program bersifat kumulatif, bukan per tahun.
-  const [year, setYear] = useState<number | null>(null);
+  const yearParam = get("tahun");
+  const year = yearParam != null && /^\d{4}$/.test(yearParam) ? Number(yearParam) : null;
+
+  const setDistrictId = (v: string | null) => setMany({ distrik: v, lembaga: null });
+  const setGroupId = (v: string | null) => setMany({ lembaga: v });
+  const setCategory = (v: BmpFarmerGroupCategory | null) => setMany({ kategori: v, lembaga: null });
+  const setYear = (v: number | null) => setMany({ tahun: v == null ? null : String(v) });
 
   const [districtOpen, setDistrictOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -129,7 +139,6 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
             value={category ?? "all"}
             onValueChange={(v) => {
               setCategory(v === "all" ? null : (v as BmpFarmerGroupCategory));
-              setGroupId(null);
             }}
           >
             <SelectTrigger className="w-[150px] h-9">
@@ -174,7 +183,6 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
                       value="Semua Distrik"
                       onSelect={() => {
                         setDistrictId(null);
-                        setGroupId(null);
                         setDistrictOpen(false);
                       }}
                     >
@@ -189,7 +197,6 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
                         value={d.name}
                         onSelect={() => {
                           setDistrictId(d.id);
-                          setGroupId(null);
                           setDistrictOpen(false);
                         }}
                       >
