@@ -26,6 +26,12 @@ model Farmer {
   landParcels          LandParcel[]
   productionRecords    ProductionRecord[]
 
+  // Keunikan ID Petani berlaku PER LEMBAGA (TD-024, keputusan owner 2026-07-21):
+  // nomor petani adalah milik lembaga masing-masing, jadi lembaga berbeda boleh
+  // memakai nomor yang sama. Constraint tidak mengenal soft delete — baris
+  // nonaktif tetap memakai slotnya, dan itu memang dikehendaki: memakai ulang ID
+  // milik petani nonaktif akan memecah riwayat pelatihan & lahannya.
+  @@unique([farmerGroupId, farmerId])
   @@index([farmerGroupId])
   @@index([isActive])
   @@index([farmerId])

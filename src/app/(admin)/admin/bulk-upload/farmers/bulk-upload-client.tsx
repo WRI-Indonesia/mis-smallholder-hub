@@ -25,7 +25,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -38,7 +45,7 @@ import {
   Check,
   ChevronsUpDown,
 } from "lucide-react";
-import { bulkCreateFarmers } from "@/server/actions/bulk-upload";
+import { bulkCreateFarmers, getExistingFarmerIds } from "@/server/actions/bulk-upload";
 
 interface FarmerGroup {
   id: string;
@@ -49,7 +56,6 @@ interface FarmerGroup {
 interface Props {
   farmerGroups: FarmerGroup[];
   permissions: string[];
-  existingFarmerIds: string[];
 }
 
 type RawRow = Record<string, Excel.CellValue>;
@@ -79,7 +85,12 @@ const TARGET_FIELDS = [
   { key: "birthPlace", label: "Tempat Lahir", required: false, desc: "Opsional" },
   { key: "birthDate", label: "Tanggal Lahir", required: false, desc: "Format tanggal (opsional)" },
   { key: "address", label: "Alamat", required: false, desc: "Opsional" },
-  { key: "joinedYear", label: "Tahun Bergabung", required: false, desc: "Tahun 1900-2100 (opsional)" },
+  {
+    key: "joinedYear",
+    label: "Tahun Bergabung",
+    required: false,
+    desc: "Tahun 1900-2100 (opsional)",
+  },
 ];
 
 const AUTO_MATCH_RULES: Record<string, string[]> = {
@@ -88,14 +99,31 @@ const AUTO_MATCH_RULES: Record<string, string[]> = {
   gender: ["jenis kelamin", "gender", "sex", "lp", "l/p", "jk", "kelamin"],
   nik: ["nik", "no. ktp", "ktp", "national id", "no_ktp"],
   birthPlace: ["tempat lahir", "birth place", "birthplace", "tempat_lahir"],
-  birthDate: ["tanggal lahir", "birth date", "birthdate", "tanggal_lahir", "tgl lahir", "tgl_lahir"],
+  birthDate: [
+    "tanggal lahir",
+    "birth date",
+    "birthdate",
+    "tanggal_lahir",
+    "tgl lahir",
+    "tgl_lahir",
+  ],
   address: ["alamat", "address", "domisili"],
-  joinedYear: ["tahun bergabung", "joined year", "joinedyear", "tahun_bergabung", "thn bergabung", "thn_bergabung"],
+  joinedYear: [
+    "tahun bergabung",
+    "joined year",
+    "joinedyear",
+    "tahun_bergabung",
+    "thn bergabung",
+    "thn_bergabung",
+  ],
 };
 
-export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds }: Props) {
+export function BulkUploadClient({ farmerGroups, permissions }: Props) {
   const router = useRouter();
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  // ID yang sudah dipakai **di lembaga terpilih** — keunikan berlaku per Lembaga
+  // (TD-024), jadi daftar ini diambil ulang tiap kali lembaganya berganti.
+  const [existingFarmerIds, setExistingFarmerIds] = useState<string[]>([]);
   const [comboOpen, setComboOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -143,7 +171,11 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
   }
 
   // Smart validation and normalization
-  function validateRow(row: RawRow, index: number, duplicatesInFile: Set<string>): { data: FarmerValidatedRow; errors: string[] } {
+  function validateRow(
+    row: RawRow,
+    index: number,
+    duplicatesInFile: Set<string>,
+  ): { data: FarmerValidatedRow; errors: string[] } {
     const errors: string[] = [];
     const normalized: FarmerValidatedRow = {
       _rowNum: index + 2, // Excel rows are 1-based, plus header is 2
@@ -161,7 +193,8 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
     // Original values kept for download
     for (const f of TARGET_FIELDS) {
       const mappedCol = mapping[f.key];
-      normalized._original[f.key] = (mappedCol ? row[mappedCol] : "") as string | number | null | undefined;
+      normalized._original[f.key] = (mappedCol ? row[mappedCol] : "") as
+        string | number | null | undefined;
     }
 
     // 1. Name
@@ -200,7 +233,9 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
       } else if (["p", "f", "perempuan", "wanita", "female"].includes(gLower)) {
         normalized.gender = "F";
       } else {
-        errors.push(`Jenis kelamin tidak valid: "${rawGender}" (Gunakan L/P atau Laki-laki/Perempuan)`);
+        errors.push(
+          `Jenis kelamin tidak valid: "${rawGender}" (Gunakan L/P atau Laki-laki/Perempuan)`,
+        );
       }
     }
 
@@ -250,14 +285,16 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
     if (rawJoinedYear !== undefined && rawJoinedYear !== null && rawJoinedYear !== "") {
       const parsedYear = parseInt(rawJoinedYear.toString().trim(), 10);
       if (isNaN(parsedYear) || parsedYear < 1900 || parsedYear > 2100) {
-        errors.push(`Tahun bergabung tidak valid: "${rawJoinedYear}" (Gunakan tahun antara 1900-2100)`);
+        errors.push(
+          `Tahun bergabung tidak valid: "${rawJoinedYear}" (Gunakan tahun antara 1900-2100)`,
+        );
       } else {
         normalized.joinedYear = parsedYear;
       }
     } else {
       normalized.joinedYear = null;
     }
- 
+
     normalized._isValid = errors.length === 0;
     normalized._errors = errors;
     return { data: normalized, errors };
@@ -309,7 +346,9 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
         let sheetHeaders: string[] = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-          const values = Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values);
+          const values = Array.isArray(row.values)
+            ? row.values.slice(1)
+            : Object.values(row.values);
           if (rowNumber === 1) {
             sheetHeaders = values.map((v) => v?.toString().trim() || "");
           } else {
@@ -338,9 +377,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
     const matched: Record<string, string> = {};
     for (const f of TARGET_FIELDS) {
       const rules = AUTO_MATCH_RULES[f.key] || [];
-      const bestMatch = detectedHeaders.find((h) =>
-        rules.includes(h.toLowerCase().trim())
-      );
+      const bestMatch = detectedHeaders.find((h) => rules.includes(h.toLowerCase().trim()));
       if (bestMatch) {
         matched[f.key] = bestMatch;
       }
@@ -353,11 +390,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
     // Ensure all required fields are mapped
     const missing = TARGET_FIELDS.filter((f) => f.required && !mapping[f.key]);
     if (missing.length > 0) {
-      toast.error(
-        `Kolom wajib berikut belum dipetakan: ${missing
-          .map((f) => f.label)
-          .join(", ")}`
-      );
+      toast.error(`Kolom wajib berikut belum dipetakan: ${missing.map((f) => f.label).join(", ")}`);
       return;
     }
 
@@ -412,10 +445,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
       fgColor: { argb: "FFE0E0E0" },
     };
 
-    const targetList =
-      mode === "errors"
-        ? validatedData.filter((d) => !d._isValid)
-        : validatedData;
+    const targetList = mode === "errors" ? validatedData.filter((d) => !d._isValid) : validatedData;
 
     targetList.forEach((row) => {
       const birthDateStr = row.birthDate
@@ -537,6 +567,12 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
                         value={`${g.name} ${g.code || ""}`}
                         onSelect={() => {
                           setSelectedGroupId(g.id);
+                          // Daftar ID existing lembaga ini — dipakai menandai
+                          // baris duplikat saat validasi berkas.
+                          setExistingFarmerIds([]);
+                          getExistingFarmerIds(g.id)
+                            .then(setExistingFarmerIds)
+                            .catch(() => toast.error("Gagal memuat daftar ID petani lembaga ini"));
                           setFile(null);
                           setHeaders([]);
                           setRawRows([]);
@@ -547,7 +583,7 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
                         <Check
                           className={cn(
                             "mr-2 h-4 w-4",
-                            selectedGroupId === g.id ? "opacity-100" : "opacity-0"
+                            selectedGroupId === g.id ? "opacity-100" : "opacity-0",
                           )}
                         />
                         <span>
@@ -577,7 +613,8 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
             />
             {file ? (
               <span className="text-sm text-muted-foreground">
-                Tipe file terdeteksi: <strong>{file.name.split(".").pop()?.toUpperCase()}</strong> ({rawRows.length} baris data)
+                Tipe file terdeteksi: <strong>{file.name.split(".").pop()?.toUpperCase()}</strong> (
+                {rawRows.length} baris data)
               </span>
             ) : (
               !selectedGroupId && (
@@ -772,20 +809,26 @@ export function BulkUploadClient({ farmerGroups, permissions, existingFarmerIds 
                       <TableCell className="font-mono text-muted-foreground">
                         {row._rowNum}
                       </TableCell>
-                      <TableCell className="font-mono">{row.farmerId || row._original.farmerId || "—"}</TableCell>
-                      <TableCell className="font-medium">{row.name || row._original.name || "—"}</TableCell>
+                      <TableCell className="font-mono">
+                        {row.farmerId || row._original.farmerId || "—"}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {row.name || row._original.name || "—"}
+                      </TableCell>
                       <TableCell>
                         {row.gender ? (
-                          <Badge variant="secondary">
-                            {row.gender === "M" ? "L" : "P"}
-                          </Badge>
+                          <Badge variant="secondary">{row.gender === "M" ? "L" : "P"}</Badge>
                         ) : (
                           row._original.gender || "—"
                         )}
                       </TableCell>
-                      <TableCell className="font-mono">{row.nik || row._original.nik || "—"}</TableCell>
+                      <TableCell className="font-mono">
+                        {row.nik || row._original.nik || "—"}
+                      </TableCell>
                       <TableCell>{row._farmerGroupName || "—"}</TableCell>
-                      <TableCell className="font-mono">{row.joinedYear || row._original.joinedYear || "—"}</TableCell>
+                      <TableCell className="font-mono">
+                        {row.joinedYear || row._original.joinedYear || "—"}
+                      </TableCell>
                       <TableCell className="tabular-nums">
                         {row.birthDate
                           ? new Date(row.birthDate).toLocaleDateString("id-ID")

@@ -22,13 +22,34 @@ export async function getFarmerGroupsForMapping() {
   });
 }
 
-export async function getExistingFarmerIds() {
+/**
+ * ID petani yang sudah dipakai **di satu Lembaga** — untuk memvalidasi berkas
+ * unggahan sebelum disimpan.
+ *
+ * Keunikan `farmerId` berlaku **per Lembaga** (TD-024), jadi pemeriksaannya
+ * dibatasi ke lembaga tujuan. Sebelumnya query ini mengambil seluruh `farmerId`
+ * di database tanpa filter apa pun: aturannya jadi lebih ketat daripada yang
+ * ditegakkan sistem, **dan** membocorkan keberadaan ID di luar wilayah kerja
+ * pengguna (melanggar lapisan data-access).
+ *
+ * Baris nonaktif ikut dihitung — constraint DB tidak mengenal soft delete.
+ */
+export async function getExistingFarmerIds(farmerGroupId: string) {
   if (!(await hasPermission("bulk-upload-farmers", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
+  // Lembaga tujuan wajib berada dalam scope pengguna. `AND` (bukan spread) agar
+  // filter `{ id: { in } }` pada mode BY_FARMER_GROUP tidak menimpa literal `id`.
+  const access = await getAccessContext();
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id: farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!group) throw new Error("Lembaga petani tidak ditemukan atau di luar akses Anda");
+
   const farmers = await prisma.farmer.findMany({
-    where: { isActive: true },
+    where: { farmerGroupId },
     select: { farmerId: true },
   });
 
@@ -36,7 +57,7 @@ export async function getExistingFarmerIds() {
 }
 
 export async function bulkCreateFarmers(
-  dataList: Record<string, unknown>[]
+  dataList: Record<string, unknown>[],
 ): Promise<ActionResult<{ count: number }>> {
   if (!(await hasPermission("bulk-upload-farmers", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
@@ -53,7 +74,7 @@ export async function bulkCreateFarmers(
       return {
         success: false,
         error: `Validasi gagal pada salah satu baris: ${JSON.stringify(
-          parsed.error.flatten().fieldErrors
+          parsed.error.flatten().fieldErrors,
         )}`,
       };
     }
