@@ -6,6 +6,7 @@ import {
   Upload,
   LayoutDashboard,
   Map as MapIcon,
+  User,
   BarChart3,
   FileText,
   Wrench,
@@ -59,6 +60,12 @@ import pPetaLahan from "@/content/help/tutorial/p-5-peta-lahan.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 
+// Lapis Referensi — "apa arti kolom & tombol di halaman ini".
+import rDaftarPetani from "@/content/help/referensi/r-1-daftar-petani.md";
+import rDaftarLahan from "@/content/help/referensi/r-2-daftar-lahan.md";
+import rDaftarPelatihan from "@/content/help/referensi/r-3-daftar-pelatihan.md";
+import rDaftarProduksi from "@/content/help/referensi/r-4-daftar-produksi.md";
+
 type IconType = React.ComponentType<{ className?: string }>;
 
 /** Ikon yang boleh dirujuk frontmatter `icon:` (nama tak dikenal → fallback). */
@@ -78,6 +85,7 @@ const ICONS: Record<string, IconType> = {
   GraduationCap,
   TrendingUp,
   Printer,
+  User,
 };
 
 export interface HelpTopic {
@@ -196,6 +204,20 @@ const CHAPTER_SOURCES: ChapterSource[] = [
     topics: [
       { id: "analisa-data", source: aAnalisaData },
       { id: "mengelola-pengguna", source: aMengelolaPengguna },
+    ],
+  },
+  {
+    slug: "referensi-halaman",
+    section: "referensi",
+    title: "Referensi Halaman",
+    summary:
+      "Arti tiap kolom, filter, dan tombol di halaman yang paling sering dipakai — untuk dirujuk saat bekerja, bukan dibaca berurutan.",
+    icon: BookOpen,
+    topics: [
+      { id: "daftar-petani", source: rDaftarPetani },
+      { id: "daftar-lahan", source: rDaftarLahan },
+      { id: "daftar-pelatihan", source: rDaftarPelatihan },
+      { id: "daftar-produksi", source: rDaftarProduksi },
     ],
   },
   {

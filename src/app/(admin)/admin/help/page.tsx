@@ -28,6 +28,7 @@ export default async function HelpIndexPage() {
     role === "SUPERADMIN" ? null : await getEffectiveMenuPermissions(role, session?.user?.id);
 
   const tutorialChapters = helpChaptersBySection("tutorial");
+  const referensiChapters = helpChaptersBySection("referensi");
   const konsepChapters = helpChaptersBySection("konsep");
 
   return (
@@ -88,6 +89,36 @@ export default async function HelpIndexPage() {
                     </Link>
                   );
                 }),
+              )}
+            </div>
+          </section>
+        )}
+
+        {referensiChapters.flatMap((c) => c.topics).length > 0 && (
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">Referensi halaman</h2>
+              <p className="text-sm text-muted-foreground">
+                Arti tiap kolom, filter, dan tombol — untuk dirujuk saat bekerja, bukan dibaca
+                berurutan.
+              </p>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {referensiChapters.flatMap((chapter) =>
+                chapter.topics.map((topic) => (
+                  <Link
+                    key={`${chapter.slug}-${topic.id}`}
+                    href={`/admin/help/${chapter.slug}/${topic.id}`}
+                    className="group flex items-center gap-2.5 rounded-lg border bg-card px-4 py-3 transition-colors hover:border-primary/40 hover:bg-accent/40"
+                  >
+                    <topic.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 text-sm font-medium leading-tight">
+                      {topic.title}
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                )),
               )}
             </div>
           </section>
