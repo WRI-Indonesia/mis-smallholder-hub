@@ -181,6 +181,7 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 1. ✅ **Tests**: `npm test` — all pass, no skipped tests
 2. ✅ **Build**: `npm run build` — no errors or warnings
 3. ✅ **Lint**: `npm run lint` — **exit 0**, 0 error (BUG-006 ✅ selesai 2026-07-12, #126; wajib dijalankan lokal sebelum commit — lihat Pre-Commit Gate di [`workflow.md`](../standards/workflow.md))
+4. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
 4. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
 4. ✅ **Code Review**: Implementation matches rule.md requirements
 5. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
