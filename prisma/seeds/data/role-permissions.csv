@@ -172,6 +172,10 @@ SUPERADMIN,dashboard-bmp,VIEW
 ADMIN,dashboard-bmp,VIEW
 OPERATOR,dashboard-bmp,VIEW
 MANAGEMENT,dashboard-bmp,VIEW
+SUPERADMIN,dashboard-training,VIEW
+ADMIN,dashboard-training,VIEW
+OPERATOR,dashboard-training,VIEW
+MANAGEMENT,dashboard-training,VIEW
 SUPERADMIN,dashboard-snapshot-bmp,CREATE
 SUPERADMIN,dashboard-snapshot-bmp,VIEW
 SUPERADMIN,dashboard-snapshot-bmp,DELETE

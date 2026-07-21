@@ -32,5 +32,6 @@ map,,Map,/admin/map,Map,7,TRUE,TRUE
 map-parcel,map,Peta Lahan,/admin/map/parcel,MapPinned,1,TRUE,TRUE
 map-bmp,map,Peta BMP,/admin/map/bmp,Sprout,2,TRUE,TRUE
 dashboard-bmp,dashboard,BMP Dashboard (Produksi),/admin/dashboard/bmp,Sprout,2,TRUE,TRUE
+dashboard-training,dashboard,Dashboard Pelatihan,/admin/dashboard/training,GraduationCap,3,TRUE,TRUE
 dashboard-snapshot-bmp,tools,Dashboard Snapshot BMP,/admin/tools/snapshot-bmp,Camera,2,TRUE,TRUE
 help,,Bantuan,/admin/help,HelpCircle,9,TRUE,TRUE
