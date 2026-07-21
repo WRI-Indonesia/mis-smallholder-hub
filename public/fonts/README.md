@@ -10,8 +10,14 @@ File font berlisensi WRI. Sumber resmi: Adobe Fonts (Creative Cloud) atau
 
 | File | Weight | Format |
 |------|--------|--------|
+| `acumin-pro-condensed-light.woff2`   | 300 | woff2 |
 | `acumin-pro-condensed-regular.woff2` | 400 | woff2 |
 | `acumin-pro-condensed-bold.woff2`    | 700 | woff2 |
+
+Weight **300 (Light)** dipakai teks tingkat **Detail** di menu Bantuan. Dikonversi
+dari `.otf` sumber ke woff2 (`npx ttf2woff2`) — 80 KB → 42 KB. Tanpa berkas ini
+`font-light` tidak berefek: browser mensintesis huruf tebal, tetapi tidak pernah
+mensintesis huruf yang lebih tipis.
 
 Font UI utama (`body`) memakai family **"Acumin Pro Condensed"** dengan fallback
 **Arial → Helvetica → sans-serif** (rekomendasi WRI). Bila file hilang, UI jatuh

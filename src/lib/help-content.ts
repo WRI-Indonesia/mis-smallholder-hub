@@ -10,6 +10,8 @@ import {
   FileText,
   Wrench,
   HelpCircle,
+  UserPlus,
+  ListChecks,
   Rocket,
   FolderInput,
   Eye,
@@ -34,6 +36,9 @@ import report from "@/content/help/4-laporan/4-1-report.md";
 import tools from "@/content/help/5-administrasi/5-1-tools.md";
 import kendala from "@/content/help/6-bantuan-lanjutan/6-1-kendala.md";
 
+// Lapis Tutorial (berbasis tugas) — dipisah dari lapis Konsep di bawahnya.
+import tMenambahPetani from "@/content/help/tutorial/t-1-menambah-petani.md";
+
 type IconType = React.ComponentType<{ className?: string }>;
 
 /** Ikon yang boleh dirujuk frontmatter `icon:` (nama tak dikenal → fallback). */
@@ -49,6 +54,7 @@ const ICONS: Record<string, IconType> = {
   FileText,
   Wrench,
   HelpCircle,
+  UserPlus,
 };
 
 export interface HelpTopic {
@@ -60,11 +66,33 @@ export interface HelpTopic {
   blocks: MdBlock[];
   /** Teks polos untuk indeks pencarian. */
   plainText: string;
+  /** Tutorial: hasil yang didapat pembaca di akhir langkah. */
+  goal?: string;
+  /** Tutorial: perkiraan waktu pengerjaan (menit). */
+  duration?: number;
+  /**
+   * Tutorial: menu yang dipakai + level izin minimalnya. Dipakai menandai
+   * tutorial yang di luar hak akses pembaca (lihat `markTopicAccess`).
+   */
+  menuKey?: string;
+  permission?: string;
+  /** Tutorial: tautan langsung ke halaman yang dibahas + label tombolnya. */
+  href?: string;
+  hrefLabel?: string;
 }
+
+/**
+ * Tiga lapis Bantuan. **Tutorial** berorganisasi per tugas ("bagaimana caranya"),
+ * **konsep** menjelaskan istilah & aturan main yang dirujuk tutorial ("apa itu"),
+ * **referensi** merinci arti tiap kolom/tombol per halaman ("apa arti ini").
+ * Rute tetap `/admin/help/[chapter]/[topic]` — section hanya mengelompokkan.
+ */
+export type HelpSection = "tutorial" | "konsep" | "referensi";
 
 export interface HelpChapter {
   /** Slug rute: `/admin/help/[chapter]`. */
   slug: string;
+  section: HelpSection;
   title: string;
   summary: string;
   icon: IconType;
@@ -73,6 +101,7 @@ export interface HelpChapter {
 
 interface ChapterSource {
   slug: string;
+  section: HelpSection;
   title: string;
   summary: string;
   icon: IconType;
@@ -81,9 +110,20 @@ interface ChapterSource {
 
 const CHAPTER_SOURCES: ChapterSource[] = [
   {
+    slug: "tutorial-data-harian",
+    section: "tutorial",
+    title: "Mengelola Data Harian",
+    summary:
+      "Langkah demi langkah pekerjaan yang paling sering dilakukan: mendaftarkan petani, lahan, pelatihan, dan produksi.",
+    icon: ListChecks,
+    topics: [{ id: "menambah-petani", source: tMenambahPetani }],
+  },
+  {
     slug: "memulai",
+    section: "konsep",
     title: "Memulai",
-    summary: "Kenali istilah yang dipakai sistem, cara masuk, dan mengapa tampilan tiap pengguna berbeda.",
+    summary:
+      "Kenali istilah yang dipakai sistem, cara masuk, dan mengapa tampilan tiap pengguna berbeda.",
     icon: Rocket,
     topics: [
       { id: "istilah", source: istilah },
@@ -93,6 +133,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
   },
   {
     slug: "mengelola-data",
+    section: "konsep",
     title: "Mengelola Data",
     summary: "Input harian lewat Master Data, atau unggah massal lewat Bulk Upload.",
     icon: FolderInput,
@@ -103,8 +144,10 @@ const CHAPTER_SOURCES: ChapterSource[] = [
   },
   {
     slug: "memantau",
+    section: "konsep",
     title: "Memantau & Menganalisa",
-    summary: "Ringkasan program lewat dashboard, sebaran spasial lewat peta, dan kualitas data lewat analisa.",
+    summary:
+      "Ringkasan program lewat dashboard, sebaran spasial lewat peta, dan kualitas data lewat analisa.",
     icon: Eye,
     topics: [
       { id: "dashboard", source: dashboard },
@@ -114,6 +157,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
   },
   {
     slug: "laporan",
+    section: "konsep",
     title: "Laporan & Cetak",
     summary: "Enam laporan siap unduh (Excel & PDF), termasuk Laporan Lahan yang menyertakan peta.",
     icon: Printer,
@@ -121,6 +165,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
   },
   {
     slug: "administrasi",
+    section: "konsep",
     title: "Administrasi",
     summary: "Perawatan berkala agar angka dashboard mengikuti data terbaru.",
     icon: Settings2,
@@ -128,6 +173,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
   },
   {
     slug: "bantuan-lanjutan",
+    section: "konsep",
     title: "Bantuan Lanjutan",
     summary: "Kendala yang paling sering ditemui beserta langkah pemeriksaannya.",
     icon: LifeBuoy,
@@ -137,11 +183,13 @@ const CHAPTER_SOURCES: ChapterSource[] = [
 
 export const HELP_CHAPTERS: HelpChapter[] = CHAPTER_SOURCES.map((chapter) => ({
   slug: chapter.slug,
+  section: chapter.section,
   title: chapter.title,
   summary: chapter.summary,
   icon: chapter.icon,
   topics: chapter.topics.map(({ id, source }) => {
     const { frontmatter, blocks } = parseMarkdown(source);
+    const duration = Number.parseInt(frontmatter.duration ?? "", 10);
     return {
       id,
       title: frontmatter.title || id,
@@ -149,9 +197,33 @@ export const HELP_CHAPTERS: HelpChapter[] = CHAPTER_SOURCES.map((chapter) => ({
       icon: ICONS[frontmatter.icon] ?? HelpCircle,
       blocks,
       plainText: blocksToPlainText(blocks),
+      goal: frontmatter.goal || undefined,
+      duration: Number.isFinite(duration) ? duration : undefined,
+      menuKey: frontmatter.menuKey || undefined,
+      permission: frontmatter.permission || undefined,
+      href: frontmatter.href || undefined,
+      hrefLabel: frontmatter.hrefLabel || undefined,
     };
   }),
 }));
+
+/** Bab pada satu lapis, urut sesuai deklarasi. */
+export function helpChaptersBySection(
+  section: HelpSection,
+  chapters: HelpChapter[] = HELP_CHAPTERS,
+): HelpChapter[] {
+  return chapters.filter((c) => c.section === section);
+}
+
+/**
+ * Tandai tutorial yang menunya di luar hak akses pembaca. Sengaja **tidak
+ * disembunyikan** — panduan tetap bisa dibaca (berguna saat pelatihan lintas
+ * peran), hanya diberi keterangan agar tidak ada yang mengikuti langkah lalu
+ * kebingungan mencari tombol yang memang tak akan muncul di layarnya.
+ */
+export function isTopicAccessible(topic: HelpTopic, accessibleMenuKeys: string[]): boolean {
+  return topic.menuKey == null || accessibleMenuKeys.includes(topic.menuKey);
+}
 
 export function getHelpChapter(slug: string): HelpChapter | undefined {
   return HELP_CHAPTERS.find((c) => c.slug === slug);
@@ -166,10 +238,7 @@ export interface HelpTopicLocation {
   number: string;
 }
 
-export function getHelpTopic(
-  chapterSlug: string,
-  topicId: string,
-): HelpTopicLocation | undefined {
+export function getHelpTopic(chapterSlug: string, topicId: string): HelpTopicLocation | undefined {
   const chapterIndex = HELP_CHAPTERS.findIndex((c) => c.slug === chapterSlug);
   if (chapterIndex === -1) return undefined;
   const chapter = HELP_CHAPTERS[chapterIndex];

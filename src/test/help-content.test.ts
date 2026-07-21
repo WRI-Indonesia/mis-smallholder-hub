@@ -57,12 +57,7 @@ describe("parseBlocks", () => {
         "dan baris kedua digabung.",
       ].join("\n"),
     );
-    expect(blocks.map((b) => b.type)).toEqual([
-      "heading",
-      "definition",
-      "list",
-      "paragraph",
-    ]);
+    expect(blocks.map((b) => b.type)).toEqual(["heading", "definition", "list", "paragraph"]);
     const def = blocks[1] as { type: "definition"; term: string };
     expect(def.term).toBe("Istilah");
     const list = blocks[2] as { type: "list"; items: unknown[] };
@@ -137,5 +132,109 @@ describe("media (gambar & video)", () => {
     expect(blocksToPlainText(parseBlocks("![Cara unggah Shapefile](/help/unggah.mp4)"))).toContain(
       "Cara unggah Shapefile",
     );
+  });
+});
+
+describe("blok tutorial — langkah bernomor & callout", () => {
+  it("mengubah baris bernomor jadi satu blok steps", () => {
+    const blocks = parseBlocks("1. Buka menu Petani\n2. Klik Tambah Petani\n3. Isi form");
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("steps");
+    if (blocks[0].type === "steps") {
+      expect(blocks[0].items).toHaveLength(3);
+      expect(blocks[0].items[0].inline[0].value).toBe("Buka menu Petani");
+    }
+  });
+
+  it("mengabaikan angka yang ditulis — penomoran diturunkan dari posisi", () => {
+    // Menyisipkan langkah di tengah tidak boleh menuntut penomoran ulang berkas.
+    const blocks = parseBlocks("1. Satu\n1. Dua\n5. Tiga");
+    expect(blocks[0].type).toBe("steps");
+    if (blocks[0].type === "steps") {
+      expect(blocks[0].items.map((i) => i.inline[0].value)).toEqual(["Satu", "Dua", "Tiga"]);
+    }
+  });
+
+  it("menerima gaya `1)` selain `1.`", () => {
+    const blocks = parseBlocks("1) Satu\n2) Dua");
+    expect(blocks[0].type).toBe("steps");
+    if (blocks[0].type === "steps") expect(blocks[0].items).toHaveLength(2);
+  });
+
+  it("baris kosong memutus rangkaian langkah jadi dua blok", () => {
+    const blocks = parseBlocks("1. Satu\n\n1. Lain");
+    expect(blocks.filter((b) => b.type === "steps")).toHaveLength(2);
+  });
+
+  it("mengenali ketiga nada callout", () => {
+    const blocks = parseBlocks(
+      "> [!tip] Pakai bulk upload\n\n> [!penting] Wajib diisi\n\n> [!hati-hati] ID tidak boleh sama",
+    );
+    expect(blocks.map((b) => (b.type === "callout" ? b.tone : b.type))).toEqual([
+      "tip",
+      "penting",
+      "hati-hati",
+    ]);
+  });
+
+  it("inline di dalam langkah & callout tetap diproses", () => {
+    const blocks = parseBlocks("1. Klik **Tambah Petani**");
+    if (blocks[0].type === "steps") {
+      expect(
+        blocks[0].items[0].inline.some((p) => p.type === "strong" && p.value === "Tambah Petani"),
+      ).toBe(true);
+    }
+  });
+
+  it("isi langkah & callout ikut terindeks pencarian", () => {
+    // Pencarian tutorial paling sering menyasar teks di dalam langkah, bukan judul.
+    const text = blocksToPlainText(
+      parseBlocks("1. Klik Tambah Petani\n\n> [!tip] Pakai bulk upload"),
+    );
+    expect(text).toContain("Klik Tambah Petani");
+    expect(text).toContain("Pakai bulk upload");
+  });
+
+  it("daftar berpoin tidak tertukar dengan langkah", () => {
+    const blocks = parseBlocks("- Poin satu\n- Poin dua");
+    expect(blocks[0].type).toBe("list");
+  });
+});
+
+describe("dua tingkat kedalaman — baris `+`", () => {
+  it("baris + menempel sebagai detail langkah di atasnya", () => {
+    const blocks = parseBlocks("1. Klik Tambah\n+ Tombolnya di kanan atas\n2. Isi nama");
+    expect(blocks[0].type).toBe("steps");
+    if (blocks[0].type === "steps") {
+      expect(blocks[0].items).toHaveLength(2);
+      expect(blocks[0].items[0].detail?.[0].value).toBe("Tombolnya di kanan atas");
+      expect(blocks[0].items[1].detail).toBeUndefined();
+    }
+  });
+
+  it("beberapa baris + berurutan digabung jadi satu detail", () => {
+    const blocks = parseBlocks("1. Langkah\n+ Bagian satu\n+ Bagian dua");
+    if (blocks[0].type === "steps") {
+      const text = blocks[0].items[0].detail?.map((p) => p.value).join("");
+      expect(text).toBe("Bagian satu Bagian dua");
+    }
+  });
+
+  it("baris + tanpa langkah sebelumnya jadi paragraf tingkat detail", () => {
+    const blocks = parseBlocks("Paragraf biasa.\n\n+ Penjelasan tambahan");
+    const last = blocks[blocks.length - 1];
+    expect(last.type).toBe("paragraph");
+    if (last.type === "paragraph") expect(last.detail).toBe(true);
+  });
+
+  it("paragraf biasa tidak ditandai detail", () => {
+    const blocks = parseBlocks("Paragraf biasa.");
+    if (blocks[0].type === "paragraph") expect(blocks[0].detail).toBeUndefined();
+  });
+
+  it("isi detail tetap terindeks pencarian — mode Ringkas hanya menyembunyikan tampilan", () => {
+    const text = blocksToPlainText(parseBlocks("1. Klik Tambah\n+ Tombolnya di kanan atas"));
+    expect(text).toContain("Klik Tambah");
+    expect(text).toContain("Tombolnya di kanan atas");
   });
 });

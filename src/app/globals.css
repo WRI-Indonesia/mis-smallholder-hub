@@ -7,13 +7,20 @@
  * Taruh file berlisensi (Adobe Fonts / brand.wri.org) di `public/fonts/`
  * dengan nama berikut. Selama file belum ada, `font-display: swap` + fallback
  * Arial/Helvetica (di --font-sans) membuat teks tetap tampil rapi sesuai
- * rekomendasi fallback sistem WRI. Tambahkan @font-face untuk weight lain
- * (mis. Acumin Pro Light 300) bila dibutuhkan.
+ * rekomendasi fallback sistem WRI. Weight 300 (Light) sudah
+ * terdaftar — dipakai teks tingkat Detail di menu Bantuan.
  */
 @font-face {
   font-family: "Acumin Pro Condensed";
   src: url("/fonts/acumin-pro-condensed-regular.woff2") format("woff2");
   font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Acumin Pro Condensed";
+  src: url("/fonts/acumin-pro-condensed-light.woff2") format("woff2");
+  font-weight: 300;
   font-style: normal;
   font-display: swap;
 }

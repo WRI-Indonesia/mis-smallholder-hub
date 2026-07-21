@@ -21,12 +21,7 @@ interface Props {
   activeTopic?: string | null;
 }
 
-export function HelpSidebar({
-  nav,
-  searchIndex,
-  activeChapter = null,
-  activeTopic = null,
-}: Props) {
+export function HelpSidebar({ nav, searchIndex, activeChapter = null, activeTopic = null }: Props) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
 
@@ -37,7 +32,10 @@ export function HelpSidebar({
   }, [q, searchIndex]);
 
   return (
-    <nav aria-label="Daftar bab bantuan" className="rounded-lg border bg-card p-3 lg:sticky lg:top-6">
+    <nav
+      aria-label="Daftar bab bantuan"
+      className="rounded-lg border bg-card p-3 lg:sticky lg:top-6"
+    >
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input

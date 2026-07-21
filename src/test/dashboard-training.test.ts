@@ -292,11 +292,12 @@ describe("RBAC scope — where fragment payload Dashboard Pelatihan", () => {
   it("scope selalu menyertakan isActive — record nonaktif tidak pernah masuk payload", () => {
     // Dashboard/report memfilter isActive untuk SEMUA role, termasuk SUPERADMIN
     // (pengecualian nonaktif hanya berlaku di list master data).
-    for (const access of [
-      { mode: "ALL" } as const,
-      { mode: "BY_DISTRICT", ids: ["d1"] } as const,
-      { mode: "BY_FARMER_GROUP", ids: ["g1"] } as const,
-    ]) {
+    const cases: AccessContext[] = [
+      { mode: "ALL" },
+      { mode: "BY_DISTRICT", ids: ["d1"] },
+      { mode: "BY_FARMER_GROUP", ids: ["g1"] },
+    ];
+    for (const access of cases) {
       expect(whereFor(access).isActive).toBe(true);
     }
   });
