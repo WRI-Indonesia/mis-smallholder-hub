@@ -4,7 +4,7 @@
 
 ## Summary
 
-Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **10 debt aktif** (TD-020/TD-021 dari DASH-06; TD-022…TD-025 dibuka & ditutup 2026-07-21 — dua dari audit asimetri, dua dari review HELP-02), tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
+Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **8 debt aktif**; TD-020…TD-025 seluruhnya dibuka & diselesaikan 2026-07-21 (TD-021 sebagian: hook URL-filter baru dipakai Dashboard Pelatihan), tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
 
 **Rekomendasi:**
 
@@ -25,9 +25,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…025) | **10** | 13 | 23 |
+| **Debt** (TD-001…025) | **8** | 15 | 23 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-020 · TD-021. (TD-018/TD-019 ✅ #180 2026-07-20; TD-020/TD-021 baru dari DASH-06 2026-07-21; **TD-022/TD-023 ✅ selesai 2026-07-21** — hasil audit asimetri pembilang–penyebut lintas dashboard.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017. (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -102,17 +102,6 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Evidence:** sesi 2026-07-16 (3 kejadian, selalu lolos di rerun); nama test belum tertangkap — kegagalan berikutnya, simpan output penuh.
 - **Validation:** saat terulang, catat nama test + longgarkan ambang (atau tandai `retry: 1` khusus perf) agar gate pre-commit tidak false-negative. · **Owner:** QA/Dev.
 
-### TD-020 · 🔲 Open — Dashboard Pelatihan: live query tanpa paginasi & tanpa ambang perf (P3)
-
-- **Masalah:** `getTrainingDashboardView()` (DASH-06) menarik **seluruh** kegiatan + peserta dalam scope user ke satu payload, lalu diagregasi client-side. Ini keputusan sadar (lihat Decision Log 2026-07-21) dan aman pada volume sekarang (±184 kegiatan / ±4.900 baris kehadiran), tetapi **tidak ada pagar**: tidak ada paginasi, tidak ada perf test ber-ambang, sehingga pertumbuhan volume hanya akan ketahuan lewat keluhan "dashboard lambat".
-- **Validation:** tambahkan perf test bergaya `perf.test.ts` atas `trainingTotals`/`trainingCoverageMatrix` dengan fixture besar (mis. 50k kehadiran) + catat ambang di mana pola snapshot (`tbl_snapshot_training_dashboard`, sudah disiapkan namanya di `docs/database/dashboard-snapshots.md`) menjadi lebih murah. · **Owner:** Backend.
-
-### TD-021 · 🔲 Open — State filter dashboard tidak tersimpan di URL (P3)
-
-- **Masalah:** filter Kategori/Distrik/Lembaga/Tahun pada **ketiga** dashboard (Main, BMP, Pelatihan) hanya `useState` — tampilan tidak bisa di-*bookmark* maupun dikirim ke rekan ("lihat Lembaga X tahun 2025"), dan refresh browser mengembalikan ke default. Sama halnya untuk sort matriks cakupan.
-- **Catatan:** ini pola lintas-halaman, bukan khusus DASH-06 — sebaiknya dikerjakan sekali sebagai helper bersama (`useSearchParams` + `router.replace`), bukan tambal per dashboard.
-- **Validation:** filter tercermin di query string, halaman dibuka ulang dengan query string menghasilkan tampilan identik. · **Owner:** Frontend.
-
 ## Debt Sequencing
 
 | Waktu                | Fokus                  | Catatan                                                    |
@@ -154,10 +143,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 </details>
 
-### Debt Register — Selesai (13 item)
+### Debt Register — Selesai (15 item)
 
 <details>
-<summary><strong>Lihat 13 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 022, 023, 024, 025</summary>
+<summary><strong>Lihat 15 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 020, 021, 022, 023, 024, 025</summary>
 
 | ID | Debt Item | Priority | Selesai |
 | --- | --- | --- | --- |
@@ -174,6 +163,8 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-023 | Dua definisi "cakupan pelatihan" antar dashboard | P3 | ✅ 2026-07-21 |
 | TD-024 | `farmerId` tanpa penjaga keunikan + celah scope bulk upload | P2 | ✅ 2026-07-21 |
 | TD-025 | Mode Detail Bantuan bergantung urutan sumber CSS | P3 | ✅ 2026-07-21 |
+| TD-020 | Dashboard Pelatihan: live query tanpa ambang perf | P3 | ✅ 2026-07-21 |
+| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan) |
 
 **TD-001** — S3/PDF utility belum terintegrasi ke modul Training. Evidence: Training + evidence upload S3 sudah terintegrasi via `upload.ts` (#81); CLI `get-link`/`pdf-manager` tetap sebagai utilitas. Owner: Backend/Storage Lead. Validation: evidence upload berfungsi di app; sisa CLI tak load dotenv → TD-011. ✅
 
@@ -188,6 +179,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 **TD-024** — `farmerId` tanpa penjaga keunikan, dua jalur input beraturan berbeda, plus celah scope. **Keputusan owner 2026-07-21: unik PER LEMBAGA.** Ditegakkan di DB (`@@unique([farmerGroupId, farmerId])`, migrasi `20260721060000_farmer_id_unique_per_group`) **dan** di aplikasi: `createFarmer`/`updateFarmer` kini menolak duplikat dengan pesan per-kolom, membedakan duplikat aktif vs milik petani nonaktif ("aktifkan kembali datanya"). `getExistingFarmerIds` sebelumnya mengambil **seluruh** `farmerId` di database tanpa filter — aturannya lebih ketat dari yang ditegakkan sistem **dan** membocorkan ID di luar wilayah kerja (pelanggaran lapisan data-access); kini menerima `farmerGroupId`, memverifikasi lembaga itu dalam scope, dan hanya mengembalikan ID lembaga tsb. Halaman bulk upload karenanya memuat daftar ID **setelah** lembaga dipilih, bukan di awal. **Prasyarat diverifikasi read-only** (`scripts/local/audit-farmer-id-duplicates.ts`, mis-prod 2026-07-21): 3.448 baris, **0 duplikat** — migrasi aman. Constraint sengaja mencakup baris nonaktif: memakai ulang ID petani nonaktif memecah riwayatnya. Materi Bantuan disesuaikan. ✅
 
 **TD-025** — Mode Detail Bantuan bergantung urutan sumber CSS. Aturan sembunyikan & tampilkan tadinya berspesifisitas sama (`:where()` bernilai 0), sehingga Detail bekerja hanya karena aturan kedua kebetulan muncul belakangan. Ditambahkan penanda `data-depth="ringkas"` pada `<article>` sehingga selektornya jadi **(0,7,0)** vs **(0,4,0)** — menang lewat spesifisitas, bukan urutan. Diverifikasi dengan membaca CSS hasil build. ✅
+
+**TD-020** — Dashboard Pelatihan live query tanpa pagar. Ditambahkan perf test di `src/test/perf.test.ts` atas fixture **60.000 baris kehadiran** (~7× volume hari ini): KPI + matriks + tren + skor + kualitas data harus selesai <1.200 ms, disertai test kebenaran agar cepat saja tidak cukup. Bila ambangnya merah, itu sinyal menimbang pola snapshot — **bukan** melonggarkan ambangnya. ✅
+
+**TD-021** — 🟡 **Sebagian.** Hook bersama `src/hooks/use-url-filters.ts` dibuat (memakai `router.replace` + `scroll: false` agar mengubah filter tidak menumpuk riwayat browser maupun melompatkan gulir; nilai kosong dihapus dari query supaya URL bawaan tetap bersih) dan **diterapkan di Dashboard Pelatihan** — filter Distrik/Lembaga/Kategori/Tahun kini bisa di-bookmark & dikirim. **Sisa:** Main Dashboard & BMP Dashboard belum memakainya; keduanya punya filter lebih kompleks (mis. mode Rataan & Kelengkapan Data) sehingga sengaja tidak diborong dalam satu sesi. Sort matriks cakupan juga belum ikut. 🟡
 
 **TD-006** — `docs/rule.md` menyebut folder dashboard components yang tidak ada. Owner: Tech Lead. Validation: tree arsitektur disinkronkan (audit 2026-07-10): `components/dashboard` dihapus, `hooks/`+`api/` ditambah; docs arsitektur sinkron dengan struktur repo. ✅
 

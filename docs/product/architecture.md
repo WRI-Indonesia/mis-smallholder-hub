@@ -6,7 +6,7 @@
 
 | Category | Status | Details |
 |----------|--------|---------|
-| **Test Status** | ✅ **43 files / 661 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02/03), map-geo, firms, middleware, perf, dashboard-bmp, dashboard-training |
+| **Test Status** | ✅ **43 files / 663 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02/03), map-geo, firms, middleware, perf, dashboard-bmp, dashboard-training |
 | **Completed Modules** | ✅ **33 phases done** | Platform (1-7), MD (1-6), DASH-01…06, RPT-01…04, BULK (1, 3, 4), DA-01/02, MAP-01/02 |
 | **Server Actions** | ✅ 25 file | dashboard, dashboard-bmp, dashboard-training, snapshot, snapshot-bmp, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
 | **Prisma Models** | ✅ 11 file schema / **20 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot, BmpDashboardSnapshot (#166) — MAP-01 read-only (no new table) |

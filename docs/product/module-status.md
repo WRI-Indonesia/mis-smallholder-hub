@@ -47,7 +47,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **43 files / 661 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **43 files / 663 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -85,7 +85,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **43 files / 661 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **43 files / 663 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
 
 ### Covered Modules
 
