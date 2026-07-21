@@ -25,10 +25,26 @@ ke fallback tsb, bukan font generik acak.
 
 ## Tersedia (opsional, belum di-`@font-face`) — Acumin Pro (lebar normal)
 
-`acumin-pro-regular.woff` · `acumin-pro-bold.woff` · `acumin-pro-italic.woff` ·
-`acumin-pro-bold-italic.woff` (format WOFF 1.0). Varian **lebar normal** (bukan
-condensed) — WRI memakainya untuk header/H1. Belum dirujuk CSS; tambahkan blok
-`@font-face` family "Acumin Pro" bila ingin dipakai untuk heading.
+| File | Weight | Format |
+|------|--------|--------|
+| `acumin-pro-regular.woff2` | 400 | woff2 |
+| `acumin-pro-regular.woff`  | 400 | woff 1.0 |
+| `acumin-pro-bold.woff`     | 700 | woff 1.0 |
+| `acumin-pro-italic.woff`   | 400 italic | woff 1.0 |
+| `acumin-pro-bold-italic.woff` | 700 italic | woff 1.0 |
+
+Varian **lebar normal** (bukan condensed) — WRI memakainya untuk header/H1.
+Belum dirujuk CSS; tambahkan blok `@font-face` family "Acumin Pro" bila ingin
+dipakai untuk heading, dengan woff2 lebih dulu lalu woff sebagai fallback:
+
+```css
+src: url("/fonts/acumin-pro-regular.woff2") format("woff2"),
+     url("/fonts/acumin-pro-regular.woff") format("woff");
+```
+
+> Nama berkas **wajib kebab-case tanpa spasi**. Berkas yang mengandung spasi
+> memaksa URL ter-encode (`/fonts/Acumin%20Pro.woff2`) — mudah salah ketik dan
+> tidak konsisten dengan berkas lain.
 
 > **Lisensi**: font Acumin milik Adobe/WRI. Jangan commit file berlisensi ke repo
 > **publik** tanpa hak distribusi — bila repo publik, `gitignore` `public/fonts/*.woff*`
