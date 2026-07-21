@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { ChevronRight, Clock, Lock } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { getAccessibleMenuKeys, requirePermission } from "@/lib/rbac";
+import { getEffectiveMenuPermissions, requirePermission } from "@/lib/rbac";
 import {
   HELP_CHAPTERS,
   buildHelpNav,
   buildHelpSearchIndex,
   helpChaptersBySection,
-  isTopicAccessible,
   topicNumber,
 } from "@/lib/help-content";
+import { isTopicAccessible } from "@/lib/help-access";
 import { HelpSidebar } from "./help-sidebar";
 import { HelpLayout } from "./help-layout";
 
@@ -24,8 +24,8 @@ export default async function HelpIndexPage() {
   // pembaca — panduan tetap berguna saat pelatihan lintas peran.
   const session = await auth();
   const role = session?.user?.role ?? "";
-  const accessibleMenuKeys =
-    role === "SUPERADMIN" ? null : await getAccessibleMenuKeys(role, session?.user?.id);
+  const effectivePermissions =
+    role === "SUPERADMIN" ? null : await getEffectiveMenuPermissions(role, session?.user?.id);
 
   const tutorialChapters = helpChaptersBySection("tutorial");
   const konsepChapters = helpChaptersBySection("konsep");
@@ -55,7 +55,7 @@ export default async function HelpIndexPage() {
               {tutorialChapters.flatMap((chapter) =>
                 chapter.topics.map((topic) => {
                   const locked =
-                    accessibleMenuKeys != null && !isTopicAccessible(topic, accessibleMenuKeys);
+                    effectivePermissions != null && !isTopicAccessible(topic, effectivePermissions);
                   return (
                     <Link
                       key={`${chapter.slug}-${topic.id}`}

@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -100,24 +95,34 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
           ? (form.get("groupType") as "ASOSIASI" | "KOPERASI")
           : null,
       joinYear: form.get("joinYear") ? parseInt(form.get("joinYear") as string, 10) : null,
-      establishedYear: form.get("establishedYear") ? parseInt(form.get("establishedYear") as string, 10) : null,
-      rspoCertYear: form.get("rspoCertYear") ? parseInt(form.get("rspoCertYear") as string, 10) : null,
+      establishedYear: form.get("establishedYear")
+        ? parseInt(form.get("establishedYear") as string, 10)
+        : null,
+      rspoCertYear: form.get("rspoCertYear")
+        ? parseInt(form.get("rspoCertYear") as string, 10)
+        : null,
       rspoCertStatus:
         form.get("rspoCertStatus") && form.get("rspoCertStatus") !== "NONE"
           ? (form.get("rspoCertStatus") as "CERTIFIED" | "PLANNED")
           : null,
-      ispoCertYear: form.get("ispoCertYear") ? parseInt(form.get("ispoCertYear") as string, 10) : null,
+      ispoCertYear: form.get("ispoCertYear")
+        ? parseInt(form.get("ispoCertYear") as string, 10)
+        : null,
       ispoCertStatus:
         form.get("ispoCertStatus") && form.get("ispoCertStatus") !== "NONE"
           ? (form.get("ispoCertStatus") as "CERTIFIED" | "PLANNED")
           : null,
-      sapMapAssuranceYear: form.get("sapMapAssuranceYear") ? parseInt(form.get("sapMapAssuranceYear") as string, 10) : null,
+      sapMapAssuranceYear: form.get("sapMapAssuranceYear")
+        ? parseInt(form.get("sapMapAssuranceYear") as string, 10)
+        : null,
       sapMapAssuranceStatus:
         form.get("sapMapAssuranceStatus") && form.get("sapMapAssuranceStatus") !== "NONE"
           ? (form.get("sapMapAssuranceStatus") as "CERTIFIED" | "PLANNED")
           : null,
       locationLat: form.get("locationLat") ? parseFloat(form.get("locationLat") as string) : null,
-      locationLong: form.get("locationLong") ? parseFloat(form.get("locationLong") as string) : null,
+      locationLong: form.get("locationLong")
+        ? parseFloat(form.get("locationLong") as string)
+        : null,
     };
 
     const result = isEdit
@@ -141,7 +146,13 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
   }
 
   // Baris status + tahun untuk satu skema sertifikasi/assurance (RSPO/ISPO/SAP-MAP).
-  const certRow = (scheme: string, statusName: string, yearName: string, statusValue: string | null | undefined, yearValue: number | null | undefined) => (
+  const certRow = (
+    scheme: string,
+    statusName: string,
+    yearName: string,
+    statusValue: string | null | undefined,
+    yearValue: number | null | undefined,
+  ) => (
     <div className="grid grid-cols-[minmax(90px,auto)_1fr_1fr] items-center gap-4">
       <span className="text-sm font-medium">{scheme}</span>
       <div className="space-y-1">
@@ -205,21 +216,33 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="districtId">Distrik</Label>
-                <Select name="districtId" defaultValue={group?.districtId ?? ""} items={districtItems}>
+                <Select
+                  name="districtId"
+                  defaultValue={group?.districtId ?? ""}
+                  items={districtItems}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih distrik" />
                   </SelectTrigger>
                   <SelectContent>
                     {districts.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.districtId && <p className="text-sm text-destructive">{errors.districtId[0]}</p>}
+                {errors.districtId && (
+                  <p className="text-sm text-destructive">{errors.districtId[0]}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Kategori</Label>
-                <Select name="category" defaultValue={group?.category ?? "SWADAYA"} items={CATEGORY_ITEMS}>
+                <Select
+                  name="category"
+                  defaultValue={group?.category ?? "SWADAYA"}
+                  items={CATEGORY_ITEMS}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -231,7 +254,11 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="groupType">Tipe Grup</Label>
-                <Select name="groupType" defaultValue={group?.groupType ?? "NONE"} items={GROUP_TYPE_ITEMS}>
+                <Select
+                  name="groupType"
+                  defaultValue={group?.groupType ?? "NONE"}
+                  items={GROUP_TYPE_ITEMS}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih tipe grup" />
                   </SelectTrigger>
@@ -249,36 +276,84 @@ export function GroupFormModal({ open, onClose, group, districts }: Props) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="establishedYear">Tahun Berdiri Lembaga</Label>
-                <Input id="establishedYear" name="establishedYear" type="number" min={1900} max={2100} placeholder="cth. 2015" defaultValue={group?.establishedYear ?? ""} />
+                <Input
+                  id="establishedYear"
+                  name="establishedYear"
+                  type="number"
+                  min={1900}
+                  max={2100}
+                  placeholder="cth. 2015"
+                  defaultValue={group?.establishedYear ?? ""}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="joinYear">Tahun Bergabung Program</Label>
-                <Input id="joinYear" name="joinYear" type="number" min={1900} max={2100} placeholder="cth. 2024" defaultValue={group?.joinYear ?? ""} />
+                <Input
+                  id="joinYear"
+                  name="joinYear"
+                  type="number"
+                  min={1900}
+                  max={2100}
+                  placeholder="cth. 2024"
+                  defaultValue={group?.joinYear ?? ""}
+                />
               </div>
             </div>
           </FormSection>
 
           <FormSection title="Sertifikasi & Assurance">
-            {certRow("RSPO", "rspoCertStatus", "rspoCertYear", group?.rspoCertStatus, group?.rspoCertYear)}
-            {certRow("ISPO", "ispoCertStatus", "ispoCertYear", group?.ispoCertStatus, group?.ispoCertYear)}
-            {certRow("SAP/MAP", "sapMapAssuranceStatus", "sapMapAssuranceYear", group?.sapMapAssuranceStatus, group?.sapMapAssuranceYear)}
+            {certRow(
+              "RSPO",
+              "rspoCertStatus",
+              "rspoCertYear",
+              group?.rspoCertStatus,
+              group?.rspoCertYear,
+            )}
+            {certRow(
+              "ISPO",
+              "ispoCertStatus",
+              "ispoCertYear",
+              group?.ispoCertStatus,
+              group?.ispoCertYear,
+            )}
+            {certRow(
+              "SAP/MAP",
+              "sapMapAssuranceStatus",
+              "sapMapAssuranceYear",
+              group?.sapMapAssuranceStatus,
+              group?.sapMapAssuranceYear,
+            )}
           </FormSection>
 
           <FormSection title="Lokasi">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="locationLat">Latitude</Label>
-                <Input id="locationLat" name="locationLat" type="number" step="any" defaultValue={group?.locationLat ?? ""} />
+                <Input
+                  id="locationLat"
+                  name="locationLat"
+                  type="number"
+                  step="any"
+                  defaultValue={group?.locationLat ?? ""}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="locationLong">Longitude</Label>
-                <Input id="locationLong" name="locationLong" type="number" step="any" defaultValue={group?.locationLong ?? ""} />
+                <Input
+                  id="locationLong"
+                  name="locationLong"
+                  type="number"
+                  step="any"
+                  defaultValue={group?.locationLong ?? ""}
+                />
               </div>
             </div>
           </FormSection>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Batal
+            </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Simpan" : "Buat"}

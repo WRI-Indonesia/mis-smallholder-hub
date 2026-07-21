@@ -41,7 +41,9 @@ Siapkan **ID Lahan** dan luasnya. ID Lahan harus unik untuk petani tersebut, dan
 
 ## Memastikan berhasil
 
-Lahan muncul di tabel, dan kartu **Total Persil Lahan** serta **Total Luas Lahan** ikut bertambah.
+Lahan muncul di tabel daftar. Cari **ID Lahan**-nya lewat kotak pencarian untuk memastikan.
+
++ Halaman Lahan sengaja tidak punya kartu ringkasan. Angka Total Persil dan Total Luas ada di daftar **Lembaga Petani** dan di Main Dashboard — yang terakhir membaca snapshot, jadi belum tentu langsung berubah.
 
 > [!hati-hati] Form ini **tidak** membuat poligon peta. Lahan yang diinput di sini tidak akan tampil di Peta Lahan — bentuk poligon hanya bisa masuk lewat unggah shapefile.
 

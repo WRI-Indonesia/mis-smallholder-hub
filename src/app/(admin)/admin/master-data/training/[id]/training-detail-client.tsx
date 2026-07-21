@@ -7,7 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { removeParticipant, updateParticipantScores, removeParticipants } from "@/server/actions/training";
+import {
+  removeParticipant,
+  updateParticipantScores,
+  removeParticipants,
+} from "@/server/actions/training";
 import { toast } from "sonner";
 import { TRAINING_CATEGORY_LABELS } from "../training-list-client";
 import { AddParticipantsModal } from "./add-participants-modal";
@@ -68,7 +72,20 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
     const date = new Date(d);
     if (isNaN(date.getTime())) return "—";
     const day = String(date.getDate()).padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
     const month = months[date.getMonth()];
     return `${day}/${month}/${date.getFullYear()}`;
   };
@@ -90,7 +107,12 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
 
   async function handleBulkDelete() {
     if (selectedParticipantIds.length === 0) return;
-    if (!confirm(`Apakah Anda yakin ingin menghapus ${selectedParticipantIds.length} peserta terpilih dari pelatihan?`)) return;
+    if (
+      !confirm(
+        `Apakah Anda yakin ingin menghapus ${selectedParticipantIds.length} peserta terpilih dari pelatihan?`,
+      )
+    )
+      return;
 
     setIsBulkDeleting(true);
     const result = await removeParticipants(selectedParticipantIds);
@@ -105,7 +127,9 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
     }
   }
 
-  const allSelected = activity.participants.length > 0 && selectedParticipantIds.length === activity.participants.length;
+  const allSelected =
+    activity.participants.length > 0 &&
+    selectedParticipantIds.length === activity.participants.length;
 
   const toggleSelectAll = () => {
     if (allSelected) {
@@ -117,7 +141,7 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
 
   const toggleSelect = (id: string) => {
     setSelectedParticipantIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
@@ -126,7 +150,7 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
   async function handleScoreBlur(
     participant: Participant,
     field: "preTestScore" | "postTestScore",
-    rawValue: string
+    rawValue: string,
   ) {
     const val = rawValue === "" ? null : parseInt(rawValue, 10);
     if (val !== null && (isNaN(val) || val < 0 || val > 100)) {
@@ -166,27 +190,39 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
       <Card className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lembaga Petani</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Lembaga Petani
+            </p>
             <p className="text-sm font-medium mt-1">{activity.farmerGroup.name}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Distrik</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Distrik
+            </p>
             <p className="text-sm font-medium mt-1">{activity.farmerGroup.district.name}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tanggal Pelatihan</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Tanggal Pelatihan
+            </p>
             <p className="text-sm font-medium mt-1">{formatDate(activity.trainingDate)}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lokasi</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Lokasi
+            </p>
             <p className="text-sm font-medium mt-1">{activity.location ?? "—"}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Peserta</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Total Peserta
+            </p>
             <p className="text-sm font-medium mt-1">{activity.participants.length} orang</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Evidence (Notulen)</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Evidence (Notulen)
+            </p>
             {activity.evidenceUrl ? (
               <a
                 href={activity.evidenceUrl}
@@ -230,55 +266,80 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
 
         <Card className="overflow-hidden border">
           <div className="overflow-x-auto">
-             <table className="w-full text-left border-collapse">
-               <thead>
-                 <tr className="bg-muted/70 border-b-2">
-                   {canEdit && (
-                     <th className="p-3 w-10 text-center">
-                       <input
-                         type="checkbox"
-                         checked={allSelected}
-                         onChange={toggleSelectAll}
-                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                       />
-                     </th>
-                   )}
-                   <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-12 text-center">No</th>
-                   <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</th>
-                   <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">ID Petani</th>
-                   <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">NIK</th>
-                   <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">L/P</th>
-                   <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center w-24">Pre-Test</th>
-                   <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center w-24">Post-Test</th>
-                   {canEdit && (
-                     <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[1%] whitespace-nowrap text-center">Aksi</th>
-                   )}
-                 </tr>
-               </thead>
-               <tbody className="divide-y">
-                 {activity.participants.length === 0 ? (
-                   <tr>
-                     <td colSpan={canEdit ? 9 : 7} className="p-8 text-center text-sm text-muted-foreground">
-                       Belum ada peserta terdaftar untuk pelatihan ini.
-                     </td>
-                   </tr>
-                 ) : (
-                   activity.participants.map((p, idx) => (
-                     <tr key={p.id} className="hover:bg-muted/30">
-                       {canEdit && (
-                         <td className="p-3 text-center">
-                           <input
-                             type="checkbox"
-                             checked={selectedParticipantIds.includes(p.id)}
-                             onChange={() => toggleSelect(p.id)}
-                             className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                           />
-                         </td>
-                       )}
-                       <td className="p-3 text-sm text-center text-muted-foreground tabular-nums">{idx + 1}</td>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/70 border-b-2">
+                  {canEdit && (
+                    <th className="p-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                      />
+                    </th>
+                  )}
+                  <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-12 text-center">
+                    No
+                  </th>
+                  <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Nama
+                  </th>
+                  <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    ID Petani
+                  </th>
+                  <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    NIK
+                  </th>
+                  <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    L/P
+                  </th>
+                  <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center w-24">
+                    Pre-Test
+                  </th>
+                  <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center w-24">
+                    Post-Test
+                  </th>
+                  {canEdit && (
+                    <th className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[1%] whitespace-nowrap text-center">
+                      Aksi
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {activity.participants.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={canEdit ? 9 : 7}
+                      className="p-8 text-center text-sm text-muted-foreground"
+                    >
+                      Belum ada peserta terdaftar untuk pelatihan ini.
+                    </td>
+                  </tr>
+                ) : (
+                  activity.participants.map((p, idx) => (
+                    <tr key={p.id} className="hover:bg-muted/30">
+                      {canEdit && (
+                        <td className="p-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedParticipantIds.includes(p.id)}
+                            onChange={() => toggleSelect(p.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                          />
+                        </td>
+                      )}
+                      <td className="p-3 text-sm text-center text-muted-foreground tabular-nums">
+                        {idx + 1}
+                      </td>
                       <td className="p-3 text-sm font-medium">{p.farmer.name}</td>
-                      <td className="p-3 text-sm font-mono text-muted-foreground">{p.farmer.farmerId}</td>
-                      <td className="p-3 text-sm font-mono text-muted-foreground">{maskNik(p.farmer.nik)}</td>
+                      <td className="p-3 text-sm font-mono text-muted-foreground">
+                        {p.farmer.farmerId}
+                      </td>
+                      <td className="p-3 text-sm font-mono text-muted-foreground">
+                        {maskNik(p.farmer.nik)}
+                      </td>
                       <td className="p-3 text-sm">
                         <Badge variant="secondary">
                           {p.farmer.gender === "M" ? "Laki-laki" : "Perempuan"}
@@ -295,7 +356,9 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
                             onBlur={(e) => handleScoreBlur(p, "preTestScore", e.target.value)}
                           />
                         ) : (
-                          <span className="text-sm font-medium tabular-nums">{p.preTestScore ?? "—"}</span>
+                          <span className="text-sm font-medium tabular-nums">
+                            {p.preTestScore ?? "—"}
+                          </span>
                         )}
                       </td>
                       <td className="p-3 text-center">
@@ -309,7 +372,9 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
                             onBlur={(e) => handleScoreBlur(p, "postTestScore", e.target.value)}
                           />
                         ) : (
-                          <span className="text-sm font-medium tabular-nums">{p.postTestScore ?? "—"}</span>
+                          <span className="text-sm font-medium tabular-nums">
+                            {p.postTestScore ?? "—"}
+                          </span>
                         )}
                       </td>
                       {canEdit && (

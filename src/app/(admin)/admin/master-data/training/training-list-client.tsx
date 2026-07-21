@@ -5,14 +5,35 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Check, ChevronsUpDown, Building, GraduationCap, Users, UserCheck } from "lucide-react";
+import {
+  Plus,
+  Check,
+  ChevronsUpDown,
+  Building,
+  GraduationCap,
+  Users,
+  UserCheck,
+} from "lucide-react";
 import { TrainingFormModal } from "./training-form-modal";
 import { toggleTrainingActivityActive } from "@/server/actions/training";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export const TRAINING_CATEGORY_LABELS: Record<string, string> = {
@@ -102,8 +123,13 @@ export function TrainingListClient({
     const matchDistrict = districtFilter === "all" || a.farmerGroup.district.id === districtFilter;
     const matchPackage = packageFilter === "all" || a.packageId === packageFilter;
     // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
-    const matchStatus =
-      !isSuperAdmin ? true : statusFilter === "all" ? true : statusFilter === "active" ? a.isActive : !a.isActive;
+    const matchStatus = !isSuperAdmin
+      ? true
+      : statusFilter === "all"
+        ? true
+        : statusFilter === "active"
+          ? a.isActive
+          : !a.isActive;
     return matchGroup && matchDistrict && matchPackage && matchStatus;
   });
 
@@ -141,7 +167,20 @@ export function TrainingListClient({
         const date = new Date(row.trainingDate);
         if (isNaN(date.getTime())) return "—";
         const day = String(date.getDate()).padStart(2, "0");
-        const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "Mei",
+          "Jun",
+          "Jul",
+          "Agu",
+          "Sep",
+          "Okt",
+          "Nov",
+          "Des",
+        ];
         const month = months[date.getMonth()];
         return `${day}/${month}/${date.getFullYear()}`;
       },
@@ -177,7 +216,20 @@ export function TrainingListClient({
     let formattedDate = "—";
     if (!isNaN(date.getTime())) {
       const day = String(date.getDate()).padStart(2, "0");
-      const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "Mei",
+        "Jun",
+        "Jul",
+        "Agu",
+        "Sep",
+        "Okt",
+        "Nov",
+        "Des",
+      ];
       const month = months[date.getMonth()];
       formattedDate = `${day}/${month}/${date.getFullYear()}`;
     }
@@ -232,7 +284,7 @@ export function TrainingListClient({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      districtFilter === "all" ? "opacity-100" : "opacity-0"
+                      districtFilter === "all" ? "opacity-100" : "opacity-0",
                     )}
                   />
                   Semua Distrik
@@ -249,7 +301,7 @@ export function TrainingListClient({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        districtFilter === d.id ? "opacity-100" : "opacity-0"
+                        districtFilter === d.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {d.name}
@@ -295,7 +347,7 @@ export function TrainingListClient({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      groupFilter === "all" ? "opacity-100" : "opacity-0"
+                      groupFilter === "all" ? "opacity-100" : "opacity-0",
                     )}
                   />
                   Semua Lembaga Petani
@@ -312,7 +364,7 @@ export function TrainingListClient({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        groupFilter === g.id ? "opacity-100" : "opacity-0"
+                        groupFilter === g.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {g.name}
@@ -337,8 +389,9 @@ export function TrainingListClient({
                 <span>Semua Paket Pelatihan</span>
               ) : (
                 <span>
-                  {TRAINING_CATEGORY_LABELS[packages.find((p) => p.id === packageFilter)?.code ?? ""] ||
-                    packages.find((p) => p.id === packageFilter)?.name}
+                  {TRAINING_CATEGORY_LABELS[
+                    packages.find((p) => p.id === packageFilter)?.code ?? ""
+                  ] || packages.find((p) => p.id === packageFilter)?.name}
                 </span>
               )}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -361,7 +414,7 @@ export function TrainingListClient({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      packageFilter === "all" ? "opacity-100" : "opacity-0"
+                      packageFilter === "all" ? "opacity-100" : "opacity-0",
                     )}
                   />
                   Semua Paket Pelatihan
@@ -378,7 +431,7 @@ export function TrainingListClient({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        packageFilter === pkg.id ? "opacity-100" : "opacity-0"
+                        packageFilter === pkg.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {TRAINING_CATEGORY_LABELS[pkg.code] || pkg.name}
@@ -407,7 +460,14 @@ export function TrainingListClient({
   );
 
   const toolbarRight = permissions.includes("CREATE") ? (
-    <Button size="sm" onClick={() => { setEditActivity(null); setShowForm(true); }} className="h-9">
+    <Button
+      size="sm"
+      onClick={() => {
+        setEditActivity(null);
+        setShowForm(true);
+      }}
+      className="h-9"
+    >
       <Plus className="h-4 w-4 mr-2" />
       Tambah Pelatihan
     </Button>
@@ -416,7 +476,9 @@ export function TrainingListClient({
   const totalKelompokTani = new Set(filtered.map((a) => a.farmerGroupId)).size;
   const totalKegiatanTraining = filtered.length;
   const totalPeserta = filtered.reduce((sum, a) => sum + (a._count?.participants ?? 0), 0);
-  const totalPesertaUnik = new Set(filtered.flatMap((a) => (a.participants ?? []).map((p) => p.farmerId))).size;
+  const totalPesertaUnik = new Set(
+    filtered.flatMap((a) => (a.participants ?? []).map((p) => p.farmerId)),
+  ).size;
 
   return (
     <>
@@ -424,8 +486,12 @@ export function TrainingListClient({
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Lembaga Petani</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalKelompokTani)}</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Lembaga Petani
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalKelompokTani)}
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Building className="h-5 w-5" />
@@ -436,8 +502,12 @@ export function TrainingListClient({
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Kegiatan Training</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalKegiatanTraining)}</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Kegiatan Training
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalKegiatanTraining)}
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <GraduationCap className="h-5 w-5" />
@@ -448,8 +518,12 @@ export function TrainingListClient({
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Peserta</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalPeserta)} Peserta</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Peserta
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalPeserta)} Peserta
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Users className="h-5 w-5" />
@@ -460,8 +534,12 @@ export function TrainingListClient({
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Peserta Unik</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalPesertaUnik)} Petani</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Peserta Unik
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalPesertaUnik)} Petani
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <UserCheck className="h-5 w-5" />
@@ -477,10 +555,14 @@ export function TrainingListClient({
           rowKey={(a) => a.id}
           searchPlaceholder="Cari lokasi, lembaga petani atau paket..."
           searchFn={(row, query) => {
-            const packageName = (TRAINING_CATEGORY_LABELS[row.package.code] || row.package.name).toLowerCase();
+            const packageName = (
+              TRAINING_CATEGORY_LABELS[row.package.code] || row.package.name
+            ).toLowerCase();
             const location = (row.location || "").toLowerCase();
             const groupName = row.farmerGroup.name.toLowerCase();
-            return packageName.includes(query) || location.includes(query) || groupName.includes(query);
+            return (
+              packageName.includes(query) || location.includes(query) || groupName.includes(query)
+            );
           }}
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
@@ -515,7 +597,10 @@ export function TrainingListClient({
       <TrainingFormModal
         key={editActivity?.id ?? "new"}
         open={showForm}
-        onClose={() => { setShowForm(false); setEditActivity(null); }}
+        onClose={() => {
+          setShowForm(false);
+          setEditActivity(null);
+        }}
         activity={editActivity}
         packages={packages}
         farmerGroups={farmerGroups}

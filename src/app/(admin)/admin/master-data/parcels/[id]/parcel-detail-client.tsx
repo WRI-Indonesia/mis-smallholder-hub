@@ -25,7 +25,7 @@ export function ParcelDetailClient({ parcel, farmers, permissions }: Props) {
 
   async function handleDelete() {
     if (!confirm("Apakah Anda yakin ingin menonaktifkan lahan ini?")) return;
-    
+
     const result = await deleteLandParcel(parcel.id);
     if (result.success) {
       toast.success("Lahan berhasil dinonaktifkan");
@@ -77,52 +77,82 @@ export function ParcelDetailClient({ parcel, farmers, permissions }: Props) {
             <h2 className="text-base font-semibold mb-4">Informasi Lahan</h2>
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ID Lahan</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  ID Lahan
+                </p>
                 <p className="text-sm font-mono font-medium mt-1">{parcel.parcelId}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Blok</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Blok
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.blok ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Luas</p>
-                <p className="text-sm font-medium mt-1">{parcel.area !== null ? `${parcel.area.toFixed(2)} ha` : "—"}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Luas
+                </p>
+                <p className="text-sm font-medium mt-1">
+                  {parcel.area !== null ? `${parcel.area.toFixed(2)} ha` : "—"}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status Kepemilikan</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Status Kepemilikan
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.landStatus ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Komoditas</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Komoditas
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.cropType ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Species</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Species
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.species ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">PSR</p>
-                <p className="text-sm font-medium mt-1">{parcel.isPsr ? "PSR (replanting)" : "Non-PSR"}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  PSR
+                </p>
+                <p className="text-sm font-medium mt-1">
+                  {parcel.isPsr ? "PSR (replanting)" : "Non-PSR"}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tahun Tanam</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Tahun Tanam
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.plantingYear ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gapoktan/KUD</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Gapoktan/KUD
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.subGroupLv1 ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kelompok Tani</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Kelompok Tani
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.subGroupLv2 ?? "—"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Revisi</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Revisi
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.revision}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Catatan</p>
-                <p className="text-sm font-medium mt-1 whitespace-pre-wrap">{parcel.notes ?? "—"}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Catatan
+                </p>
+                <p className="text-sm font-medium mt-1 whitespace-pre-wrap">
+                  {parcel.notes ?? "—"}
+                </p>
               </div>
             </div>
           </Card>
@@ -131,22 +161,35 @@ export function ParcelDetailClient({ parcel, farmers, permissions }: Props) {
             <h2 className="text-base font-semibold mb-4">Informasi Pemilik</h2>
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama Petani</p>
-                <Link href={`/admin/master-data/farmers/${parcel.farmer.id}`} className="text-sm font-medium mt-1 text-primary hover:underline block">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Nama Petani
+                </p>
+                <Link
+                  href={`/admin/master-data/farmers/${parcel.farmer.id}`}
+                  className="text-sm font-medium mt-1 text-primary hover:underline block"
+                >
                   {parcel.farmer.name}
                 </Link>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ID Petani</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  ID Petani
+                </p>
                 <p className="text-sm font-mono font-medium mt-1">{parcel.farmer.farmerId}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lembaga Petani</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Lembaga Petani
+                </p>
                 <p className="text-sm font-medium mt-1">{parcel.farmer.farmerGroup.name}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Distrik</p>
-                <p className="text-sm font-medium mt-1">{parcel.farmer.farmerGroup.district.name}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Distrik
+                </p>
+                <p className="text-sm font-medium mt-1">
+                  {parcel.farmer.farmerGroup.district.name}
+                </p>
               </div>
             </div>
           </Card>

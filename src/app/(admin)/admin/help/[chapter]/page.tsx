@@ -15,10 +15,6 @@ import { HelpLayout } from "../help-layout";
 // Ikhtisar satu bab (#184): daftar topik sebagai kartu — materi lengkap ada di
 // halaman topik `/admin/help/[chapter]/[topic]`.
 
-export function generateStaticParams() {
-  return HELP_CHAPTERS.map((c) => ({ chapter: c.slug }));
-}
-
 export default async function HelpChapterPage({
   params,
 }: {

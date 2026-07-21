@@ -2,15 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight, ArrowUpRight, Clock, Target, Lock } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { getAccessibleMenuKeys, requirePermission } from "@/lib/rbac";
+import { getEffectiveMenuPermissions, requirePermission } from "@/lib/rbac";
 import {
-  HELP_CHAPTERS,
   getHelpTopic,
   getAdjacentHelpTopics,
   buildHelpNav,
   buildHelpSearchIndex,
-  isTopicAccessible,
 } from "@/lib/help-content";
+import { isTopicAccessible } from "@/lib/help-access";
 import { resolveHelpMedia } from "@/lib/help-media";
 import { HelpSidebar } from "../../help-sidebar";
 import { HelpBlocks } from "../../help-blocks";
@@ -19,20 +18,19 @@ import { HelpLayout } from "../../help-layout";
 // Halaman satu topik Bantuan (#184) — tiap topik berdiri sendiri agar muat
 // langkah/tutorial detail. Konten dari file Markdown di `src/content/help/`.
 
-export function generateStaticParams() {
-  return HELP_CHAPTERS.flatMap((chapter) =>
-    chapter.topics.map((topic) => ({ chapter: chapter.slug, topic: topic.id })),
-  );
-}
-
 export default async function HelpTopicPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ chapter: string; topic: string }>;
+  searchParams: Promise<{ detail?: string }>;
 }) {
   await requirePermission("help");
 
   const { chapter: chapterSlug, topic: topicId } = await params;
+  // Dibuka dari hasil pencarian → langsung mode Detail, karena kecocokannya bisa
+  // berada di materi yang justru tersembunyi pada mode Ringkas.
+  const openDetail = (await searchParams).detail === "1";
   const found = getHelpTopic(chapterSlug, topicId);
   if (!found) notFound();
 
@@ -47,7 +45,7 @@ export default async function HelpTopicPage({
   const locked =
     topic.menuKey != null &&
     role !== "SUPERADMIN" &&
-    !isTopicAccessible(topic, await getAccessibleMenuKeys(role, session?.user?.id));
+    !isTopicAccessible(topic, await getEffectiveMenuPermissions(role, session?.user?.id));
   // Media `s3://key` di-presign per-request agar tautannya selalu segar (#185).
   const blocks = await resolveHelpMedia(topic.blocks);
 
@@ -139,18 +137,20 @@ export default async function HelpTopicPage({
             <input
               type="checkbox"
               id="help-depth"
-              aria-label="Tampilkan penjelasan detail"
+              aria-label="Kedalaman: Detail"
+              defaultChecked={openDetail}
               className="peer sr-only"
             />
             {/* Kelas peer-* HARUS berada di elemen yang bersibling setelah
                   checkbox — Tailwind menghasilkan `:where(.peer):checked ~ *`.
                   Karena itu gaya kedua tombol diatur dari pembungkus ini lewat
                   selektor turunan `[data-opt=...]`, bukan di span-nya langsung. */}
-            <div className="mb-3 flex items-center gap-2 peer-checked:[&_[data-opt=detail]]:bg-primary peer-checked:[&_[data-opt=detail]]:font-medium peer-checked:[&_[data-opt=detail]]:text-primary-foreground peer-checked:[&_[data-opt=ringkas]]:bg-transparent peer-checked:[&_[data-opt=ringkas]]:font-normal peer-checked:[&_[data-opt=ringkas]]:text-muted-foreground">
+            <div className="mb-3 flex items-center gap-2 peer-checked:[&_[data-opt=detail]]:bg-primary peer-checked:[&_[data-opt=detail]]:font-medium peer-checked:[&_[data-opt=detail]]:text-primary-foreground peer-checked:[&_[data-opt=ringkas]]:bg-transparent peer-checked:[&_[data-opt=ringkas]]:font-normal peer-checked:[&_[data-opt=ringkas]]:text-muted-foreground peer-focus-visible:[&_[data-depth-toggle]]:outline-2 peer-focus-visible:[&_[data-depth-toggle]]:outline-offset-2 peer-focus-visible:[&_[data-depth-toggle]]:outline-primary">
               <span className="text-xs text-muted-foreground">Kedalaman:</span>
               <label
                 htmlFor="help-depth"
-                className="inline-flex cursor-pointer overflow-hidden rounded-md border text-xs peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
+                data-depth-toggle
+                className="inline-flex cursor-pointer overflow-hidden rounded-md border text-xs"
               >
                 <span
                   data-opt="ringkas"
@@ -166,7 +166,10 @@ export default async function HelpTopicPage({
                 </span>
               </label>
             </div>
-            <article className="rounded-lg border bg-card p-6 [&_[data-detail]]:hidden peer-checked:[&_[data-detail]]:block">
+            <article
+              data-depth="ringkas"
+              className="rounded-lg border bg-card p-6 [&[data-depth=ringkas]_[data-detail]]:hidden peer-checked:[&[data-depth=ringkas]_[data-detail]]:block"
+            >
               <HelpBlocks blocks={blocks} />
             </article>
           </div>

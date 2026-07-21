@@ -26,12 +26,10 @@ const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecifi
     sources: {
       "google-hybrid": {
         type: "raster",
-        tiles: [
-          "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
-        ],
+        tiles: ["https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
         tileSize: 256,
-        attribution: "Map data &copy; Google"
-      }
+        attribution: "Map data &copy; Google",
+      },
     },
     layers: [
       {
@@ -39,21 +37,19 @@ const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecifi
         type: "raster",
         source: "google-hybrid",
         minzoom: 0,
-        maxzoom: 20
-      }
-    ]
+        maxzoom: 20,
+      },
+    ],
   },
   satellite: {
     version: 8,
     sources: {
       "google-satellite": {
         type: "raster",
-        tiles: [
-          "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-        ],
+        tiles: ["https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"],
         tileSize: 256,
-        attribution: "Map data &copy; Google"
-      }
+        attribution: "Map data &copy; Google",
+      },
     },
     layers: [
       {
@@ -61,21 +57,20 @@ const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecifi
         type: "raster",
         source: "google-satellite",
         minzoom: 0,
-        maxzoom: 20
-      }
-    ]
+        maxzoom: 20,
+      },
+    ],
   },
   light: {
     version: 8,
     sources: {
       "carto-light": {
         type: "raster",
-        tiles: [
-          "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-        ],
+        tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
         tileSize: 256,
-        attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors &copy; <a href=\"https://carto.com/attributions\">CARTO</a>"
-      }
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      },
     },
     layers: [
       {
@@ -83,21 +78,20 @@ const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecifi
         type: "raster",
         source: "carto-light",
         minzoom: 0,
-        maxzoom: 20
-      }
-    ]
+        maxzoom: 20,
+      },
+    ],
   },
   dark: {
     version: 8,
     sources: {
       "carto-dark": {
         type: "raster",
-        tiles: [
-          "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-        ],
+        tiles: ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
         tileSize: 256,
-        attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors &copy; <a href=\"https://carto.com/attributions\">CARTO</a>"
-      }
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      },
     },
     layers: [
       {
@@ -105,10 +99,10 @@ const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecifi
         type: "raster",
         source: "carto-dark",
         minzoom: 0,
-        maxzoom: 20
-      }
-    ]
-  }
+        maxzoom: 20,
+      },
+    ],
+  },
 };
 
 export function ParcelBulkUploadMap({ data }: Props) {
@@ -136,7 +130,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
 
     data.forEach((row) => {
       if (!row.geometry) return;
-      
+
       let parsed = row.geometry;
       if (typeof parsed === "string") {
         try {
@@ -214,14 +208,14 @@ export function ParcelBulkUploadMap({ data }: Props) {
           isValid: !!row._isValid,
           parcelId: row.parcelId || "—",
           farmerName: row._farmerName || "—",
-          errors: Array.isArray(row._errors) ? row._errors.join("; ") : ""
-        }
+          errors: Array.isArray(row._errors) ? row._errors.join("; ") : "",
+        },
       });
     });
 
     return {
       type: "FeatureCollection" as const,
-      features
+      features,
     };
   })();
 
@@ -237,8 +231,8 @@ export function ParcelBulkUploadMap({ data }: Props) {
     type: "fill",
     paint: {
       "fill-color": ["case", ["get", "isValid"], "#22c55e", "#ef4444"],
-      "fill-opacity": 0.4
-    }
+      "fill-opacity": 0.4,
+    },
   };
 
   const borderStyle: LayerProps = {
@@ -246,8 +240,8 @@ export function ParcelBulkUploadMap({ data }: Props) {
     type: "line",
     paint: {
       "line-color": ["case", ["get", "isValid"], "#16a34a", "#dc2626"],
-      "line-width": 2
-    }
+      "line-width": 2,
+    },
   };
 
   const onMapClick = (event: MapLayerMouseEvent) => {
@@ -261,7 +255,7 @@ export function ParcelBulkUploadMap({ data }: Props) {
         parcelId: props.parcelId,
         farmerName: props.farmerName,
         isValid: props.isValid === "true" || props.isValid === true,
-        errors: props.errors || ""
+        errors: props.errors || "",
       });
     }
   };
@@ -302,15 +296,23 @@ export function ParcelBulkUploadMap({ data }: Props) {
             <div className="p-2 space-y-1.5 min-w-[150px]">
               <div className="flex items-center justify-between border-b pb-1">
                 <span className="font-semibold text-foreground">Detail Lahan</span>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                  popupInfo.isValid ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"
-                }`}>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    popupInfo.isValid
+                      ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                      : "bg-destructive/10 text-destructive border border-destructive/20"
+                  }`}
+                >
                   {popupInfo.isValid ? "Valid" : "Error"}
                 </span>
               </div>
               <div className="space-y-1 text-muted-foreground">
-                <p><strong className="text-foreground">ID:</strong> {popupInfo.parcelId}</p>
-                <p><strong className="text-foreground">Petani:</strong> {popupInfo.farmerName}</p>
+                <p>
+                  <strong className="text-foreground">ID:</strong> {popupInfo.parcelId}
+                </p>
+                <p>
+                  <strong className="text-foreground">Petani:</strong> {popupInfo.farmerName}
+                </p>
                 {popupInfo.errors && (
                   <p className="text-destructive font-medium border-t pt-1 mt-1 text-[11px] max-w-[200px] leading-tight">
                     <strong className="text-foreground block mb-0.5 text-xs">Error Detail:</strong>

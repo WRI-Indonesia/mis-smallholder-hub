@@ -54,6 +54,10 @@ import pMembacaPeta from "@/content/help/tutorial/p-3-membaca-peta.md";
 import lMembuatLaporan from "@/content/help/tutorial/l-1-membuat-laporan.md";
 import lLaporanLahan from "@/content/help/tutorial/l-2-laporan-lahan.md";
 import lMemperbaruiDashboard from "@/content/help/tutorial/l-3-memperbarui-dashboard.md";
+import pDashboardBmp from "@/content/help/tutorial/p-4-dashboard-bmp.md";
+import pPetaLahan from "@/content/help/tutorial/p-5-peta-lahan.md";
+import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
+import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 
 type IconType = React.ComponentType<{ className?: string }>;
 
@@ -166,6 +170,8 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "membaca-dashboard", source: pMembacaDashboard },
       { id: "cakupan-pelatihan", source: pCakupanPelatihan },
       { id: "membaca-peta", source: pMembacaPeta },
+      { id: "dashboard-bmp", source: pDashboardBmp },
+      { id: "peta-lahan", source: pPetaLahan },
     ],
   },
   {
@@ -179,6 +185,17 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "membuat-laporan", source: lMembuatLaporan },
       { id: "laporan-lahan", source: lLaporanLahan },
       { id: "memperbarui-dashboard", source: lMemperbaruiDashboard },
+    ],
+  },
+  {
+    slug: "tutorial-administrasi",
+    section: "tutorial",
+    title: "Analisa & Administrasi",
+    summary: "Memeriksa kelengkapan data sebelum dilaporkan, dan mengatur siapa boleh melihat apa.",
+    icon: Shield,
+    topics: [
+      { id: "analisa-data", source: aAnalisaData },
+      { id: "mengelola-pengguna", source: aMengelolaPengguna },
     ],
   },
   {
@@ -278,15 +295,16 @@ export function helpChaptersBySection(
   return chapters.filter((c) => c.section === section);
 }
 
-/**
- * Tandai tutorial yang menunya di luar hak akses pembaca. Sengaja **tidak
- * disembunyikan** — panduan tetap bisa dibaca (berguna saat pelatihan lintas
- * peran), hanya diberi keterangan agar tidak ada yang mengikuti langkah lalu
- * kebingungan mencari tombol yang memang tak akan muncul di layarnya.
- */
-export function isTopicAccessible(topic: HelpTopic, accessibleMenuKeys: string[]): boolean {
-  return topic.menuKey == null || accessibleMenuKeys.includes(topic.menuKey);
+/** Bungkus `findTutorialForMenu` dengan daftar bab bawaan. Intinya ada di
+ * `help-access.ts` (modul murni) agar bisa diuji tanpa memuat berkas `.md`. */
+export function findTutorialForMenu(menuKey: string, chapters: HelpChapter[] = HELP_CHAPTERS) {
+  return findTutorialCore(menuKey, chapters);
 }
+
+// Penanda hak akses dipindah ke modul murni agar bisa diuji (berkas ini
+// mengimpor `.md` yang tak bisa dimuat vitest); di-re-export demi kompatibilitas.
+export { isTopicAccessible, type AccessCheckable } from "@/lib/help-access";
+import { findTutorialForMenu as findTutorialCore } from "@/lib/help-access";
 
 export function getHelpChapter(slug: string): HelpChapter | undefined {
   return HELP_CHAPTERS.find((c) => c.slug === slug);

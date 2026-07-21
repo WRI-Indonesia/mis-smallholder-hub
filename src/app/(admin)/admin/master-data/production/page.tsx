@@ -1,4 +1,5 @@
 import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/lib/rbac";
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getProductionRecords } from "@/server/actions/production";
 import { getFarmerGroupOptions } from "@/lib/select-options";
 import { ProductionListClient } from "./components/production-list-client";
@@ -38,8 +39,13 @@ export default async function ProductionPage({
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Produksi</h1>
-        <p className="text-muted-foreground">Data panen dan produksi hasil tani (yield) per petani</p>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Produksi</h1>
+          <HelpHint menuKey="master-data-production" />
+        </div>
+        <p className="text-muted-foreground">
+          Data panen dan produksi hasil tani (yield) per petani
+        </p>
       </div>
       <ProductionListClient
         initialRecords={records}

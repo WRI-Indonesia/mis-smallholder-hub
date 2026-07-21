@@ -25,14 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Download,
-  Database,
-  ArrowRight,
-  RefreshCw,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
 import { bulkCreateProductionRecords } from "@/server/actions/bulk-upload-production";
 
 interface FarmerMapping {
@@ -74,22 +67,79 @@ interface ProductionValidatedRow {
 }
 
 const TARGET_FIELDS = [
-  { key: "farmerId", label: "ID Petani", required: true, desc: "ID Petani WRI (contoh: FARMER-001)" },
+  {
+    key: "farmerId",
+    label: "ID Petani",
+    required: true,
+    desc: "ID Petani WRI (contoh: FARMER-001)",
+  },
   { key: "period", label: "Periode", required: true, desc: "Format YYYY-MM (contoh: 2026-06)" },
-  { key: "harvestDate", label: "Tanggal Panen", required: true, desc: "Format tanggal (harus sesuai bulan periode)" },
+  {
+    key: "harvestDate",
+    label: "Tanggal Panen",
+    required: true,
+    desc: "Format tanggal (harus sesuai bulan periode)",
+  },
   { key: "harvestNumber", label: "Panen Ke-", required: true, desc: "Angka bulat 1 s/d 4" },
-  { key: "yieldKg", label: "Hasil Panen (kg)", required: true, desc: "Angka desimal/bulat lebih dari 0" },
-  { key: "parcelId", label: "ID Lahan", required: false, desc: "ID Lahan opsional (CUID dari sistem)" },
+  {
+    key: "yieldKg",
+    label: "Hasil Panen (kg)",
+    required: true,
+    desc: "Angka desimal/bulat lebih dari 0",
+  },
+  {
+    key: "parcelId",
+    label: "ID Lahan",
+    required: false,
+    desc: "ID Lahan opsional (CUID dari sistem)",
+  },
   { key: "notes", label: "Catatan", required: false, desc: "Catatan tambahan (maks 500 karakter)" },
 ];
 
 const AUTO_MATCH_RULES: Record<string, string[]> = {
-  farmerId: ["farmer_id", "farmerid", "petani_id", "id petani", "id_petani", "farmer_code", "kode_petani", "wri_id", "farmer", "kode petani"],
+  farmerId: [
+    "farmer_id",
+    "farmerid",
+    "petani_id",
+    "id petani",
+    "id_petani",
+    "farmer_code",
+    "kode_petani",
+    "wri_id",
+    "farmer",
+    "kode petani",
+  ],
   period: ["period", "periode", "bulan", "month", "period_id"],
-  harvestDate: ["harvest_date", "harvestdate", "tanggal_panen", "tgl_panen", "tanggal panen", "tgl panen", "tanggal", "date"],
-  harvestNumber: ["harvest_number", "harvestnumber", "panen_ke", "panen ke", "no_panen", "panen ke-", "panen ke_"],
+  harvestDate: [
+    "harvest_date",
+    "harvestdate",
+    "tanggal_panen",
+    "tgl_panen",
+    "tanggal panen",
+    "tgl panen",
+    "tanggal",
+    "date",
+  ],
+  harvestNumber: [
+    "harvest_number",
+    "harvestnumber",
+    "panen_ke",
+    "panen ke",
+    "no_panen",
+    "panen ke-",
+    "panen ke_",
+  ],
   yieldKg: ["yield_kg", "yieldkg", "yield", "hasil", "hasil_panen", "hasil panen", "kg", "berat"],
-  parcelId: ["parcel_id", "parcelid", "lahan_id", "id lahan", "id_lahan", "kode_lahan", "kode lahan", "parcel"],
+  parcelId: [
+    "parcel_id",
+    "parcelid",
+    "lahan_id",
+    "id lahan",
+    "id_lahan",
+    "kode_lahan",
+    "kode lahan",
+    "parcel",
+  ],
   notes: ["notes", "note", "keterangan", "ket", "catatan", "notes_info"],
 };
 
@@ -139,7 +189,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
   function validateRow(
     row: RawRow,
     index: number,
-    duplicatesInFile: Set<string>
+    duplicatesInFile: Set<string>,
   ): { data: ProductionValidatedRow; errors: string[] } {
     const errors: string[] = [];
     const normalized: ProductionValidatedRow = {
@@ -156,7 +206,8 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
 
     for (const f of TARGET_FIELDS) {
       const mappedCol = mapping[f.key];
-      normalized._original[f.key] = (mappedCol ? row[mappedCol] : "") as string | number | null | undefined;
+      normalized._original[f.key] = (mappedCol ? row[mappedCol] : "") as
+        string | number | null | undefined;
     }
 
     // 1. Farmer ID mapping lookup
@@ -168,7 +219,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       errors.push("ID Petani wajib diisi");
     } else {
       const matchFarmer = farmers.find(
-        (f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase()
+        (f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase(),
       );
       if (matchFarmer) {
         mappedFarmerDbId = matchFarmer.id;
@@ -215,8 +266,8 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       if (harvestYear !== year || harvestMonth !== month) {
         errors.push(
           `Tanggal panen (${parsedHarvestDate.toLocaleDateString(
-            "id-ID"
-          )}) tidak sesuai dengan periode ${rawPeriod}`
+            "id-ID",
+          )}) tidak sesuai dengan periode ${rawPeriod}`,
         );
       }
     }
@@ -268,7 +319,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       const dupKey = `${mappedFarmerDbId}::${normalized.parcelId || ""}::${rawPeriod}::${harvestNumber}`;
       if (duplicatesInFile.has(dupKey)) {
         errors.push(
-          `Data panen ke-${harvestNumber} periode ${rawPeriod} terdeteksi ganda di dalam file`
+          `Data panen ke-${harvestNumber} periode ${rawPeriod} terdeteksi ganda di dalam file`,
         );
       }
 
@@ -278,11 +329,11 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
           er.farmerId === mappedFarmerDbId &&
           er.period === rawPeriod &&
           er.harvestNumber === harvestNumber &&
-          (er.parcel?.parcelId === normalized.parcelId || (!er.parcelId && !normalized.parcelId))
+          (er.parcel?.parcelId === normalized.parcelId || (!er.parcelId && !normalized.parcelId)),
       );
       if (dbDup) {
         errors.push(
-          `Data panen ke-${harvestNumber} periode ${rawPeriod} sudah terdaftar di database`
+          `Data panen ke-${harvestNumber} periode ${rawPeriod} sudah terdaftar di database`,
         );
       }
     }
@@ -368,9 +419,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     const matched: Record<string, string> = {};
     for (const f of TARGET_FIELDS) {
       const rules = AUTO_MATCH_RULES[f.key] || [];
-      const bestMatch = detectedHeaders.find((h) =>
-        rules.includes(h.toLowerCase().trim())
-      );
+      const bestMatch = detectedHeaders.find((h) => rules.includes(h.toLowerCase().trim()));
       if (bestMatch) {
         matched[f.key] = bestMatch;
       }
@@ -398,7 +447,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
 
       if (rawFarmerId && rawPeriod && rawHarvestNumber) {
         const matchFarmer = farmers.find(
-          (f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase()
+          (f) => f.farmerId.toLowerCase() === rawFarmerId.toLowerCase(),
         );
         const farmerDbId = matchFarmer ? matchFarmer.id : rawFarmerId;
         const key = `${farmerDbId}::${rawParcelId}::${rawPeriod}::${rawHarvestNumber}`;
@@ -464,7 +513,9 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     });
 
     const buffer = await exportWorkbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -555,7 +606,9 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     });
 
     const buffer = await templateWorkbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -594,7 +647,8 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
             />
             {file && (
               <span className="text-sm text-muted-foreground">
-                Tipe File: <strong>{file.name.split(".").pop()?.toUpperCase()}</strong> ({rawRows.length} baris terdeteksi)
+                Tipe File: <strong>{file.name.split(".").pop()?.toUpperCase()}</strong> (
+                {rawRows.length} baris terdeteksi)
               </span>
             )}
           </div>
@@ -687,7 +741,11 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
             </div>
 
             <div className="flex gap-2">
-              <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => setFilter("all")}>
+              <Button
+                variant={filter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter("all")}
+              >
                 Semua ({validatedData.length})
               </Button>
               <Button
@@ -711,7 +769,12 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleDownload("all")} className="h-9">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownload("all")}
+                className="h-9"
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Download Semua Data
               </Button>
@@ -768,20 +831,28 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
                 ) : (
                   filteredData.slice(0, 100).map((row, idx) => (
                     <TableRow key={idx} className={row._isValid ? "" : "bg-destructive/5"}>
-                      <TableCell className="font-mono text-muted-foreground">{row._rowNum}</TableCell>
+                      <TableCell className="font-mono text-muted-foreground">
+                        {row._rowNum}
+                      </TableCell>
                       <TableCell className="font-mono">{row._farmerIdRaw || "—"}</TableCell>
                       <TableCell className="font-medium">{row._farmerName || "—"}</TableCell>
-                      <TableCell className="font-mono">{row.period || row._original.period || "—"}</TableCell>
+                      <TableCell className="font-mono">
+                        {row.period || row._original.period || "—"}
+                      </TableCell>
                       <TableCell className="tabular-nums">
                         {row.harvestDate
                           ? new Date(row.harvestDate).toLocaleDateString("id-ID")
                           : row._original.harvestDate || "—"}
                       </TableCell>
-                      <TableCell className="font-mono">{row.harvestNumber || row._original.harvestNumber || "—"}</TableCell>
+                      <TableCell className="font-mono">
+                        {row.harvestNumber || row._original.harvestNumber || "—"}
+                      </TableCell>
                       <TableCell className="font-mono text-right">
                         {row.yieldKg !== undefined ? row.yieldKg.toLocaleString("id-ID") : "—"}
                       </TableCell>
-                      <TableCell className="font-mono">{row.parcelId || row._original.parcelId || "—"}</TableCell>
+                      <TableCell className="font-mono">
+                        {row.parcelId || row._original.parcelId || "—"}
+                      </TableCell>
                       <TableCell>
                         {row._isValid ? (
                           <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
@@ -795,7 +866,9 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-destructive font-medium">{row._errors.join("; ") || "—"}</TableCell>
+                      <TableCell className="text-sm text-destructive font-medium">
+                        {row._errors.join("; ") || "—"}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

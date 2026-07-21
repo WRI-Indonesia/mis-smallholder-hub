@@ -72,7 +72,6 @@ const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatArea = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
-
 export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("active");
@@ -83,8 +82,13 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
   const filtered = initialGroups.filter((g) => {
     const matchDistrict = districtFilter === "all" || g.districtId === districtFilter;
     // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
-    const matchStatus =
-      !isSuperAdmin ? true : statusFilter === "all" ? true : statusFilter === "active" ? g.isActive : !g.isActive;
+    const matchStatus = !isSuperAdmin
+      ? true
+      : statusFilter === "all"
+        ? true
+        : statusFilter === "active"
+          ? g.isActive
+          : !g.isActive;
     return matchDistrict && matchStatus;
   });
 
@@ -135,9 +139,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       label: "Kategori",
       sortable: true,
       render: (row) => (
-        <Badge variant="secondary">
-          {row.category === "EX_PLASMA" ? "Ex Plasma" : "Swadaya"}
-        </Badge>
+        <Badge variant="secondary">{row.category === "EX_PLASMA" ? "Ex Plasma" : "Swadaya"}</Badge>
       ),
     },
     {
@@ -255,22 +257,23 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
     };
   };
 
-  const selectedDistrictName = districtFilter === "all"
-    ? "Semua Distrik"
-    : districts.find((d) => d.id === districtFilter)?.name ?? districtFilter;
+  const selectedDistrictName =
+    districtFilter === "all"
+      ? "Semua Distrik"
+      : (districts.find((d) => d.id === districtFilter)?.name ?? districtFilter);
 
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
       <Select value={districtFilter} onValueChange={(v) => setDistrictFilter(v ?? "all")}>
         <SelectTrigger className="w-[180px] h-9">
-          <SelectValue placeholder="Semua Distrik">
-            {selectedDistrictName}
-          </SelectValue>
+          <SelectValue placeholder="Semua Distrik">{selectedDistrictName}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Semua Distrik</SelectItem>
           {districts.map((d) => (
-            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+            <SelectItem key={d.id} value={d.id}>
+              {d.name}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -292,7 +295,14 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
   );
 
   const toolbarRight = permissions.includes("CREATE") ? (
-    <Button size="sm" onClick={() => { setEditGroup(null); setShowForm(true); }} className="h-9">
+    <Button
+      size="sm"
+      onClick={() => {
+        setEditGroup(null);
+        setShowForm(true);
+      }}
+      className="h-9"
+    >
       <Plus className="h-4 w-4 mr-2" />
       Tambah Lembaga Petani
     </Button>
@@ -309,7 +319,9 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Lembaga Petani</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Lembaga Petani
+              </p>
               <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalKT)}</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
@@ -321,8 +333,12 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Petani</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalPetani)} orang</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Petani
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalPetani)} orang
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Users className="h-5 w-5" />
@@ -333,8 +349,12 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Persil Lahan</p>
-              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatNumber(totalPersil)} persil</h3>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Persil Lahan
+              </p>
+              <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
+                {formatNumber(totalPersil)} persil
+              </h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
               <Layers className="h-5 w-5" />
@@ -345,7 +365,9 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Luas Lahan</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Luas Lahan
+              </p>
               <h3 className="text-2xl font-bold mt-1.5 tabular-nums">{formatArea(totalLuas)} Ha</h3>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-xl">
@@ -395,7 +417,10 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       <GroupFormModal
         key={editGroup?.id ?? "new"}
         open={showForm}
-        onClose={() => { setShowForm(false); setEditGroup(null); }}
+        onClose={() => {
+          setShowForm(false);
+          setEditGroup(null);
+        }}
         group={editGroup}
         districts={districts}
       />

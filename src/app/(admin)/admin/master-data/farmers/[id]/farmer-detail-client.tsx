@@ -30,11 +30,12 @@ import type { FarmerDetailData } from "@/lib/farmer-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
 
 const ParcelsDistributionMap = dynamic(
-  () => import("@/components/shared/parcels-distribution-map").then((m) => m.ParcelsDistributionMap),
+  () =>
+    import("@/components/shared/parcels-distribution-map").then((m) => m.ParcelsDistributionMap),
   {
     ssr: false,
     loading: () => <div className="h-[768px] rounded-md border bg-muted/30 animate-pulse" />,
-  }
+  },
 );
 
 interface FarmerProfile {
@@ -81,10 +82,25 @@ const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const formatDate = (d: Date | null) =>
   d
-    ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(d))
+    ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(
+        new Date(d),
+      )
     : "—";
 
-const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agu",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
+];
 const formatPeriod = (period: string) => {
   const m = parseInt(period.slice(5, 7), 10);
   return `${MONTH_LABELS[m - 1] ?? period.slice(5, 7)} ${period.slice(0, 4)}`;
@@ -97,7 +113,8 @@ function ageFrom(birthDate: Date | null): number | null {
   const now = new Date();
   let age = now.getFullYear() - b.getFullYear();
   const beforeBirthday =
-    now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate());
+    now.getMonth() < b.getMonth() ||
+    (now.getMonth() === b.getMonth() && now.getDate() < b.getDate());
   if (beforeBirthday) age -= 1;
   return age >= 0 ? age : null;
 }
@@ -132,7 +149,9 @@ function SummaryCard({
     <Card className="h-full">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {title}
+          </p>
           <Icon className="h-4 w-4 shrink-0 text-primary" />
         </div>
         <h3 className="text-xl font-bold mt-1.5 tabular-nums">{value}</h3>
@@ -145,20 +164,33 @@ function SummaryCard({
 function FieldItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
       <div className="text-sm font-medium mt-1">{children}</div>
     </div>
   );
 }
 
-const AVAILABILITY_META: { key: "BAIK" | "CUKUP" | "KURANG" | "NONE"; label: string; className: string }[] = [
+const AVAILABILITY_META: {
+  key: "BAIK" | "CUKUP" | "KURANG" | "NONE";
+  label: string;
+  className: string;
+}[] = [
   { key: "BAIK", label: "Baik (>24 bln)", className: "bg-green-100 text-green-800" },
   { key: "CUKUP", label: "Cukup (12–24 bln)", className: "bg-lime-100 text-lime-800" },
   { key: "KURANG", label: "Kurang (<12 bln)", className: "bg-amber-100 text-amber-800" },
   { key: "NONE", label: "Tanpa Data", className: "bg-slate-100 text-slate-600" },
 ];
 
-export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdit, farmerGroups }: Props) {
+export function FarmerDetailClient({
+  farmer,
+  detail,
+  parcels,
+  mapParcels,
+  canEdit,
+  farmerGroups,
+}: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
@@ -217,13 +249,19 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
               <Badge variant="secondary">{farmer.gender === "M" ? "Laki-laki" : "Perempuan"}</Badge>
               <Link href={`/admin/master-data/groups/${farmer.farmerGroup.id}`}>
-                <Badge variant="default" className="hover:opacity-80">{farmer.farmerGroup.name}</Badge>
+                <Badge variant="default" className="hover:opacity-80">
+                  {farmer.farmerGroup.name}
+                </Badge>
               </Link>
               {subGroups.gapoktan.map((g) => (
-                <Badge key={`g-${g}`} variant="outline">{g}</Badge>
+                <Badge key={`g-${g}`} variant="outline">
+                  {g}
+                </Badge>
               ))}
               {subGroups.kelompokTani.map((kt) => (
-                <Badge key={`kt-${kt}`} variant="outline">{kt}</Badge>
+                <Badge key={`kt-${kt}`} variant="outline">
+                  {kt}
+                </Badge>
               ))}
               <Badge variant={farmer.isActive ? "default" : "outline"}>
                 {farmer.isActive ? "Aktif" : "Nonaktif"}
@@ -261,19 +299,33 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
           icon={BookOpen}
           title="Pelatihan"
           value={`${formatNumber(summary.packagesDone)}/${formatNumber(summary.packagesTotal)} paket`}
-          sub={summary.packagesDone === summary.packagesTotal ? "Semua paket diikuti" : "Belum semua paket"}
+          sub={
+            summary.packagesDone === summary.packagesTotal
+              ? "Semua paket diikuti"
+              : "Belum semua paket"
+          }
         />
         <SummaryCard
           icon={ClipboardCheck}
           title="Kelengkapan Profil"
           value={`${formatNumber(summary.profile.complete)}/${formatNumber(summary.profile.total)}`}
-          sub={summary.profile.missing.length > 0 ? `Belum: ${summary.profile.missing.join(", ")}` : "Lengkap"}
+          sub={
+            summary.profile.missing.length > 0
+              ? `Belum: ${summary.profile.missing.join(", ")}`
+              : "Lengkap"
+          }
         />
         <SummaryCard
           icon={TrendingUp}
           title="Produktivitas Terakhir"
-          value={summary.lastProductivity ? `${formatDecimal(summary.lastProductivity.tonHa)} Ton/Ha` : "—"}
-          sub={summary.lastProductivity ? `tahun ${summary.lastProductivity.year}` : "Belum ada data"}
+          value={
+            summary.lastProductivity
+              ? `${formatDecimal(summary.lastProductivity.tonHa)} Ton/Ha`
+              : "—"
+          }
+          sub={
+            summary.lastProductivity ? `tahun ${summary.lastProductivity.year}` : "Belum ada data"
+          }
         />
       </div>
 
@@ -291,13 +343,18 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
           <Card className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <FieldItem label="Lembaga Petani">
-                <Link href={`/admin/master-data/groups/${farmer.farmerGroup.id}`} className="text-primary hover:underline">
+                <Link
+                  href={`/admin/master-data/groups/${farmer.farmerGroup.id}`}
+                  className="text-primary hover:underline"
+                >
                   {farmer.farmerGroup.name}
                 </Link>
               </FieldItem>
               <FieldItem label="Distrik">{farmer.farmerGroup.district.name}</FieldItem>
               <FieldItem label="Jenis Kelamin">
-                <Badge variant="secondary">{farmer.gender === "M" ? "Laki-laki" : "Perempuan"}</Badge>
+                <Badge variant="secondary">
+                  {farmer.gender === "M" ? "Laki-laki" : "Perempuan"}
+                </Badge>
               </FieldItem>
               <FieldItem label="NIK">
                 <span className="font-mono text-muted-foreground">{maskNik(farmer.nik)}</span>
@@ -347,7 +404,9 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
                         <td className="py-2 pr-4 text-right tabular-nums">
                           {p.area != null ? formatDecimal(p.area) : "—"}
                         </td>
-                        <td className="py-2 pr-4 text-right tabular-nums">{p.plantingYear ?? "—"}</td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {p.plantingYear ?? "—"}
+                        </td>
                         <td className="py-2 pr-4 text-right tabular-nums">{p.revision}</td>
                         <td className="py-2 text-right">
                           <Button
@@ -389,7 +448,10 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {pelatihan.checklist.map((c) => (
-                <div key={c.code} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <div
+                  key={c.code}
+                  className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                >
                   {c.done ? (
                     <Check className="h-4 w-4 shrink-0 text-green-600" />
                   ) : (
@@ -424,7 +486,9 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
                   <tbody>
                     {pelatihan.history.map((h) => (
                       <tr key={h.id} className="border-b last:border-0">
-                        <td className="py-2 pr-4 whitespace-nowrap">{formatDate(h.trainingDate)}</td>
+                        <td className="py-2 pr-4 whitespace-nowrap">
+                          {formatDate(h.trainingDate)}
+                        </td>
                         <td className="py-2 pr-4">{h.packageName}</td>
                         <td className="py-2 pr-4">{h.location ?? "—"}</td>
                         <td className="py-2 text-right tabular-nums">
@@ -448,7 +512,9 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
               Produksi per Tahun
             </h2>
             {produksi.perYear.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Belum ada data produksi untuk petani ini.</p>
+              <p className="text-sm text-muted-foreground">
+                Belum ada data produksi untuk petani ini.
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -481,26 +547,46 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
                               {y.year}
                             </span>
                           </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">{formatDecimal(y.totalKg)}</td>
                           <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(y.recordCount)}{pctOf(y.reportedParcelMonths, summary.totalParcels * 12)}
+                            {formatDecimal(y.totalKg)}
                           </td>
                           <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(y.parcelsReporting)}{pctOf(y.parcelsReporting, summary.totalParcels)}
+                            {formatNumber(y.recordCount)}
+                            {pctOf(y.reportedParcelMonths, summary.totalParcels * 12)}
                           </td>
                           <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatDecimal(y.areaReporting)}{pctOf(y.areaReporting, summary.totalArea)}
+                            {formatNumber(y.parcelsReporting)}
+                            {pctOf(y.parcelsReporting, summary.totalParcels)}
                           </td>
-                          <td className="py-2 text-right tabular-nums">{formatDecimal(y.productivityTonHa)}</td>
+                          <td className="py-2 pr-4 text-right tabular-nums">
+                            {formatDecimal(y.areaReporting)}
+                            {pctOf(y.areaReporting, summary.totalArea)}
+                          </td>
+                          <td className="py-2 text-right tabular-nums">
+                            {formatDecimal(y.productivityTonHa)}
+                          </td>
                         </tr>,
                         ...(expanded
                           ? y.months.map((m) => (
-                              <tr key={m.period} className="border-b last:border-0 bg-muted/30 text-muted-foreground">
-                                <td className="py-1.5 pr-4 pl-6 text-xs">{formatPeriod(m.period)}</td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">{formatDecimal(m.totalKg)}</td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">{formatNumber(m.recordCount)}</td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">{formatNumber(m.parcelsReporting)}</td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">{formatDecimal(m.areaReporting)}</td>
+                              <tr
+                                key={m.period}
+                                className="border-b last:border-0 bg-muted/30 text-muted-foreground"
+                              >
+                                <td className="py-1.5 pr-4 pl-6 text-xs">
+                                  {formatPeriod(m.period)}
+                                </td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
+                                  {formatDecimal(m.totalKg)}
+                                </td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
+                                  {formatNumber(m.recordCount)}
+                                </td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
+                                  {formatNumber(m.parcelsReporting)}
+                                </td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
+                                  {formatDecimal(m.areaReporting)}
+                                </td>
                                 <td className="py-1.5 text-right text-xs">—</td>
                               </tr>
                             ))
@@ -512,10 +598,11 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
               </div>
             )}
             <p className="text-xs text-muted-foreground mt-3">
-              Produktivitas = Σ produksi tahun tsb ÷ Σ luas lahan yang melapor pada tahun tsb (Ton/Ha). Record tanpa
-              lahan masuk total produksi, tidak menambah luas pelapor. Persentase Record = kelengkapan pelaporan
-              bulanan (pasangan lahan×bulan yang melapor ÷ total persil × 12 bulan — pelaporan wajib min. 1 panen per
-              bulan per lahan); Lahan/Luas Melapor terhadap total persil/luas milik petani.
+              Produktivitas = Σ produksi tahun tsb ÷ Σ luas lahan yang melapor pada tahun tsb
+              (Ton/Ha). Record tanpa lahan masuk total produksi, tidak menambah luas pelapor.
+              Persentase Record = kelengkapan pelaporan bulanan (pasangan lahan×bulan yang melapor ÷
+              total persil × 12 bulan — pelaporan wajib min. 1 panen per bulan per lahan);
+              Lahan/Luas Melapor terhadap total persil/luas milik petani.
             </p>
           </Card>
 
@@ -527,7 +614,9 @@ export function FarmerDetailClient({ farmer, detail, parcels, mapParcels, canEdi
               {AVAILABILITY_META.map((m) => (
                 <div key={m.key} className={`rounded-lg px-3 py-2 ${m.className}`}>
                   <p className="text-xs font-medium">{m.label}</p>
-                  <p className="text-lg font-bold tabular-nums">{formatNumber(produksi.availability[m.key])} lahan</p>
+                  <p className="text-lg font-bold tabular-nums">
+                    {formatNumber(produksi.availability[m.key])} lahan
+                  </p>
                 </div>
               ))}
             </div>

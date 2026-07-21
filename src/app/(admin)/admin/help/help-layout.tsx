@@ -25,11 +25,11 @@ export function HelpLayout({
       <input
         type="checkbox"
         id="help-nav"
-        aria-label="Sembunyikan daftar isi Bantuan"
+        aria-label="Sembunyikan daftar isi"
         className="peer sr-only"
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[280px_1fr] peer-checked:lg:grid-cols-1 peer-checked:[&_[data-nav-hide]]:hidden peer-checked:[&_[data-nav-show]]:inline-block peer-checked:[&>[data-help-nav]]:hidden peer-focus-visible:[&_[data-nav-toggle]]:outline-2 peer-focus-visible:[&_[data-nav-toggle]]:outline-offset-2 peer-focus-visible:[&_[data-nav-toggle]]:outline-primary">
+      <div className="grid items-start gap-6 lg:grid-cols-[280px_1fr] peer-checked:lg:grid-cols-1 peer-checked:[&_[data-nav-hide]]:hidden peer-checked:[&_[data-nav-show]]:inline-block peer-checked:lg:[&>[data-help-nav]]:hidden peer-focus-visible:[&_[data-nav-toggle]]:outline-2 peer-focus-visible:[&_[data-nav-toggle]]:outline-offset-2 peer-focus-visible:[&_[data-nav-toggle]]:outline-primary">
         <div data-help-nav className="min-w-0">
           {sidebar}
         </div>

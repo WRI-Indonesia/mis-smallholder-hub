@@ -27,8 +27,8 @@ Siapkan: nama lengkap, **ID Petani**, jenis kelamin, dan nama lembaga. Sisanya b
 + Daftar yang muncul hanya lembaga dalam wilayah kerja akun Anda, jadi wajar bila jauh lebih pendek daripada daftar seluruh organisasi. Pembatasan ini berlaku di seluruh sistem, bukan hanya di form ini: laporan dan dashboard Anda pun hanya menghitung lembaga yang sama. Karena itu angka total bisa berbeda antar pengguna, dan itu normal.
 3. Isi **Nama** dengan nama lengkap sesuai dokumen.
 + Nama ini muncul di daftar hadir pelatihan, Laporan Petani, Laporan Lahan, dan Profil Lahan PDF yang kadang diserahkan ke pihak ketiga. Hindari singkatan dan gelar. Kalau nama di KTP berbeda dengan nama panggilan yang dipakai sehari-hari di lapangan, pakai nama KTP di sini agar cocok saat verifikasi sertifikasi.
-4. Isi **ID Petani**. Harus unik dalam satu lembaga.
-+ Petani di lembaga berbeda boleh punya ID yang kebetulan sama — yang dilarang hanya duplikat di dalam satu lembaga. Hati-hati saat menyalin dari Excel: nol di depan sering hilang karena sel diperlakukan sebagai angka, sehingga `007` berubah jadi `7` dan tidak lagi cocok dengan berkas unggahan Anda.
+4. Isi **ID Petani**, lalu **periksa sendiri** apakah nomor itu sudah dipakai.
++ Form ini **tidak memeriksa duplikat** — nomor yang sama bisa tersimpan dua kali tanpa peringatan. Cari dulu nomornya di kotak pencarian sebelum menyimpan. Sebaliknya **Bulk Upload menolak** ID yang sudah ada **di mana pun dalam sistem**, termasuk milik lembaga lain — jadi pakailah nomor yang unik secara global, bukan hanya unik di lembaga Anda. Hati-hati juga saat menyalin dari Excel: nol di depan sering hilang karena sel diperlakukan sebagai angka, sehingga `007` berubah jadi `7`.
 5. Pilih **Jenis Kelamin**.
 + Dari kolom inilah angka Petani Laki-laki/Perempuan di Main Dashboard dan **partisipasi perempuan** di Dashboard Pelatihan dihitung. Indikator GEDSI yang biasa diminta donor bersumber dari sini, jadi kolom yang salah isi akan langsung terlihat di laporan program. Kolom ini wajib dan tidak bisa dikosongkan.
 6. Isi **NIK**, **Tempat/Tanggal Lahir**, dan **Alamat** bila ada.
@@ -38,7 +38,7 @@ Siapkan: nama lengkap, **ID Petani**, jenis kelamin, dan nama lembaga. Sisanya b
 8. Klik **Buat**.
 + Bila berhasil, jendela tertutup sendiri dan muncul notifikasi singkat di sudut layar. Bila jendela tetap terbuka, berarti ada kolom yang ditolak — pesannya ada tepat di bawah kolom bersangkutan.
 
-> [!hati-hati] Bila muncul pesan ID Petani sudah terdaftar, jangan langsung mengganti dengan angka lain. Cari dulu ID itu di daftar — biasanya petaninya memang sudah ada, dan data kedua akan memecah riwayat pelatihan serta lahannya.
+> [!hati-hati] Karena form ini tidak memeriksa duplikat, mendaftarkan ulang petani yang sudah ada akan **memecah riwayatnya** — pelatihan dan lahannya terbagi ke dua data, dan cakupan pelatihannya terhitung dua kali di dashboard. Selalu cari dulu di kotak pencarian sebelum menambah.
 
 ## Memastikan berhasil
 
@@ -56,9 +56,11 @@ Petani muncul di tabel, kartu **Total Petani** bertambah satu, dan namanya ketem
 
 + Untuk memastikan yang mana, buka **Master Data → Lembaga Petani**. Bila lembaganya tidak ada di sana juga, berarti di luar wilayah kerja Anda — mintalah administrator menambahkan distrik atau lembaga itu ke akun Anda. Bila ada tetapi berstatus Nonaktif, aktifkan kembali lebih dulu; petani tidak boleh ditambahkan ke lembaga nonaktif.
 
-**Muncul pesan "ID Petani sudah terdaftar".** Cari ID itu di daftar. Bila petaninya ada tapi **Nonaktif**, gunakan **Aktifkan kembali** — jangan buat data baru.
+**Petani yang dicari ternyata sudah ada tapi berstatus Nonaktif.** Gunakan aksi **Aktifkan kembali** pada barisnya — jangan buat data baru.
 
-+ Sistem ini tidak pernah benar-benar menghapus data; menonaktifkan hanya menyembunyikannya dari daftar. Seluruh riwayat pelatihan, lahan, dan produksi petani tersebut masih tersimpan utuh dan akan tersambung kembali begitu diaktifkan. Membuat data baru dengan ID berbeda justru memecah riwayatnya jadi dua, dan cakupan pelatihannya akan terhitung dua kali di dashboard.
++ Sistem ini tidak pernah benar-benar menghapus data; menonaktifkan hanya menyembunyikannya dari daftar. Seluruh riwayat pelatihan, lahan, dan produksi petani tersebut masih tersimpan utuh dan akan tersambung kembali begitu diaktifkan.
+
+**Bulk Upload menolak ID dengan pesan "sudah terdaftar", padahal di lembaga saya belum ada.** Pemeriksaan duplikat pada unggahan massal berlaku **untuk seluruh sistem**, bukan per lembaga — nomor itu sudah dipakai lembaga lain. Pakai nomor yang berbeda.
 
 **Form menolak disimpan tanpa pesan jelas.** Gulirkan jendela ke atas — pesan kesalahan muncul di bawah kolom bermasalah dan bisa berada di luar layar.
 

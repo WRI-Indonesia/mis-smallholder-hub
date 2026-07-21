@@ -65,7 +65,10 @@ export function HelpSidebar({ nav, searchIndex, activeChapter = null, activeTopi
           {results.map((r) => (
             <Link
               key={`${r.chapterSlug}-${r.topicId}`}
-              href={`/admin/help/${r.chapterSlug}/${r.topicId}`}
+              // `?detail=1`: kecocokan bisa berada di materi tingkat Detail yang
+              // pada mode Ringkas disembunyikan — membuka hasil pencarian dalam mode
+              // Ringkas berarti kata yang dicari tak terlihat, bahkan oleh Ctrl+F.
+              href={`/admin/help/${r.chapterSlug}/${r.topicId}?detail=1`}
               className="block rounded-md px-2 py-1.5 hover:bg-accent"
             >
               <span className="block text-sm font-medium">

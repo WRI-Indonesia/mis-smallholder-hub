@@ -9,6 +9,7 @@ import {
   blocksToPlainText,
   embedUrl,
 } from "@/lib/markdown-lite";
+import { isTopicAccessible, findTutorialForMenu } from "@/lib/help-access";
 
 describe("parseFrontmatter", () => {
   it("memisahkan frontmatter dari body & melepas kutip", () => {
@@ -279,5 +280,98 @@ describe("kelengkapan berkas tutorial", () => {
       const { frontmatter } = parseMarkdown(readFileSync(join(dir, file), "utf-8"));
       expect(frontmatter.href, file).toMatch(/^\/admin\//);
     }
+  });
+});
+
+describe("isTopicAccessible — penanda hak akses tutorial", () => {
+  const topic = (menuKey?: string, permission?: string) =>
+    ({
+      id: "t",
+      title: "T",
+      icon: () => null,
+      blocks: [],
+      plainText: "",
+      menuKey,
+      permission,
+    }) as never;
+
+  it("topik tanpa menuKey selalu terjangkau (mis. materi konsep)", () => {
+    expect(isTopicAccessible(topic(), {})).toBe(true);
+  });
+
+  it("menu yang tidak ada di peta izin → tidak terjangkau", () => {
+    expect(isTopicAccessible(topic("master-data-farmers", "VIEW"), {})).toBe(false);
+  });
+
+  it("punya menu tapi TANPA level izin yang dibutuhkan → tidak terjangkau", () => {
+    // Inti perbaikan: VIEW saja tidak cukup untuk tutorial yang menuntut CREATE —
+    // tombol "Tambah Petani" memang tak akan muncul untuk pembaca ini.
+    const effective = { "master-data-farmers": ["VIEW"] };
+    expect(isTopicAccessible(topic("master-data-farmers", "CREATE"), effective)).toBe(false);
+    expect(isTopicAccessible(topic("master-data-farmers", "VIEW"), effective)).toBe(true);
+  });
+
+  it("izin yang cukup → terjangkau", () => {
+    const effective = { "master-data-farmers": ["VIEW", "CREATE", "EDIT"] };
+    expect(isTopicAccessible(topic("master-data-farmers", "CREATE"), effective)).toBe(true);
+  });
+
+  it("tanpa `permission` di frontmatter, cukup punya menunya", () => {
+    expect(isTopicAccessible(topic("map-bmp"), { "map-bmp": [] })).toBe(true);
+  });
+});
+
+describe("findTutorialForMenu — bantuan kontekstual", () => {
+  const chapters = [
+    {
+      slug: "konsep-x",
+      section: "konsep",
+      topics: [{ id: "istilah", title: "Istilah", menuKey: "master-data-farmers" }],
+    },
+    {
+      slug: "tutorial-data-harian",
+      section: "tutorial",
+      topics: [
+        {
+          id: "menambah-petani",
+          title: "Mendaftarkan petani baru",
+          menuKey: "master-data-farmers",
+        },
+        {
+          id: "menambah-lahan",
+          title: "Mendaftarkan lahan petani",
+          menuKey: "master-data-parcels",
+        },
+      ],
+    },
+    {
+      slug: "tutorial-lain",
+      section: "tutorial",
+      topics: [{ id: "lain", title: "Lain", menuKey: "master-data-farmers" }],
+    },
+  ];
+
+  it("mengembalikan rute tutorial untuk menu tersebut", () => {
+    expect(findTutorialForMenu("master-data-parcels", chapters)).toEqual({
+      href: "/admin/help/tutorial-data-harian/menambah-lahan",
+      title: "Mendaftarkan lahan petani",
+    });
+  });
+
+  it("melewati bab non-tutorial meski menuKey-nya cocok", () => {
+    // Ikon `?` harus mengarah ke panduan langkah, bukan ke halaman konsep.
+    expect(findTutorialForMenu("master-data-farmers", chapters)?.href).toBe(
+      "/admin/help/tutorial-data-harian/menambah-petani",
+    );
+  });
+
+  it("mengambil yang pertama dideklarasikan bila ada beberapa", () => {
+    expect(findTutorialForMenu("master-data-farmers", chapters)?.title).toBe(
+      "Mendaftarkan petani baru",
+    );
+  });
+
+  it("menu tanpa tutorial → null (komponen tidak merender apa pun)", () => {
+    expect(findTutorialForMenu("settings-menu", chapters)).toBeNull();
   });
 });

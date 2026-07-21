@@ -1,4 +1,5 @@
 import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getFarmersForMapping, getExistingParcelIds } from "@/server/actions/bulk-upload-parcel";
 import { ParcelBulkUploadClient } from "./components/parcel-bulk-upload-client";
 
@@ -14,9 +15,13 @@ export default async function ParcelBulkUploadPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Upload Massal Lahan</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold tracking-tight">Upload Massal Lahan</h2>
+            <HelpHint menuKey="bulk-upload-parcels" />
+          </div>
           <p className="text-muted-foreground">
-            Unggah data spasial lahan petani menggunakan ZIP Shapefile (.zip berisi berkas .shp, .dbf, .shx, .prj) dengan pencocokan kolom dinamis.
+            Unggah data spasial lahan petani menggunakan ZIP Shapefile (.zip berisi berkas .shp,
+            .dbf, .shx, .prj) dengan pencocokan kolom dinamis.
           </p>
         </div>
       </div>
