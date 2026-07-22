@@ -25,9 +25,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…028) | **11** | 15 | 26 |
+| **Debt** (TD-001…028) | **10** | 16 | 26 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-028. (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027. (**TD-028 ✅** #188 — migrasi primitif popup + paritas/lebar Sebaran Lahan.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -107,10 +107,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Masalah:** sel izin di `role-matrix-client.tsx` adalah tombol ikon tanpa nama aksesibel maupun `aria-pressed`; chevron & tombol toggle baris hanya punya `title`. Pembaca layar tak bisa membedakan granted/denied atau mengetahui aksi tombol.
 - **Validation:** tambahkan `aria-label` (mis. "ADMIN · Dashboard · VIEW: aktif") + `aria-pressed` pada sel; label pada chevron & tombol `ListChecks`. · **Evidence:** #187B. · **Owner:** Frontend.
 
-### TD-028 · 🔲 Open — Migrasi Peta Lahan/BMP ke primitif popup bersama (P3)
+### TD-028 · ✅ Selesai (#188, 2026-07-22) — Migrasi Peta Lahan/BMP ke primitif popup bersama
 
-- **Masalah:** #188 mengekstrak primitif popup peta ke `src/components/shared/map-popup.tsx` (standar) dan memakainya di **Sebaran Lahan**, tapi `map-canvas.tsx` (Peta Lahan) & `map-bmp-canvas.tsx` (Peta BMP) **masih menyimpan salinan lokal** (`PopupHighlight`/`PopupSection`/`AttrRows`). Tiga sumber = risiko divergensi dengan "standar".
-- **Validation:** ganti definisi lokal di dua canvas dengan impor dari `map-popup.tsx` (`MapPopupHighlight`/`MapPopupSection`/`MapPopupRows`), verifikasi visual tak berubah. Sekalian pertimbangkan tipe kembalian `getLandParcelById` bersama agar `ParcelEditModalHost` tak perlu cast `as unknown as LandParcel`. · **Evidence:** #188. · **Owner:** Frontend.
+- **Masalah:** #188 mengekstrak primitif popup peta ke `src/components/shared/map-popup.tsx` (standar) tapi `map-canvas.tsx` & `map-bmp-canvas.tsx` masih menyimpan salinan lokal (`PopupHighlight`/`PopupSection`/`AttrRows`).
+- **Hasil:** kedua canvas kini mengimpor `MapPopupHighlight`/`MapPopupSection`/`MapPopupRows` dari modul bersama; definisi lokal + impor `Collapsible`/`ChevronDown`/`ReactNode`/`InfoRow` yang menganggur dihapus (verifikasi visual Peta Lahan & Sebaran Lahan tak berubah). Sekalian: **paritas header Sebaran Lahan** (ID Petani + ID Lahan + Lembaga Petani via payload `farmerCode`/`farmerGroupName`), **tutup popup pasca-edit**, dan **fix lebar**: popup Sebaran Lahan `w-max` (min 300 / max 440) + ID mono `whitespace-nowrap` agar **ID panjang tampil penuh satu baris** (tak terpotong). Sisa minor (bukan blocker): cast `as unknown as LandParcel` di `ParcelEditModalHost` dibiarkan. Gate lint 0 / build / test 675 ✅.
 
 ### TD-027 · 🔲 Open — `setRolePermissions` N+1 pada kaskade besar (P3)
 

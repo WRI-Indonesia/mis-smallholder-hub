@@ -56,9 +56,9 @@ export function MapPopupHeader({
         {rows && rows.length > 0 && (
           <div className="space-y-0.5 text-[11px] text-muted-foreground">
             {rows.map((r) => (
-              <p key={r.label}>
+              <p key={r.label} className={cn(r.mono && "whitespace-nowrap")}>
                 <span>{r.label}: </span>
-                <span className={cn("text-foreground/80", r.mono && "font-mono break-all")}>{r.value}</span>
+                <span className={cn("text-foreground/80", r.mono && "font-mono")}>{r.value}</span>
               </p>
             ))}
           </div>

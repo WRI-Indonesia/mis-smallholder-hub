@@ -238,6 +238,8 @@ export async function getFarmerDetail(id: string) {
       id: p.id,
       parcelId: p.parcelId,
       farmerName: farmer.name,
+      farmerCode: farmer.farmerId,
+      farmerGroupName: farmer.farmerGroup.name,
       kelompokTani: p.subGroupLv2,
       gapoktan: p.subGroupLv1,
       blok: p.blok,

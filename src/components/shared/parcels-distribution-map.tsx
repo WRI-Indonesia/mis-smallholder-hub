@@ -16,6 +16,9 @@ export interface DistributionMapParcel {
   id: string;
   parcelId: string;
   farmerName: string;
+  /** ID Petani (kode) & Lembaga Petani — untuk header popup (parity Peta Lahan). */
+  farmerCode: string;
+  farmerGroupName: string;
   /** Kelompok Tani (LandParcel.subGroupLv2) — basis warna poligon. */
   kelompokTani: string | null;
   gapoktan: string | null;
@@ -78,6 +81,8 @@ interface SelectedParcel {
   id: string;
   parcelId: string;
   farmerName: string;
+  farmerCode: string;
+  farmerGroupName: string;
   kelompokTani: string | null;
   gapoktan: string | null;
   blok: string | null;
@@ -137,6 +142,8 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
           color,
           ktKey,
           farmerName: p.farmerName,
+          farmerCode: p.farmerCode,
+          farmerGroupName: p.farmerGroupName,
           kelompokTani: p.kelompokTani,
           gapoktan: p.gapoktan,
           blok: p.blok,
@@ -264,6 +271,8 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
       id: String(props.id ?? ""),
       parcelId: String(props.parcelId ?? "—"),
       farmerName: String(props.farmerName ?? "—"),
+      farmerCode: String(props.farmerCode ?? "—"),
+      farmerGroupName: String(props.farmerGroupName ?? "—"),
       kelompokTani: (props.kelompokTani as string | null) ?? null,
       gapoktan: (props.gapoktan as string | null) ?? null,
       blok: (props.blok as string | null) ?? null,
@@ -315,12 +324,17 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
             onClose={() => setSelected(null)}
             {...MAP_POPUP_PROPS}
           >
-            <div className="w-[300px]">
+            {/* Lebar mengikuti isi (ID mono tak dipotong) — clamp agar tak terlalu lebar. */}
+            <div className="w-max min-w-[300px] max-w-[440px]">
               <MapPopupHeader
                 accent="blue"
                 icon={<User className="h-5 w-5 text-muted-foreground" />}
                 title={selected.farmerName}
-                rows={[{ label: "ID Lahan", value: selected.parcelId, mono: true }]}
+                rows={[
+                  { label: "ID Petani", value: selected.farmerCode, mono: true },
+                  { label: "ID Lahan", value: selected.parcelId, mono: true },
+                  { label: "Lembaga Petani", value: selected.farmerGroupName },
+                ]}
               />
               <MapPopupHighlight label="Luas Lahan" value={formatArea(selected.area)} />
               <div className="divide-y">
@@ -352,6 +366,9 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
           key={editParcelId}
           parcelId={editParcelId}
           onClose={() => setEditParcelId(null)}
+          // Tutup popup sesudah simpan agar tak menampilkan data lama
+          // (router.refresh dari form menyegar poligon dari server props).
+          onSaved={() => setSelected(null)}
         />
       )}
 

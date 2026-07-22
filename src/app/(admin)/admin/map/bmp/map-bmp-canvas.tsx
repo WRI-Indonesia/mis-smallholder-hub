@@ -1,16 +1,16 @@
 "use client";
 
-import { useRef, useMemo, useEffect, useState, type ReactNode } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { StyleSpecification, ExpressionSpecification, FilterSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Sprout, Info, BarChart3, ChevronDown, Maximize } from "lucide-react";
+import { Sprout, Info, BarChart3, Maximize } from "lucide-react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { MapPopupSection, MapPopupRows } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BMP_PRODUCTIVITY_CLASSES, productivityViewLabel, summarizeProduction } from "@/lib/map-data";
 import type {
@@ -551,23 +551,6 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
   );
 }
 
-type InfoRow = { label: string; value: unknown; mono?: boolean };
-
-function AttrRows({ rows, className }: { rows: InfoRow[]; className?: string }) {
-  return (
-    <dl className={cn("space-y-1.5", className)}>
-      {rows.map((r) => {
-        const display = r.value === null || r.value === undefined || r.value === "" ? "—" : String(r.value);
-        return (
-          <div key={r.label} className="flex items-start justify-between gap-3">
-            <dt className="shrink-0 text-xs text-muted-foreground">{r.label}</dt>
-            <dd className={cn("text-right text-xs font-medium", r.mono && "font-mono")}>{display}</dd>
-          </div>
-        );
-      })}
-    </dl>
-  );
-}
 
 function CategoryBadge({ category }: { category: ProductionAvailabilityCategory }) {
   const meta = CATEGORY_META[category];
@@ -672,8 +655,8 @@ function BmpParcelPopupBody({
       )}
 
       <div className="divide-y">
-        <PopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
-          <AttrRows
+        <MapPopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
+          <MapPopupRows
             rows={[
               { label: "Luas", value: formatArea(props.area as number | null) },
               { label: "Tahun Tanam", value: props.plantingYear },
@@ -695,10 +678,10 @@ function BmpParcelPopupBody({
                 : []),
             ]}
           />
-        </PopupSection>
-        <PopupSection icon={<BarChart3 className="h-3.5 w-3.5" />} title="Produksi Bulanan">
+        </MapPopupSection>
+        <MapPopupSection icon={<BarChart3 className="h-3.5 w-3.5" />} title="Produksi Bulanan">
           <BmpProductionSection summary={summary} />
-        </PopupSection>
+        </MapPopupSection>
       </div>
 
       <p className="border-t px-3.5 py-2 text-[10px] leading-snug text-muted-foreground">
@@ -713,39 +696,6 @@ function BmpParcelPopupBody({
         />
       )}
     </div>
-  );
-}
-
-/** Generic collapsible section inside the popup card (mirrors Peta Lahan). */
-function PopupSection({
-  icon,
-  title,
-  defaultOpen = false,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  defaultOpen?: boolean;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger
-        render={
-          <button className="flex w-full items-center justify-between px-3.5 py-2.5 text-left hover:bg-muted/40">
-            <span className="flex items-center gap-2 text-xs font-semibold">
-              {icon}
-              {title}
-            </span>
-            <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", open && "rotate-180")} />
-          </button>
-        }
-      />
-      <CollapsibleContent>
-        <div className="px-3.5 pb-3">{children}</div>
-      </CollapsibleContent>
-    </Collapsible>
   );
 }
 
