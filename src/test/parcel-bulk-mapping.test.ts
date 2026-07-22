@@ -9,27 +9,24 @@ const ALL_KEYS = Object.keys(PARCEL_AUTO_MATCH_RULES);
 
 describe("parcel bulk mapping (#150)", () => {
   describe("autoMatchColumns", () => {
-    it("memetakan atribut shapefile umum ke subGroupLv1/subGroupLv2/blok", () => {
-      const headers = ["ID_LAHAN", "ID_PETANI", "LUAS_HA", "GAPOKTAN", "KELOMPOK_TANI", "BLOK"];
+    it("memetakan atribut shapefile umum ke subGroupLv2/blok", () => {
+      const headers = ["ID_LAHAN", "ID_PETANI", "LUAS_HA", "KELOMPOK_TANI", "BLOK"];
       const m = autoMatchColumns(headers, ALL_KEYS);
       expect(m.parcelId).toBe("ID_LAHAN");
       expect(m.farmerId).toBe("ID_PETANI");
       expect(m.area).toBe("LUAS_HA");
-      expect(m.subGroupLv1).toBe("GAPOKTAN");
       expect(m.subGroupLv2).toBe("KELOMPOK_TANI");
       expect(m.blok).toBe("BLOK");
     });
 
-    it("match case-insensitive + trim; alias KUD/poktan/kt dikenali", () => {
-      const m = autoMatchColumns(["  kud ", "Poktan", "blk"], ALL_KEYS);
-      expect(m.subGroupLv1).toBe("  kud ");
+    it("match case-insensitive + trim; alias poktan/kt dikenali", () => {
+      const m = autoMatchColumns(["Poktan", "blk"], ALL_KEYS);
       expect(m.subGroupLv2).toBe("Poktan");
       expect(m.blok).toBe("blk");
     });
 
     it("header tanpa alias → field tak terpetakan (opsional, tak memblokir)", () => {
       const m = autoMatchColumns(["FOO", "BAR"], ALL_KEYS);
-      expect(m.subGroupLv1).toBeUndefined();
       expect(m.subGroupLv2).toBeUndefined();
       expect(m.blok).toBeUndefined();
     });

@@ -64,7 +64,7 @@ Sebelum **setiap commit dari lokal**, keempat gate ini **wajib hijau** — janga
 | Test | `npm test` | semua lulus, **tidak ada** test di-skip |
 | **Docs sync** | Review & update `docs/` yang terdampak | Dokumentasi terkait sudah diperbarui & konsisten, di-commit **bersama** kode |
 
-Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `scripts/**` diperbolehkan — bukan kode aplikasi). Enforcement melalui disiplin lokal (bukan CI), sesuai keputusan project owner.
+Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `scripts/**` diperbolehkan — bukan kode aplikasi). Keempat gate di atas **tidak dijalankan CI** — enforcement-nya disiplin lokal, sesuai keputusan project owner. Yang berjalan di CI adalah pemindaian keamanan & deployment (lihat di bawah).
 
 **Docs sync (wajib, sebelum commit):** setiap perubahan yang menyentuh skema/migrasi/kolom, modul/fitur, status delivery, atau aturan **harus** memperbarui file `docs/` yang relevan **sebelum commit** dan di-commit **bersama** kodenya — jangan dipisah/ditunda. Peta cepat:
 
@@ -74,6 +74,24 @@ Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `s
 - **Tech debt / bug** → `project/tech-debt.md`
 
 Checklist detail: [`../project/contributing.md`](../project/contributing.md) §5-Minute Update Checklist.
+
+### GitHub Actions yang berjalan (4 workflow)
+
+Repo **punya CI** — hanya saja bukan untuk lint/build/test. Jangan mengira gate lokal adalah satu-satunya jaring pengaman, dan jangan pula mengira tidak ada otomatisasi sama sekali.
+
+| Workflow | Pemicu | Fungsi |
+|---|---|---|
+| `gitleaks.yml` | **setiap push & PR** | Memindai kredensial/rahasia yang tak sengaja ter-commit |
+| `semgrep.yml` | **PR** (+push ke `main` bila berkasnya berubah) | Analisis keamanan statis (SAST) |
+| `deploy-dev.yaml` | push ke branch dev | Deploy otomatis ke lingkungan dev |
+| `deploy-main.yml` | **push ke `main`** | **Deploy otomatis ke produksi** via SSH: `git reset --hard origin/main` → tulis `.env` dari secret → `npm install` → `prisma generate` → `npm run build` → `pm2 reload mis-main` |
+
+Konsekuensi yang wajib diingat:
+
+- **Merge PR ke `main` = deploy produksi.** Tidak ada langkah manual terpisah; begitu PR di-merge, produksi ikut terbarui. Pastikan gate lokal hijau **sebelum** merge, bukan sesudah.
+- `deploy-main.yml` **tidak menjalankan migrasi Prisma** (`prisma generate` ≠ `migrate deploy`). Migrasi DB tetap **manual** dan harus diterapkan **sebelum** kode yang membutuhkannya di-merge — lihat Safety & Approval di bawah.
+- Gitleaks memindai **seluruh riwayat** (`fetch-depth: 0`), jadi rahasia yang pernah ter-commit lalu dihapus tetap terdeteksi.
+- Kegagalan `gitleaks`/`semgrep` muncul sebagai check merah di PR; periksa `gh pr checks <nomor>` sebelum merge.
 
 ---
 

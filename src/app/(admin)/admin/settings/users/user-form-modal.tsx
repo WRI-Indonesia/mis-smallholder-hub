@@ -21,6 +21,8 @@ import {
 import { createUser, updateUser } from "@/server/actions/user";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { ROLES } from "@/lib/roles";
+import type { Role } from "@prisma/client";
 
 interface User {
   id: string;
@@ -34,8 +36,6 @@ interface Props {
   onClose: () => void;
   user: User | null;
 }
-
-const ROLES = ["SUPERADMIN", "ADMIN", "OPERATOR", "MANAGEMENT"] as const;
 
 export function UserFormModal({ open, onClose, user }: Props) {
   const [isLoading, setIsLoading] = useState(false);
@@ -55,7 +55,7 @@ export function UserFormModal({ open, onClose, user }: Props) {
         id: user.id,
         name: form.get("name") as string,
         email: form.get("email") as string,
-        role: form.get("role") as "SUPERADMIN" | "ADMIN" | "OPERATOR" | "MANAGEMENT",
+        role: form.get("role") as Role,
         password: (form.get("password") as string) || "",
       });
 
@@ -73,7 +73,7 @@ export function UserFormModal({ open, onClose, user }: Props) {
       const result = await createUser({
         name: form.get("name") as string,
         email: form.get("email") as string,
-        role: form.get("role") as "SUPERADMIN" | "ADMIN" | "OPERATOR" | "MANAGEMENT",
+        role: form.get("role") as Role,
         password: form.get("password") as string,
       });
 

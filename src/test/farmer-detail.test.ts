@@ -16,7 +16,6 @@ function parcel(id: string, area: number | null, extra: Partial<FarmerDetailRawI
     id,
     parcelId: `L-${id}`,
     area,
-    subGroupLv1: null,
     subGroupLv2: null,
     blok: null,
     plantingYear: null,
@@ -75,12 +74,12 @@ describe("computeProfileCompleteness (#172)", () => {
 });
 
 describe("buildFarmerDetail (#172)", () => {
-  it("summary: lahan/luas, KT-Gapoktan turunan, checklist paket, produktivitas terakhir", () => {
+  it("summary: lahan/luas, KT turunan, checklist paket, produktivitas terakhir", () => {
     const d = buildFarmerDetail(
       {
         ...baseFarmer,
         landParcels: [
-          parcel("p1", 2, { subGroupLv1: "KUD Maju", subGroupLv2: "KT A" }),
+          parcel("p1", 2, { subGroupLv2: "KT A" }),
           parcel("p2", 3, { subGroupLv2: "kt a " }), // varian → tetap 1 KT
         ],
         trainingParticipants: [
@@ -98,7 +97,6 @@ describe("buildFarmerDetail (#172)", () => {
     expect(d.summary.totalParcels).toBe(2);
     expect(d.summary.totalArea).toBe(5);
     expect(d.subGroups.kelompokTani).toEqual(["KT A"]);
-    expect(d.subGroups.gapoktan).toEqual(["KUD Maju"]);
 
     // Checklist: Paket 1 done (2 partisipasi), Paket 2 belum
     const p1 = d.pelatihan.checklist.find((c) => c.code === "PAKET_1_BMP_PC_RSPO_NKT")!;

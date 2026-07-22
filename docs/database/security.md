@@ -12,7 +12,7 @@
 | Layer | Mekanisme | Implementation |
 |-------|-----------|----------------|
 | **Authentication** | NextAuth.js | Email + password, session stored in JWT |
-| **Authorization** | Role-Based (RBAC) | 4 roles: SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT |
+| **Authorization** | Role-Based (RBAC) | 5 roles: SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (donor/funder read-only: dashboard, laporan, peta) |
 | **Data Access Control** | Data-level filtering | UserProvince, UserDistrict, UserFarmerGroup assignments |
 | **Permission Override** | User-specific exceptions | UserPermissionOverride for grant/revoke specific menu permissions |
 

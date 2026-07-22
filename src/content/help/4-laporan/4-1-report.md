@@ -6,7 +6,7 @@ intro: Semua laporan bisa diunduh sebagai Excel dan PDF. Sebagian laporan mewaji
 
 **Petani / Pelatihan / Produksi** — Rekap per lembaga: daftar petani, cakupan pelatihan per paket (termasuk nilai pre/post test), dan matriks produksi bulanan per petani atau lahan.
 
-**Kelompok Tani (Summary & Detail)** — Summary berisi rekap jumlah petani, lahan, dan luas per Gapoktan/KUD dan KT. Detail berisi daftar anggota per lembaga tersusun Gapoktan/KUD, KT, lalu Petani.
+**Kelompok Tani (Summary & Detail)** — Summary berisi rekap jumlah petani, lahan, dan luas per KT. Detail berisi daftar anggota per lembaga tersusun KT lalu Petani.
 
 **Lahan** — Daftar lahan per lembaga (satu baris satu lahan). Pilih Lembaga Petani (wajib), atur kolom yang tampil, lalu cetak.
 

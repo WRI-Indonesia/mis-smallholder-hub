@@ -19,8 +19,6 @@ export interface LpRawParcel {
   farmerGroupId: string;
   /** FarmerGroup.name (= Lembaga Petani). */
   lembagaTani: string;
-  /** Gapoktan/KUD (Sub Lv.1). */
-  subGroupLv1: string | null;
   /** Kelompok Tani (Sub Lv.2). */
   subGroupLv2: string | null;
   /** Blok kebun. */
@@ -45,7 +43,7 @@ function clean(s: string | null | undefined): string | null {
 
 /**
  * Report Lahan (real-time, #177): roster datar **1 baris = 1 lahan aktif**
- * dengan Lembaga/Petani/ID Petani/ID Lahan/KT. KT & Gapoktan = atribut
+ * dengan Lembaga/Petani/ID Petani/ID Lahan/KT. KT = atribut
  * per-lahan (`LandParcel.subGroupLv*`, keputusan #146/#152 — petani tidak
  * punya field KT sendiri); nilai dinormalisasi trim (kosong → null) dan
  * distinct KT dihitung ternormalisasi case-insensitive per Lembaga (pola #154).
@@ -61,7 +59,6 @@ export function buildLandParcelReport(
   let totalLuas = 0;
 
   const rows: LandParcelReportRow[] = parcels.map((p) => {
-    const g1 = clean(p.subGroupLv1);
     const g2 = clean(p.subGroupLv2);
 
     distinctPetani.add(p.farmerId);
@@ -77,7 +74,6 @@ export function buildLandParcelReport(
       idPetani: p.farmerCode,
       idLahan: p.parcelCode,
       kelompokTani: g2,
-      gapoktan: g1,
       blok: clean(p.blok),
       komoditas: clean(p.cropType),
       species: clean(p.species),

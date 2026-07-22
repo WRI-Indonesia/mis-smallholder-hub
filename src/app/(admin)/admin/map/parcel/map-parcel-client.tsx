@@ -33,9 +33,11 @@ const MapCanvas = dynamic(
 
 interface Props {
   provinces: MapSelectOption[];
+  canViewParcel: boolean;
+  canEditParcel: boolean;
 }
 
-export function MapParcelClient({ provinces }: Props) {
+export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Props) {
   const [provinceId, setProvinceId] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [farmerGroupId, setFarmerGroupId] = useState<string | null>(null);
@@ -130,6 +132,15 @@ export function MapParcelClient({ provinces }: Props) {
     else setHotspotLoading(true);
   };
 
+  // Re-fetch GeoJSON dengan filter aktif (dipakai setelah Edit Lahan dari popup).
+  const reloadMapData = () => {
+    if (!districtId) return;
+    startTransition(async () => {
+      const res = await getMapData({ provinceId, districtId, farmerGroupId });
+      if (res.success) setMapData(res.data ?? null);
+    });
+  };
+
   const handleLoad = () => {
     if (!districtId) {
       toast.error("Silakan pilih Distrik terlebih dahulu");
@@ -162,6 +173,9 @@ export function MapParcelClient({ provinces }: Props) {
         customLayers={customLayers}
         hotspot={hotspot}
         hotspotData={hotspotData}
+        canViewParcel={canViewParcel}
+        canEditParcel={canEditParcel}
+        onParcelUpdated={reloadMapData}
       />
 
       <MapControlPanel

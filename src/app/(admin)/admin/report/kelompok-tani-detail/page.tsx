@@ -11,7 +11,7 @@ export default async function KelompokTaniDetailReportPage() {
       <div className="print:hidden">
         <h1 className="text-2xl font-bold">Laporan Kelompok Tani (Detail)</h1>
         <p className="text-muted-foreground">
-          Roster per Lembaga Petani: rincian Gapoktan/KUD &rarr; Kelompok Tani &rarr; daftar Petani (turunan data lahan)
+          Roster per Lembaga Petani: rincian Kelompok Tani &rarr; daftar Petani (turunan data lahan)
         </p>
       </div>
       <KelompokTaniDetailReportClient districts={districts} />

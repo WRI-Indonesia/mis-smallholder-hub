@@ -11,6 +11,17 @@ import {
   farmerAccessFilter,
   farmerRelationAccessFilter,
 } from "@/lib/access-context";
+import { getFarmerOptions } from "@/lib/select-options";
+
+/**
+ * Daftar petani (opsi) dalam scope, khusus untuk form Lahan. Dibungkus sebagai
+ * Server Action agar bisa dipanggil lazy dari komponen klien (mis. modal Edit
+ * dari peta) — `getFarmerOptions` di `@/lib/select-options` bukan action, jadi
+ * tak boleh diimpor langsung ke bundle klien (menarik Prisma/`pg`/`fs`).
+ */
+export async function getParcelFarmerOptions() {
+  return getFarmerOptions("master-data-parcels");
+}
 
 export async function getLandParcels(search?: string, farmerId?: string) {
   if (!(await hasPermission("master-data-parcels", "VIEW"))) {
@@ -45,7 +56,6 @@ export async function getLandParcels(search?: string, farmerId?: string) {
       farmerId: true,
       parcelId: true,
       blok: true,
-      subGroupLv1: true,
       subGroupLv2: true,
       area: true,
       landStatus: true,

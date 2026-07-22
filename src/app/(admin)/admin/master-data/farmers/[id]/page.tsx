@@ -13,6 +13,10 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
 
   const canEdit = await hasPermission("master-data-farmers", "EDIT");
   const farmerGroups = canEdit ? await getFarmerGroupOptions("master-data-farmers") : [];
+  const [canViewParcel, canEditParcel] = await Promise.all([
+    hasPermission("master-data-parcels", "VIEW"),
+    hasPermission("master-data-parcels", "EDIT"),
+  ]);
 
   return (
     <FarmerDetailClient
@@ -22,6 +26,8 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
       mapParcels={result.mapParcels}
       canEdit={canEdit}
       farmerGroups={farmerGroups}
+      canViewParcel={canViewParcel}
+      canEditParcel={canEditParcel}
     />
   );
 }

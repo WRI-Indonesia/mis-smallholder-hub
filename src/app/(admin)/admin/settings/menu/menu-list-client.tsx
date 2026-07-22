@@ -14,12 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ChevronRight, ChevronDown } from "lucide-react";
 import { MenuFormModal } from "./menu-form-modal";
 import { deleteMenuItem } from "@/server/actions/menu";
 import { toast } from "sonner";
 import { ICON_MAP } from "@/lib/icon-map";
 import { TableActions, DeleteDialog } from "@/components/shared";
+import { buildMenuTree, collapsibleKeys, flattenTree } from "@/lib/menu-tree";
+import { useCollapseState } from "@/lib/use-collapse-state";
 
 interface MenuItemData {
   id: string;
@@ -46,8 +48,9 @@ export function MenuListClient({
   const [search, setSearch] = useState("");
   const router = useRouter();
 
-  const parents = initialItems.filter((i) => !i.parentKey);
-  const getChildren = (key: string) => initialItems.filter((i) => i.parentKey === key);
+  const tree = React.useMemo(() => buildMenuTree(initialItems), [initialItems]);
+  const allCollapsible = React.useMemo(() => collapsibleKeys(tree), [tree]);
+  const { isCollapsed, toggle, openAll, closeAll } = useCollapseState("menu-list:open");
 
   const getAllowedParentOptions = () => {
     const descendants = new Set<string>();
@@ -116,17 +119,14 @@ export function MenuListClient({
     );
   }
 
-  const filteredParents = parents.filter((p) => {
-    const children = getChildren(p.key);
-    const matchSelf = p.title.toLowerCase().includes(search.toLowerCase()) || p.key.includes(search.toLowerCase());
-    const matchChild = children.some((c) => {
-      const grandchildren = getChildren(c.key);
-      const matchC = c.title.toLowerCase().includes(search.toLowerCase()) || c.key.includes(search.toLowerCase());
-      const matchGc = grandchildren.some((gc) => gc.title.toLowerCase().includes(search.toLowerCase()) || gc.key.includes(search.toLowerCase()));
-      return matchC || matchGc;
-    });
-    return matchSelf || matchChild;
+  const term = search.trim().toLowerCase();
+  const rows = flattenTree(tree, {
+    isCollapsed,
+    matches: term
+      ? (m) => m.title.toLowerCase().includes(term) || m.key.toLowerCase().includes(term)
+      : undefined,
   });
+  const allOpen = allCollapsible.length > 0 && allCollapsible.every((k) => !isCollapsed(k));
 
   return (
     <>
@@ -141,6 +141,14 @@ export function MenuListClient({
               className="pl-9"
             />
           </div>
+          <Button
+            variant="outline"
+            onClick={() => (allOpen ? closeAll() : openAll(allCollapsible))}
+            disabled={!!term}
+            title={term ? "Nonaktif saat mencari" : undefined}
+          >
+            {allOpen ? "Tutup semua" : "Buka semua"}
+          </Button>
           {permissions.includes("CREATE") && (
             <Button onClick={() => { setEditItem(null); setShowForm(true); }}>
               <Plus className="h-4 w-4 mr-2" />
@@ -161,67 +169,48 @@ export function MenuListClient({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredParents.map((parent) => (
-              <React.Fragment key={parent.id}>
-                <TableRow className="bg-muted/30">
-                  <TableCell className="w-[1%] whitespace-nowrap">{rowActions(parent)}</TableCell>
-                  <TableCell className="text-sm font-bold">
-                    <div className="flex items-center gap-2">
-                      {renderIcon(parent.icon)}
-                      {parent.title}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm font-mono text-muted-foreground">{parent.key}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{parent.url}</TableCell>
-                  <TableCell className="text-sm tabular-nums text-center">{parent.order}</TableCell>
-                  <TableCell>
-                    <Badge variant={parent.isActive ? "default" : "outline"}>
-                      {parent.isActive ? "Aktif" : "Nonaktif"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-                {getChildren(parent.key).map((child) => (
-                  <React.Fragment key={child.id}>
-                    <TableRow>
-                      <TableCell className="w-[1%] whitespace-nowrap">{rowActions(child)}</TableCell>
-                      <TableCell className="text-sm font-normal pl-8">
-                        <div className="flex items-center gap-2">
-                          — {renderIcon(child.icon)}
-                          {child.title}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm font-mono text-muted-foreground">{child.key}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{child.url}</TableCell>
-                      <TableCell className="text-sm tabular-nums text-center">{child.order}</TableCell>
-                      <TableCell>
-                        <Badge variant={child.isActive ? "default" : "outline"}>
-                          {child.isActive ? "Aktif" : "Nonaktif"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                    {getChildren(child.key).map((gchild) => (
-                      <TableRow key={gchild.id}>
-                        <TableCell className="w-[1%] whitespace-nowrap">{rowActions(gchild)}</TableCell>
-                        <TableCell className="text-sm font-normal text-muted-foreground pl-14">
-                          <div className="flex items-center gap-2">
-                            —— {renderIcon(gchild.icon)}
-                            {gchild.title}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm font-mono text-muted-foreground">{gchild.key}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{gchild.url}</TableCell>
-                        <TableCell className="text-sm tabular-nums text-center">{gchild.order}</TableCell>
-                        <TableCell>
-                          <Badge variant={gchild.isActive ? "default" : "outline"}>
-                            {gchild.isActive ? "Aktif" : "Nonaktif"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </React.Fragment>
+            {rows.map(({ item, depth, hasChildren }) => (
+              <TableRow key={item.id} className={depth === 0 ? "bg-muted/30" : undefined}>
+                <TableCell className="w-[1%] whitespace-nowrap">{rowActions(item)}</TableCell>
+                <TableCell className={depth === 0 ? "text-sm font-bold" : "text-sm font-normal"}>
+                  <div className="flex items-center gap-2" style={{ paddingLeft: depth * 20 }}>
+                    {hasChildren ? (
+                      <button
+                        onClick={() => toggle(item.key)}
+                        disabled={!!term}
+                        className="p-0.5 rounded hover:bg-muted disabled:opacity-40"
+                        title={isCollapsed(item.key) ? "Buka" : "Tutup"}
+                      >
+                        {isCollapsed(item.key) && !term ? (
+                          <ChevronRight className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="w-5 shrink-0" />
+                    )}
+                    {renderIcon(item.icon)}
+                    <span className={depth >= 1 ? "text-muted-foreground" : undefined}>{item.title}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-sm font-mono text-muted-foreground">{item.key}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{item.url}</TableCell>
+                <TableCell className="text-sm tabular-nums text-center">{item.order}</TableCell>
+                <TableCell>
+                  <Badge variant={item.isActive ? "default" : "outline"}>
+                    {item.isActive ? "Aktif" : "Nonaktif"}
+                  </Badge>
+                </TableCell>
+              </TableRow>
             ))}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
+                  Tidak ada menu yang cocok dengan pencarian.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </Card>

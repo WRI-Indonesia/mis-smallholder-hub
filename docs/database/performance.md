@@ -22,7 +22,7 @@
 | **TrainingActivity** | 200 | 800 | 1600 | 2400 | ~800/year (4 training/KT/year avg) |
 | **TrainingParticipant** | 10000 | 50000 | 120000 | 200000 | ~50k/year (high growth, many-to-many) |
 | **MenuItem** | 30 | 40 | 50 | 60 | Slow growth |
-| **RolePermission** | 120 | 160 | 200 | 240 | Follows MenuItem growth (4 roles × menus × 4 perms) |
+| **RolePermission** | 120 | 160 | 200 | 240 | Follows MenuItem growth (5 roles × menus × 4 perms) |
 | **RBAC User Assignments** | 100 | 300 | 600 | 900 | Follows User growth |
 
 ### Table Size Estimates (Year 3)

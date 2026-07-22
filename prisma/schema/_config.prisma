@@ -15,6 +15,7 @@ enum Role {
   ADMIN
   OPERATOR
   MANAGEMENT
+  DONOR
 }
 
 enum PermissionLevel {

@@ -25,7 +25,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 ├── Empty state: Pilih Lembaga Petani / Tidak Ada Data Lahan
 ├── Tabel Lahan
 │   ├── Kolom: No, Lembaga Petani, Nama Petani, ID Petani, ID Lahan,
-│   │          Kelompok Tani, Gapoktan/KUD, Blok, Komoditas, Species,
+│   │          Kelompok Tani, Blok, Komoditas, Species,
 │   │          PSR, Tahun Tanam, Luas (Ha)
 │   └── Baris Total (tanpa paginasi & pencarian)
 └── Ekspor
@@ -57,7 +57,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | "Grid Index (Baris × Kolom)" | Filter (dua input `number`) | Baris 1–26, kolom 1–20; teks bantu "maks. `<n>` peta + ikhtisar" atau "tanpa pecah" |
 | "Label Poligon" | Filter (checkbox, minimal satu aktif) | Opsi: No, Nama, ID Petani, ID Lahan, Kelompok Tani (default: No) |
 | Preview peta | Chart / SVG | Tanpa grid: 1 halaman peta. Dengan grid: 1 ikhtisar (garis grid + label sel + "`<n>` lahan") + satu peta per sel; dekorasi panah utara & skala batang; catatan "`<n>` lahan tanpa geometri tidak tergambar (No …)."; state "Memuat geometri lahan..." dan "Tidak ada geometri lahan yang dapat digambar." |
-| "Kolom" | Dropdown selektor kolom | "Tampilkan Kolom": Kelompok Tani, Gapoktan/KUD, Blok, Komoditas, Species, PSR, Tahun Tanam, Luas (Ha). Default aktif: Kelompok Tani, Tahun Tanam, Luas (Ha) |
+| "Kolom" | Dropdown selektor kolom | "Tampilkan Kolom": Kelompok Tani, Blok, Komoditas, Species, PSR, Tahun Tanam, Luas (Ha). Default aktif: Kelompok Tani, Tahun Tanam, Luas (Ha) |
 | Empty state | Kartu | "Pilih Lembaga Petani untuk memuat laporan." / "Memuat laporan..."; bila tanpa baris: "Tidak Ada Data Lahan" — "Belum ada lahan aktif untuk cakupan yang dipilih." |
 
 ## Tabel
@@ -72,7 +72,6 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | ID Petani | Selalu tampil |
 | ID Lahan | Selalu tampil |
 | Kelompok Tani | Opsional (default aktif) |
-| Gapoktan/KUD | Opsional |
 | Blok | Opsional |
 | Komoditas | Opsional |
 | Species | Opsional (italic) |

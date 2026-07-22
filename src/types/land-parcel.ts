@@ -37,7 +37,6 @@ export interface LandParcel {
   species: string | null;
   isPsr: boolean;
   plantingYear: number | null;
-  subGroupLv1: string | null; // Gapoktan
   subGroupLv2: string | null; // Kelompok Tani
   revision: number;
   isActive: boolean;

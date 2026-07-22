@@ -5,12 +5,14 @@ import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, ChevronDown, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
+import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
+import { MapPopupHighlight, MapPopupSection, MapPopupRows } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
@@ -106,9 +108,13 @@ interface Props {
   customLayers: CustomLayer[];
   hotspot: HotspotState;
   hotspotData: FeatureCollection | null;
+  canViewParcel: boolean;
+  canEditParcel: boolean;
+  /** Dipanggil setelah Edit Lahan berhasil — refetch GeoJSON (data di-fetch di klien). */
+  onParcelUpdated: () => void;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotspotData }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotspotData, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -117,6 +123,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
   const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
+  const [editParcelId, setEditParcelId] = useState<string | null>(null);
 
   // Close any open popup when a new dataset loads (adjusts state during render on
   // prop change — the React-endorsed alternative to a setState-in-effect).
@@ -652,7 +659,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
                   title="Titik Api"
                   subtitle={selected.props.ageBucket === "recent" ? "< 24 jam" : "1–5 hari"}
                 />
-                <AttrRows
+                <MapPopupRows
                   className="border-t px-3.5 py-3"
                   rows={[
                     { label: "Waktu Deteksi", value: formatWib(selected.props.acqDatetime as string) },
@@ -679,7 +686,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
             ) : selected.kind === "kt" ? (
               <div className="w-[252px]">
                 <PopupHeader accent="emerald" icon={<MapPin className="h-4 w-4" />} title={String(selected.props.name ?? "—")} subtitle="Lembaga Petani" />
-                <AttrRows
+                <MapPopupRows
                   className="border-t px-3.5 py-3"
                   rows={[
                     { label: "Kode", value: selected.props.code, mono: true },
@@ -693,7 +700,12 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
                 />
               </div>
             ) : (
-              <ParcelPopupBody props={selected.props} />
+              <ParcelPopupBody
+                props={selected.props}
+                canViewParcel={canViewParcel}
+                canEditParcel={canEditParcel}
+                onEdit={setEditParcelId}
+              />
             )}
           </Popup>
         )}
@@ -874,6 +886,15 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
           ))}
         </div>
       </div>
+
+      {editParcelId && (
+        <ParcelEditModalHost
+          key={editParcelId}
+          parcelId={editParcelId}
+          onClose={() => setEditParcelId(null)}
+          onSaved={onParcelUpdated}
+        />
+      )}
     </div>
   );
 }
@@ -914,8 +935,6 @@ function satelliteLabel(v: unknown) {
   if (s === "1" || s === "NOAA-20") return "NOAA-20";
   return v == null || v === "" ? "—" : String(v);
 }
-
-type InfoRow = { label: string; value: unknown; mono?: boolean };
 
 function PopupHeader({ accent, icon, title, subtitle }: { accent: keyof typeof ACCENTS; icon: ReactNode; title: string; subtitle: string }) {
   const c = ACCENTS[accent];
@@ -975,7 +994,17 @@ function ParcelHeader({
  * section and the "Profil Lahan" (passport) button share a single fetch:
  * whichever loads it first fills the cache, and the other reuses it.
  */
-function ParcelPopupBody({ props }: { props: Record<string, unknown> }) {
+function ParcelPopupBody({
+  props,
+  canViewParcel,
+  canEditParcel,
+  onEdit,
+}: {
+  props: Record<string, unknown>;
+  canViewParcel: boolean;
+  canEditParcel: boolean;
+  onEdit: (id: string) => void;
+}) {
   const landParcelId = String(props.id);
   const [production, setProduction] = useState<ProductionSummary | null>(null);
   const [prodLoading, setProdLoading] = useState(false);
@@ -1013,17 +1042,17 @@ function ParcelPopupBody({ props }: { props: Record<string, unknown> }) {
         parcelId={String(props.parcelId ?? "—")}
         groupName={String(props.farmerGroupName ?? "—")}
       />
-      <PopupHighlight label="Luas Lahan" value={formatArea(props.area as number | null)} />
+      <MapPopupHighlight label="Luas Lahan" value={formatArea(props.area as number | null)} />
       <div className="divide-y">
-        <PopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
-          <AttrRows
+        <MapPopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
+          <MapPopupRows
             rows={[
               { label: "Tahun Tanam", value: props.plantingYear },
               { label: "Komoditas", value: props.cropType },
               { label: "Status Lahan", value: props.landStatus },
             ]}
           />
-        </PopupSection>
+        </MapPopupSection>
         {props.farmerId ? <ParcelTrainingSection farmerId={String(props.farmerId)} /> : null}
         <ParcelProductionSection
           production={production}
@@ -1035,6 +1064,14 @@ function ParcelPopupBody({ props }: { props: Record<string, unknown> }) {
         />
       </div>
       <ParcelFooter landParcelId={landParcelId} production={production} onProductionLoaded={setProduction} />
+      {(canViewParcel || canEditParcel) && (
+        <ParcelPopupActions
+          parcelId={landParcelId}
+          canView={canViewParcel}
+          canEdit={canEditParcel}
+          onEdit={() => onEdit(landParcelId)}
+        />
+      )}
     </div>
   );
 }
@@ -1081,69 +1118,6 @@ function ParcelFooter({
   );
 }
 
-function PopupHighlight({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline justify-between border-y bg-muted/40 px-3.5 py-2">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-base font-bold tabular-nums">{value}</span>
-    </div>
-  );
-}
-
-function AttrRows({ rows, className }: { rows: InfoRow[]; className?: string }) {
-  return (
-    <dl className={cn("space-y-1.5", className)}>
-      {rows.map((r) => {
-        const display = r.value === null || r.value === undefined || r.value === "" ? "—" : String(r.value);
-        return (
-          <div key={r.label} className="flex items-start justify-between gap-3">
-            <dt className="shrink-0 text-xs text-muted-foreground">{r.label}</dt>
-            <dd className={cn("text-right text-xs font-medium", r.mono && "font-mono")}>{display}</dd>
-          </div>
-        );
-      })}
-    </dl>
-  );
-}
-
-/** Generic collapsible section inside a popup card. */
-function PopupSection({
-  icon,
-  title,
-  defaultOpen = false,
-  onOpenChange,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  defaultOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  const handle = (next: boolean) => {
-    setOpen(next);
-    onOpenChange?.(next);
-  };
-  return (
-    <Collapsible open={open} onOpenChange={handle}>
-      <CollapsibleTrigger
-        render={
-          <button className="flex w-full items-center justify-between px-3.5 py-2.5 text-left hover:bg-muted/40">
-            <span className="flex items-center gap-2 text-xs font-semibold">
-              {icon}
-              {title}
-            </span>
-            <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", open && "rotate-180")} />
-          </button>
-        }
-      />
-      <CollapsibleContent>
-        <div className="px-3.5 pb-3">{children}</div>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
 
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 const formatShortDate = (iso: string) => {
@@ -1169,7 +1143,7 @@ function ParcelTrainingSection({ farmerId }: { farmerId: string }) {
   };
 
   return (
-    <PopupSection icon={<GraduationCap className="h-3.5 w-3.5" />} title="Pelatihan Petani" onOpenChange={handleOpenChange}>
+    <MapPopupSection icon={<GraduationCap className="h-3.5 w-3.5" />} title="Pelatihan Petani" onOpenChange={handleOpenChange}>
       {loading && (
         <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1196,7 +1170,7 @@ function ParcelTrainingSection({ farmerId }: { farmerId: string }) {
           ))}
         </ul>
       )}
-    </PopupSection>
+    </MapPopupSection>
   );
 }
 
@@ -1225,7 +1199,7 @@ function ParcelProductionSection({
   const monthly = view === "average" ? data?.monthly : selectedYear?.monthly;
 
   return (
-    <PopupSection icon={<BarChart3 className="h-3.5 w-3.5" />} title="Produksi" onOpenChange={handleOpenChange}>
+    <MapPopupSection icon={<BarChart3 className="h-3.5 w-3.5" />} title="Produksi" onOpenChange={handleOpenChange}>
       {loading && (
         <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1256,7 +1230,7 @@ function ParcelProductionSection({
           </p>
         </div>
       )}
-    </PopupSection>
+    </MapPopupSection>
   );
 }
 

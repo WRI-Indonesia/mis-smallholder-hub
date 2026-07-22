@@ -44,6 +44,8 @@ const MapCanvas = dynamic(
 
 interface Props {
   provinces: MapSelectOption[];
+  canViewParcel: boolean;
+  canEditParcel: boolean;
 }
 
 /**
@@ -62,7 +64,7 @@ function buildAvailabilityMatrix(parcels: BmpParcelFeature[]) {
   return { periods, rows };
 }
 
-export function MapBmpClient({ provinces }: Props) {
+export function MapBmpClient({ provinces, canViewParcel, canEditParcel }: Props) {
   const [provinceId, setProvinceId] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [farmerGroupId, setFarmerGroupId] = useState<string | null>(null);
@@ -298,6 +300,15 @@ export function MapBmpClient({ provinces }: Props) {
     }
   };
 
+  // Re-fetch GeoJSON dengan filter aktif (dipakai setelah Edit Lahan dari popup).
+  const reloadMapData = () => {
+    if (!farmerGroupId) return;
+    startTransition(async () => {
+      const res = await getBmpMapData({ provinceId, districtId, farmerGroupId });
+      if (res.success) setMapData(res.data ?? null);
+    });
+  };
+
   const handleLoad = () => {
     if (!farmerGroupId) {
       toast.error("Silakan pilih Lembaga Petani terlebih dahulu");
@@ -337,6 +348,9 @@ export function MapBmpClient({ provinces }: Props) {
         productivity={colorMode === "PRODUCTIVITY" ? productivity : null}
         prodLayers={prodLayers}
         registerCapture={registerCapture}
+        canViewParcel={canViewParcel}
+        canEditParcel={canEditParcel}
+        onParcelUpdated={reloadMapData}
       />
 
       <MapBmpControlPanel

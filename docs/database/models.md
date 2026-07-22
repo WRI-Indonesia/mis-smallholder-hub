@@ -197,16 +197,17 @@ Farmer (1) ─→ (N) TrainingParticipant
 
 ### Hierarki Kelembagaan (Petani → Kelompok Tani → Lembaga Petani)
 
-Hierarki domain: **Petani → Kelompok Tani (Gapoktan) → Lembaga Petani**. Entitas `FarmerGroup` (tabel `tbl_farmer_group`, relasi `Farmer.farmerGroupId`) secara **semantik = Lembaga Petani** (level teratas) — label UI lama "Kelompok Tani" adalah *mislabel*, di-relabel ke "Lembaga Petani" (TD-013 / #147); **identifier tetap** `FarmerGroup` (rename massal ditolak, lihat `code-standards.md`).
+Hierarki domain (final, #189): **Petani → Kelompok Tani → Lembaga Petani** (3 level; level **Gapoktan/KUD dihapus**). Entitas `FarmerGroup` (tabel `tbl_farmer_group`, relasi `Farmer.farmerGroupId`) secara **semantik = Lembaga Petani** (level teratas) — label UI lama "Kelompok Tani" adalah *mislabel*, di-relabel ke "Lembaga Petani" (TD-013 / #147); **identifier tetap** `FarmerGroup` (rename massal ditolak, lihat `code-standards.md`).
 
-Level **Kelompok Tani** & **Gapoktan** belum dimodelkan sebagai tabel. **Interim (#146):** disimpan sebagai field denormalisasi **di `LandParcel`** (bukan `Farmer`), karena satu petani bisa punya beberapa lahan di Kelompok Tani/Gapoktan berbeda → keanggotaan bersifat **per-lahan**:
+Level **Kelompok Tani** belum dimodelkan sebagai tabel. **Interim (#146):** disimpan sebagai field denormalisasi **di `LandParcel`** (bukan `Farmer`), karena satu petani bisa punya beberapa lahan di Kelompok Tani berbeda → keanggotaan bersifat **per-lahan**:
 
 | Field (`LandParcel`) | Type | Makna | Label UI |
 |----------------------|--------|-------|----------|
-| `subGroupLv1` | String? | Gapoktan | **Gapoktan/KUD** (relabel #154) |
 | `subGroupLv2` | String? | Kelompok Tani | Kelompok Tani |
 
-Konsumen agregat interim: **Report Kelompok Tani** (real-time, #154 — Summary agregat + Detail roster) & **card "Total Kelompok Tani"** di Main Dashboard (snapshot-backed, distinct `subGroupLv2`, #148). Pemodelan tabel penuh (KT/Gapoktan sebagai entitas + re-parenting `Farmer`) = **TD-014**.
+> Kolom `subGroupLv1` (Gapoktan/KUD) **di-drop #189** (migrasi `20260722030000`).
+
+Konsumen agregat interim: **Report Kelompok Tani** (real-time, #154 — Summary agregat + Detail roster) & **card "Total Kelompok Tani"** di Main Dashboard (snapshot-backed, distinct `subGroupLv2`, #148). Pemodelan tabel penuh (KT sebagai entitas + re-parenting `Farmer`) = **TD-014**.
 
 ### RBAC Filter Context
 

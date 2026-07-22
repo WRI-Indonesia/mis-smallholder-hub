@@ -6,14 +6,14 @@ const createUserSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
-  role: z.enum(["SUPERADMIN", "ADMIN", "OPERATOR", "MANAGEMENT"]),
+  role: z.enum(["SUPERADMIN", "ADMIN", "OPERATOR", "MANAGEMENT", "DONOR"]),
 });
 
 const updateUserSchema = z.object({
   id: z.string(),
   name: z.string().min(2),
   email: z.string().email(),
-  role: z.enum(["SUPERADMIN", "ADMIN", "OPERATOR", "MANAGEMENT"]),
+  role: z.enum(["SUPERADMIN", "ADMIN", "OPERATOR", "MANAGEMENT", "DONOR"]),
   password: z.string().min(6).optional().or(z.literal("")),
 });
 
@@ -56,6 +56,16 @@ describe("User Validation - Create", () => {
       role: "OPERATOR",
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts DONOR role", () => {
+    const result = createUserSchema.safeParse({
+      name: "Donor User",
+      email: "donor@wri.org",
+      password: "P@ssword123",
+      role: "DONOR",
+    });
+    expect(result.success).toBe(true);
   });
 
   it("rejects invalid role", () => {

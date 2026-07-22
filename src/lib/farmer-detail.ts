@@ -15,7 +15,6 @@ export interface FarmerDetailRawParcel {
   /** Kode lahan human-facing. */
   parcelId: string;
   area: number | null;
-  subGroupLv1: string | null;
   subGroupLv2: string | null;
   blok: string | null;
   plantingYear: number | null;

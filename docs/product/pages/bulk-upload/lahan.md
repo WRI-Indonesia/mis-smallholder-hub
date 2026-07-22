@@ -26,7 +26,7 @@ Halaman: Lahan (/admin/bulk-upload/parcels)
 │   │   └── Popup "Detail Lahan": badge Valid/Error, ID, Petani, Error Detail
 │   └── Tabel preview (kolom: No, ID Lahan, ID Petani (Asal),
 │       Nama Petani (DB), Luas (ha), Status Kepemilikan, Komoditas,
-│       Tahun Tanam, Gapoktan/KUD, Kelompok Tani, Blok, Revisi,
+│       Tahun Tanam, Kelompok Tani, Blok, Revisi,
 │       Status, Detail Error)
 └── Tombol simpan "Simpan N Lahan Valid" (hijau, hanya permission CREATE)
 ```
@@ -62,7 +62,7 @@ Halaman: Lahan (/admin/bulk-upload/parcels)
 | Info berkas | Teks | *"Shapefile: **nama.zip** (N fitur/baris terdeteksi)"* |
 | Toast parsing | Toast | Sukses *"Berhasil mengurai shapefile: N geometri lahan terdeteksi"*; kosong *"Shapefile tidak mengandung data geometri/fitur"*; gagal *"Gagal mengurai file shapefile"* / *"Gagal membaca berkas ZIP"* |
 | "2. Petakan Atribut Kolom" | Card + grid Select | Subjudul *"Cocokkan kolom dari tabel atribut DBF shapefile dengan data target sistem."* |
-| Target field | 11 field | `ID Lahan`* (unik per petani), `ID Petani`*, `Luas (ha)`, `Status Kepemilikan` (Owned/Leased/Shared), `Komoditas`, `Tahun Tanam` (1900-2100), `Gapoktan/KUD` (`subGroupLv1`), `Kelompok Tani` (`subGroupLv2`), `Blok`, `Revisi` (default 0), `Catatan` |
+| Target field | 11 field | `ID Lahan`* (unik per petani), `ID Petani`*, `Luas (ha)`, `Status Kepemilikan` (Owned/Leased/Shared), `Komoditas`, `Tahun Tanam` (1900-2100), `Kelompok Tani` (`subGroupLv2`), `Blok`, `Revisi` (default 0), `Catatan` |
 | "Validasi Data Shapefile" | Tombol | Loading *"Memproses..."*; sukses toast *"Validasi selesai"* |
 | "3. Hasil Validasi & Tinjauan" | Card | Subjudul *"Tinjau kembali hasil pemetaan dan validasi spasial/atribut sebelum menyimpannya ke database."* |
 | Ringkasan hasil | Badge/pill | *"N Lahan Valid"* / *"N Lahan Error"* |
@@ -73,8 +73,8 @@ Halaman: Lahan (/admin/bulk-upload/parcels)
 | Basemap switcher | Overlay tombol | `HYBRID`, `SATELLITE`, `LIGHT`, `DARK` |
 | "Fokus Semua" | Tombol overlay peta | Title *"Fokus ke Semua Lahan"* — memusatkan viewport ke rata-rata koordinat |
 | Popup peta | Popup | Judul *"Detail Lahan"* + badge `Valid`/`Error`, baris `ID:`, `Petani:`, dan `Error Detail:` bila ada |
-| Tabel preview | Tabel | Kolom: `No`, `ID Lahan`, `ID Petani (Asal)`, `Nama Petani (DB)`, `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Tahun Tanam`, `Gapoktan/KUD`, `Kelompok Tani`, `Blok`, `Revisi`, `Status`, `Detail Error` |
-| Kolom ekspor Excel | 15 kolom | `Baris Asal`, `ID Lahan`, `ID Petani Asal`, `Nama Petani`, `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Tahun Tanam`, `Gapoktan/KUD`, `Kelompok Tani`, `Blok`, `Revisi`, `Catatan`, `Status Validasi`, `Detail Error` |
+| Tabel preview | Tabel | Kolom: `No`, `ID Lahan`, `ID Petani (Asal)`, `Nama Petani (DB)`, `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Tahun Tanam`, `Kelompok Tani`, `Blok`, `Revisi`, `Status`, `Detail Error` |
+| Kolom ekspor Excel | 15 kolom | `Baris Asal`, `ID Lahan`, `ID Petani Asal`, `Nama Petani`, `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Tahun Tanam`, `Kelompok Tani`, `Blok`, `Revisi`, `Catatan`, `Status Validasi`, `Detail Error` |
 
 ## Aturan validasi & pesan error (client)
 

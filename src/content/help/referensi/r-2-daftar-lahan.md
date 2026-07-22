@@ -37,7 +37,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Tahun Tanam** — dasar memperkirakan umur tanaman. Sawit di bawah 4 tahun belum berbuah optimal; di atas 25 tahun hasilnya menurun.
 
-**Gapoktan/KUD** dan **Kelompok Tani** — sub-kelompok di bawah Lembaga Petani. Keduanya untuk sementara disimpan **per lahan**, belum sebagai tabel tersendiri. Tulis namanya persis sama untuk semua lahan di kelompok yang sama — beda satu spasi akan terhitung sebagai dua kelompok berbeda.
+**Kelompok Tani** — kelompok di bawah Lembaga Petani. Untuk sementara disimpan **per lahan**, belum sebagai tabel tersendiri. Tulis namanya persis sama untuk semua lahan di kelompok yang sama — beda satu spasi akan terhitung sebagai dua kelompok berbeda.
 
 **Blok** — penanda blok kebun bila organisasi Anda memakainya.
 

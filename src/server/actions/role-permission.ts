@@ -53,3 +53,60 @@ export async function toggleRolePermission(
   });
   return { success: true, data: { granted: true } };
 }
+
+export interface RolePermissionUpdate {
+  role: Role;
+  menuKey: string;
+  permission: PermissionLevel;
+  granted: boolean;
+}
+
+/**
+ * Set banyak permission ke keadaan eksplisit dalam satu round-trip (transaksi).
+ * Dipakai aksi massal matriks Role & Permission: toggle satu baris penuh dan
+ * kaskade induk → anak. Entri SUPERADMIN diabaikan (bypass di RBAC).
+ */
+export async function setRolePermissions(
+  updates: RolePermissionUpdate[]
+): Promise<ActionResult<{ count: number }>> {
+  if (!(await hasPermission("settings-roles", "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah permission" };
+  }
+
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  const valid = updates.filter((u) => u.role !== "SUPERADMIN");
+  if (valid.length === 0) return { success: true, data: { count: 0 } };
+
+  await prisma.$transaction(
+    async (tx) => {
+      for (const u of valid) {
+        const existing = await tx.rolePermission.findFirst({
+          where: { role: u.role, menuKey: u.menuKey, permission: u.permission },
+        });
+
+        if (existing) {
+          if (existing.isActive !== u.granted) {
+            await tx.rolePermission.update({
+              where: { id: existing.id },
+              data: { isActive: u.granted, modifiedBy: userId },
+            });
+          }
+        } else if (u.granted) {
+          await tx.rolePermission.create({
+            data: {
+              role: u.role,
+              menuKey: u.menuKey,
+              permission: u.permission,
+              createdBy: userId,
+            },
+          });
+        }
+      }
+    },
+    // Kaskade induk → anak bisa banyak query berurutan; longgarkan timeout.
+    { timeout: 20000 }
+  );
+
+  return { success: true, data: { count: valid.length } };
+}

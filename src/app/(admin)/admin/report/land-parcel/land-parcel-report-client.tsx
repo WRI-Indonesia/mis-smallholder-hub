@@ -72,11 +72,10 @@ const clampGrid = (v: number, max: number) =>
   Number.isFinite(v) ? Math.min(max, Math.max(1, Math.round(v))) : 1;
 
 // Kolom default: 5 kolom #177 + Tahun Tanam & Luas (revisi owner #179);
-// Gapoktan/KUD, Blok, Komoditas, Species, PSR opsional via selektor kolom.
-type ColKey = "kelompokTani" | "gapoktan" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas";
+// Blok, Komoditas, Species, PSR opsional via selektor kolom.
+type ColKey = "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "kelompokTani", label: "Kelompok Tani" },
-  { key: "gapoktan", label: "Gapoktan/KUD" },
   { key: "blok", label: "Blok" },
   { key: "komoditas", label: "Komoditas" },
   { key: "species", label: "Species" },
@@ -227,7 +226,6 @@ export function LandParcelReportClient({ districts }: Props) {
   const textColCount =
     4 +
     (show("kelompokTani") ? 1 : 0) +
-    (show("gapoktan") ? 1 : 0) +
     (show("blok") ? 1 : 0) +
     (show("komoditas") ? 1 : 0) +
     (show("species") ? 1 : 0) +
@@ -241,7 +239,6 @@ export function LandParcelReportClient({ districts }: Props) {
     { header: "ID Petani", key: "idPetani" },
     { header: "ID Lahan", key: "idLahan" },
     ...(show("kelompokTani") ? [{ header: "Kelompok Tani", key: "kelompokTani" }] : []),
-    ...(show("gapoktan") ? [{ header: "Gapoktan/KUD", key: "gapoktan" }] : []),
     ...(show("blok") ? [{ header: "Blok", key: "blok" }] : []),
     ...(show("komoditas") ? [{ header: "Komoditas", key: "komoditas" }] : []),
     ...(show("species") ? [{ header: "Species", key: "species" }] : []),
@@ -264,7 +261,6 @@ export function LandParcelReportClient({ districts }: Props) {
       idPetani: row.idPetani,
       idLahan: row.idLahan,
       kelompokTani: displayOrEmpty(row.kelompokTani),
-      gapoktan: displayOrEmpty(row.gapoktan),
       blok: displayOrEmpty(row.blok),
       komoditas: displayOrEmpty(row.komoditas),
       species: displayOrEmpty(row.species),
@@ -280,7 +276,6 @@ export function LandParcelReportClient({ districts }: Props) {
     idPetani: "",
     idLahan: "",
     kelompokTani: "",
-    gapoktan: "",
     blok: "",
     komoditas: "",
     species: "",
@@ -360,7 +355,6 @@ export function LandParcelReportClient({ districts }: Props) {
       idPetani: row.idPetani,
       idLahan: row.idLahan,
       kelompokTani: displayOrEmpty(row.kelompokTani),
-      gapoktan: displayOrEmpty(row.gapoktan),
       blok: displayOrEmpty(row.blok),
       komoditas: displayOrEmpty(row.komoditas),
       species: displayOrEmpty(row.species),
@@ -377,7 +371,6 @@ export function LandParcelReportClient({ districts }: Props) {
         idPetani: "",
         idLahan: "",
         kelompokTani: "",
-        gapoktan: "",
         blok: "",
         komoditas: "",
         species: "",
@@ -676,7 +669,6 @@ export function LandParcelReportClient({ districts }: Props) {
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">ID Petani</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">ID Lahan</th>
                 {show("kelompokTani") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Kelompok Tani</th>}
-                {show("gapoktan") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Gapoktan/KUD</th>}
                 {show("blok") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Blok</th>}
                 {show("komoditas") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Komoditas</th>}
                 {show("species") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Species</th>}
@@ -696,11 +688,6 @@ export function LandParcelReportClient({ districts }: Props) {
                     {show("kelompokTani") && (
                       <td className={cn("px-3 py-2 whitespace-nowrap", row.kelompokTani == null && "text-muted-foreground")}>
                         {displayOrEmpty(row.kelompokTani)}
-                      </td>
-                    )}
-                    {show("gapoktan") && (
-                      <td className={cn("px-3 py-2 whitespace-nowrap", row.gapoktan == null && "text-muted-foreground")}>
-                        {displayOrEmpty(row.gapoktan)}
                       </td>
                     )}
                     {show("blok") && (

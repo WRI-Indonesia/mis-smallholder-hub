@@ -22,12 +22,13 @@ Menu ini biasanya hanya dipegang SUPERADMIN.
 1. Buka menu **Settings → User Management**, lalu tambahkan pengguna baru.
 2. Isi identitas dan kredensial masuknya.
 3. Pilih **Peran** sesuai tugasnya.
-+ OPERATOR untuk staf lapangan yang menginput data; ADMIN untuk koordinator wilayah; MANAGEMENT untuk yang hanya perlu membaca; SUPERADMIN hanya untuk pengelola sistem — peran ini melewati seluruh pembatasan.
++ OPERATOR untuk staf lapangan yang menginput data; ADMIN untuk koordinator wilayah; MANAGEMENT untuk yang hanya perlu membaca; DONOR untuk pihak donor/funder yang hanya melihat dashboard, laporan, dan peta (read-only, tanpa master data); SUPERADMIN hanya untuk pengelola sistem — peran ini melewati seluruh pembatasan.
 4. Tetapkan **cakupan data**: distrik, atau Lembaga Petani tertentu.
 + Inilah yang membuat dua pengguna dengan peran sama melihat angka berbeda — dan itu memang dikehendaki. Bila cakupan dikosongkan, pengguna melihat seluruh data organisasi.
 5. Simpan, lalu minta pengguna mencoba masuk.
 6. Bila ada kebutuhan khusus, sesuaikan izin per menu lewat **Role & Permission**.
 + Pengaturan per pengguna menimpa pengaturan peran — berguna untuk pengecualian, tetapi bila dipakai berlebihan akan sulit ditelusuri. Ubah perannya bila polanya berulang untuk banyak orang.
++ Di matriks **Role & Permission** Anda bisa memilih role yang ditampilkan, mencari menu, serta membuka/menutup kelompok menu. Ikon ceklis di tiap baris memberi atau mencabut **semua** izin menu itu sekaligus — dengan opsi ikut diterapkan ke sub-menunya. SUPERADMIN tidak ditampilkan karena selalu berakses penuh.
 
 > [!hati-hati] Menonaktifkan pengguna **tidak** menghapus data yang pernah ia input. Riwayat siapa membuat dan mengubah apa tetap tersimpan — memang begitu seharusnya untuk keperluan audit.
 

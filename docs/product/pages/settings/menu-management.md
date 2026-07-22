@@ -11,8 +11,10 @@ Halaman: Menu Management (/admin/settings/menu)
 │   └── Deskripsi: Kelola navigasi menu sidebar
 ├── Toolbar / Filter
 │   ├── Pencarian: Cari menu... (title / key, level 1–3)
+│   ├── Buka semua / Tutup semua (nonaktif saat mencari)
 │   └── Tambah Menu (CREATE)
-├── Tabel tree menu (3 level: parent · — anak · —— cucu)
+├── Tabel tree menu (render rekursif 3 level, collapsible per induk)
+│   ├── Chevron buka/tutup per induk (default collapsed, state localStorage)
 │   ├── Kolom: Aksi · Menu · Key · URL · Order · Status
 │   └── Aksi baris: Edit (EDIT) · Nonaktifkan / Aktifkan kembali (DELETE)
 ├── Dialog
@@ -42,6 +44,7 @@ Halaman: Menu Management (/admin/settings/menu)
 | Tipe | Server Component → Client Component (tabel tree + dialog) |
 | Guard | `requirePermission("settings-menu")` |
 | Server action / data | `getAllMenuItems()` (`src/server/actions/menu.ts`), `getUserPermissionsForMenu("settings-menu")` |
+| Helper | `buildMenuTree` / `flattenTree` / `collapsibleKeys` (`src/lib/menu-tree.ts`), `useCollapseState` (`src/lib/use-collapse-state.ts`) |
 | Loading | `loading.tsx` |
 
 **Objek halaman**
@@ -49,9 +52,10 @@ Halaman: Menu Management (/admin/settings/menu)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Menu Management` | Heading | `h1`, deskripsi: `Kelola navigasi menu sidebar` |
-| Pencarian | Filter | Placeholder `Cari menu...`; mencocokkan `title` atau `key` pada level 1–3 (parent tetap tampil bila anak/cucu cocok) |
+| Pencarian | Filter | Placeholder `Cari menu...`; mencocokkan `title` atau `key` pada level 1–3 (parent tetap tampil bila anak/cucu cocok; subtree cocok di-expand paksa) |
+| `Buka semua` / `Tutup semua` | Tombol | Buka/tutup seluruh induk; state `localStorage` (`menu-list:open`), default *collapsed*; nonaktif saat mencari |
 | `Tambah Menu` | Tombol | Ikon `Plus`; tampil hanya jika permission `CREATE` |
-| Tabel tree menu | Tree / Tabel | 3 level: parent (bold), anak (prefix `—`, `pl-8`), cucu (prefix `——`, `pl-14`); ikon dirender dari `ICON_MAP` |
+| Tabel tree menu | Tree / Tabel | Render **rekursif 3 level** (`flattenTree`), **collapsible per induk** (chevron, default collapsed); indentasi per kedalaman; ikon dari `ICON_MAP` |
 | Kolom `Aksi` | Kolom | `Edit` (EDIT) dan `Nonaktifkan` / `Aktifkan kembali` (DELETE) via `TableActions` |
 | Kolom `Menu` | Kolom | Ikon + judul menu, terindentasi sesuai level |
 | Kolom `Key` | Kolom | `key` menu (font mono) |

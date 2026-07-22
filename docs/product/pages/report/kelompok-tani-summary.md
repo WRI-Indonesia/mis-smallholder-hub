@@ -15,7 +15,6 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 │   └── Catatan filter
 ├── Kartu KPI
 │   ├── Lembaga Petani
-│   ├── Gapoktan/KUD
 │   ├── Kelompok Tani
 │   ├── Total Petani
 │   ├── Total Lahan
@@ -23,7 +22,7 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 ├── Selektor Kolom (dropdown "Tampilkan Kolom")
 ├── Empty state: Tidak Ada Data Kelompok Tani
 ├── Tabel Kelompok Tani
-│   ├── Kolom: No, Lembaga Petani, Gapoktan/KUD, Kelompok Tani,
+│   ├── Kolom: No, Lembaga Petani, Kelompok Tani,
 │   │          Total Petani, Total Lahan, Total Luas (Ha)
 │   └── Baris Total (tanpa paginasi)
 └── Ekspor
@@ -46,14 +45,14 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| "Laporan Kelompok Tani (Ringkasan)" | Heading | Deskripsi "Rekap Gapoktan/KUD & Kelompok Tani turunan dari data lahan (per Lembaga Petani)" |
+| "Laporan Kelompok Tani (Ringkasan)" | Heading | Deskripsi "Rekap Kelompok Tani turunan dari data lahan (per Lembaga Petani)" |
 | "Distrik" | Filter (combobox + search, opsional) | Default "Semua Distrik" |
 | "Lembaga Petani" | Filter (combobox + search, opsional) | Default "Semua Lembaga Petani"; empty "Lembaga petani tidak ditemukan." |
-| "Cari" | Filter (input teks) | Placeholder "Lembaga / Gapoktan/KUD / KT..."; filter di sisi klien pada kolom Lembaga Petani, Gapoktan/KUD, Kelompok Tani |
+| "Cari" | Filter (input teks) | Placeholder "Lembaga / KT..."; filter di sisi klien pada kolom Lembaga Petani, Kelompok Tani |
 | Catatan filter | Teks bantu | "Rekap real-time turunan dari data lahan aktif. Filter Distrik/Lembaga bersifat opsional." |
-| Kartu KPI | 6 kartu | "Lembaga Petani" (badge Lembaga), "Gapoktan/KUD" (badge Gapoktan/KUD), "Kelompok Tani" (badge KT), "Total Petani" (badge Petani), "Total Lahan" (badge Lahan), "Total Luas" (badge Ha) |
-| "Kolom" | Dropdown selektor kolom | "Tampilkan Kolom": Gapoktan/KUD, Kelompok Tani, Total Petani, Total Lahan, Total Luas (semua aktif secara default) |
-| Empty state | Kartu | "Tidak Ada Data Kelompok Tani" — "Belum ada lahan aktif dengan data Gapoktan/KUD atau Kelompok Tani untuk cakupan yang dipilih."; bila pencarian tak cocok: "Tidak ada baris yang cocok dengan pencarian." |
+| Kartu KPI | 5 kartu | "Lembaga Petani" (badge Lembaga), "Kelompok Tani" (badge KT), "Total Petani" (badge Petani), "Total Lahan" (badge Lahan), "Total Luas" (badge Ha) |
+| "Kolom" | Dropdown selektor kolom | "Tampilkan Kolom": Kelompok Tani, Total Petani, Total Lahan, Total Luas (semua aktif secara default) |
+| Empty state | Kartu | "Tidak Ada Data Kelompok Tani" — "Belum ada lahan aktif dengan data Kelompok Tani untuk cakupan yang dipilih."; bila pencarian tak cocok: "Tidak ada baris yang cocok dengan pencarian." |
 
 ## Tabel
 
@@ -63,7 +62,6 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 |---|---|
 | No | Nomor urut |
 | Lembaga Petani | Selalu tampil |
-| Gapoktan/KUD | Opsional (selektor kolom) |
 | Kelompok Tani | Opsional |
 | Total Petani | Opsional, rata kanan |
 | Total Lahan | Opsional, rata kanan |

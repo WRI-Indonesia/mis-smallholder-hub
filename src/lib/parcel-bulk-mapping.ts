@@ -14,8 +14,7 @@ export const PARCEL_AUTO_MATCH_RULES: Record<string, string[]> = {
   plantingYear: ["planting_year", "plantingyear", "tahun_tanam", "thn_tanam", "tanam", "year"],
   revision: ["revision", "revisi", "rev"],
   notes: ["notes", "note", "keterangan", "ket", "catatan"],
-  // Sub-kelompok interim per-lahan (#146/#150)
-  subGroupLv1: ["gapoktan", "kud", "gapoktan_kud", "gapoktan/kud", "sub_group_1", "subgrouplv1", "sub1", "gpktn"],
+  // Kelompok Tani per-lahan interim (#146/#150). Level Gapoktan/KUD dihapus #189.
   subGroupLv2: ["kelompok_tani", "kelompoktani", "poktan", "kt", "nama_kt", "klp_tani", "sub_group_2", "subgrouplv2", "sub2"],
   blok: ["blok", "block", "blok_kebun", "blk"],
 };

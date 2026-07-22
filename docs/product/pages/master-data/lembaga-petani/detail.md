@@ -50,12 +50,12 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 | `BreadcrumbOverride` | Navigasi | Menampilkan nama Lembaga, bukan id URL |
 | Header | Heading | Tombol kembali, nama lembaga, kode (mono), badge `RSPO`/`ISPO`/`SAP/MAP` + `Aktif`/`Nonaktif` |
 | Tombol `Edit` | Tombol | EDIT — buka `GroupFormModal` |
-| Kartu ringkasan (5) | Kartu | `Total Petani` (L/P), `Kelompok Tani` (Gapoktan/KUD · Blok), `Persil Lahan` (Ha), `Produksi` (Ton, tahun ber-data), `Kelengkapan Data` (% + anomali, link ke `/admin/data-analyst/data-completeness`) |
+| Kartu ringkasan (5) | Kartu | `Total Petani` (L/P), `Kelompok Tani` (Blok), `Persil Lahan` (Ha), `Produksi` (Ton, tahun ber-data), `Kelengkapan Data` (% + anomali, link ke `/admin/data-analyst/data-completeness`) |
 | Tabs | Tab | `Ringkasan`, `Petani`, `Lahan`, `Pelatihan`, `Produksi` |
 | Tab Ringkasan — profil | Kartu | Field: `Distrik`, `Kategori`, `Tipe Grup`, `Singkatan`, `Tahun Berdiri Lembaga`, `Tahun Bergabung Program`, `Sertifikasi RSPO`, `Sertifikasi ISPO`, `Assurance SAP/MAP`, `Koordinat`, `Dibuat`, `Terakhir Diubah` |
-| Tab Ringkasan — `Struktur Kelembagaan (dari lahan)` | Tabel | Kolom `Gapoktan/KUD` (auto-hide bila kosong), `Kelompok Tani`, `Petani`, `Lahan`, `Luas (Ha)`; link `Lihat roster lengkap →`; empty state `Belum ada data Gapoktan/KUD & Kelompok Tani dari lahan.` |
+| Tab Ringkasan — `Struktur Kelembagaan (dari lahan)` | Tabel | Kolom `Kelompok Tani`, `Petani`, `Lahan`, `Luas (Ha)`; link `Lihat roster lengkap →`; empty state `Belum ada data Kelompok Tani dari lahan.` |
 | Tab Petani | Kartu + teks | `Total Petani`, `Laki-laki / Perempuan`, `Petani Tanpa Lahan` + tautan ke Master Data Petani & Ringkasan Petani |
-| Tab Lahan | Kartu + peta | `Persil Lahan`, `Kelompok Tani / Gapoktan`, `Blok`; `Sebaran Lahan` = `ParcelsDistributionMap` (dynamic, ssr:false) |
+| Tab Lahan | Kartu + peta | `Persil Lahan`, `Kelompok Tani`, `Blok`; `Sebaran Lahan` = `ParcelsDistributionMap` (dynamic, ssr:false) |
 | Tab Pelatihan — `Cakupan per Paket` | Tabel | `Paket`, `Petani Terlatih`, `Cakupan`, `Rataan Pre Test`, `Rataan Post Test` |
 | Tab Pelatihan — `Aktivitas Pelatihan (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Peserta`, `Rata-rata Pre → Post`; empty state `Belum ada aktivitas pelatihan untuk Lembaga ini.` |
 | Tab Produksi — `Produksi per Tahun` | Tabel | `Tahun` (expandable → rincian bulanan), `Produksi (kg)`, `Record`, `Lahan Melapor`, `Luas Melapor (Ha)`, `Produktivitas (Ton/Ha)`; catatan kaki rumus; empty state `Belum ada data produksi untuk Lembaga ini.` |

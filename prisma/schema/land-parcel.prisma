@@ -14,9 +14,9 @@ model LandParcel {
   isPsr         Boolean     @default(false) @map("is_psr") // PSR = Peremajaan Sawit Rakyat (replanting → produksi 0 wajar)
   plantingYear  Int?        @map("planting_year")
   notes         String?     @map("notes")
-  // Sub-kelompok interim (denormalisasi, TD-014): hierarki KT belum jadi tabel.
-  // Per-lahan karena satu petani bisa punya lahan di KT/Gapoktan berbeda.
-  subGroupLv1   String?     @map("sub_group_lv1") // Gapoktan
+  // Kelompok Tani per-lahan (denormalisasi, TD-014): hierarki KT belum jadi
+  // tabel. Per-lahan karena satu petani bisa punya lahan di KT berbeda.
+  // (Level Gapoktan/KUD `sub_group_lv1` dihapus #189 — hierarki cukup 3 level.)
   subGroupLv2   String?     @map("sub_group_lv2") // Kelompok Tani
   revision      Int         @default(0) @map("revision")
   isActive      Boolean     @default(true) @map("is_active")
