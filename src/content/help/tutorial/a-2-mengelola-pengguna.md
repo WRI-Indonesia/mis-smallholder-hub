@@ -22,7 +22,7 @@ Menu ini biasanya hanya dipegang SUPERADMIN.
 1. Buka menu **Settings → User Management**, lalu tambahkan pengguna baru.
 2. Isi identitas dan kredensial masuknya.
 3. Pilih **Peran** sesuai tugasnya.
-+ OPERATOR untuk staf lapangan yang menginput data; ADMIN untuk koordinator wilayah; MANAGEMENT untuk yang hanya perlu membaca; SUPERADMIN hanya untuk pengelola sistem — peran ini melewati seluruh pembatasan.
++ OPERATOR untuk staf lapangan yang menginput data; ADMIN untuk koordinator wilayah; MANAGEMENT untuk yang hanya perlu membaca; DONOR untuk pihak donor/funder yang hanya melihat dashboard, laporan, dan peta (read-only, tanpa master data); SUPERADMIN hanya untuk pengelola sistem — peran ini melewati seluruh pembatasan.
 4. Tetapkan **cakupan data**: distrik, atau Lembaga Petani tertentu.
 + Inilah yang membuat dua pengguna dengan peran sama melihat angka berbeda — dan itu memang dikehendaki. Bila cakupan dikosongkan, pengguna melihat seluruh data organisasi.
 5. Simpan, lalu minta pengguna mencoba masuk.

@@ -18,6 +18,9 @@ describe("RBAC - Permission check", () => {
     { role: "ADMIN", menuKey: "master-data-groups", permission: "EDIT", isActive: true },
     { role: "OPERATOR", menuKey: "master-data-groups", permission: "VIEW", isActive: true },
     { role: "MANAGEMENT", menuKey: "master-data-groups", permission: "VIEW", isActive: true },
+    // DONOR: read-only, dashboard/report/map only — no master data
+    { role: "DONOR", menuKey: "report-farmer", permission: "VIEW", isActive: true },
+    { role: "DONOR", menuKey: "map-parcel", permission: "VIEW", isActive: true },
   ];
 
   function hasPermission(role: string, menuKey: string, permission: string): boolean {
@@ -50,6 +53,18 @@ describe("RBAC - Permission check", () => {
 
   it("OPERATOR cannot delete master-data-groups", () => {
     expect(hasPermission("OPERATOR", "master-data-groups", "DELETE")).toBe(false);
+  });
+
+  it("DONOR can view report but not master data", () => {
+    expect(hasPermission("DONOR", "report-farmer", "VIEW")).toBe(true);
+    expect(hasPermission("DONOR", "map-parcel", "VIEW")).toBe(true);
+    expect(hasPermission("DONOR", "master-data-groups", "VIEW")).toBe(false);
+  });
+
+  it("DONOR is read-only (no CREATE/EDIT/DELETE)", () => {
+    expect(hasPermission("DONOR", "report-farmer", "CREATE")).toBe(false);
+    expect(hasPermission("DONOR", "report-farmer", "EDIT")).toBe(false);
+    expect(hasPermission("DONOR", "report-farmer", "DELETE")).toBe(false);
   });
 
   it("getAccessibleMenuKeys filters correctly per role", () => {

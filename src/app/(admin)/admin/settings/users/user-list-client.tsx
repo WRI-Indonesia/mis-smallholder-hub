@@ -12,6 +12,7 @@ import { UserMenuAccessModal } from "./user-menu-access-modal";
 import { toggleUserActive } from "@/server/actions/user";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
+import { ROLE_BADGE_CLASS } from "@/lib/roles";
 
 interface User {
   id: string;
@@ -85,12 +86,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
     }
   }
 
-  const roleColor: Record<string, string> = {
-    SUPERADMIN: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-    ADMIN: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    OPERATOR: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    MANAGEMENT: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-  };
+  const roleColor: Record<string, string> = ROLE_BADGE_CLASS;
 
   const columns: DataTableColumn<User>[] = [
     {

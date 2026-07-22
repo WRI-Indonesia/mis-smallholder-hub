@@ -6,8 +6,8 @@ import { Card } from "@/components/ui/card";
 import { toggleRolePermission } from "@/server/actions/role-permission";
 import { toast } from "sonner";
 import type { Role, PermissionLevel } from "@prisma/client";
+import { ROLES } from "@/lib/roles";
 
-const ROLES: Role[] = ["SUPERADMIN", "ADMIN", "OPERATOR", "MANAGEMENT"];
 const PERMISSIONS: PermissionLevel[] = ["CREATE", "VIEW", "EDIT", "DELETE"];
 
 interface Props {
