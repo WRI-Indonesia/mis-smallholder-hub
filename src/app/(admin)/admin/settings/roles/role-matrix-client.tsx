@@ -255,7 +255,9 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
           <tbody>
             {rows.map(({ item, depth, hasChildren }) => {
               const isParent = depth === 0;
-              const rowBg = isParent ? "bg-muted/40" : depth === 1 ? "bg-background" : "bg-muted/10";
+              // Kolom Menu sticky → latar WAJIB opaque, kalau tidak sel izin
+              // tembus saat scroll horizontal.
+              const rowBg = isParent ? "bg-muted" : "bg-card";
               return (
                 <tr key={item.key} className="border-b border-border/40">
                   {/* Kolom Menu (sticky kiri) */}

@@ -28,6 +28,7 @@ Menu ini biasanya hanya dipegang SUPERADMIN.
 5. Simpan, lalu minta pengguna mencoba masuk.
 6. Bila ada kebutuhan khusus, sesuaikan izin per menu lewat **Role & Permission**.
 + Pengaturan per pengguna menimpa pengaturan peran — berguna untuk pengecualian, tetapi bila dipakai berlebihan akan sulit ditelusuri. Ubah perannya bila polanya berulang untuk banyak orang.
++ Di matriks **Role & Permission** Anda bisa memilih role yang ditampilkan, mencari menu, serta membuka/menutup kelompok menu. Ikon ceklis di tiap baris memberi atau mencabut **semua** izin menu itu sekaligus — dengan opsi ikut diterapkan ke sub-menunya. SUPERADMIN tidak ditampilkan karena selalu berakses penuh.
 
 > [!hati-hati] Menonaktifkan pengguna **tidak** menghapus data yang pernah ia input. Riwayat siapa membuat dan mengubah apa tetap tersimpan — memang begitu seharusnya untuk keperluan audit.
 
