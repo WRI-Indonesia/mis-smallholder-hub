@@ -35,9 +35,15 @@ interface Props {
   onClose: () => void;
   parcel: LandParcel | null;
   farmers: FarmerSelect[];
+  /**
+   * Dipanggil setelah simpan berhasil. Dipakai pemanggil yang datanya di-fetch
+   * di klien (mis. Peta Lahan/BMP) untuk me-refetch GeoJSON; halaman berbasis
+   * Server Component cukup mengandalkan `router.refresh()` di bawah.
+   */
+  onSaved?: () => void;
 }
 
-export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
+export function ParcelFormModal({ open, onClose, parcel, farmers, onSaved }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [selectedFarmerId, setSelectedFarmerId] = useState<string>(parcel?.farmerId ?? "");
@@ -95,6 +101,7 @@ export function ParcelFormModal({ open, onClose, parcel, farmers }: Props) {
 
     toast.success(isEdit ? "Data lahan berhasil diubah" : "Data lahan berhasil ditambahkan");
     onClose();
+    onSaved?.();
     router.refresh();
   }
 

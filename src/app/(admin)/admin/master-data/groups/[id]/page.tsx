@@ -12,6 +12,10 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
 
   const canEdit = await hasPermission("master-data-groups", "EDIT");
   const districts = canEdit ? await getDistrictsForSelect() : [];
+  const [canViewParcel, canEditParcel] = await Promise.all([
+    hasPermission("master-data-parcels", "VIEW"),
+    hasPermission("master-data-parcels", "EDIT"),
+  ]);
 
   return (
     <GroupDetailClient
@@ -21,6 +25,8 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
       mapParcels={result.mapParcels}
       canEdit={canEdit}
       districts={districts}
+      canViewParcel={canViewParcel}
+      canEditParcel={canEditParcel}
     />
   );
 }

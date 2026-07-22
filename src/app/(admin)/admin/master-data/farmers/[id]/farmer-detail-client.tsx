@@ -75,6 +75,8 @@ interface Props {
   mapParcels: DistributionMapParcel[];
   canEdit: boolean;
   farmerGroups: { id: string; name: string }[];
+  canViewParcel: boolean;
+  canEditParcel: boolean;
 }
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -190,6 +192,8 @@ export function FarmerDetailClient({
   mapParcels,
   canEdit,
   farmerGroups,
+  canViewParcel,
+  canEditParcel,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
@@ -436,7 +440,7 @@ export function FarmerDetailClient({
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Sebaran Lahan
             </h2>
-            <ParcelsDistributionMap parcels={mapParcels} />
+            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} />
           </Card>
         </TabsContent>
 

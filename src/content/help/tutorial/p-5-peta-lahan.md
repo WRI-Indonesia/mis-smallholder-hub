@@ -23,7 +23,7 @@ Hanya lahan dari unggahan **shapefile** yang tergambar di sini.
 2. Gunakan panel **daftar lahan** untuk mencari persil, lalu klik hasilnya — peta akan memperbesar ke lokasinya.
 + Jauh lebih cepat daripada mencari manual dengan menggeser peta, terutama untuk lembaga dengan ratusan persil.
 3. Klik sebuah poligon untuk membuka info detailnya.
-+ Berisi identitas petani, luas, komoditas, dan data produksi bila ada. Dari sini pula Anda bisa mencetak **Profil Lahan** dalam bentuk PDF.
++ Berisi identitas petani, luas, komoditas, dan data produksi bila ada. Dari popup ini Anda bisa mencetak **Profil Lahan** (PDF), membuka **Lihat Detail** halaman lahan, atau **Edit Lahan** langsung dari peta bila akun Anda punya izin ubah pada menu Lahan. Perubahan mengikuti mekanisme revisi biasa, dan peta ikut menyegar setelah disimpan. Tombol yang sama tersedia di popup **Sebaran Lahan** (di detail Lembaga Petani/Petani) dan **Peta BMP**.
 4. Aktifkan lapisan tambahan lewat panel kiri bila perlu — misalnya **titik panas** untuk memeriksa indikasi kebakaran di sekitar kebun.
 + Titik panas berasal dari satelit NASA FIRMS dan merupakan **deteksi anomali panas, bukan konfirmasi kebakaran**. Perlakukan sebagai petunjuk untuk diverifikasi ke lapangan, bukan kesimpulan.
 5. Gunakan alat **ukur jarak** bila perlu memperkirakan jarak antar titik.

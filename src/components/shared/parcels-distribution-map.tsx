@@ -5,9 +5,12 @@ import MapGL, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } fro
 import type { LayerProps } from "react-map-gl/maplibre";
 import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Target } from "lucide-react";
+import { Target, User, Info } from "lucide-react";
 import { MAP_STYLES } from "@/app/(admin)/admin/master-data/parcels/components/parcel-map-view";
 import { geomBounds, parcelLabelFit, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
+import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
+import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
+import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupHighlight, MapPopupSection, MapPopupRows } from "@/components/shared/map-popup";
 
 export interface DistributionMapParcel {
   id: string;
@@ -23,6 +26,9 @@ export interface DistributionMapParcel {
 
 interface Props {
   parcels: DistributionMapParcel[];
+  /** Izin menu `master-data-parcels` — mengatur tombol popup Lihat Detail / Edit. */
+  canViewParcel?: boolean;
+  canEditParcel?: boolean;
 }
 
 /** Palet kategorikal per Kelompok Tani — berulang bila KT > 12; tanpa-KT = abu. */
@@ -69,6 +75,7 @@ const lineStyle: LayerProps = {
 
 interface SelectedParcel {
   lngLat: [number, number];
+  id: string;
   parcelId: string;
   farmerName: string;
   kelompokTani: string | null;
@@ -83,13 +90,14 @@ const formatArea = (n: number | null) =>
     : "—";
 
 /** Peta sebaran lahan (poligon) satu Lembaga/Petani, diwarnai per Kelompok Tani (#171/#172). */
-export function ParcelsDistributionMap({ parcels }: Props) {
+export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEditParcel = false }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
   // KT yang disembunyikan via checklist legenda.
   const [hiddenKts, setHiddenKts] = useState<Set<string>>(new Set());
   const [zoom, setZoom] = useState(13);
   const [selected, setSelected] = useState<SelectedParcel | null>(null);
+  const [editParcelId, setEditParcelId] = useState<string | null>(null);
 
   const { collection, bounds, validCount, legend, labelBase } = useMemo(() => {
     // KT → warna: distinct ternormalisasi (trim + case-insensitive, konsisten
@@ -124,6 +132,7 @@ export function ParcelsDistributionMap({ parcels }: Props) {
         type: "Feature",
         geometry: geom,
         properties: {
+          id: p.id,
           parcelId: p.parcelId,
           color,
           ktKey,
@@ -252,6 +261,7 @@ export function ParcelsDistributionMap({ parcels }: Props) {
     const props = f.properties as Record<string, unknown>;
     setSelected({
       lngLat: [e.lngLat.lng, e.lngLat.lat],
+      id: String(props.id ?? ""),
       parcelId: String(props.parcelId ?? "—"),
       farmerName: String(props.farmerName ?? "—"),
       kelompokTani: (props.kelompokTani as string | null) ?? null,
@@ -303,29 +313,47 @@ export function ParcelsDistributionMap({ parcels }: Props) {
             longitude={selected.lngLat[0]}
             latitude={selected.lngLat[1]}
             onClose={() => setSelected(null)}
-            closeButton
-            closeOnClick={false}
-            maxWidth="260px"
+            {...MAP_POPUP_PROPS}
           >
-            <div className="space-y-1.5 text-xs">
-              <div>
-                <p className="font-bold text-sm">{selected.farmerName}</p>
-                <p className="font-mono text-muted-foreground">{selected.parcelId}</p>
+            <div className="w-[300px]">
+              <MapPopupHeader
+                accent="blue"
+                icon={<User className="h-5 w-5 text-muted-foreground" />}
+                title={selected.farmerName}
+                rows={[{ label: "ID Lahan", value: selected.parcelId, mono: true }]}
+              />
+              <MapPopupHighlight label="Luas Lahan" value={formatArea(selected.area)} />
+              <div className="divide-y">
+                <MapPopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
+                  <MapPopupRows
+                    rows={[
+                      { label: "Kelompok Tani", value: selected.kelompokTani },
+                      { label: "Gapoktan/KUD", value: selected.gapoktan },
+                      { label: "Blok", value: selected.blok },
+                    ]}
+                  />
+                </MapPopupSection>
               </div>
-              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 pt-1 border-t">
-                <span className="text-muted-foreground">Kelompok Tani</span>
-                <span className="font-medium text-right">{selected.kelompokTani ?? "—"}</span>
-                <span className="text-muted-foreground">Gapoktan/KUD</span>
-                <span className="font-medium text-right">{selected.gapoktan ?? "—"}</span>
-                <span className="text-muted-foreground">Blok</span>
-                <span className="font-medium text-right">{selected.blok ?? "—"}</span>
-                <span className="text-muted-foreground">Luas</span>
-                <span className="font-medium text-right tabular-nums">{formatArea(selected.area)}</span>
-              </div>
+              {selected.id && (canViewParcel || canEditParcel) && (
+                <ParcelPopupActions
+                  parcelId={selected.id}
+                  canView={canViewParcel}
+                  canEdit={canEditParcel}
+                  onEdit={() => setEditParcelId(selected.id)}
+                />
+              )}
             </div>
           </Popup>
         )}
       </MapGL>
+
+      {editParcelId && (
+        <ParcelEditModalHost
+          key={editParcelId}
+          parcelId={editParcelId}
+          onClose={() => setEditParcelId(null)}
+        />
+      )}
 
       {/* Legenda + checklist show/hide per Kelompok Tani — kiri atas */}
       <div className="absolute top-3 left-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-2.5 max-h-[calc(100%-6rem)] w-52 overflow-y-auto">

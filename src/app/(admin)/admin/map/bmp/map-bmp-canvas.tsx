@@ -8,6 +8,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Sprout, Info, BarChart3, ChevronDown, Maximize } from "lucide-react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
+import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
+import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BMP_PRODUCTIVITY_CLASSES, productivityViewLabel, summarizeProduction } from "@/lib/map-data";
@@ -161,6 +163,10 @@ interface Props {
    * its capture fn on mount and clears it on unmount.
    */
   registerCapture?: (fn: (() => Promise<BmpMapCapture | null>) | null) => void;
+  canViewParcel: boolean;
+  canEditParcel: boolean;
+  /** Dipanggil setelah Edit Lahan berhasil — refetch GeoJSON (data di-fetch di klien). */
+  onParcelUpdated: () => void;
 }
 
 function parcelProps(
@@ -201,7 +207,7 @@ function parcelProps(
   };
 }
 
-export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers, registerCapture }: Props) {
+export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers, registerCapture, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -209,6 +215,7 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
   const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
+  const [editParcelId, setEditParcelId] = useState<string | null>(null);
 
   // Close any open popup when a new dataset loads (state-during-render pattern).
   const [prevData, setPrevData] = useState(data);
@@ -490,7 +497,12 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
             maxWidth="none"
             className="map-parcel-popup"
           >
-            <BmpParcelPopupBody props={selected.props} />
+            <BmpParcelPopupBody
+              props={selected.props}
+              canViewParcel={canViewParcel}
+              canEditParcel={canEditParcel}
+              onEdit={setEditParcelId}
+            />
           </Popup>
         )}
       </Map>
@@ -526,6 +538,15 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
           ))}
         </div>
       </div>
+
+      {editParcelId && (
+        <ParcelEditModalHost
+          key={editParcelId}
+          parcelId={editParcelId}
+          onClose={() => setEditParcelId(null)}
+          onSaved={onParcelUpdated}
+        />
+      )}
     </div>
   );
 }
@@ -578,7 +599,17 @@ function ProductivityBadge({ cls }: { cls: ProductivityClass }) {
   );
 }
 
-function BmpParcelPopupBody({ props }: { props: Record<string, unknown> }) {
+function BmpParcelPopupBody({
+  props,
+  canViewParcel,
+  canEditParcel,
+  onEdit,
+}: {
+  props: Record<string, unknown>;
+  canViewParcel: boolean;
+  canEditParcel: boolean;
+  onEdit: (id: string) => void;
+}) {
   const category = (props.category as ProductionAvailabilityCategory) ?? "NONE";
   const streak = Number(props.streakMonths ?? 0);
   const first = props.firstPeriod as string | null;
@@ -673,6 +704,14 @@ function BmpParcelPopupBody({ props }: { props: Record<string, unknown> }) {
       <p className="border-t px-3.5 py-2 text-[10px] leading-snug text-muted-foreground">
         Kategori dari run bulan berturut-turut produksi yang tertaut ke lahan.
       </p>
+      {(canViewParcel || canEditParcel) && (
+        <ParcelPopupActions
+          parcelId={String(props.id)}
+          canView={canViewParcel}
+          canEdit={canEditParcel}
+          onEdit={() => onEdit(String(props.id))}
+        />
+      )}
     </div>
   );
 }

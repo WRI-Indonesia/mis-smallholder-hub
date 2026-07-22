@@ -65,6 +65,8 @@ interface Props {
   mapParcels: DistributionMapParcel[];
   canEdit: boolean;
   districts: { id: string; name: string }[];
+  canViewParcel: boolean;
+  canEditParcel: boolean;
 }
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -180,6 +182,8 @@ export function GroupDetailClient({
   mapParcels,
   canEdit,
   districts,
+  canViewParcel,
+  canEditParcel,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   // Tahun yang di-expand pada tabel Produksi per Tahun (rincian bulanan).
@@ -447,7 +451,7 @@ export function GroupDetailClient({
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Sebaran Lahan
             </h2>
-            <ParcelsDistributionMap parcels={mapParcels} />
+            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} />
           </Card>
           <p className="text-sm text-muted-foreground">
             Detail per lahan ada di{" "}

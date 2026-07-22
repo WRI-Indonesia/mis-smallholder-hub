@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
+import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
@@ -106,9 +108,13 @@ interface Props {
   customLayers: CustomLayer[];
   hotspot: HotspotState;
   hotspotData: FeatureCollection | null;
+  canViewParcel: boolean;
+  canEditParcel: boolean;
+  /** Dipanggil setelah Edit Lahan berhasil — refetch GeoJSON (data di-fetch di klien). */
+  onParcelUpdated: () => void;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotspotData }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotspotData, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -117,6 +123,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
   const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
+  const [editParcelId, setEditParcelId] = useState<string | null>(null);
 
   // Close any open popup when a new dataset loads (adjusts state during render on
   // prop change — the React-endorsed alternative to a setState-in-effect).
@@ -693,7 +700,12 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
                 />
               </div>
             ) : (
-              <ParcelPopupBody props={selected.props} />
+              <ParcelPopupBody
+                props={selected.props}
+                canViewParcel={canViewParcel}
+                canEditParcel={canEditParcel}
+                onEdit={setEditParcelId}
+              />
             )}
           </Popup>
         )}
@@ -874,6 +886,15 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
           ))}
         </div>
       </div>
+
+      {editParcelId && (
+        <ParcelEditModalHost
+          key={editParcelId}
+          parcelId={editParcelId}
+          onClose={() => setEditParcelId(null)}
+          onSaved={onParcelUpdated}
+        />
+      )}
     </div>
   );
 }
@@ -975,7 +996,17 @@ function ParcelHeader({
  * section and the "Profil Lahan" (passport) button share a single fetch:
  * whichever loads it first fills the cache, and the other reuses it.
  */
-function ParcelPopupBody({ props }: { props: Record<string, unknown> }) {
+function ParcelPopupBody({
+  props,
+  canViewParcel,
+  canEditParcel,
+  onEdit,
+}: {
+  props: Record<string, unknown>;
+  canViewParcel: boolean;
+  canEditParcel: boolean;
+  onEdit: (id: string) => void;
+}) {
   const landParcelId = String(props.id);
   const [production, setProduction] = useState<ProductionSummary | null>(null);
   const [prodLoading, setProdLoading] = useState(false);
@@ -1035,6 +1066,14 @@ function ParcelPopupBody({ props }: { props: Record<string, unknown> }) {
         />
       </div>
       <ParcelFooter landParcelId={landParcelId} production={production} onProductionLoaded={setProduction} />
+      {(canViewParcel || canEditParcel) && (
+        <ParcelPopupActions
+          parcelId={landParcelId}
+          canView={canViewParcel}
+          canEdit={canEditParcel}
+          onEdit={() => onEdit(landParcelId)}
+        />
+      )}
     </div>
   );
 }
