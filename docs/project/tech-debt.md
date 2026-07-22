@@ -25,9 +25,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…025) | **8** | 15 | 23 |
+| **Debt** (TD-001…027) | **10** | 15 | 25 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017. (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027. (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -101,6 +101,16 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Masalah:** pada 2026-07-16 suite gagal **3× (1 test)** lalu hijau saat di-rerun (441→457 pass); loop 3× berturut saat idle bersih — gagal hanya saat run berbarengan proses berat (build/lint). Pola konsisten **perf test ber-ambang waktu** (`perf.test.ts` berisi assert durasi ms).
 - **Evidence:** sesi 2026-07-16 (3 kejadian, selalu lolos di rerun); nama test belum tertangkap — kegagalan berikutnya, simpan output penuh.
 - **Validation:** saat terulang, catat nama test + longgarkan ambang (atau tandai `retry: 1` khusus perf) agar gate pre-commit tidak false-negative. · **Owner:** QA/Dev.
+
+### TD-026 · 🔲 Open — Matriks Role & Permission: sel izin belum aksesibel (P3)
+
+- **Masalah:** sel izin di `role-matrix-client.tsx` adalah tombol ikon tanpa nama aksesibel maupun `aria-pressed`; chevron & tombol toggle baris hanya punya `title`. Pembaca layar tak bisa membedakan granted/denied atau mengetahui aksi tombol.
+- **Validation:** tambahkan `aria-label` (mis. "ADMIN · Dashboard · VIEW: aktif") + `aria-pressed` pada sel; label pada chevron & tombol `ListChecks`. · **Evidence:** #187B. · **Owner:** Frontend.
+
+### TD-027 · 🔲 Open — `setRolePermissions` N+1 pada kaskade besar (P3)
+
+- **Masalah:** `setRolePermissions` melakukan `findFirst`+`update`/`create` **berurutan per baris** dalam satu transaksi. Kaskade induk→anak untuk subtree besar × banyak role = puluhan round-trip (terasa lewat tunnel; timeout dinaikkan ke 20s sebagai penambal).
+- **Validation:** ganti ke SQL massal — `findMany` sekali untuk state saat ini, lalu `updateMany`(isActive) + `createMany`(baris baru) atas himpunan terhitung. · **Evidence:** #187B (`src/server/actions/role-permission.ts`). · **Owner:** Backend.
 
 ## Debt Sequencing
 
