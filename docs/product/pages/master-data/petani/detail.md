@@ -9,7 +9,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 ├── Header
 │   ├── BreadcrumbOverride
 │   ├── Tombol kembali, avatar inisial, nama, ID petani
-│   ├── Badge: L/P, Lembaga, Gapoktan, Kelompok Tani, Aktif/Nonaktif
+│   ├── Badge: L/P, Lembaga, Kelompok Tani, Aktif/Nonaktif
 │   └── Tombol: Edit
 ├── Kartu ringkasan
 │   ├── Lahan
@@ -45,12 +45,12 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `BreadcrumbOverride` | Navigasi | Menampilkan ID Petani, bukan CUID |
-| Header | Heading | Tombol kembali, avatar inisial (placeholder, TD-017), nama, ID petani, badge L/P + Lembaga (link) + Gapoktan + Kelompok Tani + `Aktif`/`Nonaktif` |
+| Header | Heading | Tombol kembali, avatar inisial (placeholder, TD-017), nama, ID petani, badge L/P + Lembaga (link) + Kelompok Tani + `Aktif`/`Nonaktif` |
 | Tombol `Edit` | Tombol | EDIT — buka `FarmerFormModal` |
 | Kartu ringkasan (5) | Kartu | `Lahan` (persil + Ha), `Produksi` (Ton), `Pelatihan` (n/n paket), `Kelengkapan Profil` (n/n + field yang belum), `Produktivitas Terakhir` (Ton/Ha) |
 | Tabs | Tab | `Ringkasan`, `Lahan`, `Pelatihan`, `Produksi` |
 | Tab Ringkasan | Kartu | Field: `Lembaga Petani` (link), `Distrik`, `Jenis Kelamin`, `NIK` (disensor), `Tempat, Tanggal Lahir` (+ umur), `Tahun Bergabung`, `Alamat`, `Dibuat`, `Terakhir Diubah` |
-| Tab Lahan — `Daftar Lahan (n)` | Tabel | `Kode Lahan`, `Kelompok Tani`, `Gapoktan/KUD`, `Blok`, `Luas (Ha)`, `Tahun Tanam`, `Revisi`, `Profil Lahan`; empty state `Petani ini belum memiliki lahan.` |
+| Tab Lahan — `Daftar Lahan (n)` | Tabel | `Kode Lahan`, `Kelompok Tani`, `Blok`, `Luas (Ha)`, `Tahun Tanam`, `Revisi`, `Profil Lahan`; empty state `Petani ini belum memiliki lahan.` |
 | Tombol `PDF` per baris lahan | Tombol | Unduh Farm Passport via `getFarmerParcelPassport` + `generateFarmPassportPdf` |
 | Tab Lahan — `Sebaran Lahan` | Peta | `ParcelsDistributionMap` (dynamic, ssr:false) |
 | Tab Pelatihan — `Paket Wajib` | Checklist | Per paket: ikon ✓/✗, label, jumlah partisipasi (`n×`) atau `Belum` |

@@ -23,7 +23,6 @@ export interface DetailRawParcel {
   /** LandParcel.id (db) — kunci ketersediaan data produksi per lahan. */
   id: string;
   area: number | null;
-  subGroupLv1: string | null;
   subGroupLv2: string | null;
   blok: string | null;
 }
@@ -55,7 +54,6 @@ export interface GroupDetailSummary {
   totalFarmersFemale: number;
   farmersWithoutParcel: number;
   kelompokTaniCount: number;
-  gapoktanCount: number;
   blokCount: number;
   totalParcels: number;
   totalArea: number;
@@ -125,7 +123,6 @@ export function buildFarmerGroupDetail(
       farmerCode: f.farmerId,
       farmerName: f.name,
       area: p.area,
-      subGroupLv1: p.subGroupLv1,
       subGroupLv2: p.subGroupLv2,
     }))
   );
@@ -188,7 +185,6 @@ export function buildFarmerGroupDetail(
       totalFarmersFemale: farmers.filter((f) => f.gender === "F").length,
       farmersWithoutParcel: farmers.filter((f) => f.landParcels.length === 0).length,
       kelompokTaniCount: struktur.summary.totalKelompokTani,
-      gapoktanCount: struktur.summary.totalGapoktan,
       blokCount: blokSet.size,
       totalParcels,
       totalArea: round2(totalArea),

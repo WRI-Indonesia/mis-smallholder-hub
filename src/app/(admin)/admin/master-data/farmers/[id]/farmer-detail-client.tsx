@@ -59,7 +59,6 @@ interface ParcelRow {
   id: string;
   parcelId: string;
   area: number | null;
-  subGroupLv1: string | null;
   subGroupLv2: string | null;
   blok: string | null;
   plantingYear: number | null;
@@ -257,11 +256,6 @@ export function FarmerDetailClient({
                   {farmer.farmerGroup.name}
                 </Badge>
               </Link>
-              {subGroups.gapoktan.map((g) => (
-                <Badge key={`g-${g}`} variant="outline">
-                  {g}
-                </Badge>
-              ))}
               {subGroups.kelompokTani.map((kt) => (
                 <Badge key={`kt-${kt}`} variant="outline">
                   {kt}
@@ -390,7 +384,6 @@ export function FarmerDetailClient({
                     <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
                       <th className="py-2 pr-4">Kode Lahan</th>
                       <th className="py-2 pr-4">Kelompok Tani</th>
-                      <th className="py-2 pr-4">Gapoktan/KUD</th>
                       <th className="py-2 pr-4">Blok</th>
                       <th className="py-2 pr-4 text-right">Luas (Ha)</th>
                       <th className="py-2 pr-4 text-right">Tahun Tanam</th>
@@ -403,7 +396,6 @@ export function FarmerDetailClient({
                       <tr key={p.id} className="border-b last:border-0">
                         <td className="py-2 pr-4 font-mono">{p.parcelId}</td>
                         <td className="py-2 pr-4">{p.subGroupLv2 ?? "—"}</td>
-                        <td className="py-2 pr-4">{p.subGroupLv1 ?? "—"}</td>
                         <td className="py-2 pr-4">{p.blok ?? "—"}</td>
                         <td className="py-2 pr-4 text-right tabular-nums">
                           {p.area != null ? formatDecimal(p.area) : "—"}

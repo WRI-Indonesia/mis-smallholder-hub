@@ -88,10 +88,10 @@ export async function getFarmerById(id: string) {
           district: true,
         },
       },
-      // KT/Gapoktan turunan (#152): keanggotaan sub-kelompok bersifat per-lahan (#146).
+      // KT turunan (#152): keanggotaan sub-kelompok bersifat per-lahan (#146).
       landParcels: {
         where: { isActive: true },
-        select: { subGroupLv1: true, subGroupLv2: true },
+        select: { subGroupLv2: true },
       },
     },
   });
@@ -126,7 +126,6 @@ export async function getFarmerDetail(id: string) {
             id: true,
             parcelId: true,
             area: true,
-            subGroupLv1: true,
             subGroupLv2: true,
             blok: true,
             plantingYear: true,
@@ -177,7 +176,6 @@ export async function getFarmerDetail(id: string) {
         id: p.id,
         parcelId: p.parcelId,
         area: p.area,
-        subGroupLv1: p.subGroupLv1,
         subGroupLv2: p.subGroupLv2,
         blok: p.blok,
         plantingYear: p.plantingYear,
@@ -226,7 +224,6 @@ export async function getFarmerDetail(id: string) {
       id: p.id,
       parcelId: p.parcelId,
       area: p.area,
-      subGroupLv1: p.subGroupLv1,
       subGroupLv2: p.subGroupLv2,
       blok: p.blok,
       plantingYear: p.plantingYear,
@@ -241,7 +238,6 @@ export async function getFarmerDetail(id: string) {
       farmerCode: farmer.farmerId,
       farmerGroupName: farmer.farmerGroup.name,
       kelompokTani: p.subGroupLv2,
-      gapoktan: p.subGroupLv1,
       blok: p.blok,
       area: p.area,
       geometry: p.geometry,

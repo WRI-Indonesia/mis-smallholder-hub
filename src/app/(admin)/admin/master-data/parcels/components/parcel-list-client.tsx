@@ -115,14 +115,6 @@ export function ParcelListClient({
       render: (row) => row.farmer.farmerGroup.name,
     },
     {
-      key: "subGroupLv1",
-      label: "Gapoktan/KUD",
-      sortable: true,
-      defaultVisible: false,
-      cellClassName: "text-sm text-muted-foreground",
-      render: (row) => row.subGroupLv1 ?? "—",
-    },
-    {
       key: "subGroupLv2",
       label: "Kelompok Tani",
       sortable: true,
@@ -202,7 +194,6 @@ export function ParcelListClient({
       farmer: p.farmer.name,
       farmerId: p.farmer.farmerId,
       farmerGroupName: p.farmer.farmerGroup.name,
-      subGroupLv1: p.subGroupLv1 ?? "—",
       subGroupLv2: p.subGroupLv2 ?? "—",
       area: p.area !== null ? p.area : "—",
       landStatus: p.landStatus ?? "—",

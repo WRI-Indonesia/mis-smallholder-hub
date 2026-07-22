@@ -131,13 +131,11 @@ export interface KelompokTaniReportFilters {
 }
 
 export interface KelompokTaniReportRow {
-  /** Unique key per (Lembaga × Gapoktan × Kelompok Tani) combination. */
+  /** Unique key per (Lembaga × Kelompok Tani) combination. */
   key: string;
   farmerGroupId: string;
   /** FarmerGroup.name (= Lembaga Petani). */
   lembagaTani: string;
-  /** Sub Lv.1 = Gapoktan (LandParcel.subGroupLv1), null bila kosong. */
-  gapoktan: string | null;
   /** Sub Lv.2 = Kelompok Tani (LandParcel.subGroupLv2), null bila kosong. */
   kelompokTani: string | null;
   /** Distinct petani dengan ≥1 lahan aktif di kombinasi ini. */
@@ -150,7 +148,6 @@ export interface KelompokTaniReportRow {
 
 export interface KelompokTaniReportSummary {
   totalKelompokTani: number; // baris dengan Kelompok Tani non-null
-  totalGapoktan: number; // distinct (Lembaga, Gapoktan) non-null
   totalLembagaTani: number; // distinct Lembaga
   totalPetani: number; // distinct petani keseluruhan
   totalLahan: number; // total lahan aktif
@@ -183,8 +180,6 @@ export interface LandParcelReportRow {
   idLahan: string;
   /** Sub Lv.2 = Kelompok Tani (LandParcel.subGroupLv2), null bila kosong. */
   kelompokTani: string | null;
-  /** Sub Lv.1 = Gapoktan/KUD (LandParcel.subGroupLv1), null bila kosong. */
-  gapoktan: string | null;
   /** Blok kebun, null bila kosong. */
   blok: string | null;
   /** Komoditas (LandParcel.cropType), null bila kosong. */
@@ -220,9 +215,9 @@ export interface KtDetailPetani {
   /** Farmer.farmerId (kode human-facing). */
   farmerCode: string;
   name: string;
-  /** Jumlah lahan aktif petani ini pada kombinasi (Gapoktan × KT). */
+  /** Jumlah lahan aktif petani ini pada Kelompok Tani ini. */
   totalLahan: number;
-  /** Total luas (Ha) lahan petani ini pada kombinasi tsb. */
+  /** Total luas (Ha) lahan petani ini pada KT tsb. */
   totalLuas: number;
 }
 
@@ -235,19 +230,8 @@ export interface KtDetailKelompokTani {
   petani: KtDetailPetani[];
 }
 
-export interface KtDetailGapoktan {
-  /** Gapoktan/KUD (subGroupLv1), null bila kosong. */
-  gapoktan: string | null;
-  totalKelompokTani: number; // baris KT non-null di Gapoktan ini
-  totalPetani: number; // distinct petani di Gapoktan ini
-  totalLahan: number;
-  totalLuas: number;
-  kelompokTaniList: KtDetailKelompokTani[];
-}
-
 export interface KelompokTaniDetailReportSummary {
-  totalGapoktan: number; // distinct Gapoktan non-null
-  totalKelompokTani: number; // distinct (Gapoktan × KT) non-null
+  totalKelompokTani: number; // distinct KT non-null di Lembaga
   totalPetani: number; // distinct petani di Lembaga
   totalLahan: number;
   totalLuas: number;
@@ -258,5 +242,5 @@ export interface KelompokTaniDetailReportResult {
   /** FarmerGroup.name (= Lembaga Petani terpilih). */
   lembagaTani: string;
   summary: KelompokTaniDetailReportSummary;
-  gapoktanList: KtDetailGapoktan[];
+  kelompokTaniList: KtDetailKelompokTani[];
 }

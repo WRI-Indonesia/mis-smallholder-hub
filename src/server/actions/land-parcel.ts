@@ -56,7 +56,6 @@ export async function getLandParcels(search?: string, farmerId?: string) {
       farmerId: true,
       parcelId: true,
       blok: true,
-      subGroupLv1: true,
       subGroupLv2: true,
       area: true,
       landStatus: true,

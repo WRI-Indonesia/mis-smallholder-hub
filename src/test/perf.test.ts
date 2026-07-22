@@ -504,14 +504,13 @@ describe("Performance - Kelompok Tani distinct aggregation (#148, subGroupLv2)",
   });
 });
 
-// #152: detail Petani menderivasi KT/Gapoktan dari lahan aktif via
+// #152: detail Petani menderivasi KT dari lahan aktif via
 // deriveFarmerSubGroups. Realistisnya satu petani hanya punya beberapa lahan —
 // stress jauh melampaui itu untuk membuktikan derivasi (trim+lowercase dedup +
 // sort) tetap O(n) dan aman dipanggil per-render halaman detail.
 describe("Performance - Farmer sub-group derivation (#152)", () => {
-  it("derives distinct KT/Gapoktan from 10k parcels under 50ms", () => {
+  it("derives distinct KT from 10k parcels under 50ms", () => {
     const parcels = Array.from({ length: 10_000 }, (_, i) => ({
-      subGroupLv1: i % 9 === 0 ? null : `${i % 3 === 0 ? "  " : ""}Gapoktan ${i % 40}`,
       subGroupLv2: i % 7 === 0 ? null : `KT ${i % 250}${i % 5 === 0 ? " " : ""}`,
     }));
 
@@ -520,9 +519,8 @@ describe("Performance - Farmer sub-group derivation (#152)", () => {
     const duration = performance.now() - start;
 
     console.log(
-      `  deriveFarmerSubGroups (10k lahan): ${result.gapoktan.length} gapoktan / ${result.kelompokTani.length} KT in ${duration.toFixed(2)}ms`,
+      `  deriveFarmerSubGroups (10k lahan): ${result.kelompokTani.length} KT in ${duration.toFixed(2)}ms`,
     );
-    expect(result.gapoktan.length).toBe(40); // noise spasi ter-dedup
     expect(result.kelompokTani.length).toBe(250);
     expect(duration).toBeLessThan(50);
   });
@@ -566,34 +564,31 @@ describe("Performance - RSPO cert sort & format (#160)", () => {
 });
 
 // Forward-looking untuk #153 (Master Lembaga Petani, snapshot-backed Opsi A): saat
-// generate snapshot, agregasi per-Lembaga = distinct KT/Gapoktan/Blok dari lahan
+// generate snapshot, agregasi per-Lembaga = distinct KT/Blok dari lahan
 // seluruh petani di Lembaga tsb. Buktikan agregasi O(n) satu-pass tetap murah →
 // aman dihitung di generator snapshot (bukan real-time per-baris list).
 describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga distinct)", () => {
-  it("aggregates distinct KT/Gapoktan/Blok per Lembaga over 50k parcels under 30ms", () => {
+  it("aggregates distinct KT/Blok per Lembaga over 50k parcels under 30ms", () => {
     const N_LEMBAGA = 100;
     const parcels = Array.from({ length: 50_000 }, (_, i) => ({
       farmerGroupId: `lembaga-${i % N_LEMBAGA}`,
       subGroupLv2: i % 6 === 0 ? null : `KT ${i % 500}`,
-      subGroupLv1: i % 8 === 0 ? null : `Gapoktan ${i % 50}`,
       blok: i % 4 === 0 ? null : `Blok ${i % 200}`,
     }));
 
     const start = performance.now();
     const perLembaga = new Map<
       string,
-      { kt: Set<string>; gapoktan: Set<string>; blok: Set<string> }
+      { kt: Set<string>; blok: Set<string> }
     >();
     for (const p of parcels) {
       let agg = perLembaga.get(p.farmerGroupId);
       if (!agg) {
-        agg = { kt: new Set(), gapoktan: new Set(), blok: new Set() };
+        agg = { kt: new Set(), blok: new Set() };
         perLembaga.set(p.farmerGroupId, agg);
       }
       const kt = p.subGroupLv2?.trim().toLowerCase();
       if (kt) agg.kt.add(kt);
-      const g = p.subGroupLv1?.trim().toLowerCase();
-      if (g) agg.gapoktan.add(g);
       const b = p.blok?.trim().toLowerCase();
       if (b) agg.blok.add(b);
     }

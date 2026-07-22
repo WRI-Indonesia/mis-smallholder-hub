@@ -36,7 +36,7 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 | `Detail Lahan` | Heading | Tombol kembali + subjudul `Lahan: {parcelId} · Petani: {nama}` |
 | Tombol `Edit` | Tombol | EDIT — buka `ParcelFormModal` |
 | Tombol `Nonaktifkan` | Tombol | DELETE — `deleteLandParcel` dengan konfirmasi `Apakah Anda yakin ingin menonaktifkan lahan ini?` |
-| Kartu `Informasi Lahan` | Kartu | `ID Lahan`, `Blok`, `Luas`, `Status Kepemilikan`, `Komoditas`, `Species`, `PSR`, `Tahun Tanam`, `Gapoktan/KUD`, `Kelompok Tani`, `Revisi`, `Catatan` |
+| Kartu `Informasi Lahan` | Kartu | `ID Lahan`, `Blok`, `Luas`, `Status Kepemilikan`, `Komoditas`, `Species`, `PSR`, `Tahun Tanam`, `Kelompok Tani`, `Revisi`, `Catatan` |
 | Kartu `Informasi Pemilik` | Kartu | `Nama Petani` (link ke detail petani), `ID Petani`, `Lembaga Petani`, `Distrik` |
 | Kartu `Peta Spasial Lahan` | Peta | `ParcelMapView` (MapLibre) — tombol `Zoom ke Lahan`, pemilih basemap `hybrid`/`satellite`/`light`/`dark` |
 | Empty state peta | Teks | `Tidak ada data spasial (geometri) untuk lahan ini` |

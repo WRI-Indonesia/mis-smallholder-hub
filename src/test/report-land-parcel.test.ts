@@ -18,7 +18,6 @@ const P = (o: Partial<LpRawParcel> & { id: string; farmerId: string }): LpRawPar
   farmerName: "Petani",
   farmerGroupId: "lg1",
   lembagaTani: "Lembaga A",
-  subGroupLv1: null,
   subGroupLv2: null,
   blok: null,
   cropType: null,
@@ -46,14 +45,13 @@ describe("buildLandParcelReport", () => {
     });
   });
 
-  it("normalisasi trim: KT/Gapoktan/Blok kosong/whitespace → null", () => {
+  it("normalisasi trim: KT/Blok kosong/whitespace → null", () => {
     const r = buildLandParcelReport([
-      P({ id: "p1", farmerId: "f1", subGroupLv1: "  ", subGroupLv2: "", blok: "   " }),
+      P({ id: "p1", farmerId: "f1", subGroupLv2: "", blok: "   " }),
       P({ id: "p2", farmerId: "f1", subGroupLv2: "  KT Subur " }),
     ]);
     const p1 = r.rows.find((x) => x.id === "p1")!;
     expect(p1.kelompokTani).toBeNull();
-    expect(p1.gapoktan).toBeNull();
     expect(p1.blok).toBeNull();
     const p2 = r.rows.find((x) => x.id === "p2")!;
     expect(p2.kelompokTani).toBe("KT Subur");

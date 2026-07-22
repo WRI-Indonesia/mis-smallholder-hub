@@ -21,7 +21,6 @@ export interface DistributionMapParcel {
   farmerGroupName: string;
   /** Kelompok Tani (LandParcel.subGroupLv2) — basis warna poligon. */
   kelompokTani: string | null;
-  gapoktan: string | null;
   blok: string | null;
   area: number | null;
   geometry: unknown;
@@ -84,7 +83,6 @@ interface SelectedParcel {
   farmerCode: string;
   farmerGroupName: string;
   kelompokTani: string | null;
-  gapoktan: string | null;
   blok: string | null;
   area: number | null;
 }
@@ -145,7 +143,6 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
           farmerCode: p.farmerCode,
           farmerGroupName: p.farmerGroupName,
           kelompokTani: p.kelompokTani,
-          gapoktan: p.gapoktan,
           blok: p.blok,
           area: p.area,
         },
@@ -274,7 +271,6 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
       farmerCode: String(props.farmerCode ?? "—"),
       farmerGroupName: String(props.farmerGroupName ?? "—"),
       kelompokTani: (props.kelompokTani as string | null) ?? null,
-      gapoktan: (props.gapoktan as string | null) ?? null,
       blok: (props.blok as string | null) ?? null,
       area: props.area != null ? Number(props.area) : null,
     });
@@ -342,7 +338,6 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
                   <MapPopupRows
                     rows={[
                       { label: "Kelompok Tani", value: selected.kelompokTani },
-                      { label: "Gapoktan/KUD", value: selected.gapoktan },
                       { label: "Blok", value: selected.blok },
                     ]}
                   />

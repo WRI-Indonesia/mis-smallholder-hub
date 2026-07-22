@@ -197,10 +197,6 @@ export function GroupDetailClient({
       else next.add(year);
       return next;
     });
-  // Auto-hide kolom Gapoktan/KUD bila Lembaga tak punya level itu — langsung
-  // ke Kelompok Tani (pola Report KT Detail #154).
-  const hasGapoktan = struktur.gapoktanList.some((g) => g.gapoktan !== null);
-
   // Persentase kolom Produksi per Tahun: Record = kelengkapan pelaporan bulanan
   // (lahan×bulan melapor ÷ total persil × 12 — mandatory min. 1 panen/bulan);
   // lahan/luas melapor thd total persil/luas Lembaga.
@@ -256,7 +252,7 @@ export function GroupDetailClient({
           icon={Network}
           title="Kelompok Tani"
           value={formatNumber(summary.kelompokTaniCount)}
-          sub={`${formatNumber(summary.gapoktanCount)} Gapoktan/KUD · ${formatNumber(summary.blokCount)} Blok`}
+          sub={`${formatNumber(summary.blokCount)} Blok`}
         />
         <SummaryCard
           icon={MapIcon}
@@ -340,16 +336,15 @@ export function GroupDetailClient({
                 Lihat roster lengkap →
               </Link>
             </div>
-            {struktur.gapoktanList.length === 0 ? (
+            {struktur.kelompokTaniList.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Belum ada data Gapoktan/KUD & Kelompok Tani dari lahan.
+                Belum ada data Kelompok Tani dari lahan.
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
-                      {hasGapoktan && <th className="py-2 pr-4">Gapoktan/KUD</th>}
                       <th className="py-2 pr-4">Kelompok Tani</th>
                       <th className="py-2 pr-4 text-right">Petani</th>
                       <th className="py-2 pr-4 text-right">Lahan</th>
@@ -357,38 +352,27 @@ export function GroupDetailClient({
                     </tr>
                   </thead>
                   <tbody>
-                    {struktur.gapoktanList.flatMap((g) =>
-                      g.kelompokTaniList.map((kt, i) => (
-                        <tr
-                          key={`${g.gapoktan ?? "-"}-${kt.kelompokTani ?? "-"}`}
-                          className="border-b last:border-0"
-                        >
-                          {hasGapoktan && (
-                            <td className="py-2 pr-4 font-medium">
-                              {i === 0
-                                ? (g.gapoktan ?? (
-                                    <span className="text-muted-foreground">(tidak diketahui)</span>
-                                  ))
-                                : ""}
-                            </td>
+                    {struktur.kelompokTaniList.map((kt) => (
+                      <tr
+                        key={kt.kelompokTani ?? "-"}
+                        className="border-b last:border-0"
+                      >
+                        <td className="py-2 pr-4">
+                          {kt.kelompokTani ?? (
+                            <span className="text-muted-foreground">(tidak diketahui)</span>
                           )}
-                          <td className="py-2 pr-4">
-                            {kt.kelompokTani ?? (
-                              <span className="text-muted-foreground">(tidak diketahui)</span>
-                            )}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(kt.totalPetani)}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(kt.totalLahan)}
-                          </td>
-                          <td className="py-2 text-right tabular-nums">
-                            {formatDecimal(kt.totalLuas)}
-                          </td>
-                        </tr>
-                      )),
-                    )}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {formatNumber(kt.totalPetani)}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {formatNumber(kt.totalLahan)}
+                        </td>
+                        <td className="py-2 text-right tabular-nums">
+                          {formatDecimal(kt.totalLuas)}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -442,8 +426,8 @@ export function GroupDetailClient({
             />
             <SummaryCard
               icon={Network}
-              title="Kelompok Tani / Gapoktan"
-              value={`${formatNumber(summary.kelompokTaniCount)} / ${formatNumber(summary.gapoktanCount)}`}
+              title="Kelompok Tani"
+              value={formatNumber(summary.kelompokTaniCount)}
             />
             <SummaryCard icon={MapIcon} title="Blok" value={formatNumber(summary.blokCount)} />
           </div>

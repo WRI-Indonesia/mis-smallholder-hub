@@ -98,13 +98,13 @@
    ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
    ├── ✅ Laporan Pelatihan (RPT-02) — Activities, unique participants & coverage
    ├── ✅ Laporan Produksi (RPT-03) — Matriks bulanan per petani/lahan + Excel & PDF export (#132)
-   ├── ✅ Kelompok Tani (Summary) (RPT-04) — Agregat real-time Lembaga×Gapoktan/KUD×KT + column selector + Excel & PDF (#154)
-   └── ✅ Kelompok Tani (Detail) (RPT-04) — Roster per Lembaga: Gapoktan/KUD→KT→Petani collapsible + Excel & PDF (#154)
+   ├── ✅ Kelompok Tani (Summary) (RPT-04) — Agregat real-time Lembaga×KT + column selector + Excel & PDF (#154)
+   └── ✅ Kelompok Tani (Detail) (RPT-04) — Roster per Lembaga: KT→Petani collapsible + Excel & PDF (#154)
 
 📤 Bulk Upload
    ├── ✅ Bulk Upload Petani (BULK-03) — Excel mapping + validation + preview
    ├── ✅ Bulk Upload Produksi (BULK-04) — Excel mapping + period/harvest validation + preview
-   ├── ✅ Bulk Upload Lahan (MD-04) — ZIP Shapefile upload + column mapping (incl. Gapoktan/KUD, Kelompok Tani, Blok #150) + geometry validation
+   ├── ✅ Bulk Upload Lahan (MD-04) — ZIP Shapefile upload + column mapping (incl. Kelompok Tani, Blok #150) + geometry validation
    ├── 🔲 Bulk Upload Lembaga Petani (#69) — CSV + validation (belum ada menu/route)
    └── 🔲 Bulk Upload Region (BULK-02, #70) — Hierarchy validation (belum ada menu/route)
 

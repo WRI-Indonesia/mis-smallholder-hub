@@ -71,7 +71,6 @@ interface ParcelValidatedRow {
   cropType: string | null;
   plantingYear?: number | null;
   notes: string | null;
-  subGroupLv1: string | null;
   subGroupLv2: string | null;
   blok: string | null;
 }
@@ -107,7 +106,6 @@ const TARGET_FIELDS = [
   },
   { key: "cropType", label: "Komoditas", required: false, desc: "e.g. Kelapa Sawit, Karet" },
   { key: "plantingYear", label: "Tahun Tanam", required: false, desc: "Tahun 1900-2100" },
-  { key: "subGroupLv1", label: "Gapoktan/KUD", required: false, desc: "Nama Gapoktan/KUD" },
   { key: "subGroupLv2", label: "Kelompok Tani", required: false, desc: "Nama Kelompok Tani" },
   { key: "blok", label: "Blok", required: false, desc: "Blok kebun" },
   { key: "revision", label: "Revisi", required: false, desc: "Angka revisi (default 0)" },
@@ -211,7 +209,6 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       landStatus: null,
       cropType: null,
       notes: null,
-      subGroupLv1: null,
       subGroupLv2: null,
       blok: null,
     };
@@ -330,9 +327,6 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     normalized.notes = props[mapping["notes"]]?.toString().trim() || null;
 
     // 8b. Sub-kelompok interim + blok (#150) — opsional, trim, kosong → null.
-    normalized.subGroupLv1 = normalizeAttr(
-      mapping["subGroupLv1"] ? props[mapping["subGroupLv1"]] : null,
-    );
     normalized.subGroupLv2 = normalizeAttr(
       mapping["subGroupLv2"] ? props[mapping["subGroupLv2"]] : null,
     );
@@ -399,7 +393,6 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       { header: "Status Kepemilikan", key: "landStatus", width: 20 },
       { header: "Komoditas", key: "cropType", width: 15 },
       { header: "Tahun Tanam", key: "plantingYear", width: 15 },
-      { header: "Gapoktan/KUD", key: "subGroupLv1", width: 20 },
       { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
       { header: "Blok", key: "blok", width: 12 },
       { header: "Revisi", key: "revision", width: 12 },
@@ -428,7 +421,6 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
         landStatus: row.landStatus || row._original.landStatus || "",
         cropType: row.cropType || row._original.cropType || "",
         plantingYear: row.plantingYear || row._original.plantingYear || "",
-        subGroupLv1: row.subGroupLv1 || row._original.subGroupLv1 || "",
         subGroupLv2: row.subGroupLv2 || row._original.subGroupLv2 || "",
         blok: row.blok || row._original.blok || "",
         revision: row.revision !== undefined ? row.revision : row._original.revision || 0,
@@ -468,7 +460,6 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       plantingYear: d.plantingYear,
       revision: d.revision,
       notes: d.notes,
-      subGroupLv1: d.subGroupLv1,
       subGroupLv2: d.subGroupLv2,
       blok: d.blok,
     }));
@@ -686,7 +677,6 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                   <TableHead>Status Kepemilikan</TableHead>
                   <TableHead>Komoditas</TableHead>
                   <TableHead>Tahun Tanam</TableHead>
-                  <TableHead>Gapoktan/KUD</TableHead>
                   <TableHead>Kelompok Tani</TableHead>
                   <TableHead>Blok</TableHead>
                   <TableHead>Revisi</TableHead>
@@ -720,7 +710,6 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
                       <TableCell className="font-mono">
                         {row.plantingYear || row._original.plantingYear || "—"}
                       </TableCell>
-                      <TableCell>{row.subGroupLv1 || "—"}</TableCell>
                       <TableCell>{row.subGroupLv2 || "—"}</TableCell>
                       <TableCell>{row.blok || "—"}</TableCell>
                       <TableCell className="font-mono">{row.revision}</TableCell>

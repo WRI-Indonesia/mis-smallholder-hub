@@ -11,7 +11,7 @@ const PACKAGES = [
 ];
 
 function parcel(id: string, area: number | null, opts: Partial<DetailRawFarmer["landParcels"][number]> = {}) {
-  return { id, area, subGroupLv1: null, subGroupLv2: null, blok: null, ...opts };
+  return { id, area, subGroupLv2: null, blok: null, ...opts };
 }
 
 /** Periods "YYYY-MM" berturut mulai start, sebanyak n — untuk kategori ketersediaan. */
@@ -25,13 +25,13 @@ function months(startYear: number, startMonth: number, n: number): string[] {
 }
 
 describe("buildFarmerGroupDetail (#171)", () => {
-  it("summary: hitung petani L/P, tanpa lahan, persil/luas, KT/Gapoktan/Blok distinct", () => {
+  it("summary: hitung petani L/P, tanpa lahan, persil/luas, KT/Blok distinct", () => {
     const farmers: DetailRawFarmer[] = [
       {
         id: "f1", farmerId: "F-001", name: "Andi", gender: "M",
         landParcels: [
-          parcel("p1", 1.5, { subGroupLv1: "KUD Maju", subGroupLv2: "KT A", blok: "Blok 1" }),
-          parcel("p2", 2.5, { subGroupLv1: "kud maju ", subGroupLv2: "KT B", blok: " blok 1 " }), // varian kapital/spasi → 1 Gapoktan, 1 blok
+          parcel("p1", 1.5, { subGroupLv2: "KT A", blok: "Blok 1" }),
+          parcel("p2", 2.5, { subGroupLv2: "KT B", blok: " blok 1 " }), // varian kapital/spasi → 1 blok
         ],
         trainingParticipants: [{ packageCode: "PAKET_1_BMP_PC_RSPO_NKT" }],
         productionRecords: [],
@@ -51,7 +51,6 @@ describe("buildFarmerGroupDetail (#171)", () => {
     expect(d.summary.farmersWithoutParcel).toBe(1);
     expect(d.summary.totalParcels).toBe(2);
     expect(d.summary.totalArea).toBe(4);
-    expect(d.summary.gapoktanCount).toBe(1); // "KUD Maju" ≡ "kud maju "
     expect(d.summary.kelompokTaniCount).toBe(2); // KT A + KT B
     expect(d.summary.blokCount).toBe(1); // "Blok 1" ≡ " blok 1 "
     expect(d.struktur.summary.totalPetani).toBe(1); // hanya f1 punya lahan

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, FileText, Download, Building2, Users, Layers, Sprout, Network, Printer, Search, SlidersHorizontal, MapPin } from "lucide-react";
+import { Check, ChevronsUpDown, FileText, Download, Building2, Users, Layers, Sprout, Printer, Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,9 +40,8 @@ interface Props {
 
 const UNKNOWN = "(tidak diketahui)";
 
-type ColKey = "gapoktan" | "kelompokTani" | "totalPetani" | "totalLahan" | "totalLuas";
+type ColKey = "kelompokTani" | "totalPetani" | "totalLahan" | "totalLuas";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
-  { key: "gapoktan", label: "Gapoktan/KUD" },
   { key: "kelompokTani", label: "Kelompok Tani" },
   { key: "totalPetani", label: "Total Petani" },
   { key: "totalLahan", label: "Total Lahan" },
@@ -58,9 +57,9 @@ export function KelompokTaniReportClient({ districts }: Props) {
   const [groupComboOpen, setGroupComboOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  // Kolom yang bisa disembunyikan (mis. Gapoktan/KUD untuk Lembaga tanpa level itu).
+  // Kolom yang bisa disembunyikan.
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(
-    new Set<ColKey>(["gapoktan", "kelompokTani", "totalPetani", "totalLahan", "totalLuas"]),
+    new Set<ColKey>(["kelompokTani", "totalPetani", "totalLahan", "totalLuas"]),
   );
   const show = (k: ColKey) => visibleCols.has(k);
   const toggleCol = (k: ColKey) =>
@@ -127,7 +126,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
     const q = search.trim().toLowerCase();
     if (!q) return reportData.rows;
     return reportData.rows.filter((r) =>
-      [r.lembagaTani, r.gapoktan ?? UNKNOWN, r.kelompokTani ?? UNKNOWN]
+      [r.lembagaTani, r.kelompokTani ?? UNKNOWN]
         .some((v) => v.toLowerCase().includes(q)),
     );
   }, [reportData, search]);
@@ -145,14 +144,13 @@ export function KelompokTaniReportClient({ districts }: Props) {
   }, [filteredRows]);
 
   // Kolom teks yang tampil (untuk colSpan footer & kolom kosong pencarian).
-  const textColCount = 1 + (show("gapoktan") ? 1 : 0) + (show("kelompokTani") ? 1 : 0); // Lembaga + opsional
+  const textColCount = 1 + (show("kelompokTani") ? 1 : 0); // Lembaga + opsional
   const numericColCount = (show("totalPetani") ? 1 : 0) + (show("totalLahan") ? 1 : 0) + (show("totalLuas") ? 1 : 0);
   const visibleColCount = 1 + textColCount + numericColCount; // No + teks + numerik
 
   const buildExportColumns = () => [
     { header: "No", key: "no" },
     { header: "Lembaga Petani", key: "lembagaTani" },
-    ...(show("gapoktan") ? [{ header: "Gapoktan/KUD", key: "gapoktan" }] : []),
     ...(show("kelompokTani") ? [{ header: "Kelompok Tani", key: "kelompokTani" }] : []),
     ...(show("totalPetani") ? [{ header: "Total Petani", key: "totalPetani" }] : []),
     ...(show("totalLahan") ? [{ header: "Total Lahan", key: "totalLahan" }] : []),
@@ -171,7 +169,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
     const data: Record<string, string | number>[] = filteredRows.map((row, idx) => ({
       no: idx + 1,
       lembagaTani: row.lembagaTani,
-      gapoktan: displayOrUnknown(row.gapoktan),
       kelompokTani: displayOrUnknown(row.kelompokTani),
       totalPetani: row.totalPetani,
       totalLahan: row.totalLahan,
@@ -181,7 +178,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
     data.push({
       no: "",
       lembagaTani: "Total",
-      gapoktan: "",
       kelompokTani: "",
       totalPetani: filteredTotals.totalPetani,
       totalLahan: filteredTotals.totalLahan,
@@ -202,7 +198,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
     const data: Record<string, string | number>[] = filteredRows.map((row, idx) => ({
       no: idx + 1,
       lembagaTani: row.lembagaTani,
-      gapoktan: displayOrUnknown(row.gapoktan),
       kelompokTani: displayOrUnknown(row.kelompokTani),
       totalPetani: formatNumber(row.totalPetani),
       totalLahan: formatNumber(row.totalLahan),
@@ -212,7 +207,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
     data.push({
       no: "",
       lembagaTani: "Total",
-      gapoktan: "",
       kelompokTani: "",
       totalPetani: formatNumber(filteredTotals.totalPetani),
       totalLahan: formatNumber(filteredTotals.totalLahan),
@@ -245,7 +239,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
   const summaryCards = reportData
     ? [
         { label: "Lembaga Petani", value: formatNumber(reportData.summary.totalLembagaTani), icon: Building2, badge: "Lembaga", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-        { label: "Gapoktan/KUD", value: formatNumber(reportData.summary.totalGapoktan), icon: Network, badge: "Gapoktan/KUD", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" },
         { label: "Kelompok Tani", value: formatNumber(reportData.summary.totalKelompokTani), icon: Layers, badge: "KT", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
         { label: "Total Petani", value: formatNumber(reportData.summary.totalPetani), icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
         { label: "Total Lahan", value: formatNumber(reportData.summary.totalLahan), icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
@@ -352,7 +345,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Lembaga / Gapoktan/KUD / KT..."
+                  placeholder="Lembaga / KT..."
                   className="w-[240px] h-9 pl-8"
                 />
               </div>
@@ -436,7 +429,7 @@ export function KelompokTaniReportClient({ districts }: Props) {
             <div className="space-y-1">
               <h3 className="font-semibold text-lg">Tidak Ada Data Kelompok Tani</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Belum ada lahan aktif dengan data Gapoktan/KUD atau Kelompok Tani untuk cakupan yang dipilih.
+                Belum ada lahan aktif dengan data Kelompok Tani untuk cakupan yang dipilih.
               </p>
             </div>
           </CardContent>
@@ -448,7 +441,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
               <tr className="bg-muted/70 border-b-2 border-border">
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">No</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Lembaga Petani</th>
-                {show("gapoktan") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Gapoktan/KUD</th>}
                 {show("kelompokTani") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Kelompok Tani</th>}
                 {show("totalPetani") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Petani</th>}
                 {show("totalLahan") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Lahan</th>}
@@ -467,11 +459,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
                   <tr key={row.key} className="border-b last:border-b-0 hover:bg-muted/30">
                     <td className="px-3 py-2 text-muted-foreground tabular-nums">{idx + 1}</td>
                     <td className="px-3 py-2 font-medium whitespace-nowrap">{row.lembagaTani}</td>
-                    {show("gapoktan") && (
-                      <td className={cn("px-3 py-2 whitespace-nowrap", row.gapoktan == null && "italic text-muted-foreground")}>
-                        {displayOrUnknown(row.gapoktan)}
-                      </td>
-                    )}
                     {show("kelompokTani") && (
                       <td className={cn("px-3 py-2 whitespace-nowrap", row.kelompokTani == null && "italic text-muted-foreground")}>
                         {displayOrUnknown(row.kelompokTani)}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, ChevronRight, FileText, Download, Network, Layers, Users, Sprout, MapPin, Printer } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronRight, FileText, Download, Layers, Users, Sprout, MapPin, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,45 +88,21 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
     new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
   const displayOrUnknown = (v: string | null) => v ?? UNKNOWN;
 
-  // Auto-sembunyikan level Gapoktan/KUD bila Lembaga terpilih tak punya sama sekali.
-  const hasGapoktan = useMemo(
-    () => (reportData ? reportData.gapoktanList.some((g) => g.gapoktan !== null) : false),
-    [reportData],
-  );
-
-  // Section top-level: Gapoktan (3 tingkat) atau langsung KT (2 tingkat, auto-hide).
+  // Section top-level = tiap Kelompok Tani (hierarki Gapoktan dihapus #189).
   const sections = useMemo(() => {
     if (!reportData) return [];
-    if (hasGapoktan) {
-      return reportData.gapoktanList.map((g, i) => ({
-        key: `g${i}`,
-        label: g.gapoktan,
-        isNull: g.gapoktan == null,
-        kts: g.kelompokTaniList,
-        stats: [
-          `${formatNumber(g.totalKelompokTani)} KT`,
-          `${formatNumber(g.totalPetani)} Petani`,
-          `${formatNumber(g.totalLahan)} Lahan`,
-          `${formatLuas(g.totalLuas)} Ha`,
-        ],
-        flatKt: false as const,
-      }));
-    }
-    // Tanpa Gapoktan → tiap KT jadi section top-level.
-    const only = reportData.gapoktanList[0];
-    return (only?.kelompokTaniList ?? []).map((kt, i) => ({
+    return reportData.kelompokTaniList.map((kt, i) => ({
       key: `k${i}`,
       label: kt.kelompokTani,
       isNull: kt.kelompokTani == null,
-      kts: [kt],
+      kt,
       stats: [
         `${formatNumber(kt.totalPetani)} Petani`,
         `${formatNumber(kt.totalLahan)} Lahan`,
         `${formatLuas(kt.totalLuas)} Ha`,
       ],
-      flatKt: true as const,
     }));
-  }, [reportData, hasGapoktan]);
+  }, [reportData]);
 
   const allKeys = useMemo(() => sections.map((s) => s.key), [sections]);
   const allOpen = allKeys.length > 0 && allKeys.every((k) => openKeys.has(k));
@@ -140,12 +116,11 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
     });
   const setAll = (open: boolean) => setOpenKeys(open ? new Set(allKeys) : new Set());
 
-  const sectionIcon = hasGapoktan ? Network : Layers;
+  const sectionIcon = Layers;
 
   // ─── Export (flat) ───
   const buildExportColumns = () => [
     { header: "No", key: "no" },
-    ...(hasGapoktan ? [{ header: "Gapoktan/KUD", key: "gapoktan" }] : []),
     { header: "Kelompok Tani", key: "kelompokTani" },
     { header: "Nama Petani", key: "name" },
     { header: "ID Petani", key: "farmerCode" },
@@ -157,20 +132,17 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
     if (!reportData) return [];
     const rows: Record<string, string | number>[] = [];
     let no = 0;
-    for (const g of reportData.gapoktanList) {
-      for (const kt of g.kelompokTaniList) {
-        for (const p of kt.petani) {
-          no += 1;
-          rows.push({
-            no,
-            gapoktan: displayOrUnknown(g.gapoktan),
-            kelompokTani: displayOrUnknown(kt.kelompokTani),
-            name: p.name,
-            farmerCode: p.farmerCode,
-            totalLahan: numeric ? p.totalLahan : formatNumber(p.totalLahan),
-            totalLuas: numeric ? Number(p.totalLuas.toFixed(2)) : formatLuas(p.totalLuas),
-          });
-        }
+    for (const kt of reportData.kelompokTaniList) {
+      for (const p of kt.petani) {
+        no += 1;
+        rows.push({
+          no,
+          kelompokTani: displayOrUnknown(kt.kelompokTani),
+          name: p.name,
+          farmerCode: p.farmerCode,
+          totalLahan: numeric ? p.totalLahan : formatNumber(p.totalLahan),
+          totalLuas: numeric ? Number(p.totalLuas.toFixed(2)) : formatLuas(p.totalLuas),
+        });
       }
     }
     return rows;
@@ -184,7 +156,6 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
     const data = flattenRows(true);
     data.push({
       no: "",
-      gapoktan: "",
       kelompokTani: "",
       name: "Total",
       farmerCode: "",
@@ -204,7 +175,6 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
     const data = flattenRows(false);
     data.push({
       no: "",
-      gapoktan: "",
       kelompokTani: "",
       name: "Total",
       farmerCode: "",
@@ -233,11 +203,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
   };
 
   const summaryCards = reportData
-    ? [
-        ...(hasGapoktan
-          ? [{ label: "Gapoktan/KUD", value: formatNumber(reportData.summary.totalGapoktan), icon: Network, badge: "Gapoktan/KUD", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" }]
-          : []),
-        { label: "Kelompok Tani", value: formatNumber(reportData.summary.totalKelompokTani), icon: Layers, badge: "KT", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+    ? [        { label: "Kelompok Tani", value: formatNumber(reportData.summary.totalKelompokTani), icon: Layers, badge: "KT", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
         { label: "Total Petani", value: formatNumber(reportData.summary.totalPetani), icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
         { label: "Total Lahan", value: formatNumber(reportData.summary.totalLahan), icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
         { label: "Total Luas", value: formatLuas(reportData.summary.totalLuas), icon: MapPin, badge: "Ha", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
@@ -349,7 +315,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
 
       {/* Summary Cards */}
       {reportData && (
-        <div className={cn("grid gap-4 sm:grid-cols-2 print:hidden", hasGapoktan ? "lg:grid-cols-5" : "lg:grid-cols-4")}>
+        <div className={"grid gap-4 sm:grid-cols-2 lg:grid-cols-4 print:hidden"}>
           {summaryCards.map((c) => (
             <Card key={c.label} className="shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -399,7 +365,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
             <div className="space-y-1">
               <h3 className="font-semibold text-lg">{isPending ? "Memuat laporan..." : "Pilih Lembaga Petani"}</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Pilih satu Lembaga Petani untuk menampilkan rincian Gapoktan/KUD, Kelompok Tani, dan daftar Petani.
+                Pilih satu Lembaga Petani untuk menampilkan rincian Kelompok Tani dan daftar Petani.
               </p>
             </div>
           </CardContent>
@@ -413,7 +379,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
             <div className="space-y-1">
               <h3 className="font-semibold text-lg">Tidak Ada Data</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Lembaga Petani ini belum memiliki lahan aktif dengan data Gapoktan/KUD atau Kelompok Tani.
+                Lembaga Petani ini belum memiliki lahan aktif dengan data Kelompok Tani.
               </p>
             </div>
           </CardContent>
@@ -448,28 +414,7 @@ export function KelompokTaniDetailReportClient({ districts }: Props) {
 
                 {/* Section content */}
                 {open && (
-                  <div className="divide-y">
-                    {s.flatKt
-                      ? <div className="p-3">{renderPetaniTable(s.kts[0])}</div>
-                      : s.kts.map((kt, ki) => (
-                          <div key={`${kt.kelompokTani ?? "null"}-${ki}`} className="px-4 py-3">
-                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span className={cn("text-sm font-medium", kt.kelompokTani == null && "italic text-muted-foreground")}>
-                                  {displayOrUnknown(kt.kelompokTani)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
-                                <span>{formatNumber(kt.totalPetani)} Petani</span>
-                                <span>{formatNumber(kt.totalLahan)} Lahan</span>
-                                <span>{formatLuas(kt.totalLuas)} Ha</span>
-                              </div>
-                            </div>
-                            {renderPetaniTable(kt)}
-                          </div>
-                        ))}
-                  </div>
+                  <div className="p-3">{renderPetaniTable(s.kt)}</div>
                 )}
               </div>
             );

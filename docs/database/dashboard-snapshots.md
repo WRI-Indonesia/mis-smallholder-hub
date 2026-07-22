@@ -241,6 +241,6 @@ Pola yang sama dipakai **card & badge sertifikasi (#169, 2026-07-16)**: `certSta
 
 > **Catatan generate (2026-07-14):** filter Distrik/Tahun pada Tools → Dashboard Snapshot **dinonaktifkan sementara** (`FILTERS_ENABLED=false` di `snapshot-client.tsx`) → snapshot selalu **Semua Data**. Kolom Distrik/Tahun di tabel daftar **default hidden** (toggleable). Set `true` untuk mengaktifkan kembali.
 
-- Detail/tabular KT/Gapoktan/Blok → **real-time** (Report #154; detail Petani #152).
+- Detail/tabular KT/Blok → **real-time** (Report #154; detail Petani #152).
 - Saat KT jadi tabel (**TD-014**), agregasi teks → query relasi.
-- Semantik distinct dashboard = per-(Lembaga × KT); Report #154 per-(Lembaga × Gapoktan × KT) — beda granularitas *by design*.
+- Semantik distinct dashboard = per-(Lembaga × KT); Report #154 per-(Lembaga × KT) — beda granularitas *by design*.

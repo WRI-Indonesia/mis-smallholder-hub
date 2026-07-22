@@ -33,7 +33,7 @@ Siapkan **ID Lahan** dan luasnya. ID Lahan harus unik untuk petani tersebut, dan
 + Umur tanaman menjelaskan banyak hal saat membaca produktivitas: sawit muda di bawah 4 tahun belum berbuah optimal, sementara di atas 25 tahun hasilnya menurun dan biasanya masuk rencana peremajaan.
 6. Centang **PSR** bila lahan sedang diremajakan — ini menjelaskan mengapa produksinya rendah atau nol.
 + Tanpa penanda ini, lahan PSR akan terbaca sebagai lahan bermasalah pada analisa ketersediaan data produksi, padahal nol hasil memang wajar selama peremajaan.
-7. Isi **Gapoktan/KUD** dan **Kelompok Tani** kalau petani tergabung di sub-kelompok. Dua kolom inilah yang menghasilkan angka Kelompok Tani di dashboard dan laporan.
+7. Isi **Kelompok Tani** kalau petani tergabung di sebuah kelompok. Kolom inilah yang menghasilkan angka Kelompok Tani di dashboard dan laporan.
 + Kedua level ini untuk sementara disimpan **per lahan**, belum sebagai tabel tersendiri. Tulis namanya persis sama untuk semua lahan di kelompok yang sama — perbedaan satu spasi atau huruf besar-kecil akan terhitung sebagai dua kelompok berbeda.
 8. Klik **Buat**.
 

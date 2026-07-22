@@ -18,7 +18,7 @@ Halaman: Lahan (/admin/master-data/parcels)
 │   └── Tombol: Kolom
 ├── Tabel
 │   ├── Kolom: ID Lahan, Blok, Nama Petani, ID Petani, Lembaga Petani,
-│   │          Gapoktan/KUD, Kelompok Tani, Luas (ha), Status Kepemilikan,
+│   │          Kelompok Tani, Luas (ha), Status Kepemilikan,
 │   │          Komoditas, Species, PSR, Tahun Tanam, Revisi, Status
 │   └── Aksi baris: Lihat, Edit, Nonaktifkan
 └── Dialog
@@ -41,7 +41,7 @@ Halaman: Lahan (/admin/master-data/parcels)
 | Filter Status | Select | SUPERADMIN saja |
 | Pencarian | Filter | `Cari ID Lahan atau nama petani...` (parcelId, nama & ID petani) |
 | Tombol `Tambah Lahan` | Tombol | CREATE — buka `ParcelFormModal` |
-| Tabel daftar | Tabel | Kolom: `ID Lahan`, `Blok` (hidden default), `Nama Petani`, `ID Petani`, `Lembaga Petani`, `Gapoktan/KUD` (hidden), `Kelompok Tani` (hidden), `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Species`, `PSR` (badge PSR/Non-PSR), `Tahun Tanam`, `Revisi`, `Status` (SUPERADMIN) |
+| Tabel daftar | Tabel | Kolom: `ID Lahan`, `Blok` (hidden default), `Nama Petani`, `ID Petani`, `Lembaga Petani`, `Kelompok Tani` (hidden), `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Species`, `PSR` (badge PSR/Non-PSR), `Tahun Tanam`, `Revisi`, `Status` (SUPERADMIN) |
 | Aksi baris | Tombol | Lihat → `/admin/master-data/parcels/{id}`; Edit → modal; Nonaktifkan → `toggleLandParcelActive` |
 | Ekspor | Tombol | `data-lahan` (termasuk kolom distrik) |
 | Tidak ada kartu KPI | — | Halaman ini langsung ke tabel |
@@ -62,5 +62,5 @@ Judul `Tambah Lahan` / `Edit Lahan`; aksi `createLandParcel` / `updateLandParcel
 | `PSR (Peremajaan Sawit Rakyat)` | checkbox `Lahan sedang PSR (replanting)` |
 | `Tahun Tanam` | number 1900–2100 |
 | `Revisi` | read-only (`otomatis bertambah saat disimpan`) |
-| `Gapoktan/KUD` (`subGroupLv1`), `Kelompok Tani` (`subGroupLv2`) | text |
+| `Kelompok Tani` (`subGroupLv2`) | text |
 | `Catatan` | textarea |

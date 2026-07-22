@@ -445,7 +445,7 @@ export async function getProductionReport(filters: ProductionReportFilters): Pro
   return buildProductionMatrix(matrixRecords, periods);
 }
 
-// ─── Report Kelompok Tani (#154) — agregat KT/Gapoktan turunan dari lahan (real-time) ───
+// ─── Report Kelompok Tani (#154) — agregat KT turunan dari lahan (real-time) ───
 
 // Dropdown Distrik/Lembaga dipakai bersama Report KT Summary & Detail
 // (menuKeys ganda: VIEW salah satunya cukup).
@@ -480,7 +480,6 @@ export async function getKelompokTaniReport(
     select: {
       farmerId: true,
       area: true,
-      subGroupLv1: true,
       subGroupLv2: true,
       farmer: {
         select: {
@@ -496,7 +495,6 @@ export async function getKelompokTaniReport(
     farmerGroupId: p.farmer.farmerGroupId,
     lembagaTani: p.farmer.farmerGroup.name,
     area: p.area,
-    subGroupLv1: p.subGroupLv1,
     subGroupLv2: p.subGroupLv2,
   }));
 
@@ -516,7 +514,7 @@ export async function getFarmerGroupsForLandParcelReport(districtId?: string | n
 /**
  * Report Lahan — roster datar 1 baris per lahan aktif (Lembaga | Petani |
  * ID Petani | ID Lahan | KT). RBAC 3-layer: `report-land-parcel` VIEW + scope
- * (`farmerRelationAccessFilter` via `AND`) + `isActive`. KT/Gapoktan = atribut
+ * (`farmerRelationAccessFilter` via `AND`) + `isActive`. KT = atribut
  * per-lahan (#146); select ramping tanpa `geometry` (#163).
  */
 export async function getLandParcelReport(
@@ -540,7 +538,6 @@ export async function getLandParcelReport(
     select: {
       id: true,
       parcelId: true,
-      subGroupLv1: true,
       subGroupLv2: true,
       blok: true,
       cropType: true,
@@ -568,7 +565,6 @@ export async function getLandParcelReport(
     farmerName: p.farmer.name,
     farmerGroupId: p.farmer.farmerGroupId,
     lembagaTani: p.farmer.farmerGroup.name,
-    subGroupLv1: p.subGroupLv1,
     subGroupLv2: p.subGroupLv2,
     blok: p.blok,
     cropType: p.cropType,
@@ -616,7 +612,7 @@ export async function getLandParcelReportGeometries(
 }
 
 /**
- * Report Kelompok Tani (Detail) — roster 1 Lembaga: hierarki Gapoktan/KUD → KT →
+ * Report Kelompok Tani (Detail) — roster 1 Lembaga: hierarki KT →
  * daftar Petani. RBAC 3-layer: `report-kelompok-tani-detail` VIEW + scope
  * (`farmerRelationAccessFilter` via `AND`) + `isActive`. Lembaga wajib & harus
  * berada dalam cakupan akses user; bila tak ada lahan, kembalikan roster kosong
@@ -651,7 +647,6 @@ export async function getKelompokTaniDetailReport(
     },
     select: {
       area: true,
-      subGroupLv1: true,
       subGroupLv2: true,
       farmer: { select: { id: true, farmerId: true, name: true } },
     },
@@ -662,7 +657,6 @@ export async function getKelompokTaniDetailReport(
     farmerCode: p.farmer.farmerId,
     farmerName: p.farmer.name,
     area: p.area,
-    subGroupLv1: p.subGroupLv1,
     subGroupLv2: p.subGroupLv2,
   }));
 

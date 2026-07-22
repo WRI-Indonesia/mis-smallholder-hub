@@ -154,7 +154,6 @@ export async function getFarmerGroupDetail(id: string) {
             id: true,
             parcelId: true,
             area: true,
-            subGroupLv1: true,
             subGroupLv2: true,
             blok: true,
             plantingYear: true,
@@ -193,7 +192,6 @@ export async function getFarmerGroupDetail(id: string) {
       landParcels: f.landParcels.map((p) => ({
         id: p.id,
         area: p.area,
-        subGroupLv1: p.subGroupLv1,
         subGroupLv2: p.subGroupLv2,
         blok: p.blok,
       })),
@@ -268,7 +266,6 @@ export async function getFarmerGroupDetail(id: string) {
         farmerCode: f.farmerId,
         farmerGroupName: group.name,
         kelompokTani: p.subGroupLv2,
-        gapoktan: p.subGroupLv1,
         blok: p.blok,
         area: p.area,
         geometry: p.geometry,
