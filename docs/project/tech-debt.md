@@ -4,7 +4,7 @@
 
 ## Summary
 
-Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **8 debt aktif**; TD-020…TD-025 seluruhnya dibuka & diselesaikan 2026-07-21 (TD-021 sebagian: hook URL-filter baru dipakai Dashboard Pelatihan), tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
+Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **8 debt aktif**; TD-020…TD-025 seluruhnya dibuka & diselesaikan 2026-07-21 (TD-021 sebagian: hook URL-filter baru dipakai Dashboard Pelatihan), tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani belum dimodelkan sebagai tabel — interim per-lahan sudah jalan; hierarki **final 3 level** diputuskan #189, refactor penuh menunggu data lengkap); selebihnya debt kualitas berukuran kecil–sedang.
 
 **Rekomendasi:**
 
@@ -12,7 +12,7 @@ Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua cel
 | --- | --- | --- |
 | **Jangka pendek** (sprint berjalan) | **TD-015** (`exportValue` DataTable) & **TD-008** (helper parsing angka form) — kerjakan menumpang saat menyentuh file terkait; **TD-002** (visual audit `text-white`) sekali jalan | Kecil, murah, mencegah silent-fail berulang (TD-015 sudah 2× menggigit di #160) |
 | **Jangka menengah** (1–2 sprint) | **TD-010 sisa** — pisah `error:string` + `fieldErrors` di tipe `ActionResult` (22 titik / 9 action / ~10 form); **TD-004** (i18n) bila jadi kebutuhan produk | Perubahan kontrak lintas form — butuh PR khusus ber-scope jelas, bukan tumpangan; i18n perlu keputusan produk dulu |
-| **Jangka panjang** (menunggu data & keputusan) | **TD-014** refactor hierarki penuh (Jalur B + B2: KT/Gapoktan jadi tabel, `FarmerGroup`→`FarmerInstitution`, export→rebuild→re-import) | Blocker: keputusan **3 vs 4 level** + data KT lengkap; interim per-lahan (#146/#150) sudah menopang report/dashboard/detail sampai saat itu |
+| **Jangka panjang** (menunggu data) | **TD-014** refactor hierarki penuh (Jalur B: **KT** jadi tabel, `FarmerGroup`→`FarmerInstitution`, export→rebuild→re-import) — **tanpa** entitas Gapoktan (3 level final #189) | Blocker: data KT lengkap (keputusan 3-vs-4-level **sudah final: 3**); interim per-lahan (#146/#150) sudah menopang report/dashboard/detail sampai saat itu |
 
 ---
 
