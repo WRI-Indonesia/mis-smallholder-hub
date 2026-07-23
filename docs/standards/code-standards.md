@@ -26,13 +26,13 @@ Identifier **wajib Bahasa Inggris**, dengan **pengecualian resmi** untuk kosakat
 | `pelatihan` | training | `computePelatihanDomain` |
 | `produksi` | production | `computeProduksiDomain` |
 | `lembaga petani` (entitas `FarmerGroup`) | farmer institution — level teratas hierarki | `FarmerGroup`, `farmerGroupId`, `kelompokTani`* |
-| `gapoktan` / `kelompok tani` (sub-level) | sub-kelompok — interim di `LandParcel` | `subGroupLv1` (Gapoktan), `subGroupLv2` (Kelompok Tani) |
+| `kelompok tani` (sub-level) | sub-kelompok — interim di `LandParcel` | `subGroupLv2` (Kelompok Tani) |
 | `persil` | parcel (unit lahan) | `totalPersil`, `totalPersilLahan` |
 | `paket` | training package | `pctPaket1`, prefix enum `PAKET_1_*` |
 
 Alasan: istilah ini adalah **kosakata domain proyek** (WRI Indonesia — data sawit rakyat) yang lebih jelas & konsisten dengan UI copy Bahasa Indonesia daripada terjemahan Inggris paksa. Rename massal ditolak karena melanggar prinsip **Surgical Changes** dan berisiko regresi lintas modul (dashboard/map/report). Nilai **enum DB** (`PAKET_1_*`, dll.) adalah **data**, bukan identifier — di luar aturan ini. Selain istilah di tabel, tetap gunakan Bahasa Inggris.
 
-> ⚠️ **Catatan hierarki (`*`):** hierarki domain = **Petani → Kelompok Tani (Gapoktan) → Lembaga Petani**. Identifier `FarmerGroup`/`kelompokTani` secara **semantik = Lembaga Petani** (level teratas); label UI lama "Kelompok Tani" adalah **mislabel** yang di-relabel ke "Lembaga Petani" (TD-013 / #147), sedangkan **identifier tetap** (rename massal ditolak). Sub-level **Kelompok Tani/Gapoktan** disimpan interim sebagai field denormalisasi di `LandParcel.subGroupLv2`/`subGroupLv1` (#146, **per-lahan**); pemodelan tabel penuh = TD-014.
+> ⚠️ **Catatan hierarki (`*`):** hierarki domain (final #189) = **Petani → Kelompok Tani → Lembaga Petani** (3 level; Gapoktan/KUD dihapus). Identifier `FarmerGroup`/`kelompokTani` secara **semantik = Lembaga Petani** (level teratas); label UI lama "Kelompok Tani" adalah **mislabel** yang di-relabel ke "Lembaga Petani" (TD-013 / #147), sedangkan **identifier tetap** (rename massal ditolak). Sub-level **Kelompok Tani** disimpan interim sebagai field denormalisasi di `LandParcel.subGroupLv2` (#146, **per-lahan**; `subGroupLv1`/Gapoktan di-drop #189); pemodelan tabel penuh = TD-014.
 
 ### Data Access & Soft Delete
 

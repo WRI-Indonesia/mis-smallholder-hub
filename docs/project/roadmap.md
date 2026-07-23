@@ -206,7 +206,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <summary><strong>MD-03</strong> · ✅ Done — Farmer</summary>
 
 - **Evidence:** `Farmer` model ✅, `src/server/actions/farmer.ts` (188 LOC) ✅, validation ✅, UI (list/detail/form) ✅, test ✅.
-- **#152 ✅ (2026-07-15):** detail Petani tampilkan Gapoktan/KUD + KT turunan dari lahan aktif (`lib/farmer-sub-groups.ts`).
+- **#152 ✅ (2026-07-15):** detail Petani tampilkan KT turunan dari lahan aktif (`lib/farmer-sub-groups.ts`).
 - **#172 ✅ kode (2026-07-16):** detail Petani = **profil 360° ber-Tabs** — header (avatar placeholder TD-017, badge Lembaga ber-link #171, breadcrumb = ID Petani) + 5 cards (Lahan+Luas, Produksi, Pelatihan n/paket, Kelengkapan Profil 5-cek, Produktivitas terakhir #166) + tabs Ringkasan/Lahan (tabel + peta shared + PDF Profil Lahan #134)/Pelatihan (checklist + riwayat pre→post)/Produksi (per tahun ber-persentase kelengkapan bulanan + bulanan collapsible + 4 kategori); action `getFarmerDetail` + pure lib (+4 unit); **sensor NIK & tanggal lahir di layar** (`lib/mask.ts`, +3 unit).
 - **Next step:** verifikasi visual owner → retro/close #172; field foto petani = TD-017.
 
@@ -418,9 +418,9 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <summary><strong>RPT-04</strong> · ✅ Done — Report: Kelompok Tani</summary>
 
 - **#154 ✅ (real-time):** **2 submenu**.
-- **Summary** `report-kelompok-tani` — agregat 1 baris per (Lembaga×Gapoktan/KUD×KT): distinct petani, jumlah lahan, total luas; filter Distrik/Lembaga opsional + search + **column selector** + 6 card.
-- **Detail** `report-kelompok-tani-detail` — roster per 1 Lembaga (Gapoktan/KUD→KT→Petani), **section collapsible** (default tutup) + **auto-hide** Gapoktan bila Lembaga tak punya.
-- Keduanya Excel + PDF. Pure `lib/report-kelompok-tani.ts`(+7) & `report-kelompok-tani-detail.ts`(+7); RBAC 3-layer; label "Gapoktan"→"Gapoktan/KUD". Read-only, tanpa migration.
+- **Summary** `report-kelompok-tani` — agregat 1 baris per (Lembaga×KT): distinct petani, jumlah lahan, total luas; filter Distrik/Lembaga opsional + search + **column selector** + 6 card.
+- **Detail** `report-kelompok-tani-detail` — roster per 1 Lembaga (KT→Petani), **section collapsible** (default tutup). (Level Gapoktan/KUD dihapus #189.)
+- Keduanya Excel + PDF. Pure `lib/report-kelompok-tani.ts`(+7) & `report-kelompok-tani-detail.ts`(+7); RBAC 3-layer; Read-only. Level Gapoktan/KUD dihapus #189 (Summary jadi Lembaga×KT; Detail flat KT→Petani).
 - **Next step:** Implement #154 completed.
 
 </details>
@@ -428,9 +428,9 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <details>
 <summary><strong>RPT-05</strong> · ✅ Done — Report: Lahan</summary>
 
-- **#177 ✅ (real-time):** submenu `report-land-parcel` — roster datar **1 baris = 1 lahan aktif**: Lembaga Petani | Nama Petani | ID Petani | ID Lahan | Kelompok Tani (+ Tahun Tanam & Luas default; Gapoktan/KUD, Blok, Komoditas, Species, PSR via **column selector**).
+- **#177 ✅ (real-time):** submenu `report-land-parcel` — roster datar **1 baris = 1 lahan aktif**: Lembaga Petani | Nama Petani | ID Petani | ID Lahan | Kelompok Tani (+ Tahun Tanam & Luas default; Blok, Komoditas, Species, PSR via **column selector**).
 - **#179 ✅ (revisi owner pasca-QC):** **Lembaga wajib** (laporan & cetakan per 1 Lembaga, search dihapus); **PDF landscape ber-halaman peta** — poligon lahan digambar vektor jsPDF (pola farm-passport), **label per ceklis** (No/Nama/ID Petani/ID Lahan/KT) **adaptif** (`fitLabelToBox`: horizontal → vertikal 90° → auto-scale lantai 0.55; fix posisi teks vertikal — jsPDF align pra-rotasi, anchor manual `verticalLabelAnchors` diverifikasi dari content stream); **grid index (atlas) fleksibel Baris × Kolom** (input bebas, baris maks 26 = label A–Z) → halaman ikhtisar ber-grid (A1, A2, …) + 1 halaman per sel berisi (sel kosong dilewati); **preview on-page (SVG)** dari helper layout yang sama dengan PDF; **Excel multi-sheet ber-gambar peta** (sheet Lahan + gambar index; satu sheet per sel + peta selnya, SVG→PNG); geometry di-fetch per-Lembaga terpisah dari payload list (#163).
-- KT/Gapoktan = atribut per-lahan `subGroupLv*` (#146/#152), normalisasi trim + distinct KT case-insensitive per Lembaga (pola #154); KT kosong tampil "-". Pure `lib/report-land-parcel.ts` + `report-land-parcel-pdf.ts` + `report-land-parcel-xlsx.ts` (**33 unit + 1 perf** termasuk verifikasi empiris jsPDF & workbook exceljs; #180: anti-tumpang label, skala batang + utara, mini-index sel); RBAC 3-layer. Read-only (migration `species`/`isPsr` tercatat di MD-04).
+- KT = atribut per-lahan `subGroupLv2` (#146/#152; Gapoktan dihapus #189), normalisasi trim + distinct KT case-insensitive per Lembaga (pola #154); KT kosong tampil "-". Pure `lib/report-land-parcel.ts` + `report-land-parcel-pdf.ts` + `report-land-parcel-xlsx.ts` (**33 unit + 1 perf** termasuk verifikasi empiris jsPDF & workbook exceljs; #180: anti-tumpang label, skala batang + utara, mini-index sel); RBAC 3-layer. Read-only (migration `species`/`isPsr` tercatat di MD-04).
 - **Next step:** Implement #177 + #179 completed.
 
 </details>
@@ -443,7 +443,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 - **#182 ✅ (statis):** menu top-level `help` ("Bantuan", `/admin/help`, order 9) + seed 5 role VIEW (termasuk DONOR #187); **Server Component statis** (tanpa query DB/server action/`"use client"`), guard `requirePermission("help")`.
 - **#184 ✅ sub-halaman + Markdown + pencarian**: rute **3 tingkat** — `/admin/help` (indeks 6 kartu bab) → `/admin/help/[chapter]` (ikhtisar topik) → `/admin/help/[chapter]/[topic]` (**satu topik = satu halaman**, siap memuat langkah/tutorial detail) + tombol topik sebelumnya/berikutnya lintas bab. **Konten pindah ke Markdown** `src/content/help/**.md` (di-bundle webpack `asset/source` seperti `.csv`; frontmatter `title`/`icon`/`intro`) — editable lewat GitHub tanpa menyentuh JSX. **Parser subset sendiri tanpa dependency** (`lib/markdown-lite.ts`: heading/paragraf/list/definisi/inline + **gambar, video, sematan YouTube-Vimeo, dan aset S3 privat `s3://key` yang di-presign per-request** #185) dirender ke elemen React (tanpa `dangerouslySetInnerHTML`). **Pencarian client-side** atas indeks ringan (judul+isi) → hasil menautkan langsung ke halaman topik. +12 unit test.
 - **#183 ✅ tree view per bab**: navigasi kiri **sticky** ber-`<details>` native (buka/tutup tanpa JS — tetap Server Component), **6 bab → 11 topik** ber-penomoran `bab.topik` (mis. 3.2 Peta) agar mudah dirujuk; konten dikelompokkan per bab (header bab + kartu topik ber-anchor), responsif stack di layar kecil.
-- **11 topik**: istilah domain (Petani→KT→Gapoktan/KUD→Lembaga Petani, lahan, produksi), masuk & akun, hak akses & cakupan data per role, Master Data (soft delete/restore, revisi lahan, sensor NIK), Bulk Upload (Excel & Shapefile, baris gagal, data ganda), Dashboard (+kenapa snapshot), Peta, Report (6 laporan incl. grid peta Laporan Lahan), Data Analyst, Tools, FAQ/kendala.
+- **11 topik**: istilah domain (Petani→KT→Lembaga Petani, lahan, produksi), masuk & akun, hak akses & cakupan data per role, Master Data (soft delete/restore, revisi lahan, sensor NIK), Bulk Upload (Excel & Shapefile, baris gagal, data ganda), Dashboard (+kenapa snapshot), Peta, Report (6 laporan incl. grid peta Laporan Lahan), Data Analyst, Tools, FAQ/kendala.
 - Konten diturunkan dari `docs/product/*` — perbarui bersama saat alur modul berubah. Tanpa migration; read-only.
 - **Next step:** ✅ isi materi tutorial per topik dikerjakan di **HELP-02**; sisa kandidat = editor konten non-developer (CMS-01).
 
@@ -564,7 +564,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <details>
 <summary><strong>OPS-01</strong> · 🟠 Partial — Testing</summary>
 
-- **Evidence:** Vitest: **43 test files / 663 passing tests** ✅; coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02/03)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) + **report-kelompok-tani (Summary/Detail) #154** + dashboard KT count #148 + parcel-bulk-mapping (#150) + farmer-sub-groups (#152) + agregasi farmer-group (#163) + **dashboard-bmp (#166)** + farmer-group-detail (#171) + farmer-detail (#172) + **produktivitas peta BMP (#174)** + **report-lahan/layout peta/grid/PDF/Excel (#177/#179, termasuk verifikasi empiris jsPDF & workbook exceljs)** + perf layout peta 2k lahan + **dashboard-training (DASH-06)** + **dashboard-asymmetry (invarian pembilang ≤ penyebut lintas 3 dashboard, 2026-07-21)** + **help-content (parser 2 tingkat + penjaga kelengkapan materi tutorial, HELP-02)**.
+- **Evidence:** Vitest: **44 test files / 673 passing tests** ✅ (verifikasi `npx vitest run`, 2026-07-23); coverage: auth/RBAC/menu/menu-filter/menu-tree/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map (MAP-01/02/03)/map-geo/firms/middleware/perf + rbac-server-guards (#125) + access-context lintas-scope (#127) + profile/addParticipants validation (#130) + **report-kelompok-tani (Summary/Detail) #154** + dashboard KT count #148 + parcel-bulk-mapping (#150) + farmer-sub-groups (#152) + agregasi farmer-group (#163) + **dashboard-bmp (#166)** + farmer-group-detail (#171) + farmer-detail (#172) + **produktivitas peta BMP (#174)** + **report-lahan/layout peta/grid/PDF/Excel (#177/#179, termasuk verifikasi empiris jsPDF & workbook exceljs)** + perf layout peta 2k lahan + **dashboard-training (DASH-06)** + **dashboard-asymmetry (invarian pembilang ≤ penyebut lintas 3 dashboard, 2026-07-21)** + **help-content (parser 2 tingkat + penjaga kelengkapan materi tutorial, HELP-02)**.
 - **Next step:** RPT-03 (#132) ✅, MAP-02 (#144) ✅, RPT-04 (#154) ✅ & DASH-05 (#148) ✅ tercakup; gap tersisa: integration test route hotspot.
 
 </details>
