@@ -38,10 +38,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Sisa (follow-up khusus):** `error: fieldErrors` (objek) di 22 titik/9 action — perlu pisah `error:string` + `fieldErrors` di tipe `ActionResult` + ~10 form (lihat analisa #129).
 - **Evidence:** Audit 2026-07-10 §3.4 & LOW · **Issue #129/#130** · **Owner:** Backend Lead.
 
-### TD-014 · 🟡 Interim jalan — Level "Kelompok Tani (Gapoktan)" belum dimodelkan (P2)
+### TD-014 · 🟡 Interim jalan — Level "Kelompok Tani" belum dimodelkan sebagai tabel (P2)
 
 - **Masalah:** level tengah antara Petani dan Lembaga Petani belum dimodelkan; data KT belum dimasukkan (per owner). Butuh model baru KT, re-parenting `Farmer` (Petani → KT, KT → Lembaga) via migrasi, plus dampak RBAC scope, districtId, dan **tabrakan identifier** (`FarmerGroup` kini dipakai untuk Lembaga). **Bukan refactor & bukan kosmetik — ini fitur/skema baru.**
-- **Status interim (jalan):** field denormalisasi `LandParcel.subGroupLv1` (Gapoktan) + `subGroupLv2` (Kelompok Tani) **per-lahan** (#146) + input manual & bulk shapefile (#150 ✅) — jalur input interim lengkap.
+- **Status interim (jalan):** field denormalisasi `LandParcel.subGroupLv2` (Kelompok Tani) **per-lahan** (#146) + input manual & bulk shapefile (#150 ✅) — jalur input interim lengkap. (Level `subGroupLv1`/Gapoktan **di-drop #189** → hierarki final 3 level.)
 - **Target akhir (diperbarui 2026-07-22, #189):** hierarki final **3 level** — **Gapoktan/KUD dibatalkan** (kolom `sub_group_lv1` di-drop). Jalur B tetap: rename `FarmerGroup`→`FarmerInstitution` + entitas **KT** sebagai tabel (tanpa entitas Gapoktan); eksekusi **export → rebuild → re-import** saat data lengkap.
 - **Blocker:** keputusan 3-vs-4-level **sudah terjawab (3 level, #189)**; sisa: konfirmasi padanan Inggris + eksekusi re-modelling KT jadi tabel saat data siap.
 - **Owner:** Product + Backend Lead.
