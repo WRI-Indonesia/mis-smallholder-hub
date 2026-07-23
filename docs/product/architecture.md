@@ -1,131 +1,176 @@
 # Produk — Arsitektur & Navigasi
 
-> Bagian dari dokumentasi **Produk**. Indeks: [../README.md](../README.md) · Terkait: [access-context.md](./access-context.md) · [crud-flows.md](./crud-flows.md) · [role-flows.md](./role-flows.md) · [module-status.md](./module-status.md)
+> Bagian dari dokumentasi **Produk**. Indeks: [../README.md](../README.md) · Terkait: [access-context.md](./access-context.md) · [crud-flows.md](./crud-flows.md) · [role-flows.md](./role-flows.md) · [module-status.md](./module-status.md) · [pages/](./pages/README.md)
 
-## Quick Reference
+**Isi halaman ini:** peta navigasi aplikasi admin — lapis route, role, struktur menu sidebar, dan status tiap sub menu dalam satu baris.
 
-| Category | Status | Details |
-|----------|--------|---------|
-| **Test Status** | ✅ **43 files / 663 tests passing** | Coverage: auth, RBAC, menu, menu-filter, user, region, farmer, land parcel, training, production, bulk upload, report, dashboard, data-analyst, data-completeness, map (MAP-01/02/03), map-geo, firms, middleware, perf, dashboard-bmp, dashboard-training |
-| **Completed Modules** | ✅ **33 phases done** | Platform (1-7), MD (1-6), DASH-01…06, RPT-01…04, BULK (1, 3, 4), DA-01/02, MAP-01/02 |
-| **Server Actions** | ✅ 25 file | dashboard, dashboard-bmp, dashboard-training, snapshot, snapshot-bmp, report, map, user, user-data-access, user-menu-access, menu, region, role-permission, farmer-group, farmer, land-parcel, bulk-upload, bulk-upload-parcel, bulk-upload-production, training, production, upload, profile, data-analyst, data-completeness |
-| **Prisma Models** | ✅ 11 file schema / **20 model** | User, Menu, RBAC (5 model), Geography (4), FarmerGroup, Farmer, LandParcel, Training (3), ProductionRecord, MainDashboardSnapshot, BmpDashboardSnapshot (#166) — MAP-01 read-only (no new table) |
-| **Priority Next** | 🎯 **BULK-02 / #69 / #143** | Kandidat berikut: Bulk Upload Region (#70) & Lembaga Petani (#69), Analisa Data Produksi (#143), #171 Fase 2 (menunggu data). Selesai 2026-07-16: #169 sertifikasi, #170 form layout, #171 detail 360° Fase 1 |
+**Sumber data:** menu dari `prisma/seeds/data/menu.csv` · halaman dari `src/app/(admin)/admin/**`.
 
----
+## Cari di mana
 
-<details open>
-<summary><strong>Status Legend & Overview</strong></summary>
+| Yang dicari | Dokumen |
+|---|---|
+| Detail per halaman (objek, kolom, tombol, pesan, guard) | [pages/](./pages/README.md) — satu file per halaman |
+| Status delivery per fase (**kanonis**) | [../project/roadmap.md](../project/roadmap.md) · sprint berjalan: [../project/sprint.md](../project/sprint.md) |
+| Stack, struktur folder, request flow | [../standards/architecture.md](../standards/architecture.md) |
+| Aturan hak akses & scope data | [role-flows.md](./role-flows.md) · [access-context.md](./access-context.md) · [../standards/rbac.md](../standards/rbac.md) |
 
-## Status Legend
+> ⚠️ **Angka & status di halaman ini adalah cerminan**, bukan sumber kebenaran. Perbarui [../project/roadmap.md](../project/roadmap.md) lebih dulu.
 
-| Symbol | Status | Keterangan |
-|--------|--------|-----------|
-| ✅ | Done | Implementasi selesai dan terverifikasi |
-| 🟠 | Partial | Sebagian implementasi ada |
-| 🔲 | Planned | Masuk roadmap tetapi belum dimulai |
-| 🔴 | Blocked | Terhambat dependency atau keputusan |
-
-## System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Public Routes                             │
-│  ✅ Home  │  🔲 Community  │  🔲 Knowledge  │  ✅ Login      │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                    ┌─────────┴─────────┐
-                    │   Authentication   │
-                    └─────────┬─────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-    ┌───▼───┐          ┌──────▼──────┐      ┌──────▼──────┐
-    │ SUPER │          │   ADMIN     │      │  OPERATOR   │
-    │ ADMIN │          │  (District) │      │  (KT-level) │
-    └───┬───┘          └──────┬──────┘      └──────┬──────┘
-        │                     │                     │
-        ├─ Dashboard (All)    ├─ Dashboard (Filt)  ├─ Dashboard (View)
-        ├─ Master Data (All)  ├─ Master Data (Filt)├─ Master Data (CRUD)
-        ├─ Settings (Full)    ├─ Settings (Limited)│
-        ├─ Report (All)       ├─ Report (Filtered) ├─ Report (View)
-        ├─ Bulk Upload (All)  ├─ Bulk Upload (Scope)
-        └─ Tools (All)        │                     │
-                              │              ┌──────▼──────┐
-                              │              │ MANAGEMENT  │
-                              │              │ (Read-only) │
-                              │              └──────┬──────┘
-                              │                     │
-                              │              ├─ Dashboard (View All)
-                              │              └─ Report (View All)
-                              │
-```
-
-</details>
+Legenda status: ✅ Done · 🟠 Partial · 🔲 Planned · 🔴 Blocked — definisi lengkap di [roadmap.md § Status Definition](../project/roadmap.md).
 
 ---
 
-<details>
-<summary><strong>Navigation Structure & Menu Hierarchy</strong></summary>
+## 1. Peta Sistem
 
-## Admin Sidebar Menu (Compact View)
+### Lapis route
 
-> **Perilaku sidebar:** header punya **filter pencarian menu** (input, fokus via Ctrl/⌘K, hapus via Esc/✕) yang memfilter pohon menu secara live + tombol **Tutup semua** (collapse-all). Menu induk otomatis tampil sebagai **container** bila salah satu anaknya ter-grant meski induk tak di-grant (lihat `../standards/rbac.md` §RBAC Permission Inheritance). Pencarian hanya menampilkan menu sesuai hak akses user.
+| Lapis | Route | Guard |
+|---|---|---|
+| Publik | `/` (Home ✅), `/community` 🔲, `/knowledge` 🔲 | — |
+| Autentikasi | `/login` ✅ · `/api/auth/[...nextauth]` | NextAuth (Credentials) |
+| Admin | `/admin/**` | `middleware.ts` (sesi) → `requirePermission(menuKey)` per halaman |
+| Proxy tile | `/api/map-overlay/[key]` (SIGAP KLHK) · `/api/map-hotspot` (NASA FIRMS) | auth-guarded, same-origin |
 
-```
-📊 Dashboard (✅ DASH-01)
-   ├── ✅ Main Dashboard — Snapshot-backed: 14 summary cards (incl. Petani L/P, Total Kelompok Tani #148, 3 card sertifikasi RSPO/ISPO/SAP-MAP #169) + filter Distrik/KT/Tahun + peta MapLibre 60:40 dengan info panel (cluster, label nama KT pada titik non-cluster, dark/light/hybrid, search KT, Lihat Semua) + info panel per-Lembaga (badge sertifikasi di bawah kode #169; konten 2 kolom statistik | cakupan pelatihan)
-   ├── ✅ BMP Dashboard (Produksi) (DASH-04, #166) — Snapshot-backed: 4 card produksi (Produksi, Produktivitas Ton/Ha per tahun, Lahan ber-data, Petani melapor) + combo chart produksi/% lahan melapor + panel Ketersediaan Data Produksi 4 kategori (reuse MAP-02) + filter global Distrik/Lembaga/Kategori/Tahun client-side
-   └── ✅ Dashboard Pelatihan (DASH-06) — **Live query (bukan snapshot)**: 5 KPI card (Cakupan Petani Terlatih terhadap seluruh petani aktif, Total Kegiatan, Kehadiran vs Petani Unik, Partisipasi Perempuan, Rata-rata Kenaikan Skor) + matriks cakupan **Lembaga × Paket** (heatmap 5 tingkat, sel 0% merah, sortable, collapsible) + chart tren stacked-bar kehadiran per paket (12 bulan bila Tahun dipilih, per-tahun bila Semua Tahun) + panel efektivitas pre/post (menandai skor turun = indikasi salah input) + panel kualitas data ber-deep-link ke Master Data Pelatihan; filter Kategori/Distrik/Lembaga/Tahun di-slice client-side
+Semua akses data lewat **Server Actions** (`src/server/actions/`) dengan 3 lapis pengaman: permission menu → access context → soft delete. Tidak ada REST API selain NextAuth & proxy tile.
 
-📁 Master Data
-   ├── ✅ Lembaga Petani (MD-02) — List/CRUD + detail profil 360° ber-Tabs (cards + struktur KT + peta sebaran lahan + pelatihan + produksi, #171)
-   ├── ✅ Petani (MD-03) — List/CRUD + detail profil 360° ber-Tabs (cards + lahan/peta + PDF Profil Lahan + checklist pelatihan + produksi, #172)
-   ├── ✅ Lahan / Parcels (MD-04) — Map + polygon + geolocation + Shapefile bulk upload
-   ├── ✅ Pelatihan / Training (MD-05) — Activities + participants + evidence
-   ├── ✅ Produksi / Production (MD-06) — Period + yield tracking
-   ├── 🔲 Staff (MD-07)
-   ├── 🔲 HCV (MD-08)
-   ├── 🔲 BUSDEV (MD-09)
-   ├── 🔲 IMPACT (MD-10)
-   └── 🔲 Workplan (MD-11)
+### Role & cakupan
 
-📉 Data Analyst (✅ DA-01, DA-02)
-   ├── ✅ Ringkasan Petani (DA-01) — Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel export
-   └── ✅ Analisa Ketersediaan Data (DA-02) — Pilih distrik → KT → Analisa: Index Ketersediaan Data + 5 section collapsible (Profil KT, Petani, Lahan, Pelatihan, Produksi) deteksi anomali & data belum lengkap (NIK kosong/invalid, petani tanpa lahan, belum pelatihan, tanpa produksi, dll) + Excel multi-sheet
+Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" ditentukan `getAccessContext()`, bukan role itu sendiri (lihat [access-context.md](./access-context.md)).
 
-📈 Report (✅ RPT-01…04)
-   ├── ✅ Laporan Petani (RPT-01) — Cascade filter (mandatory) + Excel & PDF export
-   ├── ✅ Laporan Pelatihan (RPT-02) — Activities, unique participants & coverage
-   ├── ✅ Laporan Produksi (RPT-03) — Matriks bulanan per petani/lahan + Excel & PDF export (#132)
-   ├── ✅ Kelompok Tani (Summary) (RPT-04) — Agregat real-time Lembaga×KT + column selector + Excel & PDF (#154)
-   └── ✅ Kelompok Tani (Detail) (RPT-04) — Roster per Lembaga: KT→Petani collapsible + Excel & PDF (#154)
+| Role | Scope data | Menu yang diakses |
+|---|---|---|
+| **SUPERADMIN** | `ALL` (bypass semua guard) | Semua menu, semua aksi |
+| **ADMIN** | `BY_DISTRICT` (dari `UserProvince`/`UserDistrict`) | Dashboard, Master Data, Report, Bulk Upload, Tools, Map, Settings (terbatas) |
+| **OPERATOR** | `BY_FARMER_GROUP` (dari `UserFarmerGroup`) | Dashboard (VIEW), Master Data (CRUD dalam scope), Report (VIEW), Map |
+| **MANAGEMENT** | `ALL` (read-only) | Dashboard, Report, Map, Tools (snapshot view-only) |
+| **DONOR** (#187) | `ALL` atau ter-scope bila di-assign | Dashboard, Report, Map, Bantuan — **VIEW-only** |
 
-📤 Bulk Upload
-   ├── ✅ Bulk Upload Petani (BULK-03) — Excel mapping + validation + preview
-   ├── ✅ Bulk Upload Produksi (BULK-04) — Excel mapping + period/harvest validation + preview
-   ├── ✅ Bulk Upload Lahan (MD-04) — ZIP Shapefile upload + column mapping (incl. Kelompok Tani, Blok #150) + geometry validation
-   ├── 🔲 Bulk Upload Lembaga Petani (#69) — CSV + validation (belum ada menu/route)
-   └── 🔲 Bulk Upload Region (BULK-02, #70) — Hierarchy validation (belum ada menu/route)
+> Tanpa assignment apa pun → mode `ALL`. Prioritas: SUPERADMIN → district (jika ada `UserProvince`/`UserDistrict`) → farmer group.
 
-⚙️ Settings
-   ├── ✅ User Management (PLATFORM-04) — CRUD + data access + menu override
-   ├── ✅ Role & Permission (PLATFORM-04) — Matrix C/V/E/D
-   ├── ✅ Menu Management (PLATFORM-05/07) — Dynamic sidebar (3-level support)
-   └── ✅ Region Settings (MD-01) — Tree hierarchy
+---
 
-🔧 Tools (🟠 TOOLS-01)
-   ├── ✅ Dashboard Snapshot (DASH-01) — Generate/list/detail snapshot + Excel export + soft delete
-   ├── ✅ Dashboard Snapshot BMP (DASH-04, #166) — Generate Semua Data + list + detail per-Lembaga + Excel export + soft delete
-   ├── 🟠 CLI lokal (bukan menu app): S3 get-link & PDF manager (`scripts/`, npm `s3:get-link` `pdf:*`); export CSV di `scripts/local/` (gitignored)
-   └── 🔲 GIS Utilities — Planned
+## 2. Struktur Menu Sidebar
 
-🗺️ Map (✅ MAP-01 · MAP-02 · MAP-03)
-   ├── ✅ Peta Lahan — Peta full-bleed MapLibre + panel filter floating collapsible (Provinsi→Distrik→KT + Muat Data, auto-collapse) + legend layer toggle (Point KT / Point centroid lahan / Area polygon lahan + count) + section **Peta Lainnya** (paling bawah panel) = overlay raster referensi SIGAP KLHK/Kemenhut (Kawasan Hutan, Pelepasan Kawasan Hutan, Fungsi Ekosistem Gambut, PIPPIB/Moratorium, Penutupan Lahan 2022) dengan toggle per-layer + slider transparansi, di-render di bawah layer data petani; tile di-proxy same-origin via `/api/map-overlay/[key]` (atasi CORS + TLS chain upstream) + section **Tambah Data GIS Lain** = user tambah layer sendiri via 3 mode (WMS URL / ZIP Shapefile / GeoJSON), Shapefile & GeoJSON diparse di browser (`shpjs`), toggle + hapus + auto-fit ke bounds layer baru; WMS user di-fetch langsung (butuh CORS). Klik feature → info popup: KT (identitas) · Lahan = accordion (Detail Lahan + Pelatihan Petani lazy-load + **Produksi data asli per-lahan** dengan **selektor Rata-rata/tahun**, grafik sumbu-Y kanan + tooltip hover) + tombol **"Profil Lahan"** → Farm Passport PDF (identitas, layout lahan/polygon, pelatihan, **produksi matriks tahun×bulan×Total**; header/file di-rebrand "Profil Lahan"). Produksi popup & PDF berbagi satu fetch (dedup). **Panel kanan Daftar Lahan** (toggle) = daftar lahan hasil Muat Data dengan **text search** (nama/ID petani/ID lahan) + tabel beraksi **zoom ke lahan** (kolom paling kiri). Legenda **collapsible**. Read-only atas FarmerGroup + LandParcel + section **Titik Api (Hotspot)** = layer NASA FIRMS VIIRS 375 m (toggle 24 jam / 5 hari, warna by kebaruan <24 jam merah / 1–5 hari oranye, popup detail + disclaimer "deteksi anomali panas", area **Riau**, tile via proxy same-origin `/api/map-hotspot` auth-guarded) + **tool Ruler** (kanan atas) = ukur jarak & luas **geodesik** (klik menaruh titik, label per-segmen, undo/hapus/Esc) + **label nama** (nama KT pada titik + nama petani pada poligon, **hanya bila teks muat di poligon** pada zoom aktif, wrap otomatis). Kontrol **basemap switcher + "Zoom ke semua data"** di kanan-bawah; panel filter/legend kiri **minimizable** ke ikon.
-   └── ✅ Peta BMP (MAP-02, #144) — peta tematik **Ketersediaan Data Produksi** per-lahan: tiap poligon lahan diwarnai **4 kategori** (Baik >24 bln berturut / Cukup 12–24 / Kurang 1–11 / Tidak ada 0) dari **run bulan berturut-turut terpanjang** `ProductionRecord.period`. Filter **Lembaga Petani wajib** (Provinsi/Distrik opsional). **Poligon-only** (NONE = outline saja, lainnya fill) + **label nama petani** + **popup accordion** (Detail Lahan + grafik **Produksi Bulanan** Rata-rata/per-tahun). **Panel kiri & kanan minimizable** ke ikon; kontrol basemap+"Zoom ke semua data" kanan-bawah. **Panel kanan** = matriks ketersediaan per lahan × bulan (blok true/false) + Zoom-to. **Ekspor:** "Cetak Peta dan Matriks Ketersediaan Data" (PDF landscape: hal.1 peta+legend, hal.2+ matriks sel=total kg/latar hijau) & **Download Excel** (+ kolom Status Ketersediaan Data & Luas Lahan Ha). Server `getBmpMapData` (RBAC 3 layer `map-bmp` VIEW + scope KT + `isActive`; groupBy `_sum` scoped, no N+1). Read-only, **tanpa tabel/migration baru**. **Layer 2 Produktivitas (MAP-03, #174)**: panel kiri 2 section layer ber-radio (satu aktif) — layer **Produktivitas (Ton/Ha) per persil** (Σ produksi tahun ÷ luas; selektor Tahun default terbaru + Rata-rata; 5 kelas warna, tanpa-data outline-only) dihitung realtime client-side dari payload yang sama; popup strip badge produktivitas + nilai di Detail Lahan; **cetak PDF & Excel WYSIWYG ikut layer aktif** (tabel Ton/Ha per lahan × tahun, sel berwarna kelas).
+9 menu top-level / 27 sub menu (`menu.csv`), urut sesuai kolom `order`:
 
-👤 Profile
-   └── ✅ Change Password
+```text
+📊 Dashboard          (3 sub)   📈 Report        (6 sub)
+📁 Master Data        (5 sub)   🔧 Tools         (2 sub)
+⚙️  Settings           (4 sub)   🗺️  Map           (2 sub)
+📤 Bulk Upload        (3 sub)   ❓ Bantuan       (halaman bab/topik, tanpa sub menu)
+📉 Data Analyst       (2 sub)
 ```
 
-</details>
+Halaman non-menu: `/admin/profile` (Ubah Kata Sandi) · `/login` · route publik. Lihat [pages/halaman-non-menu/](./pages/halaman-non-menu/README.md).
+
+---
+
+## 3. Rincian Sub Menu
+
+Kolom **Ringkasan** sengaja satu baris; detail lengkap ada di dokumen halaman yang ditautkan.
+
+### 📊 Dashboard — `/admin/dashboard`
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [Main Dashboard](./pages/dashboard/main-dashboard.md) | `dashboard-main` | DASH-01 | Snapshot-backed: 14 summary card (incl. Petani L/P, Total Kelompok Tani #148, 3 card sertifikasi RSPO/ISPO/SAP-MAP #169) + filter Distrik/KT/Tahun + peta MapLibre 60:40 ber-info panel |
+| ✅ [BMP Dashboard (Produksi)](./pages/dashboard/bmp-dashboard-produksi.md) | `dashboard-bmp` | DASH-04 (#166) | Snapshot-backed: 4 card produksi + combo chart produksi/% lahan melapor + panel Ketersediaan Data 4 kategori + filter client-side |
+| ✅ [Dashboard Pelatihan](./pages/dashboard/dashboard-pelatihan.md) | `dashboard-training` | DASH-06 | **Live query (bukan snapshot)**: 5 KPI + matriks cakupan Lembaga × Paket + tren stacked-bar + panel efektivitas pre/post + panel kualitas data ber-deep-link |
+
+### 📁 Master Data — `/admin/master-data`
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [Lembaga Petani](./pages/master-data/lembaga-petani/README.md) | `master-data-groups` | MD-02 | List/CRUD + detail profil 360° ber-Tabs (cards, struktur KT, peta sebaran lahan, pelatihan, produksi) (#171) |
+| ✅ [Petani](./pages/master-data/petani/README.md) | `master-data-farmers` | MD-03 | List/CRUD + detail profil 360° ber-Tabs (cards, lahan/peta, PDF Profil Lahan, checklist pelatihan, produksi) (#172) |
+| ✅ [Pelatihan](./pages/master-data/pelatihan/README.md) | `master-data-training` | MD-05 | Kegiatan + peserta (pre/post-test) + unggah bukti ke S3 |
+| ✅ [Lahan](./pages/master-data/lahan/README.md) | `master-data-parcels` | MD-04 | Peta + poligon + geolocation + revision tracking |
+| ✅ [Produksi](./pages/master-data/produksi/README.md) | `master-data-production` | MD-06 | Periode + panen ke-n + validasi duplikat |
+
+Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · HCV (MD-08) · BUSDEV (MD-09) · IMPACT (MD-10) · Workplan (MD-11).
+
+### ⚙️ Settings — `/admin/settings`
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [User Management](./pages/settings/user-management.md) | `settings-users` | PLATFORM-04 | CRUD user + data access assignment + override menu per-user |
+| ✅ [Menu Management](./pages/settings/menu-management.md) | `settings-menu` | PLATFORM-05/07 | Sidebar dinamis, hierarki maks. 3 level |
+| ✅ [Role & Permission](./pages/settings/role-permission.md) | `settings-roles` | PLATFORM-04 | Matriks CREATE/VIEW/EDIT/DELETE per role × menu |
+| ✅ [Regions](./pages/settings/regions.md) | `settings-regions` | MD-01 | Hierarki wilayah 4 level (Provinsi→Distrik→Kecamatan→Desa) |
+
+### 📤 Bulk Upload — `/admin/bulk-upload`
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [Upload Petani](./pages/bulk-upload/upload-petani.md) | `bulk-upload-farmers` | BULK-03 (#76) | Excel + mapping kolom dinamis + validasi + preview + unduh error |
+| ✅ [Upload Produksi](./pages/bulk-upload/upload-produksi.md) | `bulk-upload-production` | BULK-04 | Excel + validasi periode/panen + preview |
+| ✅ [Lahan](./pages/bulk-upload/lahan.md) | `bulk-upload-parcels` | MD-04 (#88) | ZIP Shapefile + mapping (incl. Kelompok Tani & Blok #150) + validasi geometri |
+
+Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum ada menu/route.
+
+### 📉 Data Analyst — `/admin/data-analyst`
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [Ringkasan Petani](./pages/data-analyst/ringkasan-petani.md) | `data-analyst-farmer-summary` | DA-01 (#103) | Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel |
+| ✅ [Analisa Ketersediaan Data](./pages/data-analyst/analisa-ketersediaan-data.md) | `data-analyst-data-completeness` | DA-02 (#118, #122) | Index Ketersediaan Data + 5 section anomali (Profil KT, Petani, Lahan, Pelatihan, Produksi) + Excel multi-sheet |
+
+### 📈 Report — `/admin/report`
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [Petani](./pages/report/petani.md) | `report-farmer` | RPT-01 (#107) | Cascade filter wajib + Excel & PDF |
+| ✅ [Pelatihan](./pages/report/pelatihan.md) | `report-training` | RPT-02 (#108) | Kegiatan, peserta unik & cakupan + Excel 2-sheet + PDF |
+| ✅ [Produksi](./pages/report/produksi.md) | `report-production` | RPT-03 (#132) | Matriks bulanan per petani/lahan + Excel & PDF landscape |
+| ✅ [Kelompok Tani (Summary)](./pages/report/kelompok-tani-summary.md) | `report-kelompok-tani` | RPT-04 (#154) | Agregat real-time Lembaga × KT + column selector + Excel & PDF |
+| ✅ [Kelompok Tani (Detail)](./pages/report/kelompok-tani-detail.md) | `report-kelompok-tani-detail` | RPT-04 (#154) | Roster per Lembaga: KT→Petani collapsible + Excel & PDF |
+| ✅ [Lahan](./pages/report/lahan.md) | `report-land-parcel` | RPT-05 (#177/#179/#180) | Roster datar 1 baris = 1 lahan per Lembaga + PDF landscape ber-peta poligon & grid index + Excel multi-sheet ber-gambar |
+
+### 🔧 Tools — `/admin/tools` (🟠 TOOLS-01)
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [Dashboard Snapshot](./pages/tools/dashboard-snapshot/README.md) | `dashboard-snapshot` | DASH-01 | Generate/list/detail snapshot + Excel export + soft delete |
+| ✅ [Dashboard Snapshot BMP](./pages/tools/dashboard-snapshot-bmp/README.md) | `dashboard-snapshot-bmp` | DASH-04 (#166) | Generate Semua Data + list + detail per-Lembaga + Excel export + soft delete |
+| 🟠 CLI lokal (**bukan menu app**) | — | — | S3 get-link & PDF manager (`scripts/`, npm `s3:get-link` `pdf:*`); export CSV di `scripts/local/` (gitignored) |
+| 🔲 GIS Utilities | — | — | Planned |
+
+### 🗺️ Map — `/admin/map`
+
+| Sub menu | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [Peta Lahan](./pages/map/peta-lahan.md) | `map-parcel` | MAP-01 (#113/#134/#135) | Peta full-bleed + panel filter & legenda minimizable; overlay raster SIGAP KLHK (5 layer + slider transparansi, via proxy same-origin), Titik Api NASA FIRMS, Tambah Data GIS Lain (WMS/Shapefile/GeoJSON, diparse di browser), ruler geodesik, label adaptif; popup lahan (Detail + Pelatihan + Produksi) + tombol **Profil Lahan** → PDF; panel Daftar Lahan ber-search & zoom |
+| ✅ [Peta BMP](./pages/map/peta-bmp.md) | `map-bmp` | MAP-02 (#144) · MAP-03 (#174) | Peta tematik poligon-only, 2 layer ber-radio: **Ketersediaan Data Produksi** (4 kategori dari run bulan berturut-turut) & **Produktivitas Ton/Ha** (per tahun / rata-rata, 5 kelas, dihitung client-side); Lembaga wajib; panel matriks per lahan × bulan; cetak PDF & Excel WYSIWYG ikut layer aktif |
+
+### ❓ Bantuan — `/admin/help`
+
+| Halaman | Key | Fase | Ringkasan |
+|---|---|---|---|
+| ✅ [Indeks · Bab · Topik](./pages/bantuan/README.md) | `help` | HELP-01/02 (#182–#185) | Panduan in-app 3 lapis (tutorial/konsep/referensi), konten Markdown di `src/content/help/**.md`, sidebar tree + pencarian client-side, dua tingkat kedalaman (baris `+` = Detail), aset S3 privat via presigned URL |
+
+---
+
+## 4. Perilaku Sidebar
+
+- **Pencarian menu** di header sidebar — fokus `Ctrl/⌘+K`, hapus `Esc`/✕, memfilter pohon menu live. Hanya menampilkan menu yang di-grant untuk user tersebut.
+- **Tombol "Tutup semua"** (collapse-all) untuk seluruh cabang.
+- **Menu induk sebagai container** — induk tetap tampil bila salah satu anaknya ter-grant meski induk sendiri tidak di-grant. Lihat [../standards/rbac.md § RBAC Permission Inheritance](../standards/rbac.md).
+- **Hierarki maksimal 3 level**, divalidasi di Menu Management (PLATFORM-07).
+
+---
+
+## 5. Ringkasan Teknis (cerminan)
+
+Diverifikasi **2026-07-23** terhadap kode di branch `mvp` (app `v0.16.0`).
+
+| Aspek | Angka | Catatan |
+|---|---|---|
+| Test | **44 file / 673 test passing** ✅ | `npx vitest run`; rincian coverage di [roadmap.md § OPS-01](../project/roadmap.md) |
+| Server Actions | **25 file** | `src/server/actions/` — satu file per domain, seluruh akses data lewat sini |
+| Prisma | **11 file schema / 20 model / 19 migrasi** | `prisma/schema/` modular; semua model ber-audit field + `isActive` |
+| Menu | **9 top-level / 27 sub menu** | `prisma/seeds/data/menu.csv` |
+| Materi Bantuan | **33 file Markdown** | `src/content/help/**` |
+| Fase selesai | lihat [roadmap.md § Phase Status](../project/roadmap.md) | cerminan naratif di [module-status.md](./module-status.md) |
+
+Prioritas berikutnya & backlog: [../project/sprint.md](../project/sprint.md) dan [../project/roadmap.md](../project/roadmap.md).

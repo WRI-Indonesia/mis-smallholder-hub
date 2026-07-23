@@ -9,12 +9,12 @@
 
 ## Completed Modules (✅ 34 Phases)
 
-> Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`progress.md`](../project/roadmap.md). Perbarui angka di sana lebih dulu.
+> Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`roadmap.md`](../project/roadmap.md). Perbarui angka di sana lebih dulu.
  
 | Phase | Module | Key Features |
 |-------|--------|--------------|
 | PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup |
-| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 19 model / 16 migrasi) |
+| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 20 model / 19 migrasi / 11 file schema) |
 | PLATFORM-03 | Schema Hardening | Audit fields, soft-delete pattern |
 | PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides |
 | PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child |
@@ -48,7 +48,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
  
-**Total Tests**: **43 files / 663 tests passing** ✅ (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Total Tests**: **44 files / 673 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -86,43 +86,41 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **43 files / 663 tests passing** (angka kanonis di [`progress.md`](../project/roadmap.md))
+**Test Status**: ✅ **44 files / 673 tests passing** (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
 ### Covered Modules
 
+Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-23). Total baris = **44 file / 673 test**.
+
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
+| Bantuan: parser, materi, hak akses, media S3 (HELP-01/02, #184 #185) | help-content.test.ts, help-media.test.ts | 91 | ✅ |
+| Map (MAP-01/02/03) + ruler/label geodesik | map.test.ts, map-geo.test.ts | 62 | ✅ |
+| RBAC & Access Context (#125 #127) | rbac.test.ts, rbac-permission.test.ts, rbac-server-guards.test.ts, access-context.test.ts | 50 | ✅ |
 | Region | region.test.ts | 42 | ✅ |
+| User | user-action.test.ts, user-data-access.test.ts, user-menu-access.test.ts | 40 | ✅ |
+| Report Lahan (#177 #179 #180) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts | 33 | ✅ |
+| Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
 | Data Completeness (DA-02) | data-completeness.test.ts | 31 | ✅ |
-| User | user-action.test.ts, user-data-access.test.ts, user-menu-access.test.ts | 39 | ✅ |
-| Training | training-activity.test.ts, training-participant.test.ts | 23 | ✅ |
+| Training | training-activity.test.ts, training-participant.test.ts | 29 | ✅ |
+| Menu (incl. tree 3-level #187) | menu-action.test.ts, menu-filter.test.ts, menu-tree.test.ts | 29 | ✅ |
+| Performance | perf.test.ts | 23 | ✅ |
+| Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
+| Farmer Group (#163/#169/#171) + sub-groups (#152) | farmer-group.test.ts, farmer-group-detail.test.ts, farmer-sub-groups.test.ts | 22 | ✅ |
+| Farmer + detail & mask (#172) | farmer.test.ts, farmer-detail.test.ts | 21 | ✅ |
+| Bulk Upload + parcel mapping (#150) | bulk-upload.test.ts, parcel-bulk-mapping.test.ts | 21 | ✅ |
+| Invarian cakupan 3 dashboard + hulu | dashboard-asymmetry.test.ts | 18 | ✅ |
+| Dashboard | dashboard.test.ts | 17 | ✅ |
 | Land Parcel | land-parcel.test.ts | 16 | ✅ |
 | Production | production.test.ts | 15 | ✅ |
-| Farmer | farmer.test.ts | 14 | ✅ |
-| Bulk Upload | bulk-upload.test.ts | 14 | ✅ |
-| Map Geo (ruler/label) | map-geo.test.ts | 13 | ✅ |
-| Dashboard | dashboard.test.ts | 14 | ✅ |
-| Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 14 | ✅ |
-| Bantuan / Markdown-lite (#184 #185) | help-content.test.ts, help-media.test.ts | 16 | ✅ |
-| Report Lahan (#177 #179 #180) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts (+1 perf) | 34 | ✅ |
-| Exporter PDF build-vs-save (TD-019 #180) | pdf-exporters.test.ts | 5 | ✅ |
-| Parcel Bulk Mapping (#150) | parcel-bulk-mapping.test.ts | 7 | ✅ |
-| Farmer Group (#163/#169/#171) | farmer-group.test.ts, farmer-group-detail.test.ts | 17 | ✅ |
-| Farmer Detail + mask (#172) | farmer-detail.test.ts | 7 | ✅ |
-| Farmer Sub-Groups (#152) | farmer-sub-groups.test.ts | 6 | ✅ |
-| Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
-| Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
-| Invarian cakupan 3 dashboard + hulu | dashboard-asymmetry.test.ts | 18 | ✅ |
-| Bantuan: parser, materi, hak akses & lookup (HELP-02) | help-content.test.ts | 87 | ✅ |
-| RBAC | rbac.test.ts, rbac-permission.test.ts | 12 | ✅ |
-| Map (MAP-01/02) | map.test.ts | 34 | ✅ |
-| Menu | menu-action.test.ts, menu-filter.test.ts | 20 | ✅ |
+| Report (umum) | report.test.ts | 14 | ✅ |
+| Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 13 | ✅ |
 | Hotspot FIRMS | firms.test.ts | 9 | ✅ |
-| Performance | perf.test.ts | 13 | ✅ |
-| Report | report.test.ts | 5 | ✅ |
+| Exporter PDF build-vs-save (TD-019 #180) | pdf-exporters.test.ts | 5 | ✅ |
 | Middleware | middleware.test.ts | 5 | ✅ |
 | Auth | auth.test.ts | 5 | ✅ |
 | Data Analyst (DA-01) | data-analyst.test.ts | 4 | ✅ |
+| Profile | profile.test.ts | 3 | ✅ |
 
 ### Need Coverage
 
