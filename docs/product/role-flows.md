@@ -41,4 +41,20 @@
 - **Bulk Upload**: ❌ No access
 - **Tools**: 🟠 Dashboard Snapshot (view-only, tanpa generate/delete)
 
+## DONOR (Read-Only donor/funder, #187)
+
+Tipe pengguna untuk pihak donor/funder — **VIEW-only** pada subset menu. Cakupan data mengikuti aturan yang sama (tanpa assignment = `ALL`, dengan assignment = ter-scope).
+
+- **Dashboard**: ✅ Main Dashboard + BMP + Dashboard Pelatihan (VIEW)
+- **Report**: 🔲 View reports (Petani, Pelatihan, Produksi, Kelompok Tani, Lahan) — ekspor Excel/PDF diizinkan
+- **Map**: ✅ Peta Lahan + Peta BMP (VIEW)
+- **Bantuan**: ✅ VIEW
+- **Master Data**: ❌ No access
+- **Data Analyst**: ❌ No access
+- **Settings**: ❌ No access
+- **Bulk Upload**: ❌ No access
+- **Tools**: ❌ No access
+
+> Privasi (sementara): DONOR masih melihat data individu petani (nama/NIK) seperti MANAGEMENT. Pemisahan agregat-saja via menu khusus DONOR = follow-up (lihat retro #187).
+
 </details>
