@@ -366,3 +366,75 @@ export interface TrainingDashboardView {
   data: TrainingDashboardData;
   generatedAt: string;
 }
+
+// ── Dashboard Ketersediaan Data (DA-03, #193) ─────────────────────────────
+// Roll-up lintas Lembaga dari scoring DA-02 (src/lib/data-completeness.ts).
+// Live-query seperti Dashboard Pelatihan; payload per-Lembaga di-slice di client
+// (Distrik/Kategori). Deep-dive per Lembaga tetap lewat halaman DA-02.
+
+export type AvailabilityDomainKey = "profil" | "petani" | "lahan" | "pelatihan" | "produksi";
+
+/** Satu tipe anomali pada satu Lembaga — tanpa daftar petani (PII & payload). */
+export interface AvailabilityAnomalyCount {
+  key: string;
+  label: string;
+  count: number;
+}
+
+/** Entri per Lembaga Petani — grain dashboard; semua panel di-slice dari sini. */
+export interface AvailabilityGroupEntry {
+  id: string;
+  name: string;
+  code: string | null;
+  category: BmpFarmerGroupCategory;
+  districtId: string;
+  districtName: string;
+  totalFarmers: number;
+  totalParcels: number;
+  activityCount: number;
+  farmersWithProduction: number;
+  /** Skor kelengkapan berbobot 0-100 — identik dengan healthScore DA-02. */
+  healthScore: number;
+  profileScore: number;
+  domainScores: Record<Exclude<AvailabilityDomainKey, "profil">, number>;
+  totalAnomalies: number;
+  anomalies: AvailabilityAnomalyCount[];
+}
+
+export interface AvailabilityDashboardData {
+  groups: AvailabilityGroupEntry[];
+}
+
+export interface AvailabilitySliceFilter {
+  districtId?: string | null;
+  category?: BmpFarmerGroupCategory | null;
+}
+
+/** KPI baris atas — skor portfolio pada irisan yang tampil. */
+export interface AvailabilityTotals {
+  totalGroups: number;
+  totalFarmers: number;
+  totalParcels: number;
+  totalActivities: number;
+  farmersWithProduction: number;
+  totalAnomalies: number;
+  /** Skor berbobot DOMAIN_WEIGHTS atas 5 skor domain portfolio di bawah. */
+  overallScore: number;
+  domainScores: Record<AvailabilityDomainKey, number>;
+}
+
+export type AvailabilityScoreBand = "full" | "good" | "warn" | "bad";
+
+/** Satu tipe anomali dijumlah lintas Lembaga pada irisan yang tampil. */
+export interface AvailabilityAnomalySummary {
+  key: string;
+  label: string;
+  count: number;
+  /** Berapa Lembaga yang memiliki anomali ini. */
+  groupsAffected: number;
+}
+
+export interface DataAvailabilityView {
+  data: AvailabilityDashboardData;
+  generatedAt: string;
+}

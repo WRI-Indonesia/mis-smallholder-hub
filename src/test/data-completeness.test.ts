@@ -112,11 +112,20 @@ describe("computePetaniDomain", () => {
     expect(d.score).toBe(100);
     expect(d.anomalies).toHaveLength(0);
   });
-  it("counts a multi-anomaly farmer once in completeness", () => {
+  it("skor graded: field yang terisi tetap dihargai (#193)", () => {
+    // NIK & alamat kosong, tapi 3 check lain lolos (ID unik, tgl lahir, tahun
+    // bergabung) → 3/5 = 60%, bukan 0% (formula lama all-or-nothing).
     const d = computePetaniDomain([farmer({ nik: null, address: null })]);
-    // one farmer, multiple anomalies → 0% complete
-    expect(d.score).toBe(0);
+    expect(d.score).toBe(60);
     expect(d.cards.find((c) => c.label === "Petani dengan Anomali")!.value).toBe(1);
+  });
+  it("skor graded: NIK duplikat menggagalkan check NIK kedua petani", () => {
+    const d = computePetaniDomain([
+      farmer({ id: "a", farmerId: "F-001", nik: "1111111111111111" }),
+      farmer({ id: "b", farmerId: "F-002", nik: "1111111111111111" }),
+    ]);
+    // 4/5 check lolos per petani (NIK gagal karena duplikat) → 80%.
+    expect(d.score).toBe(80);
   });
 });
 
@@ -138,6 +147,20 @@ describe("computeLahanDomain", () => {
   it("scores 100 for a fully valid parcel", () => {
     const d = computeLahanDomain([farmer({ landParcels: [validParcel] })]);
     expect(d.score).toBe(100);
+  });
+  it("skor graded: atribut persil yang terisi tetap dihargai (#193)", () => {
+    // Geometry & luas kosong, 3 atribut lain terisi → 3/5 = 60%, bukan 0%.
+    const d = computeLahanDomain([
+      farmer({ landParcels: [{ ...validParcel, geometry: null, area: null }] }),
+    ]);
+    expect(d.score).toBe(60);
+    // Rata-rata lintas persil: persil lengkap (100%) + persil 3/5 (60%) → 80%.
+    const d2 = computeLahanDomain([
+      farmer({
+        landParcels: [validParcel, { ...validParcel, parcelId: "P-2", geometry: null, area: null }],
+      }),
+    ]);
+    expect(d2.score).toBe(80);
   });
 });
 

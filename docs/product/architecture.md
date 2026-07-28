@@ -52,14 +52,14 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 
 ## 2. Struktur Menu Sidebar
 
-9 menu top-level / 27 sub menu (`menu.csv`), urut sesuai kolom `order`:
+9 menu top-level / 28 sub menu (`menu.csv`), urut sesuai kolom `order`:
 
 ```text
 📊 Dashboard          (3 sub)   📈 Report        (6 sub)
 📁 Master Data        (5 sub)   🔧 Tools         (2 sub)
 ⚙️  Settings           (4 sub)   🗺️  Map           (2 sub)
 📤 Bulk Upload        (3 sub)   ❓ Bantuan       (halaman bab/topik, tanpa sub menu)
-📉 Data Analyst       (2 sub)
+📉 Data Analyst       (3 sub)
 ```
 
 Halaman non-menu: `/admin/profile` (Ubah Kata Sandi) · `/login` · route publik. Lihat [pages/halaman-non-menu/](./pages/halaman-non-menu/README.md).
@@ -115,6 +115,7 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 |---|---|---|---|
 | ✅ [Ringkasan Petani](./pages/data-analyst/ringkasan-petani.md) | `data-analyst-farmer-summary` | DA-01 (#103) | Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel |
 | ✅ [Analisa Ketersediaan Data](./pages/data-analyst/analisa-ketersediaan-data.md) | `data-analyst-data-completeness` | DA-02 (#118, #122) | Index Ketersediaan Data + 5 section anomali (Profil KT, Petani, Lahan, Pelatihan, Produksi) + Excel multi-sheet |
+| ✅ [Dashboard Ketersediaan Data](./pages/data-analyst/dashboard-ketersediaan-data.md) | `data-analyst-data-availability` | DA-03 (#193) | Roll-up skor DA-02 lintas Lembaga: 6 KPI + matriks Lembaga×domain + bar chart terendah-dulu + panel anomali; live query, tanpa DONOR |
 
 ### 📈 Report — `/admin/report`
 
@@ -164,15 +165,15 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 
 ## 5. Ringkasan Teknis (cerminan)
 
-Diverifikasi **2026-07-23** terhadap kode di branch `mvp` (app `v0.16.0`).
+Diverifikasi **2026-07-28** terhadap kode di branch `mvp` (app `v0.16.0`).
 
 | Aspek | Angka | Catatan |
 |---|---|---|
-| Test | **44 file / 673 test passing** ✅ | `npx vitest run`; rincian coverage di [roadmap.md § OPS-01](../project/roadmap.md) |
-| Server Actions | **25 file** | `src/server/actions/` — satu file per domain, seluruh akses data lewat sini |
+| Test | **45 file / 702 test passing** ✅ | `npx vitest run`; rincian coverage di [roadmap.md § OPS-01](../project/roadmap.md) |
+| Server Actions | **26 file** | `src/server/actions/` — satu file per domain, seluruh akses data lewat sini |
 | Prisma | **11 file schema / 20 model / 19 migrasi** | `prisma/schema/` modular; semua model ber-audit field + `isActive` |
-| Menu | **9 top-level / 27 sub menu** | `prisma/seeds/data/menu.csv` |
-| Materi Bantuan | **33 file Markdown** | `src/content/help/**` |
+| Menu | **9 top-level / 28 sub menu** | `prisma/seeds/data/menu.csv` |
+| Materi Bantuan | **34 file Markdown** | `src/content/help/**` |
 | Fase selesai | lihat [roadmap.md § Phase Status](../project/roadmap.md) | cerminan naratif di [module-status.md](./module-status.md) |
 
 Prioritas berikutnya & backlog: [../project/sprint.md](../project/sprint.md) dan [../project/roadmap.md](../project/roadmap.md).

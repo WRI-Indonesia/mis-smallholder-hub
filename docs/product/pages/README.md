@@ -31,7 +31,8 @@ docs/product/pages/
 │   └── lahan.md
 ├── data-analyst/                 Menu: Data Analyst
 │   ├── ringkasan-petani.md
-│   └── analisa-ketersediaan-data.md
+│   ├── analisa-ketersediaan-data.md
+│   └── dashboard-ketersediaan-data.md
 ├── report/                       Menu: Report
 │   ├── petani.md · pelatihan.md · produksi.md
 │   ├── kelompok-tani-summary.md · kelompok-tani-detail.md
@@ -57,7 +58,7 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 | 1 | Master Data | `master-data` | `/admin/master-data` | 5 | [master-data/](./master-data/README.md) |
 | 2 | Settings | `settings` | `/admin/settings` | 4 | [settings/](./settings/README.md) |
 | 3 | Bulk Upload | `bulk-upload` | `/admin/bulk-upload` | 3 | [bulk-upload/](./bulk-upload/README.md) |
-| 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 2 | [data-analyst/](./data-analyst/README.md) |
+| 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 3 | [data-analyst/](./data-analyst/README.md) |
 | 5 | Report | `report` | `/admin/report` | 6 | [report/](./report/README.md) |
 | 6 | Tools | `tools` | `/admin/tools` | 2 | [tools/](./tools/README.md) |
 | 7 | Map | `map` | `/admin/map` | 2 | [map/](./map/README.md) |

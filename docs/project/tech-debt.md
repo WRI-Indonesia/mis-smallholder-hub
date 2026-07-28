@@ -4,7 +4,7 @@
 
 ## Summary
 
-Kondisi per **2026-07-28**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **10 debt aktif**; TD-020…TD-025 dibuka & diselesaikan 2026-07-21 (TD-021 sebagian: hook URL-filter baru dipakai Dashboard Pelatihan); **TD-026/TD-027/TD-028 dibuka 2026-07-22** dari #187B/#188 (TD-028 langsung selesai di #188); **TD-029 dibuka & diselesaikan 2026-07-28** (scope leak combobox bulk upload petani, follow-up TD-024). Tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani belum dimodelkan sebagai tabel — interim per-lahan sudah jalan; hierarki **final 3 level** diputuskan #189, refactor penuh menunggu data lengkap); selebihnya debt kualitas berukuran kecil–sedang.
+Kondisi per **2026-07-28**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **10 debt aktif**; TD-020…TD-025 dibuka & diselesaikan 2026-07-21 (TD-021 sebagian: hook URL-filter dipakai Dashboard Pelatihan + Dashboard Ketersediaan Data); **TD-026/TD-027/TD-028 dibuka 2026-07-22** dari #187B/#188 (TD-028 langsung selesai di #188); **TD-029 dibuka & diselesaikan 2026-07-28** (scope leak combobox bulk upload petani, follow-up TD-024). Tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani belum dimodelkan sebagai tabel — interim per-lahan sudah jalan; hierarki **final 3 level** diputuskan #189, refactor penuh menunggu data lengkap); selebihnya debt kualitas berukuran kecil–sedang.
 
 **Rekomendasi:**
 
@@ -166,7 +166,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-025 | Mode Detail Bantuan bergantung urutan sumber CSS | P3 | ✅ 2026-07-21 |
 | TD-029 | Combobox bulk upload petani: daftar Lembaga tanpa scope filter | P1 | ✅ 2026-07-28 |
 | TD-020 | Dashboard Pelatihan: live query tanpa ambang perf | P3 | ✅ 2026-07-21 |
-| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan) |
+| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan + Dashboard Ketersediaan Data) |
 
 **TD-001** — S3/PDF utility belum terintegrasi ke modul Training. Evidence: Training + evidence upload S3 sudah terintegrasi via `upload.ts` (#81); CLI `get-link`/`pdf-manager` tetap sebagai utilitas. Owner: Backend/Storage Lead. Validation: evidence upload berfungsi di app; sisa CLI tak load dotenv → TD-011. ✅
 

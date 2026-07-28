@@ -47,6 +47,7 @@ tbl_snapshot_<dashboard_name>
 - `tbl_snapshot_bmp_dashboard` — Dashboard BMP (DASH-04, #166) ✅ — data JSON `BmpSnapshotData` per **Lembaga Petani** (monthly + byYear produksi/lahan melapor + subset `monthlyFull`/`byYearFull` lahan-lengkap + availability 4 kategori MAP-02 + totals); unique `(snapshot_date, district_id)`; di-slice client-side (Distrik/Lembaga/Kategori/Tahun) via pure `src/lib/bmp-dashboard-aggregation.ts`
 - `tbl_snapshot_production_dashboard` — Production analytics (future)
 - ~~`tbl_snapshot_training_dashboard`~~ — **tidak dipakai**: Dashboard Pelatihan (DASH-06) sengaja **live query**, bukan snapshot — volume pelatihan kecil (ratusan kegiatan) sehingga agregasi cukup client-side lewat `src/lib/training-dashboard-aggregation.ts`. Pola snapshot tetap jadi jalur migrasi bila volume tumbuh.
+- ~~`tbl_snapshot_data_availability`~~ — **tidak dipakai**: Dashboard Ketersediaan Data (DA-03, #193) juga **live query** — reuse scoring DA-02 (`computeCompleteness`) via `src/lib/data-availability-aggregation.ts`; snapshot tetap jalur fallback bila volume tumbuh.
 - `tbl_snapshot_financial_dashboard` — Financial reports (future)
 
 ---

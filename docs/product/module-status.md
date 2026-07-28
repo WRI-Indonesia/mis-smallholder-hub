@@ -7,7 +7,7 @@
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 34 Phases)
+## Completed Modules (✅ 35 Phases)
 
 > Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`roadmap.md`](../project/roadmap.md). Perbarui angka di sana lebih dulu.
  
@@ -44,11 +44,12 @@
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
 | BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
 | HELP-01 | Bantuan | Panduan in-app: **indeks → bab → topik** (satu topik = satu halaman, `/admin/help/[chapter]/[topic]`), sidebar tree + **pencarian** client-side, tombol topik sebelumnya/berikutnya. **Konten Markdown** di `src/content/help/**.md` (editable tanpa menyentuh kode; frontmatter title/icon/intro), parser subset tanpa dependency + dukungan **gambar, video, sematan YouTube/Vimeo, dan aset S3 privat (`s3://key` → presigned per-request, #185)**; menu top-level, 5 role VIEW. 6 bab / 11 topik: istilah domain, akun, hak akses, Master Data, Bulk Upload, Dashboard, Peta, Data Analyst, Report, Tools, FAQ (#182 #183 #184) |
-| HELP-02 | Bantuan: Tutorial per Tugas | Tiga lapis (tutorial/konsep/referensi); 17 tutorial + 4 referensi dengan **dua tingkat kedalaman dari satu sumber** (baris `+`); toggle Ringkas/Detail & lipat daftar isi tanpa JS; personalisasi per izin; bantuan kontekstual `HelpHint` di 7 halaman |
+| HELP-02 | Bantuan: Tutorial per Tugas | Tiga lapis (tutorial/konsep/referensi); 18 tutorial + 4 referensi dengan **dua tingkat kedalaman dari satu sumber** (baris `+`); toggle Ringkas/Detail & lipat daftar isi tanpa JS; personalisasi per izin; bantuan kontekstual `HelpHint` di 7 halaman |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
-| DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122) |
+| DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193 |
+| DA-03 | Dashboard Ketersediaan Data | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks, bar chart, panel anomali); live query; tanpa DONOR (#193) |
  
-**Total Tests**: **44 files / 673 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
+**Total Tests**: **45 files / 702 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -86,11 +87,11 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **44 files / 673 tests passing** (angka kanonis di [`roadmap.md`](../project/roadmap.md))
+**Test Status**: ✅ **45 files / 702 tests passing** (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
 ### Covered Modules
 
-Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-23). Total baris = **44 file / 673 test**.
+Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-28). Total baris = **45 file / 702 test**.
 
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
@@ -101,7 +102,8 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-23). Total baris
 | User | user-action.test.ts, user-data-access.test.ts, user-menu-access.test.ts | 40 | ✅ |
 | Report Lahan (#177 #179 #180) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts | 33 | ✅ |
 | Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
-| Data Completeness (DA-02) | data-completeness.test.ts | 31 | ✅ |
+| Data Completeness (DA-02) | data-completeness.test.ts | 33 | ✅ |
+| Dashboard Ketersediaan Data (DA-03) | dashboard-data-availability.test.ts | 21 | ✅ |
 | Training | training-activity.test.ts, training-participant.test.ts | 29 | ✅ |
 | Menu (incl. tree 3-level #187) | menu-action.test.ts, menu-filter.test.ts, menu-tree.test.ts | 29 | ✅ |
 | Performance | perf.test.ts | 23 | ✅ |
@@ -109,7 +111,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-23). Total baris
 | Farmer Group (#163/#169/#171) + sub-groups (#152) | farmer-group.test.ts, farmer-group-detail.test.ts, farmer-sub-groups.test.ts | 22 | ✅ |
 | Farmer + detail & mask (#172) | farmer.test.ts, farmer-detail.test.ts | 21 | ✅ |
 | Bulk Upload + parcel mapping (#150) | bulk-upload.test.ts, parcel-bulk-mapping.test.ts | 21 | ✅ |
-| Invarian cakupan 3 dashboard + hulu | dashboard-asymmetry.test.ts | 18 | ✅ |
+| Invarian cakupan 3 dashboard + DA-03 + hulu | dashboard-asymmetry.test.ts | 21 | ✅ |
 | Dashboard | dashboard.test.ts | 17 | ✅ |
 | Land Parcel | land-parcel.test.ts | 16 | ✅ |
 | Production | production.test.ts | 15 | ✅ |

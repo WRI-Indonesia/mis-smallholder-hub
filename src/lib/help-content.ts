@@ -1,5 +1,7 @@
 import {
   BookOpen,
+  ClipboardCheck,
+  Gauge,
   LogIn,
   Shield,
   Database,
@@ -57,6 +59,7 @@ import lLaporanLahan from "@/content/help/tutorial/l-2-laporan-lahan.md";
 import lMemperbaruiDashboard from "@/content/help/tutorial/l-3-memperbarui-dashboard.md";
 import pDashboardBmp from "@/content/help/tutorial/p-4-dashboard-bmp.md";
 import pPetaLahan from "@/content/help/tutorial/p-5-peta-lahan.md";
+import pKetersediaanData from "@/content/help/tutorial/p-6-ketersediaan-data.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 
@@ -71,6 +74,8 @@ type IconType = React.ComponentType<{ className?: string }>;
 /** Ikon yang boleh dirujuk frontmatter `icon:` (nama tak dikenal → fallback). */
 const ICONS: Record<string, IconType> = {
   BookOpen,
+  ClipboardCheck,
+  Gauge,
   LogIn,
   Shield,
   Database,
@@ -180,6 +185,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "membaca-peta", source: pMembacaPeta },
       { id: "dashboard-bmp", source: pDashboardBmp },
       { id: "peta-lahan", source: pPetaLahan },
+      { id: "ketersediaan-data", source: pKetersediaanData },
     ],
   },
   {

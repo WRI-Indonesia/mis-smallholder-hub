@@ -16,7 +16,7 @@ Sejak **HELP-02** materi dibagi **tiga lapis** lewat `section` pada `HelpChapter
 
 | Lapis | Isi | Status |
 |---|---|---|
-| `tutorial` | Panduan **per tugas**, dua tingkat kedalaman (Ringkas/Detail) | 17 topik / 5 bab |
+| `tutorial` | Panduan **per tugas**, dua tingkat kedalaman (Ringkas/Detail) | 18 topik / 5 bab |
 | `konsep` | Istilah & aturan main yang dirujuk tutorial | 11 topik / 6 bab |
 | `referensi` | Arti kolom & tombol per halaman | 4 topik / 1 bab (`r-1-daftar-petani` … `r-4-daftar-produksi`) |
 
@@ -41,7 +41,7 @@ Menu: Bantuan (/admin/help)
 
 | Aspek | Keterangan |
 |---|---|
-| Berkas materi | `src/content/help/` — lapis tutorial di `tutorial/` (17 file), lapis referensi di `referensi/` (4 file), lapis konsep di 6 folder `<n>-<bab>/<n>-<m>-<topik>.md` (11 file); total 12 bab di `CHAPTER_SOURCES` (5 tutorial + 1 referensi + 6 konsep) |
+| Berkas materi | `src/content/help/` — lapis tutorial di `tutorial/` (18 file), lapis referensi di `referensi/` (4 file), lapis konsep di 6 folder `<n>-<bab>/<n>-<m>-<topik>.md` (11 file); total 12 bab di `CHAPTER_SOURCES` (5 tutorial + 1 referensi + 6 konsep) |
 | Registrasi | `src/lib/help-content.ts` — konstanta `CHAPTER_SOURCES` (slug, judul, ringkasan, ikon bab) + satu baris `import` per file `.md` |
 | Bundling | file `.md` dimuat sebagai string via webpack `asset/source` (`next.config.ts`), di-parse sekali saat modul dimuat → perubahan materi baru tampil setelah build ulang |
 | Parser | `src/lib/markdown-lite.ts` (`parseMarkdown`, `parseBlocks`, `parseInline`, `blocksToPlainText`) — subset Markdown: frontmatter, heading `##`, paragraf, daftar `-`, baris definisi `**Istilah** — deskripsi`, inline `**tebal**` / `` `kode` `` / `[tautan](url)`, dan baris media `![caption](src)` |
@@ -57,7 +57,7 @@ Menu: Bantuan (/admin/help)
 |---|---|---|---|---|
 | 1 | tutorial | Mengelola Data Harian (`tutorial-data-harian`) | Langkah demi langkah pekerjaan yang paling sering dilakukan: mendaftarkan petani, lahan, pelatihan, dan produksi. | 1.1 Mendaftarkan petani baru (`menambah-petani`) · 1.2 Mendaftarkan lahan petani (`menambah-lahan`) · 1.3 Mencatat pelatihan & pesertanya (`mencatat-pelatihan`) · 1.4 Mencatat hasil panen (`mencatat-produksi`) |
 | 2 | tutorial | Unggah Massal (`tutorial-unggah-massal`) | Memasukkan data dalam jumlah besar sekaligus — Excel untuk petani & produksi, shapefile untuk lahan. | 2.1 Mengunggah data petani dari Excel (`unggah-petani`) · 2.2 Mengunggah data produksi dari Excel (`unggah-produksi`) · 2.3 Mengunggah lahan dari shapefile (`unggah-lahan`) |
-| 3 | tutorial | Memantau & Menindaklanjuti (`tutorial-memantau`) | Membaca dashboard dan peta, lalu mengubah temuannya jadi daftar kerja yang bisa ditindaklanjuti. | 3.1 Membaca Main Dashboard (`membaca-dashboard`) · 3.2 Menindaklanjuti petani yang belum dilatih (`cakupan-pelatihan`) · 3.3 Membaca peta lahan & peta BMP (`membaca-peta`) · 3.4 Membaca BMP Dashboard (produksi) (`dashboard-bmp`) · 3.5 Menjelajah Peta Lahan (`peta-lahan`) |
+| 3 | tutorial | Memantau & Menindaklanjuti (`tutorial-memantau`) | Membaca dashboard dan peta, lalu mengubah temuannya jadi daftar kerja yang bisa ditindaklanjuti. | 3.1 Membaca Main Dashboard (`membaca-dashboard`) · 3.2 Menindaklanjuti petani yang belum dilatih (`cakupan-pelatihan`) · 3.3 Membaca peta lahan & peta BMP (`membaca-peta`) · 3.4 Membaca BMP Dashboard (produksi) (`dashboard-bmp`) · 3.5 Menjelajah Peta Lahan (`peta-lahan`) · 3.6 Memeriksa ketersediaan data (`ketersediaan-data`) |
 | 4 | tutorial | Laporan & Perawatan (`tutorial-laporan`) | Menyiapkan berkas untuk donor atau audit, dan menjaga angka dashboard tetap mutakhir. | 4.1 Menyiapkan laporan untuk dicetak (`membuat-laporan`) · 4.2 Mencetak Laporan Lahan ber-peta (`laporan-lahan`) · 4.3 Memperbarui angka dashboard (`memperbarui-dashboard`) |
 | 5 | tutorial | Analisa & Administrasi (`tutorial-administrasi`) | Memeriksa kelengkapan data sebelum dilaporkan, dan mengatur siapa boleh melihat apa. | 5.1 Memeriksa kelengkapan & kualitas data (`analisa-data`) · 5.2 Menambah pengguna & mengatur haknya (`mengelola-pengguna`) |
 | 6 | referensi | Referensi Halaman (`referensi-halaman`) | Arti tiap kolom, filter, dan tombol di halaman yang paling sering dipakai — untuk dirujuk saat bekerja, bukan dibaca berurutan. | 6.1 Halaman Petani — arti kolom & tombol (`daftar-petani`) · 6.2 Halaman Lahan — arti kolom & tombol (`daftar-lahan`) · 6.3 Halaman Pelatihan — arti kolom & tombol (`daftar-pelatihan`) · 6.4 Halaman Produksi — arti kolom & tombol (`daftar-produksi`) |

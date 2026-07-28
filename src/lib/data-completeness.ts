@@ -61,6 +61,11 @@ export function computeProfileChecks(group: CompletenessGroupInput): ProfileChec
 }
 
 // ── Domain 2: Petani ──
+// Skor GRADED per field (#193, keputusan owner 2026-07-28): tiap petani dinilai
+// dari proporsi check yang lolos (NIK sahih & unik, ID unik, alamat, tanggal
+// lahir, tahun bergabung), lalu dirata-rata. Sebelumnya all-or-nothing (petani
+// dengan satu field kosong dihitung 0) sehingga skor kolaps ke 0% padahal
+// sebagian besar field terisi. Daftar anomali tidak berubah — hanya skornya.
 export function computePetaniDomain(farmers: CompletenessFarmerInput[]): DomainResult {
   const total = farmers.length;
 
@@ -98,16 +103,33 @@ export function computePetaniDomain(farmers: CompletenessFarmerInput[]): DomainR
   for (const a of anomalies) for (const item of a.items) flagged.add(item.farmerDbId);
   const completeFarmers = total - flagged.size;
 
+  // Skor graded: rata-rata proporsi check per petani (5 check per petani).
+  const checksPassed = (f: CompletenessFarmerInput): number => {
+    const nik = f.nik?.trim();
+    const nikOk = !!nik && NIK_REGEX.test(nik) && (nikCount.get(nik) ?? 0) === 1;
+    const fid = f.farmerId?.trim();
+    const farmerIdOk = !!fid && (farmerIdCount.get(fid) ?? 0) === 1;
+    return (
+      (nikOk ? 1 : 0) +
+      (farmerIdOk ? 1 : 0) +
+      (isBlank(f.address) ? 0 : 1) +
+      (f.birthDate != null ? 1 : 0) +
+      (f.joinedYear != null ? 1 : 0)
+    );
+  };
+  const score =
+    total > 0 ? (farmers.reduce((s, f) => s + checksPassed(f) / 5, 0) / total) * 100 : 0;
+
   return {
     domain: "petani",
     label: "Petani",
-    score: scorePercent(completeFarmers, total),
+    score,
     totalAnomalies: anomalies.reduce((s, a) => s + a.count, 0),
     cards: [
       { label: "Total Petani", value: total },
       { label: "Petani Lengkap", value: completeFarmers },
       { label: "Petani dengan Anomali", value: flagged.size },
-      { label: "% Kelengkapan", value: `${scorePercent(completeFarmers, total).toFixed(1)}%` },
+      { label: "% Kelengkapan Field", value: `${score.toFixed(1)}%` },
     ],
     anomalies,
   };
@@ -150,12 +172,25 @@ export function computeLahanDomain(farmers: CompletenessFarmerInput[]): DomainRe
   markParcel(noPlantingYear);
   markParcel(noCropType);
   markParcel(noLandStatus);
-  const cleanParcels = totalParcels - flaggedParcels.size;
+
+  // Skor GRADED per field (#193, keputusan owner 2026-07-28): tiap persil dinilai
+  // dari proporsi 5 atribut yang terisi (geometry, luas, tahun tanam, jenis
+  // tanaman, status lahan), lalu dirata-rata — bukan all-or-nothing per persil.
+  const parcelChecks = ({ parcel }: ParcelWithOwner): number =>
+    (parcel.geometry != null ? 1 : 0) +
+    (parcel.area != null && parcel.area > 0 ? 1 : 0) +
+    (parcel.plantingYear != null ? 1 : 0) +
+    (isBlank(parcel.cropType) ? 0 : 1) +
+    (isBlank(parcel.landStatus) ? 0 : 1);
+  const score =
+    totalParcels > 0
+      ? (parcels.reduce((s, p) => s + parcelChecks(p) / 5, 0) / totalParcels) * 100
+      : 0;
 
   return {
     domain: "lahan",
     label: "Lahan",
-    score: scorePercent(cleanParcels, totalParcels),
+    score,
     totalAnomalies: anomalies.reduce((s, a) => s + a.count, 0),
     cards: [
       { label: "Total Persil Aktif", value: totalParcels },

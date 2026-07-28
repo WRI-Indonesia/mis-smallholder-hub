@@ -220,7 +220,7 @@ JavaScript**, konsisten sifat statis halaman Bantuan (#182/#183).
 > | Biaya query per request tak terterima | Beban operasional "generate snapshot dulu" tak sepadan |
 >
 > Contoh snapshot: DASH-01 Main (`tbl_snapshot_main_dashboard`), DASH-04 BMP (`tbl_snapshot_bmp_dashboard`).
-> Contoh **live query**: **DASH-06 Dashboard Pelatihan** — `src/server/actions/dashboard-training.ts` query langsung lalu agregasi client-side lewat lib murni `src/lib/training-dashboard-aggregation.ts`; sengaja tanpa tabel snapshot (keputusan 2026-07-21, lihat `changelog.md`). Bila volume tumbuh, pola snapshot di bawah tetap jadi jalur migrasi.
+> Contoh **live query**: **DASH-06 Dashboard Pelatihan** — `src/server/actions/dashboard-training.ts` query langsung lalu agregasi client-side lewat lib murni `src/lib/training-dashboard-aggregation.ts`; sengaja tanpa tabel snapshot (keputusan 2026-07-21, lihat `changelog.md`); juga **DA-03 Dashboard Ketersediaan Data** (`data-availability.ts` + `data-availability-aggregation.ts`, #193). Bila volume tumbuh, pola snapshot di bawah tetap jadi jalur migrasi.
 >
 > Terlepas dari pilihannya, **lapisan RBAC tetap sama** (permission menu + access-context + `isActive`), dan agregasi tetap ditaruh di **lib murni yang bisa dites tanpa DB**.
 

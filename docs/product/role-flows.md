@@ -23,7 +23,7 @@
 - **Settings**: ❌ No access (tidak ada baris seed `settings-*` untuk ADMIN)
 - **Report**: ✅ Semua report (data ter-scope)
 - **Bulk Upload**: ✅ Petani, Lahan & Produksi (CREATE+VIEW, scope masing-masing)
-- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data)
+- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data + Dashboard Ketersediaan Data)
 - **Bantuan**: ✅ VIEW
 - **Tools**: ✅ Dashboard Snapshot + Snapshot BMP (generate/view/delete, scope distrik)
 
@@ -34,7 +34,7 @@
 - **Settings**: ❌ No access
 - **Report**: ✅ Semua report (data ter-scope Lembaga)
 - **Bulk Upload**: ✅ Petani & Produksi (CREATE+VIEW); Lahan hanya VIEW warisan dari `bulk-upload` (tanpa CREATE)
-- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data)
+- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data + Dashboard Ketersediaan Data)
 - **Bantuan**: ✅ VIEW
 - **Tools**: ❌ No access (tidak diberi akses Dashboard Snapshot)
 
@@ -45,7 +45,7 @@
 - **Settings**: ❌ No access
 - **Report**: ✅ View all reports (all data)
 - **Bulk Upload**: ❌ No access
-- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data)
+- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data + Dashboard Ketersediaan Data)
 - **Bantuan**: ✅ VIEW
 - **Tools**: 🟠 Dashboard Snapshot + Snapshot BMP (view-only, tanpa generate/delete)
 
@@ -58,7 +58,7 @@ Tipe pengguna untuk pihak donor/funder — **VIEW-only** pada subset menu. Cakup
 - **Map**: ✅ Peta Lahan + Peta BMP (VIEW)
 - **Bantuan**: ✅ VIEW
 - **Master Data**: ❌ No access
-- **Data Analyst**: ❌ No access
+- **Data Analyst**: ❌ No access (termasuk Dashboard Ketersediaan Data — keputusan owner #193: alat kerja internal kualitas data)
 - **Settings**: ❌ No access
 - **Bulk Upload**: ❌ No access
 - **Tools**: ❌ No access
