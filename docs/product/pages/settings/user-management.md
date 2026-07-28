@@ -92,7 +92,7 @@ Halaman: User Management (/admin/settings/users)
 |---|---|---|
 | `Nama` | Ya | `user.name` |
 | `Email` | Ya | `user.email` |
-| `Role` | Ya | Badge role berwarna: SUPERADMIN (merah), ADMIN (biru), OPERATOR (hijau), MANAGEMENT (ungu) |
+| `Role` | Ya | Badge role berwarna (`ROLE_BADGE_CLASS`, `src/lib/roles.ts`): SUPERADMIN (merah), ADMIN (biru), OPERATOR (hijau), MANAGEMENT (ungu), DONOR (teal) |
 | `Akses Data` | Tidak | Badge outline gabungan: nama provinsi, nama distrik, dan `abrv` (fallback `name`) lembaga petani; `—` bila tidak ada |
 | `Akses Menu` | Tidak | Badge amber `{n} Override` bila ada `permissionOverrides`; `—` bila kosong |
 | `Status` | Ya | Badge `Aktif` / `Nonaktif` |
@@ -110,7 +110,7 @@ Halaman: User Management (/admin/settings/users)
 |---|---|---|
 | `Nama` | Input | Wajib |
 | `Email` | Input | `type="email"`, wajib |
-| `Role` | Select | Opsi: `SUPERADMIN`, `ADMIN`, `OPERATOR`, `MANAGEMENT`; default `OPERATOR` |
+| `Role` | Select | Opsi digenerate dari `ROLES` (`src/lib/roles.ts`) — 5 opsi: `SUPERADMIN`, `ADMIN`, `OPERATOR`, `MANAGEMENT`, `DONOR`; default `OPERATOR` |
 | `Password` | Input | `type="password"`; wajib saat create. Saat edit label bersuffix `(kosongkan jika tidak diubah)` |
 | `Batal` / `Buat` / `Simpan` | Tombol | `Buat` saat create, `Simpan` saat edit |
 | Toast | Notifikasi | `User berhasil dibuat` / `User berhasil diupdate` |

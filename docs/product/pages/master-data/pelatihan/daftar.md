@@ -43,6 +43,7 @@ Halaman: Pelatihan (/admin/master-data/training)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Pelatihan` / `Data kegiatan pelatihan lembaga tani yang terdaftar` | Heading | h1 + deskripsi |
+| `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-training` (`findTutorialForMenu`), dibuka di tab baru |
 | Kartu KPI (4) | Kartu | `Total Lembaga Petani`, `Total Kegiatan Training`, `Total Peserta`, `Total Peserta Unik` |
 | Filter Distrik | Combobox | `Semua Distrik` |
 | Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` |

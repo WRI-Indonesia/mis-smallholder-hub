@@ -37,7 +37,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 |---|---|
 | File | `farmers/[id]/page.tsx` + `farmers/[id]/farmer-detail-client.tsx` |
 | Tipe | Server Component + client component |
-| Guard | `requirePermission("master-data-farmers")`; `hasPermission(...,"EDIT")` untuk tombol Edit; `notFound()` bila kosong |
+| Guard | `requirePermission("master-data-farmers")`; `hasPermission(...,"EDIT")` untuk tombol Edit; `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate aksi popup peta); `notFound()` bila kosong |
 | Server action / data | `getFarmerDetail(id)` → `{ farmer, detail, parcels, mapParcels }`, `getFarmerGroupOptions` (bila boleh edit), `getFarmerParcelPassport(parcelId)` untuk PDF |
 
 ## Objek halaman
@@ -52,7 +52,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | Tab Ringkasan | Kartu | Field: `Lembaga Petani` (link), `Distrik`, `Jenis Kelamin`, `NIK` (disensor), `Tempat, Tanggal Lahir` (+ umur), `Tahun Bergabung`, `Alamat`, `Dibuat`, `Terakhir Diubah` |
 | Tab Lahan — `Daftar Lahan (n)` | Tabel | `Kode Lahan`, `Kelompok Tani`, `Blok`, `Luas (Ha)`, `Tahun Tanam`, `Revisi`, `Profil Lahan`; empty state `Petani ini belum memiliki lahan.` |
 | Tombol `PDF` per baris lahan | Tombol | Unduh Farm Passport via `getFarmerParcelPassport` + `generateFarmPassportPdf` |
-| Tab Lahan — `Sebaran Lahan` | Peta | `ParcelsDistributionMap` (dynamic, ssr:false) |
+| Tab Lahan — `Sebaran Lahan` | Peta | `ParcelsDistributionMap` (dynamic, ssr:false); popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
 | Tab Pelatihan — `Paket Wajib` | Checklist | Per paket: ikon ✓/✗, label, jumlah partisipasi (`n×`) atau `Belum` |
 | Tab Pelatihan — `Riwayat Partisipasi (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Pre → Post Test`; empty state `Belum pernah mengikuti pelatihan.` |
 | Tab Produksi | Tabel + kartu | Sama pola dengan detail Lembaga: `Produksi per Tahun` (expandable bulanan) + `Ketersediaan Data Produksi per Lahan`; empty state `Belum ada data produksi untuk petani ini.` |

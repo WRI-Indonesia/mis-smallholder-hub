@@ -26,7 +26,7 @@ Menu: Dashboard (/admin/dashboard)
 | Icon | `LayoutDashboard` |
 | Order | `0` |
 | Sub menu | 3 — Main Dashboard (`dashboard-main`), BMP Dashboard (Produksi) (`dashboard-bmp`), Dashboard Pelatihan (`dashboard-training`) |
-| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT (untuk `dashboard` dan ketiga sub menu) |
+| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (untuk `dashboard` dan ketiga sub menu — `prisma/seeds/data/role-permissions.csv`) |
 
 Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 

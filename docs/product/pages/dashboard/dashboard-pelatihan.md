@@ -63,6 +63,8 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 | Guard | `requirePermission("dashboard-training")` (halaman); `hasPermission("dashboard-training", "VIEW")` + `getAccessContext()` di action |
 | Server action / data | `getTrainingDashboardView()` dari `src/server/actions/dashboard-training.ts` — query langsung ke DB (bukan snapshot), difilter `isActive` + access context; `getUntrainedFarmers(groupId, packageCode, year)` untuk dialog drill-down |
 | Helper agregasi | `filterTrainingGroups`, `trainingTotals`, `trainingCoverageMatrix`, `trainingActivePackages`, `trainingTrendSeries`, `trainingScoreRows`, `trainingQualityStats`, `trainingAvailableYears`, `trainingTargetGap` / `TRAINING_COVERAGE_TARGET` dari `src/lib/training-dashboard-aggregation.ts` |
+| Persistensi filter | `useUrlFilters()` (`src/hooks/use-url-filters.ts`, TD-021) — filter disimpan di query string, kunci `distrik`, `lembaga`, `kategori`, `tahun`; via History API `replaceState` (bukan `router.replace`, agar tidak memicu ulang payload RSC); nilai kosong dihapus dari query |
+| Uji performa | `src/test/perf.test.ts` (TD-020) — agregat (KPI + matriks + tren + skor) diuji pada fixture 60.000 baris kehadiran, ambang < 1.200 ms; pagar sebelum menimbang beralih ke pola snapshot |
 | Icon menu | `GraduationCap` |
 
 ## Objek halaman
@@ -75,6 +77,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
 | Filter Tahun | Select | Default "Semua Tahun" (kumulatif) + daftar tahun dari data |
+| Perilaku filter | Catatan | Nilai tersimpan di URL (`?distrik=…&lembaga=…&kategori=…&tahun=…`) sehingga bisa di-bookmark/dibagikan; mengubah Distrik atau Kategori mereset Lembaga (`setMany`); nilai URL yang tak valid (lembaga nonaktif, kategori/tahun sembarang) diabaikan → dashboard tampil sebagai "Semua", bukan tampilan kosong |
 | Kartu KPI (5 kartu) | Kartu KPI | Lihat rincian di bawah |
 | Matriks cakupan | Tabel heatmap (collapsible) | Lihat rincian di bawah |
 | Chart tren kehadiran | Stacked bar chart (SVG kustom) | Lihat rincian di bawah |

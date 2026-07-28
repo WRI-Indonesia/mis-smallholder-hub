@@ -10,7 +10,7 @@ Menggunakan **Semantic Versioning** (`MAJOR.MINOR.PATCH`) yang diadaptasi untuk 
 
 | Bump | Kapan dianggap naik versi | Contoh |
 | --- | --- | --- |
-| **MAJOR** | Perubahan yang memutus kompatibilitas: migrasi DB yang butuh intervensi manual/berisiko data, perombakan RBAC/alur login, perubahan struktur data yang membuat data lama tidak kompatibel, atau milestone besar (go-live produksi = `1.0.0`) | Restrukturisasi hierarki Petani → Kelompok Tani → Lembaga Petani yang mengubah data existing |
+| **MAJOR** | Perubahan yang memutus kompatibilitas: migrasi DB yang butuh intervensi manual/berisiko data, perombakan RBAC/alur login, perubahan struktur data yang membuat data lama tidak kompatibel, atau milestone besar (go-live produksi = `1.0.0`) | Penggantian mekanisme autentikasi yang memutus semua sesi/integrasi login, atau perubahan skema breaking pasca-1.0 yang butuh migrasi manual. (Catatan: restrukturisasi hierarki #189 memenuhi kriteria ini, tapi dirilis sebagai MINOR `0.16.0` sesuai aturan Pre-1.0.) |
 | **MINOR** | Fitur baru yang terlihat pengguna: satu phase roadmap berstatus ✅ Done, modul/menu baru, kolom atau alur baru di UI | Phase MAP-01 selesai, bulk upload region baru, report baru |
 | **PATCH** | Perbaikan tanpa fitur baru: bugfix, perbaikan performa, penyesuaian UI kecil, koreksi validasi | Perbaikan performa list action (#163) |
 

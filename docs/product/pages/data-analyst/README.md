@@ -7,7 +7,7 @@
 | Menu key | `data-analyst` |
 | URL | `/admin/data-analyst` |
 | Icon | `BarChart3` |
-| Sub menu | 2 — Ringkasan Petani (`data-analyst-farmer-summary`), Analisa Ketersediaan Data (`data-analyst-data-completeness`) |
+| Sub menu | 3 — Ringkasan Petani (`data-analyst-farmer-summary`), Analisa Ketersediaan Data (`data-analyst-data-completeness`), Dashboard Ketersediaan Data (`data-analyst-data-availability`) |
 
 ## Diagram objek
 
@@ -15,8 +15,10 @@
 Menu: Data Analyst (/admin/data-analyst)
 ├── Sub Menu: Ringkasan Petani (data-analyst-farmer-summary)
 │   └── Page: Ringkasan Petani (/admin/data-analyst/farmer-summary)
-└── Sub Menu: Analisa Ketersediaan Data (data-analyst-data-completeness)
-    └── Page: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
+├── Sub Menu: Analisa Ketersediaan Data (data-analyst-data-completeness)
+│   └── Page: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
+└── Sub Menu: Dashboard Ketersediaan Data (data-analyst-data-availability)
+    └── Page: Dashboard Ketersediaan Data (/admin/data-analyst/data-availability)
 ```
 
 ## Daftar sub menu
@@ -25,6 +27,7 @@ Menu: Data Analyst (/admin/data-analyst)
 |---|---|---|---|---|
 | 1 | Ringkasan Petani | `data-analyst-farmer-summary` | `/admin/data-analyst/farmer-summary` | [ringkasan-petani.md](./ringkasan-petani.md) |
 | 2 | Analisa Ketersediaan Data | `data-analyst-data-completeness` | `/admin/data-analyst/data-completeness` | [analisa-ketersediaan-data.md](./analisa-ketersediaan-data.md) |
+| 3 | Dashboard Ketersediaan Data | `data-analyst-data-availability` | `/admin/data-analyst/data-availability` | [dashboard-ketersediaan-data.md](./dashboard-ketersediaan-data.md) |
 
 ## Catatan route induk
 

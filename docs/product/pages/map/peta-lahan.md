@@ -27,6 +27,8 @@ Halaman: Peta Lahan (/admin/map/parcel)
 │   ├── Layer: Overlay raster · Titik api · Layer GIS tambahan
 │   ├── Popup fitur: Lembaga Petani · Titik Api · Lahan
 │   │   └── Popup Lahan: Detail Lahan · Pelatihan Petani · Produksi · Profil Lahan
+│   │       └── Aksi: Lihat Detail · Edit Lahan
+│   ├── Modal: Edit Lahan (dari popup)
 │   └── Legend
 ├── Panel kanan atas: Ukur jarak & luas · Daftar Lahan
 └── Tombol: Zoom ke semua data · Basemap switcher
@@ -38,9 +40,9 @@ Halaman: Peta Lahan (/admin/map/parcel)
 |---|---|
 | Menu key | `map-parcel` (URL `/admin/map/parcel`, icon `MapPinned`, order 1) |
 | File | `src/app/(admin)/admin/map/parcel/page.tsx` |
-| Client | `map-parcel-client.tsx` (orkestrasi), `map-control-panel.tsx` (panel kiri), `map-canvas.tsx` (peta + popup), `map-custom-gis.tsx`, `map-overlays.ts`, `map-hotspot.ts`, `map-geo.ts` |
+| Client | `map-parcel-client.tsx` (orkestrasi), `map-control-panel.tsx` (panel kiri), `map-canvas.tsx` (peta + popup), `map-custom-gis.tsx`, `map-overlays.ts`, `map-hotspot.ts`, `map-geo.ts`; primitif popup bersama `src/components/shared/map-popup.tsx` (TD-028) + `parcel-popup-actions.tsx` & `parcel-edit-modal-host.tsx` (dari `master-data/parcels/components/`) |
 | Tipe | Server Component (opsi provinsi) → Client Component (peta interaktif) |
-| Guard | `requirePermission("map-parcel")`; action `getMapData` guard `hasPermission("map-parcel", "VIEW")` + `getAccessContext()` |
+| Guard | `requirePermission("map-parcel")`; `page.tsx` juga menghitung `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate tombol aksi popup); action `getMapData` guard `hasPermission("map-parcel", "VIEW")` + `getAccessContext()` |
 | Server action / data | `getProvincesForMap()`, `getDistrictsForMap()`, `getFarmerGroupsForMap()`, `getMapData()`, `getFarmerTraining()`, `getParcelProduction()`, `getParcelPassport()` (`src/server/actions/map.ts`); proxy same-origin `/api/map-overlay/[key]` (SIGAP KLHK) dan `/api/map-hotspot` (NASA FIRMS) |
 | Loading | `loading.tsx` |
 
@@ -79,3 +81,5 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Popup › Pelatihan Petani | Section popup | Lazy-load `getFarmerTraining`; daftar paket dengan centang selesai + tanggal; error "Gagal memuat pelatihan." |
 | Popup › Produksi | Section popup | Lazy-load `getParcelProduction`; select "Rata-rata" atau per tahun; grafik batang bulanan (kg); "Belum ada data produksi." bila kosong |
 | Profil Lahan | Tombol popup | Generate PDF Farm Passport (`src/lib/farm-passport.ts`) via `getParcelPassport`; label proses "Menyiapkan..."; gagal → toast "Gagal membuat PDF profil lahan" |
+| Aksi popup Lahan | Footer popup | `ParcelPopupActions`: tombol "Lihat Detail" (link `/admin/master-data/parcels/{id}`, gate `hasPermission("master-data-parcels", "VIEW")`) dan "Edit Lahan" (gate EDIT, membuka modal edit); footer tak dirender bila keduanya false |
+| Modal Edit Lahan | Modal | `ParcelEditModalHost` — dirender hanya saat ada `parcelId` (remount per id via `key`); data lahan + daftar petani di-load lazy saat mount (`getLandParcelById` + `getParcelFarmerOptions`); lahan tak ditemukan → toast "Lahan tidak ditemukan atau di luar akses Anda", gagal fetch → "Gagal memuat data lahan"; setelah simpan peta refetch GeoJSON (`onParcelUpdated` → muat ulang data dengan filter aktif) |

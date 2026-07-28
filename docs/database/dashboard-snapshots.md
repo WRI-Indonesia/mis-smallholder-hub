@@ -243,4 +243,4 @@ Pola yang sama dipakai **card & badge sertifikasi (#169, 2026-07-16)**: `certSta
 
 - Detail/tabular KT/Blok → **real-time** (Report #154; detail Petani #152).
 - Saat KT jadi tabel (**TD-014**), agregasi teks → query relasi.
-- Semantik distinct dashboard = per-(Lembaga × KT); Report #154 per-(Lembaga × KT) — beda granularitas *by design*.
+- Semantik distinct dashboard = per-(Lembaga × KT); Report #154 juga per-(Lembaga × KT) — granularitas **identik** pasca-#189 (level Gapoktan di-drop; sebelumnya Report memakai Lembaga × Gapoktan × KT).

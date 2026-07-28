@@ -79,7 +79,7 @@ Halaman: Menu Management (/admin/settings/menu)
 | `Title` | Input | Wajib |
 | `URL` | Input | Wajib |
 | `Parent` | Select | Opsi `— Tidak ada (root) —` plus daftar menu level 1 dan level 2 (level 2 diberi prefix `— `). Item yang sedang diedit beserta seluruh turunannya dikecualikan agar tidak terjadi siklus |
-| `Icon` | Select | Opsi `— Tanpa icon —` plus `ICON_LIST` (`src/lib/icon-map.ts`); placeholder `Pilih icon` |
+| `Icon` | Select | Opsi `— Tanpa icon —` plus `ICON_LIST` (`src/lib/icon-map.tsx`); placeholder `Pilih icon` |
 | `Aktif` | Switch | Default aktif |
 | `Visible` | Switch | Default aktif |
 | `Batal` / `Buat` / `Simpan` | Tombol | `Buat` saat create, `Simpan` saat edit |

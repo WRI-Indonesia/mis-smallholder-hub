@@ -56,8 +56,8 @@ Format phase: `STREAM-NN`.
 | MD       | Master Data            | Regions, groups, farmer, parcels, training, staff, agronomy, HCV, BUSDEV, IMPACT, workplan |
 | DASH     | Dashboard              | Basic dashboard, server actions, interactive map, BMP, Pelatihan                           |
 | MAP      | Geospatial Map Explorer | Peta interaktif sebaran KT & lahan, filter spasial (Province/District/KT), layer toggle    |
-| RPT      | Report                 | Report User, Region, Lembaga Petani, Kelompok Tani; summary tabel + export Excel/PDF                      |
-| BULK     | Bulk Upload            | Bulk upload CSV untuk Region dan Lembaga Petani; validasi, preview, insert                  |
+| RPT      | Report                 | Report Petani, Pelatihan, Produksi, Kelompok Tani (Summary+Detail), Lahan; summary tabel + export Excel/PDF |
+| BULK     | Bulk Upload            | Bulk upload Farmer (Excel), Produksi (Excel), Lahan (Shapefile ZIP) ✅; Region & Lembaga Petani/KT masih planned (#69, #70) |
 | TOOLS    | Tools & Utility        | Import, export, GIS, S3/PDF utility                                                        |
 | DA       | Data Analyst           | Ringkasan Petani, Analisa Ketersediaan Data (anomali/kelengkapan), analytics dashboards    |
 | CMS      | Content Management     | Pages, media, knowledge base                                                               |
@@ -107,7 +107,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | RPT-05      | Report: Lahan                       | ✅ Done        | Done    |
 | HELP-01     | Bantuan: Panduan Penggunaan         | ✅ Done        | Done    |
 | HELP-02     | Bantuan: Tutorial per Tugas         | ✅ Done        | Done    |
-| BULK-01     | Bulk Upload: Menu & KT              | ✅ Done        | Done    |
+| BULK-01     | Bulk Upload: Menu & Route           | ✅ Done        | Done    |
 | BULK-02     | Bulk Upload: Region                 | 🔲 Not Started | Next    |
 | BULK-03     | Bulk Upload: Farmer                 | ✅ Done        | Done    |
 | BULK-04     | Bulk Upload: Production             | ✅ Done        | Done    |
@@ -152,6 +152,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <summary><strong>PLATFORM-04</strong> · ✅ Done — Autentikasi & RBAC</summary>
 
 - **Evidence:** NextAuth credentials, RBAC helpers, role permissions, data access, menu override — 5 auth tests.
+- **#187 ✅ (2026-07-22):** role kelima **`DONOR`** — enum `Role.DONOR` (migrasi `20260722010000`), sentralisasi daftar role ke `src/lib/roles.ts` (ganti 5 titik hardcode), seed **15 baris DONOR VIEW** (Dashboard/Report/Map/Bantuan, tanpa CREATE/EDIT/DELETE); migrasi + seed diterapkan ke mis-prod.
 - **Next step:** Maintain and test regression.
 
 </details>
@@ -160,6 +161,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <summary><strong>PLATFORM-05</strong> · ✅ Done — Dynamic Menu Management</summary>
 
 - **Evidence:** `MenuItem` schema, seed, menu server actions, sidebar, menu management page.
+- **#187B ✅ (2026-07-22):** perombakan UI **Menu Management & Role & Permission** — render **rekursif 3 level** via helper bersama `src/lib/menu-tree.ts` (fix bug menu level-3 tak muncul di matriks), collapsible per induk (`localStorage`), header + kolom Menu **sticky**, selektor role, search, toggle baris + **kaskade induk→anak** ber-konfirmasi, feedback optimistis via `setRolePermissions(updates[])`; **SUPERADMIN dikecualikan** dari matriks.
 - **Next step:** Maintain.
 
 </details>
@@ -474,10 +476,10 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 #### BULK — Bulk Upload
 
 <details>
-<summary><strong>BULK-01</strong> · ✅ Done — Bulk Upload: Menu & KT</summary>
+<summary><strong>BULK-01</strong> · ✅ Done — Bulk Upload: Menu & Route</summary>
 
-- **Evidence:** Menu & route setup ✅; redirect `/admin/bulk-upload` → `/farmers` implemented ✅.
-- **Next step:** Maintain; #68 complete.
+- **Evidence:** Menu & route setup ✅; redirect `/admin/bulk-upload` → `/farmers` implemented ✅. (Cakupan fase dipersempit ke **#68 — menu & route**; judul lama "Menu & KT" menyesatkan karena Bulk Upload KT belum ada.)
+- **Next step:** Maintain; #68 complete. **#69 Bulk Upload KT (CSV) masih 🔲 Todo** — dikerjakan bersama BULK-02 #70 (lihat [sprint.md](./sprint.md)).
 
 </details>
 
@@ -573,7 +575,8 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <summary><strong>OPS-02</strong> · 🟠 Partial — DevOps & Deployment</summary>
 
 - **Evidence:** Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`).
-- **Next step:** Verify deployment, env matrix, rollback, and CI status.
+- **CI status ✅ diverifikasi 2026-07-21:** **4 workflow aktif** — `gitleaks` (push & PR), `semgrep` (SAST di PR), `deploy-dev.yaml`, `deploy-main.yml`; **merge PR ke `main` = deploy produksi otomatis** (SSH + `pm2 reload`). Lint/build/test tetap gate lokal (keputusan owner); `deploy-main.yml` menjalankan `prisma generate`, **bukan** `migrate deploy` — migrasi DB manual sebelum merge.
+- **Next step:** Verify env matrix & rollback.
 
 </details>
 

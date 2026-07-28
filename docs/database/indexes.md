@@ -28,6 +28,11 @@
 | MenuItem | UNIQUE | `key` | Menu item lookup by slug |
 | **Farmer Group** | | | |
 | FarmerGroup | PK | `id` (CUID) | Primary key |
+| **Farmer** | | | |
+| Farmer | PK | `id` (CUID) | Primary key |
+| Farmer | UNIQUE | `(farmerGroupId, farmerId)` | ID Petani unik per Lembaga (TD-024, migration 20260721060000) |
+| **Land Parcel** | | | |
+| LandParcel | PK | `id` (CUID) | Primary key |
 | **Training** | | | |
 | TrainingPackage | PK | `id` (CUID) | Primary key |
 | TrainingPackage | UNIQUE | `code` (TrainingCategory enum) | Package lookup by category |
@@ -40,6 +45,8 @@
 | **Dashboard Snapshot** | | | |
 | MainDashboardSnapshot | PK | `id` (CUID) | Primary key |
 | MainDashboardSnapshot | UNIQUE | `(snapshotDate, districtId, joinedYear)` | Prevent duplicate snapshot untuk kombinasi tanggal + filter |
+| BmpDashboardSnapshot | PK | `id` (CUID) | Primary key |
+| BmpDashboardSnapshot | UNIQUE | `(snapshotDate, districtId)` | Prevent duplicate snapshot untuk kombinasi tanggal + filter |
 | **RBAC** | | | |
 | RolePermission | PK | `id` (CUID) | Primary key |
 | RolePermission | UNIQUE | `(role, menuKey, permission)` | Prevent duplicate role permissions |
@@ -78,6 +85,9 @@
 | **MainDashboardSnapshot** | `snapshotDate` | Ambil snapshot terbaru (dashboard read) | HIGH |
 | MainDashboardSnapshot | `createdBy` | Audit/list snapshot per user | LOW |
 | MainDashboardSnapshot | `isActive` | Filter snapshot aktif (soft delete) | MEDIUM |
+| **BmpDashboardSnapshot** | `snapshotDate` | Ambil snapshot terbaru (dashboard read) | HIGH |
+| BmpDashboardSnapshot | `createdBy` | Audit/list snapshot per user | LOW |
+| BmpDashboardSnapshot | `isActive` | Filter snapshot aktif (soft delete) | MEDIUM |
 
 ### Index Maintenance Notes
 

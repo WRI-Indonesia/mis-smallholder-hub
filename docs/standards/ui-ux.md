@@ -69,6 +69,16 @@ Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus d
   - Kustomisasi mapping baris dilakukan melalui prop `getExportRow` untuk meratakan relasi atau data kompleks.
 - **Posisi Tombol Tambah**: Tombol "Tambah / Create" di-render secara konsisten di paling kanan toolbar menggunakan prop `toolbarRight` dari `<DataTable>`.
 
+### Pola UI Settings — Matriks & Tabel Bertingkat (#187B)
+
+Standar reusable untuk halaman Settings bermatriks/bertingkat (contoh kanonis: `role-matrix-client.tsx`, juga dipakai `menu-list-client.tsx`):
+
+- **Sticky header + sticky kolom pertama** di dalam scroll box (`overflow-auto max-h-[70vh]`): tabel `border-separate border-spacing-0`, header `sticky top-0`, kolom pertama `sticky left-0` — latar sel sticky **wajib opaque** (`bg-muted` / bg baris) agar sel di belakangnya tidak tembus saat scroll.
+- **Pohon collapsible** dengan state per-halaman di `localStorage` via `useCollapseState` (`src/lib/use-collapse-state.ts`) — default collapsed, dibaca pasca-mount untuk mencegah hydration mismatch; tree helper dari `src/lib/menu-tree.ts`.
+- **Chip selektor role** (toggle kolom per role) + tombol **"Semua"** untuk menampilkan kembali seluruh kolom.
+- **Aksi kaskade** (induk → anak) selalu lewat **dialog konfirmasi** dengan pilihan eksplisit ("hanya induk" vs "termasuk sub-menu").
+- **Update optimistis + rollback**: terapkan perubahan ke state lokal dulu, panggil server action, dan kembalikan state sebelumnya (`setGranted(prev)`) bila gagal + toast error.
+
 ### State & Feedback
 
 - Loading state wajib (skeleton/spinner)

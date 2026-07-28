@@ -59,6 +59,8 @@ flowchart LR
 
 ### Recommended Implementation Order
 
+> **Arsip historis** — rencana urutan awal proyek, seluruh step-nya sudah terlaksana (lihat Phase Status di [`roadmap.md`](./roadmap.md)) kecuali #69/#70. Penomoran issue RPT lama di tabel ini (#65 Report User, #66 Report Region, #67 Report KT) **tidak pernah dipakai** — realisasi stream RPT: RPT-01 Petani (#107), RPT-02 Pelatihan (#108), RPT-03 Produksi (#132), RPT-04 Kelompok Tani (#154), RPT-05 Lahan (#177/#179).
+
 | Step | Phase / Bug | Scope Minimal                                          | Prasyarat                        | Catatan Tech Lead                                        |
 | ---- | ----------- | ---------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------- |
 | 1    | BUG-001     | Fix `/admin/master-data` redirect                      | Existing routes                  | Pilih redirect ke groups atau implement farmer          |
@@ -182,9 +184,9 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 2. ✅ **Build**: `npm run build` — no errors or warnings
 3. ✅ **Lint**: `npm run lint` — **exit 0**, 0 error (BUG-006 ✅ selesai 2026-07-12, #126; wajib dijalankan lokal sebelum commit — lihat Pre-Commit Gate di [`workflow.md`](../standards/workflow.md))
 4. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
-4. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
-4. ✅ **Code Review**: Implementation matches rule.md requirements
-5. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
+5. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
+6. ✅ **Code Review**: Implementation matches rule.md requirements
+7. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
 
 #### Common Pitfalls & Fixes
 

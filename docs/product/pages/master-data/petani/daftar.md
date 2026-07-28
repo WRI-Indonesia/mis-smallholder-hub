@@ -42,6 +42,7 @@ Halaman: Petani (/admin/master-data/farmers)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Petani` / `Data petani (smallholder) yang terdaftar` | Heading | h1 + deskripsi |
+| `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-farmers` (`findTutorialForMenu`), dibuka di tab baru |
 | Kartu KPI (4) | Kartu | `Total Lembaga Petani`, `Total Petani`, `Petani Laki-laki`, `Petani Perempuan` |
 | Filter Distrik | Combobox | Popover + Command, `Semua Distrik`, cari `Cari distrik...`, empty `Distrik tidak ditemukan.` |
 | Filter Lembaga Petani | Combobox | `Semua Lembaga Petani`, cari `Cari lembaga petani...`, empty `Lembaga Petani tidak ditemukan.` |
@@ -55,6 +56,8 @@ Halaman: Petani (/admin/master-data/farmers)
 ## Dialog: `FarmerFormModal` (`farmers/farmer-form-modal.tsx`)
 
 Judul `Tambah Petani` / `Edit Petani`; aksi `createFarmer` / `updateFarmer`; validasi `farmerSchema` / `updateFarmerSchema` (`src/validations/farmer.schema.ts`); tombol `Batal` + `Buat`/`Simpan`.
+
+Keunikan **ID Petani per Lembaga** (TD-024, `@@unique([farmerGroupId, farmerId])`) dicek di `createFarmer`/`updateFarmer` **termasuk baris nonaktif**; galat ditampilkan di field `ID Petani`: `ID Petani sudah terdaftar di lembaga ini` / `ID Petani dipakai petani nonaktif di lembaga ini — aktifkan kembali datanya` (`src/server/actions/farmer.ts`).
 
 | Field | Input |
 |---|---|

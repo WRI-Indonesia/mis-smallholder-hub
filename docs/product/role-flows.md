@@ -5,6 +5,8 @@
 <details>
 <summary><strong>Role-Specific Access Summary</strong></summary>
 
+> Matriks di bawah menggambarkan **grant awal seed** (`prisma/seeds/data/role-permissions.csv`) + pewarisan kaskade induk→anak (`getEffectiveMenuPermissions`, lihat [access-context.md](./access-context.md)). `RolePermission` dapat diubah runtime via **Settings → Role & Permission**, jadi instalasi berjalan bisa berbeda dari default ini.
+
 ## SUPERADMIN
 
 - **Dashboard**: ✅ Main Dashboard + BMP (semua snapshot, semua data) · ✅ **Dashboard Pelatihan** (live query, semua Lembaga)
@@ -17,29 +19,35 @@
 ## ADMIN (District/Province Level)
 
 - **Dashboard**: ✅ Main Dashboard + BMP (snapshot dalam scope distrik + org-wide) · ✅ **Dashboard Pelatihan** (live query, ter-scope distrik via `farmerGroupAccessFilter` per request)
-- **Master Data**: ✅ CRUD within assigned district (Groups, Farmers, Training)
-- **Settings**: 🟠 Limited (View/Edit users based on permission)
-- **Report**: 🔲 Filtered reports (User, KT within scope)
-- **Bulk Upload**: ✅ Farmer (assigned groups only)
-- **Tools**: ✅ Dashboard Snapshot (generate/view/delete, scope distrik)
+- **Master Data**: ✅ CRUD penuh Pelatihan/Lahan/Produksi (scope distrik); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`)
+- **Settings**: ❌ No access (tidak ada baris seed `settings-*` untuk ADMIN)
+- **Report**: ✅ Semua report (data ter-scope)
+- **Bulk Upload**: ✅ Petani, Lahan & Produksi (CREATE+VIEW, scope masing-masing)
+- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data)
+- **Bantuan**: ✅ VIEW
+- **Tools**: ✅ Dashboard Snapshot + Snapshot BMP (generate/view/delete, scope distrik)
 
 ## OPERATOR (Field Level)
 
 - **Dashboard**: ✅ Main Dashboard + BMP (VIEW; snapshot dalam scope KT + org-wide) · ✅ **Dashboard Pelatihan** (VIEW; live query ter-scope Lembaga yang di-assign)
-- **Master Data**: ✅ CRUD Farmers/Parcels/Training/Production within assigned KT
+- **Master Data**: ✅ Pelatihan CRUD penuh; Lahan & Produksi CREATE/EDIT/VIEW (**tanpa DELETE**); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`) — dalam scope Lembaga yang di-assign
 - **Settings**: ❌ No access
-- **Report**: 🔲 View reports (assigned KT only)
-- **Bulk Upload**: ❌ No access
+- **Report**: ✅ Semua report (data ter-scope Lembaga)
+- **Bulk Upload**: ✅ Petani & Produksi (CREATE+VIEW); Lahan hanya VIEW warisan dari `bulk-upload` (tanpa CREATE)
+- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data)
+- **Bantuan**: ✅ VIEW
 - **Tools**: ❌ No access (tidak diberi akses Dashboard Snapshot)
 
 ## MANAGEMENT (Read-Only)
 
 - **Dashboard**: ✅ Main Dashboard + BMP (view all metrics, organization-wide) · ✅ **Dashboard Pelatihan** (VIEW, organization-wide)
-- **Master Data**: ❌ Read-only (no CRUD)
+- **Master Data**: 🟠 View-only (semua modul master data VIEW, tanpa CRUD)
 - **Settings**: ❌ No access
-- **Report**: 🔲 View all reports (all data)
+- **Report**: ✅ View all reports (all data)
 - **Bulk Upload**: ❌ No access
-- **Tools**: 🟠 Dashboard Snapshot (view-only, tanpa generate/delete)
+- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data)
+- **Bantuan**: ✅ VIEW
+- **Tools**: 🟠 Dashboard Snapshot + Snapshot BMP (view-only, tanpa generate/delete)
 
 ## DONOR (Read-Only donor/funder, #187)
 

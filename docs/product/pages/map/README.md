@@ -34,6 +34,7 @@ Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawa
 | Glyphs label | `https://fonts.openmaptiles.org/{fontstack}/{range}.pbf`, font `Open Sans Regular` |
 | View awal | `longitude: 101.8, latitude: 0.6, zoom: 9` (Riau), lalu auto `fitBounds` ke data yang dimuat |
 | Kontrol zoom | Tidak ada `NavigationControl` bawaan — zoom via scroll/pinch/double-click + tombol "Zoom ke semua data" |
+| Popup standar (TD-028) | Primitif bersama `src/components/shared/map-popup.tsx` (`MapPopupHeader`, `MapPopupHighlight`, `MapPopupSection`, `MapPopupRows`) + props `<Popup>` baku `MAP_POPUP_PROPS`; footer aksi `ParcelPopupActions` + modal `ParcelEditModalHost` (`master-data/parcels/components/`). Rule: `docs/standards/ui-ux.md` §Geospatial Features — "Popup lahan (STANDAR)" |
 | Layout | Peta full-bleed `-m-6 h-[calc(100vh-3.5rem)]`, panel mengambang di atas canvas |
 
 ## Daftar sub menu

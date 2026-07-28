@@ -16,8 +16,8 @@
 | PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup |
 | PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 20 model / 19 migrasi / 11 file schema) |
 | PLATFORM-03 | Schema Hardening | Audit fields, soft-delete pattern |
-| PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides |
-| PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child |
+| PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides; +role **DONOR** read-only (#187) + sentralisasi daftar role ke `src/lib/roles.ts` |
+| PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child; perombakan UI Menu Management & Role & Permission (#187B): render rekursif 3 level (`menu-tree.ts`), collapsible, sticky header/kolom, selektor role, kaskade induk→anak, SUPERADMIN dikecualikan dari matriks |
 | PLATFORM-06 | DataTable & Export | Column visibility, Excel export (exceljs) |
 | PLATFORM-07 | 3-Level Menu | Sidebar, RBAC inheritance, validation depth max 3 |
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD |
@@ -31,8 +31,8 @@
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
 | DASH-04 | BMP Dashboard (Produksi) | Snapshot-backed `/admin/dashboard/bmp`: 4 card produksi + combo chart produksi/% lahan melapor + panel Ketersediaan Data 4 kategori (reuse MAP-02) + filter global Kategori/Distrik/Lembaga/Tahun/Kelengkapan Data; tools generate `/admin/tools/snapshot-bmp` (#166) |
 | DASH-06 | Dashboard Pelatihan | **Live query (bukan snapshot)** `/admin/dashboard/training`: 5 KPI card (cakupan petani terlatih, kegiatan, kehadiran vs unik, partisipasi perempuan, kenaikan skor) + matriks cakupan Lembaga × Paket (heatmap sortable, collapsible) + tren stacked-bar per paket + panel efektivitas pre/post + panel kualitas data ber-deep-link; **drill-down sel → daftar petani belum dilatih (salin/Excel)**; target 100% per paket; filter Kategori/Distrik/Lembaga/Tahun client-side |
-| MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible |
-| MAP-02 | Map: Peta BMP (Layer 1) | Peta tematik **Ketersediaan Data Produksi** per-lahan, 4 kategori dari run bulan berturut-turut produksi (#144); KT wajib (Prov/Distrik opsional); `getBmpMapData` (groupBy scoped, no N+1) + data-driven color MapLibre. **Poligon saja tanpa titik** (NONE outline-only, lainnya fill). **Cetak** → PDF A4 landscape (hal.1 peta+legend, hal.2+ matriks per lahan × bulan = total kg/latar hijau) + **Download Excel** matriks. **Panel kanan floating minimizable**: matriks ketersediaan per lahan × bulan (true/false) + Zoom to. Seed `map-bmp` menu+VIEW ✅ |
+| MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible; aksi popup **Lihat Detail**/**Edit Lahan** ber-gate permission via primitif bersama `map-popup.tsx` (#188) |
+| MAP-02 | Map: Peta BMP (Layer 1) | Peta tematik **Ketersediaan Data Produksi** per-lahan, 4 kategori dari run bulan berturut-turut produksi (#144); KT wajib (Prov/Distrik opsional); `getBmpMapData` (groupBy scoped, no N+1) + data-driven color MapLibre. **Poligon saja tanpa titik** (NONE outline-only, lainnya fill). **Cetak** → PDF A4 landscape (hal.1 peta+legend, hal.2+ matriks per lahan × bulan = total kg/latar hijau) + **Download Excel** matriks. **Panel kanan floating minimizable**: matriks ketersediaan per lahan × bulan (true/false) + Zoom to. Seed `map-bmp` menu+VIEW ✅. Aksi popup Lihat Detail/Edit Lahan standar #188 (`map-popup.tsx`) |
 | MAP-03 | Map: Peta BMP Layer 2 (Produktivitas) | Layer tematik kedua di halaman yang sama (#174): **Produktivitas (Ton/Ha) per persil** = Σ produksi tahun ÷ luas persil; panel kiri **2 section layer ber-radio** ("Ketersediaan Data Produksi" / "Produktivitas (Ton/Ha)", satu aktif); selektor **Tahun (default terbaru) + Rata-rata**; 5 kelas warna (≥20 / 15–20 / 10–15 / <10 / tanpa data outline-only, ambang `PRODUCTIVITY_*_MIN`). Hitung **realtime client-side** (pure helper `map-data.ts` atas payload `getBmpMapData` existing — zero query/migration baru). **Cetak & Excel WYSIWYG ikut layer aktif**: layer Produktivitas → PDF legend produktivitas + tabel Ton/Ha per lahan × tahun (sel berwarna kelas) + Excel Produktivitas |
 | RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
 | RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
@@ -137,13 +137,24 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-23). Total baris
 
 ---
 
-## Priority Actions (Next 2 Weeks)
- 
+## Priority Actions (berjalan)
+
+Prioritas terbuka saat ini — selaras [../project/sprint.md](../project/sprint.md) & [../project/tech-debt.md](../project/tech-debt.md):
+
 | Priority | Action | Owner | Deadline | Impact |
 |----------|--------|-------|----------|--------|
-| **P0** | **Remediasi audit — guard/scope RBAC** (`role-permission.ts`, `menu.ts`, `upload.ts`, `getFarmerById`, `bulkCreateFarmers`, menuKey Roles) | Engineering | ASAP | Menutup celah pemanggilan server action langsung (UI-bypass) |
-| ✅ P1 | **Lint hijau kembali (#126)** — ✅ Done 2026-07-12 | Engineering | — | `npm run lint` **exit 0**; gate ditegakkan lokal via Pre-Commit Gate (`workflow.md`) |
-| ✅ P2 | **Cleanup dead code & deps (#129)** — ✅ Done 2026-07-12 | Engineering | — | 9 deps 0-usage + 7 file mati terhapus, helper "for select" dikonsolidasi. Win = install/supply-chain (−59 paket transitif), **bukan** bundle client (deps mati tak pernah di-import) |
+| P1 | **#69 Bulk Upload Lembaga Petani (KT)** — CSV + validasi + preview + insert | Engineering | TBD | Melengkapi jalur bulk upload master data (depends #68) |
+| P2 | **BULK-02 #70 Bulk Upload Region** — CSV per level + validasi hierarki | Engineering | TBD | Setup wilayah baru tanpa input manual (depends #68 #69) |
+| P3 | **TD-026** — aksesibilitas matriks Role & Permission (`aria-label`/`aria-pressed` sel izin) | Frontend | TBD | Pembaca layar bisa membedakan granted/denied (#187B) |
+| P3 | **TD-027** — `setRolePermissions` N+1 pada kaskade besar → SQL massal | Backend | TBD | Hilangkan puluhan round-trip/timeout 20s saat kaskade subtree besar (#187B) |
+
+Selesai (arsip blok ini):
+
+| Priority | Action | Selesai | Impact |
+|----------|--------|---------|--------|
+| ✅ P0 | **Remediasi audit — guard/scope RBAC (#125)** (`role-permission.ts`, `menu.ts`, `upload.ts`, `getFarmerById`, `bulkCreateFarmers`, menuKey Roles) | 2026-07-12 | Celah pemanggilan server action langsung (UI-bypass) **ditutup** |
+| ✅ P1 | **Lint hijau kembali (#126)** | 2026-07-12 | `npm run lint` **exit 0**; gate ditegakkan lokal via Pre-Commit Gate (`workflow.md`) |
+| ✅ P2 | **Cleanup dead code & deps (#129)** | 2026-07-12 | 9 deps 0-usage + 7 file mati terhapus, helper "for select" dikonsolidasi. Win = install/supply-chain (−59 paket transitif), **bukan** bundle client (deps mati tak pernah di-import) |
 
 ---
 

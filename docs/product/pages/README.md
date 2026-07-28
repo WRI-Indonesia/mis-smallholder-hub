@@ -83,6 +83,7 @@ Beberapa menu induk hanya berfungsi sebagai grup navigasi di sidebar:
 | `/admin/bulk-upload` | Redirect ke `/admin/bulk-upload/farmers` |
 | `/admin/report` | Redirect ke `/admin/report/farmer` (tanpa guard permission) |
 | `/admin/tools` | Redirect ke halaman snapshot |
+| `/admin/map` | Redirect ke `/admin/map/parcel` |
 | `/admin/settings` | Tidak ada `page.tsx` — grup navigasi saja |
 | `/admin/data-analyst` | Tidak ada `page.tsx` — hanya `layout.tsx` (metadata) |
 

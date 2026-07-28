@@ -41,12 +41,12 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 | Role | Scope data | Menu yang diakses |
 |---|---|---|
 | **SUPERADMIN** | `ALL` (bypass semua guard) | Semua menu, semua aksi |
-| **ADMIN** | `BY_DISTRICT` (dari `UserProvince`/`UserDistrict`) | Dashboard, Master Data, Report, Bulk Upload, Tools, Map, Settings (terbatas) |
-| **OPERATOR** | `BY_FARMER_GROUP` (dari `UserFarmerGroup`) | Dashboard (VIEW), Master Data (CRUD dalam scope), Report (VIEW), Map |
-| **MANAGEMENT** | `ALL` (read-only) | Dashboard, Report, Map, Tools (snapshot view-only) |
+| **ADMIN** | `BY_DISTRICT` (dari `UserProvince`/`UserDistrict`) | Dashboard, Master Data, Report, Bulk Upload, Data Analyst, Tools, Map, Bantuan — **tanpa Settings** |
+| **OPERATOR** | `BY_FARMER_GROUP` (dari `UserFarmerGroup`) | Dashboard, Master Data (CRUD sebagian dalam scope), Report, Bulk Upload (Petani & Produksi), Data Analyst, Map, Bantuan |
+| **MANAGEMENT** | `ALL` (read-only) | Dashboard, Master Data (VIEW), Report, Data Analyst, Map, Tools (snapshot view-only), Bantuan |
 | **DONOR** (#187) | `ALL` atau ter-scope bila di-assign | Dashboard, Report, Map, Bantuan — **VIEW-only** |
 
-> Tanpa assignment apa pun → mode `ALL`. Prioritas: SUPERADMIN → district (jika ada `UserProvince`/`UserDistrict`) → farmer group.
+> Tanpa assignment apa pun → mode `ALL`. Urutan evaluasi `getAccessContext()`: SUPERADMIN → tanpa assignment = `ALL` → **hanya** `UserFarmerGroup` = `BY_FARMER_GROUP` → ada `UserProvince`/`UserDistrict` = `BY_DISTRICT`. Sesi kosong / user tak ditemukan → `BY_DISTRICT` dengan ids kosong = **tolak semua**. Rincian per role di [role-flows.md](./role-flows.md).
 
 ---
 
@@ -95,8 +95,8 @@ Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · HCV (MD-08) · BUSDE
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|
 | ✅ [User Management](./pages/settings/user-management.md) | `settings-users` | PLATFORM-04 | CRUD user + data access assignment + override menu per-user |
-| ✅ [Menu Management](./pages/settings/menu-management.md) | `settings-menu` | PLATFORM-05/07 | Sidebar dinamis, hierarki maks. 3 level |
-| ✅ [Role & Permission](./pages/settings/role-permission.md) | `settings-roles` | PLATFORM-04 | Matriks CREATE/VIEW/EDIT/DELETE per role × menu |
+| ✅ [Menu Management](./pages/settings/menu-management.md) | `settings-menu` | PLATFORM-05/07 | Sidebar dinamis, hierarki maks. 3 level; render rekursif via `src/lib/menu-tree.ts` + baris collapsible (`useCollapseState`) (#187B) |
+| ✅ [Role & Permission](./pages/settings/role-permission.md) | `settings-roles` | PLATFORM-04 | Matriks CREATE/VIEW/EDIT/DELETE per role × menu — render rekursif 3 level (`menu-tree.ts`), collapsible + `useCollapseState`, sticky header/kolom, selektor role, kaskade induk→anak; SUPERADMIN dikecualikan dari matriks (**4 kolom role editable**, bukan 5) (#187B) |
 | ✅ [Regions](./pages/settings/regions.md) | `settings-regions` | MD-01 | Hierarki wilayah 4 level (Provinsi→Distrik→Kecamatan→Desa) |
 
 ### 📤 Bulk Upload — `/admin/bulk-upload`
@@ -140,8 +140,10 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|
-| ✅ [Peta Lahan](./pages/map/peta-lahan.md) | `map-parcel` | MAP-01 (#113/#134/#135) | Peta full-bleed + panel filter & legenda minimizable; overlay raster SIGAP KLHK (5 layer + slider transparansi, via proxy same-origin), Titik Api NASA FIRMS, Tambah Data GIS Lain (WMS/Shapefile/GeoJSON, diparse di browser), ruler geodesik, label adaptif; popup lahan (Detail + Pelatihan + Produksi) + tombol **Profil Lahan** → PDF; panel Daftar Lahan ber-search & zoom |
-| ✅ [Peta BMP](./pages/map/peta-bmp.md) | `map-bmp` | MAP-02 (#144) · MAP-03 (#174) | Peta tematik poligon-only, 2 layer ber-radio: **Ketersediaan Data Produksi** (4 kategori dari run bulan berturut-turut) & **Produktivitas Ton/Ha** (per tahun / rata-rata, 5 kelas, dihitung client-side); Lembaga wajib; panel matriks per lahan × bulan; cetak PDF & Excel WYSIWYG ikut layer aktif |
+| ✅ [Peta Lahan](./pages/map/peta-lahan.md) | `map-parcel` | MAP-01 (#113/#134/#135) | Peta full-bleed + panel filter & legenda minimizable; overlay raster SIGAP KLHK (5 layer + slider transparansi, via proxy same-origin), Titik Api NASA FIRMS, Tambah Data GIS Lain (WMS/Shapefile/GeoJSON, diparse di browser), ruler geodesik, label adaptif; popup lahan (Detail + Pelatihan + Produksi) + tombol **Profil Lahan** → PDF + aksi popup standar #188 (Lihat Detail / Edit Lahan); panel Daftar Lahan ber-search & zoom |
+| ✅ [Peta BMP](./pages/map/peta-bmp.md) | `map-bmp` | MAP-02 (#144) · MAP-03 (#174) | Peta tematik poligon-only, 2 layer ber-radio: **Ketersediaan Data Produksi** (4 kategori dari run bulan berturut-turut) & **Produktivitas Ton/Ha** (per tahun / rata-rata, 5 kelas, dihitung client-side); Lembaga wajib; panel matriks per lahan × bulan; cetak PDF & Excel WYSIWYG ikut layer aktif; aksi popup standar #188 (Lihat Detail / Edit Lahan) |
+
+> **Popup peta terstandar (#188/TD-028):** primitif bersama `src/components/shared/map-popup.tsx` + tombol **Lihat Detail** (gate VIEW `master-data-parcels`) & **Edit Lahan** (gate EDIT) di 3 peta — Peta Lahan, Peta BMP, dan peta Sebaran Lahan (`ParcelsDistributionMap` di detail Lembaga/Petani) — dengan modal edit lahan langsung dari peta (`ParcelEditModalHost`).
 
 ### ❓ Bantuan — `/admin/help`
 
