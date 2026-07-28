@@ -24,8 +24,9 @@ const formatPct = (n: number) =>
   new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Math.floor(n));
 
 /**
- * Gradasi hijau 5 tingkat untuk sel heatmap. Nol sengaja dibedakan (merah muda)
- * — "belum tersentuh" adalah temuan, bukan sekadar nilai rendah.
+ * Gradasi hijau 6 tingkat untuk sel heatmap. Nol sengaja dibedakan (merah muda)
+ * — "belum tersentuh" adalah temuan, bukan sekadar nilai rendah. 100% (#194)
+ * dibedakan dari 75–99% agar lembaga yang sudah complete langsung terlihat.
  */
 function cellClass(pct: number, hasFarmers: boolean): string {
   if (!hasFarmers) return "bg-muted/40 text-muted-foreground";
@@ -36,7 +37,8 @@ function cellClass(pct: number, hasFarmers: boolean): string {
     return "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200";
   if (pct < 75)
     return "bg-emerald-300 text-emerald-950 dark:bg-emerald-800/60 dark:text-emerald-100";
-  return "bg-emerald-500 text-white dark:bg-emerald-600";
+  if (pct < 100) return "bg-emerald-500 text-white dark:bg-emerald-600";
+  return "bg-emerald-800 text-white dark:bg-emerald-400 dark:text-emerald-950";
 }
 
 type SortKey = "name" | "totalFarmers" | "any" | TrainingPackageCode;
@@ -298,23 +300,14 @@ export function TrainingCoverageMatrix({
                 { label: "<25%", cls: cellClass(10, true) },
                 { label: "25–49%", cls: cellClass(30, true) },
                 { label: "50–74%", cls: cellClass(60, true) },
-                { label: "≥75%", cls: cellClass(90, true) },
+                { label: "75–99%", cls: cellClass(90, true) },
+                { label: "100%", cls: cellClass(100, true) },
               ].map((s) => (
                 <span key={s.label} className="inline-flex items-center gap-1.5">
                   <span className={`inline-block h-3 w-5 rounded ${s.cls}`} />
                   {s.label}
                 </span>
               ))}
-              <span className="ml-auto">
-                Target program: <strong className="text-foreground">100%</strong> petani aktif per
-                paket
-                {targetGap > 0 && (
-                  <>
-                    {" · kurang "}
-                    <strong className="text-foreground">{formatNumber(targetGap)}</strong> petani
-                  </>
-                )}
-              </span>
             </div>
           </CardContent>
         </CollapsibleContent>
