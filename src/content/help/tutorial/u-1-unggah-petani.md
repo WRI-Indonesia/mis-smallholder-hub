@@ -44,6 +44,8 @@ Petani muncul di **Master Data → Petani** dengan lembaga yang Anda pilih di La
 
 **Kotak berkas terkunci** — Lembaga Petani di Langkah 1 belum dipilih.
 
+**Lembaga yang dicari tidak ada di daftar** — daftar hanya menampilkan lembaga di dalam wilayah akses Anda. Bila lembaganya memang wilayah kerja Anda, minta admin memperbarui akses data Anda.
+
 **Banyak baris error "ID Petani sudah terdaftar"** — nomor itu sudah dipakai **di lembaga tujuan**. Keluarkan barisnya dari berkas, atau perbarui datanya lewat Master Data.
 
 + Pemeriksaan berlaku **per lembaga**, bukan seluruh sistem: nomor yang sama boleh dipakai lembaga lain. Baris nonaktif ikut dihitung — bila petaninya pernah dinonaktifkan, aktifkan kembali datanya alih-alih mengunggah ulang.

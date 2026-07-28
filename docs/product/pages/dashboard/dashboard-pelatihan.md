@@ -105,10 +105,10 @@ Label tahun: "semua tahun" atau "{YYYY}".
 | Kolom "Petani" | Kolom tabel (sortable) | Jumlah petani aktif Lembaga |
 | Kolom paket | Kolom tabel (sortable, dinamis) | Header ringkas: "Paket 1", "Paket 2 - MK", "Paket 2 - HSE", "Paket 3 & 4", "Lainnya" — hanya paket yang aktif pada irisan; sel = persen + jumlah petani; tooltip header = label paket lengkap |
 | Kolom "Min. 1 Paket" | Kolom tabel (sortable) | Petani yang mengikuti paket apa pun (target 100%); sel diberi ring pembeda |
-| Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, ≥75% (gradasi emerald); Lembaga tanpa petani aktif = sel abu "—" |
+| Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, 75–99%, 100% (gradasi emerald, 100%/tuntas paling tua — #194); Lembaga tanpa petani aktif = sel abu "—" |
 | Tooltip sel | `title` | "{label} — {n} dari {n} petani · kurang {n} menuju target {t}%. Klik untuk melihat daftarnya." / "target {t}% tercapai (...)" / "Lembaga belum punya petani aktif" |
 | Sel dapat diklik | Tombol | Aktif hanya bila Lembaga punya petani aktif dan masih ada kekurangan menuju target → membuka dialog drill-down |
-| Legenda skala | Legend | "Skala:" 0% · <25% · 25–49% · 50–74% · ≥75% |
+| Legenda skala | Legend | "Skala:" 0% · <25% · 25–49% · 50–74% · 75–99% · 100% (catatan "Target program … kurang N petani" di kanan legenda dihapus — ambigu, #194) |
 | Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." |
 
 Target cakupan per paket: `TRAINING_COVERAGE_TARGET` — Paket 1, Paket 2 - MK, Paket 2 - HSE, Paket 3 & 4 = 100%; `OTHER` (Lainnya) tanpa target (`null`).
