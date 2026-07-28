@@ -63,6 +63,8 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 | Guard | `requirePermission("dashboard-training")` (halaman); `hasPermission("dashboard-training", "VIEW")` + `getAccessContext()` di action |
 | Server action / data | `getTrainingDashboardView()` dari `src/server/actions/dashboard-training.ts` — query langsung ke DB (bukan snapshot), difilter `isActive` + access context; `getUntrainedFarmers(groupId, packageCode, year)` untuk dialog drill-down |
 | Helper agregasi | `filterTrainingGroups`, `trainingTotals`, `trainingCoverageMatrix`, `trainingActivePackages`, `trainingTrendSeries`, `trainingScoreRows`, `trainingQualityStats`, `trainingAvailableYears`, `trainingTargetGap` / `TRAINING_COVERAGE_TARGET` dari `src/lib/training-dashboard-aggregation.ts` |
+| Persistensi filter | `useUrlFilters()` (`src/hooks/use-url-filters.ts`, TD-021) — filter disimpan di query string, kunci `distrik`, `lembaga`, `kategori`, `tahun`; via History API `replaceState` (bukan `router.replace`, agar tidak memicu ulang payload RSC); nilai kosong dihapus dari query |
+| Uji performa | `src/test/perf.test.ts` (TD-020) — agregat (KPI + matriks + tren + skor) diuji pada fixture 60.000 baris kehadiran, ambang < 1.200 ms; pagar sebelum menimbang beralih ke pola snapshot |
 | Icon menu | `GraduationCap` |
 
 ## Objek halaman
@@ -75,6 +77,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
 | Filter Tahun | Select | Default "Semua Tahun" (kumulatif) + daftar tahun dari data |
+| Perilaku filter | Catatan | Nilai tersimpan di URL (`?distrik=…&lembaga=…&kategori=…&tahun=…`) sehingga bisa di-bookmark/dibagikan; mengubah Distrik atau Kategori mereset Lembaga (`setMany`); nilai URL yang tak valid (lembaga nonaktif, kategori/tahun sembarang) diabaikan → dashboard tampil sebagai "Semua", bukan tampilan kosong |
 | Kartu KPI (5 kartu) | Kartu KPI | Lihat rincian di bawah |
 | Matriks cakupan | Tabel heatmap (collapsible) | Lihat rincian di bawah |
 | Chart tren kehadiran | Stacked bar chart (SVG kustom) | Lihat rincian di bawah |
@@ -105,10 +108,10 @@ Label tahun: "semua tahun" atau "{YYYY}".
 | Kolom "Petani" | Kolom tabel (sortable) | Jumlah petani aktif Lembaga |
 | Kolom paket | Kolom tabel (sortable, dinamis) | Header ringkas: "Paket 1", "Paket 2 - MK", "Paket 2 - HSE", "Paket 3 & 4", "Lainnya" — hanya paket yang aktif pada irisan; sel = persen + jumlah petani; tooltip header = label paket lengkap |
 | Kolom "Min. 1 Paket" | Kolom tabel (sortable) | Petani yang mengikuti paket apa pun (target 100%); sel diberi ring pembeda |
-| Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, ≥75% (gradasi emerald); Lembaga tanpa petani aktif = sel abu "—" |
+| Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, 75–99%, 100% (gradasi emerald, 100%/tuntas paling tua — #194); Lembaga tanpa petani aktif = sel abu "—" |
 | Tooltip sel | `title` | "{label} — {n} dari {n} petani · kurang {n} menuju target {t}%. Klik untuk melihat daftarnya." / "target {t}% tercapai (...)" / "Lembaga belum punya petani aktif" |
 | Sel dapat diklik | Tombol | Aktif hanya bila Lembaga punya petani aktif dan masih ada kekurangan menuju target → membuka dialog drill-down |
-| Legenda skala | Legend | "Skala:" 0% · <25% · 25–49% · 50–74% · ≥75% |
+| Legenda skala | Legend | "Skala:" 0% · <25% · 25–49% · 50–74% · 75–99% · 100% (catatan "Target program … kurang N petani" di kanan legenda dihapus — ambigu, #194) |
 | Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." |
 
 Target cakupan per paket: `TRAINING_COVERAGE_TARGET` — Paket 1, Paket 2 - MK, Paket 2 - HSE, Paket 3 & 4 = 100%; `OTHER` (Lainnya) tanpa target (`null`).

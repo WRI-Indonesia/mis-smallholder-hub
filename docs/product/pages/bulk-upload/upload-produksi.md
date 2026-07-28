@@ -53,6 +53,7 @@ Halaman: Upload Produksi (/admin/bulk-upload/production)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | "Upload Massal Produksi" | Heading (`h2`) | Deskripsi: *"Unggah data produksi petani menggunakan file Excel (.xlsx) atau CSV dengan pencocokan kolom dinamis."* |
+| `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `bulk-upload-production` (`findTutorialForMenu`), dibuka di tab baru |
 | "1. Pilih File Data Produksi" | Card + Input `type="file"` | Keterangan *"Unggah file Excel (.xlsx) atau CSV yang berisi data transaksi panen / produksi petani."* |
 | "Unduh Template Excel" | Tombol (kanan atas kartu 1) | Membuat workbook sheet `Template Produksi` berisi header `ID Petani`, `Periode (YYYY-MM)`, `Tanggal Panen (DD/MM/YYYY)`, `Panen Ke- (1-4)`, `Hasil Panen (kg)`, `ID Lahan (Opsional)`, `Catatan (Opsional)` + 2 baris contoh (`FARMER-001` / `FARMER-002`) |
 | Info berkas | Teks | *"Tipe File: **XLSX/CSV** (N baris terdeteksi)"* |

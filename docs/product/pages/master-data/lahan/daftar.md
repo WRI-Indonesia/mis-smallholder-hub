@@ -37,6 +37,7 @@ Halaman: Lahan (/admin/master-data/parcels)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Lahan` / `Data lahan petani (land parcels) yang terdaftar` | Heading | h1 + deskripsi |
+| `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-parcels` (`findTutorialForMenu`), dibuka di tab baru |
 | Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` |
 | Filter Status | Select | SUPERADMIN saja |
 | Pencarian | Filter | `Cari ID Lahan atau nama petani...` (parcelId, nama & ID petani) |

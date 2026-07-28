@@ -12,11 +12,12 @@ Halaman: Indeks Bantuan (/admin/help)
 │       └── Tree bab → topik
 ├── Konten
 │   ├── h1 "Bantuan"
-│   ├── Deskripsi (jumlah bab & topik)
-│   └── Grid kartu bab (2 kolom ≥sm)
+│   ├── Deskripsi
+│   ├── Seksi "Apa yang ingin Anda lakukan?" → kartu tugas (tutorial)
+│   ├── Seksi "Referensi halaman" → kartu topik referensi
+│   └── Seksi "Konsep & istilah" → grid kartu bab (2 kolom ≥sm)
 │       ├── Ikon bab
-│       ├── "Bab {n} — {judul}"
-│       ├── Ringkasan bab
+│       ├── Judul & ringkasan bab
 │       └── Daftar topik "{n.m} {judul}"
 └── Tombol / Form
     └── "Buka bab" → /admin/help/{slug}
@@ -27,7 +28,7 @@ Halaman: Indeks Bantuan (/admin/help)
 | File | `src/app/(admin)/admin/help/page.tsx` |
 | Tipe | Server Component (indeks bab) |
 | Guard | `requirePermission("help")` |
-| Server action / data | `HELP_CHAPTERS`, `buildHelpNav()`, `buildHelpSearchIndex()`, `helpChaptersBySection()`, `topicNumber()` dari `@/lib/help-content`; **+`auth()` & `getAccessibleMenuKeys()`** untuk menandai tutorial di luar hak akses (sejak HELP-02 halaman ini tidak lagi "nol query DB") |
+| Server action / data | `HELP_CHAPTERS`, `buildHelpNav()`, `buildHelpSearchIndex()`, `helpChaptersBySection()`, `topicNumber()` dari `@/lib/help-content`; **+`auth()` & `getEffectiveMenuPermissions()`** (+ `isTopicAccessible`, `src/lib/help-access.ts`) untuk menandai tutorial di luar hak akses (sejak HELP-02 halaman ini tidak lagi "nol query DB") |
 
 **Objek halaman**
 
@@ -37,6 +38,7 @@ Halaman: Indeks Bantuan (/admin/help)
 | `Bantuan` | Heading | `h1` halaman |
 | Deskripsi | Konten | `Panduan penggunaan Smallholder HUB MIS. Mulai dari tugas yang ingin Anda kerjakan, atau gunakan pencarian di samping.` |
 | Seksi `Apa yang ingin Anda lakukan?` | Seksi | Kartu **tugas** (lapis tutorial): ikon, judul, `goal`, `± {n} menit`, dan penanda `Di luar hak akses akun Anda` bila `menuKey` tak terjangkau |
+| Seksi `Referensi halaman` | Seksi | Kartu **topik** lapis referensi (baris ringkas: ikon + judul, tautan langsung ke halaman topik); sub-teks "Arti tiap kolom, filter, dan tombol — untuk dirujuk saat bekerja, bukan dibaca berurutan."; dirender hanya bila ada topik referensi |
 | Seksi `Konsep & istilah` | Seksi | Kartu bab lapis konsep |
 | Tombol lipat daftar isi | Label | `Sembunyikan daftar isi` / `Tampilkan daftar isi` (≥lg) — checkbox `#help-nav` + CSS |
 | Kartu bab | Kartu | Grid 2 kolom (≥sm); tiap kartu: ikon bab, judul bab, ringkasan, daftar topik `{n.m} {judul topik}` |

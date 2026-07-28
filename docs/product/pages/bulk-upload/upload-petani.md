@@ -49,7 +49,7 @@ Halaman: Upload Petani (/admin/bulk-upload/farmers)
 | File | `src/app/(admin)/admin/bulk-upload/farmers/page.tsx` (Server Component) + `src/app/(admin)/admin/bulk-upload/farmers/bulk-upload-client.tsx` (`"use client"`) |
 | Tipe | Wizard unggah massal 4 langkah (kartu berurutan, bukan stepper terpisah) |
 | Guard | `requirePermission("bulk-upload-farmers")`; aksi data guard `hasPermission("bulk-upload-farmers", "VIEW"\|"CREATE")` |
-| Server action / data | `getFarmerGroupsForMapping()`, `getExistingFarmerIds(farmerGroupId)`, `bulkCreateFarmers()` — semua di `src/server/actions/bulk-upload.ts` |
+| Server action / data | `getFarmerGroupsForMapping()` (daftar Lembaga dibatasi scope pengguna — TD-029), `getExistingFarmerIds(farmerGroupId)`, `bulkCreateFarmers()` — semua di `src/server/actions/bulk-upload.ts` |
 | Format file diterima | `.xlsx` dan `.csv` (`accept=".xlsx,.csv"`); selain itu toast *"Hanya mendukung file Excel (.xlsx) atau CSV"* |
 | Tombol unduh template | **Tidak ada** di halaman ini (hanya unduh hasil validasi) |
 | Redirect setelah simpan | `/admin/master-data/farmers` |
@@ -59,6 +59,7 @@ Halaman: Upload Petani (/admin/bulk-upload/farmers)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | "Upload Massal Petani" | Heading (`h2`) | Deskripsi: *"Unggah data petani menggunakan file Excel (.xlsx) atau CSV dengan pencocokan kolom dinamis."* |
+| `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `bulk-upload-farmers` (`findTutorialForMenu`), dibuka di tab baru |
 | "1. Pilih Lembaga Petani" | Card + Combobox (Popover + Command) | Placeholder tombol *"Pilih Lembaga Petani..."*; pencarian *"Cari Lembaga Petani berdasarkan nama atau kode..."*; empty state *"Lembaga Petani tidak ditemukan."*; item ditampilkan `Nama (KODE)`. Mengganti lembaga mereset file, header, dan hasil validasi |
 | Catatan langkah 1 | Teks bantuan | *"Pilih Lembaga Petani tujuan terlebih dahulu sebelum mengunggah data."* |
 | "2. Pilih File Data Petani" | Card + Input `type="file"` | Disabled selama lembaga belum dipilih; peringatan merah *"* Harap pilih Lembaga Petani di atas terlebih dahulu."* |
@@ -66,7 +67,7 @@ Halaman: Upload Petani (/admin/bulk-upload/farmers)
 | "Petakan Kolom Data" | Card + grid Select per field | Subjudul *"Cocokkan kolom dari file unggahan Anda dengan data target sistem."*; tiap field punya badge `Wajib`/`Opsional`, placeholder *"Pilih kolom..."*, opsi *"-- Kosongkan --"*, dan teks bantuan |
 | Target field | 8 field | `ID Petani`* (min 2 karakter), `Nama Petani`* (min 2 karakter), `Jenis Kelamin`* (L/P atau Laki-laki/Perempuan), `NIK` (16 digit angka), `Tempat Lahir`, `Tanggal Lahir`, `Alamat`, `Tahun Bergabung` (1900-2100) |
 | Auto-match kolom | Otomatis | `AUTO_MATCH_RULES` mencocokkan header file (lowercase, trim) ke target field saat berkas dibaca |
-| "Validasi Data" | Tombol | Loading state *"Memproses..."*; jika ada kolom wajib belum dipetakan → toast *"Kolom wajib berikut belum dipetakan: …"*; sukses → toast *"Validasi selesai"* |
+| "Validasi Data" | Tombol | Disabled saat memproses, belum ada baris, atau daftar ID existing masih dimuat (`loadingExistingIds` — cegah race validasi sebelum `existingFarmerIds` siap); loading state *"Memproses..."*; jika ada kolom wajib belum dipetakan → toast *"Kolom wajib berikut belum dipetakan: …"*; sukses → toast *"Validasi selesai"* |
 | "Hasil Validasi & Tinjauan" | Card | Subjudul *"Tinjau kembali data sebelum menyimpannya ke database."* |
 | Ringkasan hasil | Badge/pill | *"N Baris Valid"* (hijau) dan *"N Baris Error"* (merah) |
 | Filter hasil | 3 tombol | *"Semua (N)"*, *"Valid (N)"*, *"Error (N)"* |

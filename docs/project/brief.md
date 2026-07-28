@@ -4,9 +4,9 @@
 
 > Dokumen kerja untuk memantau delivery Smallholder HUB. Status di dokumen ini disinkronkan terhadap **file dan code yang benar-benar ada di repository**, bukan berdasarkan klaim changelog historis.
 
-**Last updated:** 2026-07-12 · **Next management review:** 2026-07-14
+**Last updated:** 2026-07-28 · **Next management review:** 2026-08-10
 
-**Perubahan terakhir (2026-07-12):** (1) AUDIT-P0 Remediasi keamanan RBAC (#125) ✅ — guard `hasPermission` (`role-permission`/`menu`/`upload`) + scope `getAccessContext` (`getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`) + menuKey Roles → `settings-roles` + 17 test RBAC/perf baru. (2) **AUDIT-P1 Lint hijau (#126) ✅** — `npm run lint` **exit 0** (229 masalah/193 error → 0 error, 3 warning), gate ditegakkan lokal via Pre-Commit Gate. (3) **AUDIT-P1 scope by-id + pola restore (#127) ✅** & **konvensi UI (#128) ✅** — gating izin Menu Management + `<TableActions>`/`<DeleteDialog>`, Combobox KT searchable, 4 `loading.tsx`. (4) **AUDIT-P2 cleanup dead code/deps (#129) ✅** — 9 deps 0-usage + 7 file mati dihapus, `csv-parse`/`sharp`→devDeps, helper "for select" dikonsolidasi ke `src/lib/select-options.ts`, payload `ActionResult` ad-hoc (`{granted}`/`{count}`) → `data`, env/tooling drift diberesi (TD-009/011 ✅, TD-010 sebagian). QA: `npm test` **26 file / 349 ✅** · build ✅ · **lint ✅ exit 0**. AUDIT-P0/P1/P2 tuntas. (5) **AUDIT-P3 kualitas berkelanjutan (#130) ✅** — audit fields `createdBy`/`modifiedBy` diisi di mutasi yang kosong, Zod `addParticipants`/`changePassword`, keputusan naming = resmikan istilah domain (TD-012 ✅), rename `land-parcel.ts`, font brand WRI Acumin Pro Condensed. Sisa tech-debt: standardisasi `ActionResult` (`fieldErrors`), pemecahan file client besar, NaN parsing. Riwayat lengkap → [`changelog.md`](./changelog.md).
+**Perubahan terakhir (2026-07-28):** sinkronisasi menyeluruh pasca-rilis **v0.14.0 → v0.15.0 → v0.16.0** (2026-07-20 s.d. 2026-07-22). Highlight periode: (1) **Modul Bantuan** (HELP-01/02) — panduan in-app 3 lapis: **17 tutorial per tugas** (dua tingkat kedalaman dari satu sumber) + 11 konsep + 4 referensi halaman, bantuan kontekstual `HelpHint`. (2) **Role `DONOR`** (#187) — role kelima, VIEW-only Dashboard/Report/Map/Bantuan; sentralisasi daftar role ke `src/lib/roles.ts`; migrasi + seed diterapkan ke mis-prod. (3) **Perombakan UI Settings** (#187B) — Menu Management & Role & Permission render rekursif 3 level (fix bug level-3), sticky header/kolom, kaskade induk→anak, SUPERADMIN dikecualikan dari matriks. (4) **Standar popup peta** (#188) — primitif `components/shared/map-popup.tsx` + aksi Lihat Detail/Edit Lahan di 3 peta. (5) **Penghapusan level Gapoktan/KUD** (#189, **breaking**) — hierarki final **3 level** (Petani → Kelompok Tani → Lembaga Petani), DROP COLUMN `sub_group_lv1` (migrasi `20260722030000` **diterapkan + diverifikasi mis-prod**), Laporan Kelompok Tani direstrukturisasi. (6) **DASH-06 Dashboard Pelatihan** (live query) & **RPT-05 Laporan Lahan** (PDF ber-peta grid index) selesai; TD-020…TD-025 + TD-028 ditutup; fix logout sidebar. Riwayat lengkap → [`changelog.md`](./changelog.md).
 
 **Source of truth:** tabel **Phase Status** di [`roadmap.md`](./roadmap.md). **Panduan update & checklist:** [`contributing.md`](./contributing.md).
 
@@ -25,70 +25,64 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Item               | Nilai                                                       |
 | ------------------ | ----------------------------------------------------------- |
-| Periode laporan    | 2026-07-07 s.d. 2026-07-15                                  |
-| Status keseluruhan | 🟢 On Track (temuan audit 2026-07-10 selesai diremediasi 2026-07-12; rilis SemVer pertama v0.9.0–v0.11.0 pada 2026-07-15) |
-| Basis review       | **Audit menyeluruh 2026-07-10** (`audit-report/audit-2026-07-10.md`) |
-| Test lokal         | ✅ `npm test` — **33 files / 441 tests passed** · build ✅ · **lint ✅ exit 0** (#126 selesai 2026-07-12) |
-| Fokus berikutnya   | **AUDIT-P0/P1/P2/P3 (#125–#130) ✅ selesai.** Sisa tech-debt: `ActionResult` `fieldErrors` (TD-010 follow-up), pemecahan file client besar (#130 §5), NaN parsing, visual audit |
+| Periode laporan    | 2026-07-15 s.d. 2026-07-28                                  |
+| Status keseluruhan | 🟢 On Track (rilis v0.14.0/v0.15.0/v0.16.0; breaking change #189 hierarki 3 level sudah diterapkan & diverifikasi di mis-prod) |
+| Basis review       | Sinkronisasi docs ↔ code 2026-07-28 (roadmap Phase Status + hasil test lokal) |
+| Test lokal         | ✅ `npm test` — **44 files / 673 tests passed** · build ✅ · **lint ✅ exit 0** |
+| Fokus berikutnya   | **TD-027** (N+1 `setRolePermissions`), **TD-026** (a11y matriks Role & Permission), **BULK-02** (#70) / #69 — TD-029 ✅ ditutup 2026-07-28 |
 
 ### Executive Summary
 
 | Area                | Status          | Ringkasan                                                                                                                                  |
 | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Platform foundation | ✅ Ready        | Auth, RBAC, menu, user management, region, dan farmer group sudah implementatif. Schema dengan audit fields, soft-delete, RBAC patterns.  |
-| Master data inti    | ✅ Complete     | Farmer ✅, Land Parcel ✅, Training ✅, Production (MD-06) ✅ complete (model + action + UI + test).                            |
-| Dashboard           | ✅ Complete     | DASH-01/02/03 selesai (#99): `/admin/dashboard/main` snapshot-backed + peta MapLibre + Tools Snapshot; DASH-05 card Total Kelompok Tani (#148); **DASH-04 BMP Dashboard Produksi (#166) ✅ 2026-07-15** — snapshot-backed + tools generate + filter Kelengkapan Data. |
-| Report              | ✅ Complete     | RPT-01 Petani (#107) ✅, RPT-02 Pelatihan (#108) ✅, RPT-03 Produksi (#132) ✅ & RPT-04 Kelompok Tani Summary+Detail (#154) ✅ (route + `report.ts` + UI + test). |
+| Platform foundation | ✅ Ready        | Auth, RBAC (**5 role** termasuk DONOR #187), menu 3-level, user management, region, farmer group implementatif; perombakan UI Settings (#187B). |
+| Master data inti    | ✅ Complete     | Farmer ✅, Land Parcel ✅, Training ✅, Production (MD-06) ✅ complete (model + action + UI + test). Hierarki final **3 level** Petani → KT → Lembaga Petani (#189). |
+| Dashboard           | ✅ Complete     | DASH-01/02/03 (#99) + DASH-04 BMP (#166) + DASH-05 card Total Kelompok Tani (#148) + **DASH-06 Dashboard Pelatihan (live query, 2026-07-21)** ✅. |
+| Report              | ✅ Complete     | RPT-01 Petani (#107) ✅, RPT-02 Pelatihan (#108) ✅, RPT-03 Produksi (#132) ✅, RPT-04 Kelompok Tani Summary+Detail (#154, restrukturisasi #189) ✅, **RPT-05 Lahan (#177/#179) ✅** — PDF ber-peta grid index + Excel ber-gambar peta. |
 | Bulk Upload         | ✅ Partial      | Farmer bulk upload ✅, Shapefile bulk upload ✅, Production bulk upload ✅. Region & KT bulk upload belum ada (#69, #70). |
-| Map & Data Analyst  | ✅ Complete     | MAP-01 (#113 + hotspot/ruler/label) ✅, MAP-02 Peta BMP (#144) ✅ & MAP-03 Layer Produktivitas Peta BMP (#174) ✅ 2026-07-17; DA-01 (#103) & DA-02 (#118, #122) ✅. |
-| **Keamanan (audit)** | ✅ **Remediated (#125, 2026-07-12)** | 5 celah guard/scope RBAC + menuKey Roles **ditutup**: guard `hasPermission` di `role-permission`/`menu`/`upload`, scope `getAccessContext` di `getFarmerById`/`updateFarmer`/`toggleFarmerActive`/`createFarmer`/`bulkCreateFarmers`, `requirePermission("settings-roles")`. Sisa scope by-id KT/pelatihan → #127. |
-| Testing & QA        | ✅ Strong | Vitest: **33 files / 441 tests passed** ✅ · build ✅ · **`npm run lint` ✅ exit 0** (0 error; 3 warning `exhaustive-deps` ditahan) — #126 selesai 2026-07-12. |
+| Map & Data Analyst  | ✅ Complete     | MAP-01 (#113 + hotspot/ruler/label) ✅, MAP-02 Peta BMP (#144) ✅, MAP-03 Layer Produktivitas (#174) ✅; standar popup peta + aksi Lihat Detail/Edit (#188) ✅; DA-01 (#103) & DA-02 (#118, #122) ✅. |
+| Bantuan (HELP)      | ✅ Complete     | HELP-01 panduan in-app (6 bab, Markdown + pencarian) ✅; HELP-02 **17 tutorial per tugas + 4 referensi** (dua tingkat kedalaman, `HelpHint` kontekstual) ✅. |
+| Keamanan            | ✅ Clean | Remediasi audit 2026-07-10 tuntas (#125–#130); TD-024 (scope `getExistingFarmerIds`) ✅; **TD-029** (scope combobox bulk upload petani) ditemukan audit docs 2026-07-28 dan **ditutup di hari yang sama** ✅. |
+| Testing & QA        | ✅ Strong | Vitest: **44 files / 673 tests passed** ✅ · build ✅ · **`npm run lint` ✅ exit 0**. |
 
 ### Progress Snapshot
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
-| Total phase    | 41 fase        | PLATFORM(7), MD(11), DASH(5), MAP(2), RPT(4), BULK(4), DA(2), TOOLS(1), CMS(1), COMM(2), OPS(2) |
-| ✅ Done        | **29 fase**    | PLATFORM-01…07, MD-01…06, DASH-01…05, MAP-01/02, RPT-01…04, BULK-01/03/04, DA-01/02 |
+| Total phase    | 46 fase        | PLATFORM(7), MD(11), DASH(6), MAP(3), RPT(5), HELP(2), BULK(4), DA(2), TOOLS(1), CMS(1), COMM(2), OPS(2) |
+| ✅ Done        | **34 fase**    | PLATFORM-01…07, MD-01…06, DASH-01…06, MAP-01…03, RPT-01…05, HELP-01/02, BULK-01/03/04, DA-01/02 |
 | 🟠 Partial     | 3 fase         | TOOLS-01, OPS-01, OPS-02 |
 | 🔲 Not Started | 3 fase         | BULK-02 (#70), CMS-01, COMM-01 |
 | 🔲 Planned     | 6 fase         | MD-07/08/09/10/11, COMM-02 |
 | 🔴 Blocked     | 0 fase         | — |
-| 🎯 Now         | tech-debt sisa | **AUDIT-P0/P1/P2/P3 (#125–#130) ✅ selesai** — sisa: `ActionResult` `fieldErrors`, pemecahan file besar, NaN parsing, visual audit |
+| 🎯 Now         | tech-debt & bulk upload | TD-027 (N+1 kaskade) · TD-026 (a11y matriks) · BULK-02 #70 / #69 (TD-029 ✅ 07-28) |
 
 ### Management Talking Points
 
 | Topik               | Pesan Utama                                                              | Dampak                                                                                    |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Code Quality 🟢 (audit 2026-07-10 → update 2026-07-12)** | Audit menyeluruh: fondasi sehat (35/35 page ter-guard, DataTable/API route/seed compliant, 349 test ✅). Kompliansi **8 PASS / 4 PARTIAL / 2 FAIL** — celah guard/scope RBAC (#125) ✅ & lint gate (#126) ✅ ditutup 2026-07-12. | Remediasi P0/P1/P2 selesai; 2 FAIL (barrel resmi + helper guard) ditutup via #127-#129 ✅. Detail di `audit-report/audit-2026-07-10.md`. |
-| **Production ✅ Complete** | MD-06 Production sudah implementatif (#89): ProductionRecord model + actions + UI + 13 tests + bulk upload | Yield tracking per farmer/parcel ready; foundation untuk impact reporting. |
-| **Land Parcel ✅ Complete** | MD-04 Land Parcel sudah implementatif (#88): model + actions + UI + 14 tests + Shapefile bulk upload | Geospatial features ready; foundation untuk Production module. |
-| Farmer ✅ Complete  | MD-03 Farmer sudah implementatif (model + action + UI + 10 tests).       | Ready untuk dependency downstream (dashboard, parcel, training, production).                          |
-| Navigation ✅ Fixed | `/admin/master-data` redirect ke farmers — sudah bekerja & tested.       | Admin flow tidak patah; Farmer list fully accessible.                                     |
-| Dashboard ✅ Complete | DASH-01/02/03 selesai (#99): Main Dashboard snapshot-backed + peta + Tools Snapshot. | Fondasi dashboard siap; DASH-04 (BMP) tinggal reuse pola snapshot. |
-| ~~Stale scripts alert~~ | ✅ Resolved — debug/stale scripts dipindah ke `scripts/local/` (gitignored). `get-link.js` & `pdf-manager.js` tetap di `scripts/` root. | BUG-002 closed. |
-| Delivery confidence | Tests **441/441** passed (33 files); coverage: auth/RBAC/menu/menu-filter/user/region/farmer/land-parcel/training/production/bulk-upload/report/dashboard/data-analyst/data-completeness/map/map-geo/firms + rbac-server-guards + access-context (#125/#127) ✅. | Foundation & core features stabil; AUDIT-P0/P1/P2 (#125–#129) ✅ selesai 2026-07-12. |
+| **Hierarki final 3 level (#189)** 🟢 | Level Gapoktan/KUD dibatalkan owner — hierarki resmi Petani → Kelompok Tani → Lembaga Petani; kolom `sub_group_lv1` di-drop (migrasi diterapkan & diverifikasi mis-prod); laporan/UI/bulk-upload/Bantuan disisir ~40 file. | Pertanyaan lama "3 vs 4 level" (TD-013/TD-014) tertutup; model data lebih sederhana; refactor KT-jadi-tabel (TD-014 Jalur B) menunggu data lengkap. |
+| **Role DONOR (#187)** 🟢 | Role kelima untuk donor/funder: VIEW-only Dashboard/Report/Map/Bantuan, tanpa Master Data/Settings; sudah live di mis-prod (15 baris permission terverifikasi). | Akses stakeholder eksternal tanpa risiko tulis; pemisahan data agregat-saja menyusul sebagai menu khusus. |
+| **Modul Bantuan lengkap (HELP-01/02)** 🟢 | Panduan in-app 17 tutorial per tugas + 4 referensi + 11 konsep, dua tingkat kedalaman, terindeks pencarian, ber-penjaga test kelengkapan materi. | Onboarding pengguna & pelatihan lintas peran tidak lagi bergantung pendampingan langsung. |
+| **UI Settings dirombak (#187B)** 🟢 | Menu Management & Role & Permission rekursif 3 level (fix bug menu level-3 tak muncul), sticky, kaskade ber-konfirmasi, feedback optimistis. | Administrasi permission lebih cepat & akurat; sisa: TD-026 (a11y) & TD-027 (N+1 kaskade besar). |
+| **Keamanan** 🟢 | Audit docs 2026-07-28 menemukan TD-029 (combobox "Pilih Lembaga Petani" bulk upload memuat seluruh lembaga aktif tanpa scope filter) — **langsung ditutup di hari yang sama** dengan pola filter yang sudah dipakai bulk upload lahan/produksi. | Kebocoran daftar (bukan data petani) tertangkap oleh proses audit internal dan ditutup <24 jam. |
+| Delivery confidence | Tests **673/673** passed (44 files); lint 0 error; 3 rilis berturut (v0.14–v0.16) dengan gate hijau. | Foundation & core features stabil; breaking change #189 lolos gate + verifikasi mis-prod. |
 
 ### Decisions Needed
 
 | Keputusan                  | Owner                   | Dibutuhkan Kapan     | Rekomendasi Tech Lead                                                                       |
 | -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
-| ✅ Arah `/admin/master-data` | — (RESOLVED)            | ✅ DONE              | Redirect ke `/admin/master-data/farmers` — **route tersedia & functional**.                 |
-| ✅ MD-04 Land Parcel (#88)  | — (RESOLVED)            | ✅ DONE              | Implementasi complete: model, actions, UI, tests, Shapefile bulk upload ✅                   |
-| ✅ MD-06 Production (#89) | — (RESOLVED)            | ✅ DONE              | Implementasi complete: ProductionRecord model, CRUD actions, UI, 13 tests, bulk upload ✅ |
-| ✅ Dashboard Scope DASH-01 | — (RESOLVED)            | ✅ DONE (#99)        | Main Dashboard snapshot-backed + `dashboard.ts`/`snapshot.ts` sudah diimplementasi & teruji. |
-| ✅ **Pola restore soft-delete** | — (RESOLVED #127) | ✅ DONE | Tampilkan nonaktif + badge + filter Status (default Aktif) + toggle Aktifkan, khusus SUPERADMIN; diseragamkan ke semua list master data. |
-| ✅ **Nasib `recharts` & `Dockerfile`** | — (RESOLVED #129) | ✅ DONE | `recharts` **dihapus** (pasang lagi saat chart produksi); `Dockerfile` **dipertahankan** & di-hardening via `.dockerignore` (deploy via SSH build, bukan Docker). |
+| ✅ **Hierarki 3 vs 4 level** | — (RESOLVED #189)      | ✅ DONE               | **3 level final** — Gapoktan/KUD dibatalkan; kolom `sub_group_lv1` di-drop, migrasi diterapkan ke mis-prod. |
+| ✅ **Privasi DONOR**        | — (RESOLVED #187)       | ✅ DONE (sementara)   | DONOR sementara melihat data individu petani seperti MANAGEMENT; pemisahan agregat-saja ditunda ke menu khusus DONOR. |
+| TD-014 eksekusi refactor KT jadi tabel | Product + Backend Lead | Saat data KT lengkap | Jalur B (rename `FarmerGroup`→`FarmerInstitution` + tabel KT, tanpa Gapoktan) — export → rebuild → re-import; interim per-lahan tetap menopang. |
 
-### Next Two Weeks (2026-07-10 s.d. 2026-07-24)
+### Next Two Weeks (2026-07-28 s.d. 2026-08-10)
 
 | Priority | Target                                      | Output                                                                                                        |
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **✅ Done**| **#107 RPT-01: Report Petani**              | Menu Level 1 `report` + sub-menu `report-farmer` + server actions (`report.ts`) + UI + unit tests ✅        |
-| **✅ Done**| **#108 RPT-02: Report Pelatihan**           | Sub-menu `report-training` + `report.ts` (`getTrainingReport`) + UI (2 tab) + Excel/PDF export + unit tests ✅        |
-| **P0**   | **Remediasi audit 2026-07-10 (keamanan)**   | Guard `hasPermission` di `role-permission.ts`/`menu.ts`/`upload.ts` + scope `getFarmerById`/`bulkCreateFarmers` + menuKey Roles + unit test RBAC — lihat `audit-report/audit-2026-07-10.md` §8 |
-| **✅ Done**| **#126 AUDIT-P1: Lint hijau kembali**       | `npm run lint` **exit 0** — ignore `scripts/**` + `no-unused-vars`/`prefer-const` bersih + `no-explicit-any` diganti tipe nyata + react-hooks set-state/static-components diperbaiki; build & test hijau ✅ |
-| **✅ Done**| **#132 RPT-03: Report Produksi**            | Sub-menu `report-production` + `report.ts` (`getProductionReport`) + matriks bulanan per petani/lahan + filter rentang bulan + Excel + PDF landscape export + unit tests ✅ |
-| **✅ Done**| **#128 AUDIT-P1: Konvensi UI**              | Gating izin Menu Management + `<TableActions>`/Aksi kolom kiri/`<DeleteDialog>`; Combobox KT searchable (`farmer-form-modal`); 4 `loading.tsx` (`<TableSkeleton>`); kosmetik skeleton/snapshot Card ✅ |
+| ✅ Done  | **TD-029: scope combobox bulk upload petani** (2026-07-28) | `getFarmerGroupsForMapping()` diberi filter `AND: farmerGroupAccessFilter(access)` + troubleshooting Bantuan; gate hijau |
+| **P2**   | **TD-027: `setRolePermissions` N+1**        | Ganti loop `findFirst`+`update`/`create` per baris → `findMany` + `updateMany`/`createMany` massal dalam transaksi |
+| **P2**   | **TD-026: a11y matriks Role & Permission**  | `aria-label` + `aria-pressed` pada sel izin; label pada chevron & tombol toggle baris                          |
+| **P3**   | **BULK-02 (#70) / #69 Bulk Upload Region & KT** | CSV upload + validasi hierarchy/Zod + preview + bulk insert — selaras [sprint.md](./sprint.md)             |
 
 </details>

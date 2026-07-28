@@ -27,6 +27,8 @@
 | **Dashboard Snapshot** | | | | | |
 | MainDashboardSnapshot | `districtId` (nullable) | District | `id` | SET NULL | CASCADE |
 | MainDashboardSnapshot | `createdBy` | User | `id` | RESTRICT | CASCADE |
+| BmpDashboardSnapshot | `districtId` (nullable) | District | `id` | SET NULL | CASCADE |
+| BmpDashboardSnapshot | `createdBy` | User | `id` | RESTRICT | CASCADE |
 | **Training** | | | | | |
 | TrainingActivity | `packageId` | TrainingPackage | `id` | RESTRICT | CASCADE |
 | TrainingActivity | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
@@ -45,7 +47,7 @@
 | **Menu Hierarchy** | | | | | |
 | MenuItem | `parentKey` | MenuItem | `key` | SET NULL | CASCADE |
 
-> Koreksi audit 2026-07-10: nilai On Delete di atas diverifikasi langsung ke SQL di `prisma/migrations/*`. Seluruh FK memakai **RESTRICT** kecuali dua **SET NULL** (`MenuItem.parentKey`, `MainDashboardSnapshot.districtId`). Tidak ada FK CASCADE on-delete di schema — soft delete (`isActive`) yang dipakai, bukan hard delete berantai; versi dokumen sebelumnya keliru menandai RBAC/TrainingParticipant/MenuItem sebagai CASCADE.
+> Koreksi audit 2026-07-10: nilai On Delete di atas diverifikasi langsung ke SQL di `prisma/migrations/*`. Seluruh FK memakai **RESTRICT** kecuali tiga **SET NULL** (`MenuItem.parentKey`, `MainDashboardSnapshot.districtId`, `BmpDashboardSnapshot.districtId`). Tidak ada FK CASCADE on-delete di schema — soft delete (`isActive`) yang dipakai, bukan hard delete berantai; versi dokumen sebelumnya keliru menandai RBAC/TrainingParticipant/MenuItem sebagai CASCADE.
 
 ### Cascade Behavior Explanation
 
@@ -58,6 +60,7 @@
 **SET NULL (relasi opsional)**:
 - `MenuItem.parentKey` → bila parent menu dihapus, `parentKey` anak menjadi NULL (anak tidak ikut terhapus)
 - `MainDashboardSnapshot.districtId` → bila district dihapus, filter snapshot menjadi NULL (snapshot tetap ada)
+- `BmpDashboardSnapshot.districtId` → bila district dihapus, filter snapshot menjadi NULL (snapshot tetap ada)
 
 **CASCADE**:
 - Hanya berlaku untuk **On Update** (propagasi perubahan primary key), bukan On Delete
@@ -72,17 +75,22 @@
 | **Geography** | `code` | UNIQUE, NOT NULL | Code wilayah harus unik (BPS standard) |
 | **FarmerGroup** | `category` | ENUM, NOT NULL | Kategori: EX_PLASMA / SWADAYA (default: SWADAYA) |
 | **Farmer** | `farmerId` | NOT NULL, INDEXED | Internal farmer ID, bisa sama dengan NIK atau custom ID |
+| Farmer | `(farmerGroupId, farmerId)` | UNIQUE COMPOSITE | ID Petani unik **per Lembaga** (TD-024) — Lembaga berbeda boleh memakai nomor yang sama |
 | Farmer | `nik` | NULLABLE, 16 digits | NIK optional, jika diisi harus 16 digit angka |
 | Farmer | `gender` | ENUM (M/F), NOT NULL | Gender wajib |
 | Farmer | `joinedYear` | INT (1900-2100), NULLABLE | Tahun bergabung dengan KT, optional |
 | **TrainingPackage** | `code` | UNIQUE, ENUM | Training category code harus unik |
 | **TrainingParticipant** | `(activityId, farmerId)` | UNIQUE COMPOSITE | Satu farmer hanya bisa terdaftar 1x di satu training |
+| **ProductionRecord** | `(farmerId, parcelId, period, harvestNumber)` | UNIQUE COMPOSITE | Tidak boleh duplicate entri produksi untuk kombinasi farmer/parcel/periode/panen |
+| **MainDashboardSnapshot** | `(snapshotDate, districtId, joinedYear)` | UNIQUE COMPOSITE | Tidak boleh duplicate snapshot untuk kombinasi tanggal + filter |
+| **BmpDashboardSnapshot** | `(snapshotDate, districtId)` | UNIQUE COMPOSITE | Tidak boleh duplicate snapshot untuk kombinasi tanggal + filter |
 | **MenuItem** | `key` | UNIQUE, NOT NULL | Menu key (slug) harus unik |
 | MenuItem | `parentKey` | NULLABLE, FK | Self-reference untuk menu hierarchy (max 3 level) |
 | **RolePermission** | `(role, menuKey, permission)` | UNIQUE COMPOSITE | Tidak boleh duplicate role permission |
 | **UserProvince** | `(userId, provinceId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke province yang sama |
 | **UserDistrict** | `(userId, districtId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke district yang sama |
 | **UserFarmerGroup** | `(userId, farmerGroupId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke KT yang sama |
+| **UserPermissionOverride** | `(userId, menuKey, permission)` | UNIQUE COMPOSITE | Tidak boleh duplicate permission override per user |
 
 ### Soft Delete Pattern
 
@@ -100,7 +108,7 @@ Semua tabel menggunakan **soft delete** dengan field `isActive`:
 
 **Trade-off**:
 - Perlu disiplin di query layer (selalu filter `isActive`)
-- UNIQUE constraint harus conditional (tapi Prisma tidak support, jadi pakai kombinasi unik+isActive di app layer)
+- UNIQUE constraint **tidak mengenal soft delete** — baris nonaktif tetap memakai slot uniknya. Untuk `Farmer (farmerGroupId, farmerId)` itu **by design** (TD-024): memakai ulang ID milik petani nonaktif akan memecah riwayat pelatihan & lahannya (lihat komentar di `prisma/schema/farmer.prisma`). Bila suatu tabel memang perlu unik hanya-aktif (mis. revision tracking `LandParcel`), penegakannya di app layer (kombinasi cek unik+`isActive`), karena Prisma tidak support partial/conditional unique index
 
 ### Referential Integrity Check
 

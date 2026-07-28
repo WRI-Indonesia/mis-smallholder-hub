@@ -57,6 +57,7 @@ flowchart TD
 | **Email** | User | `email` | Unique index, validate format di app layer |
 | **NIK (ID Card)** | Farmer | `nik` | Optional field, validate 16 digits jika diisi, bisa mask di UI (****1234) |
 | **Location Coordinates** | FarmerGroup | `locationLat`, `locationLong` | Public (untuk mapping), tidak sensitif |
+| **Parcel Geometry** | LandParcel | `geometry` | Koordinat lahan milik individu — akses hanya via Server Action ber-RBAC (scope district/KT), tidak ikut payload list (fetch detail by-id, #163) |
 | **S3 Evidence Key** | TrainingActivity | `evidenceKey` | Private S3 bucket, generate pre-signed URL saat akses |
 
 ### Audit Trail

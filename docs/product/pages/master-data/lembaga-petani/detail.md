@@ -40,7 +40,7 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 |---|---|
 | File | `groups/[id]/page.tsx` + `groups/[id]/group-detail-client.tsx` |
 | Tipe | Server Component + client component |
-| Guard | `requirePermission("master-data-groups")`; `hasPermission("master-data-groups","EDIT")` untuk tombol Edit; `notFound()` bila data tidak ada |
+| Guard | `requirePermission("master-data-groups")`; `hasPermission("master-data-groups","EDIT")` untuk tombol Edit; `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate aksi popup peta); `notFound()` bila data tidak ada |
 | Server action / data | `getFarmerGroupDetail(id)` → `{ group, detail, completeness, mapParcels }`, `getDistrictsForSelect()` (hanya bila boleh edit) |
 
 ## Objek halaman
@@ -55,7 +55,7 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 | Tab Ringkasan — profil | Kartu | Field: `Distrik`, `Kategori`, `Tipe Grup`, `Singkatan`, `Tahun Berdiri Lembaga`, `Tahun Bergabung Program`, `Sertifikasi RSPO`, `Sertifikasi ISPO`, `Assurance SAP/MAP`, `Koordinat`, `Dibuat`, `Terakhir Diubah` |
 | Tab Ringkasan — `Struktur Kelembagaan (dari lahan)` | Tabel | Kolom `Kelompok Tani`, `Petani`, `Lahan`, `Luas (Ha)`; link `Lihat roster lengkap →`; empty state `Belum ada data Kelompok Tani dari lahan.` |
 | Tab Petani | Kartu + teks | `Total Petani`, `Laki-laki / Perempuan`, `Petani Tanpa Lahan` + tautan ke Master Data Petani & Ringkasan Petani |
-| Tab Lahan | Kartu + peta | `Persil Lahan`, `Kelompok Tani`, `Blok`; `Sebaran Lahan` = `ParcelsDistributionMap` (dynamic, ssr:false) |
+| Tab Lahan | Kartu + peta | `Persil Lahan`, `Kelompok Tani`, `Blok`; `Sebaran Lahan` = `ParcelsDistributionMap` (dynamic, ssr:false); popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
 | Tab Pelatihan — `Cakupan per Paket` | Tabel | `Paket`, `Petani Terlatih`, `Cakupan`, `Rataan Pre Test`, `Rataan Post Test` |
 | Tab Pelatihan — `Aktivitas Pelatihan (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Peserta`, `Rata-rata Pre → Post`; empty state `Belum ada aktivitas pelatihan untuk Lembaga ini.` |
 | Tab Produksi — `Produksi per Tahun` | Tabel | `Tahun` (expandable → rincian bulanan), `Produksi (kg)`, `Record`, `Lahan Melapor`, `Luas Melapor (Ha)`, `Produktivitas (Ton/Ha)`; catatan kaki rumus; empty state `Belum ada data produksi untuk Lembaga ini.` |

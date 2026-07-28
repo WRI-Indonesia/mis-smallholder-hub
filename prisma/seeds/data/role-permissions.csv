@@ -176,6 +176,10 @@ SUPERADMIN,dashboard-training,VIEW
 ADMIN,dashboard-training,VIEW
 OPERATOR,dashboard-training,VIEW
 MANAGEMENT,dashboard-training,VIEW
+SUPERADMIN,data-analyst-data-availability,VIEW
+ADMIN,data-analyst-data-availability,VIEW
+OPERATOR,data-analyst-data-availability,VIEW
+MANAGEMENT,data-analyst-data-availability,VIEW
 SUPERADMIN,dashboard-snapshot-bmp,CREATE
 SUPERADMIN,dashboard-snapshot-bmp,VIEW
 SUPERADMIN,dashboard-snapshot-bmp,DELETE

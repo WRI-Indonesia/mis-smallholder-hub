@@ -58,6 +58,7 @@ Halaman: Lahan (/admin/bulk-upload/parcels)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | "Upload Massal Lahan" | Heading (`h2`) | Deskripsi: *"Unggah data spasial lahan petani menggunakan ZIP Shapefile (.zip berisi berkas .shp, .dbf, .shx, .prj) dengan pencocokan kolom dinamis."* |
+| `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `bulk-upload-parcels` (`findTutorialForMenu`), dibuka di tab baru |
 | "1. Pilih ZIP Shapefile" | Card + Input `type="file"` (`accept=".zip"`) | Keterangan *"Unggah arsip ZIP (.zip) yang berisi berkas .shp, .dbf, .shx, dan .prj dari shapefile lahan."* |
 | Info berkas | Teks | *"Shapefile: **nama.zip** (N fitur/baris terdeteksi)"* |
 | Toast parsing | Toast | Sukses *"Berhasil mengurai shapefile: N geometri lahan terdeteksi"*; kosong *"Shapefile tidak mengandung data geometri/fitur"*; gagal *"Gagal mengurai file shapefile"* / *"Gagal membaca berkas ZIP"* |

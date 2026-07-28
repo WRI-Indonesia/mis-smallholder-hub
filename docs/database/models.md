@@ -25,6 +25,7 @@ classDiagram
         ADMIN
         OPERATOR
         MANAGEMENT
+        DONOR
     }
 
     class PermissionLevel {
@@ -92,7 +93,7 @@ classDiagram
 | `reg_` | Reference data regional | `reg_province`, `reg_district` |
 | `ref_` | Reference data domain | `ref_training_package` |
 | `rbac_` | Tabel RBAC / permission | `rbac_role_permission`, `rbac_user_district` |
-| `tbl_snapshot_` | Snapshot dashboard (separate table per dashboard) | `tbl_snapshot_main_dashboard` |
+| `tbl_snapshot_` | Snapshot dashboard (separate table per dashboard) | `tbl_snapshot_main_dashboard`, `tbl_snapshot_bmp_dashboard` |
 | `cache_` | Cache / materialized view (reserved — belum ada tabelnya) | `cache_dashboard_stats` (contoh rencana) |
 
 </details>
@@ -181,7 +182,7 @@ flowchart LR
 | `farmerGroupId` | String | FK | Relasi ke FarmerGroup |
 | `gender` | Gender | Required | Enum: M / F |
 | `name` | String | Required | Nama petani |
-| `farmerId` | String | Required, Indexed | ID petani (bisa sama dengan NIK atau ID internal KT) |
+| `farmerId` | String | Required, Indexed, UNIQUE composite `(farmerGroupId, farmerId)` | ID petani (bisa sama dengan NIK atau ID internal KT); unik **per Lembaga** (TD-024) |
 | `nik` | String? | Optional | NIK 16 digit (nullable) |
 | `address` | String? | Optional | Alamat tinggal |
 | `birthPlace` | String? | Optional | Tempat lahir |
@@ -303,7 +304,10 @@ prisma/schema/
 ├── geography.prisma      # Province → District → Subdistrict → Village
 ├── farmer-group.prisma   # FarmerGroup
 ├── farmer.prisma         # Farmer
+├── land-parcel.prisma    # LandParcel
+├── production.prisma     # ProductionRecord
 ├── training.prisma       # TrainingPackage, TrainingActivity, TrainingParticipant
+├── dashboard-snapshot.prisma # MainDashboardSnapshot, BmpDashboardSnapshot
 ├── rbac.prisma           # RolePermission, UserProvince, UserDistrict, UserFarmerGroup, UserPermissionOverride
 └── menu.prisma           # MenuItem
 ```

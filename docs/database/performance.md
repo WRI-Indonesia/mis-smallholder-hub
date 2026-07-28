@@ -18,6 +18,10 @@
 | **User** | 20 | 50 | 100 | 150 | ~50/year |
 | **FarmerGroup** | 100 | 150 | 200 | 250 | ~50/year |
 | **Farmer** | 5000 | 15000 | 30000 | 50000 | ~15k/year (high growth) |
+| **LandParcel** | ~4200 (aktual ±4.163, Jul 2026) | 18000 | 36000 | 60000 | Mengikuti Farmer (~1.2 lahan/petani, estimasi) |
+| **ProductionRecord** | 5000 | 100000 | 300000 | 600000 | ~12-24 record/lahan/tahun (per periode × panen, estimasi kasar) |
+| **MainDashboardSnapshot** | 20 | 100 | 200 | 300 | ~100/year (generate manual via Tools, estimasi) |
+| **BmpDashboardSnapshot** | 10 | 50 | 100 | 150 | ~50/year (generate manual via Tools, estimasi) |
 | **TrainingPackage** | 5 | 7 | 10 | 10 | Slow growth |
 | **TrainingActivity** | 200 | 800 | 1600 | 2400 | ~800/year (4 training/KT/year avg) |
 | **TrainingParticipant** | 10000 | 50000 | 120000 | 200000 | ~50k/year (high growth, many-to-many) |
@@ -30,14 +34,18 @@
 | Tabel | Record Count | Avg Row Size | Total Size | Index Size | Total |
 |-------|-------------|--------------|------------|-----------|-------|
 | **Farmer** | 50k | 500 bytes | ~25 MB | ~5 MB | ~30 MB |
+| **LandParcel** | 60k | ~50 KB (estimasi — `geometry` JSONB puluhan–ratusan KB/lahan; baris terbesar di DB) | ~3 GB | ~10 MB | **~3 GB** |
+| **ProductionRecord** | 600k | 250 bytes | ~150 MB | ~40 MB | ~190 MB |
+| **MainDashboardSnapshot** | 300 | ~200 KB (estimasi — `data` JSON agregat + `kelompokTaniList`) | ~60 MB | < 1 MB | ~60 MB |
+| **BmpDashboardSnapshot** | 150 | ~100 KB (estimasi — `data` JSON agregat per Lembaga) | ~15 MB | < 1 MB | ~15 MB |
 | **TrainingParticipant** | 200k | 300 bytes | ~60 MB | ~15 MB | ~75 MB |
 | **TrainingActivity** | 2.4k | 700 bytes | ~1.7 MB | ~0.5 MB | ~2.2 MB |
 | **FarmerGroup** | 250 | 600 bytes | ~150 KB | ~50 KB | ~200 KB |
 | **Geography (all)** | 5.5k | 300 bytes | ~1.65 MB | ~0.5 MB | ~2.15 MB |
 | **RBAC (all)** | 900 | 400 bytes | ~360 KB | ~100 KB | ~460 KB |
-| **TOTAL (Year 3)** | ~260k records | — | ~90 MB | ~22 MB | **~112 MB** |
+| **TOTAL (Year 3)** | ~920k records | — | ~3.3 GB | ~70 MB | **~3.5 GB (estimasi; didominasi geometry LandParcel)** |
 
-**Conclusion**: Database size sangat manageable di PostgreSQL, tidak butuh partitioning / sharding.
+**Conclusion**: Database size tetap manageable di PostgreSQL (orde beberapa GB, didominasi `LandParcel.geometry`), tidak butuh partitioning / sharding. Angka volume & size di atas adalah **estimasi kasar**, kecuali yang ditandai aktual.
 
 ### Query Performance Optimization
 

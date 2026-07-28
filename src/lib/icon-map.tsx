@@ -27,6 +27,7 @@ import {
   TrendingUp,
   TrendingDown,
   Activity,
+  Gauge,
   // Agriculture & Nature
   Leaf,
   Sprout,
@@ -119,6 +120,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Droplets: Droplets,
   // Education & Training
   GraduationCap: GraduationCap,
+  Gauge: Gauge,
   BookOpen: BookOpen,
   BookMarked: BookMarked,
   Library: Library,

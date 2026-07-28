@@ -10,6 +10,11 @@ import {
 } from "@/lib/bmp-dashboard-aggregation";
 import { buildDashboardData, type RawFarmer, type RawGroup } from "@/lib/dashboard-aggregation";
 import { trainingCoverageMatrix, trainingTotals } from "@/lib/training-dashboard-aggregation";
+import {
+  buildAvailabilityEntry,
+  availabilityTotals,
+} from "@/lib/data-availability-aggregation";
+import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
 import type { TrainingGroupEntry } from "@/types/dashboard";
 
 /**
@@ -255,6 +260,78 @@ describe("Invarian cakupan — Dashboard Pelatihan", () => {
     const row = trainingCoverageMatrix([repeat])[0];
     expect(row.byPackage.PAKET_1_BMP_PC_RSPO_NKT).toBe(1);
     expect(row.anyPackage).toBeLessThanOrEqual(row.totalFarmers);
+  });
+});
+
+// ── Dashboard Ketersediaan Data ────────────────────────────────────────────
+
+describe("Invarian skor — Dashboard Ketersediaan Data", () => {
+  const daGroup = (farmers: CompletenessFarmerInput[]): CompletenessGroupInput => ({
+    id: "kt-1",
+    name: "KT Sukamaju",
+    code: null, // profil sengaja tak lengkap agar anomali profil ikut teruji
+    abrv: "SKM",
+    joinYear: 2015,
+    locationLat: 1.23,
+    locationLong: 103.4,
+    district: { id: "d-1", name: "Distrik A" },
+    activities: [],
+    trainingPackages: [{ code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1" }],
+    farmers,
+  });
+
+  const daFarmer = (id: string, nik: string | null): CompletenessFarmerInput => ({
+    id,
+    farmerId: `F-${id}`,
+    name: `Petani ${id}`,
+    nik,
+    address: null,
+    birthDate: null,
+    joinedYear: null,
+    landParcels: [],
+    trainingParticipants: [],
+    productionRecords: [],
+  });
+
+  const entries = [
+    buildAvailabilityEntry(daGroup([daFarmer("f1", null), daFarmer("f2", "1234567890123456")]), {
+      category: "SWADAYA",
+      districtId: "d-1",
+    }),
+    buildAvailabilityEntry(daGroup([]), { category: "EX_PLASMA", districtId: "d-1" }),
+  ];
+
+  it("skor per-Lembaga dan portfolio selalu di rentang 0–100", () => {
+    const totals = availabilityTotals(entries);
+    const scores = [
+      totals.overallScore,
+      ...Object.values(totals.domainScores),
+      ...entries.flatMap((e) => [e.healthScore, e.profileScore, ...Object.values(e.domainScores)]),
+    ];
+    for (const s of scores) {
+      expect(s).toBeGreaterThanOrEqual(0);
+      expect(s).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("skor portfolio terikat oleh min/max skor Lembaga (rata-rata tertimbang tak bisa keluar rentang)", () => {
+    const totals = availabilityTotals(entries);
+    const min = Math.min(...entries.map((e) => e.healthScore));
+    const max = Math.max(...entries.map((e) => e.healthScore));
+    // Toleransi 1 poin: healthScore per-Lembaga dibulatkan ke bilangan bulat
+    // sedangkan portfolio dihitung dari skor domain sebelum pembulatan itu.
+    expect(totals.overallScore).toBeGreaterThanOrEqual(min - 1);
+    expect(totals.overallScore).toBeLessThanOrEqual(max + 1);
+  });
+
+  it("anomali domain petani tidak pernah melebihi jumlah petani per tipenya", () => {
+    // Tiap tipe anomali petani menandai satu petani paling banyak sekali,
+    // jadi count per tipe ≤ totalFarmers (penyebut kartu Petani).
+    const e = entries[0];
+    const petaniKeys = ["no-nik", "invalid-nik", "no-address", "no-birth-date", "no-joined-year"];
+    for (const a of e.anomalies.filter((x) => petaniKeys.includes(x.key))) {
+      expect(a.count).toBeLessThanOrEqual(e.totalFarmers);
+    }
   });
 });
 

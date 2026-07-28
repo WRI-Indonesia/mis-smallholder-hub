@@ -17,18 +17,22 @@
 ```
 src/
 ├── app/
-│   ├── (admin)/admin/        # dashboard, master-data, data-analyst, map, report, bulk-upload, settings, tools, profile
-│   ├── (public)/             # Home, community, knowledge
+│   ├── (admin)/admin/        # dashboard, master-data, data-analyst, map, report, bulk-upload, settings, tools, profile, help
+│   ├── (public)/             # Home, community, knowledge-management
 │   ├── api/                  # NextAuth + proxy tile peta (map-overlay, map-hotspot)
+│   ├── login/                # Halaman login
+│   ├── not-found.tsx         # 404 global
 │   └── globals.css           # Design tokens
 ├── components/
 │   ├── ui/                   # Shadcn primitives
-│   ├── shared/               # DataTable, TableActions, TableSkeleton, DeleteDialog
+│   ├── shared/               # DataTable, TableActions, TableSkeleton, DeleteDialog + map-popup (standar popup peta #188), parcels-distribution-map
 │   ├── auth/                 # Login form
 │   └── layout/               # Admin & public layout
-├── hooks/                    # Custom hooks (use-mobile)
+├── content/                  # Materi Bantuan (help/, 30+ file .md — dibundel via loader asset/source di next.config.ts)
+├── hooks/                    # Custom hooks (use-mobile, use-url-filters)
 ├── lib/                      # Prisma, rbac, access-context, utils, helper murni (firms, map-data, dsb)
 ├── server/actions/           # Server Actions
+├── test/                     # Unit test Vitest (44 file)
 ├── validations/              # Zod schemas
 ├── types/                    # Custom types
 └── middleware.ts             # NextAuth guard /admin/* & /login

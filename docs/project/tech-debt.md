@@ -4,15 +4,15 @@
 
 ## Summary
 
-Kondisi per **2026-07-21**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **8 debt aktif**; TD-020…TD-025 seluruhnya dibuka & diselesaikan 2026-07-21 (TD-021 sebagian: hook URL-filter baru dipakai Dashboard Pelatihan), tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani/Gapoktan belum dimodelkan — interim per-lahan sudah jalan, refactor penuh menunggu keputusan hierarki); selebihnya debt kualitas berukuran kecil–sedang.
+Kondisi per **2026-07-28**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **10 debt aktif**; TD-020…TD-025 dibuka & diselesaikan 2026-07-21 (TD-021 sebagian: hook URL-filter dipakai Dashboard Pelatihan + Dashboard Ketersediaan Data); **TD-026/TD-027/TD-028 dibuka 2026-07-22** dari #187B/#188 (TD-028 langsung selesai di #188); **TD-029 dibuka & diselesaikan 2026-07-28** (scope leak combobox bulk upload petani, follow-up TD-024). Tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani belum dimodelkan sebagai tabel — interim per-lahan sudah jalan; hierarki **final 3 level** diputuskan #189, refactor penuh menunggu data lengkap); selebihnya debt kualitas berukuran kecil–sedang.
 
 **Rekomendasi:**
 
 | Horizon | Fokus | Alasan |
 | --- | --- | --- |
-| **Jangka pendek** (sprint berjalan) | **TD-015** (`exportValue` DataTable) & **TD-008** (helper parsing angka form) — kerjakan menumpang saat menyentuh file terkait; **TD-002** (visual audit `text-white`) sekali jalan | Kecil, murah, mencegah silent-fail berulang (TD-015 sudah 2× menggigit di #160) |
-| **Jangka menengah** (1–2 sprint) | **TD-010 sisa** — pisah `error:string` + `fieldErrors` di tipe `ActionResult` (22 titik / 9 action / ~10 form); **TD-004** (i18n) bila jadi kebutuhan produk | Perubahan kontrak lintas form — butuh PR khusus ber-scope jelas, bukan tumpangan; i18n perlu keputusan produk dulu |
-| **Jangka panjang** (menunggu data & keputusan) | **TD-014** refactor hierarki penuh (Jalur B + B2: KT/Gapoktan jadi tabel, `FarmerGroup`→`FarmerInstitution`, export→rebuild→re-import) | Blocker: keputusan **3 vs 4 level** + data KT lengkap; interim per-lahan (#146/#150) sudah menopang report/dashboard/detail sampai saat itu |
+| **Jangka pendek** (sprint berjalan) | **TD-026** (a11y matriks) & **TD-027** (N+1 kaskade `setRolePermissions`); **TD-015** (`exportValue` DataTable) & **TD-008** (helper parsing angka form) — kerjakan menumpang saat menyentuh file terkait; **TD-002** (visual audit `text-white`) sekali jalan | Sisa #187B (TD-026/027) sudah ber-scope jelas; sisanya kecil, murah, mencegah silent-fail berulang (TD-015 sudah 2× menggigit di #160). TD-029 ✅ selesai 2026-07-28 |
+| **Jangka menengah** (1–2 sprint) | **TD-010 sisa** — pisah `error:string` + `fieldErrors` di tipe `ActionResult` (32 baris `fieldErrors` / 13 file actions / ~10 form); **TD-004** (i18n) bila jadi kebutuhan produk | Perubahan kontrak lintas form — butuh PR khusus ber-scope jelas, bukan tumpangan; i18n perlu keputusan produk dulu |
+| **Jangka panjang** (menunggu data) | **TD-014** refactor hierarki penuh (Jalur B: **KT** jadi tabel, `FarmerGroup`→`FarmerInstitution`, export→rebuild→re-import) — **tanpa** entitas Gapoktan (3 level final #189) | Blocker: data KT lengkap (keputusan 3-vs-4-level **sudah final: 3**); interim per-lahan (#146/#150) sudah menopang report/dashboard/detail sampai saat itu |
 
 ---
 
@@ -25,9 +25,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…028) | **10** | 16 | 26 |
+| **Debt** (TD-001…029) | **10** | 19 | 29 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027. (**TD-028 ✅** #188 — migrasi primitif popup + paritas/lebar Sebaran Lahan.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027. (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -35,13 +35,13 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 - **Masalah awal:** audit fields tidak diisi di sebagian mutasi (`user.ts`, `menu.ts`, `role-permission.ts`, toggle region, assignment) + return `ActionResult` ad-hoc.
 - **Sudah selesai:** payload ad-hoc `{granted}`/`{count}` → ✅ #129 (dipindah ke `data` + anotasi tipe); audit fields `createdBy`/`modifiedBy` → ✅ #130 (diisi dari `auth()` di user/menu/role-permission/region-toggle/user-data-access/user-menu-access + `toggleFarmerActive`).
-- **Sisa (follow-up khusus):** `error: fieldErrors` (objek) di 22 titik/9 action — perlu pisah `error:string` + `fieldErrors` di tipe `ActionResult` + ~10 form (lihat analisa #129).
+- **Sisa (follow-up khusus):** `error: fieldErrors` (objek) di **32 baris / 13 file actions** (verifikasi `grep -rc "fieldErrors" src/server/actions/*.ts`, 2026-07-28) — perlu pisah `error:string` + `fieldErrors` di tipe `ActionResult` + ~10 form (lihat analisa #129).
 - **Evidence:** Audit 2026-07-10 §3.4 & LOW · **Issue #129/#130** · **Owner:** Backend Lead.
 
-### TD-014 · 🟡 Interim jalan — Level "Kelompok Tani (Gapoktan)" belum dimodelkan (P2)
+### TD-014 · 🟡 Interim jalan — Level "Kelompok Tani" belum dimodelkan sebagai tabel (P2)
 
 - **Masalah:** level tengah antara Petani dan Lembaga Petani belum dimodelkan; data KT belum dimasukkan (per owner). Butuh model baru KT, re-parenting `Farmer` (Petani → KT, KT → Lembaga) via migrasi, plus dampak RBAC scope, districtId, dan **tabrakan identifier** (`FarmerGroup` kini dipakai untuk Lembaga). **Bukan refactor & bukan kosmetik — ini fitur/skema baru.**
-- **Status interim (jalan):** field denormalisasi `LandParcel.subGroupLv1` (Gapoktan) + `subGroupLv2` (Kelompok Tani) **per-lahan** (#146) + input manual & bulk shapefile (#150 ✅) — jalur input interim lengkap.
+- **Status interim (jalan):** field denormalisasi `LandParcel.subGroupLv2` (Kelompok Tani) **per-lahan** (#146) + input manual & bulk shapefile (#150 ✅) — jalur input interim lengkap. (Level `subGroupLv1`/Gapoktan **di-drop #189** → hierarki final 3 level.)
 - **Target akhir (diperbarui 2026-07-22, #189):** hierarki final **3 level** — **Gapoktan/KUD dibatalkan** (kolom `sub_group_lv1` di-drop). Jalur B tetap: rename `FarmerGroup`→`FarmerInstitution` + entitas **KT** sebagai tabel (tanpa entitas Gapoktan); eksekusi **export → rebuild → re-import** saat data lengkap.
 - **Blocker:** keputusan 3-vs-4-level **sudah terjawab (3 level, #189)**; sisa: konfirmasi padanan Inggris + eksekusi re-modelling KT jadi tabel saat data siap.
 - **Owner:** Product + Backend Lead.
@@ -49,10 +49,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 <details>
 <summary>Riwayat, evidence & validation lengkap</summary>
 
-- **Evidence:** Skema: `farmer.prisma:10` (`farmerGroupId`→FarmerGroup), `farmer-group.prisma`, `access-context.ts` (mode `BY_FARMER_GROUP`), enum `FarmerGroupCategory` (`EX_PLASMA`/`SWADAYA`). Gapoktan = Gabungan Kelompok Tani → perjelas apakah KT & Gapoktan satu entitas atau dua.
+- **Evidence:** Skema: `farmer.prisma:10` (`farmerGroupId`→FarmerGroup), `farmer-group.prisma`, `access-context.ts` (mode `BY_FARMER_GROUP`), enum `FarmerGroupCategory` (`EX_PLASMA`/`SWADAYA`). Gapoktan = Gabungan Kelompok Tani → perjelas apakah KT & Gapoktan satu entitas atau dua *(pertanyaan ini **terjawab #189**: Gapoktan dibatalkan — hierarki final 3 level)*.
 - **Alasan per-lahan (#146):** satu petani bisa punya lahan di KT/Gapoktan berbeda → keanggotaan sub-kelompok per-lahan, bukan di `Farmer`.
 - **Konsumen interim (selesai):** Report Kelompok Tani real-time (**#154** — Summary agregat + Detail roster, Excel/PDF), card "Total Kelompok Tani" Main Dashboard snapshot-backed (**#148**, distinct `subGroupLv2`), KT/Gapoktan turunan di detail Petani (**#152**, `lib/farmer-sub-groups.ts`). Label UI "Gapoktan" → **"Gapoktan/KUD"** (#154; `subGroupLv1` tetap).
-- **Validation:** model jalan Petani→KT→Lembaga; scope RBAC & filter district konsisten; **ID/relasi (UserFarmerGroup, LandParcel+GeoJSON, TrainingActivity, produksi, snapshot) tidak putus** saat re-import (pertahankan CUID atau remap); UI/CRUD/bulk untuk level baru; gate lint/build/test hijau. Padanan Inggris terpilih: `Farmer` / `FarmerGroup`(KT) / `FarmerGroupAssociation`(Gapoktan, bila 4 level) / `FarmerInstitution`(Lembaga).
+- **Validation:** model jalan Petani→KT→Lembaga; scope RBAC & filter district konsisten; **ID/relasi (UserFarmerGroup, LandParcel+GeoJSON, TrainingActivity, produksi, snapshot) tidak putus** saat re-import (pertahankan CUID atau remap); UI/CRUD/bulk untuk level baru; gate lint/build/test hijau. Padanan Inggris terpilih: `Farmer` / `FarmerGroup`(KT) / ~~`FarmerGroupAssociation`(Gapoktan, bila 4 level)~~ *(gugur — 3 level final #189)* / `FarmerInstitution`(Lembaga).
 
 </details>
 
@@ -71,18 +71,6 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Masalah:** form data parsing berpotensi `NaN` pada field kosong/whitespace.
 - **Evidence:** `src/app/(admin)/admin/master-data/groups/group-form-modal.tsx`.
 - **Validation:** gunakan helper untuk memproses string kosong/whitespace sebelum parsing numerik. · **Owner:** Frontend Lead.
-
-### TD-018 · ✅ Selesai (#180, 2026-07-20) — 5 salinan action dropdown Distrik/Lembaga per menu report
-
-- **Masalah:** `report.ts` berisi 5 pasang action dropdown nyaris identik (`getDistrictsFor*` + `getFarmerGroupsFor*` untuk farmer/training/production/KT/lahan) — beda hanya di permission key menu. Duplikasi sadar demi guard per-menu, tapi tiap report baru menambah salinan ke-6.
-- **Evidence:** ditemukan #177/#179 (retro); `src/server/actions/report.ts`.
-- **Resolusi (#180):** 10 action dropdown kini delegasi tipis ke 2 helper privat `districtsForMenus(menuKeys)` / `farmerGroupsForMenus(menuKeys, districtId)` — nama/signature action exported & permission key per-menu tidak berubah (client tak tersentuh); KT family memakai menuKeys ganda. · **Owner:** Backend.
-
-### TD-019 · ✅ Selesai (#180, 2026-07-20) — Exporter PDF lama belum pola build-vs-save
-
-- **Masalah:** `report-land-parcel-pdf.ts` & `report-land-parcel-xlsx.ts` (#179) memisahkan **build dokumen** dari **save/download** sehingga bisa diverifikasi unit test (halaman, orientasi, sheet, gambar) — exporter lama (`pdf.ts`, `farm-passport.ts`, `bmp-map-print.ts`) masih satu fungsi ber-side-effect `doc.save()`, tak teruji empiris (akar bug print #174 & label vertikal #179: jsPDF align pra-rotasi).
-- **Evidence:** #174 (2 bug print lolos gate), #179 (teks vertikal melenceng, tertangkap QC owner bukan test).
-- **Resolusi (#180):** `pdf.ts` → `buildPDF` + `exportToPDF`; `farm-passport.ts` → `buildFarmPassportDoc` + `generateFarmPassportPdf`; `bmp-map-print.ts` → `buildBmpMapDoc` + `generateBmpMapPdf` — API publik tak berubah; +5 test struktural (`pdf-exporters.test.ts`: orientasi/halaman/tanpa-throw termasuk geometri rusak). · **Owner:** Frontend.
 
 ### TD-015 · 🔲 Open — `DataTable` kolom turunan: export mengandalkan tebakan key (P3)
 
@@ -106,11 +94,6 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 - **Masalah:** sel izin di `role-matrix-client.tsx` adalah tombol ikon tanpa nama aksesibel maupun `aria-pressed`; chevron & tombol toggle baris hanya punya `title`. Pembaca layar tak bisa membedakan granted/denied atau mengetahui aksi tombol.
 - **Validation:** tambahkan `aria-label` (mis. "ADMIN · Dashboard · VIEW: aktif") + `aria-pressed` pada sel; label pada chevron & tombol `ListChecks`. · **Evidence:** #187B. · **Owner:** Frontend.
-
-### TD-028 · ✅ Selesai (#188, 2026-07-22) — Migrasi Peta Lahan/BMP ke primitif popup bersama
-
-- **Masalah:** #188 mengekstrak primitif popup peta ke `src/components/shared/map-popup.tsx` (standar) tapi `map-canvas.tsx` & `map-bmp-canvas.tsx` masih menyimpan salinan lokal (`PopupHighlight`/`PopupSection`/`AttrRows`).
-- **Hasil:** kedua canvas kini mengimpor `MapPopupHighlight`/`MapPopupSection`/`MapPopupRows` dari modul bersama; definisi lokal + impor `Collapsible`/`ChevronDown`/`ReactNode`/`InfoRow` yang menganggur dihapus (verifikasi visual Peta Lahan & Sebaran Lahan tak berubah). Sekalian: **paritas header Sebaran Lahan** (ID Petani + ID Lahan + Lembaga Petani via payload `farmerCode`/`farmerGroupName`), **tutup popup pasca-edit**, dan **fix lebar**: popup Sebaran Lahan `w-max` (min 300 / max 440) + ID mono `whitespace-nowrap` agar **ID panjang tampil penuh satu baris** (tak terpotong). Sisa minor (bukan blocker): cast `as unknown as LandParcel` di `ParcelEditModalHost` dibiarkan. Gate lint 0 / build / test 675 ✅.
 
 ### TD-027 · 🔲 Open — `setRolePermissions` N+1 pada kaskade besar (P3)
 
@@ -158,10 +141,10 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 </details>
 
-### Debt Register — Selesai (15 item)
+### Debt Register — Selesai (19 item)
 
 <details>
-<summary><strong>Lihat 15 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 020, 021, 022, 023, 024, 025</summary>
+<summary><strong>Lihat 19 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 018, 019, 020, 021, 022, 023, 024, 025, 028, 029</summary>
 
 | ID | Debt Item | Priority | Selesai |
 | --- | --- | --- | --- |
@@ -174,12 +157,16 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-011 | Env & tooling drift | P2 | ✅ 2026-07-12 (#129) |
 | TD-012 | Identifier Bahasa Indonesia vs rule "variable English" | P3 | ✅ 2026-07-12 (#130) |
 | TD-013 | Mislabel `FarmerGroup` = "Lembaga Petani" (relabel UI) | P2 | ✅ 2026-07-14 (#147) |
+| TD-018 | 5 salinan action dropdown Distrik/Lembaga per menu report | P3 | ✅ 2026-07-20 (#180) |
+| TD-019 | Exporter PDF lama belum pola build-vs-save | P3 | ✅ 2026-07-20 (#180) |
+| TD-028 | Migrasi Peta Lahan/BMP ke primitif popup bersama | P3 | ✅ 2026-07-22 (#188) |
 | TD-022 | BMP: produksi jadi orphan saat revisi lahan (asimetri produktivitas) | P2 | ✅ 2026-07-21 |
 | TD-023 | Dua definisi "cakupan pelatihan" antar dashboard | P3 | ✅ 2026-07-21 |
 | TD-024 | `farmerId` tanpa penjaga keunikan + celah scope bulk upload | P2 | ✅ 2026-07-21 |
 | TD-025 | Mode Detail Bantuan bergantung urutan sumber CSS | P3 | ✅ 2026-07-21 |
+| TD-029 | Combobox bulk upload petani: daftar Lembaga tanpa scope filter | P1 | ✅ 2026-07-28 |
 | TD-020 | Dashboard Pelatihan: live query tanpa ambang perf | P3 | ✅ 2026-07-21 |
-| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan) |
+| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan + Dashboard Ketersediaan Data) |
 
 **TD-001** — S3/PDF utility belum terintegrasi ke modul Training. Evidence: Training + evidence upload S3 sudah terintegrasi via `upload.ts` (#81); CLI `get-link`/`pdf-manager` tetap sebagai utilitas. Owner: Backend/Storage Lead. Validation: evidence upload berfungsi di app; sisa CLI tak load dotenv → TD-011. ✅
 
@@ -210,5 +197,13 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 **TD-012** — Identifier Bahasa Indonesia di code (`computePetaniDomain` dkk, field types `totalPetani`…) vs rule "variable English". Evidence: Audit 2026-07-10 §5 · Issue #130. Owner: Tech Lead. Validation: **keputusan #130 — resmikan istilah domain** (petani/lahan/pelatihan/produksi/KT/persil/paket) sebagai pengecualian resmi di `code-standards.md`, bukan rename massal (Surgical Changes, hindari regresi lintas modul); enum DB (`PAKET_1_*`) = data, di luar aturan. ✅
 
 **TD-013** — **Mislabel: entitas `FarmerGroup` sebenarnya "Lembaga Petani", bukan "Kelompok Tani"** (hierarki benar: Petani → Kelompok Tani (Gapoktan) → Lembaga Petani). Scope Bagian A (relabel, aman, forward-compatible): ganti UI-copy "Kelompok Tani" → "Lembaga Petani"; identifier English `FarmerGroup`/`farmerGroup`/`farmer-group` tetap (konvensi + preseden TD-012 #130); ⚠️ menu _key_ RBAC tidak diubah — hanya label. Evidence: label seed `prisma/seeds/data/menu.csv` (+DB row); ±142 string di ±52 file `src/**` + 27 di `docs/**`; identifier `FarmerGroup` di 93 file (tetap); abbr "KT"→"LT"; relasi `Farmer.farmerGroupId`→`FarmerGroup`, scope RBAC `BY_FARMER_GROUP`, `UserFarmerGroup`/`TrainingActivity` menggantung di sini · Issue #147 (pembeda: field `subGroupLv2` tetap "Kelompok Tani", lihat #146/TD-014). Owner: Product + Frontend. Hasil: sweep ~56 file `src/**` + `menu.csv`; label menu DB di-update 1 baris terarah (`tbl_menu_item` key `master-data-groups`, bukan `db seed` penuh); docs disinkronkan. Gate lint 0 / build / test 380 ✅.
+
+**TD-029** — Combobox bulk upload petani: daftar Lembaga tanpa scope filter. `getFarmerGroupsForMapping()` (`src/server/actions/bulk-upload.ts`) mengembalikan **seluruh** `FarmerGroup` aktif — hanya guard `hasPermission("bulk-upload-farmers","VIEW")`, tanpa `getAccessContext()` — sehingga combobox "Pilih Lembaga Petani" di Step 1 membocorkan daftar lembaga di luar scope user (kebocoran terbatas daftar nama/kode; `bulkCreateFarmers` & `getExistingFarmerIds` sudah ber-scope sejak #125/TD-024, jadi insert lintas scope tetap tertolak). Ditemukan audit docs 2026-07-28, follow-up TD-024. **Fix (2026-07-28):** filter `AND: farmerGroupAccessFilter(access)` (pola anti key-collision #127) — identik dengan `bulk-upload-parcel.ts`/`bulk-upload-production.ts`. Tiga mode filter sudah teruji sebagai helper di `rbac-server-guards.test.ts` (konvensi suite: action Prisma tidak di-mock). Materi Bantuan `u-1-unggah-petani.md` ditambah troubleshooting "lembaga tidak ada di daftar". ✅
+
+**TD-018** — 5 salinan action dropdown Distrik/Lembaga per menu report: `report.ts` berisi 5 pasang action dropdown nyaris identik (`getDistrictsFor*` + `getFarmerGroupsFor*` untuk farmer/training/production/KT/lahan) — beda hanya di permission key menu; tiap report baru menambah salinan ke-6. Evidence: ditemukan #177/#179 (retro); `src/server/actions/report.ts`. Resolusi (#180): 10 action dropdown kini delegasi tipis ke 2 helper privat `districtsForMenus(menuKeys)` / `farmerGroupsForMenus(menuKeys, districtId)` — nama/signature action exported & permission key per-menu tidak berubah (client tak tersentuh); KT family memakai menuKeys ganda. Owner: Backend. ✅
+
+**TD-019** — Exporter PDF lama belum pola build-vs-save: `report-land-parcel-pdf.ts` & `report-land-parcel-xlsx.ts` (#179) memisahkan **build dokumen** dari **save/download** sehingga bisa diverifikasi unit test — exporter lama (`pdf.ts`, `farm-passport.ts`, `bmp-map-print.ts`) masih satu fungsi ber-side-effect `doc.save()`, tak teruji empiris (akar bug print #174 & label vertikal #179: jsPDF align pra-rotasi). Resolusi (#180): `pdf.ts` → `buildPDF` + `exportToPDF`; `farm-passport.ts` → `buildFarmPassportDoc` + `generateFarmPassportPdf`; `bmp-map-print.ts` → `buildBmpMapDoc` + `generateBmpMapPdf` — API publik tak berubah; +5 test struktural (`pdf-exporters.test.ts`: orientasi/halaman/tanpa-throw termasuk geometri rusak). Owner: Frontend. ✅
+
+**TD-028** — Migrasi Peta Lahan/BMP ke primitif popup bersama: #188 mengekstrak primitif popup peta ke `src/components/shared/map-popup.tsx` (standar) tapi `map-canvas.tsx` & `map-bmp-canvas.tsx` masih menyimpan salinan lokal (`PopupHighlight`/`PopupSection`/`AttrRows`). Hasil (#188, 2026-07-22): kedua canvas kini mengimpor `MapPopupHighlight`/`MapPopupSection`/`MapPopupRows` dari modul bersama; definisi lokal + impor menganggur (`Collapsible`/`ChevronDown`/`ReactNode`/`InfoRow`) dihapus (verifikasi visual Peta Lahan & Sebaran Lahan tak berubah). Sekalian: **paritas header Sebaran Lahan** (ID Petani + ID Lahan + Lembaga Petani via payload `farmerCode`/`farmerGroupName`), **tutup popup pasca-edit**, dan **fix lebar**: popup Sebaran Lahan `w-max` (min 300 / max 440) + ID mono `whitespace-nowrap` agar ID panjang tampil penuh satu baris. Sisa minor (bukan blocker): cast `as unknown as LandParcel` di `ParcelEditModalHost` dibiarkan. Gate lint 0 / build / test 675 ✅
 
 </details>

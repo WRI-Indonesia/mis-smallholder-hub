@@ -20,8 +20,10 @@ Halaman: Peta BMP (/admin/map/bmp)
 │   ├── Basemap: LIGHT / DARK / HYBRID
 │   ├── Layer: Area lahan (poligon) · Label nama petani
 │   ├── Legend
-│   └── Popup fitur: Lahan BMP
-│       └── Ketersediaan Data · Produktivitas · Detail Lahan · Produksi Bulanan
+│   ├── Popup fitur: Lahan BMP
+│   │   ├── Ketersediaan Data · Produktivitas · Detail Lahan · Produksi Bulanan
+│   │   └── Aksi: Lihat Detail · Edit Lahan
+│   └── Modal: Edit Lahan (dari popup)
 ├── Panel kanan: Ketersediaan Data per Lahan
 │   ├── Pencarian matriks
 │   ├── Tabel matriks (bulan per tahun)
@@ -35,9 +37,9 @@ Halaman: Peta BMP (/admin/map/bmp)
 |---|---|
 | Menu key | `map-bmp` (URL `/admin/map/bmp`, icon `Sprout`, order 2) |
 | File | `src/app/(admin)/admin/map/bmp/page.tsx` |
-| Client | `map-bmp-client.tsx` (orkestrasi + cetak/ekspor), `map-bmp-control-panel.tsx` (panel kiri), `map-bmp-canvas.tsx` (peta + popup), `map-bmp-data-panel.tsx` (panel matriks kanan) |
+| Client | `map-bmp-client.tsx` (orkestrasi + cetak/ekspor), `map-bmp-control-panel.tsx` (panel kiri), `map-bmp-canvas.tsx` (peta + popup), `map-bmp-data-panel.tsx` (panel matriks kanan); primitif popup bersama `src/components/shared/map-popup.tsx` (TD-028: `MapPopupSection`, `MapPopupRows`) + `parcel-popup-actions.tsx` & `parcel-edit-modal-host.tsx` (dari `master-data/parcels/components/`) |
 | Tipe | Server Component (opsi provinsi) → Client Component (peta interaktif) |
-| Guard | `requirePermission("map-bmp")`; action `getBmpMapData` guard `hasPermission("map-bmp", "VIEW")` + `getAccessContext()` |
+| Guard | `requirePermission("map-bmp")`; `page.tsx` juga menghitung `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate tombol aksi popup); action `getBmpMapData` guard `hasPermission("map-bmp", "VIEW")` + `getAccessContext()` |
 | Server action / data | `getProvincesForMap()`, `getDistrictsForMap()`, `getFarmerGroupsForMap()`, `getBmpMapData()` (`src/server/actions/map.ts`); helper `src/lib/map-data.ts`, `src/lib/report-production.ts`, `src/lib/bmp-map-print.ts`, `src/lib/xlsx.ts` |
 | Loading | `loading.tsx` |
 
@@ -73,3 +75,6 @@ Halaman: Peta BMP (/admin/map/bmp)
 | Popup › Produktivitas | Baris popup | Badge kelas produktivitas + label tampilan (tahun / rata-rata); hanya bila layer produktivitas dihitung |
 | Popup › Detail Lahan | Section popup | Terbuka default: Luas, Tahun Tanam, Komoditas, Status Lahan, Run Bulan Berturut, Periode Awal, Periode Akhir, Produktivitas (Ton/Ha), dan Tahun Melapor (mode rata-rata) atau Bulan Melapor `n/12` |
 | Popup › Produksi Bulanan | Section popup | Grafik dari data per periode yang sudah tertanam di fitur (tanpa fetch tambahan) |
+| Catatan kaki popup | Teks | "Kategori dari run bulan berturut-turut produksi yang tertaut ke lahan." |
+| Aksi popup Lahan BMP | Footer popup | `ParcelPopupActions`: tombol "Lihat Detail" (link `/admin/master-data/parcels/{id}`, gate `hasPermission("master-data-parcels", "VIEW")`) dan "Edit Lahan" (gate EDIT, membuka modal edit); footer tak dirender bila keduanya false |
+| Modal Edit Lahan | Modal | `ParcelEditModalHost` — dirender hanya saat ada `parcelId` (remount per id via `key`); data lahan + daftar petani di-load lazy saat mount; lahan tak ditemukan → toast "Lahan tidak ditemukan atau di luar akses Anda", gagal fetch → "Gagal memuat data lahan"; setelah simpan peta refetch GeoJSON (`onParcelUpdated`) |

@@ -26,7 +26,7 @@ Menu: Dashboard (/admin/dashboard)
 | Icon | `LayoutDashboard` |
 | Order | `0` |
 | Sub menu | 3 — Main Dashboard (`dashboard-main`), BMP Dashboard (Produksi) (`dashboard-bmp`), Dashboard Pelatihan (`dashboard-training`) |
-| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT (untuk `dashboard` dan ketiga sub menu) |
+| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (untuk `dashboard` dan ketiga sub menu; `prisma/seeds/data/role-permissions.csv`) |
 
 Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 
@@ -77,3 +77,4 @@ Loading skeleton segmen: `src/app/(admin)/admin/dashboard/loading.tsx` (judul, b
 - Ketiga sub menu hanya membaca data (aksi `VIEW`); tidak ada tombol mutasi (create/edit/delete) di halaman dashboard.
 - Main Dashboard dan BMP Dashboard membaca **snapshot** yang dibuat lewat menu Tools (`/admin/tools/snapshot`, `/admin/tools/snapshot-bmp`); Dashboard Pelatihan membaca DB secara langsung.
 - Semua filter pada ketiga halaman diiris **client-side** dari satu payload server.
+- **Dashboard Ketersediaan Data** semula dirilis sebagai sub menu keempat di sini (#193) lalu dipindah ke menu **Data Analyst** pada hari yang sama — lihat [dashboard-ketersediaan-data.md](../data-analyst/dashboard-ketersediaan-data.md).

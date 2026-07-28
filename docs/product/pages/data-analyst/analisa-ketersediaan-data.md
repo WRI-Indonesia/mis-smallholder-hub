@@ -2,6 +2,8 @@
 
 [← Menu Data Analyst](./README.md) · [← Katalog halaman](../README.md)
 
+> Roll-up lintas Lembaga dari scoring halaman ini tersedia di [Dashboard Ketersediaan Data](./dashboard-ketersediaan-data.md) (DA-03, #193, satu menu ini juga) — skornya identik karena memakai `computeCompleteness` yang sama.
+
 ## Diagram objek
 
 ```text
@@ -60,6 +62,16 @@ Halaman: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
 | Chip domain | Badge skor | "Profil Lembaga Petani" + 4 domain (Petani, Lahan, Pelatihan, Produksi) masing-masing dengan badge skor % |
 | Peringatan 0 petani | Kartu peringatan | "Lembaga Petani ini belum memiliki data petani aktif — domain Petani, Lahan, Pelatihan, dan Produksi kosong." |
 
+## Aturan skor (per 2026-07-28, #193)
+
+- **Bobot antar domain** (`DOMAIN_WEIGHTS`, `src/lib/data-completeness.ts`): profil 10%, petani 25%, lahan 25%, pelatihan 20%, produksi 20% → Index Ketersediaan Data.
+- **Skor domain Petani & Lahan = GRADED per field** (keputusan owner #193, mengganti formula lama all-or-nothing yang membuat skor kolaps ke 0% padahal sebagian field terisi):
+  - Petani: tiap petani dinilai dari proporsi 5 check yang lolos — NIK (terisi, 16 digit, tidak duplikat), ID Petani tidak duplikat, alamat, tanggal lahir, tahun bergabung — lalu dirata-rata lintas petani.
+  - Lahan: tiap persil dinilai dari proporsi 5 atribut terisi — geometry, luas (>0), tahun tanam, jenis tanaman, status lahan — lalu dirata-rata lintas persil.
+  - Daftar anomali **tidak berubah**; kartu "Petani Lengkap"/"Persil dengan Anomali" tetap memakai definisi tanpa-anomali-sama-sekali.
+- Profil (proporsi 4 check), Pelatihan (rata-rata % cakupan paket per petani), dan Produksi (% petani ber-produksi) sudah graded sejak awal — tidak berubah.
+- Skor di [Dashboard Ketersediaan Data](./dashboard-ketersediaan-data.md) otomatis mengikuti formula yang sama (satu sumber: `computeCompleteness`).
+
 ## Seksi collapsible
 
 (masing-masing menampilkan badge "`<n>` anomali" / "Lengkap" + badge skor; terbuka otomatis bila ada anomali)
@@ -67,7 +79,7 @@ Halaman: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
 | Seksi | Isi |
 |---|---|
 | Profil Lembaga Petani | Daftar cek: "Kode Lembaga Petani", "Koordinat Lokasi", "Tahun Bergabung", "Singkatan (Abrv)" — tiap baris badge "Lengkap"/"Belum" |
-| Petani | Kartu: "Total Petani", "Petani Lengkap", "Petani dengan Anomali", "% Kelengkapan". Anomali: "Petani tanpa NIK", "NIK tidak valid (bukan 16 digit)", "NIK duplikat dalam Lembaga Petani", "ID Petani duplikat dalam Lembaga Petani", "Petani tanpa alamat", "Petani tanpa tanggal lahir", "Petani tanpa tahun bergabung" |
+| Petani | Kartu: "Total Petani", "Petani Lengkap", "Petani dengan Anomali", "% Kelengkapan Field". Anomali: "Petani tanpa NIK", "NIK tidak valid (bukan 16 digit)", "NIK duplikat dalam Lembaga Petani", "ID Petani duplikat dalam Lembaga Petani", "Petani tanpa alamat", "Petani tanpa tanggal lahir", "Petani tanpa tahun bergabung" |
 | Lahan | Kartu: "Total Persil Aktif", "Petani Tanpa Lahan", "Persil dengan Anomali", "Total Luas (ha)". Anomali: "Petani tanpa lahan aktif", "Persil tanpa geometry", "Persil tanpa luas", "Persil tanpa tahun tanam", "Persil tanpa jenis tanaman", "Persil tanpa status lahan" |
 | Pelatihan | Kartu: "Total Petani", "Petani Lengkap", "Belum Lengkap", "% Cakupan Paket". Tampilan khusus cakupan paket (lihat bawah). Anomali: "Belum ikut `<paket>`" per paket, "Peserta tanpa nilai pre-test", "Peserta tanpa nilai post-test", dan "Lembaga Petani belum memiliki aktivitas pelatihan" bila berlaku |
 | Produksi | Kartu: "Total Petani", "Petani dengan Produksi", "Petani Tanpa Produksi", "Berlahan Tanpa Produksi". Anomali: "Petani tanpa data produksi", "Petani punya lahan tapi tanpa produksi", "Produksi tidak terhubung ke persil" |

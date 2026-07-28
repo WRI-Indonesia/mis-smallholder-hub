@@ -36,6 +36,7 @@ Halaman: Produksi (/admin/master-data/production)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Produksi` / `Data panen dan produksi hasil tani (yield) per petani` | Heading | h1 + deskripsi |
+| `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-production` (`findTutorialForMenu`), dibuka di tab baru |
 | Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` |
 | Filter Periode | Input | `type="month"` |
 | Filter Lahan | Select | `Semua Lahan` / `Terpetakan` / `Belum Terpetakan` |

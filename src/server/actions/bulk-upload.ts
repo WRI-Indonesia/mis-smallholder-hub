@@ -7,13 +7,19 @@ import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context"
 import { farmerSchema, type FarmerInput } from "@/validations/farmer.schema";
 import type { ActionResult } from "@/types/action-result";
 
+/**
+ * Daftar Lembaga tujuan untuk combobox Step 1 — dibatasi scope pengguna
+ * (TD-029). Tanpa filter ini seluruh Lembaga aktif ikut terdaftar, membocorkan
+ * keberadaan lembaga di luar wilayah kerja pengguna.
+ */
 export async function getFarmerGroupsForMapping() {
   if (!(await hasPermission("bulk-upload-farmers", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
+  const access = await getAccessContext();
   return prisma.farmerGroup.findMany({
-    where: { isActive: true },
+    where: { isActive: true, AND: farmerGroupAccessFilter(access) },
     select: {
       id: true,
       name: true,

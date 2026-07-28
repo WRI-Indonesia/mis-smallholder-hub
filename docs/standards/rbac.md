@@ -2,14 +2,31 @@
 
 > Bagian dari dokumentasi **Standar**. Indeks: [../README.md](../README.md) · Terkait: [principles.md](./principles.md) · [workflow.md](./workflow.md) · [code-standards.md](./code-standards.md) · [ui-ux.md](./ui-ux.md) · [architecture.md](./architecture.md)
 
+### Inventaris Role
+
+Aplikasi memiliki **5 role** (enum `Role` di `prisma/schema/_config.prisma`):
+
+| Role | Deskripsi |
+|------|-----------|
+| **SUPERADMIN** | Akses penuh seluruh menu dan data (bypass RBAC). |
+| **ADMIN** | Kelola data dalam cakupan wilayah yang ditugaskan. |
+| **OPERATOR** | Petugas lapangan: input & ubah data lembaga/KT yang ditugaskan. |
+| **MANAGEMENT** | Read-only: dashboard, laporan, dan analisa. |
+| **DONOR** | Read-only untuk donor/funder: dashboard, laporan, peta, dan bantuan. |
+
+**Sentralisasi:** daftar role di sisi aplikasi hanya hidup di `src/lib/roles.ts` (`ROLES`, `ROLE_BADGE_CLASS`, `ROLE_DESCRIPTION`) — dipakai validasi (`user.schema.ts`), form & daftar pengguna, dan matriks Role & Permission. Menambah role baru cukup: edit `src/lib/roles.ts` + tambah nilai di enum `Role` Prisma (migrasi) + seed permission-nya. Jangan hardcode daftar role di tempat lain.
+
+> [!NOTE]
+> **Istilah (hierarki final #189):** Petani → Kelompok Tani → Lembaga Petani. Model `FarmerGroup` = **Lembaga Petani**; "KT" (Kelompok Tani) kini merujuk level per-lahan (`subGroupLv2`), bukan `FarmerGroup`.
+
 ### RBAC Data Access Hierarchy
 
 ```
 SUPERADMIN        → skip semua filter (akses ALL)
 No assignment     → unrestricted (akses ALL)
-UserFarmerGroup   → hanya KT spesifik (filter by FarmerGroup.id)
-UserDistrict      → semua KT di district (filter by districtId)
-UserProvince      → semua district di province → semua KT (filter by districtId)
+UserFarmerGroup   → hanya Lembaga Petani spesifik (filter by FarmerGroup.id)
+UserDistrict      → semua Lembaga Petani di district (filter by districtId)
+UserProvince      → semua district di province → semua Lembaga Petani (filter by districtId)
 ```
 
 Konvensi (urutan prioritas):
@@ -37,13 +54,13 @@ const accessFilter =
 ```
 
 > [!WARNING]
-> **Bug pattern lama** — Jangan filter hanya berdasarkan `districtId` tanpa handle case `BY_FARMER_GROUP`. Jika user hanya assign KT dan code menghasilkan `districtId: { in: [] }`, semua data KT akan hilang dari query.
+> **Bug pattern lama** — Jangan filter hanya berdasarkan `districtId` tanpa handle case `BY_FARMER_GROUP`. Jika user hanya assign Lembaga Petani dan code menghasilkan `districtId: { in: [] }`, semua data Lembaga Petani akan hilang dari query.
 
 ### User Data Access Assignment UI
 
-Untuk assign data access per user (Province/District/KT):
+Untuk assign data access per user (Province/District/Lembaga Petani):
 - **Server Actions** — di `src/server/actions/user-data-access.ts`: `getUserDataAccess`, `getRegionsForSelect`, `assignUserProvince/District/FarmerGroup`, `removeUserProvince/District/FarmerGroup`
-- **Modal** — `UserDataAccessModal` (Tabs: Provinsi | Distrik | KT) dengan live-save checkbox per item
+- **Modal** — `UserDataAccessModal` (Tabs: Provinsi | Distrik | Lembaga Petani) dengan live-save checkbox per item
 - **Table Summary** — Gunakan komponen `AccessSummaryCell` di kolom "Akses Data": badge per assignment, `—` jika kosong
 - **Real-time refresh** — Pass `onDataChange` callback ke modal → panggil `startTransition(() => router.refresh())` setiap toggle berhasil
 
@@ -55,6 +72,12 @@ Untuk melakukan override permission menu per user (grant/revoke):
 - **Keamanan** — Pengecekan di server action wajib menolak override terhadap user berkole `SUPERADMIN`.
 - **Soft Delete** — Penghapusan override menggunakan update `isActive: false` (bukan physical delete).
 - **Optimasi Caching** — Fungsi pembacaan permission di `src/lib/rbac.ts` wajib dibungkus dengan React `cache` untuk mereduksi kueri ganda pada render lifecycle.
+
+### Role & Permission Matrix UI
+
+Untuk mengelola permission per role (matriks role × menu × C/V/E/D di Settings):
+- **Server Actions** — di `src/server/actions/role-permission.ts`: `getRolePermissions`, `toggleRolePermission` (satu sel), dan `setRolePermissions(updates[])` — set banyak permission ke keadaan eksplisit dalam **satu transaksi** untuk aksi massal (toggle satu baris penuh, kaskade induk → anak).
+- **SUPERADMIN dikecualikan dari matriks** (keputusan governance): kolom yang tampil/diedit hanya `EDITABLE_ROLES = ROLES.filter((r) => r !== "SUPERADMIN")` (`role-matrix-client.tsx`), dan `setRolePermissions` mengabaikan entri role SUPERADMIN — SUPERADMIN bypass RBAC sehingga permission-nya tidak perlu (dan tidak boleh) diatur dari UI.
 
 ### Hierarchical Menu Management (3-Level Support)
 
@@ -78,14 +101,17 @@ Sistem menu mendukung hierarki sampai **3 level maksimal**:
 - **Max depth:** Level 3 tidak boleh punya children (max depth = 3 level)
 - **Sidebar visual:**
   - Level 2: `pl-4`, normal text size, collapsible jika punya children
-  - Level 3: `pl-8`, `text-xs`, `ChevronRight` icon atau bullet `•`
-- **Menu Management table visual:**
-  - Level 1: **Bold** text
-  - Level 2: `— ` prefix + normal weight
-  - Level 3: `—— ` prefix + `text-muted-foreground`
+  - Level 3: `pl-4 pr-2`, `text-xs`, bullet `•` (`nav-main.tsx`)
+- **Menu Management table visual** (pasca #187B, `menu-list-client.tsx`):
+  - Indentasi numerik pada kolom Menu: `paddingLeft: depth * 20`
+  - Depth 0 (level 1): **bold** + baris `bg-muted/30`
+  - Depth ≥ 1 (level 2–3): `text-muted-foreground`
+  - Pohon **collapsible**: tombol chevron (`ChevronRight`/`ChevronDown`) per baris yang punya anak, dinonaktifkan saat mode pencarian aktif
 
 **Technical Implementation:**
-- Helper function `buildMenuTree(items, parentKey, currentDepth, maxDepth)` di `src/lib/menu-utils.ts` untuk recursive tree building
+- **Dua helper pohon menu** dengan peruntukan berbeda — jangan disatukan:
+  - `src/lib/menu-utils.ts` — `buildMenuTree(items, parentKey, currentDepth, maxDepth)` menghasilkan pohon nested `children`; untuk jalur **server & sidebar** (`src/server/actions/menu.ts`, `filterMenuTreeByAccess`)
+  - `src/lib/menu-tree.ts` — `buildMenuTree(items)` (satu argumen) menghasilkan node `{ item, depth, children }`, plus `collapsibleKeys`, `descendantKeys`, `flattenTree`; untuk **UI Settings** (tabel collapsible Menu Management & Role & Permission)
 - Validation: `validateMenuDepth()` reject jika depth > 3
 - RBAC: `getEffectiveMenuPermissions()` dengan fallback ke parent/grandparent
 - Server action: Validate depth sebelum create/update menu item
