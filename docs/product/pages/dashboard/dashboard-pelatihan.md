@@ -31,7 +31,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   └── Empty state
 ├── Card Petani Terlatih vs Belum per Distrik (full row, #198)
 │   ├── Legend Sudah/Belum
-│   ├── Tabel distrik × paket (+ Min. 1 Paket, lebar kolom seragam)
+│   ├── Tabel paket × distrik (baris = paket + Min. 1 Paket; kolom = distrik + total petani; lebar kolom seragam)
 │   ├── Sel: % terlatih + jumlah sudah + bar proporsi (belum di tooltip)
 │   └── Empty state
 ├── Chart tren kehadiran
@@ -105,7 +105,7 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Heading kartu | "Petani Terlatih vs Belum per Distrik" + legend Sudah (emerald) / Belum (muted) |
-| Tabel | Distrik × paket | Roll-up matriks cakupan via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); kolom paket + Min. 1 Paket lebar seragam |
+| Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Min. 1 Paket; kolom = distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
 | Sel | Bar proporsi | "{persen}%" + jumlah sudah + bar terisi proporsi terlatih (angka belum di tooltip — revisi owner); distrik tanpa petani → "—" |
 | Empty state | Teks | "Tidak ada distrik pada filter ini." |
 

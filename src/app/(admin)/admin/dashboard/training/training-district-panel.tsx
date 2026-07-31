@@ -49,7 +49,8 @@ export function TrainingDistrictPanel({
   packages: TrainingPackageCode[];
 }) {
   const districts = trainingDistrictCoverage(rows);
-  const cellWidth = `${62 / (packages.length + 1)}%`;
+  // Lebar seragam antar kolom distrik; kolom label Paket menyisakan ~18%.
+  const cellWidth = `${82 / Math.max(districts.length, 1)}%`;
 
   return (
     <Card className="border border-border/60 shadow-sm">
@@ -77,47 +78,53 @@ export function TrainingDistrictPanel({
           </div>
         ) : (
           <div className="overflow-x-auto">
+            {/* Transposisi (revisi owner #198): baris = paket, kolom = distrik —
+                distrik sedikit sehingga bar lebih lebar, dan tiap baris terbaca
+                sebagai progres satu paket lintas distrik. */}
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <th className="text-left py-2 pr-4 font-semibold">Distrik</th>
-                  <th className="text-right py-2 px-3 font-semibold">Petani</th>
-                  {packages.map((code) => (
+                  <th className="text-left py-2 pr-4 font-semibold">Paket</th>
+                  {districts.map((d) => (
                     <th
-                      key={code}
+                      key={d.districtName}
                       style={{ width: cellWidth }}
                       className="text-center py-2 px-2 font-semibold whitespace-nowrap"
-                      title={TRAINING_PACKAGE_LABELS[code]}
                     >
-                      {TRAINING_PACKAGE_SHORT[code]}
+                      {d.districtName}
+                      <span className="block text-[10px] font-normal normal-case tabular-nums">
+                        {formatNumber(d.totalFarmers)} petani
+                      </span>
                     </th>
                   ))}
-                  <th
-                    style={{ width: cellWidth }}
-                    className="text-center py-2 px-2 font-semibold whitespace-nowrap"
-                    title="Petani yang mengikuti paket apa pun"
-                  >
-                    Min. 1 Paket
-                  </th>
                 </tr>
               </thead>
               <tbody>
-                {districts.map((d) => (
-                  <tr key={d.districtName} className="align-middle border-t border-border/40">
-                    <td className="py-2.5 pr-4 font-medium">{d.districtName}</td>
-                    <td className="py-2.5 px-3 text-right tabular-nums text-muted-foreground">
-                      {formatNumber(d.totalFarmers)}
+                {packages.map((code) => (
+                  <tr key={code} className="align-middle border-t border-border/40">
+                    <td className="py-2.5 pr-4 font-medium" title={TRAINING_PACKAGE_LABELS[code]}>
+                      {TRAINING_PACKAGE_SHORT[code]}
                     </td>
-                    {packages.map((code) => (
-                      <td key={code} className="py-2.5 px-2">
+                    {districts.map((d) => (
+                      <td key={d.districtName} className="py-2.5 px-2">
                         <DistrictCell trained={d.byPackage[code] ?? 0} total={d.totalFarmers} />
                       </td>
                     ))}
-                    <td className="py-2.5 px-2">
-                      <DistrictCell trained={d.anyPackage} total={d.totalFarmers} />
-                    </td>
                   </tr>
                 ))}
+                <tr className="align-middle border-t border-border/40">
+                  <td
+                    className="py-2.5 pr-4 font-semibold"
+                    title="Petani yang mengikuti paket apa pun"
+                  >
+                    Min. 1 Paket
+                  </td>
+                  {districts.map((d) => (
+                    <td key={d.districtName} className="py-2.5 px-2">
+                      <DistrictCell trained={d.anyPackage} total={d.totalFarmers} />
+                    </td>
+                  ))}
+                </tr>
               </tbody>
             </table>
             <p className="mt-3 text-[11px] text-muted-foreground">
