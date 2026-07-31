@@ -185,8 +185,7 @@ export function TrainingCoverageMatrix({
             >
               <span className="min-w-0">
                 <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <Grid3x3 className="h-4 w-4 text-primary" /> Cakupan Pelatihan per Lembaga &amp;
-                  Paket
+                  <Grid3x3 className="h-4 w-4 text-primary" /> Capaian Paket per Lembaga
                 </span>
                 <span className="block text-xs text-muted-foreground mt-1">
                   {open

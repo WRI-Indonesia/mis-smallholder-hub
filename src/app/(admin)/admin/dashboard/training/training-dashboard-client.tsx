@@ -309,10 +309,11 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
 
       <TrainingScoreCards totals={totals} yearLabel={yearLabel} />
 
-      <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} />
-
-      {/* Roll-up cakupan ke level distrik: sudah vs belum per paket (#198) */}
+      {/* Roll-up cakupan ke level distrik dulu (gambaran besar), baru rincian
+          per Lembaga — urutan revisi owner (#198). */}
       <TrainingDistrictPanel rows={coverage} packages={packages} />
+
+      <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
