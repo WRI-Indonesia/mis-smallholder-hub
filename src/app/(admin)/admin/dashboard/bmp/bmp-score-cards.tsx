@@ -17,15 +17,23 @@ interface CardConfig {
   iconClass: string;
 }
 
-// Penekanan angka pembanding di sub-teks (permintaan owner #191). Light mode
-// butuh warna (foreground vs muted terlalu tipis di text-xs); dark mode cukup
-// putih + medium — emerald terang justru mengurangi kontras di sana.
-function Emph({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="font-semibold text-emerald-700 dark:font-medium dark:text-foreground">
-      {children}
-    </span>
-  );
+// Penekanan berwarna di sub-teks per jenis token (permintaan owner #191):
+// persen amber, angka total emerald, konteks tahun sky — shade 400 di dark
+// mode agar tetap kontras di latar gelap.
+const EMPH_STYLES = {
+  percent: "text-amber-600 dark:text-amber-400",
+  total: "text-emerald-700 dark:text-emerald-400",
+  year: "text-sky-700 dark:text-sky-400",
+} as const;
+
+function Emph({
+  kind,
+  children,
+}: {
+  kind: keyof typeof EMPH_STYLES;
+  children: React.ReactNode;
+}) {
+  return <span className={`font-semibold ${EMPH_STYLES[kind]}`}>{children}</span>;
 }
 
 export function BmpScoreCards({
@@ -46,9 +54,14 @@ export function BmpScoreCards({
       // % total hanya muncul bila snapshot sudah memuat total luas.
       sub: (
         <>
-          {yearLabel} — dari <Emph>{formatTon(totals.luasMelaporHa)} Ha</Emph> terdata
+          <Emph kind="year">{yearLabel}</Emph> — dari{" "}
+          <Emph kind="total">{formatTon(totals.luasMelaporHa)} Ha</Emph> terdata
           {totals.totalLuasHa > 0 && (
-            <> ({pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total luas)</>
+            <>
+              {" "}
+              (<Emph kind="percent">{pct(totals.luasMelaporHa, totals.totalLuasHa)}</Emph> dari
+              total luas)
+            </>
           )}
         </>
       ),
@@ -71,11 +84,14 @@ export function BmpScoreCards({
       sub:
         totals.totalLuasHa > 0 ? (
           <>
-            {pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total{" "}
-            <Emph>{formatTon(totals.totalLuasHa)} Ha</Emph> luas aktif ({yearLabel})
+            <Emph kind="percent">{pct(totals.luasMelaporHa, totals.totalLuasHa)}</Emph> dari total{" "}
+            <Emph kind="total">{formatTon(totals.totalLuasHa)} Ha</Emph> luas aktif (
+            <Emph kind="year">{yearLabel}</Emph>)
           </>
         ) : (
-          `luas lahan terdata (${yearLabel})`
+          <>
+            luas lahan terdata (<Emph kind="year">{yearLabel}</Emph>)
+          </>
         ),
       icon: LandPlot,
       iconClass: "text-teal-600",
@@ -85,8 +101,9 @@ export function BmpScoreCards({
       value: formatNumber(totals.lahanBerData),
       sub: (
         <>
-          {pct(totals.lahanBerData, totals.totalLahan)} dari total{" "}
-          <Emph>{formatNumber(totals.totalLahan)}</Emph> lahan aktif ({yearLabel})
+          <Emph kind="percent">{pct(totals.lahanBerData, totals.totalLahan)}</Emph> dari total{" "}
+          <Emph kind="total">{formatNumber(totals.totalLahan)}</Emph> lahan aktif (
+          <Emph kind="year">{yearLabel}</Emph>)
         </>
       ),
       icon: Map,
@@ -97,8 +114,9 @@ export function BmpScoreCards({
       value: formatNumber(totals.petaniMelapor),
       sub: (
         <>
-          {pct(totals.petaniMelapor, totals.totalPetani)} dari total{" "}
-          <Emph>{formatNumber(totals.totalPetani)}</Emph> petani ({yearLabel})
+          <Emph kind="percent">{pct(totals.petaniMelapor, totals.totalPetani)}</Emph> dari total{" "}
+          <Emph kind="total">{formatNumber(totals.totalPetani)}</Emph> petani (
+          <Emph kind="year">{yearLabel}</Emph>)
         </>
       ),
       icon: Users,
