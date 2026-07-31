@@ -17,10 +17,15 @@ interface CardConfig {
   iconClass: string;
 }
 
-// Penekanan halus angka pembanding di sub-teks (permintaan owner #191) —
-// pola yang sama dengan tanggal snapshot di header dashboard.
+// Penekanan angka pembanding di sub-teks (permintaan owner #191). Light mode
+// butuh warna (foreground vs muted terlalu tipis di text-xs); dark mode cukup
+// putih + medium — emerald terang justru mengurangi kontras di sana.
 function Emph({ children }: { children: React.ReactNode }) {
-  return <span className="font-medium text-foreground">{children}</span>;
+  return (
+    <span className="font-semibold text-emerald-700 dark:font-medium dark:text-foreground">
+      {children}
+    </span>
+  );
 }
 
 export function BmpScoreCards({
