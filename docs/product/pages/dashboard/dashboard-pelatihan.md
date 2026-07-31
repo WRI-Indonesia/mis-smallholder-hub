@@ -12,10 +12,10 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Judul "Dashboard Pelatihan"
 │   └── Deskripsi + tanggal generate
 ├── Filter
-│   ├── Kategori Lembaga (select)
 │   ├── Distrik (combobox)
 │   ├── Lembaga Petani (combobox)
 │   └── Tahun (select, default "Semua Tahun")
+│   (filter Kategori Ex-Plasma/Swadaya dihapus — #198)
 ├── Kartu KPI (4) — satu angka besar, pembanding di sub-teks (#198, pola BMP #191)
 │   ├── Petani Terlatih
 │   ├── Total Sesi
@@ -77,7 +77,6 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 |---|---|---|
 | Judul halaman | Heading `h1` | "Dashboard Pelatihan" |
 | Deskripsi | Teks | "Cakupan & efektivitas program pelatihan petani — data per {tanggal generate}" |
-| Filter Kategori Lembaga | Select | "Semua Kategori", "Ex-Plasma", "Swadaya" |
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
 | Filter Tahun | Select | Default "Semua Tahun" (kumulatif) + daftar tahun dari data |
