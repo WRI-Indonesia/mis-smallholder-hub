@@ -372,7 +372,7 @@ export function TrainingReportClient({ districts }: Props) {
       filename: `Laporan_Pelatihan_${selectedDistrictObj?.name.replace(/\s+/g, "_")}_${selectedGroupObj?.name.replace(/\s+/g, "_")}`,
       sheets: [
         {
-          name: "Kegiatan Pelatihan",
+          name: "Sesi Pelatihan",
           columns: [
             { header: "Paket Pelatihan", key: "packageName" },
             { header: "Tanggal Pelatihan", key: "trainingDate" },
@@ -604,13 +604,13 @@ export function TrainingReportClient({ districts }: Props) {
               <div className="grid gap-4 md:grid-cols-3">
                 <Card className="shadow-sm border border-border/60">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Kegiatan</CardTitle>
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Sesi</CardTitle>
                     <Calendar className="h-4 w-4 text-primary" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-xl font-bold">{formatNumber(reportData.summary.totalKegiatan)}</div>
                     <Badge variant="outline" className="mt-1 bg-blue-50 text-blue-700 border-blue-100">
-                      Kegiatan
+                      Sesi
                     </Badge>
                   </CardContent>
                 </Card>
@@ -698,7 +698,7 @@ export function TrainingReportClient({ districts }: Props) {
                   value="activities"
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-1 pb-3 pt-1 text-sm font-semibold shadow-none"
                 >
-                  Kegiatan Pelatihan
+                  Sesi Pelatihan
                 </TabsTrigger>
                 <TabsTrigger
                   value="farmers"
@@ -921,7 +921,7 @@ export function TrainingReportClient({ districts }: Props) {
             <div className="space-y-1">
               <h3 className="font-semibold text-lg">Filter Wajib Belum Lengkap</h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Silakan pilih Distrik dan Lembaga Petani untuk memuat ringkasan, kegiatan pelatihan, dan cakupan data laporan pelatihan.
+                Silakan pilih Distrik dan Lembaga Petani untuk memuat ringkasan, sesi pelatihan, dan cakupan data laporan pelatihan.
               </p>
             </div>
           </CardContent>

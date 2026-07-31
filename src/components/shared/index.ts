@@ -9,4 +9,6 @@ export type { TableAction } from "./table-actions";
 
 export { TableSkeleton } from "./table-skeleton";
 
+export { StatEmph } from "./stat-emph";
+
 

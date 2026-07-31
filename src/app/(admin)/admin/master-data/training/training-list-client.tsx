@@ -503,7 +503,7 @@ export function TrainingListClient({
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Total Kegiatan Training
+                Total Sesi Pelatihan
               </p>
               <h3 className="text-2xl font-bold mt-1.5 tabular-nums">
                 {formatNumber(totalKegiatanTraining)}

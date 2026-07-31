@@ -11,6 +11,7 @@ import {
   trainingScoreRows,
   trainingTotals,
   trainingTrendSeries,
+  trainingDistrictCoverage,
 } from "@/lib/training-dashboard-aggregation";
 import type {
   TrainingActivityEntry,
@@ -364,5 +365,47 @@ describe("target cakupan (TRAINING_COVERAGE_TARGET / trainingTargetGap)", () => 
     expect(before).toBe(40); // 4 paket × 10 petani, belum ada kegiatan
     expect(after).toBe(38); // 2 petani ikut K3 → berkurang 2, tidak melonjak
     expect(after).toBeLessThan(before);
+  });
+});
+
+describe("trainingDistrictCoverage (#198)", () => {
+  const row = (
+    districtName: string,
+    totalFarmers: number,
+    k3: number,
+    anyPackage: number,
+  ): import("@/types/dashboard").TrainingCoverageRow => ({
+    groupId: `${districtName}-${totalFarmers}`,
+    groupName: "G",
+    groupCode: null,
+    districtName,
+    totalFarmers,
+    byPackage: {
+      PAKET_1_BMP_PC_RSPO_NKT: 0,
+      PAKET_2_MK: 0,
+      PAKET_2_K3: k3,
+      PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0,
+      OTHER: 0,
+    },
+    anyPackage,
+  });
+
+  it("roll-up per distrik: Σ petani, Σ per paket, Σ anyPackage; urut nama", () => {
+    const d = trainingDistrictCoverage([
+      row("Siak", 100, 40, 60),
+      row("Pelalawan", 50, 10, 20),
+      row("Siak", 30, 5, 10),
+    ]);
+    expect(d.map((x) => x.districtName)).toEqual(["Pelalawan", "Siak"]);
+    const siak = d[1];
+    expect(siak.totalFarmers).toBe(130);
+    expect(siak.byPackage.PAKET_2_K3).toBe(45);
+    expect(siak.anyPackage).toBe(70);
+    // Belum = total − sudah, tidak pernah negatif (invarian pembilang ≤ penyebut)
+    expect(siak.totalFarmers - (siak.byPackage.PAKET_2_K3 ?? 0)).toBeGreaterThanOrEqual(0);
+  });
+
+  it("daftar kosong → kosong", () => {
+    expect(trainingDistrictCoverage([])).toEqual([]);
   });
 });

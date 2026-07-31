@@ -33,6 +33,7 @@ import {
 } from "@/lib/training-dashboard-aggregation";
 import { TrainingScoreCards } from "./training-score-cards";
 import { TrainingCoverageMatrix } from "./training-coverage-matrix";
+import { TrainingDistrictPanel } from "./training-district-panel";
 import { TrainingTrendChart } from "./training-trend-chart";
 import { TrainingEffectivenessPanel } from "./training-effectiveness-panel";
 import { TrainingQualityPanel } from "./training-quality-panel";
@@ -309,6 +310,9 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
       <TrainingScoreCards totals={totals} yearLabel={yearLabel} />
 
       <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} />
+
+      {/* Roll-up cakupan ke level distrik: sudah vs belum per paket (#198) */}
+      <TrainingDistrictPanel rows={coverage} packages={packages} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">

@@ -16,10 +16,9 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Distrik (combobox)
 │   ├── Lembaga Petani (combobox)
 │   └── Tahun (select, default "Semua Tahun")
-├── Kartu KPI (5)
+├── Kartu KPI (4) — satu angka besar, pembanding di sub-teks (#198, pola BMP #191)
 │   ├── Cakupan Petani Terlatih
-│   ├── Total Kegiatan
-│   ├── Kehadiran vs Petani Unik
+│   ├── Total Sesi
 │   ├── Partisipasi Perempuan
 │   └── Rata-rata Kenaikan Skor
 ├── Matriks cakupan (collapsible)
@@ -29,6 +28,11 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Kolom Min. 1 Paket
 │   ├── Heatmap sel (klik → dialog drill-down)
 │   ├── Legenda skala
+│   └── Empty state
+├── Card Petani Terlatih vs Belum per Distrik (full row, #198)
+│   ├── Legend Sudah/Belum
+│   ├── Tabel distrik × paket (+ Min. 1 Paket, lebar kolom seragam)
+│   ├── Sel: % terlatih + jumlah sudah + bar proporsi (belum di tooltip)
 │   └── Empty state
 ├── Chart tren kehadiran
 │   ├── Stacked bar per paket
@@ -40,9 +44,9 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Catatan per paket
 │   └── Empty state
 ├── Panel kualitas data
-│   ├── Kegiatan tanpa bukti
-│   ├── Kegiatan tanpa lokasi
-│   ├── Kegiatan tanpa peserta
+│   ├── Sesi tanpa bukti
+│   ├── Sesi tanpa lokasi
+│   ├── Sesi tanpa peserta
 │   ├── Peserta tanpa skor lengkap
 │   └── Link ke Master Data Pelatihan
 └── Dialog drill-down petani belum dilatih
@@ -89,11 +93,21 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 
 | # | Judul kartu | Nilai | Sub |
 |---|---|---|---|
-| 1 | Cakupan Petani Terlatih | "{terlatih} / {total petani}" | "{persen} petani aktif pernah ikut ≥1 pelatihan ({label tahun})" |
-| 2 | Total Kegiatan | "{n} kegiatan" | label tahun |
-| 3 | Kehadiran vs Petani Unik | "{kehadiran} / {petani terlatih}" | "rata-rata {n} pelatihan per petani" / "belum ada kehadiran" |
-| 4 | Partisipasi Perempuan | persen | "{n} dari {n} kehadiran" |
-| 5 | Rata-rata Kenaikan Skor | "+/−{n} poin" atau "—" | "pre {n} → post {n} · {n} peserta ber-skor" / "belum ada peserta dengan pre & post terisi" |
+| 1 | Cakupan Petani Terlatih | "{terlatih}" | "{persen} dari total {total petani} petani aktif pernah ikut ≥1 pelatihan ({label tahun})" |
+| 2 | Total Sesi | "{n}" | "sesi pelatihan ({label tahun})" |
+| 3 | Partisipasi Perempuan | persen | "{n} dari total {n} kehadiran ({label tahun})" |
+| 4 | Rata-rata Kenaikan Skor | "+/−{n} poin" atau "—" | "pre {n} → post {n} · {n} peserta ber-skor" / "belum ada peserta dengan pre & post terisi" |
+
+Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmph` (`src/components/shared/stat-emph.tsx`, pola KPI BMP #191). Card "Kehadiran vs Petani Unik" **dihapus** (#198, keputusan owner — petani unik sudah diwakili card Cakupan). Kolom matriks cakupan diberi lebar seragam agar grid sel simetris.
+
+## Card Petani Terlatih vs Belum per Distrik (`TrainingDistrictPanel`, #198)
+
+| Objek | Tipe | Keterangan |
+|---|---|---|
+| Judul | Heading kartu | "Petani Terlatih vs Belum per Distrik" + legend Sudah (emerald) / Belum (muted) |
+| Tabel | Distrik × paket | Roll-up matriks cakupan via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); kolom paket + Min. 1 Paket lebar seragam |
+| Sel | Bar proporsi | "{persen}%" + jumlah sudah + bar terisi proporsi terlatih (angka belum di tooltip — revisi owner); distrik tanpa petani → "—" |
+| Empty state | Teks | "Tidak ada distrik pada filter ini." |
 
 Label tahun: "semua tahun" atau "{YYYY}".
 
@@ -134,10 +148,10 @@ Target cakupan per paket: `TRAINING_COVERAGE_TARGET` — Paket 1, Paket 2 - MK, 
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Heading kartu | "Tren Kehadiran Pelatihan — {label tahun}" |
-| Deskripsi | Teks | "Tinggi batang = jumlah kehadiran (peserta per kegiatan), dipecah per paket." |
+| Deskripsi | Teks | "Tinggi batang = jumlah kehadiran (peserta per sesi), dipecah per paket." |
 | Seri | Stacked bar | Kehadiran per bucket (per tahun bila "Semua Tahun", per bulan bila satu tahun dipilih), disegmen per paket |
 | Warna paket | Legend | Paket 1 `#16a34a`, Paket 2 - MK `#0ea5e9`, Paket 2 - HSE `#f97316`, Paket 3 & 4 `#8b5cf6`, Lainnya `#94a3b8` |
-| Tooltip hover | Tooltip | Label bucket, "{n} kegiatan · {n} kehadiran", rincian per paket |
+| Tooltip hover | Tooltip | Label bucket, "{n} sesi · {n} kehadiran", rincian per paket |
 | Empty state | Teks | "Belum ada data pelatihan pada filter ini." |
 
 ## Panel efektivitas (`TrainingEffectivenessPanel`)
@@ -157,8 +171,8 @@ Target cakupan per paket: `TRAINING_COVERAGE_TARGET` — Paket 1, Paket 2 - MK, 
 |---|---|---|
 | Judul | Heading kartu | "Kualitas Data" |
 | Deskripsi | Teks | "Kelengkapan pengisian pada irisan yang sedang tampil." |
-| "Kegiatan tanpa bukti" | Kartu ringkas | Nilai + "{persen} dari {total kegiatan}"; disorot amber bila > 0 |
-| "Kegiatan tanpa lokasi" | Kartu ringkas | idem |
-| "Kegiatan tanpa peserta" | Kartu ringkas | idem |
+| "Sesi tanpa bukti" | Kartu ringkas | Nilai + "{persen} dari {total sesi}"; disorot amber bila > 0 |
+| "Sesi tanpa lokasi" | Kartu ringkas | idem |
+| "Sesi tanpa peserta" | Kartu ringkas | idem |
 | "Peserta tanpa skor lengkap" | Kartu ringkas | Nilai + "{persen} dari {total kehadiran}" |
 | Link tindak lanjut | Link | "Buka Master Data Pelatihan untuk melengkapi →" → `/admin/master-data/training` |

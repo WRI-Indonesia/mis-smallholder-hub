@@ -57,5 +57,5 @@ Judul `Tambah Peserta Pelatihan`; aksi `addParticipants` (validasi `addParticipa
 | Tab `Pilih Manual` | Tab | Panel kiri `Petani Tersedia (n)` + pencarian `Cari nama / ID...` + `Pilih Semua Halaman Ini`; badge `n terpilih`; panel kanan `Petani Terpilih (n)` + `Hapus Semua`; empty `Tidak ada kandidat petani` / `Belum ada petani dipilih` |
 | Tab `Upload List Peserta` | Tab | Drop zone `Unggah List Peserta Pelatihan` (.xlsx/.csv), tombol `Template Excel` (kolom `ID Petani`, `Nilai Pre-Test`, `Nilai Post-Test`) |
 | `Tinjauan Data (n baris)` | Tabel | Kolom `ID Petani`, `Nama`, `Pre-Test`, `Post-Test`, `Status`, `Keterangan`; ringkasan `n Valid` / `n Warning` / `n Error` |
-| Validasi baris upload | Aturan | ERROR: nilai Pre/Post-Test bukan angka 0–100, `ID Petani tidak ditemukan di lembaga tani ini`, `Petani sudah terdaftar sebagai peserta`; WARNING: sudah pernah mengikuti paket sama di kegiatan lain |
+| Validasi baris upload | Aturan | ERROR: nilai Pre/Post-Test bukan angka 0–100, `ID Petani tidak ditemukan di lembaga tani ini`, `Petani sudah terdaftar sebagai peserta`; WARNING: sudah pernah mengikuti paket sama di sesi lain |
 | Footer | Tombol | `Batal` + `Tambahkan Peserta` (manual) / `Tambahkan n Peserta` (upload; VALID + WARNING ikut disimpan) |

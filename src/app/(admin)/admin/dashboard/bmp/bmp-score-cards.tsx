@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Activity, LandPlot, Users } from "lucide-react";
+import { StatEmph } from "@/components/shared/stat-emph";
 import type { BmpGroupTotals } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -17,25 +18,9 @@ interface CardConfig {
   iconClass: string;
 }
 
-// Penekanan sub-teks (#191, dua putaran feedback owner): warna hanya untuk
-// DATA (persen & total — emerald di light, putih di dark); konteks tahun tetap
-// muted tanpa penekanan. Tiga warna sekaligus terasa terlalu ramai.
-const EMPH_STYLES = {
-  percent: "font-semibold text-emerald-700 dark:font-medium dark:text-foreground",
-  total: "font-semibold text-emerald-700 dark:font-medium dark:text-foreground",
-  year: "",
-} as const;
-
-function Emph({
-  kind,
-  children,
-}: {
-  kind: keyof typeof EMPH_STYLES;
-  children: React.ReactNode;
-}) {
-  if (!EMPH_STYLES[kind]) return <>{children}</>;
-  return <span className={EMPH_STYLES[kind]}>{children}</span>;
-}
+// Penekanan sub-teks (#191): diekstrak ke komponen bersama saat pola yang
+// sama dipakai Dashboard Pelatihan (#198).
+const Emph = StatEmph;
 
 export function BmpScoreCards({
   totals,

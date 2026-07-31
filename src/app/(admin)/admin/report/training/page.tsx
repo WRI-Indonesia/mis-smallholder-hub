@@ -10,7 +10,7 @@ export default async function TrainingReportPage() {
     <div className="p-6 space-y-6">
       <div className="print:hidden">
         <h1 className="text-2xl font-bold">Laporan Pelatihan</h1>
-        <p className="text-muted-foreground">Analisis ringkasan kegiatan pelatihan dan cakupan petani</p>
+        <p className="text-muted-foreground">Analisis ringkasan sesi pelatihan dan cakupan petani</p>
       </div>
       <TrainingReportClient districts={districts} />
     </div>

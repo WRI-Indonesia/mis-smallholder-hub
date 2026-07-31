@@ -12,7 +12,7 @@ Sub Menu: Pelatihan (/admin/master-data/training)
 │   ├── Tabel daftar
 │   └── Dialog: TrainingFormModal
 └── Page: Detail Pelatihan (/admin/master-data/training/[id])
-    ├── Kartu info kegiatan
+    ├── Kartu info sesi
     ├── Tabel peserta
     └── Dialog: AddParticipantsModal
 ```

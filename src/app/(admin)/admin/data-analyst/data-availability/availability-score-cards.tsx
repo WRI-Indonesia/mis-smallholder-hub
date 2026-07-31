@@ -48,7 +48,7 @@ export function AvailabilityScoreCards({ totals }: { totals: AvailabilityTotals 
     },
     {
       title: "Pelatihan",
-      value: `${formatNumber(totals.totalActivities)} kegiatan`,
+      value: `${formatNumber(totals.totalActivities)} sesi`,
       score: totals.domainScores.pelatihan,
       prefix: "cakupan paket",
       icon: GraduationCap,
