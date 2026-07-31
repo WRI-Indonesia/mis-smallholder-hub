@@ -75,7 +75,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 
 | # | Judul kartu | Nilai | Sub |
 |---|---|---|---|
-| 1 | Total Produksi | "{n} Ton" | "{label tahun} — dari {n} Ha terdata ({persen} dari total luas)" — persen hilang bila snapshot lama tanpa `totalLuasHa` |
+| 1 | Total Produksi | "{n} Ton" | "{persen} dari total luas — {n} Ha terdata ({label tahun})" — persen hilang bila snapshot lama tanpa `totalLuasHa`. Urutan sub-teks seragam antar card: %, total, tahun; token persen & total beraksen emerald (light) / foreground (dark) |
 | 2 | Produktivitas | "{n} Ton/Ha" | "per tahun — produksi ÷ luas lahan terdata" |
 | 3 | Luasan | "{terdata} Ha" | "{persen} dari total {total} Ha luas aktif ({label tahun})" — snapshot lama: "luas lahan terdata ({label tahun})" |
 | 4 | Lahan dengan Data Produksi | "{ber-data}" | "{persen} dari total {total} lahan aktif ({label tahun})" |

@@ -53,17 +53,19 @@ export function BmpScoreCards({
       value: `${formatTon(totals.produksiTon)} Ton`,
       // Info bawah pakai luasan, bukan jumlah lahan (permintaan owner #191);
       // % total hanya muncul bila snapshot sudah memuat total luas.
+      // Urutan sub-teks konsisten antar card (permintaan owner): %, total, tahun.
       sub: (
         <>
-          <Emph kind="year">{yearLabel}</Emph> — dari{" "}
-          <Emph kind="total">{formatTon(totals.luasMelaporHa)} Ha</Emph> terdata
-          {totals.totalLuasHa > 0 && (
+          {totals.totalLuasHa > 0 ? (
             <>
-              {" "}
-              (<Emph kind="percent">{pct(totals.luasMelaporHa, totals.totalLuasHa)}</Emph> dari
-              total luas)
+              <Emph kind="percent">{pct(totals.luasMelaporHa, totals.totalLuasHa)}</Emph> dari
+              total luas —{" "}
             </>
+          ) : (
+            "dari "
           )}
+          <Emph kind="total">{formatTon(totals.luasMelaporHa)} Ha</Emph> terdata (
+          <Emph kind="year">{yearLabel}</Emph>)
         </>
       ),
       icon: TrendingUp,
