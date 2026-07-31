@@ -16,27 +16,56 @@ import type { TrainingCoverageRow, TrainingPackageCode } from "@/types/dashboard
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatPct = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
 
-/** Satu sel: persen + jumlah sudah (angka belum cukup di tooltip — revisi owner #198). */
+/**
+ * Satu sel: persen di kiri luar bar (revisi owner #198), lalu stacked bar
+ * tebal — segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum.
+ * Label segmen disembunyikan/dipindah bila segmennya terlalu sempit; tooltip
+ * selalu lengkap.
+ */
 function DistrictCell({ trained, total }: { trained: number; total: number }) {
   if (total <= 0) {
     return <div className="text-center text-xs text-muted-foreground">—</div>;
   }
   const pct = (trained / total) * 100;
   const belum = total - trained;
+  const sudahInside = pct >= 20;
+  const belumInside = 100 - pct >= 20;
   return (
     <div
-      className="space-y-1"
+      className="flex items-center gap-2"
       title={`${formatNumber(trained)} sudah · ${formatNumber(belum)} belum dari ${formatNumber(total)} petani`}
     >
-      <div className="flex items-baseline justify-between gap-1 text-xs">
-        <span className="font-semibold tabular-nums">{formatPct(pct)}%</span>
-        <span className="tabular-nums text-muted-foreground">{formatNumber(trained)}</span>
-      </div>
-      <div className="h-2 w-full rounded-full bg-muted">
+      <span className="w-11 shrink-0 text-right text-xs font-semibold tabular-nums">
+        {formatPct(pct)}%
+      </span>
+      <div className="relative h-6 flex-1 overflow-hidden rounded-full bg-muted">
         <div
-          className="h-2 rounded-full bg-emerald-600 dark:bg-emerald-500"
+          className="absolute inset-y-0 left-0 flex items-center justify-center bg-emerald-600 dark:bg-emerald-500"
           style={{ width: `${Math.min(pct, 100)}%` }}
-        />
+        >
+          {sudahInside && (
+            <span className="px-1 text-[10px] font-semibold text-white tabular-nums whitespace-nowrap">
+              {formatNumber(trained)}
+            </span>
+          )}
+        </div>
+        {!sudahInside && trained > 0 && (
+          <div className="absolute inset-y-0 flex items-center" style={{ left: `${pct}%` }}>
+            <span className="pl-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap">
+              {formatNumber(trained)}
+            </span>
+          </div>
+        )}
+        {belumInside && (
+          <div
+            className="absolute inset-y-0 right-0 flex items-center justify-end"
+            style={{ width: `${100 - pct}%` }}
+          >
+            <span className="pr-2 text-[10px] tabular-nums text-muted-foreground whitespace-nowrap">
+              {formatNumber(belum)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -166,9 +195,8 @@ export function TrainingDistrictPanel({
                   </tbody>
                 </table>
                 <p className="mt-3 text-[11px] text-muted-foreground">
-                  Angka per sel: persen terlatih · jumlah petani sudah dilatih (arahkan kursor
-                  untuk angka belum). Roll-up dari matriks cakupan — mengikuti seluruh filter
-                  aktif.
+                  Persen di kiri bar; segmen hijau = jumlah petani sudah dilatih, segmen abu =
+                  jumlah belum. Roll-up dari matriks capaian — mengikuti seluruh filter aktif.
                 </p>
               </div>
             )}
