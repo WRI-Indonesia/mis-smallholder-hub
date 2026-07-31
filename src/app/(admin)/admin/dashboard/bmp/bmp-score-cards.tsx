@@ -17,13 +17,13 @@ interface CardConfig {
   iconClass: string;
 }
 
-// Penekanan berwarna di sub-teks per jenis token (permintaan owner #191):
-// persen amber, angka total emerald, konteks tahun sky — shade 400 di dark
-// mode agar tetap kontras di latar gelap.
+// Penekanan sub-teks (#191, dua putaran feedback owner): warna hanya untuk
+// DATA (persen & total — emerald di light, putih di dark); konteks tahun tetap
+// muted tanpa penekanan. Tiga warna sekaligus terasa terlalu ramai.
 const EMPH_STYLES = {
-  percent: "text-amber-600 dark:text-amber-400",
-  total: "text-emerald-700 dark:text-emerald-400",
-  year: "text-sky-700 dark:text-sky-400",
+  percent: "font-semibold text-emerald-700 dark:font-medium dark:text-foreground",
+  total: "font-semibold text-emerald-700 dark:font-medium dark:text-foreground",
+  year: "",
 } as const;
 
 function Emph({
@@ -33,7 +33,8 @@ function Emph({
   kind: keyof typeof EMPH_STYLES;
   children: React.ReactNode;
 }) {
-  return <span className={`font-semibold ${EMPH_STYLES[kind]}`}>{children}</span>;
+  if (!EMPH_STYLES[kind]) return <>{children}</>;
+  return <span className={EMPH_STYLES[kind]}>{children}</span>;
 }
 
 export function BmpScoreCards({
