@@ -17,11 +17,10 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 │   ├── Lembaga Petani (combobox)
 │   ├── Tahun (select, default tahun berjalan; "Rataan" di paling bawah)
 │   └── Kelengkapan data (select)
-├── Kartu KPI (5)
+├── Kartu KPI (4)
 │   ├── Produktivitas
 │   ├── Total Produksi
 │   ├── Luasan
-│   ├── Lahan dengan Data Produksi
 │   └── Petani Terdata
 ├── 2 grafik 50/50
 │   ├── Chart tren "Tren Produksi & Cakupan Data Bulanan"
@@ -64,7 +63,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
 | Filter Tahun | Select | Default **tahun berjalan** (fallback tahun terbaru ber-data; #191); daftar tahun (desc) lalu "Rataan" di paling bawah |
 | Filter Kelengkapan data | Select | "Semua Data" (`all`) / "Data Full 1 Tahun" (`full` — hanya lahan dengan 12 bulan penuh) |
-| Kartu KPI (5 kartu) | Kartu KPI | Lihat rincian di bawah |
+| Kartu KPI (4 kartu) | Kartu KPI | Lihat rincian di bawah |
 | Chart tren | Chart kombinasi (bar + line, SVG kustom) | Lihat rincian di bawah |
 | Chart ranking | Bar horizontal Top-10 | Lihat rincian di bawah |
 | Card Ex-Plasma vs Swadaya | Card full-row | Lihat rincian di bawah |
@@ -78,8 +77,9 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 | 1 | Produktivitas | "{n} Ton/Ha" | "per tahun — produksi ÷ luas lahan terdata" |
 | 2 | Total Produksi | "{n} Ton" | "{persen} dari total luas — {n} Ha terdata ({label tahun})" — persen hilang bila snapshot lama tanpa `totalLuasHa` |
 | 3 | Luasan | "{terdata} Ha" | "{persen} dari total {total} Ha luas ({label tahun})" — snapshot lama: "luas lahan terdata ({label tahun})" |
-| 4 | Lahan dengan Data Produksi | "{ber-data}" | "{persen} dari total {total} lahan ({label tahun})" |
-| 5 | Petani Terdata | "{terdata}" | "{persen} dari total {total} petani ({label tahun})" |
+| 4 | Petani Terdata | "{terdata}" | "{persen} dari total {total} petani ({label tahun})" |
+
+Card "Lahan dengan Data Produksi" (jumlah persil ber-data / total persil) **dihapus** (#191, keputusan owner) — cakupan per-persil sudah terwakili card Luasan (Ha) dan garis Cakupan Data di chart tren.
 
 Urutan sub-teks seragam antar card: **%, total, tahun** (tanpa kata "aktif" — membingungkan); token persen & total beraksen emerald (light) / foreground (dark), konteks tahun tetap muted.
 

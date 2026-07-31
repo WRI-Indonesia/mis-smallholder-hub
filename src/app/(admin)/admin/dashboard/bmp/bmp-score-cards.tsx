@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, LandPlot, Map, Users } from "lucide-react";
+import { TrendingUp, Activity, LandPlot, Users } from "lucide-react";
 import type { BmpGroupTotals } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -101,19 +101,6 @@ export function BmpScoreCards({
       iconClass: "text-teal-600",
     },
     {
-      title: "Lahan dengan Data Produksi",
-      value: formatNumber(totals.lahanBerData),
-      sub: (
-        <>
-          <Emph kind="percent">{pct(totals.lahanBerData, totals.totalLahan)}</Emph> dari total{" "}
-          <Emph kind="total">{formatNumber(totals.totalLahan)}</Emph> lahan (
-          <Emph kind="year">{yearLabel}</Emph>)
-        </>
-      ),
-      icon: Map,
-      iconClass: "text-green-600",
-    },
-    {
       title: "Petani Terdata",
       value: formatNumber(totals.petaniMelapor),
       sub: (
@@ -129,7 +116,7 @@ export function BmpScoreCards({
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
