@@ -75,7 +75,7 @@ Kolom **Ringkasan** sengaja satu baris; detail lengkap ada di dokumen halaman ya
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|
 | ✅ [Main Dashboard](./pages/dashboard/main-dashboard.md) | `dashboard-main` | DASH-01 | Snapshot-backed: 14 summary card (incl. Petani L/P, Total Kelompok Tani #148, 3 card sertifikasi RSPO/ISPO/SAP-MAP #169) + filter Distrik/KT/Tahun + peta MapLibre 60:40 ber-info panel |
-| ✅ [BMP Dashboard (Produksi)](./pages/dashboard/bmp-dashboard-produksi.md) | `dashboard-bmp` | DASH-04 (#166) | Snapshot-backed: 4 card produksi + combo chart produksi/% lahan melapor + panel Ketersediaan Data 4 kategori + filter client-side |
+| ✅ [BMP Dashboard (Produksi)](./pages/dashboard/bmp-dashboard-produksi.md) | `dashboard-bmp` | DASH-04 (#166 #191) | Snapshot-backed: 4 card KPI + 2 grafik 50/50 (tren + ranking Lembaga) + card Ex-Plasma vs Swadaya (distrik × umur tanaman); default tahun berjalan; terminologi Terdata; filter client-side |
 | ✅ [Dashboard Pelatihan](./pages/dashboard/dashboard-pelatihan.md) | `dashboard-training` | DASH-06 | **Live query (bukan snapshot)**: 5 KPI + matriks cakupan Lembaga × Paket + tren stacked-bar + panel efektivitas pre/post + panel kualitas data ber-deep-link |
 
 ### 📁 Master Data — `/admin/master-data`
@@ -103,7 +103,7 @@ Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · HCV (MD-08) · BUSDE
 
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|
-| ✅ [Upload Petani](./pages/bulk-upload/upload-petani.md) | `bulk-upload-farmers` | BULK-03 (#76) | Excel + mapping kolom dinamis + validasi + preview + unduh error |
+| ✅ [Upload Petani](./pages/bulk-upload/upload-petani.md) | `bulk-upload-farmers` | BULK-03 (#76 #196 #197) | Excel + mapping kolom dinamis + validasi 3 status (Valid/Tidak Lengkap/Error) + 2 tombol simpan + preview + unduh per status |
 | ✅ [Upload Produksi](./pages/bulk-upload/upload-produksi.md) | `bulk-upload-production` | BULK-04 | Excel + validasi periode/panen + preview |
 | ✅ [Lahan](./pages/bulk-upload/lahan.md) | `bulk-upload-parcels` | MD-04 (#88) | ZIP Shapefile + mapping (incl. Kelompok Tani & Blok #150) + validasi geometri |
 

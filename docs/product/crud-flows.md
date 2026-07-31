@@ -100,21 +100,23 @@ User Access Bulk Upload
             │
             ▼
 ┌───────────────────────────────────────────────────────────────────┐
-│ Step 5: Preview & Filter                                          │
-│  - Show all rows with status (Valid | Error)                      │
-│  - Filter: All | Valid Only | Error Only                          │
-│  - Summary: X valid, Y errors                                     │
+│ Step 5: Preview & Filter (#197)                                   │
+│  - Status per baris: Valid | Tidak Lengkap | Error                │
+│    (Tidak Lengkap = lolos validasi, ≥1 field opsional kosong —    │
+│     `farmerRowStatus`, src/lib/farmer-upload-status.ts)           │
+│  - Filter: Semua | Valid | Tidak Lengkap | Error                  │
+│  - Summary: X valid, Y tidak lengkap, Z errors                    │
 │  - Action buttons:                                                │
-│    • Download Full (all rows + status column)                     │
-│    • Download Errors Only (invalid rows + error messages)         │
-│    • Save Valid Data                                              │
+│    • Download Semua (status VALID/TIDAK LENGKAP/ERROR)            │
+│    • Download Data Tidak Lengkap ("Kosong: <field>")              │
+│    • Download Data Error Saja                                     │
+│    • Simpan Semua Layak (valid + tidak lengkap)                   │
+│    • Simpan Hanya yang Valid (tampil bila ada baris tdk lengkap)  │
 └───────────┬───────────────────────────────────────────────────────┘
             │
-            ├─ Download Full → Excel export (all rows + "Keterangan")
+            ├─ Download → Excel export (+ kolom Status & Keterangan)
             │
-            ├─ Download Errors Only → Excel export (errors + messages)
-            │
-            └─ Save Valid Data
+            └─ Simpan (salah satu tombol)
                 │
                 ├─ Langsung panggil `bulkCreateFarmers()` (tanpa dialog konfirmasi)
                 ├─ Bulk Insert (Transaction-based)

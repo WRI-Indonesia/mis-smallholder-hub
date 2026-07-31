@@ -204,11 +204,16 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
       birthDate: null,
     };
 
-    // Original values kept for download
+    // Original values kept for download. Date diubah ke string di sini: nilai
+    // _original dirender langsung di jalur fallback tabel preview, dan objek
+    // Date (mis. kolom tanggal yang salah dipetakan) membuat React crash (#196).
     for (const f of TARGET_FIELDS) {
       const mappedCol = mapping[f.key];
-      normalized._original[f.key] = (mappedCol ? row[mappedCol] : "") as
-        string | number | null | undefined;
+      const raw = mappedCol ? row[mappedCol] : "";
+      normalized._original[f.key] =
+        raw instanceof Date
+          ? raw.toLocaleDateString("id-ID")
+          : (raw as string | number | null | undefined);
     }
 
     // 1. Name

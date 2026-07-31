@@ -58,7 +58,7 @@ Pilih file (.xlsx/.csv atau .zip shapefile)
   → Deteksi header + auto-match kolom
   → Koreksi pemetaan kolom (target field wajib/opsional)
   → Validasi data di client (format, referensi, duplikat)
-  → Tinjau ringkasan Valid/Error + filter + unduh hasil
-  → Simpan N Data Valid (guard CREATE + Zod + access-context, transaksi)
+  → Tinjau ringkasan 3 status Valid/Tidak Lengkap/Error (#197) + filter + unduh hasil per status
+  → Simpan Semua Layak ATAU Simpan Hanya yang Valid (guard CREATE + Zod + access-context, transaksi)
   → Toast sukses + redirect ke halaman master data terkait
 ```

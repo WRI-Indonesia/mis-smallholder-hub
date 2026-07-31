@@ -205,10 +205,15 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       notes: null,
     };
 
+    // Date diubah ke string: nilai _original dirender langsung di jalur
+    // fallback tabel preview — objek Date membuat React crash (#196).
     for (const f of TARGET_FIELDS) {
       const mappedCol = mapping[f.key];
-      normalized._original[f.key] = (mappedCol ? row[mappedCol] : "") as
-        string | number | null | undefined;
+      const raw = mappedCol ? row[mappedCol] : "";
+      normalized._original[f.key] =
+        raw instanceof Date
+          ? raw.toLocaleDateString("id-ID")
+          : (raw as string | number | null | undefined);
     }
 
     // 1. Farmer ID mapping lookup

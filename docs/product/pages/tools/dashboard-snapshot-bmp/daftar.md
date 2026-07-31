@@ -13,7 +13,7 @@ Halaman: Daftar Snapshot BMP (/admin/tools/snapshot-bmp)
 │   └── Teks: Catatan cakupan
 ├── Tabel: Daftar snapshot (DataTable)
 │   ├── Kolom: Aksi · Tanggal Snapshot · Distrik
-│   ├── Kolom: Total Produksi (Ton) · Lahan Ber-data · Petani Melapor
+│   ├── Kolom: Total Produksi (Ton) · Lahan Ber-data · Luas Terdata (Ha) · Petani Terdata
 │   └── Kolom: Dibuat Oleh
 └── Dialog: Nonaktifkan Snapshot
 ```
@@ -43,6 +43,7 @@ Halaman: Daftar Snapshot BMP (/admin/tools/snapshot-bmp)
 | Kolom: Distrik | Kolom tabel | Default disembunyikan; `null` → "Semua" |
 | Kolom: Total Produksi (Ton) | Kolom tabel | Format `id-ID`, 2 desimal |
 | Kolom: Lahan Ber-data | Kolom tabel | `lahanBerData/totalLahan` |
-| Kolom: Petani Melapor | Kolom tabel | `petaniMelapor/totalPetani` |
+| Kolom: Luas Terdata (Ha) | Kolom tabel | `luasMelaporHa/totalLuasHa` (#191); snapshot lama tanpa `totalLuasHa` → tampil luas terdata saja |
+| Kolom: Petani Terdata | Kolom tabel | `petaniMelapor/totalPetani` |
 | Kolom: Dibuat Oleh | Kolom tabel | Nama pembuat snapshot |
 | Nonaktifkan Snapshot | Dialog (`DeleteDialog`) | Deskripsi sama dengan snapshot utama; sukses → toast "Snapshot berhasil dinonaktifkan" |

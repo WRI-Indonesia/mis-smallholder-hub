@@ -5,7 +5,7 @@ icon: LayoutDashboard
 
 **Main Dashboard** — Ringkasan program: jumlah petani, kelompok tani, lahan, luas, cakupan pelatihan, dan sertifikasi, dilengkapi peta sebaran lembaga.
 
-**BMP Dashboard (Produksi)** — Fokus produksi: total produksi, produktivitas (Ton/Ha), lahan ber-data, dan ketersediaan data produksi. Tersedia filter Kategori, Distrik, Lembaga, Tahun, dan Kelengkapan Data.
+**BMP Dashboard (Produksi)** — Fokus produksi: produktivitas (Ton/Ha), total produksi, luasan terdata, dan petani terdata; grafik tren bulanan, ranking produktivitas per Lembaga, serta perbandingan Ex-Plasma vs Swadaya (per distrik dan umur tanaman). Tersedia filter Kategori, Distrik, Lembaga, Tahun (default tahun berjalan), dan Kelengkapan Data.
 
 **Dashboard Pelatihan** — Menjawab "program pelatihan sudah sejauh mana, dan lembaga mana yang tertinggal". Isinya lima kartu ringkasan (cakupan petani terlatih, jumlah kegiatan, kehadiran, partisipasi perempuan, kenaikan skor), lalu tabel Cakupan Pelatihan per Lembaga & Paket, grafik tren kehadiran, panel pre/post-test, dan panel kualitas data. Filter Kategori, Distrik, Lembaga, dan Tahun berlaku untuk seluruh isi halaman.
 
