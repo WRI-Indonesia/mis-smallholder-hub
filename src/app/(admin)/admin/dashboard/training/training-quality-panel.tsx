@@ -10,19 +10,19 @@ const pct = (part: number, total: number) =>
 export function TrainingQualityPanel({ stats }: { stats: TrainingQualityStats }) {
   const items = [
     {
-      label: "Kegiatan tanpa bukti",
+      label: "Sesi tanpa bukti",
       value: stats.activitiesWithoutEvidence,
       of: stats.totalActivities,
       icon: FileWarning,
     },
     {
-      label: "Kegiatan tanpa lokasi",
+      label: "Sesi tanpa lokasi",
       value: stats.activitiesWithoutLocation,
       of: stats.totalActivities,
       icon: MapPinOff,
     },
     {
-      label: "Kegiatan tanpa peserta",
+      label: "Sesi tanpa peserta",
       value: stats.activitiesWithoutParticipants,
       of: stats.totalActivities,
       icon: UserX,

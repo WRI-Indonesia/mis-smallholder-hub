@@ -43,6 +43,8 @@ Catatan panen muncul di **Master Data → Produksi**. Dashboard BMP dan Peta BMP
 
 **Error pada kolom Periode** — formatnya harus tahun-bulan seperti `2026-06`.
 
+**Sel berisi `#N/A` atau error Excel lain** — sel hasil formula yang gagal dibaca sebagai **kosong**, bukan sebagai teks. Bila datanya sebenarnya ada, perbaiki formulanya atau salin-tempel nilainya sebagai **Values** sebelum mengunggah ulang.
+
 **Ada data panen ganda** — satu petani boleh punya beberapa panen dalam satu bulan, dibedakan oleh **Panen Ke-**. Kalau nomornya sama persis, sistem menganggapnya duplikat.
 
 + Bila sumber data Anda tidak punya kolom Panen Ke-, isi `1` untuk semua baris — asalkan memang hanya ada satu catatan panen per petani per bulan.

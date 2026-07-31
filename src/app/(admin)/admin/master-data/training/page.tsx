@@ -24,7 +24,7 @@ export default async function TrainingPage() {
           <h1 className="text-2xl font-bold">Pelatihan</h1>
           <HelpHint menuKey="master-data-training" />
         </div>
-        <p className="text-muted-foreground">Data kegiatan pelatihan lembaga tani yang terdaftar</p>
+        <p className="text-muted-foreground">Data sesi pelatihan lembaga tani yang terdaftar</p>
       </div>
       <TrainingListClient
         initialActivities={activities}

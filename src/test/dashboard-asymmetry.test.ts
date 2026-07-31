@@ -111,7 +111,7 @@ const bmpGroups: BmpRawGroup[] = [
   },
 ];
 const bmpFarmers: BmpRawFarmer[] = [{ id: "f1", farmerGroupId: "g1" }];
-const bmpParcels: BmpRawParcel[] = [{ id: "p1", farmerId: "f1", area: 2 }];
+const bmpParcels: BmpRawParcel[] = [{ id: "p1", farmerId: "f1", area: 2, plantingYear: null }];
 
 /**
  * Produksi yang atribusi lahannya putus: `pX` tidak ada di daftar lahan aktif —

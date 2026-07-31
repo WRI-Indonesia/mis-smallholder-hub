@@ -1,8 +1,10 @@
 import { productionAvailabilityCategory } from "@/lib/map-data";
 import type {
+  BmpAgeBucketStat,
   BmpAvailabilityCounts,
   BmpChartPoint,
   BmpDataMode,
+  BmpFarmerGroupCategory,
   BmpGroupEntry,
   BmpGroupTotals,
   BmpMonthlyStat,
@@ -29,6 +31,37 @@ export interface BmpRawParcel {
   id: string;
   farmerId: string;
   area: number | null;
+  /** Tahun tanam — basis bucket umur tanaman (#191); null = bucket "unknown". */
+  plantingYear: number | null;
+}
+
+/**
+ * Bucket umur tanaman (#191) — umur pada TAHUN PRODUKSI (tahun produksi −
+ * tahun tanam), bukan umur hari ini, agar analisa historis tetap benar.
+ * Batas mengikuti kurva hasil sawit (fase PPKS/Ditjenbun): TBM 0–3, TM muda
+ * 4–8 (menanjak), TM prima 9–15 (puncak), TM tua 16–25 (menurun), renta >25
+ * (kandidat peremajaan/PSR).
+ */
+export const BMP_AGE_BUCKETS = [
+  { key: "lt4", label: "< 4 thn (TBM)" },
+  { key: "4-8", label: "4–8 thn (TM muda)" },
+  { key: "9-15", label: "9–15 thn (TM prima)" },
+  { key: "16-25", label: "16–25 thn (TM tua)" },
+  { key: "gt25", label: "> 25 thn (renta)" },
+  { key: "unknown", label: "Tanpa thn tanam" },
+] as const;
+
+export type BmpAgeBucketKey = (typeof BMP_AGE_BUCKETS)[number]["key"];
+
+export function bmpAgeBucketKey(plantingYear: number | null, productionYear: number): BmpAgeBucketKey {
+  if (plantingYear == null) return "unknown";
+  const age = productionYear - plantingYear;
+  if (age < 0) return "unknown";
+  if (age < 4) return "lt4";
+  if (age <= 8) return "4-8";
+  if (age <= 15) return "9-15";
+  if (age <= 25) return "16-25";
+  return "gt25";
 }
 
 /** One production row summed per (farmer, parcel, period) — parcelId null = record tanpa lahan. */
@@ -49,6 +82,7 @@ function emptyTotals(): BmpGroupTotals {
     luasMelaporHa: 0,
     lahanBerData: 0,
     totalLahan: 0,
+    totalLuasHa: 0,
     petaniMelapor: 0,
     totalPetani: 0,
   };
@@ -89,6 +123,8 @@ export function buildBmpSnapshotData(
   interface SeriesAcc {
     monthly: Map<string, { ton: number; parcelIds: Set<string> }>;
     byYear: Map<string, YearAcc>;
+    /** tahun → bucket umur → akumulasi (hanya record ber-lahan, #191). */
+    byYearAge: Map<string, Map<string, { ton: number; parcelIds: Set<string> }>>;
   }
   interface Acc {
     all: SeriesAcc;
@@ -97,9 +133,14 @@ export function buildBmpSnapshotData(
     reportingFarmers: Set<string>;
     totalTon: number;
     totalLahan: number;
+    totalLuasHa: number;
     totalPetani: number;
   }
-  const emptySeries = (): SeriesAcc => ({ monthly: new Map(), byYear: new Map() });
+  const emptySeries = (): SeriesAcc => ({
+    monthly: new Map(),
+    byYear: new Map(),
+    byYearAge: new Map(),
+  });
   const emptyAcc = (): Acc => ({
     all: emptySeries(),
     full: emptySeries(),
@@ -107,6 +148,7 @@ export function buildBmpSnapshotData(
     reportingFarmers: new Set(),
     totalTon: 0,
     totalLahan: 0,
+    totalLuasHa: 0,
     totalPetani: 0,
   });
   const accByGroup = new Map<string, Acc>();
@@ -122,7 +164,11 @@ export function buildBmpSnapshotData(
   for (const f of farmers) accFor(f.farmerGroupId).totalPetani += 1;
   for (const p of parcels) {
     const groupId = groupByFarmer.get(p.farmerId);
-    if (groupId) accFor(groupId).totalLahan += 1;
+    if (groupId) {
+      const acc = accFor(groupId);
+      acc.totalLahan += 1;
+      acc.totalLuasHa += p.area ?? 0;
+    }
   }
 
   // Pass 1 — bulan-lapor tiap LAHAN per tahun. Lahan "full" tahun Y ⟺ punya
@@ -160,6 +206,19 @@ export function buildBmpSnapshotData(
     if (parcelOk && r.parcelId) {
       bucket.parcelIds.add(r.parcelId);
       yearBucket.parcelIds.add(r.parcelId);
+
+      // Analisa umur tanaman (#191): hanya record ber-lahan — tanpa lahan tidak
+      // ada tahun tanam ataupun luas, produktivitas per bucket jadi tak bermakna.
+      const ageKey = bmpAgeBucketKey(
+        parcelById.get(r.parcelId)?.plantingYear ?? null,
+        Number(yearKey)
+      );
+      let perAge = s.byYearAge.get(yearKey);
+      if (!perAge) s.byYearAge.set(yearKey, (perAge = new Map()));
+      let ageBucket = perAge.get(ageKey);
+      if (!ageBucket) perAge.set(ageKey, (ageBucket = { ton: 0, parcelIds: new Set() }));
+      ageBucket.ton += r.kg / 1000;
+      ageBucket.parcelIds.add(r.parcelId);
     }
   };
 
@@ -211,13 +270,27 @@ export function buildBmpSnapshotData(
         petaniMelapor: y.farmerIds.size,
       };
     }
-    return { monthly, byYear };
+    const byYearAge: Record<string, Record<string, BmpAgeBucketStat>> = {};
+    for (const [yearKey, perAge] of [...s.byYearAge.entries()].sort()) {
+      const buckets: Record<string, BmpAgeBucketStat> = {};
+      for (const [ageKey, b] of perAge) {
+        let luas = 0;
+        for (const pid of b.parcelIds) luas += parcelById.get(pid)?.area ?? 0;
+        buckets[ageKey] = { produksiTon: round2(b.ton), luasMelaporHa: round2(luas) };
+      }
+      byYearAge[yearKey] = buckets;
+    }
+    return { monthly, byYear, byYearAge };
   };
 
   const entries: BmpGroupEntry[] = groups.map((g) => {
     const acc = accByGroup.get(g.id) ?? emptyAcc();
-    const { monthly, byYear } = serializeSeries(acc.all);
-    const { monthly: monthlyFull, byYear: byYearFull } = serializeSeries(acc.full);
+    const { monthly, byYear, byYearAge } = serializeSeries(acc.all);
+    const {
+      monthly: monthlyFull,
+      byYear: byYearFull,
+      byYearAge: byYearAgeFull,
+    } = serializeSeries(acc.full);
 
     const availability = emptyAvailability();
     let luasMelaporHa = 0;
@@ -241,12 +314,15 @@ export function buildBmpSnapshotData(
       byYear,
       monthlyFull,
       byYearFull,
+      byYearAge,
+      byYearAgeFull,
       availability,
       totals: {
         produksiTon: round2(acc.totalTon),
         luasMelaporHa: round2(luasMelaporHa),
         lahanBerData: acc.periodsByParcel.size,
         totalLahan: acc.totalLahan,
+        totalLuasHa: round2(acc.totalLuasHa),
         petaniMelapor: acc.reportingFarmers.size,
         totalPetani: acc.totalPetani,
       },
@@ -310,6 +386,7 @@ export function bmpStatsForYear(
     ...y,
     // Master data (denominator) year-independent — pola kelompokTaniCount Main Dashboard.
     totalLahan: g.totals.totalLahan,
+    totalLuasHa: g.totals.totalLuasHa,
     totalPetani: g.totals.totalPetani,
   };
 }
@@ -347,6 +424,7 @@ export function sumBmpGroups(
     totals.luasMelaporHa += t.luasMelaporHa;
     totals.lahanBerData += t.lahanBerData;
     totals.totalLahan += t.totalLahan;
+    totals.totalLuasHa += t.totalLuasHa;
     totals.petaniMelapor += t.petaniMelapor;
     totals.totalPetani += t.totalPetani;
     availability.baik += g.availability.baik;
@@ -381,6 +459,7 @@ export function sumBmpGroups(
 
   totals.produksiTon = round2(totals.produksiTon);
   totals.luasMelaporHa = round2(totals.luasMelaporHa);
+  totals.totalLuasHa = round2(totals.totalLuasHa);
   for (const m of Object.values(monthly)) {
     m.produksiTon = round2(m.produksiTon);
     m.luasMelaporHa = round2(m.luasMelaporHa);
@@ -405,6 +484,122 @@ export function bmpProductivity(g: BmpGroupEntry, year: number | null = null): n
   }
   if (luas <= 0) return 0;
   return round2(produksi / luas);
+}
+
+export interface BmpAgeSeriesEntry {
+  key: BmpAgeBucketKey;
+  label: string;
+  produksiTon: number;
+  luasMelaporHa: number;
+  /** Σ produksi ÷ Σ luas (tertimbang lintas tahun terpilih); 0 bila tanpa luas. */
+  produktivitasTonHa: number;
+}
+
+/**
+ * Ringkasan per bucket umur tanaman lintas group (#191). `year` numerik →
+ * tahun itu saja; `"average"`/`null` → Σ lintas tahun (produksi dibagi jumlah
+ * tahun ber-data bucket ybs pada mode average; produktivitas selalu tertimbang
+ * Σton ÷ Σluas). Bucket "unknown" disertakan hanya bila ber-data.
+ */
+export function bmpAgeSeries(
+  groups: BmpGroupEntry[],
+  year: number | "average" | null,
+  dataMode: BmpDataMode = "all"
+): BmpAgeSeriesEntry[] {
+  const acc = new Map<string, { ton: number; luas: number; years: Set<string> }>();
+  for (const g of groups) {
+    const byYearAge = dataMode === "full" ? g.byYearAgeFull : g.byYearAge;
+    for (const [yearKey, buckets] of Object.entries(byYearAge ?? {})) {
+      if (typeof year === "number" && Number(yearKey) !== year) continue;
+      for (const [ageKey, b] of Object.entries(buckets)) {
+        let bucket = acc.get(ageKey);
+        if (!bucket) acc.set(ageKey, (bucket = { ton: 0, luas: 0, years: new Set() }));
+        bucket.ton += b.produksiTon;
+        bucket.luas += b.luasMelaporHa;
+        bucket.years.add(yearKey);
+      }
+    }
+  }
+  return BMP_AGE_BUCKETS.filter((b) => b.key !== "unknown" || acc.has(b.key)).map((b) => {
+    const a = acc.get(b.key) ?? { ton: 0, luas: 0, years: new Set<string>() };
+    const divisor = year === "average" && a.years.size > 0 ? a.years.size : 1;
+    return {
+      key: b.key,
+      label: b.label,
+      produksiTon: round2(a.ton / divisor),
+      luasMelaporHa: round2(a.luas / divisor),
+      produktivitasTonHa: a.luas > 0 ? round2(a.ton / a.luas) : 0,
+    };
+  });
+}
+
+export interface BmpGroupRankingEntry {
+  id: string;
+  name: string;
+  code: string | null;
+  category: BmpFarmerGroupCategory;
+  produktivitasTonHa: number;
+  luasMelaporHa: number;
+}
+
+/**
+ * Ranking Lembaga berdasarkan produktivitas (Ton/Ha) pada tahun/mode terpilih
+ * (#191) — hanya lembaga dengan luas terdata > 0, urut tertinggi dulu.
+ */
+export function bmpGroupRanking(
+  groups: BmpGroupEntry[],
+  year: number | "average" | null,
+  dataMode: BmpDataMode = "all",
+  limit = 10
+): BmpGroupRankingEntry[] {
+  const numericYear = typeof year === "number" ? year : null;
+  return groups
+    .map((g) => {
+      const { byYear } = seriesOf(g, dataMode);
+      let ton = 0;
+      let luas = 0;
+      for (const [yearKey, y] of Object.entries(byYear)) {
+        if (numericYear != null && Number(yearKey) !== numericYear) continue;
+        ton += y.produksiTon;
+        luas += y.luasMelaporHa;
+      }
+      return {
+        id: g.id,
+        name: g.name,
+        code: g.code,
+        category: g.category,
+        produktivitasTonHa: luas > 0 ? round2(ton / luas) : 0,
+        luasMelaporHa: round2(luas),
+      };
+    })
+    .filter((e) => e.luasMelaporHa > 0)
+    .sort((a, b) => b.produktivitasTonHa - a.produktivitasTonHa)
+    .slice(0, limit);
+}
+
+/** Tahun-tahun (desc) yang punya data `byYear` pada kumpulan group — opsi filter Tahun dashboard. */
+export function bmpYearOptions(groups: BmpGroupEntry[]): number[] {
+  const set = new Set<number>();
+  for (const g of groups) {
+    for (const key of Object.keys(g.byYear ?? {})) {
+      const y = Number(key);
+      if (!Number.isNaN(y)) set.add(y);
+    }
+  }
+  return [...set].sort((a, b) => b - a);
+}
+
+/**
+ * Default filter Tahun dashboard BMP (#191): tahun berjalan bila ber-data;
+ * fallback tahun terbaru ber-data (pola "newest year with data" Peta BMP);
+ * snapshot tanpa tahun sama sekali → "average".
+ */
+export function bmpDefaultYear(
+  yearOptions: number[],
+  currentYear: number
+): number | "average" {
+  if (yearOptions.includes(currentYear)) return currentYear;
+  return yearOptions[0] ?? "average";
 }
 
 /** Tahun-tahun (desc) yang punya data pada monthly slice — opsi filter chart. */
@@ -464,6 +659,8 @@ export function normalizeBmpSnapshotData(raw: unknown): BmpSnapshotData {
       byYear: g.byYear ?? {},
       monthlyFull: g.monthlyFull ?? {},
       byYearFull: g.byYearFull ?? {},
+      byYearAge: g.byYearAge ?? {},
+      byYearAgeFull: g.byYearAgeFull ?? {},
       availability: g.availability ?? emptyAvailability(),
       totals: { ...emptyTotals(), ...(g.totals ?? {}) },
     })),

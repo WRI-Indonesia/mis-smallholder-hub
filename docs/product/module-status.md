@@ -29,8 +29,8 @@
 | DASH-01 | Main Dashboard | Snapshot-backed, 14 summary cards (+Total Kelompok Tani #148, +3 card sertifikasi RSPO/ISPO/SAP-MAP #169), filter client-side (#99); peta:info panel 60:40, badge sertifikasi + konten 2 kolom di info panel |
 | DASH-02 | Dashboard Server Actions | `dashboard.ts` + `snapshot.ts` + aggregation lib (teruji) |
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
-| DASH-04 | BMP Dashboard (Produksi) | Snapshot-backed `/admin/dashboard/bmp`: 4 card produksi + combo chart produksi/% lahan melapor + panel Ketersediaan Data 4 kategori (reuse MAP-02) + filter global Kategori/Distrik/Lembaga/Tahun/Kelengkapan Data; tools generate `/admin/tools/snapshot-bmp` (#166) |
-| DASH-06 | Dashboard Pelatihan | **Live query (bukan snapshot)** `/admin/dashboard/training`: 5 KPI card (cakupan petani terlatih, kegiatan, kehadiran vs unik, partisipasi perempuan, kenaikan skor) + matriks cakupan Lembaga × Paket (heatmap sortable, collapsible) + tren stacked-bar per paket + panel efektivitas pre/post + panel kualitas data ber-deep-link; **drill-down sel → daftar petani belum dilatih (salin/Excel)**; target 100% per paket; filter Kategori/Distrik/Lembaga/Tahun client-side |
+| DASH-04 | BMP Dashboard (Produksi) | Snapshot-backed `/admin/dashboard/bmp` (#166, dirombak #191): 4 card KPI (Produktivitas · Total Produksi · Luasan terdata/total · Petani Terdata; sub-teks %→total→tahun) + 2 grafik 50/50 (combo tren produksi/% lahan terdata + ranking Top-10 produktivitas per Lembaga) + card besar **Ex-Plasma vs Swadaya** (3 metrik + analisa per distrik + per **umur tanaman** fase sawit dari `byYearAge`); filter Tahun default tahun berjalan, Rataan di bawah; panel Ketersediaan Data dihapus (tetap di Peta BMP); terminologi "Terdata"; tools generate `/admin/tools/snapshot-bmp` |
+| DASH-06 | Dashboard Pelatihan | **Live query (bukan snapshot)** `/admin/dashboard/training` (dirombak #198): 4 KPI card satu-angka-besar (Petani Terlatih, Total Sesi, Partisipasi Perempuan, Kenaikan Skor; pola StatEmph) + card collapsible **Capaian Paket per Distrik** (paket × distrik, kolom Total (Riau), stacked bar sudah/belum) + matriks **Capaian Paket per Lembaga** (heatmap sortable, collapsible, lebar kolom seragam) + tren stacked-bar per paket + panel efektivitas pre/post + panel kualitas data ("Sesi tanpa …") ber-deep-link; **drill-down sel → daftar petani belum dilatih (salin/Excel)**; target 100% per paket; terminologi **Sesi**; filter Distrik/Lembaga/Tahun client-side (filter Kategori dihapus #198) |
 | MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay SIGAP + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible; aksi popup **Lihat Detail**/**Edit Lahan** ber-gate permission via primitif bersama `map-popup.tsx` (#188) |
 | MAP-02 | Map: Peta BMP (Layer 1) | Peta tematik **Ketersediaan Data Produksi** per-lahan, 4 kategori dari run bulan berturut-turut produksi (#144); KT wajib (Prov/Distrik opsional); `getBmpMapData` (groupBy scoped, no N+1) + data-driven color MapLibre. **Poligon saja tanpa titik** (NONE outline-only, lainnya fill). **Cetak** → PDF A4 landscape (hal.1 peta+legend, hal.2+ matriks per lahan × bulan = total kg/latar hijau) + **Download Excel** matriks. **Panel kanan floating minimizable**: matriks ketersediaan per lahan × bulan (true/false) + Zoom to. Seed `map-bmp` menu+VIEW ✅. Aksi popup Lihat Detail/Edit Lahan standar #188 (`map-popup.tsx`) |
 | MAP-03 | Map: Peta BMP Layer 2 (Produktivitas) | Layer tematik kedua di halaman yang sama (#174): **Produktivitas (Ton/Ha) per persil** = Σ produksi tahun ÷ luas persil; panel kiri **2 section layer ber-radio** ("Ketersediaan Data Produksi" / "Produktivitas (Ton/Ha)", satu aktif); selektor **Tahun (default terbaru) + Rata-rata**; 5 kelas warna (≥20 / 15–20 / 10–15 / <10 / tanpa data outline-only, ambang `PRODUCTIVITY_*_MIN`). Hitung **realtime client-side** (pure helper `map-data.ts` atas payload `getBmpMapData` existing — zero query/migration baru). **Cetak & Excel WYSIWYG ikut layer aktif**: layer Produktivitas → PDF legend produktivitas + tabel Ton/Ha per lahan × tahun (sel berwarna kelas) + Excel Produktivitas |
@@ -49,7 +49,7 @@
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193 |
 | DA-03 | Dashboard Ketersediaan Data | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks, bar chart, panel anomali); live query; tanpa DONOR (#193) |
  
-**Total Tests**: **45 files / 702 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
+**Total Tests**: **47 files / 722 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
@@ -87,11 +87,11 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **45 files / 702 tests passing** (angka kanonis di [`roadmap.md`](../project/roadmap.md))
+**Test Status**: ✅ **47 files / 722 tests passing** (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
 ### Covered Modules
 
-Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-28). Total baris = **45 file / 702 test**.
+Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris = **47 file / 722 test**.
 
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
@@ -107,7 +107,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-28). Total baris
 | Training | training-activity.test.ts, training-participant.test.ts | 29 | ✅ |
 | Menu (incl. tree 3-level #187) | menu-action.test.ts, menu-filter.test.ts, menu-tree.test.ts | 29 | ✅ |
 | Performance | perf.test.ts | 23 | ✅ |
-| Dashboard BMP (#166) | dashboard-bmp.test.ts | 22 | ✅ |
+| Dashboard BMP (#166 #191 — incl. umur tanaman, ranking, totalLuasHa) | dashboard-bmp.test.ts | 29 | ✅ |
 | Farmer Group (#163/#169/#171) + sub-groups (#152) | farmer-group.test.ts, farmer-group-detail.test.ts, farmer-sub-groups.test.ts | 22 | ✅ |
 | Farmer + detail & mask (#172) | farmer.test.ts, farmer-detail.test.ts | 21 | ✅ |
 | Bulk Upload + parcel mapping (#150) | bulk-upload.test.ts, parcel-bulk-mapping.test.ts | 21 | ✅ |
@@ -118,6 +118,8 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-28). Total baris
 | Report (umum) | report.test.ts | 14 | ✅ |
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 13 | ✅ |
 | Hotspot FIRMS | firms.test.ts | 9 | ✅ |
+| Status upload petani 3 tingkat (#197) | farmer-upload-status.test.ts | 7 | ✅ |
+| Normalisasi sel Excel (#196) | excel-cell.test.ts | 6 | ✅ |
 | Exporter PDF build-vs-save (TD-019 #180) | pdf-exporters.test.ts | 5 | ✅ |
 | Middleware | middleware.test.ts | 5 | ✅ |
 | Auth | auth.test.ts | 5 | ✅ |

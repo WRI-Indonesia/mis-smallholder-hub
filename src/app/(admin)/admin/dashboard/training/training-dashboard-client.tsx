@@ -33,15 +33,11 @@ import {
 } from "@/lib/training-dashboard-aggregation";
 import { TrainingScoreCards } from "./training-score-cards";
 import { TrainingCoverageMatrix } from "./training-coverage-matrix";
+import { TrainingDistrictPanel } from "./training-district-panel";
 import { TrainingTrendChart } from "./training-trend-chart";
 import { TrainingEffectivenessPanel } from "./training-effectiveness-panel";
 import { TrainingQualityPanel } from "./training-quality-panel";
-import type { BmpFarmerGroupCategory, TrainingDashboardView } from "@/types/dashboard";
-
-const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
-  EX_PLASMA: "Ex-Plasma",
-  SWADAYA: "Swadaya",
-};
+import type { TrainingDashboardView } from "@/types/dashboard";
 
 const formatGeneratedAt = (iso: string) => {
   const d = new Date(iso);
@@ -79,11 +75,8 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
   const groupParam = get("lembaga");
   const groupId = allGroups.some((g) => g.id === groupParam) ? groupParam : null;
 
-  const categoryParam = get("kategori");
-  const category =
-    categoryParam === "EX_PLASMA" || categoryParam === "SWADAYA"
-      ? (categoryParam as BmpFarmerGroupCategory)
-      : null;
+  // Filter Kategori (Ex-Plasma/Swadaya) dihapus dari dashboard ini (#198,
+  // revisi owner) — param URL "kategori" lama diabaikan.
 
   // Default "semua tahun" — cakupan program bersifat kumulatif, bukan per tahun.
   const yearParam = get("tahun");
@@ -91,7 +84,6 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
 
   const setDistrictId = (v: string | null) => setMany({ distrik: v, lembaga: null });
   const setGroupId = (v: string | null) => setMany({ lembaga: v });
-  const setCategory = (v: BmpFarmerGroupCategory | null) => setMany({ kategori: v, lembaga: null });
   const setYear = (v: number | null) => setMany({ tahun: v == null ? null : String(v) });
 
   const [districtOpen, setDistrictOpen] = useState(false);
@@ -106,20 +98,16 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
   }, [allGroups]);
 
   const groupOptions = useMemo(
-    () =>
-      allGroups.filter(
-        (g) =>
-          (!districtId || g.districtId === districtId) && (!category || g.category === category),
-      ),
-    [allGroups, districtId, category],
+    () => allGroups.filter((g) => !districtId || g.districtId === districtId),
+    [allGroups, districtId],
   );
 
   const yearOptions = useMemo(() => trainingAvailableYears(allGroups), [allGroups]);
 
   // Satu irisan dipakai bersama oleh seluruh panel di bawah.
   const groups = useMemo(
-    () => filterTrainingGroups(view.data, { districtId, groupId, category }),
-    [view.data, districtId, groupId, category],
+    () => filterTrainingGroups(view.data, { districtId, groupId }),
+    [view.data, districtId, groupId],
   );
 
   const totals = useMemo(() => trainingTotals(groups, year), [groups, year]);
@@ -147,29 +135,6 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Kategori Lembaga */}
-          <Select
-            value={category ?? "all"}
-            onValueChange={(v) => {
-              setCategory(v === "all" ? null : (v as BmpFarmerGroupCategory));
-            }}
-          >
-            <SelectTrigger className="w-[150px] h-9">
-              <SelectValue>
-                {(value) =>
-                  value === "all"
-                    ? "Semua Kategori"
-                    : CATEGORY_LABELS[value as BmpFarmerGroupCategory]
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Kategori</SelectItem>
-              <SelectItem value="EX_PLASMA">Ex-Plasma</SelectItem>
-              <SelectItem value="SWADAYA">Swadaya</SelectItem>
-            </SelectContent>
-          </Select>
-
           {/* Distrik */}
           <Popover open={districtOpen} onOpenChange={setDistrictOpen}>
             <PopoverTrigger
@@ -307,6 +272,11 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
       </div>
 
       <TrainingScoreCards totals={totals} yearLabel={yearLabel} />
+
+      {/* Roll-up cakupan ke level distrik dulu (gambaran besar), baru rincian
+          per Lembaga — urutan revisi owner (#198). Disembunyikan saat filter
+          Lembaga aktif: roll-up distrik atas satu Lembaga tidak bermakna. */}
+      {!groupId && <TrainingDistrictPanel rows={coverage} packages={packages} />}
 
       <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} />
 

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, Map, Users } from "lucide-react";
+import { TrendingUp, Activity, LandPlot, Users } from "lucide-react";
+import { StatEmph } from "@/components/shared/stat-emph";
 import type { BmpGroupTotals } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -12,10 +13,14 @@ const pct = (part: number, total: number) =>
 interface CardConfig {
   title: string;
   value: string;
-  sub: string;
+  sub: React.ReactNode;
   icon: React.ComponentType<{ className?: string }>;
   iconClass: string;
 }
+
+// Penekanan sub-teks (#191): diekstrak ke komponen bersama saat pola yang
+// sama dipakai Dashboard Pelatihan (#198).
+const Emph = StatEmph;
 
 export function BmpScoreCards({
   totals,
@@ -27,32 +32,69 @@ export function BmpScoreCards({
   /** Konteks mode tahun utk sub-teks, mis. "rata-rata per tahun" / "tahun 2025" / "kumulatif semua tahun". */
   yearLabel: string;
 }) {
+  // Urutan card: Produktivitas dulu baru Total Produksi (permintaan owner #191).
   const cards: CardConfig[] = [
-    {
-      title: "Total Produksi",
-      value: `${formatTon(totals.produksiTon)} Ton`,
-      sub: `${yearLabel} — dari ${formatNumber(totals.lahanBerData)} lahan ber-data`,
-      icon: TrendingUp,
-      iconClass: "text-emerald-600",
-    },
     {
       title: "Produktivitas",
       value: `${formatTon(produktivitas)} Ton/Ha`,
-      sub: "per tahun — produksi ÷ luas lahan melapor",
+      sub: "per tahun — produksi ÷ luas lahan terdata",
       icon: Activity,
       iconClass: "text-orange-600",
     },
     {
-      title: "Lahan dengan Data Produksi",
-      value: `${formatNumber(totals.lahanBerData)} / ${formatNumber(totals.totalLahan)}`,
-      sub: `${pct(totals.lahanBerData, totals.totalLahan)} dari total lahan aktif (${yearLabel})`,
-      icon: Map,
-      iconClass: "text-green-600",
+      title: "Total Produksi",
+      value: `${formatTon(totals.produksiTon)} Ton`,
+      // Info bawah pakai luasan, bukan jumlah lahan (permintaan owner #191);
+      // % total hanya muncul bila snapshot sudah memuat total luas.
+      // Urutan sub-teks konsisten antar card (permintaan owner): %, total, tahun.
+      sub: (
+        <>
+          {totals.totalLuasHa > 0 ? (
+            <>
+              <Emph kind="percent">{pct(totals.luasMelaporHa, totals.totalLuasHa)}</Emph> dari
+              total luas —{" "}
+            </>
+          ) : (
+            "dari "
+          )}
+          <Emph kind="total">{formatTon(totals.luasMelaporHa)} Ha</Emph> terdata (
+          <Emph kind="year">{yearLabel}</Emph>)
+        </>
+      ),
+      icon: TrendingUp,
+      iconClass: "text-emerald-600",
     },
     {
-      title: "Petani Melapor",
-      value: `${formatNumber(totals.petaniMelapor)} / ${formatNumber(totals.totalPetani)}`,
-      sub: `${pct(totals.petaniMelapor, totals.totalPetani)} petani punya data produksi (${yearLabel})`,
+      title: "Luasan",
+      // Angka besar cukup luas terdata — bentuk "X / Y Ha" dengan desimal
+      // panjang wrap 2 baris & sulit dibaca (feedback owner #191); pembanding
+      // total pindah ke sub-teks. Snapshot lama tanpa total luas → tanpa pembanding.
+      value: `${formatTon(totals.luasMelaporHa)} Ha`,
+      sub:
+        totals.totalLuasHa > 0 ? (
+          <>
+            <Emph kind="percent">{pct(totals.luasMelaporHa, totals.totalLuasHa)}</Emph> dari total{" "}
+            <Emph kind="total">{formatTon(totals.totalLuasHa)} Ha</Emph> luas (
+            <Emph kind="year">{yearLabel}</Emph>)
+          </>
+        ) : (
+          <>
+            luas lahan terdata (<Emph kind="year">{yearLabel}</Emph>)
+          </>
+        ),
+      icon: LandPlot,
+      iconClass: "text-teal-600",
+    },
+    {
+      title: "Petani Terdata",
+      value: formatNumber(totals.petaniMelapor),
+      sub: (
+        <>
+          <Emph kind="percent">{pct(totals.petaniMelapor, totals.totalPetani)}</Emph> dari total{" "}
+          <Emph kind="total">{formatNumber(totals.totalPetani)}</Emph> petani (
+          <Emph kind="year">{yearLabel}</Emph>)
+        </>
+      ),
       icon: Users,
       iconClass: "text-blue-600",
     },

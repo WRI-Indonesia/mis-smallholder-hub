@@ -56,7 +56,7 @@ export function TrainingTrendChart({
           <BarChart3 className="h-4 w-4 text-primary" /> Tren Kehadiran Pelatihan — {yearLabel}
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Tinggi batang = jumlah kehadiran (peserta per kegiatan), dipecah per paket.
+          Tinggi batang = jumlah kehadiran (peserta per sesi), dipecah per paket.
         </p>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
@@ -139,7 +139,7 @@ export function TrainingTrendChart({
                   >
                     <div className="font-semibold mb-1">{buckets[hover].label}</div>
                     <div className="text-muted-foreground mb-1">
-                      {formatNumber(buckets[hover].activities)} kegiatan ·{" "}
+                      {formatNumber(buckets[hover].activities)} sesi ·{" "}
                       {formatNumber(buckets[hover].attendance)} kehadiran
                     </div>
                     {packages

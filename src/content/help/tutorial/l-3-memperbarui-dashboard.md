@@ -20,7 +20,7 @@ Membuat snapshot butuh izin pada menu Tools, biasanya dipegang admin.
 ## Langkah
 
 1. Buka menu **Tools → Dashboard Snapshot** (untuk Main Dashboard) atau **Dashboard Snapshot BMP** (untuk BMP Dashboard).
-+ Keduanya terpisah dan tidak saling memperbarui. Setelah unggah produksi besar, yang perlu dibuat ulang adalah snapshot BMP.
++ Keduanya terpisah dan tidak saling memperbarui. Setelah unggah produksi besar, yang perlu dibuat ulang adalah snapshot BMP. Snapshot BMP baru juga yang mengisi total luas di kartu Luasan dan analisa umur tanaman — snapshot lama belum memuat keduanya.
 2. Klik **Generate Snapshot**.
 + Proses ini membaca seluruh data dalam cakupan Anda dan merangkumnya. Untuk data besar bisa memakan waktu — tunggu sampai selesai, jangan mengklik berulang karena akan membuat rekaman ganda.
 3. Tunggu hingga baris baru muncul di tabel daftar snapshot.

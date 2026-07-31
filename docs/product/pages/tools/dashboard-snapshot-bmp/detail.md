@@ -12,12 +12,12 @@ Halaman: Detail Snapshot BMP (/admin/tools/snapshot-bmp/[id])
 ├── Card: Informasi Snapshot
 │   └── Field: Tanggal Snapshot · Filter Distrik · Dibuat Oleh
 ├── Kartu skor BMP (BmpScoreCards)
-│   └── KPI: Total Produksi · Produktivitas · Lahan dengan Data Produksi · Petani Melapor
+│   └── KPI (reuse `BmpScoreCards` #191): Produktivitas · Total Produksi · Luasan · Petani Terdata
 ├── Heading: Ringkasan per Lembaga Petani
 └── Tabel: per Lembaga (DataTable)
     ├── Kolom: Nama · Kategori · Distrik
     ├── Kolom: Produksi (Ton) · Produktivitas (Ton/Ha)
-    ├── Kolom: Lahan Ber-data · Petani Melapor
+    ├── Kolom: Lahan Ber-data · Luas Terdata (Ha) · Petani Terdata
     └── Ekspor tambahan: baik · cukup · kurang · tidakAda
 ```
 
@@ -38,7 +38,7 @@ Halaman: Detail Snapshot BMP (/admin/tools/snapshot-bmp/[id])
 | Snapshot BMP — {tanggal} | Heading | `h1` + deskripsi "Data historis dashboard BMP yang tersimpan" |
 | Kembali | Tombol | Kembali ke `/admin/tools/snapshot-bmp` |
 | Informasi Snapshot | Card metadata | 3 field: Tanggal Snapshot, Filter Distrik (`null` → "Semua Distrik"), Dibuat Oleh |
-| Kartu skor BMP | Kartu KPI (`BmpScoreCards`) | Total Produksi (Ton), Produktivitas (Ton/Ha), Lahan dengan Data Produksi (`x / y`), Petani Melapor (`x / y`); label periode "kumulatif semua tahun" |
+| Kartu skor BMP | Kartu KPI (`BmpScoreCards`, komposisi #191) | Produktivitas (Ton/Ha), Total Produksi (Ton), Luasan (Ha terdata; + % dari total bila snapshot memuat `totalLuasHa`), Petani Terdata; label periode "kumulatif semua tahun" |
 | Ringkasan per Lembaga Petani | Heading `h2` | Judul tabel di bawahnya |
 | Tabel per Lembaga | Tabel (`DataTable`) | Search `name`, placeholder "Cari lembaga petani...", empty "Tidak ada data lembaga petani.", export `snapshot-bmp-{id}` |
 | Kolom: Nama Lembaga Petani | Kolom tabel | Nama lembaga |
@@ -47,5 +47,6 @@ Halaman: Detail Snapshot BMP (/admin/tools/snapshot-bmp/[id])
 | Kolom: Produksi (Ton) | Kolom tabel | Format `id-ID`, 2 desimal |
 | Kolom: Produktivitas (Ton/Ha) | Kolom tabel | Dihitung `bmpProductivity(row)` |
 | Kolom: Lahan Ber-data | Kolom tabel | `lahanBerData/totalLahan` |
-| Kolom: Petani Melapor | Kolom tabel | `petaniMelapor/totalPetani` |
+| Kolom: Luas Terdata (Ha) | Kolom tabel | `totals.luasMelaporHa/totals.totalLuasHa` (#191); snapshot lama → luas terdata saja |
+| Kolom: Petani Terdata | Kolom tabel | `petaniMelapor/totalPetani` |
 | Kolom ekspor tambahan | Ekspor | `baik`, `cukup`, `kurang`, `tidakAda` (kategori ketersediaan data) ikut pada baris ekspor |

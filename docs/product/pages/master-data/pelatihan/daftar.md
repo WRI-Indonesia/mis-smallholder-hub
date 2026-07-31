@@ -8,10 +8,10 @@
 Halaman: Pelatihan (/admin/master-data/training)
 ├── Header
 │   ├── Judul: Pelatihan
-│   └── Deskripsi: Data kegiatan pelatihan lembaga tani yang terdaftar
+│   └── Deskripsi: Data sesi pelatihan lembaga tani yang terdaftar
 ├── Kartu KPI
 │   ├── Total Lembaga Petani
-│   ├── Total Kegiatan Training
+│   ├── Total Sesi Training
 │   ├── Total Peserta
 │   └── Total Peserta Unik
 ├── Toolbar
@@ -42,9 +42,9 @@ Halaman: Pelatihan (/admin/master-data/training)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| `Pelatihan` / `Data kegiatan pelatihan lembaga tani yang terdaftar` | Heading | h1 + deskripsi |
+| `Pelatihan` / `Data sesi pelatihan lembaga tani yang terdaftar` | Heading | h1 + deskripsi |
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-training` (`findTutorialForMenu`), dibuka di tab baru |
-| Kartu KPI (4) | Kartu | `Total Lembaga Petani`, `Total Kegiatan Training`, `Total Peserta`, `Total Peserta Unik` |
+| Kartu KPI (4) | Kartu | `Total Lembaga Petani`, `Total Sesi Training`, `Total Peserta`, `Total Peserta Unik` |
 | Filter Distrik | Combobox | `Semua Distrik` |
 | Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` |
 | Filter Paket Pelatihan | Combobox | `Semua Paket Pelatihan`, empty `Paket pelatihan tidak ditemukan.` |

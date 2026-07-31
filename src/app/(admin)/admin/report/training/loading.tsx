@@ -6,7 +6,7 @@ export default function TrainingReportLoading() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Laporan Pelatihan</h1>
-        <p className="text-muted-foreground">Analisis ringkasan kegiatan pelatihan dan cakupan petani</p>
+        <p className="text-muted-foreground">Analisis ringkasan sesi pelatihan dan cakupan petani</p>
       </div>
       <Card className="p-4">
         <div className="h-10 w-full bg-muted/20 animate-pulse rounded-md mb-4" />

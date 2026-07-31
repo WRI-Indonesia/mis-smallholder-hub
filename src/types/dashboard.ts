@@ -155,6 +155,12 @@ export interface BmpGroupTotals {
   /** Distinct lahan dengan ≥1 record produksi. */
   lahanBerData: number;
   totalLahan: number;
+  /**
+   * Total luas (ha) seluruh lahan aktif — pembanding luas terdata pada card
+   * Luasan (#191). Year-independent seperti totalLahan. Snapshot lama belum
+   * memuat field ini → 0 (UI menampilkan luas terdata saja tanpa pembanding).
+   */
+  totalLuasHa: number;
   /** Distinct petani dengan ≥1 record produksi. */
   petaniMelapor: number;
   totalPetani: number;
@@ -166,6 +172,13 @@ export interface BmpYearStats {
   luasMelaporHa: number;
   lahanBerData: number;
   petaniMelapor: number;
+}
+
+/** Statistik produksi satu bucket umur tanaman pada satu tahun (#191). */
+export interface BmpAgeBucketStat {
+  produksiTon: number;
+  /** Σ luas (ha) distinct lahan terdata bucket ini pada tahun ybs. */
+  luasMelaporHa: number;
 }
 
 /** Entri per Lembaga Petani — grain snapshot BMP; semua filter di-slice dari sini. */
@@ -186,6 +199,15 @@ export interface BmpGroupEntry {
    */
   monthlyFull: Record<string, BmpMonthlyStat>;
   byYearFull: Record<string, BmpYearStats>;
+  /**
+   * Breakdown per tahun × bucket umur tanaman (#191) — umur dihitung pada
+   * tahun produksinya (tahun produksi − tahun tanam). Hanya record ber-lahan;
+   * lahan tanpa tahun tanam masuk bucket "unknown". Snapshot lama belum
+   * memuat field ini → {} (analisa umur kosong sampai snapshot di-generate ulang).
+   */
+  byYearAge: Record<string, Record<string, BmpAgeBucketStat>>;
+  /** Subset "Full 1 Tahun" dari byYearAge. */
+  byYearAgeFull: Record<string, Record<string, BmpAgeBucketStat>>;
   availability: BmpAvailabilityCounts;
   totals: BmpGroupTotals;
 }
@@ -230,6 +252,9 @@ export interface BmpSnapshotListItem {
   totalProduksiTon: number;
   lahanBerData: number;
   totalLahan: number;
+  luasMelaporHa: number;
+  /** 0 pada snapshot lama yang belum memuat total luas (#191). */
+  totalLuasHa: number;
   petaniMelapor: number;
   totalPetani: number;
 }

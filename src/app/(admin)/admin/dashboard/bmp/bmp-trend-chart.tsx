@@ -67,7 +67,7 @@ export function BmpTrendChart({
     <Card className="h-full flex flex-col border border-border/60 shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-primary" /> Tren Produksi &amp; Cakupan Pelaporan
+          <BarChart3 className="h-4 w-4 text-primary" /> Tren Produksi &amp; Cakupan Data
           Bulanan {year != null ? `— ${year}` : "— Rataan"}
         </CardTitle>
       </CardHeader>
@@ -95,7 +95,7 @@ export function BmpTrendChart({
                   preserveAspectRatio="none"
                   className="absolute inset-0 h-full w-full"
                   role="img"
-                  aria-label="Grafik produksi dan cakupan pelaporan bulanan"
+                  aria-label="Grafik produksi dan cakupan data bulanan"
                 >
                   {fractions.map((f) => (
                     <line
@@ -170,7 +170,7 @@ export function BmpTrendChart({
                     </p>
                     <p className="tabular-nums">Produksi: {formatTon(series[hover].produksiTon)} Ton</p>
                     <p className="tabular-nums">
-                      Lahan melapor: {series[hover].lahanMelapor} ({series[hover].coveragePct}%)
+                      Lahan terdata: {series[hover].lahanMelapor} ({series[hover].coveragePct}%)
                     </p>
                   </div>
                 )}
@@ -204,7 +204,7 @@ export function BmpTrendChart({
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="inline-block h-0.5 w-4" style={{ backgroundColor: LINE_COLOR }} />
-                Cakupan pelaporan (% lahan melapor)
+                Cakupan data (% lahan terdata)
               </span>
             </div>
           </div>

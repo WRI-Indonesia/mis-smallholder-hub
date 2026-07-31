@@ -185,8 +185,7 @@ export function TrainingCoverageMatrix({
             >
               <span className="min-w-0">
                 <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <Grid3x3 className="h-4 w-4 text-primary" /> Cakupan Pelatihan per Lembaga &amp;
-                  Paket
+                  <Grid3x3 className="h-4 w-4 text-primary" /> Capaian Paket per Lembaga
                 </span>
                 <span className="block text-xs text-muted-foreground mt-1">
                   {open
@@ -221,9 +220,12 @@ export function TrainingCoverageMatrix({
                       <th className="text-right py-2 px-3 font-semibold">
                         {headBtn("totalFarmers", "Petani")}
                       </th>
+                      {/* Lebar seragam per kolom sel agar grid simetris (#198) —
+                          tanpa ini lebar mengikuti panjang judul paket. */}
                       {packages.map((code) => (
                         <th
                           key={code}
+                          style={{ width: `${62 / (packages.length + 1)}%` }}
                           className="text-center py-2 px-2 font-semibold whitespace-nowrap"
                         >
                           {headBtn(
@@ -233,7 +235,10 @@ export function TrainingCoverageMatrix({
                           )}
                         </th>
                       ))}
-                      <th className="text-center py-2 px-2 font-semibold whitespace-nowrap">
+                      <th
+                        style={{ width: `${62 / (packages.length + 1)}%` }}
+                        className="text-center py-2 px-2 font-semibold whitespace-nowrap"
+                      >
                         {headBtn("any", "Min. 1 Paket", "Petani yang mengikuti paket apa pun")}
                       </th>
                     </tr>

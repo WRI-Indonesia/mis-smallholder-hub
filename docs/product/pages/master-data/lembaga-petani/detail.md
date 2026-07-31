@@ -58,7 +58,7 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 | Tab Lahan | Kartu + peta | `Persil Lahan`, `Kelompok Tani`, `Blok`; `Sebaran Lahan` = `ParcelsDistributionMap` (dynamic, ssr:false); popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
 | Tab Pelatihan — `Cakupan per Paket` | Tabel | `Paket`, `Petani Terlatih`, `Cakupan`, `Rataan Pre Test`, `Rataan Post Test` |
 | Tab Pelatihan — `Aktivitas Pelatihan (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Peserta`, `Rata-rata Pre → Post`; empty state `Belum ada aktivitas pelatihan untuk Lembaga ini.` |
-| Tab Produksi — `Produksi per Tahun` | Tabel | `Tahun` (expandable → rincian bulanan), `Produksi (kg)`, `Record`, `Lahan Melapor`, `Luas Melapor (Ha)`, `Produktivitas (Ton/Ha)`; catatan kaki rumus; empty state `Belum ada data produksi untuk Lembaga ini.` |
+| Tab Produksi — `Produksi per Tahun` | Tabel | `Tahun` (expandable → rincian bulanan), `Produksi (kg)`, `Record`, `Lahan Terdata`, `Luas Terdata (Ha)`, `Produktivitas (Ton/Ha)`; catatan kaki rumus; empty state `Belum ada data produksi untuk Lembaga ini.` |
 | Tab Produksi — `Ketersediaan Data Produksi per Lahan` | Kartu | 4 kategori: `Baik (>24 bln)`, `Cukup (12–24 bln)`, `Kurang (<12 bln)`, `Tanpa Data` + tautan Peta BMP / Report Produksi / BMP Dashboard |
 
 Dialog `GroupFormModal` (field lengkap) didokumentasikan di [daftar.md](./daftar.md#dialog-groupformmodal-groupsgroup-form-modaltsx).

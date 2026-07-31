@@ -10,6 +10,37 @@ import type {
   TrainingTrendBucket,
 } from "@/types/dashboard";
 
+export interface TrainingDistrictCoverageRow {
+  districtName: string;
+  totalFarmers: number;
+  byPackage: Partial<Record<TrainingPackageCode, number>>;
+  anyPackage: number;
+}
+
+/**
+ * Roll-up matriks cakupan ke level distrik (#198) — bahan card "Petani
+ * Terlatih vs Belum per Distrik". Σ antar Lembaga aman: petani milik tepat
+ * satu Lembaga, jadi distinct count tidak tumpang-tindih antar baris.
+ */
+export function trainingDistrictCoverage(
+  rows: TrainingCoverageRow[]
+): TrainingDistrictCoverageRow[] {
+  const map = new Map<string, TrainingDistrictCoverageRow>();
+  for (const r of rows) {
+    let d = map.get(r.districtName);
+    if (!d) {
+      d = { districtName: r.districtName, totalFarmers: 0, byPackage: {}, anyPackage: 0 };
+      map.set(r.districtName, d);
+    }
+    d.totalFarmers += r.totalFarmers;
+    d.anyPackage += r.anyPackage;
+    for (const [code, n] of Object.entries(r.byPackage) as [TrainingPackageCode, number][]) {
+      d.byPackage[code] = (d.byPackage[code] ?? 0) + n;
+    }
+  }
+  return [...map.values()].sort((a, b) => a.districtName.localeCompare(b.districtName));
+}
+
 /** Urutan tampil paket di matriks, chart, dan tabel skor. OTHER selalu terakhir. */
 export const TRAINING_PACKAGE_ORDER: TrainingPackageCode[] = [
   "PAKET_1_BMP_PC_RSPO_NKT",

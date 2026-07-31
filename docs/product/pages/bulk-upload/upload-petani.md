@@ -23,14 +23,20 @@ Halaman: Upload Petani (/admin/bulk-upload/farmers)
 │   ├── Auto-match via AUTO_MATCH_RULES
 │   └── Tombol "Validasi Data"
 ├── Hasil Validasi & Tinjauan
-│   ├── Ringkasan: "N Baris Valid" (hijau) / "N Baris Error" (merah)
-│   ├── Filter: "Semua (N)" · "Valid (N)" · "Error (N)"
-│   ├── Tombol "Download Semua Data" / "Download Data Error Saja"
+│   ├── Ringkasan: "N Baris Valid" (hijau) / "N Baris Tidak Lengkap" (kuning)
+│   │   / "N Baris Error" (merah)
+│   ├── Filter: "Semua (N)" · "Valid (N)" · "Tidak Lengkap (N)" · "Error (N)"
+│   ├── Tombol "Download Semua Data" / "Download Data Tidak Lengkap"
+│   │   / "Download Data Error Saja"
 │   ├── Tabel preview (kolom: Baris, ID Petani, Nama, L/P, NIK,
 │   │   Lembaga Petani, Tahun Bergabung, Tanggal Lahir, Status,
 │   │   Keterangan / Detail Error)
 │   └── Empty state: "Tidak ada data untuk filter ini."
-└── Tombol simpan "Simpan N Data Valid" (hijau, hanya permission CREATE)
+└── Tombol simpan (hanya permission CREATE):
+    ├── "Simpan Semua Layak (N)" (hijau solid; label "Simpan N Data Valid"
+    │   bila tidak ada baris tidak lengkap)
+    └── "Simpan Hanya yang Valid (N)" (outline; tampil hanya bila ada
+        baris tidak lengkap)
 ```
 
 ## Atribut sub menu
@@ -69,15 +75,17 @@ Halaman: Upload Petani (/admin/bulk-upload/farmers)
 | Auto-match kolom | Otomatis | `AUTO_MATCH_RULES` mencocokkan header file (lowercase, trim) ke target field saat berkas dibaca |
 | "Validasi Data" | Tombol | Disabled saat memproses, belum ada baris, atau daftar ID existing masih dimuat (`loadingExistingIds` — cegah race validasi sebelum `existingFarmerIds` siap); loading state *"Memproses..."*; jika ada kolom wajib belum dipetakan → toast *"Kolom wajib berikut belum dipetakan: …"*; sukses → toast *"Validasi selesai"* |
 | "Hasil Validasi & Tinjauan" | Card | Subjudul *"Tinjau kembali data sebelum menyimpannya ke database."* |
-| Ringkasan hasil | Badge/pill | *"N Baris Valid"* (hijau) dan *"N Baris Error"* (merah) |
-| Filter hasil | 3 tombol | *"Semua (N)"*, *"Valid (N)"*, *"Error (N)"* |
+| Ringkasan hasil | Badge/pill | *"N Baris Valid"* (hijau), *"N Baris Tidak Lengkap"* (kuning), *"N Baris Error"* (merah). Status per baris via `farmerRowStatus` (`src/lib/farmer-upload-status.ts`, #197): **valid** = lolos & lengkap; **incomplete** = lolos tapi ≥1 field opsional kosong (NIK, Tempat/Tanggal Lahir, Alamat, Tahun Bergabung); **error** = gagal validasi |
+| Filter hasil | 4 tombol | *"Semua (N)"*, *"Valid (N)"*, *"Tidak Lengkap (N)"*, *"Error (N)"* |
 | "Download Semua Data" | Tombol | Ekspor `bulk_upload_petani_full.xlsx` (sheet `Data Petani`) |
-| "Download Data Error Saja" | Tombol | Ekspor `bulk_upload_petani_error_only.xlsx` (hanya baris `_isValid = false`) |
-| "Simpan N Data Valid" | Tombol (hijau) | Hanya jika permission `CREATE`; disabled bila tidak ada baris valid |
+| "Download Data Tidak Lengkap" | Tombol (kuning) | Ekspor `bulk_upload_petani_tidak_lengkap.xlsx` (hanya baris status incomplete) |
+| "Download Data Error Saja" | Tombol (merah) | Ekspor `bulk_upload_petani_error_only.xlsx` (hanya baris status error) |
+| "Simpan Semua Layak (N)" | Tombol (hijau solid) | Hanya jika permission `CREATE`; menyimpan baris valid + tidak lengkap; berlabel *"Simpan N Data Valid"* bila tidak ada baris tidak lengkap; disabled bila tidak ada baris layak |
+| "Simpan Hanya yang Valid (N)" | Tombol (outline hijau) | Tampil hanya bila ada baris tidak lengkap; menahan baris tidak lengkap agar bisa dilengkapi di file lalu diunggah ulang (upload hanya menambah, tidak memperbarui) |
 | Tabel preview | Tabel | Kolom: `Baris`, `ID Petani`, `Nama`, `L/P`, `NIK`, `Lembaga Petani`, `Tahun Bergabung`, `Tanggal Lahir`, `Status`, `Keterangan / Detail Error` |
-| Badge status baris | Badge | `Valid` (hijau) / `Error` (merah); baris error diberi latar `bg-destructive/5` |
+| Badge status baris | Badge | `Valid` (hijau) / `Tidak Lengkap` (kuning, latar `bg-amber-500/5`, keterangan *"Kosong: …"*) / `Error` (merah, latar `bg-destructive/5`) |
 | Empty state tabel | Teks | *"Tidak ada data untuk filter ini."* |
-| Kolom ekspor Excel | 12 kolom | `Baris Asal`, `ID Petani`, `Nama Petani`, `Jenis Kelamin`, `NIK`, `Lembaga Petani`, `Tempat Lahir`, `Tanggal Lahir`, `Tahun Bergabung`, `Alamat`, `Status` (VALID/ERROR), `Keterangan / Detail Error` |
+| Kolom ekspor Excel | 12 kolom | `Baris Asal`, `ID Petani`, `Nama Petani`, `Jenis Kelamin`, `NIK`, `Lembaga Petani`, `Tempat Lahir`, `Tanggal Lahir`, `Tahun Bergabung`, `Alamat`, `Status` (VALID/TIDAK LENGKAP/ERROR), `Keterangan / Detail Error` (alasan error, atau *"Kosong: …"* untuk baris tidak lengkap) |
 
 ## Aturan validasi & pesan error (client)
 
@@ -99,6 +107,6 @@ Halaman: Upload Petani (/admin/bulk-upload/farmers)
 2. Pilih berkas `.xlsx`/`.csv` → header terdeteksi → auto-match kolom.
 3. Perbaiki pemetaan kolom pada kartu "Petakan Kolom Data".
 4. Klik **Validasi Data** → seluruh baris divalidasi di client (termasuk cek duplikat dalam file dan terhadap `existingFarmerIds`).
-5. Tinjau ringkasan valid/error, filter, dan bila perlu unduh berkas hasil (semua / error saja) untuk diperbaiki lalu unggah ulang.
-6. Klik **Simpan N Data Valid** → `bulkCreateFarmers()`: guard `CREATE` → validasi ulang tiap baris dengan `farmerSchema` → cek scope access-context (semua `farmerGroupId` harus dalam scope) → insert dalam satu `prisma.$transaction` dengan `createdBy`.
+5. Tinjau ringkasan valid/tidak lengkap/error, filter, dan bila perlu unduh berkas hasil (semua / tidak lengkap / error saja) untuk diperbaiki lalu unggah ulang.
+6. Klik **Simpan Semua Layak** (valid + tidak lengkap) atau **Simpan Hanya yang Valid** (baris tidak lengkap ditahan) → `bulkCreateFarmers()`: guard `CREATE` → validasi ulang tiap baris dengan `farmerSchema` → cek scope access-context (semua `farmerGroupId` harus dalam scope) → insert dalam satu `prisma.$transaction` dengan `createdBy`.
 7. Sukses → toast *"Berhasil menyimpan N data petani"* + redirect ke daftar petani. Gagal → toast berisi pesan error dari action.

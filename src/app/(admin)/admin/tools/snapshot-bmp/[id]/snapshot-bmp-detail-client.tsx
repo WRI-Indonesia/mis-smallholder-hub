@@ -67,8 +67,18 @@ export function SnapshotBmpDetailClient({ snapshot }: { snapshot: BmpSnapshotDet
       render: (row) => `${row.totals.lahanBerData}/${row.totals.totalLahan}`,
     },
     {
+      key: "byYear",
+      label: "Luas Terdata (Ha)",
+      sortable: false,
+      cellClassName: "text-sm tabular-nums text-right pr-4",
+      render: (row) =>
+        row.totals.totalLuasHa > 0
+          ? `${formatTon(row.totals.luasMelaporHa)}/${formatTon(row.totals.totalLuasHa)}`
+          : formatTon(row.totals.luasMelaporHa),
+    },
+    {
       key: "monthly",
-      label: "Petani Melapor",
+      label: "Petani Terdata",
       sortable: false,
       cellClassName: "text-sm tabular-nums text-right pr-4",
       render: (row) => `${row.totals.petaniMelapor}/${row.totals.totalPetani}`,
@@ -82,6 +92,10 @@ export function SnapshotBmpDetailClient({ snapshot }: { snapshot: BmpSnapshotDet
     produksiTon: formatTon(row.totals.produksiTon),
     produktivitas: formatTon(bmpProductivity(row)),
     lahanBerData: `${row.totals.lahanBerData}/${row.totals.totalLahan}`,
+    luasTerdata:
+      row.totals.totalLuasHa > 0
+        ? `${formatTon(row.totals.luasMelaporHa)}/${formatTon(row.totals.totalLuasHa)}`
+        : formatTon(row.totals.luasMelaporHa),
     petaniMelapor: `${row.totals.petaniMelapor}/${row.totals.totalPetani}`,
     baik: row.availability.baik,
     cukup: row.availability.cukup,

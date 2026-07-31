@@ -89,7 +89,7 @@ Halaman: Dashboard Ketersediaan Data (/admin/data-analyst/data-availability)
 | 2 | Profil Lembaga | "{n} Lembaga" | "kelengkapan profil {skor}%" (warna band) |
 | 3 | Petani | "{n}" | "data lengkap {skor}%" |
 | 4 | Lahan | "{n} persil" | "data lengkap {skor}%" |
-| 5 | Pelatihan | "{n} kegiatan" | "cakupan paket {skor}%" |
+| 5 | Pelatihan | "{n} sesi" | "cakupan paket {skor}%" |
 | 6 | Produksi | "{n} / {n}" (petani ber-produksi / total) | "petani ber-produksi {skor}%" |
 
 ## Matriks kelengkapan (`AvailabilityMatrix`)

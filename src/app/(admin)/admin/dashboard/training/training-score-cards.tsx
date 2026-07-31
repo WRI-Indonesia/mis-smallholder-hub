@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, GraduationCap, UserCheck, Venus, TrendingUp } from "lucide-react";
+import { GraduationCap, UserCheck, Venus, TrendingUp } from "lucide-react";
+import { StatEmph } from "@/components/shared/stat-emph";
 import type { TrainingTotals } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -12,7 +13,7 @@ const pct = (part: number, total: number) =>
 interface CardConfig {
   title: string;
   value: string;
-  sub: string;
+  sub: React.ReactNode;
   icon: React.ComponentType<{ className?: string }>;
   iconClass: string;
 }
@@ -25,37 +26,43 @@ export function TrainingScoreCards({
   /** Konteks tahun untuk sub-teks, mis. "2025" / "semua tahun". */
   yearLabel: string;
 }) {
+  // Satu angka besar per card, pembanding di sub-teks pola KPI BMP (#198):
+  // urutan %, total, konteks tahun; token data beraksen StatEmph.
   const cards: CardConfig[] = [
     {
-      title: "Cakupan Petani Terlatih",
-      value: `${formatNumber(totals.trainedFarmers)} / ${formatNumber(totals.totalFarmers)}`,
+      title: "Petani Terlatih",
+      value: formatNumber(totals.trainedFarmers),
       // Pembagi = seluruh petani aktif di Lembaga terpilih, termasuk Lembaga
       // yang belum tersentuh pelatihan sama sekali (keputusan owner).
-      sub: `${pct(totals.trainedFarmers, totals.totalFarmers)} petani aktif pernah ikut ≥1 pelatihan (${yearLabel})`,
+      sub: (
+        <>
+          <StatEmph kind="percent">{pct(totals.trainedFarmers, totals.totalFarmers)}</StatEmph>{" "}
+          dari total <StatEmph kind="total">{formatNumber(totals.totalFarmers)}</StatEmph> petani
+          aktif pernah ikut ≥1 pelatihan ({yearLabel})
+        </>
+      ),
       icon: UserCheck,
       iconClass: "text-emerald-600",
     },
     {
-      title: "Total Kegiatan",
-      value: `${formatNumber(totals.totalActivities)} kegiatan`,
-      sub: `${yearLabel}`,
+      title: "Total Sesi",
+      value: formatNumber(totals.totalActivities),
+      sub: `sesi pelatihan (${yearLabel})`,
       icon: GraduationCap,
       iconClass: "text-orange-600",
     },
-    {
-      title: "Kehadiran vs Petani Unik",
-      value: `${formatNumber(totals.totalAttendance)} / ${formatNumber(totals.trainedFarmers)}`,
-      sub:
-        totals.trainedFarmers > 0
-          ? `rata-rata ${formatDecimal(totals.totalAttendance / totals.trainedFarmers)} pelatihan per petani`
-          : "belum ada kehadiran",
-      icon: Users,
-      iconClass: "text-blue-600",
-    },
+    // Card "Kehadiran vs Petani Unik" dihapus (#198, keputusan owner):
+    // petani unik sudah diwakili card Cakupan.
     {
       title: "Partisipasi Perempuan",
       value: pct(totals.femaleAttendance, totals.totalAttendance),
-      sub: `${formatNumber(totals.femaleAttendance)} dari ${formatNumber(totals.totalAttendance)} kehadiran`,
+      sub: (
+        <>
+          <StatEmph kind="total">{formatNumber(totals.femaleAttendance)}</StatEmph> dari total{" "}
+          <StatEmph kind="total">{formatNumber(totals.totalAttendance)}</StatEmph> kehadiran (
+          {yearLabel})
+        </>
+      ),
       icon: Venus,
       iconClass: "text-pink-600",
     },
@@ -75,7 +82,7 @@ export function TrainingScoreCards({
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (

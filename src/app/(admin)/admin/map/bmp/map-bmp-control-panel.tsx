@@ -422,7 +422,7 @@ export function MapBmpControlPanel(props: Props) {
                 </div>
                 <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
                   Produktivitas = produksi tahun terpilih ÷ luas persil (Rata-rata =
-                  rata-rata antar tahun melapor). Produksi tanpa tautan lahan tidak
+                  rata-rata antar tahun terdata). Produksi tanpa tautan lahan tidak
                   dihitung.
                 </p>
               </>
