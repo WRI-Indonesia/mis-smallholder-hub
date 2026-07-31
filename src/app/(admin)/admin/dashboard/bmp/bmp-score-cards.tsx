@@ -12,9 +12,15 @@ const pct = (part: number, total: number) =>
 interface CardConfig {
   title: string;
   value: string;
-  sub: string;
+  sub: React.ReactNode;
   icon: React.ComponentType<{ className?: string }>;
   iconClass: string;
+}
+
+// Penekanan halus angka pembanding di sub-teks (permintaan owner #191) —
+// pola yang sama dengan tanggal snapshot di header dashboard.
+function Emph({ children }: { children: React.ReactNode }) {
+  return <span className="font-medium text-foreground">{children}</span>;
 }
 
 export function BmpScoreCards({
@@ -33,11 +39,14 @@ export function BmpScoreCards({
       value: `${formatTon(totals.produksiTon)} Ton`,
       // Info bawah pakai luasan, bukan jumlah lahan (permintaan owner #191);
       // % total hanya muncul bila snapshot sudah memuat total luas.
-      sub: `${yearLabel} — dari ${formatTon(totals.luasMelaporHa)} Ha terdata${
-        totals.totalLuasHa > 0
-          ? ` (${pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total luas)`
-          : ""
-      }`,
+      sub: (
+        <>
+          {yearLabel} — dari <Emph>{formatTon(totals.luasMelaporHa)} Ha</Emph> terdata
+          {totals.totalLuasHa > 0 && (
+            <> ({pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total luas)</>
+          )}
+        </>
+      ),
       icon: TrendingUp,
       iconClass: "text-emerald-600",
     },
@@ -55,23 +64,38 @@ export function BmpScoreCards({
       // total pindah ke sub-teks. Snapshot lama tanpa total luas → tanpa pembanding.
       value: `${formatTon(totals.luasMelaporHa)} Ha`,
       sub:
-        totals.totalLuasHa > 0
-          ? `${pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total ${formatTon(totals.totalLuasHa)} Ha luas aktif (${yearLabel})`
-          : `luas lahan terdata (${yearLabel})`,
+        totals.totalLuasHa > 0 ? (
+          <>
+            {pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total{" "}
+            <Emph>{formatTon(totals.totalLuasHa)} Ha</Emph> luas aktif ({yearLabel})
+          </>
+        ) : (
+          `luas lahan terdata (${yearLabel})`
+        ),
       icon: LandPlot,
       iconClass: "text-teal-600",
     },
     {
       title: "Lahan dengan Data Produksi",
       value: formatNumber(totals.lahanBerData),
-      sub: `${pct(totals.lahanBerData, totals.totalLahan)} dari total ${formatNumber(totals.totalLahan)} lahan aktif (${yearLabel})`,
+      sub: (
+        <>
+          {pct(totals.lahanBerData, totals.totalLahan)} dari total{" "}
+          <Emph>{formatNumber(totals.totalLahan)}</Emph> lahan aktif ({yearLabel})
+        </>
+      ),
       icon: Map,
       iconClass: "text-green-600",
     },
     {
       title: "Petani Terdata",
       value: formatNumber(totals.petaniMelapor),
-      sub: `${pct(totals.petaniMelapor, totals.totalPetani)} dari total ${formatNumber(totals.totalPetani)} petani (${yearLabel})`,
+      sub: (
+        <>
+          {pct(totals.petaniMelapor, totals.totalPetani)} dari total{" "}
+          <Emph>{formatNumber(totals.totalPetani)}</Emph> petani ({yearLabel})
+        </>
+      ),
       icon: Users,
       iconClass: "text-blue-600",
     },
