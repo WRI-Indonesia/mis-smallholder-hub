@@ -139,16 +139,6 @@ export function TrainingDistrictPanel({
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <div className="flex justify-end gap-4 text-xs text-muted-foreground mb-2">
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 dark:bg-emerald-500" />
-                    Sudah
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-muted border border-border" />
-                    Belum
-                  </span>
-                </div>
                 {/* Transposisi (revisi owner #198): baris = paket, kolom = distrik —
                     distrik sedikit sehingga bar lebih lebar, dan tiap baris terbaca
                     sebagai progres satu paket lintas distrik. */}
@@ -223,10 +213,23 @@ export function TrainingDistrictPanel({
                     </tr>
                   </tbody>
                 </table>
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  Persen di kiri bar; segmen hijau = jumlah petani sudah dilatih, segmen abu =
-                  jumlah belum. Roll-up dari matriks capaian — mengikuti seluruh filter aktif.
-                </p>
+                {/* Legend di kanan bawah (revisi owner #198), catatan di kiri. */}
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[11px] text-muted-foreground">
+                    Persen di kiri bar; segmen hijau = jumlah petani sudah dilatih, segmen abu =
+                    jumlah belum. Roll-up dari matriks capaian — mengikuti seluruh filter aktif.
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 dark:bg-emerald-500" />
+                      Sudah
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-muted border border-border" />
+                      Belum
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
