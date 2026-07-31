@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
+import { cellValueToPrimitive } from "@/lib/excel-cell";
 import { bulkCreateProductionRecords } from "@/server/actions/bulk-upload-production";
 
 interface FarmerMapping {
@@ -389,9 +390,11 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
         let sheetHeaders: string[] = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-          const values = Array.isArray(row.values)
-            ? row.values.slice(1)
-            : Object.values(row.values);
+          // Normalisasi ke primitif: sel error/rich text/formula dari exceljs
+          // berupa objek yang membuat tabel preview crash bila dirender (#196).
+          const values = (
+            Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values)
+          ).map(cellValueToPrimitive);
           if (rowNumber === 1) {
             sheetHeaders = values.map((v) => v?.toString().trim() || "");
           } else {

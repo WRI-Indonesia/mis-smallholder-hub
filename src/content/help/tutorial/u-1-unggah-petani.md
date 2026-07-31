@@ -52,6 +52,10 @@ Petani muncul di **Master Data → Petani** dengan lembaga yang Anda pilih di La
 
 + Unggahan massal ini hanya **menambah**, tidak memperbarui data yang sudah ada. Untuk mengubah data petani lama, gunakan tombol Edit di Master Data satu per satu.
 
+**Sel berisi `#N/A` atau error Excel lain** — sel hasil formula yang gagal (misalnya VLOOKUP) dibaca sebagai **kosong**, bukan sebagai teks. Kolom wajib akan ditandai error "wajib diisi"; kolom opsional tersimpan kosong.
+
++ Bila datanya sebenarnya ada, perbaiki formulanya di Excel atau salin-tempel nilainya sebagai **Values** sebelum mengunggah ulang.
+
 **Kolom tidak tercocokkan otomatis** — wajar bila judul kolom Anda tidak umum. Cocokkan manual; pencocokan otomatis hanya membantu, bukan syarat.
 
 **Jumlah baris terbaca lebih sedikit dari isi berkas** — biasanya ada baris judul ganda atau baris kosong di tengah. Rapikan dulu di Excel.

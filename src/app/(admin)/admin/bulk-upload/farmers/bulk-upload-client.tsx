@@ -34,6 +34,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { cellValueToPrimitive } from "@/lib/excel-cell";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -354,9 +355,11 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
         let sheetHeaders: string[] = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-          const values = Array.isArray(row.values)
-            ? row.values.slice(1)
-            : Object.values(row.values);
+          // Normalisasi ke primitif: sel error/rich text/formula dari exceljs
+          // berupa objek yang membuat tabel preview crash bila dirender (#196).
+          const values = (
+            Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values)
+          ).map(cellValueToPrimitive);
           if (rowNumber === 1) {
             sheetHeaders = values.map((v) => v?.toString().trim() || "");
           } else {
