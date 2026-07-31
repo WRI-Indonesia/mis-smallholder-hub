@@ -31,7 +31,7 @@ Angka di sini **dihitung langsung** saat halaman dibuka — tidak memakai snapsh
 6. Klik **Salin** atau **Excel** untuk membawa daftarnya keluar.
 + Salin menghasilkan baris siap tempel ke Excel atau pesan WhatsApp. NIK tidak disertakan — daftar ini untuk keperluan undangan, bukan verifikasi identitas.
 7. Periksa panel **Efektivitas Pre/Post-Test** dan **Kualitas Data** di bawahnya.
-+ Panel efektivitas menandai peserta yang skor post-nya lebih rendah dari pre — hampir selalu salah input, bukan hasil belajar menurun. Panel kualitas data menunjukkan sesi tanpa bukti, tanpa lokasi, atau tanpa peserta. Di bawah matriks juga ada card **Petani Terlatih vs Belum per Distrik** — rangkuman sudah/belum per paket di tingkat distrik.
++ Panel efektivitas menandai peserta yang skor post-nya lebih rendah dari pre — hampir selalu salah input, bukan hasil belajar menurun. Panel kualitas data menunjukkan sesi tanpa bukti, tanpa lokasi, atau tanpa peserta. Di bawah matriks juga ada card **Capaian Paket per Distrik** — rangkuman petani sudah/belum dilatih per paket di tingkat distrik.
 
 > [!tip] Tabel cakupan bisa dilipat lewat tanda panah di kanan judulnya bila layar terasa penuh. Saat terlipat, ringkasannya tetap terbaca.
 

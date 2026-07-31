@@ -37,9 +37,9 @@ function DistrictCell({ trained, total }: { trained: number; total: number }) {
 }
 
 /**
- * Card full-row "Petani Terlatih vs Belum per Distrik" (#198, bentuk grid
- * distrik × paket — pilihan owner): roll-up matriks cakupan ke level distrik,
- * semua paket terlihat sekaligus tanpa klik.
+ * Card full-row "Capaian Paket per Distrik" (#198): roll-up matriks cakupan
+ * ke level distrik — baris per paket, kolom per distrik, semua paket terlihat
+ * sekaligus tanpa klik.
  */
 export function TrainingDistrictPanel({
   rows,
@@ -57,7 +57,7 @@ export function TrainingDistrictPanel({
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary" /> Petani Terlatih vs Belum per Distrik
+            <MapPin className="h-4 w-4 text-primary" /> Capaian Paket per Distrik
           </CardTitle>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
