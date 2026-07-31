@@ -47,7 +47,15 @@ export function BmpScoreCards({
   /** Konteks mode tahun utk sub-teks, mis. "rata-rata per tahun" / "tahun 2025" / "kumulatif semua tahun". */
   yearLabel: string;
 }) {
+  // Urutan card: Produktivitas dulu baru Total Produksi (permintaan owner #191).
   const cards: CardConfig[] = [
+    {
+      title: "Produktivitas",
+      value: `${formatTon(produktivitas)} Ton/Ha`,
+      sub: "per tahun — produksi ÷ luas lahan terdata",
+      icon: Activity,
+      iconClass: "text-orange-600",
+    },
     {
       title: "Total Produksi",
       value: `${formatTon(totals.produksiTon)} Ton`,
@@ -72,13 +80,6 @@ export function BmpScoreCards({
       iconClass: "text-emerald-600",
     },
     {
-      title: "Produktivitas",
-      value: `${formatTon(produktivitas)} Ton/Ha`,
-      sub: "per tahun — produksi ÷ luas lahan terdata",
-      icon: Activity,
-      iconClass: "text-orange-600",
-    },
-    {
       title: "Luasan",
       // Angka besar cukup luas terdata — bentuk "X / Y Ha" dengan desimal
       // panjang wrap 2 baris & sulit dibaca (feedback owner #191); pembanding
@@ -88,7 +89,7 @@ export function BmpScoreCards({
         totals.totalLuasHa > 0 ? (
           <>
             <Emph kind="percent">{pct(totals.luasMelaporHa, totals.totalLuasHa)}</Emph> dari total{" "}
-            <Emph kind="total">{formatTon(totals.totalLuasHa)} Ha</Emph> luas aktif (
+            <Emph kind="total">{formatTon(totals.totalLuasHa)} Ha</Emph> luas (
             <Emph kind="year">{yearLabel}</Emph>)
           </>
         ) : (
@@ -105,7 +106,7 @@ export function BmpScoreCards({
       sub: (
         <>
           <Emph kind="percent">{pct(totals.lahanBerData, totals.totalLahan)}</Emph> dari total{" "}
-          <Emph kind="total">{formatNumber(totals.totalLahan)}</Emph> lahan aktif (
+          <Emph kind="total">{formatNumber(totals.totalLahan)}</Emph> lahan (
           <Emph kind="year">{yearLabel}</Emph>)
         </>
       ),
