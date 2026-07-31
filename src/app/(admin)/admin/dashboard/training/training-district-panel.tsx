@@ -38,33 +38,31 @@ function DistrictCell({ trained, total }: { trained: number; total: number }) {
       <span className="w-11 shrink-0 text-right text-xs font-semibold tabular-nums">
         {formatPct(pct)}%
       </span>
-      <div className="relative h-6 flex-1 overflow-hidden rounded-full bg-muted">
+      {/* Angka sudah selalu menempel di BATAS segmen (kanan-dalam bila muat,
+          tepat setelah batas bila sempit) — posisi konsisten antar baris (#198). */}
+      <div className="relative h-5 flex-1 overflow-hidden rounded-full bg-muted">
         <div
-          className="absolute inset-y-0 left-0 flex items-center justify-center bg-emerald-600 dark:bg-emerald-500"
+          className="absolute inset-y-0 left-0 flex items-center justify-end bg-emerald-600 dark:bg-emerald-500"
           style={{ width: `${Math.min(pct, 100)}%` }}
         >
           {sudahInside && (
-            <span className="px-1 text-[10px] font-semibold text-white tabular-nums whitespace-nowrap">
+            <span className="pr-2 text-[10px] font-semibold text-white tabular-nums whitespace-nowrap">
               {formatNumber(trained)}
             </span>
           )}
         </div>
         {!sudahInside && trained > 0 && (
-          <div className="absolute inset-y-0 flex items-center" style={{ left: `${pct}%` }}>
-            <span className="pl-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap">
-              {formatNumber(trained)}
-            </span>
-          </div>
+          <span
+            className="absolute inset-y-0 flex items-center pl-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap"
+            style={{ left: `${pct}%` }}
+          >
+            {formatNumber(trained)}
+          </span>
         )}
         {belumInside && (
-          <div
-            className="absolute inset-y-0 right-0 flex items-center justify-end"
-            style={{ width: `${100 - pct}%` }}
-          >
-            <span className="pr-2 text-[10px] tabular-nums text-muted-foreground whitespace-nowrap">
-              {formatNumber(belum)}
-            </span>
-          </div>
+          <span className="absolute inset-y-0 right-0 flex items-center pr-2 text-[10px] tabular-nums text-muted-foreground whitespace-nowrap">
+            {formatNumber(belum)}
+          </span>
         )}
       </div>
     </div>
