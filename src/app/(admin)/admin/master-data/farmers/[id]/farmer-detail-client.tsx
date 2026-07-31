@@ -207,7 +207,7 @@ export function FarmerDetailClient({
       return next;
     });
 
-  // Persen Record = kelengkapan pelaporan bulanan (lahan×bulan melapor ÷
+  // Persen Record = kelengkapan data bulanan (lahan×bulan terdata ÷
   // total persil × 12 — mandatory min. 1 panen/bulan per lahan).
   const pctOf = (part: number, total: number) =>
     total > 0 ? ` (${formatDecimal((part / total) * 100)}%)` : "";
@@ -519,8 +519,8 @@ export function FarmerDetailClient({
                       <th className="py-2 pr-4">Tahun</th>
                       <th className="py-2 pr-4 text-right">Produksi (kg)</th>
                       <th className="py-2 pr-4 text-right">Record</th>
-                      <th className="py-2 pr-4 text-right">Lahan Melapor</th>
-                      <th className="py-2 pr-4 text-right">Luas Melapor (Ha)</th>
+                      <th className="py-2 pr-4 text-right">Lahan Terdata</th>
+                      <th className="py-2 pr-4 text-right">Luas Terdata (Ha)</th>
                       <th className="py-2 text-right">Produktivitas (Ton/Ha)</th>
                     </tr>
                   </thead>
@@ -594,11 +594,11 @@ export function FarmerDetailClient({
               </div>
             )}
             <p className="text-xs text-muted-foreground mt-3">
-              Produktivitas = Σ produksi tahun tsb ÷ Σ luas lahan yang melapor pada tahun tsb
-              (Ton/Ha). Record tanpa lahan masuk total produksi, tidak menambah luas pelapor.
-              Persentase Record = kelengkapan pelaporan bulanan (pasangan lahan×bulan yang melapor ÷
+              Produktivitas = Σ produksi tahun tsb ÷ Σ luas lahan yang terdata pada tahun tsb
+              (Ton/Ha). Record tanpa lahan masuk total produksi, tidak menambah luas terdata.
+              Persentase Record = kelengkapan data bulanan (pasangan lahan×bulan yang terdata ÷
               total persil × 12 bulan — pelaporan wajib min. 1 panen per bulan per lahan);
-              Lahan/Luas Melapor terhadap total persil/luas milik petani.
+              Lahan/Luas Terdata terhadap total persil/luas milik petani.
             </p>
           </Card>
 

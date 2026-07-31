@@ -15,27 +15,27 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 │   ├── Kategori Lembaga (select)
 │   ├── Distrik (combobox)
 │   ├── Lembaga Petani (combobox)
-│   ├── Tahun (select, default "Rataan")
+│   ├── Tahun (select, default tahun berjalan; "Rataan" di paling bawah)
 │   └── Kelengkapan data (select)
-├── Kartu KPI (4)
+├── Kartu KPI (5)
 │   ├── Total Produksi
 │   ├── Produktivitas
+│   ├── Luasan
 │   ├── Lahan dengan Data Produksi
-│   └── Petani Melapor
-├── Chart tren
-│   ├── Judul "Tren Produksi & Cakupan Pelaporan Bulanan"
-│   ├── Seri batang (Produksi Ton)
-│   ├── Seri garis (Cakupan pelaporan %)
-│   ├── Tooltip hover
-│   ├── Legenda
-│   └── Empty state
-├── Panel ketersediaan data
-│   ├── Baik (> 2 tahun)
-│   ├── Cukup (min. 1 tahun)
-│   ├── Kurang (< 1 tahun)
-│   ├── Tidak ada data
-│   ├── Catatan kategori
-│   └── Link "Lihat sebaran di Peta BMP"
+│   └── Petani Terdata
+├── 2 grafik 50/50
+│   ├── Chart tren "Tren Produksi & Cakupan Data Bulanan"
+│   │   ├── Seri batang (Produksi Ton) + garis (Cakupan data %)
+│   │   ├── Tooltip hover · Legenda · Empty state
+│   └── Chart ranking "Produktivitas per Lembaga — Top 10"
+│       ├── Bar horizontal Ton/Ha, warna per kategori + legend
+│       └── Empty state
+├── Card besar Ex-Plasma vs Swadaya (full row)
+│   ├── Legend warna kategori
+│   ├── Ringkasan 3 metrik per kategori (Produksi, Produktivitas, Luas Terdata)
+│   ├── Analisa "Produksi per Distrik (Ton)" (bar berpasangan)
+│   ├── Analisa "Produktivitas per Umur Tanaman (Ton/Ha)" (bar berpasangan)
+│   └── Catatan filter & definisi umur
 └── Empty state halaman
     ├── "Belum ada snapshot"
     └── Tombol "Ke Dashboard Snapshot BMP"
@@ -47,10 +47,10 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 |---|---|
 | File | `src/app/(admin)/admin/dashboard/bmp/page.tsx` |
 | Tipe | Server Component → `BmpDashboardClient` (Client Component) |
-| Komponen anak | `bmp-dashboard-client.tsx`, `bmp-score-cards.tsx`, `bmp-trend-chart.tsx`, `bmp-availability-panel.tsx`, `loading.tsx` |
+| Komponen anak | `bmp-dashboard-client.tsx`, `bmp-score-cards.tsx`, `bmp-trend-chart.tsx`, `bmp-ranking-chart.tsx`, `bmp-category-panel.tsx`, `loading.tsx` |
 | Guard | `requirePermission("dashboard-bmp")` |
 | Server action / data | `getLatestBmpSnapshot()` dari `src/server/actions/dashboard-bmp.ts` — satu snapshot org-wide, diiris di client |
-| Helper agregasi | `filterBmpGroups`, `sumBmpGroups`, `bmpChartSeries` dari `src/lib/bmp-dashboard-aggregation.ts` |
+| Helper agregasi | `filterBmpGroups`, `sumBmpGroups`, `bmpChartSeries`, `bmpYearOptions`, `bmpDefaultYear`, `bmpAgeSeries`, `bmpGroupRanking` dari `src/lib/bmp-dashboard-aggregation.ts` |
 | Icon menu | `Sprout` |
 
 ## Objek halaman
@@ -62,11 +62,12 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 | Filter Kategori Lembaga | Select | "Semua Kategori", "Ex-Plasma" (`EX_PLASMA`), "Swadaya" (`SWADAYA`) |
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
-| Filter Tahun | Select | Default "Rataan" (rata-rata per tahun) + daftar tahun dari snapshot (desc) |
+| Filter Tahun | Select | Default **tahun berjalan** (fallback tahun terbaru ber-data; #191); daftar tahun (desc) lalu "Rataan" di paling bawah |
 | Filter Kelengkapan data | Select | "Semua Data" (`all`) / "Data Full 1 Tahun" (`full` — hanya lahan dengan 12 bulan penuh) |
-| Kartu KPI (4 kartu) | Kartu KPI | Lihat rincian di bawah |
+| Kartu KPI (5 kartu) | Kartu KPI | Lihat rincian di bawah |
 | Chart tren | Chart kombinasi (bar + line, SVG kustom) | Lihat rincian di bawah |
-| Panel ketersediaan data | Panel kategori + progress bar | Lihat rincian di bawah |
+| Chart ranking | Bar horizontal Top-10 | Lihat rincian di bawah |
+| Card Ex-Plasma vs Swadaya | Card full-row | Lihat rincian di bawah |
 | Empty state halaman | Empty state | Ikon `Camera` + "Belum ada snapshot" + "Dashboard BMP menampilkan data dari snapshot terakhir (Semua Data). Buat snapshot terlebih dahulu melalui menu Tools." |
 | Tombol "Ke Dashboard Snapshot BMP" | Tombol/Link | Hanya pada empty state; menuju `/admin/tools/snapshot-bmp` (menu `dashboard-snapshot-bmp`) |
 
@@ -74,10 +75,11 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 
 | # | Judul kartu | Nilai | Sub |
 |---|---|---|---|
-| 1 | Total Produksi | "{n} Ton" | "{label tahun} — dari {n} lahan ber-data" |
-| 2 | Produktivitas | "{n} Ton/Ha" | "per tahun — produksi ÷ luas lahan melapor" |
-| 3 | Lahan dengan Data Produksi | "{ber-data} / {total lahan}" | "{persen} dari total lahan aktif ({label tahun})" |
-| 4 | Petani Melapor | "{melapor} / {total petani}" | "{persen} petani punya data produksi ({label tahun})" |
+| 1 | Total Produksi | "{n} Ton" | "{label tahun} — dari {n} Ha terdata ({persen} dari total luas)" — persen hilang bila snapshot lama tanpa `totalLuasHa` |
+| 2 | Produktivitas | "{n} Ton/Ha" | "per tahun — produksi ÷ luas lahan terdata" |
+| 3 | Luasan | "{terdata} / {total} Ha" (snapshot lama: "{terdata} Ha") | "{persen} dari total luas lahan aktif ({label tahun})" / "luas lahan terdata ({label tahun})" |
+| 4 | Lahan dengan Data Produksi | "{ber-data} / {total lahan}" | "{persen} dari total lahan aktif ({label tahun})" |
+| 5 | Petani Terdata | "{terdata} / {total petani}" | "{persen} petani punya data produksi ({label tahun})" |
 
 Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah " · lahan full 1 tahun" bila mode `full`.
 
@@ -85,21 +87,31 @@ Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah "
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Judul | Heading kartu | "Tren Produksi & Cakupan Pelaporan Bulanan — {tahun}" atau "— Rataan" |
+| Judul | Heading kartu | "Tren Produksi & Cakupan Data Bulanan — {tahun}" atau "— Rataan" |
 | Seri batang | Bar chart (12 bulan Jan–Des) | Produksi (Ton), warna hijau `#22c55e`, sumbu kiri skala adaptif |
-| Seri garis | Line chart | Cakupan pelaporan (% lahan melapor), warna biru `#0ea5e9`, sumbu kanan 0–100% |
-| Tooltip hover | Tooltip | Bulan (+tahun / "(rata-rata)"), "Produksi: {n} Ton", "Lahan melapor: {n} ({p}%)" |
-| Legenda | Legend | "Produksi (Ton)", "Cakupan pelaporan (% lahan melapor)" |
+| Seri garis | Line chart | Cakupan data (% lahan terdata), warna biru `#0ea5e9`, sumbu kanan 0–100% |
+| Tooltip hover | Tooltip | Bulan (+tahun / "(rata-rata)"), "Produksi: {n} Ton", "Lahan terdata: {n} ({p}%)" |
+| Legenda | Legend | "Produksi (Ton)", "Cakupan data (% lahan terdata)" |
 | Empty state | Teks | "Belum ada data produksi." |
 
-## Panel ketersediaan (`BmpAvailabilityPanel`)
+## Chart ranking (`BmpRankingChart`, #191)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Judul | Heading kartu | "Ketersediaan Data Produksi" |
-| Kategori "Baik (> 2 tahun)" | Baris + progress bar | Warna `#22c55e`, nilai = jumlah lahan + persen dari total lahan |
-| Kategori "Cukup (min. 1 tahun)" | Baris + progress bar | Warna `#eab308` |
-| Kategori "Kurang (< 1 tahun)" | Baris + progress bar | Warna `#f97316` |
-| Kategori "Tidak ada data" | Baris + progress bar | Warna `#9ca3af` |
-| Catatan | Teks | "Kategori per lahan dari run bulan berturut-turut data produksi; produksi tanpa lahan tidak memengaruhi kategori." |
-| Link "Lihat sebaran di Peta BMP" | Link | Menuju `/admin/map/bmp` (menu `map-bmp`) |
+| Judul | Heading kartu | "Produktivitas per Lembaga — Top 10 ({label tahun})" + legend warna kategori |
+| Bar | Bar horizontal per lembaga | Ton/Ha (`bmpGroupRanking` — hanya lembaga ber-luas terdata, desc, maks 10); warna `#0d9488` Ex-Plasma / `#f59e0b` Swadaya |
+| Catatan | Teks | "Ton/Ha = Σ produksi ÷ Σ luas terdata lembaga ybs; warna mengikuti kategori (Ex-Plasma/Swadaya)." |
+| Empty state | Teks | "Belum ada lembaga dengan luas terdata." |
+
+## Card Ex-Plasma vs Swadaya (`BmpCategoryPanel`, #191 — menggantikan panel Ketersediaan Data Produksi)
+
+| Objek | Tipe | Keterangan |
+|---|---|---|
+| Judul | Heading kartu | "Ex-Plasma vs Swadaya — {label tahun}" + legend warna kategori (`CategoryLegend`) |
+| Ringkasan 3 metrik | Grid 3 kolom | Total Produksi (Ton), Produktivitas (Ton/Ha), Luas Terdata (Ha) — dua nilai berwarna per metrik |
+| "Produksi per Distrik (Ton)" | Bar horizontal berpasangan | Dua bar (Ex-Plasma/Swadaya) per distrik dalam scope filter |
+| "Produktivitas per Umur Tanaman (Ton/Ha)" | Bar horizontal berpasangan | Bucket `bmpAgeSeries`: "< 4 thn", "4–8 thn", "9–15 thn", "> 15 thn", "Tanpa thn tanam" (hanya bila ber-data); umur = tahun produksi − tahun tanam |
+| Empty state umur | Teks | "Snapshot ini belum memuat data umur tanaman — generate ulang snapshot BMP melalui menu Tools untuk mengisi analisa ini." |
+| Catatan | Teks | "Mengikuti filter aktif kecuali filter Kategori. Umur tanaman dihitung pada tahun produksinya…" |
+
+Panel Ketersediaan Data Produksi (Baik/Cukup/Kurang/Tidak Ada) **dihapus** dari dashboard (#191, keputusan owner) — kategori yang sama tetap tersedia di Peta BMP.

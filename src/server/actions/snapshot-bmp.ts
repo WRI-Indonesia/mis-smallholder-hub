@@ -67,7 +67,7 @@ async function aggregateBmpSnapshotData(districtId: string | null) {
     }),
     prisma.landParcel.findMany({
       where: { isActive: true, farmer: farmerWhere },
-      select: { id: true, farmerId: true, area: true },
+      select: { id: true, farmerId: true, area: true, plantingYear: true },
     }),
     prisma.productionRecord.groupBy({
       by: ["farmerId", "parcelId", "period"],
@@ -191,6 +191,8 @@ export async function getBmpSnapshots(): Promise<BmpSnapshotListItem[]> {
       totalProduksiTon: totals.produksiTon,
       lahanBerData: totals.lahanBerData,
       totalLahan: totals.totalLahan,
+      luasMelaporHa: totals.luasMelaporHa,
+      totalLuasHa: totals.totalLuasHa,
       petaniMelapor: totals.petaniMelapor,
       totalPetani: totals.totalPetani,
     };

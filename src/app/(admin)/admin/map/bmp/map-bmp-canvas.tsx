@@ -672,8 +672,8 @@ function BmpParcelPopupBody({
                       value: prodTonHa != null ? `${formatTonHa(prodTonHa)} Ton/Ha` : "—",
                     },
                     prodIsAvg
-                      ? { label: "Tahun Melapor", value: prodYears > 0 ? `${prodYears} tahun` : "—" }
-                      : { label: "Bulan Melapor", value: `${prodMonths}/12` },
+                      ? { label: "Tahun Terdata", value: prodYears > 0 ? `${prodYears} tahun` : "—" }
+                      : { label: "Bulan Terdata", value: `${prodMonths}/12` },
                   ]
                 : []),
             ]}

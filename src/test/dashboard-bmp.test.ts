@@ -7,6 +7,11 @@ import {
   bmpStatsForYear,
   bmpAvailableYears,
   bmpChartSeries,
+  bmpDefaultYear,
+  bmpYearOptions,
+  bmpAgeBucketKey,
+  bmpAgeSeries,
+  bmpGroupRanking,
   normalizeBmpSnapshotData,
   type BmpRawFarmer,
   type BmpRawGroup,
@@ -27,10 +32,10 @@ const farmers: BmpRawFarmer[] = [
 ];
 
 const parcels: BmpRawParcel[] = [
-  { id: "p1", farmerId: "f1", area: 2 },
-  { id: "p2", farmerId: "f1", area: 1.5 },
-  { id: "p3", farmerId: "f2", area: null },
-  { id: "p4", farmerId: "f3", area: 3 },
+  { id: "p1", farmerId: "f1", area: 2, plantingYear: 2015 },
+  { id: "p2", farmerId: "f1", area: 1.5, plantingYear: 2022 },
+  { id: "p3", farmerId: "f2", area: null, plantingYear: null },
+  { id: "p4", farmerId: "f3", area: 3, plantingYear: 2000 },
 ];
 
 /** Record produksi p1: 30 bulan berturut (2023-01 … 2025-06) @1000kg → BAIK. */
@@ -75,6 +80,7 @@ describe("buildBmpSnapshotData", () => {
       luasMelaporHa: 0,
       lahanBerData: 0,
       totalLahan: 1,
+      totalLuasHa: 3, // p4
       petaniMelapor: 0,
       totalPetani: 1,
     });
@@ -320,7 +326,7 @@ describe("bmpProductivity (Ton/Ha per tahun)", () => {
     monthlyFull: {},
     byYearFull: {},
     availability: { baik: 0, cukup: 0, kurang: 0, tidakAda: 0 },
-    totals: { produksiTon: 0, luasMelaporHa: 0, lahanBerData: 0, totalLahan: 0, petaniMelapor: 0, totalPetani: 0 },
+    totals: { produksiTon: 0, luasMelaporHa: 0, lahanBerData: 0, totalLahan: 0, totalLuasHa: 0, petaniMelapor: 0, totalPetani: 0 },
   });
 
   it("Semua Tahun = Σ produksi per tahun ÷ Σ luas melapor per tahun (rata-rata tahunan tertimbang)", () => {
@@ -388,8 +394,10 @@ describe("normalizeBmpSnapshotData", () => {
       byYear: { "2025": { produksiTon: 1, luasMelaporHa: 2, lahanBerData: 1, petaniMelapor: 1 } },
       monthlyFull: { "2025-01": { produksiTon: 1, lahanMelapor: 1, luasMelaporHa: 2 } },
       byYearFull: { "2025": { produksiTon: 1, luasMelaporHa: 2, lahanBerData: 1, petaniMelapor: 1 } },
+      byYearAge: { "2025": { "9-15": { produksiTon: 1, luasMelaporHa: 2 } } },
+      byYearAgeFull: {},
       availability: { baik: 1, cukup: 0, kurang: 0, tidakAda: 0 },
-      totals: { produksiTon: 1, luasMelaporHa: 2, lahanBerData: 1, totalLahan: 1, petaniMelapor: 1, totalPetani: 1 },
+      totals: { produksiTon: 1, luasMelaporHa: 2, lahanBerData: 1, totalLahan: 1, totalLuasHa: 2, petaniMelapor: 1, totalPetani: 1 },
     };
     expect(normalizeBmpSnapshotData({ groups: [entry] }).groups[0]).toEqual(entry);
     expect(normalizeBmpSnapshotData(null)).toEqual({ groups: [] });
@@ -400,7 +408,93 @@ describe("normalizeBmpSnapshotData", () => {
     expect(partial.byYear).toEqual({});
     expect(partial.monthlyFull).toEqual({});
     expect(partial.byYearFull).toEqual({});
+    expect(partial.byYearAge).toEqual({});
+    expect(partial.byYearAgeFull).toEqual({});
     expect(partial.availability).toEqual({ baik: 0, cukup: 0, kurang: 0, tidakAda: 0 });
     expect(partial.totals.totalLahan).toBe(0);
+    expect(partial.totals.totalLuasHa).toBe(0); // snapshot lama → tanpa pembanding luas
+  });
+});
+
+describe("bmpYearOptions & bmpDefaultYear (#191)", () => {
+  it("default = tahun berjalan bila ber-data; fallback tahun terbaru; tanpa tahun → average", () => {
+    expect(bmpDefaultYear([2026, 2025], 2026)).toBe(2026);
+    expect(bmpDefaultYear([2025, 2024], 2026)).toBe(2025);
+    expect(bmpDefaultYear([], 2026)).toBe("average");
+  });
+
+  it("bmpYearOptions: gabungan tahun byYear seluruh group, desc", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, [
+      { farmerId: "f1", parcelId: "p1", period: "2024-05", kg: 1000 },
+      { farmerId: "f3", parcelId: "p4", period: "2025-01", kg: 1000 },
+    ]);
+    expect(bmpYearOptions(d.groups)).toEqual([2025, 2024]);
+    expect(bmpYearOptions([])).toEqual([]);
+  });
+});
+
+describe("bucket umur tanaman (#191)", () => {
+  it("bmpAgeBucketKey: umur dihitung pada tahun produksi", () => {
+    expect(bmpAgeBucketKey(2022, 2025)).toBe("lt4"); // umur 3
+    expect(bmpAgeBucketKey(2021, 2025)).toBe("4-8"); // umur 4
+    expect(bmpAgeBucketKey(2015, 2025)).toBe("9-15"); // umur 10
+    expect(bmpAgeBucketKey(2000, 2025)).toBe("gt15"); // umur 25
+    expect(bmpAgeBucketKey(null, 2025)).toBe("unknown");
+    expect(bmpAgeBucketKey(2030, 2025)).toBe("unknown"); // tahun tanam di masa depan
+  });
+
+  it("byYearAge terisi per tahun × bucket — hanya record ber-lahan", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, [
+      { farmerId: "f1", parcelId: "p1", period: "2025-01", kg: 1500 }, // p1 (2015) → 9-15
+      { farmerId: "f1", parcelId: "p2", period: "2025-02", kg: 500 }, // p2 (2022) → lt4
+      { farmerId: "f1", parcelId: null, period: "2025-03", kg: 999 }, // tanpa lahan → di luar analisa umur
+    ]);
+    const g1 = d.groups.find((g) => g.id === "g1")!;
+    expect(g1.byYearAge["2025"]["9-15"]).toEqual({ produksiTon: 1.5, luasMelaporHa: 2 });
+    expect(g1.byYearAge["2025"]["lt4"]).toEqual({ produksiTon: 0.5, luasMelaporHa: 1.5 });
+    expect(g1.byYearAge["2025"]["unknown"]).toBeUndefined();
+  });
+
+  it("bmpAgeSeries: agregasi lintas group, produktivitas tertimbang Σton ÷ Σluas", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, [
+      { farmerId: "f1", parcelId: "p1", period: "2025-01", kg: 4000 }, // 4 ton ÷ 2 ha = 2 Ton/Ha
+      { farmerId: "f3", parcelId: "p4", period: "2025-01", kg: 3000 }, // 3 ton ÷ 3 ha = 1 Ton/Ha
+    ]);
+    const series = bmpAgeSeries(d.groups, 2025);
+    expect(series.find((s) => s.key === "9-15")).toMatchObject({
+      produksiTon: 4,
+      luasMelaporHa: 2,
+      produktivitasTonHa: 2,
+    });
+    expect(series.find((s) => s.key === "gt15")!.produktivitasTonHa).toBe(1);
+    // Bucket program tanpa data tetap tampil (0); "unknown" hanya bila ber-data.
+    expect(series.find((s) => s.key === "4-8")!.produksiTon).toBe(0);
+    expect(series.find((s) => s.key === "unknown")).toBeUndefined();
+  });
+});
+
+describe("bmpGroupRanking (#191)", () => {
+  it("urut produktivitas desc, hanya lembaga ber-luas, hormati limit & tahun", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, [
+      { farmerId: "f1", parcelId: "p1", period: "2025-01", kg: 2000 }, // g1: 2 ÷ 2 = 1 Ton/Ha
+      { farmerId: "f3", parcelId: "p4", period: "2025-01", kg: 9000 }, // g2: 9 ÷ 3 = 3 Ton/Ha
+    ]);
+    const r = bmpGroupRanking(d.groups, 2025);
+    expect(r.map((e) => e.id)).toEqual(["g2", "g1"]);
+    expect(r[0]).toMatchObject({ produktivitasTonHa: 3, category: "EX_PLASMA" });
+    expect(bmpGroupRanking(d.groups, 2025, "all", 1)).toHaveLength(1);
+    expect(bmpGroupRanking(d.groups, 2024)).toEqual([]); // tahun tanpa data → tanpa luas
+  });
+});
+
+describe("totalLuasHa (#191)", () => {
+  it("Σ luas seluruh lahan aktif per group; year-independent; tidak dirata-rata pada mode average", () => {
+    const d = buildBmpSnapshotData(groups, farmers, parcels, [
+      { farmerId: "f1", parcelId: "p1", period: "2025-01", kg: 1000 },
+    ]);
+    const g1 = d.groups.find((g) => g.id === "g1")!;
+    expect(g1.totals.totalLuasHa).toBe(3.5); // p1 2 + p2 1,5 (p3 area null)
+    expect(sumBmpGroups(d.groups, 2025).totals.totalLuasHa).toBe(6.5); // + p4 3
+    expect(sumBmpGroups(d.groups, "average").totals.totalLuasHa).toBe(6.5);
   });
 });

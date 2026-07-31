@@ -108,8 +108,19 @@ export function SnapshotBmpClient({ snapshots, permissions }: Props) {
       render: (row) => `${row.lahanBerData}/${row.totalLahan}`,
     },
     {
+      key: "luasMelaporHa",
+      label: "Luas Terdata (Ha)",
+      sortable: true,
+      cellClassName: "text-sm tabular-nums text-right pr-4",
+      // Snapshot lama belum memuat total luas → tampilkan luas terdata saja.
+      render: (row) =>
+        row.totalLuasHa > 0
+          ? `${formatTon(row.luasMelaporHa)}/${formatTon(row.totalLuasHa)}`
+          : formatTon(row.luasMelaporHa),
+    },
+    {
       key: "petaniMelapor",
-      label: "Petani Melapor",
+      label: "Petani Terdata",
       sortable: true,
       cellClassName: "text-sm tabular-nums text-right pr-4",
       render: (row) => `${row.petaniMelapor}/${row.totalPetani}`,
@@ -127,6 +138,10 @@ export function SnapshotBmpClient({ snapshots, permissions }: Props) {
     districtName: row.districtName ?? "Semua",
     totalProduksiTon: formatTon(row.totalProduksiTon),
     lahanBerData: `${row.lahanBerData}/${row.totalLahan}`,
+    luasTerdata:
+      row.totalLuasHa > 0
+        ? `${formatTon(row.luasMelaporHa)}/${formatTon(row.totalLuasHa)}`
+        : formatTon(row.luasMelaporHa),
     petaniMelapor: `${row.petaniMelapor}/${row.totalPetani}`,
     createdByName: row.createdByName,
   });

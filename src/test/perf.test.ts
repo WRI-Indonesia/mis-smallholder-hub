@@ -416,6 +416,7 @@ describe("Performance - DASH-04 Dashboard BMP snapshot (pure logic)", () => {
       id: `${f.id}-p${p}`,
       farmerId: f.id,
       area: 1.5,
+      plantingYear: 2015,
     })),
   );
   const periods = enumeratePeriods("2023-01", "2025-12"); // 36 bulan

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, Map, Users } from "lucide-react";
+import { TrendingUp, Activity, LandPlot, Map, Users } from "lucide-react";
 import type { BmpGroupTotals } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -31,16 +31,37 @@ export function BmpScoreCards({
     {
       title: "Total Produksi",
       value: `${formatTon(totals.produksiTon)} Ton`,
-      sub: `${yearLabel} — dari ${formatNumber(totals.lahanBerData)} lahan ber-data`,
+      // Info bawah pakai luasan, bukan jumlah lahan (permintaan owner #191);
+      // % total hanya muncul bila snapshot sudah memuat total luas.
+      sub: `${yearLabel} — dari ${formatTon(totals.luasMelaporHa)} Ha terdata${
+        totals.totalLuasHa > 0
+          ? ` (${pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total luas)`
+          : ""
+      }`,
       icon: TrendingUp,
       iconClass: "text-emerald-600",
     },
     {
       title: "Produktivitas",
       value: `${formatTon(produktivitas)} Ton/Ha`,
-      sub: "per tahun — produksi ÷ luas lahan melapor",
+      sub: "per tahun — produksi ÷ luas lahan terdata",
       icon: Activity,
       iconClass: "text-orange-600",
+    },
+    {
+      title: "Luasan",
+      // Snapshot lama belum memuat total luas (totalLuasHa = 0) → tampilkan
+      // luas terdata saja; pembandingnya muncul setelah snapshot di-generate ulang.
+      value:
+        totals.totalLuasHa > 0
+          ? `${formatTon(totals.luasMelaporHa)} / ${formatTon(totals.totalLuasHa)} Ha`
+          : `${formatTon(totals.luasMelaporHa)} Ha`,
+      sub:
+        totals.totalLuasHa > 0
+          ? `${pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total luas lahan aktif (${yearLabel})`
+          : `luas lahan terdata (${yearLabel})`,
+      icon: LandPlot,
+      iconClass: "text-teal-600",
     },
     {
       title: "Lahan dengan Data Produksi",
@@ -50,7 +71,7 @@ export function BmpScoreCards({
       iconClass: "text-green-600",
     },
     {
-      title: "Petani Melapor",
+      title: "Petani Terdata",
       value: `${formatNumber(totals.petaniMelapor)} / ${formatNumber(totals.totalPetani)}`,
       sub: `${pct(totals.petaniMelapor, totals.totalPetani)} petani punya data produksi (${yearLabel})`,
       icon: Users,
@@ -59,7 +80,7 @@ export function BmpScoreCards({
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
