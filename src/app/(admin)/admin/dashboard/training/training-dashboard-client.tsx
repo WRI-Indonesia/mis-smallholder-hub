@@ -310,8 +310,9 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
       <TrainingScoreCards totals={totals} yearLabel={yearLabel} />
 
       {/* Roll-up cakupan ke level distrik dulu (gambaran besar), baru rincian
-          per Lembaga — urutan revisi owner (#198). */}
-      <TrainingDistrictPanel rows={coverage} packages={packages} />
+          per Lembaga — urutan revisi owner (#198). Disembunyikan saat filter
+          Lembaga aktif: roll-up distrik atas satu Lembaga tidak bermakna. */}
+      {!groupId && <TrainingDistrictPanel rows={coverage} packages={packages} />}
 
       <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} />
 
