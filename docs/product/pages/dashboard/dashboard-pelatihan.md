@@ -105,7 +105,7 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Collapsible trigger | "Capaian Paket per Distrik" (default terbuka; ringkasan saat dilipat: jumlah distrik + % terlatih min. 1 paket) + legend Sudah/Belum |
-| Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Min. 1 Paket; kolom = **Total (Riau)** (agregat scope, ber-border pemisah) lalu distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
+| Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Min. 1 Paket; kolom = **Total (Riau)** (agregat scope, ber-border pemisah; disembunyikan bila hanya 1 distrik dalam scope) lalu distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
 | Sel | Stacked bar tebal | Persen di kiri luar bar; segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum (label sembunyi bila segmen sempit, tooltip lengkap); distrik tanpa petani → "—" |
 | Empty state | Teks | "Tidak ada distrik pada filter ini." |
 

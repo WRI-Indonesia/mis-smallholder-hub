@@ -83,8 +83,11 @@ export function TrainingDistrictPanel({
 }) {
   const [open, setOpen] = useState(true);
   const districts = trainingDistrictCoverage(rows);
+  // Kolom Total hanya bermakna bila ada >1 distrik — dengan filter distrik
+  // aktif, Total cuma menduplikasi kolom distrik itu (revisi owner #198).
+  const showTotal = districts.length > 1;
   // Lebar seragam antar kolom (Total + distrik); kolom label Paket menyisakan ~18%.
-  const cellWidth = `${82 / Math.max(districts.length + 1, 1)}%`;
+  const cellWidth = `${82 / Math.max(districts.length + (showTotal ? 1 : 0), 1)}%`;
 
   // Ringkasan yang tetap terbaca saat panel dilipat.
   const summaryFarmers = districts.reduce((s, d) => s + d.totalFarmers, 0);
@@ -144,16 +147,18 @@ export function TrainingDistrictPanel({
                   <thead>
                     <tr className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       <th className="text-left py-2 pr-4 font-semibold">Paket</th>
-                      <th
-                        style={{ width: cellWidth }}
-                        className="text-center py-2 px-2 font-semibold whitespace-nowrap border-r border-border/60"
-                        title="Agregat seluruh distrik dalam scope filter"
-                      >
-                        Total (Riau)
-                        <span className="block text-[10px] font-normal normal-case tabular-nums">
-                          {formatNumber(summaryFarmers)} petani
-                        </span>
-                      </th>
+                      {showTotal && (
+                        <th
+                          style={{ width: cellWidth }}
+                          className="text-center py-2 px-2 font-semibold whitespace-nowrap border-r border-border/60"
+                          title="Agregat seluruh distrik dalam scope filter"
+                        >
+                          Total (Riau)
+                          <span className="block text-[10px] font-normal normal-case tabular-nums">
+                            {formatNumber(summaryFarmers)} petani
+                          </span>
+                        </th>
+                      )}
                       {districts.map((d) => (
                         <th
                           key={d.districtName}
@@ -177,12 +182,14 @@ export function TrainingDistrictPanel({
                         >
                           {TRAINING_PACKAGE_SHORT[code]}
                         </td>
-                        <td className="py-2.5 px-2 border-r border-border/60">
-                          <DistrictCell
-                            trained={totalByPackage[code] ?? 0}
-                            total={summaryFarmers}
-                          />
-                        </td>
+                        {showTotal && (
+                          <td className="py-2.5 px-2 border-r border-border/60">
+                            <DistrictCell
+                              trained={totalByPackage[code] ?? 0}
+                              total={summaryFarmers}
+                            />
+                          </td>
+                        )}
                         {districts.map((d) => (
                           <td key={d.districtName} className="py-2.5 px-2">
                             <DistrictCell
@@ -200,9 +207,11 @@ export function TrainingDistrictPanel({
                       >
                         Min. 1 Paket
                       </td>
-                      <td className="py-2.5 px-2 border-r border-border/60">
-                        <DistrictCell trained={summaryTrained} total={summaryFarmers} />
-                      </td>
+                      {showTotal && (
+                        <td className="py-2.5 px-2 border-r border-border/60">
+                          <DistrictCell trained={summaryTrained} total={summaryFarmers} />
+                        </td>
+                      )}
                       {districts.map((d) => (
                         <td key={d.districtName} className="py-2.5 px-2">
                           <DistrictCell trained={d.anyPackage} total={d.totalFarmers} />
