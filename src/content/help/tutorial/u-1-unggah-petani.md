@@ -28,13 +28,14 @@ Kolom di Excel Anda **tidak harus bernama persis** seperti di sistem — nanti a
 + Pencocokan otomatis menebak dari nama kolom yang umum, dan bisa salah bila Anda punya dua kolom bernama mirip seperti "Nama" dan "Nama KK". Karena itu selalu tinjau ulang sebelum melanjutkan.
 5. Kolom bertanda **Wajib** harus terisi. Yang tidak dipakai, pilih **-- Kosongkan --**.
 6. Klik **Validasi Data**.
-7. Periksa ringkasan **Baris Valid** dan **Baris Error**. Klik filter **Error** untuk melihat yang bermasalah saja.
-+ Kolom **Detail Error** menjelaskan alasan per baris. Bila ratusan baris memberi alasan yang sama, penyebabnya biasanya satu: pemetaan kolom yang keliru — perbaiki pemetaannya, bukan datanya.
-8. Bila masih ada error, klik **Download Data Error Saja**, perbaiki di Excel, lalu ulangi dari langkah 3.
-+ Berkas unduhan itu sudah memuat kolom keterangan errornya, jadi bisa diperbaiki langsung di sana tanpa mencocokkan manual dengan layar.
-9. Setelah puas, klik **Simpan N Data Valid**.
+7. Periksa ringkasan hasil validasi. Setiap baris berstatus salah satu dari tiga: **Valid** (semua terisi), **Tidak Lengkap** (boleh disimpan, tapi ada kolom opsional yang kosong — NIK, tempat/tanggal lahir, alamat, atau tahun bergabung), atau **Error** (tidak bisa disimpan). Klik filter status untuk melihat kelompok tertentu saja.
++ Kolom **Keterangan** menjelaskan per baris: alasan error, atau daftar kolom yang kosong untuk baris tidak lengkap. Bila ratusan baris memberi alasan yang sama, penyebabnya biasanya satu: pemetaan kolom yang keliru — perbaiki pemetaannya, bukan datanya.
+8. Bila masih ada error, klik **Download Data Error Saja**, perbaiki di Excel, lalu ulangi dari langkah 3. Untuk menindaklanjuti data bolong, **Download Data Tidak Lengkap** memberi daftar baris beserta kolom mana yang kosong.
++ Semua berkas unduhan memuat kolom **Status** (VALID / TIDAK LENGKAP / ERROR) dan keterangannya, jadi bisa diperbaiki langsung di sana tanpa mencocokkan manual dengan layar.
+9. Setelah puas, pilih salah satu tombol simpan: **Simpan Semua Layak** (baris valid + tidak lengkap) atau **Simpan Hanya yang Valid** (baris tidak lengkap ditahan).
++ Kapan menahan baris tidak lengkap? Bila datanya masih bisa dilengkapi di Excel dalam waktu dekat. Unggahan ini hanya **menambah**, tidak memperbarui — baris yang telanjur disimpan bolong hanya bisa dilengkapi lewat tombol Edit di Master Data satu per satu, tidak bisa diunggah ulang.
 
-> [!penting] Hanya **baris valid** yang tersimpan. Baris error dilewati, bukan menggagalkan seluruh unggahan — jadi Anda bisa menyimpan yang baik dulu lalu memperbaiki sisanya.
+> [!penting] Baris **error** selalu dilewati, bukan menggagalkan seluruh unggahan — jadi Anda bisa menyimpan yang baik dulu lalu memperbaiki sisanya.
 
 ## Hasil
 
@@ -52,7 +53,7 @@ Petani muncul di **Master Data → Petani** dengan lembaga yang Anda pilih di La
 
 + Unggahan massal ini hanya **menambah**, tidak memperbarui data yang sudah ada. Untuk mengubah data petani lama, gunakan tombol Edit di Master Data satu per satu.
 
-**Sel berisi `#N/A` atau error Excel lain** — sel hasil formula yang gagal (misalnya VLOOKUP) dibaca sebagai **kosong**, bukan sebagai teks. Kolom wajib akan ditandai error "wajib diisi"; kolom opsional tersimpan kosong.
+**Sel berisi `#N/A` atau error Excel lain** — sel hasil formula yang gagal (misalnya VLOOKUP) dibaca sebagai **kosong**, bukan sebagai teks. Kolom wajib akan ditandai error "wajib diisi"; kolom opsional membuat barisnya berstatus **Tidak Lengkap**.
 
 + Bila datanya sebenarnya ada, perbaiki formulanya di Excel atau salin-tempel nilainya sebagai **Values** sebelum mengunggah ulang.
 

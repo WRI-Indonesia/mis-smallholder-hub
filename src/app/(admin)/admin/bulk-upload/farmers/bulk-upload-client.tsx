@@ -35,9 +35,11 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { cellValueToPrimitive } from "@/lib/excel-cell";
+import { missingOptionalFields, farmerRowStatus } from "@/lib/farmer-upload-status";
 import { toast } from "sonner";
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Download,
   Database,
@@ -66,6 +68,7 @@ interface FarmerValidatedRow {
   _original: Record<string, string | number | null | undefined>;
   _isValid: boolean;
   _errors: string[];
+  _missingFields: string[];
   _farmerGroupName?: string;
   name: string;
   farmerId: string;
@@ -139,9 +142,10 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
   const [rawRows, setRawRows] = useState<RawRow[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [validatedData, setValidatedData] = useState<FarmerValidatedRow[]>([]);
-  const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
+  const [filter, setFilter] = useState<"all" | "valid" | "incomplete" | "error">("all");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  // Cakupan yang sedang disimpan — null berarti tidak sedang menyimpan.
+  const [savingScope, setSavingScope] = useState<"all" | "completeOnly" | null>(null);
 
   // Parse Excel Date
   function parseExcelDate(val: Excel.CellValue): Date | null {
@@ -191,6 +195,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
       _original: {},
       _isValid: false,
       _errors: [],
+      _missingFields: [],
       name: "",
       farmerId: "",
       nik: null,
@@ -306,6 +311,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
 
     normalized._isValid = errors.length === 0;
     normalized._errors = errors;
+    normalized._missingFields = missingOptionalFields(normalized);
     return { data: normalized, errors };
   }
 
@@ -425,8 +431,8 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
     toast.success("Validasi selesai");
   }
 
-  // Download logic (Full vs Errors only)
-  async function handleDownload(mode: "all" | "errors") {
+  // Download logic (Full / Errors only / Incomplete only)
+  async function handleDownload(mode: "all" | "errors" | "incomplete") {
     const exportWorkbook = new Excel.Workbook();
     const sheet = exportWorkbook.addWorksheet("Data Petani");
 
@@ -456,12 +462,20 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
       fgColor: { argb: "FFE0E0E0" },
     };
 
-    const targetList = mode === "errors" ? validatedData.filter((d) => !d._isValid) : validatedData;
+    const targetList =
+      mode === "errors"
+        ? validatedData.filter((d) => farmerRowStatus(d) === "error")
+        : mode === "incomplete"
+          ? validatedData.filter((d) => farmerRowStatus(d) === "incomplete")
+          : validatedData;
+
+    const STATUS_TEXT = { valid: "VALID", incomplete: "TIDAK LENGKAP", error: "ERROR" } as const;
 
     targetList.forEach((row) => {
       const birthDateStr = row.birthDate
         ? new Date(row.birthDate).toLocaleDateString("id-ID")
         : row._original.birthDate || "";
+      const status = farmerRowStatus(row);
 
       sheet.addRow({
         rowNum: row._rowNum,
@@ -474,8 +488,11 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
         birthDate: birthDateStr,
         joinedYear: row.joinedYear || row._original.joinedYear || "",
         address: row.address || row._original.address || "",
-        status: row._isValid ? "VALID" : "ERROR",
-        keterangan: row._errors.join("; "),
+        status: STATUS_TEXT[status],
+        keterangan:
+          status === "incomplete"
+            ? `Kosong: ${row._missingFields.join(", ")}`
+            : row._errors.join("; "),
       });
     });
 
@@ -486,20 +503,26 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `bulk_upload_petani_${mode === "errors" ? "error_only" : "full"}.xlsx`;
+    link.download = `bulk_upload_petani_${
+      mode === "errors" ? "error_only" : mode === "incomplete" ? "tidak_lengkap" : "full"
+    }.xlsx`;
     link.click();
     URL.revokeObjectURL(url);
   }
 
-  // Save to DB
-  async function handleSave() {
-    const validRows = validatedData.filter((d) => d._isValid);
+  // Save to DB. "all" = valid + tidak lengkap; "completeOnly" = valid saja —
+  // baris tidak lengkap ditahan agar bisa dilengkapi di file lalu diunggah
+  // ulang (upload hanya menambah; baris tersimpan tak bisa diunggah ulang).
+  async function handleSave(scope: "all" | "completeOnly") {
+    const validRows = validatedData.filter(
+      (d) => d._isValid && (scope === "all" || d._missingFields.length === 0),
+    );
     if (validRows.length === 0) {
-      toast.error("Tidak ada data valid yang dapat disimpan");
+      toast.error("Tidak ada data yang dapat disimpan");
       return;
     }
 
-    setIsSaving(true);
+    setSavingScope(scope);
     // Prepare exact Prisma fields
     const toSave = validRows.map((d) => ({
       farmerGroupId: d.farmerGroupId,
@@ -514,7 +537,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
     }));
 
     const result = await bulkCreateFarmers(toSave);
-    setIsSaving(false);
+    setSavingScope(null);
 
     if (result.success) {
       toast.success(`Berhasil menyimpan ${result.data?.count} data petani`);
@@ -525,14 +548,13 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
     }
   }
 
-  const validCount = validatedData.filter((d) => d._isValid).length;
-  const invalidCount = validatedData.length - validCount;
+  const validCount = validatedData.filter((d) => farmerRowStatus(d) === "valid").length;
+  const incompleteCount = validatedData.filter((d) => farmerRowStatus(d) === "incomplete").length;
+  const errorCount = validatedData.filter((d) => farmerRowStatus(d) === "error").length;
+  // Layak simpan = lolos validasi, lengkap maupun tidak.
+  const savableCount = validCount + incompleteCount;
 
-  const filteredData = validatedData.filter((d) => {
-    if (filter === "valid") return d._isValid;
-    if (filter === "error") return !d._isValid;
-    return true;
-  });
+  const filteredData = validatedData.filter((d) => filter === "all" || farmerRowStatus(d) === filter);
 
   const selectedGroup = farmerGroups.find((g) => g.id === selectedGroupId);
 
@@ -722,14 +744,18 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
               <p className="text-sm text-muted-foreground">
                 Tinjau kembali data sebelum menyimpannya ke database.
               </p>
-              <div className="flex items-center gap-4 mt-2 pt-1 text-sm">
+              <div className="flex flex-wrap items-center gap-3 mt-2 pt-1 text-sm">
                 <span className="flex items-center gap-1.5 text-emerald-600 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
                   <CheckCircle2 className="h-4 w-4" />
                   {validCount} Baris Valid
                 </span>
+                <span className="flex items-center gap-1.5 text-amber-600 font-semibold bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                  <AlertTriangle className="h-4 w-4" />
+                  {incompleteCount} Baris Tidak Lengkap
+                </span>
                 <span className="flex items-center gap-1.5 text-destructive font-semibold bg-destructive/10 px-2.5 py-1 rounded-full border border-destructive/20">
                   <AlertCircle className="h-4 w-4" />
-                  {invalidCount} Baris Error
+                  {errorCount} Baris Error
                 </span>
               </div>
             </div>
@@ -752,12 +778,20 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
                 Valid ({validCount})
               </Button>
               <Button
+                variant={filter === "incomplete" ? "default" : "outline"}
+                size="sm"
+                className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20"
+                onClick={() => setFilter("incomplete")}
+              >
+                Tidak Lengkap ({incompleteCount})
+              </Button>
+              <Button
                 variant={filter === "error" ? "default" : "outline"}
                 size="sm"
                 className="bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
                 onClick={() => setFilter("error")}
               >
-                Error ({invalidCount})
+                Error ({errorCount})
               </Button>
             </div>
           </div>
@@ -777,6 +811,15 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => handleDownload("incomplete")}
+                className="h-9 text-amber-600 border-amber-500/20 hover:bg-amber-500/10"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download Data Tidak Lengkap
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleDownload("errors")}
                 className="h-9 text-destructive border-destructive/20 hover:bg-destructive/10"
               >
@@ -786,18 +829,37 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
             </div>
 
             {permissions.includes("CREATE") && (
-              <Button
-                onClick={handleSave}
-                disabled={validCount === 0 || isSaving}
-                className="h-9 bg-emerald-600 hover:bg-emerald-700"
-              >
-                {isSaving ? (
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Database className="mr-2 h-4 w-4" />
+              <div className="flex flex-wrap gap-2">
+                {incompleteCount > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSave("completeOnly")}
+                    disabled={validCount === 0 || savingScope !== null}
+                    className="h-9 text-emerald-600 border-emerald-600/30 hover:bg-emerald-600/10"
+                  >
+                    {savingScope === "completeOnly" ? (
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Database className="mr-2 h-4 w-4" />
+                    )}
+                    Simpan Hanya yang Valid ({validCount})
+                  </Button>
                 )}
-                Simpan {validCount} Data Valid
-              </Button>
+                <Button
+                  onClick={() => handleSave("all")}
+                  disabled={savableCount === 0 || savingScope !== null}
+                  className="h-9 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {savingScope === "all" ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Database className="mr-2 h-4 w-4" />
+                  )}
+                  {incompleteCount > 0
+                    ? `Simpan Semua Layak (${savableCount})`
+                    : `Simpan ${savableCount} Data Valid`}
+                </Button>
+              </div>
             )}
           </div>
 
@@ -827,7 +889,16 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
                   </TableRow>
                 ) : (
                   filteredData.slice(0, 100).map((row, idx) => (
-                    <TableRow key={idx} className={row._isValid ? "" : "bg-destructive/5"}>
+                    <TableRow
+                      key={idx}
+                      className={
+                        farmerRowStatus(row) === "error"
+                          ? "bg-destructive/5"
+                          : farmerRowStatus(row) === "incomplete"
+                            ? "bg-amber-500/5"
+                            : ""
+                      }
+                    >
                       <TableCell className="font-mono text-muted-foreground">
                         {row._rowNum}
                       </TableCell>
@@ -857,10 +928,15 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
                           : row._original.birthDate || "—"}
                       </TableCell>
                       <TableCell>
-                        {row._isValid ? (
+                        {farmerRowStatus(row) === "valid" ? (
                           <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
                             <CheckCircle2 className="h-3 w-3" />
                             Valid
+                          </Badge>
+                        ) : farmerRowStatus(row) === "incomplete" ? (
+                          <Badge className="bg-amber-600 hover:bg-amber-600 gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Tidak Lengkap
                           </Badge>
                         ) : (
                           <Badge variant="destructive" className="gap-1">
@@ -869,8 +945,16 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-destructive font-medium">
-                        {row._errors.join("; ") || "—"}
+                      <TableCell className="text-sm font-medium">
+                        {farmerRowStatus(row) === "error" ? (
+                          <span className="text-destructive">{row._errors.join("; ")}</span>
+                        ) : farmerRowStatus(row) === "incomplete" ? (
+                          <span className="text-amber-600">
+                            Kosong: {row._missingFields.join(", ")}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
