@@ -85,12 +85,22 @@ export function TrainingDistrictPanel({
 }) {
   const [open, setOpen] = useState(true);
   const districts = trainingDistrictCoverage(rows);
-  // Lebar seragam antar kolom distrik; kolom label Paket menyisakan ~18%.
-  const cellWidth = `${82 / Math.max(districts.length, 1)}%`;
+  // Lebar seragam antar kolom (Total + distrik); kolom label Paket menyisakan ~18%.
+  const cellWidth = `${82 / Math.max(districts.length + 1, 1)}%`;
 
   // Ringkasan yang tetap terbaca saat panel dilipat.
   const summaryFarmers = districts.reduce((s, d) => s + d.totalFarmers, 0);
   const summaryTrained = districts.reduce((s, d) => s + d.anyPackage, 0);
+
+  // Kolom Total (Riau) di paling kiri (revisi owner #198) — agregat seluruh
+  // distrik dalam scope filter. Label provinsi diminta eksplisit owner; bila
+  // program meluas lintas provinsi, jadikan data-driven.
+  const totalByPackage: Partial<Record<TrainingPackageCode, number>> = {};
+  for (const d of districts) {
+    for (const [code, n] of Object.entries(d.byPackage) as [TrainingPackageCode, number][]) {
+      totalByPackage[code] = (totalByPackage[code] ?? 0) + n;
+    }
+  }
 
   return (
     <Card className="border border-border/60 shadow-sm">
@@ -146,6 +156,16 @@ export function TrainingDistrictPanel({
                   <thead>
                     <tr className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       <th className="text-left py-2 pr-4 font-semibold">Paket</th>
+                      <th
+                        style={{ width: cellWidth }}
+                        className="text-center py-2 px-2 font-semibold whitespace-nowrap border-r border-border/60"
+                        title="Agregat seluruh distrik dalam scope filter"
+                      >
+                        Total (Riau)
+                        <span className="block text-[10px] font-normal normal-case tabular-nums">
+                          {formatNumber(summaryFarmers)} petani
+                        </span>
+                      </th>
                       {districts.map((d) => (
                         <th
                           key={d.districtName}
@@ -169,6 +189,12 @@ export function TrainingDistrictPanel({
                         >
                           {TRAINING_PACKAGE_SHORT[code]}
                         </td>
+                        <td className="py-2.5 px-2 border-r border-border/60">
+                          <DistrictCell
+                            trained={totalByPackage[code] ?? 0}
+                            total={summaryFarmers}
+                          />
+                        </td>
                         {districts.map((d) => (
                           <td key={d.districtName} className="py-2.5 px-2">
                             <DistrictCell
@@ -185,6 +211,9 @@ export function TrainingDistrictPanel({
                         title="Petani yang mengikuti paket apa pun"
                       >
                         Min. 1 Paket
+                      </td>
+                      <td className="py-2.5 px-2 border-r border-border/60">
+                        <DistrictCell trained={summaryTrained} total={summaryFarmers} />
                       </td>
                       {districts.map((d) => (
                         <td key={d.districtName} className="py-2.5 px-2">

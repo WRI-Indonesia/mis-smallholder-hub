@@ -23,7 +23,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   └── Rata-rata Kenaikan Skor
 ├── Card Capaian Paket per Distrik (full row, collapsible, #198)
 │   ├── Legend Sudah/Belum
-│   ├── Tabel paket × distrik (baris = paket + Min. 1 Paket; kolom = distrik + total petani; lebar kolom seragam)
+│   ├── Tabel paket × distrik (baris = paket + Min. 1 Paket; kolom = Total (Riau) lalu distrik, header memuat total petani; lebar kolom seragam)
 │   ├── Sel: % di kiri + stacked bar tebal (sudah di segmen hijau, belum di segmen abu)
 │   └── Empty state
 ├── Matriks Capaian Paket per Lembaga (collapsible)
@@ -105,7 +105,7 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Collapsible trigger | "Capaian Paket per Distrik" (default terbuka; ringkasan saat dilipat: jumlah distrik + % terlatih min. 1 paket) + legend Sudah/Belum |
-| Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Min. 1 Paket; kolom = distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
+| Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Min. 1 Paket; kolom = **Total (Riau)** (agregat scope, ber-border pemisah) lalu distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
 | Sel | Stacked bar tebal | Persen di kiri luar bar; segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum (label sembunyi bila segmen sempit, tooltip lengkap); distrik tanpa petani → "—" |
 | Empty state | Teks | "Tidak ada distrik pada filter ini." |
 
