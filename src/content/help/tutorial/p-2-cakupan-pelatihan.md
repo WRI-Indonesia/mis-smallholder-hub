@@ -20,7 +20,7 @@ Angka di sini **dihitung langsung** saat halaman dibuka — tidak memakai snapsh
 ## Langkah
 
 1. Buka menu **Dashboard → Dashboard Pelatihan**.
-2. Baca lima kartu di atas, terutama **Cakupan Petani Terlatih**.
+2. Baca empat kartu di atas, terutama **Petani Terlatih**.
 + Pembaginya seluruh petani aktif pada lembaga yang tersaring — termasuk lembaga yang belum tersentuh pelatihan sama sekali. Ini disengaja, agar sisa pekerjaan terlihat jujur, bukan tersembunyi.
 3. Turun ke card **Capaian Paket per Distrik** (gambaran besar per distrik), lalu tabel **Capaian Paket per Lembaga**.
 + Tiap sel adalah persentase petani lembaga itu yang sudah mengikuti satu paket, dibaca terhadap target program 100%. Hijau paling tua khusus untuk sel yang sudah **100% (tuntas)**, hijau tua mendekati target, hijau muda masih jauh, dan **merah berarti belum ada satu pun** petani yang mengikuti paket tersebut.

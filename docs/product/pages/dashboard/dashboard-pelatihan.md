@@ -17,7 +17,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Lembaga Petani (combobox)
 │   └── Tahun (select, default "Semua Tahun")
 ├── Kartu KPI (4) — satu angka besar, pembanding di sub-teks (#198, pola BMP #191)
-│   ├── Cakupan Petani Terlatih
+│   ├── Petani Terlatih
 │   ├── Total Sesi
 │   ├── Partisipasi Perempuan
 │   └── Rata-rata Kenaikan Skor
@@ -93,7 +93,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 
 | # | Judul kartu | Nilai | Sub |
 |---|---|---|---|
-| 1 | Cakupan Petani Terlatih | "{terlatih}" | "{persen} dari total {total petani} petani aktif pernah ikut ≥1 pelatihan ({label tahun})" |
+| 1 | Petani Terlatih | "{terlatih}" | "{persen} dari total {total petani} petani aktif pernah ikut ≥1 pelatihan ({label tahun})" |
 | 2 | Total Sesi | "{n}" | "sesi pelatihan ({label tahun})" |
 | 3 | Partisipasi Perempuan | persen | "{n} dari total {n} kehadiran ({label tahun})" |
 | 4 | Rata-rata Kenaikan Skor | "+/−{n} poin" atau "—" | "pre {n} → post {n} · {n} peserta ber-skor" / "belum ada peserta dengan pre & post terisi" |

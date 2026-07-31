@@ -30,7 +30,7 @@ export function TrainingScoreCards({
   // urutan %, total, konteks tahun; token data beraksen StatEmph.
   const cards: CardConfig[] = [
     {
-      title: "Cakupan Petani Terlatih",
+      title: "Petani Terlatih",
       value: formatNumber(totals.trainedFarmers),
       // Pembagi = seluruh petani aktif di Lembaga terpilih, termasuk Lembaga
       // yang belum tersentuh pelatihan sama sekali (keputusan owner).
