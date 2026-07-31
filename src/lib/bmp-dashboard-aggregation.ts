@@ -38,12 +38,16 @@ export interface BmpRawParcel {
 /**
  * Bucket umur tanaman (#191) — umur pada TAHUN PRODUKSI (tahun produksi −
  * tahun tanam), bukan umur hari ini, agar analisa historis tetap benar.
+ * Batas mengikuti kurva hasil sawit (fase PPKS/Ditjenbun): TBM 0–3, TM muda
+ * 4–8 (menanjak), TM prima 9–15 (puncak), TM tua 16–25 (menurun), renta >25
+ * (kandidat peremajaan/PSR).
  */
 export const BMP_AGE_BUCKETS = [
-  { key: "lt4", label: "< 4 thn" },
-  { key: "4-8", label: "4–8 thn" },
-  { key: "9-15", label: "9–15 thn" },
-  { key: "gt15", label: "> 15 thn" },
+  { key: "lt4", label: "< 4 thn (TBM)" },
+  { key: "4-8", label: "4–8 thn (TM muda)" },
+  { key: "9-15", label: "9–15 thn (TM prima)" },
+  { key: "16-25", label: "16–25 thn (TM tua)" },
+  { key: "gt25", label: "> 25 thn (renta)" },
   { key: "unknown", label: "Tanpa thn tanam" },
 ] as const;
 
@@ -56,7 +60,8 @@ export function bmpAgeBucketKey(plantingYear: number | null, productionYear: num
   if (age < 4) return "lt4";
   if (age <= 8) return "4-8";
   if (age <= 15) return "9-15";
-  return "gt15";
+  if (age <= 25) return "16-25";
+  return "gt25";
 }
 
 /** One production row summed per (farmer, parcel, period) — parcelId null = record tanpa lahan. */

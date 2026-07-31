@@ -434,11 +434,12 @@ describe("bmpYearOptions & bmpDefaultYear (#191)", () => {
 });
 
 describe("bucket umur tanaman (#191)", () => {
-  it("bmpAgeBucketKey: umur dihitung pada tahun produksi", () => {
-    expect(bmpAgeBucketKey(2022, 2025)).toBe("lt4"); // umur 3
-    expect(bmpAgeBucketKey(2021, 2025)).toBe("4-8"); // umur 4
-    expect(bmpAgeBucketKey(2015, 2025)).toBe("9-15"); // umur 10
-    expect(bmpAgeBucketKey(2000, 2025)).toBe("gt15"); // umur 25
+  it("bmpAgeBucketKey: umur dihitung pada tahun produksi, fase kurva hasil sawit", () => {
+    expect(bmpAgeBucketKey(2022, 2025)).toBe("lt4"); // umur 3 — TBM
+    expect(bmpAgeBucketKey(2021, 2025)).toBe("4-8"); // umur 4 — TM muda
+    expect(bmpAgeBucketKey(2015, 2025)).toBe("9-15"); // umur 10 — TM prima
+    expect(bmpAgeBucketKey(2000, 2025)).toBe("16-25"); // umur 25 — TM tua
+    expect(bmpAgeBucketKey(1995, 2025)).toBe("gt25"); // umur 30 — renta/PSR
     expect(bmpAgeBucketKey(null, 2025)).toBe("unknown");
     expect(bmpAgeBucketKey(2030, 2025)).toBe("unknown"); // tahun tanam di masa depan
   });
@@ -466,7 +467,7 @@ describe("bucket umur tanaman (#191)", () => {
       luasMelaporHa: 2,
       produktivitasTonHa: 2,
     });
-    expect(series.find((s) => s.key === "gt15")!.produktivitasTonHa).toBe(1);
+    expect(series.find((s) => s.key === "16-25")!.produktivitasTonHa).toBe(1); // p4 tanam 2000, umur 25
     // Bucket program tanpa data tetap tampil (0); "unknown" hanya bila ber-data.
     expect(series.find((s) => s.key === "4-8")!.produksiTon).toBe(0);
     expect(series.find((s) => s.key === "unknown")).toBeUndefined();

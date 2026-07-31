@@ -78,8 +78,8 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 | 1 | Total Produksi | "{n} Ton" | "{label tahun} — dari {n} Ha terdata ({persen} dari total luas)" — persen hilang bila snapshot lama tanpa `totalLuasHa` |
 | 2 | Produktivitas | "{n} Ton/Ha" | "per tahun — produksi ÷ luas lahan terdata" |
 | 3 | Luasan | "{terdata} Ha" | "{persen} dari total {total} Ha luas aktif ({label tahun})" — snapshot lama: "luas lahan terdata ({label tahun})" |
-| 4 | Lahan dengan Data Produksi | "{ber-data} / {total lahan}" | "{persen} dari total lahan aktif ({label tahun})" |
-| 5 | Petani Terdata | "{terdata} / {total petani}" | "{persen} petani punya data produksi ({label tahun})" |
+| 4 | Lahan dengan Data Produksi | "{ber-data}" | "{persen} dari total {total} lahan aktif ({label tahun})" |
+| 5 | Petani Terdata | "{terdata}" | "{persen} dari total {total} petani ({label tahun})" |
 
 Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah " · lahan full 1 tahun" bila mode `full`.
 
@@ -110,7 +110,7 @@ Label tahun mengikuti filter: "rata-rata per tahun" / "tahun {YYYY}", ditambah "
 | Judul | Heading kartu | "Ex-Plasma vs Swadaya — {label tahun}" + legend warna kategori (`CategoryLegend`) |
 | Ringkasan 3 metrik | Grid 3 kolom | Total Produksi (Ton), Produktivitas (Ton/Ha), Luas Terdata (Ha) — dua nilai berwarna per metrik |
 | "Produksi per Distrik (Ton)" | Bar horizontal berpasangan | Dua bar (Ex-Plasma/Swadaya) per distrik dalam scope filter |
-| "Produktivitas per Umur Tanaman (Ton/Ha)" | Bar horizontal berpasangan | Bucket `bmpAgeSeries`: "< 4 thn", "4–8 thn", "9–15 thn", "> 15 thn", "Tanpa thn tanam" (hanya bila ber-data); umur = tahun produksi − tahun tanam |
+| "Produktivitas per Umur Tanaman (Ton/Ha)" | Bar horizontal berpasangan | Bucket `bmpAgeSeries` mengikuti fase kurva hasil sawit: "< 4 thn (TBM)", "4–8 thn (TM muda)", "9–15 thn (TM prima)", "16–25 thn (TM tua)", "> 25 thn (renta)", "Tanpa thn tanam" (hanya bila ber-data); umur = tahun produksi − tahun tanam |
 | Empty state umur | Teks | "Snapshot ini belum memuat data umur tanaman — generate ulang snapshot BMP melalui menu Tools untuk mengisi analisa ini." |
 | Catatan | Teks | "Mengikuti filter aktif kecuali filter Kategori. Umur tanaman dihitung pada tahun produksinya…" |
 
