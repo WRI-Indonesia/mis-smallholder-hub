@@ -50,15 +50,13 @@ export function BmpScoreCards({
     },
     {
       title: "Luasan",
-      // Snapshot lama belum memuat total luas (totalLuasHa = 0) → tampilkan
-      // luas terdata saja; pembandingnya muncul setelah snapshot di-generate ulang.
-      value:
-        totals.totalLuasHa > 0
-          ? `${formatTon(totals.luasMelaporHa)} / ${formatTon(totals.totalLuasHa)} Ha`
-          : `${formatTon(totals.luasMelaporHa)} Ha`,
+      // Angka besar cukup luas terdata — bentuk "X / Y Ha" dengan desimal
+      // panjang wrap 2 baris & sulit dibaca (feedback owner #191); pembanding
+      // total pindah ke sub-teks. Snapshot lama tanpa total luas → tanpa pembanding.
+      value: `${formatTon(totals.luasMelaporHa)} Ha`,
       sub:
         totals.totalLuasHa > 0
-          ? `${pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total luas lahan aktif (${yearLabel})`
+          ? `${pct(totals.luasMelaporHa, totals.totalLuasHa)} dari total ${formatTon(totals.totalLuasHa)} Ha luas aktif (${yearLabel})`
           : `luas lahan terdata (${yearLabel})`,
       icon: LandPlot,
       iconClass: "text-teal-600",

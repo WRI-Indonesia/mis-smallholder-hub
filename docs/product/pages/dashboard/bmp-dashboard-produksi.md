@@ -77,7 +77,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 |---|---|---|---|
 | 1 | Total Produksi | "{n} Ton" | "{label tahun} — dari {n} Ha terdata ({persen} dari total luas)" — persen hilang bila snapshot lama tanpa `totalLuasHa` |
 | 2 | Produktivitas | "{n} Ton/Ha" | "per tahun — produksi ÷ luas lahan terdata" |
-| 3 | Luasan | "{terdata} / {total} Ha" (snapshot lama: "{terdata} Ha") | "{persen} dari total luas lahan aktif ({label tahun})" / "luas lahan terdata ({label tahun})" |
+| 3 | Luasan | "{terdata} Ha" | "{persen} dari total {total} Ha luas aktif ({label tahun})" — snapshot lama: "luas lahan terdata ({label tahun})" |
 | 4 | Lahan dengan Data Produksi | "{ber-data} / {total lahan}" | "{persen} dari total lahan aktif ({label tahun})" |
 | 5 | Petani Terdata | "{terdata} / {total petani}" | "{persen} petani punya data produksi ({label tahun})" |
 
