@@ -343,6 +343,14 @@ export interface TrainingCoverageRow {
   byPackage: Record<TrainingPackageCode, number>;
   /** Petani unik yang ikut paket apa pun. */
   anyPackage: number;
+  /**
+   * Saat filter tahun aktif: petani unik yang dilatih paket ybs HANYA di tahun
+   * lain (tidak di tahun terpilih) — segmen "tahun lain" pada bar capaian,
+   * supaya mereka tidak salah terhitung "belum dilatih". 0/undefined tanpa
+   * filter tahun.
+   */
+  byPackageOtherYears?: Record<TrainingPackageCode, number>;
+  anyPackageOtherYears?: number;
 }
 
 /** Satu bucket chart tren (bulan bila tahun dipilih, tahun bila "semua"). */

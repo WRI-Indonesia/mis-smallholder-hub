@@ -15,6 +15,9 @@ export interface TrainingDistrictCoverageRow {
   totalFarmers: number;
   byPackage: Partial<Record<TrainingPackageCode, number>>;
   anyPackage: number;
+  /** Dilatih hanya di tahun lain (lihat TrainingCoverageRow.byPackageOtherYears). */
+  byPackageOtherYears: Partial<Record<TrainingPackageCode, number>>;
+  anyPackageOtherYears: number;
 }
 
 /**
@@ -29,13 +32,27 @@ export function trainingDistrictCoverage(
   for (const r of rows) {
     let d = map.get(r.districtName);
     if (!d) {
-      d = { districtName: r.districtName, totalFarmers: 0, byPackage: {}, anyPackage: 0 };
+      d = {
+        districtName: r.districtName,
+        totalFarmers: 0,
+        byPackage: {},
+        anyPackage: 0,
+        byPackageOtherYears: {},
+        anyPackageOtherYears: 0,
+      };
       map.set(r.districtName, d);
     }
     d.totalFarmers += r.totalFarmers;
     d.anyPackage += r.anyPackage;
+    d.anyPackageOtherYears += r.anyPackageOtherYears ?? 0;
     for (const [code, n] of Object.entries(r.byPackage) as [TrainingPackageCode, number][]) {
       d.byPackage[code] = (d.byPackage[code] ?? 0) + n;
+    }
+    for (const [code, n] of Object.entries(r.byPackageOtherYears ?? {}) as [
+      TrainingPackageCode,
+      number,
+    ][]) {
+      d.byPackageOtherYears[code] = (d.byPackageOtherYears[code] ?? 0) + n;
     }
   }
   return [...map.values()].sort((a, b) => a.districtName.localeCompare(b.districtName));
@@ -236,6 +253,34 @@ export function trainingCoverageMatrix(
     const byPackage = emptyByPackage();
     for (const [code, set] of perPackage) byPackage[code] = set.size;
 
+    // Saat filter tahun aktif: petani yang dilatih paket ybs HANYA di tahun
+    // lain. Tanpa ini mereka tampak "belum dilatih" padahal sudah — cakupan
+    // program bersifat kumulatif (#201).
+    const byPackageOtherYears = emptyByPackage();
+    let anyPackageOtherYears = 0;
+    if (year != null) {
+      const perPackageAll = new Map<TrainingPackageCode, Set<string>>();
+      const anyAll = new Set<string>();
+      for (const a of g.activities) {
+        let set = perPackageAll.get(a.packageCode);
+        if (!set) {
+          set = new Set<string>();
+          perPackageAll.set(a.packageCode, set);
+        }
+        for (const p of a.participants) {
+          set.add(p.farmerId);
+          anyAll.add(p.farmerId);
+        }
+      }
+      for (const [code, all] of perPackageAll) {
+        const selected = perPackage.get(code);
+        let n = 0;
+        for (const f of all) if (!selected?.has(f)) n += 1;
+        byPackageOtherYears[code] = n;
+      }
+      for (const f of anyAll) if (!any.has(f)) anyPackageOtherYears += 1;
+    }
+
     return {
       groupId: g.id,
       groupName: g.name,
@@ -244,6 +289,8 @@ export function trainingCoverageMatrix(
       totalFarmers: g.totalFarmers,
       byPackage,
       anyPackage: any.size,
+      byPackageOtherYears,
+      anyPackageOtherYears,
     };
   });
 }
