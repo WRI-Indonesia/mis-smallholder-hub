@@ -41,6 +41,17 @@ npm test
 ### Decision Log
 
 <details>
+<summary><strong>Agustus 2026</strong></summary>
+
+| Tanggal    | Keputusan                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-01 | **#200 (review) — Keunikan record produksi diselaraskan: per (petani, LAHAN, periode, panen-ke)** — `checkDuplicateProduction` di `production.ts` selama ini mengecek duplikat **tanpa `parcelId`** (level petani), lebih ketat dari constraint DB `production_record_unique`, dedup bulk upload, dan teks Bantuan `t-4` yang semuanya per-lahan. Akibatnya petani ber-lahan >1 tertolak mencatat panen ke-N di lahan kedua pada bulan yang sama lewat form manual — data yang sah. Ditemukan saat review modal produksi per-bulan di Detail Lahan (jalur input per-lahan baru membuat konflik ini pasti terjadi). Kode diselaraskan ke semantik DB/bulk/docs: `parcelId` masuk kunci cek duplikat (create + update; update juga re-cek saat `parcelId` berubah). Tanpa migrasi — constraint DB memang sudah benar. |
+| 2026-08-01 | **#201 — Dashboard Pelatihan: bar capaian saat filter Tahun = 3 segmen (tahun ini · tahun lain · belum pernah)** — dengan filter tahun aktif, card "Capaian Paket per Distrik" menghitung petani yang dilatih di tahun lain sebagai "Belum" — menyesatkan karena cakupan program **kumulatif** (temuan owner). Keputusan: (1) `trainingCoverageMatrix` menambah `byPackageOtherYears`/`anyPackageOtherYears` = petani unik yang dilatih **hanya** di tahun lain (dilatih di kedua kelompok tahun dihitung sekali di "tahun ini"; 0 tanpa filter tahun; field opsional agar fixture lama tetap valid); roll-up distrik ikut menjumlah. (2) Bar jadi 3 segmen: hijau tua = dilatih tahun terpilih (persen kiri tetap mengacu ke sini, konsisten KPI "Petani Terlatih ({tahun})"), hijau muda = tahun lain, abu = belum pernah; legend + tooltip + catatan kaki menyesuaikan; tanpa filter tahun tampilan tetap 2 segmen. (3) Matriks "Capaian Paket per Lembaga" belum diubah (heatmap % tahun terpilih vs target) — kandidat follow-up. +3 test. |
+| 2026-08-01 | **#200 — Detail Lahan dirombak: dari daftar label-nilai jadi halaman kerja** — halaman lama hanya dua kartu label-nilai penuh "—" + peta kecil (temuan owner: "kurang intuitif"). Arah desain (5 putaran revisi owner): (1) header ber-badge + breadcrumb menampilkan ID lahan (pola detail Petani #172); (2) 4 kartu ringkasan, termasuk **Kelengkapan Data n/8 atribut** yang menyebut field yang belum diisi — mengganti deretan "—" ambigu, nilai kosong ditulis *"Belum diisi"*; (3) **satu section gabungan** Informasi Lahan (peta 60% : keterangan 40% — semula 75%, dikecilkan karena ID panjang mepet; `break-all` pada ID mono) + section Produksi, keduanya **collapsible** (`hidden`, bukan unmount, agar canvas peta tak re-init); (4) peta menampilkan **lahan lain milik petani yang sama** berwarna biru + badge navigasi antar-lahan; zoom awal & "Zoom ke Lahan" = `fitBounds` **semua** lahan; koordinat titik pusat ber-link Google Maps (navigasi lapangan); (5) **produksi bisa diedit dari tabelnya**: grafik bulanan kontinu (clip 6 bln/1 thn/2 thn/Semua + slide, deret sampai bulan berjalan walau kosong) + tabel pivot Tahun × Jan–Des; klik sel bulan → modal 4 slot panen meniru aplikasi lapangan (slot berurutan, total otomatis, slot dikosongkan = nonaktifkan record ber-konfirmasi) — mutasi via action menu **Data Produksi** (permission menu itu yang berlaku), bukan action baru; (6) PDF Profil Lahan langsung dari halaman (action ber-guard menu Lahan, `getLandParcelPassport` — varian ketiga setelah menu Peta & Petani). |
+
+</details>
+
+<details>
 <summary><strong>Juli 2026</strong></summary>
 
 | Tanggal    | Keputusan                                                                                                                      |
@@ -140,6 +151,17 @@ npm test
 </details>
 
 ### Changelog
+
+<details>
+<summary><strong>Agustus 2026</strong></summary>
+
+| Tanggal | Perubahan |
+| ------- | --------- |
+| 08-01   | **#201 Dashboard Pelatihan: bar Capaian per Distrik 3 segmen saat filter Tahun ✅** — petani yang dilatih di tahun lain tidak lagi terhitung "Belum": `trainingCoverageMatrix` + roll-up distrik menambah hitungan "dilatih hanya di tahun lain" (`byPackageOtherYears`/`anyPackageOtherYears`), bar jadi hijau tua (dilatih {tahun}) · hijau muda (tahun lain) · abu (belum pernah) dengan legend/tooltip/catatan kaki dinamis; tanpa filter tahun tetap 2 segmen. Bantuan `p-2` + katalog `dashboard-pelatihan.md` disinkronkan. +3 test. |
+| 08-01   | **#200 (review) Fix: duplikat produksi kini per (petani, lahan, periode, panen-ke)** — `checkDuplicateProduction` diberi `parcelId` (create + update, termasuk re-cek saat pindah lahan), selaras constraint DB + dedup bulk upload + Bantuan `t-4`; sebelumnya petani ber-lahan >1 tertolak mencatat panen ke-N di lahan kedua bulan yang sama. Ditemukan saat review Detail Lahan. Tanpa migrasi. |
+| 08-01   | **#200 Detail Lahan dirombak ✅** — header ber-badge + breadcrumb ID lahan; 4 kartu ringkasan (Luas, Umur Tanaman, Produksi, **Kelengkapan Data n/8** + daftar yang belum diisi); section collapsible: **Informasi Lahan** (peta 60% — poligon biru lahan lain milik petani + badge navigasi antar-lahan, `fitBounds` semua lahan, koordinat → Google Maps; keterangan 40% + sub-bagian Pemilik) dan **Produksi** (konteks Luas/Tahun Tanam/Species; grafik bulanan kontinu clip 6 bln/1 thn/2 thn/Semua + slide s.d. bulan berjalan; tabel pivot Tahun × Jan–Des + Total + Ton/Ha s.d. tahun berjalan; **klik sel bulan → modal 4 slot panen** gaya aplikasi lapangan, gate permission menu Produksi); tombol **Profil Lahan (PDF)**. Action baru: `getLandParcelProduction`, `getLandParcelPassport`, `getFarmerSiblingParcels` (guard menu Lahan + scope), `getParcelPeriodRecords` (guard menu Produksi). Bantuan `2-1` + `t-4` + katalog `lahan/detail.md` diperbarui. Komponen baru `parcel-production-chart.tsx` + `parcel-production-month-modal.tsx`. |
+
+</details>
 
 <details>
 <summary><strong>Juli 2026</strong></summary>
