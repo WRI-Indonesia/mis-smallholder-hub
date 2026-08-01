@@ -393,6 +393,11 @@ export interface UntrainedFarmer {
   name: string;
   farmerId: string;
   gender: "M" | "F";
+  /**
+   * Saat filter tahun aktif: tahun terakhir petani ini dilatih paket ybs di
+   * LUAR tahun terpilih (#202) — null/undefined = belum pernah dilatih.
+   */
+  lastTrainedOtherYear?: number | null;
 }
 
 export interface TrainingDashboardView {

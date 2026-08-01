@@ -29,6 +29,7 @@ Angka di sini **dihitung langsung** saat halaman dibuka — tidak memakai snapsh
 + Urutan menaik menampilkan lembaga paling tertinggal lebih dulu — inilah cara tercepat menentukan lembaga mana yang perlu didatangi berikutnya.
 5. Klik sel yang belum mencapai target.
 + Muncul daftar nama petani yang belum mengikuti paket itu, lengkap dengan ID Petani. Sel yang sudah memenuhi target sengaja tidak bisa diklik — tidak ada yang perlu didaftar.
++ Bila filter **Tahun** aktif, baris petani yang sebenarnya pernah dilatih paket itu di tahun lain diberi badge **"Dilatih {tahun}"** (ikut juga sebagai kolom di Salin/Excel) — jangan diundang ulang sebagai peserta baru. Centang **"Hanya yang belum pernah sama sekali mengikuti paket ini"** untuk menyaring daftar ke yang benar-benar belum pernah; Salin dan Excel mengikuti saringan itu.
 6. Klik **Salin** atau **Excel** untuk membawa daftarnya keluar.
 + Salin menghasilkan baris siap tempel ke Excel atau pesan WhatsApp. NIK tidak disertakan — daftar ini untuk keperluan undangan, bukan verifikasi identitas.
 7. Periksa panel **Efektivitas Pre/Post-Test** dan **Kualitas Data** di bawahnya.

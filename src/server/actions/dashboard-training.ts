@@ -182,5 +182,36 @@ export async function getUntrainedFarmers(
     orderBy: { name: "asc" },
   });
 
-  return farmers;
+  // Saat filter tahun aktif, tandai petani yang PERNAH dilatih paket ybs di
+  // tahun lain (#202, lanjutan #201): daftar ini dipakai sebagai undangan —
+  // tanpa penanda, petani yang sudah terlatih tahun lalu ikut terundang
+  // seolah belum pernah dilatih. Definisi daftar tidak diubah; hanya anotasi.
+  if (year == null || farmers.length === 0) return farmers;
+
+  const otherYears = await prisma.trainingParticipant.findMany({
+    where: {
+      isActive: true,
+      farmerId: { in: farmers.map((f) => f.id) },
+      activity: {
+        isActive: true,
+        farmerGroupId,
+        ...(packageCode === "ANY" ? {} : { package: { code: packageCode } }),
+      },
+    },
+    select: { farmerId: true, activity: { select: { trainingDate: true } } },
+  });
+
+  // Tahun via UTC — konsisten dengan penentuan tahun payload dashboard.
+  const lastYearByFarmer = new Map<string, number>();
+  for (const p of otherYears) {
+    const y = p.activity.trainingDate.getUTCFullYear();
+    if (y === year) continue;
+    const current = lastYearByFarmer.get(p.farmerId);
+    if (current == null || y > current) lastYearByFarmer.set(p.farmerId, y);
+  }
+
+  return farmers.map((f) => ({
+    ...f,
+    lastTrainedOtherYear: lastYearByFarmer.get(f.id) ?? null,
+  }));
 }

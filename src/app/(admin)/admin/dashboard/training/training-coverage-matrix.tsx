@@ -51,6 +51,7 @@ type SortKey = "name" | "totalFarmers" | "any" | TrainingPackageCode;
 function CoverageCell({
   row,
   trained,
+  trainedOther = 0,
   target,
   label,
   ring,
@@ -58,6 +59,8 @@ function CoverageCell({
 }: {
   row: TrainingCoverageRow;
   trained: number;
+  /** Dilatih hanya di tahun lain (#202) — hanya terisi saat filter tahun aktif. */
+  trainedOther?: number;
   target: number | null;
   label: string;
   ring?: boolean;
@@ -67,6 +70,11 @@ function CoverageCell({
   const pct = hasFarmers ? (trained / row.totalFarmers) * 100 : 0;
   const gap = trainingTargetGap(row.totalFarmers, trained, target);
   const clickable = hasFarmers && gap > 0;
+
+  // Konteks kumulatif saat filter tahun aktif — sel % tetap tahun terpilih,
+  // tooltip menjelaskan berapa yang sebenarnya sudah terlatih di tahun lain.
+  const otherSuffix =
+    trainedOther > 0 ? ` · ${formatNumber(trainedOther)} dilatih hanya di tahun lain` : "";
 
   const body = (
     <>
@@ -82,10 +90,10 @@ function CoverageCell({
     : target == null
       ? // Paket di luar program (Lainnya) tidak punya target — jangan mengklaim
         // "target tercapai" untuk sesuatu yang memang tidak ditargetkan.
-        `${label} — ${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani · di luar paket program (tanpa target)`
+        `${label} — ${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani · di luar paket program (tanpa target)${otherSuffix}`
       : gap > 0
-        ? `${label} — ${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani · kurang ${formatNumber(gap)} menuju target ${target}%. Klik untuk melihat daftarnya.`
-        : `${label} — target ${target}% tercapai (${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani)`;
+        ? `${label} — ${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani${otherSuffix} · kurang ${formatNumber(gap)} menuju target ${target}%. Klik untuk melihat daftarnya.`
+        : `${label} — target ${target}% tercapai (${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani)${otherSuffix}`;
 
   const cls = `w-full rounded-md px-2 py-1.5 text-center tabular-nums ${ring ? "ring-1 ring-inset ring-border/60 " : ""}${cellClass(pct, hasFarmers)}`;
 
@@ -261,6 +269,7 @@ export function TrainingCoverageMatrix({
                             <CoverageCell
                               row={row}
                               trained={row.byPackage[code]}
+                              trainedOther={row.byPackageOtherYears?.[code] ?? 0}
                               target={TRAINING_COVERAGE_TARGET[code]}
                               label={TRAINING_PACKAGE_LABELS[code]}
                               onOpen={() =>
@@ -278,6 +287,7 @@ export function TrainingCoverageMatrix({
                           <CoverageCell
                             row={row}
                             trained={row.anyPackage}
+                            trainedOther={row.anyPackageOtherYears ?? 0}
                             target={100}
                             label="Mengikuti paket apa pun"
                             ring
