@@ -106,6 +106,7 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 | Judul | Collapsible trigger | "Capaian Paket per Distrik" (default terbuka; ringkasan saat dilipat: jumlah distrik + % terlatih min. 1 paket) + legend Sudah/Belum (kanan bawah). Card **disembunyikan saat filter Lembaga aktif** (roll-up distrik atas satu Lembaga tidak bermakna); kolom Total (Riau) disembunyikan bila hanya 1 distrik |
 | Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Min. 1 Paket; kolom = **Total (Riau)** (agregat scope, ber-border pemisah; disembunyikan bila hanya 1 distrik dalam scope) lalu distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
 | Sel | Stacked bar tebal | Persen di kiri luar bar; segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum (label sembunyi bila segmen sempit, tooltip lengkap); distrik tanpa petani → "—" |
+| Sel saat filter Tahun aktif | Stacked bar 3 segmen | Hijau tua = dilatih **tahun terpilih** (persen kiri mengacu segmen ini), hijau muda = dilatih **hanya di tahun lain** (`byPackageOtherYears`/`anyPackageOtherYears` dari `trainingCoverageMatrix` — petani dilatih di kedua kelompok tahun dihitung sekali di "tahun ini"), abu = **belum pernah dilatih**. Legend & catatan kaki menyesuaikan ("Dilatih {tahun} · Tahun lain · Belum pernah"). Cakupan kumulatif — petani yang dilatih tahun lain tidak terhitung "belum" |
 | Empty state | Teks | "Tidak ada distrik pada filter ini." |
 
 Label tahun: "semua tahun" atau "{YYYY}".
@@ -122,7 +123,7 @@ Label tahun: "semua tahun" atau "{YYYY}".
 | Kolom paket | Kolom tabel (sortable, dinamis) | Header ringkas: "Paket 1", "Paket 2 - MK", "Paket 2 - HSE", "Paket 3 & 4", "Lainnya" — hanya paket yang aktif pada irisan; sel = persen + jumlah petani; tooltip header = label paket lengkap |
 | Kolom "Min. 1 Paket" | Kolom tabel (sortable) | Petani yang mengikuti paket apa pun (target 100%); sel diberi ring pembeda |
 | Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, 75–99%, 100% (gradasi emerald, 100%/tuntas paling tua — #194); Lembaga tanpa petani aktif = sel abu "—" |
-| Tooltip sel | `title` | "{label} — {n} dari {n} petani · kurang {n} menuju target {t}%. Klik untuk melihat daftarnya." / "target {t}% tercapai (...)" / "Lembaga belum punya petani aktif" |
+| Tooltip sel | `title` | "{label} — {n} dari {n} petani · kurang {n} menuju target {t}%. Klik untuk melihat daftarnya." / "target {t}% tercapai (...)" / "Lembaga belum punya petani aktif"; saat filter Tahun aktif ditambah "· {x} dilatih hanya di tahun lain" bila ada (#202) |
 | Sel dapat diklik | Tombol | Aktif hanya bila Lembaga punya petani aktif dan masih ada kekurangan menuju target → membuka dialog drill-down |
 | Legenda skala | Legend | "Skala:" 0% · <25% · 25–49% · 50–74% · 75–99% · 100% (catatan "Target program … kurang N petani" di kanan legenda dihapus — ambigu, #194) |
 | Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." |
@@ -136,10 +137,11 @@ Target cakupan per paket: `TRAINING_COVERAGE_TARGET` — Paket 1, Paket 2 - MK, 
 | Judul dialog | Dialog title | Nama Lembaga + sub "Petani belum mengikuti {paket} — {tahun / semua tahun}" |
 | Data | Server action | `getUntrainedFarmers(groupId, packageCode \| "ANY", year)` |
 | Loading | Spinner | "Memuat daftar petani..." |
-| Tabel | Tabel scrollable | Kolom "ID Petani" (mono), "Nama", "L/P" (`F` → P, selain itu L) |
-| Ringkasan | Teks | "{n} petani" |
-| Tombol "Salin" | Tombol | Salin baris `ID\tNama\tL/P` ke clipboard; toast "{n} baris disalin" / "Gagal menyalin — izin clipboard ditolak browser" |
-| Tombol "Excel" | Tombol | `exportToExcel` → `petani-{slug}-{nama-lembaga}.xlsx`, sheet "Belum Dilatih", kolom ID Petani / Nama Petani / L/P; toast "Excel diunduh" / "Gagal membuat file Excel" |
+| Tabel | Tabel scrollable | Kolom "ID Petani" (mono), "Nama", "L/P" (`F` → P, selain itu L); saat filter Tahun aktif + kolom "Tahun Lain" — badge **"Dilatih {tahun}"** bila petani pernah dilatih paket tsb di luar tahun terpilih (`lastTrainedOtherYear`, #202), "—" bila belum pernah |
+| Ceklis saring | Checkbox | "Hanya yang belum pernah sama sekali mengikuti paket ini" — tampil saat filter Tahun aktif & ada baris ber-badge; menyaring tabel + Salin + Excel ke `lastTrainedOtherYear == null`; ringkasan berubah jadi "{n} petani · dari {total} baris irisan tahun ini" (#202) |
+| Ringkasan | Teks | "{n} petani"; saat filter Tahun aktif + "· {x} pernah dilatih di tahun lain" bila ada |
+| Tombol "Salin" | Tombol | Salin baris `ID\tNama\tL/P` (+ kolom tahun lain saat filter Tahun aktif) ke clipboard; toast "{n} baris disalin" / "Gagal menyalin — izin clipboard ditolak browser" |
+| Tombol "Excel" | Tombol | `exportToExcel` → `petani-{slug}-{nama-lembaga}.xlsx`, sheet "Belum Dilatih", kolom ID Petani / Nama Petani / L/P (+ "Dilatih Tahun Lain" saat filter Tahun aktif); toast "Excel diunduh" / "Gagal membuat file Excel" |
 | Empty state | Teks | "Semua petani aktif di Lembaga ini sudah mengikuti pelatihan tersebut." |
 
 ## Chart tren (`TrainingTrendChart`)

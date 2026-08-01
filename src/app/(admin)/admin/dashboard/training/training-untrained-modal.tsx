@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Copy, Download } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { exportToExcel } from "@/lib/xlsx";
 import { getUntrainedFarmers } from "@/server/actions/dashboard-training";
@@ -27,6 +29,9 @@ export interface UntrainedTarget {
 function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<UntrainedFarmer[]>([]);
+  // Saring ke petani yang BELUM PERNAH mengikuti paket ini di tahun mana pun
+  // (#202) — daftar undangan bersih tanpa yang sudah terlatih tahun lain.
+  const [onlyNever, setOnlyNever] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,11 +61,26 @@ function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: 
 
   const yearLabel = target.year == null ? "semua tahun" : String(target.year);
 
+  // Petani yang pernah dilatih paket ini di tahun LAIN (#202) — tetap masuk
+  // daftar irisan tahun, tapi ditandai agar tidak terundang seolah belum pernah.
+  const showOtherYear = target.year != null;
+  const otherYearCount = rows.filter((r) => r.lastTrainedOtherYear != null).length;
+  const visibleRows = onlyNever ? rows.filter((r) => r.lastTrainedOtherYear == null) : rows;
+
   const handleCopy = async () => {
-    const text = rows.map((r) => `${r.farmerId}\t${r.name}\t${r.gender}`).join("\n");
+    const text = visibleRows
+      .map((r) =>
+        [
+          r.farmerId,
+          r.name,
+          r.gender,
+          ...(showOtherYear ? [r.lastTrainedOtherYear ?? "-"] : []),
+        ].join("\t"),
+      )
+      .join("\n");
     try {
       await navigator.clipboard.writeText(text);
-      toast.success(`${formatNumber(rows.length)} baris disalin`);
+      toast.success(`${formatNumber(visibleRows.length)} baris disalin`);
     } catch {
       toast.error("Gagal menyalin — izin clipboard ditolak browser");
     }
@@ -85,11 +105,15 @@ function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: 
           { header: "ID Petani", key: "farmerId", width: 18 },
           { header: "Nama Petani", key: "name", width: 32 },
           { header: "L/P", key: "gender", width: 8 },
+          ...(showOtherYear
+            ? [{ header: "Dilatih Tahun Lain", key: "otherYear", width: 18 }]
+            : []),
         ],
-        data: rows.map((r) => ({
+        data: visibleRows.map((r) => ({
           farmerId: r.farmerId,
           name: r.name,
           gender: r.gender === "F" ? "P" : "L",
+          ...(showOtherYear ? { otherYear: r.lastTrainedOtherYear ?? "-" } : {}),
         })),
       });
       toast.success("Excel diunduh");
@@ -119,6 +143,12 @@ function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: 
         </div>
       ) : (
         <>
+          {showOtherYear && otherYearCount > 0 && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <Checkbox checked={onlyNever} onCheckedChange={(v) => setOnlyNever(!!v)} />
+              Hanya yang belum pernah sama sekali mengikuti paket ini
+            </label>
+          )}
           <div className="max-h-[50vh] overflow-y-auto rounded-md border">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/80 backdrop-blur">
@@ -126,16 +156,41 @@ function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: 
                   <th className="text-left px-3 py-2">ID Petani</th>
                   <th className="text-left px-3 py-2">Nama</th>
                   <th className="text-center px-3 py-2">L/P</th>
+                  {showOtherYear && <th className="text-right px-3 py-2">Tahun Lain</th>}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {visibleRows.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={showOtherYear ? 4 : 3}
+                      className="px-3 py-6 text-center text-sm text-muted-foreground"
+                    >
+                      Semua petani pada daftar ini pernah dilatih di tahun lain.
+                    </td>
+                  </tr>
+                )}
+                {visibleRows.map((r) => (
                   <tr key={r.id} className="border-t">
                     <td className="px-3 py-1.5 font-mono text-xs text-muted-foreground">
                       {r.farmerId}
                     </td>
                     <td className="px-3 py-1.5">{r.name}</td>
                     <td className="px-3 py-1.5 text-center">{r.gender === "F" ? "P" : "L"}</td>
+                    {showOtherYear && (
+                      <td className="px-3 py-1.5 text-right">
+                        {r.lastTrainedOtherYear != null ? (
+                          <Badge
+                            variant="secondary"
+                            title={`Pernah dilatih paket ini pada ${r.lastTrainedOtherYear} — bukan "belum pernah dilatih"`}
+                          >
+                            Dilatih {r.lastTrainedOtherYear}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -144,7 +199,15 @@ function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: 
 
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">
-              {formatNumber(rows.length)} petani
+              {formatNumber(visibleRows.length)} petani
+              {onlyNever ? (
+                <> · dari {formatNumber(rows.length)} baris irisan tahun ini</>
+              ) : (
+                showOtherYear &&
+                otherYearCount > 0 && (
+                  <> · {formatNumber(otherYearCount)} pernah dilatih di tahun lain</>
+                )
+              )}
             </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleCopy}>

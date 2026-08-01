@@ -173,6 +173,28 @@ describe("trainingCoverageMatrix", () => {
     expect(g1.byPackage.PAKET_1_BMP_PC_RSPO_NKT).toBe(2);
     expect(g1.byPackage.PAKET_2_MK).toBe(0);
   });
+
+  it("dengan filter tahun: hitung petani yang dilatih HANYA di tahun lain", () => {
+    // 2025: Paket 1 diikuti f1 saja; f2 hanya dilatih 2024 → masuk "tahun lain".
+    const g1 = trainingCoverageMatrix(DATA.groups, 2025).find((r) => r.groupId === "g1")!;
+    expect(g1.byPackage.PAKET_1_BMP_PC_RSPO_NKT).toBe(1);
+    expect(g1.byPackageOtherYears!.PAKET_1_BMP_PC_RSPO_NKT).toBe(1);
+    expect(g1.anyPackage).toBe(1);
+    expect(g1.anyPackageOtherYears).toBe(1);
+
+    // 2024: Paket 2-MK belum ada; f1 ikut MK di 2025 → "tahun lain" utk MK.
+    const g1y24 = trainingCoverageMatrix(DATA.groups, 2024).find((r) => r.groupId === "g1")!;
+    expect(g1y24.byPackageOtherYears!.PAKET_1_BMP_PC_RSPO_NKT).toBe(0);
+    expect(g1y24.byPackageOtherYears!.PAKET_2_MK).toBe(1);
+    // f1 & f2 sudah terlatih di 2024 → tidak ada yang "hanya tahun lain".
+    expect(g1y24.anyPackageOtherYears).toBe(0);
+  });
+
+  it("tanpa filter tahun: hitungan 'tahun lain' selalu nol", () => {
+    const g1 = trainingCoverageMatrix(DATA.groups).find((r) => r.groupId === "g1")!;
+    expect(g1.byPackageOtherYears!.PAKET_1_BMP_PC_RSPO_NKT).toBe(0);
+    expect(g1.anyPackageOtherYears).toBe(0);
+  });
 });
 
 describe("trainingActivePackages", () => {
@@ -407,5 +429,14 @@ describe("trainingDistrictCoverage (#198)", () => {
 
   it("daftar kosong → kosong", () => {
     expect(trainingDistrictCoverage([])).toEqual([]);
+  });
+
+  it("roll-up menyertakan hitungan 'tahun lain' saat filter tahun aktif", () => {
+    const d = trainingDistrictCoverage(trainingCoverageMatrix(DATA.groups, 2025));
+    const siak = d.find((x) => x.districtName === "Siak")!;
+    expect(siak.byPackageOtherYears.PAKET_1_BMP_PC_RSPO_NKT).toBe(1); // f2 (hanya 2024)
+    expect(siak.anyPackageOtherYears).toBe(1);
+    const pelalawan = d.find((x) => x.districtName === "Pelalawan")!;
+    expect(pelalawan.anyPackageOtherYears).toBe(0);
   });
 });

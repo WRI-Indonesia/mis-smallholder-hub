@@ -276,7 +276,7 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
       {/* Roll-up cakupan ke level distrik dulu (gambaran besar), baru rincian
           per Lembaga — urutan revisi owner (#198). Disembunyikan saat filter
           Lembaga aktif: roll-up distrik atas satu Lembaga tidak bermakna. */}
-      {!groupId && <TrainingDistrictPanel rows={coverage} packages={packages} />}
+      {!groupId && <TrainingDistrictPanel rows={coverage} packages={packages} year={year} />}
 
       <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} />
 

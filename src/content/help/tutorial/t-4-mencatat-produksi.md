@@ -35,6 +35,8 @@ Isi lahannya bila memungkinkan; tanpa lahan, produksi tetap tersimpan tapi tidak
 
 > [!tip] Punya data satu musim penuh dalam Excel? Pakai **Bulk Upload → Upload Produksi** — jauh lebih cepat dan tervalidasi sebelum tersimpan.
 
+> [!tip] Untuk mengisi atau mengoreksi produksi **satu lahan** bulan demi bulan, ada jalur yang lebih cepat: buka **Detail Lahan** (Master Data → Lahan → tombol detail), lalu klik sel bulan pada tabel produksinya. Muncul jendela berisi 4 slot panen (kg + tanggal) untuk bulan itu — petani dan lahannya sudah terisi otomatis.
+
 ## Memastikan berhasil
 
 Catatan muncul di daftar Produksi. Angkanya masuk ke Dashboard BMP dan Peta BMP **setelah snapshot diperbarui** — lihat tutorial **Memperbarui angka dashboard**.

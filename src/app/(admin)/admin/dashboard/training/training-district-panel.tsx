@@ -18,29 +18,56 @@ const formatPct = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractio
 
 /**
  * Satu sel: persen di kiri luar bar (revisi owner #198), lalu stacked bar
- * tebal — segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum.
- * Label segmen disembunyikan/dipindah bila segmennya terlalu sempit; tooltip
- * selalu lengkap.
+ * tebal. Tanpa filter tahun: segmen hijau (sudah) + abu (belum). Dengan filter
+ * tahun ada segmen tengah hijau muda = dilatih HANYA di tahun lain (#201) —
+ * mereka bukan "belum dilatih", cakupan program kumulatif. Label segmen
+ * disembunyikan/dipindah bila segmennya terlalu sempit; tooltip selalu lengkap.
  */
-function DistrictCell({ trained, total }: { trained: number; total: number }) {
+function DistrictCell({
+  trained,
+  trainedOther,
+  total,
+  year,
+}: {
+  trained: number;
+  /** Dilatih hanya di tahun lain (0 bila tanpa filter tahun). */
+  trainedOther: number;
+  total: number;
+  year: number | null;
+}) {
   if (total <= 0) {
     return <div className="text-center text-xs text-muted-foreground">—</div>;
   }
   const pct = (trained / total) * 100;
-  const belum = total - trained;
+  const pctOther = (trainedOther / total) * 100;
+  const belum = total - trained - trainedOther;
   const sudahInside = pct >= 20;
-  const belumInside = 100 - pct >= 20;
+  const otherInside = pctOther >= 12;
+  const belumInside = 100 - pct - pctOther >= 20;
+  const title =
+    year == null
+      ? `${formatNumber(trained)} sudah · ${formatNumber(belum)} belum dari ${formatNumber(total)} petani`
+      : `${formatNumber(trained)} dilatih ${year} · ${formatNumber(trainedOther)} dilatih tahun lain · ${formatNumber(belum)} belum pernah, dari ${formatNumber(total)} petani`;
   return (
-    <div
-      className="flex items-center gap-2"
-      title={`${formatNumber(trained)} sudah · ${formatNumber(belum)} belum dari ${formatNumber(total)} petani`}
-    >
+    <div className="flex items-center gap-2" title={title}>
       <span className="w-11 shrink-0 text-right text-xs font-semibold tabular-nums">
         {formatPct(pct)}%
       </span>
       {/* Angka sudah selalu menempel di BATAS segmen (kanan-dalam bila muat,
           tepat setelah batas bila sempit) — posisi konsisten antar baris (#198). */}
       <div className="relative h-5 flex-1 overflow-hidden rounded-full bg-muted">
+        {trainedOther > 0 && (
+          <div
+            className="absolute inset-y-0 flex items-center justify-center bg-emerald-300 dark:bg-emerald-800"
+            style={{ left: `${Math.min(pct, 100)}%`, width: `${Math.min(pctOther, 100)}%` }}
+          >
+            {otherInside && (
+              <span className="text-[10px] font-semibold text-emerald-950 dark:text-emerald-100 tabular-nums whitespace-nowrap">
+                {formatNumber(trainedOther)}
+              </span>
+            )}
+          </div>
+        )}
         <div
           className="absolute inset-y-0 left-0 flex items-center justify-end bg-emerald-600 dark:bg-emerald-500"
           style={{ width: `${Math.min(pct, 100)}%` }}
@@ -51,7 +78,7 @@ function DistrictCell({ trained, total }: { trained: number; total: number }) {
             </span>
           )}
         </div>
-        {!sudahInside && trained > 0 && (
+        {!sudahInside && trained > 0 && trainedOther === 0 && (
           <span
             className="absolute inset-y-0 flex items-center pl-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap"
             style={{ left: `${pct}%` }}
@@ -77,9 +104,12 @@ function DistrictCell({ trained, total }: { trained: number; total: number }) {
 export function TrainingDistrictPanel({
   rows,
   packages,
+  year,
 }: {
   rows: TrainingCoverageRow[];
   packages: TrainingPackageCode[];
+  /** Tahun terpilih pada filter — memunculkan segmen "dilatih tahun lain". */
+  year: number | null;
 }) {
   const [open, setOpen] = useState(true);
   const districts = trainingDistrictCoverage(rows);
@@ -97,9 +127,18 @@ export function TrainingDistrictPanel({
   // distrik dalam scope filter. Label provinsi diminta eksplisit owner; bila
   // program meluas lintas provinsi, jadikan data-driven.
   const totalByPackage: Partial<Record<TrainingPackageCode, number>> = {};
+  const totalByPackageOther: Partial<Record<TrainingPackageCode, number>> = {};
+  let summaryTrainedOther = 0;
   for (const d of districts) {
+    summaryTrainedOther += d.anyPackageOtherYears;
     for (const [code, n] of Object.entries(d.byPackage) as [TrainingPackageCode, number][]) {
       totalByPackage[code] = (totalByPackage[code] ?? 0) + n;
+    }
+    for (const [code, n] of Object.entries(d.byPackageOtherYears) as [
+      TrainingPackageCode,
+      number,
+    ][]) {
+      totalByPackageOther[code] = (totalByPackageOther[code] ?? 0) + n;
     }
   }
 
@@ -186,7 +225,9 @@ export function TrainingDistrictPanel({
                           <td className="py-2.5 px-2 border-r border-border/60">
                             <DistrictCell
                               trained={totalByPackage[code] ?? 0}
+                              trainedOther={totalByPackageOther[code] ?? 0}
                               total={summaryFarmers}
+                              year={year}
                             />
                           </td>
                         )}
@@ -194,7 +235,9 @@ export function TrainingDistrictPanel({
                           <td key={d.districtName} className="py-2.5 px-2">
                             <DistrictCell
                               trained={d.byPackage[code] ?? 0}
+                              trainedOther={d.byPackageOtherYears[code] ?? 0}
                               total={d.totalFarmers}
+                              year={year}
                             />
                           </td>
                         ))}
@@ -209,12 +252,22 @@ export function TrainingDistrictPanel({
                       </td>
                       {showTotal && (
                         <td className="py-2.5 px-2 border-r border-border/60">
-                          <DistrictCell trained={summaryTrained} total={summaryFarmers} />
+                          <DistrictCell
+                            trained={summaryTrained}
+                            trainedOther={summaryTrainedOther}
+                            total={summaryFarmers}
+                            year={year}
+                          />
                         </td>
                       )}
                       {districts.map((d) => (
                         <td key={d.districtName} className="py-2.5 px-2">
-                          <DistrictCell trained={d.anyPackage} total={d.totalFarmers} />
+                          <DistrictCell
+                            trained={d.anyPackage}
+                            trainedOther={d.anyPackageOtherYears}
+                            total={d.totalFarmers}
+                            year={year}
+                          />
                         </td>
                       ))}
                     </tr>
@@ -223,17 +276,24 @@ export function TrainingDistrictPanel({
                 {/* Legend di kanan bawah (revisi owner #198), catatan di kiri. */}
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[11px] text-muted-foreground">
-                    Persen di kiri bar; segmen hijau = jumlah petani sudah dilatih, segmen abu =
-                    jumlah belum. Roll-up dari matriks capaian — mengikuti seluruh filter aktif.
+                    {year == null
+                      ? "Persen di kiri bar; segmen hijau = jumlah petani sudah dilatih, segmen abu = jumlah belum. Roll-up dari matriks capaian — mengikuti seluruh filter aktif."
+                      : `Persen di kiri bar = dilatih ${year}; hijau muda = dilatih hanya di tahun lain (bukan "belum"), abu = belum pernah dilatih. Roll-up dari matriks capaian — mengikuti seluruh filter aktif.`}
                   </p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 dark:bg-emerald-500" />
-                      Sudah
+                      {year == null ? "Sudah" : `Dilatih ${year}`}
                     </span>
+                    {year != null && (
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300 dark:bg-emerald-800" />
+                        Tahun lain
+                      </span>
+                    )}
                     <span className="flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-muted border border-border" />
-                      Belum
+                      {year == null ? "Belum" : "Belum pernah"}
                     </span>
                   </div>
                 </div>

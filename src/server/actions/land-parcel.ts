@@ -12,6 +12,10 @@ import {
   farmerRelationAccessFilter,
 } from "@/lib/access-context";
 import { getFarmerOptions } from "@/lib/select-options";
+import { summarizeProduction } from "@/lib/map-data";
+import { fetchParcelPassport } from "@/lib/parcel-passport-query";
+import type { ActionResult } from "@/types/action-result";
+import type { ParcelPassport, ProductionSummary } from "@/types/map";
 
 /**
  * Daftar petani (opsi) dalam scope, khusus untuk form Lahan. Dibungkus sebagai
@@ -108,6 +112,69 @@ export async function getLandParcelById(id: string) {
       },
     },
   });
+}
+
+/**
+ * Ringkasan produksi satu lahan (halaman Detail Lahan): rata-rata bulanan
+ * lintas tahun + rincian per tahun. Scope ditegakkan lewat lembaga si petani.
+ */
+export async function getLandParcelProduction(id: string): Promise<ProductionSummary | null> {
+  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  const access = await getAccessContext();
+
+  const parcel = await prisma.landParcel.findFirst({
+    where: { id, ...farmerRelationAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!parcel) return null;
+
+  const records = await prisma.productionRecord.findMany({
+    where: { parcelId: id, isActive: true },
+    select: { period: true, yieldKg: true },
+  });
+
+  return summarizeProduction(records);
+}
+
+/**
+ * Lahan aktif lain milik petani yang sama — badge navigasi antar-lahan dan
+ * overlay peta (warna berbeda) di halaman Detail Lahan. Scope via lembaga
+ * si petani.
+ */
+export async function getFarmerSiblingParcels(farmerId: string, excludeParcelDbId: string) {
+  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  const access = await getAccessContext();
+
+  return prisma.landParcel.findMany({
+    where: {
+      farmerId,
+      isActive: true,
+      id: { not: excludeParcelDbId },
+      ...farmerRelationAccessFilter(access),
+    },
+    select: { id: true, parcelId: true, geometry: true },
+    orderBy: { parcelId: "asc" },
+  });
+}
+
+/**
+ * Data Farm Passport ("Profil Lahan" PDF) untuk halaman Detail Lahan — guard
+ * menu Lahan, berbeda dari varian menu Peta (map.ts) dan Petani (farmer.ts).
+ */
+export async function getLandParcelPassport(
+  landParcelId: string,
+): Promise<ActionResult<ParcelPassport>> {
+  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  }
+
+  return fetchParcelPassport(landParcelId, true);
 }
 
 export async function createLandParcel(input: LandParcelInput) {

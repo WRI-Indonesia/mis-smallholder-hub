@@ -41,6 +41,9 @@ export interface LandParcel {
   revision: number;
   isActive: boolean;
   notes?: string | null;
+  // Audit — hanya diisi oleh fetch detail (getLandParcelById), tidak oleh list.
+  createdAt?: Date;
+  modifiedAt?: Date;
 }
 
 export interface FarmerSelect {
