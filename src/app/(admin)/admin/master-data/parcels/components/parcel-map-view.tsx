@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Map, { Source, Layer } from "react-map-gl/maplibre";
-import type { MapLayerMouseEvent, LayerProps } from "react-map-gl/maplibre";
+import type { MapRef, MapLayerMouseEvent, LayerProps } from "react-map-gl/maplibre";
 import type { Geometry, Position } from "geojson";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -10,6 +10,34 @@ import { Target } from "lucide-react";
 
 interface Props {
   geometry: Geometry | null | undefined;
+  /** Kelas tinggi container peta (default h-96). */
+  heightClassName?: string;
+  /** Geometri lahan lain (mis. milik petani yang sama) — dirender biru. */
+  siblingGeometries?: (Geometry | string | null | undefined)[];
+}
+
+// Kumpulkan semua posisi [lng, lat] dari struktur koordinat GeoJSON apa pun
+// (rekursif); posisi dengan null (hasil parse gagal) otomatis terlewati.
+function collectPositions(node: unknown, into: Position[]) {
+  if (!Array.isArray(node)) return;
+  if (node.length >= 2 && typeof node[0] === "number" && typeof node[1] === "number") {
+    into.push(node as Position);
+    return;
+  }
+  for (const child of node) collectPositions(child, into);
+}
+
+// Geometry dari Prisma bisa objek GeoJSON atau string JSON (legacy).
+function parseGeom(g: Geometry | string | null | undefined): Geometry | null {
+  if (!g) return null;
+  if (typeof g === "string") {
+    try {
+      return JSON.parse(g);
+    } catch {
+      return null;
+    }
+  }
+  return g;
 }
 
 export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecification> = {
@@ -97,7 +125,7 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
   },
 };
 
-export function ParcelMapView({ geometry }: Props) {
+export function ParcelMapView({ geometry, heightClassName = "h-96", siblingGeometries }: Props) {
   const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
 
   const parsedGeometry =
@@ -112,46 +140,52 @@ export function ParcelMapView({ geometry }: Props) {
         })()
       : geometry;
 
+  const siblingFeatures = (siblingGeometries ?? [])
+    .map(parseGeom)
+    .filter((g): g is Geometry => g != null)
+    .map((g) => ({ type: "Feature" as const, geometry: g, properties: {} }));
+
+  const mapRef = useRef<MapRef>(null);
   const [viewport, setViewport] = useState({
     longitude: 101.8,
     latitude: 0.6,
     zoom: 12,
   });
 
+  // Bounding box seluruh lahan (utama + lahan lain) untuk fit zoom.
+  const allPositions: Position[] = [];
+  if (parsedGeometry && "coordinates" in parsedGeometry) {
+    collectPositions(parsedGeometry.coordinates, allPositions);
+  }
+  for (const f of siblingFeatures) {
+    if ("coordinates" in f.geometry) collectPositions(f.geometry.coordinates, allPositions);
+  }
+  let bounds: [[number, number], [number, number]] | null = null;
+  if (allPositions.length > 0) {
+    let minLng = Infinity;
+    let minLat = Infinity;
+    let maxLng = -Infinity;
+    let maxLat = -Infinity;
+    for (const [lng, lat] of allPositions) {
+      if (lng < minLng) minLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lng > maxLng) maxLng = lng;
+      if (lat > maxLat) maxLat = lat;
+    }
+    bounds = [
+      [minLng, minLat],
+      [maxLng, maxLat],
+    ];
+  }
+
   function zoomToLahan() {
-    if (!parsedGeometry) return;
-
-    let coords = parsedGeometry.coordinates;
-    if (parsedGeometry.type === "Polygon") {
-      coords = parsedGeometry.coordinates[0];
-    } else if (parsedGeometry.type === "MultiPolygon") {
-      coords = parsedGeometry.coordinates[0][0];
-    }
-
-    if (Array.isArray(coords)) {
-      let sumLng = 0;
-      let sumLat = 0;
-      let count = 0;
-      coords.forEach((c: Position) => {
-        // Filter out null coordinates from failed reprojections/parses
-        if (Array.isArray(c) && c.length >= 2 && c[0] !== null && c[1] !== null) {
-          sumLng += c[0];
-          sumLat += c[1];
-          count++;
-        }
-      });
-      if (count > 0) {
-        setViewport({
-          longitude: sumLng / count,
-          latitude: sumLat / count,
-          zoom: 14,
-        });
-      }
-    }
+    if (!bounds) return;
+    mapRef.current?.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 600 });
   }
 
   useEffect(() => {
     zoomToLahan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parsedGeometry]);
 
   // Check if geometry coordinates are valid/non-null
@@ -217,15 +251,34 @@ export function ParcelMapView({ geometry }: Props) {
   };
 
   return (
-    <div className="relative h-96 w-full rounded-md overflow-hidden border">
+    <div className={`relative ${heightClassName} w-full rounded-md overflow-hidden border`}>
       <Map
+        ref={mapRef}
         {...viewport}
         onMove={(evt) => setViewport(evt.viewState)}
+        onLoad={zoomToLahan}
         mapStyle={MAP_STYLES[styleKey]}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         interactiveLayerIds={["parcel-polygon"]}
       >
+        {siblingFeatures.length > 0 && (
+          <Source
+            type="geojson"
+            data={{ type: "FeatureCollection" as const, features: siblingFeatures }}
+          >
+            <Layer
+              id="sibling-fill"
+              type="fill"
+              paint={{ "fill-color": "#0ea5e9", "fill-opacity": 0.3 }}
+            />
+            <Layer
+              id="sibling-border"
+              type="line"
+              paint={{ "line-color": "#0284c7", "line-width": 1.5 }}
+            />
+          </Source>
+        )}
         <Source type="geojson" data={geojsonData}>
           <Layer {...layerStyle} />
           <Layer {...borderStyle} />
