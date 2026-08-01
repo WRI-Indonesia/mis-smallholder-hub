@@ -74,6 +74,16 @@ export function ParcelProductionMonthModal({
   const minDate = `${period}-01`;
   const maxDate = `${period}-${String(lastDay).padStart(2, "0")}`;
 
+  async function loadSlots() {
+    const records = await getParcelPeriodRecords(parcelDbId, period);
+    return EMPTY_SLOTS.map((s, i) => {
+      const rec = records.find((r) => r.harvestNumber === i + 1);
+      return rec
+        ? { recordId: rec.id, kg: String(rec.yieldKg), date: toDateInputValue(rec.harvestDate) }
+        : s;
+    });
+  }
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -148,6 +158,7 @@ export function ParcelProductionMonthModal({
 
     setIsSaving(true);
     let changed = 0;
+    let failed = false;
     try {
       for (let i = 0; i < MAX_HARVESTS; i++) {
         const s = slots[i];
@@ -159,7 +170,8 @@ export function ParcelProductionMonthModal({
           const res = await deleteProductionRecord(s.recordId);
           if (!res.success) {
             toast.error(typeof res.error === "string" ? res.error : `Panen ${i + 1} gagal dihapus`);
-            return;
+            failed = true;
+            break;
           }
           changed++;
         } else if (s.recordId && filled && (s.kg !== o.kg || s.date !== o.date)) {
@@ -173,7 +185,8 @@ export function ParcelProductionMonthModal({
                 ? res.error
                 : `Panen ${i + 1} gagal disimpan — periksa isian`,
             );
-            return;
+            failed = true;
+            break;
           }
           changed++;
         } else if (!s.recordId && filled) {
@@ -192,16 +205,43 @@ export function ParcelProductionMonthModal({
                 ? res.error
                 : `Panen ${i + 1} gagal disimpan — periksa isian`,
             );
-            return;
+            failed = true;
+            break;
           }
           changed++;
         }
       }
 
-      if (changed > 0) {
-        toast.success("Data produksi berhasil disimpan");
-        router.refresh();
+      // Slot yang terlanjur tersimpan sebelum kegagalan tetap harus tercermin —
+      // tanpa reload, state modal basi dan klik Simpan ulang mencoba create
+      // ulang slot yang sudah tersimpan (error duplikat yang membingungkan).
+      if (changed > 0) router.refresh();
+
+      if (failed) {
+        if (changed > 0) {
+          try {
+            const next = await loadSlots();
+            // Nilai isian slot yang gagal dipertahankan agar bisa dikoreksi;
+            // hanya recordId/original yang disegarkan dari server.
+            setOriginal(next);
+            setSlots((prev) =>
+              prev.map((s, i) =>
+                next[i].recordId != null && s.kg.trim() !== ""
+                  ? { ...s, recordId: next[i].recordId }
+                  : next[i].recordId == null
+                    ? s
+                    : next[i],
+              ),
+            );
+          } catch {
+            // Gagal reload — biarkan state apa adanya; refresh() di atas sudah
+            // menyegarkan tabel di belakang modal.
+          }
+        }
+        return;
       }
+
+      if (changed > 0) toast.success("Data produksi berhasil disimpan");
       onClose();
     } finally {
       setIsSaving(false);
