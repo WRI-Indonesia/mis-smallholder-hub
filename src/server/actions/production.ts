@@ -13,8 +13,13 @@ import {
 
 // Private helper (bukan server action / endpoint) — hanya dipakai internal oleh
 // create/update yang sudah menjaga permission & scope.
+// Keunikan per (petani, LAHAN, periode, panen-ke) — mengikuti constraint DB
+// `production_record_unique` & dedup bulk upload (#200). Tanpa parcelId di
+// sini, petani ber-lahan >1 tertolak mencatat panen ke-N di lahan kedua pada
+// bulan yang sama, padahal itu data yang sah.
 async function checkDuplicateProduction(
   farmerId: string,
+  parcelId: string | null,
   period: string,
   harvestNumber: number,
   excludeId?: string
@@ -22,6 +27,7 @@ async function checkDuplicateProduction(
   const existing = await prisma.productionRecord.findFirst({
     where: {
       farmerId,
+      parcelId,
       period,
       harvestNumber,
       isActive: true,
@@ -186,6 +192,7 @@ export async function createProductionRecord(input: ProductionInput) {
   // Validate duplicate
   const duplicate = await checkDuplicateProduction(
     parsed.data.farmerId,
+    parsed.data.parcelId ?? null,
     parsed.data.period,
     parsed.data.harvestNumber
   );
@@ -243,13 +250,19 @@ export async function updateProductionRecord(id: string, input: ProductionUpdate
     }
   }
 
-  // Validate duplicate if period or harvestNumber changed
-  if (data.period !== undefined || data.harvestNumber !== undefined) {
+  // Validate duplicate if parcel, period, or harvestNumber changed
+  if (
+    data.parcelId !== undefined ||
+    data.period !== undefined ||
+    data.harvestNumber !== undefined
+  ) {
+    const newParcelId = data.parcelId !== undefined ? data.parcelId : existing.parcelId;
     const newPeriod = data.period ?? existing.period;
     const newHarvestNumber = data.harvestNumber ?? existing.harvestNumber;
 
     const duplicate = await checkDuplicateProduction(
       existing.farmerId,
+      newParcelId ?? null,
       newPeriod,
       newHarvestNumber,
       id
@@ -340,6 +353,35 @@ export async function toggleProductionRecordActive(id: string) {
   });
 
   return { success: true };
+}
+
+/**
+ * Record panen aktif satu lahan pada satu periode (YYYY-MM) — dipakai modal
+ * input/edit produksi per-bulan di halaman Detail Lahan. Scope via lembaga
+ * si petani; mutasinya tetap lewat create/update/deleteProductionRecord.
+ */
+export async function getParcelPeriodRecords(parcelDbId: string, period: string) {
+  if (!(await hasPermission("master-data-production", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  const access = await getAccessContext();
+
+  return prisma.productionRecord.findMany({
+    where: {
+      parcelId: parcelDbId,
+      period,
+      isActive: true,
+      ...farmerRelationAccessFilter(access),
+    },
+    select: {
+      id: true,
+      harvestNumber: true,
+      harvestDate: true,
+      yieldKg: true,
+    },
+    orderBy: { harvestNumber: "asc" },
+  });
 }
 
 export async function getFarmerParcels(farmerId: string) {
