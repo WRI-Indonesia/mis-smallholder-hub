@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, FileText, Download, Building2, Users, Layers, Sprout, Printer, Search, SlidersHorizontal, MapPin } from "lucide-react";
+import { FileText, Download, Building2, Users, Layers, Sprout, Printer, Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { FilterCombobox } from "@/components/shared/district-group-filter";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -53,8 +52,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
 
-  const [districtComboOpen, setDistrictComboOpen] = useState(false);
-  const [groupComboOpen, setGroupComboOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   // Kolom yang bisa disembunyikan.
@@ -105,12 +102,10 @@ export function KelompokTaniReportClient({ districts }: Props) {
   const handleDistrictSelect = (val: string | null) => {
     setSelectedDistrict(val);
     setSelectedFarmerGroup(null);
-    setDistrictComboOpen(false);
   };
 
   const handleFarmerGroupSelect = (val: string | null) => {
     setSelectedFarmerGroup(val);
-    setGroupComboOpen(false);
   };
 
   const selectedDistrictObj = districts.find((d) => d.id === selectedDistrict);
@@ -254,88 +249,26 @@ export function KelompokTaniReportClient({ districts }: Props) {
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-muted-foreground">Distrik</label>
-              <Popover open={districtComboOpen} onOpenChange={setDistrictComboOpen}>
-                <PopoverTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={districtComboOpen}
-                      className="w-[220px] justify-between h-9 font-normal text-left"
-                    >
-                      {selectedDistrict ? (
-                        <span>{selectedDistrictObj?.name}</span>
-                      ) : (
-                        <span className="text-muted-foreground">Semua Distrik</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  }
-                />
-                <PopoverContent className="w-[220px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Cari distrik..." />
-                    <CommandList>
-                      <CommandEmpty>Distrik tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem value="__all__" onSelect={() => handleDistrictSelect(null)}>
-                          <Check className={cn("mr-2 h-4 w-4", selectedDistrict === null ? "opacity-100" : "opacity-0")} />
-                          Semua Distrik
-                        </CommandItem>
-                        {districts.map((d) => (
-                          <CommandItem key={d.id} value={d.name} onSelect={() => handleDistrictSelect(d.id)}>
-                            <Check className={cn("mr-2 h-4 w-4", selectedDistrict === d.id ? "opacity-100" : "opacity-0")} />
-                            {d.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <FilterCombobox
+                options={districts}
+                value={selectedDistrict}
+                onSelect={handleDistrictSelect}
+                allLabel="Semua Distrik"
+                searchPlaceholder="Cari distrik..."
+                emptyLabel="Distrik tidak ditemukan."
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-muted-foreground">Lembaga Petani</label>
-              <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
-                <PopoverTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={groupComboOpen}
-                      className="w-[220px] justify-between h-9 font-normal text-left"
-                    >
-                      {selectedFarmerGroup ? (
-                        <span>{selectedGroupObj?.name}</span>
-                      ) : (
-                        <span className="text-muted-foreground">Semua Lembaga Petani</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  }
-                />
-                <PopoverContent className="w-[220px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Cari lembaga petani..." />
-                    <CommandList>
-                      <CommandEmpty>Lembaga petani tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem value="__all__" onSelect={() => handleFarmerGroupSelect(null)}>
-                          <Check className={cn("mr-2 h-4 w-4", selectedFarmerGroup === null ? "opacity-100" : "opacity-0")} />
-                          Semua Lembaga Petani
-                        </CommandItem>
-                        {farmerGroups.map((g) => (
-                          <CommandItem key={g.id} value={g.name} onSelect={() => handleFarmerGroupSelect(g.id)}>
-                            <Check className={cn("mr-2 h-4 w-4", selectedFarmerGroup === g.id ? "opacity-100" : "opacity-0")} />
-                            {g.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <FilterCombobox
+                options={farmerGroups}
+                value={selectedFarmerGroup}
+                onSelect={handleFarmerGroupSelect}
+                allLabel="Semua Lembaga Petani"
+                searchPlaceholder="Cari lembaga petani..."
+                emptyLabel="Lembaga Petani tidak ditemukan."
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">

@@ -48,7 +48,7 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-kelompok-tani` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Kelompok Tani (Ringkasan)" | Heading | Deskripsi "Rekap Kelompok Tani turunan dari data lahan (per Lembaga Petani)" |
 | "Distrik" | Filter (combobox + search, opsional) | Default "Semua Distrik" |
-| "Lembaga Petani" | Filter (combobox + search, opsional) | Default "Semua Lembaga Petani"; empty "Lembaga petani tidak ditemukan." |
+| "Lembaga Petani" | Filter (combobox + search, opsional) | Default "Semua Lembaga Petani"; empty "Lembaga Petani tidak ditemukan." (`FilterCombobox`, `src/components/shared/district-group-filter.tsx`) |
 | "Cari" | Filter (input teks) | Placeholder "Lembaga / KT..."; filter di sisi klien pada kolom Lembaga Petani, Kelompok Tani |
 | Catatan filter | Teks bantu | "Rekap real-time turunan dari data lahan aktif. Filter Distrik/Lembaga bersifat opsional." |
 | Kartu KPI | 5 kartu | "Lembaga Petani" (badge Lembaga), "Kelompok Tani" (badge KT), "Total Petani" (badge Petani), "Total Lahan" (badge Lahan), "Total Luas" (badge Ha) |

@@ -15,7 +15,7 @@ Halaman: Lembaga Petani (/admin/master-data/groups)
 │   ├── Total Persil Lahan
 │   └── Total Luas Lahan
 ├── Toolbar
-│   ├── Filter: Distrik
+│   ├── Filter: Distrik (combobox)
 │   ├── Filter: Status (SUPERADMIN)
 │   ├── Filter: Pencarian
 │   ├── Tombol: Tambah Lembaga Petani
@@ -45,7 +45,7 @@ Halaman: Lembaga Petani (/admin/master-data/groups)
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `master-data-groups` (`findTutorialForMenu`), dibuka di tab baru |
 | `Lembaga Petani` / `Data lembaga petani yang terdaftar` | Heading | h1 + deskripsi |
 | Kartu KPI (4) | Kartu | `Total Lembaga Petani`, `Total Petani` (orang), `Total Persil Lahan` (persil), `Total Luas Lahan` (Ha) — dihitung dari baris terfilter |
-| Filter Distrik | Select | `Semua Distrik` + daftar distrik |
+| Filter Distrik | Combobox | `Semua Distrik` + daftar distrik, ber-pencarian (`FilterCombobox`, `src/components/shared/district-group-filter.tsx`) |
 | Filter Status | Select | SUPERADMIN saja (lihat objek bersama) |
 | Pencarian | Filter | `Cari nama, kode, atau singkatan...` (`name`, `code`, `abrv`) |
 | Tombol `Tambah Lembaga Petani` | Tombol | CREATE — buka `GroupFormModal` mode tambah |
