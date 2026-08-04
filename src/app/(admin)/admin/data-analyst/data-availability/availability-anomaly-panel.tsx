@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { topAnomalies } from "@/lib/data-availability-aggregation";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
 
@@ -36,15 +38,20 @@ export function AvailabilityAnomalyPanel({ groups }: { groups: AvailabilityGroup
                     {formatNumber(a.count)}
                   </span>
                 </div>
-                <div
-                  className="mt-1 h-2 w-full rounded-full bg-muted"
-                  title={`${a.label} — ${formatNumber(a.count)} temuan di ${formatNumber(a.groupsAffected)} Lembaga`}
-                >
-                  <div
-                    className="h-full rounded-full bg-amber-400"
-                    style={{ width: max > 0 ? `${(a.count / max) * 100}%` : 0 }}
-                  />
-                </div>
+                <Tooltip>
+                  <TooltipTrigger render={<div className="mt-1 h-2 w-full rounded-full bg-muted" />}>
+                    <div
+                      className="h-full rounded-full bg-amber-400"
+                      style={{ width: max > 0 ? `${(a.count / max) * 100}%` : 0 }}
+                    />
+                  </TooltipTrigger>
+                  <StatTooltipContent
+                    title={a.label}
+                    footer={`tersebar di ${formatNumber(a.groupsAffected)} Lembaga`}
+                  >
+                    <StatTooltipRow chip="bg-amber-400" label="Temuan" value={a.count} />
+                  </StatTooltipContent>
+                </Tooltip>
                 <div className="text-[11px] text-muted-foreground mt-0.5">
                   di {formatNumber(a.groupsAffected)} Lembaga
                 </div>

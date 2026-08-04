@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { Grid3x3, ArrowUpDown, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import {
   TRAINING_PACKAGE_SHORT,
   TRAINING_PACKAGE_LABELS,
@@ -47,6 +49,10 @@ type SortKey = "name" | "totalFarmers" | "any" | TrainingPackageCode;
  * Satu sel heatmap. Bisa diklik selama masih ada kekurangan menuju target —
  * membuka daftar petani yang belum dilatih. Sel yang sudah memenuhi target
  * (atau Lembaga tanpa petani aktif) tidak bisa diklik: tidak ada yang didaftar.
+ *
+ * Tooltip terstruktur (#213, pola #205): judul paket + Lembaga, baris chip
+ * warna per status, footer total + status target. Warna chip sinkron dengan
+ * segmen bar Capaian per Distrik agar kedua panel terbaca sebagai satu bahasa.
  */
 function CoverageCell({
   row,
@@ -54,6 +60,7 @@ function CoverageCell({
   trainedOther = 0,
   target,
   label,
+  year,
   ring,
   onOpen,
 }: {
@@ -63,6 +70,8 @@ function CoverageCell({
   trainedOther?: number;
   target: number | null;
   label: string;
+  /** Tahun terpilih pada filter — menentukan label baris tooltip (#201/#202). */
+  year: number | null;
   ring?: boolean;
   onOpen: () => void;
 }) {
@@ -70,11 +79,7 @@ function CoverageCell({
   const pct = hasFarmers ? (trained / row.totalFarmers) * 100 : 0;
   const gap = trainingTargetGap(row.totalFarmers, trained, target);
   const clickable = hasFarmers && gap > 0;
-
-  // Konteks kumulatif saat filter tahun aktif — sel % tetap tahun terpilih,
-  // tooltip menjelaskan berapa yang sebenarnya sudah terlatih di tahun lain.
-  const otherSuffix =
-    trainedOther > 0 ? ` · ${formatNumber(trainedOther)} dilatih hanya di tahun lain` : "";
+  const belum = row.totalFarmers - trained - trainedOther;
 
   const body = (
     <>
@@ -85,35 +90,98 @@ function CoverageCell({
     </>
   );
 
-  const title = !hasFarmers
-    ? `${label} — Lembaga belum punya petani aktif`
-    : target == null
-      ? // Paket di luar program (Lainnya) tidak punya target — jangan mengklaim
-        // "target tercapai" untuk sesuatu yang memang tidak ditargetkan.
-        `${label} — ${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani · di luar paket program (tanpa target)${otherSuffix}`
-      : gap > 0
-        ? `${label} — ${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani${otherSuffix} · kurang ${formatNumber(gap)} menuju target ${target}%. Klik untuk melihat daftarnya.`
-        : `${label} — target ${target}% tercapai (${formatNumber(trained)} dari ${formatNumber(row.totalFarmers)} petani)${otherSuffix}`;
-
   const cls = `w-full rounded-md px-2 py-1.5 text-center tabular-nums ${ring ? "ring-1 ring-inset ring-border/60 " : ""}${cellClass(pct, hasFarmers)}`;
 
-  if (!clickable) {
+  const trigger = clickable ? (
+    <TooltipTrigger
+      render={
+        <button
+          type="button"
+          onClick={onOpen}
+          className={`${cls} cursor-pointer transition-transform hover:scale-[1.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
+        />
+      }
+    >
+      {body}
+    </TooltipTrigger>
+  ) : (
+    <TooltipTrigger render={<div className={cls} />}>{body}</TooltipTrigger>
+  );
+
+  if (!hasFarmers) {
     return (
-      <div className={cls} title={title}>
-        {body}
-      </div>
+      <Tooltip>
+        {trigger}
+        <StatTooltipContent
+          title={label}
+          subtitle={row.groupName}
+          footer="Lembaga belum punya petani aktif"
+        />
+      </Tooltip>
     );
   }
 
+  // Paket di luar program (Lainnya) tidak punya target — jangan mengklaim
+  // "target tercapai" untuk sesuatu yang memang tidak ditargetkan.
+  const targetLine =
+    target == null
+      ? "Di luar paket program — tanpa target"
+      : gap > 0
+        ? `Kurang ${formatNumber(gap)} menuju target ${target}% — klik sel untuk daftar petaninya`
+        : `Target ${target}% tercapai`;
+
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      title={title}
-      className={`${cls} cursor-pointer transition-transform hover:scale-[1.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
-    >
-      {body}
-    </button>
+    <Tooltip>
+      {trigger}
+      <StatTooltipContent
+        title={label}
+        subtitle={row.groupName}
+        footer={
+          <>
+            <span className="block">dari {formatNumber(row.totalFarmers)} petani aktif</span>
+            <span className="block">{targetLine}</span>
+          </>
+        }
+      >
+        {year == null ? (
+          <>
+            <StatTooltipRow
+              chip="bg-emerald-600 dark:bg-emerald-500"
+              label="Sudah ikut"
+              value={trained}
+              pct={pct}
+            />
+            <StatTooltipRow
+              chip="bg-muted border border-border"
+              label="Belum"
+              value={belum}
+              pct={(belum / row.totalFarmers) * 100}
+            />
+          </>
+        ) : (
+          <>
+            <StatTooltipRow
+              chip="bg-emerald-600 dark:bg-emerald-500"
+              label={`Ikut ${year}`}
+              value={trained}
+              pct={pct}
+            />
+            <StatTooltipRow
+              chip="bg-emerald-300 dark:bg-emerald-800"
+              label="Ikut tahun lain"
+              value={trainedOther}
+              pct={(trainedOther / row.totalFarmers) * 100}
+            />
+            <StatTooltipRow
+              chip="bg-muted border border-border"
+              label="Belum pernah"
+              value={belum}
+              pct={(belum / row.totalFarmers) * 100}
+            />
+          </>
+        )}
+      </StatTooltipContent>
+    </Tooltip>
   );
 }
 
@@ -272,6 +340,7 @@ export function TrainingCoverageMatrix({
                               trainedOther={row.byPackageOtherYears?.[code] ?? 0}
                               target={TRAINING_COVERAGE_TARGET[code]}
                               label={TRAINING_PACKAGE_LABELS[code]}
+                              year={year}
                               onOpen={() =>
                                 setDrilldown({
                                   groupId: row.groupId,
@@ -290,6 +359,7 @@ export function TrainingCoverageMatrix({
                             trainedOther={row.anyPackageOtherYears ?? 0}
                             target={100}
                             label="Mengikuti paket apa pun"
+                            year={year}
                             ring
                             onOpen={() =>
                               setDrilldown({

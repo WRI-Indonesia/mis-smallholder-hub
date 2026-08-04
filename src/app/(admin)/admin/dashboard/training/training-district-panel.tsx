@@ -6,7 +6,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import {
   TRAINING_PACKAGE_LABELS,
   TRAINING_PACKAGE_SHORT,
@@ -16,30 +17,6 @@ import type { TrainingCoverageRow, TrainingPackageCode } from "@/types/dashboard
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatPct = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
-
-/** Baris rincian tooltip: chip warna segmen, label, lalu angka + persen. */
-function CellTooltipRow({
-  chip,
-  label,
-  value,
-  pct,
-}: {
-  chip: string;
-  label: string;
-  value: number;
-  pct: number;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${chip}`} />
-      <span className="text-background/75">{label}</span>
-      <span className="ml-auto pl-4 font-semibold tabular-nums">{formatNumber(value)}</span>
-      <span className="w-11 shrink-0 text-right tabular-nums text-background/60">
-        {formatPct(pct)}%
-      </span>
-    </div>
-  );
-}
 
 /**
  * Satu sel: persen di kiri luar bar (revisi owner #198), lalu stacked bar
@@ -118,17 +95,16 @@ function DistrictCell({
           )}
         </div>
       </TooltipTrigger>
-      <TooltipContent className="flex-col items-stretch gap-1 px-3 py-2 tabular-nums">
-        <p className="pb-0.5 font-semibold">{label}</p>
+      <StatTooltipContent title={label} footer={`dari ${formatNumber(total)} petani aktif`}>
         {year == null ? (
           <>
-            <CellTooltipRow
+            <StatTooltipRow
               chip="bg-emerald-600 dark:bg-emerald-500"
               label="Sudah dilatih"
               value={trained}
               pct={pct}
             />
-            <CellTooltipRow
+            <StatTooltipRow
               chip="bg-muted border border-border"
               label="Belum"
               value={belum}
@@ -137,19 +113,19 @@ function DistrictCell({
           </>
         ) : (
           <>
-            <CellTooltipRow
+            <StatTooltipRow
               chip="bg-emerald-600 dark:bg-emerald-500"
               label={`Dilatih ${year}`}
               value={trained}
               pct={pct}
             />
-            <CellTooltipRow
+            <StatTooltipRow
               chip="bg-emerald-300 dark:bg-emerald-800"
               label="Dilatih tahun lain"
               value={trainedOther}
               pct={pctOther}
             />
-            <CellTooltipRow
+            <StatTooltipRow
               chip="bg-muted border border-border"
               label="Belum pernah"
               value={belum}
@@ -157,10 +133,7 @@ function DistrictCell({
             />
           </>
         )}
-        <p className="mt-1 border-t border-background/20 pt-1 text-background/70">
-          dari {formatNumber(total)} petani aktif
-        </p>
-      </TooltipContent>
+      </StatTooltipContent>
     </Tooltip>
   );
 }

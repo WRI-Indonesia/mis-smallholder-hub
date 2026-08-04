@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { availabilityScoreRows, scoreBand } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, BAND_LEGEND } from "./score-band-styles";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
@@ -48,15 +50,29 @@ export function AvailabilityGroupChart({ groups }: { groups: AvailabilityGroupEn
                       {formatNumber(e.healthScore)}
                     </span>
                   </div>
-                  <div
-                    className="mt-1 h-2.5 w-full rounded-full bg-muted"
-                    title={`${e.name} — skor ${formatNumber(e.healthScore)}/100 · ${formatNumber(e.totalAnomalies)} anomali`}
-                  >
-                    <div
-                      className={`h-full rounded-full ${BAND_BAR[band]}`}
-                      style={{ width: `${Math.min(100, Math.max(0, e.healthScore))}%` }}
-                    />
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger render={<div className="mt-1 h-2.5 w-full rounded-full bg-muted" />}>
+                      <div
+                        className={`h-full rounded-full ${BAND_BAR[band]}`}
+                        style={{ width: `${Math.min(100, Math.max(0, e.healthScore))}%` }}
+                      />
+                    </TooltipTrigger>
+                    <StatTooltipContent
+                      title={e.name}
+                      subtitle={`${e.districtName} · ${formatNumber(e.totalFarmers)} petani`}
+                    >
+                      <StatTooltipRow
+                        chip={BAND_BAR[band]}
+                        label="Skor kelengkapan"
+                        value={`${formatNumber(e.healthScore)}/100`}
+                      />
+                      <StatTooltipRow
+                        chip="bg-amber-400"
+                        label="Anomali terdeteksi"
+                        value={e.totalAnomalies}
+                      />
+                    </StatTooltipContent>
+                  </Tooltip>
                 </div>
               );
             })}
