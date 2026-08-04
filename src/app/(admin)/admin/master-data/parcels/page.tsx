@@ -2,15 +2,17 @@ import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/li
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getLandParcels } from "@/server/actions/land-parcel";
 import { getFarmerOptions, getFarmerGroupOptions } from "@/lib/select-options";
+import { getDistrictsForSelect } from "@/server/actions/farmer-group";
 import { ParcelListClient } from "./components/parcel-list-client";
 
 export default async function ParcelsPage() {
   await requirePermission("master-data-parcels");
 
-  const [parcels, farmers, farmerGroups, permissions, superAdmin] = await Promise.all([
+  const [parcels, farmers, farmerGroups, districts, permissions, superAdmin] = await Promise.all([
     getLandParcels(),
     getFarmerOptions("master-data-parcels"),
     getFarmerGroupOptions("master-data-parcels"),
+    getDistrictsForSelect(),
     getUserPermissionsForMenu("master-data-parcels"),
     isSuperAdmin(),
   ]);
@@ -28,6 +30,7 @@ export default async function ParcelsPage() {
         initialParcels={parcels}
         farmers={farmers}
         farmerGroups={farmerGroups}
+        districts={districts}
         permissions={permissions}
         isSuperAdmin={superAdmin}
       />

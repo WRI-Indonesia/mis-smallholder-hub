@@ -5,20 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Plus, Check, ChevronsUpDown } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ParcelFormModal } from "./parcel-form-modal";
 import { toggleLandParcelActive } from "@/server/actions/land-parcel";
 import { toast } from "sonner";
-import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  TableActions,
+  DataTable,
+  DistrictGroupFilter,
+  type DataTableColumn,
+} from "@/components/shared";
 import {
   Select,
   SelectContent,
@@ -26,14 +22,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel";
+
+interface District {
+  id: string;
+  name: string;
+}
 
 interface Props {
   initialParcels: unknown[];
   farmers: FarmerSelect[];
   farmerGroups: FarmerGroupSelect[];
+  districts: District[];
   permissions: string[];
   isSuperAdmin: boolean;
 }
@@ -45,11 +46,12 @@ export function ParcelListClient({
   initialParcels,
   farmers,
   farmerGroups,
+  districts,
   permissions,
   isSuperAdmin,
 }: Props) {
+  const [districtFilter, setDistrictFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
-  const [groupComboOpen, setGroupComboOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
   const [editParcel, setEditParcel] = useState<LandParcel | null>(null);
@@ -57,6 +59,8 @@ export function ParcelListClient({
 
   const filtered = (initialParcels as LandParcel[]).filter((p) => {
     const matchGroup = groupFilter === "all" || p.farmer.farmerGroup.id === groupFilter;
+    const matchDistrict =
+      districtFilter === "all" || p.farmer.farmerGroup.district.id === districtFilter;
     // Filter Status hanya berlaku untuk SUPERADMIN; user lain hanya menerima data aktif.
     const matchStatus = !isSuperAdmin
       ? true
@@ -65,7 +69,7 @@ export function ParcelListClient({
         : statusFilter === "active"
           ? p.isActive
           : !p.isActive;
-    return matchGroup && matchStatus;
+    return matchGroup && matchDistrict && matchStatus;
   });
 
   async function handleToggleActive(id: string) {
@@ -206,72 +210,16 @@ export function ParcelListClient({
     };
   };
 
-  const selectedGroup = farmerGroups.find((g) => g.id === groupFilter);
-
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
-      <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={groupComboOpen}
-              className="w-[330px] justify-between h-9 font-normal text-left"
-            >
-              {groupFilter === "all" ? (
-                <span>Semua Lembaga Petani</span>
-              ) : (
-                <span>{selectedGroup?.name}</span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent className="w-[330px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Cari lembaga petani..." />
-            <CommandList className="max-h-[300px]">
-              <CommandEmpty>Lembaga Petani tidak ditemukan.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem
-                  value="all"
-                  onSelect={() => {
-                    setGroupFilter("all");
-                    setGroupComboOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      groupFilter === "all" ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  Semua Lembaga Petani
-                </CommandItem>
-                {farmerGroups.map((g) => (
-                  <CommandItem
-                    key={g.id}
-                    value={`${g.name} ${g.code || ""}`}
-                    onSelect={() => {
-                      setGroupFilter(g.id);
-                      setGroupComboOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        groupFilter === g.id ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {g.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <DistrictGroupFilter
+        districts={districts}
+        farmerGroups={farmerGroups}
+        districtFilter={districtFilter}
+        groupFilter={groupFilter}
+        onDistrictFilterChange={setDistrictFilter}
+        onGroupFilterChange={setGroupFilter}
+      />
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (

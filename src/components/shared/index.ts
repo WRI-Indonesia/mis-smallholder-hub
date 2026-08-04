@@ -11,4 +11,7 @@ export { TableSkeleton } from "./table-skeleton";
 
 export { StatEmph } from "./stat-emph";
 
+export { DistrictGroupFilter } from "./district-group-filter";
+export type { DistrictFilterOption, GroupFilterOption } from "./district-group-filter";
+
 

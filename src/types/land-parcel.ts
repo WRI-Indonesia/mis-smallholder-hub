@@ -8,6 +8,7 @@ export interface LandParcelFarmer {
     id: string;
     name: string;
     district: {
+      id: string;
       name: string;
     };
   };
@@ -17,6 +18,7 @@ export interface FarmerGroupSelect {
   id: string;
   name: string;
   code: string | null;
+  districtId: string;
 }
 
 export interface LandParcel {

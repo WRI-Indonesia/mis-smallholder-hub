@@ -5,20 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Check, ChevronsUpDown, Building, Users, User, UserCheck } from "lucide-react";
+import { Plus, Building, Users, User, UserCheck } from "lucide-react";
 import { FarmerFormModal } from "./farmer-form-modal";
 import { toggleFarmerActive } from "@/server/actions/farmer";
 import { toast } from "sonner";
-import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  TableActions,
+  DataTable,
+  DistrictGroupFilter,
+  type DataTableColumn,
+} from "@/components/shared";
 import {
   Select,
   SelectContent,
@@ -26,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { maskNik, maskBirthDate } from "@/lib/mask";
 
 interface Farmer {
@@ -57,6 +52,7 @@ interface FarmerGroup {
   id: string;
   name: string;
   code?: string | null;
+  districtId: string;
 }
 
 interface District {
@@ -82,9 +78,7 @@ export function FarmerListClient({
   isSuperAdmin,
 }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
-  const [districtComboOpen, setDistrictComboOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState("all");
-  const [comboOpen, setComboOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
   const [editFarmer, setEditFarmer] = useState<Farmer | null>(null);
@@ -212,136 +206,16 @@ export function FarmerListClient({
     };
   };
 
-  const selectedGroup = farmerGroups.find((g) => g.id === groupFilter);
-  const selectedDistrict = districts.find((d) => d.id === districtFilter);
-
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
-      <Popover open={districtComboOpen} onOpenChange={setDistrictComboOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={districtComboOpen}
-              className="w-[200px] justify-between h-9 font-normal text-left"
-            >
-              {districtFilter === "all" ? (
-                <span>Semua Distrik</span>
-              ) : (
-                <span>{selectedDistrict?.name}</span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent className="w-[200px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Cari distrik..." />
-            <CommandList className="max-h-[300px]">
-              <CommandEmpty>Distrik tidak ditemukan.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem
-                  value="all"
-                  onSelect={() => {
-                    setDistrictFilter("all");
-                    setDistrictComboOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      districtFilter === "all" ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  Semua Distrik
-                </CommandItem>
-                {districts.map((d) => (
-                  <CommandItem
-                    key={d.id}
-                    value={d.name}
-                    onSelect={() => {
-                      setDistrictFilter(d.id);
-                      setDistrictComboOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        districtFilter === d.id ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {d.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-
-      <Popover open={comboOpen} onOpenChange={setComboOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={comboOpen}
-              className="w-[330px] justify-between h-9 font-normal text-left"
-            >
-              {groupFilter === "all" ? (
-                <span>Semua Lembaga Petani</span>
-              ) : (
-                <span>{selectedGroup?.name}</span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent className="w-[330px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Cari lembaga petani..." />
-            <CommandList className="max-h-[300px]">
-              <CommandEmpty>Lembaga Petani tidak ditemukan.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem
-                  value="all"
-                  onSelect={() => {
-                    setGroupFilter("all");
-                    setComboOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      groupFilter === "all" ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  Semua Lembaga Petani
-                </CommandItem>
-                {farmerGroups.map((g) => (
-                  <CommandItem
-                    key={g.id}
-                    value={`${g.name} ${g.code || ""}`}
-                    onSelect={() => {
-                      setGroupFilter(g.id);
-                      setComboOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        groupFilter === g.id ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {g.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <DistrictGroupFilter
+        districts={districts}
+        farmerGroups={farmerGroups}
+        districtFilter={districtFilter}
+        groupFilter={groupFilter}
+        onDistrictFilterChange={setDistrictFilter}
+        onGroupFilterChange={setGroupFilter}
+      />
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (

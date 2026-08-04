@@ -79,7 +79,7 @@ export async function getLandParcels(search?: string, farmerId?: string) {
             select: {
               id: true,
               name: true,
-              district: { select: { name: true } },
+              district: { select: { id: true, name: true } },
             },
           },
         },

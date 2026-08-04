@@ -19,7 +19,7 @@ hrefLabel: Buka halaman Pelatihan
 
 ## Filter
 
-**Distrik**, **Lembaga Petani**, **Paket Pelatihan** — mempersempit daftar. **Status** hanya untuk SUPERADMIN.
+**Distrik**, **Lembaga Petani**, **Paket Pelatihan** — mempersempit daftar. Pilihan Lembaga ikut menyempit bila Distrik sudah dipilih. **Status** hanya untuk SUPERADMIN.
 
 **Kotak pencarian** — menelusuri lokasi, nama lembaga, dan nama paket.
 

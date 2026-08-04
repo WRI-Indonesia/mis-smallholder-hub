@@ -10,7 +10,8 @@ Halaman: Lahan (/admin/master-data/parcels)
 │   ├── Judul: Lahan
 │   └── Deskripsi: Data lahan petani (land parcels) yang terdaftar
 ├── Toolbar
-│   ├── Filter: Lembaga Petani (combobox)
+│   ├── Filter: Distrik (combobox)
+│   ├── Filter: Lembaga Petani (combobox, cascade dari Distrik)
 │   ├── Filter: Status (SUPERADMIN)
 │   ├── Filter: Pencarian
 │   ├── Tombol: Tambah Lahan
@@ -30,7 +31,7 @@ Halaman: Lahan (/admin/master-data/parcels)
 | File | `parcels/page.tsx` + `parcels/components/parcel-list-client.tsx` |
 | Tipe | Server Component + client component |
 | Guard | `requirePermission("master-data-parcels")` |
-| Server action / data | `getLandParcels()` (`@/server/actions/land-parcel`), `getFarmerOptions`, `getFarmerGroupOptions`, `getUserPermissionsForMenu`, `isSuperAdmin` |
+| Server action / data | `getLandParcels()` (`@/server/actions/land-parcel`), `getFarmerOptions`, `getFarmerGroupOptions`, `getDistrictsForSelect`, `getUserPermissionsForMenu`, `isSuperAdmin` |
 
 ## Objek halaman
 
@@ -38,7 +39,8 @@ Halaman: Lahan (/admin/master-data/parcels)
 |---|---|---|
 | `Lahan` / `Data lahan petani (land parcels) yang terdaftar` | Heading | h1 + deskripsi |
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-parcels` (`findTutorialForMenu`), dibuka di tab baru |
-| Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` |
+| Filter Distrik | Combobox | `Semua Distrik` (`DistrictGroupFilter`, `src/components/shared/district-group-filter.tsx`) |
+| Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` — daftar ikut menyempit saat Distrik dipilih; pilihan yang tidak cocok di-reset ke `Semua` |
 | Filter Status | Select | SUPERADMIN saja |
 | Pencarian | Filter | `Cari ID Lahan atau nama petani...` (parcelId, nama & ID petani) |
 | Tombol `Tambah Lahan` | Tombol | CREATE — buka `ParcelFormModal` |

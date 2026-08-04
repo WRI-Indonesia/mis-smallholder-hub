@@ -16,7 +16,7 @@ Halaman: Pelatihan (/admin/master-data/training)
 │   └── Total Peserta Unik
 ├── Toolbar
 │   ├── Filter: Distrik (combobox)
-│   ├── Filter: Lembaga Petani (combobox)
+│   ├── Filter: Lembaga Petani (combobox, cascade dari Distrik)
 │   ├── Filter: Paket Pelatihan (combobox)
 │   ├── Filter: Status (SUPERADMIN)
 │   ├── Filter: Pencarian
@@ -45,8 +45,8 @@ Halaman: Pelatihan (/admin/master-data/training)
 | `Pelatihan` / `Data sesi pelatihan lembaga tani yang terdaftar` | Heading | h1 + deskripsi |
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-training` (`findTutorialForMenu`), dibuka di tab baru |
 | Kartu KPI (4) | Kartu | `Total Lembaga Petani`, `Total Sesi Training`, `Total Peserta`, `Total Peserta Unik` |
-| Filter Distrik | Combobox | `Semua Distrik` |
-| Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` |
+| Filter Distrik | Combobox | `Semua Distrik` (`DistrictGroupFilter`, `src/components/shared/district-group-filter.tsx`) |
+| Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` — daftar ikut menyempit saat Distrik dipilih; pilihan yang tidak cocok di-reset ke `Semua` |
 | Filter Paket Pelatihan | Combobox | `Semua Paket Pelatihan`, empty `Paket pelatihan tidak ditemukan.` |
 | Filter Status | Select | SUPERADMIN saja |
 | Pencarian | Filter | `Cari lokasi, lembaga petani atau paket...` |

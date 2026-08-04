@@ -2,6 +2,7 @@ import { requirePermission, getUserPermissionsForMenu, isSuperAdmin } from "@/li
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getProductionRecords } from "@/server/actions/production";
 import { getFarmerGroupOptions } from "@/lib/select-options";
+import { getDistrictsForSelect } from "@/server/actions/farmer-group";
 import { ProductionListClient } from "./components/production-list-client";
 
 interface SearchParams {
@@ -21,7 +22,7 @@ export default async function ProductionPage({
 
   const resolvedParams = await searchParams;
 
-  const [records, farmerGroups, permissions, superAdmin] = await Promise.all([
+  const [records, farmerGroups, districts, permissions, superAdmin] = await Promise.all([
     getProductionRecords({
       search: resolvedParams.search,
       farmerGroupId: resolvedParams.farmerGroupId,
@@ -32,6 +33,7 @@ export default async function ProductionPage({
       status: resolvedParams.status ?? "all",
     }),
     getFarmerGroupOptions("master-data-production"),
+    getDistrictsForSelect(),
     getUserPermissionsForMenu("master-data-production"),
     isSuperAdmin(),
   ]);
@@ -50,6 +52,7 @@ export default async function ProductionPage({
       <ProductionListClient
         initialRecords={records}
         farmerGroups={farmerGroups}
+        districts={districts}
         permissions={permissions}
         isSuperAdmin={superAdmin}
       />

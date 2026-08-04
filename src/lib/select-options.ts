@@ -39,7 +39,7 @@ export async function getFarmerGroupOptions(menuKey: string) {
 
   return prisma.farmerGroup.findMany({
     where: { ...farmerGroupAccessFilter(access), isActive: true },
-    select: { id: true, name: true, code: true },
+    select: { id: true, name: true, code: true, districtId: true },
     orderBy: { name: "asc" },
   });
 }
