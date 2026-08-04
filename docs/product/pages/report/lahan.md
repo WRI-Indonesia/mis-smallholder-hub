@@ -48,6 +48,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-land-parcel` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Lahan" | Heading | Deskripsi "Roster lahan per Lembaga Petani (Lembaga, Petani, ID Petani, ID Lahan, Kelompok Tani)" |
 | "Distrik" | Filter (combobox + search) | Default "Semua Distrik" |
 | "Lembaga Petani" | Filter (combobox + search) | Label tombol default "Semua Lembaga Petani", namun laporan baru dimuat setelah satu Lembaga dipilih (wajib secara efektif) |

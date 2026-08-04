@@ -75,6 +75,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `dashboard-training` (`findTutorialForMenu`), dibuka di tab baru |
 | Judul halaman | Heading `h1` | "Dashboard Pelatihan" |
 | Deskripsi | Teks | "Cakupan & efektivitas program pelatihan petani — data per {tanggal generate}" |
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |

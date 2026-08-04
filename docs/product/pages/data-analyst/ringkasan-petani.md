@@ -42,6 +42,7 @@ Halaman: Ringkasan Petani (/admin/data-analyst/farmer-summary)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `data-analyst-farmer-summary` (`findTutorialForMenu`), dibuka di tab baru |
 | "Ringkasan Petani" | Heading | `h1`; deskripsi: "Analisis data petani berdasarkan district dan Lembaga Petani" |
 | "Distrik" | Filter (combobox popover + search) | Placeholder cari: "Cari distrik..."; opsi "Semua Distrik" + daftar distrik; empty state "Distrik tidak ditemukan."; default `Semua Distrik` |
 | "Lembaga Petani (ISH)" | Filter (combobox popover + search) | Placeholder cari: "Cari lembaga petani..."; opsi "Semua ISH" + daftar lembaga (cascading: dimuat ulang saat Distrik berubah); empty state "Lembaga Petani tidak ditemukan."; default `Semua ISH` |

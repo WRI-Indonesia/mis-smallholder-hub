@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/rbac";
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDataAvailabilityView } from "@/server/actions/data-availability";
 import { DataAvailabilityClient } from "./data-availability-client";
 
@@ -11,7 +12,7 @@ export default async function DataAvailabilityDashboardPage() {
 
   return (
     <div className="p-6">
-      <DataAvailabilityClient view={view} />
+      <DataAvailabilityClient view={view} helpSlot={<HelpHint menuKey="data-analyst-data-availability" />} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/rbac";
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDistrictsForLandParcelReport } from "@/server/actions/report";
 import { LandParcelReportClient } from "./land-parcel-report-client";
 
@@ -9,7 +10,10 @@ export default async function LandParcelReportPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="print:hidden">
-        <h1 className="text-2xl font-bold">Laporan Lahan</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Laporan Lahan</h1>
+          <HelpHint menuKey="report-land-parcel" />
+        </div>
         <p className="text-muted-foreground">
           Roster lahan per Lembaga Petani (Lembaga, Petani, ID Petani, ID Lahan, Kelompok Tani)
         </p>

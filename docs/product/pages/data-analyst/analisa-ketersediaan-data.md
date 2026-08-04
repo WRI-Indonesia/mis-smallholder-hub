@@ -51,6 +51,7 @@ Halaman: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `data-analyst-data-completeness` (`findTutorialForMenu`), dibuka di tab baru |
 | "Analisa Ketersediaan Data" | Heading | `h1`; deskripsi: "Periksa kelengkapan dan anomali data satu Lembaga Petani (Petani, Lahan, Pelatihan, Produksi)" |
 | "Distrik" | Filter (combobox + search) | Placeholder "Cari distrik..."; opsi "Semua Distrik"; empty "Distrik tidak ditemukan." |
 | "Lembaga Petani" | Filter (combobox + search, **wajib**) | Placeholder tombol "Pilih Lembaga Petani"; placeholder cari "Cari lembaga petani..."; empty "Lembaga Petani tidak ditemukan."; tanpa opsi "semua" |

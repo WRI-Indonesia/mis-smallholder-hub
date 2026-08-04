@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/rbac";
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getLatestDashboardSnapshot } from "@/server/actions/dashboard";
 import { DashboardClient } from "../dashboard-client";
 
@@ -11,7 +12,7 @@ export default async function MainDashboardPage() {
 
   return (
     <div className="p-6">
-      <DashboardClient initialView={initialView} />
+      <DashboardClient initialView={initialView} helpSlot={<HelpHint menuKey="dashboard-main" />} />
     </div>
   );
 }

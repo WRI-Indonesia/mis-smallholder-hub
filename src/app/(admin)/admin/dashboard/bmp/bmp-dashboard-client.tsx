@@ -25,6 +25,8 @@ import type { BmpDataMode, BmpFarmerGroupCategory, BmpSnapshotView } from "@/typ
 
 interface Props {
   initialView: BmpSnapshotView | null;
+  /** Tautan bantuan kontekstual (HelpHint) — dirender server agar markdown Bantuan tidak ikut bundle client. */
+  helpSlot?: React.ReactNode;
 }
 
 const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
@@ -39,7 +41,7 @@ const formatGeneratedAt = (iso: string) => {
   return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export function BmpDashboardClient({ initialView }: Props) {
+export function BmpDashboardClient({ initialView, helpSlot }: Props) {
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [category, setCategory] = useState<BmpFarmerGroupCategory | null>(null);
@@ -154,7 +156,10 @@ export function BmpDashboardClient({ initialView }: Props) {
       {/* Header: title + generate note (left), filters (right) */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">BMP Dashboard (Produksi)</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">BMP Dashboard (Produksi)</h1>
+            {helpSlot}
+          </div>
           {view ? (
             <p className="text-muted-foreground">
               Nilai di bawah di-generate pada{" "}

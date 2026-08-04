@@ -43,6 +43,7 @@ Halaman: Laporan Petani (/admin/report/farmer)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-farmer` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Petani" | Heading | `h1`; deskripsi "Analisis ringkasan dan rincian data petani"; disembunyikan saat cetak (`print:hidden`) |
 | "Distrik *" | Filter (combobox + search, wajib) | Placeholder tombol "Pilih Distrik"; placeholder cari "Cari distrik..."; empty "Distrik tidak ditemukan." |
 | "Lembaga Petani *" | Filter (combobox + search, wajib) | Disabled sampai Distrik dipilih; placeholder "Pilih Lembaga Petani"; cari "Cari lembaga petani..."; empty "Kelompok tani tidak ditemukan." |

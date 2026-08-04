@@ -45,6 +45,7 @@ Halaman: Laporan Produksi (/admin/report/production)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-production` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Produksi" | Heading | Deskripsi "Matriks produksi bulanan per petani/lahan dalam satu Lembaga Petani" |
 | "Distrik *" | Filter (combobox + search, wajib) | Placeholder "Pilih Distrik" |
 | "Lembaga Petani *" | Filter (combobox + search, wajib) | Disabled sampai Distrik dipilih |

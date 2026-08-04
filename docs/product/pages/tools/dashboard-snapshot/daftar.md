@@ -37,6 +37,7 @@ Halaman: Daftar Snapshot (/admin/tools/snapshot)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `dashboard-snapshot` (`findTutorialForMenu`), dibuka di tab baru |
 | Dashboard Snapshot | Heading | `h1` + deskripsi "Buat dan kelola snapshot historis dari data dashboard" |
 | Buat Snapshot Baru | Card | Hanya tampil bila permission `CREATE`; ikon `Camera` |
 | Distrik | Filter (combobox) | Popover + Command, opsi "Semua Distrik" + daftar distrik; pencarian "Cari distrik...", empty "Distrik tidak ditemukan." — **disabled** (`FILTERS_ENABLED = false`) |
