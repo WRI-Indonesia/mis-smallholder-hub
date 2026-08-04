@@ -15,7 +15,7 @@ Halaman: Main Dashboard (/admin/dashboard/main)
 │   ├── Distrik (combobox)
 │   ├── Lembaga Petani (combobox)
 │   └── Tahun Bergabung (select)
-├── Kartu KPI (14)
+├── Kartu KPI (14 — 5 pertama bisa diklik → dialog rincian)
 │   ├── Total Lembaga Petani
 │   ├── Total Kelompok Tani
 │   ├── Sertifikasi RSPO
@@ -30,6 +30,12 @@ Halaman: Main Dashboard (/admin/dashboard/main)
 │   ├── Paket 2 - MK
 │   ├── Paket 2 - HSE
 │   └── Paket 3 & 4 - GEDSI/BUSDEV
+├── Dialog rincian kartu (#206)
+│   ├── Header: ikon + judul kartu + deskripsi
+│   ├── Chip ringkasan (angka sama dengan kartu)
+│   ├── Kotak pencarian (bila daftar > 8)
+│   ├── Daftar lembaga (link ke detail Master Data, tab baru)
+│   └── Footer: timestamp generate snapshot
 ├── Peta sebaran (MapLibre)
 │   ├── Layer cluster
 │   ├── Layer titik
@@ -66,12 +72,13 @@ Halaman: Main Dashboard (/admin/dashboard/main)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `dashboard-main` (`findTutorialForMenu`), dibuka di tab baru |
 | Judul halaman | Heading `h1` | "Main Dashboard" |
 | Catatan generate | Teks | "Nilai di bawah di-generate pada {tanggal snapshot}" — atau "Belum ada snapshot" bila snapshot kosong |
 | Filter Distrik | Combobox (Popover + Command) | Placeholder cari "Cari distrik...", opsi "Semua Distrik" + daftar distrik dari snapshot; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani...", opsi "Semua Lembaga Petani" + daftar Lembaga hasil irisan; empty: "Kelompok tani tidak ditemukan." |
 | Filter Tahun Bergabung | Select | "Semua Tahun" + daftar tahun dari `byYear` snapshot (desc) |
-| Kartu KPI (14 kartu) | Kartu KPI | Lihat rincian di bawah |
+| Kartu KPI (14 kartu) | Kartu KPI | Lihat rincian di bawah; 5 kartu pertama bisa diklik (juga Enter/Space, `role="button"`) → dialog rincian angka (#206) |
 | Peta sebaran | Peta (MapLibre / react-map-gl) | Marker titik Lembaga Petani dengan clustering; lihat rincian di bawah |
 | Panel info Lembaga | Kartu detail | Muncul saat satu Lembaga dipilih; judul = nama Lembaga, sub = kode (mono), badge sertifikasi |
 | Empty state panel info | Empty state | Ikon `MapPin` + "Pilih Lembaga Petani" + "Klik marker di peta untuk melihat detail informasi Lembaga Petani dan statistik petani." |
@@ -80,24 +87,40 @@ Halaman: Main Dashboard (/admin/dashboard/main)
 
 ## Kartu KPI (`DashboardSummaryCards`)
 
-| # | Judul kartu | Nilai | Sub |
-|---|---|---|---|
-| 1 | Total Lembaga Petani | jumlah Lembaga | — |
-| 2 | Total Kelompok Tani | jumlah KT per-lahan | — |
-| 3 | Sertifikasi RSPO | "{n} lembaga" | "Tersertifikasi · {n} plan" |
-| 4 | Sertifikasi ISPO | "{n} lembaga" | "Tersertifikasi · {n} plan" |
-| 5 | Assurance SAP/MAP | "{n} lembaga" | "Tersertifikasi · {n} plan" |
-| 6 | Total Petani | jumlah petani | — |
-| 7 | Petani Laki-laki | jumlah | — |
-| 8 | Petani Perempuan | jumlah | — |
-| 9 | Total Persil Lahan | jumlah persil | — |
-| 10 | Total Luas Lahan | "{n} ha" | — |
-| 11 | Paket 1 - BMP/NKT/RSPO | "{n} petani" | — |
-| 12 | Paket 2 - MK | "{n} petani" | — |
-| 13 | Paket 2 - HSE | "{n} petani" | — |
-| 14 | Paket 3 & 4 - GEDSI/BUSDEV | "{n} petani" | — |
+| # | Judul kartu | Nilai | Sub | Dialog rincian (#206) |
+|---|---|---|---|---|
+| 1 | Total Lembaga Petani | jumlah Lembaga | — | Daftar lembaga (nama, kode, distrik) |
+| 2 | Total Kelompok Tani | jumlah KT per-lahan | — | Jumlah KT per lembaga + baris Total |
+| 3 | Sertifikasi RSPO | "{n} lembaga" | "Tersertifikasi · {n} plan" | Seksi Tersertifikasi / Plan + badge tahun |
+| 4 | Sertifikasi ISPO | "{n} lembaga" | "Tersertifikasi · {n} plan" | Seksi Tersertifikasi / Plan + badge tahun |
+| 5 | Assurance SAP/MAP | "{n} lembaga" | "Tersertifikasi · {n} plan" | Seksi Ter-assurance / Plan + badge tahun |
+| 6 | Total Petani | jumlah petani | — | — |
+| 7 | Petani Laki-laki | jumlah | — | — |
+| 8 | Petani Perempuan | jumlah | — | — |
+| 9 | Total Persil Lahan | jumlah persil | — | — |
+| 10 | Total Luas Lahan | "{n} ha" | — | — |
+| 11 | Paket 1 - BMP/NKT/RSPO | "{n} petani" | — | — |
+| 12 | Paket 2 - MK | "{n} petani" | — | — |
+| 13 | Paket 2 - HSE | "{n} petani" | — | — |
+| 14 | Paket 3 & 4 - GEDSI/BUSDEV | "{n} petani" | — | — |
 
 Kartu sertifikasi bersifat year-independent (tidak ikut filter Tahun).
+
+### Dialog rincian kartu (#206)
+
+Dialog dihitung dari daftar KT yang sama dengan angka kartu (prop `kts` = irisan filter aktif — `[selectedKt]` bila satu Lembaga dipilih, selainnya `activeKts`), sehingga jumlah baris selalu identik dengan angka di kartu.
+
+| Objek | Tipe | Keterangan |
+|---|---|---|
+| Header dialog | Ikon + judul + deskripsi | Judul = judul kartu; deskripsi menjelaskan definisi angka |
+| Chip ringkasan | Badge | Angka yang sama dengan kartu sebagai jangkar visual (lembaga / total KT / tersertifikasi + plan) |
+| Kotak pencarian | Input | Hanya tampil bila daftar > 8; cari nama lembaga, kode, atau distrik; empty state `Tidak ada yang cocok dengan "{query}"` |
+| Baris lembaga | Link | Nama + kode (mono) + distrik → `/admin/master-data/groups/{id}` di tab baru |
+| Seksi sertifikasi | 2 seksi | "Tersertifikasi"/"Ter-assurance" (dot emerald) dan "Plan" (dot amber), masing-masing ber-jumlah; badge status via `formatCertStatus` |
+| Footer | Teks | "Nilai di-generate pada {timestamp snapshot}" |
+| Empty state | Teks + ikon | "Tidak ada data pada filter ini." bila daftar kosong |
+
+Di halaman [Detail Snapshot](../tools/dashboard-snapshot/detail.md) komponen kartu yang sama dirender **tanpa** prop `kts` → kartu statis, tidak bisa diklik.
 
 ## Objek peta (`DashboardMap`)
 

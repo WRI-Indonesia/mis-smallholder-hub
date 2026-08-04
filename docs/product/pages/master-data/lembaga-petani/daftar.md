@@ -42,6 +42,7 @@ Halaman: Lembaga Petani (/admin/master-data/groups)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `master-data-groups` (`findTutorialForMenu`), dibuka di tab baru |
 | `Lembaga Petani` / `Data lembaga petani yang terdaftar` | Heading | h1 + deskripsi |
 | Kartu KPI (4) | Kartu | `Total Lembaga Petani`, `Total Petani` (orang), `Total Persil Lahan` (persil), `Total Luas Lahan` (Ha) — dihitung dari baris terfilter |
 | Filter Distrik | Select | `Semua Distrik` + daftar distrik |

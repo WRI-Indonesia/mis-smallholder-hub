@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/rbac";
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getLatestBmpSnapshot } from "@/server/actions/dashboard-bmp";
 import { BmpDashboardClient } from "./bmp-dashboard-client";
 
@@ -11,7 +12,7 @@ export default async function BmpDashboardPage() {
 
   return (
     <div className="p-6">
-      <BmpDashboardClient initialView={initialView} />
+      <BmpDashboardClient initialView={initialView} helpSlot={<HelpHint menuKey="dashboard-bmp" />} />
     </div>
   );
 }

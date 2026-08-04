@@ -44,6 +44,7 @@ import tools from "@/content/help/5-administrasi/5-1-tools.md";
 import kendala from "@/content/help/6-bantuan-lanjutan/6-1-kendala.md";
 
 // Lapis Tutorial (berbasis tugas) — dipisah dari lapis Konsep di bawahnya.
+import tMenambahLembaga from "@/content/help/tutorial/t-0-menambah-lembaga.md";
 import tMenambahPetani from "@/content/help/tutorial/t-1-menambah-petani.md";
 import tMenambahLahan from "@/content/help/tutorial/t-2-menambah-lahan.md";
 import tMencatatPelatihan from "@/content/help/tutorial/t-3-mencatat-pelatihan.md";
@@ -57,9 +58,13 @@ import pMembacaPeta from "@/content/help/tutorial/p-3-membaca-peta.md";
 import lMembuatLaporan from "@/content/help/tutorial/l-1-membuat-laporan.md";
 import lLaporanLahan from "@/content/help/tutorial/l-2-laporan-lahan.md";
 import lMemperbaruiDashboard from "@/content/help/tutorial/l-3-memperbarui-dashboard.md";
+import lLaporanPelatihan from "@/content/help/tutorial/l-4-laporan-pelatihan.md";
+import lLaporanProduksi from "@/content/help/tutorial/l-5-laporan-produksi.md";
+import lLaporanKelompokTani from "@/content/help/tutorial/l-6-laporan-kelompok-tani.md";
 import pDashboardBmp from "@/content/help/tutorial/p-4-dashboard-bmp.md";
 import pPetaLahan from "@/content/help/tutorial/p-5-peta-lahan.md";
 import pKetersediaanData from "@/content/help/tutorial/p-6-ketersediaan-data.md";
+import pRingkasanPetani from "@/content/help/tutorial/p-7-ringkasan-petani.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 
@@ -153,6 +158,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       "Langkah demi langkah pekerjaan yang paling sering dilakukan: mendaftarkan petani, lahan, pelatihan, dan produksi.",
     icon: ListChecks,
     topics: [
+      { id: "menambah-lembaga", source: tMenambahLembaga },
       { id: "menambah-petani", source: tMenambahPetani },
       { id: "menambah-lahan", source: tMenambahLahan },
       { id: "mencatat-pelatihan", source: tMencatatPelatihan },
@@ -186,6 +192,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "dashboard-bmp", source: pDashboardBmp },
       { id: "peta-lahan", source: pPetaLahan },
       { id: "ketersediaan-data", source: pKetersediaanData },
+      { id: "ringkasan-petani", source: pRingkasanPetani },
     ],
   },
   {
@@ -198,6 +205,9 @@ const CHAPTER_SOURCES: ChapterSource[] = [
     topics: [
       { id: "membuat-laporan", source: lMembuatLaporan },
       { id: "laporan-lahan", source: lLaporanLahan },
+      { id: "laporan-pelatihan", source: lLaporanPelatihan },
+      { id: "laporan-produksi", source: lLaporanProduksi },
+      { id: "laporan-kelompok-tani", source: lLaporanKelompokTani },
       { id: "memperbarui-dashboard", source: lMemperbaruiDashboard },
     ],
   },

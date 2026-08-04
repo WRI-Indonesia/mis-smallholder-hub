@@ -6,6 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   TRAINING_PACKAGE_LABELS,
   TRAINING_PACKAGE_SHORT,
@@ -16,19 +17,51 @@ import type { TrainingCoverageRow, TrainingPackageCode } from "@/types/dashboard
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatPct = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
 
+/** Baris rincian tooltip: chip warna segmen, label, lalu angka + persen. */
+function CellTooltipRow({
+  chip,
+  label,
+  value,
+  pct,
+}: {
+  chip: string;
+  label: string;
+  value: number;
+  pct: number;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${chip}`} />
+      <span className="text-background/75">{label}</span>
+      <span className="ml-auto pl-4 font-semibold tabular-nums">{formatNumber(value)}</span>
+      <span className="w-11 shrink-0 text-right tabular-nums text-background/60">
+        {formatPct(pct)}%
+      </span>
+    </div>
+  );
+}
+
 /**
  * Satu sel: persen di kiri luar bar (revisi owner #198), lalu stacked bar
  * tebal. Tanpa filter tahun: segmen hijau (sudah) + abu (belum). Dengan filter
  * tahun ada segmen tengah hijau muda = dilatih HANYA di tahun lain (#201) —
- * mereka bukan "belum dilatih", cakupan program kumulatif. Label segmen
- * disembunyikan/dipindah bila segmennya terlalu sempit; tooltip selalu lengkap.
+ * mereka bukan "belum dilatih", cakupan program kumulatif.
+ *
+ * Penempatan angka (#205): "muat" diukur dari lebar piksel segmen via
+ * container query — bukan persen, yang menyesatkan di bar lebar. Angka dilatih
+ * tahun terpilih di DALAM segmennya bila muat (≥3rem), kalau tidak menempel
+ * tepat setelah batas segmen; angka "tahun lain" butuh ruang ekstra (≥6rem,
+ * rata kanan) agar tak bertabrakan dengan fallback tsb. Tooltip selalu lengkap.
  */
 function DistrictCell({
+  label,
   trained,
   trainedOther,
   total,
   year,
 }: {
+  /** Konteks sel untuk judul tooltip, mis. "Paket 1 — Kampar". */
+  label: string;
   trained: number;
   /** Dilatih hanya di tahun lain (0 bila tanpa filter tahun). */
   trainedOther: number;
@@ -41,58 +74,94 @@ function DistrictCell({
   const pct = (trained / total) * 100;
   const pctOther = (trainedOther / total) * 100;
   const belum = total - trained - trainedOther;
-  const sudahInside = pct >= 20;
-  const otherInside = pctOther >= 12;
   const belumInside = 100 - pct - pctOther >= 20;
-  const title =
-    year == null
-      ? `${formatNumber(trained)} sudah · ${formatNumber(belum)} belum dari ${formatNumber(total)} petani`
-      : `${formatNumber(trained)} dilatih ${year} · ${formatNumber(trainedOther)} dilatih tahun lain · ${formatNumber(belum)} belum pernah, dari ${formatNumber(total)} petani`;
   return (
-    <div className="flex items-center gap-2" title={title}>
-      <span className="w-11 shrink-0 text-right text-xs font-semibold tabular-nums">
-        {formatPct(pct)}%
-      </span>
-      {/* Angka sudah selalu menempel di BATAS segmen (kanan-dalam bila muat,
-          tepat setelah batas bila sempit) — posisi konsisten antar baris (#198). */}
-      <div className="relative h-5 flex-1 overflow-hidden rounded-full bg-muted">
-        {trainedOther > 0 && (
-          <div
-            className="absolute inset-y-0 flex items-center justify-center bg-emerald-300 dark:bg-emerald-800"
-            style={{ left: `${Math.min(pct, 100)}%`, width: `${Math.min(pctOther, 100)}%` }}
-          >
-            {otherInside && (
-              <span className="text-[10px] font-semibold text-emerald-950 dark:text-emerald-100 tabular-nums whitespace-nowrap">
+    <Tooltip>
+      <TooltipTrigger render={<div className="flex items-center gap-2" />}>
+        <span className="w-11 shrink-0 text-right text-xs font-semibold tabular-nums">
+          {formatPct(pct)}%
+        </span>
+        <div className="relative h-5 flex-1 overflow-hidden rounded-full bg-muted">
+          {trainedOther > 0 && (
+            <div
+              className="absolute inset-y-0 @container flex items-center justify-end bg-emerald-300 dark:bg-emerald-800"
+              style={{ left: `${Math.min(pct, 100)}%`, width: `${Math.min(pctOther, 100)}%` }}
+            >
+              <span className="hidden @min-[6rem]:inline pr-2 text-[10px] font-semibold text-emerald-950 dark:text-emerald-100 tabular-nums whitespace-nowrap">
                 {formatNumber(trainedOther)}
+              </span>
+            </div>
+          )}
+          <div
+            className="absolute inset-y-0 left-0 @container flex items-center justify-end bg-emerald-600 dark:bg-emerald-500"
+            style={{ width: `${Math.min(pct, 100)}%` }}
+          >
+            <span className="hidden @min-[3rem]:inline pr-2 text-[10px] font-semibold text-white tabular-nums whitespace-nowrap">
+              {formatNumber(trained)}
+            </span>
+            {trained > 0 && (
+              <span
+                className={`@min-[3rem]:hidden absolute inset-y-0 left-full flex items-center pl-1.5 text-[10px] font-semibold tabular-nums whitespace-nowrap ${
+                  trainedOther > 0
+                    ? "text-emerald-950 dark:text-emerald-100"
+                    : "text-emerald-700 dark:text-emerald-400"
+                }`}
+              >
+                {formatNumber(trained)}
               </span>
             )}
           </div>
-        )}
-        <div
-          className="absolute inset-y-0 left-0 flex items-center justify-end bg-emerald-600 dark:bg-emerald-500"
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        >
-          {sudahInside && (
-            <span className="pr-2 text-[10px] font-semibold text-white tabular-nums whitespace-nowrap">
-              {formatNumber(trained)}
+          {belumInside && (
+            <span className="absolute inset-y-0 right-0 flex items-center pr-2 text-[10px] tabular-nums text-muted-foreground whitespace-nowrap">
+              {formatNumber(belum)}
             </span>
           )}
         </div>
-        {!sudahInside && trained > 0 && trainedOther === 0 && (
-          <span
-            className="absolute inset-y-0 flex items-center pl-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums whitespace-nowrap"
-            style={{ left: `${pct}%` }}
-          >
-            {formatNumber(trained)}
-          </span>
+      </TooltipTrigger>
+      <TooltipContent className="flex-col items-stretch gap-1 px-3 py-2 tabular-nums">
+        <p className="pb-0.5 font-semibold">{label}</p>
+        {year == null ? (
+          <>
+            <CellTooltipRow
+              chip="bg-emerald-600 dark:bg-emerald-500"
+              label="Sudah dilatih"
+              value={trained}
+              pct={pct}
+            />
+            <CellTooltipRow
+              chip="bg-muted border border-border"
+              label="Belum"
+              value={belum}
+              pct={total > 0 ? (belum / total) * 100 : 0}
+            />
+          </>
+        ) : (
+          <>
+            <CellTooltipRow
+              chip="bg-emerald-600 dark:bg-emerald-500"
+              label={`Dilatih ${year}`}
+              value={trained}
+              pct={pct}
+            />
+            <CellTooltipRow
+              chip="bg-emerald-300 dark:bg-emerald-800"
+              label="Dilatih tahun lain"
+              value={trainedOther}
+              pct={pctOther}
+            />
+            <CellTooltipRow
+              chip="bg-muted border border-border"
+              label="Belum pernah"
+              value={belum}
+              pct={total > 0 ? (belum / total) * 100 : 0}
+            />
+          </>
         )}
-        {belumInside && (
-          <span className="absolute inset-y-0 right-0 flex items-center pr-2 text-[10px] tabular-nums text-muted-foreground whitespace-nowrap">
-            {formatNumber(belum)}
-          </span>
-        )}
-      </div>
-    </div>
+        <p className="mt-1 border-t border-background/20 pt-1 text-background/70">
+          dari {formatNumber(total)} petani aktif
+        </p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -224,6 +293,7 @@ export function TrainingDistrictPanel({
                         {showTotal && (
                           <td className="py-2.5 px-2 border-r border-border/60">
                             <DistrictCell
+                              label={`${TRAINING_PACKAGE_SHORT[code]} — Total (Riau)`}
                               trained={totalByPackage[code] ?? 0}
                               trainedOther={totalByPackageOther[code] ?? 0}
                               total={summaryFarmers}
@@ -234,6 +304,7 @@ export function TrainingDistrictPanel({
                         {districts.map((d) => (
                           <td key={d.districtName} className="py-2.5 px-2">
                             <DistrictCell
+                              label={`${TRAINING_PACKAGE_SHORT[code]} — ${d.districtName}`}
                               trained={d.byPackage[code] ?? 0}
                               trainedOther={d.byPackageOtherYears[code] ?? 0}
                               total={d.totalFarmers}
@@ -253,6 +324,7 @@ export function TrainingDistrictPanel({
                       {showTotal && (
                         <td className="py-2.5 px-2 border-r border-border/60">
                           <DistrictCell
+                            label="Min. 1 Paket — Total (Riau)"
                             trained={summaryTrained}
                             trainedOther={summaryTrainedOther}
                             total={summaryFarmers}
@@ -263,6 +335,7 @@ export function TrainingDistrictPanel({
                       {districts.map((d) => (
                         <td key={d.districtName} className="py-2.5 px-2">
                           <DistrictCell
+                            label={`Min. 1 Paket — ${d.districtName}`}
                             trained={d.anyPackage}
                             trainedOther={d.anyPackageOtherYears}
                             total={d.totalFarmers}

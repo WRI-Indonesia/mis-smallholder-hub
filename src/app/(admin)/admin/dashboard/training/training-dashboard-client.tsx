@@ -59,7 +59,7 @@ const formatGeneratedAt = (iso: string) => {
   return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export function TrainingDashboardClient({ view }: { view: TrainingDashboardView }) {
+export function TrainingDashboardClient({ view, helpSlot }: { view: TrainingDashboardView; helpSlot?: React.ReactNode }) {
   // Filter disimpan di query string (TD-021) agar tampilan bisa di-bookmark &
   // dikirim ke rekan, dan bertahan saat halaman dimuat ulang.
   const { get, setMany } = useUrlFilters();
@@ -125,7 +125,10 @@ export function TrainingDashboardClient({ view }: { view: TrainingDashboardView 
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard Pelatihan</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Dashboard Pelatihan</h1>
+            {helpSlot}
+          </div>
           <p className="text-muted-foreground">
             Cakupan &amp; efektivitas program pelatihan petani — data per{" "}
             <span className="font-medium text-foreground">

@@ -45,6 +45,7 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-kelompok-tani` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Kelompok Tani (Ringkasan)" | Heading | Deskripsi "Rekap Kelompok Tani turunan dari data lahan (per Lembaga Petani)" |
 | "Distrik" | Filter (combobox + search, opsional) | Default "Semua Distrik" |
 | "Lembaga Petani" | Filter (combobox + search, opsional) | Default "Semua Lembaga Petani"; empty "Lembaga petani tidak ditemukan." |

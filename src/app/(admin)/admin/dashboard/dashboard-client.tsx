@@ -23,6 +23,8 @@ const DashboardMap = dynamic(() => import("./dashboard-map").then((m) => m.Dashb
 
 interface Props {
   initialView: DashboardSnapshotView | null;
+  /** Tautan bantuan kontekstual (HelpHint) — dirender server agar markdown Bantuan tidak ikut bundle client. */
+  helpSlot?: React.ReactNode;
 }
 
 const PACKAGE_LABELS: { key: keyof KTDetails["trainingCoverage"]; label: string }[] = [
@@ -53,7 +55,7 @@ const formatGeneratedAt = (iso: string) => {
   return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export function DashboardClient({ initialView }: Props) {
+export function DashboardClient({ initialView, helpSlot }: Props) {
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [joinedYear, setJoinedYear] = useState<number | null>(null);
   const [selectedKtId, setSelectedKtId] = useState<string | null>(null);
@@ -101,7 +103,10 @@ export function DashboardClient({ initialView }: Props) {
       {/* Header: title + generate note (left), filters (right) */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Main Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Main Dashboard</h1>
+            {helpSlot}
+          </div>
           {view ? (
             <p className="text-muted-foreground">
               Nilai di bawah di-generate pada{" "}
@@ -223,7 +228,11 @@ export function DashboardClient({ initialView }: Props) {
 
       {view ? (
         <>
-          <DashboardSummaryCards stats={displayedStats} />
+          <DashboardSummaryCards
+            stats={displayedStats}
+            kts={selectedKt ? [selectedKt] : activeKts}
+            generatedAtLabel={formatGeneratedAt(view.snapshotDate)}
+          />
 
           <div className="grid gap-4 lg:grid-cols-5">
             <div className="lg:col-span-3">

@@ -71,6 +71,7 @@ Halaman: Dashboard Ketersediaan Data (/admin/data-analyst/data-availability)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `data-analyst-data-availability` (`findTutorialForMenu`), dibuka di tab baru |
 | Judul halaman | Heading `h1` | "Dashboard Ketersediaan Data" |
 | Deskripsi | Teks | "Kelengkapan data 5 domain lintas Lembaga Petani — data per {tanggal generate}" |
 | Filter Kategori Lembaga | Select | "Semua Kategori", "Ex-Plasma", "Swadaya" |

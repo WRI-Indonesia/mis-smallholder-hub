@@ -74,6 +74,7 @@ Halaman: User Management (/admin/settings/users)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `settings-users` (`findTutorialForMenu`), dibuka di tab baru |
 | `User Management` | Heading | `h1`, deskripsi: `Kelola akun pengguna sistem` |
 | Filter status | Tombol grup | `Semua` / `Aktif` / `Nonaktif` (toolbar kiri, filter client-side) |
 | Pencarian | Filter | Placeholder `Cari nama atau email...`, mencari pada kolom `name` dan `email` |

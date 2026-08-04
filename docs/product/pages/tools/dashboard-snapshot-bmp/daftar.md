@@ -33,6 +33,7 @@ Halaman: Daftar Snapshot BMP (/admin/tools/snapshot-bmp)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `dashboard-snapshot` (`findTutorialForMenu`), dibuka di tab baru — menuju tutorial Memperbarui Dashboard |
 | Dashboard Snapshot BMP | Heading | `h1` + deskripsi "Buat dan kelola snapshot historis dari data dashboard BMP" |
 | Buat Snapshot Baru | Card | Hanya tampil bila permission `CREATE`; ikon `Camera` |
 | Generate Snapshot | Tombol | `generateBmpSnapshot({ districtId: null })`; label saat proses "Membuat…"; toast "Snapshot BMP berhasil dibuat" |

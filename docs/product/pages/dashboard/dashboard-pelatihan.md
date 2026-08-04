@@ -63,7 +63,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 |---|---|
 | File | `src/app/(admin)/admin/dashboard/training/page.tsx` |
 | Tipe | Server Component → `TrainingDashboardClient` (Client Component) |
-| Komponen anak | `training-dashboard-client.tsx`, `training-score-cards.tsx`, `training-coverage-matrix.tsx`, `training-trend-chart.tsx`, `training-effectiveness-panel.tsx`, `training-quality-panel.tsx`, `training-untrained-modal.tsx`, `loading.tsx` |
+| Komponen anak | `training-dashboard-client.tsx`, `training-score-cards.tsx`, `training-district-panel.tsx`, `training-coverage-matrix.tsx`, `training-trend-chart.tsx`, `training-effectiveness-panel.tsx`, `training-quality-panel.tsx`, `training-untrained-modal.tsx`, `loading.tsx` |
 | Guard | `requirePermission("dashboard-training")` (halaman); `hasPermission("dashboard-training", "VIEW")` + `getAccessContext()` di action |
 | Server action / data | `getTrainingDashboardView()` dari `src/server/actions/dashboard-training.ts` — query langsung ke DB (bukan snapshot), difilter `isActive` + access context; `getUntrainedFarmers(groupId, packageCode, year)` untuk dialog drill-down |
 | Helper agregasi | `filterTrainingGroups`, `trainingTotals`, `trainingCoverageMatrix`, `trainingActivePackages`, `trainingTrendSeries`, `trainingScoreRows`, `trainingQualityStats`, `trainingAvailableYears`, `trainingTargetGap` / `TRAINING_COVERAGE_TARGET` dari `src/lib/training-dashboard-aggregation.ts` |
@@ -75,6 +75,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `dashboard-training` (`findTutorialForMenu`), dibuka di tab baru |
 | Judul halaman | Heading `h1` | "Dashboard Pelatihan" |
 | Deskripsi | Teks | "Cakupan & efektivitas program pelatihan petani — data per {tanggal generate}" |
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
@@ -105,8 +106,9 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 |---|---|---|
 | Judul | Collapsible trigger | "Capaian Paket per Distrik" (default terbuka; ringkasan saat dilipat: jumlah distrik + % terlatih min. 1 paket) + legend Sudah/Belum (kanan bawah). Card **disembunyikan saat filter Lembaga aktif** (roll-up distrik atas satu Lembaga tidak bermakna); kolom Total (Riau) disembunyikan bila hanya 1 distrik |
 | Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Min. 1 Paket; kolom = **Total (Riau)** (agregat scope, ber-border pemisah; disembunyikan bila hanya 1 distrik dalam scope) lalu distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
-| Sel | Stacked bar tebal | Persen di kiri luar bar; segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum (label sembunyi bila segmen sempit, tooltip lengkap); distrik tanpa petani → "—" |
-| Sel saat filter Tahun aktif | Stacked bar 3 segmen | Hijau tua = dilatih **tahun terpilih** (persen kiri mengacu segmen ini), hijau muda = dilatih **hanya di tahun lain** (`byPackageOtherYears`/`anyPackageOtherYears` dari `trainingCoverageMatrix` — petani dilatih di kedua kelompok tahun dihitung sekali di "tahun ini"), abu = **belum pernah dilatih**. Legend & catatan kaki menyesuaikan ("Dilatih {tahun} · Tahun lain · Belum pernah"). Cakupan kumulatif — petani yang dilatih tahun lain tidak terhitung "belum" |
+| Sel | Stacked bar tebal | Persen di kiri luar bar; segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum; "muat"-nya label diukur dari lebar piksel segmen via container query (≥3rem), bukan persen (#205); distrik tanpa petani → "—" |
+| Tooltip sel | Tooltip terstruktur (Base UI) | Menggantikan `title` native (#205): judul "{paket} — {distrik / Total (Riau)}", baris per segmen (chip warna + label + jumlah + persen), footer "dari {n} petani aktif" — isi mengikuti mode tanpa/dengan filter Tahun |
+| Sel saat filter Tahun aktif | Stacked bar 3 segmen | Hijau tua = dilatih **tahun terpilih** (persen kiri mengacu segmen ini), hijau muda = dilatih **hanya di tahun lain** (`byPackageOtherYears`/`anyPackageOtherYears` dari `trainingCoverageMatrix` — petani dilatih di kedua kelompok tahun dihitung sekali di "tahun ini"), abu = **belum pernah dilatih**. Legend & catatan kaki menyesuaikan ("Dilatih {tahun} · Tahun lain · Belum pernah"). Angka dilatih tahun terpilih selalu tampil: di dalam segmen hijau tua bila muat, bila sempit menempel tepat setelah batas segmen; angka "tahun lain" rata kanan segmennya dan butuh ruang lebih (≥6rem) agar tak bertabrakan (#205). Cakupan kumulatif — petani yang dilatih tahun lain tidak terhitung "belum" |
 | Empty state | Teks | "Tidak ada distrik pada filter ini." |
 
 Label tahun: "semua tahun" atau "{YYYY}".

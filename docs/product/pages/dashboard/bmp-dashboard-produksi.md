@@ -56,6 +56,7 @@ Halaman: BMP Dashboard (Produksi) (/admin/dashboard/bmp)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `dashboard-bmp` (`findTutorialForMenu`), dibuka di tab baru |
 | Judul halaman | Heading `h1` | "BMP Dashboard (Produksi)" |
 | Catatan generate | Teks | "Nilai di bawah di-generate pada {tanggal snapshot}" / "Belum ada snapshot" |
 | Filter Kategori Lembaga | Select | "Semua Kategori", "Ex-Plasma" (`EX_PLASMA`), "Swadaya" (`SWADAYA`) |
