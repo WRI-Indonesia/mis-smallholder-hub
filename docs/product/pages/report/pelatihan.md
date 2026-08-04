@@ -21,7 +21,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 │   └── Tabel Sesi
 │       ├── Kolom: Paket Pelatihan, Tanggal Pelatihan, Lokasi, Total Peserta
 │       └── Pencarian paket + paginasi 10 baris
-├── Tab 2: Cakupan per Petani
+├── Tab 2: Detail per Pelatihan
 │   ├── Filter Jenis Pelatihan
 │   ├── Filter Tanggal Pelatihan (bila paket spesifik)
 │   ├── Tabel Cakupan (mode "Semua Pelatihan")
@@ -29,6 +29,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 │   │              Paket 2 - MK, Paket 2 - K3, Paket 3 & 4
 │   └── Tabel Peserta Sesi (mode paket spesifik)
 │       ├── Kolom: NO, Nama Petani, Farmer ID, Tanggal, Pre-Test, Post-Test
+│       ├── "Semua Tanggal" → petani unik, baris = sesi terakhirnya
 │       └── Blok print-only DAFTAR PESERTA PELATIHAN
 └── Ekspor
     ├── Excel (2-Sheet)
@@ -50,6 +51,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-training` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Pelatihan" | Heading | Deskripsi "Analisis ringkasan sesi pelatihan dan cakupan petani" |
 | "Parameter Laporan" | Kartu filter collapsible | Ikon `BarChart3`; klik header untuk buka/tutup (ikut menyembunyikan kartu KPI) |
 | "Distrik *" | Filter (combobox + search, wajib) | Placeholder "Pilih Distrik" |
@@ -59,7 +61,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 | Header cetak | Blok print-only | "LAPORAN RINGKASAN PELATIHAN" |
 | "Total Sesi" / "Total Peserta" / "Total Unik" | Kartu KPI | Badge "Sesi" / "Peserta" / "Petani" |
 | "Cakupan Paket 1", "Cakupan Paket 2 - MK", "Cakupan Paket 2 - HSE (K3)", "Cakupan P3 & 4" | Kartu KPI | Nilai persen + sub-teks "`<n>` dari `<total petani>`" |
-| "Sesi Pelatihan" / "Cakupan per Petani" | Tab | Default tab `Sesi Pelatihan` |
+| "Sesi Pelatihan" / "Detail per Pelatihan" | Tab | Default tab `Sesi Pelatihan` |
 | "Excel (2-Sheet)" & "PDF" | Tombol ekspor | Berada di baris tab, berlaku untuk kedua tab |
 
 ## Tab 1 — Sesi Pelatihan
@@ -73,7 +75,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 | Lokasi | ya | "—" bila kosong |
 | Total Peserta | ya | "`<n>` Peserta" |
 
-## Tab 2 — Cakupan per Petani
+## Tab 2 — Detail per Pelatihan
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
@@ -92,14 +94,14 @@ Bila filter jenis = "Semua Pelatihan" → tabel cakupan (`DataTable`; pencarian 
 | Paket 2 - K3 | ya | Tanggal atau "-belum-" |
 | Paket 3 & 4 | ya | Tanggal atau "-belum-" |
 
-Bila paket spesifik dipilih → tabel peserta sesi (`DataTable`; pencarian `name` placeholder "Cari nama peserta..."; ekspor Excel `Laporan_Pelatihan_<Nama Paket>` + tombol PDF) plus blok print-only "DAFTAR PESERTA PELATIHAN" (Jenis Pelatihan, Tanggal, Lokasi):
+Bila paket spesifik dipilih → tabel peserta sesi (`DataTable`; pencarian `name` placeholder "Cari nama peserta..."; ekspor Excel `Laporan_Pelatihan_<Nama Paket>` + tombol PDF) plus blok print-only "DAFTAR PESERTA PELATIHAN" (Jenis Pelatihan, Tanggal, Lokasi). Tanggal "Semua Tanggal" → **petani unik**: yang ikut lebih dari satu sesi paket itu tampil satu baris dengan tanggal + nilai pre/post dari sesi terakhirnya — berlaku sama di tabel layar, Excel, dan PDF; kolom Tanggal selalu berisi tanggal sesi per baris:
 
 | Kolom | Sortable |
 |---|---|
 | NO | tidak |
 | Nama Petani | ya |
 | Farmer ID | ya |
-| Tanggal | tidak |
+| Tanggal | ya |
 | Pre-Test | ya |
 | Post-Test | ya |
 

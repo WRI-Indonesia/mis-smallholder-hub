@@ -281,17 +281,23 @@ export function TrainingReportClient({ districts }: Props) {
     if (!reportData || selectedPackageCode === "all") return [];
     if (selectedActivityDate === "all") {
       const matching = reportData.activities.filter((a) => a.packageCode === selectedPackageCode);
-      return matching.flatMap((act) =>
-        act.participants.map((p) => ({
-          ...p,
-          trainingDate: act.trainingDate,
-        }))
-      );
+      // Petani unik — yang ikut sesi paket ini lebih dari sekali hanya tampil
+      // satu baris, dengan tanggal (dan nilai) dari sesi terakhirnya.
+      const latestByFarmer = new Map<string, SpecificTrainingRow>();
+      for (const act of matching) {
+        for (const p of act.participants) {
+          const prev = latestByFarmer.get(p.farmerId);
+          if (!prev || new Date(act.trainingDate).getTime() >= new Date(prev.trainingDate!).getTime()) {
+            latestByFarmer.set(p.farmerId, { ...p, trainingDate: act.trainingDate });
+          }
+        }
+      }
+      return [...latestByFarmer.values()];
     } else {
       const target = reportData.activities.find(
         (a) => a.packageCode === selectedPackageCode && formatDateDMY(a.trainingDate, "—") === selectedActivityDate
       );
-      return target?.participants ?? [];
+      return (target?.participants ?? []).map((p) => ({ ...p, trainingDate: target!.trainingDate }));
     }
   }, [reportData, selectedPackageCode, selectedActivityDate]);
 
@@ -328,9 +334,9 @@ export function TrainingReportClient({ districts }: Props) {
     {
       key: "trainingDate",
       label: "Tanggal",
-      sortable: false,
+      sortable: true,
       cellClassName: "text-sm text-muted-foreground tabular-nums",
-      render: () => selectedTrainingDate,
+      render: (row) => formatDateDMY(row.trainingDate ?? null, "—"),
     },
     {
       key: "preTestScore",
@@ -353,7 +359,7 @@ export function TrainingReportClient({ districts }: Props) {
       no: idx !== undefined ? idx + 1 : "",
       name: row.name,
       farmerIdCode: row.farmerIdCode,
-      trainingDate: selectedTrainingDate,
+      trainingDate: formatDateDMY(row.trainingDate ?? null, "—"),
       preTestScore: row.preTestScore ?? "—",
       postTestScore: row.postTestScore ?? "—",
     };
@@ -704,7 +710,7 @@ export function TrainingReportClient({ districts }: Props) {
                   value="farmers"
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-1 pb-3 pt-1 text-sm font-semibold shadow-none"
                 >
-                  Cakupan per Petani
+                  Detail per Pelatihan
                 </TabsTrigger>
               </TabsList>
 
