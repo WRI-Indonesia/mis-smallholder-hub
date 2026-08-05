@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ReleaseMetric } from "@/types/release-metrics";
-import { fmt1, fmt2, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtRvs } from "./metrics-shared";
+import { fmt1, fmt2, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtRvs, issueUrl, releaseUrl } from "./metrics-shared";
 import { RvsCurveChart } from "./rvs-curve-chart";
 import { RvsPeriodBars } from "./rvs-period-bars";
 import { RoadmapStepChart, TestCountChart } from "./metrics-small-charts";
@@ -26,6 +26,31 @@ const lastOf = <T,>(arr: T[], pick: (t: T) => number | null): number | null => {
   }
   return null;
 };
+
+/** Teks catatan dengan setiap "#123" jadi tautan issue GitHub (tab baru). */
+function LinkifiedNotes({ notes }: { notes: string }) {
+  const parts = notes.split(/(#\d+)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^#\d+$/.test(part) ? (
+          <a
+            key={i}
+            href={issueUrl(part)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:underline hover:text-foreground"
+            title={`Buka issue ${part} di GitHub (tab baru)`}
+          >
+            {part}
+          </a>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
 
 function ChartCard({ title, subtitle, children, className }: { title: string; subtitle: string; children: ReactNode; className?: string }) {
   return (
@@ -243,7 +268,19 @@ export function MetricsDashboardClient({
               {[...releases].reverse().map((r) => (
                 <tr key={r.version} className="border-b border-border/40 align-top last:border-0">
                   <td className="whitespace-nowrap py-2 pr-3 font-medium">
-                    {r.isProvisional ? "berjalan" : r.version}
+                    {r.isProvisional ? (
+                      "berjalan"
+                    ) : (
+                      <a
+                        href={releaseUrl(r.version)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline-offset-2 hover:underline"
+                        title={`Buka GitHub Release ${r.version} (tab baru)`}
+                      >
+                        {r.version}
+                      </a>
+                    )}
                     {r.isProvisional && (
                       <Badge variant="outline" className="ml-1.5 font-normal text-muted-foreground">provisional</Badge>
                     )}
@@ -254,8 +291,27 @@ export function MetricsDashboardClient({
                   <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{r.releasedAt ? fmtDate(r.releasedAt) : "—"}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{fmtRvs(r)}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{r.delta != null ? fmtDelta(r.delta) : "—"}</td>
-                  <td className="py-2 pr-3 text-xs leading-snug text-muted-foreground">{r.notes}</td>
-                  <td className="py-2 text-xs tabular-nums text-muted-foreground">{r.issueRefs.join(" ") || "—"}</td>
+                  <td className="py-2 pr-3 text-xs leading-snug text-muted-foreground">
+                    <LinkifiedNotes notes={r.notes} />
+                  </td>
+                  <td className="py-2 text-xs tabular-nums text-muted-foreground">
+                    {r.issueRefs.length > 0
+                      ? r.issueRefs.map((ref, i) => (
+                          <span key={ref}>
+                            {i > 0 && " "}
+                            <a
+                              href={issueUrl(ref)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline-offset-2 hover:underline hover:text-foreground"
+                              title={`Buka issue ${ref} di GitHub (tab baru)`}
+                            >
+                              {ref}
+                            </a>
+                          </span>
+                        ))
+                      : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

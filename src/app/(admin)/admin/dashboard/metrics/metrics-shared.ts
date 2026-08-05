@@ -51,3 +51,8 @@ export const dayEpoch = (iso: string) => {
 
 /** Tanggal efektif sebuah baris pada sumbu kalender (provisional → hari ini). */
 export const effectiveDate = (r: ReleaseMetric, today: string) => r.releasedAt ?? today;
+
+/** Repo GitHub proyek — tautan versi (release tag) & issue di Daftar rilis. */
+export const REPO_URL = "https://github.com/WRI-Indonesia/mis-smallholder-hub";
+export const releaseUrl = (version: string) => `${REPO_URL}/releases/tag/${version}`;
+export const issueUrl = (ref: string) => `${REPO_URL}/issues/${ref.replace("#", "")}`;
