@@ -38,6 +38,7 @@ import {
   formatMeasureArea,
   geomBounds,
   parcelLabelFit,
+  quantizeZoom,
   type LngLat,
 } from "./map-geo";
 
@@ -361,6 +362,11 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       const bounds = geojsonBounds(l.data);
       if (bounds) map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 600 });
     }
+    // Prune id layer yang sudah dihapus agar Set tidak tumbuh sepanjang sesi.
+    const activeIds = new Set(customLayers.map((l) => l.id));
+    for (const id of fittedLayerIds.current) {
+      if (!activeIds.has(id)) fittedLayerIds.current.delete(id);
+    }
   }, [customLayers]);
 
   // Zoom-to per layer dari panel (klik nama / ikon crosshair). Token yang sudah
@@ -480,9 +486,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
         interactiveLayerIds={interactiveLayerIds}
         onLoad={(e) => {
           fitAll();
-          setZoom(e.target.getZoom());
+          setZoom(quantizeZoom(e.target.getZoom()));
         }}
-        onZoomEnd={(e) => setZoom(e.viewState.zoom)}
+        onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onClick={handleClick}
         onMouseMove={(e) => {
           e.target.getCanvas().style.cursor = measuring

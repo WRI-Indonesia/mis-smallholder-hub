@@ -38,10 +38,11 @@ const RECENT_MS = 24 * 60 * 60 * 1000;
 export async function fetchHotspots(
   bbox: [number, number, number, number],
   dayRange: HotspotDayRange,
-  now: number
+  now: number,
+  signal?: AbortSignal
 ): Promise<FeatureCollection> {
   const [w, s, e, n] = bbox;
-  const res = await fetch(`/api/map-hotspot?bbox=${w},${s},${e},${n}&dayRange=${dayRange}`);
+  const res = await fetch(`/api/map-hotspot?bbox=${w},${s},${e},${n}&dayRange=${dayRange}`, { signal });
   if (!res.ok) throw new Error("Gagal memuat titik api");
   const fc = (await res.json()) as FeatureCollection;
   for (const f of fc.features) {

@@ -78,6 +78,15 @@ export function geomBounds(geometry: unknown): [number, number, number, number] 
  * wrapping across lines if needed. Returns the `text-max-width` (in ems) so
  * MapLibre wraps to the polygon width, or null if it can't fit (hide label).
  */
+/**
+ * Kuantisasi zoom untuk state label (step 0,5) — audit performa peta: perubahan
+ * zoom halus tidak meng-invalidate memo label, sehingga FeatureCollection label
+ * tidak di-setData ulang ke worker MapLibre pada tiap gesture kecil. Uji muat
+ * label (`parcelLabelFit`) cukup kasar sehingga step 0,5 tidak mengubah hasil
+ * secara berarti.
+ */
+export const quantizeZoom = (zoom: number) => Math.round(zoom * 2) / 2;
+
 export function parcelLabelFit(
   name: string,
   bounds: [number, number, number, number],

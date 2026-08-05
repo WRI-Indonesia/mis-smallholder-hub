@@ -122,7 +122,10 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
   useEffect(() => {
     if (!hotspot.visible) return;
     let active = true;
-    fetchHotspots(RIAU_BBOX, hotspot.dayRange, Date.now())
+    // Abort membatalkan request yang masih jalan saat toggle-off/ganti rentang —
+    // stale-guard `active` tetap dipakai untuk mencegah setState basi.
+    const controller = new AbortController();
+    fetchHotspots(RIAU_BBOX, hotspot.dayRange, Date.now(), controller.signal)
       .then((fc) => {
         if (!active) return;
         setHotspotData(fc);
@@ -134,6 +137,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
       .finally(() => active && setHotspotLoading(false));
     return () => {
       active = false;
+      controller.abort();
     };
   }, [hotspot.visible, hotspot.dayRange]);
 

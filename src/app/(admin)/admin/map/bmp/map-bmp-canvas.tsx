@@ -22,7 +22,7 @@ import type {
   ProductionSummary,
   ProductivityClass,
 } from "@/types/map";
-import { geomBounds, parcelLabelFit, PARCEL_LABEL_FONT_PX } from "../parcel/map-geo";
+import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "../parcel/map-geo";
 import {
   BMP_CATEGORIES,
   type BmpColorMode,
@@ -382,7 +382,15 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
           return;
         }
         const map = ref.getMap();
-        map.once("render", () => {
+        // Peta bisa di-remove sebelum event "render" datang (navigasi saat
+        // print) — timeout menjamin promise selesai agar tombol Cetak tidak
+        // macet "Menyiapkan…" dan closure map-nya lepas.
+        const timeout = setTimeout(() => {
+          map.off("render", onRender);
+          resolve(null);
+        }, 3000);
+        const onRender = () => {
+          clearTimeout(timeout);
           try {
             const canvas = map.getCanvas();
             resolve({
@@ -396,7 +404,8 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
             console.warn("Map capture failed:", err);
             resolve(null);
           }
-        });
+        };
+        map.once("render", onRender);
         map.triggerRepaint();
       });
     registerCapture(capture);
@@ -441,9 +450,9 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
         interactiveLayerIds={["bmp-parcel-fill"]}
         onLoad={(e) => {
           fitAll();
-          setZoom(e.target.getZoom());
+          setZoom(quantizeZoom(e.target.getZoom()));
         }}
-        onZoomEnd={(e) => setZoom(e.viewState.zoom)}
+        onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onClick={handleClick}
         onMouseMove={(e) => {
           e.target.getCanvas().style.cursor = e.features?.length ? "pointer" : "";

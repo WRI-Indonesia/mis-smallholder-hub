@@ -350,6 +350,16 @@ type ShpNamedExports = {
   combine: (pair: [Geometry[], Record<string, unknown>[]?]) => FeatureCollection;
 };
 
+/** Binary WASM unrar di-fetch sekali per sesi (audit peta: hindari spike per upload RAR). */
+let unrarWasmPromise: Promise<ArrayBuffer> | null = null;
+const loadUnrarWasm = (url: string) =>
+  (unrarWasmPromise ??= fetch(url)
+    .then((r) => r.arrayBuffer())
+    .catch((err) => {
+      unrarWasmPromise = null; // gagal → jangan cache kegagalan
+      throw err;
+    }));
+
 /**
  * Parse RAR shapefile: ekstrak arsip di browser (node-unrar-js, WASM lazy-load)
  * lalu rakit tiap pasangan .shp/.dbf/.prj/.cpg lewat named exports shpjs —
@@ -365,7 +375,7 @@ async function parseRarShapefile(buffer: ArrayBuffer): Promise<Feature[]> {
     ]);
   registerEsriProjections(proj4);
   const { parseShp, parseDbf, combine } = shpModule as unknown as ShpNamedExports;
-  const wasmBinary = await (await fetch(wasmAsset.default)).arrayBuffer();
+  const wasmBinary = await loadUnrarWasm(wasmAsset.default);
   const extractor = await createExtractorFromData({ data: buffer, wasmBinary });
 
   // Kunci lowercase agar pencarian pasangan .shp/.dbf/.prj tak peka kapitalisasi.

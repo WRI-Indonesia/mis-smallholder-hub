@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Source, Layer, Popup } from "react-map-gl/maplibre";
-import type { MapLayerMouseEvent, LayerProps } from "react-map-gl/maplibre";
+import type { MapLayerMouseEvent, LayerProps, MapRef } from "react-map-gl/maplibre";
 import type { Feature, Polygon, MultiPolygon, Position } from "geojson";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -105,7 +105,28 @@ const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecifi
   },
 };
 
+// Layer style per status validasi baris (isValid) — konstan, di-hoist agar tidak
+// dibuat ulang per render.
+const layerStyle: LayerProps = {
+  id: "bulk-parcels-fill",
+  type: "fill",
+  paint: {
+    "fill-color": ["case", ["get", "isValid"], "#22c55e", "#ef4444"],
+    "fill-opacity": 0.4,
+  },
+};
+
+const borderStyle: LayerProps = {
+  id: "bulk-parcels-border",
+  type: "line",
+  paint: {
+    "line-color": ["case", ["get", "isValid"], "#16a34a", "#dc2626"],
+    "line-width": 2,
+  },
+};
+
 export function ParcelBulkUploadMap({ data }: Props) {
+  const mapRef = useRef<MapRef>(null);
   const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
   const [popupInfo, setPopupInfo] = useState<{
     longitude: number;
@@ -116,65 +137,10 @@ export function ParcelBulkUploadMap({ data }: Props) {
     errors: string;
   } | null>(null);
 
-  const [viewport, setViewport] = useState({
-    longitude: 101.8,
-    latitude: 0.6,
-    zoom: 11,
-  });
-
-  // Calculate center of all valid geometry coordinates in data
-  function zoomToFitAll() {
-    let sumLng = 0;
-    let sumLat = 0;
-    let count = 0;
-
-    data.forEach((row) => {
-      if (!row.geometry) return;
-
-      let parsed = row.geometry;
-      if (typeof parsed === "string") {
-        try {
-          parsed = JSON.parse(parsed);
-        } catch {
-          return;
-        }
-      }
-
-      const geom = parsed as Polygon | MultiPolygon;
-      let coords: Position[] | Position[][] | Position[][][] = geom.coordinates;
-      if (geom.type === "Polygon") {
-        coords = geom.coordinates[0];
-      } else if (geom.type === "MultiPolygon") {
-        coords = geom.coordinates[0][0];
-      }
-
-      if (Array.isArray(coords)) {
-        (coords as Position[]).forEach((c: Position) => {
-          if (Array.isArray(c) && c.length >= 2 && c[0] !== null && c[1] !== null) {
-            sumLng += c[0];
-            sumLat += c[1];
-            count++;
-          }
-        });
-      }
-    });
-
-    if (count > 0) {
-      setViewport({
-        longitude: sumLng / count,
-        latitude: sumLat / count,
-        zoom: 11,
-      });
-    }
-  }
-
-  useEffect(() => {
-    zoomToFitAll();
-    setPopupInfo(null);
-  }, [data]);
-
-  // Construct GeoJSON FeatureCollection from data list
-  const featureCollection = (() => {
+  // Construct GeoJSON FeatureCollection from data list. Memo (#audit peta):
+  // JSON.parse per baris + pembangunan fitur hanya saat data berubah, dan
+  // referensi stabil mencegah <Source> setData ulang tiap render.
+  const featureCollection = useMemo(() => {
     const features: Feature[] = [];
     data.forEach((row) => {
       if (!row.geometry) return;
@@ -217,32 +183,41 @@ export function ParcelBulkUploadMap({ data }: Props) {
       type: "FeatureCollection" as const,
       features,
     };
-  })();
+  }, [data]);
+
+  // Center rata-rata vertex ring pertama tiap fitur — kamera digerakkan
+  // imperatif (uncontrolled) agar pan/zoom tidak me-render ulang React per frame.
+  const zoomToFitAll = useCallback(() => {
+    let sumLng = 0;
+    let sumLat = 0;
+    let count = 0;
+    featureCollection.features.forEach((f) => {
+      const geom = f.geometry as Polygon | MultiPolygon;
+      const ring = geom.type === "Polygon" ? geom.coordinates[0] : geom.coordinates[0][0];
+      if (!Array.isArray(ring)) return;
+      ring.forEach((c) => {
+        if (Array.isArray(c) && c.length >= 2 && c[0] !== null && c[1] !== null) {
+          sumLng += c[0];
+          sumLat += c[1];
+          count++;
+        }
+      });
+    });
+    if (count > 0) {
+      mapRef.current?.easeTo({ center: [sumLng / count, sumLat / count], zoom: 11, duration: 600 });
+    }
+  }, [featureCollection]);
+
+  useEffect(() => {
+    zoomToFitAll();
+    setPopupInfo(null);
+  }, [zoomToFitAll]);
 
   const hasFeatures = featureCollection.features.length > 0;
 
   if (!hasFeatures) {
     return null;
   }
-
-  // Dynamic layers to style depending on row validation status (isValid)
-  const layerStyle: LayerProps = {
-    id: "bulk-parcels-fill",
-    type: "fill",
-    paint: {
-      "fill-color": ["case", ["get", "isValid"], "#22c55e", "#ef4444"],
-      "fill-opacity": 0.4,
-    },
-  };
-
-  const borderStyle: LayerProps = {
-    id: "bulk-parcels-border",
-    type: "line",
-    paint: {
-      "line-color": ["case", ["get", "isValid"], "#16a34a", "#dc2626"],
-      "line-width": 2,
-    },
-  };
 
   const onMapClick = (event: MapLayerMouseEvent) => {
     const features = event.features;
@@ -271,9 +246,10 @@ export function ParcelBulkUploadMap({ data }: Props) {
   return (
     <div className="relative h-96 w-full rounded-md overflow-hidden border">
       <Map
-        {...viewport}
-        onMove={(evt) => setViewport(evt.viewState)}
+        ref={mapRef}
+        initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 11 }}
         mapStyle={MAP_STYLES[styleKey]}
+        onLoad={zoomToFitAll}
         onClick={onMapClick}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
