@@ -3,10 +3,10 @@ import type { NextRequest } from "next/server";
 import { MAP_OVERLAYS } from "@/app/(admin)/admin/map/parcel/map-overlays";
 
 // Tile proxy for the "Peta Lainnya" reference overlays. Needed because the
-// upstream SIGAP KLHK / Kementerian Kehutanan ArcGIS server (a) sends no CORS
-// headers, so the browser blocks direct tile reads, and (b) serves an
-// incomplete TLS certificate chain. Proxying server-side fixes both: the
-// browser only talks to our same-origin endpoint.
+// upstream government ArcGIS servers (Kemenhut geoportal, Satu Peta BIG)
+// (a) send no CORS headers, so the browser blocks direct tile reads, and
+// (b) may serve an incomplete TLS certificate chain. Proxying server-side
+// fixes both: the browser only talks to our same-origin endpoint.
 //
 // This is a deliberate, narrow exception to the "no REST API layer" rule — a
 // binary image endpoint cannot be a Server Action (MapLibre needs a plain GET
@@ -48,7 +48,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ key:
 
   const upstream =
     `${overlay.service}/export?bbox=${bbox}&bboxSR=3857&imageSR=3857` +
-    `&size=256,256&dpi=96&format=png32&transparent=true&f=image`;
+    `&size=256,256&dpi=96&format=png32&transparent=true&f=image` +
+    (overlay.exportLayers ? `&layers=${overlay.exportLayers}` : "");
 
   try {
     const res = await fetchTile(upstream);

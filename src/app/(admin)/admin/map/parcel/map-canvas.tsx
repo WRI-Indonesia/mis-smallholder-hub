@@ -431,7 +431,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
             type="raster"
             tiles={[overlayTileUrl(o.key)]}
             tileSize={256}
-            attribution="SIGAP KLHK / Kementerian Kehutanan"
+            attribution={o.source}
           >
             <Layer
               id={`overlay-${o.key}-layer`}
