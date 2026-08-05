@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
 import type { ReleaseMetric } from "@/types/release-metrics";
 import { dayEpoch, effectiveDate, fmtDate, fmtDateShort, fmtDelta, fmtInt, fmtRvs } from "./metrics-shared";
+import { TimeWindowButtons } from "./time-window";
 
 /**
  * Panel 1 (spec §4.2 + revisi owner): kurva RVS pada SUMBU KALENDER
@@ -21,15 +21,6 @@ import { dayEpoch, effectiveDate, fmtDate, fmtDateShort, fmtDelta, fmtInt, fmtRv
 
 const H = 240;
 const PAD = { t: 18, b: 26 };
-
-/** Rentang hari yang tampak di viewport; null = seluruh riwayat. */
-const PERIODS: { label: string; days: number | null }[] = [
-  { label: "1 Minggu", days: 7 },
-  { label: "1 Bulan", days: 30 },
-  { label: "6 Bulan", days: 183 },
-  { label: "1 Tahun", days: 365 },
-  { label: "Semua", days: null },
-];
 
 export function RvsCurveChart({
   releases,
@@ -91,22 +82,8 @@ export function RvsCurveChart({
 
   return (
     <div>
-      <div className="mb-3 flex justify-end gap-1" role="group" aria-label="Rentang waktu tampak">
-        {PERIODS.map((p) => (
-          <button
-            key={p.label}
-            onClick={() => setWindowDays(p.days)}
-            aria-pressed={windowDays === p.days}
-            className={cn(
-              "rounded px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring",
-              windowDays === p.days
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            {p.label}
-          </button>
-        ))}
+      <div className="mb-3">
+        <TimeWindowButtons value={windowDays} onChange={setWindowDays} />
       </div>
 
       <div className="flex gap-2">

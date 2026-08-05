@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReleaseMetric } from "@/types/release-metrics";
-import { dayEpoch, effectiveDate, fmtDate, fmtInt, fmt1, seriesColor } from "./metrics-shared";
+import { dayEpoch, effectiveDate, fmtDate, fmtDateShort, fmtInt, fmt1, seriesColor } from "./metrics-shared";
+import { TimeWindowButtons } from "./time-window";
 
 /**
  * Panel 3 & 4 (spec §4.4–§4.5). Roadmap: STEPPED line (naik diskret — tanpa
@@ -130,6 +131,12 @@ export function RoadmapStepChart({
   );
 }
 
+/**
+ * Jumlah test dengan slicer rentang yang sama dengan Kurva RVS (revisi owner):
+ * tombol periode = zoom viewport, sisanya scroll horizontal + auto-slide ke
+ * tanggal terbaru; sumbu Y tetap di kiri; geometri piksel nyata
+ * (ResizeObserver) agar titik/dash tidak terdistorsi.
+ */
 export function TestCountChart({
   releases,
   today,
@@ -143,13 +150,38 @@ export function TestCountChart({
   gridColor: string;
   surface: string;
 }) {
+  const [windowDays, setWindowDays] = useState<number | null>(30);
   const [hover, setHover] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [innerW, setInnerW] = useState(0);
   const color = seriesColor("growth", dark);
+
   const pts: Pt[] = releases
     .filter((r) => r.testCount != null)
     .map((r) => ({ r, t: dayEpoch(effectiveDate(r, today)), v: r.testCount as number }));
+  const t0 = pts[0].t;
+  const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
+  const scale = windowDays == null ? 1 : Math.max(1, (t1 - t0) / windowDays);
+
   const yMax = Math.ceil((Math.max(...pts.map((p) => p.v)) + 30) / 100) * 100;
-  const { x, y } = useScales(pts, 400, yMax);
+  const gridVals = Array.from({ length: Math.floor((yMax - 400) / 100) + 1 }, (_, i) => 400 + i * 100);
+  const y = (v: number) => PAD.t + (1 - (v - 400) / (yMax - 400)) * (H - PAD.t - PAD.b);
+
+  useEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setInnerW(el.clientWidth));
+    ro.observe(el);
+    setInnerW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+  const x = (t: number) => 12 + ((t - t0) / (t1 - t0)) * Math.max(0, innerW - 24);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [windowDays, innerW]);
 
   // Anotasi lonjakan terbesar antar rilis (spec: v0.15.0, 519→640).
   let jumpIdx = 1;
@@ -158,69 +190,108 @@ export function TestCountChart({
   }
   const jump = pts[jumpIdx].v - pts[jumpIdx - 1].v;
 
+  const uniqueDates = [...new Set(pts.map((p) => p.t))];
+  const labelEvery = Math.max(1, Math.ceil(uniqueDates.length / (6 * scale)));
   const hovered = hover != null ? pts[hover] : null;
 
   return (
-    <div className="relative">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-auto"
-        role="img"
-        aria-label={`Jumlah test otomatis dari ${fmtInt(pts[0].v)} menjadi ${fmtInt(pts[pts.length - 1].v)}; lonjakan terbesar +${fmtInt(jump)} pada ${pts[jumpIdx].r.version}`}
-      >
-        <title>Jumlah test otomatis per rilis</title>
-        {Array.from({ length: Math.floor((yMax - 400) / 100) + 1 }, (_, i) => 400 + i * 100).map((v) => (
-          <g key={v}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke={gridColor} strokeWidth={0.5} />
-            <text x={PAD.l - 5} y={y(v) + 3} textAnchor="end" fontSize={9} fill="currentColor" opacity={0.6}>
-              {fmtInt(v)}
-            </text>
-          </g>
-        ))}
-        <path
-          d={`M ${pts.map((p) => `${x(p.t)} ${y(p.v)}`).join(" L ")}`}
-          fill="none"
-          stroke={color}
-          strokeWidth={2}
-          strokeLinejoin="round"
-        />
-        {pts.map((p, i) => (
-          <g key={p.r.version}>
-            <circle
-              cx={x(p.t)}
-              cy={y(p.v)}
-              r={3}
-              fill={p.r.isEstimated || p.r.isProvisional ? surface : color}
-              stroke={color}
-              strokeWidth={1.5}
-            />
-            <circle
-              cx={x(p.t)}
-              cy={y(p.v)}
-              r={9}
-              fill="transparent"
-              onMouseEnter={() => setHover(i)}
-              onMouseLeave={() => setHover(null)}
-            />
-          </g>
-        ))}
-        <text
-          x={x(pts[jumpIdx].t) + 5}
-          y={y(pts[jumpIdx].v) + 1}
-          fontSize={9}
-          fill="currentColor"
-          opacity={0.65}
+    <div>
+      <div className="mb-3">
+        <TimeWindowButtons value={windowDays} onChange={setWindowDays} compact />
+      </div>
+      <div className="flex gap-2">
+        <div
+          className="relative w-10 shrink-0 text-right text-[9px] tabular-nums text-muted-foreground"
+          style={{ height: H }}
+          aria-hidden
         >
-          +{fmtInt(jump)} ({pts[jumpIdx].r.version})
-        </text>
-        <text x={PAD.l} y={H - 6} fontSize={9} fill="currentColor" opacity={0.6}>
-          {fmtDate(effectiveDate(pts[0].r, today))}
-        </text>
-        <text x={W - PAD.r} y={H - 6} textAnchor="end" fontSize={9} fill="currentColor" opacity={0.6}>
-          {fmtDate(effectiveDate(pts[pts.length - 1].r, today))}
-        </text>
-      </svg>
-      {hovered && <Tooltip pt={hovered} x={x(hovered.t)} format={(v) => `${fmtInt(v)} test`} />}
+          {gridVals.map((v) => (
+            <span key={v} className="absolute right-0" style={{ top: y(v) - 5 }}>
+              {fmtInt(v)}
+            </span>
+          ))}
+        </div>
+        <div ref={scrollRef} className="flex-1 overflow-x-auto pb-1">
+          <div ref={innerRef} className="relative" style={{ width: `${scale * 100}%`, minWidth: "100%", height: H }}>
+            {innerW > 0 && (
+              <svg
+                width={innerW}
+                height={H}
+                className="absolute inset-0"
+                role="img"
+                aria-label={`Jumlah test otomatis dari ${fmtInt(pts[0].v)} menjadi ${fmtInt(pts[pts.length - 1].v)}; lonjakan terbesar +${fmtInt(jump)} pada ${pts[jumpIdx].r.version}`}
+              >
+                <title>Jumlah test otomatis per rilis</title>
+                {gridVals.map((v) => (
+                  <line key={v} x1={0} x2={innerW} y1={y(v)} y2={y(v)} stroke={gridColor} strokeWidth={0.5} />
+                ))}
+                <path
+                  d={`M ${pts.map((p) => `${x(p.t)} ${y(p.v)}`).join(" L ")}`}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={2}
+                  strokeLinejoin="round"
+                />
+                {pts.map((p, i) => (
+                  <g key={p.r.version}>
+                    <circle
+                      cx={x(p.t)}
+                      cy={y(p.v)}
+                      r={3}
+                      fill={p.r.isEstimated || p.r.isProvisional ? surface : color}
+                      stroke={color}
+                      strokeWidth={1.5}
+                    />
+                    <circle
+                      cx={x(p.t)}
+                      cy={y(p.v)}
+                      r={9}
+                      fill="transparent"
+                      onMouseEnter={() => setHover(i)}
+                      onMouseLeave={() => setHover(null)}
+                    />
+                  </g>
+                ))}
+                <text x={x(pts[jumpIdx].t) + 5} y={y(pts[jumpIdx].v) + 1} fontSize={9} fill="currentColor" opacity={0.65}>
+                  +{fmtInt(jump)} ({pts[jumpIdx].r.version})
+                </text>
+                {uniqueDates.map((t, i) =>
+                  i % labelEvery === 0 || i === uniqueDates.length - 1 ? (
+                    <text
+                      key={t}
+                      x={x(t)}
+                      y={H - 6}
+                      textAnchor={i === 0 ? "start" : i === uniqueDates.length - 1 ? "end" : "middle"}
+                      fontSize={9}
+                      fill="currentColor"
+                      opacity={0.6}
+                    >
+                      {fmtDateShort(new Date(t * 86_400_000).toISOString().slice(0, 10))}
+                    </text>
+                  ) : null
+                )}
+              </svg>
+            )}
+            {hovered && innerW > 0 && (
+              <div
+                className="pointer-events-none absolute top-0 z-10 rounded-md border bg-popover px-2.5 py-1.5 text-xs shadow-md whitespace-nowrap"
+                style={{
+                  left: x(hovered.t),
+                  transform: `translateX(${x(hovered.t) > innerW * 0.7 ? "calc(-100% - 8px)" : "8px"})`,
+                }}
+              >
+                <p className="font-medium">
+                  {hovered.r.isProvisional ? "Siklus berjalan" : hovered.r.version}
+                  {hovered.r.releasedAt && (
+                    <span className="ml-2 font-normal text-muted-foreground">{fmtDate(hovered.r.releasedAt)}</span>
+                  )}
+                </p>
+                <p className="tabular-nums">{fmtInt(hovered.v)} test</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

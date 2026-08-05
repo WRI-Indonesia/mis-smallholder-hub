@@ -32,7 +32,8 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   ├── Baris statistik: jumlah periode · rata-rata · puncak
 │   └── Disclaimer atribusi: perolehan dicatat pada tanggal rilis
 ├── Panel 3 — Progres roadmap (stepped line, Y 68–90, shading + label plateau)
-├── Panel 4 — Jumlah test (line, Y mulai 400, anotasi lonjakan terbesar; warna = seri RVS)
+├── Panel 4 — Jumlah test (line, Y mulai 400, anotasi lonjakan terbesar; warna = seri RVS;
+│   slicer rentang sama dgn Kurva RVS — komponen bersama time-window.tsx)
 ├── Panel 5 — Kualitas (4 kartu)
 │   ├── Bug register (0 → normal; >0 → warna warning)
 │   ├── Tech debt aktif + indikator arah (naik/turun/tetap — sorot perubahan arah)
