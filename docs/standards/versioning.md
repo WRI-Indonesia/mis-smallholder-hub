@@ -55,6 +55,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] Migrasi DB yang dibutuhkan sudah diterapkan **sebelum** merge (merge = deploy produksi)
 - [ ] `package.json` `version` sudah di-bump sesuai kriteria
 - [ ] Entri rilis tercatat di `docs/project/changelog.md`
+- [ ] **Metrik Nilai Rilis dihitung** dan dicantumkan di entri rilis (lihat §Metrik Nilai Rilis)
 - [ ] PR `mvp` → `main` merged
 - [ ] Annotated tag `vX.Y.Z` dibuat di `main` dan di-push
 - [ ] GitHub Release dibuat dengan notes dari changelog
@@ -63,3 +64,46 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 
 - Tag lama `v1.8-complete` (April 2026) **tidak mengikuti skema ini** dan tidak dipakai sebagai acuan; dibiarkan apa adanya karena menghapus tag yang sudah di-push berisiko membingungkan.
 - Skema ini mulai bersih dari tag SemVer pertama (`v0.x.0`); penentuan angka awal dicatat di Decision Log ([changelog.md](../project/changelog.md)) saat rilis pertama dibuat.
+
+## Metrik Nilai Rilis
+
+> Diputuskan 2026-08-05 (#226) — cara mengkuantifikasi nilai tiap rilis **berbasis artefak terverifikasi** (Phase Status, issue, pengukuran, test), bukan perasaan. Tiga metrik saling melengkapi; ketiganya dihitung **saat rilis** dan dicantumkan di entri rilis changelog. Baca **trennya antar rilis**, bukan angka absolutnya — metrik begini mudah di-game bila dijadikan target individu; posisikan sebagai alat komunikasi, bukan KPI orang.
+
+### 1. Progres Roadmap Tertimbang (audiens: manajemen/donor)
+
+Persentase menuju go-live `1.0.0`, dihitung dari tabel **Phase Status** di [roadmap.md](../project/roadmap.md):
+
+- **Bobot phase** — Inti go-live = **2** (stream PLATFORM, MD-01…06, DASH, MAP, RPT, BULK, HELP, DA); Pendukung/pasca-go-live = **1** (MD-07…11, TOOLS, CMS, COMM, OPS).
+- **Nilai status** — ✅ Done = 1 · 🟠 Partial = 0,5 · lainnya = 0.
+- **Skor** = Σ(bobot × nilai) ÷ Σbobot.
+
+Baseline (dihitung 2026-08-05, 46 phase): inti 35 phase (34 ✅ + BULK-02 belum) = 68/70; pendukung 11 phase (3 🟠) = 1,5/11 → **69,5 / 81 = 85,8%**. Perubahan bobot/klasifikasi phase wajib dicatat di Decision Log.
+
+### 2. Papan KPI Produk (audiens: manajemen — "makin baik atau tidak")
+
+Lima metrik tetap, diukur ulang tiap rilis; laporkan sebagai tabel delta (tanpa agregat tunggal):
+
+| # | KPI | Cara ukur | Baseline v0.21.0 |
+| - | --- | --------- | ---------------- |
+| 1 | Payload peta distrik terbesar | Proyeksi `getMapData` distrik ber-persil terbanyak (sampel ≥500 persil nyata) | 2,67 MB |
+| 2 | Cakupan tutorial Bantuan | Menu ber-tutorial ÷ total menu (audit #207) | 23/28 (82%) |
+| 3 | Test otomatis | Jumlah test `npm test` | 748 |
+| 4 | Bug terbuka | Issue open berlabel `bug` | 0 |
+| 5 | Tech debt aktif | Item aktif di [tech-debt.md](../project/tech-debt.md) | 12 (10 per 07-28 + TD-030/031) |
+
+### 3. Release Value Score / RVS (audiens: tim — narasi nilai per rilis)
+
+Skor kumulatif per rilis; baseline **v0.21.0 = 1000**, tiap rilis menambahkan poin dari artefak siklusnya:
+
+| Komponen | Poin | Sumber |
+| --- | --- | --- |
+| Fitur/UX per issue (S / M / L) | 5 / 15 / 40 | issue + retro |
+| Bug fix (minor / sedang / kritis) | 3 / 8 / 20 | severity di issue |
+| Perbaikan performa **terukur** | 0,5 × % perbaikan (cap 25/item) | angka di issue |
+| Test baru | 0,5 per test (cap 15/rilis) | delta `npm test` |
+| Audit/review menyeluruh terverifikasi | 5 | retro |
+| Tech debt ditutup | 3 per TD | tech-debt.md |
+
+Ukuran fitur S/M/L dinilai saat menutup issue (S = satu komponen/halaman; M = lintas beberapa file/halaman; L = modul baru). Rilis kualitas (hanya `fix:`/`perf:`) tetap menghasilkan poin — itu memang tujuannya. RVS **tidak** menggantikan kriteria bump SemVer.
+
+Contoh perhitungan siklus pasca-v0.21.0 (#222–#225): bug sedang 8 + UX-S 5 + perf 37,4%→18,7 + UX-S lazy point 5 + 3 perbaikan degradasi 24 + audit 5 + 10 test 5 ≈ **+71 → 1071**.
