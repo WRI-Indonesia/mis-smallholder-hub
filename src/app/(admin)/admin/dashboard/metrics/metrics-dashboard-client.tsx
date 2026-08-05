@@ -168,7 +168,10 @@ export function MetricsDashboardClient({
       </ChartCard>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <ChartCard title="Progres roadmap" subtitle="Persen tertimbang menuju go-live 1.0 — naik diskret per fase selesai.">
+        <ChartCard
+          title="Progres roadmap"
+          subtitle="Persen tertimbang menuju go-live 1.0 — naik diskret per fase selesai. Label plateau = berapa hari % tidak naik; datar ≠ berhenti, biasanya kerja bergeser ke kualitas (lihat RVS yang tetap naik)."
+        >
           <RoadmapStepChart releases={releases} today={today} dark={dark} gridColor={gridColor} />
         </ChartCard>
         <ChartCard title="Jumlah test otomatis" subtitle="Per rilis; titik berongga = angka estimasi.">
@@ -282,10 +285,22 @@ export function MetricsDashboardClient({
                       </a>
                     )}
                     {r.isProvisional && (
-                      <Badge variant="outline" className="ml-1.5 font-normal text-muted-foreground">provisional</Badge>
+                      <Badge
+                        variant="outline"
+                        className="ml-1.5 cursor-help font-normal text-muted-foreground"
+                        title="Siklus kerja yang sedang berjalan (calon rilis berikutnya) — angka masih bisa berubah sampai dirilis."
+                      >
+                        belum dirilis
+                      </Badge>
                     )}
                     {/breaking/i.test(r.notes) && (
-                      <Badge variant="outline" className="ml-1.5 border-amber-500/60 font-normal text-amber-700 dark:text-amber-400">breaking</Badge>
+                      <Badge
+                        variant="outline"
+                        className="ml-1.5 cursor-help border-amber-500/60 font-normal text-amber-700 dark:text-amber-400"
+                        title="Rilis dengan perubahan yang memutus kompatibilitas (mis. perubahan skema data) — pre-1.0 tetap dirilis sebagai MINOR sesuai aturan versioning."
+                      >
+                        perubahan besar
+                      </Badge>
                     )}
                   </td>
                   <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{r.releasedAt ? fmtDate(r.releasedAt) : "—"}</td>
