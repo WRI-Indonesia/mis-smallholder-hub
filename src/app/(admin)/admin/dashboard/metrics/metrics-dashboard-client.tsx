@@ -116,12 +116,42 @@ export function MetricsDashboardClient({
   const { resolvedTheme } = useTheme();
   const [releasesOpen, setReleasesOpen] = useState(true);
   const [tdOpen, setTdOpen] = useState(false);
-  const tdSectionRef = useRef<HTMLDivElement>(null);
-  // Klik kartu Tech debt → buka section-nya + scroll ke sana (pengganti popup).
-  const jumpToTechDebt = () => {
-    setTdOpen(true);
-    requestAnimationFrame(() => tdSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+
+  // Kartu ber-detail-di-halaman-ini bisa diklik → scroll + sorot sekilas ke
+  // section tujuannya (pola kartu Tech debt, diseragamkan atas permintaan owner).
+  const rvsRef = useRef<HTMLDivElement>(null);
+  const roadmapRef = useRef<HTMLDivElement>(null);
+  const testRef = useRef<HTMLDivElement>(null);
+  const qualityRef = useRef<HTMLDivElement>(null);
+  const tdRef = useRef<HTMLDivElement>(null);
+  type SectionKey = "rvs" | "roadmap" | "test" | "quality" | "td";
+  const [flash, setFlash] = useState<SectionKey | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const jumpTo = (key: SectionKey) => {
+    // Akses ref hanya di event handler (rule react-hooks/refs) — lookup switch.
+    const target =
+      key === "rvs" ? rvsRef : key === "roadmap" ? roadmapRef : key === "test" ? testRef : key === "quality" ? qualityRef : tdRef;
+    if (key === "td") setTdOpen(true);
+    requestAnimationFrame(() => target.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    setFlash(key);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(null), 1600);
   };
+  const flashClass = (key: SectionKey) =>
+    cn("scroll-mt-4 rounded-xl transition-shadow duration-500", flash === key && "ring-2 ring-primary/50");
+  const cardButtonProps = (key: SectionKey, label: string) => ({
+    role: "button" as const,
+    tabIndex: 0,
+    onClick: () => jumpTo(key),
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        jumpTo(key);
+      }
+    },
+    title: label,
+    "aria-label": label,
+  });
   const dark = resolvedTheme === "dark";
   const gridColor = dark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.07)";
   const surface = dark ? "#26332a" : "#ffffff";
@@ -152,24 +182,28 @@ export function MetricsDashboardClient({
     {
       icon: Activity,
       label: "RVS sekarang",
+      target: "rvs" as const,
       value: fmtRvs(last),
       sub: `${fmtPct1(((last.rvs - first.rvs) / first.rvs) * 100).replace("%", "")}% dari anchor ${fmtInt(first.rvs)}`,
     },
     {
       icon: Gauge,
       label: "Roadmap",
+      target: "roadmap" as const,
       value: fmtPct1(last.roadmapPct),
       sub: `+${fmt1(last.roadmapPct - first.roadmapPct)} pt sejak ${first.version}`,
     },
     {
       icon: BookOpenCheck,
       label: "Test",
+      target: "test" as const,
       value: lastTest != null ? fmtInt(lastTest) : "—",
       sub: firstTest != null && lastTest != null ? `+${fmtInt(((lastTest - firstTest) / firstTest) * 100)}% dari ≈${fmtInt(firstTest)}` : "—",
     },
     {
       icon: Bug,
       label: "Kualitas",
+      target: "quality" as const,
       value: bugOpen != null ? `${fmtInt(bugOpen)} bug` : "—",
       sub: `TD ${td != null ? fmtInt(td) : "—"} · Bantuan ${bantuan ? `${fmtInt(bantuan.bantuanDone as number)}/${fmtInt(bantuan.bantuanTotal as number)}` : "—"}`,
     },
@@ -195,7 +229,11 @@ export function MetricsDashboardClient({
       {/* Baris KPI (§4.1) */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
         {kpis.map((k) => (
-          <Card key={k.label} className="border border-border/60 shadow-sm">
+          <Card
+            key={k.label}
+            {...cardButtonProps(k.target, `${k.label} — klik untuk melihat rinciannya di bawah`)}
+            className="cursor-pointer border border-border/60 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+          >
             <CardContent className="p-4">
               <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
                 <k.icon className="h-3.5 w-3.5" aria-hidden /> {k.label}
@@ -207,28 +245,34 @@ export function MetricsDashboardClient({
         ))}
       </div>
 
-      <ChartCard title="Kurva RVS" subtitle="Kumulatif pada sumbu kalender — jarak antar titik proporsional waktu; titik berongga bergaris putus = estimasi.">
-        <RvsCurveChart releases={releases} today={today} dark={dark} gridColor={gridColor} surface={surface} />
-      </ChartCard>
+      <div ref={rvsRef} className={flashClass("rvs")}>
+        <ChartCard title="Kurva RVS" subtitle="Kumulatif pada sumbu kalender — jarak antar titik proporsional waktu; titik berongga bergaris putus = estimasi.">
+          <RvsCurveChart releases={releases} today={today} dark={dark} gridColor={gridColor} surface={surface} />
+        </ChartCard>
+      </div>
 
       <ChartCard title="Perolehan RVS per periode" subtitle="Batang bertumpuk per jenis hari; toggle granularitas periode.">
         <RvsPeriodBars releases={releases} today={today} dark={dark} gridColor={gridColor} />
       </ChartCard>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <ChartCard
-          title="Progres roadmap"
-          subtitle="Persen tertimbang menuju go-live 1.0 — naik diskret per fase selesai. Label plateau = berapa hari % tidak naik; datar ≠ berhenti, biasanya kerja bergeser ke kualitas (lihat RVS yang tetap naik)."
-        >
-          <RoadmapStepChart releases={releases} today={today} dark={dark} gridColor={gridColor} />
-        </ChartCard>
-        <ChartCard title="Jumlah test otomatis" subtitle="Per rilis; titik berongga = angka estimasi.">
-          <TestCountChart releases={releases} today={today} dark={dark} gridColor={gridColor} surface={surface} />
-        </ChartCard>
+        <div ref={roadmapRef} className={flashClass("roadmap")}>
+          <ChartCard
+            title="Progres roadmap"
+            subtitle="Persen tertimbang menuju go-live 1.0 — naik diskret per fase selesai. Label plateau = berapa hari % tidak naik; datar ≠ berhenti, biasanya kerja bergeser ke kualitas (lihat RVS yang tetap naik)."
+          >
+            <RoadmapStepChart releases={releases} today={today} dark={dark} gridColor={gridColor} />
+          </ChartCard>
+        </div>
+        <div ref={testRef} className={flashClass("test")}>
+          <ChartCard title="Jumlah test otomatis" subtitle="Per rilis; titik berongga = angka estimasi.">
+            <TestCountChart releases={releases} today={today} dark={dark} gridColor={gridColor} surface={surface} />
+          </ChartCard>
+        </div>
       </div>
 
       {/* Panel 5 — kualitas (§4.6) */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
+      <div ref={qualityRef} className={cn("grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3", flashClass("quality"))}>
         <Card className={cn("border shadow-sm", bugOpen ? "border-amber-500/50 bg-amber-500/5" : "border-border/60")}>
           <CardContent className="p-4">
             <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
@@ -241,11 +285,11 @@ export function MetricsDashboardClient({
         <Card
           role="button"
           tabIndex={0}
-          onClick={jumpToTechDebt}
+          onClick={() => jumpTo("td")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              jumpToTechDebt();
+              jumpTo("td");
             }
           }}
           aria-label={`Tech debt aktif ${td != null ? fmtInt(td) : ""} — buka rincian`}
@@ -423,7 +467,7 @@ export function MetricsDashboardClient({
       </CollapsibleSection>
 
       {/* Section Tech debt aktif — target klik kartu Tech debt di atas. */}
-      <div ref={tdSectionRef} className="scroll-mt-4">
+      <div ref={tdRef} className={flashClass("td")}>
         <CollapsibleSection
           title={
             <span className="flex items-center gap-2">
