@@ -11,12 +11,3 @@ export { TableSkeleton } from "./table-skeleton";
 
 export { StatEmph } from "./stat-emph";
 
-export { DistrictGroupFilter, FilterCombobox } from "./district-group-filter";
-export type {
-  DistrictFilterOption,
-  GroupFilterOption,
-  FilterComboOption,
-  FilterComboboxProps,
-} from "./district-group-filter";
-
-

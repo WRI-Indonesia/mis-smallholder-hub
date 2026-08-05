@@ -12,9 +12,13 @@ import { toast } from "sonner";
 import {
   TableActions,
   DataTable,
-  DistrictGroupFilter,
   type DataTableColumn,
 } from "@/components/shared";
+import {
+  DistrictGroupFilter,
+  type DistrictFilterOption,
+  type GroupFilterOption,
+} from "@/components/shared/district-group-filter";
 import {
   Select,
   SelectContent,
@@ -48,22 +52,10 @@ interface Farmer {
   isActive: boolean;
 }
 
-interface FarmerGroup {
-  id: string;
-  name: string;
-  code?: string | null;
-  districtId: string;
-}
-
-interface District {
-  id: string;
-  name: string;
-}
-
 interface Props {
   initialFarmers: Farmer[];
-  farmerGroups: FarmerGroup[];
-  districts: District[];
+  farmerGroups: GroupFilterOption[];
+  districts: DistrictFilterOption[];
   permissions: string[];
   isSuperAdmin: boolean;
 }

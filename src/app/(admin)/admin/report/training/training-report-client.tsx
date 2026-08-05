@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
-import { FilterCombobox } from "@/components/shared/district-group-filter";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getFarmerGroupsForTrainingReport, getTrainingReport } from "@/server/actions/report";
 import type { TrainingReportResult, TrainingActivityReportRow, TrainingFarmerReportRow, TrainingActivityParticipant } from "@/types/report";

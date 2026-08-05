@@ -79,7 +79,9 @@ function CoverageCell({
   const pct = hasFarmers ? (trained / row.totalFarmers) * 100 : 0;
   const gap = trainingTargetGap(row.totalFarmers, trained, target);
   const clickable = hasFarmers && gap > 0;
-  const belum = row.totalFarmers - trained - trainedOther;
+  // Peserta bisa tercatat melebihi populasi baris (data historis) → jangan
+  // pernah menampilkan angka negatif.
+  const belum = Math.max(0, row.totalFarmers - trained - trainedOther);
 
   const body = (
     <>

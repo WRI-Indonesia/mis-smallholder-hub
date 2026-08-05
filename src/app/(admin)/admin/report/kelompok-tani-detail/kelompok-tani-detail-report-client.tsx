@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FilterCombobox } from "@/components/shared/district-group-filter";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { getFarmerGroupsForKtReport, getKelompokTaniDetailReport } from "@/server/actions/report";
 import type { KelompokTaniDetailReportResult, KtDetailKelompokTani } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";

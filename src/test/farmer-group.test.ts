@@ -98,6 +98,65 @@ describe("getFarmerGroups stats merge (#163)", () => {
   });
 });
 
+/**
+ * Scope `getDistrictsForSelect` (#211 → #217): helper for-select ini juga
+ * access-scoped — user BY_DISTRICT/BY_FARMER_GROUP hanya melihat distrik dalam
+ * jurisdiksinya (termasuk di form tambah/edit Lembaga Petani — by design).
+ * Cermin dari `getAccessibleDistrictIds` (access-context.ts) + konstruksi
+ * where-clause di `getDistrictsForSelect` (farmer-group.ts).
+ */
+
+type AccessContext =
+  | { mode: "ALL"; ids: string[] }
+  | { mode: "BY_FARMER_GROUP"; ids: string[] }
+  | { mode: "BY_DISTRICT"; ids: string[] };
+
+// Cermin getAccessibleDistrictIds; lookup group→district diinjeksi menggantikan prisma.
+function accessibleDistrictIds(
+  access: AccessContext,
+  groupDistricts: Record<string, string>
+): string[] | null {
+  if (access.mode === "ALL") return null;
+  if (access.mode === "BY_DISTRICT") return access.ids;
+  if (access.ids.length === 0) return [];
+  return [...new Set(access.ids.map((id) => groupDistricts[id]).filter(Boolean))];
+}
+
+// Cermin where-clause getDistrictsForSelect: null = tanpa batasan id.
+function districtWhere(districtIds: string[] | null) {
+  return { isActive: true, ...(districtIds ? { id: { in: districtIds } } : {}) };
+}
+
+describe("getDistrictsForSelect access scope (#211)", () => {
+  const groupDistricts = { "kt-1": "d1", "kt-2": "d1", "kt-3": "d2" };
+
+  it("ALL → semua distrik aktif, tanpa filter id", () => {
+    expect(districtWhere(accessibleDistrictIds({ mode: "ALL", ids: [] }, groupDistricts))).toEqual({
+      isActive: true,
+    });
+  });
+
+  it("BY_DISTRICT → hanya distrik assignment", () => {
+    expect(
+      districtWhere(accessibleDistrictIds({ mode: "BY_DISTRICT", ids: ["d1", "d3"] }, groupDistricts))
+    ).toEqual({ isActive: true, id: { in: ["d1", "d3"] } });
+  });
+
+  it("BY_FARMER_GROUP → distrik turunan lembaga, tanpa duplikat", () => {
+    expect(
+      districtWhere(
+        accessibleDistrictIds({ mode: "BY_FARMER_GROUP", ids: ["kt-1", "kt-2", "kt-3"] }, groupDistricts)
+      )
+    ).toEqual({ isActive: true, id: { in: ["d1", "d2"] } });
+  });
+
+  it("BY_FARMER_GROUP tanpa assignment → tidak ada distrik (in: [])", () => {
+    expect(
+      districtWhere(accessibleDistrictIds({ mode: "BY_FARMER_GROUP", ids: [] }, groupDistricts))
+    ).toEqual({ isActive: true, id: { in: [] } });
+  });
+});
+
 // ——— #169: Sertifikasi ISPO + Assurance SAP/MAP (status + tahun, pola RSPO #160) ———
 
 import { farmerGroupSchema } from "@/validations/farmer-group.schema";

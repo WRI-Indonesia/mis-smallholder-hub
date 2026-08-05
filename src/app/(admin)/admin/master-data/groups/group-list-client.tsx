@@ -19,9 +19,9 @@ import { toast } from "sonner";
 import {
   TableActions,
   DataTable,
-  FilterCombobox,
   type DataTableColumn,
 } from "@/components/shared";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import {
   GROUP_TYPE_LABELS,
   formatGroupType,

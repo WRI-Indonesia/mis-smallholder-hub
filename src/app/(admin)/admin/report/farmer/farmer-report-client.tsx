@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
-import { FilterCombobox } from "@/components/shared/district-group-filter";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { getFarmerGroupsForReport, getFarmerReport } from "@/server/actions/report";
 import type { FarmerReportRow, FarmerReportResult } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";

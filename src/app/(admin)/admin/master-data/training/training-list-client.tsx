@@ -20,9 +20,13 @@ import { toast } from "sonner";
 import {
   TableActions,
   DataTable,
-  DistrictGroupFilter,
   type DataTableColumn,
 } from "@/components/shared";
+import {
+  DistrictGroupFilter,
+  type DistrictFilterOption,
+  type GroupFilterOption,
+} from "@/components/shared/district-group-filter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
@@ -83,23 +87,11 @@ interface TrainingPackage {
   name: string;
 }
 
-interface FarmerGroup {
-  id: string;
-  name: string;
-  code?: string | null;
-  districtId: string;
-}
-
-interface District {
-  id: string;
-  name: string;
-}
-
 interface Props {
   initialActivities: TrainingActivity[];
   packages: TrainingPackage[];
-  farmerGroups: FarmerGroup[];
-  districts: District[];
+  farmerGroups: GroupFilterOption[];
+  districts: DistrictFilterOption[];
   permissions: string[];
   isSuperAdmin: boolean;
 }

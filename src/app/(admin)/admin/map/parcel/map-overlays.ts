@@ -5,11 +5,12 @@
  * services. We consume the dynamic `export` endpoint as XYZ-style raster tiles
  * so MapLibre can overlay them beneath the farmer data layers.
  *
- * Riwayat sumber: semula SIGAP KLHK (geoportal.menlhk.go.id). Pasca pemisahan
- * KLHK menjadi Kemenhut + KLH, domain lama dihapus dari DNS (2026) dan layanan
- * pindah/tersebar: Kawasan Hutan kini di geoportal.planologi.kehutanan.go.id
- * (Peta Interaktif 2026), sedangkan Fungsi Ekosistem Gambut tidak lagi publik
- * di Kemenhut/KLH — dipakai salinan resmi Satu Peta BIG (kspservices.big.go.id).
+ * Source history: originally SIGAP KLHK (geoportal.menlhk.go.id). After the
+ * ministry split into Kemenhut + KLH, the old domain was removed from DNS
+ * (2026) and the services scattered: Kawasan Hutan now lives at
+ * geoportal.planologi.kehutanan.go.id (Peta Interaktif 2026), while Fungsi
+ * Ekosistem Gambut is no longer public at Kemenhut/KLH — we use the official
+ * copy on Satu Peta BIG (kspservices.big.go.id).
  */
 
 import type { FeatureCollection, Feature, Geometry } from "geojson";
