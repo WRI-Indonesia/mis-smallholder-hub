@@ -264,6 +264,7 @@ export function MetricsDashboardClient({
                 <th className="py-2 pr-3 text-right font-medium">RVS</th>
                 <th className="py-2 pr-3 text-right font-medium">Δ</th>
                 <th className="py-2 pr-3 text-right font-medium">Roadmap</th>
+                <th className="py-2 pr-3 text-right font-medium">Test</th>
                 <th className="py-2 pr-3 font-medium">Catatan</th>
                 <th className="py-2 font-medium">Issue</th>
               </tr>
@@ -312,6 +313,23 @@ export function MetricsDashboardClient({
                     {/* rev terbalik (terbaru dulu) → baris sebelumnya = ri+1; naiknya fase ditandai */}
                     {ri + 1 < rev.length && r.roadmapPct > rev[ri + 1].roadmapPct && (
                       <span className="ml-1 text-xs text-primary">+{fmt1(r.roadmapPct - rev[ri + 1].roadmapPct)}</span>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap py-2 pr-3 text-right tabular-nums">
+                    {r.testCount != null ? (
+                      <>
+                        {r.isEstimated && "≈"}
+                        {fmtInt(r.testCount)}
+                        {ri + 1 < rev.length &&
+                          rev[ri + 1].testCount != null &&
+                          r.testCount > (rev[ri + 1].testCount as number) && (
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              +{fmtInt(r.testCount - (rev[ri + 1].testCount as number))}
+                            </span>
+                          )}
+                      </>
+                    ) : (
+                      "—"
                     )}
                   </td>
                   <td className="py-2 pr-3 text-xs leading-snug text-muted-foreground">
