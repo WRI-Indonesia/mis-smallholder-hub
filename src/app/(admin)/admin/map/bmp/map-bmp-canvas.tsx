@@ -218,8 +218,10 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
 
+  // Key memuat lngLat: klik ulang persil yang sama di titik lain harus me-remount
+  // popup + memicu ulang auto-pan (review pasca-v0.21.0).
   const popupKey = selected
-    ? String(selected.props.id ?? `${selected.longitude},${selected.latitude}`)
+    ? `${selected.props.id ?? ""}:${selected.longitude},${selected.latitude}`
     : null;
   useMapPopupAutoPan(mapRef, popupKey);
 
@@ -456,27 +458,30 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
     return () => registerCapture(null);
   }, [registerCapture]);
 
+  // Mode produktivitas menyembunyikan kelas via opacity (bukan filter), jadi
+  // fitur transparan tetap ter-query — klik/hover harus MENEMBUS fitur
+  // tersembunyi ke fitur terlihat di bawahnya (review pasca-v0.21.0).
+  const firstVisibleParcel = (features: MapLayerMouseEvent["features"]) => {
+    for (const f of features ?? []) {
+      if (f.layer?.id !== "bmp-parcel-fill") continue;
+      const id = f.properties?.id as string | undefined;
+      const p = id ? data?.parcels.find((x) => x.id === id) : undefined;
+      if (!p) continue;
+      const cls = productivity?.byParcel[p.id]?.cls ?? "NO_DATA";
+      if (isProductivity && !prodLayers[cls]) continue;
+      return p;
+    }
+    return undefined;
+  };
+
   const handleClick = (e: MapLayerMouseEvent) => {
-    const feature = e.features?.[0];
-    if (!feature || feature.layer?.id !== "bmp-parcel-fill") {
+    const p = firstVisibleParcel(e.features);
+    if (!p) {
       setSelected(null);
       return;
     }
     // Props popup dirakit dari state React (bukan feature.properties) karena
     // nilai produktivitas per-view tidak lagi tersimpan di source statis.
-    const id = feature.properties?.id as string | undefined;
-    const p = id ? data?.parcels.find((x) => x.id === id) : undefined;
-    if (!p) {
-      setSelected(null);
-      return;
-    }
-    // Mode produktivitas: kelas disembunyikan via opacity, fitur transparan
-    // tetap ter-query — jangan buka popup untuk kelas yang di-uncheck.
-    const cls = productivity?.byParcel[p.id]?.cls ?? "NO_DATA";
-    if (isProductivity && !prodLayers[cls]) {
-      setSelected(null);
-      return;
-    }
     setSelected({
       longitude: e.lngLat.lng,
       latitude: e.lngLat.lat,
@@ -518,7 +523,7 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
         onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onClick={handleClick}
         onMouseMove={(e) => {
-          e.target.getCanvas().style.cursor = e.features?.length ? "pointer" : "";
+          e.target.getCanvas().style.cursor = firstVisibleParcel(e.features) ? "pointer" : "";
         }}
         onError={(e) => {
           console.warn("Map source error:", e.error?.message ?? e.error);

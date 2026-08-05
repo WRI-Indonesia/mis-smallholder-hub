@@ -147,8 +147,10 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
 
+  // Key memuat lngLat: klik ulang fitur yang sama di titik lain harus me-remount
+  // popup + memicu ulang auto-pan (review pasca-v0.21.0).
   const popupKey = selected
-    ? `${selected.kind}:${selected.props.id ?? `${selected.longitude},${selected.latitude}`}`
+    ? `${selected.kind}:${selected.props.id ?? ""}:${selected.longitude},${selected.latitude}`
     : null;
   useMapPopupAutoPan(mapRef, popupKey);
 
