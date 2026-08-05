@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
-import { releaseMetrics } from "@/lib/release-metrics-data";
+import { activeTechDebt, releaseMetrics } from "@/lib/release-metrics-data";
 import { MetricsDashboardClient } from "./metrics-dashboard-client";
 
 export default async function ReleaseMetricsPage() {
@@ -14,6 +14,7 @@ export default async function ReleaseMetricsPage() {
     <div className="p-6">
       <MetricsDashboardClient
         releases={releaseMetrics}
+        techDebt={activeTechDebt}
         today={today}
         helpSlot={<HelpHint menuKey="dashboard-metrics" />}
       />

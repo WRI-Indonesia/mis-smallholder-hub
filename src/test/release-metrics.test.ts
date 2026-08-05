@@ -135,3 +135,19 @@ describe("kalender & agregasi Panel 2", () => {
     expect(months.find((m) => m.key === "2026-08")?.total).toBe(augExpected);
   });
 });
+
+describe("parseActiveTechDebt — register tech-debt.md nyata", () => {
+  it("memparse semua item aktif dengan id/status/prioritas/judul; arsip tidak ikut", async () => {
+    const { parseActiveTechDebt } = await import("@/lib/tech-debt");
+    const md = readFileSync(join(__dirname, "../../docs/project/tech-debt.md"), "utf-8");
+    const items = parseActiveTechDebt(md);
+    expect(items.length).toBeGreaterThanOrEqual(10);
+    const td15 = items.find((t) => t.id === "TD-015");
+    expect(td15?.priority).toBe("P3");
+    expect(td15?.title).toContain("DataTable");
+    // Arsip (item selesai) tidak boleh terparse.
+    expect(items.every((t) => !t.status.includes("✅"))).toBe(true);
+    // Format rusak → error, bukan tabel kosong diam-diam.
+    expect(() => parseActiveTechDebt("tanpa register")).toThrow(/Debt Register/);
+  });
+});

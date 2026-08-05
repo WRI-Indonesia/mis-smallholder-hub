@@ -39,9 +39,15 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   ├── Tech debt aktif + indikator arah (naik/turun/tetap — sorot perubahan arah)
 │   ├── Audit Bantuan (meter satu ramp, done/total per era)
 │   └── Payload peta (kartu delta 2 titik terukur — sengaja bukan grafik)
-└── Daftar rilis (terbaru di atas)
-    ├── Kolom: versi · tanggal · RVS (≈ bila estimasi) · Δ · catatan · issue refs
-    └── Badge: provisional (siklus berjalan) · breaking (dari catatan)
+├── Daftar rilis (collapsible, default terbuka; terbaru di atas)
+│   ├── Kolom: versi (link Release GitHub) · tanggal · RVS (≈ bila estimasi) · Δ · Roadmap (+pt saat naik)
+│   │   · Test (+N saat bertambah) · catatan (#ref ter-link) · issue refs (link, biru/amber)
+│   └── Badge: "belum dirilis" (siklus berjalan) · "perubahan besar" (breaking) — ber-tooltip title
+└── Tech debt aktif (collapsible, default tertutup)
+    ├── Target klik kartu Tech debt di panel kualitas (buka + scroll — pengganti popup)
+    ├── Tabel: ID · Prioritas (badge, P2 amber) · Status · Judul — sumber tech-debt.md
+    │   (parser `src/lib/tech-debt.ts`, hanya section "Debt Register — Aktif")
+    └── Footer link ke tech-debt.md di GitHub
 ```
 
 ## Referensi teknis

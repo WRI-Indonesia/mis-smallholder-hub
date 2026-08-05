@@ -1,11 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useTheme } from "next-themes";
-import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, BookOpenCheck, Bug, Gauge, Minus, Package } from "lucide-react";
+import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, BookOpenCheck, Bug, ChevronDown, Gauge, Minus, Package } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import type { TechDebtItem } from "@/lib/tech-debt";
 import type { ReleaseMetric } from "@/types/release-metrics";
 import { fmt1, fmt2, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtRvs, issueUrl, releaseUrl } from "./metrics-shared";
 import { RvsCurveChart } from "./rvs-curve-chart";
@@ -64,16 +66,62 @@ function ChartCard({ title, subtitle, children, className }: { title: string; su
   );
 }
 
+/** Card collapsible ber-header seragam untuk section Daftar rilis & Tech debt. */
+function CollapsibleSection({
+  title,
+  subtitle,
+  open,
+  onOpenChange,
+  children,
+}: {
+  title: ReactNode;
+  subtitle: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="border border-border/60 shadow-sm">
+      <Collapsible open={open} onOpenChange={onOpenChange}>
+        <CollapsibleTrigger
+          render={
+            <button className="w-full text-left focus-visible:outline-2 focus-visible:outline-ring">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center justify-between text-sm font-medium">
+                  {title}
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+                </CardTitle>
+                <p className="text-xs font-normal text-muted-foreground">{subtitle}</p>
+              </CardHeader>
+            </button>
+          }
+        />
+        <CollapsibleContent>{children}</CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
+}
+
 export function MetricsDashboardClient({
   releases,
+  techDebt,
   today,
   helpSlot,
 }: {
   releases: ReleaseMetric[];
+  techDebt: TechDebtItem[];
   today: string;
   helpSlot?: ReactNode;
 }) {
   const { resolvedTheme } = useTheme();
+  const [releasesOpen, setReleasesOpen] = useState(true);
+  const [tdOpen, setTdOpen] = useState(false);
+  const tdSectionRef = useRef<HTMLDivElement>(null);
+  // Klik kartu Tech debt → buka section-nya + scroll ke sana (pengganti popup).
+  const jumpToTechDebt = () => {
+    setTdOpen(true);
+    requestAnimationFrame(() => tdSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
   const dark = resolvedTheme === "dark";
   const gridColor = dark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.07)";
   const surface = dark ? "#26332a" : "#ffffff";
@@ -190,9 +238,24 @@ export function MetricsDashboardClient({
             <p className="mt-0.5 text-xs text-muted-foreground">{bugOpen ? "terbuka — perlu perhatian" : "sejak v0.17.0 (7/7 selesai)"}</p>
           </CardContent>
         </Card>
-        <Card className={cn("border shadow-sm", tdDir > 0 ? "border-amber-500/50 bg-amber-500/5" : "border-border/60")}>
+        <Card
+          role="button"
+          tabIndex={0}
+          onClick={jumpToTechDebt}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              jumpToTechDebt();
+            }
+          }}
+          aria-label={`Tech debt aktif ${td != null ? fmtInt(td) : ""} — buka rincian`}
+          className={cn(
+            "cursor-pointer border shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring",
+            tdDir > 0 ? "border-amber-500/50 bg-amber-500/5" : "border-border/60"
+          )}
+        >
           <CardContent className="p-4">
-            <p className="text-[13px] text-muted-foreground">Tech debt aktif</p>
+            <p className="text-[13px] text-muted-foreground">Tech debt aktif · klik untuk rincian</p>
             <p className="mt-1 flex items-center gap-1.5 text-[28px] font-medium tabular-nums">
               {td != null ? fmtInt(td) : "—"}
               {tdDir > 0 && <ArrowUpRight className="h-5 w-5 text-amber-600" aria-label="naik" />}
@@ -248,13 +311,12 @@ export function MetricsDashboardClient({
       </div>
 
       {/* Daftar rilis (layout owner: kartu & chart dulu, list paling bawah) */}
-      <Card className="border border-border/60 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Daftar rilis</CardTitle>
-          <p className="text-xs font-normal text-muted-foreground">
-            Terbaru di atas. Nilai ≈ = rekonstruksi retrospektif; sumber: docs/project/metrics.md.
-          </p>
-        </CardHeader>
+      <CollapsibleSection
+        title="Daftar rilis"
+        subtitle="Terbaru di atas. Nilai ≈ = rekonstruksi retrospektif; sumber: docs/project/metrics.md."
+        open={releasesOpen}
+        onOpenChange={setReleasesOpen}
+      >
         <CardContent className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
             <thead>
@@ -358,7 +420,70 @@ export function MetricsDashboardClient({
             </tbody>
           </table>
         </CardContent>
-      </Card>
+      </CollapsibleSection>
+
+      {/* Section Tech debt aktif — target klik kartu Tech debt di atas. */}
+      <div ref={tdSectionRef} className="scroll-mt-4">
+        <CollapsibleSection
+          title={
+            <span className="flex items-center gap-2">
+              Tech debt aktif
+              <Badge variant="outline" className="font-normal tabular-nums">{fmtInt(techDebt.length)}</Badge>
+            </span>
+          }
+          subtitle="Register debt yang belum selesai; sumber: docs/project/tech-debt.md (arsip selesai tidak ditampilkan)."
+          open={tdOpen}
+          onOpenChange={setTdOpen}
+        >
+          <CardContent className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="py-2 pr-3 font-medium">ID</th>
+                  <th className="py-2 pr-3 font-medium">Prioritas</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 font-medium">Judul</th>
+                </tr>
+              </thead>
+              <tbody>
+                {techDebt.map((t) => (
+                  <tr key={t.id} className="border-b border-border/40 align-top last:border-0">
+                    <td className="whitespace-nowrap py-2 pr-3 font-medium tabular-nums">{t.id}</td>
+                    <td className="py-2 pr-3">
+                      {t.priority ? (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "font-normal",
+                            t.priority === "P2" && "border-amber-500/60 text-amber-700 dark:text-amber-400"
+                          )}
+                        >
+                          {t.priority}
+                        </Badge>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap py-2 pr-3 text-xs text-muted-foreground">{t.status}</td>
+                    <td className="py-2 text-xs leading-snug">{t.title}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Rincian lengkap (evidence, owner, sequencing):{" "}
+              <a
+                href="https://github.com/WRI-Indonesia/mis-smallholder-hub/blob/mvp/docs/project/tech-debt.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline-offset-2 hover:underline dark:text-amber-400"
+              >
+                docs/project/tech-debt.md
+              </a>
+            </p>
+          </CardContent>
+        </CollapsibleSection>
+      </div>
     </div>
   );
 }
