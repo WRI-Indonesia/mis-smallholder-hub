@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Footer aksi untuk popup lahan di ketiga peta (Sebaran Lahan, Peta Lahan,
- * Peta BMP): **Lihat Detail** (route ke halaman detail, gate VIEW) dan
+ * Peta BMP): **Lihat Detail** (buka halaman detail di tab baru, gate VIEW) dan
  * **Edit Lahan** (buka ParcelFormModal, gate EDIT). `children` menampung aksi
  * tambahan khusus peta (mis. tombol "Profil Lahan" PDF di Peta Lahan).
  * Modal edit di-hoist ke container peta; footer hanya memicu `onEdit`.
@@ -31,6 +31,8 @@ export function ParcelPopupActions({ parcelId, canView, canEdit, onEdit, childre
           {canView && (
             <Link
               href={`/admin/master-data/parcels/${parcelId}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 flex-1 gap-1.5")}
             >
               <Eye className="h-3.5 w-3.5" />
