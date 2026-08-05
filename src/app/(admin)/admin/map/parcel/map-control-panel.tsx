@@ -49,6 +49,8 @@ interface Props {
   onAddCustomLayer: (layer: CustomLayer) => void;
   onRemoveCustomLayer: (id: string) => void;
   onToggleCustomLayer: (id: string, visible: boolean) => void;
+  onZoomCustomLayer: (id: string) => void;
+  onCustomLayerSymbology: (id: string, attribute: string | null) => void;
   hotspot: HotspotState;
   onHotspotChange: (hotspot: HotspotState) => void;
   hotspotLoading: boolean;
@@ -159,17 +161,33 @@ function OverlayRow({
   onToggle: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-start gap-2.5 py-1.5 cursor-pointer">
-      <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} className="mt-0.5" />
-      <span
-        className="mt-0.5 inline-block h-3 w-3 shrink-0 rounded-sm border-2"
-        style={{ backgroundColor: `${def.color}33`, borderColor: def.color }}
-      />
-      <span className="min-w-0">
-        <span className="block text-sm leading-tight">{def.label}</span>
-        <span className="block text-[11px] leading-snug text-muted-foreground">{def.description}</span>
-      </span>
-    </label>
+    <div className="py-1.5">
+      <label className="flex items-start gap-2.5 cursor-pointer">
+        <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} className="mt-0.5" />
+        <span
+          className="mt-0.5 inline-block h-3 w-3 shrink-0 rounded-sm border-2"
+          style={{ backgroundColor: `${def.color}33`, borderColor: def.color }}
+        />
+        <span className="min-w-0">
+          <span className="block text-sm leading-tight">{def.label}</span>
+          <span className="block text-[11px] leading-snug text-muted-foreground">{def.description}</span>
+        </span>
+      </label>
+      {checked && (
+        <div className="ml-[42px] mt-1.5 space-y-1">
+          {def.legend.map((item) => (
+            <div key={item.label} className="flex items-center gap-2">
+              <span
+                className="inline-block h-2.5 w-2.5 shrink-0 rounded-[2px] border border-border"
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="text-[11px] leading-tight text-muted-foreground">{item.label}</span>
+            </div>
+          ))}
+          <p className="text-[10px] leading-snug text-muted-foreground/80">Sumber: {def.source}.</p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -181,7 +199,7 @@ export function MapControlPanel(props: Props) {
     onLoad, isLoading, filterOpen, onFilterOpenChange,
     counts, layers, onLayersChange,
     overlays, onOverlaysChange,
-    customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer,
+    customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer, onZoomCustomLayer, onCustomLayerSymbology,
     hotspot, onHotspotChange, hotspotLoading, hotspotCount,
   } = props;
 
@@ -368,9 +386,6 @@ export function MapControlPanel(props: Props) {
                 </span>
               </div>
             )}
-            <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
-              Sumber: SIGAP KLHK / Kementerian Kehutanan.
-            </p>
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -451,6 +466,8 @@ export function MapControlPanel(props: Props) {
         onAdd={onAddCustomLayer}
         onRemove={onRemoveCustomLayer}
         onToggle={onToggleCustomLayer}
+        onZoomTo={onZoomCustomLayer}
+        onSymbologyChange={onCustomLayerSymbology}
       />
     </Card>
   );

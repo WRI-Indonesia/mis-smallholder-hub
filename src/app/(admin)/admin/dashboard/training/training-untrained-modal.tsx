@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { exportToExcel } from "@/lib/xlsx";
 import { getUntrainedFarmers } from "@/server/actions/dashboard-training";
 import { TRAINING_PACKAGE_LABELS } from "@/lib/training-dashboard-aggregation";
@@ -180,12 +181,15 @@ function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: 
                     {showOtherYear && (
                       <td className="px-3 py-1.5 text-right">
                         {r.lastTrainedOtherYear != null ? (
-                          <Badge
-                            variant="secondary"
-                            title={`Pernah dilatih paket ini pada ${r.lastTrainedOtherYear} — bukan "belum pernah dilatih"`}
-                          >
-                            Dilatih {r.lastTrainedOtherYear}
-                          </Badge>
+                          <Tooltip>
+                            <TooltipTrigger render={<Badge variant="secondary" />}>
+                              Dilatih {r.lastTrainedOtherYear}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Pernah dilatih paket ini pada {r.lastTrainedOtherYear} — bukan
+                              &ldquo;belum pernah dilatih&rdquo;
+                            </TooltipContent>
+                          </Tooltip>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}

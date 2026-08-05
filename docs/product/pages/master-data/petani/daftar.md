@@ -16,7 +16,7 @@ Halaman: Petani (/admin/master-data/farmers)
 │   └── Petani Perempuan
 ├── Toolbar
 │   ├── Filter: Distrik (combobox)
-│   ├── Filter: Lembaga Petani (combobox)
+│   ├── Filter: Lembaga Petani (combobox, cascade dari Distrik)
 │   ├── Filter: Status (SUPERADMIN)
 │   ├── Filter: Pencarian
 │   ├── Tombol: Tambah Petani
@@ -44,8 +44,8 @@ Halaman: Petani (/admin/master-data/farmers)
 | `Petani` / `Data petani (smallholder) yang terdaftar` | Heading | h1 + deskripsi |
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-farmers` (`findTutorialForMenu`), dibuka di tab baru |
 | Kartu KPI (4) | Kartu | `Total Lembaga Petani`, `Total Petani`, `Petani Laki-laki`, `Petani Perempuan` |
-| Filter Distrik | Combobox | Popover + Command, `Semua Distrik`, cari `Cari distrik...`, empty `Distrik tidak ditemukan.` |
-| Filter Lembaga Petani | Combobox | `Semua Lembaga Petani`, cari `Cari lembaga petani...`, empty `Lembaga Petani tidak ditemukan.` |
+| Filter Distrik | Combobox | `Semua Distrik`, cari `Cari distrik...`, empty `Distrik tidak ditemukan.` (`DistrictGroupFilter`, `src/components/shared/district-group-filter.tsx`) |
+| Filter Lembaga Petani | Combobox | `Semua Lembaga Petani`, cari `Cari lembaga petani...`, empty `Lembaga Petani tidak ditemukan.` — daftar ikut menyempit saat Distrik dipilih; pilihan yang tidak cocok di-reset ke `Semua` |
 | Filter Status | Select | SUPERADMIN saja |
 | Pencarian | Filter | `Cari nama, ID petani, atau NIK...` (`name`, `farmerId`, `nik`) |
 | Tombol `Tambah Petani` | Tombol | CREATE — buka `FarmerFormModal` |

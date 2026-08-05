@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
       test: /\.md$/,
       type: "asset/source",
     });
+    // WASM unrar (dukungan Shapefile .rar): di-emit sebagai file statis; URL-nya
+    // di-fetch saat runtime lalu diberikan ke node-unrar-js sebagai wasmBinary.
+    config.module.rules.push({
+      test: /unrar\.wasm$/,
+      type: "asset/resource",
+    });
     return config;
   },
 };

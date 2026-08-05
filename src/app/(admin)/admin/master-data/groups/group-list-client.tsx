@@ -16,7 +16,12 @@ import { Plus, Building, Users, Layers, Trees } from "lucide-react";
 import { GroupFormModal } from "./group-form-modal";
 import { toggleFarmerGroupActive } from "@/server/actions/farmer-group";
 import { toast } from "sonner";
-import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
+import {
+  TableActions,
+  DataTable,
+  type DataTableColumn,
+} from "@/components/shared";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import {
   GROUP_TYPE_LABELS,
   formatGroupType,
@@ -257,26 +262,17 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
     };
   };
 
-  const selectedDistrictName =
-    districtFilter === "all"
-      ? "Semua Distrik"
-      : (districts.find((d) => d.id === districtFilter)?.name ?? districtFilter);
-
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
-      <Select value={districtFilter} onValueChange={(v) => setDistrictFilter(v ?? "all")}>
-        <SelectTrigger className="w-[180px] h-9">
-          <SelectValue placeholder="Semua Distrik">{selectedDistrictName}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Distrik</SelectItem>
-          {districts.map((d) => (
-            <SelectItem key={d.id} value={d.id}>
-              {d.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <FilterCombobox
+        options={districts}
+        value={districtFilter === "all" ? null : districtFilter}
+        onSelect={(id) => setDistrictFilter(id ?? "all")}
+        allLabel="Semua Distrik"
+        searchPlaceholder="Cari distrik..."
+        emptyLabel="Distrik tidak ditemukan."
+        widthClass="w-[200px]"
+      />
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (

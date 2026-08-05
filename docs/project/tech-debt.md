@@ -27,7 +27,7 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
 | **Debt** (TD-001…029) | **10** | 19 | 29 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027. (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded). (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -99,6 +99,16 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 - **Masalah:** `setRolePermissions` melakukan `findFirst`+`update`/`create` **berurutan per baris** dalam satu transaksi. Kaskade induk→anak untuk subtree besar × banyak role = puluhan round-trip (terasa lewat tunnel; timeout dinaikkan ke 20s sebagai penambal).
 - **Validation:** ganti ke SQL massal — `findMany` sekali untuk state saat ini, lalu `updateMany`(isActive) + `createMany`(baris baru) atas himpunan terhitung. · **Evidence:** #187B (`src/server/actions/role-permission.ts`). · **Owner:** Backend.
+
+### TD-030 · 🔲 Open — 3 overlay peta hilang tanpa padanan publik (P3)
+
+- **Masalah:** #215 menghapus overlay **Pelepasan Kawasan Hutan**, **PIPPIB (Moratorium)**, dan **Penutupan Lahan** karena layanan SIGAP KLHK mati dan geoportal Kemenhut baru tidak memublikasikan padanannya (kandidat terdekat PPTPKH ≠ Pelepasan; PIPPIB 2026 & PL 2024 tersedia tapi belum di-review kecocokannya dengan kebutuhan produk). Kapabilitas produk berkurang diam-diam.
+- **Validation:** review berkala geoportal Kemenhut (`Peta_Interaktif_2026`) & Satu Peta BIG; bila layanan publik yang cocok muncul, tambahkan kembali via `MAP_OVERLAYS` (skema sudah mendukung). · **Evidence:** #215 (`map-overlays.ts`). · **Owner:** Product + Frontend.
+
+### TD-031 · 🔲 Open — Warna legend overlay hardcoded, sinkron manual dengan renderer upstream (P3)
+
+- **Masalah:** `MAP_OVERLAYS[].legend` menyalin warna kelas dari renderer ArcGIS upstream saat #215; bila penyedia mengubah simbologi, legend panel diam-diam tidak cocok dengan tile yang dirender.
+- **Validation:** cek visual berkala (bandingkan legend panel vs endpoint `/MapServer/legend?f=json`); alternatif jangka panjang: fetch legend upstream sekali per sesi dengan fallback ke nilai statis. · **Evidence:** #215/#217 (`map-overlays.ts`). · **Owner:** Frontend.
 
 ## Debt Sequencing
 

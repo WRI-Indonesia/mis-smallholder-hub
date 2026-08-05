@@ -36,7 +36,7 @@ Siapkan: paket pelatihan, tanggal, lokasi, daftar hadir, dan notulen PDF (maksim
 3. Centang petani yang hadir. Daftar yang muncul hanya anggota lembaga penyelenggara.
 + Bila seorang petani hadir tapi belum terdaftar, daftarkan dia dulu di Master Data → Petani lalu kembali ke sini. Menambahkannya ke lembaga lain hanya agar bisa dicentang akan merusak angka cakupan kedua lembaga.
 4. Isi **Pre-Test** dan **Post-Test** bila tesnya dilakukan. Boleh dikosongkan dan dilengkapi belakangan.
-+ Panel efektivitas di Dashboard Pelatihan hanya menghitung peserta yang **kedua** skornya terisi. Mengisi pre saja tanpa post membuat peserta itu tidak masuk hitungan kenaikan skor, meski kehadirannya tetap terhitung.
++ Panel efektivitas dan kelulusan di Dashboard Pelatihan hanya menghitung peserta yang **kedua** skornya terisi. Mengisi pre saja tanpa post membuat peserta itu tidak masuk hitungan kenaikan skor maupun kelulusan (post-test ≥ 60), meski kehadirannya tetap terhitung.
 5. Simpan.
 
 > [!hati-hati] Nilai post-test yang lebih rendah dari pre-test akan ditandai "turun" di Dashboard Pelatihan sebagai indikasi salah input. Periksa ulang sebelum menyimpan.

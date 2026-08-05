@@ -58,6 +58,12 @@ export function trainingDistrictCoverage(
   return [...map.values()].sort((a, b) => a.districtName.localeCompare(b.districtName));
 }
 
+/**
+ * Ambang lulus post-test (#214): peserta ber-skor dengan post ≥ nilai ini
+ * dihitung "lulus" pada KPI kelulusan dan panel kelulusan per paket.
+ */
+export const TRAINING_PASS_SCORE = 60;
+
 /** Urutan tampil paket di matriks, chart, dan tabel skor. OTHER selalu terakhir. */
 export const TRAINING_PACKAGE_ORDER: TrainingPackageCode[] = [
   "PAKET_1_BMP_PC_RSPO_NKT",
@@ -184,6 +190,8 @@ export function trainingTotals(
   year: number | null = null,
 ): TrainingTotals {
   const trained = new Set<string>();
+  const scoredFarmers = new Set<string>();
+  const passedFarmers = new Set<string>();
   let totalFarmers = 0;
   let totalActivities = 0;
   let totalAttendance = 0;
@@ -204,6 +212,10 @@ export function trainingTotals(
           scoredAttendance += 1;
           sumPre += p.preTestScore;
           sumPost += p.postTestScore;
+          // Basis petani unik (indikator impact "# of smallholders", #214):
+          // sekali mencapai ambang di kehadiran mana pun → lulus.
+          scoredFarmers.add(p.farmerId);
+          if (p.postTestScore >= TRAINING_PASS_SCORE) passedFarmers.add(p.farmerId);
         }
       }
     }
@@ -219,6 +231,8 @@ export function trainingTotals(
     totalAttendance,
     femaleAttendance,
     scoredAttendance,
+    scoredFarmers: scoredFarmers.size,
+    passedFarmers: passedFarmers.size,
     avgPreScore: avgPre,
     avgPostScore: avgPost,
     avgScoreGain: avgPost - avgPre,
@@ -370,6 +384,8 @@ export function trainingScoreRows(
       attendance: number;
       pre: number;
       post: number;
+      scoredFarmers: Set<string>;
+      passedFarmers: Set<string>;
       declined: number;
       unchanged: number;
     }
@@ -379,7 +395,16 @@ export function trainingScoreRows(
     for (const a of activitiesInYear(g, year)) {
       let e = acc.get(a.packageCode);
       if (!e) {
-        e = { scored: 0, attendance: 0, pre: 0, post: 0, declined: 0, unchanged: 0 };
+        e = {
+          scored: 0,
+          attendance: 0,
+          pre: 0,
+          post: 0,
+          scoredFarmers: new Set<string>(),
+          passedFarmers: new Set<string>(),
+          declined: 0,
+          unchanged: 0,
+        };
         acc.set(a.packageCode, e);
       }
       for (const p of a.participants) {
@@ -388,6 +413,9 @@ export function trainingScoreRows(
         e.scored += 1;
         e.pre += p.preTestScore;
         e.post += p.postTestScore;
+        // Kelulusan per paket berbasis petani unik (#214), bukan kehadiran.
+        e.scoredFarmers.add(p.farmerId);
+        if (p.postTestScore >= TRAINING_PASS_SCORE) e.passedFarmers.add(p.farmerId);
         if (p.postTestScore < p.preTestScore) e.declined += 1;
         else if (p.postTestScore === p.preTestScore) e.unchanged += 1;
       }
@@ -405,6 +433,8 @@ export function trainingScoreRows(
       avgPre,
       avgPost,
       gain: avgPost - avgPre,
+      scoredFarmers: e.scoredFarmers.size,
+      passedFarmers: e.passedFarmers.size,
       declined: e.declined,
       unchanged: e.unchanged,
     };

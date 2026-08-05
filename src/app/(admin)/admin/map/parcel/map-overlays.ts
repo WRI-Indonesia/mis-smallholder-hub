@@ -1,16 +1,19 @@
 /**
  * Reference map overlays for the "Peta Lainnya" panel section.
  *
- * These are third-party thematic maps (kawasan hutan, gambut, moratorium, dst.)
- * published by SIGAP KLHK / Kementerian Kehutanan as ArcGIS REST MapServer
+ * These are third-party thematic maps served as ArcGIS REST MapServer
  * services. We consume the dynamic `export` endpoint as XYZ-style raster tiles
  * so MapLibre can overlay them beneath the farmer data layers.
+ *
+ * Source history: originally SIGAP KLHK (geoportal.menlhk.go.id). After the
+ * ministry split into Kemenhut + KLH, the old domain was removed from DNS
+ * (2026) and the services scattered: Kawasan Hutan now lives at
+ * geoportal.planologi.kehutanan.go.id (Peta Interaktif 2026), while Fungsi
+ * Ekosistem Gambut is no longer public at Kemenhut/KLH — we use the official
+ * copy on Satu Peta BIG (kspservices.big.go.id).
  */
 
 import type { FeatureCollection, Feature, Geometry } from "geojson";
-
-const SIGAP_BASE =
-  "https://geoportal.menlhk.go.id/server/rest/services/SIGAP_Interaktif";
 
 export type OverlayDef = {
   key: string;
@@ -20,6 +23,15 @@ export type OverlayDef = {
   color: string;
   /** ArcGIS REST MapServer base URL. */
   service: string;
+  /**
+   * Optional ArcGIS `layers` param for the export request (e.g. "show:48")
+   * when the MapServer bundles many layers and only some should be drawn.
+   */
+  exportLayers?: string;
+  /** Attribution line shown under the toggle when the overlay is active. */
+  source: string;
+  /** Legend entries (fill colors from the upstream renderer), shown when active. */
+  legend: { color: string; label: string }[];
 };
 
 /** Ordered list of available overlays (top row = drawn on top). */
@@ -29,35 +41,34 @@ export const MAP_OVERLAYS: OverlayDef[] = [
     label: "Kawasan Hutan",
     description: "Penunjukan kawasan hutan (HK/HL/HP/HPT/HPK/APL)",
     color: "#16a34a",
-    service: `${SIGAP_BASE}/Kawasan_Hutan/MapServer`,
-  },
-  {
-    key: "pelepasanKawasanHutan",
-    label: "Pelepasan Kawasan Hutan",
-    description: "Areal pelepasan kawasan hutan untuk penggunaan lain",
-    color: "#f97316",
-    service: `${SIGAP_BASE}/Pelepasan_Kawasan_Hutan/MapServer`,
+    service:
+      "https://geoportal.planologi.kehutanan.go.id/server/rest/services/Peta_Interaktif_2026/KWSHUTAN_AR_250K/MapServer",
+    source:
+      "Kementerian Kehutanan — Geoportal Planologi, Peta Kawasan Hutan 1:250.000 (Des 2025)",
+    legend: [
+      { color: "#ad3fff", label: "Kawasan Konservasi (HK)" },
+      { color: "#02ad00", label: "Hutan Lindung (HL)" },
+      { color: "#8af200", label: "Hutan Produksi Terbatas (HPT)" },
+      { color: "#ffff00", label: "Hutan Produksi Tetap (HP)" },
+      { color: "#ff5eff", label: "Hutan Produksi Konversi (HPK)" },
+      { color: "#ffffff", label: "Area Penggunaan Lain (APL)" },
+      { color: "#00c5ff", label: "Tubuh Air" },
+    ],
   },
   {
     key: "gambut",
     label: "Fungsi Ekosistem Gambut",
     description: "Fungsi lindung & budidaya ekosistem gambut",
     color: "#92400e",
-    service: `${SIGAP_BASE}/Fungsi_Ekosistem_Gambut/MapServer`,
-  },
-  {
-    key: "pippib",
-    label: "PIPPIB (Moratorium)",
-    description: "Indikatif penghentian izin baru 2023 Periode II",
-    color: "#dc2626",
-    service: `${SIGAP_BASE}/PIPPIB_2023_Periode_2/MapServer`,
-  },
-  {
-    key: "tutupanLahan",
-    label: "Penutupan Lahan 2022",
-    description: "Kelas penutupan/tutupan lahan nasional 2022",
-    color: "#0ea5e9",
-    service: `${SIGAP_BASE}/Penutupan_Lahan_2022/MapServer`,
+    service:
+      "https://kspservices.big.go.id/satupeta/rest/services/PUBLIK/SUMBER_DAYA_ALAM_DAN_LINGKUNGAN/MapServer",
+    exportLayers: "show:48",
+    source:
+      "Satu Peta BIG / KLH, Peta Fungsi Ekosistem Gambut 1:50.000",
+    legend: [
+      { color: "#38a800", label: "Fungsi Lindung Ekosistem Gambut" },
+      { color: "#ffff73", label: "Fungsi Budidaya Ekosistem Gambut" },
+    ],
   },
 ];
 
@@ -88,6 +99,15 @@ export const DEFAULT_OVERLAY_STATE: OverlayState = {
 // User-added GIS layers ("Tambah Data GIS Lain") — session-only, not persisted.
 // ---------------------------------------------------------------------------
 
+/** Pewarnaan kategorikal (unique value) sebuah layer vector berdasarkan satu atribut. */
+export type CustomLayerSymbology = {
+  attribute: string;
+  /** Nilai atribut (sebagai string) → warna; nilai di luar mapping memakai warna dasar layer. */
+  mapping: Record<string, string>;
+  /** Total nilai unik atribut — bisa lebih besar dari isi mapping bila terpotong batas kelas. */
+  totalValues: number;
+};
+
 /** A layer added by the user at runtime: a WMS/tile URL or a parsed vector set. */
 export type CustomLayer = {
   id: string;
@@ -97,7 +117,7 @@ export type CustomLayer = {
   visible: boolean;
 } & (
     | { kind: "wms"; tileUrl: string }
-    | { kind: "vector"; data: FeatureCollection }
+    | { kind: "vector"; data: FeatureCollection; symbology?: CustomLayerSymbology }
   );
 
 /** Palette cycled for user-added layers so each is visually distinct. */
@@ -109,6 +129,63 @@ export const CUSTOM_LAYER_COLORS = [
   "#6366f1",
   "#ef4444",
 ];
+
+/** Batas jumlah kelas warna symbology agar legend masih terbaca; nilai selebihnya memakai warna dasar. */
+export const SYMBOLOGY_MAX_CLASSES = 24;
+
+/**
+ * Palet kategorikal symbology — 8 hue urutan tetap (tervalidasi pemisahan CVD
+ * untuk pasangan bersebelahan); disiklus bila kelas lebih dari 8, dengan legend
+ * dan popup atribut sebagai pembawa identitas.
+ */
+export const SYMBOLOGY_PALETTE = [
+  "#2a78d6",
+  "#eb6834",
+  "#1baf7a",
+  "#eda100",
+  "#e87ba4",
+  "#008300",
+  "#4a3aa7",
+  "#e34948",
+];
+
+/** Semua atribut yang tersedia untuk symbology: punya minimal satu nilai non-kosong. */
+export function symbologyCandidates(fc: FeatureCollection): string[] {
+  const keys = new Set<string>();
+  for (const f of fc.features) {
+    for (const [key, value] of Object.entries(f.properties ?? {})) {
+      if (value === null || value === undefined || value === "") continue;
+      keys.add(key);
+    }
+  }
+  return [...keys].sort((a, b) => a.localeCompare(b, "id"));
+}
+
+/**
+ * Susun symbology untuk satu atribut: nilai unik diurutkan alfabet-numerik,
+ * SYMBOLOGY_MAX_CLASSES pertama diberi warna (palet disiklus), sisanya jatuh ke
+ * warna dasar layer.
+ */
+export function buildSymbology(
+  fc: FeatureCollection,
+  attribute: string
+): CustomLayerSymbology {
+  const values = new Set<string>();
+  for (const f of fc.features) {
+    const value = f.properties?.[attribute];
+    if (value === null || value === undefined || value === "") continue;
+    values.add(String(value));
+  }
+  const collator = new Intl.Collator("id", { numeric: true });
+  const sorted = [...values].sort(collator.compare).slice(0, SYMBOLOGY_MAX_CLASSES);
+  return {
+    attribute,
+    mapping: Object.fromEntries(
+      sorted.map((value, i) => [value, SYMBOLOGY_PALETTE[i % SYMBOLOGY_PALETTE.length]])
+    ),
+    totalValues: values.size,
+  };
+}
 
 /**
  * Build a MapLibre raster tile URL from a user-provided WMS endpoint. If the

@@ -11,6 +11,18 @@ hrefLabel: Buka halaman Produksi
 
 Data di halaman ini **selalu terkini**. Yang membaca snapshot berkala adalah Main Dashboard, BMP Dashboard, dan Peta BMP — jadi angka di sana bisa tertinggal meski data di sini sudah benar.
 
+## Filter & pencarian
+
+**Distrik** — mempersempit ke satu kabupaten/kota. Daftarnya hanya memuat distrik dalam wilayah kerja akun Anda.
+
+**Lembaga Petani** — mempersempit ke satu lembaga. Pilihannya ikut menyempit bila Distrik sudah dipilih.
+
+**Pilih bulan** — menampilkan satu periode panen saja.
+
+**Lahan** — memisahkan data yang sudah/belum terhubung ke persil (Terpetakan / Belum Terpetakan). **Status** hanya untuk SUPERADMIN.
+
+**Kotak pencarian** — menelusuri nama petani dan ID Petani.
+
 ## Kolom tabel
 
 **Petani** — pemilik data panen.

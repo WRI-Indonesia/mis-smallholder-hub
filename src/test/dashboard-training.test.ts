@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   TRAINING_COVERAGE_TARGET,
+  TRAINING_PASS_SCORE,
   trainingTargetGap,
   trainingTotalTargetGap,
   filterTrainingGroups,
@@ -134,6 +135,19 @@ describe("trainingTotals", () => {
     expect(t.avgScoreGain).toBeCloseTo(66.25 - 45);
   });
 
+  it("menghitung petani unik lulus post-test ≥ 60 — sekali lulus tetap lulus (#214)", () => {
+    expect(TRAINING_PASS_SCORE).toBe(60);
+    const t = trainingTotals(DATA.groups);
+    expect(t.scoredFarmers).toBe(3); // f1, f2, f9 — f1 ber-skor 2x tetap satu petani
+    // f1 lulus via a1 (70) meski a2-nya 55; f2 tepat 60 (batas bawah lulus); f9 80.
+    expect(t.passedFarmers).toBe(3);
+
+    // Tahun 2025: hanya f1@a2 (55) dan f9 (80) ber-skor → f1 belum lulus tahun itu.
+    const t25 = trainingTotals(DATA.groups, 2025);
+    expect(t25.scoredFarmers).toBe(2);
+    expect(t25.passedFarmers).toBe(1);
+  });
+
   it("narrows to the selected year", () => {
     const t = trainingTotals(DATA.groups, 2024);
     expect(t.totalActivities).toBe(1);
@@ -147,6 +161,8 @@ describe("trainingTotals", () => {
       group("gx", { activities: [act("z", "PAKET_2_MK", "2025-01-01", [p("f1")])] }),
     ]);
     expect(t.scoredAttendance).toBe(0);
+    expect(t.scoredFarmers).toBe(0);
+    expect(t.passedFarmers).toBe(0);
     expect(t.avgScoreGain).toBe(0);
   });
 });
@@ -237,7 +253,24 @@ describe("trainingScoreRows", () => {
     const mk = trainingScoreRows(DATA.groups).find((r) => r.packageCode === "PAKET_2_MK")!;
     expect(mk.attendance).toBe(1);
     expect(mk.scored).toBe(0);
+    expect(mk.scoredFarmers).toBe(0);
+    expect(mk.passedFarmers).toBe(0);
     expect(mk.gain).toBe(0);
+  });
+
+  it("kelulusan per paket: petani unik, mengikuti filter tahun (#214)", () => {
+    const paket1 = trainingScoreRows(DATA.groups).find(
+      (r) => r.packageCode === "PAKET_1_BMP_PC_RSPO_NKT",
+    )!;
+    // f1 ber-skor 2x (70 lulus, 55 tidak) → dihitung satu petani, tetap lulus.
+    expect(paket1.scoredFarmers).toBe(3);
+    expect(paket1.passedFarmers).toBe(3);
+
+    const paket1y25 = trainingScoreRows(DATA.groups, 2025).find(
+      (r) => r.packageCode === "PAKET_1_BMP_PC_RSPO_NKT",
+    )!;
+    expect(paket1y25.scoredFarmers).toBe(2); // f1 (55) & f9 (80)
+    expect(paket1y25.passedFarmers).toBe(1); // hanya f9
   });
 
   it("counts unchanged scores separately from declines", () => {

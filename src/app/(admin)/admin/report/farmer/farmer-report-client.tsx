@@ -2,15 +2,13 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, FileText, Building, Users, Layers, Trees, Printer } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { FileText, Building, Users, Layers, Trees, Printer } from "lucide-react";
 import { maskNik } from "@/lib/mask";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { getFarmerGroupsForReport, getFarmerReport } from "@/server/actions/report";
 import type { FarmerReportRow, FarmerReportResult } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
@@ -35,9 +33,6 @@ export function FarmerReportClient({ districts }: Props) {
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
 
-  const [districtComboOpen, setDistrictComboOpen] = useState(false);
-  const [groupComboOpen, setGroupComboOpen] = useState(false);
-
   const [reportData, setReportData] = useState<FarmerReportResult | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -61,13 +56,11 @@ export function FarmerReportClient({ districts }: Props) {
   const handleDistrictSelect = (val: string | null) => {
     setSelectedDistrict(val);
     setSelectedFarmerGroup(null);
-    setDistrictComboOpen(false);
     setReportData(null);
   };
 
   const handleFarmerGroupSelect = (val: string | null) => {
     setSelectedFarmerGroup(val);
-    setGroupComboOpen(false);
     setReportData(null);
   };
 
@@ -202,99 +195,27 @@ export function FarmerReportClient({ districts }: Props) {
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-muted-foreground">Distrik <span className="text-red-500">*</span></label>
-              <Popover open={districtComboOpen} onOpenChange={setDistrictComboOpen}>
-                <PopoverTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={districtComboOpen}
-                      className="w-[220px] justify-between h-9 font-normal text-left"
-                    >
-                      {selectedDistrict ? (
-                        <span>{selectedDistrictObj?.name}</span>
-                      ) : (
-                        <span className="text-muted-foreground">Pilih Distrik</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  }
-                />
-                <PopoverContent className="w-[220px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Cari distrik..." />
-                    <CommandList>
-                      <CommandEmpty>Distrik tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        {districts.map((d) => (
-                          <CommandItem
-                            key={d.id}
-                            value={d.name}
-                            onSelect={() => handleDistrictSelect(d.id)}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedDistrict === d.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {d.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <FilterCombobox
+                options={districts}
+                value={selectedDistrict}
+                onSelect={handleDistrictSelect}
+                placeholder="Pilih Distrik"
+                searchPlaceholder="Cari distrik..."
+                emptyLabel="Distrik tidak ditemukan."
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-muted-foreground">Lembaga Petani <span className="text-red-500">*</span></label>
-              <Popover open={groupComboOpen} onOpenChange={setGroupComboOpen}>
-                <PopoverTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={groupComboOpen}
-                      className="w-[220px] justify-between h-9 font-normal text-left"
-                      disabled={!selectedDistrict}
-                    >
-                      {selectedFarmerGroup ? (
-                        <span>{selectedGroupObj?.name}</span>
-                      ) : (
-                        <span className="text-muted-foreground">Pilih Lembaga Petani</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  }
-                />
-                <PopoverContent className="w-[220px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Cari lembaga petani..." />
-                    <CommandList>
-                      <CommandEmpty>Kelompok tani tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        {farmerGroups.map((g) => (
-                          <CommandItem
-                            key={g.id}
-                            value={g.name}
-                            onSelect={() => handleFarmerGroupSelect(g.id)}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedFarmerGroup === g.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {g.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <FilterCombobox
+                options={farmerGroups}
+                value={selectedFarmerGroup}
+                onSelect={handleFarmerGroupSelect}
+                placeholder="Pilih Lembaga Petani"
+                searchPlaceholder="Cari lembaga petani..."
+                emptyLabel="Lembaga Petani tidak ditemukan."
+                disabled={!selectedDistrict}
+              />
             </div>
 
             <Button

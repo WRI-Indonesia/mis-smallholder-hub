@@ -15,7 +15,9 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 ## Filter & pencarian
 
-**Lembaga Petani** — mempersempit ke satu lembaga.
+**Distrik** — mempersempit ke satu kabupaten/kota. Daftarnya hanya memuat distrik dalam wilayah kerja akun Anda.
+
+**Lembaga Petani** — mempersempit ke satu lembaga. Pilihannya ikut menyempit bila Distrik sudah dipilih.
 
 **Status** — hanya untuk SUPERADMIN.
 

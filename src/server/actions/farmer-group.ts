@@ -6,7 +6,11 @@ import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer
 import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
 import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 
-import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
+import {
+  getAccessContext,
+  farmerGroupAccessFilter,
+  getAccessibleDistrictIds,
+} from "@/lib/access-context";
 import { buildFarmerGroupDetail } from "@/lib/farmer-group-detail";
 import { computeCompleteness } from "@/lib/data-completeness";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
@@ -346,18 +350,26 @@ export async function toggleFarmerGroupActive(id: string) {
 }
 
 export async function getDistrictsForSelect() {
-  // Dipakai sebagai filter di halaman KT, Petani, & Pelatihan — izinkan bila
-  // user punya VIEW pada salah satu menu tersebut.
+  // Dipakai sebagai filter di halaman Lembaga Petani, Petani, Pelatihan,
+  // Lahan, & Produksi — izinkan bila user punya VIEW pada salah satu menu.
   const allowed =
     (await hasPermission("master-data-groups", "VIEW")) ||
     (await hasPermission("master-data-farmers", "VIEW")) ||
-    (await hasPermission("master-data-training", "VIEW"));
+    (await hasPermission("master-data-training", "VIEW")) ||
+    (await hasPermission("master-data-parcels", "VIEW")) ||
+    (await hasPermission("master-data-production", "VIEW"));
   if (!allowed) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
+  // Hanya distrik dalam jurisdiksi user (access scope), konsisten dengan
+  // getFarmerGroupOptions — user BY_DISTRICT/BY_FARMER_GROUP tidak perlu
+  // melihat distrik yang datanya pasti kosong.
+  const access = await getAccessContext();
+  const districtIds = await getAccessibleDistrictIds(access);
+
   return prisma.district.findMany({
-    where: { isActive: true },
+    where: { isActive: true, ...(districtIds ? { id: { in: districtIds } } : {}) },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

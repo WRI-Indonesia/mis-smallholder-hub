@@ -54,8 +54,8 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-training` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Pelatihan" | Heading | Deskripsi "Analisis ringkasan sesi pelatihan dan cakupan petani" |
 | "Parameter Laporan" | Kartu filter collapsible | Ikon `BarChart3`; klik header untuk buka/tutup (ikut menyembunyikan kartu KPI) |
-| "Distrik *" | Filter (combobox + search, wajib) | Placeholder "Pilih Distrik" |
-| "Lembaga Petani *" | Filter (combobox + search, wajib) | Disabled sampai Distrik dipilih |
+| "Distrik *" | Filter (combobox + search, wajib) | Primitif `FilterCombobox` (#212); placeholder "Pilih Distrik", empty "Distrik tidak ditemukan." |
+| "Lembaga Petani *" | Filter (combobox + search, wajib) | Primitif `FilterCombobox` (#212); disabled sampai Distrik dipilih; empty "Lembaga Petani tidak ditemukan." |
 | "Tampilkan Laporan" | Tombol | Mereset filter paket & tanggal setelah berhasil |
 | Empty state | Kartu | "Filter Wajib Belum Lengkap" — "Silakan pilih Distrik dan Lembaga Petani untuk memuat ringkasan, sesi pelatihan, dan cakupan data laporan pelatihan." |
 | Header cetak | Blok print-only | "LAPORAN RINGKASAN PELATIHAN" |

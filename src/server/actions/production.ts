@@ -104,7 +104,7 @@ export async function getProductionRecords(params?: {
           name: true,
           farmerId: true,
           farmerGroupId: true,
-          farmerGroup: { select: { name: true } },
+          farmerGroup: { select: { name: true, districtId: true } },
         },
       },
       parcel: { select: { parcelId: true } },

@@ -20,7 +20,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Petani Terlatih
 │   ├── Total Sesi
 │   ├── Partisipasi Perempuan
-│   └── Rata-rata Kenaikan Skor
+│   └── Petani Lulus Post-Test (≥ 60, #214)
 ├── Card Capaian Paket per Distrik (full row, collapsible, #198; tersembunyi saat filter Lembaga aktif)
 │   ├── Legend Sudah/Belum
 │   ├── Tabel paket × distrik (baris = paket + Min. 1 Paket; kolom = Total (Riau) lalu distrik, header memuat total petani; lebar kolom seragam)
@@ -43,12 +43,15 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   ├── Baris per paket (bar Pre / Post)
 │   ├── Catatan per paket
 │   └── Empty state
-├── Panel kualitas data
+├── Panel kualitas data (baris kedua, 2/3 kiri — sejajar panel kelulusan)
 │   ├── Sesi tanpa bukti
 │   ├── Sesi tanpa lokasi
 │   ├── Sesi tanpa peserta
 │   ├── Peserta tanpa skor lengkap
 │   └── Link ke Master Data Pelatihan
+├── Panel kelulusan post-test per paket (#214, baris kedua, 1/3 kanan — di bawah panel efektivitas)
+│   ├── Baris per paket (stacked bar lulus vs belum, basis petani unik)
+│   └── Empty state
 └── Dialog drill-down petani belum dilatih
     ├── Tabel (ID Petani / Nama / L-P)
     ├── Tombol "Salin"
@@ -63,10 +66,10 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 |---|---|
 | File | `src/app/(admin)/admin/dashboard/training/page.tsx` |
 | Tipe | Server Component → `TrainingDashboardClient` (Client Component) |
-| Komponen anak | `training-dashboard-client.tsx`, `training-score-cards.tsx`, `training-district-panel.tsx`, `training-coverage-matrix.tsx`, `training-trend-chart.tsx`, `training-effectiveness-panel.tsx`, `training-quality-panel.tsx`, `training-untrained-modal.tsx`, `loading.tsx` |
+| Komponen anak | `training-dashboard-client.tsx`, `training-score-cards.tsx`, `training-district-panel.tsx`, `training-coverage-matrix.tsx`, `training-trend-chart.tsx`, `training-effectiveness-panel.tsx`, `training-pass-panel.tsx`, `training-quality-panel.tsx`, `training-untrained-modal.tsx`, `loading.tsx` |
 | Guard | `requirePermission("dashboard-training")` (halaman); `hasPermission("dashboard-training", "VIEW")` + `getAccessContext()` di action |
 | Server action / data | `getTrainingDashboardView()` dari `src/server/actions/dashboard-training.ts` — query langsung ke DB (bukan snapshot), difilter `isActive` + access context; `getUntrainedFarmers(groupId, packageCode, year)` untuk dialog drill-down |
-| Helper agregasi | `filterTrainingGroups`, `trainingTotals`, `trainingCoverageMatrix`, `trainingActivePackages`, `trainingTrendSeries`, `trainingScoreRows`, `trainingQualityStats`, `trainingAvailableYears`, `trainingTargetGap` / `TRAINING_COVERAGE_TARGET` dari `src/lib/training-dashboard-aggregation.ts` |
+| Helper agregasi | `filterTrainingGroups`, `trainingTotals`, `trainingCoverageMatrix`, `trainingActivePackages`, `trainingTrendSeries`, `trainingScoreRows`, `trainingQualityStats`, `trainingAvailableYears`, `trainingTargetGap` / `TRAINING_COVERAGE_TARGET`, `TRAINING_PASS_SCORE` (ambang lulus post-test = 60, #214) dari `src/lib/training-dashboard-aggregation.ts` |
 | Persistensi filter | `useUrlFilters()` (`src/hooks/use-url-filters.ts`, TD-021) — filter disimpan di query string, kunci `distrik`, `lembaga`, `kategori`, `tahun`; via History API `replaceState` (bukan `router.replace`, agar tidak memicu ulang payload RSC); nilai kosong dihapus dari query |
 | Uji performa | `src/test/perf.test.ts` (TD-020) — agregat (KPI + matriks + tren + skor) diuji pada fixture 60.000 baris kehadiran, ambang < 1.200 ms; pagar sebelum menimbang beralih ke pola snapshot |
 | Icon menu | `GraduationCap` |
@@ -96,9 +99,9 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 | 1 | Petani Terlatih | "{terlatih}" | "{persen} dari total {total petani} petani aktif pernah ikut ≥1 pelatihan ({label tahun})" |
 | 2 | Total Sesi | "{n}" | "sesi pelatihan ({label tahun})" |
 | 3 | Partisipasi Perempuan | persen | "{n} dari total {n} kehadiran ({label tahun})" |
-| 4 | Rata-rata Kenaikan Skor | "+/−{n} poin" atau "—" | "pre {n} → post {n} · {n} peserta ber-skor" / "belum ada peserta dengan pre & post terisi" |
+| 4 | Petani Lulus Post-Test | "{n}" atau "—" | "{persen} dari {n} petani terlatih mencapai post-test ≥ 60 ({label tahun})" / "belum ada peserta dengan pre & post terisi" |
 
-Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmph` (`src/components/shared/stat-emph.tsx`, pola KPI BMP #191). Card "Kehadiran vs Petani Unik" **dihapus** (#198, keputusan owner — petani unik sudah diwakili card Cakupan). Kolom matriks cakupan diberi lebar seragam agar grid sel simetris.
+Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmph` (`src/components/shared/stat-emph.tsx`, pola KPI BMP #191). Card "Kehadiran vs Petani Unik" **dihapus** (#198, keputusan owner — petani unik sudah diwakili card Cakupan). Card "Rata-rata Kenaikan Skor" **diganti** card Petani Lulus Post-Test (#214) — mengikuti indikator impact "# of smallholders demonstrating knowledge at or above a defined proficiency threshold (≥60 on post-test)", basis **petani unik** (lulus bila ≥1 post-test-nya ≥ 60), dengan pembagi persentase = **petani terlatih** (angka card 1, revisi owner) sehingga petani tanpa skor terhitung belum lulus. Kolom matriks cakupan diberi lebar seragam agar grid sel simetris.
 
 ## Card Capaian Paket per Distrik (`TrainingDistrictPanel`, #198)
 
@@ -125,7 +128,7 @@ Label tahun: "semua tahun" atau "{YYYY}".
 | Kolom paket | Kolom tabel (sortable, dinamis) | Header ringkas: "Paket 1", "Paket 2 - MK", "Paket 2 - HSE", "Paket 3 & 4", "Lainnya" — hanya paket yang aktif pada irisan; sel = persen + jumlah petani; tooltip header = label paket lengkap |
 | Kolom "Min. 1 Paket" | Kolom tabel (sortable) | Petani yang mengikuti paket apa pun (target 100%); sel diberi ring pembeda |
 | Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, 75–99%, 100% (gradasi emerald, 100%/tuntas paling tua — #194); Lembaga tanpa petani aktif = sel abu "—" |
-| Tooltip sel | `title` | "{label} — {n} dari {n} petani · kurang {n} menuju target {t}%. Klik untuk melihat daftarnya." / "target {t}% tercapai (...)" / "Lembaga belum punya petani aktif"; saat filter Tahun aktif ditambah "· {x} dilatih hanya di tahun lain" bila ada (#202) |
+| Tooltip sel | Tooltip terstruktur (`StatTooltip`, #213) | Judul = label paket + subtitle nama Lembaga; baris chip+jumlah+persen: tanpa filter Tahun "Sudah ikut"/"Belum", dengan filter Tahun "Ikut {tahun}"/"Ikut tahun lain"/"Belum pernah" (#202, chip sinkron warna segmen bar Distrik); footer "dari {n} petani aktif" + baris target ("Kurang {n} menuju target {t}% — klik sel untuk daftar petaninya" / "Target {t}% tercapai" / "Di luar paket program — tanpa target"); Lembaga tanpa petani aktif → footer khusus |
 | Sel dapat diklik | Tombol | Aktif hanya bila Lembaga punya petani aktif dan masih ada kekurangan menuju target → membuka dialog drill-down |
 | Legenda skala | Legend | "Skala:" 0% · <25% · 25–49% · 50–74% · 75–99% · 100% (catatan "Target program … kurang N petani" di kanan legenda dihapus — ambigu, #194) |
 | Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." |
@@ -167,6 +170,18 @@ Target cakupan per paket: `TRAINING_COVERAGE_TARGET` — Paket 1, Paket 2 - MK, 
 | Bar "Pre" / "Post" | Bar | Rata-rata skor; skala relatif skor tertinggi yang muncul |
 | Catatan per paket | Teks | "{n} dari {n} kehadiran ber-skor · {n} turun · {n} tetap" |
 | Empty state | Teks | "Belum ada peserta dengan skor pre & post terisi." |
+
+## Panel kelulusan (`TrainingPassPanel`, #214)
+
+| Objek | Tipe | Keterangan |
+|---|---|---|
+| Judul | Heading kartu | "Kelulusan Post-Test per Paket" (baris kedua kolom kanan, di bawah panel efektivitas, sejajar panel Kualitas Data yang menempati 2/3 kiri) |
+| Deskripsi | Teks | "Petani unik ber-skor — lulus bila salah satu post-test-nya ≥ 60." |
+| Baris per paket | Stacked bar | Label paket lengkap + persen lulus di kanan; bar dua segmen: lulus (emerald) vs belum lulus (amber), celah 2px antar segmen |
+| Catatan per paket | Teks | "{n} lulus · {n} belum lulus · dari {n} petani ber-skor" |
+| Empty state | Teks | "Belum ada peserta dengan skor pre & post terisi." |
+
+Basis **petani unik per paket** (bukan kehadiran, beda dari panel efektivitas): petani yang ber-skor di beberapa sesi paket yang sama dihitung sekali, lulus bila salah satu post-test-nya mencapai ambang.
 
 ## Panel kualitas data (`TrainingQualityPanel`)
 

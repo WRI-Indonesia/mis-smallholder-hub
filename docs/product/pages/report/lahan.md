@@ -50,8 +50,8 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 |---|---|---|
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-land-parcel` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Lahan" | Heading | Deskripsi "Roster lahan per Lembaga Petani (Lembaga, Petani, ID Petani, ID Lahan, Kelompok Tani)" |
-| "Distrik" | Filter (combobox + search) | Default "Semua Distrik" |
-| "Lembaga Petani" | Filter (combobox + search) | Label tombol default "Semua Lembaga Petani", namun laporan baru dimuat setelah satu Lembaga dipilih (wajib secara efektif) |
+| "Distrik" | Filter (combobox + search) | Primitif `FilterCombobox` (#212); default "Semua Distrik", empty "Distrik tidak ditemukan." |
+| "Lembaga Petani" | Filter (combobox + search) | Primitif `FilterCombobox` (#212); label tombol default "Semua Lembaga Petani", namun laporan baru dimuat setelah satu Lembaga dipilih (wajib secara efektif); empty "Lembaga Petani tidak ditemukan." |
 | Catatan filter | Teks bantu | "Roster real-time dari data lahan aktif (1 baris = 1 lahan). Pilih Lembaga Petani (wajib) — laporan & cetakan selalu per Lembaga; filter Distrik membantu mempersempit daftar. PDF & Excel menyertakan peta lahan — atur pecahan grid dan isi label poligon di panel Peta Cetak." |
 | Kartu KPI | 4 kartu | "Total Petani" (badge Petani), "Kelompok Tani" (badge KT), "Total Lahan" (badge Lahan), "Total Luas" (badge Ha) |
 | "Peta Cetak — Grid & Label" | Kartu pengaturan peta | Ikon `Grid3x3` |

@@ -23,7 +23,7 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 2. Baca kartu **Skor Keseluruhan** dan lima kartu domain di sebelahnya.
 + Skor domain adalah rata-rata seluruh lembaga yang **tertimbang jumlah petani** — lembaga besar berpengaruh lebih besar. Warna: hijau tua khusus 100 (lengkap penuh), hijau 80–99, kuning 50–79, merah <50.
 3. Lihat **Matriks Kelengkapan per Lembaga & Domain**. Urutan bawaannya skor terendah dulu.
-+ Setiap sel adalah skor satu domain untuk satu lembaga. Klik judul kolom untuk mengurutkan — misalnya kolom **Lahan** menaik untuk menemukan lembaga yang paling banyak persilnya belum lengkap.
++ Setiap sel adalah skor satu domain untuk satu lembaga; arahkan kursor ke sel untuk keterangan band skornya (kolom **Skor Total** juga menampilkan jumlah anomalinya). Klik judul kolom untuk mengurutkan — misalnya kolom **Lahan** menaik untuk menemukan lembaga yang paling banyak persilnya belum lengkap.
 4. Gunakan filter **Kategori** dan **Distrik** di kanan atas untuk mempersempit.
 + Filter tersimpan di alamat halaman, jadi tampilannya bisa di-bookmark atau dikirim ke rekan kerja.
 5. Periksa panel **Anomali Terbanyak** untuk tahu jenis masalah yang paling sering muncul, misalnya "Petani tanpa NIK" atau "Persil tanpa geometry".

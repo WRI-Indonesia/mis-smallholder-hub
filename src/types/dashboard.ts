@@ -327,6 +327,14 @@ export interface TrainingTotals {
   femaleAttendance: number;
   /** Peserta dengan pre & post terisi — pembagi avgScoreGain. */
   scoredAttendance: number;
+  /** Petani unik dengan ≥1 kehadiran ber-skor — pembagi passedFarmers. */
+  scoredFarmers: number;
+  /**
+   * Petani unik "lulus" — punya ≥1 post-test ≥ TRAINING_PASS_SCORE. Mengikuti
+   * indikator impact "# of smallholders demonstrating knowledge at or above a
+   * defined proficiency threshold" (#214), jadi basisnya petani, bukan kehadiran.
+   */
+  passedFarmers: number;
   avgPreScore: number;
   avgPostScore: number;
   avgScoreGain: number;
@@ -371,6 +379,10 @@ export interface TrainingScoreRow {
   avgPre: number;
   avgPost: number;
   gain: number;
+  /** Petani unik ber-skor pada paket ini — pembagi passedFarmers. */
+  scoredFarmers: number;
+  /** Petani unik lulus paket ini — ≥1 post-test ≥ TRAINING_PASS_SCORE (#214). */
+  passedFarmers: number;
   /** Post < pre — hampir selalu salah input, bukan hasil belajar. */
   declined: number;
   /** Post == pre. */

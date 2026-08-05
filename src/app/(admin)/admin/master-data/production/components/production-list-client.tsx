@@ -5,19 +5,19 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Plus, Check, ChevronsUpDown } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toggleProductionRecordActive } from "@/server/actions/production";
 import { toast } from "sonner";
-import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  TableActions,
+  DataTable,
+  type DataTableColumn,
+} from "@/components/shared";
+import {
+  DistrictGroupFilter,
+  type DistrictFilterOption,
+  type GroupFilterOption,
+} from "@/components/shared/district-group-filter";
 import {
   Select,
   SelectContent,
@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 interface ProductionRecord {
   id: string;
@@ -43,14 +42,15 @@ interface ProductionRecord {
     name: string;
     farmerId: string;
     farmerGroupId: string;
-    farmerGroup: { name: string };
+    farmerGroup: { name: string; districtId: string };
   };
   parcel: { parcelId: string } | null;
 }
 
 interface Props {
   initialRecords: ProductionRecord[];
-  farmerGroups: { id: string; name: string }[];
+  farmerGroups: GroupFilterOption[];
+  districts: DistrictFilterOption[];
   permissions: string[];
   isSuperAdmin: boolean;
 }
@@ -58,11 +58,12 @@ interface Props {
 export function ProductionListClient({
   initialRecords,
   farmerGroups,
+  districts,
   permissions,
   isSuperAdmin,
 }: Props) {
+  const [districtFilter, setDistrictFilter] = useState("all");
   const [farmerGroupFilter, setFarmerGroupFilter] = useState("all");
-  const [farmerGroupComboOpen, setFarmerGroupComboOpen] = useState(false);
   const [periodFilter, setPeriodFilter] = useState("");
   const [hasParcelFilter, setHasParcelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("active");
@@ -70,6 +71,8 @@ export function ProductionListClient({
 
   const filtered = initialRecords.filter((r) => {
     const matchGroup = farmerGroupFilter === "all" || r.farmer.farmerGroupId === farmerGroupFilter;
+    const matchDistrict =
+      districtFilter === "all" || r.farmer.farmerGroup.districtId === districtFilter;
     const matchPeriod = !periodFilter || r.period === periodFilter;
     const matchParcel =
       hasParcelFilter === "all"
@@ -86,7 +89,7 @@ export function ProductionListClient({
           ? r.isActive === true
           : r.isActive === false;
 
-    return matchGroup && matchPeriod && matchParcel && matchStatus;
+    return matchGroup && matchDistrict && matchPeriod && matchParcel && matchStatus;
   });
 
   async function handleToggleActive(id: string) {
@@ -207,73 +210,17 @@ export function ProductionListClient({
     };
   };
 
-  const selectedGroup = farmerGroups.find((g) => g.id === farmerGroupFilter);
-
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
-      {/* Lembaga Petani filter (Combobox) */}
-      <Popover open={farmerGroupComboOpen} onOpenChange={setFarmerGroupComboOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={farmerGroupComboOpen}
-              className="w-[240px] justify-between h-9 font-normal text-left"
-            >
-              {farmerGroupFilter === "all" ? (
-                <span>Semua Lembaga Petani</span>
-              ) : (
-                <span>{selectedGroup?.name}</span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent className="w-[240px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Cari lembaga petani..." />
-            <CommandList className="max-h-[300px]">
-              <CommandEmpty>Lembaga Petani tidak ditemukan.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem
-                  value="all"
-                  onSelect={() => {
-                    setFarmerGroupFilter("all");
-                    setFarmerGroupComboOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      farmerGroupFilter === "all" ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  Semua Lembaga Petani
-                </CommandItem>
-                {farmerGroups.map((g) => (
-                  <CommandItem
-                    key={g.id}
-                    value={g.name}
-                    onSelect={() => {
-                      setFarmerGroupFilter(g.id);
-                      setFarmerGroupComboOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        farmerGroupFilter === g.id ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {g.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      {/* Distrik + Lembaga Petani filter (cascade) */}
+      <DistrictGroupFilter
+        districts={districts}
+        farmerGroups={farmerGroups}
+        districtFilter={districtFilter}
+        groupFilter={farmerGroupFilter}
+        onDistrictFilterChange={setDistrictFilter}
+        onGroupFilterChange={setFarmerGroupFilter}
+      />
 
       {/* Period filter (Month Picker / Input) */}
       <Input

@@ -19,7 +19,7 @@ hrefLabel: Buka halaman Pelatihan
 
 ## Filter
 
-**Distrik**, **Lembaga Petani**, **Paket Pelatihan** — mempersempit daftar. **Status** hanya untuk SUPERADMIN.
+**Distrik**, **Lembaga Petani**, **Paket Pelatihan** — mempersempit daftar. Pilihan Lembaga ikut menyempit bila Distrik sudah dipilih. **Status** hanya untuk SUPERADMIN.
 
 **Kotak pencarian** — menelusuri lokasi, nama lembaga, dan nama paket.
 
@@ -39,7 +39,7 @@ hrefLabel: Buka halaman Pelatihan
 
 **Peserta Pelatihan** — daftar hadir. **Tambah Peserta** hanya menampilkan anggota lembaga penyelenggara.
 
-**Pre-Test / Post-Test** — boleh dikosongkan. Panel efektivitas di Dashboard Pelatihan hanya menghitung peserta yang **kedua** skornya terisi; mengisi pre saja membuat peserta itu tidak masuk hitungan kenaikan skor.
+**Pre-Test / Post-Test** — boleh dikosongkan. Panel efektivitas dan kelulusan di Dashboard Pelatihan hanya menghitung peserta yang **kedua** skornya terisi; mengisi pre saja membuat peserta itu tidak masuk hitungan kenaikan skor maupun kelulusan (post-test ≥ 60).
 
 **Evidence** — notulen PDF maksimal 10 MB, disimpan di penyimpanan privat dan hanya bisa dibuka lewat tautan bertanda tangan. Sesi tanpa bukti terhitung di panel Kualitas Data.
 

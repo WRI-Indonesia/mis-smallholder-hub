@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { Grid3x3, ArrowUpDown, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import {
   AVAILABILITY_DOMAIN_LABELS,
   scoreBand,
 } from "@/lib/data-availability-aggregation";
-import { BAND_CELL, BAND_LEGEND } from "./score-band-styles";
+import { BAND_BAR, BAND_CELL, BAND_LEGEND } from "./score-band-styles";
 import type { AvailabilityDomainKey, AvailabilityGroupEntry } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -29,14 +31,27 @@ function domainScore(e: AvailabilityGroupEntry, key: AvailabilityDomainKey): num
   return key === "profil" ? e.profileScore : e.domainScores[key];
 }
 
-function ScoreCell({ score, label }: { score: number; label: string }) {
+const bandLabel = (score: number) =>
+  BAND_LEGEND.find((s) => s.band === scoreBand(score))?.label ?? "";
+
+/** Sel skor domain — tooltip terstruktur (#213): domain + Lembaga, skor ber-chip band. */
+function ScoreCell({ score, label, groupName }: { score: number; label: string; groupName: string }) {
+  const band = scoreBand(score);
   return (
-    <div
-      className={`w-full rounded-md px-2 py-1.5 text-center tabular-nums text-sm font-semibold ${BAND_CELL[scoreBand(score)]}`}
-      title={`${label} — skor ${formatScore(score)}%`}
-    >
-      {formatScore(score)}%
-    </div>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <div
+            className={`w-full rounded-md px-2 py-1.5 text-center tabular-nums text-sm font-semibold ${BAND_CELL[band]}`}
+          />
+        }
+      >
+        {formatScore(score)}%
+      </TooltipTrigger>
+      <StatTooltipContent title={label} subtitle={groupName} footer={`Band: ${bandLabel(score)}`}>
+        <StatTooltipRow chip={BAND_BAR[band]} label="Skor kelengkapan" value={`${formatScore(score)}%`} />
+      </StatTooltipContent>
+    </Tooltip>
   );
 }
 
@@ -158,16 +173,38 @@ export function AvailabilityMatrix({ rows }: { rows: AvailabilityGroupEntry[] })
                             <ScoreCell
                               score={domainScore(e, key)}
                               label={AVAILABILITY_DOMAIN_LABELS[key]}
+                              groupName={e.name}
                             />
                           </td>
                         ))}
                         <td className="py-1.5 px-1">
-                          <div
-                            className={`w-full rounded-md px-2 py-1.5 text-center tabular-nums text-sm font-bold ring-1 ring-inset ring-border/60 ${BAND_CELL[scoreBand(e.healthScore)]}`}
-                            title={`Skor kelengkapan berbobot — ${formatNumber(e.totalAnomalies)} anomali`}
-                          >
-                            {formatNumber(e.healthScore)}
-                          </div>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <div
+                                  className={`w-full rounded-md px-2 py-1.5 text-center tabular-nums text-sm font-bold ring-1 ring-inset ring-border/60 ${BAND_CELL[scoreBand(e.healthScore)]}`}
+                                />
+                              }
+                            >
+                              {formatNumber(e.healthScore)}
+                            </TooltipTrigger>
+                            <StatTooltipContent
+                              title="Skor Total — berbobot lintas domain"
+                              subtitle={e.name}
+                              footer={`Band: ${bandLabel(e.healthScore)}`}
+                            >
+                              <StatTooltipRow
+                                chip={BAND_BAR[scoreBand(e.healthScore)]}
+                                label="Skor kelengkapan"
+                                value={`${formatNumber(e.healthScore)}/100`}
+                              />
+                              <StatTooltipRow
+                                chip="bg-amber-400"
+                                label="Anomali terdeteksi"
+                                value={e.totalAnomalies}
+                              />
+                            </StatTooltipContent>
+                          </Tooltip>
                         </td>
                       </tr>
                     ))}

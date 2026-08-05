@@ -17,7 +17,16 @@ import {
 import { TrainingFormModal } from "./training-form-modal";
 import { toggleTrainingActivityActive } from "@/server/actions/training";
 import { toast } from "sonner";
-import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
+import {
+  TableActions,
+  DataTable,
+  type DataTableColumn,
+} from "@/components/shared";
+import {
+  DistrictGroupFilter,
+  type DistrictFilterOption,
+  type GroupFilterOption,
+} from "@/components/shared/district-group-filter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
@@ -78,21 +87,11 @@ interface TrainingPackage {
   name: string;
 }
 
-interface FarmerGroup {
-  id: string;
-  name: string;
-}
-
-interface District {
-  id: string;
-  name: string;
-}
-
 interface Props {
   initialActivities: TrainingActivity[];
   packages: TrainingPackage[];
-  farmerGroups: FarmerGroup[];
-  districts: District[];
+  farmerGroups: GroupFilterOption[];
+  districts: DistrictFilterOption[];
   permissions: string[];
   isSuperAdmin: boolean;
 }
@@ -108,9 +107,7 @@ export function TrainingListClient({
   isSuperAdmin,
 }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
-  const [districtComboOpen, setDistrictComboOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState("all");
-  const [comboOpen, setComboOpen] = useState(false);
   const [packageFilter, setPackageFilter] = useState("all");
   const [packageComboOpen, setPackageComboOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("active");
@@ -245,136 +242,16 @@ export function TrainingListClient({
     };
   };
 
-  const selectedGroup = farmerGroups.find((g) => g.id === groupFilter);
-  const selectedDistrict = districts.find((d) => d.id === districtFilter);
-
   const toolbarLeft = (
     <div className="flex flex-wrap items-center gap-2">
-      <Popover open={districtComboOpen} onOpenChange={setDistrictComboOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={districtComboOpen}
-              className="w-[200px] justify-between h-9 font-normal text-left"
-            >
-              {districtFilter === "all" ? (
-                <span>Semua Distrik</span>
-              ) : (
-                <span>{selectedDistrict?.name}</span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent className="w-[200px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Cari distrik..." />
-            <CommandList className="max-h-[300px]">
-              <CommandEmpty>Distrik tidak ditemukan.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem
-                  value="all"
-                  onSelect={() => {
-                    setDistrictFilter("all");
-                    setDistrictComboOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      districtFilter === "all" ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  Semua Distrik
-                </CommandItem>
-                {districts.map((d) => (
-                  <CommandItem
-                    key={d.id}
-                    value={d.name}
-                    onSelect={() => {
-                      setDistrictFilter(d.id);
-                      setDistrictComboOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        districtFilter === d.id ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {d.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-
-      <Popover open={comboOpen} onOpenChange={setComboOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={comboOpen}
-              className="w-[330px] justify-between h-9 font-normal text-left"
-            >
-              {groupFilter === "all" ? (
-                <span>Semua Lembaga Petani</span>
-              ) : (
-                <span>{selectedGroup?.name}</span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent className="w-[330px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Cari lembaga petani..." />
-            <CommandList className="max-h-[300px]">
-              <CommandEmpty>Lembaga Petani tidak ditemukan.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem
-                  value="all"
-                  onSelect={() => {
-                    setGroupFilter("all");
-                    setComboOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      groupFilter === "all" ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  Semua Lembaga Petani
-                </CommandItem>
-                {farmerGroups.map((g) => (
-                  <CommandItem
-                    key={g.id}
-                    value={g.name}
-                    onSelect={() => {
-                      setGroupFilter(g.id);
-                      setComboOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        groupFilter === g.id ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {g.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <DistrictGroupFilter
+        districts={districts}
+        farmerGroups={farmerGroups}
+        districtFilter={districtFilter}
+        groupFilter={groupFilter}
+        onDistrictFilterChange={setDistrictFilter}
+        onGroupFilterChange={setGroupFilter}
+      />
 
       <Popover open={packageComboOpen} onOpenChange={setPackageComboOpen}>
         <PopoverTrigger

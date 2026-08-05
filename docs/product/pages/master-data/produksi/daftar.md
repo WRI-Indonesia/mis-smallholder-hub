@@ -10,7 +10,8 @@ Halaman: Produksi (/admin/master-data/production)
 │   ├── Judul: Produksi
 │   └── Deskripsi: Data panen dan produksi hasil tani (yield) per petani
 ├── Toolbar
-│   ├── Filter: Lembaga Petani (combobox)
+│   ├── Filter: Distrik (combobox)
+│   ├── Filter: Lembaga Petani (combobox, cascade dari Distrik)
 │   ├── Filter: Periode (month)
 │   ├── Filter: Lahan
 │   ├── Filter: Status (SUPERADMIN)
@@ -29,7 +30,7 @@ Halaman: Produksi (/admin/master-data/production)
 | File | `production/page.tsx` + `production/components/production-list-client.tsx` |
 | Tipe | Server Component + client component |
 | Guard | `requirePermission("master-data-production")` |
-| Server action / data | `getProductionRecords({ search, farmerGroupId, period, hasParcel, status })` (`@/server/actions/production`), `getFarmerGroupOptions`, `getUserPermissionsForMenu`, `isSuperAdmin`; menerima `searchParams` |
+| Server action / data | `getProductionRecords({ search, farmerGroupId, period, hasParcel, status })` (`@/server/actions/production`), `getFarmerGroupOptions`, `getDistrictsForSelect`, `getUserPermissionsForMenu`, `isSuperAdmin`; menerima `searchParams` |
 
 ## Objek halaman
 
@@ -37,7 +38,8 @@ Halaman: Produksi (/admin/master-data/production)
 |---|---|---|
 | `Produksi` / `Data panen dan produksi hasil tani (yield) per petani` | Heading | h1 + deskripsi |
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-production` (`findTutorialForMenu`), dibuka di tab baru |
-| Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` |
+| Filter Distrik | Combobox | `Semua Distrik` (`DistrictGroupFilter`, `src/components/shared/district-group-filter.tsx`) |
+| Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` — daftar ikut menyempit saat Distrik dipilih; pilihan yang tidak cocok di-reset ke `Semua` |
 | Filter Periode | Input | `type="month"` |
 | Filter Lahan | Select | `Semua Lahan` / `Terpetakan` / `Belum Terpetakan` |
 | Filter Status | Select | SUPERADMIN saja |

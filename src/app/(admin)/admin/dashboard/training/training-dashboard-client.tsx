@@ -36,6 +36,7 @@ import { TrainingCoverageMatrix } from "./training-coverage-matrix";
 import { TrainingDistrictPanel } from "./training-district-panel";
 import { TrainingTrendChart } from "./training-trend-chart";
 import { TrainingEffectivenessPanel } from "./training-effectiveness-panel";
+import { TrainingPassPanel } from "./training-pass-panel";
 import { TrainingQualityPanel } from "./training-quality-panel";
 import type { TrainingDashboardView } from "@/types/dashboard";
 
@@ -283,14 +284,18 @@ export function TrainingDashboardClient({ view, helpSlot }: { view: TrainingDash
 
       <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} />
 
+      {/* Dua baris × (2/3 + 1/3): panel Kelulusan sejajar di bawah Efektivitas
+          tanpa memaksa baris pertama setinggi dua card (#214). */}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <TrainingTrendChart buckets={trend} packages={packages} yearLabel={yearLabel} />
         </div>
         <TrainingEffectivenessPanel rows={scores} />
+        <div className="lg:col-span-2">
+          <TrainingQualityPanel stats={quality} />
+        </div>
+        <TrainingPassPanel rows={scores} />
       </div>
-
-      <TrainingQualityPanel stats={quality} />
     </div>
   );
 }
