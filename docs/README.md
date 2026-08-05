@@ -49,6 +49,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [project/sprint.md](./project/sprint.md) | Sprint focus & issue control |
 | [project/tech-debt.md](./project/tech-debt.md) | Technical debt & bug register |
 | [project/changelog.md](./project/changelog.md) | Changelog & decision log (append-only) |
+| [project/metrics.md](./project/metrics.md) | Metrik Nilai Rilis per rilis (Roadmap % · KPI · RVS) |
 | [project/contributing.md](./project/contributing.md) | Panduan kontribusi & update dokumen |
 
 ---

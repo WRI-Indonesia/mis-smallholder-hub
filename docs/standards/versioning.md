@@ -55,7 +55,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] Migrasi DB yang dibutuhkan sudah diterapkan **sebelum** merge (merge = deploy produksi)
 - [ ] `package.json` `version` sudah di-bump sesuai kriteria
 - [ ] Entri rilis tercatat di `docs/project/changelog.md`
-- [ ] **Metrik Nilai Rilis dihitung** dan dicantumkan di entri rilis (lihat §Metrik Nilai Rilis)
+- [ ] **Metrik Nilai Rilis dihitung** → baris baru di [`project/metrics.md`](../project/metrics.md) (lihat §Metrik Nilai Rilis)
 - [ ] PR `mvp` → `main` merged
 - [ ] Annotated tag `vX.Y.Z` dibuat di `main` dan di-push
 - [ ] GitHub Release dibuat dengan notes dari changelog
@@ -67,7 +67,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 
 ## Metrik Nilai Rilis
 
-> Diputuskan 2026-08-05 (#226) — cara mengkuantifikasi nilai tiap rilis **berbasis artefak terverifikasi** (Phase Status, issue, pengukuran, test), bukan perasaan. Tiga metrik saling melengkapi; ketiganya dihitung **saat rilis** dan dicantumkan di entri rilis changelog. Baca **trennya antar rilis**, bukan angka absolutnya — metrik begini mudah di-game bila dijadikan target individu; posisikan sebagai alat komunikasi, bukan KPI orang.
+> Diputuskan 2026-08-05 (#226) — cara mengkuantifikasi nilai tiap rilis **berbasis artefak terverifikasi** (Phase Status, issue, pengukuran, test), bukan perasaan. Tiga metrik saling melengkapi; ketiganya dihitung **saat rilis** dan dicatat sebagai **satu baris di [`project/metrics.md`](../project/metrics.md)** (tabel riwayat seluruh rilis; entri rilis changelog cukup menyebut ringkas). Baca **trennya antar rilis**, bukan angka absolutnya — metrik begini mudah di-game bila dijadikan target individu; posisikan sebagai alat komunikasi, bukan KPI orang.
 
 ### 1. Progres Roadmap Tertimbang (audiens: manajemen/donor)
 
@@ -93,7 +93,7 @@ Lima metrik tetap, diukur ulang tiap rilis; laporkan sebagai tabel delta (tanpa 
 
 ### 3. Release Value Score / RVS (audiens: tim — narasi nilai per rilis)
 
-Skor kumulatif per rilis; baseline **v0.21.0 = 1000**, tiap rilis menambahkan poin dari artefak siklusnya:
+Skor kumulatif per rilis; anchor **v0.9.0 (rilis SemVer pertama) = 1000**, tiap rilis menambahkan poin dari artefak siklusnya. Riwayat lengkap (termasuk rekonstruksi retrospektif v0.9.0–v0.21.0 ≈ 1774, bertanda ± karena diestimasi dari changelog) ada di [`project/metrics.md`](../project/metrics.md):
 
 | Komponen | Poin | Sumber |
 | --- | --- | --- |
@@ -106,4 +106,4 @@ Skor kumulatif per rilis; baseline **v0.21.0 = 1000**, tiap rilis menambahkan po
 
 Ukuran fitur S/M/L dinilai saat menutup issue (S = satu komponen/halaman; M = lintas beberapa file/halaman; L = modul baru). Rilis kualitas (hanya `fix:`/`perf:`) tetap menghasilkan poin — itu memang tujuannya. RVS **tidak** menggantikan kriteria bump SemVer.
 
-Contoh perhitungan siklus pasca-v0.21.0 (#222–#225): bug sedang 8 + UX-S 5 + perf 37,4%→18,7 + UX-S lazy point 5 + 3 perbaikan degradasi 24 + audit 5 + 10 test 5 ≈ **+71 → 1071**.
+Contoh perhitungan siklus pasca-v0.21.0 (#222–#225): bug sedang 8 + UX-S 5 + perf 37,4%→18,7 + UX-S lazy point 5 + 3 perbaikan degradasi 24 + audit 5 + 10 test 5 ≈ **+71** (dari ±1774 → ±1845).
