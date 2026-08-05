@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, UserCheck, Venus, TrendingUp } from "lucide-react";
+import { GraduationCap, UserCheck, Venus, BadgeCheck } from "lucide-react";
 import { StatEmph } from "@/components/shared/stat-emph";
+import { TRAINING_PASS_SCORE } from "@/lib/training-dashboard-aggregation";
 import type { TrainingTotals } from "@/types/dashboard";
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -67,16 +68,25 @@ export function TrainingScoreCards({
       iconClass: "text-pink-600",
     },
     {
-      title: "Rata-rata Kenaikan Skor",
-      value:
-        totals.scoredAttendance > 0
-          ? `${totals.avgScoreGain >= 0 ? "+" : "−"}${formatDecimal(Math.abs(totals.avgScoreGain))} poin`
-          : "—",
+      // Ganti "Rata-rata Kenaikan Skor" (#214): mengikuti indikator impact
+      // "# of smallholders demonstrating knowledge at or above a defined
+      // proficiency threshold (≥60 on post-test)" — basis petani unik.
+      title: "Petani Lulus Post-Test",
+      value: totals.scoredFarmers > 0 ? formatNumber(totals.passedFarmers) : "—",
+      // Pembagi = petani terlatih (angka card pertama), bukan hanya yang
+      // ber-skor — konsisten antar card, dan petani tanpa skor terhitung
+      // "belum lulus" alih-alih menggelembungkan persentase.
       sub:
-        totals.scoredAttendance > 0
-          ? `pre ${formatDecimal(totals.avgPreScore)} → post ${formatDecimal(totals.avgPostScore)} · ${formatNumber(totals.scoredAttendance)} peserta ber-skor`
-          : "belum ada peserta dengan pre & post terisi",
-      icon: TrendingUp,
+        totals.scoredFarmers > 0 ? (
+          <>
+            <StatEmph kind="percent">{pct(totals.passedFarmers, totals.trainedFarmers)}</StatEmph>{" "}
+            dari <StatEmph kind="total">{formatNumber(totals.trainedFarmers)}</StatEmph> petani
+            terlatih mencapai post-test ≥ {TRAINING_PASS_SCORE} ({yearLabel})
+          </>
+        ) : (
+          "belum ada peserta dengan pre & post terisi"
+        ),
+      icon: BadgeCheck,
       iconClass: "text-violet-600",
     },
   ];
