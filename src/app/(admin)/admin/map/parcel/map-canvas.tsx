@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
-import { MapPopupHighlight, MapPopupSection, MapPopupRows } from "@/components/shared/map-popup";
+import { MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
@@ -145,6 +145,11 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
+
+  const popupKey = selected
+    ? `${selected.kind}:${selected.props.id ?? `${selected.longitude},${selected.latitude}`}`
+    : null;
+  useMapPopupAutoPan(mapRef, popupKey);
 
   // Close any open popup when a new dataset loads (adjusts state during render on
   // prop change — the React-endorsed alternative to a setState-in-effect).
@@ -717,7 +722,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
         {selected && (
           <Popup
-            key={`${selected.kind}:${selected.props.id ?? `${selected.longitude},${selected.latitude}`}`}
+            key={popupKey}
             longitude={selected.longitude}
             latitude={selected.latitude}
             anchor="bottom"

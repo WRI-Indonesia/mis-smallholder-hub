@@ -182,6 +182,12 @@
   overflow: hidden !important;
   max-width: none !important;
 }
+/* Kartu lebih tinggi dari viewport peta (max-height di-set useMapPopupAutoPan)
+   → scroll internal, jangan terpotong (#222). */
+.map-parcel-popup .maplibregl-popup-content {
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
 .maplibregl-popup-anchor-top .maplibregl-popup-tip,
 .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
 .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {

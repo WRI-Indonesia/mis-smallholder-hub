@@ -10,7 +10,7 @@ import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
-import { MapPopupSection, MapPopupRows } from "@/components/shared/map-popup";
+import { MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BMP_PRODUCTIVITY_CLASSES, productivityViewLabel, summarizeProduction } from "@/lib/map-data";
 import type {
@@ -216,6 +216,11 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
+
+  const popupKey = selected
+    ? String(selected.props.id ?? `${selected.longitude},${selected.latitude}`)
+    : null;
+  useMapPopupAutoPan(mapRef, popupKey);
 
   // Close any open popup when a new dataset loads (state-during-render pattern).
   const [prevData, setPrevData] = useState(data);
@@ -487,7 +492,7 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
 
         {selected && (
           <Popup
-            key={String(selected.props.id ?? `${selected.longitude},${selected.latitude}`)}
+            key={popupKey}
             longitude={selected.longitude}
             latitude={selected.latitude}
             anchor="bottom"

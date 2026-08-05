@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode, type RefObject } from "react";
+import type { MapRef } from "react-map-gl/maplibre";
 import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,88 @@ export const MAP_POPUP_PROPS = {
   closeOnClick: false,
   className: "map-parcel-popup",
 } as const;
+
+/** Jarak minimum kartu popup ke tepi viewport peta (px). */
+export const POPUP_VIEW_PAD = 12;
+
+type EdgeRect = { left: number; top: number; right: number; bottom: number };
+
+/**
+ * Pergeseran `panBy` (px) agar rect popup masuk viewport peta; `[0, 0]` bila
+ * sudah utuh. Popup lebih besar dari viewport → prioritaskan tepi kiri/atas
+ * (header + tombol close tetap terlihat; sisanya di-scroll internal).
+ */
+export function computePopupPan(mapRect: EdgeRect, popupRect: EdgeRect, pad = POPUP_VIEW_PAD): [number, number] {
+  let dx = 0;
+  let dy = 0;
+  if (popupRect.left < mapRect.left + pad) dx = popupRect.left - (mapRect.left + pad);
+  else if (popupRect.right > mapRect.right - pad) dx = popupRect.right - (mapRect.right - pad);
+  if (popupRect.top < mapRect.top + pad) dy = popupRect.top - (mapRect.top + pad);
+  else if (popupRect.bottom > mapRect.bottom - pad) dy = popupRect.bottom - (mapRect.bottom - pad);
+  return [dx, dy];
+}
+
+/**
+ * Auto-pan agar popup `.map-parcel-popup` selalu utuh di viewport peta (#222).
+ * `popupKey` = key <Popup> aktif (null saat tertutup); tiap kali key berubah
+ * atau tinggi kartu berubah (ResizeObserver — expand seksi collapsible, data
+ * async masuk), peta digeser secukupnya. Menunggu peta idle dulu supaya tidak
+ * memotong animasi easeTo/fitBounds pemanggil. Kartu juga diberi max-height
+ * setinggi viewport peta (scroll internal) sebagai pengaman viewport pendek.
+ */
+export function useMapPopupAutoPan(mapRef: RefObject<MapRef | null>, popupKey: string | null) {
+  useEffect(() => {
+    if (popupKey == null) return;
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    const container = map.getContainer();
+    let raf = 0;
+    let observer: ResizeObserver | null = null;
+
+    const clamp = () => {
+      const el = container.querySelector<HTMLElement>(".map-parcel-popup");
+      const content = el?.querySelector<HTMLElement>(".maplibregl-popup-content");
+      if (!el || !content) return;
+      const mapRect = container.getBoundingClientRect();
+      if (mapRect.height === 0) return;
+      content.style.maxHeight = `${Math.max(160, mapRect.height - 2 * POPUP_VIEW_PAD - 24)}px`;
+      const [dx, dy] = computePopupPan(mapRect, el.getBoundingClientRect());
+      if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { duration: 250 });
+    };
+
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        // Jangan potong animasi kamera yang sedang berjalan (easeTo/fitBounds
+        // dari daftar lahan) — koreksi setelah peta idle.
+        map.off("idle", clamp);
+        if (map.isMoving()) map.once("idle", clamp);
+        else clamp();
+      });
+    };
+
+    const attach = () => {
+      const content = container.querySelector<HTMLElement>(".map-parcel-popup .maplibregl-popup-content");
+      if (!content) return false;
+      observer = new ResizeObserver(schedule); // observe() langsung memicu sekali → clamp awal
+      observer.observe(content);
+      return true;
+    };
+
+    if (!attach()) {
+      // DOM popup belum ter-mount di frame ini — coba sekali lagi frame berikut.
+      raf = requestAnimationFrame(() => {
+        if (attach()) schedule();
+      });
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer?.disconnect();
+      map.off("idle", clamp);
+    };
+  }, [mapRef, popupKey]);
+}
 
 const ACCENTS = {
   blue: "bg-blue-500/10",
