@@ -28,7 +28,7 @@ Satu baris per rilis — riwayat **Metrik Nilai Rilis** sekali pandang. Definisi
 | v0.19.0 | 2026-08-01 | 85,8% | — · — · 727 · 0 · 10 | ±1599 | +40 | Detail Lahan dirombak + Kelengkapan Data n/8 |
 | v0.20.0 | 2026-08-04 | 85,8% | — · 23/28 · 742 · 0 · 10 | ±1649 | +50 | Kartu dashboard klik → dialog rincian; audit Bantuan 18→23/28 |
 | v0.21.0 | 2026-08-05 | 85,8% | 2,67 MB · 23/28 · 748 · 0 · 12 | ±1774 | +125 | Filter konsisten #211/#212, tooltip #213, KPI lulus #214, migrasi overlay darurat #215, GIS custom #219/#220. **Mulai titik ini angka diukur, bukan estimasi** |
-| _(siklus berjalan)_ | — | 85,8% | 1,67 MB · 23/28 · 758 · 0 · 12 | ±1845 | +71 | #222 popup auto-pan · #223 payload −37,4% · #224 · #225 audit performa · #226 metrik — masuk v0.22.0 |
+| _(siklus berjalan)_ | — | 85,8% | 1,67 MB · 24/29 · 773 · 0 · 12 | ±1893 | +119 | #222 popup auto-pan · #223 payload −37,4% · #224 · #225 audit performa · #226 metrik · #227 dashboard Metrik Rilis — masuk v0.22.0 |
 
 ## Aturan pengisian
 
