@@ -263,12 +263,13 @@ export function MetricsDashboardClient({
                 <th className="py-2 pr-3 font-medium">Tanggal</th>
                 <th className="py-2 pr-3 text-right font-medium">RVS</th>
                 <th className="py-2 pr-3 text-right font-medium">Δ</th>
+                <th className="py-2 pr-3 text-right font-medium">Roadmap</th>
                 <th className="py-2 pr-3 font-medium">Catatan</th>
                 <th className="py-2 font-medium">Issue</th>
               </tr>
             </thead>
             <tbody>
-              {[...releases].reverse().map((r) => (
+              {[...releases].reverse().map((r, ri, rev) => (
                 <tr key={r.version} className="border-b border-border/40 align-top last:border-0">
                   <td className="whitespace-nowrap py-2 pr-3 font-medium">
                     {r.isProvisional ? (
@@ -306,6 +307,13 @@ export function MetricsDashboardClient({
                   <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">{r.releasedAt ? fmtDate(r.releasedAt) : "—"}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{fmtRvs(r)}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{r.delta != null ? fmtDelta(r.delta) : "—"}</td>
+                  <td className="whitespace-nowrap py-2 pr-3 text-right tabular-nums">
+                    {fmtPct1(r.roadmapPct)}
+                    {/* rev terbalik (terbaru dulu) → baris sebelumnya = ri+1; naiknya fase ditandai */}
+                    {ri + 1 < rev.length && r.roadmapPct > rev[ri + 1].roadmapPct && (
+                      <span className="ml-1 text-xs text-primary">+{fmt1(r.roadmapPct - rev[ri + 1].roadmapPct)}</span>
+                    )}
+                  </td>
                   <td className="py-2 pr-3 text-xs leading-snug text-muted-foreground">
                     <LinkifiedNotes notes={r.notes} />
                   </td>
