@@ -12,35 +12,16 @@ import { TimeWindowButtons } from "./time-window";
  * sama dengan seri RVS (sama-sama metrik "pertumbuhan").
  */
 
-const W = 352;
 const H = 200;
-const PAD = { l: 38, r: 12, t: 16, b: 24 };
+const PAD = { l: 38, t: 16, b: 24 };
 
 type Pt = { r: ReleaseMetric; t: number; v: number };
 
-function useScales(pts: Pt[], yMin: number, yMaxRaw: number) {
-  const t0 = pts[0].t;
-  const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
-  const x = (t: number) => PAD.l + ((t - t0) / (t1 - t0)) * (W - PAD.l - PAD.r);
-  const y = (v: number) => PAD.t + (1 - (v - yMin) / (yMaxRaw - yMin)) * (H - PAD.t - PAD.b);
-  return { x, y };
-}
-
-function Tooltip({ pt, x, format }: { pt: Pt; x: number; format: (v: number) => string }) {
-  return (
-    <div
-      className="pointer-events-none absolute top-0 z-10 rounded-md border bg-popover px-2.5 py-1.5 text-xs shadow-md"
-      style={{ left: `${(x / W) * 100}%`, transform: `translateX(${x > W * 0.65 ? "-100%" : "8px"})` }}
-    >
-      <p className="font-medium">
-        {pt.r.isProvisional ? "Siklus berjalan" : pt.r.version}
-        {pt.r.releasedAt && <span className="ml-2 font-normal text-muted-foreground">{fmtDate(pt.r.releasedAt)}</span>}
-      </p>
-      <p className="tabular-nums">{format(pt.v)}</p>
-    </div>
-  );
-}
-
+/**
+ * Roadmap versi piksel nyata (revisi layout): lebar diukur ResizeObserver dan
+ * tinggi tetap 200px — sebelumnya viewBox 352×200 di-stretch memenuhi kolom
+ * sehingga font/garis membesar dan tingginya timpang dengan chart Test.
+ */
 export function RoadmapStepChart({
   releases,
   today,
@@ -53,80 +34,111 @@ export function RoadmapStepChart({
   gridColor: string;
 }) {
   const [hover, setHover] = useState<number | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
   const color = seriesColor("roadmap", dark);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    ro.observe(el);
+    setW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
   const pts: Pt[] = releases.map((r) => ({ r, t: dayEpoch(effectiveDate(r, today)), v: r.roadmapPct }));
-  const { x, y } = useScales(pts, 68, 90);
+  const t0 = pts[0].t;
+  const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
+  const x = (t: number) => PAD.l + ((t - t0) / (t1 - t0)) * Math.max(0, w - PAD.l - 14);
+  const y = (v: number) => PAD.t + (1 - (v - 68) / (90 - 68)) * (H - PAD.t - PAD.b);
 
   // Plateau terakhir: sejak kapan nilai tidak berubah (spec: shading + label).
   let plateauStart = pts.length - 1;
   while (plateauStart > 0 && pts[plateauStart - 1].v === pts[pts.length - 1].v) plateauStart--;
   const plateauDays = Math.round(pts[pts.length - 1].t - pts[plateauStart].t);
 
-  const path = pts
-    .map((p, i) => (i === 0 ? `M ${x(p.t)} ${y(p.v)}` : `H ${x(p.t)} V ${y(p.v)}`))
-    .join(" ");
-
+  const path = pts.map((p, i) => (i === 0 ? `M ${x(p.t)} ${y(p.v)}` : `H ${x(p.t)} V ${y(p.v)}`)).join(" ");
   const hovered = hover != null ? pts[hover] : null;
 
   return (
-    <div className="relative">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-auto"
-        role="img"
-        aria-label={`Progres roadmap tertimbang dari ${fmt1(pts[0].v)}% menjadi ${fmt1(pts[pts.length - 1].v)}%, plateau ${fmtInt(plateauDays)} hari terakhir`}
-      >
-        <title>Roadmap % per tanggal rilis</title>
-        {[70, 75, 80, 85, 90].map((v) => (
-          <g key={v}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke={gridColor} strokeWidth={0.5} />
-            <text x={PAD.l - 5} y={y(v) + 3} textAnchor="end" fontSize={9} fill="currentColor" opacity={0.6}>
-              {fmtInt(v)}%
-            </text>
-          </g>
-        ))}
-        {plateauDays >= 5 && (
-          <g>
-            <rect
-              x={x(pts[plateauStart].t)}
-              y={y(pts[pts.length - 1].v) - 8}
-              width={x(pts[pts.length - 1].t) - x(pts[plateauStart].t)}
-              height={16}
-              fill={color}
-              opacity={0.08}
+    <div ref={wrapRef} className="relative" style={{ height: H }}>
+      {w > 0 && (
+        <svg
+          width={w}
+          height={H}
+          className="absolute inset-0"
+          role="img"
+          aria-label={`Progres roadmap tertimbang dari ${fmt1(pts[0].v)}% menjadi ${fmt1(pts[pts.length - 1].v)}%, plateau ${fmtInt(plateauDays)} hari terakhir`}
+        >
+          <title>Roadmap % per tanggal rilis</title>
+          {[70, 75, 80, 85, 90].map((v) => (
+            <g key={v}>
+              <line x1={PAD.l} x2={w} y1={y(v)} y2={y(v)} stroke={gridColor} strokeWidth={0.5} />
+              <text x={PAD.l - 6} y={y(v) + 3} textAnchor="end" fontSize={10} fill="currentColor" opacity={0.6}>
+                {fmtInt(v)}%
+              </text>
+            </g>
+          ))}
+          {plateauDays >= 5 && (
+            <g>
+              <rect
+                x={x(pts[plateauStart].t)}
+                y={y(pts[pts.length - 1].v) - 8}
+                width={x(pts[pts.length - 1].t) - x(pts[plateauStart].t)}
+                height={16}
+                fill={color}
+                opacity={0.08}
+              />
+              <text
+                x={x(pts[pts.length - 1].t)}
+                y={y(pts[pts.length - 1].v) - 12}
+                textAnchor="end"
+                fontSize={10}
+                fill="currentColor"
+                opacity={0.6}
+              >
+                plateau {fmtInt(plateauDays)} hari
+              </text>
+            </g>
+          )}
+          <path d={path} fill="none" stroke={color} strokeWidth={2} />
+          {pts.map((p, i) => (
+            <circle
+              key={p.r.version}
+              cx={x(p.t)}
+              cy={y(p.v)}
+              r={9}
+              fill="transparent"
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
             />
-            <text
-              x={x(pts[pts.length - 1].t)}
-              y={y(pts[pts.length - 1].v) - 12}
-              textAnchor="end"
-              fontSize={9}
-              fill="currentColor"
-              opacity={0.6}
-            >
-              plateau {fmtInt(plateauDays)} hari
-            </text>
-          </g>
-        )}
-        <path d={path} fill="none" stroke={color} strokeWidth={2} />
-        {pts.map((p, i) => (
-          <circle
-            key={p.r.version}
-            cx={x(p.t)}
-            cy={y(p.v)}
-            r={8}
-            fill="transparent"
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover(null)}
-          />
-        ))}
-        <text x={PAD.l} y={H - 6} fontSize={9} fill="currentColor" opacity={0.6}>
-          {fmtDate(effectiveDate(pts[0].r, today))}
-        </text>
-        <text x={W - PAD.r} y={H - 6} textAnchor="end" fontSize={9} fill="currentColor" opacity={0.6}>
-          {fmtDate(effectiveDate(pts[pts.length - 1].r, today))}
-        </text>
-      </svg>
-      {hovered && <Tooltip pt={hovered} x={x(hovered.t)} format={(v) => `Roadmap ${fmt1(v)}%`} />}
+          ))}
+          <text x={PAD.l} y={H - 6} fontSize={10} fill="currentColor" opacity={0.6}>
+            {fmtDate(effectiveDate(pts[0].r, today))}
+          </text>
+          <text x={w - 4} y={H - 6} textAnchor="end" fontSize={10} fill="currentColor" opacity={0.6}>
+            {fmtDate(effectiveDate(pts[pts.length - 1].r, today))}
+          </text>
+        </svg>
+      )}
+      {hovered && w > 0 && (
+        <div
+          className="pointer-events-none absolute top-0 z-10 rounded-md border bg-popover px-2.5 py-1.5 text-xs shadow-md whitespace-nowrap"
+          style={{
+            left: x(hovered.t),
+            transform: `translateX(${x(hovered.t) > w * 0.65 ? "calc(-100% - 8px)" : "8px"})`,
+          }}
+        >
+          <p className="font-medium">
+            {hovered.r.isProvisional ? "Siklus berjalan" : hovered.r.version}
+            {hovered.r.releasedAt && (
+              <span className="ml-2 font-normal text-muted-foreground">{fmtDate(hovered.r.releasedAt)}</span>
+            )}
+          </p>
+          <p className="tabular-nums">Roadmap {fmt1(hovered.v)}%</p>
+        </div>
+      )}
     </div>
   );
 }

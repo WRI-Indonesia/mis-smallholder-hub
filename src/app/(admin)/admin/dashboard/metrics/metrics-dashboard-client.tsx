@@ -256,16 +256,17 @@ export function MetricsDashboardClient({
       </ChartCard>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div ref={roadmapRef} className={flashClass("roadmap")}>
+        <div ref={roadmapRef} className={cn("h-full", flashClass("roadmap"))}>
           <ChartCard
+            className="h-full"
             title="Progres roadmap"
             subtitle="Persen tertimbang menuju go-live 1.0 — naik diskret per fase selesai. Label plateau = berapa hari % tidak naik; datar ≠ berhenti, biasanya kerja bergeser ke kualitas (lihat RVS yang tetap naik)."
           >
             <RoadmapStepChart releases={releases} today={today} dark={dark} gridColor={gridColor} />
           </ChartCard>
         </div>
-        <div ref={testRef} className={flashClass("test")}>
-          <ChartCard title="Jumlah test otomatis" subtitle="Per rilis; titik berongga = angka estimasi.">
+        <div ref={testRef} className={cn("h-full", flashClass("test"))}>
+          <ChartCard className="h-full" title="Jumlah test otomatis" subtitle="Per rilis; titik berongga = angka estimasi.">
             <TestCountChart releases={releases} today={today} dark={dark} gridColor={gridColor} surface={surface} />
           </ChartCard>
         </div>
