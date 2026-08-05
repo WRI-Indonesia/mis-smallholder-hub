@@ -53,9 +53,11 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
 
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [filterOpen, setFilterOpen] = useState(true);
+  // parcelPoints default mati (#223): ribuan titik jarang dipakai dan berat;
+  // layer point dibangun lazy di MapCanvas saat dicentang.
   const [layers, setLayers] = useState<LayerVisibility>({
     kt: true,
-    parcelPoints: true,
+    parcelPoints: false,
     parcelAreas: true,
   });
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAY_STATE);

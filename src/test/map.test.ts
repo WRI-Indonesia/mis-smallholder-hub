@@ -69,13 +69,12 @@ describe("buildMapData", () => {
     });
 
     expect(result.parcels).toHaveLength(1);
-    const [long, lat] = result.parcels[0].centroid;
+    // Wire (#223): tuple posisi + lookup petani; centroid tidak dikirim.
+    expect(result.farmers).toEqual({ f1: ["FMR-01", "Budi", "KT Maju"] });
+    const expanded = expandMapData(result);
+    const [long, lat] = expanded.parcels[0].centroid;
     expect(long).toBeCloseTo(100, 5);
     expect(lat).toBeCloseTo(0, 5);
-    expect(result.parcels[0]).toMatchObject({ parcelId: "PCL-01", area: 2.5 });
-    // Atribut petani dinormalisasi ke lookup (#223), di-rehydrate expandMapData.
-    expect(result.farmers).toEqual({ f1: { code: "FMR-01", name: "Budi", group: "KT Maju" } });
-    const expanded = expandMapData(result);
     expect(expanded.parcels[0]).toMatchObject({
       parcelId: "PCL-01",
       farmerCode: "FMR-01",
@@ -110,7 +109,7 @@ describe("buildMapData", () => {
         }),
       ]
     );
-    const ring = (result.parcels[0].geometry as { coordinates: number[][][] }).coordinates[0];
+    const ring = (result.parcels[0][7] as { coordinates: number[][][] }).coordinates[0];
     expect(ring[0]).toEqual([99.123457, -0.5]);
     // Ring tetap tertutup setelah pembulatan.
     expect(ring[ring.length - 1]).toEqual(ring[0]);
@@ -127,7 +126,7 @@ describe("buildMapData", () => {
 
   it("skips parcels with null geometry", () => {
     const result = buildMapData([], [parcel(), parcel({ id: "p2", geometry: null })]);
-    expect(result.parcels.map((p) => p.id)).toEqual(["p1"]);
+    expect(result.parcels.map((p) => p[0])).toEqual(["p1"]);
     expect(result.counts.parcelPoints).toBe(1);
   });
 
@@ -136,7 +135,7 @@ describe("buildMapData", () => {
       [],
       [parcel(), parcel({ id: "p2", geometry: { type: "Polygon", coordinates: "broken" } as never })]
     );
-    expect(result.parcels.map((p) => p.id)).toEqual(["p1"]);
+    expect(result.parcels.map((p) => p[0])).toEqual(["p1"]);
   });
 
   it("falls back to em dash for missing farmer / group / district", () => {
@@ -388,7 +387,8 @@ describe("buildBmpMapData", () => {
       })
     );
 
-    const byId = Object.fromEntries(result.parcels.map((p) => [p.id, p]));
+    // Kategori tidak dikirim di wire — hasil expand yang dicek (#223).
+    const byId = Object.fromEntries(expandBmpMapData(result).parcels.map((p) => [p.id, p]));
     expect(byId.pBaik.category).toBe("BAIK");
     expect(byId.pCukup.category).toBe("CUKUP");
     expect(byId.pKurang.category).toBe("KURANG");
@@ -403,23 +403,24 @@ describe("buildBmpMapData", () => {
       [parcel({ id: "p1" })],
       production({ p1: ["2025-03", "2025-01", "2025-02", "2025-01"] })
     );
-    const f = result.parcels[0];
+    const f = expandBmpMapData(result).parcels[0];
     expect(f.streakMonths).toBe(3);
     expect(f.firstPeriod).toBe("2025-01");
     expect(f.lastPeriod).toBe("2025-03");
     // periods are de-duplicated and sorted (drives the availability grid).
     expect(f.periods).toEqual(["2025-01", "2025-02", "2025-03"]);
-    expect(result.farmers.f1.code).toBe("FMR-01");
-    expect(expandBmpMapData(result).parcels[0].farmerCode).toBe("FMR-01");
+    expect(result.farmers.f1[0]).toBe("FMR-01");
+    expect(f.farmerCode).toBe("FMR-01");
     // kg summed per period — the duplicate 2025-01 (100 + 100) becomes 200.
     expect(f.production).toEqual({ "2025-01": 200, "2025-02": 100, "2025-03": 100 });
   });
 
   it("parcels with no attributed production fall to NONE", () => {
     const result = buildBmpMapData([], [parcel({ id: "p1" })], production({}));
-    expect(result.parcels[0].category).toBe("NONE");
-    expect(result.parcels[0].streakMonths).toBe(0);
-    expect(result.parcels[0].firstPeriod).toBeNull();
+    const f = expandBmpMapData(result).parcels[0];
+    expect(f.category).toBe("NONE");
+    expect(f.streakMonths).toBe(0);
+    expect(f.firstPeriod).toBeNull();
     expect(result.counts.none).toBe(1);
   });
 
@@ -429,9 +430,10 @@ describe("buildBmpMapData", () => {
       [parcel({ id: "p1" }), parcel({ id: "p2", geometry: null })],
       production({ p1: months(2024, 1, 12) })
     );
-    expect(result.parcels.map((p) => p.id)).toEqual(["p1"]);
+    const parcels = expandBmpMapData(result).parcels;
+    expect(parcels.map((p) => p.id)).toEqual(["p1"]);
     expect(result.counts).toEqual({ baik: 0, cukup: 1, kurang: 0, none: 0 });
-    const [long, lat] = result.parcels[0].centroid;
+    const [long, lat] = parcels[0].centroid;
     expect(long).toBeCloseTo(100, 5);
     expect(lat).toBeCloseTo(0, 5);
   });

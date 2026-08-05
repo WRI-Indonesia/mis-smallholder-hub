@@ -259,16 +259,20 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     [data]
   );
 
+  // Lazy (#223): layer default tersembunyi — ribuan fitur point hanya dibangun
+  // (dan dikirim ke worker MapLibre) selama layer dicentang.
   const parcelPointGeojson = useMemo<FeatureCollection>(
     () => ({
       type: "FeatureCollection",
-      features: (data?.parcels ?? []).map((p) => ({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: p.centroid },
-        properties: parcelProps(p),
-      })),
+      features: layers.parcelPoints
+        ? (data?.parcels ?? []).map((p) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: p.centroid },
+            properties: parcelProps(p),
+          }))
+        : [],
     }),
-    [data]
+    [data, layers.parcelPoints]
   );
 
   // Current zoom drives the "does the label fit inside the polygon" test.

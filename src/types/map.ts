@@ -43,21 +43,33 @@ export type MapData = {
 };
 
 // ── Wire format (#223) ─────────────────────────────────────────────────────
-// Payload peta besar (ribuan persil) — atribut petani yang berulang per persil
-// dinormalisasi ke lookup `farmers` (key: Farmer.id) dan di-rehydrate di klien
-// via expandMapData/expandBmpMapData (src/lib/map-data.ts).
+// Payload peta besar (ribuan persil), dipadatkan tiga arah dan di-rehydrate di
+// klien via expandMapData/expandBmpMapData (src/lib/map-data.ts):
+// 1. atribut petani yang berulang → lookup `farmers` (key: Farmer.id);
+// 2. fitur persil → tuple posisi (kunci JSON tidak diulang ribuan kali);
+// 3. nilai turunan (centroid; kategori/streak/first-last/periods BMP) tidak
+//    dikirim — dihitung ulang klien dengan fungsi murni yang sama.
 
-/** Atribut petani yang dinormalisasi keluar dari fitur persil. */
-export type MapFarmerInfo = { code: string; name: string; group: string };
+/** Atribut petani (tuple): [kode, nama, lembaga]. */
+export type MapFarmerTuple = [code: string, name: string, group: string];
 
-/** ParcelFeature versi kirim: tanpa atribut petani inline (ada di lookup `farmers`). */
-export type ParcelFeatureWire = Omit<ParcelFeature, "farmerCode" | "farmerName" | "farmerGroupName">;
+/** Fitur persil versi kirim (tuple posisi) — urutan wajib sinkron build/expand. */
+export type ParcelWireTuple = [
+  id: string,
+  parcelId: string,
+  farmerId: string,
+  area: number | null,
+  plantingYear: number | null,
+  cropType: string | null,
+  landStatus: string | null,
+  geometry: Polygon | MultiPolygon,
+];
 
 export type MapDataWire = {
   kelompokTani: KTPoint[];
-  parcels: ParcelFeatureWire[];
-  /** Lookup atribut petani, key = Farmer.id (`ParcelFeatureWire.farmerId`). */
-  farmers: Record<string, MapFarmerInfo>;
+  parcels: ParcelWireTuple[];
+  /** Lookup atribut petani, key = Farmer.id (elemen `farmerId` tuple). */
+  farmers: Record<string, MapFarmerTuple>;
   counts: MapData["counts"];
 };
 
@@ -116,19 +128,17 @@ export type BmpMapData = {
   counts: { baik: number; cukup: number; kurang: number; none: number };
 };
 
-/** BmpParcelFeature versi kirim (#223): atribut petani di lookup, plus key-nya. */
-export type BmpParcelFeatureWire = Omit<
-  BmpParcelFeature,
-  "farmerCode" | "farmerName" | "farmerGroupName"
-> & {
-  /** Farmer.id — key ke lookup `farmers`; tidak ikut di fitur hasil expand. */
-  farmerId: string;
-};
+/**
+ * Fitur persil BMP versi kirim (#223): tuple `ParcelWireTuple` + total kg per
+ * periode. Kategori, streak, first/last, dan `periods` TIDAK dikirim — turunan
+ * deterministik dari `production`, dihitung ulang `expandBmpMapData`.
+ */
+export type BmpParcelWireTuple = [...ParcelWireTuple, production: Record<string, number>];
 
 export type BmpMapDataWire = {
-  parcels: BmpParcelFeatureWire[];
+  parcels: BmpParcelWireTuple[];
   kt: KTPoint[];
-  farmers: Record<string, MapFarmerInfo>;
+  farmers: Record<string, MapFarmerTuple>;
   counts: BmpMapData["counts"];
 };
 
