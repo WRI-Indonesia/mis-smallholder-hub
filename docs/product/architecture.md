@@ -30,7 +30,7 @@ Legenda status: ✅ Done · 🟠 Partial · 🔲 Planned · 🔴 Blocked — def
 | Publik | `/` (Home ✅), `/community` 🔲, `/knowledge` 🔲 | — |
 | Autentikasi | `/login` ✅ · `/api/auth/[...nextauth]` | NextAuth (Credentials) |
 | Admin | `/admin/**` | `middleware.ts` (sesi) → `requirePermission(menuKey)` per halaman |
-| Proxy tile | `/api/map-overlay/[key]` (SIGAP KLHK) · `/api/map-hotspot` (NASA FIRMS) | auth-guarded, same-origin |
+| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) | auth-guarded, same-origin |
 
 Semua akses data lewat **Server Actions** (`src/server/actions/`) dengan 3 lapis pengaman: permission menu → access context → soft delete. Tidak ada REST API selain NextAuth & proxy tile.
 
@@ -141,7 +141,7 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|
-| ✅ [Peta Lahan](./pages/map/peta-lahan.md) | `map-parcel` | MAP-01 (#113/#134/#135) | Peta full-bleed + panel filter & legenda minimizable; overlay raster SIGAP KLHK (5 layer + slider transparansi, via proxy same-origin), Titik Api NASA FIRMS, Tambah Data GIS Lain (WMS/Shapefile/GeoJSON, diparse di browser), ruler geodesik, label adaptif; popup lahan (Detail + Pelatihan + Produksi) + tombol **Profil Lahan** → PDF + aksi popup standar #188 (Lihat Detail / Edit Lahan); panel Daftar Lahan ber-search & zoom |
+| ✅ [Peta Lahan](./pages/map/peta-lahan.md) | `map-parcel` | MAP-01 (#113/#134/#135) | Peta full-bleed + panel filter & legenda minimizable; overlay raster referensi pemerintah (2 layer: Kawasan Hutan Kemenhut & Gambut Satu Peta BIG + legend/sumber per layer + slider transparansi, via proxy same-origin — #215), Titik Api NASA FIRMS, Tambah Data GIS Lain (WMS/Shapefile/GeoJSON, diparse di browser), ruler geodesik, label adaptif; popup lahan (Detail + Pelatihan + Produksi) + tombol **Profil Lahan** → PDF + aksi popup standar #188 (Lihat Detail / Edit Lahan); panel Daftar Lahan ber-search & zoom |
 | ✅ [Peta BMP](./pages/map/peta-bmp.md) | `map-bmp` | MAP-02 (#144) · MAP-03 (#174) | Peta tematik poligon-only, 2 layer ber-radio: **Ketersediaan Data Produksi** (4 kategori dari run bulan berturut-turut) & **Produktivitas Ton/Ha** (per tahun / rata-rata, 5 kelas, dihitung client-side); Lembaga wajib; panel matriks per lahan × bulan; cetak PDF & Excel WYSIWYG ikut layer aktif; aksi popup standar #188 (Lihat Detail / Edit Lahan) |
 
 > **Popup peta terstandar (#188/TD-028):** primitif bersama `src/components/shared/map-popup.tsx` + tombol **Lihat Detail** (gate VIEW `master-data-parcels`) & **Edit Lahan** (gate EDIT) di 3 peta — Peta Lahan, Peta BMP, dan peta Sebaran Lahan (`ParcelsDistributionMap` di detail Lembaga/Petani) — dengan modal edit lahan langsung dari peta (`ParcelEditModalHost`).

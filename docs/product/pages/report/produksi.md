@@ -47,8 +47,8 @@ Halaman: Laporan Produksi (/admin/report/production)
 |---|---|---|
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-production` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Produksi" | Heading | Deskripsi "Matriks produksi bulanan per petani/lahan dalam satu Lembaga Petani" |
-| "Distrik *" | Filter (combobox + search, wajib) | Placeholder "Pilih Distrik" |
-| "Lembaga Petani *" | Filter (combobox + search, wajib) | Disabled sampai Distrik dipilih |
+| "Distrik *" | Filter (combobox + search, wajib) | Primitif `FilterCombobox` (#212); placeholder "Pilih Distrik", empty "Distrik tidak ditemukan." |
+| "Lembaga Petani *" | Filter (combobox + search, wajib) | Primitif `FilterCombobox` (#212); disabled sampai Distrik dipilih; empty "Lembaga Petani tidak ditemukan." |
 | "Periode Awal *" | Filter (`input type="month"`, wajib) | `max` = Periode Akhir |
 | "Periode Akhir *" | Filter (`input type="month"`, wajib) | `min` = Periode Awal |
 | "Tampilkan Laporan" | Tombol | Validasi klien: "Periode Akhir harus sama dengan atau setelah Periode Awal" dan "Rentang periode maksimal 24 bulan"; server memvalidasi ulang |

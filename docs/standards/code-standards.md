@@ -43,6 +43,7 @@ Alasan: istilah ini adalah **kosakata domain proyek** (WRI Indonesia — data sa
   - Role & Permission menentukan level akses (view/edit/delete)
 - **Pattern** — Gunakan helper function untuk inject where clause RBAC, jangan copy-paste manual di setiap action.
 - **Backend Permission Validation** — Setiap Server Action (terutama mutasi data) wajib divalidasi ulang di level server menggunakan helper `hasPermission(menuCode, permission)` sebelum melakukan query/mutasi database, untuk mencegah eksekusi request langsung yang tidak sah (bypass UI). **Termasuk** read/mutasi **by-id** dan helper "for select" (pelajaran audit #125/#127).
+- **Helper "for select" juga wajib access-scoped** — guard permission saja tidak cukup: daftar opsi dropdown harus difilter `getAccessContext()`/`getAccessibleDistrictIds` agar user scoped tidak melihat entitas di luar wilayah kerjanya, **termasuk saat helper yang sama dipakai form create/edit** (pelajaran #211 — `getDistrictsForSelect` lolos guard tapi bocor scope; efeknya ke form Lembaga Petani dipertahankan by design, lihat Decision Log 2026-08-04).
 
 #### Access-filter helpers (`src/lib/access-context.ts`)
 

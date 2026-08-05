@@ -46,8 +46,8 @@ Halaman: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
 |---|---|---|
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-kelompok-tani` (`findTutorialForMenu`), dibuka di tab baru — tutorial yang sama dengan Summary |
 | "Laporan Kelompok Tani (Detail)" | Heading | Deskripsi "Roster per Lembaga Petani: rincian Kelompok Tani → daftar Petani (turunan data lahan)" |
-| "Distrik" | Filter (combobox + search, opsional) | Default "Semua Distrik" |
-| "Lembaga Petani *" | Filter (combobox + search, wajib) | Placeholder "Pilih Lembaga Petani"; memilih nilai langsung memuat laporan |
+| "Distrik" | Filter (combobox + search, opsional) | Primitif `FilterCombobox` (#212); default "Semua Distrik", empty "Distrik tidak ditemukan." |
+| "Lembaga Petani *" | Filter (combobox + search, wajib) | Primitif `FilterCombobox` (#212); placeholder "Pilih Lembaga Petani"; memilih nilai langsung memuat laporan; empty "Lembaga Petani tidak ditemukan." |
 | Catatan filter | Teks bantu | "Pilih satu Lembaga Petani untuk menampilkan roster rinci. Filter Distrik opsional (mempersempit daftar Lembaga)." |
 | Kartu KPI | 4 kartu | "Kelompok Tani", "Total Petani", "Total Lahan", "Total Luas" |
 | "Buka semua" / "Tutup semua" | Tombol | Default semua seksi tertutup |

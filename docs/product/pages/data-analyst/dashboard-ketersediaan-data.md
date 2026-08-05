@@ -101,8 +101,8 @@ Halaman: Dashboard Ketersediaan Data (/admin/data-analyst/data-availability)
 | Sub-judul (terlipat) | Ringkasan | "{n} Lembaga · {n} berskor kritis (<50)" |
 | Kolom "Lembaga Petani" | Kolom tabel (sortable) | Nama + baris kecil "{kode} · {distrik}" |
 | Kolom "Petani" | Kolom tabel (sortable) | Jumlah petani aktif |
-| Kolom domain (5) | Kolom tabel (sortable) | Profil, Petani, Lahan, Pelatihan, Produksi — sel = skor% berwarna band |
-| Kolom "Skor Total" | Kolom tabel (sortable, default sort menaik) | `healthScore` berwarna band + ring pembeda; tooltip memuat jumlah anomali |
+| Kolom domain (5) | Kolom tabel (sortable) | Profil, Petani, Lahan, Pelatihan, Produksi — sel = skor% berwarna band; tooltip terstruktur `StatTooltip` (#213): band + jumlah anomali domain |
+| Kolom "Skor Total" | Kolom tabel (sortable, default sort menaik) | `healthScore` berwarna band + ring pembeda; tooltip terstruktur (#213) memuat band + jumlah anomali |
 | Legenda band | Legend | "Band skor:" 100 lengkap penuh · 80–99 baik · 50–79 perlu perhatian · <50 kritis |
 | Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." |
 
@@ -111,7 +111,7 @@ Halaman: Dashboard Ketersediaan Data (/admin/data-analyst/data-availability)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Heading kartu | "Skor Kelengkapan per Lembaga Petani" |
-| Baris per Lembaga | Bar horizontal (skala 0–100) | Terendah dulu; label "{nama} · {distrik} · {n} petani" + skor; warna bar = band; tooltip memuat jumlah anomali; scroll bila panjang |
+| Baris per Lembaga | Bar horizontal (skala 0–100) | Terendah dulu; label "{nama} · {distrik} · {n} petani" + skor; warna bar = band; tooltip terstruktur (#213) memuat jumlah anomali; scroll bila panjang |
 | Legenda + link | Legend | Band skor + "Analisa detail per Lembaga →" → `/admin/data-analyst/data-completeness` |
 | Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." |
 
@@ -120,7 +120,7 @@ Halaman: Dashboard Ketersediaan Data (/admin/data-analyst/data-availability)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Heading kartu | "Anomali Terbanyak" (ikon `AlertTriangle` amber) |
-| Baris anomali (maks 10) | Bar amber (skala relatif terbanyak) | Label + jumlah temuan + "di {n} Lembaga" |
+| Baris anomali (maks 10) | Bar amber (skala relatif terbanyak) | Label + jumlah temuan + "di {n} Lembaga"; tooltip terstruktur (#213) |
 | Link tindak lanjut | Link | "Buka Analisa Ketersediaan Data untuk daftar petaninya →" |
 | Empty state | Teks | "Tidak ada anomali pada filter ini. 🎉" |
 

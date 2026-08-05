@@ -6,7 +6,7 @@ intro: Menu Master Data adalah tempat input harian: Lembaga Petani, Petani, Laha
 
 **Menambah data** — Klik tombol Tambah di kanan atas daftar, isi formulir, lalu Simpan. Kolom bertanda wajib harus diisi.
 
-**Mencari & menyaring** — Gunakan kotak pencarian di atas tabel; tombol Kolom untuk menampilkan atau menyembunyikan kolom; klik judul kolom untuk mengurutkan.
+**Mencari & menyaring** — Gunakan kotak pencarian di atas tabel; tombol Kolom untuk menampilkan atau menyembunyikan kolom; klik judul kolom untuk mengurutkan. Daftar Petani, Pelatihan, Lahan, dan Produksi juga punya pasangan filter **Distrik → Lembaga Petani** yang saling terkait: memilih Distrik menyaring pilihan Lembaga, dan pilihan Lembaga yang tak lagi sesuai otomatis kembali ke "Semua". Keduanya bisa dicari dengan mengetik.
 
 **Mengubah & melihat detail** — Kolom Aksi di kiri baris berisi tombol ubah dan detail. Halaman detail Petani dan Lembaga Petani menampilkan profil lengkap: lahan dan peta, pelatihan, serta produksi. Halaman detail Lahan menampilkan ringkasan lahan (luas, umur tanaman, produksi, kelengkapan data), peta batas kebun dengan koordinat titik pusat, grafik dan tabel produksi bulanan, serta tombol unduh PDF Profil Lahan; sel bulan pada tabel produksi bisa diklik untuk menambah atau mengubah data panen bulan itu (maks. 4 panen per bulan, mengikuti izin menu Data Produksi).
 
