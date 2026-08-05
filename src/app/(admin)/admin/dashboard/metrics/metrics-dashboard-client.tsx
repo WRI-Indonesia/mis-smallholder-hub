@@ -39,7 +39,7 @@ function LinkifiedNotes({ notes }: { notes: string }) {
             href={issueUrl(part)}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline-offset-2 hover:underline hover:text-foreground"
+            className="text-blue-600 underline-offset-2 hover:underline hover:text-blue-700 dark:text-amber-400 dark:hover:text-amber-300"
             title={`Buka issue ${part} di GitHub (tab baru)`}
           >
             {part}
@@ -344,7 +344,7 @@ export function MetricsDashboardClient({
                               href={issueUrl(ref)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="underline-offset-2 hover:underline hover:text-foreground"
+                              className="text-blue-600 underline-offset-2 hover:underline hover:text-blue-700 dark:text-amber-400 dark:hover:text-amber-300"
                               title={`Buka issue ${ref} di GitHub (tab baru)`}
                             >
                               {ref}
