@@ -166,7 +166,7 @@ function periodKeyLabel(isoDate: string, granularity: PeriodGranularity): { key:
 }
 
 /**
- * Perolehan RVS per periode untuk Panel 2. Atribusi: delta sebuah rilis dicatat
+ * Perolehan RVS per periode. Atribusi: delta sebuah rilis dicatat
  * pada TANGGAL RILISNYA (penyederhanaan yang disetujui owner — pekerjaan
  * terjadi di hari-hari sebelumnya). Baris tanpa delta (anchor) dan baris
  * provisional tanpa tanggal dilewati; `provisionalDate` (default: tidak ada)

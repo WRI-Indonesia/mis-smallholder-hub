@@ -16,8 +16,10 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   ├── Roadmap (% tertimbang, +pt sejak v0.9.0)
 │   ├── Test (+% dari baseline ≈)
 │   └── Kualitas (bug · TD · Bantuan)
-├── Panel 1 — Kurva RVS (line + area 10%)
+├── Panel 1 — Kurva RVS (line + area 10%; konsep chart produksi Detail Lahan)
 │   ├── Sumbu X waktu PROPORSIONAL kalender (jeda antar rilis terlihat)
+│   ├── Slicer rentang tampak: 1 Minggu · 1 Bulan (default) · 6 Bulan · 1 Tahun · Semua
+│   │   — zoom viewport; sisanya scroll horizontal, auto-slide ke tanggal terbaru; sumbu Y tetap di kiri
 │   ├── Estimasi (pra-v0.21.0): garis putus-putus + titik berongga
 │   ├── Anotasi vertikal "mulai diukur" (rilis terukur pertama)
 │   ├── Titik provisional = siklus berjalan (ditempatkan pada "hari ini" WIB)
