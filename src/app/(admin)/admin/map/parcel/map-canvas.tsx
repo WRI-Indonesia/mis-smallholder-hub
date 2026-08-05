@@ -3,9 +3,9 @@
 import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import type { StyleSpecification } from "maplibre-gl";
+import type { StyleSpecification, ExpressionSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
@@ -89,6 +89,22 @@ const MAP_STYLES = {
   },
 };
 
+/**
+ * Warna layer GIS tambahan: warna tunggal, atau expression `match` nilai→warna
+ * saat symbology unique-value aktif (nilai di luar mapping/kosong → warna dasar).
+ */
+function customLayerColor(l: Extract<CustomLayer, { kind: "vector" }>): string | ExpressionSpecification {
+  if (!l.symbology) return l.color;
+  const branches = Object.entries(l.symbology.mapping).flat();
+  if (branches.length === 0) return l.color;
+  return [
+    "match",
+    ["to-string", ["get", l.symbology.attribute]],
+    ...branches,
+    l.color,
+  ] as ExpressionSpecification;
+}
+
 const formatArea = (n: number | null | undefined) =>
   n == null ? "—" : `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
 
@@ -97,8 +113,11 @@ const MEASURE_COLOR = "#f59e0b";
 type SelectedFeature = {
   longitude: number;
   latitude: number;
-  kind: "kt" | "parcel" | "hotspot";
+  kind: "kt" | "parcel" | "hotspot" | "custom";
   props: Record<string, unknown>;
+  /** Untuk kind "custom": nama & warna layer GIS tambahan asal fitur. */
+  layerName?: string;
+  layerColor?: string;
 };
 
 interface Props {
@@ -106,6 +125,8 @@ interface Props {
   layers: LayerVisibility;
   overlays: OverlayState;
   customLayers: CustomLayer[];
+  /** Permintaan zoom ke satu layer GIS tambahan (token membedakan klik berulang). */
+  customZoomRequest: { id: string; token: number } | null;
   hotspot: HotspotState;
   hotspotData: FeatureCollection | null;
   canViewParcel: boolean;
@@ -114,7 +135,7 @@ interface Props {
   onParcelUpdated: () => void;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotspotData, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -333,6 +354,19 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
     }
   }, [customLayers]);
 
+  // Zoom-to per layer dari panel (klik nama / ikon crosshair). Token yang sudah
+  // ditangani dicatat agar perubahan customLayers tidak memicu ulang zoom.
+  const handledZoomToken = useRef<number | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !customZoomRequest || customZoomRequest.token === handledZoomToken.current) return;
+    handledZoomToken.current = customZoomRequest.token;
+    const l = customLayers.find((c) => c.id === customZoomRequest.id);
+    if (!l || l.kind !== "vector") return;
+    const bounds = geojsonBounds(l.data);
+    if (bounds) map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 600 });
+  }, [customZoomRequest, customLayers]);
+
   const vis = (on: boolean) => ({ visibility: (on ? "visible" : "none") as "visible" | "none" });
 
   // Label colors follow the basemap so they stay legible (matches DASH-03).
@@ -370,8 +404,41 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
     } else if (layerId === "hotspot-point") {
       const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "hotspot", props: feature.properties ?? {} });
+    } else if (layerId?.startsWith("custom-")) {
+      const layer = customLayers.find((l) => layerId.startsWith(`custom-${l.id}-`));
+      if (!layer) return;
+      const [longitude, latitude] =
+        feature.geometry.type === "Point"
+          ? ((feature.geometry as Point).coordinates as [number, number])
+          : [e.lngLat.lng, e.lngLat.lat];
+      setSelected({
+        longitude,
+        latitude,
+        kind: "custom",
+        props: feature.properties ?? {},
+        layerName: layer.name,
+        layerColor: layer.color,
+      });
     }
   };
+
+  // Fitur data internal (lahan/KT/hotspot) dirender di atas custom layer, dan
+  // queryRenderedFeatures mengembalikan fitur teratas lebih dulu — jadi saat
+  // bertumpuk, popup internal tetap menang atas popup atribut custom layer.
+  const interactiveLayerIds = useMemo(
+    () => [
+      "kt-point",
+      "parcel-point",
+      "parcel-fill",
+      "hotspot-point",
+      ...customLayers.flatMap((l) =>
+        l.kind === "vector"
+          ? [`custom-${l.id}-fill`, `custom-${l.id}-line`, `custom-${l.id}-circle`]
+          : []
+      ),
+    ],
+    [customLayers]
+  );
 
   const filteredParcels = useMemo(() => {
     const parcels = data?.parcels ?? [];
@@ -401,7 +468,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
         mapStyle={MAP_STYLES[styleKey] as StyleSpecification}
-        interactiveLayerIds={["kt-point", "parcel-point", "parcel-fill", "hotspot-point"]}
+        interactiveLayerIds={interactiveLayerIds}
         onLoad={(e) => {
           fitAll();
           setZoom(e.target.getZoom());
@@ -457,24 +524,33 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
             </Source>
           ) : (
             <Source key={l.id} id={`custom-${l.id}`} type="geojson" data={l.data}>
+              {/* Filter per tipe geometri: tanpa ini layer circle menggambar
+                  lingkaran di SETIAP vertex polygon/garis dan menutupi fill-nya. */}
               <Layer
                 id={`custom-${l.id}-fill`}
                 type="fill"
+                filter={["==", ["geometry-type"], "Polygon"]}
                 layout={vis(l.visible)}
-                paint={{ "fill-color": l.color, "fill-opacity": 0.25 }}
+                paint={{
+                  "fill-color": customLayerColor(l),
+                  // Symbology butuh fill lebih pekat agar kelas warnanya terbaca.
+                  "fill-opacity": l.symbology ? 0.5 : 0.25,
+                }}
               />
               <Layer
                 id={`custom-${l.id}-line`}
                 type="line"
+                filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "LineString"]]}
                 layout={vis(l.visible)}
-                paint={{ "line-color": l.color, "line-width": 1.5 }}
+                paint={{ "line-color": customLayerColor(l), "line-width": 1.5 }}
               />
               <Layer
                 id={`custom-${l.id}-circle`}
                 type="circle"
+                filter={["==", ["geometry-type"], "Point"]}
                 layout={vis(l.visible)}
                 paint={{
-                  "circle-color": l.color,
+                  "circle-color": customLayerColor(l),
                   "circle-radius": 4,
                   "circle-stroke-width": 1,
                   "circle-stroke-color": "#ffffff",
@@ -651,7 +727,13 @@ export function MapCanvas({ data, layers, overlays, customLayers, hotspot, hotsp
             maxWidth="none"
             className="map-parcel-popup"
           >
-            {selected.kind === "hotspot" ? (
+            {selected.kind === "custom" ? (
+              <CustomFeaturePopup
+                layerName={selected.layerName ?? "Layer GIS"}
+                color={selected.layerColor ?? "#8b5cf6"}
+                attrs={selected.props}
+              />
+            ) : selected.kind === "hotspot" ? (
               <div className="w-[264px]">
                 <PopupHeader
                   accent="red"
@@ -934,6 +1016,51 @@ function satelliteLabel(v: unknown) {
   if (s === "N") return "Suomi NPP";
   if (s === "1" || s === "NOAA-20") return "NOAA-20";
   return v == null || v === "" ? "—" : String(v);
+}
+
+/**
+ * Popup atribut fitur dari layer GIS tambahan ("Tambah Data GIS Lain"):
+ * header memakai warna layer, isi = seluruh atribut non-kosong (scroll bila panjang).
+ */
+function CustomFeaturePopup({
+  layerName,
+  color,
+  attrs,
+}: {
+  layerName: string;
+  color: string;
+  attrs: Record<string, unknown>;
+}) {
+  const rows = Object.entries(attrs)
+    .filter(([, v]) => v !== null && v !== undefined && v !== "")
+    .map(([label, value]) => ({ label, value }));
+  return (
+    <div className="w-[280px]">
+      <div className="flex items-center gap-2.5 px-3.5 py-3 pr-8" style={{ backgroundColor: `${color}1a` }}>
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white"
+          style={{ backgroundColor: color }}
+        >
+          <Layers className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-tight">{layerName}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Data GIS Lain
+          </p>
+        </div>
+      </div>
+      {rows.length > 0 ? (
+        <div className="max-h-64 overflow-y-auto border-t px-3.5 py-3">
+          <MapPopupRows rows={rows} />
+        </div>
+      ) : (
+        <p className="border-t px-3.5 py-3 text-xs text-muted-foreground">
+          Fitur ini tidak memiliki atribut.
+        </p>
+      )}
+    </div>
+  );
 }
 
 function PopupHeader({ accent, icon, title, subtitle }: { accent: keyof typeof ACCENTS; icon: ReactNode; title: string; subtitle: string }) {

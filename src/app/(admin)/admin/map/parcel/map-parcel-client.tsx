@@ -15,7 +15,12 @@ import type {
 } from "@/types/map";
 import type { FeatureCollection } from "geojson";
 import { MapControlPanel, type LayerVisibility } from "./map-control-panel";
-import { DEFAULT_OVERLAY_STATE, type OverlayState, type CustomLayer } from "./map-overlays";
+import {
+  DEFAULT_OVERLAY_STATE,
+  buildSymbology,
+  type OverlayState,
+  type CustomLayer,
+} from "./map-overlays";
 import {
   DEFAULT_HOTSPOT_STATE,
   fetchHotspots,
@@ -63,6 +68,25 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
     setCustomLayers((prev) => prev.filter((l) => l.id !== id));
   const toggleCustomLayer = (id: string, visible: boolean) =>
     setCustomLayers((prev) => prev.map((l) => (l.id === id ? { ...l, visible } : l)));
+  // Symbology unique-value per layer vector: pilih atribut → mapping nilai→warna
+  // dihitung sekali di sini; null mengembalikan ke warna tunggal.
+  const setCustomLayerSymbology = (id: string, attribute: string | null) =>
+    setCustomLayers((prev) =>
+      prev.map((l) => {
+        if (l.id !== id || l.kind !== "vector") return l;
+        return {
+          ...l,
+          symbology: attribute ? buildSymbology(l.data, attribute) : undefined,
+        };
+      })
+    );
+  // Zoom request ke satu layer GIS tambahan; token membedakan klik berulang pada
+  // layer yang sama. Zoom juga menyalakan layer bila sedang disembunyikan.
+  const [customZoomRequest, setCustomZoomRequest] = useState<{ id: string; token: number } | null>(null);
+  const zoomToCustomLayer = (id: string) => {
+    setCustomLayers((prev) => prev.map((l) => (l.id === id ? { ...l, visible: true } : l)));
+    setCustomZoomRequest({ id, token: Date.now() });
+  };
   const [isPending, startTransition] = useTransition();
 
   // Refetch districts when province changes.
@@ -171,6 +195,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
         layers={layers}
         overlays={overlays}
         customLayers={customLayers}
+        customZoomRequest={customZoomRequest}
         hotspot={hotspot}
         hotspotData={hotspotData}
         canViewParcel={canViewParcel}
@@ -201,6 +226,8 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
         onAddCustomLayer={addCustomLayer}
         onRemoveCustomLayer={removeCustomLayer}
         onToggleCustomLayer={toggleCustomLayer}
+        onZoomCustomLayer={zoomToCustomLayer}
+        onCustomLayerSymbology={setCustomLayerSymbology}
         hotspot={hotspot}
         onHotspotChange={handleHotspotChange}
         hotspotLoading={hotspotLoading}

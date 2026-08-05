@@ -99,6 +99,15 @@ export const DEFAULT_OVERLAY_STATE: OverlayState = {
 // User-added GIS layers ("Tambah Data GIS Lain") — session-only, not persisted.
 // ---------------------------------------------------------------------------
 
+/** Pewarnaan kategorikal (unique value) sebuah layer vector berdasarkan satu atribut. */
+export type CustomLayerSymbology = {
+  attribute: string;
+  /** Nilai atribut (sebagai string) → warna; nilai di luar mapping memakai warna dasar layer. */
+  mapping: Record<string, string>;
+  /** Total nilai unik atribut — bisa lebih besar dari isi mapping bila terpotong batas kelas. */
+  totalValues: number;
+};
+
 /** A layer added by the user at runtime: a WMS/tile URL or a parsed vector set. */
 export type CustomLayer = {
   id: string;
@@ -108,7 +117,7 @@ export type CustomLayer = {
   visible: boolean;
 } & (
     | { kind: "wms"; tileUrl: string }
-    | { kind: "vector"; data: FeatureCollection }
+    | { kind: "vector"; data: FeatureCollection; symbology?: CustomLayerSymbology }
   );
 
 /** Palette cycled for user-added layers so each is visually distinct. */
@@ -120,6 +129,63 @@ export const CUSTOM_LAYER_COLORS = [
   "#6366f1",
   "#ef4444",
 ];
+
+/** Batas jumlah kelas warna symbology agar legend masih terbaca; nilai selebihnya memakai warna dasar. */
+export const SYMBOLOGY_MAX_CLASSES = 24;
+
+/**
+ * Palet kategorikal symbology — 8 hue urutan tetap (tervalidasi pemisahan CVD
+ * untuk pasangan bersebelahan); disiklus bila kelas lebih dari 8, dengan legend
+ * dan popup atribut sebagai pembawa identitas.
+ */
+export const SYMBOLOGY_PALETTE = [
+  "#2a78d6",
+  "#eb6834",
+  "#1baf7a",
+  "#eda100",
+  "#e87ba4",
+  "#008300",
+  "#4a3aa7",
+  "#e34948",
+];
+
+/** Semua atribut yang tersedia untuk symbology: punya minimal satu nilai non-kosong. */
+export function symbologyCandidates(fc: FeatureCollection): string[] {
+  const keys = new Set<string>();
+  for (const f of fc.features) {
+    for (const [key, value] of Object.entries(f.properties ?? {})) {
+      if (value === null || value === undefined || value === "") continue;
+      keys.add(key);
+    }
+  }
+  return [...keys].sort((a, b) => a.localeCompare(b, "id"));
+}
+
+/**
+ * Susun symbology untuk satu atribut: nilai unik diurutkan alfabet-numerik,
+ * SYMBOLOGY_MAX_CLASSES pertama diberi warna (palet disiklus), sisanya jatuh ke
+ * warna dasar layer.
+ */
+export function buildSymbology(
+  fc: FeatureCollection,
+  attribute: string
+): CustomLayerSymbology {
+  const values = new Set<string>();
+  for (const f of fc.features) {
+    const value = f.properties?.[attribute];
+    if (value === null || value === undefined || value === "") continue;
+    values.add(String(value));
+  }
+  const collator = new Intl.Collator("id", { numeric: true });
+  const sorted = [...values].sort(collator.compare).slice(0, SYMBOLOGY_MAX_CLASSES);
+  return {
+    attribute,
+    mapping: Object.fromEntries(
+      sorted.map((value, i) => [value, SYMBOLOGY_PALETTE[i % SYMBOLOGY_PALETTE.length]])
+    ),
+    totalValues: values.size,
+  };
+}
 
 /**
  * Build a MapLibre raster tile URL from a user-provided WMS endpoint. If the

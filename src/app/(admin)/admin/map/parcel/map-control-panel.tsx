@@ -49,6 +49,8 @@ interface Props {
   onAddCustomLayer: (layer: CustomLayer) => void;
   onRemoveCustomLayer: (id: string) => void;
   onToggleCustomLayer: (id: string, visible: boolean) => void;
+  onZoomCustomLayer: (id: string) => void;
+  onCustomLayerSymbology: (id: string, attribute: string | null) => void;
   hotspot: HotspotState;
   onHotspotChange: (hotspot: HotspotState) => void;
   hotspotLoading: boolean;
@@ -197,7 +199,7 @@ export function MapControlPanel(props: Props) {
     onLoad, isLoading, filterOpen, onFilterOpenChange,
     counts, layers, onLayersChange,
     overlays, onOverlaysChange,
-    customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer,
+    customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer, onZoomCustomLayer, onCustomLayerSymbology,
     hotspot, onHotspotChange, hotspotLoading, hotspotCount,
   } = props;
 
@@ -464,6 +466,8 @@ export function MapControlPanel(props: Props) {
         onAdd={onAddCustomLayer}
         onRemove={onRemoveCustomLayer}
         onToggle={onToggleCustomLayer}
+        onZoomTo={onZoomCustomLayer}
+        onSymbologyChange={onCustomLayerSymbology}
       />
     </Card>
   );
