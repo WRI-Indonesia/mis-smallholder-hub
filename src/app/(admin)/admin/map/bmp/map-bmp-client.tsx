@@ -14,6 +14,7 @@ import {
   bmpProductionYears,
   buildBmpProductivityMatrix,
   buildBmpProductivityView,
+  expandBmpMapData,
   productivityViewLabel,
 } from "@/lib/map-data";
 import type {
@@ -305,7 +306,7 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel }: Props)
     if (!farmerGroupId) return;
     startTransition(async () => {
       const res = await getBmpMapData({ provinceId, districtId, farmerGroupId });
-      if (res.success) setMapData(res.data ?? null);
+      if (res.success) setMapData(res.data ? expandBmpMapData(res.data) : null);
     });
   };
 
@@ -320,12 +321,13 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel }: Props)
         toast.error(res.error);
         return;
       }
-      setMapData(res.data ?? null);
+      const data = res.data ? expandBmpMapData(res.data) : null;
+      setMapData(data);
       // Default the productivity view to the newest year with data (#174).
-      const years = bmpProductionYears(res.data?.parcels ?? []);
+      const years = bmpProductionYears(data?.parcels ?? []);
       setProdView(years.length > 0 ? String(years[0]) : "AVG");
       setFilterOpen(false);
-      const counts = res.data?.counts;
+      const counts = data?.counts;
       const total = counts
         ? counts.baik + counts.cukup + counts.kurang + counts.none
         : 0;

@@ -42,6 +42,25 @@ export type MapData = {
   counts: { kt: number; parcelPoints: number; parcelAreas: number };
 };
 
+// ── Wire format (#223) ─────────────────────────────────────────────────────
+// Payload peta besar (ribuan persil) — atribut petani yang berulang per persil
+// dinormalisasi ke lookup `farmers` (key: Farmer.id) dan di-rehydrate di klien
+// via expandMapData/expandBmpMapData (src/lib/map-data.ts).
+
+/** Atribut petani yang dinormalisasi keluar dari fitur persil. */
+export type MapFarmerInfo = { code: string; name: string; group: string };
+
+/** ParcelFeature versi kirim: tanpa atribut petani inline (ada di lookup `farmers`). */
+export type ParcelFeatureWire = Omit<ParcelFeature, "farmerCode" | "farmerName" | "farmerGroupName">;
+
+export type MapDataWire = {
+  kelompokTani: KTPoint[];
+  parcels: ParcelFeatureWire[];
+  /** Lookup atribut petani, key = Farmer.id (`ParcelFeatureWire.farmerId`). */
+  farmers: Record<string, MapFarmerInfo>;
+  counts: MapData["counts"];
+};
+
 /** Lightweight option shape for the cascading filter dropdowns. */
 export type MapSelectOption = { id: string; name: string };
 export type MapGroupOption = { id: string; name: string; code: string | null };
@@ -95,6 +114,22 @@ export type BmpMapData = {
   parcels: BmpParcelFeature[];
   kt: KTPoint[];
   counts: { baik: number; cukup: number; kurang: number; none: number };
+};
+
+/** BmpParcelFeature versi kirim (#223): atribut petani di lookup, plus key-nya. */
+export type BmpParcelFeatureWire = Omit<
+  BmpParcelFeature,
+  "farmerCode" | "farmerName" | "farmerGroupName"
+> & {
+  /** Farmer.id — key ke lookup `farmers`; tidak ikut di fitur hasil expand. */
+  farmerId: string;
+};
+
+export type BmpMapDataWire = {
+  parcels: BmpParcelFeatureWire[];
+  kt: KTPoint[];
+  farmers: Record<string, MapFarmerInfo>;
+  counts: BmpMapData["counts"];
 };
 
 // ── Peta BMP — produktivitas per persil (MAP-03) ───────────────────────────

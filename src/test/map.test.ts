@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   buildMapData,
+  expandMapData,
+  expandBmpMapData,
   monthlyAverageYield,
   summarizeProduction,
   longestConsecutiveMonths,
@@ -70,12 +72,48 @@ describe("buildMapData", () => {
     const [long, lat] = result.parcels[0].centroid;
     expect(long).toBeCloseTo(100, 5);
     expect(lat).toBeCloseTo(0, 5);
-    expect(result.parcels[0]).toMatchObject({
+    expect(result.parcels[0]).toMatchObject({ parcelId: "PCL-01", area: 2.5 });
+    // Atribut petani dinormalisasi ke lookup (#223), di-rehydrate expandMapData.
+    expect(result.farmers).toEqual({ f1: { code: "FMR-01", name: "Budi", group: "KT Maju" } });
+    const expanded = expandMapData(result);
+    expect(expanded.parcels[0]).toMatchObject({
       parcelId: "PCL-01",
+      farmerCode: "FMR-01",
       farmerName: "Budi",
       farmerGroupName: "KT Maju",
       area: 2.5,
     });
+  });
+
+  it("dedupes the farmers lookup across parcels of the same farmer (#223)", () => {
+    const result = buildMapData([], [parcel(), parcel({ id: "p2" })]);
+    expect(result.parcels).toHaveLength(2);
+    expect(Object.keys(result.farmers)).toEqual(["f1"]);
+  });
+
+  it("truncates geometry coordinates to 6 decimals for display (#223)", () => {
+    const result = buildMapData(
+      [],
+      [
+        parcel({
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [99.123456789012, -0.5000000004],
+                [100.5, -0.5],
+                [100.5, 0.5],
+                [99.123456789012, -0.5000000004],
+              ],
+            ],
+          },
+        }),
+      ]
+    );
+    const ring = (result.parcels[0].geometry as { coordinates: number[][][] }).coordinates[0];
+    expect(ring[0]).toEqual([99.123457, -0.5]);
+    // Ring tetap tertutup setelah pembulatan.
+    expect(ring[ring.length - 1]).toEqual(ring[0]);
   });
 
   it("excludes KT without coordinates from the kt layer", () => {
@@ -107,8 +145,12 @@ describe("buildMapData", () => {
       [parcel({ farmer: null })]
     );
     expect(result.kelompokTani[0].districtName).toBe("—");
-    expect(result.parcels[0].farmerName).toBe("—");
-    expect(result.parcels[0].farmerGroupName).toBe("—");
+    // Petani tanpa relasi → tak masuk lookup; expand memberi fallback "—".
+    expect(result.farmers).toEqual({});
+    const expanded = expandMapData(result);
+    expect(expanded.parcels[0].farmerCode).toBe("—");
+    expect(expanded.parcels[0].farmerName).toBe("—");
+    expect(expanded.parcels[0].farmerGroupName).toBe("—");
   });
 
   it("reports counts consistent with produced features", () => {
@@ -367,7 +409,8 @@ describe("buildBmpMapData", () => {
     expect(f.lastPeriod).toBe("2025-03");
     // periods are de-duplicated and sorted (drives the availability grid).
     expect(f.periods).toEqual(["2025-01", "2025-02", "2025-03"]);
-    expect(f.farmerCode).toBe("FMR-01");
+    expect(result.farmers.f1.code).toBe("FMR-01");
+    expect(expandBmpMapData(result).parcels[0].farmerCode).toBe("FMR-01");
     // kg summed per period — the duplicate 2025-01 (100 + 100) becomes 200.
     expect(f.production).toEqual({ "2025-01": 200, "2025-02": 100, "2025-03": 100 });
   });

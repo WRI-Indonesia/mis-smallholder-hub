@@ -8,6 +8,7 @@ import {
   getFarmerGroupsForMap,
   getMapData,
 } from "@/server/actions/map";
+import { expandMapData } from "@/lib/map-data";
 import type {
   MapData,
   MapSelectOption,
@@ -161,7 +162,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
     if (!districtId) return;
     startTransition(async () => {
       const res = await getMapData({ provinceId, districtId, farmerGroupId });
-      if (res.success) setMapData(res.data ?? null);
+      if (res.success) setMapData(res.data ? expandMapData(res.data) : null);
     });
   };
 
@@ -176,7 +177,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
         toast.error(res.error);
         return;
       }
-      setMapData(res.data ?? null);
+      setMapData(res.data ? expandMapData(res.data) : null);
       setFilterOpen(false);
       const total =
         (res.data?.counts.kt ?? 0) + (res.data?.counts.parcelAreas ?? 0);
