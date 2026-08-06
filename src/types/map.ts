@@ -42,6 +42,37 @@ export type MapData = {
   counts: { kt: number; parcelPoints: number; parcelAreas: number };
 };
 
+// ── Wire format (#223) ─────────────────────────────────────────────────────
+// Payload peta besar (ribuan persil), dipadatkan tiga arah dan di-rehydrate di
+// klien via expandMapData/expandBmpMapData (src/lib/map-data.ts):
+// 1. atribut petani yang berulang → lookup `farmers` (key: Farmer.id);
+// 2. fitur persil → tuple posisi (kunci JSON tidak diulang ribuan kali);
+// 3. nilai turunan (centroid; kategori/streak/first-last/periods BMP) tidak
+//    dikirim — dihitung ulang klien dengan fungsi murni yang sama.
+
+/** Atribut petani (tuple): [kode, nama, lembaga]. */
+export type MapFarmerTuple = [code: string, name: string, group: string];
+
+/** Fitur persil versi kirim (tuple posisi) — urutan wajib sinkron build/expand. */
+export type ParcelWireTuple = [
+  id: string,
+  parcelId: string,
+  farmerId: string,
+  area: number | null,
+  plantingYear: number | null,
+  cropType: string | null,
+  landStatus: string | null,
+  geometry: Polygon | MultiPolygon,
+];
+
+export type MapDataWire = {
+  kelompokTani: KTPoint[];
+  parcels: ParcelWireTuple[];
+  /** Lookup atribut petani, key = Farmer.id (elemen `farmerId` tuple). */
+  farmers: Record<string, MapFarmerTuple>;
+  counts: MapData["counts"];
+};
+
 /** Lightweight option shape for the cascading filter dropdowns. */
 export type MapSelectOption = { id: string; name: string };
 export type MapGroupOption = { id: string; name: string; code: string | null };
@@ -95,6 +126,20 @@ export type BmpMapData = {
   parcels: BmpParcelFeature[];
   kt: KTPoint[];
   counts: { baik: number; cukup: number; kurang: number; none: number };
+};
+
+/**
+ * Fitur persil BMP versi kirim (#223): tuple `ParcelWireTuple` + total kg per
+ * periode. Kategori, streak, first/last, dan `periods` TIDAK dikirim — turunan
+ * deterministik dari `production`, dihitung ulang `expandBmpMapData`.
+ */
+export type BmpParcelWireTuple = [...ParcelWireTuple, production: Record<string, number>];
+
+export type BmpMapDataWire = {
+  parcels: BmpParcelWireTuple[];
+  kt: KTPoint[];
+  farmers: Record<string, MapFarmerTuple>;
+  counts: BmpMapData["counts"];
 };
 
 // ── Peta BMP — produktivitas per persil (MAP-03) ───────────────────────────

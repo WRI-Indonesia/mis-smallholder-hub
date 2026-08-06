@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
-import { MapPopupHighlight, MapPopupSection, MapPopupRows } from "@/components/shared/map-popup";
+import { MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
@@ -38,6 +38,7 @@ import {
   formatMeasureArea,
   geomBounds,
   parcelLabelFit,
+  quantizeZoom,
   type LngLat,
 } from "./map-geo";
 
@@ -145,6 +146,13 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
+
+  // Key memuat lngLat: klik ulang fitur yang sama di titik lain harus me-remount
+  // popup + memicu ulang auto-pan (review pasca-v0.21.0).
+  const popupKey = selected
+    ? `${selected.kind}:${selected.props.id ?? ""}:${selected.longitude},${selected.latitude}`
+    : null;
+  useMapPopupAutoPan(mapRef, popupKey);
 
   // Close any open popup when a new dataset loads (adjusts state during render on
   // prop change — the React-endorsed alternative to a setState-in-effect).
@@ -254,16 +262,20 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     [data]
   );
 
+  // Lazy (#223): layer default tersembunyi — ribuan fitur point hanya dibangun
+  // (dan dikirim ke worker MapLibre) selama layer dicentang.
   const parcelPointGeojson = useMemo<FeatureCollection>(
     () => ({
       type: "FeatureCollection",
-      features: (data?.parcels ?? []).map((p) => ({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: p.centroid },
-        properties: parcelProps(p),
-      })),
+      features: layers.parcelPoints
+        ? (data?.parcels ?? []).map((p) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: p.centroid },
+            properties: parcelProps(p),
+          }))
+        : [],
     }),
-    [data]
+    [data, layers.parcelPoints]
   );
 
   // Current zoom drives the "does the label fit inside the polygon" test.
@@ -351,6 +363,11 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       fittedLayerIds.current.add(l.id);
       const bounds = geojsonBounds(l.data);
       if (bounds) map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 600 });
+    }
+    // Prune id layer yang sudah dihapus agar Set tidak tumbuh sepanjang sesi.
+    const activeIds = new Set(customLayers.map((l) => l.id));
+    for (const id of fittedLayerIds.current) {
+      if (!activeIds.has(id)) fittedLayerIds.current.delete(id);
     }
   }, [customLayers]);
 
@@ -471,9 +488,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
         interactiveLayerIds={interactiveLayerIds}
         onLoad={(e) => {
           fitAll();
-          setZoom(e.target.getZoom());
+          setZoom(quantizeZoom(e.target.getZoom()));
         }}
-        onZoomEnd={(e) => setZoom(e.viewState.zoom)}
+        onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onClick={handleClick}
         onMouseMove={(e) => {
           e.target.getCanvas().style.cursor = measuring
@@ -717,7 +734,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
         {selected && (
           <Popup
-            key={`${selected.kind}:${selected.props.id ?? `${selected.longitude},${selected.latitude}`}`}
+            key={popupKey}
             longitude={selected.longitude}
             latitude={selected.latitude}
             anchor="bottom"

@@ -21,7 +21,7 @@ hrefLabel: Buka halaman Pelatihan
 
 **Distrik**, **Lembaga Petani**, **Paket Pelatihan** — mempersempit daftar. Pilihan Lembaga ikut menyempit bila Distrik sudah dipilih. **Status** hanya untuk SUPERADMIN.
 
-**Kotak pencarian** — menelusuri lokasi, nama lembaga, dan nama paket.
+**Kotak pencarian** — menelusuri lokasi, catatan, nama lembaga, dan nama paket.
 
 ## Kolom tabel
 
@@ -32,6 +32,8 @@ hrefLabel: Buka halaman Pelatihan
 **Tanggal Pelatihan** — tanggal pelaksanaan sebenarnya, bukan tanggal input. Menentukan sesi masuk tahun mana di dashboard.
 
 **Lokasi** — tempat sesi. Bila kosong akan muncul sebagai temuan di panel Kualitas Data.
+
+**Catatan** — keterangan bebas: rentang sesi beberapa hari (tanggal yang tercatat = hari pertama, misalnya `Sesi 3 hari: 11-13 November 2023`) atau pembeda dua kegiatan Paket 1 pada tanggal yang sama (`Modul BMP` vs `Modul PNC & NKT`).
 
 **Total Peserta** — jumlah petani yang tercatat hadir di sesi itu. Nol berarti sesinya sudah dicatat tetapi daftar hadirnya belum dimasukkan.
 

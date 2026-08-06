@@ -1,12 +1,17 @@
-import { centroid } from "@turf/turf";
+import { centroid, truncate } from "@turf/turf";
 import type { Polygon, MultiPolygon } from "geojson";
 import type {
   MapData,
+  MapDataWire,
+  MapFarmerTuple,
   KTPoint,
   ParcelFeature,
+  ParcelWireTuple,
   ProductionSummary,
   BmpMapData,
+  BmpMapDataWire,
   BmpParcelFeature,
+  BmpParcelWireTuple,
   BmpParcelProductivity,
   BmpProductivityMatrix,
   BmpProductivityView,
@@ -36,12 +41,81 @@ export type RawParcel = {
 };
 
 /**
- * Pure transform from DB rows to the map payload:
- * - KT points drop groups without coordinates.
- * - Parcels derive a centroid from their polygon; parcels with missing or
- *   invalid geometry are skipped rather than failing the whole batch.
+ * Presisi koordinat payload peta (#223): 6 desimal ≈ 0,11 m — tanpa perubahan
+ * visual pada zoom maksimum, memangkas ±19% byte geometri. Geometri asli di DB
+ * tidak disentuh (dipakai export/analisis).
  */
-export function buildMapData(groups: RawGroup[], parcels: RawParcel[]): MapData {
+const GEOMETRY_PRECISION = 6;
+
+/** Salinan geometri untuk tampilan peta dengan koordinat dibulatkan; gagal → apa adanya. */
+function slimGeometry(geometry: Polygon | MultiPolygon): Polygon | MultiPolygon {
+  try {
+    return truncate({ type: "Feature", properties: {}, geometry }, { precision: GEOMETRY_PRECISION })
+      .geometry as Polygon | MultiPolygon;
+  } catch {
+    return geometry;
+  }
+}
+
+/** Centroid [long, lat] dari polygon, atau null bila geometri tak valid. */
+function safeCentroid(geometry: Polygon | MultiPolygon): [number, number] | null {
+  try {
+    const c = centroid(geometry as never).geometry.coordinates;
+    if (!Number.isFinite(c[0]) || !Number.isFinite(c[1])) return null;
+    return [c[0], c[1]];
+  } catch {
+    return null;
+  }
+}
+
+/** Entri lookup petani dari relasi row persil; null bila relasinya kosong. */
+const farmerInfo = (p: RawParcel): MapFarmerTuple | null =>
+  p.farmer ? [p.farmer.farmerId, p.farmer.name, p.farmer.farmerGroup?.name ?? "—"] : null;
+
+/** Bagian bersama fitur persil (wire): tuple posisi — urutan = `ParcelWireTuple`. */
+const parcelTuple = (p: RawParcel, geometry: Polygon | MultiPolygon): ParcelWireTuple => [
+  p.id,
+  p.parcelId,
+  p.farmerId,
+  p.area,
+  p.plantingYear,
+  p.cropType,
+  p.landStatus,
+  slimGeometry(geometry),
+];
+
+/** Bagian bersama expand: tuple wire + lookup petani → ParcelFeature (tanpa centroid). */
+function expandParcelTuple(
+  t: ParcelWireTuple,
+  farmers: Record<string, MapFarmerTuple>
+): Omit<ParcelFeature, "centroid" | "geometry"> & { geometry: Polygon | MultiPolygon } {
+  const [id, parcelId, farmerId, area, plantingYear, cropType, landStatus, geometry] = t;
+  const f = farmers[farmerId];
+  return {
+    id,
+    parcelId,
+    farmerId,
+    farmerCode: f?.[0] ?? "—",
+    farmerName: f?.[1] ?? "—",
+    farmerGroupName: f?.[2] ?? "—",
+    area,
+    plantingYear,
+    cropType,
+    landStatus,
+    geometry,
+  };
+}
+
+/**
+ * Pure transform from DB rows to the map payload (wire format, #223):
+ * - KT points drop groups without coordinates.
+ * - Parcels with missing or invalid geometry (no derivable centroid) are
+ *   skipped rather than failing the whole batch.
+ * - Wire dipadatkan: tuple posisi per persil, koordinat geometri di-truncate,
+ *   atribut petani didedup ke lookup `farmers`, centroid tidak dikirim
+ *   (dihitung ulang klien) — rehydrate via `expandMapData`.
+ */
+export function buildMapData(groups: RawGroup[], parcels: RawParcel[]): MapDataWire {
   const kelompokTani: KTPoint[] = groups
     .filter((g) => g.locationLat != null && g.locationLong != null)
     .map((g) => ({
@@ -53,42 +127,40 @@ export function buildMapData(groups: RawGroup[], parcels: RawParcel[]): MapData 
       long: g.locationLong as number,
     }));
 
-  const parcelFeatures: ParcelFeature[] = [];
+  const farmers: Record<string, MapFarmerTuple> = {};
+  const parcelTuples: ParcelWireTuple[] = [];
   for (const p of parcels) {
     const geometry = p.geometry as Polygon | MultiPolygon | null;
-    if (!geometry) continue;
-    let center: [number, number];
-    try {
-      const c = centroid(geometry as never).geometry.coordinates;
-      if (!Number.isFinite(c[0]) || !Number.isFinite(c[1])) continue;
-      center = [c[0], c[1]];
-    } catch {
-      continue;
-    }
-    parcelFeatures.push({
-      id: p.id,
-      parcelId: p.parcelId,
-      farmerId: p.farmerId,
-      farmerCode: p.farmer?.farmerId ?? "—",
-      farmerName: p.farmer?.name ?? "—",
-      farmerGroupName: p.farmer?.farmerGroup?.name ?? "—",
-      area: p.area,
-      plantingYear: p.plantingYear,
-      cropType: p.cropType,
-      landStatus: p.landStatus,
-      centroid: center,
-      geometry,
-    });
+    if (!geometry || !safeCentroid(geometry)) continue;
+    const info = farmerInfo(p);
+    if (info && !farmers[p.farmerId]) farmers[p.farmerId] = info;
+    parcelTuples.push(parcelTuple(p, geometry));
   }
 
   return {
     kelompokTani,
-    parcels: parcelFeatures,
+    parcels: parcelTuples,
+    farmers,
     counts: {
       kt: kelompokTani.length,
-      parcelPoints: parcelFeatures.length,
-      parcelAreas: parcelFeatures.length,
+      parcelPoints: parcelTuples.length,
+      parcelAreas: parcelTuples.length,
     },
+  };
+}
+
+/** Rehydrate payload wire → MapData utuh di klien (petani tak dikenal → "—"). */
+export function expandMapData(wire: MapDataWire): MapData {
+  return {
+    kelompokTani: wire.kelompokTani,
+    parcels: wire.parcels.flatMap((t): ParcelFeature[] => {
+      const base = expandParcelTuple(t, wire.farmers);
+      // Geometri sudah tervalidasi server (persil tanpa centroid tak dikirim);
+      // guard di sini hanya penjaga tipe.
+      const center = safeCentroid(base.geometry);
+      return center ? [{ ...base, centroid: center }] : [];
+    }),
+    counts: wire.counts,
   };
 }
 
@@ -205,17 +277,19 @@ export function productionAvailabilityCategory(
 }
 
 /**
- * Pure transform for the Peta BMP payload. Each parcel is colored by its
- * production-data availability category, derived from the production attributed
- * to it via `productionByParcel` (keyed by LandParcel.id → per-period kg totals).
- * Parcels with missing or invalid geometry are skipped (they never affect
- * counts). KT points reuse the same rules as `buildMapData`.
+ * Pure transform for the Peta BMP payload (wire format, #223). Each parcel is
+ * colored by its production-data availability category, derived from the
+ * production attributed to it via `productionByParcel` (keyed by LandParcel.id
+ * → per-period kg totals). Parcels with missing or invalid geometry are skipped
+ * (they never affect counts). KT points reuse the same rules as `buildMapData`;
+ * geometry truncation and the `farmers` lookup too (rehydrate via
+ * `expandBmpMapData`).
  */
 export function buildBmpMapData(
   groups: RawGroup[],
   parcels: RawParcel[],
   productionByParcel: Map<string, { period: string; kg: number }[]>
-): BmpMapData {
+): BmpMapDataWire {
   const kt: KTPoint[] = groups
     .filter((g) => g.locationLat != null && g.locationLong != null)
     .map((g) => ({
@@ -227,20 +301,13 @@ export function buildBmpMapData(
       long: g.locationLong as number,
     }));
 
-  const parcelFeatures: BmpParcelFeature[] = [];
+  const farmers: Record<string, MapFarmerTuple> = {};
+  const parcelTuples: BmpParcelWireTuple[] = [];
   const counts = { baik: 0, cukup: 0, kurang: 0, none: 0 };
 
   for (const p of parcels) {
     const geometry = p.geometry as Polygon | MultiPolygon | null;
-    if (!geometry) continue;
-    let center: [number, number];
-    try {
-      const c = centroid(geometry as never).geometry.coordinates;
-      if (!Number.isFinite(c[0]) || !Number.isFinite(c[1])) continue;
-      center = [c[0], c[1]];
-    } catch {
-      continue;
-    }
+    if (!geometry || !safeCentroid(geometry)) continue;
 
     // Sum kg per period (groupBy already yields one row per period, but sum
     // defensively) → sorted unique periods drive the category & availability.
@@ -249,38 +316,53 @@ export function buildBmpMapData(
       kgByPeriod.set(r.period, (kgByPeriod.get(r.period) ?? 0) + r.kg);
     }
     const uniqueSorted = [...kgByPeriod.keys()].sort();
-    const category = productionAvailabilityCategory(uniqueSorted);
-    const streakMonths = longestConsecutiveMonths(uniqueSorted);
     const production: Record<string, number> = {};
     for (const period of uniqueSorted) production[period] = kgByPeriod.get(period) as number;
 
-    parcelFeatures.push({
-      id: p.id,
-      parcelId: p.parcelId,
-      farmerCode: p.farmer?.farmerId ?? "—",
-      farmerName: p.farmer?.name ?? "—",
-      farmerGroupName: p.farmer?.farmerGroup?.name ?? "—",
-      area: p.area,
-      plantingYear: p.plantingYear,
-      cropType: p.cropType,
-      landStatus: p.landStatus,
-      centroid: center,
-      geometry,
-      category,
-      streakMonths,
-      firstPeriod: uniqueSorted[0] ?? null,
-      lastPeriod: uniqueSorted[uniqueSorted.length - 1] ?? null,
-      periods: uniqueSorted,
-      production,
-    });
+    const info = farmerInfo(p);
+    if (info && !farmers[p.farmerId]) farmers[p.farmerId] = info;
+    parcelTuples.push([...parcelTuple(p, geometry), production]);
 
+    // Kategori hanya untuk counts — per persil dihitung ulang di expand.
+    const category = productionAvailabilityCategory(uniqueSorted);
     if (category === "BAIK") counts.baik++;
     else if (category === "CUKUP") counts.cukup++;
     else if (category === "KURANG") counts.kurang++;
     else counts.none++;
   }
 
-  return { parcels: parcelFeatures, kt, counts };
+  return { parcels: parcelTuples, kt, farmers, counts };
+}
+
+/**
+ * Rehydrate payload wire → BmpMapData utuh di klien (petani tak dikenal → "—").
+ * Turunan deterministik dihitung ulang dari `production` dengan fungsi murni
+ * yang sama dengan server: periods, kategori, streak, first/last, centroid.
+ */
+export function expandBmpMapData(wire: BmpMapDataWire): BmpMapData {
+  return {
+    parcels: wire.parcels.flatMap((t): BmpParcelFeature[] => {
+      const production = t[8];
+      const base = expandParcelTuple(t.slice(0, 8) as unknown as ParcelWireTuple, wire.farmers);
+      const center = safeCentroid(base.geometry);
+      if (!center) return [];
+      const uniqueSorted = Object.keys(production).sort();
+      return [
+        {
+          ...base,
+          centroid: center,
+          category: productionAvailabilityCategory(uniqueSorted),
+          streakMonths: longestConsecutiveMonths(uniqueSorted),
+          firstPeriod: uniqueSorted[0] ?? null,
+          lastPeriod: uniqueSorted[uniqueSorted.length - 1] ?? null,
+          periods: uniqueSorted,
+          production,
+        },
+      ];
+    }),
+    kt: wire.kt,
+    counts: wire.counts,
+  };
 }
 
 // ── Peta BMP — produktivitas per persil (MAP-03) ─────────────────────────────

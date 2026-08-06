@@ -7,10 +7,10 @@ import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target, User, Info } from "lucide-react";
 import { MAP_STYLES } from "@/app/(admin)/admin/master-data/parcels/components/parcel-map-view";
-import { geomBounds, parcelLabelFit, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
+import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
-import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupHighlight, MapPopupSection, MapPopupRows } from "@/components/shared/map-popup";
+import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
 
 export interface DistributionMapParcel {
   id: string;
@@ -101,6 +101,9 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
   const [zoom, setZoom] = useState(13);
   const [selected, setSelected] = useState<SelectedParcel | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
+
+  const popupKey = selected ? `${selected.parcelId}:${selected.lngLat[0]},${selected.lngLat[1]}` : null;
+  useMapPopupAutoPan(mapRef, popupKey);
 
   const { collection, bounds, validCount, legend, labelBase } = useMemo(() => {
     // KT → warna: distinct ternormalisasi (trim + case-insensitive, konsisten
@@ -284,7 +287,7 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
         mapStyle={MAP_STYLES[styleKey]}
         interactiveLayerIds={["group-parcels-fill"]}
         onClick={onMapClick}
-        onMoveEnd={(e) => setZoom(e.viewState.zoom)}
+        onMoveEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onMouseEnter={(e) => { e.target.getCanvas().style.cursor = "pointer"; }}
         onMouseLeave={(e) => { e.target.getCanvas().style.cursor = ""; }}
       >
@@ -315,6 +318,7 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
 
         {selected && (
           <Popup
+            key={popupKey}
             longitude={selected.lngLat[0]}
             latitude={selected.lngLat[1]}
             onClose={() => setSelected(null)}

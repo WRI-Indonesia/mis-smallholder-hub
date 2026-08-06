@@ -43,7 +43,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Client | `map-parcel-client.tsx` (orkestrasi), `map-control-panel.tsx` (panel kiri), `map-canvas.tsx` (peta + popup), `map-custom-gis.tsx`, `map-overlays.ts`, `map-hotspot.ts`, `map-geo.ts`; primitif popup bersama `src/components/shared/map-popup.tsx` (TD-028) + `parcel-popup-actions.tsx` & `parcel-edit-modal-host.tsx` (dari `master-data/parcels/components/`) |
 | Tipe | Server Component (opsi provinsi) → Client Component (peta interaktif) |
 | Guard | `requirePermission("map-parcel")`; `page.tsx` juga menghitung `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate tombol aksi popup); action `getMapData` guard `hasPermission("map-parcel", "VIEW")` + `getAccessContext()` |
-| Server action / data | `getProvincesForMap()`, `getDistrictsForMap()`, `getFarmerGroupsForMap()`, `getMapData()`, `getFarmerTraining()`, `getParcelProduction()`, `getParcelPassport()` (`src/server/actions/map.ts`); proxy same-origin `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) dan `/api/map-hotspot` (NASA FIRMS) |
+| Server action / data | `getProvincesForMap()`, `getDistrictsForMap()`, `getFarmerGroupsForMap()`, `getMapData()`, `getFarmerTraining()`, `getParcelProduction()`, `getParcelPassport()` (`src/server/actions/map.ts`); proxy same-origin `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) dan `/api/map-hotspot` (NASA FIRMS). `getMapData` mengembalikan **format wire dipadatkan** (#223: tuple posisi per persil, koordinat truncate 6 desimal, atribut petani di lookup `farmers`, centroid tidak dikirim) — klien me-rehydrate via `expandMapData` (`src/lib/map-data.ts`) sebelum dipakai |
 | Loading | `loading.tsx` |
 
 ## Objek halaman
@@ -58,7 +58,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Muat Data | Tombol | Disabled tanpa Distrik; tanpa Distrik → toast "Silakan pilih Distrik terlebih dahulu"; hasil kosong → toast "Tidak ada data untuk filter ini", sukses → "Data berhasil dimuat" |
 | Legenda | Section collapsible + Legend | Muncul hanya setelah data dimuat; tiap baris = checkbox toggle layer + swatch warna + jumlah fitur |
 | Point Lembaga Petani | Layer + Legend | Circle hijau `#22c55e` r=8, stroke putih; label nama lembaga di bawah titik |
-| Point Lahan Petani | Layer + Legend | Circle biru `#3b82f6` r=5 pada centroid persil |
+| Point Lahan Petani | Layer + Legend | Circle biru `#3b82f6` r=5 pada centroid persil; **default tidak dicentang** (#223) — GeoJSON point dibangun lazy saat pertama dicentang (ribuan titik jarang dipakai) |
 | Area Lahan Petani | Layer + Legend | Polygon fill `#22c55e` opacity 0.2, outline `#16a34a`; label nama petani di dalam poligon bila muat (`parcelLabelFit`) |
 | Peta Lainnya | Section collapsible (overlay) | Raster overlay ArcGIS pemerintah via proxy: **Kawasan Hutan** (geoportal Kemenhut, Peta Kawasan Hutan 1:250.000 Des 2025) & **Fungsi Ekosistem Gambut** (Satu Peta BIG, FEG 1:50.000) — tiap baris checkbox + deskripsi singkat. Saat aktif, di bawah baris muncul **legend warna kelas** (Kawasan Hutan: Kawasan Konservasi (HK) · Hutan Lindung (HL) · Hutan Produksi Terbatas (HPT) · Hutan Produksi Tetap (HP) · Hutan Produksi Konversi (HPK) · Area Penggunaan Lain (APL) · Tubuh Air; Gambut: Fungsi Lindung · Fungsi Budidaya) + baris "Sumber: …" per overlay |
 | Transparansi | Slider | Muncul bila ada overlay aktif; rentang 0.1–1 (default 0.7), ditampilkan dalam persen |

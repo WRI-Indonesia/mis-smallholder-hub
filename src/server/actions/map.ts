@@ -13,14 +13,14 @@ import { buildMapData, buildBmpMapData, summarizeProduction } from "@/lib/map-da
 import { mapFilterSchema, bmpMapFilterSchema } from "@/validations/map.schema";
 import type { ActionResult } from "@/types/action-result";
 import type {
-  MapData,
+  MapDataWire,
   MapFilters,
   MapSelectOption,
   MapGroupOption,
   FarmerTrainingItem,
   ParcelPassport,
   ProductionSummary,
-  BmpMapData,
+  BmpMapDataWire,
   BmpMapFilters,
 } from "@/types/map";
 
@@ -108,7 +108,7 @@ export async function getFarmerGroupsForMap(
  */
 export async function getMapData(
   filters: MapFilters
-): Promise<ActionResult<MapData>> {
+): Promise<ActionResult<MapDataWire>> {
   if (!(await hasPermission(MENU_KEY, VIEW))) {
     return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
   }
@@ -188,7 +188,7 @@ const BMP_MENU_KEY = "map-bmp";
  */
 export async function getBmpMapData(
   filters: BmpMapFilters
-): Promise<ActionResult<BmpMapData>> {
+): Promise<ActionResult<BmpMapDataWire>> {
   if (!(await hasPermission(BMP_MENU_KEY, VIEW))) {
     return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
   }

@@ -65,6 +65,7 @@ import pDashboardBmp from "@/content/help/tutorial/p-4-dashboard-bmp.md";
 import pPetaLahan from "@/content/help/tutorial/p-5-peta-lahan.md";
 import pKetersediaanData from "@/content/help/tutorial/p-6-ketersediaan-data.md";
 import pRingkasanPetani from "@/content/help/tutorial/p-7-ringkasan-petani.md";
+import pMetrikRilis from "@/content/help/tutorial/p-8-metrik-rilis.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 
@@ -193,6 +194,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "peta-lahan", source: pPetaLahan },
       { id: "ketersediaan-data", source: pKetersediaanData },
       { id: "ringkasan-petani", source: pRingkasanPetani },
+      { id: "metrik-rilis", source: pMetrikRilis },
     ],
   },
   {

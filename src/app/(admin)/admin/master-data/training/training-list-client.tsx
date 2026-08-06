@@ -72,6 +72,7 @@ interface TrainingActivity {
   };
   location: string | null;
   trainingDate: Date | string;
+  notes: string | null;
   isActive: boolean;
   participants: {
     farmerId: string;
@@ -190,6 +191,13 @@ export function TrainingListClient({
       render: (row) => row.location ?? "—",
     },
     {
+      key: "notes",
+      label: "Catatan",
+      sortable: false,
+      cellClassName: "text-sm text-muted-foreground",
+      render: (row) => row.notes ?? "—",
+    },
+    {
       key: "id",
       label: "Total Peserta",
       sortable: false,
@@ -236,6 +244,7 @@ export function TrainingListClient({
       farmerGroup: a.farmerGroup.name,
       district: a.farmerGroup.district.name,
       location: a.location ?? "—",
+      notes: a.notes ?? "—",
       trainingDate: formattedDate,
       id: `${a._count.participants} orang`,
       isActive: a.isActive ? "Aktif" : "Nonaktif",
@@ -436,9 +445,13 @@ export function TrainingListClient({
               TRAINING_CATEGORY_LABELS[row.package.code] || row.package.name
             ).toLowerCase();
             const location = (row.location || "").toLowerCase();
+            const notes = (row.notes || "").toLowerCase();
             const groupName = row.farmerGroup.name.toLowerCase();
             return (
-              packageName.includes(query) || location.includes(query) || groupName.includes(query)
+              packageName.includes(query) ||
+              location.includes(query) ||
+              notes.includes(query) ||
+              groupName.includes(query)
             );
           }}
           toolbarLeft={toolbarLeft}

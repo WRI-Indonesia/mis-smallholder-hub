@@ -10,7 +10,7 @@ import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
-import { MapPopupSection, MapPopupRows } from "@/components/shared/map-popup";
+import { MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BMP_PRODUCTIVITY_CLASSES, productivityViewLabel, summarizeProduction } from "@/lib/map-data";
 import type {
@@ -22,7 +22,7 @@ import type {
   ProductionSummary,
   ProductivityClass,
 } from "@/types/map";
-import { geomBounds, parcelLabelFit, PARCEL_LABEL_FONT_PX } from "../parcel/map-geo";
+import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "../parcel/map-geo";
 import {
   BMP_CATEGORIES,
   type BmpColorMode,
@@ -108,24 +108,25 @@ const CATEGORY_META: Record<ProductionAvailabilityCategory, { color: string; sho
   NONE: { color: "#9ca3af", short: "Tidak ada data" },
 };
 
-// Productivity mode (MAP-03): fill/line color by the feature's `productivityClass`
-// property; the NO_DATA entry doubles as the match fallback and is outline-only.
+// Productivity mode (MAP-03): fill/line color by the parcel's productivity
+// class, dibaca dari FEATURE-STATE (bukan property) — audit performa peta:
+// ganti tahun/mode hanya setFeatureState + repaint, source geometri tidak
+// pernah di-setData ulang. NO_DATA doubles as fallback dan outline-only.
 const NO_DATA_COLOR = BMP_PRODUCTIVITY_CLASSES.find((c) => c.key === "NO_DATA")?.color ?? "#9ca3af";
+
+/** Kelas produktivitas fitur; sebelum state ter-set (source baru dimuat) → NO_DATA. */
+const PROD_STATE_CLS = [
+  "coalesce",
+  ["feature-state", "productivityClass"],
+  "NO_DATA",
+] as unknown as ExpressionSpecification;
 
 const PRODUCTIVITY_COLOR_EXPR: ExpressionSpecification = [
   "match",
-  ["get", "productivityClass"],
+  PROD_STATE_CLS,
   ...BMP_PRODUCTIVITY_CLASSES.filter((c) => c.key !== "NO_DATA").flatMap((c) => [c.key, c.color]),
   NO_DATA_COLOR,
 ] as unknown as ExpressionSpecification;
-
-const PRODUCTIVITY_FILL_OPACITY_EXPR: ExpressionSpecification = [
-  "match",
-  ["get", "productivityClass"],
-  "NO_DATA",
-  0,
-  0.4,
-];
 
 const PRODUCTIVITY_META: Record<ProductivityClass, { color: string; short: string }> =
   Object.fromEntries(
@@ -217,6 +218,13 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
 
+  // Key memuat lngLat: klik ulang persil yang sama di titik lain harus me-remount
+  // popup + memicu ulang auto-pan (review pasca-v0.21.0).
+  const popupKey = selected
+    ? `${selected.props.id ?? ""}:${selected.longitude},${selected.latitude}`
+    : null;
+  useMapPopupAutoPan(mapRef, popupKey);
+
   // Close any open popup when a new dataset loads (state-during-render pattern).
   const [prevData, setPrevData] = useState(data);
   if (prevData !== data) {
@@ -233,13 +241,21 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
     return json;
   }, [data]);
 
+  // Lookup id→persil untuk hover/klik/refresh popup — `find` linear per fitur
+  // ter-hover membebani onMouseMove di grup besar (#229). (Plain object:
+  // `Map` di file ini ter-shadow komponen react-map-gl.)
+  const parcelById = useMemo(
+    () => Object.fromEntries((data?.parcels ?? []).map((p) => [p.id, p])),
+    [data]
+  );
+
   // Refresh (not just close) an open popup when the productivity view changes,
   // so its badge/values never contradict the polygon colors underneath.
   const [prevProductivity, setPrevProductivity] = useState(productivity);
   if (prevProductivity !== productivity) {
     setPrevProductivity(productivity);
     if (selected) {
-      const p = data?.parcels.find((x) => x.id === selected.props.id);
+      const p = parcelById[selected.props.id as string];
       setSelected(
         p
           ? {
@@ -256,25 +272,71 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
     }
   }
 
+  // Source polygon STATIS per dataset (audit performa peta): tanpa properti
+  // produktivitas per-view, sehingga ganti tahun/mode tidak men-setData ulang
+  // (re-parse + re-tessellate) seluruh geometri di worker MapLibre.
   const parcelAreaGeojson = useMemo<FeatureCollection>(
     () => ({
       type: "FeatureCollection",
       features: (data?.parcels ?? []).map((p) => ({
         type: "Feature",
         geometry: p.geometry as Polygon | MultiPolygon,
-        properties: parcelProps(
-          p,
-          productivity?.byParcel[p.id],
-          productivity?.view,
-          productionJsonById[p.id]
-        ),
+        properties: parcelProps(p, undefined, undefined, productionJsonById[p.id]),
       })),
     }),
-    [data, productivity, productionJsonById]
+    [data, productionJsonById]
   );
 
-  // Visibility filter shared by fill + outline + label, driven by the active
-  // coloring mode (availability categories vs productivity classes).
+  // Dekorasi per-view: kelas produktivitas dioper via feature-state (repaint
+  // saja). Diterapkan ulang saat source dibuat lagi (muat awal / ganti basemap
+  // — setStyle membuang feature-state).
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !data) return;
+    const apply = () => {
+      if (!map.getSource("bmp-parcel-area-source")) return false;
+      map.removeFeatureState({ source: "bmp-parcel-area-source" });
+      for (const p of data.parcels) {
+        map.setFeatureState(
+          { source: "bmp-parcel-area-source", id: p.id },
+          { productivityClass: productivity?.byParcel[p.id]?.cls ?? "NO_DATA" }
+        );
+      }
+      return true;
+    };
+    let applied = apply();
+    const onSourceData = () => {
+      if (!applied) applied = apply();
+    };
+    const onStyleData = () => {
+      // styledata juga terpancar oleh mutasi paint/filter (toggle checklist
+      // legenda, ganti mode warna) — state masih utuh di sana. Reapply O(N)
+      // hanya bila state benar-benar hilang (setStyle basemap): probe satu
+      // fitur (#229).
+      if (!map.getSource("bmp-parcel-area-source")) {
+        applied = false;
+        return;
+      }
+      const probe = data.parcels[0];
+      const st = probe
+        ? (map.getFeatureState({ source: "bmp-parcel-area-source", id: probe.id }) as
+            | { productivityClass?: string }
+            | undefined)
+        : undefined;
+      if (!st || st.productivityClass === undefined) applied = apply();
+    };
+    map.on("sourcedata", onSourceData);
+    map.on("styledata", onStyleData);
+    return () => {
+      map.off("sourcedata", onSourceData);
+      map.off("styledata", onStyleData);
+    };
+  }, [data, productivity]);
+
+  // Visibility filter untuk layer LABEL (source label kecil dan tetap membawa
+  // properti per-view). Layer fill/outline mode produktivitas memakai ekspresi
+  // opacity feature-state di bawah — filter MapLibre tidak bisa membaca
+  // feature-state.
   const categoryFilter = useMemo<FilterSpecification>(() => {
     if (colorMode === "PRODUCTIVITY") {
       const visible = BMP_PRODUCTIVITY_CLASSES.filter((c) => prodLayers[c.key]).map((c) => c.key);
@@ -284,9 +346,20 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
     return ["in", ["get", "category"], ["literal", visible]] as unknown as FilterSpecification;
   }, [layers, prodLayers, colorMode]);
 
-  const fillColorExpr = colorMode === "PRODUCTIVITY" ? PRODUCTIVITY_COLOR_EXPR : CATEGORY_COLOR_EXPR;
-  const fillOpacityExpr =
-    colorMode === "PRODUCTIVITY" ? PRODUCTIVITY_FILL_OPACITY_EXPR : CATEGORY_FILL_OPACITY_EXPR;
+  // Mode produktivitas: kelas tersembunyi (checklist legenda) → opacity 0;
+  // NO_DATA tetap outline-only.
+  const prodFillOpacityExpr = useMemo<ExpressionSpecification>(() => {
+    const visible = BMP_PRODUCTIVITY_CLASSES.filter((c) => prodLayers[c.key] && c.key !== "NO_DATA").map((c) => c.key);
+    return ["case", ["in", PROD_STATE_CLS, ["literal", visible]], 0.4, 0] as unknown as ExpressionSpecification;
+  }, [prodLayers]);
+  const prodLineOpacityExpr = useMemo<ExpressionSpecification>(() => {
+    const visible = BMP_PRODUCTIVITY_CLASSES.filter((c) => prodLayers[c.key]).map((c) => c.key);
+    return ["case", ["in", PROD_STATE_CLS, ["literal", visible]], 1, 0] as unknown as ExpressionSpecification;
+  }, [prodLayers]);
+
+  const isProductivity = colorMode === "PRODUCTIVITY";
+  const fillColorExpr = isProductivity ? PRODUCTIVITY_COLOR_EXPR : CATEGORY_COLOR_EXPR;
+  const fillOpacityExpr = isProductivity ? prodFillOpacityExpr : CATEGORY_FILL_OPACITY_EXPR;
 
   // Current zoom drives the "does the name fit inside the polygon" test.
   const [zoom, setZoom] = useState(9);
@@ -377,7 +450,15 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
           return;
         }
         const map = ref.getMap();
-        map.once("render", () => {
+        // Peta bisa di-remove sebelum event "render" datang (navigasi saat
+        // print) — timeout menjamin promise selesai agar tombol Cetak tidak
+        // macet "Menyiapkan…" dan closure map-nya lepas.
+        const timeout = setTimeout(() => {
+          map.off("render", onRender);
+          resolve(null);
+        }, 3000);
+        const onRender = () => {
+          clearTimeout(timeout);
           try {
             const canvas = map.getCanvas();
             resolve({
@@ -391,20 +472,43 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
             console.warn("Map capture failed:", err);
             resolve(null);
           }
-        });
+        };
+        map.once("render", onRender);
         map.triggerRepaint();
       });
     registerCapture(capture);
     return () => registerCapture(null);
   }, [registerCapture]);
 
+  // Mode produktivitas menyembunyikan kelas via opacity (bukan filter), jadi
+  // fitur transparan tetap ter-query — klik/hover harus MENEMBUS fitur
+  // tersembunyi ke fitur terlihat di bawahnya (review pasca-v0.21.0).
+  const firstVisibleParcel = (features: MapLayerMouseEvent["features"]) => {
+    for (const f of features ?? []) {
+      if (f.layer?.id !== "bmp-parcel-fill") continue;
+      const id = f.properties?.id as string | undefined;
+      const p = id ? parcelById[id] : undefined;
+      if (!p) continue;
+      const cls = productivity?.byParcel[p.id]?.cls ?? "NO_DATA";
+      if (isProductivity && !prodLayers[cls]) continue;
+      return p;
+    }
+    return undefined;
+  };
+
   const handleClick = (e: MapLayerMouseEvent) => {
-    const feature = e.features?.[0];
-    if (!feature || feature.layer?.id !== "bmp-parcel-fill") {
+    const p = firstVisibleParcel(e.features);
+    if (!p) {
       setSelected(null);
       return;
     }
-    setSelected({ longitude: e.lngLat.lng, latitude: e.lngLat.lat, props: feature.properties ?? {} });
+    // Props popup dirakit dari state React (bukan feature.properties) karena
+    // nilai produktivitas per-view tidak lagi tersimpan di source statis.
+    setSelected({
+      longitude: e.lngLat.lng,
+      latitude: e.lngLat.lat,
+      props: parcelProps(p, productivity?.byParcel[p.id], productivity?.view, productionJsonById[p.id]),
+    });
   };
 
   // Zoom the map to a parcel's extent and open its popup (from the data panel).
@@ -436,31 +540,37 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
         interactiveLayerIds={["bmp-parcel-fill"]}
         onLoad={(e) => {
           fitAll();
-          setZoom(e.target.getZoom());
+          setZoom(quantizeZoom(e.target.getZoom()));
         }}
-        onZoomEnd={(e) => setZoom(e.viewState.zoom)}
+        onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onClick={handleClick}
         onMouseMove={(e) => {
-          e.target.getCanvas().style.cursor = e.features?.length ? "pointer" : "";
+          e.target.getCanvas().style.cursor = firstVisibleParcel(e.features) ? "pointer" : "";
         }}
         onError={(e) => {
           console.warn("Map source error:", e.error?.message ?? e.error);
         }}
       >
         {/* Area lahan (polygon): outline as base + thematic fill per category
-            (NONE = outline only, no fill). No centroid points. */}
-        <Source id="bmp-parcel-area-source" type="geojson" data={parcelAreaGeojson}>
+            (NONE = outline only, no fill). No centroid points. promoteId
+            menjadikan properti id sebagai feature id untuk setFeatureState;
+            mode produktivitas menyembunyikan kelas via opacity (bukan filter). */}
+        <Source id="bmp-parcel-area-source" type="geojson" data={parcelAreaGeojson} promoteId="id">
           <Layer
             id="bmp-parcel-fill"
             type="fill"
-            filter={categoryFilter}
+            filter={isProductivity ? undefined : categoryFilter}
             paint={{ "fill-color": fillColorExpr, "fill-opacity": fillOpacityExpr }}
           />
           <Layer
             id="bmp-parcel-outline"
             type="line"
-            filter={categoryFilter}
-            paint={{ "line-color": fillColorExpr, "line-width": 1.5 }}
+            filter={isProductivity ? undefined : categoryFilter}
+            paint={{
+              "line-color": fillColorExpr,
+              "line-width": 1.5,
+              "line-opacity": isProductivity ? prodLineOpacityExpr : 1,
+            }}
           />
         </Source>
 
@@ -487,7 +597,7 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
 
         {selected && (
           <Popup
-            key={String(selected.props.id ?? `${selected.longitude},${selected.latitude}`)}
+            key={popupKey}
             longitude={selected.longitude}
             latitude={selected.latitude}
             anchor="bottom"

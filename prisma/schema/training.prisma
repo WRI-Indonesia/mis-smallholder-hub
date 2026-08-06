@@ -24,6 +24,9 @@ model TrainingActivity {
   farmerGroup   FarmerGroup     @relation(fields: [farmerGroupId], references: [id])
   location      String?         @map("location")
   trainingDate  DateTime        @map("training_date")
+  // Catatan bebas: label modul Paket 1 ("Modul BMP"/"Modul PNC & NKT"),
+  // sesi multi-hari ("Sesi 3 hari: 11-13 November 2023"), dsb.
+  notes         String?         @map("notes")
   evidenceKey   String?         @map("evidence_key")
   evidenceName  String?         @map("evidence_name")
   

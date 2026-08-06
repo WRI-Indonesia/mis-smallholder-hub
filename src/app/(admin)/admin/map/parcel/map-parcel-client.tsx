@@ -8,6 +8,7 @@ import {
   getFarmerGroupsForMap,
   getMapData,
 } from "@/server/actions/map";
+import { expandMapData } from "@/lib/map-data";
 import type {
   MapData,
   MapSelectOption,
@@ -52,9 +53,11 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
 
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [filterOpen, setFilterOpen] = useState(true);
+  // parcelPoints default mati (#223): ribuan titik jarang dipakai dan berat;
+  // layer point dibangun lazy di MapCanvas saat dicentang.
   const [layers, setLayers] = useState<LayerVisibility>({
     kt: true,
-    parcelPoints: true,
+    parcelPoints: false,
     parcelAreas: true,
   });
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAY_STATE);
@@ -119,7 +122,10 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
   useEffect(() => {
     if (!hotspot.visible) return;
     let active = true;
-    fetchHotspots(RIAU_BBOX, hotspot.dayRange, Date.now())
+    // Abort membatalkan request yang masih jalan saat toggle-off/ganti rentang —
+    // stale-guard `active` tetap dipakai untuk mencegah setState basi.
+    const controller = new AbortController();
+    fetchHotspots(RIAU_BBOX, hotspot.dayRange, Date.now(), controller.signal)
       .then((fc) => {
         if (!active) return;
         setHotspotData(fc);
@@ -131,6 +137,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
       .finally(() => active && setHotspotLoading(false));
     return () => {
       active = false;
+      controller.abort();
     };
   }, [hotspot.visible, hotspot.dayRange]);
 
@@ -161,7 +168,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
     if (!districtId) return;
     startTransition(async () => {
       const res = await getMapData({ provinceId, districtId, farmerGroupId });
-      if (res.success) setMapData(res.data ?? null);
+      if (res.success) setMapData(res.data ? expandMapData(res.data) : null);
     });
   };
 
@@ -176,7 +183,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
         toast.error(res.error);
         return;
       }
-      setMapData(res.data ?? null);
+      setMapData(res.data ? expandMapData(res.data) : null);
       setFilterOpen(false);
       const total =
         (res.data?.counts.kt ?? 0) + (res.data?.counts.parcelAreas ?? 0);
