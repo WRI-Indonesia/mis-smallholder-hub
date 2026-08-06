@@ -137,12 +137,15 @@ describe("kalender & agregasi Panel 2", () => {
   // terhadap data, bukan nilai pin yang basi begitu file bertambah baris.
   it("baris provisional hanya masuk bucket bila diberi tanggal 'hari ini'", () => {
     const releases = parseReleaseMetrics(realMd);
-    const provisionalDelta = releases[releases.length - 1].delta ?? 0;
+    const last = releases[releases.length - 1];
+    expect(last.isProvisional).toBe(true);
     const without = bucketRvsGains(releases, "month");
     const with2 = bucketRvsGains(releases, "month", "2026-08-05");
-    const aug = (bs: typeof with2) => bs.find((b) => b.key === "2026-08")?.total ?? 0;
-    expect(provisionalDelta).toBeGreaterThan(0);
-    expect(aug(with2) - aug(without)).toBe(provisionalDelta);
+    const aug = (bs: typeof with2) => bs.find((b) => b.key === "2026-08");
+    // Tepat pasca-rilis, baris siklus berjalan yang baru ber-delta 0 (bukan
+    // null) — assert INKLUSI via jumlah rilis di bucket, bukan delta > 0.
+    expect((aug(with2)?.releases ?? 0) - (aug(without)?.releases ?? 0)).toBe(last.delta == null ? 0 : 1);
+    expect((aug(with2)?.total ?? 0) - (aug(without)?.total ?? 0)).toBe(last.delta ?? 0);
   });
 
   it("total bucket bulanan = jumlah delta rilis di bulan itu (Juli 559, estimasi)", () => {
