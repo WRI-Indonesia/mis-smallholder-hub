@@ -9,6 +9,7 @@ export const trainingActivitySchema = z.object({
     return val;
   }, z.date({ message: "Tanggal pelatihan wajib diisi" })),
   location: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
   evidenceKey: z.string().nullable().optional(),
   evidenceName: z.string().nullable().optional(),
 });

@@ -50,6 +50,7 @@ interface TrainingActivity {
   };
   location: string | null;
   trainingDate: Date | string;
+  notes: string | null;
   evidenceName: string | null;
   evidenceUrl: string | null;
   participants: Participant[];
@@ -212,6 +213,12 @@ export function TrainingDetailClient({ activity, permissions }: Props) {
               Lokasi
             </p>
             <p className="text-sm font-medium mt-1">{activity.location ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Catatan
+            </p>
+            <p className="text-sm font-medium mt-1">{activity.notes ?? "—"}</p>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

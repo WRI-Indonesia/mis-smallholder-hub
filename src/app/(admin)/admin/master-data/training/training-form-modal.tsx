@@ -37,6 +37,7 @@ interface TrainingActivity {
   farmerGroupId: string;
   location: string | null;
   trainingDate: Date | string;
+  notes: string | null;
   evidenceKey?: string | null;
   evidenceName?: string | null;
 }
@@ -127,6 +128,7 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
       packageId: form.get("packageId") as string,
       farmerGroupId,
       location: (form.get("location") as string) || null,
+      notes: (form.get("notes") as string) || null,
       trainingDate,
     };
 
@@ -335,6 +337,17 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
               />
               {errors.location && <p className="text-sm text-destructive">{errors.location[0]}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Catatan</Label>
+            <Input
+              id="notes"
+              name="notes"
+              placeholder="Contoh: Sesi 3 hari: 11-13 November 2023"
+              defaultValue={activity?.notes ?? ""}
+            />
+            {errors.notes && <p className="text-sm text-destructive">{errors.notes[0]}</p>}
           </div>
 
           <div className="space-y-2">

@@ -32,6 +32,7 @@ export async function getTrainingActivities(search?: string, farmerGroupId?: str
       ? {
           OR: [
             { location: { contains: search, mode: "insensitive" as const } },
+            { notes: { contains: search, mode: "insensitive" as const } },
             { package: { name: { contains: search, mode: "insensitive" as const } } },
             { farmerGroup: { name: { contains: search, mode: "insensitive" as const } } },
           ],
@@ -49,6 +50,7 @@ export async function getTrainingActivities(search?: string, farmerGroupId?: str
       farmerGroupId: true,
       location: true,
       trainingDate: true,
+      notes: true,
       isActive: true,
       evidenceKey: true,
       evidenceName: true,

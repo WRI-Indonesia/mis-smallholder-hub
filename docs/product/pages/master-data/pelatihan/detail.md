@@ -12,7 +12,7 @@ Halaman: Detail Pelatihan (/admin/master-data/training/[id])
 │   └── Subjudul: nama paket
 ├── Kartu info
 │   ├── Lembaga Petani, Distrik, Tanggal Pelatihan
-│   └── Lokasi, Total Peserta, Evidence (Notulen)
+│   └── Lokasi, Catatan, Total Peserta, Evidence (Notulen)
 ├── Toolbar
 │   ├── Tombol: Tambah Peserta
 │   └── Tombol: Hapus Terpilih (n)
@@ -39,7 +39,7 @@ Halaman: Detail Pelatihan (/admin/master-data/training/[id])
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Detail Pelatihan` | Heading | Tombol kembali + subjudul nama paket |
-| Kartu info | Kartu | `Lembaga Petani`, `Distrik`, `Tanggal Pelatihan`, `Lokasi`, `Total Peserta`, `Evidence (Notulen)` (link PDF presigned atau `—`) |
+| Kartu info | Kartu | `Lembaga Petani`, `Distrik`, `Tanggal Pelatihan`, `Lokasi`, `Catatan`, `Total Peserta`, `Evidence (Notulen)` (link PDF presigned atau `—`) |
 | `Peserta Pelatihan` | Heading | Judul seksi |
 | Tombol `Tambah Peserta` | Tombol | EDIT — buka `AddParticipantsModal` |
 | Tombol `Hapus Terpilih (n)` | Tombol | EDIT — muncul bila ada baris tercentang; `removeParticipants` (konfirmasi `confirm`) |

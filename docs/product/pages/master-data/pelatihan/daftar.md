@@ -25,7 +25,7 @@ Halaman: Pelatihan (/admin/master-data/training)
 │   └── Tombol: Kolom
 ├── Tabel
 │   ├── Kolom: Paket Pelatihan, Lembaga Petani, Tanggal Pelatihan,
-│   │          Lokasi, Total Peserta, Status
+│   │          Lokasi, Catatan, Total Peserta, Status
 │   └── Aksi baris: Lihat, Edit, Nonaktifkan
 └── Dialog
     └── TrainingFormModal (Tambah / Edit Pelatihan)
@@ -51,7 +51,7 @@ Halaman: Pelatihan (/admin/master-data/training)
 | Filter Status | Select | SUPERADMIN saja |
 | Pencarian | Filter | `Cari lokasi, lembaga petani atau paket...` |
 | Tombol `Tambah Pelatihan` | Tombol | CREATE — buka `TrainingFormModal` |
-| Tabel daftar | Tabel | Kolom: `Paket Pelatihan` (label `TRAINING_CATEGORY_LABELS`), `Lembaga Petani`, `Tanggal Pelatihan`, `Lokasi`, `Total Peserta` (orang), `Status` (SUPERADMIN) |
+| Tabel daftar | Tabel | Kolom: `Paket Pelatihan` (label `TRAINING_CATEGORY_LABELS`), `Lembaga Petani`, `Tanggal Pelatihan`, `Lokasi`, `Catatan`, `Total Peserta` (orang), `Status` (SUPERADMIN) |
 | Aksi baris | Tombol | Lihat → `/admin/master-data/training/{id}`; Edit → modal; Nonaktifkan → `toggleTrainingActivityActive` |
 | Ekspor | Tombol | `data-training-activities` |
 
@@ -67,4 +67,5 @@ Judul `Tambah Pelatihan` / `Edit Pelatihan`; aksi `createTrainingActivity` / `up
 | `Lembaga Petani` | combobox (`Pilih Lembaga Petani`; wajib — error `Kelompok tani wajib dipilih`) |
 | `Tanggal Pelatihan` | date picker (Calendar, locale `id`) |
 | `Lokasi` | text (`Contoh: Balai Desa`) |
+| `Catatan` | text (`Contoh: Sesi 3 hari: 11-13 November 2023`; juga label modul Paket 1 `Modul BMP`/`Modul PNC & NKT`) |
 | `Evidence (Notulen PDF, maks 10MB)` | file — validasi klien: hanya `application/pdf`, maks 10 MB |
