@@ -221,7 +221,7 @@ export function RvsPeriodBars({
         </span>
         {(granularity === "month" || granularity === "year") && (
           <span className="rounded bg-muted px-2 py-0.5">
-            Rentang data belum genap satu {granularity === "month" ? "bulan" : "tahun"} penuh — perbandingan antar periode tidak setara.
+            {granularity === "month" ? "Bulan" : "Tahun"} di tepi rentang data bisa belum genap — bandingkan antar periode dengan hati-hati.
           </span>
         )}
       </div>

@@ -18,7 +18,10 @@ import type {
 /** Sejak versi ini angka DIUKUR saat rilis; sebelumnya rekonstruksi ± (spec §2.3–2.4). */
 export const MEASURED_FROM_VERSION = "v0.21.0";
 
-const num = (s: string): number => Number.parseFloat(s.replace(/\./g, "").replace(",", "."));
+// Titik hanya dibuang bila benar pemisah ribuan (diikuti tepat 3 digit) —
+// typo desimal-titik ("2.67") tidak boleh terbaca 267 (#229).
+const num = (s: string): number =>
+  Number.parseFloat(s.replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", "."));
 
 /** "±440" / "748" / "—" → number|null (marker ± dibuang; dicatat terpisah). */
 function cellNumber(raw: string): number | null {
@@ -54,14 +57,26 @@ export function parseReleaseMetrics(markdown: string): ReleaseMetric[] {
     .filter((l) => l.startsWith("|") && !/^\|[\s\-|]+\|$/.test(l))
     .map((l) => l.slice(1, -1).split("|").map((c) => c.trim()))
     // Baris data: kolom pertama versi vX.Y.Z atau baris siklus berjalan.
-    .filter((c) => c.length === 7 && (/v\d+\.\d+\.\d+/.test(c[0]) || /berjalan/i.test(c[0])));
+    .filter((c) => /v\d+\.\d+\.\d+/.test(c[0]) || /berjalan/i.test(c[0]));
 
   if (rows.length === 0) {
     throw new Error("metrics.md: tabel Metrik per Rilis tidak ditemukan / format kolom berubah");
   }
 
+  // Jumlah kolom salah harus GAGAL KERAS, bukan baris hilang diam-diam —
+  // sel Catatan yang mengandung "|" memecah baris jadi >7 kolom (#229).
+  for (const c of rows) {
+    if (c.length !== 7) {
+      throw new Error(
+        `metrics.md ${c[0]}: baris rilis harus 7 kolom, dapat ${c.length} — ada "|" di sel Catatan?`
+      );
+    }
+  }
+
+  const statedDeltas: (number | null)[] = [];
   const releases = rows.map((c): ReleaseMetric => {
-    const [rilis, tanggal, roadmap, kpi, rvsRaw, , catatan] = c;
+    const [rilis, tanggal, roadmap, kpi, rvsRaw, deltaRaw, catatan] = c;
+    statedDeltas.push(cellNumber(deltaRaw));
     const isProvisional = /berjalan/i.test(rilis);
     const version = isProvisional ? "berjalan" : (rilis.match(/v\d+\.\d+\.\d+/) as RegExpMatchArray)[0];
 
@@ -103,13 +118,24 @@ export function parseReleaseMetrics(markdown: string): ReleaseMetric[] {
   });
 
   // Turunan delta + validasi invarian (§7).
+  const seen = new Set<string>();
   for (let i = 0; i < releases.length; i++) {
     const cur = releases[i];
     const prev = i > 0 ? releases[i - 1] : null;
+    if (seen.has(cur.version)) {
+      throw new Error(`metrics.md: versi ${cur.version} tercatat dua kali`);
+    }
+    seen.add(cur.version);
     if (prev) {
       cur.delta = cur.rvs - prev.rvs;
       if (cur.rvs < prev.rvs) {
         throw new Error(`metrics.md ${cur.version}: RVS turun (${prev.rvs} → ${cur.rvs}) — kumulatif tidak boleh turun`);
+      }
+      const stated = statedDeltas[i];
+      if (stated != null && Math.abs(stated - cur.delta) > 0.001) {
+        throw new Error(
+          `metrics.md ${cur.version}: kolom Δ (+${stated}) tidak cocok dengan selisih RVS (${prev.rvs} → ${cur.rvs} = +${cur.delta})`
+        );
       }
       if (cur.roadmapPct < prev.roadmapPct && cur.notes.trim() === "") {
         throw new Error(`metrics.md ${cur.version}: roadmap % turun tanpa catatan penjelas`);

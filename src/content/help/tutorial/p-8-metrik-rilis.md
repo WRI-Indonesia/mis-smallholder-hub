@@ -22,7 +22,7 @@ Halaman ini memantau pengembangan **aplikasinya sendiri**, bukan data petani. Ti
 3. Lihat **Kurva RVS** untuk laju keseluruhan. Jarak antar titik mengikuti kalender sungguhan, jadi celah horizontal = hari tanpa rilis.
 + Titik berongga dengan garis putus-putus = estimasi; garis penuh dengan titik pejal = terukur (sejak anotasi "mulai diukur"). Titik terakhir adalah siklus berjalan — angkanya masih bisa berubah sampai dirilis.
 4. Pakai **Perolehan RVS per periode** untuk melihat ritme kerja: toggle Hari/Minggu/Bulan/Tahun, batang dipecah hari kerja vs Sabtu vs Minggu.
-+ Perolehan dicatat pada tanggal rilis — pekerjaan sebenarnya berlangsung di hari-hari sebelumnya. Pada mode Bulan/Tahun muncul peringatan bila rentang datanya belum genap, supaya perbandingannya tidak menyesatkan.
++ Perolehan dicatat pada tanggal rilis — pekerjaan sebenarnya berlangsung di hari-hari sebelumnya. Pada mode Bulan/Tahun ada pengingat bahwa periode di tepi rentang data bisa belum genap, supaya perbandingannya tidak menyesatkan.
 5. Dua grafik kecil menjawab dua pertanyaan berbeda: **Progres roadmap** (jarak ke go-live — naiknya bertangga per fase selesai; datar ≠ berhenti, biasanya berarti kerja kualitas) dan **Jumlah test** (pertumbuhan pengaman regresi).
 6. Panel kualitas dan **Daftar rilis** di bawah adalah rinciannya — versi, tanggal, Δ RVS, catatan, dan nomor issue GitHub-nya.
 

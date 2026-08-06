@@ -178,6 +178,11 @@ export function MetricsDashboardClient({
   const tdPrev = tdSeries.length > 1 ? tdSeries[tdSeries.length - 2] : null;
   const tdDir = td != null && tdPrev != null ? Math.sign(td - tdPrev) : 0;
 
+  // Tanda delta dihitung, bukan prefix hardcode — nilai negatif jangan
+  // dirender "+-2,0" (#229). Formatter sudah membawa "-" untuk nilai negatif.
+  const plus = (n: number) => (n < 0 ? "" : "+");
+  const roadmapDiff = last.roadmapPct - first.roadmapPct;
+
   const kpis = [
     {
       icon: Activity,
@@ -191,14 +196,17 @@ export function MetricsDashboardClient({
       label: "Roadmap",
       target: "roadmap" as const,
       value: fmtPct1(last.roadmapPct),
-      sub: `+${fmt1(last.roadmapPct - first.roadmapPct)} pt sejak ${first.version}`,
+      sub: `${plus(roadmapDiff)}${fmt1(roadmapDiff)} pt sejak ${first.version}`,
     },
     {
       icon: BookOpenCheck,
       label: "Test",
       target: "test" as const,
       value: lastTest != null ? fmtInt(lastTest) : "—",
-      sub: firstTest != null && lastTest != null ? `+${fmtInt(((lastTest - firstTest) / firstTest) * 100)}% dari ≈${fmtInt(firstTest)}` : "—",
+      sub:
+        firstTest != null && firstTest > 0 && lastTest != null
+          ? `${plus(lastTest - firstTest)}${fmtInt(((lastTest - firstTest) / firstTest) * 100)}% dari ≈${fmtInt(firstTest)}`
+          : "—",
     },
     {
       icon: Bug,
@@ -215,7 +223,7 @@ export function MetricsDashboardClient({
         <div>
           <h1 className="text-xl font-medium">Metrik rilis</h1>
           <p className="text-sm text-muted-foreground">
-            {first.releasedAt ? fmtDate(first.releasedAt) : ""} – {lastReleased.releasedAt ? fmtDate(lastReleased.releasedAt) : ""} · {fmtInt(released.length)} rilis + siklus berjalan
+            {first.releasedAt ? fmtDate(first.releasedAt) : ""} – {lastReleased?.releasedAt ? fmtDate(lastReleased.releasedAt) : ""} · {fmtInt(released.length)} rilis + siklus berjalan
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -280,7 +288,7 @@ export function MetricsDashboardClient({
               {bugOpen ? <AlertTriangle className="h-3.5 w-3.5 text-amber-600" aria-hidden /> : <Bug className="h-3.5 w-3.5" aria-hidden />} Bug register
             </p>
             <p className="mt-1 text-[28px] font-medium tabular-nums">{bugOpen != null ? fmtInt(bugOpen) : "—"}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{bugOpen ? "terbuka — perlu perhatian" : "sejak v0.17.0 (7/7 selesai)"}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{bugOpen ? "terbuka — perlu perhatian" : "tidak ada bug terbuka"}</p>
           </CardContent>
         </Card>
         <Card
@@ -339,7 +347,8 @@ export function MetricsDashboardClient({
             {payloadFirst != null && payloadLast != null ? (
               <>
                 <p className="mt-1 text-[28px] font-medium tabular-nums">
-                  −{fmt1((1 - payloadLast / payloadFirst) * 100)}%
+                  {payloadLast <= payloadFirst ? "−" : "+"}
+                  {fmt1(Math.abs((1 - payloadLast / payloadFirst) * 100))}%
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
                   {fmt2(payloadFirst)} → {fmt2(payloadLast)} MB · dua titik terukur, belum tren

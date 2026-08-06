@@ -241,13 +241,21 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
     return json;
   }, [data]);
 
+  // Lookup id→persil untuk hover/klik/refresh popup — `find` linear per fitur
+  // ter-hover membebani onMouseMove di grup besar (#229). (Plain object:
+  // `Map` di file ini ter-shadow komponen react-map-gl.)
+  const parcelById = useMemo(
+    () => Object.fromEntries((data?.parcels ?? []).map((p) => [p.id, p])),
+    [data]
+  );
+
   // Refresh (not just close) an open popup when the productivity view changes,
   // so its badge/values never contradict the polygon colors underneath.
   const [prevProductivity, setPrevProductivity] = useState(productivity);
   if (prevProductivity !== productivity) {
     setPrevProductivity(productivity);
     if (selected) {
-      const p = data?.parcels.find((x) => x.id === selected.props.id);
+      const p = parcelById[selected.props.id as string];
       setSelected(
         p
           ? {
@@ -301,7 +309,21 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
       if (!applied) applied = apply();
     };
     const onStyleData = () => {
-      applied = apply();
+      // styledata juga terpancar oleh mutasi paint/filter (toggle checklist
+      // legenda, ganti mode warna) — state masih utuh di sana. Reapply O(N)
+      // hanya bila state benar-benar hilang (setStyle basemap): probe satu
+      // fitur (#229).
+      if (!map.getSource("bmp-parcel-area-source")) {
+        applied = false;
+        return;
+      }
+      const probe = data.parcels[0];
+      const st = probe
+        ? (map.getFeatureState({ source: "bmp-parcel-area-source", id: probe.id }) as
+            | { productivityClass?: string }
+            | undefined)
+        : undefined;
+      if (!st || st.productivityClass === undefined) applied = apply();
     };
     map.on("sourcedata", onSourceData);
     map.on("styledata", onStyleData);
@@ -465,7 +487,7 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
     for (const f of features ?? []) {
       if (f.layer?.id !== "bmp-parcel-fill") continue;
       const id = f.properties?.id as string | undefined;
-      const p = id ? data?.parcels.find((x) => x.id === id) : undefined;
+      const p = id ? parcelById[id] : undefined;
       if (!p) continue;
       const cls = productivity?.byParcel[p.id]?.cls ?? "NO_DATA";
       if (isProductivity && !prodLayers[cls]) continue;

@@ -7,9 +7,11 @@ import { TimeWindowButtons } from "./time-window";
 
 /**
  * Panel 3 & 4 (spec §4.4–§4.5). Roadmap: STEPPED line (naik diskret — tanpa
- * kurva halus), Y 68–90 (rentang 0–100 membuat plateau tak terbaca), shading +
- * label plateau. Test: line, Y mulai 400, anotasi lonjakan terbesar; warnanya
- * sama dengan seri RVS (sama-sama metrik "pertumbuhan").
+ * kurva halus), domain Y dinamis mengikuti data ±margin, clamp 0–100 (rentang
+ * penuh 0–100 membuat plateau tak terbaca; hardcode jebol saat roadmap
+ * mendekati go-live 100% — #229), shading + label plateau. Test: line, sumbu Y
+ * ikut data, anotasi lonjakan terbesar; warnanya sama dengan seri RVS
+ * (sama-sama metrik "pertumbuhan").
  */
 
 const H = 200;
@@ -51,7 +53,13 @@ export function RoadmapStepChart({
   const t0 = pts[0].t;
   const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
   const x = (t: number) => PAD.l + ((t - t0) / (t1 - t0)) * Math.max(0, w - PAD.l - 14);
-  const y = (v: number) => PAD.t + (1 - (v - 68) / (90 - 68)) * (H - PAD.t - PAD.b);
+  const vMin = Math.min(...pts.map((p) => p.v));
+  const vMax = Math.max(...pts.map((p) => p.v));
+  const domLo = Math.max(0, Math.floor((vMin - 2) / 5) * 5);
+  const domHi = Math.min(100, Math.max(domLo + 5, Math.ceil((vMax + 2) / 5) * 5));
+  const gridVals: number[] = [];
+  for (let v = domLo + 5; v <= domHi; v += 5) gridVals.push(v);
+  const y = (v: number) => PAD.t + (1 - (v - domLo) / (domHi - domLo)) * (H - PAD.t - PAD.b);
 
   // Plateau terakhir: sejak kapan nilai tidak berubah (spec: shading + label).
   let plateauStart = pts.length - 1;
@@ -72,7 +80,7 @@ export function RoadmapStepChart({
           aria-label={`Progres roadmap tertimbang dari ${fmt1(pts[0].v)}% menjadi ${fmt1(pts[pts.length - 1].v)}%, plateau ${fmtInt(plateauDays)} hari terakhir`}
         >
           <title>Roadmap % per tanggal rilis</title>
-          {[70, 75, 80, 85, 90].map((v) => (
+          {gridVals.map((v) => (
             <g key={v}>
               <line x1={PAD.l} x2={w} y1={y(v)} y2={y(v)} stroke={gridColor} strokeWidth={0.5} />
               <text x={PAD.l - 6} y={y(v) + 3} textAnchor="end" fontSize={10} fill="currentColor" opacity={0.6}>
@@ -172,13 +180,6 @@ export function TestCountChart({
   const pts: Pt[] = releases
     .filter((r) => r.testCount != null)
     .map((r) => ({ r, t: dayEpoch(effectiveDate(r, today)), v: r.testCount as number }));
-  const t0 = pts[0].t;
-  const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
-  const scale = windowDays == null ? 1 : Math.max(1, (t1 - t0) / windowDays);
-
-  const yMax = Math.ceil((Math.max(...pts.map((p) => p.v)) + 30) / 100) * 100;
-  const gridVals = Array.from({ length: Math.floor((yMax - 400) / 100) + 1 }, (_, i) => 400 + i * 100);
-  const y = (v: number) => PAD.t + (1 - (v - 400) / (yMax - 400)) * (H - PAD.t - PAD.b);
 
   useEffect(() => {
     const el = innerRef.current;
@@ -188,12 +189,31 @@ export function TestCountChart({
     setInnerW(el.clientWidth);
     return () => ro.disconnect();
   }, []);
-  const x = (t: number) => 12 + ((t - t0) / (t1 - t0)) * Math.max(0, innerW - 24);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollLeft = el.scrollWidth;
   }, [windowDays, innerW]);
+
+  // Parser sah meloloskan sel test "—" — garis/lonjakan butuh ≥2 titik (#229).
+  if (pts.length < 2) {
+    return (
+      <p className="flex items-center justify-center text-sm text-muted-foreground" style={{ height: H }}>
+        Belum cukup titik test terukur untuk menggambar tren.
+      </p>
+    );
+  }
+
+  const t0 = pts[0].t;
+  const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
+  const scale = windowDays == null ? 1 : Math.max(1, (t1 - t0) / windowDays);
+
+  const yMin = Math.max(0, Math.floor((Math.min(...pts.map((p) => p.v)) - 30) / 100) * 100);
+  const yMax = Math.ceil((Math.max(...pts.map((p) => p.v)) + 30) / 100) * 100;
+  const step = Math.max(1, Math.ceil((yMax - yMin) / 800)) * 100;
+  const gridVals = Array.from({ length: Math.floor((yMax - yMin) / step) + 1 }, (_, i) => yMin + i * step);
+  const y = (v: number) => PAD.t + (1 - (v - yMin) / (yMax - yMin)) * (H - PAD.t - PAD.b);
+  const x = (t: number) => 12 + ((t - t0) / (t1 - t0)) * Math.max(0, innerW - 24);
 
   // Anotasi lonjakan terbesar antar rilis (spec: v0.15.0, 519→640).
   let jumpIdx = 1;

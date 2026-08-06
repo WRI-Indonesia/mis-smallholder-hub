@@ -28,11 +28,11 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   ├── Toggle granularitas: Hari · Minggu (default) · Bulan · Tahun
 │   ├── 3 seri tetap: Senin–Jumat / Sabtu / Minggu + arsir 45°/135° (a11y)
 │   ├── Mode Hari dibatasi 90 periode terakhir (retensi)
-│   ├── Peringatan "rentang belum genap" di mode Bulan/Tahun
+│   ├── Peringatan periode tepi bisa belum genap di mode Bulan/Tahun
 │   ├── Baris statistik: jumlah periode · rata-rata · puncak
 │   └── Disclaimer atribusi: perolehan dicatat pada tanggal rilis
-├── Panel 3 — Progres roadmap (stepped line, Y 68–90, shading + label plateau)
-├── Panel 4 — Jumlah test (line, Y mulai 400, anotasi lonjakan terbesar; warna = seri RVS;
+├── Panel 3 — Progres roadmap (stepped line, domain Y dinamis ±margin clamp 0–100, shading + label plateau)
+├── Panel 4 — Jumlah test (line, sumbu Y mengikuti data, anotasi lonjakan terbesar; warna = seri RVS;
 │   slicer rentang sama dgn Kurva RVS — komponen bersama time-window.tsx)
 ├── Panel 5 — Kualitas (4 kartu)
 │   ├── Bug register (0 → normal; >0 → warna warning)
