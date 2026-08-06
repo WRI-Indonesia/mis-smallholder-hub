@@ -84,6 +84,28 @@ describe("parseReleaseMetrics — validasi invarian (§7)", () => {
     ]);
     expect(() => parseReleaseMetrics(md)).toThrow(/paling akhir/);
   });
+
+  it("baris rilis dengan '|' di sel Catatan (8 kolom) → error, bukan hilang diam-diam (#229)", () => {
+    const md = table([base, "| v0.10.0 | 2026-07-16 | 71,0% | — · — · 441 · — · — | 1010 | +10 | b | c |"]);
+    expect(() => parseReleaseMetrics(md)).toThrow(/7 kolom/);
+  });
+
+  it("versi duplikat → error (#229)", () => {
+    const md = table([base, "| v0.9.0 | 2026-07-16 | 71,0% | — · — · 441 · — · — | 1010 | +10 | b |"]);
+    expect(() => parseReleaseMetrics(md)).toThrow(/dua kali/);
+  });
+
+  it("kolom Δ tidak cocok dengan selisih RVS → error (#229)", () => {
+    const md = table([base, "| v0.10.0 | 2026-07-16 | 71,0% | — · — · 441 · — · — | 1010 | +99 | b |"]);
+    expect(() => parseReleaseMetrics(md)).toThrow(/tidak cocok/);
+  });
+
+  it("titik desimal tidak terbaca sebagai ribuan (2.67 ≠ 267); ribuan sejati tetap dibuang (#229)", () => {
+    const md = table(["| v0.9.0 | 2026-07-15 | 71,0% | 2.67 MB · — · 1.234 · — · — | 1000 | anchor | a |"]);
+    const [r] = parseReleaseMetrics(md);
+    expect(r.payloadMb).toBeCloseTo(2.67);
+    expect(r.testCount).toBe(1234);
+  });
 });
 
 describe("kalender & agregasi Panel 2", () => {
