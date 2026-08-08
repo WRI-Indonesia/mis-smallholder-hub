@@ -36,6 +36,8 @@ interface PreviewGroup {
   group: TreeGroupInput;
   parcel: TreeUploadParcel | null;
   density: number | null;
+  /** parcelId dipakai >1 petani (parcelId hanya unik per petani) — tak bisa dicocokkan. */
+  ambiguous: boolean;
 }
 
 const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -52,12 +54,21 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
 
   const canCreate = permissions.includes("CREATE");
   const parcelByBusinessId = new Map(parcels.map((p) => [p.parcelId, p]));
+  // parcelId hanya unik per petani — id yang muncul >1 kali di scope ambigu.
+  const duplicateParcelIds = new Set(
+    [...parcels.reduce((m, p) => m.set(p.parcelId, (m.get(p.parcelId) ?? 0) + 1), new Map<string, number>())]
+      .filter(([, count]) => count > 1)
+      .map(([parcelId]) => parcelId),
+  );
 
-  const validPreviews = previews.filter((p) => p.parcel != null);
+  const validPreviews = previews.filter((p) => p.parcel != null && !p.ambiguous);
   const totalTrees = validPreviews.reduce((sum, p) => sum + p.group.rows.length, 0);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0];
+    // Kosongkan value agar memilih berkas yang sama memicu onChange lagi
+    // (mis. setelah Reset atau re-export dengan nama sama).
+    e.target.value = "";
     if (!selectedFile) return;
 
     if (!selectedFile.name.endsWith(".zip")) {
@@ -99,11 +110,13 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
         setSkipped(skippedRows);
         setPreviews(
           groups.map((group) => {
-            const parcel = parcelByBusinessId.get(group.parcelId) ?? null;
+            const ambiguous = duplicateParcelIds.has(group.parcelId);
+            const parcel = ambiguous ? null : (parcelByBusinessId.get(group.parcelId) ?? null);
             return {
               group,
               parcel,
               density: parcel ? treeDensity(group.rows.length, parcel.area) : null,
+              ambiguous,
             };
           }),
         );
@@ -144,6 +157,12 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
       } else {
         toast.error(res.success ? "Gagal menyimpan data" : res.error);
       }
+    } catch (err) {
+      // Payload terlalu besar / koneksi putus / sesi habis — jangan diam:
+      // tanpa toast, user tak tahu simpan gagal dan bisa upload dobel.
+      toast.error(
+        (err instanceof Error && err.message) || "Gagal menyimpan — periksa koneksi lalu coba lagi",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -245,7 +264,9 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
                       {p.density != null ? formatDecimal(p.density) : "—"}
                     </TableCell>
                     <TableCell>
-                      {p.parcel == null ? (
+                      {p.ambiguous ? (
+                        <Badge variant="destructive">ID Lahan ganda (lintas petani)</Badge>
+                      ) : p.parcel == null ? (
                         <Badge variant="destructive">Lahan tidak ditemukan</Badge>
                       ) : p.parcel.activeTreeCount > 0 ? (
                         <Badge variant="secondary">
@@ -264,9 +285,10 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
           {previews.some((p) => p.parcel == null) && (
             <p className="text-sm text-destructive flex items-start gap-2">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              Lahan dengan status &quot;tidak ditemukan&quot; dilewati saat menyimpan — pastikan ID
-              Lahan sudah terdaftar (dan aktif) di Master Data Lahan, atau ada dalam scope akses
-              Anda.
+              Lahan berstatus &quot;tidak ditemukan&quot; atau &quot;ID Lahan ganda&quot; dilewati
+              saat menyimpan — pastikan ID Lahan terdaftar (dan aktif) di Master Data Lahan dan
+              dalam scope akses Anda; ID yang dipakai lebih dari satu petani tidak bisa dicocokkan
+              otomatis.
             </p>
           )}
 

@@ -289,6 +289,15 @@ export async function updateLandParcel(input: UpdateLandParcelInput) {
     },
   });
 
+  // Tree menyimpan parcelId denormalisasi (#238) — ikutkan bila ID lahan
+  // diganti lewat form, agar jangkar bisnis titik pohon tidak basi.
+  if (data.parcelId !== existing.parcelId) {
+    await prisma.tree.updateMany({
+      where: { landParcelId: id },
+      data: { parcelId: data.parcelId, modifiedBy: session?.user?.id ?? null },
+    });
+  }
+
   return { success: true };
 }
 

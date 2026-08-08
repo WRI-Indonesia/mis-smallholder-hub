@@ -273,7 +273,9 @@ export function ParcelMapView({
         mapStyle={MAP_STYLES[styleKey]}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        interactiveLayerIds={["parcel-polygon"]}
+        // Layer polygon kini kondisional (jalur titik-pohon-saja) — jangan
+        // daftarkan layer yang tidak dirender, MapLibre error tiap mousemove.
+        interactiveLayerIds={parsedGeometry && hasValidCoordinates ? ["parcel-polygon"] : []}
       >
         {siblingFeatures.length > 0 && (
           <Source

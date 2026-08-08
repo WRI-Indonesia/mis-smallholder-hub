@@ -29,9 +29,6 @@ export interface SkippedTreeFeature {
   reason: string;
 }
 
-/** Sumber titik yang dikenal (README ekspor); nilai lain tetap disimpan apa adanya. */
-export const TREE_SOURCES = ["auto", "moved", "added", "verified"] as const;
-
 // DBF menandai NULL numerik dengan '*' berulang; string kosong/whitespace → null.
 function cleanString(v: unknown): string | null {
   if (v === null || v === undefined) return null;
@@ -129,18 +126,4 @@ export function groupTreeFeatures(features: TreeFeatureInput[]): {
 export function treeDensity(count: number, area: number | null | undefined): number | null {
   if (area == null || area <= 0) return null;
   return count / area;
-}
-
-/** Komposisi jumlah pohon per nilai `source` (untuk kartu statistik). */
-export function summarizeTreeSources(
-  sources: (string | null)[],
-): { source: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const s of sources) {
-    const key = s ?? "(tanpa sumber)";
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .map(([source, count]) => ({ source, count }))
-    .sort((a, b) => b.count - a.count);
 }

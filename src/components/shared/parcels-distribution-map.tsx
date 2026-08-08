@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import MapGL, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { LayerProps } from "react-map-gl/maplibre";
-import type { Feature, FeatureCollection, Geometry, Polygon, MultiPolygon } from "geojson";
+import type { Feature, FeatureCollection, Geometry, Point, Polygon, MultiPolygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target, User, Info } from "lucide-react";
 import { MAP_STYLES } from "@/app/(admin)/admin/master-data/parcels/components/parcel-map-view";
@@ -31,8 +31,12 @@ interface Props {
   /** Izin menu `master-data-parcels` — mengatur tombol popup Lihat Detail / Edit. */
   canViewParcel?: boolean;
   canEditParcel?: boolean;
-  /** Titik pohon sawit (#238) — lingkaran kuning non-interaktif di atas poligon. */
-  treePoints?: { longitude: number; latitude: number }[];
+  /**
+   * Titik pohon sawit (#238) — lingkaran kuning non-interaktif di atas poligon.
+   * `landParcelId` (row id lahan) dipakai memetakan titik ke Kelompok Tani
+   * agar ikut checklist legenda; tanpa itu titik dianggap tanpa-KT.
+   */
+  treePoints?: { longitude: number; latitude: number; landParcelId?: string }[];
 }
 
 /** Palet kategorikal per Kelompok Tani — berulang bila KT > 12; tanpa-KT = abu. */
@@ -207,18 +211,30 @@ export function ParcelsDistributionMap({
     [collection, hiddenKts]
   );
 
-  // Titik pohon sawit — FeatureCollection statis per props (#238).
-  const treeGeojson = useMemo<FeatureCollection | null>(() => {
-    if (!treePoints || treePoints.length === 0) return null;
-    return {
-      type: "FeatureCollection",
-      features: treePoints.map((t) => ({
-        type: "Feature" as const,
-        geometry: { type: "Point" as const, coordinates: [t.longitude, t.latitude] },
-        properties: {},
-      })),
-    };
-  }, [treePoints]);
+  // Titik pohon sawit (#238) — ber-ktKey agar ikut checklist legenda KT.
+  const treeFeatures = useMemo(() => {
+    if (!treePoints || treePoints.length === 0) return [];
+    const ktKeyByParcelId = new Map(
+      parcels.map((p) => {
+        const label = p.kelompokTani?.trim();
+        return [p.id, label ? label.toLowerCase() : NO_KT_KEY];
+      }),
+    );
+    return treePoints.map((t) => ({
+      type: "Feature" as const,
+      geometry: { type: "Point" as const, coordinates: [t.longitude, t.latitude] },
+      properties: {
+        ktKey: (t.landParcelId ? ktKeyByParcelId.get(t.landParcelId) : null) ?? NO_KT_KEY,
+      },
+    }));
+  }, [treePoints, parcels]);
+
+  // Titik pohon yang tampil mengikuti KT tercentang — jangan biarkan titik
+  // "mengambang" saat KT-nya disembunyikan dari legenda.
+  const visibleTreeGeojson = useMemo<FeatureCollection | null>(() => {
+    const features = treeFeatures.filter((f) => !hiddenKts.has(f.properties.ktKey));
+    return features.length > 0 ? { type: "FeatureCollection", features } : null;
+  }, [treeFeatures, hiddenKts]);
 
   // Label nama petani: hanya yang muat di poligon pada zoom sekarang (pola Peta Lahan).
   const labelGeojson = useMemo<FeatureCollection>(() => {
@@ -238,7 +254,26 @@ export function ParcelsDistributionMap({
     return { type: "FeatureCollection", features };
   }, [labelBase, hiddenKts, zoom]);
 
-  if (validCount === 0) {
+  // Bounds gabungan poligon + titik pohon — titik lahan tanpa poligon tetap
+  // terjangkau "Zoom ke semua" dan zoom awal.
+  const combinedBounds = useMemo<[[number, number], [number, number]] | null>(() => {
+    if (treeFeatures.length === 0) return bounds;
+    let [minLng, minLat, maxLng, maxLat] = bounds
+      ? [bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1]]
+      : [Infinity, Infinity, -Infinity, -Infinity];
+    for (const f of treeFeatures) {
+      const [lng, lat] = f.geometry.coordinates;
+      if (lng < minLng) minLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lng > maxLng) maxLng = lng;
+      if (lat > maxLat) maxLat = lat;
+    }
+    return [[minLng, minLat], [maxLng, maxLat]];
+  }, [bounds, treeFeatures]);
+
+  // Tetap render peta bila ada titik pohon meski tak ada poligon (paritas
+  // ParcelMapView) — jangan sembunyikan data pohon di balik empty state.
+  if (validCount === 0 && treeFeatures.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center bg-muted/30 border rounded-md text-muted-foreground text-sm p-4 text-center">
         Belum ada lahan ber-geometri (poligon) untuk Lembaga ini.
@@ -247,7 +282,7 @@ export function ParcelsDistributionMap({
   }
 
   const zoomToAll = () => {
-    if (bounds) mapRef.current?.fitBounds(bounds, { padding: 40, duration: 600 });
+    if (combinedBounds) mapRef.current?.fitBounds(combinedBounds, { padding: 40, duration: 600 });
   };
 
   const toggleKt = (key: string) => {
@@ -262,11 +297,15 @@ export function ParcelsDistributionMap({
   const showAll = () => setHiddenKts(new Set());
   const hideAll = () => setHiddenKts(new Set(legend.map((r) => r.key)));
 
-  // Zoom ke poligon KT yang sedang tercentang saja.
+  // Zoom ke poligon + titik pohon KT yang sedang tercentang saja.
   const zoomToVisible = () => {
     const positions: [number, number][] = [];
     for (const f of visibleCollection.features) {
       collectPositions((f.geometry as Polygon | MultiPolygon).coordinates, positions);
+    }
+    for (const f of visibleTreeGeojson?.features ?? []) {
+      const [lng, lat] = (f.geometry as Point).coordinates;
+      positions.push([lng, lat]);
     }
     if (positions.length === 0) return;
     let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
@@ -303,7 +342,7 @@ export function ParcelsDistributionMap({
     <div className="relative h-[768px] w-full rounded-md overflow-hidden border">
       <MapGL
         ref={mapRef}
-        initialViewState={bounds ? { bounds, fitBoundsOptions: { padding: 40 } } : { longitude: 101.8, latitude: 0.6, zoom: 9 }}
+        initialViewState={combinedBounds ? { bounds: combinedBounds, fitBoundsOptions: { padding: 40 } } : { longitude: 101.8, latitude: 0.6, zoom: 9 }}
         mapStyle={MAP_STYLES[styleKey]}
         interactiveLayerIds={["group-parcels-fill"]}
         onClick={onMapClick}
@@ -316,8 +355,8 @@ export function ParcelsDistributionMap({
           <Layer {...lineStyle} />
         </Source>
 
-        {treeGeojson && (
-          <Source type="geojson" data={treeGeojson}>
+        {visibleTreeGeojson && (
+          <Source type="geojson" data={visibleTreeGeojson}>
             <Layer
               id="group-parcels-trees"
               type="circle"
@@ -487,10 +526,10 @@ export function ParcelsDistributionMap({
         <span>
           {visibleCollection.features.length}/{validCount} lahan ditampilkan
         </span>
-        {treeGeojson && (
+        {treeFeatures.length > 0 && (
           <span className="flex items-center gap-1 border-l pl-1.5">
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#facc15] border border-[#854d0e]" />
-            {treeGeojson.features.length} titik pohon
+            {visibleTreeGeojson?.features.length ?? 0}/{treeFeatures.length} titik pohon
           </span>
         )}
       </div>

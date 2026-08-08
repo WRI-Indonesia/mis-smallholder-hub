@@ -4,53 +4,21 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerRelationAccessFilter } from "@/lib/access-context";
+import { parseShapefileZip } from "@/lib/shapefile-server";
 import { bulkCreateTreesSchema, type BulkCreateTreesInput } from "@/validations/tree.schema";
 import type { ActionResult } from "@/types/action-result";
-import type { Feature } from "geojson";
 
 /**
- * Urai ZIP shapefile titik pohon (#238). Pola sama dengan parseShapefile lahan
- * (bulk-upload-parcel.ts) — dipisah karena guard menunya berbeda.
+ * Urai ZIP shapefile titik pohon (#238) — mesin parse bersama dengan upload
+ * Lahan (`lib/shapefile-server.ts`, termasuk workaround proj4 CEA); dipisah
+ * sebagai action karena guard menunya berbeda.
  */
 export async function parseTreeShapefile(base64Data: string) {
   if (!(await hasPermission("bulk-upload-trees", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
-  // Polyfill self to avoid ReferenceError: self is not defined when running shpjs on the server
-  if (typeof self === "undefined") {
-    (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
-  }
-
-  try {
-    const shp = (await import("shpjs")).default;
-    const buffer = Buffer.from(base64Data, "base64");
-    const geojson = await shp(buffer);
-
-    const features: Feature[] = [];
-    if (Array.isArray(geojson)) {
-      for (const gc of geojson) {
-        if (gc.type === "FeatureCollection") {
-          features.push(...gc.features);
-        }
-      }
-    } else if (geojson && geojson.type === "FeatureCollection") {
-      features.push(...geojson.features);
-    }
-
-    return {
-      success: true,
-      features: features.map((f, index) => ({
-        index,
-        properties: f.properties || {},
-        geometry: f.geometry || null,
-      })),
-    };
-  } catch (error) {
-    console.error("Tree shapefile parsing error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || "Gagal mengurai file shapefile" };
-  }
+  return parseShapefileZip(base64Data);
 }
 
 export interface TreeUploadParcel {
@@ -60,12 +28,13 @@ export interface TreeUploadParcel {
   farmerName: string;
   /** Jumlah pohon aktif saat ini (0 = belum ada; >0 = upload akan jadi revisi). */
   activeTreeCount: number;
-  activeRevision: number | null;
 }
 
 /**
  * Lahan aktif dalam scope + jumlah pohon aktifnya — untuk mencocokkan
  * parcel_id file dengan lahan di database saat preview upload.
+ * Catatan: parcelId hanya unik PER PETANI — bila satu parcelId muncul lebih
+ * dari sekali di daftar ini, upload untuk id tsb ambigu dan harus ditolak.
  */
 export async function getTreeUploadParcels(): Promise<TreeUploadParcel[]> {
   if (!(await hasPermission("bulk-upload-trees", "VIEW"))) {
@@ -89,7 +58,6 @@ export async function getTreeUploadParcels(): Promise<TreeUploadParcel[]> {
     by: ["landParcelId"],
     where: { landParcelId: { in: parcels.map((p) => p.id) }, isActive: true },
     _count: { _all: true },
-    _max: { revision: true },
   });
   const byParcel = new Map(grouped.map((g) => [g.landParcelId, g]));
 
@@ -99,7 +67,6 @@ export async function getTreeUploadParcels(): Promise<TreeUploadParcel[]> {
     area: p.area,
     farmerName: p.farmer.name,
     activeTreeCount: byParcel.get(p.id)?._count._all ?? 0,
-    activeRevision: byParcel.get(p.id)?._max.revision ?? null,
   }));
 }
 
@@ -133,8 +100,22 @@ export async function bulkCreateTrees(
     where: { parcelId: { in: parcelIds }, isActive: true, ...farmerRelationAccessFilter(access) },
     select: { id: true, parcelId: true },
   });
-  const parcelByBusinessId = new Map(parcels.map((p) => [p.parcelId, p.id]));
 
+  // parcelId hanya unik per petani — id yang dipakai >1 petani tidak bisa
+  // dipetakan dengan aman, tolak eksplisit (jangan diam-diam pilih salah satu).
+  const rowsPerParcelId = new Map<string, number>();
+  for (const p of parcels) {
+    rowsPerParcelId.set(p.parcelId, (rowsPerParcelId.get(p.parcelId) ?? 0) + 1);
+  }
+  const ambiguous = parcelIds.filter((pid) => (rowsPerParcelId.get(pid) ?? 0) > 1);
+  if (ambiguous.length > 0) {
+    return {
+      success: false,
+      error: `ID Lahan terdaftar pada lebih dari satu petani (ambigu, tidak bisa dicocokkan otomatis): ${ambiguous.join(", ")}`,
+    };
+  }
+
+  const parcelByBusinessId = new Map(parcels.map((p) => [p.parcelId, p.id]));
   const missing = parcelIds.filter((pid) => !parcelByBusinessId.has(pid));
   if (missing.length > 0) {
     return {
@@ -144,47 +125,57 @@ export async function bulkCreateTrees(
   }
 
   const sourceFile = parsed.data.sourceFile ?? null;
-  let totalTrees = 0;
+  const totalTrees = parsed.data.groups.reduce((sum, g) => sum + g.rows.length, 0);
 
   try {
-    await prisma.$transaction(async (tx) => {
-      for (const group of parsed.data.groups) {
-        const landParcelId = parcelByBusinessId.get(group.parcelId)!;
+    // Batch tetap 3 query berapa pun jumlah lahan (groupBy → updateMany →
+    // createMany) agar transaksi tidak menabrak timeout pada ZIP multi-lahan
+    // besar; timeout dinaikkan mengikuti preseden role-permission.ts.
+    await prisma.$transaction(
+      async (tx) => {
+        const landParcelIds = parsed.data.groups.map(
+          (g) => parcelByBusinessId.get(g.parcelId)!,
+        );
 
-        // Nonaktifkan set aktif lama (bila ada) → set baru revision + 1.
-        const prev = await tx.tree.aggregate({
-          where: { landParcelId, isActive: true },
+        const prev = await tx.tree.groupBy({
+          by: ["landParcelId"],
+          where: { landParcelId: { in: landParcelIds }, isActive: true },
           _max: { revision: true },
         });
-        const revision = prev._max.revision != null ? prev._max.revision + 1 : 0;
+        const prevRevision = new Map(prev.map((p) => [p.landParcelId, p._max.revision]));
 
-        if (prev._max.revision != null) {
+        if (prev.length > 0) {
           await tx.tree.updateMany({
-            where: { landParcelId, isActive: true },
+            where: { landParcelId: { in: prev.map((p) => p.landParcelId) }, isActive: true },
             data: { isActive: false, modifiedBy: userId },
           });
         }
 
         await tx.tree.createMany({
-          data: group.rows.map((row) => ({
-            landParcelId,
-            parcelId: group.parcelId,
-            treeId: row.treeId,
-            sequenceNo: row.sequenceNo,
-            longitude: row.longitude,
-            latitude: row.latitude,
-            category: row.category,
-            vigor: row.vigor,
-            source: row.source,
-            modelVersion: row.modelVersion,
-            sourceFile,
-            revision,
-            createdBy: userId,
-          })),
+          data: parsed.data.groups.flatMap((group) => {
+            const landParcelId = parcelByBusinessId.get(group.parcelId)!;
+            const prevMax = prevRevision.get(landParcelId);
+            const revision = prevMax != null ? prevMax + 1 : 0;
+            return group.rows.map((row) => ({
+              landParcelId,
+              parcelId: group.parcelId,
+              treeId: row.treeId,
+              sequenceNo: row.sequenceNo,
+              longitude: row.longitude,
+              latitude: row.latitude,
+              category: row.category,
+              vigor: row.vigor,
+              source: row.source,
+              modelVersion: row.modelVersion,
+              sourceFile,
+              revision,
+              createdBy: userId,
+            }));
+          }),
         });
-        totalTrees += group.rows.length;
-      }
-    });
+      },
+      { timeout: 20_000 },
+    );
 
     return { success: true, data: { parcels: parsed.data.groups.length, trees: totalTrees } };
   } catch (error) {

@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Allow mobile LAN testing for HMR
   allowedDevOrigins: ['192.168.18.70'],
+  experimental: {
+    serverActions: {
+      // Default 1 MB terlalu kecil untuk jalur upload spasial: ZIP shapefile
+      // dikirim base64 (parseShapefile/parseTreeShapefile) dan payload pohon
+      // bisa puluhan ribu baris JSON (#238 — review temuan body-limit).
+      bodySizeLimit: "16mb",
+    },
+  },
   images: {
     remotePatterns: [
       {

@@ -5,75 +5,15 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { landParcelSchema, type LandParcelInput } from "@/validations/land-parcel.schema";
 import { getAccessContext } from "@/lib/access-context";
+import { parseShapefileZip } from "@/lib/shapefile-server";
 import type { ActionResult } from "@/types/action-result";
-import type { Feature } from "geojson";
 
 export async function parseShapefile(base64Data: string) {
   if (!(await hasPermission("bulk-upload-parcels", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
-  // Polyfill self to avoid ReferenceError: self is not defined when running shpjs on the server
-  if (typeof self === "undefined") {
-    (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
-  }
-
-  // Register cylindrical_equal_area alias to cea projection in proj4
-  try {
-    const proj4 = (await import("proj4")).default;
-    const cea = proj4.Proj.projections.get("cea");
-    if (cea) {
-      if (!cea.names.includes("cylindrical_equal_area")) {
-        cea.names.push("cylindrical_equal_area");
-        (proj4.Proj.projections as unknown as { add: (proj: unknown) => void }).add(cea);
-      }
-      // Override init to handle missing lat_ts (latitude of true scale) in WKT
-      if (!(cea as unknown as { _initOverridden?: boolean })._initOverridden) {
-        const originalInit = cea.init;
-        cea.init = function () {
-          const self = this as unknown as { lat_ts?: number; lat1?: number; lat0?: number };
-          if (self.lat_ts === undefined) {
-            self.lat_ts = self.lat1 ?? self.lat0 ?? 0;
-          }
-          originalInit.apply(this);
-        };
-        (cea as unknown as { _initOverridden?: boolean })._initOverridden = true;
-      }
-    }
-  } catch (projError) {
-    console.error("Failed to register proj4 alias:", projError);
-  }
-
-  try {
-    const shp = (await import("shpjs")).default;
-    const buffer = Buffer.from(base64Data, "base64");
-    // shpjs can parse a zip buffer containing shapefiles directly
-    const geojson = await shp(buffer);
-
-    const features: Feature[] = [];
-    if (Array.isArray(geojson)) {
-      for (const gc of geojson) {
-        if (gc.type === "FeatureCollection") {
-          features.push(...gc.features);
-        }
-      }
-    } else if (geojson && geojson.type === "FeatureCollection") {
-      features.push(...geojson.features);
-    }
-
-    return {
-      success: true,
-      features: features.map((f, index) => ({
-        index,
-        properties: f.properties || {},
-        geometry: f.geometry || null,
-      })),
-    };
-  } catch (error) {
-    console.error("Shapefile parsing error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || "Gagal mengurai file shapefile" };
-  }
+  return parseShapefileZip(base64Data);
 }
 
 export async function getFarmersForMapping() {

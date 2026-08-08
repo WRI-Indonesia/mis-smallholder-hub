@@ -46,4 +46,5 @@ Halaman: Pohon Sawit (/admin/bulk-upload/trees)
 - **Revisi per-set** — upload ulang untuk lahan yang sama menonaktifkan **seluruh** set titik lama lahan tsb (`isActive = false`) dan menyisipkan set baru dengan `revision + 1`. Tidak ada penggabungan per titik.
 - **Repoint saat lahan direvisi** — revisi lahan via bulk upload membuat baris lahan ber-`id` baru; seluruh titik pohon (semua revisi) ikut dipindahkan ke `landParcelId` baru (pola sama dengan `productionRecord`, lihat `bulkCreateLandParcels`).
 - **Normalisasi DBF** — nilai NULL numerik DBF (`********`) dan string kosong → `null`; koordinat diambil dari geometri Point, fallback atribut `lon`/`lat`; titik di luar rentang WGS84 dilewati dengan alasan.
-- Hasil tampil di **Detail Lahan** (seksi Pohon Sawit: kartu jumlah/kerapatan/sumber/vigor + peta titik kuning di atas poligon) dan **Detail Petani** (tab Pohon: rekap per lahan).
+- Hasil tampil di **Detail Lahan** (kartu ringkasan Pohon Sawit — jumlah + kerapatan; titik kuning langsung di peta Informasi Lahan; kolom Jumlah Pohon di tabel Lahan Lain Milik Petani) dan **Detail Petani** tab Lahan (kolom Jumlah Pohon di tabel Daftar Lahan + titik kuning di peta Sebaran Lahan).
+- `Panduan` — `HelpHint` di header menuju tutorial Bantuan `unggah-pohon` untuk `bulk-upload-trees` (`findTutorialForMenu`), dibuka di tab baru.

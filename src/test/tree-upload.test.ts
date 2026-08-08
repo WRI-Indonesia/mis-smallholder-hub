@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  groupTreeFeatures,
-  treeDensity,
-  summarizeTreeSources,
-  type TreeFeatureInput,
-} from "@/lib/tree-upload";
+import { groupTreeFeatures, treeDensity, type TreeFeatureInput } from "@/lib/tree-upload";
 import { treeGroupSchema, bulkCreateTreesSchema } from "@/validations/tree.schema";
 
 /** Fitur point valid ala hasil parse shpjs atas ekspor pohon (#238). */
@@ -128,16 +123,6 @@ describe("treeDensity — kerapatan tanam (pohon/ha)", () => {
   });
 });
 
-describe("summarizeTreeSources — komposisi sumber titik", () => {
-  it("menghitung per nilai, urut terbanyak dulu; null diberi label", () => {
-    expect(summarizeTreeSources(["auto", "moved", "auto", null, "auto"])).toEqual([
-      { source: "auto", count: 3 },
-      { source: "moved", count: 1 },
-      { source: "(tanpa sumber)", count: 1 },
-    ]);
-  });
-});
-
 describe("skema Zod bulk upload pohon", () => {
   const validRow = {
     treeId: 1,
@@ -172,6 +157,26 @@ describe("skema Zod bulk upload pohon", () => {
 
   it("tanpa grup sama sekali → ditolak", () => {
     expect(bulkCreateTreesSchema.safeParse({ groups: [] }).success).toBe(false);
+  });
+});
+
+describe("parcel_id ambigu lintas petani — deteksi duplikat (mirror bulkCreateTrees & preview client)", () => {
+  // Mirror: parcelId hanya unik PER PETANI; id yang resolve ke >1 baris lahan
+  // aktif harus ditolak, bukan diam-diam memilih salah satu.
+  function ambiguousIds(activeParcels: { parcelId: string }[], requested: string[]): string[] {
+    const counts = new Map<string, number>();
+    for (const p of activeParcels) counts.set(p.parcelId, (counts.get(p.parcelId) ?? 0) + 1);
+    return requested.filter((pid) => (counts.get(pid) ?? 0) > 1);
+  }
+
+  it("parcelId dipakai dua petani → terdeteksi ambigu", () => {
+    const parcels = [{ parcelId: "A.01" }, { parcelId: "A.01" }, { parcelId: "B.02" }];
+    expect(ambiguousIds(parcels, ["A.01", "B.02"])).toEqual(["A.01"]);
+  });
+
+  it("parcelId unik → tidak ada yang ambigu", () => {
+    const parcels = [{ parcelId: "A.01" }, { parcelId: "B.02" }];
+    expect(ambiguousIds(parcels, ["A.01", "B.02"])).toEqual([]);
   });
 });
 

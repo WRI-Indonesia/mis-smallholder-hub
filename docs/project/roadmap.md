@@ -218,7 +218,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 <details>
 <summary><strong>MD-04</strong> · ✅ Done — Parcels</summary>
 
-- **Evidence:** `LandParcel` model ✅, `src/server/actions/land-parcel.ts` (165 LOC) ✅, `src/server/actions/bulk-upload-parcel.ts` (222 LOC) ✅, validation schema ✅, UI list/detail/form ✅, ZIP Shapefile bulk upload dengan column mapping ✅, 14 unit tests ✅. **Data Pohon Sawit (#238, 2026-08-08):** model `Tree` (`tbl_tree`) ✅, bulk upload ZIP shapefile point (`bulk-upload-tree.ts` + helper murni `lib/tree-upload.ts`) ✅, seksi Pohon Sawit di detail lahan + tab Pohon di detail petani ✅, revisi per-set + repoint saat lahan berevisi ✅.
+- **Evidence:** `LandParcel` model ✅, `src/server/actions/land-parcel.ts` (165 LOC) ✅, `src/server/actions/bulk-upload-parcel.ts` (222 LOC) ✅, validation schema ✅, UI list/detail/form ✅, ZIP Shapefile bulk upload dengan column mapping ✅, 14 unit tests ✅. **Data Pohon Sawit (#238, 2026-08-08):** model `Tree` (`tbl_tree`) ✅, bulk upload ZIP shapefile point (`bulk-upload-tree.ts` + helper murni `lib/tree-upload.ts`) ✅, detail lahan: kartu Pohon Sawit + titik di peta Informasi Lahan; detail petani (tab Lahan): kolom Jumlah Pohon + titik di peta Sebaran Lahan ✅, revisi per-set + repoint saat lahan berevisi ✅.
 - **Next step:** Maintain; expand to Production dependency. Fase 2 pohon: layer titik di Peta Lahan.
 
 </details>

@@ -13,7 +13,7 @@ goal: Titik pohon per lahan masuk ke sistem sehingga jumlah pohon dan kerapatan 
 
 Data pohon berasal dari hasil deteksi model (citra satelit/drone) yang sudah dikoreksi manusia, diekspor sebagai **shapefile titik (point)** — satu titik satu pohon.
 
-+ Kolom `source` pada data menjelaskan asal tiap titik: `auto` = draf model, `moved` = digeser manusia, `added` = ditambah manusia, `verified` = diperiksa manusia. Sistem menyimpannya apa adanya dan menampilkannya sebagai komposisi di detail lahan.
++ Kolom `source` pada data menjelaskan asal tiap titik: `auto` = draf model, `moved` = digeser manusia, `added` = ditambah manusia, `verified` = diperiksa manusia. Sistem menyimpannya apa adanya sebagai atribut tiap titik.
 
 Siapkan **satu berkas ZIP** berisi shapefile lengkap: `.shp`, `.dbf`, `.shx`, dan `.prj` (WGS84).
 
@@ -44,5 +44,7 @@ Buka **Master Data → Lahan → detail lahan** yang bersangkutan: kartu **Pohon
 **ZIP ditolak atau terbaca kosong** — pastikan `.shp`, `.dbf`, `.shx`, `.prj` berada langsung di dalam ZIP, dan layer-nya bertipe **Point** (bukan poligon).
 
 **Semua lahan berstatus "tidak ditemukan"** — isi kolom `parcel_id` tidak persis sama dengan ID Lahan di Master Data (perhatikan titik dan huruf besar-kecil), atau lahannya di luar wilayah akses akun Anda.
+
+**Status "ID Lahan ganda (lintas petani)"** — ID Lahan itu terdaftar pada lebih dari satu petani, sehingga sistem tidak bisa menentukan lahan mana yang dimaksud. Rapikan dulu ID Lahan yang kembar di Master Data Lahan, baru unggah ulang.
 
 **Titik dilewati karena koordinat tidak valid** — shapefile tidak dalam WGS84 (EPSG:4326). Ekspor ulang dari perangkat lunak GIS dengan sistem koordinat itu.
