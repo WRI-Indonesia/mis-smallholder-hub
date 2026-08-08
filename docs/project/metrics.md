@@ -30,7 +30,7 @@ Satu baris per rilis — riwayat **Metrik Nilai Rilis** sekali pandang. Definisi
 | v0.21.0 | 2026-08-05 | 85,8% | 2,67 MB · 23/28 · 748 · 0 · 12 | ±1774 | +125 | Filter konsisten #211/#212, tooltip #213, KPI lulus #214, migrasi overlay darurat #215, GIS custom #219/#220. **Mulai titik ini angka diukur, bukan estimasi** |
 | v0.22.0 | 2026-08-06 | 85,8% | 1,67 MB · 24/29 · 778 · 0 · 12 | 1903 | +129 | #222 popup auto-pan · #223 payload −37,4% · #224 · #225 audit performa · #226 metrik · #227 dashboard Metrik Rilis · #228 catatan sesi pelatihan · #229 review putaran 2 |
 | v0.22.1 | 2026-08-08 | 86,1% | 1,67 MB · 24/29 · 778 · 0 · 13 | 1918 | +15 | #234 label "Pernah Ikut Pelatihan" · #233-A cleanup dead code · #235 audit issue/TD. Roadmap % naik karena **koreksi baseline** (DA-03 masuk Phase Status, 46→47 fase — Decision Log 2026-08-08), bukan fase baru Done. Payload dibawa dari v0.21.0 (tak ada perubahan kode peta); TD 12→13 = koreksi hitung + TD-032 |
-| _(siklus berjalan)_ | — | 86,1% | — · — · — · — · — | 1918 | — | (belum ada — siklus pasca-v0.22.1) |
+| _(siklus berjalan)_ | — | 86,1% | — · 29/29 · 787 · 1 · 13 | 1918 | — | Siklus pasca-v0.22.1 (terukur berjalan): Bantuan **29/29** + test 787 dari #207 closed; bug open 1 = #237 (Aktifkan kembali Menu Management). RVS belum dihitung — diisi saat rilis |
 
 ## Aturan pengisian
 
