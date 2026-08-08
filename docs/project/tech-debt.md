@@ -4,7 +4,7 @@
 
 ## Summary
 
-Kondisi per **2026-07-28**: seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **10 debt aktif**; TD-020…TD-025 dibuka & diselesaikan 2026-07-21 (TD-021 sebagian: hook URL-filter dipakai Dashboard Pelatihan + Dashboard Ketersediaan Data); **TD-026/TD-027/TD-028 dibuka 2026-07-22** dari #187B/#188 (TD-028 langsung selesai di #188); **TD-029 dibuka & diselesaikan 2026-07-28** (scope leak combobox bulk upload petani, follow-up TD-024). Tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani belum dimodelkan sebagai tabel — interim per-lahan sudah jalan; hierarki **final 3 level** diputuskan #189, refactor penuh menunggu data lengkap); selebihnya debt kualitas berukuran kecil–sedang.
+Kondisi per **2026-08-08** (audit menyeluruh): seluruh **bug (7/7) selesai** — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **13 debt aktif** (semua diverifikasi ulang terhadap kode 2026-08-08 — tidak ada yang diam-diam sudah selesai); **TD-030/TD-031 dibuka 2026-08-05** dari #215/#217 (overlay hilang tanpa padanan publik & legend hardcoded); **TD-032 dibuka 2026-08-08** menampung 3 item mikro sisa issue #136 yang ditutup (debounce panel lahan, aria-label, lahan tetangga PDF). Tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani belum dimodelkan sebagai tabel — interim per-lahan sudah jalan; hierarki **final 3 level** diputuskan #189, refactor penuh menunggu data lengkap); selebihnya debt kualitas berukuran kecil–sedang.
 
 **Rekomendasi:**
 
@@ -25,9 +25,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…029) | **10** | 19 | 29 |
+| **Debt** (TD-001…032) | **13** | 19 | 32 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded). (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -109,6 +109,14 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 - **Masalah:** `MAP_OVERLAYS[].legend` menyalin warna kelas dari renderer ArcGIS upstream saat #215; bila penyedia mengubah simbologi, legend panel diam-diam tidak cocok dengan tile yang dirender.
 - **Validation:** cek visual berkala (bandingkan legend panel vs endpoint `/MapServer/legend?f=json`); alternatif jangka panjang: fetch legend upstream sekali per sesi dengan fallback ke nilai statis. · **Evidence:** #215/#217 (`map-overlays.ts`). · **Owner:** Frontend.
+
+### TD-032 · 🔲 Open — Polish mikro Peta Lahan sisa #136 (P3)
+
+- **Masalah:** 3 item mikro tersisa dari issue #136 (ditutup 2026-08-08; item lain obsolete/superseded — Recharts dihapus dari stack #129, warna 2 kategori terwujud lebih kaya di Peta BMP #144, data-quality `parcelId=null` terverifikasi 0 orphan di TD-022):
+  1. Search panel daftar lahan belum debounce/virtualisasi (aman sampai >10k lahan);
+  2. `aria-label` eksplisit untuk input search & tombol ikon panel daftar lahan;
+  3. Lahan tetangga di gambar lahan PDF (#134-E) — menunggu keputusan kriteria "tetangga" (radius vs bersinggungan) + batas jumlah.
+- **Validation:** kerjakan menumpang saat menyentuh `map-canvas.tsx`/panel daftar lahan berikutnya; item 3 butuh keputusan produk dulu. · **Evidence:** #136 (komentar disposisi penutupan). · **Owner:** Frontend.
 
 ## Debt Sequencing
 
