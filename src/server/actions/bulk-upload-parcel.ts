@@ -227,6 +227,12 @@ export async function bulkCreateLandParcels(
             where: { parcelId: duplicate.id },
             data: { parcelId: created.id, modifiedBy: userId },
           });
+          // Titik pohon (#238) juga menunjuk id baris lahan — ikut repoint
+          // dengan alasan yang sama; semua revisi pohon dipindah agar utuh.
+          await tx.tree.updateMany({
+            where: { landParcelId: duplicate.id },
+            data: { landParcelId: created.id, modifiedBy: userId },
+          });
         }
       }
     });

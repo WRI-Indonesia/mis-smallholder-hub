@@ -16,6 +16,7 @@ import {
   Ruler,
   Sprout,
   Trash2,
+  TreePine,
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ import { ParcelProductionMonthModal } from "../components/parcel-production-mont
 import type { Geometry, Position } from "geojson";
 import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
 import type { ProductionSummary, ProductionYear } from "@/types/map";
+import type { ParcelTreeData } from "@/server/actions/tree";
 
 /** Lahan aktif lain milik petani yang sama (badge navigasi + overlay peta). */
 export interface SiblingParcel {
@@ -43,6 +45,7 @@ export interface SiblingParcel {
 interface Props {
   parcel: LandParcel;
   production: ProductionSummary | null;
+  trees: ParcelTreeData | null;
   farmers: FarmerSelect[];
   permissions: string[];
   /** Permission user pada menu Data Produksi — gate edit sel tabel produksi. */
@@ -194,6 +197,7 @@ function Val({ value, mono = false }: { value: string | number | null | undefine
 export function ParcelDetailClient({
   parcel,
   production,
+  trees,
   farmers,
   permissions,
   productionPermissions,
@@ -531,6 +535,95 @@ export function ParcelDetailClient({
             </div>
           </div>
         </div>
+      </SectionCard>
+
+      {/* Section: Pohon Sawit (#238) — titik pohon hasil deteksi + koreksi manusia */}
+      <SectionCard
+        title="Pohon Sawit"
+        action={
+          trees != null && trees.summary.count > 0 ? (
+            <span className="text-xs text-muted-foreground">
+              Diunggah {formatDate(trees.summary.uploadedAt ?? undefined)}
+              {trees.summary.sourceFile && (
+                <span className="font-mono"> · {trees.summary.sourceFile}</span>
+              )}
+            </span>
+          ) : undefined
+        }
+      >
+        {trees == null || trees.summary.count === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Belum ada data titik pohon untuk lahan ini. Data diunggah lewat menu Bulk Upload &gt;
+            Pohon Sawit (ZIP shapefile point per lahan).
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <SummaryCard
+                icon={TreePine}
+                title="Jumlah Pohon"
+                value={formatNumber(trees.summary.count)}
+                sub={`Set revisi ke-${trees.summary.revision}`}
+              />
+              <SummaryCard
+                icon={Ruler}
+                title="Kerapatan Tanam"
+                value={
+                  trees.summary.density != null
+                    ? `${formatDecimal(trees.summary.density)} pohon/ha`
+                    : "—"
+                }
+                sub={
+                  trees.summary.density != null
+                    ? "Rujukan umum ± 136 pohon/ha"
+                    : "Luas lahan belum diisi"
+                }
+              />
+              <SummaryCard
+                icon={Sprout}
+                title="Sumber Titik"
+                value={
+                  trees.summary.sources[0]
+                    ? `${trees.summary.sources[0].source} (${formatNumber(trees.summary.sources[0].count)})`
+                    : "—"
+                }
+                sub={
+                  trees.summary.sources.length > 1
+                    ? trees.summary.sources
+                        .slice(1)
+                        .map((s) => `${s.source} ${formatNumber(s.count)}`)
+                        .join(" · ")
+                    : "auto = draf model; moved/added/verified = koreksi manusia"
+                }
+              />
+              <SummaryCard
+                icon={ClipboardCheck}
+                title="Vigor Rata-rata"
+                value={
+                  trees.summary.avgVigor != null ? formatDecimal(trees.summary.avgVigor) : "—"
+                }
+                sub={
+                  trees.summary.modelVersion
+                    ? `Model ${trees.summary.modelVersion}`
+                    : "Belum ada data vigor"
+                }
+              />
+            </div>
+
+            <ParcelMapView
+              geometry={parcel.geometry}
+              heightClassName="h-[480px]"
+              treePoints={trees.points}
+            />
+            <p className="text-xs text-muted-foreground">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#facc15] border border-[#854d0e] mr-1.5 align-middle" />
+              Titik kuning = pohon sawit ({formatNumber(trees.summary.count)} titik). Sumber titik:
+              auto = draf model deteksi, moved = digeser manusia, added = ditambah manusia, verified
+              = diperiksa manusia. Upload ulang lewat Bulk Upload &gt; Pohon Sawit akan mengganti
+              seluruh set titik lahan ini (set lama tersimpan sebagai riwayat nonaktif).
+            </p>
+          </div>
+        )}
       </SectionCard>
 
       {/* Section: Produksi — grafik bulanan kontinu + tabel pivot per tahun */}

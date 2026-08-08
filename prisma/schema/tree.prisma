@@ -1,0 +1,35 @@
+// tree.prisma — Tree model (titik pohon sawit per lahan, hasil deteksi model
+// yang dikoreksi manusia; diunggah per lahan via ZIP shapefile point — #238)
+
+model Tree {
+  id           String     @id @default(cuid())
+  // FK ke baris lahan aktif saat upload. Lahan berevisi dengan id BARU (bulk
+  // upload), jadi pohon aktif ikut di-repoint saat lahan direvisi — parcelId
+  // (kunci bisnis) disimpan agar keterkaitan tak putus bila repoint terlewat.
+  landParcelId String     @map("land_parcel_id")
+  landParcel   LandParcel @relation(fields: [landParcelId], references: [id])
+  parcelId     String     @map("parcel_id") // Kunci bisnis lahan (tbl_land_parcel.parcel_id)
+  treeId       Int?       @map("tree_id") // ID pohon dari sistem sumber (global)
+  sequenceNo   Int?       @map("sequence_no") // Nomor urut dalam file sumber
+  longitude    Float      @map("longitude") // WGS84
+  latitude     Float      @map("latitude") // WGS84
+  category     String?    @map("category") // mis. "unknown"; nilai baku menyusul
+  vigor        Float?     @map("vigor") // Skor kesehatan pohon (bila ada)
+  source       String?    @map("source") // auto | moved | added | verified
+  modelVersion String?    @map("model_version") // Versi model deteksi
+  surveyedAt   DateTime?  @map("surveyed_at") // Tanggal ekspor/survei sumber
+  sourceFile   String?    @map("source_file") // Nama ZIP asal (audit)
+  // Pola revisi per-set: upload ulang menonaktifkan seluruh set pohon lama
+  // lahan tsb dan menyisipkan set baru dengan revision + 1.
+  revision     Int        @default(0) @map("revision")
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  createdBy    String?    @map("created_by")
+  modifiedAt   DateTime   @updatedAt @map("modified_at")
+  modifiedBy   String?    @map("modified_by")
+
+  @@index([landParcelId, isActive])
+  @@index([parcelId])
+  @@index([isActive])
+  @@map("tbl_tree")
+}

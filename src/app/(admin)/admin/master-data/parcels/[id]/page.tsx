@@ -5,6 +5,7 @@ import {
   getLandParcelProduction,
   getFarmerSiblingParcels,
 } from "@/server/actions/land-parcel";
+import { getParcelTrees } from "@/server/actions/tree";
 import { getFarmerOptions } from "@/lib/select-options";
 import { notFound } from "next/navigation";
 import { ParcelDetailClient } from "./parcel-detail-client";
@@ -15,13 +16,15 @@ export default async function ParcelDetailPage({ params }: { params: Promise<{ i
   await requirePermission("master-data-parcels");
   const { id } = await params;
 
-  const [parcel, production, farmers, permissions, productionPermissions] = await Promise.all([
-    getLandParcelById(id),
-    getLandParcelProduction(id),
-    getFarmerOptions("master-data-parcels"),
-    getUserPermissionsForMenu("master-data-parcels"),
-    getUserPermissionsForMenu("master-data-production"),
-  ]);
+  const [parcel, production, trees, farmers, permissions, productionPermissions] =
+    await Promise.all([
+      getLandParcelById(id),
+      getLandParcelProduction(id),
+      getParcelTrees(id),
+      getFarmerOptions("master-data-parcels"),
+      getUserPermissionsForMenu("master-data-parcels"),
+      getUserPermissionsForMenu("master-data-production"),
+    ]);
 
   if (!parcel) notFound();
 
@@ -33,6 +36,7 @@ export default async function ParcelDetailPage({ params }: { params: Promise<{ i
       <ParcelDetailClient
         parcel={parcel as unknown as LandParcel}
         production={production}
+        trees={trees}
         farmers={farmers}
         permissions={permissions}
         productionPermissions={productionPermissions}

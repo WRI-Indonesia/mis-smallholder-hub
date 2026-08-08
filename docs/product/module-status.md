@@ -14,7 +14,7 @@
 | Phase | Module | Key Features |
 |-------|--------|--------------|
 | PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup |
-| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 20 model / 19 migrasi / 11 file schema) |
+| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 21 model / 21 migrasi / 12 file schema) |
 | PLATFORM-03 | Schema Hardening | Audit fields, soft-delete pattern |
 | PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides; +role **DONOR** read-only (#187) + sentralisasi daftar role ke `src/lib/roles.ts` |
 | PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child; perombakan UI Menu Management & Role & Permission (#187B): render rekursif 3 level (`menu-tree.ts`), collapsible, sticky header/kolom, selektor role, kaskade induk→anak, SUPERADMIN dikecualikan dari matriks |

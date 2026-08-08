@@ -37,3 +37,4 @@ dashboard-training,dashboard,Dashboard Pelatihan,/admin/dashboard/training,Gradu
 dashboard-snapshot-bmp,tools,Dashboard Snapshot BMP,/admin/tools/snapshot-bmp,Camera,2,TRUE,TRUE
 help,,Bantuan,/admin/help,HelpCircle,9,TRUE,TRUE
 dashboard-metrics,dashboard,Metrik Rilis,/admin/dashboard/metrics,Activity,4,TRUE,TRUE
+bulk-upload-trees,bulk-upload,Pohon Sawit,/admin/bulk-upload/trees,TreePine,4,TRUE,TRUE

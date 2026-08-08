@@ -17,6 +17,7 @@ erDiagram
     
     %% LAND PARCEL
     Farmer ||--o{ LandParcel : "owns parcels"
+    LandParcel ||--o{ Tree : "has trees"
     
     %% PRODUCTION RECORD
     Farmer ||--o{ ProductionRecord : "records production"
@@ -62,6 +63,7 @@ erDiagram
 | **Farmer Group** | FarmerGroup | **= Lembaga Petani** (level teratas; label lama "Kelompok Tani" mislabel → relabel TD-013/#147). District-based, location coordinates, category (EX_PLASMA/SWADAYA), tipe grup (ASOSIASI/KOPERASI), tahun bergabung program (`join_year`) + tahun berdiri (`established_year`), sertifikasi RSPO (`rspo_cert_status` CERTIFIED/PLANNED + `rspo_cert_year`, status boleh tanpa tahun) (#160), sertifikasi ISPO (`ispo_cert_status` + `ispo_cert_year`) + assurance SAP/MAP (`sap_map_assurance_status` + `sap_map_assurance_year`) — enum generik `CertStatus`, aturan sama dengan RSPO (#169) |
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
 | **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking; `blok` (blok kebun); `cropType` (Komoditas) + `species` + `isPsr` (PSR/replanting, default false); **Kelompok Tani interim** `subGroupLv2` per-lahan (#146; Gapoktan `subGroupLv1` di-drop #189) |
+| **Tree** | Tree | Titik pohon sawit per lahan (#238) — deteksi model + koreksi manusia (`source` auto/moved/added/verified), koordinat WGS84, `vigor`, revisi **per-set** (upload ulang nonaktifkan set lama), relasi `landParcelId` + kunci bisnis `parcelId`; skala 10⁵–10⁶ baris → wajib agregat |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
 | **Production** | ProductionRecord | Yield tracking per farmer/parcel with period (YYYY-MM), harvest number (1-4), duplicate validation |
 
@@ -94,7 +96,8 @@ erDiagram
 
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
-| **2.9.0** | 2026-07-20 | Field lahan `species` (String?) + `isPsr` (Boolean default false — PSR = Peremajaan Sawit Rakyat); `cropType` = Komoditas, data fix 4.163 lahan → "Kelapa Sawit" | LOW (additive) |
+| **2.10.0** | 2026-08-08 | Tree model (#238): `tbl_tree` titik pohon sawit per lahan, bulk upload ZIP shapefile point, revisi per-set — applied mis-prod | MEDIUM (new table, additive) |
+| 2.9.0 | 2026-07-20 | Field lahan `species` (String?) + `isPsr` (Boolean default false — PSR = Peremajaan Sawit Rakyat); `cropType` = Komoditas, data fix 4.163 lahan → "Kelapa Sawit" | LOW (additive) |
 | 2.8.0 | 2026-07-16 | Sertifikasi Lembaga Petani (#169): `FarmerGroup.ispoCertYear` + `ispoCertStatus` + `sapMapAssuranceYear` + `sapMapAssuranceStatus` (enum generik `CertStatus` CERTIFIED/PLANNED — `RspoCertStatus` existing dibiarkan) | LOW (4 nullable columns + 1 enum, additive) |
 | 2.7.0 | 2026-07-15 | Dashboard BMP snapshot (#166, DASH-04): BmpDashboardSnapshot → `tbl_snapshot_bmp_dashboard` (snapshot pattern kedua, data JSON per Lembaga) — migration applied + seed menu/permission (approval owner) | MEDIUM (new table, additive) |
 | 2.6.0 | 2026-07-15 | Identitas Lembaga Petani (#160): `FarmerGroup.groupType` (enum `FarmerGroupType`) + `establishedYear` + `rspoCertYear` + `rspoCertStatus` (enum `RspoCertStatus`); data `code` ICS→ISH | LOW (4 nullable columns + 2 enums, additive) |

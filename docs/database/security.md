@@ -58,6 +58,7 @@ flowchart TD
 | **NIK (ID Card)** | Farmer | `nik` | Optional field, validate 16 digits jika diisi, bisa mask di UI (****1234) |
 | **Location Coordinates** | FarmerGroup | `locationLat`, `locationLong` | Public (untuk mapping), tidak sensitif |
 | **Parcel Geometry** | LandParcel | `geometry` | Koordinat lahan milik individu — akses hanya via Server Action ber-RBAC (scope district/KT), tidak ikut payload list (fetch detail by-id, #163) |
+| **Tree Coordinates** | Tree | `longitude`, `latitude` | Titik GPS pohon di dalam lahan milik individu (#238) — akses hanya via Server Action ber-RBAC (scope via relasi lahan→petani), dikirim utuh hanya per-lahan di halaman detail; lintas lahan wajib agregat |
 | **S3 Evidence Key** | TrainingActivity | `evidenceKey` | Private S3 bucket, generate pre-signed URL saat akses |
 
 ### Audit Trail

@@ -28,6 +28,7 @@ import { getFarmerParcelPassport } from "@/server/actions/farmer";
 import { maskNik, maskBirthDate } from "@/lib/mask";
 import type { FarmerDetailData } from "@/lib/farmer-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
+import type { FarmerTreeParcelSummary } from "@/server/actions/tree";
 
 const ParcelsDistributionMap = dynamic(
   () =>
@@ -72,6 +73,7 @@ interface Props {
   detail: FarmerDetailData;
   parcels: ParcelRow[];
   mapParcels: DistributionMapParcel[];
+  treeSummary: FarmerTreeParcelSummary[];
   canEdit: boolean;
   farmerGroups: { id: string; name: string }[];
   canViewParcel: boolean;
@@ -189,6 +191,7 @@ export function FarmerDetailClient({
   detail,
   parcels,
   mapParcels,
+  treeSummary,
   canEdit,
   farmerGroups,
   canViewParcel,
@@ -329,9 +332,10 @@ export function FarmerDetailClient({
 
       {/* Tabs */}
       <Tabs defaultValue="ringkasan" className="w-full">
-        <TabsList className="grid w-full max-w-[480px] grid-cols-4 mb-4">
+        <TabsList className="grid w-full max-w-[600px] grid-cols-5 mb-4">
           <TabsTrigger value="ringkasan">Ringkasan</TabsTrigger>
           <TabsTrigger value="lahan">Lahan</TabsTrigger>
+          <TabsTrigger value="pohon">Pohon</TabsTrigger>
           <TabsTrigger value="pelatihan">Pelatihan</TabsTrigger>
           <TabsTrigger value="produksi">Produksi</TabsTrigger>
         </TabsList>
@@ -433,6 +437,83 @@ export function FarmerDetailClient({
               Sebaran Lahan
             </h2>
             <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} />
+          </Card>
+        </TabsContent>
+
+        {/* ── Pohon: rekap titik pohon sawit per lahan (#238) ── */}
+        <TabsContent value="pohon" className="space-y-4">
+          <Card className="p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Pohon Sawit per Lahan
+            </h2>
+            {treeSummary.every((t) => t.treeCount === 0) ? (
+              <p className="text-sm text-muted-foreground">
+                Belum ada data titik pohon untuk lahan petani ini. Data diunggah lewat menu Bulk
+                Upload &gt; Pohon Sawit (ZIP shapefile point per lahan).
+              </p>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                        <th className="py-2 pr-4">Kode Lahan</th>
+                        <th className="py-2 pr-4 text-right">Jumlah Pohon</th>
+                        <th className="py-2 pr-4 text-right">Luas (Ha)</th>
+                        <th className="py-2 pr-4 text-right">Kerapatan (pohon/ha)</th>
+                        <th className="py-2 text-right">Diunggah</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {treeSummary.map((t) => (
+                        <tr key={t.parcelDbId} className="border-b last:border-0">
+                          <td className="py-2 pr-4 font-mono">
+                            {canViewParcel ? (
+                              <Link
+                                href={`/admin/master-data/parcels/${t.parcelDbId}`}
+                                className="text-primary hover:underline"
+                              >
+                                {t.parcelId}
+                              </Link>
+                            ) : (
+                              t.parcelId
+                            )}
+                          </td>
+                          <td className="py-2 pr-4 text-right tabular-nums">
+                            {t.treeCount > 0 ? formatNumber(t.treeCount) : "—"}
+                          </td>
+                          <td className="py-2 pr-4 text-right tabular-nums">
+                            {t.area != null ? formatDecimal(t.area) : "—"}
+                          </td>
+                          <td className="py-2 pr-4 text-right tabular-nums">
+                            {t.density != null ? formatDecimal(t.density) : "—"}
+                          </td>
+                          <td className="py-2 text-right whitespace-nowrap">
+                            {t.uploadedAt != null ? formatDate(t.uploadedAt) : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="font-medium">
+                        <td className="py-2 pr-4">Total</td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {formatNumber(treeSummary.reduce((s, t) => s + t.treeCount, 0))}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {formatDecimal(treeSummary.reduce((s, t) => s + (t.area ?? 0), 0))}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">—</td>
+                        <td className="py-2 text-right">—</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Titik pohon per lahan dari hasil deteksi model yang dikoreksi manusia (rujukan
+                  kerapatan umum ± 136 pohon/ha). Buka detail lahan untuk melihat sebaran titik di
+                  peta.
+                </p>
+              </>
+            )}
           </Card>
         </TabsContent>
 
