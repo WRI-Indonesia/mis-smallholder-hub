@@ -317,7 +317,7 @@ export function TrainingCoverageMatrix({
                         style={{ width: `${62 / (packages.length + 1)}%` }}
                         className="text-center py-2 px-2 font-semibold whitespace-nowrap"
                       >
-                        {headBtn("any", "Min. 1 Paket", "Petani yang mengikuti paket apa pun")}
+                        {headBtn("any", "Pernah Ikut Pelatihan", "Petani yang pernah mengikuti minimal 1 paket pelatihan")}
                       </th>
                     </tr>
                   </thead>
@@ -360,7 +360,7 @@ export function TrainingCoverageMatrix({
                             trained={row.anyPackage}
                             trainedOther={row.anyPackageOtherYears ?? 0}
                             target={100}
-                            label="Mengikuti paket apa pun"
+                            label="Mengikuti minimal 1 paket pelatihan"
                             year={year}
                             ring
                             onOpen={() =>
