@@ -51,6 +51,7 @@ Halaman: Menu Management (/admin/settings/menu)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `settings-menu` (`findTutorialForMenu`), dibuka di tab baru |
 | `Menu Management` | Heading | `h1`, deskripsi: `Kelola navigasi menu sidebar` |
 | Pencarian | Filter | Placeholder `Cari menu...`; mencocokkan `title` atau `key` pada level 1–3 (parent tetap tampil bila anak/cucu cocok; subtree cocok di-expand paksa) |
 | `Buka semua` / `Tutup semua` | Tombol | Buka/tutup seluruh induk; state `localStorage` (`menu-list:open`), default *collapsed*; nonaktif saat mencari |

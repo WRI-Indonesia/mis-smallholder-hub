@@ -55,6 +55,7 @@ interface Props {
   onHotspotChange: (hotspot: HotspotState) => void;
   hotspotLoading: boolean;
   hotspotCount: number;
+  helpSlot?: React.ReactNode;
 }
 
 interface ComboboxProps {
@@ -201,6 +202,7 @@ export function MapControlPanel(props: Props) {
     overlays, onOverlaysChange,
     customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer, onZoomCustomLayer, onCustomLayerSymbology,
     hotspot, onHotspotChange, hotspotLoading, hotspotCount,
+    helpSlot,
   } = props;
 
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -231,14 +233,17 @@ export function MapControlPanel(props: Props) {
           <MapPinned className="h-4 w-4" />
           Peta Lahan
         </span>
-        <button
-          onClick={() => setMinimized(true)}
-          title="Minimalkan"
-          aria-label="Minimalkan"
-          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <Minimize2 className="h-3.5 w-3.5" />
-        </button>
+        <span className="flex items-center gap-1.5">
+          {helpSlot}
+          <button
+            onClick={() => setMinimized(true)}
+            title="Minimalkan"
+            aria-label="Minimalkan"
+            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Minimize2 className="h-3.5 w-3.5" />
+          </button>
+        </span>
       </div>
 
       {/* Filter section */}

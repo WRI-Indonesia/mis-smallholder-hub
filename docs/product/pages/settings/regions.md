@@ -64,6 +64,7 @@ Halaman: Region Management (/admin/settings/regions)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `settings-regions` (`findTutorialForMenu`), dibuka di tab baru |
 | `Region Management` | Heading | `h1`, deskripsi: `Kelola hierarki wilayah administratif` |
 | Pencarian | Filter | Placeholder `Cari nama atau kode...`; mencocokkan `code` dan `name` di semua level |
 | Filter status | Select | `Semua Status` / `Aktif` / `Nonaktif` |

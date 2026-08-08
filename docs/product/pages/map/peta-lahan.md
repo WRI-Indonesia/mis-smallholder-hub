@@ -51,6 +51,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Panel "Peta Lahan" | Panel mengambang | Card kiri-atas, header sticky ikon `MapPinned`, tombol "Minimalkan"; saat minimize jadi tombol ikon "Buka panel filter" |
+| `Panduan` | Tautan | `HelpHint` di header panel (sebelah tombol Minimalkan) menuju tutorial Bantuan untuk `map-parcel`; dirender server via prop `helpSlot` (markdown Bantuan tak masuk bundle client), dibuka di tab baru; ikut tersembunyi saat panel di-minimize |
 | Filter | Section collapsible | Terbuka default; tertutup otomatis setelah data dimuat |
 | Provinsi | Filter (combobox) | Placeholder "Pilih Provinsi", empty "Provinsi tidak ditemukan."; mengubahnya mereset Distrik & Lembaga Petani |
 | Distrik | Filter (combobox) | **Wajib** (tanda `*`); placeholder "Pilih Distrik", empty "Distrik tidak ditemukan." |

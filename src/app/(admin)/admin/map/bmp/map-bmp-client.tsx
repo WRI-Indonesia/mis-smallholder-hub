@@ -47,6 +47,8 @@ interface Props {
   provinces: MapSelectOption[];
   canViewParcel: boolean;
   canEditParcel: boolean;
+  /** HelpHint dirender di server agar markdown Bantuan tak masuk bundle client. */
+  helpSlot?: React.ReactNode;
 }
 
 /**
@@ -65,7 +67,7 @@ function buildAvailabilityMatrix(parcels: BmpParcelFeature[]) {
   return { periods, rows };
 }
 
-export function MapBmpClient({ provinces, canViewParcel, canEditParcel }: Props) {
+export function MapBmpClient({ provinces, canViewParcel, canEditParcel, helpSlot }: Props) {
   const [provinceId, setProvinceId] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [farmerGroupId, setFarmerGroupId] = useState<string | null>(null);
@@ -356,6 +358,7 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel }: Props)
       />
 
       <MapBmpControlPanel
+        helpSlot={helpSlot}
         provinces={provinces}
         districts={districts}
         farmerGroups={farmerGroups}

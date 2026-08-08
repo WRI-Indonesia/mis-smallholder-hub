@@ -34,6 +34,7 @@ import { parseMarkdown, blocksToPlainText, type MdBlock } from "@/lib/markdown-l
 import istilah from "@/content/help/1-memulai/1-1-istilah.md";
 import masukAkun from "@/content/help/1-memulai/1-2-masuk-akun.md";
 import hakAkses from "@/content/help/1-memulai/1-3-hak-akses.md";
+import memakaiBantuan from "@/content/help/1-memulai/1-4-memakai-bantuan.md";
 import masterData from "@/content/help/2-mengelola-data/2-1-master-data.md";
 import bulkUpload from "@/content/help/2-mengelola-data/2-2-bulk-upload.md";
 import dashboard from "@/content/help/3-memantau/3-1-dashboard.md";
@@ -68,6 +69,9 @@ import pRingkasanPetani from "@/content/help/tutorial/p-7-ringkasan-petani.md";
 import pMetrikRilis from "@/content/help/tutorial/p-8-metrik-rilis.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
+import aMengaturIzinPeran from "@/content/help/tutorial/a-3-mengatur-izin-peran.md";
+import aMenambahWilayah from "@/content/help/tutorial/a-4-menambah-wilayah.md";
+import aMengelolaMenu from "@/content/help/tutorial/a-5-mengelola-menu.md";
 
 // Lapis Referensi — "apa arti kolom & tombol di halaman ini".
 import rDaftarPetani from "@/content/help/referensi/r-1-daftar-petani.md";
@@ -222,6 +226,9 @@ const CHAPTER_SOURCES: ChapterSource[] = [
     topics: [
       { id: "analisa-data", source: aAnalisaData },
       { id: "mengelola-pengguna", source: aMengelolaPengguna },
+      { id: "mengatur-izin-peran", source: aMengaturIzinPeran },
+      { id: "menambah-wilayah", source: aMenambahWilayah },
+      { id: "mengelola-menu", source: aMengelolaMenu },
     ],
   },
   {
@@ -243,12 +250,13 @@ const CHAPTER_SOURCES: ChapterSource[] = [
     section: "konsep",
     title: "Memulai",
     summary:
-      "Kenali istilah yang dipakai sistem, cara masuk, dan mengapa tampilan tiap pengguna berbeda.",
+      "Kenali istilah yang dipakai sistem, cara masuk, mengapa tampilan tiap pengguna berbeda, dan cara memakai Bantuan ini.",
     icon: Rocket,
     topics: [
       { id: "istilah", source: istilah },
       { id: "masuk-akun", source: masukAkun },
       { id: "hak-akses", source: hakAkses },
+      { id: "memakai-bantuan", source: memakaiBantuan },
     ],
   },
   {
