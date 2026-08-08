@@ -31,6 +31,8 @@ interface Props {
   /** Izin menu `master-data-parcels` — mengatur tombol popup Lihat Detail / Edit. */
   canViewParcel?: boolean;
   canEditParcel?: boolean;
+  /** Titik pohon sawit (#238) — lingkaran kuning non-interaktif di atas poligon. */
+  treePoints?: { longitude: number; latitude: number }[];
 }
 
 /** Palet kategorikal per Kelompok Tani — berulang bila KT > 12; tanpa-KT = abu. */
@@ -93,7 +95,12 @@ const formatArea = (n: number | null) =>
     : "—";
 
 /** Peta sebaran lahan (poligon) satu Lembaga/Petani, diwarnai per Kelompok Tani (#171/#172). */
-export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEditParcel = false }: Props) {
+export function ParcelsDistributionMap({
+  parcels,
+  canViewParcel = false,
+  canEditParcel = false,
+  treePoints,
+}: Props) {
   const mapRef = useRef<MapRef>(null);
   const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
   // KT yang disembunyikan via checklist legenda.
@@ -200,6 +207,19 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
     [collection, hiddenKts]
   );
 
+  // Titik pohon sawit — FeatureCollection statis per props (#238).
+  const treeGeojson = useMemo<FeatureCollection | null>(() => {
+    if (!treePoints || treePoints.length === 0) return null;
+    return {
+      type: "FeatureCollection",
+      features: treePoints.map((t) => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [t.longitude, t.latitude] },
+        properties: {},
+      })),
+    };
+  }, [treePoints]);
+
   // Label nama petani: hanya yang muat di poligon pada zoom sekarang (pola Peta Lahan).
   const labelGeojson = useMemo<FeatureCollection>(() => {
     const features = labelBase.flatMap((l) => {
@@ -295,6 +315,22 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
           <Layer {...fillStyle} />
           <Layer {...lineStyle} />
         </Source>
+
+        {treeGeojson && (
+          <Source type="geojson" data={treeGeojson}>
+            <Layer
+              id="group-parcels-trees"
+              type="circle"
+              paint={{
+                "circle-radius": 3.5,
+                "circle-color": "#facc15",
+                "circle-opacity": 0.9,
+                "circle-stroke-width": 1,
+                "circle-stroke-color": "#854d0e",
+              }}
+            />
+          </Source>
+        )}
 
         {/* Label nama petani dalam poligon */}
         <Source type="geojson" data={labelGeojson}>
@@ -447,8 +483,16 @@ export function ParcelsDistributionMap({ parcels, canViewParcel = false, canEdit
         <span>Zoom ke semua</span>
       </button>
 
-      <div className="absolute bottom-3 left-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md px-2 py-1 text-xs text-muted-foreground">
-        {visibleCollection.features.length}/{validCount} lahan ditampilkan
+      <div className="absolute bottom-3 left-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md px-2 py-1 text-xs text-muted-foreground flex items-center gap-1.5">
+        <span>
+          {visibleCollection.features.length}/{validCount} lahan ditampilkan
+        </span>
+        {treeGeojson && (
+          <span className="flex items-center gap-1 border-l pl-1.5">
+            <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#facc15] border border-[#854d0e]" />
+            {treeGeojson.features.length} titik pohon
+          </span>
+        )}
       </div>
     </div>
   );

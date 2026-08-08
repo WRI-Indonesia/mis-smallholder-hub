@@ -102,8 +102,32 @@ export interface FarmerTreeParcelSummary {
 }
 
 /**
- * Rekap pohon per lahan aktif milik satu petani (tab "Pohon" Detail Petani).
- * Agregat via groupBy — jangan findMany semua titik (skala 10⁵–10⁶ baris).
+ * Titik pohon aktif seluruh lahan aktif satu petani — overlay peta Sebaran
+ * Lahan di Detail Petani (tab Lahan). Per petani hanya beberapa lahan ×
+ * ±ratusan titik, aman dikirim utuh.
+ */
+export async function getFarmerTreePoints(
+  farmerId: string,
+): Promise<{ longitude: number; latitude: number }[]> {
+  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+
+  const access = await getAccessContext();
+
+  return prisma.tree.findMany({
+    where: {
+      isActive: true,
+      landParcel: { farmerId, isActive: true, ...farmerRelationAccessFilter(access) },
+    },
+    select: { longitude: true, latitude: true },
+  });
+}
+
+/**
+ * Rekap pohon per lahan aktif milik satu petani (kolom Jumlah Pohon pada
+ * tabel Daftar Lahan di Detail Petani). Agregat via groupBy — jangan
+ * findMany semua titik (skala 10⁵–10⁶ baris).
  */
 export async function getFarmerTreeSummary(farmerId: string): Promise<FarmerTreeParcelSummary[]> {
   if (!(await hasPermission("master-data-farmers", "VIEW"))) {
