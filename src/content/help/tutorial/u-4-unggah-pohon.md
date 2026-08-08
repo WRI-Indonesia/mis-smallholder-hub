@@ -37,7 +37,7 @@ Tabel atribut `.dbf` wajib memuat kolom `parcel_id` berisi **ID Lahan** persis s
 
 ## Memastikan berhasil
 
-Buka **Master Data → Lahan → detail lahan** yang bersangkutan: seksi **Pohon Sawit** menampilkan jumlah pohon, kerapatan, dan sebaran titik kuning di atas poligon lahan. Rekapnya juga tampil di tab **Pohon** pada detail petani.
+Buka **Master Data → Lahan → detail lahan** yang bersangkutan: kartu **Pohon Sawit** menampilkan jumlah pohon dan kerapatan, dan titik-titik kuning tampil langsung di peta **Informasi Lahan** di atas poligon. Rekapnya juga tampil di tab **Pohon** pada detail petani.
 
 ## Kalau bermasalah
 

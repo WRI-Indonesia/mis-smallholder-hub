@@ -35,11 +35,14 @@ import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
 import type { ProductionSummary, ProductionYear } from "@/types/map";
 import type { ParcelTreeData } from "@/server/actions/tree";
 
-/** Lahan aktif lain milik petani yang sama (badge navigasi + overlay peta). */
+/** Lahan aktif lain milik petani yang sama (tabel navigasi + overlay peta). */
 export interface SiblingParcel {
   id: string;
   parcelId: string;
   geometry?: Geometry | string | null;
+  area: number | null;
+  plantingYear: number | null;
+  treeCount: number;
 }
 
 interface Props {
@@ -366,12 +369,24 @@ export function ParcelDetailClient({
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <SummaryCard
           icon={Ruler}
           title="Luas"
           value={parcel.area != null ? `${formatDecimal(parcel.area)} Ha` : "—"}
           sub={parcel.blok ? `Blok ${parcel.blok}` : "Blok belum diisi"}
+        />
+        <SummaryCard
+          icon={TreePine}
+          title="Pohon Sawit"
+          value={trees != null && trees.summary.count > 0 ? formatNumber(trees.summary.count) : "—"}
+          sub={
+            trees != null && trees.summary.count > 0
+              ? trees.summary.density != null
+                ? `${formatDecimal(trees.summary.density)} pohon/ha`
+                : "Luas belum diisi — kerapatan tak terhitung"
+              : "Belum ada data titik pohon"
+          }
         />
         <SummaryCard
           icon={Sprout}
@@ -415,12 +430,19 @@ export function ParcelDetailClient({
               geometry={parcel.geometry}
               heightClassName="h-[560px]"
               siblingGeometries={siblingParcels.map((s) => s.geometry)}
+              treePoints={trees?.points}
             />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground mt-2">
               <span className="flex items-center gap-2">
                 <span className="inline-block h-3 w-3 shrink-0 rounded-sm bg-[#22c55e]/60 border border-[#16a34a]" />
                 Poligon hijau = batas lahan ini
               </span>
+              {trees != null && trees.summary.count > 0 && (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[#facc15] border border-[#854d0e]" />
+                  Titik kuning = pohon sawit ({formatNumber(trees.summary.count)})
+                </span>
+              )}
               {siblingParcels.some((s) => s.geometry) && (
                 <span className="flex items-center gap-2">
                   <span className="inline-block h-3 w-3 shrink-0 rounded-sm bg-[#0ea5e9]/40 border border-[#0284c7]" />
@@ -520,14 +542,40 @@ export function ParcelDetailClient({
               {siblingParcels.length > 0 && (
                 <div className="mt-3">
                   <FieldItem label={`Lahan Lain Milik Petani (${siblingParcels.length})`}>
-                    <div className="flex flex-wrap gap-1.5">
-                      {siblingParcels.map((s) => (
-                        <Link key={s.id} href={`/admin/master-data/parcels/${s.id}`}>
-                          <Badge variant="outline" className="font-mono hover:bg-muted">
-                            {s.parcelId}
-                          </Badge>
-                        </Link>
-                      ))}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                            <th className="py-1.5 pr-3 font-semibold">Kode</th>
+                            <th className="py-1.5 pr-3 font-semibold text-right">Luas (Ha)</th>
+                            <th className="py-1.5 pr-3 font-semibold text-right">Tahun Tanam</th>
+                            <th className="py-1.5 font-semibold text-right">Jumlah Pohon</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {siblingParcels.map((s) => (
+                            <tr key={s.id} className="border-b last:border-0">
+                              <td className="py-1.5 pr-3 font-mono">
+                                <Link
+                                  href={`/admin/master-data/parcels/${s.id}`}
+                                  className="text-primary hover:underline"
+                                >
+                                  {s.parcelId}
+                                </Link>
+                              </td>
+                              <td className="py-1.5 pr-3 text-right tabular-nums">
+                                {s.area != null ? formatDecimal(s.area) : "—"}
+                              </td>
+                              <td className="py-1.5 pr-3 text-right tabular-nums">
+                                {s.plantingYear ?? "—"}
+                              </td>
+                              <td className="py-1.5 text-right tabular-nums">
+                                {s.treeCount > 0 ? formatNumber(s.treeCount) : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </FieldItem>
                 </div>
@@ -535,95 +583,6 @@ export function ParcelDetailClient({
             </div>
           </div>
         </div>
-      </SectionCard>
-
-      {/* Section: Pohon Sawit (#238) — titik pohon hasil deteksi + koreksi manusia */}
-      <SectionCard
-        title="Pohon Sawit"
-        action={
-          trees != null && trees.summary.count > 0 ? (
-            <span className="text-xs text-muted-foreground">
-              Diunggah {formatDate(trees.summary.uploadedAt ?? undefined)}
-              {trees.summary.sourceFile && (
-                <span className="font-mono"> · {trees.summary.sourceFile}</span>
-              )}
-            </span>
-          ) : undefined
-        }
-      >
-        {trees == null || trees.summary.count === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Belum ada data titik pohon untuk lahan ini. Data diunggah lewat menu Bulk Upload &gt;
-            Pohon Sawit (ZIP shapefile point per lahan).
-          </p>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <SummaryCard
-                icon={TreePine}
-                title="Jumlah Pohon"
-                value={formatNumber(trees.summary.count)}
-                sub={`Set revisi ke-${trees.summary.revision}`}
-              />
-              <SummaryCard
-                icon={Ruler}
-                title="Kerapatan Tanam"
-                value={
-                  trees.summary.density != null
-                    ? `${formatDecimal(trees.summary.density)} pohon/ha`
-                    : "—"
-                }
-                sub={
-                  trees.summary.density != null
-                    ? "Rujukan umum ± 136 pohon/ha"
-                    : "Luas lahan belum diisi"
-                }
-              />
-              <SummaryCard
-                icon={Sprout}
-                title="Sumber Titik"
-                value={
-                  trees.summary.sources[0]
-                    ? `${trees.summary.sources[0].source} (${formatNumber(trees.summary.sources[0].count)})`
-                    : "—"
-                }
-                sub={
-                  trees.summary.sources.length > 1
-                    ? trees.summary.sources
-                        .slice(1)
-                        .map((s) => `${s.source} ${formatNumber(s.count)}`)
-                        .join(" · ")
-                    : "auto = draf model; moved/added/verified = koreksi manusia"
-                }
-              />
-              <SummaryCard
-                icon={ClipboardCheck}
-                title="Vigor Rata-rata"
-                value={
-                  trees.summary.avgVigor != null ? formatDecimal(trees.summary.avgVigor) : "—"
-                }
-                sub={
-                  trees.summary.modelVersion
-                    ? `Model ${trees.summary.modelVersion}`
-                    : "Belum ada data vigor"
-                }
-              />
-            </div>
-
-            <ParcelMapView
-              geometry={parcel.geometry}
-              heightClassName="h-[480px]"
-              treePoints={trees.points}
-            />
-            <p className="text-xs text-muted-foreground">
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#facc15] border border-[#854d0e] mr-1.5 align-middle" />
-              Titik kuning = pohon sawit ({formatNumber(trees.summary.count)} titik). Sumber titik:
-              auto = draf model deteksi, moved = digeser manusia, added = ditambah manusia, verified
-              = diperiksa manusia. Upload ulang lewat Bulk Upload &gt; Pohon Sawit akan mengganti
-              seluruh set titik lahan ini (set lama tersimpan sebagai riwayat nonaktif).
-            </p>
-          </div>
-        )}
       </SectionCard>
 
       {/* Section: Produksi — grafik bulanan kontinu + tabel pivot per tahun */}
