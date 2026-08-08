@@ -5,23 +5,6 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import type { PermissionLevel } from "@prisma/client";
 
-// ─── Query overrides for a single user ────────────────────────────────────────
-export async function getUserMenuOverrides(userId: string) {
-  if (!(await hasPermission("settings-users", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  return prisma.userPermissionOverride.findMany({
-    where: {
-      userId,
-      isActive: true,
-    },
-    include: {
-      menu: true,
-    },
-  });
-}
-
 // ─── Query active menu items ──────────────────────────────────────────────────
 export async function getMenuItemsForSelect() {
   if (!(await hasPermission("settings-users", "EDIT"))) {

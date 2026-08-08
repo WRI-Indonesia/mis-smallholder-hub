@@ -349,7 +349,7 @@ export interface TrainingCoverageRow {
   totalFarmers: number;
   /** Petani unik terlatih per paket. */
   byPackage: Record<TrainingPackageCode, number>;
-  /** Petani unik yang ikut paket apa pun. */
+  /** Petani unik yang pernah ikut minimal 1 paket. */
   anyPackage: number;
   /**
    * Saat filter tahun aktif: petani unik yang dilatih paket ybs HANYA di tahun

@@ -17,14 +17,6 @@ import type {
   BmpFarmerGroupCategory,
 } from "@/types/dashboard";
 
-export const AVAILABILITY_DOMAIN_ORDER: AvailabilityDomainKey[] = [
-  "profil",
-  "petani",
-  "lahan",
-  "pelatihan",
-  "produksi",
-];
-
 export const AVAILABILITY_DOMAIN_LABELS: Record<AvailabilityDomainKey, string> = {
   profil: "Profil Lembaga",
   petani: "Petani",

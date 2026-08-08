@@ -23,14 +23,14 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 │   └── Petani Lulus Post-Test (≥ 60, #214)
 ├── Card Capaian Paket per Distrik (full row, collapsible, #198; tersembunyi saat filter Lembaga aktif)
 │   ├── Legend Sudah/Belum
-│   ├── Tabel paket × distrik (baris = paket + Min. 1 Paket; kolom = Total (Riau) lalu distrik, header memuat total petani; lebar kolom seragam)
+│   ├── Tabel paket × distrik (baris = paket + Pernah Ikut Pelatihan; kolom = Total (Riau) lalu distrik, header memuat total petani; lebar kolom seragam)
 │   ├── Sel: % di kiri + stacked bar tebal (sudah di segmen hijau, belum di segmen abu)
 │   └── Empty state
 ├── Matriks Capaian Paket per Lembaga (collapsible)
 │   ├── Kolom Lembaga Petani
 │   ├── Kolom Petani
 │   ├── Kolom paket (dinamis)
-│   ├── Kolom Min. 1 Paket
+│   ├── Kolom Pernah Ikut Pelatihan
 │   ├── Heatmap sel (klik → dialog drill-down)
 │   ├── Legenda skala
 │   └── Empty state
@@ -107,8 +107,8 @@ Satu angka besar per card, pembanding di sub-teks dengan token beraksen `StatEmp
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Judul | Collapsible trigger | "Capaian Paket per Distrik" (default terbuka; ringkasan saat dilipat: jumlah distrik + % terlatih min. 1 paket) + legend Sudah/Belum (kanan bawah). Card **disembunyikan saat filter Lembaga aktif** (roll-up distrik atas satu Lembaga tidak bermakna); kolom Total (Riau) disembunyikan bila hanya 1 distrik |
-| Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Min. 1 Paket; kolom = **Total (Riau)** (agregat scope, ber-border pemisah; disembunyikan bila hanya 1 distrik dalam scope) lalu distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
+| Judul | Collapsible trigger | "Capaian Paket per Distrik" (default terbuka; ringkasan saat dilipat: jumlah distrik + % pernah ikut pelatihan) + legend Sudah/Belum (kanan bawah). Card **disembunyikan saat filter Lembaga aktif** (roll-up distrik atas satu Lembaga tidak bermakna); kolom Total (Riau) disembunyikan bila hanya 1 distrik |
+| Tabel | Paket × distrik (transposisi, revisi owner) | Baris = paket + Pernah Ikut Pelatihan (baris agregat ber-latar `bg-muted/40` + pemisah atas tegas — pembeda struktural, bar tetap emerald konsisten legend); kolom = **Total (Riau)** (agregat scope, ber-border pemisah; disembunyikan bila hanya 1 distrik dalam scope) lalu distrik (header memuat total petani); roll-up via `trainingDistrictCoverage` (Σ antar Lembaga aman — petani milik tepat satu Lembaga); lebar kolom distrik seragam |
 | Sel | Stacked bar tebal | Persen di kiri luar bar; segmen hijau memuat jumlah sudah, segmen abu memuat jumlah belum; "muat"-nya label diukur dari lebar piksel segmen via container query (≥3rem), bukan persen (#205); distrik tanpa petani → "—" |
 | Tooltip sel | Tooltip terstruktur (Base UI) | Menggantikan `title` native (#205): judul "{paket} — {distrik / Total (Riau)}", baris per segmen (chip warna + label + jumlah + persen), footer "dari {n} petani aktif" — isi mengikuti mode tanpa/dengan filter Tahun |
 | Sel saat filter Tahun aktif | Stacked bar 3 segmen | Hijau tua = dilatih **tahun terpilih** (persen kiri mengacu segmen ini), hijau muda = dilatih **hanya di tahun lain** (`byPackageOtherYears`/`anyPackageOtherYears` dari `trainingCoverageMatrix` — petani dilatih di kedua kelompok tahun dihitung sekali di "tahun ini"), abu = **belum pernah dilatih**. Legend & catatan kaki menyesuaikan ("Dilatih {tahun} · Tahun lain · Belum pernah"). Angka dilatih tahun terpilih selalu tampil: di dalam segmen hijau tua bila muat, bila sempit menempel tepat setelah batas segmen; angka "tahun lain" rata kanan segmennya dan butuh ruang lebih (≥6rem) agar tak bertabrakan (#205). Cakupan kumulatif — petani yang dilatih tahun lain tidak terhitung "belum" |
@@ -126,7 +126,7 @@ Label tahun: "semua tahun" atau "{YYYY}".
 | Kolom "Lembaga Petani" | Kolom tabel (sortable) | Nama + baris kecil "{kode} · {distrik}" |
 | Kolom "Petani" | Kolom tabel (sortable) | Jumlah petani aktif Lembaga |
 | Kolom paket | Kolom tabel (sortable, dinamis) | Header ringkas: "Paket 1", "Paket 2 - MK", "Paket 2 - HSE", "Paket 3 & 4", "Lainnya" — hanya paket yang aktif pada irisan; sel = persen + jumlah petani; tooltip header = label paket lengkap |
-| Kolom "Min. 1 Paket" | Kolom tabel (sortable) | Petani yang mengikuti paket apa pun (target 100%); sel diberi ring pembeda |
+| Kolom "Pernah Ikut Pelatihan" | Kolom tabel (sortable) | Petani yang pernah mengikuti minimal 1 paket pelatihan (target 100%); sel diberi ring pembeda |
 | Heatmap sel | Skala warna | 0% (rose), <25%, 25–49%, 50–74%, 75–99%, 100% (gradasi emerald, 100%/tuntas paling tua — #194); Lembaga tanpa petani aktif = sel abu "—" |
 | Tooltip sel | Tooltip terstruktur (`StatTooltip`, #213) | Judul = label paket + subtitle nama Lembaga; baris chip+jumlah+persen: tanpa filter Tahun "Sudah ikut"/"Belum", dengan filter Tahun "Ikut {tahun}"/"Ikut tahun lain"/"Belum pernah" (#202, chip sinkron warna segmen bar Distrik); footer "dari {n} petani aktif" + baris target ("Kurang {n} menuju target {t}% — klik sel untuk daftar petaninya" / "Target {t}% tercapai" / "Di luar paket program — tanpa target"); Lembaga tanpa petani aktif → footer khusus |
 | Sel dapat diklik | Tombol | Aktif hanya bila Lembaga punya petani aktif dan masih ada kekurangan menuju target → membuka dialog drill-down |

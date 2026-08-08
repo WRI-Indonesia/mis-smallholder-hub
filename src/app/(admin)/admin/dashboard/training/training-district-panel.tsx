@@ -202,7 +202,7 @@ export function TrainingDistrictPanel({
                     ? "Persen & jumlah petani sudah dilatih per paket di tiap distrik — arahkan kursor ke sel untuk angka belum dilatih."
                     : `${formatNumber(districts.length)} distrik · ${formatPct(
                         summaryFarmers > 0 ? (summaryTrained / summaryFarmers) * 100 : 0,
-                      )}% petani terlatih (min. 1 paket)`}
+                      )}% petani pernah ikut pelatihan`}
                 </span>
               </span>
               <ChevronDown
@@ -287,17 +287,23 @@ export function TrainingDistrictPanel({
                         ))}
                       </tr>
                     ))}
-                    <tr className="align-middle border-t border-border/40">
+                    {/* Baris agregat: dibedakan struktural (jeda + latar + pemisah
+                        tegas), bar tetap emerald agar konsisten dengan legend
+                        Sudah/Belum. */}
+                    <tr aria-hidden="true" className="h-2">
+                      <td colSpan={1 + (showTotal ? 1 : 0) + districts.length} className="p-0" />
+                    </tr>
+                    <tr className="align-middle border-t-2 border-border/70 bg-muted/40">
                       <td
                         className="py-2.5 pr-4 font-semibold"
-                        title="Petani yang mengikuti paket apa pun"
+                        title="Petani yang pernah mengikuti minimal 1 paket pelatihan"
                       >
-                        Min. 1 Paket
+                        Pernah Ikut Pelatihan
                       </td>
                       {showTotal && (
                         <td className="py-2.5 px-2 border-r border-border/60">
                           <DistrictCell
-                            label="Min. 1 Paket — Total (Riau)"
+                            label="Pernah Ikut Pelatihan — Total (Riau)"
                             trained={summaryTrained}
                             trainedOther={summaryTrainedOther}
                             total={summaryFarmers}
@@ -308,7 +314,7 @@ export function TrainingDistrictPanel({
                       {districts.map((d) => (
                         <td key={d.districtName} className="py-2.5 px-2">
                           <DistrictCell
-                            label={`Min. 1 Paket — ${d.districtName}`}
+                            label={`Pernah Ikut Pelatihan — ${d.districtName}`}
                             trained={d.anyPackage}
                             trainedOther={d.anyPackageOtherYears}
                             total={d.totalFarmers}

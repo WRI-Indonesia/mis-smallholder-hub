@@ -41,27 +41,6 @@ export async function getUsers(search?: string) {
   });
 }
 
-export async function getUserById(id: string) {
-  if (!(await hasPermission("settings-users", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  return prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-      provinces: { select: { provinceId: true } },
-      districts: { select: { districtId: true } },
-      farmerGroups: { select: { farmerGroupId: true } },
-    },
-  });
-}
-
 export async function createUser(input: CreateUserInput) {
   if (!(await hasPermission("settings-users", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menambah user" };

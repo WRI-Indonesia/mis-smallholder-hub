@@ -49,7 +49,7 @@
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193 |
 | DA-03 | Dashboard Ketersediaan Data | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks, bar chart, panel anomali); live query; tanpa DONOR (#193) |
  
-**Total Tests**: **47 files / 722 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
+**Total Tests**: **49 files / 778 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 

@@ -22,12 +22,3 @@ export const ROLE_BADGE_CLASS: Record<Role, string> = {
   MANAGEMENT: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   DONOR: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
 };
-
-/** Penjelasan singkat peran (referensi UI/dokumentasi). */
-export const ROLE_DESCRIPTION: Record<Role, string> = {
-  SUPERADMIN: "Akses penuh seluruh menu dan data.",
-  ADMIN: "Kelola data dalam cakupan wilayah yang ditugaskan.",
-  OPERATOR: "Petugas lapangan: input & ubah data lembaga/KT yang ditugaskan.",
-  MANAGEMENT: "Read-only: dashboard, laporan, dan analisa.",
-  DONOR: "Read-only untuk donor/funder: dashboard, laporan, dan peta.",
-};
