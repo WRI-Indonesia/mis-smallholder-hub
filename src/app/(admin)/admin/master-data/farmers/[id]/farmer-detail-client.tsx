@@ -398,7 +398,21 @@ export function FarmerDetailClient({
                   <tbody>
                     {parcels.map((p) => (
                       <tr key={p.id} className="border-b last:border-0">
-                        <td className="py-2 pr-4 font-mono">{p.parcelId}</td>
+                        <td className="py-2 pr-4 font-mono">
+                          {canViewParcel ? (
+                            // Tab baru agar posisi tab/scroll halaman petani tak hilang (pola #224).
+                            <Link
+                              href={`/admin/master-data/parcels/${p.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {p.parcelId}
+                            </Link>
+                          ) : (
+                            p.parcelId
+                          )}
+                        </td>
                         <td className="py-2 pr-4">{p.subGroupLv2 ?? "—"}</td>
                         <td className="py-2 pr-4">{p.blok ?? "—"}</td>
                         <td className="py-2 pr-4 text-right tabular-nums">
@@ -471,6 +485,8 @@ export function FarmerDetailClient({
                             {canViewParcel ? (
                               <Link
                                 href={`/admin/master-data/parcels/${t.parcelDbId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-primary hover:underline"
                               >
                                 {t.parcelId}

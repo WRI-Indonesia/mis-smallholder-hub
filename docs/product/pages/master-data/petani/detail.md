@@ -52,10 +52,10 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | Kartu ringkasan (5) | Kartu | `Lahan` (persil + Ha), `Produksi` (Ton), `Pelatihan` (n/n paket), `Kelengkapan Profil` (n/n + field yang belum), `Produktivitas Terakhir` (Ton/Ha) |
 | Tabs | Tab | `Ringkasan`, `Lahan`, `Pohon`, `Pelatihan`, `Produksi` |
 | Tab Ringkasan | Kartu | Field: `Lembaga Petani` (link), `Distrik`, `Jenis Kelamin`, `NIK` (disensor), `Tempat, Tanggal Lahir` (+ umur), `Tahun Bergabung`, `Alamat`, `Dibuat`, `Terakhir Diubah` |
-| Tab Lahan — `Daftar Lahan (n)` | Tabel | `Kode Lahan`, `Kelompok Tani`, `Blok`, `Luas (Ha)`, `Tahun Tanam`, `Revisi`, `Profil Lahan`; empty state `Petani ini belum memiliki lahan.` |
+| Tab Lahan — `Daftar Lahan (n)` | Tabel | `Kode Lahan` (link detail lahan **tab baru** — pola #224, gate `canViewParcel`), `Kelompok Tani`, `Blok`, `Luas (Ha)`, `Tahun Tanam`, `Revisi`, `Profil Lahan`; empty state `Petani ini belum memiliki lahan.` |
 | Tombol `PDF` per baris lahan | Tombol | Unduh Farm Passport via `getFarmerParcelPassport` + `generateFarmPassportPdf` |
 | Tab Lahan — `Sebaran Lahan` | Peta | `ParcelsDistributionMap` (dynamic, ssr:false); popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
-| Tab Pohon — `Pohon Sawit per Lahan` | Tabel | `Kode Lahan` (link ke detail lahan, gate `canViewParcel`), `Jumlah Pohon`, `Luas (Ha)`, `Kerapatan (pohon/ha)`, `Diunggah` + baris Total; data agregat `getFarmerTreeSummary` (#238); empty state `Belum ada data titik pohon untuk lahan petani ini…` |
+| Tab Pohon — `Pohon Sawit per Lahan` | Tabel | `Kode Lahan` (link detail lahan **tab baru**, gate `canViewParcel`), `Jumlah Pohon`, `Luas (Ha)`, `Kerapatan (pohon/ha)`, `Diunggah` + baris Total; data agregat `getFarmerTreeSummary` (#238); empty state `Belum ada data titik pohon untuk lahan petani ini…` |
 | Tab Pelatihan — `Paket Wajib` | Checklist | Per paket: ikon ✓/✗, label, jumlah partisipasi (`n×`) atau `Belum` |
 | Tab Pelatihan — `Riwayat Partisipasi (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Pre → Post Test`; empty state `Belum pernah mengikuti pelatihan.` |
 | Tab Produksi | Tabel + kartu | Sama pola dengan detail Lembaga: `Produksi per Tahun` (expandable bulanan) + `Ketersediaan Data Produksi per Lahan`; empty state `Belum ada data produksi untuk petani ini.` |
