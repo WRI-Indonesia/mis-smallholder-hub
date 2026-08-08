@@ -15,6 +15,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [standards/rbac.md](./standards/rbac.md) | RBAC data-access hierarchy, user assignment & menu-access UI, hierarchical menu |
 | [standards/ui-ux.md](./standards/ui-ux.md) | Prinsip UI/UX, tabel, bulk upload, shapefile, geospatial, dashboard snapshot |
 | [standards/architecture.md](./standards/architecture.md) | Informasi proyek, arsitektur, tech stack |
+| [standards/ai-model-guide.md](./standards/ai-model-guide.md) | Panduan pilih model & effort AI (Claude Code) per kelas tugas |
 
 ## 🗄️ Database (`database/`) — skema, indeks, operasional DB
 
