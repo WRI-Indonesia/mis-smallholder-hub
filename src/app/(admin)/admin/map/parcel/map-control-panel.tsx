@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame, Minimize2, MapPinned } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame, Minimize2, MapPinned, Download, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,8 +13,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import type { MapData, MapSelectOption, MapGroupOption } from "@/types/map";
 import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } from "./map-overlays";
 import {
-  HOTSPOT_RECENT_COLOR,
-  HOTSPOT_OLDER_COLOR,
+  HOTSPOT_CONF_COLORS,
+  HOTSPOT_CONF_LABELS,
+  type HotspotConfBucket,
   type HotspotState,
   type HotspotDayRange,
 } from "./map-hotspot";
@@ -25,6 +26,9 @@ export type LayerVisibility = {
   parcelPoints: boolean;
   parcelAreas: boolean;
 };
+
+/** Layer internal yang bisa dituju tombol zoom di panel (klik label). */
+export type LayerZoomTarget = "kt" | "parcelPoints" | "parcelAreas" | "hotspot";
 
 interface Props {
   provinces: MapSelectOption[];
@@ -43,6 +47,7 @@ interface Props {
   counts: MapData["counts"] | null;
   layers: LayerVisibility;
   onLayersChange: (layers: LayerVisibility) => void;
+  onZoomLayer: (target: LayerZoomTarget) => void;
   overlays: OverlayState;
   onOverlaysChange: (overlays: OverlayState) => void;
   customLayers: CustomLayer[];
@@ -54,7 +59,13 @@ interface Props {
   hotspot: HotspotState;
   onHotspotChange: (hotspot: HotspotState) => void;
   hotspotLoading: boolean;
-  hotspotCount: number;
+  hotspotCounts: Record<HotspotConfBucket, number>;
+  onHotspotDownloadShp: () => void;
+  onHotspotPrintPdf: () => void;
+  /** Kalkulasi jarak lembaga terdekat masih berjalan → tombol PDF menunggu. */
+  hotspotPdfCalculating: boolean;
+  /** Buka ulang modal ringkasan titik api (auto-terbuka saat kalkulasi selesai). */
+  onHotspotShowSummary: () => void;
   helpSlot?: React.ReactNode;
 }
 
@@ -131,13 +142,15 @@ interface LegendRowProps {
   count: number;
   checked: boolean;
   onToggle: (checked: boolean) => void;
+  /** Klik label = zoom ke sebaran data layer (checkbox tetap toggle visibilitas). */
+  onZoomTo: () => void;
   variant?: "dot" | "area";
 }
 
-function LegendRow({ color, label, count, checked, onToggle, variant = "dot" }: LegendRowProps) {
+function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot" }: LegendRowProps) {
   return (
-    <label className="flex items-center gap-2.5 py-1 cursor-pointer">
-      <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} />
+    <div className="flex items-center gap-2.5 py-1">
+      <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} aria-label={label} />
       <span
         className={cn("inline-block h-3 w-3 shrink-0", variant === "area" ? "rounded-sm border-2" : "rounded-full")}
         style={
@@ -146,9 +159,17 @@ function LegendRow({ color, label, count, checked, onToggle, variant = "dot" }: 
             : { backgroundColor: color }
         }
       />
-      <span className="text-sm flex-1">{label}</span>
+      <button
+        type="button"
+        onClick={onZoomTo}
+        disabled={count === 0}
+        title="Zoom ke sebaran data layer"
+        className="flex-1 text-left text-sm hover:underline disabled:cursor-default disabled:no-underline"
+      >
+        {label}
+      </button>
       <span className="text-xs font-mono text-muted-foreground tabular-nums">{count}</span>
-    </label>
+    </div>
   );
 }
 
@@ -198,10 +219,11 @@ export function MapControlPanel(props: Props) {
     provinceId, districtId, farmerGroupId,
     onProvinceChange, onDistrictChange, onFarmerGroupChange,
     onLoad, isLoading, filterOpen, onFilterOpenChange,
-    counts, layers, onLayersChange,
+    counts, layers, onLayersChange, onZoomLayer,
     overlays, onOverlaysChange,
     customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer, onZoomCustomLayer, onCustomLayerSymbology,
-    hotspot, onHotspotChange, hotspotLoading, hotspotCount,
+    hotspot, onHotspotChange, hotspotLoading, hotspotCounts,
+    onHotspotDownloadShp, onHotspotPrintPdf, hotspotPdfCalculating, onHotspotShowSummary,
     helpSlot,
   } = props;
 
@@ -210,6 +232,12 @@ export function MapControlPanel(props: Props) {
   const [legendOpen, setLegendOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
   const anyOverlayOn = Object.values(overlays.visible).some(Boolean);
+  const hotspotTotal = hotspotCounts.high + hotspotCounts.nominal + hotspotCounts.low;
+  // Titik api baru bisa dinyalakan setelah data lahan dimuat (perlu titik
+  // Lembaga Petani untuk kalkulasi jarak di laporan PDF). Saat sudah nyala,
+  // checkbox tetap bisa dipakai untuk mematikan.
+  const hotspotDisabled = counts === null && !hotspot.visible;
+  const hotspotExportDisabled = !hotspot.visible || hotspotLoading || hotspotTotal === 0;
 
   // Minimized → just a floating icon button (same pattern as Peta BMP).
   if (minimized) {
@@ -323,6 +351,7 @@ export function MapControlPanel(props: Props) {
                       count={counts.kt}
                       checked={layers.kt}
                       onToggle={(v) => onLayersChange({ ...layers, kt: v })}
+                      onZoomTo={() => onZoomLayer("kt")}
                     />
                     <LegendRow
                       color="#3b82f6"
@@ -330,6 +359,7 @@ export function MapControlPanel(props: Props) {
                       count={counts.parcelPoints}
                       checked={layers.parcelPoints}
                       onToggle={(v) => onLayersChange({ ...layers, parcelPoints: v })}
+                      onZoomTo={() => onZoomLayer("parcelPoints")}
                     />
                     <LegendRow
                       color="#16a34a"
@@ -337,6 +367,7 @@ export function MapControlPanel(props: Props) {
                       count={counts.parcelAreas}
                       checked={layers.parcelAreas}
                       onToggle={(v) => onLayersChange({ ...layers, parcelAreas: v })}
+                      onZoomTo={() => onZoomLayer("parcelAreas")}
                       variant="area"
                     />
                   </div>
@@ -411,30 +442,44 @@ export function MapControlPanel(props: Props) {
         />
         <CollapsibleContent>
           <div className="px-4 pb-4">
-            <label className="flex items-center gap-2.5 py-1 cursor-pointer">
+            <div
+              className="flex items-center gap-2.5 py-1"
+              title={hotspotDisabled ? "Muat data lahan dulu untuk menampilkan titik api" : undefined}
+            >
               <Checkbox
                 checked={hotspot.visible}
+                disabled={hotspotDisabled}
                 onCheckedChange={(v) => onHotspotChange({ ...hotspot, visible: !!v })}
+                aria-label="Tampilkan titik api"
               />
-              <Flame className="h-4 w-4 shrink-0 text-red-500" />
-              <span className="text-sm flex-1">Tampilkan titik api</span>
+              <Flame className={cn("h-4 w-4 shrink-0", hotspotDisabled ? "text-muted-foreground" : "text-red-500")} />
+              <button
+                type="button"
+                onClick={() => onZoomLayer("hotspot")}
+                disabled={!hotspot.visible || hotspotLoading}
+                title="Zoom ke sebaran titik api"
+                className="flex-1 text-left text-sm hover:underline disabled:cursor-default disabled:no-underline"
+              >
+                Tampilkan titik api
+              </button>
               {hotspot.visible && hotspotLoading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
               ) : (
                 hotspot.visible && (
-                  <span className="text-xs font-mono text-muted-foreground tabular-nums">{hotspotCount}</span>
+                  <span className="text-xs font-mono text-muted-foreground tabular-nums">{hotspotTotal}</span>
                 )
               )}
-            </label>
+            </div>
 
             {/* Time window selector */}
             <div className="mt-3 flex gap-1 rounded-md border p-0.5">
               {([1, 5] as HotspotDayRange[]).map((d) => (
                 <button
                   key={d}
+                  disabled={hotspotDisabled}
                   onClick={() => onHotspotChange({ ...hotspot, dayRange: d })}
                   className={cn(
-                    "flex-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+                    "flex-1 rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-default disabled:opacity-50",
                     hotspot.dayRange === d
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -445,16 +490,74 @@ export function MapControlPanel(props: Props) {
               ))}
             </div>
 
-            {/* Recency legend */}
+            {/* Confidence legend + per-class counts */}
             <div className="mt-3 flex flex-col gap-1.5">
-              <span className="flex items-center gap-2 text-xs">
-                <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: HOTSPOT_RECENT_COLOR }} />
-                <span className="text-muted-foreground">&lt; 24 jam terakhir</span>
-              </span>
-              <span className="flex items-center gap-2 text-xs">
-                <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: HOTSPOT_OLDER_COLOR }} />
-                <span className="text-muted-foreground">1–5 hari terakhir</span>
-              </span>
+              <span className="text-xs font-medium">Keyakinan deteksi</span>
+              {(["high", "nominal", "low"] as HotspotConfBucket[]).map((b) => (
+                <span key={b} className="flex items-center gap-2 text-xs">
+                  <span
+                    className="inline-block h-3 w-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: HOTSPOT_CONF_COLORS[b] }}
+                  />
+                  <span className="flex-1 text-muted-foreground">{HOTSPOT_CONF_LABELS[b]}</span>
+                  {hotspot.visible && !hotspotLoading && (
+                    <span className="font-mono text-muted-foreground tabular-nums">{hotspotCounts[b]}</span>
+                  )}
+                </span>
+              ))}
+            </div>
+
+            {/* Ringkasan (modal) + ekspor titik api: ZIP Shapefile + laporan PDF */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 h-7 w-full text-xs"
+              disabled={hotspotExportDisabled || hotspotPdfCalculating}
+              onClick={onHotspotShowSummary}
+              title={
+                hotspotPdfCalculating
+                  ? "Menghitung jarak ke Lembaga Petani…"
+                  : "Lihat ringkasan & daftar titik api terdekat"
+              }
+            >
+              {hotspotPdfCalculating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <List className="h-3.5 w-3.5" />
+              )}
+              Lihat Ringkasan
+            </Button>
+            <div className="mt-2 flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 flex-1 text-xs"
+                disabled={hotspotExportDisabled}
+                onClick={onHotspotDownloadShp}
+                title="Unduh titik api sebagai ZIP Shapefile"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Unduh SHP
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 flex-1 text-xs"
+                disabled={hotspotExportDisabled || hotspotPdfCalculating}
+                onClick={onHotspotPrintPdf}
+                title={
+                  hotspotPdfCalculating
+                    ? "Menghitung jarak ke Lembaga Petani…"
+                    : "Cetak daftar titik api sebagai PDF"
+                }
+              >
+                {hotspotPdfCalculating ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Printer className="h-3.5 w-3.5" />
+                )}
+                Cetak PDF
+              </Button>
             </div>
 
             <p className="mt-3 text-[10px] leading-snug text-muted-foreground">

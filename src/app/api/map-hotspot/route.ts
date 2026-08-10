@@ -22,8 +22,9 @@ export const runtime = "nodejs";
 const FIRMS_BASE = "https://firms.modaps.eosdis.nasa.gov/api/area/csv";
 const SOURCE = "VIIRS_SNPP_NRT";
 const TIMEOUT_MS = 20_000;
-// UI exposes only these two windows; both within the FIRMS [1..5] day cap.
-const ALLOWED_DAY_RANGE = new Set([1, 5]);
+// UI exposes two windows: "24 jam" fetches 2 UTC days (client trims to a
+// rolling 24 h) and "5 hari" fetches 5. Both within the FIRMS [1..5] day cap.
+const ALLOWED_DAY_RANGE = new Set([2, 5]);
 
 export async function GET(req: NextRequest) {
   if (!(await hasPermission("map-parcel", "VIEW"))) {
