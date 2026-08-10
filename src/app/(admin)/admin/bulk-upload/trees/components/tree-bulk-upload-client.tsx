@@ -25,6 +25,7 @@ import {
   type TreeGroupInput,
   type SkippedTreeFeature,
 } from "@/lib/tree-upload";
+import { formatNumber } from "@/lib/format";
 
 interface Props {
   parcels: TreeUploadParcel[];
@@ -40,7 +41,6 @@ interface PreviewGroup {
   ambiguous: boolean;
 }
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 

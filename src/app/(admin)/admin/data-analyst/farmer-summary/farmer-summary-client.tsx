@@ -14,6 +14,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { getFarmerGroupsForAnalyst, getFarmerSummary, getFarmersWithoutParcels } from "@/server/actions/data-analyst";
 import type { FarmerDetailRow, FarmerSummaryResult, FarmerNoParcelsRow, FarmersWithoutParcelsResult } from "@/types/data-analyst";
+import { formatNumber } from "@/lib/format";
 
 interface District {
   id: string;
@@ -83,10 +84,6 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
 
   const selectedDistrictObj = districts.find((d) => d.id === selectedDistrict);
   const selectedGroupObj = farmerGroups.find((g) => g.id === selectedFarmerGroup);
-
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("id-ID").format(num);
-  };
 
   const formatArea = (num: number) => {
     return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + " ha";

@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Activity, LandPlot, Users } from "lucide-react";
 import { StatEmph } from "@/components/shared/stat-emph";
 import type { BmpGroupTotals } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatTon = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 

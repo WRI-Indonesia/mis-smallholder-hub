@@ -6,8 +6,7 @@ import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-too
 import { availabilityScoreRows, scoreBand } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, BAND_LEGEND } from "./score-band-styles";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
+import { formatNumber } from "@/lib/format";
 
 /**
  * Bar horizontal skor kelengkapan per Lembaga, terburuk dulu — daftar kerja

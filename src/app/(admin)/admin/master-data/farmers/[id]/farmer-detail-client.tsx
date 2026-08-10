@@ -28,6 +28,7 @@ import { maskNik, maskBirthDate } from "@/lib/mask";
 import type { FarmerDetailData } from "@/lib/farmer-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
 import type { FarmerTreeParcelSummary } from "@/server/actions/tree";
+import { formatNumber } from "@/lib/format";
 
 const ParcelsDistributionMap = dynamic(
   () =>
@@ -80,7 +81,6 @@ interface Props {
   canEditParcel: boolean;
 }
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const formatDate = (d: Date | null) =>

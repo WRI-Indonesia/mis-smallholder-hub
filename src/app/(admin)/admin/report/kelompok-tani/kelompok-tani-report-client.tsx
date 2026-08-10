@@ -21,6 +21,7 @@ import {
 import { getFarmerGroupsForKtReport, getKelompokTaniReport } from "@/server/actions/report";
 import type { KelompokTaniReportResult } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
+import { formatNumber } from "@/lib/format";
 
 interface District {
   id: string;
@@ -111,7 +112,6 @@ export function KelompokTaniReportClient({ districts }: Props) {
   const selectedDistrictObj = districts.find((d) => d.id === selectedDistrict);
   const selectedGroupObj = farmerGroups.find((g) => g.id === selectedFarmerGroup);
 
-  const formatNumber = (num: number) => new Intl.NumberFormat("id-ID").format(num);
   const formatLuas = (num: number) =>
     new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
   const displayOrUnknown = (v: string | null) => v ?? UNKNOWN;

@@ -24,6 +24,7 @@ import type {
   ProductionMonthRow,
   ProductionYearRow,
 } from "@/lib/production-stats";
+import { formatNumber } from "@/lib/format";
 
 const MONTH_LABELS = [
   "Jan",
@@ -41,7 +42,6 @@ const MONTH_LABELS = [
 ];
 
 // Instance formatter di-cache di level modul — jangan konstruksi per sel per render.
-const NUM_FMT = new Intl.NumberFormat("id-ID");
 const DEC2_FMT = new Intl.NumberFormat("id-ID", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -55,7 +55,6 @@ const tonFmt = (digits: number) => {
   }
   return f;
 };
-const formatNumber = (n: number) => NUM_FMT.format(n);
 const formatDecimal = (n: number) => DEC2_FMT.format(n);
 // Persen sel bulanan: bulat, tapi 0<pct<0,5 jangan tampil "0%" (legenda 0% = abu).
 const formatCellPct = (pct: number) => {

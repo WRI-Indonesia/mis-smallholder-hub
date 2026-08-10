@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getFarmerGroupsForTrainingReport, getTrainingReport } from "@/server/actions/report";
 import type { TrainingReportResult, TrainingActivityReportRow, TrainingFarmerReportRow, TrainingActivityParticipant } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
+import { formatNumber } from "@/lib/format";
 
 interface District {
   id: string;
@@ -49,7 +50,6 @@ export function TrainingReportClient({ districts }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
-
 
   const [reportData, setReportData] = useState<TrainingReportResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -453,10 +453,6 @@ export function TrainingReportClient({ districts }: Props) {
         data: reportData.farmers.map(getCoverageExportRow),
       });
     }
-  };
-
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("id-ID").format(num);
   };
 
   return (

@@ -22,6 +22,7 @@ import { ProductionMonthlyMatrix } from "@/components/shared/production-monthly-
 import { formatGroupType, formatCertStatus } from "@/lib/farmer-group-labels";
 import type { FarmerGroupDetailData } from "@/lib/farmer-group-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
+import { formatNumber } from "@/lib/format";
 
 const ParcelsDistributionMap = dynamic(
   () =>
@@ -68,7 +69,6 @@ interface Props {
   canEditParcel: boolean;
 }
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const formatDate = (d: Date) =>

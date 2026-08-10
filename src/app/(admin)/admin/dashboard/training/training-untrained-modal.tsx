@@ -12,8 +12,7 @@ import { exportToExcel } from "@/lib/xlsx";
 import { getUntrainedFarmers } from "@/server/actions/dashboard-training";
 import { TRAINING_PACKAGE_LABELS } from "@/lib/training-dashboard-aggregation";
 import type { TrainingPackageCode, UntrainedFarmer } from "@/types/dashboard";
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
+import { formatNumber } from "@/lib/format";
 
 export interface UntrainedTarget {
   groupId: string;

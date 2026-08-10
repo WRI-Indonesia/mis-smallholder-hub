@@ -29,6 +29,7 @@ import {
   formatIspoCert,
   formatSapMapAssurance,
 } from "@/lib/farmer-group-labels";
+import { formatNumber } from "@/lib/format";
 
 interface FarmerGroup {
   id: string;
@@ -73,7 +74,6 @@ interface Props {
 const certSortValue = (year: number | null, status: string | null) =>
   status === "CERTIFIED" ? `0-${year ?? 9999}` : status === "PLANNED" ? `1-${year ?? 9999}` : null;
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatArea = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 

@@ -34,6 +34,7 @@ import type { Geometry, Position } from "geojson";
 import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
 import type { ProductionSummary, ProductionYear } from "@/types/map";
 import type { ParcelTreeData } from "@/server/actions/tree";
+import { formatNumber } from "@/lib/format";
 
 /** Lahan aktif lain milik petani yang sama (tabel navigasi + overlay peta). */
 export interface SiblingParcel {
@@ -56,7 +57,6 @@ interface Props {
   siblingParcels: SiblingParcel[];
 }
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const formatDate = (d: Date | undefined) =>

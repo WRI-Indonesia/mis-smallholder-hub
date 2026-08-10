@@ -2,10 +2,7 @@
 
 import type { ReactNode } from "react";
 import { TooltipContent } from "@/components/ui/tooltip";
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
-const formatPct = (n: number) =>
-  new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
+import { formatNumber, formatPct } from "@/lib/format";
 
 /**
  * Isi tooltip data terstruktur — satu sumber gaya untuk semua sel/bar angka

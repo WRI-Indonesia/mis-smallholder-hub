@@ -14,9 +14,7 @@ import {
   trainingDistrictCoverage,
 } from "@/lib/training-dashboard-aggregation";
 import type { TrainingCoverageRow, TrainingPackageCode } from "@/types/dashboard";
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
-const formatPct = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
+import { formatNumber, formatPct } from "@/lib/format";
 
 /**
  * Satu sel: persen di kiri luar bar (revisi owner #198), lalu stacked bar

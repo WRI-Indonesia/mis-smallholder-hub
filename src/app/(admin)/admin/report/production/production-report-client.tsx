@@ -12,6 +12,7 @@ import { getFarmerGroupsForProductionReport, getProductionReport } from "@/serve
 import type { ProductionReportResult } from "@/types/report";
 import { formatPeriodLabel, enumeratePeriods, PRODUCTION_REPORT_MAX_MONTHS } from "@/lib/report-production";
 import { exportToPDF } from "@/lib/pdf";
+import { formatNumber } from "@/lib/format";
 
 interface District {
   id: string;
@@ -35,7 +36,6 @@ export function ProductionReportClient({ districts }: Props) {
 
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
-
 
   const [reportData, setReportData] = useState<ProductionReportResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -105,8 +105,6 @@ export function ProductionReportClient({ districts }: Props) {
 
   const selectedDistrictObj = districts.find((d) => d.id === selectedDistrict);
   const selectedGroupObj = farmerGroups.find((g) => g.id === selectedFarmerGroup);
-
-  const formatNumber = (num: number) => new Intl.NumberFormat("id-ID").format(num);
 
   const formatCell = (num: number | undefined) => {
     if (num == null) return "";

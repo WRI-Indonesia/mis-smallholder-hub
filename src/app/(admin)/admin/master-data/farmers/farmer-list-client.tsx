@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { maskNik, maskBirthDate } from "@/lib/mask";
+import { formatNumber } from "@/lib/format";
 
 interface Farmer {
   id: string;
@@ -59,8 +60,6 @@ interface Props {
   permissions: string[];
   isSuperAdmin: boolean;
 }
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 
 export function FarmerListClient({
   initialFarmers,

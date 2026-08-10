@@ -106,15 +106,11 @@ export async function bulkCreateFarmers(
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      for (const record of validatedRecords) {
-        await tx.farmer.create({
-          data: {
-            ...record,
-            createdBy: userId,
-          },
-        });
-      }
+    // Satu INSERT massal (audit #233) — semula create per baris = N round-trip
+    // berurutan dalam transaksi. createMany tetap atomik (satu statement) dan
+    // tetap melempar P2002 pada bentrok ID Petani per Lembaga (TD-024).
+    await prisma.farmer.createMany({
+      data: validatedRecords.map((record) => ({ ...record, createdBy: userId })),
     });
 
     return { success: true, data: { count: validatedRecords.length } };

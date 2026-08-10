@@ -3,8 +3,8 @@ import { Gauge, Building2, Users, Map, GraduationCap, TrendingUp } from "lucide-
 import { scoreBand } from "@/lib/data-availability-aggregation";
 import { BAND_TEXT } from "./score-band-styles";
 import type { AvailabilityTotals } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatScore = (n: number) =>
   new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
 
