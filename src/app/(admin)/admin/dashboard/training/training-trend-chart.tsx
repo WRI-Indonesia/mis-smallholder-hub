@@ -5,8 +5,7 @@ import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TRAINING_PACKAGE_SHORT } from "@/lib/training-dashboard-aggregation";
 import type { TrainingPackageCode, TrainingTrendBucket } from "@/types/dashboard";
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
+import { formatNumber } from "@/lib/format";
 
 /** Warna seri per paket — dipakai bersama batang stacked dan legenda. */
 const PACKAGE_COLORS: Record<TrainingPackageCode, string> = {

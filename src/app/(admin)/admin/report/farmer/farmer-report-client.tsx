@@ -12,6 +12,7 @@ import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { getFarmerGroupsForReport, getFarmerReport } from "@/server/actions/report";
 import type { FarmerReportRow, FarmerReportResult } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
+import { formatNumber } from "@/lib/format";
 
 interface District {
   id: string;
@@ -111,10 +112,6 @@ export function FarmerReportClient({ districts }: Props) {
     });
   };
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("id-ID").format(num);
-  };
-
   const formatArea = (num: number) => {
     return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + " Ha";
   };
@@ -184,8 +181,6 @@ export function FarmerReportClient({ districts }: Props) {
       totalArea: row.totalArea,
     };
   };
-
-
 
   return (
     <div className="space-y-6">

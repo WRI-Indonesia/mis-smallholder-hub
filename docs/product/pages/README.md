@@ -28,7 +28,8 @@ docs/product/pages/
 ├── bulk-upload/                  Menu: Bulk Upload
 │   ├── upload-petani.md
 │   ├── upload-produksi.md
-│   └── lahan.md
+│   ├── lahan.md
+│   └── pohon.md
 ├── data-analyst/                 Menu: Data Analyst
 │   ├── ringkasan-petani.md
 │   ├── analisa-ketersediaan-data.md

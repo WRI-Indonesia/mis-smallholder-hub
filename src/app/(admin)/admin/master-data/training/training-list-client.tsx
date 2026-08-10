@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/format";
 
 export const TRAINING_CATEGORY_LABELS: Record<string, string> = {
   PAKET_1_BMP_PC_RSPO_NKT: "Paket 1 - BMP + P&C RSPO + NKT",
@@ -96,8 +97,6 @@ interface Props {
   permissions: string[];
   isSuperAdmin: boolean;
 }
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 
 export function TrainingListClient({
   initialActivities,

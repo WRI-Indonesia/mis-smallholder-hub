@@ -2,8 +2,8 @@ import Link from "next/link";
 import { AlertTriangle, FileWarning, MapPinOff, UserX, ClipboardX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TrainingQualityStats } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const pct = (part: number, total: number) =>
   total > 0 ? `${Math.round((part / total) * 1000) / 10}%` : "—";
 

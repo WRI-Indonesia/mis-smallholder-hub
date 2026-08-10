@@ -49,6 +49,7 @@ Halaman: Role & Permission (/admin/settings/roles)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `settings-roles` (`findTutorialForMenu`), dibuka di tab baru |
 | `Role & Permission` | Heading | `h1`, deskripsi: `Atur default permission per role untuk setiap menu` |
 | Pencarian | Filter | Placeholder `Cari menu...`; mencocokkan `title`/`key` level 1–3, leluhur ikut tampil, subtree cocok di-expand paksa |
 | `Buka semua` / `Tutup semua` | Tombol | Buka/tutup seluruh induk; state disimpan `localStorage` (`role-matrix:open`), default *collapsed*; nonaktif saat mencari |

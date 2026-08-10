@@ -7,8 +7,8 @@ import {
   TRAINING_PASS_SCORE,
 } from "@/lib/training-dashboard-aggregation";
 import type { TrainingScoreRow } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(n);
 

@@ -48,6 +48,7 @@ Halaman: Peta BMP (/admin/map/bmp)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Panel "Peta BMP" | Panel mengambang | Card kiri-atas, header sticky ikon `Sprout`, tombol "Minimalkan"; saat minimize jadi tombol "Buka panel filter" |
+| `Panduan` | Tautan | `HelpHint` di header panel (sebelah tombol Minimalkan) menuju tutorial Bantuan untuk `map-bmp`; dirender server via prop `helpSlot` (markdown Bantuan tak masuk bundle client), dibuka di tab baru; ikut tersembunyi saat panel di-minimize |
 | Filter | Section collapsible | Terbuka default; tertutup otomatis setelah data dimuat |
 | Provinsi | Filter (combobox) | Placeholder "Pilih Provinsi (opsional)" |
 | Distrik | Filter (combobox) | Placeholder "Pilih Distrik (opsional)" |

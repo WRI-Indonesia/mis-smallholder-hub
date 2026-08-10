@@ -33,6 +33,8 @@
 | Farmer | UNIQUE | `(farmerGroupId, farmerId)` | ID Petani unik per Lembaga (TD-024, migration 20260721060000) |
 | **Land Parcel** | | | |
 | LandParcel | PK | `id` (CUID) | Primary key |
+| **Tree** | | | |
+| Tree | PK | `id` (CUID) | Primary key |
 | **Training** | | | |
 | TrainingPackage | PK | `id` (CUID) | Primary key |
 | TrainingPackage | UNIQUE | `code` (TrainingCategory enum) | Package lookup by category |
@@ -78,6 +80,9 @@
 | **LandParcel** | `farmerId` | Get all parcels for a farmer | HIGH — list parcels, map view |
 | LandParcel | `isActive` | Filter active parcels | HIGH |
 | LandParcel | `parcelId` | Search parcel by ID | MEDIUM — lookup operations |
+| **Tree** | `(landParcelId, isActive)` | Set pohon aktif satu lahan (detail lahan, agregat count) | HIGH — tabel terbesar (10⁵–10⁶ baris), semua query lewat index ini |
+| Tree | `parcelId` | Relink pohon ke lahan by kunci bisnis (revisi lahan) | MEDIUM |
+| Tree | `isActive` | Filter global pohon aktif | LOW |
 | **ProductionRecord** | `farmerId` | Get all production records for a farmer | HIGH — list production, farmer summary |
 | ProductionRecord | `parcelId` | Get production records by parcel | MEDIUM — parcel-level analysis |
 | ProductionRecord | `period` | Filter production by period (YYYY-MM) | HIGH — monthly/yearly reports |

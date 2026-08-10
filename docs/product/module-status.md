@@ -14,7 +14,7 @@
 | Phase | Module | Key Features |
 |-------|--------|--------------|
 | PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup |
-| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 20 model / 19 migrasi / 11 file schema) |
+| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 21 model / 21 migrasi / 12 file schema) |
 | PLATFORM-03 | Schema Hardening | Audit fields, soft-delete pattern |
 | PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides; +role **DONOR** read-only (#187) + sentralisasi daftar role ke `src/lib/roles.ts` |
 | PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child; perombakan UI Menu Management & Role & Permission (#187B): render rekursif 3 level (`menu-tree.ts`), collapsible, sticky header/kolom, selektor role, kaskade induk→anak, SUPERADMIN dikecualikan dari matriks |
@@ -31,7 +31,7 @@
 | DASH-03 | Interactive Map | MapLibre cluster KT + info panel (dashboard-map) |
 | DASH-04 | BMP Dashboard (Produksi) | Snapshot-backed `/admin/dashboard/bmp` (#166, dirombak #191): 4 card KPI (Produktivitas · Total Produksi · Luasan terdata/total · Petani Terdata; sub-teks %→total→tahun) + 2 grafik 50/50 (combo tren produksi/% lahan terdata + ranking Top-10 produktivitas per Lembaga) + card besar **Ex-Plasma vs Swadaya** (3 metrik + analisa per distrik + per **umur tanaman** fase sawit dari `byYearAge`); filter Tahun default tahun berjalan, Rataan di bawah; panel Ketersediaan Data dihapus (tetap di Peta BMP); terminologi "Terdata"; tools generate `/admin/tools/snapshot-bmp` |
 | DASH-06 | Dashboard Pelatihan | **Live query (bukan snapshot)** `/admin/dashboard/training` (dirombak #198): 4 KPI card satu-angka-besar (Petani Terlatih, Total Sesi, Partisipasi Perempuan, Kenaikan Skor; pola StatEmph) + card collapsible **Capaian Paket per Distrik** (paket × distrik, kolom Total (Riau), stacked bar sudah/belum) + matriks **Capaian Paket per Lembaga** (heatmap sortable, collapsible, lebar kolom seragam) + tren stacked-bar per paket + panel efektivitas pre/post + panel kualitas data ("Sesi tanpa …") ber-deep-link; **drill-down sel → daftar petani belum dilatih (salin/Excel)**; target 100% per paket; terminologi **Sesi**; filter Distrik/Lembaga/Tahun client-side (filter Kategori dihapus #198) |
-| MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay referensi pemerintah (Kawasan Hutan & Gambut, #215) + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible; aksi popup **Lihat Detail**/**Edit Lahan** ber-gate permission via primitif bersama `map-popup.tsx` (#188) |
+| MAP-01 | Map: Peta Lahan | Peta full-bleed + overlay referensi pemerintah (Kawasan Hutan & Gambut, #215) + custom GIS + hotspot FIRMS + ruler + label (#113); produksi popup real + PDF "Profil Lahan" matriks (#134); panel daftar lahan search+zoom (#135); legenda collapsible; aksi popup **Lihat Detail**/**Edit Lahan** ber-gate permission via primitif bersama `map-popup.tsx` (#188); revamp Titik Api (#240): 24 jam bergulir, breakdown keyakinan, klik label = zoom, ekspor SHP/PDF < 15 km + modal ringkasan |
 | MAP-02 | Map: Peta BMP (Layer 1) | Peta tematik **Ketersediaan Data Produksi** per-lahan, 4 kategori dari run bulan berturut-turut produksi (#144); KT wajib (Prov/Distrik opsional); `getBmpMapData` (groupBy scoped, no N+1) + data-driven color MapLibre. **Poligon saja tanpa titik** (NONE outline-only, lainnya fill). **Cetak** → PDF A4 landscape (hal.1 peta+legend, hal.2+ matriks per lahan × bulan = total kg/latar hijau) + **Download Excel** matriks. **Panel kanan floating minimizable**: matriks ketersediaan per lahan × bulan (true/false) + Zoom to. Seed `map-bmp` menu+VIEW ✅. Aksi popup Lihat Detail/Edit Lahan standar #188 (`map-popup.tsx`) |
 | MAP-03 | Map: Peta BMP Layer 2 (Produktivitas) | Layer tematik kedua di halaman yang sama (#174): **Produktivitas (Ton/Ha) per persil** = Σ produksi tahun ÷ luas persil; panel kiri **2 section layer ber-radio** ("Ketersediaan Data Produksi" / "Produktivitas (Ton/Ha)", satu aktif); selektor **Tahun (default terbaru) + Rata-rata**; 5 kelas warna (≥20 / 15–20 / 10–15 / <10 / tanpa data outline-only, ambang `PRODUCTIVITY_*_MIN`). Hitung **realtime client-side** (pure helper `map-data.ts` atas payload `getBmpMapData` existing — zero query/migration baru). **Cetak & Excel WYSIWYG ikut layer aktif**: layer Produktivitas → PDF legend produktivitas + tabel Ton/Ha per lahan × tahun (sel berwarna kelas) + Excel Produktivitas |
 | RPT-01 | Report Petani | Filter cascade wajib + Excel & PDF (#107) |
@@ -43,20 +43,20 @@
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
 | BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
-| HELP-01 | Bantuan | Panduan in-app: **indeks → bab → topik** (satu topik = satu halaman, `/admin/help/[chapter]/[topic]`), sidebar tree + **pencarian** client-side, tombol topik sebelumnya/berikutnya. **Konten Markdown** di `src/content/help/**.md` (editable tanpa menyentuh kode; frontmatter title/icon/intro), parser subset tanpa dependency + dukungan **gambar, video, sematan YouTube/Vimeo, dan aset S3 privat (`s3://key` → presigned per-request, #185)**; menu top-level, 5 role VIEW. 6 bab / 11 topik: istilah domain, akun, hak akses, Master Data, Bulk Upload, Dashboard, Peta, Data Analyst, Report, Tools, FAQ (#182 #183 #184) |
-| HELP-02 | Bantuan: Tutorial per Tugas | Tiga lapis (tutorial/konsep/referensi); 23 tutorial + 4 referensi dengan **dua tingkat kedalaman dari satu sumber** (baris `+`); toggle Ringkas/Detail & lipat daftar isi tanpa JS; personalisasi per izin; bantuan kontekstual `HelpHint` di 23 halaman (semua kecuali 2 halaman peta full-screen & halaman tanpa tutorial) |
+| HELP-01 | Bantuan | Panduan in-app: **indeks → bab → topik** (satu topik = satu halaman, `/admin/help/[chapter]/[topic]`), sidebar tree + **pencarian** client-side, tombol topik sebelumnya/berikutnya. **Konten Markdown** di `src/content/help/**.md` (editable tanpa menyentuh kode; frontmatter title/icon/intro), parser subset tanpa dependency + dukungan **gambar, video, sematan YouTube/Vimeo, dan aset S3 privat (`s3://key` → presigned per-request, #185)**; menu top-level, 5 role VIEW. 6 bab / 12 topik: istilah domain, akun, hak akses, cara memakai Bantuan (#207), Master Data, Bulk Upload, Dashboard, Peta, Data Analyst, Report, Tools, FAQ (#182 #183 #184) |
+| HELP-02 | Bantuan: Tutorial per Tugas | Tiga lapis (tutorial/konsep/referensi); 28 tutorial + 4 referensi dengan **dua tingkat kedalaman dari satu sumber** (baris `+`); toggle Ringkas/Detail & lipat daftar isi tanpa JS; personalisasi per izin; bantuan kontekstual `HelpHint` di 29 halaman — termasuk 2 halaman peta full-screen, di header panel filter via prop `helpSlot` (#207); +`u-4` unggah pohon (#238) |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193 |
 | DA-03 | Dashboard Ketersediaan Data | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks, bar chart, panel anomali); live query; tanpa DONOR (#193) |
  
-**Total Tests**: **49 files / 778 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
+**Total Tests**: **49 files / 787 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
 ## In Progress (🟠 3 Phases)
 
 | Phase | Module | Status | Missing |
 |-------|--------|--------|---------|
 | TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager (CLI sudah ada) |
-| OPS-01 | Testing | Partial | RPT-03 (#132), RPT-04 (#154, +14 unit) & DASH-05 (#148, +2 unit) ✅ tercakup; gap tersisa: integration test route hotspot |
+| OPS-01 | Testing | Done | RPT-03 (#132), RPT-04 (#154, +14 unit) & DASH-05 (#148, +2 unit) ✅ tercakup; integration test route hotspot ✅ #231 (`map-hotspot-route.test.ts`, 9 test, 2026-08-10) — gap terakhir tertutup |
 | OPS-02 | DevOps | Partial | Verifikasi deployment/rollback; status Dockerfile vs CI |
 
 ## Planned - Now (🔲 Priority)
@@ -118,6 +118,8 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris
 | Report (umum) | report.test.ts | 14 | ✅ |
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 13 | ✅ |
 | Hotspot FIRMS | firms.test.ts | 9 | ✅ |
+| Hotspot route `/api/map-hotspot` (#231) | map-hotspot-route.test.ts | 9 | ✅ |
+| Hotspot klien (24 jam bergulir + keyakinan) | map-hotspot.test.ts | 8 | ✅ |
 | Status upload petani 3 tingkat (#197) | farmer-upload-status.test.ts | 7 | ✅ |
 | Normalisasi sel Excel (#196) | excel-cell.test.ts | 6 | ✅ |
 | Exporter PDF build-vs-save (TD-019 #180) | pdf-exporters.test.ts | 5 | ✅ |
@@ -129,7 +131,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris
 ### Need Coverage
 
 - 🔲 Server-action level tests untuk snapshot RBAC (kini hanya fungsi murni)
-- 🔲 Integration test route `api/map-hotspot` (follow-up MAP-01)
+- ✅ Integration test route `api/map-hotspot` — selesai #231 (`map-hotspot-route.test.ts`, 2026-08-10)
 
 ## Code Compliance (rule.md)
 

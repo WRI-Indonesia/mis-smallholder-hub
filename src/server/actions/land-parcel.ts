@@ -140,9 +140,9 @@ export async function getLandParcelProduction(id: string): Promise<ProductionSum
 }
 
 /**
- * Lahan aktif lain milik petani yang sama — badge navigasi antar-lahan dan
- * overlay peta (warna berbeda) di halaman Detail Lahan. Scope via lembaga
- * si petani.
+ * Lahan aktif lain milik petani yang sama — tabel navigasi antar-lahan
+ * (kode/luas/tahun tanam/jumlah pohon) dan overlay peta (warna berbeda) di
+ * halaman Detail Lahan. Scope via lembaga si petani.
  */
 export async function getFarmerSiblingParcels(farmerId: string, excludeParcelDbId: string) {
   if (!(await hasPermission("master-data-parcels", "VIEW"))) {
@@ -151,16 +151,27 @@ export async function getFarmerSiblingParcels(farmerId: string, excludeParcelDbI
 
   const access = await getAccessContext();
 
-  return prisma.landParcel.findMany({
+  const parcels = await prisma.landParcel.findMany({
     where: {
       farmerId,
       isActive: true,
       id: { not: excludeParcelDbId },
       ...farmerRelationAccessFilter(access),
     },
-    select: { id: true, parcelId: true, geometry: true },
+    select: { id: true, parcelId: true, geometry: true, area: true, plantingYear: true },
     orderBy: { parcelId: "asc" },
   });
+  if (parcels.length === 0) return [];
+
+  // Jumlah pohon aktif per lahan — agregat, jangan tarik titiknya (#238).
+  const grouped = await prisma.tree.groupBy({
+    by: ["landParcelId"],
+    where: { landParcelId: { in: parcels.map((p) => p.id) }, isActive: true },
+    _count: { _all: true },
+  });
+  const treeCounts = new Map(grouped.map((g) => [g.landParcelId, g._count._all]));
+
+  return parcels.map((p) => ({ ...p, treeCount: treeCounts.get(p.id) ?? 0 }));
 }
 
 /**
@@ -277,6 +288,15 @@ export async function updateLandParcel(input: UpdateLandParcelInput) {
       modifiedBy: session?.user?.id ?? null,
     },
   });
+
+  // Tree menyimpan parcelId denormalisasi (#238) — ikutkan bila ID lahan
+  // diganti lewat form, agar jangkar bisnis titik pohon tidak basi.
+  if (data.parcelId !== existing.parcelId) {
+    await prisma.tree.updateMany({
+      where: { landParcelId: id },
+      data: { parcelId: data.parcelId, modifiedBy: session?.user?.id ?? null },
+    });
+  }
 
   return { success: true };
 }

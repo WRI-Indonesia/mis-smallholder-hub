@@ -14,8 +14,7 @@ import {
 } from "@/server/actions/production";
 import { toast } from "sonner";
 import { Loader2, Lock } from "lucide-react";
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
+import { formatNumber } from "@/lib/format";
 
 const MAX_HARVESTS = 4;
 

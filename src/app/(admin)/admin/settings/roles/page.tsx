@@ -1,3 +1,4 @@
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { requirePermission } from "@/lib/rbac";
 import { getRolePermissions } from "@/server/actions/role-permission";
 import { getAllMenuItems } from "@/server/actions/menu";
@@ -13,7 +14,10 @@ export default async function RolesPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Role & Permission</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Role & Permission</h1>
+          <HelpHint menuKey="settings-roles" />
+        </div>
         <p className="text-muted-foreground">Atur default permission per role untuk setiap menu</p>
       </div>
       <RoleMatrixClient

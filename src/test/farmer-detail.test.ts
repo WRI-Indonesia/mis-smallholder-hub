@@ -22,6 +22,7 @@ function parcel(id: string, area: number | null, extra: Partial<FarmerDetailRawI
     cropType: null,
     landStatus: null,
     revision: 0,
+    isPsr: false,
     ...extra,
   };
 }
@@ -115,13 +116,59 @@ describe("buildFarmerDetail (#172)", () => {
     expect(d.summary.productionYears).toEqual([2025, 2026]);
   });
 
+  it("produksi.parcelBreakdown (#239): rincian per lahan per tahun + baris Tanpa Lahan + flag excluded", () => {
+    const d = buildFarmerDetail(
+      {
+        ...baseFarmer,
+        landParcels: [
+          parcel("p1", 2, { plantingYear: 2015 }),
+          parcel("p2", 1, { isPsr: true }), // → excluded pada varian Exclude
+        ],
+        productionRecords: [
+          { parcelId: "p1", period: "2025-01", yieldKg: 1000 },
+          { parcelId: "p1", period: "2025-01", yieldKg: 500 }, // 2 record sebulan → agregat
+          { parcelId: "p1", period: "2024-06", yieldKg: 400 }, // tahun lain → baris terpisah
+          { parcelId: "p2", period: "2025-02", yieldKg: 200 },
+          { parcelId: null, period: "2025-03", yieldKg: 300 }, // → baris "Tanpa Lahan"
+          { parcelId: "ghost", period: "2025-04", yieldKg: 50 }, // lahan di luar daftar aktif
+        ],
+      },
+      PACKAGES,
+      2026
+    );
+
+    const bd = d.produksi.parcelBreakdown;
+    const p1y2025 = bd.find((r) => r.parcelKey === "p1" && r.year === 2025)!;
+    expect(p1y2025.label).toBe("L-p1");
+    expect(p1y2025.months[1]).toEqual({ totalKg: 1500, recordCount: 2 });
+    expect(p1y2025.totalKg).toBe(1500);
+    expect(p1y2025.productivityTonHa).toBe(0.75); // 1,5 Ton ÷ 2 Ha
+    expect(p1y2025.excluded).toBe(false);
+    expect(p1y2025.plantingYear).toBe(2015);
+
+    expect(bd.find((r) => r.parcelKey === "p1" && r.year === 2024)!.totalKg).toBe(400);
+    expect(bd.find((r) => r.parcelKey === "p2" && r.year === 2025)!.excluded).toBe(true);
+
+    const none = bd.find((r) => r.parcelKey === "__none__")!;
+    expect(none.label).toBe("Tanpa Lahan");
+    expect(none.area).toBeNull();
+    expect(none.excluded).toBe(false);
+    expect(none.months[3]).toEqual({ totalKg: 300, recordCount: 1 });
+    expect(none.productivityTonHa).toBe(0); // tanpa luas → 0
+
+    // Konsistensi dgn buildExcludeVariant: lahan di luar daftar aktif ikut
+    // terbuang pada varian Exclude (excluded=true), beda dgn "Tanpa Lahan".
+    const ghost = bd.find((r) => r.parcelKey === "ghost")!;
+    expect(ghost.excluded).toBe(true);
+  });
+
   it("tanpa produksi → lastProductivity null; ketersediaan semua NONE", () => {
     const d = buildFarmerDetail(
       { ...baseFarmer, landParcels: [parcel("p1", 1)] },
       PACKAGES
     );
     expect(d.summary.lastProductivity).toBeNull();
-    expect(d.produksi.perYear).toEqual([]);
+    expect(d.produksi.all.perYear).toEqual([]);
     expect(d.produksi.availability).toEqual({ BAIK: 0, CUKUP: 0, KURANG: 0, NONE: 1 });
   });
 });

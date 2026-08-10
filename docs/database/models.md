@@ -305,6 +305,7 @@ prisma/schema/
 ├── farmer-group.prisma   # FarmerGroup
 ├── farmer.prisma         # Farmer
 ├── land-parcel.prisma    # LandParcel
+├── tree.prisma           # Tree (titik pohon sawit per lahan, #238)
 ├── production.prisma     # ProductionRecord
 ├── training.prisma       # TrainingPackage, TrainingActivity, TrainingParticipant
 ├── dashboard-snapshot.prisma # MainDashboardSnapshot, BmpDashboardSnapshot

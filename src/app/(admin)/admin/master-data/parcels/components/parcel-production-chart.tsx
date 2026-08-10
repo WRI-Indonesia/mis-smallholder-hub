@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProductionYear } from "@/types/map";
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
+import { formatNumber } from "@/lib/format";
 
 const MONTH_LABELS = [
   "Jan",

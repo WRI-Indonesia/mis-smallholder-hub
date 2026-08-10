@@ -22,7 +22,7 @@
 - **Master Data**: ✅ CRUD penuh Pelatihan/Lahan/Produksi (scope distrik); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`)
 - **Settings**: ❌ No access (tidak ada baris seed `settings-*` untuk ADMIN)
 - **Report**: ✅ Semua report (data ter-scope)
-- **Bulk Upload**: ✅ Petani, Lahan & Produksi (CREATE+VIEW, scope masing-masing)
+- **Bulk Upload**: ✅ Petani, Lahan, Pohon Sawit & Produksi (CREATE+VIEW, scope masing-masing)
 - **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data + Dashboard Ketersediaan Data)
 - **Bantuan**: ✅ VIEW
 - **Tools**: ✅ Dashboard Snapshot + Snapshot BMP (generate/view/delete, scope distrik)
@@ -33,7 +33,7 @@
 - **Master Data**: ✅ Pelatihan CRUD penuh; Lahan & Produksi CREATE/EDIT/VIEW (**tanpa DELETE**); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`) — dalam scope Lembaga yang di-assign
 - **Settings**: ❌ No access
 - **Report**: ✅ Semua report (data ter-scope Lembaga)
-- **Bulk Upload**: ✅ Petani & Produksi (CREATE+VIEW); Lahan hanya VIEW warisan dari `bulk-upload` (tanpa CREATE)
+- **Bulk Upload**: ✅ Petani & Produksi (CREATE+VIEW); Lahan & Pohon Sawit hanya VIEW warisan dari `bulk-upload` (tanpa CREATE)
 - **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data + Dashboard Ketersediaan Data)
 - **Bantuan**: ✅ VIEW
 - **Tools**: ❌ No access (tidak diberi akses Dashboard Snapshot)

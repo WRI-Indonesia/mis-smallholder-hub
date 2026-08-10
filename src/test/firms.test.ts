@@ -1,8 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { parseBbox, acqDatetime, isFirmsCsv, csvToGeoJSON } from "@/lib/firms";
+import { parseBbox, acqDatetime, isFirmsCsv, csvToGeoJSON, upstreamDayRange } from "@/lib/firms";
 
 const HEADER =
   "latitude,longitude,bright_ti4,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_ti5,frp,daynight";
+
+describe("upstreamDayRange", () => {
+  it("memetakan window UI ke hari upstream, termasuk nilai lama 1 → 2", () => {
+    expect(upstreamDayRange(1)).toBe(2);
+    expect(upstreamDayRange(2)).toBe(2);
+    expect(upstreamDayRange(5)).toBe(5);
+  });
+
+  it("menolak nilai di luar kontrak", () => {
+    expect(upstreamDayRange(0)).toBeNull();
+    expect(upstreamDayRange(3)).toBeNull();
+    expect(upstreamDayRange(6)).toBeNull();
+    expect(upstreamDayRange(NaN)).toBeNull();
+  });
+});
 
 describe("parseBbox", () => {
   it("accepts a valid west,south,east,north bbox", () => {

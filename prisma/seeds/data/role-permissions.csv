@@ -202,3 +202,7 @@ DONOR,map,VIEW
 DONOR,map-parcel,VIEW
 DONOR,map-bmp,VIEW
 DONOR,help,VIEW
+SUPERADMIN,bulk-upload-trees,CREATE
+SUPERADMIN,bulk-upload-trees,VIEW
+ADMIN,bulk-upload-trees,CREATE
+ADMIN,bulk-upload-trees,VIEW

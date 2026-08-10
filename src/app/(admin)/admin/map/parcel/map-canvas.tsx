@@ -16,7 +16,7 @@ import { MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan } 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
-import type { LayerVisibility } from "./map-control-panel";
+import type { LayerVisibility, LayerZoomTarget } from "./map-control-panel";
 import {
   MAP_OVERLAYS,
   overlayTileUrl,
@@ -25,8 +25,10 @@ import {
   type CustomLayer,
 } from "./map-overlays";
 import {
-  HOTSPOT_RECENT_COLOR,
-  HOTSPOT_OLDER_COLOR,
+  HOTSPOT_CONF_COLORS,
+  formatWib,
+  confidenceLabel,
+  satelliteLabel,
   type HotspotState,
 } from "./map-hotspot";
 import {
@@ -128,6 +130,10 @@ interface Props {
   customLayers: CustomLayer[];
   /** Permintaan zoom ke satu layer GIS tambahan (token membedakan klik berulang). */
   customZoomRequest: { id: string; token: number } | null;
+  /** Permintaan zoom ke layer internal dari klik label panel kiri. */
+  layerZoomRequest: { target: LayerZoomTarget; token: number } | null;
+  /** Permintaan zoom ke satu titik (klik baris tabel ringkasan titik api). */
+  pointZoomRequest: { coord: [number, number]; token: number } | null;
   hotspot: HotspotState;
   hotspotData: FeatureCollection | null;
   canViewParcel: boolean;
@@ -136,7 +142,7 @@ interface Props {
   onParcelUpdated: () => void;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -327,14 +333,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     [data]
   );
 
-  const fitAll = useCallback(() => {
+  const fitCoords = useCallback((coords: [number, number][]) => {
     const map = mapRef.current;
-    if (!map || !data) return;
-    const coords: [number, number][] = [
-      ...data.kelompokTani.map((kt) => [kt.long, kt.lat] as [number, number]),
-      ...data.parcels.map((p) => p.centroid),
-    ];
-    if (coords.length === 0) return;
+    if (!map || coords.length === 0) return;
     if (coords.length === 1) {
       map.easeTo({ center: coords[0], zoom: 13, duration: 600 });
       return;
@@ -347,11 +348,46 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       maxLat = Math.max(maxLat, lat);
     }
     map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 80, maxZoom: 15, duration: 600 });
-  }, [data]);
+  }, []);
+
+  const fitAll = useCallback(() => {
+    if (!data) return;
+    fitCoords([
+      ...data.kelompokTani.map((kt) => [kt.long, kt.lat] as [number, number]),
+      ...data.parcels.map((p) => p.centroid),
+    ]);
+  }, [data, fitCoords]);
 
   useEffect(() => {
     fitAll();
   }, [fitAll]);
+
+  // Zoom ke layer internal saat label di panel kiri diklik (Legenda / Titik Api).
+  const handledLayerZoomToken = useRef<number | null>(null);
+  useEffect(() => {
+    if (!layerZoomRequest || layerZoomRequest.token === handledLayerZoomToken.current) return;
+    handledLayerZoomToken.current = layerZoomRequest.token;
+    if (layerZoomRequest.target === "hotspot") {
+      fitCoords(
+        (hotspotData?.features ?? [])
+          .filter((f) => f.geometry.type === "Point")
+          .map((f) => (f.geometry as Point).coordinates as [number, number])
+      );
+    } else if (layerZoomRequest.target === "kt") {
+      fitCoords((data?.kelompokTani ?? []).map((kt) => [kt.long, kt.lat] as [number, number]));
+    } else {
+      fitCoords((data?.parcels ?? []).map((p) => p.centroid));
+    }
+  }, [layerZoomRequest, data, hotspotData, fitCoords]);
+
+  // Zoom ke satu titik api dari klik baris tabel ringkasan.
+  const handledPointZoomToken = useRef<number | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !pointZoomRequest || pointZoomRequest.token === handledPointZoomToken.current) return;
+    handledPointZoomToken.current = pointZoomRequest.token;
+    map.easeTo({ center: pointZoomRequest.coord, zoom: 14, duration: 600 });
+  }, [pointZoomRequest]);
 
   // Zoom to a newly-added vector GIS layer so the user can see where it landed.
   const fittedLayerIds = useRef<Set<string>>(new Set());
@@ -663,7 +699,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           />
         </Source>
 
-        {/* Titik Api (Hotspot) — NASA FIRMS, top layer; colored by recency */}
+        {/* Titik Api (Hotspot) — NASA FIRMS, top layer; colored by confidence */}
         <Source
           id="hotspot-source"
           type="geojson"
@@ -677,10 +713,12 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             paint={{
               "circle-color": [
                 "match",
-                ["get", "ageBucket"],
-                "recent",
-                HOTSPOT_RECENT_COLOR,
-                HOTSPOT_OLDER_COLOR,
+                ["get", "confBucket"],
+                "high",
+                HOTSPOT_CONF_COLORS.high,
+                "low",
+                HOTSPOT_CONF_COLORS.low,
+                HOTSPOT_CONF_COLORS.nominal,
               ],
               "circle-radius": 5,
               "circle-opacity": 0.85,
@@ -1003,37 +1041,6 @@ const ACCENTS = {
   blue: { bar: "bg-blue-500", tint: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
   red: { bar: "bg-red-500", tint: "bg-red-500/10", text: "text-red-600 dark:text-red-400" },
 };
-
-/** Format a FIRMS acquisition timestamp (UTC ISO) as local Jakarta time. */
-function formatWib(iso: string | null | undefined) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return (
-    new Intl.DateTimeFormat("id-ID", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: "Asia/Jakarta",
-    }).format(d) + " WIB"
-  );
-}
-
-/** VIIRS confidence codes (l/n/h) → Bahasa labels; pass through anything else. */
-function confidenceLabel(v: unknown) {
-  const s = String(v ?? "").toLowerCase();
-  if (s === "l") return "Rendah";
-  if (s === "n") return "Nominal";
-  if (s === "h") return "Tinggi";
-  return v == null || v === "" ? "—" : String(v);
-}
-
-/** FIRMS satellite code → readable name (VIIRS S-NPP / NOAA-20). */
-function satelliteLabel(v: unknown) {
-  const s = String(v ?? "").toUpperCase();
-  if (s === "N") return "Suomi NPP";
-  if (s === "1" || s === "NOAA-20") return "NOAA-20";
-  return v == null || v === "" ? "—" : String(v);
-}
 
 /**
  * Popup atribut fitur dari layer GIS tambahan ("Tambah Data GIS Lain"):

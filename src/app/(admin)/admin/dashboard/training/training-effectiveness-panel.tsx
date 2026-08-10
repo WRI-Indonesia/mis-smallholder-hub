@@ -4,8 +4,8 @@ import { ClipboardCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TRAINING_PACKAGE_LABELS } from "@/lib/training-dashboard-aggregation";
 import type { TrainingScoreRow } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(n);
 

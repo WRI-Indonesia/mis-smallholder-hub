@@ -36,6 +36,7 @@ import {
   type LpGridCell,
 } from "@/lib/report-land-parcel";
 import { exportLandParcelReportExcel, type LpExcelImage } from "@/lib/report-land-parcel-xlsx";
+import { formatNumber } from "@/lib/format";
 
 interface District {
   id: string;
@@ -175,7 +176,6 @@ export function LandParcelReportClient({ districts }: Props) {
   const selectedDistrictObj = districts.find((d) => d.id === selectedDistrict);
   const selectedGroupObj = farmerGroups.find((g) => g.id === selectedFarmerGroup);
 
-  const formatNumber = (num: number) => new Intl.NumberFormat("id-ID").format(num);
   const formatLuas = (num: number) =>
     new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
   const displayOrEmpty = (v: string | null) => v ?? EMPTY;

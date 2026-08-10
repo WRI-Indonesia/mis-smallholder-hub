@@ -14,22 +14,25 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 │   ├── Tombol: Profil Lahan (PDF) — disabled tanpa geometri
 │   ├── Tombol: Edit
 │   └── Tombol: Nonaktifkan
-├── Kartu ringkasan (4)
+├── Kartu ringkasan (5)
 │   ├── Luas (Ha, sub: Blok)
+│   ├── Pohon Sawit (jumlah titik, sub: kerapatan pohon/ha — #238)
 │   ├── Umur Tanaman (sub: Tahun tanam)
 │   ├── Produksi (Ton total, sub: jumlah record + rentang tahun; catatan PSR)
 │   └── Kelengkapan Data (n/8 atribut, sub: daftar yang belum diisi)
 ├── Section: Informasi Lahan (collapsible) — peta 60% kiri, keterangan 40% kanan
 │   ├── Peta ParcelMapView (h-560px)
 │   │   ├── Poligon hijau = lahan ini; poligon biru = lahan lain milik petani
+│   │   ├── Titik kuning = pohon sawit bila tersedia (prop treePoints, #238)
 │   │   ├── Tombol Zoom ke Lahan + zoom awal: fitBounds SEMUA lahan
 │   │   └── Pemilih basemap: hybrid / satellite / light / dark
-│   ├── Legenda warna + link koordinat titik pusat → Google Maps
+│   ├── Legenda warna (+ titik kuning bila ada pohon) + link koordinat titik pusat → Google Maps
 │   ├── Kolom kanan: ID Lahan, Blok, Kelompok Tani, Status Kepemilikan,
 │   │   Tahun Tanam (+umur), Komoditas, Species, Catatan ("Belum diisi" bila kosong)
 │   ├── Meta: Revisi ke-N · Dibuat · Diubah
 │   └── Sub-bagian Pemilik: Nama (link), ID Petani, Lembaga (link), Distrik,
-│       badge Lahan Lain Milik Petani (link antar-detail lahan)
+│       tabel Lahan Lain Milik Petani (Kode ber-link antar-detail · Luas ·
+│       Tahun Tanam · Jumlah Pohon)
 ├── Section: Produksi (collapsible)
 │   ├── Konteks: Luas · Tahun Tanam · Species
 │   ├── Grafik batang bulanan kontinu (ParcelProductionChart)
@@ -51,7 +54,7 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 | File | `parcels/[id]/page.tsx` + `parcel-detail-client.tsx` (+ `components/parcel-map-view.tsx`, `parcel-production-chart.tsx`, `parcel-production-month-modal.tsx`) |
 | Tipe | Server Component + client component |
 | Guard | `requirePermission("master-data-parcels")` + `getUserPermissionsForMenu` (menu Lahan **dan** menu Produksi); `notFound()` bila kosong |
-| Server action / data | `getLandParcelById(id)`, `getLandParcelProduction(id)`, `getFarmerSiblingParcels`, `getFarmerOptions`; PDF `getLandParcelPassport`; produksi per bulan `getParcelPeriodRecords` + `create/update/deleteProductionRecord`; mutasi `deleteLandParcel` |
+| Server action / data | `getLandParcelById(id)`, `getLandParcelProduction(id)`, `getParcelTrees(id)` (`src/server/actions/tree.ts`), `getFarmerSiblingParcels`, `getFarmerOptions`; PDF `getLandParcelPassport`; produksi per bulan `getParcelPeriodRecords` + `create/update/deleteProductionRecord`; mutasi `deleteLandParcel` |
 
 ## Objek halaman
 
@@ -61,9 +64,9 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 | Tombol `Profil Lahan (PDF)` | Tombol | VIEW — Farm Passport via `getLandParcelPassport` (guard menu Lahan); disabled bila lahan tanpa geometri |
 | Tombol `Edit` | Tombol | EDIT — buka `ParcelFormModal` |
 | Tombol `Nonaktifkan` | Tombol | DELETE — `deleteLandParcel` dengan konfirmasi `Apakah Anda yakin ingin menonaktifkan lahan ini?` |
-| Kartu ringkasan | Kartu ×4 | `Luas`, `Umur Tanaman`, `Produksi`, `Kelengkapan Data` (8 atribut: Blok, Luas, Status Kepemilikan, Komoditas, Species, Tahun Tanam, Kelompok Tani, Geometri) |
-| Section `Informasi Lahan` | Collapsible | Peta 60% + keterangan 40%; field kosong ditulis *"Belum diisi"*; sub-bagian Pemilik + badge lahan lain milik petani (navigasi antar-lahan) |
-| Peta `ParcelMapView` | Peta | MapLibre; poligon hijau = lahan ini, biru = lahan lain milik petani (`siblingGeometries`); zoom awal & `Zoom ke Lahan` = `fitBounds` semua lahan; link koordinat titik pusat → Google Maps |
+| Kartu ringkasan | Kartu ×5 | `Luas`, `Pohon Sawit` (jumlah titik + kerapatan pohon/ha, #238), `Umur Tanaman`, `Produksi`, `Kelengkapan Data` (8 atribut: Blok, Luas, Status Kepemilikan, Komoditas, Species, Tahun Tanam, Kelompok Tani, Geometri) |
+| Section `Informasi Lahan` | Collapsible | Peta 60% + keterangan 40%; field kosong ditulis *"Belum diisi"*; sub-bagian Pemilik + tabel lahan lain milik petani (Kode ber-link · Luas · Tahun Tanam · Jumlah Pohon — `getFarmerSiblingParcels` kini menyertakan agregat pohon) |
+| Peta `ParcelMapView` | Peta | MapLibre; poligon hijau = lahan ini, biru = lahan lain milik petani (`siblingGeometries`), titik kuning = pohon sawit bila tersedia (`treePoints`, #238 — data `getParcelTrees`); zoom awal & `Zoom ke Lahan` = `fitBounds` semua lahan; link koordinat titik pusat → Google Maps |
 | Empty state peta | Teks | `Tidak ada data spasial (geometri) untuk lahan ini` |
 | Section `Produksi` | Collapsible | Konteks Luas/Tahun Tanam/Species; grafik bulanan kontinu (clip 6 bln/1 thn/2 thn/Semua + slide, sampai bulan berjalan); tabel pivot Tahun × Jan–Des + Total + Ton/Ha, baris s.d. tahun berjalan |
 | Sel bulan tabel produksi | Tombol sel | Klik (butuh CREATE/EDIT menu Produksi) → `ParcelProductionMonthModal`; sel bulan masa depan tidak bisa diklik |

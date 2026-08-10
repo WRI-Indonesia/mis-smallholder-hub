@@ -5,8 +5,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowLeft,
-  ChevronDown,
-  ChevronRight,
   Pencil,
   Users,
   Network,
@@ -20,9 +18,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupFormModal } from "../group-form-modal";
 import { BreadcrumbOverride } from "@/components/layout/admin/breadcrumb-override";
+import { ProductionMonthlyMatrix } from "@/components/shared/production-monthly-matrix";
 import { formatGroupType, formatCertStatus } from "@/lib/farmer-group-labels";
 import type { FarmerGroupDetailData } from "@/lib/farmer-group-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
+import { formatNumber } from "@/lib/format";
 
 const ParcelsDistributionMap = dynamic(
   () =>
@@ -69,33 +69,12 @@ interface Props {
   canEditParcel: boolean;
 }
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const formatDate = (d: Date) =>
   new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(
     new Date(d),
   );
-
-const MONTH_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "Mei",
-  "Jun",
-  "Jul",
-  "Agu",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Des",
-];
-// "2025-03" → "Mar 2025"
-const formatPeriod = (period: string) => {
-  const m = parseInt(period.slice(5, 7), 10);
-  return `${MONTH_LABELS[m - 1] ?? period.slice(5, 7)} ${period.slice(0, 4)}`;
-};
 
 // Badge sertifikasi — pola info panel Main Dashboard (#169).
 function CertBadge({
@@ -186,22 +165,7 @@ export function GroupDetailClient({
   canEditParcel,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
-  // Tahun yang di-expand pada tabel Produksi per Tahun (rincian bulanan).
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const { summary, struktur, pelatihan, produksi } = detail;
-
-  const toggleYear = (year: number) =>
-    setExpandedYears((prev) => {
-      const next = new Set(prev);
-      if (next.has(year)) next.delete(year);
-      else next.add(year);
-      return next;
-    });
-  // Persentase kolom Produksi per Tahun: Record = kelengkapan data bulanan
-  // (lahan×bulan terdata ÷ total persil × 12 — mandatory min. 1 panen/bulan);
-  // lahan/luas terdata thd total persil/luas Lembaga.
-  const pctOf = (part: number, total: number) =>
-    total > 0 ? ` (${formatDecimal((part / total) * 100)}%)` : "";
 
   return (
     <div className="p-6 space-y-6">
@@ -537,104 +501,14 @@ export function GroupDetailClient({
 
         {/* ── Produksi ── */}
         <TabsContent value="produksi" className="space-y-4">
-          <Card className="p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Produksi per Tahun
-            </h2>
-            {produksi.perYear.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Belum ada data produksi untuk Lembaga ini.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
-                      <th className="py-2 pr-4">Tahun</th>
-                      <th className="py-2 pr-4 text-right">Produksi (kg)</th>
-                      <th className="py-2 pr-4 text-right">Record</th>
-                      <th className="py-2 pr-4 text-right">Lahan Terdata</th>
-                      <th className="py-2 pr-4 text-right">Luas Terdata (Ha)</th>
-                      <th className="py-2 text-right">Produktivitas (Ton/Ha)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {produksi.perYear.map((y) => {
-                      const expanded = expandedYears.has(y.year);
-                      return [
-                        <tr
-                          key={y.year}
-                          className="border-b last:border-0 cursor-pointer hover:bg-muted/40"
-                          onClick={() => toggleYear(y.year)}
-                        >
-                          <td className="py-2 pr-4 font-medium tabular-nums">
-                            <span className="inline-flex items-center gap-1">
-                              {expanded ? (
-                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                              )}
-                              {y.year}
-                            </span>
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatDecimal(y.totalKg)}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(y.recordCount)}
-                            {pctOf(y.reportedParcelMonths, summary.totalParcels * 12)}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(y.parcelsReporting)}
-                            {pctOf(y.parcelsReporting, summary.totalParcels)}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatDecimal(y.areaReporting)}
-                            {pctOf(y.areaReporting, summary.totalArea)}
-                          </td>
-                          <td className="py-2 text-right tabular-nums">
-                            {formatDecimal(y.productivityTonHa)}
-                          </td>
-                        </tr>,
-                        ...(expanded
-                          ? y.months.map((m) => (
-                              <tr
-                                key={m.period}
-                                className="border-b last:border-0 bg-muted/30 text-muted-foreground"
-                              >
-                                <td className="py-1.5 pr-4 pl-6 text-xs">
-                                  {formatPeriod(m.period)}
-                                </td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
-                                  {formatDecimal(m.totalKg)}
-                                </td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
-                                  {formatNumber(m.recordCount)}
-                                </td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
-                                  {formatNumber(m.parcelsReporting)}
-                                </td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
-                                  {formatDecimal(m.areaReporting)}
-                                </td>
-                                <td className="py-1.5 text-right text-xs">—</td>
-                              </tr>
-                            ))
-                          : []),
-                      ];
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground mt-3">
-              Produktivitas = Σ produksi tahun tsb ÷ Σ luas lahan yang terdata pada tahun tsb
-              (Ton/Ha). Record tanpa lahan masuk total produksi, tidak menambah luas terdata.
-              Persentase Record = kelengkapan data bulanan (pasangan lahan×bulan yang terdata ÷
-              total persil × 12 bulan — pelaporan wajib min. 1 panen per bulan per lahan);
-              Lahan/Luas Terdata terhadap total persil/luas Lembaga.
-            </p>
-          </Card>
+          <ProductionMonthlyMatrix
+            all={produksi.all}
+            exclude={produksi.exclude}
+            scopeLabel="Lembaga"
+            emptyMessage="Belum ada data produksi untuk Lembaga ini."
+            tonDecimals={0}
+            currentYear={produksi.currentYear}
+          />
 
           <Card className="p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">

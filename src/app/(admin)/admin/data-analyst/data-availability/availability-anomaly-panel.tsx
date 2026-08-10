@@ -5,8 +5,7 @@ import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { topAnomalies } from "@/lib/data-availability-aggregation";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
-
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
+import { formatNumber } from "@/lib/format";
 
 /** Top-10 tipe anomali terbanyak pada irisan yang tampil — prioritas pembersihan data. */
 export function AvailabilityAnomalyPanel({ groups }: { groups: AvailabilityGroupEntry[] }) {

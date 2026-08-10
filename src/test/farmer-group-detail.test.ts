@@ -11,7 +11,7 @@ const PACKAGES = [
 ];
 
 function parcel(id: string, area: number | null, opts: Partial<DetailRawFarmer["landParcels"][number]> = {}) {
-  return { id, area, subGroupLv2: null, blok: null, ...opts };
+  return { id, area, subGroupLv2: null, blok: null, isPsr: false, plantingYear: null, ...opts };
 }
 
 /** Periods "YYYY-MM" berturut mulai start, sebanyak n — untuk kategori ketersediaan. */
@@ -76,8 +76,8 @@ describe("buildFarmerGroupDetail (#171)", () => {
     expect(d.summary.productionTotalKg).toBe(5200);
     expect(d.summary.productionYears).toEqual([2024, 2025]);
 
-    expect(d.produksi.perYear.map((y) => y.year)).toEqual([2025, 2024]); // terbaru dulu
-    const y2025 = d.produksi.perYear[0];
+    expect(d.produksi.all.perYear.map((y) => y.year)).toEqual([2025, 2024]); // terbaru dulu
+    const y2025 = d.produksi.all.perYear[0];
     expect(y2025.totalKg).toBe(4500);
     expect(y2025.recordCount).toBe(4);
     // Kelengkapan bulanan: p1-01, p1-02, p2-03 = 3 pasangan lahan×bulan (record tanpa lahan tak dihitung)
@@ -86,21 +86,52 @@ describe("buildFarmerGroupDetail (#171)", () => {
     expect(y2025.areaReporting).toBe(5); // p1 (2) + p2 (3), dedupe
     expect(y2025.productivityTonHa).toBe(0.9); // 4,5 Ton ÷ 5 Ha
 
-    const y2024 = d.produksi.perYear[1];
+    const y2024 = d.produksi.all.perYear[1];
     expect(y2024.areaReporting).toBe(2);
     expect(y2024.productivityTonHa).toBe(0.35); // 0,7 ÷ 2
 
-    // Rincian bulanan: urut naik, agregat per periode, record tanpa lahan tak menambah lahan/luas
+    // Rincian bulanan: urut naik, agregat per periode, record tanpa lahan tak menambah lahan
+    // (field bulanan dipangkas ke period/totalKg/parcelsReporting — TD-033)
     expect(y2025.months.map((m) => m.period)).toEqual(["2025-01", "2025-02", "2025-03", "2025-04"]);
     const mar = y2025.months.find((m) => m.period === "2025-03")!;
     expect(mar.totalKg).toBe(2000);
-    expect(mar.recordCount).toBe(1);
     expect(mar.parcelsReporting).toBe(1);
-    expect(mar.areaReporting).toBe(3); // p2
     const apr = y2025.months.find((m) => m.period === "2025-04")!;
     expect(apr.totalKg).toBe(500);
     expect(apr.parcelsReporting).toBe(0); // record tanpa lahan
-    expect(apr.areaReporting).toBe(0);
+  });
+
+  it("produksi.exclude (#239): lahan PSR & tanaman <3 thn dibuang beserta record-nya, record tanpa lahan tetap", () => {
+    const farmers: DetailRawFarmer[] = [
+      {
+        id: "f1", farmerId: "F-001", name: "Andi", gender: "M",
+        landParcels: [
+          parcel("pTua", 2, { plantingYear: 2015 }),
+          parcel("pMuda", 3, { plantingYear: 2024 }), // umur 2 thn pada 2026 → dibuang
+          parcel("pPsr", 1, { isPsr: true }), // PSR → dibuang
+          parcel("pBatas", 4, { plantingYear: 2023 }), // umur tepat 3 thn → tetap ikut
+        ],
+        trainingParticipants: [],
+        productionRecords: [
+          { parcelId: "pTua", period: "2025-01", yieldKg: 1000 },
+          { parcelId: "pMuda", period: "2025-01", yieldKg: 500 },
+          { parcelId: "pPsr", period: "2025-02", yieldKg: 200 },
+          { parcelId: null, period: "2025-03", yieldKg: 300 }, // tanpa lahan → tetap dihitung
+        ],
+      },
+    ];
+
+    const d = buildFarmerGroupDetail("g1", "Lembaga Uji", farmers, [], PACKAGES, 2026);
+    // Varian all tak terpengaruh filter
+    expect(d.produksi.all.perYear[0].totalKg).toBe(2000);
+    expect(d.summary.totalParcels).toBe(4);
+    // Exclude: tersisa pTua + pBatas; record pMuda/pPsr dibuang, record tanpa lahan tetap
+    expect(d.produksi.exclude.totalParcels).toBe(2);
+    expect(d.produksi.exclude.totalArea).toBe(6);
+    const y = d.produksi.exclude.perYear[0];
+    expect(y.totalKg).toBe(1300); // 1000 (pTua) + 300 (tanpa lahan)
+    expect(y.parcelsReporting).toBe(1); // hanya pTua yang melapor
+    expect(y.areaReporting).toBe(2);
   });
 
   it("ketersediaan per lahan: kategori dari run bulan berturut (aturan MAP-02)", () => {
@@ -179,7 +210,7 @@ describe("buildFarmerGroupDetail (#171)", () => {
     const d = buildFarmerGroupDetail("g1", "Lembaga Uji", [], [], PACKAGES);
     expect(d.summary.totalFarmers).toBe(0);
     expect(d.summary.productionYears).toEqual([]);
-    expect(d.produksi.perYear).toEqual([]);
+    expect(d.produksi.all.perYear).toEqual([]);
     expect(d.produksi.availability).toEqual({ BAIK: 0, CUKUP: 0, KURANG: 0, NONE: 0 });
     expect(d.pelatihan.coverage.every((c) => c.covered === 0 && c.coveragePct === 0)).toBe(true);
   });

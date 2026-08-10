@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useMemo, useRef, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
@@ -15,7 +15,7 @@ import type {
   MapGroupOption,
 } from "@/types/map";
 import type { FeatureCollection } from "geojson";
-import { MapControlPanel, type LayerVisibility } from "./map-control-panel";
+import { MapControlPanel, type LayerVisibility, type LayerZoomTarget } from "./map-control-panel";
 import {
   DEFAULT_OVERLAY_STATE,
   buildSymbology,
@@ -24,10 +24,19 @@ import {
 } from "./map-overlays";
 import {
   DEFAULT_HOTSPOT_STATE,
+  countByConfidence,
   fetchHotspots,
   RIAU_BBOX,
   type HotspotState,
 } from "./map-hotspot";
+import {
+  calcHotspotNearest,
+  downloadHotspotShapefile,
+  filterNearSorted,
+  printHotspotPdf,
+  type HotspotNearestRow,
+} from "./map-hotspot-export";
+import { HotspotSummaryDialog } from "./map-hotspot-summary";
 
 const MapCanvas = dynamic(
   () => import("./map-canvas").then((m) => m.MapCanvas),
@@ -41,9 +50,11 @@ interface Props {
   provinces: MapSelectOption[];
   canViewParcel: boolean;
   canEditParcel: boolean;
+  /** HelpHint dirender di server agar markdown Bantuan tak masuk bundle client. */
+  helpSlot?: React.ReactNode;
 }
 
-export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Props) {
+export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpSlot }: Props) {
   const [provinceId, setProvinceId] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [farmerGroupId, setFarmerGroupId] = useState<string | null>(null);
@@ -65,6 +76,31 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
   const [hotspot, setHotspot] = useState<HotspotState>(DEFAULT_HOTSPOT_STATE);
   const [hotspotData, setHotspotData] = useState<FeatureCollection | null>(null);
   const [hotspotLoading, setHotspotLoading] = useState(false);
+  // Hasil kalkulasi lembaga terdekat per titik api (lazy, background), beserta
+  // identitas input yang dihitungnya — hasil basi otomatis terabaikan lewat
+  // pengecekan identitas (tanpa reset setState sinkron di effect).
+  const [hotspotNearestResult, setHotspotNearestResult] = useState<{
+    forData: FeatureCollection;
+    forKt: MapData["kelompokTani"];
+    rows: HotspotNearestRow[];
+  } | null>(null);
+  // Modal ringkasan titik api: auto-terbuka saat kalkulasi selesai, bisa
+  // dibuka ulang dari tombol "Lihat Ringkasan" di panel.
+  const [hotspotSummaryOpen, setHotspotSummaryOpen] = useState(false);
+  // Zoom ke satu titik api dari klik baris tabel ringkasan.
+  const [pointZoomRequest, setPointZoomRequest] = useState<{
+    coord: [number, number];
+    token: number;
+  } | null>(null);
+  // Data titik api yang sudah pernah memicu auto-open modal ringkasan.
+  const autoOpenedForData = useRef<FeatureCollection | null>(null);
+  // Snapshot Provinsi & Distrik SAAT data dimuat — header PDF/modal harus
+  // menggambarkan data yang dimuat, bukan pilihan combobox yang bisa berubah
+  // tanpa Muat Data (temuan review 2026-08-10).
+  const [loadedArea, setLoadedArea] = useState<{
+    provinceName: string | null;
+    districtName: string | null;
+  } | null>(null);
 
   const addCustomLayer = (layer: CustomLayer) => setCustomLayers((prev) => [...prev, layer]);
   const removeCustomLayer = (id: string) =>
@@ -90,6 +126,9 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
     setCustomLayers((prev) => prev.map((l) => (l.id === id ? { ...l, visible: true } : l)));
     setCustomZoomRequest({ id, token: Date.now() });
   };
+  // Zoom request ke layer internal (klik label Legenda / Titik Api di panel kiri).
+  const [layerZoomRequest, setLayerZoomRequest] = useState<{ target: LayerZoomTarget; token: number } | null>(null);
+  const zoomToLayer = (target: LayerZoomTarget) => setLayerZoomRequest({ target, token: Date.now() });
   const [isPending, startTransition] = useTransition();
 
   // Refetch districts when province changes.
@@ -163,12 +202,95 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
     else setHotspotLoading(true);
   };
 
+  const hotspotCounts = useMemo(() => countByConfidence(hotspotData), [hotspotData]);
+
+  // Kalkulasi jarak titik api → Lembaga Petani berjalan lazy di background
+  // setelah titik tampil, chunked agar peta tetap responsif saat titik ribuan.
+  // Cetak PDF disabled sampai selesai (lihat hotspotPdfCalculating).
+  useEffect(() => {
+    if (!hotspotData || hotspotData.features.length === 0) return;
+    const ktPoints = mapData?.kelompokTani;
+    if (!ktPoints || ktPoints.length === 0) return;
+    const controller = new AbortController();
+    calcHotspotNearest(hotspotData, ktPoints, controller.signal)
+      .then((rows) => {
+        if (controller.signal.aborted) return;
+        setHotspotNearestResult({ forData: hotspotData, forKt: ktPoints, rows });
+        // Auto-open + toast hanya untuk titik api yang BARU dimuat. Kalkulasi
+        // juga terulang saat mapData berganti identitas (mis. reload setelah
+        // Edit Lahan) — jarak diperbarui diam-diam, modal tidak boleh
+        // menyembul lagi setelah user menutupnya (temuan review 2026-08-10).
+        if (autoOpenedForData.current !== hotspotData) {
+          autoOpenedForData.current = hotspotData;
+          setHotspotSummaryOpen(true);
+          toast.success("Kalkulasi jarak titik api selesai — Cetak PDF siap");
+        }
+      })
+      .catch(() => {
+        // Abort (ganti data/rentang/unmount) — hasil sengaja dibuang.
+      });
+    return () => controller.abort();
+  }, [hotspotData, mapData]);
+
+  // Hasil hanya berlaku untuk pasangan (titik api, lembaga) yang sama persis.
+  const hotspotNearest =
+    hotspotNearestResult &&
+    hotspotNearestResult.forData === hotspotData &&
+    hotspotNearestResult.forKt === (mapData?.kelompokTani ?? null)
+      ? hotspotNearestResult.rows
+      : null;
+
+  const hotspotNearRows = useMemo(
+    () => (hotspotNearest ? filterNearSorted(hotspotNearest) : []),
+    [hotspotNearest]
+  );
+
+  const zoomToHotspotPoint = (lon: number, lat: number) => {
+    setHotspotSummaryOpen(false);
+    setPointZoomRequest({ coord: [lon, lat], token: Date.now() });
+  };
+
+  // PDF menunggu kalkulasi hanya bila memang ada yang dihitung (titik api +
+  // data lembaga sama-sama tersedia); tanpa data peta, PDF tetap bisa dicetak
+  // (kolom jarak "—").
+  const hotspotPdfCalculating =
+    !!hotspotData &&
+    hotspotData.features.length > 0 &&
+    (mapData?.kelompokTani.length ?? 0) > 0 &&
+    hotspotNearest === null;
+
+  const handleHotspotDownloadShp = () => {
+    if (!hotspotData) return;
+    downloadHotspotShapefile(hotspotData, hotspot.dayRange, new Date()).catch(() =>
+      toast.error("Gagal membuat shapefile titik api")
+    );
+  };
+
+  const hotspotArea = loadedArea ?? { provinceName: null, districtName: null };
+
+  const handleHotspotPrintPdf = () => {
+    if (!hotspotData || hotspotPdfCalculating) return;
+    printHotspotPdf(hotspotData, hotspot.dayRange, new Date(), hotspotNearest, hotspotArea).catch(
+      () => toast.error("Gagal membuat PDF titik api")
+    );
+  };
+
+  // Nama area sesuai filter yang benar-benar dipakai memuat data.
+  const currentAreaNames = () => ({
+    provinceName: provinces.find((p) => p.id === provinceId)?.name ?? null,
+    districtName: districts.find((d) => d.id === districtId)?.name ?? null,
+  });
+
   // Re-fetch GeoJSON dengan filter aktif (dipakai setelah Edit Lahan dari popup).
   const reloadMapData = () => {
     if (!districtId) return;
+    const area = currentAreaNames();
     startTransition(async () => {
       const res = await getMapData({ provinceId, districtId, farmerGroupId });
-      if (res.success) setMapData(res.data ? expandMapData(res.data) : null);
+      if (res.success) {
+        setMapData(res.data ? expandMapData(res.data) : null);
+        setLoadedArea(area);
+      }
     });
   };
 
@@ -177,6 +299,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
       toast.error("Silakan pilih Distrik terlebih dahulu");
       return;
     }
+    const area = currentAreaNames();
     startTransition(async () => {
       const res = await getMapData({ provinceId, districtId, farmerGroupId });
       if (!res.success) {
@@ -184,6 +307,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
         return;
       }
       setMapData(res.data ? expandMapData(res.data) : null);
+      setLoadedArea(area);
       setFilterOpen(false);
       const total =
         (res.data?.counts.kt ?? 0) + (res.data?.counts.parcelAreas ?? 0);
@@ -203,6 +327,8 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
         overlays={overlays}
         customLayers={customLayers}
         customZoomRequest={customZoomRequest}
+        layerZoomRequest={layerZoomRequest}
+        pointZoomRequest={pointZoomRequest}
         hotspot={hotspot}
         hotspotData={hotspotData}
         canViewParcel={canViewParcel}
@@ -211,6 +337,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
       />
 
       <MapControlPanel
+        helpSlot={helpSlot}
         provinces={provinces}
         districts={districts}
         farmerGroups={farmerGroups}
@@ -227,6 +354,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
         counts={mapData?.counts ?? null}
         layers={layers}
         onLayersChange={setLayers}
+        onZoomLayer={zoomToLayer}
         overlays={overlays}
         onOverlaysChange={setOverlays}
         customLayers={customLayers}
@@ -238,7 +366,24 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel }: Pro
         hotspot={hotspot}
         onHotspotChange={handleHotspotChange}
         hotspotLoading={hotspotLoading}
-        hotspotCount={hotspotData?.features.length ?? 0}
+        hotspotCounts={hotspotCounts}
+        onHotspotDownloadShp={handleHotspotDownloadShp}
+        onHotspotPrintPdf={handleHotspotPrintPdf}
+        hotspotPdfCalculating={hotspotPdfCalculating}
+        onHotspotShowSummary={() => setHotspotSummaryOpen(true)}
+      />
+
+      <HotspotSummaryDialog
+        open={hotspotSummaryOpen}
+        onOpenChange={setHotspotSummaryOpen}
+        dayRange={hotspot.dayRange}
+        area={hotspotArea}
+        counts={hotspotCounts}
+        distancesAvailable={hotspotNearest !== null}
+        nearRows={hotspotNearRows}
+        onDownloadShp={handleHotspotDownloadShp}
+        onPrintPdf={handleHotspotPrintPdf}
+        onZoomToPoint={zoomToHotspotPoint}
       />
     </div>
   );

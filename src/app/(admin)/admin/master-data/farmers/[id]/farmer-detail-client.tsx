@@ -5,8 +5,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowLeft,
-  ChevronDown,
-  ChevronRight,
   ClipboardCheck,
   Loader2,
   Map as MapIcon,
@@ -24,10 +22,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FarmerFormModal } from "../farmer-form-modal";
 import { BreadcrumbOverride } from "@/components/layout/admin/breadcrumb-override";
+import { ProductionMonthlyMatrix } from "@/components/shared/production-monthly-matrix";
 import { getFarmerParcelPassport } from "@/server/actions/farmer";
 import { maskNik, maskBirthDate } from "@/lib/mask";
 import type { FarmerDetailData } from "@/lib/farmer-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
+import type { FarmerTreeParcelSummary } from "@/server/actions/tree";
+import { formatNumber } from "@/lib/format";
 
 const ParcelsDistributionMap = dynamic(
   () =>
@@ -72,13 +73,14 @@ interface Props {
   detail: FarmerDetailData;
   parcels: ParcelRow[];
   mapParcels: DistributionMapParcel[];
+  treeSummary: FarmerTreeParcelSummary[];
+  treePoints: { longitude: number; latitude: number }[];
   canEdit: boolean;
   farmerGroups: { id: string; name: string }[];
   canViewParcel: boolean;
   canEditParcel: boolean;
 }
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const formatDate = (d: Date | null) =>
@@ -87,25 +89,6 @@ const formatDate = (d: Date | null) =>
         new Date(d),
       )
     : "—";
-
-const MONTH_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "Mei",
-  "Jun",
-  "Jul",
-  "Agu",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Des",
-];
-const formatPeriod = (period: string) => {
-  const m = parseInt(period.slice(5, 7), 10);
-  return `${MONTH_LABELS[m - 1] ?? period.slice(5, 7)} ${period.slice(0, 4)}`;
-};
 
 // Umur dalam tahun dari tanggal lahir; null bila tak diketahui.
 function ageFrom(birthDate: Date | null): number | null {
@@ -189,30 +172,21 @@ export function FarmerDetailClient({
   detail,
   parcels,
   mapParcels,
+  treeSummary,
+  treePoints,
   canEdit,
   farmerGroups,
   canViewParcel,
   canEditParcel,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
   const { summary, subGroups, pelatihan, produksi } = detail;
 
-  const toggleYear = (year: number) =>
-    setExpandedYears((prev) => {
-      const next = new Set(prev);
-      if (next.has(year)) next.delete(year);
-      else next.add(year);
-      return next;
-    });
-
-  // Persen Record = kelengkapan data bulanan (lahan×bulan terdata ÷
-  // total persil × 12 — mandatory min. 1 panen/bulan per lahan).
-  const pctOf = (part: number, total: number) =>
-    total > 0 ? ` (${formatDecimal((part / total) * 100)}%)` : "";
-
   const age = ageFrom(farmer.birthDate);
+
+  // Jumlah pohon aktif per lahan (#238) — kolom tabel Daftar Lahan.
+  const treeCountByParcel = new Map(treeSummary.map((t) => [t.parcelDbId, t.treeCount]));
 
   // Unduh PDF "Profil Lahan" (Farm Passport #134) via action ber-guard menu petani.
   const downloadPassport = async (parcelDbId: string) => {
@@ -387,6 +361,7 @@ export function FarmerDetailClient({
                       <th className="py-2 pr-4">Blok</th>
                       <th className="py-2 pr-4 text-right">Luas (Ha)</th>
                       <th className="py-2 pr-4 text-right">Tahun Tanam</th>
+                      <th className="py-2 pr-4 text-right">Jumlah Pohon</th>
                       <th className="py-2 pr-4 text-right">Revisi</th>
                       <th className="py-2 text-right">Profil Lahan</th>
                     </tr>
@@ -394,7 +369,21 @@ export function FarmerDetailClient({
                   <tbody>
                     {parcels.map((p) => (
                       <tr key={p.id} className="border-b last:border-0">
-                        <td className="py-2 pr-4 font-mono">{p.parcelId}</td>
+                        <td className="py-2 pr-4 font-mono">
+                          {canViewParcel ? (
+                            // Tab baru agar posisi tab/scroll halaman petani tak hilang (pola #224).
+                            <Link
+                              href={`/admin/master-data/parcels/${p.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {p.parcelId}
+                            </Link>
+                          ) : (
+                            p.parcelId
+                          )}
+                        </td>
                         <td className="py-2 pr-4">{p.subGroupLv2 ?? "—"}</td>
                         <td className="py-2 pr-4">{p.blok ?? "—"}</td>
                         <td className="py-2 pr-4 text-right tabular-nums">
@@ -402,6 +391,11 @@ export function FarmerDetailClient({
                         </td>
                         <td className="py-2 pr-4 text-right tabular-nums">
                           {p.plantingYear ?? "—"}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {(treeCountByParcel.get(p.id) ?? 0) > 0
+                            ? formatNumber(treeCountByParcel.get(p.id)!)
+                            : "—"}
                         </td>
                         <td className="py-2 pr-4 text-right tabular-nums">{p.revision}</td>
                         <td className="py-2 text-right">
@@ -432,7 +426,12 @@ export function FarmerDetailClient({
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Sebaran Lahan
             </h2>
-            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} />
+            <ParcelsDistributionMap
+              parcels={mapParcels}
+              canViewParcel={canViewParcel}
+              canEditParcel={canEditParcel}
+              treePoints={treePoints}
+            />
           </Card>
         </TabsContent>
 
@@ -503,104 +502,15 @@ export function FarmerDetailClient({
 
         {/* ── Produksi ── */}
         <TabsContent value="produksi" className="space-y-4">
-          <Card className="p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Produksi per Tahun
-            </h2>
-            {produksi.perYear.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Belum ada data produksi untuk petani ini.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
-                      <th className="py-2 pr-4">Tahun</th>
-                      <th className="py-2 pr-4 text-right">Produksi (kg)</th>
-                      <th className="py-2 pr-4 text-right">Record</th>
-                      <th className="py-2 pr-4 text-right">Lahan Terdata</th>
-                      <th className="py-2 pr-4 text-right">Luas Terdata (Ha)</th>
-                      <th className="py-2 text-right">Produktivitas (Ton/Ha)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {produksi.perYear.map((y) => {
-                      const expanded = expandedYears.has(y.year);
-                      return [
-                        <tr
-                          key={y.year}
-                          className="border-b last:border-0 cursor-pointer hover:bg-muted/40"
-                          onClick={() => toggleYear(y.year)}
-                        >
-                          <td className="py-2 pr-4 font-medium tabular-nums">
-                            <span className="inline-flex items-center gap-1">
-                              {expanded ? (
-                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                              )}
-                              {y.year}
-                            </span>
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatDecimal(y.totalKg)}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(y.recordCount)}
-                            {pctOf(y.reportedParcelMonths, summary.totalParcels * 12)}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatNumber(y.parcelsReporting)}
-                            {pctOf(y.parcelsReporting, summary.totalParcels)}
-                          </td>
-                          <td className="py-2 pr-4 text-right tabular-nums">
-                            {formatDecimal(y.areaReporting)}
-                            {pctOf(y.areaReporting, summary.totalArea)}
-                          </td>
-                          <td className="py-2 text-right tabular-nums">
-                            {formatDecimal(y.productivityTonHa)}
-                          </td>
-                        </tr>,
-                        ...(expanded
-                          ? y.months.map((m) => (
-                              <tr
-                                key={m.period}
-                                className="border-b last:border-0 bg-muted/30 text-muted-foreground"
-                              >
-                                <td className="py-1.5 pr-4 pl-6 text-xs">
-                                  {formatPeriod(m.period)}
-                                </td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
-                                  {formatDecimal(m.totalKg)}
-                                </td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
-                                  {formatNumber(m.recordCount)}
-                                </td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
-                                  {formatNumber(m.parcelsReporting)}
-                                </td>
-                                <td className="py-1.5 pr-4 text-right tabular-nums text-xs">
-                                  {formatDecimal(m.areaReporting)}
-                                </td>
-                                <td className="py-1.5 text-right text-xs">—</td>
-                              </tr>
-                            ))
-                          : []),
-                      ];
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground mt-3">
-              Produktivitas = Σ produksi tahun tsb ÷ Σ luas lahan yang terdata pada tahun tsb
-              (Ton/Ha). Record tanpa lahan masuk total produksi, tidak menambah luas terdata.
-              Persentase Record = kelengkapan data bulanan (pasangan lahan×bulan yang terdata ÷
-              total persil × 12 bulan — pelaporan wajib min. 1 panen per bulan per lahan);
-              Lahan/Luas Terdata terhadap total persil/luas milik petani.
-            </p>
-          </Card>
+          <ProductionMonthlyMatrix
+            all={produksi.all}
+            exclude={produksi.exclude}
+            scopeLabel="milik petani"
+            emptyMessage="Belum ada data produksi untuk petani ini."
+            weightUnit="kg"
+            parcelBreakdown={produksi.parcelBreakdown}
+            currentYear={produksi.currentYear}
+          />
 
           <Card className="p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">

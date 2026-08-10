@@ -16,6 +16,7 @@ import {
   Ruler,
   Sprout,
   Trash2,
+  TreePine,
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,17 +33,23 @@ import { ParcelProductionMonthModal } from "../components/parcel-production-mont
 import type { Geometry, Position } from "geojson";
 import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
 import type { ProductionSummary, ProductionYear } from "@/types/map";
+import type { ParcelTreeData } from "@/server/actions/tree";
+import { formatNumber } from "@/lib/format";
 
-/** Lahan aktif lain milik petani yang sama (badge navigasi + overlay peta). */
+/** Lahan aktif lain milik petani yang sama (tabel navigasi + overlay peta). */
 export interface SiblingParcel {
   id: string;
   parcelId: string;
   geometry?: Geometry | string | null;
+  area: number | null;
+  plantingYear: number | null;
+  treeCount: number;
 }
 
 interface Props {
   parcel: LandParcel;
   production: ProductionSummary | null;
+  trees: ParcelTreeData | null;
   farmers: FarmerSelect[];
   permissions: string[];
   /** Permission user pada menu Data Produksi — gate edit sel tabel produksi. */
@@ -50,7 +57,6 @@ interface Props {
   siblingParcels: SiblingParcel[];
 }
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatDecimal = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const formatDate = (d: Date | undefined) =>
@@ -194,6 +200,7 @@ function Val({ value, mono = false }: { value: string | number | null | undefine
 export function ParcelDetailClient({
   parcel,
   production,
+  trees,
   farmers,
   permissions,
   productionPermissions,
@@ -362,12 +369,24 @@ export function ParcelDetailClient({
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <SummaryCard
           icon={Ruler}
           title="Luas"
           value={parcel.area != null ? `${formatDecimal(parcel.area)} Ha` : "—"}
           sub={parcel.blok ? `Blok ${parcel.blok}` : "Blok belum diisi"}
+        />
+        <SummaryCard
+          icon={TreePine}
+          title="Pohon Sawit"
+          value={trees != null && trees.summary.count > 0 ? formatNumber(trees.summary.count) : "—"}
+          sub={
+            trees != null && trees.summary.count > 0
+              ? trees.summary.density != null
+                ? `${formatDecimal(trees.summary.density)} pohon/ha`
+                : "Luas belum diisi — kerapatan tak terhitung"
+              : "Belum ada data titik pohon"
+          }
         />
         <SummaryCard
           icon={Sprout}
@@ -411,12 +430,19 @@ export function ParcelDetailClient({
               geometry={parcel.geometry}
               heightClassName="h-[560px]"
               siblingGeometries={siblingParcels.map((s) => s.geometry)}
+              treePoints={trees?.points}
             />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground mt-2">
               <span className="flex items-center gap-2">
                 <span className="inline-block h-3 w-3 shrink-0 rounded-sm bg-[#22c55e]/60 border border-[#16a34a]" />
                 Poligon hijau = batas lahan ini
               </span>
+              {trees != null && trees.summary.count > 0 && (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[#facc15] border border-[#854d0e]" />
+                  Titik kuning = pohon sawit ({formatNumber(trees.summary.count)})
+                </span>
+              )}
               {siblingParcels.some((s) => s.geometry) && (
                 <span className="flex items-center gap-2">
                   <span className="inline-block h-3 w-3 shrink-0 rounded-sm bg-[#0ea5e9]/40 border border-[#0284c7]" />
@@ -516,14 +542,40 @@ export function ParcelDetailClient({
               {siblingParcels.length > 0 && (
                 <div className="mt-3">
                   <FieldItem label={`Lahan Lain Milik Petani (${siblingParcels.length})`}>
-                    <div className="flex flex-wrap gap-1.5">
-                      {siblingParcels.map((s) => (
-                        <Link key={s.id} href={`/admin/master-data/parcels/${s.id}`}>
-                          <Badge variant="outline" className="font-mono hover:bg-muted">
-                            {s.parcelId}
-                          </Badge>
-                        </Link>
-                      ))}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                            <th className="py-1.5 pr-3 font-semibold">Kode</th>
+                            <th className="py-1.5 pr-3 font-semibold text-right">Luas (Ha)</th>
+                            <th className="py-1.5 pr-3 font-semibold text-right">Tahun Tanam</th>
+                            <th className="py-1.5 font-semibold text-right">Jumlah Pohon</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {siblingParcels.map((s) => (
+                            <tr key={s.id} className="border-b last:border-0">
+                              <td className="py-1.5 pr-3 font-mono">
+                                <Link
+                                  href={`/admin/master-data/parcels/${s.id}`}
+                                  className="text-primary hover:underline"
+                                >
+                                  {s.parcelId}
+                                </Link>
+                              </td>
+                              <td className="py-1.5 pr-3 text-right tabular-nums">
+                                {s.area != null ? formatDecimal(s.area) : "—"}
+                              </td>
+                              <td className="py-1.5 pr-3 text-right tabular-nums">
+                                {s.plantingYear ?? "—"}
+                              </td>
+                              <td className="py-1.5 text-right tabular-nums">
+                                {s.treeCount > 0 ? formatNumber(s.treeCount) : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </FieldItem>
                 </div>

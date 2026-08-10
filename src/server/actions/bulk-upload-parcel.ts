@@ -5,75 +5,15 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { landParcelSchema, type LandParcelInput } from "@/validations/land-parcel.schema";
 import { getAccessContext } from "@/lib/access-context";
+import { parseShapefileZip } from "@/lib/shapefile-server";
 import type { ActionResult } from "@/types/action-result";
-import type { Feature } from "geojson";
 
 export async function parseShapefile(base64Data: string) {
   if (!(await hasPermission("bulk-upload-parcels", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
 
-  // Polyfill self to avoid ReferenceError: self is not defined when running shpjs on the server
-  if (typeof self === "undefined") {
-    (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
-  }
-
-  // Register cylindrical_equal_area alias to cea projection in proj4
-  try {
-    const proj4 = (await import("proj4")).default;
-    const cea = proj4.Proj.projections.get("cea");
-    if (cea) {
-      if (!cea.names.includes("cylindrical_equal_area")) {
-        cea.names.push("cylindrical_equal_area");
-        (proj4.Proj.projections as unknown as { add: (proj: unknown) => void }).add(cea);
-      }
-      // Override init to handle missing lat_ts (latitude of true scale) in WKT
-      if (!(cea as unknown as { _initOverridden?: boolean })._initOverridden) {
-        const originalInit = cea.init;
-        cea.init = function () {
-          const self = this as unknown as { lat_ts?: number; lat1?: number; lat0?: number };
-          if (self.lat_ts === undefined) {
-            self.lat_ts = self.lat1 ?? self.lat0 ?? 0;
-          }
-          originalInit.apply(this);
-        };
-        (cea as unknown as { _initOverridden?: boolean })._initOverridden = true;
-      }
-    }
-  } catch (projError) {
-    console.error("Failed to register proj4 alias:", projError);
-  }
-
-  try {
-    const shp = (await import("shpjs")).default;
-    const buffer = Buffer.from(base64Data, "base64");
-    // shpjs can parse a zip buffer containing shapefiles directly
-    const geojson = await shp(buffer);
-
-    const features: Feature[] = [];
-    if (Array.isArray(geojson)) {
-      for (const gc of geojson) {
-        if (gc.type === "FeatureCollection") {
-          features.push(...gc.features);
-        }
-      }
-    } else if (geojson && geojson.type === "FeatureCollection") {
-      features.push(...geojson.features);
-    }
-
-    return {
-      success: true,
-      features: features.map((f, index) => ({
-        index,
-        properties: f.properties || {},
-        geometry: f.geometry || null,
-      })),
-    };
-  } catch (error) {
-    console.error("Shapefile parsing error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || "Gagal mengurai file shapefile" };
-  }
+  return parseShapefileZip(base64Data);
 }
 
 export async function getFarmersForMapping() {
@@ -182,15 +122,28 @@ export async function bulkCreateLandParcels(
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Prefetch semua pasangan aktif (farmerId, parcelId) dalam satu query
+      // (audit #233) — semula findFirst per baris = N round-trip. Loop create
+      // per-baris TETAP: dibutuhkan revision tracking + repoint produksi/pohon
+      // (TD-022/#238). Map di-update setiap create agar pasangan yang muncul
+      // dua kali dalam satu batch tetap terdeteksi duplikat (perilaku setara
+      // findFirst dalam transaksi yang melihat tulisan sendiri).
+      const pairKey = (farmerId: string, parcelId: string) => `${farmerId}\u0000${parcelId}`;
+      const existing = await tx.landParcel.findMany({
+        where: {
+          isActive: true,
+          OR: [...new Map(
+            validatedRecords.map((r) => [pairKey(r.farmerId, r.parcelId), { farmerId: r.farmerId, parcelId: r.parcelId }])
+          ).values()],
+        },
+        select: { id: true, farmerId: true, parcelId: true, revision: true, geometry: true },
+      });
+      const activeByPair = new Map(
+        existing.map((d) => [pairKey(d.farmerId, d.parcelId), { id: d.id, revision: d.revision, geometry: d.geometry }])
+      );
+
       for (const record of validatedRecords) {
-        // Check duplicates within transaction
-        const duplicate = await tx.landParcel.findFirst({
-          where: {
-            farmerId: record.farmerId,
-            parcelId: record.parcelId,
-            isActive: true,
-          },
-        });
+        const duplicate = activeByPair.get(pairKey(record.farmerId, record.parcelId)) ?? null;
 
         let finalRevision = record.revision ?? 0;
 
@@ -227,7 +180,20 @@ export async function bulkCreateLandParcels(
             where: { parcelId: duplicate.id },
             data: { parcelId: created.id, modifiedBy: userId },
           });
+          // Titik pohon (#238) juga menunjuk id baris lahan — ikut repoint
+          // dengan alasan yang sama; semua revisi pohon dipindah agar utuh.
+          await tx.tree.updateMany({
+            where: { landParcelId: duplicate.id },
+            data: { landParcelId: created.id, modifiedBy: userId },
+          });
         }
+
+        // Baris yang baru dibuat kini jadi baris aktif untuk pasangan ini.
+        activeByPair.set(pairKey(record.farmerId, record.parcelId), {
+          id: created.id,
+          revision: finalRevision,
+          geometry: record.geometry ?? null,
+        });
       }
     });
 

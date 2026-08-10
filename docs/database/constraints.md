@@ -21,6 +21,8 @@
 | Farmer | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
 | **LandParcel** | | | | | |
 | LandParcel | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
+| **Tree** | | | | | |
+| Tree | `landParcelId` | LandParcel | `id` | RESTRICT | CASCADE |
 | **Production** | | | | | |
 | ProductionRecord | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
 | ProductionRecord | `parcelId` (nullable) | LandParcel | `id` | RESTRICT | CASCADE |

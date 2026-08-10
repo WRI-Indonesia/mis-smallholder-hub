@@ -30,7 +30,9 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 │   │   ├── Tabel: Cakupan per Paket
 │   │   └── Tabel: Aktivitas Pelatihan (n)
 │   └── Produksi
-│       ├── Tabel: Produksi per Tahun (expandable bulanan)
+│       ├── Tombol filter: Semua Lahan / Exclude (PSR & tanaman <3 thn)
+│       ├── Matriks: Produksi Bulanan (Ton) — collapsible (#239)
+│       ├── Matriks: Ketersediaan Data Bulanan — collapsible (#239)
 │       └── Kartu: Ketersediaan Data Produksi per Lahan
 └── Dialog
     └── GroupFormModal (Edit Lembaga Petani)
@@ -58,7 +60,9 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 | Tab Lahan | Kartu + peta | `Persil Lahan`, `Kelompok Tani`, `Blok`; `Sebaran Lahan` = `ParcelsDistributionMap` (dynamic, ssr:false); popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
 | Tab Pelatihan — `Cakupan per Paket` | Tabel | `Paket`, `Petani Terlatih`, `Cakupan`, `Rataan Pre Test`, `Rataan Post Test` |
 | Tab Pelatihan — `Aktivitas Pelatihan (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Peserta`, `Rata-rata Pre → Post`; empty state `Belum ada aktivitas pelatihan untuk Lembaga ini.` |
-| Tab Produksi — `Produksi per Tahun` | Tabel | `Tahun` (expandable → rincian bulanan), `Produksi (kg)`, `Record`, `Lahan Terdata`, `Luas Terdata (Ha)`, `Produktivitas (Ton/Ha)`; catatan kaki rumus; empty state `Belum ada data produksi untuk Lembaga ini.` |
+| Tab Produksi — filter varian | Tombol | `Semua Lahan` / `Exclude (PSR & tanaman <3 thn)` — menyaring kedua matriks; varian Exclude dihitung server-side (`buildExcludeVariant`, lahan PSR/muda dibuang beserta record-nya, record tanpa lahan tetap, penyebut ikut varian) (#239) |
+| Tab Produksi — `Produksi Bulanan (Ton)` | Matriks (collapsible) | `ProductionMonthlyMatrix` (`components/shared/production-monthly-matrix.tsx`): baris = tahun kontinu s.d. tahun berjalan (tanpa data = "—"), kolom `Jan`–`Des` (Ton, 0 desimal, gradasi hijau relatif sel tertinggi) + `Total` + `Ton/Ha` (tooltip "Produktivitas (Ton/Ha)"); catatan kaki rumus; empty state `Belum ada data produksi untuk Lembaga ini.` (#239) |
+| Tab Produksi — `Ketersediaan Data Bulanan` | Matriks (collapsible) | Baris = tahun, sel bulanan = jumlah lahan pelapor + % (baris bawah) berwarna threshold (hijau ≥80 / kuning 50–79 / oranye 1–49 / abu 0) + ringkasan tahunan `Record`, `Lahan`, `Luas (Ha)` (persen di baris bawah) + legenda warna (#239) |
 | Tab Produksi — `Ketersediaan Data Produksi per Lahan` | Kartu | 4 kategori: `Baik (>24 bln)`, `Cukup (12–24 bln)`, `Kurang (<12 bln)`, `Tanpa Data` + tautan Peta BMP / Report Produksi / BMP Dashboard |
 
 Dialog `GroupFormModal` (field lengkap) didokumentasikan di [daftar.md](./daftar.md#dialog-groupformmodal-groupsgroup-form-modaltsx).

@@ -102,6 +102,7 @@ interface Props {
   printing: boolean;
   onExport: () => void;
   exporting: boolean;
+  helpSlot?: ReactNode;
 }
 
 interface ComboboxProps {
@@ -258,6 +259,7 @@ export function MapBmpControlPanel(props: Props) {
     colorMode, onColorModeChange, productivity, prodView, onProdViewChange,
     prodLayers, onProdLayersChange,
     onPrint, printing, onExport, exporting,
+    helpSlot,
   } = props;
 
   const [minimized, setMinimized] = useState(false);
@@ -288,14 +290,17 @@ export function MapBmpControlPanel(props: Props) {
           <Sprout className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           Peta BMP
         </span>
-        <button
-          onClick={() => setMinimized(true)}
-          title="Minimalkan"
-          aria-label="Minimalkan"
-          className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <Minimize2 className="h-3.5 w-3.5" />
-        </button>
+        <span className="flex items-center gap-1.5">
+          {helpSlot}
+          <button
+            onClick={() => setMinimized(true)}
+            title="Minimalkan"
+            aria-label="Minimalkan"
+            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Minimize2 className="h-3.5 w-3.5" />
+          </button>
+        </span>
       </div>
 
       {/* Filter section */}

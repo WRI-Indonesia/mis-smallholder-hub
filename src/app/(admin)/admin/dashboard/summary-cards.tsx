@@ -21,8 +21,8 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCertStatus } from "@/lib/farmer-group-labels";
 import type { DashboardStats, KTDetails } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const formatArea = (n: number) =>
   `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
 

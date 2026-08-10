@@ -236,12 +236,11 @@ export function scopeSnapshotData(
 ): DashboardSnapshotData {
   if (scope.mode === "ALL") return data;
 
+  const allowedIds = new Set(scope.mode === "BY_DISTRICT" ? scope.districtIds : scope.groupIds);
   const kts =
     scope.mode === "BY_DISTRICT"
-      ? data.kelompokTaniList.filter(
-          (kt) => kt.districtId != null && scope.districtIds.includes(kt.districtId)
-        )
-      : data.kelompokTaniList.filter((kt) => scope.groupIds.includes(kt.id));
+      ? data.kelompokTaniList.filter((kt) => kt.districtId != null && allowedIds.has(kt.districtId))
+      : data.kelompokTaniList.filter((kt) => allowedIds.has(kt.id));
 
   return { ...sumKelompokTaniStats(kts), kelompokTaniList: kts };
 }

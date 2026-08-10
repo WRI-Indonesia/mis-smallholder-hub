@@ -25,6 +25,7 @@ model LandParcel {
   modifiedAt    DateTime    @updatedAt @map("modified_at")
   modifiedBy    String?     @map("modified_by")
   productionRecords ProductionRecord[]
+  trees             Tree[]
 
   @@index([farmerId])
   @@index([isActive])

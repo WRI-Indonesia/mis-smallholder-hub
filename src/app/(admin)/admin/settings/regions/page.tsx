@@ -1,3 +1,4 @@
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { getRegionTree } from "@/server/actions/region";
 import { RegionListClient } from "./region-list-client";
@@ -12,7 +13,10 @@ export default async function RegionsPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Region Management</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">Region Management</h1>
+          <HelpHint menuKey="settings-regions" />
+        </div>
         <p className="text-muted-foreground">Kelola hierarki wilayah administratif</p>
       </div>
       <RegionListClient initialData={data} permissions={permissions} />

@@ -152,4 +152,8 @@ Penjaga tambahan:
 
 `src/server/actions/bulk-upload-parcel.ts` — ZIP Shapefile diparse langsung dari buffer (`shpjs`), mapping atribut `.dbf` (incl. Kelompok Tani & Blok #150), validasi geometri (`@turf/turf`) → preview → simpan. Mengikuti **revision tracking**: duplikat aktif ditolak; duplikat nonaktif diizinkan dengan `revision + 1`.
 
+## Upload Pohon Sawit (Shapefile ZIP point, #238)
+
+`src/server/actions/bulk-upload-tree.ts` + helper murni `src/lib/tree-upload.ts` — ZIP shapefile **point** diparse (`shpjs`), titik dikelompokkan per atribut `parcel_id` (satu ZIP boleh multi-lahan), dicocokkan ke lahan aktif dalam scope → preview per lahan (jumlah titik, kerapatan pohon/ha, status Baru/Revisi/Tidak ditemukan) → simpan transaksional. **Revisi per-set**: upload ulang menonaktifkan seluruh set pohon lama lahan tsb, set baru `revision + 1`; revisi lahan me-repoint semua pohon ke baris lahan baru (pola productionRecord).
+
 </details>

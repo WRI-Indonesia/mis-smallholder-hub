@@ -4,9 +4,12 @@
 import { deriveFarmerSubGroups, type FarmerSubGroups } from "@/lib/farmer-sub-groups";
 import { NIK_REGEX } from "@/lib/data-completeness";
 import {
+  buildExcludeVariant,
+  buildParcelYearBreakdown,
   buildProductionStats,
   type AvailabilityDistribution,
-  type ProductionYearRow,
+  type ParcelYearBreakdownRow,
+  type ProductionMatrixVariant,
 } from "@/lib/production-stats";
 
 export interface FarmerDetailRawParcel {
@@ -21,6 +24,8 @@ export interface FarmerDetailRawParcel {
   cropType: string | null;
   landStatus: string | null;
   revision: number;
+  /** Basis filter Exclude matriks produksi (#239). */
+  isPsr: boolean;
 }
 
 export interface FarmerDetailRawParticipation {
@@ -78,8 +83,15 @@ export interface FarmerDetailData {
     history: FarmerDetailRawParticipation[];
   };
   produksi: {
-    perYear: ProductionYearRow[];
+    /** Varian penuh matriks (seluruh lahan aktif) — sumber tunggal penyebut (#239). */
+    all: ProductionMatrixVariant;
     availability: AvailabilityDistribution;
+    /** Varian matriks tanpa lahan PSR & tanaman <3 thn (#239). */
+    exclude: ProductionMatrixVariant;
+    /** Rincian per lahan per tahun — sub-baris expand matriks (#239). */
+    parcelBreakdown: ParcelYearBreakdownRow[];
+    /** Tahun berjalan sisi server — sinkron dgn flag excluded/umur di client. */
+    currentYear: number;
   };
 }
 
@@ -113,13 +125,25 @@ export function computeProfileCompleteness(f: {
  */
 export function buildFarmerDetail(
   farmer: FarmerDetailRawInput,
-  trainingPackages: { code: string; name: string }[]
+  trainingPackages: { code: string; name: string }[],
+  /** Basis umur tanaman filter Exclude — parameter agar tetap pure/testable. */
+  currentYear: number = new Date().getFullYear()
 ): FarmerDetailData {
   const totalArea = farmer.landParcels.reduce((s, p) => s + (p.area ?? 0), 0);
 
-  const prodStats = buildProductionStats(
-    farmer.landParcels.map((p) => ({ id: p.id, area: p.area })),
-    farmer.productionRecords
+  const matrixParcels = farmer.landParcels.map((p) => ({
+    id: p.id,
+    area: p.area,
+    isPsr: p.isPsr,
+    plantingYear: p.plantingYear,
+    label: p.parcelId,
+  }));
+  const prodStats = buildProductionStats(matrixParcels, farmer.productionRecords);
+  const exclude = buildExcludeVariant(matrixParcels, farmer.productionRecords, currentYear);
+  const parcelBreakdown = buildParcelYearBreakdown(
+    matrixParcels,
+    farmer.productionRecords,
+    currentYear
   );
 
   const checklist: FarmerTrainingChecklistItem[] = trainingPackages.map((pkg) => {
@@ -153,6 +177,16 @@ export function buildFarmerDetail(
     },
     subGroups: deriveFarmerSubGroups(farmer.landParcels),
     pelatihan: { checklist, history },
-    produksi: { perYear: prodStats.perYear, availability: prodStats.availability },
+    produksi: {
+      all: {
+        perYear: prodStats.perYear,
+        totalParcels: farmer.landParcels.length,
+        totalArea: round2(totalArea),
+      },
+      availability: prodStats.availability,
+      exclude,
+      parcelBreakdown,
+      currentYear,
+    },
   };
 }

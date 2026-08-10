@@ -1,3 +1,4 @@
+import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { requirePermission, hasPermission } from "@/lib/rbac";
 import { getProvincesForMap } from "@/server/actions/map";
 import { MapBmpClient } from "./map-bmp-client";
@@ -15,6 +16,7 @@ export default async function MapBmpPage() {
       provinces={provinces}
       canViewParcel={canViewParcel}
       canEditParcel={canEditParcel}
+      helpSlot={<HelpHint menuKey="map-bmp" />}
     />
   );
 }

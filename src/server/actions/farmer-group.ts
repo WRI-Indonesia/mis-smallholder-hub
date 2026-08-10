@@ -163,6 +163,8 @@ export async function getFarmerGroupDetail(id: string) {
             plantingYear: true,
             cropType: true,
             landStatus: true,
+            // Basis filter Exclude matriks produksi (#239).
+            isPsr: true,
             // Dipakai untuk cek kelengkapan (computeCompleteness) + peta
             // sebaran lahan di tab Lahan (mapParcels).
             geometry: true,
@@ -198,6 +200,8 @@ export async function getFarmerGroupDetail(id: string) {
         area: p.area,
         subGroupLv2: p.subGroupLv2,
         blok: p.blok,
+        isPsr: p.isPsr,
+        plantingYear: p.plantingYear,
       })),
       trainingParticipants: f.trainingParticipants.map((tp) => ({
         packageCode: tp.activity.package.code,

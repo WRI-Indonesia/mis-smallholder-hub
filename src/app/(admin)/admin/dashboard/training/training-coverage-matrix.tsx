@@ -15,8 +15,8 @@ import {
 } from "@/lib/training-dashboard-aggregation";
 import { TrainingUntrainedModal, type UntrainedTarget } from "./training-untrained-modal";
 import type { TrainingCoverageRow, TrainingPackageCode } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const formatNumber = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 /**
  * Dibulatkan ke BAWAH: 999 dari 1.000 petani harus terbaca "99%", bukan "100%"
  * sementara selnya masih bisa diklik dengan keterangan "kurang 1 menuju target".

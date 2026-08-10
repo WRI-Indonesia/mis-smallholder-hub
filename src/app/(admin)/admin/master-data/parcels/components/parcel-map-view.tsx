@@ -14,6 +14,8 @@ interface Props {
   heightClassName?: string;
   /** Geometri lahan lain (mis. milik petani yang sama) — dirender biru. */
   siblingGeometries?: (Geometry | string | null | undefined)[];
+  /** Titik pohon sawit (#238) — dirender lingkaran kuning di atas poligon. */
+  treePoints?: { longitude: number; latitude: number }[];
 }
 
 // Kumpulkan semua posisi [lng, lat] dari struktur koordinat GeoJSON apa pun
@@ -125,7 +127,12 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
   },
 };
 
-export function ParcelMapView({ geometry, heightClassName = "h-96", siblingGeometries }: Props) {
+export function ParcelMapView({
+  geometry,
+  heightClassName = "h-96",
+  siblingGeometries,
+  treePoints,
+}: Props) {
   const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
 
   const parsedGeometry =
@@ -152,13 +159,16 @@ export function ParcelMapView({ geometry, heightClassName = "h-96", siblingGeome
     zoom: 12,
   });
 
-  // Bounding box seluruh lahan (utama + lahan lain) untuk fit zoom.
+  // Bounding box seluruh lahan (utama + lahan lain + titik pohon) untuk fit zoom.
   const allPositions: Position[] = [];
   if (parsedGeometry && "coordinates" in parsedGeometry) {
     collectPositions(parsedGeometry.coordinates, allPositions);
   }
   for (const f of siblingFeatures) {
     if ("coordinates" in f.geometry) collectPositions(f.geometry.coordinates, allPositions);
+  }
+  for (const t of treePoints ?? []) {
+    allPositions.push([t.longitude, t.latitude]);
   }
   let bounds: [[number, number], [number, number]] | null = null;
   if (allPositions.length > 0) {
@@ -206,7 +216,10 @@ export function ParcelMapView({ geometry, heightClassName = "h-96", siblingGeome
     return true;
   })();
 
-  if (!parsedGeometry || !hasValidCoordinates) {
+  // Tetap render peta bila ada titik pohon meski poligon lahan kosong.
+  const hasTreePoints = (treePoints?.length ?? 0) > 0;
+
+  if ((!parsedGeometry || !hasValidCoordinates) && !hasTreePoints) {
     return (
       <div className="h-64 flex items-center justify-center bg-muted/30 border rounded-md text-muted-foreground text-sm flex-col gap-2 p-4 text-center">
         <p className="font-medium">Tidak ada data spasial (geometri) untuk lahan ini</p>
@@ -260,7 +273,9 @@ export function ParcelMapView({ geometry, heightClassName = "h-96", siblingGeome
         mapStyle={MAP_STYLES[styleKey]}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        interactiveLayerIds={["parcel-polygon"]}
+        // Layer polygon kini kondisional (jalur titik-pohon-saja) — jangan
+        // daftarkan layer yang tidak dirender, MapLibre error tiap mousemove.
+        interactiveLayerIds={parsedGeometry && hasValidCoordinates ? ["parcel-polygon"] : []}
       >
         {siblingFeatures.length > 0 && (
           <Source
@@ -279,10 +294,37 @@ export function ParcelMapView({ geometry, heightClassName = "h-96", siblingGeome
             />
           </Source>
         )}
-        <Source type="geojson" data={geojsonData}>
-          <Layer {...layerStyle} />
-          <Layer {...borderStyle} />
-        </Source>
+        {parsedGeometry && hasValidCoordinates && (
+          <Source type="geojson" data={geojsonData}>
+            <Layer {...layerStyle} />
+            <Layer {...borderStyle} />
+          </Source>
+        )}
+        {hasTreePoints && (
+          <Source
+            type="geojson"
+            data={{
+              type: "FeatureCollection" as const,
+              features: (treePoints ?? []).map((t) => ({
+                type: "Feature" as const,
+                geometry: { type: "Point" as const, coordinates: [t.longitude, t.latitude] },
+                properties: {},
+              })),
+            }}
+          >
+            <Layer
+              id="tree-points"
+              type="circle"
+              paint={{
+                "circle-radius": 3.5,
+                "circle-color": "#facc15",
+                "circle-opacity": 0.9,
+                "circle-stroke-width": 1,
+                "circle-stroke-color": "#854d0e",
+              }}
+            />
+          </Source>
+        )}
       </Map>
 
       {/* Zoom to Lahan Button */}
