@@ -27,7 +27,9 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 │   │   ├── Checklist: Paket Wajib
 │   │   └── Tabel: Riwayat Partisipasi (n)
 │   └── Produksi
-│       ├── Tabel: Produksi per Tahun (expandable bulanan)
+│       ├── Tombol filter: Semua Lahan / Exclude + switch Tahun › Lahan / Lahan › Tahun
+│       ├── Matriks: Produksi Bulanan (Kg) — collapsible, expandable per lahan (#239)
+│       ├── Matriks: Ketersediaan Data Bulanan — collapsible, expandable per lahan (#239)
 │       └── Kartu: Ketersediaan Data Produksi per Lahan
 └── Dialog
     └── FarmerFormModal (Edit Petani)
@@ -55,6 +57,6 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | Tab Lahan — `Sebaran Lahan` | Peta | `ParcelsDistributionMap` (dynamic, ssr:false) + titik pohon kuning non-interaktif via prop `treePoints` (`getFarmerTreePoints`, counter "N titik pohon" di badge kiri-bawah, #238); popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
 | Tab Pelatihan — `Paket Wajib` | Checklist | Per paket: ikon ✓/✗, label, jumlah partisipasi (`n×`) atau `Belum` |
 | Tab Pelatihan — `Riwayat Partisipasi (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Pre → Post Test`; empty state `Belum pernah mengikuti pelatihan.` |
-| Tab Produksi | Tabel + kartu | Sama pola dengan detail Lembaga: `Produksi per Tahun` (expandable bulanan) + `Ketersediaan Data Produksi per Lahan`; empty state `Belum ada data produksi untuk petani ini.` |
+| Tab Produksi | Matriks + kartu | Pola detail Lembaga (`ProductionMonthlyMatrix` #239) dengan perbedaan Petani: satuan sel bulanan & Total = **Kg**; kolom `Luas (Ha)` + `Umur/PSR` di kanan kolom pertama matriks produksi; prop `parcelBreakdown` (`buildParcelYearBreakdown` — per lahan per tahun, record tanpa lahan = baris "Tanpa Lahan") mengaktifkan **switch grouping** `Tahun › Lahan` (baris tahun → expand sub-baris per lahan) / `Lahan › Tahun` (baris lahan → expand per tahun; Produktivitas baris lahan = rata-rata tahunan Σproduksi ÷ luas ÷ tahun ber-data); empty state `Belum ada data produksi untuk petani ini.` |
 
 Dialog `FarmerFormModal` (field lengkap) didokumentasikan di [daftar.md](./daftar.md#dialog-farmerformmodal-farmersfarmer-form-modaltsx).

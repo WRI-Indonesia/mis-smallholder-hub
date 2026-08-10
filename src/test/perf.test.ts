@@ -719,3 +719,61 @@ describe("Performance — agregasi Dashboard Pelatihan (TD-020)", () => {
     }
   });
 });
+
+describe("Performance - Production matrix variants (#239)", () => {
+  // Skala Lembaga besar: 400 lahan × 36 bulan ber-data = 14.400 record.
+  // Dataset dibangun di dalam tiap test (bukan saat collection) agar tidak
+  // menambah beban paralel ke perf test lain yang budget-nya ketat.
+  const PARCELS = 400;
+  const MONTHS = 36; // 2023-01 .. 2025-12
+  const makeData = () => {
+    const parcels = Array.from({ length: PARCELS }, (_, i) => ({
+      id: `p${i}`,
+      label: `LHN.${String(i).padStart(4, "0")}`,
+      area: 2,
+      isPsr: i % 10 === 0,
+      plantingYear: i % 7 === 0 ? 2024 : 2015,
+    }));
+    const records = parcels.flatMap((p) =>
+      Array.from({ length: MONTHS }, (_, m) => ({
+        parcelId: p.id,
+        period: `${2023 + Math.floor(m / 12)}-${String((m % 12) + 1).padStart(2, "0")}`,
+        yieldKg: 100,
+      })),
+    );
+    return { parcels, records };
+  };
+
+  it("buildProductionStats + buildExcludeVariant (14.400 record) under 200ms", async () => {
+    const { buildProductionStats, buildExcludeVariant } = await import("@/lib/production-stats");
+    const { parcels, records } = makeData();
+
+    const start = performance.now();
+    // Beban nyata satu render detail Lembaga: varian all + Exclude.
+    const all = buildProductionStats(parcels, records);
+    const exclude = buildExcludeVariant(parcels, records, 2026);
+    const duration = performance.now() - start;
+
+    console.log(
+      `  production variants (${records.length} records, ${PARCELS} parcels): ${duration.toFixed(2)}ms`,
+    );
+    expect(duration).toBeLessThan(200);
+    expect(all.perYear).toHaveLength(3);
+    // Exclude membuang PSR (i%10) dan tanaman muda (i%7, overlap i%70).
+    const excludedCount = parcels.filter((p) => p.isPsr || 2026 - p.plantingYear < 3).length;
+    expect(exclude.totalParcels).toBe(PARCELS - excludedCount);
+  });
+
+  it("buildParcelYearBreakdown (14.400 record) under 100ms", async () => {
+    const { buildParcelYearBreakdown } = await import("@/lib/production-stats");
+    const { parcels, records } = makeData();
+
+    const start = performance.now();
+    const rows = buildParcelYearBreakdown(parcels, records, 2026);
+    const duration = performance.now() - start;
+
+    console.log(`  parcel-year breakdown (${rows.length} rows): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(100);
+    expect(rows).toHaveLength(PARCELS * 3); // 400 lahan × 3 tahun
+  });
+});

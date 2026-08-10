@@ -132,6 +132,8 @@ export async function getFarmerDetail(id: string) {
             cropType: true,
             landStatus: true,
             revision: true,
+            // Basis filter Exclude matriks produksi (#239).
+            isPsr: true,
             // Untuk peta sebaran lahan petani (mapParcels) — tidak dipakai agregasi.
             geometry: true,
           },
@@ -182,6 +184,7 @@ export async function getFarmerDetail(id: string) {
         cropType: p.cropType,
         landStatus: p.landStatus,
         revision: p.revision,
+        isPsr: p.isPsr,
       })),
       trainingParticipants: farmer.trainingParticipants.map((tp) => ({
         id: tp.id,

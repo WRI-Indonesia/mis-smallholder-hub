@@ -16,13 +16,15 @@ export interface ProductionStatsRecord {
   yieldKg: number;
 }
 
+// Field bulanan dipangkas ke yang benar-benar dirender matriks #239 (TD-033):
+// recordCount/areaReporting bulanan tersedia via ParcelYearBreakdownRow (Petani)
+// dan agregat tahunan — jangan kirim payload mati per bulan ke client.
 export interface ProductionMonthRow {
   /** Periode "YYYY-MM". */
   period: string;
   totalKg: number;
-  recordCount: number;
+  /** Distinct lahan (ber-`parcelId`) yang melapor pada bulan tsb. */
   parcelsReporting: number;
-  areaReporting: number;
 }
 
 export interface ProductionYearRow {
@@ -47,6 +49,126 @@ export interface ProductionYearRow {
 
 export type AvailabilityDistribution = Record<"BAIK" | "CUKUP" | "KURANG" | "NONE", number>;
 
+// ── Varian filter matriks produksi (#239) ──
+
+export interface ProductionMatrixParcel extends ProductionStatsParcel {
+  isPsr: boolean;
+  plantingYear: number | null;
+}
+
+/** Satu varian matriks (All / Exclude) + penyebut persen ketersediaannya. */
+export interface ProductionMatrixVariant {
+  perYear: ProductionYearRow[];
+  totalParcels: number;
+  totalArea: number;
+}
+
+/** Lahan yang dibuang filter "Exclude": PSR atau tanaman berumur < 3 tahun. */
+export function isExcludedParcel(
+  p: { isPsr: boolean; plantingYear: number | null },
+  currentYear: number
+): boolean {
+  return p.isPsr || (p.plantingYear != null && currentYear - p.plantingYear < 3);
+}
+
+export interface ParcelBreakdownMonth {
+  totalKg: number;
+  recordCount: number;
+}
+
+/** Rincian produksi satu lahan pada satu tahun — sub-baris expand matriks (#239). */
+export interface ParcelYearBreakdownRow {
+  /** LandParcel.id; "__none__" untuk record tanpa lahan. */
+  parcelKey: string;
+  /** Kode lahan human-facing; "Tanpa Lahan" untuk record tanpa lahan. */
+  label: string;
+  area: number | null;
+  isPsr: boolean;
+  plantingYear: number | null;
+  /** Kena filter Exclude (PSR / tanaman <3 thn) — disembunyikan pada varian Exclude. */
+  excluded: boolean;
+  year: number;
+  /** Bulan (1–12) → agregat; hanya bulan ber-data. */
+  months: Record<number, ParcelBreakdownMonth>;
+  totalKg: number;
+  recordCount: number;
+  /** Ton/Ha lahan tsb tahun tsb; 0 bila luas tak diketahui. */
+  productivityTonHa: number;
+}
+
+/**
+ * Rincian per lahan per tahun untuk expand baris tahun matriks (#239) —
+ * dipakai detail Petani (jumlah lahan kecil). Record tanpa lahan digabung
+ * jadi satu baris "Tanpa Lahan" agar penjumlahan sub-baris = total tahun.
+ */
+export function buildParcelYearBreakdown(
+  parcels: (ProductionMatrixParcel & { label: string })[],
+  records: ProductionStatsRecord[],
+  currentYear: number
+): ParcelYearBreakdownRow[] {
+  const meta = new Map(parcels.map((p) => [p.id, p]));
+  const rows = new Map<string, ParcelYearBreakdownRow>();
+  for (const r of records) {
+    const year = parseInt(r.period.slice(0, 4), 10);
+    const month = parseInt(r.period.slice(5, 7), 10);
+    if (Number.isNaN(year) || Number.isNaN(month)) continue;
+    const key = r.parcelId ?? "__none__";
+    const p = r.parcelId ? meta.get(r.parcelId) : undefined;
+    const rowKey = `${key}|${year}`;
+    const row = rows.get(rowKey) ?? {
+      parcelKey: key,
+      // parcelId di luar daftar aktif = lahan nonaktif/revisi lama — jangan
+      // tampilkan CUID mentah sebagai kode lahan.
+      label: p?.label ?? (r.parcelId ? "Lahan nonaktif" : "Tanpa Lahan"),
+      area: p?.area ?? null,
+      isPsr: p?.isPsr ?? false,
+      plantingYear: p?.plantingYear ?? null,
+      // Konsisten dgn buildExcludeVariant: parcelId di luar daftar lahan aktif
+      // ikut terbuang pada varian Exclude; hanya record tanpa lahan yang tetap.
+      excluded: p ? isExcludedParcel(p, currentYear) : r.parcelId != null,
+      year,
+      months: {} as Record<number, ParcelBreakdownMonth>,
+      totalKg: 0,
+      recordCount: 0,
+      productivityTonHa: 0,
+    };
+    const m = row.months[month] ?? { totalKg: 0, recordCount: 0 };
+    m.totalKg = round2(m.totalKg + r.yieldKg);
+    m.recordCount += 1;
+    row.months[month] = m;
+    row.totalKg = round2(row.totalKg + r.yieldKg);
+    row.recordCount += 1;
+    rows.set(rowKey, row);
+  }
+  return [...rows.values()]
+    .map((row) => ({
+      ...row,
+      productivityTonHa:
+        row.area != null && row.area > 0 ? round2(row.totalKg / 1000 / row.area) : 0,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, "id"));
+}
+
+/**
+ * Varian "Exclude" matriks produksi: lahan PSR & tanaman <3 thn dibuang
+ * beserta record-nya; record tanpa lahan tetap ikut (pola #166).
+ */
+export function buildExcludeVariant(
+  parcels: ProductionMatrixParcel[],
+  records: ProductionStatsRecord[],
+  currentYear: number
+): ProductionMatrixVariant {
+  const kept = parcels.filter((p) => !isExcludedParcel(p, currentYear));
+  const keptIds = new Set(kept.map((p) => p.id));
+  const keptRecords = records.filter((r) => r.parcelId == null || keptIds.has(r.parcelId));
+  const stats = buildProductionStats(kept, keptRecords);
+  return {
+    perYear: stats.perYear,
+    totalParcels: kept.length,
+    totalArea: round2(kept.reduce((s, p) => s + (p.area ?? 0), 0)),
+  };
+}
+
 export interface ProductionStats {
   /** Per tahun, terbaru dulu. */
   perYear: ProductionYearRow[];
@@ -70,7 +192,6 @@ export function buildProductionStats(
 ): ProductionStats {
   interface MonthAcc {
     totalKg: number;
-    recordCount: number;
     parcelIds: Set<string>;
   }
   interface YearAcc {
@@ -104,10 +225,8 @@ export function buildProductionStats(
       };
     acc.totalKg += r.yieldKg;
     acc.recordCount += 1;
-    const month =
-      acc.months.get(r.period) ?? { totalKg: 0, recordCount: 0, parcelIds: new Set<string>() };
+    const month = acc.months.get(r.period) ?? { totalKg: 0, parcelIds: new Set<string>() };
     month.totalKg += r.yieldKg;
-    month.recordCount += 1;
     if (r.parcelId) {
       acc.parcelIds.add(r.parcelId);
       acc.parcelMonths.add(`${r.parcelId}|${r.period}`);
@@ -129,9 +248,7 @@ export function buildProductionStats(
         .map(([period, m]) => ({
           period,
           totalKg: round2(m.totalKg),
-          recordCount: m.recordCount,
           parcelsReporting: m.parcelIds.size,
-          areaReporting: round2(sumParcelArea(m.parcelIds)),
         }))
         .sort((a, b) => a.period.localeCompare(b.period));
       return {
