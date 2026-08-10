@@ -63,18 +63,24 @@ describe("GET /api/map-hotspot — validasi parameter", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("400 untuk dayRange di luar {2, 5} — termasuk 1 (kontrak lama)", async () => {
-    for (const d of ["", "1", "3", "6", "abc"]) {
+  it("400 untuk dayRange di luar {1, 2, 5}", async () => {
+    for (const d of ["", "3", "6", "abc"]) {
       const res = await GET(req(`bbox=100,-1.4,104.7,3&dayRange=${d}`));
       expect(res.status).toBe(400);
     }
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("menerima dayRange 2 dan 5", async () => {
-    for (const d of ["2", "5"]) {
+  it("menerima dayRange 2 dan 5, serta 1 (kontrak lama) yang dipetakan ke 2 hari upstream", async () => {
+    for (const [d, upstream] of [
+      ["2", "2"],
+      ["5", "5"],
+      ["1", "2"], // bundle pra-deploy masih mengirim 1 — jangan 400
+    ]) {
+      fetchMock.mockClear();
       const res = await GET(req(`bbox=100,-1.4,104.7,3&dayRange=${d}`));
       expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toMatch(new RegExp(`/${upstream}$`));
     }
   });
 });

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { hasPermission } from "@/lib/rbac";
-import { parseBbox, isFirmsCsv, csvToGeoJSON } from "@/lib/firms";
+import { parseBbox, isFirmsCsv, csvToGeoJSON, upstreamDayRange } from "@/lib/firms";
 
 // Data proxy for the "Titik Api (Hotspot)" layer. Fetches active-fire detections
 // from NASA FIRMS (VIIRS 375 m, near-real-time) and returns them as GeoJSON so
@@ -22,9 +22,8 @@ export const runtime = "nodejs";
 const FIRMS_BASE = "https://firms.modaps.eosdis.nasa.gov/api/area/csv";
 const SOURCE = "VIIRS_SNPP_NRT";
 const TIMEOUT_MS = 20_000;
-// UI exposes two windows: "24 jam" fetches 2 UTC days (client trims to a
-// rolling 24 h) and "5 hari" fetches 5. Both within the FIRMS [1..5] day cap.
-const ALLOWED_DAY_RANGE = new Set([2, 5]);
+// Nilai dayRange valid + pemetaan ke hari upstream dipusatkan di
+// `upstreamDayRange` (lib/firms.ts) — sumber yang sama dipakai klien.
 
 export async function GET(req: NextRequest) {
   if (!(await hasPermission("map-parcel", "VIEW"))) {
@@ -37,10 +36,10 @@ export async function GET(req: NextRequest) {
   const bbox = parseBbox(req.nextUrl.searchParams.get("bbox"));
   if (!bbox) return new Response("Invalid bbox", { status: 400 });
 
-  const dayRange = Number(req.nextUrl.searchParams.get("dayRange"));
-  if (!ALLOWED_DAY_RANGE.has(dayRange)) return new Response("Invalid dayRange", { status: 400 });
+  const upstreamDays = upstreamDayRange(Number(req.nextUrl.searchParams.get("dayRange")));
+  if (upstreamDays === null) return new Response("Invalid dayRange", { status: 400 });
 
-  const upstream = `${FIRMS_BASE}/${mapKey}/${SOURCE}/${bbox}/${dayRange}`;
+  const upstream = `${FIRMS_BASE}/${mapKey}/${SOURCE}/${bbox}/${upstreamDays}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);

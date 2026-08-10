@@ -161,10 +161,10 @@ export function filterNearSorted(rows: HotspotNearestRow[]): HotspotNearestRow[]
  * total titik + jumlah yang < 15 km dari Lembaga Petani; tabel hanya memuat
  * titik < 15 km tsb, dengan kolom Lembaga Terdekat & Jarak (km), diurutkan
  * dari jarak terdekat. `nearestRows` = hasil `calcHotspotNearest` (dihitung
- * lazy di background); bila null (data peta belum dimuat → jarak tak bisa
- * dihitung), tabel memuat semua titik (kolom jarak "—") dan header meminta
- * memuat data peta dulu. `area` = Provinsi & Distrik terpilih di filter
- * (level muat data Peta Lahan adalah Distrik), ditampilkan di header laporan.
+ * lazy di background); bila null (data peta tanpa titik Lembaga Petani →
+ * jarak tak bisa dihitung), tabel memuat semua titik (kolom jarak "—") dengan
+ * keterangan di header. `area` = Provinsi & Distrik SAAT data dimuat (snapshot
+ * dari klien, bukan pilihan combobox berjalan), ditampilkan di header laporan.
  */
 export async function printHotspotPdf(
   fc: FeatureCollection,
@@ -222,7 +222,7 @@ export async function printHotspotPdf(
   doc.text(
     hasDistance
       ? `Berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani: ${near.length} titik — tabel hanya memuat titik tsb, diurutkan dari yang terdekat.`
-      : "Jarak ke Lembaga Petani tidak dapat dihitung — muat data peta dulu; tabel memuat semua titik.",
+      : "Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki titik Lembaga Petani; tabel memuat semua titik.",
     MARGIN,
     37
   );

@@ -5,6 +5,7 @@
  */
 
 import type { FeatureCollection } from "geojson";
+import { upstreamDayRange } from "@/lib/firms";
 
 /** UI time window: rolling last 24 hours (1) or last 5 days (5).
  *  FIRMS caps a single area request at 5 days ("Expects [1..5]"). */
@@ -139,7 +140,7 @@ export async function fetchHotspots(
   signal?: AbortSignal
 ): Promise<FeatureCollection> {
   const [w, s, e, n] = bbox;
-  const upstreamDays = dayRange === 1 ? 2 : dayRange;
+  const upstreamDays = upstreamDayRange(dayRange) ?? dayRange;
   const res = await fetch(`/api/map-hotspot?bbox=${w},${s},${e},${n}&dayRange=${upstreamDays}`, {
     signal,
   });

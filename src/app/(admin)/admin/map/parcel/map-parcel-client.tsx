@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useTransition } from "react";
+import { useState, useEffect, useMemo, useRef, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
@@ -91,6 +91,15 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
   const [pointZoomRequest, setPointZoomRequest] = useState<{
     coord: [number, number];
     token: number;
+  } | null>(null);
+  // Data titik api yang sudah pernah memicu auto-open modal ringkasan.
+  const autoOpenedForData = useRef<FeatureCollection | null>(null);
+  // Snapshot Provinsi & Distrik SAAT data dimuat — header PDF/modal harus
+  // menggambarkan data yang dimuat, bukan pilihan combobox yang bisa berubah
+  // tanpa Muat Data (temuan review 2026-08-10).
+  const [loadedArea, setLoadedArea] = useState<{
+    provinceName: string | null;
+    districtName: string | null;
   } | null>(null);
 
   const addCustomLayer = (layer: CustomLayer) => setCustomLayers((prev) => [...prev, layer]);
@@ -207,8 +216,15 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
       .then((rows) => {
         if (controller.signal.aborted) return;
         setHotspotNearestResult({ forData: hotspotData, forKt: ktPoints, rows });
-        setHotspotSummaryOpen(true);
-        toast.success("Kalkulasi jarak titik api selesai — Cetak PDF siap");
+        // Auto-open + toast hanya untuk titik api yang BARU dimuat. Kalkulasi
+        // juga terulang saat mapData berganti identitas (mis. reload setelah
+        // Edit Lahan) — jarak diperbarui diam-diam, modal tidak boleh
+        // menyembul lagi setelah user menutupnya (temuan review 2026-08-10).
+        if (autoOpenedForData.current !== hotspotData) {
+          autoOpenedForData.current = hotspotData;
+          setHotspotSummaryOpen(true);
+          toast.success("Kalkulasi jarak titik api selesai — Cetak PDF siap");
+        }
       })
       .catch(() => {
         // Abort (ganti data/rentang/unmount) — hasil sengaja dibuang.
@@ -250,11 +266,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
     );
   };
 
-  // Provinsi & Distrik terpilih di filter lahan — dipakai header PDF & modal.
-  const hotspotArea = {
-    provinceName: provinces.find((p) => p.id === provinceId)?.name ?? null,
-    districtName: districts.find((d) => d.id === districtId)?.name ?? null,
-  };
+  const hotspotArea = loadedArea ?? { provinceName: null, districtName: null };
 
   const handleHotspotPrintPdf = () => {
     if (!hotspotData || hotspotPdfCalculating) return;
@@ -263,12 +275,22 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
     );
   };
 
+  // Nama area sesuai filter yang benar-benar dipakai memuat data.
+  const currentAreaNames = () => ({
+    provinceName: provinces.find((p) => p.id === provinceId)?.name ?? null,
+    districtName: districts.find((d) => d.id === districtId)?.name ?? null,
+  });
+
   // Re-fetch GeoJSON dengan filter aktif (dipakai setelah Edit Lahan dari popup).
   const reloadMapData = () => {
     if (!districtId) return;
+    const area = currentAreaNames();
     startTransition(async () => {
       const res = await getMapData({ provinceId, districtId, farmerGroupId });
-      if (res.success) setMapData(res.data ? expandMapData(res.data) : null);
+      if (res.success) {
+        setMapData(res.data ? expandMapData(res.data) : null);
+        setLoadedArea(area);
+      }
     });
   };
 
@@ -277,6 +299,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
       toast.error("Silakan pilih Distrik terlebih dahulu");
       return;
     }
+    const area = currentAreaNames();
     startTransition(async () => {
       const res = await getMapData({ provinceId, districtId, farmerGroupId });
       if (!res.success) {
@@ -284,6 +307,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
         return;
       }
       setMapData(res.data ? expandMapData(res.data) : null);
+      setLoadedArea(area);
       setFilterOpen(false);
       const total =
         (res.data?.counts.kt ?? 0) + (res.data?.counts.parcelAreas ?? 0);
@@ -355,6 +379,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
         dayRange={hotspot.dayRange}
         area={hotspotArea}
         counts={hotspotCounts}
+        distancesAvailable={hotspotNearest !== null}
         nearRows={hotspotNearRows}
         onDownloadShp={handleHotspotDownloadShp}
         onPrintPdf={handleHotspotPrintPdf}

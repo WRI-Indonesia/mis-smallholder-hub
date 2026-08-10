@@ -5,6 +5,19 @@
 
 import type { FeatureCollection, Feature } from "geojson";
 
+/**
+ * UI window → jumlah hari FIRMS yang diambil upstream — satu sumber kebenaran
+ * untuk klien (`map-hotspot.ts`) dan route (`/api/map-hotspot`).
+ * "24 jam" mengambil 2 hari UTC (jendela bergulir difilter klien karena
+ * dayRange FIRMS dihitung per hari UTC utuh); nilai lama `1` tetap diterima
+ * dan dipetakan ke 2 demi kompatibilitas bundle pra-deploy. Null = tak valid.
+ */
+export function upstreamDayRange(dayRange: number): 2 | 5 | null {
+  if (dayRange === 1 || dayRange === 2) return 2;
+  if (dayRange === 5) return 5;
+  return null;
+}
+
 /** Validate a WGS84 "west,south,east,north" bbox string; returns normalized string or null. */
 export function parseBbox(raw: string | null): string | null {
   if (!raw) return null;

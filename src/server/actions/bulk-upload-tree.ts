@@ -103,11 +103,17 @@ export async function bulkCreateTrees(
 
   // parcelId hanya unik per petani — id yang dipakai >1 petani tidak bisa
   // dipetakan dengan aman, tolak eksplisit (jangan diam-diam pilih salah satu).
-  const rowsPerParcelId = new Map<string, number>();
-  for (const p of parcels) {
-    rowsPerParcelId.set(p.parcelId, (rowsPerParcelId.get(p.parcelId) ?? 0) + 1);
-  }
-  const ambiguous = parcelIds.filter((pid) => (rowsPerParcelId.get(pid) ?? 0) > 1);
+  // Hitungannya WAJIB global (tanpa filter scope): bila kembarannya milik
+  // petani di luar akses user, versi ter-scope hanya melihat satu baris dan
+  // diam-diam menempelkan seluruh titik ke lahan yang salah (temuan review
+  // 2026-08-10). Query ini hanya membocorkan jumlah, bukan data petani lain.
+  const globalCounts = await prisma.landParcel.groupBy({
+    by: ["parcelId"],
+    where: { parcelId: { in: parcelIds }, isActive: true },
+    _count: { _all: true },
+  });
+  const countPerParcelId = new Map(globalCounts.map((g) => [g.parcelId, g._count._all]));
+  const ambiguous = parcelIds.filter((pid) => (countPerParcelId.get(pid) ?? 0) > 1);
   if (ambiguous.length > 0) {
     return {
       success: false,
@@ -180,7 +186,21 @@ export async function bulkCreateTrees(
     return { success: true, data: { parcels: parsed.data.groups.length, trees: totalTrees } };
   } catch (error) {
     console.error("Bulk save trees error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || "Gagal menyimpan data ke database" };
+    // Pesan Prisma berbahasa Inggris + memuat nama tabel/kolom internal —
+    // terjemahkan ke pesan yang bisa ditindaklanjuti (pola bulkCreateFarmers).
+    if (typeof error === "object" && error !== null && "code" in error) {
+      const code = (error as { code?: string }).code;
+      if (code === "P2028") {
+        return {
+          success: false,
+          error:
+            "Waktu penyimpanan habis — berkas terlalu besar. Pecah ZIP menjadi beberapa bagian lalu unggah bertahap.",
+        };
+      }
+    }
+    return {
+      success: false,
+      error: "Gagal menyimpan data pohon ke database. Coba lagi; bila berulang, laporkan ke admin.",
+    };
   }
 }

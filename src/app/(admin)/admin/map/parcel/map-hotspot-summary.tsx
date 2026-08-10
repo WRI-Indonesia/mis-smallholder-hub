@@ -36,6 +36,9 @@ interface Props {
   area: { provinceName: string | null; districtName: string | null };
   /** Jumlah titik per keyakinan (seluruh titik termuat, bukan hanya < 15 km). */
   counts: Record<HotspotConfBucket, number>;
+  /** False bila jarak tak bisa dihitung (data peta tanpa titik Lembaga Petani)
+   *  — tampilkan keterangan, jangan "0 titik" yang terbaca sebagai hasil. */
+  distancesAvailable: boolean;
   /** Baris < 15 km dari Lembaga Petani, sudah urut jarak terdekat. */
   nearRows: HotspotNearestRow[];
   onDownloadShp: () => void;
@@ -71,6 +74,7 @@ export function HotspotSummaryDialog({
   dayRange,
   area,
   counts,
+  distancesAvailable,
   nearRows,
   onDownloadShp,
   onPrintPdf,
@@ -107,15 +111,26 @@ export function HotspotSummaryDialog({
               <span className="font-mono text-xs tabular-nums">{counts[b]}</span>
             </span>
           ))}
-          <span className="text-muted-foreground">
-            &lt; {NEAR_KM_THRESHOLD} km dari Lembaga Petani:{" "}
-            <span className="font-semibold text-foreground tabular-nums">{nearRows.length}</span>{" "}
-            titik
-          </span>
+          {distancesAvailable ? (
+            <span className="text-muted-foreground">
+              &lt; {NEAR_KM_THRESHOLD} km dari Lembaga Petani:{" "}
+              <span className="font-semibold text-foreground tabular-nums">{nearRows.length}</span>{" "}
+              titik
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki
+              titik Lembaga Petani.
+            </span>
+          )}
         </div>
 
         {/* Tabel titik < 15 km */}
-        {nearRows.length === 0 ? (
+        {!distancesAvailable ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Tabel titik terdekat membutuhkan titik Lembaga Petani pada data yang dimuat.
+          </p>
+        ) : nearRows.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             Tidak ada titik api berjarak &lt; {NEAR_KM_THRESHOLD} km dari Lembaga Petani.
           </p>

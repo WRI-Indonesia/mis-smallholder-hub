@@ -324,7 +324,9 @@ export function ProductionMonthlyMatrix({
     });
 
   const formatWeight = (kg: number) => {
-    if (weightUnit === "kg") return tonFmt(0).format(kg);
+    // Kg tampil maks 2 desimal (bukan dibulatkan ke bulat) agar total matriks
+    // tetap rekonsiliasi dengan laporan produksi yang memakai 2 desimal.
+    if (weightUnit === "kg") return tonFmt(2).format(kg);
     const ton = kg / 1000;
     // Ton kecil (<1) jangan dibulatkan jadi "0" pada sel ber-data — pakai 2 desimal.
     const digits = ton !== 0 && Math.abs(ton) < 1 ? 2 : tonDecimals;
@@ -404,12 +406,16 @@ export function ProductionMonthlyMatrix({
     );
     const maxKg = Math.max(...active.perYear.flatMap((y) => y.months.map((m) => m.totalKg)), 0);
     const dataByYear = new Map(active.perYear.map((y) => [y.year, y]));
-    const dataYears = active.perYear.map((y) => y.year);
-    const maxYear = Math.max(currentYear, ...dataYears);
-    // Clamp 20 baris — periode ber-tahun typo (mis. "1025-06") lolos validasi
-    // format dan tanpa clamp akan merender ribuan baris kosong.
+    // Jendela baris diangkur ke tahun berjalan, BUKAN ke tahun data terbesar:
+    // satu periode ber-tahun typo masa depan (mis. "2107-05", lolos regex
+    // YYYY-MM) tidak boleh menggeser jendela dan menyembunyikan semua tahun
+    // riil (temuan review 2026-08-10). Tahun typo — masa depan maupun lampau
+    // jauh ("1025-06") — jatuh di luar jendela dan tidak dirender.
+    const realYears = active.perYear.map((y) => y.year).filter((y) => y <= currentYear);
+    const maxYear = currentYear;
+    // Clamp 20 baris — tanpa clamp, typo lampau merender ribuan baris kosong.
     const minYear = Math.max(
-      dataYears.length > 0 ? Math.min(...dataYears) : currentYear,
+      realYears.length > 0 ? Math.min(...realYears) : currentYear,
       maxYear - 19,
     );
     const rows: YearRowEntry[] = [];
@@ -583,7 +589,13 @@ export function ProductionMonthlyMatrix({
                         hasBreakdown
                           ? (y) => (
                               <>
-                                <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
+                                {/* Baris tahun ≠ baris lahan: nilainya luas TERDATA
+                                    (lahan yang melapor tahun itu), bukan luas milik —
+                                    beri title agar tak terbaca sebagai luas lahan. */}
+                                <td
+                                  className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground"
+                                  title="Luas Terdata (Ha) — total luas lahan yang melapor tahun ini"
+                                >
                                   {y ? formatDecimal(y.areaReporting) : "—"}
                                 </td>
                                 <td className="py-1.5 pr-3 text-center text-muted-foreground">
