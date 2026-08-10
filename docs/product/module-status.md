@@ -56,7 +56,7 @@
 | Phase | Module | Status | Missing |
 |-------|--------|--------|---------|
 | TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager (CLI sudah ada) |
-| OPS-01 | Testing | Partial | RPT-03 (#132), RPT-04 (#154, +14 unit) & DASH-05 (#148, +2 unit) ✅ tercakup; gap tersisa: integration test route hotspot |
+| OPS-01 | Testing | Done | RPT-03 (#132), RPT-04 (#154, +14 unit) & DASH-05 (#148, +2 unit) ✅ tercakup; integration test route hotspot ✅ #231 (`map-hotspot-route.test.ts`, 9 test, 2026-08-10) — gap terakhir tertutup |
 | OPS-02 | DevOps | Partial | Verifikasi deployment/rollback; status Dockerfile vs CI |
 
 ## Planned - Now (🔲 Priority)
@@ -118,6 +118,8 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris
 | Report (umum) | report.test.ts | 14 | ✅ |
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 13 | ✅ |
 | Hotspot FIRMS | firms.test.ts | 9 | ✅ |
+| Hotspot route `/api/map-hotspot` (#231) | map-hotspot-route.test.ts | 9 | ✅ |
+| Hotspot klien (24 jam bergulir + keyakinan) | map-hotspot.test.ts | 8 | ✅ |
 | Status upload petani 3 tingkat (#197) | farmer-upload-status.test.ts | 7 | ✅ |
 | Normalisasi sel Excel (#196) | excel-cell.test.ts | 6 | ✅ |
 | Exporter PDF build-vs-save (TD-019 #180) | pdf-exporters.test.ts | 5 | ✅ |
@@ -129,7 +131,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris
 ### Need Coverage
 
 - 🔲 Server-action level tests untuk snapshot RBAC (kini hanya fungsi murni)
-- 🔲 Integration test route `api/map-hotspot` (follow-up MAP-01)
+- ✅ Integration test route `api/map-hotspot` — selesai #231 (`map-hotspot-route.test.ts`, 2026-08-10)
 
 ## Code Compliance (rule.md)
 
