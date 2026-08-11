@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { upsertReferenceBenchmark } from "@/server/actions/benchmark-comparison";
 import { BENCHMARK_METRICS } from "@/lib/benchmark-comparison";
+import type { ReferenceBenchmarkInput } from "@/validations/reference-benchmark.schema";
 import type { BenchmarkComparisonRow, BenchmarkMetricKey } from "@/types/benchmark-comparison";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -17,6 +18,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   row: BenchmarkComparisonRow | null;
+  /** Dipanggil setelah simpan sukses dengan input tervalidasi (update optimistis di parent). */
+  onSaved?: (input: ReferenceBenchmarkInput) => void;
 }
 
 function initialValues(row: BenchmarkComparisonRow | null): Record<BenchmarkMetricKey, string> {
@@ -35,7 +38,7 @@ function parseValue(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function BenchmarkFormModal({ open, onClose, row }: Props) {
+export function BenchmarkFormModal({ open, onClose, row, onSaved }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [values, setValues] = useState<Record<BenchmarkMetricKey, string>>(() => initialValues(row));
@@ -79,6 +82,7 @@ export function BenchmarkFormModal({ open, onClose, row }: Props) {
 
     if (result.success) {
       toast.success("Angka acuan disimpan");
+      onSaved?.(data);
       onClose();
       router.refresh();
     } else if (typeof result.error === "string") {

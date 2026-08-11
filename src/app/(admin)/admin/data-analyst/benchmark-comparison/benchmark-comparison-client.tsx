@@ -1,9 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -18,14 +23,15 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { useUrlFilters } from "@/hooks/use-url-filters";
-import { BENCHMARK_METRICS } from "@/lib/benchmark-comparison";
+import { applySavedBenchmark, BENCHMARK_METRICS } from "@/lib/benchmark-comparison";
+import type { ReferenceBenchmarkInput } from "@/validations/reference-benchmark.schema";
 import type {
   BenchmarkComparisonRow,
   BenchmarkComparisonView,
   BenchmarkDistrictSection,
   BenchmarkMetricKey,
 } from "@/types/benchmark-comparison";
-import { Download, Pencil, Search, StickyNote } from "lucide-react";
+import { ChevronDown, Download, Pencil, Search, StickyNote } from "lucide-react";
 import { format } from "date-fns";
 import { BenchmarkFormModal } from "./benchmark-form-modal";
 
@@ -100,15 +106,35 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
   const [editing, setEditing] = useState<BenchmarkComparisonRow | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Update optimistis: hasil simpan langsung diterapkan ke view di client
+  // (perhitungan sama dengan server), lalu router.refresh() menyelaraskan.
+  // Prop server baru menggantikan hasil optimistis — disetel saat render
+  // (bukan useEffect) agar tabel tidak dirender dua kali.
+  const [localView, setLocalView] = useState(view);
+  const [serverView, setServerView] = useState(view);
+  if (view !== serverView) {
+    setServerView(view);
+    setLocalView(view);
+  }
+  const handleSaved = useCallback((input: ReferenceBenchmarkInput) => {
+    setLocalView((prev) => applySavedBenchmark(prev, input));
+  }, []);
+
   const mode = get("mode") === "detail" ? "detail" : "ringkas";
   const districtFilter = get("distrik") ?? "all";
   const onlyDiff = get("selisih") === "1";
   const sortBy = get("urut") === "masalah" ? "masalah" : "kode";
   const [search, setSearch] = useState(get("q") ?? "");
+  // Tulis ke URL di-debounce — Safari melempar SecurityError bila
+  // history.replaceState dipanggil >100×/30 detik (mengetik cepat).
+  useEffect(() => {
+    const timer = setTimeout(() => setMany({ q: search.trim() || null }), 400);
+    return () => clearTimeout(timer);
+  }, [search, setMany]);
 
   const filteredSections = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return view.sections
+    return localView.sections
       .filter((s) => districtFilter === "all" || s.districtId === districtFilter)
       .map((section) => {
         let rows = section.rows;
@@ -128,7 +154,7 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
         return { ...section, rows };
       })
       .filter((s) => s.rows.length > 0);
-  }, [view.sections, districtFilter, onlyDiff, search, sortBy]);
+  }, [localView.sections, districtFilter, onlyDiff, search, sortBy]);
 
   async function onExport() {
     setIsExporting(true);
@@ -146,7 +172,7 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
         { header: "Metrik Masih Selisih", key: "diffSummary", width: 40 },
         { header: "Catatan", key: "notes", width: 40 },
       ];
-      const data = view.sections.flatMap((section) =>
+      const data = localView.sections.flatMap((section) =>
         section.rows.map((row) => ({
           district: section.districtName,
           code: row.code ?? "",
@@ -179,13 +205,13 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
         <Card>
           <CardContent className="px-4 py-3">
             <p className="text-xs text-muted-foreground">Lembaga Petani</p>
-            <p className="text-xl font-bold">{view.totalGroups}</p>
+            <p className="text-xl font-bold">{localView.totalGroups}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="px-4 py-3">
             <p className="text-xs text-muted-foreground">Masih ada selisih</p>
-            <p className="text-xl font-bold text-amber-600">{view.groupsWithDiff}</p>
+            <p className="text-xl font-bold text-amber-600">{localView.groupsWithDiff}</p>
           </CardContent>
         </Card>
         <div className="ml-auto">
@@ -213,7 +239,7 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua distrik</SelectItem>
-            {view.sections.map((s) => (
+            {localView.sections.map((s) => (
               <SelectItem key={s.districtId} value={s.districtId}>
                 {s.districtName}
               </SelectItem>
@@ -246,10 +272,7 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setMany({ q: e.target.value.trim() || null });
-            }}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari lembaga..."
             className="pl-8"
           />
@@ -293,8 +316,62 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
         )
       )}
 
-      <BenchmarkFormModal open={!!editing} onClose={() => setEditing(null)} row={editing} />
+      <BenchmarkFormModal
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        row={editing}
+        onSaved={handleSaved}
+      />
     </div>
+  );
+}
+
+// ── Shell seksi distrik: Card collapsible dengan ringkasan di header ─────────
+
+function SectionShell({
+  section,
+  children,
+}: {
+  section: BenchmarkDistrictSection;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+  const diffCount = section.rows.filter((r) => r.diffSummary.length > 0).length;
+  const noRefCount = section.rows.filter((r) => !r.reference).length;
+  const summaryParts = [`${section.rows.length} lembaga`];
+  if (diffCount > 0) summaryParts.push(`${diffCount} masih selisih`);
+  else summaryParts.push("tidak ada selisih");
+  if (noRefCount > 0) summaryParts.push(`${noRefCount} tanpa acuan`);
+
+  return (
+    <Card className="gap-0 py-0">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger
+          render={
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            />
+          }
+        >
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+            <span className="font-semibold">{section.districtName}</span>
+            <span className="text-xs text-muted-foreground">
+              {summaryParts.join(" · ")}
+            </span>
+            {diffCount > 0 && (
+              <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-xs">
+                {diffCount}
+              </Badge>
+            )}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-4 pb-4">{children}</CollapsibleContent>
+      </Collapsible>
+    </Card>
   );
 }
 
@@ -310,16 +387,14 @@ function CompactSection({
   onEdit: (row: BenchmarkComparisonRow) => void;
 }) {
   return (
-    <Card>
-      <CardContent className="pt-4 space-y-3">
-        <h2 className="font-semibold">{section.districtName}</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="sticky left-0 bg-muted text-left p-2 min-w-[220px] z-10">
-                  Lembaga Petani
-                </th>
+    <SectionShell section={section}>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="sticky left-0 bg-muted text-left p-2 min-w-[220px] z-10">
+                Lembaga Petani
+              </th>
                 {BENCHMARK_METRICS.map((m) => (
                   <th key={m.key} className="p-2 text-center border-l font-medium min-w-[86px]">
                     {m.label.replace("Training ", "")}
@@ -395,8 +470,7 @@ function CompactSection({
             </tfoot>
           </table>
         </div>
-      </CardContent>
-    </Card>
+    </SectionShell>
   );
 }
 
@@ -510,13 +584,21 @@ function RowLabel({ row }: { row: BenchmarkComparisonRow }) {
         )}
       </div>
       {row.notes && (
-        <p
-          className="text-xs text-muted-foreground mt-1 flex items-start gap-1 max-w-[260px]"
-          title={row.notes}
-        >
-          <StickyNote className="h-3 w-3 mt-0.5 shrink-0" />
-          <span className="line-clamp-2 whitespace-pre-line">{row.notes}</span>
-        </p>
+        <div className="mt-1">
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span className="inline-flex max-w-[240px] cursor-default items-center gap-1 rounded-full border border-dashed border-amber-400/60 bg-amber-50 px-2 py-0.5 text-xs text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/50 dark:text-amber-300" />
+              }
+            >
+              <StickyNote className="h-3 w-3 shrink-0" />
+              <span className="truncate">{row.notes.split("\n")[0]}</span>
+            </TooltipTrigger>
+            <StatTooltipContent title="Catatan" subtitle={row.name}>
+              <p className="max-w-[240px] whitespace-pre-line text-background/90">{row.notes}</p>
+            </StatTooltipContent>
+          </Tooltip>
+        </div>
       )}
     </>
   );
@@ -534,10 +616,8 @@ function DetailSection({
   onEdit: (row: BenchmarkComparisonRow) => void;
 }) {
   return (
-    <Card>
-      <CardContent className="pt-4 space-y-3">
-        <h2 className="font-semibold">{section.districtName}</h2>
-        <div className="overflow-x-auto">
+    <SectionShell section={section}>
+      <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b bg-muted/50">
@@ -602,9 +682,8 @@ function DetailSection({
               </tr>
             </tfoot>
           </table>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </SectionShell>
   );
 }
 

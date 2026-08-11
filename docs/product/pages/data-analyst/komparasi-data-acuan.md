@@ -17,8 +17,11 @@ Halaman: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
 │   ├── Select distrik · Select urutan (kode | paling bermasalah)
 │   ├── Switch "Hanya yang masih selisih" · Input cari lembaga
 │   └── Legenda warna (mode Ringkas)
-├── Tabel per distrik (satu Card per distrik; empty state bila filter tidak cocok)
-│   ├── Baris per Lembaga: nama + kode + badge ("cocok" / "acuan belum diisi") + catatan
+├── Tabel per distrik (satu Card collapsible per distrik — header: nama distrik +
+│   │   ringkasan "N lembaga · N masih selisih · N tanpa acuan" + badge jumlah selisih;
+│   │   empty state bila filter tidak cocok)
+│   ├── Baris per Lembaga: nama + kode + badge ("cocok" / "acuan belum diisi")
+│   │   + catatan sebagai pill kuning (baris pertama; isi lengkap via tooltip)
 │   ├── Mode Ringkas: matriks Δ — satu sel per metrik (✓ hijau cocok · kuning ≤20% ·
 │   │   merah >20% · abu "—" tanpa acuan), isi sel = selisih + % capaian;
 │   │   tooltip terstruktur (StatTooltipContent, pola #213): Acuan/MIS/Selisih + bar capaian
@@ -29,7 +32,10 @@ Halaman: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
 └── Modal entry acuan (BenchmarkFormModal)
     ├── 8 input angka terkontrol — tiap field menampilkan MIS live + preview Δ saat mengetik
     │   (kosong = tidak dibandingkan, bukan nol)
-    └── Textarea catatan
+    ├── Textarea catatan
+    └── onSaved → update optimistis: `applySavedBenchmark` me-rebuild view di client dengan
+        perhitungan yang sama persis, `router.refresh()` menyelaraskan dengan server
+
 ```
 
 ## Atribut halaman
@@ -41,7 +47,7 @@ Halaman: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
 | Komponen anak | `benchmark-comparison-client.tsx`, `benchmark-form-modal.tsx`, `loading.tsx` |
 | Guard | `requirePermission("data-analyst-benchmark-comparison")` (halaman); `hasPermission(..., "VIEW"/"EDIT")` + `getAccessContext()` di action |
 | Server action | `getBenchmarkComparisonView()` (VIEW, live query) dan `upsertReferenceBenchmark()` (EDIT, upsert per `farmerGroupId` + `revalidatePath`) dari `src/server/actions/benchmark-comparison.ts` |
-| Logika murni | `aggregateMisMetrics` + `buildComparisonView` di `src/lib/benchmark-comparison.ts` (teruji di `src/test/benchmark-comparison.test.ts`) |
+| Logika murni | `aggregateMisMetrics` + `buildComparisonView` + `applySavedBenchmark` (update optimistis) di `src/lib/benchmark-comparison.ts` (teruji di `src/test/benchmark-comparison.test.ts`) |
 | Model | `ReferenceBenchmark` (`prisma/schema/reference-benchmark.prisma`, tabel `tbl_reference_benchmark`) — 1 baris per Lembaga (`farmerGroupId` unique), 8 metrik nullable + `notes`; "hapus" = soft delete, entry ulang mengaktifkan kembali baris yang sama |
 | Konvensi angka MIS | Identik dashboard: petani/persil/luas aktif; training **distinct petani per paket** dengan `farmer.farmerGroupId` = `activity.farmerGroupId` (pola `dashboard-training.ts`); produksi = distinct petani ber-record aktif |
 | Validasi | `referenceBenchmarkSchema` di `src/validations/reference-benchmark.schema.ts` (angka ≥ 0, bulat kecuali luas, notes ≤ 2000) |

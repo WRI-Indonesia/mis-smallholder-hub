@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   aggregateMisMetrics,
+  applySavedBenchmark,
   buildComparisonView,
   type ComparisonBenchmarkInput,
   type ComparisonGroupInput,
@@ -184,5 +185,48 @@ describe("buildComparisonView", () => {
     // total acuan Kampar = 3 (G2 tanpa acuan tidak menyumbang), total MIS = 2 petani
     expect(view.sections[0].totals.reference.farmerCount).toBe(3);
     expect(view.sections[0].totals.mis.farmerCount).toBe(2);
+  });
+});
+
+describe("applySavedBenchmark", () => {
+  const mis = () =>
+    aggregateMisMetrics(
+      baseInput({
+        farmers: [
+          { id: "f1", farmerGroupId: G1 },
+          { id: "f2", farmerGroupId: G1 },
+          { id: "f3", farmerGroupId: G2 },
+        ],
+      })
+    );
+  const groups = () => [group(), group({ id: G2, code: "ISH-1401-02", name: "KUD Karya Sembada" })];
+
+  it("menimpa acuan lembaga yang disimpan, acuan + catatan lembaga lain tidak berubah", () => {
+    const view = buildComparisonView(groups(), mis(), [
+      benchmark(G2, { farmerCount: 1 }, "catatan lama G2"),
+    ]);
+
+    const next = applySavedBenchmark(view, benchmark(G1, { farmerCount: 5 }, "catatan baru"));
+
+    const rowG1 = next.sections[0].rows.find((r) => r.farmerGroupId === G1)!;
+    const rowG2 = next.sections[0].rows.find((r) => r.farmerGroupId === G2)!;
+    expect(rowG1.diff.farmerCount).toBe(3); // 5 − 2
+    expect(rowG1.notes).toBe("catatan baru");
+    expect(rowG2.reference?.farmerCount).toBe(1);
+    expect(rowG2.notes).toBe("catatan lama G2");
+    expect(next.groupsWithDiff).toBe(1); // G1 selisih; G2 cocok (1 − 1)
+  });
+
+  it("hasilnya identik dengan buildComparisonView dari data yang sama (paritas render server)", () => {
+    const saved = benchmark(G1, { farmerCount: 5, areaHa: 12.5 }, "cek paritas");
+    const before = buildComparisonView(groups(), mis(), [benchmark(G2, { parcelCount: 2 })]);
+
+    const optimistic = applySavedBenchmark(before, saved);
+    const serverRender = buildComparisonView(groups(), mis(), [
+      saved,
+      benchmark(G2, { parcelCount: 2 }),
+    ]);
+
+    expect(optimistic).toEqual(serverRender);
   });
 });

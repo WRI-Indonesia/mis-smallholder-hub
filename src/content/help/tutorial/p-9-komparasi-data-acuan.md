@@ -25,12 +25,13 @@ Kolom **Δ (selisih) = Acuan − MIS**. Selisih positif berarti data di MIS masi
 1. Buka menu **Data Analyst → Komparasi Data Acuan**.
 2. Baca dua kartu ringkas di atas: jumlah **Lembaga Petani** dalam cakupan akses Anda dan berapa yang **masih ada selisih**.
 3. Baca matriks selisih (mode **Ringkas**, bawaan): satu sel = satu metrik, isinya angka selisih + persen capaian. Hijau ✓ = cocok, kuning = gap ≤20%, merah = gap >20%, abu-abu "—" = acuan belum diisi.
++ Tiap distrik punya seksi sendiri yang bisa diciutkan — klik judul distriknya. Ringkasan seksi (jumlah lembaga, berapa yang masih selisih, berapa tanpa acuan) tetap terbaca di judul walau seksinya tertutup.
 + Arahkan kursor ke sel untuk rincian: angka Acuan, MIS live, selisih, dan bar capaian. Baris **TOTAL** menjumlahkan kolom acuan hanya dari lembaga yang acuannya terisi — bila banyak lembaga belum diisi, total acuan wajar lebih kecil dari total MIS.
 4. Perlu angka lengkap berdampingan? Klik tab **Detail** untuk tampilan kolom Acuan | MIS | Δ per metrik (lebar, geser tabel ke samping).
 5. Persempit dengan alat di atas tabel: filter **distrik**, saklar **Hanya yang masih selisih**, kotak **cari lembaga**, dan **Urut paling bermasalah** (lembaga dengan selisih terbanyak naik ke atas).
 + Pilihan filter tersimpan di alamat halaman, jadi tampilannya bisa di-bookmark atau dikirim ke rekan kerja.
-6. Untuk memperbarui angka acuan sebuah lembaga, klik ikon **pensil** di ujung barisnya. Di dialog, tiap kolom menampilkan angka **MIS live** dan preview selisihnya berubah langsung saat Anda mengetik. Isi lalu **Simpan**.
-+ Kosongkan kolom yang memang belum ada angka acuannya — kosong artinya "tidak dibandingkan", bukan nol. Kolom **Catatan** untuk konteks selisih, misalnya "56 petani belum ada data produksi".
+6. Untuk memperbarui angka acuan sebuah lembaga, klik ikon **pensil** di ujung barisnya. Di dialog, tiap kolom menampilkan angka **MIS live** dan preview selisihnya berubah langsung saat Anda mengetik. Isi lalu **Simpan** — angka di tabel langsung diperbarui tanpa perlu memuat ulang halaman.
++ Kosongkan kolom yang memang belum ada angka acuannya — kosong artinya "tidak dibandingkan", bukan nol. Kolom **Catatan** untuk konteks selisih, misalnya "56 petani belum ada data produksi"; catatan tampil sebagai penanda kuning kecil di bawah nama lembaga, arahkan kursor untuk membaca isi lengkapnya.
 7. Klik **Ekspor Excel** untuk mengunduh tabel lengkap (Acuan | MIS | Selisih per metrik) sebagai bahan diskusi dengan fasilitator.
 + Ekspor selalu berisi semua lembaga dalam cakupan akses Anda, mengabaikan filter yang sedang aktif.
 

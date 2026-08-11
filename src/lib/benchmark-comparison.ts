@@ -138,6 +138,13 @@ function formatDiff(value: number, decimal: boolean): string {
   return decimal ? String(round2(value)) : String(value);
 }
 
+/** Ambil 8 nilai metrik dari baris benchmark (buang farmerGroupId/notes/kolom lain). */
+function pickReferenceValues(benchmark: ComparisonBenchmarkInput): BenchmarkReferenceValues {
+  const values = {} as BenchmarkReferenceValues;
+  for (const metric of BENCHMARK_METRICS) values[metric.key] = benchmark[metric.key];
+  return values;
+}
+
 /** Susun view komparasi: baris per lembaga, seksi per distrik, total per seksi. */
 export function buildComparisonView(
   groups: ComparisonGroupInput[],
@@ -152,16 +159,7 @@ export function buildComparisonView(
     const mis = misByGroup.get(group.id) ?? emptyMis();
     const benchmark = benchmarkByGroup.get(group.id);
     const reference: BenchmarkReferenceValues | null = benchmark
-      ? {
-          farmerCount: benchmark.farmerCount,
-          parcelCount: benchmark.parcelCount,
-          areaHa: benchmark.areaHa,
-          trainingP1: benchmark.trainingP1,
-          trainingP2Mk: benchmark.trainingP2Mk,
-          trainingP2K3: benchmark.trainingP2K3,
-          trainingP34: benchmark.trainingP34,
-          productionFarmerCount: benchmark.productionFarmerCount,
-        }
+      ? pickReferenceValues(benchmark)
       : null;
 
     const diff = {} as BenchmarkComparisonRow["diff"];
@@ -222,4 +220,38 @@ export function buildComparisonView(
   }
 
   return { sections: orderedSections, groupsWithDiff, totalGroups: groups.length };
+}
+
+/**
+ * Terapkan hasil simpan acuan ke view yang sudah ada TANPA menunggu refresh
+ * server (update optimistis di client). View di-rebuild dengan perhitungan
+ * yang sama persis, jadi hasilnya identik dengan render server berikutnya.
+ */
+export function applySavedBenchmark(
+  view: BenchmarkComparisonView,
+  saved: ComparisonBenchmarkInput
+): BenchmarkComparisonView {
+  const groups: ComparisonGroupInput[] = [];
+  const misByGroup = new Map<string, BenchmarkMisValues>();
+  const benchmarks: ComparisonBenchmarkInput[] = [];
+
+  for (const section of view.sections) {
+    for (const row of section.rows) {
+      groups.push({
+        id: row.farmerGroupId,
+        code: row.code,
+        abrv: row.abrv,
+        name: row.name,
+        district: { id: row.districtId, name: row.districtName },
+      });
+      misByGroup.set(row.farmerGroupId, row.mis);
+      if (row.farmerGroupId === saved.farmerGroupId) {
+        benchmarks.push(saved);
+      } else if (row.reference) {
+        benchmarks.push({ farmerGroupId: row.farmerGroupId, notes: row.notes, ...row.reference });
+      }
+    }
+  }
+
+  return buildComparisonView(groups, misByGroup, benchmarks);
 }
