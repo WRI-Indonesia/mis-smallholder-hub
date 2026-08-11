@@ -24,17 +24,21 @@ Kolom **Δ (selisih) = Acuan − MIS**. Selisih positif berarti data di MIS masi
 
 1. Buka menu **Data Analyst → Komparasi Data Acuan**.
 2. Baca dua kartu ringkas di atas: jumlah **Lembaga Petani** dalam cakupan akses Anda dan berapa yang **masih ada selisih**.
-3. Telusuri tabel per distrik. Sel Δ berwarna oranye = masih selisih; badge **cocok** = seluruh metrik yang ada acuannya sudah sama.
-+ Baris **TOTAL** menjumlahkan kolom acuan hanya dari lembaga yang acuannya terisi — bila banyak lembaga belum diisi, total acuan wajar lebih kecil dari total MIS.
-4. Untuk memperbarui angka acuan sebuah lembaga, klik ikon **pensil** di ujung barisnya, isi metrik yang ada acuannya, lalu **Simpan**.
+3. Baca matriks selisih (mode **Ringkas**, bawaan): satu sel = satu metrik, isinya angka selisih + persen capaian. Hijau ✓ = cocok, kuning = gap ≤20%, merah = gap >20%, abu-abu "—" = acuan belum diisi.
++ Arahkan kursor ke sel untuk rincian: angka Acuan, MIS live, selisih, dan bar capaian. Baris **TOTAL** menjumlahkan kolom acuan hanya dari lembaga yang acuannya terisi — bila banyak lembaga belum diisi, total acuan wajar lebih kecil dari total MIS.
+4. Perlu angka lengkap berdampingan? Klik tab **Detail** untuk tampilan kolom Acuan | MIS | Δ per metrik (lebar, geser tabel ke samping).
+5. Persempit dengan alat di atas tabel: filter **distrik**, saklar **Hanya yang masih selisih**, kotak **cari lembaga**, dan **Urut paling bermasalah** (lembaga dengan selisih terbanyak naik ke atas).
++ Pilihan filter tersimpan di alamat halaman, jadi tampilannya bisa di-bookmark atau dikirim ke rekan kerja.
+6. Untuk memperbarui angka acuan sebuah lembaga, klik ikon **pensil** di ujung barisnya. Di dialog, tiap kolom menampilkan angka **MIS live** dan preview selisihnya berubah langsung saat Anda mengetik. Isi lalu **Simpan**.
 + Kosongkan kolom yang memang belum ada angka acuannya — kosong artinya "tidak dibandingkan", bukan nol. Kolom **Catatan** untuk konteks selisih, misalnya "56 petani belum ada data produksi".
-5. Klik **Ekspor Excel** untuk mengunduh tabel lengkap (Acuan | MIS | Selisih per metrik) sebagai bahan diskusi dengan fasilitator.
+7. Klik **Ekspor Excel** untuk mengunduh tabel lengkap (Acuan | MIS | Selisih per metrik) sebagai bahan diskusi dengan fasilitator.
++ Ekspor selalu berisi semua lembaga dalam cakupan akses Anda, mengabaikan filter yang sedang aktif.
 
 > [!hati-hati] Angka acuan adalah data entry manual — memperbaruinya tidak mengubah data MIS sama sekali. Sebaliknya, sisi MIS tidak bisa diedit dari halaman ini; kejar selisihnya lewat unggah/entry data di menu terkait (Master Data, Unggah Massal).
 
 ## Kalau bermasalah
 
-**Halaman kosong / lembaga tidak muncul** — lembaga di luar cakupan akses Anda tidak ditampilkan. Cek penugasan distrik/lembaga akun Anda ke admin.
+**Halaman kosong / lembaga tidak muncul** — cek dulu filternya: matikan "Hanya yang masih selisih", kosongkan pencarian, kembalikan distrik ke "Semua". Bila tetap kosong, lembaga tersebut mungkin di luar cakupan akses Anda — cek penugasan distrik/lembaga akun Anda ke admin.
 
 **Tombol pensil tidak ada** — akun Anda tidak punya izin EDIT untuk menu ini; entry acuan hanya untuk peran yang ditugaskan admin.
 

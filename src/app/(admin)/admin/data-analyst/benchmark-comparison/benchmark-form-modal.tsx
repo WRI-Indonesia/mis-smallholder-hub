@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { upsertReferenceBenchmark } from "@/server/actions/benchmark-comparison";
 import { BENCHMARK_METRICS } from "@/lib/benchmark-comparison";
-import type { BenchmarkComparisonRow } from "@/types/benchmark-comparison";
+import type { BenchmarkComparisonRow, BenchmarkMetricKey } from "@/types/benchmark-comparison";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -19,10 +19,39 @@ interface Props {
   row: BenchmarkComparisonRow | null;
 }
 
+function initialValues(row: BenchmarkComparisonRow | null): Record<BenchmarkMetricKey, string> {
+  const values = {} as Record<BenchmarkMetricKey, string>;
+  for (const m of BENCHMARK_METRICS) {
+    const v = row?.reference?.[m.key];
+    values[m.key] = v == null ? "" : String(v);
+  }
+  return values;
+}
+
+function parseValue(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
 export function BenchmarkFormModal({ open, onClose, row }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [values, setValues] = useState<Record<BenchmarkMetricKey, string>>(() => initialValues(row));
+  const [notes, setNotes] = useState(row?.notes ?? "");
   const router = useRouter();
+
+  // Reset isi form tiap ganti lembaga / buka ulang dialog.
+  const rowId = row?.farmerGroupId ?? null;
+  useEffect(() => {
+    if (open) {
+      setValues(initialValues(row));
+      setNotes(row?.notes ?? "");
+      setErrors({});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, rowId]);
 
   if (!row) return null;
 
@@ -32,23 +61,17 @@ export function BenchmarkFormModal({ open, onClose, row }: Props) {
     setIsLoading(true);
     setErrors({});
 
-    const form = new FormData(e.currentTarget);
-    const numberOrNull = (name: string) => {
-      const raw = (form.get(name) as string | null)?.trim();
-      return raw ? Number(raw.replace(",", ".")) : null;
-    };
-
     const data = {
       farmerGroupId: row.farmerGroupId,
-      farmerCount: numberOrNull("farmerCount"),
-      parcelCount: numberOrNull("parcelCount"),
-      areaHa: numberOrNull("areaHa"),
-      trainingP1: numberOrNull("trainingP1"),
-      trainingP2Mk: numberOrNull("trainingP2Mk"),
-      trainingP2K3: numberOrNull("trainingP2K3"),
-      trainingP34: numberOrNull("trainingP34"),
-      productionFarmerCount: numberOrNull("productionFarmerCount"),
-      notes: ((form.get("notes") as string) || "").trim() || null,
+      farmerCount: parseValue(values.farmerCount),
+      parcelCount: parseValue(values.parcelCount),
+      areaHa: parseValue(values.areaHa),
+      trainingP1: parseValue(values.trainingP1),
+      trainingP2Mk: parseValue(values.trainingP2Mk),
+      trainingP2K3: parseValue(values.trainingP2K3),
+      trainingP34: parseValue(values.trainingP34),
+      productionFarmerCount: parseValue(values.productionFarmerCount),
+      notes: notes.trim() || null,
     };
 
     const result = await upsertReferenceBenchmark(data);
@@ -74,34 +97,63 @@ export function BenchmarkFormModal({ open, onClose, row }: Props) {
         <form onSubmit={onSubmit} className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Isi angka acuan manual (GDrive / MD 1st SOW). Kosongkan bila belum ada acuan untuk
-            metrik tersebut.
+            metrik tersebut. Angka MIS di bawah tiap kolom adalah nilai live saat ini.
           </p>
           <div className="grid grid-cols-2 gap-3">
-            {BENCHMARK_METRICS.map((metric) => (
-              <div key={metric.key} className="space-y-1.5">
-                <Label htmlFor={metric.key}>{metric.label}</Label>
-                <Input
-                  id={metric.key}
-                  name={metric.key}
-                  type="number"
-                  min={0}
-                  step={metric.decimal ? "0.01" : "1"}
-                  defaultValue={row.reference?.[metric.key] ?? ""}
-                  disabled={isLoading}
-                />
-                {errors[metric.key] && (
-                  <p className="text-xs text-destructive">{errors[metric.key][0]}</p>
-                )}
-              </div>
-            ))}
+            {BENCHMARK_METRICS.map((metric) => {
+              const mis = row.mis[metric.key];
+              const parsed = parseValue(values[metric.key]);
+              const delta = parsed === null ? null : Math.round((parsed - mis) * 100) / 100;
+              return (
+                <div key={metric.key} className="space-y-1">
+                  <Label htmlFor={metric.key}>{metric.label}</Label>
+                  <Input
+                    id={metric.key}
+                    type="number"
+                    min={0}
+                    step={metric.decimal ? "0.01" : "1"}
+                    value={values[metric.key]}
+                    onChange={(e) =>
+                      setValues((prev) => ({ ...prev, [metric.key]: e.target.value }))
+                    }
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    MIS: {mis.toLocaleString("id-ID", { maximumFractionDigits: 2 })}
+                    {delta !== null && delta !== 0 && (
+                      <span
+                        className={
+                          delta > 0
+                            ? " text-amber-700 dark:text-amber-400 font-medium"
+                            : " text-sky-700 dark:text-sky-400 font-medium"
+                        }
+                      >
+                        {" "}
+                        · Δ {delta > 0 ? "+" : ""}
+                        {delta.toLocaleString("id-ID", { maximumFractionDigits: 2 })}
+                      </span>
+                    )}
+                    {delta === 0 && (
+                      <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                        {" "}
+                        · cocok
+                      </span>
+                    )}
+                  </p>
+                  {errors[metric.key] && (
+                    <p className="text-xs text-destructive">{errors[metric.key][0]}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="notes">Catatan</Label>
             <Textarea
               id="notes"
-              name="notes"
               rows={3}
-              defaultValue={row.notes ?? ""}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               placeholder="Mis. 56 petani belum ada data produksi"
               disabled={isLoading}
             />

@@ -11,18 +11,24 @@ Menggantikan komparasi manual di Excel (sheet "Comparasi MIS vs MD1stSOW GDriv" 
 ```text
 Halaman: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
 ├── Header (judul + HelpHint + deskripsi)
-├── Kartu ringkas
-│   ├── Jumlah Lembaga Petani (dalam scope)
-│   └── Jumlah lembaga masih ada selisih
-├── Tombol Ekspor Excel (client-side, lib/xlsx)
-├── Tabel per distrik (satu Card per distrik)
+├── Kartu ringkas (jumlah Lembaga dalam scope · jumlah masih selisih) + tombol Ekspor Excel
+├── Toolbar (filter tersimpan di URL via useUrlFilters, TD-021)
+│   ├── Tabs mode: Ringkas (default) | Detail
+│   ├── Select distrik · Select urutan (kode | paling bermasalah)
+│   ├── Switch "Hanya yang masih selisih" · Input cari lembaga
+│   └── Legenda warna (mode Ringkas)
+├── Tabel per distrik (satu Card per distrik; empty state bila filter tidak cocok)
 │   ├── Baris per Lembaga: nama + kode + badge ("cocok" / "acuan belum diisi") + catatan
-│   ├── 8 blok metrik × kolom (Acuan | MIS | Δ)
+│   ├── Mode Ringkas: matriks Δ — satu sel per metrik (✓ hijau cocok · kuning ≤20% ·
+│   │   merah >20% · abu "—" tanpa acuan), isi sel = selisih + % capaian;
+│   │   tooltip terstruktur (StatTooltipContent, pola #213): Acuan/MIS/Selisih + bar capaian
+│   ├── Mode Detail: 8 blok metrik × kolom (Acuan | MIS | Δ)
 │   │   └── Metrik: Petani, Persil, Luas (ha), Training P1/P2-MK/P2-K3/P3&4, Produksi (petani)
 │   ├── Tombol edit per baris (hanya bila punya EDIT)
-│   └── Baris TOTAL distrik (acuan hanya menjumlah yang terisi)
+│   └── Baris TOTAL distrik (acuan hanya menjumlah yang terisi; tooltip sama)
 └── Modal entry acuan (BenchmarkFormModal)
-    ├── 8 input angka (kosong = tidak dibandingkan, bukan nol)
+    ├── 8 input angka terkontrol — tiap field menampilkan MIS live + preview Δ saat mengetik
+    │   (kosong = tidak dibandingkan, bukan nol)
     └── Textarea catatan
 ```
 
@@ -48,3 +54,6 @@ Halaman: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
 - Selisih dihitung hanya untuk metrik yang acuannya terisi; kosong = "—" (tidak dibandingkan, bukan nol).
 - Toleransi pembulatan luas 0,005 ha — di bawah itu dianggap 0 (cocok).
 - Baris TOTAL menjumlahkan kolom acuan hanya dari lembaga yang terisi, jadi total acuan bisa lebih kecil dari total MIS bila banyak lembaga belum dientry.
+- Band warna mode Ringkas dari gap relatif |Δ|/acuan: cocok (0) · kuning ≤5% · kuning tua ≤20% · merah >20%; % capaian = MIS/acuan (bisa >100% bila MIS melebihi acuan).
+- Urutan "paling bermasalah": jumlah metrik selisih terbanyak dulu, seri dipecah gap relatif terbesar.
+- Ekspor Excel selalu memuat semua lembaga dalam scope (mengabaikan filter aktif).
