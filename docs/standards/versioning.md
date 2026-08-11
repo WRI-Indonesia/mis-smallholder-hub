@@ -45,6 +45,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 6. **Tag & Release di `main`**:
    - Annotated tag: `git tag -a vX.Y.Z -m "vX.Y.Z"` pada merge commit di `main`, lalu `git push origin vX.Y.Z`.
    - GitHub Release: `gh release create vX.Y.Z` dengan release notes diambil dari ringkasan changelog — **bukan** auto-generate dari commit mentah, agar konsisten dengan changelog sebagai catatan historis.
+7. **Pengumuman Telegram** — teks **compact**, maks ±6 baris: judul versi, 2–3 poin fitur/perbaikan dalam bahasa awam (tanpa nomor issue/istilah teknis), tutup dengan progres roadmap. Metrik internal (RVS/KPI/jumlah test) **tidak** ikut — cukup di changelog & release notes.
 
 ### Checklist Rilis
 
@@ -59,6 +60,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] PR `mvp` → `main` merged
 - [ ] Annotated tag `vX.Y.Z` dibuat di `main` dan di-push
 - [ ] GitHub Release dibuat dengan notes dari changelog
+- [ ] Teks pengumuman Telegram (compact, §langkah 7) disiapkan
 
 ## Catatan Historis
 
