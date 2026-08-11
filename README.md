@@ -4,7 +4,7 @@
 
 **Developed for**: WRI Indonesia  
 **Tech Stack**: Next.js 16 · React 19 · TypeScript · Tailwind 4 · Shadcn UI · Prisma 7 · PostgreSQL + PostGIS  
-**Status**: ✅ In Production (v0.23.0 — all core modules, dashboards, maps, reports & help live)
+**Status**: ✅ In Production (v0.24.0 — all core modules, dashboards, maps, reports & help live)
 
 ---
 
@@ -447,5 +447,5 @@ Tech Lead: [Add contact info]
 ---
 
 **Last Updated**: 2026-08-11  
-**Version**: 0.23.0  
+**Version**: 0.24.0  
 **Status**: Production (mis-prod live)

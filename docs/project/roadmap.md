@@ -114,6 +114,7 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 | DA-01       | Farmer Summary Analytics            | ✅ Done        | Done    |
 | DA-02       | Analisa Ketersediaan Data KT        | ✅ Done        | Done    |
 | DA-03       | Dashboard Ketersediaan Data         | ✅ Done        | Done    |
+| DA-06       | Komparasi Data Acuan                | ✅ Done        | Done    |
 | TOOLS-01    | Tools Import/Export/GIS/S3          | 🟠 Partial     | Next    |
 | CMS-01      | CMS & Content Management            | 🔲 Not Started | Later   |
 | COMM-01     | Community                           | 🔲 Not Started | Later   |
@@ -548,8 +549,8 @@ Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-
 - **Model:** `ReferenceBenchmark` (`tbl_reference_benchmark`) — 1 baris per Lembaga (`farmerGroupId` unique), 8 metrik nullable (kosong = tidak dibandingkan, bukan nol) + `notes`; soft delete dengan reaktivasi via upsert. Konvensi angka MIS **identik dashboard** (distinct petani per paket, lembaga kegiatan = lembaga petani).
 - **UI:** dua mode — **Ringkas** (matriks Δ + % capaian, band warna gap relatif, tooltip terstruktur pola #213) dan **Detail** (blok Acuan | MIS | Δ); filter URL (distrik, hanya selisih, cari, urut paling bermasalah — TD-021); seksi per distrik **collapsible ber-ringkasan header**; catatan sebagai pill + tooltip; simpan acuan → **update optimistis** (`applySavedBenchmark`, paritas dengan render server diuji unit); ekspor Excel semua lembaga dalam scope.
 - **Evidence:** action `benchmark-comparison.ts` (3 lapis keamanan); lib murni `src/lib/benchmark-comparison.ts` (8 unit test); seed menu + role-permissions; import awal dari GDrive via `scripts/local/other/import-reference-benchmark.mjs` (dry-run default); doc `docs/product/pages/data-analyst/komparasi-data-acuan.md`; Bantuan tutorial `p-9-komparasi-data-acuan` (menu ke-31, cakupan 31/31).
-- **Catatan penomoran & baseline:** DA-04 hangus (#143 superseded, Decision Log 2026-08-08), DA-05 = #178. **Belum dimasukkan ke tabel Phase Status** — menaikkan baseline 47→48 fase adalah keputusan owner (preseden DA-03 di #235: hidup di rincian dulu, dipromosikan kemudian).
-- **Next step:** bulk upload Excel angka acuan (opsional, disebut di #243), keputusan owner promosi ke tabel Phase Status.
+- **Catatan penomoran & baseline:** DA-04 hangus (#143 superseded, Decision Log 2026-08-08), DA-05 = #178. **Dipromosikan ke tabel Phase Status pada rilis v0.24.0** (keputusan owner 2026-08-11): baseline 47→48 fase (inti 37 + pendukung 11), skor 74/85 = **87,1%**.
+- **Next step:** bulk upload Excel angka acuan (opsional, disebut di #243); deep-link sel selisih ke halaman pengejaran data.
 
 </details>
 
