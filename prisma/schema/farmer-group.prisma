@@ -30,6 +30,7 @@ model FarmerGroup {
   users UserFarmerGroup[]
   farmers Farmer[]
   activities TrainingActivity[]
+  referenceBenchmark ReferenceBenchmark?
 
   @@index([districtId])
   @@index([isActive])

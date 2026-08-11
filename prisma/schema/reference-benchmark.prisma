@@ -1,0 +1,29 @@
+// reference-benchmark.prisma — Angka acuan manual (benchmark GDrive / MD 1st SOW)
+
+// Satu baris per lembaga petani, nilai terkini saja: edit menimpa nilai lama,
+// audit fields mencatat siapa & kapan. Semua metrik nullable — acuan boleh
+// terisi sebagian. Dipakai sub-menu Data Analyst → Komparasi Data Acuan (#243).
+model ReferenceBenchmark {
+  id            String      @id @default(cuid())
+  farmerGroupId String      @unique @map("farmer_group_id")
+  farmerGroup   FarmerGroup @relation(fields: [farmerGroupId], references: [id])
+
+  farmerCount           Int?   @map("farmer_count") // jumlah petani terdaftar
+  parcelCount           Int?   @map("parcel_count") // jumlah persil lahan
+  areaHa                Float? @map("area_ha") // total luas lahan (ha)
+  trainingP1            Int?   @map("training_p1") // petani terlatih Paket 1
+  trainingP2Mk          Int?   @map("training_p2_mk") // petani terlatih Paket 2-MK
+  trainingP2K3          Int?   @map("training_p2_k3") // petani terlatih Paket 2-K3/HSE
+  trainingP34           Int?   @map("training_p34") // petani terlatih Paket 3&4
+  productionFarmerCount Int?   @map("production_farmer_count") // petani punya data produksi
+  notes                 String?
+
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  @@index([isActive])
+  @@map("tbl_reference_benchmark")
+}
