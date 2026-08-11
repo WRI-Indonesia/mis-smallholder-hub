@@ -206,3 +206,9 @@ SUPERADMIN,bulk-upload-trees,CREATE
 SUPERADMIN,bulk-upload-trees,VIEW
 ADMIN,bulk-upload-trees,CREATE
 ADMIN,bulk-upload-trees,VIEW
+SUPERADMIN,data-analyst-benchmark-comparison,VIEW
+SUPERADMIN,data-analyst-benchmark-comparison,EDIT
+ADMIN,data-analyst-benchmark-comparison,VIEW
+ADMIN,data-analyst-benchmark-comparison,EDIT
+OPERATOR,data-analyst-benchmark-comparison,VIEW
+MANAGEMENT,data-analyst-benchmark-comparison,VIEW

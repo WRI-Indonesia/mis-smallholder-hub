@@ -28,6 +28,7 @@ import {
   TrendingDown,
   Activity,
   Gauge,
+  GitCompare,
   // Agriculture & Nature
   Leaf,
   Sprout,
@@ -111,6 +112,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   TrendingUp: TrendingUp,
   TrendingDown: TrendingDown,
   Activity: Activity,
+  GitCompare: GitCompare,
   // Agriculture & Nature
   Leaf: Leaf,
   Sprout: Sprout,
