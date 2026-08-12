@@ -8,7 +8,10 @@ model Tree {
   // (kunci bisnis) disimpan agar keterkaitan tak putus bila repoint terlewat.
   landParcelId String     @map("land_parcel_id")
   landParcel   LandParcel @relation(fields: [landParcelId], references: [id])
-  parcelId     String     @map("parcel_id") // Kunci bisnis lahan (tbl_land_parcel.parcel_id)
+  // Kunci bisnis lahan (tbl_land_parcel.parcel_id). Kolom ARSIP/AUDIT
+  // (keputusan #241): ditulis saat upload sebagai jangkar pemulihan manual,
+  // TIDAK dipakai jalur baca — semua query pohon lewat landParcelId.
+  parcelId     String     @map("parcel_id")
   treeId       Int?       @map("tree_id") // ID pohon dari sistem sumber (global)
   sequenceNo   Int?       @map("sequence_no") // Nomor urut dalam file sumber
   longitude    Float      @map("longitude") // WGS84

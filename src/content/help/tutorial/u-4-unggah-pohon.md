@@ -47,4 +47,6 @@ Buka **Master Data → Lahan → detail lahan** yang bersangkutan: kartu **Pohon
 
 **Status "ID Lahan ganda (lintas petani)"** — ID Lahan itu terdaftar pada lebih dari satu petani, sehingga sistem tidak bisa menentukan lahan mana yang dimaksud. Rapikan dulu ID Lahan yang kembar di Master Data Lahan, baru unggah ulang.
 
+**Status "Melebihi batas 50.000 titik per lahan"** — satu `parcel_id` di file memuat lebih dari 50.000 titik; baris itu dilewati saat menyimpan. Jumlah sebesar itu hampir pasti berarti titik beberapa lahan tergabung ke satu `parcel_id` (lahan sawit rakyat normalnya ratusan titik) — perbaiki atribut `parcel_id` di data sumber, lalu unggah ulang.
+
 **Titik dilewati karena koordinat tidak valid** — shapefile tidak dalam WGS84 (EPSG:4326). Ekspor ulang dari perangkat lunak GIS dengan sistem koordinat itu.

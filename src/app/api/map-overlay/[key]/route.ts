@@ -1,5 +1,6 @@
 import https from "node:https";
 import type { NextRequest } from "next/server";
+import { hasPermission } from "@/lib/rbac";
 import { MAP_OVERLAYS } from "@/app/(admin)/admin/map/parcel/map-overlays";
 
 // Tile proxy for the "Peta Lainnya" reference overlays. Needed because the
@@ -37,6 +38,12 @@ function fetchTile(url: string): Promise<UpstreamResult> {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
+  // Guard permission yang sama dengan halaman peta (paritas /api/map-hotspot,
+  // dilengkapi saat test #241) — endpoint tile bukan proxy anonim.
+  if (!(await hasPermission("map-parcel", "VIEW"))) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
   const { key } = await params;
   const overlay = MAP_OVERLAYS.find((o) => o.key === key);
   if (!overlay) return new Response("Unknown overlay", { status: 404 });

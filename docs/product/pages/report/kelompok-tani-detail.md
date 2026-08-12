@@ -72,5 +72,5 @@ Halaman: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
 
 | Format | Keterangan |
 |---|---|
-| Excel | Sheet "Detail KT", file `Laporan_Kelompok_Tani_Detail_<Lembaga>`; kolom No, Kelompok Tani, Nama Petani, ID Petani, Jml Lahan, Luas (Ha) + baris Total |
-| PDF | Judul "LAPORAN KELOMPOK TANI (DETAIL)", metadata Lembaga Petani & Distrik; kolom sama + baris Total |
+| Excel | Sheet "Detail KT", file `Laporan_Kelompok_Tani_Detail_<Lembaga>`; kolom No, Kelompok Tani, Nama Petani, ID Petani, Jml Lahan, Luas (Ha) + baris Total — digate izin `EXPORT` (#245) |
+| PDF | Judul "LAPORAN KELOMPOK TANI (DETAIL)", metadata Lembaga Petani & Distrik; kolom sama + baris Total — digate izin `PRINT` (#245) |

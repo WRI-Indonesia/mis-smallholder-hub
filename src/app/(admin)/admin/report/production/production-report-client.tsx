@@ -12,7 +12,7 @@ import { getFarmerGroupsForProductionReport, getProductionReport } from "@/serve
 import type { ProductionReportResult } from "@/types/report";
 import { formatPeriodLabel, enumeratePeriods, PRODUCTION_REPORT_MAX_MONTHS } from "@/lib/report-production";
 import { exportToPDF } from "@/lib/pdf";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatArea } from "@/lib/format";
 
 interface District {
   id: string;
@@ -27,9 +27,11 @@ interface FarmerGroup {
 
 interface Props {
   districts: District[];
+  canExport: boolean;
+  canPrint: boolean;
 }
 
-export function ProductionReportClient({ districts }: Props) {
+export function ProductionReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
@@ -111,10 +113,7 @@ export function ProductionReportClient({ districts }: Props) {
     return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(num);
   };
 
-  const formatArea = (num: number | null | undefined) => {
-    if (num == null) return "-";
-    return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
-  };
+  const formatAreaCell = (num: number | null | undefined) => (num == null ? "-" : formatArea(num));
 
   const totalArea = reportData
     ? reportData.rows.reduce((sum, row) => sum + (row.parcelArea ?? 0), 0)
@@ -191,7 +190,7 @@ export function ProductionReportClient({ districts }: Props) {
         name: row.name,
         farmerCode: row.farmerCode,
         parcelCode: row.parcelCode ?? "-",
-        parcelArea: formatArea(row.parcelArea),
+        parcelArea: formatAreaCell(row.parcelArea),
       };
       reportData.periods.forEach((p) => {
         rec[p] = formatCell(row.values[p]);
@@ -205,7 +204,7 @@ export function ProductionReportClient({ districts }: Props) {
       name: "Total per Bulan",
       farmerCode: "",
       parcelCode: "",
-      parcelArea: formatArea(totalArea),
+      parcelArea: formatAreaCell(totalArea),
     };
     reportData.periods.forEach((p) => {
       totalRow[p] = formatCell(reportData.columnTotals[p]);
@@ -383,14 +382,18 @@ export function ProductionReportClient({ districts }: Props) {
 
           {/* Export toolbar */}
           <div className="flex items-center justify-end gap-2 print:hidden">
-            <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-9 gap-2">
-              <Download className="h-4 w-4" />
-              Excel
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-9 gap-2">
-              <Printer className="h-4 w-4" />
-              PDF
-            </Button>
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-9 gap-2">
+                <Download className="h-4 w-4" />
+                Excel
+              </Button>
+            )}
+            {canPrint && (
+              <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-9 gap-2">
+                <Printer className="h-4 w-4" />
+                PDF
+              </Button>
+            )}
           </div>
 
           {/* Matrix Table */}
@@ -433,7 +436,7 @@ export function ProductionReportClient({ districts }: Props) {
                       <td className="px-3 py-2 font-medium whitespace-nowrap">{row.name}</td>
                       <td className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">{row.farmerCode}</td>
                       <td className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">{row.parcelCode ?? "-"}</td>
-                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap text-muted-foreground">{formatArea(row.parcelArea)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap text-muted-foreground">{formatAreaCell(row.parcelArea)}</td>
                       {reportData.periods.map((p) => (
                         <td key={p} className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                           {formatCell(row.values[p])}
@@ -447,7 +450,7 @@ export function ProductionReportClient({ districts }: Props) {
                   <tr className="border-t-2 border-border bg-muted/50 font-semibold">
                     <td className="px-3 py-2 sticky left-0 bg-muted/50 z-10" />
                     <td className="px-3 py-2 whitespace-nowrap" colSpan={3}>Total per Bulan</td>
-                    <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatArea(totalArea)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatAreaCell(totalArea)}</td>
                     {reportData.periods.map((p) => (
                       <td key={p} className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                         {formatCell(reportData.columnTotals[p])}

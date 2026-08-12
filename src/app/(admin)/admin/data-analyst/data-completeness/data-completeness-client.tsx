@@ -46,6 +46,7 @@ interface FarmerGroup {
 interface Props {
   districts: District[];
   initialFarmerGroups: FarmerGroup[];
+  canExport: boolean;
 }
 
 const DOMAIN_ICONS: Record<DomainResult["domain"], React.ComponentType<{ className?: string }>> = {
@@ -69,7 +70,7 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
-export function DataCompletenessClient({ districts, initialFarmerGroups }: Props) {
+export function DataCompletenessClient({ districts, initialFarmerGroups, canExport }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>(initialFarmerGroups);
@@ -307,10 +308,12 @@ export function DataCompletenessClient({ districts, initialFarmerGroups }: Props
                       {result.healthScore}%
                     </div>
                   </div>
-                  <Button variant="outline" onClick={handleDownload} className="h-9">
-                    <Download className="mr-2 h-4 w-4" />
-                    Excel
-                  </Button>
+                  {canExport && (
+                    <Button variant="outline" onClick={handleDownload} className="h-9">
+                      <Download className="mr-2 h-4 w-4" />
+                      Excel
+                    </Button>
+                  )}
                 </div>
               </div>
               {/* Domain chips */}

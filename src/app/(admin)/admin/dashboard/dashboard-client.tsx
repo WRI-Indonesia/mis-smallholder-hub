@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DashboardSummaryCards } from "./summary-cards";
 import { ktStatsForYear, sumKelompokTaniStats } from "@/lib/dashboard-aggregation";
 import { formatCertStatus } from "@/lib/farmer-group-labels";
+import { formatArea } from "@/lib/format";
 import type { DashboardSnapshotView, KTDetails } from "@/types/dashboard";
 
 const DashboardMap = dynamic(() => import("./dashboard-map").then((m) => m.DashboardMap), {
@@ -34,8 +35,7 @@ const PACKAGE_LABELS: { key: keyof KTDetails["trainingCoverage"]; label: string 
   { key: "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV", label: "Paket 3 & 4" },
 ];
 
-const formatArea = (n: number) =>
-  `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
+const formatAreaHa = (n: number) => `${formatArea(n)} ha`;
 
 // Badge sertifikasi di bawah kode Lembaga pada info panel (#169) — hanya tampil
 // bila statusnya ada; CERTIFIED = filled, PLANNED = outline.
@@ -260,7 +260,7 @@ export function DashboardClient({ initialView, helpSlot }: Props) {
                           <StatRow icon={Users} label="Total Petani" value={String(selectedKt.totalFarmers)} />
                           <StatRow icon={Users} label="Laki-laki / Perempuan" value={`${selectedKt.totalFarmersMale} / ${selectedKt.totalFarmersFemale}`} />
                           <StatRow icon={MapIcon} label="Total Persil" value={String(selectedKt.totalParcels)} />
-                          <StatRow icon={Ruler} label="Luas Lahan" value={formatArea(selectedKt.totalArea)} />
+                          <StatRow icon={Ruler} label="Luas Lahan" value={formatAreaHa(selectedKt.totalArea)} />
                         </div>
                         <div className="border-t pt-3 space-y-2 sm:border-t-0 sm:pt-0 sm:border-l sm:pl-4">
                           {PACKAGE_LABELS.map((p) => (

@@ -26,7 +26,15 @@ export interface UntrainedTarget {
  * `key` di pemanggil) — dengan begitu state awal sudah benar dan effect tidak
  * perlu me-reset state secara sinkron (dilarang: memicu cascading render).
  */
-function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: () => void }) {
+function UntrainedList({
+  target,
+  onClose,
+  canExport,
+}: {
+  target: UntrainedTarget;
+  onClose: () => void;
+  canExport: boolean;
+}) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<UntrainedFarmer[]>([]);
   // Saring ke petani yang BELUM PERNAH mengikuti paket ini di tahun mana pun
@@ -213,12 +221,17 @@ function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: 
               )}
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopy}>
-                <Copy className="h-4 w-4 mr-1.5" /> Salin
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-1.5" /> Excel
-              </Button>
+              {/* Salin menyalin dataset yang sama dengan Excel — digate izin EXPORT juga */}
+              {canExport && (
+                <Button variant="outline" size="sm" onClick={handleCopy}>
+                  <Copy className="h-4 w-4 mr-1.5" /> Salin
+                </Button>
+              )}
+              {canExport && (
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="h-4 w-4 mr-1.5" /> Excel
+                </Button>
+              )}
             </div>
           </div>
         </>
@@ -230,9 +243,11 @@ function UntrainedList({ target, onClose }: { target: UntrainedTarget; onClose: 
 export function TrainingUntrainedModal({
   target,
   onClose,
+  canExport,
 }: {
   target: UntrainedTarget | null;
   onClose: () => void;
+  canExport: boolean;
 }) {
   return (
     <Dialog open={target != null} onOpenChange={(open) => !open && onClose()}>
@@ -242,6 +257,7 @@ export function TrainingUntrainedModal({
             key={`${target.groupId}-${target.packageCode}-${target.year ?? "all"}`}
             target={target}
             onClose={onClose}
+            canExport={canExport}
           />
         )}
       </DialogContent>

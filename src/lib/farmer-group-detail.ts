@@ -10,16 +10,8 @@ import {
   buildProductionStats,
   type AvailabilityDistribution,
   type ProductionMatrixVariant,
-  type ProductionMonthRow,
-  type ProductionYearRow,
 } from "@/lib/production-stats";
 import type { KelompokTaniDetailReportResult } from "@/types/report";
-
-// Agregasi produksi diekstrak ke production-stats.ts (#172, dipakai juga
-// detail Petani) — alias tipe dipertahankan agar konsumen #171 tak berubah.
-export type GroupProductionMonthRow = ProductionMonthRow;
-export type GroupProductionYearRow = ProductionYearRow;
-export type { AvailabilityDistribution };
 
 export interface DetailRawParcel {
   /** LandParcel.id (db) — kunci ketersediaan data produksi per lahan. */

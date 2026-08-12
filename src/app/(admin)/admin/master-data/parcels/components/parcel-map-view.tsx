@@ -7,6 +7,7 @@ import type { Geometry, Position } from "geojson";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target } from "lucide-react";
+import { TREE_POINT_PAINT } from "@/lib/map-style";
 
 interface Props {
   geometry: Geometry | null | undefined;
@@ -312,17 +313,7 @@ export function ParcelMapView({
               })),
             }}
           >
-            <Layer
-              id="tree-points"
-              type="circle"
-              paint={{
-                "circle-radius": 3.5,
-                "circle-color": "#facc15",
-                "circle-opacity": 0.9,
-                "circle-stroke-width": 1,
-                "circle-stroke-color": "#854d0e",
-              }}
-            />
+            <Layer id="tree-points" type="circle" paint={TREE_POINT_PAINT} />
           </Source>
         )}
       </Map>

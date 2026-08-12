@@ -29,7 +29,7 @@ import {
   formatIspoCert,
   formatSapMapAssurance,
 } from "@/lib/farmer-group-labels";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatArea } from "@/lib/format";
 
 interface FarmerGroup {
   id: string;
@@ -74,8 +74,6 @@ interface Props {
 const certSortValue = (year: number | null, status: string | null) =>
   status === "CERTIFIED" ? `0-${year ?? 9999}` : status === "PLANNED" ? `1-${year ?? 9999}` : null;
 
-const formatArea = (n: number) =>
-  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
@@ -383,6 +381,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
           exportFilename="data-farmer-groups"
+          canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
           renderActions={(group) => (
             <TableActions

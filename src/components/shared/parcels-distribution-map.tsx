@@ -7,6 +7,8 @@ import type { Feature, FeatureCollection, Geometry, Point, Polygon, MultiPolygon
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target, User, Info } from "lucide-react";
 import { MAP_STYLES } from "@/app/(admin)/admin/master-data/parcels/components/parcel-map-view";
+import { TREE_POINT_PAINT } from "@/lib/map-style";
+import { formatArea } from "@/lib/format";
 import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
@@ -93,10 +95,7 @@ interface SelectedParcel {
   area: number | null;
 }
 
-const formatArea = (n: number | null) =>
-  n != null
-    ? `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} Ha`
-    : "—";
+const formatAreaHa = (n: number | null) => (n != null ? `${formatArea(n)} Ha` : "—");
 
 /** Peta sebaran lahan (poligon) satu Lembaga/Petani, diwarnai per Kelompok Tani (#171/#172). */
 export function ParcelsDistributionMap({
@@ -357,17 +356,7 @@ export function ParcelsDistributionMap({
 
         {visibleTreeGeojson && (
           <Source type="geojson" data={visibleTreeGeojson}>
-            <Layer
-              id="group-parcels-trees"
-              type="circle"
-              paint={{
-                "circle-radius": 3.5,
-                "circle-color": "#facc15",
-                "circle-opacity": 0.9,
-                "circle-stroke-width": 1,
-                "circle-stroke-color": "#854d0e",
-              }}
-            />
+            <Layer id="group-parcels-trees" type="circle" paint={TREE_POINT_PAINT} />
           </Source>
         )}
 
@@ -411,7 +400,7 @@ export function ParcelsDistributionMap({
                   { label: "Lembaga Petani", value: selected.farmerGroupName },
                 ]}
               />
-              <MapPopupHighlight label="Luas Lahan" value={formatArea(selected.area)} />
+              <MapPopupHighlight label="Luas Lahan" value={formatAreaHa(selected.area)} />
               <div className="divide-y">
                 <MapPopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
                   <MapPopupRows

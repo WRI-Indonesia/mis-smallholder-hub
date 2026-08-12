@@ -10,13 +10,18 @@ import {
   confidenceLabel,
   countByConfidence,
   formatWib,
+  hotspotWindowLabel,
   satelliteLabel,
   type HotspotDayRange,
 } from "./map-hotspot";
 import { haversineMeters } from "./map-geo";
+import { formatArea } from "@/lib/format";
 
-const windowLabel = (dayRange: HotspotDayRange) =>
-  dayRange === 1 ? "24 jam terakhir" : "5 hari terakhir";
+const windowLabel = (dayRange: HotspotDayRange) => `${hotspotWindowLabel(dayRange)} terakhir`;
+
+/** Disclaimer sumber data pada laporan PDF (dipakai di 2 cabang render). */
+const PDF_DISCLAIMER =
+  "Deteksi anomali panas VIIRS 375 m, bukan konfirmasi kebakaran. Sumber: NASA FIRMS (LANCE/EOSDIS) · jeda ±3 jam.";
 
 /** Timestamp WIB ringkas untuk nama file, mis. "20260810-1417". */
 function wibFileStamp(now: Date): string {
@@ -140,11 +145,27 @@ export async function calcHotspotNearest(
   return rows;
 }
 
-/** Format jarak meter → "x,xx" km (id-ID). */
-export const formatKm = (meters: number) =>
-  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-    meters / 1000
-  );
+/** Format jarak meter → "x,xx" km (id-ID, 2 desimal via formatter bersama). */
+export const formatKm = (meters: number) => formatArea(meters / 1000);
+
+/** Sel baris deteksi yang sama untuk tabel modal ringkasan & tabel PDF
+ *  (dedup #241). Keyakinan tidak ikut: modal memakai badge, PDF label teks. */
+export function hotspotRowCells(r: HotspotNearestRow): {
+  time: string;
+  satellite: string;
+  frp: string;
+  nearestName: string;
+  distanceKm: string;
+} {
+  const frp = r.f.properties?.frp;
+  return {
+    time: formatWib(r.f.properties?.acqDatetime as string | null),
+    satellite: satelliteLabel(r.f.properties?.satellite),
+    frp: typeof frp === "number" && Number.isFinite(frp) ? frp.toFixed(1) : "—",
+    nearestName: r.nearest?.name ?? "—",
+    distanceKm: r.nearest ? formatKm(r.nearest.meters) : "—",
+  };
+}
 
 /** Ambang laporan/ringkasan: hanya titik api berjarak < 15 km dari Lembaga Petani. */
 export const NEAR_KM_THRESHOLD = 15;
@@ -231,11 +252,7 @@ export async function printHotspotPdf(
     doc.setFontSize(10);
     doc.text(`Tidak ada titik api berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani.`, MARGIN, 47);
     doc.setFontSize(8);
-    doc.text(
-      "Deteksi anomali panas VIIRS 375 m, bukan konfirmasi kebakaran. Sumber: NASA FIRMS (LANCE/EOSDIS) · jeda ±3 jam.",
-      MARGIN,
-      55
-    );
+    doc.text(PDF_DISCLAIMER, MARGIN, 55);
     doc.save(`${fileBase(dayRange, now)}.pdf`);
     return;
   }
@@ -246,18 +263,18 @@ export async function printHotspotPdf(
     head: [
       ["No", "Waktu Deteksi (WIB)", "Satelit", "Keyakinan", "FRP (MW)", "Lintang", "Bujur", "Lembaga Terdekat", "Jarak (km)"],
     ],
-    body: rows.map(({ f, lon, lat, nearest }, i) => {
-      const frp = f.properties?.frp;
+    body: rows.map((r, i) => {
+      const cells = hotspotRowCells(r);
       return [
         String(i + 1),
-        formatWib(f.properties?.acqDatetime as string | null),
-        satelliteLabel(f.properties?.satellite),
-        confidenceLabel(f.properties?.confidence),
-        typeof frp === "number" && Number.isFinite(frp) ? frp.toFixed(1) : "—",
-        lat.toFixed(5),
-        lon.toFixed(5),
-        nearest?.name ?? "—",
-        nearest ? formatKm(nearest.meters) : "—",
+        cells.time,
+        cells.satellite,
+        confidenceLabel(r.f.properties?.confidence),
+        cells.frp,
+        r.lat.toFixed(5),
+        r.lon.toFixed(5),
+        cells.nearestName,
+        cells.distanceKm,
       ];
     }),
     styles: { fontSize: 8, textColor: SLATE_800, cellPadding: 1.6 },
@@ -268,11 +285,7 @@ export async function printHotspotPdf(
   const endY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 40;
   doc.setFontSize(8);
   doc.setTextColor(...SLATE_600);
-  doc.text(
-    "Deteksi anomali panas VIIRS 375 m, bukan konfirmasi kebakaran. Sumber: NASA FIRMS (LANCE/EOSDIS) · jeda ±3 jam.",
-    MARGIN,
-    Math.min(endY + 8, PAGE_H - 8)
-  );
+  doc.text(PDF_DISCLAIMER, MARGIN, Math.min(endY + 8, PAGE_H - 8));
 
   doc.save(`${fileBase(dayRange, now)}.pdf`);
 }

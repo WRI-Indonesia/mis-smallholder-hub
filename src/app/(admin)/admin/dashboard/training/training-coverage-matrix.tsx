@@ -191,11 +191,13 @@ export function TrainingCoverageMatrix({
   rows,
   packages,
   year,
+  canExport,
 }: {
   rows: TrainingCoverageRow[];
   packages: TrainingPackageCode[];
   /** Diteruskan ke modal drill-down agar daftar petani ikut irisan tahun yang tampil. */
   year: number | null;
+  canExport: boolean;
 }) {
   const [drilldown, setDrilldown] = useState<UntrainedTarget | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("any");
@@ -400,7 +402,7 @@ export function TrainingCoverageMatrix({
         </CollapsibleContent>
       </Collapsible>
 
-      <TrainingUntrainedModal target={drilldown} onClose={() => setDrilldown(null)} />
+      <TrainingUntrainedModal target={drilldown} onClose={() => setDrilldown(null)} canExport={canExport} />
     </Card>
   );
 }

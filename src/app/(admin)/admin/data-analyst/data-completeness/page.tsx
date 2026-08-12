@@ -1,4 +1,4 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDistrictsForCompleteness, getFarmerGroupsForCompleteness } from "@/server/actions/data-completeness";
 import { DataCompletenessClient } from "./data-completeness-client";
@@ -6,9 +6,10 @@ import { DataCompletenessClient } from "./data-completeness-client";
 export default async function DataCompletenessPage() {
   await requirePermission("data-analyst-data-completeness");
 
-  const [districts, farmerGroups] = await Promise.all([
+  const [districts, farmerGroups, permissions] = await Promise.all([
     getDistrictsForCompleteness(),
     getFarmerGroupsForCompleteness(null),
+    getUserPermissionsForMenu("data-analyst-data-completeness"),
   ]);
 
   return (
@@ -22,7 +23,11 @@ export default async function DataCompletenessPage() {
           Periksa kelengkapan dan anomali data satu Lembaga Petani (Petani, Lahan, Pelatihan, Produksi)
         </p>
       </div>
-      <DataCompletenessClient districts={districts} initialFarmerGroups={farmerGroups} />
+      <DataCompletenessClient
+        districts={districts}
+        initialFarmerGroups={farmerGroups}
+        canExport={permissions.includes("EXPORT")}
+      />
     </div>
   );
 }

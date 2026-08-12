@@ -307,8 +307,10 @@ export async function getParcelPassport(
   landParcelId: string,
   includeProduction = true
 ): Promise<ActionResult<ParcelPassport>> {
-  if (!(await hasPermission(MENU_KEY, VIEW))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  // Varian menu Peta: digate PRINT pada map-parcel (menu tempat tombolnya berada),
+  // bukan master-data-parcels — role peta-saja (mis. DONOR) tetap bisa cetak passport.
+  if (!(await hasPermission(MENU_KEY, "PRINT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mencetak Profil Lahan" };
   }
 
   return fetchParcelPassport(landParcelId, includeProduction);

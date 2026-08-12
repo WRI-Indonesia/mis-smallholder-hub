@@ -60,7 +60,15 @@ const formatGeneratedAt = (iso: string) => {
   return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export function TrainingDashboardClient({ view, helpSlot }: { view: TrainingDashboardView; helpSlot?: React.ReactNode }) {
+export function TrainingDashboardClient({
+  view,
+  helpSlot,
+  canExport,
+}: {
+  view: TrainingDashboardView;
+  helpSlot?: React.ReactNode;
+  canExport: boolean;
+}) {
   // Filter disimpan di query string (TD-021) agar tampilan bisa di-bookmark &
   // dikirim ke rekan, dan bertahan saat halaman dimuat ulang.
   const { get, setMany } = useUrlFilters();
@@ -282,7 +290,7 @@ export function TrainingDashboardClient({ view, helpSlot }: { view: TrainingDash
           Lembaga aktif: roll-up distrik atas satu Lembaga tidak bermakna. */}
       {!groupId && <TrainingDistrictPanel rows={coverage} packages={packages} year={year} />}
 
-      <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} />
+      <TrainingCoverageMatrix rows={coverage} packages={packages} year={year} canExport={canExport} />
 
       {/* Dua baris × (2/3 + 1/3): panel Kelulusan sejajar di bawah Efektivitas
           tanpa memaksa baris pertama setinggi dua card (#214). */}

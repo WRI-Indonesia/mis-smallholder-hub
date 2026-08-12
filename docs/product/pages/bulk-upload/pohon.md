@@ -38,11 +38,11 @@ Halaman: Pohon Sawit (/admin/bulk-upload/trees)
 | File | `src/app/(admin)/admin/bulk-upload/trees/page.tsx` + `components/tree-bulk-upload-client.tsx` (`"use client"`) |
 | Tipe | Unggah massal spasial 2 langkah (tanpa mapping kolom — atribut DBF baku) |
 | Guard | `requirePermission("bulk-upload-trees")`; aksi guard `hasPermission("bulk-upload-trees", …)` |
-| Server action / data | `parseTreeShapefile()`, `getTreeUploadParcels()`, `bulkCreateTrees()` — `src/server/actions/bulk-upload-tree.ts`; helper murni `src/lib/tree-upload.ts` |
+| Server action / data | `parseTreeShapefile()`, `matchTreeUploadParcels(parcelIds)` (dipanggil setelah parse, hanya untuk `parcel_id` yang ada di file — pengganti `getTreeUploadParcels` yang mengirim semua lahan scope, #241), `bulkCreateTrees()` — `src/server/actions/bulk-upload-tree.ts`; helper murni `src/lib/tree-upload.ts` |
 
 ## Perilaku khusus
 
-- **Pengelompokan otomatis** — titik dikelompokkan per atribut `parcel_id`; satu ZIP boleh memuat beberapa lahan. Pencocokan ke lahan **aktif** dalam scope akses user (`farmerRelationAccessFilter`); `parcel_id` yang tidak cocok dilewati saat simpan, sisanya tetap tersimpan.
+- **Pengelompokan otomatis** — titik dikelompokkan per atribut `parcel_id`; satu ZIP boleh memuat beberapa lahan. Pencocokan ke lahan **aktif** dalam scope akses user (`farmerRelationAccessFilter`); `parcel_id` yang tidak cocok dilewati saat simpan, sisanya tetap tersimpan. Ambiguitas `parcel_id` (terdaftar >1 petani) dicek **global** — sama dengan penolakan `bulkCreateTrees` — dan ditandai dini di pratinjau (#240/#241); grup dengan >50.000 titik per lahan (batas zod) juga ditolak dini di pratinjau dengan pesan jelas (#241).
 - **Revisi per-set** — upload ulang untuk lahan yang sama menonaktifkan **seluruh** set titik lama lahan tsb (`isActive = false`) dan menyisipkan set baru dengan `revision + 1`. Tidak ada penggabungan per titik.
 - **Repoint saat lahan direvisi** — revisi lahan via bulk upload membuat baris lahan ber-`id` baru; seluruh titik pohon (semua revisi) ikut dipindahkan ke `landParcelId` baru (pola sama dengan `productionRecord`, lihat `bulkCreateLandParcels`).
 - **Normalisasi DBF** — nilai NULL numerik DBF (`********`) dan string kosong → `null`; koordinat diambil dari geometri Point, fallback atribut `lon`/`lat`; titik di luar rentang WGS84 dilewati dengan alasan.

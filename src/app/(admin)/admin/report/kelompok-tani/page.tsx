@@ -1,10 +1,11 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDistrictsForKtReport } from "@/server/actions/report";
 import { KelompokTaniReportClient } from "./kelompok-tani-report-client";
 
 export default async function KelompokTaniReportPage() {
   await requirePermission("report-kelompok-tani");
+  const permissions = await getUserPermissionsForMenu("report-kelompok-tani");
   const districts = await getDistrictsForKtReport();
 
   return (
@@ -18,7 +19,11 @@ export default async function KelompokTaniReportPage() {
           Rekap Kelompok Tani turunan dari data lahan (per Lembaga Petani)
         </p>
       </div>
-      <KelompokTaniReportClient districts={districts} />
+      <KelompokTaniReportClient
+        districts={districts}
+        canExport={permissions.includes("EXPORT")}
+        canPrint={permissions.includes("PRINT")}
+      />
     </div>
   );
 }

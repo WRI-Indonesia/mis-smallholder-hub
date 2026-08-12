@@ -9,6 +9,7 @@ import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, 
 import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
+import { formatArea } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
@@ -108,8 +109,7 @@ function customLayerColor(l: Extract<CustomLayer, { kind: "vector" }>): string |
   ] as ExpressionSpecification;
 }
 
-const formatArea = (n: number | null | undefined) =>
-  n == null ? "—" : `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
+const formatAreaHa = (n: number | null | undefined) => (n == null ? "—" : `${formatArea(n)} ha`);
 
 const MEASURE_COLOR = "#f59e0b";
 
@@ -138,11 +138,13 @@ interface Props {
   hotspotData: FeatureCollection | null;
   canViewParcel: boolean;
   canEditParcel: boolean;
+  /** PRINT menu Lahan — gate tombol "Profil Lahan" (PDF) di popup lahan. */
+  canPrintParcel: boolean;
   /** Dipanggil setelah Edit Lahan berhasil — refetch GeoJSON (data di-fetch di klien). */
   onParcelUpdated: () => void;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, canPrintParcel, onParcelUpdated }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -841,6 +843,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                 props={selected.props}
                 canViewParcel={canViewParcel}
                 canEditParcel={canEditParcel}
+                canPrintParcel={canPrintParcel}
                 onEdit={setEditParcelId}
               />
             )}
@@ -1149,11 +1152,13 @@ function ParcelPopupBody({
   props,
   canViewParcel,
   canEditParcel,
+  canPrintParcel,
   onEdit,
 }: {
   props: Record<string, unknown>;
   canViewParcel: boolean;
   canEditParcel: boolean;
+  canPrintParcel: boolean;
   onEdit: (id: string) => void;
 }) {
   const landParcelId = String(props.id);
@@ -1193,7 +1198,7 @@ function ParcelPopupBody({
         parcelId={String(props.parcelId ?? "—")}
         groupName={String(props.farmerGroupName ?? "—")}
       />
-      <MapPopupHighlight label="Luas Lahan" value={formatArea(props.area as number | null)} />
+      <MapPopupHighlight label="Luas Lahan" value={formatAreaHa(props.area as number | null)} />
       <div className="divide-y">
         <MapPopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
           <MapPopupRows
@@ -1214,7 +1219,9 @@ function ParcelPopupBody({
           }}
         />
       </div>
-      <ParcelFooter landParcelId={landParcelId} production={production} onProductionLoaded={setProduction} />
+      {canPrintParcel && (
+        <ParcelFooter landParcelId={landParcelId} production={production} onProductionLoaded={setProduction} />
+      )}
       {(canViewParcel || canEditParcel) && (
         <ParcelPopupActions
           parcelId={landParcelId}

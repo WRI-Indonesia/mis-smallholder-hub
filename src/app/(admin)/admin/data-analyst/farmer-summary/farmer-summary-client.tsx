@@ -14,7 +14,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { getFarmerGroupsForAnalyst, getFarmerSummary, getFarmersWithoutParcels } from "@/server/actions/data-analyst";
 import type { FarmerDetailRow, FarmerSummaryResult, FarmerNoParcelsRow, FarmersWithoutParcelsResult } from "@/types/data-analyst";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatArea } from "@/lib/format";
 
 interface District {
   id: string;
@@ -30,9 +30,10 @@ interface FarmerGroup {
 interface Props {
   districts: District[];
   initialFarmerGroups: FarmerGroup[];
+  canExport: boolean;
 }
 
-export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
+export function FarmerSummaryClient({ districts, initialFarmerGroups, canExport }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>(initialFarmerGroups);
@@ -85,9 +86,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
   const selectedDistrictObj = districts.find((d) => d.id === selectedDistrict);
   const selectedGroupObj = farmerGroups.find((g) => g.id === selectedFarmerGroup);
 
-  const formatArea = (num: number) => {
-    return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + " ha";
-  };
+  const formatAreaHa = (num: number) => `${formatArea(num)} ha`;
 
   const formatPercent = (num: number) => {
     return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(num) + "%";
@@ -355,7 +354,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Luas Lahan</span>
-                      <span className="text-2xl font-bold">{formatArea(summaryData.summary.totalLuasLahan)}</span>
+                      <span className="text-2xl font-bold">{formatAreaHa(summaryData.summary.totalLuasLahan)}</span>
                     </div>
                   </Card>
                 </div>
@@ -369,6 +368,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                     searchKey="farmerName"
                     searchPlaceholder="Cari petani..."
                     defaultPageSize={25}
+                    canExport={canExport}
                     exportFilename={`detail-petani-${currentDateStr}`}
                     getExportRow={(row) => ({
                       farmerGroupName: row.farmerGroupName,
@@ -428,6 +428,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                     searchKey="farmerName"
                     searchPlaceholder="Cari petani..."
                     defaultPageSize={25}
+                    canExport={canExport}
                     exportFilename={`petani-tanpa-lahan-${currentDateStr}`}
                     getExportRow={(row) => ({
                       farmerGroupName: row.farmerGroupName,

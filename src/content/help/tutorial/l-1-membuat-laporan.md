@@ -27,6 +27,7 @@ Berbeda dari dashboard, laporan **membaca data terkini**, bukan snapshot.
 4. Gunakan **Tampilkan Kolom** untuk menyembunyikan kolom yang tak diperlukan.
 + Pengaturan kolom ikut memengaruhi hasil unduhan, sehingga Anda bisa menyiapkan laporan ringkas untuk rapat dan laporan lengkap untuk arsip dari halaman yang sama.
 5. Klik tombol unduh — **Excel** untuk diolah lagi, **PDF** untuk diserahkan.
++ Tombol Excel hanya tampil bila akun Anda punya izin **Export**, dan tombol PDF bila punya izin **Print**, pada menu laporan tersebut. Bila keduanya tidak tampil, minta administrator menyetelnya di Role & Permission.
 
 > [!hati-hati] NIK dan tanggal lahir tampil tersensor di layar, tetapi **terekspor utuh** ke Excel. Perlakukan berkas hasil unduhan sebagai dokumen rahasia dan jangan sebar lewat kanal terbuka.
 

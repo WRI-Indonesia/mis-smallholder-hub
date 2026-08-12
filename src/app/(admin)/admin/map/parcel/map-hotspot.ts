@@ -21,6 +21,11 @@ export const DEFAULT_HOTSPOT_STATE: HotspotState = {
   dayRange: 1,
 };
 
+/** Label rentang UI: "24 jam" / "5 hari" (dedup #241 — panel, ringkasan, PDF).
+ *  Konteks kalimat ("… terakhir") ditambah pemakainya. */
+export const hotspotWindowLabel = (dayRange: HotspotDayRange) =>
+  dayRange === 1 ? "24 jam" : "5 hari";
+
 // Point styling + legend breakdown by VIIRS detection confidence.
 // Deliberately spread in hue AND lightness (dark red / orange / bright yellow)
 // so the three classes stay distinguishable at small point sizes.

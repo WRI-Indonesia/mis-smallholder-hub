@@ -73,5 +73,5 @@ Halaman: Laporan Petani (/admin/report/farmer)
 
 | Format | Keterangan |
 |---|---|
-| Excel | Tombol bawaan `DataTable`; nama file `Laporan_Petani_<Distrik>_<Lembaga>` |
-| PDF | Tombol "PDF" di toolbar tabel; judul "LAPORAN RINGKASAN DATA PETANI"; kolom ID Petani, Nama Petani, Gender, NIK, Tahun Bergabung, Lahan (Persil), Total Luas (Ha); metadata Distrik & Lembaga Petani |
+| Excel | Tombol bawaan `DataTable`; nama file `Laporan_Petani_<Distrik>_<Lembaga>` — digate izin `EXPORT` (#245) |
+| PDF | Tombol "PDF" di toolbar tabel; judul "LAPORAN RINGKASAN DATA PETANI"; kolom ID Petani, Nama Petani, Gender, NIK, Tahun Bergabung, Lahan (Persil), Total Luas (Ha); metadata Distrik & Lembaga Petani — digate izin `PRINT` (#245) |

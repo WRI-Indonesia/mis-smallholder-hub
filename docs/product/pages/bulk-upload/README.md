@@ -45,6 +45,8 @@ Sumber: `prisma/seeds/data/role-permissions.csv`
 | `bulk-upload-parcels` | CREATE, VIEW | CREATE, VIEW | — |
 | `bulk-upload-trees` | CREATE, VIEW | CREATE, VIEW | — |
 
+> Sejak #245 setiap baris VIEW di seed juga disertai `EXPORT` + `PRINT` (backfill dua izin keluaran baru). Di modul bulk upload belum ada tombol export/print, jadi keduanya belum berdampak di sini; tombol **Unduh Template Excel** sengaja tidak digate (bagian dari alur CREATE, bukan export data).
+
 ## Pola umum ketiga halaman
 
 - Server Component memanggil `requirePermission(<menuKey>)` + `getUserPermissionsForMenu(<menuKey>)`, memuat data referensi, lalu menyerahkan ke Client Component.

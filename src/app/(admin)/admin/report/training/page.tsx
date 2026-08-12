@@ -1,10 +1,11 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDistrictsForTrainingReport } from "@/server/actions/report";
 import { TrainingReportClient } from "./training-report-client";
 
 export default async function TrainingReportPage() {
   await requirePermission("report-training");
+  const permissions = await getUserPermissionsForMenu("report-training");
   const districts = await getDistrictsForTrainingReport();
 
   return (
@@ -16,7 +17,11 @@ export default async function TrainingReportPage() {
         </div>
         <p className="text-muted-foreground">Analisis ringkasan sesi pelatihan dan cakupan petani</p>
       </div>
-      <TrainingReportClient districts={districts} />
+      <TrainingReportClient
+        districts={districts}
+        canExport={permissions.includes("EXPORT")}
+        canPrint={permissions.includes("PRINT")}
+      />
     </div>
   );
 }

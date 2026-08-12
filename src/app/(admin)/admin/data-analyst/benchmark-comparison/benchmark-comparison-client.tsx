@@ -38,6 +38,7 @@ import { BenchmarkFormModal } from "./benchmark-form-modal";
 interface Props {
   view: BenchmarkComparisonView;
   canEdit: boolean;
+  canExport: boolean;
 }
 
 function formatValue(value: number | null | undefined, decimal: boolean): string {
@@ -101,7 +102,7 @@ function problemScore(row: BenchmarkComparisonRow): [number, number] {
   return [row.diffSummary.length, maxRel];
 }
 
-export function BenchmarkComparisonClient({ view, canEdit }: Props) {
+export function BenchmarkComparisonClient({ view, canEdit, canExport }: Props) {
   const { get, setMany } = useUrlFilters();
   const [editing, setEditing] = useState<BenchmarkComparisonRow | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -172,7 +173,9 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
         { header: "Metrik Masih Selisih", key: "diffSummary", width: 40 },
         { header: "Catatan", key: "notes", width: 40 },
       ];
-      const data = localView.sections.flatMap((section) =>
+      // WYSIWYG (#247): ekspor mengikuti filter & urutan yang sedang tampil,
+      // konsisten dengan perilaku export DataTable dan cetak Peta BMP.
+      const data = filteredSections.flatMap((section) =>
         section.rows.map((row) => ({
           district: section.districtName,
           code: row.code ?? "",
@@ -214,12 +217,14 @@ export function BenchmarkComparisonClient({ view, canEdit }: Props) {
             <p className="text-xl font-bold text-amber-600">{localView.groupsWithDiff}</p>
           </CardContent>
         </Card>
-        <div className="ml-auto">
-          <Button variant="outline" onClick={onExport} disabled={isExporting}>
-            <Download className="mr-2 h-4 w-4" />
-            {isExporting ? "Menyiapkan..." : "Ekspor Excel"}
-          </Button>
-        </div>
+        {canExport && (
+          <div className="ml-auto">
+            <Button variant="outline" onClick={onExport} disabled={isExporting}>
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting ? "Menyiapkan..." : "Ekspor Excel"}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">

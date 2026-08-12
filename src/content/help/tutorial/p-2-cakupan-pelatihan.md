@@ -31,7 +31,7 @@ Angka di sini **dihitung langsung** saat halaman dibuka — tidak memakai snapsh
 + Muncul daftar nama petani yang belum mengikuti paket itu, lengkap dengan ID Petani. Sel yang sudah memenuhi target sengaja tidak bisa diklik — tidak ada yang perlu didaftar.
 + Bila filter **Tahun** aktif, baris petani yang sebenarnya pernah dilatih paket itu di tahun lain diberi badge **"Dilatih {tahun}"** (ikut juga sebagai kolom di Salin/Excel) — jangan diundang ulang sebagai peserta baru. Centang **"Hanya yang belum pernah sama sekali mengikuti paket ini"** untuk menyaring daftar ke yang benar-benar belum pernah; Salin dan Excel mengikuti saringan itu.
 6. Klik **Salin** atau **Excel** untuk membawa daftarnya keluar.
-+ Salin menghasilkan baris siap tempel ke Excel atau pesan WhatsApp. NIK tidak disertakan — daftar ini untuk keperluan undangan, bukan verifikasi identitas.
++ Salin menghasilkan baris siap tempel ke Excel atau pesan WhatsApp. NIK tidak disertakan — daftar ini untuk keperluan undangan, bukan verifikasi identitas. Kedua tombol (Salin dan Excel) hanya tampil bila akun Anda punya izin **Export** pada menu ini.
 7. Periksa panel **Efektivitas Pre/Post-Test** dan **Kualitas Data** di bawahnya.
 + Panel efektivitas menandai peserta yang skor post-nya lebih rendah dari pre — hampir selalu salah input, bukan hasil belajar menurun. Panel kualitas data menunjukkan sesi tanpa bukti, tanpa lokasi, atau tanpa peserta. Di bawah matriks juga ada card **Capaian Paket per Distrik** — rangkuman petani sudah/belum dilatih per paket di tingkat distrik.
 

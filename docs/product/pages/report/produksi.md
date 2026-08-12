@@ -82,5 +82,5 @@ Agregasi: baris footer "Total per Bulan" berisi total luas, `columnTotals` per b
 
 | Format | Keterangan |
 |---|---|
-| Excel | Sheet "Produksi", file `Laporan_Produksi_<Lembaga>_<periodStart>_sd_<periodEnd>`; kolom No, Nama Petani, Id Petani, Id Lahan, Luas (Ha), kolom bulan, Total + baris "Total per Bulan" |
-| PDF | Judul "CATATAN PRODUKSI PETANI", orientasi landscape, metadata Distrik / Lembaga Petani / Periode; kolom sama dengan Excel; ukuran font mengecil bila lebih dari 12 bulan |
+| Excel | Sheet "Produksi", file `Laporan_Produksi_<Lembaga>_<periodStart>_sd_<periodEnd>`; kolom No, Nama Petani, Id Petani, Id Lahan, Luas (Ha), kolom bulan, Total + baris "Total per Bulan" — digate izin `EXPORT` (#245) |
+| PDF | Judul "CATATAN PRODUKSI PETANI", orientasi landscape, metadata Distrik / Lembaga Petani / Periode; kolom sama dengan Excel; ukuran font mengecil bila lebih dari 12 bulan — digate izin `PRINT` (#245) |

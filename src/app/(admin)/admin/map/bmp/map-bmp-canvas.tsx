@@ -8,6 +8,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Sprout, Info, BarChart3, Maximize } from "lucide-react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
+import { formatArea } from "@/lib/format";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
 import { MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
@@ -141,8 +142,7 @@ const formatPeriod = (p: string | null | undefined) => {
   return month >= 0 && month < 12 ? `${MONTHS_ID[month]} ${year}` : p;
 };
 
-const formatArea = (n: number | null | undefined) =>
-  n == null ? "—" : `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
+const formatAreaHa = (n: number | null | undefined) => (n == null ? "—" : `${formatArea(n)} ha`);
 
 type SelectedFeature = {
   longitude: number;
@@ -768,7 +768,7 @@ function BmpParcelPopupBody({
         <MapPopupSection icon={<Info className="h-3.5 w-3.5" />} title="Detail Lahan" defaultOpen>
           <MapPopupRows
             rows={[
-              { label: "Luas", value: formatArea(props.area as number | null) },
+              { label: "Luas", value: formatAreaHa(props.area as number | null) },
               { label: "Tahun Tanam", value: props.plantingYear },
               { label: "Komoditas", value: props.cropType },
               { label: "Status Lahan", value: props.landStatus },

@@ -79,6 +79,8 @@ interface Props {
   farmerGroups: { id: string; name: string }[];
   canViewParcel: boolean;
   canEditParcel: boolean;
+  /** PRINT menu Petani — gate tombol PDF "Profil Lahan" per baris lahan. */
+  canPrint: boolean;
 }
 
 const formatDecimal = (n: number) =>
@@ -178,6 +180,7 @@ export function FarmerDetailClient({
   farmerGroups,
   canViewParcel,
   canEditParcel,
+  canPrint,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
@@ -363,7 +366,7 @@ export function FarmerDetailClient({
                       <th className="py-2 pr-4 text-right">Tahun Tanam</th>
                       <th className="py-2 pr-4 text-right">Jumlah Pohon</th>
                       <th className="py-2 pr-4 text-right">Revisi</th>
-                      <th className="py-2 text-right">Profil Lahan</th>
+                      {canPrint && <th className="py-2 text-right">Profil Lahan</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -398,22 +401,24 @@ export function FarmerDetailClient({
                             : "—"}
                         </td>
                         <td className="py-2 pr-4 text-right tabular-nums">{p.revision}</td>
-                        <td className="py-2 text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1.5"
-                            disabled={pdfLoadingId != null}
-                            onClick={() => downloadPassport(p.id)}
-                          >
-                            {pdfLoadingId === p.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Printer className="h-3.5 w-3.5" />
-                            )}
-                            PDF
-                          </Button>
-                        </td>
+                        {canPrint && (
+                          <td className="py-2 text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 gap-1.5"
+                              disabled={pdfLoadingId != null}
+                              onClick={() => downloadPassport(p.id)}
+                            >
+                              {pdfLoadingId === p.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Printer className="h-3.5 w-3.5" />
+                              )}
+                              PDF
+                            </Button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

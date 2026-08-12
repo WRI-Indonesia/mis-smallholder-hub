@@ -61,7 +61,7 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Header `{parcelId}` | Heading | Judul = ID lahan (mono); subjudul pemilik ber-link; badge status/PSR/komoditas/KT; `BreadcrumbOverride` menampilkan parcelId |
-| Tombol `Profil Lahan (PDF)` | Tombol | VIEW — Farm Passport via `getLandParcelPassport` (guard menu Lahan); disabled bila lahan tanpa geometri |
+| Tombol `Profil Lahan (PDF)` | Tombol | PRINT (sebelumnya VIEW, #245) — Farm Passport via `getLandParcelPassport` (guard menu Lahan); disabled bila lahan tanpa geometri |
 | Tombol `Edit` | Tombol | EDIT — buka `ParcelFormModal` |
 | Tombol `Nonaktifkan` | Tombol | DELETE — `deleteLandParcel` dengan konfirmasi `Apakah Anda yakin ingin menonaktifkan lahan ini?` |
 | Kartu ringkasan | Kartu ×5 | `Luas`, `Pohon Sawit` (jumlah titik + kerapatan pohon/ha, #238), `Umur Tanaman`, `Produksi`, `Kelengkapan Data` (8 atribut: Blok, Luas, Status Kepemilikan, Komoditas, Species, Tahun Tanam, Kelompok Tani, Geometri) |

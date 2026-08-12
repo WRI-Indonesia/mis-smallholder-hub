@@ -12,10 +12,17 @@ export const treeRowSchema = z.object({
   modelVersion: z.string().nullable(),
 });
 
+/** Batas titik per lahan dalam satu upload — dicek dini di preview klien
+ *  (pesan jelas) dan tetap di-enforce zod saat simpan. */
+export const MAX_TREE_ROWS_PER_PARCEL = 50_000;
+
 // Satu set pohon untuk satu lahan (satu ZIP bisa memuat beberapa set).
 export const treeGroupSchema = z.object({
   parcelId: z.string().min(1, "parcel_id wajib ada"),
-  rows: z.array(treeRowSchema).min(1, "Tidak ada titik pohon").max(50_000, "Terlalu banyak titik dalam satu lahan"),
+  rows: z
+    .array(treeRowSchema)
+    .min(1, "Tidak ada titik pohon")
+    .max(MAX_TREE_ROWS_PER_PARCEL, "Terlalu banyak titik dalam satu lahan"),
 });
 
 export const bulkCreateTreesSchema = z.object({

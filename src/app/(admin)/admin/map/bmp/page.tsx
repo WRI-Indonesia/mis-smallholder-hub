@@ -5,10 +5,12 @@ import { MapBmpClient } from "./map-bmp-client";
 
 export default async function MapBmpPage() {
   await requirePermission("map-bmp");
-  const [provinces, canViewParcel, canEditParcel] = await Promise.all([
+  const [provinces, canViewParcel, canEditParcel, canExport, canPrint] = await Promise.all([
     getProvincesForMap(),
     hasPermission("master-data-parcels", "VIEW"),
     hasPermission("master-data-parcels", "EDIT"),
+    hasPermission("map-bmp", "EXPORT"),
+    hasPermission("map-bmp", "PRINT"),
   ]);
 
   return (
@@ -16,6 +18,8 @@ export default async function MapBmpPage() {
       provinces={provinces}
       canViewParcel={canViewParcel}
       canEditParcel={canEditParcel}
+      canExport={canExport}
+      canPrint={canPrint}
       helpSlot={<HelpHint menuKey="map-bmp" />}
     />
   );

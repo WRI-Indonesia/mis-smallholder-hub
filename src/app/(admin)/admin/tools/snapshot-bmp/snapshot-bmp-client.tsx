@@ -177,6 +177,7 @@ export function SnapshotBmpClient({ snapshots, permissions }: Props) {
           searchPlaceholder="Cari distrik atau pembuat..."
           emptyMessage="Belum ada snapshot."
           exportFilename="bmp-dashboard-snapshots"
+          canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
         />
       </Card>

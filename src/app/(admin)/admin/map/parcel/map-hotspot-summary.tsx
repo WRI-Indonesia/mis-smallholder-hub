@@ -21,12 +21,11 @@ import {
   HOTSPOT_CONF_COLORS,
   HOTSPOT_CONF_LABELS,
   confidenceBucket,
-  formatWib,
-  satelliteLabel,
+  hotspotWindowLabel,
   type HotspotConfBucket,
   type HotspotDayRange,
 } from "./map-hotspot";
-import { NEAR_KM_THRESHOLD, formatKm, type HotspotNearestRow } from "./map-hotspot-export";
+import { NEAR_KM_THRESHOLD, hotspotRowCells, type HotspotNearestRow } from "./map-hotspot-export";
 
 interface Props {
   open: boolean;
@@ -45,6 +44,10 @@ interface Props {
   onPrintPdf: () => void;
   /** Klik baris tabel: tutup modal + zoom peta ke titik api tsb. */
   onZoomToPoint: (lon: number, lat: number) => void;
+  /** EXPORT menu Peta Lahan — gate tombol "Unduh SHP". */
+  canExport: boolean;
+  /** PRINT menu Peta Lahan — gate tombol "Cetak PDF". */
+  canPrint: boolean;
 }
 
 /** Pill keyakinan mengikuti warna legenda titik api. */
@@ -79,6 +82,8 @@ export function HotspotSummaryDialog({
   onDownloadShp,
   onPrintPdf,
   onZoomToPoint,
+  canExport,
+  canPrint,
 }: Props) {
   const total = counts.high + counts.nominal + counts.low;
   return (
@@ -90,7 +95,7 @@ export function HotspotSummaryDialog({
             Ringkasan Titik Api
           </DialogTitle>
           <DialogDescription>
-            Rentang {dayRange === 1 ? "24 jam terakhir" : "5 hari terakhir"} · Provinsi:{" "}
+            Rentang {hotspotWindowLabel(dayRange)} terakhir · Provinsi:{" "}
             {area.provinceName ?? "—"} · Distrik: {area.districtName ?? "—"} · sumber NASA FIRMS
             (VIIRS 375 m)
           </DialogDescription>
@@ -150,7 +155,7 @@ export function HotspotSummaryDialog({
               </TableHeader>
               <TableBody>
                 {nearRows.map((r, i) => {
-                  const frp = r.f.properties?.frp;
+                  const cells = hotspotRowCells(r);
                   return (
                     <TableRow
                       key={`${r.lon},${r.lat},${String(r.f.properties?.acqDatetime ?? i)}`}
@@ -159,17 +164,17 @@ export function HotspotSummaryDialog({
                       onClick={() => onZoomToPoint(r.lon, r.lat)}
                     >
                       <TableCell className="text-muted-foreground tabular-nums">{i + 1}</TableCell>
-                      <TableCell>{formatWib(r.f.properties?.acqDatetime as string | null)}</TableCell>
-                      <TableCell>{satelliteLabel(r.f.properties?.satellite)}</TableCell>
+                      <TableCell>{cells.time}</TableCell>
+                      <TableCell>{cells.satellite}</TableCell>
                       <TableCell>
                         <ConfidenceBadge confidence={r.f.properties?.confidence} />
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
-                        {typeof frp === "number" && Number.isFinite(frp) ? frp.toFixed(1) : "—"}
+                        {cells.frp}
                       </TableCell>
-                      <TableCell>{r.nearest?.name ?? "—"}</TableCell>
+                      <TableCell>{cells.nearestName}</TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
-                        {r.nearest ? formatKm(r.nearest.meters) : "—"}
+                        {cells.distanceKm}
                       </TableCell>
                     </TableRow>
                   );
@@ -185,14 +190,18 @@ export function HotspotSummaryDialog({
             ke titiknya.
           </p>
           <div className="flex shrink-0 gap-2">
-            <Button variant="outline" size="sm" onClick={onDownloadShp}>
-              <Download className="h-3.5 w-3.5" />
-              Unduh SHP
-            </Button>
-            <Button size="sm" onClick={onPrintPdf}>
-              <Printer className="h-3.5 w-3.5" />
-              Cetak PDF
-            </Button>
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={onDownloadShp}>
+                <Download className="h-3.5 w-3.5" />
+                Unduh SHP
+              </Button>
+            )}
+            {canPrint && (
+              <Button size="sm" onClick={onPrintPdf}>
+                <Printer className="h-3.5 w-3.5" />
+                Cetak PDF
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

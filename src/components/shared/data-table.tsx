@@ -90,6 +90,11 @@ export interface DataTableProps<T> {
   toolbarRight?: React.ReactNode;
   /** Filename for Excel export (if provided, shows export button) */
   exportFilename?: string;
+  /**
+   * RBAC gate tombol Excel (permission EXPORT). Default FALSE (fail-closed):
+   * pemakai exportFilename wajib meneruskan `permissions.includes("EXPORT")` secara eksplisit.
+   */
+  canExport?: boolean;
   /** Custom export row transformer */
   getExportRow?: (row: T) => Record<string, unknown>;
 }
@@ -116,6 +121,7 @@ export function DataTable<T>({
   toolbarLeft,
   toolbarRight,
   exportFilename,
+  canExport = false,
   getExportRow,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("");
@@ -305,7 +311,7 @@ export function DataTable<T>({
         )}
 
         <div className="flex items-center gap-2 ml-auto">
-          {exportFilename && (
+          {exportFilename && canExport && (
             <Button
               variant="outline"
               size="sm"

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { toggleProductionRecordActive } from "@/server/actions/production";
+import { MONTH_NAMES_ID } from "@/lib/format";
 import { toast } from "sonner";
 import {
   TableActions,
@@ -143,21 +144,7 @@ export function ProductionListClient({
       cellClassName: "text-sm text-muted-foreground",
       render: (row) => {
         const [year, month] = row.period.split("-");
-        const months = [
-          "Januari",
-          "Februari",
-          "Maret",
-          "April",
-          "Mei",
-          "Juni",
-          "Juli",
-          "Agustus",
-          "September",
-          "Oktober",
-          "November",
-          "Desember",
-        ];
-        return `${months[parseInt(month, 10) - 1]} ${year}`;
+        return `${MONTH_NAMES_ID[parseInt(month, 10) - 1]} ${year}`;
       },
     },
     {
@@ -285,6 +272,7 @@ export function ProductionListClient({
         toolbarLeft={toolbarLeft}
         toolbarRight={toolbarRight}
         exportFilename="data-produksi"
+        canExport={permissions.includes("EXPORT")}
         getExportRow={getExportRow}
         renderActions={(row) => (
           <TableActions

@@ -21,10 +21,9 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCertStatus } from "@/lib/farmer-group-labels";
 import type { DashboardStats, KTDetails } from "@/types/dashboard";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatArea } from "@/lib/format";
 
-const formatArea = (n: number) =>
-  `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
+const formatAreaHa = (n: number) => `${formatArea(n)} ha`;
 
 // Kartu yang bisa diklik untuk popup rincian (#206) — 5 kartu baris teratas.
 type DetailKey = "lembaga" | "kelompokTani" | "rspo" | "ispo" | "sapMap";
@@ -75,7 +74,7 @@ export function DashboardSummaryCards({ stats, kts, generatedAtLabel }: Props) {
     { title: "Petani Laki-laki", value: formatNumber(stats.totalPetaniLaki ?? 0), icon: User, iconClass: "text-sky-600" },
     { title: "Petani Perempuan", value: formatNumber(stats.totalPetaniPerempuan ?? 0), icon: User, iconClass: "text-pink-600" },
     { title: "Total Persil Lahan", value: formatNumber(stats.totalPersilLahan), icon: Map, iconClass: "text-green-600" },
-    { title: "Total Luas Lahan", value: formatArea(stats.totalLuasLahan), icon: Ruler, iconClass: "text-green-600" },
+    { title: "Total Luas Lahan", value: formatAreaHa(stats.totalLuasLahan), icon: Ruler, iconClass: "text-green-600" },
     { title: "Paket 1 - BMP/NKT/RSPO", value: `${formatNumber(stats.trainingCounts.PAKET_1_BMP_PC_RSPO_NKT)} petani`, icon: BookOpen, iconClass: "text-orange-600" },
     { title: "Paket 2 - MK", value: `${formatNumber(stats.trainingCounts.PAKET_2_MK)} petani`, icon: BookOpen, iconClass: "text-purple-600" },
     { title: "Paket 2 - HSE", value: `${formatNumber(stats.trainingCounts.PAKET_2_K3)} petani`, icon: BookOpen, iconClass: "text-red-600" },

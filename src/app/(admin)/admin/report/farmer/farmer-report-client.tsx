@@ -12,7 +12,7 @@ import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { getFarmerGroupsForReport, getFarmerReport } from "@/server/actions/report";
 import type { FarmerReportRow, FarmerReportResult } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatArea } from "@/lib/format";
 
 interface District {
   id: string;
@@ -27,9 +27,11 @@ interface FarmerGroup {
 
 interface Props {
   districts: District[];
+  canExport: boolean;
+  canPrint: boolean;
 }
 
-export function FarmerReportClient({ districts }: Props) {
+export function FarmerReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
@@ -112,9 +114,7 @@ export function FarmerReportClient({ districts }: Props) {
     });
   };
 
-  const formatArea = (num: number) => {
-    return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + " Ha";
-  };
+  const formatAreaHa = (num: number) => `${formatArea(num)} Ha`;
 
   const columns: DataTableColumn<FarmerReportRow>[] = [
     {
@@ -166,7 +166,7 @@ export function FarmerReportClient({ districts }: Props) {
       label: "Total Luas (Ha)",
       sortable: true,
       cellClassName: "text-sm text-right md:text-left pr-4 md:pr-0 tabular-nums",
-      render: (row) => formatArea(row.totalArea),
+      render: (row) => formatAreaHa(row.totalArea),
     },
   ];
 
@@ -224,8 +224,8 @@ export function FarmerReportClient({ districts }: Props) {
         </CardContent>
       </Card>
 
-      {/* Print Document Header */}
-      {reportData && (
+      {/* Print Document Header — ikut digate PRINT agar Ctrl+P tanpa izin tidak menghasilkan dokumen resmi */}
+      {reportData && canPrint && (
         <div className="hidden print:block text-center border-b pb-4 mb-6">
           <h1 className="text-3xl font-extrabold tracking-tight">LAPORAN RINGKASAN PETANI</h1>
           <p className="text-sm text-muted-foreground mt-1">Smallholder HUB Management Information System</p>
@@ -304,16 +304,19 @@ export function FarmerReportClient({ districts }: Props) {
               searchPlaceholder="Cari nama petani..."
               exportFilename={`Laporan_Petani_${selectedDistrictObj?.name.replace(/\s+/g, "_")}_${selectedGroupObj?.name.replace(/\s+/g, "_")}`}
               getExportRow={getExportRow}
+              canExport={canExport}
               toolbarRight={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportPDF}
-                  className="h-9 gap-2 print:hidden"
-                >
-                  <Printer className="h-4 w-4" />
-                  PDF
-                </Button>
+                canPrint ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportPDF}
+                    className="h-9 gap-2 print:hidden"
+                  >
+                    <Printer className="h-4 w-4" />
+                    PDF
+                  </Button>
+                ) : undefined
               }
             />
           </div>

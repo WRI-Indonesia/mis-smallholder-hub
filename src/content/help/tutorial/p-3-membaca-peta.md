@@ -30,7 +30,7 @@ Hanya lahan yang berasal dari unggahan shapefile yang muncul di peta.
 + Produktivitas dihitung sebagai total produksi tahun itu dibagi luas persil. Lahan yang sedang PSR wajar bernilai rendah atau nol.
 6. Klik sebuah poligon untuk melihat detailnya.
 7. Klik **Cetak** untuk PDF, atau unduh Excel-nya.
-+ Keluarannya mengikuti layer yang sedang aktif — termasuk legenda dan tabel datanya, jadi periksa layernya sudah benar sebelum mencetak.
++ Keluarannya mengikuti layer yang sedang aktif — termasuk legenda dan tabel datanya, jadi periksa layernya sudah benar sebelum mencetak. Tombol Cetak hanya tampil bila akun Anda punya izin **Print**, dan unduhan Excel bila punya izin **Export**, pada menu ini.
 
 > [!penting] Peta BMP membaca snapshot yang sama dengan BMP Dashboard. Bila data produksi baru saja diunggah tetapi warnanya belum berubah, snapshot-nya perlu dibuat ulang.
 

@@ -1,10 +1,11 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDistrictsForProductionReport } from "@/server/actions/report";
 import { ProductionReportClient } from "./production-report-client";
 
 export default async function ProductionReportPage() {
   await requirePermission("report-production");
+  const permissions = await getUserPermissionsForMenu("report-production");
   const districts = await getDistrictsForProductionReport();
 
   return (
@@ -16,7 +17,11 @@ export default async function ProductionReportPage() {
         </div>
         <p className="text-muted-foreground">Matriks produksi bulanan per petani/lahan dalam satu Lembaga Petani</p>
       </div>
-      <ProductionReportClient districts={districts} />
+      <ProductionReportClient
+        districts={districts}
+        canExport={permissions.includes("EXPORT")}
+        canPrint={permissions.includes("PRINT")}
+      />
     </div>
   );
 }

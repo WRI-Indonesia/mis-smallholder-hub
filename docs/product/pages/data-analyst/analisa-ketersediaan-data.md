@@ -59,7 +59,7 @@ Halaman: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
 | Empty state awal | Kartu | Ikon `ClipboardCheck` + "Pilih District dan Lembaga Petani, lalu klik Analisa" |
 | Header hasil | Kartu ringkasan | Nama Lembaga + kode (mono), baris "`<District>` · `<n>` petani · `<n>` anomali" |
 | "Index Ketersediaan Data" | Kartu KPI | Skor persen; warna: ≥85 hijau, ≥60 amber, <60 merah |
-| "Excel" | Tombol ekspor | Ikon `Download`; multi-sheet, nama file `analisa-ketersediaan-<kode atau nama>-<yyyyMMdd>` |
+| "Excel" | Tombol ekspor | Ikon `Download`; multi-sheet, nama file `analisa-ketersediaan-<kode atau nama>-<yyyyMMdd>` — digate izin `EXPORT` (#245) |
 | Chip domain | Badge skor | "Profil Lembaga Petani" + 4 domain (Petani, Lahan, Pelatihan, Produksi) masing-masing dengan badge skor % |
 | Peringatan 0 petani | Kartu peringatan | "Lembaga Petani ini belum memiliki data petani aktif — domain Petani, Lahan, Pelatihan, dan Produksi kosong." |
 

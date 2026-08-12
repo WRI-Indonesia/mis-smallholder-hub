@@ -47,6 +47,10 @@ interface Props {
   provinces: MapSelectOption[];
   canViewParcel: boolean;
   canEditParcel: boolean;
+  /** EXPORT menu Peta BMP — gate tombol "Download … (Excel)". */
+  canExport: boolean;
+  /** PRINT menu Peta BMP — gate tombol "Cetak Peta …". */
+  canPrint: boolean;
   /** HelpHint dirender di server agar markdown Bantuan tak masuk bundle client. */
   helpSlot?: React.ReactNode;
 }
@@ -67,7 +71,7 @@ function buildAvailabilityMatrix(parcels: BmpParcelFeature[]) {
   return { periods, rows };
 }
 
-export function MapBmpClient({ provinces, canViewParcel, canEditParcel, helpSlot }: Props) {
+export function MapBmpClient({ provinces, canViewParcel, canEditParcel, canExport, canPrint, helpSlot }: Props) {
   const [provinceId, setProvinceId] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [farmerGroupId, setFarmerGroupId] = useState<string | null>(null);
@@ -386,6 +390,8 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel, helpSlot
         printing={printing}
         onExport={handleExport}
         exporting={exporting}
+        canExport={canExport}
+        canPrint={canPrint}
       />
     </div>
   );

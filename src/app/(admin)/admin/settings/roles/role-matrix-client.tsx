@@ -16,14 +16,61 @@ import {
   setRolePermissions,
   type RolePermissionUpdate,
 } from "@/server/actions/role-permission";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { ChevronRight, ChevronDown, Search, ListChecks } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronDown,
+  Search,
+  ListChecks,
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+  FileSpreadsheet,
+  Printer,
+} from "lucide-react";
 import type { Role, PermissionLevel } from "@prisma/client";
 import { ROLES } from "@/lib/roles";
+import { PERMISSION_LEVELS } from "@/lib/permission-levels";
 import { buildMenuTree, collapsibleKeys, descendantKeys, flattenTree } from "@/lib/menu-tree";
 import { useCollapseState } from "@/lib/use-collapse-state";
 
-const PERMISSIONS: PermissionLevel[] = ["CREATE", "VIEW", "EDIT", "DELETE"];
+// Daftar & label izin dari sumber tunggal src/lib/permission-levels.ts; ikon lokal UI ini.
+const PERMISSION_ICON: Record<PermissionLevel, React.ComponentType<{ className?: string }>> = {
+  CREATE: Plus,
+  VIEW: Eye,
+  EDIT: Pencil,
+  DELETE: Trash2,
+  EXPORT: FileSpreadsheet,
+  PRINT: Printer,
+};
+const PERMISSION_META = PERMISSION_LEVELS.map((p) => ({ ...p, icon: PERMISSION_ICON[p.key] }));
+const PERMISSIONS: PermissionLevel[] = PERMISSION_META.map((m) => m.key);
+
+// Preset izin per baris menu — kombinasi yang paling sering dipakai.
+const ROW_PRESETS: { label: string; perms: PermissionLevel[] }[] = [
+  { label: "Lihat saja", perms: ["VIEW"] },
+  { label: "Lihat + Unduh", perms: ["VIEW", "EXPORT", "PRINT"] },
+  { label: "Akses penuh", perms: [...PERMISSIONS] },
+  { label: "Kosongkan", perms: [] },
+];
+
+// Border kiri sel: tebal di awal role, sedang di batas grup data|keluaran, tipis sisanya.
+const colBorder = (i: number) =>
+  i === 0
+    ? "border-l border-border"
+    : PERMISSION_META[i].group !== PERMISSION_META[i - 1].group
+      ? "border-l-2 border-border"
+      : "border-l border-border/40";
+
 const EDITABLE_ROLES = ROLES.filter((r) => r !== "SUPERADMIN");
 
 interface Props {
@@ -36,10 +83,17 @@ const cellKey = (role: string, menuKey: string, perm: string) => `${role}|${menu
 interface CascadeState {
   menuKey: string;
   title: string;
-  target: boolean;
+  presetLabel: string;
   baseUpdates: RolePermissionUpdate[];
   descendantUpdates: RolePermissionUpdate[];
   descendantCount: number;
+}
+
+// Field lain (label, daftar update) diderivasi saat konfirmasi — jangan simpan yang bisa basi.
+interface ColumnToggleState {
+  role: Role;
+  perm: PermissionLevel;
+  target: boolean;
 }
 
 export function RoleMatrixClient({ permissions, menuItems }: Props) {
@@ -51,6 +105,25 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [cascade, setCascade] = useState<CascadeState | null>(null);
+  const [colToggle, setColToggle] = useState<ColumnToggleState | null>(null);
+  // Highlight silang kolom saat hover — via dataset DOM langsung (bukan state React):
+  // state akan me-rerender seluruh matriks (±1.100 sel) pada tiap perpindahan sel (#247).
+  const tableRef = React.useRef<HTMLTableElement>(null);
+  const hoverColRef = React.useRef<string | null>(null);
+  function setColHighlight(colId: string | null) {
+    if (hoverColRef.current === colId) return;
+    const table = tableRef.current;
+    if (!table) return;
+    for (const prev of table.querySelectorAll('[data-colhover="true"]')) {
+      delete (prev as HTMLElement).dataset.colhover;
+    }
+    if (colId) {
+      for (const el of table.querySelectorAll(`[data-colid="${CSS.escape(colId)}"]`)) {
+        (el as HTMLElement).dataset.colhover = "true";
+      }
+    }
+    hoverColRef.current = colId;
+  }
 
   const tree = useMemo(() => buildMenuTree(menuItems), [menuItems]);
   const allCollapsible = useMemo(() => collapsibleKeys(tree), [tree]);
@@ -75,7 +148,13 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
 
   // ─── Apply (optimistic + server) ──────────────────────────────────────────
   async function applyUpdates(updates: RolePermissionUpdate[]) {
-    const real = updates.filter((u) => u.role !== "SUPERADMIN");
+    // Buang no-op (state sama) — preset/toggle kolom bisa mengirim ratusan update;
+    // tanpa filter ini transaksi server (round-trip per update) rawan kena timeout.
+    const real = updates.filter(
+      (u) =>
+        u.role !== "SUPERADMIN" &&
+        granted.has(cellKey(u.role, u.menuKey, u.permission)) !== u.granted
+    );
     if (real.length === 0) return;
 
     const prev = granted;
@@ -87,12 +166,21 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
     }
     setGranted(next);
     setSaving(true);
-    const result = await setRolePermissions(real);
-    setSaving(false);
-
-    if (!result.success) {
-      setGranted(prev); // revert
-      toast.error(typeof result.error === "string" ? result.error : "Gagal menyimpan permission");
+    try {
+      const result = await setRolePermissions(real);
+      if (!result.success) {
+        setGranted(prev); // revert
+        toast.error(
+          typeof result.error === "string" ? result.error : "Gagal menyimpan permission"
+        );
+      }
+    } catch {
+      // Error tak tertangkap (mis. timeout transaksi) — jangan biarkan UI menampilkan
+      // state yang tidak tersimpan.
+      setGranted(prev);
+      toast.error("Gagal menyimpan permission — coba lagi");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -104,22 +192,28 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
     applyUpdates([{ role, menuKey, permission: perm, granted: !has(role, menuKey, perm) }]);
   }
 
-  // Toggle satu baris penuh (semua izin × role tampil) untuk satu menu.
-  function handleRowToggle(menuKey: string, title: string, hasChildren: boolean) {
+  // Terapkan preset izin (Lihat saja / Lihat+Unduh / Akses penuh / Kosongkan)
+  // pada satu baris menu untuk semua role yang tampil.
+  function handleRowPreset(
+    menuKey: string,
+    title: string,
+    hasChildren: boolean,
+    preset: (typeof ROW_PRESETS)[number]
+  ) {
     const editable = EDITABLE_ROLES.filter((r) => visibleRoles.has(r));
     if (editable.length === 0) {
       toast.error("Tidak ada role yang dapat diubah pada tampilan ini");
       return;
     }
 
-    const allGranted = editable.every((role) =>
-      PERMISSIONS.every((perm) => has(role, menuKey, perm))
-    );
-    const target = !allGranted;
-
     const buildFor = (mk: string): RolePermissionUpdate[] =>
       editable.flatMap((role) =>
-        PERMISSIONS.map((perm) => ({ role, menuKey: mk, permission: perm, granted: target }))
+        PERMISSIONS.map((perm) => ({
+          role,
+          menuKey: mk,
+          permission: perm,
+          granted: preset.perms.includes(perm),
+        }))
       );
 
     const baseUpdates = buildFor(menuKey);
@@ -129,7 +223,7 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
       setCascade({
         menuKey,
         title,
-        target,
+        presetLabel: preset.label,
         baseUpdates,
         descendantUpdates: desc.flatMap(buildFor),
         descendantCount: desc.length,
@@ -138,6 +232,24 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
     }
 
     applyUpdates(baseUpdates);
+  }
+
+  // Klik header kolom: toggle satu izin untuk SEMUA menu pada satu role (dengan konfirmasi).
+  // Arah: bila ADA yang granted → cabut semua; grant-semua hanya saat kolom benar-benar
+  // kosong. Dengan ini klik pertama = revoke (kasus umum: cabut Export/Print satu role),
+  // bukan grant massal ke menu yang bahkan tak punya VIEW.
+  function handleColumnToggle(role: Role, perm: PermissionLevel) {
+    const target = !menuItems.some((m) => has(role, m.key, perm));
+    setColToggle({ role, perm, target });
+  }
+
+  function confirmColumnToggle() {
+    if (!colToggle) return;
+    const { role, perm, target } = colToggle;
+    setColToggle(null);
+    applyUpdates(
+      menuItems.map((m) => ({ role, menuKey: m.key, permission: perm, granted: target }))
+    );
   }
 
   function confirmCascade(includeDescendants: boolean) {
@@ -218,7 +330,11 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
 
       {/* Matriks */}
       <div className="overflow-auto max-h-[70vh] rounded-md border border-border">
-        <table className="w-full text-sm border-separate border-spacing-0">
+        <table
+          ref={tableRef}
+          onMouseLeave={() => setColHighlight(null)}
+          className="w-full text-sm border-separate border-spacing-0"
+        >
           <thead>
             <tr>
               <th
@@ -239,16 +355,27 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
             </tr>
             <tr>
               {shownRoles.map((role) =>
-                PERMISSIONS.map((perm, i) => (
-                  <th
-                    key={`${role}-${perm}`}
-                    className={`sticky top-9 z-20 bg-muted text-center text-[10px] font-medium text-muted-foreground p-1 border-b-2 border-border ${
-                      i === 0 ? "border-l border-border" : "border-l border-border/40"
-                    }`}
-                  >
-                    {perm.charAt(0)}
-                  </th>
-                ))
+                PERMISSION_META.map((meta, i) => {
+                  const colId = `${role}|${meta.key}`;
+                  const Icon = meta.icon;
+                  return (
+                    <th
+                      key={colId}
+                      data-colid={colId}
+                      onMouseEnter={() => setColHighlight(colId)}
+                      className={`sticky top-9 z-20 text-center p-1 border-b-2 border-border bg-muted data-[colhover=true]:bg-accent ${colBorder(i)}`}
+                    >
+                      <button
+                        onClick={() => handleColumnToggle(role, meta.key)}
+                        disabled={saving}
+                        className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 disabled:opacity-40"
+                        title={`${meta.label} · klik untuk toggle seluruh kolom ${role}`}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                      </button>
+                    </th>
+                  );
+                })
               )}
             </tr>
           </thead>
@@ -259,7 +386,7 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
               // tembus saat scroll horizontal.
               const rowBg = isParent ? "bg-muted" : "bg-card";
               return (
-                <tr key={item.key} className="border-b border-border/40">
+                <tr key={item.key} className="border-b border-border/40 hover:bg-accent/30">
                   {/* Kolom Menu (sticky kiri) */}
                   <td
                     className={`sticky left-0 z-10 px-2 py-1 border-r border-border ${rowBg}`}
@@ -285,14 +412,31 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                       <span className={isParent ? "font-semibold" : "text-muted-foreground"}>
                         {item.title}
                       </span>
-                      <button
-                        onClick={() => handleRowToggle(item.key, item.title, hasChildren)}
-                        disabled={saving}
-                        className="ml-1 p-0.5 rounded text-muted-foreground/60 hover:text-foreground hover:bg-muted disabled:opacity-40"
-                        title="Toggle semua izin di baris ini"
-                      >
-                        <ListChecks className="h-3.5 w-3.5" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          disabled={saving}
+                          className="ml-1 p-0.5 rounded text-muted-foreground/60 hover:text-foreground hover:bg-muted disabled:opacity-40"
+                          title="Preset izin baris ini"
+                        >
+                          <ListChecks className="h-3.5 w-3.5" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuLabel className="text-xs">
+                            Preset — role yang tampil
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {ROW_PRESETS.map((preset) => (
+                            <DropdownMenuItem
+                              key={preset.label}
+                              onClick={() =>
+                                handleRowPreset(item.key, item.title, hasChildren, preset)
+                              }
+                            >
+                              {preset.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </td>
 
@@ -300,10 +444,13 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                   {shownRoles.map((role) =>
                     PERMISSIONS.map((perm, i) => {
                       const on = has(role, item.key, perm);
+                      const colId = `${role}|${perm}`;
                       return (
                         <td
                           key={`${role}-${item.key}-${perm}`}
-                          className={`text-center p-1 ${i === 0 ? "border-l border-border" : "border-l border-border/30"}`}
+                          data-colid={colId}
+                          onMouseEnter={() => setColHighlight(colId)}
+                          className={`text-center p-1 data-[colhover=true]:bg-accent/50 ${colBorder(i)}`}
                         >
                           <button
                             onClick={() => handleCellToggle(role, item.key, perm)}
@@ -343,9 +490,19 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
           <span className="w-3 h-3 rounded-sm border border-border inline-block" /> Denied
         </div>
         <div className="flex items-center gap-1">
-          <ListChecks className="h-3.5 w-3.5" /> Toggle baris
+          <ListChecks className="h-3.5 w-3.5" /> Preset baris
         </div>
-        <div className="ml-auto">C = Create · V = View · E = Edit · D = Delete · SUPERADMIN selalu akses penuh (tidak ditampilkan)</div>
+        {PERMISSION_META.map((meta) => {
+          const Icon = meta.icon;
+          return (
+            <div key={meta.key} className="flex items-center gap-1">
+              <Icon className="h-3.5 w-3.5" /> {meta.label.split(" — ")[0]}
+            </div>
+          );
+        })}
+        <div className="ml-auto">
+          Klik ikon header = toggle satu kolom · SUPERADMIN selalu akses penuh (tidak ditampilkan)
+        </div>
       </div>
 
       {/* Dialog kaskade induk → anak */}
@@ -354,7 +511,7 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
           <DialogHeader>
             <DialogTitle>Terapkan ke sub-menu?</DialogTitle>
             <DialogDescription>
-              {cascade?.target ? "Memberi" : "Mencabut"} seluruh izin pada{" "}
+              Menerapkan preset <strong>{cascade?.presetLabel}</strong> pada{" "}
               <strong>{cascade?.title}</strong> untuk role yang tampil. Menu ini punya{" "}
               <strong>{cascade?.descendantCount}</strong> sub-menu — terapkan juga ke semuanya?
             </DialogDescription>
@@ -367,6 +524,28 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
               Hanya menu ini
             </Button>
             <Button onClick={() => confirmCascade(true)}>Termasuk sub-menu</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog konfirmasi toggle satu kolom (semua menu) */}
+      <Dialog open={!!colToggle} onOpenChange={(v) => !v && setColToggle(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Toggle satu kolom?</DialogTitle>
+            <DialogDescription>
+              {colToggle?.target ? "Memberi" : "Mencabut"} izin{" "}
+              <strong>
+                {colToggle && PERMISSION_META.find((m) => m.key === colToggle.perm)?.label}
+              </strong>{" "}
+              pada <strong>semua menu</strong> untuk role <strong>{colToggle?.role}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setColToggle(null)}>
+              Batal
+            </Button>
+            <Button onClick={confirmColumnToggle}>Terapkan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -45,7 +45,7 @@ Halaman: Daftar Snapshot (/admin/tools/snapshot)
 | Generate Snapshot | Tombol | Memanggil `generateSnapshot({ districtId: null, joinedYear: null })`; label saat proses "Membuat…"; toast "Snapshot berhasil dibuat" |
 | Reset | Tombol | Hanya dirender bila `FILTERS_ENABLED` — saat ini tidak tampil |
 | Catatan filter | Teks | "Filter dinonaktifkan sementara — snapshot dibuat untuk **Semua Distrik** & **Semua Tahun**." |
-| Daftar snapshot | Tabel (`DataTable`) | Search keys: `districtName`, `createdByName`; placeholder "Cari distrik atau pembuat..."; empty "Belum ada snapshot."; export `dashboard-snapshots` |
+| Daftar snapshot | Tabel (`DataTable`) | Search keys: `districtName`, `createdByName`; placeholder "Cari distrik atau pembuat..."; empty "Belum ada snapshot."; export `dashboard-snapshots` — tombol Excel digate izin `EXPORT` (#245) |
 | Kolom: Aksi | Kolom tabel | `TableActions` — `view` (title "Lihat" → `/admin/tools/snapshot/{id}`), `delete` (title "Nonaktifkan") |
 | Kolom: Tanggal Snapshot | Kolom tabel | Format `dd Mmm yyyy, HH:mm` (bulan Indonesia) |
 | Kolom: Distrik | Kolom tabel | Default disembunyikan; `null` → "Semua" |

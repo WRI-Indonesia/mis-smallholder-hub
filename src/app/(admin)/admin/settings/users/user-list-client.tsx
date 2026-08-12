@@ -205,6 +205,7 @@ export function UserListClient({ initialUsers, permissions }: Props) {
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
           exportFilename="data-users"
+          canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
           renderActions={(user) => (
             <div className="flex items-center">
