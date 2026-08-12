@@ -38,7 +38,7 @@ Halaman: Detail Snapshot (/admin/tools/snapshot/[id])
 | Informasi Snapshot | Card metadata | 4 field: Tanggal Snapshot, Filter Distrik (`null` → "Semua Distrik"), Filter Tahun (`null` → "Semua Tahun"), Dibuat Oleh |
 | Kartu ringkasan | Kartu KPI (`DashboardSummaryCards`) | Dirender dari `snapshot.data`: Total Lembaga Petani, Total Kelompok Tani, Sertifikasi RSPO, Sertifikasi ISPO, Assurance SAP/MAP, Total Petani, Petani Laki-laki, Petani Perempuan, Total Persil Lahan, Total Luas Lahan, Paket 1 - BMP/NKT/RSPO, Paket 2 - MK, Paket 2 - HSE, Paket 3 & 4 - GEDSI/BUSDEV. Statis — tanpa dialog rincian kartu (#206, khusus Main Dashboard) |
 | Ringkasan per Lembaga Petani | Heading `h2` | Judul tabel di bawahnya |
-| Download PDF | Tombol | Saat ini hanya toast info "Fitur download PDF akan segera tersedia" — digate izin `PRINT` (#245) |
+| Download PDF | Tombol | Unduh PDF snapshot (#248, `src/lib/snapshot-pdf.ts` → `exportToPDF`): judul "SNAPSHOT DASHBOARD" + subjudul MIS, metadata tanggal snapshot (historis, bukan tanggal unduh)/filter/pembuat + ringkasan KPI (angka sama dengan kartu), lalu tabel Lembaga Petani berkolom sama dengan tabel/Excel halaman. File `snapshot-{id}.pdf`. Spinner saat generate; toast error bila gagal. Digate izin `PRINT` (#245) |
 | Tabel Lembaga Petani | Tabel (`DataTable`) | Search `name`, placeholder "Cari lembaga petani...", empty "Tidak ada data lembaga petani.", export `snapshot-{id}-kt` — tombol Excel digate izin `EXPORT` (#245) |
 | Kolom: Nama Lembaga Petani | Kolom tabel | Nama lembaga |
 | Kolom: Kelompok Tani | Kolom tabel | Jumlah kelompok tani |

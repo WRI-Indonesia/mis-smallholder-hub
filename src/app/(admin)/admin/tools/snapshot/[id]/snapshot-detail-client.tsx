@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { DashboardSummaryCards } from "../../../dashboard/summary-cards";
 import type { KTDetails, SnapshotDetail } from "@/types/dashboard";
+import { formatArea } from "@/lib/format";
 
 const formatDateTime = (iso: string) => {
   const d = new Date(iso);
@@ -17,8 +19,7 @@ const formatDateTime = (iso: string) => {
   return `${day} ${months[d.getMonth()]} ${d.getFullYear()}, ${time}`;
 };
 
-const formatArea = (n: number) =>
-  `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
+const formatAreaHa = (n: number) => `${formatArea(n)} ha`;
 
 const coverageCount = (kt: KTDetails) =>
   Object.values(kt.trainingCoverage).filter((c) => c > 0).length;
@@ -33,6 +34,21 @@ export function SnapshotDetailClient({
   canPrint: boolean;
 }) {
   const router = useRouter();
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Unduh PDF snapshot (#248) — dynamic import agar jsPDF tidak masuk bundle awal.
+  async function handleDownloadPdf() {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const { exportSnapshotPdf } = await import("@/lib/snapshot-pdf");
+      exportSnapshotPdf(snapshot);
+    } catch {
+      toast.error("Gagal membuat PDF snapshot");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
 
   const columns: DataTableColumn<KTDetails>[] = [
     { key: "name", label: "Nama Lembaga Petani", sortable: true, cellClassName: "text-sm font-medium" },
@@ -60,7 +76,7 @@ export function SnapshotDetailClient({
       label: "Luas Lahan",
       sortable: true,
       cellClassName: "text-sm tabular-nums text-right pr-4",
-      render: (row) => formatArea(row.totalArea),
+      render: (row) => formatAreaHa(row.totalArea),
     },
     {
       key: "id",
@@ -76,7 +92,7 @@ export function SnapshotDetailClient({
     kelompokTaniCount: row.kelompokTaniCount ?? 0,
     totalFarmers: row.totalFarmers,
     totalParcels: row.totalParcels,
-    totalArea: formatArea(row.totalArea),
+    totalArea: formatAreaHa(row.totalArea),
     coverage: `${coverageCount(row)}/4 paket`,
   });
 
@@ -120,9 +136,11 @@ export function SnapshotDetailClient({
             variant="outline"
             size="sm"
             className="gap-2"
-            onClick={() => toast.info("Fitur download PDF akan segera tersedia")}
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
           >
-            <Download className="h-4 w-4" /> Download PDF
+            {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Download PDF
           </Button>
         )}
       </div>
