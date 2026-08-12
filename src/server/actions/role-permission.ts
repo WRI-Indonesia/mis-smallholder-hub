@@ -75,38 +75,53 @@ export async function setRolePermissions(
 
   const session = await auth();
   const userId = session?.user?.id ?? null;
-  const valid = updates.filter((u) => u.role !== "SUPERADMIN");
+  // Dedup per (role, menuKey, permission) — entri terakhir menang; SUPERADMIN diabaikan.
+  const byKey = new Map<string, RolePermissionUpdate>();
+  for (const u of updates) {
+    if (u.role !== "SUPERADMIN") byKey.set(`${u.role}|${u.menuKey}|${u.permission}`, u);
+  }
+  const valid = [...byKey.values()];
   if (valid.length === 0) return { success: true, data: { count: 0 } };
 
-  await prisma.$transaction(
-    async (tx) => {
-      for (const u of valid) {
-        const existing = await tx.rolePermission.findFirst({
-          where: { role: u.role, menuKey: u.menuKey, permission: u.permission },
-        });
+  // Batch (#246): satu findMany + updateMany aktif/nonaktif + createMany — bukan
+  // round-trip per update, supaya kaskade preset besar tidak mendekati timeout transaksi.
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.rolePermission.findMany({
+      where: { OR: valid.map((u) => ({ role: u.role, menuKey: u.menuKey, permission: u.permission })) },
+      select: { id: true, role: true, menuKey: true, permission: true, isActive: true },
+    });
+    const existingByKey = new Map(
+      existing.map((e) => [`${e.role}|${e.menuKey}|${e.permission}`, e])
+    );
 
-        if (existing) {
-          if (existing.isActive !== u.granted) {
-            await tx.rolePermission.update({
-              where: { id: existing.id },
-              data: { isActive: u.granted, modifiedBy: userId },
-            });
-          }
-        } else if (u.granted) {
-          await tx.rolePermission.create({
-            data: {
-              role: u.role,
-              menuKey: u.menuKey,
-              permission: u.permission,
-              createdBy: userId,
-            },
-          });
-        }
+    const toActivate: string[] = [];
+    const toDeactivate: string[] = [];
+    const toCreate: { role: Role; menuKey: string; permission: PermissionLevel; createdBy: string | null }[] = [];
+    for (const u of valid) {
+      const e = existingByKey.get(`${u.role}|${u.menuKey}|${u.permission}`);
+      if (e) {
+        if (e.isActive !== u.granted) (u.granted ? toActivate : toDeactivate).push(e.id);
+      } else if (u.granted) {
+        toCreate.push({ role: u.role, menuKey: u.menuKey, permission: u.permission, createdBy: userId });
       }
-    },
-    // Kaskade induk → anak bisa banyak query berurutan; longgarkan timeout.
-    { timeout: 20000 }
-  );
+    }
+
+    if (toActivate.length > 0) {
+      await tx.rolePermission.updateMany({
+        where: { id: { in: toActivate } },
+        data: { isActive: true, modifiedBy: userId },
+      });
+    }
+    if (toDeactivate.length > 0) {
+      await tx.rolePermission.updateMany({
+        where: { id: { in: toDeactivate } },
+        data: { isActive: false, modifiedBy: userId },
+      });
+    }
+    if (toCreate.length > 0) {
+      await tx.rolePermission.createMany({ data: toCreate });
+    }
+  });
 
   return { success: true, data: { count: valid.length } };
 }
