@@ -1,12 +1,10 @@
 import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
-import { getTreeUploadParcels } from "@/server/actions/bulk-upload-tree";
 import { TreeBulkUploadClient } from "./components/tree-bulk-upload-client";
 
 export default async function TreeBulkUploadPage() {
   await requirePermission("bulk-upload-trees");
   const permissions = await getUserPermissionsForMenu("bulk-upload-trees");
-  const parcels = await getTreeUploadParcels();
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -23,7 +21,7 @@ export default async function TreeBulkUploadPage() {
           </p>
         </div>
       </div>
-      <TreeBulkUploadClient parcels={parcels} permissions={permissions} />
+      <TreeBulkUploadClient permissions={permissions} />
     </div>
   );
 }

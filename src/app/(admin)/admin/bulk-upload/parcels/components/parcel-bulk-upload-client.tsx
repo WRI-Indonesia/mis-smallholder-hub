@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
 import { parseShapefile, bulkCreateLandParcels } from "@/server/actions/bulk-upload-parcel";
+import { readFileAsBase64 } from "@/lib/file-base64";
 import {
   PARCEL_AUTO_MATCH_RULES,
   autoMatchColumns,
@@ -143,39 +144,31 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     setValidatedData([]);
     setIsProcessing(true);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(selectedFile);
-    reader.onload = async () => {
-      try {
-        const base64 = (reader.result as string).split(",")[1];
-        const res = await parseShapefile(base64);
-        setIsProcessing(false);
+    try {
+      const base64 = await readFileAsBase64(selectedFile);
+      const res = await parseShapefile(base64);
 
-        if (res.success && res.features) {
-          setFeatures(res.features);
-          // Extract headers from first feature properties keys
-          if (res.features.length > 0) {
-            const detectedHeaders = Object.keys(res.features[0].properties);
-            setHeaders(detectedHeaders);
-            autoMatch(detectedHeaders);
-            toast.success(
-              `Berhasil mengurai shapefile: ${res.features.length} geometri lahan terdeteksi`,
-            );
-          } else {
-            toast.error("Shapefile tidak mengandung data geometri/fitur");
-          }
+      if (res.success && res.features) {
+        setFeatures(res.features);
+        // Extract headers from first feature properties keys
+        if (res.features.length > 0) {
+          const detectedHeaders = Object.keys(res.features[0].properties);
+          setHeaders(detectedHeaders);
+          autoMatch(detectedHeaders);
+          toast.success(
+            `Berhasil mengurai shapefile: ${res.features.length} geometri lahan terdeteksi`,
+          );
         } else {
-          toast.error(res.error || "Gagal mengurai file shapefile");
+          toast.error("Shapefile tidak mengandung data geometri/fitur");
         }
-      } catch (err) {
-        setIsProcessing(false);
-        toast.error((err instanceof Error && err.message) || "Gagal membaca berkas ZIP");
+      } else {
+        toast.error(res.error || "Gagal mengurai file shapefile");
       }
-    };
-    reader.onerror = () => {
+    } catch (err) {
+      toast.error((err instanceof Error && err.message) || "Gagal membaca berkas ZIP");
+    } finally {
       setIsProcessing(false);
-      toast.error("Gagal membaca berkas");
-    };
+    }
   }
 
   function autoMatch(detectedHeaders: string[]) {

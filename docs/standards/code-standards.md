@@ -13,6 +13,7 @@
 | Data layer | CSV = static, Prisma = dynamic |
 | Validation | Zod di `src/validations/` |
 | Server Actions | Di `src/server/actions/` |
+| Formatter angka id-ID | **Wajib impor dari `src/lib/format.ts`** (`formatNumber`, `formatPct`, `formatArea` desimal-2, `MONTH_NAMES_ID`) — **dilarang** membuat instance `Intl.NumberFormat("id-ID")` / array nama bulan lokal baru (#233/#241). Varian sufiks (" ha") / null-handling boleh wrapper lokal tipis yang mendelegasi ke formatter bersama |
 | Database Schema | Lihat [database-schema.md](../database/erd.md) untuk ERD, indexes, constraints, migrations, security |
 
 #### Istilah domain resmi (pengecualian naming — keputusan #130 / TD-012)

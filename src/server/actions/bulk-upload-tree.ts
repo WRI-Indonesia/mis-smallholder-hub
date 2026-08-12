@@ -30,44 +30,74 @@ export interface TreeUploadParcel {
   activeTreeCount: number;
 }
 
+export interface TreeUploadMatchResult {
+  /** Lahan aktif dalam scope yang cocok dengan parcel_id file (non-ambigu). */
+  parcels: TreeUploadParcel[];
+  /** parcel_id terdaftar aktif pada >1 petani secara GLOBAL — akan ditolak
+   *  server saat simpan (paritas cek `bulkCreateTrees`), tandai dini di preview. */
+  ambiguousParcelIds: string[];
+}
+
 /**
- * Lahan aktif dalam scope + jumlah pohon aktifnya — untuk mencocokkan
- * parcel_id file dengan lahan di database saat preview upload.
- * Catatan: parcelId hanya unik PER PETANI — bila satu parcelId muncul lebih
- * dari sekali di daftar ini, upload untuk id tsb ambigu dan harus ditolak.
+ * Cocokkan parcel_id dari file yang diunggah dengan lahan aktif dalam scope +
+ * jumlah pohon aktifnya — dipanggil klien SETELAH parse, hanya untuk id yang
+ * ada di file. (Dulu `getTreeUploadParcels` mengirim SEMUA lahan aktif dalam
+ * scope saat halaman dibuka — payload RSC multi-MB pada scope ALL, temuan #241.)
  */
-export async function getTreeUploadParcels(): Promise<TreeUploadParcel[]> {
+export async function matchTreeUploadParcels(
+  parcelIds: string[],
+): Promise<TreeUploadMatchResult> {
   if (!(await hasPermission("bulk-upload-trees", "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+  const ids = [...new Set(parcelIds)].filter((id) => typeof id === "string" && id.length > 0);
+  if (ids.length === 0) return { parcels: [], ambiguousParcelIds: [] };
 
   const access = await getAccessContext();
 
-  const parcels = await prisma.landParcel.findMany({
-    where: { isActive: true, ...farmerRelationAccessFilter(access) },
-    select: {
-      id: true,
-      parcelId: true,
-      area: true,
-      farmer: { select: { name: true } },
-    },
-    orderBy: { parcelId: "asc" },
-  });
+  // Ambiguitas WAJIB dihitung global (tanpa filter scope) — paritas dengan
+  // `bulkCreateTrees`: kembaran milik petani di luar scope tetap membuat id
+  // tak bisa dipetakan. Query hanya membocorkan jumlah, bukan data petani lain.
+  const [parcels, globalCounts] = await Promise.all([
+    prisma.landParcel.findMany({
+      where: { parcelId: { in: ids }, isActive: true, ...farmerRelationAccessFilter(access) },
+      select: {
+        id: true,
+        parcelId: true,
+        area: true,
+        farmer: { select: { name: true } },
+      },
+      orderBy: { parcelId: "asc" },
+    }),
+    prisma.landParcel.groupBy({
+      by: ["parcelId"],
+      where: { parcelId: { in: ids }, isActive: true },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const ambiguous = new Set(
+    globalCounts.filter((g) => g._count._all > 1).map((g) => g.parcelId),
+  );
+  const matched = parcels.filter((p) => !ambiguous.has(p.parcelId));
 
   const grouped = await prisma.tree.groupBy({
     by: ["landParcelId"],
-    where: { landParcelId: { in: parcels.map((p) => p.id) }, isActive: true },
+    where: { landParcelId: { in: matched.map((p) => p.id) }, isActive: true },
     _count: { _all: true },
   });
-  const byParcel = new Map(grouped.map((g) => [g.landParcelId, g]));
+  const byParcel = new Map(grouped.map((g) => [g.landParcelId, g._count._all]));
 
-  return parcels.map((p) => ({
-    id: p.id,
-    parcelId: p.parcelId,
-    area: p.area,
-    farmerName: p.farmer.name,
-    activeTreeCount: byParcel.get(p.id)?._count._all ?? 0,
-  }));
+  return {
+    parcels: matched.map((p) => ({
+      id: p.id,
+      parcelId: p.parcelId,
+      area: p.area,
+      farmerName: p.farmer.name,
+      activeTreeCount: byParcel.get(p.id) ?? 0,
+    })),
+    ambiguousParcelIds: [...ambiguous].sort(),
+  };
 }
 
 /**

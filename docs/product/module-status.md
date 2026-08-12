@@ -119,6 +119,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris
 | Report Kelompok Tani (#154) | report-kelompok-tani.test.ts, report-kelompok-tani-detail.test.ts | 13 | ✅ |
 | Hotspot FIRMS | firms.test.ts | 9 | ✅ |
 | Hotspot route `/api/map-hotspot` (#231) | map-hotspot-route.test.ts | 9 | ✅ |
+| Overlay tile route `/api/map-overlay/[key]` (#241) | map-overlay-route.test.ts | 8 | ✅ |
 | Hotspot klien (24 jam bergulir + keyakinan) | map-hotspot.test.ts | 8 | ✅ |
 | Status upload petani 3 tingkat (#197) | farmer-upload-status.test.ts | 7 | ✅ |
 | Normalisasi sel Excel (#196) | excel-cell.test.ts | 6 | ✅ |

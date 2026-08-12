@@ -12,7 +12,7 @@ import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { getFarmerGroupsForReport, getFarmerReport } from "@/server/actions/report";
 import type { FarmerReportRow, FarmerReportResult } from "@/types/report";
 import { exportToPDF } from "@/lib/pdf";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatArea } from "@/lib/format";
 
 interface District {
   id: string;
@@ -114,9 +114,7 @@ export function FarmerReportClient({ districts, canExport, canPrint }: Props) {
     });
   };
 
-  const formatArea = (num: number) => {
-    return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + " Ha";
-  };
+  const formatAreaHa = (num: number) => `${formatArea(num)} Ha`;
 
   const columns: DataTableColumn<FarmerReportRow>[] = [
     {
@@ -168,7 +166,7 @@ export function FarmerReportClient({ districts, canExport, canPrint }: Props) {
       label: "Total Luas (Ha)",
       sortable: true,
       cellClassName: "text-sm text-right md:text-left pr-4 md:pr-0 tabular-nums",
-      render: (row) => formatArea(row.totalArea),
+      render: (row) => formatAreaHa(row.totalArea),
     },
   ];
 

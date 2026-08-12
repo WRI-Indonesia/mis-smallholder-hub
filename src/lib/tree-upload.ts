@@ -2,21 +2,16 @@
 // agar teruji tanpa DB. Shapefile point per lahan; satu ZIP boleh berisi
 // lebih dari satu lahan (dikelompokkan per atribut parcel_id).
 
+// Satu deklarasi untuk baris pohon: sumbernya treeRowSchema (zod) — dulu
+// interface di sini menduplikasi field + aturan koordinatnya (temuan #241).
+import type { TreeRowInput } from "@/validations/tree.schema";
+
+export type { TreeRowInput };
+
 export interface TreeFeatureInput {
   index: number;
   properties: Record<string, unknown>;
   geometry: { type?: string; coordinates?: unknown } | null;
-}
-
-export interface TreeRowInput {
-  treeId: number | null;
-  sequenceNo: number | null;
-  longitude: number;
-  latitude: number;
-  category: string | null;
-  vigor: number | null;
-  source: string | null;
-  modelVersion: string | null;
 }
 
 export interface TreeGroupInput {

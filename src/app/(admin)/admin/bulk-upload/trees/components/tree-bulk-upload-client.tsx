@@ -17,7 +17,11 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw, TreePine } from "lucide-react";
-import { parseTreeShapefile, bulkCreateTrees } from "@/server/actions/bulk-upload-tree";
+import {
+  parseTreeShapefile,
+  matchTreeUploadParcels,
+  bulkCreateTrees,
+} from "@/server/actions/bulk-upload-tree";
 import type { TreeUploadParcel } from "@/server/actions/bulk-upload-tree";
 import {
   groupTreeFeatures,
@@ -25,10 +29,11 @@ import {
   type TreeGroupInput,
   type SkippedTreeFeature,
 } from "@/lib/tree-upload";
-import { formatNumber } from "@/lib/format";
+import { MAX_TREE_ROWS_PER_PARCEL } from "@/validations/tree.schema";
+import { readFileAsBase64 } from "@/lib/file-base64";
+import { formatNumber, formatArea } from "@/lib/format";
 
 interface Props {
-  parcels: TreeUploadParcel[];
   permissions: string[];
 }
 
@@ -37,14 +42,13 @@ interface PreviewGroup {
   group: TreeGroupInput;
   parcel: TreeUploadParcel | null;
   density: number | null;
-  /** parcelId dipakai >1 petani (parcelId hanya unik per petani) — tak bisa dicocokkan. */
+  /** parcelId terdaftar >1 petani secara GLOBAL (cek server) — tak bisa dicocokkan. */
   ambiguous: boolean;
+  /** Melebihi batas titik per lahan (cek dini; server juga menolak via zod). */
+  tooManyRows: boolean;
 }
 
-const formatDecimal = (n: number) =>
-  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-
-export function TreeBulkUploadClient({ parcels, permissions }: Props) {
+export function TreeBulkUploadClient({ permissions }: Props) {
   const router = useRouter();
   const [fileName, setFileName] = useState<string | null>(null);
   const [previews, setPreviews] = useState<PreviewGroup[]>([]);
@@ -53,15 +57,10 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
   const [isSaving, setIsSaving] = useState(false);
 
   const canCreate = permissions.includes("CREATE");
-  const parcelByBusinessId = new Map(parcels.map((p) => [p.parcelId, p]));
-  // parcelId hanya unik per petani — id yang muncul >1 kali di scope ambigu.
-  const duplicateParcelIds = new Set(
-    [...parcels.reduce((m, p) => m.set(p.parcelId, (m.get(p.parcelId) ?? 0) + 1), new Map<string, number>())]
-      .filter(([, count]) => count > 1)
-      .map(([parcelId]) => parcelId),
-  );
 
-  const validPreviews = previews.filter((p) => p.parcel != null && !p.ambiguous);
+  const validPreviews = previews.filter(
+    (p) => p.parcel != null && !p.ambiguous && !p.tooManyRows,
+  );
   const totalTrees = validPreviews.reduce((sum, p) => sum + p.group.rows.length, 0);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -81,59 +80,57 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
     setSkipped([]);
     setIsProcessing(true);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(selectedFile);
-    reader.onload = async () => {
-      try {
-        const base64 = (reader.result as string).split(",")[1];
-        const res = await parseTreeShapefile(base64);
-        setIsProcessing(false);
+    try {
+      const base64 = await readFileAsBase64(selectedFile);
+      const res = await parseTreeShapefile(base64);
 
-        if (!res.success || !res.features) {
-          toast.error(res.error || "Gagal mengurai file shapefile");
-          return;
-        }
-        if (res.features.length === 0) {
-          toast.error("Shapefile tidak mengandung fitur titik");
-          return;
-        }
-
-        const { groups, skipped: skippedRows } = groupTreeFeatures(res.features);
-        if (groups.length === 0) {
-          toast.error(
-            "Tidak ada titik valid — pastikan shapefile bertipe Point dengan atribut parcel_id",
-          );
-          setSkipped(skippedRows);
-          return;
-        }
-
-        setSkipped(skippedRows);
-        setPreviews(
-          groups.map((group) => {
-            const ambiguous = duplicateParcelIds.has(group.parcelId);
-            const parcel = ambiguous ? null : (parcelByBusinessId.get(group.parcelId) ?? null);
-            return {
-              group,
-              parcel,
-              density: parcel ? treeDensity(group.rows.length, parcel.area) : null,
-              ambiguous,
-            };
-          }),
-        );
-        toast.success(
-          `Berhasil mengurai shapefile: ${formatNumber(
-            groups.reduce((s, g) => s + g.rows.length, 0),
-          )} titik pohon pada ${formatNumber(groups.length)} lahan`,
-        );
-      } catch (err) {
-        setIsProcessing(false);
-        toast.error((err instanceof Error && err.message) || "Gagal membaca berkas ZIP");
+      if (!res.success || !res.features) {
+        toast.error(res.error || "Gagal mengurai file shapefile");
+        return;
       }
-    };
-    reader.onerror = () => {
+      if (res.features.length === 0) {
+        toast.error("Shapefile tidak mengandung fitur titik");
+        return;
+      }
+
+      const { groups, skipped: skippedRows } = groupTreeFeatures(res.features);
+      setSkipped(skippedRows);
+      if (groups.length === 0) {
+        toast.error(
+          "Tidak ada titik valid — pastikan shapefile bertipe Point dengan atribut parcel_id",
+        );
+        return;
+      }
+
+      // Pencocokan server-side hanya untuk parcel_id yang ada di file (#241)
+      // — termasuk cek ambiguitas GLOBAL (paritas penolakan saat simpan).
+      const match = await matchTreeUploadParcels(groups.map((g) => g.parcelId));
+      const parcelByBusinessId = new Map(match.parcels.map((p) => [p.parcelId, p]));
+      const ambiguousIds = new Set(match.ambiguousParcelIds);
+
+      setPreviews(
+        groups.map((group) => {
+          const ambiguous = ambiguousIds.has(group.parcelId);
+          const parcel = ambiguous ? null : (parcelByBusinessId.get(group.parcelId) ?? null);
+          return {
+            group,
+            parcel,
+            density: parcel ? treeDensity(group.rows.length, parcel.area) : null,
+            ambiguous,
+            tooManyRows: group.rows.length > MAX_TREE_ROWS_PER_PARCEL,
+          };
+        }),
+      );
+      toast.success(
+        `Berhasil mengurai shapefile: ${formatNumber(
+          groups.reduce((s, g) => s + g.rows.length, 0),
+        )} titik pohon pada ${formatNumber(groups.length)} lahan`,
+      );
+    } catch (err) {
+      toast.error((err instanceof Error && err.message) || "Gagal membaca berkas ZIP");
+    } finally {
       setIsProcessing(false);
-      toast.error("Gagal membaca berkas");
-    };
+    }
   }
 
   async function handleSave() {
@@ -258,13 +255,17 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
                       {formatNumber(p.group.rows.length)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {p.parcel?.area != null ? formatDecimal(p.parcel.area) : "—"}
+                      {p.parcel?.area != null ? formatArea(p.parcel.area) : "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {p.density != null ? formatDecimal(p.density) : "—"}
+                      {p.density != null ? formatArea(p.density) : "—"}
                     </TableCell>
                     <TableCell>
-                      {p.ambiguous ? (
+                      {p.tooManyRows ? (
+                        <Badge variant="destructive">
+                          Melebihi batas {formatNumber(MAX_TREE_ROWS_PER_PARCEL)} titik per lahan
+                        </Badge>
+                      ) : p.ambiguous ? (
                         <Badge variant="destructive">ID Lahan ganda (lintas petani)</Badge>
                       ) : p.parcel == null ? (
                         <Badge variant="destructive">Lahan tidak ditemukan</Badge>
@@ -282,13 +283,13 @@ export function TreeBulkUploadClient({ parcels, permissions }: Props) {
             </Table>
           </div>
 
-          {previews.some((p) => p.parcel == null) && (
+          {previews.some((p) => p.parcel == null || p.tooManyRows) && (
             <p className="text-sm text-destructive flex items-start gap-2">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-              Lahan berstatus &quot;tidak ditemukan&quot; atau &quot;ID Lahan ganda&quot; dilewati
-              saat menyimpan — pastikan ID Lahan terdaftar (dan aktif) di Master Data Lahan dan
-              dalam scope akses Anda; ID yang dipakai lebih dari satu petani tidak bisa dicocokkan
-              otomatis.
+              Baris berstatus merah dilewati saat menyimpan — pastikan ID Lahan terdaftar (dan
+              aktif) di Master Data Lahan dan dalam scope akses Anda; ID yang dipakai lebih dari
+              satu petani tidak bisa dicocokkan otomatis; lahan dengan lebih dari{" "}
+              {formatNumber(MAX_TREE_ROWS_PER_PARCEL)} titik harus dipecah menjadi beberapa berkas.
             </p>
           )}
 

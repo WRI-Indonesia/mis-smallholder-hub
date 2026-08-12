@@ -4,6 +4,7 @@ import type {
   PeriodGranularity,
   ReleaseMetric,
 } from "@/types/release-metrics";
+import { MONTH_NAMES_ID } from "@/lib/format";
 
 /**
  * Parser & agregasi Metrik Rilis (#227). Sumber tunggal: tabel
@@ -186,7 +187,7 @@ function periodKeyLabel(isoDate: string, granularity: PeriodGranularity): { key:
   }
   if (granularity === "month") {
     const [y, m] = isoDate.split("-").map(Number);
-    return { key: isoDate.slice(0, 7), label: `${["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][m - 1]} ${y}` };
+    return { key: isoDate.slice(0, 7), label: `${MONTH_NAMES_ID[m - 1]} ${y}` };
   }
   return { key: isoDate.slice(0, 4), label: isoDate.slice(0, 4) };
 }

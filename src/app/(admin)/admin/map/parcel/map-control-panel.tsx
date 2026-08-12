@@ -15,6 +15,7 @@ import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } fr
 import {
   HOTSPOT_CONF_COLORS,
   HOTSPOT_CONF_LABELS,
+  hotspotWindowLabel,
   type HotspotConfBucket,
   type HotspotState,
   type HotspotDayRange,
@@ -490,7 +491,7 @@ export function MapControlPanel(props: Props) {
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  {d === 1 ? "24 jam" : "5 hari"}
+                  {hotspotWindowLabel(d)}
                 </button>
               ))}
             </div>

@@ -295,6 +295,19 @@ Farmer (1) ─→ (N) TrainingParticipant
 ---
 
 <details>
+<summary><strong>Tree Model</strong> — Titik pohon sawit per lahan (#238)</summary>
+
+## Tree Model Details
+
+- **Relasi baca**: `landParcelId` (FK ke `LandParcel.id`) adalah **satu-satunya jalur baca** — semua query pohon (detail lahan, overlay peta, agregat count) lewat FK ini. Set aktif per lahan berevisi per-set (upload ulang menonaktifkan set lama, `revision + 1`).
+- **`parcelId` = kolom arsip/audit** (keputusan #241): menyimpan kunci bisnis lahan (`LandParcel.parcelId`) saat upload sebagai **jangkar pemulihan manual** — lahan berevisi mendapat `id` baru dan pohon aktif di-repoint saat revisi; bila repoint terlewat/salah, keterkaitan masih bisa direkonstruksi dari kolom ini. **Tidak ada jalur baca aplikasi yang memakai/fallback ke kolom ini** — itu disengaja, bukan utang; jangan menambah jalur baca berbasis `parcelId` tanpa keputusan baru (parcelId hanya unik per petani, lookup global bisa ambigu).
+- **Audit sumber**: `sourceFile` (nama ZIP asal), `modelVersion`, `source` (auto/moved/added/verified).
+
+</details>
+
+---
+
+<details>
 <summary><strong>File Structure</strong> — Struktur file Prisma schema</summary>
 
 ## File Structure

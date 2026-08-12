@@ -1,6 +1,6 @@
 import { requirePermission, hasPermission } from "@/lib/rbac";
 import { getFarmerDetail } from "@/server/actions/farmer";
-import { getFarmerTreeSummary, getFarmerTreePoints } from "@/server/actions/tree";
+import { getFarmerTreePoints } from "@/server/actions/tree";
 import { getFarmerGroupOptions } from "@/lib/select-options";
 import { notFound } from "next/navigation";
 import { FarmerDetailClient } from "./farmer-detail-client";
@@ -14,13 +14,24 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
 
   const canEdit = await hasPermission("master-data-farmers", "EDIT");
   const farmerGroups = canEdit ? await getFarmerGroupOptions("master-data-farmers") : [];
-  const [canViewParcel, canEditParcel, canPrint, treeSummary, treePoints] = await Promise.all([
+  const [canViewParcel, canEditParcel, canPrint, treePoints] = await Promise.all([
     hasPermission("master-data-parcels", "VIEW"),
     hasPermission("master-data-parcels", "EDIT"),
     hasPermission("master-data-farmers", "PRINT"),
-    getFarmerTreeSummary(id),
     getFarmerTreePoints(id),
   ]);
+
+  // Jumlah pohon per lahan diturunkan dari titik yang sudah di-fetch —
+  // dulu round-trip terpisah `getFarmerTreeSummary` dengan hasil identik (#241).
+  const treeCountByParcel = new Map<string, number>();
+  for (const t of treePoints) {
+    treeCountByParcel.set(t.landParcelId, (treeCountByParcel.get(t.landParcelId) ?? 0) + 1);
+  }
+  const treeSummary = result.parcels.map((p) => ({
+    parcelDbId: p.id,
+    parcelId: p.parcelId,
+    treeCount: treeCountByParcel.get(p.id) ?? 0,
+  }));
 
   return (
     <FarmerDetailClient

@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 
 import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel";
+import { formatArea } from "@/lib/format";
 
 interface Props {
   initialParcels: unknown[];
@@ -37,8 +38,6 @@ interface Props {
   isSuperAdmin: boolean;
 }
 
-const formatArea = (n: number) =>
-  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 export function ParcelListClient({
   initialParcels,

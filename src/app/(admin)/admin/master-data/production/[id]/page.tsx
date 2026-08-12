@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { getProductionRecordById, getAuditUserNames } from "@/server/actions/production";
+import { MONTH_NAMES_ID } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,21 +31,7 @@ export default async function ProductionDetailPage({
 
   // Format month and year
   const [year, month] = record.period.split("-");
-  const months = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
-  ];
-  const formattedPeriod = `${months[parseInt(month, 10) - 1]} ${year}`;
+  const formattedPeriod = `${MONTH_NAMES_ID[parseInt(month, 10) - 1]} ${year}`;
 
   const formattedHarvestDate = new Date(record.harvestDate).toLocaleDateString("id-ID", {
     day: "numeric",

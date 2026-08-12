@@ -77,41 +77,14 @@ export async function getFarmerTreePoints(
   });
 }
 
+/**
+ * Jumlah pohon aktif per lahan (kolom Jumlah Pohon di Detail Petani).
+ * Tidak ada action-nya lagi: nilainya diturunkan di page detail petani dari
+ * `getFarmerTreePoints` + daftar lahan `getFarmerDetail` yang memang sudah
+ * di-fetch halaman itu (hapus round-trip `getFarmerTreeSummary`, #241).
+ */
 export interface FarmerTreeParcelSummary {
   parcelDbId: string;
   parcelId: string;
   treeCount: number;
-}
-
-/**
- * Jumlah pohon aktif per lahan aktif milik satu petani (kolom Jumlah Pohon
- * pada tabel Daftar Lahan di Detail Petani). Agregat via groupBy — jangan
- * findMany semua titik (skala 10⁵–10⁶ baris).
- */
-export async function getFarmerTreeSummary(farmerId: string): Promise<FarmerTreeParcelSummary[]> {
-  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  const access = await getAccessContext();
-
-  const parcels = await prisma.landParcel.findMany({
-    where: { farmerId, isActive: true, ...farmerRelationAccessFilter(access) },
-    select: { id: true, parcelId: true },
-    orderBy: { parcelId: "asc" },
-  });
-  if (parcels.length === 0) return [];
-
-  const grouped = await prisma.tree.groupBy({
-    by: ["landParcelId"],
-    where: { landParcelId: { in: parcels.map((p) => p.id) }, isActive: true },
-    _count: { _all: true },
-  });
-  const byParcel = new Map(grouped.map((g) => [g.landParcelId, g._count._all]));
-
-  return parcels.map((p) => ({
-    parcelDbId: p.id,
-    parcelId: p.parcelId,
-    treeCount: byParcel.get(p.id) ?? 0,
-  }));
 }

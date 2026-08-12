@@ -15,6 +15,7 @@ import { TableActions } from "@/components/shared/table-actions";
 import { DeleteDialog } from "@/components/shared/delete-dialog";
 import { generateSnapshot, deleteSnapshot } from "@/server/actions/snapshot";
 import type { DashboardFilterOptions, SnapshotListItem } from "@/types/dashboard";
+import { formatArea } from "@/lib/format";
 
 interface Props {
   snapshots: SnapshotListItem[];
@@ -30,8 +31,6 @@ const formatDateTime = (iso: string) => {
   return `${day} ${months[d.getMonth()]} ${d.getFullYear()}, ${time}`;
 };
 
-const formatArea = (n: number) =>
-  new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 // Sementara filter dimatikan — snapshot selalu dibuat untuk Semua Distrik &
 // Semua Tahun. Set `true` untuk mengaktifkan kembali filter generate.
