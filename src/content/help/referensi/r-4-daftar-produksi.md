@@ -41,6 +41,6 @@ Data di halaman ini **selalu terkini**. Yang membaca snapshot berkala adalah Mai
 
 **Tambah Data** — membuka halaman tersendiri berjudul "Tambah Data Produksi", bukan jendela isian.
 
-**Excel** — mengunduh data sesuai filter yang sedang aktif.
+**Excel** — mengunduh data sesuai filter yang sedang aktif; hanya muncul bila akun Anda punya izin **Export** pada menu ini.
 
 > [!tip] Untuk data satu musim penuh, pakai **Bulk Upload → Upload Produksi** — jauh lebih cepat dan tervalidasi sebelum tersimpan.

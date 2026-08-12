@@ -50,11 +50,17 @@ interface Props {
   provinces: MapSelectOption[];
   canViewParcel: boolean;
   canEditParcel: boolean;
+  /** PRINT menu Lahan — gate tombol "Profil Lahan" (PDF) di popup lahan. */
+  canPrintParcel: boolean;
+  /** EXPORT menu Peta Lahan — gate tombol "Unduh SHP" titik api. */
+  canExport: boolean;
+  /** PRINT menu Peta Lahan — gate tombol "Cetak PDF" titik api. */
+  canPrint: boolean;
   /** HelpHint dirender di server agar markdown Bantuan tak masuk bundle client. */
   helpSlot?: React.ReactNode;
 }
 
-export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpSlot }: Props) {
+export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPrintParcel, canExport, canPrint, helpSlot }: Props) {
   const [provinceId, setProvinceId] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [farmerGroupId, setFarmerGroupId] = useState<string | null>(null);
@@ -333,6 +339,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
         hotspotData={hotspotData}
         canViewParcel={canViewParcel}
         canEditParcel={canEditParcel}
+        canPrintParcel={canPrintParcel}
         onParcelUpdated={reloadMapData}
       />
 
@@ -371,6 +378,8 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
         onHotspotPrintPdf={handleHotspotPrintPdf}
         hotspotPdfCalculating={hotspotPdfCalculating}
         onHotspotShowSummary={() => setHotspotSummaryOpen(true)}
+        canExport={canExport}
+        canPrint={canPrint}
       />
 
       <HotspotSummaryDialog
@@ -384,6 +393,8 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, helpS
         onDownloadShp={handleHotspotDownloadShp}
         onPrintPdf={handleHotspotPrintPdf}
         onZoomToPoint={zoomToHotspotPoint}
+        canExport={canExport}
+        canPrint={canPrint}
       />
     </div>
   );

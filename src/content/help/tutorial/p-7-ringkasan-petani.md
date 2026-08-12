@@ -26,7 +26,7 @@ Angkanya dihitung langsung dari data terkini setiap kali tombol Analisa diklik, 
 5. Buka tab **Petani Tanpa Lahan** untuk daftar kerjanya.
 + Definisinya: petani aktif yang tidak punya satu pun persil aktif — termasuk yang persilnya pernah ada tapi sudah dinonaktifkan. Kartu persentase dibaca terhadap total petani pada filter yang sama. Daftar ini adalah subset tab pertama, jadi jangan menjumlahkan keduanya.
 6. Unduh lewat tombol **Excel** di toolbar tabel.
-+ Tiap tab menghasilkan berkas sendiri. Isinya mengikuti pencarian, urutan, dan kolom yang sedang tampil — tetapi memuat semua halaman, bukan hanya yang terlihat.
++ Tiap tab menghasilkan berkas sendiri. Isinya mengikuti pencarian, urutan, dan kolom yang sedang tampil — tetapi memuat semua halaman, bukan hanya yang terlihat. Tombol Excel hanya tampil bila akun Anda punya izin **Export** pada menu ini.
 
 > [!penting] Kotak pencarian hanya mencari **nama petani**. Mengetik ID petani atau nama lembaga tidak akan menemukan apa-apa — gunakan urutan kolom atau filter untuk itu.
 

@@ -16,6 +16,28 @@ Aplikasi memiliki **5 role** (enum `Role` di `prisma/schema/_config.prisma`):
 
 **Sentralisasi:** daftar role di sisi aplikasi hanya hidup di `src/lib/roles.ts` (`ROLES`, `ROLE_BADGE_CLASS`, `ROLE_DESCRIPTION`) — dipakai validasi (`user.schema.ts`), form & daftar pengguna, dan matriks Role & Permission. Menambah role baru cukup: edit `src/lib/roles.ts` + tambah nilai di enum `Role` Prisma (migrasi) + seed permission-nya. Jangan hardcode daftar role di tempat lain.
 
+### Inventaris Permission
+
+Enum `PermissionLevel` (`prisma/schema/_config.prisma`) punya **6 aksi**, dua grup (#245):
+
+| Grup | Aksi | Menggate |
+|------|------|----------|
+| Data | `CREATE` | Tombol/aksi tambah data |
+| Data | `VIEW` | Menu tampil di sidebar + akses halaman/read |
+| Data | `EDIT` | Tombol/aksi ubah data |
+| Data | `DELETE` | Tombol/aksi nonaktifkan (soft delete) |
+| Keluaran | `EXPORT` | Tombol unduh **Excel/SHP/data mentah** (termasuk tombol Excel bawaan `DataTable` via prop `canExport`) |
+| Keluaran | `PRINT` | Tombol cetak/unduh **PDF** (laporan, farm passport, cetak peta) |
+
+**Sentralisasi:** daftar + label + huruf singkat permission hanya hidup di `src/lib/permission-levels.ts` (`PERMISSION_LEVELS`, `ALL_PERMISSIONS`) — dipakai bypass SUPERADMIN (`rbac.ts`), matriks Role & Permission, dan modal Hak Akses Menu. Jangan hardcode daftar permission di tempat lain (pola sama dengan `src/lib/roles.ts`).
+
+**Cakupan baris permission keluaran:** baris `EXPORT`/`PRINT` di-seed/backfill **hanya pada menu daun** — cascade bersifat union (induk → anak, tanpa pengurangan), sehingga baris di menu induk membuat revoke per sub-menu tidak efektif (migrasi koreksi `20260812130000`). Grant manual di induk tetap boleh bila memang ingin berlaku satu seksi penuh.
+
+Konvensi gating keluaran (#245):
+- Page server component menghitung `permissions.includes("EXPORT"/"PRINT")` (atau `hasPermission`) → kirim boolean `canExport`/`canPrint` ke client; tombol tidak dirender bila false.
+- Export yang dibangun **client-side dari data yang sudah tampil** cukup digate di UI (datanya memang sudah di tangan user). Server action yang menyuplai data **khusus** export/print (mis. farm passport) wajib guard `hasPermission(menuKey, "PRINT"/"EXPORT")` juga.
+- SUPERADMIN bypass mengembalikan keenam aksi (`src/lib/rbac.ts`).
+
 > [!NOTE]
 > **Istilah (hierarki final #189):** Petani → Kelompok Tani → Lembaga Petani. Model `FarmerGroup` = **Lembaga Petani**; "KT" (Kelompok Tani) kini merujuk level per-lahan (`subGroupLv2`), bukan `FarmerGroup`.
 
@@ -68,14 +90,14 @@ Untuk assign data access per user (Province/District/Lembaga Petani):
 
 Untuk melakukan override permission menu per user (grant/revoke):
 - **Server Actions** — di `src/server/actions/user-menu-access.ts`: `getUserMenuOverrides`, `getMenuItemsForSelect`, `getUserEffectivePermissions`, `setUserMenuOverride`, `removeUserMenuOverride`
-- **Modal** — `UserMenuAccessModal` dengan matrix C | V | E | D per menu, visual code status (`role` | `granted` | `revoked`), dan interactive toggle saving.
+- **Modal** — `UserMenuAccessModal` dengan matrix C | V | E | D | X (Export) | P (Print) per menu (`PERMISSION_COLUMNS`), visual code status (`role` | `granted` | `revoked`), dan interactive toggle saving.
 - **Keamanan** — Pengecekan di server action wajib menolak override terhadap user berkole `SUPERADMIN`.
 - **Soft Delete** — Penghapusan override menggunakan update `isActive: false` (bukan physical delete).
 - **Optimasi Caching** — Fungsi pembacaan permission di `src/lib/rbac.ts` wajib dibungkus dengan React `cache` untuk mereduksi kueri ganda pada render lifecycle.
 
 ### Role & Permission Matrix UI
 
-Untuk mengelola permission per role (matriks role × menu × C/V/E/D di Settings):
+Untuk mengelola permission per role (matriks role × menu × 6 izin di Settings — header ikon per izin, grup Data ┊ Keluaran, preset baris via dropdown `ListChecks`, toggle satu kolom via klik ikon header, hover highlight silang):
 - **Server Actions** — di `src/server/actions/role-permission.ts`: `getRolePermissions`, `toggleRolePermission` (satu sel), dan `setRolePermissions(updates[])` — set banyak permission ke keadaan eksplisit dalam **satu transaksi** untuk aksi massal (toggle satu baris penuh, kaskade induk → anak).
 - **SUPERADMIN dikecualikan dari matriks** (keputusan governance): kolom yang tampil/diedit hanya `EDITABLE_ROLES = ROLES.filter((r) => r !== "SUPERADMIN")` (`role-matrix-client.tsx`), dan `setRolePermissions` mengabaikan entri role SUPERADMIN — SUPERADMIN bypass RBAC sehingga permission-nya tidak perlu (dan tidak boleh) diatur dari UI.
 

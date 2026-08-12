@@ -321,6 +321,7 @@ export function FarmerListClient({
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
           exportFilename="data-farmers"
+          canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
           renderActions={(farmer) => (
             <TableActions

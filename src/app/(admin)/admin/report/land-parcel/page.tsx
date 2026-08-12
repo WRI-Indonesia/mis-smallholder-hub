@@ -1,10 +1,11 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDistrictsForLandParcelReport } from "@/server/actions/report";
 import { LandParcelReportClient } from "./land-parcel-report-client";
 
 export default async function LandParcelReportPage() {
   await requirePermission("report-land-parcel");
+  const permissions = await getUserPermissionsForMenu("report-land-parcel");
   const districts = await getDistrictsForLandParcelReport();
 
   return (
@@ -18,7 +19,11 @@ export default async function LandParcelReportPage() {
           Roster lahan per Lembaga Petani (Lembaga, Petani, ID Petani, ID Lahan, Kelompok Tani)
         </p>
       </div>
-      <LandParcelReportClient districts={districts} />
+      <LandParcelReportClient
+        districts={districts}
+        canExport={permissions.includes("EXPORT")}
+        canPrint={permissions.includes("PRINT")}
+      />
     </div>
   );
 }

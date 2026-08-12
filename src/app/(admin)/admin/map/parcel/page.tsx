@@ -5,10 +5,12 @@ import { MapParcelClient } from "./map-parcel-client";
 
 export default async function MapParcelPage() {
   await requirePermission("map-parcel");
-  const [provinces, canViewParcel, canEditParcel] = await Promise.all([
+  const [provinces, canViewParcel, canEditParcel, canExport, canPrint] = await Promise.all([
     getProvincesForMap(),
     hasPermission("master-data-parcels", "VIEW"),
     hasPermission("master-data-parcels", "EDIT"),
+    hasPermission("map-parcel", "EXPORT"),
+    hasPermission("map-parcel", "PRINT"),
   ]);
 
   return (
@@ -16,6 +18,10 @@ export default async function MapParcelPage() {
       provinces={provinces}
       canViewParcel={canViewParcel}
       canEditParcel={canEditParcel}
+      // Passport popup ikut PRINT map-parcel — konsisten dgn guard getParcelPassport
+      canPrintParcel={canPrint}
+      canExport={canExport}
+      canPrint={canPrint}
       helpSlot={<HelpHint menuKey="map-parcel" />}
     />
   );

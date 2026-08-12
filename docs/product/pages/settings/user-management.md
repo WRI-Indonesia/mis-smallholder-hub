@@ -78,7 +78,7 @@ Halaman: User Management (/admin/settings/users)
 | `User Management` | Heading | `h1`, deskripsi: `Kelola akun pengguna sistem` |
 | Filter status | Tombol grup | `Semua` / `Aktif` / `Nonaktif` (toolbar kiri, filter client-side) |
 | Pencarian | Filter | Placeholder `Cari nama atau email...`, mencari pada kolom `name` dan `email` |
-| `Excel` | Tombol | Export data tabel, nama file `data-users` |
+| `Excel` | Tombol | Export data tabel, nama file `data-users` — digate izin `EXPORT` (#245) |
 | `Kolom` | Dropdown | Toggle visibilitas kolom (`Tampilkan Kolom`) |
 | `Tambah User` | Tombol | Ikon `Plus`; tampil hanya jika permission `CREATE` |
 | Tabel user | Tabel | Komponen `DataTable` — sortable, paginasi (`Tampilkan N dari X data`, `Halaman n dari m`) |

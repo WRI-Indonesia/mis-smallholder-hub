@@ -27,9 +27,11 @@ interface FarmerGroup {
 
 interface Props {
   districts: District[];
+  canExport: boolean;
+  canPrint: boolean;
 }
 
-export function FarmerReportClient({ districts }: Props) {
+export function FarmerReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
@@ -224,8 +226,8 @@ export function FarmerReportClient({ districts }: Props) {
         </CardContent>
       </Card>
 
-      {/* Print Document Header */}
-      {reportData && (
+      {/* Print Document Header — ikut digate PRINT agar Ctrl+P tanpa izin tidak menghasilkan dokumen resmi */}
+      {reportData && canPrint && (
         <div className="hidden print:block text-center border-b pb-4 mb-6">
           <h1 className="text-3xl font-extrabold tracking-tight">LAPORAN RINGKASAN PETANI</h1>
           <p className="text-sm text-muted-foreground mt-1">Smallholder HUB Management Information System</p>
@@ -304,16 +306,19 @@ export function FarmerReportClient({ districts }: Props) {
               searchPlaceholder="Cari nama petani..."
               exportFilename={`Laporan_Petani_${selectedDistrictObj?.name.replace(/\s+/g, "_")}_${selectedGroupObj?.name.replace(/\s+/g, "_")}`}
               getExportRow={getExportRow}
+              canExport={canExport}
               toolbarRight={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportPDF}
-                  className="h-9 gap-2 print:hidden"
-                >
-                  <Printer className="h-4 w-4" />
-                  PDF
-                </Button>
+                canPrint ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportPDF}
+                    className="h-9 gap-2 print:hidden"
+                  >
+                    <Printer className="h-4 w-4" />
+                    PDF
+                  </Button>
+                ) : undefined
               }
             />
           </div>

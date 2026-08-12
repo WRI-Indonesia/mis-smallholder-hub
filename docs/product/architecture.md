@@ -96,7 +96,7 @@ Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · HCV (MD-08) · BUSDE
 |---|---|---|---|
 | ✅ [User Management](./pages/settings/user-management.md) | `settings-users` | PLATFORM-04 | CRUD user + data access assignment + override menu per-user |
 | ✅ [Menu Management](./pages/settings/menu-management.md) | `settings-menu` | PLATFORM-05/07 | Sidebar dinamis, hierarki maks. 3 level; render rekursif via `src/lib/menu-tree.ts` + baris collapsible (`useCollapseState`) (#187B) |
-| ✅ [Role & Permission](./pages/settings/role-permission.md) | `settings-roles` | PLATFORM-04 | Matriks CREATE/VIEW/EDIT/DELETE per role × menu — render rekursif 3 level (`menu-tree.ts`), collapsible + `useCollapseState`, sticky header/kolom, selektor role, kaskade induk→anak; SUPERADMIN dikecualikan dari matriks (**4 kolom role editable**, bukan 5) (#187B) |
+| ✅ [Role & Permission](./pages/settings/role-permission.md) | `settings-roles` | PLATFORM-04 | Matriks 6 izin (CREATE/VIEW/EDIT/DELETE ┊ EXPORT/PRINT, #245) per role × menu — header ikon + toggle kolom, preset baris (Lihat saja/Lihat+Unduh/Akses penuh/Kosongkan), render rekursif 3 level (`menu-tree.ts`), collapsible + `useCollapseState`, sticky header/kolom, selektor role, kaskade induk→anak; SUPERADMIN dikecualikan dari matriks (**4 kolom role editable**, bukan 5) (#187B) |
 | ✅ [Regions](./pages/settings/regions.md) | `settings-regions` | MD-01 | Hierarki wilayah 4 level (Provinsi→Distrik→Kecamatan→Desa) |
 
 ### 📤 Bulk Upload — `/admin/bulk-upload`

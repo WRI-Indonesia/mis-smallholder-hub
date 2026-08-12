@@ -267,6 +267,7 @@ export function ParcelListClient({
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
           exportFilename="data-lahan"
+          canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
           renderActions={(parcel) => (
             <TableActions

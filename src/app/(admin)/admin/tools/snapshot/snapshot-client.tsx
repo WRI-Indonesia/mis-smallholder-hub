@@ -270,6 +270,7 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
           searchPlaceholder="Cari distrik atau pembuat..."
           emptyMessage="Belum ada snapshot."
           exportFilename="dashboard-snapshots"
+          canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
         />
       </Card>

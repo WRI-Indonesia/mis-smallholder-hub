@@ -23,7 +23,15 @@ const formatArea = (n: number) =>
 const coverageCount = (kt: KTDetails) =>
   Object.values(kt.trainingCoverage).filter((c) => c > 0).length;
 
-export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail }) {
+export function SnapshotDetailClient({
+  snapshot,
+  canExport,
+  canPrint,
+}: {
+  snapshot: SnapshotDetail;
+  canExport: boolean;
+  canPrint: boolean;
+}) {
   const router = useRouter();
 
   const columns: DataTableColumn<KTDetails>[] = [
@@ -107,14 +115,16 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
       {/* KT table */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Ringkasan per Lembaga Petani</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() => toast.info("Fitur download PDF akan segera tersedia")}
-        >
-          <Download className="h-4 w-4" /> Download PDF
-        </Button>
+        {canPrint && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => toast.info("Fitur download PDF akan segera tersedia")}
+          >
+            <Download className="h-4 w-4" /> Download PDF
+          </Button>
+        )}
       </div>
       <DataTable
         columns={columns}
@@ -123,6 +133,7 @@ export function SnapshotDetailClient({ snapshot }: { snapshot: SnapshotDetail })
         searchKey="name"
         searchPlaceholder="Cari lembaga petani..."
         emptyMessage="Tidak ada data lembaga petani."
+        canExport={canExport}
         exportFilename={`snapshot-${snapshot.id}-kt`}
         getExportRow={getExportRow}
       />

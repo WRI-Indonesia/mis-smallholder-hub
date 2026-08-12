@@ -62,7 +62,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 | "Total Sesi" / "Total Peserta" / "Total Unik" | Kartu KPI | Badge "Sesi" / "Peserta" / "Petani" |
 | "Cakupan Paket 1", "Cakupan Paket 2 - MK", "Cakupan Paket 2 - HSE (K3)", "Cakupan P3 & 4" | Kartu KPI | Nilai persen + sub-teks "`<n>` dari `<total petani>`" |
 | "Sesi Pelatihan" / "Detail per Pelatihan" | Tab | Default tab `Sesi Pelatihan` |
-| "Excel (2-Sheet)" & "PDF" | Tombol ekspor | Berada di baris tab, berlaku untuk kedua tab |
+| "Excel (2-Sheet)" & "PDF" | Tombol ekspor | Berada di baris tab, berlaku untuk kedua tab — Excel digate izin `EXPORT`, PDF digate izin `PRINT` (#245) |
 
 ## Tab 1 — Sesi Pelatihan
 
@@ -82,7 +82,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 | "Filter Jenis Pelatihan:" | Filter (combobox + search) | Opsi: "Semua Pelatihan (Cakupan per Petani)", "Paket 1 - BMP + P&C RSPO + NKT", "Paket 2 - MK", "Paket 2 - HSE (K3)", "Paket 3 & 4" — hanya paket yang punya sesi yang ditampilkan; empty "Jenis pelatihan tidak ditemukan." |
 | "Filter Tanggal Pelatihan:" | Filter (combobox + search) | Tampil hanya bila paket spesifik dipilih; opsi "Semua Tanggal" + tanggal sesi (urut terbaru); empty "Tanggal tidak ditemukan." |
 
-Bila filter jenis = "Semua Pelatihan" → tabel cakupan (`DataTable`; pencarian `name` placeholder "Cari nama petani..."; ekspor Excel `Laporan_Cakupan_Pelatihan_<Distrik>_<Lembaga>` + tombol PDF):
+Bila filter jenis = "Semua Pelatihan" → tabel cakupan (`DataTable`; pencarian `name` placeholder "Cari nama petani..."; ekspor Excel `Laporan_Cakupan_Pelatihan_<Distrik>_<Lembaga>` digate izin `EXPORT` + tombol PDF digate izin `PRINT`, #245):
 
 | Kolom | Sortable | Keterangan |
 |---|---|---|
@@ -94,7 +94,7 @@ Bila filter jenis = "Semua Pelatihan" → tabel cakupan (`DataTable`; pencarian 
 | Paket 2 - K3 | ya | Tanggal atau "-belum-" |
 | Paket 3 & 4 | ya | Tanggal atau "-belum-" |
 
-Bila paket spesifik dipilih → tabel peserta sesi (`DataTable`; pencarian `name` placeholder "Cari nama peserta..."; ekspor Excel `Laporan_Pelatihan_<Nama Paket>` + tombol PDF) plus blok print-only "DAFTAR PESERTA PELATIHAN" (Jenis Pelatihan, Tanggal, Lokasi). Tanggal "Semua Tanggal" → **petani unik**: yang ikut lebih dari satu sesi paket itu tampil satu baris dengan tanggal + nilai pre/post dari sesi terakhirnya — berlaku sama di tabel layar, Excel, dan PDF; kolom Tanggal selalu berisi tanggal sesi per baris:
+Bila paket spesifik dipilih → tabel peserta sesi (`DataTable`; pencarian `name` placeholder "Cari nama peserta..."; ekspor Excel `Laporan_Pelatihan_<Nama Paket>` digate izin `EXPORT` + tombol PDF digate izin `PRINT`, #245) plus blok print-only "DAFTAR PESERTA PELATIHAN" (Jenis Pelatihan, Tanggal, Lokasi). Tanggal "Semua Tanggal" → **petani unik**: yang ikut lebih dari satu sesi paket itu tampil satu baris dengan tanggal + nilai pre/post dari sesi terakhirnya — berlaku sama di tabel layar, Excel, dan PDF; kolom Tanggal selalu berisi tanggal sesi per baris:
 
 | Kolom | Sortable |
 |---|---|

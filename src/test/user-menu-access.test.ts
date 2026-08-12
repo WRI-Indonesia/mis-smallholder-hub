@@ -31,7 +31,7 @@ describe("User Menu Access — Permission Override Logic", () => {
     overrides: UserOverride[]
   ): string[] {
     if (role === "SUPERADMIN") {
-      return ["CREATE", "VIEW", "EDIT", "DELETE"];
+      return ["CREATE", "VIEW", "EDIT", "DELETE", "EXPORT", "PRINT"];
     }
 
     const defaultPerms = rolePermissions

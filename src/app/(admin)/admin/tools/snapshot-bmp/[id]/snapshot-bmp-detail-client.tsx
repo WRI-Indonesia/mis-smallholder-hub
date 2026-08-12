@@ -25,7 +25,13 @@ const CATEGORY_LABELS: Record<BmpGroupEntry["category"], string> = {
   SWADAYA: "Swadaya",
 };
 
-export function SnapshotBmpDetailClient({ snapshot }: { snapshot: BmpSnapshotDetail }) {
+export function SnapshotBmpDetailClient({
+  snapshot,
+  canExport,
+}: {
+  snapshot: BmpSnapshotDetail;
+  canExport: boolean;
+}) {
   const router = useRouter();
   const { totals, produktivitasTonHa } = sumBmpGroups(snapshot.data.groups);
 
@@ -143,6 +149,7 @@ export function SnapshotBmpDetailClient({ snapshot }: { snapshot: BmpSnapshotDet
         searchKey="name"
         searchPlaceholder="Cari lembaga petani..."
         emptyMessage="Tidak ada data lembaga petani."
+        canExport={canExport}
         exportFilename={`snapshot-bmp-${snapshot.id}`}
         getExportRow={getExportRow}
       />

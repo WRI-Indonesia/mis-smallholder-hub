@@ -74,5 +74,5 @@ Agregasi: baris footer "Total" dihitung dari baris hasil pencarian (`filteredTot
 
 | Format | Keterangan |
 |---|---|
-| Excel | Sheet "Kelompok Tani", file `Laporan_Kelompok_Tani_<Lembaga/Distrik/Semua>`; kolom mengikuti selektor kolom + baris Total |
-| PDF | Judul "LAPORAN KELOMPOK TANI", metadata Distrik & Lembaga Petani; kolom mengikuti selektor + baris Total |
+| Excel | Sheet "Kelompok Tani", file `Laporan_Kelompok_Tani_<Lembaga/Distrik/Semua>`; kolom mengikuti selektor kolom + baris Total — digate izin `EXPORT` (#245) |
+| PDF | Judul "LAPORAN KELOMPOK TANI", metadata Distrik & Lembaga Petani; kolom mengikuti selektor + baris Total — digate izin `PRINT` (#245) |

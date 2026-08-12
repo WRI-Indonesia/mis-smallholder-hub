@@ -181,8 +181,8 @@ export async function getFarmerSiblingParcels(farmerId: string, excludeParcelDbI
 export async function getLandParcelPassport(
   landParcelId: string,
 ): Promise<ActionResult<ParcelPassport>> {
-  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  if (!(await hasPermission("master-data-parcels", "PRINT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mencetak Profil Lahan" };
   }
 
   return fetchParcelPassport(landParcelId, true);

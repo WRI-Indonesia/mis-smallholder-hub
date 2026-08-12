@@ -1,4 +1,4 @@
-import { requirePermission } from "@/lib/rbac";
+import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
 import { getDistrictsForAnalyst, getFarmerGroupsForAnalyst } from "@/server/actions/data-analyst";
 import { FarmerSummaryClient } from "./farmer-summary-client";
@@ -6,9 +6,10 @@ import { FarmerSummaryClient } from "./farmer-summary-client";
 export default async function FarmerSummaryPage() {
   await requirePermission("data-analyst-farmer-summary");
 
-  const [districts, farmerGroups] = await Promise.all([
+  const [districts, farmerGroups, permissions] = await Promise.all([
     getDistrictsForAnalyst(),
     getFarmerGroupsForAnalyst(null),
+    getUserPermissionsForMenu("data-analyst-farmer-summary"),
   ]);
 
   return (
@@ -22,7 +23,11 @@ export default async function FarmerSummaryPage() {
           Analisis data petani berdasarkan district dan Lembaga Petani
         </p>
       </div>
-      <FarmerSummaryClient districts={districts} initialFarmerGroups={farmerGroups} />
+      <FarmerSummaryClient
+        districts={districts}
+        initialFarmerGroups={farmerGroups}
+        canExport={permissions.includes("EXPORT")}
+      />
     </div>
   );
 }

@@ -62,7 +62,7 @@ Halaman: Ringkasan Petani (/admin/data-analyst/farmer-summary)
 | "Total Persil" | Kartu KPI | Ikon `Layers`; nilai + satuan "persil" |
 | "Luas Lahan" | Kartu KPI | Ikon `Trees`; format `id-ID` 2 desimal + " ha" |
 
-**Tabel** (`DataTable`, pencarian pada `farmerName` dengan placeholder "Cari petani...", paginasi default 25 baris, opsi ukuran halaman 10/25/50/100, ekspor Excel dengan nama file `detail-petani-<yyyyMMdd>`)
+**Tabel** (`DataTable`, pencarian pada `farmerName` dengan placeholder "Cari petani...", paginasi default 25 baris, opsi ukuran halaman 10/25/50/100, ekspor Excel dengan nama file `detail-petani-<yyyyMMdd>` — digate izin `EXPORT`, #245)
 
 | Kolom | Sortable |
 |---|---|
@@ -81,7 +81,7 @@ Halaman: Ringkasan Petani (/admin/data-analyst/farmer-summary)
 | "Petani Tanpa Lahan" | Kartu KPI | Ikon `Users`; satuan "petani" |
 | "% dari Total Petani" | Kartu KPI | Ikon `Layers`; format persen 1 desimal |
 
-**Tabel** (`DataTable`, pencarian pada `farmerName` placeholder "Cari petani...", paginasi default 25 baris, ekspor Excel dengan nama file `petani-tanpa-lahan-<yyyyMMdd>`)
+**Tabel** (`DataTable`, pencarian pada `farmerName` placeholder "Cari petani...", paginasi default 25 baris, ekspor Excel dengan nama file `petani-tanpa-lahan-<yyyyMMdd>` — digate izin `EXPORT`, #245)
 
 | Kolom | Sortable | Keterangan |
 |---|---|---|

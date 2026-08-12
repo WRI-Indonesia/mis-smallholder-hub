@@ -51,7 +51,7 @@ Keempat kartu di atas tabel **mengikuti filter yang sedang aktif**, bukan seluru
 
 **Tambah Petani** — hanya muncul bila akun Anda punya izin menambah data pada menu ini.
 
-**Excel** — mengunduh data sesuai filter dan kolom yang sedang tampil. NIK dan tanggal lahir **tidak disensor** di berkas hasil unduhan.
+**Excel** — mengunduh data sesuai filter dan kolom yang sedang tampil; hanya muncul bila akun Anda punya izin **Export** pada menu ini. NIK dan tanggal lahir **tidak disensor** di berkas hasil unduhan.
 
 **Kolom** — menyembunyikan atau menampilkan kolom. Pengaturannya juga memengaruhi isi unduhan Excel.
 

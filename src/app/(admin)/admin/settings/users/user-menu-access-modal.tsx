@@ -27,6 +27,10 @@ import {
   removeUserMenuOverride,
 } from "@/server/actions/user-menu-access";
 import type { PermissionLevel } from "@prisma/client";
+import { PERMISSION_LEVELS } from "@/lib/permission-levels";
+
+// Kolom izin — daftar & label dari sumber tunggal src/lib/permission-levels.ts.
+const PERMISSION_COLUMNS = PERMISSION_LEVELS;
 
 interface Props {
   open: boolean;
@@ -250,7 +254,7 @@ export function UserMenuAccessModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[620px] max-h-[85vh] flex flex-col p-6">
+      <DialogContent className="sm:max-w-[720px] max-h-[85vh] flex flex-col p-6">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -299,11 +303,16 @@ export function UserMenuAccessModal({
                 <TableHeader className="sticky top-0 bg-muted/90 backdrop-blur-sm z-10">
                   <TableRow className="hover:bg-transparent border-b">
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2.5">Menu</TableHead>
-                    <TableHead className="w-[12%] text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2.5">C</TableHead>
-                    <TableHead className="w-[12%] text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2.5">V</TableHead>
-                    <TableHead className="w-[12%] text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2.5">E</TableHead>
-                    <TableHead className="w-[12%] text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2.5">D</TableHead>
-                    <TableHead className="w-[18%] text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2.5">Status</TableHead>
+                    {PERMISSION_COLUMNS.map((col) => (
+                      <TableHead
+                        key={col.key}
+                        title={col.label}
+                        className="w-[9%] text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2.5 cursor-help"
+                      >
+                        {col.short}
+                      </TableHead>
+                    ))}
+                    <TableHead className="w-[16%] text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2.5">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -323,18 +332,11 @@ export function UserMenuAccessModal({
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-center py-2">
-                          {!hasSub ? renderCell(item, "CREATE") : null}
-                        </TableCell>
-                        <TableCell className="text-center py-2">
-                          {!hasSub ? renderCell(item, "VIEW") : null}
-                        </TableCell>
-                        <TableCell className="text-center py-2">
-                          {!hasSub ? renderCell(item, "EDIT") : null}
-                        </TableCell>
-                        <TableCell className="text-center py-2">
-                          {!hasSub ? renderCell(item, "DELETE") : null}
-                        </TableCell>
+                        {PERMISSION_COLUMNS.map((col) => (
+                          <TableCell key={col.key} className="text-center py-2">
+                            {!hasSub ? renderCell(item, col.key) : null}
+                          </TableCell>
+                        ))}
                         <TableCell className="text-center py-2">
                           {!hasSub ? getRowStatusBadge(item) : "—"}
                         </TableCell>
@@ -343,7 +345,7 @@ export function UserMenuAccessModal({
                   })}
                   {filteredTree.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-sm text-muted-foreground">
+                      <TableCell colSpan={2 + PERMISSION_COLUMNS.length} className="text-center py-8 text-sm text-muted-foreground">
                         Tidak ada menu ditemukan
                       </TableCell>
                     </TableRow>
@@ -355,6 +357,9 @@ export function UserMenuAccessModal({
             {/* Legend / Info footer */}
             <div className="text-[11px] text-muted-foreground space-y-1.5 border-t pt-3 mt-1 px-1">
               <p className="font-semibold text-foreground uppercase tracking-wider">Keterangan:</p>
+              <p>
+                C = Create · V = View · E = Edit · D = Delete · X = Export (Excel) · P = Print (PDF)
+              </p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 <div className="flex items-center gap-2">
                   <span className="h-4 w-4 rounded flex items-center justify-center bg-primary text-primary-foreground text-[8px]">

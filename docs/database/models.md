@@ -33,6 +33,8 @@ classDiagram
         VIEW
         EDIT
         DELETE
+        EXPORT
+        PRINT
     }
 
     class FarmerGroupCategory {

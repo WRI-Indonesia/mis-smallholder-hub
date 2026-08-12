@@ -23,6 +23,8 @@ enum PermissionLevel {
   VIEW
   EDIT
   DELETE
+  EXPORT
+  PRINT
 }
 
 enum ActivityStatus {

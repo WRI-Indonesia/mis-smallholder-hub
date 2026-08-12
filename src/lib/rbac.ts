@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { ALL_PERMISSIONS } from "@/lib/permission-levels";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { Role } from "@prisma/client";
@@ -134,7 +135,7 @@ export const getUserPermissionsForMenu = cache(async (menuKey: string): Promise<
   if (!session?.user) return [];
 
   const role = session.user.role;
-  if (role === "SUPERADMIN") return ["CREATE", "VIEW", "EDIT", "DELETE"];
+  if (role === "SUPERADMIN") return [...ALL_PERMISSIONS];
 
   const effective = await getEffectiveMenuPermissions(role, session.user.id);
   return effective[menuKey] || [];

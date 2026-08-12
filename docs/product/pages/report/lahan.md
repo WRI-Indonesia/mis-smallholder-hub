@@ -86,5 +86,5 @@ Agregasi: baris footer "Total" berisi jumlah Luas (Ha), hanya muncul bila kolom 
 
 | Format | Keterangan |
 |---|---|
-| Excel | File `Laporan_Lahan_<Lembaga/Distrik/Semua>`; sheet "Lahan" berisi seluruh baris + gambar peta (PNG hasil rasterisasi SVG). Bila grid aktif: tambahan satu sheet per sel grid berisi subset baris sel + gambar peta sel. Kolom mengikuti selektor kolom. Bila geometri belum termuat: "Geometri lahan masih dimuat — coba lagi sebentar." |
-| PDF | File `Laporan_Lahan_<…>` via `exportLandParcelReportPDF`; metadata Distrik & Lembaga Petani; kolom mengikuti selektor kolom + baris Total; menyertakan halaman peta sesuai pengaturan grid & label |
+| Excel | File `Laporan_Lahan_<Lembaga/Distrik/Semua>`; sheet "Lahan" berisi seluruh baris + gambar peta (PNG hasil rasterisasi SVG). Bila grid aktif: tambahan satu sheet per sel grid berisi subset baris sel + gambar peta sel. Kolom mengikuti selektor kolom. Bila geometri belum termuat: "Geometri lahan masih dimuat — coba lagi sebentar." Tombol digate izin `EXPORT` (#245) |
+| PDF | File `Laporan_Lahan_<…>` via `exportLandParcelReportPDF`; metadata Distrik & Lembaga Petani; kolom mengikuti selektor kolom + baris Total; menyertakan halaman peta sesuai pengaturan grid & label — digate izin `PRINT` (#245) |

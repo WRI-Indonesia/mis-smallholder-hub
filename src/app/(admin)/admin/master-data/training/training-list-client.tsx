@@ -456,6 +456,7 @@ export function TrainingListClient({
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
           exportFilename="data-training-activities"
+          canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
           renderActions={(activity) => (
             <TableActions

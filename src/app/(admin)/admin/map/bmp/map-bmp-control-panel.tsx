@@ -102,6 +102,10 @@ interface Props {
   printing: boolean;
   onExport: () => void;
   exporting: boolean;
+  /** EXPORT menu Peta BMP — gate tombol "Download … (Excel)". */
+  canExport: boolean;
+  /** PRINT menu Peta BMP — gate tombol "Cetak Peta …". */
+  canPrint: boolean;
   helpSlot?: ReactNode;
 }
 
@@ -259,6 +263,7 @@ export function MapBmpControlPanel(props: Props) {
     colorMode, onColorModeChange, productivity, prodView, onProdViewChange,
     prodLayers, onProdLayersChange,
     onPrint, printing, onExport, exporting,
+    canExport, canPrint,
     helpSlot,
   } = props;
 
@@ -434,37 +439,45 @@ export function MapBmpControlPanel(props: Props) {
             )}
           </LayerSection>
 
-          <Separator />
-          <div className="px-4 py-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-full gap-2"
-              onClick={onPrint}
-              disabled={printing}
-            >
-              {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
-              {printing
-                ? "Menyiapkan..."
-                : colorMode === "PRODUCTIVITY"
-                  ? "Cetak Peta dan Tabel Produktivitas"
-                  : "Cetak Peta dan Matriks Ketersediaan Data"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2 h-8 w-full gap-2"
-              onClick={onExport}
-              disabled={exporting}
-            >
-              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
-              {exporting
-                ? "Menyiapkan..."
-                : colorMode === "PRODUCTIVITY"
-                  ? "Download Produktivitas (Excel)"
-                  : "Download Ketersediaan Data (Excel)"}
-            </Button>
-          </div>
+          {(canPrint || canExport) && (
+            <>
+              <Separator />
+              <div className="px-4 py-3">
+                {canPrint && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-full gap-2"
+                    onClick={onPrint}
+                    disabled={printing}
+                  >
+                    {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
+                    {printing
+                      ? "Menyiapkan..."
+                      : colorMode === "PRODUCTIVITY"
+                        ? "Cetak Peta dan Tabel Produktivitas"
+                        : "Cetak Peta dan Matriks Ketersediaan Data"}
+                  </Button>
+                )}
+                {canExport && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn("h-8 w-full gap-2", canPrint && "mt-2")}
+                    onClick={onExport}
+                    disabled={exporting}
+                  >
+                    {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
+                    {exporting
+                      ? "Menyiapkan..."
+                      : colorMode === "PRODUCTIVITY"
+                        ? "Download Produktivitas (Excel)"
+                        : "Download Ketersediaan Data (Excel)"}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
 

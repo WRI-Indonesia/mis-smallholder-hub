@@ -383,6 +383,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
           toolbarLeft={toolbarLeft}
           toolbarRight={toolbarRight}
           exportFilename="data-farmer-groups"
+          canExport={permissions.includes("EXPORT")}
           getExportRow={getExportRow}
           renderActions={(group) => (
             <TableActions

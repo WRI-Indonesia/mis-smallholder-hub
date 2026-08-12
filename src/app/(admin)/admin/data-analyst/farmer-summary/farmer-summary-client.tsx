@@ -30,9 +30,10 @@ interface FarmerGroup {
 interface Props {
   districts: District[];
   initialFarmerGroups: FarmerGroup[];
+  canExport: boolean;
 }
 
-export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
+export function FarmerSummaryClient({ districts, initialFarmerGroups, canExport }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>(initialFarmerGroups);
@@ -369,6 +370,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                     searchKey="farmerName"
                     searchPlaceholder="Cari petani..."
                     defaultPageSize={25}
+                    canExport={canExport}
                     exportFilename={`detail-petani-${currentDateStr}`}
                     getExportRow={(row) => ({
                       farmerGroupName: row.farmerGroupName,
@@ -428,6 +430,7 @@ export function FarmerSummaryClient({ districts, initialFarmerGroups }: Props) {
                     searchKey="farmerName"
                     searchPlaceholder="Cari petani..."
                     defaultPageSize={25}
+                    canExport={canExport}
                     exportFilename={`petani-tanpa-lahan-${currentDateStr}`}
                     getExportRow={(row) => ({
                       farmerGroupName: row.farmerGroupName,

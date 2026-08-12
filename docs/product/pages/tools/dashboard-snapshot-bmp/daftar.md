@@ -38,7 +38,7 @@ Halaman: Daftar Snapshot BMP (/admin/tools/snapshot-bmp)
 | Buat Snapshot Baru | Card | Hanya tampil bila permission `CREATE`; ikon `Camera` |
 | Generate Snapshot | Tombol | `generateBmpSnapshot({ districtId: null })`; label saat proses "Membuat…"; toast "Snapshot BMP berhasil dibuat" |
 | Catatan cakupan | Teks | "Snapshot dibuat untuk **Semua Data** — filter Distrik/Lembaga/Kategori/Tahun dilakukan langsung di BMP Dashboard." |
-| Daftar snapshot | Tabel (`DataTable`) | Search keys: `districtName`, `createdByName`; placeholder "Cari distrik atau pembuat..."; empty "Belum ada snapshot."; export `bmp-dashboard-snapshots` |
+| Daftar snapshot | Tabel (`DataTable`) | Search keys: `districtName`, `createdByName`; placeholder "Cari distrik atau pembuat..."; empty "Belum ada snapshot."; export `bmp-dashboard-snapshots` — tombol Excel digate izin `EXPORT` (#245) |
 | Kolom: Aksi | Kolom tabel | `view` ("Lihat" → `/admin/tools/snapshot-bmp/{id}`), `delete` ("Nonaktifkan") |
 | Kolom: Tanggal Snapshot | Kolom tabel | Format `dd Mmm yyyy, HH:mm` |
 | Kolom: Distrik | Kolom tabel | Default disembunyikan; `null` → "Semua" |

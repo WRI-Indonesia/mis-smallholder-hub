@@ -213,6 +213,7 @@ export function ParcelDetailClient({
 
   const canEdit = permissions.includes("EDIT");
   const canDelete = permissions.includes("DELETE");
+  const canPrint = permissions.includes("PRINT");
   const canEditProduction =
     productionPermissions.includes("CREATE") || productionPermissions.includes("EDIT");
 
@@ -339,20 +340,22 @@ export function ParcelDetailClient({
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={downloadPassport}
-            disabled={pdfLoading || geometry == null}
-            title={geometry == null ? "Perlu data geometri untuk membuat PDF" : undefined}
-          >
-            {pdfLoading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Printer className="h-4 w-4 mr-2" />
-            )}
-            Profil Lahan (PDF)
-          </Button>
+          {canPrint && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={downloadPassport}
+              disabled={pdfLoading || geometry == null}
+              title={geometry == null ? "Perlu data geometri untuk membuat PDF" : undefined}
+            >
+              {pdfLoading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4 mr-2" />
+              )}
+              Profil Lahan (PDF)
+            </Button>
+          )}
           {canEdit && (
             <Button size="sm" variant="outline" onClick={() => setShowForm(true)}>
               <Pencil className="h-4 w-4 mr-2" />

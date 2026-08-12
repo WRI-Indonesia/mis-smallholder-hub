@@ -45,6 +45,10 @@ interface Props {
   onPrintPdf: () => void;
   /** Klik baris tabel: tutup modal + zoom peta ke titik api tsb. */
   onZoomToPoint: (lon: number, lat: number) => void;
+  /** EXPORT menu Peta Lahan — gate tombol "Unduh SHP". */
+  canExport: boolean;
+  /** PRINT menu Peta Lahan — gate tombol "Cetak PDF". */
+  canPrint: boolean;
 }
 
 /** Pill keyakinan mengikuti warna legenda titik api. */
@@ -79,6 +83,8 @@ export function HotspotSummaryDialog({
   onDownloadShp,
   onPrintPdf,
   onZoomToPoint,
+  canExport,
+  canPrint,
 }: Props) {
   const total = counts.high + counts.nominal + counts.low;
   return (
@@ -185,14 +191,18 @@ export function HotspotSummaryDialog({
             ke titiknya.
           </p>
           <div className="flex shrink-0 gap-2">
-            <Button variant="outline" size="sm" onClick={onDownloadShp}>
-              <Download className="h-3.5 w-3.5" />
-              Unduh SHP
-            </Button>
-            <Button size="sm" onClick={onPrintPdf}>
-              <Printer className="h-3.5 w-3.5" />
-              Cetak PDF
-            </Button>
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={onDownloadShp}>
+                <Download className="h-3.5 w-3.5" />
+                Unduh SHP
+              </Button>
+            )}
+            {canPrint && (
+              <Button size="sm" onClick={onPrintPdf}>
+                <Printer className="h-3.5 w-3.5" />
+                Cetak PDF
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

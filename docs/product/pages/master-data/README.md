@@ -50,7 +50,7 @@ Semua halaman daftar memakai `DataTable` (`src/components/shared/data-table.tsx`
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Kotak pencarian | Filter | Input `type="search"`, placeholder per halaman |
-| Tombol `Excel` | Tombol | Ekspor baris terfilter ke `.xlsx` (nama file per halaman) |
+| Tombol `Excel` | Tombol | Ekspor baris terfilter ke `.xlsx` (nama file per halaman) — digate izin `EXPORT` (#245) |
 | Tombol `Kolom` → `Tampilkan Kolom` | Dropdown | Toggle visibilitas kolom (kolom `defaultVisible: false` tersembunyi awalnya) |
 | Paginasi | Navigasi | Kontrol halaman di bawah tabel |
 | Kolom aksi | Tombol ikon | `Lihat` (VIEW), `Edit` (EDIT), `Nonaktifkan`/`Aktifkan kembali` (DELETE) — tiap tombol hilang bila permission tak ada |

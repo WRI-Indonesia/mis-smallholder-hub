@@ -285,6 +285,7 @@ export function ProductionListClient({
         toolbarLeft={toolbarLeft}
         toolbarRight={toolbarRight}
         exportFilename="data-produksi"
+        canExport={permissions.includes("EXPORT")}
         getExportRow={getExportRow}
         renderActions={(row) => (
           <TableActions

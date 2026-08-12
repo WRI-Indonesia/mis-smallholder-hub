@@ -6,9 +6,10 @@ import { BenchmarkComparisonClient } from "./benchmark-comparison-client";
 export default async function BenchmarkComparisonPage() {
   await requirePermission("data-analyst-benchmark-comparison");
 
-  const [view, canEdit] = await Promise.all([
+  const [view, canEdit, canExport] = await Promise.all([
     getBenchmarkComparisonView(),
     hasPermission("data-analyst-benchmark-comparison", "EDIT"),
+    hasPermission("data-analyst-benchmark-comparison", "EXPORT"),
   ]);
 
   return (
@@ -23,7 +24,7 @@ export default async function BenchmarkComparisonPage() {
           Petani — selisih = acuan − MIS
         </p>
       </div>
-      <BenchmarkComparisonClient view={view} canEdit={canEdit} />
+      <BenchmarkComparisonClient view={view} canEdit={canEdit} canExport={canExport} />
     </div>
   );
 }

@@ -14,9 +14,10 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
 
   const canEdit = await hasPermission("master-data-farmers", "EDIT");
   const farmerGroups = canEdit ? await getFarmerGroupOptions("master-data-farmers") : [];
-  const [canViewParcel, canEditParcel, treeSummary, treePoints] = await Promise.all([
+  const [canViewParcel, canEditParcel, canPrint, treeSummary, treePoints] = await Promise.all([
     hasPermission("master-data-parcels", "VIEW"),
     hasPermission("master-data-parcels", "EDIT"),
+    hasPermission("master-data-farmers", "PRINT"),
     getFarmerTreeSummary(id),
     getFarmerTreePoints(id),
   ]);
@@ -33,6 +34,7 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
       farmerGroups={farmerGroups}
       canViewParcel={canViewParcel}
       canEditParcel={canEditParcel}
+      canPrint={canPrint}
     />
   );
 }

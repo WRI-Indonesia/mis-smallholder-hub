@@ -40,7 +40,7 @@ Halaman: Detail Snapshot BMP (/admin/tools/snapshot-bmp/[id])
 | Informasi Snapshot | Card metadata | 3 field: Tanggal Snapshot, Filter Distrik (`null` → "Semua Distrik"), Dibuat Oleh |
 | Kartu skor BMP | Kartu KPI (`BmpScoreCards`, komposisi #191) | Produktivitas (Ton/Ha), Total Produksi (Ton), Luasan (Ha terdata; + % dari total bila snapshot memuat `totalLuasHa`), Petani Terdata; label periode "kumulatif semua tahun" |
 | Ringkasan per Lembaga Petani | Heading `h2` | Judul tabel di bawahnya |
-| Tabel per Lembaga | Tabel (`DataTable`) | Search `name`, placeholder "Cari lembaga petani...", empty "Tidak ada data lembaga petani.", export `snapshot-bmp-{id}` |
+| Tabel per Lembaga | Tabel (`DataTable`) | Search `name`, placeholder "Cari lembaga petani...", empty "Tidak ada data lembaga petani.", export `snapshot-bmp-{id}` — tombol Excel digate izin `EXPORT` (#245) |
 | Kolom: Nama Lembaga Petani | Kolom tabel | Nama lembaga |
 | Kolom: Kategori | Kolom tabel | `EX_PLASMA` → "Ex-Plasma", `SWADAYA` → "Swadaya" |
 | Kolom: Distrik | Kolom tabel | `null` → "—" |

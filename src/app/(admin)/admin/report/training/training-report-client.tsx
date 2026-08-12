@@ -30,6 +30,8 @@ interface FarmerGroup {
 
 interface Props {
   districts: District[];
+  canExport: boolean;
+  canPrint: boolean;
 }
 
 /** Row shape for the per-activity participant table (adds display-only fields). */
@@ -46,7 +48,7 @@ export const TRAINING_CATEGORY_LABELS: Record<string, string> = {
   OTHER: "Lainnya",
 };
 
-export function TrainingReportClient({ districts }: Props) {
+export function TrainingReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
@@ -510,8 +512,8 @@ export function TrainingReportClient({ districts }: Props) {
         )}
       </Card>
 
-      {/* Print Document Header */}
-      {reportData && (
+      {/* Print Document Header — ikut digate PRINT agar Ctrl+P tanpa izin tidak menghasilkan dokumen resmi */}
+      {reportData && canPrint && (
         <div className="hidden print:block text-center border-b pb-4 mb-6">
           <h1 className="text-3xl font-extrabold tracking-tight">LAPORAN RINGKASAN PELATIHAN</h1>
           <p className="text-sm text-muted-foreground mt-1">Smallholder HUB Management Information System</p>
@@ -636,24 +638,28 @@ export function TrainingReportClient({ districts }: Props) {
               </TabsList>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportExcel}
-                  className="h-9 gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Excel (2-Sheet)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportPDF}
-                  className="h-9 gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  PDF
-                </Button>
+                {canExport && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportExcel}
+                    className="h-9 gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Excel (2-Sheet)
+                  </Button>
+                )}
+                {canPrint && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportPDF}
+                    className="h-9 gap-2"
+                  >
+                    <Printer className="h-4 w-4" />
+                    PDF
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -781,20 +787,24 @@ export function TrainingReportClient({ districts }: Props) {
                   searchPlaceholder="Cari nama petani..."
                   exportFilename={`Laporan_Cakupan_Pelatihan_${selectedDistrictObj?.name.replace(/\s+/g, "_")}_${selectedGroupObj?.name.replace(/\s+/g, "_")}`}
                   getExportRow={getCoverageExportRow}
+                  canExport={canExport}
                   toolbarRight={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleExportPDF}
-                      className="h-9 gap-2 print:hidden"
-                    >
-                      <Printer className="h-4 w-4" />
-                      PDF
-                    </Button>
+                    canPrint ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportPDF}
+                        className="h-9 gap-2 print:hidden"
+                      >
+                        <Printer className="h-4 w-4" />
+                        PDF
+                      </Button>
+                    ) : undefined
                   }
                 />
               ) : (
                 <div className="space-y-4">
+                  {canPrint && (
                   <div className="hidden print:block border-t pt-4">
                     <h2 className="text-xl font-bold">DAFTAR PESERTA PELATIHAN</h2>
                     <table className="w-full text-sm mt-2 border-collapse">
@@ -814,6 +824,7 @@ export function TrainingReportClient({ districts }: Props) {
                       </tbody>
                     </table>
                   </div>
+                  )}
                   <DataTable
                     columns={specificTrainingColumns}
                     data={selectedTrainingParticipants.map((p, idx) => ({ ...p, no: idx + 1 }))}
@@ -822,16 +833,19 @@ export function TrainingReportClient({ districts }: Props) {
                     searchPlaceholder="Cari nama peserta..."
                     exportFilename={`Laporan_Pelatihan_${(packagesList.find(p => p.code === selectedPackageCode)?.name ?? "").replace(/\s+/g, "_")}`}
                     getExportRow={getSpecificTrainingExportRow}
+                    canExport={canExport}
                     toolbarRight={
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExportPDF}
-                        className="h-9 gap-2 print:hidden"
-                      >
-                        <Printer className="h-4 w-4" />
-                        PDF
-                      </Button>
+                      canPrint ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExportPDF}
+                          className="h-9 gap-2 print:hidden"
+                        >
+                          <Printer className="h-4 w-4" />
+                          PDF
+                        </Button>
+                      ) : undefined
                     }
                   />
                 </div>

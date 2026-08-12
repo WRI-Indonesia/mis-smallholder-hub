@@ -138,11 +138,13 @@ interface Props {
   hotspotData: FeatureCollection | null;
   canViewParcel: boolean;
   canEditParcel: boolean;
+  /** PRINT menu Lahan — gate tombol "Profil Lahan" (PDF) di popup lahan. */
+  canPrintParcel: boolean;
   /** Dipanggil setelah Edit Lahan berhasil — refetch GeoJSON (data di-fetch di klien). */
   onParcelUpdated: () => void;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, onParcelUpdated }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, canPrintParcel, onParcelUpdated }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -841,6 +843,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                 props={selected.props}
                 canViewParcel={canViewParcel}
                 canEditParcel={canEditParcel}
+                canPrintParcel={canPrintParcel}
                 onEdit={setEditParcelId}
               />
             )}
@@ -1149,11 +1152,13 @@ function ParcelPopupBody({
   props,
   canViewParcel,
   canEditParcel,
+  canPrintParcel,
   onEdit,
 }: {
   props: Record<string, unknown>;
   canViewParcel: boolean;
   canEditParcel: boolean;
+  canPrintParcel: boolean;
   onEdit: (id: string) => void;
 }) {
   const landParcelId = String(props.id);
@@ -1214,7 +1219,9 @@ function ParcelPopupBody({
           }}
         />
       </div>
-      <ParcelFooter landParcelId={landParcelId} production={production} onProductionLoaded={setProduction} />
+      {canPrintParcel && (
+        <ParcelFooter landParcelId={landParcelId} production={production} onProductionLoaded={setProduction} />
+      )}
       {(canViewParcel || canEditParcel) && (
         <ParcelPopupActions
           parcelId={landParcelId}

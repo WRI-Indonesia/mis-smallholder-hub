@@ -27,9 +27,11 @@ interface FarmerGroup {
 
 interface Props {
   districts: District[];
+  canExport: boolean;
+  canPrint: boolean;
 }
 
-export function ProductionReportClient({ districts }: Props) {
+export function ProductionReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
   const [farmerGroups, setFarmerGroups] = useState<FarmerGroup[]>([]);
@@ -383,14 +385,18 @@ export function ProductionReportClient({ districts }: Props) {
 
           {/* Export toolbar */}
           <div className="flex items-center justify-end gap-2 print:hidden">
-            <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-9 gap-2">
-              <Download className="h-4 w-4" />
-              Excel
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-9 gap-2">
-              <Printer className="h-4 w-4" />
-              PDF
-            </Button>
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-9 gap-2">
+                <Download className="h-4 w-4" />
+                Excel
+              </Button>
+            )}
+            {canPrint && (
+              <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-9 gap-2">
+                <Printer className="h-4 w-4" />
+                PDF
+              </Button>
+            )}
           </div>
 
           {/* Matrix Table */}

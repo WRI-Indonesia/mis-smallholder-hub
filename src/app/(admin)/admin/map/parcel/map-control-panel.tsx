@@ -66,6 +66,10 @@ interface Props {
   hotspotPdfCalculating: boolean;
   /** Buka ulang modal ringkasan titik api (auto-terbuka saat kalkulasi selesai). */
   onHotspotShowSummary: () => void;
+  /** EXPORT menu Peta Lahan — gate tombol "Unduh SHP" titik api. */
+  canExport: boolean;
+  /** PRINT menu Peta Lahan — gate tombol "Cetak PDF" titik api. */
+  canPrint: boolean;
   helpSlot?: React.ReactNode;
 }
 
@@ -224,6 +228,7 @@ export function MapControlPanel(props: Props) {
     customLayers, onAddCustomLayer, onRemoveCustomLayer, onToggleCustomLayer, onZoomCustomLayer, onCustomLayerSymbology,
     hotspot, onHotspotChange, hotspotLoading, hotspotCounts,
     onHotspotDownloadShp, onHotspotPrintPdf, hotspotPdfCalculating, onHotspotShowSummary,
+    canExport, canPrint,
     helpSlot,
   } = props;
 
@@ -527,38 +532,44 @@ export function MapControlPanel(props: Props) {
               )}
               Lihat Ringkasan
             </Button>
-            <div className="mt-2 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 flex-1 text-xs"
-                disabled={hotspotExportDisabled}
-                onClick={onHotspotDownloadShp}
-                title="Unduh titik api sebagai ZIP Shapefile"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Unduh SHP
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 flex-1 text-xs"
-                disabled={hotspotExportDisabled || hotspotPdfCalculating}
-                onClick={onHotspotPrintPdf}
-                title={
-                  hotspotPdfCalculating
-                    ? "Menghitung jarak ke Lembaga Petani…"
-                    : "Cetak daftar titik api sebagai PDF"
-                }
-              >
-                {hotspotPdfCalculating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Printer className="h-3.5 w-3.5" />
+            {(canExport || canPrint) && (
+              <div className="mt-2 flex gap-2">
+                {canExport && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 flex-1 text-xs"
+                    disabled={hotspotExportDisabled}
+                    onClick={onHotspotDownloadShp}
+                    title="Unduh titik api sebagai ZIP Shapefile"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Unduh SHP
+                  </Button>
                 )}
-                Cetak PDF
-              </Button>
-            </div>
+                {canPrint && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 flex-1 text-xs"
+                    disabled={hotspotExportDisabled || hotspotPdfCalculating}
+                    onClick={onHotspotPrintPdf}
+                    title={
+                      hotspotPdfCalculating
+                        ? "Menghitung jarak ke Lembaga Petani…"
+                        : "Cetak daftar titik api sebagai PDF"
+                    }
+                  >
+                    {hotspotPdfCalculating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Printer className="h-3.5 w-3.5" />
+                    )}
+                    Cetak PDF
+                  </Button>
+                )}
+              </div>
+            )}
 
             <p className="mt-3 text-[10px] leading-snug text-muted-foreground">
               Deteksi anomali panas VIIRS 375 m, bukan konfirmasi kebakaran. Sumber: NASA FIRMS · jeda ±3 jam.

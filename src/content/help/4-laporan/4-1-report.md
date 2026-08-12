@@ -1,7 +1,7 @@
 ---
 title: Report (Laporan)
 icon: FileText
-intro: Semua laporan bisa diunduh sebagai Excel dan PDF. Sebagian laporan mewajibkan pilih Distrik dan Lembaga Petani lebih dulu.
+intro: Semua laporan bisa diunduh sebagai Excel (izin Export) dan PDF (izin Print). Sebagian laporan mewajibkan pilih Distrik dan Lembaga Petani lebih dulu.
 ---
 
 **Petani / Pelatihan / Produksi** — Rekap per lembaga: daftar petani, cakupan pelatihan per paket (termasuk nilai pre/post test), dan matriks produksi bulanan per petani atau lahan.
