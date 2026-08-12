@@ -33,8 +33,9 @@ Enum `PermissionLevel` (`prisma/schema/_config.prisma`) punya **6 aksi**, dua gr
 
 **Cakupan baris permission keluaran:** baris `EXPORT`/`PRINT` di-seed/backfill **hanya pada menu daun** — cascade bersifat union (induk → anak, tanpa pengurangan), sehingga baris di menu induk membuat revoke per sub-menu tidak efektif (migrasi koreksi `20260812130000`). Grant manual di induk tetap boleh bila memang ingin berlaku satu seksi penuh.
 
-Konvensi gating keluaran (#245):
-- Page server component menghitung `permissions.includes("EXPORT"/"PRINT")` (atau `hasPermission`) → kirim boolean `canExport`/`canPrint` ke client; tombol tidak dirender bila false.
+Konvensi gating keluaran (#245, idiom diseragamkan #247):
+- **Idiom page**: butuh ≥2 aksi dari satu menu → panggil `getUserPermissionsForMenu(menuKey)` sekali lalu `includes()`; cek tunggal atau lintas-menu → `hasPermission(menuKey, aksi)`. Keduanya di-cache per-request, jadi ini soal keterbacaan, bukan kinerja — jangan campur dua idiom untuk menu yang sama di satu page.
+- Page server component mengirim **boolean bernama** (`canExport`/`canPrint`/`canPrintParcel`) ke client, bukan array `permissions` mentah — eksplisit tentang aksi apa yang dipakai komponen (keputusan #247: threading boolean dipertahankan; array hanya untuk list page master-data yang memakai banyak aksi sekaligus).
 - Export yang dibangun **client-side dari data yang sudah tampil** cukup digate di UI (datanya memang sudah di tangan user). Server action yang menyuplai data **khusus** export/print (mis. farm passport) wajib guard `hasPermission(menuKey, "PRINT"/"EXPORT")` juga.
 - SUPERADMIN bypass mengembalikan keenam aksi (`src/lib/rbac.ts`).
 

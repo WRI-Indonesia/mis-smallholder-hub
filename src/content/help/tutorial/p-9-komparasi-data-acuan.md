@@ -33,7 +33,7 @@ Kolom **Δ (selisih) = Acuan − MIS**. Selisih positif berarti data di MIS masi
 6. Untuk memperbarui angka acuan sebuah lembaga, klik ikon **pensil** di ujung barisnya. Di dialog, tiap kolom menampilkan angka **MIS live** dan preview selisihnya berubah langsung saat Anda mengetik. Isi lalu **Simpan** — angka di tabel langsung diperbarui tanpa perlu memuat ulang halaman.
 + Kosongkan kolom yang memang belum ada angka acuannya — kosong artinya "tidak dibandingkan", bukan nol. Kolom **Catatan** untuk konteks selisih, misalnya "56 petani belum ada data produksi"; catatan tampil sebagai penanda kuning kecil di bawah nama lembaga, arahkan kursor untuk membaca isi lengkapnya.
 7. Klik **Ekspor Excel** untuk mengunduh tabel lengkap (Acuan | MIS | Selisih per metrik) sebagai bahan diskusi dengan fasilitator.
-+ Ekspor selalu berisi semua lembaga dalam cakupan akses Anda, mengabaikan filter yang sedang aktif. Tombol Ekspor Excel hanya tampil bila akun Anda punya izin **Export** pada menu ini.
++ Ekspor mengikuti filter yang sedang aktif — apa yang tampil di layar, itulah isi berkasnya; kosongkan filter dulu bila ingin semua lembaga. Tombol Ekspor Excel hanya tampil bila akun Anda punya izin **Export** pada menu ini.
 
 > [!hati-hati] Angka acuan adalah data entry manual — memperbaruinya tidak mengubah data MIS sama sekali. Sebaliknya, sisi MIS tidak bisa diedit dari halaman ini; kejar selisihnya lewat unggah/entry data di menu terkait (Master Data, Unggah Massal).
 

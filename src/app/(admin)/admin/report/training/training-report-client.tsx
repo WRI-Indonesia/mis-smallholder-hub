@@ -48,6 +48,16 @@ export const TRAINING_CATEGORY_LABELS: Record<string, string> = {
   OTHER: "Lainnya",
 };
 
+// Tombol PDF yang sama dipakai header tab + toolbar dua DataTable (#247).
+function PdfExportButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="outline" size="sm" onClick={onClick} className="h-9 gap-2 print:hidden">
+      <Printer className="h-4 w-4" />
+      PDF
+    </Button>
+  );
+}
+
 export function TrainingReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
@@ -649,17 +659,7 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
                     Excel (2-Sheet)
                   </Button>
                 )}
-                {canPrint && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportPDF}
-                    className="h-9 gap-2"
-                  >
-                    <Printer className="h-4 w-4" />
-                    PDF
-                  </Button>
-                )}
+                {canPrint && <PdfExportButton onClick={handleExportPDF} />}
               </div>
             </div>
 
@@ -788,19 +788,7 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
                   exportFilename={`Laporan_Cakupan_Pelatihan_${selectedDistrictObj?.name.replace(/\s+/g, "_")}_${selectedGroupObj?.name.replace(/\s+/g, "_")}`}
                   getExportRow={getCoverageExportRow}
                   canExport={canExport}
-                  toolbarRight={
-                    canPrint ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExportPDF}
-                        className="h-9 gap-2 print:hidden"
-                      >
-                        <Printer className="h-4 w-4" />
-                        PDF
-                      </Button>
-                    ) : undefined
-                  }
+                  toolbarRight={canPrint ? <PdfExportButton onClick={handleExportPDF} /> : undefined}
                 />
               ) : (
                 <div className="space-y-4">
@@ -834,19 +822,7 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
                     exportFilename={`Laporan_Pelatihan_${(packagesList.find(p => p.code === selectedPackageCode)?.name ?? "").replace(/\s+/g, "_")}`}
                     getExportRow={getSpecificTrainingExportRow}
                     canExport={canExport}
-                    toolbarRight={
-                      canPrint ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleExportPDF}
-                          className="h-9 gap-2 print:hidden"
-                        >
-                          <Printer className="h-4 w-4" />
-                          PDF
-                        </Button>
-                      ) : undefined
-                    }
+                    toolbarRight={canPrint ? <PdfExportButton onClick={handleExportPDF} /> : undefined}
                   />
                 </div>
               )}

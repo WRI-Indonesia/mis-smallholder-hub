@@ -89,12 +89,11 @@ interface CascadeState {
   descendantCount: number;
 }
 
+// Field lain (label, daftar update) diderivasi saat konfirmasi — jangan simpan yang bisa basi.
 interface ColumnToggleState {
   role: Role;
   perm: PermissionLevel;
-  label: string;
   target: boolean;
-  updates: RolePermissionUpdate[];
 }
 
 export function RoleMatrixClient({ permissions, menuItems }: Props) {
@@ -107,8 +106,24 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
   const [saving, setSaving] = useState(false);
   const [cascade, setCascade] = useState<CascadeState | null>(null);
   const [colToggle, setColToggle] = useState<ColumnToggleState | null>(null);
-  // Kolom (role|perm) yang sedang di-hover — untuk highlight silang baris×kolom.
-  const [hoverCol, setHoverCol] = useState<string | null>(null);
+  // Highlight silang kolom saat hover — via dataset DOM langsung (bukan state React):
+  // state akan me-rerender seluruh matriks (±1.100 sel) pada tiap perpindahan sel (#247).
+  const tableRef = React.useRef<HTMLTableElement>(null);
+  const hoverColRef = React.useRef<string | null>(null);
+  function setColHighlight(colId: string | null) {
+    if (hoverColRef.current === colId) return;
+    const table = tableRef.current;
+    if (!table) return;
+    for (const prev of table.querySelectorAll('[data-colhover="true"]')) {
+      delete (prev as HTMLElement).dataset.colhover;
+    }
+    if (colId) {
+      for (const el of table.querySelectorAll(`[data-colid="${CSS.escape(colId)}"]`)) {
+        (el as HTMLElement).dataset.colhover = "true";
+      }
+    }
+    hoverColRef.current = colId;
+  }
 
   const tree = useMemo(() => buildMenuTree(menuItems), [menuItems]);
   const allCollapsible = useMemo(() => collapsibleKeys(tree), [tree]);
@@ -224,16 +239,17 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
   // kosong. Dengan ini klik pertama = revoke (kasus umum: cabut Export/Print satu role),
   // bukan grant massal ke menu yang bahkan tak punya VIEW.
   function handleColumnToggle(role: Role, perm: PermissionLevel) {
-    const meta = PERMISSION_META.find((m) => m.key === perm)!;
-    const allKeys = menuItems.map((m) => m.key);
-    const target = !allKeys.some((k) => has(role, k, perm));
-    setColToggle({
-      role,
-      perm,
-      label: meta.label,
-      target,
-      updates: allKeys.map((k) => ({ role, menuKey: k, permission: perm, granted: target })),
-    });
+    const target = !menuItems.some((m) => has(role, m.key, perm));
+    setColToggle({ role, perm, target });
+  }
+
+  function confirmColumnToggle() {
+    if (!colToggle) return;
+    const { role, perm, target } = colToggle;
+    setColToggle(null);
+    applyUpdates(
+      menuItems.map((m) => ({ role, menuKey: m.key, permission: perm, granted: target }))
+    );
   }
 
   function confirmCascade(includeDescendants: boolean) {
@@ -314,7 +330,11 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
 
       {/* Matriks */}
       <div className="overflow-auto max-h-[70vh] rounded-md border border-border">
-        <table className="w-full text-sm border-separate border-spacing-0">
+        <table
+          ref={tableRef}
+          onMouseLeave={() => setColHighlight(null)}
+          className="w-full text-sm border-separate border-spacing-0"
+        >
           <thead>
             <tr>
               <th
@@ -341,15 +361,13 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                   return (
                     <th
                       key={colId}
-                      className={`sticky top-9 z-20 text-center p-1 border-b-2 border-border ${colBorder(i)} ${
-                        hoverCol === colId ? "bg-accent" : "bg-muted"
-                      }`}
+                      data-colid={colId}
+                      onMouseEnter={() => setColHighlight(colId)}
+                      className={`sticky top-9 z-20 text-center p-1 border-b-2 border-border bg-muted data-[colhover=true]:bg-accent ${colBorder(i)}`}
                     >
                       <button
                         onClick={() => handleColumnToggle(role, meta.key)}
                         disabled={saving}
-                        onMouseEnter={() => setHoverCol(colId)}
-                        onMouseLeave={() => setHoverCol(null)}
                         className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 disabled:opacity-40"
                         title={`${meta.label} · klik untuk toggle seluruh kolom ${role}`}
                       >
@@ -430,11 +448,9 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
                       return (
                         <td
                           key={`${role}-${item.key}-${perm}`}
-                          onMouseEnter={() => setHoverCol(colId)}
-                          onMouseLeave={() => setHoverCol(null)}
-                          className={`text-center p-1 ${colBorder(i)} ${
-                            hoverCol === colId ? "bg-accent/50" : ""
-                          }`}
+                          data-colid={colId}
+                          onMouseEnter={() => setColHighlight(colId)}
+                          className={`text-center p-1 data-[colhover=true]:bg-accent/50 ${colBorder(i)}`}
                         >
                           <button
                             onClick={() => handleCellToggle(role, item.key, perm)}
@@ -519,24 +535,17 @@ export function RoleMatrixClient({ permissions, menuItems }: Props) {
             <DialogTitle>Toggle satu kolom?</DialogTitle>
             <DialogDescription>
               {colToggle?.target ? "Memberi" : "Mencabut"} izin{" "}
-              <strong>{colToggle?.label}</strong> pada <strong>semua menu</strong> untuk role{" "}
-              <strong>{colToggle?.role}</strong>.
+              <strong>
+                {colToggle && PERMISSION_META.find((m) => m.key === colToggle.perm)?.label}
+              </strong>{" "}
+              pada <strong>semua menu</strong> untuk role <strong>{colToggle?.role}</strong>.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setColToggle(null)}>
               Batal
             </Button>
-            <Button
-              onClick={() => {
-                if (!colToggle) return;
-                const updates = colToggle.updates;
-                setColToggle(null);
-                applyUpdates(updates);
-              }}
-            >
-              Terapkan
-            </Button>
+            <Button onClick={confirmColumnToggle}>Terapkan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

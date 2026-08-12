@@ -173,7 +173,9 @@ export function BenchmarkComparisonClient({ view, canEdit, canExport }: Props) {
         { header: "Metrik Masih Selisih", key: "diffSummary", width: 40 },
         { header: "Catatan", key: "notes", width: 40 },
       ];
-      const data = localView.sections.flatMap((section) =>
+      // WYSIWYG (#247): ekspor mengikuti filter & urutan yang sedang tampil,
+      // konsisten dengan perilaku export DataTable dan cetak Peta BMP.
+      const data = filteredSections.flatMap((section) =>
         section.rows.map((row) => ({
           district: section.districtName,
           code: row.code ?? "",

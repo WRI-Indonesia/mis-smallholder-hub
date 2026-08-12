@@ -62,4 +62,4 @@ Halaman: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
 - Baris TOTAL menjumlahkan kolom acuan hanya dari lembaga yang terisi, jadi total acuan bisa lebih kecil dari total MIS bila banyak lembaga belum dientry.
 - Band warna mode Ringkas dari gap relatif |Δ|/acuan: cocok (0) · kuning ≤5% · kuning tua ≤20% · merah >20%; % capaian = MIS/acuan (bisa >100% bila MIS melebihi acuan).
 - Urutan "paling bermasalah": jumlah metrik selisih terbanyak dulu, seri dipecah gap relatif terbesar.
-- Ekspor Excel selalu memuat semua lembaga dalam scope (mengabaikan filter aktif) — tombol digate izin `EXPORT` (#245).
+- Ekspor Excel **mengikuti filter & urutan yang sedang tampil** (WYSIWYG, #247 — semula semua lembaga tanpa filter) — tombol digate izin `EXPORT` (#245).
