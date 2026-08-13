@@ -70,6 +70,7 @@ import pKetersediaanData from "@/content/help/tutorial/p-6-ketersediaan-data.md"
 import pRingkasanPetani from "@/content/help/tutorial/p-7-ringkasan-petani.md";
 import pKomparasiDataAcuan from "@/content/help/tutorial/p-9-komparasi-data-acuan.md";
 import pMetrikRilis from "@/content/help/tutorial/p-8-metrik-rilis.md";
+import pPetaDataSkema from "@/content/help/tutorial/p-10-peta-data-skema.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 import aMengaturIzinPeran from "@/content/help/tutorial/a-3-mengatur-izin-peran.md";
@@ -205,6 +206,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "ringkasan-petani", source: pRingkasanPetani },
       { id: "komparasi-data-acuan", source: pKomparasiDataAcuan },
       { id: "metrik-rilis", source: pMetrikRilis },
+      { id: "peta-data-skema", source: pPetaDataSkema },
     ],
   },
   {

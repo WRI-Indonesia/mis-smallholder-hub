@@ -133,6 +133,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | DA-02       | Analisa Ketersediaan Data KT        | ✅ Done        | Done    | inti      |
 | DA-03       | Dashboard Ketersediaan Data         | ✅ Done        | Done    | inti      |
 | DA-06       | Komparasi Data Acuan                | ✅ Done        | Done    | inti      |
+| DA-07       | Peta Data & Skema                   | ✅ Done        | Done    | inti      |
 | TOOLS-01    | Tools Import/Export/GIS/S3          | 🟠 Partial     | Next    | pendukung |
 | CMS-01      | CMS & Content Management            | 🔲 Not Started | Later   | pendukung |
 | COMM-01     | Community                           | 🔲 Not Started | Later   | pendukung |
@@ -569,6 +570,18 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 - **Evidence:** action `benchmark-comparison.ts` (3 lapis keamanan); lib murni `src/lib/benchmark-comparison.ts` (8 unit test); seed menu + role-permissions; import awal dari GDrive via `scripts/local/other/import-reference-benchmark.mjs` (dry-run default); doc `docs/product/pages/data-analyst/komparasi-data-acuan.md`; Bantuan tutorial `p-9-komparasi-data-acuan` (menu ke-31, cakupan 31/31).
 - **Catatan penomoran & baseline:** DA-04 hangus (#143 superseded, Decision Log 2026-08-08), DA-05 = #178. **Dipromosikan ke tabel Phase Status pada rilis v0.24.0** (keputusan owner 2026-08-11): baseline 47→48 fase (inti 37 + pendukung 11), skor 74/85 = **87,1%**.
 - **Next step:** bulk upload Excel angka acuan (opsional, disebut di #243); deep-link sel selisih ke halaman pengejaran data.
+
+</details>
+
+<details>
+<summary><strong>DA-07</strong> · ✅ Done — Peta Data & Skema (#256)</summary>
+
+- **✅ (2026-08-13):** **Peta Data & Skema** — `/admin/data-analyst/data-map` (menu `data-analyst-data-map`, order 5 di grup Data Analyst, icon `Network`; VIEW **SUPERADMIN/ADMIN saja**, tanpa EXPORT/PRINT). Tiga tab: **ERD** (kanvas React Flow, 22 entitas × 28 relasi, kolom per domain, klik entitas menyorot tetangga), **Keterisian** (baris & persen terisi per kolom, sorotan kolom 0%), **Jalur data** (matriks menu × entitas R/W/RW).
+- **Sumber — empat, tak satu pun ditulis khusus:** struktur dari `prisma/schema/*.prisma` (`npm run build:schema`), keterisian dari kueri agregat runtime (1 kueri per tabel, ~22), jalur data dari pindai kode (`npm run build:lineage`), rencana modul dari stream MD tabel Phase Status ini sendiri. **Tanpa tabel database baru** — keputusan ditinjau ulang saat implementasi (owner 2026-08-13) dan tetap: struktur & jalur data adalah turunan kode, menyalinnya ke tabel hanya menambah langkah yang bisa terlupa.
+- **Lapis keamanan — penyimpangan disengaja:** hanya lapis 1 (`requirePermission`/`hasPermission`) + lapis 3 (soft delete). Access-context **tidak** dipakai karena yang ditampilkan bentuk & keterisian skema secara nasional, bukan baris milik wilayah; konsekuensinya menu hanya boleh diberikan ke peran yang berhak melihat angka nasional. Tertulis di kepala `src/server/actions/data-map.ts` dan skrip seed-nya.
+- **Evidence:** `scripts/schema-scan.ts` + `scripts/lineage-scan.ts` (+ artefak turunan di `src/lib/*.generated.ts`, di-commit agar perubahannya terlihat di diff PR); `src/test/data-schema.test.ts` (12 test, termasuk **silang sumber** dengan `Prisma.dmmf`) & `src/test/data-lineage.test.ts` (8 test, penjaga kesegaran diverifikasi dengan sengaja membasikan artefak); dependensi `@xyflow/react` hanya untuk tab ERD (impor dinamis, tanpa SSR); doc `docs/product/pages/data-analyst/peta-data-skema.md`; Bantuan tutorial `p-10-peta-data-skema` (menu ke-32, cakupan 32/32).
+- **Catatan baseline:** baseline 48→49 fase (inti 38 + pendukung 11) → skor **76/87 = 87,4%** (dari 74/85 = 87,1%). Angka ini dihitung ulang otomatis oleh test konsistensi #250 (±0,1 pp) terhadap baris _(siklus berjalan)_ di `metrics.md`, jadi kedua berkas wajib bergerak bersama; baris rilis lama tidak dihitung ulang (aturan metrics.md #4).
+- **Next step:** riwayat keterisian (tren "makin terisi atau tidak") bila diminta — presedennya tabel snapshot dashboard; anotasi/usulan field dari UI (butuh tabel, sengaja ditunda).
 
 </details>
 

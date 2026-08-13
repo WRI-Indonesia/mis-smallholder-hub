@@ -1,6 +1,6 @@
 # Metrik Rilis
 
-[← Menu Dashboard](./README.md) · [← Katalog halaman](../README.md)
+[← Menu Data Analyst](./README.md) · [← Katalog halaman](../README.md)
 
 Sub menu `dashboard-metrics`, satu halaman: `/admin/dashboard/metrics` (#227). Dashboard internal development — audiens tim/manajemen/donor, bukan data petani. Akses **SUPERADMIN saja** (tanpa baris RolePermission; role lain via Role & Permission bila diputuskan).
 
@@ -64,7 +64,7 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 
 | Aspek | Nilai |
 |---|---|
-| Menu key | `dashboard-metrics` (parent `dashboard`, label "Metrik Rilis", icon `Activity`, order 4) |
+| Menu key | `dashboard-metrics` (parent **`data-analyst`** di database — lihat catatan di [README menu](./README.md); label "Metrik Rilis", icon `Activity`, order 4). Route tetap `/admin/dashboard/metrics`. |
 | File | `src/app/(admin)/admin/dashboard/metrics/page.tsx` (+ `loading.tsx`) |
 | Client | `metrics-dashboard-client.tsx` (orkestrasi + KPI + jalur kualitas + akordeon), `time-series-chart.tsx` (kerangka bersama 3 grafik: sumbu, ResizeObserver, tooltip, marka, render-prop anotasi), `rvs-curve-chart.tsx`, `metrics-small-charts.tsx`, `rvs-period-bars.tsx`, `roadmap-detail.tsx`, `time-window.tsx`, `metrics-shared.ts` (palet tervalidasi, formatter id-ID, `windowSlice`, `niceTicks`) |
 | Guard | `requirePermission("dashboard-metrics")`; tanpa seed RolePermission → efektif SUPERADMIN-only (bypass) |
