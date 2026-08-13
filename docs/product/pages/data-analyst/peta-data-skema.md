@@ -4,7 +4,7 @@
 
 Sub menu `data-analyst-data-map`, satu halaman: `/admin/data-analyst/data-map` (DA-07, #256). Menjawab tiga pertanyaan yang sebelumnya tersebar: **data apa saja yang ada**, **seberapa terisi**, dan **menu mana yang memakainya**.
 
-Akses efektif: **SUPERADMIN & ADMIN** (VIEW, tanpa EXPORT/PRINT). Pembatasan itu berlaku bukan karena peran lain tidak disebut, melainkan karena menu induk `data-analyst` hanya ber-VIEW untuk SUPERADMIN — kaskade izin bersifat union tanpa pengurangan, sehingga sub-menu tak pernah bisa lebih ketat dari induknya (#262). Dijaga `src/test/menu-access.test.ts`.
+Akses efektif: **SUPERADMIN, ADMIN, dan MANAGEMENT** (VIEW, tanpa EXPORT/PRINT) — MANAGEMENT ditambahkan di produksi 2026-08-13. Pembatasan itu berlaku bukan karena peran lain tidak disebut, melainkan karena menu induk `data-analyst` hanya ber-VIEW untuk SUPERADMIN — kaskade izin bersifat union tanpa pengurangan, sehingga sub-menu tak pernah bisa lebih ketat dari induknya (#262). Dijaga `src/test/menu-access.test.ts`.
 
 ## Lapis keamanan — penyimpangan yang disengaja
 

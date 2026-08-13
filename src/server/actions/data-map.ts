@@ -17,7 +17,7 @@ import type { EntityFill, MenuLabel } from "@/types/data-map";
  * arti yang konsisten. Lapis ketiga (soft delete) tetap dihormati: hitungan
  * memakai baris aktif.
  *
- * **Siapa yang bisa membuka halaman ini: SUPERADMIN & ADMIN.** Yang penting
+ * **Siapa yang bisa membuka halaman ini: SUPERADMIN, ADMIN, MANAGEMENT.** Yang penting
  * dipahami, itu BUKAN karena baris peran lain tidak ditulis — kaskade izin menu
  * bersifat union tanpa pengurangan (`getUserPermissionsForMenu`), sehingga
  * sub-menu tidak pernah bisa lebih ketat daripada induknya. Yang membuatnya

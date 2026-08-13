@@ -77,8 +77,11 @@ const rolesWithView = (menuKey: string) =>
  * test ini gagal.
  */
 const DINYATAKAN: Record<string, string[]> = {
-  // Angka nasional tanpa penyaringan wilayah (#256).
-  "data-analyst-data-map": ["ADMIN", "SUPERADMIN"],
+  // Angka nasional tanpa penyaringan wilayah (#256). MANAGEMENT ditambahkan di
+  // produksi pada 2026-08-13 lewat UI Role & Permission — bukan oleh skrip seed,
+  // yang hanya menyisipkan SUPERADMIN & ADMIN; diadopsi mengikuti keputusan
+  // "produksi sebagai acuan" (#263).
+  "data-analyst-data-map": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
   // Metrik internal pengembangan (#227). MANAGEMENT ikut karena audiens Roadmap %
   // dan Papan KPI memang manajemen/donor (versioning.md §Metrik Nilai Rilis).
   "dashboard-metrics": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
