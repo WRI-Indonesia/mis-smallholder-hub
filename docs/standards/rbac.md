@@ -65,6 +65,8 @@ Karena itu, kalau sebuah menu harus terbatas, yang menentukan adalah **izin menu
 
 **Dijaga test.** `src/test/menu-access.test.ts` menghitung ulang izin efektif dari `prisma/seeds/data/menu.csv` + `role-permissions.csv` dengan logika kaskade yang sama, lalu membandingkannya dengan daftar akses yang dinyatakan untuk menu sensitif. Klaim seperti "SUPERADMIN saja" karena itu tidak bisa lagi salah tanpa ketahuan di gate lokal. Catatan: yang dijaga adalah **sisi kode**, bukan isi database produksi — keduanya diketahui berbeda (#263).
 
+**Jarak ke produksi.** Izin di produksi disesuaikan lewat UI Role & Permission, dan penyesuaian itu tidak punya jalan pulang ke `prisma/seeds/data/*.csv`. Per 2026-08-13 selisihnya **115 baris** (#263), sehingga DB yang di-seed dari repo tidak menguji aturan akses yang sebenarnya berlaku. Jalankan `npm run rbac:compare` (read-only, keluar kode 1 bila ada selisih) sebagai bagian checklist rilis; unit test tidak bisa menggantikannya karena butuh koneksi database.
+
 **Sidebar.** `filterMenuTreeByAccess` (`src/lib/menu-utils.ts`) menyimpan sebuah node bila ia sendiri dapat diakses **atau** salah satu anaknya lolos. Jadi mencabut izin induk tidak menyembunyikan grupnya selama masih ada anak yang boleh dibuka — inilah yang membuat pembatasan lewat induk tetap berterima secara navigasi.
 
 ### RBAC Data Access Hierarchy

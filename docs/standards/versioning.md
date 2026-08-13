@@ -52,6 +52,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] Belum ada rilis lain di hari yang sama (aturan **maks. 1 rilis/hari**; kecuali hotfix kritis)
 - [ ] Semua commit sejak rilis terakhir sudah ter-review (issue workflow selesai)
 - [ ] Lint, build, dan test lulus lokal
+- [ ] `npm run rbac:compare` — selisih izin seed ↔ produksi ditinjau (lihat #263; selisih yang disengaja dicatat, bukan diabaikan)
 - [ ] Check CI di PR hijau (`gitleaks`, `semgrep`) — `gh pr checks <nomor>`
 - [ ] Migrasi DB yang dibutuhkan sudah diterapkan **sebelum** merge (merge = deploy produksi)
 - [ ] `package.json` `version` sudah di-bump sesuai kriteria
