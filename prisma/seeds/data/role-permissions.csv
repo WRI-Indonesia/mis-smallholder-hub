@@ -436,3 +436,5 @@ OPERATOR,data-analyst-benchmark-comparison,PRINT
 MANAGEMENT,data-analyst-benchmark-comparison,VIEW
 MANAGEMENT,data-analyst-benchmark-comparison,EXPORT
 MANAGEMENT,data-analyst-benchmark-comparison,PRINT
+SUPERADMIN,data-analyst-data-map,VIEW
+ADMIN,data-analyst-data-map,VIEW
