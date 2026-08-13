@@ -4,6 +4,9 @@
 
 ## High-Level ERD
 
+> **Versi interaktifnya ada di aplikasi**: menu **Data Analyst → Peta Data & Skema** (`/admin/data-analyst/data-map`, DA-07 #256) menggambar ERD yang sama dari `prisma/schema/*.prisma` — bisa di-zoom, disaring per domain, dan diklik untuk menyorot tetangga, plus tab keterisian kolom dan jalur data menu→entitas. Diagram mermaid di bawah tetap dipelihara sebagai rujukan dokumen (bisa dibaca tanpa menjalankan aplikasi), tetapi bila keduanya berbeda, **yang benar adalah hasil pindai skema** — ia diturunkan dari berkas yang sama dengan yang membuat database.
+
+
 ```mermaid
 erDiagram
     %% GEOGRAPHY HIERARCHY

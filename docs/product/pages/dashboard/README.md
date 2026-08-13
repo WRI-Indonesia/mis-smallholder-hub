@@ -13,11 +13,11 @@ Menu: Dashboard (/admin/dashboard)
 │   └── Page: /admin/dashboard/main
 ├── Sub Menu: BMP Dashboard (Produksi) (dashboard-bmp)
 │   └── Page: /admin/dashboard/bmp
-├── Sub Menu: Dashboard Pelatihan (dashboard-training)
-│   └── Page: /admin/dashboard/training
-└── Sub Menu: Metrik Rilis (dashboard-metrics) — SUPERADMIN saja
-    └── Page: /admin/dashboard/metrics
+└── Sub Menu: Dashboard Pelatihan (dashboard-training)
+    └── Page: /admin/dashboard/training
 ```
+
+> **Metrik Rilis tidak lagi di sini.** Menu `dashboard-metrics` route-nya memang `/admin/dashboard/metrics`, tetapi di database ia bertengger di bawah **Data Analyst** — dokumennya pindah ke [../data-analyst/metrik-rilis.md](../data-analyst/metrik-rilis.md). Perbedaan ini ditemukan saat mendaftarkan menu DA-07 (#256) dan diselesaikan dengan menjadikan keadaan produksi sebagai acuan.
 
 ## Atribut menu
 
@@ -27,7 +27,7 @@ Menu: Dashboard (/admin/dashboard)
 | URL | `/admin/dashboard` |
 | Icon | `LayoutDashboard` |
 | Order | `0` |
-| Sub menu | 4 — Main Dashboard (`dashboard-main`), BMP Dashboard (Produksi) (`dashboard-bmp`), Dashboard Pelatihan (`dashboard-training`), Metrik Rilis (`dashboard-metrics`, SUPERADMIN saja #227) |
+| Sub menu | 3 — Main Dashboard (`dashboard-main`), BMP Dashboard (Produksi) (`dashboard-bmp`), Dashboard Pelatihan (`dashboard-training`) |
 | Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (untuk `dashboard` dan ketiga sub menu; `prisma/seeds/data/role-permissions.csv`) |
 
 Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
@@ -39,7 +39,6 @@ Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 | 1 | Main Dashboard | `dashboard-main` | `/admin/dashboard/main` | 1 | [main-dashboard.md](./main-dashboard.md) |
 | 2 | BMP Dashboard (Produksi) | `dashboard-bmp` | `/admin/dashboard/bmp` | 1 | [bmp-dashboard-produksi.md](./bmp-dashboard-produksi.md) |
 | 3 | Dashboard Pelatihan | `dashboard-training` | `/admin/dashboard/training` | 1 | [dashboard-pelatihan.md](./dashboard-pelatihan.md) |
-| 4 | Metrik Rilis | `dashboard-metrics` | `/admin/dashboard/metrics` | 1 | [metrik-rilis.md](./metrik-rilis.md) |
 
 ## Redirect
 

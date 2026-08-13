@@ -7,7 +7,7 @@
 | Menu key | `data-analyst` |
 | URL | `/admin/data-analyst` |
 | Icon | `BarChart3` |
-| Sub menu | 4 — Ringkasan Petani (`data-analyst-farmer-summary`), Analisa Ketersediaan Data (`data-analyst-data-completeness`), Dashboard Ketersediaan Data (`data-analyst-data-availability`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`) |
+| Sub menu | 6 — Ringkasan Petani (`data-analyst-farmer-summary`), Analisa Ketersediaan Data (`data-analyst-data-completeness`), Dashboard Ketersediaan Data (`data-analyst-data-availability`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Peta Data & Skema (`data-analyst-data-map`, SUPERADMIN/ADMIN/MANAGEMENT), Metrik Rilis (`dashboard-metrics`, SUPERADMIN/ADMIN/MANAGEMENT) |
 
 ## Diagram objek
 
@@ -19,9 +19,15 @@ Menu: Data Analyst (/admin/data-analyst)
 │   └── Page: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
 ├── Sub Menu: Dashboard Ketersediaan Data (data-analyst-data-availability)
 │   └── Page: Dashboard Ketersediaan Data (/admin/data-analyst/data-availability)
-└── Sub Menu: Komparasi Data Acuan (data-analyst-benchmark-comparison)
-    └── Page: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
+├── Sub Menu: Komparasi Data Acuan (data-analyst-benchmark-comparison)
+│   └── Page: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
+├── Sub Menu: Peta Data & Skema (data-analyst-data-map) — SUPERADMIN/ADMIN/MANAGEMENT
+│   └── Page: Peta Data & Skema (/admin/data-analyst/data-map)
+└── Sub Menu: Metrik Rilis (dashboard-metrics) — SUPERADMIN/ADMIN/MANAGEMENT
+    └── Page: Metrik Rilis (/admin/dashboard/metrics)
 ```
+
+> **Catatan penempatan Metrik Rilis.** Menu key-nya `dashboard-metrics` dan route-nya masih `/admin/dashboard/metrics` (peninggalan #227 yang menempatkannya di bawah Dashboard), tetapi di database ia bertengger di bawah **Data Analyst**. Perbedaan itu ditemukan saat mendaftarkan menu DA-07 (#256) dan diselesaikan dengan menjadikan **keadaan produksi sebagai acuan** — seed CSV serta katalog ini disesuaikan, database tidak diubah. Key dan route sengaja dibiarkan apa adanya: mengubahnya berarti memutus tautan yang sudah beredar dan baris RolePermission yang sudah ada.
 
 ## Daftar sub menu
 
@@ -31,6 +37,8 @@ Menu: Data Analyst (/admin/data-analyst)
 | 2 | Analisa Ketersediaan Data | `data-analyst-data-completeness` | `/admin/data-analyst/data-completeness` | [analisa-ketersediaan-data.md](./analisa-ketersediaan-data.md) |
 | 3 | Dashboard Ketersediaan Data | `data-analyst-data-availability` | `/admin/data-analyst/data-availability` | [dashboard-ketersediaan-data.md](./dashboard-ketersediaan-data.md) |
 | 4 | Komparasi Data Acuan | `data-analyst-benchmark-comparison` | `/admin/data-analyst/benchmark-comparison` | [komparasi-data-acuan.md](./komparasi-data-acuan.md) |
+| 5 | Peta Data & Skema | `data-analyst-data-map` | `/admin/data-analyst/data-map` | [peta-data-skema.md](./peta-data-skema.md) |
+| — | Metrik Rilis | `dashboard-metrics` | `/admin/dashboard/metrics` | [metrik-rilis.md](./metrik-rilis.md) |
 
 ## Catatan route induk
 

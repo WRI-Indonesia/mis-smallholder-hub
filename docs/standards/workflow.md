@@ -64,6 +64,15 @@ Sebelum **setiap commit dari lokal**, keempat gate ini **wajib hijau** — janga
 | Test | `npm test` | semua lulus, **tidak ada** test di-skip |
 | **Docs sync** | Review & update `docs/` yang terdampak | Dokumentasi terkait sudah diperbarui & konsisten, di-commit **bersama** kode |
 
+**Artefak turunan.** Dua berkas di `src/lib/*.generated.ts` diturunkan dari kode dan skema, bukan ditulis tangan:
+
+| Perintah | Menghasilkan | Regenerasi wajib saat |
+|---|---|---|
+| `npm run build:schema` | `data-schema.generated.ts` | `prisma/schema/*.prisma` berubah |
+| `npm run build:lineage` | `data-lineage.generated.ts` | rute ber-`requirePermission`, import halaman, atau pemanggilan Prisma di action berubah |
+
+Tidak perlu dihafal: `npm test` akan gagal bila artefaknya basi, dengan pesan yang menyebut entitas/menu yang berubah beserta perintah regenerasinya. Artefaknya **di-commit** supaya perubahan jalur data terlihat di diff PR, bukan terjadi diam-diam.
+
 Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `scripts/**` diperbolehkan — bukan kode aplikasi). Keempat gate di atas **tidak dijalankan CI** — enforcement-nya disiplin lokal, sesuai keputusan project owner. Yang berjalan di CI adalah pemindaian keamanan & deployment (lihat di bawah).
 
 **Docs sync (wajib, sebelum commit):** setiap perubahan yang menyentuh skema/migrasi/kolom, modul/fitur, status delivery, atau aturan **harus** memperbarui file `docs/` yang relevan **sebelum commit** dan di-commit **bersama** kodenya — jangan dipisah/ditunda. Peta cepat:

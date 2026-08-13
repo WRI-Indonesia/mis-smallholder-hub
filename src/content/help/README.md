@@ -6,7 +6,7 @@ Materi panduan aplikasi disimpan sebagai file Markdown di folder ini — **bisa 
 
 1. Buka file `.md` yang ingin diubah (mis. `2-mengelola-data/2-2-bulk-upload.md`).
 2. Edit teksnya, simpan, buat commit/PR. Riwayat perubahan tercatat di git.
-3. Urutan bab & topik mengikuti **awalan angka** pada nama folder/file (`2-1-…` tampil sebelum `2-2-…`).
+3. Urutan bab & topik ditentukan array `CHAPTER_SOURCES` di `src/lib/help-content.ts`, **bukan** awalan angka pada nama berkas — awalan itu hanya kosmetik agar folder mudah dibaca. Menambah topik = tambah berkas `.md` + satu baris import + satu entri di array tersebut. Nomor `bab.topik` yang tampil di UI dihitung dari posisi di array itu, jadi menyisipkan entri akan menggeser nomor entri sesudahnya.
 
 Menambah topik baru: buat file `.md` baru **dan** daftarkan di `src/lib/help-content.ts` (satu baris import) — langkah ini masih perlu developer karena bundling dilakukan saat build.
 
