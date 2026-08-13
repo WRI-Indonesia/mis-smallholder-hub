@@ -12,7 +12,8 @@
     "s3:get-link": "node scripts/get-link.js",
     "pdf:manage": "node scripts/pdf-manager.js",
     "pdf:list": "node scripts/pdf-manager.js list",
-    "build:lineage": "tsx scripts/build-lineage.ts"
+    "build:lineage": "tsx scripts/build-lineage.ts",
+    "build:schema": "tsx scripts/build-schema.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
