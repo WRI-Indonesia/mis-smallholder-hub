@@ -10,9 +10,9 @@ Aplikasi memiliki **5 role** (enum `Role` di `prisma/schema/_config.prisma`):
 |------|-----------|
 | **SUPERADMIN** | Akses penuh seluruh menu dan data (bypass RBAC). |
 | **ADMIN** | Kelola data dalam cakupan wilayah yang ditugaskan. |
-| **OPERATOR** | Petugas lapangan: input & ubah data lembaga/KT yang ditugaskan. |
+| **OPERATOR** | Petugas lapangan: **membaca, mengekspor, dan mencetak** data lembaga/KT yang ditugaskan — tanpa hak tulis. Pemasukan data dikerjakan lewat impor massal oleh admin (keputusan owner 2026-08-13 mengikuti keadaan produksi; sebelumnya tertulis "input & ubah data", lihat #263). |
 | **MANAGEMENT** | Read-only: dashboard, laporan, dan analisa. |
-| **DONOR** | Read-only untuk donor/funder: dashboard, laporan, peta, dan bantuan. |
+| **DONOR** | Read-only untuk donor/funder: dashboard, laporan, peta, dan bantuan — **tanpa master data** dan tanpa EXPORT (boleh PRINT). Ditegakkan 2026-08-13 setelah ditemukan produksi memberi akses daftar petani kepada peran ini (#263). |
 
 **Sentralisasi:** daftar role di sisi aplikasi hanya hidup di `src/lib/roles.ts` (`ROLES`, `ROLE_BADGE_CLASS`, `ROLE_DESCRIPTION`) — dipakai validasi (`user.schema.ts`), form & daftar pengguna, dan matriks Role & Permission. Menambah role baru cukup: edit `src/lib/roles.ts` + tambah nilai di enum `Role` Prisma (migrasi) + seed permission-nya. Jangan hardcode daftar role di tempat lain.
 

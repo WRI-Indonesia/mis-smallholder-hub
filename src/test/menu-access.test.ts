@@ -125,3 +125,35 @@ describe("izin efektif menu dari seed (kaskade induk → anak)", () => {
     expect(yatim, "menu tanpa peran mana pun yang bisa membukanya").toEqual([]);
   });
 });
+
+describe("spesifikasi peran (rbac.md §Inventaris Role) ditegakkan seed", () => {
+  const punya = (role: string, menuPrefix: string, aksi: string[]) =>
+    menus
+      .filter((m) => m.key.startsWith(menuPrefix))
+      .filter((m) => aksi.some((a) => access.get(m.key)?.get(role)?.has(a)))
+      .map((m) => m.key)
+      .sort();
+
+  it("DONOR tidak menyentuh master data sama sekali", () => {
+    // Daftar petani memuat NIK & alamat. Peran donor tertulis read-only untuk
+    // dashboard, laporan, peta, dan bantuan — master data tidak termasuk.
+    // Produksi sempat memberikannya (#263); seed tidak boleh mengulanginya.
+    expect(punya("DONOR", "master-data", ["VIEW", "PRINT", "EXPORT", "CREATE", "EDIT", "DELETE"])).toEqual([]);
+  });
+
+  it("DONOR tidak bisa mengekspor data mentah, tapi boleh mencetak", () => {
+    expect(punya("DONOR", "", ["EXPORT"])).toEqual([]);
+    expect(punya("DONOR", "report", ["PRINT"]).length).toBeGreaterThan(0);
+  });
+
+  it("DONOR tetap bisa membuka Bantuan", () => {
+    expect(punya("DONOR", "help", ["VIEW"])).toEqual(["help"]);
+  });
+
+  it("OPERATOR & MANAGEMENT tidak punya hak tulis di mana pun", () => {
+    // Keputusan owner 2026-08-13: keduanya peran baca/ekspor (#263).
+    for (const role of ["OPERATOR", "MANAGEMENT"]) {
+      expect(punya(role, "", ["CREATE", "EDIT", "DELETE"]), `${role} seharusnya tanpa hak tulis`).toEqual([]);
+    }
+  });
+});
