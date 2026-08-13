@@ -13,3 +13,7 @@ intro: Smallholder HUB MIS adalah sistem informasi data petani sawit swadaya: pe
 **Lahan / Persil** — Sebidang kebun milik petani: ID Lahan, luas (Ha), tahun tanam, komoditas, dan poligon batas kebun (dari Shapefile).
 
 **Produksi** — Catatan panen per lahan per bulan (periode YYYY-MM), dalam kilogram. Satu bulan bisa berisi beberapa kali panen.
+
+**Pohon** — Titik pohon sawit di dalam sebuah lahan, dicatat lewat unggah massal shapefile.
+
+Bagaimana semua istilah di atas saling terhubung — dan kenapa Kelompok Tani menempel pada lahan, bukan pada petani — digambarkan di topik [Peta Data](/admin/help/memulai/peta-data).
