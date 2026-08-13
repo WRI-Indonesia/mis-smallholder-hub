@@ -14,7 +14,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/bulk-upload.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "bulk-upload-parcels",
@@ -27,7 +28,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/bulk-upload-parcel.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "bulk-upload-production",
@@ -39,7 +41,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/bulk-upload-production.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "bulk-upload-trees",
@@ -50,7 +53,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/bulk-upload-tree.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "dashboard-bmp",
@@ -60,7 +64,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/dashboard-bmp.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "dashboard-main",
@@ -70,13 +75,15 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/dashboard.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "dashboard-metrics",
     "route": "(admin)/admin/dashboard/metrics",
     "models": {},
-    "modules": []
+    "modules": [],
+    "dynamicAccess": null
   },
   {
     "menuKey": "dashboard-snapshot",
@@ -90,7 +97,8 @@ export const DATA_LINEAGE: DataLineage = [
     "modules": [
       "src/lib/dashboard-query.ts",
       "src/server/actions/snapshot.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "dashboard-snapshot-bmp",
@@ -104,7 +112,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/snapshot-bmp.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "dashboard-training",
@@ -116,7 +125,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/dashboard-training.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "data-analyst-benchmark-comparison",
@@ -131,7 +141,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/benchmark-comparison.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "data-analyst-data-availability",
@@ -143,7 +154,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/data-availability.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "data-analyst-data-completeness",
@@ -155,7 +167,19 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/data-completeness.ts"
-    ]
+    ],
+    "dynamicAccess": null
+  },
+  {
+    "menuKey": "data-analyst-data-map",
+    "route": "(admin)/admin/data-analyst/data-map",
+    "models": {
+      "menuItem": "R"
+    },
+    "modules": [
+      "src/server/actions/data-map.ts"
+    ],
+    "dynamicAccess": "R"
   },
   {
     "menuKey": "data-analyst-farmer-summary",
@@ -167,13 +191,15 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/data-analyst.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "help",
     "route": "(admin)/admin/help",
     "models": {},
-    "modules": []
+    "modules": [],
+    "dynamicAccess": null
   },
   {
     "menuKey": "map-bmp",
@@ -190,7 +216,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/select-options.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/map.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "map-parcel",
@@ -209,7 +236,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/select-options.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/map.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "master-data-farmers",
@@ -230,7 +258,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/server/actions/farmer-group.ts",
       "src/server/actions/farmer.ts",
       "src/server/actions/tree.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "master-data-groups",
@@ -245,7 +274,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/farmer-group.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "master-data-parcels",
@@ -266,7 +296,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/server/actions/land-parcel.ts",
       "src/server/actions/production.ts",
       "src/server/actions/tree.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "master-data-production",
@@ -283,7 +314,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/production.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "master-data-training",
@@ -300,7 +332,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/training.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "report-farmer",
@@ -313,7 +346,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/report.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "report-kelompok-tani",
@@ -325,7 +359,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/report.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "report-kelompok-tani-detail",
@@ -337,7 +372,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/report.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "report-land-parcel",
@@ -349,7 +385,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/report.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "report-production",
@@ -362,7 +399,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/report.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "report-training",
@@ -376,7 +414,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/report.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "settings-menu",
@@ -386,7 +425,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/menu.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "settings-regions",
@@ -399,7 +439,8 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/region.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "settings-roles",
@@ -411,7 +452,8 @@ export const DATA_LINEAGE: DataLineage = [
     "modules": [
       "src/server/actions/menu.ts",
       "src/server/actions/role-permission.ts"
-    ]
+    ],
+    "dynamicAccess": null
   },
   {
     "menuKey": "settings-users",
@@ -432,7 +474,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/server/actions/user-data-access.ts",
       "src/server/actions/user-menu-access.ts",
       "src/server/actions/user.ts"
-    ]
+    ],
+    "dynamicAccess": null
   }
 ];
 

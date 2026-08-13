@@ -20,6 +20,14 @@ export type LineageEntry = {
    * "lewat mana", dan membuat kegagalan test penjaga bisa dibaca.
    */
   modules: string[];
+  /**
+   * Akses ke SELURUH entitas secara dinamis (`prisma[namaModel]`), yang tidak
+   * mungkin dilihat pemindai statis. Diisi dari penanda eksplisit
+   * `@lineage-dynamic: R|W|RW` di kode — pintu keluar yang sengaja dibuat
+   * kentara, supaya halaman yang mengakses model secara dinamis tidak
+   * diam-diam tampak "hanya menyentuh satu entitas".
+   */
+  dynamicAccess: LineageAccess | null;
 };
 
 export type DataLineage = LineageEntry[];

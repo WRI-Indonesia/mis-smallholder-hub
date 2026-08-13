@@ -70,6 +70,17 @@ describe("data-lineage — invarian hasil pindai", () => {
     }
   });
 
+  it("akses delegate dinamis dinyatakan lewat penanda, bukan disembunyikan", () => {
+    // Halaman Peta Data membaca semua entitas lewat prisma[clientName] — mustahil
+    // dilihat pemindaian statis. Tanpa penanda @lineage-dynamic ia akan tampak
+    // hanya menyentuh menuItem, yaitu berbohong tentang dirinya sendiri.
+    const dataMap = scan.entries.find((e) => e.menuKey === "data-analyst-data-map");
+    expect(dataMap?.dynamicAccess).toBe("R");
+    // Penanda harus tetap langka: rute lain wajib jujur lewat pemindaian biasa.
+    const withMarker = scan.entries.filter((e) => e.dynamicAccess !== null).map((e) => e.menuKey);
+    expect(withMarker).toEqual(["data-analyst-data-map"]);
+  });
+
   it("halaman yang tidak menyentuh DB tercatat tanpa entitas domain", () => {
     // Metrik Rilis membaca berkas .md (#227/#250), bukan database — kalau suatu
     // saat ia menyentuh entitas, itu perubahan arsitektur yang harus disadari.

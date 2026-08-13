@@ -64,6 +64,14 @@ const CALL_RE = new RegExp(
 /** Pemanggilan identifier apa pun — dipakai menelusuri helper lokal & simbol impor. */
 const IDENT_CALL_RE = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
 const IMPORT_RE = /import\s+(type\s+)?(?:\{([\s\S]*?)\}|(\w+)|\*\s+as\s+(\w+))\s+from\s+"([^"]+)"/g;
+/**
+ * Pintu keluar untuk akses delegate dinamis (`prisma[namaModel]`) yang tak
+ * mungkin dilihat pemindaian statis — mis. halaman Peta Data yang menghitung
+ * keterisian SEMUA entitas. Tanpa penanda ini, rute begitu akan tampak hanya
+ * menyentuh satu-dua entitas; dengan penanda, ketidaktahuan pemindai jadi
+ * kentara di UI alih-alih menyamar jadi fakta.
+ */
+const DYNAMIC_RE = /@lineage-dynamic:\s*(RW|R|W)\b/;
 const FUNCTION_RE = /(?:^|\n)\s*(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*[(<]/g;
 const GUARD_RE = /requirePermission\(\s*"([a-z0-9-]+)"/;
 
@@ -209,6 +217,7 @@ function walkRoute(seeds: string[], root: string) {
   const models: Record<string, LineageAccess> = {};
   const infraModels: Record<string, LineageAccess> = {};
   const modules = new Set<string>();
+  let dynamicAccess: LineageAccess | null = null;
   const visited = new Set<string>();
   const queue: Request[] = seeds.map((file) => ({ file, symbol: "*" }));
 
@@ -226,6 +235,9 @@ function walkRoute(seeds: string[], root: string) {
     const key = `${file}#${symbol}`;
     if (visited.has(key)) continue;
     visited.add(key);
+
+    const declared = DYNAMIC_RE.exec(read(join(root, file)))?.[1] as LineageAccess | undefined;
+    if (declared) dynamicAccess = merge(dynamicAccess ?? undefined, declared);
 
     const facts = parseModule(file, root);
     // Modul infrastruktur: catat entitasnya, jangan telusuri lebih dalam.
@@ -259,7 +271,7 @@ function walkRoute(seeds: string[], root: string) {
     for (const target of facts.wildcard) queue.push({ file: target, symbol: "*" });
   }
 
-  return { models, infraModels, modules: [...modules].sort() };
+  return { models, infraModels, modules: [...modules].sort(), dynamicAccess };
 }
 
 const toRoute = (dir: string) => posix(relative(join("src", "app"), dir));
@@ -310,18 +322,19 @@ export function scanLineage(root: string = process.cwd()): LineageScanResult {
   const infra: Record<string, LineageAccess> = {};
   for (const [dir, seeds] of [...seedsByDir.entries()].sort()) {
     const menuKey = guarded.get(dir) as string;
-    const { models, infraModels, modules } = walkRoute(seeds, root);
+    const { models, infraModels, modules, dynamicAccess } = walkRoute(seeds, root);
     for (const [model, access] of Object.entries(infraModels)) infra[model] = merge(infra[model], access);
 
     const existing = byMenu.get(menuKey);
     if (!existing) {
-      byMenu.set(menuKey, { menuKey, route: toRoute(dir), models, modules });
+      byMenu.set(menuKey, { menuKey, route: toRoute(dir), models, modules, dynamicAccess });
       continue;
     }
     for (const [model, access] of Object.entries(models)) {
       existing.models[model] = merge(existing.models[model], access);
     }
     existing.modules = [...new Set([...existing.modules, ...modules])].sort();
+    if (dynamicAccess) existing.dynamicAccess = merge(existing.dynamicAccess ?? undefined, dynamicAccess);
   }
 
   const entries = [...byMenu.values()]
