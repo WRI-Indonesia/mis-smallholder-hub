@@ -74,6 +74,29 @@ export const dayEpoch = (iso: string) => {
 /** Tanggal efektif sebuah baris pada sumbu kalender (provisional → hari ini). */
 export const effectiveDate = (r: ReleaseMetric, today: string) => r.releasedAt ?? today;
 
+/** Nilai garis bantu pada kelipatan "bulat" (1/2/2,5/5 × 10ⁿ) di dalam domain. */
+export function niceTicks(min: number, max: number, target = 4): number[] {
+  const raw = Math.max((max - min) / target, Number.EPSILON);
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? 10 * mag;
+  const out: number[] = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + step / 1000; v += step) out.push(Number(v.toFixed(6)));
+  return out;
+}
+
+/**
+ * Potong deret ke rentang tampak (hari ke belakang dari titik terakhir).
+ * Rentang menyaring data, bukan men-zoom kanvas — dengan begitu ketiga grafik
+ * halaman ini berbagi sumbu X yang sama persis dan bisa dibaca berdampingan.
+ * Selalu menyisakan ≥ 2 titik supaya garis tidak pernah hilang.
+ */
+export function windowSlice<T>(pts: T[], at: (p: T) => number, windowDays: number | null): T[] {
+  if (windowDays == null || pts.length <= 2) return pts;
+  const tEnd = at(pts[pts.length - 1]);
+  const kept = pts.filter((p) => at(p) >= tEnd - windowDays);
+  return kept.length >= 2 ? kept : pts.slice(-2);
+}
+
 /** Repo GitHub proyek — tautan versi (release tag) & issue di Daftar rilis. */
 export const REPO_URL = "https://github.com/WRI-Indonesia/mis-smallholder-hub";
 export const releaseUrl = (version: string) => `${REPO_URL}/releases/tag/${version}`;
