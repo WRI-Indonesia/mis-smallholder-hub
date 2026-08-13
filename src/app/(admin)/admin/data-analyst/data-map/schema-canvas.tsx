@@ -16,7 +16,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { cn } from "@/lib/utils";
-import type { SchemaMap } from "@/types/data-schema";
+import type { CanvasSchema } from "@/types/data-schema";
 
 /**
  * Kanvas ERD (DA-07, #256) — satu-satunya tempat React Flow dipakai di aplikasi
@@ -81,7 +81,7 @@ function EntityNode({ data }: NodeProps) {
 
 const nodeTypes = { entity: EntityNode };
 
-export function SchemaCanvas({ schema, dark }: { schema: SchemaMap; dark: boolean }) {
+export function SchemaCanvas({ schema, dark }: { schema: CanvasSchema; dark: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
 
@@ -150,7 +150,7 @@ export function SchemaCanvas({ schema, dark }: { schema: SchemaMap; dark: boolea
           tableName: entity.tableName,
           domain: entity.domain,
           scalarCount: entity.scalarCount,
-          relationCount: entity.fields.length - entity.scalarCount,
+          relationCount: entity.fieldCount - entity.scalarCount,
           dimmed: neighbours ? !neighbours.has(entity.name) : false,
           active: selected === entity.name,
         } satisfies EntityNodeData,

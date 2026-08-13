@@ -341,8 +341,7 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "district": "R",
       "farmer": "R",
-      "farmerGroup": "R",
-      "landParcel": "R"
+      "farmerGroup": "R"
     },
     "modules": [
       "src/server/actions/report.ts"
@@ -394,7 +393,6 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "district": "R",
       "farmerGroup": "R",
-      "landParcel": "R",
       "productionRecord": "R"
     },
     "modules": [
@@ -409,7 +407,6 @@ export const DATA_LINEAGE: DataLineage = [
       "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
-      "landParcel": "R",
       "trainingActivity": "R"
     },
     "modules": [

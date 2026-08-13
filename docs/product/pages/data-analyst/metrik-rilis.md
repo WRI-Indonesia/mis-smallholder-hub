@@ -2,7 +2,7 @@
 
 [← Menu Data Analyst](./README.md) · [← Katalog halaman](../README.md)
 
-Sub menu `dashboard-metrics`, satu halaman: `/admin/dashboard/metrics` (#227). Dashboard internal development — audiens tim/manajemen/donor, bukan data petani. Akses **SUPERADMIN saja** (tanpa baris RolePermission; role lain via Role & Permission bila diputuskan).
+Sub menu `dashboard-metrics`, satu halaman: `/admin/dashboard/metrics` (#227). Dashboard internal development — audiens tim/manajemen/donor, bukan data petani. Akses: tanpa baris RolePermission sendiri, tetapi karena menu ini berada di bawah `data-analyst` yang ber-VIEW untuk keempat peran, **akses efektifnya bukan SUPERADMIN saja** — lihat #262.
 
 ## Diagram objek
 

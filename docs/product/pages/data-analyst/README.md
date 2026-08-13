@@ -7,7 +7,7 @@
 | Menu key | `data-analyst` |
 | URL | `/admin/data-analyst` |
 | Icon | `BarChart3` |
-| Sub menu | 6 — Ringkasan Petani (`data-analyst-farmer-summary`), Analisa Ketersediaan Data (`data-analyst-data-completeness`), Dashboard Ketersediaan Data (`data-analyst-data-availability`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Peta Data & Skema (`data-analyst-data-map`, SUPERADMIN/ADMIN), Metrik Rilis (`dashboard-metrics`, SUPERADMIN saja) |
+| Sub menu | 6 — Ringkasan Petani (`data-analyst-farmer-summary`), Analisa Ketersediaan Data (`data-analyst-data-completeness`), Dashboard Ketersediaan Data (`data-analyst-data-availability`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Peta Data & Skema (`data-analyst-data-map`), Metrik Rilis (`dashboard-metrics`) — keduanya **efektif terbuka untuk keempat peran** yang punya VIEW pada menu induk, lihat #262 |
 
 ## Diagram objek
 
@@ -21,9 +21,9 @@ Menu: Data Analyst (/admin/data-analyst)
 │   └── Page: Dashboard Ketersediaan Data (/admin/data-analyst/data-availability)
 ├── Sub Menu: Komparasi Data Acuan (data-analyst-benchmark-comparison)
 │   └── Page: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
-├── Sub Menu: Peta Data & Skema (data-analyst-data-map) — SUPERADMIN/ADMIN
+├── Sub Menu: Peta Data & Skema (data-analyst-data-map) — seed SUPERADMIN/ADMIN, efektif 4 peran (#262)
 │   └── Page: Peta Data & Skema (/admin/data-analyst/data-map)
-└── Sub Menu: Metrik Rilis (dashboard-metrics) — SUPERADMIN saja
+└── Sub Menu: Metrik Rilis (dashboard-metrics) — seed SUPERADMIN, efektif 4 peran (#262)
     └── Page: Metrik Rilis (/admin/dashboard/metrics)
 ```
 

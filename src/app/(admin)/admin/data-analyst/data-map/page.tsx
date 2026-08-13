@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
-import { dataSchema } from "@/lib/data-schema";
+import { canvasSchema } from "@/lib/data-schema";
 import { DATA_LINEAGE, INFRA_MODELS, UNMAPPED_ROUTES } from "@/lib/data-lineage.generated";
 import { roadmapSummary } from "@/lib/release-metrics-data";
 import { getEntityFillRates, getMenuLabels } from "@/server/actions/data-map";
@@ -36,7 +36,7 @@ export default async function DataMapPage() {
       </div>
 
       <DataMapClient
-        schema={dataSchema}
+        schema={canvasSchema()}
         fills={fills}
         lineage={DATA_LINEAGE}
         infraModels={INFRA_MODELS}

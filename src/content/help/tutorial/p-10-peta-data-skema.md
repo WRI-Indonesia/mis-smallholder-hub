@@ -14,7 +14,7 @@ goal: Mengetahui data apa saja yang sebenarnya ada di sistem, kolom mana yang ti
 Halaman ini menjelaskan **bentuk datanya**, bukan isi datanya. Ia tidak menampilkan nama petani atau angka produksi, melainkan: entitas apa yang ada, kolom apa saja di dalamnya, bagaimana antar-entitas terhubung, dan seberapa banyak kolom itu benar-benar diisi.
 + Semua angkanya diturunkan otomatis — struktur dari berkas skema database, jalur data dari kode aplikasi, keterisian dari hitungan langsung ke database. Tidak ada daftar yang diketik manual, jadi tidak ada yang bisa basi tanpa ketahuan.
 
-Angka di halaman ini bersifat **nasional**, tidak disaring per wilayah atau per Lembaga. Karena itu menunya hanya diberikan kepada SUPERADMIN dan ADMIN. Untuk kelengkapan data per Lembaga, pakai **Analisa Ketersediaan Data**.
+Angka di halaman ini bersifat **nasional**, tidak disaring per wilayah atau per Lembaga — jadi apa yang Anda lihat bukan hanya wilayah kerja Anda. Untuk kelengkapan data per Lembaga, pakai **Analisa Ketersediaan Data**.
 
 ## Langkah
 

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import type { DataLineage, LineageAccess, UnmappedRoute } from "@/types/data-lineage";
 import type { EntityFill, MenuLabel } from "@/types/data-map";
-import type { SchemaMap } from "@/types/data-schema";
+import type { CanvasSchema } from "@/types/data-schema";
 import type { RoadmapPhase } from "@/types/roadmap";
 import { FillRatesPanel } from "./fill-rates-panel";
 import { LineageMatrix } from "./lineage-matrix";
@@ -39,7 +39,7 @@ export function DataMapClient({
   menus,
   planned,
 }: {
-  schema: SchemaMap;
+  schema: CanvasSchema;
   fills: EntityFill[];
   lineage: DataLineage;
   infraModels: Record<string, LineageAccess>;

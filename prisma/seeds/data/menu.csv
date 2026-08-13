@@ -38,5 +38,5 @@ dashboard-bmp,dashboard,BMP Dashboard (Produksi),/admin/dashboard/bmp,Sprout,2,T
 dashboard-training,dashboard,Dashboard Pelatihan,/admin/dashboard/training,GraduationCap,3,TRUE,TRUE
 dashboard-snapshot-bmp,tools,Dashboard Snapshot BMP,/admin/tools/snapshot-bmp,Camera,2,TRUE,TRUE
 help,,Bantuan,/admin/help,HelpCircle,9,TRUE,TRUE
-dashboard-metrics,data-analyst,Metrik Rilis,/admin/dashboard/metrics,Activity,4,TRUE,TRUE
+dashboard-metrics,data-analyst,Metrik Rilis,/admin/dashboard/metrics,Activity,6,TRUE,TRUE
 bulk-upload-trees,bulk-upload,Pohon Sawit,/admin/bulk-upload/trees,TreePine,4,TRUE,TRUE

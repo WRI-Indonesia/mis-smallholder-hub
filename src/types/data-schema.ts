@@ -69,3 +69,22 @@ export type SchemaMap = {
   relations: SchemaRelation[];
   enums: SchemaEnum[];
 };
+
+/**
+ * Bentuk ramping khusus kanvas ERD. `SchemaMap` penuh berisi seluruh kolom tiap
+ * entitas (±114 KB saat diserialisasi) padahal kanvas hanya memerlukan nama,
+ * nama tabel, domain, dan dua hitungan — mengirim sisanya membebani payload RSC
+ * tiap kali halaman dibuka, pada aplikasi yang justru memantau payload sebagai KPI.
+ */
+export type CanvasEntity = {
+  name: string;
+  tableName: string | null;
+  domain: string;
+  scalarCount: number;
+  fieldCount: number;
+};
+
+export type CanvasSchema = {
+  entities: CanvasEntity[];
+  relations: SchemaRelation[];
+};

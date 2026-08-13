@@ -14,10 +14,16 @@ import type { EntityFill, MenuLabel } from "@/types/data-map";
  * tidak dipakai: yang ditampilkan adalah bentuk dan keterisian *skema* — jumlah
  * baris dan proporsi kolom terisi secara nasional — bukan baris data milik
  * wilayah tertentu, dan menyaring 22 entitas heterogen ke satu scope tidak punya
- * arti yang konsisten. Konsekuensinya angka di sini bersifat global, jadi menu
- * `data-analyst-data-map` hanya boleh diberikan ke peran yang memang berhak
- * melihat angka nasional (SUPERADMIN/ADMIN). Lapis ketiga (soft delete) tetap
- * dihormati: hitungan memakai baris aktif.
+ * arti yang konsisten. Lapis ketiga (soft delete) tetap dihormati: hitungan
+ * memakai baris aktif.
+ *
+ * **Siapa yang bisa membuka halaman ini — apa adanya.** Seed hanya memberi VIEW
+ * ke SUPERADMIN & ADMIN, TETAPI kaskade izin menu bersifat union tanpa
+ * pengurangan (`getUserPermissionsForMenu`): karena menu induk `data-analyst`
+ * ber-VIEW untuk OPERATOR dan MANAGEMENT, kedua peran itu **ikut mendapat
+ * akses**. Jadi angka nasional di halaman ini efektif terbuka untuk empat peran.
+ * Membatasinya butuh keputusan terpisah — lihat #262; jangan menulis ulang
+ * klaim "SUPERADMIN/ADMIN saja" di sini sebelum keputusan itu diambil.
  *
  * @lineage-dynamic: R
  * Berkas ini mengakses delegate Prisma secara dinamis (`prisma[clientName]`)
@@ -33,6 +39,14 @@ const hasIsActive = (entity: { fields: { name: string }[] }) =>
   entity.fields.some((f) => f.name === "isActive");
 
 /**
+ * Berapa tabel diagregasi bersamaan. `connection_limit` pool adalah 20
+ * (docs/database/performance.md), jadi menembakkan 22 kueri sekaligus bisa
+ * menghabiskan pool dan menabrak `pool_timeout` — apalagi kueri ini adalah
+ * agregat sekuensial atas tabel terbesar.
+ */
+const CHUNK = 5;
+
+/**
  * Keterisian kolom per entitas: satu kueri agregat per tabel (~22 kueri), bukan
  * satu kueri per kolom (~300). `_count` per field menghitung baris NON-NULL.
  *
@@ -44,36 +58,39 @@ export async function getEntityFillRates(): Promise<EntityFill[]> {
     throw new Error("Anda tidak memiliki akses melihat Peta Data & Skema");
   }
 
-  const results = await Promise.all(
-    dataSchema.entities.map(async (entity): Promise<EntityFill> => {
-      const fields = countableFields(entity);
-      const select = Object.fromEntries(fields.map((f) => [f.name, true]));
-      const where = hasIsActive(entity) ? { isActive: true } : undefined;
+  const aggregate = async (entity: (typeof dataSchema.entities)[number]): Promise<EntityFill> => {
+    const fields = countableFields(entity);
+    const select = Object.fromEntries(fields.map((f) => [f.name, true]));
+    const where = hasIsActive(entity) ? { isActive: true } : undefined;
 
-      // Model diakses dinamis lewat nama properti client dari peta skema —
-      // sudah disilangkan dengan Prisma.dmmf oleh test, jadi nama pasti ada.
-      const delegate = (prisma as unknown as Record<string, { aggregate: (args: unknown) => Promise<unknown> }>)[
-        entity.clientName
-      ];
-      const raw = (await delegate.aggregate({ where, _count: { _all: true, ...select } })) as {
-        _count: Record<string, number>;
-      };
+    // Model diakses dinamis lewat nama properti client dari peta skema —
+    // sudah disilangkan dengan Prisma.dmmf oleh test, jadi nama pasti ada.
+    const delegate = (prisma as unknown as Record<string, { aggregate: (args: unknown) => Promise<unknown> }>)[
+      entity.clientName
+    ];
+    const raw = (await delegate.aggregate({ where, _count: { _all: true, ...select } })) as {
+      _count: Record<string, number>;
+    };
 
-      const rows = raw._count._all ?? 0;
-      return {
-        entity: entity.name,
-        clientName: entity.clientName,
-        domain: entity.domain,
-        rows,
-        fields: fields.map((f) => ({
-          field: f.name,
-          isRequired: f.isRequired,
-          filled: raw._count[f.name] ?? 0,
-          pct: rows === 0 ? null : ((raw._count[f.name] ?? 0) / rows) * 100,
-        })),
-      };
-    })
-  );
+    const rows = raw._count._all ?? 0;
+    return {
+      entity: entity.name,
+      clientName: entity.clientName,
+      domain: entity.domain,
+      rows,
+      fields: fields.map((f) => ({
+        field: f.name,
+        isRequired: f.isRequired,
+        filled: raw._count[f.name] ?? 0,
+        pct: rows === 0 ? null : ((raw._count[f.name] ?? 0) / rows) * 100,
+      })),
+    };
+  };
+
+  const results: EntityFill[] = [];
+  for (let i = 0; i < dataSchema.entities.length; i += CHUNK) {
+    results.push(...(await Promise.all(dataSchema.entities.slice(i, i + CHUNK).map(aggregate))));
+  }
 
   return results.sort((a, b) => b.rows - a.rows || a.entity.localeCompare(b.entity));
 }

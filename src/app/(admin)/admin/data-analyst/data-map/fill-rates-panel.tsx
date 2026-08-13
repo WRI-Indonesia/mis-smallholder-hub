@@ -18,7 +18,15 @@ import type { RoadmapPhase } from "@/types/roadmap";
  * Kualitas isi per Lembaga ada di Analisa Ketersediaan Data (DA-02/DA-03).
  */
 
-const pctLabel = (pct: number | null) => (pct === null ? "—" : `${pct.toFixed(pct < 10 && pct > 0 ? 1 : 0)}%`);
+/**
+ * Satu desimal dipakai juga pada pita 99–100: kolom wajib dengan beberapa baris
+ * NULL — justru anomali yang dicari panel ini — tidak boleh tampil "100%".
+ */
+const pctLabel = (pct: number | null) => {
+  if (pct === null) return "—";
+  const perluDesimal = (pct > 0 && pct < 10) || (pct > 99 && pct < 100);
+  return `${pct.toFixed(perluDesimal ? 1 : 0)}%`;
+};
 
 function FieldRow({ name, pct, filled, rows, isRequired }: {
   name: string;

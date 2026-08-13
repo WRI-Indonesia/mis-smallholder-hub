@@ -34,8 +34,15 @@ export function LineageMatrix({
   const labels = useMemo(() => new Map(menus.map((m) => [m.key, m])), [menus]);
 
   const rows = useMemo(() => {
+    // Akses dinamis ikut dihitung: penanda itu justru ada untuk membuat akses
+    // yang tak terdeteksi lebih terlihat, jadi menyembunyikannya dari saringan
+    // "yang menulis" adalah kebalikan dari tujuannya.
     const visible = onlyWrites
-      ? lineage.filter((entry) => Object.values(entry.models).some((a) => a !== "R"))
+      ? lineage.filter(
+          (entry) =>
+            Object.values(entry.models).some((a) => a !== "R") ||
+            (entry.dynamicAccess !== null && entry.dynamicAccess !== "R")
+        )
       : lineage;
     // Urutkan mengikuti urutan menu aplikasi bila menunya dikenal DB; sisanya di bawah.
     return [...visible].sort((a, b) => {

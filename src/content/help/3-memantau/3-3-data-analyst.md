@@ -7,7 +7,7 @@ icon: BarChart3
 
 **Analisa Ketersediaan Data** — Skor kelengkapan data per lembaga atau KT beserta rincian domain yang masih kosong. Gunakan ini untuk menentukan prioritas pendataan lapangan.
 
-**Peta Data & Skema** — Menjelaskan *bentuk* datanya, bukan isinya: entitas apa saja yang ada di sistem, bagaimana antar-entitas terhubung, kolom mana yang ternyata tidak pernah diisi, dan menu mana mengambil data dari entitas apa. Angkanya bersifat nasional (tidak disaring per wilayah), sehingga menunya hanya untuk SUPERADMIN dan ADMIN. Untuk kelengkapan data per Lembaga, pakai Analisa Ketersediaan Data.
+**Peta Data & Skema** — Menjelaskan *bentuk* datanya, bukan isinya: entitas apa saja yang ada di sistem, bagaimana antar-entitas terhubung, kolom mana yang ternyata tidak pernah diisi, dan menu mana mengambil data dari entitas apa. Angkanya bersifat nasional — tidak disaring per wilayah, jadi yang tampil bukan hanya wilayah kerja Anda. Untuk kelengkapan data per Lembaga, pakai Analisa Ketersediaan Data.
 
 **Metrik Rilis** — Memantau pengembangan aplikasinya sendiri, bukan data petani: kecepatan rilis, kemajuan menuju go-live, jumlah test, dan kualitas. Menu ini berada di grup Data Analyst meskipun alamat halamannya masih `/admin/dashboard/metrics`.
 

@@ -1,5 +1,5 @@
 import { DATA_SCHEMA } from "@/lib/data-schema.generated";
-import type { SchemaEntity, SchemaField, SchemaMap } from "@/types/data-schema";
+import type { CanvasSchema, SchemaEntity, SchemaField, SchemaMap } from "@/types/data-schema";
 
 /**
  * Pembantu murni di atas artefak peta skema (#256). Tidak mengimpor Prisma
@@ -35,3 +35,15 @@ export function entitiesByDomain(schema: SchemaMap = DATA_SCHEMA): { domain: str
 /** Relasi yang menyentuh satu entitas (kedua arah) — dipakai sorot tetangga. */
 export const relationsOf = (name: string, schema: SchemaMap = DATA_SCHEMA) =>
   schema.relations.filter((r) => r.from === name || r.to === name);
+
+/** Proyeksi ramping untuk kanvas ERD — lihat catatan pada `CanvasSchema`. */
+export const canvasSchema = (schema: SchemaMap = DATA_SCHEMA): CanvasSchema => ({
+  entities: schema.entities.map((e) => ({
+    name: e.name,
+    tableName: e.tableName,
+    domain: e.domain,
+    scalarCount: e.scalarCount,
+    fieldCount: e.fields.length,
+  })),
+  relations: schema.relations,
+});

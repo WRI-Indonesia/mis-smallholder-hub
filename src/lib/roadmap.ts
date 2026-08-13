@@ -109,7 +109,21 @@ function parsePhaseDetails(markdown: string): Record<string, { evidence: string 
  */
 export function parseRoadmapPhases(markdown: string): RoadmapPhase[] {
   const section = sliceSection(markdown, "### Phase Status (Indeks)", "\n### ");
-  const rows = tableRows(section).filter((c) => /^[A-Z]+-\d+$/.test(c[0]));
+  const all = tableRows(section);
+  const rows = all.filter((c) => /^[A-Z]+-\d+$/.test(c[0]));
+
+  // Baris yang BERBENTUK data (5 kolom, bukan header) tapi kode fasenya
+  // menyimpang — `**MD-12**`, backtick, atau tanda footnote — dulu dilewati
+  // diam-diam sehingga penyebut mengecil tanpa jejak. Kontrak berkas ini
+  // "format menyimpang membuat build & test gagal", jadi ia harus melempar.
+  const menyimpang = all.filter(
+    (c) => c.length === 5 && c[0] !== "Phase" && !/^[A-Z]+-\d+$/.test(c[0])
+  );
+  if (menyimpang.length > 0) {
+    throw new Error(
+      `roadmap.md: kode phase tidak dikenali — ${menyimpang.map((c) => `"${c[0]}"`).join(", ")}; tulis apa adanya tanpa penekanan/backtick`
+    );
+  }
 
   if (rows.length === 0) {
     throw new Error("roadmap.md: tabel Phase Status tidak ditemukan / format kolom berubah");

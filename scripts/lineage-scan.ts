@@ -145,10 +145,50 @@ function collectUnit(text: string): Unit {
   return { models, calls };
 }
 
-/** Potong badan fungsi dengan pencocokan kurung kurawal dari `{` pertama. */
+/**
+ * Potong badan fungsi. Yang sulit adalah menemukan `{` PEMBUKA BADAN, bukan
+ * mencocokkan kurungnya:
+ *
+ * - `{` pertama sesudah kata `function` sering merupakan **tipe objek inline
+ *   pada parameter** — mis. `addParticipants(activityId, participants: {
+ *   farmerId: string; … }[])`. Mengambilnya membuat badan fungsi yang
+ *   sesungguhnya jatuh ke kode level modul, yang lalu diserap untuk SETIAP
+ *   simbol yang diimpor dari modul itu — persis kebalikan dari granularitas
+ *   per fungsi yang diklaim pemindai ini.
+ * - Sesudah daftar parameter masih bisa ada anotasi tipe kembalian yang memuat
+ *   `{` di dalam generic (`: Promise<{ id: string }>`), jadi `{` badan adalah
+ *   yang pertama berada pada kedalaman generic nol.
+ */
 function functionBody(text: string, startIndex: number): { body: string; end: number } {
-  const open = text.indexOf("{", startIndex);
+  const paren = text.indexOf("(", startIndex);
+  if (paren === -1) return { body: "", end: startIndex };
+
+  let cursor = paren;
+  let parenDepth = 0;
+  for (; cursor < text.length; cursor++) {
+    if (text[cursor] === "(") parenDepth++;
+    else if (text[cursor] === ")") {
+      parenDepth--;
+      if (parenDepth === 0) {
+        cursor++;
+        break;
+      }
+    }
+  }
+
+  let angle = 0;
+  let open = -1;
+  for (; cursor < text.length; cursor++) {
+    const char = text[cursor];
+    if (char === "<") angle++;
+    else if (char === ">") angle = Math.max(0, angle - 1);
+    else if (char === "{" && angle === 0) {
+      open = cursor;
+      break;
+    }
+  }
   if (open === -1) return { body: "", end: startIndex };
+
   let depth = 0;
   for (let i = open; i < text.length; i++) {
     if (text[i] === "{") depth++;

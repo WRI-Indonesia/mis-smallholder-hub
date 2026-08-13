@@ -4,7 +4,7 @@
 
 Sub menu `data-analyst-data-map`, satu halaman: `/admin/data-analyst/data-map` (DA-07, #256). Menjawab tiga pertanyaan yang sebelumnya tersebar: **data apa saja yang ada**, **seberapa terisi**, dan **menu mana yang memakainya**.
 
-Akses **SUPERADMIN & ADMIN** (VIEW saja, tanpa EXPORT/PRINT).
+Akses: baris seed hanya untuk **SUPERADMIN & ADMIN** (VIEW, tanpa EXPORT/PRINT), tetapi **OPERATOR & MANAGEMENT ikut mendapat akses** lewat kaskade izin dari menu induk `data-analyst` — kaskade bersifat union tanpa pengurangan, jadi sub-menu tidak bisa lebih ketat dari induknya. Lihat **#262**.
 
 ## Lapis keamanan — penyimpangan yang disengaja
 
@@ -16,7 +16,7 @@ Dari tiga lapis standar, halaman ini **hanya memakai lapis pertama** (`requirePe
 | Access context | **sengaja tidak dipakai** | Yang ditampilkan bentuk & keterisian *skema* secara nasional, bukan baris milik wilayah tertentu; menyaring 22 entitas heterogen ke satu scope tidak punya arti yang konsisten |
 | Soft delete | dipakai | Hitungan baris & keterisian memakai `isActive: true` bila entitasnya punya kolom itu |
 
-Konsekuensi lapis kedua: angka di halaman ini bersifat **nasional**, sehingga menu ini tidak boleh diberikan ke peran ber-scope wilayah. Alasan yang sama tertulis di kepala `src/server/actions/data-map.ts` dan `scripts/local/other/seed-data-map-menu.ts`.
+Konsekuensi lapis kedua: angka di halaman ini bersifat **nasional**. Niat awalnya membatasi menu ini ke peran non-wilayah, tetapi kaskade izin menu membuat pembatasan itu tidak berlaku (#262) — jadi yang berlaku sekarang adalah: siapa pun yang bisa membuka grup Data Analyst melihat angka nasional. Catatan yang sama ada di kepala `src/server/actions/data-map.ts` dan `scripts/local/other/seed-data-map-menu.ts`.
 
 ## Diagram objek
 
@@ -26,8 +26,11 @@ Halaman: Peta Data & Skema (/admin/data-analyst/data-map)
 └── Tabs (3)
     ├── ERD — kanvas React Flow (impor dinamis, tanpa SSR)
     │   ├── Node per entitas: nama · nama tabel · jumlah kolom & relasi
-    │   ├── Tata letak DETERMINISTIK: satu kolom per domain (nama berkas .prisma),
-    │   │   bukan layout otomatis — posisi entitas tidak berpindah tiap dibuka
+    │   ├── Tata letak DETERMINISTIK: entitas dikelompokkan per domain (nama berkas
+    │   │   .prisma), domain disusun sebagai GRID 4 kolom — bukan layout otomatis,
+    │   │   supaya posisi entitas tidak berpindah tiap halaman dibuka
+    │   ├── Saringan domain: menampilkan satu domain + tetangga langsungnya;
+    │   │   fitView dibatasi minZoom 0,55 agar nama entitas tetap terbaca
     │   ├── Edge berlabel kardinalitas (1:1 · 1:n · n:n), arah dari sisi "memiliki banyak"
     │   ├── Klik entitas → sorot tetangga, sisanya diredupkan; klik latar → lepas
     │   └── Background · Controls · MiniMap; colorMode mengikuti tema aplikasi

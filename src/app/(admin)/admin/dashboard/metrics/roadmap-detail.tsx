@@ -23,8 +23,14 @@ type StatusKey = keyof typeof PHASE_STATUS;
 const statusKey = (p: RoadmapPhase): StatusKey =>
   p.status === "Done" ? "done" : p.status === "Partial" ? "partial" : "open";
 
-/** Urutan horizon pada blok "Sisa menuju 1.0" — paling dekat dulu. */
-const HORIZON_ORDER: PhaseHorizon[] = ["Now", "Next", "Later", "Blocked"];
+/**
+ * Urutan tampil horizon pada blok "Sisa menuju 1.0" — paling dekat dulu.
+ * Bukan daftar penyaring: horizon apa pun yang muncul di data tetap ditampilkan
+ * (termasuk "Done" pada baris ber-status Partial, yang sah menurut parser).
+ * Kalau ia dipakai menyaring, chip-nya berhenti menjumlah angka gap tepat di
+ * atasnya — tanpa tanda apa pun.
+ */
+const HORIZON_ORDER: PhaseHorizon[] = ["Now", "Next", "Later", "Blocked", "Done"];
 
 const HORIZON_NOTE: Record<PhaseHorizon, string> = {
   Done: "sudah selesai",
@@ -64,10 +70,16 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
   const maxStreamPoints = Math.max(...streams.map((s) => s.maxPoints));
   const gapPp = 100 - summary.pct;
 
-  const byHorizon = HORIZON_ORDER.map((horizon) => {
-    const items = remaining.filter((r) => r.phase.horizon === horizon);
-    return { horizon, count: items.length, pp: items.reduce((acc, r) => acc + r.gainPp, 0) };
-  }).filter((h) => h.count > 0);
+  const horizons = [
+    ...HORIZON_ORDER,
+    ...remaining.map((r) => r.phase.horizon).filter((h) => !HORIZON_ORDER.includes(h)),
+  ];
+  const byHorizon = [...new Set(horizons)]
+    .map((horizon) => {
+      const items = remaining.filter((r) => r.phase.horizon === horizon);
+      return { horizon, count: items.length, pp: items.reduce((acc, r) => acc + r.gainPp, 0) };
+    })
+    .filter((h) => h.count > 0);
 
   return (
     <div className="space-y-6 px-6 pb-6">
