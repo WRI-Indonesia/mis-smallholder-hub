@@ -18,6 +18,26 @@ export const SERIES = {
 export const seriesColor = (key: keyof typeof SERIES, dark: boolean) =>
   dark ? SERIES[key].dark : SERIES[key].light;
 
+/**
+ * Palet STATUS untuk Detail Roadmap (#250) — sengaja terpisah dari `SERIES`:
+ * status fase adalah keadaan (selesai/sebagian/belum), bukan identitas seri,
+ * jadi warnanya tidak boleh dipinjam dari palet kategorikal Panel 2.
+ * Divalidasi dengan validator dataviz pada surface card halaman ini (light
+ * #ffffff, dark #26332a): dua slot berwarna LULUS semua cek — lightness,
+ * chroma, CVD (ΔE protan 8,6 light / 9,9 dark), normal-vision, kontras ≥ 3:1.
+ * Slot "belum" sengaja netral (abu) sehingga gagal cek chroma: ia menandai
+ * *ketiadaan* status, bukan kategori setara. Reliefnya: angka hitungan yang
+ * selalu tampil di samping bar + legenda berlabel (bukan warna semata).
+ */
+export const PHASE_STATUS = {
+  done: { light: "#12805a", dark: "#25a074", label: "Selesai" },
+  partial: { light: "#d9730d", dark: "#c97a12", label: "Sebagian" },
+  open: { light: "#8b948f", dark: "#74817a", label: "Belum" },
+} as const;
+
+export const phaseStatusColor = (key: keyof typeof PHASE_STATUS, dark: boolean) =>
+  dark ? PHASE_STATUS[key].dark : PHASE_STATUS[key].light;
+
 const nfInt = new Intl.NumberFormat("id-ID");
 const nf1 = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const nf2 = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -26,6 +46,8 @@ const nf2 = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFr
 export const fmtInt = (n: number) => nfInt.format(Math.round(n));
 export const fmtPct1 = (n: number) => `${nf1.format(n)}%`;
 export const fmt1 = (n: number) => nf1.format(n);
+/** Poin (mis. 74 dari 85) — maksimal 1 desimal, karena 🟠 menyumbang 0,5. */
+export const fmtPoints = (n: number) => (Number.isInteger(n) ? nfInt.format(n) : nf1.format(n));
 export const fmt2 = (n: number) => nf2.format(n);
 export const fmtDelta = (n: number) => `${n >= 0 ? "+" : "−"}${nfInt.format(Math.abs(Math.round(n)))}`;
 

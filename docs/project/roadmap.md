@@ -46,6 +46,20 @@ Format: **tabel indeks Phase Status** untuk scanning cepat → **rincian per pha
 </details>
 
 <details>
+<summary><strong>Bobot Definition</strong> — arti kolom <code>Bobot</code>: inti (×2) · pendukung (×1)</summary>
+
+Bobot dipakai formula **Roadmap %** ([standards/versioning.md](../standards/versioning.md) §Metrik Nilai Rilis): skor fase (✅ = 1, 🟠 = 0,5, sisanya 0) dikali bobotnya, dibagi total bobot maksimum.
+
+| Bobot     | Pengali | Arti                                                                              |
+| --------- | ------- | --------------------------------------------------------------------------------- |
+| inti      | ×2      | Fase yang menentukan kelayakan go-live 1.0 — modul data, dashboard, report, peta   |
+| pendukung | ×1      | Fase pelengkap/operasional — modul lanjutan (MD-07…MD-11), tooling, CMS, komunitas, DevOps |
+
+Kolom ini adalah **satu-satunya sumber klasifikasi** (dibaca mesin oleh section Detail Roadmap di dashboard Metrik Rilis). Mengubah bobot sebuah fase = mengubah baseline → wajib dicatat di Decision Log.
+
+</details>
+
+<details>
 <summary><strong>Stream Definition</strong> — arti prefix pada format phase <code>STREAM-NN</code></summary>
 
 Format phase: `STREAM-NN`.
@@ -71,56 +85,58 @@ Format phase: `STREAM-NN`.
 
 Rincian evidence & next step tiap phase ada di [Rincian per Phase](#rincian-per-phase) di bawah.
 
-| Phase       | Deskripsi                           | Status         | Horizon |
-| ----------- | ----------------------------------- | -------------- | ------- |
-| PLATFORM-01 | Initialization & UI Statis          | ✅ Done        | Done    |
-| PLATFORM-02 | Database Schema & Migrations        | ✅ Done        | Done    |
-| PLATFORM-03 | Schema Hardening                    | ✅ Done        | Done    |
-| PLATFORM-04 | Autentikasi & RBAC                  | ✅ Done        | Done    |
-| PLATFORM-05 | Dynamic Menu Management             | ✅ Done        | Done    |
-| PLATFORM-06 | Table Refactor & Export Excel       | ✅ Done        | Done    |
-| PLATFORM-07 | Hierarchical Menu (3-Level)         | ✅ Done        | Done    |
-| MD-01       | Regions                             | ✅ Done        | Done    |
-| MD-02       | Farmer Groups                       | ✅ Done        | Done    |
-| MD-03       | Farmer                              | ✅ Done        | Done    |
-| MD-04       | Parcels                             | ✅ Done        | Done    |
-| MD-05       | Training                            | ✅ Done        | Done    |
-| MD-06       | Agronomy / Production               | ✅ Done        | Done    |
-| MD-07       | Staff                               | 🔲 Planned     | Later   |
-| MD-08       | HCV                                 | 🔲 Planned     | Later   |
-| MD-09       | BUSDEV                              | 🔲 Planned     | Later   |
-| MD-10       | IMPACT                              | 🔲 Planned     | Later   |
-| MD-11       | Workplan                            | 🔲 Planned     | Later   |
-| DASH-01     | Dashboard: Basic Data               | ✅ Done        | Done    |
-| DASH-02     | Dashboard: Server Actions           | ✅ Done        | Done    |
-| DASH-03     | Interactive Map                     | ✅ Done        | Done    |
-| DASH-04     | Dashboard BMP (Produksi)            | ✅ Done        | Done    |
-| DASH-05     | Dashboard: Card Total Kelompok Tani | ✅ Done        | Done    |
-| DASH-06     | Dashboard Pelatihan                 | ✅ Done        | Done    |
-| MAP-01      | Map: Peta Lahan                     | ✅ Done        | Done    |
-| MAP-02      | Map: Peta BMP (Layer 1)             | ✅ Done        | Done    |
-| MAP-03      | Map: Peta BMP Layer 2 (Produktivitas) | ✅ Done      | Done    |
-| RPT-01      | Report: Petani                      | ✅ Done        | Done    |
-| RPT-02      | Report: Pelatihan                   | ✅ Done        | Done    |
-| RPT-03      | Report: Produksi                    | ✅ Done        | Done    |
-| RPT-04      | Report: Kelompok Tani               | ✅ Done        | Done    |
-| RPT-05      | Report: Lahan                       | ✅ Done        | Done    |
-| HELP-01     | Bantuan: Panduan Penggunaan         | ✅ Done        | Done    |
-| HELP-02     | Bantuan: Tutorial per Tugas         | ✅ Done        | Done    |
-| BULK-01     | Bulk Upload: Menu & Route           | ✅ Done        | Done    |
-| BULK-02     | Bulk Upload: Region                 | 🔲 Not Started | Next    |
-| BULK-03     | Bulk Upload: Farmer                 | ✅ Done        | Done    |
-| BULK-04     | Bulk Upload: Production             | ✅ Done        | Done    |
-| DA-01       | Farmer Summary Analytics            | ✅ Done        | Done    |
-| DA-02       | Analisa Ketersediaan Data KT        | ✅ Done        | Done    |
-| DA-03       | Dashboard Ketersediaan Data         | ✅ Done        | Done    |
-| DA-06       | Komparasi Data Acuan                | ✅ Done        | Done    |
-| TOOLS-01    | Tools Import/Export/GIS/S3          | 🟠 Partial     | Next    |
-| CMS-01      | CMS & Content Management            | 🔲 Not Started | Later   |
-| COMM-01     | Community                           | 🔲 Not Started | Later   |
-| COMM-02     | i18n                                | 🔲 Planned     | Later   |
-| OPS-01      | Testing                             | ✅ Done        | Done    |
-| OPS-02      | DevOps & Deployment                 | 🟠 Partial     | Later   |
+Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail Roadmap** di dashboard Metrik Rilis: urutan kolom, nilai Status/Horizon/Bobot, dan keunikan kode fase wajib sesuai Definisi di atas — format menyimpang membuat build & test gagal. Roadmap % pada [metrics.md](./metrics.md) dihitung ulang dari tabel ini oleh unit test (toleransi 0,1 pp).
+
+| Phase       | Deskripsi                           | Status         | Horizon | Bobot     |
+| ----------- | ----------------------------------- | -------------- | ------- | --------- |
+| PLATFORM-01 | Initialization & UI Statis          | ✅ Done        | Done    | inti      |
+| PLATFORM-02 | Database Schema & Migrations        | ✅ Done        | Done    | inti      |
+| PLATFORM-03 | Schema Hardening                    | ✅ Done        | Done    | inti      |
+| PLATFORM-04 | Autentikasi & RBAC                  | ✅ Done        | Done    | inti      |
+| PLATFORM-05 | Dynamic Menu Management             | ✅ Done        | Done    | inti      |
+| PLATFORM-06 | Table Refactor & Export Excel       | ✅ Done        | Done    | inti      |
+| PLATFORM-07 | Hierarchical Menu (3-Level)         | ✅ Done        | Done    | inti      |
+| MD-01       | Regions                             | ✅ Done        | Done    | inti      |
+| MD-02       | Farmer Groups                       | ✅ Done        | Done    | inti      |
+| MD-03       | Farmer                              | ✅ Done        | Done    | inti      |
+| MD-04       | Parcels                             | ✅ Done        | Done    | inti      |
+| MD-05       | Training                            | ✅ Done        | Done    | inti      |
+| MD-06       | Agronomy / Production               | ✅ Done        | Done    | inti      |
+| MD-07       | Staff                               | 🔲 Planned     | Later   | pendukung |
+| MD-08       | HCV                                 | 🔲 Planned     | Later   | pendukung |
+| MD-09       | BUSDEV                              | 🔲 Planned     | Later   | pendukung |
+| MD-10       | IMPACT                              | 🔲 Planned     | Later   | pendukung |
+| MD-11       | Workplan                            | 🔲 Planned     | Later   | pendukung |
+| DASH-01     | Dashboard: Basic Data               | ✅ Done        | Done    | inti      |
+| DASH-02     | Dashboard: Server Actions           | ✅ Done        | Done    | inti      |
+| DASH-03     | Interactive Map                     | ✅ Done        | Done    | inti      |
+| DASH-04     | Dashboard BMP (Produksi)            | ✅ Done        | Done    | inti      |
+| DASH-05     | Dashboard: Card Total Kelompok Tani | ✅ Done        | Done    | inti      |
+| DASH-06     | Dashboard Pelatihan                 | ✅ Done        | Done    | inti      |
+| MAP-01      | Map: Peta Lahan                     | ✅ Done        | Done    | inti      |
+| MAP-02      | Map: Peta BMP (Layer 1)             | ✅ Done        | Done    | inti      |
+| MAP-03      | Map: Peta BMP Layer 2 (Produktivitas) | ✅ Done      | Done    | inti      |
+| RPT-01      | Report: Petani                      | ✅ Done        | Done    | inti      |
+| RPT-02      | Report: Pelatihan                   | ✅ Done        | Done    | inti      |
+| RPT-03      | Report: Produksi                    | ✅ Done        | Done    | inti      |
+| RPT-04      | Report: Kelompok Tani               | ✅ Done        | Done    | inti      |
+| RPT-05      | Report: Lahan                       | ✅ Done        | Done    | inti      |
+| HELP-01     | Bantuan: Panduan Penggunaan         | ✅ Done        | Done    | inti      |
+| HELP-02     | Bantuan: Tutorial per Tugas         | ✅ Done        | Done    | inti      |
+| BULK-01     | Bulk Upload: Menu & Route           | ✅ Done        | Done    | inti      |
+| BULK-02     | Bulk Upload: Region                 | 🔲 Not Started | Next    | inti      |
+| BULK-03     | Bulk Upload: Farmer                 | ✅ Done        | Done    | inti      |
+| BULK-04     | Bulk Upload: Production             | ✅ Done        | Done    | inti      |
+| DA-01       | Farmer Summary Analytics            | ✅ Done        | Done    | inti      |
+| DA-02       | Analisa Ketersediaan Data KT        | ✅ Done        | Done    | inti      |
+| DA-03       | Dashboard Ketersediaan Data         | ✅ Done        | Done    | inti      |
+| DA-06       | Komparasi Data Acuan                | ✅ Done        | Done    | inti      |
+| TOOLS-01    | Tools Import/Export/GIS/S3          | 🟠 Partial     | Next    | pendukung |
+| CMS-01      | CMS & Content Management            | 🔲 Not Started | Later   | pendukung |
+| COMM-01     | Community                           | 🔲 Not Started | Later   | pendukung |
+| COMM-02     | i18n                                | 🔲 Planned     | Later   | pendukung |
+| OPS-01      | Testing                             | ✅ Done        | Done    | pendukung |
+| OPS-02      | DevOps & Deployment                 | 🟠 Partial     | Later   | pendukung |
 
 ### Rincian per Phase
 

@@ -1,6 +1,8 @@
 import metricsMd from "../../docs/project/metrics.md";
+import roadmapMd from "../../docs/project/roadmap.md";
 import techDebtMd from "../../docs/project/tech-debt.md";
 import { parseReleaseMetrics } from "./release-metrics";
+import { parseRoadmapPhases, parseStreamLabels, summarizeRoadmap } from "./roadmap";
 import { parseActiveTechDebt } from "./tech-debt";
 
 /**
@@ -15,3 +17,12 @@ export const releaseMetrics = parseReleaseMetrics(metricsMd);
 
 /** Item TD aktif untuk dialog rincian kartu Tech debt (sumber: tech-debt.md). */
 export const activeTechDebt = parseActiveTechDebt(techDebtMd);
+
+/**
+ * Rincian roadmap (#250) untuk section Detail Roadmap — pembuktian angka
+ * "Roadmap %" yang di `metrics.md` hanya berupa satu angka (sumber: roadmap.md).
+ */
+export const roadmapSummary = summarizeRoadmap(
+  parseRoadmapPhases(roadmapMd),
+  parseStreamLabels(roadmapMd)
+);
