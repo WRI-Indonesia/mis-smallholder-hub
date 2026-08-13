@@ -57,6 +57,8 @@ Bobot dipakai formula **Roadmap %** ([standards/versioning.md](../standards/vers
 
 Kolom ini adalah **satu-satunya sumber klasifikasi** (dibaca mesin oleh section Detail Roadmap di dashboard Metrik Rilis). Mengubah bobot sebuah fase = mengubah baseline → wajib dicatat di Decision Log.
 
+Kolom ditambahkan pada #250 (2026-08-13) sebagai **eksplisitasi klasifikasi baseline v0.24.0, bukan perubahan bobot**: sebelumnya klasifikasi hanya berupa narasi per-stream di [standards/versioning.md](../standards/versioning.md) sehingga tidak bisa dihitung mesin. Angkanya identik — inti 37 ×2 = 72/74, pendukung 11 = 2/11 → **74/85 = 87,1%** — jadi seluruh tren metrics ke belakang tetap sah dan tidak dihitung ulang.
+
 </details>
 
 <details>

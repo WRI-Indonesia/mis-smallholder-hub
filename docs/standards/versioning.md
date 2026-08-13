@@ -75,11 +75,13 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 
 Persentase menuju go-live `1.0.0`, dihitung dari tabel **Phase Status** di [roadmap.md](../project/roadmap.md):
 
-- **Bobot phase** — Inti go-live = **2** (stream PLATFORM, MD-01…06, DASH, MAP, RPT, BULK, HELP, DA); Pendukung/pasca-go-live = **1** (MD-07…11, TOOLS, CMS, COMM, OPS).
+- **Bobot phase** — dibaca dari kolom **`Bobot`** pada tabel Phase Status roadmap.md, satu baris satu fase: `inti` = **2** (fase penentu kelayakan go-live — stream PLATFORM, MD-01…06, DASH, MAP, RPT, BULK, HELP, DA), `pendukung` = **1** (pelengkap/pasca-go-live — MD-07…11, TOOLS, CMS, COMM, OPS). Kolom itu **satu-satunya sumber klasifikasi**; daftar stream di sini hanya glosarium, bukan acuan.
 - **Nilai status** — ✅ Done = 1 · 🟠 Partial = 0,5 · lainnya = 0.
 - **Skor** = Σ(bobot × nilai) ÷ Σbobot.
 
-Baseline (dihitung 2026-08-05, 46 phase): inti 35 phase (34 ✅ + BULK-02 belum) = 68/70; pendukung 11 phase (3 🟠) = 1,5/11 → **69,5 / 81 = 85,8%**. Perubahan bobot/klasifikasi phase wajib dicatat di Decision Log.
+Baseline awal (dihitung 2026-08-05, 46 phase): inti 35 phase (34 ✅ + BULK-02 belum) = 68/70; pendukung 11 phase (3 🟠) = 1,5/11 → **69,5 / 81 = 85,8%**. Baseline berjalan sejak v0.24.0 (48 phase): inti 37 = 72/74; pendukung 11 = 2/11 → **74 / 85 = 87,1%**.
+
+Sejak #250 angka ini **tidak lagi hanya dihitung tangan**: `src/lib/roadmap.ts` memparse tabel Phase Status saat build, dan unit test menghitung ulang Roadmap % lalu membandingkannya dengan baris rilis terakhir di `project/metrics.md` (toleransi **0,1 pp**). Konsekuensinya, **menambah atau mengubah fase mengubah penyebut** — baris metrics.md pada rilis yang sama wajib ikut, kalau tidak gate lokal gagal. Perubahan bobot/klasifikasi phase tetap wajib dicatat di Decision Log; rinciannya bisa dibaca langsung di section **Detail roadmap** pada dashboard Metrik Rilis.
 
 ### 2. Papan KPI Produk (audiens: manajemen — "makin baik atau tidak")
 
