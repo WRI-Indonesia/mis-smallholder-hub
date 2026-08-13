@@ -154,15 +154,12 @@ SUPERADMIN,data-analyst,VIEW
 SUPERADMIN,data-analyst-farmer-summary,VIEW
 SUPERADMIN,data-analyst-farmer-summary,EXPORT
 SUPERADMIN,data-analyst-farmer-summary,PRINT
-ADMIN,data-analyst,VIEW
 ADMIN,data-analyst-farmer-summary,VIEW
 ADMIN,data-analyst-farmer-summary,EXPORT
 ADMIN,data-analyst-farmer-summary,PRINT
-OPERATOR,data-analyst,VIEW
 OPERATOR,data-analyst-farmer-summary,VIEW
 OPERATOR,data-analyst-farmer-summary,EXPORT
 OPERATOR,data-analyst-farmer-summary,PRINT
-MANAGEMENT,data-analyst,VIEW
 MANAGEMENT,data-analyst-farmer-summary,VIEW
 MANAGEMENT,data-analyst-farmer-summary,EXPORT
 MANAGEMENT,data-analyst-farmer-summary,PRINT
@@ -438,3 +435,5 @@ MANAGEMENT,data-analyst-benchmark-comparison,EXPORT
 MANAGEMENT,data-analyst-benchmark-comparison,PRINT
 SUPERADMIN,data-analyst-data-map,VIEW
 ADMIN,data-analyst-data-map,VIEW
+ADMIN,dashboard-metrics,VIEW
+MANAGEMENT,dashboard-metrics,VIEW

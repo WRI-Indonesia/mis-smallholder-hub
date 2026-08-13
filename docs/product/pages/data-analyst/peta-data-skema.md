@@ -4,7 +4,7 @@
 
 Sub menu `data-analyst-data-map`, satu halaman: `/admin/data-analyst/data-map` (DA-07, #256). Menjawab tiga pertanyaan yang sebelumnya tersebar: **data apa saja yang ada**, **seberapa terisi**, dan **menu mana yang memakainya**.
 
-Akses: baris seed hanya untuk **SUPERADMIN & ADMIN** (VIEW, tanpa EXPORT/PRINT), tetapi **OPERATOR & MANAGEMENT ikut mendapat akses** lewat kaskade izin dari menu induk `data-analyst` — kaskade bersifat union tanpa pengurangan, jadi sub-menu tidak bisa lebih ketat dari induknya. Lihat **#262**.
+Akses efektif: **SUPERADMIN & ADMIN** (VIEW, tanpa EXPORT/PRINT). Pembatasan itu berlaku bukan karena peran lain tidak disebut, melainkan karena menu induk `data-analyst` hanya ber-VIEW untuk SUPERADMIN — kaskade izin bersifat union tanpa pengurangan, sehingga sub-menu tak pernah bisa lebih ketat dari induknya (#262). Dijaga `src/test/menu-access.test.ts`.
 
 ## Lapis keamanan — penyimpangan yang disengaja
 
@@ -16,7 +16,7 @@ Dari tiga lapis standar, halaman ini **hanya memakai lapis pertama** (`requirePe
 | Access context | **sengaja tidak dipakai** | Yang ditampilkan bentuk & keterisian *skema* secara nasional, bukan baris milik wilayah tertentu; menyaring 22 entitas heterogen ke satu scope tidak punya arti yang konsisten |
 | Soft delete | dipakai | Hitungan baris & keterisian memakai `isActive: true` bila entitasnya punya kolom itu |
 
-Konsekuensi lapis kedua: angka di halaman ini bersifat **nasional**. Niat awalnya membatasi menu ini ke peran non-wilayah, tetapi kaskade izin menu membuat pembatasan itu tidak berlaku (#262) — jadi yang berlaku sekarang adalah: siapa pun yang bisa membuka grup Data Analyst melihat angka nasional. Catatan yang sama ada di kepala `src/server/actions/data-map.ts` dan `scripts/local/other/seed-data-map-menu.ts`.
+Konsekuensi lapis kedua: angka di halaman ini bersifat **nasional**, sehingga menu ini hanya pantas untuk peran non-wilayah. Yang menjaganya adalah izin menu induk, bukan ketiadaan baris di sub-menu ini (#262). Catatan yang sama ada di kepala `src/server/actions/data-map.ts` dan `scripts/local/other/seed-data-map-menu.ts`.
 
 ## Diagram objek
 

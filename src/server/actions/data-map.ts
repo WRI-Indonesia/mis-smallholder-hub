@@ -17,13 +17,14 @@ import type { EntityFill, MenuLabel } from "@/types/data-map";
  * arti yang konsisten. Lapis ketiga (soft delete) tetap dihormati: hitungan
  * memakai baris aktif.
  *
- * **Siapa yang bisa membuka halaman ini — apa adanya.** Seed hanya memberi VIEW
- * ke SUPERADMIN & ADMIN, TETAPI kaskade izin menu bersifat union tanpa
- * pengurangan (`getUserPermissionsForMenu`): karena menu induk `data-analyst`
- * ber-VIEW untuk OPERATOR dan MANAGEMENT, kedua peran itu **ikut mendapat
- * akses**. Jadi angka nasional di halaman ini efektif terbuka untuk empat peran.
- * Membatasinya butuh keputusan terpisah — lihat #262; jangan menulis ulang
- * klaim "SUPERADMIN/ADMIN saja" di sini sebelum keputusan itu diambil.
+ * **Siapa yang bisa membuka halaman ini: SUPERADMIN & ADMIN.** Yang penting
+ * dipahami, itu BUKAN karena baris peran lain tidak ditulis — kaskade izin menu
+ * bersifat union tanpa pengurangan (`getUserPermissionsForMenu`), sehingga
+ * sub-menu tidak pernah bisa lebih ketat daripada induknya. Yang membuatnya
+ * benar-benar terbatas adalah induk `data-analyst` yang hanya ber-VIEW untuk
+ * SUPERADMIN. Menambahkan VIEW induk untuk peran lain akan membuka halaman ini
+ * tanpa ada baris apa pun yang berubah di sini — dijaga
+ * `src/test/menu-access.test.ts` (#262).
  *
  * @lineage-dynamic: R
  * Berkas ini mengakses delegate Prisma secara dinamis (`prisma[clientName]`)

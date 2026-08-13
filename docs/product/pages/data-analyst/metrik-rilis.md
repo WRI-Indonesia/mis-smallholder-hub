@@ -2,7 +2,7 @@
 
 [← Menu Data Analyst](./README.md) · [← Katalog halaman](../README.md)
 
-Sub menu `dashboard-metrics`, satu halaman: `/admin/dashboard/metrics` (#227). Dashboard internal development — audiens tim/manajemen/donor, bukan data petani. Akses: tanpa baris RolePermission sendiri, tetapi karena menu ini berada di bawah `data-analyst` yang ber-VIEW untuk keempat peran, **akses efektifnya bukan SUPERADMIN saja** — lihat #262.
+Sub menu `dashboard-metrics`, satu halaman: `/admin/dashboard/metrics` (#227). Dashboard internal development — audiens tim/manajemen/donor, bukan data petani. Akses efektif: **SUPERADMIN, ADMIN, dan MANAGEMENT** — bukan "SUPERADMIN saja" seperti tertulis di #227. SUPERADMIN lewat kaskade dari induk `data-analyst`; ADMIN & MANAGEMENT lewat baris eksplisit. MANAGEMENT memang audiens yang dituju: `versioning.md` §Metrik Nilai Rilis menyebut Roadmap % dan Papan KPI untuk manajemen/donor. Dijaga `src/test/menu-access.test.ts` (#262).
 
 ## Diagram objek
 

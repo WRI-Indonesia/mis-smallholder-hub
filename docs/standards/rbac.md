@@ -42,6 +42,31 @@ Konvensi gating keluaran (#245, idiom diseragamkan #247):
 > [!NOTE]
 > **Istilah (hierarki final #189):** Petani → Kelompok Tani → Lembaga Petani. Model `FarmerGroup` = **Lembaga Petani**; "KT" (Kelompok Tani) kini merujuk level per-lahan (`subGroupLv2`), bukan `FarmerGroup`.
 
+### Kaskade Izin Menu — union tanpa pengurangan
+
+`getUserPermissionsForMenu` (`src/lib/rbac.ts`) menelusuri pohon menu dari akar dan **mewariskan izin induk ke seluruh anaknya**:
+
+```ts
+function traverse(key, parentPermissions = new Set()) {
+  const currentPerms = new Set(parentPermissions);   // izin induk diwarisi
+  // + baris RolePermission menu ini
+  // + override per-pengguna (satu-satunya yang bisa MENGURANGI)
+  children.forEach(child => traverse(child, currentPerms));
+}
+```
+
+Tiga konsekuensi yang harus disadari **sebelum menempatkan menu baru**:
+
+1. **Sub-menu tidak pernah bisa lebih ketat daripada induknya.** Memberi `VIEW` pada menu induk berarti memberi `VIEW` pada semua anaknya, sekarang dan yang ditambahkan kelak.
+2. **Menghilangkan baris `RolePermission` bukan mekanisme pembatasan.** Menu tanpa baris apa pun tetap terbuka bila induknya terbuka. Satu-satunya pengurangan berlaku lewat `UserPermissionOverride` — dan itu per-pengguna, bukan per-peran.
+3. **Menaruh menu sensitif di bawah induk yang luas akan membukanya diam-diam.** Preseden: #245 harus menghapus 52 baris EXPORT/PRINT di menu induk karena revoke per sub-menu memang mandul.
+
+Karena itu, kalau sebuah menu harus terbatas, yang menentukan adalah **izin menu induknya** — bukan daftar baris di menu itu sendiri. Contoh yang berlaku sekarang: `data-analyst-data-map` terbatas pada SUPERADMIN/ADMIN karena induk `data-analyst` hanya ber-VIEW untuk SUPERADMIN, bukan karena OPERATOR/MANAGEMENT tidak disebut.
+
+**Dijaga test.** `src/test/menu-access.test.ts` menghitung ulang izin efektif dari `prisma/seeds/data/menu.csv` + `role-permissions.csv` dengan logika kaskade yang sama, lalu membandingkannya dengan daftar akses yang dinyatakan untuk menu sensitif. Klaim seperti "SUPERADMIN saja" karena itu tidak bisa lagi salah tanpa ketahuan di gate lokal. Catatan: yang dijaga adalah **sisi kode**, bukan isi database produksi — keduanya diketahui berbeda (#263).
+
+**Sidebar.** `filterMenuTreeByAccess` (`src/lib/menu-utils.ts`) menyimpan sebuah node bila ia sendiri dapat diakses **atau** salah satu anaknya lolos. Jadi mencabut izin induk tidak menyembunyikan grupnya selama masih ada anak yang boleh dibuka — inilah yang membuat pembatasan lewat induk tetap berterima secara navigasi.
+
 ### RBAC Data Access Hierarchy
 
 ```
