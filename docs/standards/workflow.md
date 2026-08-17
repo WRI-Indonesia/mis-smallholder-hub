@@ -112,3 +112,5 @@ Konsekuensi yang wajib diingat:
 |----------|---------|
 | Destructive | Hapus file, drop table, reset DB, force push |
 | Database Mutations | CREATE/UPDATE/DELETE data (Prisma seed, migration, manual query) |
+
+**Akses environment** mengikuti [environments.md](./environments.md): default semua perintah mendarat di **local** (`.env`); menyentuh dev/staging/prod wajib eksplisit via `npx dotenv -e .env.<env> -- <perintah>`. Skrip yang menulis ke prod: log "DB efektif" + dry-run dulu + approval owner.
