@@ -1,0 +1,58 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: STAGING_ENV_MIS_SMALLHOLDER
+    timeout-minutes: 20
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT }}
+          timeout: 60s
+          command_timeout: 45m
+          script: |
+            set -Eeuo pipefail
+
+            # LOAD NVM
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # CD
+            cd /var/www/html/mis-staging
+
+            # PULL
+            git fetch origin
+            git checkout staging
+            git reset --hard origin/staging
+
+            # ENV — dari secret MIS_STAGING_ENV (DB mis-staging + S3 dev)
+            cat > .env <<'EOF'
+            ${{ secrets.MIS_STAGING_ENV }}
+            EOF
+            chmod 600 .env
+
+            # GUARD: gagal keras bila secret belum diisi (jangan deploy dengan .env kosong)
+            grep -q "DATABASE_URL" .env || { echo "::error::secret MIS_STAGING_ENV kosong / tanpa DATABASE_URL — deploy dibatalkan"; exit 1; }
+
+            # BUILD
+            npm install
+            npx prisma generate
+            npm run build
+
+            # RELOAD
+            pm2 reload mis-staging || pm2 start npm --name "mis-staging" -- start -- -p 3000

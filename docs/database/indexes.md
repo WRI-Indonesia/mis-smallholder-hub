@@ -28,6 +28,13 @@
 | MenuItem | UNIQUE | `key` | Menu item lookup by slug |
 | **Farmer Group** | | | |
 | FarmerGroup | PK | `id` (CUID) | Primary key |
+| **Farmer Group Boundary** | | | |
+| FarmerGroupBoundary | PK | `id` (CUID) | Primary key |
+| FarmerGroupBoundary | GIST | `geom` | Index spasial PostGIS (ST_Intersects/ST_Contains) — ditulis manual di migration 20260819041658 karena kolom `Unsupported` (#266) |
+| **Administrative Boundary** | | | |
+| AdministrativeBoundary | PK | `id` (CUID) | Primary key |
+| AdministrativeBoundary | INDEX | `(level, isActive)` | Baca garis batas per level (KABUPATEN/KECAMATAN/DESA) |
+| AdministrativeBoundary | GIST | `geom` | Index spasial PostGIS — manual di migration 20260819073337 (#266) |
 | **Farmer** | | | |
 | Farmer | PK | `id` (CUID) | Primary key |
 | Farmer | UNIQUE | `(farmerGroupId, farmerId)` | ID Petani unik per Lembaga (TD-024, migration 20260721060000) |

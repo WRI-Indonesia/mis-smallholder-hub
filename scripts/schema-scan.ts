@@ -132,6 +132,11 @@ export function scanSchema(root: string = process.cwd()): SchemaMap {
         continue;
       }
 
+      // Field `Unsupported(...)` (mis. kolom PostGIS `geom` di
+      // FarmerGroupBoundary, #266) tidak muncul di Prisma.dmmf maupun Client —
+      // dilewati agar artefak tetap identik dengan DMMF.
+      if (/^\w+\s+Unsupported\(/.test(line)) continue;
+
       const match = FIELD_RE.exec(line);
       if (!match) {
         throw new Error(`schema-scan: baris tak dikenal di model ${entity.name} — "${line}"`);

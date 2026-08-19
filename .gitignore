@@ -33,8 +33,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env
+# env files — semua varian (.env, .env.dev, .env.staging, .env.prod) kecuali contoh
+.env*
+!.env.example
 
 # vercel
 .vercel
@@ -48,6 +49,7 @@ next-env.d.ts
 /developer-log
 /draft-issue
 /scripts/local
+/scripts/dump-prod
 /documentation
 CLAUDE.md
 /audit-report

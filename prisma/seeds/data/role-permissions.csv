@@ -443,3 +443,13 @@ SUPERADMIN,settings,DELETE
 SUPERADMIN,settings,EDIT
 SUPERADMIN,settings,VIEW
 SUPERADMIN,tools,VIEW
+ADMIN,dashboard-risk-fire,VIEW
+ADMIN,dashboard-risk-fire,PRINT
+DONOR,dashboard-risk-fire,VIEW
+DONOR,dashboard-risk-fire,PRINT
+MANAGEMENT,dashboard-risk-fire,VIEW
+MANAGEMENT,dashboard-risk-fire,PRINT
+OPERATOR,dashboard-risk-fire,VIEW
+OPERATOR,dashboard-risk-fire,PRINT
+SUPERADMIN,dashboard-risk-fire,VIEW
+SUPERADMIN,dashboard-risk-fire,PRINT

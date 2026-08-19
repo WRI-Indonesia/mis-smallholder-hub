@@ -6,6 +6,195 @@ import type { SchemaMap } from "@/types/data-schema";
 export const DATA_SCHEMA: SchemaMap = {
   "entities": [
     {
+      "name": "AdministrativeBoundary",
+      "clientName": "administrativeBoundary",
+      "tableName": "tbl_administrative_boundary",
+      "domain": "administrative-boundary",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "level",
+          "type": "AdminBoundaryLevel",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parentName",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "parent_name",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "districtId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "district_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "district",
+          "type": "District",
+          "kind": "relation",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "districtId"
+          ]
+        },
+        {
+          "name": "geojson",
+          "type": "Json",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "geojson",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "source",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 13,
+      "compoundUnique": [],
+      "indexes": [
+        [
+          "level",
+          "isActive"
+        ],
+        [
+          "districtId"
+        ]
+      ]
+    },
+    {
       "name": "BmpDashboardSnapshot",
       "clientName": "bmpDashboardSnapshot",
       "tableName": "tbl_snapshot_bmp_dashboard",
@@ -346,6 +535,18 @@ export const DATA_SCHEMA: SchemaMap = {
         {
           "name": "bmpDashboardSnapshots",
           "type": "BmpDashboardSnapshot",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "administrativeBoundaries",
+          "type": "AdministrativeBoundary",
           "kind": "relation",
           "isRequired": true,
           "isList": true,
@@ -959,6 +1160,18 @@ export const DATA_SCHEMA: SchemaMap = {
           "dbName": null,
           "relationName": null,
           "relationFields": []
+        },
+        {
+          "name": "boundaries",
+          "type": "FarmerGroupBoundary",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
         }
       ],
       "scalarCount": 23,
@@ -972,6 +1185,146 @@ export const DATA_SCHEMA: SchemaMap = {
         ],
         [
           "code"
+        ]
+      ]
+    },
+    {
+      "name": "FarmerGroupBoundary",
+      "clientName": "farmerGroupBoundary",
+      "tableName": "tbl_farmer_group_boundary",
+      "domain": "farmer-group-boundary",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "farmerGroupId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "farmer_group_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "farmerGroup",
+          "type": "FarmerGroup",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "farmerGroupId"
+          ]
+        },
+        {
+          "name": "geojson",
+          "type": "Json",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "geojson",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "source",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 9,
+      "compoundUnique": [],
+      "indexes": [
+        [
+          "farmerGroupId"
+        ],
+        [
+          "isActive"
         ]
       ]
     },
@@ -4179,6 +4532,15 @@ export const DATA_SCHEMA: SchemaMap = {
   ],
   "relations": [
     {
+      "key": "AdministrativeBoundary↔District",
+      "from": "District",
+      "to": "AdministrativeBoundary",
+      "kind": "1:n",
+      "fromField": "administrativeBoundaries",
+      "toField": "district",
+      "isSelf": false
+    },
+    {
       "key": "BmpDashboardSnapshot↔District",
       "from": "District",
       "to": "BmpDashboardSnapshot",
@@ -4256,6 +4618,15 @@ export const DATA_SCHEMA: SchemaMap = {
       "to": "Farmer",
       "kind": "1:n",
       "fromField": "farmers",
+      "toField": "farmerGroup",
+      "isSelf": false
+    },
+    {
+      "key": "FarmerGroup↔FarmerGroupBoundary",
+      "from": "FarmerGroup",
+      "to": "FarmerGroupBoundary",
+      "kind": "1:n",
+      "fromField": "boundaries",
       "toField": "farmerGroup",
       "isSelf": false
     },
@@ -4439,6 +4810,15 @@ export const DATA_SCHEMA: SchemaMap = {
         "PENDING_APPROVAL",
         "APPROVED",
         "REJECTED"
+      ],
+      "domain": "config"
+    },
+    {
+      "name": "AdminBoundaryLevel",
+      "values": [
+        "KABUPATEN",
+        "KECAMATAN",
+        "DESA"
       ],
       "domain": "config"
     },

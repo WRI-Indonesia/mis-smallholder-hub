@@ -93,6 +93,7 @@ Repo **punya CI** — hanya saja bukan untuk lint/build/test. Jangan mengira gat
 | `gitleaks.yml` | **setiap push & PR** | Memindai kredensial/rahasia yang tak sengaja ter-commit |
 | `semgrep.yml` | **PR** (+push ke `main` bila berkasnya berubah) | Analisis keamanan statis (SAST) |
 | `deploy-dev.yaml` | push ke branch dev | Deploy otomatis ke lingkungan dev |
+| `deploy-staging.yml` | **push ke `staging`** | Deploy otomatis ke app staging (server staging, pm2 `mis-staging`, port 3000); `.env` dari secret `MIS_STAGING_ENV` — gagal keras bila secret kosong |
 | `deploy-main.yml` | **push ke `main`** | **Deploy otomatis ke produksi** via SSH: `git reset --hard origin/main` → tulis `.env` dari secret → `npm install` → `prisma generate` → `npm run build` → `pm2 reload mis-main` |
 
 Konsekuensi yang wajib diingat:
@@ -112,3 +113,5 @@ Konsekuensi yang wajib diingat:
 |----------|---------|
 | Destructive | Hapus file, drop table, reset DB, force push |
 | Database Mutations | CREATE/UPDATE/DELETE data (Prisma seed, migration, manual query) |
+
+**Akses environment** mengikuti [environments.md](./environments.md): default semua perintah mendarat di **local** (`.env`); menyentuh dev/staging/prod wajib eksplisit via `npx dotenv -e .env.<env> -- <perintah>`. Skrip yang menulis ke prod: log "DB efektif" + dry-run dulu + approval owner.

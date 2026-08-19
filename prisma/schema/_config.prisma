@@ -56,6 +56,13 @@ enum CertStatus {
   PLANNED
 }
 
+// Level batas administrasi (BIG) — tbl_administrative_boundary (#266).
+enum AdminBoundaryLevel {
+  KABUPATEN
+  KECAMATAN
+  DESA
+}
+
 enum TrainingCategory {
   PAKET_1_BMP_PC_RSPO_NKT
   PAKET_2_MK

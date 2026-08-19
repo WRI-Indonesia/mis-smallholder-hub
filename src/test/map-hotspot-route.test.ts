@@ -33,12 +33,19 @@ afterEach(() => {
 });
 
 describe("GET /api/map-hotspot — guard & konfigurasi", () => {
-  it("403 tanpa permission map-parcel VIEW, tanpa menyentuh upstream", async () => {
+  it("403 tanpa permission map-parcel maupun dashboard-risk-fire VIEW, tanpa menyentuh upstream", async () => {
     hasPermission.mockResolvedValue(false);
     const res = await GET(req(VALID_QS));
     expect(res.status).toBe(403);
     expect(hasPermission).toHaveBeenCalledWith("map-parcel", "VIEW");
+    expect(hasPermission).toHaveBeenCalledWith("dashboard-risk-fire", "VIEW");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("izin dashboard-risk-fire VIEW saja sudah cukup (Dashboard Fire Alert #266)", async () => {
+    hasPermission.mockImplementation(async (key: string) => key === "dashboard-risk-fire");
+    const res = await GET(req(VALID_QS));
+    expect(res.status).toBe(200);
   });
 
   it("500 bila FIRMS_MAP_KEY_FREE tidak dikonfigurasi", async () => {

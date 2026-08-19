@@ -16,7 +16,7 @@ Sejak **HELP-02** materi dibagi **tiga lapis** lewat `section` pada `HelpChapter
 
 | Lapis | Isi | Status |
 |---|---|---|
-| `tutorial` | Panduan **per tugas**, dua tingkat kedalaman (Ringkas/Detail) | 27 topik / 5 bab |
+| `tutorial` | Panduan **per tugas**, dua tingkat kedalaman (Ringkas/Detail) | 28 topik / 5 bab |
 | `konsep` | Istilah & aturan main yang dirujuk tutorial | 12 topik / 6 bab |
 | `referensi` | Arti kolom & tombol per halaman | 4 topik / 1 bab (`r-1-daftar-petani` … `r-4-daftar-produksi`) |
 

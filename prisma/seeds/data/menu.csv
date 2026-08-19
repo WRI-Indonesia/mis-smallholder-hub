@@ -40,3 +40,5 @@ dashboard-snapshot-bmp,tools,Dashboard Snapshot BMP,/admin/tools/snapshot-bmp,Ca
 help,,Bantuan,/admin/help,HelpCircle,9,TRUE,TRUE
 dashboard-metrics,data-analyst,Metrik Rilis,/admin/dashboard/metrics,Activity,6,TRUE,TRUE
 bulk-upload-trees,bulk-upload,Pohon Sawit,/admin/bulk-upload/trees,TreePine,4,TRUE,TRUE
+dashboard-risk,dashboard,Risk Management,/admin/dashboard/risk,ShieldAlert,4,TRUE,TRUE
+dashboard-risk-fire,dashboard-risk,Fire Alert,/admin/dashboard/risk/fire,Flame,1,TRUE,TRUE

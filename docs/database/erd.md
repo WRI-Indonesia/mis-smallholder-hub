@@ -16,6 +16,8 @@ erDiagram
     
     %% FARMER GROUP & FARMER
     District ||--o{ FarmerGroup : "located in"
+    District |o--o{ AdministrativeBoundary : "batas BIG (opsional, #266)"
+    FarmerGroup ||--o{ FarmerGroupBoundary : "boundary ICS (#266)"
     FarmerGroup ||--o{ Farmer : "has members"
     
     %% LAND PARCEL

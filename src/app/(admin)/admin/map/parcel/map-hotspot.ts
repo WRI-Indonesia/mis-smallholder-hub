@@ -38,7 +38,7 @@ export type HotspotConfBucket = keyof typeof HOTSPOT_CONF_COLORS;
 
 export const HOTSPOT_CONF_LABELS: Record<HotspotConfBucket, string> = {
   high: "Tinggi",
-  nominal: "Nominal",
+  nominal: "Nominal (Medium)",
   low: "Rendah",
 };
 
@@ -60,7 +60,7 @@ export function formatWib(iso: string | null | undefined) {
 export function confidenceLabel(v: unknown) {
   const s = String(v ?? "").toLowerCase();
   if (s === "l") return "Rendah";
-  if (s === "n") return "Nominal";
+  if (s === "n") return "Nominal (Medium)";
   if (s === "h") return "Tinggi";
   return v == null || v === "" ? "—" : String(v);
 }

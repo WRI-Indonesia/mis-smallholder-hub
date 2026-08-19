@@ -310,6 +310,25 @@ Farmer (1) ─→ (N) TrainingParticipant
 <details>
 <summary><strong>File Structure</strong> — Struktur file Prisma schema</summary>
 
+## FarmerGroupBoundary (Boundary Lembaga, #266)
+
+Poligon wilayah kerja tiap ICS/lembaga (`tbl_farmer_group_boundary`) untuk Dashboard Risk Management — Fire Alert. Maksimal **satu boundary aktif per lembaga** (dijaga alur seed: soft-delete lama + insert baru; tanpa constraint DB karena soft delete). **Fakta domain (owner, 2026-08-19): poligon di shapefile sumber sudah dibuat TERMASUK buffer 1,5 km** dari area lahan — deteksi titik api cukup point-in-polygon, tanpa perhitungan buffer tambahan.
+
+Penyimpanan **dual-column**:
+
+| Kolom | Tipe | Peran |
+| ----- | ---- | ----- |
+| `geom` | `geometry(MultiPolygon, 4326)` PostGIS (`Unsupported` di Prisma) | **Sumber kebenaran** untuk analisa spasial (`ST_Intersects`/`ST_Contains`, GiST index); tulis/baca via `$executeRaw`/`$queryRaw` (`ST_GeomFromGeoJSON` / `ST_AsGeoJSON`) |
+| `geojson` | `Json` (GeoJSON MultiPolygon WGS84) | Cache untuk rendering peta — konsisten pola `LandParcel.geometry` |
+
+Drift dua kolom praktis nol: penulisan hanya lewat `scripts/local/seed/seed-boundary-lembaga.ts` (shapefile ZIP + `boundary-mapping.csv` nama ICS → `FarmerGroup.code`). Catatan: field `Unsupported` tidak muncul di Prisma DMMF/Client — pemindai `scripts/schema-scan.ts` sengaja melewatinya.
+
+## AdministrativeBoundary (Batas Administrasi BIG, #266)
+
+Garis batas administrasi (`tbl_administrative_boundary`) sebagai konteks peta — **satu tabel lintas level** dengan enum `AdminBoundaryLevel` (KABUPATEN/KECAMATAN/DESA; keputusan owner, bukan tabel per level): bentuk data identik per level dan skema atribut file BIG seragam (NAMOBJ/KDBPUM/WADM\*). Terpisah dari `reg_district`/`Subdistrict`/`Village` karena file batas mencakup **seluruh** Riau (12 kabupaten), sedangkan tabel geografi hanya wilayah program — FK `districtId` nullable terisi bila nama cocok.
+
+Dual-column sama dengan FarmerGroupBoundary, dengan satu perbedaan penting: kolom cache `geojson` disimpan **tersimplifikasi** (`ST_SimplifyPreserveTopology` 0,001° ≈ 111 m; ~10 MB → ~165 KB) karena hanya untuk garis konteks di browser — `geom` tetap full-res untuk analisa. Seed: `scripts/local/seed/seed-batas-administrasi.ts` (config per level, dry-run default, idempotent per level).
+
 ## File Structure
 
 ```
@@ -318,6 +337,8 @@ prisma/schema/
 ├── user.prisma           # User identity
 ├── geography.prisma      # Province → District → Subdistrict → Village
 ├── farmer-group.prisma   # FarmerGroup
+├── farmer-group-boundary.prisma # FarmerGroupBoundary (poligon ICS, dual-column PostGIS+Json, #266)
+├── administrative-boundary.prisma # AdministrativeBoundary (batas BIG per level, #266)
 ├── farmer.prisma         # Farmer
 ├── land-parcel.prisma    # LandParcel
 ├── tree.prisma           # Tree (titik pohon sawit per lahan, #238)
