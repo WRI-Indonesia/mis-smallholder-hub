@@ -319,7 +319,7 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
 
       // Peta per lembaga ber-titik api (berurutan — tiap capture menunggu
       // tile termuat), lalu kembalikan tampilan ke scope utama.
-      const groupMaps: { name: string; count: number; dataUrl: string; widthPx: number; heightPx: number }[] = [];
+      const groupMaps: { name: string; count: number; shared: number; dataUrl: string; widthPx: number; heightPx: number }[] = [];
       for (const r of scopeGroupRows.filter((g) => g.count > 0)) {
         const b = indexed.find((x) => x.farmerGroupId === r.farmerGroupId);
         if (!b) continue;
@@ -328,6 +328,7 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
           groupMaps.push({
             name: r.name,
             count: r.count,
+            shared: r.shared,
             dataUrl: gshot.dataUrl,
             widthPx: gshot.width,
             heightPx: gshot.height,

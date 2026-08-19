@@ -121,18 +121,31 @@ describe("findContainingBoundary & classifyHotspots", () => {
       groupIds: ["kbj", "ksj"],
       groupName: "Koperasi Beringin Jaya & Koperasi Sawit Jaya",
     });
-    // Rekap: dihitung di TIAP pemilik; ringkasan: titik unik tetap 1, lembaga terdampak 2.
+    // Rekap: dihitung di TIAP pemilik + penanda `shared` (dasar keterangan
+    // anti-double-counting); ringkasan: titik unik tetap 1, lembaga terdampak 2.
     const rows = countHotspotsByGroup(fc, shared);
-    expect(rows.map((r) => [r.name, r.count])).toEqual([
-      ["Koperasi Beringin Jaya", 1],
-      ["Koperasi Sawit Jaya", 1],
+    expect(rows.map((r) => [r.name, r.count, r.shared])).toEqual([
+      ["Koperasi Beringin Jaya", 1, 1],
+      ["Koperasi Sawit Jaya", 1, 1],
     ]);
-    expect(summarizeFire(fc)).toEqual({ total: 1, inside: 1, outside: 0, groupsAffected: 2 });
+    expect(summarizeFire(fc)).toEqual({
+      total: 1,
+      inside: 1,
+      outside: 0,
+      insideShared: 1,
+      groupsAffected: 2,
+    });
   });
 
   it("summarizeFire menghitung total/inside/outside/lembaga terdampak", () => {
     const fc = classifyHotspots(hotspotFc([[101.5, 0.5], [101.6, 0.6], [105, 0.5]]), boundaries);
-    expect(summarizeFire(fc)).toEqual({ total: 3, inside: 2, outside: 1, groupsAffected: 1 });
+    expect(summarizeFire(fc)).toEqual({
+      total: 3,
+      inside: 2,
+      outside: 1,
+      insideShared: 0,
+      groupsAffected: 1,
+    });
   });
 });
 

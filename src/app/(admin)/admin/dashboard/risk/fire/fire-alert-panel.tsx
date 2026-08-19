@@ -211,6 +211,11 @@ export function FireAlertPanel({
                       <td className="px-2.5 py-1.5 text-right font-semibold tabular-nums text-red-600 dark:text-red-400">
                         <Flame className="mr-1 inline h-3 w-3" />
                         {r.count}
+                        {r.shared > 0 && (
+                          <p className="text-[9px] font-normal leading-tight text-muted-foreground">
+                            {r.shared} bersama
+                          </p>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -232,6 +237,15 @@ export function FireAlertPanel({
               </tbody>
             </table>
           </div>
+          {/* Anti-"double counting": titik di wilayah tumpang-tindih memang
+              dihitung di tiap lembaga pemilik — jelaskan selisihnya. */}
+          {summary && summary.insideShared > 0 && (
+            <p className="mt-1.5 text-[10px] leading-snug text-muted-foreground">
+              {summary.insideShared} titik berada di wilayah tumpang-tindih boundary dan dihitung di
+              tiap lembaga pemiliknya — jumlah kolom Titik dapat melebihi total titik unik (
+              {summary.inside}).
+            </p>
+          )}
         </div>
       </div>
 

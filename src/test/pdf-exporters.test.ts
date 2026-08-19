@@ -140,7 +140,7 @@ describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
   const row = (n: number) => ({
     timeWib: "17 Agu 2026, 14.29 WIB",
     satellite: "Suomi NPP",
-    confidence: "Nominal",
+    confidence: "Nominal (Medium)",
     frp: "3.2",
     lat: "0.70085",
     lng: "100.37555",
@@ -159,7 +159,7 @@ describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
   });
 
   it("groupMaps → halaman lampiran Peta per Lembaga", () => {
-    const gm = { name: "Kepau Jaya", count: 2, dataUrl: PNG_1PX_URL, widthPx: 800, heightPx: 500 };
+    const gm = { name: "Kepau Jaya", count: 2, shared: 1, dataUrl: PNG_1PX_URL, widthPx: 800, heightPx: 500 };
     const doc = buildFireMapDoc({ ...base, rows: [row(1)], groupMaps: [gm, { ...gm, name: "PPKS" }] });
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
   });

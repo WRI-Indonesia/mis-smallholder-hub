@@ -121,6 +121,9 @@ export type FireGroupCount = {
   districtId: string;
   districtName: string;
   count: number;
+  /** Berapa dari `count` yang berada di wilayah tumpang-tindih (juga dihitung
+   *  di lembaga lain) — dasar keterangan anti-"double counting" di UI/PDF. */
+  shared: number;
 };
 
 /**
@@ -134,9 +137,12 @@ export function countHotspotsByGroup(
   boundaries: FireBoundary[]
 ): FireGroupCount[] {
   const counts = new Map<string, number>();
+  const sharedCounts = new Map<string, number>();
   for (const f of classified.features) {
-    for (const groupId of (f.properties?.groupIds as string[] | undefined) ?? []) {
+    const groupIds = (f.properties?.groupIds as string[] | undefined) ?? [];
+    for (const groupId of groupIds) {
       counts.set(groupId, (counts.get(groupId) ?? 0) + 1);
+      if (groupIds.length > 1) sharedCounts.set(groupId, (sharedCounts.get(groupId) ?? 0) + 1);
     }
   }
   return boundaries
@@ -146,6 +152,7 @@ export function countHotspotsByGroup(
       districtId: b.districtId,
       districtName: b.districtName,
       count: counts.get(b.farmerGroupId) ?? 0,
+      shared: sharedCounts.get(b.farmerGroupId) ?? 0,
     }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "id"));
 }
@@ -154,25 +161,29 @@ export type FireSummary = {
   total: number;
   inside: number;
   outside: number;
+  /** Titik unik yang berada di wilayah tumpang-tindih ≥2 lembaga. */
+  insideShared: number;
   /** Jumlah lembaga dengan ≥1 titik dalam boundary. */
   groupsAffected: number;
 };
 
 export function summarizeFire(classified: FeatureCollection): FireSummary {
   let inside = 0;
+  let insideShared = 0;
   const groups = new Set<string>();
   for (const f of classified.features) {
     if (f.properties?.inBoundary === "in") {
       inside++;
-      for (const groupId of (f.properties?.groupIds as string[] | undefined) ?? []) {
-        groups.add(groupId);
-      }
+      const groupIds = (f.properties?.groupIds as string[] | undefined) ?? [];
+      if (groupIds.length > 1) insideShared++;
+      for (const groupId of groupIds) groups.add(groupId);
     }
   }
   return {
     total: classified.features.length,
     inside,
     outside: classified.features.length - inside,
+    insideShared,
     groupsAffected: groups.size,
   };
 }

@@ -31,6 +31,8 @@ export type FireReportRow = {
 export type FireGroupMap = {
   name: string;
   count: number;
+  /** Berapa dari `count` yang berada di wilayah tumpang-tindih lembaga lain. */
+  shared: number;
   dataUrl: string;
   widthPx: number;
   heightPx: number;
@@ -147,7 +149,7 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
     { value: fmtN(s.total), label: "Total Titik Api", color: RED, fill: [250, 235, 235] },
     {
       value: `${fmtN(s.high)} / ${fmtN(s.nominal)} / ${fmtN(s.low)}`,
-      label: "Tinggi / Nominal / Rendah",
+      label: "Tinggi / Nominal (Medium) / Rendah",
       color: AMBER,
       fill: [253, 244, 226],
     },
@@ -211,18 +213,10 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
     y += 14;
   } else {
     autoTable(doc, {
+      // Tanpa kolom "Status Tindak Lanjut" — laporan ini murni ALERT
+      // (keputusan owner 2026-08-19), bukan pelacakan tindak lanjut.
       head: [
-        [
-          "No",
-          "Waktu Deteksi",
-          "Satelit",
-          "Keyakinan",
-          "FRP (MW)",
-          "Lintang",
-          "Bujur",
-          "Lembaga",
-          "Status Tindak Lanjut",
-        ],
+        ["No", "Waktu Deteksi", "Satelit", "Keyakinan", "FRP (MW)", "Lintang", "Bujur", "Lembaga"],
       ],
       body: opts.rows.map((r, i) => [
         String(i + 1),
@@ -233,7 +227,6 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
         r.lat,
         r.lng,
         r.groupName,
-        "Menunggu verifikasi lapangan",
       ]),
       startY: y,
       margin: { top: 16, left: MARGIN, right: MARGIN, bottom: 16 },
@@ -248,14 +241,13 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
         textColor: 30,
       },
       columnStyles: {
-        0: { cellWidth: 8, halign: "center" },
-        1: { cellWidth: 26 },
-        2: { cellWidth: 19 },
-        3: { cellWidth: 18, halign: "center" },
-        4: { cellWidth: 14, halign: "center" },
-        5: { cellWidth: 17, halign: "right" },
-        6: { cellWidth: 18, halign: "right" },
-        8: { cellWidth: 30 },
+        0: { cellWidth: 9, halign: "center" },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 26, halign: "center" },
+        4: { cellWidth: 16, halign: "center" },
+        5: { cellWidth: 19, halign: "right" },
+        6: { cellWidth: 20, halign: "right" },
       },
       headStyles: {
         font: F,
@@ -273,7 +265,7 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
           if (v === "Tinggi") {
             d.cell.styles.textColor = RED;
             d.cell.styles.fontStyle = "bold";
-          } else if (v === "Nominal") {
+          } else if (v.startsWith("Nominal")) {
             d.cell.styles.textColor = AMBER;
           }
         }
@@ -303,7 +295,11 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
       doc.setFont(F, "bold");
       doc.setFontSize(10);
       doc.setTextColor(...RED);
-      doc.text(`${gm.name} — ${fmtN(gm.count)} titik api`, MARGIN, y);
+      doc.text(
+        `${gm.name} — ${fmtN(gm.count)} titik api${gm.shared > 0 ? ` (${fmtN(gm.shared)} di wilayah tumpang-tindih)` : ""}`,
+        MARGIN,
+        y
+      );
       y += 2.5;
       y = drawMapImage(doc, gm.dataUrl, gm.widthPx, gm.heightPx, y, contentW, 100);
       y += 8;
@@ -315,7 +311,8 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
   const note =
     "Catatan metodologi: Data merupakan deteksi anomali panas VIIRS resolusi 375 m, bukan konfirmasi kebakaran di " +
     "lapangan. Sumber: NASA FIRMS (LANCE/EOSDIS), jeda pembaruan data ±3 jam. Tabel hanya memuat titik hotspot " +
-    "yang berada dalam boundary lembaga petani dampingan (boundary sudah termasuk buffer 1,5 km).";
+    "yang berada dalam boundary lembaga petani dampingan (boundary sudah termasuk buffer 1,5 km). Titik pada " +
+    "wilayah boundary yang tumpang-tindih diatribusikan ke tiap lembaga pemiliknya; angka ringkasan menghitung titik unik.";
   const pageH = doc.internal.pageSize.getHeight();
   if (y > pageH - 20) {
     doc.addPage("a4", "portrait");
