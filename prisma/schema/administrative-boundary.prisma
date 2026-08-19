@@ -1,0 +1,29 @@
+// administrative-boundary.prisma — garis batas administrasi (BIG) untuk peta (#266)
+
+// Satu tabel lintas level (keputusan owner): bentuk data identik per level dan
+// level baru cukup menambah nilai enum + menjalankan seed file barunya.
+// Terpisah dari reg_district/subdistrict/village karena file batas mencakup
+// SELURUH wilayah Riau, sedangkan tabel geografi hanya wilayah program.
+model AdministrativeBoundary {
+  id         String             @id @default(cuid())
+  level      AdminBoundaryLevel
+  name       String // NAMOBJ
+  code       String? // kode BIG (KDBPUM), mis. "14.01"
+  parentName String?            @map("parent_name") // nama wilayah induk dari atribut file
+  districtId String?            @map("district_id") // terisi bila cocok dengan District program
+  district   District?          @relation(fields: [districtId], references: [id])
+  // Dual-column pola FarmerGroupBoundary: `geom` PostGIS = sumber kebenaran
+  // spasial (GiST di migration), `geojson` = cache render peta.
+  geom       Unsupported("geometry(MultiPolygon, 4326)")?
+  geojson    Json               @map("geojson") // GeoJSON MultiPolygon WGS84
+  source     String?            @map("source")
+  isActive   Boolean            @default(true) @map("is_active")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  createdBy  String?            @map("created_by")
+  modifiedAt DateTime           @updatedAt @map("modified_at")
+  modifiedBy String?            @map("modified_by")
+
+  @@index([level, isActive])
+  @@index([districtId])
+  @@map("tbl_administrative_boundary")
+}
