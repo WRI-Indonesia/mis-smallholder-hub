@@ -99,15 +99,35 @@ describe("findContainingBoundary & classifyHotspots", () => {
     expect(findContainingBoundary([100, 0.5], boundaries)).toBeNull();
   });
 
-  it("menandai in/out + groupId/groupName dan mempertahankan properti lama", () => {
+  it("menandai in/out + groupIds/groupName dan mempertahankan properti lama", () => {
     const fc = classifyHotspots(hotspotFc([[101.5, 0.5], [103.5, 0.5], [105, 0.5]]), boundaries);
     expect(fc.features.map((f) => f.properties?.inBoundary)).toEqual(["in", "in", "out"]);
     expect(fc.features[0].properties).toMatchObject({
       confidence: "n",
-      groupId: "g1",
+      groupIds: ["g1"],
       groupName: "Lembaga Satu",
     });
-    expect(fc.features[2].properties).toMatchObject({ groupId: null, groupName: null });
+    expect(fc.features[2].properties).toMatchObject({ groupIds: [], groupName: null });
+  });
+
+  it("boundary BERSAMA (dua lembaga, poligon sama — KSJ & KBJ): titik diatribusikan ke keduanya", () => {
+    const shared = indexBoundaries([
+      boundary({ farmerGroupId: "kbj", name: "Koperasi Beringin Jaya", geometry: square(101, 0, 102, 1) }),
+      boundary({ farmerGroupId: "ksj", name: "Koperasi Sawit Jaya", geometry: square(101, 0, 102, 1) }),
+    ]);
+    const fc = classifyHotspots(hotspotFc([[101.5, 0.5]]), shared);
+    expect(fc.features[0].properties).toMatchObject({
+      inBoundary: "in",
+      groupIds: ["kbj", "ksj"],
+      groupName: "Koperasi Beringin Jaya & Koperasi Sawit Jaya",
+    });
+    // Rekap: dihitung di TIAP pemilik; ringkasan: titik unik tetap 1, lembaga terdampak 2.
+    const rows = countHotspotsByGroup(fc, shared);
+    expect(rows.map((r) => [r.name, r.count])).toEqual([
+      ["Koperasi Beringin Jaya", 1],
+      ["Koperasi Sawit Jaya", 1],
+    ]);
+    expect(summarizeFire(fc)).toEqual({ total: 1, inside: 1, outside: 0, groupsAffected: 2 });
   });
 
   it("summarizeFire menghitung total/inside/outside/lembaga terdampak", () => {

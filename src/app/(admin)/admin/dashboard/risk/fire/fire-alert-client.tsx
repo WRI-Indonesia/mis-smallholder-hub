@@ -283,7 +283,11 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
     const insideFeatures = classified.features.filter((f) => {
       if (f.properties?.inBoundary !== "in") return false;
       if (!scopeDistrictId) return true;
-      return groupDistrict.get(f.properties?.groupId as string) === scopeDistrictId;
+      // Boundary bisa bersama (groupIds > 1) — cukup salah satu pemilik
+      // berada di distrik scope.
+      return ((f.properties?.groupIds as string[] | undefined) ?? []).some(
+        (id) => groupDistrict.get(id) === scopeDistrictId
+      );
     });
     const detailRows = insideFeatures
       .map((f) => ({

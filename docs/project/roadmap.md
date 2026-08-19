@@ -381,7 +381,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 - **Tooltip rincian kartu:** Dalam Boundary per distrik program, Luar Boundary per kabupaten (PiP poligon BIG) + "Kab. Lainnya" — `countPointsByNamedArea` + `StatTooltipContent`.
 - **Hotspot dipangkas ke Provinsi Riau:** bbox FIRMS persegi ikut menangkap Malaysia/Sumbar/Jambi → hasil fetch disaring `filterPointsWithinAreas` terhadap gabungan 12 poligon kabupaten BIG (fallback tampil semua bila batas belum ter-seed).
 - **PDF "Laporan Titik Api"** (rombak total, mockup owner): A4 portrait ber-logo WRI + font **Acumin Pro** ter-embed (WOFF CFF→TTF via fonttools/cu2qu), kartu ringkasan, peta sebaran, tabel detail per titik, lampiran peta per lembaga ber-titik api, catatan metodologi; boundary ICS **sudah termasuk buffer 1,5 km** (fakta owner — penamaan mengikuti).
-- **Test:** +26 (`fire-alert.test.ts` 20 unit + 2 route guard + 3 `buildFireMapDoc` + 1 perf PiP) → total **916** ✅; Bantuan: tutorial `p-11-fire-alert.md` + konsep `3-1-dashboard.md`.
+- **Test:** +26 (`fire-alert.test.ts` 20 unit + 2 route guard + 3 `buildFireMapDoc` + 1 perf PiP + 1 boundary bersama) → total **917** ✅; Bantuan: tutorial `p-11-fire-alert.md` + konsep `3-1-dashboard.md`.
 
 </details>
 

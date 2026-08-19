@@ -66,22 +66,33 @@ export function pointInMultiPolygon(pt: Position, geometry: MultiPolygon): boole
   return false;
 }
 
+/** SEMUA boundary yang memuat titik — boundary bisa bertumpuk/bersama (KSJ & KBJ). */
+export function findContainingBoundaries(
+  pt: Position,
+  boundaries: FireBoundaryIndexed[]
+): FireBoundaryIndexed[] {
+  const hits: FireBoundaryIndexed[] = [];
+  for (const b of boundaries) {
+    const [w, s, e, n] = b.bbox;
+    if (pt[0] < w || pt[0] > e || pt[1] < s || pt[1] > n) continue;
+    if (pointInMultiPolygon(pt, b.geometry)) hits.push(b);
+  }
+  return hits;
+}
+
 /** Boundary pertama yang memuat titik (urutan input; null bila di luar semua). */
 export function findContainingBoundary(
   pt: Position,
   boundaries: FireBoundaryIndexed[]
 ): FireBoundaryIndexed | null {
-  for (const b of boundaries) {
-    const [w, s, e, n] = b.bbox;
-    if (pt[0] < w || pt[0] > e || pt[1] < s || pt[1] > n) continue;
-    if (pointInMultiPolygon(pt, b.geometry)) return b;
-  }
-  return null;
+  return findContainingBoundaries(pt, boundaries)[0] ?? null;
 }
 
 /**
- * Tandai tiap titik api: `inBoundary` ("in"/"out") + `groupId`/`groupName` bila
- * di dalam — dipakai ekspresi styling MapLibre, popup, dan rekap panel.
+ * Tandai tiap titik api: `inBoundary` ("in"/"out"); bila di dalam juga
+ * `groupIds` (SEMUA lembaga pemilik — satu poligon bisa bersama, mis. KSJ &
+ * KBJ, keputusan owner 2026-08-19) dan `groupName` (nama digabung " & ").
+ * Dipakai ekspresi styling MapLibre, popup, tabel, dan PDF.
  */
 export function classifyHotspots(
   fc: FeatureCollection,
@@ -89,14 +100,14 @@ export function classifyHotspots(
 ): FeatureCollection {
   const features: Feature[] = fc.features.map((f) => {
     const pt = f.geometry.type === "Point" ? (f.geometry.coordinates as Position) : null;
-    const hit = pt ? findContainingBoundary(pt, boundaries) : null;
+    const hits = pt ? findContainingBoundaries(pt, boundaries) : [];
     return {
       ...f,
       properties: {
         ...(f.properties ?? {}),
-        inBoundary: hit ? "in" : "out",
-        groupId: hit?.farmerGroupId ?? null,
-        groupName: hit?.name ?? null,
+        inBoundary: hits.length > 0 ? "in" : "out",
+        groupIds: hits.map((h) => h.farmerGroupId),
+        groupName: hits.length > 0 ? hits.map((h) => h.name).join(" & ") : null,
       },
     };
   });
@@ -114,7 +125,9 @@ export type FireGroupCount = {
 
 /**
  * Rekap jumlah titik (ter-klasifikasi) per lembaga — lembaga tanpa titik tetap
- * muncul (count 0). Urut: jumlah menurun, lalu nama.
+ * muncul (count 0); titik dalam boundary bersama dihitung di TIAP pemiliknya
+ * (kartu ringkasan tetap menghitung titik unik via `summarizeFire`).
+ * Urut: jumlah menurun, lalu nama.
  */
 export function countHotspotsByGroup(
   classified: FeatureCollection,
@@ -122,8 +135,9 @@ export function countHotspotsByGroup(
 ): FireGroupCount[] {
   const counts = new Map<string, number>();
   for (const f of classified.features) {
-    const groupId = f.properties?.groupId as string | null | undefined;
-    if (groupId) counts.set(groupId, (counts.get(groupId) ?? 0) + 1);
+    for (const groupId of (f.properties?.groupIds as string[] | undefined) ?? []) {
+      counts.set(groupId, (counts.get(groupId) ?? 0) + 1);
+    }
   }
   return boundaries
     .map((b) => ({
@@ -150,8 +164,9 @@ export function summarizeFire(classified: FeatureCollection): FireSummary {
   for (const f of classified.features) {
     if (f.properties?.inBoundary === "in") {
       inside++;
-      const groupId = f.properties?.groupId as string | null;
-      if (groupId) groups.add(groupId);
+      for (const groupId of (f.properties?.groupIds as string[] | undefined) ?? []) {
+        groups.add(groupId);
+      }
     }
   }
   return {
