@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { buildPDF } from "@/lib/pdf";
 import { buildFarmPassportDoc } from "@/lib/farm-passport";
 import { buildBmpMapDoc } from "@/lib/bmp-map-print";
+import { buildFireMapDoc } from "@/lib/fire-map-print";
 import type { ParcelPassport } from "@/types/map";
 
 // TD-019: exporter lama dipisah build-vs-save (pola #179) — test struktural
@@ -119,6 +120,47 @@ describe("buildBmpMapDoc (lib/bmp-map-print)", () => {
       },
     });
     expect(Math.round(doc.internal.pageSize.getWidth())).toBe(297);
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
+  const base = {
+    subtitle: "Smallholder Hub Group",
+    kabupatenLabel: "Kampar, Pelalawan, Rokan Hulu, Siak",
+    rangeLabel: "5 hari terakhir (14–19 Agu 2026)",
+    exportedAt: "19 Agu 2026, 14.55 WIB",
+    logo: null,
+    fonts: null,
+    stats: { total: 130, high: 1, nominal: 123, low: 6, inside: 6, groupsAffected: 3 },
+    imageDataUrl: PNG_1PX_URL,
+    imageWidthPx: 800,
+    imageHeightPx: 500,
+  };
+  const row = (n: number) => ({
+    timeWib: "17 Agu 2026, 14.29 WIB",
+    satellite: "Suomi NPP",
+    confidence: "Nominal",
+    frp: "3.2",
+    lat: "0.70085",
+    lng: "100.37555",
+    groupName: `Lembaga ${n}`,
+  });
+
+  it("portrait A4: header + kartu + peta + tabel detail titik", () => {
+    const doc = buildFireMapDoc({ ...base, rows: [row(1), row(2), row(3)] });
+    expect(Math.round(doc.internal.pageSize.getWidth())).toBe(210);
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+  });
+
+  it("tanpa titik & tanpa capture peta → placeholder + pesan kosong, tanpa throw", () => {
+    const doc = buildFireMapDoc({ ...base, imageDataUrl: null, rows: [] });
+    expect(doc.getNumberOfPages()).toBe(1);
+  });
+
+  it("groupMaps → halaman lampiran Peta per Lembaga", () => {
+    const gm = { name: "Kepau Jaya", count: 2, dataUrl: PNG_1PX_URL, widthPx: 800, heightPx: 500 };
+    const doc = buildFireMapDoc({ ...base, rows: [row(1)], groupMaps: [gm, { ...gm, name: "PPKS" }] });
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
   });
 });

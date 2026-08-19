@@ -86,6 +86,18 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "dashboard-risk-fire",
+    "route": "(admin)/admin/dashboard/risk/fire",
+    "models": {
+      "administrativeBoundary": "R",
+      "farmerGroupBoundary": "R"
+    },
+    "modules": [
+      "src/server/actions/fire-boundary.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "dashboard-snapshot",
     "route": "(admin)/admin/tools/snapshot",
     "models": {

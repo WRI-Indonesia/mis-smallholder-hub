@@ -10,7 +10,8 @@ import { parseBbox, isFirmsCsv, csvToGeoJSON, upstreamDayRange } from "@/lib/fir
 // and (b) sidestep CORS on the FIRMS endpoint. Like /api/map-overlay, this is a
 // deliberate, narrow exception to the "no REST API layer" rule — MapLibre/Source
 // needs a plain GET URL, which a Server Action cannot provide. Guarded by the
-// same `map-parcel` VIEW permission as the page so it isn't an anonymous proxy.
+// VIEW permission of either consuming page (Peta Lahan / Dashboard Fire Alert)
+// so it isn't an anonymous proxy.
 //
 // FIRMS area API:
 //   https://firms.modaps.eosdis.nasa.gov/api/area/csv/[KEY]/[SOURCE]/[bbox]/[dayRange]
@@ -26,7 +27,13 @@ const TIMEOUT_MS = 20_000;
 // `upstreamDayRange` (lib/firms.ts) — sumber yang sama dipakai klien.
 
 export async function GET(req: NextRequest) {
-  if (!(await hasPermission("map-parcel", "VIEW"))) {
+  // Dua halaman memakai proxy ini: Peta Lahan dan Dashboard Fire Alert (#266).
+  // Cukup salah satu izin VIEW — dicek berurutan agar pemegang map-parcel
+  // (kasus umum) tidak membayar query permission kedua.
+  if (
+    !(await hasPermission("map-parcel", "VIEW")) &&
+    !(await hasPermission("dashboard-risk-fire", "VIEW"))
+  ) {
     return new Response("Forbidden", { status: 403 });
   }
 
