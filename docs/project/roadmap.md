@@ -115,6 +115,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | DASH-04     | Dashboard BMP (Produksi)            | ✅ Done        | Done    | inti      |
 | DASH-05     | Dashboard: Card Total Kelompok Tani | ✅ Done        | Done    | inti      |
 | DASH-06     | Dashboard Pelatihan                 | ✅ Done        | Done    | inti      |
+| DASH-07     | Dashboard Risk Management: Fire Alert | ✅ Done      | Done    | inti      |
 | MAP-01      | Map: Peta Lahan                     | ✅ Done        | Done    | inti      |
 | MAP-02      | Map: Peta BMP (Layer 1)             | ✅ Done        | Done    | inti      |
 | MAP-03      | Map: Peta BMP Layer 2 (Produktivitas) | ✅ Done      | Done    | inti      |
@@ -363,6 +364,24 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 - **Review putaran 2 (2026-07-21) — 5 cacat diperbaiki:** (a) **pembilang cakupan bocor** — peserta tidak memfilter `farmer.isActive` maupun keanggotaan Lembaga, padahal penyebut (`_count.farmers`) memfilter keduanya → sel bisa >100%, `gap`=0, sel jadi **tidak bisa diklik** sehingga petani yang benar-benar belum dilatih tak terjangkau; (b) tooltip kolom "Lainnya" mencetak `target null% tercapai`; (c) `exportToExcel` sudah menambah ekstensi sendiri → nama berkas `…xlsx.xlsx`, plus sanitasi nama Lembaga; (d) ringkasan "kurang N menuju target" dijumlah hanya atas paket ber-kegiatan → **non-monoton** (mencatat kegiatan paket baru menaikkan angka kekurangan); (e) `packageCode`/`year` dari klien tak divalidasi → `PrismaClientValidationError` 500. Persen kini dibulatkan ke bawah agar 999/1.000 tidak terbaca "100%".
 - **Drill-down & target (2026-07-21):** sel matriks yang belum mencapai target bisa **diklik** → modal daftar petani yang belum dilatih (Nama + ID Petani + L/P, **tanpa NIK**) dengan tombol **Salin** & **unduh Excel** — siap jadi daftar undangan. Action `getUntrainedFarmers` memakai `AND: farmerGroupAccessFilter(...)` (bukan spread) untuk menghindari pitfall key-collision, diambil **on-demand** agar payload awal tetap ramping. Target program `TRAINING_COVERAGE_TARGET` = **100% petani aktif per paket** (keputusan owner; konstanta di lib, `OTHER` tanpa target).
 - **Next step:** filter tersimpan di URL, export matriks, deep-link panel kualitas data yang benar-benar terfilter.
+
+</details>
+
+<details>
+<summary><strong>DASH-07</strong> · ✅ Done — Dashboard Risk Management: Fire Alert (#266)</summary>
+
+- **✅ (2026-08-19):** `/admin/dashboard/risk/fire` (menu 3 level `dashboard` → `dashboard-risk` → `dashboard-risk-fire`; VIEW+PRINT untuk 5 role). Titik api VIIRS (NASA FIRMS, proxy `/api/map-hotspot` existing — guard dilonggarkan jadi `map-parcel` **atau** `dashboard-risk-fire` VIEW) diklasifikasi **point-in-polygon** terhadap **boundary lembaga (ICS)** — beda metode dari Peta Lahan yang berbasis jarak haversine 15 km ke titik kantor lembaga.
+- **Model `FarmerGroupBoundary`** (`tbl_farmer_group_boundary`): dual-column — `geom geometry(MultiPolygon,4326)` PostGIS (sumber kebenaran + GiST, siap analisa overlap kawasan) + `geojson Json` cache render (pola `LandParcel.geometry`); `geom` bertipe `Unsupported` → tulis via `ST_GeomFromGeoJSON` ($executeRaw), dan pemindai `schema-scan.ts` melewati field Unsupported agar artefak `data-schema.generated.ts` tetap identik DMMF. Migrasi diterapkan manual (`db execute` + `migrate resolve`) karena drift checksum lokal pre-existing.
+- **Seed boundary**: `scripts/local/seed/seed-boundary-lembaga.ts` — shapefile `Groups-Boundary.zip` (30 poligon ICS, UTM 47S → WGS84 via shpjs) + mapping manual `boundary-mapping.csv` (nama ICS → `FarmerGroup.code`); validasi total (unmapped/duplikat/geometri → gagal berlaporan), dry-run default `--apply` untuk menulis, idempotent (soft-delete + insert). Catatan: boundary "PPKSSM / APKSMB & KSJ" gabungan → dipetakan ke PPKSSM; **KSJ (ISH-1408-10) belum punya boundary sendiri**.
+- **UI:** ¾ peta MapLibre (boundary biru berlabel + titik confidence-colored; bentuk = pembeda lokasi: dalam boundary ikon api, luar lingkaran kecil; legenda on-map kiri-bawah; popup titik/boundary) | ¼ panel (toggle 24 jam/5 hari default 5, 4 kartu ringkasan, breakdown confidence, tabel Lembaga × jumlah titik urut terbanyak — hanya lembaga ber-titik api, di panel maupun PDF). Klasifikasi client-side (`lib/fire-alert.ts`, ray-casting lokal tanpa turf di bundle) — live FIRMS, **tanpa riwayat di DB** (keputusan scope #266).
+- **Print Map** (`lib/fire-map-print.ts`, pola BMP): scope Full Riau / Per District (per-lembaga dicabut saat review owner) → auto-zoom bbox + tunggu `idle` → capture → PDF A4 landscape (peta+legenda, halaman tabel rekap per lembaga sesuai scope); gate PRINT.
+- **Akses:** `getFireBoundaries` guard VIEW + `farmerGroupAccessFilter(getAccessContext())` — boundary/rekap mengikuti scope user.
+- **Iterasi review owner (2026-08-19):** klik baris tabel → zoom + highlight boundary terpilih (outline tebal + fill pekat); warna boundary **Antique Violet #660099**; ikon `ShieldAlert`/`Flame` didaftarkan ke `icon-map.tsx`; tabel panel & PDF hanya lembaga ber-titik api.
+- **Batas administrasi (BIG):** model `AdministrativeBoundary` — satu tabel lintas level (enum `AdminBoundaryLevel`), FK `districtId` nullable, cache `geojson` tersimplifikasi 0,001° (9,7 MB → 165 KB), seed `seed-batas-administrasi.ts` (12 kabupaten); garis putus-putus abu + label selalu tampil sebagai konteks; `getAdminBoundaries` tanpa access-context (garis referensi publik).
+- **Tooltip rincian kartu:** Dalam Boundary per distrik program, Luar Boundary per kabupaten (PiP poligon BIG) + "Kab. Lainnya" — `countPointsByNamedArea` + `StatTooltipContent`.
+- **Hotspot dipangkas ke Provinsi Riau:** bbox FIRMS persegi ikut menangkap Malaysia/Sumbar/Jambi → hasil fetch disaring `filterPointsWithinAreas` terhadap gabungan 12 poligon kabupaten BIG (fallback tampil semua bila batas belum ter-seed).
+- **PDF "Laporan Titik Api"** (rombak total, mockup owner): A4 portrait ber-logo WRI + font **Acumin Pro** ter-embed (WOFF CFF→TTF via fonttools/cu2qu), kartu ringkasan, peta sebaran, tabel detail per titik, lampiran peta per lembaga ber-titik api, catatan metodologi; boundary ICS **sudah termasuk buffer 1,5 km** (fakta owner — penamaan mengikuti).
+- **Test:** +26 (`fire-alert.test.ts` 20 unit + 2 route guard + 3 `buildFireMapDoc` + 1 perf PiP) → total **916** ✅; Bantuan: tutorial `p-11-fire-alert.md` + konsep `3-1-dashboard.md`.
 
 </details>
 

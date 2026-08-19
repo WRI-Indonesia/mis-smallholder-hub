@@ -13,7 +13,8 @@ docs/product/pages/
 ├── dashboard/                    Menu: Dashboard
 │   ├── main-dashboard.md
 │   ├── bmp-dashboard-produksi.md
-│   └── dashboard-pelatihan.md
+│   ├── dashboard-pelatihan.md
+│   └── risk-management-fire-alert.md
 ├── master-data/                  Menu: Master Data
 │   ├── lembaga-petani/           daftar · detail
 │   ├── petani/                   daftar · detail
