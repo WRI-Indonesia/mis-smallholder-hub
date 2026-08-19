@@ -235,7 +235,7 @@ export function FireAlertPanel({
         </div>
       </div>
 
-      {/* Print Map — Full Riau / Per District / Per Lembaga */}
+      {/* Print Map — Full Riau / Per District (per-lembaga dicabut, review owner) */}
       {canPrint && (
         <div className="space-y-2 border-t p-4">
           <p className="text-xs font-medium text-muted-foreground">Print Map</p>

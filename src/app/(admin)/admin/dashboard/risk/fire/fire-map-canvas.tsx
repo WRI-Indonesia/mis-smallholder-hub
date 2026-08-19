@@ -135,7 +135,7 @@ interface Props {
   boundaries: FireBoundaryIndexed[];
   /** Garis batas kabupaten (BIG) — konteks statis di bawah layer lembaga. */
   adminBoundaries: AdminBoundaryLine[];
-  /** Titik api ter-klasifikasi (properti inBoundary/groupId/confBucket). */
+  /** Titik api ter-klasifikasi (properti inBoundary/groupIds/groupName/confBucket). */
   hotspots: FeatureCollection | null;
   /** Jumlah titik dalam boundary per lembaga — untuk popup boundary. */
   countsByGroup: Record<string, number>;
