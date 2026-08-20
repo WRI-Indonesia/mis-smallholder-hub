@@ -93,6 +93,10 @@ export function findContainingBoundary(
  * `groupIds` (SEMUA lembaga pemilik — satu poligon bisa bersama, mis. KSJ &
  * KBJ, keputusan owner 2026-08-19) dan `groupName` (nama digabung " & ").
  * Dipakai ekspresi styling MapLibre, popup, tabel, dan PDF.
+ *
+ * Hit di-dedup per lembaga: bila satu lembaga punya >1 boundary aktif yang
+ * sama-sama memuat titik, tanpa dedup titik itu terhitung dua kali dan salah
+ * ditandai "bersama" (`groupIds.length > 1`) padahal pemiliknya satu.
  */
 export function classifyHotspots(
   fc: FeatureCollection,
@@ -100,7 +104,11 @@ export function classifyHotspots(
 ): FeatureCollection {
   const features: Feature[] = fc.features.map((f) => {
     const pt = f.geometry.type === "Point" ? (f.geometry.coordinates as Position) : null;
-    const hits = pt ? findContainingBoundaries(pt, boundaries) : [];
+    const owners = new Map<string, FireBoundaryIndexed>();
+    for (const h of pt ? findContainingBoundaries(pt, boundaries) : []) {
+      if (!owners.has(h.farmerGroupId)) owners.set(h.farmerGroupId, h);
+    }
+    const hits = [...owners.values()];
     return {
       ...f,
       properties: {
@@ -131,6 +139,12 @@ export type FireGroupCount = {
  * muncul (count 0); titik dalam boundary bersama dihitung di TIAP pemiliknya
  * (kartu ringkasan tetap menghitung titik unik via `summarizeFire`).
  * Urut: jumlah menurun, lalu nama.
+ *
+ * Baris dibangun per LEMBAGA, bukan per baris boundary: relasi
+ * FarmerGroup→boundary adalah 1-ke-banyak tanpa unique constraint, sehingga
+ * satu lembaga dengan >1 boundary aktif (mis. seed gagal di antara
+ * soft-delete dan insert) akan muncul dobel dengan jumlah titik penuh di
+ * masing-masing baris, dan menggelembungkan penyebut "Lembaga Terdampak".
  */
 export function countHotspotsByGroup(
   classified: FeatureCollection,
@@ -145,7 +159,11 @@ export function countHotspotsByGroup(
       if (groupIds.length > 1) sharedCounts.set(groupId, (sharedCounts.get(groupId) ?? 0) + 1);
     }
   }
-  return boundaries
+  const groupById = new Map<string, FireBoundary>();
+  for (const b of boundaries) {
+    if (!groupById.has(b.farmerGroupId)) groupById.set(b.farmerGroupId, b);
+  }
+  return [...groupById.values()]
     .map((b) => ({
       farmerGroupId: b.farmerGroupId,
       name: b.name,
@@ -263,4 +281,86 @@ export function combinedBbox(
     if (b.bbox[3] > n) n = b.bbox[3];
   }
   return [w, s, e, n];
+}
+
+/** Zona waktu tunggal laporan Fire Alert — semua tanggal/jam dibaca sebagai WIB. */
+const WIB = "Asia/Jakarta";
+
+/**
+ * Awal jendela waktu untuk label laporan.
+ * - `1` = **bergulir** 1×24 jam ke belakang (perilaku layer 24 jam, #240).
+ * - `5` = 5 hari **kalender termasuk hari ini** (batas FIRMS) → mundur 4 hari,
+ *   supaya label rentangnya benar-benar 5 hari, bukan 6.
+ */
+export function hotspotWindowStart(now: Date, dayRange: number): Date {
+  const back = dayRange <= 1 ? 1 : dayRange - 1;
+  return new Date(now.getTime() - back * 24 * 60 * 60 * 1000);
+}
+
+/** Komponen hari/bulan/tahun sebuah Date menurut WIB (bukan zona browser). */
+function wibDateParts(d: Date): { day: number; month: number; year: number } {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: WIB,
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  }).formatToParts(d);
+  const num = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return { day: num("day"), month: num("month"), year: num("year") };
+}
+
+/**
+ * "15–19 Agu 2026" (bentuk penuh bila lintas bulan/tahun) — selalu dibaca WIB
+ * agar laporan tidak bergeser sehari untuk browser di luar zona Indonesia.
+ */
+export function formatHotspotRange(start: Date, end: Date): string {
+  const full = new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: WIB,
+  });
+  const a = wibDateParts(start);
+  const b = wibDateParts(end);
+  const sameMonth = a.month === b.month && a.year === b.year;
+  return sameMonth ? `${a.day}–${full.format(end)}` : `${full.format(start)} – ${full.format(end)}`;
+}
+
+/** "19 Agu 2026, 14.55 WIB" — tanggal DAN jam sama-sama dibaca WIB. */
+export function formatExportedAt(now: Date): string {
+  const date = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: WIB }).format(now);
+  const time = new Intl.DateTimeFormat("id-ID", { timeStyle: "short", timeZone: WIB }).format(now);
+  return `${date}, ${time} WIB`;
+}
+
+/**
+ * Rincian titik api DALAM boundary per distrik program, menghitung **titik
+ * unik**: satu titik di boundary bersama (mis. KSJ & KBJ) hanya dihitung sekali
+ * per distrik, sehingga jumlahnya cocok dengan kartu "Dalam Boundary" —
+ * berbeda dari `countHotspotsByGroup` yang sengaja menghitung per pemilik.
+ * (Satu titik yang boundary pemiliknya berbeda distrik tetap dihitung di tiap
+ * distrik — kasus ini tidak ada pada data program saat ini.)
+ */
+export function countUniqueInsideByDistrict(
+  classified: FeatureCollection,
+  boundaries: FireBoundary[]
+): AreaCount[] {
+  const districtOfGroup = new Map<string, string>();
+  const districtName = new Map<string, string>();
+  for (const b of boundaries) {
+    districtOfGroup.set(b.farmerGroupId, b.districtId);
+    districtName.set(b.districtId, b.districtName);
+  }
+  const counts = new Map<string, number>([...districtName.keys()].map((id) => [id, 0]));
+  for (const f of classified.features) {
+    if (f.properties?.inBoundary !== "in") continue;
+    const groupIds = (f.properties?.groupIds as string[] | undefined) ?? [];
+    const districtIds = new Set(
+      groupIds.map((id) => districtOfGroup.get(id)).filter((id): id is string => id !== undefined)
+    );
+    for (const id of districtIds) counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([id, count]) => ({ name: districtName.get(id) ?? id, count }))
+    .sort((a, b) => a.name.localeCompare(b.name, "id"));
 }

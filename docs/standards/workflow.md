@@ -99,7 +99,7 @@ Repo **punya CI** — hanya saja bukan untuk lint/build/test. Jangan mengira gat
 Konsekuensi yang wajib diingat:
 
 - **Merge PR ke `main` = deploy produksi.** Tidak ada langkah manual terpisah; begitu PR di-merge, produksi ikut terbarui. Pastikan gate lokal hijau **sebelum** merge, bukan sesudah.
-- `deploy-main.yml` **tidak menjalankan migrasi Prisma** (`prisma generate` ≠ `migrate deploy`). Migrasi DB tetap **manual** dan harus diterapkan **sebelum** kode yang membutuhkannya di-merge — lihat Safety & Approval di bawah.
+- **Tidak ada workflow deploy yang menjalankan migrasi Prisma** — `deploy-main.yml` maupun `deploy-staging.yml` hanya `prisma generate` (≠ `migrate deploy`). Migrasi DB tetap **manual** dan harus diterapkan **sebelum** kode yang membutuhkannya di-merge/di-push ke branch deploy — lihat Safety & Approval di bawah. Preseden v0.27.0: 2 migrasi Fire Alert di-`migrate deploy` ke mis-prod **sebelum** PR rilis di-merge.
 - Gitleaks memindai **seluruh riwayat** (`fetch-depth: 0`), jadi rahasia yang pernah ter-commit lalu dihapus tetap terdeteksi.
 - Kegagalan `gitleaks`/`semgrep` muncul sebagai check merah di PR; periksa `gh pr checks <nomor>` sebelum merge.
 

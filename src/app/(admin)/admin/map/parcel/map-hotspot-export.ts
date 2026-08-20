@@ -7,6 +7,7 @@
 import type { FeatureCollection, Point } from "geojson";
 import type { KTPoint } from "@/types/map";
 import {
+  HOTSPOT_CONF_LABELS,
   confidenceLabel,
   countByConfidence,
   formatWib,
@@ -220,7 +221,7 @@ export async function printHotspotPdf(
   const near = filterNearSorted(all);
   const rows = hasDistance ? near : all;
 
-  const doc = new jsPDF({ orientation: "landscape" });
+  const doc = new jsPDF({ orientation: "landscape", compress: true });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
@@ -236,7 +237,7 @@ export async function printHotspotPdf(
     25
   );
   doc.text(
-    `Total ${total} titik  —  Keyakinan Tinggi: ${counts.high}  ·  Nominal: ${counts.nominal}  ·  Rendah: ${counts.low}`,
+    `Total ${total} titik  —  Keyakinan ${HOTSPOT_CONF_LABELS.high}: ${counts.high}  ·  ${HOTSPOT_CONF_LABELS.nominal}: ${counts.nominal}  ·  ${HOTSPOT_CONF_LABELS.low}: ${counts.low}`,
     MARGIN,
     31
   );

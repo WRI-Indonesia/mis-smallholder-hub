@@ -17,6 +17,7 @@ import {
   type HotspotConfBucket,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
 import { combinedBbox, multiPolygonBbox, type FireBoundaryIndexed } from "@/lib/fire-alert";
+import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
 import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
 
 const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
@@ -111,7 +112,8 @@ function flameImageData(color: string): ImageData | null {
   return ctx.getImageData(0, 0, size, size);
 }
 
-export type FireMapCapture = { dataUrl: string; width: number; height: number };
+export type FireMapCapture = MapCapture;
+
 /**
  * Snapshot peta; `bbox` (WSEN) opsional untuk auto-zoom scope cetak dulu.
  * `focusGroupId` = mode fokus capture per-lembaga (PDF): lembaga subjek
@@ -256,7 +258,7 @@ export function FireMapCanvas({
   );
 
   // Capture untuk cetak PDF: (opsional) set fokus lembaga + zoom ke bbox →
-  // tunggu "idle" (tile termuat) → toDataURL. Pola timeout/taint mengikuti
+  // tunggu "idle" (tile termuat) → encodeMapCapture. Pola timeout/taint mengikuti
   // map-bmp-canvas.
   useEffect(() => {
     if (!registerCapture) return;
@@ -271,8 +273,7 @@ export function FireMapCanvas({
         setFocusGroupId(focus);
         const snap = () => {
           try {
-            const canvas = map.getCanvas();
-            resolve({ dataUrl: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height });
+            resolve(encodeMapCapture(map.getCanvas()));
           } catch (err) {
             // Basemap cross-origin (Hybrid) men-taint canvas — gagal rapi.
             console.warn("Map capture failed:", err);

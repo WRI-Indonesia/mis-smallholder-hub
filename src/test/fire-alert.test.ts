@@ -5,7 +5,11 @@ import {
   combinedBbox,
   countHotspotsByGroup,
   countPointsByNamedArea,
+  countUniqueInsideByDistrict,
   filterPointsWithinAreas,
+  formatExportedAt,
+  formatHotspotRange,
+  hotspotWindowStart,
   findContainingBoundary,
   indexBoundaries,
   multiPolygonBbox,
@@ -175,6 +179,36 @@ describe("countHotspotsByGroup", () => {
     expect(rows.map((r) => r.name)).toEqual(["Alpha", "Beta", "Gamma"]);
     expect(rows.every((r) => r.count === 0)).toBe(true);
   });
+
+  // #274 — FarmerGroup→boundary 1-ke-banyak tanpa unique constraint: satu
+  // lembaga dengan 2 boundary aktif (mis. seed gagal antara soft-delete dan
+  // insert) tidak boleh muncul dobel atau menghitung titiknya dua kali.
+  it("lembaga dengan >1 boundary aktif tetap satu baris, tanpa hitungan dobel", () => {
+    const dua = [
+      boundary({ id: "b-g1-lama", farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 102, 1) }),
+      boundary({ id: "b-g1-baru", farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 102, 1) }),
+      boundary({ farmerGroupId: "g2", name: "Beta", geometry: square(103, 0, 104, 1) }),
+    ];
+    const fc = classifyHotspots(hotspotFc([[101.5, 0.5], [101.6, 0.5]]), indexBoundaries(dua));
+    const rows = countHotspotsByGroup(fc, dua);
+    expect(rows.map((r) => [r.name, r.count, r.shared])).toEqual([
+      ["Alpha", 2, 0],
+      ["Beta", 0, 0],
+    ]);
+    // Penyebut kartu "Lembaga Terdampak" ikut benar.
+    expect(summarizeFire(fc).groupsAffected).toBe(1);
+  });
+
+  it("boundary ganda satu lembaga tidak tertandai 'bersama'", () => {
+    const dua = [
+      boundary({ id: "b-x1", farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 102, 1) }),
+      boundary({ id: "b-x2", farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 102, 1) }),
+    ];
+    const fc = classifyHotspots(hotspotFc([[101.5, 0.5]]), indexBoundaries(dua));
+    expect(fc.features[0].properties?.groupIds).toEqual(["g1"]);
+    expect(fc.features[0].properties?.groupName).toBe("Alpha");
+    expect(summarizeFire(fc).insideShared).toBe(0);
+  });
 });
 
 describe("filterPointsWithinAreas", () => {
@@ -199,5 +233,58 @@ describe("countPointsByNamedArea", () => {
       { name: "Siak", count: 0 },
       { name: "Kab. Lainnya", count: 1 },
     ]);
+  });
+});
+
+describe("countUniqueInsideByDistrict", () => {
+  const shared = square(101, 0, 102, 1);
+  const bounds = [
+    // KSJ & KBJ berbagi satu poligon (#268) — dua lembaga, satu distrik.
+    boundary({ farmerGroupId: "ksj", districtId: "d1", districtName: "Kampar", geometry: shared }),
+    boundary({ farmerGroupId: "kbj", districtId: "d1", districtName: "Kampar", geometry: shared }),
+    boundary({ farmerGroupId: "sk", districtId: "d2", districtName: "Siak", geometry: square(103, 0, 104, 1) }),
+  ];
+
+  it("titik di boundary bersama dihitung SEKALI per distrik (cocok dgn kartu)", () => {
+    const classified = classifyHotspots(hotspotFc([[101.5, 0.5]]), indexBoundaries(bounds));
+    // countHotspotsByGroup sengaja menghitung per pemilik → 1 + 1 = 2.
+    expect(
+      countHotspotsByGroup(classified, bounds)
+        .filter((r) => r.districtId === "d1")
+        .reduce((sum, r) => sum + r.count, 0)
+    ).toBe(2);
+    // Rincian tooltip menghitung titik unik → 1, sama dengan summarizeFire.
+    expect(countUniqueInsideByDistrict(classified, bounds)).toEqual([
+      { name: "Kampar", count: 1 },
+      { name: "Siak", count: 0 },
+    ]);
+    expect(summarizeFire(classified).inside).toBe(1);
+  });
+
+  it("titik di luar semua boundary tidak dihitung", () => {
+    const classified = classifyHotspots(hotspotFc([[105, 0.5]]), indexBoundaries(bounds));
+    expect(countUniqueInsideByDistrict(classified, bounds).every((d) => d.count === 0)).toBe(true);
+  });
+});
+
+describe("label rentang waktu laporan", () => {
+  it("5 hari = 5 hari kalender TERMASUK hari ini (mundur 4 hari, bukan 5)", () => {
+    const now = new Date("2026-08-19T07:55:00Z"); // 19 Agu 14.55 WIB
+    expect(formatHotspotRange(hotspotWindowStart(now, 5), now)).toBe("15–19 Agu 2026");
+  });
+
+  it("24 jam = bergulir 1×24 jam", () => {
+    const now = new Date("2026-08-19T07:55:00Z");
+    expect(formatHotspotRange(hotspotWindowStart(now, 1), now)).toBe("18–19 Agu 2026");
+  });
+
+  it("lintas bulan ditulis penuh di kedua sisi", () => {
+    const now = new Date("2026-09-02T07:55:00Z");
+    expect(formatHotspotRange(hotspotWindowStart(now, 5), now)).toBe("29 Agu 2026 – 2 Sep 2026");
+  });
+
+  it("tanggal & jam sama-sama dibaca WIB, bukan zona browser", () => {
+    // 23.00 UTC 19 Agu = 06.00 WIB 20 Agu — tanggalnya harus ikut maju.
+    expect(formatExportedAt(new Date("2026-08-19T23:00:00Z"))).toBe("20 Agu 2026, 06.00 WIB");
   });
 });
