@@ -109,6 +109,11 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
   const [loading, setLoading] = useState(true);
   const [printScope, setPrintScope] = useState<FirePrintScope>("riau");
   const [printing, setPrinting] = useState(false);
+  // Lampiran PDF di-capture satu peta per lembaga secara berurutan; pada scope
+  // Full Riau saat musim kebakaran itu bisa puluhan lembaga × tunggu tile,
+  // jadi progres dan pembatalan wajib ada (#276).
+  const [printProgress, setPrintProgress] = useState<{ done: number; total: number } | null>(null);
+  const printAbortRef = useRef<AbortController | null>(null);
 
   // Fetch se-bbox Riau → pangkas ke Provinsi Riau (poligon kabupaten BIG —
   // bbox FIRMS persegi ikut mencakup Malaysia/Sumbar/Jambi) → klasifikasi
@@ -302,13 +307,17 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
       }))
       .sort((a, b) => b.iso.localeCompare(a.iso));
 
+    const abort = new AbortController();
+    printAbortRef.current = abort;
     setPrinting(true);
+    setPrintProgress(null);
     try {
       const [shot, logo, fonts] = await Promise.all([
         capture(bbox),
         rasterizeLogo(),
         loadAcuminFonts(),
       ]);
+      if (abort.signal.aborted) return;
       if (!shot) {
         toast.error("Gagal mengambil gambar peta. Coba basemap Light/Dark (bukan Hybrid).");
         return;
@@ -316,11 +325,17 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
 
       // Peta per lembaga ber-titik api (berurutan — tiap capture menunggu
       // tile termuat), lalu kembalikan tampilan ke scope utama.
+      const affected = scopeGroupRows.filter((g) => g.count > 0);
+      setPrintProgress({ done: 0, total: affected.length });
       const groupMaps: { name: string; count: number; shared: number; dataUrl: string; widthPx: number; heightPx: number }[] = [];
-      for (const r of scopeGroupRows.filter((g) => g.count > 0)) {
+      for (const [i, r] of affected.entries()) {
+        // Dicek TIAP iterasi: pembatalan tidak bisa menghentikan satu capture
+        // yang sedang menunggu "idle", tapi menghentikan sisanya.
+        if (abort.signal.aborted) break;
         const b = indexed.find((x) => x.farmerGroupId === r.farmerGroupId);
         if (!b) continue;
         const gshot = await capture(b.bbox, r.farmerGroupId);
+        setPrintProgress({ done: i + 1, total: affected.length });
         if (gshot) {
           groupMaps.push({
             name: r.name,
@@ -333,6 +348,12 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         }
       }
       zoomRef.current?.(bbox);
+      // Dibatalkan = tidak ada PDF. Menerbitkan laporan berlampiran separuh
+      // tanpa keterangan justru memotong diam-diam — persis yang dihindari.
+      if (abort.signal.aborted) {
+        toast.info("Cetak PDF dibatalkan");
+        return;
+      }
       const now = new Date();
       const start = hotspotWindowStart(now, dayRange);
       const exportedAt = formatExportedAt(now);
@@ -365,8 +386,12 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
       toast.error("Gagal membuat PDF laporan");
     } finally {
       setPrinting(false);
+      setPrintProgress(null);
+      printAbortRef.current = null;
     }
   };
+
+  const handleCancelPrint = () => printAbortRef.current?.abort();
 
   return (
     <div className="relative -m-6 flex h-[calc(100vh-3.5rem)] w-auto overflow-hidden">
@@ -404,6 +429,8 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
           onPrintScopeChange={setPrintScope}
           onPrint={handlePrint}
           printing={printing}
+          printProgress={printProgress}
+          onCancelPrint={handleCancelPrint}
         />
       </aside>
     </div>

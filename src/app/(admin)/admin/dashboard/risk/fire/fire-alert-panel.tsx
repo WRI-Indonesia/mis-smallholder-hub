@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, Loader2, Printer, ShieldAlert } from "lucide-react";
+import { Flame, Loader2, Printer, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -51,6 +51,9 @@ interface Props {
   onPrintScopeChange: (s: FirePrintScope) => void;
   onPrint: () => void;
   printing: boolean;
+  /** Kemajuan capture lampiran per lembaga; null = tahap persiapan (#276). */
+  printProgress: { done: number; total: number } | null;
+  onCancelPrint: () => void;
 }
 
 export function FireAlertPanel({
@@ -72,6 +75,8 @@ export function FireAlertPanel({
   onPrintScopeChange,
   onPrint,
   printing,
+  printProgress,
+  onCancelPrint,
 }: Props) {
   return (
     <div className="flex h-full flex-col">
@@ -145,19 +150,47 @@ export function FireAlertPanel({
         {/* Breakdown confidence titik dalam boundary */}
         {summary && summary.inside > 0 && (
           <div className="space-y-1.5 rounded-md border p-3">
+            {/* "Keyakinan", bukan "Confidence" — seragam dengan kolom PDF,
+                modal Peta Lahan, dan tabel ekspor. */}
             <p className="text-xs font-medium text-muted-foreground">
-              Confidence (dalam boundary)
+              Keyakinan deteksi (dalam boundary)
             </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {(Object.keys(HOTSPOT_CONF_COLORS) as HotspotConfBucket[]).map((b) => (
-                <span key={b} className="inline-flex items-center gap-1.5 text-xs">
-                  <span
-                    className="inline-block h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: HOTSPOT_CONF_COLORS[b] }}
-                  />
-                  {HOTSPOT_CONF_LABELS[b]}: <span className="font-semibold">{confInside[b]}</span>
-                </span>
-              ))}
+            {/* Satu baris per tingkat (bukan flex-wrap yang mengalir 2+1) dengan
+                bar porsi terhadap total: dominasi satu tingkat langsung terbaca
+                tanpa membandingkan angka satu per satu. */}
+            <div className="space-y-1">
+              {(Object.keys(HOTSPOT_CONF_COLORS) as HotspotConfBucket[]).map((b) => {
+                const count = confInside[b];
+                const share = summary.inside > 0 ? (count / summary.inside) * 100 : 0;
+                return (
+                  <div key={b} className="flex items-center gap-2 text-xs">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: HOTSPOT_CONF_COLORS[b] }}
+                    />
+                    <span className="w-28 shrink-0 truncate">{HOTSPOT_CONF_LABELS[b]}</span>
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="block h-full rounded-full"
+                        style={{ width: `${share}%`, backgroundColor: HOTSPOT_CONF_COLORS[b] }}
+                      />
+                    </span>
+                    {/* Nol diredupkan agar tingkat yang benar-benar terdeteksi menonjol. */}
+                    <span
+                      className={cn(
+                        "w-6 shrink-0 text-right tabular-nums",
+                        count > 0 ? "font-semibold" : "text-muted-foreground"
+                      )}
+                    >
+                      {count}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between border-t pt-1.5 text-xs text-muted-foreground">
+              <span>Total dalam boundary</span>
+              <span className="font-semibold tabular-nums text-foreground">{summary.inside}</span>
             </div>
           </div>
         )}
@@ -285,7 +318,10 @@ export function FireAlertPanel({
           >
             {printing ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Menyiapkan…
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {printProgress
+                  ? `Peta lembaga ${printProgress.done} dari ${printProgress.total}…`
+                  : "Menyiapkan…"}
               </>
             ) : (
               <>
@@ -293,6 +329,13 @@ export function FireAlertPanel({
               </>
             )}
           </Button>
+          {/* Lampiran di-capture berurutan menunggu tile tiap lembaga — pada
+              Full Riau bisa beberapa menit, jadi harus bisa dihentikan. */}
+          {printing && (
+            <Button size="sm" variant="outline" className="w-full" onClick={onCancelPrint}>
+              <X className="h-3.5 w-3.5" /> Batalkan
+            </Button>
+          )}
         </div>
       )}
     </div>
