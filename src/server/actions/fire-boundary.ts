@@ -82,12 +82,20 @@ export type AdminBoundaryLine = {
 };
 
 /**
- * Garis batas administrasi kabupaten (BIG) sebagai konteks peta Fire Alert.
+ * Garis batas administrasi kabupaten (BIG) sebagai konteks peta Fire Alert,
+ * dan penyaring wilayah Provinsi Riau untuk titik api Peta Lahan (#269).
  * Sengaja TANPA filter access-context: ini garis referensi publik se-Riau
  * (setara basemap), bukan data program per wilayah.
+ *
+ * Dua halaman memakainya, jadi cukup salah satu izin VIEW — pola yang sama
+ * dengan proxy `/api/map-hotspot`, dicek berurutan agar pemegang
+ * `dashboard-risk-fire` (pemanggil terbanyak) tak membayar query kedua.
  */
 export async function getAdminBoundaries(): Promise<AdminBoundaryLine[]> {
-  if (!(await hasPermission(MENU_KEY, VIEW))) {
+  if (
+    !(await hasPermission(MENU_KEY, VIEW)) &&
+    !(await hasPermission("map-parcel", VIEW))
+  ) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
   const rows = await prisma.administrativeBoundary.findMany({
