@@ -115,7 +115,7 @@ function attrList(doc: jsPDF, items: { label: string; value: string }[], x: numb
  * `generateFarmPassportPdf` agar bisa diverifikasi unit test (TD-019).
  */
 export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
   const { farmer, group, parcel, training, production } = data;
 
   // Accent bar + header

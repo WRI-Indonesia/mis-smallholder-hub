@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable, { type CellHookData, type Styles } from "jspdf-autotable";
 import { BMP_PRODUCTIVITY_CLASSES, productivityClass } from "@/lib/map-data";
 import type { BmpProductivityMatrix, ProductivityClass } from "@/types/map";
+import { imageFormatOf } from "@/lib/map-capture";
 
 export type BmpPrintLegendItem = {
   color: string;
@@ -30,7 +31,7 @@ export type BmpPrintMatrix = {
 export type BmpPrintOptions = {
   title: string;
   subtitle?: string;
-  /** PNG data URL of the rendered map canvas. */
+  /** Data URL of the rendered map canvas (JPEG via `encodeMapCapture`). */
   imageDataUrl: string;
   imageWidthPx: number;
   imageHeightPx: number;
@@ -57,7 +58,7 @@ function hexToRgb(hex: string): [number, number, number] {
  * bisa diverifikasi unit test.
  */
 export function buildBmpMapDoc(opts: BmpPrintOptions): jsPDF {
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
   const pageW = doc.internal.pageSize.getWidth(); // 297
   const pageH = doc.internal.pageSize.getHeight(); // 210
   const margin = 10;
@@ -148,7 +149,7 @@ export function buildBmpMapDoc(opts: BmpPrintOptions): jsPDF {
   const drawX = areaX + (areaW - drawW) / 2;
   const drawY = areaY + (areaH - drawH) / 2;
 
-  doc.addImage(opts.imageDataUrl, "PNG", drawX, drawY, drawW, drawH);
+  doc.addImage(opts.imageDataUrl, imageFormatOf(opts.imageDataUrl), drawX, drawY, drawW, drawH);
   doc.setDrawColor(200);
   doc.rect(drawX, drawY, drawW, drawH);
 

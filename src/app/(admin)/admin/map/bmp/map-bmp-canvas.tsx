@@ -31,6 +31,7 @@ import {
   type BmpProductivityVisibility,
 } from "./map-bmp-control-panel";
 import { MapBmpDataPanel } from "./map-bmp-data-panel";
+import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
 
 const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
 
@@ -151,7 +152,7 @@ type SelectedFeature = {
 };
 
 /** Snapshot of the rendered map for the print/PDF flow. */
-export type BmpMapCapture = { dataUrl: string; width: number; height: number };
+export type BmpMapCapture = MapCapture;
 
 interface Props {
   data: BmpMapData | null;
@@ -160,8 +161,9 @@ interface Props {
   productivity: BmpProductivityView | null;
   prodLayers: BmpProductivityVisibility;
   /**
-   * Lets the parent grab a PNG snapshot of the current map. The canvas registers
-   * its capture fn on mount and clears it on unmount.
+   * Lets the parent grab a snapshot of the current map (JPEG, downscaled for
+   * print — see `encodeMapCapture`). The canvas registers its capture fn on
+   * mount and clears it on unmount.
    */
   registerCapture?: (fn: (() => Promise<BmpMapCapture | null>) | null) => void;
   canViewParcel: boolean;
@@ -460,12 +462,7 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
         const onRender = () => {
           clearTimeout(timeout);
           try {
-            const canvas = map.getCanvas();
-            resolve({
-              dataUrl: canvas.toDataURL("image/png"),
-              width: canvas.width,
-              height: canvas.height,
-            });
+            resolve(encodeMapCapture(map.getCanvas()));
           } catch (err) {
             // Cross-origin basemap (e.g. Hybrid/Google) taints the canvas and
             // blocks toDataURL — fail gracefully instead of hanging.

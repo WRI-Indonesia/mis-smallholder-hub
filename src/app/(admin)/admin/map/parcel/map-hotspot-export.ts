@@ -221,7 +221,7 @@ export async function printHotspotPdf(
   const near = filterNearSorted(all);
   const rows = hasDistance ? near : all;
 
-  const doc = new jsPDF({ orientation: "landscape" });
+  const doc = new jsPDF({ orientation: "landscape", compress: true });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);

@@ -3,6 +3,7 @@ import { buildPDF } from "@/lib/pdf";
 import { buildFarmPassportDoc } from "@/lib/farm-passport";
 import { buildBmpMapDoc } from "@/lib/bmp-map-print";
 import { buildFireMapDoc } from "@/lib/fire-map-print";
+import { imageFormatOf } from "@/lib/map-capture";
 import type { ParcelPassport } from "@/types/map";
 
 // TD-019: exporter lama dipisah build-vs-save (pola #179) — test struktural
@@ -162,5 +163,16 @@ describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
     const gm = { name: "Kepau Jaya", count: 2, shared: 1, dataUrl: PNG_1PX_URL, widthPx: 800, heightPx: 500 };
     const doc = buildFireMapDoc({ ...base, rows: [row(1)], groupMaps: [gm, { ...gm, name: "PPKS" }] });
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// Ukuran berkas PDF (#276): capture peta di-encode JPEG + diperkecil, sementara
+// placeholder & logo tetap PNG — format `addImage` diturunkan dari isi data URL,
+// bukan dipatok, agar keduanya benar.
+describe("imageFormatOf (lib/map-capture)", () => {
+  it("JPEG untuk capture peta, PNG untuk sisanya", () => {
+    expect(imageFormatOf("data:image/jpeg;base64,/9j/4AAQ")).toBe("JPEG");
+    expect(imageFormatOf(PNG_1PX_URL)).toBe("PNG");
+    expect(imageFormatOf("")).toBe("PNG");
   });
 });

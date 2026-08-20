@@ -60,7 +60,7 @@ export type FireReportOptions = {
     inside: number;
     groupsAffected: number;
   };
-  /** PNG capture peta; null = kotak placeholder (mis. capture gagal). */
+  /** Data URL capture peta (JPEG); null = kotak placeholder (mis. capture gagal). */
   imageDataUrl: string | null;
   imageWidthPx: number;
   imageHeightPx: number;
@@ -74,7 +74,7 @@ const fmtN = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const MARGIN = 12;
 
 export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
   const pageW = doc.internal.pageSize.getWidth(); // 210
   const contentW = pageW - MARGIN * 2;
 
@@ -353,7 +353,10 @@ function drawMapImage(
     drawW = drawH * ratio;
   }
   const drawX = MARGIN + (contentW - drawW) / 2;
-  doc.addImage(dataUrl, "PNG", drawX, y, drawW, drawH);
+  // Capture peta kini JPEG (lihat encodeCapture); placeholder/test bisa PNG —
+  // format diturunkan dari data URL-nya agar keduanya benar.
+  const format = dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
+  doc.addImage(dataUrl, format, drawX, y, drawW, drawH);
   doc.setDrawColor(200);
   doc.setLineWidth(0.2);
   doc.rect(drawX, y, drawW, drawH);
