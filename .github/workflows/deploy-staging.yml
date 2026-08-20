@@ -28,9 +28,10 @@ jobs:
           script: |
             set -Eeuo pipefail
 
-            # LOAD NVM
+            # LOAD NVM (opsional — `set -e` akan mematikan job tanpa pesan bila
+            # nvm tidak terpasang dan tes `[ -s ... ]` gagal, jadi dibungkus if)
             export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then \. "$NVM_DIR/nvm.sh"; fi
 
             # CD
             cd /var/www/html/mis-staging

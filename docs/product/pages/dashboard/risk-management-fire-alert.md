@@ -21,8 +21,8 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
     ├── Kartu ringkasan (4, ber-tooltip rincian)
     │   ├── Dalam Boundary → tooltip per distrik program
     │   ├── Lembaga Terdampak → tooltip daftar lembaga ber-titik api
-    │   ├── Luar Boundary → tooltip per kabupaten + "Kab. Lainnya"
-    │   └── Total se-Riau → tooltip per kabupaten + "Kab. Lainnya"
+    │   ├── Luar Boundary → tooltip per kabupaten program + "Kab. Lainnya"
+    │   └── Total se-Riau → tooltip per kabupaten program + "Kab. Lainnya"
     ├── Breakdown confidence (dalam boundary)
     ├── Tabel Titik api per lembaga (hanya ber-titik; klik baris = zoom + highlight, klik ulang = batal)
     └── Print Map: scope Full Riau / per Distrik → tombol Cetak Peta (PDF)

@@ -53,6 +53,8 @@ export async function getFireBoundaries(): Promise<FireBoundary[]> {
 export type AdminBoundaryLine = {
   id: string;
   name: string;
+  /** District program yang cocok saat seed — null bila kabupaten non-program. */
+  districtId: string | null;
   geometry: MultiPolygon;
 };
 
@@ -67,12 +69,13 @@ export async function getAdminBoundaries(): Promise<AdminBoundaryLine[]> {
   }
   const rows = await prisma.administrativeBoundary.findMany({
     where: { level: "KABUPATEN", isActive: true },
-    select: { id: true, name: true, geojson: true },
+    select: { id: true, name: true, districtId: true, geojson: true },
     orderBy: { name: "asc" },
   });
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
+    districtId: r.districtId,
     geometry: r.geojson as unknown as MultiPolygon,
   }));
 }

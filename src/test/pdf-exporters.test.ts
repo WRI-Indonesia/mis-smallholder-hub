@@ -128,7 +128,7 @@ describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
   const base = {
     subtitle: "Smallholder Hub Group",
     kabupatenLabel: "Kampar, Pelalawan, Rokan Hulu, Siak",
-    rangeLabel: "5 hari terakhir (14–19 Agu 2026)",
+    rangeLabel: "5 hari terakhir (15–19 Agu 2026)",
     exportedAt: "19 Agu 2026, 14.55 WIB",
     logo: null,
     fonts: null,

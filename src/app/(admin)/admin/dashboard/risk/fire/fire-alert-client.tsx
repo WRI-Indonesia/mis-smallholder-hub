@@ -19,7 +19,11 @@ import {
   combinedBbox,
   countHotspotsByGroup,
   countPointsByNamedArea,
+  countUniqueInsideByDistrict,
   filterPointsWithinAreas,
+  formatExportedAt,
+  formatHotspotRange,
+  hotspotWindowStart,
   indexBoundaries,
   multiPolygonBbox,
   summarizeFire,
@@ -76,13 +80,6 @@ async function loadAcuminFonts() {
     acuminCache = null;
   }
   return acuminCache;
-}
-
-/** "14–19 Agu 2026" (atau bentuk penuh bila lintas bulan/tahun). */
-function formatDateRange(start: Date, end: Date): string {
-  const full = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" });
-  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
-  return sameMonth ? `${start.getDate()}–${full.format(end)}` : `${full.format(start)} – ${full.format(end)}`;
 }
 
 const FireMapCanvas = dynamic(
@@ -167,19 +164,19 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
   // Rincian tooltip kartu: titik DALAM boundary per distrik program (agregasi
   // dari rekap lembaga), dan titik LUAR boundary per kabupaten (PiP terhadap
   // poligon BIG distrik program; sisanya "Kab. Lainnya").
+  // Titik UNIK per distrik — bukan penjumlahan `rows[].count` yang menghitung
+  // titik boundary bersama di tiap pemilik (tooltip harus cocok dgn kartunya).
   const insideByDistrict = useMemo(
-    () =>
-      districts.map((d) => ({
-        name: d.name,
-        count: rows.filter((r) => r.districtId === d.id).reduce((sum, r) => sum + r.count, 0),
-      })),
-    [districts, rows]
+    () => (classified ? countUniqueInsideByDistrict(classified, boundaries) : []),
+    [classified, boundaries]
   );
   // Poligon kabupaten BIG milik distrik program — dasar rincian per kabupaten.
+  // Dicocokkan lewat `districtId` yang sudah ditautkan saat seed, bukan lewat
+  // kecocokan nama (nama BIG "Kota X" vs nama District program mudah meleset).
   const programAreas = useMemo(() => {
-    const programNames = new Set(districts.map((d) => d.name.toLowerCase()));
+    const programIds = new Set(districts.map((d) => d.id));
     return adminBoundaries
-      .filter((b) => programNames.has(b.name.toLowerCase().replace(/^kota\s+/, "")))
+      .filter((b) => b.districtId !== null && programIds.has(b.districtId))
       .sort((a, b) => a.name.localeCompare(b.name, "id"));
   }, [adminBoundaries, districts]);
   const outsideByKabupaten = useMemo(() => {
@@ -264,16 +261,16 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
 
     // Irisan scope: distrik → total/confidence dari titik dalam poligon
     // kabupaten BIG-nya; dalam-boundary & lembaga dari boundary distrik tsb.
-    const scopeKabName = scopeDistrictId
-      ? (districts.find((d) => d.id === scopeDistrictId)?.name ?? "").toLowerCase()
+    const scopeArea = scopeDistrictId
+      ? (programAreas.find((a) => a.districtId === scopeDistrictId) ?? null)
       : null;
-    const scopeArea = scopeKabName
-      ? programAreas.find((a) => a.name.toLowerCase().replace(/^kota\s+/, "") === scopeKabName)
-      : null;
-    const scopeFc =
-      scopeArea != null
-        ? filterPointsWithinAreas(classified, [scopeArea])
-        : classified;
+    // Tanpa poligon kabupaten, angka scope distrik akan diam-diam terisi
+    // se-Riau padahal judulnya satu kabupaten — lebih baik gagal terang.
+    if (scopeDistrictId && !scopeArea) {
+      toast.error("Batas kabupaten distrik ini belum tersedia — cetak per distrik tidak bisa dilakukan");
+      return;
+    }
+    const scopeFc = scopeArea ? filterPointsWithinAreas(classified, [scopeArea]) : classified;
     const conf = countByConfidence(scopeFc);
     const scopeGroupRows = scopeDistrictId
       ? rows.filter((r) => r.districtId === scopeDistrictId)
@@ -337,14 +334,14 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
       }
       zoomRef.current?.(bbox);
       const now = new Date();
-      const start = new Date(now.getTime() - (dayRange === 1 ? 1 : 5) * 24 * 60 * 60 * 1000);
-      const exportedAt = `${new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(now)}, ${new Intl.DateTimeFormat("id-ID", { timeStyle: "short", timeZone: "Asia/Jakarta" }).format(now)} WIB`;
+      const start = hotspotWindowStart(now, dayRange);
+      const exportedAt = formatExportedAt(now);
 
       const { generateFireMapPdf } = await import("@/lib/fire-map-print");
       generateFireMapPdf({
         subtitle: "Smallholder Hub Group",
         kabupatenLabel,
-        rangeLabel: `${hotspotWindowLabel(dayRange)} terakhir (${formatDateRange(start, now)})`,
+        rangeLabel: `${hotspotWindowLabel(dayRange)} terakhir (${formatHotspotRange(start, now)})`,
         exportedAt,
         logo,
         fonts,
