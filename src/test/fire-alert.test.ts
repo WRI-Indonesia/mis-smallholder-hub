@@ -179,6 +179,36 @@ describe("countHotspotsByGroup", () => {
     expect(rows.map((r) => r.name)).toEqual(["Alpha", "Beta", "Gamma"]);
     expect(rows.every((r) => r.count === 0)).toBe(true);
   });
+
+  // #274 — FarmerGroup→boundary 1-ke-banyak tanpa unique constraint: satu
+  // lembaga dengan 2 boundary aktif (mis. seed gagal antara soft-delete dan
+  // insert) tidak boleh muncul dobel atau menghitung titiknya dua kali.
+  it("lembaga dengan >1 boundary aktif tetap satu baris, tanpa hitungan dobel", () => {
+    const dua = [
+      boundary({ id: "b-g1-lama", farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 102, 1) }),
+      boundary({ id: "b-g1-baru", farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 102, 1) }),
+      boundary({ farmerGroupId: "g2", name: "Beta", geometry: square(103, 0, 104, 1) }),
+    ];
+    const fc = classifyHotspots(hotspotFc([[101.5, 0.5], [101.6, 0.5]]), indexBoundaries(dua));
+    const rows = countHotspotsByGroup(fc, dua);
+    expect(rows.map((r) => [r.name, r.count, r.shared])).toEqual([
+      ["Alpha", 2, 0],
+      ["Beta", 0, 0],
+    ]);
+    // Penyebut kartu "Lembaga Terdampak" ikut benar.
+    expect(summarizeFire(fc).groupsAffected).toBe(1);
+  });
+
+  it("boundary ganda satu lembaga tidak tertandai 'bersama'", () => {
+    const dua = [
+      boundary({ id: "b-x1", farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 102, 1) }),
+      boundary({ id: "b-x2", farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 102, 1) }),
+    ];
+    const fc = classifyHotspots(hotspotFc([[101.5, 0.5]]), indexBoundaries(dua));
+    expect(fc.features[0].properties?.groupIds).toEqual(["g1"]);
+    expect(fc.features[0].properties?.groupName).toBe("Alpha");
+    expect(summarizeFire(fc).insideShared).toBe(0);
+  });
 });
 
 describe("filterPointsWithinAreas", () => {

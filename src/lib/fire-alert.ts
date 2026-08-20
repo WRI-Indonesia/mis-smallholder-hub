@@ -93,6 +93,10 @@ export function findContainingBoundary(
  * `groupIds` (SEMUA lembaga pemilik — satu poligon bisa bersama, mis. KSJ &
  * KBJ, keputusan owner 2026-08-19) dan `groupName` (nama digabung " & ").
  * Dipakai ekspresi styling MapLibre, popup, tabel, dan PDF.
+ *
+ * Hit di-dedup per lembaga: bila satu lembaga punya >1 boundary aktif yang
+ * sama-sama memuat titik, tanpa dedup titik itu terhitung dua kali dan salah
+ * ditandai "bersama" (`groupIds.length > 1`) padahal pemiliknya satu.
  */
 export function classifyHotspots(
   fc: FeatureCollection,
@@ -100,7 +104,11 @@ export function classifyHotspots(
 ): FeatureCollection {
   const features: Feature[] = fc.features.map((f) => {
     const pt = f.geometry.type === "Point" ? (f.geometry.coordinates as Position) : null;
-    const hits = pt ? findContainingBoundaries(pt, boundaries) : [];
+    const owners = new Map<string, FireBoundaryIndexed>();
+    for (const h of pt ? findContainingBoundaries(pt, boundaries) : []) {
+      if (!owners.has(h.farmerGroupId)) owners.set(h.farmerGroupId, h);
+    }
+    const hits = [...owners.values()];
     return {
       ...f,
       properties: {
@@ -131,6 +139,12 @@ export type FireGroupCount = {
  * muncul (count 0); titik dalam boundary bersama dihitung di TIAP pemiliknya
  * (kartu ringkasan tetap menghitung titik unik via `summarizeFire`).
  * Urut: jumlah menurun, lalu nama.
+ *
+ * Baris dibangun per LEMBAGA, bukan per baris boundary: relasi
+ * FarmerGroup→boundary adalah 1-ke-banyak tanpa unique constraint, sehingga
+ * satu lembaga dengan >1 boundary aktif (mis. seed gagal di antara
+ * soft-delete dan insert) akan muncul dobel dengan jumlah titik penuh di
+ * masing-masing baris, dan menggelembungkan penyebut "Lembaga Terdampak".
  */
 export function countHotspotsByGroup(
   classified: FeatureCollection,
@@ -145,7 +159,11 @@ export function countHotspotsByGroup(
       if (groupIds.length > 1) sharedCounts.set(groupId, (sharedCounts.get(groupId) ?? 0) + 1);
     }
   }
-  return boundaries
+  const groupById = new Map<string, FireBoundary>();
+  for (const b of boundaries) {
+    if (!groupById.has(b.farmerGroupId)) groupById.set(b.farmerGroupId, b);
+  }
+  return [...groupById.values()]
     .map((b) => ({
       farmerGroupId: b.farmerGroupId,
       name: b.name,
