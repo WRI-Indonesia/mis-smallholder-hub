@@ -321,13 +321,13 @@ Penyimpanan **dual-column**:
 | `geom` | `geometry(MultiPolygon, 4326)` PostGIS (`Unsupported` di Prisma) | **Sumber kebenaran** untuk analisa spasial (`ST_Intersects`/`ST_Contains`, GiST index); tulis/baca via `$executeRaw`/`$queryRaw` (`ST_GeomFromGeoJSON` / `ST_AsGeoJSON`) |
 | `geojson` | `Json` (GeoJSON MultiPolygon WGS84) | Cache untuk rendering peta — konsisten pola `LandParcel.geometry` |
 
-Drift dua kolom praktis nol: penulisan hanya lewat `scripts/local/seed/seed-boundary-lembaga.ts` (shapefile ZIP + `boundary-mapping.csv` nama ICS → `FarmerGroup.code`). Catatan: field `Unsupported` tidak muncul di Prisma DMMF/Client — pemindai `scripts/schema-scan.ts` sengaja melewatinya.
+Drift dua kolom praktis nol: penulisan hanya lewat `scripts/seed/seed-boundary-lembaga.ts` (shapefile ZIP + `boundary-mapping.csv` nama ICS → `FarmerGroup.code`). Catatan: field `Unsupported` tidak muncul di Prisma DMMF/Client — pemindai `scripts/schema-scan.ts` sengaja melewatinya.
 
 ## AdministrativeBoundary (Batas Administrasi BIG, #266)
 
 Garis batas administrasi (`tbl_administrative_boundary`) sebagai konteks peta — **satu tabel lintas level** dengan enum `AdminBoundaryLevel` (KABUPATEN/KECAMATAN/DESA; keputusan owner, bukan tabel per level): bentuk data identik per level dan skema atribut file BIG seragam (NAMOBJ/KDBPUM/WADM\*). Terpisah dari `reg_district`/`Subdistrict`/`Village` karena file batas mencakup **seluruh** Riau (12 kabupaten), sedangkan tabel geografi hanya wilayah program — FK `districtId` nullable terisi bila nama cocok.
 
-Dual-column sama dengan FarmerGroupBoundary, dengan satu perbedaan penting: kolom cache `geojson` disimpan **tersimplifikasi** (`ST_SimplifyPreserveTopology` 0,001° ≈ 111 m; ~10 MB → ~165 KB) karena hanya untuk garis konteks di browser — `geom` tetap full-res untuk analisa. Seed: `scripts/local/seed/seed-batas-administrasi.ts` (config per level, dry-run default, idempotent per level).
+Dual-column sama dengan FarmerGroupBoundary, dengan satu perbedaan penting: kolom cache `geojson` disimpan **tersimplifikasi** (`ST_SimplifyPreserveTopology` 0,001° ≈ 111 m; ~10 MB → ~165 KB) karena hanya untuk garis konteks di browser — `geom` tetap full-res untuk analisa. Seed: `scripts/seed/seed-batas-administrasi.ts` (config per level, dry-run default, idempotent per level).
 
 ## File Structure
 

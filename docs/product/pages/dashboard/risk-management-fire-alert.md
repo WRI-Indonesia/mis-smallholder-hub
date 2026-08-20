@@ -48,7 +48,7 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
 | Saringan se-Riau | Logika klien | Hotspot bbox FIRMS dipangkas ke gabungan 12 poligon kabupaten BIG (`filterPointsWithinAreas`) — bbox persegi ikut memuat Malaysia/Sumbar/Jambi |
 | Cetak PDF | jsPDF | "Laporan Titik Api (Hotspot)" A4 portrait (`src/lib/fire-map-print.ts`): header letterhead ber-logo WRI, 4 kartu, peta sebaran, tabel detail per titik, lampiran peta per lembaga ber-titik api (mode fokus — lembaga lain dipudarkan), catatan metodologi; font **Acumin Pro** ter-embed (`public/fonts/*.ttf`, fallback helvetica) |
 | Sumber data titik api | API eksternal | NASA FIRMS VIIRS SNPP NRT via proxy `/api/map-hotspot`; live, maks 5 hari, tanpa riwayat DB |
-| Sumber boundary | DB | `FarmerGroupBoundary` (seed `scripts/local/seed/seed-boundary-lembaga.ts`) & `AdministrativeBoundary` (seed `seed-batas-administrasi.ts`; cache geojson tersimplifikasi 0,001°) |
+| Sumber boundary | DB | `FarmerGroupBoundary` (seed `scripts/seed/seed-boundary-lembaga.ts`) & `AdministrativeBoundary` (seed `seed-batas-administrasi.ts`; cache geojson tersimplifikasi 0,001°) |
 
 ## Catatan
 
