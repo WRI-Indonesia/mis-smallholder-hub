@@ -317,7 +317,12 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         rasterizeLogo(),
         loadAcuminFonts(),
       ]);
-      if (abort.signal.aborted) return;
+      // Persiapan bisa memakan detik (fetch 3 TTF Acumin) — batal di fase ini
+      // harus berkabar sama seperti batal di tengah loop lampiran.
+      if (abort.signal.aborted) {
+        toast.info("Cetak PDF dibatalkan");
+        return;
+      }
       if (!shot) {
         toast.error("Gagal mengambil gambar peta. Coba basemap Light/Dark (bukan Hybrid).");
         return;

@@ -19,11 +19,13 @@ Shapefile, Excel, ZIP, dan apa pun yang berisi data petani/pengguna **tetap di `
 | `seed-batas-administrasi.ts` | 12 kabupaten BIG → `tbl_administrative_boundary`, `geojson` disimpan tersimplifikasi 0,001° | `Batas_Administrasi_Kabupaten_Riau.zip` |
 | `seed-menu-only.ts` | menu + role-permissions saja, tanpa `prisma db seed` penuh (yang tidak idempotent) | — |
 
+`seed-menu-only.ts` juga ber-`--apply`, tetapi seeder menu/RBAC tak bisa mem-preview perubahan — dry-run-nya hanya menyatakan tujuan dan DB yang akan disentuh. Perhatikan peringatannya: `seedRolePermissions` memakai upsert `update: {}`, sehingga baris permission yang sengaja **dihapus admin akan dipulihkan**.
+
 `data/boundary-mapping.csv` memetakan nama ICS di shapefile → `FarmerGroup.code`, karena keduanya tidak sama persis. Satu poligon bisa dimiliki beberapa lembaga (kode dipisah `+`). Ini hasil pemetaan manual — bagian yang paling mahal dibuat ulang, dan alasan utama ia ikut di-track.
 
 ## Menjalankan
 
-Keduanya **dry-run secara bawaan**; menulis hanya dengan `--apply`.
+Ketiganya **dry-run secara bawaan**; menulis hanya dengan `--apply`.
 
 ```bash
 # lokal (.env)

@@ -27,26 +27,26 @@ export function imageFormatOf(dataUrl: string): "JPEG" | "PNG" {
 }
 
 export function encodeMapCapture(source: HTMLCanvasElement): MapCapture {
-  const asIs = (): MapCapture => ({
-    dataUrl: source.toDataURL("image/jpeg", CAPTURE_QUALITY),
-    width: source.width,
-    height: source.height,
-  });
-
+  // Skala 1 (layar DPR-1: canvas sudah <= MAX_CAPTURE_PX) TETAP lewat canvas
+  // antara. JPEG tak punya alpha, dan piksel transparan — mis. tile basemap
+  // gagal dimuat — dikomposit browser di atas HITAM. Jalur PNG lama tampil
+  // putih di halaman PDF, jadi menyalin canvas apa adanya akan menjadi regresi
+  // yang hanya muncul di layar non-Retina.
   const scale = Math.min(1, MAX_CAPTURE_PX / Math.max(source.width, source.height));
-  if (scale === 1) return asIs();
-
   const width = Math.round(source.width * scale);
   const height = Math.round(source.height * scale);
+
   const target = document.createElement("canvas");
   target.width = width;
   target.height = height;
   const ctx = target.getContext("2d");
-  // Tanpa konteks 2D, lebih baik gambar ukuran penuh daripada tanpa peta.
-  if (!ctx) return asIs();
+  // Tanpa konteks 2D tak ada cara meratakan alpha — kembali ke PNG (lossless,
+  // alpha aman) daripada menerbitkan JPEG berlatar hitam.
+  if (!ctx) {
+    return { dataUrl: source.toDataURL("image/png"), width: source.width, height: source.height };
+  }
 
   ctx.imageSmoothingQuality = "high";
-  // JPEG tak punya alpha: latar putih agar area transparan tidak jadi hitam.
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
   ctx.drawImage(source, 0, 0, width, height);

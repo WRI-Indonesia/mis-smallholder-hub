@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { imageFormatOf } from "@/lib/map-capture";
 import autoTable from "jspdf-autotable";
 
 /**
@@ -353,10 +354,9 @@ function drawMapImage(
     drawW = drawH * ratio;
   }
   const drawX = MARGIN + (contentW - drawW) / 2;
-  // Capture peta kini JPEG (lihat encodeCapture); placeholder/test bisa PNG —
-  // format diturunkan dari data URL-nya agar keduanya benar.
-  const format = dataUrl.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
-  doc.addImage(dataUrl, format, drawX, y, drawW, drawH);
+  // Capture peta kini JPEG (lihat encodeMapCapture); placeholder/test bisa PNG —
+  // format diturunkan dari data URL-nya lewat helper bersama, satu aturan.
+  doc.addImage(dataUrl, imageFormatOf(dataUrl), drawX, y, drawW, drawH);
   doc.setDrawColor(200);
   doc.setLineWidth(0.2);
   doc.rect(drawX, y, drawW, drawH);

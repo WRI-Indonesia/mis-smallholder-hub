@@ -152,7 +152,16 @@ async function main() {
 
     // Sanity reproyeksi: koordinat harus lon/lat Riau, bukan meter UTM.
     for (const p of plan) {
-      const [lng, lat] = p.geometry.coordinates[0][0][0];
+      // Poligon/ring kosong itu GeoJSON yang sah dan bisa lahir dari shapefile
+      // terpotong — tanpa guard, akses [0][0][0] melempar TypeError yang lolos
+      // dari laporan errors[] dan muncul sebagai "❌ Gagal: TypeError" tanpa
+      // menyebut fitur mana yang bermasalah.
+      const first = p.geometry.coordinates[0]?.[0]?.[0];
+      if (!first) {
+        errors.push(`ICS "${p.ics}" bergeometri kosong (poligon/ring tanpa titik).`);
+        continue;
+      }
+      const [lng, lat] = first;
       if (Math.abs(lng) > 180 || Math.abs(lat) > 90) {
         errors.push(`ICS "${p.ics}" koordinat di luar WGS84 (${lng}, ${lat}) — reproyeksi gagal?`);
       }

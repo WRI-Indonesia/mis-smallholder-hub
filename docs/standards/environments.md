@@ -31,9 +31,12 @@ Semua `.env*` di-gitignore kecuali `.env.example`. Di server produksi, `.env` di
 ```bash
 npm run dev                                          # app → DB local + S3 dev
 npx dotenv -e .env.staging -- npm run dev            # app → DB staging + S3 dev
-npx dotenv -e .env.prod -- tsx scripts/local/other/x.ts   # skrip → PROD (sadar & eksplisit)
+npx dotenv -e .env.prod -- tsx scripts/seed/seed-boundary-lembaga.ts  # skrip seed ter-track → PROD (dry-run dulu)
+npx dotenv -e .env.prod -- tsx scripts/local/other/x.ts   # skrip sekali-pakai → PROD (sadar & eksplisit)
 npx dotenv -e .env.prod -- npx prisma studio         # inspeksi DB prod
 ```
+
+> **Di mana skrip tinggal (#279).** Skrip yang merupakan **satu-satunya definisi tereksekusi** dari data produksi ada di `scripts/seed/` dan **di-track** — lihat `scripts/seed/README.md` untuk aturan isinya (skrip di-track, data tidak). `scripts/local/` tetap gitignored: ia memuat berkas ber-PII dan repo ini **publik**. Berkas data ditunjuk lewat `--data=<dir>` / `SEED_DATA_DIR`, bukan lewat lokasi skripnya.
 
 Mekanisme: `dotenv -e` men-set variabel di process environment **sebelum** proses anak berjalan; `dotenv/config` maupun loader `.env` Next.js **tidak menimpa** variabel yang sudah ter-set, sehingga file yang dipilih selalu menang atas `.env`.
 

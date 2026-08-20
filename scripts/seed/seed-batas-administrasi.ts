@@ -86,9 +86,17 @@ async function main() {
   try {
     const districts = await prisma.district.findMany({
       where: { isActive: true },
-      select: { id: true, name: true },
+      select: { id: true, name: true, code: true },
     });
     const districtByName = new Map(districts.map((d) => [d.name.trim().toLowerCase(), d.id]));
+    // Kedua sisi punya kunci numerik yang stabil: BIG `KDBPUM` ("14.01") dan
+    // `District.code` ("1401"). Kode dicoba LEBIH DULU karena kecocokan nama
+    // rapuh — "Kab. Kampar" atau distrik yang di-rename membuat district_id
+    // null tanpa error, dan `programAreas` di klien kini bergantung penuh
+    // padanya (cetak per distrik langsung gagal, tooltip runtuh ke "Lainnya").
+    const districtByCode = new Map(
+      districts.map((d) => [d.code.replace(/\D/g, ""), d.id])
+    );
 
     let found = 0;
     for (const cfg of LEVELS) {
@@ -124,15 +132,27 @@ async function main() {
           continue;
         }
         const geometry = toMultiPolygon2D(geom);
-        const [lng, lat] = geometry.coordinates[0][0][0];
+        // Ring kosong = GeoJSON sah; tanpa guard, [0][0][0] melempar TypeError
+        // yang melewati laporan errors[] dan menyembunyikan fitur penyebabnya.
+        const first = geometry.coordinates[0]?.[0]?.[0];
+        if (!first) {
+          errors.push(`"${name}" bergeometri kosong (poligon/ring tanpa titik).`);
+          continue;
+        }
+        const [lng, lat] = first;
         if (Math.abs(lng) > 180 || Math.abs(lat) > 90) {
           errors.push(`"${name}" koordinat di luar WGS84 (${lng}, ${lat}).`);
           continue;
         }
-        // "Kota Pekanbaru" vs district "Pekanbaru" dkk. — coba nama utuh lalu tanpa prefiks "Kota ".
+        // Kode dulu (stabil), lalu nama sebagai cadangan: "Kota Pekanbaru" vs
+        // district "Pekanbaru" dkk. — coba nama utuh lalu tanpa prefiks "Kota ".
         const key = name.toLowerCase();
+        const codeKey = props.KDBPUM ? String(props.KDBPUM).replace(/\D/g, "") : "";
         const districtId =
-          districtByName.get(key) ?? districtByName.get(key.replace(/^kota\s+/, "")) ?? null;
+          (codeKey ? districtByCode.get(codeKey) : undefined) ??
+          districtByName.get(key) ??
+          districtByName.get(key.replace(/^kota\s+/, "")) ??
+          null;
         plan.push({
           name,
           code: props.KDBPUM ? String(props.KDBPUM).trim() || null : null,

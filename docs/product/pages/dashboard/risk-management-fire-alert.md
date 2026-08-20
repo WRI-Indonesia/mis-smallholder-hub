@@ -23,9 +23,9 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
     │   ├── Lembaga Terdampak → tooltip daftar lembaga ber-titik api
     │   ├── Luar Boundary → tooltip per kabupaten program + "Kab. Lainnya"
     │   └── Total se-Riau → tooltip per kabupaten program + "Kab. Lainnya"
-    ├── Breakdown confidence (dalam boundary)
+    ├── Keyakinan deteksi (dalam boundary) — 1 baris per tingkat + bar porsi, nilai 0 diredupkan, baris Total
     ├── Tabel Titik api per lembaga (hanya ber-titik; klik baris = zoom + highlight, klik ulang = batal)
-    └── Print Map: scope Full Riau / per Distrik → tombol Cetak Peta (PDF)
+    └── Print Map: scope Full Riau / per Distrik → Cetak Peta (PDF) berprogres ("Peta lembaga n dari N…") + tombol Batalkan
 ```
 
 ## Atribut halaman
@@ -46,7 +46,7 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
 |---|---|---|
 | Deteksi dalam/luar boundary | Logika klien | Point-in-polygon (`src/lib/fire-alert.ts`, ray casting + pra-cek bbox); **boundary ICS sudah termasuk buffer 1,5 km** (fakta owner) |
 | Saringan se-Riau | Logika klien | Hotspot bbox FIRMS dipangkas ke gabungan 12 poligon kabupaten BIG (`filterPointsWithinAreas`) — bbox persegi ikut memuat Malaysia/Sumbar/Jambi |
-| Cetak PDF | jsPDF | "Laporan Titik Api (Hotspot)" A4 portrait (`src/lib/fire-map-print.ts`): header letterhead ber-logo WRI, 4 kartu, peta sebaran, tabel detail per titik, lampiran peta per lembaga ber-titik api (mode fokus — lembaga lain dipudarkan), catatan metodologi; font **Acumin Pro** ter-embed (`public/fonts/*.ttf`, fallback helvetica) |
+| Cetak PDF | jsPDF | Lampiran di-capture **berurutan** satu peta per lembaga (tiap capture menunggu `idle`, timeout 8 dtk) — tombol menghitung kemajuan dan bisa **dibatalkan** (`AbortController` dicek tiap iterasi; batal = **tidak ada PDF**, bukan lampiran separuh) (#276). "Laporan Titik Api (Hotspot)" A4 portrait (`src/lib/fire-map-print.ts`): header letterhead ber-logo WRI, 4 kartu, peta sebaran, tabel detail per titik, lampiran peta per lembaga ber-titik api (mode fokus — lembaga lain dipudarkan), catatan metodologi; font **Acumin Pro** ter-embed (`public/fonts/*.ttf`, fallback helvetica); dokumen dibuat `compress: true` dan capture peta di-encode **JPEG** ter-downscale ke 1500 px sisi terpanjang (`src/lib/map-capture.ts`) demi ukuran berkas |
 | Sumber data titik api | API eksternal | NASA FIRMS VIIRS SNPP NRT via proxy `/api/map-hotspot`; live, maks 5 hari, tanpa riwayat DB |
 | Sumber boundary | DB | `FarmerGroupBoundary` (seed `scripts/seed/seed-boundary-lembaga.ts`) & `AdministrativeBoundary` (seed `seed-batas-administrasi.ts`; cache geojson tersimplifikasi 0,001°) |
 

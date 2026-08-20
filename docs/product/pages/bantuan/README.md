@@ -41,7 +41,7 @@ Menu: Bantuan (/admin/help)
 
 | Aspek | Keterangan |
 |---|---|
-| Berkas materi | `src/content/help/` — lapis tutorial di `tutorial/` (31 file), lapis referensi di `referensi/` (4 file), lapis konsep di 6 folder `<n>-<bab>/<n>-<m>-<topik>.md` (12 file); total 12 bab di `CHAPTER_SOURCES` (5 tutorial + 1 referensi + 6 konsep) |
+| Berkas materi | `src/content/help/` — lapis tutorial di `tutorial/` (31 file), lapis referensi di `referensi/` (4 file), lapis konsep di 6 folder `<n>-<bab>/<n>-<m>-<topik>.md` (13 file); total 12 bab di `CHAPTER_SOURCES` (5 tutorial + 1 referensi + 6 konsep) |
 | Registrasi | `src/lib/help-content.ts` — konstanta `CHAPTER_SOURCES` (slug, judul, ringkasan, ikon bab) + satu baris `import` per file `.md` |
 | Bundling | file `.md` dimuat sebagai string via webpack `asset/source` (`next.config.ts`), di-parse sekali saat modul dimuat → perubahan materi baru tampil setelah build ulang |
 | Parser | `src/lib/markdown-lite.ts` (`parseMarkdown`, `parseBlocks`, `parseInline`, `blocksToPlainText`) — subset Markdown: frontmatter, heading `##`, paragraf, daftar `-`, baris definisi `**Istilah** — deskripsi`, inline `**tebal**` / `` `kode` `` / `[tautan](url)`, dan baris media `![caption](src)` |
