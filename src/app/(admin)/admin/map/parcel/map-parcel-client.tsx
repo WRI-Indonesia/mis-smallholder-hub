@@ -232,8 +232,12 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
   // change that keeps it on (toggle-on or day-range) re-enters the loading state.
   const handleHotspotChange = (next: HotspotState) => {
     setHotspot(next);
-    if (!next.visible) setHotspotData(null);
-    else setHotspotLoading(true);
+    if (!next.visible) {
+      setHotspotData(null);
+      // Mematikan layer di tengah fetch: cleanup effect men-set `active=false`
+      // sehingga `finally` tak lagi mereset loading — reset di sini (#285).
+      setHotspotLoading(false);
+    } else setHotspotLoading(true);
   };
 
   const hotspotCounts = useMemo(() => countByConfidence(hotspotData), [hotspotData]);

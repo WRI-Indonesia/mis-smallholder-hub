@@ -16,4 +16,6 @@ intro: Smallholder HUB MIS adalah sistem informasi data petani sawit swadaya: pe
 
 **Pohon** — Titik pohon sawit di dalam sebuah lahan, dicatat lewat unggah massal shapefile.
 
+**Titik api (hotspot)** — Deteksi anomali panas oleh satelit VIIRS (NASA FIRMS), bukan konfirmasi kebakaran. Ditampilkan di Peta Lahan dan Fire Alert dengan rentang 24 jam / 5 / 10 / 30 hari; rentang harinya dihitung menurut **tanggal UTC** (satuan yang dipakai satelit), sehingga "5 hari" berarti 5 hari kalender UTC termasuk hari ini.
+
 Bagaimana semua istilah di atas saling terhubung — dan kenapa Kelompok Tani menempel pada lahan, bukan pada petani — digambarkan di topik [Peta Data](/admin/help/memulai/peta-data).

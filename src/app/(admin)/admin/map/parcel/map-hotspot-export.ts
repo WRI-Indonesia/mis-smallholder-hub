@@ -16,7 +16,7 @@ import {
   type HotspotDayRange,
 } from "./map-hotspot";
 import { haversineMeters } from "./map-geo";
-import { formatArea } from "@/lib/format";
+import { formatArea, formatNumber } from "@/lib/format";
 
 const windowLabel = (dayRange: HotspotDayRange) => `${hotspotWindowLabel(dayRange)} terakhir`;
 
@@ -39,8 +39,8 @@ function wibFileStamp(now: Date): string {
   return `${get("year")}${get("month")}${get("day")}-${get("hour")}${get("minute")}`;
 }
 
-function fileBase(dayRange: HotspotDayRange, now: Date): string {
-  return `titik-api-riau-${dayRange === 1 ? "24jam" : "5hari"}-${wibFileStamp(now)}`;
+export function fileBase(dayRange: HotspotDayRange, now: Date): string {
+  return `titik-api-riau-${dayRange === 1 ? "24jam" : `${dayRange}hari`}-${wibFileStamp(now)}`;
 }
 
 function saveBlob(blob: Blob, filename: string) {
@@ -237,13 +237,13 @@ export async function printHotspotPdf(
     25
   );
   doc.text(
-    `Total ${total} titik  —  Keyakinan ${HOTSPOT_CONF_LABELS.high}: ${counts.high}  ·  ${HOTSPOT_CONF_LABELS.nominal}: ${counts.nominal}  ·  ${HOTSPOT_CONF_LABELS.low}: ${counts.low}`,
+    `Total ${formatNumber(total)} titik  —  Keyakinan ${HOTSPOT_CONF_LABELS.high}: ${formatNumber(counts.high)}  ·  ${HOTSPOT_CONF_LABELS.nominal}: ${formatNumber(counts.nominal)}  ·  ${HOTSPOT_CONF_LABELS.low}: ${formatNumber(counts.low)}`,
     MARGIN,
     31
   );
   doc.text(
     hasDistance
-      ? `Berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani: ${near.length} titik — tabel hanya memuat titik tsb, diurutkan dari yang terdekat.`
+      ? `Berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani: ${formatNumber(near.length)} titik — tabel hanya memuat titik tsb, diurutkan dari yang terdekat.`
       : "Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki titik Lembaga Petani; tabel memuat semua titik.",
     MARGIN,
     37
@@ -267,7 +267,7 @@ export async function printHotspotPdf(
     body: rows.map((r, i) => {
       const cells = hotspotRowCells(r);
       return [
-        String(i + 1),
+        formatNumber(i + 1),
         cells.time,
         cells.satellite,
         confidenceLabel(r.f.properties?.confidence),

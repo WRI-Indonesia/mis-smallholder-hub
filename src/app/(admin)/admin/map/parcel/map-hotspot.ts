@@ -5,11 +5,10 @@
  */
 
 import type { FeatureCollection } from "geojson";
-import { upstreamDayRange } from "@/lib/firms";
+import { HOTSPOT_DAY_RANGES, type HotspotDayRange } from "@/lib/firms";
 
-/** UI time window: rolling last 24 hours (1) or last 5 days (5).
- *  FIRMS caps a single area request at 5 days ("Expects [1..5]"). */
-export type HotspotDayRange = 1 | 5;
+// Re-export untuk modul Peta Lahan (dokumentasi rentang ada di lib/firms.ts).
+export { HOTSPOT_DAY_RANGES, type HotspotDayRange };
 
 export type HotspotState = {
   visible: boolean;
@@ -21,10 +20,10 @@ export const DEFAULT_HOTSPOT_STATE: HotspotState = {
   dayRange: 1,
 };
 
-/** Label rentang UI: "24 jam" / "5 hari" (dedup #241 — panel, ringkasan, PDF).
- *  Konteks kalimat ("… terakhir") ditambah pemakainya. */
+/** Label rentang UI: "24 jam" / "5 hari" / "10 hari" / "30 hari" (dedup #241 —
+ *  panel, ringkasan, PDF). Konteks kalimat ("… terakhir") ditambah pemakainya. */
 export const hotspotWindowLabel = (dayRange: HotspotDayRange) =>
-  dayRange === 1 ? "24 jam" : "5 hari";
+  dayRange === 1 ? "24 jam" : `${dayRange} hari`;
 
 // Point styling + legend breakdown by VIIRS detection confidence.
 // Deliberately spread in hue AND lightness (dark red / orange / bright yellow)
@@ -78,6 +77,15 @@ export const RIAU_BBOX: [number, number, number, number] = [100.0, -1.4, 104.7, 
 
 const RECENT_MS = 24 * 60 * 60 * 1000;
 
+/** Usia deteksi untuk subtitle popup dari properti `ageDays` (dihitung
+ *  `processHotspots` saat data dimuat — bukan `Date.now()` di render):
+ *  0 → "< 24 jam", n → "n hari lalu". `ageBucket` hanya dua nilai (untuk
+ *  ekspresi warna MapLibre), terlalu kasar untuk rentang 10/30 hari (#285). */
+export function hotspotAgeLabel(ageDays: unknown): string {
+  if (typeof ageDays !== "number" || !Number.isFinite(ageDays)) return "—";
+  return ageDays <= 0 ? "< 24 jam" : `${ageDays} hari lalu`;
+}
+
 /** VIIRS confidence code (l/n/h) → bucket; unknown values count as nominal. */
 export function confidenceBucket(v: unknown): HotspotConfBucket {
   const s = String(v ?? "").toLowerCase();
@@ -111,6 +119,8 @@ export function processHotspots(
       properties: {
         ...(f.properties ?? {}),
         ageBucket: recent ? "recent" : "older",
+        // Usia dalam hari penuh untuk subtitle popup (`hotspotAgeLabel`).
+        ageDays: !Number.isFinite(t) ? null : recent ? 0 : Math.floor((now - t) / RECENT_MS),
         confBucket: confidenceBucket(f.properties?.confidence),
       },
     });
@@ -135,8 +145,9 @@ export function countByConfidence(
  * Fetch fire hotspots from the FIRMS proxy for the given UI window.
  * FIRMS counts day ranges in whole UTC days, so "24 jam" fetches 2 days and
  * `processHotspots` trims to a rolling 24-hour window against `now` — with
- * dayRange=1 the current UTC day is often near-empty in WIB daytime (VIIRS
+ * a single UTC day the current day is often near-empty in WIB daytime (VIIRS
  * passes ~13.30 local + ±3 h NRT latency), which showed a misleading 0.
+ * The proxy maps the UI value to upstream windows (`upstreamWindows`).
  */
 export async function fetchHotspots(
   bbox: [number, number, number, number],
@@ -145,8 +156,7 @@ export async function fetchHotspots(
   signal?: AbortSignal
 ): Promise<FeatureCollection> {
   const [w, s, e, n] = bbox;
-  const upstreamDays = upstreamDayRange(dayRange) ?? dayRange;
-  const res = await fetch(`/api/map-hotspot?bbox=${w},${s},${e},${n}&dayRange=${upstreamDays}`, {
+  const res = await fetch(`/api/map-hotspot?bbox=${w},${s},${e},${n}&dayRange=${dayRange}`, {
     signal,
   });
   if (!res.ok) throw new Error("Gagal memuat titik api");

@@ -283,6 +283,27 @@ describe("label rentang waktu laporan", () => {
     expect(formatHotspotRange(hotspotWindowStart(now, 5), now)).toBe("29 Agu 2026 – 2 Sep 2026");
   });
 
+  it("10 & 30 hari mengikuti satuan hari UTC FIRMS (#284)", () => {
+    const now = new Date("2026-08-24T10:00:00Z");
+    expect(formatHotspotRange(hotspotWindowStart(now, 10), now)).toBe("15–24 Agu 2026");
+    expect(formatHotspotRange(hotspotWindowStart(now, 30), now)).toBe("26 Jul 2026 – 24 Agu 2026");
+  });
+
+  it("30 hari lintas tahun ditulis penuh di kedua sisi", () => {
+    const now = new Date("2027-01-03T03:00:00Z"); // 3 Jan 10.00 WIB
+    expect(formatHotspotRange(hotspotWindowStart(now, 30), now)).toBe("5 Des 2026 – 3 Jan 2027");
+  });
+
+  it("00.00–07.00 WIB: awal rentang mengikuti tanggal UTC, bukan mundur N×24 jam (#281)", () => {
+    // 20 Agu 06.00 WIB = 19 Agu 23.00 UTC → FIRMS 5 hari = UTC 15–19 Agu,
+    // yang dalam WIB berlangsung 15 Agu 07.00 s.d. 20 Agu 06.59 → "15–20 Agu".
+    const now = new Date("2026-08-19T23:00:00Z");
+    expect(formatHotspotRange(hotspotWindowStart(now, 5), now)).toBe("15–20 Agu 2026");
+    // Sebaliknya 23.00 WIB (16.00 UTC) hari yang sama tetap "15–19 Agu".
+    const evening = new Date("2026-08-19T16:00:00Z");
+    expect(formatHotspotRange(hotspotWindowStart(evening, 5), evening)).toBe("15–19 Agu 2026");
+  });
+
   it("tanggal & jam sama-sama dibaca WIB, bukan zona browser", () => {
     // 23.00 UTC 19 Agu = 06.00 WIB 20 Agu — tanggalnya harus ikut maju.
     expect(formatExportedAt(new Date("2026-08-19T23:00:00Z"))).toBe("20 Agu 2026, 06.00 WIB");

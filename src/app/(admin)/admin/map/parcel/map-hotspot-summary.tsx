@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, Flame, Printer } from "lucide-react";
+import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -104,7 +105,7 @@ export function HotspotSummaryDialog({
         {/* Ringkasan angka */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
           <span>
-            Total <span className="font-semibold tabular-nums">{total}</span> titik
+            Total <span className="font-semibold tabular-nums">{formatNumber(total)}</span> titik
           </span>
           {(["high", "nominal", "low"] as HotspotConfBucket[]).map((b) => (
             <span key={b} className="flex items-center gap-1.5">
@@ -113,13 +114,15 @@ export function HotspotSummaryDialog({
                 style={{ backgroundColor: HOTSPOT_CONF_COLORS[b] }}
               />
               <span className="text-muted-foreground">{HOTSPOT_CONF_LABELS[b]}</span>
-              <span className="font-mono text-xs tabular-nums">{counts[b]}</span>
+              <span className="font-mono text-xs tabular-nums">{formatNumber(counts[b])}</span>
             </span>
           ))}
           {distancesAvailable ? (
             <span className="text-muted-foreground">
               &lt; {NEAR_KM_THRESHOLD} km dari Lembaga Petani:{" "}
-              <span className="font-semibold text-foreground tabular-nums">{nearRows.length}</span>{" "}
+              <span className="font-semibold text-foreground tabular-nums">
+                {formatNumber(nearRows.length)}
+              </span>{" "}
               titik
             </span>
           ) : (

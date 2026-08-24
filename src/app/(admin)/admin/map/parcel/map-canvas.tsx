@@ -31,6 +31,7 @@ import {
   confidenceLabel,
   satelliteLabel,
   type HotspotState,
+  hotspotAgeLabel,
 } from "./map-hotspot";
 import {
   PARCEL_LABEL_FONT_PX,
@@ -796,7 +797,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                   accent="red"
                   icon={<Flame className="h-4 w-4" />}
                   title="Titik Api"
-                  subtitle={selected.props.ageBucket === "recent" ? "< 24 jam" : "1–5 hari"}
+                  subtitle={hotspotAgeLabel(selected.props.ageDays)}
                 />
                 <MapPopupRows
                   className="border-t px-3.5 py-3"

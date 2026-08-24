@@ -12,14 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/format";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
+import { HOTSPOT_DAY_RANGES, type HotspotDayRange } from "@/lib/firms";
 import {
   HOTSPOT_CONF_COLORS,
   HOTSPOT_CONF_LABELS,
   hotspotWindowLabel,
   type HotspotConfBucket,
-  type HotspotDayRange,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
 import type { AreaCount, FireGroupCount, FireSummary } from "@/lib/fire-alert";
 
@@ -87,11 +88,11 @@ export function FireAlertPanel({
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
-        {/* Rentang waktu — mengikuti Peta Lahan (24 jam / 5 hari, cap FIRMS). */}
+        {/* Rentang waktu — mengikuti Peta Lahan (24 jam / 5 / 10 / 30 hari, #284). */}
         <div>
           <p className="mb-1.5 text-xs font-medium text-muted-foreground">Rentang waktu</p>
           <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
-            {([1, 5] as HotspotDayRange[]).map((d) => (
+            {HOTSPOT_DAY_RANGES.map((d) => (
               <button
                 key={d}
                 onClick={() => onDayRangeChange(d)}
@@ -117,7 +118,7 @@ export function FireAlertPanel({
           <div className="grid grid-cols-2 gap-2">
             <SummaryCard
               label="Dalam Boundary"
-              value={summary.inside}
+              value={formatNumber(summary.inside)}
               highlight={summary.inside > 0}
               breakdown={insideByDistrict}
             />
@@ -130,13 +131,13 @@ export function FireAlertPanel({
             />
             <SummaryCard
               label="Luar Boundary"
-              value={summary.outside}
+              value={formatNumber(summary.outside)}
               muted
               breakdown={outsideByKabupaten}
             />
             <SummaryCard
               label="Total se-Riau"
-              value={summary.total}
+              value={formatNumber(summary.total)}
               muted
               breakdown={totalByKabupaten}
             />
@@ -178,11 +179,11 @@ export function FireAlertPanel({
                     {/* Nol diredupkan agar tingkat yang benar-benar terdeteksi menonjol. */}
                     <span
                       className={cn(
-                        "w-6 shrink-0 text-right tabular-nums",
+                        "w-10 shrink-0 text-right tabular-nums",
                         count > 0 ? "font-semibold" : "text-muted-foreground"
                       )}
                     >
-                      {count}
+                      {formatNumber(count)}
                     </span>
                   </div>
                 );
@@ -190,7 +191,9 @@ export function FireAlertPanel({
             </div>
             <div className="flex items-center justify-between border-t pt-1.5 text-xs text-muted-foreground">
               <span>Total dalam boundary</span>
-              <span className="font-semibold tabular-nums text-foreground">{summary.inside}</span>
+              <span className="font-semibold tabular-nums text-foreground">
+                {formatNumber(summary.inside)}
+              </span>
             </div>
           </div>
         )}
@@ -243,10 +246,10 @@ export function FireAlertPanel({
                       </td>
                       <td className="px-2.5 py-1.5 text-right font-semibold tabular-nums text-red-600 dark:text-red-400">
                         <Flame className="mr-1 inline h-3 w-3" />
-                        {r.count}
+                        {formatNumber(r.count)}
                         {r.shared > 0 && (
                           <p className="text-[9px] font-normal leading-tight text-muted-foreground">
-                            {r.shared} bersama
+                            {formatNumber(r.shared)} bersama
                           </p>
                         )}
                       </td>
@@ -274,9 +277,9 @@ export function FireAlertPanel({
               dihitung di tiap lembaga pemilik — jelaskan selisihnya. */}
           {summary && summary.insideShared > 0 && (
             <p className="mt-1.5 text-[10px] leading-snug text-muted-foreground">
-              {summary.insideShared} titik berada di wilayah tumpang-tindih boundary dan dihitung di
-              tiap lembaga pemiliknya — jumlah kolom Titik dapat melebihi total titik unik (
-              {summary.inside}).
+              {formatNumber(summary.insideShared)} titik berada di wilayah tumpang-tindih boundary dan
+              dihitung di tiap lembaga pemiliknya — jumlah kolom Titik dapat melebihi total titik unik (
+              {formatNumber(summary.inside)}).
             </p>
           )}
         </div>

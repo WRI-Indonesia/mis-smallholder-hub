@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { imageFormatOf } from "@/lib/map-capture";
+import { formatNumber } from "@/lib/format";
 import autoTable from "jspdf-autotable";
 
 /**
@@ -71,7 +72,6 @@ export type FireReportOptions = {
   fileName?: string;
 };
 
-const fmtN = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 const MARGIN = 12;
 
 export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
@@ -147,21 +147,21 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
     color: [number, number, number];
     fill: [number, number, number];
   }[] = [
-    { value: fmtN(s.total), label: "Total Titik Api", color: RED, fill: [250, 235, 235] },
+    { value: formatNumber(s.total), label: "Total Titik Api", color: RED, fill: [250, 235, 235] },
     {
-      value: `${fmtN(s.high)} / ${fmtN(s.nominal)} / ${fmtN(s.low)}`,
+      value: `${formatNumber(s.high)} / ${formatNumber(s.nominal)} / ${formatNumber(s.low)}`,
       label: "Tinggi / Nominal (Medium) / Rendah",
       color: AMBER,
       fill: [253, 244, 226],
     },
     {
-      value: fmtN(s.inside),
+      value: formatNumber(s.inside),
       label: "Dalam Boundary Lembaga (termasuk buffer 1,5 km)",
       color: RED,
       fill: [250, 235, 235],
     },
     {
-      value: fmtN(s.groupsAffected),
+      value: formatNumber(s.groupsAffected),
       label: "Lembaga Terdampak",
       color: GRAY,
       fill: [238, 238, 238],
@@ -220,7 +220,7 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
         ["No", "Waktu Deteksi", "Satelit", "Keyakinan", "FRP (MW)", "Lintang", "Bujur", "Lembaga"],
       ],
       body: opts.rows.map((r, i) => [
-        String(i + 1),
+        formatNumber(i + 1),
         r.timeWib,
         r.satellite,
         r.confidence,
@@ -297,7 +297,7 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
       doc.setFontSize(10);
       doc.setTextColor(...RED);
       doc.text(
-        `${gm.name} — ${fmtN(gm.count)} titik api${gm.shared > 0 ? ` (${fmtN(gm.shared)} di wilayah tumpang-tindih)` : ""}`,
+        `${gm.name} — ${formatNumber(gm.count)} titik api${gm.shared > 0 ? ` (${formatNumber(gm.shared)} di wilayah tumpang-tindih)` : ""}`,
         MARGIN,
         y
       );
