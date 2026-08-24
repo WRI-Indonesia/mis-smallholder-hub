@@ -86,6 +86,24 @@ Standar reusable untuk halaman Settings bermatriks/bertingkat (contoh kanonis: `
 - Loading state wajib (skeleton/spinner)
 - Toast setelah action berhasil/gagal
 
+### Lebar Modal — selalu `sm:max-w-*`, dan timpa `w-full` bila > 640px (#292)
+
+Kelas dasar `DialogContent` (`src/components/ui/dialog.tsx`) adalah **`w-full max-w-[calc(100%-2rem)] sm:max-w-sm`**. `cn()` di repo ini `twMerge(clsx())`, yang mengelompokkan utility per **(varian, jenis)** — jadi `max-w-*` dan `sm:max-w-*` adalah dua grup berbeda.
+
+**❌ Tanpa prefiks — `className="max-w-3xl"`.** Yang terhapus justru penjaganya (`max-w-[calc(100%-2rem)]`, segrup), sementara **`sm:max-w-sm` tetap hidup**. Karena aturan `sm:` di-emit di blok `@media` belakangan dengan spesifisitas sama, `sm:max-w-sm` menang di ≥640px dan modal terjepit **384px** — jauh lebih sempit dari yang diminta. Inilah cacat asli #292: bukan modal melebar, tapi modal menyempit diam-diam.
+
+**✅ Berprefiks — `className="sm:max-w-5xl"`.** Menggantikan `sm:max-w-sm` dengan benar. Tapi perhatikan: penjaga `max-w-[calc(100%-2rem)]` yang selamat itu **hanya efektif di bawah 640px**, karena aturan `sm:` di-emit belakangan dan menang di atas breakpoint.
+
+**Karena itu, bila nilainya melebihi breakpoint `sm` (640px), timpa juga `w-full`:**
+
+```tsx
+<DialogContent className="w-[calc(100%-2rem)] sm:max-w-5xl">
+```
+
+Tanpa itu modal menempel rapat ke tepi layar pada lebar 640–1056px (tablet, atau browser separuh layar). Untuk nilai ≤ 640px (`sm:max-w-md`, `sm:max-w-[520px]`, dst.) `w-full` bawaan sudah aman.
+
+Prinsip umumnya: **cek kelas dasar komponen `ui/` sebelum menimpanya**, dan ingat bahwa varian membuat grup terpisah — kelas dasar yang "selamat" dari twMerge belum tentu menang di cascade.
+
 ### Sensor Data Pribadi Petani (keputusan owner 2026-07-16)
 
 Data pribadi petani **wajib disensor di semua tampilan layar** via helper `src/lib/mask.ts`:

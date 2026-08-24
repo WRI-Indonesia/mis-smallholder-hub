@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  bearingDegrees,
+  compassPointId,
   haversineMeters,
   pathMeters,
   sphericalAreaM2,
@@ -97,5 +99,87 @@ describe("parcelLabelFit", () => {
   it("hides the label when the polygon is tiny on screen (low zoom)", () => {
     const tinyBox: [number, number, number, number] = [101.0, 0.0, 101.0005, 0.0005];
     expect(parcelLabelFit("Budi Santoso", tinyBox, 8)).toBeNull();
+  });
+});
+
+describe("bearingDegrees", () => {
+  // Riau ada di dekat khatulistiwa, jadi arah mata angin di sana praktis lurus.
+  const origin: LngLat = [101.4, 0.5];
+
+  it("returns 0° for due north", () => {
+    expect(bearingDegrees(origin, [101.4, 1.5])).toBeCloseTo(0, 6);
+  });
+
+  it("returns 90° for due east", () => {
+    expect(bearingDegrees(origin, [102.4, 0.5])).toBeCloseTo(90, 1);
+  });
+
+  it("returns 180° for due south", () => {
+    expect(bearingDegrees(origin, [101.4, -0.5])).toBeCloseTo(180, 6);
+  });
+
+  it("returns 270° for due west", () => {
+    expect(bearingDegrees(origin, [100.4, 0.5])).toBeCloseTo(270, 1);
+  });
+
+  it("is always normalised to [0, 360)", () => {
+    for (const target of [
+      [101.4, 1.5],
+      [100.4, 0.5],
+      [102.4, -0.5],
+      [100.9, 1.0],
+    ] as LngLat[]) {
+      const b = bearingDegrees(origin, target);
+      expect(b).toBeGreaterThanOrEqual(0);
+      expect(b).toBeLessThan(360);
+    }
+  });
+
+  it("reverses by ~180° when the endpoints swap", () => {
+    const target: LngLat = [101.9, 0.9];
+    const forward = bearingDegrees(origin, target);
+    const back = bearingDegrees(target, origin);
+    const diff = (((back - forward) % 360) + 360) % 360;
+    expect(Math.abs(diff - 180)).toBeLessThan(1);
+  });
+
+  it("handles the antimeridian without blowing up", () => {
+    const b = bearingDegrees([179.9, 0], [-179.9, 0]);
+    expect(b).toBeCloseTo(90, 1);
+  });
+
+  it("returns a finite value for identical points", () => {
+    expect(Number.isFinite(bearingDegrees(origin, origin))).toBe(true);
+  });
+});
+
+describe("compassPointId", () => {
+  it("maps the eight cardinal bearings", () => {
+    expect(compassPointId(0)).toBe("U");
+    expect(compassPointId(45)).toBe("TL");
+    expect(compassPointId(90)).toBe("T");
+    expect(compassPointId(135)).toBe("TG");
+    expect(compassPointId(180)).toBe("S");
+    expect(compassPointId(225)).toBe("BD");
+    expect(compassPointId(270)).toBe("B");
+    expect(compassPointId(315)).toBe("BL");
+  });
+
+  it("wraps back to north near 360°", () => {
+    expect(compassPointId(350)).toBe("U");
+    expect(compassPointId(359.9)).toBe("U");
+    expect(compassPointId(360)).toBe("U");
+  });
+
+  it("rounds to the nearest 45° sector", () => {
+    expect(compassPointId(22)).toBe("U");
+    expect(compassPointId(23)).toBe("TL");
+    expect(compassPointId(292)).toBe("B");
+    expect(compassPointId(294)).toBe("BL");
+  });
+
+  it("normalises out-of-range input", () => {
+    expect(compassPointId(-90)).toBe("B");
+    expect(compassPointId(450)).toBe("T");
   });
 });

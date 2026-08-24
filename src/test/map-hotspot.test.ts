@@ -7,7 +7,12 @@ import {
   hotspotWindowLabel,
   hotspotAgeLabel,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
-import { fileBase } from "@/app/(admin)/admin/map/parcel/map-hotspot-export";
+import {
+  calcHotspotNearest,
+  fileBase,
+  hotspotRowCells,
+} from "@/app/(admin)/admin/map/parcel/map-hotspot-export";
+import type { KTPoint } from "@/types/map";
 
 // "now" fixed at 2026-07-10 12:00 UTC for deterministic age buckets.
 const NOW = Date.parse("2026-07-10T12:00:00Z");
@@ -127,5 +132,61 @@ describe("countByConfidence", () => {
     );
     expect(countByConfidence(out)).toEqual({ high: 1, nominal: 1, low: 2 });
     expect(countByConfidence(null)).toEqual({ high: 0, nominal: 0, low: 0 });
+  });
+});
+
+describe("calcHotspotNearest — arah ke lembaga terdekat (#293)", () => {
+  const kt = (name: string, long: number, lat: number): KTPoint => ({
+    id: name,
+    name,
+    code: null,
+    districtName: "Kampar",
+    lat,
+    long,
+  });
+
+  /** Satu titik api pada koordinat tertentu, satu lembaga di [101, 0]. */
+  async function dirFor(lon: number, lat: number) {
+    const feature: Feature = {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [lon, lat] },
+      properties: { acqDatetime: "2026-07-10T05:00:00Z", confidence: "n" },
+    };
+    const rows = await calcHotspotNearest(fc(feature), [kt("Lembaga A", 101, 0)]);
+    return hotspotRowCells(rows[0]).distanceDir;
+  }
+
+  // Penjaga risiko utama issue: bearing lembaga→titik dan titik→lembaga
+  // berselisih 180°, dan bila terbalik angkanya tetap terlihat masuk akal.
+  // Tak ada lint/build yang bisa menangkapnya — hanya tes semantik ini.
+  it("labels a hotspot NORTH of the institution as U (utara)", async () => {
+    expect(await dirFor(101, 0.2)).toContain("U 0°");
+  });
+
+  it("labels a hotspot EAST of the institution as T (timur)", async () => {
+    expect(await dirFor(101.2, 0)).toContain("T 90°");
+  });
+
+  it("labels a hotspot SOUTH of the institution as S (selatan)", async () => {
+    expect(await dirFor(101, -0.2)).toContain("S 180°");
+  });
+
+  it("labels a hotspot WEST of the institution as B (barat)", async () => {
+    expect(await dirFor(100.8, 0)).toContain("B 270°");
+  });
+
+  it("keeps the distance alongside the direction", async () => {
+    const cells = await dirFor(101, 0.2);
+    expect(cells).toMatch(/^\d+,\d+ · U 0°$/);
+  });
+
+  it("returns an em dash when no institution is loaded", async () => {
+    const feature: Feature = {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [101, 0.5] },
+      properties: { acqDatetime: "2026-07-10T05:00:00Z", confidence: "n" },
+    };
+    const rows = await calcHotspotNearest(fc(feature), []);
+    expect(hotspotRowCells(rows[0]).distanceDir).toBe("—");
   });
 });
