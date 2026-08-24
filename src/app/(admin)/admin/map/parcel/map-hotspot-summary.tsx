@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Download, Flame, Printer } from "lucide-react";
 import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,20 @@ function ConfidenceBadge({ confidence }: { confidence: unknown }) {
   );
 }
 
+/** Nilai yang ditonjolkan di baris meta (#294). */
+function Emph({ children }: { children: ReactNode }) {
+  return <span className="font-semibold text-foreground">{children}</span>;
+}
+
+/** Pemisah redup antar segmen baris meta. */
+function Sep() {
+  return (
+    <span aria-hidden className="text-muted-foreground/50">
+      ·
+    </span>
+  );
+}
+
 /**
  * Satu angka ringkasan: label kecil di atas, nilai memimpin di bawah (#294).
  * `dot` memberi penanda warna keyakinan — selalu berdampingan dengan label
@@ -128,6 +143,10 @@ export function HotspotSummaryDialog({
   canPrint,
 }: Props) {
   const total = counts.high + counts.nominal + counts.low;
+  // Wilayah data LAHAN yang dimuat — bukan cakupan titik apinya, yang selalu
+  // se-Provinsi Riau. Dipakai untuk melabeli jarak "< 15 km", karena Lembaga
+  // Petani pembanding hanya yang ada di data yang dimuat itu.
+  const loadedAreaLabel = area.districtName ?? area.provinceName ?? null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Lebar modal (#292). Kelas dasar DialogContent: `w-full
@@ -145,17 +164,28 @@ export function HotspotSummaryDialog({
             <Flame className="h-5 w-5 text-red-500" />
             Ringkasan Titik Api
           </DialogTitle>
-          <DialogDescription>
-            {/* Wilayah kosong dihilangkan, bukan dicetak "—" (#294): baris meta
-                ini konteks, dan field kosong hanya menambah derau. */}
-            {[
-              `Rentang ${hotspotWindowLabel(dayRange)} terakhir`,
-              area.provinceName,
-              area.districtName,
-              "NASA FIRMS (VIIRS 375 m)",
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+          {/* Nilai penting (rentang & wilayah) ditonjolkan, kata penghubungnya
+              tetap redup (#294) — sebelumnya seluruh baris seragam abu-abu
+              sehingga tidak ada yang menonjol.
+              "Riau · Kampar" polos SENGAJA tidak dipakai lagi: modal ini
+              mencampur dua cakupan berbeda — hitungan titik api selalu
+              se-Provinsi Riau (lihat map-parcel-client.tsx: fetchHotspots
+              memakai RIAU_BBOX lalu dipangkas ke poligon kabupaten Riau, tanpa
+              filter distrik), sedangkan "< 15 km" dihitung terhadap Lembaga
+              Petani pada data lahan yang dimuat. Menulis keduanya berjajar
+              membuat pembaca menyangka semua angka milik Kampar. */}
+          <DialogDescription className="flex flex-wrap items-center gap-x-1.5 text-sm">
+            <span>Rentang</span>
+            <Emph>{hotspotWindowLabel(dayRange)} terakhir</Emph>
+            {loadedAreaLabel && (
+              <>
+                <Sep />
+                <span>Data lahan</span>
+                <Emph>{loadedAreaLabel}</Emph>
+              </>
+            )}
+            <Sep />
+            <span>NASA FIRMS (VIIRS 375 m)</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -170,7 +200,11 @@ export function HotspotSummaryDialog({
             persis + persentase. Warna tidak pernah jadi pembeda tunggal —
             kuning #facc15 hanya 1,49:1 terhadap latar terang. */}
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr]">
-          <Stat label="Total titik" value={formatNumber(total)} lead />
+          {/* "se-Riau" eksplisit: cakupan titik api TIDAK mengikuti distrik
+              yang dimuat, dan tanpa keterangan ini pembaca menyangka angkanya
+              milik distrik tsb (#294). "Riau" dikeraskan karena pemangkasannya
+              memang selalu ke poligon kabupaten Provinsi Riau. */}
+          <Stat label="Total titik se-Riau" value={formatNumber(total)} lead />
           {distancesAvailable ? (
             <Stat
               label={`< ${NEAR_KM_THRESHOLD} km dari Lembaga`}
