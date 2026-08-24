@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Download, Flame, Printer } from "lucide-react";
+import { Download, Flame, MapPin, Printer } from "lucide-react";
 import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,36 +88,35 @@ function Sep() {
  * teks, tidak pernah sebagai satu-satunya pembeda.
  */
 function Stat({
+  icon,
   label,
   value,
-  dot,
-  lead = false,
   accent = false,
 }: {
+  icon: ReactNode;
   label: string;
   value: string;
-  dot?: string;
-  lead?: boolean;
   accent?: boolean;
 }) {
   return (
+    /* Ikon di kiri, label + nilai rata kanan (#294). Kartunya jauh lebih lebar
+       daripada angkanya; menaruh teks di kiri menyisakan ruang kosong besar di
+       kanan, sedangkan ikon-kiri/teks-kanan memakai lebar itu sebagai jarak
+       yang disengaja. Ikon `aria-hidden` — label teks yang menamai angkanya. */
     <div
-      className={`rounded-lg border px-3 py-2 ${
+      className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${
         accent ? "border-primary/30 bg-primary/5" : "bg-muted/40"
       }`}
     >
-      <div className="flex items-center gap-1.5 text-[11px] leading-tight text-muted-foreground">
-        {dot && (
-          <span
-            aria-hidden
-            className="inline-block h-2 w-2 shrink-0 rounded-full"
-            style={{ backgroundColor: dot }}
-          />
-        )}
-        <span className="truncate">{label}</span>
-      </div>
-      <div className={`mt-0.5 ${lead ? "text-2xl font-semibold" : "text-xl font-medium"}`}>
-        {value}
+      <span
+        aria-hidden
+        className={`shrink-0 ${accent ? "text-primary/70" : "text-muted-foreground/60"}`}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1 text-right">
+        <div className="truncate text-[11px] leading-tight text-muted-foreground">{label}</div>
+        <div className="mt-1 text-3xl font-semibold leading-none tracking-tight">{value}</div>
       </div>
     </div>
   );
@@ -204,12 +203,16 @@ export function HotspotSummaryDialog({
               yang dimuat, dan tanpa keterangan ini pembaca menyangka angkanya
               milik distrik tsb (#294). "Riau" dikeraskan karena pemangkasannya
               memang selalu ke poligon kabupaten Provinsi Riau. */}
-          <Stat label="Total titik se-Riau" value={formatNumber(total)} lead />
+          <Stat
+            icon={<Flame className="h-8 w-8" strokeWidth={1.5} />}
+            label="Total titik se-Riau"
+            value={formatNumber(total)}
+          />
           {distancesAvailable ? (
             <Stat
+              icon={<MapPin className="h-8 w-8" strokeWidth={1.5} />}
               label={`< ${NEAR_KM_THRESHOLD} km dari Lembaga`}
               value={formatNumber(nearRows.length)}
-              lead
               accent
             />
           ) : (
