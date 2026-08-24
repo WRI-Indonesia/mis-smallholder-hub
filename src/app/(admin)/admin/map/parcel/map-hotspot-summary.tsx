@@ -89,7 +89,11 @@ export function HotspotSummaryDialog({
   const total = counts.high + counts.nominal + counts.low;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      {/* `sm:max-w-*` (berprefiks) — WAJIB. Bentuk tanpa prefiks (`max-w-3xl`)
+          menimpa penjaga `max-w-[calc(100%-2rem)]` milik DialogContent lewat
+          tailwind-merge, sehingga modal bisa melebihi viewport di layar sempit
+          (#292). Tujuh kolom tabel butuh 5xl agar terbaca tanpa geser. */}
+      <DialogContent className="sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-red-500" />
@@ -147,13 +151,16 @@ export function HotspotSummaryDialog({
             <Table>
               <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
+                  {/* Semua kolom nowrap kecuali "Lembaga Terdekat" — nama
+                      lembaga yang panjang dibiarkan membungkus di kolom itu
+                      saja, agar tanggal/badge/angka tidak pecah baris (#292). */}
                   <TableHead className="w-10">No</TableHead>
-                  <TableHead>Waktu Deteksi (WIB)</TableHead>
-                  <TableHead>Satelit</TableHead>
-                  <TableHead>Keyakinan</TableHead>
-                  <TableHead className="text-right">FRP (MW)</TableHead>
+                  <TableHead className="whitespace-nowrap">Waktu Deteksi (WIB)</TableHead>
+                  <TableHead className="whitespace-nowrap">Satelit</TableHead>
+                  <TableHead className="whitespace-nowrap">Keyakinan</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">FRP (MW)</TableHead>
                   <TableHead>Lembaga Terdekat</TableHead>
-                  <TableHead className="text-right">Jarak (km)</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">Jarak (km)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -167,16 +174,16 @@ export function HotspotSummaryDialog({
                       onClick={() => onZoomToPoint(r.lon, r.lat)}
                     >
                       <TableCell className="text-muted-foreground tabular-nums">{i + 1}</TableCell>
-                      <TableCell>{cells.time}</TableCell>
-                      <TableCell>{cells.satellite}</TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">{cells.time}</TableCell>
+                      <TableCell className="whitespace-nowrap">{cells.satellite}</TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <ConfidenceBadge confidence={r.f.properties?.confidence} />
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                         {cells.frp}
                       </TableCell>
                       <TableCell>{cells.nearestName}</TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">
                         {cells.distanceKm}
                       </TableCell>
                     </TableRow>

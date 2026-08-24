@@ -86,6 +86,15 @@ Standar reusable untuk halaman Settings bermatriks/bertingkat (contoh kanonis: `
 - Loading state wajib (skeleton/spinner)
 - Toast setelah action berhasil/gagal
 
+### Lebar Modal — selalu `sm:max-w-*`, jangan `max-w-*` (#292)
+
+`DialogContent` (`src/components/ui/dialog.tsx`) membawa penjaga bawaan `max-w-[calc(100%-2rem)]` agar modal tidak pernah melebihi lebar layar. `cn()` di repo ini adalah `twMerge(clsx())`, dan tailwind-merge memperlakukan semua utility `max-w-*` **tanpa varian** sebagai satu grup: kelas yang dioper dari call site menang dan **penjaga bawaan ikut terhapus**. Akibatnya modal bisa melebihi viewport di layar sempit — cacat yang tak terlihat di desktop.
+
+- ✅ `<DialogContent className="sm:max-w-5xl">` — varian `sm:` beda grup, penjaga selamat.
+- ❌ `<DialogContent className="max-w-3xl">` — penjaga terhapus.
+
+Berlaku untuk setiap utility yang bertabrakan dengan kelas dasar sebuah komponen UI, bukan hanya `max-w-*`. Bila ragu, cek kelas dasar komponennya sebelum menimpa.
+
 ### Sensor Data Pribadi Petani (keputusan owner 2026-07-16)
 
 Data pribadi petani **wajib disensor di semua tampilan layar** via helper `src/lib/mask.ts`:
