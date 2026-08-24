@@ -70,8 +70,8 @@ describe("GET /api/map-hotspot — validasi parameter", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("400 untuk dayRange di luar {1, 2, 5}", async () => {
-    for (const d of ["", "3", "6", "abc"]) {
+  it("400 untuk dayRange di luar {1, 2, 5, 10, 30}", async () => {
+    for (const d of ["", "3", "6", "15", "31", "abc"]) {
       const res = await GET(req(`bbox=100,-1.4,104.7,3&dayRange=${d}`));
       expect(res.status).toBe(400);
     }
@@ -87,8 +87,51 @@ describe("GET /api/map-hotspot — validasi parameter", () => {
       fetchMock.mockClear();
       const res = await GET(req(`bbox=100,-1.4,104.7,3&dayRange=${d}`));
       expect(res.status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(String(fetchMock.mock.calls[0][0])).toMatch(new RegExp(`/${upstream}$`));
     }
+  });
+});
+
+describe("GET /api/map-hotspot — rentang 10 & 30 hari dari beberapa jendela FIRMS (#284)", () => {
+  beforeEach(() => {
+    // Hanya Date yang dibekukan — setTimeout (timeout upstream) tetap nyata.
+    vi.useFakeTimers({ now: new Date("2026-08-24T10:00:00Z"), toFake: ["Date"] });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const base = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${TEST_KEY}/VIIRS_SNPP_NRT/100,-1.4,104.7,3`;
+
+  it("10 hari = 2 request: jendela ber-DATE H-9 (UTC) + jendela terbaru tanpa DATE", async () => {
+    const res = await GET(req("bbox=100,-1.4,104.7,3&dayRange=10"));
+    expect(res.status).toBe(200);
+    expect(fetchMock.mock.calls.map((c) => String(c[0]))).toEqual([`${base}/5/2026-08-15`, `${base}/5`]);
+  });
+
+  it("30 hari = 6 request; jendela lampau di-cache lebih lama daripada jendela terbaru", async () => {
+    const res = await GET(req("bbox=100,-1.4,104.7,3&dayRange=30"));
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(6);
+    const revalidates = fetchMock.mock.calls.map((c) => c[1]?.next?.revalidate);
+    expect(revalidates.slice(0, 5).every((r) => r > revalidates[5])).toBe(true);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(`${base}/5/2026-07-26`);
+    expect(String(fetchMock.mock.calls[5][0])).toBe(`${base}/5`);
+  });
+
+  it("hasil jendela digabung dan deteksi ganda di batas jendela dibuang", async () => {
+    // Mock mengembalikan baris yang sama untuk tiap jendela → tanpa dedup jadi 2.
+    const res = await GET(req("bbox=100,-1.4,104.7,3&dayRange=10"));
+    const fc = await res.json();
+    expect(fc.features).toHaveLength(1);
+  });
+
+  it("satu jendela gagal → 502, bukan hasil sebagian yang diam-diam bolong", async () => {
+    fetchMock
+      .mockImplementationOnce(async () => new Response(CSV_OK, { status: 200 }))
+      .mockImplementationOnce(async () => new Response("boom", { status: 500 }));
+    const res = await GET(req("bbox=100,-1.4,104.7,3&dayRange=10"));
+    expect(res.status).toBe(502);
+    expect(await res.text()).not.toContain(TEST_KEY);
   });
 });
 

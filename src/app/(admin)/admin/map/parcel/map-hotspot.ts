@@ -5,11 +5,12 @@
  */
 
 import type { FeatureCollection } from "geojson";
-import { upstreamDayRange } from "@/lib/firms";
+import { HOTSPOT_DAY_RANGES, type HotspotDayRange } from "@/lib/firms";
 
-/** UI time window: rolling last 24 hours (1) or last 5 days (5).
- *  FIRMS caps a single area request at 5 days ("Expects [1..5]"). */
-export type HotspotDayRange = 1 | 5;
+/** UI time window: rolling last 24 hours (1) or last 5 / 10 / 30 UTC days.
+ *  FIRMS caps a single request at 5 days; the proxy stitches longer windows
+ *  from several dated requests (#284). */
+export { HOTSPOT_DAY_RANGES, type HotspotDayRange };
 
 export type HotspotState = {
   visible: boolean;
@@ -21,10 +22,10 @@ export const DEFAULT_HOTSPOT_STATE: HotspotState = {
   dayRange: 1,
 };
 
-/** Label rentang UI: "24 jam" / "5 hari" (dedup #241 — panel, ringkasan, PDF).
- *  Konteks kalimat ("… terakhir") ditambah pemakainya. */
+/** Label rentang UI: "24 jam" / "5 hari" / "10 hari" / "30 hari" (dedup #241 —
+ *  panel, ringkasan, PDF). Konteks kalimat ("… terakhir") ditambah pemakainya. */
 export const hotspotWindowLabel = (dayRange: HotspotDayRange) =>
-  dayRange === 1 ? "24 jam" : "5 hari";
+  dayRange === 1 ? "24 jam" : `${dayRange} hari`;
 
 // Point styling + legend breakdown by VIIRS detection confidence.
 // Deliberately spread in hue AND lightness (dark red / orange / bright yellow)
@@ -135,8 +136,9 @@ export function countByConfidence(
  * Fetch fire hotspots from the FIRMS proxy for the given UI window.
  * FIRMS counts day ranges in whole UTC days, so "24 jam" fetches 2 days and
  * `processHotspots` trims to a rolling 24-hour window against `now` — with
- * dayRange=1 the current UTC day is often near-empty in WIB daytime (VIIRS
+ * a single UTC day the current day is often near-empty in WIB daytime (VIIRS
  * passes ~13.30 local + ±3 h NRT latency), which showed a misleading 0.
+ * The proxy maps the UI value to upstream windows (`upstreamWindows`).
  */
 export async function fetchHotspots(
   bbox: [number, number, number, number],
@@ -145,8 +147,7 @@ export async function fetchHotspots(
   signal?: AbortSignal
 ): Promise<FeatureCollection> {
   const [w, s, e, n] = bbox;
-  const upstreamDays = upstreamDayRange(dayRange) ?? dayRange;
-  const res = await fetch(`/api/map-hotspot?bbox=${w},${s},${e},${n}&dayRange=${upstreamDays}`, {
+  const res = await fetch(`/api/map-hotspot?bbox=${w},${s},${e},${n}&dayRange=${dayRange}`, {
     signal,
   });
   if (!res.ok) throw new Error("Gagal memuat titik api");

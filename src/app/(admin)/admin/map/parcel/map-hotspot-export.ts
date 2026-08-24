@@ -40,7 +40,7 @@ function wibFileStamp(now: Date): string {
 }
 
 function fileBase(dayRange: HotspotDayRange, now: Date): string {
-  return `titik-api-riau-${dayRange === 1 ? "24jam" : "5hari"}-${wibFileStamp(now)}`;
+  return `titik-api-riau-${dayRange === 1 ? "24jam" : `${dayRange}hari`}-${wibFileStamp(now)}`;
 }
 
 function saveBlob(blob: Blob, filename: string) {

@@ -5,17 +5,71 @@
 
 import type { FeatureCollection, Feature } from "geojson";
 
+/** Rentang UI yang diterima proxy: 24 jam (1), 5, 10, 30 hari. */
+export const HOTSPOT_DAY_RANGES = [1, 5, 10, 30] as const;
+export type HotspotDayRange = (typeof HOTSPOT_DAY_RANGES)[number];
+
+/** Cap FIRMS: satu request area maksimal 5 hari ("Expects [1..5]"). */
+const FIRMS_MAX_DAYS = 5;
+
 /**
- * UI window → jumlah hari FIRMS yang diambil upstream — satu sumber kebenaran
- * untuk klien (`map-hotspot.ts`) dan route (`/api/map-hotspot`).
- * "24 jam" mengambil 2 hari UTC (jendela bergulir difilter klien karena
- * dayRange FIRMS dihitung per hari UTC utuh); nilai lama `1` tetap diterima
- * dan dipetakan ke 2 demi kompatibilitas bundle pra-deploy. Null = tak valid.
+ * Satu request ke FIRMS Area API. `date` (YYYY-MM-DD, UTC) = hari pertama
+ * jendela — bila kosong FIRMS mengembalikan "hari ini (UTC) mundur
+ * dayRange-1 hari".
  */
-export function upstreamDayRange(dayRange: number): 2 | 5 | null {
-  if (dayRange === 1 || dayRange === 2) return 2;
-  if (dayRange === 5) return 5;
-  return null;
+export type UpstreamWindow = { dayRange: number; date?: string };
+
+/** 00:00 UTC pada `days` hari sebelum tanggal UTC milik `now` (0 = hari ini UTC). */
+export function utcMidnightDaysAgo(now: Date, days: number): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - days));
+}
+
+const utcDateString = (d: Date) => d.toISOString().slice(0, 10);
+
+/**
+ * Rentang UI → daftar jendela FIRMS yang harus diambil (#284).
+ * FIRMS membatasi 5 hari per request, tetapi parameter `DATE` membolehkan
+ * jendela lampau — rentang panjang = beberapa jendela 5 hari berurutan,
+ * digabung di proxy. Jendela **terbaru selalu tanpa `DATE`** (mengikuti
+ * "hari ini" versi server FIRMS, kebal selisih jam; URL-nya pun sama dengan
+ * opsi 5 hari sehingga cache-nya dipakai bersama); jendela lampau diberi
+ * `DATE` dari tanggal **UTC** (satuan hari FIRMS), bukan `now − N×24 jam`.
+ *
+ * "24 jam" mengambil 2 hari UTC lalu klien memangkas ke 24 jam bergulir
+ * (`processHotspots`); nilai lama `2` tetap diterima demi kompatibilitas
+ * bundle pra-deploy. Null = rentang tak valid.
+ */
+export function upstreamWindows(dayRange: number, now: Date): UpstreamWindow[] | null {
+  if (dayRange === 1 || dayRange === 2) return [{ dayRange: 2 }];
+  if (!(HOTSPOT_DAY_RANGES as readonly number[]).includes(dayRange)) return null;
+  const windows: UpstreamWindow[] = [];
+  // Jendela lampau dari yang tertua: mulai hari ke-(N-1) sebelum hari ini UTC.
+  for (let back = dayRange - 1; back >= FIRMS_MAX_DAYS; back -= FIRMS_MAX_DAYS) {
+    windows.push({ dayRange: FIRMS_MAX_DAYS, date: utcDateString(utcMidnightDaysAgo(now, back)) });
+  }
+  windows.push({ dayRange: FIRMS_MAX_DAYS });
+  return windows;
+}
+
+/**
+ * Gabungkan hasil beberapa jendela menjadi satu FeatureCollection. Deteksi
+ * yang sama (koordinat + waktu akuisisi + satelit) hanya masuk sekali —
+ * berjaga bila dua jendela bertumpang tindih di batas hari UTC.
+ */
+export function mergeHotspotCollections(collections: FeatureCollection[]): FeatureCollection {
+  const seen = new Set<string>();
+  const features: Feature[] = [];
+  for (const fc of collections) {
+    for (const f of fc.features) {
+      const [lon, lat] = f.geometry.type === "Point" ? f.geometry.coordinates : [NaN, NaN];
+      const p = f.properties ?? {};
+      const key = `${lon},${lat},${p.acqDate},${p.acqTime},${p.satellite}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      features.push(f);
+    }
+  }
+  return { type: "FeatureCollection", features };
 }
 
 /** Validate a WGS84 "west,south,east,north" bbox string; returns normalized string or null. */

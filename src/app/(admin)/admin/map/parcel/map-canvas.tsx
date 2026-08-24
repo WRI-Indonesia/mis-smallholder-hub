@@ -796,7 +796,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                   accent="red"
                   icon={<Flame className="h-4 w-4" />}
                   title="Titik Api"
-                  subtitle={selected.props.ageBucket === "recent" ? "< 24 jam" : "1–5 hari"}
+                  subtitle={selected.props.ageBucket === "recent" ? "< 24 jam" : "> 24 jam"}
                 />
                 <MapPopupRows
                   className="border-t px-3.5 py-3"

@@ -9,6 +9,7 @@
  */
 
 import type { Feature, FeatureCollection, MultiPolygon, Position } from "geojson";
+import { utcMidnightDaysAgo } from "@/lib/firms";
 
 /** Boundary lembaga siap render/klasifikasi (hasil `getFireBoundaries`). */
 export type FireBoundary = {
@@ -289,12 +290,15 @@ const WIB = "Asia/Jakarta";
 /**
  * Awal jendela waktu untuk label laporan.
  * - `1` = **bergulir** 1×24 jam ke belakang (perilaku layer 24 jam, #240).
- * - `5` = 5 hari **kalender termasuk hari ini** (batas FIRMS) → mundur 4 hari,
- *   supaya label rentangnya benar-benar 5 hari, bukan 6.
+ * - `5`/`10`/`30` = N hari **kalender UTC termasuk hari ini** — persis satuan
+ *   yang dipakai FIRMS (`upstreamWindows`) → 00:00 UTC pada N-1 hari sebelum
+ *   tanggal UTC `now`. Dihitung dari tanggal UTC, bukan `now − N×24 jam`,
+ *   supaya pada 00:00–07:00 WIB (tanggal UTC masih kemarin) label tidak
+ *   memundurkan awal rentang sehari lebih sedikit daripada data (#281).
  */
 export function hotspotWindowStart(now: Date, dayRange: number): Date {
-  const back = dayRange <= 1 ? 1 : dayRange - 1;
-  return new Date(now.getTime() - back * 24 * 60 * 60 * 1000);
+  if (dayRange <= 1) return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  return utcMidnightDaysAgo(now, dayRange - 1);
 }
 
 /** Komponen hari/bulan/tahun sebuah Date menurut WIB (bukan zona browser). */
