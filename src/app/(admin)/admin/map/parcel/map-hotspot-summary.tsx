@@ -159,14 +159,17 @@ export function HotspotSummaryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Ringkasan (#294): dua angka utama + grafik sebaran keyakinan.
-            Bar HORIZONTAL, bukan stacked/pie: nama kategori panjang ("Nominal
-            (Medium)") dan sebarannya sangat timpang — pada stacked bar segmen
-            "Rendah" (2 dari 543) hilang sama sekali, sedangkan pada bar
-            horizontal ia tetap punya barisnya sendiri lengkap dengan angka.
-            Angka di-direct-label pada tiap baris; warna keyakinan tidak pernah
-            jadi pembeda tunggal (kuning #facc15 hanya 1,49:1 vs latar terang). */}
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Ringkasan (#294, opsi C — pilihan owner 2026-08-24): dua angka
+            tunggal sebagai kartu, tiga tingkat keyakinan sebagai satu bar
+            bertumpuk.
+            Catatan untuk yang membaca nanti: pada sebaran timpang (mis. 507
+            dari 543 Nominal) segmen kecil menyusut jadi serpihan — termasuk
+            "Tinggi" yang justru paling genting. Itu diterima sebagai keputusan
+            desain; kompensasinya WAJIB dipertahankan: lebar minimum 3px per
+            segmen bukan-nol, dan legenda di bawahnya yang memuat hitungan
+            persis + persentase. Warna tidak pernah jadi pembeda tunggal —
+            kuning #facc15 hanya 1,49:1 terhadap latar terang. */}
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr]">
           <Stat label="Total titik" value={formatNumber(total)} lead />
           {distancesAvailable ? (
             <Stat
@@ -181,37 +184,45 @@ export function HotspotSummaryDialog({
               titik Lembaga Petani.
             </p>
           )}
-          <div className="rounded-lg border bg-muted/40 px-3 py-2 sm:col-span-2">
-            <div className="mb-1.5 text-[11px] leading-tight text-muted-foreground">
+          <div className="rounded-lg border bg-muted/40 px-3 py-2">
+            <div className="mb-2 text-[11px] leading-tight text-muted-foreground">
               Sebaran keyakinan deteksi
             </div>
-            <div className="space-y-1">
+            {/* gap-[2px]: pemisah antar segmen agar dua warna bersebelahan
+                tidak terbaca menyatu. */}
+            <div className="flex h-3 gap-[2px] overflow-hidden rounded-full">
               {(["high", "nominal", "low"] as HotspotConfBucket[]).map((b) => {
                 const n = counts[b];
                 const pct = total > 0 ? (n / total) * 100 : 0;
                 return (
-                  <div key={b} className="flex items-center gap-2 text-xs">
-                    <span className="w-28 shrink-0 truncate text-muted-foreground">
-                      {HOTSPOT_CONF_LABELS[b]}
+                  <span
+                    key={b}
+                    className="block h-full first:rounded-l-full last:rounded-r-full"
+                    style={{
+                      width: n > 0 ? `max(3px, ${pct.toFixed(2)}%)` : 0,
+                      backgroundColor: HOTSPOT_CONF_COLORS[b],
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              {(["high", "nominal", "low"] as HotspotConfBucket[]).map((b) => {
+                const n = counts[b];
+                const pct = total > 0 ? (n / total) * 100 : 0;
+                return (
+                  <span key={b} className="flex items-center gap-1.5">
+                    <span
+                      aria-hidden
+                      className="inline-block h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: HOTSPOT_CONF_COLORS[b] }}
+                    />
+                    <span className="text-muted-foreground">{HOTSPOT_CONF_LABELS[b]}</span>
+                    <span className="font-medium tabular-nums">{formatNumber(n)}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {pct.toFixed(pct > 0 && pct < 1 ? 1 : 0)}%
                     </span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-foreground/5">
-                      {/* min 3px agar nilai bukan-nol tetap terlihat; angka
-                          persisnya tetap tertulis di sebelahnya. */}
-                      <span
-                        className="block h-full rounded-full"
-                        style={{
-                          width: n > 0 ? `max(3px, ${pct.toFixed(2)}%)` : 0,
-                          backgroundColor: HOTSPOT_CONF_COLORS[b],
-                        }}
-                      />
-                    </span>
-                    <span className="w-16 shrink-0 text-right tabular-nums">
-                      {formatNumber(n)}
-                      <span className="ml-1 text-[10px] text-muted-foreground">
-                        {pct.toFixed(pct > 0 && pct < 1 ? 1 : 0)}%
-                      </span>
-                    </span>
-                  </div>
+                  </span>
                 );
               })}
             </div>
