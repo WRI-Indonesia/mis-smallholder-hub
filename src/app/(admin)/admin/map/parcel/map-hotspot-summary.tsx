@@ -68,6 +68,41 @@ function ConfidenceBadge({ confidence }: { confidence: unknown }) {
 }
 
 /**
+ * Satu angka ringkasan: label kecil di atas, nilai memimpin di bawah (#294).
+ * `dot` memberi penanda warna keyakinan — selalu berdampingan dengan label
+ * teks, tidak pernah sebagai satu-satunya pembeda.
+ */
+function Stat({
+  label,
+  value,
+  dot,
+  size = "normal",
+}: {
+  label: string;
+  value: string;
+  dot?: string;
+  size?: "normal" | "lead";
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 text-[11px] leading-tight text-muted-foreground">
+        {dot && (
+          <span
+            aria-hidden
+            className="inline-block h-2 w-2 shrink-0 rounded-full"
+            style={{ backgroundColor: dot }}
+          />
+        )}
+        {label}
+      </div>
+      <div className={size === "lead" ? "text-xl font-semibold" : "text-base font-medium"}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Modal ringkasan titik api: tampil otomatis saat kalkulasi jarak selesai
  * (bisa dibuka ulang dari panel). Ringkasan total + per keyakinan + jumlah
  * < 15 km, lalu tabel titik < 15 km saja (urut jarak terdekat).
@@ -105,40 +140,48 @@ export function HotspotSummaryDialog({
             Ringkasan Titik Api
           </DialogTitle>
           <DialogDescription>
-            Rentang {hotspotWindowLabel(dayRange)} terakhir · Provinsi:{" "}
-            {area.provinceName ?? "—"} · Distrik: {area.districtName ?? "—"} · sumber NASA FIRMS
-            (VIIRS 375 m)
+            {/* Wilayah kosong dihilangkan, bukan dicetak "—" (#294): baris meta
+                ini konteks, dan field kosong hanya menambah derau. */}
+            {[
+              `Rentang ${hotspotWindowLabel(dayRange)} terakhir`,
+              area.provinceName,
+              area.districtName,
+              "NASA FIRMS (VIIRS 375 m)",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Ringkasan angka */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
-          <span>
-            Total <span className="font-semibold tabular-nums">{formatNumber(total)}</span> titik
-          </span>
+        {/* Baris KPI (#294). Angka yang memimpin, label kecil di atasnya —
+            menggantikan satu baris teks padat yang menyembunyikan angkanya.
+            Nilai memakai angka proporsional (bukan `tabular-nums`, yang hanya
+            untuk kolom yang harus lurus vertikal). Warna keyakinan SELALU
+            didampingi label teks: kuning #facc15 hanya 1,49:1 terhadap latar
+            terang, jadi warna tidak boleh jadi satu-satunya pembeda. */}
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <Stat label="Total titik" value={formatNumber(total)} size="lead" />
           {(["high", "nominal", "low"] as HotspotConfBucket[]).map((b) => (
-            <span key={b} className="flex items-center gap-1.5">
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: HOTSPOT_CONF_COLORS[b] }}
-              />
-              <span className="text-muted-foreground">{HOTSPOT_CONF_LABELS[b]}</span>
-              <span className="font-mono text-xs tabular-nums">{formatNumber(counts[b])}</span>
-            </span>
+            <Stat
+              key={b}
+              label={HOTSPOT_CONF_LABELS[b]}
+              value={formatNumber(counts[b])}
+              dot={HOTSPOT_CONF_COLORS[b]}
+            />
           ))}
           {distancesAvailable ? (
-            <span className="text-muted-foreground">
-              &lt; {NEAR_KM_THRESHOLD} km dari Lembaga Petani:{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {formatNumber(nearRows.length)}
-              </span>{" "}
-              titik
-            </span>
+            <div className="ml-auto rounded-lg border border-primary/25 bg-primary/5 px-3 py-1.5">
+              <Stat
+                label={`< ${NEAR_KM_THRESHOLD} km dari Lembaga Petani`}
+                value={formatNumber(nearRows.length)}
+                size="lead"
+              />
+            </div>
           ) : (
-            <span className="text-muted-foreground">
+            <p className="ml-auto max-w-xs text-xs text-muted-foreground">
               Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki
               titik Lembaga Petani.
-            </span>
+            </p>
           )}
         </div>
 
