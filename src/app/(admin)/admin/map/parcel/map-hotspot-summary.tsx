@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Download, Flame, MapPin, Printer } from "lucide-react";
 import { formatNumber } from "@/lib/format";
+import { COMPASS_LEGEND_ID } from "./map-geo";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -83,9 +84,7 @@ function Sep() {
 }
 
 /**
- * Satu angka ringkasan: label kecil di atas, nilai memimpin di bawah (#294).
- * `dot` memberi penanda warna keyakinan — selalu berdampingan dengan label
- * teks, tidak pernah sebagai satu-satunya pembeda.
+ * Satu angka ringkasan: ikon di kiri, label + nilai besar rata kanan (#294).
  */
 function Stat({
   icon,
@@ -291,7 +290,7 @@ export function HotspotSummaryDialog({
                   <TableHead>Keyakinan</TableHead>
                   <TableHead className="text-right">FRP (MW)</TableHead>
                   <TableHead>Lembaga Terdekat</TableHead>
-                  <TableHead className="text-right">Jarak (km)</TableHead>
+                  <TableHead className="text-right">Jarak (km) &amp; Arah dari Kantor Lembaga</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -317,7 +316,7 @@ export function HotspotSummaryDialog({
                         {cells.nearestName}
                       </TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
-                        {cells.distanceKm}
+                        {cells.distanceDir}
                       </TableCell>
                     </TableRow>
                   );
@@ -331,6 +330,8 @@ export function HotspotSummaryDialog({
           <p className="text-[10px] leading-snug text-muted-foreground">
             Deteksi anomali panas, bukan konfirmasi kebakaran · jeda ±3 jam. Klik baris untuk zoom
             ke titiknya.
+            <br />
+            Arah diukur dari kantor Lembaga Petani menuju titik api (0° = utara) — {COMPASS_LEGEND_ID}.
           </p>
           <div className="flex shrink-0 gap-2">
             {canExport && (

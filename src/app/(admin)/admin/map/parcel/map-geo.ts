@@ -22,6 +22,53 @@ export function haversineMeters(a: LngLat, b: LngLat): number {
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+/**
+ * 8-point compass, clockwise from north (Bahasa Indonesia). Abbreviation and
+ * full name live in ONE list so the legend can never drift from the mapping.
+ */
+const COMPASS_ID_FULL = [
+  ["U", "Utara"],
+  ["TL", "Timur Laut"],
+  ["T", "Timur"],
+  ["TG", "Tenggara"],
+  ["S", "Selatan"],
+  ["BD", "Barat Daya"],
+  ["B", "Barat"],
+  ["BL", "Barat Laut"],
+] as const;
+
+const COMPASS_ID = COMPASS_ID_FULL.map(([abbr]) => abbr);
+
+/** "U=Utara, TL=Timur Laut, …" — keterangan singkatan arah untuk modal & PDF. */
+export const COMPASS_LEGEND_ID = COMPASS_ID_FULL.map(([a, full]) => `${a}=${full}`).join(", ");
+
+/**
+ * Initial great-circle bearing from `a` to `b`, in degrees clockwise from
+ * north (0 = north, 90 = east). Always normalised to [0, 360).
+ *
+ * Direction matters: `bearingDegrees(lembaga, titikApi)` answers "which way is
+ * the hotspot from the office" — the reverse differs by 180°.
+ */
+export function bearingDegrees(a: LngLat, b: LngLat): number {
+  const lat1 = toRad(a[1]);
+  const lat2 = toRad(b[1]);
+  const dLng = toRad(b[0] - a[0]);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  const deg = (Math.atan2(y, x) * 180) / Math.PI;
+  return ((deg % 360) + 360) % 360;
+}
+
+/**
+ * Compass abbreviation for a bearing: "U", "TL", "T", "TG", "S", "BD", "B",
+ * "BL". Each of the 8 sectors spans 45°, centred on its cardinal direction —
+ * so 337.5°–22.5° is "U".
+ */
+export function compassPointId(bearing: number): string {
+  const norm = ((bearing % 360) + 360) % 360;
+  return COMPASS_ID[Math.round(norm / 45) % 8];
+}
+
 /** Total path length in meters across an ordered list of points. */
 export function pathMeters(points: LngLat[]): number {
   let m = 0;
