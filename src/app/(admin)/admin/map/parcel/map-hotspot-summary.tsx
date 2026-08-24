@@ -76,15 +76,21 @@ function Stat({
   label,
   value,
   dot,
-  size = "normal",
+  lead = false,
+  accent = false,
 }: {
   label: string;
   value: string;
   dot?: string;
-  size?: "normal" | "lead";
+  lead?: boolean;
+  accent?: boolean;
 }) {
   return (
-    <div>
+    <div
+      className={`rounded-lg border px-3 py-2 ${
+        accent ? "border-primary/30 bg-primary/5" : "bg-muted/40"
+      }`}
+    >
       <div className="flex items-center gap-1.5 text-[11px] leading-tight text-muted-foreground">
         {dot && (
           <span
@@ -93,9 +99,9 @@ function Stat({
             style={{ backgroundColor: dot }}
           />
         )}
-        {label}
+        <span className="truncate">{label}</span>
       </div>
-      <div className={size === "lead" ? "text-xl font-semibold" : "text-base font-medium"}>
+      <div className={`mt-0.5 ${lead ? "text-2xl font-semibold" : "text-xl font-medium"}`}>
         {value}
       </div>
     </div>
@@ -153,36 +159,63 @@ export function HotspotSummaryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Baris KPI (#294). Angka yang memimpin, label kecil di atasnya —
-            menggantikan satu baris teks padat yang menyembunyikan angkanya.
-            Nilai memakai angka proporsional (bukan `tabular-nums`, yang hanya
-            untuk kolom yang harus lurus vertikal). Warna keyakinan SELALU
-            didampingi label teks: kuning #facc15 hanya 1,49:1 terhadap latar
-            terang, jadi warna tidak boleh jadi satu-satunya pembeda. */}
-        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-          <Stat label="Total titik" value={formatNumber(total)} size="lead" />
-          {(["high", "nominal", "low"] as HotspotConfBucket[]).map((b) => (
-            <Stat
-              key={b}
-              label={HOTSPOT_CONF_LABELS[b]}
-              value={formatNumber(counts[b])}
-              dot={HOTSPOT_CONF_COLORS[b]}
-            />
-          ))}
+        {/* Ringkasan (#294): dua angka utama + grafik sebaran keyakinan.
+            Bar HORIZONTAL, bukan stacked/pie: nama kategori panjang ("Nominal
+            (Medium)") dan sebarannya sangat timpang — pada stacked bar segmen
+            "Rendah" (2 dari 543) hilang sama sekali, sedangkan pada bar
+            horizontal ia tetap punya barisnya sendiri lengkap dengan angka.
+            Angka di-direct-label pada tiap baris; warna keyakinan tidak pernah
+            jadi pembeda tunggal (kuning #facc15 hanya 1,49:1 vs latar terang). */}
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat label="Total titik" value={formatNumber(total)} lead />
           {distancesAvailable ? (
-            <div className="ml-auto rounded-lg border border-primary/25 bg-primary/5 px-3 py-1.5">
-              <Stat
-                label={`< ${NEAR_KM_THRESHOLD} km dari Lembaga Petani`}
-                value={formatNumber(nearRows.length)}
-                size="lead"
-              />
-            </div>
+            <Stat
+              label={`< ${NEAR_KM_THRESHOLD} km dari Lembaga`}
+              value={formatNumber(nearRows.length)}
+              lead
+              accent
+            />
           ) : (
-            <p className="ml-auto max-w-xs text-xs text-muted-foreground">
+            <p className="self-center rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
               Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki
               titik Lembaga Petani.
             </p>
           )}
+          <div className="rounded-lg border bg-muted/40 px-3 py-2 sm:col-span-2">
+            <div className="mb-1.5 text-[11px] leading-tight text-muted-foreground">
+              Sebaran keyakinan deteksi
+            </div>
+            <div className="space-y-1">
+              {(["high", "nominal", "low"] as HotspotConfBucket[]).map((b) => {
+                const n = counts[b];
+                const pct = total > 0 ? (n / total) * 100 : 0;
+                return (
+                  <div key={b} className="flex items-center gap-2 text-xs">
+                    <span className="w-28 shrink-0 truncate text-muted-foreground">
+                      {HOTSPOT_CONF_LABELS[b]}
+                    </span>
+                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-foreground/5">
+                      {/* min 3px agar nilai bukan-nol tetap terlihat; angka
+                          persisnya tetap tertulis di sebelahnya. */}
+                      <span
+                        className="block h-full rounded-full"
+                        style={{
+                          width: n > 0 ? `max(3px, ${pct.toFixed(2)}%)` : 0,
+                          backgroundColor: HOTSPOT_CONF_COLORS[b],
+                        }}
+                      />
+                    </span>
+                    <span className="w-16 shrink-0 text-right tabular-nums">
+                      {formatNumber(n)}
+                      <span className="ml-1 text-[10px] text-muted-foreground">
+                        {pct.toFixed(pct > 0 && pct < 1 ? 1 : 0)}%
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Tabel titik < 15 km */}
