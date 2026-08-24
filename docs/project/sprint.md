@@ -11,7 +11,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Sprint Focus
 
-Fokus **minggu 2026-08-18 → 2026-08-24** — siklus pasca-rilis **v0.27.0**: menuntaskan temuan review #278 (#274, #275 ✅), UX & ukuran berkas cetak PDF (#276 ✅), konsistensi angka titik api lintas halaman (#269 ✅), dan mengeluarkan skrip seed geospasial dari folder gitignored (#279 ✅). Tidak ada fase roadmap baru — seluruhnya perbaikan atas modul yang sudah Done. Pasca-rilis v0.28.0 (2026-08-24): **#284** rentang titik api 10/30 hari (sekaligus menutup **#281**) + review **#285**; dibuka **#286** skala musim karhutla (P1, sebelum kemarau berikutnya), **#287** keputusan cetak PDF 30 hari, **#288** DevX typecheck test. **Belum diputuskan:** prioritas siklus berikutnya.
+Fokus **minggu 2026-08-18 → 2026-08-24** — siklus pasca-rilis **v0.27.0**: menuntaskan temuan review #278 (#274, #275 ✅), UX & ukuran berkas cetak PDF (#276 ✅), konsistensi angka titik api lintas halaman (#269 ✅), dan mengeluarkan skrip seed geospasial dari folder gitignored (#279 ✅). Tidak ada fase roadmap baru — seluruhnya perbaikan atas modul yang sudah Done. Pasca-rilis v0.28.0 (2026-08-24): **#284** rentang titik api 10/30 hari (sekaligus menutup **#281**) + review **#285**; dibuka **#286** skala musim karhutla (P1, sebelum kemarau berikutnya), **#287** keputusan cetak PDF 30 hari (ditutup: tidak dibatasi), **#288** DevX typecheck test. **Belum diputuskan:** prioritas siklus berikutnya.
 
 <details>
 <summary>Fokus sprint sebelumnya (2026-08-08 → 2026-08-14)</summary>
