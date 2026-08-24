@@ -15,7 +15,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 │   │   ├── Per layer aktif: legend warna kelas + "Sumber: …"
 │   │   └── Slider: Transparansi
 │   ├── Titik Api (Hotspot)
-│   │   ├── Toggle: Rentang waktu (24 jam / 5 hari)
+│   │   ├── Toggle: Rentang waktu (24 jam / 5 / 10 / 30 hari)
 │   │   └── Legenda hotspot
 │   └── Tambah Data GIS Lain
 │       ├── Form: WMS URL
@@ -66,7 +66,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Titik Api (Hotspot) | Section collapsible + Layer | Checkbox "Tampilkan titik api" + jumlah titik; sumber NASA FIRMS VIIRS 375 m; area query tetap bbox persegi Riau, tetapi hasilnya **dipangkas ke gabungan 12 poligon kabupaten BIG** (`filterPointsWithinAreas`) sebelum masuk state — bbox persegi ikut memuat Malaysia/Sumbar/Jambi/Kepri (#269). Poligon dimuat malas via `getAdminBoundaries()` saat layer dinyalakan (±165 KB, sekali); batas belum ter-seed → tampil apa adanya. Checkbox & toggle rentang disabled sebelum data lahan dimuat (perlu titik lembaga untuk kalkulasi jarak PDF; saat layer sudah nyala, checkbox tetap bisa mematikan). Klik teks label = zoom ke sebaran titik api |
 | Ekspor titik api | Tombol | "Unduh SHP" (ZIP Shapefile point WGS84 via `@mapbox/shp-write`, kolom DBF-safe ≤10 char) & "Cetak PDF" (jsPDF landscape: ringkasan total + per keyakinan + jumlah < 15 km dari Lembaga Petani; tabel hanya titik < 15 km, kolom Lembaga Terdekat & Jarak (km), urut jarak terdekat; header Provinsi & Distrik terpilih; tanpa data peta dimuat → semua titik, jarak "—"); disabled saat layer mati/loading/0 titik. Kalkulasi jarak lazy di background (`calcHotspotNearest`, chunked 250 titik/tick agar peta responsif) — tombol PDF spinner+disabled selama menghitung, toast "Kalkulasi jarak titik api selesai — Cetak PDF siap" saat siap. Helper `map-hotspot-export.ts`. "Unduh SHP" digate izin `EXPORT`, "Cetak PDF" digate izin `PRINT` (#245) |
 | Ringkasan titik api | Modal (`map-hotspot-summary.tsx`) | Auto-terbuka saat kalkulasi jarak selesai; buka ulang via tombol "Lihat Ringkasan" (disabled selama menghitung). Subtitle: rentang + Provinsi & Distrik terpilih di filter lahan + sumber. Isi: total + jumlah per keyakinan + jumlah < 15 km; tabel hanya titik < 15 km urut jarak terdekat (No, Waktu WIB, Satelit, badge Keyakinan berwarna legenda, FRP, Lembaga Terdekat, Jarak km); klik baris = tutup modal + zoom peta ke titik (`pointZoomRequest`, zoom 14); footer tombol Unduh SHP & Cetak PDF (gating sama: izin `EXPORT`/`PRINT`, #245) |
-| Rentang waktu hotspot | Toggle | Dua opsi: "24 jam" / "5 hari". "24 jam" = jendela bergulir 24 jam terakhir (fetch 2 hari UTC dari FIRMS lalu difilter klien berdasarkan `acqDatetime` — `dayRange=1` FIRMS hanya mencakup hari UTC berjalan sehingga sering 0 di pagi–siang WIB) |
+| Rentang waktu hotspot | Toggle | Empat opsi dari `HOTSPOT_DAY_RANGES` (`src/lib/firms.ts`): "24 jam" / "5 hari" / "10 hari" / "30 hari" (#284). 5/10/30 hari = jendela 5 hari ber-`DATE` (tanggal UTC) yang di-fetch paralel dan di-dedup di proxy; nama berkas ekspor ber-suffix `24jam`/`5hari`/`10hari`/`30hari`; angka legenda & modal ber-pemisah ribuan. "24 jam" = jendela bergulir 24 jam terakhir (fetch 2 hari UTC dari FIRMS lalu difilter klien berdasarkan `acqDatetime` — `dayRange=1` FIRMS hanya mencakup hari UTC berjalan sehingga sering 0 di pagi–siang WIB) |
 | Legenda hotspot | Legend | Breakdown per keyakinan deteksi + jumlah titik per kelas: `#b91c1c` Tinggi, `#f97316` Nominal (Medium), `#facc15` Rendah (kode VIIRS h/n/l; tak dikenal → Nominal (Medium); warna sengaja beda hue+lightness agar kontras); catatan "Deteksi anomali panas VIIRS 375 m, bukan konfirmasi kebakaran. Sumber: NASA FIRMS · jeda ±3 jam." |
 | Tambah Data GIS Lain | Section collapsible | Tiga mode: "WMS URL", "Shapefile", "GeoJSON"; layer sesi saja (tidak disimpan) |
 | Form WMS | Form | Input "Nama layer (opsional)", "URL WMS / template tile", "Nama layer WMS (mis. 0, kawasan_hutan)" + tombol "Tambah Layer"; toast "Layer WMS ditambahkan" |
@@ -78,7 +78,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Zoom ke semua data | Tombol (kanan bawah) | `fitBounds` ke seluruh data yang dimuat |
 | Basemap switcher | Tombol grup (kanan bawah) | LIGHT / DARK / HYBRID |
 | Popup Lembaga Petani | Popup | Header hijau + nama lembaga, subtitle "Lembaga Petani"; baris: Kode, Distrik, Koordinat |
-| Popup Titik Api | Popup | Header merah "Titik Api", subtitle "< 24 jam" / "1–5 hari"; baris: Waktu Deteksi (WIB), Satelit (Suomi NPP / NOAA-20), Keyakinan (Rendah/Nominal (Medium)/Tinggi), FRP (MW), Koordinat + catatan sumber FIRMS |
+| Popup Titik Api | Popup | Header merah "Titik Api", subtitle usia deteksi "< 24 jam" / "n hari lalu" (`hotspotAgeLabel`); baris: Waktu Deteksi (WIB), Satelit (Suomi NPP / NOAA-20), Keyakinan (Rendah/Nominal (Medium)/Tinggi), FRP (MW), Koordinat + catatan sumber FIRMS |
 | Popup Lahan | Popup | Header biru: foto placeholder + nama petani, ID Petani, ID Lahan, Lembaga Petani; highlight "Luas Lahan" (`x,xx ha`) |
 | Popup › Detail Lahan | Section popup | Terbuka default: Tahun Tanam, Komoditas, Status Lahan |
 | Popup › Pelatihan Petani | Section popup | Lazy-load `getFarmerTraining`; daftar paket dengan centang selesai + tanggal; error "Gagal memuat pelatihan." |

@@ -24,7 +24,7 @@ import {
 //   https://firms.modaps.eosdis.nasa.gov/api/area/csv/[KEY]/[SOURCE]/[bbox]/[dayRange]
 //   https://firms.modaps.eosdis.nasa.gov/api/area/csv/[KEY]/[SOURCE]/[bbox]/[dayRange]/[YYYY-MM-DD]
 //   bbox = west,south,east,north (WGS84 lon/lat); dayRange = 1..5 days per
-//   request ("Expects [1..5]"). Rentang UI 10/30 hari = beberapa jendela 5 hari
+//   request ("Expects [1..5]"). Rentang UI 5/10/30 hari = jendela 5 hari
 //   ber-DATE yang diambil paralel lalu digabung (#284) — pemecahnya di
 //   `upstreamWindows` (lib/firms.ts), sumber yang sama dipakai klien.
 
@@ -35,10 +35,12 @@ const SOURCE = "VIIRS_SNPP_NRT";
 // Satu jendela biasanya 1–3 s, pernah 7 s; jendela-jendela diambil paralel
 // sehingga batas ini berlaku untuk yang paling lambat, bukan jumlahnya.
 const TIMEOUT_MS = 30_000;
-// Jendela terbaru: FIRMS NRT berjeda ~3 jam, polling lebih rapat cuma
-// membakar kuota (~5000 transaksi / 10 menit per key). Jendela lampau
-// (ber-DATE, berakhir ≥5 hari lalu) praktis beku → cache lebih lama, sehingga
-// opsi 30 hari hanya menyegarkan satu jendela per jam.
+// Jendela terakhir (berakhir hari ini UTC): FIRMS NRT berjeda ~3 jam, polling
+// lebih rapat cuma membakar kuota (~5000 transaksi / 10 menit per key).
+// Jendela sebelumnya berakhir ≥5 hari lalu → praktis beku → cache lebih lama,
+// sehingga opsi 30 hari hanya menyegarkan satu jendela per jam.
+// Catatan: data cache Next menolak entri >2 MB (#286 — musim asap bisa
+// melampauinya; saat itu jendela ter-fetch ulang tiap request).
 const REVALIDATE_LATEST_S = 3600;
 const REVALIDATE_PAST_S = 6 * 3600;
 
@@ -59,18 +61,27 @@ export async function GET(req: NextRequest) {
   const bbox = parseBbox(req.nextUrl.searchParams.get("bbox"));
   if (!bbox) return new Response("Invalid bbox", { status: 400 });
 
-  const windows = upstreamWindows(Number(req.nextUrl.searchParams.get("dayRange")), new Date());
+  // Hanya bilangan bulat desimal — `Number("1e1")`/`"0x1E"` juga bernilai
+  // 10/30, tetapi bukan bagian kontrak {1, 2, 5, 10, 30}.
+  const rawDayRange = req.nextUrl.searchParams.get("dayRange") ?? "";
+  const windows = /^\d+$/.test(rawDayRange)
+    ? upstreamWindows(Number(rawDayRange), new Date())
+    : null;
   if (windows === null) return new Response("Invalid dayRange", { status: 400 });
 
+  // Satu controller untuk semua jendela: timer-lah yang mengabort. Kegagalan
+  // satu jendela sengaja TIDAK mengabort saudaranya — yang sudah sukses masih
+  // membaca body untuk mengisi cache, dan cache itulah yang membuat retry
+  // berikutnya murah. Sisa yang menggantung diabort timer pada 30 s.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  const fetchWindow = async (w: UpstreamWindow) => {
+  const fetchWindow = async (w: UpstreamWindow, i: number) => {
     const upstream =
       `${FIRMS_BASE}/${mapKey}/${SOURCE}/${bbox}/${w.dayRange}` + (w.date ? `/${w.date}` : "");
     const res = await fetch(upstream, {
       signal: controller.signal,
-      next: { revalidate: w.date ? REVALIDATE_PAST_S : REVALIDATE_LATEST_S },
+      next: { revalidate: i === windows.length - 1 ? REVALIDATE_LATEST_S : REVALIDATE_PAST_S },
     });
     if (!res.ok) throw new Error("Upstream error");
     const csv = await res.text();
@@ -84,13 +95,14 @@ export async function GET(req: NextRequest) {
     // Satu jendela gagal = seluruh permintaan gagal. Mengembalikan sebagian
     // akan tampil sebagai "rentang 30 hari" yang diam-diam bolong.
     const parts = await Promise.all(windows.map(fetchWindow));
+    clearTimeout(timer);
+    // `private`: respons ini digerbangi permission — cache bersama (CDN/proxy)
+    // tidak boleh menyajikannya ke pengguna lain. Umur cache lintas pengguna
+    // ditangani data cache Next di sisi server (revalidate di atas).
     return Response.json(mergeHotspotCollections(parts), {
-      headers: { "Cache-Control": "public, max-age=1800, s-maxage=3600" },
+      headers: { "Cache-Control": "private, max-age=1800" },
     });
   } catch {
-    controller.abort();
     return new Response("Upstream error", { status: 502 });
-  } finally {
-    clearTimeout(timer);
   }
 }

@@ -11,7 +11,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Sprint Focus
 
-Fokus **minggu 2026-08-18 → 2026-08-24** — siklus pasca-rilis **v0.27.0**: menuntaskan temuan review #278 (#274, #275 ✅), UX & ukuran berkas cetak PDF (#276 ✅), konsistensi angka titik api lintas halaman (#269 ✅), dan mengeluarkan skrip seed geospasial dari folder gitignored (#279 ✅). Tidak ada fase roadmap baru — seluruhnya perbaikan atas modul yang sudah Done. **Belum diputuskan:** prioritas siklus berikutnya.
+Fokus **minggu 2026-08-18 → 2026-08-24** — siklus pasca-rilis **v0.27.0**: menuntaskan temuan review #278 (#274, #275 ✅), UX & ukuran berkas cetak PDF (#276 ✅), konsistensi angka titik api lintas halaman (#269 ✅), dan mengeluarkan skrip seed geospasial dari folder gitignored (#279 ✅). Tidak ada fase roadmap baru — seluruhnya perbaikan atas modul yang sudah Done. Pasca-rilis v0.28.0 (2026-08-24): **#284** rentang titik api 10/30 hari (sekaligus menutup **#281**) + review **#285**; dibuka **#286** skala musim karhutla (P1, sebelum kemarau berikutnya), **#287** keputusan cetak PDF 30 hari, **#288** DevX typecheck test. **Belum diputuskan:** prioritas siklus berikutnya.
 
 <details>
 <summary>Fokus sprint sebelumnya (2026-08-08 → 2026-08-14)</summary>
@@ -41,6 +41,8 @@ Fokus **minggu 2026-08-08 → 2026-08-14** (hasil audit menyeluruh 2026-08-08 + 
 
 | Work Item                                        | Phase   | Status      | Assignee | Target | Next Action                                                                              |
 | ------------------------------------------------ | ------- | ----------- | -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **✅ #285 Review kode pasca-rilis v0.28.0 + Docs Compliance** — COMPLETE | DASH-07 / MAP-01 / DOCS | ✅ Done | - | 2026-08-24 | 1 HIGH (jendela terbaru tanpa `DATE` bisa menyisakan celah sehari) + 13 temuan lain diperbaiki; 8 MUST docs; ditunda ke #286/#287/#288 |
+| **✅ #284 Rentang titik api 10 & 30 hari (menutup #281)** — COMPLETE | DASH-07 / MAP-01 | ✅ Done | - | 2026-08-24 | Jendela 5 hari ber-`DATE` digabung di proxy (bukan snapshot DB — koreksi asumsi #271); label rentang berbasis tanggal UTC; pemisah ribuan; +17 test |
 | **✅ #269 Titik api Peta Lahan dipangkas ke poligon Riau (termasuk Unduh SHP & Cetak PDF)** — COMPLETE | MAP-01 / DASH-07 | ✅ Done | - | 2026-08-20 | `filterPointsWithinAreas` dipanggil sebelum `setHotspotData` → peta/legenda/terdekat/SHP/PDF ikut; poligon dimuat malas (±165 KB, sekali); guard `getAdminBoundaries` dilebarkan `map-parcel` **atau** `dashboard-risk-fire` |
 | **✅ #279 Skrip seed geospasial keluar dari folder gitignored → `scripts/seed/`** — COMPLETE | PLATFORM / DOCS | ✅ Done | - | 2026-08-20 | 3 skrip + `boundary-mapping.csv` (diaudit bebas PII) di-track; path data via `--data`/`SEED_DATA_DIR` + gagal-terang; usul pola ignore berbasis data **ditolak** (akan membuka ~70 skrip ke repo publik) |
 | **✅ #276 Cetak PDF Fire Alert berprogres & bisa dibatalkan** — COMPLETE | DASH-07 | ✅ Done | - | 2026-08-20 | "Peta lembaga n dari N…" + tombol Batalkan (`AbortController` tiap iterasi); batal = tidak ada PDF. Batas lampiran **tidak** diambil (keputusan data, bukan UX). Sekalian blok Keyakinan dirombak |

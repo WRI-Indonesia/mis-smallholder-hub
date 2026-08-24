@@ -473,7 +473,9 @@ export function MapControlPanel(props: Props) {
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
               ) : (
                 hotspot.visible && (
-                  <span className="text-xs font-mono text-muted-foreground tabular-nums">{formatNumber(hotspotTotal)}</span>
+                  <span className="text-xs font-mono text-muted-foreground tabular-nums">
+                    {formatNumber(hotspotTotal)}
+                  </span>
                 )
               )}
             </div>
@@ -486,7 +488,7 @@ export function MapControlPanel(props: Props) {
                   disabled={hotspotDisabled}
                   onClick={() => onHotspotChange({ ...hotspot, dayRange: d })}
                   className={cn(
-                    "flex-1 rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-default disabled:opacity-50",
+                    "flex-1 whitespace-nowrap rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-default disabled:opacity-50",
                     hotspot.dayRange === d
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -508,7 +510,9 @@ export function MapControlPanel(props: Props) {
                   />
                   <span className="flex-1 text-muted-foreground">{HOTSPOT_CONF_LABELS[b]}</span>
                   {hotspot.visible && !hotspotLoading && (
-                    <span className="font-mono text-muted-foreground tabular-nums">{formatNumber(hotspotCounts[b])}</span>
+                    <span className="font-mono text-muted-foreground tabular-nums">
+                      {formatNumber(hotspotCounts[b])}
+                    </span>
                   )}
                 </span>
               ))}

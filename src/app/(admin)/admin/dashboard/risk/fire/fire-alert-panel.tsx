@@ -15,13 +15,12 @@ import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
+import { HOTSPOT_DAY_RANGES, type HotspotDayRange } from "@/lib/firms";
 import {
   HOTSPOT_CONF_COLORS,
   HOTSPOT_CONF_LABELS,
-  HOTSPOT_DAY_RANGES,
   hotspotWindowLabel,
   type HotspotConfBucket,
-  type HotspotDayRange,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
 import type { AreaCount, FireGroupCount, FireSummary } from "@/lib/fire-alert";
 
@@ -192,7 +191,9 @@ export function FireAlertPanel({
             </div>
             <div className="flex items-center justify-between border-t pt-1.5 text-xs text-muted-foreground">
               <span>Total dalam boundary</span>
-              <span className="font-semibold tabular-nums text-foreground">{formatNumber(summary.inside)}</span>
+              <span className="font-semibold tabular-nums text-foreground">
+                {formatNumber(summary.inside)}
+              </span>
             </div>
           </div>
         )}
@@ -276,8 +277,8 @@ export function FireAlertPanel({
               dihitung di tiap lembaga pemilik — jelaskan selisihnya. */}
           {summary && summary.insideShared > 0 && (
             <p className="mt-1.5 text-[10px] leading-snug text-muted-foreground">
-              {formatNumber(summary.insideShared)} titik berada di wilayah tumpang-tindih boundary dan dihitung di
-              tiap lembaga pemiliknya — jumlah kolom Titik dapat melebihi total titik unik (
+              {formatNumber(summary.insideShared)} titik berada di wilayah tumpang-tindih boundary dan
+              dihitung di tiap lembaga pemiliknya — jumlah kolom Titik dapat melebihi total titik unik (
               {formatNumber(summary.inside)}).
             </p>
           )}

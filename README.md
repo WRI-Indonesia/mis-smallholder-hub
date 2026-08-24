@@ -4,7 +4,7 @@
 
 **Developed for**: WRI Indonesia  
 **Tech Stack**: Next.js 16 · React 19 · TypeScript · Tailwind 4 · Shadcn UI · Prisma 7 · PostgreSQL + PostGIS  
-**Status**: ✅ In Production (v0.24.0 — all core modules, dashboards, maps, reports & help live)
+**Status**: ✅ In Production (v0.28.0 — all core modules, dashboards, maps, reports & help live)
 
 ---
 
@@ -153,11 +153,12 @@ Semua modul di bawah sudah live di produksi. Klik tiap modul untuk rincian.
 </details>
 
 <details>
-<summary><strong>📈 Dashboards (DASH-01…06)</strong> — Main, BMP (Produksi), Pelatihan</summary>
+<summary><strong>📈 Dashboards (DASH-01…07)</strong> — Main, BMP (Produksi), Pelatihan, Fire Alert</summary>
 
 - **Main Dashboard**: 14 summary cards (incl. RSPO/ISPO/SAP-MAP certification), filters, clustered map — snapshot-backed
 - **BMP Dashboard (Produksi)**: productivity (Ton/Ha), production trends, Ex-Plasma vs Swadaya, plant-age analysis — snapshot-backed
 - **Dashboard Pelatihan**: training coverage KPIs, Lembaga × Paket coverage matrix with drill-down to untrained farmers — live query
+- **Fire Alert (Risk Management)**: NASA FIRMS hotspots classified point-in-polygon against ICS boundaries (incl. 1.5 km buffer), 24-hour / 5 / 10 / 30-day ranges, print-ready PDF report for all of Riau or per district — live, no DB history
 
 </details>
 
@@ -166,7 +167,7 @@ Semua modul di bawah sudah live di produksi. Klik tiap modul untuk rincian.
 
 - **Peta Lahan**: full-bleed interactive map (parcels, farmer-group points, labels), production popup, ruler tool
 - Reference overlays (Kawasan Hutan, Fungsi Ekosistem Gambut), custom WMS/Shapefile/GeoJSON layers
-- **Titik Api (Hotspot)**: NASA FIRMS VIIRS layer, rolling 24-h/5-day window, confidence breakdown, SHP/PDF export with nearest-Lembaga proximity summary
+- **Titik Api (Hotspot)**: NASA FIRMS VIIRS layer with 24-hour / 5 / 10 / 30-day ranges (ranges beyond the FIRMS 5-day per-request cap are stitched from multiple `DATE` windows in the proxy), confidence breakdown, SHP/PDF export with nearest-Lembaga proximity summary
 - **Peta BMP**: thematic layers for production data availability & productivity per parcel, PDF/Excel print
 
 </details>
@@ -447,5 +448,5 @@ Tech Lead: [Add contact info]
 ---
 
 **Last Updated**: 2026-08-11  
-**Version**: 0.24.0  
+**Version**: 0.28.0  
 **Status**: Production (mis-prod live)

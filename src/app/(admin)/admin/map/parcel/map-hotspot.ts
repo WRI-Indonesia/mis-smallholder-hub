@@ -7,9 +7,7 @@
 import type { FeatureCollection } from "geojson";
 import { HOTSPOT_DAY_RANGES, type HotspotDayRange } from "@/lib/firms";
 
-/** UI time window: rolling last 24 hours (1) or last 5 / 10 / 30 UTC days.
- *  FIRMS caps a single request at 5 days; the proxy stitches longer windows
- *  from several dated requests (#284). */
+// Re-export untuk modul Peta Lahan (dokumentasi rentang ada di lib/firms.ts).
 export { HOTSPOT_DAY_RANGES, type HotspotDayRange };
 
 export type HotspotState = {
@@ -79,6 +77,15 @@ export const RIAU_BBOX: [number, number, number, number] = [100.0, -1.4, 104.7, 
 
 const RECENT_MS = 24 * 60 * 60 * 1000;
 
+/** Usia deteksi untuk subtitle popup dari properti `ageDays` (dihitung
+ *  `processHotspots` saat data dimuat — bukan `Date.now()` di render):
+ *  0 → "< 24 jam", n → "n hari lalu". `ageBucket` hanya dua nilai (untuk
+ *  ekspresi warna MapLibre), terlalu kasar untuk rentang 10/30 hari (#285). */
+export function hotspotAgeLabel(ageDays: unknown): string {
+  if (typeof ageDays !== "number" || !Number.isFinite(ageDays)) return "—";
+  return ageDays <= 0 ? "< 24 jam" : `${ageDays} hari lalu`;
+}
+
 /** VIIRS confidence code (l/n/h) → bucket; unknown values count as nominal. */
 export function confidenceBucket(v: unknown): HotspotConfBucket {
   const s = String(v ?? "").toLowerCase();
@@ -112,6 +119,8 @@ export function processHotspots(
       properties: {
         ...(f.properties ?? {}),
         ageBucket: recent ? "recent" : "older",
+        // Usia dalam hari penuh untuk subtitle popup (`hotspotAgeLabel`).
+        ageDays: !Number.isFinite(t) ? null : recent ? 0 : Math.floor((now - t) / RECENT_MS),
         confBucket: confidenceBucket(f.properties?.confidence),
       },
     });

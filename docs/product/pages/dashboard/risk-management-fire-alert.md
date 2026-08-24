@@ -17,7 +17,7 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
 │   ├── Legenda kiri-bawah (confidence, bentuk dalam/luar, boundary, batas kabupaten)
 │   └── Kontrol kanan-bawah: ⛶ Zoom ke satu Riau (+ clear selection) · basemap Light/Dark/Hybrid
 └── Panel kanan (¼ lebar)
-    ├── Toggle rentang: 24 jam / 5 hari terakhir (default 5; cap FIRMS)
+    ├── Toggle rentang: 24 jam / 5 / 10 / 30 hari terakhir (default 5; >5 hari = gabungan jendela 5 hari ber-DATE, #284)
     ├── Kartu ringkasan (4, ber-tooltip rincian)
     │   ├── Dalam Boundary → tooltip per distrik program
     │   ├── Lembaga Terdampak → tooltip daftar lembaga ber-titik api
@@ -47,7 +47,7 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
 | Deteksi dalam/luar boundary | Logika klien | Point-in-polygon (`src/lib/fire-alert.ts`, ray casting + pra-cek bbox); **boundary ICS sudah termasuk buffer 1,5 km** (fakta owner) |
 | Saringan se-Riau | Logika klien | Hotspot bbox FIRMS dipangkas ke gabungan 12 poligon kabupaten BIG (`filterPointsWithinAreas`) — bbox persegi ikut memuat Malaysia/Sumbar/Jambi |
 | Cetak PDF | jsPDF | Lampiran di-capture **berurutan** satu peta per lembaga (tiap capture menunggu `idle`, timeout 8 dtk) — tombol menghitung kemajuan dan bisa **dibatalkan** (`AbortController` dicek tiap iterasi; batal = **tidak ada PDF**, bukan lampiran separuh) (#276). "Laporan Titik Api (Hotspot)" A4 portrait (`src/lib/fire-map-print.ts`): header letterhead ber-logo WRI, 4 kartu, peta sebaran, tabel detail per titik, lampiran peta per lembaga ber-titik api (mode fokus — lembaga lain dipudarkan), catatan metodologi; font **Acumin Pro** ter-embed (`public/fonts/*.ttf`, fallback helvetica); dokumen dibuat `compress: true` dan capture peta di-encode **JPEG** ter-downscale ke 1500 px sisi terpanjang (`src/lib/map-capture.ts`) demi ukuran berkas |
-| Sumber data titik api | API eksternal | NASA FIRMS VIIRS SNPP NRT via proxy `/api/map-hotspot`; live, maks 5 hari, tanpa riwayat DB |
+| Sumber data titik api | API eksternal | NASA FIRMS VIIRS SNPP NRT via proxy `/api/map-hotspot`; live, rentang 24 jam/5/10/30 hari (cap 5 hari per request FIRMS diatasi dengan beberapa jendela ber-`DATE` yang digabung di proxy, #284), tanpa riwayat DB. Angka kartu/rincian keyakinan/tabel ber-pemisah ribuan (`formatNumber`). Terbuka: cetak PDF Full Riau pada 30 hari belum dibatasi (#287) |
 | Sumber boundary | DB | `FarmerGroupBoundary` (seed `scripts/seed/seed-boundary-lembaga.ts`) & `AdministrativeBoundary` (seed `seed-batas-administrasi.ts`; cache geojson tersimplifikasi 0,001°) |
 
 ## Catatan

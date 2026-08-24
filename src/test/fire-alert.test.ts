@@ -289,6 +289,11 @@ describe("label rentang waktu laporan", () => {
     expect(formatHotspotRange(hotspotWindowStart(now, 30), now)).toBe("26 Jul 2026 – 24 Agu 2026");
   });
 
+  it("30 hari lintas tahun ditulis penuh di kedua sisi", () => {
+    const now = new Date("2027-01-03T03:00:00Z"); // 3 Jan 10.00 WIB
+    expect(formatHotspotRange(hotspotWindowStart(now, 30), now)).toBe("5 Des 2026 – 3 Jan 2027");
+  });
+
   it("00.00–07.00 WIB: awal rentang mengikuti tanggal UTC, bukan mundur N×24 jam (#281)", () => {
     // 20 Agu 06.00 WIB = 19 Agu 23.00 UTC → FIRMS 5 hari = UTC 15–19 Agu,
     // yang dalam WIB berlangsung 15 Agu 07.00 s.d. 20 Agu 06.59 → "15–20 Agu".

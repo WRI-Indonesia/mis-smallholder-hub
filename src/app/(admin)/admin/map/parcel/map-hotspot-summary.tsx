@@ -120,7 +120,9 @@ export function HotspotSummaryDialog({
           {distancesAvailable ? (
             <span className="text-muted-foreground">
               &lt; {NEAR_KM_THRESHOLD} km dari Lembaga Petani:{" "}
-              <span className="font-semibold text-foreground tabular-nums">{formatNumber(nearRows.length)}</span>{" "}
+              <span className="font-semibold text-foreground tabular-nums">
+                {formatNumber(nearRows.length)}
+              </span>{" "}
               titik
             </span>
           ) : (

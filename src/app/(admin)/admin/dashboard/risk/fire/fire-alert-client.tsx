@@ -103,7 +103,7 @@ interface Props {
 export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlot }: Props) {
   const indexed = useMemo(() => indexBoundaries(boundaries), [boundaries]);
 
-  // Default 5 hari — tabel panel memang merekap "5 hari terakhir" (#266).
+  // Default 5 hari (#266); pilihan lain lihat HOTSPOT_DAY_RANGES (#284).
   const [dayRange, setDayRange] = useState<HotspotDayRange>(5);
   const [classified, setClassified] = useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(true);

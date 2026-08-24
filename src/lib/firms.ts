@@ -30,46 +30,58 @@ const utcDateString = (d: Date) => d.toISOString().slice(0, 10);
  * Rentang UI → daftar jendela FIRMS yang harus diambil (#284).
  * FIRMS membatasi 5 hari per request, tetapi parameter `DATE` membolehkan
  * jendela lampau — rentang panjang = beberapa jendela 5 hari berurutan,
- * digabung di proxy. Jendela **terbaru selalu tanpa `DATE`** (mengikuti
- * "hari ini" versi server FIRMS, kebal selisih jam; URL-nya pun sama dengan
- * opsi 5 hari sehingga cache-nya dipakai bersama); jendela lampau diberi
- * `DATE` dari tanggal **UTC** (satuan hari FIRMS), bukan `now − N×24 jam`.
+ * digabung di proxy. **Semua** jendela ≥5 hari diberi `DATE` dari tanggal
+ * **UTC** server (satuan hari FIRMS), termasuk jendela terbaru (#285): jendela
+ * tanpa `DATE` mengikuti "hari ini" versi FIRMS, dan bila itu berbeda dari
+ * tanggal UTC server (jam server terlambat melewati 00:00 UTC, respons lama
+ * dari cache) satu hari bisa hilang diam-diam padahal label tetap utuh.
+ * Ber-`DATE` semua → cakupan deterministik = `hotspotWindowStart`. Opsi 5
+ * hari menghasilkan URL yang sama dengan jendela terbaru 10/30 hari, jadi
+ * cache-nya tetap dipakai bersama.
  *
- * "24 jam" mengambil 2 hari UTC lalu klien memangkas ke 24 jam bergulir
- * (`processHotspots`); nilai lama `2` tetap diterima demi kompatibilitas
- * bundle pra-deploy. Null = rentang tak valid.
+ * Semantik `DATE` = hari **pertama** jendela (`DATE … DATE+dayRange-1`) —
+ * diverifikasi live 2026-08-24: `…/5/2026-08-15` → acq_date 15–19 Agu.
+ * Perintah cek ulang ada di docs/standards/ui-ux.md §Titik Api.
+ *
+ * "24 jam" mengambil 2 hari UTC tanpa `DATE` lalu klien memangkas ke 24 jam
+ * bergulir (`processHotspots`); nilai lama `2` tetap diterima demi
+ * kompatibilitas bundle pra-deploy. Null = rentang tak valid.
  */
 export function upstreamWindows(dayRange: number, now: Date): UpstreamWindow[] | null {
   if (dayRange === 1 || dayRange === 2) return [{ dayRange: 2 }];
   if (!(HOTSPOT_DAY_RANGES as readonly number[]).includes(dayRange)) return null;
+  // Rentang ≥5 wajib kelipatan 5 (dijaga test) — jendela terakhir pasti
+  // berakhir tepat hari ini UTC tanpa perlu dipangkas.
   const windows: UpstreamWindow[] = [];
-  // Jendela lampau dari yang tertua: mulai hari ke-(N-1) sebelum hari ini UTC.
-  for (let back = dayRange - 1; back >= FIRMS_MAX_DAYS; back -= FIRMS_MAX_DAYS) {
+  for (let back = dayRange - 1; back >= 0; back -= FIRMS_MAX_DAYS) {
     windows.push({ dayRange: FIRMS_MAX_DAYS, date: utcDateString(utcMidnightDaysAgo(now, back)) });
   }
-  windows.push({ dayRange: FIRMS_MAX_DAYS });
   return windows;
 }
 
 /**
  * Gabungkan hasil beberapa jendela menjadi satu FeatureCollection. Deteksi
  * yang sama (koordinat + waktu akuisisi + satelit) hanya masuk sekali —
- * berjaga bila dua jendela bertumpang tindih di batas hari UTC.
+ * berjaga bila dua jendela bertumpang tindih di batas hari UTC; pada
+ * tabrakan, salinan dari jendela **terakhir** (lebih baru) yang dipakai
+ * karena FIRMS NRT bisa merevisi atribut. Fitur non-Point (tak pernah
+ * dihasilkan `csvToGeoJSON`) diteruskan apa adanya, bukan saling menelan.
  */
 export function mergeHotspotCollections(collections: FeatureCollection[]): FeatureCollection {
-  const seen = new Set<string>();
-  const features: Feature[] = [];
+  const byKey = new Map<string, Feature>();
+  const passthrough: Feature[] = [];
   for (const fc of collections) {
     for (const f of fc.features) {
-      const [lon, lat] = f.geometry.type === "Point" ? f.geometry.coordinates : [NaN, NaN];
+      if (f.geometry.type !== "Point") {
+        passthrough.push(f);
+        continue;
+      }
+      const [lon, lat] = f.geometry.coordinates;
       const p = f.properties ?? {};
-      const key = `${lon},${lat},${p.acqDate},${p.acqTime},${p.satellite}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      features.push(f);
+      byKey.set(`${lon},${lat},${p.acqDate},${p.acqTime},${p.satellite}`, f);
     }
   }
-  return { type: "FeatureCollection", features };
+  return { type: "FeatureCollection", features: [...byKey.values(), ...passthrough] };
 }
 
 /** Validate a WGS84 "west,south,east,north" bbox string; returns normalized string or null. */

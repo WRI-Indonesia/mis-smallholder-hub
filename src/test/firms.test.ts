@@ -7,6 +7,7 @@ import {
   upstreamWindows,
   utcMidnightDaysAgo,
   mergeHotspotCollections,
+  HOTSPOT_DAY_RANGES,
 } from "@/lib/firms";
 import type { Feature } from "geojson";
 
@@ -21,12 +22,15 @@ describe("upstreamWindows (#284)", () => {
     expect(upstreamWindows(2, now)).toEqual([{ dayRange: 2 }]);
   });
 
-  it("5 hari = satu jendela tanpa DATE (URL sama dengan sebelumnya → cache bersama)", () => {
-    expect(upstreamWindows(5, now)).toEqual([{ dayRange: 5 }]);
+  it("5 hari = satu jendela ber-DATE H-4 (URL sama dengan jendela terbaru 10/30 → cache bersama)", () => {
+    expect(upstreamWindows(5, now)).toEqual([{ dayRange: 5, date: "2026-08-20" }]);
   });
 
-  it("10 hari = jendela ber-DATE mulai H-9 (UTC) + jendela terbaru tanpa DATE", () => {
-    expect(upstreamWindows(10, now)).toEqual([{ dayRange: 5, date: "2026-08-15" }, { dayRange: 5 }]);
+  it("10 hari = dua jendela ber-DATE: H-9 dan H-4 (UTC)", () => {
+    expect(upstreamWindows(10, now)).toEqual([
+      { dayRange: 5, date: "2026-08-15" },
+      { dayRange: 5, date: "2026-08-20" },
+    ]);
   });
 
   it("30 hari = 6 jendela 5 hari berurutan tanpa celah/tumpang tindih, dari H-29", () => {
@@ -36,15 +40,43 @@ describe("upstreamWindows (#284)", () => {
       { dayRange: 5, date: "2026-08-05" },
       { dayRange: 5, date: "2026-08-10" },
       { dayRange: 5, date: "2026-08-15" },
-      { dayRange: 5 },
+      { dayRange: 5, date: "2026-08-20" },
     ]);
   });
 
+  it("jendela terbaru pun ber-DATE — cakupan tidak bergantung 'hari ini' versi FIRMS (#285)", () => {
+    for (const d of [5, 10, 30]) {
+      expect(upstreamWindows(d, now)!.every((w) => typeof w.date === "string")).toBe(true);
+    }
+  });
+
+  it("properti: gabungan jendela = tepat [H-(N-1) … H] tanpa celah, semua rentang ≥5 kelipatan 5", () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    for (const n of HOTSPOT_DAY_RANGES.filter((d) => d >= 5)) {
+      expect(n % 5).toBe(0);
+      const windows = upstreamWindows(n, now)!;
+      const covered = new Set<string>();
+      for (const w of windows) {
+        const start = Date.parse(`${w.date}T00:00:00Z`);
+        for (let i = 0; i < w.dayRange; i++) {
+          covered.add(new Date(start + i * DAY).toISOString().slice(0, 10));
+        }
+      }
+      const expected = new Set<string>();
+      for (let back = n - 1; back >= 0; back--) {
+        expected.add(utcMidnightDaysAgo(now, back).toISOString().slice(0, 10));
+      }
+      expect(covered).toEqual(expected);
+      // Tanpa tumpang tindih: total hari jendela = N.
+      expect(windows.reduce((s, w) => s + w.dayRange, 0)).toBe(n);
+    }
+  });
+
   it("DATE dihitung dari tanggal UTC, bukan WIB — 00.00–07.00 WIB masih hari kemarin", () => {
-    // 25 Agu 05.00 WIB = 24 Agu 22.00 UTC → hari ini (FIRMS) masih 24 Agu.
+    // 25 Agu 05.00 WIB = 24 Agu 22.00 UTC → hari ini (UTC) masih 24 Agu.
     expect(upstreamWindows(10, new Date("2026-08-24T22:00:00Z"))).toEqual([
       { dayRange: 5, date: "2026-08-15" },
-      { dayRange: 5 },
+      { dayRange: 5, date: "2026-08-20" },
     ]);
   });
 
@@ -81,8 +113,25 @@ describe("mergeHotspotCollections (#284)", () => {
   it("deteksi identik (koordinat + waktu + satelit) di dua jendela hanya masuk sekali", () => {
     const dup = pt(101, 0.5, "2026-08-19");
     const merged = mergeHotspotCollections([fc(dup), fc(dup, pt(101, 0.5, "2026-08-19", "633", "1"))]);
-    // Satelit berbeda pada koordinat & waktu yang sama = deteksi berbeda.
-    expect(merged.features).toHaveLength(2);
+    // Satelit berbeda pada koordinat & waktu yang sama = deteksi berbeda — tanpa dedup jadi 3.
+    expect(merged.features.map((f) => f.properties?.satellite)).toEqual(["N", "1"]);
+  });
+
+  it("pada tabrakan, salinan dari jendela terakhir (lebih baru) yang dipakai, posisi tetap", () => {
+    const older = { ...pt(101, 0.5, "2026-08-19"), properties: { acqDate: "2026-08-19", acqTime: "633", satellite: "N", frp: 1 } };
+    const newer = { ...older, properties: { ...older.properties, frp: 9 } };
+    const merged = mergeHotspotCollections([fc(older, pt(102, 0.6, "2026-08-20")), fc(newer)]);
+    expect(merged.features.map((f) => f.properties?.frp ?? null)).toEqual([9, null]);
+  });
+
+  it("fitur non-Point diteruskan apa adanya, tidak saling menelan", () => {
+    const line = (id: number): Feature => ({
+      type: "Feature",
+      geometry: { type: "LineString", coordinates: [[101, 0], [102, 0]] },
+      properties: { id },
+    });
+    const merged = mergeHotspotCollections([fc(line(1)), fc(line(2))]);
+    expect(merged.features.map((f) => f.properties?.id)).toEqual([1, 2]);
   });
 
   it("daftar kosong → FeatureCollection kosong", () => {
