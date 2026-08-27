@@ -74,6 +74,7 @@ Sebelum deploy migration ke production, pastikan:
 - [ ] Ada rollback plan jika migration gagal
 - [ ] Semua query di codebase sudah update (jika ada breaking change)
 - [ ] Index creation untuk tabel besar dilakukan CONCURRENTLY (jika perlu)
+- [ ] **Sesudah `migrate deploy` prod:** segarkan snapshot checksum — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` (SELECT saja) → commit `prisma/migrations/applied-checksums.json`. Test `migration-guards.test.ts` (#303) membandingkan sha256 file lokal dengan daftar ini: **file migrasi yang sudah applied tidak boleh diedit** — kalau perlu koreksi, buat migrasi baru. Migrasi yang belum ada di daftar dianggap pending sah hanya bila lebih baru dari entri terakhir.
 
 ### Breaking Changes Policy
 

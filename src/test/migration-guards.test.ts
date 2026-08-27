@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 
 /**
  * Penjaga isi berkas migrasi Prisma (#296/#297).
@@ -82,5 +83,46 @@ describe("migrasi land_parcel_satellites — backfill parcel_uid sebelum NOT NUL
       const fk = new RegExp(`ALTER TABLE "${t}" ADD CONSTRAINT "${t}_parcel_uid_fkey" FOREIGN KEY \\("parcel_uid"\\) REFERENCES "tbl_land_parcel_identity"`);
       expect(sql, `${t} harus FK ke identity`).toMatch(fk);
     }
+  });
+});
+
+/**
+ * Guard checksum migrasi ter-apply (#303, akar #270).
+ *
+ * `prisma/migrations/applied-checksums.json` = snapshot `_prisma_migrations`
+ * mis-prod (sha256 isi file, cara hitung Prisma). Mengedit file migrasi yang
+ * sudah applied membuat `migrate dev` menuntut reset di setiap mesin dev —
+ * test ini menangkapnya di gate, murni file-vs-file tanpa DB.
+ */
+describe("migrasi Prisma — file yang sudah applied di prod tidak boleh berubah (#303)", () => {
+  const list = JSON.parse(readFileSync(join(MIGRATIONS_DIR, "applied-checksums.json"), "utf8")) as {
+    checksums: Record<string, string>;
+  };
+  const applied = Object.entries(list.checksums);
+  const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
+
+  it("daftar tidak kosong dan setiap entri punya folder migrasi", () => {
+    expect(applied.length).toBeGreaterThan(0);
+    const missing = applied.map(([name]) => name).filter((name) => !existsSync(join(MIGRATIONS_DIR, name, "migration.sql")));
+    expect(missing, "entri applied tanpa folder migrasi — folder dihapus/diganti nama?").toEqual([]);
+  });
+
+  it("sha256 file lokal = checksum applied (file migrasi lama tidak diedit)", () => {
+    const files = new Map(migrationFiles().map((m) => [m.name, m.sql]));
+    const changed = applied
+      .filter(([name, checksum]) => files.has(name) && sha256(files.get(name)!) !== checksum)
+      .map(([name]) => name);
+    expect(
+      changed,
+      `file migrasi yang sudah applied di prod tidak boleh diedit — buat migrasi baru. Bila checksum prod memang disamakan, segarkan daftar: npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts`,
+    ).toEqual([]);
+  });
+
+  it("migrasi di luar daftar hanya boleh yang lebih baru dari entri terakhir (pending sah)", () => {
+    const last = applied.map(([name]) => name).sort().at(-1)!;
+    const stale = migrationFiles()
+      .map((m) => m.name)
+      .filter((name) => !(name in list.checksums) && name < last);
+    expect(stale, "migrasi lama yang tidak tercatat applied — daftar belum disegarkan atau folder liar").toEqual([]);
   });
 });
