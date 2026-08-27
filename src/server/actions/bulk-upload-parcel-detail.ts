@@ -44,6 +44,10 @@ export async function getParcelsForDetailMapping(): Promise<ParcelRef[]> {
 }
 
 /** Simpan batch — guard izin/scope/Zod di sini, inti upsert di `applyLandParcelDetailRows`. */
+/** 500 baris ≈ 5 findMany + createMany + update hanya yang berubah — jauh di bawah 60 dtk. */
+const PARCEL_DETAIL_CHUNK_SIZE = 500;
+const PARCEL_DETAIL_TX_TIMEOUT_MS = 60_000;
+
 export async function bulkSaveLandParcelDetails(
   input: unknown,
 ): Promise<ActionResult<ParcelDetailSaveSummary>> {
@@ -82,18 +86,28 @@ export async function bulkSaveLandParcelDetails(
 
   const summary = emptyParcelDetailSummary(rows.length);
 
+  // Chunk per transaksi (#300): tiap chunk = prefetch → plan → createMany/update,
+  // bukan N×7 query serial. Chunk yang gagal tidak membatalkan chunk sebelumnya —
+  // unggah ulang aman karena semantik upsert (baris tersimpan jadi "tanpa perubahan").
+  let saved = 0;
   try {
-    await prisma.$transaction(
-      async (tx) => {
-        await applyLandParcelDetailRows(tx, rows, userId, summary);
-      },
-      { timeout: 600_000 },
-    );
-
+    for (let i = 0; i < rows.length; i += PARCEL_DETAIL_CHUNK_SIZE) {
+      const chunk = rows.slice(i, i + PARCEL_DETAIL_CHUNK_SIZE);
+      await prisma.$transaction(
+        async (tx) => {
+          await applyLandParcelDetailRows(tx, chunk, userId, summary);
+        },
+        { timeout: PARCEL_DETAIL_TX_TIMEOUT_MS },
+      );
+      saved += chunk.length;
+    }
     return { success: true, data: summary };
   } catch (error) {
     console.error("Bulk save land parcel details error:", error);
     const message = error instanceof Error ? error.message : String(error);
-    return { success: false, error: message || "Gagal menyimpan data ke database" };
+    return {
+      success: false,
+      error: `${saved} dari ${rows.length} baris sudah tersimpan sebelum gagal — perbaiki lalu unggah ulang berkas yang sama (baris tersimpan tidak digandakan). ${message || "Gagal menyimpan data ke database"}`,
+    };
   }
 }

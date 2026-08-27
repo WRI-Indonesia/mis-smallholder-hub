@@ -32,6 +32,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 + Nilai seperti **"Lahan sudah dijual"** atau **"Surat lahan di bank"** bukan jenis surat; sistem menyimpannya sebagai catatan penguasaan (tampil miring), bukan sebagai SHM/SKT.
 + Baris yang punya nomor/nama/luas surat tetapi **jenisnya kosong** tetap diterima sebagai jenis **Lainnya** — datanya tidak dibuang, jenisnya bisa dilengkapi belakangan di detail lahan.
 6. Perbaiki error bila ada, lalu klik **Simpan N Baris Valid**.
++ Penyimpanan berjalan per 500 baris. Bila gagal di tengah, pesan menyebut berapa baris yang sudah tersimpan — cukup **unggah ulang berkas yang sama**: baris yang sudah masuk tidak digandakan (tampil sebagai "tanpa perubahan" di ringkasan).
 + Unggah ulang berkas yang sama **aman**: surat dengan nomor yang sama diperbarui, bukan digandakan; STDB dan UL Parcel Code juga dicocokkan dulu.
 + **Nama Kelompok Tani** hanya mengisi lahan yang di sistem masih kosong — yang sudah terisi **tidak ditimpa** (di pratinjau ditandai *"(sudah ada)"*). Untuk mengubah KT lahan, pakai form Edit Lahan.
 
