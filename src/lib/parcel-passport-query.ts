@@ -30,16 +30,18 @@ export async function computeFarmerTrainingItems(farmerId: string): Promise<Farm
     select: { activity: { select: { trainingDate: true, package: { select: { code: true } } } } },
   });
 
-  const earliest = new Map<string, Date>();
+  // Tanggal TERAKHIR mengikuti tiap paket (keputusan owner #298 — semula
+  // tanggal pertama); di PDF berlabel "Tanggal Mengikuti".
+  const latest = new Map<string, Date>();
   for (const p of participations) {
     const code = p.activity.package.code;
     const date = p.activity.trainingDate;
-    const current = earliest.get(code);
-    if (!current || date < current) earliest.set(code, date);
+    const current = latest.get(code);
+    if (!current || date > current) latest.set(code, date);
   }
 
   return TRAINING_PACKAGES.map(({ code, label }) => {
-    const date = earliest.get(code);
+    const date = latest.get(code);
     return { code, label, completed: date != null, date: date ? date.toISOString() : null };
   });
 }

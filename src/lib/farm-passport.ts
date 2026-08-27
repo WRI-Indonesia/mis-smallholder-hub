@@ -393,7 +393,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   sectionHeading(doc, "Pelatihan", y);
   y += 5;
   autoTable(doc, {
-    head: [["Paket Pelatihan", "Status", "Tanggal Pertama Ikut"]],
+    head: [["Paket Pelatihan", "Status", "Tanggal Mengikuti"]],
     body: training.map((t) => [t.label, t.completed ? "Selesai" : "Belum", t.date ? fmtDate(t.date) : "—"]),
     startY: y,
     theme: "striped",

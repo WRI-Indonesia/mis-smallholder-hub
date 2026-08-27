@@ -195,7 +195,7 @@ export type FarmerTrainingItem = {
   code: string;
   label: string;
   completed: boolean;
-  /** ISO date of the earliest attendance for this package, or null. */
+  /** ISO date of the LATEST attendance for this package, or null (#298: semula pertama). */
   date: string | null;
 };
 
