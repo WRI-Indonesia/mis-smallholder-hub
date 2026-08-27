@@ -147,6 +147,7 @@ export const PARCEL_DETAIL_TARGET_FIELDS = [
   { key: "statedArea", label: "Luas tertera di Surat (ha)", required: false, desc: "Angka desimal; terpisah dari luas poligon" },
   { key: "stdbNumber", label: "Nomor STDB", required: false, desc: "Per petani; satu nomor boleh menutup beberapa lahan" },
   { key: "externalCode", label: "Kode Vendor (parcel_code)", required: false, desc: "Kode hasil pemetaan pihak ketiga" },
+  { key: "subGroupLv2", label: "Nama Kelompok Tani", required: false, desc: "Mengisi Kelompok Tani lahan HANYA bila di sistem masih kosong (tidak menimpa)" },
 ] as const;
 
 export type ParcelDetailFieldKey = (typeof PARCEL_DETAIL_TARGET_FIELDS)[number]["key"];
@@ -160,6 +161,7 @@ export const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string
   statedArea: ["luas tertera di surat (ha)", "luas tertera di surat", "luas tertera", "luas_tertera", "luas surat", "stated_area"],
   stdbNumber: ["nomor stdb", "no stdb", "no. stdb", "nomor_stdb", "no_stdb", "stdb"],
   externalCode: ["parcel_code", "parcel code", "parcelcode", "kode vendor", "parcel_cod", "external_code"],
+  subGroupLv2: ["nama kelompok tani", "kelompok tani", "kelompok_tani", "nama_kelompok_tani", "group_name", "sub_group_lv2", "kt"],
 };
 
 export function autoMatchParcelDetailColumns(headers: string[]): Partial<Record<ParcelDetailFieldKey, string>> {
@@ -181,6 +183,8 @@ export interface ParcelRef {
   farmerName: string;
   /** Farmer.id (cuid). */
   farmerDbId: string;
+  /** Kelompok Tani yang sudah tersimpan di lahan (LandParcel.subGroupLv2) — untuk pratinjau. */
+  subGroupLv2?: string | null;
 }
 
 /** Satu baris siap kirim ke server (sudah ternormalisasi). */
@@ -200,6 +204,8 @@ export interface ParcelDetailRow {
   custodyNote: string | null;
   stdb: ParsedStdb | null;
   externalCode: string | null;
+  /** Diisi ke LandParcel.subGroupLv2 hanya bila DB kosong (server yang memutuskan). */
+  subGroupLv2: string | null;
 }
 
 export interface ParcelDetailValidatedRow {
@@ -208,6 +214,8 @@ export interface ParcelDetailValidatedRow {
   _errors: string[];
   _raw: Record<ParcelDetailFieldKey, string>;
   _farmerName: string;
+  /** Kelompok Tani yang sudah ada di DB untuk lahan ini (pratinjau "tidak akan ditimpa"). */
+  _dbSubGroupLv2: string | null;
   data: ParcelDetailRow | null;
 }
 
@@ -286,14 +294,15 @@ export function validateParcelDetailRows(
       errors.push(`Nomor STDB "${stdb.number}" dipakai ID Petani berbeda di file — STDB terbit per petani`);
     }
     const externalCode = r.externalCode || null;
+    const subGroupLv2 = r.subGroupLv2 || null;
 
     // Nomor/nama/luas terisi tanpa jenis (1.046 baris di data sumber): jenisnya
     // tak diketahui, bukan tak ada — simpan sebagai OTHER (typeRaw null) agar
     // datanya tidak terbuang; UI menampilkannya sebagai "Lainnya".
     const hasDocFields = Boolean(r.documentNumber || r.holderName || area.value !== null);
     const docType: LandDocumentTypeCode | null = doc.type ?? (hasDocFields && !doc.custodyNote ? "OTHER" : null);
-    const hasAny = Boolean(docType || doc.custodyNote || stdb || externalCode);
-    if (!hasAny) errors.push("Tidak ada data detail (surat, STDB, atau kode vendor) untuk disimpan");
+    const hasAny = Boolean(docType || doc.custodyNote || stdb || externalCode || subGroupLv2);
+    if (!hasAny) errors.push("Tidak ada data detail (surat, STDB, kode vendor, atau kelompok tani) untuk disimpan");
 
     const isValid = errors.length === 0 && Boolean(pair);
     const data: ParcelDetailRow | null =
@@ -315,6 +324,7 @@ export function validateParcelDetailRows(
             custodyNote: doc.custodyNote,
             stdb,
             externalCode,
+            subGroupLv2,
           }
         : null;
 
@@ -324,6 +334,7 @@ export function validateParcelDetailRows(
       _errors: errors,
       _raw: r,
       _farmerName: pair?.farmerName ?? farmerRef?.farmerName ?? "",
+      _dbSubGroupLv2: pair?.subGroupLv2 ?? null,
       data,
     };
   });

@@ -192,7 +192,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     }
     const s = result.data!;
     toast.success(
-      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui · STDB ${s.stdbsCreated} baru, ${s.stdbLinksCreated} tautan · kode vendor ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui`,
+      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui · STDB ${s.stdbsCreated} baru, ${s.stdbLinksCreated} tautan · kode vendor ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui · kelompok tani terisi ${s.subGroupsFilled}`,
       { duration: 8000 },
     );
     setValidated([]);
@@ -240,6 +240,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
       statedArea: 0.25,
       stdbNumber: "1637/53/1401/6/2025",
       externalCode: "ID080d781b4",
+      subGroupLv2: "Kelompok Tani Karya Maju",
     });
     sheet.addRow({
       parcelId: "APSS.0001.B.14.01.10.2012",
@@ -250,6 +251,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
       statedArea: 1.34,
       stdbNumber: "1637/53/1401/6/2025",
       externalCode: "",
+      subGroupLv2: "",
     });
     const buffer = await wb.xlsx.writeBuffer();
     const url = URL.createObjectURL(new Blob([buffer]));
@@ -272,8 +274,9 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, dan kode pemetaan vendor per <strong>ID Lahan</strong>{" "}
-            yang sudah terdaftar. Poligon lahan tetap diunggah lewat tab Shapefile.
+            Surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, kode pemetaan vendor, dan Nama Kelompok Tani (hanya
+            mengisi yang masih kosong) per <strong>ID Lahan</strong> yang sudah terdaftar. Poligon lahan tetap diunggah
+            lewat tab Shapefile.
           </p>
           <div className="flex items-center gap-4 mt-2">
             <Input type="file" accept=".xlsx,.csv" onChange={handleFileChange} disabled={isProcessing} className="max-w-md" />
@@ -428,6 +431,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                   <TableHead className="text-right">Luas Surat (ha)</TableHead>
                   <TableHead>STDB</TableHead>
                   <TableHead>Kode Vendor</TableHead>
+                  <TableHead>Kelompok Tani</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[220px]">Detail Error</TableHead>
                 </TableRow>
@@ -435,7 +439,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
                       Tidak ada data untuk filter ini.
                     </TableCell>
                   </TableRow>
@@ -458,6 +462,13 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                       <TableCell className="text-right tabular-nums">{r._raw.statedArea || "—"}</TableCell>
                       <TableCell className="font-mono">{r._raw.stdbNumber || "—"}</TableCell>
                       <TableCell className="font-mono">{r._raw.externalCode || "—"}</TableCell>
+                      <TableCell>
+                        {r._raw.subGroupLv2
+                          ? r._dbSubGroupLv2
+                            ? <span className="text-muted-foreground" title={`Sudah terisi di sistem: ${r._dbSubGroupLv2}`}>{r._raw.subGroupLv2} <em>(sudah ada)</em></span>
+                            : r._raw.subGroupLv2
+                          : "—"}
+                      </TableCell>
                       <TableCell>
                         {r._isValid ? (
                           <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">

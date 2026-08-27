@@ -112,11 +112,11 @@ Mengisi satelit lahan (`tbl_land_parcel_document`, `tbl_land_stdb` + `tbl_land_p
 |---|---|
 | Daftar lahan | Dimuat malas saat tab dibuka (`getParcelsForDetailMapping`, scope `farmerRelationAccessFilter`); jumlah tampil di Langkah 1; tombol validasi nonaktif sampai selesai |
 | Sheet yang dibaca | Sheet bernama `Data` bila ada dan berisi; kalau tidak, sheet pertama yang berisi (berkas sumber punya `Sheet1` kosong) |
-| Target field (8) | `ID Lahan`*, `ID Petani`*, `Jenis Surat Tanah`, `Nomor Surat`, `Nama tertera di Surat`, `Luas tertera di Surat (ha)`, `Nomor STDB`, `Kode Vendor (parcel_code)` — auto-match `PARCEL_DETAIL_AUTO_MATCH_RULES` (`src/lib/land-parcel-detail-import.ts`), termasuk header DBF terpotong `parcel_cod` |
+| Target field (9) | `ID Lahan`*, `ID Petani`*, `Jenis Surat Tanah`, `Nomor Surat`, `Nama tertera di Surat`, `Luas tertera di Surat (ha)`, `Nomor STDB`, `Kode Vendor (parcel_code)`, `Nama Kelompok Tani` (→ `LandParcel.subGroupLv2`, **isi hanya bila kosong**, update in-place tanpa revisi; pratinjau menandai "(sudah ada)") — auto-match `PARCEL_DETAIL_AUTO_MATCH_RULES` (`src/lib/land-parcel-detail-import.ts`), termasuk header DBF terpotong `parcel_cod` |
 | Normalisasi | Jenis surat 19 ejaan → enum `LandDocumentType` + `typeRaw` (jenis kosong tapi nomor/nama/luas terisi → `OTHER`); "Lahan sudah dijual"/"Surat lahan di bank" → `custodyNote` (dokumen `OTHER` tanpa nomor); token `0`/`n/a`/`-`/`Belum dapat` = kosong; STDB `…/M/YYYY` → `issuedYear` |
 | Tabel preview | `No`, `ID Lahan`, `ID Petani`, `Nama Petani (DB)`, `Jenis Surat` (label ternormalisasi; catatan penguasaan miring), `Nomor Surat`, `Nama di Surat`, `Luas Surat (ha)`, `STDB`, `Kode Vendor`, `Status`, `Detail Error` (100 baris pertama) |
 | Unduhan | `detail_lahan_semua.xlsx` / `detail_lahan_error.xlsx` (kolom target + Status + Detail Error) |
-| Simpan | *"Simpan N Baris Valid"* (CREATE) → satu transaksi (timeout 600 dtk); toast ringkasan: surat baru/diperbarui, STDB baru + tautan, kode vendor baru/diperbarui |
+| Simpan | *"Simpan N Baris Valid"* (CREATE) → satu transaksi (timeout 600 dtk); toast ringkasan: surat baru/diperbarui, STDB baru + tautan, kode vendor baru/diperbarui, kelompok tani terisi |
 | Semantik simpan | **Upsert**: dokumen kunci `(parcelUid, type, number)` aktif → update; STDB unik `(farmerId, number)`; tautan unik `(parcelUid, stdbId)`; kode vendor unik `(source="parcel_code", code)` → `parcelUid` dipindah bila berubah |
 | Guard server | `hasPermission("bulk-upload-parcels", CREATE)`; Zod `landParcelDetailBatchSchema` (≤ 20.000 baris); setiap `parcelUid` dicek milik lahan aktif dalam scope **dan** `farmerDbId` = pemilik identitas (klien tidak dipercaya) |
 
@@ -132,4 +132,4 @@ Mengisi satelit lahan (`tbl_land_parcel_document`, `tbl_land_stdb` + `tbl_land_p
 | STDB sama, petani sama, lahan berbeda | **Bukan error** — STDB per petani menutup beberapa persil |
 | Nomor/nama/luas terisi, jenis kosong | **Bukan error** — disimpan sebagai `OTHER` dengan `typeRaw` null (1.046 baris di data sumber; keputusan: jenis tak diketahui ≠ tak ada surat) |
 | Luas tertera bukan angka | *"Luas tertera tidak valid: "X""* (0 = kosong, bukan error) |
-| Tanpa surat, STDB, maupun kode | *"Tidak ada data detail (surat, STDB, atau kode vendor) untuk disimpan"* |
+| Tanpa surat, STDB, kode, maupun KT | *"Tidak ada data detail (surat, STDB, kode vendor, atau kelompok tani) untuk disimpan"* |

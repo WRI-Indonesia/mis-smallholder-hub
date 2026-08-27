@@ -125,6 +125,7 @@ describe("autoMatchParcelDetailColumns — header berkas sumber", () => {
       statedArea: "Luas tertera di Surat (Ha)",
       stdbNumber: "Nomor STDB",
       externalCode: "parcel_code",
+      subGroupLv2: "Nama Kelompok Tani",
     });
   });
   it("header shapefile terpotong 10 karakter (parcel_cod) tetap dikenali", () => {
@@ -142,7 +143,7 @@ describe("validateParcelDetailRows", () => {
     parcelId: "ID Lahan", farmerId: "ID Petani", documentType: "Jenis", documentNumber: "No",
     holderName: "Nama", statedArea: "Luas", stdbNumber: "STDB", externalCode: "parcel_code",
   } as const;
-  const row = (o: Record<string, unknown>) => ({ "ID Lahan": "", "ID Petani": "", Jenis: "", No: "", Nama: "", Luas: "", STDB: "", parcel_code: "", ...o });
+  const row = (o: Record<string, unknown>) => ({ "ID Lahan": "", "ID Petani": "", Jenis: "", No: "", Nama: "", Luas: "", STDB: "", parcel_code: "", KT: "", ...o });
 
   it("baris lengkap → valid, data ternormalisasi menempel ke parcelUid", () => {
     const [r] = validateParcelDetailRows(
@@ -157,7 +158,22 @@ describe("validateParcelDetailRows", () => {
       custodyNote: null,
       stdb: { number: "1637/53/1401/6/2025", issuedYear: 2025 },
       externalCode: "ID080d781b4",
+      subGroupLv2: null,
     });
+  });
+
+  it("Nama Kelompok Tani ikut terbawa; baris yang hanya berisi KT tetap valid", () => {
+    const [r] = validateParcelDetailRows([row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", KT: "Kelompok Tani Karya Maju" })], { ...mapping, subGroupLv2: "KT" }, parcels);
+    expect(r._isValid).toBe(true);
+    expect(r.data?.subGroupLv2).toBe("Kelompok Tani Karya Maju");
+    expect(r._dbSubGroupLv2).toBeNull();
+  });
+
+  it("pratinjau menandai KT yang sudah ada di DB (server tidak akan menimpa)", () => {
+    const withKt: ParcelRef[] = [{ ...parcels[0], subGroupLv2: "KT Lama" }];
+    const [r] = validateParcelDetailRows([row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", KT: "KT Baru" })], { ...mapping, subGroupLv2: "KT" }, withKt);
+    expect(r._dbSubGroupLv2).toBe("KT Lama");
+    expect(r.data?.subGroupLv2).toBe("KT Baru");
   });
 
   it("pencocokan ID tidak peduli kapitalisasi", () => {

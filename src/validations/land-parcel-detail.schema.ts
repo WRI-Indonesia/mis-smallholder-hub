@@ -26,6 +26,7 @@ export const landParcelDetailRowSchema = z.object({
     })
     .nullable(),
   externalCode: trimmed.nullable(),
+  subGroupLv2: trimmed.nullable(),
 });
 
 export const landParcelDetailBatchSchema = z

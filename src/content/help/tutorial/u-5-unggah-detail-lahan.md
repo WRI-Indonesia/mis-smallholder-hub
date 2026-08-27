@@ -15,7 +15,7 @@ Ini **bukan** cara menambah lahan. Setiap baris harus menunjuk **ID Lahan** yang
 
 + Detail menempel pada *identitas* lahan, bukan pada satu versi poligon. Jadi kalau nanti poligonnya direvisi lewat unggah shapefile ulang, surat dan STDB-nya tetap ikut — tidak perlu diunggah lagi.
 
-Kolom yang dikenali otomatis dari berkas `MIS_<Kabupaten>_data-lahan.xlsx`: ID Lahan, ID Petani, Jenis Surat Tanah, Nomor Surat, Nama tertera di Surat, Luas tertera di Surat, Nomor STDB, `parcel_code`. Kolom lain di berkas (nama petani, lembaga, luas poligon, kelompok tani) diabaikan.
+Kolom yang dikenali otomatis dari berkas `MIS_<Kabupaten>_data-lahan.xlsx`: ID Lahan, ID Petani, Jenis Surat Tanah, Nomor Surat, Nama tertera di Surat, Luas tertera di Surat, Nomor STDB, `parcel_code`, dan Nama Kelompok Tani. Kolom lain di berkas (nama petani, lembaga, luas poligon) diabaikan — sudah ada di sistem.
 
 Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 
@@ -33,6 +33,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 + Baris yang punya nomor/nama/luas surat tetapi **jenisnya kosong** tetap diterima sebagai jenis **Lainnya** — datanya tidak dibuang, jenisnya bisa dilengkapi belakangan di detail lahan.
 6. Perbaiki error bila ada, lalu klik **Simpan N Baris Valid**.
 + Unggah ulang berkas yang sama **aman**: surat dengan nomor yang sama diperbarui, bukan digandakan; STDB dan kode vendor juga dicocokkan dulu.
++ **Nama Kelompok Tani** hanya mengisi lahan yang di sistem masih kosong — yang sudah terisi **tidak ditimpa** (di pratinjau ditandai *"(sudah ada)"*). Untuk mengubah KT lahan, pakai form Edit Lahan.
 
 > [!penting] Satu nomor **STDB boleh muncul di beberapa baris** selama ID Petaninya sama — STDB memang terbit per petani dan menutup semua persilnya. Yang ditolak adalah nomor STDB yang sama dengan **petani berbeda**.
 
