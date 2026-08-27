@@ -56,6 +56,7 @@ import uUnggahPetani from "@/content/help/tutorial/u-1-unggah-petani.md";
 import uUnggahProduksi from "@/content/help/tutorial/u-2-unggah-produksi.md";
 import uUnggahLahan from "@/content/help/tutorial/u-3-unggah-lahan.md";
 import uUnggahPohon from "@/content/help/tutorial/u-4-unggah-pohon.md";
+import uUnggahDetailLahan from "@/content/help/tutorial/u-5-unggah-detail-lahan.md";
 import pMembacaDashboard from "@/content/help/tutorial/p-1-membaca-dashboard.md";
 import pCakupanPelatihan from "@/content/help/tutorial/p-2-cakupan-pelatihan.md";
 import pMembacaPeta from "@/content/help/tutorial/p-3-membaca-peta.md";
@@ -182,12 +183,13 @@ const CHAPTER_SOURCES: ChapterSource[] = [
     section: "tutorial",
     title: "Unggah Massal",
     summary:
-      "Memasukkan data dalam jumlah besar sekaligus — Excel untuk petani & produksi, shapefile untuk lahan.",
+      "Memasukkan data dalam jumlah besar sekaligus — Excel untuk petani, produksi & detail lahan, shapefile untuk poligon lahan.",
     icon: UploadCloud,
     topics: [
       { id: "unggah-petani", source: uUnggahPetani },
       { id: "unggah-produksi", source: uUnggahProduksi },
       { id: "unggah-lahan", source: uUnggahLahan },
+      { id: "unggah-detail-lahan", source: uUnggahDetailLahan },
       { id: "unggah-pohon", source: uUnggahPohon },
     ],
   },

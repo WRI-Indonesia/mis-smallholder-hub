@@ -23,12 +23,17 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "farmer": "R",
       "landParcel": "RW",
+      "landParcelDocument": "RW",
+      "landParcelExternalId": "W",
       "landParcelIdentity": "W",
+      "landParcelStdb": "RW",
+      "landStdb": "RW",
       "productionRecord": "W",
       "tree": "W"
     },
     "modules": [
       "src/lib/land-parcel-identity.ts",
+      "src/server/actions/bulk-upload-parcel-detail.ts",
       "src/server/actions/bulk-upload-parcel.ts"
     ],
     "dynamicAccess": null
