@@ -43,7 +43,7 @@ Mekanisme: `dotenv -e` men-set variabel di process environment **sebelum** prose
 
 ## Refresh DB Local dari Prod
 
-DB local (`localhost:5432/mis-dev`, Postgres.app 17) adalah **snapshot prod**. Untuk menyegarkan (tunnel `:1234` harus aktif; `pg_dump`/`pg_restore` wajib versi ≥ PG prod — pakai milik `libpq` Homebrew):
+DB local (`localhost:5432/mis-dev`, Postgres.app 17) adalah **snapshot prod**. Untuk menyegarkan (tunnel `:1234` harus aktif; `pg_dump`/`pg_restore` wajib versi ≥ PG prod — prod **PostgreSQL 18.3** per 2026-08-27, jadi `pg_dump` 17 dari `postgresql@17` ditolak; pakai milik `libpq` Homebrew, 18.0):
 
 ```bash
 mkdir -p scripts/dump-prod/$(date +%F)   # folder di-gitignore — dump berisi data pribadi petani, jangan pernah commit
