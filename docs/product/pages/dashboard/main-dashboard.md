@@ -131,7 +131,7 @@ Di halaman [Detail Snapshot](../tools/dashboard-snapshot/detail.md) komponen kar
 | Label titik | Symbol | Nama Lembaga di bawah titik; warna label mengikuti basemap |
 | Tombol "Cari Lembaga Petani" | Tombol + Popover Command | Cari & fly-to Lembaga; empty: "Kelompok tani tidak ditemukan." |
 | Tombol "Lihat Semua" | Tombol | Fit bounds ke semua Lembaga bertitik |
-| Basemap switcher | Grup tombol | `light` / `dark` / `hybrid` (CARTO light, CARTO dark, Google hybrid); default mengikuti tema aplikasi |
+| Basemap switcher | Grup tombol | `light` / `dark` / `hybrid` (light = OpenStreetMap standar, dark = Esri World Dark Gray — tanpa API key, pengganti CARTO #298); default mengikuti tema aplikasi |
 | Empty state peta | Empty state | "Tidak ada data lokasi yang tersedia untuk ditampilkan di peta" |
 
 ## Objek panel info Lembaga
