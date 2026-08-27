@@ -1,0 +1,53 @@
+// land-parcel-document.prisma — surat/bukti kepemilikan lahan (SHM, SKT, SKGR,
+// dst.). Satelit 1:N dari LandParcelIdentity (Decision Log 2026-08-27).
+// Sumber awal: MIS_<KAB>_data-lahan.xlsx kolom "Jenis Surat Tanah",
+// "Nama tertera di Surat", "Nomor Surat", "Luas tertera di Surat (Ha)".
+
+// Jenis surat yang terdefinisi di data lapangan. Ejaan sumber beragam
+// ("SHM", "SHM (Sertifikat Hak Milik)", "SHM (Surat Hak Milik)") — parser
+// menormalkan ke enum dan menyimpan teks asli di typeRaw. Nilai yang bukan
+// jenis surat ("Lahan sudah dijual", "Surat lahan di bank") TIDAK masuk sini
+// — itu status penguasaan, disimpan di custodyNote.
+enum LandDocumentType {
+  SHM // Sertifikat Hak Milik
+  SKT // Surat Keterangan Tanah (termasuk "SKT Desa")
+  SKGR // Surat Keterangan Ganti Rugi
+  SK // Surat Keterangan
+  SKST // Surat Kesaksian Sempadan Tanah
+  SKTC // Surat Keterangan Camat
+  SKGK
+  SPPT // Surat Pernyataan Pemilik Tanah
+  SKRPT
+  SKKT
+  SKTB // Surat Keterangan Tidak Bersengketa
+  HIBAH // Surat Keterangan Hibah
+  JUAL_BELI // Surat Jual Beli
+  OTHER // lihat typeRaw
+}
+
+model LandParcelDocument {
+  id          String             @id @default(cuid())
+  parcelUid   String             @map("parcel_uid")
+  parcel      LandParcelIdentity @relation(fields: [parcelUid], references: [id])
+  type        LandDocumentType   @map("type")
+  typeRaw     String?            @map("type_raw") // teks jenis asli dari sumber (audit / OTHER)
+  // Nomor surat TIDAK unik: nomor SHM pendek ("694") berulang antar desa,
+  // dan format nomor sangat beragam ("05.16.08.05.1.105108", "SKGR/12/05/2019").
+  number      String?            @map("number")
+  holderName  String?            @map("holder_name") // nama tertera di surat — 97% ≠ nama petani
+  statedArea  Float?             @map("stated_area") // luas tertera di surat (ha); sengaja terpisah dari LandParcel.area
+  issuedYear  Int?               @map("issued_year")
+  custodyNote String?            @map("custody_note") // mis. "surat di bank", "lahan sudah dijual"
+  fileUrl     String?            @map("file_url") // scan dokumen (S3 key), menyusul
+  notes       String?            @map("notes")
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  createdBy   String?            @map("created_by")
+  modifiedAt  DateTime           @updatedAt @map("modified_at")
+  modifiedBy  String?            @map("modified_by")
+
+  @@index([parcelUid, isActive])
+  @@index([type])
+  @@index([number])
+  @@map("tbl_land_parcel_document")
+}

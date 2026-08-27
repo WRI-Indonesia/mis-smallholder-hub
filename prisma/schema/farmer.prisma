@@ -24,6 +24,8 @@ model Farmer {
   modifiedBy    String?     @map("modified_by")
   trainingParticipants TrainingParticipant[]
   landParcels          LandParcel[]
+  landParcelIdentities LandParcelIdentity[]
+  landStdbs            LandStdb[]
   productionRecords    ProductionRecord[]
 
   // Keunikan ID Petani berlaku PER LEMBAGA (TD-024, keputusan owner 2026-07-21):

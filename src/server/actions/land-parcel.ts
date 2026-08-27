@@ -14,6 +14,7 @@ import {
 import { getFarmerOptions } from "@/lib/select-options";
 import { summarizeProduction } from "@/lib/map-data";
 import { fetchParcelPassport } from "@/lib/parcel-passport-query";
+import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import type { ActionResult } from "@/types/action-result";
 import type { ParcelPassport, ProductionSummary } from "@/types/map";
 
@@ -220,9 +221,17 @@ export async function createLandParcel(input: LandParcelInput) {
     return { success: false, error: { parcelId: ["ID Lahan sudah terdaftar untuk petani ini"] } };
   }
 
+  // Identitas stabil antar revisi (Decision Log 2026-08-27): satu baris per
+  // pasangan (farmer, parcelId). Upsert — pasangan bisa sudah ada bila lahan
+  // pernah dinonaktifkan lalu didaftarkan ulang.
+  const identity = await prisma.landParcelIdentity.upsert(
+    parcelIdentityUpsertArgs(parsed.data, session?.user?.id ?? null)
+  );
+
   await prisma.landParcel.create({
     data: {
       ...parsed.data,
+      parcelUid: identity.id,
       geometry: parsed.data.geometry ?? null,
       revision: 0,
       createdBy: session?.user?.id ?? null,

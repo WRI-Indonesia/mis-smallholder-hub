@@ -23,10 +23,12 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "farmer": "R",
       "landParcel": "RW",
+      "landParcelIdentity": "W",
       "productionRecord": "W",
       "tree": "W"
     },
     "modules": [
+      "src/lib/land-parcel-identity.ts",
       "src/server/actions/bulk-upload-parcel.ts"
     ],
     "dynamicAccess": null
@@ -299,11 +301,13 @@ export const DATA_LINEAGE: DataLineage = [
       "farmer": "R",
       "farmerGroup": "R",
       "landParcel": "RW",
+      "landParcelIdentity": "W",
       "productionRecord": "RW",
       "trainingParticipant": "R",
       "tree": "RW"
     },
     "modules": [
+      "src/lib/land-parcel-identity.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
