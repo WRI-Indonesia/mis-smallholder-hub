@@ -34,11 +34,12 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 │       tabel Lahan Lain Milik Petani (Kode ber-link antar-detail · Luas ·
 │       Tahun Tanam · Jumlah Pohon)
 ├── Tabs (#298): Informasi · Legalitas (badge jumlah) · Produksi — satu Card per tab
-├── Tab Legalitas (#296/#298) — 4 grup sebagai BARIS ringkas (2 kolom di lg), kolom kosong tak dirender
+├── Tab Legalitas (#296/#298) — 4 kartu grup (ikon + judul + pill jumlah + Tambah) dalam grid 2 kolom;
+│   tiap item = blok bernuansa (judul + chip meta), kolom kosong tak dirender; empty state bergaris putus
 │   ├── Surat kepemilikan: badge jenis (akronim; "Jenis belum diisi" bila OTHER tanpa
-│   │   typeRaw) · nomor mono · a.n. nama; meta: luas tertera (+selisih vs poligon,
-│   │   ≥0,5 Ha amber) · terbit · catatan penguasaan/notes; aksi pensil/hapus
-│   ├── STDB: nomor mono · badge tahun · a.n.; meta: luas tertera · "Juga menutup:" kode
+│   │   typeRaw) · nomor mono · a.n. nama; chip: luas tertera · selisih vs poligon
+│   │   (≥0,5 Ha chip amber) · terbit · catatan penguasaan; aksi pensil/hapus
+│   ├── STDB: nomor mono · badge tahun · a.n.; meta: luas tertera · "Juga mencakup:" kode
 │   │   ber-link / "Hanya lahan ini"; aksi pensil/lepas tautan
 │   ├── Kode pemetaan vendor: kode mono + sumber; meta tanggal pemetaan
 │   └── Program: jenis + badge status; meta rentang tanggal

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2, Unlink } from "lucide-react";
+import { FileBadge, Hash, Pencil, Plus, ScrollText, Sprout, Trash2, Unlink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/shared/delete-dialog";
@@ -32,22 +32,68 @@ function fmtDate(d: Date | null) {
   return d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : null;
 }
 
-/** Judul grup + jumlah + tombol Tambah (bila boleh). Satu-satunya tingkat sub-judul di tab ini. */
-function GroupHead({ title, count, hint, onAdd }: { title: string; count: number; hint?: string; onAdd?: () => void }) {
+/** Kartu grup: ikon + judul + pill jumlah + tombol Tambah; isi = daftar item atau empty state. */
+function Group({
+  icon: Icon,
+  title,
+  count,
+  hint,
+  onAdd,
+  empty,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  count: number;
+  hint?: string;
+  onAdd?: () => void;
+  empty: string;
+  children?: React.ReactNode;
+}) {
   return (
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <h3 className="text-sm font-semibold">
-          {title} <span className="text-muted-foreground font-normal">· {count}</span>
-        </h3>
-        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    <section className="rounded-lg border bg-card">
+      <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Icon className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              {title}
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">{count}</span>
+            </h3>
+            {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
+          </div>
+        </div>
+        {onAdd && (
+          <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs shrink-0" onClick={onAdd}>
+            <Plus className="h-3.5 w-3.5" /> Tambah
+          </Button>
+        )}
       </div>
-      {onAdd && (
-        <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs shrink-0" onClick={onAdd}>
-          <Plus className="h-3.5 w-3.5" /> Tambah
-        </Button>
-      )}
-    </div>
+      <div className="p-3">
+        {count === 0 ? (
+          <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">{empty}</p>
+        ) : (
+          <ul className="space-y-2">{children}</ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** Chip meta kecil; `tone="warn"` untuk selisih luas yang perlu diperhatikan. */
+function Chip({ children, tone }: { children: React.ReactNode; tone?: "warn" }) {
+  return (
+    <span
+      className={
+        tone === "warn"
+          ? "inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-800"
+          : "inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
+      }
+    >
+      {children}
+    </span>
   );
 }
 
@@ -69,21 +115,18 @@ function RowActions({ onEdit, onRemove, unlink = false }: { onEdit?: () => void;
   );
 }
 
-/** Satu baris item: judul (kiri), meta kecil di bawahnya, aksi di kanan. */
-function Row({ title, meta, children, actions }: { title: React.ReactNode; meta?: React.ReactNode; children?: React.ReactNode; actions?: React.ReactNode }) {
+/** Satu item: blok bernuansa — judul (kiri), chip meta di bawahnya, aksi di kanan. */
+function Row({ title, meta, actions }: { title: React.ReactNode; meta?: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    <li className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-      <div className="min-w-0 space-y-0.5">
+    <li className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2.5">
+      <div className="min-w-0 space-y-1.5">
         <div className="text-sm flex flex-wrap items-center gap-x-2 gap-y-1">{title}</div>
-        {meta && <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">{meta}</div>}
-        {children}
+        {meta && <div className="flex flex-wrap items-center gap-1.5">{meta}</div>}
       </div>
       {actions}
     </li>
   );
 }
-
-const Empty = ({ text }: { text: string }) => <p className="text-sm text-muted-foreground">{text}</p>;
 
 interface Props {
   data: LandParcelSatellites;
@@ -124,14 +167,9 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
   const add = (kind: SatelliteFormTarget["kind"]) => (canCreate ? () => setFormTarget({ kind, item: null } as SatelliteFormTarget) : undefined);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* ── Surat kepemilikan ── */}
-      <section className="space-y-3">
-        <GroupHead title="Surat kepemilikan" count={documents.length} hint="Luas tertera adalah angka di surat; selisih terhadap poligon bukan kesalahan." onAdd={add("document")} />
-        {documents.length === 0 ? (
-          <Empty text="Belum ada surat tercatat." />
-        ) : (
-          <ul className="divide-y">
+      <Group icon={ScrollText} title="Surat kepemilikan" count={documents.length} hint="Luas tertera adalah angka di surat; selisih terhadap poligon bukan kesalahan." onAdd={add("document")} empty="Belum ada surat tercatat.">
             {documents.map((d) => {
               const unknownType = d.type === "OTHER" && !d.typeRaw;
               const diff = d.statedArea != null && parcelArea != null ? d.statedArea - parcelArea : null;
@@ -151,19 +189,15 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                   meta={
                     (d.statedArea != null || d.issuedYear != null || d.custodyNote || d.notes) && (
                       <>
-                        {d.statedArea != null && (
-                          <span>
-                            Luas tertera {formatArea(d.statedArea)} Ha
-                            {diff != null && (
-                              <span className={bigDiff ? "text-amber-600 font-medium" : undefined}>
-                                {" "}({diff > 0 ? "+" : ""}{formatArea(diff)} vs poligon)
-                              </span>
-                            )}
-                          </span>
+                        {d.statedArea != null && <Chip>Luas tertera {formatArea(d.statedArea)} Ha</Chip>}
+                        {diff != null && (
+                          <Chip tone={bigDiff ? "warn" : undefined}>
+                            {diff > 0 ? "+" : ""}{formatArea(diff)} Ha vs poligon
+                          </Chip>
                         )}
-                        {d.issuedYear != null && <span>Terbit {d.issuedYear}</span>}
-                        {d.custodyNote && <span className="italic">{d.custodyNote}</span>}
-                        {d.notes && <span>{d.notes}</span>}
+                        {d.issuedYear != null && <Chip>Terbit {d.issuedYear}</Chip>}
+                        {d.custodyNote && <Chip>{d.custodyNote}</Chip>}
+                        {d.notes && <span className="text-xs text-muted-foreground">{d.notes}</span>}
                       </>
                     )
                   }
@@ -176,17 +210,10 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                 />
               );
             })}
-          </ul>
-        )}
-      </section>
+      </Group>
 
       {/* ── STDB ── */}
-      <section className="space-y-3">
-        <GroupHead title="STDB" count={stdbs.length} hint="Surat Tanda Daftar Budidaya terbit per petani dan dapat menutup beberapa lahan." onAdd={add("stdb")} />
-        {stdbs.length === 0 ? (
-          <Empty text="Belum ada STDB tercatat." />
-        ) : (
-          <ul className="divide-y">
+      <Group icon={FileBadge} title="STDB" count={stdbs.length} hint="Surat Tanda Daftar Budidaya terbit per petani dan dapat menutup beberapa lahan." onAdd={add("stdb")} empty="Belum ada STDB tercatat.">
             {stdbs.map((s) => (
               <Row
                 key={s.id}
@@ -199,24 +226,24 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                 }
                 meta={
                   <>
-                    {s.statedArea != null && <span>Luas tertera {formatArea(s.statedArea)} Ha</span>}
+                    {s.statedArea != null && <Chip>Luas tertera {formatArea(s.statedArea)} Ha</Chip>}
                     {s.otherParcels.length === 0 ? (
-                      <span>Hanya lahan ini</span>
+                      <Chip>Hanya lahan ini</Chip>
                     ) : (
-                      <span className="flex flex-wrap items-center gap-1">
-                        Juga menutup:
+                      <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                        Juga mencakup
                         {s.otherParcels.map((p) =>
                           p.id ? (
-                            <Link key={p.parcelId} href={`/admin/master-data/parcels/${p.id}`} className="font-mono text-primary hover:underline">
+                            <Link key={p.parcelId} href={`/admin/master-data/parcels/${p.id}`} className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] text-primary hover:underline">
                               {p.parcelId}
                             </Link>
                           ) : (
-                            <span key={p.parcelId} className="font-mono">{p.parcelId}</span>
+                            <span key={p.parcelId} className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px]">{p.parcelId}</span>
                           ),
                         )}
                       </span>
                     )}
-                    {s.notes && <span>{s.notes}</span>}
+                    {s.notes && <span className="text-xs text-muted-foreground">{s.notes}</span>}
                   </>
                 }
                 actions={
@@ -228,17 +255,10 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                 }
               />
             ))}
-          </ul>
-        )}
-      </section>
+      </Group>
 
       {/* ── Kode vendor ── */}
-      <section className="space-y-3">
-        <GroupHead title="Kode pemetaan vendor" count={externalIds.length} onAdd={add("externalId")} />
-        {externalIds.length === 0 ? (
-          <Empty text="Belum ada kode vendor." />
-        ) : (
-          <ul className="divide-y">
+      <Group icon={Hash} title="Kode pemetaan vendor" count={externalIds.length} hint="Identitas lahan dari sistem/vendor pemetaan pihak ketiga." onAdd={add("externalId")} empty="Belum ada kode vendor.">
             {externalIds.map((e) => {
               const mapped = fmtDate(e.mappedAt);
               return (
@@ -250,7 +270,7 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                       <span className="text-muted-foreground">{SOURCE_LABELS[e.source] ?? e.source}</span>
                     </>
                   }
-                  meta={(mapped || e.notes) && (<>{mapped && <span>Dipetakan {mapped}</span>}{e.notes && <span>{e.notes}</span>}</>)}
+                  meta={(mapped || e.notes) && (<>{mapped && <Chip>Dipetakan {mapped}</Chip>}{e.notes && <span className="text-xs text-muted-foreground">{e.notes}</span>}</>)}
                   actions={
                     <RowActions
                       onEdit={canEdit ? () => setFormTarget({ kind: "externalId", item: e }) : undefined}
@@ -260,17 +280,10 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                 />
               );
             })}
-          </ul>
-        )}
-      </section>
+      </Group>
 
       {/* ── Program ── */}
-      <section className="space-y-3">
-        <GroupHead title="Program" count={programs.length} hint="Keikutsertaan lahan dalam program, mis. demplot PBU." onAdd={add("program")} />
-        {programs.length === 0 ? (
-          <Empty text="Tidak terdaftar di program mana pun." />
-        ) : (
-          <ul className="divide-y">
+      <Group icon={Sprout} title="Program" count={programs.length} hint="Keikutsertaan lahan dalam program, mis. demplot PBU." onAdd={add("program")} empty="Tidak terdaftar di program mana pun.">
             {programs.map((p) => {
               const start = fmtDate(p.startDate), end = fmtDate(p.endDate);
               return (
@@ -282,7 +295,7 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                       <Badge variant={p.status === "ACTIVE" ? "default" : "outline"}>{STATUS_LABELS[p.status] ?? p.status}</Badge>
                     </>
                   }
-                  meta={(start || end || p.notes) && (<>{(start || end) && <span>{start ?? "…"} – {end ?? "…"}</span>}{p.notes && <span>{p.notes}</span>}</>)}
+                  meta={(start || end || p.notes) && (<>{(start || end) && <Chip>{start ?? "…"} – {end ?? "…"}</Chip>}{p.notes && <span className="text-xs text-muted-foreground">{p.notes}</span>}</>)}
                   actions={
                     <RowActions
                       onEdit={canEdit ? () => setFormTarget({ kind: "program", item: p }) : undefined}
@@ -292,9 +305,7 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                 />
               );
             })}
-          </ul>
-        )}
-      </section>
+      </Group>
 
       {formTarget && (
         <ParcelSatelliteFormModal open onClose={() => setFormTarget(null)} landParcelId={landParcelId} target={formTarget} />

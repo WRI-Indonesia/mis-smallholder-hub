@@ -422,7 +422,10 @@ export function ParcelDetailClient({
         <TabsList className="grid w-full max-w-[420px] grid-cols-3 mb-4">
           <TabsTrigger value="informasi">Informasi</TabsTrigger>
           <TabsTrigger value="legalitas">
-            Legalitas{legalCount > 0 && <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{formatNumber(legalCount)}</span>}
+            Legalitas
+            {legalCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-primary">{formatNumber(legalCount)}</span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="produksi">Produksi</TabsTrigger>
         </TabsList>
@@ -588,13 +591,12 @@ export function ParcelDetailClient({
 
         {/* ── Legalitas (#296): dokumen, STDB, kode vendor, program via parcelUid ── */}
         <TabsContent value="legalitas">
-        <Card className="p-6">
+          {/* Tanpa Card pembungkus: tiap grup sudah berbingkai sendiri (hindari bingkai ganda). */}
           {satellites ? (
             <ParcelLegalSection data={satellites} parcelArea={parcel.area} landParcelId={parcel.id} permissions={permissions} />
           ) : (
             <Val value={null} />
           )}
-        </Card>
         </TabsContent>
 
         {/* ── Produksi: grafik bulanan kontinu + tabel pivot per tahun ── */}
@@ -623,7 +625,7 @@ export function ParcelDetailClient({
         </div>
 
         {!hasProdData && (
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="mb-4 rounded-md border border-dashed px-3 py-3 text-center text-sm text-muted-foreground">
             Belum ada data produksi untuk lahan ini.
             {parcel.isPsr && " Lahan PSR (replanting) — belum berproduksi adalah wajar."}
             {canEditProduction && " Klik sel bulan pada tabel di bawah untuk mulai input."}
