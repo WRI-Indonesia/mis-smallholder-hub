@@ -131,6 +131,10 @@ describe("autoMatchParcelDetailColumns — header berkas sumber", () => {
   it("header shapefile terpotong 10 karakter (parcel_cod) tetap dikenali", () => {
     expect(autoMatchParcelDetailColumns(["ID_Lahan", "parcel_cod"]).externalCode).toBe("parcel_cod");
   });
+  it("alias label UI 'UL Parcel Code' (huruf campur) cocok — review pasca-v0.30.0", () => {
+    expect(autoMatchParcelDetailColumns(["UL Parcel Code"]).externalCode).toBe("UL Parcel Code");
+    expect(autoMatchParcelDetailColumns(["ul parcel code"]).externalCode).toBe("ul parcel code");
+  });
 });
 
 describe("validateParcelDetailRows", () => {
@@ -254,6 +258,39 @@ describe("validateParcelDetailRows", () => {
     expect(r._isValid).toBe(true);
     expect(r.data?.document).toEqual({ type: "SHM", typeRaw: "SHM", number: null, holderName: null, statedArea: null, custodyNote: null });
     expect(r.data?.stdb).toBeNull();
+  });
+
+  it("UL Parcel Code yang sama di dua lahan berbeda → kedua baris error (kode unik per lahan)", () => {
+    const rs = validateParcelDetailRows(
+      [
+        row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", parcel_code: "ID0001" }),
+        row({ "ID Lahan": "APSS.0001.B", "ID Petani": "APSS.0001", parcel_code: "id0001" }),
+      ],
+      mapping, parcels,
+    );
+    expect(rs.every((r) => !r._isValid)).toBe(true);
+    expect(rs[0]._errors.join(" ")).toContain("dipakai lebih dari satu lahan");
+  });
+
+  it("kode sama di baris ganda lahan yang SAMA tidak dianggap bentrok", () => {
+    const rs = validateParcelDetailRows(
+      [
+        row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", parcel_code: "ID0001" }),
+        row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", parcel_code: "ID0001", Jenis: "SKT", No: "5" }),
+      ],
+      mapping, parcels,
+    );
+    expect(rs.every((r) => r._isValid)).toBe(true);
+  });
+
+  it("pasangan (ID Petani, ID Lahan) yang cocok ke >1 lahan dalam scope (Lembaga berbeda, TD-024) → error, bukan dipilih diam-diam", () => {
+    const twoGroups: ParcelRef[] = [
+      ...parcels,
+      { parcelUid: "uid-x", parcelId: "APSS.0001.A", farmerCode: "APSS.0001", farmerName: "Orang Lain", farmerDbId: "f9" },
+    ];
+    const [r] = validateParcelDetailRows([row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", parcel_code: "X" })], mapping, twoGroups);
+    expect(r._isValid).toBe(false);
+    expect(r._errors.join(" ")).toContain("lebih dari satu lahan");
   });
 
   it("nomor baris = indeks + 2 (baris 1 Excel adalah header)", () => {

@@ -43,6 +43,6 @@ Catatan tampil di tab Legalitas lahan dan kartu Legalitas di atasnya, diringkas 
 
 **"Nomor STDB ini sudah terdaftar untuk petani yang sama"** saat mengubah — Anda mengganti nomor menjadi nomor STDB lain milik petani itu. Bila maksudnya menautkan lahan ke STDB tersebut, lepas STDB ini lalu **Tambah** STDB dengan nomor itu.
 
-**"Kode ini sudah dipakai lahan lain untuk sumber yang sama"** — UL Parcel Code unik per sumber. Periksa lahan mana yang memakainya lewat Report → Lahan dengan kolom UL Parcel Code, atau perbaiki di lahan tersebut lebih dulu.
+**"Kode ini sudah dipakai lahan lain untuk sumber yang sama"** — UL Parcel Code unik per sumber. Cari lahan pemakainya lewat pencarian di Master Data → Lahan (atau detail lahan yang bersangkutan), lalu perbaiki di sana lebih dulu.
 
 **"Lahan tidak ditemukan atau di luar akses Anda"** — lahan nonaktif atau di luar wilayah/lembaga akses Anda; aktifkan kembali lahan dulu (SUPERADMIN) atau minta akses.

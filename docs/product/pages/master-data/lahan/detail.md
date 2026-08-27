@@ -15,12 +15,12 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 │   ├── Tombol: Edit
 │   └── Tombol: Nonaktifkan
 ├── Kartu ringkasan (5)
-│   ├── Luas (Ha, sub: Blok)
-│   ├── Pohon Sawit (jumlah titik, sub: kerapatan pohon/ha — #238)
+│   ├── Luas (Ha, sub: Blok · jumlah pohon + kerapatan/ha — #238)
+│   ├── Legalitas (jenis surat unik + "STDB", sub: n surat · n STDB · n UL Parcel Code · n program — #298)
 │   ├── Umur Tanaman (sub: Tahun tanam)
 │   ├── Produksi (Ton total, sub: jumlah record + rentang tahun; catatan PSR)
-│   └── Kelengkapan Data (n/8 atribut, sub: daftar yang belum diisi)
-├── Section: Informasi Lahan (collapsible) — peta 60% kiri, keterangan 40% kanan
+│   └── Kelengkapan Data (n/9 atribut termasuk Surat kepemilikan — #298, sub: daftar yang belum diisi)
+├── Tab Informasi (#298) — peta 60% kiri, keterangan 40% kanan
 │   ├── Peta ParcelMapView (h-560px)
 │   │   ├── Poligon hijau = lahan ini; poligon biru = lahan lain milik petani
 │   │   ├── Titik kuning = pohon sawit bila tersedia (prop treePoints, #238)
@@ -30,8 +30,9 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 │   │   biru lahan lain (Marker HTML, klik tembus); klik poligon biru → popup (ID, luas, tahun
 │   │   tanam, "Buka detail lahan"), auto-pan agar tak terpotong; lahan ini tanpa popup
 │   ├── Legenda warna (+ titik kuning bila ada pohon) + link koordinat titik pusat → Google Maps
-│   ├── Kolom kanan: ID Lahan, Blok, Kelompok Tani, Status Kepemilikan,
-│   │   Tahun Tanam (+umur), Komoditas, Species, Catatan ("Belum diisi" bila kosong)
+│   ├── Kolom kanan: hanya atribut terisi (ID Lahan, Blok, Kelompok Tani, Status Kepemilikan,
+│   │   Tahun Tanam (+umur), Komoditas, Species, Catatan); yang kosong → satu baris
+│   │   "Belum diisi: …" + tombol Lengkapi (EDIT)
 │   ├── Meta: Revisi ke-N · Dibuat · Diubah
 │   └── Sub-bagian Pemilik: Nama (link), ID Petani, Lembaga (link), Distrik,
 │       tabel Lahan Lain Milik Petani (Kode ber-link antar-detail · Luas ·
@@ -78,10 +79,10 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 | Tombol `Edit` | Tombol | EDIT — buka `ParcelFormModal` |
 | Tombol `Nonaktifkan` | Tombol | DELETE — `deleteLandParcel` dengan konfirmasi `Apakah Anda yakin ingin menonaktifkan lahan ini?` |
 | Kartu ringkasan | Kartu ×5 | `Luas` (sub: blok · jumlah pohon + kerapatan/ha, #238), **`Legalitas`** (#298: nilai = jenis surat unik + "STDB", mis. "SHM + STDB"; sub = hitungan surat/STDB/UL Parcel Code/program), `Umur Tanaman`, `Produksi`, `Kelengkapan Data` (**9** atribut: Blok, Luas, Status Kepemilikan, Komoditas, Species, Tahun Tanam, Kelompok Tani, Geometri, **Surat kepemilikan**) |
-| Tab `Informasi` | Tab (#298) — atribut **hanya yang terisi**; yang kosong dirangkum satu baris "Belum diisi: …" + tombol **Lengkapi** (EDIT) membuka modal edit; label sentence-case (bukan uppercase); Pemilik dalam kotak berbingkai | Peta 60% + keterangan 40%; field kosong ditulis *"Belum diisi"*; sub-bagian Pemilik + tabel lahan lain milik petani (Kode ber-link · Luas · Tahun Tanam · Jumlah Pohon — `getFarmerSiblingParcels` kini menyertakan agregat pohon) |
+| Tab `Informasi` | Tab (#298) — atribut **hanya yang terisi**; yang kosong dirangkum satu baris "Belum diisi: …" + tombol **Lengkapi** (EDIT) membuka modal edit; label sentence-case (bukan uppercase); Pemilik dalam kotak berbingkai | Peta 60% + keterangan 40%; sub-bagian Pemilik + tabel lahan lain milik petani (Kode ber-link · Luas · Tahun Tanam · Jumlah Pohon — `getFarmerSiblingParcels` kini menyertakan agregat pohon) |
 | Peta `ParcelMapView` | Peta | MapLibre; poligon hijau = lahan ini, biru = lahan lain milik petani (`siblingGeometries`), titik kuning = pohon sawit bila tersedia (`treePoints`, #238 — data `getParcelTrees`); zoom awal & `Zoom ke Lahan` = `fitBounds` semua lahan; link koordinat titik pusat → Google Maps |
 | Empty state peta | Teks | `Tidak ada data spasial (geometri) untuk lahan ini` |
-| Tab `Legalitas` | Tab (#296/#298) | Data masuk lewat Bulk Upload → Lahan → tab Detail Lahan **atau CRUD manual** (3c): tombol **Tambah** per blok (CREATE), ikon pensil (EDIT) → `ParcelSatelliteFormModal` (satu modal, 4 jenis, form uncontrolled + error Zod per field), ikon tempat sampah (DELETE) → `DeleteDialog` soft-delete; STDB memakai ikon **lepas tautan** (STDB tetap ada untuk lahan lain). Empty state total 0 → kalimat arahan + empat tombol Tambah. Empat blok: Surat Kepemilikan (tabel; selisih luas tertera vs poligon dihitung di klien, ≥0,5 Ha amber), STDB (tabel + lahan lain dalam STDB yang sama, ber-link), UL Parcel Code, Program (badge status). Kosong total → satu kalimat arahan ke tab import |
+| Tab `Legalitas` | Tab (#296/#298) | Data masuk lewat Bulk Upload → Lahan → tab Detail Lahan **atau CRUD manual** (3c): tombol **Tambah** per blok (CREATE), ikon pensil (EDIT) → `ParcelSatelliteFormModal` (satu modal, 4 jenis, form uncontrolled + error Zod per field), ikon tempat sampah (DELETE) → `DeleteDialog` soft-delete; STDB memakai ikon **lepas tautan** (STDB tetap ada untuk lahan lain). Empat kartu grup (ikon + judul + pill jumlah + tombol Tambah); grup kosong menampilkan satu kalimat empty state bergaris putus — tidak ada empty state gabungan. Isi grup berupa baris kartu: Surat kepemilikan (selisih luas tertera vs poligon dihitung di klien, ≥0,5 Ha amber), STDB (+ lahan lain dalam STDB yang sama, ber-link), UL Parcel Code, Program (badge status) |
 | Tab `Produksi` | Tab | Konteks Luas/Tahun Tanam/Species; grafik bulanan kontinu (clip 6 bln/1 thn/2 thn/Semua + slide, sampai bulan berjalan); tabel pivot Tahun × Jan–Des + Total + Ton/Ha, baris s.d. tahun berjalan |
 | Sel bulan tabel produksi | Tombol sel | Klik (butuh CREATE/EDIT menu Produksi) → `ParcelProductionMonthModal`; sel bulan masa depan tidak bisa diklik |
 | `ParcelProductionMonthModal` | Dialog | 4 slot panen (kg + tanggal, dibatasi bulan tsb) terbuka berurutan; total otomatis; slot dikosongkan = nonaktifkan record (konfirmasi); keunikan per (petani, lahan, periode, panen-ke) |

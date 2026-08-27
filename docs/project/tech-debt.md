@@ -31,7 +31,7 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
 | **Debt** (TD-001…033) | **13** | 20 | 33 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). · **TD-034** (dibuka 2026-08-24 dari review #285 — kontrak `DATE` FIRMS terverifikasi manual saja). (**TD-033 ✅ 2026-08-10** — dedup tbody matriks produksi + trim payload bulanan, dari review #239; dibuka & diselesaikan di hari yang sama.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). · **TD-034** (dibuka 2026-08-24 dari review #285 — kontrak `DATE` FIRMS terverifikasi manual saja) · **TD-035** (dibuka 2026-08-27 dari penutupan #296 — `fileUrl`/`rawGeometry` tanpa UI, kolom report UL Parcel Code/Program) · **TD-036** (dibuka 2026-08-27 dari review pasca-v0.30.0 — `MAP_STYLES` tersalin 6×). (**TD-033 ✅ 2026-08-10** — dedup tbody matriks produksi + trim payload bulanan, dari review #239; dibuka & diselesaikan di hari yang sama.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -126,6 +126,16 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 - **Masalah:** seluruh rentang 10/30 hari titik api (#284) bertumpu pada asumsi parameter `DATE` Area API FIRMS = hari **pertama** jendela (`DATE … DATE+dayRange-1`). Semua test route mem-mock `fetch`; bila FIRMS mengubah semantiknya (mis. jadi hari terakhir), 10 hari akan menampilkan 11–15 + 20–24 Agu dengan label "15–24 Agu" — bolong 4 hari tanpa satu pun test merah. Diverifikasi manual 2026-08-24 (`…/5/2026-08-15` → acq_date 15–19 Agu); perintah cek tercatat di `docs/standards/ui-ux.md` §Titik Api.
 - **Validation:** smoke check hidup yang tidak melanggar gate "tanpa test ter-skip" — mis. skrip `scripts/smoke/firms-date.ts` (npm script terpisah, dijalankan sebelum rilis / bulanan) yang menegaskan `min(acq_date) == DATE` dan `max(acq_date) == DATE+4`; atau job terjadwal yang memberi peringatan. · **Evidence:** #285 (temuan 2). · **Owner:** Backend.
+
+### TD-035 · 🔲 Open — Satelit lahan: kolom skema tanpa jalur UI & cakupan report (P3)
+
+- **Masalah:** dari #296 ada bagian skema yang **sengaja ditunda** UI-nya: `LandParcelDocument.fileUrl` (scan dokumen, S3) dan `LandParcelExternalId.rawGeometry` (geometri vendor) hanya terisi lewat skrip/import, tanpa unggah/tampil di Detail Lahan; enum `LandProgramType` baru berisi `DEMPLOT_PBU`; Report Lahan belum punya kolom UL Parcel Code & Program (hanya surat/STDB). `kabupaten/kecamatan/desa` per lahan dari Excel Rohul juga belum ditampung (bisa diturunkan dari poligon vs batas BIG).
+- **Validation:** unggah scan dokumen ke S3 (`src/lib/s3.ts`, presigned) + pratinjau di tab Legalitas; kolom toggle UL Parcel Code/Program di Report Lahan; program kedua saat ada kebutuhan. · **Evidence:** #296 retro, `prisma/schema/land-parcel-document.prisma:41`, `land-parcel-external-id.prisma:16`. · **Owner:** Product + Frontend.
+
+### TD-036 · 🔲 Open — `MAP_STYLES` basemap tersalin di 6 canvas peta (P3)
+
+- **Masalah:** blok sumber basemap (OSM/Esri Light-Dark-Hybrid, `GLYPHS`) identik byte-per-byte di 6 file (`map/parcel/map-canvas.tsx`, `map/bmp/map-bmp-canvas.tsx`, `dashboard/dashboard-map.tsx`, `dashboard/risk/fire/fire-map-canvas.tsx`, `bulk-upload/parcels/components/parcel-bulk-upload-map.tsx`, `master-data/parcels/components/parcel-map-view.tsx`) — pergantian CARTO→OSM/Esri (#298) harus disunting 6×. Sudah diakui "kandidat TD" di Decision Log 2026-08-27 tapi belum terdaftar.
+- **Validation:** satu `MAP_STYLES`/`GLYPHS` di `src/lib/map-style.ts` (rumah bersama yang sudah ada) diimpor keenam canvas; test snapshot kunci `light/dark/hybrid` tetap. · **Evidence:** review pasca-rilis v0.30.0. · **Owner:** Frontend.
 
 ## Debt Sequencing
 

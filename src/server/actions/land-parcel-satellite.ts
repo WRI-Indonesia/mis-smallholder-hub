@@ -98,7 +98,10 @@ export async function createLandStdb(input: unknown): Promise<Result> {
     let stdbId: string;
     if (found) {
       stdbId = found.id;
-      await tx.landStdb.update({ where: { id: found.id }, data: { ...rest, isActive: true, modifiedBy: uid } });
+      // Pakai ulang: hanya timpa field yang diisi — field kosong di form
+      // tidak boleh mengosongkan data STDB yang sudah ada dari lahan lain.
+      const filled = Object.fromEntries(Object.entries(rest).filter(([, v]) => v != null && v !== ""));
+      await tx.landStdb.update({ where: { id: found.id }, data: { ...filled, isActive: true, modifiedBy: uid } });
     } else {
       const created = await tx.landStdb.create({ data: { farmerId: parcel.farmerId, number, ...rest, createdBy: uid }, select: { id: true } });
       stdbId = created.id;
@@ -106,7 +109,7 @@ export async function createLandStdb(input: unknown): Promise<Result> {
     const link = await tx.landParcelStdb.findUnique({ where: { parcelUid_stdbId: { parcelUid: parcel.parcelUid, stdbId } }, select: { id: true, isActive: true } });
     if (!link) await tx.landParcelStdb.create({ data: { parcelUid: parcel.parcelUid, stdbId, createdBy: uid } });
     else if (!link.isActive) await tx.landParcelStdb.update({ where: { id: link.id }, data: { isActive: true } });
-    return { id: stdbId, reused: Boolean(found) };
+    return { id: stdbId };
   });
   return { success: true, data: { id: result.id } };
 }

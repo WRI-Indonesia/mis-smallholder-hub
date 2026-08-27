@@ -286,10 +286,32 @@ export async function updateLandParcel(input: UpdateLandParcelInput) {
     }
   }
 
+  // Identitas stabil (#296) mengikuti pasangan (farmerId, parcelId). Bila
+  // pasangan diganti lewat form: pindahkan baris identitas (satelit ikut),
+  // kecuali pasangan baru sudah punya identitas (lahan lama yang pernah
+  // dinonaktifkan) → lahan diarahkan ke identitas itu.
+  let parcelUid: string | undefined;
+  if (data.parcelId !== existing.parcelId || data.farmerId !== existing.farmerId) {
+    const target = await prisma.landParcelIdentity.findUnique({
+      where: { farmerId_parcelId: { farmerId: data.farmerId, parcelId: data.parcelId } },
+      select: { id: true },
+    });
+    if (target && target.id !== existing.parcelUid) {
+      parcelUid = target.id;
+      await prisma.landParcelIdentity.update({ where: { id: target.id }, data: { isActive: true, modifiedBy: session?.user?.id ?? null } });
+    } else if (!target) {
+      await prisma.landParcelIdentity.update({
+        where: { id: existing.parcelUid },
+        data: { farmerId: data.farmerId, parcelId: data.parcelId, modifiedBy: session?.user?.id ?? null },
+      });
+    }
+  }
+
   await prisma.landParcel.update({
     where: { id },
     data: {
       ...data,
+      ...(parcelUid ? { parcelUid } : {}),
       // Geometry hanya ditulis bila client mengirim field-nya (undefined = tidak
       // diubah). Payload list & form edit tidak membawa geometry (#163), jadi
       // edit dari list tidak boleh menghapus polygon existing.
@@ -375,7 +397,7 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
   }
   const access = await getAccessContext();
   const parcel = await prisma.landParcel.findFirst({
-    where: { id: landParcelId, ...farmerRelationAccessFilter(access) },
+    where: { id: landParcelId, isActive: true, ...farmerRelationAccessFilter(access) },
     select: { parcelUid: true },
   });
   if (!parcel) return null;
@@ -422,7 +444,10 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
       statedArea: l.stdb.statedArea,
       issuedYear: l.stdb.issuedYear,
       notes: l.stdb.notes,
-      otherParcels: l.stdb.parcelLinks.map((p) => ({ parcelId: p.parcel.parcelId, id: p.parcel.revisions[0]?.id ?? null })),
+      // Hanya lahan yang masih punya revisi aktif — identitas tidak ikut nonaktif saat lahan dihapus.
+      otherParcels: l.stdb.parcelLinks
+        .filter((p) => p.parcel.revisions.length > 0)
+        .map((p) => ({ parcelId: p.parcel.parcelId, id: p.parcel.revisions[0].id })),
     })),
     externalIds,
     programs,

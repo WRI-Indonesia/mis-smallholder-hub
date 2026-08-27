@@ -1,5 +1,6 @@
 "use client";
 
+import { LAND_PROGRAM_STATUS_LABELS } from "@/lib/land-parcel-satellite-format";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,7 +26,6 @@ import type { LandParcelSatellites } from "@/types/land-parcel";
  */
 
 const PROGRAM_LABELS: Record<string, string> = { DEMPLOT_PBU: "Demplot PBU (Productive Business Unit)" };
-const STATUS_LABELS: Record<string, string> = { PLANNED: "Direncanakan", ACTIVE: "Berjalan", COMPLETED: "Selesai", CANCELLED: "Dibatalkan" };
 const SOURCE_LABELS: Record<string, string> = { parcel_code: "sumber: parcel_code" };
 
 function fmtDate(d: Date | null) {
@@ -292,7 +292,7 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                   title={
                     <>
                       <span className="font-medium">{PROGRAM_LABELS[p.programType] ?? p.programType}</span>
-                      <Badge variant={p.status === "ACTIVE" ? "default" : "outline"}>{STATUS_LABELS[p.status] ?? p.status}</Badge>
+                      <Badge variant={p.status === "ACTIVE" ? "default" : "outline"}>{LAND_PROGRAM_STATUS_LABELS[p.status] ?? p.status}</Badge>
                     </>
                   }
                   meta={(start || end || p.notes) && (<>{(start || end) && <Chip>{start ?? "…"} – {end ?? "…"}</Chip>}{p.notes && <span className="text-xs text-muted-foreground">{p.notes}</span>}</>)}

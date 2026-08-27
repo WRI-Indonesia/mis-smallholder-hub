@@ -23,7 +23,7 @@
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD |
 | MD-02 | Farmer Groups | List, CRUD, RBAC filtering, agregat petani/persil/luas; identitas & sertifikasi: Tipe Grup, Tahun Berdiri/Bergabung, RSPO (#160), ISPO + Assurance SAP/MAP (#169); **detail = profil 360° ber-Tabs** (5 cards incl. skor DA-02, struktur #154, peta sebaran lahan, pelatihan pre→post, produksi Ton/Ha + 4 kategori) (#171) |
 | MD-03 | Farmers | Full CRUD, RBAC, joinedYear; **detail = profil 360° ber-Tabs** (5 cards incl. Kelengkapan Profil & Produktivitas, lahan + peta shared + PDF Profil Lahan #134, checklist paket, produksi per tahun/bulanan) (#172) |
-| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping KT/Blok (#150) |
+| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping KT/Blok (#150); identitas stabil `parcelUid` + satelit surat/STDB/UL Parcel Code/program, tab Legalitas & CRUD manual (#296); detail ber-tabs + PDF Profil Lahan 2 halaman (#298) |
 | MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |
 | MD-06 | Production | ProductionRecord, period + harvest number, duplicate validation (#89) |
 | DASH-01 | Main Dashboard | Snapshot-backed, 14 summary cards (+Total Kelompok Tani #148, +3 card sertifikasi RSPO/ISPO/SAP-MAP #169), filter client-side (#99); peta:info panel 60:40, badge sertifikasi + konten 2 kolom di info panel |
@@ -44,6 +44,7 @@
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
 | BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
+| BULK-06 | Bulk Upload Detail Lahan | Tab kedua di Bulk Upload → Lahan: Excel surat/STDB/UL Parcel Code/KT, satu transaksi (#296) |
 | HELP-01 | Bantuan | Panduan in-app: **indeks → bab → topik** (satu topik = satu halaman, `/admin/help/[chapter]/[topic]`), sidebar tree + **pencarian** client-side, tombol topik sebelumnya/berikutnya. **Konten Markdown** di `src/content/help/**.md` (editable tanpa menyentuh kode; frontmatter title/icon/intro), parser subset tanpa dependency + dukungan **gambar, video, sematan YouTube/Vimeo, dan aset S3 privat (`s3://key` → presigned per-request, #185)**; menu top-level, 5 role VIEW. 6 bab / 12 topik: istilah domain, akun, hak akses, cara memakai Bantuan (#207), Master Data, Bulk Upload, Dashboard, Peta, Data Analyst, Report, Tools, FAQ (#182 #183 #184) |
 | HELP-02 | Bantuan: Tutorial per Tugas | Tiga lapis (tutorial/konsep/referensi); 28 tutorial + 4 referensi dengan **dua tingkat kedalaman dari satu sumber** (baris `+`); toggle Ringkas/Detail & lipat daftar isi tanpa JS; personalisasi per izin; bantuan kontekstual `HelpHint` di 29 halaman — termasuk 2 halaman peta full-screen, di header panel filter via prop `helpSlot` (#207); +`u-4` unggah pohon (#238) |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |

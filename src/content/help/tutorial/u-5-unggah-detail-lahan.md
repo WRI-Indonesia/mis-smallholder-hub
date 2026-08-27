@@ -41,7 +41,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 
 ## Hasil
 
-Detail tampil di **Master Data → Lahan → detail lahan** (bagian Dokumen, STDB, UL Parcel Code) dan ringkasannya di detail petani. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
+Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB, UL Parcel Code) dan ringkasannya di detail petani. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
 
 ## Kalau bermasalah
 

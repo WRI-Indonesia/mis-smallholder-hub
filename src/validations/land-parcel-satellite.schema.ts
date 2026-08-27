@@ -66,32 +66,25 @@ export const updateLandParcelExternalIdSchema = landParcelExternalIdSchema.omit(
 // ---- Program
 export const LAND_PROGRAM_TYPES = ["DEMPLOT_PBU"] as const;
 export const LAND_PROGRAM_STATUSES = ["PLANNED", "ACTIVE", "COMPLETED", "CANCELLED"] as const;
-export const landParcelProgramSchema = z
-  .object({
-    landParcelId: z.string().min(1, "Lahan tidak valid"),
-    programType: z.enum(LAND_PROGRAM_TYPES, { message: "Jenis program wajib dipilih" }),
-    status: z.enum(LAND_PROGRAM_STATUSES, { message: "Status wajib dipilih" }),
-    startDate: optDate,
-    endDate: optDate,
-    notes: optText(1000),
-  })
-  .refine((d) => !d.startDate || !d.endDate || d.endDate >= d.startDate, {
-    message: "Tanggal selesai harus setelah tanggal mulai",
-    path: ["endDate"],
-  });
-export const updateLandParcelProgramSchema = z
-  .object({
-    id: z.string().min(1),
-    programType: z.enum(LAND_PROGRAM_TYPES, { message: "Jenis program wajib dipilih" }),
-    status: z.enum(LAND_PROGRAM_STATUSES, { message: "Status wajib dipilih" }),
-    startDate: optDate,
-    endDate: optDate,
-    notes: optText(1000),
-  })
-  .refine((d) => !d.startDate || !d.endDate || d.endDate >= d.startDate, {
-    message: "Tanggal selesai harus setelah tanggal mulai",
-    path: ["endDate"],
-  });
+// Basis tanpa refine — zod 4 membuang refine saat .omit/.extend, jadi refine
+// dipasang di akhir pada kedua varian lewat helper yang sama.
+const programBase = z.object({
+  programType: z.enum(LAND_PROGRAM_TYPES, { message: "Jenis program wajib dipilih" }),
+  status: z.enum(LAND_PROGRAM_STATUSES, { message: "Status wajib dipilih" }),
+  startDate: optDate,
+  endDate: optDate,
+  notes: optText(1000),
+});
+const programDateOrder = {
+  check: (d: { startDate?: Date | null; endDate?: Date | null }) => !d.startDate || !d.endDate || d.endDate >= d.startDate,
+  opts: { message: "Tanggal selesai harus setelah tanggal mulai", path: ["endDate"] },
+};
+export const landParcelProgramSchema = programBase
+  .extend({ landParcelId: z.string().min(1, "Lahan tidak valid") })
+  .refine(programDateOrder.check, programDateOrder.opts);
+export const updateLandParcelProgramSchema = programBase
+  .extend({ id: z.string().min(1) })
+  .refine(programDateOrder.check, programDateOrder.opts);
 
 export type LandParcelDocumentInput = z.infer<typeof landParcelDocumentSchema>;
 export type LandStdbInput = z.infer<typeof landStdbSchema>;

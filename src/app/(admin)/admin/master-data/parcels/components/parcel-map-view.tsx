@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Map, { Source, Layer, Marker, Popup } from "react-map-gl/maplibre";
 import type { MapRef, MapLayerMouseEvent, LayerProps } from "react-map-gl/maplibre";
@@ -187,24 +187,28 @@ export function ParcelMapView({
         })()
       : geometry;
 
-  const siblingFeatures = siblings
-    ? siblings
-        .map((sb) => ({ sb, g: parseGeom(sb.geometry) }))
-        .filter((x): x is { sb: NonNullable<Props["siblings"]>[number]; g: Geometry } => x.g != null)
-        .map(({ sb, g }) => ({
-          type: "Feature" as const,
-          geometry: g,
-          properties: { id: sb.id, parcelId: sb.parcelId, area: sb.area, plantingYear: sb.plantingYear },
-        }))
-    : (siblingGeometries ?? [])
-        .map(parseGeom)
-        .filter((g): g is Geometry => g != null)
-        .map((g) => ({ type: "Feature" as const, geometry: g, properties: {} }));
+  // Dihitung sekali per perubahan prop — komponen re-render tiap gerak peta
+  // (viewport = state), jangan parse ulang geometri di setiap frame.
+  const siblingFeatures = useMemo(() => (
+    siblings
+      ? siblings
+          .map((sb) => ({ sb, g: parseGeom(sb.geometry) }))
+          .filter((x): x is { sb: NonNullable<Props["siblings"]>[number]; g: Geometry } => x.g != null)
+          .map(({ sb, g }) => ({
+            type: "Feature" as const,
+            geometry: g,
+            properties: { id: sb.id, parcelId: sb.parcelId, area: sb.area, plantingYear: sb.plantingYear },
+          }))
+      : (siblingGeometries ?? [])
+          .map(parseGeom)
+          .filter((g): g is Geometry => g != null)
+          .map((g) => ({ type: "Feature" as const, geometry: g, properties: {} }))
+  ), [siblings, siblingGeometries]);
   // Label lahan lain: [lng, lat] centroid + teks singkat.
-  const siblingLabels = siblingFeatures
+  const siblingLabels = useMemo(() => siblingFeatures
     .map((f) => ({ c: centroid(f.geometry), parcelId: (f.properties as { parcelId?: string }).parcelId }))
     .filter((x): x is { c: [number, number]; parcelId: string } => x.c != null && typeof x.parcelId === "string")
-    .map((x) => ({ ...x, text: siblingLabel ? siblingLabel(x.parcelId) : x.parcelId }));
+    .map((x) => ({ ...x, text: siblingLabel ? siblingLabel(x.parcelId) : x.parcelId })), [siblingFeatures, siblingLabel]);
 
   const mapRef = useRef<MapRef>(null);
   // Geser peta agar popup lahan lain tidak terpotong tepi (pola parcels-distribution-map).

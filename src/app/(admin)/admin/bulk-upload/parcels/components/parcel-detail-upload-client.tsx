@@ -65,7 +65,6 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
   const [mapping, setMapping] = useState<Mapping>({});
   const [validated, setValidated] = useState<ParcelDetailValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -174,9 +173,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
       toast.error(`Kolom wajib belum dipetakan: ${missing.map((f) => f.label).join(", ")}`);
       return;
     }
-    setIsProcessing(true);
     setValidated(validateParcelDetailRows(rawRows, mapping, parcels));
-    setIsProcessing(false);
     toast.success("Validasi selesai");
   }
 
@@ -192,7 +189,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     }
     const s = result.data!;
     toast.success(
-      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui · STDB ${s.stdbsCreated} baru, ${s.stdbLinksCreated} tautan · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui · kelompok tani terisi ${s.subGroupsFilled}`,
+      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui · STDB ${s.stdbsCreated} baru, ${s.stdbLinksCreated} tautan · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled}`,
       { duration: 8000 },
     );
     setValidated([]);
@@ -279,7 +276,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
             lewat tab Shapefile.
           </p>
           <div className="flex items-center gap-4 mt-2">
-            <Input type="file" accept=".xlsx,.csv" onChange={handleFileChange} disabled={isProcessing} className="max-w-md" />
+            <Input type="file" accept=".xlsx,.csv" onChange={handleFileChange} className="max-w-md" />
             {file && (
               <span className="text-sm text-muted-foreground">
                 {rawRows.length} baris terdeteksi
@@ -333,18 +330,9 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
             ))}
           </div>
           <div className="flex justify-end pt-2">
-            <Button onClick={handleValidate} disabled={isProcessing || rawRows.length === 0 || parcels === null} className="h-10">
-              {isProcessing ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Memproses...
-                </>
-              ) : (
-                <>
-                  Validasi Detail Lahan
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
+            <Button onClick={handleValidate} disabled={rawRows.length === 0 || parcels === null} className="h-10">
+              Validasi Detail Lahan
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </Card>

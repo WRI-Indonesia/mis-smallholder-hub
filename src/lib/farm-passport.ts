@@ -1,3 +1,4 @@
+import { documentTypeShort, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS } from "@/lib/land-parcel-satellite-format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
@@ -19,9 +20,6 @@ const CONTENT_W = PAGE_W - MARGIN * 2;
 /** Batas bawah konten sebelum footer; lewat ini → halaman baru (#298: PDF boleh >1 halaman). */
 const CONTENT_BOTTOM = 268;
 
-const DOC_TYPE_SHORT: Record<string, string> = { OTHER: "Lainnya", JUAL_BELI: "Jual Beli", HIBAH: "Hibah" };
-const PROGRAM_LABEL: Record<string, string> = { DEMPLOT_PBU: "Demplot PBU" };
-const PROGRAM_STATUS: Record<string, string> = { PLANNED: "Direncanakan", ACTIVE: "Berjalan", COMPLETED: "Selesai", CANCELLED: "Dibatalkan" };
 
 const fmtArea = (n: number | null) =>
   n == null ? "—" : `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
@@ -132,8 +130,6 @@ function sectionHeading(doc: jsPDF, text: string, y: number) {
   doc.line(MARGIN, y + 1.5, MARGIN + 26, y + 1.5);
 }
 
-/** Render a label:value list; returns the y after the last row. */
-
 /**
  * Build dokumen Profil Lahan (tanpa save) — dipisah dari
  * `generateFarmPassportPdf` agar bisa diverifikasi unit test (TD-019).
@@ -148,7 +144,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   //   hal. 2 — Pelatihan, Produksi (dengan Ton/Ha)
   //   Footer + nomor halaman di semua halaman; tabel boleh pecah halaman.
   const tableCommon = {
-    margin: { left: MARGIN, right: MARGIN },
+    margin: { left: MARGIN, right: MARGIN, bottom: PAGE_H - CONTENT_BOTTOM }, // jangan menabrak footer
     styles: { font: "helvetica", cellPadding: 2.6 },
     pageBreak: "auto" as const,
     headStyles: { fillColor: EMERALD, textColor: [255, 255, 255] as [number, number, number], fontSize: 9, fontStyle: "bold" as const },
@@ -194,7 +190,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   doc.line(MARGIN, 35, PAGE_W - MARGIN, 35);
 
   // ── 4 kartu ringkasan
-  const docTypes = [...new Set(legal.documents.map((d) => (d.type === "OTHER" && !d.typeRaw ? "Lainnya" : DOC_TYPE_SHORT[d.type] ?? d.type)))];
+  const docTypes = [...new Set(legal.documents.map((d) => documentTypeShort(d.type)))];
   const legalValue = legal.documents.length === 0 && legal.stdbs.length === 0 ? "—" : [docTypes.join(" · ") || null, legal.stdbs.length ? "STDB" : null].filter(Boolean).join(" + ");
   const legalSub = legal.documents.length === 0 && legal.stdbs.length === 0 ? "Belum ada surat / STDB" : `${legal.documents.length} surat · ${legal.stdbs.length} STDB`;
   const cards: { title: string; value: string; sub: string }[] = [
@@ -319,7 +315,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   y = ensureSpace(doc, y, 36);
   sectionHeading(doc, "Legalitas & Dokumen", y);
   y += 5;
-  const docShort = (t: string) => DOC_TYPE_SHORT[t] ?? t;
+  const docShort = documentTypeShort;
   const fmtDiff = (stated: number | null) =>
     stated == null || parcel.area == null ? "—" : `${stated - parcel.area > 0 ? "+" : ""}${fmtArea(stated - parcel.area)}`;
   if (legal.documents.length === 0) {
@@ -372,7 +368,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   if (legal.programs.length > 0) {
     metaLines.push(
       `Program: ${legal.programs
-        .map((pg) => `${PROGRAM_LABEL[pg.programType] ?? pg.programType} — ${PROGRAM_STATUS[pg.status] ?? pg.status}${pg.startDate || pg.endDate ? ` (${fmtDate(pg.startDate)} – ${fmtDate(pg.endDate)})` : ""}`)
+        .map((pg) => `${LAND_PROGRAM_LABELS[pg.programType] ?? pg.programType} — ${LAND_PROGRAM_STATUS_LABELS[pg.status] ?? pg.status}${pg.startDate || pg.endDate ? ` (${fmtDate(pg.startDate)} – ${fmtDate(pg.endDate)})` : ""}`)
         .join("; ")}`,
     );
   }
@@ -430,7 +426,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
       headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 7, fontStyle: "bold", halign: "right" },
       bodyStyles: { fontSize: 7.5, textColor: SLATE_600, halign: "right" },
       columnStyles: { 0: { halign: "left", fontStyle: "bold" }, ...monthCols, 13: { halign: "right", fontStyle: "bold" }, 14: { halign: "right", fontStyle: "bold" } },
-      margin: { left: MARGIN, right: MARGIN },
+      margin: { left: MARGIN, right: MARGIN, bottom: PAGE_H - CONTENT_BOTTOM }, // jangan menabrak footer
       styles: { font: "helvetica", cellPadding: 1.8, overflow: "linebreak" },
       pageBreak: "auto",
     });
@@ -440,7 +436,6 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     doc.setTextColor(...SLATE_400);
     doc.text(`Ton/Ha = produksi tahun tsb ÷ luas lahan (${fmtArea(parcel.area)}).`, MARGIN, y + 2);
   }
-  void PAGE_H;
 
   // Footer di SEMUA halaman
   const total = doc.getNumberOfPages();

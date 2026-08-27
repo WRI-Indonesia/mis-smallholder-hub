@@ -15,4 +15,4 @@ icon: Map
 
 **Cetak peta** — Tombol Cetak menghasilkan PDF sesuai tampilan layer aktif (peta, legenda, dan tabel data), dan tersedia juga unduhan Excel. Tombol Cetak hanya tampil bila akun Anda punya izin **Print**, dan unduhan Excel bila punya izin **Export**, pada menu peta tersebut.
 
-**Profil Lahan (PDF)** — Dari peta atau halaman detail Petani, Anda dapat mencetak Profil Lahan satu persil: identitas petani, layout kebun, pelatihan, dan produksi. Tombolnya hanya tampil bila akun Anda punya izin **Print** pada menu halaman tersebut.
+**Profil Lahan (PDF)** — Dari peta atau halaman detail Petani, Anda dapat mencetak Profil Lahan satu persil (PDF 2 halaman): halaman 1 kartu ringkasan (Luas, Legalitas, Tanaman, Produksi), layout kebun, informasi lahan & pemilik, serta Legalitas & Dokumen (surat kepemilikan, STDB, UL Parcel Code, program); halaman 2 pelatihan dan produksi. Tombolnya hanya tampil bila akun Anda punya izin **Print** pada menu halaman tersebut.

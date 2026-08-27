@@ -56,8 +56,8 @@ export interface FarmerSelect {
 
 // --- Satelit lahan (#296) — menempel ke parcelUid, dibaca via getLandParcelSatellites ---
 
-export type LandDocumentTypeCode =
-  | "SHM" | "SKT" | "SKGR" | "SK" | "SKST" | "SKTC" | "SKGK" | "SPPT" | "SKRPT" | "SKKT" | "SKTB" | "HIBAH" | "JUAL_BELI" | "OTHER";
+import type { LandDocumentTypeCode } from "@/lib/land-parcel-detail-import";
+export type { LandDocumentTypeCode };
 
 export interface LandParcelDocumentItem {
   id: string;

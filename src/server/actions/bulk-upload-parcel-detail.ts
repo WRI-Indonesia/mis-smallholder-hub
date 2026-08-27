@@ -53,7 +53,7 @@ export async function bulkSaveLandParcelDetails(
 
   const parsed = landParcelDetailBatchSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: `Validasi gagal: ${JSON.stringify(parsed.error.flatten().fieldErrors)}` };
+    return { success: false, error: "Data yang dikirim tidak valid — ulangi validasi lalu simpan kembali" };
   }
   const rows = parsed.data;
 

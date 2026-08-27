@@ -16,6 +16,7 @@
  *   dipakai petani berbeda — keduanya salah ketik sumber, wajib DILAPORKAN,
  *   bukan dipilih diam-diam.
  */
+import { autoMatchColumns } from "@/lib/parcel-bulk-mapping";
 
 /** Cermin enum Prisma `LandDocumentType` — literal agar aman di bundle klien. */
 export const LAND_DOCUMENT_TYPES = [
@@ -160,18 +161,16 @@ export const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string
   holderName: ["nama tertera di surat", "nama di surat", "nama_tertera", "nama_di_surat", "holder_name", "nama pemilik di surat"],
   statedArea: ["luas tertera di surat (ha)", "luas tertera di surat", "luas tertera", "luas_tertera", "luas surat", "stated_area"],
   stdbNumber: ["nomor stdb", "no stdb", "no. stdb", "nomor_stdb", "no_stdb", "stdb"],
-  externalCode: ["parcel_code", "parcel code", "parcelcode", "UL Parcel Code", "parcel_cod", "external_code"],
+  externalCode: ["parcel_code", "parcel code", "parcelcode", "ul parcel code", "parcel_cod", "external_code"],
   subGroupLv2: ["nama kelompok tani", "kelompok tani", "kelompok_tani", "nama_kelompok_tani", "group_name", "sub_group_lv2", "kt"],
 };
 
 export function autoMatchParcelDetailColumns(headers: string[]): Partial<Record<ParcelDetailFieldKey, string>> {
-  const matched: Partial<Record<ParcelDetailFieldKey, string>> = {};
-  for (const f of PARCEL_DETAIL_TARGET_FIELDS) {
-    const rules = PARCEL_DETAIL_AUTO_MATCH_RULES[f.key];
-    const hit = headers.find((h) => rules.includes(h.toLowerCase().trim()));
-    if (hit) matched[f.key] = hit;
-  }
-  return matched;
+  return autoMatchColumns(
+    headers,
+    PARCEL_DETAIL_TARGET_FIELDS.map((f) => f.key),
+    PARCEL_DETAIL_AUTO_MATCH_RULES,
+  ) as Partial<Record<ParcelDetailFieldKey, string>>;
 }
 
 /** Lahan aktif yang boleh menerima detail — dari server, sudah dalam scope user. */
@@ -246,9 +245,14 @@ export function validateParcelDetailRows(
 ): ParcelDetailValidatedRow[] {
   const lower = (s: string) => s.toLowerCase();
   const byPair = new Map<string, ParcelRef>();
+  // ID Petani hanya unik per Lembaga (TD-024): pasangan (ID Petani, ID Lahan)
+  // yang cocok ke >1 lahan dalam scope user tidak boleh dipilih diam-diam.
+  const ambiguousPairs = new Set<string>();
   const farmerByCode = new Map<string, ParcelRef>();
   for (const p of parcels) {
-    byPair.set(`${lower(p.farmerCode)} ${lower(p.parcelId)}`, p);
+    const key = `${lower(p.farmerCode)}\u0000${lower(p.parcelId)}`;
+    if (byPair.has(key)) ambiguousPairs.add(key);
+    byPair.set(key, p);
     if (!farmerByCode.has(lower(p.farmerCode))) farmerByCode.set(lower(p.farmerCode), p);
   }
 
@@ -257,7 +261,13 @@ export function validateParcelDetailRows(
   // Lintas-baris: ID Lahan → himpunan ID Petani; STDB → himpunan ID Petani.
   const farmersPerParcel = new Map<string, Set<string>>();
   const farmersPerStdb = new Map<string, Set<string>>();
+  const pairsPerCode = new Map<string, Set<string>>();
   for (const r of raws) {
+    if (r.externalCode) {
+      const s = pairsPerCode.get(lower(r.externalCode)) ?? new Set();
+      s.add(`${lower(r.farmerId ?? "")}\u0000${lower(r.parcelId ?? "")}`);
+      pairsPerCode.set(lower(r.externalCode), s);
+    }
     if (r.parcelId && r.farmerId) {
       const s = farmersPerParcel.get(lower(r.parcelId)) ?? new Set();
       s.add(lower(r.farmerId));
@@ -274,13 +284,17 @@ export function validateParcelDetailRows(
   return raws.map((r, idx) => {
     const errors: string[] = [];
     const farmerRef = r.farmerId ? farmerByCode.get(lower(r.farmerId)) : undefined;
-    const pair = r.parcelId && r.farmerId ? byPair.get(`${lower(r.farmerId)} ${lower(r.parcelId)}`) : undefined;
+    const pairKey = r.parcelId && r.farmerId ? `${lower(r.farmerId)}\u0000${lower(r.parcelId)}` : null;
+    const pair = pairKey ? byPair.get(pairKey) : undefined;
 
     if (!r.parcelId) errors.push("ID Lahan wajib diisi");
     if (!r.farmerId) errors.push("ID Petani wajib diisi");
     if (r.parcelId && r.farmerId) {
       if (!farmerRef) errors.push(`ID Petani "${r.farmerId}" tidak ditemukan dalam database atau akses Anda`);
       else if (!pair) errors.push(`ID Lahan "${r.parcelId}" tidak terdaftar untuk petani "${r.farmerId}"`);
+      else if (pairKey && ambiguousPairs.has(pairKey)) {
+        errors.push(`ID Petani "${r.farmerId}" + ID Lahan "${r.parcelId}" cocok ke lebih dari satu lahan (Lembaga berbeda) — persempit cakupan akses`);
+      }
     }
     if (r.parcelId && (farmersPerParcel.get(lower(r.parcelId))?.size ?? 0) > 1) {
       errors.push(`ID Lahan "${r.parcelId}" muncul di file dengan ID Petani berbeda — perbaiki sumber`);
@@ -294,6 +308,9 @@ export function validateParcelDetailRows(
       errors.push(`Nomor STDB "${stdb.number}" dipakai ID Petani berbeda di file — STDB terbit per petani`);
     }
     const externalCode = r.externalCode || null;
+    if (externalCode && (pairsPerCode.get(lower(externalCode))?.size ?? 0) > 1) {
+      errors.push(`UL Parcel Code "${externalCode}" dipakai lebih dari satu lahan di file — kode unik per lahan`);
+    }
     const subGroupLv2 = r.subGroupLv2 || null;
 
     // Nomor/nama/luas terisi tanpa jenis (1.046 baris di data sumber): jenisnya

@@ -21,6 +21,15 @@
 | Farmer | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
 | **LandParcel** | | | | | |
 | LandParcel | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
+| LandParcel | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
+| **Land Parcel Identity & Satelit (#296)** | | | | | |
+| LandParcelIdentity | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
+| LandParcelDocument | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
+| LandStdb | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
+| LandParcelStdb | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
+| LandParcelStdb | `stdbId` | LandStdb | `id` | RESTRICT | CASCADE |
+| LandParcelExternalId | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
+| LandParcelProgram | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
 | **Tree** | | | | | |
 | Tree | `landParcelId` | LandParcel | `id` | RESTRICT | CASCADE |
 | **Production** | | | | | |
@@ -81,6 +90,10 @@
 | Farmer | `nik` | NULLABLE, 16 digits | NIK optional, jika diisi harus 16 digit angka |
 | Farmer | `gender` | ENUM (M/F), NOT NULL | Gender wajib |
 | Farmer | `joinedYear` | INT (1900-2100), NULLABLE | Tahun bergabung dengan KT, optional |
+| **LandParcelIdentity** | `(farmerId, parcelId)` | UNIQUE COMPOSITE | Satu identitas per pasangan petani + ID Lahan, stabil antar revisi (#296) |
+| **LandStdb** | `(farmerId, number)` | UNIQUE COMPOSITE | Nomor STDB unik per petani; nonaktif tetap memegang slot |
+| **LandParcelStdb** | `(parcelUid, stdbId)` | UNIQUE COMPOSITE | Tautan lahan↔STDB tidak ganda |
+| **LandParcelExternalId** | `(source, code)` | UNIQUE COMPOSITE | UL Parcel Code unik per sumber; nonaktif tetap memegang slot ("Kode ini sudah dipakai lahan lain") |
 | **TrainingPackage** | `code` | UNIQUE, ENUM | Training category code harus unik |
 | **TrainingParticipant** | `(activityId, farmerId)` | UNIQUE COMPOSITE | Satu farmer hanya bisa terdaftar 1x di satu training |
 | **ProductionRecord** | `(farmerId, parcelId, period, harvestNumber)` | UNIQUE COMPOSITE | Tidak boleh duplicate entri produksi untuk kombinasi farmer/parcel/periode/panen |
@@ -110,7 +123,7 @@ Semua tabel menggunakan **soft delete** dengan field `isActive`:
 
 **Trade-off**:
 - Perlu disiplin di query layer (selalu filter `isActive`)
-- UNIQUE constraint **tidak mengenal soft delete** — baris nonaktif tetap memakai slot uniknya. Untuk `Farmer (farmerGroupId, farmerId)` itu **by design** (TD-024): memakai ulang ID milik petani nonaktif akan memecah riwayat pelatihan & lahannya (lihat komentar di `prisma/schema/farmer.prisma`). Bila suatu tabel memang perlu unik hanya-aktif (mis. revision tracking `LandParcel`), penegakannya di app layer (kombinasi cek unik+`isActive`), karena Prisma tidak support partial/conditional unique index
+- UNIQUE constraint **tidak mengenal soft delete** — baris nonaktif tetap memakai slot uniknya. Untuk `Farmer (farmerGroupId, farmerId)` itu **by design** (TD-024); hal yang sama berlaku untuk `LandStdb (farmerId, number)` dan `LandParcelExternalId (source, code)` (#296) — record nonaktif masih memegang slot uniknya, aktifkan kembali alih-alih membuat baru: memakai ulang ID milik petani nonaktif akan memecah riwayat pelatihan & lahannya (lihat komentar di `prisma/schema/farmer.prisma`). Bila suatu tabel memang perlu unik hanya-aktif (mis. revision tracking `LandParcel`), penegakannya di app layer (kombinasi cek unik+`isActive`), karena Prisma tidak support partial/conditional unique index
 
 ### Referential Integrity Check
 
