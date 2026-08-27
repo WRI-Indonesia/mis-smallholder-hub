@@ -29,9 +29,10 @@ import { ParcelFormModal } from "../components/parcel-form-modal";
 import { ParcelMapView } from "../components/parcel-map-view";
 import { ParcelProductionChart } from "../components/parcel-production-chart";
 import { ParcelProductionMonthModal } from "../components/parcel-production-month-modal";
+import { ParcelLegalSection } from "../components/parcel-legal-section";
 
 import type { Geometry, Position } from "geojson";
-import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
+import type { LandParcel, FarmerSelect, LandParcelSatellites } from "@/types/land-parcel";
 import type { ProductionSummary, ProductionYear } from "@/types/map";
 import type { ParcelTreeData } from "@/server/actions/tree";
 import { formatNumber } from "@/lib/format";
@@ -55,6 +56,8 @@ interface Props {
   /** Permission user pada menu Data Produksi — gate edit sel tabel produksi. */
   productionPermissions: string[];
   siblingParcels: SiblingParcel[];
+  /** Satelit lahan (#296) — null bila lahan di luar scope (tak seharusnya terjadi: page sudah 404). */
+  satellites: LandParcelSatellites | null;
 }
 
 const formatDecimal = (n: number) =>
@@ -205,6 +208,7 @@ export function ParcelDetailClient({
   permissions,
   productionPermissions,
   siblingParcels,
+  satellites,
 }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -586,6 +590,24 @@ export function ParcelDetailClient({
             </div>
           </div>
         </div>
+      </SectionCard>
+
+      {/* Section: Legalitas & Dokumen (#296) — dokumen, STDB, kode vendor, program via parcelUid */}
+      <SectionCard
+        title="Legalitas & Dokumen"
+        action={
+          satellites ? (
+            <span className="text-xs text-muted-foreground">
+              {satellites.documents.length} surat · {satellites.stdbs.length} STDB · {satellites.externalIds.length} kode vendor · {satellites.programs.length} program
+            </span>
+          ) : undefined
+        }
+      >
+        {satellites ? (
+          <ParcelLegalSection data={satellites} parcelArea={parcel.area} />
+        ) : (
+          <Val value={null} />
+        )}
       </SectionCard>
 
       {/* Section: Produksi — grafik bulanan kontinu + tabel pivot per tahun */}
