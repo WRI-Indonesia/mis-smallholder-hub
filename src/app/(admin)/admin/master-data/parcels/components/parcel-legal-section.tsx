@@ -10,34 +10,40 @@ import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/shared/delete-dialog";
 import { formatArea } from "@/lib/format";
 import { LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parcel-detail-import";
+import { documentTypeShort } from "@/lib/land-parcel-satellite-format";
 import { deactivateLandParcelSatellite, unlinkLandStdb } from "@/server/actions/land-parcel-satellite";
 import { ParcelSatelliteFormModal, type SatelliteFormTarget } from "./parcel-satellite-form-modal";
 import type { LandParcelSatellites } from "@/types/land-parcel";
 
 /**
- * Isi section "Legalitas & Dokumen" di Detail Lahan (#296): dokumen
- * kepemilikan, STDB, kode vendor, program. Data masuk lewat Bulk Upload →
- * Lahan → tab Detail Lahan (Excel) atau CRUD manual di sini (tahap 3c):
- * tombol Tambah (CREATE), Ubah (EDIT), Nonaktifkan/Lepas (DELETE) mengikuti
- * izin menu Lahan. Dirender di dalam SectionCard milik parcel-detail-client.
+ * Tab "Legalitas" di Detail Lahan (#296, redesign #298): dokumen kepemilikan,
+ * STDB, kode vendor, program — sebagai BARIS RINGKAS (bukan tabel lebar):
+ * kolom yang kosong tidak dirender, meta dalam satu baris kecil, aksi di
+ * ujung kanan. Data masuk lewat Bulk Upload → Lahan → tab Detail Lahan
+ * (Excel) atau CRUD manual di sini (Tambah = CREATE, pensil = EDIT,
+ * hapus/lepas = DELETE menu Lahan).
  */
 
 const PROGRAM_LABELS: Record<string, string> = { DEMPLOT_PBU: "Demplot PBU (Productive Business Unit)" };
 const STATUS_LABELS: Record<string, string> = { PLANNED: "Direncanakan", ACTIVE: "Berjalan", COMPLETED: "Selesai", CANCELLED: "Dibatalkan" };
-const SOURCE_LABELS: Record<string, string> = { parcel_code: "Kode pemetaan vendor (parcel_code)" };
+const SOURCE_LABELS: Record<string, string> = { parcel_code: "pemetaan vendor" };
 
 function fmtDate(d: Date | null) {
-  return d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "—";
+  return d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : null;
 }
 
-function SubHead({ label, count, onAdd }: { label: string; count: number; onAdd?: () => void }) {
+/** Judul grup + jumlah + tombol Tambah (bila boleh). Satu-satunya tingkat sub-judul di tab ini. */
+function GroupHead({ title, count, hint, onAdd }: { title: string; count: number; hint?: string; onAdd?: () => void }) {
   return (
-    <div className="flex items-center justify-between mb-2">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {label} <span className="font-normal">({count})</span>
-      </p>
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <h3 className="text-sm font-semibold">
+          {title} <span className="text-muted-foreground font-normal">· {count}</span>
+        </h3>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
       {onAdd && (
-        <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={onAdd}>
+        <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs shrink-0" onClick={onAdd}>
           <Plus className="h-3.5 w-3.5" /> Tambah
         </Button>
       )}
@@ -45,27 +51,39 @@ function SubHead({ label, count, onAdd }: { label: string; count: number; onAdd?
   );
 }
 
-function RowActions({ onEdit, onRemove, removeTitle }: { onEdit?: () => void; onRemove?: () => void; removeTitle: string }) {
+function RowActions({ onEdit, onRemove, unlink = false }: { onEdit?: () => void; onRemove?: () => void; unlink?: boolean }) {
   if (!onEdit && !onRemove) return null;
   return (
-    <span className="inline-flex gap-1">
+    <span className="inline-flex shrink-0 gap-0.5 -mr-1">
       {onEdit && (
         <Button type="button" variant="ghost" size="icon" className="h-7 w-7" title="Ubah" onClick={onEdit}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
       )}
       {onRemove && (
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" title={removeTitle} onClick={onRemove}>
-          {removeTitle.startsWith("Lepas") ? <Unlink className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" title={unlink ? "Lepas dari lahan ini" : "Nonaktifkan"} onClick={onRemove}>
+          {unlink ? <Unlink className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
         </Button>
       )}
     </span>
   );
 }
 
-function Empty({ text }: { text: string }) {
-  return <p className="text-sm italic text-muted-foreground">{text}</p>;
+/** Satu baris item: judul (kiri), meta kecil di bawahnya, aksi di kanan. */
+function Row({ title, meta, children, actions }: { title: React.ReactNode; meta?: React.ReactNode; children?: React.ReactNode; actions?: React.ReactNode }) {
+  return (
+    <li className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+      <div className="min-w-0 space-y-0.5">
+        <div className="text-sm flex flex-wrap items-center gap-x-2 gap-y-1">{title}</div>
+        {meta && <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">{meta}</div>}
+        {children}
+      </div>
+      {actions}
+    </li>
+  );
 }
+
+const Empty = ({ text }: { text: string }) => <p className="text-sm text-muted-foreground">{text}</p>;
 
 interface Props {
   data: LandParcelSatellites;
@@ -77,14 +95,11 @@ interface Props {
   permissions: string[];
 }
 
-type RemoveTarget =
-  | { kind: "document" | "externalId" | "program"; id: string; label: string }
-  | { kind: "stdb"; id: string; label: string };
+type RemoveTarget = { kind: "document" | "externalId" | "program" | "stdb"; id: string; label: string };
 
 export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions }: Props) {
   const router = useRouter();
   const { documents, stdbs, externalIds, programs } = data;
-  const total = documents.length + stdbs.length + externalIds.length + programs.length;
   const canCreate = permissions.includes("CREATE");
   const canEdit = permissions.includes("EDIT");
   const canDelete = permissions.includes("DELETE");
@@ -106,8 +121,181 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
     router.refresh();
   }
 
-  const modals = (
-    <>
+  const add = (kind: SatelliteFormTarget["kind"]) => (canCreate ? () => setFormTarget({ kind, item: null } as SatelliteFormTarget) : undefined);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
+      {/* ── Surat kepemilikan ── */}
+      <section className="space-y-3">
+        <GroupHead title="Surat kepemilikan" count={documents.length} hint="Luas tertera adalah angka di surat; selisih terhadap poligon bukan kesalahan." onAdd={add("document")} />
+        {documents.length === 0 ? (
+          <Empty text="Belum ada surat tercatat." />
+        ) : (
+          <ul className="divide-y">
+            {documents.map((d) => {
+              const unknownType = d.type === "OTHER" && !d.typeRaw;
+              const diff = d.statedArea != null && parcelArea != null ? d.statedArea - parcelArea : null;
+              const bigDiff = diff != null && Math.abs(diff) >= 0.5;
+              return (
+                <Row
+                  key={d.id}
+                  title={
+                    <>
+                      <Badge variant={unknownType ? "outline" : "secondary"} title={d.typeRaw ?? LAND_DOCUMENT_TYPE_LABELS[d.type]} className={unknownType ? "italic text-muted-foreground" : undefined}>
+                        {unknownType ? "Jenis belum diisi" : documentTypeShort(d.type)}
+                      </Badge>
+                      {d.number ? <span className="font-mono">{d.number}</span> : <span className="text-muted-foreground">tanpa nomor</span>}
+                      {d.holderName && <span className="text-muted-foreground">a.n. <span className="text-foreground">{d.holderName}</span></span>}
+                    </>
+                  }
+                  meta={
+                    (d.statedArea != null || d.issuedYear != null || d.custodyNote || d.notes) && (
+                      <>
+                        {d.statedArea != null && (
+                          <span>
+                            Luas tertera {formatArea(d.statedArea)} Ha
+                            {diff != null && (
+                              <span className={bigDiff ? "text-amber-600 font-medium" : undefined}>
+                                {" "}({diff > 0 ? "+" : ""}{formatArea(diff)} vs poligon)
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {d.issuedYear != null && <span>Terbit {d.issuedYear}</span>}
+                        {d.custodyNote && <span className="italic">{d.custodyNote}</span>}
+                        {d.notes && <span>{d.notes}</span>}
+                      </>
+                    )
+                  }
+                  actions={
+                    <RowActions
+                      onEdit={canEdit ? () => setFormTarget({ kind: "document", item: d }) : undefined}
+                      onRemove={canDelete ? () => setRemoveTarget({ kind: "document", id: d.id, label: `Surat ${documentTypeShort(d.type)}${d.number ? ` ${d.number}` : ""}` }) : undefined}
+                    />
+                  }
+                />
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* ── STDB ── */}
+      <section className="space-y-3">
+        <GroupHead title="STDB" count={stdbs.length} hint="Surat Tanda Daftar Budidaya terbit per petani dan dapat menutup beberapa lahan." onAdd={add("stdb")} />
+        {stdbs.length === 0 ? (
+          <Empty text="Belum ada STDB tercatat." />
+        ) : (
+          <ul className="divide-y">
+            {stdbs.map((s) => (
+              <Row
+                key={s.id}
+                title={
+                  <>
+                    <span className="font-mono">{s.number}</span>
+                    {s.issuedYear != null && <Badge variant="outline">{s.issuedYear}</Badge>}
+                    {s.holderName && <span className="text-muted-foreground">a.n. <span className="text-foreground">{s.holderName}</span></span>}
+                  </>
+                }
+                meta={
+                  <>
+                    {s.statedArea != null && <span>Luas tertera {formatArea(s.statedArea)} Ha</span>}
+                    {s.otherParcels.length === 0 ? (
+                      <span>Hanya lahan ini</span>
+                    ) : (
+                      <span className="flex flex-wrap items-center gap-1">
+                        Juga menutup:
+                        {s.otherParcels.map((p) =>
+                          p.id ? (
+                            <Link key={p.parcelId} href={`/admin/master-data/parcels/${p.id}`} className="font-mono text-primary hover:underline">
+                              {p.parcelId}
+                            </Link>
+                          ) : (
+                            <span key={p.parcelId} className="font-mono">{p.parcelId}</span>
+                          ),
+                        )}
+                      </span>
+                    )}
+                    {s.notes && <span>{s.notes}</span>}
+                  </>
+                }
+                actions={
+                  <RowActions
+                    unlink
+                    onEdit={canEdit ? () => setFormTarget({ kind: "stdb", item: s }) : undefined}
+                    onRemove={canDelete ? () => setRemoveTarget({ kind: "stdb", id: s.id, label: s.number }) : undefined}
+                  />
+                }
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* ── Kode vendor ── */}
+      <section className="space-y-3">
+        <GroupHead title="Kode pemetaan vendor" count={externalIds.length} onAdd={add("externalId")} />
+        {externalIds.length === 0 ? (
+          <Empty text="Belum ada kode vendor." />
+        ) : (
+          <ul className="divide-y">
+            {externalIds.map((e) => {
+              const mapped = fmtDate(e.mappedAt);
+              return (
+                <Row
+                  key={e.id}
+                  title={
+                    <>
+                      <span className="font-mono">{e.code}</span>
+                      <span className="text-muted-foreground">{SOURCE_LABELS[e.source] ?? e.source}</span>
+                    </>
+                  }
+                  meta={(mapped || e.notes) && (<>{mapped && <span>Dipetakan {mapped}</span>}{e.notes && <span>{e.notes}</span>}</>)}
+                  actions={
+                    <RowActions
+                      onEdit={canEdit ? () => setFormTarget({ kind: "externalId", item: e }) : undefined}
+                      onRemove={canDelete ? () => setRemoveTarget({ kind: "externalId", id: e.id, label: `Kode vendor ${e.code}` }) : undefined}
+                    />
+                  }
+                />
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* ── Program ── */}
+      <section className="space-y-3">
+        <GroupHead title="Program" count={programs.length} hint="Keikutsertaan lahan dalam program, mis. demplot PBU." onAdd={add("program")} />
+        {programs.length === 0 ? (
+          <Empty text="Tidak terdaftar di program mana pun." />
+        ) : (
+          <ul className="divide-y">
+            {programs.map((p) => {
+              const start = fmtDate(p.startDate), end = fmtDate(p.endDate);
+              return (
+                <Row
+                  key={p.id}
+                  title={
+                    <>
+                      <span className="font-medium">{PROGRAM_LABELS[p.programType] ?? p.programType}</span>
+                      <Badge variant={p.status === "ACTIVE" ? "default" : "outline"}>{STATUS_LABELS[p.status] ?? p.status}</Badge>
+                    </>
+                  }
+                  meta={(start || end || p.notes) && (<>{(start || end) && <span>{start ?? "…"} – {end ?? "…"}</span>}{p.notes && <span>{p.notes}</span>}</>)}
+                  actions={
+                    <RowActions
+                      onEdit={canEdit ? () => setFormTarget({ kind: "program", item: p }) : undefined}
+                      onRemove={canDelete ? () => setRemoveTarget({ kind: "program", id: p.id, label: `Program ${PROGRAM_LABELS[p.programType] ?? p.programType}` }) : undefined}
+                    />
+                  }
+                />
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       {formTarget && (
         <ParcelSatelliteFormModal open onClose={() => setFormTarget(null)} landParcelId={landParcelId} target={formTarget} />
       )}
@@ -122,203 +310,6 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
             : `${removeTarget?.label ?? "Data"} dinonaktifkan (soft delete) dan tidak tampil lagi di lahan ini.`
         }
       />
-    </>
-  );
-
-  const addButtons = canCreate ? (
-    <div className="flex flex-wrap gap-2">
-      <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={() => setFormTarget({ kind: "document", item: null })}><Plus className="h-3.5 w-3.5" /> Surat</Button>
-      <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={() => setFormTarget({ kind: "stdb", item: null })}><Plus className="h-3.5 w-3.5" /> STDB</Button>
-      <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={() => setFormTarget({ kind: "externalId", item: null })}><Plus className="h-3.5 w-3.5" /> Kode Vendor</Button>
-      <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={() => setFormTarget({ kind: "program", item: null })}><Plus className="h-3.5 w-3.5" /> Program</Button>
-    </div>
-  ) : null;
-
-  if (total === 0) {
-    return (
-      <div className="space-y-3">
-        <Empty text="Belum ada dokumen, STDB, kode vendor, maupun program untuk lahan ini. Data masuk lewat Bulk Upload → Lahan → tab Detail Lahan (Excel), atau tambahkan manual di bawah." />
-        {addButtons}
-        {modals}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Dokumen kepemilikan */}
-      <div>
-        <SubHead label="Surat Kepemilikan" count={documents.length} onAdd={canCreate ? () => setFormTarget({ kind: "document", item: null }) : undefined} />
-        {documents.length === 0 ? (
-          <Empty text="Belum ada surat kepemilikan tercatat." />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="py-1.5 pr-3 font-semibold">Jenis</th>
-                  <th className="py-1.5 pr-3 font-semibold">Nomor</th>
-                  <th className="py-1.5 pr-3 font-semibold">Nama di Surat</th>
-                  <th className="py-1.5 pr-3 font-semibold text-right">Luas Tertera (Ha)</th>
-                  <th className="py-1.5 pr-3 font-semibold text-right">Selisih vs Poligon</th>
-                  <th className="py-1.5 pr-3 font-semibold text-right">Tahun</th>
-                  <th className="py-1.5 pr-3 font-semibold">Keterangan</th>
-                  {(canEdit || canDelete) && <th className="py-1.5 w-[70px]" />}
-                </tr>
-              </thead>
-              <tbody>
-                {documents.map((d) => {
-                  const diff = d.statedArea != null && parcelArea != null ? d.statedArea - parcelArea : null;
-                  const unknownType = d.type === "OTHER" && !d.typeRaw;
-                  return (
-                    <tr key={d.id} className="border-b last:border-0 align-top">
-                      <td className="py-1.5 pr-3">
-                        {unknownType ? (
-                          <span className="italic text-muted-foreground" title="Jenis surat kosong di sumber data">Lainnya (jenis belum diisi)</span>
-                        ) : (
-                          <span title={d.typeRaw ?? undefined}>{LAND_DOCUMENT_TYPE_LABELS[d.type] ?? d.type}</span>
-                        )}
-                      </td>
-                      <td className="py-1.5 pr-3 font-mono break-all">{d.number ?? "—"}</td>
-                      <td className="py-1.5 pr-3">{d.holderName ?? "—"}</td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums">{d.statedArea != null ? formatArea(d.statedArea) : "—"}</td>
-                      <td className={`py-1.5 pr-3 text-right tabular-nums ${diff != null && Math.abs(diff) >= 0.5 ? "text-amber-600" : "text-muted-foreground"}`}>
-                        {diff != null ? `${diff > 0 ? "+" : ""}${formatArea(diff)}` : "—"}
-                      </td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums">{d.issuedYear ?? "—"}</td>
-                      <td className="py-1.5 pr-3 text-muted-foreground">
-                        {[d.custodyNote, d.notes].filter(Boolean).join(" · ") || "—"}
-                      </td>
-                      {(canEdit || canDelete) && (
-                        <td className="py-1 text-right">
-                          <RowActions
-                            onEdit={canEdit ? () => setFormTarget({ kind: "document", item: d }) : undefined}
-                            onRemove={canDelete ? () => setRemoveTarget({ kind: "document", id: d.id, label: `Surat ${LAND_DOCUMENT_TYPE_LABELS[d.type]}${d.number ? ` ${d.number}` : ""}` }) : undefined}
-                            removeTitle="Nonaktifkan"
-                          />
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <p className="text-xs text-muted-foreground mt-2">
-              Luas tertera adalah angka di surat; selisih terhadap luas poligon
-              {parcelArea != null ? ` (${formatArea(parcelArea)} Ha)` : ""} bukan kesalahan — perbedaan ≥ 0,5 Ha ditandai.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* STDB */}
-      <div>
-        <SubHead label="STDB (Surat Tanda Daftar Budidaya)" count={stdbs.length} onAdd={canCreate ? () => setFormTarget({ kind: "stdb", item: null }) : undefined} />
-        {stdbs.length === 0 ? (
-          <Empty text="Belum ada STDB tercatat. STDB terbit per petani dan dapat menutup beberapa lahan." />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="py-1.5 pr-3 font-semibold">Nomor</th>
-                  <th className="py-1.5 pr-3 font-semibold text-right">Tahun</th>
-                  <th className="py-1.5 pr-3 font-semibold">Nama Pemegang</th>
-                  <th className="py-1.5 pr-3 font-semibold text-right">Luas Tertera (Ha)</th>
-                  <th className="py-1.5 pr-3 font-semibold">Lahan Lain dalam STDB Ini</th>
-                  {(canEdit || canDelete) && <th className="py-1.5 w-[70px]" />}
-                </tr>
-              </thead>
-              <tbody>
-                {stdbs.map((s) => (
-                  <tr key={s.id} className="border-b last:border-0 align-top">
-                    <td className="py-1.5 pr-3 font-mono break-all">{s.number}</td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">{s.issuedYear ?? "—"}</td>
-                    <td className="py-1.5 pr-3">{s.holderName ?? "—"}</td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">{s.statedArea != null ? formatArea(s.statedArea) : "—"}</td>
-                    <td className="py-1.5 pr-3">
-                      {s.otherParcels.length === 0 ? (
-                        <span className="text-muted-foreground">Hanya lahan ini</span>
-                      ) : (
-                        <span className="flex flex-wrap gap-1.5">
-                          {s.otherParcels.map((p) =>
-                            p.id ? (
-                              <Link key={p.parcelId} href={`/admin/master-data/parcels/${p.id}`} className="font-mono text-primary hover:underline">
-                                {p.parcelId}
-                              </Link>
-                            ) : (
-                              <span key={p.parcelId} className="font-mono text-muted-foreground">{p.parcelId}</span>
-                            ),
-                          )}
-                        </span>
-                      )}
-                    </td>
-                    {(canEdit || canDelete) && (
-                      <td className="py-1 text-right">
-                        <RowActions
-                          onEdit={canEdit ? () => setFormTarget({ kind: "stdb", item: s }) : undefined}
-                          onRemove={canDelete ? () => setRemoveTarget({ kind: "stdb", id: s.id, label: s.number }) : undefined}
-                          removeTitle="Lepas dari lahan ini"
-                        />
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Kode vendor & program — dua kolom */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <SubHead label="Kode Pemetaan Vendor" count={externalIds.length} onAdd={canCreate ? () => setFormTarget({ kind: "externalId", item: null }) : undefined} />
-          {externalIds.length === 0 ? (
-            <Empty text="Belum ada kode vendor." />
-          ) : (
-            <ul className="space-y-1.5 text-sm">
-              {externalIds.map((e) => (
-                <li key={e.id} className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="font-mono">{e.code}</span>
-                  <span className="text-xs text-muted-foreground">{SOURCE_LABELS[e.source] ?? e.source}</span>
-                  {e.mappedAt && <span className="text-xs text-muted-foreground">· dipetakan {fmtDate(e.mappedAt)}</span>}
-                  <RowActions
-                    onEdit={canEdit ? () => setFormTarget({ kind: "externalId", item: e }) : undefined}
-                    onRemove={canDelete ? () => setRemoveTarget({ kind: "externalId", id: e.id, label: `Kode vendor ${e.code}` }) : undefined}
-                    removeTitle="Nonaktifkan"
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div>
-          <SubHead label="Program" count={programs.length} onAdd={canCreate ? () => setFormTarget({ kind: "program", item: null }) : undefined} />
-          {programs.length === 0 ? (
-            <Empty text="Lahan ini tidak terdaftar di program mana pun (mis. demplot PBU)." />
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {programs.map((p) => (
-                <li key={p.id} className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{PROGRAM_LABELS[p.programType] ?? p.programType}</span>
-                  <Badge variant={p.status === "ACTIVE" ? "default" : "outline"}>{STATUS_LABELS[p.status] ?? p.status}</Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {fmtDate(p.startDate)} – {fmtDate(p.endDate)}
-                  </span>
-                  <RowActions
-                    onEdit={canEdit ? () => setFormTarget({ kind: "program", item: p }) : undefined}
-                    onRemove={canDelete ? () => setRemoveTarget({ kind: "program", id: p.id, label: `Program ${PROGRAM_LABELS[p.programType] ?? p.programType}` }) : undefined}
-                    removeTitle="Nonaktifkan"
-                  />
-                  {p.notes && <span className="text-xs text-muted-foreground w-full">{p.notes}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-      {modals}
     </div>
   );
 }

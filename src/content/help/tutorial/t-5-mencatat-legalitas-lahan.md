@@ -20,12 +20,12 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Tambah** butuh izin ta
 ## Langkah
 
 1. Buka **Master Data → Lahan**, klik tombol detail pada baris lahan.
-2. Gulir ke bagian **Legalitas & Dokumen**. Ringkasan jumlahnya tampil di kanan judul.
+2. Buka tab **Legalitas** (jumlah catatannya tampil di tab; kartu **Legalitas** di atas meringkas jenis surat & STDB).
 3. Klik **Tambah** pada blok yang sesuai — Surat Kepemilikan, STDB, Kode Pemetaan Vendor, atau Program.
-+ Kalau lahan belum punya catatan apa pun, keempat tombol tambah tampil bersama satu kalimat kosong, bukan empat tabel kosong.
++ Tiap grup punya tombol Tambah sendiri; grup yang kosong hanya menampilkan satu kalimat, bukan tabel kosong.
 4. Isi formulir lalu klik **Tambah**. Untuk surat, hanya **Jenis** yang wajib; untuk STDB hanya **Nomor**.
-+ **Surat** — Jenis yang tidak ada di daftar pilih *Lainnya*. Nilai seperti "surat di bank" atau "lahan sudah dijual" bukan jenis; tulis di **Catatan Penguasaan**. **Luas Tertera** adalah angka di surat — boleh berbeda dari luas poligon; tabel menampilkan selisihnya dan menandai bila ≥ 0,5 Ha.
-+ **STDB** — terbit per **petani** dan boleh menutup beberapa lahan. Bila nomor yang Anda ketik sudah terdaftar untuk petani yang sama, lahan ini cukup *ditautkan* ke STDB itu (tidak dibuat dua kali). Kolom **Lahan Lain dalam STDB Ini** memperlihatkan persil lain yang tercakup.
++ **Surat** — Jenis yang tidak ada di daftar pilih *Lainnya*. Nilai seperti "surat di bank" atau "lahan sudah dijual" bukan jenis; tulis di **Catatan Penguasaan**. **Luas Tertera** adalah angka di surat — boleh berbeda dari luas poligon; baris surat menampilkan selisihnya dan menandai bila ≥ 0,5 Ha.
++ **STDB** — terbit per **petani** dan boleh menutup beberapa lahan. Bila nomor yang Anda ketik sudah terdaftar untuk petani yang sama, lahan ini cukup *ditautkan* ke STDB itu (tidak dibuat dua kali). Keterangan **Juga menutup:** di baris STDB memperlihatkan persil lain yang tercakup.
 + **Kode Vendor** — pasangan sumber + kode harus unik; kode yang sudah dipakai lahan lain ditolak.
 + **Program** — untuk saat ini hanya *Demplot PBU*; status Direncanakan / Berjalan / Selesai / Dibatalkan, tanggal selesai tidak boleh mendahului tanggal mulai.
 5. Untuk mengubah, klik ikon **pensil** di ujung baris; untuk menghapus, klik ikon **tempat sampah**, lalu konfirmasi.
@@ -35,7 +35,7 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Tambah** butuh izin ta
 
 ## Hasil
 
-Catatan tampil di bagian Legalitas & Dokumen lahan, diringkas di tab **Lahan** pada detail petani (kolom Surat & STDB), dan bisa ditampilkan di **Report → Lahan** lewat tombol Kolom (Surat Kepemilikan, Nama di Surat, Luas Tertera, STDB).
+Catatan tampil di tab Legalitas lahan dan kartu Legalitas di atasnya, diringkas di tab **Lahan** pada detail petani (kolom Surat & STDB), dan bisa ditampilkan di **Report → Lahan** lewat tombol Kolom (Surat Kepemilikan, Nama di Surat, Luas Tertera, STDB).
 
 ## Kalau bermasalah
 
