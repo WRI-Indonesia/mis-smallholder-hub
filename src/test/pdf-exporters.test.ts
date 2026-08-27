@@ -66,6 +66,20 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
         type: "Polygon",
         coordinates: [[[101.49, 0.74], [101.51, 0.74], [101.51, 0.76], [101.49, 0.76], [101.49, 0.74]]],
       },
+      blok: "DUSUN 2",
+      subGroupLv2: "KT Karya Maju",
+      species: "Elaeis guineensis",
+      isPsr: false,
+      treeCount: 286,
+    },
+    legal: {
+      documents: [
+        { type: "SHM", typeRaw: "SHM (Sertifikat Hak Milik)", number: "727", holderName: "Abdul Rohman", statedArea: 0.25, issuedYear: null, custodyNote: null },
+        { type: "OTHER", typeRaw: null, number: "694", holderName: null, statedArea: null, issuedYear: null, custodyNote: "surat di bank" },
+      ],
+      stdbs: [{ number: "1637/53/1401/6/2025", issuedYear: 2025, holderName: null, otherParcelIds: ["LHN-002", "LHN-003"] }],
+      externalIds: [{ source: "parcel_code", code: "ID080d781b4" }],
+      programs: [{ programType: "DEMPLOT_PBU", status: "ACTIVE", startDate: "2026-01-01", endDate: null }],
     },
     training: [
       { code: "PAKET_1_BMP_PC_RSPO_NKT", label: "BMP, P&C RSPO & NKT", completed: true, date: "2025-05-16" },
@@ -83,6 +97,22 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     const doc = buildFarmPassportDoc(passport);
     expect(Math.round(doc.internal.pageSize.getWidth())).toBe(210);
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+  });
+
+  it("legalitas kosong (belum ada surat/STDB/kode/program) → tetap terbit tanpa throw", () => {
+    const bare: ParcelPassport = { ...passport, legal: { documents: [], stdbs: [], externalIds: [], programs: [] } };
+    expect(() => buildFarmPassportDoc(bare)).not.toThrow();
+  });
+
+  it("banyak surat → pecah ke halaman berikutnya (footer per halaman), bukan terpotong (#298)", () => {
+    const many: ParcelPassport = {
+      ...passport,
+      legal: {
+        ...passport.legal,
+        documents: Array.from({ length: 60 }, (_, i) => ({ type: "SKT", typeRaw: null, number: `SKT-${i + 1}`, holderName: "Nama", statedArea: 1, issuedYear: 2020, custodyNote: null })),
+      },
+    };
+    expect(buildFarmPassportDoc(many).getNumberOfPages()).toBeGreaterThanOrEqual(2);
   });
 
   it("geometri tak tersedia (ring < 3 titik) → tetap terbit tanpa throw", () => {

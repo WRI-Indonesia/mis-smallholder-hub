@@ -250,7 +250,8 @@ export const DATA_LINEAGE: DataLineage = [
       "landParcel": "R",
       "productionRecord": "R",
       "province": "R",
-      "trainingParticipant": "R"
+      "trainingParticipant": "R",
+      "tree": "R"
     },
     "modules": [
       "src/lib/parcel-passport-query.ts",

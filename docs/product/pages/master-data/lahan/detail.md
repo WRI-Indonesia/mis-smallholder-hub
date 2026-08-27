@@ -74,7 +74,7 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Header `{parcelId}` | Heading | Judul = ID lahan (mono); subjudul pemilik ber-link; badge status/PSR/komoditas/KT; `BreadcrumbOverride` menampilkan parcelId |
-| Tombol `Profil Lahan (PDF)` | Tombol | PRINT (sebelumnya VIEW, #245) — Farm Passport via `getLandParcelPassport` (guard menu Lahan); disabled bila lahan tanpa geometri |
+| Tombol `Profil Lahan (PDF)` | Tombol | PRINT (sebelumnya VIEW, #245) — Farm Passport via `getLandParcelPassport` (guard menu Lahan); sejak #298 memuat section **Legalitas & Dokumen** (surat, STDB, kode vendor, program) + blok/KT/species/PSR/jumlah pohon, multi-halaman dengan footer per halaman; disabled bila lahan tanpa geometri |
 | Tombol `Edit` | Tombol | EDIT — buka `ParcelFormModal` |
 | Tombol `Nonaktifkan` | Tombol | DELETE — `deleteLandParcel` dengan konfirmasi `Apakah Anda yakin ingin menonaktifkan lahan ini?` |
 | Kartu ringkasan | Kartu ×5 | `Luas` (sub: blok · jumlah pohon + kerapatan/ha, #238), **`Legalitas`** (#298: nilai = jenis surat unik + "STDB", mis. "SHM + STDB"; sub = hitungan surat/STDB/kode vendor/program), `Umur Tanaman`, `Produksi`, `Kelengkapan Data` (**9** atribut: Blok, Luas, Status Kepemilikan, Komoditas, Species, Tahun Tanam, Kelompok Tani, Geometri, **Surat kepemilikan**) |
