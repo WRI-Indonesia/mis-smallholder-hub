@@ -17,7 +17,7 @@ import type { LandParcelSatellites } from "@/types/land-parcel";
 
 /**
  * Tab "Legalitas" di Detail Lahan (#296, redesign #298): dokumen kepemilikan,
- * STDB, kode vendor, program — sebagai BARIS RINGKAS (bukan tabel lebar):
+ * STDB, UL Parcel Code, program — sebagai BARIS RINGKAS (bukan tabel lebar):
  * kolom yang kosong tidak dirender, meta dalam satu baris kecil, aksi di
  * ujung kanan. Data masuk lewat Bulk Upload → Lahan → tab Detail Lahan
  * (Excel) atau CRUD manual di sini (Tambah = CREATE, pensil = EDIT,
@@ -26,7 +26,7 @@ import type { LandParcelSatellites } from "@/types/land-parcel";
 
 const PROGRAM_LABELS: Record<string, string> = { DEMPLOT_PBU: "Demplot PBU (Productive Business Unit)" };
 const STATUS_LABELS: Record<string, string> = { PLANNED: "Direncanakan", ACTIVE: "Berjalan", COMPLETED: "Selesai", CANCELLED: "Dibatalkan" };
-const SOURCE_LABELS: Record<string, string> = { parcel_code: "pemetaan vendor" };
+const SOURCE_LABELS: Record<string, string> = { parcel_code: "sumber: parcel_code" };
 
 function fmtDate(d: Date | null) {
   return d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : null;
@@ -257,8 +257,8 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
             ))}
       </Group>
 
-      {/* ── Kode vendor ── */}
-      <Group icon={Hash} title="Kode pemetaan vendor" count={externalIds.length} hint="Identitas lahan dari sistem/vendor pemetaan pihak ketiga." onAdd={add("externalId")} empty="Belum ada kode vendor.">
+      {/* ── UL Parcel Code ── */}
+      <Group icon={Hash} title="UL Parcel Code" count={externalIds.length} hint="Kode identitas lahan dari hasil pemetaan (parcel_code) — dipakai untuk mencocokkan dengan data pihak ketiga." onAdd={add("externalId")} empty="Belum ada UL Parcel Code.">
             {externalIds.map((e) => {
               const mapped = fmtDate(e.mappedAt);
               return (
@@ -274,7 +274,7 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                   actions={
                     <RowActions
                       onEdit={canEdit ? () => setFormTarget({ kind: "externalId", item: e }) : undefined}
-                      onRemove={canDelete ? () => setRemoveTarget({ kind: "externalId", id: e.id, label: `Kode vendor ${e.code}` }) : undefined}
+                      onRemove={canDelete ? () => setRemoveTarget({ kind: "externalId", id: e.id, label: `UL Parcel Code ${e.code}` }) : undefined}
                     />
                   }
                 />

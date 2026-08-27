@@ -43,7 +43,7 @@ import {
 
 /**
  * Tab "Detail Lahan (Excel)" di halaman Upload Massal Lahan (#296): surat
- * kepemilikan, STDB, dan kode vendor per ID Lahan. Mengikuti alur 3 langkah
+ * kepemilikan, STDB, dan UL Parcel Code per ID Lahan. Mengikuti alur 3 langkah
  * upload produksi (pilih berkas → petakan kolom → validasi & simpan).
  * Daftar lahan dimuat MALAS saat tab dibuka — ±13 ribu baris di prod, jangan
  * dibebankan ke halaman utama yang mayoritas dipakai untuk shapefile.
@@ -192,7 +192,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     }
     const s = result.data!;
     toast.success(
-      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui · STDB ${s.stdbsCreated} baru, ${s.stdbLinksCreated} tautan · kode vendor ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui · kelompok tani terisi ${s.subGroupsFilled}`,
+      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui · STDB ${s.stdbsCreated} baru, ${s.stdbLinksCreated} tautan · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui · kelompok tani terisi ${s.subGroupsFilled}`,
       { duration: 8000 },
     );
     setValidated([]);
@@ -274,7 +274,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, kode pemetaan vendor, dan Nama Kelompok Tani (hanya
+            Surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, UL Parcel Code, dan Nama Kelompok Tani (hanya
             mengisi yang masih kosong) per <strong>ID Lahan</strong> yang sudah terdaftar. Poligon lahan tetap diunggah
             lewat tab Shapefile.
           </p>
@@ -430,7 +430,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                   <TableHead>Nama di Surat</TableHead>
                   <TableHead className="text-right">Luas Surat (ha)</TableHead>
                   <TableHead>STDB</TableHead>
-                  <TableHead>Kode Vendor</TableHead>
+                  <TableHead>UL Parcel Code</TableHead>
                   <TableHead>Kelompok Tani</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[220px]">Detail Error</TableHead>

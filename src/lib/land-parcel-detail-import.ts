@@ -1,6 +1,6 @@
 /**
  * Import detail lahan dari Excel (`MIS_<KAB>_data-lahan.xlsx`, #296):
- * surat kepemilikan, STDB, dan kode pemetaan vendor (`parcel_code`) per
+ * surat kepemilikan, STDB, dan UL Parcel Code (`parcel_code`) per
  * lahan. Modul ini MURNI (tanpa Prisma/DOM) agar bisa dipakai klien
  * (validasi pratinjau) maupun server, dan diuji langsung.
  *
@@ -53,7 +53,7 @@ export const LAND_DOCUMENT_TYPE_LABELS: Record<LandDocumentTypeCode, string> = {
   OTHER: "Lainnya",
 };
 
-/** Sumber kode vendor untuk kolom `parcel_code` — nilai `LandParcelExternalId.source`. */
+/** Sumber UL Parcel Code untuk kolom `parcel_code` — nilai `LandParcelExternalId.source`. */
 export const EXTERNAL_ID_SOURCE_PARCEL_CODE = "parcel_code";
 
 /** Nilai sel yang berarti "tidak ada" pada data sumber. */
@@ -146,7 +146,7 @@ export const PARCEL_DETAIL_TARGET_FIELDS = [
   { key: "holderName", label: "Nama tertera di Surat", required: false, desc: "Nama pemegang di surat (boleh ≠ nama petani)" },
   { key: "statedArea", label: "Luas tertera di Surat (ha)", required: false, desc: "Angka desimal; terpisah dari luas poligon" },
   { key: "stdbNumber", label: "Nomor STDB", required: false, desc: "Per petani; satu nomor boleh menutup beberapa lahan" },
-  { key: "externalCode", label: "Kode Vendor (parcel_code)", required: false, desc: "Kode hasil pemetaan pihak ketiga" },
+  { key: "externalCode", label: "UL Parcel Code (parcel_code)", required: false, desc: "Kode hasil pemetaan pihak ketiga" },
   { key: "subGroupLv2", label: "Nama Kelompok Tani", required: false, desc: "Mengisi Kelompok Tani lahan HANYA bila di sistem masih kosong (tidak menimpa)" },
 ] as const;
 
@@ -160,7 +160,7 @@ export const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string
   holderName: ["nama tertera di surat", "nama di surat", "nama_tertera", "nama_di_surat", "holder_name", "nama pemilik di surat"],
   statedArea: ["luas tertera di surat (ha)", "luas tertera di surat", "luas tertera", "luas_tertera", "luas surat", "stated_area"],
   stdbNumber: ["nomor stdb", "no stdb", "no. stdb", "nomor_stdb", "no_stdb", "stdb"],
-  externalCode: ["parcel_code", "parcel code", "parcelcode", "kode vendor", "parcel_cod", "external_code"],
+  externalCode: ["parcel_code", "parcel code", "parcelcode", "UL Parcel Code", "parcel_cod", "external_code"],
   subGroupLv2: ["nama kelompok tani", "kelompok tani", "kelompok_tani", "nama_kelompok_tani", "group_name", "sub_group_lv2", "kt"],
 };
 
@@ -302,7 +302,7 @@ export function validateParcelDetailRows(
     const hasDocFields = Boolean(r.documentNumber || r.holderName || area.value !== null);
     const docType: LandDocumentTypeCode | null = doc.type ?? (hasDocFields && !doc.custodyNote ? "OTHER" : null);
     const hasAny = Boolean(docType || doc.custodyNote || stdb || externalCode || subGroupLv2);
-    if (!hasAny) errors.push("Tidak ada data detail (surat, STDB, kode vendor, atau kelompok tani) untuk disimpan");
+    if (!hasAny) errors.push("Tidak ada data detail (surat, STDB, UL Parcel Code, atau kelompok tani) untuk disimpan");
 
     const isValid = errors.length === 0 && Boolean(pair);
     const data: ParcelDetailRow | null =

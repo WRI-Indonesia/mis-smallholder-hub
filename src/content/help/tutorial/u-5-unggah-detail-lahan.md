@@ -1,12 +1,12 @@
 ---
-title: Mengunggah detail lahan (surat, STDB, kode vendor) dari Excel
+title: Mengunggah detail lahan (surat, STDB, UL Parcel Code) dari Excel
 icon: Upload
 menuKey: bulk-upload-parcels
 permission: CREATE
 duration: 10
 href: /admin/bulk-upload/parcels
 hrefLabel: Buka halaman Upload Lahan
-goal: Surat kepemilikan, nomor STDB, dan kode pemetaan vendor menempel pada lahan yang sudah ada — sekaligus untuk satu kabupaten.
+goal: Surat kepemilikan, nomor STDB, dan UL Parcel Code menempel pada lahan yang sudah ada — sekaligus untuk satu kabupaten.
 ---
 
 ## Sebelum mulai
@@ -32,7 +32,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 + Nilai seperti **"Lahan sudah dijual"** atau **"Surat lahan di bank"** bukan jenis surat; sistem menyimpannya sebagai catatan penguasaan (tampil miring), bukan sebagai SHM/SKT.
 + Baris yang punya nomor/nama/luas surat tetapi **jenisnya kosong** tetap diterima sebagai jenis **Lainnya** — datanya tidak dibuang, jenisnya bisa dilengkapi belakangan di detail lahan.
 6. Perbaiki error bila ada, lalu klik **Simpan N Baris Valid**.
-+ Unggah ulang berkas yang sama **aman**: surat dengan nomor yang sama diperbarui, bukan digandakan; STDB dan kode vendor juga dicocokkan dulu.
++ Unggah ulang berkas yang sama **aman**: surat dengan nomor yang sama diperbarui, bukan digandakan; STDB dan UL Parcel Code juga dicocokkan dulu.
 + **Nama Kelompok Tani** hanya mengisi lahan yang di sistem masih kosong — yang sudah terisi **tidak ditimpa** (di pratinjau ditandai *"(sudah ada)"*). Untuk mengubah KT lahan, pakai form Edit Lahan.
 
 > [!penting] Satu nomor **STDB boleh muncul di beberapa baris** selama ID Petaninya sama — STDB memang terbit per petani dan menutup semua persilnya. Yang ditolak adalah nomor STDB yang sama dengan **petani berbeda**.
@@ -41,7 +41,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 
 ## Hasil
 
-Detail tampil di **Master Data → Lahan → detail lahan** (bagian Dokumen, STDB, Kode Vendor) dan ringkasannya di detail petani. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
+Detail tampil di **Master Data → Lahan → detail lahan** (bagian Dokumen, STDB, UL Parcel Code) dan ringkasannya di detail petani. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
 
 ## Kalau bermasalah
 
@@ -49,6 +49,6 @@ Detail tampil di **Master Data → Lahan → detail lahan** (bagian Dokumen, STD
 
 **"ID Petani … tidak ditemukan dalam database atau akses Anda"** — petani ada tapi di luar wilayah/lembaga akses Anda, atau ID-nya berubah format (spasi, nol di depan hilang).
 
-**"Tidak ada data detail … untuk disimpan"** — baris itu tidak membawa surat, STDB, maupun kode vendor. Hapus barisnya atau lengkapi.
+**"Tidak ada data detail … untuk disimpan"** — baris itu tidak membawa surat, STDB, maupun UL Parcel Code. Hapus barisnya atau lengkapi.
 
 **Tombol validasi tetap nonaktif** — daftar lahan belum selesai dimuat (bisa beberapa detik untuk belasan ribu lahan). Tunggu sampai jumlah lahan tampil di Langkah 1.

@@ -17,7 +17,7 @@ const PAGE_H = 297;
 const MARGIN = 14;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 /** Batas bawah konten sebelum footer; lewat ini → halaman baru (#298: PDF boleh >1 halaman). */
-const CONTENT_BOTTOM = 272;
+const CONTENT_BOTTOM = 268;
 
 const DOC_TYPE_SHORT: Record<string, string> = { OTHER: "Lainnya", JUAL_BELI: "Jual Beli", HIBAH: "Hibah" };
 const PROGRAM_LABEL: Record<string, string> = { DEMPLOT_PBU: "Demplot PBU" };
@@ -123,7 +123,7 @@ function drawPolygon(doc: jsPDF, geometry: ParcelPassport["parcel"]["geometry"],
 }
 
 function sectionHeading(doc: jsPDF, text: string, y: number) {
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...SLATE_800);
   doc.text(text, MARGIN, y);
@@ -133,20 +133,6 @@ function sectionHeading(doc: jsPDF, text: string, y: number) {
 }
 
 /** Render a label:value list; returns the y after the last row. */
-function attrList(doc: jsPDF, items: { label: string; value: string }[], x: number, y: number, labelW: number) {
-  let cy = y;
-  doc.setFontSize(9);
-  for (const it of items) {
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...SLATE_400);
-    doc.text(it.label, x, cy);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...SLATE_800);
-    doc.text(doc.splitTextToSize(it.value, CONTENT_W / 2 - labelW - 4), x + labelW, cy);
-    cy += 5.5;
-  }
-  return cy;
-}
 
 /**
  * Build dokumen Profil Lahan (tanpa save) — dipisah dari
@@ -155,127 +141,193 @@ function attrList(doc: jsPDF, items: { label: string; value: string }[], x: numb
 export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
   const { farmer, group, parcel, legal, training, production } = data;
+
+  // ── Komposisi (#298, rombak total atas masukan owner "terlalu rapat"):
+  //   hal. 1 — header ber-ID besar, 4 kartu ringkasan (cermin halaman web),
+  //            peta (kiri) + Informasi Lahan & Pemilik (kanan), Legalitas & Dokumen
+  //   hal. 2 — Pelatihan, Produksi (dengan Ton/Ha)
+  //   Footer + nomor halaman di semua halaman; tabel boleh pecah halaman.
   const tableCommon = {
     margin: { left: MARGIN, right: MARGIN },
-    styles: { font: "helvetica", cellPadding: 2 },
-    // Tabel boleh pecah halaman; footer digambar belakangan untuk semua halaman.
+    styles: { font: "helvetica", cellPadding: 2.6 },
     pageBreak: "auto" as const,
+    headStyles: { fillColor: EMERALD, textColor: [255, 255, 255] as [number, number, number], fontSize: 9, fontStyle: "bold" as const },
+    bodyStyles: { fontSize: 9, textColor: SLATE_600 },
+    alternateRowStyles: { fillColor: [248, 250, 252] as [number, number, number] },
   };
+  const now = new Date();
+  const plantAge = parcel.plantingYear != null ? now.getFullYear() - parcel.plantingYear : null;
 
-  // Accent bar + header
+  // ── Header
   doc.setFillColor(...EMERALD);
   doc.rect(0, 0, PAGE_W, 4, "F");
-
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...SLATE_800);
-  doc.text("Profil Lahan", MARGIN, 16);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(...SLATE_600);
-  doc.text("Smallholder HUB — Profil Lahan", MARGIN, 21);
-
-  doc.setFontSize(9);
   doc.setTextColor(...SLATE_400);
-  doc.text(`ID Lahan: ${parcel.parcelId}`, PAGE_W - MARGIN, 16, { align: "right" });
-
-  doc.setDrawColor(...SLATE_200);
-  doc.setLineWidth(0.4);
-  doc.line(MARGIN, 25, PAGE_W - MARGIN, 25);
-
-  // Identity: photo placeholder + fields
-  const photo = { x: MARGIN, y: 30, w: 24, h: 24 };
-  doc.setFillColor(241, 245, 249);
-  doc.setDrawColor(...SLATE_200);
-  doc.roundedRect(photo.x, photo.y, photo.w, photo.h, 2, 2, "FD");
-  doc.setFontSize(7);
-  doc.setTextColor(...SLATE_400);
-  doc.text("FOTO", photo.x + photo.w / 2, photo.y + photo.h / 2, { align: "center", baseline: "middle" });
-
-  const idX = photo.x + photo.w + 6;
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
+  doc.text("SMALLHOLDER HUB  ·  PROFIL LAHAN", MARGIN, 14);
+  doc.text(`Dicetak ${fmtDate(now.toISOString())}`, PAGE_W - MARGIN, 14, { align: "right" });
+  doc.setFontSize(20);
+  doc.setFont("courier", "bold");
   doc.setTextColor(...SLATE_800);
-  doc.text(farmer.name, idX, 36);
-  doc.setFontSize(9);
+  doc.text(parcel.parcelId, MARGIN, 24);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
-  doc.text(`ID Petani: ${orDash(farmer.code)}`, idX, 42);
-  doc.text(`Lembaga Petani: ${orDash(group.name)}`, idX, 47);
-  doc.text(`${orDash(group.districtName)}, ${orDash(group.provinceName)}`, idX, 52);
-
-  // Layout Lahan
-  let y = 64;
-  sectionHeading(doc, "Layout Lahan", y);
-  y += 4;
-  // 48 mm (semula 62): beri ruang untuk section Legalitas agar profil umum tetap 1 halaman (#298).
-  const mapBox = { x: MARGIN, y, w: CONTENT_W, h: 48 };
-  doc.setDrawColor(...SLATE_200);
-  doc.setLineWidth(0.4);
-  doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h, "S");
-  drawPolygon(doc, parcel.geometry, mapBox, farmer.name);
+  doc.text(`Milik ${farmer.name}  ·  ${orDash(group.name)}  ·  ${orDash(group.districtName)}, ${orDash(group.provinceName)}`, MARGIN, 30);
+  // Badge PSR / komoditas di kanan
+  // Badge hanya untuk yang bermakna: PSR (bila ya) dan komoditas — "Non-PSR" tidak ditampilkan (owner).
+  const badges = [parcel.isPsr ? "PSR (replanting)" : null, parcel.cropType ?? null].filter((b): b is string => Boolean(b));
+  let bx = PAGE_W - MARGIN;
   doc.setFontSize(7.5);
-  doc.setTextColor(...SLATE_600);
-  doc.text(
-    `Luas: ${fmtArea(parcel.area)}   •   Titik tengah: ${parcel.centroid[1].toFixed(6)}, ${parcel.centroid[0].toFixed(6)}   •   Tahun tanam: ${orDash(parcel.plantingYear)}${parcel.treeCount > 0 ? `   •   Pohon: ${fmtNum(parcel.treeCount)}` : ""}`,
-    mapBox.x + 2,
-    mapBox.y + mapBox.h - 3
-  );
-  y += mapBox.h + 8;
+  for (const b of badges.reverse()) {
+    const w = doc.getTextWidth(b) + 5;
+    bx -= w;
+    doc.setFillColor(241, 245, 249);
+    doc.setDrawColor(...SLATE_200);
+    doc.roundedRect(bx, 20, w, 6, 1.5, 1.5, "FD");
+    doc.setTextColor(...SLATE_600);
+    doc.text(b, bx + w / 2, 24.1, { align: "center" });
+    bx -= 2;
+  }
+  doc.setDrawColor(...SLATE_200);
+  doc.setLineWidth(0.4);
+  doc.line(MARGIN, 35, PAGE_W - MARGIN, 35);
 
-  // Data Petani + Informasi Lahan (two columns)
-  const COL2_X = PAGE_W / 2 + 4;
-  sectionHeading(doc, "Data Petani", y);
-  doc.setFontSize(11);
+  // ── 4 kartu ringkasan
+  const docTypes = [...new Set(legal.documents.map((d) => (d.type === "OTHER" && !d.typeRaw ? "Lainnya" : DOC_TYPE_SHORT[d.type] ?? d.type)))];
+  const legalValue = legal.documents.length === 0 && legal.stdbs.length === 0 ? "—" : [docTypes.join(" · ") || null, legal.stdbs.length ? "STDB" : null].filter(Boolean).join(" + ");
+  const legalSub = legal.documents.length === 0 && legal.stdbs.length === 0 ? "Belum ada surat / STDB" : `${legal.documents.length} surat · ${legal.stdbs.length} STDB`;
+  const cards: { title: string; value: string; sub: string }[] = [
+    { title: "LUAS", value: fmtArea(parcel.area), sub: [parcel.blok ? `Blok ${parcel.blok}` : null, parcel.treeCount > 0 ? `${fmtNum(parcel.treeCount)} pohon` : null].filter(Boolean).join(" · ") || "Blok belum diisi" },
+    { title: "LEGALITAS", value: legalValue, sub: legalSub },
+    { title: "TANAMAN", value: plantAge != null ? `${plantAge} tahun` : "—", sub: parcel.plantingYear != null ? `Tanam ${parcel.plantingYear}${parcel.isPsr ? " · PSR" : ""}` : "Tahun tanam belum diisi" },
+    { title: "PRODUKSI", value: production.totalKg > 0 ? `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(production.totalKg / 1000)} ton` : "—", sub: production.recordCount > 0 ? `${production.recordCount} catatan` : parcel.isPsr ? "Belum ada (wajar untuk PSR)" : "Belum ada data" },
+  ];
+  const cardGap = 4;
+  const cardW = (CONTENT_W - cardGap * 3) / 4;
+  const cardY = 40;
+  const cardH = 22;
+  cards.forEach((c, i) => {
+    const x = MARGIN + i * (cardW + cardGap);
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(...SLATE_200);
+    doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "FD");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...SLATE_400);
+    doc.text(c.title, x + 4, cardY + 6);
+    doc.setFontSize(12.5);
+    doc.setTextColor(...SLATE_800);
+    doc.text(doc.splitTextToSize(c.value, cardW - 8)[0] ?? "—", x + 4, cardY + 13);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...SLATE_600);
+    doc.text(doc.splitTextToSize(c.sub, cardW - 8)[0] ?? "", x + 4, cardY + 18.5);
+  });
+
+  // ── Peta (kiri) + Informasi Lahan & Pemilik (kanan)
+  let y = cardY + cardH + 10;
+  const mapW = CONTENT_W * 0.56;
+  const mapBox = { x: MARGIN, y, w: mapW, h: 92 };
+  sectionHeading(doc, "Layout Lahan", y);
+  const COL2_X = MARGIN + mapW + 8;
+  const COL2_W = PAGE_W - MARGIN - COL2_X;
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...SLATE_800);
   doc.text("Informasi Lahan", COL2_X, y);
   doc.setDrawColor(...EMERALD);
   doc.setLineWidth(0.6);
   doc.line(COL2_X, y + 1.5, COL2_X + 26, y + 1.5);
-  y += 6;
-  const leftEnd = attrList(
-    doc,
+  y += 5;
+  mapBox.y = y;
+  doc.setDrawColor(...SLATE_200);
+  doc.setLineWidth(0.4);
+  doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h, "S");
+  drawPolygon(doc, parcel.geometry, mapBox, parcel.parcelId.split(".").find((x) => /^[A-Z]$/i.test(x)) ?? parcel.parcelId);
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_600);
+  doc.text(`Titik tengah: ${parcel.centroid[1].toFixed(6)}, ${parcel.centroid[0].toFixed(6)}`, mapBox.x + 2, mapBox.y + mapBox.h - 3);
+
+  const colW = COL2_W;
+  const attr = (items: { label: string; value: string }[], x: number, yy: number, labelW: number, maxW: number) => {
+    let cy = yy;
+    for (const it of items) {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...SLATE_400);
+      doc.text(it.label, x, cy);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...SLATE_800);
+      const lines = doc.splitTextToSize(it.value, maxW - labelW) as string[];
+      doc.text(lines, x + labelW, cy);
+      cy += 6 * Math.max(1, lines.length);
+    }
+    return cy;
+  };
+  let ry = y + 5;
+  ry = attr(
     [
-      { label: "Nama", value: orDash(farmer.name) },
-      { label: "ID Petani", value: orDash(farmer.code) },
-      { label: "Jenis Kelamin", value: farmer.gender === "M" ? "Laki-laki" : farmer.gender === "F" ? "Perempuan" : "—" },
-      { label: "Tempat, Tgl Lahir", value: `${orDash(farmer.birthPlace)}, ${fmtDate(farmer.birthDate)}` },
-      { label: "Tahun Bergabung", value: orDash(farmer.joinedYear) },
-    ],
-    MARGIN,
-    y,
-    32
-  );
-  const rightEnd = attrList(
-    doc,
-    [
-      { label: "Luas Lahan", value: fmtArea(parcel.area) },
-      { label: "Blok / Kel. Tani", value: `${orDash(parcel.blok)} / ${orDash(parcel.subGroupLv2)}` },
+      { label: "Luas", value: fmtArea(parcel.area) },
+      { label: "Blok", value: orDash(parcel.blok) },
+      { label: "Kelompok Tani", value: orDash(parcel.subGroupLv2) },
       { label: "Status Lahan", value: orDash(parcel.landStatus) },
       { label: "Komoditas", value: `${orDash(parcel.cropType)}${parcel.species ? ` (${parcel.species})` : ""}` },
-      { label: "Tahun Tanam", value: `${orDash(parcel.plantingYear)}${parcel.isPsr ? " • PSR (replanting)" : ""}` },
-      { label: "Alamat", value: orDash(farmer.address) },
+      { label: "Tahun Tanam", value: `${orDash(parcel.plantingYear)}${plantAge != null ? ` (${plantAge} th)` : ""}${parcel.isPsr ? " · PSR" : ""}` },
+      { label: "Pohon Sawit", value: parcel.treeCount > 0 ? `${fmtNum(parcel.treeCount)}${parcel.area ? ` (${fmtNum(Math.round(parcel.treeCount / parcel.area))}/ha)` : ""}` : "—" },
     ],
     COL2_X,
-    y,
-    28
+    ry,
+    28,
+    colW,
   );
-  y = Math.max(leftEnd, rightEnd) + 6;
+  ry += 4;
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...SLATE_800);
+  doc.text("Pemilik", COL2_X, ry);
+  doc.setDrawColor(...EMERALD);
+  doc.line(COL2_X, ry + 1.5, COL2_X + 26, ry + 1.5);
+  ry += 5.5;
+  ry = attr(
+    [
+      { label: "Nama", value: farmer.name },
+      { label: "ID Petani", value: orDash(farmer.code) },
+      { label: "Jenis Kelamin", value: farmer.gender === "M" ? "Laki-laki" : farmer.gender === "F" ? "Perempuan" : "—" },
+      { label: "Lahir", value: `${orDash(farmer.birthPlace)}, ${fmtDate(farmer.birthDate)}` },
+      { label: "Alamat", value: orDash(farmer.address) },
+      { label: "Lembaga", value: `${orDash(group.name)}${group.code ? ` (${group.code})` : ""}` },
+      { label: "Bergabung", value: orDash(farmer.joinedYear) },
+    ],
+    COL2_X,
+    ry,
+    28,
+    colW,
+  );
+  y = Math.max(mapBox.y + mapBox.h, ry) + 6;
+  if (parcel.notes) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...SLATE_600);
+    const lines = doc.splitTextToSize(`Catatan: ${parcel.notes}`, CONTENT_W) as string[];
+    doc.text(lines, MARGIN, y + 2);
+    y += 4.5 * lines.length + 4;
+  }
 
-  // Legalitas & Dokumen (#296/#298) — surat, STDB, kode vendor, program
-  y = ensureSpace(doc, y, 30);
+  // ── Legalitas & Dokumen
+  y = ensureSpace(doc, y, 36);
   sectionHeading(doc, "Legalitas & Dokumen", y);
-  y += 3;
+  y += 5;
   const docShort = (t: string) => DOC_TYPE_SHORT[t] ?? t;
   const fmtDiff = (stated: number | null) =>
-    stated == null || parcel.area == null ? "—" : `${stated - parcel.area > 0 ? "+" : ""}${fmtArea(stated - parcel.area).replace(" ha", "")}`;
+    stated == null || parcel.area == null ? "—" : `${stated - parcel.area > 0 ? "+" : ""}${fmtArea(stated - parcel.area)}`;
   if (legal.documents.length === 0) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_400);
     doc.text("Belum ada surat kepemilikan tercatat.", MARGIN, y + 3);
-    y += 8;
+    y += 9;
   } else {
     autoTable(doc, {
       head: [["Surat Kepemilikan", "Nomor", "Nama di Surat", "Luas Tertera", "Selisih vs Poligon", "Terbit", "Keterangan"]],
@@ -290,17 +342,14 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
       ]),
       startY: y,
       theme: "striped",
-      headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold" },
-      bodyStyles: { fontSize: 8, textColor: SLATE_600 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
       columnStyles: { 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
       ...tableCommon,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 4;
+    y = (doc as any).lastAutoTable.finalY + 6;
   }
   if (legal.stdbs.length > 0) {
-    y = ensureSpace(doc, y, 16);
+    y = ensureSpace(doc, y, 18);
     autoTable(doc, {
       head: [["STDB", "Terbit", "Nama Pemegang", "Juga mencakup"]],
       body: legal.stdbs.map((st) => [
@@ -311,19 +360,15 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
       ]),
       startY: y,
       theme: "striped",
-      headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 8, fontStyle: "bold" },
-      bodyStyles: { fontSize: 8, textColor: SLATE_600 },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
       columnStyles: { 1: { halign: "right" } },
       ...tableCommon,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 4;
+    y = (doc as any).lastAutoTable.finalY + 6;
   }
   const metaLines: string[] = [];
-  if (legal.externalIds.length > 0) {
-    metaLines.push(`Kode vendor: ${legal.externalIds.map((e) => `${e.code} (${e.source})`).join(", ")}`);
-  }
+  if (legal.stdbs.length === 0) metaLines.push("STDB: belum tercatat.");
+  if (legal.externalIds.length > 0) metaLines.push(`UL Parcel Code: ${legal.externalIds.map((e) => `${e.code} (${e.source})`).join(", ")}`);
   if (legal.programs.length > 0) {
     metaLines.push(
       `Program: ${legal.programs
@@ -331,92 +376,79 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
         .join("; ")}`,
     );
   }
-  if (legal.stdbs.length === 0) metaLines.unshift("STDB: belum tercatat.");
   if (metaLines.length > 0) {
     y = ensureSpace(doc, y, 6 * metaLines.length);
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_600);
     for (const line of metaLines) {
       const wrapped = doc.splitTextToSize(line, CONTENT_W) as string[];
       doc.text(wrapped, MARGIN, y + 2);
-      y += 4 * wrapped.length + 1;
+      y += 4.5 * wrapped.length + 1.5;
     }
-    y += 3;
   }
-  y += 2;
 
-  // Pelatihan
-  y = ensureSpace(doc, y, 24);
+  // ── Halaman 2: Pelatihan + Produksi
+  y = ensureSpace(doc, y, 999);
   sectionHeading(doc, "Pelatihan", y);
-  y += 3;
+  y += 5;
   autoTable(doc, {
-    head: [["Paket Pelatihan", "Status", "Tanggal"]],
+    head: [["Paket Pelatihan", "Status", "Tanggal Pertama Ikut"]],
     body: training.map((t) => [t.label, t.completed ? "Selesai" : "Belum", t.date ? fmtDate(t.date) : "—"]),
     startY: y,
     theme: "striped",
-    headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 8.5, fontStyle: "bold" },
-    bodyStyles: { fontSize: 8.5, textColor: SLATE_600 },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
     ...tableCommon,
-    styles: { font: "helvetica", cellPadding: 1.6 },
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 6;
+  y = (doc as any).lastAutoTable.finalY + 12;
 
-  // Produksi — tanpa data cukup 2 baris; jangan memaksa halaman baru hanya untuk "Belum ada data".
-  y = ensureSpace(doc, y, production.recordCount === 0 ? 10 : 30);
+  y = ensureSpace(doc, y, production.recordCount === 0 ? 14 : 36);
   sectionHeading(doc, "Produksi", y);
   y += 5;
   if (production.recordCount === 0) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_400);
-    doc.text("Belum ada data produksi.", MARGIN, y + 2);
-    y += 8;
+    doc.text(`Belum ada data produksi.${parcel.isPsr ? " Lahan PSR (replanting) — belum berproduksi adalah wajar." : ""}`, MARGIN, y + 3);
+    y += 9;
   } else {
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_600);
-    doc.text(
-      `Produksi panen (kg)  •  Total tercatat: ${fmtNum(production.totalKg)} kg dari ${production.recordCount} catatan`,
-      MARGIN,
-      y
-    );
-    y += 3;
+    doc.text(`Produksi panen dalam kg  ·  Total tercatat ${fmtNum(production.totalKg)} kg dari ${production.recordCount} catatan`, MARGIN, y + 1);
+    y += 5;
     const cell = (n: number) => (n > 0 ? fmtNum(n) : "");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const monthCols: Record<number, any> = {};
     for (let i = 1; i <= 12; i++) monthCols[i] = { halign: "right" };
+    const tonHa = (kg: number) => (parcel.area && parcel.area > 0 ? new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(kg / 1000 / parcel.area) : "—");
     autoTable(doc, {
-      head: [["Tahun", ...MONTHS_ID, "Total"]],
-      body: production.byYear.map((yr) => [
-        String(yr.year),
-        ...yr.monthly.map(cell),
-        fmtNum(yr.total),
-      ]),
+      head: [["Tahun", ...MONTHS_ID, "Total (kg)", "Ton/Ha"]],
+      body: production.byYear.map((yr) => [String(yr.year), ...yr.monthly.map(cell), fmtNum(yr.total), tonHa(yr.total)]),
       startY: y,
       theme: "grid",
-      headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 6.5, fontStyle: "bold", halign: "right" },
-      bodyStyles: { fontSize: 6.5, textColor: SLATE_600, halign: "right" },
-      columnStyles: { 0: { halign: "left", fontStyle: "bold" }, ...monthCols, 13: { halign: "right", fontStyle: "bold" } },
+      headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 7, fontStyle: "bold", halign: "right" },
+      bodyStyles: { fontSize: 7.5, textColor: SLATE_600, halign: "right" },
+      columnStyles: { 0: { halign: "left", fontStyle: "bold" }, ...monthCols, 13: { halign: "right", fontStyle: "bold" }, 14: { halign: "right", fontStyle: "bold" } },
       margin: { left: MARGIN, right: MARGIN },
-      styles: { font: "helvetica", cellPadding: 1.4, overflow: "linebreak" },
+      styles: { font: "helvetica", cellPadding: 1.8, overflow: "linebreak" },
       pageBreak: "auto",
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 8;
+    y = (doc as any).lastAutoTable.finalY + 4;
+    doc.setFontSize(7.5);
+    doc.setTextColor(...SLATE_400);
+    doc.text(`Ton/Ha = produksi tahun tsb ÷ luas lahan (${fmtArea(parcel.area)}).`, MARGIN, y + 2);
   }
   void PAGE_H;
 
-  // Footer di SEMUA halaman (konten boleh pecah halaman sejak ada Legalitas, #298).
+  // Footer di SEMUA halaman
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
     doc.setPage(i);
     drawFooter(doc, i, total);
   }
   doc.setPage(total);
-
   return doc;
 }
 

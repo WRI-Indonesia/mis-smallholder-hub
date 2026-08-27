@@ -53,7 +53,7 @@ export const landStdbSchema = z.object({
 });
 export const updateLandStdbSchema = landStdbSchema.omit({ landParcelId: true }).extend({ id: z.string().min(1) });
 
-// ---- Kode vendor
+// ---- UL Parcel Code
 export const landParcelExternalIdSchema = z.object({
   landParcelId: z.string().min(1, "Lahan tidak valid"),
   source: z.string().trim().min(1, "Sumber wajib diisi").max(100),

@@ -23,7 +23,7 @@ export default async function ParcelBulkUploadPage() {
           </div>
           <p className="text-muted-foreground">
             Poligon lahan dari ZIP Shapefile (.shp, .dbf, .shx, .prj), atau detail lahan — surat
-            kepemilikan, STDB, kode vendor — dari Excel untuk lahan yang sudah terdaftar.
+            kepemilikan, STDB, UL Parcel Code — dari Excel untuk lahan yang sudah terdaftar.
           </p>
         </div>
       </div>

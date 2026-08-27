@@ -50,7 +50,7 @@ interface Props {
 const TITLES: Record<SatelliteFormTarget["kind"], string> = {
   document: "Surat Kepemilikan",
   stdb: "STDB",
-  externalId: "Kode Vendor",
+  externalId: "UL Parcel Code",
   program: "Program",
 };
 

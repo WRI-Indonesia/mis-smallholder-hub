@@ -37,7 +37,7 @@ describe("land-parcel-satellite.schema", () => {
     expect(r.success && r.data.number).toBe("1637/53/1401/6/2025");
   });
 
-  it("kode vendor: source & code wajib; tanggal string → Date; kosong → null", () => {
+  it("UL Parcel Code: source & code wajib; tanggal string → Date; kosong → null", () => {
     const r = landParcelExternalIdSchema.safeParse({ landParcelId: "lp1", source: "parcel_code", code: "ID080d781b4", mappedAt: "2025-06-01", notes: "" });
     expect(r.success).toBe(true);
     expect(r.data?.mappedAt).toBeInstanceOf(Date);

@@ -233,7 +233,7 @@ export function ParcelDetailClient({
       : [
           `${formatNumber(docCount)} surat`,
           `${formatNumber(stdbCount)} STDB`,
-          vendorCount > 0 ? `${formatNumber(vendorCount)} kode vendor` : null,
+          vendorCount > 0 ? `${formatNumber(vendorCount)} UL Parcel Code` : null,
           programCount > 0 ? `${formatNumber(programCount)} program` : null,
         ]
           .filter(Boolean)
@@ -598,7 +598,7 @@ export function ParcelDetailClient({
         </Card>
         </TabsContent>
 
-        {/* ── Legalitas (#296): dokumen, STDB, kode vendor, program via parcelUid ── */}
+        {/* ── Legalitas (#296): dokumen, STDB, UL Parcel Code, program via parcelUid ── */}
         <TabsContent value="legalitas">
           {/* Tanpa Card pembungkus: tiap grup sudah berbingkai sendiri (hindari bingkai ganda). */}
           {satellites ? (

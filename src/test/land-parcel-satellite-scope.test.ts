@@ -38,7 +38,7 @@ const resolveParcelWhere = (landParcelId: string, access: AccessContext) => ({
   ...farmerRelationAccessFilter(access),
 });
 
-// Cermin `satelliteScope` — update/nonaktif dokumen, kode vendor, program:
+// Cermin `satelliteScope` — update/nonaktif dokumen, UL Parcel Code, program:
 // record satelit → identity (`parcel`) → farmer.
 const satelliteScope = (access: AccessContext) => ({ parcel: { ...farmerRelationAccessFilter(access) } });
 const satelliteByIdWhere = (id: string, access: AccessContext) => ({ id, isActive: true, ...satelliteScope(access) });

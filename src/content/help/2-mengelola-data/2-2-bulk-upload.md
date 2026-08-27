@@ -8,7 +8,7 @@ intro: Untuk data dalam jumlah banyak, gunakan Bulk Upload alih-alih input satu 
 
 **Lahan (Shapefile ZIP)** — Unggah satu file ZIP berisi Shapefile (.shp, .dbf, .shx, .prj). Sistem membaca poligon lahan beserta atributnya; Anda dapat memetakan atribut Kelompok Tani dan Blok saat proses mapping.
 
-**Detail Lahan (Excel)** — Tab kedua di halaman yang sama: surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, dan kode pemetaan vendor untuk lahan yang **sudah terdaftar**, dikunci ID Lahan + ID Petani. Detail menempel pada identitas lahan sehingga tetap ikut saat poligonnya direvisi. Unggah ulang memperbarui, bukan menggandakan.
+**Detail Lahan (Excel)** — Tab kedua di halaman yang sama: surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, dan UL Parcel Code untuk lahan yang **sudah terdaftar**, dikunci ID Lahan + ID Petani. Detail menempel pada identitas lahan sehingga tetap ikut saat poligonnya direvisi. Unggah ulang memperbarui, bukan menggandakan.
 
 **Pohon Sawit (Shapefile ZIP titik)** — Unggah ZIP Shapefile bertipe point berisi titik pohon per lahan; titik dicocokkan ke lahan lewat atribut `parcel_id`. Jumlah pohon dan kerapatan tanam tampil di detail lahan dan detail petani. Upload ulang untuk lahan yang sama mengganti seluruh set titik lahan itu (set lama tersimpan sebagai riwayat nonaktif).
 

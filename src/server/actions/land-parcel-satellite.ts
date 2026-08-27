@@ -143,10 +143,10 @@ export async function unlinkLandStdb(landParcelId: string, stdbId: string): Prom
   return { success: true };
 }
 
-// ─── Kode vendor ───
+// ─── UL Parcel Code ───
 
 export async function createLandParcelExternalId(input: unknown): Promise<Result> {
-  if (!(await hasPermission(MENU, "CREATE"))) return { success: false, error: "Tidak memiliki izin untuk menambah kode vendor" };
+  if (!(await hasPermission(MENU, "CREATE"))) return { success: false, error: "Tidak memiliki izin untuk menambah UL Parcel Code" };
   const parsed = landParcelExternalIdSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors as FieldErrors };
   const parcel = await resolveParcel(parsed.data.landParcelId);
@@ -165,12 +165,12 @@ export async function createLandParcelExternalId(input: unknown): Promise<Result
 }
 
 export async function updateLandParcelExternalId(input: unknown): Promise<Result> {
-  if (!(await hasPermission(MENU, "EDIT"))) return { success: false, error: "Tidak memiliki izin untuk mengubah kode vendor" };
+  if (!(await hasPermission(MENU, "EDIT"))) return { success: false, error: "Tidak memiliki izin untuk mengubah UL Parcel Code" };
   const parsed = updateLandParcelExternalIdSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors as FieldErrors };
   const { id, ...data } = parsed.data;
   const existing = await prisma.landParcelExternalId.findFirst({ where: { id, isActive: true, ...(await satelliteScope()) }, select: { id: true, parcelUid: true } });
-  if (!existing) return { success: false, error: "Kode vendor tidak ditemukan atau di luar akses Anda" };
+  if (!existing) return { success: false, error: "UL Parcel Code tidak ditemukan atau di luar akses Anda" };
   const clash = await prisma.landParcelExternalId.findUnique({ where: { source_code: { source: data.source, code: data.code } }, select: { id: true } });
   if (clash && clash.id !== id) return { success: false, error: { code: ["Kode ini sudah dipakai record lain untuk sumber yang sama"] } };
   await prisma.landParcelExternalId.update({ where: { id }, data: { ...data, modifiedBy: await userId() } });
@@ -204,7 +204,7 @@ export async function updateLandParcelProgram(input: unknown): Promise<Result> {
 
 // ─── Nonaktifkan (soft delete) ───
 
-/** Nonaktifkan satu record satelit (dokumen / kode vendor / program). STDB dilepas lewat `unlinkLandStdb`. */
+/** Nonaktifkan satu record satelit (dokumen / UL Parcel Code / program). STDB dilepas lewat `unlinkLandStdb`. */
 export async function deactivateLandParcelSatellite(kind: Exclude<SatelliteKind, "stdb">, id: string): Promise<ActionResult> {
   if (!(await hasPermission(MENU, "DELETE"))) return { success: false, error: "Tidak memiliki izin untuk menonaktifkan data ini" };
   const scope = await satelliteScope();

@@ -363,10 +363,10 @@ export async function toggleLandParcelActive(id: string) {
 
 /**
  * Satelit lahan (#296) untuk halaman Detail Lahan: dokumen kepemilikan, STDB,
- * kode vendor, program. Menempel ke `parcelUid` (identitas stabil antar
+ * UL Parcel Code, program. Menempel ke `parcelUid` (identitas stabil antar
  * revisi), jadi dibaca lewat baris lahan yang diminta — scope ditegakkan pada
  * baris lahan itu (`farmerRelationAccessFilter`), satelit tidak punya scope
- * sendiri. `rawGeometry` kode vendor sengaja tidak ikut (payload besar, hanya
+ * sendiri. `rawGeometry` UL Parcel Code sengaja tidak ikut (payload besar, hanya
  * untuk audit).
  */
 export async function getLandParcelSatellites(landParcelId: string): Promise<LandParcelSatellites | null> {
