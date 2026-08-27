@@ -26,6 +26,9 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 │   │   ├── Titik kuning = pohon sawit bila tersedia (prop treePoints, #238)
 │   │   ├── Tombol Zoom ke Lahan + zoom awal: fitBounds SEMUA lahan
 │   │   └── Pemilih basemap: hybrid / satellite / light / dark
+│   ├── Label singkat di tiap poligon (#298): segmen huruf ID lahan ("A"/"B"/"C") — hijau lahan ini,
+│   │   biru lahan lain (Marker HTML, klik tembus); klik poligon biru → popup (ID, luas, tahun
+│   │   tanam, "Buka detail lahan"), auto-pan agar tak terpotong; lahan ini tanpa popup
 │   ├── Legenda warna (+ titik kuning bila ada pohon) + link koordinat titik pusat → Google Maps
 │   ├── Kolom kanan: ID Lahan, Blok, Kelompok Tani, Status Kepemilikan,
 │   │   Tahun Tanam (+umur), Komoditas, Species, Catatan ("Belum diisi" bila kosong)

@@ -83,6 +83,13 @@ const MONTH_LABELS = [
   "Des",
 ];
 
+// Label singkat di peta (#298): segmen huruf tunggal pada ID lahan
+// ("APSS.0001.A.14.01.10.2012" → "A"); bila tak ada, segmen terakhir.
+function shortParcelLabel(parcelId: string): string {
+  const segs = parcelId.split(".");
+  return segs.find((x) => /^[A-Z]$/i.test(x)) ?? segs[segs.length - 1] ?? parcelId;
+}
+
 // Geometry dari Prisma bisa berupa objek GeoJSON atau string JSON (legacy).
 function parseGeometry(geometry: LandParcel["geometry"]): Geometry | null {
   if (!geometry) return null;
@@ -438,7 +445,9 @@ export function ParcelDetailClient({
             <ParcelMapView
               geometry={parcel.geometry}
               heightClassName="h-[560px]"
-              siblingGeometries={siblingParcels.map((s) => s.geometry)}
+              siblings={siblingParcels}
+              label={shortParcelLabel(parcel.parcelId)}
+              siblingLabel={shortParcelLabel}
               treePoints={trees?.points}
             />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground mt-2">
