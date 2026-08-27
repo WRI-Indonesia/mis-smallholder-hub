@@ -604,7 +604,7 @@ export function ParcelDetailClient({
         }
       >
         {satellites ? (
-          <ParcelLegalSection data={satellites} parcelArea={parcel.area} />
+          <ParcelLegalSection data={satellites} parcelArea={parcel.area} landParcelId={parcel.id} permissions={permissions} />
         ) : (
           <Val value={null} />
         )}

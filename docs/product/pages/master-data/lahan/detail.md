@@ -59,10 +59,10 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 
 | Atribut | Nilai |
 |---|---|
-| File | `parcels/[id]/page.tsx` + `parcel-detail-client.tsx` (+ `components/parcel-map-view.tsx`, `parcel-production-chart.tsx`, `parcel-production-month-modal.tsx`, `parcel-legal-section.tsx` #296) |
+| File | `parcels/[id]/page.tsx` + `parcel-detail-client.tsx` (+ `components/parcel-map-view.tsx`, `parcel-production-chart.tsx`, `parcel-production-month-modal.tsx`, `parcel-legal-section.tsx` + `parcel-satellite-form-modal.tsx` #296) |
 | Tipe | Server Component + client component |
 | Guard | `requirePermission("master-data-parcels")` + `getUserPermissionsForMenu` (menu Lahan **dan** menu Produksi); `notFound()` bila kosong |
-| Server action / data | `getLandParcelById(id)`, `getLandParcelProduction(id)`, `getParcelTrees(id)` (`src/server/actions/tree.ts`), `getLandParcelSatellites(id)` (#296 — scope pada baris lahan, satelit dibaca via `parcelUid`), `getFarmerSiblingParcels`, `getFarmerOptions`; PDF `getLandParcelPassport`; produksi per bulan `getParcelPeriodRecords` + `create/update/deleteProductionRecord`; mutasi `deleteLandParcel` |
+| Server action / data | `getLandParcelById(id)`, `getLandParcelProduction(id)`, `getParcelTrees(id)` (`src/server/actions/tree.ts`), `getLandParcelSatellites(id)` (#296 — scope pada baris lahan, satelit dibaca via `parcelUid`); CRUD satelit `src/server/actions/land-parcel-satellite.ts` (`create/update{LandParcelDocument,LandStdb,LandParcelExternalId,LandParcelProgram}`, `unlinkLandStdb`, `deactivateLandParcelSatellite` — izin menu Lahan CREATE/EDIT/DELETE, scope via `parcel.farmer`), `getFarmerSiblingParcels`, `getFarmerOptions`; PDF `getLandParcelPassport`; produksi per bulan `getParcelPeriodRecords` + `create/update/deleteProductionRecord`; mutasi `deleteLandParcel` |
 
 ## Objek halaman
 
@@ -76,7 +76,7 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 | Section `Informasi Lahan` | Collapsible | Peta 60% + keterangan 40%; field kosong ditulis *"Belum diisi"*; sub-bagian Pemilik + tabel lahan lain milik petani (Kode ber-link · Luas · Tahun Tanam · Jumlah Pohon — `getFarmerSiblingParcels` kini menyertakan agregat pohon) |
 | Peta `ParcelMapView` | Peta | MapLibre; poligon hijau = lahan ini, biru = lahan lain milik petani (`siblingGeometries`), titik kuning = pohon sawit bila tersedia (`treePoints`, #238 — data `getParcelTrees`); zoom awal & `Zoom ke Lahan` = `fitBounds` semua lahan; link koordinat titik pusat → Google Maps |
 | Empty state peta | Teks | `Tidak ada data spasial (geometri) untuk lahan ini` |
-| Section `Legalitas & Dokumen` | Collapsible (#296) | Baca-saja (data masuk lewat Bulk Upload → Lahan → tab Detail Lahan). Empat blok: Surat Kepemilikan (tabel; selisih luas tertera vs poligon dihitung di klien, ≥0,5 Ha amber), STDB (tabel + lahan lain dalam STDB yang sama, ber-link), Kode Pemetaan Vendor, Program (badge status). Kosong total → satu kalimat arahan ke tab import |
+| Section `Legalitas & Dokumen` | Collapsible (#296) | Data masuk lewat Bulk Upload → Lahan → tab Detail Lahan **atau CRUD manual** (3c): tombol **Tambah** per blok (CREATE), ikon pensil (EDIT) → `ParcelSatelliteFormModal` (satu modal, 4 jenis, form uncontrolled + error Zod per field), ikon tempat sampah (DELETE) → `DeleteDialog` soft-delete; STDB memakai ikon **lepas tautan** (STDB tetap ada untuk lahan lain). Empty state total 0 → kalimat arahan + empat tombol Tambah. Empat blok: Surat Kepemilikan (tabel; selisih luas tertera vs poligon dihitung di klien, ≥0,5 Ha amber), STDB (tabel + lahan lain dalam STDB yang sama, ber-link), Kode Pemetaan Vendor, Program (badge status). Kosong total → satu kalimat arahan ke tab import |
 | Section `Produksi` | Collapsible | Konteks Luas/Tahun Tanam/Species; grafik bulanan kontinu (clip 6 bln/1 thn/2 thn/Semua + slide, sampai bulan berjalan); tabel pivot Tahun × Jan–Des + Total + Ton/Ha, baris s.d. tahun berjalan |
 | Sel bulan tabel produksi | Tombol sel | Klik (butuh CREATE/EDIT menu Produksi) → `ParcelProductionMonthModal`; sel bulan masa depan tidak bisa diklik |
 | `ParcelProductionMonthModal` | Dialog | 4 slot panen (kg + tanggal, dibatasi bulan tsb) terbuka berurutan; total otomatis; slot dikosongkan = nonaktifkan record (konfirmasi); keunikan per (petani, lahan, periode, panen-ke) |

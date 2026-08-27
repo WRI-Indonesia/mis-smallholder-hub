@@ -1,16 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Pencil, Plus, Trash2, Unlink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DeleteDialog } from "@/components/shared/delete-dialog";
 import { formatArea } from "@/lib/format";
 import { LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parcel-detail-import";
+import { deactivateLandParcelSatellite, unlinkLandStdb } from "@/server/actions/land-parcel-satellite";
+import { ParcelSatelliteFormModal, type SatelliteFormTarget } from "./parcel-satellite-form-modal";
 import type { LandParcelSatellites } from "@/types/land-parcel";
 
 /**
  * Isi section "Legalitas & Dokumen" di Detail Lahan (#296): dokumen
- * kepemilikan, STDB, kode vendor, program. Baca-saja — data masuk lewat
- * Bulk Upload → Lahan → tab Detail Lahan (Excel); CRUD manual menyusul.
- * Dirender di dalam SectionCard milik parcel-detail-client.
+ * kepemilikan, STDB, kode vendor, program. Data masuk lewat Bulk Upload →
+ * Lahan → tab Detail Lahan (Excel) atau CRUD manual di sini (tahap 3c):
+ * tombol Tambah (CREATE), Ubah (EDIT), Nonaktifkan/Lepas (DELETE) mengikuti
+ * izin menu Lahan. Dirender di dalam SectionCard milik parcel-detail-client.
  */
 
 const PROGRAM_LABELS: Record<string, string> = { DEMPLOT_PBU: "Demplot PBU (Productive Business Unit)" };
@@ -21,11 +30,36 @@ function fmtDate(d: Date | null) {
   return d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "—";
 }
 
-function SubHead({ label, count }: { label: string; count: number }) {
+function SubHead({ label, count, onAdd }: { label: string; count: number; onAdd?: () => void }) {
   return (
-    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-      {label} <span className="font-normal">({count})</span>
-    </p>
+    <div className="flex items-center justify-between mb-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label} <span className="font-normal">({count})</span>
+      </p>
+      {onAdd && (
+        <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={onAdd}>
+          <Plus className="h-3.5 w-3.5" /> Tambah
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function RowActions({ onEdit, onRemove, removeTitle }: { onEdit?: () => void; onRemove?: () => void; removeTitle: string }) {
+  if (!onEdit && !onRemove) return null;
+  return (
+    <span className="inline-flex gap-1">
+      {onEdit && (
+        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" title="Ubah" onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      )}
+      {onRemove && (
+        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" title={removeTitle} onClick={onRemove}>
+          {removeTitle.startsWith("Lepas") ? <Unlink className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+        </Button>
+      )}
+    </span>
   );
 }
 
@@ -37,15 +71,76 @@ interface Props {
   data: LandParcelSatellites;
   /** Luas poligon lahan (ha) — pembanding luas tertera di surat. */
   parcelArea: number | null;
+  /** LandParcel.id — target action CRUD (server menerjemahkan ke parcelUid). */
+  landParcelId: string;
+  /** Izin menu Lahan (CREATE/EDIT/DELETE) — menentukan tombol yang tampil. */
+  permissions: string[];
 }
 
-export function ParcelLegalSection({ data, parcelArea }: Props) {
+type RemoveTarget =
+  | { kind: "document" | "externalId" | "program"; id: string; label: string }
+  | { kind: "stdb"; id: string; label: string };
+
+export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions }: Props) {
+  const router = useRouter();
   const { documents, stdbs, externalIds, programs } = data;
   const total = documents.length + stdbs.length + externalIds.length + programs.length;
+  const canCreate = permissions.includes("CREATE");
+  const canEdit = permissions.includes("EDIT");
+  const canDelete = permissions.includes("DELETE");
+  const [formTarget, setFormTarget] = useState<SatelliteFormTarget | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null);
+
+  async function confirmRemove() {
+    if (!removeTarget) return;
+    const res =
+      removeTarget.kind === "stdb"
+        ? await unlinkLandStdb(landParcelId, removeTarget.id)
+        : await deactivateLandParcelSatellite(removeTarget.kind, removeTarget.id);
+    if (!res.success) {
+      toast.error(typeof res.error === "string" ? res.error : "Gagal menonaktifkan data");
+      return;
+    }
+    toast.success(removeTarget.kind === "stdb" ? "STDB dilepas dari lahan ini" : "Data dinonaktifkan");
+    setRemoveTarget(null);
+    router.refresh();
+  }
+
+  const modals = (
+    <>
+      {formTarget && (
+        <ParcelSatelliteFormModal open onClose={() => setFormTarget(null)} landParcelId={landParcelId} target={formTarget} />
+      )}
+      <DeleteDialog
+        open={removeTarget != null}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={confirmRemove}
+        title={removeTarget?.kind === "stdb" ? "Lepas STDB dari lahan ini?" : "Nonaktifkan data ini?"}
+        description={
+          removeTarget?.kind === "stdb"
+            ? `STDB ${removeTarget.label} tetap tersimpan untuk petani dan lahan lain; hanya tautan ke lahan ini yang dilepas.`
+            : `${removeTarget?.label ?? "Data"} dinonaktifkan (soft delete) dan tidak tampil lagi di lahan ini.`
+        }
+      />
+    </>
+  );
+
+  const addButtons = canCreate ? (
+    <div className="flex flex-wrap gap-2">
+      <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={() => setFormTarget({ kind: "document", item: null })}><Plus className="h-3.5 w-3.5" /> Surat</Button>
+      <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={() => setFormTarget({ kind: "stdb", item: null })}><Plus className="h-3.5 w-3.5" /> STDB</Button>
+      <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={() => setFormTarget({ kind: "externalId", item: null })}><Plus className="h-3.5 w-3.5" /> Kode Vendor</Button>
+      <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={() => setFormTarget({ kind: "program", item: null })}><Plus className="h-3.5 w-3.5" /> Program</Button>
+    </div>
+  ) : null;
 
   if (total === 0) {
     return (
-      <Empty text="Belum ada dokumen, STDB, kode vendor, maupun program untuk lahan ini. Data masuk lewat Bulk Upload → Lahan → tab Detail Lahan (Excel)." />
+      <div className="space-y-3">
+        <Empty text="Belum ada dokumen, STDB, kode vendor, maupun program untuk lahan ini. Data masuk lewat Bulk Upload → Lahan → tab Detail Lahan (Excel), atau tambahkan manual di bawah." />
+        {addButtons}
+        {modals}
+      </div>
     );
   }
 
@@ -53,7 +148,7 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
     <div className="space-y-6">
       {/* Dokumen kepemilikan */}
       <div>
-        <SubHead label="Surat Kepemilikan" count={documents.length} />
+        <SubHead label="Surat Kepemilikan" count={documents.length} onAdd={canCreate ? () => setFormTarget({ kind: "document", item: null }) : undefined} />
         {documents.length === 0 ? (
           <Empty text="Belum ada surat kepemilikan tercatat." />
         ) : (
@@ -67,7 +162,8 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
                   <th className="py-1.5 pr-3 font-semibold text-right">Luas Tertera (Ha)</th>
                   <th className="py-1.5 pr-3 font-semibold text-right">Selisih vs Poligon</th>
                   <th className="py-1.5 pr-3 font-semibold text-right">Tahun</th>
-                  <th className="py-1.5 font-semibold">Keterangan</th>
+                  <th className="py-1.5 pr-3 font-semibold">Keterangan</th>
+                  {(canEdit || canDelete) && <th className="py-1.5 w-[70px]" />}
                 </tr>
               </thead>
               <tbody>
@@ -90,9 +186,18 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
                         {diff != null ? `${diff > 0 ? "+" : ""}${formatArea(diff)}` : "—"}
                       </td>
                       <td className="py-1.5 pr-3 text-right tabular-nums">{d.issuedYear ?? "—"}</td>
-                      <td className="py-1.5 text-muted-foreground">
+                      <td className="py-1.5 pr-3 text-muted-foreground">
                         {[d.custodyNote, d.notes].filter(Boolean).join(" · ") || "—"}
                       </td>
+                      {(canEdit || canDelete) && (
+                        <td className="py-1 text-right">
+                          <RowActions
+                            onEdit={canEdit ? () => setFormTarget({ kind: "document", item: d }) : undefined}
+                            onRemove={canDelete ? () => setRemoveTarget({ kind: "document", id: d.id, label: `Surat ${LAND_DOCUMENT_TYPE_LABELS[d.type]}${d.number ? ` ${d.number}` : ""}` }) : undefined}
+                            removeTitle="Nonaktifkan"
+                          />
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -108,7 +213,7 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
 
       {/* STDB */}
       <div>
-        <SubHead label="STDB (Surat Tanda Daftar Budidaya)" count={stdbs.length} />
+        <SubHead label="STDB (Surat Tanda Daftar Budidaya)" count={stdbs.length} onAdd={canCreate ? () => setFormTarget({ kind: "stdb", item: null }) : undefined} />
         {stdbs.length === 0 ? (
           <Empty text="Belum ada STDB tercatat. STDB terbit per petani dan dapat menutup beberapa lahan." />
         ) : (
@@ -120,7 +225,8 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
                   <th className="py-1.5 pr-3 font-semibold text-right">Tahun</th>
                   <th className="py-1.5 pr-3 font-semibold">Nama Pemegang</th>
                   <th className="py-1.5 pr-3 font-semibold text-right">Luas Tertera (Ha)</th>
-                  <th className="py-1.5 font-semibold">Lahan Lain dalam STDB Ini</th>
+                  <th className="py-1.5 pr-3 font-semibold">Lahan Lain dalam STDB Ini</th>
+                  {(canEdit || canDelete) && <th className="py-1.5 w-[70px]" />}
                 </tr>
               </thead>
               <tbody>
@@ -130,7 +236,7 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
                     <td className="py-1.5 pr-3 text-right tabular-nums">{s.issuedYear ?? "—"}</td>
                     <td className="py-1.5 pr-3">{s.holderName ?? "—"}</td>
                     <td className="py-1.5 pr-3 text-right tabular-nums">{s.statedArea != null ? formatArea(s.statedArea) : "—"}</td>
-                    <td className="py-1.5">
+                    <td className="py-1.5 pr-3">
                       {s.otherParcels.length === 0 ? (
                         <span className="text-muted-foreground">Hanya lahan ini</span>
                       ) : (
@@ -147,6 +253,15 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
                         </span>
                       )}
                     </td>
+                    {(canEdit || canDelete) && (
+                      <td className="py-1 text-right">
+                        <RowActions
+                          onEdit={canEdit ? () => setFormTarget({ kind: "stdb", item: s }) : undefined}
+                          onRemove={canDelete ? () => setRemoveTarget({ kind: "stdb", id: s.id, label: s.number }) : undefined}
+                          removeTitle="Lepas dari lahan ini"
+                        />
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -158,7 +273,7 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
       {/* Kode vendor & program — dua kolom */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <SubHead label="Kode Pemetaan Vendor" count={externalIds.length} />
+          <SubHead label="Kode Pemetaan Vendor" count={externalIds.length} onAdd={canCreate ? () => setFormTarget({ kind: "externalId", item: null }) : undefined} />
           {externalIds.length === 0 ? (
             <Empty text="Belum ada kode vendor." />
           ) : (
@@ -168,13 +283,18 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
                   <span className="font-mono">{e.code}</span>
                   <span className="text-xs text-muted-foreground">{SOURCE_LABELS[e.source] ?? e.source}</span>
                   {e.mappedAt && <span className="text-xs text-muted-foreground">· dipetakan {fmtDate(e.mappedAt)}</span>}
+                  <RowActions
+                    onEdit={canEdit ? () => setFormTarget({ kind: "externalId", item: e }) : undefined}
+                    onRemove={canDelete ? () => setRemoveTarget({ kind: "externalId", id: e.id, label: `Kode vendor ${e.code}` }) : undefined}
+                    removeTitle="Nonaktifkan"
+                  />
                 </li>
               ))}
             </ul>
           )}
         </div>
         <div>
-          <SubHead label="Program" count={programs.length} />
+          <SubHead label="Program" count={programs.length} onAdd={canCreate ? () => setFormTarget({ kind: "program", item: null }) : undefined} />
           {programs.length === 0 ? (
             <Empty text="Lahan ini tidak terdaftar di program mana pun (mis. demplot PBU)." />
           ) : (
@@ -186,6 +306,11 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
                   <span className="text-xs text-muted-foreground">
                     {fmtDate(p.startDate)} – {fmtDate(p.endDate)}
                   </span>
+                  <RowActions
+                    onEdit={canEdit ? () => setFormTarget({ kind: "program", item: p }) : undefined}
+                    onRemove={canDelete ? () => setRemoveTarget({ kind: "program", id: p.id, label: `Program ${PROGRAM_LABELS[p.programType] ?? p.programType}` }) : undefined}
+                    removeTitle="Nonaktifkan"
+                  />
                   {p.notes && <span className="text-xs text-muted-foreground w-full">{p.notes}</span>}
                 </li>
               ))}
@@ -193,6 +318,7 @@ export function ParcelLegalSection({ data, parcelArea }: Props) {
           )}
         </div>
       </div>
+      {modals}
     </div>
   );
 }

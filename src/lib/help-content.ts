@@ -52,6 +52,7 @@ import tMenambahPetani from "@/content/help/tutorial/t-1-menambah-petani.md";
 import tMenambahLahan from "@/content/help/tutorial/t-2-menambah-lahan.md";
 import tMencatatPelatihan from "@/content/help/tutorial/t-3-mencatat-pelatihan.md";
 import tMencatatProduksi from "@/content/help/tutorial/t-4-mencatat-produksi.md";
+import tMencatatLegalitasLahan from "@/content/help/tutorial/t-5-mencatat-legalitas-lahan.md";
 import uUnggahPetani from "@/content/help/tutorial/u-1-unggah-petani.md";
 import uUnggahProduksi from "@/content/help/tutorial/u-2-unggah-produksi.md";
 import uUnggahLahan from "@/content/help/tutorial/u-3-unggah-lahan.md";
@@ -176,6 +177,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "menambah-lahan", source: tMenambahLahan },
       { id: "mencatat-pelatihan", source: tMencatatPelatihan },
       { id: "mencatat-produksi", source: tMencatatProduksi },
+      { id: "mencatat-legalitas-lahan", source: tMencatatLegalitasLahan },
     ],
   },
   {
