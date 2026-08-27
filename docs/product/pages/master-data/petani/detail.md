@@ -21,7 +21,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 │   ├── Ringkasan
 │   │   └── Kartu profil
 │   ├── Lahan
-│   │   ├── Tabel: Daftar Lahan (n) + kolom Jumlah Pohon (#238) + tombol PDF per baris
+│   │   ├── Tabel: Daftar Lahan (n) + kolom Surat & STDB (#296) + Jumlah Pohon (#238) + tombol PDF per baris
 │   │   └── Peta: Sebaran Lahan (ParcelsDistributionMap + titik pohon kuning, #238)
 │   ├── Pelatihan
 │   │   ├── Checklist: Paket Wajib
@@ -52,7 +52,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | Kartu ringkasan (5) | Kartu | `Lahan` (persil + Ha), `Produksi` (Ton), `Pelatihan` (n/n paket), `Kelengkapan Profil` (n/n + field yang belum), `Produktivitas Terakhir` (Ton/Ha) |
 | Tabs | Tab | `Ringkasan`, `Lahan`, `Pelatihan`, `Produksi` |
 | Tab Ringkasan | Kartu | Field: `Lembaga Petani` (link), `Distrik`, `Jenis Kelamin`, `NIK` (disensor), `Tempat, Tanggal Lahir` (+ umur), `Tahun Bergabung`, `Alamat`, `Dibuat`, `Terakhir Diubah` |
-| Tab Lahan — `Daftar Lahan (n)` | Tabel | `Kode Lahan` (link detail lahan **tab baru** — pola #224, gate `canViewParcel`), `Kelompok Tani`, `Blok`, `Luas (Ha)`, `Tahun Tanam`, `Jumlah Pohon` (dihitung di page dari `getFarmerTreePoints`, "—" bila belum ada, #238/#241), `Revisi`, `Profil Lahan`; empty state `Petani ini belum memiliki lahan.` |
+| Tab Lahan — `Daftar Lahan (n)` | Tabel | `Kode Lahan` (link detail lahan **tab baru** — pola #224, gate `canViewParcel`), `Kelompok Tani`, `Blok`, `Surat` (ringkasan `JENIS nomor` dokumen aktif, #296), `STDB` (nomor, #296), `Luas (Ha)`, `Tahun Tanam`, `Jumlah Pohon` (dihitung di page dari `getFarmerTreePoints`, "—" bila belum ada, #238/#241), `Revisi`, `Profil Lahan`; empty state `Petani ini belum memiliki lahan.` |
 | Tombol `PDF` per baris lahan | Tombol | Unduh Farm Passport via `getFarmerParcelPassport` + `generateFarmPassportPdf` — digate izin `PRINT` (#245) |
 | Tab Lahan — `Sebaran Lahan` | Peta | `ParcelsDistributionMap` (dynamic, ssr:false) + titik pohon kuning non-interaktif via prop `treePoints` (`getFarmerTreePoints`, counter "N titik pohon" di badge kiri-bawah, #238); popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
 | Tab Pelatihan — `Paket Wajib` | Checklist | Per paket: ikon ✓/✗, label, jumlah partisipasi (`n×`) atau `Belum` |

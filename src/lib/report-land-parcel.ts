@@ -3,6 +3,13 @@ import type {
   LandParcelReportResult,
   LandParcelReportRow,
 } from "@/types/report";
+import {
+  summarizeDocuments,
+  summarizeHolderNames,
+  sumStatedArea,
+  summarizeStdb,
+  type DocSummaryInput,
+} from "@/lib/land-parcel-satellite-format";
 
 /** Satu baris lahan mentah (sudah ter-scope) untuk Report Lahan. */
 export interface LpRawParcel {
@@ -33,6 +40,10 @@ export interface LpRawParcel {
   plantingYear: number | null;
   /** Luas lahan (Ha), null bila tak diketahui. */
   area: number | null;
+  /** Dokumen kepemilikan aktif (#296) — opsional agar pemanggil lama tetap valid. */
+  documents?: DocSummaryInput[];
+  /** Nomor STDB aktif yang menutup lahan ini (#296). */
+  stdbNumbers?: string[];
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -80,6 +91,10 @@ export function buildLandParcelReport(
       psr: p.isPsr,
       tahunTanam: p.plantingYear,
       luas: p.area,
+      surat: summarizeDocuments(p.documents ?? []),
+      namaDiSurat: summarizeHolderNames(p.documents ?? []),
+      luasTertera: sumStatedArea(p.documents ?? []),
+      stdb: summarizeStdb(p.stdbNumbers ?? []),
     };
   });
 
