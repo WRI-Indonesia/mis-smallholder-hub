@@ -73,7 +73,7 @@ Format phase: `STREAM-NN`.
 | DASH     | Dashboard              | Basic dashboard, server actions, interactive map, BMP, Pelatihan                           |
 | MAP      | Geospatial Map Explorer | Peta interaktif sebaran KT & lahan, filter spasial (Province/District/KT), layer toggle    |
 | RPT      | Report                 | Report Petani, Pelatihan, Produksi, Kelompok Tani (Summary+Detail), Lahan; summary tabel + export Excel/PDF |
-| BULK     | Bulk Upload            | Bulk upload Farmer (Excel), Produksi (Excel), Lahan (Shapefile ZIP) ✅; Region & Lembaga Petani/KT masih planned (#69, #70) |
+| BULK     | Bulk Upload            | Bulk upload Farmer (Excel), Produksi (Excel), Lahan (Shapefile ZIP) + Detail Lahan (Excel: surat/STDB/UL Parcel Code, #296) ✅; Region & Lembaga Petani/KT masih planned (#69, #70) |
 | TOOLS    | Tools & Utility        | Import, export, GIS, S3/PDF utility                                                        |
 | DA       | Data Analyst           | Ringkasan Petani, Analisa Ketersediaan Data (anomali/kelengkapan), analytics dashboards, Komparasi Data Acuan |
 | CMS      | Content Management     | Pages, media, knowledge base                                                               |
@@ -240,7 +240,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>MD-04</strong> · ✅ Done — Parcels</summary>
 
 - **Evidence:** `LandParcel` model ✅, `src/server/actions/land-parcel.ts` (165 LOC) ✅, `src/server/actions/bulk-upload-parcel.ts` (222 LOC) ✅, validation schema ✅, UI list/detail/form ✅, ZIP Shapefile bulk upload dengan column mapping ✅, 14 unit tests ✅. **Data Pohon Sawit (#238, 2026-08-08):** model `Tree` (`tbl_tree`) ✅, bulk upload ZIP shapefile point (`bulk-upload-tree.ts` + helper murni `lib/tree-upload.ts`) ✅, detail lahan: kartu Pohon Sawit + titik di peta Informasi Lahan; detail petani (tab Lahan): kolom Jumlah Pohon + titik di peta Sebaran Lahan ✅, revisi per-set + repoint saat lahan berevisi ✅.
-- **Next step:** Maintain; expand to Production dependency. Fase 2 pohon: layer titik di Peta Lahan.
+- **Evidence (lanjutan):** **Identitas & satelit lahan (#296, 2026-08-27):** `LandParcelIdentity.parcelUid` + 5 tabel satelit ✅, import Excel tab Detail Lahan ✅, tab Legalitas + CRUD manual ✅, kolom legalitas Report Lahan & tab Lahan Petani ✅; **#298** Detail Lahan ber-tabs + PDF Profil Lahan 2 halaman ✅; **#297** audit test (suite 1072) ✅.
+- **Next step:** Maintain (migrasi `20260827053327` sudah di prod, #302 2026-08-27); expand to Production dependency. Fase 2 pohon: layer titik di Peta Lahan.
 
 </details>
 

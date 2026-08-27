@@ -195,7 +195,7 @@ export type FarmerTrainingItem = {
   code: string;
   label: string;
   completed: boolean;
-  /** ISO date of the earliest attendance for this package, or null. */
+  /** ISO date of the LATEST attendance for this package, or null (#298: semula pertama). */
   date: string | null;
 };
 
@@ -239,6 +239,27 @@ export type ParcelPassport = {
     notes: string | null;
     centroid: [number, number];
     geometry: Polygon | MultiPolygon;
+    // Atribut tambahan di PDF (#298): blok, Kelompok Tani, species, PSR, jumlah pohon.
+    blok: string | null;
+    subGroupLv2: string | null;
+    species: string | null;
+    isPsr: boolean;
+    treeCount: number;
+  };
+  /** Legalitas lahan (#296/#298) — satelit via parcelUid. */
+  legal: {
+    documents: {
+      type: string;
+      typeRaw: string | null;
+      number: string | null;
+      holderName: string | null;
+      statedArea: number | null;
+      issuedYear: number | null;
+      custodyNote: string | null;
+    }[];
+    stdbs: { number: string; issuedYear: number | null; holderName: string | null; otherParcelIds: string[] }[];
+    externalIds: { source: string; code: string }[];
+    programs: { programType: string; status: string; startDate: string | null; endDate: string | null }[];
   };
   training: FarmerTrainingItem[];
   production: ProductionSummary;

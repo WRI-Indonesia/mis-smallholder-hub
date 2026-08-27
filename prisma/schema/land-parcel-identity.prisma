@@ -1,0 +1,33 @@
+// land-parcel-identity.prisma — identitas lahan yang STABIL antar revisi
+// (Decision Log 2026-08-27). LandParcel berevisi dengan id baru per baris
+// (bulk upload: baris lama is_active=false, baris baru revision+1), sehingga
+// setiap tabel yang menunjuk LandParcel.id harus ikut di-repoint (pola Tree).
+// Tabel ini menjadi jangkar tetap: satu baris per (farmer, parcelId), dibuat
+// sekali pada revisi 0 dan tidak pernah berganti. Semua satelit lahan
+// (dokumen, STDB, external id, program) menunjuk ke sini — bukan ke baris revisi.
+//
+// Tabel ini SENGAJA hanya berisi identitas (tanpa geometri/atribut) — atribut
+// fisik tetap di LandParcel agar revision tracking tak berubah.
+
+model LandParcelIdentity {
+  id         String   @id @default(cuid()) // = parcelUid
+  farmerId   String   @map("farmer_id")
+  farmer     Farmer   @relation(fields: [farmerId], references: [id])
+  parcelId   String   @map("parcel_id") // kunci bisnis (tbl_land_parcel.parcel_id)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  revisions   LandParcel[]
+  documents   LandParcelDocument[]
+  stdbLinks   LandParcelStdb[]
+  externalIds LandParcelExternalId[]
+  programs    LandParcelProgram[]
+
+  // Satu identitas per pasangan petani × ID lahan, lintas revisi.
+  @@unique([farmerId, parcelId])
+  @@index([isActive])
+  @@map("tbl_land_parcel_identity")
+}

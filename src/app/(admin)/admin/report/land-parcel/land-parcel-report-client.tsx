@@ -75,7 +75,10 @@ const clampGrid = (v: number, max: number) =>
 
 // Kolom default: 5 kolom #177 + Tahun Tanam & Luas (revisi owner #179);
 // Blok, Komoditas, Species, PSR opsional via selektor kolom.
-type ColKey = "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas";
+// Kolom legalitas (#296): Surat, Nama di Surat, Luas Tertera, STDB — opsional, default mati.
+type ColKey =
+  | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
+  | "surat" | "namaDiSurat" | "luasTertera" | "stdb";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "kelompokTani", label: "Kelompok Tani" },
   { key: "blok", label: "Blok" },
@@ -84,6 +87,10 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "psr", label: "PSR" },
   { key: "tahunTanam", label: "Tahun Tanam" },
   { key: "luas", label: "Luas (Ha)" },
+  { key: "surat", label: "Surat Kepemilikan" },
+  { key: "namaDiSurat", label: "Nama di Surat" },
+  { key: "luasTertera", label: "Luas Tertera (Ha)" },
+  { key: "stdb", label: "STDB" },
 ];
 
 export function LandParcelReportClient({ districts, canExport, canPrint }: Props) {
@@ -227,7 +234,11 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     (show("komoditas") ? 1 : 0) +
     (show("species") ? 1 : 0) +
     (show("psr") ? 1 : 0) +
-    (show("tahunTanam") ? 1 : 0);
+    (show("tahunTanam") ? 1 : 0) +
+    (show("surat") ? 1 : 0) +
+    (show("namaDiSurat") ? 1 : 0) +
+    (show("luasTertera") ? 1 : 0) +
+    (show("stdb") ? 1 : 0);
 
   const buildExportColumns = () => [
     { header: "No", key: "no" },
@@ -242,6 +253,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     ...(show("psr") ? [{ header: "PSR", key: "psr" }] : []),
     ...(show("tahunTanam") ? [{ header: "Tahun Tanam", key: "tahunTanam" }] : []),
     ...(show("luas") ? [{ header: "Luas (Ha)", key: "luas" }] : []),
+    ...(show("surat") ? [{ header: "Surat Kepemilikan", key: "surat" }] : []),
+    ...(show("namaDiSurat") ? [{ header: "Nama di Surat", key: "namaDiSurat" }] : []),
+    ...(show("luasTertera") ? [{ header: "Luas Tertera (Ha)", key: "luasTertera" }] : []),
+    ...(show("stdb") ? [{ header: "STDB", key: "stdb" }] : []),
   ];
 
   const scopeLabel = () =>
@@ -264,6 +279,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       psr: row.psr ? "PSR" : "Non-PSR",
       tahunTanam: row.tahunTanam ?? EMPTY,
       luas: row.luas != null ? Number(row.luas.toFixed(2)) : EMPTY,
+      surat: displayOrEmpty(row.surat),
+      namaDiSurat: displayOrEmpty(row.namaDiSurat),
+      luasTertera: row.luasTertera != null ? Number(row.luasTertera.toFixed(2)) : EMPTY,
+      stdb: displayOrEmpty(row.stdb),
     }));
 
   const totalRow = (): Record<string, string | number> => ({
@@ -277,6 +296,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     komoditas: "",
     species: "",
     psr: "",
+    surat: "",
+    namaDiSurat: "",
+    luasTertera: "",
+    stdb: "",
     tahunTanam: "",
     luas: Number(reportTotalLuas.toFixed(2)),
   });
@@ -358,6 +381,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       psr: row.psr ? "PSR" : "Non-PSR",
       tahunTanam: row.tahunTanam ?? EMPTY,
       luas: row.luas != null ? formatLuas(row.luas) : EMPTY,
+      surat: displayOrEmpty(row.surat),
+      namaDiSurat: displayOrEmpty(row.namaDiSurat),
+      luasTertera: row.luasTertera != null ? formatLuas(row.luasTertera) : EMPTY,
+      stdb: displayOrEmpty(row.stdb),
     }));
 
     if (show("luas")) {
@@ -372,6 +399,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
         komoditas: "",
         species: "",
         psr: "",
+        surat: "",
+        namaDiSurat: "",
+        luasTertera: "",
+        stdb: "",
         tahunTanam: "",
         luas: formatLuas(reportTotalLuas),
       });
@@ -614,6 +645,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 {show("psr") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">PSR</th>}
                 {show("tahunTanam") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Tahun Tanam</th>}
                 {show("luas") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Luas (Ha)</th>}
+                {show("surat") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Surat Kepemilikan</th>}
+                {show("namaDiSurat") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Nama di Surat</th>}
+                {show("luasTertera") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Luas Tertera (Ha)</th>}
+                {show("stdb") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">STDB</th>}
               </tr>
             </thead>
             <tbody>
@@ -657,6 +692,26 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                     {show("luas") && (
                       <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                         {row.luas != null ? formatLuas(row.luas) : EMPTY}
+                      </td>
+                    )}
+                    {show("surat") && (
+                      <td className={cn("px-3 py-2 font-mono text-xs", row.surat == null && "font-sans text-sm text-muted-foreground")}>
+                        {displayOrEmpty(row.surat)}
+                      </td>
+                    )}
+                    {show("namaDiSurat") && (
+                      <td className={cn("px-3 py-2", row.namaDiSurat == null && "text-muted-foreground")}>
+                        {displayOrEmpty(row.namaDiSurat)}
+                      </td>
+                    )}
+                    {show("luasTertera") && (
+                      <td className={cn("px-3 py-2 text-right tabular-nums whitespace-nowrap", row.luasTertera == null && "text-muted-foreground")}>
+                        {row.luasTertera != null ? formatLuas(row.luasTertera) : EMPTY}
+                      </td>
+                    )}
+                    {show("stdb") && (
+                      <td className={cn("px-3 py-2 font-mono text-xs", row.stdb == null && "font-sans text-sm text-muted-foreground")}>
+                        {displayOrEmpty(row.stdb)}
                       </td>
                     )}
                   </tr>

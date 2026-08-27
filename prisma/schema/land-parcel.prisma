@@ -5,6 +5,13 @@ model LandParcel {
   farmerId      String      @map("farmer_id")
   farmer        Farmer      @relation(fields: [farmerId], references: [id])
   parcelId      String      @map("parcel_id") // Internal parcel ID (unique per farmer)
+  // Identitas stabil antar revisi (Decision Log 2026-08-27): semua revisi
+  // pasangan (farmer, parcelId) menunjuk SATU LandParcelIdentity. Satelit
+  // (dokumen/STDB/external id/program) menempel ke sana, bukan ke baris ini,
+  // sehingga tak perlu repoint saat revisi. Baris lama di-backfill dalam
+  // migrasi yang sama (satu uid per pasangan farmer_id+parcel_id, lintas revisi).
+  parcelUid     String      @map("parcel_uid")
+  identity      LandParcelIdentity @relation(fields: [parcelUid], references: [id])
   blok          String?     @map("blok") // Blok kebun
   geometry      Json?       @map("geometry") // GeoJSON polygon
   area          Float?      @map("area") // Area in hectares
@@ -30,5 +37,6 @@ model LandParcel {
   @@index([farmerId])
   @@index([isActive])
   @@index([parcelId])
+  @@index([parcelUid])
   @@map("tbl_land_parcel")
 }

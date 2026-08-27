@@ -40,6 +40,17 @@
 | Farmer | UNIQUE | `(farmerGroupId, farmerId)` | ID Petani unik per Lembaga (TD-024, migration 20260721060000) |
 | **Land Parcel** | | | |
 | LandParcel | PK | `id` (CUID) | Primary key |
+| **Land Parcel Identity & Satelit (#296)** | | | |
+| LandParcelIdentity | PK | `id` (CUID) = `parcelUid` | Identitas stabil antar revisi |
+| LandParcelIdentity | UNIQUE | `(farmerId, parcelId)` | Satu identitas per pasangan petani+ID lahan |
+| LandParcelDocument | PK | `id` (CUID) | Primary key |
+| LandStdb | PK | `id` (CUID) | Primary key |
+| LandStdb | UNIQUE | `(farmerId, number)` | Nomor STDB unik per petani |
+| LandParcelStdb | PK | `id` (CUID) | Primary key |
+| LandParcelStdb | UNIQUE | `(parcelUid, stdbId)` | Tautan lahan↔STDB tidak ganda |
+| LandParcelExternalId | PK | `id` (CUID) | Primary key |
+| LandParcelExternalId | UNIQUE | `(source, code)` | UL Parcel Code unik per sumber |
+| LandParcelProgram | PK | `id` (CUID) | Primary key |
 | **Tree** | | | |
 | Tree | PK | `id` (CUID) | Primary key |
 | **Training** | | | |
@@ -87,6 +98,17 @@
 | **LandParcel** | `farmerId` | Get all parcels for a farmer | HIGH — list parcels, map view |
 | LandParcel | `isActive` | Filter active parcels | HIGH |
 | LandParcel | `parcelId` | Search parcel by ID | MEDIUM — lookup operations |
+| LandParcel | `parcelUid` | Join ke identitas & satelit (#296) | HIGH — detail lahan, report legalitas |
+| **LandParcelIdentity** | `isActive` | Filter identitas aktif | LOW |
+| **LandParcelDocument** | `(parcelUid, isActive)` | Surat aktif satu lahan | HIGH |
+| LandParcelDocument | `type` | Agregat per jenis surat | LOW |
+| LandParcelDocument | `number` | Cari nomor surat | MEDIUM |
+| **LandStdb** | `number` | Cari nomor STDB | MEDIUM |
+| LandStdb | `isActive` | Filter STDB aktif | LOW |
+| **LandParcelStdb** | `stdbId` | Lahan lain dalam STDB yang sama | MEDIUM |
+| **LandParcelExternalId** | `(parcelUid, isActive)` | UL Parcel Code aktif satu lahan | HIGH |
+| **LandParcelProgram** | `(parcelUid, isActive)` | Program aktif satu lahan | HIGH |
+| LandParcelProgram | `(programType, status)` | Daftar peserta program | LOW |
 | **Tree** | `(landParcelId, isActive)` | Set pohon aktif satu lahan (detail lahan, agregat count) | HIGH — tabel terbesar (10⁵–10⁶ baris), semua query lewat index ini |
 | Tree | `parcelId` | Relink pohon ke lahan by kunci bisnis (revisi lahan) | MEDIUM |
 | Tree | `isActive` | Filter global pohon aktif | LOW |

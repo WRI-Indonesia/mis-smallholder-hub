@@ -23,10 +23,18 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "farmer": "R",
       "landParcel": "RW",
+      "landParcelDocument": "RW",
+      "landParcelExternalId": "RW",
+      "landParcelIdentity": "W",
+      "landParcelStdb": "RW",
+      "landStdb": "RW",
       "productionRecord": "W",
       "tree": "W"
     },
     "modules": [
+      "src/lib/land-parcel-detail-save.ts",
+      "src/lib/land-parcel-identity.ts",
+      "src/server/actions/bulk-upload-parcel-detail.ts",
       "src/server/actions/bulk-upload-parcel.ts"
     ],
     "dynamicAccess": null
@@ -242,7 +250,8 @@ export const DATA_LINEAGE: DataLineage = [
       "landParcel": "R",
       "productionRecord": "R",
       "province": "R",
-      "trainingParticipant": "R"
+      "trainingParticipant": "R",
+      "tree": "R"
     },
     "modules": [
       "src/lib/parcel-passport-query.ts",
@@ -299,14 +308,22 @@ export const DATA_LINEAGE: DataLineage = [
       "farmer": "R",
       "farmerGroup": "R",
       "landParcel": "RW",
+      "landParcelDocument": "RW",
+      "landParcelExternalId": "RW",
+      "landParcelIdentity": "RW",
+      "landParcelProgram": "RW",
+      "landParcelStdb": "RW",
+      "landStdb": "RW",
       "productionRecord": "RW",
       "trainingParticipant": "R",
       "tree": "RW"
     },
     "modules": [
+      "src/lib/land-parcel-identity.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
+      "src/server/actions/land-parcel-satellite.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/production.ts",
       "src/server/actions/tree.ts"

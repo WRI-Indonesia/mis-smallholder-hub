@@ -832,3 +832,33 @@ describe("Performance - DASH-07 Fire Alert point-in-polygon (pure logic)", () =>
     expect(rows).toHaveLength(30);
   });
 });
+
+describe("Performance - Import Detail Lahan planner (#300, pure logic)", () => {
+  it("merencanakan 7.000 baris (surat+STDB+kode, 30% sudah ada di DB) under 100ms", async () => {
+    const { planLandParcelDetailRows, emptyExistingState, docKey, stdbKey } = await import("@/lib/land-parcel-detail-save");
+    const existing = emptyExistingState();
+    const rows = Array.from({ length: 7000 }, (_, i) => {
+      const farmer = `f${Math.floor(i / 3)}`;
+      const uid = `uid-${i}`;
+      if (i % 10 < 3) {
+        existing.documents.set(docKey(uid, "SHM", `S-${i}`), { id: `d${i}`, typeRaw: "SHM", holderName: "Abdul", statedArea: 0.25, custodyNote: null });
+        existing.stdbs.set(stdbKey(farmer, `N-${Math.floor(i / 3)}`), { id: `s${i}`, isActive: true });
+        existing.externalIds.set(`CODE-${i}`, { parcelUid: uid, isActive: true });
+      }
+      return {
+        parcelUid: uid, farmerDbId: farmer, parcelId: `P-${i}`,
+        document: { type: "SHM" as const, typeRaw: "SHM", number: `S-${i}`, holderName: "Abdul", statedArea: 0.25, custodyNote: null },
+        custodyNote: null,
+        stdb: { number: `N-${Math.floor(i / 3)}`, issuedYear: 2025 },
+        externalCode: `CODE-${i}`,
+        subGroupLv2: i % 2 ? "KT" : null,
+      };
+    });
+    const start = performance.now();
+    const plan = planLandParcelDetailRows(rows, existing);
+    const duration = performance.now() - start;
+    console.log(`  detail-lahan plan (7.000 baris): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(100);
+    expect(plan.summary.documentsCreated + plan.summary.documentsUnchanged).toBe(7000);
+  });
+});

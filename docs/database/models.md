@@ -97,6 +97,9 @@ classDiagram
 | `rbac_` | Tabel RBAC / permission | `rbac_role_permission`, `rbac_user_district` |
 | `tbl_snapshot_` | Snapshot dashboard (separate table per dashboard) | `tbl_snapshot_main_dashboard`, `tbl_snapshot_bmp_dashboard` |
 | `cache_` | Cache / materialized view (reserved — belum ada tabelnya) | `cache_dashboard_stats` (contoh rencana) |
+| `tbl_<induk>_<aspek>` | **Tabel satelit** — atribut ber-siklus-hidup sendiri / bisa >1 per induk; induk ditulis lengkap; penghubung M:N = gabungan dua induk tanpa aspek | `tbl_land_parcel_document`, `tbl_land_parcel_stdb` (M:N ke `tbl_land_stdb`) |
+
+Aturan lengkap (termasuk larangan `tbl_parcel_*`, enum vs `ref_`): [../standards/code-standards.md §Penamaan tabel & model](../standards/code-standards.md#penamaan-tabel--model-prisma).
 
 </details>
 
@@ -310,6 +313,22 @@ Farmer (1) ─→ (N) TrainingParticipant
 <details>
 <summary><strong>File Structure</strong> — Struktur file Prisma schema</summary>
 
+## LandParcelIdentity & satelit lahan (#296, Decision Log 2026-08-27)
+
+`LandParcel` berevisi dengan **id baru per baris** (bulk upload: baris lama `is_active=false`, baris baru `revision+1`), sehingga tabel yang menunjuk `LandParcel.id` harus di-repoint tiap revisi (pola `Tree`/produksi). **`tbl_land_parcel_identity`** (`parcelUid`) adalah jangkar tetap: satu baris per `(farmerId, parcelId)` — unik, dibuat/di-upsert saat revisi 0 (`createLandParcel`, bulk upload) dan tidak berganti. `LandParcel.parcelUid` NOT NULL (backfill di migrasi). Tabel ini **sengaja hanya identitas** — geometri/atribut fisik tetap di `LandParcel`; `LandParcel` bukan tabel bridging (keputusan owner: `farmerId`+`parcelId` adalah identitas & basis scope RBAC).
+
+Satelit menempel ke `parcelUid`, bukan ke baris revisi — tak perlu repoint:
+
+| Tabel | Model | Relasi | Isi kunci |
+| ----- | ----- | ------ | --------- |
+| `tbl_land_parcel_document` | `LandParcelDocument` | 1:N | Surat kepemilikan: `type` enum `LandDocumentType` (SHM/SKT/SKGR/SK/SKST/SKTC/SKGK/SPPT/SKRPT/SKKT/SKTB/HIBAH/JUAL_BELI/OTHER) + `typeRaw` (ejaan sumber), `number` (**tidak unik** — nomor pendek berulang antar desa), `holderName` (97% ≠ nama petani), `statedArea` (terpisah dari `area`), `issuedYear?`, `custodyNote` ("surat di bank", "lahan sudah dijual" — status, bukan jenis), `fileUrl?` |
+| `tbl_land_stdb` | `LandStdb` | per **petani**, unik `(farmerId, number)` | STDB menutup beberapa persil petani yang sama (maks 13 di data); `number` mentah (`1637/53/1401/6/2025` → `issuedYear` diturunkan bila berpola) |
+| `tbl_land_parcel_stdb` | `LandParcelStdb` | M:N lahan ↔ STDB | satu-satunya M:N di keluarga satelit |
+| `tbl_land_parcel_external_id` | `LandParcelExternalId` | 1:N, unik `(source, code)` | UL Parcel Code (`parcel_code`, mis. `ID080d781b4`) + **`rawGeometry Json?`** poligon mentah vendor (opsional, keputusan owner) |
+| `tbl_land_parcel_program` | `LandParcelProgram` | 1:N | Keikutsertaan program: `programType` (`DEMPLOT_PBU`), `status`, `startDate/endDate` — level lahan dulu; entitas Program/PBU bisa ditambah sebagai FK tanpa mengubah baris |
+
+Scope RBAC satelit: lewat `identity.farmer` (`farmerRelationAccessFilter` pola sama dengan `LandParcel`). Sumber data awal: `MIS_<KAB>_data-lahan.xlsx` (7.177 baris, 3 kabupaten) — statistik & bug sumber yang wajib dilaporkan parser ada di Decision Log 2026-08-27.
+
 ## FarmerGroupBoundary (Boundary Lembaga, #266)
 
 Poligon wilayah kerja tiap ICS/lembaga (`tbl_farmer_group_boundary`) untuk Dashboard Risk Management — Fire Alert. Maksimal **satu boundary aktif per lembaga** (dijaga alur seed: soft-delete lama + insert baru; tanpa constraint DB karena soft delete). **Fakta domain (owner, 2026-08-19): poligon di shapefile sumber sudah dibuat TERMASUK buffer 1,5 km** dari area lahan — deteksi titik api cukup point-in-polygon, tanpa perhitungan buffer tambahan.
@@ -341,6 +360,11 @@ prisma/schema/
 ├── administrative-boundary.prisma # AdministrativeBoundary (batas BIG per level, #266)
 ├── farmer.prisma         # Farmer
 ├── land-parcel.prisma    # LandParcel
+├── land-parcel-identity.prisma # LandParcelIdentity (parcelUid — identitas stabil antar revisi, #296)
+├── land-parcel-document.prisma # LandParcelDocument + enum LandDocumentType (surat kepemilikan, #296)
+├── land-stdb.prisma      # LandStdb (per petani) + LandParcelStdb (M:N ke lahan, #296)
+├── land-parcel-external-id.prisma # LandParcelExternalId (UL Parcel Code + rawGeometry opsional, #296)
+├── land-parcel-program.prisma # LandParcelProgram + enum LandProgramType/Status (demplot PBU, #296)
 ├── tree.prisma           # Tree (titik pohon sawit per lahan, #238)
 ├── reference-benchmark.prisma # ReferenceBenchmark (angka acuan manual per lembaga, #243)
 ├── production.prisma     # ProductionRecord

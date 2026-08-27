@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { landParcelSchema, type LandParcelInput } from "@/validations/land-parcel.schema";
 import { getAccessContext } from "@/lib/access-context";
+import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import { parseShapefileZip } from "@/lib/shapefile-server";
 import type { ActionResult } from "@/types/action-result";
 
@@ -160,9 +161,15 @@ export async function bulkCreateLandParcels(
           }
         }
 
+        // Identitas stabil antar revisi (Decision Log 2026-08-27): revisi
+        // memakai identitas yang sama, sehingga satelit (dokumen/STDB/dll.)
+        // tak perlu ikut di-repoint seperti produksi & pohon di bawah.
+        const identity = await tx.landParcelIdentity.upsert(parcelIdentityUpsertArgs(record, userId));
+
         const created = await tx.landParcel.create({
           data: {
             ...record,
+            parcelUid: identity.id,
             geometry: record.geometry ?? null,
             revision: finalRevision,
             createdBy: userId,

@@ -30,7 +30,7 @@ Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawa
 | Aspek | Nilai |
 |---|---|
 | Library | MapLibre GL via `react-map-gl/maplibre` (`Map`, `Source`, `Layer`, `Popup`); komponen canvas di-`dynamic()` dengan `ssr: false` |
-| Basemap | 3 pilihan: `light` (CARTO light_all), `dark` (CARTO dark_all), `hybrid` (Google `mt1.google.com/vt/lyrs=y`); default mengikuti tema aplikasi sampai user memilih manual |
+| Basemap | 3 pilihan: `light` (OpenStreetMap standar, tanpa API key — pengganti CARTO #298), `dark` (Esri World Dark Gray, maxzoom 16), `hybrid` (Google `mt1.google.com/vt/lyrs=y`); default mengikuti tema aplikasi sampai user memilih manual |
 | Glyphs label | `https://fonts.openmaptiles.org/{fontstack}/{range}.pbf`, font `Open Sans Regular` |
 | View awal | `longitude: 101.8, latitude: 0.6, zoom: 9` (Riau), lalu auto `fitBounds` ke data yang dimuat |
 | Kontrol zoom | Tidak ada `NavigationControl` bawaan — zoom via scroll/pinch/double-click + tombol "Zoom ke semua data" |

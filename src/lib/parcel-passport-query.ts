@@ -30,16 +30,18 @@ export async function computeFarmerTrainingItems(farmerId: string): Promise<Farm
     select: { activity: { select: { trainingDate: true, package: { select: { code: true } } } } },
   });
 
-  const earliest = new Map<string, Date>();
+  // Tanggal TERAKHIR mengikuti tiap paket (keputusan owner #298 — semula
+  // tanggal pertama); di PDF berlabel "Tanggal Mengikuti".
+  const latest = new Map<string, Date>();
   for (const p of participations) {
     const code = p.activity.package.code;
     const date = p.activity.trainingDate;
-    const current = earliest.get(code);
-    if (!current || date < current) earliest.set(code, date);
+    const current = latest.get(code);
+    if (!current || date > current) latest.set(code, date);
   }
 
   return TRAINING_PACKAGES.map(({ code, label }) => {
-    const date = earliest.get(code);
+    const date = latest.get(code);
     return { code, label, completed: date != null, date: date ? date.toISOString() : null };
   });
 }
@@ -71,6 +73,36 @@ export async function fetchParcelPassport(
       plantingYear: true,
       notes: true,
       geometry: true,
+      blok: true,
+      subGroupLv2: true,
+      species: true,
+      isPsr: true,
+      parcelUid: true,
+      // Legalitas (#296/#298) via identitas stabil — hanya record aktif.
+      identity: {
+        select: {
+          documents: {
+            where: { isActive: true },
+            select: { type: true, typeRaw: true, number: true, holderName: true, statedArea: true, issuedYear: true, custodyNote: true },
+            orderBy: [{ type: "asc" }, { number: "asc" }],
+          },
+          stdbLinks: {
+            where: { isActive: true, stdb: { isActive: true } },
+            select: {
+              stdb: {
+                select: {
+                  number: true,
+                  issuedYear: true,
+                  holderName: true,
+                  parcelLinks: { where: { isActive: true }, select: { parcel: { select: { parcelId: true } } } },
+                },
+              },
+            },
+          },
+          externalIds: { where: { isActive: true }, select: { source: true, code: true } },
+          programs: { where: { isActive: true }, select: { programType: true, status: true, startDate: true, endDate: true } },
+        },
+      },
       farmer: {
         select: {
           id: true,
@@ -110,7 +142,7 @@ export async function fetchParcelPassport(
   }
 
   const farmer = parcel.farmer;
-  const [training, prodRecords] = await Promise.all([
+  const [training, prodRecords, treeCount] = await Promise.all([
     computeFarmerTrainingItems(farmer.id),
     includeProduction
       ? prisma.productionRecord.findMany({
@@ -118,6 +150,7 @@ export async function fetchParcelPassport(
           select: { period: true, yieldKg: true },
         })
       : Promise.resolve([]),
+    prisma.tree.count({ where: { landParcelId, isActive: true } }),
   ]);
 
   return {
@@ -148,6 +181,27 @@ export async function fetchParcelPassport(
         notes: parcel.notes,
         centroid: center,
         geometry,
+        blok: parcel.blok,
+        subGroupLv2: parcel.subGroupLv2,
+        species: parcel.species,
+        isPsr: parcel.isPsr,
+        treeCount,
+      },
+      legal: {
+        documents: parcel.identity.documents,
+        stdbs: parcel.identity.stdbLinks.map((l) => ({
+          number: l.stdb.number,
+          issuedYear: l.stdb.issuedYear,
+          holderName: l.stdb.holderName,
+          otherParcelIds: l.stdb.parcelLinks.map((x) => x.parcel.parcelId).filter((id) => id !== parcel.parcelId),
+        })),
+        externalIds: parcel.identity.externalIds,
+        programs: parcel.identity.programs.map((pg) => ({
+          programType: pg.programType,
+          status: pg.status,
+          startDate: pg.startDate ? pg.startDate.toISOString() : null,
+          endDate: pg.endDate ? pg.endDate.toISOString() : null,
+        })),
       },
       training,
       production: summarizeProduction(prodRecords),

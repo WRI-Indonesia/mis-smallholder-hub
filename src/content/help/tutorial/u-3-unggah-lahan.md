@@ -23,7 +23,8 @@ Tabel atribut `.dbf` harus memuat **ID Petani** dan **ID Lahan**, karena dari si
 
 ## Langkah
 
-1. Buka menu **Bulk Upload → Lahan**.
+1. Buka menu **Bulk Upload → Lahan**; pastikan tab **Poligon (Shapefile ZIP)** yang aktif (tab bawaan).
++ Tab satunya, **Detail Lahan (Excel)**, untuk surat/STDB/UL Parcel Code lahan yang sudah ada — bukan untuk poligon.
 2. Pada **Langkah 1**, pilih berkas `.zip`. Sistem membaca isinya dan menyebut jumlah fitur yang terdeteksi.
 + Bila jumlah fitur jauh berbeda dari yang Anda harapkan, hentikan di sini — biasanya berarti ZIP-nya memuat layer yang salah.
 3. Pada **Langkah 2 — Petakan Atribut Kolom**, cocokkan kolom tabel atribut dengan kolom sistem.

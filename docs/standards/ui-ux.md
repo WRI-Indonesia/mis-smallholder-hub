@@ -197,7 +197,7 @@ Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (ko
   - Tile proxy overlay: `src/app/api/map-overlay/[key]/route.ts` (forward ke ArcGIS `export`, toleran TLS chain upstream, whitelist per-overlay)
   - Hotspot NASA FIRMS: proxy `src/app/api/map-hotspot/route.ts` (auth-guarded) + helper murni `src/lib/firms.ts` + client `src/app/(admin)/admin/map/parcel/map-hotspot.ts`; unit test `src/test/firms.test.ts`
   - Ruler & label fit: `src/app/(admin)/admin/map/parcel/map-geo.ts` (jarak/luas geodesik + `parcelLabelFit`/`geomBounds`); unit test `src/test/map-geo.test.ts`
-  - Farm Passport PDF: `src/lib/farm-passport.ts` (jsPDF A4: identitas, layout lahan/polygon vektor, pelatihan, produksi) — di-generate dari `getParcelPassport`
+  - Farm Passport PDF: `src/lib/farm-passport.ts` (jsPDF A4, 2 halaman: kartu ringkasan, layout lahan/polygon vektor, informasi & pemilik, Legalitas & Dokumen (#298), pelatihan, produksi) — di-generate dari `getParcelPassport`
 
 ### Pola Konten Bantuan (HELP-02)
 

@@ -188,6 +188,10 @@
   overflow-y: auto !important;
   overscroll-behavior: contain;
 }
+/* Popup harus di atas tombol overlay peta (Zoom ke Lahan / basemap, z-10) — #298. */
+.map-parcel-popup {
+  z-index: 20;
+}
 .maplibregl-popup-anchor-top .maplibregl-popup-tip,
 .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
 .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
