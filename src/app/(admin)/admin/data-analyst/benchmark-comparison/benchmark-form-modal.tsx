@@ -94,7 +94,9 @@ export function BenchmarkFormModal({ open, onClose, row, onSaved }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      {/* `sm:max-w-*` berprefiks — tanpa prefiks akan menimpa penjaga
+          `max-w-[calc(100%-2rem)]` milik DialogContent via tailwind-merge (#292). */}
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Angka Acuan — {row.name}</DialogTitle>
         </DialogHeader>

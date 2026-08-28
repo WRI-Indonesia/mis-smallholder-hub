@@ -49,3 +49,9 @@ src: url("/fonts/acumin-pro-regular.woff2") format("woff2"),
 > **Lisensi**: font Acumin milik Adobe/WRI. Jangan commit file berlisensi ke repo
 > **publik** tanpa hak distribusi — bila repo publik, `gitignore` `public/fonts/*.woff*`
 > dan distribusikan lewat jalur lain.
+
+File turunan:
+- `acumin-pro-{regular,bold,italic}.ttf` — hasil konversi WOFF (outline CFF/OTTO) → TrueType via fonttools/cu2qu, khusus untuk **embed jsPDF** (laporan Fire Alert #266); jsPDF tidak membaca WOFF/OTF-CFF.
+- `Acumin-*.otf` — **dihapus 2026-08-20 (#273)**. Salinan sumber desktop (CFF) yang tidak dirujuk kode
+  sama sekali, sementara repo ini **publik** — lihat catatan lisensi di atas. Bila perlu konversi ulang,
+  ambil `.otf` sumber dari Adobe Fonts / <https://brand.wri.org/fonts/>, jangan commit kembali ke repo.

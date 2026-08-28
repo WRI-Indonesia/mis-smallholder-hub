@@ -53,3 +53,57 @@ export interface FarmerSelect {
   name: string;
   farmerId: string;
 }
+
+// --- Satelit lahan (#296) — menempel ke parcelUid, dibaca via getLandParcelSatellites ---
+
+import type { LandDocumentTypeCode } from "@/lib/land-parcel-detail-import";
+export type { LandDocumentTypeCode };
+
+export interface LandParcelDocumentItem {
+  id: string;
+  type: LandDocumentTypeCode;
+  typeRaw: string | null;
+  number: string | null;
+  holderName: string | null;
+  statedArea: number | null;
+  issuedYear: number | null;
+  custodyNote: string | null;
+  fileUrl: string | null;
+  notes: string | null;
+}
+
+export interface LandStdbItem {
+  id: string;
+  number: string;
+  holderName: string | null;
+  statedArea: number | null;
+  issuedYear: number | null;
+  notes: string | null;
+  /** Lahan lain (aktif) yang ditutup STDB yang sama; `id` = baris lahan aktif untuk tautan. */
+  otherParcels: { parcelId: string; id: string | null }[];
+}
+
+export interface LandParcelExternalIdItem {
+  id: string;
+  source: string;
+  code: string;
+  mappedAt: Date | null;
+  notes: string | null;
+}
+
+export interface LandParcelProgramItem {
+  id: string;
+  programType: "DEMPLOT_PBU";
+  status: "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  startDate: Date | null;
+  endDate: Date | null;
+  notes: string | null;
+}
+
+export interface LandParcelSatellites {
+  parcelUid: string;
+  documents: LandParcelDocumentItem[];
+  stdbs: LandStdbItem[];
+  externalIds: LandParcelExternalIdItem[];
+  programs: LandParcelProgramItem[];
+}

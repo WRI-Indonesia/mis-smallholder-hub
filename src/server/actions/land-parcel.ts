@@ -14,8 +14,10 @@ import {
 import { getFarmerOptions } from "@/lib/select-options";
 import { summarizeProduction } from "@/lib/map-data";
 import { fetchParcelPassport } from "@/lib/parcel-passport-query";
+import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import type { ActionResult } from "@/types/action-result";
 import type { ParcelPassport, ProductionSummary } from "@/types/map";
+import type { LandParcelSatellites } from "@/types/land-parcel";
 
 /**
  * Daftar petani (opsi) dalam scope, khusus untuk form Lahan. Dibungkus sebagai
@@ -220,9 +222,17 @@ export async function createLandParcel(input: LandParcelInput) {
     return { success: false, error: { parcelId: ["ID Lahan sudah terdaftar untuk petani ini"] } };
   }
 
+  // Identitas stabil antar revisi (Decision Log 2026-08-27): satu baris per
+  // pasangan (farmer, parcelId). Upsert — pasangan bisa sudah ada bila lahan
+  // pernah dinonaktifkan lalu didaftarkan ulang.
+  const identity = await prisma.landParcelIdentity.upsert(
+    parcelIdentityUpsertArgs(parsed.data, session?.user?.id ?? null)
+  );
+
   await prisma.landParcel.create({
     data: {
       ...parsed.data,
+      parcelUid: identity.id,
       geometry: parsed.data.geometry ?? null,
       revision: 0,
       createdBy: session?.user?.id ?? null,
@@ -276,10 +286,32 @@ export async function updateLandParcel(input: UpdateLandParcelInput) {
     }
   }
 
+  // Identitas stabil (#296) mengikuti pasangan (farmerId, parcelId). Bila
+  // pasangan diganti lewat form: pindahkan baris identitas (satelit ikut),
+  // kecuali pasangan baru sudah punya identitas (lahan lama yang pernah
+  // dinonaktifkan) → lahan diarahkan ke identitas itu.
+  let parcelUid: string | undefined;
+  if (data.parcelId !== existing.parcelId || data.farmerId !== existing.farmerId) {
+    const target = await prisma.landParcelIdentity.findUnique({
+      where: { farmerId_parcelId: { farmerId: data.farmerId, parcelId: data.parcelId } },
+      select: { id: true },
+    });
+    if (target && target.id !== existing.parcelUid) {
+      parcelUid = target.id;
+      await prisma.landParcelIdentity.update({ where: { id: target.id }, data: { isActive: true, modifiedBy: session?.user?.id ?? null } });
+    } else if (!target) {
+      await prisma.landParcelIdentity.update({
+        where: { id: existing.parcelUid },
+        data: { farmerId: data.farmerId, parcelId: data.parcelId, modifiedBy: session?.user?.id ?? null },
+      });
+    }
+  }
+
   await prisma.landParcel.update({
     where: { id },
     data: {
       ...data,
+      ...(parcelUid ? { parcelUid } : {}),
       // Geometry hanya ditulis bila client mengirim field-nya (undefined = tidak
       // diubah). Payload list & form edit tidak membawa geometry (#163), jadi
       // edit dari list tidak boleh menghapus polygon existing.
@@ -349,4 +381,75 @@ export async function toggleLandParcelActive(id: string) {
   });
 
   return { success: true };
+}
+
+/**
+ * Satelit lahan (#296) untuk halaman Detail Lahan: dokumen kepemilikan, STDB,
+ * UL Parcel Code, program. Menempel ke `parcelUid` (identitas stabil antar
+ * revisi), jadi dibaca lewat baris lahan yang diminta — scope ditegakkan pada
+ * baris lahan itu (`farmerRelationAccessFilter`), satelit tidak punya scope
+ * sendiri. `rawGeometry` UL Parcel Code sengaja tidak ikut (payload besar, hanya
+ * untuk audit).
+ */
+export async function getLandParcelSatellites(landParcelId: string): Promise<LandParcelSatellites | null> {
+  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+  const parcel = await prisma.landParcel.findFirst({
+    where: { id: landParcelId, isActive: true, ...farmerRelationAccessFilter(access) },
+    select: { parcelUid: true },
+  });
+  if (!parcel) return null;
+  const uid = parcel.parcelUid;
+
+  const [documents, stdbLinks, externalIds, programs] = await Promise.all([
+    prisma.landParcelDocument.findMany({
+      where: { parcelUid: uid, isActive: true },
+      select: { id: true, type: true, typeRaw: true, number: true, holderName: true, statedArea: true, issuedYear: true, custodyNote: true, fileUrl: true, notes: true },
+      orderBy: [{ type: "asc" }, { number: "asc" }],
+    }),
+    prisma.landParcelStdb.findMany({
+      where: { parcelUid: uid, isActive: true, stdb: { isActive: true } },
+      select: {
+        stdb: {
+          select: {
+            id: true, number: true, holderName: true, statedArea: true, issuedYear: true, notes: true,
+            // Lahan lain yang ditutup STDB yang sama (aktif) — ditampilkan sebagai konteks.
+            parcelLinks: { where: { isActive: true, parcelUid: { not: uid } }, select: { parcel: { select: { parcelId: true, revisions: { where: { isActive: true }, select: { id: true }, take: 1 } } } } },
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.landParcelExternalId.findMany({
+      where: { parcelUid: uid, isActive: true },
+      select: { id: true, source: true, code: true, mappedAt: true, notes: true, rawGeometry: false },
+      orderBy: [{ source: "asc" }, { code: "asc" }],
+    }),
+    prisma.landParcelProgram.findMany({
+      where: { parcelUid: uid, isActive: true },
+      select: { id: true, programType: true, status: true, startDate: true, endDate: true, notes: true },
+      orderBy: { startDate: "desc" },
+    }),
+  ]);
+
+  return {
+    parcelUid: uid,
+    documents,
+    stdbs: stdbLinks.map((l) => ({
+      id: l.stdb.id,
+      number: l.stdb.number,
+      holderName: l.stdb.holderName,
+      statedArea: l.stdb.statedArea,
+      issuedYear: l.stdb.issuedYear,
+      notes: l.stdb.notes,
+      // Hanya lahan yang masih punya revisi aktif — identitas tidak ikut nonaktif saat lahan dihapus.
+      otherParcels: l.stdb.parcelLinks
+        .filter((p) => p.parcel.revisions.length > 0)
+        .map((p) => ({ parcelId: p.parcel.parcelId, id: p.parcel.revisions[0].id })),
+    })),
+    externalIds,
+    programs,
+  };
 }

@@ -182,6 +182,7 @@ describe("dashboard aggregation", () => {
     const kts: KTDetails[] = [
       {
         id: "g1", name: "KT Alpha", code: "A1", districtId: "d1", districtName: "Distrik 1", locationLat: 1, locationLong: 101,
+        kelompokTaniCount: 0,
         totalFarmers: 2, totalFarmersMale: 1, totalFarmersFemale: 1, totalParcels: 3, totalArea: 4.5,
         trainingCoverage: { PAKET_1_BMP_PC_RSPO_NKT: 2, PAKET_2_MK: 1, PAKET_2_K3: 0, PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0 },
         byYear: {
@@ -190,6 +191,7 @@ describe("dashboard aggregation", () => {
       },
       {
         id: "g2", name: "KT Beta", code: "B1", districtId: "d2", districtName: "Distrik 2", locationLat: null, locationLong: null,
+        kelompokTaniCount: 0,
         totalFarmers: 1, totalFarmersMale: 0, totalFarmersFemale: 1, totalParcels: 0, totalArea: 0,
         trainingCoverage: { PAKET_1_BMP_PC_RSPO_NKT: 0, PAKET_2_MK: 0, PAKET_2_K3: 1, PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV: 0 },
         byYear: {},
@@ -286,6 +288,7 @@ describe("dashboard aggregation", () => {
     const data: DashboardSnapshotData = {
       totalKelompokTani: 2, totalKelompokTaniLahan: 5, totalPetani: 5, totalPetaniLaki: 5, totalPetaniPerempuan: 0,
       totalPersilLahan: 0, totalLuasLahan: 0, trainingCounts: { ...emptyCov },
+      certStats: { rspo: { certified: 0, planned: 0 }, ispo: { certified: 0, planned: 0 }, sapMap: { certified: 0, planned: 0 } },
       kelompokTaniList: [kt("ktA", "d1", 3, 3), kt("ktB", "d2", 2, 2)],
     };
 

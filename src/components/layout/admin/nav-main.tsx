@@ -119,6 +119,11 @@ export function NavMain({
                         render={<SidebarMenuSubItem />}
                       >
                         <CollapsibleTrigger
+                          // SidebarMenuSubButton dirender sebagai <a>, bukan
+                          // <button> — beri tahu Base UI agar tidak memaksa
+                          // semantik native button (warning dev sejak grup
+                          // level-3 pertama, Risk Management #266).
+                          nativeButton={false}
                           render={
                             <SidebarMenuSubButton
                               isActive={pathname === subItem.url || pathname.startsWith(subItem.url + "/")}

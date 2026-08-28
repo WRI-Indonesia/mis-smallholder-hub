@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { buildPDF } from "@/lib/pdf";
 import { buildFarmPassportDoc } from "@/lib/farm-passport";
 import { buildBmpMapDoc } from "@/lib/bmp-map-print";
+import { buildFireMapDoc } from "@/lib/fire-map-print";
+import { imageFormatOf } from "@/lib/map-capture";
 import type { ParcelPassport } from "@/types/map";
 
 // TD-019: exporter lama dipisah build-vs-save (pola #179) — test struktural
@@ -64,6 +66,20 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
         type: "Polygon",
         coordinates: [[[101.49, 0.74], [101.51, 0.74], [101.51, 0.76], [101.49, 0.76], [101.49, 0.74]]],
       },
+      blok: "DUSUN 2",
+      subGroupLv2: "KT Karya Maju",
+      species: "Elaeis guineensis",
+      isPsr: false,
+      treeCount: 286,
+    },
+    legal: {
+      documents: [
+        { type: "SHM", typeRaw: "SHM (Sertifikat Hak Milik)", number: "727", holderName: "Abdul Rohman", statedArea: 0.25, issuedYear: null, custodyNote: null },
+        { type: "OTHER", typeRaw: null, number: "694", holderName: null, statedArea: null, issuedYear: null, custodyNote: "surat di bank" },
+      ],
+      stdbs: [{ number: "1637/53/1401/6/2025", issuedYear: 2025, holderName: null, otherParcelIds: ["LHN-002", "LHN-003"] }],
+      externalIds: [{ source: "MERIDIA", code: "ID080d781b4" }],
+      programs: [{ programType: "DEMPLOT_PBU", status: "ACTIVE", startDate: "2026-01-01", endDate: null }],
     },
     training: [
       { code: "PAKET_1_BMP_PC_RSPO_NKT", label: "BMP, P&C RSPO & NKT", completed: true, date: "2025-05-16" },
@@ -81,6 +97,22 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     const doc = buildFarmPassportDoc(passport);
     expect(Math.round(doc.internal.pageSize.getWidth())).toBe(210);
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+  });
+
+  it("legalitas kosong (belum ada surat/STDB/kode/program) → tetap terbit tanpa throw", () => {
+    const bare: ParcelPassport = { ...passport, legal: { documents: [], stdbs: [], externalIds: [], programs: [] } };
+    expect(() => buildFarmPassportDoc(bare)).not.toThrow();
+  });
+
+  it("banyak surat → pecah ke halaman berikutnya (footer per halaman), bukan terpotong (#298)", () => {
+    const many: ParcelPassport = {
+      ...passport,
+      legal: {
+        ...passport.legal,
+        documents: Array.from({ length: 60 }, (_, i) => ({ type: "SKT", typeRaw: null, number: `SKT-${i + 1}`, holderName: "Nama", statedArea: 1, issuedYear: 2020, custodyNote: null })),
+      },
+    };
+    expect(buildFarmPassportDoc(many).getNumberOfPages()).toBeGreaterThanOrEqual(2);
   });
 
   it("geometri tak tersedia (ring < 3 titik) → tetap terbit tanpa throw", () => {
@@ -120,5 +152,57 @@ describe("buildBmpMapDoc (lib/bmp-map-print)", () => {
     });
     expect(Math.round(doc.internal.pageSize.getWidth())).toBe(297);
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
+  const base = {
+    subtitle: "Smallholder Hub Group",
+    kabupatenLabel: "Kampar, Pelalawan, Rokan Hulu, Siak",
+    rangeLabel: "5 hari terakhir (15–19 Agu 2026)",
+    exportedAt: "19 Agu 2026, 14.55 WIB",
+    logo: null,
+    fonts: null,
+    stats: { total: 130, high: 1, nominal: 123, low: 6, inside: 6, groupsAffected: 3 },
+    imageDataUrl: PNG_1PX_URL,
+    imageWidthPx: 800,
+    imageHeightPx: 500,
+  };
+  const row = (n: number) => ({
+    timeWib: "17 Agu 2026, 14.29 WIB",
+    satellite: "Suomi NPP",
+    confidence: "Nominal (Medium)",
+    frp: "3.2",
+    lat: "0.70085",
+    lng: "100.37555",
+    groupName: `Lembaga ${n}`,
+  });
+
+  it("portrait A4: header + kartu + peta + tabel detail titik", () => {
+    const doc = buildFireMapDoc({ ...base, rows: [row(1), row(2), row(3)] });
+    expect(Math.round(doc.internal.pageSize.getWidth())).toBe(210);
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+  });
+
+  it("tanpa titik & tanpa capture peta → placeholder + pesan kosong, tanpa throw", () => {
+    const doc = buildFireMapDoc({ ...base, imageDataUrl: null, rows: [] });
+    expect(doc.getNumberOfPages()).toBe(1);
+  });
+
+  it("groupMaps → halaman lampiran Peta per Lembaga", () => {
+    const gm = { name: "Kepau Jaya", count: 2, shared: 1, dataUrl: PNG_1PX_URL, widthPx: 800, heightPx: 500 };
+    const doc = buildFireMapDoc({ ...base, rows: [row(1)], groupMaps: [gm, { ...gm, name: "PPKS" }] });
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// Ukuran berkas PDF (#276): capture peta di-encode JPEG + diperkecil, sementara
+// placeholder & logo tetap PNG — format `addImage` diturunkan dari isi data URL,
+// bukan dipatok, agar keduanya benar.
+describe("imageFormatOf (lib/map-capture)", () => {
+  it("JPEG untuk capture peta, PNG untuk sisanya", () => {
+    expect(imageFormatOf("data:image/jpeg;base64,/9j/4AAQ")).toBe("JPEG");
+    expect(imageFormatOf(PNG_1PX_URL)).toBe("PNG");
+    expect(imageFormatOf("")).toBe("PNG");
   });
 });

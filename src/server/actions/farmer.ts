@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
 import type { FarmerInput, UpdateFarmerInput } from "@/validations/farmer.schema";
@@ -136,6 +137,13 @@ export async function getFarmerDetail(id: string) {
             isPsr: true,
             // Untuk peta sebaran lahan petani (mapParcels) — tidak dipakai agregasi.
             geometry: true,
+            // Satelit (#296) via identitas stabil — ringkasan surat & STDB di tab Lahan.
+            identity: {
+              select: {
+                documents: { where: { isActive: true }, select: { type: true, number: true, holderName: true, statedArea: true } },
+                stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true } } } },
+              },
+            },
           },
         },
         trainingParticipants: {
@@ -233,6 +241,8 @@ export async function getFarmerDetail(id: string) {
       cropType: p.cropType,
       landStatus: p.landStatus,
       revision: p.revision,
+      surat: summarizeDocuments(p.identity.documents),
+      stdb: summarizeStdb(p.identity.stdbLinks.map((l) => l.stdb.number)),
     })),
     mapParcels: farmer.landParcels.map((p) => ({
       id: p.id,

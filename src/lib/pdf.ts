@@ -41,6 +41,7 @@ export function buildPDF({
     orientation,
     unit: "mm",
     format: "a4",
+    compress: true,
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();

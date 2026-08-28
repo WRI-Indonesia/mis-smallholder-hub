@@ -275,7 +275,7 @@ export async function getBmpMapData(
 /**
  * Training completion of a single farmer (parcel owner), lazily loaded when the
  * "Pelatihan Petani" section of the parcel popup is expanded. Returns one entry
- * per main package with the earliest attendance date, if any.
+ * per main package with the latest attendance date, if any (#298).
  * (Helper fetch dipindah ke lib/parcel-passport-query.ts — dipakai juga #172.)
  */
 export async function getFarmerTraining(farmerId: string): Promise<FarmerTrainingItem[]> {

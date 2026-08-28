@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useTransition } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
@@ -14,7 +14,9 @@ import type {
   MapSelectOption,
   MapGroupOption,
 } from "@/types/map";
-import type { FeatureCollection } from "geojson";
+import type { FeatureCollection, MultiPolygon } from "geojson";
+import { filterPointsWithinAreas } from "@/lib/fire-alert";
+import { getAdminBoundaries } from "@/server/actions/fire-boundary";
 import { MapControlPanel, type LayerVisibility, type LayerZoomTarget } from "./map-control-panel";
 import {
   DEFAULT_OVERLAY_STATE,
@@ -81,6 +83,21 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
   const [customLayers, setCustomLayers] = useState<CustomLayer[]>([]);
   const [hotspot, setHotspot] = useState<HotspotState>(DEFAULT_HOTSPOT_STATE);
   const [hotspotData, setHotspotData] = useState<FeatureCollection | null>(null);
+  // Poligon 12 kabupaten BIG untuk memangkas titik api ke Provinsi Riau (#269).
+  // Dimuat MALAS — hanya saat layer Titik Api dinyalakan, dan hanya sekali —
+  // karena geometrinya ±165 KB dan mayoritas kunjungan tak membuka layer ini.
+  const riauAreasRef = useRef<Promise<{ geometry: MultiPolygon }[]> | null>(null);
+  const loadRiauAreas = useCallback(() => {
+    riauAreasRef.current ??= getAdminBoundaries()
+      .then((rows) => rows.map((r) => ({ geometry: r.geometry })))
+      // Batas belum ter-seed / gagal dimuat → jangan gagalkan layer titik api;
+      // pemanggil menampilkan titik apa adanya (fallback yang disengaja).
+      .catch(() => {
+        riauAreasRef.current = null; // biar percobaan berikutnya tidak memakai hasil gagal
+        return [];
+      });
+    return riauAreasRef.current;
+  }, []);
   const [hotspotLoading, setHotspotLoading] = useState(false);
   // Hasil kalkulasi lembaga terdekat per titik api (lazy, background), beserta
   // identitas input yang dihitungnya — hasil basi otomatis terabaikan lewat
@@ -170,9 +187,20 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
     // Abort membatalkan request yang masih jalan saat toggle-off/ganti rentang —
     // stale-guard `active` tetap dipakai untuk mencegah setState basi.
     const controller = new AbortController();
-    fetchHotspots(RIAU_BBOX, hotspot.dayRange, Date.now(), controller.signal)
-      .then((fc) => {
+    Promise.all([
+      fetchHotspots(RIAU_BBOX, hotspot.dayRange, Date.now(), controller.signal),
+      loadRiauAreas(),
+    ])
+      .then(([raw, areas]) => {
         if (!active) return;
+        // Area API FIRMS hanya menerima bbox PERSEGI, sehingga RIAU_BBOX ikut
+        // menangkap Semenanjung Malaysia, Sumbar, Jambi, dan Kepri. Dipangkas
+        // ke gabungan poligon kabupaten BIG — sama seperti Dashboard Fire Alert
+        // (#266), agar angka kedua halaman tidak berbeda untuk rentang yang
+        // sama. Disaring SEBELUM setHotspotData, jadi peta, legenda, hitungan
+        // terdekat, ekspor SHP, dan PDF semuanya ikut (#269).
+        // Batas belum ter-seed → tampil apa adanya, bukan peta kosong.
+        const fc = areas.length > 0 ? filterPointsWithinAreas(raw, areas) : raw;
         setHotspotData(fc);
         if (fc.features.length === 0) {
           toast.info("Tidak ada titik api pada area & rentang waktu ini");
@@ -184,7 +212,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
       active = false;
       controller.abort();
     };
-  }, [hotspot.visible, hotspot.dayRange]);
+  }, [hotspot.visible, hotspot.dayRange, loadRiauAreas]);
 
   const handleProvinceChange = (val: string | null) => {
     setProvinceId(val);
@@ -204,8 +232,12 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
   // change that keeps it on (toggle-on or day-range) re-enters the loading state.
   const handleHotspotChange = (next: HotspotState) => {
     setHotspot(next);
-    if (!next.visible) setHotspotData(null);
-    else setHotspotLoading(true);
+    if (!next.visible) {
+      setHotspotData(null);
+      // Mematikan layer di tengah fetch: cleanup effect men-set `active=false`
+      // sehingga `finally` tak lagi mereset loading — reset di sini (#285).
+      setHotspotLoading(false);
+    } else setHotspotLoading(true);
   };
 
   const hotspotCounts = useMemo(() => countByConfidence(hotspotData), [hotspotData]);

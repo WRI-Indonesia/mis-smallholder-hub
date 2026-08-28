@@ -231,7 +231,7 @@ export function buildLandParcelReportDoc({
   mapParcels,
   grid = { rows: 1, cols: 1 },
 }: Omit<LpPdfInput, "filename">): jsPDF {
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 

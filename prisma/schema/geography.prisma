@@ -31,6 +31,7 @@ model District {
   farmerGroups FarmerGroup[]
   dashboardSnapshots MainDashboardSnapshot[]
   bmpDashboardSnapshots BmpDashboardSnapshot[]
+  administrativeBoundaries AdministrativeBoundary[]
 
   @@map("reg_district")
 }

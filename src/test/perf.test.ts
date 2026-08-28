@@ -777,3 +777,88 @@ describe("Performance - Production matrix variants (#239)", () => {
     expect(rows).toHaveLength(PARCELS * 3); // 400 lahan × 3 tahun
   });
 });
+
+describe("Performance - DASH-07 Fire Alert point-in-polygon (pure logic)", () => {
+  // Skala realistis ×~10: produksi = ±300 titik FIRMS × 30 boundary lembaga
+  // (poligon ICS ~ratusan verteks) + saringan 12 poligon kabupaten BIG
+  // tersimplifikasi. Jalan di klien pada SETIAP fetch/ganti rentang (#266).
+  const circle = (cx: number, cy: number, r: number, n: number) => {
+    const ring: [number, number][] = [];
+    for (let i = 0; i <= n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      ring.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    return { type: "MultiPolygon" as const, coordinates: [[ring]] };
+  };
+  const boundaries = Array.from({ length: 30 }, (_, i) => ({
+    id: `b${i}`,
+    farmerGroupId: `g${i}`,
+    name: `Lembaga ${i}`,
+    districtId: `d${i % 4}`,
+    districtName: `Distrik ${i % 4}`,
+    geometry: circle(100.5 + (i % 6) * 0.7, -1 + Math.floor(i / 6) * 0.8, 0.15, 400),
+  }));
+  const kabupaten = Array.from({ length: 12 }, (_, i) => ({
+    name: `Kab ${i}`,
+    geometry: circle(100.5 + (i % 4) * 1.1, -1 + Math.floor(i / 4) * 1.4, 0.7, 800),
+  }));
+  const points = {
+    type: "FeatureCollection" as const,
+    features: Array.from({ length: 3000 }, (_, i) => ({
+      type: "Feature" as const,
+      geometry: {
+        type: "Point" as const,
+        coordinates: [100 + ((i * 7919) % 470) / 100, -1.4 + ((i * 104729) % 440) / 100],
+      },
+      properties: { confidence: "n" },
+    })),
+  };
+
+  it("filter 12 kabupaten + klasifikasi 30 boundary atas 3000 titik under 250ms", async () => {
+    const { filterPointsWithinAreas, indexBoundaries, classifyHotspots, countHotspotsByGroup } =
+      await import("@/lib/fire-alert");
+    const indexed = indexBoundaries(boundaries);
+
+    const start = performance.now();
+    const inRiau = filterPointsWithinAreas(points, kabupaten);
+    const classified = classifyHotspots(inRiau, indexed);
+    const rows = countHotspotsByGroup(classified, boundaries);
+    const duration = performance.now() - start;
+
+    console.log(
+      `  fire-alert PiP (${points.features.length} titik → ${inRiau.features.length} se-area, ${rows.length} lembaga): ${duration.toFixed(2)}ms`
+    );
+    expect(duration).toBeLessThan(250);
+    expect(rows).toHaveLength(30);
+  });
+});
+
+describe("Performance - Import Detail Lahan planner (#300, pure logic)", () => {
+  it("merencanakan 7.000 baris (surat+STDB+kode, 30% sudah ada di DB) under 100ms", async () => {
+    const { planLandParcelDetailRows, emptyExistingState, docKey, stdbKey } = await import("@/lib/land-parcel-detail-save");
+    const existing = emptyExistingState();
+    const rows = Array.from({ length: 7000 }, (_, i) => {
+      const farmer = `f${Math.floor(i / 3)}`;
+      const uid = `uid-${i}`;
+      if (i % 10 < 3) {
+        existing.documents.set(docKey(uid, "SHM", `S-${i}`), { id: `d${i}`, typeRaw: "SHM", holderName: "Abdul", statedArea: 0.25, custodyNote: null });
+        existing.stdbs.set(stdbKey(farmer, `N-${Math.floor(i / 3)}`), { id: `s${i}`, isActive: true });
+        existing.externalIds.set(`CODE-${i}`, { parcelUid: uid, isActive: true });
+      }
+      return {
+        parcelUid: uid, farmerDbId: farmer, parcelId: `P-${i}`,
+        document: { type: "SHM" as const, typeRaw: "SHM", number: `S-${i}`, holderName: "Abdul", statedArea: 0.25, custodyNote: null },
+        custodyNote: null,
+        stdb: { number: `N-${Math.floor(i / 3)}`, issuedYear: 2025 },
+        externalCode: `CODE-${i}`,
+        subGroupLv2: i % 2 ? "KT" : null,
+      };
+    });
+    const start = performance.now();
+    const plan = planLandParcelDetailRows(rows, existing);
+    const duration = performance.now() - start;
+    console.log(`  detail-lahan plan (7.000 baris): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(100);
+    expect(plan.summary.documentsCreated + plan.summary.documentsUnchanged).toBe(7000);
+  });
+});

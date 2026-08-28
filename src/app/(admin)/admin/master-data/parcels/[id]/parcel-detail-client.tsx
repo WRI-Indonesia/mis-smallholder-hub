@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  ChevronDown,
-  ChevronRight,
   ClipboardCheck,
   ExternalLink,
   LandPlot,
@@ -14,24 +12,26 @@ import {
   Pencil,
   Printer,
   Ruler,
+  ShieldCheck,
   Sprout,
   Trash2,
-  TreePine,
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BreadcrumbOverride } from "@/components/layout/admin/breadcrumb-override";
 import { deleteLandParcel, getLandParcelPassport } from "@/server/actions/land-parcel";
 import { ParcelFormModal } from "../components/parcel-form-modal";
 import { ParcelMapView } from "../components/parcel-map-view";
 import { ParcelProductionChart } from "../components/parcel-production-chart";
 import { ParcelProductionMonthModal } from "../components/parcel-production-month-modal";
+import { ParcelLegalSection } from "../components/parcel-legal-section";
 
 import type { Geometry, Position } from "geojson";
-import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
+import type { LandParcel, FarmerSelect, LandParcelSatellites } from "@/types/land-parcel";
 import type { ProductionSummary, ProductionYear } from "@/types/map";
 import type { ParcelTreeData } from "@/server/actions/tree";
 import { formatNumber } from "@/lib/format";
@@ -55,6 +55,8 @@ interface Props {
   /** Permission user pada menu Data Produksi — gate edit sel tabel produksi. */
   productionPermissions: string[];
   siblingParcels: SiblingParcel[];
+  /** Satelit lahan (#296) — null bila lahan di luar scope (tak seharusnya terjadi: page sudah 404). */
+  satellites: LandParcelSatellites | null;
 }
 
 const formatDecimal = (n: number) =>
@@ -80,6 +82,13 @@ const MONTH_LABELS = [
   "Nov",
   "Des",
 ];
+
+// Label singkat di peta (#298): segmen huruf tunggal pada ID lahan
+// ("APSS.0001.A.14.01.10.2012" → "A"); bila tak ada, segmen terakhir.
+function shortParcelLabel(parcelId: string): string {
+  const segs = parcelId.split(".");
+  return segs.find((x) => /^[A-Z]$/i.test(x)) ?? segs[segs.length - 1] ?? parcelId;
+}
 
 // Geometry dari Prisma bisa berupa objek GeoJSON atau string JSON (legacy).
 function parseGeometry(geometry: LandParcel["geometry"]): Geometry | null {
@@ -143,47 +152,13 @@ function SummaryCard({
   );
 }
 
-/** Section full-width dengan judul yang bisa di-collapse (default terbuka). */
-function SectionCard({
-  title,
-  action,
-  defaultOpen = true,
-  children,
-}: {
-  title: string;
-  /** Aksi/keterangan di kanan judul (mis. link koordinat) — tetap tampil saat collapsed. */
-  action?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <Card className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          {title}
-        </button>
-        {action}
-      </div>
-      {/* `hidden` (bukan unmount) agar canvas peta tidak re-init saat dibuka lagi */}
-      <div className={open ? "mt-4" : "hidden"}>{children}</div>
-    </Card>
-  );
-}
-
+// Label kecil sentence-case (redesign #298): satu tingkat label di bawah judul tab,
+// tanpa uppercase/tracking agar hierarki tidak bertumpuk.
 function FieldItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <div className="text-sm font-medium mt-1">{children}</div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="text-sm font-medium mt-0.5">{children}</div>
     </div>
   );
 }
@@ -205,6 +180,7 @@ export function ParcelDetailClient({
   permissions,
   productionPermissions,
   siblingParcels,
+  satellites,
 }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -235,7 +211,34 @@ export function ParcelDetailClient({
     { label: "Tahun Tanam", filled: parcel.plantingYear != null },
     { label: "Kelompok Tani", filled: parcel.subGroupLv2 != null && parcel.subGroupLv2 !== "" },
     { label: "Geometri (peta)", filled: geometry != null },
+    // Legalitas ikut dihitung (#298): lahan tanpa surat sama "belum lengkap"-nya dengan tanpa luas.
+    { label: "Surat kepemilikan", filled: (satellites?.documents.length ?? 0) > 0 },
   ];
+  const docCount = satellites?.documents.length ?? 0;
+  const stdbCount = satellites?.stdbs.length ?? 0;
+  const vendorCount = satellites?.externalIds.length ?? 0;
+  const programCount = satellites?.programs.length ?? 0;
+  // Program TIDAK ikut hitungan legalitas (koreksi owner 2026-08-28) — tab & KPI-nya sendiri.
+  const legalCount = docCount + stdbCount + vendorCount;
+  // Jenis surat unik (akronim) untuk nilai kartu, mis. "SHM · SKT".
+  const docTypes = [...new Set((satellites?.documents ?? []).map((d) => (d.type === "OTHER" && !d.typeRaw ? "?" : d.type)))];
+  const legalValue =
+    docCount === 0 && stdbCount === 0
+      ? "—"
+      : [docTypes.length ? docTypes.map((t) => (t === "?" ? "Lainnya" : t)).join(" · ") : null, stdbCount > 0 ? "STDB" : null]
+          .filter(Boolean)
+          .join(" + ");
+  const legalSub =
+    legalCount === 0
+      ? "Belum ada surat / STDB"
+      : [
+          `${formatNumber(docCount)} surat`,
+          `${formatNumber(stdbCount)} STDB`,
+          vendorCount > 0 ? `${formatNumber(vendorCount)} UL Parcel Code` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+  const treeCount = trees != null && trees.summary.count > 0 ? trees.summary.count : 0;
   const filledCount = attributes.filter((a) => a.filled).length;
   const missingLabels = attributes.filter((a) => !a.filled).map((a) => a.label);
 
@@ -331,9 +334,9 @@ export function ParcelDetailClient({
               <Badge variant={parcel.isActive ? "default" : "outline"}>
                 {parcel.isActive ? "Aktif" : "Nonaktif"}
               </Badge>
-              <Badge variant={parcel.isPsr ? "secondary" : "outline"}>
-                {parcel.isPsr ? "PSR (Replanting)" : "Non-PSR"}
-              </Badge>
+              {/* Hanya PSR yang ditampilkan — "Non-PSR" hanya menambah badge tanpa informasi
+                  (sejalan dengan PDF #298); statusnya tetap terbaca di tab Program. */}
+              {parcel.isPsr && <Badge variant="secondary">PSR (Replanting)</Badge>}
               {parcel.cropType && <Badge variant="secondary">{parcel.cropType}</Badge>}
               {parcel.subGroupLv2 && <Badge variant="outline">{parcel.subGroupLv2}</Badge>}
             </div>
@@ -377,20 +380,16 @@ export function ParcelDetailClient({
           icon={Ruler}
           title="Luas"
           value={parcel.area != null ? `${formatDecimal(parcel.area)} Ha` : "—"}
-          sub={parcel.blok ? `Blok ${parcel.blok}` : "Blok belum diisi"}
+          sub={[
+            parcel.blok ? `Blok ${parcel.blok}` : null,
+            treeCount > 0
+              ? `${formatNumber(treeCount)} pohon${trees?.summary.density != null ? ` (${formatDecimal(trees.summary.density)}/ha)` : ""}`
+              : "Belum ada titik pohon",
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         />
-        <SummaryCard
-          icon={TreePine}
-          title="Pohon Sawit"
-          value={trees != null && trees.summary.count > 0 ? formatNumber(trees.summary.count) : "—"}
-          sub={
-            trees != null && trees.summary.count > 0
-              ? trees.summary.density != null
-                ? `${formatDecimal(trees.summary.density)} pohon/ha`
-                : "Luas belum diisi — kerapatan tak terhitung"
-              : "Belum ada data titik pohon"
-          }
-        />
+        <SummaryCard icon={ShieldCheck} title="Legalitas" value={legalValue} sub={legalSub} />
         <SummaryCard
           icon={Sprout}
           title="Umur Tanaman"
@@ -425,14 +424,36 @@ export function ParcelDetailClient({
         />
       </div>
 
-      {/* Section: Informasi Lahan — peta 60% kiri, info + pemilik di kanan */}
-      <SectionCard title="Informasi Lahan">
+      {/* Tabs (#298): konsisten dengan Detail Petani; tiap tab satu kartu */}
+      <Tabs defaultValue="informasi" className="w-full">
+        <TabsList className="grid w-full max-w-[520px] grid-cols-4 mb-4">
+          <TabsTrigger value="informasi">Informasi</TabsTrigger>
+          <TabsTrigger value="legalitas">
+            Legalitas
+            {legalCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-primary">{formatNumber(legalCount)}</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="program">
+            Program
+            {programCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-primary">{formatNumber(programCount)}</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="produksi">Produksi</TabsTrigger>
+        </TabsList>
+
+        {/* ── Informasi: peta 60% kiri, atribut + pemilik di kanan ── */}
+        <TabsContent value="informasi">
+        <Card className="p-6">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
           <div className="lg:col-span-3">
             <ParcelMapView
               geometry={parcel.geometry}
               heightClassName="h-[560px]"
-              siblingGeometries={siblingParcels.map((s) => s.geometry)}
+              siblings={siblingParcels}
+              label={shortParcelLabel(parcel.parcelId)}
+              siblingLabel={shortParcelLabel}
               treePoints={trees?.points}
             />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground mt-2">
@@ -468,58 +489,52 @@ export function ParcelDetailClient({
           </div>
 
           <div className="space-y-4 lg:col-span-2">
-            <div className="grid grid-cols-2 gap-3">
+            {/* Atribut: hanya yang terisi (#298) — yang kosong dirangkum satu baris + tombol Lengkapi,
+                bukan "Belum diisi" berulang di tiap field. */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div className="col-span-2">
                 <FieldItem label="ID Lahan">
                   <Val value={parcel.parcelId} mono />
                 </FieldItem>
               </div>
-              <FieldItem label="Blok">
-                <Val value={parcel.blok} />
-              </FieldItem>
-              <FieldItem label="Kelompok Tani">
-                <Val value={parcel.subGroupLv2} />
-              </FieldItem>
-              <FieldItem label="Status Kepemilikan">
-                <Val value={parcel.landStatus} />
-              </FieldItem>
-              <FieldItem label="Tahun Tanam">
-                {parcel.plantingYear != null ? (
-                  <>
-                    {parcel.plantingYear}
-                    {plantAge != null && (
-                      <span className="text-muted-foreground font-normal"> ({plantAge} th)</span>
-                    )}
-                  </>
-                ) : (
-                  <Val value={null} />
-                )}
-              </FieldItem>
-              <FieldItem label="Komoditas">
-                <Val value={parcel.cropType} />
-              </FieldItem>
-              <FieldItem label="Species">
-                <Val value={parcel.species} />
-              </FieldItem>
-              <div className="col-span-2">
-                <FieldItem label="Catatan">
-                  {parcel.notes ? (
-                    <span className="whitespace-pre-wrap">{parcel.notes}</span>
-                  ) : (
-                    <Val value={null} />
-                  )}
+              {parcel.blok && <FieldItem label="Blok">{parcel.blok}</FieldItem>}
+              {parcel.subGroupLv2 && <FieldItem label="Kelompok Tani">{parcel.subGroupLv2}</FieldItem>}
+              {parcel.landStatus && <FieldItem label="Status Kepemilikan">{parcel.landStatus}</FieldItem>}
+              {parcel.plantingYear != null && (
+                <FieldItem label="Tahun Tanam">
+                  {parcel.plantingYear}
+                  {plantAge != null && <span className="text-muted-foreground font-normal"> ({plantAge} th)</span>}
                 </FieldItem>
-              </div>
+              )}
+              {parcel.cropType && <FieldItem label="Komoditas">{parcel.cropType}</FieldItem>}
+              {parcel.species && <FieldItem label="Species"><span className="italic">{parcel.species}</span></FieldItem>}
+              {parcel.notes && (
+                <div className="col-span-2">
+                  <FieldItem label="Catatan">
+                    <span className="whitespace-pre-wrap font-normal">{parcel.notes}</span>
+                  </FieldItem>
+                </div>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground border-t pt-3">
+            {missingLabels.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                <span>
+                  Belum diisi: <span className="text-foreground">{missingLabels.join(", ")}</span>
+                </span>
+                {canEdit && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 px-2" onClick={() => setShowForm(true)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> Lengkapi
+                  </Button>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
               Revisi ke-{parcel.revision} · Dibuat {formatDate(parcel.createdAt)} · Diubah{" "}
               {formatDate(parcel.modifiedAt)}
             </p>
 
-            <div className="border-t pt-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Pemilik
-              </p>
+            <div className="rounded-lg border p-4 space-y-3">
+              <h3 className="text-sm font-semibold">Pemilik</h3>
               <div className="grid grid-cols-2 gap-3">
                 <FieldItem label="Nama Petani">
                   <Link
@@ -543,13 +558,13 @@ export function ParcelDetailClient({
                 <FieldItem label="Distrik">{parcel.farmer.farmerGroup.district.name}</FieldItem>
               </div>
               {siblingParcels.length > 0 && (
-                <div className="mt-3">
-                  <FieldItem label={`Lahan Lain Milik Petani (${siblingParcels.length})`}>
+                <div className="pt-1">
+                  <FieldItem label={`Lahan lain milik petani (${siblingParcels.length})`}>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
-                            <th className="py-1.5 pr-3 font-semibold">Kode</th>
+                          <tr className="border-b text-left text-xs text-muted-foreground">
+                            <th className="py-1.5 pr-3 font-medium">Kode</th>
                             <th className="py-1.5 pr-3 font-semibold text-right">Luas (Ha)</th>
                             <th className="py-1.5 pr-3 font-semibold text-right">Tahun Tanam</th>
                             <th className="py-1.5 font-semibold text-right">Jumlah Pohon</th>
@@ -586,10 +601,38 @@ export function ParcelDetailClient({
             </div>
           </div>
         </div>
-      </SectionCard>
+        </Card>
+        </TabsContent>
 
-      {/* Section: Produksi — grafik bulanan kontinu + tabel pivot per tahun */}
-      <SectionCard title="Produksi">
+        {/* ── Legalitas (#296): dokumen, STDB, UL Parcel Code via parcelUid ── */}
+        <TabsContent value="legalitas">
+          {/* Tanpa Card pembungkus: tiap grup sudah berbingkai sendiri (hindari bingkai ganda). */}
+          {satellites ? (
+            <ParcelLegalSection data={satellites} parcelArea={parcel.area} landParcelId={parcel.id} permissions={permissions} />
+          ) : (
+            <Val value={null} />
+          )}
+        </TabsContent>
+
+        {/* ── Program: keikutsertaan program + status PSR (bukan legalitas) ── */}
+        <TabsContent value="program">
+          {satellites ? (
+            <ParcelLegalSection
+              data={satellites}
+              parcelArea={parcel.area}
+              landParcelId={parcel.id}
+              permissions={permissions}
+              variant="program"
+              isPsr={parcel.isPsr}
+            />
+          ) : (
+            <Val value={null} />
+          )}
+        </TabsContent>
+
+        {/* ── Produksi: grafik bulanan kontinu + tabel pivot per tahun ── */}
+        <TabsContent value="produksi">
+        <Card className="p-6">
         {/* Konteks agronomi singkat — pembanding saat membaca produktivitas */}
         <div className="flex flex-wrap gap-x-10 gap-y-3 mb-4">
           <FieldItem label="Luas">
@@ -613,7 +656,7 @@ export function ParcelDetailClient({
         </div>
 
         {!hasProdData && (
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="mb-4 rounded-md border border-dashed px-3 py-3 text-center text-sm text-muted-foreground">
             Belum ada data produksi untuk lahan ini.
             {parcel.isPsr && " Lahan PSR (replanting) — belum berproduksi adalah wajar."}
             {canEditProduction && " Klik sel bulan pada tabel di bawah untuk mulai input."}
@@ -627,8 +670,8 @@ export function ParcelDetailClient({
             <div className={`overflow-x-auto ${hasProdData ? "mt-6" : ""}`}>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="py-2 pr-4 text-left">Tahun</th>
+                  <tr className="border-b text-xs text-muted-foreground">
+                    <th className="py-2 pr-4 text-left font-medium">Tahun</th>
                     {MONTH_LABELS.map((m) => (
                       <th key={m} className="py-2 px-2 text-right">
                         {m}
@@ -697,7 +740,9 @@ export function ParcelDetailClient({
             </p>
           </>
         )}
-      </SectionCard>
+        </Card>
+        </TabsContent>
+      </Tabs>
 
       <ParcelFormModal
         open={showForm}

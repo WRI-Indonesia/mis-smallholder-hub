@@ -41,7 +41,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
    - **Maksimal satu rilis per hari.** Bila ada beberapa pemicu dalam sehari (beberapa phase Done / beberapa `feat:`), gabungkan menjadi **satu rilis di akhir hari** dengan bump tertinggi yang berlaku — jangan rilis beruntun seperti 2026-07-15 (v0.9.0 → v0.10.0 → v0.11.0 dalam sehari). Satu-satunya pengecualian: **hotfix kritis produksi** setelah rilis hari itu.
 3. **Gate lokal**: `npm run lint`, `npm run build`, dan `npm test` lulus (Pre-Commit Gate di [workflow.md](./workflow.md)) — ketiganya **tidak** dijalankan CI, jadi harus dipastikan lokal. Di PR, CI menjalankan `gitleaks` & `semgrep`; periksa `gh pr checks <nomor>` hijau sebelum merge.
 4. **Bump versi**: update `version` di `package.json`, tambah entri rilis di [changelog.md](../project/changelog.md), commit dengan pesan `chore(release): vX.Y.Z`.
-5. **PR `mvp` → `main`**, merge setelah approval. ⚠️ **Merge ke `main` memicu deploy produksi otomatis** (`deploy-main.yml`) — pastikan migrasi DB yang dibutuhkan sudah diterapkan lebih dulu.
+5. **PR `mvp` → `main`**, merge setelah approval. ⚠️ **Merge ke `main` memicu deploy produksi otomatis** (`deploy-main.yml`) — pastikan migrasi DB yang dibutuhkan sudah diterapkan lebih dulu, lalu segarkan `prisma/migrations/applied-checksums.json` (skrip `scripts/migrations/refresh-applied-checksums.ts`, #303) dan ikutkan di commit rilis.
 6. **Tag & Release di `main`**:
    - Annotated tag: `git tag -a vX.Y.Z -m "vX.Y.Z"` pada merge commit di `main`, lalu `git push origin vX.Y.Z`.
    - GitHub Release: `gh release create vX.Y.Z` dengan release notes diambil dari ringkasan changelog — **bukan** auto-generate dari commit mentah, agar konsisten dengan changelog sebagai catatan historis.
@@ -55,6 +55,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] `npm run rbac:compare` — selisih izin seed ↔ produksi ditinjau (lihat #263; selisih yang disengaja dicatat, bukan diabaikan)
 - [ ] Check CI di PR hijau (`gitleaks`, `semgrep`) — `gh pr checks <nomor>`
 - [ ] Migrasi DB yang dibutuhkan sudah diterapkan **sebelum** merge (merge = deploy produksi)
+- [ ] Bila ada migrasi: **snapshot checksum disegarkan** setelah `migrate deploy` — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` → commit `prisma/migrations/applied-checksums.json` (guard #303; lihat [database/migrations.md](../database/migrations.md) §Pre-Deployment Checklist). Tanpa ini, gate lokal mesin lain akan merah pada migrasi baru.
 - [ ] `package.json` `version` sudah di-bump sesuai kriteria
 - [ ] Entri rilis tercatat di `docs/project/changelog.md`
 - [ ] **Metrik Nilai Rilis dihitung** → baris baru di [`project/metrics.md`](../project/metrics.md) (lihat §Metrik Nilai Rilis)

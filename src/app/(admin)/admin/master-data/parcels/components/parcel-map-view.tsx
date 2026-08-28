@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Map, { Source, Layer } from "react-map-gl/maplibre";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import Map, { Source, Layer, Marker, Popup } from "react-map-gl/maplibre";
 import type { MapRef, MapLayerMouseEvent, LayerProps } from "react-map-gl/maplibre";
 import type { Geometry, Position } from "geojson";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Target } from "lucide-react";
+import { ExternalLink, LandPlot, Target } from "lucide-react";
 import { TREE_POINT_PAINT } from "@/lib/map-style";
+import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
+import { formatArea } from "@/lib/format";
 
 interface Props {
   geometry: Geometry | null | undefined;
@@ -15,6 +18,16 @@ interface Props {
   heightClassName?: string;
   /** Geometri lahan lain (mis. milik petani yang sama) — dirender biru. */
   siblingGeometries?: (Geometry | string | null | undefined)[];
+  /**
+   * Lahan lain ber-atribut (#298): dirender biru + label singkat + popup saat
+   * diklik (ID, luas, tahun tanam, tautan detail). Bila diberikan,
+   * `siblingGeometries` diabaikan.
+   */
+  siblings?: { id: string; parcelId: string; area: number | null; plantingYear: number | null; geometry?: Geometry | string | null }[];
+  /** Label singkat lahan ini di atas poligonnya (mis. "A"). */
+  label?: string;
+  /** Label singkat tiap lahan lain — dipetakan dari parcelId. */
+  siblingLabel?: (parcelId: string) => string;
   /** Titik pohon sawit (#238) — dirender lingkaran kuning di atas poligon. */
   treePoints?: { longitude: number; latitude: number }[];
 }
@@ -89,10 +102,12 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
     sources: {
       "carto-light": {
         type: "raster",
-        tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
+        // OSM standar (tanpa API key) — pengganti CARTO yang sejak 2024 menandai tile zoom tinggi "API KEY REQUIRED" (#298).
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        maxzoom: 19,
         tileSize: 256,
         attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },
     },
     layers: [
@@ -110,10 +125,12 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
     sources: {
       "carto-dark": {
         type: "raster",
-        tiles: ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
+        // Esri World Dark Gray (tanpa API key); zoom >16 diperbesar dari tile 16 — tanpa tanda air (#298).
+        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
+        maxzoom: 16,
         tileSize: 256,
         attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ',
       },
     },
     layers: [
@@ -128,13 +145,35 @@ export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", Style
   },
 };
 
+/** Titik pusat sederhana (rata-rata semua posisi) untuk menempatkan label. */
+function centroid(g: Geometry | null): [number, number] | null {
+  if (!g || !("coordinates" in g)) return null;
+  const pts: Position[] = [];
+  collectPositions(g.coordinates, pts);
+  if (pts.length === 0) return null;
+  const [sx, sy] = pts.reduce(([ax, ay], [x, y]) => [ax + x, ay + y], [0, 0]);
+  return [sx / pts.length, sy / pts.length];
+}
+
+interface SiblingSelection {
+  id: string;
+  parcelId: string;
+  area: number | null;
+  plantingYear: number | null;
+  lngLat: [number, number];
+}
+
 export function ParcelMapView({
   geometry,
   heightClassName = "h-96",
   siblingGeometries,
+  siblings,
+  label,
+  siblingLabel,
   treePoints,
 }: Props) {
   const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
+  const [selected, setSelected] = useState<SiblingSelection | null>(null);
 
   const parsedGeometry =
     typeof geometry === "string"
@@ -148,12 +187,32 @@ export function ParcelMapView({
         })()
       : geometry;
 
-  const siblingFeatures = (siblingGeometries ?? [])
-    .map(parseGeom)
-    .filter((g): g is Geometry => g != null)
-    .map((g) => ({ type: "Feature" as const, geometry: g, properties: {} }));
+  // Dihitung sekali per perubahan prop — komponen re-render tiap gerak peta
+  // (viewport = state), jangan parse ulang geometri di setiap frame.
+  const siblingFeatures = useMemo(() => (
+    siblings
+      ? siblings
+          .map((sb) => ({ sb, g: parseGeom(sb.geometry) }))
+          .filter((x): x is { sb: NonNullable<Props["siblings"]>[number]; g: Geometry } => x.g != null)
+          .map(({ sb, g }) => ({
+            type: "Feature" as const,
+            geometry: g,
+            properties: { id: sb.id, parcelId: sb.parcelId, area: sb.area, plantingYear: sb.plantingYear },
+          }))
+      : (siblingGeometries ?? [])
+          .map(parseGeom)
+          .filter((g): g is Geometry => g != null)
+          .map((g) => ({ type: "Feature" as const, geometry: g, properties: {} }))
+  ), [siblings, siblingGeometries]);
+  // Label lahan lain: [lng, lat] centroid + teks singkat.
+  const siblingLabels = useMemo(() => siblingFeatures
+    .map((f) => ({ c: centroid(f.geometry), parcelId: (f.properties as { parcelId?: string }).parcelId }))
+    .filter((x): x is { c: [number, number]; parcelId: string } => x.c != null && typeof x.parcelId === "string")
+    .map((x) => ({ ...x, text: siblingLabel ? siblingLabel(x.parcelId) : x.parcelId })), [siblingFeatures, siblingLabel]);
 
   const mapRef = useRef<MapRef>(null);
+  // Geser peta agar popup lahan lain tidak terpotong tepi (pola parcels-distribution-map).
+  useMapPopupAutoPan(mapRef, selected?.id ?? null);
   const [viewport, setViewport] = useState({
     longitude: 101.8,
     latitude: 0.6,
@@ -264,6 +323,26 @@ export function ParcelMapView({
     event.target.getCanvas().style.cursor = "";
   };
 
+  // Klik lahan lain (biru) → popup ringkas + tautan detail. Klik lahan ini tidak
+  // memunculkan apa pun: atributnya sudah tampil di panel kanan halaman.
+  const onClick = (event: MapLayerMouseEvent) => {
+    const f = event.features?.find((x) => x.layer.id === "sibling-fill");
+    if (!f || !siblings) {
+      setSelected(null);
+      return;
+    }
+    const p = f.properties as { id?: string; parcelId?: string; area?: number | null; plantingYear?: number | null };
+    if (!p.id || !p.parcelId) return;
+    setSelected({
+      id: p.id,
+      parcelId: p.parcelId,
+      area: p.area ?? null,
+      plantingYear: p.plantingYear ?? null,
+      lngLat: [event.lngLat.lng, event.lngLat.lat],
+    });
+  };
+  const mainCentroid = label ? centroid(parsedGeometry) : null;
+
   return (
     <div className={`relative ${heightClassName} w-full rounded-md overflow-hidden border`}>
       <Map
@@ -274,9 +353,13 @@ export function ParcelMapView({
         mapStyle={MAP_STYLES[styleKey]}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
+        onClick={onClick}
         // Layer polygon kini kondisional (jalur titik-pohon-saja) — jangan
         // daftarkan layer yang tidak dirender, MapLibre error tiap mousemove.
-        interactiveLayerIds={parsedGeometry && hasValidCoordinates ? ["parcel-polygon"] : []}
+        interactiveLayerIds={[
+          ...(parsedGeometry && hasValidCoordinates ? ["parcel-polygon"] : []),
+          ...(siblings && siblingFeatures.length > 0 ? ["sibling-fill"] : []),
+        ]}
       >
         {siblingFeatures.length > 0 && (
           <Source
@@ -300,6 +383,55 @@ export function ParcelMapView({
             <Layer {...layerStyle} />
             <Layer {...borderStyle} />
           </Source>
+        )}
+        {/* Label singkat (#298) sebagai Marker HTML — style raster tak punya glyphs untuk symbol layer.
+            pointer-events none pada WADAH marker (bukan hanya span) agar klik tembus ke poligon di bawahnya. */}
+        {mainCentroid && label && (
+          <Marker longitude={mainCentroid[0]} latitude={mainCentroid[1]} anchor="center" style={{ pointerEvents: "none" }}>
+            <span className="pointer-events-none rounded-md border border-[#16a34a] bg-[#22c55e] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white shadow">
+              {label}
+            </span>
+          </Marker>
+        )}
+        {siblingLabels.map((l) => (
+          <Marker key={l.parcelId} longitude={l.c[0]} latitude={l.c[1]} anchor="center" style={{ pointerEvents: "none" }}>
+            <span className="pointer-events-none rounded-md border border-[#0284c7] bg-[#0ea5e9] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white shadow">
+              {l.text}
+            </span>
+          </Marker>
+        ))}
+        {selected && (
+          <Popup
+            key={selected.id}
+            longitude={selected.lngLat[0]}
+            latitude={selected.lngLat[1]}
+            onClose={() => setSelected(null)}
+            {...MAP_POPUP_PROPS}
+          >
+            <div className="w-max min-w-[260px] max-w-[380px]">
+              <MapPopupHeader
+                accent="blue"
+                icon={<LandPlot className="h-5 w-5 text-muted-foreground" />}
+                title="Lahan lain milik petani ini"
+                rows={[{ label: "ID Lahan", value: selected.parcelId, mono: true }]}
+              />
+              <MapPopupRows
+                className="px-3.5 py-2"
+                rows={[
+                  { label: "Luas", value: selected.area != null ? `${formatArea(selected.area)} Ha` : "—" },
+                  { label: "Tahun Tanam", value: selected.plantingYear ?? "—" },
+                ]}
+              />
+              <div className="border-t px-3.5 py-2">
+                <Link
+                  href={`/admin/master-data/parcels/${selected.id}`}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  Buka detail lahan <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </Popup>
         )}
         {hasTreePoints && (
           <Source

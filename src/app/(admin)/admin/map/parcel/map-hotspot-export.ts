@@ -7,6 +7,7 @@
 import type { FeatureCollection, Point } from "geojson";
 import type { KTPoint } from "@/types/map";
 import {
+  HOTSPOT_CONF_LABELS,
   confidenceLabel,
   countByConfidence,
   formatWib,
@@ -14,14 +15,22 @@ import {
   satelliteLabel,
   type HotspotDayRange,
 } from "./map-hotspot";
-import { haversineMeters } from "./map-geo";
-import { formatArea } from "@/lib/format";
+import {
+  COMPASS_LEGEND_ID,
+  bearingDegrees,
+  compassPointId,
+  haversineMeters,
+} from "./map-geo";
+import { formatArea, formatNumber } from "@/lib/format";
 
 const windowLabel = (dayRange: HotspotDayRange) => `${hotspotWindowLabel(dayRange)} terakhir`;
 
 /** Disclaimer sumber data pada laporan PDF (dipakai di 2 cabang render). */
 const PDF_DISCLAIMER =
   "Deteksi anomali panas VIIRS 375 m, bukan konfirmasi kebakaran. Sumber: NASA FIRMS (LANCE/EOSDIS) · jeda ±3 jam.";
+
+/** Keterangan kolom "Jarak (km) & Arah dari Kantor Lembaga" pada PDF (#293). */
+const PDF_BEARING_NOTE = `Arah diukur dari kantor Lembaga Petani menuju titik api (0° = utara) — ${COMPASS_LEGEND_ID}.`;
 
 /** Timestamp WIB ringkas untuk nama file, mis. "20260810-1417". */
 function wibFileStamp(now: Date): string {
@@ -38,8 +47,8 @@ function wibFileStamp(now: Date): string {
   return `${get("year")}${get("month")}${get("day")}-${get("hour")}${get("minute")}`;
 }
 
-function fileBase(dayRange: HotspotDayRange, now: Date): string {
-  return `titik-api-riau-${dayRange === 1 ? "24jam" : "5hari"}-${wibFileStamp(now)}`;
+export function fileBase(dayRange: HotspotDayRange, now: Date): string {
+  return `titik-api-riau-${dayRange === 1 ? "24jam" : `${dayRange}hari`}-${wibFileStamp(now)}`;
 }
 
 function saveBlob(blob: Blob, filename: string) {
@@ -102,13 +111,25 @@ function nearestKt(
   lon: number,
   lat: number,
   ktPoints: KTPoint[]
-): { name: string; meters: number } | null {
-  let best: { name: string; meters: number } | null = null;
+): { name: string; meters: number; bearing: number } | null {
+  let best: { name: string; meters: number; lon: number; lat: number } | null = null;
   for (const kt of ktPoints) {
     const m = haversineMeters([lon, lat], [kt.long, kt.lat]);
-    if (!best || m < best.meters) best = { name: kt.name, meters: m };
+    if (!best || m < best.meters)
+      best = { name: kt.name, meters: m, lon: kt.long, lat: kt.lat };
   }
-  return best;
+  if (!best) return null;
+  // Bearing dihitung SEKALI untuk pemenang, di luar loop (#293): loop ini
+  // berjalan sebanyak (jumlah titik api x jumlah lembaga) dan pada rentang
+  // 30 hari titiknya ribuan — trigonometri tambahan di dalam loop akan terasa.
+  //
+  // Arahnya lembaga -> titik api ("titik api ada di sebelah X dari kantor"),
+  // BUKAN sebaliknya; keduanya berselisih 180°.
+  return {
+    name: best.name,
+    meters: best.meters,
+    bearing: bearingDegrees([best.lon, best.lat], [lon, lat]),
+  };
 }
 
 /** Satu titik api + hasil kalkulasi lembaga terdekatnya (precomputed untuk PDF). */
@@ -116,7 +137,7 @@ export type HotspotNearestRow = {
   f: FeatureCollection["features"][number];
   lon: number;
   lat: number;
-  nearest: { name: string; meters: number } | null;
+  nearest: { name: string; meters: number; bearing: number } | null;
 };
 
 /**
@@ -156,6 +177,8 @@ export function hotspotRowCells(r: HotspotNearestRow): {
   frp: string;
   nearestName: string;
   distanceKm: string;
+  /** "2,49 · B 287°" — jarak + arah dari kantor Lembaga menuju titik api (#293). */
+  distanceDir: string;
 } {
   const frp = r.f.properties?.frp;
   return {
@@ -164,6 +187,9 @@ export function hotspotRowCells(r: HotspotNearestRow): {
     frp: typeof frp === "number" && Number.isFinite(frp) ? frp.toFixed(1) : "—",
     nearestName: r.nearest?.name ?? "—",
     distanceKm: r.nearest ? formatKm(r.nearest.meters) : "—",
+    distanceDir: r.nearest
+      ? `${formatKm(r.nearest.meters)} · ${compassPointId(r.nearest.bearing)} ${Math.round(r.nearest.bearing)}°`
+      : "—",
   };
 }
 
@@ -220,9 +246,11 @@ export async function printHotspotPdf(
   const near = filterNearSorted(all);
   const rows = hasDistance ? near : all;
 
-  const doc = new jsPDF({ orientation: "landscape" });
+  const doc = new jsPDF({ orientation: "landscape", compress: true });
 
   doc.setFont("helvetica", "bold");
+  const loadedArea = area.districtName ?? area.provinceName ?? null;
+
   doc.setFontSize(15);
   doc.setTextColor(...RED);
   doc.text("Laporan Titik Api (Hotspot)", MARGIN, 18);
@@ -231,18 +259,26 @@ export async function printHotspotPdf(
   doc.setFontSize(9.5);
   doc.setTextColor(...SLATE_600);
   doc.text(
-    `Provinsi: ${area.provinceName ?? "—"}  ·  Distrik: ${area.districtName ?? "—"}  ·  Rentang: ${windowLabel(dayRange)}  ·  Dibuat: ${formatWib(now.toISOString())}`,
+    [
+      // Cakupan data LAHAN yang dimuat — bukan cakupan titik apinya, yang
+      // selalu se-Riau (#294). Field kosong dihilangkan, bukan dicetak "—".
+      loadedArea ? `Data lahan: ${loadedArea}` : null,
+      `Rentang: ${windowLabel(dayRange)}`,
+      `Dibuat: ${formatWib(now.toISOString())}`,
+    ]
+      .filter(Boolean)
+      .join("  ·  "),
     MARGIN,
     25
   );
   doc.text(
-    `Total ${total} titik  —  Keyakinan Tinggi: ${counts.high}  ·  Nominal: ${counts.nominal}  ·  Rendah: ${counts.low}`,
+    `Total ${formatNumber(total)} titik se-Riau  —  Keyakinan ${HOTSPOT_CONF_LABELS.high}: ${formatNumber(counts.high)}  ·  ${HOTSPOT_CONF_LABELS.nominal}: ${formatNumber(counts.nominal)}  ·  ${HOTSPOT_CONF_LABELS.low}: ${formatNumber(counts.low)}`,
     MARGIN,
     31
   );
   doc.text(
     hasDistance
-      ? `Berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani: ${near.length} titik — tabel hanya memuat titik tsb, diurutkan dari yang terdekat.`
+      ? `Berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani: ${formatNumber(near.length)} titik — tabel hanya memuat titik tsb, diurutkan dari yang terdekat.`
       : "Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki titik Lembaga Petani; tabel memuat semua titik.",
     MARGIN,
     37
@@ -261,12 +297,12 @@ export async function printHotspotPdf(
     startY: 43,
     margin: { left: MARGIN, right: MARGIN },
     head: [
-      ["No", "Waktu Deteksi (WIB)", "Satelit", "Keyakinan", "FRP (MW)", "Lintang", "Bujur", "Lembaga Terdekat", "Jarak (km)"],
+      ["No", "Waktu Deteksi (WIB)", "Satelit", "Keyakinan", "FRP (MW)", "Lintang", "Bujur", "Lembaga Terdekat", "Jarak (km) & Arah dari Kantor Lembaga"],
     ],
     body: rows.map((r, i) => {
       const cells = hotspotRowCells(r);
       return [
-        String(i + 1),
+        formatNumber(i + 1),
         cells.time,
         cells.satellite,
         confidenceLabel(r.f.properties?.confidence),
@@ -274,7 +310,7 @@ export async function printHotspotPdf(
         r.lat.toFixed(5),
         r.lon.toFixed(5),
         cells.nearestName,
-        cells.distanceKm,
+        cells.distanceDir,
       ];
     }),
     styles: { fontSize: 8, textColor: SLATE_800, cellPadding: 1.6 },
@@ -285,7 +321,11 @@ export async function printHotspotPdf(
   const endY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 40;
   doc.setFontSize(8);
   doc.setTextColor(...SLATE_600);
-  doc.text(PDF_DISCLAIMER, MARGIN, Math.min(endY + 8, PAGE_H - 8));
+  // Keterangan arah hanya relevan bila tabelnya benar-benar memuat kolom itu
+  // dengan isi — yakni saat jarak berhasil dihitung (#293).
+  const footNoteY = Math.min(endY + 8, PAGE_H - 12);
+  doc.text(PDF_DISCLAIMER, MARGIN, footNoteY);
+  if (nearestRows) doc.text(PDF_BEARING_NOTE, MARGIN, Math.min(footNoteY + 4, PAGE_H - 6));
 
   doc.save(`${fileBase(dayRange, now)}.pdf`);
 }

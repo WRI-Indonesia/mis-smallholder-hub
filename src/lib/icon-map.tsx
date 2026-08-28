@@ -70,10 +70,12 @@ import {
   Filter,
   // Security & Settings
   Shield,
+  ShieldAlert,
   Lock,
   Key,
   SlidersHorizontal,
   // Misc
+  Flame,
   Star,
   Flag,
   Tag,
@@ -155,10 +157,12 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Filter: Filter,
   // Security & Settings
   Shield: Shield,
+  ShieldAlert: ShieldAlert,
   Lock: Lock,
   Key: Key,
   SlidersHorizontal: SlidersHorizontal,
   // Misc
+  Flame: Flame,
   Star: Star,
   Flag: Flag,
   Tag: Tag,

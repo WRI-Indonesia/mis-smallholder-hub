@@ -26,7 +26,8 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 ├── Tabel Lahan
 │   ├── Kolom: No, Lembaga Petani, Nama Petani, ID Petani, ID Lahan,
 │   │          Kelompok Tani, Blok, Komoditas, Species,
-│   │          PSR, Tahun Tanam, Luas (Ha)
+│   │          PSR, Tahun Tanam, Luas (Ha), Surat Kepemilikan, Nama di Surat,
+│   │          Luas Tertera (Ha), STDB (#296 — default mati)
 │   └── Baris Total (tanpa paginasi & pencarian)
 └── Ekspor
     ├── Excel
@@ -58,7 +59,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | "Grid Index (Baris × Kolom)" | Filter (dua input `number`) | Baris 1–26, kolom 1–20; teks bantu "maks. `<n>` peta + ikhtisar" atau "tanpa pecah" |
 | "Label Poligon" | Filter (checkbox, minimal satu aktif) | Opsi: No, Nama, ID Petani, ID Lahan, Kelompok Tani (default: No) |
 | Preview peta | Chart / SVG | Tanpa grid: 1 halaman peta. Dengan grid: 1 ikhtisar (garis grid + label sel + "`<n>` lahan") + satu peta per sel; dekorasi panah utara & skala batang; catatan "`<n>` lahan tanpa geometri tidak tergambar (No …)."; state "Memuat geometri lahan..." dan "Tidak ada geometri lahan yang dapat digambar." |
-| "Kolom" | Dropdown selektor kolom | "Tampilkan Kolom": Kelompok Tani, Blok, Komoditas, Species, PSR, Tahun Tanam, Luas (Ha). Default aktif: Kelompok Tani, Tahun Tanam, Luas (Ha) |
+| "Kolom" | Dropdown selektor kolom | "Tampilkan Kolom": Kelompok Tani, Blok, Komoditas, Species, PSR, Tahun Tanam, Luas (Ha), **Surat Kepemilikan, Nama di Surat, Luas Tertera (Ha), STDB** (#296). Default aktif: Kelompok Tani, Tahun Tanam, Luas (Ha) |
 | Empty state | Kartu | "Pilih Lembaga Petani untuk memuat laporan." / "Memuat laporan..."; bila tanpa baris: "Tidak Ada Data Lahan" — "Belum ada lahan aktif untuk cakupan yang dipilih." |
 
 ## Tabel
@@ -79,6 +80,10 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | PSR | Opsional; Badge "PSR" atau teks "Non-PSR" |
 | Tahun Tanam | Opsional (default aktif), rata kanan |
 | Luas (Ha) | Opsional (default aktif), rata kanan, 2 desimal |
+| Surat Kepemilikan | Opsional (#296), mono — ringkasan `JENIS nomor` semua dokumen aktif lahan, dipisah `; ` ("Lainnya" bila jenis tak diketahui); sumber `identity.documents` via `parcelUid` |
+| Nama di Surat | Opsional (#296) — nama tertera (distinct) |
+| Luas Tertera (Ha) | Opsional (#296), rata kanan — **jumlah** luas tertera lintas dokumen; sengaja terpisah dari Luas (Ha) poligon, tidak ikut baris Total |
+| STDB | Opsional (#296), mono — nomor STDB (distinct) yang menutup lahan |
 
 Agregasi: baris footer "Total" berisi jumlah Luas (Ha), hanya muncul bila kolom Luas aktif.
 

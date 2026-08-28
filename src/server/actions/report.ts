@@ -554,6 +554,13 @@ export async function getLandParcelReport(
           farmerGroup: { select: { name: true } },
         },
       },
+      // Satelit (#296) via identitas stabil — dokumen & STDB aktif.
+      identity: {
+        select: {
+          documents: { where: { isActive: true }, select: { type: true, number: true, holderName: true, statedArea: true } },
+          stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true } } } },
+        },
+      },
     },
   });
 
@@ -572,6 +579,8 @@ export async function getLandParcelReport(
     isPsr: p.isPsr,
     plantingYear: p.plantingYear,
     area: p.area,
+    documents: p.identity.documents,
+    stdbNumbers: p.identity.stdbLinks.map((l) => l.stdb.number),
   }));
 
   return buildLandParcelReport(raw);

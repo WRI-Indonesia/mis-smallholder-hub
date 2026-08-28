@@ -9,6 +9,7 @@ Empat environment, satu file per environment. **Tidak ada baris yang di-comment/
 | File | Database | S3 | Cara aktif |
 |------|----------|-----|-----------|
 | `.env` | **LOCAL** (`localhost:5432`) | **dev** (`mis-dev`) | Otomatis — satu-satunya file yang dibaca default oleh Next.js, Prisma, dan skrip |
+| `.env.staging-local` | **STAGING-LOCAL** (`localhost:5432/mis-staging-local`, snapshot prod 2026-08-27) | **dev** (`mis-dev`) | `npx dotenv -e .env.staging-local -- <perintah>` — DB lokal kedua khusus **uji migrasi** sebelum naik ke staging/prod; `.env`/`mis-dev` tetap untuk pengembangan harian. Sebelum `migrate dev` di sini: `pg_dump` dulu ke `scripts/dump-prod/<tanggal>/` |
 | `.env.dev` | DEV | **dev** (`mis-dev`) | `npx dotenv -e .env.dev -- <perintah>` |
 | `.env.staging` | STAGING | **dev** (`mis-dev`) | `npx dotenv -e .env.staging -- <perintah>` |
 | `.env.prod` | **PROD** (via tunnel `:1234`) | **prod** (`mis-main`) | `npx dotenv -e .env.prod -- <perintah>` — ⚠️ selalu sadar & eksplisit |
@@ -31,15 +32,18 @@ Semua `.env*` di-gitignore kecuali `.env.example`. Di server produksi, `.env` di
 ```bash
 npm run dev                                          # app → DB local + S3 dev
 npx dotenv -e .env.staging -- npm run dev            # app → DB staging + S3 dev
-npx dotenv -e .env.prod -- tsx scripts/local/other/x.ts   # skrip → PROD (sadar & eksplisit)
+npx dotenv -e .env.prod -- tsx scripts/seed/seed-boundary-lembaga.ts  # skrip seed ter-track → PROD (dry-run dulu)
+npx dotenv -e .env.prod -- tsx scripts/local/other/x.ts   # skrip sekali-pakai → PROD (sadar & eksplisit)
 npx dotenv -e .env.prod -- npx prisma studio         # inspeksi DB prod
 ```
+
+> **Di mana skrip tinggal (#279).** Skrip yang merupakan **satu-satunya definisi tereksekusi** dari data produksi ada di `scripts/seed/` dan **di-track** — lihat `scripts/seed/README.md` untuk aturan isinya (skrip di-track, data tidak). `scripts/local/` tetap gitignored: ia memuat berkas ber-PII dan repo ini **publik**. Berkas data ditunjuk lewat `--data=<dir>` / `SEED_DATA_DIR`, bukan lewat lokasi skripnya.
 
 Mekanisme: `dotenv -e` men-set variabel di process environment **sebelum** proses anak berjalan; `dotenv/config` maupun loader `.env` Next.js **tidak menimpa** variabel yang sudah ter-set, sehingga file yang dipilih selalu menang atas `.env`.
 
 ## Refresh DB Local dari Prod
 
-DB local (`localhost:5432/mis-dev`, Postgres.app 17) adalah **snapshot prod**. Untuk menyegarkan (tunnel `:1234` harus aktif; `pg_dump`/`pg_restore` wajib versi ≥ PG prod — pakai milik `libpq` Homebrew):
+DB local (`localhost:5432/mis-dev`, Postgres.app 17) adalah **snapshot prod**. Untuk menyegarkan (tunnel `:1234` harus aktif; `pg_dump`/`pg_restore` wajib versi ≥ PG prod — prod **PostgreSQL 18.3** per 2026-08-27, jadi `pg_dump` 17 dari `postgresql@17` ditolak; pakai milik `libpq` Homebrew, 18.0):
 
 ```bash
 mkdir -p scripts/dump-prod/$(date +%F)   # folder di-gitignore — dump berisi data pribadi petani, jangan pernah commit

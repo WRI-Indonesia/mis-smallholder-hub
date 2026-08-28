@@ -323,8 +323,10 @@ describe("bmpProductivity (Ton/Ha per tahun)", () => {
     districtName: null,
     monthly: {},
     byYear,
+    byYearAge: {},
     monthlyFull: {},
     byYearFull: {},
+    byYearAgeFull: {},
     availability: { baik: 0, cukup: 0, kurang: 0, tidakAda: 0 },
     totals: { produksiTon: 0, luasMelaporHa: 0, lahanBerData: 0, totalLahan: 0, totalLuasHa: 0, petaniMelapor: 0, totalPetani: 0 },
   });

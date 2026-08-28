@@ -1,0 +1,52 @@
+// land-stdb.prisma — STDB (Surat Tanda Daftar Budidaya) dan tautannya ke lahan
+// (Decision Log 2026-08-27). STDB adalah dokumen PER PETANI: satu nomor menutup
+// beberapa persil petani yang sama (data Kampar: 293 nomor >1 lahan, maks 13),
+// sehingga dimodelkan sebagai entitas sendiri + penghubung M:N ke lahan —
+// satu-satunya M:N di keluarga satelit lahan.
+
+model LandStdb {
+  id         String   @id @default(cuid())
+  farmerId   String   @map("farmer_id")
+  farmer     Farmer   @relation(fields: [farmerId], references: [id])
+  // Nomor disimpan MENTAH. Format dominan "1637/53/1401/6/2025"
+  // (urut/kode/kabupaten/bulan/tahun) — issuedYear diturunkan parser bila
+  // pola cocok; ada juga "3475" atau "Belum dapat" yang tak berpola.
+  number     String   @map("number")
+  holderName String?  @map("holder_name")
+  statedArea Float?   @map("stated_area") // luas tertera (ha), total per STDB
+  issuedYear Int?     @map("issued_year")
+  fileUrl    String?  @map("file_url")
+  notes      String?  @map("notes")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  createdBy  String?  @map("created_by")
+  modifiedAt DateTime @updatedAt @map("modified_at")
+  modifiedBy String?  @map("modified_by")
+
+  parcelLinks LandParcelStdb[]
+
+  // Nomor unik per petani (bukan global — nomor pendek bisa berulang antar
+  // kabupaten). Nomor sama pada petani berbeda di data sumber (64 kasus HJP)
+  // adalah salah ketik ID petani dan harus ditolak parser, bukan digabung.
+  @@unique([farmerId, number])
+  @@index([number])
+  @@index([isActive])
+  @@map("tbl_land_stdb")
+}
+
+// Penghubung STDB × lahan (nama = gabungan dua induk tanpa aspek, lihat
+// standards/code-standards.md §Penamaan).
+model LandParcelStdb {
+  id        String             @id @default(cuid())
+  parcelUid String             @map("parcel_uid")
+  parcel    LandParcelIdentity @relation(fields: [parcelUid], references: [id])
+  stdbId    String             @map("stdb_id")
+  stdb      LandStdb           @relation(fields: [stdbId], references: [id])
+  isActive  Boolean            @default(true) @map("is_active")
+  createdAt DateTime           @default(now()) @map("created_at")
+  createdBy String?            @map("created_by")
+
+  @@unique([parcelUid, stdbId])
+  @@index([stdbId])
+  @@map("tbl_land_parcel_stdb")
+}

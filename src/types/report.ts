@@ -192,6 +192,14 @@ export interface LandParcelReportRow {
   tahunTanam: number | null;
   /** Luas (Ha), null bila tak diketahui. */
   luas: number | null;
+  /** Surat kepemilikan ringkas "SHM 727; SKT …" (#296), null bila tak ada. */
+  surat: string | null;
+  /** Nama tertera di surat (distinct), null bila kosong. */
+  namaDiSurat: string | null;
+  /** Total luas tertera di surat (Ha), null bila tak ada. */
+  luasTertera: number | null;
+  /** Nomor STDB (distinct), null bila tak ada. */
+  stdb: string | null;
 }
 
 export interface LandParcelReportSummary {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame, Minimize2, MapPinned, Download, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,10 +16,10 @@ import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } fr
 import {
   HOTSPOT_CONF_COLORS,
   HOTSPOT_CONF_LABELS,
+  HOTSPOT_DAY_RANGES,
   hotspotWindowLabel,
   type HotspotConfBucket,
   type HotspotState,
-  type HotspotDayRange,
 } from "./map-hotspot";
 import { CustomGisSection } from "./map-custom-gis";
 
@@ -472,20 +473,22 @@ export function MapControlPanel(props: Props) {
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
               ) : (
                 hotspot.visible && (
-                  <span className="text-xs font-mono text-muted-foreground tabular-nums">{hotspotTotal}</span>
+                  <span className="text-xs font-mono text-muted-foreground tabular-nums">
+                    {formatNumber(hotspotTotal)}
+                  </span>
                 )
               )}
             </div>
 
             {/* Time window selector */}
             <div className="mt-3 flex gap-1 rounded-md border p-0.5">
-              {([1, 5] as HotspotDayRange[]).map((d) => (
+              {HOTSPOT_DAY_RANGES.map((d) => (
                 <button
                   key={d}
                   disabled={hotspotDisabled}
                   onClick={() => onHotspotChange({ ...hotspot, dayRange: d })}
                   className={cn(
-                    "flex-1 rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-default disabled:opacity-50",
+                    "flex-1 whitespace-nowrap rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-default disabled:opacity-50",
                     hotspot.dayRange === d
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -507,7 +510,9 @@ export function MapControlPanel(props: Props) {
                   />
                   <span className="flex-1 text-muted-foreground">{HOTSPOT_CONF_LABELS[b]}</span>
                   {hotspot.visible && !hotspotLoading && (
-                    <span className="font-mono text-muted-foreground tabular-nums">{hotspotCounts[b]}</span>
+                    <span className="font-mono text-muted-foreground tabular-nums">
+                      {formatNumber(hotspotCounts[b])}
+                    </span>
                   )}
                 </span>
               ))}

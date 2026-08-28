@@ -66,6 +66,10 @@ interface ParcelRow {
   cropType: string | null;
   landStatus: string | null;
   revision: number;
+  /** Surat kepemilikan ringkas (#296), null bila belum ada. */
+  surat: string | null;
+  /** Nomor STDB (#296), null bila belum ada. */
+  stdb: string | null;
 }
 
 interface Props {
@@ -362,6 +366,8 @@ export function FarmerDetailClient({
                       <th className="py-2 pr-4">Kode Lahan</th>
                       <th className="py-2 pr-4">Kelompok Tani</th>
                       <th className="py-2 pr-4">Blok</th>
+                      <th className="py-2 pr-4">Surat</th>
+                      <th className="py-2 pr-4">STDB</th>
                       <th className="py-2 pr-4 text-right">Luas (Ha)</th>
                       <th className="py-2 pr-4 text-right">Tahun Tanam</th>
                       <th className="py-2 pr-4 text-right">Jumlah Pohon</th>
@@ -389,6 +395,8 @@ export function FarmerDetailClient({
                         </td>
                         <td className="py-2 pr-4">{p.subGroupLv2 ?? "—"}</td>
                         <td className="py-2 pr-4">{p.blok ?? "—"}</td>
+                        <td className="py-2 pr-4 font-mono text-xs">{p.surat ?? <span className="font-sans text-sm text-muted-foreground">—</span>}</td>
+                        <td className="py-2 pr-4 font-mono text-xs">{p.stdb ?? <span className="font-sans text-sm text-muted-foreground">—</span>}</td>
                         <td className="py-2 pr-4 text-right tabular-nums">
                           {p.area != null ? formatDecimal(p.area) : "—"}
                         </td>

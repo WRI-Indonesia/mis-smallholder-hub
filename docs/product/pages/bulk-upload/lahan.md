@@ -8,6 +8,8 @@
 Halaman: Lahan (/admin/bulk-upload/parcels)
 ├── Header
 │   └── h2 "Upload Massal Lahan" + deskripsi
+├── Tabs (#296): "Poligon (Shapefile ZIP)" [bawaan] · "Detail Lahan (Excel)"
+│   └── (tab Detail — lihat bagian "Tab Detail Lahan (Excel)" di bawah)
 ├── Langkah 1 — Pilih ZIP Shapefile
 │   ├── Input type="file" (accept=".zip" — .shp/.dbf/.shx/.prj)
 │   ├── Info berkas: "Shapefile: nama.zip (N fitur/baris terdeteksi)"
@@ -44,20 +46,21 @@ Halaman: Lahan (/admin/bulk-upload/parcels)
 
 | Atribut | Nilai |
 |---|---|
-| File | `src/app/(admin)/admin/bulk-upload/parcels/page.tsx` + `components/parcel-bulk-upload-client.tsx` (`"use client"`) + `components/parcel-bulk-upload-map.tsx` |
-| Tipe | Wizard unggah massal spasial 3 langkah + peta preview |
+| File | `src/app/(admin)/admin/bulk-upload/parcels/page.tsx` (Tabs) + `components/parcel-bulk-upload-client.tsx` (`"use client"`) + `components/parcel-bulk-upload-map.tsx` + `components/parcel-detail-upload-client.tsx` (tab Excel, #296) |
+| Tipe | Dua tab dalam satu menu/izin: wizard unggah spasial 3 langkah + peta preview; wizard detail lahan Excel 3 langkah |
 | Guard | `requirePermission("bulk-upload-parcels")`; aksi guard `hasPermission("bulk-upload-parcels", …)` |
-| Server action / data | `parseShapefile()`, `getFarmersForMapping()`, `getExistingParcelIds()`, `bulkCreateLandParcels()` — `src/server/actions/bulk-upload-parcel.ts` |
+| Server action / data | `parseShapefile()`, `getFarmersForMapping()`, `getExistingParcelIds()`, `bulkCreateLandParcels()` — `src/server/actions/bulk-upload-parcel.ts`; tab Excel: `getParcelsForDetailMapping()` (lazy saat tab dibuka), `bulkSaveLandParcelDetails()` — `src/server/actions/bulk-upload-parcel-detail.ts` |
 | Helper | `PARCEL_AUTO_MATCH_RULES`, `autoMatchColumns()`, `normalizeAttr()` dari `src/lib/parcel-bulk-mapping.ts` |
-| Format file diterima | **Hanya** ZIP Shapefile `.zip` berisi `.shp`, `.dbf`, `.shx`, `.prj`; selain itu toast *"Hanya mendukung berkas ZIP Shapefile (.zip)"* |
-| Tombol unduh template | **Tidak ada** (sumber data adalah shapefile) |
+| Format file diterima | Tab Poligon: **hanya** ZIP Shapefile `.zip` berisi `.shp`, `.dbf`, `.shx`, `.prj`; selain itu toast *"Hanya mendukung berkas ZIP Shapefile (.zip)"* |
+| Tombol unduh template | Tab Poligon: **tidak ada** (sumber data adalah shapefile); tab Detail: `template_detail_lahan.xlsx` |
 | Redirect setelah simpan | `/admin/master-data/parcels` |
 
 ## Objek halaman
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| "Upload Massal Lahan" | Heading (`h2`) | Deskripsi: *"Unggah data spasial lahan petani menggunakan ZIP Shapefile (.zip berisi berkas .shp, .dbf, .shx, .prj) dengan pencocokan kolom dinamis."* |
+| "Upload Massal Lahan" | Heading (`h2`) | Deskripsi: *"Poligon lahan dari ZIP Shapefile (.shp, .dbf, .shx, .prj), atau detail lahan — surat kepemilikan, STDB, UL Parcel Code — dari Excel untuk lahan yang sudah terdaftar."* |
+| Tabs | `Tabs` (`@/components/ui/tabs`) | *"Poligon (Shapefile ZIP)"* (bawaan) · *"Detail Lahan (Excel)"* — satu menu key, satu set izin (keputusan owner 2026-08-27: tanpa menu baru) |
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `bulk-upload-parcels` (`findTutorialForMenu`), dibuka di tab baru |
 | "1. Pilih ZIP Shapefile" | Card + Input `type="file"` (`accept=".zip"`) | Keterangan *"Unggah arsip ZIP (.zip) yang berisi berkas .shp, .dbf, .shx, dan .prj dari shapefile lahan."* |
 | Info berkas | Teks | *"Shapefile: **nama.zip** (N fitur/baris terdeteksi)"* |
@@ -100,3 +103,34 @@ Halaman: Lahan (/admin/bulk-upload/parcels)
 5. Tinjau hasil di peta preview dan tabel; filter Semua/Valid/Error; unduh hasil bila perlu.
 6. Klik **Simpan N Lahan Valid** → `bulkCreateLandParcels()`: guard `CREATE` → cek scope access-context semua `farmerId` → validasi Zod `landParcelSchema` → dalam satu `prisma.$transaction`, untuk tiap baris: jika ada duplikat aktif dengan geometri sama → gagal; jika geometri berbeda → baris lama di-`isActive: false` dan baris baru dibuat dengan `revision + 1`; selain itu insert biasa dengan `createdBy`.
 7. Sukses → toast *"Berhasil menyimpan N data lahan"* + redirect ke daftar lahan.
+
+## Tab Detail Lahan (Excel) — #296
+
+Mengisi satelit lahan (`tbl_land_parcel_document`, `tbl_land_stdb` + `tbl_land_parcel_stdb`, `tbl_land_parcel_external_id`) yang menempel ke `parcelUid` (identitas stabil antar revisi), untuk lahan yang **sudah terdaftar & aktif**. Sumber: `MIS_<KAB>_data-lahan.xlsx`.
+
+| Objek | Keterangan |
+|---|---|
+| Daftar lahan | Dimuat malas saat tab dibuka (`getParcelsForDetailMapping`, scope `farmerRelationAccessFilter`); jumlah tampil di Langkah 1; tombol validasi nonaktif sampai selesai |
+| Sheet yang dibaca | Sheet bernama `Data` bila ada dan berisi; kalau tidak, sheet pertama yang berisi (berkas sumber punya `Sheet1` kosong) |
+| Target field (9) | `ID Lahan`*, `ID Petani`*, `Jenis Surat Tanah`, `Nomor Surat`, `Nama tertera di Surat`, `Luas tertera di Surat (ha)`, `Nomor STDB`, `UL Parcel Code (parcel_code)`, `Nama Kelompok Tani` (→ `LandParcel.subGroupLv2`, **isi hanya bila kosong**, update in-place tanpa revisi; pratinjau menandai "(sudah ada)") — auto-match `PARCEL_DETAIL_AUTO_MATCH_RULES` (`src/lib/land-parcel-detail-import.ts`), termasuk header DBF terpotong `parcel_cod` |
+| Normalisasi | Jenis surat 19 ejaan → enum `LandDocumentType` + `typeRaw` (jenis kosong tapi nomor/nama/luas terisi → `OTHER`); "Lahan sudah dijual"/"Surat lahan di bank" → `custodyNote` (dokumen `OTHER` tanpa nomor); token `0`/`n/a`/`-`/`Belum dapat` = kosong; STDB `…/M/YYYY` → `issuedYear` |
+| Tabel preview | `No`, `ID Lahan`, `ID Petani`, `Nama Petani (DB)`, `Jenis Surat` (label ternormalisasi; catatan penguasaan miring), `Nomor Surat`, `Nama di Surat`, `Luas Surat (ha)`, `STDB`, `UL Parcel Code`, `Kelompok Tani` ("(sudah ada)" bila DB sudah terisi), `Status`, `Detail Error` (100 baris pertama) |
+| Unduhan | `detail_lahan_semua.xlsx` / `detail_lahan_error.xlsx` (kolom target + Status + Detail Error) |
+| Simpan | *"Simpan N Baris Valid"* (CREATE) → **chunk 500 baris per transaksi** (timeout 60 dtk/chunk, #300): tiap chunk = prefetch 5 `findMany` → planner murni `planLandParcelDetailRows` (dedup dalam batch, lewati yang tidak berubah) → `createMany` + `update` hanya yang berubah; chunk gagal tidak membatalkan chunk sebelumnya (pesan menyebut N baris tersimpan; unggah ulang aman karena upsert). Toast ringkasan: surat baru/diperbarui/tanpa perubahan, STDB baru + tautan, UL Parcel Code baru/diperbarui/tanpa perubahan/dilewati, kelompok tani terisi |
+| Pemeta (2026-08-28) | Selektor **Pemeta** di kartu 3 (Meridia / WRI / Swadaya / isian bebas, default `MERIDIA`) → `LandParcelExternalId.source` untuk SELURUH baris berkas; dikirim sebagai argumen kedua `bulkSaveLandParcelDetails(rows, source)`, divalidasi `parcelMapperSchema` (2–60 karakter), diteruskan ke `applyLandParcelDetailRows(..., source)` |
+| Semantik simpan | **Upsert**: dokumen kunci `(parcelUid, type, number)` aktif → update; STDB unik `(farmerId, number)`; tautan unik `(parcelUid, stdbId)`; UL Parcel Code unik `(source, code)` dengan `source` = pemeta berkas → `parcelUid` dipindah bila berubah; kode sama dari pemeta berbeda hidup berdampingan |
+| Guard server | `hasPermission("bulk-upload-parcels", CREATE)`; Zod `landParcelDetailBatchSchema` (≤ 20.000 baris); setiap `parcelUid` dicek milik lahan aktif dalam scope **dan** `farmerDbId` = pemilik identitas (klien tidak dipercaya) |
+
+### Aturan validasi & pesan error (client, `validateParcelDetailRows`)
+
+| Kondisi | Pesan |
+|---|---|
+| ID Lahan / ID Petani kosong | *"ID Lahan wajib diisi"* / *"ID Petani wajib diisi"* |
+| ID Petani tak dikenal / di luar scope | *"ID Petani "X" tidak ditemukan dalam database atau akses Anda"* |
+| Pasangan (petani, lahan) tak ada | *"ID Lahan "X" tidak terdaftar untuk petani "Y""* |
+| ID Lahan sama, ID Petani berbeda di file | **Semua** barisnya: *"ID Lahan "X" muncul di file dengan ID Petani berbeda — perbaiki sumber"* (20 kasus di data Kampar) |
+| Nomor STDB sama, ID Petani berbeda | **Semua** barisnya: *"Nomor STDB "X" dipakai ID Petani berbeda di file — STDB terbit per petani"* (64 kasus HJP) |
+| STDB sama, petani sama, lahan berbeda | **Bukan error** — STDB per petani menutup beberapa persil |
+| Nomor/nama/luas terisi, jenis kosong | **Bukan error** — disimpan sebagai `OTHER` dengan `typeRaw` null (1.046 baris di data sumber; keputusan: jenis tak diketahui ≠ tak ada surat) |
+| Luas tertera bukan angka | *"Luas tertera tidak valid: "X""* (0 = kosong, bukan error) |
+| Tanpa surat, STDB, kode, maupun KT | *"Tidak ada data detail (surat, STDB, UL Parcel Code, atau kelompok tani) untuk disimpan"* |
