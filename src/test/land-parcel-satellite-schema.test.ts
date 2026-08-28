@@ -38,7 +38,7 @@ describe("land-parcel-satellite.schema", () => {
   });
 
   it("UL Parcel Code: source & code wajib; tanggal string → Date; kosong → null", () => {
-    const r = landParcelExternalIdSchema.safeParse({ landParcelId: "lp1", source: "parcel_code", code: "ID080d781b4", mappedAt: "2025-06-01", notes: "" });
+    const r = landParcelExternalIdSchema.safeParse({ landParcelId: "lp1", source: "MERIDIA", code: "ID080d781b4", mappedAt: "2025-06-01", notes: "" });
     expect(r.success).toBe(true);
     expect(r.data?.mappedAt).toBeInstanceOf(Date);
     expect(r.data?.notes).toBeNull();

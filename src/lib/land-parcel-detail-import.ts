@@ -54,8 +54,6 @@ export const LAND_DOCUMENT_TYPE_LABELS: Record<LandDocumentTypeCode, string> = {
   OTHER: "Lainnya",
 };
 
-/** Sumber UL Parcel Code untuk kolom `parcel_code` — nilai `LandParcelExternalId.source`. */
-export const EXTERNAL_ID_SOURCE_PARCEL_CODE = "parcel_code";
 
 /** Nilai sel yang berarti "tidak ada" pada data sumber. */
 const EMPTY_TOKENS = new Set(["", "-", "0", "n/a", "na", "null", "belum dapat", "belum ada", "tidak ada"]);

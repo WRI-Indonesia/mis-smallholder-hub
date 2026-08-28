@@ -1,4 +1,4 @@
-import { documentTypeShort, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS } from "@/lib/land-parcel-satellite-format";
+import { documentTypeShort, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
@@ -364,7 +364,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   }
   const metaLines: string[] = [];
   if (legal.stdbs.length === 0) metaLines.push("STDB: belum tercatat.");
-  if (legal.externalIds.length > 0) metaLines.push(`UL Parcel Code: ${legal.externalIds.map((e) => `${e.code} (${e.source})`).join(", ")}`);
+  if (legal.externalIds.length > 0) metaLines.push(`UL Parcel Code: ${legal.externalIds.map((e) => `${e.code} (${parcelMapperShort(e.source)})`).join(", ")}`);
   if (legal.programs.length > 0) {
     metaLines.push(
       `Program: ${legal.programs

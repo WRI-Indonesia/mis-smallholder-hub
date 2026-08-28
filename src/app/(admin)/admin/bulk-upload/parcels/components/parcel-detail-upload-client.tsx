@@ -36,10 +36,14 @@ import {
   type ParcelDetailValidatedRow,
   type ParcelRef,
 } from "@/lib/land-parcel-detail-import";
+import { PARCEL_MAPPERS, DEFAULT_PARCEL_MAPPER } from "@/lib/land-parcel-satellite-format";
 import {
   getParcelsForDetailMapping,
   bulkSaveLandParcelDetails,
 } from "@/server/actions/bulk-upload-parcel-detail";
+
+/** Nilai sentinel selektor Pemeta — bukan nilai yang disimpan ke DB. */
+const OTHER_MAPPER = "__other";
 
 /**
  * Tab "Detail Lahan (Excel)" di halaman Upload Massal Lahan (#296): surat
@@ -66,6 +70,10 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
   const [validated, setValidated] = useState<ParcelDetailValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
   const [isSaving, setIsSaving] = useState(false);
+  // Pemeta berlaku untuk seluruh berkas → `LandParcelExternalId.source`
+  // (keputusan owner 2026-08-28: kolom itu berarti SIAPA yang memetakan).
+  const [mapper, setMapper] = useState<string>(DEFAULT_PARCEL_MAPPER);
+  const [customMapper, setCustomMapper] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -180,8 +188,13 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
   async function handleSave() {
     const rows = validated.filter((r) => r._isValid && r.data).map((r) => r.data!);
     if (rows.length === 0) return;
+    const source = mapper === OTHER_MAPPER ? customMapper.trim() : mapper;
+    if (!source) {
+      toast.error("Isi nama pemeta terlebih dahulu");
+      return;
+    }
     setIsSaving(true);
-    const result = await bulkSaveLandParcelDetails(rows);
+    const result = await bulkSaveLandParcelDetails(rows, source);
     setIsSaving(false);
     if (!result.success) {
       toast.error(result.error);
@@ -397,6 +410,32 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                 Download Data Error Saja
               </Button>
             </div>
+            {permissions.includes("CREATE") && (
+              <div className="flex items-end gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="mapper" className="text-xs text-muted-foreground">Pemeta (sumber UL Parcel Code)</Label>
+                  <Select value={mapper} onValueChange={(v) => setMapper(v ?? DEFAULT_PARCEL_MAPPER)}>
+                    <SelectTrigger id="mapper" className="h-9 w-[280px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PARCEL_MAPPERS.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))}
+                      <SelectItem value={OTHER_MAPPER}>Lainnya…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {mapper === OTHER_MAPPER && (
+                  <Input
+                    value={customMapper}
+                    onChange={(e) => setCustomMapper(e.target.value)}
+                    placeholder="Nama pemeta"
+                    className="h-9 w-[200px]"
+                  />
+                )}
+              </div>
+            )}
             {permissions.includes("CREATE") && (
               <Button onClick={handleSave} disabled={validCount === 0 || isSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700">
                 {isSaving ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}

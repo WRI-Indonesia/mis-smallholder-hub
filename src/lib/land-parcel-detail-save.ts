@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { EXTERNAL_ID_SOURCE_PARCEL_CODE } from "@/lib/land-parcel-detail-import";
+import { DEFAULT_PARCEL_MAPPER } from "@/lib/land-parcel-satellite-format";
 import type { LandParcelDetailRowInput } from "@/validations/land-parcel-detail.schema";
 
 /**
@@ -13,7 +13,9 @@ import type { LandParcelDetailRowInput } from "@/validations/land-parcel-detail.
  * - status penguasaan tanpa jenis → dokumen OTHER tanpa nomor;
  * - STDB: unik (farmerId, number) → buat bila belum ada; tautan (parcelUid, stdbId) unik;
  * - UL Parcel Code: unik (source, code) → kode nonaktif/milik lahan sama dipakai ulang;
- *   kode AKTIF milik lahan lain DILEWATI (tidak dipindah diam-diam);
+ *   kode AKTIF milik lahan lain DILEWATI (tidak dipindah diam-diam). `source` =
+ *   PEMETA berkas ini (Meridia/WRI/Swadaya, keputusan owner 2026-08-28), dikirim
+ *   pemanggil; kode yang sama dari pemeta berbeda hidup berdampingan;
  * - Nama Kelompok Tani: isi LandParcel.subGroupLv2 baris aktif HANYA bila kosong.
  *
  * Bentuk (#300): 3 tahap per batch — PREFETCH (5 `findMany`), PLAN (murni,
@@ -255,6 +257,7 @@ export function planLandParcelDetailRows(rows: LandParcelDetailRowInput[], exist
 export async function fetchParcelDetailExistingState(
   tx: Prisma.TransactionClient,
   rows: LandParcelDetailRowInput[],
+  source: string = DEFAULT_PARCEL_MAPPER,
 ): Promise<ParcelDetailExistingState> {
   const state = emptyExistingState();
   const uids = [...new Set(rows.map((r) => r.parcelUid))];
@@ -275,7 +278,7 @@ export async function fetchParcelDetailExistingState(
       : Promise.resolve([]),
     codes.length
       ? tx.landParcelExternalId.findMany({
-          where: { source: EXTERNAL_ID_SOURCE_PARCEL_CODE, code: { in: codes } },
+          where: { source, code: { in: codes } },
           select: { code: true, parcelUid: true, isActive: true },
         })
       : Promise.resolve([]),
@@ -296,7 +299,7 @@ export async function fetchParcelDetailExistingState(
 
 // ─── EXECUTE ───
 
-async function executeParcelDetailPlan(tx: Prisma.TransactionClient, plan: ParcelDetailPlan, userId: string | null): Promise<void> {
+async function executeParcelDetailPlan(tx: Prisma.TransactionClient, plan: ParcelDetailPlan, userId: string | null, source: string): Promise<void> {
   const { summary } = plan;
 
   if (plan.documentCreates.length) {
@@ -335,12 +338,12 @@ async function executeParcelDetailPlan(tx: Prisma.TransactionClient, plan: Parce
 
   if (plan.externalIdCreates.length) {
     await tx.landParcelExternalId.createMany({
-      data: plan.externalIdCreates.map((e) => ({ ...e, source: EXTERNAL_ID_SOURCE_PARCEL_CODE, createdBy: userId })),
+      data: plan.externalIdCreates.map((e) => ({ ...e, source, createdBy: userId })),
     });
   }
   for (const u of plan.externalIdUpdates) {
     await tx.landParcelExternalId.update({
-      where: { source_code: { source: EXTERNAL_ID_SOURCE_PARCEL_CODE, code: u.code } },
+      where: { source_code: { source, code: u.code } },
       data: { parcelUid: u.parcelUid, isActive: true, modifiedBy: userId },
     });
   }
@@ -366,10 +369,11 @@ export async function applyLandParcelDetailRows(
   rows: LandParcelDetailRowInput[],
   userId: string | null,
   summary: ParcelDetailSaveSummary,
+  source: string = DEFAULT_PARCEL_MAPPER,
 ): Promise<void> {
   if (rows.length === 0) return;
-  const existing = await fetchParcelDetailExistingState(tx, rows);
+  const existing = await fetchParcelDetailExistingState(tx, rows, source);
   const plan = planLandParcelDetailRows(rows, existing);
-  await executeParcelDetailPlan(tx, plan, userId);
+  await executeParcelDetailPlan(tx, plan, userId, source);
   mergeParcelDetailSummary(summary, plan.summary);
 }

@@ -35,7 +35,7 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Tambah** butuh izin ta
 
 ## Hasil
 
-Catatan tampil di tab Legalitas lahan dan kartu Legalitas di atasnya, diringkas di tab **Lahan** pada detail petani (kolom Surat & STDB), dan bisa ditampilkan di **Report → Lahan** lewat tombol Kolom (Surat Kepemilikan, Nama di Surat, Luas Tertera, STDB).
+Catatan tampil di tab **Legalitas** lahan (surat, STDB, UL Parcel Code — keikutsertaan program ada di tab **Program** tersendiri) dan kartu Legalitas di atasnya, diringkas di tab **Lahan** pada detail petani (kolom Surat & STDB), dan bisa ditampilkan di **Report → Lahan** lewat tombol Kolom (Surat Kepemilikan, Nama di Surat, Luas Tertera, STDB).
 
 ## Kalau bermasalah
 

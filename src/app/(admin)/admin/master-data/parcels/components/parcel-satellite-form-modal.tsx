@@ -21,6 +21,7 @@ import {
   createLandParcelProgram,
   updateLandParcelProgram,
 } from "@/server/actions/land-parcel-satellite";
+import { PARCEL_MAPPERS, DEFAULT_PARCEL_MAPPER } from "@/lib/land-parcel-satellite-format";
 import type {
   LandParcelDocumentItem,
   LandStdbItem,
@@ -218,8 +219,13 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="source">Sumber *</Label>
-                  <Input id="source" name="source" defaultValue={ext?.source ?? "parcel_code"} />
+                  <Label htmlFor="source">Pemeta *</Label>
+                  <Input id="source" name="source" list="parcel-mapper-options" defaultValue={ext?.source ?? DEFAULT_PARCEL_MAPPER} />
+                  <datalist id="parcel-mapper-options">
+                    {PARCEL_MAPPERS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </datalist>
                   {fieldError("source")}
                 </div>
                 <div className="space-y-2">

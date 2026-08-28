@@ -29,6 +29,16 @@ export const landParcelDetailRowSchema = z.object({
   subGroupLv2: trimmed.nullable(),
 });
 
+/**
+ * Pemeta UL Parcel Code (`LandParcelExternalId.source`) untuk satu berkas import
+ * — daftar `PARCEL_MAPPERS` plus isian bebas (pemeta baru tak perlu rilis kode).
+ */
+export const parcelMapperSchema = z
+  .string()
+  .trim()
+  .min(2, "Pemeta wajib diisi")
+  .max(60, "Nama pemeta maksimal 60 karakter");
+
 export const landParcelDetailBatchSchema = z
   .array(landParcelDetailRowSchema)
   .min(1, "Tidak ada baris valid untuk disimpan")

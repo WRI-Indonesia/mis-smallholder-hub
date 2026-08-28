@@ -6,7 +6,8 @@ import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerRelationAccessFilter } from "@/lib/access-context";
 import type { ParcelRef } from "@/lib/land-parcel-detail-import";
 import { applyLandParcelDetailRows, emptyParcelDetailSummary, type ParcelDetailSaveSummary } from "@/lib/land-parcel-detail-save";
-import { landParcelDetailBatchSchema } from "@/validations/land-parcel-detail.schema";
+import { landParcelDetailBatchSchema, parcelMapperSchema } from "@/validations/land-parcel-detail.schema";
+import { DEFAULT_PARCEL_MAPPER } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -50,6 +51,7 @@ const PARCEL_DETAIL_TX_TIMEOUT_MS = 60_000;
 
 export async function bulkSaveLandParcelDetails(
   input: unknown,
+  mapper: unknown = DEFAULT_PARCEL_MAPPER,
 ): Promise<ActionResult<ParcelDetailSaveSummary>> {
   if (!(await hasPermission("bulk-upload-parcels", "CREATE"))) {
     return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
@@ -60,6 +62,14 @@ export async function bulkSaveLandParcelDetails(
     return { success: false, error: "Data yang dikirim tidak valid — ulangi validasi lalu simpan kembali" };
   }
   const rows = parsed.data;
+
+  // Pemeta berlaku untuk SELURUH berkas — satu berkas = satu pemeta (Meridia,
+  // WRI, swadaya). Disimpan ke `LandParcelExternalId.source`.
+  const parsedMapper = parcelMapperSchema.safeParse(mapper);
+  if (!parsedMapper.success) {
+    return { success: false, error: parsedMapper.error.issues[0]?.message ?? "Pemeta tidak valid" };
+  }
+  const source = parsedMapper.data;
 
   const session = await auth();
   const userId = session?.user?.id ?? null;
@@ -95,7 +105,7 @@ export async function bulkSaveLandParcelDetails(
       const chunk = rows.slice(i, i + PARCEL_DETAIL_CHUNK_SIZE);
       await prisma.$transaction(
         async (tx) => {
-          await applyLandParcelDetailRows(tx, chunk, userId, summary);
+          await applyLandParcelDetailRows(tx, chunk, userId, summary, source);
         },
         { timeout: PARCEL_DETAIL_TX_TIMEOUT_MS },
       );

@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   documentTypeShort,
+  parcelMapperLabel,
+  parcelMapperShort,
+  PARCEL_MAPPERS,
+  DEFAULT_PARCEL_MAPPER,
   summarizeDocuments,
   summarizeHolderNames,
   sumStatedArea,
@@ -65,4 +69,24 @@ describe("buildLandParcelReport — kolom legalitas (#296)", () => {
     ]);
     expect(r.rows[0]).toMatchObject({ surat: "SHM 727", namaDiSurat: "Abdul Rohman", luasTertera: 0.25, stdb: "1637/53/1401/6/2025" });
   });
+
+  /** Pemeta UL Parcel Code (2026-08-28): kolom `source` = SIAPA yang memetakan. */
+  describe("pemeta UL Parcel Code", () => {
+    it("defaults to Meridia — vendor yang ditugaskan donor (UL)", () => {
+      expect(DEFAULT_PARCEL_MAPPER).toBe("MERIDIA");
+      expect(PARCEL_MAPPERS.map((m) => m.value)).toEqual(["MERIDIA", "WRI", "SWADAYA"]);
+    });
+
+    it("melabeli pemeta dikenal panjang & pendek", () => {
+      expect(parcelMapperLabel("MERIDIA")).toBe("Meridia — vendor pemetaan (ditugaskan UL)");
+      expect(parcelMapperShort("MERIDIA")).toBe("Meridia");
+      expect(parcelMapperShort("SWADAYA")).toBe("Swadaya");
+    });
+
+    it("menampilkan sumber tak dikenal apa adanya (isian bebas tidak hilang)", () => {
+      expect(parcelMapperLabel("Dinas Perkebunan")).toBe("Dinas Perkebunan");
+      expect(parcelMapperShort("parcel_code")).toBe("parcel_code");
+    });
+  });
+
 });
