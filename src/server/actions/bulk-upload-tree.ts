@@ -6,6 +6,7 @@ import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerRelationAccessFilter } from "@/lib/access-context";
 import { parseShapefileZip } from "@/lib/shapefile-server";
 import { bulkCreateTreesSchema, type BulkCreateTreesInput } from "@/validations/tree.schema";
+import { formatFieldErrors } from "@/lib/validation-message";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -116,7 +117,7 @@ export async function bulkCreateTrees(
   if (!parsed.success) {
     return {
       success: false,
-      error: `Validasi gagal: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`,
+      error: formatFieldErrors(parsed.error.flatten().fieldErrors, "Data tidak lolos validasi"),
     };
   }
 

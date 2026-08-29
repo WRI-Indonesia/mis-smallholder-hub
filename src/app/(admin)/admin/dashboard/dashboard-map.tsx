@@ -1,24 +1,19 @@
 "use client";
 
 import { useRef, useMemo, useEffect, useState, useCallback } from "react";
-import { useTheme } from "next-themes";
 import Map, { Source, Layer, type MapRef, type LayerProps, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import { GeoJSONSource } from "maplibre-gl";
 import type { Point } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPin, Search, Check, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MAP_STYLES } from "@/lib/map-style";
+import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { KTDetails } from "@/types/dashboard";
 
-// Single font only: fonts.openmaptiles.org does not serve *combined* fontstacks
-// (e.g. "Open Sans Regular,Noto Sans Regular" returns its HTML landing page,
-// which MapLibre then fails to parse as PBF → "Unable to load glyph range /
-// Unimplemented type: 4"). "Open Sans Regular" is served as a valid glyph PBF.
-const TEXT_FONT = ["Open Sans Regular"];
 
 interface Props {
   kelompokTaniList: KTDetails[];
@@ -28,11 +23,15 @@ interface Props {
 
 export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) {
   const mapRef = useRef<MapRef>(null);
-  const { resolvedTheme } = useTheme();
 
-  // Basemap follows the app theme until the user picks one explicitly (override).
-  const [styleOverride, setStyleOverride] = useState<keyof typeof MAP_STYLES | null>(null);
-  const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  // Default StreetMap untuk KEDUA tema (keputusan owner 2026-08-29) — peta
+  // ikhtisar butuh nama kota/jalan sebagai orientasi, bukan latar yang menepi.
+  // Sengaja TIDAK ikut tema aplikasi, beda dari Fire Alert / Peta Lahan / BMP.
+  const [styleOverride, setStyleOverride] = useState<MapStyleKey | null>(null);
+  const styleKey: MapStyleKey = styleOverride ?? "streetmap";
+
+  const { mapStyle, labelFont, labelsReady, syncStyle, registerImageFallback } =
+    useVectorBasemap(styleKey);
 
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -112,7 +111,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     filter: ["has", "point_count"],
     layout: {
       "text-field": ["get", "point_count_abbreviated"],
-      "text-font": TEXT_FONT,
+      "text-font": [labelFont],
       "text-size": 12,
     },
     paint: { "text-color": "#ffffff" },
@@ -144,7 +143,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
     filter: ["!", ["has", "point_count"]],
     layout: {
       "text-field": ["get", "name"],
-      "text-font": TEXT_FONT,
+      "text-font": [labelFont],
       "text-size": 11,
       "text-anchor": "top",
       "text-offset": [0, 0.9],
@@ -202,9 +201,14 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey]}
+        mapStyle={mapStyle}
         interactiveLayerIds={["clusters", "unclustered-point"]}
-        onLoad={() => fitAll()}
+        onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
+          fitAll();
+        }}
+        onStyleData={(e) => syncStyle(e.target)}
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={(e) => {
@@ -213,9 +217,10 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
       >
         <Source id="kt-source" type="geojson" data={geojson} cluster clusterMaxZoom={14} clusterRadius={50}>
           <Layer {...clusterLayer} />
-          <Layer {...clusterCountLayer} />
           <Layer {...pointLayer} />
-          <Layer {...pointLabelLayer} />
+          {/* Layer berteks menunggu glyphs style aktif cocok — lihat useVectorBasemap. */}
+          {labelsReady && <Layer {...clusterCountLayer} />}
+          {labelsReady && <Layer {...pointLabelLayer} />}
         </Source>
       </Map>
 
@@ -274,17 +279,18 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
 
       {/* Basemap switcher */}
       <div className="absolute top-3 right-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-        {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+        {MAP_STYLE_KEYS.map((key) => (
           <button
             key={key}
             onClick={() => setStyleOverride(key)}
+            title={MAP_STYLE_LABELS[key].full}
             className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
               styleKey === key
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {key}
+            {MAP_STYLE_LABELS[key].short}
           </button>
         ))}
       </div>

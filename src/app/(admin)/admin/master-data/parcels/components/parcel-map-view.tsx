@@ -7,7 +7,8 @@ import type { MapRef, MapLayerMouseEvent, LayerProps } from "react-map-gl/maplib
 import type { Geometry, Position } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ExternalLink, LandPlot, Target } from "lucide-react";
-import { TREE_POINT_PAINT, PARCEL_MAP_STYLES } from "@/lib/map-style";
+import { TREE_POINT_PAINT, MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
 import { formatArea } from "@/lib/format";
 
@@ -82,7 +83,8 @@ export function ParcelMapView({
   siblingLabel,
   treePoints,
 }: Props) {
-  const [styleKey, setStyleKey] = useState<keyof typeof PARCEL_MAP_STYLES>("hybrid");
+  const [styleKey, setStyleKey] = useState<MapStyleKey>("hybrid");
+  const { mapStyle, labelBeforeId, syncStyle, registerImageFallback } = useVectorBasemap(styleKey);
   const [selected, setSelected] = useState<SiblingSelection | null>(null);
 
   const parsedGeometry =
@@ -259,8 +261,13 @@ export function ParcelMapView({
         ref={mapRef}
         {...viewport}
         onMove={(evt) => setViewport(evt.viewState)}
-        onLoad={zoomToLahan}
-        mapStyle={PARCEL_MAP_STYLES[styleKey]}
+        onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
+          zoomToLahan();
+        }}
+        onStyleData={(e) => syncStyle(e.target)}
+        mapStyle={mapStyle}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onClick={onClick}
@@ -276,22 +283,25 @@ export function ParcelMapView({
             type="geojson"
             data={{ type: "FeatureCollection" as const, features: siblingFeatures }}
           >
+            {/* Di bawah label basemap (vector) supaya nama tempat tetap terbaca. */}
             <Layer
               id="sibling-fill"
               type="fill"
+              beforeId={labelBeforeId}
               paint={{ "fill-color": "#0ea5e9", "fill-opacity": 0.3 }}
             />
             <Layer
               id="sibling-border"
               type="line"
+              beforeId={labelBeforeId}
               paint={{ "line-color": "#0284c7", "line-width": 1.5 }}
             />
           </Source>
         )}
         {parsedGeometry && hasValidCoordinates && (
           <Source type="geojson" data={geojsonData}>
-            <Layer {...layerStyle} />
-            <Layer {...borderStyle} />
+            <Layer {...layerStyle} beforeId={labelBeforeId} />
+            <Layer {...borderStyle} beforeId={labelBeforeId} />
           </Source>
         )}
         {/* Label singkat (#298) sebagai Marker HTML — style raster tak punya glyphs untuk symbol layer.
@@ -372,17 +382,18 @@ export function ParcelMapView({
 
       {/* Background style selector overlay */}
       <div className="absolute top-3 right-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-        {(Object.keys(PARCEL_MAP_STYLES) as Array<keyof typeof PARCEL_MAP_STYLES>).map((key) => (
+        {MAP_STYLE_KEYS.map((key) => (
           <button
             key={key}
             onClick={() => setStyleKey(key)}
+            title={MAP_STYLE_LABELS[key].full}
             className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
               styleKey === key
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {key}
+            {MAP_STYLE_LABELS[key].short}
           </button>
         ))}
       </div>

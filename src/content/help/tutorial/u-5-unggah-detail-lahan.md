@@ -39,11 +39,19 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 
 > [!penting] Satu nomor **STDB boleh muncul di beberapa baris** selama ID Petaninya sama — STDB memang terbit per petani dan menutup semua persilnya. Yang ditolak adalah nomor STDB yang sama dengan **petani berbeda**.
 
+### Kolom STDB yang belum bernomor
+
+Sel bertuliskan **"belum ada"**, **"belum dapat"**, atau **"n/a"** dulu diperlakukan sama dengan sel kosong dan **hilang** saat unggah. Sekarang sel seperti itu menjadi baris STDB tahap **Persiapan Data** — pernyataan "sedang diurus" akhirnya punya tempat.
+
++ Bedanya dengan sel yang benar-benar kosong (atau berisi `-` / `0`): sel kosong tetap **tidak** membuat baris STDB apa pun.
++ Semua lahan petani yang sama ditautkan ke **satu** berkas berjalan, bukan satu berkas per lahan.
++ Bila petani itu **sudah punya STDB aktif** (bernomor) di sistem atau di berkas yang sama, sel "belum ada" pada barisnya **dilewati** — kemungkinan besar kolomnya memang tidak diisi untuk persil itu, bukan berarti petaninya sedang mengurus STDB baru. Untuk mencatat pengajuan baru bagi petani yang sudah punya STDB, gunakan tab Legalitas di detail lahan.
+
 > [!hati-hati] Baris yang **ID Lahan-nya muncul dua kali dengan ID Petani berbeda** ditandai error di *kedua* barisnya. Sistem sengaja tidak memilih salah satu — itu salah ketik di sumber yang harus Anda putuskan sendiri.
 
 ## Hasil
 
-Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB, UL Parcel Code) dan ringkasannya di detail petani. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
+Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB lengkap dengan **tahapnya**, UL Parcel Code) dan ringkasannya di detail petani. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
 
 ## Kalau bermasalah
 
@@ -54,3 +62,9 @@ Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: 
 **"Tidak ada data detail … untuk disimpan"** — baris itu tidak membawa surat, STDB, maupun UL Parcel Code. Hapus barisnya atau lengkapi.
 
 **Tombol validasi tetap nonaktif** — daftar lahan belum selesai dimuat (bisa beberapa detik untuk belasan ribu lahan). Tunggu sampai jumlah lahan tampil di Langkah 1.
+
+**Muncul pesan "Header ditemukan di baris 3"** — berkas kabupaten kerap punya baris judul di atas baris nama kolom, dan sistem melewatinya sendiri. Periksa sekilas apakah nama kolom yang terbaca sudah benar, lalu lanjutkan.
+
++ Nomor **Baris** di tabel hasil validasi dan di berkas unduhan error mengikuti nomor baris sungguhan di Excel, jadi tetap menunjuk baris yang benar walau headernya bukan di baris 1.
+
+**"Tidak menemukan baris header pada berkas ini"** — sheet yang terbaca tidak punya satu pun baris berisi nama kolom. Periksa apakah datanya ada di sheet lain yang kosong judulnya, atau berkasnya memang bukan tabel.

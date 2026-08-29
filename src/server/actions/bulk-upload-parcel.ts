@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { landParcelSchema, type LandParcelInput } from "@/validations/land-parcel.schema";
+import { formatFieldErrors } from "@/lib/validation-message";
 import { getAccessContext } from "@/lib/access-context";
 import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import { parseShapefileZip } from "@/lib/shapefile-server";
@@ -113,9 +114,10 @@ export async function bulkCreateLandParcels(
     if (!parsed.success) {
       return {
         success: false,
-        error: `Validasi gagal pada salah satu baris: ${JSON.stringify(
-          parsed.error.flatten().fieldErrors
-        )}`,
+        error: formatFieldErrors(
+          parsed.error.flatten().fieldErrors,
+          "Ada baris yang tidak lolos validasi",
+        ),
       };
     }
     validatedRecords.push(parsed.data);

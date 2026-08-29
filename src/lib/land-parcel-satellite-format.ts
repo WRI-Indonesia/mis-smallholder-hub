@@ -74,8 +74,100 @@ export function sumStatedArea(docs: DocSummaryInput[]): number | null {
   return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
 }
 
-/** Nomor STDB distinct, gabung "; "; null bila kosong. */
-export function summarizeStdb(numbers: string[]): string | null {
-  const u = [...new Set(numbers.map((n) => n.trim()).filter(Boolean))];
+/**
+ * Ambang "selisih luas tertera vs poligon patut diperiksa" (Ha), #305.
+ * SATU konstanta untuk dua tempat: chip amber di tab Legalitas Detail Lahan dan
+ * filter/KPI di Laporan Lahan. Kalau keduanya memakai angka sendiri-sendiri,
+ * laporan dan detail akan menandai lahan yang berbeda tanpa gejala.
+ */
+export const AREA_DIFF_THRESHOLD_HA = 0.5;
+
+/** `true` bila selisih luas tertera vs poligon mencapai ambang di atas. */
+export function isBigAreaDiff(statedArea: number | null, area: number | null): boolean {
+  if (statedArea == null || area == null) return false;
+  return Math.abs(statedArea - area) >= AREA_DIFF_THRESHOLD_HA;
+}
+
+export interface ExternalIdSummaryInput {
+  source: string;
+  code: string;
+}
+
+/**
+ * "ID080d781b4 (Meridia)" — distinct, gabung "; "; null bila kosong (#305).
+ * Pemetanya ikut karena kode yang sama bisa datang dari pemeta berbeda dan
+ * hidup berdampingan (lihat `PARCEL_MAPPERS`).
+ */
+export function summarizeExternalIds(items: ExternalIdSummaryInput[]): string | null {
+  const parts = [...new Set(items.map((e) => `${e.code.trim()} (${parcelMapperShort(e.source)})`).filter(Boolean))];
+  return parts.length ? parts.join("; ") : null;
+}
+
+export interface ProgramSummaryInput {
+  programType: string;
+  status: string;
+}
+
+/** "Demplot PBU — Berjalan" — distinct, gabung "; "; null bila kosong (#305). */
+export function summarizePrograms(items: ProgramSummaryInput[]): string | null {
+  const parts = [
+    ...new Set(
+      items.map(
+        (p) =>
+          `${LAND_PROGRAM_LABELS[p.programType] ?? p.programType} — ${LAND_PROGRAM_STATUS_LABELS[p.status] ?? p.status}`,
+      ),
+    ),
+  ];
+  return parts.length ? parts.join("; ") : null;
+}
+
+// ─── Tahapan penerbitan STDB (#306) ───
+
+export const LAND_STDB_STAGES = ["PERSIAPAN_DATA", "PENGAJUAN", "REVISI", "TERBIT", "DITOLAK"] as const;
+export type LandStdbStageCode = (typeof LAND_STDB_STAGES)[number];
+
+export const LAND_STDB_STAGE_LABELS: Record<string, string> = {
+  PERSIAPAN_DATA: "Persiapan Data",
+  PENGAJUAN: "Pengajuan",
+  REVISI: "Revisi",
+  TERBIT: "Terbit",
+  DITOLAK: "Ditolak",
+};
+
+/**
+ * Tahap yang berarti "berkas masih terbuka" — dipakai UI, filter, DAN partial
+ * unique index `uniq_land_stdb_farmer_open` (satu berkas terbuka per petani).
+ * `DITOLAK` sengaja TIDAK ikut: prosesnya berhenti, dan petani harus bisa
+ * mengajukan ulang dengan baris baru (keputusan owner #306).
+ */
+export const LAND_STDB_OPEN_STAGES = ["PERSIAPAN_DATA", "PENGAJUAN", "REVISI"] as const;
+
+export function isOpenStdbStage(stage: string): boolean {
+  return (LAND_STDB_OPEN_STAGES as readonly string[]).includes(stage);
+}
+
+export function landStdbStageLabel(stage: string): string {
+  return LAND_STDB_STAGE_LABELS[stage] ?? stage;
+}
+
+export interface StdbSummaryInput {
+  number: string | null;
+  stage: string;
+}
+
+/**
+ * "1637/53/1401/6/2025; Pengajuan — belum bernomor" — distinct, null bila
+ * kosong. Baris pra-terbit tidak boleh muncul sebagai string kosong di Report
+ * dan PDF (#306): pembaca akan menyangka datanya rusak, padahal tahapnya memang
+ * belum menghasilkan nomor. Baris TERBIT bernomor ditulis polos (nomor saja)
+ * supaya kolom roster harian tidak berubah bentuk.
+ */
+export function summarizeStdb(items: StdbSummaryInput[]): string | null {
+  const parts = items.map((s) => {
+    const number = s.number?.trim() || null;
+    if (!number) return `${landStdbStageLabel(s.stage)} — belum bernomor`;
+    return s.stage === "TERBIT" ? number : `${number} (${landStdbStageLabel(s.stage)})`;
+  });
+  const u = [...new Set(parts.filter(Boolean))];
   return u.length ? u.join("; ") : null;
 }

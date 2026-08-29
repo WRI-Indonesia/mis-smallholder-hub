@@ -74,7 +74,15 @@ export interface LandParcelDocumentItem {
 
 export interface LandStdbItem {
   id: string;
-  number: string;
+  /** null selama tahap pra-terbit (#306) — nomor baru keluar saat TERBIT. */
+  number: string | null;
+  stage: string;
+  stageChangedAt: Date | null;
+  stageNote: string | null;
+  submittedTo: string | null;
+  preparedAt: Date | null;
+  submittedAt: Date | null;
+  issuedAt: Date | null;
   holderName: string | null;
   statedArea: number | null;
   issuedYear: number | null;

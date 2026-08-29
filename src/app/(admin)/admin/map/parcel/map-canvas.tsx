@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
 import { formatArea } from "@/lib/format";
-import { MAP_STYLES } from "@/lib/map-style";
+import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { Button } from "@/components/ui/button";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
@@ -105,8 +106,10 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
   const { resolvedTheme } = useTheme();
 
   // Basemap follows the app theme until the user picks one explicitly (override).
-  const [styleOverride, setStyleOverride] = useState<keyof typeof MAP_STYLES | null>(null);
-  const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const [styleOverride, setStyleOverride] = useState<MapStyleKey | null>(null);
+  const styleKey: MapStyleKey = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } =
+    useVectorBasemap(styleKey);
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
@@ -478,12 +481,15 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey]}
+        mapStyle={mapStyle}
         interactiveLayerIds={interactiveLayerIds}
         onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
           fitAll();
           setZoom(quantizeZoom(e.target.getZoom()));
         }}
+        onStyleData={(e) => syncStyle(e.target)}
         onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onClick={handleClick}
         onMouseMove={(e) => {
@@ -540,6 +546,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
               <Layer
                 id={`custom-${l.id}-fill`}
                 type="fill"
+                beforeId={labelBeforeId}
                 filter={["==", ["geometry-type"], "Polygon"]}
                 layout={vis(l.visible)}
                 paint={{
@@ -551,6 +558,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
               <Layer
                 id={`custom-${l.id}-line`}
                 type="line"
+                beforeId={labelBeforeId}
                 filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "LineString"]]}
                 layout={vis(l.visible)}
                 paint={{ "line-color": customLayerColor(l), "line-width": 1.5 }}
@@ -576,37 +584,41 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           <Layer
             id="parcel-fill"
             type="fill"
+            beforeId={labelBeforeId}
             layout={vis(layers.parcelAreas)}
             paint={{ "fill-color": "#22c55e", "fill-opacity": 0.2 }}
           />
           <Layer
             id="parcel-outline"
             type="line"
+            beforeId={labelBeforeId}
             layout={vis(layers.parcelAreas)}
             paint={{ "line-color": "#16a34a", "line-width": 1.5 }}
           />
         </Source>
 
         {/* Parcel farmer-name labels — only where the name fits inside the polygon */}
-        <Source id="parcel-label-source" type="geojson" data={parcelLabelGeojson}>
-          <Layer
-            id="parcel-label"
-            type="symbol"
-            layout={{
-              ...vis(layers.parcelAreas),
-              "text-field": ["get", "farmerName"],
-              "text-font": ["Open Sans Regular"],
-              "text-size": PARCEL_LABEL_FONT_PX,
-              "text-max-width": ["get", "maxWidthEms"],
-              "text-optional": true,
-            }}
-            paint={{
-              "text-color": labelColors.text,
-              "text-halo-color": labelColors.halo,
-              "text-halo-width": 1.5,
-            }}
-          />
-        </Source>
+        {labelsReady && (
+          <Source id="parcel-label-source" type="geojson" data={parcelLabelGeojson}>
+            <Layer
+              id="parcel-label"
+              type="symbol"
+              layout={{
+                ...vis(layers.parcelAreas),
+                "text-field": ["get", "farmerName"],
+                "text-font": [labelFont],
+                "text-size": PARCEL_LABEL_FONT_PX,
+                "text-max-width": ["get", "maxWidthEms"],
+                "text-optional": true,
+              }}
+              paint={{
+                "text-color": labelColors.text,
+                "text-halo-color": labelColors.halo,
+                "text-halo-width": 1.5,
+              }}
+            />
+          </Source>
+        )}
 
         {/* Point lahan (centroid) */}
         <Source id="parcel-point-source" type="geojson" data={parcelPointGeojson}>
@@ -636,25 +648,27 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
               "circle-stroke-color": "#ffffff",
             }}
           />
-          <Layer
-            id="kt-label"
-            type="symbol"
-            layout={{
-              ...vis(layers.kt),
-              "text-field": ["get", "name"],
-              "text-font": ["Open Sans Regular"],
-              "text-size": 11,
-              "text-anchor": "top",
-              "text-offset": [0, 0.9],
-              "text-max-width": 10,
-              "text-optional": true,
-            }}
-            paint={{
-              "text-color": labelColors.text,
-              "text-halo-color": labelColors.halo,
-              "text-halo-width": 1.5,
-            }}
-          />
+          {labelsReady && (
+            <Layer
+              id="kt-label"
+              type="symbol"
+              layout={{
+                ...vis(layers.kt),
+                "text-field": ["get", "name"],
+                "text-font": [labelFont],
+                "text-size": 11,
+                "text-anchor": "top",
+                "text-offset": [0, 0.9],
+                "text-max-width": 10,
+                "text-optional": true,
+              }}
+              paint={{
+                "text-color": labelColors.text,
+                "text-halo-color": labelColors.halo,
+                "text-halo-width": 1.5,
+              }}
+            />
+          )}
         </Source>
 
         {/* Titik Api (Hotspot) — NASA FIRMS, top layer; colored by confidence */}
@@ -691,6 +705,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           <Layer
             id="measure-fill"
             type="fill"
+            beforeId={labelBeforeId}
             paint={{ "fill-color": MEASURE_COLOR, "fill-opacity": 0.12 }}
           />
         </Source>
@@ -698,23 +713,26 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           <Layer
             id="measure-line"
             type="line"
+            beforeId={labelBeforeId}
             layout={{ "line-cap": "round", "line-join": "round" }}
             paint={{ "line-color": MEASURE_COLOR, "line-width": 2.5, "line-dasharray": [2, 1] }}
           />
         </Source>
-        <Source id="measure-segment-source" type="geojson" data={measureSegmentFc}>
-          <Layer
-            id="measure-segment-label"
-            type="symbol"
-            layout={{
-              "text-field": ["get", "label"],
-              "text-font": ["Open Sans Regular"],
-              "text-size": 10,
-              "text-allow-overlap": true,
-            }}
-            paint={{ "text-color": labelColors.text, "text-halo-color": labelColors.halo, "text-halo-width": 1.5 }}
-          />
-        </Source>
+        {labelsReady && (
+          <Source id="measure-segment-source" type="geojson" data={measureSegmentFc}>
+            <Layer
+              id="measure-segment-label"
+              type="symbol"
+              layout={{
+                "text-field": ["get", "label"],
+                "text-font": [labelFont],
+                "text-size": 10,
+                "text-allow-overlap": true,
+              }}
+              paint={{ "text-color": labelColors.text, "text-halo-color": labelColors.halo, "text-halo-width": 1.5 }}
+            />
+          </Source>
+        )}
         <Source id="measure-point-source" type="geojson" data={measurePointsFc}>
           <Layer
             id="measure-point"
@@ -968,16 +986,17 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           </button>
         )}
         <div className="bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+          {MAP_STYLE_KEYS.map((key) => (
             <button
               key={key}
               onClick={() => setStyleOverride(key)}
+            title={MAP_STYLE_LABELS[key].full}
               className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${styleKey === key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
             >
-              {key}
+              {MAP_STYLE_LABELS[key].short}
             </button>
           ))}
         </div>

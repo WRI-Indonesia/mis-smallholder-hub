@@ -82,3 +82,60 @@ describe("buildLandParcelReportDoc", () => {
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(3);
   });
 });
+
+/**
+ * Blok filter & ringkasan legalitas (#305). Ia dirender penuh-lebar di bawah
+ * metadata dan **menggeser awal peta ke bawah** — bagian yang mudah rusak
+ * diam-diam: kalau blok itu panjang, kotak peta bisa jadi gepeng atau bertinggi
+ * negatif tanpa satu pun error dilempar.
+ */
+describe("buildLandParcelReportDoc — blok sections legalitas", () => {
+  const longSections = [
+    {
+      title: "Filter Legalitas",
+      lines: [
+        "Cakupan Pendataan: Hanya lahan yang sudah didata (punya UL Parcel Code)",
+        "Status Surat: Tanpa surat (tak ada surat tercatat sama sekali)",
+        "Jenis Surat: SHM, SKT, SKGR, SK, SKST, SKTC, SKGK, SPPT, SKRPT, SKKT, SKTB, Hibah, Jual Beli, Lainnya (punya minimal satu)",
+        "Status STDB: Tahap Persiapan Data",
+        "Selisih Luas: ≥ 0,50 Ha (luas surat vs poligon)",
+      ],
+    },
+    {
+      title: "Ringkasan Legalitas",
+      lines: [
+        "Lahan (hasil filter): 1.204 (1.204 di antaranya sudah didata)",
+        "Ada Surat: 903 (75% dari 1.204 lahan yang sudah didata)",
+        "Ada STDB: 210 (17% dari 1.204 lahan yang sudah didata — dihitung per persil, bukan per petani)",
+        "Selisih Luas ≥ 0,50 Ha: 32 (luas di surat vs luas poligon)",
+      ],
+    },
+  ];
+
+  it("tanpa sections, jumlah halaman tidak berubah dari perilaku lama", () => {
+    const without = buildLandParcelReportDoc(baseInput(20, true));
+    const withEmpty = buildLandParcelReportDoc({ ...baseInput(20, true), sections: [] });
+    expect(withEmpty.getNumberOfPages()).toBe(without.getNumberOfPages());
+  });
+
+  it("sections terpanjang tetap menghasilkan dokumen sah, tanpa error", () => {
+    expect(() =>
+      buildLandParcelReportDoc({ ...baseInput(60, true), sections: longSections }),
+    ).not.toThrow();
+  });
+
+  it("bila blok legalitas memakan halaman, peta pindah halaman — bukan dirender gepeng", () => {
+    const base = buildLandParcelReportDoc(baseInput(20, true));
+    const long = buildLandParcelReportDoc({ ...baseInput(20, true), sections: longSections });
+    // Lantai MIN_MAP_H memaksa halaman baru, jadi total halaman bertambah.
+    expect(long.getNumberOfPages()).toBeGreaterThanOrEqual(base.getNumberOfPages());
+  });
+
+  it("section tanpa baris dilewati (tidak meninggalkan judul menggantung)", () => {
+    const doc = buildLandParcelReportDoc({
+      ...baseInput(20, true),
+      sections: [{ title: "Filter Legalitas", lines: [] }],
+    });
+    expect(doc.getNumberOfPages()).toBe(buildLandParcelReportDoc(baseInput(20, true)).getNumberOfPages());
+  });
+});

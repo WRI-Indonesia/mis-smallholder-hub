@@ -3,6 +3,7 @@ import {
   landParcelDocumentSchema,
   updateLandParcelDocumentSchema,
   landStdbSchema,
+  updateLandStdbSchema,
   landParcelExternalIdSchema,
   landParcelProgramSchema,
 } from "@/validations/land-parcel-satellite.schema";
@@ -31,10 +32,58 @@ describe("land-parcel-satellite.schema", () => {
     expect(updateLandParcelDocumentSchema.safeParse({ type: "SKT" }).success).toBe(false);
   });
 
-  it("STDB: nomor wajib & di-trim", () => {
+  it("STDB: nomor wajib & di-trim pada tahap Terbit (default)", () => {
     expect(landStdbSchema.safeParse({ landParcelId: "lp1", number: "  " }).success).toBe(false);
     const r = landStdbSchema.safeParse({ landParcelId: "lp1", number: " 1637/53/1401/6/2025 " });
     expect(r.success && r.data.number).toBe("1637/53/1401/6/2025");
+    // Tanpa `stage` = TERBIT — 1.086 baris lama tetap sah tanpa perubahan form.
+    expect(r.success && r.data.stage).toBe("TERBIT");
+  });
+
+  /**
+   * Tahapan penerbitan (#306). Aturannya bergantung tahap, jadi tak bisa
+   * disimpulkan dari bentuk field — dikunci di sini.
+   */
+  describe("STDB: aturan per tahap (#306)", () => {
+    it("nomor TIDAK wajib selain Terbit", () => {
+      for (const stage of ["PERSIAPAN_DATA", "PENGAJUAN"]) {
+        const r = landStdbSchema.safeParse({ landParcelId: "lp1", stage, number: "" });
+        expect(r.success, stage).toBe(true);
+        expect(r.data?.number).toBeNull();
+      }
+    });
+
+    it("nomor wajib saat Terbit", () => {
+      const r = landStdbSchema.safeParse({ landParcelId: "lp1", stage: "TERBIT", number: "" });
+      expect(r.success).toBe(false);
+      expect(r.error!.flatten().fieldErrors.number).toBeDefined();
+    });
+
+    it("tanggal & tahun terbit DITOLAK selain Terbit — baris pengajuan tak boleh terbaca sudah terbit", () => {
+      const r = landStdbSchema.safeParse({ landParcelId: "lp1", stage: "PENGAJUAN", issuedAt: "2025-06-01", issuedYear: "2025" });
+      expect(r.success).toBe(false);
+      const f = r.error!.flatten().fieldErrors;
+      expect(f.issuedAt).toBeDefined();
+      expect(f.issuedYear).toBeDefined();
+    });
+
+    it("catatan wajib saat Revisi/Ditolak — tanpa alasan, dua tahap itu dipakai bergantian", () => {
+      for (const stage of ["REVISI", "DITOLAK"]) {
+        const r = landStdbSchema.safeParse({ landParcelId: "lp1", stage, stageNote: "  " });
+        expect(r.success, stage).toBe(false);
+        expect(r.error!.flatten().fieldErrors.stageNote, stage).toBeDefined();
+      }
+      expect(landStdbSchema.safeParse({ landParcelId: "lp1", stage: "REVISI", stageNote: "Berkas kurang peta" }).success).toBe(true);
+    });
+
+    it("tahap di luar enum ditolak", () => {
+      expect(landStdbSchema.safeParse({ landParcelId: "lp1", stage: "SELESAI", number: "N-1" }).success).toBe(false);
+    });
+
+    it("update: refine ikut terpasang walau lewat .extend (zod 4 membuang refine)", () => {
+      expect(updateLandStdbSchema.safeParse({ id: "s1", stage: "TERBIT", number: "" }).success).toBe(false);
+      expect(updateLandStdbSchema.safeParse({ id: "s1", stage: "PENGAJUAN", number: "" }).success).toBe(true);
+    });
   });
 
   it("UL Parcel Code: source & code wajib; tanggal string → Date; kosong → null", () => {

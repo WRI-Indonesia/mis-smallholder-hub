@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { DEFAULT_PARCEL_MAPPER } from "@/lib/land-parcel-satellite-format";
+import { DEFAULT_PARCEL_MAPPER, isOpenStdbStage, LAND_STDB_OPEN_STAGES } from "@/lib/land-parcel-satellite-format";
 import type { LandParcelDetailRowInput } from "@/validations/land-parcel-detail.schema";
 
 /**
@@ -30,6 +30,13 @@ export interface ParcelDetailSaveSummary {
   /** Dokumen yang sudah ada dengan data identik — tidak ada query. */
   documentsUnchanged: number;
   stdbsCreated: number;
+  /** Baris PERSIAPAN_DATA dari sel "belum ada"/"n/a" (#306) — bagian dari stdbsCreated. */
+  stdbsPendingCreated: number;
+  /**
+   * Sel "belum ada" yang DILEWATI karena petaninya sudah punya STDB aktif —
+   * di berkas sumber ada 29 petani seperti itu dari 103 (ukur 2026-08-29).
+   */
+  stdbsPendingSkipped: number;
   stdbLinksCreated: number;
   externalIdsCreated: number;
   externalIdsUpdated: number;
@@ -48,6 +55,8 @@ export function emptyParcelDetailSummary(rows: number): ParcelDetailSaveSummary 
     documentsUpdated: 0,
     documentsUnchanged: 0,
     stdbsCreated: 0,
+    stdbsPendingCreated: 0,
+    stdbsPendingSkipped: 0,
     stdbLinksCreated: 0,
     externalIdsCreated: 0,
     externalIdsUpdated: 0,
@@ -69,6 +78,12 @@ export function mergeParcelDetailSummary(into: ParcelDetailSaveSummary, part: Pa
 const SEP = "\u0000";
 export const docKey = (parcelUid: string, type: string, number: string | null) => `${parcelUid}${SEP}${type}${SEP}${number ?? ""}`;
 export const stdbKey = (farmerId: string, number: string) => `${farmerId}${SEP}${number}`;
+/**
+ * Kunci "berkas STDB terbuka" milik seorang petani (#306). Sengaja beda bentuk
+ * dari `stdbKey` (tanpa nomor) karena DB hanya mengizinkan SATU baris terbuka
+ * per petani — partial unique index `uniq_land_stdb_farmer_open`.
+ */
+export const openStdbKey = (farmerId: string) => `${farmerId}${SEP}<terbuka>`;
 export const linkKey = (parcelUid: string, stdbId: string) => `${parcelUid}${SEP}${stdbId}`;
 
 export interface DocumentFields {
@@ -81,8 +96,12 @@ export interface DocumentFields {
 export interface ParcelDetailExistingState {
   /** docKey → dokumen aktif (id + field yang bisa berubah). */
   documents: Map<string, { id: string } & DocumentFields>;
-  /** stdbKey → STDB (aktif atau tidak). */
+  /** stdbKey → STDB BERNOMOR (aktif atau tidak). Baris tanpa nomor tidak masuk peta ini. */
   stdbs: Map<string, { id: string; isActive: boolean }>;
+  /** openStdbKey → berkas STDB terbuka milik petani (#306); paling banyak satu. */
+  openStdbs: Map<string, { id: string; isActive: boolean }>;
+  /** farmerId yang sudah punya STDB AKTIF apa pun — penentu apakah baris "belum ada" layak dibuat. */
+  farmersWithActiveStdb: Set<string>;
   /** linkKey → tautan lahan↔STDB. */
   links: Map<string, { id: string; isActive: boolean }>;
   /** code (sumber parcel_code) → pemegang saat ini. */
@@ -90,7 +109,14 @@ export interface ParcelDetailExistingState {
 }
 
 export function emptyExistingState(): ParcelDetailExistingState {
-  return { documents: new Map(), stdbs: new Map(), links: new Map(), externalIds: new Map() };
+  return {
+    documents: new Map(),
+    stdbs: new Map(),
+    openStdbs: new Map(),
+    farmersWithActiveStdb: new Set(),
+    links: new Map(),
+    externalIds: new Map(),
+  };
 }
 
 // ─── Rencana eksekusi (hasil PLAN, murni) ───
@@ -98,7 +124,7 @@ export function emptyExistingState(): ParcelDetailExistingState {
 export interface ParcelDetailPlan {
   documentCreates: Array<{ parcelUid: string; type: string; number: string | null } & DocumentFields>;
   documentUpdates: Array<{ id: string; data: Partial<DocumentFields> }>;
-  stdbCreates: Array<{ farmerId: string; number: string; issuedYear: number | null }>;
+  stdbCreates: Array<{ farmerId: string; number: string | null; issuedYear: number | null; stage: string }>;
   stdbReactivateIds: string[];
   /** Tautan ke STDB yang sudah punya id. */
   linkCreates: Array<{ parcelUid: string; stdbId: string }>;
@@ -121,7 +147,12 @@ const sameDoc = (a: DocumentFields, b: Partial<DocumentFields>) =>
  * Baris ganda dalam batch (kunci sama) digabung — yang terakhir menang untuk
  * field, tapi dihitung sekali.
  */
-export function planLandParcelDetailRows(rows: LandParcelDetailRowInput[], existing: ParcelDetailExistingState): ParcelDetailPlan {
+export function planLandParcelDetailRows(
+  rows: LandParcelDetailRowInput[],
+  existing: ParcelDetailExistingState,
+  /** Lihat `applyLandParcelDetailRows`; bila tak diberi, dihitung dari `rows` saja (cukup untuk pemakaian satu-batch). */
+  farmersWithNumberedStdb?: ReadonlySet<string>,
+): ParcelDetailPlan {
   const summary = emptyParcelDetailSummary(rows.length);
   const plan: ParcelDetailPlan = {
     documentCreates: [],
@@ -141,6 +172,13 @@ export function planLandParcelDetailRows(rows: LandParcelDetailRowInput[], exist
   const pendingDocUpdate = new Map<string, ParcelDetailPlan["documentUpdates"][number]>();
   const pendingStdb = new Set<string>();
   const reactivatedStdb = new Set<string>();
+  const skippedPendingFarmers = new Set<string>();
+  // Dihitung DULU (bukan sambil jalan) supaya keputusan "lewati baris
+  // pra-terbit" tidak bergantung urutan baris di berkas: satu petani bisa
+  // punya baris "n/a" di atas baris bernomornya. Pemanggil yang memecah chunk
+  // WAJIB mengirimkan set se-berkas — batas chunk kalau tidak akan memotong
+  // pasangan baris milik petani yang sama.
+  const farmersWithNumberedStdbInBatch = farmersWithNumberedStdb ?? farmersWithNumberedStdbIn(rows);
   const pendingLinks = new Set<string>();
   const reactivatedLinks = new Set<string>();
   const pendingCodes = new Map<string, "create" | "update" | "skip" | "unchanged">();
@@ -186,9 +224,26 @@ export function planLandParcelDetailRows(rows: LandParcelDetailRowInput[], exist
 
     // --- STDB (per petani) + tautan ke lahan ---
     if (r.stdb) {
-      const sk = stdbKey(r.farmerDbId, r.stdb.number);
-      const inDb = existing.stdbs.get(sk);
-      if (inDb) {
+      // Baris pra-terbit (sel "belum ada"/"n/a", #306) memakai slot "berkas
+      // terbuka" milik petani, bukan kunci nomor — DB hanya mengizinkan satu.
+      const pending = r.stdb.number == null;
+      const sk = pending ? openStdbKey(r.farmerDbId) : stdbKey(r.farmerDbId, r.stdb.number!);
+      const inDb = pending ? existing.openStdbs.get(sk) : existing.stdbs.get(sk);
+      // Petani yang SUDAH punya STDB aktif tidak diberi baris "sedang diurus":
+      // di berkas sumber, 29 dari 103 petani ber-sel "n/a" ternyata juga punya
+      // nomor resmi di baris lain (ukur 2026-08-29). Membuat berkas pengajuan
+      // untuk mereka akan menggelembungkan funnel dengan data yang tak pernah
+      // dinyatakan siapa pun.
+      const skipPending =
+        pending &&
+        !inDb &&
+        (existing.farmersWithActiveStdb.has(r.farmerDbId) || farmersWithNumberedStdbInBatch.has(r.farmerDbId));
+      if (skipPending) {
+        if (!skippedPendingFarmers.has(r.farmerDbId)) {
+          skippedPendingFarmers.add(r.farmerDbId);
+          summary.stdbsPendingSkipped++;
+        }
+      } else if (inDb) {
         if (!inDb.isActive && !reactivatedStdb.has(sk)) {
           reactivatedStdb.add(sk);
           plan.stdbReactivateIds.push(inDb.id);
@@ -209,8 +264,9 @@ export function planLandParcelDetailRows(rows: LandParcelDetailRowInput[], exist
       } else {
         if (!pendingStdb.has(sk)) {
           pendingStdb.add(sk);
-          plan.stdbCreates.push({ farmerId: r.farmerDbId, number: r.stdb.number, issuedYear: r.stdb.issuedYear });
+          plan.stdbCreates.push({ farmerId: r.farmerDbId, number: r.stdb.number, issuedYear: r.stdb.issuedYear, stage: r.stdb.stage });
           summary.stdbsCreated++;
+          if (pending) summary.stdbsPendingCreated++;
         }
         const lk = `${r.parcelUid}${SEP}${sk}`;
         if (!pendingLinks.has(lk)) {
@@ -262,7 +318,7 @@ export async function fetchParcelDetailExistingState(
   const state = emptyExistingState();
   const uids = [...new Set(rows.map((r) => r.parcelUid))];
   const farmerIds = [...new Set(rows.filter((r) => r.stdb).map((r) => r.farmerDbId))];
-  const stdbNumbers = [...new Set(rows.flatMap((r) => (r.stdb ? [r.stdb.number] : [])))];
+  const stdbNumbers = [...new Set(rows.flatMap((r) => (r.stdb?.number ? [r.stdb.number] : [])))];
   const codes = [...new Set(rows.flatMap((r) => (r.externalCode ? [r.externalCode] : [])))];
 
   const [documents, stdbs, externalIds] = await Promise.all([
@@ -270,10 +326,14 @@ export async function fetchParcelDetailExistingState(
       where: { parcelUid: { in: uids }, isActive: true },
       select: { id: true, parcelUid: true, type: true, number: true, typeRaw: true, holderName: true, statedArea: true, custodyNote: true },
     }),
-    stdbNumbers.length
+    // Ambil SEMUA STDB petani yang tersentuh batch ini, bukan hanya yang
+    // nomornya muncul di berkas (#306): baris pra-terbit perlu tahu apakah
+    // petaninya sudah punya berkas terbuka, dan apakah ia sudah punya STDB
+    // aktif sama sekali.
+    farmerIds.length
       ? tx.landStdb.findMany({
-          where: { farmerId: { in: farmerIds }, number: { in: stdbNumbers } },
-          select: { id: true, farmerId: true, number: true, isActive: true },
+          where: { farmerId: { in: farmerIds }, OR: [{ number: { in: stdbNumbers } }, { isActive: true }] },
+          select: { id: true, farmerId: true, number: true, stage: true, isActive: true },
         })
       : Promise.resolve([]),
     codes.length
@@ -284,7 +344,21 @@ export async function fetchParcelDetailExistingState(
       : Promise.resolve([]),
   ]);
   for (const d of documents) state.documents.set(docKey(d.parcelUid, d.type, d.number), { id: d.id, typeRaw: d.typeRaw, holderName: d.holderName, statedArea: d.statedArea, custodyNote: d.custodyNote });
-  for (const s of stdbs) state.stdbs.set(stdbKey(s.farmerId, s.number), { id: s.id, isActive: s.isActive });
+  for (const s of stdbs) {
+    if (s.number) {
+      // Bisa ada PASANGAN aktif+nonaktif dengan (farmerId, number) yang sama —
+      // partial unique index hanya menjaga baris aktif. Yang AKTIF wajib menang:
+      // memilih yang nonaktif membuat planner mendorongnya ke `stdbReactivateIds`,
+      // dan UPDATE-nya menabrak `uniq_land_stdb_farmer_number` sehingga satu
+      // chunk 500 baris gagal seluruhnya.
+      const key = stdbKey(s.farmerId, s.number);
+      const prev = state.stdbs.get(key);
+      if (!prev || (!prev.isActive && s.isActive)) state.stdbs.set(key, { id: s.id, isActive: s.isActive });
+    }
+    // Baris tanpa nomor tidak boleh ikut peta bernomor (#306) — kuncinya beda.
+    if (s.isActive && isOpenStdbStage(s.stage)) state.openStdbs.set(openStdbKey(s.farmerId), { id: s.id, isActive: true });
+    if (s.isActive) state.farmersWithActiveStdb.add(s.farmerId);
+  }
   for (const e of externalIds) state.externalIds.set(e.code, { parcelUid: e.parcelUid, isActive: e.isActive });
 
   if (stdbs.length) {
@@ -316,13 +390,30 @@ async function executeParcelDetailPlan(tx: Prisma.TransactionClient, plan: Parce
   }
   const linkCreates = [...plan.linkCreates];
   if (plan.stdbCreates.length) {
-    await tx.landStdb.createMany({ data: plan.stdbCreates.map((s) => ({ ...s, createdBy: userId })) });
-    // Ambil id STDB yang baru dibuat untuk tautan yang menunggu.
+    await tx.landStdb.createMany({
+      data: plan.stdbCreates.map((s) => ({
+        ...s,
+        stage: s.stage as Prisma.LandStdbCreateManyInput["stage"],
+        stageChangedAt: new Date(),
+        createdBy: userId,
+      })),
+    });
+    // Ambil id STDB yang baru dibuat untuk tautan yang menunggu. Baris
+    // pra-terbit tak punya nomor untuk dicocokkan, jadi ia dicari lewat slot
+    // "berkas terbuka" petani — yang memang hanya boleh satu (#306).
     const created = await tx.landStdb.findMany({
-      where: { farmerId: { in: [...new Set(plan.stdbCreates.map((s) => s.farmerId))] }, number: { in: plan.stdbCreates.map((s) => s.number) } },
+      where: {
+        farmerId: { in: [...new Set(plan.stdbCreates.map((s) => s.farmerId))] },
+        OR: [
+          { number: { in: plan.stdbCreates.flatMap((s) => (s.number ? [s.number] : [])) } },
+          { number: null, isActive: true, stage: { in: [...LAND_STDB_OPEN_STAGES] } },
+        ],
+      },
       select: { id: true, farmerId: true, number: true },
     });
-    const idByKey = new Map(created.map((s) => [stdbKey(s.farmerId, s.number), s.id]));
+    const idByKey = new Map(
+      created.map((s) => [s.number ? stdbKey(s.farmerId, s.number) : openStdbKey(s.farmerId), s.id]),
+    );
     for (const l of plan.linkCreatesPendingStdb) {
       const stdbId = idByKey.get(l.stdbKey);
       if (!stdbId) throw new Error(`STDB yang baru dibuat tidak ditemukan kembali (${l.stdbKey.replace(SEP, " / ")})`);
@@ -333,7 +424,8 @@ async function executeParcelDetailPlan(tx: Prisma.TransactionClient, plan: Parce
     await tx.landParcelStdb.createMany({ data: linkCreates.map((l) => ({ ...l, createdBy: userId })) });
   }
   if (plan.linkReactivateIds.length) {
-    await tx.landParcelStdb.updateMany({ where: { id: { in: plan.linkReactivateIds } }, data: { isActive: true } });
+    // #299: tautan STDB↔lahan kini mencatat siapa mengaktifkannya kembali.
+    await tx.landParcelStdb.updateMany({ where: { id: { in: plan.linkReactivateIds } }, data: { isActive: true, modifiedBy: userId } });
   }
 
   if (plan.externalIdCreates.length) {
@@ -370,10 +462,23 @@ export async function applyLandParcelDetailRows(
   userId: string | null,
   summary: ParcelDetailSaveSummary,
   source: string = DEFAULT_PARCEL_MAPPER,
+  /**
+   * Petani yang punya STDB bernomor **di seluruh berkas**, bukan hanya di chunk
+   * ini (#306). Wajib dihitung pemanggil sebelum memecah chunk: tanpa itu,
+   * petani yang baris "n/a"-nya jatuh di chunk 1 sementara baris bernomornya di
+   * chunk 2 tetap mendapat berkas `PERSIAPAN_DATA` — justru penggelembungan
+   * funnel yang hendak dicegah, dan hasilnya bergantung urutan baris.
+   */
+  farmersWithNumberedStdb?: ReadonlySet<string>,
 ): Promise<void> {
   if (rows.length === 0) return;
   const existing = await fetchParcelDetailExistingState(tx, rows, source);
-  const plan = planLandParcelDetailRows(rows, existing);
+  const plan = planLandParcelDetailRows(rows, existing, farmersWithNumberedStdb);
   await executeParcelDetailPlan(tx, plan, userId, source);
   mergeParcelDetailSummary(summary, plan.summary);
+}
+
+/** Petani yang membawa STDB bernomor di sekumpulan baris — dihitung sekali atas SELURUH berkas. */
+export function farmersWithNumberedStdbIn(rows: LandParcelDetailRowInput[]): Set<string> {
+  return new Set(rows.filter((r) => r.stdb?.number).map((r) => r.farmerDbId));
 }

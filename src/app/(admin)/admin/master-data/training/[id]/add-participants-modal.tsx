@@ -16,9 +16,19 @@ import { toast } from "sonner";
 import { Loader2, Search, ArrowRight, ArrowLeft, Upload, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Excel from "exceljs";
-import Papa from "papaparse";
 import { cn } from "@/lib/utils";
-import { cellValueToPrimitive } from "@/lib/excel-cell";
+import { readSpreadsheetFile } from "@/lib/excel-sheet-reader";
+
+/** Alias kolom ID Petani — dipakai untuk memilih kolom DAN mengenali baris header (#301). */
+const FARMER_ID_ALIASES = [
+  "id petani",
+  "farmer id",
+  "id",
+  "farmer_id",
+  "kode petani",
+  "kode_petani",
+  "farmerid",
+];
 
 interface Farmer {
   id: string;
@@ -148,77 +158,30 @@ export function AddParticipantsModal({
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    const fileType = selectedFile.name.split(".").pop()?.toLowerCase();
-    if (fileType === "csv") {
-      Papa.parse(selectedFile, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (results.meta.fields) {
-            processParsedData(results.meta.fields, results.data as Record<string, unknown>[]);
-          } else {
-            toast.error("Gagal membaca header file CSV");
-          }
-        },
-        error: () => {
-          toast.error("Gagal membaca file CSV");
-        },
+    try {
+      const sheet = await readSpreadsheetFile(selectedFile, {
+        isHeaderCandidate: (labels) =>
+          labels.some((h) => FARMER_ID_ALIASES.includes(h.toLowerCase().trim())),
       });
-    } else if (fileType === "xlsx") {
-      try {
-        const buffer = await selectedFile.arrayBuffer();
-        const workbook = new Excel.Workbook();
-        await workbook.xlsx.load(buffer);
-        const worksheet = workbook.getWorksheet(1);
-        if (!worksheet) {
-          toast.error("Sheet kosong");
-          return;
-        }
-
-        const rows: Record<string, unknown>[] = [];
-        let sheetHeaders: string[] = [];
-
-        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-          // Normalisasi ke primitif: sel error/rich text/formula dari exceljs
-          // berupa objek yang membuat React crash bila dirender (#196).
-          const values = (
-            Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values)
-          ).map(cellValueToPrimitive);
-          if (rowNumber === 1) {
-            sheetHeaders = values.map((v) => (v == null ? "" : String(v).trim()));
-          } else {
-            const rowData: Record<string, unknown> = {};
-            sheetHeaders.forEach((header, index) => {
-              rowData[header] = values[index];
-            });
-            rows.push(rowData);
-          }
-        });
-
-        processParsedData(sheetHeaders, rows);
-      } catch (err) {
-        console.error(err);
-        toast.error("Gagal membaca file Excel (.xlsx)");
+      if (sheet.headers.length === 0) {
+        toast.error("Tidak menemukan baris header pada berkas ini");
+        return;
       }
-    } else {
-      toast.error("Hanya mendukung file Excel (.xlsx) atau CSV");
+      if (sheet.headerRowNumber > 1) {
+        toast.info(`Header ditemukan di baris ${sheet.headerRowNumber}`);
+      }
+      processParsedData(sheet.headers, sheet.rows);
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Gagal membaca berkas");
     }
   }
 
   // Common processing and validation logic for parsed rows
   function processParsedData(detectedHeaders: string[], dataRows: Record<string, unknown>[]) {
     const idKey =
-      detectedHeaders.find((h) =>
-        [
-          "id petani",
-          "farmer id",
-          "id",
-          "farmer_id",
-          "kode petani",
-          "kode_petani",
-          "farmerid",
-        ].includes(h.toLowerCase().trim()),
-      ) || detectedHeaders[0];
+      detectedHeaders.find((h) => FARMER_ID_ALIASES.includes(h.toLowerCase().trim())) ||
+      detectedHeaders[0];
 
     const preTestKey = detectedHeaders.find((h) =>
       [

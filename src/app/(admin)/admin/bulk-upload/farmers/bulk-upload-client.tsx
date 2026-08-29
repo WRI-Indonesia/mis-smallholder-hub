@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Excel from "exceljs";
-import Papa from "papaparse";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +33,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { cellValueToPrimitive } from "@/lib/excel-cell";
+import { readSpreadsheetFile } from "@/lib/excel-sheet-reader";
 import { missingOptionalFields, farmerRowStatus } from "@/lib/farmer-upload-status";
 import { toast } from "sonner";
 import {
@@ -140,6 +139,8 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<RawRow[]>([]);
+  /** Nomor baris FISIK tiap baris data (#301) — dasar penomoran "Baris Asal". */
+  const [rowNumbers, setRowNumbers] = useState<number[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [validatedData, setValidatedData] = useState<FarmerValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "incomplete" | "error">("all");
@@ -191,7 +192,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
   ): { data: FarmerValidatedRow; errors: string[] } {
     const errors: string[] = [];
     const normalized: FarmerValidatedRow = {
-      _rowNum: index + 2, // Excel rows are 1-based, plus header is 2
+      _rowNum: rowNumbers[index] ?? index + 2, // baris fisik di berkas (#301)
       _original: {},
       _isValid: false,
       _errors: [],
@@ -330,72 +331,32 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
     setRawRows([]);
     setMapping({});
     setValidatedData([]);
+    setRowNumbers([]);
 
-    const fileType = selectedFile.name.split(".").pop()?.toLowerCase();
-
-    if (fileType === "csv") {
-      Papa.parse<RawRow>(selectedFile, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (results.meta.fields) {
-            setHeaders(results.meta.fields);
-            setRawRows(results.data as RawRow[]);
-            autoMatch(results.meta.fields);
-          } else {
-            toast.error("Gagal membaca header file CSV");
-          }
-        },
-        error: () => {
-          toast.error("Gagal membaca file CSV");
-        },
+    try {
+      const sheet = await readSpreadsheetFile(selectedFile, {
+        isHeaderCandidate: (labels) => Object.keys(matchColumns(labels)).length > 0,
       });
-    } else if (fileType === "xlsx") {
-      try {
-        const buffer = await selectedFile.arrayBuffer();
-        const workbook = new Excel.Workbook();
-        await workbook.xlsx.load(buffer);
-        const worksheet = workbook.getWorksheet(1);
-
-        if (!worksheet) {
-          toast.error("Sheet kosong");
-          return;
-        }
-
-        const rows: RawRow[] = [];
-        let sheetHeaders: string[] = [];
-
-        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-          // Normalisasi ke primitif: sel error/rich text/formula dari exceljs
-          // berupa objek yang membuat tabel preview crash bila dirender (#196).
-          const values = (
-            Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values)
-          ).map(cellValueToPrimitive);
-          if (rowNumber === 1) {
-            sheetHeaders = values.map((v) => v?.toString().trim() || "");
-          } else {
-            const rowData: RawRow = {};
-            sheetHeaders.forEach((header, index) => {
-              rowData[header] = values[index];
-            });
-            rows.push(rowData);
-          }
-        });
-
-        setHeaders(sheetHeaders);
-        setRawRows(rows);
-        autoMatch(sheetHeaders);
-      } catch (err) {
-        console.error(err);
-        toast.error("Gagal membaca file Excel (.xlsx)");
+      if (sheet.headers.length === 0) {
+        toast.error("Tidak menemukan baris header pada berkas ini");
+        return;
       }
-    } else {
-      toast.error("Hanya mendukung file Excel (.xlsx) atau CSV");
+      if (sheet.headerRowNumber > 1) {
+        toast.info(`Header ditemukan di baris ${sheet.headerRowNumber}`);
+      }
+      setHeaders(sheet.headers);
+      setRawRows(sheet.rows as RawRow[]);
+      setRowNumbers(sheet.rowNumbers);
+      setMapping(matchColumns(sheet.headers));
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Gagal membaca berkas");
     }
   }
 
   // Automatic column mapping logic
-  function autoMatch(detectedHeaders: string[]) {
+  /** Pemetaan kolom→field dari alias; murni, juga dipakai untuk mengenali baris header (#301). */
+  function matchColumns(detectedHeaders: string[]): Record<string, string> {
     const matched: Record<string, string> = {};
     for (const f of TARGET_FIELDS) {
       const rules = AUTO_MATCH_RULES[f.key] || [];
@@ -404,7 +365,7 @@ export function BulkUploadClient({ farmerGroups, permissions }: Props) {
         matched[f.key] = bestMatch;
       }
     }
-    setMapping(matched);
+    return matched;
   }
 
   // Trigger Validation

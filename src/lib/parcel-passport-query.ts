@@ -92,6 +92,7 @@ export async function fetchParcelPassport(
               stdb: {
                 select: {
                   number: true,
+                  stage: true,
                   issuedYear: true,
                   holderName: true,
                   parcelLinks: { where: { isActive: true }, select: { parcel: { select: { parcelId: true } } } },
@@ -191,6 +192,7 @@ export async function fetchParcelPassport(
         documents: parcel.identity.documents,
         stdbs: parcel.identity.stdbLinks.map((l) => ({
           number: l.stdb.number,
+          stage: l.stdb.stage,
           issuedYear: l.stdb.issuedYear,
           holderName: l.stdb.holderName,
           otherParcelIds: l.stdb.parcelLinks.map((x) => x.parcel.parcelId).filter((id) => id !== parcel.parcelId),

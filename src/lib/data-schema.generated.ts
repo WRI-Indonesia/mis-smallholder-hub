@@ -2548,9 +2548,33 @@ export const DATA_SCHEMA: SchemaMap = {
           "dbName": "created_by",
           "relationName": null,
           "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
         }
       ],
-      "scalarCount": 6,
+      "scalarCount": 8,
       "compoundUnique": [
         [
           "parcelUid",
@@ -2608,10 +2632,22 @@ export const DATA_SCHEMA: SchemaMap = {
           ]
         },
         {
+          "name": "stage",
+          "type": "LandStdbStage",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "stage",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
           "name": "number",
           "type": "String",
           "kind": "scalar",
-          "isRequired": true,
+          "isRequired": false,
           "isList": false,
           "isId": false,
           "isUnique": false,
@@ -2652,6 +2688,78 @@ export const DATA_SCHEMA: SchemaMap = {
           "isId": false,
           "isUnique": false,
           "dbName": "issued_year",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "preparedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "prepared_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "submittedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "submitted_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "issuedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "issued_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "stageChangedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "stage_changed_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "submittedTo",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "submitted_to",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "stageNote",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "stage_note",
           "relationName": null,
           "relationFields": []
         },
@@ -2752,19 +2860,17 @@ export const DATA_SCHEMA: SchemaMap = {
           "relationFields": []
         }
       ],
-      "scalarCount": 13,
-      "compoundUnique": [
-        [
-          "farmerId",
-          "number"
-        ]
-      ],
+      "scalarCount": 20,
+      "compoundUnique": [],
       "indexes": [
         [
           "number"
         ],
         [
           "isActive"
+        ],
+        [
+          "stage"
         ]
       ]
     },
@@ -6115,6 +6221,17 @@ export const DATA_SCHEMA: SchemaMap = {
         "DEMPLOT_PBU"
       ],
       "domain": "land-parcel-program"
+    },
+    {
+      "name": "LandStdbStage",
+      "values": [
+        "PERSIAPAN_DATA",
+        "PENGAJUAN",
+        "REVISI",
+        "TERBIT",
+        "DITOLAK"
+      ],
+      "domain": "land-stdb"
     },
     {
       "name": "PermissionLevel",

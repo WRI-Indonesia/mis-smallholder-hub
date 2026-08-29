@@ -17,6 +17,7 @@
  *   bukan dipilih diam-diam.
  */
 import { autoMatchColumns } from "@/lib/parcel-bulk-mapping";
+import type { LandStdbStageCode } from "@/lib/land-parcel-satellite-format";
 
 /** Cermin enum Prisma `LandDocumentType` — literal agar aman di bundle klien. */
 export const LAND_DOCUMENT_TYPES = [
@@ -55,14 +56,31 @@ export const LAND_DOCUMENT_TYPE_LABELS: Record<LandDocumentTypeCode, string> = {
 };
 
 
-/** Nilai sel yang berarti "tidak ada" pada data sumber. */
-const EMPTY_TOKENS = new Set(["", "-", "0", "n/a", "na", "null", "belum dapat", "belum ada", "tidak ada"]);
+/**
+ * Nilai sel yang berarti "tidak ada" pada data sumber.
+ *
+ * Sejak #306 daftar ini dipecah dua. `PENDING_TOKENS` sebelumnya ikut dianggap
+ * sel kosong, sehingga **329 baris** yang secara eksplisit menyatakan "belum
+ * ada STDB" (327 `n/a` di Rohul + 2 `Belum dapat` di Kampar) hilang tanpa jejak
+ * saat import — pernyataan "sedang diurus" diperlakukan sama dengan sel yang
+ * memang tak diisi. Untuk kolom STDB keduanya kini dibedakan; untuk kolom lain
+ * (jenis/nomor surat, luas) tidak ada tahapan, jadi keduanya tetap = kosong.
+ */
+const PENDING_TOKENS = new Set(["n/a", "na", "belum dapat", "belum ada", "belum", "tidak ada", "dalam proses", "sedang diurus", "proses"]);
+const BLANK_TOKENS = new Set(["", "-", "0", "null", "nil", "none"]);
+const EMPTY_TOKENS = new Set([...BLANK_TOKENS, ...PENDING_TOKENS]);
 
 export function cleanCell(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   const s = String(value).trim().replace(/\s+/g, " ");
   return EMPTY_TOKENS.has(s.toLowerCase()) ? "" : s;
+}
+
+/** `true` bila sel menyatakan "belum ada, sedang diurus" — bukan sel yang dibiarkan kosong. */
+export function isPendingCell(value: unknown): boolean {
+  if (value === null || value === undefined || value instanceof Date) return false;
+  return PENDING_TOKENS.has(String(value).trim().replace(/\s+/g, " ").toLowerCase());
 }
 
 export interface NormalizedDocumentType {
@@ -114,17 +132,26 @@ export function normalizeDocumentType(raw: unknown): NormalizedDocumentType {
 }
 
 export interface ParsedStdb {
-  number: string;
+  /** `null` saat tahapnya pra-terbit (sel bertuliskan "belum ada"/"n/a"). */
+  number: string | null;
   /** Diturunkan dari segmen terakhir bila berpola ".../M/YYYY" atau ".../YYYY". */
   issuedYear: number | null;
+  stage: LandStdbStageCode;
 }
 
+/**
+ * Sel STDB → baris STDB. Tiga hasil (#306):
+ * - bernomor → `TERBIT`;
+ * - "belum ada"/"n/a"/"belum dapat" → `PERSIAPAN_DATA` tanpa nomor, **bukan
+ *   dibuang** seperti sebelum #306;
+ * - sel kosong/`-`/`0` → `null` (tidak ada baris sama sekali).
+ */
 export function parseStdbNumber(raw: unknown): ParsedStdb | null {
   const text = cleanCell(raw);
-  if (!text) return null;
+  if (!text) return isPendingCell(raw) ? { number: null, issuedYear: null, stage: "PERSIAPAN_DATA" } : null;
   const m = text.match(/\/(\d{4})$/);
   const year = m ? Number(m[1]) : NaN;
-  return { number: text, issuedYear: year >= 1990 && year <= 2100 ? year : null };
+  return { number: text, issuedYear: year >= 1990 && year <= 2100 ? year : null, stage: "TERBIT" };
 }
 
 /** Luas tertera (ha): angka > 0; koma desimal diterima; 0/kosong → null. */
@@ -235,11 +262,19 @@ function readRaw(row: RawRow, mapping: Mapping): Record<ParcelDetailFieldKey, st
  * - nomor STDB yang sama dipakai `ID Petani` berbeda → semua barisnya error.
  * Per baris: pasangan (petani, lahan) harus ada di `parcels`; baris tanpa
  * detail apa pun (tanpa surat, STDB, kode) → error "tidak ada data".
+ *
+ * `rowNumbers` = nomor baris FISIK tiap entri `rows` (#301, dari
+ * `readSpreadsheetFile`) — dipakai hanya untuk `_rowNum` yang ditampilkan ke
+ * pengguna. Wajib diteruskan pembaca berkas: header tak lagi diasumsikan di
+ * baris 1, **dan** baris kosong di tengah data dibuang, sehingga menghitung
+ * ulang dari indeks akan menggeser "Baris Asal" sebanyak baris kosong di
+ * atasnya. Tanpa argumen ini, jatuh ke asumsi lama (header di baris 1).
  */
 export function validateParcelDetailRows(
   rows: RawRow[],
   mapping: Mapping,
   parcels: ParcelRef[],
+  rowNumbers?: number[],
 ): ParcelDetailValidatedRow[] {
   const lower = (s: string) => s.toLowerCase();
   const byPair = new Map<string, ParcelRef>();
@@ -272,7 +307,9 @@ export function validateParcelDetailRows(
       farmersPerParcel.set(lower(r.parcelId), s);
     }
     const stdb = parseStdbNumber(r.stdbNumber);
-    if (stdb && r.farmerId) {
+    // Hanya baris BERNOMOR yang bisa bentrok antar petani; baris pra-terbit
+    // memang tak punya nomor untuk ditabrakkan (#306).
+    if (stdb?.number && r.farmerId) {
       const s = farmersPerStdb.get(lower(stdb.number)) ?? new Set();
       s.add(lower(r.farmerId));
       farmersPerStdb.set(lower(stdb.number), s);
@@ -302,7 +339,7 @@ export function validateParcelDetailRows(
     const area = parseStatedArea(r.statedArea);
     if (area.error) errors.push(area.error);
     const stdb = parseStdbNumber(r.stdbNumber);
-    if (stdb && (farmersPerStdb.get(lower(stdb.number))?.size ?? 0) > 1) {
+    if (stdb?.number && (farmersPerStdb.get(lower(stdb.number))?.size ?? 0) > 1) {
       errors.push(`Nomor STDB "${stdb.number}" dipakai ID Petani berbeda di file — STDB terbit per petani`);
     }
     const externalCode = r.externalCode || null;
@@ -344,7 +381,7 @@ export function validateParcelDetailRows(
         : null;
 
     return {
-      _rowNum: idx + 2,
+      _rowNum: rowNumbers?.[idx] ?? idx + 2,
       _isValid: isValid,
       _errors: errors,
       _raw: r,

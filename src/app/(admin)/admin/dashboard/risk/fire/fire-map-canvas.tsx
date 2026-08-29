@@ -18,9 +18,10 @@ import {
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
 import { combinedBbox, multiPolygonBbox, type FireBoundaryIndexed } from "@/lib/fire-alert";
 import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
-// Basemap sama dengan Peta Lahan/BMP. Hybrid (Google) men-taint canvas —
-// capture cetak akan gagal di sana; pengguna diarahkan ke Light/Dark.
-import { MAP_STYLES } from "@/lib/map-style";
+// Hybrid (Google) men-taint canvas — capture cetak akan gagal di sana;
+// pengguna diarahkan ke StreetMap/Light/Dark.
+import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, isImageryStyle, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
 
 // Antique Violet — pilihan owner (2026-08-19); kontras terhadap titik api
@@ -70,13 +71,21 @@ function flameImageData(color: string): ImageData | null {
 const FLAME_BUCKETS = ["high", "nominal", "low"] as const;
 
 /**
- * Pastikan ketiga ikon flame terdaftar di style yang sedang aktif.
- *
- * `styleimagemissing` saja tidak cukup: ganti basemap/tema memanggil `setStyle`,
- * yang membuang seluruh image, dan penempatan simbol bisa terjadi sebelum event
- * itu sempat ditangani — MapLibre lalu memperingatkan "Image ... could not be
- * loaded" dan titik api hilang sampai render berikutnya. Dipanggil di `load`
- * dan tiap `styledata` (idempoten, dijaga `hasImage`).
+ * Ikon api per bucket confidence, disediakan ke `useVectorBasemap`. `setStyle`
+ * (ganti basemap/tema) membuang seluruh image, dan hook memasangnya kembali
+ * lewat satu listener `styleimagemissing` bersama.
+ */
+function provideFlameImage(id: string): ImageData | null {
+  const m = /^flame-(high|nominal|low)$/.exec(id);
+  if (!m) return null;
+  return flameImageData(HOTSPOT_CONF_COLORS[m[1] as keyof typeof HOTSPOT_CONF_COLORS]);
+}
+
+/**
+ * Pastikan ketiga ikon flame terdaftar di style yang sedang aktif — dipanggil
+ * di `load`/`styledata`. `styleimagemissing` saja tidak cukup: penempatan
+ * simbol bisa terjadi sebelum event itu sempat ditangani, dan titik api hilang
+ * sampai render berikutnya. Idempoten, dijaga `hasImage`.
  */
 function ensureFlameImages(map: {
   hasImage: (id: string) => boolean;
@@ -139,12 +148,17 @@ export function FireMapCanvas({
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
-  const [styleOverride, setStyleOverride] = useState<keyof typeof MAP_STYLES | null>(null);
-  const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const [styleOverride, setStyleOverride] = useState<MapStyleKey | null>(null);
+  // Ikut tema aplikasi; tema terang jatuh ke `light` (positron), bukan
+  // StreetMap — OSM standar terlalu ramai sebagai latar titik api.
+  const styleKey: MapStyleKey = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
 
   const [selected, setSelected] = useState<SelectedHotspot | null>(null);
   // Fokus capture per-lembaga (hanya selama cetak PDF) — menimpa gaya seleksi.
   const [focusGroupId, setFocusGroupId] = useState<string | null>(null);
+
+  const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } =
+    useVectorBasemap(styleKey, { provideImage: provideFlameImage });
 
   const boundaryGeojson = useMemo<FeatureCollection>(
     () => ({
@@ -207,10 +221,13 @@ export function FireMapCanvas({
     [boundaries]
   );
 
+  // Satellite & Hybrid sama-sama citra gelap-beragam — label ungu tak terbaca
+  // di atasnya, jadi keduanya pakai teks putih ber-halo hitam.
+  const isImagery = isImageryStyle(styleKey);
   const labelColors =
     styleKey === "dark"
       ? { text: "#d8b4fe", halo: "#0f172a" }
-      : styleKey === "hybrid"
+      : isImagery
         ? { text: "#ffffff", halo: "#000000" }
         : { text: BOUNDARY_COLOR, halo: "#ffffff" };
 
@@ -325,25 +342,23 @@ export function FireMapCanvas({
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.4, latitude: 0.5, zoom: 7 }}
-        mapStyle={MAP_STYLES[styleKey]}
+        mapStyle={mapStyle}
         canvasContextAttributes={{ preserveDrawingBuffer: true }}
         interactiveLayerIds={["fire-hotspot-in", "fire-hotspot-out", "fire-boundary-fill"]}
         onLoad={(e) => {
-          // Daftarkan ikon flame di muka, lalu tetap pasang jaring pengaman
-          // styleimagemissing (listener hidup di objek Map, sekali pasang cukup)
-          // untuk id yang diminta di luar dugaan.
+          // Ikon flame dipasang di muka; jaring pengamannya (satu listener
+          // styleimagemissing, sekali pasang) diurus hook bersama.
           ensureFlameImages(e.target);
-          e.target.on("styleimagemissing", ({ id }: { id: string }) => {
-            const m = /^flame-(high|nominal|low)$/.exec(id);
-            if (!m || e.target.hasImage(id)) return;
-            const img = flameImageData(HOTSPOT_CONF_COLORS[m[1] as keyof typeof HOTSPOT_CONF_COLORS]);
-            if (img) e.target.addImage(id, img, { pixelRatio: 2 });
-          });
+          registerImageFallback(e.target);
+          syncStyle(e.target);
           fitAll();
         }}
         // setStyle (ganti basemap / tema light↔dark) membuang seluruh image —
         // pasang ulang begitu style baru siap, sebelum simbol ditempatkan.
-        onStyleData={(e) => ensureFlameImages(e.target)}
+        onStyleData={(e) => {
+          ensureFlameImages(e.target);
+          syncStyle(e.target);
+        }}
         onClick={handleClick}
         onMouseMove={(e) => {
           e.target.getCanvas().style.cursor = e.features && e.features.length > 0 ? "pointer" : "";
@@ -357,6 +372,7 @@ export function FireMapCanvas({
           <Layer
             id="fire-admin-line"
             type="line"
+            beforeId={labelBeforeId}
             paint={{
               "line-color": styleKey === "dark" ? "#6b7280" : "#9ca3af",
               "line-width": 1,
@@ -364,13 +380,15 @@ export function FireMapCanvas({
             }}
           />
         </Source>
+        {/* Label baru dipasang setelah glyphs style aktif cocok (lihat labelsReady). */}
+        {labelsReady && (
         <Source id="fire-admin-label-source" type="geojson" data={adminLabelGeojson}>
           <Layer
             id="fire-admin-label"
             type="symbol"
             layout={{
               "text-field": ["get", "name"],
-              "text-font": ["Open Sans Regular"],
+              "text-font": [labelFont],
               "text-size": 10,
               "text-letter-spacing": 0.1,
               "text-optional": true,
@@ -382,6 +400,7 @@ export function FireMapCanvas({
             }}
           />
         </Source>
+        )}
 
         {/* Lembaga terpilih di-highlight: fill lebih pekat + outline tebal.
             Mode fokus capture (PDF per lembaga): subjek menonjol, sisanya
@@ -390,6 +409,7 @@ export function FireMapCanvas({
           <Layer
             id="fire-boundary-fill"
             type="fill"
+            beforeId={labelBeforeId}
             paint={{
               "fill-color": BOUNDARY_COLOR,
               "fill-opacity": focusGroupId
@@ -400,6 +420,7 @@ export function FireMapCanvas({
           <Layer
             id="fire-boundary-outline"
             type="line"
+            beforeId={labelBeforeId}
             paint={{
               "line-color": BOUNDARY_COLOR,
               "line-width": focusGroupId
@@ -412,6 +433,7 @@ export function FireMapCanvas({
           />
         </Source>
 
+        {labelsReady && (
         <Source id="fire-boundary-label-source" type="geojson" data={boundaryLabelGeojson}>
           <Layer
             id="fire-boundary-label"
@@ -428,7 +450,7 @@ export function FireMapCanvas({
               : {})}
             layout={{
               "text-field": ["get", "name"],
-              "text-font": ["Open Sans Regular"],
+              "text-font": [labelFont],
               "text-size": 11,
               "text-max-width": 8,
               "text-optional": true,
@@ -440,6 +462,7 @@ export function FireMapCanvas({
             }}
           />
         </Source>
+        )}
 
         {hotspots && (
           <Source id="fire-hotspot-source" type="geojson" data={hotspots}>
@@ -545,17 +568,18 @@ export function FireMapCanvas({
           <Maximize className="h-4 w-4" />
         </button>
         <div className="bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+          {MAP_STYLE_KEYS.map((key) => (
             <button
               key={key}
               onClick={() => setStyleOverride(key)}
+              title={MAP_STYLE_LABELS[key].full}
               className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
                 styleKey === key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {key}
+              {MAP_STYLE_LABELS[key].short}
             </button>
           ))}
         </div>

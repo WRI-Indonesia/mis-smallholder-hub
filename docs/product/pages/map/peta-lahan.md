@@ -76,7 +76,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Panel Ukur | Panel | Menampilkan "Jarak" (≥2 titik) dan "Luas" (≥3 titik); tombol "Hapus titik terakhir" & "Hapus ukuran"; petunjuk "Klik pada peta untuk mulai mengukur." / "{n} titik · klik menambah · Esc selesai." |
 | Daftar lahan | Tombol + Panel (kanan atas) | Judul "Daftar Lahan (n)"; search "Cari nama / ID petani / ID lahan"; kolom Aksi (tombol "Zoom ke lahan"), Petani (nama + kode), ID Lahan; empty "Tidak ada lahan." |
 | Zoom ke semua data | Tombol (kanan bawah) | `fitBounds` ke seluruh data yang dimuat |
-| Basemap switcher | Tombol grup (kanan bawah) | LIGHT / DARK / HYBRID |
+| Basemap switcher | Tombol grup (kanan bawah) | **STREET / LIGHT / DARK / SAT / HYBRID** (#307 — satu set & satu urutan untuk seluruh halaman peta, `MAP_STYLES`); Light/Dark = vector OpenFreeMap, Satellite/Hybrid = Esri. Default mengikuti tema aplikasi. Basemap citra (**SAT & HYBRID**) men-taint canvas sehingga cetak PDF gagal capture — pesan galat menyebut keduanya |
 | Popup Lembaga Petani | Popup | Header hijau + nama lembaga, subtitle "Lembaga Petani"; baris: Kode, Distrik, Koordinat |
 | Popup Titik Api | Popup | Header merah "Titik Api", subtitle usia deteksi "< 24 jam" / "n hari lalu" (`hotspotAgeLabel`); baris: Waktu Deteksi (WIB), Satelit (Suomi NPP / NOAA-20), Keyakinan (Rendah/Nominal (Medium)/Tinggi), FRP (MW), Koordinat + catatan sumber FIRMS |
 | Popup Lahan | Popup | Header biru: foto placeholder + nama petani, ID Petani, ID Lahan, Lembaga Petani; highlight "Luas Lahan" (`x,xx ha`) |

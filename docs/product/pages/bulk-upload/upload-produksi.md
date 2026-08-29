@@ -85,7 +85,7 @@ Halaman: Upload Produksi (/admin/bulk-upload/production)
 ## Alur upload
 
 1. (Opsional) klik **Unduh Template Excel** sebagai acuan format.
-2. Pilih berkas `.xlsx`/`.csv` → header terdeteksi → auto-match kolom.
+2. Pilih berkas `.xlsx`/`.csv` → header terdeteksi (`readSpreadsheetFile`, `src/lib/excel-sheet-reader.ts`) → auto-match kolom. Baris header **tidak** diasumsikan baris fisik 1 (#301) — aturan & pesan sama persis dengan Upload Petani; `_rowNum` ("Baris Asal") dihitung dari baris header.
 3. Perbaiki pemetaan kolom pada kartu "2. Petakan Atribut Kolom".
 4. Klik **Validasi Data Produksi** → lookup `ID Petani` ke data referensi, validasi format, cross-check tanggal vs periode, cek duplikat dalam file dan di database.
 5. Tinjau ringkasan, filter, unduh hasil bila perlu.

@@ -21,7 +21,12 @@ import {
   createLandParcelProgram,
   updateLandParcelProgram,
 } from "@/server/actions/land-parcel-satellite";
-import { PARCEL_MAPPERS, DEFAULT_PARCEL_MAPPER } from "@/lib/land-parcel-satellite-format";
+import {
+  PARCEL_MAPPERS,
+  DEFAULT_PARCEL_MAPPER,
+  LAND_STDB_STAGES,
+  LAND_STDB_STAGE_LABELS,
+} from "@/lib/land-parcel-satellite-format";
 import type {
   LandParcelDocumentItem,
   LandStdbItem,
@@ -71,6 +76,11 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [docType, setDocType] = useState<string>(target.kind === "document" ? (target.item?.type ?? "") : "");
   const [status, setStatus] = useState<string>(target.kind === "program" ? (target.item?.status ?? "ACTIVE") : "ACTIVE");
+  // Tahap STDB (#306): menentukan field mana yang muncul/wajib — nomor & tanggal
+  // terbit hanya untuk TERBIT, catatan wajib untuk REVISI/DITOLAK.
+  const [stdbStage, setStdbStage] = useState<string>(target.kind === "stdb" ? (target.item?.stage ?? "TERBIT") : "TERBIT");
+  const isTerbit = stdbStage === "TERBIT";
+  const needsStageNote = stdbStage === "REVISI" || stdbStage === "DITOLAK";
   const isEdit = Boolean(target.item);
 
   // Fungsi biasa (bukan komponen) — komponen yang dibuat saat render melanggar rules-of-hooks/react-compiler.
@@ -97,11 +107,25 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
         ? await updateLandParcelDocument({ id: target.item.id, ...data })
         : await createLandParcelDocument({ landParcelId, ...data });
     } else if (target.kind === "stdb") {
+      // Nomor & tanggal/tahun terbit hanya dikirim saat TERBIT — field-nya
+      // memang disembunyikan, dan nilai sisa dari tahap sebelumnya tidak boleh
+      // ikut terkirim lalu ditolak Zod (#306).
       const data = {
-        number: str(form, "number"),
+        stage: stdbStage,
+        // Field nomor `disabled` saat bukan TERBIT sehingga tidak ikut FormData.
+        // Nomor yang SUDAH tercatat tetap dikirim ulang: STDB terbit yang
+        // dikembalikan untuk diperbaiki (TERBIT → REVISI) tidak boleh kehilangan
+        // nomornya — skema mengizinkan baris non-TERBIT bernomor, dan
+        // `summarizeStdb` memang menampilkannya sebagai "1637/… (Revisi)".
+        number: isTerbit ? str(form, "number") : (target.item?.number ?? ""),
         holderName: str(form, "holderName"),
         statedArea: str(form, "statedArea"),
-        issuedYear: str(form, "issuedYear"),
+        issuedYear: isTerbit ? str(form, "issuedYear") : "",
+        issuedAt: isTerbit ? str(form, "issuedAt") : "",
+        preparedAt: str(form, "preparedAt"),
+        submittedAt: str(form, "submittedAt"),
+        submittedTo: str(form, "submittedTo"),
+        stageNote: str(form, "stageNote"),
         notes: str(form, "notes"),
       };
       result = target.item ? await updateLandStdb({ id: target.item.id, ...data }) : await createLandStdb({ landParcelId, ...data });
@@ -187,30 +211,100 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
           {target.kind === "stdb" && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="number">Nomor STDB *</Label>
-                <Input id="number" name="number" defaultValue={stdb?.number ?? ""} placeholder="mis. 1637/53/1401/6/2025" />
+                <Label>Tahap *</Label>
+                <Select value={stdbStage} onValueChange={(v) => setStdbStage(v ?? "TERBIT")}>
+                  <SelectTrigger className="w-full h-9"><SelectValue placeholder="Pilih tahap" /></SelectTrigger>
+                  <SelectContent>
+                    {LAND_STDB_STAGES.map((s) => (
+                      <SelectItem key={s} value={s}>{LAND_STDB_STAGE_LABELS[s]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fieldError("stage")}
+                {/* Aturan ini WAJIB terbaca di UI: tanpa kalimat ini Revisi dan
+                    Ditolak akan dipakai bergantian dan funnel jadi tak terbaca (#306). */}
+                <p className="text-xs text-muted-foreground">
+                  <strong>Revisi</strong> = berkas dikembalikan untuk diperbaiki, prosesnya masih berjalan.{" "}
+                  <strong>Ditolak</strong> = proses berhenti; mengajukan lagi berarti membuat berkas baru.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="number">Nomor STDB {isTerbit && "*"}</Label>
+                <Input
+                  id="number"
+                  name="number"
+                  defaultValue={stdb?.number ?? ""}
+                  placeholder={isTerbit ? "mis. 1637/53/1401/6/2025" : "Belum ada — nomor terbit di tahap terakhir"}
+                  disabled={!isTerbit}
+                />
                 {fieldError("number")}
-                {!isEdit && (
+                {!isEdit && isTerbit && (
                   <p className="text-xs text-muted-foreground">
                     Bila nomor ini sudah terdaftar untuk petani yang sama, lahan ini ditautkan ke STDB tersebut (satu STDB dapat menutup beberapa lahan).
                   </p>
                 )}
+                {!isTerbit && (
+                  <p className="text-xs text-muted-foreground">
+                    Satu petani hanya boleh punya satu berkas yang sedang berjalan. Lahan lain yang ikut diajukan ditautkan ke berkas yang sama.
+                  </p>
+                )}
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="holderName">Nama Pemegang</Label>
                   <Input id="holderName" name="holderName" defaultValue={stdb?.holderName ?? ""} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="issuedYear">Tahun Terbit</Label>
-                  <Input id="issuedYear" name="issuedYear" type="number" min={1900} max={2100} defaultValue={stdb?.issuedYear ?? ""} />
-                  {fieldError("issuedYear")}
+                  <Label htmlFor="statedArea">Luas Tertera (Ha)</Label>
+                  <Input id="statedArea" name="statedArea" type="number" step="0.0001" min={0} defaultValue={stdb?.statedArea ?? ""} />
+                  {fieldError("statedArea")}
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="preparedAt">Tanggal Persiapan</Label>
+                  <Input id="preparedAt" name="preparedAt" type="date" defaultValue={toDateInput(stdb?.preparedAt)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="submittedAt">Tanggal Pengajuan</Label>
+                  <Input id="submittedAt" name="submittedAt" type="date" defaultValue={toDateInput(stdb?.submittedAt)} />
+                </div>
+              </div>
+
+              {isTerbit && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="issuedAt">Tanggal Terbit</Label>
+                    <Input id="issuedAt" name="issuedAt" type="date" defaultValue={toDateInput(stdb?.issuedAt)} />
+                    {fieldError("issuedAt")}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="issuedYear">Tahun Terbit</Label>
+                    <Input id="issuedYear" name="issuedYear" type="number" min={1900} max={2100} defaultValue={stdb?.issuedYear ?? ""} />
+                    {fieldError("issuedYear")}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label htmlFor="statedArea">Luas Tertera (Ha)</Label>
-                <Input id="statedArea" name="statedArea" type="number" step="0.0001" min={0} defaultValue={stdb?.statedArea ?? ""} />
-                {fieldError("statedArea")}
+                <Label htmlFor="submittedTo">Dinas Penerima</Label>
+                <Input id="submittedTo" name="submittedTo" defaultValue={stdb?.submittedTo ?? ""} placeholder="mis. Dinas Perkebunan Kab. Kampar" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stageNote">
+                  Catatan Tahap {needsStageNote && "*"}
+                </Label>
+                <Input
+                  id="stageNote"
+                  name="stageNote"
+                  defaultValue={stdb?.stageNote ?? ""}
+                  placeholder={needsStageNote ? "Alasan revisi/penolakan" : "Keterangan tahap (opsional)"}
+                />
+                {fieldError("stageNote")}
               </div>
             </>
           )}

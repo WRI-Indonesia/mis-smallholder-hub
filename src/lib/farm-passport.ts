@@ -1,4 +1,4 @@
-import { documentTypeShort, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
+import { documentTypeShort, landStdbStageLabel, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
@@ -347,16 +347,19 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   if (legal.stdbs.length > 0) {
     y = ensureSpace(doc, y, 18);
     autoTable(doc, {
-      head: [["STDB", "Terbit", "Nama Pemegang", "Juga mencakup"]],
+      // Kolom Tahap wajib ada sejak #306: tanpa itu baris pengajuan tercetak
+      // seolah STDB-nya sudah terbit.
+      head: [["STDB", "Tahap", "Terbit", "Nama Pemegang", "Juga mencakup"]],
       body: legal.stdbs.map((st) => [
-        st.number,
+        st.number ?? "Belum bernomor",
+        landStdbStageLabel(st.stage),
         orDash(st.issuedYear),
         orDash(st.holderName),
         st.otherParcelIds.length ? st.otherParcelIds.join(", ") : "Hanya lahan ini",
       ]),
       startY: y,
       theme: "striped",
-      columnStyles: { 1: { halign: "right" } },
+      columnStyles: { 2: { halign: "right" } },
       ...tableCommon,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/shared/delete-dialog";
 import { formatArea } from "@/lib/format";
 import { LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parcel-detail-import";
-import { documentTypeShort, LAND_PROGRAM_STATUS_LABELS, parcelMapperLabel, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
+import { documentTypeShort, isBigAreaDiff, LAND_PROGRAM_STATUS_LABELS, landStdbStageLabel, parcelMapperLabel, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
 import { deactivateLandParcelSatellite, unlinkLandStdb } from "@/server/actions/land-parcel-satellite";
 import { ParcelSatelliteFormModal, type SatelliteFormTarget } from "./parcel-satellite-form-modal";
 import type { LandParcelSatellites } from "@/types/land-parcel";
@@ -29,6 +29,27 @@ const PROGRAM_LABELS: Record<string, string> = { DEMPLOT_PBU: "Demplot PBU (Prod
 
 function fmtDate(d: Date | null) {
   return d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : null;
+}
+
+/**
+ * Badge tahap STDB (#306). `TERBIT` netral (itu keadaan normal — memberinya
+ * warna justru membuat seluruh daftar lama tampak "ditandai"), `REVISI` amber
+ * karena masih menuntut tindakan, `DITOLAK` abu dan dicoret karena prosesnya
+ * berhenti.
+ */
+function StdbStageBadge({ stage }: { stage: string }) {
+  if (stage === "TERBIT") return null;
+  const tone =
+    stage === "REVISI"
+      ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+      : stage === "DITOLAK"
+        ? "border-muted-foreground/30 bg-muted text-muted-foreground line-through"
+        : "";
+  return (
+    <Badge variant="outline" className={cn("text-[11px]", tone)}>
+      {landStdbStageLabel(stage)}
+    </Badge>
+  );
 }
 
 /** Kartu grup: ikon + judul + pill jumlah + tombol Tambah; isi = daftar item atau empty state. */
@@ -245,7 +266,9 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
             {documents.map((d) => {
               const unknownType = d.type === "OTHER" && !d.typeRaw;
               const diff = d.statedArea != null && parcelArea != null ? d.statedArea - parcelArea : null;
-              const bigDiff = diff != null && Math.abs(diff) >= 0.5;
+              // Ambang bersama dengan filter/KPI Laporan Lahan (#305) — dua
+              // tempat yang menandai lahan berbeda adalah bug tanpa gejala.
+              const bigDiff = isBigAreaDiff(d.statedArea, parcelArea);
               return (
                 <Row
                   key={d.id}
@@ -291,13 +314,22 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                 key={s.id}
                 title={
                   <>
-                    <span className="font-mono">{s.number}</span>
+                    {/* Baris pra-terbit tidak punya nomor: tulis tahapnya, jangan
+                        biarkan kosong — pembaca akan menyangka datanya rusak (#306). */}
+                    {s.number ? (
+                      <span className="font-mono">{s.number}</span>
+                    ) : (
+                      <span className="text-muted-foreground">{landStdbStageLabel(s.stage)} — belum bernomor</span>
+                    )}
+                    <StdbStageBadge stage={s.stage} />
                     {s.issuedYear != null && <Badge variant="outline">{s.issuedYear}</Badge>}
                     {s.holderName && <span className="text-muted-foreground">a.n. <span className="text-foreground">{s.holderName}</span></span>}
                   </>
                 }
                 meta={
                   <>
+                    {s.stageNote && <Chip>{s.stageNote}</Chip>}
+                    {s.submittedTo && <Chip>Diajukan ke {s.submittedTo}</Chip>}
                     {s.statedArea != null && <Chip>Luas tertera {formatArea(s.statedArea)} Ha</Chip>}
                     {s.otherParcels.length === 0 ? (
                       <Chip>Hanya lahan ini</Chip>
@@ -322,7 +354,7 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                   <RowActions
                     unlink
                     onEdit={canEdit ? () => setFormTarget({ kind: "stdb", item: s }) : undefined}
-                    onRemove={canDelete ? () => setRemoveTarget({ kind: "stdb", id: s.id, label: s.number }) : undefined}
+                    onRemove={canDelete ? () => setRemoveTarget({ kind: "stdb", id: s.id, label: s.number ?? landStdbStageLabel(s.stage) }) : undefined}
                   />
                 }
               />
