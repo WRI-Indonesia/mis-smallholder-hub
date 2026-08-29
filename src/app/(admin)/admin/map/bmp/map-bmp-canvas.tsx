@@ -506,18 +506,20 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
         {/* Area lahan (polygon): outline as base + thematic fill per category
             (NONE = outline only, no fill). No centroid points. promoteId
             menjadikan properti id sebagai feature id untuk setFeatureState;
-            mode produktivitas menyembunyikan kelas via opacity (bukan filter). */}
+            mode produktivitas menyembunyikan kelas via opacity (bukan filter).
+            Prop `filter` di-spread bersyarat, bukan diberi `undefined`: MapLibre
+            menolak `filter: undefined` saat `addLayer` (lihat fire-map-canvas). */}
         <Source id="bmp-parcel-area-source" type="geojson" data={parcelAreaGeojson} promoteId="id">
           <Layer
             id="bmp-parcel-fill"
             type="fill"
-            filter={isProductivity ? undefined : categoryFilter}
+            {...(isProductivity ? {} : { filter: categoryFilter })}
             paint={{ "fill-color": fillColorExpr, "fill-opacity": fillOpacityExpr }}
           />
           <Layer
             id="bmp-parcel-outline"
             type="line"
-            filter={isProductivity ? undefined : categoryFilter}
+            {...(isProductivity ? {} : { filter: categoryFilter })}
             paint={{
               "line-color": fillColorExpr,
               "line-width": 1.5,
