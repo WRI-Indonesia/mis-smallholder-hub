@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Source, Layer, Popup } from "react-map-gl/maplibre";
 import type { MapLayerMouseEvent, LayerProps, MapRef } from "react-map-gl/maplibre";
 import type { Feature, Polygon, MultiPolygon, Position } from "geojson";
-import { PARCEL_MAP_STYLES } from "@/lib/map-style";
+import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target } from "lucide-react";
 
@@ -42,7 +43,8 @@ const borderStyle: LayerProps = {
 
 export function ParcelBulkUploadMap({ data }: Props) {
   const mapRef = useRef<MapRef>(null);
-  const [styleKey, setStyleKey] = useState<keyof typeof PARCEL_MAP_STYLES>("hybrid");
+  const [styleKey, setStyleKey] = useState<MapStyleKey>("hybrid");
+  const { mapStyle, labelBeforeId, syncStyle, registerImageFallback } = useVectorBasemap(styleKey);
   const [popupInfo, setPopupInfo] = useState<{
     longitude: number;
     latitude: number;
@@ -163,16 +165,22 @@ export function ParcelBulkUploadMap({ data }: Props) {
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 11 }}
-        mapStyle={PARCEL_MAP_STYLES[styleKey]}
-        onLoad={zoomToFitAll}
+        mapStyle={mapStyle}
+        onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
+          zoomToFitAll();
+        }}
+        onStyleData={(e) => syncStyle(e.target)}
         onClick={onMapClick}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         interactiveLayerIds={["bulk-parcels-fill"]}
       >
         <Source type="geojson" data={featureCollection}>
-          <Layer {...layerStyle} />
-          <Layer {...borderStyle} />
+          {/* Di bawah label basemap (vector) supaya nama tempat tetap terbaca. */}
+          <Layer {...layerStyle} beforeId={labelBeforeId} />
+          <Layer {...borderStyle} beforeId={labelBeforeId} />
         </Source>
 
         {popupInfo && (
@@ -228,17 +236,18 @@ export function ParcelBulkUploadMap({ data }: Props) {
 
       {/* Map style selector overlay */}
       <div className="absolute top-3 right-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-        {(Object.keys(PARCEL_MAP_STYLES) as Array<keyof typeof PARCEL_MAP_STYLES>).map((key) => (
+        {MAP_STYLE_KEYS.map((key) => (
           <button
             key={key}
             onClick={() => setStyleKey(key)}
+            title={MAP_STYLE_LABELS[key].full}
             className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
               styleKey === key
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {key}
+            {MAP_STYLE_LABELS[key].short}
           </button>
         ))}
       </div>

@@ -9,7 +9,8 @@ import { Sprout, Info, BarChart3, Maximize } from "lucide-react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
 import { formatArea } from "@/lib/format";
-import { MAP_STYLES } from "@/lib/map-style";
+import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
 import { MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
@@ -169,8 +170,10 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
-  const [styleOverride, setStyleOverride] = useState<keyof typeof MAP_STYLES | null>(null);
-  const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const [styleOverride, setStyleOverride] = useState<MapStyleKey | null>(null);
+  const styleKey: MapStyleKey = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } =
+    useVectorBasemap(styleKey);
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
@@ -487,13 +490,16 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey]}
+        mapStyle={mapStyle}
         canvasContextAttributes={{ preserveDrawingBuffer: true }}
         interactiveLayerIds={["bmp-parcel-fill"]}
         onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
           fitAll();
           setZoom(quantizeZoom(e.target.getZoom()));
         }}
+        onStyleData={(e) => syncStyle(e.target)}
         onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onClick={handleClick}
         onMouseMove={(e) => {
@@ -513,12 +519,14 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
           <Layer
             id="bmp-parcel-fill"
             type="fill"
+            beforeId={labelBeforeId}
             {...(isProductivity ? {} : { filter: categoryFilter })}
             paint={{ "fill-color": fillColorExpr, "fill-opacity": fillOpacityExpr }}
           />
           <Layer
             id="bmp-parcel-outline"
             type="line"
+            beforeId={labelBeforeId}
             {...(isProductivity ? {} : { filter: categoryFilter })}
             paint={{
               "line-color": fillColorExpr,
@@ -529,25 +537,27 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
         </Source>
 
         {/* Farmer-name labels — only where the name fits inside the polygon */}
-        <Source id="bmp-parcel-label-source" type="geojson" data={parcelLabelGeojson}>
-          <Layer
-            id="bmp-parcel-label"
-            type="symbol"
-            filter={categoryFilter}
-            layout={{
-              "text-field": ["get", "farmerName"],
-              "text-font": ["Open Sans Regular"],
-              "text-size": PARCEL_LABEL_FONT_PX,
-              "text-max-width": ["get", "maxWidthEms"],
-              "text-optional": true,
-            }}
-            paint={{
-              "text-color": labelColors.text,
-              "text-halo-color": labelColors.halo,
-              "text-halo-width": 1.5,
-            }}
-          />
-        </Source>
+        {labelsReady && (
+          <Source id="bmp-parcel-label-source" type="geojson" data={parcelLabelGeojson}>
+            <Layer
+              id="bmp-parcel-label"
+              type="symbol"
+              filter={categoryFilter}
+              layout={{
+                "text-field": ["get", "farmerName"],
+                "text-font": [labelFont],
+                "text-size": PARCEL_LABEL_FONT_PX,
+                "text-max-width": ["get", "maxWidthEms"],
+                "text-optional": true,
+              }}
+              paint={{
+                "text-color": labelColors.text,
+                "text-halo-color": labelColors.halo,
+                "text-halo-width": 1.5,
+              }}
+            />
+          </Source>
+        )}
 
         {selected && (
           <Popup
@@ -587,17 +597,18 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
           </button>
         )}
         <div className="bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+          {MAP_STYLE_KEYS.map((key) => (
             <button
               key={key}
               onClick={() => setStyleOverride(key)}
+            title={MAP_STYLE_LABELS[key].full}
               className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
                 styleKey === key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {key}
+              {MAP_STYLE_LABELS[key].short}
             </button>
           ))}
         </div>

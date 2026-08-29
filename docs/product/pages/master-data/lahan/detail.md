@@ -25,7 +25,7 @@ Halaman: Detail Lahan (/admin/master-data/parcels/[id])
 │   │   ├── Poligon hijau = lahan ini; poligon biru = lahan lain milik petani
 │   │   ├── Titik kuning = pohon sawit bila tersedia (prop treePoints, #238)
 │   │   ├── Tombol Zoom ke Lahan + zoom awal: fitBounds SEMUA lahan
-│   │   └── Pemilih basemap: hybrid / satellite / light / dark
+│   │   └── Pemilih basemap: streetmap / light / dark / satellite / hybrid (satu set dengan halaman peta lain; default hybrid)
 │   ├── Label singkat di tiap poligon (#298): segmen huruf ID lahan ("A"/"B"/"C") — hijau lahan ini,
 │   │   biru lahan lain (Marker HTML, klik tembus); klik poligon biru → popup (ID, luas, tahun
 │   │   tanam, "Buka detail lahan"), auto-pan agar tak terpotong; lahan ini tanpa popup
