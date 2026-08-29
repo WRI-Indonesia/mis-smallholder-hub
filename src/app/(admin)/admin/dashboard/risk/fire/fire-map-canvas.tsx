@@ -67,6 +67,29 @@ function flameImageData(color: string): ImageData | null {
   return ctx.getImageData(0, 0, size, size);
 }
 
+const FLAME_BUCKETS = ["high", "nominal", "low"] as const;
+
+/**
+ * Pastikan ketiga ikon flame terdaftar di style yang sedang aktif.
+ *
+ * `styleimagemissing` saja tidak cukup: ganti basemap/tema memanggil `setStyle`,
+ * yang membuang seluruh image, dan penempatan simbol bisa terjadi sebelum event
+ * itu sempat ditangani — MapLibre lalu memperingatkan "Image ... could not be
+ * loaded" dan titik api hilang sampai render berikutnya. Dipanggil di `load`
+ * dan tiap `styledata` (idempoten, dijaga `hasImage`).
+ */
+function ensureFlameImages(map: {
+  hasImage: (id: string) => boolean;
+  addImage: (id: string, img: ImageData, opts: { pixelRatio: number }) => void;
+}) {
+  for (const bucket of FLAME_BUCKETS) {
+    const id = `flame-${bucket}`;
+    if (map.hasImage(id)) continue;
+    const img = flameImageData(HOTSPOT_CONF_COLORS[bucket]);
+    if (img) map.addImage(id, img, { pixelRatio: 2 });
+  }
+}
+
 export type FireMapCapture = MapCapture;
 
 /**
@@ -306,9 +329,10 @@ export function FireMapCanvas({
         canvasContextAttributes={{ preserveDrawingBuffer: true }}
         interactiveLayerIds={["fire-hotspot-in", "fire-hotspot-out", "fire-boundary-fill"]}
         onLoad={(e) => {
-          // Ikon flame per bucket disediakan lazily: setStyle (ganti basemap)
-          // membuang images, dan styleimagemissing terpancar lagi — listener
-          // ini hidup di objek Map sehingga sekali pasang cukup.
+          // Daftarkan ikon flame di muka, lalu tetap pasang jaring pengaman
+          // styleimagemissing (listener hidup di objek Map, sekali pasang cukup)
+          // untuk id yang diminta di luar dugaan.
+          ensureFlameImages(e.target);
           e.target.on("styleimagemissing", ({ id }: { id: string }) => {
             const m = /^flame-(high|nominal|low)$/.exec(id);
             if (!m || e.target.hasImage(id)) return;
@@ -317,6 +341,9 @@ export function FireMapCanvas({
           });
           fitAll();
         }}
+        // setStyle (ganti basemap / tema light↔dark) membuang seluruh image —
+        // pasang ulang begitu style baru siap, sebelum simbol ditempatkan.
+        onStyleData={(e) => ensureFlameImages(e.target)}
         onClick={handleClick}
         onMouseMove={(e) => {
           e.target.getCanvas().style.cursor = e.features && e.features.length > 0 ? "pointer" : "";

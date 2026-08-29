@@ -19,7 +19,7 @@ import { join, relative } from "node:path";
 const SRC = join(process.cwd(), "src");
 
 /** `filter={...}` yang salah satu cabangnya `undefined` (ternary dua arah). */
-const FILTER_UNDEFINED = /filter=\{[^}]*\bundefined\b/s;
+const FILTER_UNDEFINED = /filter=\{[^}]*\bundefined\b/;
 
 function tsxFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
