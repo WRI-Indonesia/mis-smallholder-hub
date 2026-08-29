@@ -6,8 +6,7 @@ import type { LayerProps } from "react-map-gl/maplibre";
 import type { Feature, FeatureCollection, Geometry, Point, Polygon, MultiPolygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target, User, Info } from "lucide-react";
-import { MAP_STYLES } from "@/app/(admin)/admin/master-data/parcels/components/parcel-map-view";
-import { TREE_POINT_PAINT } from "@/lib/map-style";
+import { TREE_POINT_PAINT, PARCEL_MAP_STYLES } from "@/lib/map-style";
 import { formatArea } from "@/lib/format";
 import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
@@ -105,7 +104,7 @@ export function ParcelsDistributionMap({
   treePoints,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
-  const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
+  const [styleKey, setStyleKey] = useState<keyof typeof PARCEL_MAP_STYLES>("hybrid");
   // KT yang disembunyikan via checklist legenda.
   const [hiddenKts, setHiddenKts] = useState<Set<string>>(new Set());
   const [zoom, setZoom] = useState(13);
@@ -342,7 +341,7 @@ export function ParcelsDistributionMap({
       <MapGL
         ref={mapRef}
         initialViewState={combinedBounds ? { bounds: combinedBounds, fitBoundsOptions: { padding: 40 } } : { longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey]}
+        mapStyle={PARCEL_MAP_STYLES[styleKey]}
         interactiveLayerIds={["group-parcels-fill"]}
         onClick={onMapClick}
         onMoveEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
@@ -487,7 +486,7 @@ export function ParcelsDistributionMap({
       </div>
 
       <div className="absolute top-3 right-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-        {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+        {(Object.keys(PARCEL_MAP_STYLES) as Array<keyof typeof PARCEL_MAP_STYLES>).map((key) => (
           <button
             key={key}
             onClick={() => setStyleKey(key)}
