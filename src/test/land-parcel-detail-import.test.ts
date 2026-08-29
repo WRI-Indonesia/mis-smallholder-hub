@@ -78,17 +78,25 @@ describe("normalizeDocumentType — 19 ejaan jenis surat → enum", () => {
 
 describe("parseStdbNumber — nomor mentah + tahun terbit bila berpola", () => {
   it("format dominan …/bulan/tahun", () => {
-    expect(parseStdbNumber("1637/53/1401/6/2025")).toEqual({ number: "1637/53/1401/6/2025", issuedYear: 2025 });
-    expect(parseStdbNumber("176/53/1406/6/2025")).toEqual({ number: "176/53/1406/6/2025", issuedYear: 2025 });
+    expect(parseStdbNumber("1637/53/1401/6/2025")).toEqual({ number: "1637/53/1401/6/2025", issuedYear: 2025, stage: "TERBIT" });
+    expect(parseStdbNumber("176/53/1406/6/2025")).toEqual({ number: "176/53/1406/6/2025", issuedYear: 2025, stage: "TERBIT" });
   });
   it("nomor tanpa pola disimpan apa adanya, tahun null", () => {
-    expect(parseStdbNumber("3475")).toEqual({ number: "3475", issuedYear: null });
-    expect(parseStdbNumber(3475)).toEqual({ number: "3475", issuedYear: null });
+    expect(parseStdbNumber("3475")).toEqual({ number: "3475", issuedYear: null, stage: "TERBIT" });
+    expect(parseStdbNumber(3475)).toEqual({ number: "3475", issuedYear: null, stage: "TERBIT" });
   });
-  it("token kosong → null", () => {
-    expect(parseStdbNumber("n/a")).toBeNull();
-    expect(parseStdbNumber("Belum dapat")).toBeNull();
-    expect(parseStdbNumber("")).toBeNull();
+  it("token 'sedang diurus' → baris PERSIAPAN_DATA, bukan dibuang (#306)", () => {
+    // 329 baris di berkas sumber (327 `n/a` Rohul + 2 `Belum dapat` Kampar)
+    // hilang tanpa jejak sebelum #306 karena dianggap sel kosong.
+    for (const token of ["n/a", "N/A", "Belum dapat", "belum ada", "tidak ada"]) {
+      expect(parseStdbNumber(token), token).toEqual({ number: null, issuedYear: null, stage: "PERSIAPAN_DATA" });
+    }
+  });
+  it("sel yang benar-benar kosong tetap → null (tak ada baris STDB)", () => {
+    for (const token of ["", " ", "-", "0", "null"]) {
+      expect(parseStdbNumber(token), JSON.stringify(token)).toBeNull();
+    }
+    expect(parseStdbNumber(null)).toBeNull();
   });
   it("segmen akhir 4 digit di luar rentang tahun tidak dianggap tahun", () => {
     expect(parseStdbNumber("12/34/9999")?.issuedYear).toBeNull();
@@ -160,7 +168,7 @@ describe("validateParcelDetailRows", () => {
       parcelUid: "uid-1a", farmerDbId: "f1", parcelId: "APSS.0001.A",
       document: { type: "SHM", typeRaw: "SHM (Sertifikat Hak Milik)", number: "727", holderName: "Abdul Rohman", statedArea: 0.25, custodyNote: null },
       custodyNote: null,
-      stdb: { number: "1637/53/1401/6/2025", issuedYear: 2025 },
+      stdb: { number: "1637/53/1401/6/2025", issuedYear: 2025, stage: "TERBIT" },
       externalCode: "ID080d781b4",
       subGroupLv2: null,
     });

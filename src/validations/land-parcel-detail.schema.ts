@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
+import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
 
 const trimmed = z.string().trim().max(200);
 
@@ -19,15 +20,28 @@ export const landParcelDetailRowSchema = z.object({
     })
     .nullable(),
   custodyNote: z.string().max(500).nullable(),
+  // `number` boleh null sejak #306: sel "belum ada"/"n/a" menghasilkan baris
+  // PERSIAPAN_DATA tanpa nomor, bukan dibuang diam-diam.
   stdb: z
     .object({
-      number: trimmed.min(1),
+      number: trimmed.min(1).nullable(),
       issuedYear: z.number().int().min(1990).max(2100).nullable(),
+      stage: z.enum(LAND_STDB_STAGES),
     })
     .nullable(),
   externalCode: trimmed.nullable(),
   subGroupLv2: trimmed.nullable(),
 });
+
+/**
+ * Pemeta UL Parcel Code (`LandParcelExternalId.source`) untuk satu berkas import
+ * — daftar `PARCEL_MAPPERS` plus isian bebas (pemeta baru tak perlu rilis kode).
+ */
+export const parcelMapperSchema = z
+  .string()
+  .trim()
+  .min(2, "Pemeta wajib diisi")
+  .max(60, "Nama pemeta maksimal 60 karakter");
 
 export const landParcelDetailBatchSchema = z
   .array(landParcelDetailRowSchema)

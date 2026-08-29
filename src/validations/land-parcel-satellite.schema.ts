@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
+import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
 
 /**
  * CRUD manual satelit lahan (#296 tahap 3c). Semua input mengacu ke baris
@@ -43,15 +44,55 @@ export const landParcelDocumentSchema = z.object({
 export const updateLandParcelDocumentSchema = landParcelDocumentSchema.omit({ landParcelId: true }).extend({ id: z.string().min(1) });
 
 // ---- STDB (per petani, ditautkan ke lahan)
-export const landStdbSchema = z.object({
-  landParcelId: z.string().min(1, "Lahan tidak valid"),
-  number: z.string().trim().min(1, "Nomor STDB wajib diisi").max(200),
+/**
+ * Tahapan penerbitan (#306). Nomor baru terbit di tahap terakhir, jadi aturan
+ * "wajib" bergantung pada `stage` — ditegakkan lewat `superRefine`, bukan
+ * `z.string().min(1)` seperti sebelumnya. Basis tanpa refine karena zod 4
+ * membuang refine saat `.omit`/`.extend` (pola yang sama dipakai program).
+ */
+const stdbBase = z.object({
+  stage: z.enum(LAND_STDB_STAGES, { message: "Tahap wajib dipilih" }).default("TERBIT"),
+  number: optText(200),
   holderName: optText(200),
   statedArea: optNumber("Luas tertera harus angka lebih dari 0"),
   issuedYear: optYear,
+  issuedAt: optDate,
+  preparedAt: optDate,
+  submittedAt: optDate,
+  submittedTo: optText(200),
+  stageNote: optText(1000),
   notes: optText(1000),
 });
-export const updateLandStdbSchema = landStdbSchema.omit({ landParcelId: true }).extend({ id: z.string().min(1) });
+
+type StdbShape = z.infer<typeof stdbBase>;
+
+/**
+ * Aturan lintas-field yang harus sama di kedua varian (create & update):
+ * - nomor & tanggal/tahun terbit HANYA untuk `TERBIT` — mencetak baris
+ *   pengajuan seolah STDB terbit adalah kesalahan yang paling mahal di sini;
+ * - `stageNote` wajib saat `REVISI`/`DITOLAK`: tanpa alasan, dua tahap itu
+ *   akan dipakai bergantian dan funnel jadi tak terbaca.
+ */
+function refineStdbStage(d: StdbShape, ctx: z.RefinementCtx) {
+  const terbit = d.stage === "TERBIT";
+  if (terbit && !d.number?.trim()) {
+    ctx.addIssue({ code: "custom", path: ["number"], message: "Nomor STDB wajib diisi untuk tahap Terbit" });
+  }
+  if (!terbit) {
+    if (d.issuedAt) ctx.addIssue({ code: "custom", path: ["issuedAt"], message: "Tanggal terbit hanya untuk tahap Terbit" });
+    if (d.issuedYear != null) ctx.addIssue({ code: "custom", path: ["issuedYear"], message: "Tahun terbit hanya untuk tahap Terbit" });
+  }
+  if ((d.stage === "REVISI" || d.stage === "DITOLAK") && !d.stageNote?.trim()) {
+    ctx.addIssue({ code: "custom", path: ["stageNote"], message: "Alasan wajib diisi untuk tahap Revisi/Ditolak" });
+  }
+}
+
+export const landStdbSchema = stdbBase
+  .extend({ landParcelId: z.string().min(1, "Lahan tidak valid") })
+  .superRefine(refineStdbStage);
+export const updateLandStdbSchema = stdbBase
+  .extend({ id: z.string().min(1) })
+  .superRefine(refineStdbStage);
 
 // ---- UL Parcel Code
 export const landParcelExternalIdSchema = z.object({

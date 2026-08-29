@@ -257,7 +257,8 @@ export type ParcelPassport = {
       issuedYear: number | null;
       custodyNote: string | null;
     }[];
-    stdbs: { number: string; issuedYear: number | null; holderName: string | null; otherParcelIds: string[] }[];
+    /** `number` null saat tahapnya pra-terbit (#306) — PDF menampilkan tahapnya, bukan sel kosong. */
+    stdbs: { number: string | null; stage: string; issuedYear: number | null; holderName: string | null; otherParcelIds: string[] }[];
     externalIds: { source: string; code: string }[];
     programs: { programType: string; status: string; startDate: string | null; endDate: string | null }[];
   };

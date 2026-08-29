@@ -6,8 +6,8 @@ import type { LayerProps } from "react-map-gl/maplibre";
 import type { Feature, FeatureCollection, Geometry, Point, Polygon, MultiPolygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target, User, Info } from "lucide-react";
-import { MAP_STYLES } from "@/app/(admin)/admin/master-data/parcels/components/parcel-map-view";
-import { TREE_POINT_PAINT } from "@/lib/map-style";
+import { TREE_POINT_PAINT, MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { formatArea } from "@/lib/format";
 import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
@@ -105,7 +105,9 @@ export function ParcelsDistributionMap({
   treePoints,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
-  const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
+  const [styleKey, setStyleKey] = useState<MapStyleKey>("hybrid");
+  const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } =
+    useVectorBasemap(styleKey);
   // KT yang disembunyikan via checklist legenda.
   const [hiddenKts, setHiddenKts] = useState<Set<string>>(new Set());
   const [zoom, setZoom] = useState(13);
@@ -342,16 +344,22 @@ export function ParcelsDistributionMap({
       <MapGL
         ref={mapRef}
         initialViewState={combinedBounds ? { bounds: combinedBounds, fitBoundsOptions: { padding: 40 } } : { longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey]}
+        mapStyle={mapStyle}
         interactiveLayerIds={["group-parcels-fill"]}
+        onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
+        }}
+        onStyleData={(e) => syncStyle(e.target)}
         onClick={onMapClick}
         onMoveEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onMouseEnter={(e) => { e.target.getCanvas().style.cursor = "pointer"; }}
         onMouseLeave={(e) => { e.target.getCanvas().style.cursor = ""; }}
       >
         <Source type="geojson" data={visibleCollection}>
-          <Layer {...fillStyle} />
-          <Layer {...lineStyle} />
+          {/* Di bawah label basemap (vector) supaya nama tempat tetap terbaca. */}
+          <Layer {...fillStyle} beforeId={labelBeforeId} />
+          <Layer {...lineStyle} beforeId={labelBeforeId} />
         </Source>
 
         {visibleTreeGeojson && (
@@ -360,14 +368,15 @@ export function ParcelsDistributionMap({
           </Source>
         )}
 
-        {/* Label nama petani dalam poligon */}
+        {/* Label nama petani dalam poligon — menunggu glyphs style aktif cocok. */}
+        {labelsReady && (
         <Source type="geojson" data={labelGeojson}>
           <Layer
             id="group-parcels-label"
             type="symbol"
             layout={{
               "text-field": ["get", "farmerName"],
-              "text-font": ["Open Sans Regular"],
+              "text-font": [labelFont],
               "text-size": PARCEL_LABEL_FONT_PX,
               "text-max-width": ["get", "maxWidthEms"],
               "text-optional": true,
@@ -379,6 +388,7 @@ export function ParcelsDistributionMap({
             }}
           />
         </Source>
+        )}
 
         {selected && (
           <Popup
@@ -487,17 +497,18 @@ export function ParcelsDistributionMap({
       </div>
 
       <div className="absolute top-3 right-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-        {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+        {MAP_STYLE_KEYS.map((key) => (
           <button
             key={key}
             onClick={() => setStyleKey(key)}
+            title={MAP_STYLE_LABELS[key].full}
             className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
               styleKey === key
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {key}
+            {MAP_STYLE_LABELS[key].short}
           </button>
         ))}
       </div>

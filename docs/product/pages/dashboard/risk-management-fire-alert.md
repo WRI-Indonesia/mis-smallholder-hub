@@ -15,7 +15,7 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
 │   ├── Popup titik api (waktu WIB, confidence, satelit, FRP, lembaga)
 │   ├── Popup boundary (nama, distrik, jumlah titik)
 │   ├── Legenda kiri-bawah (confidence, bentuk dalam/luar, boundary, batas kabupaten)
-│   └── Kontrol kanan-bawah: ⛶ Zoom ke satu Riau (+ clear selection) · basemap Light/Dark/Hybrid
+│   └── Kontrol kanan-bawah: ⛶ Zoom ke satu Riau (+ clear selection) · basemap StreetMap/Light/Dark/Satellite/Hybrid (Light & Dark = vector OpenFreeMap sejak 2026-08-29; default ikut tema)
 └── Panel kanan (¼ lebar)
     ├── Toggle rentang: 24 jam / 5 / 10 / 30 hari terakhir (default 5; >5 hari = gabungan jendela 5 hari ber-DATE, #284)
     ├── Kartu ringkasan (4, ber-tooltip rincian)

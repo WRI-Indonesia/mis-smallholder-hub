@@ -141,7 +141,7 @@ export async function getFarmerDetail(id: string) {
             identity: {
               select: {
                 documents: { where: { isActive: true }, select: { type: true, number: true, holderName: true, statedArea: true } },
-                stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true } } } },
+                stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true, stage: true } } } },
               },
             },
           },
@@ -242,7 +242,7 @@ export async function getFarmerDetail(id: string) {
       landStatus: p.landStatus,
       revision: p.revision,
       surat: summarizeDocuments(p.identity.documents),
-      stdb: summarizeStdb(p.identity.stdbLinks.map((l) => l.stdb.number)),
+      stdb: summarizeStdb(p.identity.stdbLinks.map((l) => l.stdb)),
     })),
     mapParcels: farmer.landParcels.map((p) => ({
       id: p.id,

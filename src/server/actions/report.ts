@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import { Prisma, type LandDocumentType, type LandStdbStage } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerRelationAccessFilter } from "@/lib/access-context";
@@ -28,6 +28,8 @@ import {
 import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok-tani";
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
+import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
+import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
 
 // ─── Helper dropdown bersama (TD-018) — dedup 5 pasang action per menu report ───
 // Non-exported (bukan server action); permission key per-menu tetap di action pemanggil.
@@ -503,6 +505,65 @@ export async function getKelompokTaniReport(
 
 // ─── Report Lahan (#177) — roster lahan datar per Lembaga Petani (real-time) ───
 
+/**
+ * Filter legalitas → fragment `where` Prisma (#305). Semuanya lewat relasi
+ * `identity` supaya jumlah baris, baris Total, dan kartu ringkasan berasal dari
+ * satu kueri yang sama; memfilter array hasil di klien membuat ketiganya beda.
+ *
+ * Yang TIDAK di sini: `areaDiff` — nilainya turunan (Σ luas tertera vs poligon)
+ * sehingga tak bisa jadi `where`; ia difilter di `buildLandParcelReport`, yang
+ * juga berjalan di server dan menghitung ringkasannya sekalian.
+ */
+function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParcelWhereInput[] {
+  const out: Prisma.LandParcelWhereInput[] = [];
+
+  // Default = `mapped` (hanya lahan yang sudah didata), sama dengan yang
+  // dicetak `describeLegalFilters`. Sebelumnya `where` hanya membatasi saat
+  // `=== "mapped"` sementara teksnya menyebut "hanya yang sudah didata" untuk
+  // apa pun selain `"all"` — pemanggil yang tidak mengirim `coverage`
+  // menghasilkan PDF/Excel yang mengklaim batasan yang tidak ada di datanya.
+  if (filters.coverage !== "all") {
+    out.push({ identity: { externalIds: { some: { isActive: true } } } });
+  }
+
+  if (filters.documentStatus === "with") {
+    out.push({ identity: { documents: { some: { isActive: true } } } });
+  } else if (filters.documentStatus === "without") {
+    // "Tanpa surat" = TIDAK ADA baris dokumen aktif sama sekali. Baris `OTHER`
+    // + `custodyNote` ("surat di bank", "lahan sudah dijual") tetap dihitung
+    // PUNYA surat — skema sengaja memisahkan status penguasaan ke custodyNote.
+    out.push({ identity: { documents: { none: { isActive: true } } } });
+  }
+
+  // Nilai enum DISARING terhadap daftar sah, bukan di-cast mentah: `filters`
+  // datang dari klien, dan `as LandDocumentType[]` akan meneruskan nilai
+  // sembarang ke Prisma sehingga pengguna hanya melihat "Gagal memuat laporan"
+  // untuk sesuatu yang seharusnya cukup diabaikan.
+  const docTypes = (filters.documentTypes ?? []).filter((t): t is LandDocumentType =>
+    (LAND_DOCUMENT_TYPES as readonly string[]).includes(t),
+  );
+  if (docTypes.length > 0) {
+    // "Jenis = SHM" berarti punya MINIMAL SATU dokumen SHM; lahan ber-SHM dan
+    // ber-SKT muncul di kedua filter — disengaja.
+    out.push({ identity: { documents: { some: { isActive: true, type: { in: docTypes } } } } });
+  }
+
+  const stdb = filters.stdbStatus;
+  if (stdb === "with") {
+    out.push({ identity: { stdbLinks: { some: { isActive: true, stdb: { isActive: true } } } } });
+  } else if (stdb === "without") {
+    out.push({ identity: { stdbLinks: { none: { isActive: true, stdb: { isActive: true } } } } });
+  } else if (stdb && (LAND_STDB_STAGES as readonly string[]).includes(stdb)) {
+    out.push({
+      identity: {
+        stdbLinks: { some: { isActive: true, stdb: { isActive: true, stage: stdb as LandStdbStage } } },
+      },
+    });
+  }
+
+  return out;
+}
+
 export async function getDistrictsForLandParcelReport() {
   return districtsForMenus(["report-land-parcel"]);
 }
@@ -528,6 +589,7 @@ export async function getLandParcelReport(
   const andFilters: Prisma.LandParcelWhereInput[] = [farmerRelationAccessFilter(access)];
   if (filters.farmerGroupId) andFilters.push({ farmer: { farmerGroupId: filters.farmerGroupId } });
   if (filters.districtId) andFilters.push({ farmer: { farmerGroup: { districtId: filters.districtId } } });
+  andFilters.push(...landParcelLegalWhere(filters));
 
   const parcels = await prisma.landParcel.findMany({
     where: {
@@ -555,10 +617,14 @@ export async function getLandParcelReport(
         },
       },
       // Satelit (#296) via identitas stabil — dokumen & STDB aktif.
+      // Satu query, tanpa N+1: UL Parcel Code & Program ikut di select yang
+      // sama seperti dokumen/STDB (#305).
       identity: {
         select: {
           documents: { where: { isActive: true }, select: { type: true, number: true, holderName: true, statedArea: true } },
-          stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true } } } },
+          stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true, stage: true } } } },
+          externalIds: { where: { isActive: true }, select: { source: true, code: true } },
+          programs: { where: { isActive: true }, select: { programType: true, status: true } },
         },
       },
     },
@@ -580,10 +646,12 @@ export async function getLandParcelReport(
     plantingYear: p.plantingYear,
     area: p.area,
     documents: p.identity.documents,
-    stdbNumbers: p.identity.stdbLinks.map((l) => l.stdb.number),
+    stdbs: p.identity.stdbLinks.map((l) => l.stdb),
+    externalIds: p.identity.externalIds,
+    programs: p.identity.programs,
   }));
 
-  return buildLandParcelReport(raw);
+  return buildLandParcelReport(raw, filters);
 }
 
 /**

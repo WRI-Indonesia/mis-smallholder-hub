@@ -34,6 +34,20 @@ Hanya lahan yang berasal dari unggahan shapefile yang muncul di peta.
 
 > [!penting] Peta BMP membaca snapshot yang sama dengan BMP Dashboard. Bila data produksi baru saja diunggah tetapi warnanya belum berubah, snapshot-nya perlu dibuat ulang.
 
+## Memilih peta dasar
+
+Tombol di pojok kanan-atas peta mengganti **peta dasar** — latar di belakang data Anda. Pilihannya sama di semua halaman peta:
+
+| Tombol | Isinya | Paling cocok untuk |
+| --- | --- | --- |
+| **STREET** | OpenStreetMap lengkap: jalan, nama tempat, fasilitas umum | Mencari lokasi, menjelaskan posisi ke orang lain |
+| **LIGHT** | Terang, label secukupnya | Membaca poligon dan warna kategori tanpa gangguan |
+| **DARK** | Gelap, label secukupnya | Layar gelap, atau menonjolkan titik terang seperti titik api |
+| **SAT** | Citra satelit tanpa label | Melihat tutupan lahan sebenarnya |
+| **HYBRID** | Citra satelit + nama jalan/tempat | Mencocokkan poligon dengan kondisi lapangan |
+
++ Light dan Dark sengaja dibuat sepi supaya data Anda yang menonjol, bukan latarnya. Kalau Anda justru butuh nama desa dan jalan, pakai StreetMap. Pilihan Anda hanya berlaku selama halaman itu dibuka; saat dibuka kembali, peta memakai bawaannya lagi.
+
 ## Kalau bermasalah
 
 **Peta kosong setelah Muat Data** — lembaga tersebut belum punya lahan ber-poligon.
@@ -43,3 +57,5 @@ Hanya lahan yang berasal dari unggahan shapefile yang muncul di peta.
 + Periksa di **Master Data → Produksi** apakah kolom lahannya terisi. Produksi tanpa lahan tetap terhitung sebagai total, tetapi tidak mewarnai peta.
 
 **Poligon berada di lokasi yang salah** — masalahnya ada pada shapefile sumber, bukan pada peta. Lihat tutorial **Mengunggah lahan dari shapefile**.
+
+**Cetak gagal mengambil gambar peta** — peta dasar citra (**SAT** dan **HYBRID**) tidak bisa di-capture. Pindah ke **STREET**, **LIGHT**, atau **DARK** lalu cetak ulang.

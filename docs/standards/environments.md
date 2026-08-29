@@ -54,11 +54,26 @@ psql "postgresql://postgres:postgres@localhost:5432/postgres" -c 'drop database 
 
 Dump membawa `_prisma_migrations`, jadi status migrasi local otomatis sama dengan prod.
 
-Cara yang sama berlaku untuk menyegarkan **staging** (ganti target restore ke `.env.staging`; wipe dengan `drop schema public cascade; create schema public;` karena user staging bukan pemilik database).
+Cara yang sama berlaku untuk menyegarkan **staging** (ganti target restore ke `.env.staging`; wipe dengan `drop schema public cascade; create schema public;` karena user staging bukan pemilik database), termasuk untuk menyalin `mis-staging-local` → `mis-staging`:
 
-## Status (2026-08-17)
+```bash
+npx dotenv -e .env.staging      -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-before-refresh.dump'   # backup dulu
+npx dotenv -e .env.staging-local -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
+npx dotenv -e .env.staging -- sh -c 'psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -c "drop schema public cascade;" -c "create schema public;" -c "grant all on schema public to public;" \
+  -c "drop schema if exists tiger cascade; drop schema if exists tiger_data cascade; drop schema if exists topology cascade;"'
+npx dotenv -e .env.staging -- sh -c '/opt/homebrew/opt/libpq/bin/pg_restore --no-owner --no-privileges -d "$DATABASE_URL" scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
+```
 
-- DB **local** dan **staging** (tunnel `:1235/mis-staging`) = snapshot prod per 2026-08-17 (26 tabel; 8.626 petani, 10.953 lahan, 10.783 produksi). Dump: `scripts/dump-prod/2026-08-17/mis-prod.dump`.
-- Skema staging lama (tabel ber-tanda-hubung, migrasi Mei 2026, ada tabel audit/HSE/sertifikasi) di-backup ke `scripts/dump-prod/2026-08-17/mis-staging-legacy-backup.dump` sebelum ditimpa.
-- DB **dev** (tunnel `:1235/mis-dev`, satu server dengan staging): hidup, 40 tabel — masih **skema lama** (belum disinkronkan dengan prod).
+> **Jangan lupa `tiger`/`topology`.** Snapshot prod membawa schema kosong `tiger` & `topology` (sisa paket PostGIS). Keduanya **selamat** dari `drop schema public cascade`, lalu menabrak restore dengan `ERROR: schema "tiger" already exists` — dengan `--exit-on-error` restore berhenti di baris pertama dan DB tertinggal kosong. Drop keduanya bersamaan dengan `public`.
+
+Versi PostGIS tidak perlu disamakan: dump hanya memuat `CREATE EXTENSION`, jadi tiap server memasang versi defaultnya sendiri (local 3.5.0, server 3.6.3).
+
+## Status (2026-08-28)
+
+- DB **staging** (tunnel `:1235/mis-staging`) = salinan penuh `mis-staging-local` per 2026-08-28, yaitu snapshot prod 2026-08-27 + 3 migrasi (`farmer_group_boundary`, `administrative_boundary`, `land_parcel_satellites`). **34 tabel, 28 migrasi ter-apply**; 8.626 petani, 13.639 lahan, 10.783 produksi, 908 pelatihan, 31.383 peserta — identik dengan `mis-staging-local`. Dump: `scripts/dump-prod/2026-08-28/mis-staging-local.dump`; backup skema staging sebelumnya (26 tabel, 25 migrasi): `scripts/dump-prod/2026-08-28/mis-staging-before-refresh.dump`.
+- DB **local** (`mis-dev`) = snapshot prod 2026-08-17 yang dimigrasi + diisi ulang menyusul (lihat Decision Log 2026-08-28) — isi setara prod menurut kunci bisnis, tapi cuid lahan berbeda.
+- DB **staging-local** (`localhost:5432/mis-staging-local`) = snapshot prod 2026-08-27, DB uji migrasi.
+- DB **dev** (tunnel `:1235/mis-dev`, satu server dengan staging): hidup, masih **skema lama** (belum disinkronkan dengan prod).
 - Prod & staging: PostgreSQL **18.3**; local: Postgres.app **17.2** — dump/restore memakai client 18 dari `libpq` Homebrew.
+- Riwayat: staging pernah disamakan dengan snapshot prod 2026-08-17; skema staging lama (tabel ber-tanda-hubung, migrasi Mei 2026, tabel audit/HSE/sertifikasi) di-backup ke `scripts/dump-prod/2026-08-17/mis-staging-legacy-backup.dump` sebelum ditimpa.

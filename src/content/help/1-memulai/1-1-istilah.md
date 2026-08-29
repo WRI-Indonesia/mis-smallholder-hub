@@ -20,7 +20,7 @@ intro: Smallholder HUB MIS adalah sistem informasi data petani sawit swadaya: pe
 
 **STDB** — Surat Tanda Daftar Budidaya, terdaftar atas nama petani; satu STDB bisa menutup beberapa lahan petani yang sama.
 
-**UL Parcel Code** — Kode lahan dari vendor pemetaan (`parcel_code`), unik per sumber; dipakai untuk mencocokkan lahan dengan data pemetaan eksternal.
+**UL Parcel Code** — Kode lahan hasil pemetaan, unik per pemeta; dipakai untuk mencocokkan lahan dengan data pemetaan eksternal. **Pemeta** dicatat pada setiap kode: seluruh kode yang ada sekarang berasal dari **Meridia**, vendor yang ditugaskan donor (UL); ke depan pemetaan bisa swadaya atau dibantu WRI, dan kode dari pemeta berbeda hidup berdampingan pada lahan yang sama.
 
 **Titik api (hotspot)** — Deteksi anomali panas oleh satelit VIIRS (NASA FIRMS), bukan konfirmasi kebakaran. Ditampilkan di Peta Lahan dan Fire Alert dengan rentang 24 jam / 5 / 10 / 30 hari; rentang harinya dihitung menurut **tanggal UTC** (satuan yang dipakai satelit), sehingga "5 hari" berarti 5 hari kalender UTC termasuk hari ini.
 

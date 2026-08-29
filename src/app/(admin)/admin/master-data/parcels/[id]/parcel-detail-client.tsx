@@ -218,7 +218,8 @@ export function ParcelDetailClient({
   const stdbCount = satellites?.stdbs.length ?? 0;
   const vendorCount = satellites?.externalIds.length ?? 0;
   const programCount = satellites?.programs.length ?? 0;
-  const legalCount = docCount + stdbCount + vendorCount + programCount;
+  // Program TIDAK ikut hitungan legalitas (koreksi owner 2026-08-28) — tab & KPI-nya sendiri.
+  const legalCount = docCount + stdbCount + vendorCount;
   // Jenis surat unik (akronim) untuk nilai kartu, mis. "SHM · SKT".
   const docTypes = [...new Set((satellites?.documents ?? []).map((d) => (d.type === "OTHER" && !d.typeRaw ? "?" : d.type)))];
   const legalValue =
@@ -234,7 +235,6 @@ export function ParcelDetailClient({
           `${formatNumber(docCount)} surat`,
           `${formatNumber(stdbCount)} STDB`,
           vendorCount > 0 ? `${formatNumber(vendorCount)} UL Parcel Code` : null,
-          programCount > 0 ? `${formatNumber(programCount)} program` : null,
         ]
           .filter(Boolean)
           .join(" · ");
@@ -334,9 +334,9 @@ export function ParcelDetailClient({
               <Badge variant={parcel.isActive ? "default" : "outline"}>
                 {parcel.isActive ? "Aktif" : "Nonaktif"}
               </Badge>
-              <Badge variant={parcel.isPsr ? "secondary" : "outline"}>
-                {parcel.isPsr ? "PSR (Replanting)" : "Non-PSR"}
-              </Badge>
+              {/* Hanya PSR yang ditampilkan — "Non-PSR" hanya menambah badge tanpa informasi
+                  (sejalan dengan PDF #298); statusnya tetap terbaca di tab Program. */}
+              {parcel.isPsr && <Badge variant="secondary">PSR (Replanting)</Badge>}
               {parcel.cropType && <Badge variant="secondary">{parcel.cropType}</Badge>}
               {parcel.subGroupLv2 && <Badge variant="outline">{parcel.subGroupLv2}</Badge>}
             </div>
@@ -426,12 +426,18 @@ export function ParcelDetailClient({
 
       {/* Tabs (#298): konsisten dengan Detail Petani; tiap tab satu kartu */}
       <Tabs defaultValue="informasi" className="w-full">
-        <TabsList className="grid w-full max-w-[420px] grid-cols-3 mb-4">
+        <TabsList className="grid w-full max-w-[520px] grid-cols-4 mb-4">
           <TabsTrigger value="informasi">Informasi</TabsTrigger>
           <TabsTrigger value="legalitas">
             Legalitas
             {legalCount > 0 && (
               <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-primary">{formatNumber(legalCount)}</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="program">
+            Program
+            {programCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-primary">{formatNumber(programCount)}</span>
             )}
           </TabsTrigger>
           <TabsTrigger value="produksi">Produksi</TabsTrigger>
@@ -598,11 +604,27 @@ export function ParcelDetailClient({
         </Card>
         </TabsContent>
 
-        {/* ── Legalitas (#296): dokumen, STDB, UL Parcel Code, program via parcelUid ── */}
+        {/* ── Legalitas (#296): dokumen, STDB, UL Parcel Code via parcelUid ── */}
         <TabsContent value="legalitas">
           {/* Tanpa Card pembungkus: tiap grup sudah berbingkai sendiri (hindari bingkai ganda). */}
           {satellites ? (
             <ParcelLegalSection data={satellites} parcelArea={parcel.area} landParcelId={parcel.id} permissions={permissions} />
+          ) : (
+            <Val value={null} />
+          )}
+        </TabsContent>
+
+        {/* ── Program: keikutsertaan program + status PSR (bukan legalitas) ── */}
+        <TabsContent value="program">
+          {satellites ? (
+            <ParcelLegalSection
+              data={satellites}
+              parcelArea={parcel.area}
+              landParcelId={parcel.id}
+              permissions={permissions}
+              variant="program"
+              isPsr={parcel.isPsr}
+            />
           ) : (
             <Val value={null} />
           )}

@@ -153,7 +153,7 @@ export function MapBmpClient({ provinces, canViewParcel, canEditParcel, canExpor
     try {
       const shot = await capture();
       if (!shot) {
-        toast.error("Gagal mengambil gambar peta. Coba basemap Light/Dark (bukan Hybrid).");
+        toast.error("Gagal mengambil gambar peta. Coba basemap StreetMap/Light/Dark (bukan Satellite/Hybrid).");
         return;
       }
       const ktName =

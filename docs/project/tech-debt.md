@@ -29,9 +29,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…033) | **13** | 20 | 33 |
+| **Debt** (TD-001…036) | **15** | 21 | 36 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). · **TD-034** (dibuka 2026-08-24 dari review #285 — kontrak `DATE` FIRMS terverifikasi manual saja) · **TD-035** (dibuka 2026-08-27 dari penutupan #296 — `fileUrl`/`rawGeometry` tanpa UI, kolom report UL Parcel Code/Program) · **TD-036** (dibuka 2026-08-27 dari review pasca-v0.30.0 — `MAP_STYLES` tersalin 6×). (**TD-033 ✅ 2026-08-10** — dedup tbody matriks produksi + trim payload bulanan, dari review #239; dibuka & diselesaikan di hari yang sama.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). · **TD-034** (dibuka 2026-08-24 dari review #285 — kontrak `DATE` FIRMS terverifikasi manual saja) · **TD-035** (dibuka 2026-08-27 dari penutupan #296 — `fileUrl`/`rawGeometry` tanpa UI; bagian kolom report UL Parcel Code/Program ✅ #305 2026-08-29, diganti utang baru: **proxy "sudah didata" = punya UL Parcel Code**) (**TD-036 ✅ 2026-08-28** — `MAP_STYLES` satu sumber di `src/lib/map-style.ts`, dari #307.) (**TD-033 ✅ 2026-08-10** — dedup tbody matriks produksi + trim payload bulanan, dari review #239; dibuka & diselesaikan di hari yang sama.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -129,13 +129,9 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 ### TD-035 · 🔲 Open — Satelit lahan: kolom skema tanpa jalur UI & cakupan report (P3)
 
-- **Masalah:** dari #296 ada bagian skema yang **sengaja ditunda** UI-nya: `LandParcelDocument.fileUrl` (scan dokumen, S3) dan `LandParcelExternalId.rawGeometry` (geometri vendor) hanya terisi lewat skrip/import, tanpa unggah/tampil di Detail Lahan; enum `LandProgramType` baru berisi `DEMPLOT_PBU`; Report Lahan belum punya kolom UL Parcel Code & Program (hanya surat/STDB). `kabupaten/kecamatan/desa` per lahan dari Excel Rohul juga belum ditampung (bisa diturunkan dari poligon vs batas BIG).
-- **Validation:** unggah scan dokumen ke S3 (`src/lib/s3.ts`, presigned) + pratinjau di tab Legalitas; kolom toggle UL Parcel Code/Program di Report Lahan; program kedua saat ada kebutuhan. · **Evidence:** #296 retro, `prisma/schema/land-parcel-document.prisma:41`, `land-parcel-external-id.prisma:16`. · **Owner:** Product + Frontend.
-
-### TD-036 · 🔲 Open — `MAP_STYLES` basemap tersalin di 6 canvas peta (P3)
-
-- **Masalah:** blok sumber basemap (OSM/Esri Light-Dark-Hybrid, `GLYPHS`) identik byte-per-byte di 6 file (`map/parcel/map-canvas.tsx`, `map/bmp/map-bmp-canvas.tsx`, `dashboard/dashboard-map.tsx`, `dashboard/risk/fire/fire-map-canvas.tsx`, `bulk-upload/parcels/components/parcel-bulk-upload-map.tsx`, `master-data/parcels/components/parcel-map-view.tsx`) — pergantian CARTO→OSM/Esri (#298) harus disunting 6×. Sudah diakui "kandidat TD" di Decision Log 2026-08-27 tapi belum terdaftar.
-- **Validation:** satu `MAP_STYLES`/`GLYPHS` di `src/lib/map-style.ts` (rumah bersama yang sudah ada) diimpor keenam canvas; test snapshot kunci `light/dark/hybrid` tetap. · **Evidence:** review pasca-rilis v0.30.0. · **Owner:** Frontend.
+- **Masalah:** dari #296 ada bagian skema yang **sengaja ditunda** UI-nya: `LandParcelDocument.fileUrl` (scan dokumen, S3) dan `LandParcelExternalId.rawGeometry` (geometri vendor) hanya terisi lewat skrip/import, tanpa unggah/tampil di Detail Lahan; enum `LandProgramType` baru berisi `DEMPLOT_PBU`; ~~Report Lahan belum punya kolom UL Parcel Code & Program~~ **✅ selesai #305 (2026-08-29)** — kedua kolom masuk selektor Kolom, Excel, dan PDF (default mati). `kabupaten/kecamatan/desa` per lahan dari Excel Rohul juga belum ditampung (bisa diturunkan dari poligon vs batas BIG).
+- **Utang baru dari #305 — proxy "sudah didata":** Laporan Lahan memakai **"punya UL Parcel Code aktif"** sebagai penanda "lahan sudah melalui import Detail Lahan", dan penanda itu jadi **penyebut semua persentase legalitas**. Kesetaraannya hanya kebetulan: seluruh 6.953 baris valid yang sudah masuk membawa kolom `parcel_code`. Begitu ada berkas kabupaten tanpa kolom itu, penyebutnya diam-diam salah dan semua persen ikut salah **tanpa gejala**. Peredam sementara sudah dipasang (peringatan eksplisit di klien import bila kolomnya tidak ada + catatan penyebut di UI/PDF/Excel), tapi utangnya **lunas hanya bila ada penanda pendataan eksplisit** — mis. kolom `LandParcelIdentity.surveyedAt` atau tabel batch import — bukan proxy. Prasyarat juga untuk `Dashboard > Legalitas Lahan` (angka yang dipakai donor).
+- **Validation:** unggah scan dokumen ke S3 (`src/lib/s3.ts`, presigned) + pratinjau di tab Legalitas; penanda pendataan eksplisit menggantikan proxy UL Parcel Code; program kedua saat ada kebutuhan. · **Evidence:** #296 retro, #305 (§Kerapuhan proxy), `prisma/schema/land-parcel-document.prisma:41`, `land-parcel-external-id.prisma:16`. · **Owner:** Product + Frontend.
 
 ## Debt Sequencing
 
@@ -181,7 +177,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 ### Debt Register — Selesai (20 item)
 
 <details>
-<summary><strong>Lihat 20 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 018, 019, 020, 021, 022, 023, 024, 025, 028, 029, 033</summary>
+<summary><strong>Lihat 21 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 018, 019, 020, 021, 022, 023, 024, 025, 028, 029, 033, 036</summary>
 
 | ID | Debt Item | Priority | Selesai |
 | --- | --- | --- | --- |
@@ -203,6 +199,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-024 | `farmerId` tanpa penjaga keunikan + celah scope bulk upload | P2 | ✅ 2026-07-21 |
 | TD-025 | Mode Detail Bantuan bergantung urutan sumber CSS | P3 | ✅ 2026-07-21 |
 | TD-029 | Combobox bulk upload petani: daftar Lembaga tanpa scope filter | P1 | ✅ 2026-07-28 |
+| TD-036 | `MAP_STYLES` basemap tersalin di 6 canvas peta → satu sumber `src/lib/map-style.ts` (+`PARCEL_MAP_STYLES`, id `esri-dark`/`osm-light`, 7 test) | P3 | ✅ 2026-08-28 (#307, bersama layer label Dark) |
 | TD-020 | Dashboard Pelatihan: live query tanpa ambang perf | P3 | ✅ 2026-07-21 |
 | TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan + Dashboard Ketersediaan Data) |
 

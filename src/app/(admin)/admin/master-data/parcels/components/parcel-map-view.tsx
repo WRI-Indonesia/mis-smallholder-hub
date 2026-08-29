@@ -5,10 +5,10 @@ import Link from "next/link";
 import Map, { Source, Layer, Marker, Popup } from "react-map-gl/maplibre";
 import type { MapRef, MapLayerMouseEvent, LayerProps } from "react-map-gl/maplibre";
 import type { Geometry, Position } from "geojson";
-import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ExternalLink, LandPlot, Target } from "lucide-react";
-import { TREE_POINT_PAINT } from "@/lib/map-style";
+import { TREE_POINT_PAINT, MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
 import { formatArea } from "@/lib/format";
 
@@ -56,95 +56,6 @@ function parseGeom(g: Geometry | string | null | undefined): Geometry | null {
   return g;
 }
 
-export const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecification> = {
-  hybrid: {
-    version: 8,
-    sources: {
-      "google-hybrid": {
-        type: "raster",
-        tiles: ["https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
-        tileSize: 256,
-        attribution: "Map data &copy; Google",
-      },
-    },
-    layers: [
-      {
-        id: "google-hybrid-layer",
-        type: "raster",
-        source: "google-hybrid",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-  satellite: {
-    version: 8,
-    sources: {
-      "google-satellite": {
-        type: "raster",
-        tiles: ["https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"],
-        tileSize: 256,
-        attribution: "Map data &copy; Google",
-      },
-    },
-    layers: [
-      {
-        id: "google-satellite-layer",
-        type: "raster",
-        source: "google-satellite",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-  light: {
-    version: 8,
-    sources: {
-      "carto-light": {
-        type: "raster",
-        // OSM standar (tanpa API key) — pengganti CARTO yang sejak 2024 menandai tile zoom tinggi "API KEY REQUIRED" (#298).
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        maxzoom: 19,
-        tileSize: 256,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-    },
-    layers: [
-      {
-        id: "carto-light-layer",
-        type: "raster",
-        source: "carto-light",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-  dark: {
-    version: 8,
-    sources: {
-      "carto-dark": {
-        type: "raster",
-        // Esri World Dark Gray (tanpa API key); zoom >16 diperbesar dari tile 16 — tanpa tanda air (#298).
-        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
-        maxzoom: 16,
-        tileSize: 256,
-        attribution:
-          'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ',
-      },
-    },
-    layers: [
-      {
-        id: "carto-dark-layer",
-        type: "raster",
-        source: "carto-dark",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-};
-
 /** Titik pusat sederhana (rata-rata semua posisi) untuk menempatkan label. */
 function centroid(g: Geometry | null): [number, number] | null {
   if (!g || !("coordinates" in g)) return null;
@@ -172,7 +83,8 @@ export function ParcelMapView({
   siblingLabel,
   treePoints,
 }: Props) {
-  const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
+  const [styleKey, setStyleKey] = useState<MapStyleKey>("hybrid");
+  const { mapStyle, labelBeforeId, syncStyle, registerImageFallback } = useVectorBasemap(styleKey);
   const [selected, setSelected] = useState<SiblingSelection | null>(null);
 
   const parsedGeometry =
@@ -349,8 +261,13 @@ export function ParcelMapView({
         ref={mapRef}
         {...viewport}
         onMove={(evt) => setViewport(evt.viewState)}
-        onLoad={zoomToLahan}
-        mapStyle={MAP_STYLES[styleKey]}
+        onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
+          zoomToLahan();
+        }}
+        onStyleData={(e) => syncStyle(e.target)}
+        mapStyle={mapStyle}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onClick={onClick}
@@ -366,22 +283,25 @@ export function ParcelMapView({
             type="geojson"
             data={{ type: "FeatureCollection" as const, features: siblingFeatures }}
           >
+            {/* Di bawah label basemap (vector) supaya nama tempat tetap terbaca. */}
             <Layer
               id="sibling-fill"
               type="fill"
+              beforeId={labelBeforeId}
               paint={{ "fill-color": "#0ea5e9", "fill-opacity": 0.3 }}
             />
             <Layer
               id="sibling-border"
               type="line"
+              beforeId={labelBeforeId}
               paint={{ "line-color": "#0284c7", "line-width": 1.5 }}
             />
           </Source>
         )}
         {parsedGeometry && hasValidCoordinates && (
           <Source type="geojson" data={geojsonData}>
-            <Layer {...layerStyle} />
-            <Layer {...borderStyle} />
+            <Layer {...layerStyle} beforeId={labelBeforeId} />
+            <Layer {...borderStyle} beforeId={labelBeforeId} />
           </Source>
         )}
         {/* Label singkat (#298) sebagai Marker HTML — style raster tak punya glyphs untuk symbol layer.
@@ -462,17 +382,18 @@ export function ParcelMapView({
 
       {/* Background style selector overlay */}
       <div className="absolute top-3 right-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-        {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+        {MAP_STYLE_KEYS.map((key) => (
           <button
             key={key}
             onClick={() => setStyleKey(key)}
+            title={MAP_STYLE_LABELS[key].full}
             className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
               styleKey === key
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {key}
+            {MAP_STYLE_LABELS[key].short}
           </button>
         ))}
       </div>

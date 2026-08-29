@@ -15,6 +15,7 @@ import {
   updateLandParcelProgramSchema,
   type SatelliteKind,
 } from "@/validations/land-parcel-satellite.schema";
+import { LAND_STDB_OPEN_STAGES, isOpenStdbStage } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -87,28 +88,59 @@ export async function createLandStdb(input: unknown): Promise<Result> {
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors as FieldErrors };
   const parcel = await resolveParcel(parsed.data.landParcelId);
   if (!parcel) return { success: false, error: "Lahan tidak ditemukan atau di luar akses Anda" };
-  const { landParcelId: _ignored, number, ...rest } = parsed.data;
+  const { landParcelId: _ignored, number, stage, ...rest } = parsed.data;
   void _ignored;
   const uid = await userId();
+  const trimmedNumber = number?.trim() || null;
 
-  // STDB unik per petani: nomor yang sudah ada → pakai ulang (aktifkan bila
-  // nonaktif) lalu tautkan; ini yang membuat satu STDB menutup banyak lahan.
+  // Guard kembar partial index `uniq_land_stdb_farmer_open`. Kuncinya adalah
+  // TAHAP, bukan ada-tidaknya nomor: (a) baris `DITOLAK` tanpa nomor ada di
+  // LUAR index itu dan harus boleh dibuat walau petaninya punya berkas
+  // berjalan; (b) baris bertahap terbuka yang KEBETULAN sudah bernomor tetap
+  // masuk index, jadi tanpa guard ini insert-nya menabrak unique dan melempar
+  // P2002 mentah keluar dari server action alih-alih `{ success: false }`.
+  if (isOpenStdbStage(stage)) {
+    const open = await prisma.landStdb.findFirst({
+      where: { farmerId: parcel.farmerId, isActive: true, stage: { in: [...LAND_STDB_OPEN_STAGES] } },
+      select: { id: true },
+    });
+    if (open) {
+      return { success: false, error: { stage: ["Petani ini sudah punya satu berkas STDB yang sedang berjalan. Ubah berkas itu, atau tautkan lahan ini ke sana."] } };
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
-    const found = await tx.landStdb.findUnique({ where: { farmerId_number: { farmerId: parcel.farmerId, number } }, select: { id: true, isActive: true } });
+    // Cari baris bernomor milik petani ini TANPA menyaring `isActive`, lalu
+    // utamakan yang aktif. Menyaring `isActive: true` membuat STDB yang pernah
+    // dinonaktifkan tidak pernah dipakai ulang: baris kembar (farmerId, number)
+    // lahir — lolos DB karena partial index hanya menjaga baris aktif — dan
+    // `fetchParcelDetailExistingState` yang berkunci `stdbKey` tanpa pemisah
+    // aktif/nonaktif bisa memilih yang salah lalu menggagalkan satu chunk penuh.
+    const found = trimmedNumber
+      ? await tx.landStdb.findFirst({
+          where: { farmerId: parcel.farmerId, number: trimmedNumber },
+          orderBy: { isActive: "desc" },
+          select: { id: true },
+        })
+      : null;
     let stdbId: string;
     if (found) {
       stdbId = found.id;
       // Pakai ulang: hanya timpa field yang diisi — field kosong di form
       // tidak boleh mengosongkan data STDB yang sudah ada dari lahan lain.
+      // `stage` selalu ikut: ia tidak punya bentuk "kosong".
       const filled = Object.fromEntries(Object.entries(rest).filter(([, v]) => v != null && v !== ""));
-      await tx.landStdb.update({ where: { id: found.id }, data: { ...filled, isActive: true, modifiedBy: uid } });
+      await tx.landStdb.update({ where: { id: found.id }, data: { ...filled, stage, stageChangedAt: new Date(), isActive: true, modifiedBy: uid } });
     } else {
-      const created = await tx.landStdb.create({ data: { farmerId: parcel.farmerId, number, ...rest, createdBy: uid }, select: { id: true } });
+      const created = await tx.landStdb.create({
+        data: { farmerId: parcel.farmerId, number: trimmedNumber, stage, stageChangedAt: new Date(), ...rest, createdBy: uid },
+        select: { id: true },
+      });
       stdbId = created.id;
     }
     const link = await tx.landParcelStdb.findUnique({ where: { parcelUid_stdbId: { parcelUid: parcel.parcelUid, stdbId } }, select: { id: true, isActive: true } });
     if (!link) await tx.landParcelStdb.create({ data: { parcelUid: parcel.parcelUid, stdbId, createdBy: uid } });
-    else if (!link.isActive) await tx.landParcelStdb.update({ where: { id: link.id }, data: { isActive: true } });
+    else if (!link.isActive) await tx.landParcelStdb.update({ where: { id: link.id }, data: { isActive: true, modifiedBy: uid } });
     return { id: stdbId };
   });
   return { success: true, data: { id: result.id } };
@@ -122,14 +154,38 @@ export async function updateLandStdb(input: unknown): Promise<Result> {
   const access = await getAccessContext();
   const existing = await prisma.landStdb.findFirst({
     where: { id, isActive: true, farmer: farmerAccessFilter(access) },
-    select: { id: true, farmerId: true, number: true },
+    select: { id: true, farmerId: true, number: true, stage: true },
   });
   if (!existing) return { success: false, error: "STDB tidak ditemukan atau di luar akses Anda" };
-  if (data.number !== existing.number) {
-    const clash = await prisma.landStdb.findUnique({ where: { farmerId_number: { farmerId: existing.farmerId, number: data.number } }, select: { id: true } });
+
+  const trimmedNumber = data.number?.trim() || null;
+  if (trimmedNumber && trimmedNumber !== existing.number) {
+    const clash = await prisma.landStdb.findFirst({
+      where: { farmerId: existing.farmerId, number: trimmedNumber, isActive: true, id: { not: id } },
+      select: { id: true },
+    });
     if (clash) return { success: false, error: { number: ["Nomor STDB ini sudah terdaftar untuk petani yang sama"] } };
   }
-  await prisma.landStdb.update({ where: { id }, data: { ...data, modifiedBy: await userId() } });
+  // Guard kembar partial index `uniq_land_stdb_farmer_open`: pindah KE tahap
+  // terbuka hanya boleh bila petani belum punya berkas terbuka lain.
+  if (isOpenStdbStage(data.stage) && !isOpenStdbStage(existing.stage)) {
+    const open = await prisma.landStdb.findFirst({
+      where: { farmerId: existing.farmerId, isActive: true, stage: { in: [...LAND_STDB_OPEN_STAGES] }, id: { not: id } },
+      select: { id: true },
+    });
+    if (open) return { success: false, error: { stage: ["Petani ini sudah punya satu berkas STDB yang sedang berjalan."] } };
+  }
+
+  const stageChanged = data.stage !== existing.stage;
+  await prisma.landStdb.update({
+    where: { id },
+    data: {
+      ...data,
+      number: trimmedNumber,
+      ...(stageChanged ? { stageChangedAt: new Date() } : {}),
+      modifiedBy: await userId(),
+    },
+  });
   return { success: true, data: { id } };
 }
 
@@ -140,7 +196,8 @@ export async function unlinkLandStdb(landParcelId: string, stdbId: string): Prom
   if (!parcel) return { success: false, error: "Lahan tidak ditemukan atau di luar akses Anda" };
   const res = await prisma.landParcelStdb.updateMany({
     where: { parcelUid: parcel.parcelUid, stdbId, isActive: true },
-    data: { isActive: false },
+    // #299: tautan STDB↔lahan kini mencatat siapa melepasnya.
+    data: { isActive: false, modifiedBy: await userId() },
   });
   if (res.count === 0) return { success: false, error: "Tautan STDB tidak ditemukan" };
   return { success: true };

@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Excel from "exceljs";
-import Papa from "papaparse";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +24,8 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
-import { cellValueToPrimitive } from "@/lib/excel-cell";
+import { readSpreadsheetFile } from "@/lib/excel-sheet-reader";
+import { exportToExcel } from "@/lib/xlsx";
 import {
   PARCEL_DETAIL_TARGET_FIELDS,
   LAND_DOCUMENT_TYPE_LABELS,
@@ -36,10 +35,14 @@ import {
   type ParcelDetailValidatedRow,
   type ParcelRef,
 } from "@/lib/land-parcel-detail-import";
+import { PARCEL_MAPPERS, DEFAULT_PARCEL_MAPPER } from "@/lib/land-parcel-satellite-format";
 import {
   getParcelsForDetailMapping,
   bulkSaveLandParcelDetails,
 } from "@/server/actions/bulk-upload-parcel-detail";
+
+/** Nilai sentinel selektor Pemeta — bukan nilai yang disimpan ke DB. */
+const OTHER_MAPPER = "__other";
 
 /**
  * Tab "Detail Lahan (Excel)" di halaman Upload Massal Lahan (#296): surat
@@ -62,10 +65,16 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<RawRow[]>([]);
+  /** Nomor baris FISIK tiap baris data (#301) — dasar penomoran "Baris Asal". */
+  const [rowNumbers, setRowNumbers] = useState<number[]>([]);
   const [mapping, setMapping] = useState<Mapping>({});
   const [validated, setValidated] = useState<ParcelDetailValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
   const [isSaving, setIsSaving] = useState(false);
+  // Pemeta berlaku untuk seluruh berkas → `LandParcelExternalId.source`
+  // (keputusan owner 2026-08-28: kolom itu berarti SIAPA yang memetakan).
+  const [mapper, setMapper] = useState<string>(DEFAULT_PARCEL_MAPPER);
+  const [customMapper, setCustomMapper] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -102,64 +111,26 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     setRawRows([]);
     setMapping({});
     setValidated([]);
+    setRowNumbers([]);
 
-    const ext = selected.name.split(".").pop()?.toLowerCase();
-    if (ext === "csv") {
-      Papa.parse<RawRow>(selected, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (!results.meta.fields) {
-            toast.error("Gagal membaca header file CSV");
-            return;
-          }
-          setHeaders(results.meta.fields);
-          setRawRows(results.data);
-          setMapping(autoMatchParcelDetailColumns(results.meta.fields));
-        },
-        error: () => toast.error("Gagal membaca file CSV"),
-      });
-      return;
-    }
-    if (ext !== "xlsx") {
-      toast.error("Hanya mendukung berkas Excel (.xlsx) atau CSV");
-      return;
-    }
     try {
-      const workbook = new Excel.Workbook();
-      await workbook.xlsx.load(await selected.arrayBuffer());
-      // Berkas sumber kadang punya sheet pertama kosong ("Sheet1") dan data di
-      // sheet "Data" — pilih sheet pertama yang berisi header.
-      const worksheet =
-        workbook.worksheets.find((ws) => ws.name.toLowerCase() === "data" && ws.rowCount > 1) ??
-        workbook.worksheets.find((ws) => ws.rowCount > 1);
-      if (!worksheet) {
-        toast.error("Tidak ada sheet berisi data");
+      const sheet = await readSpreadsheetFile(selected, {
+        isHeaderCandidate: (labels) => Object.keys(autoMatchParcelDetailColumns(labels)).length > 0,
+      });
+      if (sheet.headers.length === 0) {
+        toast.error("Tidak menemukan baris header pada berkas ini");
         return;
       }
-      const rows: RawRow[] = [];
-      let sheetHeaders: string[] = [];
-      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-        const values = (Array.isArray(row.values) ? row.values.slice(1) : Object.values(row.values)).map(
-          cellValueToPrimitive,
-        );
-        if (rowNumber === 1) {
-          sheetHeaders = values.map((v) => v?.toString().trim() || "");
-          return;
-        }
-        const data: RawRow = {};
-        sheetHeaders.forEach((h, i) => {
-          if (h) data[h] = values[i];
-        });
-        rows.push(data);
-      });
-      const cleanHeaders = sheetHeaders.filter(Boolean);
-      setHeaders(cleanHeaders);
-      setRawRows(rows);
-      setMapping(autoMatchParcelDetailColumns(cleanHeaders));
+      if (sheet.headerRowNumber > 1) {
+        toast.info(`Header ditemukan di baris ${sheet.headerRowNumber}`);
+      }
+      setHeaders(sheet.headers);
+      setRawRows(sheet.rows);
+      setRowNumbers(sheet.rowNumbers);
+      setMapping(autoMatchParcelDetailColumns(sheet.headers));
     } catch (err) {
       console.error(err);
-      toast.error("Gagal membaca file Excel (.xlsx)");
+      toast.error(err instanceof Error ? err.message : "Gagal membaca berkas");
     }
   }
 
@@ -173,15 +144,31 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
       toast.error(`Kolom wajib belum dipetakan: ${missing.map((f) => f.label).join(", ")}`);
       return;
     }
-    setValidated(validateParcelDetailRows(rawRows, mapping, parcels));
+    setValidated(validateParcelDetailRows(rawRows, mapping, parcels, rowNumbers));
     toast.success("Validasi selesai");
+    // Peringatan eksplisit, bukan lewat diam-diam (#305): "punya UL Parcel
+    // Code" dipakai Laporan Lahan sebagai penanda "lahan sudah didata". Begitu
+    // ada berkas kabupaten tanpa kolom `parcel_code`, penyebut laporan itu
+    // salah tanpa satu pun gejala.
+    if (!mapping.externalCode) {
+      toast.warning(
+        "Berkas ini tidak punya kolom UL Parcel Code (parcel_code). Lahannya tetap tersimpan, " +
+          "tetapi tidak akan terhitung sebagai \"sudah didata\" di Laporan Lahan — persentase legalitas di sana jadi lebih rendah dari kenyataan.",
+        { duration: 12000 },
+      );
+    }
   }
 
   async function handleSave() {
     const rows = validated.filter((r) => r._isValid && r.data).map((r) => r.data!);
     if (rows.length === 0) return;
+    const source = mapper === OTHER_MAPPER ? customMapper.trim() : mapper;
+    if (!source) {
+      toast.error("Isi nama pemeta terlebih dahulu");
+      return;
+    }
     setIsSaving(true);
-    const result = await bulkSaveLandParcelDetails(rows);
+    const result = await bulkSaveLandParcelDetails(rows, source);
     setIsSaving(false);
     if (!result.success) {
       toast.error(result.error);
@@ -189,7 +176,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     }
     const s = result.data!;
     toast.success(
-      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui${s.documentsUnchanged ? ` / ${s.documentsUnchanged} tanpa perubahan` : ""} · STDB ${s.stdbsCreated} baru, ${s.stdbLinksCreated} tautan · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsUnchanged ? ` / ${s.externalIdsUnchanged} tanpa perubahan` : ""}${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled}`,
+      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui${s.documentsUnchanged ? ` / ${s.documentsUnchanged} tanpa perubahan` : ""} · STDB ${s.stdbsCreated} baru${s.stdbsPendingCreated ? ` (${s.stdbsPendingCreated} belum bernomor)` : ""}, ${s.stdbLinksCreated} tautan${s.stdbsPendingSkipped ? ` / ${s.stdbsPendingSkipped} petani "belum ada" dilewati (sudah punya STDB)` : ""} · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsUnchanged ? ` / ${s.externalIdsUnchanged} tanpa perubahan` : ""}${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled}`,
       { duration: 8000 },
     );
     setValidated([]);
@@ -201,62 +188,52 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
 
   async function handleDownload(mode: "all" | "errors") {
     const rows = mode === "all" ? validated : validated.filter((r) => !r._isValid);
-    const wb = new Excel.Workbook();
-    const sheet = wb.addWorksheet("Data");
-    sheet.columns = [
-      { header: "Baris", key: "row", width: 8 },
-      ...PARCEL_DETAIL_TARGET_FIELDS.map((f) => ({ header: f.label, key: f.key, width: 24 })),
-      { header: "Status", key: "status", width: 10 },
-      { header: "Detail Error", key: "errors", width: 60 },
-    ];
-    sheet.getRow(1).font = { bold: true };
-    for (const r of rows) {
-      sheet.addRow({ row: r._rowNum, ...r._raw, status: r._isValid ? "Valid" : "Error", errors: r._errors.join("; ") });
-    }
-    const buffer = await wb.xlsx.writeBuffer();
-    const url = URL.createObjectURL(new Blob([buffer]));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = mode === "all" ? "detail_lahan_semua.xlsx" : "detail_lahan_error.xlsx";
-    a.click();
-    URL.revokeObjectURL(url);
+    await exportToExcel({
+      filename: mode === "all" ? "detail_lahan_semua" : "detail_lahan_error",
+      columns: [
+        { header: "Baris", key: "row", width: 8 },
+        ...PARCEL_DETAIL_TARGET_FIELDS.map((f) => ({ header: f.label, key: f.key, width: 24 })),
+        { header: "Status", key: "status", width: 10 },
+        { header: "Detail Error", key: "errors", width: 60 },
+      ],
+      data: rows.map((r) => ({
+        row: r._rowNum,
+        ...r._raw,
+        status: r._isValid ? "Valid" : "Error",
+        errors: r._errors.join("; "),
+      })),
+    });
   }
 
   async function handleDownloadTemplate() {
-    const wb = new Excel.Workbook();
-    const sheet = wb.addWorksheet("Data");
-    sheet.columns = PARCEL_DETAIL_TARGET_FIELDS.map((f) => ({ header: f.label, key: f.key, width: 26 }));
-    sheet.getRow(1).font = { bold: true };
-    sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
-    sheet.addRow({
-      parcelId: "APSS.0001.A.14.01.10.2012",
-      farmerId: "APSS.14.01.10.2012.0001",
-      documentType: "SHM (Sertifikat Hak Milik)",
-      documentNumber: "727",
-      holderName: "Abdul Rohman",
-      statedArea: 0.25,
-      stdbNumber: "1637/53/1401/6/2025",
-      externalCode: "ID080d781b4",
-      subGroupLv2: "Kelompok Tani Karya Maju",
+    await exportToExcel({
+      filename: "template_detail_lahan",
+      columns: PARCEL_DETAIL_TARGET_FIELDS.map((f) => ({ header: f.label, key: f.key, width: 26 })),
+      data: [
+        {
+          parcelId: "APSS.0001.A.14.01.10.2012",
+          farmerId: "APSS.14.01.10.2012.0001",
+          documentType: "SHM (Sertifikat Hak Milik)",
+          documentNumber: "727",
+          holderName: "Abdul Rohman",
+          statedArea: 0.25,
+          stdbNumber: "1637/53/1401/6/2025",
+          externalCode: "ID080d781b4",
+          subGroupLv2: "Kelompok Tani Karya Maju",
+        },
+        {
+          parcelId: "APSS.0001.B.14.01.10.2012",
+          farmerId: "APSS.14.01.10.2012.0001",
+          documentType: "SKT (Surat Keterangan Tanah)",
+          documentNumber: "592.11/SKT/PEMT/BJ/140/2024",
+          holderName: "Nurhaya",
+          statedArea: 1.34,
+          stdbNumber: "1637/53/1401/6/2025",
+          externalCode: "",
+          subGroupLv2: "",
+        },
+      ],
     });
-    sheet.addRow({
-      parcelId: "APSS.0001.B.14.01.10.2012",
-      farmerId: "APSS.14.01.10.2012.0001",
-      documentType: "SKT (Surat Keterangan Tanah)",
-      documentNumber: "592.11/SKT/PEMT/BJ/140/2024",
-      holderName: "Nurhaya",
-      statedArea: 1.34,
-      stdbNumber: "1637/53/1401/6/2025",
-      externalCode: "",
-      subGroupLv2: "",
-    });
-    const buffer = await wb.xlsx.writeBuffer();
-    const url = URL.createObjectURL(new Blob([buffer]));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "template_detail_lahan.xlsx";
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   return (
@@ -397,6 +374,32 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                 Download Data Error Saja
               </Button>
             </div>
+            {permissions.includes("CREATE") && (
+              <div className="flex items-end gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="mapper" className="text-xs text-muted-foreground">Pemeta (sumber UL Parcel Code)</Label>
+                  <Select value={mapper} onValueChange={(v) => setMapper(v ?? DEFAULT_PARCEL_MAPPER)}>
+                    <SelectTrigger id="mapper" className="h-9 w-[280px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PARCEL_MAPPERS.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))}
+                      <SelectItem value={OTHER_MAPPER}>Lainnya…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {mapper === OTHER_MAPPER && (
+                  <Input
+                    value={customMapper}
+                    onChange={(e) => setCustomMapper(e.target.value)}
+                    placeholder="Nama pemeta"
+                    className="h-9 w-[200px]"
+                  />
+                )}
+              </div>
+            )}
             {permissions.includes("CREATE") && (
               <Button onClick={handleSave} disabled={validCount === 0 || isSaving} className="h-9 bg-emerald-600 hover:bg-emerald-700">
                 {isSaving ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}

@@ -3,12 +3,14 @@
 import { useRef, useMemo, useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import type { StyleSpecification, ExpressionSpecification, FilterSpecification } from "maplibre-gl";
+import type { ExpressionSpecification, FilterSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Sprout, Info, BarChart3, Maximize } from "lucide-react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
 import { formatArea } from "@/lib/format";
+import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
 import { MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
@@ -32,56 +34,6 @@ import {
 } from "./map-bmp-control-panel";
 import { MapBmpDataPanel } from "./map-bmp-data-panel";
 import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
-
-const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
-
-const MAP_STYLES = {
-  light: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "carto-light": {
-        type: "raster",
-        // OSM standar (tanpa API key) — pengganti CARTO yang sejak 2024 menandai tile zoom tinggi "API KEY REQUIRED" (#298).
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        maxzoom: 19,
-        tileSize: 256,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-    },
-    layers: [{ id: "carto-light-layer", type: "raster", source: "carto-light", minzoom: 0, maxzoom: 20 }],
-  },
-  dark: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "carto-dark": {
-        type: "raster",
-        // Esri World Dark Gray (tanpa API key); zoom >16 diperbesar dari tile 16 — tanpa tanda air (#298).
-        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
-        maxzoom: 16,
-        tileSize: 256,
-        attribution:
-          'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ',
-      },
-    },
-    layers: [{ id: "carto-dark-layer", type: "raster", source: "carto-dark", minzoom: 0, maxzoom: 20 }],
-  },
-  hybrid: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "google-hybrid": {
-        type: "raster",
-        tiles: ["https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
-        tileSize: 256,
-        attribution: "Map data &copy; Google",
-      },
-    },
-    layers: [{ id: "google-hybrid-layer", type: "raster", source: "google-hybrid", minzoom: 0, maxzoom: 20 }],
-  },
-};
 
 // Data-driven fill/line color by the feature's `category` property. NONE is the
 // fallback so any unexpected value degrades to the neutral gray.
@@ -218,8 +170,10 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
-  const [styleOverride, setStyleOverride] = useState<keyof typeof MAP_STYLES | null>(null);
-  const styleKey: keyof typeof MAP_STYLES = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const [styleOverride, setStyleOverride] = useState<MapStyleKey | null>(null);
+  const styleKey: MapStyleKey = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
+  const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } =
+    useVectorBasemap(styleKey);
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
@@ -536,13 +490,16 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey] as StyleSpecification}
+        mapStyle={mapStyle}
         canvasContextAttributes={{ preserveDrawingBuffer: true }}
         interactiveLayerIds={["bmp-parcel-fill"]}
         onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
           fitAll();
           setZoom(quantizeZoom(e.target.getZoom()));
         }}
+        onStyleData={(e) => syncStyle(e.target)}
         onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
         onClick={handleClick}
         onMouseMove={(e) => {
@@ -555,18 +512,22 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
         {/* Area lahan (polygon): outline as base + thematic fill per category
             (NONE = outline only, no fill). No centroid points. promoteId
             menjadikan properti id sebagai feature id untuk setFeatureState;
-            mode produktivitas menyembunyikan kelas via opacity (bukan filter). */}
+            mode produktivitas menyembunyikan kelas via opacity (bukan filter).
+            Prop `filter` di-spread bersyarat, bukan diberi `undefined`: MapLibre
+            menolak `filter: undefined` saat `addLayer` (lihat fire-map-canvas). */}
         <Source id="bmp-parcel-area-source" type="geojson" data={parcelAreaGeojson} promoteId="id">
           <Layer
             id="bmp-parcel-fill"
             type="fill"
-            filter={isProductivity ? undefined : categoryFilter}
+            beforeId={labelBeforeId}
+            {...(isProductivity ? {} : { filter: categoryFilter })}
             paint={{ "fill-color": fillColorExpr, "fill-opacity": fillOpacityExpr }}
           />
           <Layer
             id="bmp-parcel-outline"
             type="line"
-            filter={isProductivity ? undefined : categoryFilter}
+            beforeId={labelBeforeId}
+            {...(isProductivity ? {} : { filter: categoryFilter })}
             paint={{
               "line-color": fillColorExpr,
               "line-width": 1.5,
@@ -576,25 +537,27 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
         </Source>
 
         {/* Farmer-name labels — only where the name fits inside the polygon */}
-        <Source id="bmp-parcel-label-source" type="geojson" data={parcelLabelGeojson}>
-          <Layer
-            id="bmp-parcel-label"
-            type="symbol"
-            filter={categoryFilter}
-            layout={{
-              "text-field": ["get", "farmerName"],
-              "text-font": ["Open Sans Regular"],
-              "text-size": PARCEL_LABEL_FONT_PX,
-              "text-max-width": ["get", "maxWidthEms"],
-              "text-optional": true,
-            }}
-            paint={{
-              "text-color": labelColors.text,
-              "text-halo-color": labelColors.halo,
-              "text-halo-width": 1.5,
-            }}
-          />
-        </Source>
+        {labelsReady && (
+          <Source id="bmp-parcel-label-source" type="geojson" data={parcelLabelGeojson}>
+            <Layer
+              id="bmp-parcel-label"
+              type="symbol"
+              filter={categoryFilter}
+              layout={{
+                "text-field": ["get", "farmerName"],
+                "text-font": [labelFont],
+                "text-size": PARCEL_LABEL_FONT_PX,
+                "text-max-width": ["get", "maxWidthEms"],
+                "text-optional": true,
+              }}
+              paint={{
+                "text-color": labelColors.text,
+                "text-halo-color": labelColors.halo,
+                "text-halo-width": 1.5,
+              }}
+            />
+          </Source>
+        )}
 
         {selected && (
           <Popup
@@ -634,17 +597,18 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
           </button>
         )}
         <div className="bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-          {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+          {MAP_STYLE_KEYS.map((key) => (
             <button
               key={key}
               onClick={() => setStyleOverride(key)}
+            title={MAP_STYLE_LABELS[key].full}
               className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
                 styleKey === key
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {key}
+              {MAP_STYLE_LABELS[key].short}
             </button>
           ))}
         </div>

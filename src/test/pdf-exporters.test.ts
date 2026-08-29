@@ -77,8 +77,8 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
         { type: "SHM", typeRaw: "SHM (Sertifikat Hak Milik)", number: "727", holderName: "Abdul Rohman", statedArea: 0.25, issuedYear: null, custodyNote: null },
         { type: "OTHER", typeRaw: null, number: "694", holderName: null, statedArea: null, issuedYear: null, custodyNote: "surat di bank" },
       ],
-      stdbs: [{ number: "1637/53/1401/6/2025", issuedYear: 2025, holderName: null, otherParcelIds: ["LHN-002", "LHN-003"] }],
-      externalIds: [{ source: "parcel_code", code: "ID080d781b4" }],
+      stdbs: [{ number: "1637/53/1401/6/2025", stage: "TERBIT", issuedYear: 2025, holderName: null, otherParcelIds: ["LHN-002", "LHN-003"] }],
+      externalIds: [{ source: "MERIDIA", code: "ID080d781b4" }],
       programs: [{ programType: "DEMPLOT_PBU", status: "ACTIVE", startDate: "2026-01-01", endDate: null }],
     },
     training: [

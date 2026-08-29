@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { farmerSchema, type FarmerInput } from "@/validations/farmer.schema";
+import { formatFieldErrors } from "@/lib/validation-message";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -79,9 +80,10 @@ export async function bulkCreateFarmers(
     if (!parsed.success) {
       return {
         success: false,
-        error: `Validasi gagal pada salah satu baris: ${JSON.stringify(
+        error: formatFieldErrors(
           parsed.error.flatten().fieldErrors,
-        )}`,
+          "Ada baris yang tidak lolos validasi",
+        ),
       };
     }
     validatedRecords.push(parsed.data);

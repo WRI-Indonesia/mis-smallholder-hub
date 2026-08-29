@@ -23,13 +23,21 @@ import {
   getLandParcelReport,
   getLandParcelReportGeometries,
 } from "@/server/actions/report";
-import type { LandParcelReportResult } from "@/types/report";
+import type { LandParcelLegalFilters, LandParcelReportResult } from "@/types/report";
+import { LAND_DOCUMENT_TYPES, LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parcel-detail-import";
+import {
+  AREA_DIFF_THRESHOLD_HA,
+  LAND_STDB_STAGES,
+  LAND_STDB_STAGE_LABELS,
+} from "@/lib/land-parcel-satellite-format";
 import {
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
   fitLabelToBox,
   pickScaleBar,
   resolveLabelCollisions,
+  describeLegalFilters,
+  describeLegalSummary,
   type LpGeoJson,
   type LpMapLayout,
   type LpGridSplit,
@@ -76,9 +84,11 @@ const clampGrid = (v: number, max: number) =>
 // Kolom default: 5 kolom #177 + Tahun Tanam & Luas (revisi owner #179);
 // Blok, Komoditas, Species, PSR opsional via selektor kolom.
 // Kolom legalitas (#296): Surat, Nama di Surat, Luas Tertera, STDB — opsional, default mati.
+// Kolom legalitas #305/TD-035: UL Parcel Code & Program — juga default mati,
+// supaya lebar roster harian tidak berubah.
 type ColKey =
   | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
-  | "surat" | "namaDiSurat" | "luasTertera" | "stdb";
+  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "kelompokTani", label: "Kelompok Tani" },
   { key: "blok", label: "Blok" },
@@ -91,7 +101,12 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "namaDiSurat", label: "Nama di Surat" },
   { key: "luasTertera", label: "Luas Tertera (Ha)" },
   { key: "stdb", label: "STDB" },
+  { key: "ulParcelCode", label: "UL Parcel Code" },
+  { key: "program", label: "Program" },
 ];
+
+/** Kolom yang menyala saat halaman dibuka — dipakai juga tombol "Bawaan". */
+const DEFAULT_COLS: ColKey[] = ["kelompokTani", "tahunTanam", "luas"];
 
 export function LandParcelReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
@@ -106,9 +121,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   // Geometri lahan (id → GeoJSON) — dimuat saat Lembaga dipilih, untuk preview & PDF.
   const [geoms, setGeoms] = useState<Map<string, LpGeoJson | null> | null>(null);
 
-  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(
-    new Set<ColKey>(["kelompokTani", "tahunTanam", "luas"]),
-  );
+  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(new Set(DEFAULT_COLS));
+  const selectAllCols = () => setVisibleCols(new Set(TOGGLEABLE.map((c) => c.key)));
+  // "Kosongkan" menyisakan 5 kolom identitas (No/Lembaga/Petani/ID Petani/ID
+  // Lahan) yang memang selalu tampil — tabelnya tidak pernah jadi kosong.
+  const clearCols = () => setVisibleCols(new Set());
+  const resetCols = () => setVisibleCols(new Set(DEFAULT_COLS));
   const show = (k: ColKey) => visibleCols.has(k);
   const toggleCol = (k: ColKey) =>
     setVisibleCols((prev) => {
@@ -118,28 +136,65 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       return next;
     });
 
+  // ── Filter legalitas (#305) — yang mengubah laporan dari roster jadi worklist.
+  const [coverage, setCoverage] = useState<"all" | "mapped">("mapped");
+  const [documentStatus, setDocumentStatus] = useState<"all" | "with" | "without">("all");
+  const [documentTypes, setDocumentTypes] = useState<Set<string>>(new Set());
+  const [stdbStatus, setStdbStatus] = useState<string>("all");
+  const [areaDiff, setAreaDiff] = useState<"all" | "gte">("all");
+
+  const legalFilters: LandParcelLegalFilters = useMemo(
+    () => ({
+      coverage,
+      documentStatus,
+      documentTypes: [...documentTypes],
+      stdbStatus,
+      areaDiff,
+    }),
+    [coverage, documentStatus, documentTypes, stdbStatus, areaDiff],
+  );
+  const legalFilterActive =
+    documentStatus !== "all" || documentTypes.size > 0 || stdbStatus !== "all" || areaDiff !== "all";
+
+  const toggleDocumentType = (t: string) =>
+    setDocumentTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+
+  const resetLegalFilters = () => {
+    setDocumentStatus("all");
+    setDocumentTypes(new Set());
+    setStdbStatus("all");
+    setAreaDiff("all");
+  };
+
   const [reportData, setReportData] = useState<LandParcelReportResult | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const loadReport = (districtId: string | null, farmerGroupId: string) => {
-    startTransition(async () => {
-      try {
-        const data = await getLandParcelReport({ districtId, farmerGroupId });
-        setReportData(data);
-      } catch (err) {
-        toast.error((err instanceof Error && err.message) || "Gagal memuat laporan");
-      }
-    });
-  };
-
-  // Lembaga wajib (#179): laporan & cetakan selalu per 1 Lembaga.
+  // Lembaga wajib (#179): laporan & cetakan selalu per 1 Lembaga. Filter
+  // legalitas (#305) ikut dependensi — hasilnya dihitung ulang di server, bukan
+  // disaring di klien.
   useEffect(() => {
     if (!selectedFarmerGroup) {
       setReportData(null);
       return;
     }
-    loadReport(selectedDistrict, selectedFarmerGroup);
-  }, [selectedDistrict, selectedFarmerGroup]);
+    startTransition(async () => {
+      try {
+        const data = await getLandParcelReport({
+          districtId: selectedDistrict,
+          farmerGroupId: selectedFarmerGroup,
+          ...legalFilters,
+        });
+        setReportData(data);
+      } catch (err) {
+        toast.error((err instanceof Error && err.message) || "Gagal memuat laporan");
+      }
+    });
+  }, [selectedDistrict, selectedFarmerGroup, legalFilters]);
 
   // Geometri untuk preview peta & PDF — dimuat sekali per Lembaga terpilih.
   useEffect(() => {
@@ -238,7 +293,9 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     (show("surat") ? 1 : 0) +
     (show("namaDiSurat") ? 1 : 0) +
     (show("luasTertera") ? 1 : 0) +
-    (show("stdb") ? 1 : 0);
+    (show("stdb") ? 1 : 0) +
+    (show("ulParcelCode") ? 1 : 0) +
+    (show("program") ? 1 : 0);
 
   const buildExportColumns = () => [
     { header: "No", key: "no" },
@@ -257,6 +314,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     ...(show("namaDiSurat") ? [{ header: "Nama di Surat", key: "namaDiSurat" }] : []),
     ...(show("luasTertera") ? [{ header: "Luas Tertera (Ha)", key: "luasTertera" }] : []),
     ...(show("stdb") ? [{ header: "STDB", key: "stdb" }] : []),
+    ...(show("ulParcelCode") ? [{ header: "UL Parcel Code", key: "ulParcelCode" }] : []),
+    ...(show("program") ? [{ header: "Program", key: "program" }] : []),
   ];
 
   const scopeLabel = () =>
@@ -283,6 +342,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       namaDiSurat: displayOrEmpty(row.namaDiSurat),
       luasTertera: row.luasTertera != null ? Number(row.luasTertera.toFixed(2)) : EMPTY,
       stdb: displayOrEmpty(row.stdb),
+      ulParcelCode: displayOrEmpty(row.ulParcelCode),
+      program: displayOrEmpty(row.program),
     }));
 
   const totalRow = (): Record<string, string | number> => ({
@@ -300,6 +361,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     namaDiSurat: "",
     luasTertera: "",
     stdb: "",
+    ulParcelCode: "",
+    program: "",
     tahunTanam: "",
     luas: Number(reportTotalLuas.toFixed(2)),
   });
@@ -355,6 +418,21 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
         fullData,
         overviewImage,
         cellSheets,
+        // Sheet "Ringkasan" tersendiri, bukan baris di atas tabel: sheet data
+        // harus tetap mulai di baris 1 agar AutoFilter/pivot Excel jalan.
+        infoSheet: [
+          ...describeLegalFilters(legalFilters).map((f) => ({
+            section: "Filter Legalitas",
+            label: f.label,
+            value: f.value,
+          })),
+          ...legalCards.map((c) => ({
+            section: "Ringkasan Legalitas",
+            label: c.label,
+            value: c.value,
+            note: c.note,
+          })),
+        ],
       });
     } catch (err) {
       toast.error((err instanceof Error && err.message) || "Gagal membuat Excel ber-gambar peta");
@@ -385,6 +463,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       namaDiSurat: displayOrEmpty(row.namaDiSurat),
       luasTertera: row.luasTertera != null ? formatLuas(row.luasTertera) : EMPTY,
       stdb: displayOrEmpty(row.stdb),
+      ulParcelCode: displayOrEmpty(row.ulParcelCode),
+      program: displayOrEmpty(row.program),
     }));
 
     if (show("luas")) {
@@ -424,6 +504,14 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
         { label: "Distrik", value: selectedDistrictObj?.name ?? "Semua Distrik" },
         { label: "Lembaga Petani", value: selectedGroupObj?.name ?? "-" },
       ],
+      // Filter & ringkasan wajib tercetak (#305): tanpa filter, PDF hasil
+      // saringan "tanpa surat" terbaca seperti roster lengkap; tanpa ringkasan,
+      // pembaca hanya dapat daftar tanpa tahu proporsinya. Keduanya di blok
+      // penuh-lebar, bukan di grid metadata yang cuma 90 mm per kolom.
+      sections: [
+        { title: "Filter Legalitas", lines: describeLegalFilters(legalFilters).map((f) => `${f.label}: ${f.value}`) },
+        { title: "Ringkasan Legalitas", lines: legalSummaryLines() },
+      ],
       columns: cols,
       columnStyles,
       data,
@@ -441,6 +529,19 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
         { label: "Total Luas", value: formatLuas(reportData.summary.totalLuas), icon: MapPin, badge: "Ha", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
       ]
     : [];
+
+  /**
+   * Ringkasan legalitas (#305) — mengikuti filter aktif, dan persennya SELALU
+   * berlabel penyebutnya. Persen polos akan dibaca sebagai cakupan legalitas
+   * seluruh lembaga, padahal penyebutnya hanya lahan yang sudah melalui import
+   * Detail Lahan.
+   */
+  // Kartu layar dan cetakan memakai helper yang SAMA (#305) — kalau dihitung
+  // dua kali, layar dan PDF akan bercerita beda tanpa ada yang tahu.
+  const legalCards = reportData ? describeLegalSummary(reportData.summary, legalFilters) : [];
+
+  /** Baris teks ringkasan legalitas untuk PDF & Excel. */
+  const legalSummaryLines = () => legalCards.map((c) => `${c.label}: ${c.value} (${c.note})`);
 
   return (
     <div className="space-y-6">
@@ -473,6 +574,107 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
             </div>
 
           </div>
+
+          {/* ── Filter legalitas (#305) ── */}
+          <div className="mt-5 border-t pt-4">
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground" htmlFor="lp-coverage">Cakupan Pendataan</label>
+                <select
+                  id="lp-coverage"
+                  value={coverage}
+                  onChange={(e) => setCoverage(e.target.value as "all" | "mapped")}
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="mapped">Sudah didata</option>
+                  <option value="all">Semua lahan</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground" htmlFor="lp-doc-status">Status Surat</label>
+                <select
+                  id="lp-doc-status"
+                  value={documentStatus}
+                  onChange={(e) => setDocumentStatus(e.target.value as "all" | "with" | "without")}
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="all">Semua</option>
+                  <option value="with">Ada surat</option>
+                  <option value="without">Tanpa surat</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-muted-foreground">Jenis Surat</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 px-3 h-9 text-sm border rounded-md bg-background hover:bg-accent hover:text-accent-foreground outline-none transition-colors">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    {documentTypes.size === 0 ? "Semua jenis" : `${documentTypes.size} jenis dipilih`}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto">
+                    <DropdownMenuLabel>Punya minimal satu jenis ini</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      {LAND_DOCUMENT_TYPES.map((t) => (
+                        <DropdownMenuCheckboxItem
+                          key={t}
+                          checked={documentTypes.has(t)}
+                          onCheckedChange={() => toggleDocumentType(t)}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          {LAND_DOCUMENT_TYPE_LABELS[t]}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground" htmlFor="lp-stdb">Status STDB</label>
+                <select
+                  id="lp-stdb"
+                  value={stdbStatus}
+                  onChange={(e) => setStdbStatus(e.target.value)}
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="all">Semua</option>
+                  <option value="with">Ada STDB</option>
+                  <option value="without">Tanpa STDB</option>
+                  {LAND_STDB_STAGES.map((st) => (
+                    <option key={st} value={st}>{`Tahap: ${LAND_STDB_STAGE_LABELS[st]}`}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground" htmlFor="lp-area-diff">Selisih Luas</label>
+                <select
+                  id="lp-area-diff"
+                  value={areaDiff}
+                  onChange={(e) => setAreaDiff(e.target.value as "all" | "gte")}
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="all">Semua</option>
+                  <option value="gte">{`≥ ${formatLuas(AREA_DIFF_THRESHOLD_HA)} Ha`}</option>
+                </select>
+              </div>
+
+              {legalFilterActive && (
+                <Button variant="ghost" size="sm" className="h-9" onClick={resetLegalFilters}>
+                  Reset filter legalitas
+                </Button>
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-3">
+              <span className="font-medium">Cakupan &quot;Sudah didata&quot;</span> = lahan yang sudah melalui import Detail Lahan (ditandai adanya UL Parcel Code). Ini penting dibaca apa adanya: lahan yang belum diimport tampil &quot;tanpa surat&quot; hanya karena berkasnya belum masuk, bukan karena petaninya tak punya surat.
+              {" "}<span className="font-medium">&quot;Tanpa surat&quot;</span> berarti tidak ada satu pun surat tercatat — lahan yang hanya punya catatan penguasaan (&quot;surat di bank&quot;, &quot;lahan sudah dijual&quot;) tetap dihitung <span className="font-medium">punya</span> surat.
+              {" "}Memilih beberapa jenis surat berarti <span className="font-medium">punya minimal satu</span> di antaranya, jadi satu lahan bisa muncul di lebih dari satu jenis.
+            </p>
+          </div>
+
           <p className="text-xs text-muted-foreground mt-3">
             Roster real-time dari data lahan aktif (1 baris = 1 lahan). <span className="font-medium">Pilih Lembaga Petani (wajib)</span> — laporan &amp; cetakan selalu per Lembaga; filter Distrik membantu mempersempit daftar. PDF &amp; Excel menyertakan peta lahan — atur pecahan grid dan isi label poligon di panel <span className="font-medium">Peta Cetak</span>.
           </p>
@@ -491,6 +693,23 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               <CardContent>
                 <div className="text-2xl font-bold">{c.value}</div>
                 <Badge variant="outline" className={cn("mt-1", c.badgeClass)}>{c.badge}</Badge>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Ringkasan legalitas (#305) — ikut filter aktif */}
+      {reportData && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 print:hidden">
+          {legalCards.map((c) => (
+            <Card key={c.label} className="shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{c.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold tabular-nums">{c.value}</div>
+                <p className="mt-1 text-xs text-muted-foreground">{c.note}</p>
               </CardContent>
             </Card>
           ))}
@@ -571,15 +790,32 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               <SlidersHorizontal className="h-4 w-4" />
               Kolom
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Tampilkan Kolom</DropdownMenuLabel>
+                <DropdownMenuLabel className="flex items-center justify-between gap-2">
+                  <span>Tampilkan Kolom</span>
+                  <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                    {visibleCols.size}/{TOGGLEABLE.length}
+                  </span>
+                </DropdownMenuLabel>
+                <div className="flex items-center gap-1 px-2 pb-1.5">
+                  <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={selectAllCols}>
+                    Pilih semua
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={clearCols}>
+                    Kosongkan
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={resetCols} title="Kembali ke kolom bawaan">
+                    Bawaan
+                  </Button>
+                </div>
                 <DropdownMenuSeparator />
                 {TOGGLEABLE.map((col) => (
                   <DropdownMenuCheckboxItem
                     key={col.key}
                     checked={show(col.key)}
                     onCheckedChange={() => toggleCol(col.key)}
+                    onSelect={(e) => e.preventDefault()}
                   >
                     {col.label}
                   </DropdownMenuCheckboxItem>
@@ -649,6 +885,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 {show("namaDiSurat") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Nama di Surat</th>}
                 {show("luasTertera") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Luas Tertera (Ha)</th>}
                 {show("stdb") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">STDB</th>}
+                {show("ulParcelCode") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">UL Parcel Code</th>}
+                {show("program") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Program</th>}
               </tr>
             </thead>
             <tbody>
@@ -712,6 +950,16 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                     {show("stdb") && (
                       <td className={cn("px-3 py-2 font-mono text-xs", row.stdb == null && "font-sans text-sm text-muted-foreground")}>
                         {displayOrEmpty(row.stdb)}
+                      </td>
+                    )}
+                    {show("ulParcelCode") && (
+                      <td className={cn("px-3 py-2 font-mono text-xs", row.ulParcelCode == null && "font-sans text-sm text-muted-foreground")}>
+                        {displayOrEmpty(row.ulParcelCode)}
+                      </td>
+                    )}
+                    {show("program") && (
+                      <td className={cn("px-3 py-2 whitespace-nowrap", row.program == null && "text-muted-foreground")}>
+                        {displayOrEmpty(row.program)}
                       </td>
                     )}
                   </tr>

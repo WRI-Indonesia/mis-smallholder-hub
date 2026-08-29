@@ -324,7 +324,7 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         return;
       }
       if (!shot) {
-        toast.error("Gagal mengambil gambar peta. Coba basemap Light/Dark (bukan Hybrid).");
+        toast.error("Gagal mengambil gambar peta. Coba basemap StreetMap/Light/Dark (bukan Satellite/Hybrid).");
         return;
       }
 

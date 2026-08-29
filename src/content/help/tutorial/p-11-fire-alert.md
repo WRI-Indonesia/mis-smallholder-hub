@@ -43,6 +43,6 @@ Data satelit bersifat *near-real-time* dengan jeda ± 3 jam. Rentang yang bisa d
 
 **Tabel lembaga kosong ("Tidak ada titik api dalam boundary…")** — belum tentu galat; artinya memang tidak ada deteksi dalam boundary pada rentang terpilih. Bandingkan dengan kartu **Total se-Riau**.
 
-**Cetak gagal mengambil gambar peta** — basemap **Hybrid** tidak bisa di-capture. Pindah ke basemap **Light** atau **Dark** (tombol kanan-bawah peta) lalu cetak ulang.
+**Cetak gagal mengambil gambar peta** — basemap citra (**Hybrid** dan **Satellite**) tidak bisa di-capture. Pindah ke **StreetMap**, **Light**, atau **Dark** (tombol kanan-bawah peta) lalu cetak ulang.
 
 **Tabel kosong / lembaga tidak lengkap** — Anda hanya melihat lembaga dalam cakupan akses akun Anda. Bila seharusnya lebih luas, hubungi admin untuk menyesuaikan hak akses wilayah.

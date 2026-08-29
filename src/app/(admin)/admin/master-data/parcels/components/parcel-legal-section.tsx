@@ -1,17 +1,17 @@
 "use client";
 
-import { LAND_PROGRAM_STATUS_LABELS } from "@/lib/land-parcel-satellite-format";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FileBadge, Hash, Pencil, Plus, ScrollText, Sprout, Trash2, Unlink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/shared/delete-dialog";
 import { formatArea } from "@/lib/format";
 import { LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parcel-detail-import";
-import { documentTypeShort } from "@/lib/land-parcel-satellite-format";
+import { documentTypeShort, isBigAreaDiff, LAND_PROGRAM_STATUS_LABELS, landStdbStageLabel, parcelMapperLabel, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
 import { deactivateLandParcelSatellite, unlinkLandStdb } from "@/server/actions/land-parcel-satellite";
 import { ParcelSatelliteFormModal, type SatelliteFormTarget } from "./parcel-satellite-form-modal";
 import type { LandParcelSatellites } from "@/types/land-parcel";
@@ -26,14 +26,35 @@ import type { LandParcelSatellites } from "@/types/land-parcel";
  */
 
 const PROGRAM_LABELS: Record<string, string> = { DEMPLOT_PBU: "Demplot PBU (Productive Business Unit)" };
-const SOURCE_LABELS: Record<string, string> = { parcel_code: "sumber: parcel_code" };
 
 function fmtDate(d: Date | null) {
   return d ? new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : null;
 }
 
+/**
+ * Badge tahap STDB (#306). `TERBIT` netral (itu keadaan normal — memberinya
+ * warna justru membuat seluruh daftar lama tampak "ditandai"), `REVISI` amber
+ * karena masih menuntut tindakan, `DITOLAK` abu dan dicoret karena prosesnya
+ * berhenti.
+ */
+function StdbStageBadge({ stage }: { stage: string }) {
+  if (stage === "TERBIT") return null;
+  const tone =
+    stage === "REVISI"
+      ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+      : stage === "DITOLAK"
+        ? "border-muted-foreground/30 bg-muted text-muted-foreground line-through"
+        : "";
+  return (
+    <Badge variant="outline" className={cn("text-[11px]", tone)}>
+      {landStdbStageLabel(stage)}
+    </Badge>
+  );
+}
+
 /** Kartu grup: ikon + judul + pill jumlah + tombol Tambah; isi = daftar item atau empty state. */
 function Group({
+  className,
   icon: Icon,
   title,
   count,
@@ -49,9 +70,10 @@ function Group({
   onAdd?: () => void;
   empty: string;
   children?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="rounded-lg border bg-card">
+    <section className={cn("rounded-lg border bg-card", className)}>
       <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
         <div className="flex items-start gap-2.5 min-w-0">
           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -83,9 +105,10 @@ function Group({
 }
 
 /** Chip meta kecil; `tone="warn"` untuk selisih luas yang perlu diperhatikan. */
-function Chip({ children, tone }: { children: React.ReactNode; tone?: "warn" }) {
+function Chip({ children, tone, title }: { children: React.ReactNode; tone?: "warn"; title?: string }) {
   return (
     <span
+      title={title}
       className={
         tone === "warn"
           ? "inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-800"
@@ -136,11 +159,20 @@ interface Props {
   landParcelId: string;
   /** Izin menu Lahan (CREATE/EDIT/DELETE) — menentukan tombol yang tampil. */
   permissions: string[];
+  /**
+   * Tab mana yang dirender. `program` dipisah dari `legal` atas koreksi owner
+   * 2026-08-28: keikutsertaan program bukan legalitas. Satu komponen dua tab
+   * (bukan dua komponen) agar modal Tambah/Ubah & dialog nonaktif tetap satu
+   * implementasi; tiap tab memegang state modalnya sendiri.
+   */
+  variant?: "legal" | "program";
+  /** `LandParcel.isPsr` — PSR secara konsep juga program (lihat land-parcel-program.prisma). */
+  isPsr?: boolean;
 }
 
 type RemoveTarget = { kind: "document" | "externalId" | "program" | "stdb"; id: string; label: string };
 
-export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions }: Props) {
+export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions, variant = "legal", isPsr = false }: Props) {
   const router = useRouter();
   const { documents, stdbs, externalIds, programs } = data;
   const canCreate = permissions.includes("CREATE");
@@ -166,6 +198,67 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
 
   const add = (kind: SatelliteFormTarget["kind"]) => (canCreate ? () => setFormTarget({ kind, item: null } as SatelliteFormTarget) : undefined);
 
+  const modals = (
+    <>
+      {formTarget && (
+        <ParcelSatelliteFormModal open onClose={() => setFormTarget(null)} landParcelId={landParcelId} target={formTarget} />
+      )}
+      <DeleteDialog
+        open={removeTarget != null}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={confirmRemove}
+        title={removeTarget?.kind === "stdb" ? "Lepas STDB dari lahan ini?" : "Nonaktifkan data ini?"}
+        description={
+          removeTarget?.kind === "stdb"
+            ? `STDB ${removeTarget.label} tetap tersimpan untuk petani dan lahan lain; hanya tautan ke lahan ini yang dilepas.`
+            : `${removeTarget?.label ?? "Data"} dinonaktifkan (soft delete) dan tidak tampil lagi di lahan ini.`
+        }
+      />
+    </>
+  );
+
+  // Program dipisah dari Legalitas (koreksi owner 2026-08-28): keikutsertaan
+  // program bukan dokumen legal. PSR ikut ke sini karena secara konsep juga
+  // program pemerintah, meski disimpan sebagai atribut lahan.
+  if (variant === "program") {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Peremajaan Sawit Rakyat (PSR)</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Program peremajaan pemerintah; tercatat sebagai atribut lahan — ubah lewat tombol Edit.</p>
+          </div>
+          <Badge variant={isPsr ? "default" : "outline"}>{isPsr ? "Lahan PSR" : "Bukan lahan PSR"}</Badge>
+        </div>
+      {/* ── Program ── */}
+      <Group icon={Sprout} title="Program" count={programs.length} hint="Keikutsertaan lahan dalam program pendampingan, mis. demplot PBU." onAdd={add("program")} empty="Tidak terdaftar di program mana pun.">
+            {programs.map((p) => {
+              const start = fmtDate(p.startDate), end = fmtDate(p.endDate);
+              return (
+                <Row
+                  key={p.id}
+                  title={
+                    <>
+                      <span className="font-medium">{PROGRAM_LABELS[p.programType] ?? p.programType}</span>
+                      <Badge variant={p.status === "ACTIVE" ? "default" : "outline"}>{LAND_PROGRAM_STATUS_LABELS[p.status] ?? p.status}</Badge>
+                    </>
+                  }
+                  meta={(start || end || p.notes) && (<>{(start || end) && <Chip>{start ?? "…"} – {end ?? "…"}</Chip>}{p.notes && <span className="text-xs text-muted-foreground">{p.notes}</span>}</>)}
+                  actions={
+                    <RowActions
+                      onEdit={canEdit ? () => setFormTarget({ kind: "program", item: p }) : undefined}
+                      onRemove={canDelete ? () => setRemoveTarget({ kind: "program", id: p.id, label: `Program ${PROGRAM_LABELS[p.programType] ?? p.programType}` }) : undefined}
+                    />
+                  }
+                />
+              );
+            })}
+      </Group>
+        {modals}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* ── Surat kepemilikan ── */}
@@ -173,7 +266,9 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
             {documents.map((d) => {
               const unknownType = d.type === "OTHER" && !d.typeRaw;
               const diff = d.statedArea != null && parcelArea != null ? d.statedArea - parcelArea : null;
-              const bigDiff = diff != null && Math.abs(diff) >= 0.5;
+              // Ambang bersama dengan filter/KPI Laporan Lahan (#305) — dua
+              // tempat yang menandai lahan berbeda adalah bug tanpa gejala.
+              const bigDiff = isBigAreaDiff(d.statedArea, parcelArea);
               return (
                 <Row
                   key={d.id}
@@ -219,13 +314,22 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                 key={s.id}
                 title={
                   <>
-                    <span className="font-mono">{s.number}</span>
+                    {/* Baris pra-terbit tidak punya nomor: tulis tahapnya, jangan
+                        biarkan kosong — pembaca akan menyangka datanya rusak (#306). */}
+                    {s.number ? (
+                      <span className="font-mono">{s.number}</span>
+                    ) : (
+                      <span className="text-muted-foreground">{landStdbStageLabel(s.stage)} — belum bernomor</span>
+                    )}
+                    <StdbStageBadge stage={s.stage} />
                     {s.issuedYear != null && <Badge variant="outline">{s.issuedYear}</Badge>}
                     {s.holderName && <span className="text-muted-foreground">a.n. <span className="text-foreground">{s.holderName}</span></span>}
                   </>
                 }
                 meta={
                   <>
+                    {s.stageNote && <Chip>{s.stageNote}</Chip>}
+                    {s.submittedTo && <Chip>Diajukan ke {s.submittedTo}</Chip>}
                     {s.statedArea != null && <Chip>Luas tertera {formatArea(s.statedArea)} Ha</Chip>}
                     {s.otherParcels.length === 0 ? (
                       <Chip>Hanya lahan ini</Chip>
@@ -250,27 +354,28 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                   <RowActions
                     unlink
                     onEdit={canEdit ? () => setFormTarget({ kind: "stdb", item: s }) : undefined}
-                    onRemove={canDelete ? () => setRemoveTarget({ kind: "stdb", id: s.id, label: s.number }) : undefined}
+                    onRemove={canDelete ? () => setRemoveTarget({ kind: "stdb", id: s.id, label: s.number ?? landStdbStageLabel(s.stage) }) : undefined}
                   />
                 }
               />
             ))}
       </Group>
 
-      {/* ── UL Parcel Code ── */}
-      <Group icon={Hash} title="UL Parcel Code" count={externalIds.length} hint="Kode identitas lahan dari hasil pemetaan (parcel_code) — dipakai untuk mencocokkan dengan data pihak ketiga." onAdd={add("externalId")} empty="Belum ada UL Parcel Code.">
+      {/* ── UL Parcel Code: selebar dua kolom — isinya satu baris pendek ── */}
+      <Group className="lg:col-span-2" icon={Hash} title="UL Parcel Code" count={externalIds.length} hint="Kode hasil pemetaan; tiap kode mencatat pemetanya." onAdd={add("externalId")} empty="Belum ada UL Parcel Code.">
             {externalIds.map((e) => {
               const mapped = fmtDate(e.mappedAt);
               return (
                 <Row
                   key={e.id}
-                  title={
+                  title={<span className="font-mono">{e.code}</span>}
+                  meta={
                     <>
-                      <span className="font-mono">{e.code}</span>
-                      <span className="text-muted-foreground">{SOURCE_LABELS[e.source] ?? e.source}</span>
+                      <Chip title={parcelMapperLabel(e.source)}>Pemeta: {parcelMapperShort(e.source)}</Chip>
+                      {mapped && <Chip>Dipetakan {mapped}</Chip>}
+                      {e.notes && <span className="text-xs text-muted-foreground">{e.notes}</span>}
                     </>
                   }
-                  meta={(mapped || e.notes) && (<>{mapped && <Chip>Dipetakan {mapped}</Chip>}{e.notes && <span className="text-xs text-muted-foreground">{e.notes}</span>}</>)}
                   actions={
                     <RowActions
                       onEdit={canEdit ? () => setFormTarget({ kind: "externalId", item: e }) : undefined}
@@ -281,46 +386,7 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
               );
             })}
       </Group>
-
-      {/* ── Program ── */}
-      <Group icon={Sprout} title="Program" count={programs.length} hint="Keikutsertaan lahan dalam program, mis. demplot PBU." onAdd={add("program")} empty="Tidak terdaftar di program mana pun.">
-            {programs.map((p) => {
-              const start = fmtDate(p.startDate), end = fmtDate(p.endDate);
-              return (
-                <Row
-                  key={p.id}
-                  title={
-                    <>
-                      <span className="font-medium">{PROGRAM_LABELS[p.programType] ?? p.programType}</span>
-                      <Badge variant={p.status === "ACTIVE" ? "default" : "outline"}>{LAND_PROGRAM_STATUS_LABELS[p.status] ?? p.status}</Badge>
-                    </>
-                  }
-                  meta={(start || end || p.notes) && (<>{(start || end) && <Chip>{start ?? "…"} – {end ?? "…"}</Chip>}{p.notes && <span className="text-xs text-muted-foreground">{p.notes}</span>}</>)}
-                  actions={
-                    <RowActions
-                      onEdit={canEdit ? () => setFormTarget({ kind: "program", item: p }) : undefined}
-                      onRemove={canDelete ? () => setRemoveTarget({ kind: "program", id: p.id, label: `Program ${PROGRAM_LABELS[p.programType] ?? p.programType}` }) : undefined}
-                    />
-                  }
-                />
-              );
-            })}
-      </Group>
-
-      {formTarget && (
-        <ParcelSatelliteFormModal open onClose={() => setFormTarget(null)} landParcelId={landParcelId} target={formTarget} />
-      )}
-      <DeleteDialog
-        open={removeTarget != null}
-        onClose={() => setRemoveTarget(null)}
-        onConfirm={confirmRemove}
-        title={removeTarget?.kind === "stdb" ? "Lepas STDB dari lahan ini?" : "Nonaktifkan data ini?"}
-        description={
-          removeTarget?.kind === "stdb"
-            ? `STDB ${removeTarget.label} tetap tersimpan untuk petani dan lahan lain; hanya tautan ke lahan ini yang dilepas.`
-            : `${removeTarget?.label ?? "Data"} dinonaktifkan (soft delete) dan tidak tampil lagi di lahan ini.`
-        }
-      />
+      {modals}
     </div>
   );
 }

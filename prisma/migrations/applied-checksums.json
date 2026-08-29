@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot checksum migrasi yang sudah APPLIED di mis-prod (#303). Jangan edit manual — segarkan dengan scripts/migrations/refresh-applied-checksums.ts setelah setiap migrate deploy.",
   "source": "mis-prod",
-  "refreshedAt": "2026-08-27",
+  "refreshedAt": "2026-08-29",
   "checksums": {
     "20260521232859_init": "80ee9d999c0a3ab5c32f51a11fb0c32645a3ad6806ae872f2ef0f0a05826a0e0",
     "20260606104223_add_farmer_group_indexes": "9d9c8e28a3f07fdb659f5a38fd71b0e44c3cde53db041ea9e76cc714221b99d9",
@@ -30,6 +30,7 @@
     "20260812130000_scope_export_print_backfill_to_leaf": "2e928bd230bbc20668e3ac7444f617fe6c256292e4e7dba9c763644b6e23174b",
     "20260819041658_farmer_group_boundary": "83c2954ea10cdbd5238a0c8dc63578c4842a8608133f17a544951f528e7c8043",
     "20260819073337_administrative_boundary": "20d7322e78a4af37f1fc542a43a149c3531bc1e4640674beee01b9fccf3ab837",
-    "20260827053327_land_parcel_satellites": "40cab8168cbe75c9cf2517b59403886b745e178f3244cfe8f889d5e6bb7c9c01"
+    "20260827053327_land_parcel_satellites": "40cab8168cbe75c9cf2517b59403886b745e178f3244cfe8f889d5e6bb7c9c01",
+    "20260829031525_land_stdb_stage": "23c088ffd2783475973dc07ca48ae054a666ec041e70e109b88b3bd54302b239"
   }
 }

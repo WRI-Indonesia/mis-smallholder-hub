@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Source, Layer, Popup } from "react-map-gl/maplibre";
 import type { MapLayerMouseEvent, LayerProps, MapRef } from "react-map-gl/maplibre";
 import type { Feature, Polygon, MultiPolygon, Position } from "geojson";
-import type { StyleSpecification } from "maplibre-gl";
+import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target } from "lucide-react";
 
@@ -19,95 +20,6 @@ interface ParcelPreviewRow {
 interface Props {
   data: ParcelPreviewRow[];
 }
-
-const MAP_STYLES: Record<"hybrid" | "satellite" | "light" | "dark", StyleSpecification> = {
-  hybrid: {
-    version: 8,
-    sources: {
-      "google-hybrid": {
-        type: "raster",
-        tiles: ["https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
-        tileSize: 256,
-        attribution: "Map data &copy; Google",
-      },
-    },
-    layers: [
-      {
-        id: "google-hybrid-layer",
-        type: "raster",
-        source: "google-hybrid",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-  satellite: {
-    version: 8,
-    sources: {
-      "google-satellite": {
-        type: "raster",
-        tiles: ["https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"],
-        tileSize: 256,
-        attribution: "Map data &copy; Google",
-      },
-    },
-    layers: [
-      {
-        id: "google-satellite-layer",
-        type: "raster",
-        source: "google-satellite",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-  light: {
-    version: 8,
-    sources: {
-      "carto-light": {
-        type: "raster",
-        // OSM standar (tanpa API key) — pengganti CARTO yang sejak 2024 menandai tile zoom tinggi "API KEY REQUIRED" (#298).
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        maxzoom: 19,
-        tileSize: 256,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-    },
-    layers: [
-      {
-        id: "carto-light-layer",
-        type: "raster",
-        source: "carto-light",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-  dark: {
-    version: 8,
-    sources: {
-      "carto-dark": {
-        type: "raster",
-        // Esri World Dark Gray (tanpa API key); zoom >16 diperbesar dari tile 16 — tanpa tanda air (#298).
-        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
-        maxzoom: 16,
-        tileSize: 256,
-        attribution:
-          'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ',
-      },
-    },
-    layers: [
-      {
-        id: "carto-dark-layer",
-        type: "raster",
-        source: "carto-dark",
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  },
-};
 
 // Layer style per status validasi baris (isValid) — konstan, di-hoist agar tidak
 // dibuat ulang per render.
@@ -131,7 +43,8 @@ const borderStyle: LayerProps = {
 
 export function ParcelBulkUploadMap({ data }: Props) {
   const mapRef = useRef<MapRef>(null);
-  const [styleKey, setStyleKey] = useState<keyof typeof MAP_STYLES>("hybrid");
+  const [styleKey, setStyleKey] = useState<MapStyleKey>("hybrid");
+  const { mapStyle, labelBeforeId, syncStyle, registerImageFallback } = useVectorBasemap(styleKey);
   const [popupInfo, setPopupInfo] = useState<{
     longitude: number;
     latitude: number;
@@ -252,16 +165,22 @@ export function ParcelBulkUploadMap({ data }: Props) {
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 11 }}
-        mapStyle={MAP_STYLES[styleKey]}
-        onLoad={zoomToFitAll}
+        mapStyle={mapStyle}
+        onLoad={(e) => {
+          registerImageFallback(e.target);
+          syncStyle(e.target);
+          zoomToFitAll();
+        }}
+        onStyleData={(e) => syncStyle(e.target)}
         onClick={onMapClick}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         interactiveLayerIds={["bulk-parcels-fill"]}
       >
         <Source type="geojson" data={featureCollection}>
-          <Layer {...layerStyle} />
-          <Layer {...borderStyle} />
+          {/* Di bawah label basemap (vector) supaya nama tempat tetap terbaca. */}
+          <Layer {...layerStyle} beforeId={labelBeforeId} />
+          <Layer {...borderStyle} beforeId={labelBeforeId} />
         </Source>
 
         {popupInfo && (
@@ -317,17 +236,18 @@ export function ParcelBulkUploadMap({ data }: Props) {
 
       {/* Map style selector overlay */}
       <div className="absolute top-3 right-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-1 flex gap-1">
-        {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+        {MAP_STYLE_KEYS.map((key) => (
           <button
             key={key}
             onClick={() => setStyleKey(key)}
+            title={MAP_STYLE_LABELS[key].full}
             className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider rounded transition-colors ${
               styleKey === key
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {key}
+            {MAP_STYLE_LABELS[key].short}
           </button>
         ))}
       </div>
