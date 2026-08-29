@@ -19,7 +19,8 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 │   ├── Kelompok Tani
 │   ├── Total Lahan
 │   └── Total Luas
-├── Kartu Ringkasan Legalitas (#305 — ikut filter aktif)
+├── Kartu Ringkasan Legalitas (#305 — ikut filter aktif, `describeLegalSummary`;
+│   sumber yang SAMA dengan blok Ringkasan di PDF & sheet Ringkasan Excel)
 │   ├── Lahan (hasil filter)
 │   ├── Ada Surat (n + % berlabel penyebut)
 │   ├── Ada STDB (n + % berlabel penyebut, satuan persil)
@@ -67,7 +68,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | "Grid Index (Baris × Kolom)" | Filter (dua input `number`) | Baris 1–26, kolom 1–20; teks bantu "maks. `<n>` peta + ikhtisar" atau "tanpa pecah" |
 | "Label Poligon" | Filter (checkbox, minimal satu aktif) | Opsi: No, Nama, ID Petani, ID Lahan, Kelompok Tani (default: No) |
 | Preview peta | Chart / SVG | Tanpa grid: 1 halaman peta. Dengan grid: 1 ikhtisar (garis grid + label sel + "`<n>` lahan") + satu peta per sel; dekorasi panah utara & skala batang; catatan "`<n>` lahan tanpa geometri tidak tergambar (No …)."; state "Memuat geometri lahan..." dan "Tidak ada geometri lahan yang dapat digambar." |
-| "Kolom" | Dropdown selektor kolom | "Tampilkan Kolom": Kelompok Tani, Blok, Komoditas, Species, PSR, Tahun Tanam, Luas (Ha), **Surat Kepemilikan, Nama di Surat, Luas Tertera (Ha), STDB** (#296), **UL Parcel Code, Program** (#305). Default aktif: Kelompok Tani, Tahun Tanam, Luas (Ha) |
+| "Kolom" | Dropdown selektor kolom | Pintasan **Pilih semua · Kosongkan · Bawaan** + penghitung `aktif/total` (standar `ui-ux.md`; rollout ke menu lain: #308). "Tampilkan Kolom": Kelompok Tani, Blok, Komoditas, Species, PSR, Tahun Tanam, Luas (Ha), **Surat Kepemilikan, Nama di Surat, Luas Tertera (Ha), STDB** (#296), **UL Parcel Code, Program** (#305). Default aktif: Kelompok Tani, Tahun Tanam, Luas (Ha) |
 | "Cakupan Pendataan" | Filter (`select`) | `Sudah didata` (default) / `Semua lahan`. "Sudah didata" = punya UL Parcel Code aktif — **proxy** untuk "sudah melalui import Detail Lahan". Ini penyebut semua persentase di kartu ringkasan |
 | "Status Surat" | Filter (`select`) | `Semua` / `Ada surat` / `Tanpa surat`. **"Tanpa surat" = tidak ada baris `LandParcelDocument` aktif sama sekali**; lahan yang hanya punya baris `OTHER` + `custodyNote` ("surat di bank", "lahan sudah dijual") dihitung **punya** surat |
 | "Jenis Surat" | Filter (dropdown checkbox, multi) | Enum `LandDocumentType`. Semantik: **punya minimal satu** jenis terpilih — lahan ber-SHM *dan* ber-SKT muncul di kedua filter (disengaja) |
@@ -113,5 +114,5 @@ Cakupan/Status Surat/Jenis Surat/Status STDB → fragment `where` Prisma lewat r
 
 | Format | Keterangan |
 |---|---|
-| Excel | File `Laporan_Lahan_<Lembaga/Distrik/Semua>`; sheet "Lahan" berisi seluruh baris + gambar peta (PNG hasil rasterisasi SVG); filter legalitas aktif dicetak sebagai baris catatan **di atas header** tiap sheet (`filterNotes`, #305). Bila grid aktif: tambahan satu sheet per sel grid berisi subset baris sel + gambar peta sel. Kolom mengikuti selektor kolom. Bila geometri belum termuat: "Geometri lahan masih dimuat — coba lagi sebentar." Tombol digate izin `EXPORT` (#245) |
-| PDF | File `Laporan_Lahan_<…>` via `exportLandParcelReportPDF`; metadata Distrik & Lembaga Petani **+ seluruh filter legalitas aktif** (`describeLegalFilters`, #305 — tanpa ini ekspor hasil filter "tanpa surat" terbaca seperti roster lengkap); kolom mengikuti selektor kolom + baris Total; menyertakan halaman peta sesuai pengaturan grid & label — digate izin `PRINT` (#245) |
+| Excel | File `Laporan_Lahan_<Lembaga/Distrik/Semua>`; sheet **"Ringkasan"** di posisi pertama (kolom Bagian · Keterangan · Nilai · Catatan) berisi filter legalitas aktif + 4 angka ringkasan, lalu sheet "Lahan" berisi seluruh baris + gambar peta (PNG hasil rasterisasi SVG). Ringkasan sengaja jadi **sheet tersendiri**, bukan baris catatan di atas tabel: menyisipkan baris di atas header membuat data tak lagi mulai di baris 1 dan merusak AutoFilter/pivot (revisi owner 2026-08-29). Bila grid aktif: tambahan satu sheet per sel grid berisi subset baris sel + gambar peta sel. Kolom mengikuti selektor kolom. Bila geometri belum termuat: "Geometri lahan masih dimuat — coba lagi sebentar." Tombol digate izin `EXPORT` (#245) |
+| PDF | File `Laporan_Lahan_<…>` via `exportLandParcelReportPDF`; metadata Distrik & Lembaga Petani (grid 2 kolom), lalu **blok penuh-lebar** `sections`: "Filter Legalitas" (`describeLegalFilters`) dan "Ringkasan Legalitas" (`describeLegalSummary`) — keduanya di luar grid metadata karena kolomnya hanya 90 mm sedangkan kalimat filter jauh lebih panjang, dan tiap baris dibungkus `splitTextToSize`. Tanpa filter, ekspor "tanpa surat" terbaca seperti roster lengkap; tanpa ringkasan, pembaca dapat daftar tanpa tahu proporsinya. Kolom mengikuti selektor kolom + baris Total; menyertakan halaman peta sesuai pengaturan grid & label — digate izin `PRINT` (#245) |

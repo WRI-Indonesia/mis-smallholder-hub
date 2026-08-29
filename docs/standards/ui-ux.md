@@ -65,6 +65,10 @@ Untuk tabel dengan pagination, ikuti aturan layout dan state berikut untuk konsi
 
 Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus didukung:
 - **Show/Hide Kolom**: Disediakan tombol dropdown "Kolom" untuk memilih visibilitas kolom.
+- **Pintasan pilih kolom (wajib, sejak 2026-08-29)**: setiap dropdown "Kolom" — baik lewat `<DataTable>` maupun selektor bespoke di halaman report — wajib menyediakan **Pilih semua · Kosongkan · Bawaan** di bawah label, plus penghitung `aktif/total` di label. Alasannya: begitu daftar kolomnya panjang (Laporan Lahan sudah 13 sejak #305), mengubah tampilan berarti belasan klik, dan pengguna kehilangan jalan pulang ke tampilan awal setelah bereksperimen — "Bawaan" itulah jalan pulangnya, jadi ia **bukan** pelengkap opsional dari dua tombol lain.
+  - Kolom identitas yang selalu tampil (mis. No / Lembaga / Nama Petani) berada **di luar** daftar toggleable, sehingga "Kosongkan" tidak pernah menghasilkan tabel tanpa kolom.
+  - Item ceklisnya memakai `onSelect={(e) => e.preventDefault()}` agar dropdown tidak menutup tiap satu kolom di-toggle.
+  - Referensi implementasi: `land-parcel-report-client.tsx` (#305). Rollout ke selektor lain: issue #308.
 - **Export Excel**:
   - Disediakan tombol "Excel" untuk mengunduh data tabel saat ini (hasil pencarian/filter aktif).
   - Diaktifkan dengan menyertakan prop `exportFilename` (misalnya `exportFilename="data-users"`).

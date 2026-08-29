@@ -37,6 +37,7 @@ import {
   pickScaleBar,
   resolveLabelCollisions,
   describeLegalFilters,
+  describeLegalSummary,
   type LpGeoJson,
   type LpMapLayout,
   type LpGridSplit,
@@ -104,6 +105,9 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "program", label: "Program" },
 ];
 
+/** Kolom yang menyala saat halaman dibuka — dipakai juga tombol "Bawaan". */
+const DEFAULT_COLS: ColKey[] = ["kelompokTani", "tahunTanam", "luas"];
+
 export function LandParcelReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
@@ -117,9 +121,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   // Geometri lahan (id → GeoJSON) — dimuat saat Lembaga dipilih, untuk preview & PDF.
   const [geoms, setGeoms] = useState<Map<string, LpGeoJson | null> | null>(null);
 
-  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(
-    new Set<ColKey>(["kelompokTani", "tahunTanam", "luas"]),
-  );
+  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(new Set(DEFAULT_COLS));
+  const selectAllCols = () => setVisibleCols(new Set(TOGGLEABLE.map((c) => c.key)));
+  // "Kosongkan" menyisakan 5 kolom identitas (No/Lembaga/Petani/ID Petani/ID
+  // Lahan) yang memang selalu tampil — tabelnya tidak pernah jadi kosong.
+  const clearCols = () => setVisibleCols(new Set());
+  const resetCols = () => setVisibleCols(new Set(DEFAULT_COLS));
   const show = (k: ColKey) => visibleCols.has(k);
   const toggleCol = (k: ColKey) =>
     setVisibleCols((prev) => {
@@ -411,7 +418,21 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
         fullData,
         overviewImage,
         cellSheets,
-        filterNotes: describeLegalFilters(legalFilters).map((f) => `${f.label}: ${f.value}`),
+        // Sheet "Ringkasan" tersendiri, bukan baris di atas tabel: sheet data
+        // harus tetap mulai di baris 1 agar AutoFilter/pivot Excel jalan.
+        infoSheet: [
+          ...describeLegalFilters(legalFilters).map((f) => ({
+            section: "Filter Legalitas",
+            label: f.label,
+            value: f.value,
+          })),
+          ...legalCards.map((c) => ({
+            section: "Ringkasan Legalitas",
+            label: c.label,
+            value: c.value,
+            note: c.note,
+          })),
+        ],
       });
     } catch (err) {
       toast.error((err instanceof Error && err.message) || "Gagal membuat Excel ber-gambar peta");
@@ -482,9 +503,14 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       metadata: [
         { label: "Distrik", value: selectedDistrictObj?.name ?? "Semua Distrik" },
         { label: "Lembaga Petani", value: selectedGroupObj?.name ?? "-" },
-        // Filter aktif wajib tercetak (#305): tanpa ini, PDF hasil filter
-        // "tanpa surat" terbaca seperti roster lengkap.
-        ...describeLegalFilters(legalFilters),
+      ],
+      // Filter & ringkasan wajib tercetak (#305): tanpa filter, PDF hasil
+      // saringan "tanpa surat" terbaca seperti roster lengkap; tanpa ringkasan,
+      // pembaca hanya dapat daftar tanpa tahu proporsinya. Keduanya di blok
+      // penuh-lebar, bukan di grid metadata yang cuma 90 mm per kolom.
+      sections: [
+        { title: "Filter Legalitas", lines: describeLegalFilters(legalFilters).map((f) => `${f.label}: ${f.value}`) },
+        { title: "Ringkasan Legalitas", lines: legalSummaryLines() },
       ],
       columns: cols,
       columnStyles,
@@ -510,22 +536,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
    * seluruh lembaga, padahal penyebutnya hanya lahan yang sudah melalui import
    * Detail Lahan.
    */
-  const legalCards = reportData
-    ? (() => {
-        const s = reportData.summary;
-        const base = s.totalDidata;
-        const pct = (n: number) => (base > 0 ? `${Math.round((n / base) * 100)}%` : "—");
-        const denom = `dari ${formatNumber(base)} lahan yang sudah didata`;
-        return [
-          { label: "Lahan (hasil filter)", value: formatNumber(s.totalLahan), note: `${formatNumber(base)} di antaranya sudah didata` },
-          { label: "Ada Surat", value: formatNumber(s.totalAdaSurat), note: `${pct(s.totalAdaSurat)} ${denom}` },
-          // STDB melekat per PETANI (1 nomor s.d. 13 persil); menghitungnya per
-          // persil melebih-lebihkan beban kerja, jadi satuannya ditulis eksplisit.
-          { label: "Ada STDB", value: formatNumber(s.totalAdaStdb), note: `${pct(s.totalAdaStdb)} ${denom} — dihitung per persil, bukan per petani` },
-          { label: `Selisih Luas ≥ ${formatLuas(AREA_DIFF_THRESHOLD_HA)} Ha`, value: formatNumber(s.totalSelisihLuas), note: "luas di surat vs luas poligon" },
-        ];
-      })()
-    : [];
+  // Kartu layar dan cetakan memakai helper yang SAMA (#305) — kalau dihitung
+  // dua kali, layar dan PDF akan bercerita beda tanpa ada yang tahu.
+  const legalCards = reportData ? describeLegalSummary(reportData.summary) : [];
+
+  /** Baris teks ringkasan legalitas untuk PDF & Excel. */
+  const legalSummaryLines = () => legalCards.map((c) => `${c.label}: ${c.value} (${c.note})`);
 
   return (
     <div className="space-y-6">
@@ -774,15 +790,32 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               <SlidersHorizontal className="h-4 w-4" />
               Kolom
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Tampilkan Kolom</DropdownMenuLabel>
+                <DropdownMenuLabel className="flex items-center justify-between gap-2">
+                  <span>Tampilkan Kolom</span>
+                  <span className="text-xs font-normal tabular-nums text-muted-foreground">
+                    {visibleCols.size}/{TOGGLEABLE.length}
+                  </span>
+                </DropdownMenuLabel>
+                <div className="flex items-center gap-1 px-2 pb-1.5">
+                  <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={selectAllCols}>
+                    Pilih semua
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={clearCols}>
+                    Kosongkan
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={resetCols} title="Kembali ke kolom bawaan">
+                    Bawaan
+                  </Button>
+                </div>
                 <DropdownMenuSeparator />
                 {TOGGLEABLE.map((col) => (
                   <DropdownMenuCheckboxItem
                     key={col.key}
                     checked={show(col.key)}
                     onCheckedChange={() => toggleCol(col.key)}
+                    onSelect={(e) => e.preventDefault()}
                   >
                     {col.label}
                   </DropdownMenuCheckboxItem>

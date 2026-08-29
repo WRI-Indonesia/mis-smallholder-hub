@@ -33,6 +33,13 @@ export interface LpPdfColumn {
 export interface LpPdfInput {
   filename: string;
   metadata: { label: string; value: string }[];
+  /**
+   * Blok penuh-lebar di bawah metadata (#305): filter legalitas aktif dan
+   * ringkasannya. Sengaja TIDAK ikut `metadata` — grid metadata itu 2 kolom
+   * selebar 90 mm dan nilai filter legalitas jauh lebih panjang, sehingga akan
+   * saling tindih. Di sini tiap baris dibungkus `splitTextToSize`.
+   */
+  sections?: { title: string; lines: string[] }[];
   columns: LpPdfColumn[];
   data: Record<string, unknown>[];
   columnStyles?: Record<number, Record<string, string | number>>;
@@ -225,6 +232,7 @@ function drawEmptyMapNote(doc: jsPDF, box: { x: number; y: number; w: number; h:
  */
 export function buildLandParcelReportDoc({
   metadata,
+  sections = [],
   columns,
   data,
   columnStyles,
@@ -268,6 +276,26 @@ export function buildLandParcelReportDoc({
     doc.text(m.value, x + labelWidth + 2, y);
   });
   currentY += Math.ceil(metadata.length / 2) * 6 + 4;
+
+  // ── Blok penuh-lebar: filter aktif & ringkasan legalitas (#305) ──
+  const sectionWidth = pageWidth - MARGIN * 2;
+  for (const section of sections) {
+    if (section.lines.length === 0) continue;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...SLATE_700);
+    doc.text(section.title, MARGIN, currentY);
+    currentY += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...SLATE_500);
+    for (const line of section.lines) {
+      const wrapped = doc.splitTextToSize(line, sectionWidth) as string[];
+      doc.text(wrapped, MARGIN, currentY);
+      currentY += wrapped.length * 4.2;
+    }
+    currentY += 3;
+  }
+  if (sections.some((s) => s.lines.length > 0)) currentY += 1;
 
   // ── Halaman 1: peta (penuh atau ikhtisar grid) ──
   const noteH = 6;

@@ -9,9 +9,11 @@ import {
   resolveLabelCollisions,
   exteriorRings,
   describeLegalFilters,
+  describeLegalSummary,
   type LpRawParcel,
   type LpMapBox,
 } from "@/lib/report-land-parcel";
+import type { LandParcelReportSummary } from "@/types/report";
 
 const P = (o: Partial<LpRawParcel> & { id: string; farmerId: string }): LpRawParcel => ({
   parcelCode: `L-${o.id}`,
@@ -438,5 +440,40 @@ describe("describeLegalFilters — filter aktif ikut tercetak (#305)", () => {
     expect(d.find((f) => f.label === "Status STDB")!.value).toBe("Tahap Pengajuan");
     expect(d.find((f) => f.label === "Status Surat")!.value).toContain("Tanpa surat");
     expect(d.find((f) => f.label === "Selisih Luas")!.value).toContain("0.5 Ha");
+  });
+});
+
+/**
+ * Ringkasan legalitas ikut cetak (#305 susulan). Helper ini dipakai kartu di
+ * layar DAN header PDF/Excel — satu sumber supaya cetakan tak pernah bercerita
+ * beda dari layar.
+ */
+describe("describeLegalSummary", () => {
+  const S = (o: Partial<LandParcelReportSummary>): LandParcelReportSummary => ({
+    totalLahan: 0, totalPetani: 0, totalKelompokTani: 0, totalLembagaTani: 0, totalLuas: 0,
+    totalDidata: 0, totalAdaSurat: 0, totalAdaStdb: 0, totalSelisihLuas: 0, ...o,
+  });
+
+  it("persen SELALU membawa penyebutnya, bukan angka polos", () => {
+    const d = describeLegalSummary(S({ totalLahan: 1500, totalDidata: 1204, totalAdaSurat: 903 }));
+    const surat = d.find((x) => x.label === "Ada Surat")!;
+    expect(surat.value).toBe("903");
+    expect(surat.note).toBe("75% dari 1.204 lahan yang sudah didata");
+  });
+
+  it("KPI STDB menyebut satuannya — per persil, bukan per petani", () => {
+    const d = describeLegalSummary(S({ totalDidata: 10, totalAdaStdb: 3 }));
+    expect(d.find((x) => x.label === "Ada STDB")!.note).toContain("per persil, bukan per petani");
+  });
+
+  it("penyebut 0 tidak menghasilkan NaN%", () => {
+    const d = describeLegalSummary(S({ totalLahan: 5, totalDidata: 0, totalAdaSurat: 0 }));
+    expect(d.find((x) => x.label === "Ada Surat")!.note).toBe("— dari 0 lahan yang sudah didata");
+  });
+
+  it("empat kartu, ambang selisih ikut nama labelnya", () => {
+    const d = describeLegalSummary(S({}));
+    expect(d).toHaveLength(4);
+    expect(d[3].label).toBe("Selisih Luas ≥ 0.5 Ha");
   });
 });

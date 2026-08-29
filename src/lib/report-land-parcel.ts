@@ -3,6 +3,7 @@ import type {
   LandParcelLegalFilters,
   LandParcelReportResult,
   LandParcelReportRow,
+  LandParcelReportSummary,
 } from "@/types/report";
 import {
   summarizeDocuments,
@@ -196,6 +197,47 @@ export function describeLegalFilters(filters: LandParcelLegalFilters): { label: 
     out.push({ label: "Selisih Luas", value: `≥ ${AREA_DIFF_THRESHOLD_HA} Ha (luas surat vs poligon)` });
   }
   return out;
+}
+
+/**
+ * Ringkasan legalitas → label/nilai/catatan (#305). SATU sumber untuk kartu di
+ * layar, header PDF, dan catatan Excel — kalau tiga tempat menghitungnya
+ * sendiri-sendiri, cetakan dan layar akan bercerita beda tanpa ada yang tahu.
+ *
+ * Persen SELALU membawa penyebutnya: penyebutnya bukan seluruh lahan lembaga,
+ * melainkan lahan yang sudah melalui import Detail Lahan.
+ */
+export function describeLegalSummary(
+  summary: LandParcelReportSummary,
+): { label: string; value: string; note: string }[] {
+  const base = summary.totalDidata;
+  const pct = (n: number) => (base > 0 ? `${Math.round((n / base) * 100)}%` : "—");
+  const denom = `dari ${formatCount(base)} lahan yang sudah didata`;
+  return [
+    {
+      label: "Lahan (hasil filter)",
+      value: formatCount(summary.totalLahan),
+      note: `${formatCount(base)} di antaranya sudah didata`,
+    },
+    { label: "Ada Surat", value: formatCount(summary.totalAdaSurat), note: `${pct(summary.totalAdaSurat)} ${denom}` },
+    {
+      label: "Ada STDB",
+      value: formatCount(summary.totalAdaStdb),
+      // STDB melekat per PETANI (1 nomor s.d. 13 persil); menghitungnya per
+      // persil melebih-lebihkan beban kerja, jadi satuannya ditulis eksplisit.
+      note: `${pct(summary.totalAdaStdb)} ${denom} — dihitung per persil, bukan per petani`,
+    },
+    {
+      label: `Selisih Luas ≥ ${AREA_DIFF_THRESHOLD_HA} Ha`,
+      value: formatCount(summary.totalSelisihLuas),
+      note: "luas di surat vs luas poligon",
+    },
+  ];
+}
+
+/** Pemisah ribuan gaya Indonesia — modul ini murni, jadi tak memakai helper DOM. */
+function formatCount(n: number): string {
+  return new Intl.NumberFormat("id-ID").format(n);
 }
 
 // ─── Layout peta cetak (#179) — poligon ber-nomor dalam bounds bersama ───

@@ -22,11 +22,21 @@ export interface LpExcelInput {
   /** Satu sheet per sel grid berisi subset baris + gambar peta selnya. */
   cellSheets?: { label: string; data: Record<string, string | number>[]; image?: LpExcelImage | null }[];
   /**
-   * Filter aktif, dicetak sebagai baris catatan DI ATAS header tabel (#305).
-   * Tanpa ini, ekspor hasil filter "tanpa surat" terbaca seperti roster lengkap
-   * begitu berkasnya beredar lepas dari layarnya.
+   * Filter aktif + ringkasan legalitas (#305). Dirender sebagai sheet
+   * **"Ringkasan" tersendiri di posisi pertama**, bukan baris catatan di atas
+   * tabel: menyisipkan baris di atas header membuat data tak lagi mulai di
+   * baris 1, dan itu merusak AutoFilter/pivot — kebiasaan utama pengguna Excel.
+   * Tanpa sheet ini, ekspor hasil filter "tanpa surat" terbaca seperti roster
+   * lengkap begitu berkasnya beredar lepas dari layarnya.
    */
-  filterNotes?: string[];
+  infoSheet?: LpExcelInfoRow[];
+}
+
+export interface LpExcelInfoRow {
+  section: string;
+  label: string;
+  value: string;
+  note?: string;
 }
 
 function fillSheet(
@@ -74,36 +84,40 @@ export function buildLandParcelWorkbook({
   fullData,
   overviewImage,
   cellSheets = [],
-  filterNotes = [],
+  infoSheet = [],
 }: Omit<LpExcelInput, "filename">): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
+
+  // Sheet pertama supaya jadi yang terbuka lebih dulu — ia menerangkan
+  // cakupan berkas ini, dan sheet data tetap bersih (header di baris 1).
+  if (infoSheet.length > 0) addInfoSheet(wb, infoSheet);
 
   const full = wb.addWorksheet("Lahan");
   fillSheet(full, columns, fullData);
   if (overviewImage) addSheetImage(wb, full, overviewImage, columns.length + 1);
-  prependFilterNotes(full, filterNotes);
 
   for (const cell of cellSheets) {
     const ws = wb.addWorksheet(`Peta ${cell.label}`);
     fillSheet(ws, columns, cell.data);
     if (cell.image) addSheetImage(wb, ws, cell.image, columns.length + 1);
-    prependFilterNotes(ws, filterNotes);
   }
 
   return wb;
 }
 
-/**
- * Sisipkan baris catatan filter di atas header. Dilakukan SETELAH `fillSheet`
- * supaya pemetaan kolom→key (ExcelJS menaruh header di baris 1) tetap utuh;
- * `spliceRows` lalu menggeser semuanya ke bawah.
- */
-function prependFilterNotes(ws: ExcelJS.Worksheet, notes: string[]) {
-  if (notes.length === 0) return;
-  ws.spliceRows(1, 0, ...notes.map((n) => [n]), []);
-  for (let i = 1; i <= notes.length; i++) {
-    ws.getRow(i).font = { italic: true, color: { argb: "FF666666" } };
-  }
+/** Sheet "Ringkasan": filter aktif & angka legalitas, satu baris per butir. */
+function addInfoSheet(wb: ExcelJS.Workbook, rows: LpExcelInfoRow[]) {
+  const ws = wb.addWorksheet("Ringkasan");
+  fillSheet(
+    ws,
+    [
+      { header: "Bagian", key: "section" },
+      { header: "Keterangan", key: "label" },
+      { header: "Nilai", key: "value" },
+      { header: "Catatan", key: "note" },
+    ],
+    rows.map((r) => ({ section: r.section, label: r.label, value: r.value, note: r.note ?? "" })),
+  );
 }
 
 export async function exportLandParcelReportExcel(input: LpExcelInput) {

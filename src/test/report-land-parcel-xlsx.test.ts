@@ -58,36 +58,40 @@ describe("buildLandParcelWorkbook", () => {
  * surat" terbaca persis seperti roster lengkap begitu berkasnya beredar lepas
  * dari layar yang memfilternya.
  */
-describe("buildLandParcelWorkbook — catatan filter", () => {
-  it("catatan filter disisipkan di atas header, header tetap utuh", () => {
+describe("buildLandParcelWorkbook — sheet Ringkasan", () => {
+  const INFO = [
+    { section: "Filter Legalitas", label: "Cakupan Pendataan", value: "Hanya lahan yang sudah didata" },
+    { section: "Ringkasan Legalitas", label: "Ada Surat", value: "478", note: "97% dari 495 lahan yang sudah didata" },
+  ];
+
+  it("ringkasan jadi sheet TERSENDIRI di posisi pertama", () => {
+    const wb = buildLandParcelWorkbook({ columns: COLS, fullData: [row(1), row(2)], infoSheet: INFO });
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Ringkasan", "Lahan"]);
+    const ws = wb.getWorksheet("Ringkasan")!;
+    expect([ws.getCell("A1").value, ws.getCell("B1").value, ws.getCell("C1").value, ws.getCell("D1").value]).toEqual([
+      "Bagian", "Keterangan", "Nilai", "Catatan",
+    ]);
+    expect(ws.getCell("A2").value).toBe("Filter Legalitas");
+    expect(ws.getCell("D3").value).toBe("97% dari 495 lahan yang sudah didata");
+  });
+
+  it("sheet data tetap mulai di baris 1 — AutoFilter/pivot Excel tidak rusak", () => {
     const wb = buildLandParcelWorkbook({
       columns: COLS,
       fullData: [row(1), row(2)],
-      filterNotes: ["Cakupan Pendataan: Hanya lahan yang sudah didata", "Status Surat: Tanpa surat"],
-    });
-    const ws = wb.getWorksheet("Lahan")!;
-    expect(ws.getCell("A1").value).toBe("Cakupan Pendataan: Hanya lahan yang sudah didata");
-    expect(ws.getCell("A2").value).toBe("Status Surat: Tanpa surat");
-    // 2 catatan + 1 baris kosong pemisah → header di baris 4, data mulai baris 5.
-    expect(ws.getCell("A4").value).toBe("No");
-    expect(ws.getCell("B5").value).toBe("Petani 1");
-    expect(ws.rowCount).toBe(6);
-  });
-
-  it("tanpa catatan filter, tata letaknya persis seperti sebelumnya", () => {
-    const wb = buildLandParcelWorkbook({ columns: COLS, fullData: [row(1)] });
-    const ws = wb.getWorksheet("Lahan")!;
-    expect(ws.getCell("A1").value).toBe("No");
-    expect(ws.rowCount).toBe(2);
-  });
-
-  it("catatan ikut ke tiap sheet sel grid, bukan hanya sheet utama", () => {
-    const wb = buildLandParcelWorkbook({
-      columns: COLS,
-      fullData: [row(1)],
       cellSheets: [{ label: "A1", data: [row(1)] }],
-      filterNotes: ["Status STDB: Tanpa STDB"],
+      infoSheet: INFO,
     });
-    expect(wb.getWorksheet("Peta A1")!.getCell("A1").value).toBe("Status STDB: Tanpa STDB");
+    for (const name of ["Lahan", "Peta A1"]) {
+      const ws = wb.getWorksheet(name)!;
+      expect(ws.getCell("A1").value, name).toBe("No");
+    }
+    expect(wb.getWorksheet("Lahan")!.rowCount).toBe(3); // header + 2 baris
+  });
+
+  it("tanpa infoSheet, workbook-nya persis seperti sebelumnya", () => {
+    const wb = buildLandParcelWorkbook({ columns: COLS, fullData: [row(1)] });
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Lahan"]);
+    expect(wb.getWorksheet("Lahan")!.getCell("A1").value).toBe("No");
   });
 });

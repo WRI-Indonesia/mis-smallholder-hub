@@ -37,7 +37,19 @@ Karena itu filter **Cakupan Pendataan** disetel **Sudah didata** sejak awal: han
 + Tombol **Reset filter legalitas** mengembalikan keempatnya ke *Semua*; Cakupan Pendataan tetap seperti pilihan Anda.
 
 4. Nyalakan kolom yang relevan lewat tombol **Kolom** — Surat Kepemilikan, STDB, Luas Tertera, UL Parcel Code, Program. Semuanya mati secara bawaan supaya tabel harian tidak melebar.
-5. Unduh **Excel** atau cetak **PDF**. Filter yang sedang aktif ikut tercetak di berkasnya, jadi penerima tahu ini daftar tersaring, bukan daftar lengkap.
+
++ Di dalam dropdown itu ada **Pilih semua**, **Kosongkan**, dan **Bawaan**. Pakai *Pilih semua* kalau ingin melihat segalanya sekali jalan, lalu *Bawaan* untuk kembali ke tampilan awal — Anda tidak perlu mematikan kolomnya satu per satu.
+
+5. Unduh **Excel** atau cetak **PDF**.
+
+## Yang ikut ke berkas cetak
+
+Baik Excel maupun PDF membawa **filter yang sedang aktif** dan **empat angka ringkasan** — jadi penerima berkas tahu ini daftar tersaring, bukan daftar lengkap, dan tahu proporsinya tanpa harus membuka aplikasi.
+
+| Berkas | Letaknya |
+| --- | --- |
+| **Excel** | Sheet **Ringkasan** di urutan pertama. Sheet **Lahan** dibiarkan bersih — barisnya tetap mulai dari baris 1 supaya filter dan pivot Excel tetap jalan |
+| **PDF** | Blok **Filter Legalitas** dan **Ringkasan Legalitas** di halaman pertama, di bawah nama Distrik/Lembaga |
 
 ## Membaca kartu ringkasan
 
@@ -46,6 +58,8 @@ Empat kartu di atas tabel mengikuti filter yang sedang aktif:
 - **Lahan (hasil filter)** — jumlah baris yang tampil, dengan catatan berapa di antaranya sudah didata.
 - **Ada Surat** dan **Ada STDB** — jumlah beserta persentasenya. Persennya **selalu** menyebut penyebutnya ("dari 1.204 lahan yang sudah didata"), karena penyebut itu bukan seluruh lahan lembaga.
 - **Selisih Luas ≥ 0,50 Ha** — lahan yang angka di suratnya berjarak jauh dari luas poligon.
+
++ Angka-angka ini dihitung dari sumber yang sama dengan yang tercetak di Excel dan PDF, jadi layar dan berkas tidak akan berbeda.
 
 + **STDB dihitung per persil, bukan per petani.** Satu STDB bisa menutup belasan persil sekaligus, jadi "300 lahan tanpa STDB" tidak berarti 300 berkas yang harus diurus — bisa jadi jauh lebih sedikit. Untuk membaca beban kerja sesungguhnya, lihat per petani di Master Data.
 
