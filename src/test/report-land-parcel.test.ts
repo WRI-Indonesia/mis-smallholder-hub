@@ -439,7 +439,8 @@ describe("describeLegalFilters — filter aktif ikut tercetak (#305)", () => {
     const d = describeLegalFilters({ stdbStatus: "PENGAJUAN", areaDiff: "gte", documentStatus: "without" });
     expect(d.find((f) => f.label === "Status STDB")!.value).toBe("Tahap Pengajuan");
     expect(d.find((f) => f.label === "Status Surat")!.value).toContain("Tanpa surat");
-    expect(d.find((f) => f.label === "Selisih Luas")!.value).toContain("0.5 Ha");
+    // Ditulis gaya Indonesia, sama dengan yang tampil di filter layar (#305).
+    expect(d.find((f) => f.label === "Selisih Luas")!.value).toContain("0,50 Ha");
   });
 });
 
@@ -474,6 +475,6 @@ describe("describeLegalSummary", () => {
   it("empat kartu, ambang selisih ikut nama labelnya", () => {
     const d = describeLegalSummary(S({}));
     expect(d).toHaveLength(4);
-    expect(d[3].label).toBe("Selisih Luas ≥ 0.5 Ha");
+    expect(d[3].label).toBe("Selisih Luas ≥ 0,50 Ha");
   });
 });

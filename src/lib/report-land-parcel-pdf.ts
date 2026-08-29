@@ -299,6 +299,14 @@ export function buildLandParcelReportDoc({
 
   // ── Halaman 1: peta (penuh atau ikhtisar grid) ──
   const noteH = 6;
+  // Blok `sections` (#305) menggeser `currentY` ke bawah, jadi tinggi peta ikut
+  // menyusut. Beri lantai: bila filter+ringkasan sampai memakan halaman, peta
+  // pindah ke halaman berikutnya alih-alih dirender gepeng/negatif.
+  const MIN_MAP_H = 60;
+  if (pageHeight - currentY - MARGIN - noteH < MIN_MAP_H) {
+    doc.addPage();
+    currentY = MARGIN + 6;
+  }
   const mapBox = {
     x: MARGIN,
     y: currentY,

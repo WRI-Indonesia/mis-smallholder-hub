@@ -194,7 +194,7 @@ export function describeLegalFilters(filters: LandParcelLegalFilters): { label: 
     out.push({ label: "Status STDB", value: `Tahap ${landStdbStageLabel(filters.stdbStatus)}` });
   }
   if (filters.areaDiff === "gte") {
-    out.push({ label: "Selisih Luas", value: `≥ ${AREA_DIFF_THRESHOLD_HA} Ha (luas surat vs poligon)` });
+    out.push({ label: "Selisih Luas", value: `≥ ${formatHa(AREA_DIFF_THRESHOLD_HA)} Ha (luas surat vs poligon)` });
   }
   return out;
 }
@@ -228,7 +228,7 @@ export function describeLegalSummary(
       note: `${pct(summary.totalAdaStdb)} ${denom} — dihitung per persil, bukan per petani`,
     },
     {
-      label: `Selisih Luas ≥ ${AREA_DIFF_THRESHOLD_HA} Ha`,
+      label: `Selisih Luas ≥ ${formatHa(AREA_DIFF_THRESHOLD_HA)} Ha`,
       value: formatCount(summary.totalSelisihLuas),
       note: "luas di surat vs luas poligon",
     },
@@ -238,6 +238,15 @@ export function describeLegalSummary(
 /** Pemisah ribuan gaya Indonesia — modul ini murni, jadi tak memakai helper DOM. */
 function formatCount(n: number): string {
   return new Intl.NumberFormat("id-ID").format(n);
+}
+
+/**
+ * Luas gaya Indonesia (2 desimal, koma). Dipakai agar ambang yang sama tertulis
+ * sama di layar dan di cetakan — sebelumnya filter di layar menulis "0,50 Ha"
+ * sementara kartu & PDF menulis "0.5 Ha" untuk angka yang sama persis.
+ */
+function formatHa(n: number): string {
+  return new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 }
 
 // ─── Layout peta cetak (#179) — poligon ber-nomor dalam bounds bersama ───
