@@ -28,6 +28,8 @@ import {
 import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok-tani";
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
+import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
+import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
 
 // ─── Helper dropdown bersama (TD-018) — dedup 5 pasang action per menu report ───
 // Non-exported (bukan server action); permission key per-menu tetap di action pemanggil.
@@ -528,14 +530,17 @@ function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParc
     out.push({ identity: { documents: { none: { isActive: true } } } });
   }
 
-  if (filters.documentTypes?.length) {
+  // Nilai enum DISARING terhadap daftar sah, bukan di-cast mentah: `filters`
+  // datang dari klien, dan `as LandDocumentType[]` akan meneruskan nilai
+  // sembarang ke Prisma sehingga pengguna hanya melihat "Gagal memuat laporan"
+  // untuk sesuatu yang seharusnya cukup diabaikan.
+  const docTypes = (filters.documentTypes ?? []).filter((t): t is LandDocumentType =>
+    (LAND_DOCUMENT_TYPES as readonly string[]).includes(t),
+  );
+  if (docTypes.length > 0) {
     // "Jenis = SHM" berarti punya MINIMAL SATU dokumen SHM; lahan ber-SHM dan
     // ber-SKT muncul di kedua filter — disengaja.
-    out.push({
-      identity: {
-        documents: { some: { isActive: true, type: { in: filters.documentTypes as LandDocumentType[] } } },
-      },
-    });
+    out.push({ identity: { documents: { some: { isActive: true, type: { in: docTypes } } } } });
   }
 
   const stdb = filters.stdbStatus;
@@ -543,7 +548,7 @@ function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParc
     out.push({ identity: { stdbLinks: { some: { isActive: true, stdb: { isActive: true } } } } });
   } else if (stdb === "without") {
     out.push({ identity: { stdbLinks: { none: { isActive: true, stdb: { isActive: true } } } } });
-  } else if (stdb && stdb !== "all") {
+  } else if (stdb && (LAND_STDB_STAGES as readonly string[]).includes(stdb)) {
     out.push({
       identity: {
         stdbLinks: { some: { isActive: true, stdb: { isActive: true, stage: stdb as LandStdbStage } } },
