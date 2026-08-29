@@ -3,71 +3,22 @@
 import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, type MapRef, type LayerProps, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import { GeoJSONSource, type StyleSpecification } from "maplibre-gl";
+import { GeoJSONSource } from "maplibre-gl";
 import type { Point } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapPin, Search, Check, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MAP_STYLES } from "@/lib/map-style";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { KTDetails } from "@/types/dashboard";
-
-const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
 
 // Single font only: fonts.openmaptiles.org does not serve *combined* fontstacks
 // (e.g. "Open Sans Regular,Noto Sans Regular" returns its HTML landing page,
 // which MapLibre then fails to parse as PBF → "Unable to load glyph range /
 // Unimplemented type: 4"). "Open Sans Regular" is served as a valid glyph PBF.
 const TEXT_FONT = ["Open Sans Regular"];
-
-const MAP_STYLES = {
-  light: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "carto-light": {
-        type: "raster",
-        // OSM standar (tanpa API key) — pengganti CARTO yang sejak 2024 menandai tile zoom tinggi "API KEY REQUIRED" (#298).
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        maxzoom: 19,
-        tileSize: 256,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-    },
-    layers: [{ id: "carto-light-layer", type: "raster", source: "carto-light", minzoom: 0, maxzoom: 20 }],
-  },
-  dark: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "carto-dark": {
-        type: "raster",
-        // Esri World Dark Gray (tanpa API key); zoom >16 diperbesar dari tile 16 — tanpa tanda air (#298).
-        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
-        maxzoom: 16,
-        tileSize: 256,
-        attribution:
-          'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ',
-      },
-    },
-    layers: [{ id: "carto-dark-layer", type: "raster", source: "carto-dark", minzoom: 0, maxzoom: 20 }],
-  },
-  hybrid: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "google-hybrid": {
-        type: "raster",
-        tiles: ["https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
-        tileSize: 256,
-        attribution: "Map data &copy; Google",
-      },
-    },
-    layers: [{ id: "google-hybrid-layer", type: "raster", source: "google-hybrid", minzoom: 0, maxzoom: 20 }],
-  },
-};
 
 interface Props {
   kelompokTaniList: KTDetails[];
@@ -251,7 +202,7 @@ export function DashboardMap({ kelompokTaniList, selectedId, onSelect }: Props) 
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey] as StyleSpecification}
+        mapStyle={MAP_STYLES[styleKey]}
         interactiveLayerIds={["clusters", "unclustered-point"]}
         onLoad={() => fitAll()}
         onClick={handleClick}

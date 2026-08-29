@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import type { StyleSpecification, ExpressionSpecification, FilterSpecification } from "maplibre-gl";
+import type { ExpressionSpecification, FilterSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Flame, Maximize } from "lucide-react";
 import type { FeatureCollection } from "geojson";
@@ -18,59 +18,10 @@ import {
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
 import { combinedBbox, multiPolygonBbox, type FireBoundaryIndexed } from "@/lib/fire-alert";
 import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
-import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
-
-const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
-
 // Basemap sama dengan Peta Lahan/BMP. Hybrid (Google) men-taint canvas —
 // capture cetak akan gagal di sana; pengguna diarahkan ke Light/Dark.
-const MAP_STYLES = {
-  light: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "carto-light": {
-        type: "raster",
-        // OSM standar (tanpa API key) — pengganti CARTO yang sejak 2024 menandai tile zoom tinggi "API KEY REQUIRED" (#298).
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        maxzoom: 19,
-        tileSize: 256,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-    },
-    layers: [{ id: "carto-light-layer", type: "raster", source: "carto-light", minzoom: 0, maxzoom: 20 }],
-  },
-  dark: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "carto-dark": {
-        type: "raster",
-        // Esri World Dark Gray (tanpa API key); zoom >16 diperbesar dari tile 16 — tanpa tanda air (#298).
-        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
-        maxzoom: 16,
-        tileSize: 256,
-        attribution:
-          'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ',
-      },
-    },
-    layers: [{ id: "carto-dark-layer", type: "raster", source: "carto-dark", minzoom: 0, maxzoom: 20 }],
-  },
-  hybrid: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "google-hybrid": {
-        type: "raster",
-        tiles: ["https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
-        tileSize: 256,
-        attribution: "Map data &copy; Google",
-      },
-    },
-    layers: [{ id: "google-hybrid-layer", type: "raster", source: "google-hybrid", minzoom: 0, maxzoom: 20 }],
-  },
-};
+import { MAP_STYLES } from "@/lib/map-style";
+import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
 
 // Antique Violet — pilihan owner (2026-08-19); kontras terhadap titik api
 // (merah/oranye/kuning), garis abu batas administrasi, dan basemap Light/Dark.
@@ -351,7 +302,7 @@ export function FireMapCanvas({
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.4, latitude: 0.5, zoom: 7 }}
-        mapStyle={MAP_STYLES[styleKey] as StyleSpecification}
+        mapStyle={MAP_STYLES[styleKey]}
         canvasContextAttributes={{ preserveDrawingBuffer: true }}
         interactiveLayerIds={["fire-hotspot-in", "fire-hotspot-out", "fire-boundary-fill"]}
         onLoad={(e) => {

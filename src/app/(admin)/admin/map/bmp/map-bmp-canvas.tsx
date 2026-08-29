@@ -3,12 +3,13 @@
 import { useRef, useMemo, useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
-import type { StyleSpecification, ExpressionSpecification, FilterSpecification } from "maplibre-gl";
+import type { ExpressionSpecification, FilterSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Sprout, Info, BarChart3, Maximize } from "lucide-react";
 import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { cn } from "@/lib/utils";
 import { formatArea } from "@/lib/format";
+import { MAP_STYLES } from "@/lib/map-style";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
 import { MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
@@ -32,56 +33,6 @@ import {
 } from "./map-bmp-control-panel";
 import { MapBmpDataPanel } from "./map-bmp-data-panel";
 import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
-
-const GLYPHS = "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf";
-
-const MAP_STYLES = {
-  light: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "carto-light": {
-        type: "raster",
-        // OSM standar (tanpa API key) — pengganti CARTO yang sejak 2024 menandai tile zoom tinggi "API KEY REQUIRED" (#298).
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        maxzoom: 19,
-        tileSize: 256,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-    },
-    layers: [{ id: "carto-light-layer", type: "raster", source: "carto-light", minzoom: 0, maxzoom: 20 }],
-  },
-  dark: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "carto-dark": {
-        type: "raster",
-        // Esri World Dark Gray (tanpa API key); zoom >16 diperbesar dari tile 16 — tanpa tanda air (#298).
-        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"],
-        maxzoom: 16,
-        tileSize: 256,
-        attribution:
-          'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ',
-      },
-    },
-    layers: [{ id: "carto-dark-layer", type: "raster", source: "carto-dark", minzoom: 0, maxzoom: 20 }],
-  },
-  hybrid: {
-    version: 8 as const,
-    glyphs: GLYPHS,
-    sources: {
-      "google-hybrid": {
-        type: "raster",
-        tiles: ["https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"],
-        tileSize: 256,
-        attribution: "Map data &copy; Google",
-      },
-    },
-    layers: [{ id: "google-hybrid-layer", type: "raster", source: "google-hybrid", minzoom: 0, maxzoom: 20 }],
-  },
-};
 
 // Data-driven fill/line color by the feature's `category` property. NONE is the
 // fallback so any unexpected value degrades to the neutral gray.
@@ -536,7 +487,7 @@ export function MapBmpCanvas({ data, layers, colorMode, productivity, prodLayers
       <Map
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
-        mapStyle={MAP_STYLES[styleKey] as StyleSpecification}
+        mapStyle={MAP_STYLES[styleKey]}
         canvasContextAttributes={{ preserveDrawingBuffer: true }}
         interactiveLayerIds={["bmp-parcel-fill"]}
         onLoad={(e) => {
