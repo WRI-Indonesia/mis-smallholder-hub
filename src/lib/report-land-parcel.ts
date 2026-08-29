@@ -1,5 +1,6 @@
 import type { Position } from "geojson";
 import type {
+  LandParcelLegalFilters,
   LandParcelReportResult,
   LandParcelReportRow,
 } from "@/types/report";
@@ -8,8 +9,16 @@ import {
   summarizeHolderNames,
   sumStatedArea,
   summarizeStdb,
+  summarizeExternalIds,
+  summarizePrograms,
+  isBigAreaDiff,
+  documentTypeShort,
+  landStdbStageLabel,
+  AREA_DIFF_THRESHOLD_HA,
   type DocSummaryInput,
   type StdbSummaryInput,
+  type ExternalIdSummaryInput,
+  type ProgramSummaryInput,
 } from "@/lib/land-parcel-satellite-format";
 
 /** Satu baris lahan mentah (sudah ter-scope) untuk Report Lahan. */
@@ -48,6 +57,10 @@ export interface LpRawParcel {
    * nomor telanjang: baris pra-terbit tak punya nomor dan harus tetap terbaca.
    */
   stdbs?: StdbSummaryInput[];
+  /** UL Parcel Code aktif (#305) — juga penanda "sudah didata". */
+  externalIds?: ExternalIdSummaryInput[];
+  /** Program lahan aktif (#305). */
+  programs?: ProgramSummaryInput[];
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -67,19 +80,38 @@ function clean(s: string | null | undefined): string | null {
  */
 export function buildLandParcelReport(
   parcels: LpRawParcel[],
+  filters: LandParcelLegalFilters = {},
 ): LandParcelReportResult {
   const distinctPetani = new Set<string>();
   const distinctLembaga = new Set<string>();
   const distinctKt = new Set<string>();
   let totalLuas = 0;
+  let totalDidata = 0;
+  let totalAdaSurat = 0;
+  let totalAdaStdb = 0;
+  let totalSelisihLuas = 0;
 
-  const rows: LandParcelReportRow[] = parcels.map((p) => {
+  const rows: LandParcelReportRow[] = parcels.flatMap((p) => {
+    const docs = p.documents ?? [];
+    const luasTertera = sumStatedArea(docs);
+    const selisihLuasBesar = isBigAreaDiff(luasTertera, p.area);
+    // Filter selisih luas dikerjakan DI SINI, bukan di klien: angkanya turunan
+    // (Σ luas tertera vs poligon) sehingga tak bisa jadi `where` Prisma, tapi
+    // tetap harus memengaruhi jumlah baris, baris Total, dan kartu ringkasan
+    // dalam satu perhitungan (#305).
+    if (filters.areaDiff === "gte" && !selisihLuasBesar) return [];
+
     const g2 = clean(p.subGroupLv2);
+    const externalIds = p.externalIds ?? [];
 
     distinctPetani.add(p.farmerId);
     distinctLembaga.add(p.farmerGroupId);
     if (g2) distinctKt.add(`${p.farmerGroupId}||${g2.toLowerCase()}`);
     totalLuas += p.area ?? 0;
+    if (externalIds.length > 0) totalDidata++;
+    if (docs.length > 0) totalAdaSurat++;
+    if ((p.stdbs ?? []).length > 0) totalAdaStdb++;
+    if (selisihLuasBesar) totalSelisihLuas++;
 
     return {
       id: p.id,
@@ -95,10 +127,13 @@ export function buildLandParcelReport(
       psr: p.isPsr,
       tahunTanam: p.plantingYear,
       luas: p.area,
-      surat: summarizeDocuments(p.documents ?? []),
-      namaDiSurat: summarizeHolderNames(p.documents ?? []),
-      luasTertera: sumStatedArea(p.documents ?? []),
+      surat: summarizeDocuments(docs),
+      namaDiSurat: summarizeHolderNames(docs),
+      luasTertera,
       stdb: summarizeStdb(p.stdbs ?? []),
+      ulParcelCode: summarizeExternalIds(externalIds),
+      program: summarizePrograms(p.programs ?? []),
+      selisihLuasBesar,
     };
   });
 
@@ -117,9 +152,50 @@ export function buildLandParcelReport(
       totalKelompokTani: distinctKt.size,
       totalLembagaTani: distinctLembaga.size,
       totalLuas,
+      totalDidata,
+      totalAdaSurat,
+      totalAdaStdb,
+      totalSelisihLuas,
     },
     rows,
   };
+}
+
+/**
+ * Filter legalitas aktif → pasangan label/nilai untuk header PDF & Excel (#305).
+ *
+ * Tanpa ini, ekspor "tanpa surat" terbaca persis seperti roster lengkap — dan
+ * itu jenis kekeliruan yang baru ketahuan setelah berkasnya beredar. Cakupan
+ * pendataan SELALU ikut tercetak, bahkan saat "Semua lahan", karena ia penyebut
+ * semua persentase di laporan.
+ */
+export function describeLegalFilters(filters: LandParcelLegalFilters): { label: string; value: string }[] {
+  const out: { label: string; value: string }[] = [
+    {
+      label: "Cakupan Pendataan",
+      value:
+        filters.coverage === "all"
+          ? "Semua lahan (termasuk yang belum melalui import Detail Lahan)"
+          : "Hanya lahan yang sudah didata (punya UL Parcel Code)",
+    },
+  ];
+  if (filters.documentStatus === "with") out.push({ label: "Status Surat", value: "Ada surat" });
+  if (filters.documentStatus === "without") out.push({ label: "Status Surat", value: "Tanpa surat (tak ada surat tercatat sama sekali)" });
+  if (filters.documentTypes?.length) {
+    out.push({
+      label: "Jenis Surat",
+      value: `${filters.documentTypes.map(documentTypeShort).join(", ")} (punya minimal satu)`,
+    });
+  }
+  if (filters.stdbStatus === "with") out.push({ label: "Status STDB", value: "Ada STDB" });
+  else if (filters.stdbStatus === "without") out.push({ label: "Status STDB", value: "Tanpa STDB" });
+  else if (filters.stdbStatus && filters.stdbStatus !== "all") {
+    out.push({ label: "Status STDB", value: `Tahap ${landStdbStageLabel(filters.stdbStatus)}` });
+  }
+  if (filters.areaDiff === "gte") {
+    out.push({ label: "Selisih Luas", value: `≥ ${AREA_DIFF_THRESHOLD_HA} Ha (luas surat vs poligon)` });
+  }
+  return out;
 }
 
 // ─── Layout peta cetak (#179) — poligon ber-nomor dalam bounds bersama ───

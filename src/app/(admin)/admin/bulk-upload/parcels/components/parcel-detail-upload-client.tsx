@@ -146,6 +146,17 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     }
     setValidated(validateParcelDetailRows(rawRows, mapping, parcels, headerRowNumber));
     toast.success("Validasi selesai");
+    // Peringatan eksplisit, bukan lewat diam-diam (#305): "punya UL Parcel
+    // Code" dipakai Laporan Lahan sebagai penanda "lahan sudah didata". Begitu
+    // ada berkas kabupaten tanpa kolom `parcel_code`, penyebut laporan itu
+    // salah tanpa satu pun gejala.
+    if (!mapping.externalCode) {
+      toast.warning(
+        "Berkas ini tidak punya kolom UL Parcel Code (parcel_code). Lahannya tetap tersimpan, " +
+          "tetapi tidak akan terhitung sebagai \"sudah didata\" di Laporan Lahan — persentase legalitas di sana jadi lebih rendah dari kenyataan.",
+        { duration: 12000 },
+      );
+    }
   }
 
   async function handleSave() {

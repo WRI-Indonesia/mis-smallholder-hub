@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/shared/delete-dialog";
 import { formatArea } from "@/lib/format";
 import { LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parcel-detail-import";
-import { documentTypeShort, LAND_PROGRAM_STATUS_LABELS, landStdbStageLabel, parcelMapperLabel, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
+import { documentTypeShort, isBigAreaDiff, LAND_PROGRAM_STATUS_LABELS, landStdbStageLabel, parcelMapperLabel, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
 import { deactivateLandParcelSatellite, unlinkLandStdb } from "@/server/actions/land-parcel-satellite";
 import { ParcelSatelliteFormModal, type SatelliteFormTarget } from "./parcel-satellite-form-modal";
 import type { LandParcelSatellites } from "@/types/land-parcel";
@@ -266,7 +266,9 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
             {documents.map((d) => {
               const unknownType = d.type === "OTHER" && !d.typeRaw;
               const diff = d.statedArea != null && parcelArea != null ? d.statedArea - parcelArea : null;
-              const bigDiff = diff != null && Math.abs(diff) >= 0.5;
+              // Ambang bersama dengan filter/KPI Laporan Lahan (#305) — dua
+              // tempat yang menandai lahan berbeda adalah bug tanpa gejala.
+              const bigDiff = isBigAreaDiff(d.statedArea, parcelArea);
               return (
                 <Row
                   key={d.id}

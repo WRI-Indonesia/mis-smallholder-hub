@@ -161,7 +161,37 @@ export interface KelompokTaniReportResult {
 
 // ─── Report Lahan (#177) — roster lahan datar per Lembaga Petani ───
 
-export interface LandParcelReportFilters {
+/**
+ * Filter legalitas Laporan Lahan (#305) — yang mengubah laporan dari *roster*
+ * jadi *worklist*. Seluruhnya diterapkan di server; memfilter array hasil di
+ * klien membuat jumlah baris dan baris Total salah.
+ *
+ * Semantik yang WAJIB dijaga (ditulis di UI dan dikunci test):
+ * - `documentTypes: ["SHM"]` = punya **minimal satu** dokumen SHM. Lahan
+ *   ber-SHM *dan* ber-SKT muncul di kedua filter — disengaja, bukan bug.
+ * - `documentStatus: "without"` = **tidak ada** baris `LandParcelDocument`
+ *   aktif sama sekali. Lahan yang hanya punya baris `OTHER` + `custodyNote`
+ *   ("surat di bank", "lahan sudah dijual") dihitung **punya** surat: skema
+ *   sengaja memisahkan status penguasaan ke `custodyNote`.
+ */
+export interface LandParcelLegalFilters {
+  /**
+   * Penyebut laporan. `mapped` = hanya lahan yang sudah melalui import Detail
+   * Lahan (proxy: punya UL Parcel Code aktif). Default `mapped` begitu filter
+   * legalitas mana pun aktif — tanpa itu "tanpa surat" mengembalikan 7.607
+   * lahan di prod yang 88%-nya hanya belum diimport (ukur 2026-08-28).
+   */
+  coverage?: "all" | "mapped";
+  documentStatus?: "all" | "with" | "without";
+  /** Enum `LandDocumentType`; kosong = tidak memfilter jenis. */
+  documentTypes?: string[];
+  /** `all` | `with` | `without` | satu nilai `LandStdbStage` (#306). */
+  stdbStatus?: string;
+  /** `gte` = selisih |luas tertera − poligon| ≥ `AREA_DIFF_THRESHOLD_HA`. */
+  areaDiff?: "all" | "gte";
+}
+
+export interface LandParcelReportFilters extends LandParcelLegalFilters {
   districtId?: string | null;
   farmerGroupId?: string | null;
 }
@@ -198,8 +228,14 @@ export interface LandParcelReportRow {
   namaDiSurat: string | null;
   /** Total luas tertera di surat (Ha), null bila tak ada. */
   luasTertera: number | null;
-  /** Nomor STDB (distinct), null bila tak ada. */
+  /** Nomor STDB (distinct) + tahap bila pra-terbit (#306), null bila tak ada. */
   stdb: string | null;
+  /** UL Parcel Code aktif + pemetanya (#305/TD-035), null bila belum didata. */
+  ulParcelCode: string | null;
+  /** Program lahan + statusnya (#305/TD-035), null bila tak ada. */
+  program: string | null;
+  /** Selisih |luas tertera − poligon| ≥ ambang bersama (#305). */
+  selisihLuasBesar: boolean;
 }
 
 export interface LandParcelReportSummary {
@@ -208,6 +244,16 @@ export interface LandParcelReportSummary {
   totalKelompokTani: number; // distinct (Lembaga, KT) non-null
   totalLembagaTani: number; // distinct Lembaga
   totalLuas: number; // total luas (Ha), lahan tanpa luas dihitung 0
+  // ─── Ringkasan legalitas (#305) — SELALU dihitung dari baris yang lolos
+  // filter aktif, supaya kartu ringkasan dan tabel tidak pernah bercerita beda.
+  /** Lahan yang sudah melalui import Detail Lahan (punya UL Parcel Code). PENYEBUT persentase. */
+  totalDidata: number;
+  /** Lahan dengan ≥1 dokumen kepemilikan aktif. */
+  totalAdaSurat: number;
+  /** Lahan yang tertaut ≥1 STDB aktif — satuan **persil**, bukan petani (lihat catatan #305). */
+  totalAdaStdb: number;
+  /** Lahan dengan selisih luas tertera vs poligon ≥ ambang. */
+  totalSelisihLuas: number;
 }
 
 export interface LandParcelReportResult {

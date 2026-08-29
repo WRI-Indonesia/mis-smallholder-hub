@@ -11,6 +11,8 @@ goal: PDF berisi peta poligon ber-grid dan tabel lahan satu lembaga, siap dipaka
 
 ## Sebelum mulai
 
+Tutorial ini tentang **mencetak** roster satu lembaga beserta petanya. Untuk memakai halaman yang sama sebagai **daftar kerja** — menyaring lahan yang belum bersurat atau belum ber-STDB — lihat *Menyaring lahan yang belum punya surat atau STDB*.
+
 Ini laporan paling rumit sekaligus paling berguna di lapangan: peta poligon dengan grid indeks, label per persil, skala, dan penunjuk utara — ditambah tabel rincian lahannya.
 
 Hanya lahan ber-poligon yang muncul di petanya.

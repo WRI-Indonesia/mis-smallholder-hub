@@ -8,6 +8,7 @@ import {
   pickScaleBar,
   resolveLabelCollisions,
   exteriorRings,
+  describeLegalFilters,
   type LpRawParcel,
   type LpMapBox,
 } from "@/lib/report-land-parcel";
@@ -92,6 +93,10 @@ describe("buildLandParcelReport", () => {
       totalKelompokTani: 0,
       totalLembagaTani: 0,
       totalLuas: 0,
+      totalDidata: 0,
+      totalAdaSurat: 0,
+      totalAdaStdb: 0,
+      totalSelisihLuas: 0,
     });
   });
 });
@@ -337,5 +342,101 @@ describe("resolveLabelCollisions", () => {
     expect(out[0]).toEqual({ x: 10, y: 10 });
     expect(out[1]).toEqual({ x: 80, y: 90 });
     expect(out[2].y + 4 / 2).toBeLessThanOrEqual(100);
+  });
+});
+
+/**
+ * Ringkasan & filter legalitas Laporan Lahan (#305).
+ *
+ * Yang dikunci di sini adalah semantik yang issue tulis eksplisit "jangan
+ * ditebak implementor": penyebut persentase = lahan yang sudah didata, filter
+ * selisih luas ikut mengubah jumlah baris DAN baris Total, dan lahan yang hanya
+ * punya catatan penguasaan tetap dihitung PUNYA surat.
+ */
+describe("buildLandParcelReport — ringkasan legalitas (#305)", () => {
+  const L = (o: Partial<LpRawParcel> & { id: string }): LpRawParcel =>
+    P({ farmerId: `f-${o.id}`, area: 1, ...o });
+
+  it("totalDidata = lahan ber-UL Parcel Code; jadi penyebut yang dipakai kartu", () => {
+    const r = buildLandParcelReport([
+      L({ id: "a", externalIds: [{ source: "MERIDIA", code: "ID1" }], documents: [{ type: "SHM", number: "1", holderName: null, statedArea: null }] }),
+      L({ id: "b", externalIds: [{ source: "MERIDIA", code: "ID2" }] }),
+      L({ id: "c" }), // belum didata — tak punya kode
+    ]);
+    expect(r.summary.totalLahan).toBe(3);
+    expect(r.summary.totalDidata).toBe(2);
+    expect(r.summary.totalAdaSurat).toBe(1);
+  });
+
+  it("lahan dengan hanya catatan penguasaan (OTHER, tanpa nomor) dihitung PUNYA surat", () => {
+    // Kasus nyata di data Kampar: "surat di bank" / "lahan sudah dijual"
+    // disimpan sebagai dokumen OTHER + custodyNote, bukan sebagai tanpa surat.
+    const r = buildLandParcelReport([
+      L({ id: "a", documents: [{ type: "OTHER", number: null, holderName: null, statedArea: null }] }),
+    ]);
+    expect(r.summary.totalAdaSurat).toBe(1);
+    expect(r.rows[0].surat).toBe("Lainnya");
+  });
+
+  it("totalAdaStdb dihitung per PERSIL (bukan per petani) — satu STDB di 2 lahan = 2", () => {
+    const stdb = [{ number: "N-1", stage: "TERBIT" }];
+    const r = buildLandParcelReport([L({ id: "a", stdbs: stdb }), L({ id: "b", stdbs: stdb })]);
+    expect(r.summary.totalAdaStdb).toBe(2);
+  });
+
+  it("selisih luas: ambang inklusif, dan lahan tanpa luas tertera tidak ikut", () => {
+    const r = buildLandParcelReport([
+      L({ id: "a", area: 1, documents: [{ type: "SHM", number: "1", holderName: null, statedArea: 1.5 }] }),
+      L({ id: "b", area: 1, documents: [{ type: "SHM", number: "2", holderName: null, statedArea: 1.4 }] }),
+      L({ id: "c", area: 1, documents: [{ type: "SHM", number: "3", holderName: null, statedArea: null }] }),
+    ]);
+    expect(r.summary.totalSelisihLuas).toBe(1);
+    expect(r.rows.find((x) => x.idLahan === "L-a")!.selisihLuasBesar).toBe(true);
+  });
+
+  it("filter selisih luas mengubah jumlah baris DAN total luas — bukan hanya tampilan", () => {
+    const parcels = [
+      L({ id: "a", area: 1, documents: [{ type: "SHM", number: "1", holderName: null, statedArea: 1.5 }] }),
+      L({ id: "b", area: 4, documents: [{ type: "SHM", number: "2", holderName: null, statedArea: 4.1 }] }),
+    ];
+    const all = buildLandParcelReport(parcels);
+    const filtered = buildLandParcelReport(parcels, { areaDiff: "gte" });
+    expect(all.rows).toHaveLength(2);
+    expect(all.summary.totalLuas).toBe(5);
+    expect(filtered.rows).toHaveLength(1);
+    // Kalau filter dikerjakan di klien, angka ini akan tetap 5 dan baris Total salah.
+    expect(filtered.summary.totalLuas).toBe(1);
+    expect(filtered.summary.totalPetani).toBe(1);
+  });
+
+  it("kolom UL Parcel Code & Program terisi dari satelit yang sama", () => {
+    const r = buildLandParcelReport([
+      L({
+        id: "a",
+        externalIds: [{ source: "MERIDIA", code: "ID080d781b4" }],
+        programs: [{ programType: "DEMPLOT_PBU", status: "ACTIVE" }],
+      }),
+    ]);
+    expect(r.rows[0]).toMatchObject({ ulParcelCode: "ID080d781b4 (Meridia)", program: "Demplot PBU — Berjalan" });
+  });
+});
+
+describe("describeLegalFilters — filter aktif ikut tercetak (#305)", () => {
+  it("cakupan pendataan SELALU tercetak, walau 'semua'", () => {
+    expect(describeLegalFilters({}).map((f) => f.label)).toEqual(["Cakupan Pendataan"]);
+    expect(describeLegalFilters({ coverage: "all" })[0].value).toContain("Semua lahan");
+    expect(describeLegalFilters({ coverage: "mapped" })[0].value).toContain("sudah didata");
+  });
+
+  it("menyebut 'punya minimal satu' pada filter jenis surat", () => {
+    const d = describeLegalFilters({ documentTypes: ["SHM", "SKT"] });
+    expect(d.find((f) => f.label === "Jenis Surat")!.value).toBe("SHM, SKT (punya minimal satu)");
+  });
+
+  it("tahap STDB dan selisih luas ikut terbaca", () => {
+    const d = describeLegalFilters({ stdbStatus: "PENGAJUAN", areaDiff: "gte", documentStatus: "without" });
+    expect(d.find((f) => f.label === "Status STDB")!.value).toBe("Tahap Pengajuan");
+    expect(d.find((f) => f.label === "Status Surat")!.value).toContain("Tanpa surat");
+    expect(d.find((f) => f.label === "Selisih Luas")!.value).toContain("0.5 Ha");
   });
 });

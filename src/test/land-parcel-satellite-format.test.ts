@@ -9,6 +9,10 @@ import {
   summarizeHolderNames,
   sumStatedArea,
   summarizeStdb,
+  summarizeExternalIds,
+  summarizePrograms,
+  isBigAreaDiff,
+  AREA_DIFF_THRESHOLD_HA,
 } from "@/lib/land-parcel-satellite-format";
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 
@@ -102,4 +106,45 @@ describe("buildLandParcelReport — kolom legalitas (#296)", () => {
     });
   });
 
+});
+
+/**
+ * Kolom & ringkasan legalitas Laporan Lahan (#305, sisa TD-035). Semantik yang
+ * diuji di sini ditulis eksplisit di issue karena tak bisa ditebak implementor.
+ */
+describe("summarizeExternalIds / summarizePrograms (#305)", () => {
+  it("UL Parcel Code menyertakan pemetanya; distinct; kosong → null", () => {
+    expect(summarizeExternalIds([{ source: "MERIDIA", code: "ID080d781b4" }])).toBe("ID080d781b4 (Meridia)");
+    expect(
+      summarizeExternalIds([
+        { source: "MERIDIA", code: "ID1" },
+        { source: "MERIDIA", code: "ID1" },
+        { source: "WRI", code: "ID2" },
+      ]),
+    ).toBe("ID1 (Meridia); ID2 (WRI)");
+    expect(summarizeExternalIds([])).toBeNull();
+  });
+
+  it("pemeta tak dikenal ditampilkan apa adanya (isian bebas)", () => {
+    expect(summarizeExternalIds([{ source: "KOPERASI X", code: "K-1" }])).toBe("K-1 (KOPERASI X)");
+  });
+
+  it("Program memakai peta label yang sudah ada, bukan peta kedua", () => {
+    expect(summarizePrograms([{ programType: "DEMPLOT_PBU", status: "ACTIVE" }])).toBe("Demplot PBU — Berjalan");
+    expect(summarizePrograms([])).toBeNull();
+  });
+});
+
+describe("isBigAreaDiff — ambang bersama Detail Lahan & Laporan Lahan (#305)", () => {
+  it("ambangnya 0,5 Ha dan inklusif", () => {
+    expect(AREA_DIFF_THRESHOLD_HA).toBe(0.5);
+    expect(isBigAreaDiff(1.5, 1.0)).toBe(true); // tepat 0,5
+    expect(isBigAreaDiff(1.0, 1.5)).toBe(true); // arah sebaliknya sama saja
+    expect(isBigAreaDiff(1.49, 1.0)).toBe(false);
+  });
+
+  it("null di salah satu sisi bukan selisih besar", () => {
+    expect(isBigAreaDiff(null, 1)).toBe(false);
+    expect(isBigAreaDiff(1, null)).toBe(false);
+  });
 });
