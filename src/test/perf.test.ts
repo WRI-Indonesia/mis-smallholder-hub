@@ -850,7 +850,7 @@ describe("Performance - Import Detail Lahan planner (#300, pure logic)", () => {
         parcelUid: uid, farmerDbId: farmer, parcelId: `P-${i}`,
         document: { type: "SHM" as const, typeRaw: "SHM", number: `S-${i}`, holderName: "Abdul", statedArea: 0.25, custodyNote: null },
         custodyNote: null,
-        stdb: { number: `N-${Math.floor(i / 3)}`, issuedYear: 2025 },
+        stdb: { number: `N-${Math.floor(i / 3)}`, issuedYear: 2025, stage: "TERBIT" as const },
         externalCode: `CODE-${i}`,
         subGroupLv2: i % 2 ? "KT" : null,
       };

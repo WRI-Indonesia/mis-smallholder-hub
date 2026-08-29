@@ -558,7 +558,7 @@ export async function getLandParcelReport(
       identity: {
         select: {
           documents: { where: { isActive: true }, select: { type: true, number: true, holderName: true, statedArea: true } },
-          stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true } } } },
+          stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true, stage: true } } } },
         },
       },
     },
@@ -580,7 +580,7 @@ export async function getLandParcelReport(
     plantingYear: p.plantingYear,
     area: p.area,
     documents: p.identity.documents,
-    stdbNumbers: p.identity.stdbLinks.map((l) => l.stdb.number),
+    stdbs: p.identity.stdbLinks.map((l) => l.stdb),
   }));
 
   return buildLandParcelReport(raw);

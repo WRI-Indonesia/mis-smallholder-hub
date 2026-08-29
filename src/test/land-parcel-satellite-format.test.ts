@@ -43,8 +43,21 @@ describe("land-parcel-satellite-format", () => {
   });
 
   it("summarizeStdb: distinct + trim; kosong → null", () => {
-    expect(summarizeStdb(["1637/53/1401/6/2025", " 1637/53/1401/6/2025", "3475"])).toBe("1637/53/1401/6/2025; 3475");
+    const terbit = (number: string) => ({ number, stage: "TERBIT" });
+    expect(summarizeStdb([terbit("1637/53/1401/6/2025"), terbit(" 1637/53/1401/6/2025"), terbit("3475")])).toBe(
+      "1637/53/1401/6/2025; 3475",
+    );
     expect(summarizeStdb([])).toBeNull();
+  });
+
+  it("summarizeStdb: baris pra-terbit tampil bertahap, bukan string kosong (#306)", () => {
+    expect(summarizeStdb([{ number: null, stage: "PERSIAPAN_DATA" }])).toBe("Persiapan Data — belum bernomor");
+    expect(summarizeStdb([{ number: null, stage: "PENGAJUAN" }])).toBe("Pengajuan — belum bernomor");
+    // Nomor pra-terbit (mis. nomor berkas) tetap tampil, tapi tahapnya ikut —
+    // tanpa itu pembaca menyangka STDB-nya sudah terbit.
+    expect(summarizeStdb([{ number: "3475", stage: "REVISI" }])).toBe("3475 (Revisi)");
+    // TERBIT bernomor ditulis polos supaya kolom roster tak berubah bentuk.
+    expect(summarizeStdb([{ number: "3475", stage: "TERBIT" }])).toBe("3475");
   });
 });
 
@@ -54,7 +67,7 @@ describe("buildLandParcelReport — kolom legalitas (#296)", () => {
     subGroupLv2: null, blok: null, cropType: null, species: null, isPsr: false, plantingYear: null, area: 1, ...o,
   });
 
-  it("pemanggil lama tanpa documents/stdbNumbers → kolom legalitas null (kompatibel)", () => {
+  it("pemanggil lama tanpa documents/stdbs → kolom legalitas null (kompatibel)", () => {
     const r = buildLandParcelReport([base({ id: "p1" })]);
     expect(r.rows[0]).toMatchObject({ surat: null, namaDiSurat: null, luasTertera: null, stdb: null });
   });
@@ -64,7 +77,7 @@ describe("buildLandParcelReport — kolom legalitas (#296)", () => {
       base({
         id: "p1",
         documents: [{ type: "SHM", number: "727", holderName: "Abdul Rohman", statedArea: 0.25 }],
-        stdbNumbers: ["1637/53/1401/6/2025"],
+        stdbs: [{ number: "1637/53/1401/6/2025", stage: "TERBIT" }],
       }),
     ]);
     expect(r.rows[0]).toMatchObject({ surat: "SHM 727", namaDiSurat: "Abdul Rohman", luasTertera: 0.25, stdb: "1637/53/1401/6/2025" });

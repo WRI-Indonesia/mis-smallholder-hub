@@ -415,6 +415,8 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
         stdb: {
           select: {
             id: true, number: true, holderName: true, statedArea: true, issuedYear: true, notes: true,
+            stage: true, stageChangedAt: true, stageNote: true, submittedTo: true,
+            preparedAt: true, submittedAt: true, issuedAt: true,
             // Lahan lain yang ditutup STDB yang sama (aktif) — ditampilkan sebagai konteks.
             parcelLinks: { where: { isActive: true, parcelUid: { not: uid } }, select: { parcel: { select: { parcelId: true, revisions: { where: { isActive: true }, select: { id: true }, take: 1 } } } } },
           },
@@ -440,6 +442,13 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
     stdbs: stdbLinks.map((l) => ({
       id: l.stdb.id,
       number: l.stdb.number,
+      stage: l.stdb.stage,
+      stageChangedAt: l.stdb.stageChangedAt,
+      stageNote: l.stdb.stageNote,
+      submittedTo: l.stdb.submittedTo,
+      preparedAt: l.stdb.preparedAt,
+      submittedAt: l.stdb.submittedAt,
+      issuedAt: l.stdb.issuedAt,
       holderName: l.stdb.holderName,
       statedArea: l.stdb.statedArea,
       issuedYear: l.stdb.issuedYear,

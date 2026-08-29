@@ -74,8 +74,53 @@ export function sumStatedArea(docs: DocSummaryInput[]): number | null {
   return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
 }
 
-/** Nomor STDB distinct, gabung "; "; null bila kosong. */
-export function summarizeStdb(numbers: string[]): string | null {
-  const u = [...new Set(numbers.map((n) => n.trim()).filter(Boolean))];
+// ─── Tahapan penerbitan STDB (#306) ───
+
+export const LAND_STDB_STAGES = ["PERSIAPAN_DATA", "PENGAJUAN", "REVISI", "TERBIT", "DITOLAK"] as const;
+export type LandStdbStageCode = (typeof LAND_STDB_STAGES)[number];
+
+export const LAND_STDB_STAGE_LABELS: Record<string, string> = {
+  PERSIAPAN_DATA: "Persiapan Data",
+  PENGAJUAN: "Pengajuan",
+  REVISI: "Revisi",
+  TERBIT: "Terbit",
+  DITOLAK: "Ditolak",
+};
+
+/**
+ * Tahap yang berarti "berkas masih terbuka" — dipakai UI, filter, DAN partial
+ * unique index `uniq_land_stdb_farmer_open` (satu berkas terbuka per petani).
+ * `DITOLAK` sengaja TIDAK ikut: prosesnya berhenti, dan petani harus bisa
+ * mengajukan ulang dengan baris baru (keputusan owner #306).
+ */
+export const LAND_STDB_OPEN_STAGES = ["PERSIAPAN_DATA", "PENGAJUAN", "REVISI"] as const;
+
+export function isOpenStdbStage(stage: string): boolean {
+  return (LAND_STDB_OPEN_STAGES as readonly string[]).includes(stage);
+}
+
+export function landStdbStageLabel(stage: string): string {
+  return LAND_STDB_STAGE_LABELS[stage] ?? stage;
+}
+
+export interface StdbSummaryInput {
+  number: string | null;
+  stage: string;
+}
+
+/**
+ * "1637/53/1401/6/2025; Pengajuan — belum bernomor" — distinct, null bila
+ * kosong. Baris pra-terbit tidak boleh muncul sebagai string kosong di Report
+ * dan PDF (#306): pembaca akan menyangka datanya rusak, padahal tahapnya memang
+ * belum menghasilkan nomor. Baris TERBIT bernomor ditulis polos (nomor saja)
+ * supaya kolom roster harian tidak berubah bentuk.
+ */
+export function summarizeStdb(items: StdbSummaryInput[]): string | null {
+  const parts = items.map((s) => {
+    const number = s.number?.trim() || null;
+    if (!number) return `${landStdbStageLabel(s.stage)} — belum bernomor`;
+    return s.stage === "TERBIT" ? number : `${number} (${landStdbStageLabel(s.stage)})`;
+  });
+  const u = [...new Set(parts.filter(Boolean))];
   return u.length ? u.join("; ") : null;
 }

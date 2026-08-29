@@ -165,7 +165,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     }
     const s = result.data!;
     toast.success(
-      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui${s.documentsUnchanged ? ` / ${s.documentsUnchanged} tanpa perubahan` : ""} · STDB ${s.stdbsCreated} baru, ${s.stdbLinksCreated} tautan · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsUnchanged ? ` / ${s.externalIdsUnchanged} tanpa perubahan` : ""}${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled}`,
+      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui${s.documentsUnchanged ? ` / ${s.documentsUnchanged} tanpa perubahan` : ""} · STDB ${s.stdbsCreated} baru${s.stdbsPendingCreated ? ` (${s.stdbsPendingCreated} belum bernomor)` : ""}, ${s.stdbLinksCreated} tautan${s.stdbsPendingSkipped ? ` / ${s.stdbsPendingSkipped} petani "belum ada" dilewati (sudah punya STDB)` : ""} · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsUnchanged ? ` / ${s.externalIdsUnchanged} tanpa perubahan` : ""}${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled}`,
       { duration: 8000 },
     );
     setValidated([]);

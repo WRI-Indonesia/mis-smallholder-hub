@@ -9,6 +9,7 @@ import {
   sumStatedArea,
   summarizeStdb,
   type DocSummaryInput,
+  type StdbSummaryInput,
 } from "@/lib/land-parcel-satellite-format";
 
 /** Satu baris lahan mentah (sudah ter-scope) untuk Report Lahan. */
@@ -42,8 +43,11 @@ export interface LpRawParcel {
   area: number | null;
   /** Dokumen kepemilikan aktif (#296) — opsional agar pemanggil lama tetap valid. */
   documents?: DocSummaryInput[];
-  /** Nomor STDB aktif yang menutup lahan ini (#296). */
-  stdbNumbers?: string[];
+  /**
+   * STDB aktif yang menutup lahan ini (#296). Sejak #306 membawa `stage`, bukan
+   * nomor telanjang: baris pra-terbit tak punya nomor dan harus tetap terbaca.
+   */
+  stdbs?: StdbSummaryInput[];
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -94,7 +98,7 @@ export function buildLandParcelReport(
       surat: summarizeDocuments(p.documents ?? []),
       namaDiSurat: summarizeHolderNames(p.documents ?? []),
       luasTertera: sumStatedArea(p.documents ?? []),
-      stdb: summarizeStdb(p.stdbNumbers ?? []),
+      stdb: summarizeStdb(p.stdbs ?? []),
     };
   });
 

@@ -126,3 +126,57 @@ describe("migrasi Prisma — file yang sudah applied di prod tidak boleh berubah
     expect(stale, "migrasi lama yang tidak tercatat applied — daftar belum disegarkan atau folder liar").toEqual([]);
   });
 });
+
+/**
+ * Migrasi land_stdb_stage — #306/#299. Bagian paling berisiko: melepas
+ * `@@unique([farmerId, number])` tanpa penggantinya berarti satu petani bisa
+ * punya belasan baris pengajuan kembar (di Postgres NULL ≠ NULL), dan Prisma
+ * tidak bisa mendeklarasikan partial unique index sehingga SQL-nya ditulis
+ * tangan — tepat jenis kode yang diam-diam hilang saat migrasi diregenerasi.
+ */
+describe("migrasi land_stdb_stage — partial unique index pengganti @@unique (#306)", () => {
+  const m = migrationFiles().find((f) => f.name.endsWith("_land_stdb_stage"));
+
+  it("berkas migrasi ada", () => {
+    expect(m).toBeDefined();
+  });
+
+  it("kunci unik lama dilepas", () => {
+    expect(m!.sql).toMatch(/DROP INDEX "tbl_land_stdb_farmer_id_number_key"/);
+  });
+
+  it("nomor tetap unik per petani — hanya pada baris aktif bernomor", () => {
+    expect(m!.sql).toMatch(
+      /CREATE UNIQUE INDEX "uniq_land_stdb_farmer_number"[\s\S]*?WHERE "number" IS NOT NULL AND "is_active"/,
+    );
+  });
+
+  it("satu berkas TERBUKA per petani; DITOLAK & TERBIT sengaja di luar index", () => {
+    const stmt = m!.sql.slice(m!.sql.indexOf('CREATE UNIQUE INDEX "uniq_land_stdb_farmer_open"'));
+    const where = stmt.slice(0, stmt.indexOf(";"));
+    expect(where).toMatch(/'PERSIAPAN_DATA'/);
+    expect(where).toMatch(/'PENGAJUAN'/);
+    expect(where).toMatch(/'REVISI'/);
+    expect(where).not.toMatch(/'DITOLAK'/);
+    expect(where).not.toMatch(/'TERBIT'/);
+    expect(where).toMatch(/"is_active"/);
+  });
+
+  it("baris lama jadi TERBIT lewat DEFAULT, bukan backfill yang menebak", () => {
+    expect(m!.sql).toMatch(/ADD COLUMN\s+"stage" "LandStdbStage" NOT NULL DEFAULT 'TERBIT'/);
+    // 202 baris bernomor pendek Pelalawan belum boleh dipindah — masih dugaan.
+    expect(m!.sql).not.toMatch(/UPDATE "tbl_land_stdb"\s+SET\s+"stage"/i);
+  });
+
+  it("modified_at (#299) ditambah nullable → backfill → NOT NULL (tabel berisi 1.596 baris)", () => {
+    const sql = m!.sql;
+    const add = sql.search(/ALTER TABLE "tbl_land_parcel_stdb" ADD COLUMN\s+"modified_at" TIMESTAMP\(3\),/);
+    const backfill = sql.search(/UPDATE "tbl_land_parcel_stdb" SET "modified_at" = "created_at"/);
+    const notNull = sql.search(/ALTER COLUMN "modified_at" SET NOT NULL/);
+    expect(add).toBeGreaterThanOrEqual(0);
+    expect(add).toBeLessThan(backfill);
+    expect(backfill).toBeLessThan(notNull);
+    // NOT NULL langsung tanpa default gagal pada tabel berisi.
+    expect(sql).not.toMatch(/ADD COLUMN\s+"modified_at" TIMESTAMP\(3\) NOT NULL,/);
+  });
+});

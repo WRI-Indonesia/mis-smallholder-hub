@@ -4,17 +4,48 @@
 // sehingga dimodelkan sebagai entitas sendiri + penghubung M:N ke lahan —
 // satu-satunya M:N di keluarga satelit lahan.
 
+/// Tahapan penerbitan STDB (#306). REVISI vs DITOLAK bukan sinonim dan
+/// perbedaannya menentukan apakah barisnya masih pipeline aktif:
+/// - REVISI  = berkas dikembalikan untuk diperbaiki, MASIH dalam proses;
+/// - DITOLAK = proses berhenti, tidak dilanjutkan dengan berkas ini —
+///   mengajukan lagi berarti baris baru (karena itu DITOLAK sengaja tidak ikut
+///   partial index "satu berkas terbuka per petani").
+enum LandStdbStage {
+  PERSIAPAN_DATA
+  PENGAJUAN
+  REVISI
+  TERBIT
+  DITOLAK
+}
+
 model LandStdb {
-  id         String   @id @default(cuid())
-  farmerId   String   @map("farmer_id")
-  farmer     Farmer   @relation(fields: [farmerId], references: [id])
+  id       String        @id @default(cuid())
+  farmerId String        @map("farmer_id")
+  farmer   Farmer        @relation(fields: [farmerId], references: [id])
+  /// Default TERBIT supaya 1.086 baris lama benar apa adanya tanpa backfill
+  /// yang menebak (#306).
+  stage    LandStdbStage @default(TERBIT) @map("stage")
   // Nomor disimpan MENTAH. Format dominan "1637/53/1401/6/2025"
   // (urut/kode/kabupaten/bulan/tahun) — issuedYear diturunkan parser bila
   // pola cocok; ada juga "3475" atau "Belum dapat" yang tak berpola.
-  number     String   @map("number")
-  holderName String?  @map("holder_name")
-  statedArea Float?   @map("stated_area") // luas tertera (ha), total per STDB
-  issuedYear Int?     @map("issued_year")
+  // Opsional sejak #306: nomor baru terbit di tahap terakhir, sedangkan tahap
+  // PERSIAPAN_DATA/PENGAJUAN/REVISI harus punya tempat.
+  number   String?       @map("number")
+
+  holderName String? @map("holder_name")
+  statedArea Float?  @map("stated_area") // luas tertera (ha), total per STDB
+  issuedYear Int?    @map("issued_year") // turunan issuedAt bila tanggalnya diisi
+
+  preparedAt  DateTime? @map("prepared_at")
+  submittedAt DateTime? @map("submitted_at")
+  issuedAt    DateTime? @map("issued_at")
+  /// Kapan tahap TERKINI ditetapkan — ini yang menutup celah "berapa lama
+  /// tertahan di REVISI" tanpa tabel riwayat (keputusan owner #306).
+  stageChangedAt DateTime? @map("stage_changed_at")
+  submittedTo    String?   @map("submitted_to") // dinas penerima
+  /// Alasan revisi/penolakan, atau keterangan nomor pendek pra-terbit.
+  stageNote      String?   @map("stage_note")
+
   fileUrl    String?  @map("file_url")
   notes      String?  @map("notes")
   isActive   Boolean  @default(true) @map("is_active")
@@ -28,9 +59,17 @@ model LandStdb {
   // Nomor unik per petani (bukan global — nomor pendek bisa berulang antar
   // kabupaten). Nomor sama pada petani berbeda di data sumber (64 kasus HJP)
   // adalah salah ketik ID petani dan harus ditolak parser, bukan digabung.
-  @@unique([farmerId, number])
+  //
+  // `@@unique([farmerId, number])` DILEPAS di #306: begitu `number` boleh NULL,
+  // Postgres menganggap NULL ≠ NULL sehingga satu petani bisa punya belasan
+  // baris pengajuan kembar tanpa ada yang menahan. Penggantinya dua PARTIAL
+  // UNIQUE INDEX yang ditulis tangan di migrasi (Prisma tak bisa
+  // mendeklarasikannya) — lihat migrations/*_land_stdb_stage/migration.sql:
+  //   uniq_land_stdb_farmer_number  (farmer_id, number) WHERE number IS NOT NULL AND is_active
+  //   uniq_land_stdb_farmer_open    (farmer_id)         WHERE stage IN (…terbuka…) AND is_active
   @@index([number])
   @@index([isActive])
+  @@index([stage])
   @@map("tbl_land_stdb")
 }
 
@@ -45,6 +84,11 @@ model LandParcelStdb {
   isActive  Boolean            @default(true) @map("is_active")
   createdAt DateTime           @default(now()) @map("created_at")
   createdBy String?            @map("created_by")
+  // #299: `isActive` di sini ditoggle dua jalur (unlinkLandStdb/createLandStdb
+  // dan applyLandParcelDetailRows) — tanpa modified_at/by, siapa dan kapan
+  // melepas atau menautkan ulang STDB↔lahan tidak tercatat sama sekali.
+  modifiedAt DateTime          @updatedAt @map("modified_at")
+  modifiedBy String?           @map("modified_by")
 
   @@unique([parcelUid, stdbId])
   @@index([stdbId])
