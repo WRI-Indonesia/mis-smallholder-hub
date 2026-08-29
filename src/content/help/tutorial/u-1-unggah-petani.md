@@ -59,6 +59,12 @@ Petani muncul di **Master Data → Petani** dengan lembaga yang Anda pilih di La
 
 **Kolom tidak tercocokkan otomatis** — wajar bila judul kolom Anda tidak umum. Cocokkan manual; pencocokan otomatis hanya membantu, bukan syarat.
 
-**Jumlah baris terbaca lebih sedikit dari isi berkas** — biasanya ada baris judul ganda atau baris kosong di tengah. Rapikan dulu di Excel.
+**Muncul pesan "Header ditemukan di baris 3"** — berkas Anda punya baris judul di atas baris nama kolom, dan sistem melewatinya sendiri. Periksa sekilas apakah nama kolom yang terbaca sudah benar, lalu lanjutkan seperti biasa.
 
-+ Penyebab lain yang sering luput: data berada di sheet kedua sementara yang terbaca sheet pertama yang kosong. Pindahkan datanya ke sheet pertama.
++ Nomor **Baris Asal** di tabel hasil validasi mengikuti nomor baris sungguhan di Excel, jadi Anda bisa langsung melompat ke baris yang bermasalah — termasuk saat headernya bukan di baris 1.
+
+**"Tidak menemukan baris header pada berkas ini"** — sheet yang terbaca tidak punya satu pun baris berisi nama kolom. Biasanya berkasnya memang kosong, atau isinya gambar/pivot, bukan tabel.
+
+**Jumlah baris terbaca lebih sedikit dari isi berkas** — baris yang seluruh selnya kosong memang tidak ikut diunggah, dan itu wajar. Bila selisihnya besar, periksa apakah ada baris judul ganda di tengah data.
+
++ Data di sheet kedua tidak perlu dipindahkan: sistem memilih sheet pertama yang benar-benar berisi data, dan mengutamakan sheet bernama **Data** bila ada.

@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext } from "@/lib/access-context";
 import { productionSchema, type ProductionInput } from "@/validations/production.schema";
+import { formatFieldErrors } from "@/lib/validation-message";
 import type { ActionResult } from "@/types/action-result";
 
 export async function getFarmersForProductionMapping() {
@@ -99,9 +100,10 @@ export async function bulkCreateProductionRecords(
     if (!parsed.success) {
       return {
         success: false,
-        error: `Validasi gagal pada salah satu baris: ${JSON.stringify(
-          parsed.error.flatten().fieldErrors
-        )}`,
+        error: formatFieldErrors(
+          parsed.error.flatten().fieldErrors,
+          "Ada baris yang tidak lolos validasi",
+        ),
       };
     }
     validatedRecords.push(parsed.data);

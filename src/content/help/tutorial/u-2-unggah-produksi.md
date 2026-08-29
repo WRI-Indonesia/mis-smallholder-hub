@@ -45,6 +45,12 @@ Catatan panen muncul di **Master Data → Produksi**. Dashboard BMP dan Peta BMP
 
 **Sel berisi `#N/A` atau error Excel lain** — sel hasil formula yang gagal dibaca sebagai **kosong**, bukan sebagai teks. Bila datanya sebenarnya ada, perbaiki formulanya atau salin-tempel nilainya sebagai **Values** sebelum mengunggah ulang.
 
+**Muncul pesan "Header ditemukan di baris 3"** — berkas Anda punya baris judul di atas baris nama kolom, dan sistem melewatinya sendiri. Periksa sekilas apakah nama kolom yang terbaca sudah benar, lalu lanjutkan seperti biasa.
+
++ Nomor **Baris Asal** di tabel hasil validasi mengikuti nomor baris sungguhan di Excel, jadi tetap menunjuk baris yang benar walau headernya bukan di baris 1.
+
+**"Tidak menemukan baris header pada berkas ini"** — sheet yang terbaca tidak punya satu pun baris berisi nama kolom. Biasanya berkasnya memang kosong, atau isinya gambar/pivot, bukan tabel.
+
 **Ada data panen ganda** — satu petani boleh punya beberapa panen dalam satu bulan, dibedakan oleh **Panen Ke-**. Kalau nomornya sama persis, sistem menganggapnya duplikat.
 
 + Bila sumber data Anda tidak punya kolom Panen Ke-, isi `1` untuk semua baris — asalkan memang hanya ada satu catatan panen per petani per bulan.

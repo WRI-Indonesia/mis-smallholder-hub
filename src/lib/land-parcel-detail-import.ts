@@ -235,11 +235,17 @@ function readRaw(row: RawRow, mapping: Mapping): Record<ParcelDetailFieldKey, st
  * - nomor STDB yang sama dipakai `ID Petani` berbeda → semua barisnya error.
  * Per baris: pasangan (petani, lahan) harus ada di `parcels`; baris tanpa
  * detail apa pun (tanpa surat, STDB, kode) → error "tidak ada data".
+ *
+ * `headerRowNumber` = baris fisik header di berkas sumber (#301) — dipakai
+ * hanya untuk `_rowNum` yang ditampilkan ke pengguna. Sejak header tak lagi
+ * diasumsikan ada di baris 1, angka ini wajib diteruskan agar "Baris Asal"
+ * pada pratinjau dan ekspor error menunjuk baris yang benar di berkas.
  */
 export function validateParcelDetailRows(
   rows: RawRow[],
   mapping: Mapping,
   parcels: ParcelRef[],
+  headerRowNumber = 1,
 ): ParcelDetailValidatedRow[] {
   const lower = (s: string) => s.toLowerCase();
   const byPair = new Map<string, ParcelRef>();
@@ -344,7 +350,7 @@ export function validateParcelDetailRows(
         : null;
 
     return {
-      _rowNum: idx + 2,
+      _rowNum: idx + headerRowNumber + 1,
       _isValid: isValid,
       _errors: errors,
       _raw: r,

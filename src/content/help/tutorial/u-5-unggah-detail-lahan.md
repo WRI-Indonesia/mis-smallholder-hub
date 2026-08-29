@@ -54,3 +54,9 @@ Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: 
 **"Tidak ada data detail … untuk disimpan"** — baris itu tidak membawa surat, STDB, maupun UL Parcel Code. Hapus barisnya atau lengkapi.
 
 **Tombol validasi tetap nonaktif** — daftar lahan belum selesai dimuat (bisa beberapa detik untuk belasan ribu lahan). Tunggu sampai jumlah lahan tampil di Langkah 1.
+
+**Muncul pesan "Header ditemukan di baris 3"** — berkas kabupaten kerap punya baris judul di atas baris nama kolom, dan sistem melewatinya sendiri. Periksa sekilas apakah nama kolom yang terbaca sudah benar, lalu lanjutkan.
+
++ Nomor **Baris** di tabel hasil validasi dan di berkas unduhan error mengikuti nomor baris sungguhan di Excel, jadi tetap menunjuk baris yang benar walau headernya bukan di baris 1.
+
+**"Tidak menemukan baris header pada berkas ini"** — sheet yang terbaca tidak punya satu pun baris berisi nama kolom. Periksa apakah datanya ada di sheet lain yang kosong judulnya, atau berkasnya memang bukan tabel.

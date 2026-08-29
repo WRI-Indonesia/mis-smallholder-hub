@@ -104,7 +104,7 @@ Halaman: Upload Petani (/admin/bulk-upload/farmers)
 ## Alur upload
 
 1. Pilih **Lembaga Petani** tujuan (wajib, satu lembaga per unggahan).
-2. Pilih berkas `.xlsx`/`.csv` → header terdeteksi → auto-match kolom.
+2. Pilih berkas `.xlsx`/`.csv` → header terdeteksi (`readSpreadsheetFile`, `src/lib/excel-sheet-reader.ts`) → auto-match kolom. Baris header **tidak** diasumsikan baris fisik 1 (#301): dicari baris pertama yang label-labelnya cocok alias auto-match, lalu baris pertama dengan ≥2 sel terisi; header di baris >1 memunculkan toast *"Header ditemukan di baris X"*, berkas tanpa header sama sekali → *"Tidak menemukan baris header pada berkas ini"*. `_rowNum` ("Baris Asal") dihitung dari baris header, bukan dari 2.
 3. Perbaiki pemetaan kolom pada kartu "Petakan Kolom Data".
 4. Klik **Validasi Data** → seluruh baris divalidasi di client (termasuk cek duplikat dalam file dan terhadap `existingFarmerIds`).
 5. Tinjau ringkasan valid/tidak lengkap/error, filter, dan bila perlu unduh berkas hasil (semua / tidak lengkap / error saja) untuk diperbaiki lalu unggah ulang.

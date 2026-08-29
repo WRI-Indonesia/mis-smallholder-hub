@@ -25,6 +25,7 @@ import {
 import { addParticipantsSchema } from "@/validations/training-participant.schema";
 import { deriveFarmerSubGroups } from "@/lib/farmer-sub-groups";
 import { formatRspoCert } from "@/lib/farmer-group-labels";
+import { readSheetRows, type RawSheetRow } from "@/lib/excel-sheet-reader";
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
@@ -860,5 +861,32 @@ describe("Performance - Import Detail Lahan planner (#300, pure logic)", () => {
     console.log(`  detail-lahan plan (7.000 baris): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(100);
     expect(plan.summary.documentsCreated + plan.summary.documentsUnchanged).toBe(7000);
+  });
+});
+
+describe("Performance - Pembacaan sheet import (#301, pure logic)", () => {
+  it("readSheetRows: 7.000 baris × 12 kolom + baris judul under 100ms", () => {
+    const header = ["ID Lahan", "ID Petani", "Jenis Surat", "Nomor Surat", "Nama di Surat", "Luas Tertera", "Nomor STDB", "UL Parcel Code", "Kelompok Tani", "Blok", "Tahun Tanam", "Catatan"];
+    const rows: RawSheetRow[] = [
+      { rowNumber: 1, values: ["REKAP DETAIL LAHAN KAMPAR 2025", null, null] },
+      { rowNumber: 2, values: [null, null, null] },
+      { rowNumber: 3, values: header },
+      ...Array.from({ length: 7000 }, (_, i) => ({
+        rowNumber: i + 4,
+        values: [`P-${i}`, `F-${i}`, "SHM", `S-${i}`, "Abdul", 0.25, `N-${i}`, `CODE-${i}`, "KT", "A", 2012, null],
+      })),
+    ];
+    const aliases = ["id lahan", "id petani"];
+
+    const start = performance.now();
+    const result = readSheetRows(rows, {
+      isHeaderCandidate: (labels) => labels.some((l) => aliases.includes(l.toLowerCase())),
+    });
+    const duration = performance.now() - start;
+
+    console.log(`  readSheetRows (7.000 baris × 12 kolom): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(100);
+    expect(result.headerRowNumber).toBe(3);
+    expect(result.rows).toHaveLength(7000);
   });
 });
