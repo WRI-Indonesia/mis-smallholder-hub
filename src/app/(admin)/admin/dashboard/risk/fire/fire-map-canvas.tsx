@@ -389,12 +389,16 @@ export function FireMapCanvas({
           <Layer
             id="fire-boundary-label"
             type="symbol"
-            // Mode fokus: hanya label lembaga subjek yang tampil.
-            filter={
-              focusGroupId
-                ? (["==", ["get", "farmerGroupId"], focusGroupId] as unknown as FilterSpecification)
-                : undefined
-            }
+            // Mode fokus: hanya label lembaga subjek yang tampil. Prop di-spread
+            // bersyarat, bukan diberi `undefined`: react-map-gl meneruskan props
+            // apa adanya ke `addLayer`, dan MapLibre menolak `filter: undefined`
+            // ("array expected, undefined found"). Tanpa kunci = tanpa filter;
+            // saat fokus dilepas, `updateLayer` tetap memanggil `setFilter(id, undefined)`.
+            {...(focusGroupId
+              ? {
+                  filter: ["==", ["get", "farmerGroupId"], focusGroupId] as unknown as FilterSpecification,
+                }
+              : {})}
             layout={{
               "text-field": ["get", "name"],
               "text-font": ["Open Sans Regular"],
