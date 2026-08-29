@@ -123,17 +123,8 @@ function readCsvFile(file: File, options: ReadSheetOptions): Promise<SheetReadRe
   });
 }
 
-async function readXlsxFile(file: File, options: ReadSheetOptions): Promise<SheetReadResult> {
-  const workbook = new Excel.Workbook();
-  await workbook.xlsx.load(await file.arrayBuffer());
-  // Berkas sumber kadang punya sheet pertama kosong ("Sheet1") dan data di
-  // sheet "Data" — pilih sheet pertama yang benar-benar berisi baris data.
-  const worksheet =
-    workbook.worksheets.find((ws) => ws.name.trim().toLowerCase() === "data" && ws.rowCount > 1) ??
-    workbook.worksheets.find((ws) => ws.rowCount > 1) ??
-    workbook.worksheets[0];
-  if (!worksheet) throw new Error("Tidak ada sheet berisi data");
-
+/** Baris mentah satu worksheet exceljs. */
+function worksheetRows(worksheet: Excel.Worksheet): RawSheetRow[] {
   const rows: RawSheetRow[] = [];
   worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
     // Normalisasi ke primitif: sel error/rich text/formula dari exceljs berupa
@@ -143,8 +134,33 @@ async function readXlsxFile(file: File, options: ReadSheetOptions): Promise<Shee
     );
     rows.push({ rowNumber, values });
   });
+  return rows;
+}
 
-  return readSheetRows(rows, options);
+async function readXlsxFile(file: File, options: ReadSheetOptions): Promise<SheetReadResult> {
+  const workbook = new Excel.Workbook();
+  await workbook.xlsx.load(await file.arrayBuffer());
+
+  // Berkas sumber kadang punya sheet pertama kosong dan data di sheet lain —
+  // `MIS_KAMPAR_data-lahan.xlsx` misalnya punya "Sheet1" ber-`rowCount` 1000
+  // yang seluruhnya kosong, di samping sheet "Data" berisi 4.124 baris. Karena
+  // itu urutan coba: sheet bernama "Data" dulu, lalu sisanya sesuai urutan —
+  // dan sheet dianggap gagal bila TIDAK menghasilkan header, bukan sekadar
+  // ber-`rowCount` kecil (rowCount berbohong pada sheet kosong berformat).
+  const candidates = [...workbook.worksheets].sort(
+    (a, b) => Number(b.name.trim().toLowerCase() === "data") - Number(a.name.trim().toLowerCase() === "data"),
+  );
+  if (candidates.length === 0) throw new Error("Tidak ada sheet berisi data");
+
+  let fallback: SheetReadResult | null = null;
+  for (const worksheet of candidates) {
+    const result = readSheetRows(worksheetRows(worksheet), options);
+    if (result.headers.length > 0 && result.rows.length > 0) return result;
+    // Sheet berheader tapi tanpa baris data tetap lebih berguna daripada
+    // "tidak menemukan header" — simpan sebagai cadangan, terus cari.
+    if (!fallback && result.headers.length > 0) fallback = result;
+  }
+  return fallback ?? readSheetRows(worksheetRows(candidates[0]), options);
 }
 
 /**

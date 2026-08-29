@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { detectHeaderIndex, readSheetRows, type RawSheetRow } from "@/lib/excel-sheet-reader";
+import Excel from "exceljs";
+import {
+  detectHeaderIndex,
+  readSheetRows,
+  readSpreadsheetFile,
+  type RawSheetRow,
+} from "@/lib/excel-sheet-reader";
 import { formatFieldErrors, collectFieldErrorMessages } from "@/lib/validation-message";
 
 /**
@@ -149,6 +155,61 @@ describe("formatFieldErrors", () => {
   it("tetap berkalimat Indonesia bila fieldErrors kosong", () => {
     expect(formatFieldErrors({}, "Data tidak lolos validasi")).toBe(
       "Data tidak lolos validasi. Periksa kembali isi berkas Anda.",
+    );
+  });
+});
+
+/**
+ * Pemilihan sheet (#301). `rowCount` exceljs berbohong pada sheet kosong yang
+ * pernah diformat: `MIS_KAMPAR_data-lahan.xlsx` punya "Sheet1" ber-rowCount
+ * 1000 yang seluruhnya kosong di samping sheet "Data" berisi 4.124 baris.
+ * Karena itu sheet dinilai dari apakah ia menghasilkan header, bukan dari
+ * rowCount-nya.
+ */
+describe("readSpreadsheetFile — pemilihan sheet .xlsx", () => {
+  async function xlsx(sheets: { name: string; rows: (string | number | null)[][] }[]): Promise<File> {
+    const wb = new Excel.Workbook();
+    for (const s of sheets) {
+      const ws = wb.addWorksheet(s.name);
+      for (const r of s.rows) ws.addRow(r);
+    }
+    const buf = await wb.xlsx.writeBuffer();
+    return new File([new Uint8Array(buf as ArrayBuffer)], "uji.xlsx");
+  }
+
+  const HEADER = ["ID Lahan", "ID Petani"];
+  const DATA = [HEADER, ["A.1", "P.1"]];
+
+  it("mengutamakan sheet bernama 'Data'", async () => {
+    const f = await xlsx([
+      { name: "Lain", rows: [["Kolom X", "Kolom Y"], ["1", "2"]] },
+      { name: "Data", rows: DATA },
+    ]);
+    const r = await readSpreadsheetFile(f);
+    expect(r.headers).toEqual(HEADER);
+    expect(r.rows).toHaveLength(1);
+  });
+
+  it("melewati sheet kosong dan memakai sheet berikutnya yang berisi", async () => {
+    const f = await xlsx([
+      { name: "Sheet1", rows: [[null, null], [null, null]] },
+      { name: "Isi", rows: DATA },
+    ]);
+    const r = await readSpreadsheetFile(f);
+    expect(r.headers).toEqual(HEADER);
+    expect(r.rows).toHaveLength(1);
+  });
+
+  it("berkas tanpa isi sama sekali → header kosong, bukan lempar", async () => {
+    const f = await xlsx([{ name: "Sheet1", rows: [[null]] }]);
+    const r = await readSpreadsheetFile(f);
+    expect(r.headers).toEqual([]);
+    expect(r.headerRowNumber).toBe(0);
+  });
+
+  it("ekstensi selain .xlsx/.csv ditolak berpesan Indonesia", async () => {
+    await expect(readSpreadsheetFile(new File([""], "data.pdf"))).rejects.toThrow(
+      "Hanya mendukung berkas Excel (.xlsx) atau CSV",
     );
   });
 });
