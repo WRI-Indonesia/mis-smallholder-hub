@@ -538,7 +538,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
    */
   // Kartu layar dan cetakan memakai helper yang SAMA (#305) — kalau dihitung
   // dua kali, layar dan PDF akan bercerita beda tanpa ada yang tahu.
-  const legalCards = reportData ? describeLegalSummary(reportData.summary) : [];
+  const legalCards = reportData ? describeLegalSummary(reportData.summary, legalFilters) : [];
 
   /** Baris teks ringkasan legalitas untuk PDF & Excel. */
   const legalSummaryLines = () => legalCards.map((c) => `${c.label}: ${c.value} (${c.note})`);

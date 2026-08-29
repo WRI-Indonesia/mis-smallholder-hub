@@ -126,7 +126,37 @@ describe("readSheetRows", () => {
 
   it("berkas kosong tidak melempar dan tidak berpura-pura punya header", () => {
     const result = readSheetRows(sheet([[null], [""]]));
-    expect(result).toEqual({ headers: [], rows: [], headerRowNumber: 0 });
+    expect(result).toEqual({ headers: [], rows: [], rowNumbers: [], headerRowNumber: 0 });
+  });
+
+  it("rowNumbers = baris FISIK, bukan indeks — baris kosong di tengah tak menggeser nomor", () => {
+    // Inti #301: "Baris Asal" harus menunjuk baris yang benar di Excel. Baris
+    // kosong dibuang, jadi `indeks + header + 1` akan meleset sebanyak baris
+    // kosong di atasnya — persis yang membuat operator mencari baris yang salah.
+    const result = readSheetRows(
+      sheet([
+        ["ID Lahan", "ID Petani"],
+        ["A.1", "P.1"],
+        [null, null],
+        [null, null],
+        ["A.2", "P.2"],
+      ]),
+    );
+    expect(result.rows).toHaveLength(2);
+    expect(result.rowNumbers).toEqual([2, 5]);
+  });
+
+  it("rowNumbers ikut bergeser saat header bukan di baris 1", () => {
+    const result = readSheetRows(
+      sheet([
+        ["REKAP 2025", null],
+        [null, null],
+        ["ID Lahan", "ID Petani"],
+        ["A.1", "P.1"],
+      ]),
+    );
+    expect(result.headerRowNumber).toBe(3);
+    expect(result.rowNumbers).toEqual([4]);
   });
 });
 
@@ -198,6 +228,19 @@ describe("readSpreadsheetFile — pemilihan sheet .xlsx", () => {
     const r = await readSpreadsheetFile(f);
     expect(r.headers).toEqual(HEADER);
     expect(r.rows).toHaveLength(1);
+  });
+
+  it("sheet TERSEMBUNYI dilewati — template Excel kerap menaruh daftar dropdown di sana", async () => {
+    const wb = new Excel.Workbook();
+    const hidden = wb.addWorksheet("Data");
+    hidden.state = "hidden";
+    for (const r of [["Pilihan A", "Pilihan B"], ["x", "y"]]) hidden.addRow(r);
+    const visibleWs = wb.addWorksheet("Sheet1");
+    for (const r of DATA) visibleWs.addRow(r);
+    const buf = await wb.xlsx.writeBuffer();
+    const r = await readSpreadsheetFile(new File([new Uint8Array(buf as ArrayBuffer)], "uji.xlsx"));
+    // Tanpa saringan hidden, sheet "Data" menang dan importer membaca dropdown.
+    expect(r.headers).toEqual(HEADER);
   });
 
   it("berkas tanpa isi sama sekali → header kosong, bukan lempar", async () => {

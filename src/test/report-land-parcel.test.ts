@@ -478,3 +478,36 @@ describe("describeLegalSummary", () => {
     expect(d[3].label).toBe("Selisih Luas ≥ 0,50 Ha");
   });
 });
+
+/**
+ * Penyebut persentase mengikuti cakupan (temuan review 2026-08-29). Dengan
+ * "Semua lahan", pembilang dihitung atas seluruh baris hasil filter sedangkan
+ * `totalDidata` hanya sebagian — memakai `totalDidata` sebagai penyebut di sana
+ * menghasilkan persen di atas 100% yang ikut tercetak ke PDF & Excel.
+ */
+describe("describeLegalSummary — penyebut mengikuti cakupan", () => {
+  const S = (o: Partial<LandParcelReportSummary>): LandParcelReportSummary => ({
+    totalLahan: 0, totalPetani: 0, totalKelompokTani: 0, totalLembagaTani: 0, totalLuas: 0,
+    totalDidata: 0, totalAdaSurat: 0, totalAdaStdb: 0, totalSelisihLuas: 0, ...o,
+  });
+  // Bentuk data yang persis dianalisa review: 60 lahan bersurat, hanya 40 didata.
+  const skewed = S({ totalLahan: 60, totalDidata: 40, totalAdaSurat: 60, totalAdaStdb: 50 });
+
+  it("cakupan 'semua lahan': persen tak pernah melebihi 100%", () => {
+    const d = describeLegalSummary(skewed, { coverage: "all" });
+    const surat = d.find((x) => x.label === "Ada Surat")!;
+    expect(surat.note).toBe("100% dari 60 lahan pada hasil filter (termasuk yang belum didata)");
+    expect(surat.note).not.toContain("150%");
+  });
+
+  it("cakupan 'sudah didata': penyebutnya tetap totalDidata", () => {
+    const d = describeLegalSummary(S({ totalLahan: 40, totalDidata: 40, totalAdaSurat: 30 }), { coverage: "mapped" });
+    expect(d.find((x) => x.label === "Ada Surat")!.note).toBe("75% dari 40 lahan yang sudah didata");
+  });
+
+  it("kartu pertama selalu melaporkan totalDidata apa adanya, bukan penyebut aktif", () => {
+    const d = describeLegalSummary(skewed, { coverage: "all" });
+    expect(d[0].value).toBe("60");
+    expect(d[0].note).toBe("40 di antaranya sudah didata");
+  });
+});

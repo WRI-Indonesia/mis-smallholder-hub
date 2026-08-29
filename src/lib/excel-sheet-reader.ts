@@ -49,6 +49,12 @@ export interface SheetReadResult {
   /** Label kolom, sudah di-trim; sel header kosong dibuang. */
   headers: string[];
   rows: SheetRecord[];
+  /**
+   * Nomor baris FISIK tiap entri `rows`, sejajar indeksnya. Wajib dipakai untuk
+   * menampilkan "Baris Asal": baris kosong di tengah data dibuang, jadi
+   * `indeks + header + 1` menggeser nomornya sebanyak baris kosong di atasnya.
+   */
+  rowNumbers: number[];
   /** Nomor baris fisik header; 0 bila berkas tidak berisi apa pun. */
   headerRowNumber: number;
 }
@@ -85,15 +91,17 @@ export function detectHeaderIndex(rows: RawSheetRow[], options: ReadSheetOptions
  */
 export function readSheetRows(rows: RawSheetRow[], options: ReadSheetOptions = {}): SheetReadResult {
   const headerIndex = detectHeaderIndex(rows, options);
-  if (headerIndex < 0) return { headers: [], rows: [], headerRowNumber: 0 };
+  if (headerIndex < 0) return { headers: [], rows: [], rowNumbers: [], headerRowNumber: 0 };
 
   const headerRow = rows[headerIndex];
   const labels = labelsOf(headerRow.values);
   const headers = labels.filter(Boolean);
 
   const records: SheetRecord[] = [];
+  const rowNumbers: number[] = [];
   for (const row of rows.slice(headerIndex + 1)) {
     if (filledCount(labelsOf(row.values)) === 0) continue;
+    rowNumbers.push(row.rowNumber);
     const record: SheetRecord = {};
     // `forEach` melewati lubang array — persis perilaku lama, dan nilai sel
     // tidak dinormalisasi (`undefined` tetap `undefined`) supaya preprocess
@@ -104,7 +112,7 @@ export function readSheetRows(rows: RawSheetRow[], options: ReadSheetOptions = {
     records.push(record);
   }
 
-  return { headers, rows: records, headerRowNumber: headerRow.rowNumber };
+  return { headers, rows: records, rowNumbers, headerRowNumber: headerRow.rowNumber };
 }
 
 function readCsvFile(file: File, options: ReadSheetOptions): Promise<SheetReadResult> {
@@ -147,7 +155,14 @@ async function readXlsxFile(file: File, options: ReadSheetOptions): Promise<Shee
   // itu urutan coba: sheet bernama "Data" dulu, lalu sisanya sesuai urutan —
   // dan sheet dianggap gagal bila TIDAK menghasilkan header, bukan sekadar
   // ber-`rowCount` kecil (rowCount berbohong pada sheet kosong berformat).
-  const candidates = [...workbook.worksheets].sort(
+  //
+  // Sheet TERSEMBUNYI dilewati: template Excel lazim menyimpan daftar
+  // data-validation di sheet hidden — kadang bernama "Data" — dan sheet itu
+  // lolos uji header (≥2 sel terisi), sehingga tanpa saringan ini importer
+  // membaca daftar dropdown alih-alih datanya.
+  const visible = workbook.worksheets.filter((ws) => ws.state !== "hidden" && ws.state !== "veryHidden");
+  const pool = visible.length > 0 ? visible : workbook.worksheets;
+  const candidates = [...pool].sort(
     (a, b) => Number(b.name.trim().toLowerCase() === "data") - Number(a.name.trim().toLowerCase() === "data"),
   );
   if (candidates.length === 0) throw new Error("Tidak ada sheet berisi data");

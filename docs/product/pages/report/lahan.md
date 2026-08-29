@@ -24,6 +24,8 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 │   ├── Lahan (hasil filter)
 │   ├── Ada Surat (n + % berlabel penyebut)
 │   ├── Ada STDB (n + % berlabel penyebut, satuan persil)
+│   │   Penyebut mengikuti Cakupan: `sudah didata` → totalDidata,
+│   │   `semua lahan` → totalLahan (kalau tidak, persen bisa >100%)
 │   └── Selisih Luas ≥ 0,5 Ha
 ├── Peta Cetak — Grid & Label
 │   ├── Grid Index (Baris × Kolom)
@@ -69,7 +71,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | "Label Poligon" | Filter (checkbox, minimal satu aktif) | Opsi: No, Nama, ID Petani, ID Lahan, Kelompok Tani (default: No) |
 | Preview peta | Chart / SVG | Tanpa grid: 1 halaman peta. Dengan grid: 1 ikhtisar (garis grid + label sel + "`<n>` lahan") + satu peta per sel; dekorasi panah utara & skala batang; catatan "`<n>` lahan tanpa geometri tidak tergambar (No …)."; state "Memuat geometri lahan..." dan "Tidak ada geometri lahan yang dapat digambar." |
 | "Kolom" | Dropdown selektor kolom | Pintasan **Pilih semua · Kosongkan · Bawaan** + penghitung `aktif/total` (standar `ui-ux.md`; rollout ke menu lain: #308). "Tampilkan Kolom": Kelompok Tani, Blok, Komoditas, Species, PSR, Tahun Tanam, Luas (Ha), **Surat Kepemilikan, Nama di Surat, Luas Tertera (Ha), STDB** (#296), **UL Parcel Code, Program** (#305). Default aktif: Kelompok Tani, Tahun Tanam, Luas (Ha) |
-| "Cakupan Pendataan" | Filter (`select`) | `Sudah didata` (default) / `Semua lahan`. "Sudah didata" = punya UL Parcel Code aktif — **proxy** untuk "sudah melalui import Detail Lahan". Ini penyebut semua persentase di kartu ringkasan |
+| "Cakupan Pendataan" | Filter (`select`) | `Sudah didata` (default — **juga default server**: `landParcelLegalWhere` membatasi untuk apa pun selain `"all"`, sama dengan yang dicetak `describeLegalFilters`, supaya header PDF/Excel tak pernah mengklaim batasan yang tidak ada di datanya) / `Semua lahan`. "Sudah didata" = punya UL Parcel Code aktif — **proxy** untuk "sudah melalui import Detail Lahan". Ini penyebut semua persentase di kartu ringkasan |
 | "Status Surat" | Filter (`select`) | `Semua` / `Ada surat` / `Tanpa surat`. **"Tanpa surat" = tidak ada baris `LandParcelDocument` aktif sama sekali**; lahan yang hanya punya baris `OTHER` + `custodyNote` ("surat di bank", "lahan sudah dijual") dihitung **punya** surat |
 | "Jenis Surat" | Filter (dropdown checkbox, multi) | Enum `LandDocumentType`. Semantik: **punya minimal satu** jenis terpilih — lahan ber-SHM *dan* ber-SKT muncul di kedua filter (disengaja) |
 | "Status STDB" | Filter (`select`) | `Semua` / `Ada STDB` / `Tanpa STDB` / per tahap `LandStdbStage` (#306) |

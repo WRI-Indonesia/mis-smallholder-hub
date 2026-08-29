@@ -112,7 +112,12 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
       // ikut terkirim lalu ditolak Zod (#306).
       const data = {
         stage: stdbStage,
-        number: isTerbit ? str(form, "number") : "",
+        // Field nomor `disabled` saat bukan TERBIT sehingga tidak ikut FormData.
+        // Nomor yang SUDAH tercatat tetap dikirim ulang: STDB terbit yang
+        // dikembalikan untuk diperbaiki (TERBIT → REVISI) tidak boleh kehilangan
+        // nomornya — skema mengizinkan baris non-TERBIT bernomor, dan
+        // `summarizeStdb` memang menampilkannya sebagai "1637/… (Revisi)".
+        number: isTerbit ? str(form, "number") : (target.item?.number ?? ""),
         holderName: str(form, "holderName"),
         statedArea: str(form, "statedArea"),
         issuedYear: isTerbit ? str(form, "issuedYear") : "",

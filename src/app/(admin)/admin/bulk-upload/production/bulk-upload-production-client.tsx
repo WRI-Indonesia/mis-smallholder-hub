@@ -148,8 +148,8 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<RawRow[]>([]);
-  /** Baris fisik header di berkas (#301) — dasar penomoran "Baris Asal". */
-  const [headerRowNumber, setHeaderRowNumber] = useState(1);
+  /** Nomor baris FISIK tiap baris data (#301) — dasar penomoran "Baris Asal". */
+  const [rowNumbers, setRowNumbers] = useState<number[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [validatedData, setValidatedData] = useState<ProductionValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
@@ -195,7 +195,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
   ): { data: ProductionValidatedRow; errors: string[] } {
     const errors: string[] = [];
     const normalized: ProductionValidatedRow = {
-      _rowNum: index + headerRowNumber + 1, // baris pertama setelah header (#301)
+      _rowNum: rowNumbers[index] ?? index + 2, // baris fisik di berkas (#301)
       _original: {},
       _isValid: false,
       _errors: [],
@@ -360,7 +360,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
     setRawRows([]);
     setMapping({});
     setValidatedData([]);
-    setHeaderRowNumber(1);
+    setRowNumbers([]);
 
     try {
       const sheet = await readSpreadsheetFile(selectedFile, {
@@ -375,7 +375,7 @@ export function BulkUploadProductionClient({ farmers, existingRecords, permissio
       }
       setHeaders(sheet.headers);
       setRawRows(sheet.rows as RawRow[]);
-      setHeaderRowNumber(sheet.headerRowNumber);
+      setRowNumbers(sheet.rowNumbers);
       setMapping(matchColumns(sheet.headers));
     } catch (err) {
       console.error(err);

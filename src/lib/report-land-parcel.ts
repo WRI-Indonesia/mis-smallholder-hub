@@ -209,15 +209,26 @@ export function describeLegalFilters(filters: LandParcelLegalFilters): { label: 
  */
 export function describeLegalSummary(
   summary: LandParcelReportSummary,
+  filters: LandParcelLegalFilters = {},
 ): { label: string; value: string; note: string }[] {
-  const base = summary.totalDidata;
+  // Penyebut WAJIB mengikuti cakupan yang dipilih. Dengan "Semua lahan",
+  // pembilangnya dihitung atas seluruh baris hasil filter sedangkan
+  // `totalDidata` hanya sebagian — memakai `totalDidata` sebagai penyebut di
+  // sana menghasilkan persen di atas 100% ("Ada Surat: 60 — 150% dari 40 lahan
+  // yang sudah didata"), dan itu ikut tercetak ke PDF & Excel.
+  const allCoverage = filters.coverage === "all";
+  const base = allCoverage ? summary.totalLahan : summary.totalDidata;
   const pct = (n: number) => (base > 0 ? `${Math.round((n / base) * 100)}%` : "—");
-  const denom = `dari ${formatCount(base)} lahan yang sudah didata`;
+  const denom = allCoverage
+    ? `dari ${formatCount(base)} lahan pada hasil filter (termasuk yang belum didata)`
+    : `dari ${formatCount(base)} lahan yang sudah didata`;
   return [
     {
       label: "Lahan (hasil filter)",
       value: formatCount(summary.totalLahan),
-      note: `${formatCount(base)} di antaranya sudah didata`,
+      // Selalu `totalDidata` — bukan `base` — karena kalimat ini justru yang
+      // memberi tahu berapa banyak dari hasil filter yang sudah didata.
+      note: `${formatCount(summary.totalDidata)} di antaranya sudah didata`,
     },
     { label: "Ada Surat", value: formatCount(summary.totalAdaSurat), note: `${pct(summary.totalAdaSurat)} ${denom}` },
     {

@@ -517,7 +517,12 @@ export async function getKelompokTaniReport(
 function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParcelWhereInput[] {
   const out: Prisma.LandParcelWhereInput[] = [];
 
-  if (filters.coverage === "mapped") {
+  // Default = `mapped` (hanya lahan yang sudah didata), sama dengan yang
+  // dicetak `describeLegalFilters`. Sebelumnya `where` hanya membatasi saat
+  // `=== "mapped"` sementara teksnya menyebut "hanya yang sudah didata" untuk
+  // apa pun selain `"all"` — pemanggil yang tidak mengirim `coverage`
+  // menghasilkan PDF/Excel yang mengklaim batasan yang tidak ada di datanya.
+  if (filters.coverage !== "all") {
     out.push({ identity: { externalIds: { some: { isActive: true } } } });
   }
 

@@ -45,8 +45,17 @@ import {
 /** 1×1 RGBA transparan — pengganti ikon basemap yang hilang di sprite hulu. */
 const BLANK_IMAGE = { width: 1, height: 1, data: new Uint8Array(4) };
 
-/** Prefiks id layer milik aplikasi, supaya tak dikira layer teks basemap. */
-const APP_LAYER_PREFIXES = ["fire-", "bmp-", "parcel", "group-", "dashboard-", "cluster", "tree-"];
+/**
+ * Prefiks id layer milik aplikasi, supaya tak dikira layer teks basemap.
+ * Ini **jaring kedua**, bukan pertahanan utama: daftar seperti ini pasti
+ * tertinggal saat layer baru lahir (`kt-`, `measure-`, dan `unclustered-`
+ * sempat luput). Pertahanan utamanya ada di `syncStyle` — `labelBeforeId` hanya
+ * dihitung ketika style yang BENAR-BENAR termuat adalah basemap vector.
+ */
+const APP_LAYER_PREFIXES = [
+  "fire-", "bmp-", "parcel", "group-", "dashboard-", "cluster", "tree-",
+  "kt-", "measure-", "unclustered-", "hotspot", "overlay-", "user-",
+];
 
 type StyleLayerLike = { id: string; type: string; layout?: Record<string, unknown> };
 
@@ -93,8 +102,18 @@ export function useVectorBasemap(styleKey: MapStyleKey, options: Options = {}) {
   /** Panggil di `onLoad` DAN `onStyleData` — keduanya idempoten. */
   const syncStyle = useCallback((map: MapLike) => {
     const style = map.getStyle();
-    setLabelBeforeId(findBasemapLabelLayer((style?.layers ?? []) as StyleLayerLike[]));
-    setLiveFont(fontForGlyphs(style?.glyphs));
+    const font = fontForGlyphs(style?.glyphs);
+    // HANYA basemap vector yang punya layer teks sendiri. Pada basemap raster
+    // (streetmap/satellite/hybrid) satu-satunya layer simbol di style adalah
+    // milik aplikasi, sehingga "cari layer teks pertama" justru mengembalikan
+    // layer kita sendiri — fill/line lalu disisipkan DI BAWAHNYA dan, misalnya,
+    // overlay ukur tergambar di bawah titik api. `undefined` = perilaku lama.
+    setLabelBeforeId(
+      font === OPENFREEMAP_FONT
+        ? findBasemapLabelLayer((style?.layers ?? []) as StyleLayerLike[])
+        : undefined,
+    );
+    setLiveFont(font);
   }, []);
 
   /**

@@ -65,8 +65,8 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<RawRow[]>([]);
-  /** Baris fisik header di berkas (#301) — dasar penomoran "Baris Asal". */
-  const [headerRowNumber, setHeaderRowNumber] = useState(1);
+  /** Nomor baris FISIK tiap baris data (#301) — dasar penomoran "Baris Asal". */
+  const [rowNumbers, setRowNumbers] = useState<number[]>([]);
   const [mapping, setMapping] = useState<Mapping>({});
   const [validated, setValidated] = useState<ParcelDetailValidatedRow[]>([]);
   const [filter, setFilter] = useState<"all" | "valid" | "error">("all");
@@ -111,7 +111,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     setRawRows([]);
     setMapping({});
     setValidated([]);
-    setHeaderRowNumber(1);
+    setRowNumbers([]);
 
     try {
       const sheet = await readSpreadsheetFile(selected, {
@@ -126,7 +126,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
       }
       setHeaders(sheet.headers);
       setRawRows(sheet.rows);
-      setHeaderRowNumber(sheet.headerRowNumber);
+      setRowNumbers(sheet.rowNumbers);
       setMapping(autoMatchParcelDetailColumns(sheet.headers));
     } catch (err) {
       console.error(err);
@@ -144,7 +144,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
       toast.error(`Kolom wajib belum dipetakan: ${missing.map((f) => f.label).join(", ")}`);
       return;
     }
-    setValidated(validateParcelDetailRows(rawRows, mapping, parcels, headerRowNumber));
+    setValidated(validateParcelDetailRows(rawRows, mapping, parcels, rowNumbers));
     toast.success("Validasi selesai");
     // Peringatan eksplisit, bukan lewat diam-diam (#305): "punya UL Parcel
     // Code" dipakai Laporan Lahan sebagai penanda "lahan sudah didata". Begitu

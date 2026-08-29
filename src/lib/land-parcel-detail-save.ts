@@ -147,7 +147,12 @@ const sameDoc = (a: DocumentFields, b: Partial<DocumentFields>) =>
  * Baris ganda dalam batch (kunci sama) digabung — yang terakhir menang untuk
  * field, tapi dihitung sekali.
  */
-export function planLandParcelDetailRows(rows: LandParcelDetailRowInput[], existing: ParcelDetailExistingState): ParcelDetailPlan {
+export function planLandParcelDetailRows(
+  rows: LandParcelDetailRowInput[],
+  existing: ParcelDetailExistingState,
+  /** Lihat `applyLandParcelDetailRows`; bila tak diberi, dihitung dari `rows` saja (cukup untuk pemakaian satu-batch). */
+  farmersWithNumberedStdb?: ReadonlySet<string>,
+): ParcelDetailPlan {
   const summary = emptyParcelDetailSummary(rows.length);
   const plan: ParcelDetailPlan = {
     documentCreates: [],
@@ -170,8 +175,10 @@ export function planLandParcelDetailRows(rows: LandParcelDetailRowInput[], exist
   const skippedPendingFarmers = new Set<string>();
   // Dihitung DULU (bukan sambil jalan) supaya keputusan "lewati baris
   // pra-terbit" tidak bergantung urutan baris di berkas: satu petani bisa
-  // punya baris "n/a" di atas baris bernomornya.
-  const farmersWithNumberedStdbInBatch = new Set(rows.filter((r) => r.stdb?.number).map((r) => r.farmerDbId));
+  // punya baris "n/a" di atas baris bernomornya. Pemanggil yang memecah chunk
+  // WAJIB mengirimkan set se-berkas — batas chunk kalau tidak akan memotong
+  // pasangan baris milik petani yang sama.
+  const farmersWithNumberedStdbInBatch = farmersWithNumberedStdb ?? farmersWithNumberedStdbIn(rows);
   const pendingLinks = new Set<string>();
   const reactivatedLinks = new Set<string>();
   const pendingCodes = new Map<string, "create" | "update" | "skip" | "unchanged">();
@@ -338,7 +345,16 @@ export async function fetchParcelDetailExistingState(
   ]);
   for (const d of documents) state.documents.set(docKey(d.parcelUid, d.type, d.number), { id: d.id, typeRaw: d.typeRaw, holderName: d.holderName, statedArea: d.statedArea, custodyNote: d.custodyNote });
   for (const s of stdbs) {
-    if (s.number) state.stdbs.set(stdbKey(s.farmerId, s.number), { id: s.id, isActive: s.isActive });
+    if (s.number) {
+      // Bisa ada PASANGAN aktif+nonaktif dengan (farmerId, number) yang sama —
+      // partial unique index hanya menjaga baris aktif. Yang AKTIF wajib menang:
+      // memilih yang nonaktif membuat planner mendorongnya ke `stdbReactivateIds`,
+      // dan UPDATE-nya menabrak `uniq_land_stdb_farmer_number` sehingga satu
+      // chunk 500 baris gagal seluruhnya.
+      const key = stdbKey(s.farmerId, s.number);
+      const prev = state.stdbs.get(key);
+      if (!prev || (!prev.isActive && s.isActive)) state.stdbs.set(key, { id: s.id, isActive: s.isActive });
+    }
     // Baris tanpa nomor tidak boleh ikut peta bernomor (#306) — kuncinya beda.
     if (s.isActive && isOpenStdbStage(s.stage)) state.openStdbs.set(openStdbKey(s.farmerId), { id: s.id, isActive: true });
     if (s.isActive) state.farmersWithActiveStdb.add(s.farmerId);
@@ -446,10 +462,23 @@ export async function applyLandParcelDetailRows(
   userId: string | null,
   summary: ParcelDetailSaveSummary,
   source: string = DEFAULT_PARCEL_MAPPER,
+  /**
+   * Petani yang punya STDB bernomor **di seluruh berkas**, bukan hanya di chunk
+   * ini (#306). Wajib dihitung pemanggil sebelum memecah chunk: tanpa itu,
+   * petani yang baris "n/a"-nya jatuh di chunk 1 sementara baris bernomornya di
+   * chunk 2 tetap mendapat berkas `PERSIAPAN_DATA` — justru penggelembungan
+   * funnel yang hendak dicegah, dan hasilnya bergantung urutan baris.
+   */
+  farmersWithNumberedStdb?: ReadonlySet<string>,
 ): Promise<void> {
   if (rows.length === 0) return;
   const existing = await fetchParcelDetailExistingState(tx, rows, source);
-  const plan = planLandParcelDetailRows(rows, existing);
+  const plan = planLandParcelDetailRows(rows, existing, farmersWithNumberedStdb);
   await executeParcelDetailPlan(tx, plan, userId, source);
   mergeParcelDetailSummary(summary, plan.summary);
+}
+
+/** Petani yang membawa STDB bernomor di sekumpulan baris — dihitung sekali atas SELURUH berkas. */
+export function farmersWithNumberedStdbIn(rows: LandParcelDetailRowInput[]): Set<string> {
+  return new Set(rows.filter((r) => r.stdb?.number).map((r) => r.farmerDbId));
 }

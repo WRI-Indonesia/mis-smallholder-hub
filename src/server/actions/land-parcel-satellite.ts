@@ -93,12 +93,13 @@ export async function createLandStdb(input: unknown): Promise<Result> {
   const uid = await userId();
   const trimmedNumber = number?.trim() || null;
 
-  // Sejak #306 `@@unique([farmerId, number])` dilepas (nomor boleh NULL), jadi
-  // `findUnique` diganti `findFirst` + filter yang sama dengan partial unique
-  // index `uniq_land_stdb_farmer_number`: nomor hanya unik pada baris AKTIF.
-  // Baris tanpa nomor tidak pernah dipakai ulang lewat jalur ini — yang
-  // menahannya adalah guard "satu berkas terbuka per petani" di bawah.
-  if (!trimmedNumber) {
+  // Guard kembar partial index `uniq_land_stdb_farmer_open`. Kuncinya adalah
+  // TAHAP, bukan ada-tidaknya nomor: (a) baris `DITOLAK` tanpa nomor ada di
+  // LUAR index itu dan harus boleh dibuat walau petaninya punya berkas
+  // berjalan; (b) baris bertahap terbuka yang KEBETULAN sudah bernomor tetap
+  // masuk index, jadi tanpa guard ini insert-nya menabrak unique dan melempar
+  // P2002 mentah keluar dari server action alih-alih `{ success: false }`.
+  if (isOpenStdbStage(stage)) {
     const open = await prisma.landStdb.findFirst({
       where: { farmerId: parcel.farmerId, isActive: true, stage: { in: [...LAND_STDB_OPEN_STAGES] } },
       select: { id: true },
@@ -109,8 +110,18 @@ export async function createLandStdb(input: unknown): Promise<Result> {
   }
 
   const result = await prisma.$transaction(async (tx) => {
+    // Cari baris bernomor milik petani ini TANPA menyaring `isActive`, lalu
+    // utamakan yang aktif. Menyaring `isActive: true` membuat STDB yang pernah
+    // dinonaktifkan tidak pernah dipakai ulang: baris kembar (farmerId, number)
+    // lahir — lolos DB karena partial index hanya menjaga baris aktif — dan
+    // `fetchParcelDetailExistingState` yang berkunci `stdbKey` tanpa pemisah
+    // aktif/nonaktif bisa memilih yang salah lalu menggagalkan satu chunk penuh.
     const found = trimmedNumber
-      ? await tx.landStdb.findFirst({ where: { farmerId: parcel.farmerId, number: trimmedNumber, isActive: true }, select: { id: true } })
+      ? await tx.landStdb.findFirst({
+          where: { farmerId: parcel.farmerId, number: trimmedNumber },
+          orderBy: { isActive: "desc" },
+          select: { id: true },
+        })
       : null;
     let stdbId: string;
     if (found) {

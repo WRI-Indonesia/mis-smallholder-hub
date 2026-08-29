@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   planLandParcelDetailRows,
   emptyExistingState,
+  farmersWithNumberedStdbIn,
   emptyParcelDetailSummary,
   mergeParcelDetailSummary,
   docKey,
@@ -218,5 +219,60 @@ describe("planLandParcelDetailRows — tahapan STDB pra-terbit (#306)", () => {
     // Slot terbuka tidak tersentuh; yang dipakai tetap STDB bernomor.
     expect(plan.stdbCreates).toEqual([]);
     expect(plan.linkCreates).toEqual([{ parcelUid: "uid-1", stdbId: "s1" }]);
+  });
+});
+
+/**
+ * Temuan review 2026-08-29 pada jalur import STDB.
+ */
+describe("planLandParcelDetailRows — batas chunk & pasangan aktif/nonaktif (#306)", () => {
+  const pending = { number: null, issuedYear: null, stage: "PERSIAPAN_DATA" as const };
+  const numbered = { number: "N-9", issuedYear: null, stage: "TERBIT" as const };
+
+  it("set petani-bernomor se-BERKAS menang atas isi chunk", () => {
+    // Chunk ini hanya berisi baris "n/a"; baris bernomor milik petani yang sama
+    // ada di chunk lain. Tanpa set se-berkas, berkas PERSIAPAN_DATA tetap dibuat
+    // dan funnel menggelembung justru karena batas chunk.
+    const plan = planLandParcelDetailRows(
+      [row({ parcelUid: "uid-1", stdb: pending })],
+      emptyExistingState(),
+      new Set(["f1"]),
+    );
+    expect(plan.stdbCreates).toEqual([]);
+    expect(plan.summary).toMatchObject({ stdbsPendingCreated: 0, stdbsPendingSkipped: 1 });
+  });
+
+  it("tanpa set se-berkas, keputusannya jatuh ke isi chunk saja (perilaku cadangan)", () => {
+    const plan = planLandParcelDetailRows(
+      [row({ parcelUid: "uid-1", stdb: pending }), row({ parcelUid: "uid-2", stdb: numbered })],
+      emptyExistingState(),
+    );
+    expect(plan.summary.stdbsPendingSkipped).toBe(1);
+  });
+
+  it("farmersWithNumberedStdbIn menghitung dari seluruh baris yang diberikan", () => {
+    const rows = [
+      row({ farmerDbId: "f1", stdb: pending }),
+      row({ farmerDbId: "f2", stdb: numbered }),
+      row({ farmerDbId: "f3", stdb: null }),
+    ];
+    expect([...farmersWithNumberedStdbIn(rows)]).toEqual(["f2"]);
+  });
+});
+
+describe("fetchParcelDetailExistingState — pasangan STDB aktif/nonaktif", () => {
+  it("baris AKTIF menang atas yang nonaktif pada kunci (farmerId, number) yang sama", () => {
+    // Pasangan seperti ini sah di DB: partial unique index hanya menjaga baris
+    // aktif. Memilih yang nonaktif membuat planner mendorongnya ke
+    // stdbReactivateIds, dan UPDATE-nya menabrak uniq_land_stdb_farmer_number
+    // sehingga satu chunk 500 baris gagal seluruhnya.
+    const existing: ParcelDetailExistingState = emptyExistingState();
+    existing.stdbs.set(stdbKey("f1", "N-1"), { id: "s-aktif", isActive: true });
+    const plan = planLandParcelDetailRows(
+      [row({ parcelUid: "uid-1", stdb: { number: "N-1", issuedYear: null, stage: "TERBIT" } })],
+      existing,
+    );
+    expect(plan.stdbReactivateIds).toEqual([]);
+    expect(plan.linkCreates).toEqual([{ parcelUid: "uid-1", stdbId: "s-aktif" }]);
   });
 });
