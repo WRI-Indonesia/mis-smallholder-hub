@@ -41,6 +41,14 @@ npm test
 ### Decision Log
 
 <details>
+<summary><strong>September 2026</strong></summary>
+
+| Tanggal    | Keputusan                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-01 | **#313 menyimpang dari desain issue di 3 titik (disengaja).** (1) Gate Master Data memakai permission `master-data-parcels:EXPORT` yang **sudah ada** (di-seed untuk SUPERADMIN/ADMIN/OPERATOR/MANAGEMENT sebagai gate ekspor Excel tabel) — asumsi issue "baris permission baru, default hanya SUPERADMIN" tidak sesuai kenyataan; satu menu satu makna EXPORT, tanpa seed baru. (2) Atribut DBF **ditransliterasi ke ASCII** (NFKD, diakritik dilepas, sisanya `?`): penulis `dbf` di `@mapbox/shp-write` menulis 1 byte per code-unit sehingga `.cpg` UTF-8 justru menjanjikan encoding yang salah — terbukti korup di round-trip `shpjs`; teks penuh tetap tersedia via GeoJSON/KML. (3) **MultiPolygon dipecah per poligon anggota** (lubang dipertahankan) khusus jalur SHP — shp-write menulis Polygon & MultiPolygon sebagai **dua shapefile terpisah** dalam satu ZIP; satu layer seragam lebih benar untuk QGIS. Pertanyaan terbuka issue dijawab default: >1 surat/STDB **digabung distinct** (pola Report Lahan #296/#305), KML polos tanpa styling. |
+</details>
+
+<details>
 <summary><strong>Agustus 2026</strong></summary>
 
 | Tanggal    | Keputusan                                                                                                                      |
@@ -221,6 +229,14 @@ npm test
 </details>
 
 ### Changelog
+
+<details>
+<summary><strong>September 2026</strong></summary>
+
+| Tanggal | Perubahan |
+| ------- | --------- |
+| 09-01   | **#313 Unduh data spasial lahan (SHP ZIP / GeoJSON / KML)** di dua lokasi: panel filter **Peta Lahan** (di bawah Muat Data, gate `map-parcel:EXPORT`) dan toolbar **Master Data → Lahan** (gate `master-data-parcels:EXPORT` yang sudah ada; tombol nonaktif selama filter Distrik & Lembaga masih "Semua"). Satu action bersama `getParcelExportData(filters, source)` ber-guard 3 lapis (EXPORT per menu sumber, scope `AND` anti BUG-007, revisi aktif saja; Distrik ATAU Lembaga wajib — tanpa mode all) mengembalikan FeatureCollection WGS84 beratribut lengkap (identitas petani+NIK, lembaga/KT/distrik, fisik lahan, PSR, revisi, legalitas gabungan: surat/nama tertera/luas tertera/STDB/UL code/program via `identity`, pola #296/#305); konversi format di client (import dinamis; SHP = ZIP `lahan.shp/.shx/.dbf/.prj/.cpg`, kolom DBF ≤10 char + transliterasi ASCII, MultiPolygon dipecah; KML via dep baru `@placemarkio/tokml`, `jszip` dieksplisitkan). Round-trip write→parse `shpjs` diverifikasi. UX peta menyusul: opsi **"Semua Provinsi/Distrik/Lembaga Petani"** untuk mengosongkan filter opsional (Peta Lahan + Peta BMP; sebelumnya pilihan tak bisa dibatalkan) , **highlight lahan yang popup-nya terbuka** (fill kuning + outline tebal, tetap tampil meski layer Area dimatikan), dan **popup bisa digeser** (drag dari pegangan di puncak kartu, via `useMapPopupDrag`/`MapPopupDragHandle` di primitif popup bersama; offset ter-reset tiap ganti fitur) agar tidak menutupi lahan yang di-highlight. Bantuan: tutorial baru `p-12-unduh-spasial-lahan`, `p-5` diperbarui. Test 1183→**1201** (+18, file baru `parcel-export.test.ts` 15 test: schema, scope BUG-007, atribut, DBF, explode, nama file). Lint/build/test hijau; belum dirilis. |
+</details>
 
 <details>
 <summary><strong>Agustus 2026</strong></summary>
