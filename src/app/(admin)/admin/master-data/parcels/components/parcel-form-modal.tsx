@@ -24,6 +24,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { createLandParcel, updateLandParcel } from "@/server/actions/land-parcel";
+import { DEFAULT_CROP_TYPE } from "@/validations/land-parcel.schema";
 import { toast } from "sonner";
 import { Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -75,7 +76,9 @@ export function ParcelFormModal({ open, onClose, parcel, farmers, onSaved }: Pro
       // (payload list tidak membawa geometry, #163).
       area: areaRaw ? parseFloat(areaRaw) : null,
       landStatus: (form.get("landStatus") as string) || null,
-      cropType: (form.get("cropType") as string) || null,
+      // Kosong → komoditas bawaan (skema menerapkan default yang sama untuk
+      // jalur Bulk Upload); field-nya juga terisi otomatis di form baru.
+      cropType: (form.get("cropType") as string)?.trim() || DEFAULT_CROP_TYPE,
       species: (form.get("species") as string) || null,
       isPsr: form.get("isPsr") === "on",
       plantingYear: plantingYearRaw ? parseInt(plantingYearRaw, 10) : null,
@@ -220,7 +223,7 @@ export function ParcelFormModal({ open, onClose, parcel, farmers, onSaved }: Pro
               <Input
                 id="cropType"
                 name="cropType"
-                defaultValue={parcel?.cropType ?? ""}
+                defaultValue={parcel?.cropType ?? DEFAULT_CROP_TYPE}
                 placeholder="Contoh: Kelapa Sawit"
               />
               {errors.cropType && <p className="text-sm text-destructive">{errors.cropType[0]}</p>}

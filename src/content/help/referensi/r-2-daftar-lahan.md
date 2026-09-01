@@ -33,7 +33,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Status Kepemilikan** — Milik Sendiri, Sewa, atau Bagi Hasil. Sering diminta saat audit sertifikasi untuk memastikan hak garap jelas.
 
-**Komoditas / Species** — jenis tanaman. Species diisi nama ilmiah bila diperlukan laporan teknis.
+**Komoditas / Species** — jenis tanaman. Komoditas berisi **Kelapa Sawit** untuk seluruh lahan yang didata MIS saat ini; kolom yang dibiarkan kosong (termasuk lewat Unggah Lahan) otomatis terisi Kelapa Sawit, bukan kosong. Species diisi nama ilmiah bila diperlukan laporan teknis.
 
 **PSR** — penanda lahan sedang diremajakan. Tanpa penanda ini, lahan PSR akan terbaca sebagai lahan bermasalah pada analisa ketersediaan data, padahal nol hasil memang wajar selama peremajaan.
 

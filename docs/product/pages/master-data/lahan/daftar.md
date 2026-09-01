@@ -62,7 +62,7 @@ Judul `Tambah Lahan` / `Edit Lahan`; aksi `createLandParcel` / `updateLandParcel
 | `Luas (Hektar)` | number step 0.01, min 0 |
 | `Blok` | text |
 | `Status Kepemilikan` | select `Milik Sendiri (Owned)` / `Sewa (Leased)` / `Bagi Hasil (Shared)` |
-| `Komoditas` | text (`Contoh: Kelapa Sawit`) |
+| `Komoditas` | text (`Contoh: Kelapa Sawit`) — **terisi `Kelapa Sawit` secara default** pada form lahan baru; dikosongkan pun `landParcelSchema` mengisinya kembali (`DEFAULT_CROP_TYPE`, keputusan owner 2026-09-01) |
 | `Species` | text (`Contoh: Elaeis guineensis`) |
 | `PSR (Peremajaan Sawit Rakyat)` | checkbox `Lahan sedang PSR (replanting)` |
 | `Tahun Tanam` | number 1900–2100 |
