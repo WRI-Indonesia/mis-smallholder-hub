@@ -39,6 +39,9 @@ import {
   type HotspotNearestRow,
 } from "./map-hotspot-export";
 import { HotspotSummaryDialog } from "./map-hotspot-summary";
+import { getParcelExportData } from "@/server/actions/land-parcel-export";
+import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
+import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 
 const MapCanvas = dynamic(
   () => import("./map-canvas").then((m) => m.MapCanvas),
@@ -306,6 +309,35 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
 
   const hotspotArea = loadedArea ?? { provinceName: null, districtName: null };
 
+  // Unduh data lahan sesuai filter aktif (#313): action ber-guard mengembalikan
+  // FeatureCollection beratribut lengkap; konversi format berjalan di client.
+  const [parcelExporting, setParcelExporting] = useState(false);
+  const handleParcelExport = async (format: ParcelExportFormat) => {
+    if (!districtId || parcelExporting) return;
+    setParcelExporting(true);
+    try {
+      const res = await getParcelExportData({ provinceId, districtId, farmerGroupId }, "map-parcel");
+      if (!res.success || !res.data) {
+        toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error);
+        return;
+      }
+      if (res.data.count === 0) {
+        toast.info("Tidak ada lahan ber-poligon pada filter ini");
+        return;
+      }
+      await downloadParcelExport(format, res.data.fc, parcelExportFileBase(res.data.label, new Date()));
+      toast.success(
+        res.data.skipped > 0
+          ? `${res.data.count} lahan diunduh (${res.data.skipped} dilewati — geometri tidak valid)`
+          : `${res.data.count} lahan diunduh`
+      );
+    } catch {
+      toast.error("Gagal membuat berkas unduhan lahan");
+    } finally {
+      setParcelExporting(false);
+    }
+  };
+
   const handleHotspotPrintPdf = () => {
     if (!hotspotData || hotspotPdfCalculating) return;
     printHotspotPdf(hotspotData, hotspot.dayRange, new Date(), hotspotNearest, hotspotArea).catch(
@@ -412,6 +444,8 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
         onHotspotShowSummary={() => setHotspotSummaryOpen(true)}
         canExport={canExport}
         canPrint={canPrint}
+        onParcelExport={handleParcelExport}
+        parcelExporting={parcelExporting}
       />
 
       <HotspotSummaryDialog

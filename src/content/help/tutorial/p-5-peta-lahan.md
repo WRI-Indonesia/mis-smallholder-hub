@@ -21,7 +21,7 @@ Hanya lahan dari unggahan **shapefile** yang tergambar di sini.
 
 1. Buka menu **Map → Peta Lahan**.
 2. Pada panel kiri, pilih **Distrik** (wajib) lalu klik **Muat Data**.
-+ Provinsi dan Lembaga Petani opsional untuk mempersempit. Tombol Muat Data tetap nonaktif sampai Distrik dipilih.
++ Provinsi dan Lembaga Petani opsional untuk mempersempit — pilih **Semua Provinsi**/**Semua Lembaga Petani** di puncak daftarnya untuk membatalkan pilihan. Tombol Muat Data tetap nonaktif sampai Distrik dipilih. Di bawah Muat Data ada tombol **Unduh Lahan** untuk membawa poligon lahan keluar sebagai Shapefile/GeoJSON/KML (hanya tampil bila punya izin **Export**) — lihat tutorial **Mengunduh data spasial lahan**.
 3. Gunakan panel **daftar lahan** untuk mencari persil, lalu klik hasilnya — peta akan memperbesar ke lokasinya.
 + Jauh lebih cepat daripada mencari manual dengan menggeser peta, terutama untuk lembaga dengan ratusan persil.
 4. Klik sebuah poligon untuk membuka info detailnya.

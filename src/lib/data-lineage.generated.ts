@@ -257,6 +257,7 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/fire-boundary.ts",
+      "src/server/actions/land-parcel-export.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/map.ts"
     ],
@@ -323,6 +324,7 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
+      "src/server/actions/land-parcel-export.ts",
       "src/server/actions/land-parcel-satellite.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/production.ts",

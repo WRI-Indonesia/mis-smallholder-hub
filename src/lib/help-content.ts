@@ -76,6 +76,7 @@ import pKomparasiDataAcuan from "@/content/help/tutorial/p-9-komparasi-data-acua
 import pMetrikRilis from "@/content/help/tutorial/p-8-metrik-rilis.md";
 import pPetaDataSkema from "@/content/help/tutorial/p-10-peta-data-skema.md";
 import pFireAlert from "@/content/help/tutorial/p-11-fire-alert.md";
+import pUnduhSpasialLahan from "@/content/help/tutorial/p-12-unduh-spasial-lahan.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 import aMengaturIzinPeran from "@/content/help/tutorial/a-3-mengatur-izin-peran.md";
@@ -209,6 +210,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "membaca-peta", source: pMembacaPeta },
       { id: "dashboard-bmp", source: pDashboardBmp },
       { id: "peta-lahan", source: pPetaLahan },
+      { id: "unduh-spasial-lahan", source: pUnduhSpasialLahan },
       { id: "fire-alert", source: pFireAlert },
       { id: "ketersediaan-data", source: pKetersediaanData },
       { id: "ringkasan-petani", source: pRingkasanPetani },
