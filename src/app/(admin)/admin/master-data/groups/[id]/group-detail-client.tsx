@@ -177,7 +177,12 @@ export function GroupDetailClient({
 
   // Unduh spasial lahan lembaga ini (#313) — action ber-guard mengembalikan
   // FeatureCollection beratribut lengkap; konversi format berjalan di client.
+  // Guard tombol dihitung dari lahan yang BENAR-BENAR ber-poligon: `mapParcels`
+  // memuat semua lahan aktif termasuk yang geometrinya null (lahan input form),
+  // jadi `length > 0` akan mengaktifkan tombol untuk lembaga yang unduhannya
+  // pasti kosong — dan tooltipnya jadi berbohong.
   const [exporting, setExporting] = useState(false);
+  const polygonCount = mapParcels.filter((p) => p.geometry).length;
   async function handleParcelExport(format: ParcelExportFormat) {
     if (exporting) return;
     setExporting(true);
@@ -441,7 +446,7 @@ export function GroupDetailClient({
                   cakupannya sudah pasti satu Lembaga, jadi tak perlu filter. */}
               {canExportParcels && (
                 <ParcelExportMenu
-                  disabled={mapParcels.length === 0}
+                  disabled={polygonCount === 0}
                   disabledReason="Lembaga ini belum punya lahan ber-poligon"
                   exporting={exporting}
                   onExport={handleParcelExport}
