@@ -12,9 +12,11 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
 
   const canEdit = await hasPermission("master-data-groups", "EDIT");
   const districts = canEdit ? await getDistrictsForSelect() : [];
-  const [canViewParcel, canEditParcel] = await Promise.all([
+  const [canViewParcel, canEditParcel, canExportParcels] = await Promise.all([
     hasPermission("master-data-parcels", "VIEW"),
     hasPermission("master-data-parcels", "EDIT"),
+    // Unduh spasial lahan digate menu tempat tombolnya berada (#313).
+    hasPermission("master-data-groups", "EXPORT"),
   ]);
 
   return (
@@ -27,6 +29,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
       districts={districts}
       canViewParcel={canViewParcel}
       canEditParcel={canEditParcel}
+      canExportParcels={canExportParcels}
     />
   );
 }

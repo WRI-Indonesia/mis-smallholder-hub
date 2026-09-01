@@ -22,6 +22,8 @@ import {
   type HotspotState,
 } from "./map-hotspot";
 import { CustomGisSection } from "./map-custom-gis";
+import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
+import type { ParcelExportFormat } from "@/lib/parcel-export-data";
 
 export type LayerVisibility = {
   kt: boolean;
@@ -68,10 +70,13 @@ interface Props {
   hotspotPdfCalculating: boolean;
   /** Buka ulang modal ringkasan titik api (auto-terbuka saat kalkulasi selesai). */
   onHotspotShowSummary: () => void;
-  /** EXPORT menu Peta Lahan — gate tombol "Unduh SHP" titik api. */
+  /** EXPORT menu Peta Lahan — gate "Unduh SHP" titik api & "Unduh Lahan" (#313). */
   canExport: boolean;
   /** PRINT menu Peta Lahan — gate tombol "Cetak PDF" titik api. */
   canPrint: boolean;
+  /** Unduh data lahan sesuai filter aktif sebagai SHP/GeoJSON/KML (#313). */
+  onParcelExport: (format: ParcelExportFormat) => void;
+  parcelExporting: boolean;
   helpSlot?: React.ReactNode;
 }
 
@@ -82,11 +87,14 @@ interface ComboboxProps {
   emptyText: string;
   options: { id: string; name: string }[];
   value: string | null;
-  onChange: (val: string) => void;
+  onChange: (val: string | null) => void;
+  /** Filter opsional: item teratas "Semua …" untuk mengosongkan pilihan
+   *  (tanpa ini, pilihan yang sudah dibuat tak bisa dibatalkan). */
+  allLabel?: string;
   disabled?: boolean;
 }
 
-function FilterCombobox({ label, required, placeholder, emptyText, options, value, onChange, disabled }: ComboboxProps) {
+function FilterCombobox({ label, required, placeholder, emptyText, options, value, onChange, allLabel, disabled }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.id === value);
 
@@ -107,6 +115,8 @@ function FilterCombobox({ label, required, placeholder, emptyText, options, valu
             >
               {selected ? (
                 <span className="truncate">{selected.name}</span>
+              ) : allLabel && value === null ? (
+                <span className="truncate">{allLabel}</span>
               ) : (
                 <span className="text-muted-foreground">{placeholder}</span>
               )}
@@ -120,6 +130,18 @@ function FilterCombobox({ label, required, placeholder, emptyText, options, valu
             <CommandList>
               <CommandEmpty>{emptyText}</CommandEmpty>
               <CommandGroup>
+                {allLabel && (
+                  <CommandItem
+                    value={allLabel}
+                    onSelect={() => {
+                      onChange(null);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check className={cn("mr-2 h-4 w-4", value === null ? "opacity-100" : "opacity-0")} />
+                    {allLabel}
+                  </CommandItem>
+                )}
                 {options.map((o) => (
                   <CommandItem
                     key={o.id}
@@ -231,6 +253,7 @@ export function MapControlPanel(props: Props) {
     hotspot, onHotspotChange, hotspotLoading, hotspotCounts,
     onHotspotDownloadShp, onHotspotPrintPdf, hotspotPdfCalculating, onHotspotShowSummary,
     canExport, canPrint,
+    onParcelExport, parcelExporting,
     helpSlot,
   } = props;
 
@@ -299,6 +322,7 @@ export function MapControlPanel(props: Props) {
             <FilterCombobox
               label="Provinsi"
               placeholder="Pilih Provinsi"
+              allLabel="Semua Provinsi"
               emptyText="Provinsi tidak ditemukan."
               options={provinces}
               value={provinceId}
@@ -316,6 +340,7 @@ export function MapControlPanel(props: Props) {
             <FilterCombobox
               label="Lembaga Petani"
               placeholder="Pilih Lembaga Petani"
+              allLabel="Semua Lembaga Petani"
               emptyText="Lembaga Petani tidak ditemukan."
               options={farmerGroups}
               value={farmerGroupId}
@@ -326,6 +351,16 @@ export function MapControlPanel(props: Props) {
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Muat Data
             </Button>
+            {/* Unduh data lahan sesuai filter aktif (#313) — tak perlu Muat Data dulu. */}
+            {canExport && (
+              <ParcelExportMenu
+                className="w-full"
+                disabled={!districtId}
+                disabledReason="Pilih Distrik terlebih dahulu"
+                exporting={parcelExporting}
+                onExport={onParcelExport}
+              />
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>

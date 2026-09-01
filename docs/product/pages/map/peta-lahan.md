@@ -7,8 +7,9 @@
 ```text
 Halaman: Peta Lahan (/admin/map/parcel)
 ├── Panel kiri: "Peta Lahan" (mengambang, minimizable)
-│   ├── Filter: Provinsi · Distrik (wajib) · Lembaga Petani
+│   ├── Filter: Provinsi · Distrik (wajib) · Lembaga Petani (opsional ber-opsi "Semua …")
 │   ├── Tombol: Muat Data
+│   ├── Dropdown: Unduh Lahan (SHP ZIP / GeoJSON / KML) — izin EXPORT (#313)
 │   ├── Legenda: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani
 │   ├── Peta Lainnya (overlay referensi pemerintah)
 │   │   ├── Layer: Kawasan Hutan · Fungsi Ekosistem Gambut
@@ -25,7 +26,8 @@ Halaman: Peta Lahan (/admin/map/parcel)
 │   ├── Basemap: LIGHT / DARK / HYBRID
 │   ├── Layer: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani
 │   ├── Layer: Overlay raster · Titik api · Layer GIS tambahan
-│   ├── Popup fitur: Lembaga Petani · Titik Api · Lahan
+│   ├── Layer: Highlight lahan terpilih (fill kuning + outline tebal)
+│   ├── Popup fitur: Lembaga Petani · Titik Api · Lahan (bisa digeser via pegangan)
 │   │   └── Popup Lahan: Detail Lahan · Pelatihan Petani · Produksi · Profil Lahan
 │   │       └── Aksi: Lihat Detail · Edit Lahan
 │   ├── Modal: Edit Lahan (dari popup)
@@ -43,7 +45,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Client | `map-parcel-client.tsx` (orkestrasi), `map-control-panel.tsx` (panel kiri), `map-canvas.tsx` (peta + popup), `map-custom-gis.tsx`, `map-overlays.ts`, `map-hotspot.ts`, `map-geo.ts`; primitif popup bersama `src/components/shared/map-popup.tsx` (TD-028) + `parcel-popup-actions.tsx` & `parcel-edit-modal-host.tsx` (dari `master-data/parcels/components/`) |
 | Tipe | Server Component (opsi provinsi) → Client Component (peta interaktif) |
 | Guard | `requirePermission("map-parcel")`; `page.tsx` juga menghitung `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate tombol aksi popup); action `getMapData` guard `hasPermission("map-parcel", "VIEW")` + `getAccessContext()` |
-| Server action / data | `getProvincesForMap()`, `getDistrictsForMap()`, `getFarmerGroupsForMap()`, `getMapData()`, `getFarmerTraining()`, `getParcelProduction()`, `getParcelPassport()` (`src/server/actions/map.ts`); proxy same-origin `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) dan `/api/map-hotspot` (NASA FIRMS). `getMapData` mengembalikan **format wire dipadatkan** (#223: tuple posisi per persil, koordinat truncate 6 desimal, atribut petani di lookup `farmers`, centroid tidak dikirim) — klien me-rehydrate via `expandMapData` (`src/lib/map-data.ts`) sebelum dipakai |
+| Server action / data | `getProvincesForMap()`, `getDistrictsForMap()`, `getFarmerGroupsForMap()`, `getMapData()`, `getFarmerTraining()`, `getParcelProduction()`, `getParcelPassport()` (`src/server/actions/map.ts`); `getMapParcelExportData()` (`src/server/actions/land-parcel-export.ts`, #313 — guard `EXPORT` `map-parcel` + scope `AND`); proxy same-origin `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) dan `/api/map-hotspot` (NASA FIRMS). `getMapData` mengembalikan **format wire dipadatkan** (#223: tuple posisi per persil, koordinat truncate 6 desimal, atribut petani di lookup `farmers`, centroid tidak dikirim) — klien me-rehydrate via `expandMapData` (`src/lib/map-data.ts`) sebelum dipakai |
 | Loading | `loading.tsx` |
 
 ## Objek halaman
@@ -53,10 +55,11 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Panel "Peta Lahan" | Panel mengambang | Card kiri-atas, header sticky ikon `MapPinned`, tombol "Minimalkan"; saat minimize jadi tombol ikon "Buka panel filter" |
 | `Panduan` | Tautan | `HelpHint` di header panel (sebelah tombol Minimalkan) menuju tutorial Bantuan untuk `map-parcel`; dirender server via prop `helpSlot` (markdown Bantuan tak masuk bundle client), dibuka di tab baru; ikut tersembunyi saat panel di-minimize |
 | Filter | Section collapsible | Terbuka default; tertutup otomatis setelah data dimuat |
-| Provinsi | Filter (combobox) | Placeholder "Pilih Provinsi", empty "Provinsi tidak ditemukan."; mengubahnya mereset Distrik & Lembaga Petani |
+| Provinsi | Filter (combobox) | Item teratas **"Semua Provinsi"** untuk mengosongkan pilihan; empty "Provinsi tidak ditemukan."; mengubahnya mereset Distrik & Lembaga Petani |
 | Distrik | Filter (combobox) | **Wajib** (tanda `*`); placeholder "Pilih Distrik", empty "Distrik tidak ditemukan." |
-| Lembaga Petani | Filter (combobox) | Placeholder "Pilih Lembaga Petani", empty "Lembaga Petani tidak ditemukan."; disabled sampai Distrik dipilih |
+| Lembaga Petani | Filter (combobox) | Item teratas **"Semua Lembaga Petani"** untuk mengosongkan pilihan; empty "Lembaga Petani tidak ditemukan."; disabled sampai Distrik dipilih |
 | Muat Data | Tombol | Disabled tanpa Distrik; tanpa Distrik → toast "Silakan pilih Distrik terlebih dahulu"; hasil kosong → toast "Tidak ada data untuk filter ini", sukses → "Data berhasil dimuat" |
+| Unduh Lahan | Dropdown (`ParcelExportMenu`) | Di bawah Muat Data, hanya tampil bila punya izin `EXPORT` `map-parcel` (#313); disabled tanpa Distrik (tooltip "Pilih Distrik terlebih dahulu"). Item: **Shapefile (ZIP)** / **GeoJSON** / **KML** — memanggil `getMapParcelExportData` dengan filter aktif (tanpa perlu Muat Data), konversi di client (`parcel-spatial-download.ts`): SHP = ZIP `lahan.shp/.shx/.dbf/.prj/.cpg` (kolom DBF ≤10 char ber-transliterasi ASCII — `parcel_code` → `parcel_cod`, MultiPolygon dipecah per anggota), KML via `@placemarkio/tokml`; nama file `lahan_<kd-lembaga\|distrik>_<YYYYMMDD-HHmm>`. Toast hasil menyebut jumlah lahan (+ yang dilewati bila geometrinya invalid); 0 lahan → toast info |
 | Legenda | Section collapsible + Legend | Muncul hanya setelah data dimuat; tiap baris = checkbox toggle layer + swatch warna + jumlah fitur; klik teks label = zoom ke sebaran data layer (`LayerZoomTarget`) |
 | Point Lembaga Petani | Layer + Legend | Circle hijau `#22c55e` r=8, stroke putih; label nama lembaga di bawah titik |
 | Point Lahan Petani | Layer + Legend | Circle biru `#3b82f6` r=5 pada centroid persil; **default tidak dicentang** (#223) — GeoJSON point dibangun lazy saat pertama dicentang (ribuan titik jarang dipakai) |
@@ -79,7 +82,9 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Basemap switcher | Tombol grup (kanan bawah) | **STREET / LIGHT / DARK / SAT / HYBRID** (#307 — satu set & satu urutan untuk seluruh halaman peta, `MAP_STYLES`); Light/Dark = vector OpenFreeMap, Satellite/Hybrid = Esri. Default mengikuti tema aplikasi. Basemap citra (**SAT & HYBRID**) men-taint canvas sehingga cetak PDF gagal capture — pesan galat menyebut keduanya |
 | Popup Lembaga Petani | Popup | Header hijau + nama lembaga, subtitle "Lembaga Petani"; baris: Kode, Distrik, Koordinat |
 | Popup Titik Api | Popup | Header merah "Titik Api", subtitle usia deteksi "< 24 jam" / "n hari lalu" (`hotspotAgeLabel`); baris: Waktu Deteksi (WIB), Satelit (Suomi NPP / NOAA-20), Keyakinan (Rendah/Nominal (Medium)/Tinggi), FRP (MW), Koordinat + catatan sumber FIRMS |
-| Popup Lahan | Popup | Header biru: foto placeholder + nama petani, ID Petani, ID Lahan, Lembaga Petani; highlight "Luas Lahan" (`x,xx ha`) |
+| Highlight lahan terpilih | Layer | Lahan yang popup-nya terbuka diberi fill kuning `#facc15` (opacity 0.45) + outline tebal `#ca8a04` 3.5px; selalu tampil saat ada pilihan, tidak ikut toggle layer Area (seleksi dari titik/daftar lahan tetap kelihatan) |
+| Pegangan drag popup | Handle (`MapPopupDragHandle`) | Pil abu kecil di puncak kartu popup; drag menggeser popup (via `useMapPopupDrag` → prop `offset` `<Popup>`) agar tidak menutupi fitur yang dipilih; geseran ter-reset tiap ganti fitur, popup tetap menempel titiknya saat pan/zoom |
+| Popup Lahan | Popup | Header biru: foto placeholder + nama petani, ID Petani, ID Lahan, Lembaga Petani; highlight "Luas Lahan" (`x,xx ha`). Lahan yang popup-nya terbuka disorot layer `parcel-selected-fill` (`#facc15`, opacity 0,45) + `parcel-selected-outline` (`#ca8a04`, 3,5 px) — ber-filter `id` lahan, **selalu tampil** meski layer Area Lahan dimatikan (#314) |
 | Popup › Detail Lahan | Section popup | Terbuka default: Tahun Tanam, Komoditas, Status Lahan |
 | Popup › Pelatihan Petani | Section popup | Lazy-load `getFarmerTraining`; daftar paket dengan centang selesai + tanggal; error "Gagal memuat pelatihan." |
 | Popup › Produksi | Section popup | Lazy-load `getParcelProduction`; select "Rata-rata" atau per tahun; grafik batang bulanan (kg); "Belum ada data produksi." bila kosong |

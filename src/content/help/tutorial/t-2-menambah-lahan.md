@@ -30,6 +30,7 @@ Siapkan **ID Lahan** dan luasnya. ID Lahan harus unik untuk petani tersebut, dan
 4. Pilih **Status Kepemilikan**: Milik Sendiri, Sewa, atau Bagi Hasil.
 + Kolom ini kerap diminta saat audit sertifikasi RSPO/ISPO untuk memastikan hak garap petani jelas.
 5. Isi **Komoditas** dan **Tahun Tanam** bila datanya ada. Tahun tanam dipakai memperkirakan umur tanaman.
++ Komoditas sudah terisi **Kelapa Sawit** — seluruh lahan yang didata MIS saat ini kelapa sawit, jadi kolom ini tak perlu diisi ulang. Ganti isinya bila lahan tersebut memang komoditas lain; dikosongkan pun akan kembali terisi Kelapa Sawit, bukan dibiarkan kosong.
 + Umur tanaman menjelaskan banyak hal saat membaca produktivitas: sawit muda di bawah 4 tahun belum berbuah optimal, sementara di atas 25 tahun hasilnya menurun dan biasanya masuk rencana peremajaan.
 6. Centang **PSR** bila lahan sedang diremajakan — ini menjelaskan mengapa produksinya rendah atau nol.
 + Tanpa penanda ini, lahan PSR akan terbaca sebagai lahan bermasalah pada analisa ketersediaan data produksi, padahal nol hasil memang wajar selama peremajaan.

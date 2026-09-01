@@ -1,5 +1,36 @@
 import { describe, it, expect } from "vitest";
-import { landParcelSchema, updateLandParcelSchema } from "@/validations/land-parcel.schema";
+import {
+  DEFAULT_CROP_TYPE,
+  landParcelSchema,
+  updateLandParcelSchema,
+} from "@/validations/land-parcel.schema";
+
+// Komoditas bawaan (keputusan owner 2026-09-01): seluruh lahan MIS hari ini
+// Kelapa Sawit. Default hidup di SKEMA supaya form dan Bulk Upload Lahan tak
+// bisa menulis NULL lagi — itulah yang dulu membuat 9.505 baris kosong.
+describe("LandParcel Schema - komoditas bawaan", () => {
+  const base = { farmerId: "farmer-cuid-123", parcelId: "LH-01" };
+
+  it("kolom komoditas absen → terisi Kelapa Sawit", () => {
+    const r = landParcelSchema.safeParse(base);
+    expect(r.success).toBe(true);
+    expect(r.data?.cropType).toBe(DEFAULT_CROP_TYPE);
+  });
+
+  it("null / string kosong / spasi → terisi Kelapa Sawit", () => {
+    for (const cropType of [null, "", "   "]) {
+      const r = landParcelSchema.safeParse({ ...base, cropType });
+      expect(r.success).toBe(true);
+      expect(r.data?.cropType).toBe(DEFAULT_CROP_TYPE);
+    }
+  });
+
+  it("komoditas non-sawit tetap dihormati apa adanya (di-trim saja)", () => {
+    const r = landParcelSchema.safeParse({ ...base, cropType: "  Karet  " });
+    expect(r.success).toBe(true);
+    expect(r.data?.cropType).toBe("Karet");
+  });
+});
 
 describe("LandParcel Schema - Create Validation", () => {
   it("accepts valid land parcel input", () => {

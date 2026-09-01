@@ -15,7 +15,7 @@ import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { Button } from "@/components/ui/button";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
-import { MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
+import { MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan, useMapPopupDrag, MapPopupDragHandle } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
 import type { MapData, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
@@ -113,6 +113,8 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
   const [selected, setSelected] = useState<SelectedFeature | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
+  // Id lahan yang popup-nya terbuka — untuk layer highlight; "" tak match apa pun.
+  const selectedParcelId = selected?.kind === "parcel" ? String(selected.props.id ?? "") : "";
 
   // Key memuat lngLat: klik ulang fitur yang sama di titik lain harus me-remount
   // popup + memicu ulang auto-pan (review pasca-v0.21.0).
@@ -120,6 +122,8 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     ? `${selected.kind}:${selected.props.id ?? ""}:${selected.longitude},${selected.latitude}`
     : null;
   useMapPopupAutoPan(mapRef, popupKey);
+  // Popup bisa digeser agar tidak menutupi lahan yang di-highlight.
+  const popupDrag = useMapPopupDrag(popupKey);
 
   // Close any open popup when a new dataset loads (adjusts state during render on
   // prop change — the React-endorsed alternative to a setState-in-effect).
@@ -595,6 +599,24 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             layout={vis(layers.parcelAreas)}
             paint={{ "line-color": "#16a34a", "line-width": 1.5 }}
           />
+          {/* Highlight lahan yang popup-nya terbuka — poligon tetangga bergaya
+              seragam sulit dibedakan dari yang dipilih. Selalu tampil saat ada
+              pilihan (tak ikut toggle layer Area) supaya seleksi dari titik/
+              daftar lahan tetap kelihatan. */}
+          <Layer
+            id="parcel-selected-fill"
+            type="fill"
+            beforeId={labelBeforeId}
+            filter={["==", ["get", "id"], selectedParcelId]}
+            paint={{ "fill-color": "#facc15", "fill-opacity": 0.45 }}
+          />
+          <Layer
+            id="parcel-selected-outline"
+            type="line"
+            beforeId={labelBeforeId}
+            filter={["==", ["get", "id"], selectedParcelId]}
+            paint={{ "line-color": "#ca8a04", "line-width": 3.5 }}
+          />
         </Source>
 
         {/* Parcel farmer-name labels — only where the name fits inside the polygon */}
@@ -752,12 +774,13 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             longitude={selected.longitude}
             latitude={selected.latitude}
             anchor="bottom"
-            offset={16}
+            offset={popupDrag.offset}
             onClose={() => setSelected(null)}
             closeOnClick={false}
             maxWidth="none"
             className="map-parcel-popup"
           >
+            <MapPopupDragHandle {...popupDrag.handleProps} />
             {selected.kind === "custom" ? (
               <CustomFeaturePopup
                 layerName={selected.layerName ?? "Layer GIS"}

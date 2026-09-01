@@ -66,7 +66,7 @@ Halaman: Lahan (/admin/bulk-upload/parcels)
 | Info berkas | Teks | *"Shapefile: **nama.zip** (N fitur/baris terdeteksi)"* |
 | Toast parsing | Toast | Sukses *"Berhasil mengurai shapefile: N geometri lahan terdeteksi"*; kosong *"Shapefile tidak mengandung data geometri/fitur"*; gagal *"Gagal mengurai file shapefile"* / *"Gagal membaca berkas ZIP"* |
 | "2. Petakan Atribut Kolom" | Card + grid Select | Subjudul *"Cocokkan kolom dari tabel atribut DBF shapefile dengan data target sistem."* |
-| Target field | 11 field | `ID Lahan`* (unik per petani), `ID Petani`*, `Luas (ha)`, `Status Kepemilikan` (Owned/Leased/Shared), `Komoditas`, `Tahun Tanam` (1900-2100), `Kelompok Tani` (`subGroupLv2`), `Blok`, `Revisi` (default 0), `Catatan` |
+| Target field | 11 field | `ID Lahan`* (unik per petani), `ID Petani`*, `Luas (ha)`, `Status Kepemilikan` (Owned/Leased/Shared), `Komoditas` (boleh tak dipetakan — kosong → `Kelapa Sawit`, `DEFAULT_CROP_TYPE`), `Tahun Tanam` (1900-2100), `Kelompok Tani` (`subGroupLv2`), `Blok`, `Revisi` (default 0), `Catatan` |
 | "Validasi Data Shapefile" | Tombol | Loading *"Memproses..."*; sukses toast *"Validasi selesai"* |
 | "3. Hasil Validasi & Tinjauan" | Card | Subjudul *"Tinjau kembali hasil pemetaan dan validasi spasial/atribut sebelum menyimpannya ke database."* |
 | Ringkasan hasil | Badge/pill | *"N Lahan Valid"* / *"N Lahan Error"* |

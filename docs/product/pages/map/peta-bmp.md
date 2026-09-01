@@ -50,8 +50,8 @@ Halaman: Peta BMP (/admin/map/bmp)
 | Panel "Peta BMP" | Panel mengambang | Card kiri-atas, header sticky ikon `Sprout`, tombol "Minimalkan"; saat minimize jadi tombol "Buka panel filter" |
 | `Panduan` | Tautan | `HelpHint` di header panel (sebelah tombol Minimalkan) menuju tutorial Bantuan untuk `map-bmp`; dirender server via prop `helpSlot` (markdown Bantuan tak masuk bundle client), dibuka di tab baru; ikut tersembunyi saat panel di-minimize |
 | Filter | Section collapsible | Terbuka default; tertutup otomatis setelah data dimuat |
-| Provinsi | Filter (combobox) | Placeholder "Pilih Provinsi (opsional)" |
-| Distrik | Filter (combobox) | Placeholder "Pilih Distrik (opsional)" |
+| Provinsi | Filter (combobox) | Opsional; item teratas **"Semua Provinsi"** untuk mengosongkan pilihan |
+| Distrik | Filter (combobox) | Opsional; item teratas **"Semua Distrik"** untuk mengosongkan pilihan |
 | Lembaga Petani | Filter (combobox) | **Wajib** (tanda `*`); placeholder "Pilih Lembaga Petani" |
 | Catatan filter | Teks | "Lembaga Petani wajib dipilih. Provinsi & Distrik hanya menyaring daftar Lembaga Petani." |
 | Muat Data | Tombol | Tanpa Lembaga Petani → toast "Silakan pilih Lembaga Petani terlebih dahulu"; kosong → "Tidak ada lahan untuk filter ini"; sukses → "Data berhasil dimuat"; tampilan produktivitas default ke tahun terbaru yang berdata |
@@ -71,7 +71,7 @@ Halaman: Peta BMP (/admin/map/bmp)
 | Legenda matriks | Legend | "Ada data produksi" (blok hijau) vs "Tidak ada" (blok kosong) |
 | Zoom ke semua data | Tombol (kanan bawah) | `fitBounds` ke seluruh persil yang dimuat |
 | Basemap switcher | Tombol grup (kanan bawah) | LIGHT / DARK / HYBRID |
-| Popup Lahan BMP | Popup | Header hijau ikon `Sprout`: nama petani, ID Petani, ID Lahan, Lembaga Petani |
+| Popup Lahan BMP | Popup | Header hijau ikon `Sprout`: nama petani, ID Petani, ID Lahan, Lembaga Petani; bisa digeser via pegangan drag di puncak kartu (`useMapPopupDrag`/`MapPopupDragHandle`, pola Peta Lahan) |
 | Popup › Ketersediaan Data | Baris popup | Badge kategori (Baik/Cukup/Kurang/Tidak ada data) |
 | Popup › Produktivitas | Baris popup | Badge kelas produktivitas + label tampilan (tahun / rata-rata); hanya bila layer produktivitas dihitung |
 | Popup › Detail Lahan | Section popup | Terbuka default: Luas, Tahun Tanam, Komoditas, Status Lahan, Run Bulan Berturut, Periode Awal, Periode Akhir, Produktivitas (Ton/Ha), dan Tahun Terdata (mode rata-rata) atau Bulan Terdata `n/12` |

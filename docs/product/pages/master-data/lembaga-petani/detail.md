@@ -25,6 +25,7 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 │   │   └── Kartu + tautan
 │   ├── Lahan
 │   │   ├── Kartu ringkas
+│   │   ├── Dropdown: Unduh Lahan (SHP ZIP / GeoJSON / KML) — izin EXPORT `master-data-groups` (#313)
 │   │   └── Peta: Sebaran Lahan (ParcelsDistributionMap)
 │   ├── Pelatihan
 │   │   ├── Tabel: Cakupan per Paket
@@ -57,7 +58,7 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 | Tab Ringkasan — profil | Kartu | Field: `Distrik`, `Kategori`, `Tipe Grup`, `Singkatan`, `Tahun Berdiri Lembaga`, `Tahun Bergabung Program`, `Sertifikasi RSPO`, `Sertifikasi ISPO`, `Assurance SAP/MAP`, `Koordinat`, `Dibuat`, `Terakhir Diubah` |
 | Tab Ringkasan — `Struktur Kelembagaan (dari lahan)` | Tabel | Kolom `Kelompok Tani`, `Petani`, `Lahan`, `Luas (Ha)`; link `Lihat roster lengkap →`; empty state `Belum ada data Kelompok Tani dari lahan.` |
 | Tab Petani | Kartu + teks | `Total Petani`, `Laki-laki / Perempuan`, `Petani Tanpa Lahan` + tautan ke Master Data Petani & Ringkasan Petani |
-| Tab Lahan | Kartu + peta | `Persil Lahan`, `Kelompok Tani`, `Blok`; `Sebaran Lahan` = `ParcelsDistributionMap` (dynamic, ssr:false); popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
+| Tab Lahan | Kartu + peta | `Persil Lahan`, `Kelompok Tani`, `Blok`; `Sebaran Lahan` = `ParcelsDistributionMap` (dynamic, ssr:false); header kartu memuat **Unduh Lahan** (`ParcelExportMenu`, #313) — gate `master-data-groups:EXPORT` (menu tempat tombolnya berada, bukan menu Lahan), memanggil `getFarmerGroupParcelExportData(group.id)` yang **hanya menerima id lembaga** sehingga entry point ini tak bisa dipakai menarik distrik penuh; nonaktif bila lembaga belum punya lahan ber-poligon; popup lahan memakai primitif standar `src/components/shared/map-popup.tsx` (TD-028), termasuk pegangan geser popup (`useMapPopupDrag`/`MapPopupDragHandle`, #314) + footer aksi `ParcelPopupActions` ("Lihat Detail" gate `canViewParcel`, "Edit Lahan" gate `canEditParcel`) + modal `ParcelEditModalHost`; setelah simpan poligon disegarkan via `router.refresh()` (server props) |
 | Tab Pelatihan — `Cakupan per Paket` | Tabel | `Paket`, `Petani Terlatih`, `Cakupan`, `Rataan Pre Test`, `Rataan Post Test` |
 | Tab Pelatihan — `Aktivitas Pelatihan (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Peserta`, `Rata-rata Pre → Post`; empty state `Belum ada aktivitas pelatihan untuk Lembaga ini.` |
 | Tab Produksi — filter varian | Tombol | `Semua Lahan` / `Exclude (PSR & tanaman <3 thn)` — menyaring kedua matriks; varian Exclude dihitung server-side (`buildExcludeVariant`, lahan PSR/muda dibuang beserta record-nya, record tanpa lahan tetap, penyebut ikut varian) (#239) |
