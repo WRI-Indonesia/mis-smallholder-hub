@@ -29,7 +29,7 @@ import {
 import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel";
 import { formatArea } from "@/lib/format";
 import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
-import { getParcelExportData } from "@/server/actions/land-parcel-export";
+import { getMasterDataParcelExportData } from "@/server/actions/land-parcel-export";
 import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 
@@ -81,13 +81,10 @@ export function ParcelListClient({
     if (spatialFilterEmpty || spatialExporting) return;
     setSpatialExporting(true);
     try {
-      const res = await getParcelExportData(
-        {
-          districtId: districtFilter !== "all" ? districtFilter : null,
-          farmerGroupId: groupFilter !== "all" ? groupFilter : null,
-        },
-        "master-data-parcels"
-      );
+      const res = await getMasterDataParcelExportData({
+        districtId: districtFilter !== "all" ? districtFilter : null,
+        farmerGroupId: groupFilter !== "all" ? groupFilter : null,
+      });
       if (!res.success || !res.data) {
         toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error);
         return;

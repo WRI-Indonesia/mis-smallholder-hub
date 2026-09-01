@@ -127,6 +127,7 @@ export function useMapPopupDrag(
     onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
     onPointerMove: (e: ReactPointerEvent<HTMLElement>) => void;
     onPointerUp: (e: ReactPointerEvent<HTMLElement>) => void;
+    onPointerCancel: () => void;
   };
 } {
   const [drag, setDrag] = useState<[number, number]>([0, 0]);
@@ -155,10 +156,17 @@ export function useMapPopupDrag(
     startRef.current = null;
     e.currentTarget.releasePointerCapture(e.pointerId);
   };
+  // Pointer dibatalkan browser (gesture sistem, pointer hilang) tak memicu
+  // pointerup: tanpa ini `startRef` tertinggal terisi dan gerakan kursor
+  // berikutnya di atas pegangan langsung menggeser popup tanpa ditekan.
+  // Capture sudah dilepas implisit oleh pointercancel, jadi cukup reset state.
+  const onPointerCancel = () => {
+    startRef.current = null;
+  };
 
   return {
     offset: [baseOffset[0] + drag[0], baseOffset[1] + drag[1]],
-    handleProps: { onPointerDown, onPointerMove, onPointerUp },
+    handleProps: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel },
   };
 }
 

@@ -15,12 +15,13 @@ import type { ActionResult } from "@/types/action-result";
 import type { FeatureCollection, MultiPolygon, Polygon } from "geojson";
 
 /**
- * Unduh data spasial lahan (#313) — satu action bersama untuk dua lokasi
- * tombol. `source` = menu tempat tombolnya berada, menentukan permission
- * EXPORT mana yang di-guard (pola getParcelPassport yang digate per menu).
+ * Unduh data spasial lahan (#313) — dua entry point tipis dengan menu key
+ * DI-HARDCODE di server (pola `getParcelPassport`), bukan satu action yang
+ * menerima menu key dari klien: kalau kliennya yang memilih, mencabut EXPORT
+ * di satu menu tak memblokir apa pun — pemanggil tinggal mengirim menu yang
+ * lain dan menerima dataset ber-PII yang sama.
  */
-export type ParcelExportSource = "map-parcel" | "master-data-parcels";
-const EXPORT_SOURCES: ParcelExportSource[] = ["map-parcel", "master-data-parcels"];
+type ParcelExportSource = "map-parcel" | "master-data-parcels";
 
 export interface ParcelExportPayload {
   fc: FeatureCollection<Polygon | MultiPolygon, ParcelExportProperties>;
@@ -32,19 +33,30 @@ export interface ParcelExportPayload {
   label: string | null;
 }
 
+/** Tombol "Unduh Lahan" di panel filter Peta Lahan — digate `map-parcel:EXPORT`. */
+export async function getMapParcelExportData(
+  filters: ParcelExportFilters
+): Promise<ActionResult<ParcelExportPayload>> {
+  return exportParcels(filters, "map-parcel");
+}
+
+/** Tombol "Unduh Lahan" di toolbar Master Data → Lahan — digate `master-data-parcels:EXPORT`. */
+export async function getMasterDataParcelExportData(
+  filters: ParcelExportFilters
+): Promise<ActionResult<ParcelExportPayload>> {
+  return exportParcels(filters, "master-data-parcels");
+}
+
 /**
  * Data ekspor lahan sesuai filter, ber-guard 3 lapis: permission EXPORT pada
  * menu sumber, scope akses via `AND` (anti scope-leak BUG-007), dan hanya
  * revisi aktif (`isActive: true`). Distrik ATAU Lembaga Petani wajib —
  * tidak ada mode "all" lintas-wilayah (keputusan lingkup #313).
  */
-export async function getParcelExportData(
+async function exportParcels(
   filters: ParcelExportFilters,
   source: ParcelExportSource
 ): Promise<ActionResult<ParcelExportPayload>> {
-  if (!EXPORT_SOURCES.includes(source)) {
-    return { success: false, error: "Sumber ekspor tidak dikenal" };
-  }
   if (!(await hasPermission(source, "EXPORT"))) {
     return { success: false, error: "Tidak memiliki izin untuk mengekspor data ini" };
   }

@@ -48,7 +48,7 @@ Halaman: Lahan (/admin/master-data/parcels)
 | Tabel daftar | Tabel | Kolom: `ID Lahan`, `Blok` (hidden default), `Nama Petani`, `ID Petani`, `Lembaga Petani`, `Kelompok Tani` (hidden), `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Species`, `PSR` (badge PSR/Non-PSR), `Tahun Tanam`, `Revisi`, `Status` (SUPERADMIN) |
 | Aksi baris | Tombol | Lihat → `/admin/master-data/parcels/{id}`; Edit → modal; Nonaktifkan → `toggleLandParcelActive` |
 | Ekspor | Tombol | `data-lahan` (termasuk kolom distrik) |
-| Unduh Lahan | Dropdown (`ParcelExportMenu`) | Ekspor spasial SHP ZIP / GeoJSON / KML (#313), gate izin `EXPORT`; **nonaktif selama filter Distrik & Lembaga masih "Semua"** (tooltip "Pilih Distrik atau Lembaga Petani terlebih dahulu"); memanggil `getParcelExportData(filters, "master-data-parcels")` — atribut lengkap termasuk legalitas, hanya lahan ber-poligon |
+| Unduh Lahan | Dropdown (`ParcelExportMenu`) | Ekspor spasial SHP ZIP / GeoJSON / KML (#313), gate izin `EXPORT`; **nonaktif selama filter Distrik & Lembaga masih "Semua"** (tooltip "Pilih Distrik atau Lembaga Petani terlebih dahulu"); memanggil `getMasterDataParcelExportData(filters)` (menu key `master-data-parcels` di-hardcode di server) — atribut lengkap termasuk legalitas, hanya lahan ber-poligon. Selalu **revisi aktif saja** — filter Status (SUPERADMIN) tidak berlaku di sini, berbeda dengan tombol Excel yang mengekspor baris tabel apa adanya |
 | Tidak ada kartu KPI | — | Halaman ini langsung ke tabel |
 
 ## Dialog: `ParcelFormModal` (`parcels/components/parcel-form-modal.tsx`)

@@ -39,7 +39,7 @@ import {
   type HotspotNearestRow,
 } from "./map-hotspot-export";
 import { HotspotSummaryDialog } from "./map-hotspot-summary";
-import { getParcelExportData } from "@/server/actions/land-parcel-export";
+import { getMapParcelExportData } from "@/server/actions/land-parcel-export";
 import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 
@@ -316,7 +316,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
     if (!districtId || parcelExporting) return;
     setParcelExporting(true);
     try {
-      const res = await getParcelExportData({ provinceId, districtId, farmerGroupId }, "map-parcel");
+      const res = await getMapParcelExportData({ provinceId, districtId, farmerGroupId });
       if (!res.success || !res.data) {
         toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error);
         return;
