@@ -83,6 +83,13 @@ export interface ParcelExportRow {
 /** Atribut lengkap satu lahan — nama panjang (GeoJSON/KML tanpa batas DBF). */
 export interface ParcelExportProperties {
   idLahan: string;
+  /**
+   * Kode lahan dari pemeta luar (`parcel_code` di berkas sumber vendor),
+   * MENTAH tanpa label pemeta — permintaan GIS specialist: kolom ini dipakai
+   * sebagai kunci join ke dataset vendor, sehingga `kodeUl` yang berformat
+   * "ID0001 (Meridia)" tak bisa menggantikannya. Beberapa kode → gabung "; ".
+   */
+  parcelCode: string | null;
   idPetani: string | null;
   namaPetani: string | null;
   nik: string | null;
@@ -114,6 +121,16 @@ function isPolygonGeometry(g: unknown): g is Polygon | MultiPolygon {
   return (type === "Polygon" || type === "MultiPolygon") && Array.isArray(coordinates);
 }
 
+/**
+ * Kode pemeta luar MENTAH (tanpa label pemeta) untuk kolom `parcelCode` —
+ * distinct, gabung "; ", null bila kosong. Bedakan dari `summarizeExternalIds`
+ * yang sengaja membubuhkan "(Meridia)" untuk dibaca manusia.
+ */
+function rawExternalCodes(items: ExternalIdSummaryInput[]): string | null {
+  const parts = [...new Set(items.map((e) => e.code.trim()).filter(Boolean))];
+  return parts.length ? parts.join("; ") : null;
+}
+
 /** Trim; string kosong/whitespace → null. */
 function clean(s: string | null | undefined): string | null {
   const t = s?.trim();
@@ -143,6 +160,7 @@ export function buildParcelExportFeatures(rows: ParcelExportRow[]): {
       geometry: row.geometry,
       properties: {
         idLahan: row.parcelId,
+        parcelCode: rawExternalCodes(row.identity?.externalIds ?? []),
         idPetani: row.farmer?.farmerId ?? null,
         namaPetani: row.farmer?.name ?? null,
         nik: clean(row.farmer?.nik),
@@ -195,6 +213,11 @@ export function toDbfProperties(p: ParcelExportProperties): Record<string, unkno
   const str = (v: string | null) => (v == null ? "" : toAsciiDbf(v));
   return {
     id_lahan: str(p.idLahan),
+    // `parcel_code` (12 char) melebihi batas nama kolom DBF 10 karakter;
+    // dipendekkan `parcel_cod` — pemenggalan yang sama dengan yang dilakukan
+    // QGIS/ArcGIS sendiri saat menulis shapefile. Nama panjangnya utuh di
+    // GeoJSON/KML (`parcelCode`).
+    parcel_cod: str(p.parcelCode),
     id_petani: str(p.idPetani),
     nm_petani: str(p.namaPetani),
     nik: str(p.nik),

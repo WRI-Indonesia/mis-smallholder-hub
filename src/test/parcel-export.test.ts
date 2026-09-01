@@ -140,6 +140,33 @@ describe("buildParcelExportFeatures", () => {
     expect(p.kodeUl).toContain("ID0001");
   });
 
+  // Permintaan GIS specialist: kunci join ke dataset vendor harus MENTAH —
+  // `kodeUl` sengaja berlabel pemeta sehingga tak bisa dipakai untuk join.
+  it("parcelCode membawa kode pemeta luar mentah, tanpa label pemeta", () => {
+    const { fc } = buildParcelExportFeatures([row()]);
+    const p = fc.features[0].properties;
+    expect(p.parcelCode).toBe("ID0001");
+    expect(p.kodeUl).toBe("ID0001 (Meridia)");
+  });
+
+  it("beberapa kode pemeta → distinct digabung '; '; tanpa kode → null", () => {
+    const { fc } = buildParcelExportFeatures([
+      row({
+        identity: {
+          ...row().identity!,
+          externalIds: [
+            { source: "MERIDIA", code: " ID0001 " },
+            { source: "WRI", code: "WR0002" },
+            { source: "SWADAYA", code: "ID0001" },
+          ],
+        },
+      }),
+      row({ parcelId: "PCL-09", identity: { ...row().identity!, externalIds: [] } }),
+    ]);
+    expect(fc.features[0].properties.parcelCode).toBe("ID0001; WR0002");
+    expect(fc.features[1].properties.parcelCode).toBeNull();
+  });
+
   it("melewati geometri null/invalid tanpa menggagalkan batch, terhitung skipped", () => {
     const { fc, count, skipped } = buildParcelExportFeatures([
       row(),
@@ -176,6 +203,8 @@ describe("toDbfProperties", () => {
       expect(key.length).toBeLessThanOrEqual(10);
     }
     expect(dbf.id_lahan).toBe("PCL-01");
+    // `parcel_code` (12 char) dipendekkan `parcel_cod` agar muat batas DBF.
+    expect(Object.keys(dbf)).toContain("parcel_cod");
     expect(dbf.nm_petani).toBe("");
     expect(dbf.surat).toBe("");
     // Angka null dibiarkan null (pola ekspor SHP titik api).
