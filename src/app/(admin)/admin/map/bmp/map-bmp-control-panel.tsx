@@ -116,11 +116,14 @@ interface ComboboxProps {
   emptyText: string;
   options: { id: string; name: string }[];
   value: string | null;
-  onChange: (val: string) => void;
+  onChange: (val: string | null) => void;
+  /** Filter opsional: item teratas "Semua …" untuk mengosongkan pilihan
+   *  (tanpa ini, pilihan yang sudah dibuat tak bisa dibatalkan). */
+  allLabel?: string;
   disabled?: boolean;
 }
 
-function FilterCombobox({ label, required, placeholder, emptyText, options, value, onChange, disabled }: ComboboxProps) {
+function FilterCombobox({ label, required, placeholder, emptyText, options, value, onChange, allLabel, disabled }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.id === value);
 
@@ -141,6 +144,8 @@ function FilterCombobox({ label, required, placeholder, emptyText, options, valu
             >
               {selected ? (
                 <span className="truncate">{selected.name}</span>
+              ) : allLabel && value === null ? (
+                <span className="truncate">{allLabel}</span>
               ) : (
                 <span className="text-muted-foreground">{placeholder}</span>
               )}
@@ -154,6 +159,18 @@ function FilterCombobox({ label, required, placeholder, emptyText, options, valu
             <CommandList>
               <CommandEmpty>{emptyText}</CommandEmpty>
               <CommandGroup>
+                {allLabel && (
+                  <CommandItem
+                    value={allLabel}
+                    onSelect={() => {
+                      onChange(null);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check className={cn("mr-2 h-4 w-4", value === null ? "opacity-100" : "opacity-0")} />
+                    {allLabel}
+                  </CommandItem>
+                )}
                 {options.map((o) => (
                   <CommandItem
                     key={o.id}
@@ -326,6 +343,7 @@ export function MapBmpControlPanel(props: Props) {
             <FilterCombobox
               label="Provinsi"
               placeholder="Pilih Provinsi (opsional)"
+              allLabel="Semua Provinsi"
               emptyText="Provinsi tidak ditemukan."
               options={provinces}
               value={provinceId}
@@ -334,6 +352,7 @@ export function MapBmpControlPanel(props: Props) {
             <FilterCombobox
               label="Distrik"
               placeholder="Pilih Distrik (opsional)"
+              allLabel="Semua Distrik"
               emptyText="Distrik tidak ditemukan."
               options={districts}
               value={districtId}

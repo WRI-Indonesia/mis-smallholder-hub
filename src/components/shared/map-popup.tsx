@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -106,6 +106,70 @@ export function useMapPopupAutoPan(mapRef: RefObject<MapRef | null>, popupKey: s
       map.off("idle", clamp);
     };
   }, [mapRef, popupKey]);
+}
+
+/** Offset dasar `MAP_POPUP_PROPS.offset` (anchor bottom) dalam bentuk titik. */
+const POPUP_BASE_OFFSET: [number, number] = [0, -16];
+
+/**
+ * Popup bisa digeser (drag) agar tidak menutupi fitur yang dipilih — geseran
+ * diterapkan lewat prop `offset` <Popup> (react-map-gl memanggil `setOffset`),
+ * jadi popup tetap menempel titiknya saat peta di-pan/zoom. Geseran di-reset
+ * setiap `popupKey` berganti. Pasang `handleProps` pada `MapPopupDragHandle`
+ * (atau elemen handle lain) dan `offset` pada <Popup>.
+ */
+export function useMapPopupDrag(popupKey: string | null): {
+  offset: [number, number];
+  handleProps: {
+    onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
+    onPointerMove: (e: ReactPointerEvent<HTMLElement>) => void;
+    onPointerUp: (e: ReactPointerEvent<HTMLElement>) => void;
+  };
+} {
+  const [drag, setDrag] = useState<[number, number]>([0, 0]);
+  const startRef = useRef<{ x: number; y: number; base: [number, number] } | null>(null);
+
+  // Reset saat popup ganti — adjust-during-render (pola prevData map-canvas).
+  // startRef tak perlu di-reset: elemen handle ikut remount bersama <Popup>
+  // ber-`key`, jadi drag yang sedang berjalan otomatis putus.
+  const [prevKey, setPrevKey] = useState(popupKey);
+  if (prevKey !== popupKey) {
+    setPrevKey(popupKey);
+    setDrag([0, 0]);
+  }
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    startRef.current = { x: e.clientX, y: e.clientY, base: drag };
+  };
+  const onPointerMove = (e: ReactPointerEvent<HTMLElement>) => {
+    const start = startRef.current;
+    if (!start) return;
+    setDrag([start.base[0] + (e.clientX - start.x), start.base[1] + (e.clientY - start.y)]);
+  };
+  const onPointerUp = (e: ReactPointerEvent<HTMLElement>) => {
+    startRef.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
+  return {
+    offset: [POPUP_BASE_OFFSET[0] + drag[0], POPUP_BASE_OFFSET[1] + drag[1]],
+    handleProps: { onPointerDown, onPointerMove, onPointerUp },
+  };
+}
+
+/** Bilah pegangan drag di puncak kartu popup (pil abu kecil, kursor grab). */
+export function MapPopupDragHandle(props: ReturnType<typeof useMapPopupDrag>["handleProps"]) {
+  return (
+    <div
+      {...props}
+      title="Geser untuk memindahkan popup"
+      className="flex cursor-grab touch-none select-none justify-center py-1.5 active:cursor-grabbing"
+    >
+      <span className="h-1 w-10 rounded-full bg-muted-foreground/30" />
+    </div>
+  );
 }
 
 const ACCENTS = {
