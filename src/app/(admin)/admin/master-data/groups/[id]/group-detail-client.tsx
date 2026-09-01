@@ -23,6 +23,11 @@ import { formatGroupType, formatCertStatus } from "@/lib/farmer-group-labels";
 import type { FarmerGroupDetailData } from "@/lib/farmer-group-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
 import { formatNumber } from "@/lib/format";
+import { toast } from "sonner";
+import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
+import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-export";
+import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
+import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 
 const ParcelsDistributionMap = dynamic(
   () =>
@@ -67,6 +72,8 @@ interface Props {
   districts: { id: string; name: string }[];
   canViewParcel: boolean;
   canEditParcel: boolean;
+  /** EXPORT menu Lembaga Petani — gate tombol "Unduh Lahan" (#313). */
+  canExportParcels: boolean;
 }
 
 const formatDecimal = (n: number) =>
@@ -163,9 +170,39 @@ export function GroupDetailClient({
   districts,
   canViewParcel,
   canEditParcel,
+  canExportParcels,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const { summary, struktur, pelatihan, produksi } = detail;
+
+  // Unduh spasial lahan lembaga ini (#313) — action ber-guard mengembalikan
+  // FeatureCollection beratribut lengkap; konversi format berjalan di client.
+  const [exporting, setExporting] = useState(false);
+  async function handleParcelExport(format: ParcelExportFormat) {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const res = await getFarmerGroupParcelExportData(group.id);
+      if (!res.success || !res.data) {
+        toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error);
+        return;
+      }
+      if (res.data.count === 0) {
+        toast.info("Tidak ada lahan ber-poligon pada Lembaga ini");
+        return;
+      }
+      await downloadParcelExport(format, res.data.fc, parcelExportFileBase(res.data.label, new Date()));
+      toast.success(
+        res.data.skipped > 0
+          ? `${res.data.count} lahan diunduh (${res.data.skipped} dilewati — geometri tidak valid)`
+          : `${res.data.count} lahan diunduh`
+      );
+    } catch {
+      toast.error("Gagal membuat berkas unduhan lahan");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -396,9 +433,21 @@ export function GroupDetailClient({
             <SummaryCard icon={MapIcon} title="Blok" value={formatNumber(summary.blokCount)} />
           </div>
           <Card className="p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Sebaran Lahan
-            </h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Sebaran Lahan
+              </h2>
+              {/* Unduh lahan lembaga ini sebagai SHP/GeoJSON/KML (#313) —
+                  cakupannya sudah pasti satu Lembaga, jadi tak perlu filter. */}
+              {canExportParcels && (
+                <ParcelExportMenu
+                  disabled={mapParcels.length === 0}
+                  disabledReason="Lembaga ini belum punya lahan ber-poligon"
+                  exporting={exporting}
+                  onExport={handleParcelExport}
+                />
+              )}
+            </div>
             <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} />
           </Card>
           <p className="text-sm text-muted-foreground">

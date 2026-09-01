@@ -297,7 +297,8 @@ export const DATA_LINEAGE: DataLineage = [
       "trainingPackage": "R"
     },
     "modules": [
-      "src/server/actions/farmer-group.ts"
+      "src/server/actions/farmer-group.ts",
+      "src/server/actions/land-parcel-export.ts"
     ],
     "dynamicAccess": null
   },

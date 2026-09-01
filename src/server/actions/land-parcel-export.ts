@@ -15,13 +15,13 @@ import type { ActionResult } from "@/types/action-result";
 import type { FeatureCollection, MultiPolygon, Polygon } from "geojson";
 
 /**
- * Unduh data spasial lahan (#313) — dua entry point tipis dengan menu key
- * DI-HARDCODE di server (pola `getParcelPassport`), bukan satu action yang
- * menerima menu key dari klien: kalau kliennya yang memilih, mencabut EXPORT
- * di satu menu tak memblokir apa pun — pemanggil tinggal mengirim menu yang
- * lain dan menerima dataset ber-PII yang sama.
+ * Unduh data spasial lahan (#313) — entry point tipis per lokasi tombol dengan
+ * menu key DI-HARDCODE di server (pola `getParcelPassport`), bukan satu action
+ * yang menerima menu key dari klien: kalau kliennya yang memilih, mencabut
+ * EXPORT di satu menu tak memblokir apa pun — pemanggil tinggal mengirim menu
+ * yang lain dan menerima dataset ber-PII yang sama.
  */
-type ParcelExportSource = "map-parcel" | "master-data-parcels";
+type ParcelExportSource = "map-parcel" | "master-data-parcels" | "master-data-groups";
 
 export interface ParcelExportPayload {
   fc: FeatureCollection<Polygon | MultiPolygon, ParcelExportProperties>;
@@ -45,6 +45,20 @@ export async function getMasterDataParcelExportData(
   filters: ParcelExportFilters
 ): Promise<ActionResult<ParcelExportPayload>> {
   return exportParcels(filters, "master-data-parcels");
+}
+
+/**
+ * Tombol "Unduh Lahan" di tab Lahan detail Lembaga Petani — digate
+ * `master-data-groups:EXPORT`. Hanya menerima **id lembaga**, bukan filter
+ * bebas: tombolnya memang terikat pada satu lembaga yang sedang dibuka, jadi
+ * mempersempit kontraknya sekalian menutup jalan memakai entry point ini untuk
+ * menarik distrik penuh lewat izin menu Lembaga. Scope akses tetap berlaku
+ * (lembaga di luar cakupan → 0 fitur).
+ */
+export async function getFarmerGroupParcelExportData(
+  farmerGroupId: string
+): Promise<ActionResult<ParcelExportPayload>> {
+  return exportParcels({ farmerGroupId }, "master-data-groups");
 }
 
 /**
