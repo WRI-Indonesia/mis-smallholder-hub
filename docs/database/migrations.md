@@ -71,7 +71,7 @@ Sebelum deploy migration ke production, pastikan:
 - [ ] Migration SQL sudah direview manual (tidak ada DROP TABLE / DROP COLUMN unexpected)
 - [ ] Test di local dev environment dulu
 - [ ] Test di staging environment dengan production-like data volume
-- [ ] Backup database production sebelum migrate
+- [ ] Backup database production sebelum migrate — cek dulu `pg_dump --version` ≥ versi server (staging & prod **PG 18**; Homebrew `postgresql@17` ditolak, pakai `/opt/homebrew/opt/postgresql@18/bin/pg_dump`; #309)
 - [ ] Ada rollback plan jika migration gagal
 - [ ] Semua query di codebase sudah update (jika ada breaking change)
 - [ ] Index creation untuk tabel besar dilakukan CONCURRENTLY (jika perlu)

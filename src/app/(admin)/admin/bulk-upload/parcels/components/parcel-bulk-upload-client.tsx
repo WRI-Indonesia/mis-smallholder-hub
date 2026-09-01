@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Download, Database, ArrowRight, RefreshCw } from "lucide-react";
 import { parseShapefile, bulkCreateLandParcels } from "@/server/actions/bulk-upload-parcel";
+import { DEFAULT_CROP_TYPE } from "@/validations/land-parcel.schema";
 import { readFileAsBase64 } from "@/lib/file-base64";
 import {
   PARCEL_AUTO_MATCH_RULES,
@@ -283,8 +284,10 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     // 4. Land Status
     normalized.landStatus = props[mapping["landStatus"]]?.toString().trim() || null;
 
-    // 5. Crop Type
-    normalized.cropType = props[mapping["cropType"]]?.toString().trim() || null;
+    // 5. Crop Type — kosong → komoditas bawaan, sama dengan default di
+    // `landParcelSchema`. Di-set di sini juga supaya PRATINJAU menampilkan
+    // nilai yang benar-benar akan tersimpan, bukan "—" yang menyesatkan.
+    normalized.cropType = props[mapping["cropType"]]?.toString().trim() || DEFAULT_CROP_TYPE;
 
     // 6. Planting Year
     const rawYear = props[mapping["plantingYear"]];

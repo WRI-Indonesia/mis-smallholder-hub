@@ -28,7 +28,7 @@ Tabel atribut `.dbf` harus memuat **ID Petani** dan **ID Lahan**, karena dari si
 2. Pada **Langkah 1**, pilih berkas `.zip`. Sistem membaca isinya dan menyebut jumlah fitur yang terdeteksi.
 + Bila jumlah fitur jauh berbeda dari yang Anda harapkan, hentikan di sini — biasanya berarti ZIP-nya memuat layer yang salah.
 3. Pada **Langkah 2 — Petakan Atribut Kolom**, cocokkan kolom tabel atribut dengan kolom sistem.
-+ Nama kolom di shapefile sering terpotong menjadi 10 karakter (batas format DBF), misalnya `ID_PETANI` jadi `ID_PETAN`. Itu normal — cocokkan berdasarkan isinya, bukan namanya.
++ Nama kolom di shapefile sering terpotong menjadi 10 karakter (batas format DBF), misalnya `ID_PETANI` jadi `ID_PETAN`. Itu normal — cocokkan berdasarkan isinya, bukan namanya. **Komoditas** boleh dibiarkan tak dipetakan: baris yang kosong otomatis tersimpan sebagai **Kelapa Sawit**, dan pratinjau sudah menampilkannya begitu — jadi yang Anda lihat sama dengan yang tersimpan.
 4. Klik **Validasi Data Shapefile**.
 5. Periksa **peta pratinjau**: poligon hijau berarti valid, merah bermasalah. Klik sebuah poligon untuk melihat detail dan alasan errornya.
 + Peta ini pemeriksaan terpenting di halaman ini. Tabel bisa menyatakan seluruh baris valid, tetapi hanya peta yang memperlihatkan bahwa poligonnya mendarat di lokasi yang keliru.

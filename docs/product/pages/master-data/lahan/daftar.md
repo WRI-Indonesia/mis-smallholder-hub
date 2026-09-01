@@ -15,6 +15,7 @@ Halaman: Lahan (/admin/master-data/parcels)
 │   ├── Filter: Status (SUPERADMIN)
 │   ├── Filter: Pencarian
 │   ├── Tombol: Tambah Lahan
+│   ├── Dropdown: Unduh Lahan (SHP ZIP / GeoJSON / KML) — izin EXPORT (#313)
 │   ├── Tombol: Excel
 │   └── Tombol: Kolom
 ├── Tabel
@@ -47,6 +48,7 @@ Halaman: Lahan (/admin/master-data/parcels)
 | Tabel daftar | Tabel | Kolom: `ID Lahan`, `Blok` (hidden default), `Nama Petani`, `ID Petani`, `Lembaga Petani`, `Kelompok Tani` (hidden), `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Species`, `PSR` (badge PSR/Non-PSR), `Tahun Tanam`, `Revisi`, `Status` (SUPERADMIN) |
 | Aksi baris | Tombol | Lihat → `/admin/master-data/parcels/{id}`; Edit → modal; Nonaktifkan → `toggleLandParcelActive` |
 | Ekspor | Tombol | `data-lahan` (termasuk kolom distrik) |
+| Unduh Lahan | Dropdown (`ParcelExportMenu`) | Ekspor spasial SHP ZIP / GeoJSON / KML (#313), gate izin `EXPORT`; **nonaktif selama filter Distrik & Lembaga masih "Semua"** (tooltip "Pilih Distrik atau Lembaga Petani terlebih dahulu"); memanggil `getMasterDataParcelExportData(filters)` (menu key `master-data-parcels` di-hardcode di server) — atribut lengkap termasuk legalitas, hanya lahan ber-poligon. Selalu **revisi aktif saja** — filter Status (SUPERADMIN) tidak berlaku di sini, berbeda dengan tombol Excel yang mengekspor baris tabel apa adanya |
 | Tidak ada kartu KPI | — | Halaman ini langsung ke tabel |
 
 ## Dialog: `ParcelFormModal` (`parcels/components/parcel-form-modal.tsx`)
@@ -60,7 +62,7 @@ Judul `Tambah Lahan` / `Edit Lahan`; aksi `createLandParcel` / `updateLandParcel
 | `Luas (Hektar)` | number step 0.01, min 0 |
 | `Blok` | text |
 | `Status Kepemilikan` | select `Milik Sendiri (Owned)` / `Sewa (Leased)` / `Bagi Hasil (Shared)` |
-| `Komoditas` | text (`Contoh: Kelapa Sawit`) |
+| `Komoditas` | text (`Contoh: Kelapa Sawit`) — **terisi `Kelapa Sawit` secara default** pada form lahan baru; dikosongkan pun `landParcelSchema` mengisinya kembali (`DEFAULT_CROP_TYPE`, keputusan owner 2026-09-01) |
 | `Species` | text (`Contoh: Elaeis guineensis`) |
 | `PSR (Peremajaan Sawit Rakyat)` | checkbox `Lahan sedang PSR (replanting)` |
 | `Tahun Tanam` | number 1900–2100 |

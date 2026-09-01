@@ -69,11 +69,11 @@ npx dotenv -e .env.staging -- sh -c '/opt/homebrew/opt/libpq/bin/pg_restore --no
 
 Versi PostGIS tidak perlu disamakan: dump hanya memuat `CREATE EXTENSION`, jadi tiap server memasang versi defaultnya sendiri (local 3.5.0, server 3.6.3).
 
-## Status (2026-08-28)
+## Status (2026-09-01)
 
-- DB **staging** (tunnel `:1235/mis-staging`) = salinan penuh `mis-staging-local` per 2026-08-28, yaitu snapshot prod 2026-08-27 + 3 migrasi (`farmer_group_boundary`, `administrative_boundary`, `land_parcel_satellites`). **34 tabel, 28 migrasi ter-apply**; 8.626 petani, 13.639 lahan, 10.783 produksi, 908 pelatihan, 31.383 peserta — identik dengan `mis-staging-local`. Dump: `scripts/dump-prod/2026-08-28/mis-staging-local.dump`; backup skema staging sebelumnya (26 tabel, 25 migrasi): `scripts/dump-prod/2026-08-28/mis-staging-before-refresh.dump`.
-- DB **local** (`mis-dev`) = snapshot prod 2026-08-17 yang dimigrasi + diisi ulang menyusul (lihat Decision Log 2026-08-28) — isi setara prod menurut kunci bisnis, tapi cuid lahan berbeda.
-- DB **staging-local** (`localhost:5432/mis-staging-local`) = snapshot prod 2026-08-27, DB uji migrasi.
+- DB **local** (`mis-dev`) dan **staging-local** (`localhost:5432/mis-staging-local`) = **snapshot prod 2026-09-01** (restore penuh `scripts/dump-prod/2026-09-01/mis-prod.dump`): 8.626 petani, 13.668 lahan, 16.274 produksi, 908 pelatihan, 44 user, 29 migrasi ter-apply — identik dengan prod. Backup isi lama keduanya: `scripts/dump-prod/2026-09-01/mis-dev-before-refresh.dump` dan `mis-staging-local-before-refresh.dump`.
+- DB **staging** (tunnel `:1235/mis-staging`) = salinan penuh `mis-staging-local` per 2026-08-28, yaitu snapshot prod 2026-08-27 + 3 migrasi (`farmer_group_boundary`, `administrative_boundary`, `land_parcel_satellites`); sejak itu `land_stdb_stage` juga sudah di-apply (#309). Dump: `scripts/dump-prod/2026-08-28/mis-staging-local.dump`; backup skema staging sebelumnya (26 tabel, 25 migrasi): `scripts/dump-prod/2026-08-28/mis-staging-before-refresh.dump`.
+- **Penyeragaman `crop_type` 2026-09-01 — SELURUH env sudah:** setiap lahan bernilai **"Kelapa Sawit"** di `mis-dev` (13.668) · `mis-staging-local` (13.668) · `mis-staging` (13.639) · `mis-prod` (13.677). Tidak ada divergensi antar-env pada kolom ini. Skor Ketersediaan Data domain Lahan **naik di semua env** karena `crop_type` ikut dinilai — snapshot dashboard lama tetap memuat angka pra-perubahan. Backup kolom pra-perubahan per DB: `tmp-backup/croptype-<db>-before-<ts>.csv`.
 - DB **dev** (tunnel `:1235/mis-dev`, satu server dengan staging): hidup, masih **skema lama** (belum disinkronkan dengan prod).
 - Prod & staging: PostgreSQL **18.3**; local: Postgres.app **17.2** — dump/restore memakai client 18 dari `libpq` Homebrew.
 - Riwayat: staging pernah disamakan dengan snapshot prod 2026-08-17; skema staging lama (tabel ber-tanda-hubung, migrasi Mei 2026, tabel audit/HSE/sertifikasi) di-backup ke `scripts/dump-prod/2026-08-17/mis-staging-legacy-backup.dump` sebelum ditimpa.

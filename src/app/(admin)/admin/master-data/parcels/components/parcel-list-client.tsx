@@ -28,6 +28,10 @@ import {
 
 import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel";
 import { formatArea } from "@/lib/format";
+import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
+import { getMasterDataParcelExportData } from "@/server/actions/land-parcel-export";
+import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
+import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 
 interface Props {
   initialParcels: unknown[];
@@ -52,6 +56,7 @@ export function ParcelListClient({
   const [statusFilter, setStatusFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
   const [editParcel, setEditParcel] = useState<LandParcel | null>(null);
+  const [spatialExporting, setSpatialExporting] = useState(false);
   const router = useRouter();
 
   const filtered = (initialParcels as LandParcel[]).filter((p) => {
@@ -68,6 +73,38 @@ export function ParcelListClient({
           : !p.isActive;
     return matchGroup && matchDistrict && matchStatus;
   });
+
+  // Unduh data spasial (SHP/GeoJSON/KML) sesuai filter Distrik/Lembaga (#313).
+  // Tanpa mode "all": tombol nonaktif selama kedua filter masih "Semua".
+  const spatialFilterEmpty = districtFilter === "all" && groupFilter === "all";
+  async function handleSpatialExport(format: ParcelExportFormat) {
+    if (spatialFilterEmpty || spatialExporting) return;
+    setSpatialExporting(true);
+    try {
+      const res = await getMasterDataParcelExportData({
+        districtId: districtFilter !== "all" ? districtFilter : null,
+        farmerGroupId: groupFilter !== "all" ? groupFilter : null,
+      });
+      if (!res.success || !res.data) {
+        toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error);
+        return;
+      }
+      if (res.data.count === 0) {
+        toast.info("Tidak ada lahan ber-poligon pada filter ini");
+        return;
+      }
+      await downloadParcelExport(format, res.data.fc, parcelExportFileBase(res.data.label, new Date()));
+      toast.success(
+        res.data.skipped > 0
+          ? `${res.data.count} lahan diunduh (${res.data.skipped} dilewati — geometri tidak valid)`
+          : `${res.data.count} lahan diunduh`
+      );
+    } catch {
+      toast.error("Gagal membuat berkas unduhan lahan");
+    } finally {
+      setSpatialExporting(false);
+    }
+  }
 
   async function handleToggleActive(id: string) {
     const result = await toggleLandParcelActive(id);
@@ -234,19 +271,34 @@ export function ParcelListClient({
     </div>
   );
 
-  const toolbarRight = permissions.includes("CREATE") ? (
-    <Button
-      size="sm"
-      onClick={() => {
-        setEditParcel(null);
-        setShowForm(true);
-      }}
-      className="h-9"
-    >
-      <Plus className="h-4 w-4 mr-2" />
-      Tambah Lahan
-    </Button>
-  ) : undefined;
+  const canSpatialExport = permissions.includes("EXPORT");
+  const canCreate = permissions.includes("CREATE");
+  const toolbarRight =
+    canSpatialExport || canCreate ? (
+      <div className="flex items-center gap-2">
+        {canSpatialExport && (
+          <ParcelExportMenu
+            disabled={spatialFilterEmpty}
+            disabledReason="Pilih Distrik atau Lembaga Petani terlebih dahulu"
+            exporting={spatialExporting}
+            onExport={handleSpatialExport}
+          />
+        )}
+        {canCreate && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditParcel(null);
+              setShowForm(true);
+            }}
+            className="h-9"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Tambah Lahan
+          </Button>
+        )}
+      </div>
+    ) : undefined;
 
   return (
     <>
