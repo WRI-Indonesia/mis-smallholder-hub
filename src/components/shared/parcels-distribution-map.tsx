@@ -12,7 +12,7 @@ import { formatArea } from "@/lib/format";
 import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
-import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
+import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan, useMapPopupDrag, MapPopupDragHandle } from "@/components/shared/map-popup";
 
 export interface DistributionMapParcel {
   id: string;
@@ -116,6 +116,8 @@ export function ParcelsDistributionMap({
 
   const popupKey = selected ? `${selected.parcelId}:${selected.lngLat[0]},${selected.lngLat[1]}` : null;
   useMapPopupAutoPan(mapRef, popupKey);
+  // Popup bisa digeser agar tidak menutupi lahan yang dipilih (pola Peta Lahan).
+  const popupDrag = useMapPopupDrag(popupKey);
 
   const { collection, bounds, validCount, legend, labelBase } = useMemo(() => {
     // KT → warna: distinct ternormalisasi (trim + case-insensitive, konsisten
@@ -397,7 +399,9 @@ export function ParcelsDistributionMap({
             latitude={selected.lngLat[1]}
             onClose={() => setSelected(null)}
             {...MAP_POPUP_PROPS}
+            offset={popupDrag.offset}
           >
+            <MapPopupDragHandle {...popupDrag.handleProps} />
             {/* Lebar mengikuti isi (ID mono tak dipotong) — clamp agar tak terlalu lebar. */}
             <div className="w-max min-w-[300px] max-w-[440px]">
               <MapPopupHeader

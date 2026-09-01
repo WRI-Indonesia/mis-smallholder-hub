@@ -22,6 +22,7 @@ import { encodeMapCapture, type MapCapture } from "@/lib/map-capture";
 // pengguna diarahkan ke StreetMap/Light/Dark.
 import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, isImageryStyle, type MapStyleKey } from "@/lib/map-style";
 import { useVectorBasemap } from "@/hooks/use-vector-basemap";
+import { useMapPopupDrag, MapPopupDragHandle } from "@/components/shared/map-popup";
 import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
 
 // Antique Violet — pilihan owner (2026-08-19); kontras terhadap titik api
@@ -154,6 +155,12 @@ export function FireMapCanvas({
   const styleKey: MapStyleKey = styleOverride ?? (resolvedTheme === "dark" ? "dark" : "light");
 
   const [selected, setSelected] = useState<SelectedHotspot | null>(null);
+  // Popup bisa digeser agar tidak menutupi fitur yang dipilih (pola Peta Lahan);
+  // key me-reset geseran tiap ganti fitur. Offset dasar kanvas ini 12, bukan 16.
+  const popupKey = selected
+    ? `${String(selected.props.kind ?? "")}:${selected.longitude},${selected.latitude}`
+    : null;
+  const popupDrag = useMapPopupDrag(popupKey, [0, -12]);
   // Fokus capture per-lembaga (hanya selama cetak PDF) — menimpa gaya seleksi.
   const [focusGroupId, setFocusGroupId] = useState<string | null>(null);
 
@@ -496,15 +503,17 @@ export function FireMapCanvas({
 
         {selected && (
           <Popup
+            key={popupKey}
             longitude={selected.longitude}
             latitude={selected.latitude}
             anchor="bottom"
-            offset={12}
+            offset={popupDrag.offset}
             onClose={() => setSelected(null)}
             closeOnClick={false}
             maxWidth="none"
             className="map-parcel-popup"
           >
+            <MapPopupDragHandle {...popupDrag.handleProps} />
             {selected.props.kind === "boundary" ? (
               <BoundaryPopupBody props={selected.props} countsByGroup={countsByGroup} />
             ) : (

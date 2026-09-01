@@ -118,7 +118,10 @@ const POPUP_BASE_OFFSET: [number, number] = [0, -16];
  * setiap `popupKey` berganti. Pasang `handleProps` pada `MapPopupDragHandle`
  * (atau elemen handle lain) dan `offset` pada <Popup>.
  */
-export function useMapPopupDrag(popupKey: string | null): {
+export function useMapPopupDrag(
+  popupKey: string | null,
+  baseOffset: [number, number] = POPUP_BASE_OFFSET
+): {
   offset: [number, number];
   handleProps: {
     onPointerDown: (e: ReactPointerEvent<HTMLElement>) => void;
@@ -154,7 +157,7 @@ export function useMapPopupDrag(popupKey: string | null): {
   };
 
   return {
-    offset: [POPUP_BASE_OFFSET[0] + drag[0], POPUP_BASE_OFFSET[1] + drag[1]],
+    offset: [baseOffset[0] + drag[0], baseOffset[1] + drag[1]],
     handleProps: { onPointerDown, onPointerMove, onPointerUp },
   };
 }
