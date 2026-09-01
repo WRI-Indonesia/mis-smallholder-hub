@@ -4,7 +4,7 @@ import {
   summarizeHolderNames,
   sumStatedArea,
   summarizeStdb,
-  summarizeExternalIds,
+  parcelMapperShort,
   summarizePrograms,
   type DocSummaryInput,
   type StdbSummaryInput,
@@ -85,11 +85,15 @@ export interface ParcelExportProperties {
   idLahan: string;
   /**
    * Kode lahan dari pemeta luar (`parcel_code` di berkas sumber vendor),
-   * MENTAH tanpa label pemeta — permintaan GIS specialist: kolom ini dipakai
-   * sebagai kunci join ke dataset vendor, sehingga `kodeUl` yang berformat
-   * "ID0001 (Meridia)" tak bisa menggantikannya. Beberapa kode → gabung "; ".
+   * MENTAH tanpa label pemeta — dipakai GIS specialist sebagai kunci join ke
+   * dataset vendor. Kode dan penerbitnya sengaja dipisah dua kolom
+   * (`parcelCode` + `pemeta`), bukan satu kolom "ID0001 (Meridia)" seperti
+   * `summarizeExternalIds` yang dipakai layar/laporan: nilai gabungan tak bisa
+   * dijadikan kunci join. Beberapa kode → gabung "; ", sejajar dengan `pemeta`.
    */
   parcelCode: string | null;
+  /** Penerbit tiap kode pada `parcelCode`, urutan sejajar. */
+  pemeta: string | null;
   idPetani: string | null;
   namaPetani: string | null;
   nik: string | null;
@@ -110,7 +114,6 @@ export interface ParcelExportProperties {
   surat: string | null;
   namaDiSurat: string | null;
   luasSurat: number | null;
-  kodeUl: string | null;
   program: string | null;
   [key: string]: unknown;
 }
@@ -122,13 +125,25 @@ function isPolygonGeometry(g: unknown): g is Polygon | MultiPolygon {
 }
 
 /**
- * Kode pemeta luar MENTAH (tanpa label pemeta) untuk kolom `parcelCode` —
- * distinct, gabung "; ", null bila kosong. Bedakan dari `summarizeExternalIds`
- * yang sengaja membubuhkan "(Meridia)" untuk dibaca manusia.
+ * Kode pemeta luar dipecah DUA nilai sejajar — `parcelCode` (kode mentah, kunci
+ * join) dan `pemeta` (penerbitnya). Dedup berbasis kode agar kedua deret tak
+ * pernah berbeda panjang. Bandingkan `summarizeExternalIds` yang sengaja
+ * menggabung jadi "ID0001 (Meridia)" untuk dibaca manusia di layar/laporan.
  */
-function rawExternalCodes(items: ExternalIdSummaryInput[]): string | null {
-  const parts = [...new Set(items.map((e) => e.code.trim()).filter(Boolean))];
-  return parts.length ? parts.join("; ") : null;
+function splitExternalIds(items: ExternalIdSummaryInput[]): {
+  parcelCode: string | null;
+  pemeta: string | null;
+} {
+  const seen = new Map<string, string>();
+  for (const e of items) {
+    const code = e.code.trim();
+    if (code && !seen.has(code)) seen.set(code, parcelMapperShort(e.source));
+  }
+  if (seen.size === 0) return { parcelCode: null, pemeta: null };
+  return {
+    parcelCode: [...seen.keys()].join("; "),
+    pemeta: [...seen.values()].join("; "),
+  };
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -160,7 +175,7 @@ export function buildParcelExportFeatures(rows: ParcelExportRow[]): {
       geometry: row.geometry,
       properties: {
         idLahan: row.parcelId,
-        parcelCode: rawExternalCodes(row.identity?.externalIds ?? []),
+        ...splitExternalIds(row.identity?.externalIds ?? []),
         idPetani: row.farmer?.farmerId ?? null,
         namaPetani: row.farmer?.name ?? null,
         nik: clean(row.farmer?.nik),
@@ -180,7 +195,6 @@ export function buildParcelExportFeatures(rows: ParcelExportRow[]): {
         surat: summarizeDocuments(docs),
         namaDiSurat: summarizeHolderNames(docs),
         luasSurat: sumStatedArea(docs),
-        kodeUl: summarizeExternalIds(row.identity?.externalIds ?? []),
         program: summarizePrograms(row.identity?.programs ?? []),
       },
     });
@@ -216,8 +230,9 @@ export function toDbfProperties(p: ParcelExportProperties): Record<string, unkno
     // `parcel_code` (12 char) melebihi batas nama kolom DBF 10 karakter;
     // dipendekkan `parcel_cod` — pemenggalan yang sama dengan yang dilakukan
     // QGIS/ArcGIS sendiri saat menulis shapefile. Nama panjangnya utuh di
-    // GeoJSON/KML (`parcelCode`).
+    // GeoJSON/KML (`parcelCode`). Penerbitnya di kolom terpisah `pemeta`.
     parcel_cod: str(p.parcelCode),
+    pemeta: str(p.pemeta),
     id_petani: str(p.idPetani),
     nm_petani: str(p.namaPetani),
     nik: str(p.nik),
@@ -237,7 +252,6 @@ export function toDbfProperties(p: ParcelExportProperties): Record<string, unkno
     surat: str(p.surat),
     nm_surat: str(p.namaDiSurat),
     luas_surat: p.luasSurat,
-    kode_ul: str(p.kodeUl),
     program: str(p.program),
   };
 }

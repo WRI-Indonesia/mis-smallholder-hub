@@ -137,19 +137,18 @@ describe("buildParcelExportFeatures", () => {
     expect(p.namaDiSurat).toBe("Budi; Ani");
     expect(p.luasSurat).toBeCloseTo(2.0, 5);
     expect(p.stdb).toBe("1637/53/1401/6/2025");
-    expect(p.kodeUl).toContain("ID0001");
   });
 
-  // Permintaan GIS specialist: kunci join ke dataset vendor harus MENTAH —
-  // `kodeUl` sengaja berlabel pemeta sehingga tak bisa dipakai untuk join.
-  it("parcelCode membawa kode pemeta luar mentah, tanpa label pemeta", () => {
+  // Permintaan GIS specialist: kode dipakai sebagai kunci join, jadi kode dan
+  // penerbitnya DIPISAH dua kolom — bukan digabung "ID0001 (Meridia)".
+  it("kode pemeta luar dipecah dua kolom: parcelCode mentah + pemeta", () => {
     const { fc } = buildParcelExportFeatures([row()]);
     const p = fc.features[0].properties;
     expect(p.parcelCode).toBe("ID0001");
-    expect(p.kodeUl).toBe("ID0001 (Meridia)");
+    expect(p.pemeta).toBe("Meridia");
   });
 
-  it("beberapa kode pemeta → distinct digabung '; '; tanpa kode → null", () => {
+  it("beberapa kode → distinct digabung '; ' dan kedua deret tetap sejajar", () => {
     const { fc } = buildParcelExportFeatures([
       row({
         identity: {
@@ -163,8 +162,12 @@ describe("buildParcelExportFeatures", () => {
       }),
       row({ parcelId: "PCL-09", identity: { ...row().identity!, externalIds: [] } }),
     ]);
-    expect(fc.features[0].properties.parcelCode).toBe("ID0001; WR0002");
+    const p = fc.features[0].properties;
+    expect(p.parcelCode).toBe("ID0001; WR0002");
+    // Duplikat kode dibuang bersama penerbitnya — panjang kedua deret sama.
+    expect(p.pemeta?.split("; ")).toHaveLength(p.parcelCode!.split("; ").length);
     expect(fc.features[1].properties.parcelCode).toBeNull();
+    expect(fc.features[1].properties.pemeta).toBeNull();
   });
 
   it("melewati geometri null/invalid tanpa menggagalkan batch, terhitung skipped", () => {
@@ -203,8 +206,11 @@ describe("toDbfProperties", () => {
       expect(key.length).toBeLessThanOrEqual(10);
     }
     expect(dbf.id_lahan).toBe("PCL-01");
-    // `parcel_code` (12 char) dipendekkan `parcel_cod` agar muat batas DBF.
+    // `parcel_code` (12 char) dipendekkan `parcel_cod` agar muat batas DBF;
+    // penerbitnya kolom terpisah, tak pernah digabung ke dalam kodenya.
     expect(Object.keys(dbf)).toContain("parcel_cod");
+    expect(Object.keys(dbf)).toContain("pemeta");
+    expect(Object.keys(dbf)).not.toContain("kode_ul");
     expect(dbf.nm_petani).toBe("");
     expect(dbf.surat).toBe("");
     // Angka null dibiarkan null (pola ekspor SHP titik api).

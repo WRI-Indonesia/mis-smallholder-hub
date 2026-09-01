@@ -27,9 +27,9 @@ Unduhan selalu mengikuti **filter aktif** — per Distrik atau per Lembaga Petan
 
 ## Isi atribut
 
-Setiap poligon membawa atribut lengkap: ID Lahan, **Parcel Code** (kode dari pemeta luar), ID & nama petani, NIK, Lembaga Petani, Kelompok Tani, Distrik, blok, luas (ha), status lahan, komoditas & species, PSR, tahun tanam, revisi, serta legalitas — surat kepemilikan (jenis & nomor, nama tertera, total luas tertera), STDB, UL Parcel Code, dan program.
+Setiap poligon membawa atribut lengkap: ID Lahan, **Parcel Code** (kode dari pemeta luar), ID & nama petani, NIK, Lembaga Petani, Kelompok Tani, Distrik, blok, luas (ha), status lahan, komoditas & species, PSR, tahun tanam, revisi, serta legalitas — surat kepemilikan (jenis & nomor, nama tertera, total luas tertera), STDB, dan program.
 
-+ **Parcel Code vs UL Parcel Code** — keduanya berasal dari data yang sama, tapi dibuat untuk keperluan berbeda. `parcel_cod` (`parcelCode`) berisi **kode mentah saja**, mis. `ID080d781b4`, supaya bisa dipakai sebagai kunci **join** ke dataset pemeta di QGIS/ArcGIS. `kode_ul` berisi kode **beserta nama pemetanya**, mis. `ID080d781b4 (Meridia)`, untuk dibaca manusia. Lahan yang punya kode dari lebih dari satu pemeta menampilkan semuanya dipisah `;` — periksa dulu sebelum menjadikannya kunci join.
++ **Parcel Code dan pemetanya adalah dua kolom terpisah**, bukan satu kolom gabungan: `parcel_cod` (`parcelCode`) berisi **kode mentah saja**, mis. `ID080d781b4`, siap dipakai sebagai kunci **join** ke dataset pemeta di QGIS/ArcGIS; `pemeta` berisi penerbitnya, mis. `Meridia`. Di layar aplikasi (Detail Lahan, laporan) keduanya memang tampil menyatu sebagai `ID080d781b4 (Meridia)` karena di sana dibaca manusia — di berkas GIS sengaja dipisah supaya kodenya bisa langsung dipakai. Lahan yang punya kode dari lebih dari satu pemeta menampilkan semuanya dipisah `;` pada kedua kolom, urutannya sejajar — periksa dulu sebelum menjadikannya kunci join.
 
 + Pada Shapefile nama kolom dipendekkan maksimal 10 karakter (batas format DBF), mis. `nm_petani`, `sts_lahan`, `thn_tanam`, dan `parcel_code` menjadi **`parcel_cod`** — pemenggalan yang sama dengan yang dilakukan QGIS/ArcGIS sendiri. GeoJSON dan KML memakai nama panjang. Lahan dengan lebih dari satu surat/STDB digabung dalam satu kolom dipisah `;` — sama seperti Report → Lahan.
 
