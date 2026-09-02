@@ -105,6 +105,11 @@ export interface DataTableProps<T> {
    * Transformer baris ekspor. Kuncinya WAJIB memakai `column.key` yang sama —
    * nilai untuk kunci yang tidak dikembalikan diambil dari baris mentah, dan di
    * mode dev ketidakcocokannya diperingatkan (lihat `buildExportRows`).
+   *
+   * `index` adalah posisi dalam data **terurut & tersaring**, bukan nomor baris
+   * yang stabil. Untuk kolom nomor urut yang sudah tersimpan di baris, pakai
+   * nilai baris itu — kalau tidak, Excel menomori ulang 1..N mengikuti urutan
+   * tampilan sementara layar menampilkan nomor aslinya.
    */
   getExportRow?: (row: T, index: number) => Record<string, unknown>;
 }

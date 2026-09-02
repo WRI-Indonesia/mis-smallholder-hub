@@ -76,7 +76,6 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Evidence:** `src/app/(admin)/admin/master-data/groups/group-form-modal.tsx`.
 - **Validation:** gunakan helper untuk memproses string kosong/whitespace sebelum parsing numerik. · **Owner:** Frontend Lead.
 
-
 ### TD-017 · 🔲 Open — Field foto petani belum ada di schema (P3)
 
 - **Masalah:** detail Petani 360° (#172) butuh foto petani; field/upload belum ada di `Farmer` (keputusan owner 2026-07-16: **pending**, masuk debt).

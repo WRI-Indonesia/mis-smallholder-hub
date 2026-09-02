@@ -377,7 +377,13 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
 
   const getSpecificTrainingExportRow = (row: SpecificTrainingRow, idx?: number) => {
     return {
-      no: idx !== undefined ? idx + 1 : "",
+      // `row.no` dulu, BUKAN indeks ekspor. Baris tabel sudah membawa nomor
+      // yang dirender di layar; indeks yang diterima dari `DataTable` adalah
+      // posisi dalam data TERURUT, jadi setelah pengguna menyortir atau
+      // mencari, Excel akan menomori ulang 1..N sementara layar (dan PDF)
+      // menampilkan nomor aslinya — ketiganya berbeda baris-per-baris.
+      // `idx` tetap dipakai jalur PDF, yang mengirim baris tanpa `no`.
+      no: row.no ?? (idx !== undefined ? idx + 1 : ""),
       name: row.name,
       farmerIdCode: row.farmerIdCode,
       trainingDate: formatDateDMY(row.trainingDate ?? null, "—"),
