@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLandParcelReportDoc } from "@/lib/report-land-parcel-pdf";
+import { buildLandParcelReportDoc, collectLandParcelMapBoxes } from "@/lib/report-land-parcel-pdf";
 
 // Verifikasi empiris via jsPDF asli (pelajaran #174: bug print tak tertangkap
 // build/test biasa) — build dipisah dari save sehingga dokumen bisa diperiksa.
@@ -137,5 +137,110 @@ describe("buildLandParcelReportDoc — blok sections legalitas", () => {
       sections: [{ title: "Filter Legalitas", lines: [] }],
     });
     expect(doc.getNumberOfPages()).toBe(buildLandParcelReportDoc(baseInput(20, true)).getNumberOfPages());
+  });
+});
+
+describe("collectLandParcelMapBoxes (#318)", () => {
+  // Klien menjahit latar seukuran kotak halaman PDF. Kotak itu tak boleh
+  // ditebak dari luar (tinggi kotak halaman 1 bergantung panjang metadata &
+  // blok filter), jadi kontraknya: apa yang dilaporkan di sini = apa yang
+  // digambar buildLandParcelReportDoc.
+  it("melaporkan satu halaman peta saat grid 1×1", () => {
+    const pages = collectLandParcelMapBoxes(baseInput(20, true));
+    expect(pages).toHaveLength(1);
+    expect(pages[0].key).toBe("");
+  });
+
+  it("melaporkan ikhtisar + satu halaman per sel berisi", () => {
+    const input = { ...baseInput(60, true), grid: { rows: 2, cols: 2 } };
+    const pages = collectLandParcelMapBoxes(input);
+    expect(pages[0].key).toBe("");
+    // Sel kosong dilewati, jadi jumlahnya ≤ 1 + baris×kolom.
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages.length).toBeLessThanOrEqual(1 + 2 * 2);
+    // Label sel unik dan berformat huruf+angka.
+    const cellKeys = pages.slice(1).map((p) => p.key);
+    expect(new Set(cellKeys).size).toBe(cellKeys.length);
+    for (const key of cellKeys) expect(key).toMatch(/^[A-Z]\d+$/);
+  });
+
+  it("memberi kotak & bbox yang terpakai (bukan nol) untuk tiap halaman", () => {
+    const input = { ...baseInput(60, true), grid: { rows: 2, cols: 2 } };
+    for (const page of collectLandParcelMapBoxes(input)) {
+      expect(page.box.w).toBeGreaterThan(0);
+      expect(page.box.h).toBeGreaterThan(0);
+      expect(page.frame.scale).toBeGreaterThan(0);
+      expect(page.frame.maxLon).toBeGreaterThan(page.frame.minLon);
+      expect(page.frame.maxLat).toBeGreaterThan(page.frame.minLat);
+    }
+  });
+
+  it("tidak melaporkan halaman peta bila tak ada geometri yang bisa digambar", () => {
+    expect(collectLandParcelMapBoxes(baseInput(20, false))).toHaveLength(0);
+  });
+
+  it("kotak halaman sel identik antar sel — atlas memakai tata letak yang sama", () => {
+    const input = { ...baseInput(60, true), grid: { rows: 2, cols: 2 } };
+    const cellBoxes = collectLandParcelMapBoxes(input).slice(1).map((p) => p.box);
+    for (const box of cellBoxes) expect(box).toEqual(cellBoxes[0]);
+  });
+});
+
+// JPEG 1×1 sah — jsPDF menolak data URL palsu, dan `drawBasemap` memanggil
+// `addImage(..., "JPEG", ...)` dengan format eksplisit.
+const TINY_JPEG =
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsL" +
+  "DBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAAB" +
+  "AAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==";
+
+/** Berapa halaman yang memuat teks atribusi latar. */
+function pagesWithAttribution(doc: ReturnType<typeof buildLandParcelReportDoc>): number {
+  // jsPDF menyimpan content stream per halaman di `internal.pages` (1-indexed).
+  const pages = (doc.internal as unknown as { pages: string[][] }).pages;
+  return pages.filter((page) => Array.isArray(page) && page.join("\n").includes("Map data")).length;
+}
+
+describe("latar peta per halaman (#318)", () => {
+  const gridInput = () => ({ ...baseInput(60, true), grid: { rows: 2, cols: 2 } });
+
+  it("tanpa latar: tak satu pun halaman mencetak atribusi", () => {
+    expect(pagesWithAttribution(buildLandParcelReportDoc(gridInput()))).toBe(0);
+  });
+
+  it("atribusi HANYA di halaman yang benar-benar punya gambar latar", () => {
+    // Skenario yang bikin bendera dokumen-lebar salah: cuma halaman ikhtisar
+    // yang punya latar. Halaman sel tak boleh mengklaim "Map data © Google"
+    // untuk citra yang tidak ada di sana.
+    const doc = buildLandParcelReportDoc({
+      ...gridInput(),
+      basemaps: new Map([["", TINY_JPEG]]),
+      basemapAttribution: "Map data © Google",
+    });
+    expect(pagesWithAttribution(doc)).toBe(1);
+  });
+
+  it("atribusi muncul di setiap halaman peta saat semuanya berlatar", () => {
+    const input = gridInput();
+    const pages = collectLandParcelMapBoxes(input);
+    const doc = buildLandParcelReportDoc({
+      ...input,
+      basemaps: new Map(pages.map((p) => [p.key, TINY_JPEG])),
+      basemapAttribution: "Map data © Google",
+    });
+    expect(pagesWithAttribution(doc)).toBe(pages.length);
+  });
+
+  it("collectLandParcelMapBoxes memberi kotak yang IDENTIK dengan dokumen berdata penuh", () => {
+    // Pengumpul sengaja mengosongkan `data` untuk melewati render autoTable.
+    // Uji ini yang menjamin pintasan itu tak mengubah satu pun kotak peta.
+    const input = gridInput();
+    const viaFullBuild: unknown[] = [];
+    buildLandParcelReportDoc({
+      ...input,
+      onMapPage: (key, box, layout) => {
+        if (layout.frame) viaFullBuild.push({ key, box, frame: layout.frame });
+      },
+    });
+    expect(collectLandParcelMapBoxes(input)).toEqual(viaFullBuild);
   });
 });
