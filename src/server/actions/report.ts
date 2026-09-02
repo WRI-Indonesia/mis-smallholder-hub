@@ -522,6 +522,14 @@ function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParc
   // `=== "mapped"` sementara teksnya menyebut "hanya yang sudah didata" untuk
   // apa pun selain `"all"` — pemanggil yang tidak mengirim `coverage`
   // menghasilkan PDF/Excel yang mengklaim batasan yang tidak ada di datanya.
+  //
+  // PERHATIAN (#318, 2026-09-02): default HALAMAN kini `"all"`, tidak lagi
+  // sama dengan default fungsi ini. Tidak berdampak hari ini — satu-satunya
+  // pemanggil, Laporan Lahan, selalu mengirim `coverage` eksplisit — tapi
+  // pemanggil BARU yang lupa mengirimnya akan diam-diam menyaring lahan yang
+  // di layar ikut terhitung. Invarian yang wajib dijaga bukan nilainya,
+  // melainkan bahwa `where` di sini dan teks `describeLegalFilters` selalu
+  // menyepakati default yang sama.
   if (filters.coverage !== "all") {
     out.push({ identity: { externalIds: { some: { isActive: true } } } });
   }

@@ -19,7 +19,7 @@ src/
 ├── app/
 │   ├── (admin)/admin/        # dashboard, master-data, data-analyst, map, report, bulk-upload, settings, tools, profile, help
 │   ├── (public)/             # Home, community, knowledge-management
-│   ├── api/                  # NextAuth + proxy tile peta (map-overlay, map-hotspot)
+│   ├── api/                  # NextAuth + proxy tile peta (map-overlay, map-hotspot, map-basemap)
 │   ├── login/                # Halaman login
 │   ├── not-found.tsx         # 404 global
 │   └── globals.css           # Design tokens

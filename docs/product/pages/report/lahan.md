@@ -27,10 +27,14 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 │   │   Penyebut mengikuti Cakupan: `sudah didata` → totalDidata,
 │   │   `semua lahan` → totalLahan (kalau tidak, persen bisa >100%)
 │   └── Selisih Luas ≥ 0,5 Ha
-├── Peta Cetak — Grid & Label
+├── Peta Cetak — Latar, Grid & Label
 │   ├── Grid Index (Baris × Kolom)
+│   ├── Latar Peta (#318 — Polos · StreetMap · Satellite · Hybrid)
+│   ├── Redam Latar (slider 0–100%, hanya saat latar aktif)
+│   ├── Indikator "Menyiapkan latar peta… n/m halaman" + peringatan kunci >30 sel
 │   ├── Label Poligon (No, Nama, ID Petani, ID Lahan, Kelompok Tani)
-│   └── Preview peta SVG (ikhtisar + peta per sel, panah utara, skala batang)
+│   └── Preview peta SVG (ikhtisar + peta per sel, panah utara, skala batang,
+│       atribusi penyedia latar)
 ├── Selektor Kolom (dropdown "Tampilkan Kolom")
 ├── Empty state: Pilih Lembaga Petani / Tidak Ada Data Lahan
 ├── Tabel Lahan
@@ -64,14 +68,17 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | "Laporan Lahan" | Heading | Deskripsi "Roster lahan per Lembaga Petani (Lembaga, Petani, ID Petani, ID Lahan, Kelompok Tani)" |
 | "Distrik" | Filter (combobox + search) | Primitif `FilterCombobox` (#212); default "Semua Distrik", empty "Distrik tidak ditemukan." |
 | "Lembaga Petani" | Filter (combobox + search) | Primitif `FilterCombobox` (#212); label tombol default "Semua Lembaga Petani", namun laporan baru dimuat setelah satu Lembaga dipilih (wajib secara efektif); empty "Lembaga Petani tidak ditemukan." |
-| Catatan filter | Teks bantu | "Roster real-time dari data lahan aktif (1 baris = 1 lahan). Pilih Lembaga Petani (wajib) — laporan & cetakan selalu per Lembaga; filter Distrik membantu mempersempit daftar. PDF & Excel menyertakan peta lahan — atur pecahan grid dan isi label poligon di panel Peta Cetak." |
+| Catatan filter | Teks bantu | "Roster real-time dari data lahan aktif (1 baris = 1 lahan). Pilih Lembaga Petani (wajib) — laporan & cetakan selalu per Lembaga; filter Distrik membantu mempersempit daftar. PDF & Excel menyertakan peta lahan — atur latar, pecahan grid, dan isi label poligon di panel Peta Cetak." |
 | Kartu KPI | 4 kartu | "Total Petani" (badge Petani), "Kelompok Tani" (badge KT), "Total Lahan" (badge Lahan), "Total Luas" (badge Ha) |
-| "Peta Cetak — Grid & Label" | Kartu pengaturan peta | Ikon `Grid3x3` |
+| "Peta Cetak — Latar, Grid & Label" | Kartu pengaturan peta | Ikon `Grid3x3` |
 | "Grid Index (Baris × Kolom)" | Filter (dua input `number`) | Baris 1–26, kolom 1–20; teks bantu "maks. `<n>` peta + ikhtisar" atau "tanpa pecah" |
+| "Latar Peta" | Filter (`select`) | #318 — `Polos — tanpa latar` (**default**, mempertahankan cetakan lama) / `StreetMap` / `Satellite` / `Hybrid`. Hanya basemap **raster** dari `MAP_STYLES`; `light`/`dark` adalah style vector OpenFreeMap yang tak punya tile gambar, jadi sengaja TIDAK ditawarkan. Terkunci (`disabled`) bila grid > `BASEMAP_MAX_CELLS` (30 sel) |
+| "Redam Latar — `<n>`%" | Filter (`input[type=range]`, 0–100 step 5) | #318 — muncul hanya saat latar aktif; default `BASEMAP_DEFAULT_DIM` = 65 (latar diputihkan 35%). Peredaman **dipanggang ke dalam JPEG**, bukan lapisan per-renderer — jsPDF tak punya alpha pada `addImage` |
+| Indikator latar | Teks bantu | "Menyiapkan latar peta… `<n>`/`<m>` halaman. Ekspor tetap bisa ditekan — berkasnya menunggu sampai semua latar siap." Di atas 30 sel: peringatan amber bahwa latar dimatikan |
 | "Label Poligon" | Filter (checkbox, minimal satu aktif) | Opsi: No, Nama, ID Petani, ID Lahan, Kelompok Tani (default: No) |
 | Preview peta | Chart / SVG | Tanpa grid: 1 halaman peta. Dengan grid: 1 ikhtisar (garis grid + label sel + "`<n>` lahan") + satu peta per sel; dekorasi panah utara & skala batang; catatan "`<n>` lahan tanpa geometri tidak tergambar (No …)."; state "Memuat geometri lahan..." dan "Tidak ada geometri lahan yang dapat digambar." |
 | "Kolom" | Dropdown selektor kolom | Pintasan **Pilih semua · Kosongkan · Bawaan** + penghitung `aktif/total` (standar `ui-ux.md`; rollout ke menu lain: #308). "Tampilkan Kolom": Kelompok Tani, Blok, Komoditas, Species, PSR, Tahun Tanam, Luas (Ha), **Surat Kepemilikan, Nama di Surat, Luas Tertera (Ha), STDB** (#296), **UL Parcel Code, Program** (#305). Default aktif: Kelompok Tani, Tahun Tanam, Luas (Ha) |
-| "Cakupan Pendataan" | Filter (`select`) | `Sudah didata` (default — **juga default server**: `landParcelLegalWhere` membatasi untuk apa pun selain `"all"`, sama dengan yang dicetak `describeLegalFilters`, supaya header PDF/Excel tak pernah mengklaim batasan yang tidak ada di datanya) / `Semua lahan`. "Sudah didata" = punya UL Parcel Code aktif — **proxy** untuk "sudah melalui import Detail Lahan". Ini penyebut semua persentase di kartu ringkasan |
+| "Cakupan Pendataan" | Filter (`select`) | `Semua lahan` (**default sejak #318**, 2026-09-02 — bawaan `Sudah didata` menyaring lahan tanpa UL Parcel Code sehingga laporan terbaca seperti roster lengkap padahal tersaring) / `Sudah didata`. "Sudah didata" = punya UL Parcel Code aktif — **proxy** untuk "sudah melalui import Detail Lahan"; ini penyebut semua persentase di kartu ringkasan, jadi persentase pada setelan bawaan sengaja "pesimis". ⚠️ Default **fungsi** `landParcelLegalWhere` tetap `mapped` (membatasi untuk apa pun selain `"all"`, sepakat dengan teks `describeLegalFilters` supaya header PDF/Excel tak pernah mengklaim batasan yang tidak ada di datanya) — halaman selalu mengirim `coverage` eksplisit, tapi pemanggil baru yang lupa akan menyaring diam-diam (#319) |
 | "Status Surat" | Filter (`select`) | `Semua` / `Ada surat` / `Tanpa surat`. **"Tanpa surat" = tidak ada baris `LandParcelDocument` aktif sama sekali**; lahan yang hanya punya baris `OTHER` + `custodyNote` ("surat di bank", "lahan sudah dijual") dihitung **punya** surat |
 | "Jenis Surat" | Filter (dropdown checkbox, multi) | Enum `LandDocumentType`. Semantik: **punya minimal satu** jenis terpilih — lahan ber-SHM *dan* ber-SKT muncul di kedua filter (disengaja) |
 | "Status STDB" | Filter (`select`) | `Semua` / `Ada STDB` / `Tanpa STDB` / per tahap `LandStdbStage` (#306) |

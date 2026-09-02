@@ -846,7 +846,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
           </div>
 
           <p className="text-xs text-muted-foreground mt-3">
-            Roster real-time dari data lahan aktif (1 baris = 1 lahan). <span className="font-medium">Pilih Lembaga Petani (wajib)</span> — laporan &amp; cetakan selalu per Lembaga; filter Distrik membantu mempersempit daftar. PDF &amp; Excel menyertakan peta lahan — atur pecahan grid dan isi label poligon di panel <span className="font-medium">Peta Cetak</span>.
+            Roster real-time dari data lahan aktif (1 baris = 1 lahan). <span className="font-medium">Pilih Lembaga Petani (wajib)</span> — laporan &amp; cetakan selalu per Lembaga; filter Distrik membantu mempersempit daftar. PDF &amp; Excel menyertakan peta lahan — atur latar, pecahan grid, dan isi label poligon di panel <span className="font-medium">Peta Cetak</span>.
           </p>
         </CardContent>
       </Card>
@@ -892,7 +892,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Grid3x3 className="h-4 w-4 text-primary" />
-              Peta Cetak — Grid &amp; Label
+              Peta Cetak — Latar, Grid &amp; Label
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
