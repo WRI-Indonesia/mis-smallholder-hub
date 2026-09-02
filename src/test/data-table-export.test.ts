@@ -70,6 +70,40 @@ describe("buildExportRows — kolom non-data", () => {
   });
 });
 
+describe("buildExportRows — fallback hanya untuk nilai primitif", () => {
+  // Kolom turunan lazim MEMINJAM kunci yang tak berhubungan demi memenuhi
+  // `keyof T` — di Snapshot BMP Detail, "Produktivitas" ber-`key: "id"` dan
+  // "Lahan Ber-data" ber-`key: "availability"`, keduanya bernilai objek.
+  // Fallback yang menulis nilai mentah apa adanya menghasilkan sel
+  // "[object Object]": lebih buruk daripada kosong.
+  type Derived = { name: string; totals: { produksiTon: number }; tags: string[] };
+  const derivedCols: { key: keyof Derived }[] = [{ key: "name" }, { key: "totals" }, { key: "tags" }];
+  const derivedRows: Derived[] = [{ name: "KT Maju", totals: { produksiTon: 12 }, tags: ["a", "b"] }];
+
+  it("tidak pernah menuliskan objek atau array ke sel", () => {
+    const out = buildExportRows(derivedCols, derivedRows, (row) => ({ name: row.name }));
+    expect(out[0].name).toBe("KT Maju");
+    expect(out[0].totals).toBeUndefined();
+    expect(out[0].tags).toBeUndefined();
+  });
+
+  it("nilai turunan dari transformer tetap menang atas objek mentah", () => {
+    const out = buildExportRows(derivedCols, derivedRows, (row) => ({
+      name: row.name,
+      totals: `${row.totals.produksiTon} ton`,
+      tags: row.tags.join(", "),
+    }));
+    expect(out[0].totals).toBe("12 ton");
+    expect(out[0].tags).toBe("a, b");
+  });
+
+  it("primitif tetap lolos fallback", () => {
+    const out = buildExportRows(columns, rows);
+    expect(out[0].farmerId).toBe("MIS.14.08.001");
+    expect(out[1].paket1Date).toBeNull();
+  });
+});
+
 describe("buildExportRows — dengan transformer", () => {
   it("memakai nilai transformer ketika kuncinya cocok", () => {
     const out = buildExportRows(columns, rows, (row) => ({

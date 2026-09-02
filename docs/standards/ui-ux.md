@@ -72,7 +72,10 @@ Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus d
 - **Export Excel**:
   - Disediakan tombol "Excel" untuk mengunduh data tabel saat ini (hasil pencarian/filter aktif).
   - Diaktifkan dengan menyertakan prop `exportFilename` (misalnya `exportFilename="data-users"`).
-  - Kustomisasi mapping baris dilakukan melalui prop `getExportRow` untuk meratakan relasi atau data kompleks.
+  - Kustomisasi mapping baris dilakukan melalui prop `getExportRow(row, index)` untuk meratakan relasi atau data kompleks.
+  - **Kunci `getExportRow` WAJIB sama dengan `column.key`** (wajib, sejak 2026-09-02 / #323). Nilai dipetik per kolom, bukan per baris. Kunci yang tidak dikembalikan jatuh ke nilai mentah baris dan **diperingatkan di console mode dev**, sekali per ekspor. Sebelum #323 kolom yang namanya tak cocok terbit **kosong tanpa satu pun tanda** — bukan error, bukan nilai salah, berkasnya terlihat sah dan bisa diedarkan. Pola ini menggigit tiga kali (dua di #160, lalu empat kolom paket Laporan Pelatihan) sebelum ditutup sebagai TD-015; **empat kolom di tiga halaman lain ternyata sudah lama kosong tanpa pernah dilaporkan siapa pun**.
+  - **Kolom kontrol wajib `exportable: false`** — kolom "Aksi" yang meminjam `key: "id"` demi memenuhi `keyof T` bukan data; tanpa penanda ini ia terbawa ke Excel berisi CUID.
+  - Kolom **turunan** (nilainya dihitung `render`, tanpa padanan mentah di baris) tetap perlu entri di `getExportRow` — fallback nilai mentah tidak bisa menghitungnya.
 - **Posisi Tombol Tambah**: Tombol "Tambah / Create" di-render secara konsisten di paling kanan toolbar menggunakan prop `toolbarRight` dari `<DataTable>`.
 
 ### Pola UI Settings — Matriks & Tabel Bertingkat (#187B)

@@ -124,6 +124,18 @@ export interface DataTableProps<T> {
  * memang tak punya padanan mentah tetap kosong, tapi tak ada lagi kolom yang
  * hilang hanya karena salah nama.
  */
+/** Nilai yang layak ditulis apa adanya ke sel Excel. */
+function isExportablePrimitive(val: unknown): boolean {
+  return (
+    val === null ||
+    val === undefined ||
+    typeof val === "string" ||
+    typeof val === "number" ||
+    typeof val === "boolean" ||
+    val instanceof Date
+  );
+}
+
 export function buildExportRows<T>(
   activeColumns: { key: keyof T }[],
   rows: T[],
@@ -142,7 +154,16 @@ export function buildExportRows<T>(
       }
       if (custom) missingKeys.add(key);
       const val = row[col.key];
-      exportRow[key] = val instanceof Date ? val.toLocaleDateString("id-ID") : val;
+      // Fallback HANYA untuk nilai primitif. Kolom turunan sering meminjam
+      // kunci yang tak berhubungan demi memenuhi `keyof T` (mis. kolom
+      // "Produktivitas" ber-`key: "id"`, "Lahan Ber-data" ber-`key:
+      // "availability"`), dan nilai mentahnya objek — menuliskannya
+      // menghasilkan sel "[object Object]", yang lebih buruk daripada kosong.
+      exportRow[key] = val instanceof Date
+        ? val.toLocaleDateString("id-ID")
+        : isExportablePrimitive(val)
+          ? val
+          : undefined;
     }
     return exportRow;
   });
