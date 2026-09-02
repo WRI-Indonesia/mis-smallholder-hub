@@ -134,6 +134,34 @@ export function basemapTileUrl(key: ReportBasemapTileKey, z: number, x: number, 
   return `/api/map-basemap?key=${key}&z=${z}&x=${x}&y=${y}`;
 }
 
+/**
+ * Perluas bbox data menjadi bbox **seluruh kotak peta**.
+ *
+ * `buildLandParcelMapLayout` menempatkan bbox lahan di tengah kotak dengan
+ * rasio dipertahankan, jadi hampir selalu ada sisa ruang di kiri-kanan atau
+ * atas-bawah. Mosaik yang hanya menutupi bbox lahan meninggalkan pita putih di
+ * sisa itu — dan sisanya bisa lebar sekali untuk lembaga yang lahannya
+ * memanjang. Dengan diperluas ke tepi kotak, latar mengisi penuh dan
+ * penempatannya jadi sepele: gambar digambar persis pada kotak.
+ *
+ * Rasio mosaik lalu selalu mengikuti rasio kotak, sehingga ukurannya juga jadi
+ * dapat diperkirakan (±1600 × 1070 px) alih-alih ikut bentuk sebaran lahan.
+ */
+export function expandFrameToBox(
+  frame: BasemapFrame & { offX: number; offY: number; scale: number },
+  box: { x: number; y: number; w: number; h: number },
+): BasemapFrame {
+  // Kebalikan `project()` di buildLandParcelMapLayout:
+  //   x = offX + (lon - minLon) · scale ; y = offY + (maxLat - lat) · scale
+  const s = frame.scale || 1e-6;
+  return {
+    minLon: frame.minLon - (frame.offX - box.x) / s,
+    maxLon: frame.minLon + (box.x + box.w - frame.offX) / s,
+    maxLat: frame.maxLat + (frame.offY - box.y) / s,
+    minLat: frame.maxLat - (box.y + box.h - frame.offY) / s,
+  };
+}
+
 /** Ukuran mosaik (px) untuk sebuah bbox: sisi terpanjang ≈ `targetPx`. */
 export function basemapPixelSize(frame: BasemapFrame, targetPx: number): { w: number; h: number } {
   const spanLon = frame.maxLon - frame.minLon || 1e-6;

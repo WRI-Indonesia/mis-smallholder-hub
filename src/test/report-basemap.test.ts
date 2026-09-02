@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  expandFrameToBox,
   basemapCacheKey,
   basemapPixelSize,
   basemapTileUrl,
@@ -17,6 +18,7 @@ import {
   REPORT_BASEMAP_STYLE_KEY,
 } from "@/lib/report-basemap";
 import { rasterTileTemplate, MAP_STYLE_KEYS } from "@/lib/map-style";
+import { buildLandParcelMapLayout } from "@/lib/report-land-parcel";
 
 // Latar peta cetak Laporan Lahan (#318). Yang diuji di sini murni angka &
 // konfigurasi — penjahitan tile butuh canvas nyata (jsdom hanya menyediakan
@@ -168,5 +170,75 @@ describe("basemapTileUrl", () => {
     expect(params.get("z")).toBe("15");
     expect(params.get("x")).toBe("25735");
     expect(params.get("y")).toBe("16383");
+  });
+});
+
+describe("expandFrameToBox", () => {
+  const BOX = { x: 0, y: 0, w: 280, h: 180, pad: 6 };
+  const square = (lon: number, lat: number, size: number) => ({
+    type: "Polygon" as const,
+    coordinates: [[[lon, lat], [lon + size, lat], [lon + size, lat + size], [lon, lat + size], [lon, lat]]],
+  });
+  /** Proyeksi yang dipakai buildLandParcelMapLayout, dibalik untuk verifikasi. */
+  const projectX = (f: { minLon: number; offX: number; scale: number }, lon: number) =>
+    f.offX + (lon - f.minLon) * f.scale;
+  const projectY = (f: { maxLat: number; offY: number; scale: number }, lat: number) =>
+    f.offY + (f.maxLat - lat) * f.scale;
+
+  const layoutOf = (parcels: { no: number; geometry: ReturnType<typeof square> }[]) =>
+    buildLandParcelMapLayout(parcels, BOX);
+
+  it("memetakan bbox hasil perluasan tepat ke keempat sisi kotak", () => {
+    // Sebaran melebar: sisa ruang ada di atas & bawah.
+    const layout = layoutOf([
+      { no: 1, geometry: square(101, 0.5, 0.2) },
+      { no: 2, geometry: square(101.6, 0.52, 0.2) },
+    ]);
+    const f = layout.frame!;
+    const e = expandFrameToBox(f, BOX);
+    expect(projectX(f, e.minLon)).toBeCloseTo(BOX.x, 6);
+    expect(projectX(f, e.maxLon)).toBeCloseTo(BOX.x + BOX.w, 6);
+    expect(projectY(f, e.maxLat)).toBeCloseTo(BOX.y, 6);
+    expect(projectY(f, e.minLat)).toBeCloseTo(BOX.y + BOX.h, 6);
+  });
+
+  it("selalu memuat bbox data — latar tak pernah kurang dari sebaran lahan", () => {
+    for (const parcels of [
+      // Melebar, meninggi, dan satu lahan tunggal: ketiganya menyisakan pita
+      // putih dengan bentuk berbeda pada versi sebelum #318 diperbaiki.
+      [{ no: 1, geometry: square(101, 0.5, 0.4) }, { no: 2, geometry: square(101.8, 0.5, 0.4) }],
+      [{ no: 1, geometry: square(101, 0.2, 0.05) }, { no: 2, geometry: square(101.02, 1.2, 0.05) }],
+      [{ no: 1, geometry: square(101, 0.5, 0.002) }],
+    ]) {
+      const f = layoutOf(parcels).frame!;
+      const e = expandFrameToBox(f, BOX);
+      expect(e.minLon).toBeLessThanOrEqual(f.minLon);
+      expect(e.maxLon).toBeGreaterThanOrEqual(f.maxLon);
+      expect(e.minLat).toBeLessThanOrEqual(f.minLat);
+      expect(e.maxLat).toBeGreaterThanOrEqual(f.maxLat);
+    }
+  });
+
+  it("menghasilkan mosaik ber-rasio KOTAK, bukan ber-rasio sebaran lahan", () => {
+    // Inilah yang menghapus pita putih: apa pun bentuk sebarannya, mosaiknya
+    // seukuran kotak peta.
+    for (const parcels of [
+      [{ no: 1, geometry: square(101, 0.5, 0.4) }, { no: 2, geometry: square(101.8, 0.5, 0.4) }],
+      [{ no: 1, geometry: square(101, 0.2, 0.05) }, { no: 2, geometry: square(101.02, 1.2, 0.05) }],
+    ]) {
+      const e = expandFrameToBox(layoutOf(parcels).frame!, BOX);
+      const { w, h } = basemapPixelSize(e, 1600);
+      // Toleransi 2 desimal: sisi pendek dibulatkan ke piksel bulat, jadi
+      // rasionya meleset ±0,001 — bukan kesalahan proyeksi.
+      expect(w / h).toBeCloseTo(BOX.w / BOX.h, 2);
+    }
+  });
+
+  it("mengikuti rasio kotak yang berbeda (kartu pratinjau vs halaman PDF)", () => {
+    const parcels = [{ no: 1, geometry: square(101, 0.5, 0.1) }];
+    const pdfBox = { x: 14, y: 16, w: 269, h: 180, pad: 6 };
+    const e = expandFrameToBox(buildLandParcelMapLayout(parcels, pdfBox).frame!, pdfBox);
+    const { w, h } = basemapPixelSize(e, 1600);
+    expect(w / h).toBeCloseTo(pdfBox.w / pdfBox.h, 2);
   });
 });

@@ -113,7 +113,7 @@ describe("GET /api/map-basemap — jalur sukses", () => {
       const res = await GET(req(`key=${key}&z=12&x=100&y=100`));
       expect(res.status, key).toBe(200);
       expect(fetchMock.mock.calls[0][0], key).toBe(
-        rasterTileTemplate(key as "streetmap").replace("{z}", "12").replace("{x}", "100").replace("{y}", "100"),
+        rasterTileTemplate(key as "streetmap")!.replace("{z}", "12").replace("{x}", "100").replace("{y}", "100"),
       );
     }
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useTransition, type ReactNode, type ReactElement } from "react";
+import { useState, useCallback, useEffect, useMemo, useTransition, type ReactNode, type ReactElement } from "react";
 import { toast } from "sonner";
 import { FileText, Download, Users, Layers, Sprout, Printer, SlidersHorizontal, MapPin, Grid3x3 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,7 @@ import {
 import { exportLandParcelReportExcel, type LpExcelImage } from "@/lib/report-land-parcel-xlsx";
 import {
   composeReportBasemap,
+  expandFrameToBox,
   basemapCacheKey,
   isTileBasemap,
   BASEMAP_DEFAULT_DIM,
@@ -142,6 +143,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const [basemapDim, setBasemapDim] = useState(BASEMAP_DEFAULT_DIM);
   /** Latar per halaman peta: "" = penuh/ikhtisar, sisanya label sel grid. */
   const [basemapImages, setBasemapImages] = useState<Map<string, string>>(new Map());
+  /** Ekspor sedang menunggu latar selesai dijahit — tombol dikunci selama itu. */
+  const [preparingMaps, setPreparingMaps] = useState(false);
   // Geometri lahan (id → GeoJSON) — dimuat saat Lembaga dipilih, untuk preview & PDF.
   const [geoms, setGeoms] = useState<Map<string, LpGeoJson | null> | null>(null);
 
@@ -161,7 +164,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     });
 
   // ── Filter legalitas (#305) — yang mengubah laporan dari roster jadi worklist.
-  const [coverage, setCoverage] = useState<"all" | "mapped">("mapped");
+  // Cakupan bawaan "Semua lahan" (owner 2026-09-02): bawaan "Sudah didata"
+  // diam-diam menyembunyikan lahan yang belum punya UL Parcel Code, sehingga
+  // laporan terbaca seperti roster lengkap padahal tersaring.
+  const [coverage, setCoverage] = useState<"all" | "mapped">("all");
   const [documentStatus, setDocumentStatus] = useState<"all" | "with" | "without">("all");
   const [documentTypes, setDocumentTypes] = useState<Set<string>>(new Set());
   const [stdbStatus, setStdbStatus] = useState<string>("all");
@@ -315,65 +321,77 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     [reportRows, geoms],
   );
 
-  // Mosaik yang sudah jadi, bertahan selama halaman hidup — bolak-balik antar
-  // pilihan grid/latar tidak menarik ulang ratusan tile (cache HTTP proxy pun
-  // hanya menolong sesudah permintaan pertama).
-  const basemapCache = useRef(new Map<string, string>());
+  /**
+   * Satu bbox per halaman peta: "" untuk halaman penuh/ikhtisar, label sel
+   * untuk halaman atlas. `frame` sebuah layout hanya bergantung pada lahannya,
+   * bukan pada kotak gambar — jadi satu mosaik per halaman melayani preview,
+   * PDF, dan Excel sekaligus meski ketiganya memakai kotak berbeda.
+   */
+  const basemapTargets = useMemo(() => {
+    if (geomParcels.length === 0) return [];
+    const full = buildLandParcelMapLayout(geomParcels, PREVIEW_BOX);
+    if (!full.frame) return [];
+    const targets: { key: string; frame: NonNullable<LpMapLayout["frame"]> }[] = [
+      { key: "", frame: full.frame },
+    ];
+    const split =
+      gridRows * gridCols > 1 ? splitParcelsIntoGrid(geomParcels, gridRows, gridCols) : null;
+    for (const cell of split?.cells ?? []) {
+      const cellFrame = buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX).frame;
+      if (cellFrame) targets.push({ key: cell.label, frame: cellFrame });
+    }
+    return targets;
+  }, [geomParcels, gridRows, gridCols]);
+
+  /**
+   * Jahit semua latar yang belum ada, kembalikan set LENGKAP.
+   *
+   * Dipakai dua pihak: efek pratinjau (melaporkan kemajuan lewat `onProgress`)
+   * dan kedua tombol ekspor. Ekspor WAJIB menunggu promise ini — versi pertama
+   * memakai state `basemapImages` apa adanya, sehingga menekan Unduh sebelum
+   * penjahitan selesai menghasilkan PDF yang sebagian halamannya polos tanpa
+   * peringatan apa pun. Karena hasilnya di-cache, menunggu di sini gratis bila
+   * pratinjau memang sudah selesai.
+   */
+  const ensureBasemaps = useCallback(
+    async (onProgress?: (partial: Map<string, string>) => void) => {
+      const done = new Map<string, string>();
+      if (!isTileBasemap(activeBasemap)) return done;
+      // Berurutan, bukan Promise.all: 30 sel × ±35 tile sekaligus akan
+      // menghantam proxy (dan penyedia hulu) dalam satu ledakan.
+      for (const target of basemapTargets) {
+        const image = await composeForBox(activeBasemap, target.frame, PREVIEW_BOX, basemapDim);
+        if (image) {
+          done.set(target.key, image);
+          onProgress?.(new Map(done));
+        }
+      }
+      return done;
+    },
+    [activeBasemap, basemapDim, basemapTargets],
+  );
 
   useEffect(() => {
-    if (!isTileBasemap(activeBasemap) || geomParcels.length === 0) {
+    if (!isTileBasemap(activeBasemap)) {
       setBasemapImages(new Map());
       return;
     }
     let cancelled = false;
-
-    (async () => {
-      const full = buildLandParcelMapLayout(geomParcels, PREVIEW_BOX);
-      if (!full.frame) {
-        setBasemapImages(new Map());
-        return;
-      }
-      const split =
-        gridRows * gridCols > 1 ? splitParcelsIntoGrid(geomParcels, gridRows, gridCols) : null;
-      const useGridHere = split !== null && split.cells.length > 0;
-
-      // `frame` sebuah layout hanya bergantung pada lahannya, bukan pada kotak
-      // gambar — jadi satu mosaik per halaman melayani preview, PDF, dan Excel
-      // sekaligus meski ketiganya memakai kotak berbeda.
-      const targets: { key: string; frame: NonNullable<LpMapLayout["frame"]> }[] = [
-        { key: "", frame: full.frame },
-      ];
-      if (useGridHere) {
-        for (const cell of split!.cells) {
-          const cellFrame = buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX).frame;
-          if (cellFrame) targets.push({ key: cell.label, frame: cellFrame });
-        }
-      }
-
-      // Berurutan, bukan Promise.all: 30 sel × ±35 tile sekaligus akan
-      // menghantam proxy (dan penyedia hulu) dalam satu ledakan. Hasil
-      // disetel bertahap supaya preview terisi satu per satu.
-      const done = new Map<string, string>();
-      for (const target of targets) {
-        if (cancelled) return;
-        const cacheKey = basemapCacheKey(activeBasemap, target.frame, basemapDim);
-        let image = basemapCache.current.get(cacheKey);
-        if (!image) {
-          image = (await composeReportBasemap(activeBasemap, target.frame, basemapDim)) ?? undefined;
-          if (image) basemapCache.current.set(cacheKey, image);
-        }
-        if (cancelled) return;
-        if (image) {
-          done.set(target.key, image);
-          setBasemapImages(new Map(done));
-        }
-      }
-    })();
-
+    // Penjahitan yang sudah berjalan sengaja TIDAK dibatalkan saat pilihan
+    // berubah: hasilnya tetap masuk cache, jadi kembali ke pilihan sebelumnya
+    // langsung jadi. Yang dijaga hanya jangan sampai menyetel state basi.
+    ensureBasemaps((partial) => {
+      if (!cancelled) setBasemapImages(partial);
+    }).then((all) => {
+      if (!cancelled) setBasemapImages(all);
+    });
     return () => {
       cancelled = true;
     };
-  }, [activeBasemap, basemapDim, geomParcels, gridRows, gridCols]);
+  }, [activeBasemap, ensureBasemaps]);
+
+  /** Semua halaman peta sudah punya latar — penanda "aman diunduh". */
+  const basemapReady = !isTileBasemap(activeBasemap) || basemapImages.size >= basemapTargets.length;
 
   const reportTotalLuas = useMemo(
     () => reportRows.reduce((sum, r) => sum + (r.luas ?? 0), 0),
@@ -479,6 +497,13 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     const rows = buildExportRows();
     const fullData = show("luas") ? [...rows, totalRow()] : rows;
 
+    // Tunggu SEMUA latar selesai dijahit. Memakai state `basemapImages` apa
+    // adanya akan menghasilkan berkas yang sebagian gambar petanya polos —
+    // diam-diam, tanpa penanda apa pun bagi pembacanya.
+    setPreparingMaps(true);
+    const mapImages = await ensureBasemaps();
+    setPreparingMaps(false);
+
     // Render SVG (komponen preview yang sama) → PNG untuk ditempel di sheet.
     const { renderToStaticMarkup } = await import("react-dom/server");
     const toPng = (el: ReactElement) => svgToPng(renderToStaticMarkup(el));
@@ -497,7 +522,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 layout={fullLayout}
                 linesByNo={null}
                 overlay={gridOverlay(fullLayout, split!)}
-                basemapUrl={basemapImages.get("")}
+                basemapUrl={mapImages.get("")}
                 attribution={basemapAttribution}
               />,
             )
@@ -505,7 +530,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               <LayoutSvg
                 layout={fullLayout}
                 linesByNo={linesByNo}
-                basemapUrl={basemapImages.get("")}
+                basemapUrl={mapImages.get("")}
                 attribution={basemapAttribution}
               />,
             );
@@ -523,7 +548,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 <LayoutSvg
                   layout={buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX)}
                   linesByNo={linesByNo}
-                  basemapUrl={basemapImages.get(cell.label)}
+                  basemapUrl={mapImages.get(cell.label)}
                   attribution={basemapAttribution}
                 />,
               ),
@@ -616,9 +641,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       }
     });
 
-    const { exportLandParcelReportPDF } = await import("@/lib/report-land-parcel-pdf");
-    exportLandParcelReportPDF({
-      filename: `Laporan_Lahan_${scopeLabel()}`,
+    const { exportLandParcelReportPDF, collectLandParcelMapBoxes } = await import(
+      "@/lib/report-land-parcel-pdf"
+    );
+    const pdfInput = {
       metadata: [
         { label: "Distrik", value: selectedDistrictObj?.name ?? "Semua Distrik" },
         { label: "Lembaga Petani", value: selectedGroupObj?.name ?? "-" },
@@ -636,7 +662,30 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       data,
       mapParcels,
       grid: { rows: gridRows, cols: gridCols },
-      basemaps: basemapImages,
+    };
+
+    // Latar PDF dijahit untuk kotak halaman PDF, BUKAN untuk kotak pratinjau:
+    // rasio keduanya berbeda (A4 lanskap vs kartu pratinjau), dan memakai
+    // gambar pratinjau di sini akan menggeser citra terhadap poligon sampai
+    // ratusan meter di tepi. Kotaknya diambil dari modul PDF sendiri supaya
+    // tak ada perhitungan tata letak yang tersalin ke sini.
+    const basemaps = new Map<string, string>();
+    if (isTileBasemap(activeBasemap)) {
+      setPreparingMaps(true);
+      try {
+        for (const page of collectLandParcelMapBoxes(pdfInput)) {
+          const image = await composeForBox(activeBasemap, page.frame, page.box, basemapDim);
+          if (image) basemaps.set(page.key, image);
+        }
+      } finally {
+        setPreparingMaps(false);
+      }
+    }
+
+    exportLandParcelReportPDF({
+      filename: `Laporan_Lahan_${scopeLabel()}`,
+      ...pdfInput,
+      basemaps,
       basemapAttribution,
     });
   };
@@ -932,6 +981,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 </div>
               </div>
             </div>
+            {!basemapReady && (
+              <p className="text-xs text-muted-foreground">
+                Menyiapkan latar peta… {basemapImages.size}/{basemapTargets.length} halaman. Ekspor
+                tetap bisa ditekan — berkasnya menunggu sampai semua latar siap.
+              </p>
+            )}
             {basemapLocked && basemap !== "none" && (
               <p className="text-xs text-amber-700 dark:text-amber-500">
                 Latar peta dimatikan di atas {BASEMAP_MAX_CELLS} sel grid ({gridRows} × {gridCols} ={" "}
@@ -998,15 +1053,27 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
             </DropdownMenuContent>
           </DropdownMenu>
           {canExport && (
-            <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-9 gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportExcel}
+              disabled={preparingMaps}
+              className="h-9 gap-2"
+            >
               <Download className="h-4 w-4" />
-              Excel
+              {preparingMaps ? "Menyiapkan peta…" : "Excel"}
             </Button>
           )}
           {canPrint && (
-            <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-9 gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={preparingMaps}
+              className="h-9 gap-2"
+            >
               <Printer className="h-4 w-4" />
-              PDF
+              {preparingMaps ? "Menyiapkan peta…" : "PDF"}
             </Button>
           )}
         </div>
@@ -1153,6 +1220,30 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       )}
     </div>
   );
+}
+
+/**
+ * Mosaik latar untuk satu halaman peta, seukuran KOTAKNYA. Cache dipegang di
+ * modul (bukan state) supaya bertahan lintas render dan dipakai bersama jalur
+ * pratinjau maupun ekspor PDF — keduanya menjahit bbox yang berbeda sedikit
+ * (kotak pratinjau vs kotak halaman PDF), tapi tile-nya hampir seluruhnya sama
+ * sehingga pass kedua nyaris seluruhnya kena cache HTTP proxy.
+ */
+const basemapMosaicCache = new Map<string, string>();
+
+async function composeForBox(
+  key: ReportBasemapKey,
+  frame: NonNullable<LpMapLayout["frame"]>,
+  box: { x: number; y: number; w: number; h: number },
+  dim: number,
+): Promise<string | undefined> {
+  const expanded = expandFrameToBox(frame, box);
+  const cacheKey = basemapCacheKey(key, expanded, dim);
+  const cached = basemapMosaicCache.get(cacheKey);
+  if (cached) return cached;
+  const image = await composeReportBasemap(key, expanded, dim);
+  if (image) basemapMosaicCache.set(cacheKey, image);
+  return image ?? undefined;
 }
 
 // ─── Preview peta cetak (#179) — SVG dari helper layout yang sama dengan PDF ───
@@ -1335,15 +1426,19 @@ function LayoutSvg({
       viewBox={`0 0 ${PREVIEW_BOX.w} ${PREVIEW_BOX.h}`}
       className="w-full h-auto rounded border bg-white"
     >
-      {basemapUrl && layout.frame && (
+      {basemapUrl && (
+        // Menutupi seluruh kotak: mosaik memang dijahit untuk bbox kotak ini
+        // (`expandFrameToBox`), bukan untuk bbox lahan — jadi tak ada pita
+        // putih di sisi yang tak terpakai sebaran lahan.
+        //
         // Data URL, bukan URL jaringan: SVG ini juga dirender jadi PNG untuk
         // Excel (`svgToPng`), dan gambar eksternal diblokir di mode itu.
         <image
           href={basemapUrl}
-          x={layout.frame.offX}
-          y={layout.frame.offY}
-          width={(layout.frame.maxLon - layout.frame.minLon || 1e-6) * layout.frame.scale}
-          height={(layout.frame.maxLat - layout.frame.minLat || 1e-6) * layout.frame.scale}
+          x={0}
+          y={0}
+          width={PREVIEW_BOX.w}
+          height={PREVIEW_BOX.h}
           preserveAspectRatio="none"
         />
       )}

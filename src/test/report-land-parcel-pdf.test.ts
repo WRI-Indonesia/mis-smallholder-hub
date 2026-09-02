@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLandParcelReportDoc } from "@/lib/report-land-parcel-pdf";
+import { buildLandParcelReportDoc, collectLandParcelMapBoxes } from "@/lib/report-land-parcel-pdf";
 
 // Verifikasi empiris via jsPDF asli (pelajaran #174: bug print tak tertangkap
 // build/test biasa) — build dipisah dari save sehingga dokumen bisa diperiksa.
@@ -137,5 +137,51 @@ describe("buildLandParcelReportDoc — blok sections legalitas", () => {
       sections: [{ title: "Filter Legalitas", lines: [] }],
     });
     expect(doc.getNumberOfPages()).toBe(buildLandParcelReportDoc(baseInput(20, true)).getNumberOfPages());
+  });
+});
+
+describe("collectLandParcelMapBoxes (#318)", () => {
+  // Klien menjahit latar seukuran kotak halaman PDF. Kotak itu tak boleh
+  // ditebak dari luar (tinggi kotak halaman 1 bergantung panjang metadata &
+  // blok filter), jadi kontraknya: apa yang dilaporkan di sini = apa yang
+  // digambar buildLandParcelReportDoc.
+  it("melaporkan satu halaman peta saat grid 1×1", () => {
+    const pages = collectLandParcelMapBoxes(baseInput(20, true));
+    expect(pages).toHaveLength(1);
+    expect(pages[0].key).toBe("");
+  });
+
+  it("melaporkan ikhtisar + satu halaman per sel berisi", () => {
+    const input = { ...baseInput(60, true), grid: { rows: 2, cols: 2 } };
+    const pages = collectLandParcelMapBoxes(input);
+    expect(pages[0].key).toBe("");
+    // Sel kosong dilewati, jadi jumlahnya ≤ 1 + baris×kolom.
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages.length).toBeLessThanOrEqual(1 + 2 * 2);
+    // Label sel unik dan berformat huruf+angka.
+    const cellKeys = pages.slice(1).map((p) => p.key);
+    expect(new Set(cellKeys).size).toBe(cellKeys.length);
+    for (const key of cellKeys) expect(key).toMatch(/^[A-Z]\d+$/);
+  });
+
+  it("memberi kotak & bbox yang terpakai (bukan nol) untuk tiap halaman", () => {
+    const input = { ...baseInput(60, true), grid: { rows: 2, cols: 2 } };
+    for (const page of collectLandParcelMapBoxes(input)) {
+      expect(page.box.w).toBeGreaterThan(0);
+      expect(page.box.h).toBeGreaterThan(0);
+      expect(page.frame.scale).toBeGreaterThan(0);
+      expect(page.frame.maxLon).toBeGreaterThan(page.frame.minLon);
+      expect(page.frame.maxLat).toBeGreaterThan(page.frame.minLat);
+    }
+  });
+
+  it("tidak melaporkan halaman peta bila tak ada geometri yang bisa digambar", () => {
+    expect(collectLandParcelMapBoxes(baseInput(20, false))).toHaveLength(0);
+  });
+
+  it("kotak halaman sel identik antar sel — atlas memakai tata letak yang sama", () => {
+    const input = { ...baseInput(60, true), grid: { rows: 2, cols: 2 } };
+    const cellBoxes = collectLandParcelMapBoxes(input).slice(1).map((p) => p.box);
+    for (const box of cellBoxes) expect(box).toEqual(cellBoxes[0]);
   });
 });
