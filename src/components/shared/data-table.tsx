@@ -58,6 +58,12 @@ export interface DataTableColumn<T> {
   defaultVisible?: boolean;
   /** Whether this column can be toggled (default: true) */
   toggleable?: boolean;
+  /**
+   * Ikut diekspor ke Excel (default: true). Setel `false` untuk kolom yang
+   * isinya kontrol, bukan data — mis. kolom "Aksi" yang ber-`key: "id"` demi
+   * memenuhi `keyof T`: tanpa ini kolomnya terbawa ke Excel berisi CUID.
+   */
+  exportable?: boolean;
 }
 
 /** Props for the DataTable component */
@@ -95,8 +101,63 @@ export interface DataTableProps<T> {
    * pemakai exportFilename wajib meneruskan `permissions.includes("EXPORT")` secara eksplisit.
    */
   canExport?: boolean;
-  /** Custom export row transformer */
-  getExportRow?: (row: T) => Record<string, unknown>;
+  /**
+   * Transformer baris ekspor. Kuncinya WAJIB memakai `column.key` yang sama —
+   * nilai untuk kunci yang tidak dikembalikan diambil dari baris mentah, dan di
+   * mode dev ketidakcocokannya diperingatkan (lihat `buildExportRows`).
+   */
+  getExportRow?: (row: T, index: number) => Record<string, unknown>;
+}
+
+/**
+ * Rakit baris ekspor Excel — dipisah dari komponen supaya bisa diuji.
+ *
+ * **Resolusi per kolom, bukan per baris (TD-015).** Bentuk lama mengembalikan
+ * hasil `getExportRow` apa adanya, lalu `exportToExcel` memetik nilainya
+ * dengan `column.key`. Akibatnya, transformer yang memakai nama kunci berbeda
+ * dari kolomnya menghasilkan **sel kosong tanpa satu pun tanda** — bukan error,
+ * bukan nilai salah, sekadar hilang. Pola ini sudah tiga kali menggigit
+ * (dua kali di #160, lalu kolom paket Laporan Pelatihan).
+ *
+ * Sekarang tiap kolom dicari sendiri: pakai nilai dari transformer bila
+ * kuncinya ada, kalau tidak jatuh ke nilai mentah baris. Kolom turunan yang
+ * memang tak punya padanan mentah tetap kosong, tapi tak ada lagi kolom yang
+ * hilang hanya karena salah nama.
+ */
+export function buildExportRows<T>(
+  activeColumns: { key: keyof T }[],
+  rows: T[],
+  getExportRow?: (row: T, index: number) => Record<string, unknown>,
+): Record<string, unknown>[] {
+  const missingKeys = new Set<string>();
+
+  const exportRows = rows.map((row, index) => {
+    const custom = getExportRow?.(row, index);
+    const exportRow: Record<string, unknown> = {};
+    for (const col of activeColumns) {
+      const key = String(col.key);
+      if (custom && key in custom) {
+        exportRow[key] = custom[key];
+        continue;
+      }
+      if (custom) missingKeys.add(key);
+      const val = row[col.key];
+      exportRow[key] = val instanceof Date ? val.toLocaleDateString("id-ID") : val;
+    }
+    return exportRow;
+  });
+
+  // Diperingatkan sekali per ekspor, bukan per baris. Hanya di dev: di produksi
+  // fallback-nya sudah menyelamatkan datanya, dan console user bukan tempat
+  // menaruh keluhan developer.
+  if (missingKeys.size > 0 && process.env.NODE_ENV !== "production") {
+    console.warn(
+      `[DataTable] getExportRow tidak mengembalikan kunci: ${[...missingKeys].join(", ")}. ` +
+        "Nilai diambil dari baris mentah — samakan nama kunci dengan column.key.",
+    );
+  }
+
+  return exportRows;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -248,22 +309,13 @@ export function DataTable<T>({
     if (!exportFilename) return;
     const { exportToExcel } = await import("@/lib/xlsx");
 
-    const exportCols = activeColumns.map((col) => ({
+    const exportableColumns = activeColumns.filter((col) => col.exportable !== false);
+    const exportCols = exportableColumns.map((col) => ({
       header: col.label,
       key: String(col.key),
     }));
 
-    const exportRows = sortedData.map((row) => {
-      if (getExportRow) {
-        return getExportRow(row);
-      }
-      const exportRow: Record<string, unknown> = {};
-      activeColumns.forEach((col) => {
-        const val = row[col.key];
-        exportRow[String(col.key)] = val instanceof Date ? val.toLocaleDateString("id-ID") : val;
-      });
-      return exportRow;
-    });
+    const exportRows = buildExportRows(exportableColumns, sortedData, getExportRow);
 
     await exportToExcel({
       filename: exportFilename,
