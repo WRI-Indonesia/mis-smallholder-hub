@@ -51,17 +51,109 @@ export interface LpPdfInput {
   mapParcels: { no: number; geometry: LpGeoJson | null; labelLines: string[] }[];
   /** Grid index fleksibel: baris × kolom (1×1 = tanpa pecah). */
   grid?: { rows: number; cols: number };
+  /**
+   * Latar peta (JPEG data URL) per halaman peta, dijahit di klien oleh
+   * `composeReportBasemap`: kunci `""` untuk halaman penuh/ikhtisar, label sel
+   * ("A1", "B2", …) untuk halaman atlas. Kosong = peta polos (perilaku lama).
+   *
+   * Gambar disiapkan di klien, bukan di sini: modul ini murni sintesis
+   * dokumen (bisa diuji tanpa DOM), sedangkan penjahitan tile butuh
+   * `Image`/`canvas`.
+   */
+  basemaps?: Map<string, string>;
+  /** Atribusi latar — wajib tercetak bila `basemaps` terisi. */
+  basemapAttribution?: string | null;
+  /**
+   * Dipanggil untuk tiap halaman peta dengan kotak & layout yang BENAR-BENAR
+   * dipakai. Ada supaya klien bisa menjahit latar berukuran tepat tanpa
+   * menduplikasi perhitungan kotak di sini — tinggi kotak peta halaman 1
+   * bergantung pada panjang blok metadata & filter, jadi tak bisa ditebak dari
+   * luar. Lihat `collectLandParcelMapBoxes`.
+   */
+  onMapPage?: (key: string, box: LpMapBox, layout: LpMapLayout) => void;
 }
 
-function drawLayoutPolygons(doc: jsPDF, layout: LpMapLayout) {
+/** Satu halaman peta beserta kotak & bbox datanya. */
+export interface LpMapPageBox {
+  /** "" untuk halaman penuh/ikhtisar, label sel ("A1", …) untuk halaman atlas. */
+  key: string;
+  box: LpMapBox;
+  frame: NonNullable<LpMapLayout["frame"]>;
+}
+
+/**
+ * Kotak tiap halaman peta PDF — dengan menyusun dokumen sekali lalu
+ * membuangnya. Terkesan boros, tapi ini satu-satunya cara mendapat kotak yang
+ * PASTI sama dengan yang nanti digambar tanpa menyalin logika tata letaknya ke
+ * klien; menyusun dokumen tanpa latar hanya soal menggambar, jauh lebih murah
+ * daripada menjahit satu mosaik.
+ */
+export function collectLandParcelMapBoxes(
+  input: Omit<LpPdfInput, "filename" | "basemaps" | "onMapPage">,
+): LpMapPageBox[] {
+  const pages: LpMapPageBox[] = [];
+  buildLandParcelReportDoc({
+    ...input,
+    // Kotak peta tak bergantung pada baris tabel, sedangkan `autoTable` atas
+    // ribuan baris itu pass tata letak sinkron yang mahal — dan di sini
+    // hasilnya langsung dibuang. Dikosongkan supaya pengumpulan kotak tidak
+    // menggandakan biaya render tabel setiap kali ekspor.
+    data: [],
+    basemaps: undefined,
+    onMapPage: (key, box, layout) => {
+      if (layout.frame) pages.push({ key, box, frame: layout.frame });
+    },
+  });
+  return pages;
+}
+
+/**
+ * Latar peta menutupi SELURUH kotak peta, bukan sekadar bbox lahan: klien
+ * menjahitnya untuk bbox hasil `expandFrameToBox(frame, box)` dengan kotak yang
+ * sama persis, sehingga penempatannya sepele dan tak ada pita putih tersisa di
+ * sisi yang tak terpakai sebaran lahan. Digambar paling awal agar poligon dan
+ * label berada di atasnya.
+ */
+function drawBasemap(doc: jsPDF, box: LpMapBox, dataUrl: string | undefined) {
+  if (!dataUrl) return;
+  doc.addImage(dataUrl, "JPEG", box.x, box.y, box.w, box.h);
+}
+
+/**
+ * Bingkai kotak peta. Digambar SETELAH latar: gambar latar menutupi persis
+ * kotak ini, jadi bingkai yang digambar lebih dulu akan tertimpa dan hilang
+ * dari PDF pada setiap halaman ber-latar.
+ */
+function drawMapFrame(doc: jsPDF, box: LpMapBox) {
+  doc.setDrawColor(...SLATE_200);
+  doc.setLineWidth(0.4);
+  doc.rect(box.x, box.y, box.w, box.h);
+}
+
+/** Atribusi latar — kanan-bawah kotak peta (skala batang menempati kiri-bawah). */
+function drawBasemapAttribution(doc: jsPDF, box: LpMapBox, attribution: string | null | undefined) {
+  if (!attribution) return;
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_700);
+  doc.text(attribution, box.x + box.w - 3, box.y + box.h - 2.5, { align: "right" });
+}
+
+/**
+ * `filled = false` dipakai saat peta ber-latar: fill hijau jsPDF itu OPAK, jadi
+ * poligon berisi justru menutupi citra di dalam lahan — persis bagian yang
+ * ingin dilihat orang saat memilih Satellite. Garis dipertebal sebagai ganti
+ * fill agar batas lahan tetap menonjol di atas citra.
+ */
+function drawLayoutPolygons(doc: jsPDF, layout: LpMapLayout, filled = true) {
   doc.setDrawColor(...EMERALD);
   doc.setFillColor(...AREA_FILL);
-  doc.setLineWidth(0.4);
+  doc.setLineWidth(filled ? 0.4 : 0.6);
   for (const poly of layout.polygons) {
     for (const ring of poly.rings) {
       if (ring.length < 3) continue;
       const segs = ring.slice(1).map((p, i) => [p[0] - ring[i][0], p[1] - ring[i][1]]);
-      doc.lines(segs, ring[0][0], ring[0][1], [1, 1], "FD", true);
+      doc.lines(segs, ring[0][0], ring[0][1], [1, 1], filled ? "FD" : "S", true);
     }
   }
 }
@@ -238,6 +330,9 @@ export function buildLandParcelReportDoc({
   columnStyles,
   mapParcels,
   grid = { rows: 1, cols: 1 },
+  basemaps,
+  basemapAttribution,
+  onMapPage,
 }: Omit<LpPdfInput, "filename">): jsPDF {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -314,25 +409,36 @@ export function buildLandParcelReportDoc({
     h: pageHeight - currentY - MARGIN - noteH,
     pad: 6,
   };
-  doc.setDrawColor(...SLATE_200);
-  doc.setLineWidth(0.4);
-  doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h);
-
   const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines]));
   const fullLayout = buildLandParcelMapLayout(mapParcels, mapBox);
   const split =
     grid.rows * grid.cols > 1 ? splitParcelsIntoGrid(mapParcels, grid.rows, grid.cols) : null;
   const useGrid = split !== null && split.cells.length > 0 && fullLayout.frame;
 
+  // Latar ditentukan PER HALAMAN, bukan sekali untuk seluruh dokumen: satu
+  // halaman bisa tak punya gambar (mis. sel yang lahannya tanpa geometri)
+  // sementara halaman lain punya. Bendera dokumen-lebar akan membuat halaman
+  // polos itu tergambar tanpa fill DAN mencetak atribusi untuk latar yang tak
+  // ada di sana.
+  const pageBasemap = basemaps?.get("");
+
   if (fullLayout.polygons.length === 0) {
+    drawMapFrame(doc, mapBox);
     drawEmptyMapNote(doc, mapBox);
   } else if (!useGrid) {
-    drawLayoutPolygons(doc, fullLayout);
+    onMapPage?.("", mapBox, fullLayout);
+    drawBasemap(doc, mapBox, pageBasemap);
+    drawMapFrame(doc, mapBox);
+    drawLayoutPolygons(doc, fullLayout, !pageBasemap);
     drawLayoutLabels(doc, fullLayout, linesByNo, mapBox);
     drawMapDecorations(doc, fullLayout, mapBox);
+    drawBasemapAttribution(doc, mapBox, pageBasemap ? basemapAttribution : null);
   } else {
     // Ikhtisar: poligon tanpa nomor + garis grid + label sel berisi.
-    drawLayoutPolygons(doc, fullLayout);
+    onMapPage?.("", mapBox, fullLayout);
+    drawBasemap(doc, mapBox, pageBasemap);
+    drawMapFrame(doc, mapBox);
+    drawLayoutPolygons(doc, fullLayout, !pageBasemap);
     const f = fullLayout.frame!;
     const gx = f.offX;
     const gy = f.offY;
@@ -361,6 +467,7 @@ export function buildLandParcelReportDoc({
       doc.text(`${cell.parcels.length} lahan`, cx, cy + 6, { align: "center" });
     }
     drawMapDecorations(doc, fullLayout, mapBox);
+    drawBasemapAttribution(doc, mapBox, pageBasemap ? basemapAttribution : null);
   }
 
   doc.setFontSize(8);
@@ -384,14 +491,15 @@ export function buildLandParcelReportDoc({
       doc.text(`Peta ${cell.label} (${idx + 1}/${split!.cells.length}) — ${cell.parcels.length} lahan`, MARGIN, 12);
 
       const cellBox = { x: MARGIN, y: 16, w: pageWidth - MARGIN * 2, h: pageHeight - 16 - MARGIN, pad: 6 };
-      doc.setDrawColor(...SLATE_200);
-      doc.setLineWidth(0.4);
-      doc.rect(cellBox.x, cellBox.y, cellBox.w, cellBox.h);
-
       const cellLayout = buildLandParcelMapLayout(cell.parcels, cellBox);
-      drawLayoutPolygons(doc, cellLayout);
+      const cellBasemap = basemaps?.get(cell.label);
+      onMapPage?.(cell.label, cellBox, cellLayout);
+      drawBasemap(doc, cellBox, cellBasemap);
+      drawMapFrame(doc, cellBox);
+      drawLayoutPolygons(doc, cellLayout, !cellBasemap);
       drawLayoutLabels(doc, cellLayout, linesByNo, cellBox);
       drawMapDecorations(doc, cellLayout, cellBox);
+      drawBasemapAttribution(doc, cellBox, cellBasemap ? basemapAttribution : null);
       drawMiniIndex(doc, split!, cell, pageWidth);
     });
   }

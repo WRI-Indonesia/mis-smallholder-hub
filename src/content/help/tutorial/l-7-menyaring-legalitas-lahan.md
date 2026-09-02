@@ -17,12 +17,12 @@ Seperti laporan lainnya, **Lembaga Petani wajib dipilih** lebih dulu. Pertanyaan
 
 > [!penting] **Baca ini sebelum memakai angkanya.** Data surat dan STDB masuk lewat unggah **Detail Lahan (Excel)**, dan belum semua kabupaten diunggah. Lahan dari kabupaten yang berkasnya belum masuk akan tampak "tanpa surat" — padahal yang belum ada adalah *datanya*, bukan suratnya.
 
-Karena itu filter **Cakupan Pendataan** disetel **Sudah didata** sejak awal: hanya lahan yang sudah melalui unggah Detail Lahan yang dihitung. Ubah ke *Semua lahan* hanya bila Anda memang ingin melihat yang belum terdata sekalian — dan sadar bahwa angkanya bercampur.
+Karena itu filter **Cakupan Pendataan** ada. Sejak awal filter ini disetel **Semua lahan**, sehingga laporan tampil sebagai roster utuh — tak ada lahan yang hilang diam-diam. Konsekuensinya, angka "Ada Surat" dan "Ada STDB" ikut menghitung lahan yang berkasnya memang belum diunggah, jadi terlihat lebih rendah dari kenyataannya. **Sebelum menyimpulkan apa pun dari persentasenya, ubah dulu ke *Sudah didata***: hanya lahan yang sudah melalui unggah Detail Lahan yang dihitung, dan penyebutnya jadi jujur.
 
 ## Langkah
 
 1. Buka **Report → Lahan**, pilih **Lembaga Petani**.
-2. Pada baris filter kedua, biarkan **Cakupan Pendataan** di *Sudah didata*.
+2. Pada baris filter kedua, ubah **Cakupan Pendataan** ke *Sudah didata* (bawaannya *Semua lahan*).
 3. Setel filter legalitas sesuai pertanyaan Anda:
 
 | Ingin tahu… | Setel |
@@ -71,9 +71,9 @@ Empat kartu di atas tabel mengikuti filter yang sedang aktif:
 
 ## Kalau bermasalah
 
-**Hasilnya kosong padahal lembaga itu jelas punya lahan** — kemungkinan besar lembaga itu belum melalui unggah Detail Lahan, sehingga tak satu pun lahannya lolos filter *Sudah didata*. Ubah Cakupan Pendataan ke *Semua lahan* untuk memastikan.
+**Hasilnya kosong padahal lembaga itu jelas punya lahan** — bila Anda menyetel Cakupan Pendataan ke *Sudah didata*, kemungkinan besar lembaga itu belum melalui unggah Detail Lahan sehingga tak satu pun lahannya lolos. Kembalikan ke *Semua lahan* untuk memastikan.
 
-**Angka "Ada Surat" terasa terlalu rendah** — periksa Cakupan Pendataan. Bila disetel *Semua lahan*, penyebutnya ikut memuat lahan yang berkasnya memang belum diunggah.
+**Angka "Ada Surat" terasa terlalu rendah** — periksa Cakupan Pendataan. Pada setelan bawaan *Semua lahan*, penyebutnya ikut memuat lahan yang berkasnya memang belum diunggah; ubah ke *Sudah didata* untuk angka yang sebanding.
 
 **Lahan yang saya tahu sudah didata tidak terhitung "sudah didata"** — penandanya adalah **UL Parcel Code**. Berkas unggahan yang tidak membawa kolom `parcel_code` tidak meninggalkan penanda itu (saat mengunggah, sistem memperingatkan bila kolomnya tidak ada). Lengkapi kodenya lewat tab Legalitas di detail lahan.
 

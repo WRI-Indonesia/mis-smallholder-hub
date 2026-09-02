@@ -173,3 +173,21 @@ export const IMAGERY_STYLE_KEYS: MapStyleKey[] = ["satellite", "hybrid"];
 
 /** `true` bila kunci ini basemap citra — label perlu teks putih ber-halo hitam. */
 export const isImageryStyle = (key: MapStyleKey) => IMAGERY_STYLE_KEYS.includes(key);
+
+/**
+ * Template tile XYZ sebuah basemap **raster** (mis.
+ * `https://tile.openstreetmap.org/{z}/{x}/{y}.png`), atau `null` bila kuncinya
+ * style vector (`light`/`dark`) yang tidak punya tile gambar.
+ *
+ * Dibaca dari `MAP_STYLES` — bukan disalin — supaya pergantian penyedia tile
+ * (#298) tetap satu suntingan, persis alasan TD-036. Dipakai proxy tile
+ * `/api/map-basemap` untuk latar peta cetak Laporan Lahan.
+ */
+export function rasterTileTemplate(key: MapStyleKey): string | null {
+  const style = MAP_STYLES[key];
+  if (typeof style === "string") return null;
+  for (const source of Object.values(style.sources)) {
+    if (source.type === "raster" && source.tiles?.[0]) return source.tiles[0];
+  }
+  return null;
+}
