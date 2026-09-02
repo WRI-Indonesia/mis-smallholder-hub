@@ -67,13 +67,25 @@ export const REPORT_BASEMAP_ATTRIBUTION: Record<ReportBasemapKey, string | null>
 
 /**
  * Batas jumlah sel grid yang masih boleh ber-latar. Tiap sel = satu halaman =
- * satu JPEG (±300 KB) + ±35 permintaan tile; 4×6 sudah berarti ~900 tile dan
- * PDF belasan MB. Di atas batas ini latar dikunci ke `none` (keputusan owner
- * 2026-09-02) — grid rapat memang untuk peta detail per-blok, bukan citra.
+ * satu JPEG (±300 KB) + puluhan permintaan tile; 4×6 sudah berarti ribuan tile
+ * dan PDF belasan MB. Di atas batas ini latar dikunci ke `none` (keputusan
+ * owner 2026-09-02) — grid rapat memang untuk peta detail per-blok, bukan
+ * citra.
+ *
+ * Soal "puluhan": `pickBasemapZoom` membulatkan ke ATAS, jadi mosaik selebar
+ * 1×–2× `targetPx` — 6,25 sampai 12,5 tile melintang, dikali cacah tegaknya.
+ * Untuk rasio halaman PDF itu ±15–56 tile per halaman, dan ekspor menjahit
+ * dua kali (kotak pratinjau + kotak PDF). Jangan pakai angka tunggal di sini;
+ * estimasi optimis pernah membuat batas 30 sel terasa lebih murah daripada
+ * kenyataannya.
  */
 export const BASEMAP_MAX_CELLS = 30;
 
-/** Peredaman bawaan (%): latar diputihkan 35% agar poligon & label tetap dominan. */
+/**
+ * Kepekatan latar bawaan (%). 100% = citra penuh, 0% = putih polos —
+ * `composeReportBasemap` memakai alpha `1 - dim/100`. 65% menyisakan citra
+ * yang jelas terbaca sambil menjaga poligon & label tetap dominan di cetakan.
+ */
 export const BASEMAP_DEFAULT_DIM = 65;
 
 const TILE_PX = 256;
@@ -244,7 +256,8 @@ export async function composeReportBasemap(
   }
   await Promise.all(jobs);
 
-  // Peredaman: selubung putih. Alpha 0 = citra penuh, 1 = putih polos.
+  // Kepekatan: selubung putih. `dim` 100 → alpha 0 (citra penuh), `dim` 0 →
+  // alpha 1 (putih polos).
   const alpha = Math.min(1, Math.max(0, 1 - dim / 100));
   if (alpha > 0) {
     ctx.fillStyle = `rgba(255,255,255,${alpha})`;

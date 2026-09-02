@@ -128,9 +128,20 @@ describe("GET /api/map-basemap — jalur sukses", () => {
     const res = await GET(req(VALID_QS));
     expect(res.headers.get("Content-Type")).toBe("image/png");
     expect(res.headers.get("Cache-Control")).toContain("max-age=86400");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(PNG_BODY);
   });
 });
+
+  it("menerima content-type ber-parameter setelah dinormalisasi", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(PNG_BODY, { status: 200, headers: { "content-type": "image/PNG; charset=binary" } }),
+    );
+    const res = await GET(req(VALID_QS));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("image/png");
+  });
+
 
 describe("GET /api/map-basemap — kegagalan upstream", () => {
   it("502 bila upstream menjawab non-200", async () => {
@@ -143,6 +154,25 @@ describe("GET /api/map-basemap — kegagalan upstream", () => {
       new Response("<html>quota</html>", { status: 200, headers: { "content-type": "text/html" } }),
     );
     expect((await GET(req(VALID_QS))).status).toBe(502);
+  });
+
+  it("502 untuk image/svg+xml — SVG dieksekusi sebagai skrip pada origin aplikasi", async () => {
+    // `startsWith("image/")` saja akan meloloskan ini. Upstream-nya pihak
+    // ketiga, jadi tipe balasannya tidak boleh dipercaya apa adanya.
+    fetchMock.mockResolvedValue(
+      new Response("<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>", {
+        status: 200,
+        headers: { "content-type": "image/svg+xml" },
+      }),
+    );
+    expect((await GET(req(VALID_QS))).status).toBe(502);
+  });
+
+  it("menolak tipe gambar di luar allowlist (gif/bmp/avif)", async () => {
+    for (const type of ["image/gif", "image/bmp", "image/avif"]) {
+      fetchMock.mockResolvedValue(new Response(PNG_BODY, { status: 200, headers: { "content-type": type } }));
+      expect((await GET(req(VALID_QS))).status, type).toBe(502);
+    }
   });
 
   it("502 bila fetch gagal/timeout, bukan melempar ke pemanggil", async () => {

@@ -185,3 +185,62 @@ describe("collectLandParcelMapBoxes (#318)", () => {
     for (const box of cellBoxes) expect(box).toEqual(cellBoxes[0]);
   });
 });
+
+// JPEG 1×1 sah — jsPDF menolak data URL palsu, dan `drawBasemap` memanggil
+// `addImage(..., "JPEG", ...)` dengan format eksplisit.
+const TINY_JPEG =
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsL" +
+  "DBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAAB" +
+  "AAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==";
+
+/** Berapa halaman yang memuat teks atribusi latar. */
+function pagesWithAttribution(doc: ReturnType<typeof buildLandParcelReportDoc>): number {
+  // jsPDF menyimpan content stream per halaman di `internal.pages` (1-indexed).
+  const pages = (doc.internal as unknown as { pages: string[][] }).pages;
+  return pages.filter((page) => Array.isArray(page) && page.join("\n").includes("Map data")).length;
+}
+
+describe("latar peta per halaman (#318)", () => {
+  const gridInput = () => ({ ...baseInput(60, true), grid: { rows: 2, cols: 2 } });
+
+  it("tanpa latar: tak satu pun halaman mencetak atribusi", () => {
+    expect(pagesWithAttribution(buildLandParcelReportDoc(gridInput()))).toBe(0);
+  });
+
+  it("atribusi HANYA di halaman yang benar-benar punya gambar latar", () => {
+    // Skenario yang bikin bendera dokumen-lebar salah: cuma halaman ikhtisar
+    // yang punya latar. Halaman sel tak boleh mengklaim "Map data © Google"
+    // untuk citra yang tidak ada di sana.
+    const doc = buildLandParcelReportDoc({
+      ...gridInput(),
+      basemaps: new Map([["", TINY_JPEG]]),
+      basemapAttribution: "Map data © Google",
+    });
+    expect(pagesWithAttribution(doc)).toBe(1);
+  });
+
+  it("atribusi muncul di setiap halaman peta saat semuanya berlatar", () => {
+    const input = gridInput();
+    const pages = collectLandParcelMapBoxes(input);
+    const doc = buildLandParcelReportDoc({
+      ...input,
+      basemaps: new Map(pages.map((p) => [p.key, TINY_JPEG])),
+      basemapAttribution: "Map data © Google",
+    });
+    expect(pagesWithAttribution(doc)).toBe(pages.length);
+  });
+
+  it("collectLandParcelMapBoxes memberi kotak yang IDENTIK dengan dokumen berdata penuh", () => {
+    // Pengumpul sengaja mengosongkan `data` untuk melewati render autoTable.
+    // Uji ini yang menjamin pintasan itu tak mengubah satu pun kotak peta.
+    const input = gridInput();
+    const viaFullBuild: unknown[] = [];
+    buildLandParcelReportDoc({
+      ...input,
+      onMapPage: (key, box, layout) => {
+        if (layout.frame) viaFullBuild.push({ key, box, frame: layout.frame });
+      },
+    });
+    expect(collectLandParcelMapBoxes(input)).toEqual(viaFullBuild);
+  });
+});

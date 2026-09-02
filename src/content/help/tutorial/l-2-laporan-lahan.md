@@ -30,7 +30,7 @@ Hanya lahan ber-poligon yang muncul di petanya.
 + Grid membagi wilayah lembaga menjadi sel-sel yang dicetak satu per satu, sehingga poligon tetap terbaca di kertas A4. Wilayah luas butuh grid lebih rapat; lembaga kecil cukup 1×1.
 5. Pilih **Latar Peta**: *Polos*, *StreetMap*, *Satellite*, atau *Hybrid*.
 + *Polos* (bawaan) mencetak poligon di atas kertas putih — paling hemat tinta dan paling tajam untuk dicoret di lapangan. *Satellite* dan *Hybrid* memperlihatkan tutupan lahan sebenarnya, berguna saat memeriksa apakah poligon benar-benar jatuh di kebun. *StreetMap* memberi jalan dan nama tempat sebagai orientasi menuju lokasi.
-+ Saat latar aktif, poligon digambar sebagai **garis tanpa isian** supaya kebun di dalamnya tetap terlihat. Slider **Redam Latar** mengatur seberapa pucat latarnya dicetak — turunkan bila label mulai sulit dibaca, naikkan bila citranya terlalu samar. Bawaannya 65%.
++ Saat latar aktif, poligon digambar sebagai **garis tanpa isian** supaya kebun di dalamnya tetap terlihat. Slider **Kepekatan Latar** mengatur seberapa tegas latarnya dicetak — turunkan bila label mulai sulit dibaca, naikkan bila citranya terlalu samar. Bawaannya 65%; 0% berarti latar hilang sama sekali (putih polos).
 + Latar hanya tersedia sampai 30 sel grid. Di atas itu pilihannya terkunci ke *Polos*, karena tiap sel menambah satu gambar ke berkas dan PDF-nya membengkak sampai belasan MB.
 6. Pilih **Label Poligon** yang ingin ditampilkan: No, Nama, ID Petani, ID Lahan, atau Kelompok Tani.
 + Jangan mencentang semuanya. Label bertumpuk membuat peta justru sulit dibaca — untuk verifikasi lapangan biasanya No dan ID Lahan sudah cukup, karena rinciannya bisa dilihat di tabel.

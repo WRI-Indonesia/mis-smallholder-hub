@@ -14,7 +14,7 @@ intro: Semua laporan bisa diunduh sebagai Excel (izin Export) dan PDF (izin Prin
 
 **Peta pada Laporan Lahan** — PDF Laporan Lahan menyertakan peta poligon. Di panel Peta Cetak Anda dapat memecah peta menjadi beberapa halaman (isi jumlah baris dan kolom), memilih Latar Peta, dan memilih isi label poligon (No, Nama, ID Petani, ID Lahan, Kelompok Tani). Pratinjau di layar sama dengan hasil cetak.
 
-**Latar Peta** — Pilihannya empat: Polos (bawaan, tanpa latar), StreetMap (jalan dan nama tempat), Satellite (citra tanpa label), dan Hybrid (citra beserta label). Saat latar aktif, poligon lahan digambar sebagai garis tanpa isian supaya tutupan lahan di dalamnya tetap terlihat, dan slider Redam Latar mengatur seberapa pucat latar itu dicetak (bawaan 65%; makin kecil makin pucat). Latar ikut ke PDF dan Excel, jadi hasil cetak sama dengan pratinjau.
+**Latar Peta** — Pilihannya empat: Polos (bawaan, tanpa latar), StreetMap (jalan dan nama tempat), Satellite (citra tanpa label), dan Hybrid (citra beserta label). Saat latar aktif, poligon lahan digambar sebagai garis tanpa isian supaya tutupan lahan di dalamnya tetap terlihat, dan slider Kepekatan Latar mengatur seberapa tegas latar itu dicetak (bawaan 65%; makin kecil makin pucat, 0% berarti putih polos). Latar ikut ke PDF dan Excel, jadi hasil cetak sama dengan pratinjau.
 
 + Latar peta otomatis dimatikan bila grid melebihi 30 sel. Tiap sel menambah satu gambar latar ke PDF, sehingga grid rapat membuat berkasnya membengkak dan lama dibuat. Kecilkan jumlah baris/kolom bila Anda tetap ingin memakai latar.
 

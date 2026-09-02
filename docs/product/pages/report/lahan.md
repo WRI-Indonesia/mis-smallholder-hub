@@ -30,7 +30,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 ├── Peta Cetak — Latar, Grid & Label
 │   ├── Grid Index (Baris × Kolom)
 │   ├── Latar Peta (#318 — Polos · StreetMap · Satellite · Hybrid)
-│   ├── Redam Latar (slider 0–100%, hanya saat latar aktif)
+│   ├── Kepekatan Latar (slider 0–100%, hanya saat latar aktif)
 │   ├── Indikator "Menyiapkan latar peta… n/m halaman" + peringatan kunci >30 sel
 │   ├── Label Poligon (No, Nama, ID Petani, ID Lahan, Kelompok Tani)
 │   └── Preview peta SVG (ikhtisar + peta per sel, panah utara, skala batang,
@@ -73,7 +73,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | "Peta Cetak — Latar, Grid & Label" | Kartu pengaturan peta | Ikon `Grid3x3` |
 | "Grid Index (Baris × Kolom)" | Filter (dua input `number`) | Baris 1–26, kolom 1–20; teks bantu "maks. `<n>` peta + ikhtisar" atau "tanpa pecah" |
 | "Latar Peta" | Filter (`select`) | #318 — `Polos — tanpa latar` (**default**, mempertahankan cetakan lama) / `StreetMap` / `Satellite` / `Hybrid`. Hanya basemap **raster** dari `MAP_STYLES`; `light`/`dark` adalah style vector OpenFreeMap yang tak punya tile gambar, jadi sengaja TIDAK ditawarkan. Terkunci (`disabled`) bila grid > `BASEMAP_MAX_CELLS` (30 sel) |
-| "Redam Latar — `<n>`%" | Filter (`input[type=range]`, 0–100 step 5) | #318 — muncul hanya saat latar aktif; default `BASEMAP_DEFAULT_DIM` = 65 (latar diputihkan 35%). Peredaman **dipanggang ke dalam JPEG**, bukan lapisan per-renderer — jsPDF tak punya alpha pada `addImage` |
+| "Kepekatan Latar — `<n>`%" | Filter (`input[type=range]`, 0–100 step 5) | #318 — muncul hanya saat latar aktif; default `BASEMAP_DEFAULT_DIM` = 65. Nilainya **kepekatan**, bukan peredaman: `composeReportBasemap` memakai alpha `1 - dim/100`, jadi 100% = citra penuh dan 0% = putih polos. Nilai diambil saat geseran **dilepas** (`onPointerUp`/`onKeyUp`/`onBlur`), bukan tiap langkah — satu perubahan menjahit ulang seluruh halaman peta. Kepekatan **dipanggang ke dalam JPEG**, bukan lapisan per-renderer — jsPDF tak punya alpha pada `addImage` |
 | Indikator latar | Teks bantu | "Menyiapkan latar peta… `<n>`/`<m>` halaman. Ekspor tetap bisa ditekan — berkasnya menunggu sampai semua latar siap." Di atas 30 sel: peringatan amber bahwa latar dimatikan |
 | "Label Poligon" | Filter (checkbox, minimal satu aktif) | Opsi: No, Nama, ID Petani, ID Lahan, Kelompok Tani (default: No) |
 | Preview peta | Chart / SVG | Tanpa grid: 1 halaman peta. Dengan grid: 1 ikhtisar (garis grid + label sel + "`<n>` lahan") + satu peta per sel; dekorasi panah utara & skala batang; catatan "`<n>` lahan tanpa geometri tidak tergambar (No …)."; state "Memuat geometri lahan..." dan "Tidak ada geometri lahan yang dapat digambar." |

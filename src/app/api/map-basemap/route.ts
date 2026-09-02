@@ -30,6 +30,9 @@ const TIMEOUT_MS = 20_000;
  */
 const USER_AGENT = "SmallholderHubMIS/1.0 (+https://github.com/wri-indonesia)";
 
+/** Tipe gambar tile yang boleh diteruskan (lihat catatan di jalur sukses). */
+const TILE_CONTENT_TYPES = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp"]);
+
 const isTileKey = (v: string): v is ReportBasemapTileKey =>
   Object.prototype.hasOwnProperty.call(REPORT_BASEMAP_STYLE_KEY, v);
 
@@ -43,6 +46,12 @@ function intParam(raw: string | null, max: number): number | null {
 export async function GET(req: NextRequest) {
   // Guard permission halaman yang memakainya — endpoint tile bukan proxy anonim
   // (paritas /api/map-overlay & /api/map-hotspot).
+  //
+  // Biaya yang disadari (#320): ini berjalan PER TILE. `getUserPermissionsForMenu`
+  // dibungkus React `cache()` yang hanya men-dedup dalam satu request, jadi satu
+  // ekspor grid besar bisa memicu ribuan lookup sesi + query izin — dua sampai
+  // tiga orde lebih banyak daripada endpoint tile sejenis. Jangan menghapus
+  // guard-nya; perbaikannya memo per sesi berumur pendek.
   if (!(await hasPermission("report-land-parcel", "VIEW"))) {
     return new Response("Forbidden", { status: 403 });
   }
@@ -73,14 +82,20 @@ export async function GET(req: NextRequest) {
       headers: { "User-Agent": USER_AGENT, Accept: "image/*" },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    const contentType = res.headers.get("content-type") ?? "";
-    if (!res.ok || !contentType.startsWith("image/")) {
+    // Allowlist eksplisit, bukan sekadar `startsWith("image/")`: yang terakhir
+    // ikut menerima `image/svg+xml`, dan SVG dieksekusi sebagai skrip pada
+    // origin aplikasi bila seseorang diarahkan langsung ke URL tile ini.
+    // Upstream-nya pihak ketiga, jadi tipe balasannya tidak boleh dipercaya
+    // apa adanya.
+    const contentType = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    if (!res.ok || !TILE_CONTENT_TYPES.has(contentType)) {
       return new Response("Upstream error", { status: 502 });
     }
     return new Response(await res.arrayBuffer(), {
       status: 200,
       headers: {
         "Content-Type": contentType,
+        "X-Content-Type-Options": "nosniff",
         // Tile basemap praktis tak berubah; cache panjang menahan ratusan
         // permintaan per ekspor grid agar tidak berulang tiap render preview.
         "Cache-Control": "public, max-age=86400, s-maxage=86400",

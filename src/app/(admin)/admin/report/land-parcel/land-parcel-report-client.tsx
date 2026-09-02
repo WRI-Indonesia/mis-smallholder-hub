@@ -140,7 +140,13 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   // Latar peta cetak: "none" = perilaku lama, jadi ekspor yang sudah berjalan
   // tidak berubah sampai user memilih sendiri.
   const [basemap, setBasemap] = useState<ReportBasemapKey>("none");
+  // `basemapDim` = KEPEKATAN latar (100% = citra penuh, 0% = putih polos),
+  // sesuai `composeReportBasemap` yang memakai alpha `1 - dim/100`. Sempat
+  // dilabeli "Redam Latar" — terbalik dari yang dilakukannya, dan menyeret ke
+  // 0% justru menghasilkan peta putih polos yang tetap mencetak atribusi.
   const [basemapDim, setBasemapDim] = useState(BASEMAP_DEFAULT_DIM);
+  /** Nilai slider selagi diseret; disalin ke `basemapDim` saat dilepas. */
+  const [dimDraft, setDimDraft] = useState(BASEMAP_DEFAULT_DIM);
   /** Latar per halaman peta: "" = penuh/ikhtisar, sisanya label sel grid. */
   const [basemapImages, setBasemapImages] = useState<Map<string, string>>(new Map());
   /** Ekspor sedang menunggu latar selesai dijahit — tombol dikunci selama itu. */
@@ -354,16 +360,25 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
    * pratinjau memang sudah selesai.
    */
   const ensureBasemaps = useCallback(
-    async (onProgress?: (partial: Map<string, string>) => void) => {
+    async (opts: {
+      onProgress?: (partial: Map<string, string>) => void;
+      /** Hentikan lebih awal bila hasilnya sudah tak dipakai (lihat efek di bawah). */
+      isCancelled?: () => boolean;
+    } = {}) => {
       const done = new Map<string, string>();
       if (!isTileBasemap(activeBasemap)) return done;
-      // Berurutan, bukan Promise.all: 30 sel × ±35 tile sekaligus akan
+      // Berurutan, bukan Promise.all: 30 sel × puluhan tile sekaligus akan
       // menghantam proxy (dan penyedia hulu) dalam satu ledakan.
       for (const target of basemapTargets) {
+        // Dicek TIAP putaran, bukan hanya sebelum setState: satu putaran
+        // mengalokasikan canvas ±1600×1030 lalu memanggil `toDataURL` yang
+        // sinkron. Run yang sudah tersalip harus benar-benar berhenti, bukan
+        // sekadar berhenti melapor.
+        if (opts.isCancelled?.()) return done;
         const image = await composeForBox(activeBasemap, target.frame, PREVIEW_BOX, basemapDim);
         if (image) {
           done.set(target.key, image);
-          onProgress?.(new Map(done));
+          opts.onProgress?.(new Map(done));
         }
       }
       return done;
@@ -377,11 +392,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       return;
     }
     let cancelled = false;
-    // Penjahitan yang sudah berjalan sengaja TIDAK dibatalkan saat pilihan
-    // berubah: hasilnya tetap masuk cache, jadi kembali ke pilihan sebelumnya
-    // langsung jadi. Yang dijaga hanya jangan sampai menyetel state basi.
-    ensureBasemaps((partial) => {
-      if (!cancelled) setBasemapImages(partial);
+    const isCancelled = () => cancelled;
+    ensureBasemaps({
+      isCancelled,
+      onProgress: (partial) => {
+        if (!cancelled) setBasemapImages(partial);
+      },
     }).then((all) => {
       if (!cancelled) setBasemapImages(all);
     });
@@ -500,9 +516,19 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     // Tunggu SEMUA latar selesai dijahit. Memakai state `basemapImages` apa
     // adanya akan menghasilkan berkas yang sebagian gambar petanya polos —
     // diam-diam, tanpa penanda apa pun bagi pembacanya.
-    setPreparingMaps(true);
-    const mapImages = await ensureBasemaps();
-    setPreparingMaps(false);
+    let mapImages: Map<string, string>;
+    try {
+      setPreparingMaps(true);
+      mapImages = await ensureBasemaps();
+    } catch (err) {
+      // Tanpa `finally`, satu kegagalan penjahitan mengunci KEDUA tombol
+      // ekspor selamanya (state `preparingMaps` tak pernah turun) tanpa pesan
+      // apa pun — kegagalan diam yang lebih buruk daripada ekspornya sendiri.
+      toast.error((err instanceof Error && err.message) || "Gagal menyiapkan latar peta");
+      return;
+    } finally {
+      setPreparingMaps(false);
+    }
 
     // Render SVG (komponen preview yang sama) → PNG untuk ditempel di sheet.
     const { renderToStaticMarkup } = await import("react-dom/server");
@@ -948,7 +974,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               {isTileBasemap(activeBasemap) && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-muted-foreground" htmlFor="basemap-dim">
-                    Redam Latar — {basemapDim}%
+                    Kepekatan Latar — {dimDraft}%
                   </label>
                   <div className="flex items-center h-9">
                     <input
@@ -957,8 +983,15 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                       min={0}
                       max={100}
                       step={5}
-                      value={basemapDim}
-                      onChange={(e) => setBasemapDim(e.target.valueAsNumber)}
+                      value={dimDraft}
+                      // Nilai diambil saat geseran DILEPAS, bukan tiap langkah:
+                      // satu perubahan `basemapDim` menjahit ulang seluruh
+                      // halaman peta, dan menyeret slider melintasi rentangnya
+                      // memicu sampai 21 kali — cukup untuk membekukan tab.
+                      onChange={(e) => setDimDraft(e.target.valueAsNumber)}
+                      onPointerUp={() => setBasemapDim(dimDraft)}
+                      onKeyUp={() => setBasemapDim(dimDraft)}
+                      onBlur={() => setBasemapDim(dimDraft)}
                       className="w-40 accent-primary"
                     />
                   </div>
@@ -1231,6 +1264,34 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
  */
 const basemapMosaicCache = new Map<string, string>();
 
+/**
+ * Batas entri cache. Kuncinya memuat kepekatan DAN bbox, jadi tiap langkah
+ * slider serta tiap bentuk kotak (pratinjau vs halaman PDF vs tiap sel atlas)
+ * melahirkan entri baru — masing-masing data URL JPEG ratusan KB. Tanpa batas,
+ * satu sesi yang menggeser slider di atas grid 30 sel menahan ratusan MB
+ * string sepanjang umur SPA. 24 entri ≈ satu grid penuh pada satu setelan,
+ * cukup untuk bolak-balik antar pilihan tanpa menjahit ulang.
+ */
+const BASEMAP_CACHE_MAX = 24;
+
+/** Baca + segarkan urutan pemakaian (Map menjaga urutan sisip). */
+function readMosaicCache(key: string): string | undefined {
+  const hit = basemapMosaicCache.get(key);
+  if (hit === undefined) return undefined;
+  basemapMosaicCache.delete(key);
+  basemapMosaicCache.set(key, hit);
+  return hit;
+}
+
+function writeMosaicCache(key: string, url: string) {
+  basemapMosaicCache.set(key, url);
+  while (basemapMosaicCache.size > BASEMAP_CACHE_MAX) {
+    const oldest = basemapMosaicCache.keys().next().value;
+    if (oldest === undefined) break;
+    basemapMosaicCache.delete(oldest);
+  }
+}
+
 async function composeForBox(
   key: ReportBasemapKey,
   frame: NonNullable<LpMapLayout["frame"]>,
@@ -1239,10 +1300,10 @@ async function composeForBox(
 ): Promise<string | undefined> {
   const expanded = expandFrameToBox(frame, box);
   const cacheKey = basemapCacheKey(key, expanded, dim);
-  const cached = basemapMosaicCache.get(cacheKey);
+  const cached = readMosaicCache(cacheKey);
   if (cached) return cached;
   const image = await composeReportBasemap(key, expanded, dim);
-  if (image) basemapMosaicCache.set(cacheKey, image);
+  if (image) writeMosaicCache(cacheKey, image);
   return image ?? undefined;
 }
 

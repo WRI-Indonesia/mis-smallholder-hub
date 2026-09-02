@@ -94,6 +94,11 @@ export function collectLandParcelMapBoxes(
   const pages: LpMapPageBox[] = [];
   buildLandParcelReportDoc({
     ...input,
+    // Kotak peta tak bergantung pada baris tabel, sedangkan `autoTable` atas
+    // ribuan baris itu pass tata letak sinkron yang mahal — dan di sini
+    // hasilnya langsung dibuang. Dikosongkan supaya pengumpulan kotak tidak
+    // menggandakan biaya render tabel setiap kali ekspor.
+    data: [],
     basemaps: undefined,
     onMapPage: (key, box, layout) => {
       if (layout.frame) pages.push({ key, box, frame: layout.frame });
@@ -114,7 +119,18 @@ function drawBasemap(doc: jsPDF, box: LpMapBox, dataUrl: string | undefined) {
   doc.addImage(dataUrl, "JPEG", box.x, box.y, box.w, box.h);
 }
 
-/** Atribusi latar — kiri-bawah kotak peta, di atas skala batang. */
+/**
+ * Bingkai kotak peta. Digambar SETELAH latar: gambar latar menutupi persis
+ * kotak ini, jadi bingkai yang digambar lebih dulu akan tertimpa dan hilang
+ * dari PDF pada setiap halaman ber-latar.
+ */
+function drawMapFrame(doc: jsPDF, box: LpMapBox) {
+  doc.setDrawColor(...SLATE_200);
+  doc.setLineWidth(0.4);
+  doc.rect(box.x, box.y, box.w, box.h);
+}
+
+/** Atribusi latar — kanan-bawah kotak peta (skala batang menempati kiri-bawah). */
 function drawBasemapAttribution(doc: jsPDF, box: LpMapBox, attribution: string | null | undefined) {
   if (!attribution) return;
   doc.setFontSize(6);
@@ -318,9 +334,6 @@ export function buildLandParcelReportDoc({
   basemapAttribution,
   onMapPage,
 }: Omit<LpPdfInput, "filename">): jsPDF {
-  // Satu keputusan dipakai ulang di tiga halaman peta: ada latar ⇒ poligon
-  // digambar garis-saja dan atribusi wajib ikut tercetak.
-  const hasBasemap = (basemaps?.size ?? 0) > 0;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -396,30 +409,36 @@ export function buildLandParcelReportDoc({
     h: pageHeight - currentY - MARGIN - noteH,
     pad: 6,
   };
-  doc.setDrawColor(...SLATE_200);
-  doc.setLineWidth(0.4);
-  doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h);
-
   const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines]));
   const fullLayout = buildLandParcelMapLayout(mapParcels, mapBox);
   const split =
     grid.rows * grid.cols > 1 ? splitParcelsIntoGrid(mapParcels, grid.rows, grid.cols) : null;
   const useGrid = split !== null && split.cells.length > 0 && fullLayout.frame;
 
+  // Latar ditentukan PER HALAMAN, bukan sekali untuk seluruh dokumen: satu
+  // halaman bisa tak punya gambar (mis. sel yang lahannya tanpa geometri)
+  // sementara halaman lain punya. Bendera dokumen-lebar akan membuat halaman
+  // polos itu tergambar tanpa fill DAN mencetak atribusi untuk latar yang tak
+  // ada di sana.
+  const pageBasemap = basemaps?.get("");
+
   if (fullLayout.polygons.length === 0) {
+    drawMapFrame(doc, mapBox);
     drawEmptyMapNote(doc, mapBox);
   } else if (!useGrid) {
     onMapPage?.("", mapBox, fullLayout);
-    drawBasemap(doc, mapBox, basemaps?.get(""));
-    drawLayoutPolygons(doc, fullLayout, !hasBasemap);
+    drawBasemap(doc, mapBox, pageBasemap);
+    drawMapFrame(doc, mapBox);
+    drawLayoutPolygons(doc, fullLayout, !pageBasemap);
     drawLayoutLabels(doc, fullLayout, linesByNo, mapBox);
     drawMapDecorations(doc, fullLayout, mapBox);
-    drawBasemapAttribution(doc, mapBox, basemapAttribution);
+    drawBasemapAttribution(doc, mapBox, pageBasemap ? basemapAttribution : null);
   } else {
     // Ikhtisar: poligon tanpa nomor + garis grid + label sel berisi.
     onMapPage?.("", mapBox, fullLayout);
-    drawBasemap(doc, mapBox, basemaps?.get(""));
-    drawLayoutPolygons(doc, fullLayout, !hasBasemap);
+    drawBasemap(doc, mapBox, pageBasemap);
+    drawMapFrame(doc, mapBox);
+    drawLayoutPolygons(doc, fullLayout, !pageBasemap);
     const f = fullLayout.frame!;
     const gx = f.offX;
     const gy = f.offY;
@@ -448,7 +467,7 @@ export function buildLandParcelReportDoc({
       doc.text(`${cell.parcels.length} lahan`, cx, cy + 6, { align: "center" });
     }
     drawMapDecorations(doc, fullLayout, mapBox);
-    drawBasemapAttribution(doc, mapBox, basemapAttribution);
+    drawBasemapAttribution(doc, mapBox, pageBasemap ? basemapAttribution : null);
   }
 
   doc.setFontSize(8);
@@ -472,17 +491,15 @@ export function buildLandParcelReportDoc({
       doc.text(`Peta ${cell.label} (${idx + 1}/${split!.cells.length}) — ${cell.parcels.length} lahan`, MARGIN, 12);
 
       const cellBox = { x: MARGIN, y: 16, w: pageWidth - MARGIN * 2, h: pageHeight - 16 - MARGIN, pad: 6 };
-      doc.setDrawColor(...SLATE_200);
-      doc.setLineWidth(0.4);
-      doc.rect(cellBox.x, cellBox.y, cellBox.w, cellBox.h);
-
       const cellLayout = buildLandParcelMapLayout(cell.parcels, cellBox);
+      const cellBasemap = basemaps?.get(cell.label);
       onMapPage?.(cell.label, cellBox, cellLayout);
-      drawBasemap(doc, cellBox, basemaps?.get(cell.label));
-      drawLayoutPolygons(doc, cellLayout, !hasBasemap);
+      drawBasemap(doc, cellBox, cellBasemap);
+      drawMapFrame(doc, cellBox);
+      drawLayoutPolygons(doc, cellLayout, !cellBasemap);
       drawLayoutLabels(doc, cellLayout, linesByNo, cellBox);
       drawMapDecorations(doc, cellLayout, cellBox);
-      drawBasemapAttribution(doc, cellBox, basemapAttribution);
+      drawBasemapAttribution(doc, cellBox, cellBasemap ? basemapAttribution : null);
       drawMiniIndex(doc, split!, cell, pageWidth);
     });
   }
