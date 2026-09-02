@@ -66,6 +66,9 @@ export function SnapshotBmpClient({ snapshots, permissions }: Props) {
       label: "Aksi",
       sortable: false,
       toggleable: false,
+      // Kolom kontrol, bukan data — tanpa ini Excel-nya berisi kolom "Aksi"
+      // penuh CUID.
+      exportable: false,
       headerClassName: "w-[1%] whitespace-nowrap",
       cellClassName: "w-[1%] whitespace-nowrap",
       render: (row) => (
@@ -138,7 +141,8 @@ export function SnapshotBmpClient({ snapshots, permissions }: Props) {
     districtName: row.districtName ?? "Semua",
     totalProduksiTon: formatTon(row.totalProduksiTon),
     lahanBerData: `${row.lahanBerData}/${row.totalLahan}`,
-    luasTerdata:
+    // Kunci mengikuti `column.key`, bukan label kolomnya.
+    luasMelaporHa:
       row.totalLuasHa > 0
         ? `${formatTon(row.luasMelaporHa)}/${formatTon(row.totalLuasHa)}`
         : formatTon(row.luasMelaporHa),

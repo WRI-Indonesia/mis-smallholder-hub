@@ -88,6 +88,9 @@ export function SnapshotClient({ snapshots, filterOptions, permissions }: Props)
       label: "Aksi",
       sortable: false,
       toggleable: false,
+      // Kolom kontrol, bukan data — tanpa ini Excel-nya berisi kolom "Aksi"
+      // penuh CUID.
+      exportable: false,
       headerClassName: "w-[1%] whitespace-nowrap",
       cellClassName: "w-[1%] whitespace-nowrap",
       render: (row) => (

@@ -58,6 +58,20 @@ function PdfExportButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+/**
+ * Daftar paket untuk selektor & label ekspor. Di level modul, bukan di dalam
+ * komponen: isinya konstan, dan sebagai literal per-render ia jadi dependensi
+ * `useMemo` yang berubah identitas tiap render (peringatan
+ * `react-hooks/exhaustive-deps` yang lama menetap di berkas ini).
+ */
+const PACKAGES_LIST = [
+  { code: "all", name: "Semua Pelatihan (Cakupan per Petani)" },
+  { code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1 - BMP + P&C RSPO + NKT" },
+  { code: "PAKET_2_MK", name: "Paket 2 - MK" },
+  { code: "PAKET_2_K3", name: "Paket 2 - HSE (K3)" },
+  { code: "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV", name: "Paket 3 & 4" },
+];
+
 export function TrainingReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedFarmerGroup, setSelectedFarmerGroup] = useState<string | null>(null);
@@ -236,30 +250,28 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
     },
   ];
 
+  /**
+   * Kunci WAJIB sama dengan `coverageColumns` di atas — `DataTable` memetik
+   * nilainya per `column.key`. Bentuk lama memakai `hasPaket*` sementara
+   * kolomnya `paket*Date`, sehingga empat kolom paket terbit **kosong** di
+   * Excel tanpa satu pun tanda (TD-015, gigitan ketiga).
+   */
   const getCoverageExportRow = (row: TrainingFarmerReportRow) => {
     return {
       farmerId: row.farmerId,
       name: row.name,
       gender: row.gender === "M" ? "Laki-laki" : "Perempuan",
-      hasPaket1: formatDateDMY(row.paket1Date),
-      hasPaket2MK: formatDateDMY(row.paket2MKDate),
-      hasPaket2K3: formatDateDMY(row.paket2K3Date),
-      hasPaket34: formatDateDMY(row.paket34Date),
+      paket1Date: formatDateDMY(row.paket1Date),
+      paket2MKDate: formatDateDMY(row.paket2MKDate),
+      paket2K3Date: formatDateDMY(row.paket2K3Date),
+      paket34Date: formatDateDMY(row.paket34Date),
     };
   };
-
-  const packagesList = [
-    { code: "all", name: "Semua Pelatihan (Cakupan per Petani)" },
-    { code: "PAKET_1_BMP_PC_RSPO_NKT", name: "Paket 1 - BMP + P&C RSPO + NKT" },
-    { code: "PAKET_2_MK", name: "Paket 2 - MK" },
-    { code: "PAKET_2_K3", name: "Paket 2 - HSE (K3)" },
-    { code: "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV", name: "Paket 3 & 4" },
-  ];
 
   const availablePackages = useMemo(() => {
     if (!reportData) return [];
     const codesInActivities = new Set(reportData.activities.map((a) => a.packageCode));
-    return packagesList.filter((p) => p.code === "all" || codesInActivities.has(p.code));
+    return PACKAGES_LIST.filter((p) => p.code === "all" || codesInActivities.has(p.code));
   }, [reportData]);
 
   // Extract unique dates of activities matching selectedPackageCode
@@ -365,7 +377,13 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
 
   const getSpecificTrainingExportRow = (row: SpecificTrainingRow, idx?: number) => {
     return {
-      no: idx !== undefined ? idx + 1 : "",
+      // `row.no` dulu, BUKAN indeks ekspor. Baris tabel sudah membawa nomor
+      // yang dirender di layar; indeks yang diterima dari `DataTable` adalah
+      // posisi dalam data TERURUT, jadi setelah pengguna menyortir atau
+      // mencari, Excel akan menomori ulang 1..N sementara layar (dan PDF)
+      // menampilkan nomor aslinya — ketiganya berbeda baris-per-baris.
+      // `idx` tetap dipakai jalur PDF, yang mengirim baris tanpa `no`.
+      no: row.no ?? (idx !== undefined ? idx + 1 : ""),
       name: row.name,
       farmerIdCode: row.farmerIdCode,
       trainingDate: formatDateDMY(row.trainingDate ?? null, "—"),
@@ -402,10 +420,10 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
             { header: "Farmer ID", key: "farmerId" },
             { header: "Nama Petani", key: "name" },
             { header: "Gender", key: "gender" },
-            { header: "Paket 1 (BMP+RSPO)", key: "hasPaket1" },
-            { header: "Paket 2 - MK", key: "hasPaket2MK" },
-            { header: "Paket 2 - K3", key: "hasPaket2K3" },
-            { header: "Paket 3 & 4", key: "hasPaket34" },
+            { header: "Paket 1 (BMP+RSPO)", key: "paket1Date" },
+            { header: "Paket 2 - MK", key: "paket2MKDate" },
+            { header: "Paket 2 - K3", key: "paket2K3Date" },
+            { header: "Paket 3 & 4", key: "paket34Date" },
           ],
           data: coverageExportData,
         },
@@ -419,7 +437,7 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
 
     if (selectedPackageCode !== "all" && (selectedTraining || selectedActivityDate === "all")) {
       // Export single training participant list: NO, Nama Petani, Farmer ID, Tanggal, Pre-Test, Post-Test
-      const packageNameVal = packagesList.find((p) => p.code === selectedPackageCode)?.name ?? "—";
+      const packageNameVal = PACKAGES_LIST.find((p) => p.code === selectedPackageCode)?.name ?? "—";
       const locationVal = selectedActivityDate === "all" ? "Semua Lokasi" : (selectedTraining?.location ?? "—");
 
       exportToPDF({
@@ -457,10 +475,10 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
           { header: "Farmer ID", key: "farmerId" },
           { header: "Nama Petani", key: "name" },
           { header: "Gender", key: "gender" },
-          { header: "Paket 1", key: "hasPaket1" },
-          { header: "Paket 2 - MK", key: "hasPaket2MK" },
-          { header: "Paket 2 - K3", key: "hasPaket2K3" },
-          { header: "Paket 3 & 4", key: "hasPaket34" },
+          { header: "Paket 1", key: "paket1Date" },
+          { header: "Paket 2 - MK", key: "paket2MKDate" },
+          { header: "Paket 2 - K3", key: "paket2K3Date" },
+          { header: "Paket 3 & 4", key: "paket34Date" },
         ],
         data: reportData.farmers.map(getCoverageExportRow),
       });
@@ -689,7 +707,7 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
                           aria-expanded={packageComboOpen}
                           className="w-[300px] justify-between h-9 font-normal text-left bg-background"
                         >
-                          <span>{packagesList.find(p => p.code === selectedPackageCode)?.name || "Pilih Pelatihan"}</span>
+                          <span>{PACKAGES_LIST.find(p => p.code === selectedPackageCode)?.name || "Pilih Pelatihan"}</span>
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       }
@@ -799,7 +817,7 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
                       <tbody>
                         <tr>
                           <td className="w-1/4 font-semibold pb-1">Jenis Pelatihan</td>
-                          <td className="pb-1">: {packagesList.find(p => p.code === selectedPackageCode)?.name}</td>
+                          <td className="pb-1">: {PACKAGES_LIST.find(p => p.code === selectedPackageCode)?.name}</td>
                         </tr>
                         <tr>
                           <td className="font-semibold pb-1">Tanggal</td>
@@ -819,7 +837,7 @@ export function TrainingReportClient({ districts, canExport, canPrint }: Props) 
                     rowKey={(row) => row.farmerId}
                     searchKey="name"
                     searchPlaceholder="Cari nama peserta..."
-                    exportFilename={`Laporan_Pelatihan_${(packagesList.find(p => p.code === selectedPackageCode)?.name ?? "").replace(/\s+/g, "_")}`}
+                    exportFilename={`Laporan_Pelatihan_${(PACKAGES_LIST.find(p => p.code === selectedPackageCode)?.name ?? "").replace(/\s+/g, "_")}`}
                     getExportRow={getSpecificTrainingExportRow}
                     canExport={canExport}
                     toolbarRight={canPrint ? <PdfExportButton onClick={handleExportPDF} /> : undefined}

@@ -91,22 +91,26 @@ export function SnapshotBmpDetailClient({
     },
   ];
 
+  /**
+   * Kunci mengikuti `column.key`, BUKAN nama yang enak dibaca. Lima kolom di
+   * tabel ini turunan dan meminjam kunci objek yang tak berhubungan demi
+   * memenuhi `keyof T` — `totals` untuk Produksi, `id` untuk Produktivitas,
+   * `availability` untuk Lahan Ber-data, `byYear` untuk Luas Terdata,
+   * `monthly` untuk Petani Terdata. Bentuk lama memakai nama deskriptif,
+   * sehingga kelima kolom itu terbit kosong di Excel (#323).
+   */
   const getExportRow = (row: BmpGroupEntry) => ({
     name: row.name,
     category: CATEGORY_LABELS[row.category],
     districtName: row.districtName ?? "—",
-    produksiTon: formatTon(row.totals.produksiTon),
-    produktivitas: formatTon(bmpProductivity(row)),
-    lahanBerData: `${row.totals.lahanBerData}/${row.totals.totalLahan}`,
-    luasTerdata:
+    totals: formatTon(row.totals.produksiTon),
+    id: formatTon(bmpProductivity(row)),
+    availability: `${row.totals.lahanBerData}/${row.totals.totalLahan}`,
+    byYear:
       row.totals.totalLuasHa > 0
         ? `${formatTon(row.totals.luasMelaporHa)}/${formatTon(row.totals.totalLuasHa)}`
         : formatTon(row.totals.luasMelaporHa),
-    petaniMelapor: `${row.totals.petaniMelapor}/${row.totals.totalPetani}`,
-    baik: row.availability.baik,
-    cukup: row.availability.cukup,
-    kurang: row.availability.kurang,
-    tidakAda: row.availability.tidakAda,
+    monthly: `${row.totals.petaniMelapor}/${row.totals.totalPetani}`,
   });
 
   return (

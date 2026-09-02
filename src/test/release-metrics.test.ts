@@ -167,9 +167,14 @@ describe("parseActiveTechDebt — register tech-debt.md nyata", () => {
     const md = readFileSync(join(__dirname, "../../docs/project/tech-debt.md"), "utf-8");
     const items = parseActiveTechDebt(md);
     expect(items.length).toBeGreaterThanOrEqual(10);
-    const td15 = items.find((t) => t.id === "TD-015");
-    expect(td15?.priority).toBe("P3");
-    expect(td15?.title).toContain("DataTable");
+    // Contoh item aktif. TD-015 dipakai di sini sampai ditutup #323 — item
+    // sampel memang harus diganti tiap sampelnya selesai; itu tanda parsernya
+    // benar-benar membaca register, bukan daftar yang dihafal.
+    const sample = items.find((t) => t.id === "TD-016");
+    expect(sample?.priority).toBe("P3");
+    expect(sample?.title).toContain("flaky");
+    // Item yang sudah ditutup tak boleh ikut terparse.
+    expect(items.find((t) => t.id === "TD-015")).toBeUndefined();
     // Arsip (item selesai) tidak boleh terparse.
     expect(items.every((t) => !t.status.includes("✅"))).toBe(true);
     // Format rusak → error, bukan tabel kosong diam-diam.
