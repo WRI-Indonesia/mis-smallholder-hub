@@ -14,7 +14,7 @@ Kondisi per **2026-08-08** (audit menyeluruh): register bug lama **7/7 selesai**
 
 | Horizon | Fokus | Alasan |
 | --- | --- | --- |
-| **Jangka pendek** (sprint berjalan) | **TD-026** (a11y matriks) & **TD-027** (N+1 kaskade `setRolePermissions`); **TD-015** (`exportValue` DataTable) & **TD-008** (helper parsing angka form) — kerjakan menumpang saat menyentuh file terkait; **TD-002** (visual audit `text-white`) sekali jalan | Sisa #187B (TD-026/027) sudah ber-scope jelas; sisanya kecil, murah, mencegah silent-fail berulang (TD-015 sudah 2× menggigit di #160). TD-029 ✅ selesai 2026-07-28 |
+| **Jangka pendek** (sprint berjalan) | **TD-026** (a11y matriks) & **TD-027** (N+1 kaskade `setRolePermissions`); **TD-008** (helper parsing angka form) — kerjakan menumpang saat menyentuh file terkait (**TD-015 ✅ 2026-09-02** lewat #323, setelah gigitan ketiga); **TD-002** (visual audit `text-white`) sekali jalan | Sisa #187B (TD-026/027) sudah ber-scope jelas; sisanya kecil, murah, mencegah silent-fail berulang (TD-015 menggigit 3× — dua di #160, lalu #323). TD-029 ✅ selesai 2026-07-28 |
 | **Jangka menengah** (1–2 sprint) | **TD-010 sisa** — pisah `error:string` + `fieldErrors` di tipe `ActionResult` (32 baris `fieldErrors` / 13 file actions / ~10 form); **TD-004** (i18n) bila jadi kebutuhan produk | Perubahan kontrak lintas form — butuh PR khusus ber-scope jelas, bukan tumpangan; i18n perlu keputusan produk dulu |
 | **Jangka panjang** (menunggu data) | **TD-014** refactor hierarki penuh (Jalur B: **KT** jadi tabel, `FarmerGroup`→`FarmerInstitution`, export→rebuild→re-import) — **tanpa** entitas Gapoktan (3 level final #189) | Blocker: data KT lengkap (keputusan 3-vs-4-level **sudah final: 3**); interim per-lahan (#146/#150) sudah menopang report/dashboard/detail sampai saat itu |
 
@@ -29,9 +29,9 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…038) | **17** | 21 | 38 |
+| **Debt** (TD-001…039) | **17** | 22 | 39 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-015 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). · **TD-034** (dibuka 2026-08-24 dari review #285 — kontrak `DATE` FIRMS terverifikasi manual saja) · **TD-037** (dibuka 2026-09-01 dari #313 — penulis SHP `@mapbox/shp-write`: DBF ASCII-only & MultiPolygon dipecah) · **TD-038** (dibuka 2026-09-02 dari #318 — penjahitan mosaik latar peta cetak tak bisa diuji di jsdom) · **TD-035** (dibuka 2026-08-27 dari penutupan #296 — `fileUrl`/`rawGeometry` tanpa UI; bagian kolom report UL Parcel Code/Program ✅ #305 2026-08-29, diganti utang baru: **proxy "sudah didata" = punya UL Parcel Code**) (**TD-036 ✅ 2026-08-28** — `MAP_STYLES` satu sumber di `src/lib/map-style.ts`, dari #307.) (**TD-033 ✅ 2026-08-10** — dedup tbody matriks produksi + trim payload bulanan, dari review #239; dibuka & diselesaikan di hari yang sama.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
+Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). · **TD-034** (dibuka 2026-08-24 dari review #285 — kontrak `DATE` FIRMS terverifikasi manual saja) · **TD-037** (dibuka 2026-09-01 dari #313 — penulis SHP `@mapbox/shp-write`: DBF ASCII-only & MultiPolygon dipecah) · **TD-038** (dibuka 2026-09-02 dari #318 — penjahitan mosaik latar peta cetak tak bisa diuji di jsdom) · **TD-039** (dibuka 2026-09-02 dari #323 — kesepakatan kunci ekspor `DataTable` tak dijaga otomatis) · **TD-035** (dibuka 2026-08-27 dari penutupan #296 — `fileUrl`/`rawGeometry` tanpa UI; bagian kolom report UL Parcel Code/Program ✅ #305 2026-08-29, diganti utang baru: **proxy "sudah didata" = punya UL Parcel Code**) (**TD-036 ✅ 2026-08-28** — `MAP_STYLES` satu sumber di `src/lib/map-style.ts`, dari #307.) (**TD-033 ✅ 2026-08-10** — dedup tbody matriks produksi + trim payload bulanan, dari review #239; dibuka & diselesaikan di hari yang sama.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.)
 
 ## Debt Register — 🔴 Aktif
 
@@ -76,12 +76,6 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Evidence:** `src/app/(admin)/admin/master-data/groups/group-form-modal.tsx`.
 - **Validation:** gunakan helper untuk memproses string kosong/whitespace sebelum parsing numerik. · **Owner:** Frontend Lead.
 
-### TD-015 · 🔲 Open — `DataTable` kolom turunan: export mengandalkan tebakan key (P3)
-
-- **Masalah:** kolom yang me-render gabungan beberapa field (mis. Sertifikasi RSPO = status+tahun) gagal **diam-diam**: sort no-op (nilai `row[col.key]` null) dan kolom Excel kosong (`getExportRow` harus menebak key kolom). Sort sudah ditutup properti `sortValue` (#160); export masih rawan — kandidat properti `exportValue?: (row) => unknown` agar simetris.
-- **Evidence:** ditemukan #160 (sort & export kolom RSPO dua-duanya silent-fail); `data-table.tsx` `handleExport` (`exportRow[String(col.key)]`).
-- **Validation:** tambahkan `exportValue` saat menyentuh `DataTable` berikutnya; sampai itu, pastikan key object `getExportRow` = `col.key` persis. · **Owner:** Frontend.
-
 ### TD-017 · 🔲 Open — Field foto petani belum ada di schema (P3)
 
 - **Masalah:** detail Petani 360° (#172) butuh foto petani; field/upload belum ada di `Farmer` (keputusan owner 2026-07-16: **pending**, masuk debt).
@@ -103,6 +97,11 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 - **Masalah:** `setRolePermissions` melakukan `findFirst`+`update`/`create` **berurutan per baris** dalam satu transaksi. Kaskade induk→anak untuk subtree besar × banyak role = puluhan round-trip (terasa lewat tunnel; timeout dinaikkan ke 20s sebagai penambal).
 - **Validation:** ganti ke SQL massal — `findMany` sekali untuk state saat ini, lalu `updateMany`(isActive) + `createMany`(baris baru) atas himpunan terhitung. · **Evidence:** #187B (`src/server/actions/role-permission.ts`). · **Owner:** Backend.
+
+### TD-039 · 🔲 Open — Kesepakatan kunci ekspor `DataTable` tak dijaga otomatis (P3)
+
+- **Masalah:** #323 menutup akar TD-015 (resolusi per kolom + peringatan dev + `exportable`), tapi tak ada satu pun uji yang menjamin `getExportRow` sebuah halaman **cocok dengan kolomnya**. Transformernya inline di dalam komponen, jadi tak bisa diimpor; audit 12 pemakaian dikerjakan dengan skrip regex sekali pakai. Kolom baru yang ditambahkan besok hanya dijaga peringatan console mode dev — dan itu hanya menyala bila ada yang benar-benar menekan tombol Excel saat mengembangkan. Bug aslinya bertahan di **5 halaman / 13 kolom**; empat di antaranya tak pernah dilaporkan siapa pun.
+- **Validation:** dua jalur yang layak ditimbang. (a) Angkat tiap `getExportRow` ke fungsi murni ber-ekspor di sebelah definisi kolomnya, lalu satu uji generik menegaskan `Object.keys(transformer(sampleRow)) ⊇ columns.map(c => c.key)` untuk seluruh tabel — paling kokoh, tapi menyentuh 12 berkas. (b) Uji analisis statis yang memindai sumber (versi rapi dari skrip audit #323) — murah, tapi rapuh terhadap gaya penulisan. Terkait: tak ada uji tingkat workbook untuk jalur `DataTable` → `exportToExcel` sama sekali; yang ada hanya untuk builder bespoke Laporan Lahan (`report-land-parcel-xlsx.test.ts`). · **Evidence:** #323, `src/components/shared/data-table.tsx`, `src/test/data-table-export.test.ts`. · **Owner:** Frontend.
 
 ### TD-038 · 🔲 Open — Penjahitan mosaik latar peta cetak tak tertutup uji (P3)
 
@@ -203,6 +202,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-018 | 5 salinan action dropdown Distrik/Lembaga per menu report | P3 | ✅ 2026-07-20 (#180) |
 | TD-019 | Exporter PDF lama belum pola build-vs-save | P3 | ✅ 2026-07-20 (#180) |
 | TD-028 | Migrasi Peta Lahan/BMP ke primitif popup bersama | P3 | ✅ 2026-07-22 (#188) |
+| TD-015 | `DataTable` kolom turunan: export mengandalkan tebakan key → `buildExportRows` resolusi per kolom + `exportable` + peringatan dev (10 test) | P3 | ✅ 2026-09-02 (#323, setelah menggigit ketiga kalinya) |
 | TD-033 | Dedup mesin baris matriks produksi (`MatrixBody`) + trim `ProductionMonthRow` ke field yang dirender | P3 | ✅ 2026-08-10 (#239, dibuka & selesai hari yang sama) |
 | TD-022 | BMP: produksi jadi orphan saat revisi lahan (asimetri produktivitas) | P2 | ✅ 2026-07-21 |
 | TD-023 | Dua definisi "cakupan pelatihan" antar dashboard | P3 | ✅ 2026-07-21 |

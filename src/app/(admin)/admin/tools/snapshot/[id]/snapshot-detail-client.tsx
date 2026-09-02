@@ -93,7 +93,9 @@ export function SnapshotDetailClient({
     totalFarmers: row.totalFarmers,
     totalParcels: row.totalParcels,
     totalArea: formatAreaHa(row.totalArea),
-    coverage: `${coverageCount(row)}/4 paket`,
+    // Kolom "Cakupan Pelatihan" ber-`key: "id"` (kolom turunan yang meminjam
+    // field agar memenuhi `keyof T`), jadi kunci ekspornya pun harus `id`.
+    id: `${coverageCount(row)}/4 paket`,
   });
 
   return (

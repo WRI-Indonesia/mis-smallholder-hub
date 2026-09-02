@@ -241,6 +241,9 @@ export function ParcelListClient({
       plantingYear: p.plantingYear ?? "—",
       revision: p.revision,
       districtName: p.farmer.farmerGroup.district.name,
+      // Kolom Status hanya tampil untuk SUPERADMIN, tapi saat tampil ia wajib
+      // punya padanan di sini — kalau tidak, kolomnya terbit kosong.
+      isActive: p.isActive ? "Aktif" : "Nonaktif",
     };
   };
 
