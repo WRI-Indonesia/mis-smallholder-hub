@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useTransition, type ReactNode, type ReactElement } from "react";
+import { useState, useEffect, useMemo, useRef, useTransition, type ReactNode, type ReactElement } from "react";
 import { toast } from "sonner";
 import { FileText, Download, Users, Layers, Sprout, Printer, SlidersHorizontal, MapPin, Grid3x3 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,13 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getFarmerGroupsForLandParcelReport,
   getLandParcelReport,
@@ -44,6 +51,17 @@ import {
   type LpGridCell,
 } from "@/lib/report-land-parcel";
 import { exportLandParcelReportExcel, type LpExcelImage } from "@/lib/report-land-parcel-xlsx";
+import {
+  composeReportBasemap,
+  basemapCacheKey,
+  isTileBasemap,
+  BASEMAP_DEFAULT_DIM,
+  BASEMAP_MAX_CELLS,
+  REPORT_BASEMAP_ATTRIBUTION,
+  REPORT_BASEMAP_KEYS,
+  REPORT_BASEMAP_LABELS,
+  type ReportBasemapKey,
+} from "@/lib/report-basemap";
 import { formatNumber } from "@/lib/format";
 
 interface District {
@@ -118,6 +136,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const [gridCols, setGridCols] = useState(1);
   // Ceklis isi label poligon di peta (minimal satu).
   const [labelParts, setLabelParts] = useState<Set<LabelKey>>(new Set<LabelKey>(["no"]));
+  // Latar peta cetak: "none" = perilaku lama, jadi ekspor yang sudah berjalan
+  // tidak berubah sampai user memilih sendiri.
+  const [basemap, setBasemap] = useState<ReportBasemapKey>("none");
+  const [basemapDim, setBasemapDim] = useState(BASEMAP_DEFAULT_DIM);
+  /** Latar per halaman peta: "" = penuh/ikhtisar, sisanya label sel grid. */
+  const [basemapImages, setBasemapImages] = useState<Map<string, string>>(new Map());
   // Geometri lahan (id → GeoJSON) — dimuat saat Lembaga dipilih, untuk preview & PDF.
   const [geoms, setGeoms] = useState<Map<string, LpGeoJson | null> | null>(null);
 
@@ -276,6 +300,81 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     [reportRows, geoms, labelParts],
   );
 
+  // ── Latar peta cetak ──
+  // Di atas BASEMAP_MAX_CELLS sel, latar dikunci mati: tiap sel = satu halaman
+  // = satu JPEG + ±35 permintaan tile, dan PDF-nya jadi belasan MB.
+  const basemapLocked = gridRows * gridCols > BASEMAP_MAX_CELLS;
+  const activeBasemap: ReportBasemapKey = basemapLocked ? "none" : basemap;
+  const basemapAttribution = REPORT_BASEMAP_ATTRIBUTION[activeBasemap];
+
+  // Geometri saja, tanpa `labelLines`: bbox peta tidak berubah ketika ceklis
+  // Label Poligon diubah, jadi memisahkannya di sini mencegah seluruh mosaik
+  // dijahit ulang tiap centang.
+  const geomParcels = useMemo(
+    () => reportRows.map((row, idx) => ({ no: idx + 1, geometry: geoms?.get(row.id) ?? null })),
+    [reportRows, geoms],
+  );
+
+  // Mosaik yang sudah jadi, bertahan selama halaman hidup — bolak-balik antar
+  // pilihan grid/latar tidak menarik ulang ratusan tile (cache HTTP proxy pun
+  // hanya menolong sesudah permintaan pertama).
+  const basemapCache = useRef(new Map<string, string>());
+
+  useEffect(() => {
+    if (!isTileBasemap(activeBasemap) || geomParcels.length === 0) {
+      setBasemapImages(new Map());
+      return;
+    }
+    let cancelled = false;
+
+    (async () => {
+      const full = buildLandParcelMapLayout(geomParcels, PREVIEW_BOX);
+      if (!full.frame) {
+        setBasemapImages(new Map());
+        return;
+      }
+      const split =
+        gridRows * gridCols > 1 ? splitParcelsIntoGrid(geomParcels, gridRows, gridCols) : null;
+      const useGridHere = split !== null && split.cells.length > 0;
+
+      // `frame` sebuah layout hanya bergantung pada lahannya, bukan pada kotak
+      // gambar — jadi satu mosaik per halaman melayani preview, PDF, dan Excel
+      // sekaligus meski ketiganya memakai kotak berbeda.
+      const targets: { key: string; frame: NonNullable<LpMapLayout["frame"]> }[] = [
+        { key: "", frame: full.frame },
+      ];
+      if (useGridHere) {
+        for (const cell of split!.cells) {
+          const cellFrame = buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX).frame;
+          if (cellFrame) targets.push({ key: cell.label, frame: cellFrame });
+        }
+      }
+
+      // Berurutan, bukan Promise.all: 30 sel × ±35 tile sekaligus akan
+      // menghantam proxy (dan penyedia hulu) dalam satu ledakan. Hasil
+      // disetel bertahap supaya preview terisi satu per satu.
+      const done = new Map<string, string>();
+      for (const target of targets) {
+        if (cancelled) return;
+        const cacheKey = basemapCacheKey(activeBasemap, target.frame, basemapDim);
+        let image = basemapCache.current.get(cacheKey);
+        if (!image) {
+          image = (await composeReportBasemap(activeBasemap, target.frame, basemapDim)) ?? undefined;
+          if (image) basemapCache.current.set(cacheKey, image);
+        }
+        if (cancelled) return;
+        if (image) {
+          done.set(target.key, image);
+          setBasemapImages(new Map(done));
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeBasemap, basemapDim, geomParcels, gridRows, gridCols]);
+
   const reportTotalLuas = useMemo(
     () => reportRows.reduce((sum, r) => sum + (r.luas ?? 0), 0),
     [reportRows],
@@ -393,8 +492,23 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       let overviewImage: LpExcelImage | null = null;
       if (fullLayout.polygons.length > 0) {
         overviewImage = useGrid
-          ? await toPng(<LayoutSvg layout={fullLayout} linesByNo={null} overlay={gridOverlay(fullLayout, split!)} />)
-          : await toPng(<LayoutSvg layout={fullLayout} linesByNo={linesByNo} />);
+          ? await toPng(
+              <LayoutSvg
+                layout={fullLayout}
+                linesByNo={null}
+                overlay={gridOverlay(fullLayout, split!)}
+                basemapUrl={basemapImages.get("")}
+                attribution={basemapAttribution}
+              />,
+            )
+          : await toPng(
+              <LayoutSvg
+                layout={fullLayout}
+                linesByNo={linesByNo}
+                basemapUrl={basemapImages.get("")}
+                attribution={basemapAttribution}
+              />,
+            );
       }
 
       const rowByNo = new Map(rows.map((r) => [r.no as number, r]));
@@ -406,7 +520,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 .map((p) => rowByNo.get(p.no))
                 .filter((r): r is Record<string, string | number> => r !== undefined),
               image: await toPng(
-                <LayoutSvg layout={buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX)} linesByNo={linesByNo} />,
+                <LayoutSvg
+                  layout={buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX)}
+                  linesByNo={linesByNo}
+                  basemapUrl={basemapImages.get(cell.label)}
+                  attribution={basemapAttribution}
+                />,
               ),
             })),
           )
@@ -517,6 +636,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       data,
       mapParcels,
       grid: { rows: gridRows, cols: gridCols },
+      basemaps: basemapImages,
+      basemapAttribution,
     });
   };
 
@@ -755,6 +876,46 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground" htmlFor="basemap-select">
+                  Latar Peta
+                </label>
+                <Select
+                  value={basemap}
+                  onValueChange={(v) => setBasemap(v as ReportBasemapKey)}
+                  disabled={basemapLocked}
+                >
+                  <SelectTrigger id="basemap-select" className="w-60 h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REPORT_BASEMAP_KEYS.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {REPORT_BASEMAP_LABELS[key]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {isTileBasemap(activeBasemap) && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-muted-foreground" htmlFor="basemap-dim">
+                    Redam Latar — {basemapDim}%
+                  </label>
+                  <div className="flex items-center h-9">
+                    <input
+                      id="basemap-dim"
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={basemapDim}
+                      onChange={(e) => setBasemapDim(e.target.valueAsNumber)}
+                      className="w-40 accent-primary"
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-muted-foreground">Label Poligon</span>
                 <div className="flex items-center gap-4 h-9">
                   {LABEL_PARTS.map((part) => (
@@ -771,12 +932,25 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 </div>
               </div>
             </div>
+            {basemapLocked && basemap !== "none" && (
+              <p className="text-xs text-amber-700 dark:text-amber-500">
+                Latar peta dimatikan di atas {BASEMAP_MAX_CELLS} sel grid ({gridRows} × {gridCols} ={" "}
+                {gridRows * gridCols} sel): tiap sel menambah satu gambar latar ke PDF. Kecilkan grid
+                untuk memakainya kembali.
+              </p>
+            )}
             {!geoms ? (
               <div className="flex items-center justify-center h-40 border border-dashed rounded-md text-sm text-muted-foreground">
                 Memuat geometri lahan...
               </div>
             ) : (
-              <LandParcelMapPreview mapParcels={mapParcels} rows={gridRows} cols={gridCols} />
+              <LandParcelMapPreview
+                mapParcels={mapParcels}
+                rows={gridRows}
+                cols={gridCols}
+                basemapImages={basemapImages}
+                attribution={basemapAttribution}
+              />
             )}
           </CardContent>
         </Card>
@@ -1059,14 +1233,19 @@ async function svgToPng(svgMarkup: string): Promise<LpExcelImage> {
   }
 }
 
-/** Skala batang + panah utara (paritas dekorasi PDF, #180). */
-function MapDecorations({ layout }: { layout: LpMapLayout }) {
+/** Skala batang + panah utara (paritas dekorasi PDF, #180) + atribusi latar. */
+function MapDecorations({ layout, attribution }: { layout: LpMapLayout; attribution?: string | null }) {
   if (!layout.frame) return null;
   const bar = pickScaleBar(layout.frame.scale);
   const nx = PREVIEW_BOX.w - 6;
   const ny = 4;
   return (
     <g>
+      {attribution && (
+        <text x={PREVIEW_BOX.w - 3} y={PREVIEW_BOX.h - 2.5} fontSize={2.2} fill="#334155" textAnchor="end">
+          {attribution}
+        </text>
+      )}
       <polygon points={`${nx},${ny} ${nx + 1.8},${ny + 5} ${nx - 1.8},${ny + 5}`} fill="#1e293b" transform={`rotate(180 ${nx} ${ny + 2.5})`} />
       <text x={nx} y={ny + 8.5} fontSize={3} fontWeight={700} fill="#1e293b" textAnchor="middle">U</text>
       {bar && (
@@ -1107,11 +1286,16 @@ function LayoutSvg({
   layout,
   linesByNo,
   overlay,
+  basemapUrl,
+  attribution,
 }: {
   layout: LpMapLayout;
   /** null = tanpa label poligon (mode ikhtisar). */
   linesByNo: Map<number, string[]> | null;
   overlay?: ReactNode;
+  /** JPEG data URL hasil `composeReportBasemap`, menutupi persis bbox layout. */
+  basemapUrl?: string;
+  attribution?: string | null;
 }) {
   const LINE_H = 2.6;
 
@@ -1151,14 +1335,29 @@ function LayoutSvg({
       viewBox={`0 0 ${PREVIEW_BOX.w} ${PREVIEW_BOX.h}`}
       className="w-full h-auto rounded border bg-white"
     >
+      {basemapUrl && layout.frame && (
+        // Data URL, bukan URL jaringan: SVG ini juga dirender jadi PNG untuk
+        // Excel (`svgToPng`), dan gambar eksternal diblokir di mode itu.
+        <image
+          href={basemapUrl}
+          x={layout.frame.offX}
+          y={layout.frame.offY}
+          width={(layout.frame.maxLon - layout.frame.minLon || 1e-6) * layout.frame.scale}
+          height={(layout.frame.maxLat - layout.frame.minLat || 1e-6) * layout.frame.scale}
+          preserveAspectRatio="none"
+        />
+      )}
       {layout.polygons.map((poly) =>
         poly.rings.map((ring, ri) => (
           <polygon
             key={`${poly.no}-${ri}`}
             points={ring.map(([x, y]) => `${x},${y}`).join(" ")}
-            fill="#d1f0e0"
+            // Di atas latar, fill hijau menutupi justru citra di dalam lahan —
+            // bagian yang ingin dilihat. Garis dipertebal sebagai gantinya
+            // (paritas `drawLayoutPolygons` di jalur PDF).
+            fill={basemapUrl ? "none" : "#d1f0e0"}
             stroke="#10b981"
-            strokeWidth={0.4}
+            strokeWidth={basemapUrl ? 0.6 : 0.4}
           />
         )),
       )}
@@ -1201,12 +1400,25 @@ function LayoutSvg({
         );
       })}
       {overlay}
-      <MapDecorations layout={layout} />
+      <MapDecorations layout={layout} attribution={attribution} />
     </svg>
   );
 }
 
-function LandParcelMapPreview({ mapParcels, rows, cols }: { mapParcels: PreviewParcel[]; rows: number; cols: number }) {
+function LandParcelMapPreview({
+  mapParcels,
+  rows,
+  cols,
+  basemapImages,
+  attribution,
+}: {
+  mapParcels: PreviewParcel[];
+  rows: number;
+  cols: number;
+  /** "" = halaman penuh/ikhtisar, sisanya label sel grid. */
+  basemapImages: Map<string, string>;
+  attribution: string | null;
+}) {
   const linesByNo = useMemo(() => new Map(mapParcels.map((p) => [p.no, p.labelLines])), [mapParcels]);
   const fullLayout = useMemo(() => buildLandParcelMapLayout(mapParcels, PREVIEW_BOX), [mapParcels]);
   const split = useMemo(
@@ -1236,7 +1448,12 @@ function LandParcelMapPreview({ mapParcels, rows, cols }: { mapParcels: PreviewP
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground">Preview — 1 halaman peta</p>
         <div className="max-w-xl">
-          <LayoutSvg layout={fullLayout} linesByNo={linesByNo} />
+          <LayoutSvg
+            layout={fullLayout}
+            linesByNo={linesByNo}
+            basemapUrl={basemapImages.get("")}
+            attribution={attribution}
+          />
         </div>
         {skippedNote && <p className="text-xs text-muted-foreground">{skippedNote}</p>}
       </div>
@@ -1251,7 +1468,13 @@ function LandParcelMapPreview({ mapParcels, rows, cols }: { mapParcels: PreviewP
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <div>
           <p className="text-xs text-muted-foreground mb-1">Ikhtisar (grid index)</p>
-          <LayoutSvg layout={fullLayout} linesByNo={null} overlay={overlay} />
+          <LayoutSvg
+            layout={fullLayout}
+            linesByNo={null}
+            overlay={overlay}
+            basemapUrl={basemapImages.get("")}
+            attribution={attribution}
+          />
         </div>
         {split!.cells.map((cell) => (
           <div key={cell.label}>
@@ -1262,6 +1485,8 @@ function LandParcelMapPreview({ mapParcels, rows, cols }: { mapParcels: PreviewP
               layout={buildLandParcelMapLayout(cell.parcels, PREVIEW_BOX)}
               linesByNo={linesByNo}
               overlay={<MiniIndexSvg split={split!} active={cell} />}
+              basemapUrl={basemapImages.get(cell.label)}
+              attribution={attribution}
             />
           </div>
         ))}

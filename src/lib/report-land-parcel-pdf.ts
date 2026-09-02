@@ -51,17 +51,58 @@ export interface LpPdfInput {
   mapParcels: { no: number; geometry: LpGeoJson | null; labelLines: string[] }[];
   /** Grid index fleksibel: baris × kolom (1×1 = tanpa pecah). */
   grid?: { rows: number; cols: number };
+  /**
+   * Latar peta (JPEG data URL) per halaman peta, dijahit di klien oleh
+   * `composeReportBasemap`: kunci `""` untuk halaman penuh/ikhtisar, label sel
+   * ("A1", "B2", …) untuk halaman atlas. Kosong = peta polos (perilaku lama).
+   *
+   * Gambar disiapkan di klien, bukan di sini: modul ini murni sintesis
+   * dokumen (bisa diuji tanpa DOM), sedangkan penjahitan tile butuh
+   * `Image`/`canvas`.
+   */
+  basemaps?: Map<string, string>;
+  /** Atribusi latar — wajib tercetak bila `basemaps` terisi. */
+  basemapAttribution?: string | null;
 }
 
-function drawLayoutPolygons(doc: jsPDF, layout: LpMapLayout) {
+/**
+ * Latar peta menutupi PERSIS bbox layout: gambar dijahit untuk
+ * `frame.min/max` yang sama, jadi cukup diregangkan ke kotak yang sudah
+ * dihitung `buildLandParcelMapLayout` — tanpa fit ulang. Digambar paling awal
+ * agar poligon dan label berada di atasnya.
+ */
+function drawBasemap(doc: jsPDF, layout: LpMapLayout, dataUrl: string | undefined) {
+  const f = layout.frame;
+  if (!f || !dataUrl) return;
+  const w = (f.maxLon - f.minLon || 1e-6) * f.scale;
+  const h = (f.maxLat - f.minLat || 1e-6) * f.scale;
+  doc.addImage(dataUrl, "JPEG", f.offX, f.offY, w, h);
+}
+
+/** Atribusi latar — kiri-bawah kotak peta, di atas skala batang. */
+function drawBasemapAttribution(doc: jsPDF, box: LpMapBox, attribution: string | null | undefined) {
+  if (!attribution) return;
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_700);
+  doc.text(attribution, box.x + box.w - 3, box.y + box.h - 2.5, { align: "right" });
+}
+
+/**
+ * `filled = false` dipakai saat peta ber-latar: fill hijau jsPDF itu OPAK, jadi
+ * poligon berisi justru menutupi citra di dalam lahan — persis bagian yang
+ * ingin dilihat orang saat memilih Satellite. Garis dipertebal sebagai ganti
+ * fill agar batas lahan tetap menonjol di atas citra.
+ */
+function drawLayoutPolygons(doc: jsPDF, layout: LpMapLayout, filled = true) {
   doc.setDrawColor(...EMERALD);
   doc.setFillColor(...AREA_FILL);
-  doc.setLineWidth(0.4);
+  doc.setLineWidth(filled ? 0.4 : 0.6);
   for (const poly of layout.polygons) {
     for (const ring of poly.rings) {
       if (ring.length < 3) continue;
       const segs = ring.slice(1).map((p, i) => [p[0] - ring[i][0], p[1] - ring[i][1]]);
-      doc.lines(segs, ring[0][0], ring[0][1], [1, 1], "FD", true);
+      doc.lines(segs, ring[0][0], ring[0][1], [1, 1], filled ? "FD" : "S", true);
     }
   }
 }
@@ -238,7 +279,12 @@ export function buildLandParcelReportDoc({
   columnStyles,
   mapParcels,
   grid = { rows: 1, cols: 1 },
+  basemaps,
+  basemapAttribution,
 }: Omit<LpPdfInput, "filename">): jsPDF {
+  // Satu keputusan dipakai ulang di tiga halaman peta: ada latar ⇒ poligon
+  // digambar garis-saja dan atribusi wajib ikut tercetak.
+  const hasBasemap = (basemaps?.size ?? 0) > 0;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -327,12 +373,15 @@ export function buildLandParcelReportDoc({
   if (fullLayout.polygons.length === 0) {
     drawEmptyMapNote(doc, mapBox);
   } else if (!useGrid) {
-    drawLayoutPolygons(doc, fullLayout);
+    drawBasemap(doc, fullLayout, basemaps?.get(""));
+    drawLayoutPolygons(doc, fullLayout, !hasBasemap);
     drawLayoutLabels(doc, fullLayout, linesByNo, mapBox);
     drawMapDecorations(doc, fullLayout, mapBox);
+    drawBasemapAttribution(doc, mapBox, basemapAttribution);
   } else {
     // Ikhtisar: poligon tanpa nomor + garis grid + label sel berisi.
-    drawLayoutPolygons(doc, fullLayout);
+    drawBasemap(doc, fullLayout, basemaps?.get(""));
+    drawLayoutPolygons(doc, fullLayout, !hasBasemap);
     const f = fullLayout.frame!;
     const gx = f.offX;
     const gy = f.offY;
@@ -361,6 +410,7 @@ export function buildLandParcelReportDoc({
       doc.text(`${cell.parcels.length} lahan`, cx, cy + 6, { align: "center" });
     }
     drawMapDecorations(doc, fullLayout, mapBox);
+    drawBasemapAttribution(doc, mapBox, basemapAttribution);
   }
 
   doc.setFontSize(8);
@@ -389,9 +439,11 @@ export function buildLandParcelReportDoc({
       doc.rect(cellBox.x, cellBox.y, cellBox.w, cellBox.h);
 
       const cellLayout = buildLandParcelMapLayout(cell.parcels, cellBox);
-      drawLayoutPolygons(doc, cellLayout);
+      drawBasemap(doc, cellLayout, basemaps?.get(cell.label));
+      drawLayoutPolygons(doc, cellLayout, !hasBasemap);
       drawLayoutLabels(doc, cellLayout, linesByNo, cellBox);
       drawMapDecorations(doc, cellLayout, cellBox);
+      drawBasemapAttribution(doc, cellBox, basemapAttribution);
       drawMiniIndex(doc, split!, cell, pageWidth);
     });
   }
