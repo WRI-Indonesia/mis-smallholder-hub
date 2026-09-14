@@ -16,11 +16,12 @@ const SLATE_600: [number, number, number] = [71, 85, 105];
 const SLATE_400: [number, number, number] = [148, 163, 184];
 const SLATE_200: [number, number, number] = [226, 232, 240];
 
-const PAGE_W = 210;
-const PAGE_H = 297;
-const MARGIN = 14;
+// A4 LANDSCAPE (owner 2026-09-14): peta lebih lebar, label tidak bertumpuk.
+const PAGE_W = 297;
+const PAGE_H = 210;
+const MARGIN = 12;
 const CONTENT_W = PAGE_W - MARGIN * 2;
-const CONTENT_BOTTOM = 270;
+const CONTENT_BOTTOM = 188;
 
 export type LayerReportGeometry = Point | Polygon | MultiPolygon;
 
@@ -60,17 +61,17 @@ type Projector = (lon: number, lat: number) => [number, number];
 function drawFooter(doc: jsPDF, page: number, total: number, note: string) {
   doc.setDrawColor(...SLATE_200);
   doc.setLineWidth(0.4);
-  doc.line(MARGIN, 275, PAGE_W - MARGIN, 275);
+  doc.line(MARGIN, 193, PAGE_W - MARGIN, 193);
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(...SLATE_400);
-  doc.text(note, MARGIN, 280, { maxWidth: CONTENT_W - 40 });
+  doc.text(note, MARGIN, 198, { maxWidth: CONTENT_W - 40 });
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...EMERALD);
-  doc.text("Smallholder HUB", PAGE_W - MARGIN, 288, { align: "right" });
+  doc.text("Smallholder HUB", PAGE_W - MARGIN, 204, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_400);
-  doc.text(`Hal. ${page}/${total}`, PAGE_W - MARGIN, 280, { align: "right" });
+  doc.text(`Hal. ${page}/${total}`, PAGE_W - MARGIN, 198, { align: "right" });
 }
 
 function positionsOf(g: LayerReportGeometry): Position[] {
@@ -124,6 +125,8 @@ function drawDecorations(doc: jsPDF, box: Box, mmPerMeter: number) {
 }
 
 const CONTEXT_PURPLE: [number, number, number] = [126, 34, 206];
+/** Opacity konteks lahan non-NKT — "lebih tipis lagi" (owner 2026-09-14). */
+const CONTEXT_OPACITY = 0.12;
 
 /** Nomor kecil berlatar putih supaya tetap terbaca di atas titik/poligon yang rapat. */
 function drawNumber(doc: jsPDF, x: number, y: number, n: number) {
@@ -139,14 +142,112 @@ function drawNumber(doc: jsPDF, x: number, y: number, n: number) {
   doc.text(label, x, y, { align: "center", baseline: "middle" });
 }
 
-/** Gambar seluruh fitur ke kotak: bbox fitur utama + margin 12 %, skala lon dikoreksi cos(lat). Nomor = urutan fitur + 1. */
-function drawLayerMap(doc: jsPDF, fc: LayerReportInput["fc"], box: Box, style: LayerReportStyle, context?: LayerReportContext) {
-  const all = fc.features.flatMap((f) => positionsOf(f.geometry));
+type LabelBox = { x: number; y: number; w: number; h: number };
+const overlaps = (a: LabelBox, b: LabelBox) => Math.abs(a.x - b.x) * 2 < a.w + b.w + 0.6 && Math.abs(a.y - b.y) * 2 < a.h + b.h + 0.6;
+
+/**
+ * Penempatan label anti-tumpuk (greedy): coba di jangkar, lalu 8 arah dengan
+ * radius bertahap; posisi pertama yang bebas tabrakan & di dalam kotak dipakai,
+ * dan bila bergeser digambar garis penunjuk tipis ke jangkarnya.
+ */
+function placeAndDrawNumbers(doc: jsPDF, items: { x: number; y: number; n: number }[], box: Box) {
+  doc.setFontSize(5.5);
+  doc.setFont("helvetica", "bold");
+  const placed: LabelBox[] = [];
+  const dirs = [[1, 0], [1, -1], [-1, 0], [1, 1], [0, -1], [-1, -1], [0, 1], [-1, 1]];
+  const inside = (b: LabelBox) => b.x - b.w / 2 >= box.x + 1 && b.x + b.w / 2 <= box.x + box.w - 1 && b.y - b.h / 2 >= box.y + 1 && b.y + b.h / 2 <= box.y + box.h - 9;
+  const draws: { at: LabelBox; anchor: { x: number; y: number }; n: number; moved: boolean }[] = [];
+  for (const it of items) {
+    const w = doc.getTextWidth(String(it.n)) + 1;
+    const h = 2.5;
+    let chosen: LabelBox | null = null;
+    let moved = false;
+    outer: for (const r of [0, 3, 4.5, 6, 8, 10, 13, 16]) {
+      for (const [dx, dy] of r === 0 ? [[0, 0]] : dirs) {
+        const cand = { x: it.x + dx * r, y: it.y + dy * r, w, h };
+        if (!inside(cand)) continue;
+        if (placed.some((p) => overlaps(p, cand))) continue;
+        chosen = cand;
+        moved = r > 0;
+        break outer;
+      }
+    }
+    if (!chosen) { chosen = { x: it.x, y: it.y, w, h }; }
+    placed.push(chosen);
+    draws.push({ at: chosen, anchor: { x: it.x, y: it.y }, n: it.n, moved });
+  }
+  // Garis penunjuk dulu (di bawah label), lalu labelnya.
+  doc.setDrawColor(...SLATE_600);
+  doc.setLineWidth(0.15);
+  for (const d of draws) if (d.moved) doc.line(d.anchor.x, d.anchor.y, d.at.x, d.at.y);
+  for (const d of draws) drawNumber(doc, d.at.x, d.at.y, d.n);
+}
+
+/** Pusat fitur (centroid ring luar pertama / koordinat titik) dalam derajat. */
+function featureCenter(f: LayerReportInput["fc"]["features"][number]): [number, number] {
+  if (f.geometry.type === "Point") return [f.geometry.coordinates[0], f.geometry.coordinates[1]];
+  const rings = exteriorRings(f.geometry);
+  return rings[0] ? ringCentroid(rings[0]) : [0, 0];
+}
+
+/**
+ * Klaster fitur (single-linkage) dengan ambang jarak = 8 % bentang terbesar
+ * (min ≈ 150 m): dua blok kebun yang terpisah jauh jadi klaster sendiri dan
+ * masing-masing mendapat halaman peta rinci berskala pas.
+ */
+function clusterFeatures(fc: LayerReportInput["fc"]): number[][] {
+  const centers = fc.features.map(featureCenter);
+  if (centers.length === 0) return [];
+  let minLon = Infinity, maxLon = -Infinity, minLat = Infinity, maxLat = -Infinity;
+  for (const [lon, lat] of centers) { minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon); minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat); }
+  const cosLat = Math.max(0.2, Math.cos((((minLat + maxLat) / 2) * Math.PI) / 180));
+  const span = Math.max((maxLon - minLon) * cosLat, maxLat - minLat);
+  const thr = Math.max(0.08 * span, 150 / 111_320);
+  const parent = centers.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  for (let i = 0; i < centers.length; i++) {
+    for (let j = i + 1; j < centers.length; j++) {
+      const dx = (centers[i][0] - centers[j][0]) * cosLat;
+      const dy = centers[i][1] - centers[j][1];
+      if (Math.hypot(dx, dy) <= thr) parent[find(i)] = find(j);
+    }
+  }
+  const groups = new Map<number, number[]>();
+  centers.forEach((_, i) => { const r = find(i); groups.set(r, [...(groups.get(r) ?? []), i]); });
+  // Urut klaster: barat-laut dulu (utara, lalu barat) — huruf A, B, … stabil.
+  return [...groups.values()].sort((a, b) => {
+    const ca = featureCenter(fc.features[a[0]]), cb = featureCenter(fc.features[b[0]]);
+    return cb[1] - ca[1] || ca[0] - cb[0];
+  });
+}
+
+interface MapDrawResult {
+  /** mm per meter pada skala yang dipakai — untuk menilai apakah fitur cukup besar. */
+  mmPerMeter: number;
+  /** Kotak (mm) tiap klaster yang digambar di ikhtisar, untuk label A/B. */
+  clusterBoxes: { label: string; box: Box }[];
+}
+
+/**
+ * Gambar fitur ke kotak: bbox fitur (subset `indices`) + margin 12 %, skala lon
+ * dikoreksi cos(lat). `numbered` menggambar nomor (indeks global + 1) dengan
+ * anti-tumpuk. `clusters` (ikhtisar) menggambar kotak huruf per klaster.
+ */
+function drawLayerMap(
+  doc: jsPDF,
+  fc: LayerReportInput["fc"],
+  box: Box,
+  style: LayerReportStyle,
+  context: LayerReportContext | undefined,
+  opts: { indices: number[]; numbered: boolean; clusters?: number[][] },
+): MapDrawResult {
+  const subset = opts.indices.map((i) => fc.features[i]);
+  const all = subset.flatMap((f) => positionsOf(f.geometry));
   if (all.length === 0) {
     doc.setFontSize(9);
     doc.setTextColor(...SLATE_400);
     doc.text("Tidak ada fitur untuk digambar", box.x + box.w / 2, box.y + box.h / 2, { align: "center" });
-    return;
+    return { mmPerMeter: 0, clusterBoxes: [] };
   }
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
   for (const [lon, lat] of all) {
@@ -168,29 +269,29 @@ function drawLayerMap(doc: jsPDF, fc: LayerReportInput["fc"], box: Box, style: L
   const project: Projector = (lon, lat) => [offX + (lon - minLon) * cosLat * s, offY + (maxLat - lat) * s];
   const mmPerMeter = s / 111_320;
 
-  doc.saveGraphicsState();
-  doc.rect(box.x, box.y, box.w, box.h, null);
-  doc.clip();
-  doc.discardPath();
+  const clipToBox = () => {
+    doc.saveGraphicsState();
+    doc.rect(box.x, box.y, box.w, box.h, null);
+    doc.clip();
+    doc.discardPath();
+  };
+  clipToBox();
 
-  // Konteks (lahan di sekitar) dulu — lahan biasa ungu 25 % opacity (permintaan owner
-  // 2026-09-14), lahan yang disorot (NKT) berwarna penuh.
+  // Konteks (lahan di sekitar) dulu — lahan biasa ungu sangat tipis (CONTEXT_OPACITY),
+  // lahan yang disorot (NKT) berwarna penuh.
   if (context) {
     const plain = context.fc.features.filter((f) => !context.colorOf?.(f.properties ?? {}));
     const highlighted = context.fc.features.filter((f) => context.colorOf?.(f.properties ?? {}));
     if (plain.length > 0) {
       doc.saveGraphicsState();
-      doc.setGState(new (doc as unknown as { GState: new (o: { opacity: number }) => unknown }).GState({ opacity: 0.25 }) as never);
+      doc.setGState(new (doc as unknown as { GState: new (o: { opacity: number }) => unknown }).GState({ opacity: CONTEXT_OPACITY }) as never);
       doc.setDrawColor(...CONTEXT_PURPLE);
       doc.setFillColor(...CONTEXT_PURPLE);
       doc.setLineWidth(0.2);
       for (const f of plain) for (const ring of exteriorRings(f.geometry)) strokeRing(doc, ring, project, "FD");
       doc.restoreGraphicsState();
-      // restoreGraphicsState membuang clip — pasang lagi supaya fitur berikutnya tetap terpotong di kotak.
-      doc.saveGraphicsState();
-      doc.rect(box.x, box.y, box.w, box.h, null);
-      doc.clip();
-      doc.discardPath();
+      // Kembali ke state #1 yang masih memegang clip kotak — jangan save lagi
+      // (save ekstra membuat clip tak pernah dilepas: legenda & footer ikut terpotong).
     }
     for (const f of highlighted) {
       const tint = context.colorOf!(f.properties ?? {})!;
@@ -202,10 +303,9 @@ function drawLayerMap(doc: jsPDF, fc: LayerReportInput["fc"], box: Box, style: L
   }
 
   const numbers: { x: number; y: number; n: number }[] = [];
-  const many = fc.features.length > 400;
-  // Nomor hanya bila masih terbaca: ≤ 60 titik / ≤ 150 poligon (di atas itu tabel dirujuk lewat koordinat).
-  const pointLimit = 60, polygonLimit = 150;
-  fc.features.forEach((f, i) => {
+  const many = subset.length > 400;
+  opts.indices.forEach((gi) => {
+    const f = fc.features[gi];
     const color = style.colorOf?.(f.properties ?? {}) ?? style.color ?? EMERALD;
     if (f.geometry.type === "Point") {
       const [px, py] = project(f.geometry.coordinates[0], f.geometry.coordinates[1]);
@@ -213,7 +313,7 @@ function drawLayerMap(doc: jsPDF, fc: LayerReportInput["fc"], box: Box, style: L
       doc.setDrawColor(...SLATE_800);
       doc.setLineWidth(0.2);
       doc.circle(px, py, many ? 0.6 : 0.9, "FD");
-      if (style.numbered && fc.features.length <= pointLimit) numbers.push({ x: px + 2.6, y: py, n: i + 1 });
+      if (opts.numbered) numbers.push({ x: px, y: py, n: gi + 1 });
       return;
     }
     const rings = exteriorRings(f.geometry);
@@ -221,55 +321,136 @@ function drawLayerMap(doc: jsPDF, fc: LayerReportInput["fc"], box: Box, style: L
     doc.setFillColor(Math.round(255 - (255 - color[0]) * 0.35), Math.round(255 - (255 - color[1]) * 0.35), Math.round(255 - (255 - color[2]) * 0.35));
     doc.setLineWidth(many ? 0.15 : 0.35);
     for (const ring of rings) strokeRing(doc, ring, project, "FD");
-    if (style.numbered && fc.features.length <= polygonLimit && rings[0]) {
+    if (opts.numbered && rings[0]) {
       const [cx, cy] = ringCentroid(rings[0]);
       const [px, py] = project(cx, cy);
-      numbers.push({ x: px, y: py, n: i + 1 });
+      numbers.push({ x: px, y: py, n: gi + 1 });
     }
   });
-  for (const { x, y, n } of numbers) drawNumber(doc, x, y, n);
+  if (numbers.length > 0) placeAndDrawNumbers(doc, numbers, box);
+
+  // Kotak klaster A/B di ikhtisar.
+  const clusterBoxes: MapDrawResult["clusterBoxes"] = [];
+  if (opts.clusters) {
+    opts.clusters.forEach((idx, k) => {
+      const pts = idx.flatMap((i) => positionsOf(fc.features[i].geometry)).map(([lon, lat]) => project(lon, lat));
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+      const b = { x: x0 - 2, y: y0 - 2, w: x1 - x0 + 4, h: y1 - y0 + 4 };
+      const label = String.fromCharCode(65 + k);
+      doc.setDrawColor(...SLATE_800);
+      doc.setLineWidth(0.4);
+      doc.setLineDashPattern([1.5, 1], 0);
+      doc.rect(b.x, b.y, b.w, b.h, "S");
+      doc.setLineDashPattern([], 0);
+      doc.setFillColor(...SLATE_800);
+      doc.roundedRect(b.x, b.y - 5.5, 7, 5, 0.6, 0.6, "F");
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      doc.text(label, b.x + 3.5, b.y - 3, { align: "center", baseline: "middle" });
+      clusterBoxes.push({ label, box: b });
+    });
+  }
+
   drawDecorations(doc, box, mmPerMeter);
   doc.restoreGraphicsState();
+  return { mmPerMeter, clusterBoxes };
 }
 
-export function buildLayerReportDoc(input: LayerReportInput): jsPDF {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const note = input.footnote ?? "Catatan: Peta skematis tanpa basemap — posisi relatif fitur sesuai koordinat tersimpan; bukan bukti kepemilikan legal atas tanah.";
+function drawLegend(doc: jsPDF, legend: LayerReportInput["legend"], x0: number, y: number) {
+  if (!legend || legend.length === 0) return y;
+  let x = x0;
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_600);
+  for (const item of legend) {
+    doc.setFillColor(...item.color);
+    doc.setDrawColor(...SLATE_800);
+    doc.setLineWidth(0.2);
+    doc.rect(x, y - 2.4, 3, 3, "FD");
+    doc.text(item.label, x + 4.5, y);
+    x += 4.5 + doc.getTextWidth(item.label) + 6;
+  }
+  return y + 5;
+}
 
-  // Judul
+function drawHeader(doc: jsPDF, title: string, subtitle: string) {
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...EMERALD);
-  doc.text("SMALLHOLDER HUB · PETA LAHAN", MARGIN, 18);
-  doc.setFontSize(16);
+  doc.text("SMALLHOLDER HUB · PETA LAHAN", MARGIN, 14);
+  doc.setFontSize(15);
   doc.setTextColor(...SLATE_800);
-  doc.text(input.title, MARGIN, 27);
+  doc.text(title, MARGIN, 22);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
-  doc.text(input.subtitle, MARGIN, 33);
+  doc.text(subtitle, MARGIN, 27.5);
+}
 
-  // Peta
-  const mapBox: Box = { x: MARGIN, y: 39, w: CONTENT_W, h: 118 };
+/** Fitur dianggap "terlalu kecil" bila tapak khasnya (≈ 100 m) < 6 mm di kertas → butuh peta rinci. */
+const MIN_FEATURE_MM = 6;
+// Batas jumlah fitur yang masih dinomori — peta rinci per klaster + label anti-tumpuk
+// membuat 200 masih terbaca; di atas itu pembaca memakai tabel & koordinat.
+const NUMBER_LIMIT = 200;
+
+/**
+ * Halaman LANDSCAPE (owner 2026-09-14: peta lebih lebar, label tak bertumpuk):
+ * halaman 1 = ikhtisar; bila fitur terlalu kecil untuk dinomori di ikhtisar,
+ * tiap klaster mendapat halaman peta rinci bernomor; tabel menyusul.
+ */
+export function buildLayerReportDoc(input: LayerReportInput): jsPDF {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const note = input.footnote ?? "Catatan: Peta skematis tanpa basemap — posisi relatif fitur sesuai koordinat tersimpan; bukan bukti kepemilikan legal atas tanah.";
+  const style = input.style ?? {};
+  const n = input.fc.features.length;
+  const numberable = !!style.numbered && n > 0 && n <= NUMBER_LIMIT;
+  const allIdx = input.fc.features.map((_, i) => i);
+
+  drawHeader(doc, input.title, input.subtitle);
+  const mapBox: Box = { x: MARGIN, y: 32, w: CONTENT_W, h: 122 };
   doc.setDrawColor(...SLATE_200);
   doc.setLineWidth(0.4);
   doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h, "S");
-  drawLayerMap(doc, input.fc, mapBox, input.style ?? {}, input.context);
-  let y = mapBox.y + mapBox.h + 5;
-  if (input.legend && input.legend.length > 0) {
-    let x = MARGIN;
-    doc.setFontSize(7.5);
-    doc.setFont("helvetica", "normal");
+
+  // Putuskan dulu apakah ikhtisar cukup besar untuk dinomori (uji skala tanpa menggambar nomor).
+  const clusters = numberable ? clusterFeatures(input.fc) : [];
+  const probe = numberable ? probeScale(input.fc, mapBox) : Infinity;
+  const needDetail = numberable && probe * 100 < MIN_FEATURE_MM;
+  const result = drawLayerMap(doc, input.fc, mapBox, style, input.context, {
+    indices: allIdx,
+    numbered: numberable && !needDetail,
+    clusters: needDetail ? clusters : undefined,
+  });
+  void result;
+  let y = drawLegend(doc, input.legend, MARGIN, mapBox.y + mapBox.h + 5);
+  if (!!style.numbered && n > NUMBER_LIMIT) {
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
     doc.setTextColor(...SLATE_600);
-    for (const item of input.legend) {
-      doc.setFillColor(...item.color);
-      doc.setDrawColor(...SLATE_800);
-      doc.setLineWidth(0.2);
-      doc.rect(x, y - 2.4, 3, 3, "FD");
-      doc.text(item.label, x + 4.5, y);
-      x += 4.5 + doc.getTextWidth(item.label) + 6;
-    }
+    doc.text(`Nomor tidak dicetak (> ${NUMBER_LIMIT} fitur) — rujuk tabel & koordinat.`, MARGIN, y);
     y += 5;
+  }
+  if (needDetail) {
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...SLATE_600);
+    doc.text(`Fitur terlalu kecil untuk dinomori di ikhtisar — lihat peta rinci ${clusters.length > 1 ? `klaster A–${String.fromCharCode(64 + clusters.length)}` : "di halaman berikutnya"}.`, MARGIN, y);
+    y += 5;
+    clusters.forEach((idx, k) => {
+      doc.addPage();
+      const label = String.fromCharCode(65 + k);
+      drawHeader(doc, `${input.title} — peta rinci ${clusters.length > 1 ? label : ""}`.trim(), `${idx.length} fitur · nomor = urutan tabel`);
+      const detailBox: Box = { x: MARGIN, y: 32, w: CONTENT_W, h: 150 };
+      doc.setDrawColor(...SLATE_200);
+      doc.setLineWidth(0.4);
+      doc.rect(detailBox.x, detailBox.y, detailBox.w, detailBox.h, "S");
+      drawLayerMap(doc, input.fc, detailBox, style, input.context, { indices: idx, numbered: true });
+      drawLegend(doc, input.legend, MARGIN, detailBox.y + detailBox.h + 5);
+    });
+    doc.addPage();
+    y = 16;
   }
 
   // Tabel
@@ -281,7 +462,7 @@ export function buildLayerReportDoc(input: LayerReportInput): jsPDF {
     })),
     startY: y + 2,
     theme: "striped",
-    margin: { left: MARGIN, right: MARGIN, bottom: PAGE_H - CONTENT_BOTTOM },
+    margin: { left: MARGIN, right: MARGIN, bottom: PAGE_H - CONTENT_BOTTOM, top: 14 },
     styles: { font: "helvetica", fontSize: 7.5, cellPadding: 1.6, overflow: "linebreak" },
     headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 7.5, fontStyle: "bold" },
     bodyStyles: { textColor: SLATE_600 },
@@ -297,4 +478,17 @@ export function buildLayerReportDoc(input: LayerReportInput): jsPDF {
   }
   doc.setPage(total);
   return doc;
+}
+
+/** Skala (mm per meter) yang akan dipakai ikhtisar — dihitung tanpa menggambar. */
+function probeScale(fc: LayerReportInput["fc"], box: Box): number {
+  const all = fc.features.flatMap((f) => positionsOf(f.geometry));
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+  for (const [lon, lat] of all) { minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon); minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat); }
+  const cosLat = Math.max(0.2, Math.cos((((minLat + maxLat) / 2) * Math.PI) / 180));
+  const spanLon0 = maxLon - minLon || 1e-4;
+  const spanLat0 = maxLat - minLat || 1e-4;
+  const margin = Math.max(0.12 * Math.max(spanLon0 * cosLat, spanLat0), 60 / 111_320);
+  const s = Math.min(box.w / ((spanLon0 + (2 * margin) / cosLat) * cosLat), box.h / (spanLat0 + 2 * margin));
+  return s / 111_320;
 }

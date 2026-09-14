@@ -239,8 +239,7 @@ export function GroupDetailClient({
         columns: [
           { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
           { header: "Blok", key: "blok", width: 10 },
-          { header: "Lahan (ID Petani · ID Lahan #no)", key: "lahan", width: 60 },
-          { header: "Nama Petani", key: "farmerNames", width: 30 },
+          { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 70 },
           { header: "Lembaga Petani", key: "groupName", width: 26 },
           { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
           { header: "Lintang", key: "latitude", width: 14 },

@@ -173,10 +173,22 @@ describe("uniqueMarkerRows — unduhan patok satu baris per patok fisik (keputus
       link({ parcelId: "HJP.0001.A", farmerCode: "P-1", sequenceNo: 1 }),
     ]);
     expect(rows).toHaveLength(1);
-    expect(rows[0].lahan).toBe("P-1 · HJP.0001.A #1, P-2 · HJP.0002.B #4");
+    expect(rows[0].lahan).toBe("Budi · P-1 · HJP.0001.A #1, Cici · P-2 · HJP.0002.B #4");
     expect(rows[0].farmerNames).toBe("Budi, Cici");
     expect(rows[0].parcelCount).toBe(2);
     expect(rows[0].nkt).toBe(true);
+  });
+
+  it("nktParcelsOnly: kolom Lahan hanya lahan yang kena NKT (parcelNkt), pemakai bersih tetap dihitung", () => {
+    const rows = uniqueMarkerRows(
+      [
+        link({ parcelId: "HJP.0002.B", farmerCode: "P-2", farmerName: "Cici", sequenceNo: 4, nkt: true, parcelNkt: true }),
+        link({ parcelId: "HJP.0001.A", farmerCode: "P-1", nkt: true, parcelNkt: false }),
+      ],
+      { nktParcelsOnly: true },
+    );
+    expect(rows[0].lahan).toBe("Cici · P-2 · HJP.0002.B #4");
+    expect(rows[0].parcelCount).toBe(2);
   });
 
   it("urut Kelompok Tani lalu Blok (numerik-aware), kosong di akhir; KT/Blok patok bersama = nilai terkecil di antara lahan pemakainya", () => {

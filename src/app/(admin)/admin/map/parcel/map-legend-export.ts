@@ -250,8 +250,7 @@ function nktCodeFromLabel(label: string | null): string | null {
 const MARKER_XLSX_COLUMNS = [
   { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
   { header: "Blok", key: "blok", width: 10 },
-  { header: "Lahan (ID Petani · ID Lahan #no)", key: "lahan", width: 60 },
-  { header: "Nama Petani", key: "farmerNames", width: 30 },
+  { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 70 },
   { header: "Lembaga Petani", key: "groupName", width: 26 },
   { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
   { header: "Lintang", key: "latitude", width: 14 },
@@ -293,7 +292,8 @@ export async function exportMarkerRow(
 ): Promise<number> {
   const b = base(row === "markersNkt" ? "patok-nkt" : "patok", label, now);
   if (rows.length === 0) return 0;
-  const unique = uniqueMarkerRows(rows);
+  // Patok NKT: kolom Lahan hanya memuat lahan yang kena NKT (owner 2026-09-14).
+  const unique = uniqueMarkerRows(rows, { nktParcelsOnly: row === "markersNkt" });
   const data = unique.map(formatUniqueMarkerRow);
   if (format === "xlsx") {
     await exportToExcel({ filename: b, sheetName: "Patok", columns: MARKER_XLSX_COLUMNS, data });
@@ -313,7 +313,7 @@ export async function exportMarkerRow(
       columns: [
         { header: "No", key: "no", align: "right", width: 9 },
         { header: "KT / Blok", key: "ktBlok", width: 24 },
-        { header: "Lahan (ID Petani · ID Lahan #no)", key: "lahan" },
+        { header: row === "markersNkt" ? "Lahan NKT (Nama Petani · ID Petani · ID Lahan #no)" : "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan" },
         { header: "Kondisi", key: "condition", width: 20 },
         { header: "NKT", key: "nkt", width: 10, align: "center" },
         { header: "Lintang, Bujur", key: "coord", width: 34 },

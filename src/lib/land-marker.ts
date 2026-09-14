@@ -186,6 +186,8 @@ export interface MarkerLinkRow {
   installedBy: string | null;
   source: string;
   nkt: boolean;
+  /** Lahan baris ini sendiri kena NKT (opsional; bawaan = `nkt`). */
+  parcelNkt?: boolean;
   notes: string | null;
 }
 
@@ -194,7 +196,7 @@ export interface UniqueMarkerRow {
   /** KT & Blok terkecil (alfabet) di antara lahan pemakai — basis urutan; kosong di akhir. */
   subGroupLv2: string | null;
   blok: string | null;
-  /** "ID Petani · ID Lahan #n, ID Petani · ID Lahan #n" — semua lahan pemakai, urut ID Lahan. */
+  /** "Nama Petani · ID Petani · ID Lahan #n, …" — lahan pemakai (hanya yang kena NKT bila `nktParcelsOnly`), urut ID Lahan. */
   lahan: string;
   farmerNames: string;
   groupName: string;
@@ -216,7 +218,7 @@ export interface UniqueMarkerRow {
  * koma, diurutkan Kelompok Tani lalu Blok (kosong di akhir), lalu ID Lahan
  * pertama. NKT = salah satu lahan pemakai kena NKT.
  */
-export function uniqueMarkerRows(rows: MarkerLinkRow[]): UniqueMarkerRow[] {
+export function uniqueMarkerRows(rows: MarkerLinkRow[], opts: { nktParcelsOnly?: boolean } = {}): UniqueMarkerRow[] {
   const byId = new Map<string, MarkerLinkRow[]>();
   for (const r of rows) byId.set(r.markerId, [...(byId.get(r.markerId) ?? []), r]);
   const minStr = (vals: (string | null)[]) => {
@@ -225,14 +227,18 @@ export function uniqueMarkerRows(rows: MarkerLinkRow[]): UniqueMarkerRow[] {
   };
   const out: UniqueMarkerRow[] = [...byId.values()].map((g) => {
     const sorted = [...g].sort((a, b) => a.parcelId.localeCompare(b.parcelId));
+    // Patok NKT (owner 2026-09-14): kolom Lahan hanya lahan yang kena NKT — lahan tetangga
+    // yang bersih tetap dihitung pemakai tetapi tidak dicantumkan.
+    const listed = opts.nktParcelsOnly ? sorted.filter((x) => x.parcelNkt ?? x.nkt) : sorted;
+    const shown = listed.length > 0 ? listed : sorted;
     const first = sorted[0];
     return {
       markerId: first.markerId,
-      subGroupLv2: minStr(g.map((x) => x.subGroupLv2)),
-      blok: minStr(g.map((x) => x.blok)),
-      lahan: sorted.map((x) => `${x.farmerCode} · ${x.parcelId} #${x.sequenceNo}`).join(", "),
-      farmerNames: [...new Set(sorted.map((x) => x.farmerName))].join(", "),
-      groupName: [...new Set(sorted.map((x) => x.groupName))].join(", "),
+      subGroupLv2: minStr(shown.map((x) => x.subGroupLv2)),
+      blok: minStr(shown.map((x) => x.blok)),
+      lahan: shown.map((x) => `${x.farmerName} · ${x.farmerCode} · ${x.parcelId} #${x.sequenceNo}`).join(", "),
+      farmerNames: [...new Set(shown.map((x) => x.farmerName))].join(", "),
+      groupName: [...new Set(shown.map((x) => x.groupName))].join(", "),
       parcelCount: g.length,
       latitude: first.latitude,
       longitude: first.longitude,

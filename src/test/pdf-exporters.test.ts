@@ -389,6 +389,32 @@ describe("buildLayerReportDoc (lib/layer-report-pdf) — PDF per baris legenda P
     expect(text).toContain("Hal. 1/");
   });
 
+  it("landscape A4; fitur kecil berdempetan → halaman peta rinci per klaster bernomor (owner 2026-09-14), nomor tidak dicetak di atas 200 fitur", () => {
+    // Dua blok terpisah 3 km, masing-masing 30 lahan 40 m × 40 m — di ikhtisar < 6 mm → dua halaman rinci A/B.
+    const cell = 0.00036;
+    const block = (ox: number, oy: number) =>
+      Array.from({ length: 30 }, (_, i) => ({
+        type: "Feature" as const,
+        geometry: { type: "Polygon" as const, coordinates: [[[ox + (i % 6) * cell, oy + Math.floor(i / 6) * cell], [ox + (i % 6 + 1) * cell, oy + Math.floor(i / 6) * cell], [ox + (i % 6 + 1) * cell, oy + (Math.floor(i / 6) + 1) * cell], [ox + (i % 6) * cell, oy + (Math.floor(i / 6) + 1) * cell], [ox + (i % 6) * cell, oy + Math.floor(i / 6) * cell]]] },
+        properties: {},
+      }));
+    const features = [...block(101.1, 0.5), ...block(101.13, 0.52)];
+    const doc = buildLayerReportDoc({
+      title: "Lahan NKT", subtitle: "uji klaster", fc: { type: "FeatureCollection", features },
+      style: { color: [220, 38, 38], numbered: true },
+      columns: [{ header: "No", key: "no" }], rows: features.map((_, i) => ({ no: i + 1 })),
+    });
+    expect(Math.round(doc.internal.pageSize.getWidth())).toBe(297);
+    const text = pdfText(doc);
+    expect(text).toContain("peta rinci A");
+    expect(text).toContain("peta rinci B");
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(4);
+
+    const many = Array.from({ length: 250 }, (_, i) => ({ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: [101 + i * 0.001, 0.5] }, properties: {} }));
+    const big = buildLayerReportDoc({ title: "Patok", subtitle: "uji", fc: { type: "FeatureCollection", features: many }, style: { numbered: true }, columns: [{ header: "No", key: "no" }], rows: [] });
+    expect(pdfText(big)).toContain("Nomor tidak dicetak");
+  });
+
   it("tanpa fitur → tetap terbit dengan keterangan peta kosong", () => {
     const doc = buildLayerReportDoc({ title: "Patok lahan", subtitle: "—", fc: { type: "FeatureCollection", features: [] }, columns: [{ header: "No", key: "no" }], rows: [] });
     expect(pdfText(doc)).toContain("Tidak ada fitur untuk digambar");

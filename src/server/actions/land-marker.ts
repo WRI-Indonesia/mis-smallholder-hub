@@ -411,7 +411,10 @@ export interface LandMarkerExportRow {
   installedAt: string | null;
   installedBy: string | null;
   source: string;
+  /** Turunan: lahan INI atau lahan lain pemakai patok kena NKT. */
   nkt: boolean;
+  /** Lahan baris ini sendiri kena NKT — untuk menyaring kolom "Lahan" pada unduhan Patok NKT. */
+  parcelNkt: boolean;
   sharedWith: string[];
   notes: string | null;
 }
@@ -481,6 +484,7 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
         installedBy: l.marker.installedBy,
         source: l.marker.source,
         nkt: own || others.some((x) => isNktAffected(x.parcel.nkt?.status)),
+        parcelNkt: own,
         sharedWith: others.map((x) => x.parcel.parcelId),
         notes: l.marker.notes,
       });
@@ -565,6 +569,7 @@ export async function getMapMarkerExportRows(
         installedBy: l.marker.installedBy,
         source: l.marker.source,
         nkt,
+        parcelNkt: own,
         sharedWith: others.map((x) => x.parcel.parcelId),
         notes: l.marker.notes,
       });
