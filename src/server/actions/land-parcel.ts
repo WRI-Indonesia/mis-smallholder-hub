@@ -89,9 +89,23 @@ export async function getLandParcels(search?: string, farmerId?: string) {
           },
         },
       },
+      // Status NKT (#328) + jumlah patok aktif (#329) — filter/badge/kolom daftar;
+      // hanya status & hitungan, bukan baris satelitnya.
+      identity: {
+        select: {
+          nkt: { select: { status: true } },
+          _count: { select: { markers: { where: { isActive: true } } } },
+        },
+      },
     },
     orderBy: { parcelId: "asc" },
-  });
+  }).then((rows) =>
+    rows.map(({ identity, ...p }) => ({
+      ...p,
+      nktStatus: identity.nkt?.status ?? null,
+      markerCount: identity._count.markers,
+    })),
+  );
 }
 
 export async function getLandParcelById(id: string) {

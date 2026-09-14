@@ -11,6 +11,7 @@ import {
   Map as MapIcon,
   TrendingUp,
   ClipboardCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import { formatGroupType, formatCertStatus } from "@/lib/farmer-group-labels";
 import type { FarmerGroupDetailData } from "@/lib/farmer-group-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
 import { formatNumber } from "@/lib/format";
+import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import { toast } from "sonner";
 import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
 import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-export";
@@ -186,6 +188,9 @@ export function GroupDetailClient({
   // pasti kosong — dan tooltipnya jadi berbohong.
   const [exporting, setExporting] = useState(false);
   const polygonCount = mapParcels.filter((p) => p.geometry).length;
+  // NKT (#330): dari mapParcels (semua lahan aktif lembaga, ber-poligon atau tidak) — bukan hanya yang tergambar.
+  const nktParcels = mapParcels.filter((p) => isNktAffected(p.nktStatus));
+  const nktArea = nktParcels.reduce((s, p) => s + (p.area ?? 0), 0);
   async function handleParcelExport(format: ParcelExportFormat) {
     if (exporting) return;
     setExporting(true);
@@ -486,7 +491,7 @@ export function GroupDetailClient({
 
         {/* ── Lahan (ringkas — Fase 2 pending) ── */}
         <TabsContent value="lahan" className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <SummaryCard
               icon={MapIcon}
               title="Persil Lahan"
@@ -499,6 +504,19 @@ export function GroupDetailClient({
               value={formatNumber(summary.kelompokTaniCount)}
             />
             <SummaryCard icon={MapIcon} title="Blok" value={formatNumber(summary.blokCount)} />
+            {/* NKT (#330): lahan termasuk/terdampak; 0 = belum ada asesmen ATAU semua bersih — sub menjelaskan. */}
+            <SummaryCard
+              icon={ShieldAlert}
+              title="Lahan NKT"
+              value={formatNumber(nktParcels.length)}
+              sub={
+                nktParcels.length > 0
+                  ? `${formatDecimal(nktArea)} Ha termasuk/terdampak · ${formatNumber(mapParcels.filter((p) => p.nktStatus == null).length)} belum dinilai`
+                  : mapParcels.some((p) => p.nktStatus != null)
+                    ? "Sudah dinilai, tidak ada yang terdampak"
+                    : "Belum ada asesmen NKT"
+              }
+            />
           </div>
           <Card className="p-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

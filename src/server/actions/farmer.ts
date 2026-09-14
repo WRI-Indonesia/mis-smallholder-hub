@@ -142,6 +142,8 @@ export async function getFarmerDetail(id: string) {
               select: {
                 documents: { where: { isActive: true }, select: { type: true, number: true, holderName: true, statedArea: true } },
                 stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true, stage: true } } } },
+                // Status NKT (#330): kolom tabel lahan + peta sebaran.
+                nkt: { select: { status: true } },
               },
             },
           },
@@ -243,6 +245,7 @@ export async function getFarmerDetail(id: string) {
       revision: p.revision,
       surat: summarizeDocuments(p.identity.documents),
       stdb: summarizeStdb(p.identity.stdbLinks.map((l) => l.stdb)),
+      nktStatus: p.identity.nkt?.status ?? null,
     })),
     mapParcels: farmer.landParcels.map((p) => ({
       id: p.id,
@@ -254,6 +257,7 @@ export async function getFarmerDetail(id: string) {
       blok: p.blok,
       area: p.area,
       geometry: p.geometry,
+      nktStatus: p.identity.nkt?.status ?? null,
     })),
   };
 }

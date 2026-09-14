@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 
 import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel";
+import { LAND_NKT_STATUSES, LAND_NKT_STATUS_LABELS, isNktAffected, landNktStatusLabel } from "@/lib/land-parcel-satellite-format";
 import { formatArea } from "@/lib/format";
 import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
 import { getMasterDataParcelExportData } from "@/server/actions/land-parcel-export";
@@ -54,6 +55,10 @@ export function ParcelListClient({
   const [districtFilter, setDistrictFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("active");
+  // NKT (#328): all · affected (termasuk+terdampak) · INCLUDED/AFFECTED/NOT_AFFECTED · none (belum dinilai).
+  const [nktFilter, setNktFilter] = useState("all");
+  // Patok (#329): all · with · without.
+  const [markerFilter, setMarkerFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editParcel, setEditParcel] = useState<LandParcel | null>(null);
   const [spatialExporting, setSpatialExporting] = useState(false);
@@ -71,7 +76,17 @@ export function ParcelListClient({
         : statusFilter === "active"
           ? p.isActive
           : !p.isActive;
-    return matchGroup && matchDistrict && matchStatus;
+    const matchNkt =
+      nktFilter === "all"
+        ? true
+        : nktFilter === "affected"
+          ? isNktAffected(p.nktStatus)
+          : nktFilter === "none"
+            ? p.nktStatus == null
+            : p.nktStatus === nktFilter;
+    const matchMarker =
+      markerFilter === "all" ? true : markerFilter === "with" ? (p.markerCount ?? 0) > 0 : (p.markerCount ?? 0) === 0;
+    return matchGroup && matchDistrict && matchStatus && matchNkt && matchMarker;
   });
 
   // Unduh data spasial (SHP/GeoJSON/KML) sesuai filter Distrik/Lembaga (#313).
@@ -122,6 +137,31 @@ export function ParcelListClient({
       label: "ID Lahan",
       sortable: true,
       cellClassName: "text-sm font-mono text-muted-foreground",
+      // Badge NKT (#328) menempel di ID supaya terlihat tanpa mengaktifkan kolom NKT.
+      render: (row) => (
+        <span className="inline-flex items-center gap-1.5">
+          {row.parcelId}
+          {isNktAffected(row.nktStatus) && (
+            <Badge className={row.nktStatus === "INCLUDED" ? "bg-red-600 hover:bg-red-600 font-sans" : "bg-amber-500 hover:bg-amber-500 font-sans"}>NKT</Badge>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "nktStatus",
+      label: "NKT",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm text-muted-foreground",
+      render: (row) => (row.nktStatus ? landNktStatusLabel(row.nktStatus, true) : "Belum dinilai"),
+    },
+    {
+      key: "markerCount",
+      label: "Patok",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm tabular-nums text-right text-muted-foreground",
+      render: (row) => (row.markerCount ? row.markerCount : "—"),
     },
     {
       key: "blok",
@@ -240,6 +280,8 @@ export function ParcelListClient({
       isPsr: p.isPsr ? "PSR" : "Non-PSR",
       plantingYear: p.plantingYear ?? "—",
       revision: p.revision,
+      nktStatus: p.nktStatus ? landNktStatusLabel(p.nktStatus, true) : "Belum dinilai",
+      markerCount: p.markerCount ?? 0,
       districtName: p.farmer.farmerGroup.district.name,
       // Kolom Status hanya tampil untuk SUPERADMIN, tapi saat tampil ia wajib
       // punya padanan di sini — kalau tidak, kolomnya terbit kosong.
@@ -258,11 +300,41 @@ export function ParcelListClient({
         onGroupFilterChange={setGroupFilter}
       />
 
+      {/* NKT (#328) & Patok (#329) — filter klien atas payload list yang sudah membawa status/hitungan. */}
+      <Select value={nktFilter} onValueChange={(val) => setNktFilter(val ?? "all")}>
+        <SelectTrigger className="w-[170px] h-9">
+          <SelectValue>
+            {(v: string) =>
+              v === "all" ? "NKT: Semua" : v === "affected" ? "NKT: Termasuk/terdampak" : v === "none" ? "NKT: Belum dinilai" : LAND_NKT_STATUS_LABELS[v as (typeof LAND_NKT_STATUSES)[number]] ?? v
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">NKT: Semua</SelectItem>
+          <SelectItem value="affected">Termasuk/terdampak NKT</SelectItem>
+          {LAND_NKT_STATUSES.map((st) => (
+            <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</SelectItem>
+          ))}
+          <SelectItem value="none">Belum dinilai</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={markerFilter} onValueChange={(val) => setMarkerFilter(val ?? "all")}>
+        <SelectTrigger className="w-[150px] h-9">
+          <SelectValue>{(v: string) => (v === "with" ? "Patok: Ada" : v === "without" ? "Patok: Belum ada" : "Patok: Semua")}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Patok: Semua</SelectItem>
+          <SelectItem value="with">Sudah ada patok</SelectItem>
+          <SelectItem value="without">Belum ada patok</SelectItem>
+        </SelectContent>
+      </Select>
+
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (
         <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
           <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Status" />
+            {/* Label, bukan nilai mentah "active" (base-ui menampilkan value bila tanpa function-child). */}
+            <SelectValue>{(v: string) => (v === "all" ? "Semua Status" : v === "inactive" ? "Nonaktif" : "Aktif")}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Status</SelectItem>

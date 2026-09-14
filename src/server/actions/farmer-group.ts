@@ -168,6 +168,8 @@ export async function getFarmerGroupDetail(id: string) {
             // Dipakai untuk cek kelengkapan (computeCompleteness) + peta
             // sebaran lahan di tab Lahan (mapParcels).
             geometry: true,
+            // Status NKT (#330): KPI "Lahan NKT" + tepi merah/legenda/popup di peta sebaran — hanya status.
+            identity: { select: { nkt: { select: { status: true } } } },
           },
         },
         trainingParticipants: {
@@ -277,6 +279,7 @@ export async function getFarmerGroupDetail(id: string) {
         blok: p.blok,
         area: p.area,
         geometry: p.geometry,
+        nktStatus: p.identity.nkt?.status ?? null,
       }))
     ),
   };

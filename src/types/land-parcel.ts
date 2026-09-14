@@ -43,6 +43,10 @@ export interface LandParcel {
   revision: number;
   isActive: boolean;
   notes?: string | null;
+  /** Status NKT (#328) dari satelit — hanya diisi list (filter/badge); null = belum dinilai. */
+  nktStatus?: string | null;
+  /** Jumlah patok aktif (#329) — hanya diisi list. */
+  markerCount?: number;
   // Audit — hanya diisi oleh fetch detail (getLandParcelById), tidak oleh list.
   createdAt?: Date;
   modifiedAt?: Date;

@@ -9,6 +9,7 @@ import { Target, User, Info } from "lucide-react";
 import { TREE_POINT_PAINT, MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
 import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { formatArea } from "@/lib/format";
+import { isNktAffected, landNktStatusLabel } from "@/lib/land-parcel-satellite-format";
 import { geomBounds, parcelLabelFit, quantizeZoom, PARCEL_LABEL_FONT_PX } from "@/app/(admin)/admin/map/parcel/map-geo";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
 import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/components/parcel-edit-modal-host";
@@ -26,6 +27,8 @@ export interface DistributionMapParcel {
   blok: string | null;
   area: number | null;
   geometry: unknown;
+  /** Status NKT (#330): INCLUDED/AFFECTED → tepi merah + baris legenda "Lahan NKT"; null = belum dinilai. */
+  nktStatus?: string | null;
 }
 
 interface Props {
@@ -83,6 +86,10 @@ const lineStyle: LayerProps = {
   paint: { "line-color": ["get", "color"], "line-width": 1.5 },
 };
 
+/** Tepi merah lahan NKT (#330) — warna & ketebalan sama dengan layer "Lahan NKT" Peta Lahan. */
+const NKT_COLOR = "#dc2626";
+
+
 interface SelectedParcel {
   lngLat: [number, number];
   id: string;
@@ -93,6 +100,7 @@ interface SelectedParcel {
   kelompokTani: string | null;
   blok: string | null;
   area: number | null;
+  nktStatus: string | null;
 }
 
 const formatAreaHa = (n: number | null) => (n != null ? `${formatArea(n)} Ha` : "—");
@@ -110,6 +118,8 @@ export function ParcelsDistributionMap({
     useVectorBasemap(styleKey);
   // KT yang disembunyikan via checklist legenda.
   const [hiddenKts, setHiddenKts] = useState<Set<string>>(new Set());
+  // Sorotan NKT (#330) — toggle sendiri, terpisah dari checklist KT.
+  const [showNkt, setShowNkt] = useState(true);
   const [zoom, setZoom] = useState(13);
   const [selected, setSelected] = useState<SelectedParcel | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
@@ -119,7 +129,7 @@ export function ParcelsDistributionMap({
   // Popup bisa digeser agar tidak menutupi lahan yang dipilih (pola Peta Lahan).
   const popupDrag = useMapPopupDrag(popupKey);
 
-  const { collection, bounds, validCount, legend, labelBase } = useMemo(() => {
+  const { collection, bounds, validCount, legend, labelBase, nktCount } = useMemo(() => {
     // KT → warna: distinct ternormalisasi (trim + case-insensitive, konsisten
     // #154), label = varian pertama, urut alfabetis agar penetapan warna stabil.
     const ktLabels = new Map<string, string>();
@@ -139,6 +149,7 @@ export function ParcelsDistributionMap({
     const countByKey = new Map<string, number>();
     const labels: { name: string; bounds: [number, number, number, number]; centroid: [number, number]; ktKey: string }[] = [];
     let noKtCount = 0;
+    let nktCount = 0;
     for (const p of parcels) {
       const geom = parseGeometry(p.geometry);
       if (!geom) continue;
@@ -162,8 +173,11 @@ export function ParcelsDistributionMap({
           kelompokTani: p.kelompokTani,
           blok: p.blok,
           area: p.area,
+          nktStatus: p.nktStatus ?? null,
+          nktAffected: isNktAffected(p.nktStatus),
         },
       });
+      if (isNktAffected(p.nktStatus)) nktCount += 1;
       const featurePositions: [number, number][] = [];
       collectPositions((geom as Polygon | MultiPolygon).coordinates, featurePositions);
       positions.push(...featurePositions);
@@ -202,7 +216,7 @@ export function ParcelsDistributionMap({
       legendRows.push({ key: NO_KT_KEY, label: NO_KT_LABEL, color: NO_KT_COLOR, count: noKtCount });
 
     const fc: FeatureCollection = { type: "FeatureCollection", features };
-    return { collection: fc, bounds: b, validCount: features.length, legend: legendRows, labelBase: labels };
+    return { collection: fc, bounds: b, validCount: features.length, legend: legendRows, labelBase: labels, nktCount };
   }, [parcels]);
 
   // Hanya render KT yang tercentang di legenda.
@@ -338,6 +352,7 @@ export function ParcelsDistributionMap({
       kelompokTani: (props.kelompokTani as string | null) ?? null,
       blok: (props.blok as string | null) ?? null,
       area: props.area != null ? Number(props.area) : null,
+      nktStatus: (props.nktStatus as string | null) ?? null,
     });
   };
 
@@ -362,6 +377,15 @@ export function ParcelsDistributionMap({
           {/* Di bawah label basemap (vector) supaya nama tempat tetap terbaca. */}
           <Layer {...fillStyle} beforeId={labelBeforeId} />
           <Layer {...lineStyle} beforeId={labelBeforeId} />
+          {/* Tepi merah lahan NKT (#330) di atas garis KT; ikut checklist KT (fitur yang disembunyikan tak ada di source). */}
+          <Layer
+            id="group-parcels-nkt"
+            type="line"
+            beforeId={labelBeforeId}
+            filter={["==", ["get", "nktAffected"], true]}
+            layout={{ visibility: showNkt ? "visible" : "none" }}
+            paint={{ "line-color": ["case", ["==", ["get", "nktStatus"], "INCLUDED"], "#b91c1c", "#d97706"], "line-width": 3 }}
+          />
         </Source>
 
         {visibleTreeGeojson && (
@@ -421,6 +445,7 @@ export function ParcelsDistributionMap({
                     rows={[
                       { label: "Kelompok Tani", value: selected.kelompokTani },
                       { label: "Blok", value: selected.blok },
+                      { label: "NKT", value: selected.nktStatus ? landNktStatusLabel(selected.nktStatus, true) : "Belum dinilai" },
                     ]}
                   />
                 </MapPopupSection>
@@ -474,6 +499,16 @@ export function ParcelsDistributionMap({
             </li>
           ))}
         </ul>
+        {nktCount > 0 && (
+          <div className="mt-2 border-t pt-2">
+            <label className="flex cursor-pointer items-center gap-2 text-xs">
+              <input type="checkbox" className="h-3.5 w-3.5 accent-primary" checked={showNkt} onChange={(e) => setShowNkt(e.target.checked)} />
+              <span className="h-3 w-3 shrink-0 rounded-sm border-2" style={{ borderColor: NKT_COLOR, backgroundColor: `${NKT_COLOR}22` }} />
+              <span className="flex-1 truncate" title="Lahan termasuk/terdampak NKT">Lahan NKT</span>
+              <span className="tabular-nums text-muted-foreground">{nktCount}</span>
+            </label>
+          </div>
+        )}
         <div className="mt-2 border-t pt-2 space-y-1.5">
           <div className="flex gap-1.5">
             <button
