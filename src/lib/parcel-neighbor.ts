@@ -33,41 +33,29 @@ export interface ParcelNeighbor {
   distanceM: number;
   /** Interior kedua poligon beririsan (bukan sekadar bersentuhan) — indikasi #317. */
   overlaps: boolean;
-  /** null bila tetangga di luar scope user — dibuang di SERVER, bukan disembunyikan di UI. */
-  farmerName: string | null;
-  farmerCode: string | null;
-  /** Nama Lembaga selalu ada — label pengganti nama untuk tetangga di luar scope. */
+  /** Selalu diisi, apa pun scope (alat verifikasi lapangan — keputusan owner 2026-09-14). */
+  farmerName: string;
+  farmerCode: string;
   groupName: string;
+  /** Hanya menentukan tautan detail: halaman detail tetangga 404 di luar scope. */
   inScope: boolean;
   /** Milik petani yang sama dengan lahan yang dilihat ("lahan sendiri"). */
   sameFarmer: boolean;
 }
 
-/** Baris mentah dari kueri — nama masih lengkap, scope belum diterapkan. */
-export interface ParcelNeighborRaw extends Omit<ParcelNeighbor, "inScope" | "farmerName" | "farmerCode"> {
-  farmerName: string;
-  farmerCode: string;
-}
+/** Baris mentah dari kueri — belum diberi tanda `inScope`. */
+export type ParcelNeighborRaw = Omit<ParcelNeighbor, "inScope">;
 
 /**
- * Terapkan aturan scope (keputusan owner 2026-09-14): poligon SEMUA tetangga
- * tetap digambar, tetapi nama & kode petani hanya untuk yang ada di scope
- * user; di luar scope tinggal nama Lembaga. Pengecualian scope ini lebih
- * konservatif daripada #317 Fase 2 (yang menampilkan sisi lawan lengkap untuk
- * verifikasi tumpang tindih) karena Profil Lahan bisa dicetak siapa pun
- * yang punya akses menu Lahan/Peta/Petani. Tercatat di
- * docs/product/access-context.md.
+ * Tandai tetangga yang ada di scope user. Keputusan owner 2026-09-14 (revisi
+ * saat review): poligon DAN identitas lengkap (nama, kode petani, ID Lahan,
+ * Lembaga) SEMUA tetangga ditampilkan apa pun scope — nama pemilik adalah alat
+ * verifikasi di lapangan, sama dengan pengecualian #317 Fase 2. `inScope`
+ * hanya menentukan apakah tautan ke halaman detail tetangga boleh dibuka
+ * (halaman itu 404 di luar scope). Tercatat di docs/product/access-context.md.
  */
 export function applyNeighborScope(rows: ParcelNeighborRaw[], inScopeIds: ReadonlySet<string>): ParcelNeighbor[] {
-  return rows.map((r) => {
-    const inScope = inScopeIds.has(r.id);
-    return {
-      ...r,
-      inScope,
-      farmerName: inScope ? r.farmerName : null,
-      farmerCode: inScope ? r.farmerCode : null,
-    };
-  });
+  return rows.map((r) => ({ ...r, inScope: inScopeIds.has(r.id) }));
 }
 
 /** Urut jarak lalu ID lahan, potong ke `limit`; `omitted` = yang tak ikut. */
@@ -76,8 +64,8 @@ export function capNeighbors<T extends { distanceM: number; parcelId: string }>(
   return { neighbors: sorted.slice(0, limit), omitted: Math.max(0, sorted.length - limit) };
 }
 
-/** Label pemilik untuk legenda/popup: nama petani bila dalam scope, selain itu "—". */
+/** Label pemilik untuk legenda/popup: lahan sendiri ditandai, selain itu nama petani. */
 export function neighborOwnerLabel(n: Pick<ParcelNeighbor, "farmerName" | "sameFarmer">): string {
   if (n.sameFarmer) return "Petani ini (lahan sendiri)";
-  return n.farmerName ?? "—";
+  return n.farmerName;
 }

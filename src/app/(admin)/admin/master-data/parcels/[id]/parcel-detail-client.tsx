@@ -528,7 +528,7 @@ export function ParcelDetailClient({
                           <td className="py-1.5 pr-2 font-mono text-muted-foreground">{i + 1}</td>
                           <td className="py-1.5 pr-3 whitespace-nowrap">
                             {neighborOwnerLabel(n)}
-                            {!n.inScope && <span className="ml-1 text-xs text-muted-foreground">(di luar akses)</span>}
+                            {!n.inScope && <span className="ml-1 text-xs text-muted-foreground" title="Halaman detail lahan ini di luar akses Anda">(di luar akses)</span>}
                           </td>
                           <td className="py-1.5 pr-3 font-mono">
                             {n.inScope ? (

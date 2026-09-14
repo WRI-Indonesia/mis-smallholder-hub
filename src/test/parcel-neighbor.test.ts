@@ -33,17 +33,17 @@ describe("metersToDegrees — ambang ST_DWithin", () => {
   });
 });
 
-describe("applyNeighborScope — poligon semua, nama hanya dalam scope", () => {
-  it("di luar scope → farmerName/farmerCode null, groupName & geometri tetap, inScope=false", () => {
+describe("applyNeighborScope — identitas lengkap untuk semua, inScope hanya menandai tautan detail", () => {
+  it("di luar scope → nama/kode petani & Lembaga TETAP (alat verifikasi lapangan), inScope=false", () => {
     const [inside, outside] = applyNeighborScope([raw("a"), raw("b")], new Set(["a"]));
     expect(inside).toMatchObject({ inScope: true, farmerName: "Petani a", farmerCode: "SH-a" });
-    expect(outside).toMatchObject({ inScope: false, farmerName: null, farmerCode: null, groupName: "Lembaga Uji" });
+    expect(outside).toMatchObject({ inScope: false, farmerName: "Petani b", farmerCode: "SH-b", groupName: "Lembaga Uji" });
     expect(outside.geometry).toEqual(raw("b").geometry);
   });
 
-  it("scope kosong → semua tetangga tanpa nama (poligon tetap digambar)", () => {
+  it("scope kosong → semua tetangga tetap lengkap, semuanya inScope=false", () => {
     const out = applyNeighborScope([raw("a"), raw("b")], new Set());
-    expect(out.every((n) => n.farmerName === null && !n.inScope)).toBe(true);
+    expect(out.every((n) => n.farmerName !== null && !n.inScope)).toBe(true);
     expect(out).toHaveLength(2);
   });
 });
@@ -66,9 +66,8 @@ describe("capNeighbors — urutan jarak lalu ID, cap + omitted", () => {
 });
 
 describe("neighborOwnerLabel", () => {
-  it("lahan sendiri → 'Petani ini (lahan sendiri)'; luar scope → '—'; dalam scope → nama", () => {
+  it("lahan sendiri → 'Petani ini (lahan sendiri)'; selain itu nama petani", () => {
     expect(neighborOwnerLabel({ farmerName: "X", sameFarmer: true })).toBe("Petani ini (lahan sendiri)");
-    expect(neighborOwnerLabel({ farmerName: null, sameFarmer: false })).toBe("—");
     expect(neighborOwnerLabel({ farmerName: "Budi", sameFarmer: false })).toBe("Budi");
   });
 });

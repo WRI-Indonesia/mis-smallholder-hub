@@ -128,15 +128,9 @@ export const updateLandParcelProgramSchema = programBase
   .refine(programDateOrder.check, programDateOrder.opts);
 
 // ---- Sepadan (#326) — satelit 1:1, keempat sisi opsional; semua kosong = hapus.
-export const LAND_BORDER_SIDES = ["north", "east", "south", "west"] as const;
-export type LandBorderSide = (typeof LAND_BORDER_SIDES)[number];
-/** Label arah, urutan searah jarum jam — dipakai form, detail, PDF, dan importer. */
-export const LAND_BORDER_SIDE_LABELS: Record<LandBorderSide, string> = {
-  north: "Utara",
-  east: "Timur",
-  south: "Selatan",
-  west: "Barat",
-};
+// Urutan & label sisi tinggal di modul daun `land-parcel-satellite-format.ts`;
+// diekspor ulang di sini untuk pemakai lama.
+export { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, type LandBorderSide } from "@/lib/land-parcel-satellite-format";
 export const landParcelBorderSchema = z.object({
   landParcelId: z.string().min(1, "Lahan tidak valid"),
   north: optText(200),

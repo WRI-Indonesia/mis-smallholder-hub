@@ -10,6 +10,7 @@ import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context"
 import { summarizeProduction } from "@/lib/map-data";
 import { fetchParcelNeighbors } from "@/lib/parcel-neighbor-query";
 import { NEIGHBOR_LIMIT_PDF } from "@/lib/parcel-neighbor";
+import { hasBorderContent } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 import type { FarmerTrainingItem, ParcelPassport } from "@/types/map";
 
@@ -157,7 +158,7 @@ export async function fetchParcelPassport(
       : Promise.resolve([]),
     prisma.tree.count({ where: { landParcelId, isActive: true } }),
     // Lahan tetangga (#327) — cap PDF; scope sudah diterapkan di dalamnya.
-    fetchParcelNeighbors(landParcelId, NEIGHBOR_LIMIT_PDF),
+    fetchParcelNeighbors(landParcelId, NEIGHBOR_LIMIT_PDF, access),
   ]);
 
   return {
@@ -193,9 +194,9 @@ export async function fetchParcelPassport(
         species: parcel.species,
         isPsr: parcel.isPsr,
         treeCount,
-        border: parcel.identity.border && (parcel.identity.border.north || parcel.identity.border.east || parcel.identity.border.south || parcel.identity.border.west)
-          ? parcel.identity.border
-          : null,
+        // Predikat yang sama dengan getLandParcelSatellites (hasBorderContent) —
+        // dua salinan sempat menyimpang (catatan-saja hilang dari PDF).
+        border: hasBorderContent(parcel.identity.border) ? parcel.identity.border : null,
       },
       legal: {
         documents: parcel.identity.documents,

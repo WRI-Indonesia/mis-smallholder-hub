@@ -19,10 +19,12 @@ export const PARCEL_AUTO_MATCH_RULES: Record<string, string[]> = {
   blok: ["blok", "block", "blok_kebun", "blk"],
   // Sepadan (#326) — nama kolom DBF maksimal 10 karakter, jadi alias pendek
   // (bts_utara/sep_utara) yang realistis; yang panjang untuk GeoJSON/GPKG.
-  borderNorth: ["bts_utara", "sep_utara", "sepadan_u", "sepadan_utara", "batas_utara", "utara", "north", "u"],
-  borderEast: ["bts_timur", "sep_timur", "sepadan_t", "sepadan_timur", "batas_timur", "timur", "east", "t"],
-  borderSouth: ["bts_selatan", "sep_selatan", "sepadan_s", "sepadan_selatan", "batas_selatan", "selatan", "south", "s"],
-  borderWest: ["bts_barat", "sep_barat", "sepadan_b", "sepadan_barat", "batas_barat", "barat", "west", "b"],
+  // TANPA alias satu huruf (u/t/s/b): kolom "B" (blok) atau "T" (tahun) akan
+  // terpetakan ke sepadan dan menimpa data identitas lahan diam-diam (review 2026-09-14).
+  borderNorth: ["bts_utara", "sep_utara", "sepadan_u", "sepadan_utara", "batas_utara", "utara", "north"],
+  borderEast: ["bts_timur", "sep_timur", "sepadan_t", "sepadan_timur", "batas_timur", "timur", "east"],
+  borderSouth: ["bts_selatan", "sep_selatan", "sepadan_s", "sepadan_selatan", "batas_selatan", "selatan", "south"],
+  borderWest: ["bts_barat", "sep_barat", "sepadan_b", "sepadan_barat", "batas_barat", "barat", "west"],
 };
 
 /**

@@ -18,6 +18,7 @@ import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import type { ActionResult } from "@/types/action-result";
 import { fetchParcelNeighbors } from "@/lib/parcel-neighbor-query";
 import { NEIGHBOR_LIMIT_SCREEN, type ParcelNeighbor } from "@/lib/parcel-neighbor";
+import { hasBorderContent } from "@/lib/land-parcel-satellite-format";
 import type { ParcelPassport, ProductionSummary } from "@/types/map";
 import type { LandParcelSatellites } from "@/types/land-parcel";
 
@@ -197,7 +198,7 @@ export async function getLandParcelNeighbors(landParcelId: string): Promise<{ ne
     select: { id: true },
   });
   if (!parcel) return { neighbors: [], omitted: 0 };
-  return fetchParcelNeighbors(landParcelId, NEIGHBOR_LIMIT_SCREEN);
+  return fetchParcelNeighbors(landParcelId, NEIGHBOR_LIMIT_SCREEN, access);
 }
 
 export async function getLandParcelPassport(
@@ -485,6 +486,6 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
     })),
     externalIds,
     programs,
-    border: border && (border.north || border.east || border.south || border.west || border.notes) ? border : null,
+    border: hasBorderContent(border) ? border : null,
   };
 }

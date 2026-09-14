@@ -17,7 +17,7 @@
  *   bukan dipilih diam-diam.
  */
 import { autoMatchColumns } from "@/lib/parcel-bulk-mapping";
-import type { LandStdbStageCode } from "@/lib/land-parcel-satellite-format";
+import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, type LandStdbStageCode } from "@/lib/land-parcel-satellite-format";
 
 /** Cermin enum Prisma `LandDocumentType` — literal agar aman di bundle klien. */
 export const LAND_DOCUMENT_TYPES = [
@@ -75,6 +75,20 @@ export function cleanCell(value: unknown): string {
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   const s = String(value).trim().replace(/\s+/g, " ");
   return EMPTY_TOKENS.has(s.toLowerCase()) ? "" : s;
+}
+
+/**
+ * Pembersih untuk sel TEKS BEBAS (sepadan, #326): hanya token benar-benar
+ * kosong ("", "-", "null", …) yang dibuang. `cleanCell` juga membuang
+ * "tidak ada"/"belum ada" karena itu placeholder kolom STDB — pada sepadan,
+ * "Tidak ada" adalah jawaban yang sah ("tidak ada tetangga di sisi ini") dan
+ * tidak boleh hilang diam-diam (review 2026-09-14).
+ */
+export function cleanFreeTextCell(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const s = String(value).trim().replace(/\s+/g, " ");
+  return BLANK_TOKENS.has(s.toLowerCase()) ? "" : s;
 }
 
 /** `true` bila sel menyatakan "belum ada, sedang diurus" — bukan sel yang dibiarkan kosong. */
@@ -194,11 +208,13 @@ export const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string
   externalCode: ["parcel_code", "parcel code", "parcelcode", "ul parcel code", "parcel_cod", "external_code"],
   subGroupLv2: ["nama kelompok tani", "kelompok tani", "kelompok_tani", "nama_kelompok_tani", "group_name", "sub_group_lv2", "kt"],
   // Pencocokan header harus PERSIS (setelah lowercase/trim) — alias dibuat
-  // lengkap supaya ejaan lapangan ("Batas Utara", "Sebelah Utara", "U") terbaca.
-  borderNorth: ["sepadan utara", "sepadan_utara", "batas utara", "batas_utara", "sebelah utara", "sebelah_utara", "utara", "north", "u"],
-  borderEast: ["sepadan timur", "sepadan_timur", "batas timur", "batas_timur", "sebelah timur", "sebelah_timur", "timur", "east", "t"],
-  borderSouth: ["sepadan selatan", "sepadan_selatan", "batas selatan", "batas_selatan", "sebelah selatan", "sebelah_selatan", "selatan", "south", "s"],
-  borderWest: ["sepadan barat", "sepadan_barat", "batas barat", "batas_barat", "sebelah barat", "sebelah_barat", "barat", "west", "b"],
+  // lengkap supaya ejaan lapangan ("Batas Utara", "Sebelah Utara") terbaca.
+  // Tanpa alias satu huruf: header "S"/"T"/"B" bisa berarti apa saja, dan sel
+  // sepadan MENIMPA nilai lama saat unggah ulang (review 2026-09-14).
+  borderNorth: ["sepadan utara", "sepadan_utara", "batas utara", "batas_utara", "sebelah utara", "sebelah_utara", "utara", "north"],
+  borderEast: ["sepadan timur", "sepadan_timur", "batas timur", "batas_timur", "sebelah timur", "sebelah_timur", "timur", "east"],
+  borderSouth: ["sepadan selatan", "sepadan_selatan", "batas selatan", "batas_selatan", "sebelah selatan", "sebelah_selatan", "selatan", "south"],
+  borderWest: ["sepadan barat", "sepadan_barat", "batas barat", "batas_barat", "sebelah barat", "sebelah_barat", "barat", "west"],
 };
 
 export function autoMatchParcelDetailColumns(headers: string[]): Partial<Record<ParcelDetailFieldKey, string>> {
@@ -259,11 +275,13 @@ export interface ParcelDetailValidatedRow {
 type RawRow = Record<string, unknown>;
 type Mapping = Partial<Record<ParcelDetailFieldKey, string>>;
 
+const FREE_TEXT_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["borderNorth", "borderEast", "borderSouth", "borderWest"]);
+
 function readRaw(row: RawRow, mapping: Mapping): Record<ParcelDetailFieldKey, string> {
   const out = {} as Record<ParcelDetailFieldKey, string>;
   for (const f of PARCEL_DETAIL_TARGET_FIELDS) {
     const col = mapping[f.key];
-    out[f.key] = col ? cleanCell(row[col]) : "";
+    out[f.key] = col ? (FREE_TEXT_KEYS.has(f.key) ? cleanFreeTextCell(row[col]) : cleanCell(row[col])) : "";
   }
   return out;
 }
@@ -362,8 +380,9 @@ export function validateParcelDetailRows(
     const subGroupLv2 = r.subGroupLv2 || null;
     const borderSides = { north: r.borderNorth || null, east: r.borderEast || null, south: r.borderSouth || null, west: r.borderWest || null };
     const border = Object.values(borderSides).some(Boolean) ? borderSides : null;
-    for (const [side, v] of Object.entries(borderSides)) {
-      if (v && v.length > 200) errors.push(`Sepadan ${side === "north" ? "Utara" : side === "east" ? "Timur" : side === "south" ? "Selatan" : "Barat"} lebih dari 200 karakter`);
+    for (const side of LAND_BORDER_SIDES) {
+      const v = borderSides[side];
+      if (v && v.length > 200) errors.push(`Sepadan ${LAND_BORDER_SIDE_LABELS[side]} lebih dari 200 karakter`);
     }
 
     // Nomor/nama/luas terisi tanpa jenis (1.046 baris di data sumber): jenisnya

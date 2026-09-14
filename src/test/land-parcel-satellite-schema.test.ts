@@ -6,7 +6,11 @@ import {
   updateLandStdbSchema,
   landParcelExternalIdSchema,
   landParcelProgramSchema,
+  landParcelBorderSchema,
+  landParcelBorderSidesSchema,
+  LAND_BORDER_SIDES,
 } from "@/validations/land-parcel-satellite.schema";
+import { landParcelSchema } from "@/validations/land-parcel.schema";
 
 /** CRUD manual satelit lahan (#296 tahap 3c) — input form (string FormData) → nilai tersimpan. */
 describe("land-parcel-satellite.schema", () => {
@@ -105,5 +109,38 @@ describe("land-parcel-satellite.schema", () => {
   it("program: status/jenis di luar enum ditolak", () => {
     expect(landParcelProgramSchema.safeParse({ landParcelId: "lp1", programType: "PSR", status: "ACTIVE" }).success).toBe(false);
     expect(landParcelProgramSchema.safeParse({ landParcelId: "lp1", programType: "DEMPLOT_PBU", status: "DONE" }).success).toBe(false);
+  });
+
+  describe("sepadan (#326)", () => {
+    it("keempat sisi opsional, di-trim, kosong/whitespace → null; semua kosong SAH (= hapus)", () => {
+      const r = landParcelBorderSchema.safeParse({ landParcelId: "lp1", north: "  Lahan Pak Budi ", east: "", south: "   ", notes: "" });
+      expect(r.success).toBe(true);
+      expect(r.success && r.data).toMatchObject({ north: "Lahan Pak Budi", east: null, south: null, notes: null });
+      expect(r.success && r.data.west).toBeUndefined();
+      const empty = landParcelBorderSchema.safeParse({ landParcelId: "lp1", north: "", east: "", south: "", west: "", notes: "" });
+      expect(empty.success).toBe(true);
+    });
+
+    it("sisi > 200 karakter / catatan > 500 ditolak per field; landParcelId wajib", () => {
+      const bad = landParcelBorderSchema.safeParse({ landParcelId: "lp1", north: "x".repeat(201), notes: "y".repeat(501) });
+      expect(bad.success).toBe(false);
+      const errs = bad.error!.flatten().fieldErrors;
+      expect(errs.north).toBeDefined();
+      expect(errs.notes).toBeDefined();
+      expect(landParcelBorderSchema.safeParse({ landParcelId: "", north: "a" }).success).toBe(false);
+    });
+
+    it("varian sisi-saja untuk Bulk Upload Lahan: tanpa landParcelId/notes, kunci asing dibuang", () => {
+      const r = landParcelBorderSidesSchema.safeParse({ north: "Jalan", notes: "x", landParcelId: "lp1" });
+      expect(r.success).toBe(true);
+      expect(r.success && Object.keys(r.data)).toEqual(["north"]);
+      expect(LAND_BORDER_SIDES).toEqual(["north", "east", "south", "west"]);
+    });
+
+    it("landParcelSchema MEMBUANG kunci `border` — alasan sepadan divalidasi terpisah di bulkCreateLandParcels", () => {
+      const r = landParcelSchema.safeParse({ farmerId: "f1", parcelId: "P1", border: { north: "Jalan" } });
+      expect(r.success).toBe(true);
+      expect(r.success && "border" in r.data).toBe(false);
+    });
   });
 });

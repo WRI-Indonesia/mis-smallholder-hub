@@ -1,6 +1,6 @@
 import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
-import { getAccessContext, farmerRelationAccessFilter } from "@/lib/access-context";
+import { getAccessContext, farmerRelationAccessFilter, type AccessContext } from "@/lib/access-context";
 import {
   NEIGHBOR_DISTANCE_M,
   metersToDegrees,
@@ -21,10 +21,10 @@ import {
  * jarak sebenarnya dihitung `ST_Distance(::geography)` dalam meter.
  *
  * PENGECUALIAN SCOPE (tercatat di docs/product/access-context.md): kandidat
- * diambil tanpa filter scope supaya poligon semua tetangga bisa digambar;
- * kueri kedua memakai `farmerRelationAccessFilter` untuk menandai mana yang
- * dalam scope, lalu nama/kode petani di luar scope di-null-kan sebelum keluar
- * dari fungsi ini. Aturan akses tidak ditulis ulang di SQL.
+ * diambil TANPA filter scope — poligon dan identitas lengkap semua tetangga
+ * ditampilkan (nama pemilik = alat verifikasi lapangan, keputusan owner
+ * 2026-09-14). Kueri kedua memakai `farmerRelationAccessFilter` hanya untuk
+ * menandai `inScope` (tautan detail). Aturan akses tidak ditulis ulang di SQL.
  */
 interface NeighborRow {
   id: string;
@@ -42,6 +42,8 @@ interface NeighborRow {
 export async function fetchParcelNeighbors(
   landParcelId: string,
   limit: number,
+  /** Pemanggil biasanya sudah memegang access context — teruskan agar auth()+user tidak dihitung dua kali. */
+  access?: AccessContext,
 ): Promise<{ neighbors: ParcelNeighbor[]; omitted: number }> {
   const deg = metersToDegrees(NEIGHBOR_DISTANCE_M);
   // Ambil semua kandidat (bukan LIMIT di SQL) agar `omitted` akurat; sebaran
@@ -68,9 +70,9 @@ export async function fetchParcelNeighbors(
   `;
   if (rows.length === 0) return { neighbors: [], omitted: 0 };
 
-  const access = await getAccessContext();
+  const scope = access ?? (await getAccessContext());
   const inScope = await prisma.landParcel.findMany({
-    where: { id: { in: rows.map((r) => r.id) }, ...farmerRelationAccessFilter(access) },
+    where: { id: { in: rows.map((r) => r.id) }, ...farmerRelationAccessFilter(scope) },
     select: { id: true },
   });
   const inScopeIds = new Set(inScope.map((p) => p.id));

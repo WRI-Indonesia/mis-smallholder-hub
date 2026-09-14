@@ -200,11 +200,17 @@ describe("migrasi land_parcel_geom — kolom generated + GiST (#317 Fase 1 via #
     );
   });
 
-  it("ekspresi dijaga CASE pada type — ST_GeomFromGeoJSON melempar error untuk JSON null/objek asing", () => {
+  it("ekspresi dijaga CASE pada type + coordinates — ST_GeomFromGeoJSON melempar error untuk JSON null/objek asing", () => {
     const stmt = m!.sql.slice(m!.sql.indexOf('ADD COLUMN "geom"'));
     const expr = stmt.slice(0, stmt.indexOf("STORED"));
     expect(expr).toMatch(/CASE[\s\S]*?WHEN \("geometry" ->> 'type'\) IN \('Polygon', 'MultiPolygon'\)/);
-    expect(expr).toMatch(/ST_Multi\(ST_MakeValid\(ST_SetSRID\(/);
+    expect(expr).toMatch(/jsonb_typeof\("geometry" -> 'coordinates'\) = 'array'/);
+  });
+
+  it("hasil selalu (Multi)Polygon: ST_CollectionExtract(…, 3) membungkus ST_MakeValid — ring kolinear tak boleh menggagalkan INSERT", () => {
+    const stmt = m!.sql.slice(m!.sql.indexOf('ADD COLUMN "geom"'));
+    const expr = stmt.slice(0, stmt.indexOf("STORED"));
+    expect(expr).toMatch(/ST_Multi\(ST_CollectionExtract\(ST_MakeValid\(ST_SetSRID\([\s\S]*?\), 3\)\)/);
   });
 
   it("GiST dibuat manual dengan nama pola *_geom_idx yang dijaga test di atas", () => {

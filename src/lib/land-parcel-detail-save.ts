@@ -192,9 +192,12 @@ export function planLandParcelDetailRows(
     borderUpdates: [],
     summary,
   };
-  const pendingBorderCreate = new Map<string, ParcelDetailPlan["borderCreates"][number]>();
-  const pendingBorderUpdate = new Map<string, ParcelDetailPlan["borderUpdates"][number]>();
-  const unchangedBorders = new Set<string>();
+  // Sepadan: patch per lahan DIKUMPULKAN dulu (baris ganda: sisi terakhir
+  // menang, termasuk bila nilai terakhir = DB), keputusan create/update/
+  // unchanged baru dihitung setelah loop — kalau dihitung sambil jalan,
+  // baris kedua yang sama dengan DB tak bisa membatalkan perubahan baris
+  // pertama, dan satu lahan bisa terhitung "unchanged" sekaligus "updated".
+  const borderPatches = new Map<string, Partial<BorderSides>>();
   // Indeks per batch agar baris ganda tidak menggandakan create.
   const pendingDocCreate = new Map<string, ParcelDetailPlan["documentCreates"][number]>();
   const pendingDocUpdate = new Map<string, ParcelDetailPlan["documentUpdates"][number]>();
@@ -337,31 +340,27 @@ export function planLandParcelDetailRows(
       const filled = Object.fromEntries(
         (Object.entries(r.border) as [keyof BorderSides, string | null][]).filter(([, v]) => v),
       ) as Partial<BorderSides>;
-      const inDb = existing.borders.get(r.parcelUid);
-      const pendingCreate = pendingBorderCreate.get(r.parcelUid);
-      if (pendingCreate) {
-        Object.assign(pendingCreate, filled); // baris ganda: sisi terakhir menang
-      } else if (inDb) {
-        const changed = Object.fromEntries(
-          (Object.entries(filled) as [keyof BorderSides, string][]).filter(([k, v]) => inDb[k] !== v),
-        ) as Partial<BorderSides>;
-        const prev = pendingBorderUpdate.get(r.parcelUid);
-        if (prev) Object.assign(prev.data, changed);
-        else if (Object.keys(changed).length) {
-          const upd = { id: inDb.id, data: changed };
-          pendingBorderUpdate.set(r.parcelUid, upd);
-          plan.borderUpdates.push(upd);
-          summary.bordersUpdated++;
-        } else if (!unchangedBorders.has(r.parcelUid)) {
-          unchangedBorders.add(r.parcelUid);
-          summary.bordersUnchanged++;
-        }
-      } else {
-        const create = { parcelUid: r.parcelUid, north: null, east: null, south: null, west: null, ...filled };
-        pendingBorderCreate.set(r.parcelUid, create);
-        plan.borderCreates.push(create);
-        summary.bordersCreated++;
+      if (Object.keys(filled).length) {
+        borderPatches.set(r.parcelUid, { ...(borderPatches.get(r.parcelUid) ?? {}), ...filled });
       }
+    }
+  }
+
+  for (const [parcelUid, patch] of borderPatches) {
+    const inDb = existing.borders.get(parcelUid);
+    if (!inDb) {
+      plan.borderCreates.push({ parcelUid, north: null, east: null, south: null, west: null, ...patch });
+      summary.bordersCreated++;
+      continue;
+    }
+    const changed = Object.fromEntries(
+      (Object.entries(patch) as [keyof BorderSides, string][]).filter(([k, v]) => inDb[k] !== v),
+    ) as Partial<BorderSides>;
+    if (Object.keys(changed).length) {
+      plan.borderUpdates.push({ id: inDb.id, data: changed });
+      summary.bordersUpdated++;
+    } else {
+      summary.bordersUnchanged++;
     }
   }
 

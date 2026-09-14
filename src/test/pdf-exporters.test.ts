@@ -193,10 +193,10 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     expect(text).toContain("Petani ini");
   });
 
-  it("tetangga di luar scope → nama petani TIDAK tercetak, Lembaga tetap (#327)", () => {
-    const outside = neighbor(1, { farmerName: null, farmerCode: null, inScope: false, groupName: "Lembaga Lain" });
+  it("tetangga di luar scope → nama petani & Lembaga TETAP tercetak (alat verifikasi lapangan, keputusan owner 2026-09-14)", () => {
+    const outside = neighbor(1, { inScope: false, groupName: "Lembaga Lain" });
     const text = pdfText(buildFarmPassportDoc({ ...passport, neighbors: [outside] }));
-    expect(text).not.toContain("Tetangga 1");
+    expect(text).toContain("Tetangga 1");
     expect(text).toContain("Lembaga Lain");
   });
 
@@ -208,6 +208,29 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
   it("tetangga jauh lebih besar dari bingkai → terpotong (clip), tidak melempar error (#327)", () => {
     const huge = neighbor(1, { geometry: { type: "Polygon", coordinates: [[[100, -1], [103, -1], [103, 2], [100, 2], [100, -1]]] } });
     expect(() => buildFarmPassportDoc({ ...passport, neighbors: [huge] })).not.toThrow();
+  });
+
+  it("sepadan sepanjang batas skema (4×200 + catatan 500) dipangkas 2 baris — kolom kanan tak melewati footer; 7 tetangga tetap 2 halaman (review 2026-09-14)", () => {
+    const long = "x".repeat(200);
+    const heavy = (n: number): ParcelPassport => ({
+      ...passport,
+      parcel: { ...passport.parcel, border: { north: long, east: long, south: long, west: long, notes: "y".repeat(500) } },
+      neighbors: Array.from({ length: n }, (_, i) => neighbor(i + 1)),
+    });
+    // Section mengalir (keputusan owner 2026-09-14, mencabut "Pelatihan selalu halaman 2" #298):
+    // legalitas penuh + sepadan maksimal + 7 atau 12 tetangga tetap 2 halaman, tak ada yang hilang.
+    const usual = buildFarmPassportDoc(heavy(7));
+    expect(usual.getNumberOfPages()).toBe(2);
+    // Dipangkas: dari 4×200 karakter "x" hanya ±2 baris per sisi yang tercetak.
+    expect((pdfText(usual).match(/x/g) ?? []).length).toBeLessThan(400);
+    const dense = buildFarmPassportDoc(heavy(12));
+    expect(dense.getNumberOfPages()).toBe(2);
+    expect(pdfText(dense)).toContain("Legalitas & Dokumen");
+    expect(pdfText(dense)).toContain("Pelatihan");
+  });
+
+  it("legalitas penuh tanpa tetangga/sepadan → tetap 2 halaman seperti sebelum #326/#327 (regresi tata letak)", () => {
+    expect(buildFarmPassportDoc(passport).getNumberOfPages()).toBe(2);
   });
 
   it("geometri tak tersedia (ring < 3 titik) → tetap terbit tanpa throw", () => {

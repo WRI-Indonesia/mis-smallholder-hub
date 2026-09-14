@@ -1,4 +1,4 @@
-import { documentTypeShort, landStdbStageLabel, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
+import { documentTypeShort, landStdbStageLabel, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort, LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
@@ -15,8 +15,6 @@ const AREA_FILL: [number, number, number] = [209, 240, 224];
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 const PAGE_W = 210;
-/** Label arah sepadan (#326), urutan searah jarum jam — sama dengan Detail Lahan. */
-const SIDE_LABELS = { north: "Utara", east: "Timur", south: "Selatan", west: "Barat" } as const;
 const PAGE_H = 297;
 const MARGIN = 14;
 const CONTENT_W = PAGE_W - MARGIN * 2;
@@ -232,6 +230,20 @@ function drawParcelMap(
   doc.restoreGraphicsState();
 }
 
+/**
+ * Bungkus teks maksimal `maxLines` baris selebar `maxW`; baris terakhir diberi
+ * "…" bila terpotong. Untuk kolom kanan halaman 1 yang TIDAK punya pemenggalan
+ * halaman (tata letak dua kolom): nilai sepanjang skema (200/500 karakter) tak
+ * boleh mendorong konten melewati footer (review 2026-09-14).
+ */
+function clampLines(doc: jsPDF, text: string, maxW: number, maxLines: number): string[] {
+  const lines = doc.splitTextToSize(text, maxW) as string[];
+  if (lines.length <= maxLines) return lines;
+  const kept = lines.slice(0, maxLines);
+  kept[maxLines - 1] = fitText(doc, `${kept[maxLines - 1]}…`, maxW);
+  return kept;
+}
+
 /** Potong teks agar muat `maxW` mm (dengan "…"). */
 function fitText(doc: jsPDF, text: string, maxW: number): string {
   if (doc.getTextWidth(text) <= maxW) return text;
@@ -299,7 +311,7 @@ function drawNeighborLegend(doc: jsPDF, neighbors: ParcelPassport["neighbors"], 
   doc.setFontSize(6);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(...SLATE_400);
-  doc.text("Hanya lahan yang terdaftar di MIS; pemilik di luar akses pencetak ditampilkan Lembaga-nya saja.", x, y, { maxWidth: w });
+  doc.text("Hanya lahan yang terdaftar di MIS — jalan, sungai, dan lahan yang belum dipetakan tidak muncul.", x, y, { maxWidth: w });
   return y + 3;
 }
 
@@ -488,9 +500,10 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   );
   // ── Sepadan (#326) di kolom kanan, di bawah Pemilik — kolom kanan biasanya
   // lebih pendek daripada peta + legenda tetangga, jadi ini memakai ruang yang
-  // memang kosong dan halaman 1 tetap memuat Legalitas (Pelatihan + Produksi
-  // sengaja halaman 2). Blok SELALU dicetak ("—" bila kosong): pembaca perlu
-  // tahu sepadan memang belum didata, bukan luput cetak.
+  // memang kosong. Anggaran tinggi halaman 1 ketat (Legalitas harus tetap di
+  // halaman 1, Pelatihan+Produksi selalu halaman 2 — #298): kosong → SATU
+  // baris; terisi → grid 2×2 label+nilai sebaris, nilai dipangkas 2 baris.
+  // Blok selalu dicetak: pembaca perlu tahu sepadan belum didata, bukan luput cetak.
   ry += 3;
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
@@ -499,35 +512,38 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   doc.setDrawColor(...EMERALD);
   doc.line(COL2_X, ry + 1.5, COL2_X + 26, ry + 1.5);
   ry += 5.5;
-  // Grid 2×2 (U · T / S · B): label kecil di atas nilai — lebih hemat tinggi
-  // daripada empat baris label/nilai, dan urutannya tetap searah jarum jam.
-  const halfW = colW / 2;
-  const sides = ["north", "east", "south", "west"] as const;
-  for (let r = 0; r < 2; r++) {
-    let rowBottom = ry;
-    for (let c = 0; c < 2; c++) {
-      const side = sides[r * 2 + c];
-      const x = COL2_X + halfW * c;
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...SLATE_400);
-      doc.text(SIDE_LABELS[side], x, ry);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...SLATE_800);
-      const lines = doc.splitTextToSize(orDash(parcel.border?.[side]), halfW - 3) as string[];
-      doc.text(lines, x, ry + 4);
-      rowBottom = Math.max(rowBottom, ry + 4 + 4 * (lines.length - 1));
-    }
-    ry = rowBottom + 5.5;
-  }
-  if (parcel.border?.notes) {
-    doc.setFontSize(7.5);
+  if (!parcel.border) {
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(...SLATE_600);
-    const lines = doc.splitTextToSize(`Catatan sepadan: ${parcel.border.notes}`, colW) as string[];
-    doc.text(lines, COL2_X, ry - 1);
-    ry += 3.8 * lines.length;
+    doc.text("Belum diisi — batas Utara / Timur / Selatan / Barat.", COL2_X, ry);
+    ry += 4;
+  } else {
+    // Empat baris label+nilai sebaris (label 14 mm, nilai ±35 karakter/baris,
+    // dipangkas 2 baris): grid 2×2 terbukti terlalu sempit untuk nilai lazim
+    // seperti "Lahan Pak Budi".
+    const labelW = 14;
+    for (const side of LAND_BORDER_SIDES) {
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...SLATE_400);
+      doc.text(LAND_BORDER_SIDE_LABELS[side], COL2_X, ry);
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...SLATE_800);
+      const lines = clampLines(doc, orDash(parcel.border[side]), colW - labelW, 2);
+      doc.text(lines, COL2_X + labelW, ry);
+      ry += 4.2 + 3.8 * (lines.length - 1);
+    }
+    ry += 0.5;
+    if (parcel.border.notes) {
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(...SLATE_600);
+      const lines = clampLines(doc, `Catatan sepadan: ${parcel.border.notes}`, colW, 2);
+      doc.text(lines, COL2_X, ry - 1);
+      ry += 3.6 * lines.length;
+    }
   }
   y = Math.max(legendBottom, ry) + 4;
   if (parcel.notes) {
@@ -615,8 +631,13 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     }
   }
 
-  // ── Halaman 2: Pelatihan + Produksi
-  y = ensureSpace(doc, y, 999);
+  // ── Pelatihan + Produksi — sejak #327 (keputusan owner 2026-09-14) section
+  // MENGALIR: dulu Pelatihan selalu dipaksa mulai halaman 2 (#298), tetapi
+  // dengan legenda tetangga + sepadan halaman 1 sudah penuh, dan pemaksaan
+  // itu membuat lahan berlegalitas penuh jadi 3 halaman (Legalitas meluber ke
+  // halaman 2, Pelatihan ke halaman 3). Kini pindah halaman hanya bila sisa
+  // ruang tak cukup untuk judul + tabelnya.
+  y = ensureSpace(doc, y, 40);
   sectionHeading(doc, "Pelatihan", y);
   y += 5;
   autoTable(doc, {

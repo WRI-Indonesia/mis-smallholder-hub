@@ -139,12 +139,14 @@ describe("autoMatchParcelDetailColumns — header berkas sumber", () => {
   it("header shapefile terpotong 10 karakter (parcel_cod) tetap dikenali", () => {
     expect(autoMatchParcelDetailColumns(["ID_Lahan", "parcel_cod"]).externalCode).toBe("parcel_cod");
   });
-  it("alias sepadan (#326): ejaan lapangan 'Batas Utara' / 'Sebelah Timur' / 'S' / 'Barat' terbaca", () => {
-    const m = autoMatchParcelDetailColumns(["ID Lahan", "ID Petani", "Batas Utara", "Sebelah Timur", "S", "Barat"]);
+  it("alias sepadan (#326): ejaan lapangan 'Batas Utara' / 'Sebelah Timur' / 'Selatan' / 'Barat' terbaca; satu huruf TIDAK", () => {
+    const m = autoMatchParcelDetailColumns(["ID Lahan", "ID Petani", "Batas Utara", "Sebelah Timur", "Selatan", "Barat", "B", "T"]);
     expect(m.borderNorth).toBe("Batas Utara");
     expect(m.borderEast).toBe("Sebelah Timur");
-    expect(m.borderSouth).toBe("S");
+    expect(m.borderSouth).toBe("Selatan");
     expect(m.borderWest).toBe("Barat");
+    // Header "B"/"T" (blok/tahun?) tidak boleh terpetakan ke sepadan — sel sepadan menimpa saat unggah ulang.
+    expect(autoMatchParcelDetailColumns(["ID Lahan", "ID Petani", "B", "T", "S", "U"])).not.toHaveProperty("borderWest");
   });
   it("alias label UI 'UL Parcel Code' (huruf campur) cocok — review pasca-v0.30.0", () => {
     expect(autoMatchParcelDetailColumns(["UL Parcel Code"]).externalCode).toBe("UL Parcel Code");
@@ -190,6 +192,18 @@ describe("validateParcelDetailRows", () => {
     );
     expect(r._isValid).toBe(true);
     expect(r.data?.border).toEqual({ north: "Lahan Pak Budi", east: null, south: "Jalan desa", west: null });
+  });
+
+  it("sepadan (#326): 'Tidak ada' / 'belum ada' adalah jawaban SAH untuk sepadan, bukan sel kosong (review 2026-09-14)", () => {
+    const m = { ...mapping, borderNorth: "Utara", borderSouth: "Selatan", borderWest: "Barat" } as const;
+    const [r] = validateParcelDetailRows(
+      [row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", Utara: "Tidak ada", Selatan: "n/a", Barat: "-" })],
+      m, parcels,
+    );
+    expect(r._isValid).toBe(true);
+    expect(r.data?.border).toEqual({ north: "Tidak ada", east: null, south: "n/a", west: null });
+    // Kolom STDB tetap memakai aturan lama: "belum ada" = pra-terbit, bukan teks.
+    expect(cleanCell("Tidak ada")).toBe("");
   });
 
   it("sepadan (#326): sisi > 200 karakter ditolak", () => {

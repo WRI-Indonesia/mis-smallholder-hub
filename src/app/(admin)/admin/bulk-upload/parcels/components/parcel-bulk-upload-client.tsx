@@ -33,6 +33,7 @@ import {
   autoMatchColumns,
   normalizeAttr,
 } from "@/lib/parcel-bulk-mapping";
+import { LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
 import { ParcelBulkUploadMap } from "./parcel-bulk-upload-map";
 
 interface FarmerMapping {
@@ -344,6 +345,11 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       west: normalizeAttr(mapping["borderWest"] ? props[mapping["borderWest"]] : null),
     };
     normalized.border = Object.values(sides).some(Boolean) ? sides : null;
+    // Batas 200 karakter dicek DI SINI juga (server `optText(200)` menolak seluruh
+    // batch tanpa nomor baris) — kolom DBF karakter bisa sampai 254 karakter.
+    for (const [side, v] of Object.entries(sides)) {
+      if (v && v.length > 200) errors.push(`Sepadan ${LAND_BORDER_SIDE_LABELS[side as keyof typeof LAND_BORDER_SIDE_LABELS]} lebih dari 200 karakter`);
+    }
 
     // 9. Geometry validation
     if (

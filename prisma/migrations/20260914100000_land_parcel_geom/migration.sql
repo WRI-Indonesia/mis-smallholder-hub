@@ -13,11 +13,17 @@
 --      DIBUANG — GiST manual pada kolom Unsupported; Prisma akan selalu
 --      mengusulkannya, jangan pernah diterima (dijaga migration-guards.test.ts).
 --   2. `ADD COLUMN geom` diberi klausa GENERATED (Prisma tidak bisa menulisnya).
---      Ekspresi dijaga CASE pada `type`: ST_GeomFromGeoJSON MELEMPAR ERROR untuk
---      JSON null / objek bukan-geometri ("invalid GeoJSON representation",
---      dicek mis-dev 2026-09-14) — tanpa guard, satu baris JSON aneh membuat
---      INSERT/UPDATE lahan gagal keras. Dengan guard, baris seperti itu cukup
---      geom = NULL (tak tampak di fitur spasial), sama seperti hari ini.
+--      Ekspresi dijaga CASE pada `type` + `coordinates` array: ST_GeomFromGeoJSON
+--      MELEMPAR ERROR untuk JSON null / objek bukan-geometri ("invalid GeoJSON
+--      representation", dicek mis-dev 2026-09-14) — tanpa guard, satu baris JSON
+--      aneh membuat INSERT/UPDATE lahan gagal keras. Dengan guard, baris seperti
+--      itu cukup geom = NULL (tak tampak di fitur spasial), sama seperti hari ini.
+--      `ST_CollectionExtract(…, 3)` (review 2026-09-14): ST_MakeValid pada ring
+--      kolinear/berduri (lazim pada batas hasil jalan GPS) mengembalikan
+--      LINESTRING/GEOMETRYCOLLECTION — tanpa ekstraksi, kolom bertipe
+--      MultiPolygon menolak barisnya dan seluruh transaksi bulk upload gagal.
+--      Dengan ekstraksi, hasilnya MULTIPOLYGON (kosong bila tak ada area).
+--      Diverifikasi identik untuk 14.003 baris nyata (0 berbeda).
 --      Semua fungsi IMMUTABLE (prasyarat GENERATED), diverifikasi #317.
 --   3. GiST ditulis manual, nama mengikuti pola `*_geom_idx` yang dijaga test.
 --
@@ -34,7 +40,8 @@ ALTER TABLE "tbl_land_parcel" ADD COLUMN "geom" geometry(MultiPolygon, 4326)
   GENERATED ALWAYS AS (
     CASE
       WHEN ("geometry" ->> 'type') IN ('Polygon', 'MultiPolygon')
-      THEN ST_Multi(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON("geometry"::text), 4326)))
+       AND jsonb_typeof("geometry" -> 'coordinates') = 'array'
+      THEN ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON("geometry"::text), 4326)), 3))
       ELSE NULL
     END
   ) STORED;

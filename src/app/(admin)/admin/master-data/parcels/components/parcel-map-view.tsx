@@ -450,7 +450,7 @@ export function ParcelMapView({
                 className="px-3.5 py-2"
                 rows={[
                   { label: "Pemilik", value: neighborOwnerLabel(selectedNeighbor.neighbor) },
-                  { label: "ID Petani", value: selectedNeighbor.neighbor.farmerCode ?? "—", mono: true },
+                  { label: "ID Petani", value: selectedNeighbor.neighbor.farmerCode, mono: true },
                   { label: "Lembaga", value: selectedNeighbor.neighbor.groupName },
                   {
                     label: "Jarak",
@@ -469,7 +469,7 @@ export function ParcelMapView({
                     Buka detail lahan <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                 ) : (
-                  <span className="text-muted-foreground">Di luar akses Anda — hanya nama Lembaga yang ditampilkan.</span>
+                  <span className="text-muted-foreground">Di luar akses Anda — halaman detailnya tidak bisa dibuka.</span>
                 )}
               </div>
             </div>

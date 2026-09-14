@@ -171,3 +171,28 @@ export function summarizeStdb(items: StdbSummaryInput[]): string | null {
   const u = [...new Set(parts.filter(Boolean))];
   return u.length ? u.join("; ") : null;
 }
+
+// ─── Sepadan (#326) ───
+
+/** Empat sisi sepadan, urutan searah jarum jam — satu-satunya sumber urutan & label
+ *  (form, detail, PDF, importer). Modul ini daun (tanpa import), aman diimpor dari mana pun. */
+export const LAND_BORDER_SIDES = ["north", "east", "south", "west"] as const;
+export type LandBorderSide = (typeof LAND_BORDER_SIDES)[number];
+export const LAND_BORDER_SIDE_LABELS: Record<LandBorderSide, string> = {
+  north: "Utara",
+  east: "Timur",
+  south: "Selatan",
+  west: "Barat",
+};
+
+/**
+ * Baris sepadan dianggap TERISI bila ada satu sisi atau catatan. Baris yang
+ * keempat kolomnya NULL adalah bekas "hapus" (baris tetap ada, lihat
+ * land-parcel-border.prisma) dan harus tampil sebagai belum diisi — di Detail
+ * Lahan maupun PDF, lewat predikat yang sama.
+ */
+export function hasBorderContent(
+  b: { north: string | null; east: string | null; south: string | null; west: string | null; notes: string | null } | null | undefined,
+): boolean {
+  return Boolean(b && (b.north || b.east || b.south || b.west || b.notes));
+}
