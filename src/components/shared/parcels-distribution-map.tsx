@@ -413,7 +413,7 @@ export function ParcelsDistributionMap({
             beforeId={labelBeforeId}
             filter={["==", ["get", "nktAffected"], true]}
             layout={{ visibility: showNkt ? "visible" : "none" }}
-            paint={{ "line-color": ["case", ["==", ["get", "nktStatus"], "INCLUDED"], "#b91c1c", "#d97706"], "line-width": 3 }}
+            paint={{ "line-color": "#b91c1c", "line-width": 3 }}
           />
         </Source>
 

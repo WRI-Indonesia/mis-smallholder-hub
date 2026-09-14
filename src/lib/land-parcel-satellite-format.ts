@@ -200,6 +200,12 @@ export function hasBorderContent(
 // ─── NKT / HCV (#328) ───
 
 export const LAND_NKT_STATUSES = ["INCLUDED", "AFFECTED", "NOT_AFFECTED"] as const;
+/**
+ * Pilihan yang DITAWARKAN form/importer/filter (keputusan owner 2026-09-14:
+ * "termasuk = terdampak") — INCLUDED tetap sah di DB/validasi untuk data lama,
+ * tetapi tidak ditawarkan lagi; parser importer memetakan "termasuk" → AFFECTED.
+ */
+export const LAND_NKT_STATUS_OPTIONS = ["AFFECTED", "NOT_AFFECTED"] as const;
 export type LandNktStatusCode = (typeof LAND_NKT_STATUSES)[number];
 export const LAND_NKT_STATUS_LABELS: Record<LandNktStatusCode, string> = {
   INCLUDED: "Termasuk area NKT",

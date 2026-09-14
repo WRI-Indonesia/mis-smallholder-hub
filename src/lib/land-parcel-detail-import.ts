@@ -193,8 +193,8 @@ export function parseNktStatus(raw: unknown): { status: NktStatusCode | null; er
   if (!text) return { status: null, error: null };
   // Semua token negasi BERBATAS KATA: tanpa itu "T-aman- Nasional" terbaca "aman" → tidak terdampak (temuan review 2026-09-14).
   if (/\b(tidak|bukan|tdk|non|no|not|bersih|aman|bebas)\b|\bun(affected|included)\b/.test(text)) return { status: "NOT_AFFECTED", error: null };
-  if (/termasuk|included|di dalam|dalam area|inside/.test(text)) return { status: "INCLUDED", error: null };
-  if (/terdampak|affected|kena|berbatasan|sempadan|\bya\b|\byes\b|\by$|\btrue\b/.test(text)) return { status: "AFFECTED", error: null };
+  // "Termasuk" = terdampak (keputusan owner 2026-09-14) — keduanya AFFECTED; INCLUDED hanya data lama.
+  if (/termasuk|included|di dalam|dalam area|inside|terdampak|affected|kena|berbatasan|sempadan|\bya\b|\byes\b|\by$|\btrue\b/.test(text)) return { status: "AFFECTED", error: null };
   return { status: null, error: `Status NKT tidak dikenal: "${cleanFreeTextCell(raw)}" (isi: termasuk / terdampak / tidak)` };
 }
 

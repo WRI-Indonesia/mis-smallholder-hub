@@ -35,7 +35,7 @@ import { LAND_DOCUMENT_TYPES, LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parce
 import {
   AREA_DIFF_THRESHOLD_HA,
   LAND_STDB_STAGES,
-  LAND_STDB_STAGE_LABELS, LAND_NKT_STATUSES, LAND_NKT_STATUS_LABELS } from "@/lib/land-parcel-satellite-format";
+  LAND_STDB_STAGE_LABELS, LAND_NKT_STATUS_OPTIONS, LAND_NKT_STATUS_LABELS } from "@/lib/land-parcel-satellite-format";
 import {
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
@@ -868,9 +868,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                   className="h-9 rounded-md border bg-background px-3 text-sm"
                 >
                   <option value="all">Semua</option>
-                  <option value="affected">Termasuk / terdampak NKT</option>
-                  {LAND_NKT_STATUSES.map((st) => (
-                    <option key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</option>
+                  {LAND_NKT_STATUS_OPTIONS.map((st) => (
+                    <option key={st} value={st === "AFFECTED" ? "affected" : st}>{LAND_NKT_STATUS_LABELS[st]}</option>
                   ))}
                   <option value="assessed">Sudah dinilai</option>
                   <option value="unassessed">Belum dinilai</option>
@@ -1290,7 +1289,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                       </td>
                     )}
                     {show("nkt") && (
-                      <td className={cn("px-3 py-2 whitespace-nowrap", row.nktStatus == null && "text-muted-foreground", row.nktStatus === "INCLUDED" && "text-red-600", row.nktStatus === "AFFECTED" && "text-amber-600")}>
+                      <td className={cn("px-3 py-2 whitespace-nowrap", row.nktStatus == null && "text-muted-foreground", (row.nktStatus === "INCLUDED" || row.nktStatus === "AFFECTED") && "text-red-600")}>
                         {row.nkt ?? "Belum dinilai"}
                       </td>
                     )}

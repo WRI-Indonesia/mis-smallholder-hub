@@ -29,7 +29,7 @@ import {
   DEFAULT_PARCEL_MAPPER,
   LAND_STDB_STAGES,
   LAND_STDB_STAGE_LABELS,
-  LAND_NKT_STATUSES,
+  LAND_NKT_STATUS_OPTIONS,
   LAND_NKT_STATUS_LABELS,
   NKT_CATEGORIES,
   NKT_CATEGORY_DESCRIPTIONS,
@@ -389,13 +389,14 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
                     <SelectValue>{(value: string) => LAND_NKT_STATUS_LABELS[value as keyof typeof LAND_NKT_STATUS_LABELS] ?? value}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {LAND_NKT_STATUSES.map((st) => (
-                      <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</SelectItem>
+                    {/* Data lama "Termasuk" tetap tampil sebagai pilihan agar tidak diganti diam-diam saat form dibuka. */}
+                    {(nktStatus === "INCLUDED" ? ["INCLUDED", ...LAND_NKT_STATUS_OPTIONS] : [...LAND_NKT_STATUS_OPTIONS]).map((st) => (
+                      <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st as keyof typeof LAND_NKT_STATUS_LABELS]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  <strong>Termasuk</strong> = lahan berada di dalam area NKT; <strong>Terdampak</strong> = berbatasan/sebagian (mis. sempadan sungai);
+                  <strong>Terdampak</strong> = lahan termasuk di dalam atau berbatasan dengan area NKT (mis. sempadan sungai);
                   <strong> Tidak terdampak</strong> = sudah dinilai dan bersih. Lahan yang belum pernah dinilai tidak perlu diisi.
                 </p>
                 {fieldError("status")}

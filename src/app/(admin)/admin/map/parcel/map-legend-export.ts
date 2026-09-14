@@ -9,19 +9,26 @@ import type { KTPoint } from "@/types/map";
 import { buildLayerReportDoc, type LayerReportContext, type LayerReportInput } from "@/lib/layer-report-pdf";
 import type { ParcelFeature } from "@/types/map";
 
+const RED: [number, number, number] = [220, 38, 38];
+const PURPLE: [number, number, number] = [126, 34, 206];
+const GREEN: [number, number, number] = [34, 197, 94];
+const BLUE: [number, number, number] = [59, 130, 246];
+const YELLOW: [number, number, number] = [250, 204, 21];
+const NKT_RED: [number, number, number] = [239, 68, 68];
+
 /** Konteks lahan (poligon hasil filter yang sudah dimuat peta) di belakang titik — NKT diarsir merah/amber. */
 export function parcelContext(parcels: ParcelFeature[]): LayerReportContext {
   return {
     fc: { type: "FeatureCollection", features: parcels.map((p) => ({ type: "Feature", geometry: p.geometry, properties: { nktStatus: p.nktStatus, farmerName: p.farmerName } })) },
-    colorOf: (p) => (p.nktStatus === "INCLUDED" ? RED : p.nktStatus === "AFFECTED" ? AMBER : null),
+    colorOf: (p) => (isNktAffected(p.nktStatus as string | null) ? RED : null),
     // Nama petani di dalam poligon bila muat (owner 2026-09-14) — di halaman peta rinci lahan cukup besar.
     labelOf: (p) => (typeof p.farmerName === "string" && p.farmerName ? p.farmerName : null),
   };
 }
+// Termasuk = terdampak di mata pengguna (owner 2026-09-14) → satu kategori "Lahan NKT", satu warna.
 const CONTEXT_LEGEND: { color: [number, number, number]; label: string }[] = [
   { color: [239, 230, 250], label: "Lahan lain" },
-  { color: [220, 38, 38], label: "Lahan termasuk NKT" },
-  { color: [245, 158, 11], label: "Lahan terdampak NKT" },
+  { color: RED, label: "Lahan NKT" },
 ];
 
 /**
@@ -32,13 +39,6 @@ const CONTEXT_LEGEND: { color: [number, number, number]; label: string }[] = [
  */
 export type LegendFormat = "xlsx" | "pdf" | ParcelExportFormat;
 
-const RED: [number, number, number] = [220, 38, 38];
-const AMBER: [number, number, number] = [245, 158, 11];
-const PURPLE: [number, number, number] = [126, 34, 206];
-const GREEN: [number, number, number] = [34, 197, 94];
-const BLUE: [number, number, number] = [59, 130, 246];
-const YELLOW: [number, number, number] = [250, 204, 21];
-const NKT_RED: [number, number, number] = [239, 68, 68];
 
 const printedAt = (now: Date) => new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(now);
 
@@ -182,10 +182,7 @@ export async function exportParcelRow(
         properties: f.properties,
       })),
     };
-    const nktColor = (p: Record<string, unknown>) => {
-      const code = nktCodeFromLabel((p.nkt as string | null) ?? null);
-      return code === "INCLUDED" ? RED : code === "AFFECTED" ? AMBER : isPoint ? BLUE : PURPLE;
-    };
+    const nktColor = (p: Record<string, unknown>) => (isNktAffected(nktCodeFromLabel((p.nkt as string | null) ?? null)) ? RED : isPoint ? BLUE : PURPLE);
     savePdf({
       title: row === "nkt" ? "Lahan NKT (termasuk/terdampak)" : isPoint ? "Point Lahan Petani" : "Area Lahan Petani",
       subtitle: `${label ?? "Semua"} · ${features.length} lahan · dicetak ${printedAt(now)}`,
@@ -194,10 +191,10 @@ export async function exportParcelRow(
       context: row === "parcelAreas" ? undefined : context,
       style: { colorOf: nktColor, numbered: true, labelOf: isPoint ? undefined : (p) => (typeof p.namaPetani === "string" ? p.namaPetani : null) },
       legend: row === "nkt"
-        ? [{ color: RED, label: "Termasuk NKT" }, { color: AMBER, label: "Terdampak NKT" }, ...(context ? [CONTEXT_LEGEND[0]] : [])]
+        ? [{ color: RED, label: "Lahan NKT" }, ...(context ? [CONTEXT_LEGEND[0]] : [])]
         : isPoint
           ? [{ color: BLUE, label: "Titik lahan" }, ...(context ? CONTEXT_LEGEND : [])]
-          : [{ color: PURPLE, label: "Lahan" }, { color: RED, label: "Termasuk NKT" }, { color: AMBER, label: "Terdampak NKT" }],
+          : [{ color: PURPLE, label: "Lahan" }, { color: RED, label: "Lahan NKT" }],
       columns: [
         { header: "No", key: "no", align: "right", width: 9 },
         { header: "ID Lahan", key: "idLahan", width: 40 },

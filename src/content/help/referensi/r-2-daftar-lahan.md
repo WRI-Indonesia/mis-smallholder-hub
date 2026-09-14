@@ -19,7 +19,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Lembaga Petani** — mempersempit ke satu lembaga. Pilihannya ikut menyempit bila Distrik sudah dipilih.
 
-**NKT** — menyaring menurut status Nilai Konservasi Tinggi: *Termasuk/terdampak NKT* (gabungan), satu status tertentu, *Tidak terdampak* (sudah dinilai bersih), atau *Belum dinilai* (belum ada asesmen). Lahan yang kena NKT juga diberi badge merah/amber di kolom ID Lahan.
+**NKT** — menyaring menurut status Nilai Konservasi Tinggi: *Terdampak NKT*, *Tidak terdampak* (sudah dinilai bersih), atau *Belum dinilai* (belum ada asesmen). Lahan yang kena NKT juga diberi badge merah di kolom ID Lahan.
 
 **Patok** — *Sudah ada patok* / *Belum ada patok* (patok batas dari tab Patok di detail lahan).
 

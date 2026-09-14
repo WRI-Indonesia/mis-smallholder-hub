@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 
 import type { LandParcel, FarmerSelect, FarmerGroupSelect } from "@/types/land-parcel";
-import { LAND_NKT_STATUSES, LAND_NKT_STATUS_LABELS, isNktAffected, landNktStatusLabel } from "@/lib/land-parcel-satellite-format";
+import { LAND_NKT_STATUS_OPTIONS, LAND_NKT_STATUS_LABELS, isNktAffected, landNktStatusLabel } from "@/lib/land-parcel-satellite-format";
 import { formatArea } from "@/lib/format";
 import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
 import { getMasterDataParcelExportData } from "@/server/actions/land-parcel-export";
@@ -142,7 +142,7 @@ export function ParcelListClient({
         <span className="inline-flex items-center gap-1.5">
           {row.parcelId}
           {isNktAffected(row.nktStatus) && (
-            <Badge className={row.nktStatus === "INCLUDED" ? "bg-red-600 hover:bg-red-600 font-sans" : "bg-amber-500 hover:bg-amber-500 font-sans"}>NKT</Badge>
+            <Badge className="bg-red-600 hover:bg-red-600 font-sans">NKT</Badge>
           )}
         </span>
       ),
@@ -305,15 +305,14 @@ export function ParcelListClient({
         <SelectTrigger className="w-[170px] h-9">
           <SelectValue>
             {(v: string) =>
-              v === "all" ? "NKT: Semua" : v === "affected" ? "NKT: Termasuk/terdampak" : v === "none" ? "NKT: Belum dinilai" : LAND_NKT_STATUS_LABELS[v as (typeof LAND_NKT_STATUSES)[number]] ?? v
+              v === "all" ? "NKT: Semua" : v === "affected" ? "NKT: Terdampak" : v === "none" ? "NKT: Belum dinilai" : LAND_NKT_STATUS_LABELS[v as (typeof LAND_NKT_STATUS_OPTIONS)[number]] ?? v
             }
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">NKT: Semua</SelectItem>
-          <SelectItem value="affected">Termasuk/terdampak NKT</SelectItem>
-          {LAND_NKT_STATUSES.map((st) => (
-            <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</SelectItem>
+          {LAND_NKT_STATUS_OPTIONS.map((st) => (
+            <SelectItem key={st} value={st === "AFFECTED" ? "affected" : st}>{LAND_NKT_STATUS_LABELS[st]}</SelectItem>
           ))}
           <SelectItem value="none">Belum dinilai</SelectItem>
         </SelectContent>

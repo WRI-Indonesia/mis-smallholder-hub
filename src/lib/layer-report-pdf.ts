@@ -231,27 +231,39 @@ function placeAndDrawNumbers(doc: jsPDF, items: { x: number; y: number; n: numbe
 }
 
 /**
- * Tulis label di tengah poligon hanya bila muat: lebar teks ≤ 90 % lebar bbox poligon
- * (mm) dan tinggi bbox ≥ 5 mm; font 5 dengan warna abu gelap. Tidak ada halo —
- * poligon konteks tipis sehingga teks tetap terbaca.
+ * Label di tengah poligon dengan orientasi ADAPTIF (owner 2026-09-14): horizontal
+ * bila muat (≤ 90 % lebar bbox), kalau tidak vertikal (≤ 90 % tinggi), lalu
+ * diagonal mengikuti sudut bbox; nama panjang dipendekkan ke "Depan I.I."
+ * sebelum menyerah. Font 5, abu gelap, tanpa halo (konteks tipis).
  */
 function drawPolygonLabel(doc: jsPDF, ring: Position[], project: Projector, label: string, dyMm = 0) {
   const pts = ring.map(([lon, lat]) => project(lon, lat));
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
   const w = x1 - x0, h = y1 - y0;
-  if (h < 5) return;
+  if (Math.max(w, h) < 5) return;
+  // Bila nama digeser ke bawah nomor (dyMm > 0), poligon harus cukup tinggi untuk keduanya.
+  if (dyMm > 0 && h < 2 * dyMm + 5) return;
   doc.setFontSize(5);
   doc.setFont("helvetica", "normal");
+  const parts = label.split(/\s+/);
+  const short = parts.length > 1 ? `${parts[0]} ${parts.slice(1).map((p) => p[0] + ".").join("")}` : label;
+  const diag = Math.hypot(w, h);
+  const fits = (tw: number) => (tw <= w * 0.9 ? 0 : tw <= h * 0.9 ? 90 : tw <= diag * 0.85 ? (Math.atan2(h, w) * 180) / Math.PI : null);
   let text = label;
-  // Nama panjang: coba potong ke nama depan + inisial sebelum menyerah.
-  if (doc.getTextWidth(text) > w * 0.9) {
-    const parts = label.split(/\s+/);
-    text = parts.length > 1 ? `${parts[0]} ${parts.slice(1).map((p) => p[0] + ".").join("")}` : label;
-  }
-  if (doc.getTextWidth(text) > w * 0.9) return;
+  let angle = fits(doc.getTextWidth(text));
+  if (angle === null) { text = short; angle = fits(doc.getTextWidth(text)); }
+  if (angle === null) return;
+  const tw = doc.getTextWidth(text);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + dyMm;
+  const rad = (angle * Math.PI) / 180;
+  // jsPDF memutar berlawanan jarum jam; y kertas ke bawah → arah teks (cos, −sin),
+  // arah "bawah" relatif teks (sin, cos). Jangkar = pusat − ½ lebar teks + ½ tinggi huruf.
+  const ax = cx - (tw / 2) * Math.cos(rad) + 0.6 * Math.sin(rad);
+  const ay = cy + (tw / 2) * Math.sin(rad) + 0.6 * Math.cos(rad);
   doc.setTextColor(...SLATE_600);
-  doc.text(text, (x0 + x1) / 2, (y0 + y1) / 2 + dyMm, { align: "center", baseline: "middle" });
+  if (angle === 0) doc.text(text, cx, cy, { align: "center", baseline: "middle" });
+  else doc.text(text, ax, ay, { angle });
 }
 
 /** Pusat fitur (centroid ring luar pertama / koordinat titik) dalam derajat. */

@@ -40,7 +40,7 @@ import {
 import {
   PARCEL_MAPPERS,
   DEFAULT_PARCEL_MAPPER,
-  LAND_NKT_STATUSES,
+  LAND_NKT_STATUS_OPTIONS,
   LAND_NKT_STATUS_LABELS,
   NKT_CATEGORIES,
   nktCategoryShort,
@@ -400,7 +400,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">— tidak menetapkan —</SelectItem>
-                    {LAND_NKT_STATUSES.map((st) => (
+                    {LAND_NKT_STATUS_OPTIONS.map((st) => (
                       <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</SelectItem>
                     ))}
                   </SelectContent>

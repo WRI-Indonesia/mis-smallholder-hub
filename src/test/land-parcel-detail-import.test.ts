@@ -356,7 +356,8 @@ describe("NKT (#328) — parser sel", () => {
   it("parseNktStatus: ejaan lapangan → enum; tak dikenal → error; kosong → null", () => {
     expect(parseNktStatus("Terdampak").status).toBe("AFFECTED");
     expect(parseNktStatus("ya").status).toBe("AFFECTED");
-    expect(parseNktStatus("termasuk area NKT").status).toBe("INCLUDED");
+    // "termasuk" = terdampak (owner 2026-09-14) — INCLUDED tak lagi dihasilkan parser.
+    expect(parseNktStatus("termasuk area NKT").status).toBe("AFFECTED");
     expect(parseNktStatus("Tidak terdampak").status).toBe("NOT_AFFECTED");
     expect(parseNktStatus("tidak").status).toBe("NOT_AFFECTED");
     expect(parseNktStatus("").status).toBeNull();
@@ -372,8 +373,8 @@ describe("NKT (#328) — parser sel", () => {
     expect(parseNktStatus("1").status).toBe("AFFECTED");
     expect(parseNktStatus("0").status).toBe("NOT_AFFECTED");
   });
-  it("parseNktStatus: token negasi berbatas kata — 'Taman Nasional' bukan 'aman', 'Termasuk (Taman Nasional Tesso Nilo)' = INCLUDED (review 2026-09-14)", () => {
-    expect(parseNktStatus("Termasuk (Taman Nasional Tesso Nilo)").status).toBe("INCLUDED");
+  it("parseNktStatus: token negasi berbatas kata — 'Taman Nasional' bukan 'aman', 'Termasuk (Taman Nasional Tesso Nilo)' = terdampak (review 2026-09-14)", () => {
+    expect(parseNktStatus("Termasuk (Taman Nasional Tesso Nilo)").status).toBe("AFFECTED");
     expect(parseNktStatus("terdampak, kebun di sebelah taman").status).toBe("AFFECTED");
     expect(parseNktStatus("aman").status).toBe("NOT_AFFECTED");
     expect(parseNktStatus("bersih dari NKT").status).toBe("NOT_AFFECTED");

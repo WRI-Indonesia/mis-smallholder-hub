@@ -407,7 +407,7 @@ export function FarmerDetailClient({
                         <td className="py-2 pr-4 font-mono text-xs">{p.stdb ?? <span className="font-sans text-sm text-muted-foreground">—</span>}</td>
                         <td className="py-2 pr-4">
                           {isNktAffected(p.nktStatus) ? (
-                            <Badge className={p.nktStatus === "INCLUDED" ? "bg-red-600 hover:bg-red-600" : "bg-amber-500 hover:bg-amber-500"}>{landNktStatusLabel(p.nktStatus!, true)}</Badge>
+                            <Badge className="bg-red-600 hover:bg-red-600">{landNktStatusLabel(p.nktStatus!, true)}</Badge>
                           ) : (
                             <span className="text-sm text-muted-foreground">{p.nktStatus ? "Tidak" : "—"}</span>
                           )}

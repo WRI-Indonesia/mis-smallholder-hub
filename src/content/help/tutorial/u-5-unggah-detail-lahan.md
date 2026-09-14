@@ -55,7 +55,7 @@ Sel bertuliskan **"belum ada"**, **"belum dapat"**, atau **"n/a"** dulu diperlak
 
 ## Hasil
 
-Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB lengkap dengan **tahapnya**, UL Parcel Code; tab **Informasi**: kotak **Sepadan** dan **NKT**) dan ringkasannya di detail petani. Sepadan dan NKT juga tercetak di **Profil Lahan (PDF)**; lahan NKT tampil sebagai layer merah/amber di **Peta Lahan** dan bisa disaring di **Laporan Lahan**. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
+Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB lengkap dengan **tahapnya**, UL Parcel Code; tab **Informasi**: kotak **Sepadan** dan **NKT**) dan ringkasannya di detail petani. Sepadan dan NKT juga tercetak di **Profil Lahan (PDF)**; lahan NKT tampil sebagai layer merah di **Peta Lahan** dan bisa disaring di **Laporan Lahan**. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
 
 ## Kalau bermasalah
 

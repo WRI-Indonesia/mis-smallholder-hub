@@ -395,7 +395,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   // status yang harus terlihat sebelum apa pun, sama dengan header Detail Lahan.
   const nktBadge = parcel.nkt && isNktAffected(parcel.nkt.status) ? landNktStatusLabel(parcel.nkt.status, true) : null;
   const badges: { text: string; tone: "neutral" | "red" | "amber" }[] = [
-    nktBadge ? { text: nktBadge, tone: parcel.nkt!.status === "INCLUDED" ? "red" : "amber" } : null,
+    nktBadge ? { text: nktBadge, tone: "red" } : null,
     parcel.isPsr ? { text: "PSR (replanting)", tone: "neutral" as const } : null,
     parcel.cropType ? { text: parcel.cropType, tone: "neutral" as const } : null,
   ].filter((b): b is { text: string; tone: "neutral" | "red" | "amber" } => Boolean(b));

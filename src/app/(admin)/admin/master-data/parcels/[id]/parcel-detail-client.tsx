@@ -357,7 +357,7 @@ export function ParcelDetailClient({
               {parcel.isPsr && <Badge variant="secondary">PSR (Replanting)</Badge>}
               {/* NKT (#328): status yang harus terlihat sebelum apa pun — merah bila termasuk, amber bila terdampak. */}
               {satellites?.nkt && isNktAffected(satellites.nkt.status) && (
-                <Badge className={satellites.nkt.status === "INCLUDED" ? "bg-red-600 hover:bg-red-600" : "bg-amber-500 hover:bg-amber-500"}>
+                <Badge className="bg-red-600 hover:bg-red-600">
                   {landNktStatusLabel(satellites.nkt.status, true)}
                 </Badge>
               )}
@@ -713,7 +713,7 @@ export function ParcelDetailClient({
               {satellites?.nkt ? (
                 <div className="grid grid-cols-2 gap-3">
                   <FieldItem label="Status">
-                    <span className={isNktAffected(satellites.nkt.status) ? (satellites.nkt.status === "INCLUDED" ? "text-red-600" : "text-amber-600") : undefined}>
+                    <span className={isNktAffected(satellites.nkt.status) ? "text-red-600" : undefined}>
                       {landNktStatusLabel(satellites.nkt.status)}
                     </span>
                   </FieldItem>

@@ -641,7 +641,8 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             beforeId={labelBeforeId}
             layout={vis(layers.nkt)}
             filter={["in", ["get", "nktStatus"], ["literal", [...NKT_AFFECTED_STATUSES]]]}
-            paint={{ "fill-color": ["case", ["==", ["get", "nktStatus"], "INCLUDED"], "#dc2626", "#f59e0b"], "fill-opacity": 0.25 }}
+            // Satu warna untuk INCLUDED & AFFECTED — "termasuk = terdampak" (owner 2026-09-14).
+            paint={{ "fill-color": "#dc2626", "fill-opacity": 0.25 }}
           />
           <Layer
             id="parcel-nkt-outline"
@@ -649,7 +650,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             beforeId={labelBeforeId}
             layout={vis(layers.nkt)}
             filter={["in", ["get", "nktStatus"], ["literal", [...NKT_AFFECTED_STATUSES]]]}
-            paint={{ "line-color": ["case", ["==", ["get", "nktStatus"], "INCLUDED"], "#b91c1c", "#d97706"], "line-width": 2.5 }}
+            paint={{ "line-color": "#b91c1c", "line-width": 2.5 }}
           />
           {/* Highlight lahan yang popup-nya terbuka — poligon tetangga bergaya
               seragam sulit dibedakan dari yang dipilih. Selalu tampil saat ada
