@@ -42,8 +42,20 @@ export type ParcelFeature = {
 export type MapData = {
   kelompokTani: KTPoint[];
   parcels: ParcelFeature[];
-  /** `nkt` (#328) = lahan INCLUDED/AFFECTED; opsional agar payload lama tetap valid. */
-  counts: { kt: number; parcelPoints: number; parcelAreas: number; nkt?: number };
+  /**
+   * `nkt` (#328) = lahan INCLUDED/AFFECTED; `markers`/`markersNkt` (#331) =
+   * patok aktif lahan pada filter (patok NKT = salah satu lahan pemakainya kena
+   * NKT). Opsional agar payload lama tetap valid. Titik patoknya sendiri
+   * dimuat malas lewat `getMapMarkers` saat layernya dicentang.
+   */
+  counts: { kt: number; parcelPoints: number; parcelAreas: number; nkt?: number; markers?: number; markersNkt?: number };
+};
+
+/** Satu patok di Peta Lahan (#331) — tuple ringkas: [id, lon, lat, nkt 0/1, kondisi, "ID Lahan #n; …"]. */
+export type MapMarkerTuple = [id: string, lon: number, lat: number, nkt: 0 | 1, condition: string, parcels: string];
+
+export type MapMarkerWire = {
+  markers: MapMarkerTuple[];
 };
 
 // ── Wire format (#223) ─────────────────────────────────────────────────────

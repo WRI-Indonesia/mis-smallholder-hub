@@ -13,7 +13,11 @@ icon: Map
 
 **Lahan NKT** — Legenda punya layer **Lahan NKT (termasuk/terdampak)**: lahan yang menurut hasil asesmen termasuk area NKT disorot **merah**, yang terdampak (mis. sempadan sungai) **amber**, di atas area lahan biasa. Hitungan di sampingnya = jumlah lahan NKT pada data yang dimuat; nol berarti asesmen belum diunggah untuk wilayah itu, bukan berarti bebas NKT. Popup lahan menulis statusnya — atau "Belum dinilai".
 
-**Zoom lewat panel kiri** — Klik teks label pada Legenda (Point Lembaga Petani, Point/Area Lahan Petani, Lahan NKT) atau label "Tampilkan titik api" untuk langsung zoom ke sebaran data layer tersebut; kotak centangnya tetap untuk menampilkan/menyembunyikan layer.
+**Patok lahan** — Dua layer lagi di Legenda: **Patok lahan** (titik kuning) dan **Patok lahan NKT** (titik merah — patok yang salah satu lahan pemakainya termasuk/terdampak NKT). Keduanya mati bawaan; titiknya baru dimuat saat dicentang. Klik titik untuk melihat lahan pemakainya beserta nomor patok di tiap lahan, kondisi, dan koordinat.
+
+**Unduh per baris Legenda** — Bila punya izin Export, tiap baris Legenda punya ikon unduh: **Excel** (atribut) atau **Shapefile/GeoJSON/KML** — bentuknya mengikuti baris: baris *Point* (Lembaga, titik lahan, patok) menghasilkan titik, baris *Area/NKT* menghasilkan poligon. Baris Lahan NKT hanya berisi lahan termasuk/terdampak.
+
+**Zoom lewat panel kiri** — Klik teks label pada Legenda (Point Lembaga Petani, Point/Area Lahan Petani, Lahan NKT, Patok) atau label "Tampilkan titik api" untuk langsung zoom ke sebaran data layer tersebut; kotak centangnya tetap untuk menampilkan/menyembunyikan layer.
 
 **Peta BMP** — Peta tematik: pilih layer Ketersediaan Data Produksi atau Produktivitas (Ton/Ha). Pilih Lembaga terlebih dulu, lalu klik Muat Data.
 

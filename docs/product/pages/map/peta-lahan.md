@@ -10,7 +10,8 @@ Halaman: Peta Lahan (/admin/map/parcel)
 │   ├── Filter: Provinsi · Distrik (wajib) · Lembaga Petani (opsional ber-opsi "Semua …")
 │   ├── Tombol: Muat Data
 │   ├── Dropdown: Unduh Lahan (SHP ZIP / GeoJSON / KML) — izin EXPORT (#313)
-│   ├── Legenda: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani · Lahan NKT (#328)
+│   ├── Legenda: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani · Lahan NKT (#328) · Patok lahan · Patok lahan NKT (#331)
+│   │   └── Tombol unduh per baris (izin EXPORT, #331): Excel · Shapefile/GeoJSON/KML sesuai tipe fitur baris
 │   ├── Peta Lainnya (overlay referensi pemerintah)
 │   │   ├── Layer: Kawasan Hutan · Fungsi Ekosistem Gambut
 │   │   ├── Per layer aktif: legend warna kelas + "Sumber: …"
@@ -24,10 +25,10 @@ Halaman: Peta Lahan (/admin/map/parcel)
 │       └── Daftar layer tambahan
 ├── Peta
 │   ├── Basemap: LIGHT / DARK / HYBRID
-│   ├── Layer: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani · Lahan NKT
+│   ├── Layer: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani · Lahan NKT · Patok lahan · Patok lahan NKT
 │   ├── Layer: Overlay raster · Titik api · Layer GIS tambahan
 │   ├── Layer: Highlight lahan terpilih (fill kuning + outline tebal)
-│   ├── Popup fitur: Lembaga Petani · Titik Api · Lahan (bisa digeser via pegangan)
+│   ├── Popup fitur: Lembaga Petani · Titik Api · Lahan · Patok (bisa digeser via pegangan)
 │   │   └── Popup Lahan: Detail Lahan · Pelatihan Petani · Produksi · Profil Lahan
 │   │       └── Aksi: Lihat Detail · Edit Lahan
 │   ├── Modal: Edit Lahan (dari popup)
@@ -60,11 +61,13 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Lembaga Petani | Filter (combobox) | Item teratas **"Semua Lembaga Petani"** untuk mengosongkan pilihan; empty "Lembaga Petani tidak ditemukan."; disabled sampai Distrik dipilih |
 | Muat Data | Tombol | Disabled tanpa Distrik; tanpa Distrik → toast "Silakan pilih Distrik terlebih dahulu"; hasil kosong → toast "Tidak ada data untuk filter ini", sukses → "Data berhasil dimuat" |
 | Unduh Lahan | Dropdown (`ParcelExportMenu`) | Di bawah Muat Data, hanya tampil bila punya izin `EXPORT` `map-parcel` (#313); disabled tanpa Distrik (tooltip "Pilih Distrik terlebih dahulu"). Item: **Shapefile (ZIP)** / **GeoJSON** / **KML** — memanggil `getMapParcelExportData` dengan filter aktif (tanpa perlu Muat Data), konversi di client (`parcel-spatial-download.ts`): SHP = ZIP `lahan.shp/.shx/.dbf/.prj/.cpg` (kolom DBF ≤10 char ber-transliterasi ASCII — `parcel_code` → `parcel_cod`, MultiPolygon dipecah per anggota), KML via `@placemarkio/tokml`; nama file `lahan_<kd-lembaga\|distrik>_<YYYYMMDD-HHmm>`. Toast hasil menyebut jumlah lahan (+ yang dilewati bila geometrinya invalid); 0 lahan → toast info |
-| Legenda | Section collapsible + Legend | Muncul hanya setelah data dimuat; tiap baris = checkbox toggle layer + swatch warna + jumlah fitur; klik teks label = zoom ke sebaran data layer (`LayerZoomTarget`) |
+| Legenda | Section collapsible + Legend | Muncul hanya setelah data dimuat; tiap baris = checkbox toggle layer + swatch warna + jumlah fitur + (izin EXPORT) **ikon unduh per baris** (#331); klik teks label = zoom ke sebaran data layer (`LayerZoomTarget`) |
+| Unduh per baris legenda (#331) | Dropdown per baris (`LegendRow.onExport`) | Item **Excel** · **Shapefile (ZIP)** · **GeoJSON** · **KML**; format spasial mengikuti **tipe fitur baris** (label kecil "Point"/"Polygon" di item): Point Lembaga → Point (kode/nama/distrik); Point Lahan → Point centroid + atribut lengkap lahan; Area Lahan → Polygon (= "Unduh Lahan" lama); Lahan NKT → Polygon hanya lahan INCLUDED/AFFECTED (atribut ekspor kini memuat kolom `nkt`); Patok / Patok NKT → Point (satu fitur per patok fisik, "ID Lahan #n; …") dan Excel satu baris per patok per lahan (`getMapMarkerExportRows`, gate `map-parcel:EXPORT`). Helper klien `map-legend-export.ts`, unduhan generik `downloadFeatureExport` (SHP Point/Polygon, DBF-safe per dataset); nama file `<baris>-<label>-<stempel>` |
 | Point Lembaga Petani | Layer + Legend | Circle hijau `#22c55e` r=8, stroke putih; label nama lembaga di bawah titik |
 | Point Lahan Petani | Layer + Legend | Circle biru `#3b82f6` r=5 pada centroid persil; **default tidak dicentang** (#223) — GeoJSON point dibangun lazy saat pertama dicentang (ribuan titik jarang dipakai) |
 | Area Lahan Petani | Layer + Legend | Polygon fill **ungu** `#a855f7` opacity 0.2, outline `#7e22ce` (keputusan owner 2026-09-14 bersama #328 — hijau dilepas agar sorotan NKT merah/amber dan titik Lembaga hijau tidak bersaing); label nama petani di dalam poligon bila muat (`parcelLabelFit`) |
 | Lahan NKT (termasuk/terdampak) | Layer + Legend (#328) | Sorotan di atas area lahan: `INCLUDED` merah (`#dc2626`/outline `#b91c1c`), `AFFECTED` amber (`#f59e0b`/`#d97706`), opacity 0.25, outline 2.5; toggle sendiri (default nyala) dan tetap tampil walau layer Area dimatikan; hitungan = lahan INCLUDED/AFFECTED pada hasil filter (`counts.nkt`); zoom-ke-layer hanya ke lahan NKT. Payload hanya membawa `nktStatus` (elemen terakhir `ParcelWireTuple`), bukan seluruh baris NKT. Popup lahan: baris **NKT** — status atau "Belum dinilai" (bukan "—") |
+| Patok lahan · Patok lahan NKT | Layer + Legend (#331) | Dua layer circle dari satu source (`marker-point` kuning `#facc15`/stroke `#854d0e`; `marker-nkt-point` merah `#ef4444`/stroke `#7f1d1d`, r=4.5) difilter properti `nkt`; **default mati** — titik dimuat **malas** lewat `getMapMarkers(filters)` saat salah satu dicentang (tuple `[id, lon, lat, nkt, kondisi, "ID Lahan #n; …"]`, satu per patok fisik), direset saat data peta dimuat ulang; hitungan legenda (`counts.markers`/`markersNkt`) ikut `getMapData` (dua `count`) agar terlihat sebelum layer dinyalakan. NKT patok = turunan: salah satu lahan pemakai (di mana pun) termasuk/terdampak. Popup: judul "Patok lahan"/"Patok lahan NKT", Lahan · No, kondisi, NKT, koordinat. Zoom-ke-layer: ke titik patok (bila sudah dimuat) atau sebaran lahan |
 | Peta Lainnya | Section collapsible (overlay) | Raster overlay ArcGIS pemerintah via proxy: **Kawasan Hutan** (geoportal Kemenhut, Peta Kawasan Hutan 1:250.000 Des 2025) & **Fungsi Ekosistem Gambut** (Satu Peta BIG, FEG 1:50.000) — tiap baris checkbox + deskripsi singkat. Saat aktif, di bawah baris muncul **legend warna kelas** (Kawasan Hutan: Kawasan Konservasi (HK) · Hutan Lindung (HL) · Hutan Produksi Terbatas (HPT) · Hutan Produksi Tetap (HP) · Hutan Produksi Konversi (HPK) · Area Penggunaan Lain (APL) · Tubuh Air; Gambut: Fungsi Lindung · Fungsi Budidaya) + baris "Sumber: …" per overlay |
 | Transparansi | Slider | Muncul bila ada overlay aktif; rentang 0.1–1 (default 0.7), ditampilkan dalam persen |
 | Titik Api (Hotspot) | Section collapsible + Layer | Checkbox "Tampilkan titik api" + jumlah titik; sumber NASA FIRMS VIIRS 375 m; area query tetap bbox persegi Riau, tetapi hasilnya **dipangkas ke gabungan 12 poligon kabupaten BIG** (`filterPointsWithinAreas`) sebelum masuk state — bbox persegi ikut memuat Malaysia/Sumbar/Jambi/Kepri (#269). Poligon dimuat malas via `getAdminBoundaries()` saat layer dinyalakan (±165 KB, sekali); batas belum ter-seed → tampil apa adanya. Checkbox & toggle rentang disabled sebelum data lahan dimuat (perlu titik lembaga untuk kalkulasi jarak PDF; saat layer sudah nyala, checkbox tetap bisa mematikan). Klik teks label = zoom ke sebaran titik api |

@@ -252,6 +252,7 @@ export const DATA_LINEAGE: DataLineage = [
       "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
+      "landMarker": "R",
       "landParcel": "R",
       "productionRecord": "R",
       "province": "R",
@@ -263,6 +264,7 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/fire-boundary.ts",
+      "src/server/actions/land-marker.ts",
       "src/server/actions/land-parcel-export.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/map.ts"

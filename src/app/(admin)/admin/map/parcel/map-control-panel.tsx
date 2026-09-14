@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { MapData, MapSelectOption, MapGroupOption } from "@/types/map";
 import { MAP_OVERLAYS, type OverlayDef, type OverlayState, type CustomLayer } from "./map-overlays";
@@ -31,10 +32,17 @@ export type LayerVisibility = {
   parcelAreas: boolean;
   /** Lahan termasuk/terdampak NKT (#328) — sorotan merah/amber di atas area lahan. */
   nkt: boolean;
+  /** Patok lahan (kuning) & patok lahan NKT (merah) (#331) — dua layer, titiknya dimuat malas saat dicentang. */
+  markers: boolean;
+  markersNkt: boolean;
 };
 
 /** Layer internal yang bisa dituju tombol zoom di panel (klik label). */
-export type LayerZoomTarget = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "hotspot";
+export type LayerZoomTarget = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "markers" | "markersNkt" | "hotspot";
+
+/** Baris legenda yang punya unduhan sendiri (#331) — format spasial mengikuti tipe fitur baris (Point/Polygon). */
+export type LegendExportRow = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "markers" | "markersNkt";
+export type LegendExportFormat = "xlsx" | ParcelExportFormat;
 
 interface Props {
   provinces: MapSelectOption[];
@@ -79,6 +87,9 @@ interface Props {
   /** Unduh data lahan sesuai filter aktif sebagai SHP/GeoJSON/KML (#313). */
   onParcelExport: (format: ParcelExportFormat) => void;
   parcelExporting: boolean;
+  /** Unduh per baris legenda (#331): Excel + SHP/GeoJSON/KML sesuai tipe fitur baris. */
+  onLegendExport: (row: LegendExportRow, format: LegendExportFormat) => void;
+  legendExporting: LegendExportRow | null;
   helpSlot?: React.ReactNode;
 }
 
@@ -174,19 +185,33 @@ interface LegendRowProps {
   onToggle: (checked: boolean) => void;
   /** Klik label = zoom ke sebaran data layer (checkbox tetap toggle visibilitas). */
   onZoomTo: () => void;
-  variant?: "dot" | "area";
+  variant?: "dot" | "area" | "square";
+  /** Unduhan baris (#331): null = tanpa tombol (izin EXPORT tidak ada). */
+  onExport?: ((format: LegendExportFormat) => void) | null;
+  exporting?: boolean;
+  /** Tipe fitur spasial baris — label item unduhan ("Shapefile · Point"). */
+  featureType?: "Point" | "Polygon";
 }
 
-function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot" }: LegendRowProps) {
+const LEGEND_EXPORT_ITEMS: { format: LegendExportFormat; label: string }[] = [
+  { format: "xlsx", label: "Excel" },
+  { format: "shp", label: "Shapefile (ZIP)" },
+  { format: "geojson", label: "GeoJSON" },
+  { format: "kml", label: "KML" },
+];
+
+function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType }: LegendRowProps) {
   return (
     <div className="flex items-center gap-2.5 py-1">
       <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} aria-label={label} />
       <span
-        className={cn("inline-block h-3 w-3 shrink-0", variant === "area" ? "rounded-sm border-2" : "rounded-full")}
+        className={cn("inline-block h-3 w-3 shrink-0", variant === "area" ? "rounded-sm border-2" : variant === "square" ? "rounded-[2px] border-2" : "rounded-full")}
         style={
           variant === "area"
             ? { backgroundColor: `${color}33`, borderColor: color }
-            : { backgroundColor: color }
+            : variant === "square"
+              ? { backgroundColor: color, borderColor: "#1f2937" }
+              : { backgroundColor: color }
         }
       />
       <button
@@ -199,6 +224,26 @@ function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant =
         {label}
       </button>
       <span className="text-xs font-mono text-muted-foreground tabular-nums">{count}</span>
+      {onExport && (
+        // Unduh per baris (#331): Excel atribut + spasial sesuai tipe fitur baris.
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={count === 0 || exporting}
+            title={`Unduh ${label}`}
+            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {LEGEND_EXPORT_ITEMS.map((item) => (
+              <DropdownMenuItem key={item.format} onClick={() => onExport(item.format)}>
+                {item.label}
+                {item.format !== "xlsx" && featureType && <span className="ml-auto text-[10px] text-muted-foreground">{featureType}</span>}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }
@@ -255,7 +300,7 @@ export function MapControlPanel(props: Props) {
     hotspot, onHotspotChange, hotspotLoading, hotspotCounts,
     onHotspotDownloadShp, onHotspotPrintPdf, hotspotPdfCalculating, onHotspotShowSummary,
     canExport, canPrint,
-    onParcelExport, parcelExporting,
+    onParcelExport, parcelExporting, onLegendExport, legendExporting,
     helpSlot,
   } = props;
 
@@ -396,6 +441,9 @@ export function MapControlPanel(props: Props) {
                       checked={layers.kt}
                       onToggle={(v) => onLayersChange({ ...layers, kt: v })}
                       onZoomTo={() => onZoomLayer("kt")}
+                      onExport={canExport ? (f) => onLegendExport("kt", f) : null}
+                      exporting={legendExporting === "kt"}
+                      featureType="Point"
                     />
                     <LegendRow
                       color="#3b82f6"
@@ -404,6 +452,9 @@ export function MapControlPanel(props: Props) {
                       checked={layers.parcelPoints}
                       onToggle={(v) => onLayersChange({ ...layers, parcelPoints: v })}
                       onZoomTo={() => onZoomLayer("parcelPoints")}
+                      onExport={canExport ? (f) => onLegendExport("parcelPoints", f) : null}
+                      exporting={legendExporting === "parcelPoints"}
+                      featureType="Point"
                     />
                     <LegendRow
                       color="#7e22ce"
@@ -413,6 +464,9 @@ export function MapControlPanel(props: Props) {
                       onToggle={(v) => onLayersChange({ ...layers, parcelAreas: v })}
                       onZoomTo={() => onZoomLayer("parcelAreas")}
                       variant="area"
+                      onExport={canExport ? (f) => onLegendExport("parcelAreas", f) : null}
+                      exporting={legendExporting === "parcelAreas"}
+                      featureType="Polygon"
                     />
                     {/* NKT (#328): hitungan = lahan INCLUDED/AFFECTED pada hasil filter; 0 bila belum ada asesmen. */}
                     <LegendRow
@@ -423,6 +477,34 @@ export function MapControlPanel(props: Props) {
                       onToggle={(v) => onLayersChange({ ...layers, nkt: v })}
                       onZoomTo={() => onZoomLayer("nkt")}
                       variant="area"
+                      onExport={canExport ? (f) => onLegendExport("nkt", f) : null}
+                      exporting={legendExporting === "nkt"}
+                      featureType="Polygon"
+                    />
+                    {/* Patok (#331): dua layer/warna — titiknya dimuat malas saat dicentang. */}
+                    <LegendRow
+                      color="#facc15"
+                      label="Patok lahan"
+                      count={counts.markers ?? 0}
+                      checked={layers.markers}
+                      onToggle={(v) => onLayersChange({ ...layers, markers: v })}
+                      onZoomTo={() => onZoomLayer("markers")}
+                      variant="square"
+                      onExport={canExport ? (f) => onLegendExport("markers", f) : null}
+                      exporting={legendExporting === "markers"}
+                      featureType="Point"
+                    />
+                    <LegendRow
+                      color="#ef4444"
+                      label="Patok lahan NKT"
+                      count={counts.markersNkt ?? 0}
+                      checked={layers.markersNkt}
+                      onToggle={(v) => onLayersChange({ ...layers, markersNkt: v })}
+                      onZoomTo={() => onZoomLayer("markersNkt")}
+                      variant="square"
+                      onExport={canExport ? (f) => onLegendExport("markersNkt", f) : null}
+                      exporting={legendExporting === "markersNkt"}
+                      featureType="Point"
                     />
                   </div>
                 )}

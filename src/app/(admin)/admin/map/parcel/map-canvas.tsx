@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { ExpressionSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers, Landmark } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,8 @@ import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/com
 import { MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan, useMapPopupDrag, MapPopupDragHandle } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
-import type { MapData, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
+import type { MapData, MapMarkerTuple, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
+import { LAND_MARKER_CONDITION_LABELS, labelOf } from "@/lib/land-marker";
 import type { LayerVisibility, LayerZoomTarget } from "./map-control-panel";
 import {
   MAP_OVERLAYS,
@@ -74,7 +75,7 @@ const MEASURE_COLOR = "#f59e0b";
 type SelectedFeature = {
   longitude: number;
   latitude: number;
-  kind: "kt" | "parcel" | "hotspot" | "custom";
+  kind: "kt" | "parcel" | "hotspot" | "custom" | "marker";
   props: Record<string, unknown>;
   /** Untuk kind "custom": nama & warna layer GIS tambahan asal fitur. */
   layerName?: string;
@@ -100,9 +101,11 @@ interface Props {
   canPrintParcel: boolean;
   /** Dipanggil setelah Edit Lahan berhasil — refetch GeoJSON (data di-fetch di klien). */
   onParcelUpdated: () => void;
+  /** Titik patok (#331), dimuat malas oleh klien saat layer patok dicentang; null = belum ada. */
+  markers: MapMarkerTuple[] | null;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, canPrintParcel, onParcelUpdated }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, canPrintParcel, onParcelUpdated, markers }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -250,6 +253,19 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     [data, layers.parcelPoints]
   );
 
+  // Patok (#331): satu source, dua layer (kuning / merah NKT) difilter properti `nkt`.
+  const markerGeojson = useMemo<FeatureCollection<Point>>(
+    () => ({
+      type: "FeatureCollection",
+      features: (markers ?? []).map(([id, lon, lat, nkt, condition, parcels]) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [lon, lat] },
+        properties: { id, nkt, condition, parcels },
+      })),
+    }),
+    [markers]
+  );
+
   // Current zoom drives the "does the label fit inside the polygon" test.
   const [zoom, setZoom] = useState(9);
 
@@ -344,10 +360,15 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     } else if (layerZoomRequest.target === "nkt") {
       // NKT (#328): hanya lahan termasuk/terdampak; tanpa satu pun → fitCoords tidak melakukan apa-apa.
       fitCoords((data?.parcels ?? []).filter((p) => isNktAffected(p.nktStatus)).map((p) => p.centroid));
+    } else if (layerZoomRequest.target === "markers" || layerZoomRequest.target === "markersNkt") {
+      // Patok (#331): titik belum dimuat (layer baru dicentang) → jatuh ke sebaran lahan.
+      const wantNkt = layerZoomRequest.target === "markersNkt";
+      const pts = (markers ?? []).filter((m) => !wantNkt || m[3] === 1).map((m) => [m[1], m[2]] as [number, number]);
+      fitCoords(pts.length > 0 ? pts : (data?.parcels ?? []).map((p) => p.centroid));
     } else {
       fitCoords((data?.parcels ?? []).map((p) => p.centroid));
     }
-  }, [layerZoomRequest, data, hotspotData, fitCoords]);
+  }, [layerZoomRequest, data, hotspotData, markers, fitCoords]);
 
   // Zoom ke satu titik api dari klik baris tabel ringkasan.
   const handledPointZoomToken = useRef<number | null>(null);
@@ -424,6 +445,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
         kind: "parcel",
         props: feature.properties ?? {},
       });
+    } else if (layerId === "marker-point" || layerId === "marker-nkt-point") {
+      const [longitude, latitude] = (feature.geometry as Point).coordinates;
+      setSelected({ longitude, latitude, kind: "marker", props: feature.properties ?? {} });
     } else if (layerId === "hotspot-point") {
       const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "hotspot", props: feature.properties ?? {} });
@@ -454,6 +478,8 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       "parcel-point",
       "parcel-fill",
       "parcel-nkt-fill",
+      "marker-point",
+      "marker-nkt-point",
       "hotspot-point",
       ...customLayers.flatMap((l) =>
         l.kind === "vector"
@@ -683,6 +709,25 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           />
         </Source>
 
+        {/* Patok (#331): persegi kuning = patok lahan, merah = patok lahan NKT (turunan);
+            dua layer terpisah agar bisa dinyalakan sendiri-sendiri. Source kosong sampai dimuat malas. */}
+        <Source id="marker-source" type="geojson" data={markerGeojson}>
+          <Layer
+            id="marker-point"
+            type="circle"
+            layout={vis(layers.markers)}
+            filter={["==", ["get", "nkt"], 0]}
+            paint={{ "circle-color": "#facc15", "circle-radius": 4.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#854d0e" }}
+          />
+          <Layer
+            id="marker-nkt-point"
+            type="circle"
+            layout={vis(layers.markersNkt)}
+            filter={["==", ["get", "nkt"], 1]}
+            paint={{ "circle-color": "#ef4444", "circle-radius": 4.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#7f1d1d" }}
+          />
+        </Source>
+
         {/* Point Lembaga Petani — top */}
         <Source id="kt-source" type="geojson" data={ktGeojson}>
           <Layer
@@ -844,6 +889,28 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                 <p className="px-3.5 pb-3 text-[10px] leading-snug text-muted-foreground">
                   Deteksi anomali panas (VIIRS 375 m), bukan konfirmasi kebakaran. Sumber: NASA FIRMS · jeda ±3 jam.
                 </p>
+              </div>
+            ) : selected.kind === "marker" ? (
+              <div className="w-[272px]">
+                <PopupHeader
+                  accent={Number(selected.props.nkt) === 1 ? "red" : "amber"}
+                  icon={<Landmark className="h-4 w-4" />}
+                  title={Number(selected.props.nkt) === 1 ? "Patok lahan NKT" : "Patok lahan"}
+                  subtitle="Patok batas"
+                />
+                <MapPopupRows
+                  className="border-t px-3.5 py-3"
+                  rows={[
+                    { label: "Lahan · No", value: String(selected.props.parcels ?? "—"), mono: true },
+                    { label: "Kondisi", value: labelOf(LAND_MARKER_CONDITION_LABELS, String(selected.props.condition ?? "")) },
+                    { label: "NKT", value: Number(selected.props.nkt) === 1 ? "Lahan pemakai termasuk/terdampak NKT" : "—" },
+                    {
+                      label: "Koordinat",
+                      value: `${selected.latitude.toFixed(6)}, ${selected.longitude.toFixed(6)}`,
+                      mono: true,
+                    },
+                  ]}
+                />
               </div>
             ) : selected.kind === "kt" ? (
               <div className="w-[252px]">
@@ -1065,6 +1132,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
 const ACCENTS = {
   emerald: { bar: "bg-emerald-500", tint: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400" },
+  amber: { bar: "bg-amber-400", tint: "bg-amber-400/10", text: "text-amber-700 dark:text-amber-400" },
   blue: { bar: "bg-blue-500", tint: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
   red: { bar: "bg-red-500", tint: "bg-red-500/10", text: "text-red-600 dark:text-red-400" },
 };

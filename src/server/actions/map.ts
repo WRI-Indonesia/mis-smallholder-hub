@@ -11,9 +11,11 @@ import {
 } from "@/lib/access-context";
 import { buildMapData, buildBmpMapData, summarizeProduction } from "@/lib/map-data";
 import { mapFilterSchema, bmpMapFilterSchema } from "@/validations/map.schema";
+import { NKT_AFFECTED_STATUSES, isNktAffected } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 import type {
   MapDataWire,
+  MapMarkerWire,
   MapFilters,
   MapSelectOption,
   MapGroupOption,
@@ -173,7 +175,67 @@ export async function getMapData(
     }),
   ]);
 
-  return { success: true, data: buildMapData(groups, parcelRows) };
+  // Hitungan patok (#331) untuk baris legenda — titiknya dimuat malas (getMapMarkers).
+  const markerScope = {
+    isActive: true,
+    parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } } } } },
+  } as const;
+  const [markers, markersNkt] = await Promise.all([
+    prisma.landMarker.count({ where: markerScope }),
+    prisma.landMarker.count({
+      where: { ...markerScope, AND: [{ parcels: { some: { isActive: true, parcel: { nkt: { status: { in: [...NKT_AFFECTED_STATUSES] } } } } } }] },
+    }),
+  ]);
+
+  const data = buildMapData(groups, parcelRows);
+  return { success: true, data: { ...data, counts: { ...data.counts, markers, markersNkt } } };
+}
+
+/**
+ * Titik patok (#331) untuk layer "Patok lahan" / "Patok lahan NKT" — dimuat
+ * MALAS saat salah satu layer dicentang. Scope sama dengan getMapData
+ * (Lembaga di filter + akses user). Satu tuple per patok fisik walau dipakai
+ * beberapa lahan; `parcels` = "ID Lahan #nomor; …" untuk popup. NKT turunan =
+ * salah satu lahan pemakai (di mana pun) termasuk/terdampak.
+ */
+export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<MapMarkerWire>> {
+  if (!(await hasPermission(MENU_KEY, VIEW))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  }
+  const parsed = mapFilterSchema.safeParse(filters);
+  if (!parsed.success) return { success: false, error: "Filter tidak valid" };
+  const { provinceId, districtId, farmerGroupId } = parsed.data;
+  const access = await getAccessContext();
+  const groupWhere = {
+    isActive: true,
+    districtId,
+    ...(farmerGroupId ? { id: farmerGroupId } : {}),
+    ...(provinceId ? { district: { provinceId } } : {}),
+    AND: farmerGroupAccessFilter(access),
+  };
+  const rows = await prisma.landMarker.findMany({
+    where: {
+      isActive: true,
+      parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } } } } },
+    },
+    select: {
+      id: true, longitude: true, latitude: true, condition: true,
+      parcels: { where: { isActive: true }, select: { sequenceNo: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } }, orderBy: { parcel: { parcelId: "asc" } } },
+    },
+  });
+  return {
+    success: true,
+    data: {
+      markers: rows.map((m) => [
+        m.id,
+        m.longitude,
+        m.latitude,
+        m.parcels.some((l) => isNktAffected(l.parcel.nkt?.status)) ? 1 : 0,
+        m.condition,
+        m.parcels.map((l) => `${l.parcel.parcelId} #${l.sequenceNo}`).join("; "),
+      ]),
+    },
+  };
 }
 
 const BMP_MENU_KEY = "map-bmp";

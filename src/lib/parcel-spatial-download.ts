@@ -1,6 +1,7 @@
-import type { FeatureCollection, MultiPolygon, Polygon } from "geojson";
+import type { FeatureCollection, MultiPolygon, Point, Polygon } from "geojson";
 import {
   explodeMultiPolygons,
+  toAsciiDbf,
   toDbfProperties,
   type ParcelExportFormat,
   type ParcelExportProperties,
@@ -85,4 +86,70 @@ export async function downloadParcelExport(
   if (format === "shp") return downloadShp(fc, base);
   if (format === "kml") return downloadKml(fc, base);
   return Promise.resolve(downloadGeojson(fc, base));
+}
+
+// ─── Unduhan generik (#331): baris legenda Peta Lahan — Point (Lembaga, titik lahan,
+// patok) maupun Polygon (area lahan, lahan NKT) dengan atribut bebas. ───
+
+export type ExportGeometry = Point | Polygon | MultiPolygon;
+
+export interface GenericExportOptions {
+  /** Nama layer di dalam ZIP shapefile (tanpa ekstensi), mis. "patok". */
+  shpLayer: string;
+  /** Pemetaan atribut → kolom DBF-safe (≤10 karakter, ASCII). Bawaan: potong nama & transliterasi. */
+  toDbf?: (props: Record<string, unknown>) => Record<string, unknown>;
+}
+
+function defaultDbf(props: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(props)) {
+    const key = k.replace(/[^A-Za-z0-9_]/g, "_").slice(0, 10);
+    out[key] = typeof v === "string" ? toAsciiDbf(v) : v == null ? "" : v;
+  }
+  return out;
+}
+
+/**
+ * Unduh FeatureCollection apa pun (Point/Polygon/MultiPolygon) pada format
+ * terpilih. SHP: MultiPolygon dipecah per anggota; geometri campuran ditolak
+ * oleh shp-write, jadi pemanggil memastikan satu tipe per unduhan.
+ */
+export async function downloadFeatureExport(
+  format: ParcelExportFormat,
+  fc: FeatureCollection<ExportGeometry, Record<string, unknown>>,
+  base: string,
+  opts: GenericExportOptions
+): Promise<void> {
+  if (format === "geojson") {
+    saveBlob(new Blob([JSON.stringify(fc)], { type: "application/geo+json" }), `${base}.geojson`);
+    return;
+  }
+  if (format === "kml") {
+    const { toKML } = await import("@placemarkio/tokml");
+    saveBlob(new Blob([toKML(fc)], { type: "application/vnd.google-earth.kml+xml" }), `${base}.kml`);
+    return;
+  }
+  const [shpwrite, { default: JSZip }] = await Promise.all([import("@mapbox/shp-write"), import("jszip")]);
+  const toDbf = opts.toDbf ?? defaultDbf;
+  const isPoint = fc.features.every((f) => f.geometry.type === "Point");
+  const source: FeatureCollection<ExportGeometry, Record<string, unknown>> = isPoint
+    ? fc
+    : explodeMultiPolygons(fc as FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>);
+  const clean: FeatureCollection = {
+    type: "FeatureCollection",
+    features: source.features.map((f) => ({
+      type: "Feature",
+      geometry: f.geometry,
+      properties: toDbf(f.properties ?? {}),
+    })),
+  };
+  const blob = await shpwrite.zip<"blob">(clean, {
+    outputType: "blob",
+    compression: "DEFLATE",
+    types: isPoint ? { point: opts.shpLayer } : { polygon: opts.shpLayer },
+  });
+  const zip = await JSZip.loadAsync(blob);
+  zip.file(`${opts.shpLayer}.cpg`, "UTF-8");
+  const withCpg = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+  saveBlob(withCpg, `${base}.zip`);
 }

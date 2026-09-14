@@ -486,6 +486,91 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
   return { success: true, data: { rows, label: group.code?.trim() || group.name } };
 }
 
+/**
+ * Patok pada filter Peta Lahan (#331) — unduhan baris legenda "Patok lahan" /
+ * "Patok lahan NKT"; digate `map-parcel:EXPORT`. Satu baris per patok per
+ * lahan (Excel) — klien mengelompokkan per `markerId` untuk fitur Point.
+ * `nktOnly` = hanya patok yang salah satu lahan pemakainya kena NKT.
+ */
+export async function getMapMarkerExportRows(
+  filters: { provinceId?: string | null; districtId: string; farmerGroupId?: string | null },
+  nktOnly = false,
+): Promise<ActionResult<{ rows: (LandMarkerExportRow & { markerId: string })[]; label: string | null }>> {
+  if (!(await hasPermission("map-parcel", "EXPORT"))) return { success: false, error: "Tidak memiliki izin untuk mengekspor data ini" };
+  if (typeof filters?.districtId !== "string" || !filters.districtId) return { success: false, error: "Pilih Distrik terlebih dahulu" };
+  const access = await getAccessContext();
+  const groupWhere = {
+    isActive: true,
+    districtId: filters.districtId,
+    ...(filters.farmerGroupId ? { id: filters.farmerGroupId } : {}),
+    ...(filters.provinceId ? { district: { provinceId: filters.provinceId } } : {}),
+    AND: farmerGroupAccessFilter(access),
+  };
+  const [parcels, group, district] = await Promise.all([
+    prisma.landParcel.findMany({
+      where: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } },
+      select: {
+        parcelId: true, parcelUid: true, subGroupLv2: true, blok: true,
+        farmer: { select: { farmerId: true, name: true, farmerGroup: { select: { name: true } } } },
+        identity: {
+          select: {
+            nkt: { select: { status: true } },
+            markers: {
+              where: { isActive: true },
+              orderBy: { sequenceNo: "asc" },
+              select: {
+                sequenceNo: true,
+                marker: {
+                  select: {
+                    id: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
+                    parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { parcelId: "asc" },
+    }),
+    filters.farmerGroupId
+      ? prisma.farmerGroup.findFirst({ where: { id: filters.farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) }, select: { code: true, name: true } })
+      : Promise.resolve(null),
+    prisma.district.findUnique({ where: { id: filters.districtId }, select: { name: true } }),
+  ]);
+  const rows: (LandMarkerExportRow & { markerId: string })[] = [];
+  for (const p of parcels) {
+    const own = isNktAffected(p.identity.nkt?.status);
+    for (const l of p.identity.markers) {
+      const others = l.marker.parcels.filter((x) => x.parcelUid !== p.parcelUid);
+      const nkt = own || others.some((x) => isNktAffected(x.parcel.nkt?.status));
+      if (nktOnly && !nkt) continue;
+      rows.push({
+        markerId: l.marker.id,
+        parcelId: p.parcelId,
+        farmerCode: p.farmer.farmerId,
+        farmerName: p.farmer.name,
+        groupName: p.farmer.farmerGroup.name,
+        subGroupLv2: p.subGroupLv2,
+        blok: p.blok,
+        sequenceNo: l.sequenceNo,
+        latitude: l.marker.latitude,
+        longitude: l.marker.longitude,
+        condition: l.marker.condition,
+        type: l.marker.type,
+        installedAt: l.marker.installedAt ? l.marker.installedAt.toISOString().slice(0, 10) : null,
+        installedBy: l.marker.installedBy,
+        source: l.marker.source,
+        nkt,
+        sharedWith: others.map((x) => x.parcel.parcelId),
+        notes: l.marker.notes,
+      });
+    }
+  }
+  const label = filters.farmerGroupId ? (group?.code?.trim() || group?.name || null) : (district?.name ?? null);
+  return { success: true, data: { rows, label } };
+}
+
 // ─── Unggah titik (Excel/CSV & shapefile point) ───
 
 export interface LandMarkerUploadMatchResult {
