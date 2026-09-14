@@ -9,7 +9,7 @@ Empat environment, satu file per environment. **Tidak ada baris yang di-comment/
 | File | Database | S3 | Cara aktif |
 |------|----------|-----|-----------|
 | `.env` | **LOCAL** (`localhost:5432`) | **dev** (`mis-dev`) | Otomatis — satu-satunya file yang dibaca default oleh Next.js, Prisma, dan skrip |
-| `.env.staging-local` | **STAGING-LOCAL** (`localhost:5432/mis-staging-local`, snapshot prod 2026-08-27) | **dev** (`mis-dev`) | `npx dotenv -e .env.staging-local -- <perintah>` — DB lokal kedua khusus **uji migrasi** sebelum naik ke staging/prod; `.env`/`mis-dev` tetap untuk pengembangan harian. Sebelum `migrate dev` di sini: `pg_dump` dulu ke `scripts/dump-prod/<tanggal>/` |
+| `.env.staging-local` | **STAGING-LOCAL** (`localhost:5432/mis-staging-local`, snapshot prod 2026-09-14) | **dev** (`mis-dev`) | `npx dotenv -e .env.staging-local -- <perintah>` — DB lokal kedua khusus **uji migrasi** sebelum naik ke staging/prod; `.env`/`mis-dev` tetap untuk pengembangan harian. Sebelum `migrate dev` di sini: `pg_dump` dulu ke `scripts/dump-prod/<tanggal>/` |
 | `.env.dev` | DEV | **dev** (`mis-dev`) | `npx dotenv -e .env.dev -- <perintah>` |
 | `.env.staging` | STAGING | **dev** (`mis-dev`) | `npx dotenv -e .env.staging -- <perintah>` |
 | `.env.prod` | **PROD** (via tunnel `:1234`) | **prod** (`mis-main`) | `npx dotenv -e .env.prod -- <perintah>` — ⚠️ selalu sadar & eksplisit |
@@ -43,7 +43,7 @@ Mekanisme: `dotenv -e` men-set variabel di process environment **sebelum** prose
 
 ## Refresh DB Local dari Prod
 
-DB local (`localhost:5432/mis-dev`, Postgres.app 17) adalah **snapshot prod**. Untuk menyegarkan (tunnel `:1234` harus aktif; `pg_dump`/`pg_restore` wajib versi ≥ PG prod — prod **PostgreSQL 18.3** per 2026-08-27, jadi `pg_dump` 17 dari `postgresql@17` ditolak; pakai milik `libpq` Homebrew, 18.0):
+DB local (`localhost:5432/mis-dev`, Postgres.app **18** sejak 2026-09-14) adalah **snapshot prod**. Untuk menyegarkan (tunnel `:1234` harus aktif; `pg_dump`/`pg_restore` wajib versi ≥ PG prod — prod **PostgreSQL 18.3**; sejak local juga PG 18, client bawaan Postgres.app `/Applications/Postgres.app/Contents/Versions/18/bin/` sudah cukup; `postgresql@18`/`libpq` Homebrew tetap bisa dipakai):
 
 ```bash
 mkdir -p scripts/dump-prod/$(date +%F)   # folder di-gitignore — dump berisi data pribadi petani, jangan pernah commit
@@ -67,13 +67,13 @@ npx dotenv -e .env.staging -- sh -c '/opt/homebrew/opt/libpq/bin/pg_restore --no
 
 > **Jangan lupa `tiger`/`topology`.** Snapshot prod membawa schema kosong `tiger` & `topology` (sisa paket PostGIS). Keduanya **selamat** dari `drop schema public cascade`, lalu menabrak restore dengan `ERROR: schema "tiger" already exists` — dengan `--exit-on-error` restore berhenti di baris pertama dan DB tertinggal kosong. Drop keduanya bersamaan dengan `public`.
 
-Versi PostGIS tidak perlu disamakan: dump hanya memuat `CREATE EXTENSION`, jadi tiap server memasang versi defaultnya sendiri (local 3.5.0, server 3.6.3).
+Versi PostGIS tidak perlu disamakan: dump hanya memuat `CREATE EXTENSION`, jadi tiap server memasang versi defaultnya sendiri (sejak 2026-09-14 kebetulan sama: local & server 3.6.3).
 
-## Status (2026-09-01)
+## Status (2026-09-14)
 
-- DB **local** (`mis-dev`) dan **staging-local** (`localhost:5432/mis-staging-local`) = **snapshot prod 2026-09-01** (restore penuh `scripts/dump-prod/2026-09-01/mis-prod.dump`): 8.626 petani, 13.668 lahan, 16.274 produksi, 908 pelatihan, 44 user, 29 migrasi ter-apply — identik dengan prod. Backup isi lama keduanya: `scripts/dump-prod/2026-09-01/mis-dev-before-refresh.dump` dan `mis-staging-local-before-refresh.dump`.
-- DB **staging** (tunnel `:1235/mis-staging`) = salinan penuh `mis-staging-local` per 2026-08-28, yaitu snapshot prod 2026-08-27 + 3 migrasi (`farmer_group_boundary`, `administrative_boundary`, `land_parcel_satellites`); sejak itu `land_stdb_stage` juga sudah di-apply (#309). Dump: `scripts/dump-prod/2026-08-28/mis-staging-local.dump`; backup skema staging sebelumnya (26 tabel, 25 migrasi): `scripts/dump-prod/2026-08-28/mis-staging-before-refresh.dump`.
+- **Keempat DB non-prod = snapshot prod 2026-09-14 identik** (restore penuh `scripts/dump-prod/2026-09-14/mis-prod.dump`, pg_dump/pg_restore 18.6 dari `postgresql@18`): 8.863 petani, 14.002 lahan, 16.274 produksi, 822 pelatihan, 44 user, 29 migrasi ter-apply (terakhir `land_stdb_stage`) — sama persis dengan prod. Berlaku untuk **local** (`mis-dev`), **staging-local** (`localhost:5432/mis-staging-local`), dan **staging** (tunnel `:1235/mis-staging`). Backup isi lama ketiganya di folder yang sama: `mis-dev-before-refresh.dump`, `mis-staging-local-before-refresh.dump`, `mis-staging-before-refresh.dump`. Restore ketiganya bersih (0 error di `restore-<db>.log`).
+- Riwayat sebelumnya: local & staging-local = snapshot prod 2026-09-01 (`scripts/dump-prod/2026-09-01/`); staging = salinan `mis-staging-local` 2026-08-28 (snapshot prod 2026-08-27 + 3 migrasi, lalu `land_stdb_stage` #309) — dump & backup skema lamanya di `scripts/dump-prod/2026-08-28/`.
 - **Penyeragaman `crop_type` 2026-09-01 — SELURUH env sudah:** setiap lahan bernilai **"Kelapa Sawit"** di `mis-dev` (13.668) · `mis-staging-local` (13.668) · `mis-staging` (13.639) · `mis-prod` (13.677). Tidak ada divergensi antar-env pada kolom ini. Skor Ketersediaan Data domain Lahan **naik di semua env** karena `crop_type` ikut dinilai — snapshot dashboard lama tetap memuat angka pra-perubahan. Backup kolom pra-perubahan per DB: `tmp-backup/croptype-<db>-before-<ts>.csv`.
 - DB **dev** (tunnel `:1235/mis-dev`, satu server dengan staging): hidup, masih **skema lama** (belum disinkronkan dengan prod).
-- Prod & staging: PostgreSQL **18.3**; local: Postgres.app **17.2** — dump/restore memakai client 18 dari `libpq` Homebrew.
+- **Versi PG lokal disamakan 2026-09-14:** Postgres.app 2.9.6, server **18.6** (data `var-18`, port 5432), PostGIS **3.6.3** — major PG & PostGIS sama persis dengan prod/staging (18.3 / 3.6.3). Keempat DB lokal (`mis-dev`, `mis-staging-local`, `mis-android`, `mis_analytics`) di-restore ulang ke server 18 (0 error); `mis-android`/`mis_analytics` dari dump server 17 (`scripts/dump-prod/2026-09-14/local17-*.dump`). Server 17 (`var-17`, PG 17.11) dibiarkan berhenti sebagai fallback — bisa dihapus dari Postgres.app setelah beberapa minggu. Role `postgres` dibuat otomatis oleh Postgres.app 2.9 (auth trust lokal), `.env` tidak berubah.
 - Riwayat: staging pernah disamakan dengan snapshot prod 2026-08-17; skema staging lama (tabel ber-tanda-hubung, migrasi Mei 2026, tabel audit/HSE/sertifikasi) di-backup ke `scripts/dump-prod/2026-08-17/mis-staging-legacy-backup.dump` sebelum ditimpa.
