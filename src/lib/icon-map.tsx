@@ -32,6 +32,7 @@ import {
   // Agriculture & Nature
   Leaf,
   Sprout,
+  Landmark,
   Flower2,
   TreePine,
   Sun,
@@ -118,6 +119,7 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   // Agriculture & Nature
   Leaf: Leaf,
   Sprout: Sprout,
+  Landmark: Landmark,
   Flower2: Flower2,
   TreePine: TreePine,
   Sun: Sun,

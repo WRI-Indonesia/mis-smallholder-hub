@@ -600,6 +600,14 @@ export async function getDistrictsForLandParcelReport() {
   return districtsForMenus(["report-land-parcel"]);
 }
 
+export async function getDistrictsForMarkerReport() {
+  return districtsForMenus(["report-marker"]);
+}
+
+export async function getFarmerGroupsForMarkerReport(districtId?: string | null) {
+  return farmerGroupsForMenus(["report-marker"], districtId);
+}
+
 export async function getFarmerGroupsForLandParcelReport(districtId?: string | null) {
   return farmerGroupsForMenus(["report-land-parcel"], districtId);
 }

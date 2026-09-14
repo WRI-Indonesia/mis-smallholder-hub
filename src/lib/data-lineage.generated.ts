@@ -438,6 +438,23 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "report-marker",
+    "route": "(admin)/admin/report/marker",
+    "models": {
+      "district": "R",
+      "farmerGroup": "R",
+      "landMarker": "RW",
+      "landParcel": "R",
+      "landParcelMarker": "RW",
+      "landParcelNkt": "R"
+    },
+    "modules": [
+      "src/server/actions/land-marker.ts",
+      "src/server/actions/report.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "report-production",
     "route": "(admin)/admin/report/production",
     "models": {

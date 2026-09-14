@@ -129,6 +129,11 @@ ADMIN,report-land-parcel,EDIT
 ADMIN,report-land-parcel,EXPORT
 ADMIN,report-land-parcel,PRINT
 ADMIN,report-land-parcel,VIEW
+ADMIN,report-marker,CREATE
+ADMIN,report-marker,EDIT
+ADMIN,report-marker,EXPORT
+ADMIN,report-marker,PRINT
+ADMIN,report-marker,VIEW
 ADMIN,report-production,CREATE
 ADMIN,report-production,EDIT
 ADMIN,report-production,EXPORT
@@ -165,6 +170,8 @@ DONOR,report-kelompok-tani,PRINT
 DONOR,report-kelompok-tani,VIEW
 DONOR,report-land-parcel,PRINT
 DONOR,report-land-parcel,VIEW
+DONOR,report-marker,PRINT
+DONOR,report-marker,VIEW
 DONOR,report-production,PRINT
 DONOR,report-production,VIEW
 DONOR,report-training,PRINT
@@ -229,6 +236,9 @@ MANAGEMENT,report-kelompok-tani,VIEW
 MANAGEMENT,report-land-parcel,EXPORT
 MANAGEMENT,report-land-parcel,PRINT
 MANAGEMENT,report-land-parcel,VIEW
+MANAGEMENT,report-marker,EXPORT
+MANAGEMENT,report-marker,PRINT
+MANAGEMENT,report-marker,VIEW
 MANAGEMENT,report-production,EXPORT
 MANAGEMENT,report-production,PRINT
 MANAGEMENT,report-production,VIEW
@@ -293,6 +303,9 @@ OPERATOR,report-kelompok-tani,VIEW
 OPERATOR,report-land-parcel,EXPORT
 OPERATOR,report-land-parcel,PRINT
 OPERATOR,report-land-parcel,VIEW
+OPERATOR,report-marker,EXPORT
+OPERATOR,report-marker,PRINT
+OPERATOR,report-marker,VIEW
 OPERATOR,report-production,EXPORT
 OPERATOR,report-production,PRINT
 OPERATOR,report-production,VIEW
@@ -407,6 +420,9 @@ SUPERADMIN,report-kelompok-tani,VIEW
 SUPERADMIN,report-land-parcel,EXPORT
 SUPERADMIN,report-land-parcel,PRINT
 SUPERADMIN,report-land-parcel,VIEW
+SUPERADMIN,report-marker,EXPORT
+SUPERADMIN,report-marker,PRINT
+SUPERADMIN,report-marker,VIEW
 SUPERADMIN,report-production,EXPORT
 SUPERADMIN,report-production,PRINT
 SUPERADMIN,report-production,VIEW

@@ -521,6 +521,29 @@ export async function getMapMarkerExportRows(
 ): Promise<ActionResult<{ rows: LandMarkerExportRow[]; label: string | null }>> {
   if (!(await hasPermission("map-parcel", "EXPORT"))) return { success: false, error: "Tidak memiliki izin untuk mengekspor data ini" };
   if (typeof filters?.districtId !== "string" || !filters.districtId) return { success: false, error: "Pilih Distrik terlebih dahulu" };
+  return { success: true, data: await markerRowsForFilters(filters, nktOnly) };
+}
+
+/**
+ * Report › Patok (#331, menu baru `report-marker`): baris patok per tautan lahan
+ * untuk filter Distrik (wajib) / Lembaga — VIEW untuk layar, EXPORT/PRINT
+ * digate klien lewat `getUserPermissionsForMenu` + server pada unduhan.
+ */
+export async function getMarkerReportRows(
+  filters: { districtId: string; farmerGroupId?: string | null },
+  mode: "view" | "export" = "view",
+): Promise<ActionResult<{ rows: LandMarkerExportRow[]; label: string | null }>> {
+  const perm = mode === "export" ? "EXPORT" : "VIEW";
+  if (!(await hasPermission("report-marker", perm))) return { success: false, error: perm === "EXPORT" ? "Tidak memiliki izin untuk mengekspor data ini" : "Tidak memiliki izin untuk mengakses data ini" };
+  if (typeof filters?.districtId !== "string" || !filters.districtId) return { success: false, error: "Pilih Distrik terlebih dahulu" };
+  return { success: true, data: await markerRowsForFilters({ districtId: filters.districtId, farmerGroupId: filters.farmerGroupId ?? null }) };
+}
+
+/** Inti kueri bersama Peta Lahan & Report › Patok — scope akses via AND (pola getMapData). */
+async function markerRowsForFilters(
+  filters: { provinceId?: string | null; districtId: string; farmerGroupId?: string | null },
+  nktOnly = false,
+): Promise<{ rows: LandMarkerExportRow[]; label: string | null }> {
   const access = await getAccessContext();
   const groupWhere = {
     isActive: true,
@@ -593,7 +616,7 @@ export async function getMapMarkerExportRows(
     }
   }
   const label = filters.farmerGroupId ? (group?.code?.trim() || group?.name || null) : (district?.name ?? null);
-  return { success: true, data: { rows, label } };
+  return { rows, label };
 }
 
 // ─── Unggah titik (Excel/CSV & shapefile point) ───

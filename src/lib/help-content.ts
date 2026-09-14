@@ -70,6 +70,7 @@ import lLaporanPelatihan from "@/content/help/tutorial/l-4-laporan-pelatihan.md"
 import lLaporanProduksi from "@/content/help/tutorial/l-5-laporan-produksi.md";
 import lLaporanKelompokTani from "@/content/help/tutorial/l-6-laporan-kelompok-tani.md";
 import lMenyaringLegalitasLahan from "@/content/help/tutorial/l-7-menyaring-legalitas-lahan.md";
+import lLaporanPatok from "@/content/help/tutorial/l-8-laporan-patok.md";
 import pDashboardBmp from "@/content/help/tutorial/p-4-dashboard-bmp.md";
 import pPetaLahan from "@/content/help/tutorial/p-5-peta-lahan.md";
 import pKetersediaanData from "@/content/help/tutorial/p-6-ketersediaan-data.md";
@@ -234,6 +235,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "membuat-laporan", source: lMembuatLaporan },
       { id: "laporan-lahan", source: lLaporanLahan },
       { id: "menyaring-legalitas-lahan", source: lMenyaringLegalitasLahan },
+      { id: "laporan-patok", source: lLaporanPatok },
       { id: "laporan-pelatihan", source: lLaporanPelatihan },
       { id: "laporan-produksi", source: lLaporanProduksi },
       { id: "laporan-kelompok-tani", source: lLaporanKelompokTani },
