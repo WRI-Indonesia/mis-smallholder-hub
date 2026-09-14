@@ -110,7 +110,7 @@ export function ParcelMarkerFormModal({ open, onClose, landParcelId, item }: Pro
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Ubah Patok #${item!.sequenceNo}` : "Tambah Patok"}</DialogTitle>
+          <DialogTitle>{isEdit ? `Ubah Patok #${item!.sequenceNo} · ${item!.code}` : "Tambah Patok"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           {isEdit && item!.sharedWith.length > 0 && (

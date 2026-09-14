@@ -117,7 +117,7 @@ export async function fetchParcelPassport(
               sequenceNo: true,
               marker: {
                 select: {
-                  longitude: true, latitude: true, condition: true, type: true, installedAt: true,
+                  code: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true,
                   parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
                 },
               },
@@ -242,6 +242,7 @@ export async function fetchParcelPassport(
         const others = l.marker.parcels.filter((x) => x.parcelUid !== parcel.parcelUid);
         return {
           sequenceNo: l.sequenceNo,
+          code: l.marker.code,
           longitude: l.marker.longitude,
           latitude: l.marker.latitude,
           condition: l.marker.condition,

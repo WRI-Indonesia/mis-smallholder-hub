@@ -677,9 +677,10 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     doc.text(`${markers.length} patok · persegi bernomor di peta: kuning = patok lahan, merah = patok lahan NKT (lahan pemakainya termasuk/terdampak NKT)`, MARGIN, y + 1);
     y += 4;
     autoTable(doc, {
-      head: [["No", "Lintang", "Bujur", "Kondisi", "Jenis", "Dipasang", "NKT", "Juga patok lahan"]],
+      head: [["No", "Kode", "Lintang", "Bujur", "Kondisi", "Jenis", "Dipasang", "NKT", "Juga patok lahan"]],
       body: markers.map((m) => [
         String(m.sequenceNo),
+        m.code,
         m.latitude.toFixed(6),
         m.longitude.toFixed(6),
         labelOf(LAND_MARKER_CONDITION_LABELS, m.condition),
@@ -691,8 +692,13 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
       startY: y,
       theme: "striped",
       // Lebar No/NKT cukup untuk judul kolom satu baris pada font 9 (header "No"/"NKT" sempat terpenggal).
-      columnStyles: { 0: { halign: "right", cellWidth: 12 }, 1: { halign: "right" }, 2: { halign: "right" }, 6: { halign: "center", cellWidth: 14 } },
       ...tableCommon,
+      // Sembilan kolom (ada Kode sejak #331): font 8 + padding 2 supaya "HJP-PTK-000123" dan
+      // "Belum dipasang" muat satu baris dan kolom "Juga patok lahan" masih punya ruang.
+      styles: { font: "helvetica", cellPadding: 2, overflow: "linebreak" },
+      headStyles: { ...tableCommon.headStyles, fontSize: 8 },
+      bodyStyles: { ...tableCommon.bodyStyles, fontSize: 8 },
+      columnStyles: { 0: { halign: "right", cellWidth: 10 }, 1: { cellWidth: 27 }, 2: { halign: "right", cellWidth: 18 }, 3: { halign: "right", cellWidth: 20 }, 4: { cellWidth: 26 }, 5: { cellWidth: 18 }, 6: { cellWidth: 21 }, 7: { halign: "center", cellWidth: 10 } },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     y = (doc as any).lastAutoTable.finalY + 12;

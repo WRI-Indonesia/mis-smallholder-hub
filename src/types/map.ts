@@ -51,8 +51,8 @@ export type MapData = {
   counts: { kt: number; parcelPoints: number; parcelAreas: number; nkt?: number; markers?: number; markersNkt?: number };
 };
 
-/** Satu patok di Peta Lahan (#331) — tuple ringkas: [id, lon, lat, nkt 0/1, kondisi, "ID Lahan #n; …"]. */
-export type MapMarkerTuple = [id: string, lon: number, lat: number, nkt: 0 | 1, condition: string, parcels: string];
+/** Satu patok di Peta Lahan (#331) — tuple ringkas: [id, lon, lat, nkt 0/1, kondisi, "ID Lahan #n; …", kode]. */
+export type MapMarkerTuple = [id: string, lon: number, lat: number, nkt: 0 | 1, condition: string, parcels: string, code: string];
 
 export type MapMarkerWire = {
   markers: MapMarkerTuple[];
@@ -299,5 +299,5 @@ export type ParcelPassport = {
    * Batas". `sharedWith` = ID Lahan lain yang memakai patok yang sama; `nkt`
    * turunan dari status lahan pemakainya. Kosong = belum ada patok (tabel tidak dicetak).
    */
-  markers: { sequenceNo: number; longitude: number; latitude: number; condition: string; type: string | null; installedAt: string | null; sharedWith: string[]; nkt: boolean }[];
+  markers: { sequenceNo: number; code: string; longitude: number; latitude: number; condition: string; type: string | null; installedAt: string | null; sharedWith: string[]; nkt: boolean }[];
 };

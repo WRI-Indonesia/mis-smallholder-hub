@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LAND_MARKER_CONDITIONS, LAND_MARKER_TYPES } from "@/lib/land-marker";
+import { LAND_MARKER_CONDITIONS, LAND_MARKER_TYPES, MARKER_CODE_RE } from "@/lib/land-marker";
 import { optText, optDate } from "@/validations/land-parcel-satellite.schema";
 
 /**
@@ -60,6 +60,8 @@ export const renumberLandMarkersSchema = z.object({
  */
 export const landMarkerUploadRowSchema = z.object({
   landParcelId: z.string().min(1),
+  /** Kode patok fisik (HJP-PTK-000123) — bila terisi, patok itulah yang diperbarui/ditautkan. */
+  code: z.string().regex(MARKER_CODE_RE, "Kode patok tidak valid").nullable(),
   sequenceNo: z.number().int().positive().nullable(),
   longitude: z.number().min(-180).max(180),
   latitude: z.number().min(-90).max(90),

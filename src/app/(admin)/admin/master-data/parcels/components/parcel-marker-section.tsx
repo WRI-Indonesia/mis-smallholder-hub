@@ -140,6 +140,7 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
       filename: `Patok_${parcelId.replace(/[^A-Za-z0-9.-]/g, "_")}`,
       columns: [
         { header: "No Patok", key: "no", width: 10 },
+        { header: "Kode Patok", key: "code", width: 18 },
         { header: "ID Lahan", key: "parcelId", width: 30 },
         { header: "ID Petani", key: "farmerCode", width: 26 },
         { header: "Nama Petani", key: "farmerName", width: 26 },
@@ -156,6 +157,7 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
       ],
       data: markers.map((m) => ({
         no: m.sequenceNo,
+        code: m.code,
         parcelId,
         farmerCode,
         farmerName,
@@ -235,7 +237,7 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
                     <th className="py-1.5 pr-2 font-medium w-10">No</th>
-                    <th className="py-1.5 pr-3 font-medium">Koordinat</th>
+                    <th className="py-1.5 pr-3 font-medium">Kode · Koordinat</th>
                     <th className="py-1.5 pr-3 font-medium">Kondisi</th>
                     <th className="py-1.5 pr-3 font-medium">NKT</th>
                     <th className="py-1.5 font-medium text-right"></th>
@@ -246,6 +248,7 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
                     <tr key={m.linkId} className="border-b last:border-0 align-top">
                       <td className="py-2 pr-2 font-mono text-muted-foreground">{m.sequenceNo}</td>
                       <td className="py-2 pr-3">
+                        <div className="font-mono text-xs font-semibold">{m.code}</div>
                         <div className="font-mono text-xs">{fmtCoord(m.latitude)}, {fmtCoord(m.longitude)}</div>
                         <div className="text-[11px] text-muted-foreground">
                           {labelOf(LAND_MARKER_SOURCE_LABELS, m.source)}

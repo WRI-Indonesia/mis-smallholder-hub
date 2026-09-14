@@ -165,12 +165,39 @@ export function checkMarkerNearParcel(
   return `Koordinat ${Math.round(d)} m dari batas lahan (maks ${maxM} m) — periksa desimal/kolom`;
 }
 
+// ─── Kode patok `<SINGKATAN>-PTK-000123` (keputusan owner 2026-09-14) ───
+
+export const MARKER_CODE_INFIX = "PTK";
+export const MARKER_CODE_DIGITS = 6;
+/** Bentuk kode yang diterima unggahan: awalan huruf/angka, PTK, ≥ 1 digit. */
+export const MARKER_CODE_RE = /^[A-Z0-9]{1,20}-PTK-\d{1,9}$/;
+
+/** Awalan kode dari singkatan Lembaga (fallback kode Lembaga; 'MIS' bila keduanya kosong): huruf besar tanpa spasi/tanda baca. */
+export function markerCodePrefix(abrv: string | null | undefined, groupCode: string | null | undefined): string {
+  const raw = (abrv && abrv.trim()) || (groupCode && groupCode.trim()) || "MIS";
+  return raw.toUpperCase().replace(/[^A-Z0-9]/g, "") || "MIS";
+}
+
+export function formatMarkerCode(prefix: string, n: number): string {
+  return `${prefix}-${MARKER_CODE_INFIX}-${String(n).padStart(MARKER_CODE_DIGITS, "0")}`;
+}
+
+/** Normalisasi kode dari sel/formulir: trim, huruf besar, spasi di sekitar tanda hubung dibuang; null bila kosong/tak valid. */
+export function normalizeMarkerCode(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim().toUpperCase().replace(/\s*-\s*/g, "-").replace(/\s+/g, "");
+  if (!s) return null;
+  return MARKER_CODE_RE.test(s) ? s : null;
+}
+
 /** Format koordinat 6 desimal (≈ 0,1 m) — cukup untuk berkas STDB/SKT. */
 export const fmtCoord = (n: number) => n.toFixed(6);
 
 /** Baris ekspor patok per tautan lahan (bentuk `LandMarkerExportRow` di action) — dikelompokkan per patok fisik. */
 export interface MarkerLinkRow {
   markerId: string;
+  /** Kode patok fisik `HJP-PTK-000123`. */
+  code: string;
   parcelId: string;
   farmerCode: string;
   farmerName: string;
@@ -193,10 +220,11 @@ export interface MarkerLinkRow {
 
 export interface UniqueMarkerRow {
   markerId: string;
+  code: string;
   /** KT & Blok terkecil (alfabet) di antara lahan pemakai — basis urutan; kosong di akhir. */
   subGroupLv2: string | null;
   blok: string | null;
-  /** "Nama Petani · ID Petani · ID Lahan #n, …" — lahan pemakai (hanya yang kena NKT bila `nktParcelsOnly`), urut ID Lahan. */
+  /** "Nama Petani · ID Petani · ID Lahan #n" per baris (dipisah "\n" bila lebih dari satu) — lahan pemakai (hanya yang kena NKT bila `nktParcelsOnly`), urut ID Lahan. */
   lahan: string;
   farmerNames: string;
   groupName: string;
@@ -234,9 +262,11 @@ export function uniqueMarkerRows(rows: MarkerLinkRow[], opts: { nktParcelsOnly?:
     const first = sorted[0];
     return {
       markerId: first.markerId,
+      code: first.code,
       subGroupLv2: minStr(shown.map((x) => x.subGroupLv2)),
       blok: minStr(shown.map((x) => x.blok)),
-      lahan: shown.map((x) => `${x.farmerName} · ${x.farmerCode} · ${x.parcelId} #${x.sequenceNo}`).join(", "),
+      // Beberapa lahan → satu per baris (owner 2026-09-14), bukan dipisah koma.
+      lahan: shown.map((x) => `${x.farmerName} · ${x.farmerCode} · ${x.parcelId} #${x.sequenceNo}`).join("\n"),
       farmerNames: [...new Set(shown.map((x) => x.farmerName))].join(", "),
       groupName: [...new Set(shown.map((x) => x.groupName))].join(", "),
       parcelCount: g.length,
@@ -252,5 +282,41 @@ export function uniqueMarkerRows(rows: MarkerLinkRow[], opts: { nktParcelsOnly?:
     };
   });
   const cmp = (a: string | null, b: string | null) => (a === b ? 0 : a === null ? 1 : b === null ? -1 : a.localeCompare(b, "id", { numeric: true }));
-  return out.sort((a, b) => cmp(a.subGroupLv2, b.subGroupLv2) || cmp(a.blok, b.blok) || a.lahan.localeCompare(b.lahan));
+  return out.sort((a, b) => cmp(a.subGroupLv2, b.subGroupLv2) || cmp(a.blok, b.blok) || a.code.localeCompare(b.code, "id", { numeric: true }));
+}
+
+export interface ParcelMarkerGroup {
+  parcelId: string;
+  farmerCode: string;
+  farmerName: string;
+  subGroupLv2: string | null;
+  blok: string | null;
+  nkt: boolean;
+  /** Patok lahan ini, urut nomor per lahan; `mapNo` = nomor patok di peta/daftar unik (1-based). */
+  markers: { mapNo: number; code: string; sequenceNo: number; condition: string }[];
+}
+
+/**
+ * Tabel PDF patok dikelompokkan PER LAHAN (owner 2026-09-14: baris per patok
+ * mengulang nama/ID petani berkali-kali). `unique` = hasil `uniqueMarkerRows`
+ * (urutan = nomor di peta). Bila `nktOnly`, hanya lahan yang kena NKT.
+ */
+export function groupMarkersByParcel(rows: MarkerLinkRow[], unique: UniqueMarkerRow[], opts: { nktOnly?: boolean } = {}): ParcelMarkerGroup[] {
+  const mapNo = new Map(unique.map((u, i) => [u.markerId, i + 1]));
+  const byParcel = new Map<string, ParcelMarkerGroup>();
+  for (const r of rows) {
+    if (opts.nktOnly && !(r.parcelNkt ?? r.nkt)) continue;
+    const no = mapNo.get(r.markerId);
+    if (!no) continue;
+    let g = byParcel.get(r.parcelId);
+    if (!g) {
+      g = { parcelId: r.parcelId, farmerCode: r.farmerCode, farmerName: r.farmerName, subGroupLv2: r.subGroupLv2, blok: r.blok, nkt: r.parcelNkt ?? r.nkt, markers: [] };
+      byParcel.set(r.parcelId, g);
+    }
+    g.markers.push({ mapNo: no, code: r.code, sequenceNo: r.sequenceNo, condition: r.condition });
+  }
+  const cmp = (a: string | null, b: string | null) => (a === b ? 0 : a === null ? 1 : b === null ? -1 : a.localeCompare(b, "id", { numeric: true }));
+  const out = [...byParcel.values()];
+  for (const g of out) g.markers.sort((a, b) => a.sequenceNo - b.sequenceNo);
+  return out.sort((a, b) => cmp(a.subGroupLv2, b.subGroupLv2) || cmp(a.blok, b.blok) || a.parcelId.localeCompare(b.parcelId));
 }

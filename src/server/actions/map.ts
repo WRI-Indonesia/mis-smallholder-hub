@@ -219,7 +219,7 @@ export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<M
       parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } } } } },
     },
     select: {
-      id: true, longitude: true, latitude: true, condition: true,
+      id: true, code: true, longitude: true, latitude: true, condition: true,
       parcels: { where: { isActive: true }, select: { sequenceNo: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } }, orderBy: { parcel: { parcelId: "asc" } } },
     },
   });
@@ -233,6 +233,7 @@ export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<M
         m.parcels.some((l) => isNktAffected(l.parcel.nkt?.status)) ? 1 : 0,
         m.condition,
         m.parcels.map((l) => `${l.parcel.parcelId} #${l.sequenceNo}`).join("; "),
+        m.code,
       ]),
     },
   };

@@ -58,6 +58,8 @@
 | LandParcelNkt | UNIQUE | `parcelUid` | Status NKT 1:1 per identitas lahan (#328) |
 | LandParcelNkt | INDEX | `status` | Filter Laporan Lahan / hitungan layer peta per status |
 | LandMarker | PK | `id` (CUID) | Primary key |
+| LandMarker | UNIQUE | `code` | Kode patok fisik `HJP-PTK-000123` (#331) — kunci unggah ulang & rujukan laporan |
+| LandMarkerCounter | PK | `prefix` | Deret kode per awalan Lembaga; diperbarui atomik (`ON CONFLICT DO UPDATE … RETURNING`) |
 | LandMarker | GIST (manual, `tbl_land_marker_geom_idx`) | `geom` | Snap ≤ 5 m "Buat patok dari poligon" & unggahan (`ST_DWithin` patok ↔ geometri lahan) (#329); dijaga `migration-guards.test.ts` seperti `*_geom_idx` lain |
 | LandMarker | INDEX | `isActive` | Kueri patok aktif |
 | LandParcelMarker | PK | `id` (CUID) | Primary key |

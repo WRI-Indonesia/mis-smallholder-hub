@@ -76,12 +76,14 @@ describe("createMarkersFromPolygonSchema / renumberLandMarkersSchema", () => {
 });
 
 describe("landMarkerUploadBatchSchema — payload unggahan (sudah ternormalisasi klien)", () => {
-  const row = { landParcelId: "lp-1", sequenceNo: null, longitude: 101.19, latitude: 0.52, condition: null, type: null, installedAt: null, installedBy: null, notes: null };
+  const row = { landParcelId: "lp-1", code: null, sequenceNo: null, longitude: 101.19, latitude: 0.52, condition: null, type: null, installedAt: null, installedBy: null, notes: null };
 
   it("baris valid; tanggal harus yyyy-mm-dd; batas 20.000 baris", () => {
     expect(landMarkerUploadBatchSchema.safeParse([row]).success).toBe(true);
     expect(landMarkerUploadBatchSchema.safeParse([{ ...row, installedAt: "01/09/2026" }]).success).toBe(false);
     expect(landMarkerUploadBatchSchema.safeParse([{ ...row, installedAt: "2026-09-01", condition: "PRESENT" }]).success).toBe(true);
+    expect(landMarkerUploadBatchSchema.safeParse([{ ...row, code: "HJP-PTK-000123" }]).success).toBe(true);
+    expect(landMarkerUploadBatchSchema.safeParse([{ ...row, code: "patok-1" }]).success).toBe(false);
     expect(landMarkerUploadBatchSchema.safeParse([]).success).toBe(false);
     expect(landMarkerUploadBatchSchema.safeParse(Array.from({ length: 20_001 }, () => row)).success).toBe(false);
   });

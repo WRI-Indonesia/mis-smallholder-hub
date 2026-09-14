@@ -15,6 +15,7 @@ import {
   LAND_MARKER_CONDITION_LABELS,
   LAND_MARKER_TYPES,
   LAND_MARKER_TYPE_LABELS,
+  normalizeMarkerCode,
   type LandMarkerConditionCode,
   type LandMarkerTypeCode,
 } from "@/lib/land-marker";
@@ -22,6 +23,7 @@ import {
 export const MARKER_UPLOAD_FIELDS = [
   { key: "parcelId", label: "ID Lahan", required: true },
   { key: "farmerCode", label: "ID Petani", required: false },
+  { key: "code", label: "Kode Patok", required: false },
   { key: "sequenceNo", label: "No Patok", required: false },
   { key: "latitude", label: "Lintang", required: true },
   { key: "longitude", label: "Bujur", required: true },
@@ -37,6 +39,7 @@ export type MarkerUploadFieldKey = (typeof MARKER_UPLOAD_FIELDS)[number]["key"];
 export const MARKER_UPLOAD_AUTO_MATCH_RULES: Record<MarkerUploadFieldKey, string[]> = {
   parcelId: ["id lahan", "id_lahan", "idlahan", "parcel_id", "parcelid", "land_id", "kode lahan"],
   farmerCode: ["id petani", "id_petani", "idpetani", "farmer_id", "farmerid", "kode petani"],
+  code: ["kode patok", "kode_patok", "kodepatok", "kode", "code", "marker_code", "id patok", "id_patok", "patok_code"],
   // Tanpa alias "no"/"nomor": kolom nomor BARIS spreadsheet ikut terpetakan dan
   // menimpa koordinat patok bernomor sama (temuan review 2026-09-14).
   sequenceNo: ["no patok", "no_patok", "nopatok", "nomor patok", "nomor_patok", "seq", "sequence", "patok", "no_seq"],
@@ -191,6 +194,8 @@ export interface MarkerUploadRow {
   rowNumber: number;
   parcelId: string;
   farmerCode: string | null;
+  /** Kode patok fisik bila baris merujuk patok yang sudah ada. */
+  code: string | null;
   sequenceNo: number | null;
   latitude: number;
   longitude: number;
@@ -261,6 +266,9 @@ export function validateMarkerUploadRows(
       if (ref && !ref.hasGeometry) errors.push("Lahan belum punya poligon — jarak patok ke batas tidak bisa diperiksa");
     }
 
+    const rawCode = cleanCell(pick(rec, mapping, "code"));
+    const code = rawCode ? normalizeMarkerCode(rawCode) : null;
+    if (rawCode && !code) errors.push(`Kode patok tidak valid: "${rawCode}" (bentuk HJP-PTK-000123)`);
     const seq = parseSequenceCell(pick(rec, mapping, "sequenceNo"));
     if (seq.error) errors.push(seq.error);
     const lat = parseCoordCell(pick(rec, mapping, "latitude"), "Lintang", -90, 90);
@@ -293,7 +301,7 @@ export function validateMarkerUploadRows(
       else seen.set(key, rowNumber);
     }
 
-    const action: MarkerUploadValidatedRow["action"] = !ref ? null : seq.value != null && ref.sequenceNos.includes(seq.value) ? "update" : "create";
+    const action: MarkerUploadValidatedRow["action"] = !ref ? null : code ? "update" : seq.value != null && ref.sequenceNos.includes(seq.value) ? "update" : "create";
     const ok = errors.length === 0 && ref && lat.value != null && lon.value != null;
     return {
       rowNumber,
@@ -307,6 +315,7 @@ export function validateMarkerUploadRows(
             rowNumber,
             parcelId,
             farmerCode,
+            code,
             sequenceNo: seq.value,
             latitude: lat.value!,
             longitude: lon.value!,
@@ -327,6 +336,7 @@ export function toUploadPayload(rows: MarkerUploadValidatedRow[]) {
     .filter((r) => r.row && r.landParcelId)
     .map((r) => ({
       landParcelId: r.landParcelId!,
+      code: r.row!.code,
       sequenceNo: r.row!.sequenceNo,
       longitude: r.row!.longitude,
       latitude: r.row!.latitude,
@@ -343,6 +353,7 @@ export const MARKER_UPLOAD_TEMPLATE_COLUMNS = MARKER_UPLOAD_FIELDS.map((f) => ({
 export const MARKER_UPLOAD_TEMPLATE_EXAMPLE: Record<MarkerUploadFieldKey, string | number> = {
   parcelId: "ICS-XXXX-01.0001.A",
   farmerCode: "",
+  code: "",
   sequenceNo: 1,
   latitude: 0.523456,
   longitude: 101.191234,

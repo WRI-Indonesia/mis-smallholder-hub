@@ -255,8 +255,8 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     const withMarkers: ParcelPassport = {
       ...passport,
       markers: [
-        { sequenceNo: 1, longitude: 101.1912, latitude: 0.5235, condition: "PRESENT", type: "CONCRETE", installedAt: "2026-09-01T00:00:00.000Z", sharedWith: ["SH-0002.A"], nkt: true },
-        { sequenceNo: 2, longitude: 101.1918, latitude: 0.5235, condition: "NOT_INSTALLED", type: null, installedAt: null, sharedWith: [], nkt: false },
+        { sequenceNo: 1, code: "SH-PTK-000001", longitude: 101.1912, latitude: 0.5235, condition: "PRESENT", type: "CONCRETE", installedAt: "2026-09-01T00:00:00.000Z", sharedWith: ["SH-0002.A"], nkt: true },
+        { sequenceNo: 2, code: "SH-PTK-000002", longitude: 101.1918, latitude: 0.5235, condition: "NOT_INSTALLED", type: null, installedAt: null, sharedWith: [], nkt: false },
       ],
     };
     const text = pdfText(buildFarmPassportDoc(withMarkers));
@@ -264,6 +264,7 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     expect(text).toContain("Beton");
     expect(text).toContain("Belum dipasang");
     expect(text).toContain("SH-0002.A");
+    expect(text).toContain("SH-PTK-000001");
     expect(text).toContain("101.191200");
   });
 

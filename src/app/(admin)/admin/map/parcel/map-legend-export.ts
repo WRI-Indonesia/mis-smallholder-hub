@@ -2,7 +2,7 @@ import type { Feature, FeatureCollection, MultiPolygon, Point, Polygon } from "g
 import { exportToExcel } from "@/lib/xlsx";
 import { downloadFeatureExport } from "@/lib/parcel-spatial-download";
 import { toAsciiDbf, toDbfProperties, parcelExportFileBase, type ParcelExportFormat, type ParcelExportProperties } from "@/lib/parcel-export-data";
-import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_SOURCE_LABELS, LAND_MARKER_TYPE_LABELS, fmtCoord, labelOf, uniqueMarkerRows, type UniqueMarkerRow } from "@/lib/land-marker";
+import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_SOURCE_LABELS, LAND_MARKER_TYPE_LABELS, fmtCoord, labelOf, uniqueMarkerRows, groupMarkersByParcel, type UniqueMarkerRow } from "@/lib/land-marker";
 import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import type { LandMarkerExportRow } from "@/server/actions/land-marker";
 import type { KTPoint } from "@/types/map";
@@ -17,7 +17,7 @@ export function parcelContext(parcels: ParcelFeature[]): LayerReportContext {
   };
 }
 const CONTEXT_LEGEND: { color: [number, number, number]; label: string }[] = [
-  { color: [223, 200, 243], label: "Lahan lain (25 %)" },
+  { color: [239, 230, 250], label: "Lahan lain" },
   { color: [220, 38, 38], label: "Lahan termasuk NKT" },
   { color: [245, 158, 11], label: "Lahan terdampak NKT" },
 ];
@@ -248,9 +248,10 @@ function nktCodeFromLabel(label: string | null): string | null {
 // ─── Patok (Point) — satu baris/fitur per patok FISIK (keputusan owner 2026-09-14) ───
 
 const MARKER_XLSX_COLUMNS = [
+  { header: "Kode Patok", key: "code", width: 18 },
   { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
   { header: "Blok", key: "blok", width: 10 },
-  { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 70 },
+  { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 60, wrap: true },
   { header: "Lembaga Petani", key: "groupName", width: 26 },
   { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
   { header: "Lintang", key: "latitude", width: 14 },
@@ -300,9 +301,12 @@ export async function exportMarkerRow(
     return unique.length;
   }
   if (format === "pdf") {
+    // Tabel per LAHAN (owner 2026-09-14: baris per patok mengulang nama/ID petani);
+    // nomor di peta = urutan patok unik, dicantumkan di tiap patok pada sel "Patok".
+    const groups = groupMarkersByParcel(rows, unique, { nktOnly: row === "markersNkt" });
     savePdf({
       title: row === "markersNkt" ? "Patok lahan NKT" : "Patok lahan",
-      subtitle: `${label ?? "Semua"} · ${unique.length} patok · ${rows.length} tautan lahan · urut Kelompok Tani, Blok · dicetak ${printedAt(now)}`,
+      subtitle: `${label ?? "Semua"} · ${unique.length} patok · ${groups.length} lahan · urut Kelompok Tani, Blok · dicetak ${printedAt(now)}`,
       fc: {
         type: "FeatureCollection",
         features: unique.map((r) => ({ type: "Feature", geometry: { type: "Point", coordinates: [r.longitude, r.latitude] }, properties: { nkt: r.nkt } })),
@@ -312,19 +316,26 @@ export async function exportMarkerRow(
       legend: [{ color: YELLOW, label: "Patok lahan" }, { color: NKT_RED, label: "Patok lahan NKT" }, ...(context ? CONTEXT_LEGEND : [])],
       columns: [
         { header: "No", key: "no", align: "right", width: 9 },
-        { header: "KT / Blok", key: "ktBlok", width: 24 },
-        { header: row === "markersNkt" ? "Lahan NKT (Nama Petani · ID Petani · ID Lahan #no)" : "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan" },
-        { header: "Kondisi", key: "condition", width: 20 },
-        { header: "NKT", key: "nkt", width: 10, align: "center" },
-        { header: "Lintang, Bujur", key: "coord", width: 34 },
+        { header: "KT / Blok", key: "ktBlok", width: 22 },
+        { header: "Nama Petani", key: "farmerName", width: 38 },
+        { header: "ID Petani", key: "farmerCode", width: 42 },
+        { header: row === "markersNkt" ? "ID Lahan NKT" : "ID Lahan", key: "parcelId", width: 44 },
+        // Empat kolom sejajar per patok (satu patok per baris sel) — bukan satu sel gabungan.
+        { header: "No peta", key: "mapNo", align: "right", width: 14 },
+        { header: "Kode Patok", key: "code", width: 32 },
+        { header: "No di lahan", key: "seq", align: "right", width: 18 },
+        { header: "Kondisi", key: "condition" },
       ],
-      rows: data.map((r, i) => ({
+      rows: groups.map((g, i) => ({
         no: i + 1,
-        ktBlok: [r.subGroupLv2, r.blok].filter(Boolean).join(" / "),
-        lahan: r.lahan,
-        condition: r.condition,
-        nkt: r.nkt,
-        coord: `${r.latitude}, ${r.longitude}`,
+        ktBlok: [g.subGroupLv2, g.blok].filter(Boolean).join(" / "),
+        farmerName: g.farmerName,
+        farmerCode: g.farmerCode,
+        parcelId: g.parcelId,
+        mapNo: g.markers.map((m) => String(m.mapNo)).join("\n"),
+        code: g.markers.map((m) => m.code).join("\n"),
+        seq: g.markers.map((m) => `#${m.sequenceNo}`).join("\n"),
+        condition: g.markers.map((m) => labelOf(LAND_MARKER_CONDITION_LABELS, m.condition)).join("\n"),
       })),
     }, b);
     return unique.length;
@@ -336,6 +347,7 @@ export async function exportMarkerRow(
       geometry: { type: "Point", coordinates: [r.longitude, r.latitude] },
       properties: {
         idPatok: r.markerId,
+        kodePatok: r.code,
         kelompokTani: r.subGroupLv2,
         blok: r.blok,
         lahan: r.lahan,
@@ -355,6 +367,7 @@ export async function exportMarkerRow(
     shpLayer: row === "markersNkt" ? "patok_nkt" : "patok",
     toDbf: (p) => ({
       id_patok: String(p.idPatok ?? ""),
+      kode: String(p.kodePatok ?? ""),
       kel_tani: toAsciiDbf(String(p.kelompokTani ?? "")),
       blok: toAsciiDbf(String(p.blok ?? "")),
       lahan: toAsciiDbf(String(p.lahan ?? "")),

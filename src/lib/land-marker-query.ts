@@ -1,5 +1,6 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { MARKER_SIMPLIFY_M, MARKER_SNAP_M, type LonLat, type NearbyMarker } from "@/lib/land-marker";
+import { MARKER_SIMPLIFY_M, MARKER_SNAP_M, formatMarkerCode, type LonLat, type NearbyMarker } from "@/lib/land-marker";
 import { metersToDegrees } from "@/lib/parcel-neighbor";
 
 /**
@@ -116,4 +117,21 @@ export async function distancesToParcelBoundary(landParcelId: string, points: Lo
   const out = new Array<number>(points.length).fill(Number.POSITIVE_INFINITY);
   for (const r of rows) out[Number(r.i) - 1] = r.d == null ? Number.POSITIVE_INFINITY : Number(r.d);
   return out;
+}
+
+/**
+ * Ambil `n` nomor kode patok berurutan untuk awalan Lembaga secara ATOMIK
+ * (`INSERT … ON CONFLICT DO UPDATE … RETURNING`) — dua pengguna yang membuat
+ * patok bersamaan tidak pernah mendapat nomor sama. Dipanggil di dalam
+ * transaksi penulis; mengembalikan kode siap pakai urut.
+ */
+export async function allocateMarkerCodes(tx: Prisma.TransactionClient, prefix: string, n: number): Promise<string[]> {
+  if (n <= 0) return [];
+  const rows = await tx.$queryRaw<{ last_no: number }[]>`
+    INSERT INTO tbl_land_marker_counter (prefix, last_no) VALUES (${prefix}, ${n})
+    ON CONFLICT (prefix) DO UPDATE SET last_no = tbl_land_marker_counter.last_no + ${n}
+    RETURNING last_no
+  `;
+  const last = Number(rows[0]?.last_no ?? n);
+  return Array.from({ length: n }, (_, i) => formatMarkerCode(prefix, last - n + i + 1));
 }

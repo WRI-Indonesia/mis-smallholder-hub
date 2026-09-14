@@ -39,7 +39,7 @@ const match = (refs: MarkerUploadParcelRef[], global?: Record<string, number>): 
   return { parcelsById, globalCounts: new Map(Object.entries(global ?? {})) };
 };
 
-const MAPPING = { parcelId: "ID Lahan", farmerCode: "ID Petani", sequenceNo: "No Patok", latitude: "Lintang", longitude: "Bujur", condition: "Kondisi", type: "Jenis", installedAt: "Tanggal Pemasangan", installedBy: "Dipasang oleh", notes: "Keterangan" } as const;
+const MAPPING = { parcelId: "ID Lahan", farmerCode: "ID Petani", code: "Kode Patok", sequenceNo: "No Patok", latitude: "Lintang", longitude: "Bujur", condition: "Kondisi", type: "Jenis", installedAt: "Tanggal Pemasangan", installedBy: "Dipasang oleh", notes: "Keterangan" } as const;
 
 describe("autoMatchMarkerUploadColumns — alias header Excel & atribut DBF", () => {
   it("template resmi terpetakan seluruhnya", () => {
@@ -139,7 +139,7 @@ describe("markerFeaturesToRecords — shapefile Point → record ber-header temp
 
 describe("validateMarkerUploadRows — pencocokan lahan & aturan baris", () => {
   const row = (o: Record<string, unknown> = {}) => ({
-    "ID Lahan": "LHN-1.A", "ID Petani": "", "No Patok": "", Lintang: 0.52, Bujur: 101.19, Kondisi: "Ada", Jenis: "", "Tanggal Pemasangan": "", "Dipasang oleh": "", Keterangan: "",
+    "ID Lahan": "LHN-1.A", "ID Petani": "", "Kode Patok": "", "No Patok": "", Lintang: 0.52, Bujur: 101.19, Kondisi: "Ada", Jenis: "", "Tanggal Pemasangan": "", "Dipasang oleh": "", Keterangan: "",
     ...o,
   });
 
@@ -212,11 +212,20 @@ describe("validateMarkerUploadRows — pencocokan lahan & aturan baris", () => {
     expect(r.row).toMatchObject({ installedAt: "2026-09-01", notes: "tidak ada" });
   });
 
+  it("Kode Patok terisi → action update (patok fisik itu yang diperbarui/ditautkan); kode salah bentuk → error", () => {
+    const [ok] = validateMarkerUploadRows([row({ "Kode Patok": "hjp-ptk-000012" })], MAPPING, match([ref()]));
+    expect(ok.errors).toEqual([]);
+    expect(ok.action).toBe("update");
+    expect(ok.row?.code).toBe("HJP-PTK-000012");
+    const [bad] = validateMarkerUploadRows([row({ "Kode Patok": "Patok-12" })], MAPPING, match([ref()]));
+    expect(bad.errors[0]).toMatch(/Kode patok tidak valid/);
+  });
+
   it("toUploadPayload hanya mengirim baris valid, bentuk sesuai skema server", () => {
     const rows = validateMarkerUploadRows([row({ "No Patok": 2 }), row({ "ID Lahan": "LHN-X" })], MAPPING, match([ref()]));
     const payload = toUploadPayload(rows);
     expect(payload).toEqual([
-      { landParcelId: "lp-1", sequenceNo: 2, longitude: 101.19, latitude: 0.52, condition: "PRESENT", type: null, installedAt: null, installedBy: null, notes: null },
+      { landParcelId: "lp-1", code: null, sequenceNo: 2, longitude: 101.19, latitude: 0.52, condition: "PRESENT", type: null, installedAt: null, installedBy: null, notes: null },
     ]);
   });
 });

@@ -237,9 +237,10 @@ export function GroupDetailClient({
         filename: `patok-${parcelExportFileBase(res.data.label, new Date())}`,
         sheetName: "Patok",
         columns: [
+          { header: "Kode Patok", key: "code", width: 18 },
           { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
           { header: "Blok", key: "blok", width: 10 },
-          { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 70 },
+          { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 60, wrap: true },
           { header: "Lembaga Petani", key: "groupName", width: 26 },
           { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
           { header: "Lintang", key: "latitude", width: 14 },

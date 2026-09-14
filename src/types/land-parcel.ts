@@ -154,6 +154,8 @@ export interface LandMarkerItem {
   linkId: string;
   /** LandMarker.id. */
   id: string;
+  /** Kode patok fisik `HJP-PTK-000123` (#331). */
+  code: string;
   sequenceNo: number;
   sourceRevision: number | null;
   longitude: number;

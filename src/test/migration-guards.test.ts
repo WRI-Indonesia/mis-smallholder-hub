@@ -88,6 +88,32 @@ describe("migrasi land_marker — patok batas: geom generated + GiST + partial u
   });
 });
 
+describe("migrasi land_marker_code — kode patok unik + counter, backfill sebelum NOT NULL (#331)", () => {
+  const m = migrationFiles().find((f) => f.name.endsWith("_land_marker_code"));
+
+  it("kolom code nullable dulu → backfill dua tahap → NOT NULL → unique; counter diisi nomor terbesar per awalan", () => {
+    expect(m).toBeDefined();
+    const sql = m!.sql;
+    const addCol = sql.indexOf('ADD COLUMN "code" TEXT');
+    const backfill = sql.indexOf("UPDATE tbl_land_marker m");
+    const notNull = sql.indexOf('ALTER COLUMN "code" SET NOT NULL');
+    const unique = sql.indexOf('CREATE UNIQUE INDEX "tbl_land_marker_code_key"');
+    expect(addCol).toBeGreaterThan(-1);
+    expect(backfill).toBeGreaterThan(addCol);
+    expect(notNull).toBeGreaterThan(backfill);
+    expect(unique).toBeGreaterThan(notNull);
+    expect(sql).toMatch(/INSERT INTO tbl_land_marker_counter \(prefix, last_no\)/);
+    // Bentuk kode <AWALAN>-PTK-000123: awalan = singkatan Lembaga tanpa spasi/tanda baca, 6 digit.
+    expect(sql).toMatch(/regexp_replace\(upper\(coalesce\(nullif\(trim\(g\.abrv\), ''\), g\.code, 'MIS'\)\), '\[\^A-Z0-9\]', '', 'g'\)/);
+    expect(sql).toMatch(/\|\| '-PTK-' \|\| lpad\(numbered\.n::text, 6, '0'\)/);
+  });
+
+  it("tidak menyentuh tbl_land_parcel / index geom", () => {
+    expect(ddlOnly(m!.sql)).not.toMatch(/tbl_land_parcel"?\s+(ALTER|DROP)/i);
+    expect(ddlOnly(m!.sql)).not.toMatch(/DROP INDEX/i);
+  });
+});
+
 describe("migrasi land_parcel_satellites — backfill parcel_uid sebelum NOT NULL", () => {
   const m = migrationFiles().find((f) => f.name.endsWith("_land_parcel_satellites"));
 

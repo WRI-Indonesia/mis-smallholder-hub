@@ -35,6 +35,12 @@ enum LandMarkerSource {
 
 model LandMarker {
   id          String              @id @default(cuid())
+  // Kode unik patok fisik `<SINGKATAN LEMBAGA>-PTK-000123` (keputusan owner
+  // 2026-09-14): ditulis di patok fisiknya, dirujuk laporan/Excel, kunci
+  // unggah ulang. Awalan = singkatan Lembaga lahan yang PERTAMA membuatnya
+  // (patok bersama lintas Lembaga tetap satu kode); deret per awalan lewat
+  // LandMarkerCounter (atomik, aman dua pengguna bersamaan).
+  code        String              @unique @map("code")
   longitude   Float               @map("longitude") // WGS84
   latitude    Float               @map("latitude")
   // Turunan PostGIS dari lon/lat — GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(...), 4326))
@@ -87,4 +93,13 @@ model LandParcelMarker {
   @@index([markerId])
   @@index([parcelUid, isActive])
   @@map("tbl_land_parcel_marker")
+}
+
+// Deret nomor kode patok per awalan Lembaga — `INSERT … ON CONFLICT DO UPDATE …
+// RETURNING` mengambil blok nomor secara atomik (lihat allocateMarkerCodes).
+model LandMarkerCounter {
+  prefix String @id @map("prefix")
+  lastNo Int    @default(0) @map("last_no")
+
+  @@map("tbl_land_marker_counter")
 }

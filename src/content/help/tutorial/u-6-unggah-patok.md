@@ -15,7 +15,7 @@ Ini untuk **titik patok**, bukan poligon lahan. Setiap baris/titik harus menunju
 
 Dua bentuk berkas diterima di tab yang sama:
 
-- **Excel (.xlsx) / CSV** — kolom: `ID Lahan`*, `ID Petani` (hanya bila ID Lahan dipakai lebih dari satu petani), `No Patok`, `Lintang`*, `Bujur`*, `Kondisi`, `Jenis`, `Tanggal Pemasangan`, `Dipasang oleh`, `Keterangan`. Tombol **Unduh Template Excel** memberi contohnya.
+- **Excel (.xlsx) / CSV** — kolom: `ID Lahan`*, `ID Petani` (hanya bila ID Lahan dipakai lebih dari satu petani), `Kode Patok` (mis. `HJP-PTK-000123` — bila diisi, patok itulah yang diperbarui; patok yang belum tertaut ke lahan ini ikut ditautkan), `No Patok`, `Lintang`*, `Bujur`*, `Kondisi`, `Jenis`, `Tanggal Pemasangan`, `Dipasang oleh`, `Keterangan`. Tombol **Unduh Template Excel** memberi contohnya.
 - **ZIP shapefile titik (Point)** — koordinat diambil dari geometrinya (WGS84); atribut DBF seperti `parcel_id`, `no_patok`, `cond`, `type`, `installed` dikenali otomatis, sisanya bisa dipetakan manual. Kolom bernama `No`/`Nomor` sengaja **tidak** dianggap nomor patok (biasanya nomor baris) — petakan manual bila memang nomor patok.
 
 + Kondisi menerima *Ada / Hilang / Rusak / Belum dipasang* (juga ejaan lapangan seperti "tidak ada", "patah"); jenis menerima *Beton / Kayu / Pipa / Tanda alam / Lainnya* (juga "semen", "paralon", "pohon").
@@ -27,7 +27,7 @@ Dua bentuk berkas diterima di tab yang sama:
 + Untuk shapefile, sistem memberi tahu bila ada fitur yang bukan titik (dilewati).
 2. Periksa **Pemetaan kolom**. Kolom wajib (ID Lahan, Lintang, Bujur) harus terpetakan; kolom lain boleh dikosongkan.
 3. Klik **Validasi**. Sistem mencocokkan ID Lahan dengan lahan aktif dalam akses Anda dan menampilkan pratinjau per baris.
-+ **Perbarui patok #n** — nomor itu sudah ada di lahan; koordinat dan atributnya akan diperbarui (sumber koordinat menjadi *GPS lapangan*). Bila patok itu dipakai lahan tetangga, koordinat barunya berlaku juga di sana.
++ **Perbarui patok** — baris memuat **Kode Patok** yang dikenal, atau nomor patok itu sudah ada di lahan; koordinat dan atributnya akan diperbarui (sumber koordinat menjadi *GPS lapangan*). Bila patok itu dipakai lahan tetangga, koordinat barunya berlaku juga di sana.
 + **Patok baru** — nomor belum ada (atau kosong → nomor berikutnya). Titik yang berjarak ≤ 5 m dari patok lahan tetangga akan **ditautkan** ke patok itu, bukan dibuat baru. Mengunggah berkas yang sama dua kali tanpa kolom No Patok aman: titik ≤ 5 m dari patok lahan itu sendiri dianggap patok yang sama dan hanya diperbarui.
 + Baris merah dilewati saat menyimpan: lahan tidak ditemukan / di luar akses, lahan belum punya poligon, lintang–bujur tertukar, nomor patok ganda dalam berkas, atau kondisi/jenis/tanggal tak dikenal.
 4. Klik **Simpan N patok**. Ringkasan menampilkan jumlah patok baru, diperbarui, ditautkan ke patok tetangga, dan yang ditolak server beserta alasannya (mis. > 100 m dari batas lahan).

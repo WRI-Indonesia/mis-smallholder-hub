@@ -11,6 +11,7 @@ import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import {
   MARKER_MAX_DISTANCE_M,
   MARKER_MOVE_EPSILON_M,
+  markerCodePrefix,
   MARKER_PHOTO_MAX_BYTES,
   MARKER_PHOTO_TYPES,
   MARKER_SNAP_M,
@@ -19,7 +20,7 @@ import {
   planMarkersFromVertices,
   type MarkerCandidate,
 } from "@/lib/land-marker";
-import { distancesToParcelBoundary, fetchNearbyMarkers, fetchSimplifiedVertices } from "@/lib/land-marker-query";
+import { allocateMarkerCodes, distancesToParcelBoundary, fetchNearbyMarkers, fetchSimplifiedVertices } from "@/lib/land-marker-query";
 import type { MarkerUploadParcelRef } from "@/lib/land-marker-upload";
 import {
   createLandMarkerSchema,
@@ -45,7 +46,13 @@ const MENU = "master-data-parcels";
 type FieldErrors = Record<string, string[]>;
 type Result<T = { id: string }> = ActionResult<T> | { success: false; error: FieldErrors };
 
-const PARCEL_SELECT = { id: true, parcelUid: true, parcelId: true, revision: true, geometry: true } as const;
+const PARCEL_SELECT = {
+  id: true, parcelUid: true, parcelId: true, revision: true, geometry: true,
+  // Awalan kode patok = singkatan Lembaga lahan pembuat (fallback kode Lembaga).
+  farmer: { select: { farmerGroup: { select: { abrv: true, code: true } } } },
+} as const;
+type ResolvedParcel = NonNullable<Awaited<ReturnType<typeof resolveParcel>>>;
+const prefixOf = (p: ResolvedParcel) => markerCodePrefix(p.farmer.farmerGroup.abrv, p.farmer.farmerGroup.code);
 
 async function resolveParcel(landParcelId: string, access?: AccessContext) {
   const ctx = access ?? (await getAccessContext());
@@ -100,7 +107,7 @@ export async function getLandParcelMarkers(landParcelId: string): Promise<LandPa
       sourceRevision: true,
       marker: {
         select: {
-          id: true, longitude: true, latitude: true, source: true, condition: true, type: true,
+          id: true, code: true, longitude: true, latitude: true, source: true, condition: true, type: true,
           installedAt: true, installedBy: true, photoKey: true, photoName: true, notes: true, modifiedAt: true,
           // Lahan LAIN yang memakai patok yang sama + status NKT-nya (tanda turunan).
           parcels: {
@@ -144,6 +151,7 @@ export async function getLandParcelMarkers(landParcelId: string): Promise<LandPa
       return {
         linkId: l.id,
         id: m.id,
+        code: m.code,
         sequenceNo: l.sequenceNo,
         sourceRevision: l.sourceRevision,
         longitude: m.longitude,
@@ -208,13 +216,17 @@ export async function createMarkersFromPolygon(
   try {
   await prisma.$transaction(async (tx) => {
     let seq = await nextSequenceNo(parcel.parcelUid, tx);
+    // Kode dialokasikan sekaligus untuk semua vertex baru (urut nomor patok).
+    const newCount = plan.filter((c) => keep.has(c.sequenceNo) && !c.alreadyLinked && !c.existingMarkerId).length;
+    const codes = await allocateMarkerCodes(tx, prefixOf(parcel), newCount);
+    let codeIdx = 0;
     for (const c of plan) {
       if (!keep.has(c.sequenceNo)) continue;
       if (c.alreadyLinked) { skipped++; continue; }
       let markerId = c.existingMarkerId;
       if (!markerId) {
         const m = await tx.landMarker.create({
-          data: { longitude: c.lon, latitude: c.lat, source: "POLYGON_VERTEX", createdBy: uid },
+          data: { code: codes[codeIdx++], longitude: c.lon, latitude: c.lat, source: "POLYGON_VERTEX", createdBy: uid },
           select: { id: true },
         });
         markerId = m.id;
@@ -261,9 +273,10 @@ export async function createLandMarker(input: unknown): Promise<Result> {
     // tidak boleh sama-sama memilih nomor yang sama lalu satu gagal di unique index.
     const row = await prisma.$transaction(async (tx) => {
       const seq = await nextSequenceNo(parcel.parcelUid, tx);
+      const [code] = await allocateMarkerCodes(tx, prefixOf(parcel), 1);
       const m = await tx.landMarker.create({
         data: {
-          longitude: d.longitude, latitude: d.latitude, source: "MANUAL", condition: d.condition, type: d.type ?? null,
+          code, longitude: d.longitude, latitude: d.latitude, source: "MANUAL", condition: d.condition, type: d.type ?? null,
           installedAt: d.installedAt ?? null, installedBy: d.installedBy ?? null, notes: d.notes ?? null, createdBy: uid,
         },
         select: { id: true },
@@ -397,6 +410,8 @@ export async function uploadLandMarkerPhoto(formData: FormData): Promise<ActionR
 export interface LandMarkerExportRow {
   /** Patok fisik — dasar pengelompokan "satu baris per patok" di unduhan. */
   markerId: string;
+  /** Kode patok `HJP-PTK-000123`. */
+  code: string;
   parcelId: string;
   farmerCode: string;
   farmerName: string;
@@ -450,7 +465,7 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
               sequenceNo: true,
               marker: {
                 select: {
-                  id: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
+                  id: true, code: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
                   parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
                 },
               },
@@ -469,6 +484,7 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
       const others = l.marker.parcels.filter((x) => x.parcelUid !== p.parcelUid);
       rows.push({
         markerId: l.marker.id,
+        code: l.marker.code,
         parcelId: p.parcelId,
         farmerCode: p.farmer.farmerId,
         farmerName: p.farmer.name,
@@ -529,7 +545,7 @@ export async function getMapMarkerExportRows(
                 sequenceNo: true,
                 marker: {
                   select: {
-                    id: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
+                    id: true, code: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
                     parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
                   },
                 },
@@ -554,6 +570,7 @@ export async function getMapMarkerExportRows(
       if (nktOnly && !nkt) continue;
       rows.push({
         markerId: l.marker.id,
+        code: l.marker.code,
         parcelId: p.parcelId,
         farmerCode: p.farmer.farmerId,
         farmerName: p.farmer.name,
@@ -708,6 +725,35 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
             notes: r.notes ?? undefined,
           };
 
+          // (0) Kode patok (HJP-PTK-000123) → patok itu, apa pun lahannya: perbarui; bila belum
+          //     tertaut ke lahan ini → tautkan (menempelkan patok fisik yang dikenal ke lahan lain).
+          if (r.code) {
+            const m = await tx.landMarker.findUnique({ where: { code: r.code }, select: { id: true } });
+            if (!m) { local.rejected.push({ landParcelId, parcelId: parcel.parcelId, sequenceNo: r.sequenceNo, reason: `Kode patok ${r.code} tidak ditemukan` }); continue; }
+            await tx.landMarker.update({ where: { id: m.id }, data: { longitude: r.longitude, latitude: r.latitude, source: "GPS", isActive: true, ...attrs, modifiedBy: uid } });
+            const link = byMarker.get(m.id);
+            if (link) {
+              if (r.sequenceNo != null && r.sequenceNo !== link.sequenceNo && !bySeq.has(r.sequenceNo)) {
+                await tx.landParcelMarker.update({ where: { id: link.id }, data: { sequenceNo: r.sequenceNo, modifiedBy: uid } });
+                bySeq.delete(link.sequenceNo); link.sequenceNo = r.sequenceNo; bySeq.set(r.sequenceNo, link);
+                if (r.sequenceNo >= nextSeq) nextSeq = r.sequenceNo + 1;
+              }
+              local.updated++;
+            } else {
+              const seq = r.sequenceNo != null && !bySeq.has(r.sequenceNo) ? r.sequenceNo : nextSeq++;
+              if (seq >= nextSeq) nextSeq = seq + 1;
+              const old = await tx.landParcelMarker.findUnique({ where: { parcelUid_markerId: { parcelUid: parcel.parcelUid, markerId: m.id } }, select: { id: true } });
+              const created = old
+                ? await tx.landParcelMarker.update({ where: { id: old.id }, data: { isActive: true, sequenceNo: seq, modifiedBy: uid }, select: { id: true } })
+                : await tx.landParcelMarker.create({ data: { parcelUid: parcel.parcelUid, markerId: m.id, sequenceNo: seq, createdBy: uid }, select: { id: true } });
+              const rec = { id: created.id, sequenceNo: seq, markerId: m.id };
+              bySeq.set(seq, rec); byMarker.set(m.id, rec);
+              local.linked++;
+            }
+            usedNearby.add(m.id);
+            continue;
+          }
+
           // (a) Nomor yang sudah ada di lahan → perbarui patok itu.
           let target = r.sequenceNo != null ? bySeq.get(r.sequenceNo) : undefined;
           // (b) Tanpa nomor → titik ≤ 5 m dari patok yang SUDAH tertaut ke lahan ini = patok yang sama (unggah ulang idempoten).
@@ -743,7 +789,8 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
             await tx.landMarker.update({ where: { id: markerId }, data: { isActive: true, ...attrs, modifiedBy: uid } });
             local.linked++;
           } else {
-            const m = await tx.landMarker.create({ data: { longitude: r.longitude, latitude: r.latitude, source: "GPS", ...attrs, createdBy: uid }, select: { id: true } });
+            const [code] = await allocateMarkerCodes(tx, prefixOf(parcel), 1);
+            const m = await tx.landMarker.create({ data: { code, longitude: r.longitude, latitude: r.latitude, source: "GPS", ...attrs, createdBy: uid }, select: { id: true } });
             markerId = m.id;
             local.created++;
           }

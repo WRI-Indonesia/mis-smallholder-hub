@@ -2,12 +2,16 @@ import { describe, it, expect } from "vitest";
 import {
   MARKER_SNAP_M,
   MARKER_MAX_DISTANCE_M,
+  markerCodePrefix,
+  formatMarkerCode,
+  normalizeMarkerCode,
   distanceMeters,
   orderClockwiseFromNorth,
   planMarkersFromVertices,
   checkMarkerNearParcel,
   fmtCoord,
   uniqueMarkerRows,
+  groupMarkersByParcel,
   type NearbyMarker,
   type MarkerLinkRow,
 } from "@/lib/land-marker";
@@ -162,7 +166,7 @@ describe("fmtCoord", () => {
 
 describe("uniqueMarkerRows — unduhan patok satu baris per patok fisik (keputusan owner 2026-09-14)", () => {
   const link = (o: Partial<MarkerLinkRow>): MarkerLinkRow => ({
-    markerId: "m1", parcelId: "HJP.0001.A", farmerCode: "P-1", farmerName: "Budi", groupName: "KP HJP",
+    markerId: "m1", code: "HJP-PTK-000001", parcelId: "HJP.0001.A", farmerCode: "P-1", farmerName: "Budi", groupName: "KP HJP",
     subGroupLv2: null, blok: "31 G", sequenceNo: 1, latitude: 0.52, longitude: 101.19, condition: "PRESENT", type: null,
     installedAt: null, installedBy: null, source: "POLYGON_VERTEX", nkt: false, notes: null, ...o,
   });
@@ -173,7 +177,7 @@ describe("uniqueMarkerRows — unduhan patok satu baris per patok fisik (keputus
       link({ parcelId: "HJP.0001.A", farmerCode: "P-1", sequenceNo: 1 }),
     ]);
     expect(rows).toHaveLength(1);
-    expect(rows[0].lahan).toBe("Budi · P-1 · HJP.0001.A #1, Cici · P-2 · HJP.0002.B #4");
+    expect(rows[0].lahan).toBe("Budi · P-1 · HJP.0001.A #1\nCici · P-2 · HJP.0002.B #4");
     expect(rows[0].farmerNames).toBe("Budi, Cici");
     expect(rows[0].parcelCount).toBe(2);
     expect(rows[0].nkt).toBe(true);
@@ -201,5 +205,43 @@ describe("uniqueMarkerRows — unduhan patok satu baris per patok fisik (keputus
     ]);
     expect(rows.map((r) => r.markerId)).toEqual(["d", "b", "a", "c"]);
     expect(rows[0]).toMatchObject({ subGroupLv2: "KT Aman", blok: "5" });
+  });
+});
+
+describe("kode patok <SINGKATAN>-PTK-000123 (keputusan owner 2026-09-14)", () => {
+  it("awalan dari singkatan Lembaga: huruf besar tanpa spasi/tanda baca; fallback kode Lembaga; lalu MIS", () => {
+    expect(markerCodePrefix("HJP", "ISH-1401-03")).toBe("HJP");
+    expect(markerCodePrefix("FPS SGO", "ISH-1401-05")).toBe("FPSSGO");
+    expect(markerCodePrefix("KUD MULIA", null)).toBe("KUDMULIA");
+    expect(markerCodePrefix(null, "ISH-1405-10")).toBe("ISH140510");
+    expect(markerCodePrefix(" ", "")).toBe("MIS");
+  });
+  it("format 6 digit; normalisasi kode dari sel (huruf kecil, spasi di sekitar tanda hubung) — bentuk lain ditolak", () => {
+    expect(formatMarkerCode("HJP", 123)).toBe("HJP-PTK-000123");
+    expect(normalizeMarkerCode(" hjp - ptk - 000123 ")).toBe("HJP-PTK-000123");
+    expect(normalizeMarkerCode("HJP-PTK-7")).toBe("HJP-PTK-7");
+    expect(normalizeMarkerCode("Patok-HJP-000123")).toBeNull();
+    expect(normalizeMarkerCode("")).toBeNull();
+  });
+});
+
+describe("groupMarkersByParcel — tabel PDF per lahan (owner 2026-09-14: jangan ulangi nama/ID petani per patok)", () => {
+  const link = (o: Partial<MarkerLinkRow>): MarkerLinkRow => ({
+    markerId: "m1", code: "HJP-PTK-000001", parcelId: "HJP.0009.D", farmerCode: "P-9", farmerName: "Agus", groupName: "KP HJP",
+    subGroupLv2: null, blok: "15 L", sequenceNo: 1, latitude: 0.52, longitude: 101.19, condition: "PRESENT", type: null,
+    installedAt: null, installedBy: null, source: "GPS", nkt: true, parcelNkt: true, notes: null, ...o,
+  });
+  it("satu baris per lahan; patok urut nomor lahan dengan nomor peta dari daftar unik; nktOnly membuang lahan bersih", () => {
+    const rows = [
+      link({ markerId: "a", code: "HJP-PTK-000001", sequenceNo: 2 }),
+      link({ markerId: "b", code: "HJP-PTK-000002", sequenceNo: 1 }),
+      link({ markerId: "b", code: "HJP-PTK-000002", parcelId: "HJP.0010.A", farmerName: "Budi", farmerCode: "P-10", sequenceNo: 4, nkt: true, parcelNkt: false }),
+    ];
+    const unique = uniqueMarkerRows(rows);
+    const all = groupMarkersByParcel(rows, unique);
+    expect(all.map((g) => g.parcelId)).toEqual(["HJP.0009.D", "HJP.0010.A"]);
+    expect(all[0].markers.map((m) => `${m.mapNo}:${m.sequenceNo}`)).toEqual([`${unique.findIndex((u) => u.markerId === "b") + 1}:1`, `${unique.findIndex((u) => u.markerId === "a") + 1}:2`]);
+    const nkt = groupMarkersByParcel(rows, unique, { nktOnly: true });
+    expect(nkt.map((g) => g.parcelId)).toEqual(["HJP.0009.D"]);
   });
 });

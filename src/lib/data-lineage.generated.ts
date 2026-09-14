@@ -22,7 +22,7 @@ export const DATA_LINEAGE: DataLineage = [
     "route": "(admin)/admin/bulk-upload/parcels",
     "models": {
       "farmer": "R",
-      "landMarker": "W",
+      "landMarker": "RW",
       "landParcel": "RW",
       "landParcelBorder": "RW",
       "landParcelDocument": "RW",

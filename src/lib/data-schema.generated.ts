@@ -1371,6 +1371,18 @@ export const DATA_SCHEMA: SchemaMap = {
           "relationFields": []
         },
         {
+          "name": "code",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": true,
+          "dbName": "code",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
           "name": "longitude",
           "type": "Float",
           "kind": "scalar",
@@ -1563,13 +1575,48 @@ export const DATA_SCHEMA: SchemaMap = {
           "relationFields": []
         }
       ],
-      "scalarCount": 16,
+      "scalarCount": 17,
       "compoundUnique": [],
       "indexes": [
         [
           "isActive"
         ]
       ]
+    },
+    {
+      "name": "LandMarkerCounter",
+      "clientName": "landMarkerCounter",
+      "tableName": "tbl_land_marker_counter",
+      "domain": "land-marker",
+      "fields": [
+        {
+          "name": "prefix",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": "prefix",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "lastNo",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "last_no",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 2,
+      "compoundUnique": [],
+      "indexes": []
     },
     {
       "name": "LandParcel",

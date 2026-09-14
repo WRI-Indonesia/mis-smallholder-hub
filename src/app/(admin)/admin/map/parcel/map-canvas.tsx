@@ -257,10 +257,10 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
   const markerGeojson = useMemo<FeatureCollection<Point>>(
     () => ({
       type: "FeatureCollection",
-      features: (markers ?? []).map(([id, lon, lat, nkt, condition, parcels]) => ({
+      features: (markers ?? []).map(([id, lon, lat, nkt, condition, parcels, code]) => ({
         type: "Feature",
         geometry: { type: "Point", coordinates: [lon, lat] },
-        properties: { id, nkt, condition, parcels },
+        properties: { id, nkt, condition, parcels, code },
       })),
     }),
     [markers]
@@ -895,8 +895,8 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                 <PopupHeader
                   accent={Number(selected.props.nkt) === 1 ? "red" : "amber"}
                   icon={<Landmark className="h-4 w-4" />}
-                  title={Number(selected.props.nkt) === 1 ? "Patok lahan NKT" : "Patok lahan"}
-                  subtitle="Patok batas"
+                  title={String(selected.props.code ?? "Patok")}
+                  subtitle={Number(selected.props.nkt) === 1 ? "Patok lahan NKT" : "Patok lahan"}
                 />
                 <MapPopupRows
                   className="border-t px-3.5 py-3"
