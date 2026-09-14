@@ -12,8 +12,10 @@ import type { ParcelFeature } from "@/types/map";
 /** Konteks lahan (poligon hasil filter yang sudah dimuat peta) di belakang titik — NKT diarsir merah/amber. */
 export function parcelContext(parcels: ParcelFeature[]): LayerReportContext {
   return {
-    fc: { type: "FeatureCollection", features: parcels.map((p) => ({ type: "Feature", geometry: p.geometry, properties: { nktStatus: p.nktStatus } })) },
+    fc: { type: "FeatureCollection", features: parcels.map((p) => ({ type: "Feature", geometry: p.geometry, properties: { nktStatus: p.nktStatus, farmerName: p.farmerName } })) },
     colorOf: (p) => (p.nktStatus === "INCLUDED" ? RED : p.nktStatus === "AFFECTED" ? AMBER : null),
+    // Nama petani di dalam poligon bila muat (owner 2026-09-14) — di halaman peta rinci lahan cukup besar.
+    labelOf: (p) => (typeof p.farmerName === "string" && p.farmerName ? p.farmerName : null),
   };
 }
 const CONTEXT_LEGEND: { color: [number, number, number]; label: string }[] = [
@@ -190,7 +192,7 @@ export async function exportParcelRow(
       fc: fcPdf,
       // Titik lahan & lahan NKT: lahan lain sebagai konteks; Area Lahan sudah menggambar semua poligonnya sendiri.
       context: row === "parcelAreas" ? undefined : context,
-      style: { colorOf: nktColor, numbered: true },
+      style: { colorOf: nktColor, numbered: true, labelOf: isPoint ? undefined : (p) => (typeof p.namaPetani === "string" ? p.namaPetani : null) },
       legend: row === "nkt"
         ? [{ color: RED, label: "Termasuk NKT" }, { color: AMBER, label: "Terdampak NKT" }, ...(context ? [CONTEXT_LEGEND[0]] : [])]
         : isPoint

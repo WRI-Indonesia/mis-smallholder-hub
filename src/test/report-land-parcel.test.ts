@@ -101,6 +101,8 @@ describe("buildLandParcelReport", () => {
       totalSelisihLuas: 0,
       totalNkt: 0,
       totalDinilaiNkt: 0,
+      totalAdaPatok: 0,
+      totalPatok: 0,
     });
   });
 });
@@ -454,7 +456,7 @@ describe("describeLegalFilters — filter aktif ikut tercetak (#305)", () => {
 describe("describeLegalSummary", () => {
   const S = (o: Partial<LandParcelReportSummary>): LandParcelReportSummary => ({
     totalLahan: 0, totalPetani: 0, totalKelompokTani: 0, totalLembagaTani: 0, totalLuas: 0,
-    totalDidata: 0, totalAdaSurat: 0, totalAdaStdb: 0, totalSelisihLuas: 0, totalNkt: 0, totalDinilaiNkt: 0, ...o,
+    totalDidata: 0, totalAdaSurat: 0, totalAdaStdb: 0, totalSelisihLuas: 0, totalNkt: 0, totalDinilaiNkt: 0, totalAdaPatok: 0, totalPatok: 0, ...o,
   });
 
   it("persen SELALU membawa penyebutnya, bukan angka polos", () => {
@@ -474,12 +476,14 @@ describe("describeLegalSummary", () => {
     expect(d.find((x) => x.label === "Ada Surat")!.note).toBe("— dari 0 lahan yang sudah didata");
   });
 
-  it("lima kartu (NKT sejak #328), ambang selisih ikut nama labelnya", () => {
+  it("enam kartu (NKT sejak #328, Patok sejak #331), ambang selisih ikut nama labelnya", () => {
     const d = describeLegalSummary(S({}));
-    expect(d).toHaveLength(5);
+    expect(d).toHaveLength(6);
     expect(d[3].label).toBe("Selisih Luas ≥ 0,50 Ha");
     expect(d[4].label).toBe("Termasuk/terdampak NKT");
     expect(d[4].note).toBe("belum ada lahan yang dinilai NKT");
+    expect(d[5].label).toBe("Ada Patok");
+    expect(describeLegalSummary(S({ totalLahan: 4, totalAdaPatok: 3, totalPatok: 12 }))[5].note).toBe("75% dari 4 lahan hasil filter · 12 tautan patok");
   });
 });
 
@@ -492,7 +496,7 @@ describe("describeLegalSummary", () => {
 describe("describeLegalSummary — penyebut mengikuti cakupan", () => {
   const S = (o: Partial<LandParcelReportSummary>): LandParcelReportSummary => ({
     totalLahan: 0, totalPetani: 0, totalKelompokTani: 0, totalLembagaTani: 0, totalLuas: 0,
-    totalDidata: 0, totalAdaSurat: 0, totalAdaStdb: 0, totalSelisihLuas: 0, totalNkt: 0, totalDinilaiNkt: 0, ...o,
+    totalDidata: 0, totalAdaSurat: 0, totalAdaStdb: 0, totalSelisihLuas: 0, totalNkt: 0, totalDinilaiNkt: 0, totalAdaPatok: 0, totalPatok: 0, ...o,
   });
   // Bentuk data yang persis dianalisa review: 60 lahan bersurat, hanya 40 didata.
   const skewed = S({ totalLahan: 60, totalDidata: 40, totalAdaSurat: 60, totalAdaStdb: 50 });
@@ -539,6 +543,24 @@ describe("NKT di Laporan Lahan (#328)", () => {
     const line = describeLegalSummary(res.summary, { coverage: "all" }).find((l) => l.label === "Termasuk/terdampak NKT")!;
     expect(line.value).toBe("1");
     expect(line.note).toBe("50% dari 2 lahan yang sudah dinilai NKT");
+  });
+
+  it("Patok (#331): kolom jumlah + ringkasan kondisi urut Ada · Hilang · Rusak · Belum; ringkasan lahan ber-patok & total tautan", () => {
+    const res = buildLandParcelReport([
+      raw({ id: "p1", markerConditions: ["PRESENT", "PRESENT", "MISSING", "NOT_INSTALLED"] }),
+      raw({ id: "p2", parcelCode: "LHN-2", markerConditions: [] }),
+      raw({ id: "p3", parcelCode: "LHN-3" }),
+    ], { coverage: "all" });
+    const byId = Object.fromEntries(res.rows.map((r) => [r.id, r]));
+    expect(byId.p1.patok).toBe(4);
+    expect(byId.p1.patokKondisi).toBe("2 ada · 1 hilang · 1 belum dipasang");
+    expect(byId.p2.patok).toBe(0);
+    expect(byId.p2.patokKondisi).toBeNull();
+    expect(res.summary).toMatchObject({ totalAdaPatok: 1, totalPatok: 4 });
+    const d = (marker: string) => describeLegalFilters({ coverage: "all", marker }).find((f) => f.label === "Patok")?.value;
+    expect(d("with")).toBe("Sudah ada patok");
+    expect(d("problem")).toMatch(/hilang\/rusak/);
+    expect(d("all")).toBeUndefined();
   });
 
   it("describeLegalFilters menyebut filter NKT untuk tiap nilai yang dipahami where", () => {

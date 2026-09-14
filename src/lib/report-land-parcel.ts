@@ -68,6 +68,17 @@ export interface LpRawParcel {
   programs?: ProgramSummaryInput[];
   /** Status NKT (#328) — null/undefined = belum dinilai. */
   nkt?: { status: string; categories: string[]; affectedAreaHa: number | null; assessedAt: Date | string | null; assessor: string | null } | null;
+  /** Kondisi tiap patok aktif lahan ini (#331) — enum LandMarkerCondition. */
+  markerConditions?: string[];
+}
+
+/** "4 ada · 1 hilang" — urutan tetap Ada · Hilang · Rusak · Belum dipasang; null bila tanpa patok. */
+export function summarizeMarkerConditions(conditions: string[]): string | null {
+  if (conditions.length === 0) return null;
+  const order: [string, string][] = [["PRESENT", "ada"], ["MISSING", "hilang"], ["DAMAGED", "rusak"], ["NOT_INSTALLED", "belum dipasang"]];
+  const counts = new Map<string, number>();
+  for (const c of conditions) counts.set(c, (counts.get(c) ?? 0) + 1);
+  return order.filter(([k]) => counts.has(k)).map(([k, label]) => `${counts.get(k)} ${label}`).join(" · ");
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -99,6 +110,8 @@ export function buildLandParcelReport(
   let totalSelisihLuas = 0;
   let totalNkt = 0;
   let totalDinilaiNkt = 0;
+  let totalAdaPatok = 0;
+  let totalPatok = 0;
 
   const rows: LandParcelReportRow[] = parcels.flatMap((p) => {
     const docs = p.documents ?? [];
@@ -123,6 +136,9 @@ export function buildLandParcelReport(
     if (selisihLuasBesar) totalSelisihLuas++;
     if (p.nkt) totalDinilaiNkt++;
     if (isNktAffected(p.nkt?.status)) totalNkt++;
+    const markerCount = p.markerConditions?.length ?? 0;
+    if (markerCount > 0) totalAdaPatok++;
+    totalPatok += markerCount;
 
     return {
       id: p.id,
@@ -148,6 +164,8 @@ export function buildLandParcelReport(
       nkt: p.nkt ? summarizeNkt(p.nkt) : null,
       nktStatus: p.nkt?.status ?? null,
       luasNkt: p.nkt?.affectedAreaHa ?? null,
+      patok: p.markerConditions?.length ?? 0,
+      patokKondisi: summarizeMarkerConditions(p.markerConditions ?? []),
     };
   });
 
@@ -172,6 +190,8 @@ export function buildLandParcelReport(
       totalSelisihLuas,
       totalNkt,
       totalDinilaiNkt,
+      totalAdaPatok,
+      totalPatok,
     },
     rows,
   };
@@ -216,6 +236,11 @@ export function describeLegalFilters(filters: LandParcelLegalFilters): { label: 
   else if (nkt && nkt !== "all" && (LAND_NKT_STATUSES as readonly string[]).includes(nkt)) {
     out.push({ label: "NKT", value: landNktStatusLabel(nkt) });
   }
+  const marker = filters.marker;
+  if (marker === "with") out.push({ label: "Patok", value: "Sudah ada patok" });
+  else if (marker === "without") out.push({ label: "Patok", value: "Belum ada patok" });
+  else if (marker === "installed") out.push({ label: "Patok", value: "Semua patok ada (terpasang)" });
+  else if (marker === "problem") out.push({ label: "Patok", value: "Ada patok hilang/rusak/belum dipasang" });
   if (filters.areaDiff === "gte") {
     out.push({ label: "Selisih Luas", value: `≥ ${formatHa(AREA_DIFF_THRESHOLD_HA)} Ha (luas surat vs poligon)` });
   }
@@ -275,6 +300,12 @@ export function describeLegalSummary(
         summary.totalDinilaiNkt > 0
           ? `${Math.round((summary.totalNkt / summary.totalDinilaiNkt) * 100)}% dari ${formatCount(summary.totalDinilaiNkt)} lahan yang sudah dinilai NKT`
           : "belum ada lahan yang dinilai NKT",
+    },
+    {
+      // Patok (#331): lahan dengan ≥ 1 patok — penyebut = lahan hasil filter (patok wajar ada di semua lahan).
+      label: "Ada Patok",
+      value: formatCount(summary.totalAdaPatok),
+      note: `${summary.totalLahan > 0 ? `${Math.round((summary.totalAdaPatok / summary.totalLahan) * 100)}%` : "—"} dari ${formatCount(summary.totalLahan)} lahan hasil filter · ${formatCount(summary.totalPatok)} tautan patok`,
     },
   ];
 }

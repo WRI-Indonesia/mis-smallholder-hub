@@ -28,6 +28,7 @@ import { getFarmerParcelPassport } from "@/server/actions/farmer";
 import { maskNik, maskBirthDate } from "@/lib/mask";
 import type { FarmerDetailData } from "@/lib/farmer-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
+import type { MarkerPoint } from "@/lib/land-marker-query";
 import type { FarmerTreeParcelSummary } from "@/server/actions/tree";
 import { formatNumber } from "@/lib/format";
 
@@ -80,6 +81,8 @@ interface Props {
   detail: FarmerDetailData;
   parcels: ParcelRow[];
   mapParcels: DistributionMapParcel[];
+  /** Patok batas lahan petani ini (#331). */
+  markerPoints: MarkerPoint[];
   treeSummary: FarmerTreeParcelSummary[];
   treePoints: { longitude: number; latitude: number }[];
   canEdit: boolean;
@@ -181,6 +184,7 @@ export function FarmerDetailClient({
   detail,
   parcels,
   mapParcels,
+  markerPoints,
   treeSummary,
   treePoints,
   canEdit,
@@ -452,6 +456,7 @@ export function FarmerDetailClient({
             </h2>
             <ParcelsDistributionMap
               parcels={mapParcels}
+              markerPoints={markerPoints}
               canViewParcel={canViewParcel}
               canEditParcel={canEditParcel}
               treePoints={treePoints}

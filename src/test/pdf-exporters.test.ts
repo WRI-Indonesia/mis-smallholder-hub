@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildPDF } from "@/lib/pdf";
 import { buildFarmPassportDoc } from "@/lib/farm-passport";
-import { buildLayerReportDoc } from "@/lib/layer-report-pdf";
+import { buildLayerReportDoc, graticuleStep } from "@/lib/layer-report-pdf";
 import { buildBmpMapDoc } from "@/lib/bmp-map-print";
 import { buildFireMapDoc } from "@/lib/fire-map-print";
 import { imageFormatOf } from "@/lib/map-capture";
@@ -419,5 +419,22 @@ describe("buildLayerReportDoc (lib/layer-report-pdf) — PDF per baris legenda P
   it("tanpa fitur → tetap terbit dengan keterangan peta kosong", () => {
     const doc = buildLayerReportDoc({ title: "Patok lahan", subtitle: "—", fc: { type: "FeatureCollection", features: [] }, columns: [{ header: "No", key: "no" }], rows: [] });
     expect(pdfText(doc)).toContain("Tidak ada fitur untuk digambar");
+  });
+});
+
+describe("graticuleStep — interval kisi koordinat peta PDF (#331)", () => {
+  it("memilih interval bulat supaya ≤ 7 garis pada bentang: 0,003° → 0,0005; 0,02° → 0,005; 0,3° → 0,05; 5° → 1", () => {
+    expect(graticuleStep(0.003)).toBe(0.0005);
+    expect(graticuleStep(0.02)).toBe(0.005);
+    expect(graticuleStep(0.3)).toBe(0.05);
+    expect(graticuleStep(5)).toBe(1);
+  });
+  it("label koordinat tercetak di tepi peta layer & Profil Lahan", () => {
+    const D = 0.0009;
+    const doc = buildLayerReportDoc({
+      title: "Uji", subtitle: "-", columns: [{ header: "No", key: "no" }], rows: [],
+      fc: { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Polygon", coordinates: [[[101.19, 0.52], [101.19 + D, 0.52], [101.19 + D, 0.52 + D], [101.19, 0.52 + D], [101.19, 0.52]]] }, properties: {} }] },
+    });
+    expect(pdfText(doc)).toMatch(/101\.19\d\d/);
   });
 });

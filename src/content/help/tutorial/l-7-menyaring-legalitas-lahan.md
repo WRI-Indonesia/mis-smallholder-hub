@@ -82,3 +82,7 @@ Lima kartu di atas tabel mengikuti filter yang sedang aktif:
 **Lahan yang saya tahu sudah didata tidak terhitung "sudah didata"** — penandanya adalah **UL Parcel Code**. Berkas unggahan yang tidak membawa kolom `parcel_code` tidak meninggalkan penanda itu (saat mengunggah, sistem memperingatkan bila kolomnya tidak ada). Lengkapi kodenya lewat tab Legalitas di detail lahan.
 
 **Selisih luas menandai lahan yang menurut saya wajar** — ambangnya tetap 0,50 Ha untuk semua ukuran lahan, jadi pada lahan luas selisih segitu memang tidak berarti banyak. Anggap sebagai daftar periksa, bukan daftar kesalahan.
+
+## Filter & kolom Patok
+
+Sejak patok batas dicatat (tab Patok di detail lahan / unggah GPS), Laporan Lahan punya filter **Patok**: *Sudah ada patok*, *Belum ada patok*, *Semua patok terpasang (Ada)*, atau *Ada patok hilang/rusak/belum dipasang* — yang terakhir cocok untuk menyusun daftar kerja pemasangan ulang. Kolom **Patok** (aktifkan lewat tombol Kolom) menampilkan jumlah patok dan ringkasan kondisinya, mis. "4 · 2 ada · 1 hilang · 1 belum dipasang"; kartu **Ada Patok** di ringkasan menghitung lahan yang sudah punya patok.

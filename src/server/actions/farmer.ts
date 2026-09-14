@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { fetchFarmerMarkerPoints } from "@/lib/land-marker-query";
 import { summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
@@ -232,6 +233,8 @@ export async function getFarmerDetail(id: string) {
       },
     },
     detail,
+    // Patok (#331): titik di peta sebaran + ringkasan.
+    markerPoints: await fetchFarmerMarkerPoints(farmer.id),
     // Tabel persil (tanpa geometry) + poligon peta (pola #171).
     parcels: farmer.landParcels.map((p) => ({
       id: p.id,

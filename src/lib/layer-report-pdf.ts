@@ -31,12 +31,16 @@ export interface LayerReportStyle {
   color?: [number, number, number];
   /** Nomor di tengah fitur (poligon) atau di samping titik — mis. nomor urut baris tabel. */
   numbered?: boolean;
+  /** Label nama (mis. petani) di dalam poligon fitur utama bila muat — di bawah nomor. */
+  labelOf?: (props: Record<string, unknown>) => string | null;
 }
 
 /** Poligon latar (lahan Lembaga/filter) di belakang fitur utama — abu tipis; `colorOf` untuk menyorot (mis. lahan NKT). */
 export interface LayerReportContext {
   fc: FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>;
   colorOf?: (props: Record<string, unknown>) => [number, number, number] | null;
+  /** Label di tengah poligon (mis. nama petani) — dicetak hanya bila muat di dalam poligon (owner 2026-09-14). */
+  labelOf?: (props: Record<string, unknown>) => string | null;
 }
 
 export interface LayerReportInput {
@@ -125,6 +129,49 @@ function drawDecorations(doc: jsPDF, box: Box, mmPerMeter: number) {
 }
 
 const CONTEXT_PURPLE: [number, number, number] = [126, 34, 206];
+
+/**
+ * Graticule (permintaan owner 2026-09-14: "koordinat di pinggir sebagaimana
+ * layaknya peta"): garis kisi tipis putus-putus + label lintang (kiri) & bujur
+ * (atas) pada interval "bulat" — dipilih agar 3–7 garis muat pada bentang.
+ */
+export function graticuleStep(spanDeg: number): number {
+  const candidates = [0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1];
+  for (const c of candidates) if (spanDeg / c <= 7) return c;
+  return 1;
+}
+
+export function drawGraticule(
+  doc: jsPDF,
+  box: Box,
+  bounds: { minLon: number; maxLon: number; minLat: number; maxLat: number },
+  project: Projector,
+) {
+  const step = graticuleStep(Math.max(bounds.maxLon - bounds.minLon, bounds.maxLat - bounds.minLat));
+  const decimals = Math.max(0, Math.ceil(-Math.log10(step)));
+  const fmt = (v: number) => v.toFixed(decimals);
+  doc.setLineDashPattern([0.8, 0.8], 0);
+  doc.setDrawColor(...SLATE_400);
+  doc.setLineWidth(0.12);
+  doc.setFontSize(5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_600);
+  const startLon = Math.ceil(bounds.minLon / step) * step;
+  for (let lon = startLon; lon <= bounds.maxLon + 1e-12; lon += step) {
+    const [x] = project(lon, bounds.minLat);
+    if (x < box.x + 1 || x > box.x + box.w - 1) continue;
+    doc.line(x, box.y, x, box.y + box.h);
+    doc.text(fmt(lon), x, box.y + 2.2, { align: "center" });
+  }
+  const startLat = Math.ceil(bounds.minLat / step) * step;
+  for (let lat = startLat; lat <= bounds.maxLat + 1e-12; lat += step) {
+    const [, y] = project(bounds.minLon, lat);
+    if (y < box.y + 1 || y > box.y + box.h - 1) continue;
+    doc.line(box.x, y, box.x + box.w, y);
+    doc.text(fmt(lat), box.x + 1, y - 0.6);
+  }
+  doc.setLineDashPattern([], 0);
+}
 /** Opacity konteks lahan non-NKT — "lebih tipis lagi" (owner 2026-09-14). */
 const CONTEXT_OPACITY = 0.12;
 
@@ -181,6 +228,30 @@ function placeAndDrawNumbers(doc: jsPDF, items: { x: number; y: number; n: numbe
   doc.setLineWidth(0.15);
   for (const d of draws) if (d.moved) doc.line(d.anchor.x, d.anchor.y, d.at.x, d.at.y);
   for (const d of draws) drawNumber(doc, d.at.x, d.at.y, d.n);
+}
+
+/**
+ * Tulis label di tengah poligon hanya bila muat: lebar teks ≤ 90 % lebar bbox poligon
+ * (mm) dan tinggi bbox ≥ 5 mm; font 5 dengan warna abu gelap. Tidak ada halo —
+ * poligon konteks tipis sehingga teks tetap terbaca.
+ */
+function drawPolygonLabel(doc: jsPDF, ring: Position[], project: Projector, label: string, dyMm = 0) {
+  const pts = ring.map(([lon, lat]) => project(lon, lat));
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  const w = x1 - x0, h = y1 - y0;
+  if (h < 5) return;
+  doc.setFontSize(5);
+  doc.setFont("helvetica", "normal");
+  let text = label;
+  // Nama panjang: coba potong ke nama depan + inisial sebelum menyerah.
+  if (doc.getTextWidth(text) > w * 0.9) {
+    const parts = label.split(/\s+/);
+    text = parts.length > 1 ? `${parts[0]} ${parts.slice(1).map((p) => p[0] + ".").join("")}` : label;
+  }
+  if (doc.getTextWidth(text) > w * 0.9) return;
+  doc.setTextColor(...SLATE_600);
+  doc.text(text, (x0 + x1) / 2, (y0 + y1) / 2 + dyMm, { align: "center", baseline: "middle" });
 }
 
 /** Pusat fitur (centroid ring luar pertama / koordinat titik) dalam derajat. */
@@ -276,6 +347,7 @@ function drawLayerMap(
     doc.discardPath();
   };
   clipToBox();
+  drawGraticule(doc, box, { minLon, maxLon, minLat, maxLat }, project);
 
   // Konteks (lahan di sekitar) dulu — lahan biasa ungu sangat tipis (CONTEXT_OPACITY),
   // lahan yang disorot (NKT) berwarna penuh.
@@ -290,6 +362,13 @@ function drawLayerMap(
       doc.setLineWidth(0.2);
       for (const f of plain) for (const ring of exteriorRings(f.geometry)) strokeRing(doc, ring, project, "FD");
       doc.restoreGraphicsState();
+      if (context.labelOf) {
+        for (const f of plain) {
+          const label = context.labelOf(f.properties ?? {});
+          const ring = exteriorRings(f.geometry)[0];
+          if (label && ring) drawPolygonLabel(doc, ring, project, label);
+        }
+      }
       // Kembali ke state #1 yang masih memegang clip kotak — jangan save lagi
       // (save ekstra membuat clip tak pernah dilepas: legenda & footer ikut terpotong).
     }
@@ -299,6 +378,9 @@ function drawLayerMap(
       doc.setFillColor(Math.round(255 - (255 - tint[0]) * 0.3), Math.round(255 - (255 - tint[1]) * 0.3), Math.round(255 - (255 - tint[2]) * 0.3));
       doc.setLineWidth(0.25);
       for (const ring of exteriorRings(f.geometry)) strokeRing(doc, ring, project, "FD");
+      const label = context.labelOf?.(f.properties ?? {});
+      const ring0 = exteriorRings(f.geometry)[0];
+      if (label && ring0) drawPolygonLabel(doc, ring0, project, label);
     }
   }
 
@@ -326,6 +408,9 @@ function drawLayerMap(
       const [px, py] = project(cx, cy);
       numbers.push({ x: px, y: py, n: gi + 1 });
     }
+    const label = style.labelOf?.(f.properties ?? {});
+    // Label nama di bawah nomor (geser 3 mm) supaya tidak saling tindih.
+    if (label && rings[0]) drawPolygonLabel(doc, rings[0], project, label, opts.numbered ? 3 : 0);
   });
   if (numbers.length > 0) placeAndDrawNumbers(doc, numbers, box);
 

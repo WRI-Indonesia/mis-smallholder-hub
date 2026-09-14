@@ -12,6 +12,7 @@ import {
   TrendingUp,
   ClipboardCheck,
   ShieldAlert,
+  Landmark,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import { ProductionMonthlyMatrix } from "@/components/shared/production-monthly-
 import { formatGroupType, formatCertStatus } from "@/lib/farmer-group-labels";
 import type { FarmerGroupDetailData } from "@/lib/farmer-group-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
+import type { MarkerPoint } from "@/lib/land-marker-query";
 import { formatNumber } from "@/lib/format";
 import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import { toast } from "sonner";
@@ -73,6 +75,8 @@ interface Props {
   detail: FarmerGroupDetailData;
   completeness: { healthScore: number; totalAnomalies: number };
   mapParcels: DistributionMapParcel[];
+  /** Patok batas Lembaga (#331) — titik di peta sebaran + KPI kondisi. */
+  markerPoints: MarkerPoint[];
   canEdit: boolean;
   districts: { id: string; name: string }[];
   canViewParcel: boolean;
@@ -171,6 +175,7 @@ export function GroupDetailClient({
   detail,
   completeness,
   mapParcels,
+  markerPoints,
   canEdit,
   districts,
   canViewParcel,
@@ -490,7 +495,7 @@ export function GroupDetailClient({
 
         {/* ── Lahan (ringkas — Fase 2 pending) ── */}
         <TabsContent value="lahan" className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <SummaryCard
               icon={MapIcon}
               title="Persil Lahan"
@@ -516,6 +521,17 @@ export function GroupDetailClient({
                     : "Belum ada asesmen NKT"
               }
             />
+            {/* Patok (#331): patok fisik unik Lembaga ini; % terpasang = kondisi Ada. */}
+            <SummaryCard
+              icon={Landmark}
+              title="Patok"
+              value={formatNumber(markerPoints.length)}
+              sub={
+                markerPoints.length > 0
+                  ? `${Math.round((markerPoints.filter((m) => m.condition === "PRESENT").length / markerPoints.length) * 100)}% terpasang · ${formatNumber(markerPoints.filter((m) => m.nkt).length)} patok NKT`
+                  : "Belum ada patok"
+              }
+            />
           </div>
           <Card className="p-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -534,7 +550,7 @@ export function GroupDetailClient({
                 />
               )}
             </div>
-            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} />
+            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} markerPoints={markerPoints} />
           </Card>
           <p className="text-sm text-muted-foreground">
             Detail per lahan ada di{" "}

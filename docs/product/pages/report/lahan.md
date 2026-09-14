@@ -128,3 +128,11 @@ Cakupan/Status Surat/Jenis Surat/Status STDB/NKT → fragment `where` Prisma lew
 |---|---|
 | Excel | File `Laporan_Lahan_<Lembaga/Distrik/Semua>`; sheet **"Ringkasan"** di posisi pertama (kolom Bagian · Keterangan · Nilai · Catatan) berisi filter legalitas aktif + 4 angka ringkasan, lalu sheet "Lahan" berisi seluruh baris + gambar peta (PNG hasil rasterisasi SVG). Ringkasan sengaja jadi **sheet tersendiri**, bukan baris catatan di atas tabel: menyisipkan baris di atas header membuat data tak lagi mulai di baris 1 dan merusak AutoFilter/pivot (revisi owner 2026-08-29). Bila grid aktif: tambahan satu sheet per sel grid berisi subset baris sel + gambar peta sel. Kolom mengikuti selektor kolom. Bila geometri belum termuat: "Geometri lahan masih dimuat — coba lagi sebentar." Tombol digate izin `EXPORT` (#245) |
 | PDF | File `Laporan_Lahan_<…>` via `exportLandParcelReportPDF`; metadata Distrik & Lembaga Petani (grid 2 kolom), lalu **blok penuh-lebar** `sections`: "Filter Legalitas" (`describeLegalFilters`) dan "Ringkasan Legalitas" (`describeLegalSummary`) — keduanya di luar grid metadata karena kolomnya hanya 90 mm sedangkan kalimat filter jauh lebih panjang, dan tiap baris dibungkus `splitTextToSize`. Tanpa filter, ekspor "tanpa surat" terbaca seperti roster lengkap; tanpa ringkasan, pembaca dapat daftar tanpa tahu proporsinya. Kolom mengikuti selektor kolom + baris Total; menyertakan halaman peta sesuai pengaturan grid & label — digate izin `PRINT` (#245) |
+
+## Patok (#331)
+
+| Objek | Keterangan |
+|---|---|
+| Filter **Patok** | `all` · `with` (≥ 1 tautan patok aktif) · `without` · `installed` (ada patok dan tak satu pun selain `PRESENT`) · `problem` (ada patok `MISSING`/`DAMAGED`/`NOT_INSTALLED`) — `landParcelLegalWhere` lewat `identity.markers`; teks filter di `describeLegalFilters` (ikut PDF/Excel) |
+| Kolom **Patok** (opsional, default mati) | `patok` (jumlah tautan aktif) + `patokKondisi` ("2 ada · 1 hilang · 1 belum dipasang", urutan tetap Ada · Hilang · Rusak · Belum) — layar satu sel "4 · 2 ada · …", ekspor dua kolom (`Patok`, `Kondisi Patok`) |
+| Kartu **Ada Patok** | Kartu keenam ringkasan legalitas (grid 3 kolom): lahan ber-patok, `%` dari lahan hasil filter (patok wajar ada di semua lahan, bukan hanya yang didata) · jumlah tautan patok (patok bersama dihitung per lahan) |

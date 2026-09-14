@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { fetchFarmerGroupMarkerPoints } from "@/lib/land-marker-query";
 import { auth } from "@/lib/auth";
 import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer-group.schema";
 import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
@@ -189,6 +190,7 @@ export async function getFarmerGroupDetail(id: string) {
     }),
   ]);
 
+  const markerPoints = await fetchFarmerGroupMarkerPoints(group.id);
   const detail = buildFarmerGroupDetail(
     group.id,
     group.name,
@@ -267,6 +269,8 @@ export async function getFarmerGroupDetail(id: string) {
       healthScore: completeness.healthScore,
       totalAnomalies: completeness.totalAnomalies,
     },
+    // Patok (#331): titik di peta sebaran + KPI kondisi.
+    markerPoints,
     // Poligon untuk peta sebaran lahan (tab Lahan) — hanya field yang dipakai peta/popup.
     mapParcels: farmers.flatMap((f) =>
       f.landParcels.map((p) => ({

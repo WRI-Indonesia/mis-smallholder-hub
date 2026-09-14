@@ -581,6 +581,18 @@ function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParc
     out.push({ identity: { nkt: { is: { status: nkt as LandNktStatus } } } });
   }
 
+  // Patok (#331) — tautan aktif lahan; `installed` = tak ada patok selain PRESENT (dan ada patok).
+  const marker = filters.marker;
+  if (marker === "with") {
+    out.push({ identity: { markers: { some: { isActive: true } } } });
+  } else if (marker === "without") {
+    out.push({ identity: { markers: { none: { isActive: true } } } });
+  } else if (marker === "installed") {
+    out.push({ identity: { markers: { some: { isActive: true }, none: { isActive: true, marker: { condition: { not: "PRESENT" } } } } } });
+  } else if (marker === "problem") {
+    out.push({ identity: { markers: { some: { isActive: true, marker: { condition: { not: "PRESENT" } } } } } });
+  }
+
   return out;
 }
 
@@ -646,6 +658,8 @@ export async function getLandParcelReport(
           externalIds: { where: { isActive: true }, select: { source: true, code: true } },
           programs: { where: { isActive: true }, select: { programType: true, status: true } },
           nkt: { select: { status: true, categories: true, affectedAreaHa: true, assessedAt: true, assessor: true } },
+          // Patok (#331): hanya kondisi tiap tautan aktif — kolom "Patok" & filter.
+          markers: { where: { isActive: true }, select: { marker: { select: { condition: true } } } },
         },
       },
     },
@@ -671,6 +685,7 @@ export async function getLandParcelReport(
     externalIds: p.identity.externalIds,
     programs: p.identity.programs,
     nkt: p.identity.nkt,
+    markerConditions: p.identity.markers.map((m) => m.marker.condition),
   }));
 
   return buildLandParcelReport(raw, filters);

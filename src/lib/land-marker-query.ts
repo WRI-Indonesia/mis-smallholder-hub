@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { MARKER_SIMPLIFY_M, MARKER_SNAP_M, formatMarkerCode, type LonLat, type NearbyMarker } from "@/lib/land-marker";
 import { metersToDegrees } from "@/lib/parcel-neighbor";
@@ -135,3 +135,42 @@ export async function allocateMarkerCodes(tx: Prisma.TransactionClient, prefix: 
   const last = Number(rows[0]?.last_no ?? n);
   return Array.from({ length: n }, (_, i) => formatMarkerCode(prefix, last - n + i + 1));
 }
+
+export interface MarkerPoint {
+  id: string;
+  code: string;
+  longitude: number;
+  latitude: number;
+  condition: string;
+  /** Salah satu lahan pemakai (di mana pun) termasuk/terdampak NKT. */
+  nkt: boolean;
+}
+
+/**
+ * Titik patok untuk peta sebaran Detail Lembaga / Detail Petani (#331): satu
+ * baris per patok fisik yang dipakai lahan aktif milik petani dalam scope
+ * pemanggil (`farmerWhere` = fragmen SQL pada alias `f`). Tanpa cek permission —
+ * caller sudah lewat guard halaman detail.
+ */
+async function fetchMarkerPointsWhere(farmerWhere: Prisma.Sql): Promise<MarkerPoint[]> {
+  const rows = await prisma.$queryRaw<{ id: string; code: string; longitude: number; latitude: number; condition: string; nkt: boolean }[]>`
+    SELECT m.id, m.code, m.longitude, m.latitude, m.condition,
+           EXISTS (
+             SELECT 1 FROM tbl_land_parcel_marker l2
+             JOIN tbl_land_parcel_nkt n ON n.parcel_uid = l2.parcel_uid
+             WHERE l2.marker_id = m.id AND l2.is_active AND n.status IN ('INCLUDED', 'AFFECTED')
+           ) AS nkt
+    FROM tbl_land_marker m
+    WHERE m.is_active AND EXISTS (
+      SELECT 1 FROM tbl_land_parcel_marker l
+      JOIN tbl_land_parcel p ON p.parcel_uid = l.parcel_uid AND p.is_active
+      JOIN tbl_farmer f ON f.id = p.farmer_id AND f.is_active
+      WHERE l.marker_id = m.id AND l.is_active AND ${farmerWhere}
+    )
+    ORDER BY m.code
+  `;
+  return rows.map((r) => ({ ...r, longitude: Number(r.longitude), latitude: Number(r.latitude), nkt: Boolean(r.nkt) }));
+}
+
+export const fetchFarmerGroupMarkerPoints = (farmerGroupId: string) => fetchMarkerPointsWhere(Prisma.sql`f.farmer_group_id = ${farmerGroupId}`);
+export const fetchFarmerMarkerPoints = (farmerId: string) => fetchMarkerPointsWhere(Prisma.sql`f.id = ${farmerId}`);

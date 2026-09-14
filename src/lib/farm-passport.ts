@@ -5,6 +5,7 @@ import type { Position } from "geojson";
 import type { ParcelPassport } from "@/types/map";
 import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel } from "@/lib/parcel-neighbor";
 import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_TYPE_LABELS, labelOf } from "@/lib/land-marker";
+import { drawGraticule } from "@/lib/layer-report-pdf";
 
 const EMERALD: [number, number, number] = [16, 185, 129];
 const SLATE_800: [number, number, number] = [30, 41, 59];
@@ -181,6 +182,8 @@ function drawParcelMap(
   doc.rect(box.x, box.y, box.w, box.h, null);
   doc.clip();
   doc.discardPath();
+  // Kisi koordinat di latar (#331, permintaan owner) — sebelum poligon supaya tidak menimpa.
+  drawGraticule(doc, box, { minLon, maxLon, minLat, maxLat }, project);
 
   // Tetangga dulu (di bawah lahan utama).
   const numberAt: { x: number; y: number; n: number }[] = [];

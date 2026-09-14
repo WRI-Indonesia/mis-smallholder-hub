@@ -106,7 +106,7 @@ const clampGrid = (v: number, max: number) =>
 // supaya lebar roster harian tidak berubah.
 type ColKey =
   | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
-  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt";
+  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt" | "patok";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "kelompokTani", label: "Kelompok Tani" },
   { key: "blok", label: "Blok" },
@@ -124,6 +124,8 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
   // NKT (#328) — status asesmen; default mati seperti kolom legalitas lain.
   { key: "nkt", label: "NKT" },
   { key: "luasNkt", label: "Luas NKT (Ha)" },
+  // Patok (#331) — jumlah + ringkasan kondisi; default mati.
+  { key: "patok", label: "Patok" },
 ];
 
 /** Kolom yang menyala saat halaman dibuka — dipakai juga tombol "Bawaan". */
@@ -181,6 +183,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const [stdbStatus, setStdbStatus] = useState<string>("all");
   const [areaDiff, setAreaDiff] = useState<"all" | "gte">("all");
   const [nktStatus, setNktStatus] = useState<string>("all");
+  const [marker, setMarker] = useState<string>("all");
 
   const legalFilters: LandParcelLegalFilters = useMemo(
     () => ({
@@ -190,11 +193,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       stdbStatus,
       areaDiff,
       nktStatus,
+      marker,
     }),
-    [coverage, documentStatus, documentTypes, stdbStatus, areaDiff, nktStatus],
+    [coverage, documentStatus, documentTypes, stdbStatus, areaDiff, nktStatus, marker],
   );
   const legalFilterActive =
-    documentStatus !== "all" || documentTypes.size > 0 || stdbStatus !== "all" || areaDiff !== "all" || nktStatus !== "all";
+    documentStatus !== "all" || documentTypes.size > 0 || stdbStatus !== "all" || areaDiff !== "all" || nktStatus !== "all" || marker !== "all";
 
   const toggleDocumentType = (t: string) =>
     setDocumentTypes((prev) => {
@@ -210,6 +214,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     setStdbStatus("all");
     setAreaDiff("all");
     setNktStatus("all");
+    setMarker("all");
   };
 
   const [reportData, setReportData] = useState<LandParcelReportResult | null>(null);
@@ -453,6 +458,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     ...(show("program") ? [{ header: "Program", key: "program" }] : []),
     ...(show("nkt") ? [{ header: "NKT", key: "nkt" }] : []),
     ...(show("luasNkt") ? [{ header: "Luas NKT (Ha)", key: "luasNkt" }] : []),
+    ...(show("patok") ? [{ header: "Patok", key: "patok" }, { header: "Kondisi Patok", key: "patokKondisi" }] : []),
   ];
 
   const scopeLabel = () =>
@@ -872,6 +878,22 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               </div>
 
               <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground" htmlFor="lp-marker">Patok</label>
+                <select
+                  id="lp-marker"
+                  value={marker}
+                  onChange={(e) => setMarker(e.target.value)}
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="all">Semua</option>
+                  <option value="with">Sudah ada patok</option>
+                  <option value="without">Belum ada patok</option>
+                  <option value="installed">Semua patok terpasang (Ada)</option>
+                  <option value="problem">Ada patok hilang/rusak/belum dipasang</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-muted-foreground" htmlFor="lp-area-diff">Selisih Luas</label>
                 <select
                   id="lp-area-diff"
@@ -923,8 +945,9 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       )}
 
       {/* Ringkasan legalitas (#305) — ikut filter aktif */}
+      {/* Enam kartu sejak #331 (Patok) — 3 kolom di layar lebar agar dua baris rata. */}
       {reportData && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 print:hidden">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 print:hidden">
           {legalCards.map((c) => (
             <Card key={c.label} className="shadow-sm">
               <CardHeader className="pb-2">
@@ -1190,6 +1213,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 {show("program") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Program</th>}
                 {show("nkt") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">NKT</th>}
                 {show("luasNkt") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Luas NKT (Ha)</th>}
+                {show("patok") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Patok</th>}
               </tr>
             </thead>
             <tbody>
@@ -1273,6 +1297,11 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                     {show("luasNkt") && (
                       <td className={cn("px-3 py-2 text-right tabular-nums whitespace-nowrap", row.luasNkt == null && "text-muted-foreground")}>
                         {row.luasNkt != null ? formatLuas(row.luasNkt) : EMPTY}
+                      </td>
+                    )}
+                    {show("patok") && (
+                      <td className={cn("px-3 py-2 whitespace-nowrap", row.patok === 0 && "text-muted-foreground")}>
+                        {row.patok > 0 ? `${row.patok} · ${row.patokKondisi}` : "Belum ada"}
                       </td>
                     )}
                   </tr>

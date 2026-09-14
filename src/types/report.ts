@@ -194,6 +194,8 @@ export interface LandParcelLegalFilters {
    * `unassessed` (tanpa baris) | satu nilai `LandNktStatus`.
    */
   nktStatus?: string;
+  /** Patok (#331): `all` | `with` (≥ 1 patok aktif) | `without` | `installed` (semua patok Ada) | `problem` (ada yang Hilang/Rusak/Belum dipasang). */
+  marker?: string;
 }
 
 export interface LandParcelReportFilters extends LandParcelLegalFilters {
@@ -247,6 +249,10 @@ export interface LandParcelReportRow {
   nktStatus: string | null;
   /** Luas area NKT di dalam lahan (ha), null bila tak dicatat. */
   luasNkt: number | null;
+  /** Jumlah patok aktif (#331). */
+  patok: number;
+  /** Ringkasan kondisi patok: "4 ada" / "2 ada · 1 hilang · 1 belum dipasang"; null = tanpa patok. */
+  patokKondisi: string | null;
 }
 
 export interface LandParcelReportSummary {
@@ -269,6 +275,10 @@ export interface LandParcelReportSummary {
   totalNkt: number;
   /** Lahan yang sudah dinilai NKT (ada baris, termasuk NOT_AFFECTED). */
   totalDinilaiNkt: number;
+  /** Lahan dengan ≥ 1 patok aktif (#331). */
+  totalAdaPatok: number;
+  /** Jumlah tautan patok pada lahan-lahan hasil filter (patok bersama dihitung per lahan). */
+  totalPatok: number;
 }
 
 export interface LandParcelReportResult {
