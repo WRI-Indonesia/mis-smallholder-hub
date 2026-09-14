@@ -1,5 +1,5 @@
 ---
-title: Mengunggah detail lahan (surat, STDB, UL Parcel Code, sepadan) dari Excel
+title: Mengunggah detail lahan (surat, STDB, UL Parcel Code, sepadan, NKT) dari Excel
 icon: Upload
 menuKey: bulk-upload-parcels
 permission: CREATE
@@ -15,9 +15,9 @@ Ini **bukan** cara menambah lahan. Setiap baris harus menunjuk **ID Lahan** yang
 
 + Detail menempel pada *identitas* lahan, bukan pada satu versi poligon. Jadi kalau nanti poligonnya direvisi lewat unggah shapefile ulang, surat dan STDB-nya tetap ikut — tidak perlu diunggah lagi.
 
-Kolom yang dikenali otomatis dari berkas `MIS_<Kabupaten>_data-lahan.xlsx`: ID Lahan, ID Petani, Jenis Surat Tanah, Nomor Surat, Nama tertera di Surat, Luas tertera di Surat, Nomor STDB, `parcel_code`, Nama Kelompok Tani, dan empat kolom **Sepadan** (Utara/Timur/Selatan/Barat — judul kolom "Sepadan Utara", "Batas Utara", "Sebelah Utara", atau cukup "Utara" semuanya dikenali). Kolom lain di berkas (nama petani, lembaga, luas poligon) diabaikan — sudah ada di sistem.
+Kolom yang dikenali otomatis dari berkas `MIS_<Kabupaten>_data-lahan.xlsx`: ID Lahan, ID Petani, Jenis Surat Tanah, Nomor Surat, Nama tertera di Surat, Luas tertera di Surat, Nomor STDB, `parcel_code`, Nama Kelompok Tani, empat kolom **Sepadan** (Utara/Timur/Selatan/Barat — judul kolom "Sepadan Utara", "Batas Utara", "Sebelah Utara", atau cukup "Utara" semuanya dikenali), **Blok**, dan kolom **NKT** (Status NKT, Kategori NKT, Luas NKT Area (ha), Panjang (m)/LENGTH, Tanggal Asesmen, Asesor/Sumber). Kolom lain di berkas (nama petani, lembaga, luas poligon) diabaikan — sudah ada di sistem.
 
-Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
+Tersedia dua berkas contoh di Langkah 1: **Unduh Template Excel** (semua kolom) dan **Template NKT** — mengikuti bentuk lampiran "daftar petak kebun terdampak NKT" dari laporan asesmen (Nama, ID Petani, ID Lahan, Kelompok Tani, Blok, Luas NKT Area, Panjang). Keduanya diunggah lewat tab yang sama.
 
 ## Langkah
 
@@ -26,6 +26,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 2. Pada **Langkah 1**, pilih berkas `.xlsx` atau `.csv`.
 + Bila berkas punya beberapa sheet, sistem memakai sheet bernama **Data**; kalau tidak ada, sheet pertama yang berisi.
 3. Pada **Langkah 2**, periksa pemetaan kolom. Hanya **ID Lahan** dan **ID Petani** yang wajib; sisanya boleh kosong.
++ Untuk berkas **daftar lahan terdampak NKT** yang tidak punya kolom status/kategori (lazim pada lampiran laporan asesmen): isi panel **Bawaan NKT untuk berkas ini** — status (mis. *Terdampak*), kategori (mis. *NKT 4* untuk sempadan sungai), tanggal asesmen, dan nama laporan/asesor. Nilai itu dipakai untuk **semua baris** berkas, kecuali baris yang sel-nya sendiri menyatakan lain. Kalau berkas Anda punya kolom Status NKT, biarkan panel ini kosong.
 4. Klik **Validasi Detail Lahan**.
 5. Pada **Langkah 3**, tinjau tabel. Kolom **Nama Petani (DB)** menunjukkan pemilik lahan menurut sistem — pastikan itu orang yang Anda maksud.
 + Jenis surat ditampilkan sudah **dinormalkan**: "SHM", "SHM (Sertifikat Hak Milik)", dan "SHM (Surat Hak Milik)" semuanya jadi SHM. Ejaan aslinya tetap disimpan untuk audit.
@@ -37,6 +38,8 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 + Unggah ulang berkas yang sama **aman**: surat dengan nomor yang sama diperbarui, bukan digandakan; STDB dan UL Parcel Code juga dicocokkan dulu.
 + **Nama Kelompok Tani** hanya mengisi lahan yang di sistem masih kosong — yang sudah terisi **tidak ditimpa** (di pratinjau ditandai *"(sudah ada)"*). Untuk mengubah KT lahan, pakai form Edit Lahan.
 + **Sepadan** memakai aturan sebaliknya: sel yang **terisi menimpa** nilai lama (data sepadan wajar dikoreksi lewat pendataan ulang), sel yang **kosong dibiarkan** — tidak mengosongkan yang sudah ada. Mengosongkan sepadan hanya bisa lewat kotak Sepadan di detail lahan.
++ **Blok** mengikuti aturan Kelompok Tani: hanya mengisi yang masih kosong. Lembaga plasma biasanya memakai Blok, Lembaga swadaya memakai Kelompok Tani — template NKT memuat keduanya.
++ **NKT**: status di berkas (atau bawaan berkas) **menimpa** status lama — asesmen terbaru yang berlaku; luas/panjang/tanggal/asesor hanya ditimpa bila selnya terisi. Baris yang membawa data NKT tapi statusnya tak diketahui (tidak ada di kolom maupun bawaan) ditolak, bukan ditebak.
 
 > [!penting] Satu nomor **STDB boleh muncul di beberapa baris** selama ID Petaninya sama — STDB memang terbit per petani dan menutup semua persilnya. Yang ditolak adalah nomor STDB yang sama dengan **petani berbeda**.
 
@@ -52,7 +55,7 @@ Sel bertuliskan **"belum ada"**, **"belum dapat"**, atau **"n/a"** dulu diperlak
 
 ## Hasil
 
-Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB lengkap dengan **tahapnya**, UL Parcel Code; tab **Informasi**: kotak **Sepadan**) dan ringkasannya di detail petani. Sepadan juga tercetak di **Profil Lahan (PDF)**. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
+Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB lengkap dengan **tahapnya**, UL Parcel Code; tab **Informasi**: kotak **Sepadan** dan **NKT**) dan ringkasannya di detail petani. Sepadan dan NKT juga tercetak di **Profil Lahan (PDF)**; lahan NKT tampil sebagai layer merah/amber di **Peta Lahan** dan bisa disaring di **Laporan Lahan**. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
 
 ## Kalau bermasalah
 

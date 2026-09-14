@@ -32,6 +32,8 @@ import { ParcelLegalSection } from "../components/parcel-legal-section";
 import { ParcelSatelliteFormModal } from "../components/parcel-satellite-form-modal";
 import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/validations/land-parcel-satellite.schema";
 import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel, type ParcelNeighbor } from "@/lib/parcel-neighbor";
+import { isNktAffected, landNktStatusLabel, nktCategoryShort, NKT_CATEGORY_DESCRIPTIONS, type NktCategoryCode } from "@/lib/land-parcel-satellite-format";
+import { deleteLandParcelNkt } from "@/server/actions/land-parcel-satellite";
 
 import type { Geometry, Position } from "geojson";
 import type { LandParcel, FarmerSelect, LandParcelSatellites } from "@/types/land-parcel";
@@ -194,6 +196,7 @@ export function ParcelDetailClient({
   const [pdfLoading, setPdfLoading] = useState(false);
   const [monthModal, setMonthModal] = useState<{ period: string; title: string } | null>(null);
   const [borderModal, setBorderModal] = useState(false);
+  const [nktModal, setNktModal] = useState(false);
   const router = useRouter();
 
   const canEdit = permissions.includes("EDIT");
@@ -346,6 +349,12 @@ export function ParcelDetailClient({
               {/* Hanya PSR yang ditampilkan — "Non-PSR" hanya menambah badge tanpa informasi
                   (sejalan dengan PDF #298); statusnya tetap terbaca di tab Program. */}
               {parcel.isPsr && <Badge variant="secondary">PSR (Replanting)</Badge>}
+              {/* NKT (#328): status yang harus terlihat sebelum apa pun — merah bila termasuk, amber bila terdampak. */}
+              {satellites?.nkt && isNktAffected(satellites.nkt.status) && (
+                <Badge className={satellites.nkt.status === "INCLUDED" ? "bg-red-600 hover:bg-red-600" : "bg-amber-500 hover:bg-amber-500"}>
+                  {landNktStatusLabel(satellites.nkt.status, true)}
+                </Badge>
+              )}
               {parcel.cropType && <Badge variant="secondary">{parcel.cropType}</Badge>}
               {parcel.subGroupLv2 && <Badge variant="outline">{parcel.subGroupLv2}</Badge>}
             </div>
@@ -701,6 +710,91 @@ export function ParcelDetailClient({
               )}
             </div>
 
+            {/* NKT (#328): status hasil asesmen manual — satelit 1:1; tanpa baris = belum dinilai.
+                Sengaja TIDAK ikut Kelengkapan Data (alasan sama dengan sepadan). */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">NKT (Nilai Konservasi Tinggi)</h3>
+                {satellites && (
+                  <div className="flex items-center gap-1">
+                    {canEdit && (
+                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2" onClick={() => setNktModal(true)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" /> {satellites.nkt ? "Ubah" : "Isi"}
+                      </Button>
+                    )}
+                    {canDelete && satellites.nkt && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-destructive hover:text-destructive"
+                        title="Hapus status NKT (kembali ke belum dinilai)"
+                        onClick={async () => {
+                          if (!confirm("Hapus status NKT lahan ini? Lahan kembali berstatus belum dinilai.")) return;
+                          const res = await deleteLandParcelNkt(parcel.id);
+                          if (res.success) {
+                            toast.success("Status NKT dihapus");
+                            router.refresh();
+                          } else toast.error(typeof res.error === "string" ? res.error : "Gagal menghapus status NKT");
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              {satellites?.nkt ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <FieldItem label="Status">
+                    <span className={isNktAffected(satellites.nkt.status) ? (satellites.nkt.status === "INCLUDED" ? "text-red-600" : "text-amber-600") : undefined}>
+                      {landNktStatusLabel(satellites.nkt.status)}
+                    </span>
+                  </FieldItem>
+                  <FieldItem label="Kategori">
+                    {satellites.nkt.categories.length === 0 ? (
+                      <span className="font-normal text-muted-foreground">—</span>
+                    ) : (
+                      <span className="flex flex-wrap gap-1">
+                        {satellites.nkt.categories.map((c) => (
+                          <Badge key={c} variant="outline" title={NKT_CATEGORY_DESCRIPTIONS[c as NktCategoryCode]}>{nktCategoryShort(c)}</Badge>
+                        ))}
+                      </span>
+                    )}
+                  </FieldItem>
+                  {(satellites.nkt.affectedAreaHa != null || satellites.nkt.affectedLengthM != null) && (
+                    <FieldItem label="Luas / panjang area NKT">
+                      <span className="tabular-nums">
+                        {satellites.nkt.affectedAreaHa != null ? `${formatDecimal(satellites.nkt.affectedAreaHa)} ha` : "—"}
+                        {satellites.nkt.affectedLengthM != null && (
+                          <span className="text-muted-foreground font-normal"> · {formatNumber(Math.round(satellites.nkt.affectedLengthM))} m</span>
+                        )}
+                      </span>
+                    </FieldItem>
+                  )}
+                  <FieldItem label="Asesmen">
+                    <span className="font-normal">
+                      {satellites.nkt.assessedAt ? formatDate(satellites.nkt.assessedAt) : "—"}
+                      {satellites.nkt.assessor && ` · ${satellites.nkt.assessor}`}
+                    </span>
+                  </FieldItem>
+                  {satellites.nkt.source && (
+                    <div className="col-span-2">
+                      <FieldItem label="Sumber"><span className="font-normal">{satellites.nkt.source}</span></FieldItem>
+                    </div>
+                  )}
+                  {satellites.nkt.notes && (
+                    <div className="col-span-2">
+                      <FieldItem label="Catatan"><span className="whitespace-pre-wrap font-normal">{satellites.nkt.notes}</span></FieldItem>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Belum dinilai — status termasuk/terdampak NKT diisi dari hasil asesmen (kategori NKT 1–6, tanggal, asesor).
+                </p>
+              )}
+            </div>
           </div>
         </div>
         </Card>
@@ -852,6 +946,15 @@ export function ParcelDetailClient({
         parcel={parcel}
         farmers={farmers}
       />
+
+      {canEdit && nktModal && (
+        <ParcelSatelliteFormModal
+          open
+          onClose={() => setNktModal(false)}
+          landParcelId={parcel.id}
+          target={{ kind: "nkt", item: satellites?.nkt ?? null }}
+        />
+      )}
 
       {canEdit && borderModal && (
         <ParcelSatelliteFormModal

@@ -29,10 +29,12 @@ export type LayerVisibility = {
   kt: boolean;
   parcelPoints: boolean;
   parcelAreas: boolean;
+  /** Lahan termasuk/terdampak NKT (#328) — sorotan merah/amber di atas area lahan. */
+  nkt: boolean;
 };
 
 /** Layer internal yang bisa dituju tombol zoom di panel (klik label). */
-export type LayerZoomTarget = "kt" | "parcelPoints" | "parcelAreas" | "hotspot";
+export type LayerZoomTarget = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "hotspot";
 
 interface Props {
   provinces: MapSelectOption[];
@@ -404,12 +406,22 @@ export function MapControlPanel(props: Props) {
                       onZoomTo={() => onZoomLayer("parcelPoints")}
                     />
                     <LegendRow
-                      color="#16a34a"
+                      color="#7e22ce"
                       label="Area Lahan Petani"
                       count={counts.parcelAreas}
                       checked={layers.parcelAreas}
                       onToggle={(v) => onLayersChange({ ...layers, parcelAreas: v })}
                       onZoomTo={() => onZoomLayer("parcelAreas")}
+                      variant="area"
+                    />
+                    {/* NKT (#328): hitungan = lahan INCLUDED/AFFECTED pada hasil filter; 0 bila belum ada asesmen. */}
+                    <LegendRow
+                      color="#dc2626"
+                      label="Lahan NKT (termasuk/terdampak)"
+                      count={counts.nkt ?? 0}
+                      checked={layers.nkt}
+                      onToggle={(v) => onLayersChange({ ...layers, nkt: v })}
+                      onZoomTo={() => onZoomLayer("nkt")}
                       variant="area"
                     />
                   </div>

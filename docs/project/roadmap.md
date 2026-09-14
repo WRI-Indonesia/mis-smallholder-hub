@@ -270,10 +270,12 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 </details>
 
 <details>
-<summary><strong>MD-08</strong> · 🔲 Planned — HCV</summary>
+<summary><strong>MD-08</strong> · 🔲 Planned — HCV (langkah pertama sudah masuk kode, status dinaikkan ke Partial pada rilis berikutnya)</summary>
 
-- **Evidence:** No HCV model/route/action/UI.
-- **Next step:** Define scope.
+- **Catatan status:** kode #328 sudah di `mvp` (2026-09-14) tetapi baris Phase Status sengaja belum diubah — Roadmap % dijaga test `roadmap.test.ts` agar selalu sama dengan baris rilis terakhir di `metrics.md`, jadi perubahan status ikut siklus rilis (bump → changelog → metrics), bukan commit fitur.
+- **Evidence (#328, 2026-09-14):** status NKT per lahan — `LandParcelNkt` (satelit 1:1 identitas lahan; status termasuk/terdampak/tidak, kategori NKT 1–6, luas & panjang area NKT, tanggal/asesor/sumber), form + hapus di Detail Lahan, kolom & template tersendiri di importer Data Lahan Detail (dengan bawaan per berkas untuk daftar "terdampak" ala Lampiran asesmen), filter/kolom/KPI di Laporan Lahan, layer "Lahan NKT" di Peta Lahan, badge + baris di Profil Lahan PDF. Tanpa menu baru (menumpang menu Lahan).
+- **Belum:** layer poligon area NKT + deteksi spasial, riwayat asesmen per tahun, luas/rekomendasi pengelolaan lanjutan, dokumen laporan asesmen (S3), tindak lanjut, dashboard NKT.
+- **Next step:** kumpulkan data asesmen Lembaga lain (HJP sudah ada Lampiran III), lalu putuskan apakah modul asesmen penuh dibutuhkan.
 
 </details>
 

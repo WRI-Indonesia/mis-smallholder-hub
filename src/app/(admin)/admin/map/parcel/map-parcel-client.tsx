@@ -81,6 +81,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
     kt: true,
     parcelPoints: false,
     parcelAreas: true,
+    nkt: true,
   });
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAY_STATE);
   const [customLayers, setCustomLayers] = useState<CustomLayer[]>([]);

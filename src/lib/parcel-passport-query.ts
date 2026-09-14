@@ -107,6 +107,8 @@ export async function fetchParcelPassport(
           programs: { where: { isActive: true }, select: { programType: true, status: true, startDate: true, endDate: true } },
           // Sepadan (#326) — 1:1; keempat sisi NULL berarti pernah dihapus, diperlakukan sama dengan belum diisi.
           border: { select: { north: true, east: true, south: true, west: true, notes: true } },
+          // NKT (#328) — status terkini; null = belum dinilai.
+          nkt: { select: { status: true, categories: true, affectedAreaHa: true, affectedLengthM: true, assessedAt: true, assessor: true, source: true } },
         },
       },
       farmer: {
@@ -197,6 +199,9 @@ export async function fetchParcelPassport(
         // Predikat yang sama dengan getLandParcelSatellites (hasBorderContent) —
         // dua salinan sempat menyimpang (catatan-saja hilang dari PDF).
         border: hasBorderContent(parcel.identity.border) ? parcel.identity.border : null,
+        nkt: parcel.identity.nkt
+          ? { ...parcel.identity.nkt, assessedAt: parcel.identity.nkt.assessedAt ? parcel.identity.nkt.assessedAt.toISOString() : null }
+          : null,
       },
       legal: {
         documents: parcel.identity.documents,

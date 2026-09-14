@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } from "react";
+import { landNktStatusLabel } from "@/lib/land-parcel-satellite-format";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { ExpressionSpecification } from "maplibre-gl";
@@ -340,6 +341,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       );
     } else if (layerZoomRequest.target === "kt") {
       fitCoords((data?.kelompokTani ?? []).map((kt) => [kt.long, kt.lat] as [number, number]));
+    } else if (layerZoomRequest.target === "nkt") {
+      // NKT (#328): hanya lahan termasuk/terdampak; tanpa satu pun → fitCoords tidak melakukan apa-apa.
+      fitCoords((data?.parcels ?? []).filter((p) => p.nktStatus === "INCLUDED" || p.nktStatus === "AFFECTED").map((p) => p.centroid));
     } else {
       fitCoords((data?.parcels ?? []).map((p) => p.centroid));
     }
@@ -590,14 +594,34 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             type="fill"
             beforeId={labelBeforeId}
             layout={vis(layers.parcelAreas)}
-            paint={{ "fill-color": "#22c55e", "fill-opacity": 0.2 }}
+            // Ungu (keputusan owner 2026-09-14, #328): hijau dilepas agar sorotan NKT merah/amber
+            // dan titik Lembaga hijau tidak bersaing dengan area lahan.
+            paint={{ "fill-color": "#a855f7", "fill-opacity": 0.2 }}
           />
           <Layer
             id="parcel-outline"
             type="line"
             beforeId={labelBeforeId}
             layout={vis(layers.parcelAreas)}
-            paint={{ "line-color": "#16a34a", "line-width": 1.5 }}
+            paint={{ "line-color": "#7e22ce", "line-width": 1.5 }}
+          />
+          {/* NKT (#328): sorotan lahan termasuk (merah) / terdampak (amber) di atas area lahan;
+              toggle sendiri, tetap tampil walau layer Area dimatikan agar bisa dilihat sendirian. */}
+          <Layer
+            id="parcel-nkt-fill"
+            type="fill"
+            beforeId={labelBeforeId}
+            layout={vis(layers.nkt)}
+            filter={["in", ["get", "nktStatus"], ["literal", ["INCLUDED", "AFFECTED"]]]}
+            paint={{ "fill-color": ["case", ["==", ["get", "nktStatus"], "INCLUDED"], "#dc2626", "#f59e0b"], "fill-opacity": 0.25 }}
+          />
+          <Layer
+            id="parcel-nkt-outline"
+            type="line"
+            beforeId={labelBeforeId}
+            layout={vis(layers.nkt)}
+            filter={["in", ["get", "nktStatus"], ["literal", ["INCLUDED", "AFFECTED"]]]}
+            paint={{ "line-color": ["case", ["==", ["get", "nktStatus"], "INCLUDED"], "#b91c1c", "#d97706"], "line-width": 2.5 }}
           />
           {/* Highlight lahan yang popup-nya terbuka — poligon tetangga bergaya
               seragam sulit dibedakan dari yang dipilih. Selalu tampil saat ada
@@ -1204,6 +1228,8 @@ function ParcelPopupBody({
               { label: "Tahun Tanam", value: props.plantingYear },
               { label: "Komoditas", value: props.cropType },
               { label: "Status Lahan", value: props.landStatus },
+              // NKT (#328): belum dinilai ditulis eksplisit — "—" akan terbaca "tidak terdampak".
+              { label: "NKT", value: props.nktStatus ? landNktStatusLabel(String(props.nktStatus)) : "Belum dinilai" },
             ]}
           />
         </MapPopupSection>
@@ -1456,5 +1482,6 @@ function parcelProps(p: ParcelFeature) {
     plantingYear: p.plantingYear,
     cropType: p.cropType,
     landStatus: p.landStatus,
+    nktStatus: p.nktStatus,
   };
 }

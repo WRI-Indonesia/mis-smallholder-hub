@@ -19,6 +19,9 @@ import type { LandParcelDetailRowInput } from "@/validations/land-parcel-detail.
  * - Nama Kelompok Tani: isi LandParcel.subGroupLv2 baris aktif HANYA bila kosong.
  * - Sepadan (#326): satelit 1:1 per parcelUid — sel TERISI menimpa nilai lama,
  *   sel KOSONG dibiarkan (tidak mengosongkan; pola dokumen, bukan pola KT).
+ * - Blok: isi LandParcel.blok baris aktif HANYA bila kosong (pola KT, #328).
+ * - NKT (#328): satelit 1:1 — baris yang membawa status menimpa status/kategori
+ *   (asesmen terbaru menang); field lain hanya ditimpa bila terisi.
  *
  * Bentuk (#300): 3 tahap per batch — PREFETCH (5 `findMany`), PLAN (murni,
  * `planLandParcelDetailRows`, teruji tanpa DB), EXECUTE (`createMany` untuk
@@ -52,6 +55,12 @@ export interface ParcelDetailSaveSummary {
   bordersCreated: number;
   bordersUpdated: number;
   bordersUnchanged: number;
+  /** LandParcel.blok yang terisi (hanya yang sebelumnya kosong, #328). */
+  bloksFilled: number;
+  /** NKT (#328). */
+  nktCreated: number;
+  nktUpdated: number;
+  nktUnchanged: number;
 }
 
 export function emptyParcelDetailSummary(rows: number): ParcelDetailSaveSummary {
@@ -72,6 +81,10 @@ export function emptyParcelDetailSummary(rows: number): ParcelDetailSaveSummary 
     bordersCreated: 0,
     bordersUpdated: 0,
     bordersUnchanged: 0,
+    bloksFilled: 0,
+    nktCreated: 0,
+    nktUpdated: 0,
+    nktUnchanged: 0,
   };
 }
 
@@ -110,11 +123,24 @@ export interface BorderSides {
   west: string | null;
 }
 
+/** Field NKT yang bisa ditimpa importer (#328). */
+export interface NktFields {
+  status: string;
+  categories: string[];
+  affectedAreaHa: number | null;
+  affectedLengthM: number | null;
+  /** ISO yyyy-mm-dd. */
+  assessedAt: string | null;
+  assessor: string | null;
+}
+
 export interface ParcelDetailExistingState {
   /** docKey → dokumen aktif (id + field yang bisa berubah). */
   documents: Map<string, { id: string } & DocumentFields>;
   /** parcelUid → baris sepadan yang sudah ada (1:1). */
   borders: Map<string, { id: string } & BorderSides>;
+  /** parcelUid → baris NKT yang sudah ada (1:1). */
+  nkts: Map<string, { id: string } & NktFields>;
   /** stdbKey → STDB BERNOMOR (aktif atau tidak). Baris tanpa nomor tidak masuk peta ini. */
   stdbs: Map<string, { id: string; isActive: boolean }>;
   /** openStdbKey → berkas STDB terbuka milik petani (#306); paling banyak satu. */
@@ -131,6 +157,7 @@ export function emptyExistingState(): ParcelDetailExistingState {
   return {
     documents: new Map(),
     borders: new Map(),
+    nkts: new Map(),
     stdbs: new Map(),
     openStdbs: new Map(),
     farmersWithActiveStdb: new Set(),
@@ -159,6 +186,11 @@ export interface ParcelDetailPlan {
   /** Sepadan (#326): baris baru hanya memuat sisi yang terisi; update hanya sisi yang berubah. */
   borderCreates: Array<{ parcelUid: string } & BorderSides>;
   borderUpdates: Array<{ id: string; data: Partial<BorderSides> }>;
+  /** Blok (#328): parcelUid → blok (isi bila kosong; updateMany). */
+  blokFills: Map<string, string>;
+  /** NKT (#328): create memuat semua field; update hanya field yang berubah. */
+  nktCreates: Array<{ parcelUid: string } & NktFields>;
+  nktUpdates: Array<{ id: string; data: Partial<NktFields> }>;
   summary: ParcelDetailSaveSummary;
 }
 
@@ -190,8 +222,13 @@ export function planLandParcelDetailRows(
     subGroupFills: new Map(),
     borderCreates: [],
     borderUpdates: [],
+    blokFills: new Map(),
+    nktCreates: [],
+    nktUpdates: [],
     summary,
   };
+  // NKT: patch per lahan dikumpulkan dulu (baris terakhir menang), keputusan setelah loop — pola sepadan.
+  const nktPatches = new Map<string, Partial<NktFields>>();
   // Sepadan: patch per lahan DIKUMPULKAN dulu (baris ganda: sisi terakhir
   // menang, termasuk bila nilai terakhir = DB), keputusan create/update/
   // unchanged baru dihitung setelah loop — kalau dihitung sambil jalan,
@@ -332,8 +369,20 @@ export function planLandParcelDetailRows(
       }
     }
 
-    // --- Kelompok Tani: isi bila kosong (dieksekusi lewat satu updateMany) ---
+    // --- Kelompok Tani & Blok: isi bila kosong (dieksekusi lewat satu updateMany per nilai) ---
     if (r.subGroupLv2) plan.subGroupFills.set(r.parcelUid, r.subGroupLv2);
+    if (r.blok) plan.blokFills.set(r.parcelUid, r.blok);
+
+    // --- NKT (#328): status selalu ditimpa; field lain hanya bila terisi ---
+    if (r.nkt) {
+      const patch: Partial<NktFields> = { status: r.nkt.status };
+      if (r.nkt.categories !== null) patch.categories = r.nkt.categories;
+      if (r.nkt.affectedAreaHa !== null) patch.affectedAreaHa = r.nkt.affectedAreaHa;
+      if (r.nkt.affectedLengthM !== null) patch.affectedLengthM = r.nkt.affectedLengthM;
+      if (r.nkt.assessedAt !== null) patch.assessedAt = r.nkt.assessedAt;
+      if (r.nkt.assessor !== null) patch.assessor = r.nkt.assessor;
+      nktPatches.set(r.parcelUid, { ...(nktPatches.get(r.parcelUid) ?? {}), ...patch });
+    }
 
     // --- Sepadan (#326): hanya sisi yang terisi di file yang ditulis ---
     if (r.border) {
@@ -343,6 +392,35 @@ export function planLandParcelDetailRows(
       if (Object.keys(filled).length) {
         borderPatches.set(r.parcelUid, { ...(borderPatches.get(r.parcelUid) ?? {}), ...filled });
       }
+    }
+  }
+
+  for (const [parcelUid, patch] of nktPatches) {
+    const inDb = existing.nkts.get(parcelUid);
+    if (!inDb) {
+      plan.nktCreates.push({
+        parcelUid,
+        status: patch.status!,
+        categories: patch.categories ?? [],
+        affectedAreaHa: patch.affectedAreaHa ?? null,
+        affectedLengthM: patch.affectedLengthM ?? null,
+        assessedAt: patch.assessedAt ?? null,
+        assessor: patch.assessor ?? null,
+      });
+      summary.nktCreated++;
+      continue;
+    }
+    const changed: Partial<NktFields> = {};
+    for (const k of Object.keys(patch) as (keyof NktFields)[]) {
+      const a = inDb[k], b = patch[k];
+      const same = Array.isArray(a) && Array.isArray(b) ? a.join(",") === b.join(",") : a === b;
+      if (!same) (changed as Record<string, unknown>)[k] = b;
+    }
+    if (Object.keys(changed).length) {
+      plan.nktUpdates.push({ id: inDb.id, data: changed });
+      summary.nktUpdated++;
+    } else {
+      summary.nktUnchanged++;
     }
   }
 
@@ -380,8 +458,9 @@ export async function fetchParcelDetailExistingState(
   const stdbNumbers = [...new Set(rows.flatMap((r) => (r.stdb?.number ? [r.stdb.number] : [])))];
   const codes = [...new Set(rows.flatMap((r) => (r.externalCode ? [r.externalCode] : [])))];
   const borderUids = [...new Set(rows.filter((r) => r.border).map((r) => r.parcelUid))];
+  const nktUids = [...new Set(rows.filter((r) => r.nkt).map((r) => r.parcelUid))];
 
-  const [documents, stdbs, externalIds, borders] = await Promise.all([
+  const [documents, stdbs, externalIds, borders, nkts] = await Promise.all([
     tx.landParcelDocument.findMany({
       where: { parcelUid: { in: uids }, isActive: true },
       select: { id: true, parcelUid: true, type: true, number: true, typeRaw: true, holderName: true, statedArea: true, custodyNote: true },
@@ -408,8 +487,25 @@ export async function fetchParcelDetailExistingState(
           select: { id: true, parcelUid: true, north: true, east: true, south: true, west: true },
         })
       : Promise.resolve([]),
+    nktUids.length
+      ? tx.landParcelNkt.findMany({
+          where: { parcelUid: { in: nktUids } },
+          select: { id: true, parcelUid: true, status: true, categories: true, affectedAreaHa: true, affectedLengthM: true, assessedAt: true, assessor: true },
+        })
+      : Promise.resolve([]),
   ]);
   for (const b of borders) state.borders.set(b.parcelUid, { id: b.id, north: b.north, east: b.east, south: b.south, west: b.west });
+  for (const n of nkts) {
+    state.nkts.set(n.parcelUid, {
+      id: n.id,
+      status: n.status,
+      categories: n.categories,
+      affectedAreaHa: n.affectedAreaHa,
+      affectedLengthM: n.affectedLengthM,
+      assessedAt: n.assessedAt ? n.assessedAt.toISOString().slice(0, 10) : null,
+      assessor: n.assessor,
+    });
+  }
   for (const d of documents) state.documents.set(docKey(d.parcelUid, d.type, d.number), { id: d.id, typeRaw: d.typeRaw, holderName: d.holderName, statedArea: d.statedArea, custodyNote: d.custodyNote });
   for (const s of stdbs) {
     if (s.number) {
@@ -513,6 +609,41 @@ async function executeParcelDetailPlan(tx: Prisma.TransactionClient, plan: Parce
   }
   for (const u of plan.borderUpdates) {
     await tx.landParcelBorder.update({ where: { id: u.id }, data: { ...u.data, modifiedBy: userId } });
+  }
+
+  // NKT (#328): baris baru sekaligus; update per baris hanya field yang berubah.
+  if (plan.nktCreates.length) {
+    await tx.landParcelNkt.createMany({
+      data: plan.nktCreates.map((n) => ({
+        ...n,
+        status: n.status as Prisma.LandParcelNktCreateManyInput["status"],
+        categories: n.categories as Prisma.LandParcelNktCreateManyInput["categories"],
+        assessedAt: n.assessedAt ? new Date(`${n.assessedAt}T00:00:00Z`) : null,
+        createdBy: userId,
+      })),
+    });
+  }
+  for (const u of plan.nktUpdates) {
+    const { assessedAt, ...rest } = u.data;
+    await tx.landParcelNkt.update({
+      where: { id: u.id },
+      data: {
+        ...(rest as Prisma.LandParcelNktUpdateInput),
+        ...(assessedAt !== undefined ? { assessedAt: assessedAt ? new Date(`${assessedAt}T00:00:00Z`) : null } : {}),
+        modifiedBy: userId,
+      },
+    });
+  }
+
+  // Blok (#328): isi bila kosong — satu updateMany per nilai blok.
+  const uidsByBlok = new Map<string, string[]>();
+  for (const [uid, blok] of plan.blokFills) uidsByBlok.set(blok, [...(uidsByBlok.get(blok) ?? []), uid]);
+  for (const [blok, uids] of uidsByBlok) {
+    const res = await tx.landParcel.updateMany({
+      where: { parcelUid: { in: uids }, isActive: true, OR: [{ blok: null }, { blok: "" }] },
+      data: { blok, modifiedBy: userId },
+    });
+    summary.bloksFilled += res.count;
   }
 
   // Kelompok Tani: satu updateMany per nama KT (nama berbeda → data berbeda).

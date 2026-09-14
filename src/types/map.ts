@@ -32,6 +32,8 @@ export type ParcelFeature = {
   plantingYear: number | null;
   cropType: string | null;
   landStatus: string | null;
+  /** Status NKT (#328): INCLUDED/AFFECTED/NOT_AFFECTED, null = belum dinilai — gaya layer & popup. */
+  nktStatus: string | null;
   /** Centroid derived from the polygon, as [long, lat]. */
   centroid: [number, number];
   geometry: Polygon | MultiPolygon;
@@ -40,7 +42,8 @@ export type ParcelFeature = {
 export type MapData = {
   kelompokTani: KTPoint[];
   parcels: ParcelFeature[];
-  counts: { kt: number; parcelPoints: number; parcelAreas: number };
+  /** `nkt` (#328) = lahan INCLUDED/AFFECTED; opsional agar payload lama tetap valid. */
+  counts: { kt: number; parcelPoints: number; parcelAreas: number; nkt?: number };
 };
 
 // ── Wire format (#223) ─────────────────────────────────────────────────────
@@ -64,6 +67,8 @@ export type ParcelWireTuple = [
   cropType: string | null,
   landStatus: string | null,
   geometry: Polygon | MultiPolygon,
+  /** #328 — ditambahkan di akhir agar posisi lama tak bergeser. */
+  nktStatus: string | null,
 ];
 
 export type MapDataWire = {
@@ -248,6 +253,8 @@ export type ParcelPassport = {
     treeCount: number;
     /** Sepadan U/T/S/B (#326) — null bila belum diisi; PDF tetap mencetak bloknya dengan "—". */
     border: { north: string | null; east: string | null; south: string | null; west: string | null; notes: string | null } | null;
+    /** Status NKT (#328) — null = belum dinilai; PDF mencetak badge + baris "NKT". */
+    nkt: { status: string; categories: string[]; affectedAreaHa: number | null; affectedLengthM: number | null; assessedAt: string | null; assessor: string | null; source: string | null } | null;
   };
   /** Legalitas lahan (#296/#298) — satelit via parcelUid. */
   legal: {

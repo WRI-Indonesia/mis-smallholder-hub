@@ -84,6 +84,17 @@ describe("buildMapData", () => {
     });
   });
 
+  it("NKT (#328): status ikut tuple (elemen terakhir) & counts.nkt; tanpa identitas → null / 0", () => {
+    const result = buildMapData([], [
+      parcel({ id: "p1", identity: { nkt: { status: "AFFECTED" } } }),
+      parcel({ id: "p2", identity: { nkt: { status: "NOT_AFFECTED" } } }),
+      parcel({ id: "p3" }),
+    ]);
+    expect(result.counts.nkt).toBe(1);
+    const byId = Object.fromEntries(expandMapData(result).parcels.map((p) => [p.id, p.nktStatus]));
+    expect(byId).toEqual({ p1: "AFFECTED", p2: "NOT_AFFECTED", p3: null });
+  });
+
   it("dedupes the farmers lookup across parcels of the same farmer (#223)", () => {
     const result = buildMapData([], [parcel(), parcel({ id: "p2" })]);
     expect(result.parcels).toHaveLength(2);
@@ -157,14 +168,14 @@ describe("buildMapData", () => {
       [group(), group({ id: "g2" })],
       [parcel(), parcel({ id: "p2" }), parcel({ id: "p3" })]
     );
-    expect(result.counts).toEqual({ kt: 2, parcelPoints: 3, parcelAreas: 3 });
+    expect(result.counts).toEqual({ kt: 2, nkt: 0, parcelPoints: 3, parcelAreas: 3 });
   });
 
   it("returns empty payload for empty input", () => {
     const result = buildMapData([], []);
     expect(result.kelompokTani).toEqual([]);
     expect(result.parcels).toEqual([]);
-    expect(result.counts).toEqual({ kt: 0, parcelPoints: 0, parcelAreas: 0 });
+    expect(result.counts).toEqual({ kt: 0, nkt: 0, parcelPoints: 0, parcelAreas: 0 });
   });
 });
 

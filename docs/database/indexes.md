@@ -54,6 +54,9 @@
 | LandParcelProgram | PK | `id` (CUID) | Primary key |
 | LandParcelBorder | PK | `id` (CUID) | Primary key |
 | LandParcelBorder | UNIQUE | `parcelUid` | Sepadan 1:1 per identitas lahan (#326) — sekaligus index baca `findUnique` |
+| LandParcelNkt | PK | `id` (CUID) | Primary key |
+| LandParcelNkt | UNIQUE | `parcelUid` | Status NKT 1:1 per identitas lahan (#328) |
+| LandParcelNkt | INDEX | `status` | Filter Laporan Lahan / hitungan layer peta per status |
 | **Tree** | | | |
 | Tree | PK | `id` (CUID) | Primary key |
 | **Training** | | | |

@@ -47,6 +47,27 @@ describe("migrasi Prisma — index GiST manual tidak boleh di-drop", () => {
   });
 });
 
+describe("migrasi Prisma — kolom generated `geom` tidak boleh disentuh migrasi berikutnya", () => {
+  it("tidak ada `ALTER COLUMN geom DROP DEFAULT` (Prisma membaca ekspresi GENERATED sebagai default; di Postgres pernyataan itu error)", () => {
+    const offenders = migrationFiles()
+      .filter((m) => /ALTER\s+COLUMN\s+"?geom"?\s+(DROP|SET)\s+DEFAULT/i.test(ddlOnly(m.sql)))
+      .map((m) => m.name);
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("migrasi land_parcel_nkt — satelit status NKT 1:1 (#328)", () => {
+  const m = migrationFiles().find((f) => f.name.endsWith("_land_parcel_nkt"));
+
+  it("berkas migrasi ada; FK ke tbl_land_parcel_identity; unique parcel_uid; enum status & kategori", () => {
+    expect(m).toBeDefined();
+    expect(m!.sql).toMatch(/REFERENCES "tbl_land_parcel_identity"\("id"\)/);
+    expect(m!.sql).toMatch(/CREATE UNIQUE INDEX "tbl_land_parcel_nkt_parcel_uid_key"/);
+    expect(m!.sql).toMatch(/CREATE TYPE "LandNktStatus" AS ENUM \('INCLUDED', 'AFFECTED', 'NOT_AFFECTED'\)/);
+    expect(m!.sql).toMatch(/CREATE TYPE "NktCategory" AS ENUM \('NKT_1', 'NKT_2', 'NKT_3', 'NKT_4', 'NKT_5', 'NKT_6'\)/);
+  });
+});
+
 describe("migrasi land_parcel_satellites — backfill parcel_uid sebelum NOT NULL", () => {
   const m = migrationFiles().find((f) => f.name.endsWith("_land_parcel_satellites"));
 

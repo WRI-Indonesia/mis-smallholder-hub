@@ -10,7 +10,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 │   ├── Filter: Provinsi · Distrik (wajib) · Lembaga Petani (opsional ber-opsi "Semua …")
 │   ├── Tombol: Muat Data
 │   ├── Dropdown: Unduh Lahan (SHP ZIP / GeoJSON / KML) — izin EXPORT (#313)
-│   ├── Legenda: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani
+│   ├── Legenda: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani · Lahan NKT (#328)
 │   ├── Peta Lainnya (overlay referensi pemerintah)
 │   │   ├── Layer: Kawasan Hutan · Fungsi Ekosistem Gambut
 │   │   ├── Per layer aktif: legend warna kelas + "Sumber: …"
@@ -24,7 +24,7 @@ Halaman: Peta Lahan (/admin/map/parcel)
 │       └── Daftar layer tambahan
 ├── Peta
 │   ├── Basemap: LIGHT / DARK / HYBRID
-│   ├── Layer: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani
+│   ├── Layer: Point Lembaga Petani · Point Lahan Petani · Area Lahan Petani · Lahan NKT
 │   ├── Layer: Overlay raster · Titik api · Layer GIS tambahan
 │   ├── Layer: Highlight lahan terpilih (fill kuning + outline tebal)
 │   ├── Popup fitur: Lembaga Petani · Titik Api · Lahan (bisa digeser via pegangan)
@@ -63,7 +63,8 @@ Halaman: Peta Lahan (/admin/map/parcel)
 | Legenda | Section collapsible + Legend | Muncul hanya setelah data dimuat; tiap baris = checkbox toggle layer + swatch warna + jumlah fitur; klik teks label = zoom ke sebaran data layer (`LayerZoomTarget`) |
 | Point Lembaga Petani | Layer + Legend | Circle hijau `#22c55e` r=8, stroke putih; label nama lembaga di bawah titik |
 | Point Lahan Petani | Layer + Legend | Circle biru `#3b82f6` r=5 pada centroid persil; **default tidak dicentang** (#223) — GeoJSON point dibangun lazy saat pertama dicentang (ribuan titik jarang dipakai) |
-| Area Lahan Petani | Layer + Legend | Polygon fill `#22c55e` opacity 0.2, outline `#16a34a`; label nama petani di dalam poligon bila muat (`parcelLabelFit`) |
+| Area Lahan Petani | Layer + Legend | Polygon fill **ungu** `#a855f7` opacity 0.2, outline `#7e22ce` (keputusan owner 2026-09-14 bersama #328 — hijau dilepas agar sorotan NKT merah/amber dan titik Lembaga hijau tidak bersaing); label nama petani di dalam poligon bila muat (`parcelLabelFit`) |
+| Lahan NKT (termasuk/terdampak) | Layer + Legend (#328) | Sorotan di atas area lahan: `INCLUDED` merah (`#dc2626`/outline `#b91c1c`), `AFFECTED` amber (`#f59e0b`/`#d97706`), opacity 0.25, outline 2.5; toggle sendiri (default nyala) dan tetap tampil walau layer Area dimatikan; hitungan = lahan INCLUDED/AFFECTED pada hasil filter (`counts.nkt`); zoom-ke-layer hanya ke lahan NKT. Payload hanya membawa `nktStatus` (elemen terakhir `ParcelWireTuple`), bukan seluruh baris NKT. Popup lahan: baris **NKT** — status atau "Belum dinilai" (bukan "—") |
 | Peta Lainnya | Section collapsible (overlay) | Raster overlay ArcGIS pemerintah via proxy: **Kawasan Hutan** (geoportal Kemenhut, Peta Kawasan Hutan 1:250.000 Des 2025) & **Fungsi Ekosistem Gambut** (Satu Peta BIG, FEG 1:50.000) — tiap baris checkbox + deskripsi singkat. Saat aktif, di bawah baris muncul **legend warna kelas** (Kawasan Hutan: Kawasan Konservasi (HK) · Hutan Lindung (HL) · Hutan Produksi Terbatas (HPT) · Hutan Produksi Tetap (HP) · Hutan Produksi Konversi (HPK) · Area Penggunaan Lain (APL) · Tubuh Air; Gambut: Fungsi Lindung · Fungsi Budidaya) + baris "Sumber: …" per overlay |
 | Transparansi | Slider | Muncul bila ada overlay aktif; rentang 0.1–1 (default 0.7), ditampilkan dalam persen |
 | Titik Api (Hotspot) | Section collapsible + Layer | Checkbox "Tampilkan titik api" + jumlah titik; sumber NASA FIRMS VIIRS 375 m; area query tetap bbox persegi Riau, tetapi hasilnya **dipangkas ke gabungan 12 poligon kabupaten BIG** (`filterPointsWithinAreas`) sebelum masuk state — bbox persegi ikut memuat Malaysia/Sumbar/Jambi/Kepri (#269). Poligon dimuat malas via `getAdminBoundaries()` saat layer dinyalakan (±165 KB, sekali); batas belum ter-seed → tampil apa adanya. Checkbox & toggle rentang disabled sebelum data lahan dimuat (perlu titik lembaga untuk kalkulasi jarak PDF; saat layer sudah nyala, checkbox tetap bisa mematikan). Klik teks label = zoom ke sebaran titik api |

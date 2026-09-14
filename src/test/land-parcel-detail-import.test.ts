@@ -6,6 +6,10 @@ import {
   parseStatedArea,
   autoMatchParcelDetailColumns,
   validateParcelDetailRows,
+  parseNktStatus,
+  parseNktCategories,
+  parseDateCell,
+  parsePositiveNumber,
   type ParcelRef,
 } from "@/lib/land-parcel-detail-import";
 
@@ -181,6 +185,8 @@ describe("validateParcelDetailRows", () => {
       externalCode: "ID080d781b4",
       subGroupLv2: null,
       border: null,
+      blok: null,
+      nkt: null,
     });
   });
 
@@ -343,5 +349,84 @@ describe("validateParcelDetailRows", () => {
   it("nomor baris = indeks + 2 (baris 1 Excel adalah header)", () => {
     const rs = validateParcelDetailRows([row({}), row({})], mapping, parcels);
     expect(rs.map((r) => r._rowNum)).toEqual([2, 3]);
+  });
+});
+
+describe("NKT (#328) — parser sel", () => {
+  it("parseNktStatus: ejaan lapangan → enum; tak dikenal → error; kosong → null", () => {
+    expect(parseNktStatus("Terdampak").status).toBe("AFFECTED");
+    expect(parseNktStatus("ya").status).toBe("AFFECTED");
+    expect(parseNktStatus("termasuk area NKT").status).toBe("INCLUDED");
+    expect(parseNktStatus("Tidak terdampak").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("tidak").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("").status).toBeNull();
+    expect(parseNktStatus("mungkin").error).toMatch(/tidak dikenal/);
+  });
+  it("parseNktCategories: '1,4' / 'NKT 1; NKT 4' / 'NKT_4' → kode; di luar 1–6 → error", () => {
+    expect(parseNktCategories("1,4").categories).toEqual(["NKT_1", "NKT_4"]);
+    expect(parseNktCategories("NKT 4; NKT 1").categories).toEqual(["NKT_1", "NKT_4"]);
+    expect(parseNktCategories("NKT_4").categories).toEqual(["NKT_4"]);
+    expect(parseNktCategories("7").error).toMatch(/luar 1–6/);
+    expect(parseNktCategories("abc").error).toMatch(/tidak dikenal/);
+  });
+  it("parseDateCell: yyyy-mm-dd, dd/mm/yyyy, Date Excel; masa depan & tanggal mustahil ditolak", () => {
+    expect(parseDateCell("2025-03-12", "T").value).toBe("2025-03-12");
+    expect(parseDateCell("12/03/2025", "T").value).toBe("2025-03-12");
+    expect(parseDateCell(new Date(Date.UTC(2025, 2, 12)), "T").value).toBe("2025-03-12");
+    expect(parseDateCell("31/02/2025", "T").error).toBeTruthy();
+    expect(parseDateCell(`01/01/${new Date().getFullYear() + 1}`, "T").error).toMatch(/masa depan/);
+    expect(parseDateCell("01/01/2999", "T").error).toMatch(/tidak valid/); // di luar rentang 1990–2100
+  });
+  it("parsePositiveNumber: koma desimal Lampiran HJP ('0,088', '176,026') dan titik keduanya diterima", () => {
+    expect(parsePositiveNumber("0,088", "L").value).toBeCloseTo(0.088);
+    expect(parsePositiveNumber("176,026", "L").value).toBeCloseTo(176.026);
+    expect(parsePositiveNumber("1.952", "L").value).toBeCloseTo(1.952);
+    expect(parsePositiveNumber("x", "L").error).toBeTruthy();
+  });
+});
+
+describe("validateParcelDetailRows — NKT (#328) & Blok", () => {
+  const parcels: ParcelRef[] = [
+    { parcelUid: "uid-1a", parcelId: "HJP.0001.A", farmerCode: "HJP.0001", farmerName: "Abdul Halim", farmerDbId: "f1" },
+  ];
+  const mapping = { parcelId: "ID_Lahan", farmerId: "ID_Petani", nktAreaHa: "Luas NKT Area (ha)", nktLengthM: "LENGTH", blok: "Blok" } as const;
+  const hjpRow = { ID_Lahan: "HJP.0001.A", ID_Petani: "HJP.0001", "Luas NKT Area (ha)": "0,088", LENGTH: "176,026", Blok: "17 L" };
+
+  it("daftar terdampak ala Lampiran HJP (tanpa kolom status) + bawaan berkas → baris NKT terdampak + blok", () => {
+    const [r] = validateParcelDetailRows([hjpRow], mapping, parcels, undefined, { status: "AFFECTED", categories: ["NKT_4"], assessedAt: "2025-03-12", assessor: "Laporan NKT HJP" });
+    expect(r._isValid).toBe(true);
+    expect(r.data?.nkt).toEqual({ status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: 176.026, assessedAt: "2025-03-12", assessor: "Laporan NKT HJP" });
+    expect(r.data?.blok).toBe("17 L");
+  });
+
+  it("tanpa bawaan status → baris yang membawa sel NKT ditolak dengan pesan yang menyebut bawaan berkas", () => {
+    const [r] = validateParcelDetailRows([hjpRow], mapping, parcels);
+    expect(r._isValid).toBe(false);
+    expect(r._errors.join(" ")).toMatch(/Status NKT wajib/);
+  });
+
+  it("sel baris menang atas bawaan; NOT_AFFECTED tanpa kategori sah; terdampak tanpa kategori (sel & bawaan) ditolak", () => {
+    const m = { ...mapping, nktStatus: "Status", nktCategories: "Kat" } as const;
+    const [a] = validateParcelDetailRows([{ ...hjpRow, Status: "tidak", Kat: "" }], m, parcels, undefined, { status: "AFFECTED", categories: ["NKT_4"], assessedAt: null, assessor: null });
+    expect(a.data?.nkt?.status).toBe("NOT_AFFECTED");
+    expect(a.data?.nkt?.categories).toEqual([]);
+    const [b] = validateParcelDetailRows([{ ...hjpRow, Status: "termasuk", Kat: "" }], m, parcels, undefined, { status: null, categories: [], assessedAt: null, assessor: null });
+    expect(b._isValid).toBe(false);
+    expect(b._errors.join(" ")).toMatch(/Kategori NKT wajib/);
+  });
+
+  it("bawaan berkas TIDAK menyentuh baris tanpa satu pun sel NKT bila status bawaan kosong", () => {
+    const [r] = validateParcelDetailRows([{ ID_Lahan: "HJP.0001.A", ID_Petani: "HJP.0001", Blok: "17 L" }], mapping, parcels, undefined, { status: null, categories: ["NKT_4"], assessedAt: null, assessor: null });
+    expect(r._isValid).toBe(true);
+    expect(r.data?.nkt).toBeNull();
+  });
+
+  it("alias header Lampiran HJP ('Luas NKT Area (ha)', 'LENGTH', 'Blok') terpetakan otomatis", () => {
+    const m = autoMatchParcelDetailColumns(["Nama", "ID_Petani", "ID_Lahan", "Size_Ha", "Blok", "parcel_cod", "LENGTH", "Luas NKT Area (ha)"]);
+    expect(m.nktAreaHa).toBe("Luas NKT Area (ha)");
+    expect(m.nktLengthM).toBe("LENGTH");
+    expect(m.blok).toBe("Blok");
+    expect(m.parcelId).toBe("ID_Lahan");
+    expect(m.farmerId).toBe("ID_Petani");
   });
 });

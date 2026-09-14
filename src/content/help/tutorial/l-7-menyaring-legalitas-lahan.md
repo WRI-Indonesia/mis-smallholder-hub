@@ -32,11 +32,14 @@ Karena itu filter **Cakupan Pendataan** ada. Sejak awal filter ini disetel **Sem
 | Lahan mana yang belum punya STDB | **Status STDB** → *Tanpa STDB* |
 | Berkas STDB mana yang masih diurus | **Status STDB** → *Tahap: Pengajuan* (atau tahap lain) |
 | Luas surat mana yang jauh dari poligon | **Selisih Luas** → *≥ 0,50 Ha* |
+| Lahan mana yang termasuk/terdampak NKT | **NKT** → *Termasuk / terdampak NKT* (atau satu status saja) |
+| Lahan mana yang belum pernah dinilai NKT | **NKT** → *Belum dinilai* |
 
 + Filter bisa digabung. Menggabungkan *Tanpa surat* dengan *Tanpa STDB* memberi daftar lahan yang belum punya keduanya.
-+ Tombol **Reset filter legalitas** mengembalikan keempatnya ke *Semua*; Cakupan Pendataan tetap seperti pilihan Anda.
++ Tombol **Reset filter legalitas** mengembalikan kelimanya ke *Semua*; Cakupan Pendataan tetap seperti pilihan Anda.
++ **Belum dinilai** dan **Tidak terdampak** berbeda: yang pertama belum pernah diasesmen sama sekali, yang kedua sudah diasesmen dan bersih. Kolom NKT di tabel dan berkas juga menulis "Belum dinilai" secara eksplisit, bukan sel kosong.
 
-4. Nyalakan kolom yang relevan lewat tombol **Kolom** — Surat Kepemilikan, STDB, Luas Tertera, UL Parcel Code, Program. Semuanya mati secara bawaan supaya tabel harian tidak melebar.
+4. Nyalakan kolom yang relevan lewat tombol **Kolom** — Surat Kepemilikan, STDB, Luas Tertera, UL Parcel Code, Program, NKT, Luas NKT. Semuanya mati secara bawaan supaya tabel harian tidak melebar.
 
 + Di dalam dropdown itu ada **Pilih semua**, **Kosongkan**, dan **Bawaan**. Pakai *Pilih semua* kalau ingin melihat segalanya sekali jalan, lalu *Bawaan* untuk kembali ke tampilan awal — Anda tidak perlu mematikan kolomnya satu per satu.
 
@@ -44,7 +47,7 @@ Karena itu filter **Cakupan Pendataan** ada. Sejak awal filter ini disetel **Sem
 
 ## Yang ikut ke berkas cetak
 
-Baik Excel maupun PDF membawa **filter yang sedang aktif** dan **empat angka ringkasan** — jadi penerima berkas tahu ini daftar tersaring, bukan daftar lengkap, dan tahu proporsinya tanpa harus membuka aplikasi.
+Baik Excel maupun PDF membawa **filter yang sedang aktif** dan **lima angka ringkasan** — jadi penerima berkas tahu ini daftar tersaring, bukan daftar lengkap, dan tahu proporsinya tanpa harus membuka aplikasi.
 
 | Berkas | Letaknya |
 | --- | --- |
@@ -53,11 +56,12 @@ Baik Excel maupun PDF membawa **filter yang sedang aktif** dan **empat angka rin
 
 ## Membaca kartu ringkasan
 
-Empat kartu di atas tabel mengikuti filter yang sedang aktif:
+Lima kartu di atas tabel mengikuti filter yang sedang aktif:
 
 - **Lahan (hasil filter)** — jumlah baris yang tampil, dengan catatan berapa di antaranya sudah didata.
 - **Ada Surat** dan **Ada STDB** — jumlah beserta persentasenya. Persennya **selalu** menyebut penyebutnya ("dari 1.204 lahan yang sudah didata"), karena penyebut itu bukan seluruh lahan lembaga.
 - **Selisih Luas ≥ 0,50 Ha** — lahan yang angka di suratnya berjarak jauh dari luas poligon.
+- **Termasuk/terdampak NKT** — jumlah lahan yang kena NKT, dengan persentase **dari lahan yang sudah dinilai NKT** (bukan dari seluruh lahan — asesmen biasanya baru menyentuh sebagian lembaga).
 
 + Angka-angka ini dihitung dari sumber yang sama dengan yang tercetak di Excel dan PDF, jadi layar dan berkas tidak akan berbeda.
 

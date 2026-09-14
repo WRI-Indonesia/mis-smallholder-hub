@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma, type LandDocumentType, type LandStdbStage } from "@prisma/client";
+import { Prisma, type LandDocumentType, type LandStdbStage, type LandNktStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerRelationAccessFilter } from "@/lib/access-context";
@@ -29,7 +29,7 @@ import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
-import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
+import { LAND_STDB_STAGES, LAND_NKT_STATUSES } from "@/lib/land-parcel-satellite-format";
 
 // ─── Helper dropdown bersama (TD-018) — dedup 5 pasang action per menu report ───
 // Non-exported (bukan server action); permission key per-menu tetap di action pemanggil.
@@ -569,6 +569,18 @@ function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParc
     });
   }
 
+  // NKT (#328) — nilai disaring terhadap daftar sah (pola documentTypes).
+  const nkt = filters.nktStatus;
+  if (nkt === "affected") {
+    out.push({ identity: { nkt: { is: { status: { in: ["INCLUDED", "AFFECTED"] } } } } });
+  } else if (nkt === "assessed") {
+    out.push({ identity: { nkt: { isNot: null } } });
+  } else if (nkt === "unassessed") {
+    out.push({ identity: { nkt: null } });
+  } else if (nkt && (LAND_NKT_STATUSES as readonly string[]).includes(nkt)) {
+    out.push({ identity: { nkt: { is: { status: nkt as LandNktStatus } } } });
+  }
+
   return out;
 }
 
@@ -633,6 +645,7 @@ export async function getLandParcelReport(
           stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true, stage: true } } } },
           externalIds: { where: { isActive: true }, select: { source: true, code: true } },
           programs: { where: { isActive: true }, select: { programType: true, status: true } },
+          nkt: { select: { status: true, categories: true, affectedAreaHa: true, assessedAt: true, assessor: true } },
         },
       },
     },
@@ -657,6 +670,7 @@ export async function getLandParcelReport(
     stdbs: p.identity.stdbLinks.map((l) => l.stdb),
     externalIds: p.identity.externalIds,
     programs: p.identity.programs,
+    nkt: p.identity.nkt,
   }));
 
   return buildLandParcelReport(raw, filters);

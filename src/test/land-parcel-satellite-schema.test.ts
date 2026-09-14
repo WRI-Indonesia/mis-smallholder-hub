@@ -9,6 +9,7 @@ import {
   landParcelBorderSchema,
   landParcelBorderSidesSchema,
   LAND_BORDER_SIDES,
+  landParcelNktSchema,
 } from "@/validations/land-parcel-satellite.schema";
 import { landParcelSchema } from "@/validations/land-parcel.schema";
 
@@ -141,6 +142,35 @@ describe("land-parcel-satellite.schema", () => {
       const r = landParcelSchema.safeParse({ farmerId: "f1", parcelId: "P1", border: { north: "Jalan" } });
       expect(r.success).toBe(true);
       expect(r.success && "border" in r.data).toBe(false);
+    });
+  });
+
+  describe("NKT (#328)", () => {
+    const base = { landParcelId: "lp1", status: "AFFECTED", categories: ["NKT_4"], assessedAt: "2025-03-12", assessor: "WRI", affectedAreaHa: "0,088", affectedLengthM: "176.026" };
+
+    it("terdampak + kategori + angka koma diterima; tanggal string → Date", () => {
+      const r = landParcelNktSchema.safeParse(base);
+      expect(r.success).toBe(true);
+      expect(r.success && r.data).toMatchObject({ status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: 176.026, assessor: "WRI" });
+      expect(r.success && r.data.assessedAt).toBeInstanceOf(Date);
+    });
+
+    it("kategori wajib ≥ 1 kecuali NOT_AFFECTED; kategori string '1,4'-gaya importer dinormalkan & dedup", () => {
+      const noCat = landParcelNktSchema.safeParse({ ...base, categories: [] });
+      expect(noCat.success).toBe(false);
+      expect(noCat.error!.flatten().fieldErrors.categories).toBeDefined();
+      expect(landParcelNktSchema.safeParse({ ...base, status: "NOT_AFFECTED", categories: [] }).success).toBe(true);
+      const dup = landParcelNktSchema.safeParse({ ...base, categories: "NKT_1,NKT_4, NKT_1" });
+      expect(dup.success && dup.data.categories).toEqual(["NKT_1", "NKT_4"]);
+    });
+
+    it("status/kategori di luar enum, tanggal masa depan, luas ≤ 0 ditolak per field", () => {
+      expect(landParcelNktSchema.safeParse({ ...base, status: "MAYBE" }).success).toBe(false);
+      expect(landParcelNktSchema.safeParse({ ...base, categories: ["NKT_7"] }).success).toBe(false);
+      const future = landParcelNktSchema.safeParse({ ...base, assessedAt: "2999-01-01" });
+      expect(future.success).toBe(false);
+      expect(future.error!.flatten().fieldErrors.assessedAt).toBeDefined();
+      expect(landParcelNktSchema.safeParse({ ...base, affectedAreaHa: "0" }).success).toBe(false);
     });
   });
 });

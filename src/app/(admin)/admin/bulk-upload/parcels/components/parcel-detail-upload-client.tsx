@@ -34,8 +34,19 @@ import {
   type ParcelDetailFieldKey,
   type ParcelDetailValidatedRow,
   type ParcelRef,
+  type NktFileDefaults,
+  type NktStatusCode,
 } from "@/lib/land-parcel-detail-import";
-import { PARCEL_MAPPERS, DEFAULT_PARCEL_MAPPER } from "@/lib/land-parcel-satellite-format";
+import {
+  PARCEL_MAPPERS,
+  DEFAULT_PARCEL_MAPPER,
+  LAND_NKT_STATUSES,
+  LAND_NKT_STATUS_LABELS,
+  NKT_CATEGORIES,
+  nktCategoryShort,
+  landNktStatusLabel,
+  summarizeNktCategories,
+} from "@/lib/land-parcel-satellite-format";
 import {
   getParcelsForDetailMapping,
   bulkSaveLandParcelDetails,
@@ -75,6 +86,9 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
   // (keputusan owner 2026-08-28: kolom itu berarti SIAPA yang memetakan).
   const [mapper, setMapper] = useState<string>(DEFAULT_PARCEL_MAPPER);
   const [customMapper, setCustomMapper] = useState("");
+  // NKT (#328): bawaan per berkas untuk daftar "terdampak NKT" (Lampiran HJP) yang tak punya
+  // kolom status/kategori — bila status dipilih, SEMUA baris valid mendapat NKT.
+  const [nktDefaults, setNktDefaults] = useState<NktFileDefaults>({ status: null, categories: [], assessedAt: null, assessor: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -144,7 +158,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
       toast.error(`Kolom wajib belum dipetakan: ${missing.map((f) => f.label).join(", ")}`);
       return;
     }
-    setValidated(validateParcelDetailRows(rawRows, mapping, parcels, rowNumbers));
+    setValidated(validateParcelDetailRows(rawRows, mapping, parcels, rowNumbers, nktDefaults));
     toast.success("Validasi selesai");
     // Peringatan eksplisit, bukan lewat diam-diam (#305): "punya UL Parcel
     // Code" dipakai Laporan Lahan sebagai penanda "lahan sudah didata". Begitu
@@ -176,7 +190,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     }
     const s = result.data!;
     toast.success(
-      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui${s.documentsUnchanged ? ` / ${s.documentsUnchanged} tanpa perubahan` : ""} · STDB ${s.stdbsCreated} baru${s.stdbsPendingCreated ? ` (${s.stdbsPendingCreated} belum bernomor)` : ""}, ${s.stdbLinksCreated} tautan${s.stdbsPendingSkipped ? ` / ${s.stdbsPendingSkipped} petani "belum ada" dilewati (sudah punya STDB)` : ""} · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsUnchanged ? ` / ${s.externalIdsUnchanged} tanpa perubahan` : ""}${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled} · sepadan ${s.bordersCreated} baru / ${s.bordersUpdated} diperbarui${s.bordersUnchanged ? ` / ${s.bordersUnchanged} tanpa perubahan` : ""}`,
+      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui${s.documentsUnchanged ? ` / ${s.documentsUnchanged} tanpa perubahan` : ""} · STDB ${s.stdbsCreated} baru${s.stdbsPendingCreated ? ` (${s.stdbsPendingCreated} belum bernomor)` : ""}, ${s.stdbLinksCreated} tautan${s.stdbsPendingSkipped ? ` / ${s.stdbsPendingSkipped} petani "belum ada" dilewati (sudah punya STDB)` : ""} · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsUnchanged ? ` / ${s.externalIdsUnchanged} tanpa perubahan` : ""}${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled} · sepadan ${s.bordersCreated} baru / ${s.bordersUpdated} diperbarui${s.bordersUnchanged ? ` / ${s.bordersUnchanged} tanpa perubahan` : ""} · blok terisi ${s.bloksFilled} · NKT ${s.nktCreated} baru / ${s.nktUpdated} diperbarui${s.nktUnchanged ? ` / ${s.nktUnchanged} tanpa perubahan` : ""}`,
       { duration: 8000 },
     );
     setValidated([]);
@@ -224,6 +238,13 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
           borderEast: "Jalan desa",
           borderSouth: "Sungai",
           borderWest: "Lahan Pak Ahmad",
+          blok: "17 L",
+          nktStatus: "terdampak",
+          nktCategories: "4",
+          nktAreaHa: 0.088,
+          nktLengthM: 176.026,
+          nktAssessedAt: "2025-03-12",
+          nktAssessor: "Laporan NKT HJP 2025",
         },
         {
           parcelId: "APSS.0001.B.14.01.10.2012",
@@ -239,7 +260,37 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
           borderEast: "",
           borderSouth: "",
           borderWest: "",
+          blok: "",
+          nktStatus: "",
+          nktCategories: "",
+          nktAreaHa: "",
+          nktLengthM: "",
+          nktAssessedAt: "",
+          nktAssessor: "",
         },
+      ],
+    });
+  }
+
+  /**
+   * Template NKT tersendiri (#328) — mengikuti Lampiran daftar petak terdampak
+   * NKT dari asesmen (HJP): Nama · ID Petani · ID Lahan · Kelompok Tani · Blok ·
+   * Luas NKT Area (ha) · Panjang (m) + kolom status/kategori/tanggal/asesor
+   * (boleh kosong → dipenuhi bawaan berkas). Importer yang sama; kolom lain
+   * yang tidak ada = tidak disentuh. Kelompok Tani DAN Blok keduanya ada:
+   * Lembaga plasma memakai Blok, Lembaga swadaya memakai Kelompok Tani.
+   */
+  async function handleDownloadNktTemplate() {
+    const pick = (keys: ParcelDetailFieldKey[]) => PARCEL_DETAIL_TARGET_FIELDS.filter((f) => keys.includes(f.key)).map((f) => ({ header: f.label, key: f.key, width: 24 }));
+    await exportToExcel({
+      filename: "template_nkt_lahan",
+      columns: [
+        { header: "Nama", key: "nama", width: 22 },
+        ...pick(["farmerId", "parcelId", "subGroupLv2", "blok", "nktAreaHa", "nktLengthM", "nktStatus", "nktCategories", "nktAssessedAt", "nktAssessor"]),
+      ],
+      data: [
+        { nama: "Abdul Halim", farmerId: "HJP.14.01.10.2011.0001", parcelId: "HJP.0001.A.14.01.10.2002", subGroupLv2: "", blok: "17 L", nktAreaHa: 0.088, nktLengthM: 176.026, nktStatus: "terdampak", nktCategories: "4", nktAssessedAt: "2025-03-12", nktAssessor: "Laporan NKT HJP 2025" },
+        { nama: "Agus Setyobudi", farmerId: "HJP.14.01.10.2014.0009", parcelId: "HJP.0009.D.14.01.10.2002", subGroupLv2: "KT Karya Maju", blok: "", nktAreaHa: 0.02, nktLengthM: 39.132, nktStatus: "", nktCategories: "", nktAssessedAt: "", nktAssessor: "" },
       ],
     });
   }
@@ -250,15 +301,22 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <Label className="text-base font-semibold">1. Pilih File Detail Lahan</Label>
-            <Button variant="outline" size="sm" onClick={handleDownloadTemplate} className="text-xs h-8 gap-1.5">
-              <Download className="h-3.5 w-3.5" />
-              Unduh Template Excel
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate} className="text-xs h-8 gap-1.5">
+                <Download className="h-3.5 w-3.5" />
+                Unduh Template Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDownloadNktTemplate} className="text-xs h-8 gap-1.5" title="Daftar lahan terdampak NKT (pola Lampiran asesmen)">
+                <Download className="h-3.5 w-3.5" />
+                Template NKT
+              </Button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, UL Parcel Code, Nama Kelompok Tani (hanya
-            mengisi yang masih kosong), dan Sepadan Utara/Timur/Selatan/Barat (sel terisi menimpa, sel kosong
-            dibiarkan) per <strong>ID Lahan</strong> yang sudah terdaftar. Poligon lahan tetap diunggah lewat tab Shapefile.
+            Surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, UL Parcel Code, Nama Kelompok Tani & Blok (hanya
+            mengisi yang masih kosong), Sepadan Utara/Timur/Selatan/Barat (sel terisi menimpa, sel kosong
+            dibiarkan), dan status <strong>NKT</strong> (termasuk/terdampak/tidak, kategori 1–6, luas, tanggal asesmen) per{" "}
+            <strong>ID Lahan</strong> yang sudah terdaftar. Poligon lahan tetap diunggah lewat tab Shapefile.
           </p>
           <div className="flex items-center gap-4 mt-2">
             <Input type="file" accept=".xlsx,.csv" onChange={handleFileChange} className="max-w-md" />
@@ -313,6 +371,52 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                 <span className="text-[10px] text-muted-foreground block">{f.desc}</span>
               </div>
             ))}
+          </div>
+          {/* Bawaan NKT per berkas (#328): daftar "petak terdampak NKT" dari asesmen biasanya hanya
+              memuat ID + luas tanpa kolom status/kategori — nilainya ditetapkan sekali untuk seluruh berkas. */}
+          <div className="rounded-md border border-dashed p-3 space-y-2">
+            <p className="text-sm font-medium">Bawaan NKT untuk berkas ini <span className="text-xs font-normal text-muted-foreground">(opsional — untuk daftar lahan terdampak NKT yang tak punya kolom status/kategori)</span></p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Status untuk semua baris</Label>
+                <Select value={nktDefaults.status ?? "_none"} onValueChange={(v) => setNktDefaults((d) => ({ ...d, status: v && v !== "_none" ? (v as NktStatusCode) : null }))}>
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue>{(value: string) => (value === "_none" ? "— tidak menetapkan —" : LAND_NKT_STATUS_LABELS[value as NktStatusCode] ?? value)}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">— tidak menetapkan —</SelectItem>
+                    {LAND_NKT_STATUSES.map((st) => (
+                      <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Kategori bawaan</Label>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1.5">
+                  {NKT_CATEGORIES.map((c) => (
+                    <label key={c} className="flex items-center gap-1 text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 accent-primary"
+                        checked={nktDefaults.categories.includes(c)}
+                        onChange={(e) => setNktDefaults((d) => ({ ...d, categories: e.target.checked ? [...d.categories, c] : d.categories.filter((x) => x !== c) }))}
+                      />
+                      {nktCategoryShort(c)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Tanggal asesmen bawaan</Label>
+                <Input type="date" className="h-9" value={nktDefaults.assessedAt ?? ""} onChange={(e) => setNktDefaults((d) => ({ ...d, assessedAt: e.target.value || null }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Asesor / sumber bawaan</Label>
+                <Input className="h-9" placeholder="mis. Laporan NKT HJP 2025" value={nktDefaults.assessor ?? ""} onChange={(e) => setNktDefaults((d) => ({ ...d, assessor: e.target.value || null }))} />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">Sel di berkas menang atas bawaan. Status/kategori bawaan hanya dipakai bila kolomnya kosong atau tidak dipetakan.</p>
           </div>
           <div className="flex justify-end pt-2">
             <Button onClick={handleValidate} disabled={rawRows.length === 0 || parcels === null} className="h-10">
@@ -432,6 +536,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                   <TableHead>UL Parcel Code</TableHead>
                   <TableHead>Kelompok Tani</TableHead>
                   <TableHead>Sepadan (U · T · S · B)</TableHead>
+                  <TableHead>NKT</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[220px]">Detail Error</TableHead>
                 </TableRow>
@@ -439,7 +544,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={15} className="text-center py-8 text-muted-foreground">
                       Tidak ada data untuk filter ini.
                     </TableCell>
                   </TableRow>
@@ -473,6 +578,13 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                         {r.data?.border || r._raw.borderNorth || r._raw.borderEast || r._raw.borderSouth || r._raw.borderWest
                           ? [r._raw.borderNorth, r._raw.borderEast, r._raw.borderSouth, r._raw.borderWest].map((v) => v || "·").join(" · ")
                           : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {r.data?.nkt
+                          ? `${landNktStatusLabel(r.data.nkt.status, true)}${r.data.nkt.categories?.length ? ` — ${summarizeNktCategories(r.data.nkt.categories)}` : ""}${r.data.nkt.affectedAreaHa != null ? ` · ${r.data.nkt.affectedAreaHa} ha` : ""}`
+                          : r._raw.nktStatus || r._raw.nktAreaHa
+                            ? <span className="text-muted-foreground">{r._raw.nktStatus || r._raw.nktAreaHa}</span>
+                            : "—"}
                       </TableCell>
                       <TableCell>
                         {r._isValid ? (

@@ -20,6 +20,10 @@ import {
   type StdbSummaryInput,
   type ExternalIdSummaryInput,
   type ProgramSummaryInput,
+  isNktAffected,
+  summarizeNkt,
+  landNktStatusLabel,
+  LAND_NKT_STATUSES,
 } from "@/lib/land-parcel-satellite-format";
 
 /** Satu baris lahan mentah (sudah ter-scope) untuk Report Lahan. */
@@ -62,6 +66,8 @@ export interface LpRawParcel {
   externalIds?: ExternalIdSummaryInput[];
   /** Program lahan aktif (#305). */
   programs?: ProgramSummaryInput[];
+  /** Status NKT (#328) — null/undefined = belum dinilai. */
+  nkt?: { status: string; categories: string[]; affectedAreaHa: number | null; assessedAt: Date | string | null; assessor: string | null } | null;
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -91,6 +97,8 @@ export function buildLandParcelReport(
   let totalAdaSurat = 0;
   let totalAdaStdb = 0;
   let totalSelisihLuas = 0;
+  let totalNkt = 0;
+  let totalDinilaiNkt = 0;
 
   const rows: LandParcelReportRow[] = parcels.flatMap((p) => {
     const docs = p.documents ?? [];
@@ -113,6 +121,8 @@ export function buildLandParcelReport(
     if (docs.length > 0) totalAdaSurat++;
     if ((p.stdbs ?? []).length > 0) totalAdaStdb++;
     if (selisihLuasBesar) totalSelisihLuas++;
+    if (p.nkt) totalDinilaiNkt++;
+    if (isNktAffected(p.nkt?.status)) totalNkt++;
 
     return {
       id: p.id,
@@ -135,6 +145,9 @@ export function buildLandParcelReport(
       ulParcelCode: summarizeExternalIds(externalIds),
       program: summarizePrograms(p.programs ?? []),
       selisihLuasBesar,
+      nkt: p.nkt ? summarizeNkt(p.nkt) : null,
+      nktStatus: p.nkt?.status ?? null,
+      luasNkt: p.nkt?.affectedAreaHa ?? null,
     };
   });
 
@@ -157,6 +170,8 @@ export function buildLandParcelReport(
       totalAdaSurat,
       totalAdaStdb,
       totalSelisihLuas,
+      totalNkt,
+      totalDinilaiNkt,
     },
     rows,
   };
@@ -192,6 +207,14 @@ export function describeLegalFilters(filters: LandParcelLegalFilters): { label: 
   else if (filters.stdbStatus === "without") out.push({ label: "Status STDB", value: "Tanpa STDB" });
   else if (filters.stdbStatus && filters.stdbStatus !== "all") {
     out.push({ label: "Status STDB", value: `Tahap ${landStdbStageLabel(filters.stdbStatus)}` });
+  }
+  // NKT (#328) — teks harus menyepakati `landParcelLegalWhere` (invarian #305).
+  const nkt = filters.nktStatus;
+  if (nkt === "affected") out.push({ label: "NKT", value: "Termasuk atau terdampak NKT" });
+  else if (nkt === "assessed") out.push({ label: "NKT", value: "Sudah dinilai (termasuk yang tidak terdampak)" });
+  else if (nkt === "unassessed") out.push({ label: "NKT", value: "Belum dinilai" });
+  else if (nkt && nkt !== "all" && (LAND_NKT_STATUSES as readonly string[]).includes(nkt)) {
+    out.push({ label: "NKT", value: landNktStatusLabel(nkt) });
   }
   if (filters.areaDiff === "gte") {
     out.push({ label: "Selisih Luas", value: `≥ ${formatHa(AREA_DIFF_THRESHOLD_HA)} Ha (luas surat vs poligon)` });
@@ -242,6 +265,16 @@ export function describeLegalSummary(
       label: `Selisih Luas ≥ ${formatHa(AREA_DIFF_THRESHOLD_HA)} Ha`,
       value: formatCount(summary.totalSelisihLuas),
       note: "luas di surat vs luas poligon",
+    },
+    {
+      // NKT (#328): penyebutnya lahan yang SUDAH DINILAI, bukan penyebut legalitas —
+      // "5 dari 8.000 lahan" akan terbaca 0% padahal asesmen baru menyentuh 60 lahan.
+      label: "Termasuk/terdampak NKT",
+      value: formatCount(summary.totalNkt),
+      note:
+        summary.totalDinilaiNkt > 0
+          ? `${Math.round((summary.totalNkt / summary.totalDinilaiNkt) * 100)}% dari ${formatCount(summary.totalDinilaiNkt)} lahan yang sudah dinilai NKT`
+          : "belum ada lahan yang dinilai NKT",
     },
   ];
 }

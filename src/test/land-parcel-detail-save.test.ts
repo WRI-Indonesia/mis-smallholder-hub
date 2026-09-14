@@ -332,3 +332,37 @@ describe("planLandParcelDetailRows — sepadan (#326): sel terisi menimpa, sel k
     expect(plan.summary).toMatchObject({ bordersCreated: 0, bordersUpdated: 0, bordersUnchanged: 0 });
   });
 });
+
+describe("planLandParcelDetailRows — NKT (#328) & Blok", () => {
+  const nkt = (o: Partial<NonNullable<LandParcelDetailRowInput["nkt"]>> = {}): NonNullable<LandParcelDetailRowInput["nkt"]> => ({
+    status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: 176.026, assessedAt: "2025-03-12", assessor: "HJP", ...o,
+  });
+
+  it("DB kosong → create memuat semua field; baris ganda: field terakhir menang, dihitung sekali", () => {
+    const plan = planLandParcelDetailRows([row({ nkt: nkt() }), row({ nkt: nkt({ affectedAreaHa: 0.1, categories: null }) })], emptyExistingState());
+    expect(plan.nktCreates).toEqual([{ parcelUid: "uid-1", status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.1, affectedLengthM: 176.026, assessedAt: "2025-03-12", assessor: "HJP" }]);
+    expect(plan.summary).toMatchObject({ nktCreated: 1, nktUpdated: 0, nktUnchanged: 0 });
+  });
+
+  it("sudah ada → hanya field yang BERUBAH masuk update; status selalu dibandingkan; null di baris tidak menyentuh", () => {
+    const existing = emptyExistingState();
+    existing.nkts.set("uid-1", { id: "n1", status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: null, assessedAt: "2025-03-12", assessor: "HJP" });
+    const plan = planLandParcelDetailRows([row({ nkt: nkt({ status: "INCLUDED", categories: null, affectedAreaHa: null, affectedLengthM: null, assessedAt: null, assessor: null }) })], existing);
+    expect(plan.nktUpdates).toEqual([{ id: "n1", data: { status: "INCLUDED" } }]);
+    expect(plan.summary).toMatchObject({ nktUpdated: 1, nktUnchanged: 0 });
+  });
+
+  it("semua field sama (kategori dibandingkan sebagai himpunan terurut) → unchanged, tanpa query", () => {
+    const existing = emptyExistingState();
+    existing.nkts.set("uid-1", { id: "n1", status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: 176.026, assessedAt: "2025-03-12", assessor: "HJP" });
+    const plan = planLandParcelDetailRows([row({ nkt: nkt() })], existing);
+    expect(plan.nktUpdates).toEqual([]);
+    expect(plan.summary).toMatchObject({ nktUnchanged: 1 });
+  });
+
+  it("Blok: pola isi-bila-kosong lewat blokFills (server updateMany menyaring yang sudah terisi)", () => {
+    const plan = planLandParcelDetailRows([row({ blok: "17 L" }), row({ parcelUid: "uid-2", blok: "25 F" })], emptyExistingState());
+    expect([...plan.blokFills.entries()]).toEqual([["uid-1", "17 L"], ["uid-2", "25 F"]]);
+    expect(plan.nktCreates).toEqual([]);
+  });
+});

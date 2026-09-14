@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
-import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
+import { LAND_STDB_STAGES, LAND_NKT_STATUSES, NKT_CATEGORIES } from "@/lib/land-parcel-satellite-format";
 
 /**
  * CRUD manual satelit lahan (#296 tahap 3c). Semua input mengacu ke baris
@@ -142,6 +142,40 @@ export const landParcelBorderSchema = z.object({
 
 /** Empat sisi saja (tanpa landParcelId/notes) — dipakai Bulk Upload Lahan (atribut DBF). */
 export const landParcelBorderSidesSchema = landParcelBorderSchema.omit({ landParcelId: true, notes: true });
+
+// ---- NKT (#328) — satelit 1:1; kategori wajib ≥ 1 kecuali NOT_AFFECTED; tanggal ≤ hari ini.
+const nktBase = z.object({
+  status: z.enum(LAND_NKT_STATUSES, { message: "Status NKT wajib dipilih" }),
+  // FormData mengirim checkbox berulang → string[]; importer bisa mengirim "1,4" — keduanya dinormalkan.
+  categories: z.preprocess(
+    (v) => (typeof v === "string" ? v.split(/[,;\s]+/).filter(Boolean) : Array.isArray(v) ? v : []),
+    z.array(z.enum(NKT_CATEGORIES, { message: "Kategori NKT tidak dikenal" })),
+  ),
+  affectedAreaHa: optNumber("Luas NKT harus angka lebih dari 0"),
+  affectedLengthM: z.preprocess((v) => {
+    if (v === "" || v === undefined || v === null) return null;
+    const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
+    return Number.isNaN(n) ? NaN : n;
+  }, z.number({ message: "Panjang harus angka lebih dari 0" }).positive("Panjang harus angka lebih dari 0").max(100_000, "Panjang terlalu besar").nullable().optional()),
+  assessedAt: optDate,
+  assessor: optText(200),
+  source: optText(200),
+  notes: optText(1000),
+});
+function refineNkt(d: z.infer<typeof nktBase>, ctx: z.RefinementCtx) {
+  if (d.status !== "NOT_AFFECTED" && d.categories.length === 0) {
+    ctx.addIssue({ code: "custom", path: ["categories"], message: "Pilih minimal satu kategori NKT untuk lahan yang termasuk/terdampak" });
+  }
+  if (d.assessedAt && d.assessedAt.getTime() > Date.now() + 24 * 3600 * 1000) {
+    ctx.addIssue({ code: "custom", path: ["assessedAt"], message: "Tanggal asesmen tidak boleh di masa depan" });
+  }
+  // Duplikat kategori dibuang diam-diam (checkbox tak bisa ganda; importer bisa).
+  d.categories = [...new Set(d.categories)];
+}
+export const landParcelNktSchema = nktBase
+  .extend({ landParcelId: z.string().min(1, "Lahan tidak valid") })
+  .superRefine(refineNkt);
+export type LandParcelNktInput = z.infer<typeof landParcelNktSchema>;
 
 export type LandParcelBorderInput = z.infer<typeof landParcelBorderSchema>;
 export type LandParcelBorderSidesInput = z.infer<typeof landParcelBorderSidesSchema>;

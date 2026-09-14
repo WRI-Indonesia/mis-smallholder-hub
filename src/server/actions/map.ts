@@ -167,6 +167,8 @@ export async function getMapData(
         farmer: {
           select: { name: true, farmerId: true, farmerGroup: { select: { name: true } } },
         },
+        // NKT (#328): hanya status — cukup untuk gaya layer & popup, jangan tarik seluruh baris.
+        identity: { select: { nkt: { select: { status: true } } } },
       },
     }),
   ]);

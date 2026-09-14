@@ -189,6 +189,11 @@ export interface LandParcelLegalFilters {
   stdbStatus?: string;
   /** `gte` = selisih |luas tertera − poligon| ≥ `AREA_DIFF_THRESHOLD_HA`. */
   areaDiff?: "all" | "gte";
+  /**
+   * NKT (#328): `all` | `affected` (INCLUDED atau AFFECTED) | `assessed` (ada baris) |
+   * `unassessed` (tanpa baris) | satu nilai `LandNktStatus`.
+   */
+  nktStatus?: string;
 }
 
 export interface LandParcelReportFilters extends LandParcelLegalFilters {
@@ -236,6 +241,12 @@ export interface LandParcelReportRow {
   program: string | null;
   /** Selisih |luas tertera − poligon| ≥ ambang bersama (#305). */
   selisihLuasBesar: boolean;
+  /** Status NKT ringkas (#328): "Terdampak NKT — NKT 4 (asesmen 2025-03-12, WRI)"; null = belum dinilai. */
+  nkt: string | null;
+  /** Kode status NKT mentah (INCLUDED/AFFECTED/NOT_AFFECTED), null = belum dinilai — untuk badge/gaya. */
+  nktStatus: string | null;
+  /** Luas area NKT di dalam lahan (ha), null bila tak dicatat. */
+  luasNkt: number | null;
 }
 
 export interface LandParcelReportSummary {
@@ -254,6 +265,10 @@ export interface LandParcelReportSummary {
   totalAdaStdb: number;
   /** Lahan dengan selisih luas tertera vs poligon ≥ ambang. */
   totalSelisihLuas: number;
+  /** Lahan termasuk/terdampak NKT (INCLUDED/AFFECTED, #328). */
+  totalNkt: number;
+  /** Lahan yang sudah dinilai NKT (ada baris, termasuk NOT_AFFECTED). */
+  totalDinilaiNkt: number;
 }
 
 export interface LandParcelReportResult {

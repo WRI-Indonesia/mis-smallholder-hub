@@ -424,7 +424,7 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
   if (!parcel) return null;
   const uid = parcel.parcelUid;
 
-  const [documents, stdbLinks, externalIds, programs, border] = await Promise.all([
+  const [documents, stdbLinks, externalIds, programs, border, nkt] = await Promise.all([
     prisma.landParcelDocument.findMany({
       where: { parcelUid: uid, isActive: true },
       select: { id: true, type: true, typeRaw: true, number: true, holderName: true, statedArea: true, issuedYear: true, custodyNote: true, fileUrl: true, notes: true },
@@ -460,6 +460,11 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
       where: { parcelUid: uid },
       select: { id: true, north: true, east: true, south: true, west: true, notes: true, modifiedAt: true },
     }),
+    // NKT (#328): 1:1, tanpa baris = belum dinilai.
+    prisma.landParcelNkt.findUnique({
+      where: { parcelUid: uid },
+      select: { id: true, status: true, categories: true, affectedAreaHa: true, affectedLengthM: true, assessedAt: true, assessor: true, source: true, notes: true, modifiedAt: true },
+    }),
   ]);
 
   return {
@@ -487,5 +492,6 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
     externalIds,
     programs,
     border: hasBorderContent(border) ? border : null,
+    nkt,
   };
 }

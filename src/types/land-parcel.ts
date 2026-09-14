@@ -119,6 +119,20 @@ export interface LandParcelBorderItem {
   modifiedAt: Date;
 }
 
+/** Status NKT (#328) — satelit 1:1; null = belum dinilai. */
+export interface LandParcelNktItem {
+  id: string;
+  status: "INCLUDED" | "AFFECTED" | "NOT_AFFECTED";
+  categories: string[];
+  affectedAreaHa: number | null;
+  affectedLengthM: number | null;
+  assessedAt: Date | null;
+  assessor: string | null;
+  source: string | null;
+  notes: string | null;
+  modifiedAt: Date;
+}
+
 export interface LandParcelSatellites {
   parcelUid: string;
   documents: LandParcelDocumentItem[];
@@ -126,4 +140,5 @@ export interface LandParcelSatellites {
   externalIds: LandParcelExternalIdItem[];
   programs: LandParcelProgramItem[];
   border: LandParcelBorderItem | null;
+  nkt: LandParcelNktItem | null;
 }

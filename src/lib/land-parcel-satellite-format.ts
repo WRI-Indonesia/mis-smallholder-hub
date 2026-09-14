@@ -196,3 +196,60 @@ export function hasBorderContent(
 ): boolean {
   return Boolean(b && (b.north || b.east || b.south || b.west || b.notes));
 }
+
+// ─── NKT / HCV (#328) ───
+
+export const LAND_NKT_STATUSES = ["INCLUDED", "AFFECTED", "NOT_AFFECTED"] as const;
+export type LandNktStatusCode = (typeof LAND_NKT_STATUSES)[number];
+export const LAND_NKT_STATUS_LABELS: Record<LandNktStatusCode, string> = {
+  INCLUDED: "Termasuk area NKT",
+  AFFECTED: "Terdampak NKT",
+  NOT_AFFECTED: "Tidak terdampak",
+};
+/** Label pendek untuk badge/kolom laporan. */
+export const LAND_NKT_STATUS_SHORT: Record<LandNktStatusCode, string> = {
+  INCLUDED: "Termasuk NKT",
+  AFFECTED: "Terdampak NKT",
+  NOT_AFFECTED: "Tidak terdampak",
+};
+export function landNktStatusLabel(status: string, short = false): string {
+  return (short ? LAND_NKT_STATUS_SHORT : LAND_NKT_STATUS_LABELS)[status as LandNktStatusCode] ?? status;
+}
+/** `INCLUDED`/`AFFECTED` = lahan "kena" NKT — dipakai KPI, layer peta, tanda turunan patok (#329). */
+export function isNktAffected(status: string | null | undefined): boolean {
+  return status === "INCLUDED" || status === "AFFECTED";
+}
+
+export const NKT_CATEGORIES = ["NKT_1", "NKT_2", "NKT_3", "NKT_4", "NKT_5", "NKT_6"] as const;
+export type NktCategoryCode = (typeof NKT_CATEGORIES)[number];
+/** Label pendek ("NKT 1") — chip, kolom, PDF. */
+export function nktCategoryShort(c: string): string {
+  return c.replace(/^NKT_/, "NKT ");
+}
+/** Keterangan satu kalimat per kategori (tooltip / bantuan). */
+export const NKT_CATEGORY_DESCRIPTIONS: Record<NktCategoryCode, string> = {
+  NKT_1: "Keanekaragaman hayati penting (spesies langka, endemik, terancam)",
+  NKT_2: "Lanskap / ekosistem tingkat lanskap yang utuh",
+  NKT_3: "Ekosistem langka, terancam, atau hampir punah",
+  NKT_4: "Jasa lingkungan penting (sempadan sungai, DAS, pengendali erosi)",
+  NKT_5: "Kebutuhan dasar masyarakat lokal",
+  NKT_6: "Identitas budaya / tradisi masyarakat",
+};
+/** "NKT 1, NKT 4" — kosong → null. */
+export function summarizeNktCategories(categories: readonly string[] | null | undefined): string | null {
+  if (!categories?.length) return null;
+  return categories.map(nktCategoryShort).join(", ");
+}
+/**
+ * Ringkasan satu baris untuk PDF/laporan: `Terdampak NKT — NKT 1, NKT 4 (asesmen
+ * 2025-03-12, WRI)`. Belum dinilai → "Belum dinilai".
+ */
+export function summarizeNkt(
+  nkt: { status: string; categories: readonly string[]; assessedAt: Date | string | null; assessor: string | null } | null | undefined,
+): string {
+  if (!nkt) return "Belum dinilai";
+  const cats = summarizeNktCategories(nkt.categories);
+  const when = nkt.assessedAt ? new Date(nkt.assessedAt).toISOString().slice(0, 10) : null;
+  const meta = [when ? `asesmen ${when}` : null, nkt.assessor].filter(Boolean).join(", ");
+  return `${landNktStatusLabel(nkt.status, true)}${cats ? ` — ${cats}` : ""}${meta ? ` (${meta})` : ""}`;
+}

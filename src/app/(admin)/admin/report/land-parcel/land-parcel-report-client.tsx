@@ -35,8 +35,7 @@ import { LAND_DOCUMENT_TYPES, LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parce
 import {
   AREA_DIFF_THRESHOLD_HA,
   LAND_STDB_STAGES,
-  LAND_STDB_STAGE_LABELS,
-} from "@/lib/land-parcel-satellite-format";
+  LAND_STDB_STAGE_LABELS, LAND_NKT_STATUSES, LAND_NKT_STATUS_LABELS } from "@/lib/land-parcel-satellite-format";
 import {
   buildLandParcelMapLayout,
   splitParcelsIntoGrid,
@@ -107,7 +106,7 @@ const clampGrid = (v: number, max: number) =>
 // supaya lebar roster harian tidak berubah.
 type ColKey =
   | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
-  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program";
+  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "kelompokTani", label: "Kelompok Tani" },
   { key: "blok", label: "Blok" },
@@ -122,6 +121,9 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "stdb", label: "STDB" },
   { key: "ulParcelCode", label: "UL Parcel Code" },
   { key: "program", label: "Program" },
+  // NKT (#328) — status asesmen; default mati seperti kolom legalitas lain.
+  { key: "nkt", label: "NKT" },
+  { key: "luasNkt", label: "Luas NKT (Ha)" },
 ];
 
 /** Kolom yang menyala saat halaman dibuka — dipakai juga tombol "Bawaan". */
@@ -178,6 +180,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const [documentTypes, setDocumentTypes] = useState<Set<string>>(new Set());
   const [stdbStatus, setStdbStatus] = useState<string>("all");
   const [areaDiff, setAreaDiff] = useState<"all" | "gte">("all");
+  const [nktStatus, setNktStatus] = useState<string>("all");
 
   const legalFilters: LandParcelLegalFilters = useMemo(
     () => ({
@@ -186,11 +189,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       documentTypes: [...documentTypes],
       stdbStatus,
       areaDiff,
+      nktStatus,
     }),
-    [coverage, documentStatus, documentTypes, stdbStatus, areaDiff],
+    [coverage, documentStatus, documentTypes, stdbStatus, areaDiff, nktStatus],
   );
   const legalFilterActive =
-    documentStatus !== "all" || documentTypes.size > 0 || stdbStatus !== "all" || areaDiff !== "all";
+    documentStatus !== "all" || documentTypes.size > 0 || stdbStatus !== "all" || areaDiff !== "all" || nktStatus !== "all";
 
   const toggleDocumentType = (t: string) =>
     setDocumentTypes((prev) => {
@@ -205,6 +209,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     setDocumentTypes(new Set());
     setStdbStatus("all");
     setAreaDiff("all");
+    setNktStatus("all");
   };
 
   const [reportData, setReportData] = useState<LandParcelReportResult | null>(null);
@@ -414,7 +419,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     [reportRows],
   );
 
-  // Kolom sebelum Luas (untuk colSpan footer; Tahun Tanam ikut grup ini).
+  // Kolom SEBELUM Luas (untuk colSpan sel "Total" di footer; Tahun Tanam ikut
+  // grup ini). Kolom legalitas/NKT terletak SESUDAH Luas di header & body —
+  // sebelumnya ikut dihitung sehingga footer bergeser begitu salah satunya
+  // dinyalakan (bug lama, diperbaiki bersama #328).
   const textColCount =
     4 +
     (show("kelompokTani") ? 1 : 0) +
@@ -422,13 +430,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     (show("komoditas") ? 1 : 0) +
     (show("species") ? 1 : 0) +
     (show("psr") ? 1 : 0) +
-    (show("tahunTanam") ? 1 : 0) +
-    (show("surat") ? 1 : 0) +
-    (show("namaDiSurat") ? 1 : 0) +
-    (show("luasTertera") ? 1 : 0) +
-    (show("stdb") ? 1 : 0) +
-    (show("ulParcelCode") ? 1 : 0) +
-    (show("program") ? 1 : 0);
+    (show("tahunTanam") ? 1 : 0);
 
   const buildExportColumns = () => [
     { header: "No", key: "no" },
@@ -449,6 +451,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     ...(show("stdb") ? [{ header: "STDB", key: "stdb" }] : []),
     ...(show("ulParcelCode") ? [{ header: "UL Parcel Code", key: "ulParcelCode" }] : []),
     ...(show("program") ? [{ header: "Program", key: "program" }] : []),
+    ...(show("nkt") ? [{ header: "NKT", key: "nkt" }] : []),
+    ...(show("luasNkt") ? [{ header: "Luas NKT (Ha)", key: "luasNkt" }] : []),
   ];
 
   const scopeLabel = () =>
@@ -477,6 +481,9 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       stdb: displayOrEmpty(row.stdb),
       ulParcelCode: displayOrEmpty(row.ulParcelCode),
       program: displayOrEmpty(row.program),
+      // NKT (#328): belum dinilai ditulis eksplisit — sel kosong akan terbaca "tidak terdampak".
+      nkt: row.nkt ?? "Belum dinilai",
+      luasNkt: row.luasNkt != null ? Number(row.luasNkt.toFixed(3)) : EMPTY,
     }));
 
   const totalRow = (): Record<string, string | number> => ({
@@ -635,6 +642,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       stdb: displayOrEmpty(row.stdb),
       ulParcelCode: displayOrEmpty(row.ulParcelCode),
       program: displayOrEmpty(row.program),
+      nkt: row.nkt ?? "Belum dinilai",
+      luasNkt: row.luasNkt != null ? formatLuas(row.luasNkt) : EMPTY,
     }));
 
     if (show("luas")) {
@@ -841,6 +850,24 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                   {LAND_STDB_STAGES.map((st) => (
                     <option key={st} value={st}>{`Tahap: ${LAND_STDB_STAGE_LABELS[st]}`}</option>
                   ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground" htmlFor="lp-nkt">NKT</label>
+                <select
+                  id="lp-nkt"
+                  value={nktStatus}
+                  onChange={(e) => setNktStatus(e.target.value)}
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="all">Semua</option>
+                  <option value="affected">Termasuk / terdampak NKT</option>
+                  {LAND_NKT_STATUSES.map((st) => (
+                    <option key={st} value={st}>{LAND_NKT_STATUS_LABELS[st]}</option>
+                  ))}
+                  <option value="assessed">Sudah dinilai</option>
+                  <option value="unassessed">Belum dinilai</option>
                 </select>
               </div>
 
@@ -1161,6 +1188,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 {show("stdb") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">STDB</th>}
                 {show("ulParcelCode") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">UL Parcel Code</th>}
                 {show("program") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Program</th>}
+                {show("nkt") && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">NKT</th>}
+                {show("luasNkt") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Luas NKT (Ha)</th>}
               </tr>
             </thead>
             <tbody>
@@ -1234,6 +1263,16 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                     {show("program") && (
                       <td className={cn("px-3 py-2 whitespace-nowrap", row.program == null && "text-muted-foreground")}>
                         {displayOrEmpty(row.program)}
+                      </td>
+                    )}
+                    {show("nkt") && (
+                      <td className={cn("px-3 py-2 whitespace-nowrap", row.nktStatus == null && "text-muted-foreground", row.nktStatus === "INCLUDED" && "text-red-600", row.nktStatus === "AFFECTED" && "text-amber-600")}>
+                        {row.nkt ?? "Belum dinilai"}
+                      </td>
+                    )}
+                    {show("luasNkt") && (
+                      <td className={cn("px-3 py-2 text-right tabular-nums whitespace-nowrap", row.luasNkt == null && "text-muted-foreground")}>
+                        {row.luasNkt != null ? formatLuas(row.luasNkt) : EMPTY}
                       </td>
                     )}
                   </tr>

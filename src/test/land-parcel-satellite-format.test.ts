@@ -12,8 +12,7 @@ import {
   summarizeExternalIds,
   summarizePrograms,
   isBigAreaDiff,
-  AREA_DIFF_THRESHOLD_HA,
-} from "@/lib/land-parcel-satellite-format";
+  AREA_DIFF_THRESHOLD_HA, summarizeNkt, isNktAffected } from "@/lib/land-parcel-satellite-format";
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 
 /** Ringkasan satelit lahan untuk tabel padat (Report Lahan, tab Lahan detail Petani) — #296. */
@@ -146,5 +145,19 @@ describe("isBigAreaDiff — ambang bersama Detail Lahan & Laporan Lahan (#305)",
   it("null di salah satu sisi bukan selisih besar", () => {
     expect(isBigAreaDiff(null, 1)).toBe(false);
     expect(isBigAreaDiff(1, null)).toBe(false);
+  });
+});
+
+describe("NKT (#328) — label & ringkasan", () => {
+  it("summarizeNkt: status pendek — kategori (asesmen tanggal, asesor); belum dinilai; tanpa kategori", () => {
+    expect(summarizeNkt({ status: "AFFECTED", categories: ["NKT_1", "NKT_4"], assessedAt: "2025-03-12", assessor: "WRI" })).toBe("Terdampak NKT — NKT 1, NKT 4 (asesmen 2025-03-12, WRI)");
+    expect(summarizeNkt({ status: "NOT_AFFECTED", categories: [], assessedAt: null, assessor: null })).toBe("Tidak terdampak");
+    expect(summarizeNkt(null)).toBe("Belum dinilai");
+  });
+  it("isNktAffected: INCLUDED/AFFECTED saja", () => {
+    expect(isNktAffected("INCLUDED")).toBe(true);
+    expect(isNktAffected("AFFECTED")).toBe(true);
+    expect(isNktAffected("NOT_AFFECTED")).toBe(false);
+    expect(isNktAffected(null)).toBe(false);
   });
 });

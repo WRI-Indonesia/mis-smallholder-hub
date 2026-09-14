@@ -1,0 +1,52 @@
+// land-parcel-nkt.prisma — status NKT (Nilai Konservasi Tinggi / HCV) per lahan,
+// hasil asesmen MANUAL (#328, langkah pertama modul MD-08). Satelit 1:1 ke
+// identitas lahan — ikut lahan, bukan ikut revisi poligon.
+//
+// Tidak ada baris = BELUM DINILAI. NOT_AFFECTED adalah baris eksplisit
+// ("sudah dinilai, tidak terdampak") — laporan harus bisa membedakan keduanya.
+// Hapus = hapus baris (bukan toggle isActive): 1:1 + UNIQUE, baris nonaktif
+// akan memblokir pengisian ulang (pelajaran #306/#326); baris tanpa status
+// tidak bermakna, beda dengan sepadan yang "kosongkan kolom".
+//
+// Tanpa layer poligon area NKT dan tanpa deteksi spasial (keputusan owner
+// 2026-09-14) — bila kelak dibutuhkan, tabel area + ST_Intersects ke
+// LandParcel.geom bisa ditambah tanpa mengubah tabel ini.
+
+enum LandNktStatus {
+  INCLUDED     // lahan termasuk di dalam area NKT
+  AFFECTED     // lahan terdampak (berbatasan/sebagian, sempadan, dsb.)
+  NOT_AFFECTED // sudah dinilai: tidak termasuk/terdampak
+}
+
+enum NktCategory {
+  NKT_1 // keanekaragaman hayati
+  NKT_2 // lanskap / ekosistem tingkat lanskap
+  NKT_3 // ekosistem langka / terancam
+  NKT_4 // jasa lingkungan (sempadan sungai, DAS, pengendali erosi)
+  NKT_5 // kebutuhan dasar masyarakat
+  NKT_6 // identitas budaya
+}
+
+model LandParcelNkt {
+  id         String             @id @default(cuid())
+  parcelUid  String             @unique @map("parcel_uid")
+  parcel     LandParcelIdentity @relation(fields: [parcelUid], references: [id])
+  status     LandNktStatus      @map("status")
+  categories NktCategory[]      @map("categories") // kosong sah hanya untuk NOT_AFFECTED (dijaga Zod)
+  // Data lapangan HJP (Lampiran III, 2026-09-14) memuat luas area NKT di dalam
+  // lahan (ha) dan panjang segmen (m, mis. sempadan sungai) — keduanya opsional.
+  affectedAreaHa  Float?        @map("affected_area_ha")
+  affectedLengthM Float?        @map("affected_length_m")
+  assessedAt DateTime?          @map("assessed_at")
+  assessor   String?            @map("assessor") // asesor / lembaga penilai
+  source     String?            @map("source") // nama/nomor laporan asesmen
+  notes      String?            @map("notes")
+  isActive   Boolean            @default(true) @map("is_active")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  createdBy  String?            @map("created_by")
+  modifiedAt DateTime           @updatedAt @map("modified_at")
+  modifiedBy String?            @map("modified_by")
+
+  @@index([status])
+  @@map("tbl_land_parcel_nkt")
+}

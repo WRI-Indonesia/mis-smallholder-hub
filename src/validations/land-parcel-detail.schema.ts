@@ -42,6 +42,20 @@ export const landParcelDetailRowSchema = z.object({
     })
     .nullable()
     .optional(),
+  /** Blok: isi hanya bila DB kosong (pola subGroupLv2). */
+  blok: trimmed.nullable().optional(),
+  // NKT (#328): status wajib bila objek ada; categories null = tidak disentuh.
+  nkt: z
+    .object({
+      status: z.enum(["INCLUDED", "AFFECTED", "NOT_AFFECTED"]),
+      categories: z.array(z.enum(["NKT_1", "NKT_2", "NKT_3", "NKT_4", "NKT_5", "NKT_6"])).nullable(),
+      affectedAreaHa: z.number().positive().max(10000).nullable(),
+      affectedLengthM: z.number().positive().max(100_000).nullable(),
+      assessedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+      assessor: trimmed.nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 /**

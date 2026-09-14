@@ -14,6 +14,7 @@ import {
   landParcelProgramSchema,
   updateLandParcelProgramSchema,
   landParcelBorderSchema,
+  landParcelNktSchema,
   type SatelliteKind,
 } from "@/validations/land-parcel-satellite.schema";
 import { LAND_STDB_OPEN_STAGES, isOpenStdbStage } from "@/lib/land-parcel-satellite-format";
@@ -289,6 +290,50 @@ export async function upsertLandParcelBorder(input: unknown): Promise<Result> {
     select: { id: true },
   });
   return { success: true, data: row };
+}
+
+// ─── NKT (#328) ───
+
+/**
+ * Simpan status NKT — satelit 1:1, upsert by parcelUid. Hapus = `deleteLandParcelNkt`
+ * (hapus baris): baris tanpa status tidak bermakna, dan baris nonaktif akan
+ * memblokir pengisian ulang di bawah @unique(parcel_uid).
+ */
+export async function upsertLandParcelNkt(input: unknown): Promise<Result> {
+  if (!(await hasPermission(MENU, "EDIT"))) return { success: false, error: "Tidak memiliki izin untuk mengubah status NKT" };
+  const parsed = landParcelNktSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors as FieldErrors };
+  const parcel = await resolveParcel(parsed.data.landParcelId);
+  if (!parcel) return { success: false, error: "Lahan tidak ditemukan atau di luar akses Anda" };
+  const { landParcelId: _ignored, ...d } = parsed.data;
+  void _ignored;
+  const uid = await userId();
+  const data = {
+    status: d.status,
+    categories: d.categories,
+    affectedAreaHa: d.affectedAreaHa ?? null,
+    affectedLengthM: d.affectedLengthM ?? null,
+    assessedAt: d.assessedAt ?? null,
+    assessor: d.assessor ?? null,
+    source: d.source ?? null,
+    notes: d.notes ?? null,
+  };
+  const row = await prisma.landParcelNkt.upsert({
+    where: { parcelUid: parcel.parcelUid },
+    create: { ...data, parcelUid: parcel.parcelUid, createdBy: uid },
+    update: { ...data, modifiedBy: uid },
+    select: { id: true },
+  });
+  return { success: true, data: row };
+}
+
+/** Hapus status NKT lahan (kembali ke "belum dinilai"). */
+export async function deleteLandParcelNkt(landParcelId: string): Promise<ActionResult> {
+  if (!(await hasPermission(MENU, "DELETE"))) return { success: false, error: "Tidak memiliki izin untuk menghapus status NKT" };
+  const parcel = await resolveParcel(landParcelId);
+  if (!parcel) return { success: false, error: "Lahan tidak ditemukan atau di luar akses Anda" };
+  await prisma.landParcelNkt.deleteMany({ where: { parcelUid: parcel.parcelUid } });
+  return { success: true };
 }
 
 // ─── Nonaktifkan (soft delete) ───

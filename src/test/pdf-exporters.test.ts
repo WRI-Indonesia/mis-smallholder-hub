@@ -102,6 +102,7 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
       isPsr: false,
       treeCount: 286,
       border: null,
+      nkt: null,
     },
     legal: {
       documents: [
@@ -231,6 +232,20 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
 
   it("legalitas penuh tanpa tetangga/sepadan → tetap 2 halaman seperti sebelum #326/#327 (regresi tata letak)", () => {
     expect(buildFarmPassportDoc(passport).getNumberOfPages()).toBe(2);
+  });
+
+  it("NKT (#328): belum dinilai → baris 'NKT  Belum dinilai' tanpa badge; terdampak → badge + ringkasan kategori/luas", () => {
+    const none = pdfText(buildFarmPassportDoc(passport));
+    expect(none).toContain("Belum dinilai");
+    expect(none).not.toContain("Terdampak NKT");
+    const affected: ParcelPassport = {
+      ...passport,
+      parcel: { ...passport.parcel, nkt: { status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: 176, assessedAt: "2025-03-12T00:00:00.000Z", assessor: "HJP", source: null } },
+    };
+    const text = pdfText(buildFarmPassportDoc(affected));
+    expect((text.match(/Terdampak NKT/g) ?? []).length).toBeGreaterThanOrEqual(2); // badge header + baris NKT
+    expect(text).toContain("NKT 4");
+    expect(text).toContain("0,09 ha");
   });
 
   it("geometri tak tersedia (ring < 3 titik) → tetap terbit tanpa throw", () => {

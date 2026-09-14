@@ -1,4 +1,4 @@
-import { documentTypeShort, landStdbStageLabel, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort, LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
+import { documentTypeShort, landStdbStageLabel, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort, LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, isNktAffected, landNktStatusLabel, summarizeNkt } from "@/lib/land-parcel-satellite-format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
@@ -367,17 +367,27 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   doc.text(`Milik ${farmer.name}  ·  ${orDash(group.name)}  ·  ${orDash(group.districtName)}, ${orDash(group.provinceName)}`, MARGIN, 30);
   // Badge PSR / komoditas di kanan
   // Badge hanya untuk yang bermakna: PSR (bila ya) dan komoditas — "Non-PSR" tidak ditampilkan (owner).
-  const badges = [parcel.isPsr ? "PSR (replanting)" : null, parcel.cropType ?? null].filter((b): b is string => Boolean(b));
+  // NKT (#328) ikut sebagai badge berwarna (merah termasuk / amber terdampak) —
+  // status yang harus terlihat sebelum apa pun, sama dengan header Detail Lahan.
+  const nktBadge = parcel.nkt && isNktAffected(parcel.nkt.status) ? landNktStatusLabel(parcel.nkt.status, true) : null;
+  const badges: { text: string; tone: "neutral" | "red" | "amber" }[] = [
+    nktBadge ? { text: nktBadge, tone: parcel.nkt!.status === "INCLUDED" ? "red" : "amber" } : null,
+    parcel.isPsr ? { text: "PSR (replanting)", tone: "neutral" as const } : null,
+    parcel.cropType ? { text: parcel.cropType, tone: "neutral" as const } : null,
+  ].filter((b): b is { text: string; tone: "neutral" | "red" | "amber" } => Boolean(b));
   let bx = PAGE_W - MARGIN;
   doc.setFontSize(7.5);
   for (const b of badges.reverse()) {
-    const w = doc.getTextWidth(b) + 5;
+    const w = doc.getTextWidth(b.text) + 5;
     bx -= w;
-    doc.setFillColor(241, 245, 249);
-    doc.setDrawColor(...SLATE_200);
+    if (b.tone === "red") { doc.setFillColor(254, 226, 226); doc.setDrawColor(220, 38, 38); }
+    else if (b.tone === "amber") { doc.setFillColor(254, 243, 199); doc.setDrawColor(217, 119, 6); }
+    else { doc.setFillColor(241, 245, 249); doc.setDrawColor(...SLATE_200); }
     doc.roundedRect(bx, 20, w, 6, 1.5, 1.5, "FD");
-    doc.setTextColor(...SLATE_600);
-    doc.text(b, bx + w / 2, 24.1, { align: "center" });
+    if (b.tone === "red") doc.setTextColor(153, 27, 27);
+    else if (b.tone === "amber") doc.setTextColor(146, 64, 14);
+    else doc.setTextColor(...SLATE_600);
+    doc.text(b.text, bx + w / 2, 24.1, { align: "center" });
     bx -= 2;
   }
   doc.setDrawColor(...SLATE_200);
@@ -469,6 +479,8 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
       { label: "Komoditas", value: `${orDash(parcel.cropType)}${parcel.species ? ` (${parcel.species})` : ""}` },
       { label: "Tahun Tanam", value: `${orDash(parcel.plantingYear)}${plantAge != null ? ` (${plantAge} th)` : ""}${parcel.isPsr ? " · PSR" : ""}` },
       { label: "Pohon Sawit", value: parcel.treeCount > 0 ? `${fmtNum(parcel.treeCount)}${parcel.area ? ` (${fmtNum(Math.round(parcel.treeCount / parcel.area))}/ha)` : ""}` : "—" },
+      // NKT (#328): satu baris ringkas; belum dinilai → "Belum dinilai" (bukan "—", supaya beda dengan "tidak terdampak").
+      { label: "NKT", value: summarizeNkt(parcel.nkt) + (parcel.nkt?.affectedAreaHa != null ? ` · ${fmtArea(parcel.nkt.affectedAreaHa)}` : "") },
     ],
     COL2_X,
     ry,
