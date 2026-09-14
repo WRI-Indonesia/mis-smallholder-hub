@@ -215,9 +215,10 @@ export const LAND_NKT_STATUS_SHORT: Record<LandNktStatusCode, string> = {
 export function landNktStatusLabel(status: string, short = false): string {
   return (short ? LAND_NKT_STATUS_SHORT : LAND_NKT_STATUS_LABELS)[status as LandNktStatusCode] ?? status;
 }
-/** `INCLUDED`/`AFFECTED` = lahan "kena" NKT — dipakai KPI, layer peta, tanda turunan patok (#329). */
+/** Status yang berarti lahan "kena" NKT — satu-satunya definisi (KPI, layer peta, PDF, tanda turunan patok #329). */
+export const NKT_AFFECTED_STATUSES: readonly LandNktStatusCode[] = ["INCLUDED", "AFFECTED"];
 export function isNktAffected(status: string | null | undefined): boolean {
-  return status === "INCLUDED" || status === "AFFECTED";
+  return (NKT_AFFECTED_STATUSES as readonly string[]).includes(status ?? "");
 }
 
 export const NKT_CATEGORIES = ["NKT_1", "NKT_2", "NKT_3", "NKT_4", "NKT_5", "NKT_6"] as const;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } from "react";
-import { landNktStatusLabel } from "@/lib/land-parcel-satellite-format";
+import { landNktStatusLabel, isNktAffected, NKT_AFFECTED_STATUSES } from "@/lib/land-parcel-satellite-format";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { ExpressionSpecification } from "maplibre-gl";
@@ -343,7 +343,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       fitCoords((data?.kelompokTani ?? []).map((kt) => [kt.long, kt.lat] as [number, number]));
     } else if (layerZoomRequest.target === "nkt") {
       // NKT (#328): hanya lahan termasuk/terdampak; tanpa satu pun → fitCoords tidak melakukan apa-apa.
-      fitCoords((data?.parcels ?? []).filter((p) => p.nktStatus === "INCLUDED" || p.nktStatus === "AFFECTED").map((p) => p.centroid));
+      fitCoords((data?.parcels ?? []).filter((p) => isNktAffected(p.nktStatus)).map((p) => p.centroid));
     } else {
       fitCoords((data?.parcels ?? []).map((p) => p.centroid));
     }
@@ -416,7 +416,8 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     } else if (layerId === "parcel-point") {
       const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "parcel", props: feature.properties ?? {} });
-    } else if (layerId === "parcel-fill") {
+    } else if (layerId === "parcel-fill" || layerId === "parcel-nkt-fill") {
+      // NKT (#328): layer sorotan ikut bisa diklik supaya popup tetap ada saat Area Lahan dimatikan.
       setSelected({
         longitude: e.lngLat.lng,
         latitude: e.lngLat.lat,
@@ -452,6 +453,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       "kt-point",
       "parcel-point",
       "parcel-fill",
+      "parcel-nkt-fill",
       "hotspot-point",
       ...customLayers.flatMap((l) =>
         l.kind === "vector"
@@ -612,7 +614,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             type="fill"
             beforeId={labelBeforeId}
             layout={vis(layers.nkt)}
-            filter={["in", ["get", "nktStatus"], ["literal", ["INCLUDED", "AFFECTED"]]]}
+            filter={["in", ["get", "nktStatus"], ["literal", [...NKT_AFFECTED_STATUSES]]]}
             paint={{ "fill-color": ["case", ["==", ["get", "nktStatus"], "INCLUDED"], "#dc2626", "#f59e0b"], "fill-opacity": 0.25 }}
           />
           <Layer
@@ -620,7 +622,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             type="line"
             beforeId={labelBeforeId}
             layout={vis(layers.nkt)}
-            filter={["in", ["get", "nktStatus"], ["literal", ["INCLUDED", "AFFECTED"]]]}
+            filter={["in", ["get", "nktStatus"], ["literal", [...NKT_AFFECTED_STATUSES]]]}
             paint={{ "line-color": ["case", ["==", ["get", "nktStatus"], "INCLUDED"], "#b91c1c", "#d97706"], "line-width": 2.5 }}
           />
           {/* Highlight lahan yang popup-nya terbuka — poligon tetangga bergaya

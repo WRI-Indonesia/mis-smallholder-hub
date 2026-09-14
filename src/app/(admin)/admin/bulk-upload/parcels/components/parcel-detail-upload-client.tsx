@@ -88,7 +88,14 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
   const [customMapper, setCustomMapper] = useState("");
   // NKT (#328): bawaan per berkas untuk daftar "terdampak NKT" (Lampiran HJP) yang tak punya
   // kolom status/kategori — bila status dipilih, SEMUA baris valid mendapat NKT.
-  const [nktDefaults, setNktDefaults] = useState<NktFileDefaults>({ status: null, categories: [], assessedAt: null, assessor: null });
+  const EMPTY_NKT_DEFAULTS: NktFileDefaults = { status: null, categories: [], assessedAt: null, assessor: null };
+  const [nktDefaults, setNktDefaultsState] = useState<NktFileDefaults>(EMPTY_NKT_DEFAULTS);
+  // Mengubah bawaan SETELAH validasi harus membatalkan hasil validasi — pratinjau
+  // & baris yang dikirim Simpan dihitung dari bawaan saat Validasi diklik.
+  const setNktDefaults = (upd: (d: NktFileDefaults) => NktFileDefaults) => {
+    setNktDefaultsState(upd);
+    setValidated([]);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +132,9 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     setRawRows([]);
     setMapping({});
     setValidated([]);
+    // Bawaan NKT terikat pada SATU berkas: kalau dibawa ke berkas berikutnya
+    // (mis. data surat/STDB biasa), seluruh barisnya ikut ditandai NKT.
+    setNktDefaultsState(EMPTY_NKT_DEFAULTS);
     setRowNumbers([]);
 
     try {
@@ -197,6 +207,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     setRawRows([]);
     setHeaders([]);
     setFile(null);
+    setNktDefaultsState(EMPTY_NKT_DEFAULTS);
     router.refresh();
   }
 
@@ -281,7 +292,9 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
    * Lembaga plasma memakai Blok, Lembaga swadaya memakai Kelompok Tani.
    */
   async function handleDownloadNktTemplate() {
-    const pick = (keys: ParcelDetailFieldKey[]) => PARCEL_DETAIL_TARGET_FIELDS.filter((f) => keys.includes(f.key)).map((f) => ({ header: f.label, key: f.key, width: 24 }));
+    // Urutan kolom mengikuti `keys` (urutan Lampiran), bukan urutan definisi field.
+    const pick = (keys: ParcelDetailFieldKey[]) =>
+      keys.map((k) => PARCEL_DETAIL_TARGET_FIELDS.find((f) => f.key === k)!).map((f) => ({ header: f.label, key: f.key, width: 24 }));
     await exportToExcel({
       filename: "template_nkt_lahan",
       columns: [
@@ -352,9 +365,11 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                 </div>
                 <Select
                   value={mapping[f.key] || ""}
-                  onValueChange={(val) =>
-                    setMapping((prev) => ({ ...prev, [f.key]: val === "_empty" ? "" : val }))
-                  }
+                  onValueChange={(val) => {
+                    setMapping((prev) => ({ ...prev, [f.key]: val === "_empty" ? "" : val }));
+                    // Pemetaan berubah = hasil validasi lama tidak berlaku lagi.
+                    setValidated([]);
+                  }}
                 >
                   <SelectTrigger className="w-full h-9">
                     <SelectValue placeholder="Pilih kolom..." />
@@ -535,6 +550,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                   <TableHead>STDB</TableHead>
                   <TableHead>UL Parcel Code</TableHead>
                   <TableHead>Kelompok Tani</TableHead>
+                  <TableHead>Blok</TableHead>
                   <TableHead>Sepadan (U · T · S · B)</TableHead>
                   <TableHead>NKT</TableHead>
                   <TableHead>Status</TableHead>
@@ -544,7 +560,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={15} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={16} className="text-center py-8 text-muted-foreground">
                       Tidak ada data untuk filter ini.
                     </TableCell>
                   </TableRow>
@@ -572,6 +588,13 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                           ? r._dbSubGroupLv2
                             ? <span className="text-muted-foreground" title={`Sudah terisi di sistem: ${r._dbSubGroupLv2}`}>{r._raw.subGroupLv2} <em>(sudah ada)</em></span>
                             : r._raw.subGroupLv2
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {r._raw.blok
+                          ? r._dbBlok
+                            ? <span className="text-muted-foreground" title={`Sudah terisi di sistem: ${r._dbBlok}`}>{r._raw.blok} <em>(sudah ada)</em></span>
+                            : r._raw.blok
                           : "—"}
                       </TableCell>
                       <TableCell className="text-xs">

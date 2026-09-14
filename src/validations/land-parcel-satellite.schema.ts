@@ -11,12 +11,12 @@ import { LAND_STDB_STAGES, LAND_NKT_STATUSES, NKT_CATEGORIES } from "@/lib/land-
 const optText = (max = 200) =>
   z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), z.string().trim().max(max).nullable().optional());
 
-const optNumber = (msg: string) =>
+const optNumber = (msg: string, max = 10000, maxMsg = "Luas terlalu besar") =>
   z.preprocess((v) => {
     if (v === "" || v === undefined || v === null) return null;
     const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
     return Number.isNaN(n) ? NaN : n;
-  }, z.number({ message: msg }).positive(msg).max(10000, "Luas terlalu besar").nullable().optional());
+  }, z.number({ message: msg }).positive(msg).max(max, maxMsg).nullable().optional());
 
 const optYear = z.preprocess((v) => {
   if (v === "" || v === undefined || v === null) return null;
@@ -146,17 +146,16 @@ export const landParcelBorderSidesSchema = landParcelBorderSchema.omit({ landPar
 // ---- NKT (#328) — satelit 1:1; kategori wajib ≥ 1 kecuali NOT_AFFECTED; tanggal ≤ hari ini.
 const nktBase = z.object({
   status: z.enum(LAND_NKT_STATUSES, { message: "Status NKT wajib dipilih" }),
-  // FormData mengirim checkbox berulang → string[]; importer bisa mengirim "1,4" — keduanya dinormalkan.
+  // FormData mengirim checkbox berulang → string[]; string "1,4" / "NKT 1; NKT_4" dinormalkan ke kode enum.
   categories: z.preprocess(
-    (v) => (typeof v === "string" ? v.split(/[,;\s]+/).filter(Boolean) : Array.isArray(v) ? v : []),
+    (v) => {
+      const list = typeof v === "string" ? v.split(/[,;]+/).map((x) => x.trim()).filter(Boolean) : Array.isArray(v) ? v : [];
+      return list.map((x) => (typeof x === "string" ? x.replace(/^\s*(?:NKT[\s_-]*)?(\d)\s*$/i, "NKT_$1") : x));
+    },
     z.array(z.enum(NKT_CATEGORIES, { message: "Kategori NKT tidak dikenal" })),
   ),
   affectedAreaHa: optNumber("Luas NKT harus angka lebih dari 0"),
-  affectedLengthM: z.preprocess((v) => {
-    if (v === "" || v === undefined || v === null) return null;
-    const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
-    return Number.isNaN(n) ? NaN : n;
-  }, z.number({ message: "Panjang harus angka lebih dari 0" }).positive("Panjang harus angka lebih dari 0").max(100_000, "Panjang terlalu besar").nullable().optional()),
+  affectedLengthM: optNumber("Panjang harus angka lebih dari 0", 100_000, "Panjang terlalu besar"),
   assessedAt: optDate,
   assessor: optText(200),
   source: optText(200),
@@ -170,7 +169,9 @@ function refineNkt(d: z.infer<typeof nktBase>, ctx: z.RefinementCtx) {
     ctx.addIssue({ code: "custom", path: ["assessedAt"], message: "Tanggal asesmen tidak boleh di masa depan" });
   }
   // Duplikat kategori dibuang diam-diam (checkbox tak bisa ganda; importer bisa).
-  d.categories = [...new Set(d.categories)];
+  // NOT_AFFECTED selalu tanpa kategori — sama dengan importer; kalau tidak,
+  // form yang beralih status tanpa mencentang-hapus akan menyimpan "Tidak terdampak — NKT 4".
+  d.categories = d.status === "NOT_AFFECTED" ? [] : [...new Set(d.categories)];
 }
 export const landParcelNktSchema = nktBase
   .extend({ landParcelId: z.string().min(1, "Lahan tidak valid") })

@@ -168,14 +168,9 @@ export function parseStdbNumber(raw: unknown): ParsedStdb | null {
   return { number: text, issuedYear: year >= 1990 && year <= 2100 ? year : null, stage: "TERBIT" };
 }
 
-/** Luas tertera (ha): angka > 0; koma desimal diterima; 0/kosong → null. */
+/** Luas tertera (ha): angka > 0; koma desimal diterima; 0/kosong → null. Satu parser dengan Luas NKT. */
 export function parseStatedArea(raw: unknown): { value: number | null; error: string | null } {
-  const text = cleanCell(raw);
-  if (!text) return { value: null, error: null };
-  const n = Number(text.replace(",", "."));
-  if (!Number.isFinite(n)) return { value: null, error: `Luas tertera tidak valid: "${text}"` };
-  if (n <= 0) return { value: null, error: null };
-  return { value: n, error: null };
+  return parsePositiveNumber(raw, "Luas tertera");
 }
 
 // ─── NKT (#328) ───
@@ -183,16 +178,22 @@ export function parseStatedArea(raw: unknown): { value: number | null; error: st
 export type NktStatusCode = "INCLUDED" | "AFFECTED" | "NOT_AFFECTED";
 
 /**
- * Sel Status NKT → enum. Ejaan lapangan beragam; yang bermakna "kena" dibedakan
- * termasuk vs terdampak, dan "tidak" harus eksplisit. Sel yang tak dikenal →
- * error (bukan diam-diam dianggap terdampak).
+ * Sel Status NKT → enum. Ejaan lapangan beragam; NEGASI dicek lebih dulu di
+ * mana pun letaknya ("Lahan tidak terdampak", "not included", "unaffected")
+ * supaya tidak terbalik jadi positif, lalu termasuk vs terdampak dibedakan.
+ * Boolean Excel / 1 / 0 / ya / tidak diterima. Sel tak dikenal → error (bukan
+ * diam-diam dianggap terdampak); kosong → null (bawaan berkas yang memutuskan).
  */
 export function parseNktStatus(raw: unknown): { status: NktStatusCode | null; error: string | null } {
+  if (typeof raw === "boolean") return { status: raw ? "AFFECTED" : "NOT_AFFECTED", error: null };
+  const rawText = raw === null || raw === undefined ? "" : String(raw).trim().toLowerCase();
+  if (rawText === "0") return { status: "NOT_AFFECTED", error: null };
+  if (rawText === "1") return { status: "AFFECTED", error: null };
   const text = cleanFreeTextCell(raw).toLowerCase();
   if (!text) return { status: null, error: null };
-  if (/^(tidak|bukan|no|non|tidak terdampak|tidak termasuk|not affected|bersih|aman)\b/.test(text)) return { status: "NOT_AFFECTED", error: null };
+  if (/\b(tidak|bukan|tdk|non|no|not)\b|\bun(affected|included)\b|bersih|aman|bebas/.test(text)) return { status: "NOT_AFFECTED", error: null };
   if (/termasuk|included|di dalam|dalam area|inside/.test(text)) return { status: "INCLUDED", error: null };
-  if (/terdampak|affected|kena|berbatasan|sempadan|ya\b|yes\b|y$/.test(text)) return { status: "AFFECTED", error: null };
+  if (/terdampak|affected|kena|berbatasan|sempadan|\bya\b|\byes\b|\by$|\btrue\b/.test(text)) return { status: "AFFECTED", error: null };
   return { status: null, error: `Status NKT tidak dikenal: "${cleanFreeTextCell(raw)}" (isi: termasuk / terdampak / tidak)` };
 }
 
@@ -207,13 +208,20 @@ export function parseNktCategories(raw: unknown): { categories: string[]; error:
   return { categories: [...new Set(nums)].sort().map((n) => `NKT_${n}`), error: null };
 }
 
-/** Angka desimal positif (koma diterima); 0/kosong → null. */
-export function parsePositiveNumber(raw: unknown, label: string): { value: number | null; error: string | null } {
+/**
+ * Angka desimal positif: koma desimal Indonesia ("0,088") maupun titik ("0.088")
+ * diterima; "1.234,5" = seribu (titik ribuan hanya dibuang bila ada koma).
+ * 0/kosong → null; NEGATIF → error (salah ketik tanda, bukan sel kosong);
+ * di atas `max` → error (batas skema server, supaya batch tidak ditolak utuh).
+ */
+export function parsePositiveNumber(raw: unknown, label: string, max = 10_000): { value: number | null; error: string | null } {
   const text = cleanCell(raw);
   if (!text) return { value: null, error: null };
   const n = Number(text.replace(/\./g, (m, i, str) => (str.indexOf(",") > -1 ? "" : m)).replace(",", "."));
   if (!Number.isFinite(n)) return { value: null, error: `${label} tidak valid: "${text}"` };
-  if (n <= 0) return { value: null, error: null };
+  if (n < 0) return { value: null, error: `${label} negatif: "${text}"` };
+  if (n === 0) return { value: null, error: null };
+  if (n > max) return { value: null, error: `${label} terlalu besar: "${text}" (maks ${max})` };
   return { value: n, error: null };
 }
 
@@ -317,6 +325,8 @@ export interface ParcelRef {
   farmerDbId: string;
   /** Kelompok Tani yang sudah tersimpan di lahan (LandParcel.subGroupLv2) — untuk pratinjau. */
   subGroupLv2?: string | null;
+  /** Blok yang sudah tersimpan (LandParcel.blok) — pratinjau "(sudah ada)", aturan sama dengan KT (#328). */
+  blok?: string | null;
 }
 
 /** Satu baris siap kirim ke server (sudah ternormalisasi). */
@@ -362,6 +372,8 @@ export interface ParcelDetailValidatedRow {
   _farmerName: string;
   /** Kelompok Tani yang sudah ada di DB untuk lahan ini (pratinjau "tidak akan ditimpa"). */
   _dbSubGroupLv2: string | null;
+  /** Blok yang sudah ada di DB untuk lahan ini (pratinjau "tidak akan ditimpa", #328). */
+  _dbBlok: string | null;
   data: ParcelDetailRow | null;
 }
 
@@ -492,13 +504,18 @@ export function validateParcelDetailRows(
     if (nktStatusCell.error) errors.push(nktStatusCell.error);
     const nktCats = parseNktCategories(r.nktCategories);
     if (nktCats.error) errors.push(nktCats.error);
-    const nktArea = parsePositiveNumber(r.nktAreaHa, "Luas NKT");
+    const nktArea = parsePositiveNumber(r.nktAreaHa, "Luas NKT", 10_000);
     if (nktArea.error) errors.push(nktArea.error);
-    const nktLength = parsePositiveNumber(r.nktLengthM, "Panjang NKT");
+    const nktLength = parsePositiveNumber(r.nktLengthM, "Panjang NKT", 100_000);
     if (nktLength.error) errors.push(nktLength.error);
     const nktDate = parseDateCell(r.nktAssessedAt, "Tanggal asesmen NKT");
     if (nktDate.error) errors.push(nktDate.error);
     const nktAssessorCell = cleanFreeTextCell(r.nktAssessor) || null;
+    // Batas panjang teks = batas skema server (`trimmed.max(200)`): dicek di sini
+    // supaya satu sel kepanjangan tidak menolak seluruh batch tanpa nomor baris.
+    if (nktAssessorCell && nktAssessorCell.length > 200) errors.push("Asesor / Sumber NKT lebih dari 200 karakter");
+    if (blok && blok.length > 200) errors.push("Blok lebih dari 200 karakter");
+    if (nktDefaults?.assessor && nktDefaults.assessor.length > 200) errors.push("Asesor / sumber bawaan berkas lebih dari 200 karakter");
     const hasNktCell = Boolean(nktStatusCell.status || nktCats.categories.length || nktArea.value !== null || nktLength.value !== null || nktDate.value || nktAssessorCell);
     let nkt: ParcelDetailRow["nkt"] = null;
     if (hasNktCell || nktDefaults?.status) {
@@ -558,6 +575,7 @@ export function validateParcelDetailRows(
       _raw: r,
       _farmerName: pair?.farmerName ?? farmerRef?.farmerName ?? "",
       _dbSubGroupLv2: pair?.subGroupLv2 ?? null,
+      _dbBlok: pair?.blok ?? null,
       data,
     };
   });

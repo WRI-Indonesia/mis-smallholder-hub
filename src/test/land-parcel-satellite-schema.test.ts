@@ -12,6 +12,7 @@ import {
   landParcelNktSchema,
 } from "@/validations/land-parcel-satellite.schema";
 import { landParcelSchema } from "@/validations/land-parcel.schema";
+import { landParcelDetailRowSchema } from "@/validations/land-parcel-detail.schema";
 
 /** CRUD manual satelit lahan (#296 tahap 3c) — input form (string FormData) → nilai tersimpan. */
 describe("land-parcel-satellite.schema", () => {
@@ -162,6 +163,24 @@ describe("land-parcel-satellite.schema", () => {
       expect(landParcelNktSchema.safeParse({ ...base, status: "NOT_AFFECTED", categories: [] }).success).toBe(true);
       const dup = landParcelNktSchema.safeParse({ ...base, categories: "NKT_1,NKT_4, NKT_1" });
       expect(dup.success && dup.data.categories).toEqual(["NKT_1", "NKT_4"]);
+      // "1,4" dan "NKT 1; NKT 4" (gaya importer/manusia) dinormalkan ke kode enum.
+      const digits = landParcelNktSchema.safeParse({ ...base, categories: "1,4" });
+      expect(digits.success && digits.data.categories).toEqual(["NKT_1", "NKT_4"]);
+      const spaced = landParcelNktSchema.safeParse({ ...base, categories: "NKT 1; NKT 4" });
+      expect(spaced.success && spaced.data.categories).toEqual(["NKT_1", "NKT_4"]);
+    });
+
+    it("skema baris import menjaga invarian yang sama: AFFECTED tanpa kategori ditolak di SERVER, bukan hanya di klien", () => {
+      const row = { parcelUid: "u", farmerDbId: "f", parcelId: "P", document: null, custodyNote: null, stdb: null, externalCode: null, subGroupLv2: null };
+      const bad = landParcelDetailRowSchema.safeParse({ ...row, nkt: { status: "AFFECTED", categories: null, affectedAreaHa: null, affectedLengthM: null, assessedAt: null, assessor: null } });
+      expect(bad.success).toBe(false);
+      const ok = landParcelDetailRowSchema.safeParse({ ...row, nkt: { status: "NOT_AFFECTED", categories: [], affectedAreaHa: null, affectedLengthM: null, assessedAt: null, assessor: null } });
+      expect(ok.success).toBe(true);
+    });
+
+    it("NOT_AFFECTED selalu tanpa kategori — checkbox yang tertinggal dicentang tidak ikut tersimpan (review 2026-09-14)", () => {
+      const r = landParcelNktSchema.safeParse({ ...base, status: "NOT_AFFECTED", categories: ["NKT_4"] });
+      expect(r.success && r.data.categories).toEqual([]);
     });
 
     it("status/kategori di luar enum, tanggal masa depan, luas ≤ 0 ditolak per field", () => {

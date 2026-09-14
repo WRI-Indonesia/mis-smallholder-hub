@@ -1,4 +1,5 @@
 import { centroid, truncate } from "@turf/turf";
+import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import type { Polygon, MultiPolygon } from "geojson";
 import type {
   MapData,
@@ -148,7 +149,7 @@ export function buildMapData(groups: RawGroup[], parcels: RawParcel[]): MapDataW
     counts: {
       kt: kelompokTani.length,
       // NKT (#328): lahan INCLUDED/AFFECTED — indeks 8 = nktStatus (lihat ParcelWireTuple).
-      nkt: parcelTuples.filter((t) => t[8] === "INCLUDED" || t[8] === "AFFECTED").length,
+      nkt: parcelTuples.filter((t) => isNktAffected(t[8])).length,
       parcelPoints: parcelTuples.length,
       parcelAreas: parcelTuples.length,
     },

@@ -362,6 +362,16 @@ describe("NKT (#328) — parser sel", () => {
     expect(parseNktStatus("").status).toBeNull();
     expect(parseNktStatus("mungkin").error).toMatch(/tidak dikenal/);
   });
+  it("parseNktStatus: negasi di TENGAH kalimat & bahasa Inggris tidak terbalik jadi positif; boolean/1/0 diterima (review 2026-09-14)", () => {
+    expect(parseNktStatus("Lahan tidak terdampak").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("Not included").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("unaffected").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("bukan area NKT").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus(true).status).toBe("AFFECTED");
+    expect(parseNktStatus(false).status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("1").status).toBe("AFFECTED");
+    expect(parseNktStatus("0").status).toBe("NOT_AFFECTED");
+  });
   it("parseNktCategories: '1,4' / 'NKT 1; NKT 4' / 'NKT_4' → kode; di luar 1–6 → error", () => {
     expect(parseNktCategories("1,4").categories).toEqual(["NKT_1", "NKT_4"]);
     expect(parseNktCategories("NKT 4; NKT 1").categories).toEqual(["NKT_1", "NKT_4"]);
@@ -381,7 +391,15 @@ describe("NKT (#328) — parser sel", () => {
     expect(parsePositiveNumber("0,088", "L").value).toBeCloseTo(0.088);
     expect(parsePositiveNumber("176,026", "L").value).toBeCloseTo(176.026);
     expect(parsePositiveNumber("1.952", "L").value).toBeCloseTo(1.952);
+    expect(parsePositiveNumber("1.234,5", "L").value).toBeCloseTo(1234.5);
     expect(parsePositiveNumber("x", "L").error).toBeTruthy();
+  });
+  it("parsePositiveNumber: negatif → ERROR (bukan diam-diam kosong); di atas batas skema → error; parseStatedArea memakai parser yang sama", () => {
+    expect(parsePositiveNumber("-0,088", "Luas NKT").error).toMatch(/negatif/);
+    expect(parsePositiveNumber("120000", "Panjang", 100_000).error).toMatch(/terlalu besar/);
+    expect(parsePositiveNumber("0", "L")).toEqual({ value: null, error: null });
+    expect(parseStatedArea("1.234,5").value).toBeCloseTo(1234.5);
+    expect(parseStatedArea("-1").error).toMatch(/negatif/);
   });
 });
 
@@ -419,6 +437,17 @@ describe("validateParcelDetailRows — NKT (#328) & Blok", () => {
     const [r] = validateParcelDetailRows([{ ID_Lahan: "HJP.0001.A", ID_Petani: "HJP.0001", Blok: "17 L" }], mapping, parcels, undefined, { status: null, categories: ["NKT_4"], assessedAt: null, assessor: null });
     expect(r._isValid).toBe(true);
     expect(r.data?.nkt).toBeNull();
+  });
+
+  it("batas panjang teks & angka diperiksa di klien (asesor/blok ≤ 200, panjang ≤ 100.000) — bukan ditolak server tanpa nomor baris", () => {
+    const m = { ...mapping, nktAssessor: "Asesor" } as const;
+    const [r] = validateParcelDetailRows([{ ...hjpRow, Asesor: "x".repeat(201), LENGTH: "120000" }], m, parcels, undefined, { status: "AFFECTED", categories: ["NKT_4"], assessedAt: null, assessor: null });
+    expect(r._isValid).toBe(false);
+    expect(r._errors.join(" ")).toMatch(/Asesor \/ Sumber NKT lebih dari 200/);
+    expect(r._errors.join(" ")).toMatch(/Panjang NKT terlalu besar/);
+    // Pratinjau Blok: _dbBlok dibawa dari ParcelRef agar "(sudah ada)" bisa ditampilkan seperti KT.
+    const [b] = validateParcelDetailRows([hjpRow], mapping, [{ ...parcels[0], blok: "17L" }], undefined, { status: "AFFECTED", categories: ["NKT_4"], assessedAt: null, assessor: null });
+    expect(b._dbBlok).toBe("17L");
   });
 
   it("alias header Lampiran HJP ('Luas NKT Area (ha)', 'LENGTH', 'Blok') terpetakan otomatis", () => {
