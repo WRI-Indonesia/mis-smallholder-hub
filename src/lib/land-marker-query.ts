@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { MARKER_SIMPLIFY_M, MARKER_SNAP_M, metersToDegrees, type LonLat, type NearbyMarker } from "@/lib/land-marker";
+import { MARKER_SIMPLIFY_M, MARKER_SNAP_M, type LonLat, type NearbyMarker } from "@/lib/land-marker";
+import { metersToDegrees } from "@/lib/parcel-neighbor";
 
 /**
  * Kueri PostGIS untuk patok batas (#329). NOTE: tanpa cek permission — caller
@@ -20,10 +21,10 @@ interface VertexRow {
  * Vertex ring LUAR tiap poligon lahan, sudah disederhanakan
  * (`ST_SimplifyPreserveTopology`, ±1 m) supaya vertex kolinear/berhimpit
  * hasil digitasi lengkung (maks 60 vertex di prod) tidak jadi puluhan patok.
- * Titik penutup ganda dibuang. Urutan bagian lalu vertex — penomoran final
- * dilakukan `planMarkersFromVertices` (searah jarum jam dari utara).
+ * Titik penutup ganda dibuang. Satu ring per bagian, urutan batas utuh —
+ * penomoran final dilakukan `planMarkersFromVertices` (searah jarum jam dari utara).
  */
-export async function fetchSimplifiedVertices(landParcelId: string): Promise<LonLat[]> {
+export async function fetchSimplifiedVertices(landParcelId: string): Promise<LonLat[][]> {
   const deg = metersToDegrees(MARKER_SIMPLIFY_M);
   const rows = await prisma.$queryRaw<VertexRow[]>`
     SELECT (dp).path[1] AS poly, (dp).path[2] AS ring, (dp).path[3] AS idx,
@@ -38,7 +39,9 @@ export async function fetchSimplifiedVertices(landParcelId: string): Promise<Lon
     WHERE (dp).path[2] = 1
     ORDER BY poly, idx
   `;
-  const out: LonLat[] = [];
+  // Satu array per bagian poligon, URUTAN BATAS dipertahankan (penomoran
+  // mengikuti jalan batas, bukan sudut dari titik tengah — lihat orderClockwiseFromNorth).
+  const out: LonLat[][] = [];
   const byPoly = new Map<number, VertexRow[]>();
   for (const r of rows) byPoly.set(r.poly, [...(byPoly.get(r.poly) ?? []), r]);
   for (const ring of byPoly.values()) {
@@ -47,7 +50,7 @@ export async function fetchSimplifiedVertices(landParcelId: string): Promise<Lon
       const a = pts[0], z = pts[pts.length - 1];
       if (a.lon === z.lon && a.lat === z.lat) pts.pop();
     }
-    out.push(...pts);
+    if (pts.length >= 3) out.push(pts);
   }
   return out;
 }
@@ -56,26 +59,31 @@ interface NearbyRow {
   id: string;
   longitude: number;
   latitude: number;
+  is_active: boolean;
   parcel_ids: string[] | null;
   linked_here: boolean;
 }
 
 /**
- * Patok aktif ≤ MARKER_SNAP_M dari geometri lahan — semua vertex ada di batas,
+ * Patok ≤ MARKER_SNAP_M dari geometri lahan — semua vertex ada di batas,
  * jadi ini superset dari "≤ 5 m dari salah satu vertex"; penyaringan per vertex
  * dilakukan planner murni. Ikut daftar ID Lahan yang sudah memakai patok itu
  * (konteks "patok bersama") dan apakah sudah tertaut ke lahan ini (idempoten).
+ * Patok NONAKTIF (semua tautannya pernah dilepas) ikut dikembalikan supaya
+ * generate/unggah ulang menghidupkannya kembali, bukan membuat kembaran
+ * beberapa cm di sebelahnya (temuan review 2026-09-14); planner memprioritaskan
+ * yang aktif bila keduanya sama dekat.
  */
 export async function fetchNearbyMarkers(landParcelId: string, parcelUid: string): Promise<NearbyMarker[]> {
   const deg = metersToDegrees(MARKER_SNAP_M);
   const rows = await prisma.$queryRaw<NearbyRow[]>`
-    SELECT m.id, m.longitude, m.latitude,
+    SELECT m.id, m.longitude, m.latitude, m.is_active,
            (SELECT array_agg(i.parcel_id ORDER BY i.parcel_id)
               FROM tbl_land_parcel_marker l JOIN tbl_land_parcel_identity i ON i.id = l.parcel_uid
              WHERE l.marker_id = m.id AND l.is_active) AS parcel_ids,
            EXISTS (SELECT 1 FROM tbl_land_parcel_marker l WHERE l.marker_id = m.id AND l.is_active AND l.parcel_uid = ${parcelUid}) AS linked_here
     FROM tbl_land_marker m, tbl_land_parcel a
-    WHERE a.id = ${landParcelId} AND a.geom IS NOT NULL AND m.is_active
+    WHERE a.id = ${landParcelId} AND a.geom IS NOT NULL
       AND ST_DWithin(m.geom, a.geom, ${deg})
   `;
   return rows.map((r) => ({
@@ -84,6 +92,7 @@ export async function fetchNearbyMarkers(landParcelId: string, parcelUid: string
     lat: Number(r.latitude),
     parcelIds: r.parcel_ids ?? [],
     linkedToThisParcel: Boolean(r.linked_here),
+    isActive: Boolean(r.is_active),
   }));
 }
 

@@ -8,7 +8,8 @@ import { LAND_STDB_STAGES, LAND_NKT_STATUSES, NKT_CATEGORIES } from "@/lib/land-
  * `parcelUid` setelah cek scope; klien tidak pernah mengirim parcelUid.
  */
 
-const optText = (max = 200) =>
+/** Teks opsional: "" → null, trim, maks `max` — dipakai juga skema patok (#329), jangan digandakan. */
+export const optText = (max = 200) =>
   z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), z.string().trim().max(max).nullable().optional());
 
 const optNumber = (msg: string, max = 10000, maxMsg = "Luas terlalu besar") =>
@@ -24,7 +25,8 @@ const optYear = z.preprocess((v) => {
   return Number.isNaN(n) ? NaN : n;
 }, z.number({ message: "Tahun tidak valid" }).int().min(1900, "Tahun minimal 1900").max(2100, "Tahun maksimal 2100").nullable().optional());
 
-const optDate = z.preprocess((v) => {
+/** Tanggal opsional dari input `date` ("" → null) — dipakai juga skema patok (#329). */
+export const optDate = z.preprocess((v) => {
   if (v === "" || v === undefined || v === null) return null;
   return typeof v === "string" ? new Date(v) : v;
 }, z.date({ message: "Tanggal tidak valid" }).nullable().optional());

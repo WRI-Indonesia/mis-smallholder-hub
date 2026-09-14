@@ -372,6 +372,20 @@ describe("NKT (#328) — parser sel", () => {
     expect(parseNktStatus("1").status).toBe("AFFECTED");
     expect(parseNktStatus("0").status).toBe("NOT_AFFECTED");
   });
+  it("parseNktStatus: token negasi berbatas kata — 'Taman Nasional' bukan 'aman', 'Termasuk (Taman Nasional Tesso Nilo)' = INCLUDED (review 2026-09-14)", () => {
+    expect(parseNktStatus("Termasuk (Taman Nasional Tesso Nilo)").status).toBe("INCLUDED");
+    expect(parseNktStatus("terdampak, kebun di sebelah taman").status).toBe("AFFECTED");
+    expect(parseNktStatus("aman").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("bersih dari NKT").status).toBe("NOT_AFFECTED");
+  });
+  it("parseNktCategories: angka lain di sel diabaikan bila ada awalan 'NKT n'; tanpa awalan dibaca bilangan utuh, bukan per digit (review 2026-09-14)", () => {
+    expect(parseNktCategories("NKT 4 (sempadan 50 m)").categories).toEqual(["NKT_4"]);
+    expect(parseNktCategories("NKT 1, NKT 4 - asesmen 2024").categories).toEqual(["NKT_1", "NKT_4"]);
+    expect(parseNktCategories("HCV 4").categories).toEqual(["NKT_4"]);
+    expect(parseNktCategories("13").error).toMatch(/luar 1–6/);
+    expect(parseNktCategories("NKT 13").error).toMatch(/luar 1–6/);
+    expect(parseNktCategories("50").error).toMatch(/luar 1–6/);
+  });
   it("parseNktCategories: '1,4' / 'NKT 1; NKT 4' / 'NKT_4' → kode; di luar 1–6 → error", () => {
     expect(parseNktCategories("1,4").categories).toEqual(["NKT_1", "NKT_4"]);
     expect(parseNktCategories("NKT 4; NKT 1").categories).toEqual(["NKT_1", "NKT_4"]);

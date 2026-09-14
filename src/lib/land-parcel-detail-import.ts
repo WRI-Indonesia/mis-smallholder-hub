@@ -191,17 +191,24 @@ export function parseNktStatus(raw: unknown): { status: NktStatusCode | null; er
   if (rawText === "1") return { status: "AFFECTED", error: null };
   const text = cleanFreeTextCell(raw).toLowerCase();
   if (!text) return { status: null, error: null };
-  if (/\b(tidak|bukan|tdk|non|no|not)\b|\bun(affected|included)\b|bersih|aman|bebas/.test(text)) return { status: "NOT_AFFECTED", error: null };
+  // Semua token negasi BERBATAS KATA: tanpa itu "T-aman- Nasional" terbaca "aman" → tidak terdampak (temuan review 2026-09-14).
+  if (/\b(tidak|bukan|tdk|non|no|not|bersih|aman|bebas)\b|\bun(affected|included)\b/.test(text)) return { status: "NOT_AFFECTED", error: null };
   if (/termasuk|included|di dalam|dalam area|inside/.test(text)) return { status: "INCLUDED", error: null };
   if (/terdampak|affected|kena|berbatasan|sempadan|\bya\b|\byes\b|\by$|\btrue\b/.test(text)) return { status: "AFFECTED", error: null };
   return { status: null, error: `Status NKT tidak dikenal: "${cleanFreeTextCell(raw)}" (isi: termasuk / terdampak / tidak)` };
 }
 
-/** "1,4" / "NKT 1; NKT 4" / "1 4" / "NKT_1" → ["NKT_1","NKT_4"]; angka di luar 1–6 → error. */
+/**
+ * "1,4" / "NKT 1; NKT 4" / "1 4" / "NKT_1" → ["NKT_1","NKT_4"]; angka di luar 1–6 → error.
+ * Bila ada token "NKT n" / "HCV n", hanya angka SETELAH awalan itu yang dibaca — angka
+ * lain di sel ("sempadan 50 m", "asesmen 2024") diabaikan. Tanpa awalan, dibaca
+ * bilangan utuh sebagai token (bukan tiap digit): "13" = 13 (di luar 1–6), bukan 1 & 3.
+ */
 export function parseNktCategories(raw: unknown): { categories: string[]; error: string | null } {
   const text = cleanFreeTextCell(raw);
   if (!text) return { categories: [], error: null };
-  const nums = [...text.matchAll(/(\d)/g)].map((m) => Number(m[1]));
+  const prefixed = [...text.matchAll(/\b(?:nkt|hcv)[\s_-]*(\d+)/gi)].map((m) => Number(m[1]));
+  const nums = prefixed.length > 0 ? prefixed : [...text.matchAll(/\d+/g)].map((m) => Number(m[0]));
   if (nums.length === 0) return { categories: [], error: `Kategori NKT tidak dikenal: "${text}" (isi angka 1–6, mis. "1,4")` };
   const bad = nums.filter((n) => n < 1 || n > 6);
   if (bad.length) return { categories: [], error: `Kategori NKT di luar 1–6: "${text}"` };

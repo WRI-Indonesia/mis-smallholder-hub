@@ -44,7 +44,7 @@ describe("distanceMeters — haversine", () => {
   });
 });
 
-describe("orderClockwiseFromNorth — nomor patok deterministik", () => {
+describe("orderClockwiseFromNorth — nomor patok mengikuti jalan batas", () => {
   it("mulai dari vertex paling utara (seri → bujur terkecil), lalu searah jarum jam", () => {
     const ordered = orderClockwiseFromNorth(SQUARE);
     // Dua vertex utara sama lintangnya → barat-laut (bujur terkecil) duluan, lalu timur-laut, tenggara, barat-daya.
@@ -56,9 +56,22 @@ describe("orderClockwiseFromNorth — nomor patok deterministik", () => {
     ]);
   });
 
-  it("urutan masukan tidak memengaruhi hasil (deterministik)", () => {
-    const shuffled = [SQUARE[2], SQUARE[0], SQUARE[3], SQUARE[1]];
-    expect(orderClockwiseFromNorth(shuffled)).toEqual(orderClockwiseFromNorth(SQUARE));
+  it("ring berlawanan jarum jam (orientasi PostGIS/shapefile bebas) → dibalik, hasil sama", () => {
+    expect(orderClockwiseFromNorth([...SQUARE].reverse())).toEqual(orderClockwiseFromNorth(SQUARE));
+  });
+
+  it("titik awal ring berbeda → hasil sama (hanya diputar, tidak diurutkan ulang)", () => {
+    const rotated = [SQUARE[2], SQUARE[3], SQUARE[0], SQUARE[1]];
+    expect(orderClockwiseFromNorth(rotated)).toEqual(orderClockwiseFromNorth(SQUARE));
+  });
+
+  it("poligon cekung (bentuk U) → nomor menyusuri batas, tidak melompat menyeberangi cekungan (temuan review 2026-09-14)", () => {
+    // U: (0,0)(3,0)(3,3)(2,3)(2,1)(1,1)(1,3)(0,3) — dua 'lengan' di utara, cekungan di tengah.
+    const u = (x: number, y: number) => ({ lon: 101 + x * D, lat: 0.5 + y * D });
+    const ring = [u(0, 0), u(3, 0), u(3, 3), u(2, 3), u(2, 1), u(1, 1), u(1, 3), u(0, 3)];
+    const ordered = orderClockwiseFromNorth(ring).map((p) => [Math.round((p.lon - 101) / D), Math.round((p.lat - 0.5) / D)]);
+    // Dari barat-laut (0,3) searah jarum jam: (1,3) → turun ke (1,1) → (2,1) → naik ke (2,3) → (3,3) → (3,0) → (0,0).
+    expect(ordered).toEqual([[0, 3], [1, 3], [1, 1], [2, 1], [2, 3], [3, 3], [3, 0], [0, 0]]);
   });
 
   it("< 3 titik → dikembalikan apa adanya (bukan error)", () => {
@@ -69,7 +82,7 @@ describe("orderClockwiseFromNorth — nomor patok deterministik", () => {
 
 describe("planMarkersFromVertices — snap ≤ 5 m, patok bersama, idempoten", () => {
   it("tanpa patok di sekitar → semua vertex jadi patok baru bernomor 1..n", () => {
-    const plan = planMarkersFromVertices(SQUARE, []);
+    const plan = planMarkersFromVertices([SQUARE], []);
     expect(plan.map((c) => c.sequenceNo)).toEqual([1, 2, 3, 4]);
     expect(plan.every((c) => c.existingMarkerId === null && !c.alreadyLinked && c.snapDistanceM === null)).toBe(true);
   });
@@ -77,7 +90,7 @@ describe("planMarkersFromVertices — snap ≤ 5 m, patok bersama, idempoten", (
   it("vertex ≤ 5 m dari patok lahan tetangga → DITAUTKAN ke patok itu (existingMarkerId + jarak + ID lahan pemakai)", () => {
     // 3 m di timur vertex barat-laut.
     const m = nearby("m1", 101.19 + 3 / 111_320, 0.52 + D);
-    const plan = planMarkersFromVertices(SQUARE, [m]);
+    const plan = planMarkersFromVertices([SQUARE], [m]);
     const nw = plan.find((c) => c.lon === 101.19 && c.lat === 0.52 + D)!;
     expect(nw.existingMarkerId).toBe("m1");
     expect(nw.existingParcelIds).toEqual(["LHN-B"]);
@@ -88,7 +101,7 @@ describe("planMarkersFromVertices — snap ≤ 5 m, patok bersama, idempoten", (
 
   it("vertex > 5 m dari patok yang ada → patok baru (tidak di-snap)", () => {
     const m = nearby("m1", 101.19 + 8 / 111_320, 0.52 + D);
-    const plan = planMarkersFromVertices(SQUARE, [m], MARKER_SNAP_M);
+    const plan = planMarkersFromVertices([SQUARE], [m], MARKER_SNAP_M);
     expect(plan.every((c) => c.existingMarkerId === null)).toBe(true);
   });
 
@@ -98,19 +111,23 @@ describe("planMarkersFromVertices — snap ≤ 5 m, patok bersama, idempoten", (
     const B = { lon: 101.19 + 2 / 111_320, lat: 0.52 };
     const C = { lon: 101.19, lat: 0.52 + D };
     const m = nearby("m1", 101.19 + 1 / 111_320, 0.52 + 0.3 / 111_320);
-    const plan = planMarkersFromVertices([A, B, C], [m]);
+    const plan = planMarkersFromVertices([[A, B, C]], [m]);
     expect(plan.filter((c) => c.existingMarkerId === "m1").length).toBe(1);
   });
 
   it("dijalankan ulang → vertex yang sudah tertaut ke lahan ini ditandai alreadyLinked (dilewati saat simpan)", () => {
     const existing = SQUARE.map((p, i) => nearby(`own-${i}`, p.lon, p.lat, { parcelIds: ["LHN-A"], linkedToThisParcel: true }));
-    const plan = planMarkersFromVertices(SQUARE, existing);
+    const plan = planMarkersFromVertices([SQUARE], existing);
     expect(plan.every((c) => c.alreadyLinked && c.existingMarkerId !== null)).toBe(true);
   });
 
-  it("nomor mengikuti urutan searah jarum jam dari utara, bukan urutan vertex masukan", () => {
-    const plan = planMarkersFromVertices([SQUARE[1], SQUARE[3], SQUARE[0], SQUARE[2]], []);
+  it("nomor mulai dari vertex paling utara apa pun titik awal ring; multipoligon dinomori bagian demi bagian", () => {
+    const plan = planMarkersFromVertices([[SQUARE[2], SQUARE[3], SQUARE[0], SQUARE[1]]], []);
     expect(plan[0]).toMatchObject({ sequenceNo: 1, lon: 101.19, lat: 0.52 + D });
+    const far = SQUARE.map((p) => ({ lon: p.lon + 10 * D, lat: p.lat }));
+    const two = planMarkersFromVertices([SQUARE, far], []);
+    expect(two.map((c) => c.sequenceNo)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(two[4]).toMatchObject({ lon: far[3].lon, lat: far[3].lat });
   });
 });
 

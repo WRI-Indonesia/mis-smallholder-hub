@@ -34,6 +34,7 @@ import {
   normalizeAttr,
 } from "@/lib/parcel-bulk-mapping";
 import { LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
+import { cleanFreeTextCell } from "@/lib/land-parcel-detail-import";
 import { ParcelBulkUploadMap } from "./parcel-bulk-upload-map";
 
 interface FarmerMapping {
@@ -338,11 +339,15 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     normalized.blok = normalizeAttr(mapping["blok"] ? props[mapping["blok"]] : null);
 
     // 8c. Sepadan (#326) — opsional per sisi; tanpa satu pun sisi → null (tidak menyentuh satelit).
+    // Pembersih yang SAMA dengan jalur Excel (`cleanFreeTextCell`): placeholder DBF
+    // seperti "-", "0", "null" adalah sel kosong, bukan nilai sepadan — sisi terisi
+    // MENIMPA nilai lama, jadi "-" tak boleh lolos (temuan review 2026-09-14).
+    const sideCell = (key: string) => (mapping[key] ? cleanFreeTextCell(props[mapping[key]]) || null : null);
     const sides = {
-      north: normalizeAttr(mapping["borderNorth"] ? props[mapping["borderNorth"]] : null),
-      east: normalizeAttr(mapping["borderEast"] ? props[mapping["borderEast"]] : null),
-      south: normalizeAttr(mapping["borderSouth"] ? props[mapping["borderSouth"]] : null),
-      west: normalizeAttr(mapping["borderWest"] ? props[mapping["borderWest"]] : null),
+      north: sideCell("borderNorth"),
+      east: sideCell("borderEast"),
+      south: sideCell("borderSouth"),
+      west: sideCell("borderWest"),
     };
     normalized.border = Object.values(sides).some(Boolean) ? sides : null;
     // Batas 200 karakter dicek DI SINI juga (server `optText(200)` menolak seluruh

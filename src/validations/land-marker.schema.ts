@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LAND_MARKER_CONDITIONS, LAND_MARKER_TYPES } from "@/lib/land-marker";
+import { optText, optDate } from "@/validations/land-parcel-satellite.schema";
 
 /**
  * Patok batas lahan (#329). Koordinat: lintang −90..90, bujur −180..180 — guard
@@ -7,20 +8,12 @@ import { LAND_MARKER_CONDITIONS, LAND_MARKER_TYPES } from "@/lib/land-marker";
  * geometri lahan, jadi ditegakkan di action lewat `distancesToParcelBoundary`,
  * bukan di sini.
  */
-const optText = (max = 200) =>
-  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), z.string().trim().max(max).nullable().optional());
-
 const coord = (min: number, max: number, label: string) =>
   z.preprocess((v) => {
     if (v === "" || v === undefined || v === null) return NaN;
     const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
     return Number.isNaN(n) ? NaN : n;
   }, z.number({ message: `${label} harus angka` }).min(min, `${label} di luar rentang`).max(max, `${label} di luar rentang`));
-
-const optDate = z.preprocess((v) => {
-  if (v === "" || v === undefined || v === null) return null;
-  return typeof v === "string" ? new Date(v) : v;
-}, z.date({ message: "Tanggal tidak valid" }).nullable().optional());
 
 const markerFields = {
   longitude: coord(-180, 180, "Bujur"),

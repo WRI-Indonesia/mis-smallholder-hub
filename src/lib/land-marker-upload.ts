@@ -37,7 +37,9 @@ export type MarkerUploadFieldKey = (typeof MARKER_UPLOAD_FIELDS)[number]["key"];
 export const MARKER_UPLOAD_AUTO_MATCH_RULES: Record<MarkerUploadFieldKey, string[]> = {
   parcelId: ["id lahan", "id_lahan", "idlahan", "parcel_id", "parcelid", "land_id", "kode lahan"],
   farmerCode: ["id petani", "id_petani", "idpetani", "farmer_id", "farmerid", "kode petani"],
-  sequenceNo: ["no patok", "no_patok", "nopatok", "no", "nomor", "seq", "sequence", "patok"],
+  // Tanpa alias "no"/"nomor": kolom nomor BARIS spreadsheet ikut terpetakan dan
+  // menimpa koordinat patok bernomor sama (temuan review 2026-09-14).
+  sequenceNo: ["no patok", "no_patok", "nopatok", "nomor patok", "nomor_patok", "seq", "sequence", "patok", "no_seq"],
   latitude: ["lintang", "lat", "latitude", "y"],
   longitude: ["bujur", "lon", "lng", "long", "longitude", "x"],
   condition: ["kondisi", "condition", "cond", "status patok", "status"],
@@ -152,18 +154,19 @@ export function markerFeaturesToRecords(features: MarkerFeatureInput[]): {
   const rowNumbers: number[] = [];
   const skipped: { index: number; reason: string }[] = [];
   for (const f of features) {
-    const rec: Record<string, unknown> = { ...(f.properties ?? {}) };
     let lon: unknown, lat: unknown;
     if (f.geometry && f.geometry.type === "Point" && Array.isArray(f.geometry.coordinates)) {
       [lon, lat] = f.geometry.coordinates as unknown[];
     }
-    if (typeof lon === "number" && typeof lat === "number" && Number.isFinite(lon) && Number.isFinite(lat)) {
-      rec["Lintang"] = lat;
-      rec["Bujur"] = lon;
-    } else if (f.geometry && f.geometry.type && f.geometry.type !== "Point") {
+    const hasGeom = typeof lon === "number" && typeof lat === "number" && Number.isFinite(lon) && Number.isFinite(lat);
+    if (!hasGeom && f.geometry && f.geometry.type && f.geometry.type !== "Point") {
       skipped.push({ index: f.index, reason: `Geometri ${f.geometry.type}, bukan Point` });
       continue;
     }
+    // Kunci geometri DITARUH LEBIH DULU: auto-match memilih header pertama yang cocok,
+    // jadi Lintang/Bujur dari geometri menang atas atribut DBF X/Y/LAT/LON yang bisa
+    // berisi UTM atau nilai basi (temuan review 2026-09-14).
+    const rec: Record<string, unknown> = hasGeom ? { Lintang: lat, Bujur: lon, ...(f.properties ?? {}) } : { ...(f.properties ?? {}) };
     records.push(rec);
     rowNumbers.push(f.index + 1);
   }

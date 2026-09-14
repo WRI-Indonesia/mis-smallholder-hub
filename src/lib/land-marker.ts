@@ -8,6 +8,8 @@
 export const MARKER_SNAP_M = 5;
 /** Koordinat patok wajib ≤ jarak ini dari batas lahan — guard lat/long tertukar / salah tempel desimal. */
 export const MARKER_MAX_DISTANCE_M = 100;
+/** Pergeseran koordinat di bawah ini (m) dianggap "tidak digeser" — form mengirim ulang nilai 6 desimal (≤ ~8 cm). */
+export const MARKER_MOVE_EPSILON_M = 0.2;
 /** Toleransi penyederhanaan ring (m) — vertex kolinear/berhimpit hasil digitasi lengkung tak jadi patok. */
 export const MARKER_SIMPLIFY_M = 1;
 /** Foto patok: jpg/png/webp ≤ 5 MB. */
@@ -44,9 +46,6 @@ export const LAND_MARKER_SOURCE_LABELS: Record<LandMarkerSourceCode, string> = {
 export const labelOf = <K extends string>(map: Record<K, string>, code: string | null | undefined): string =>
   code ? (map[code as K] ?? code) : "—";
 
-/** Meter → derajat di ekuator (Riau lintang 0–2°, galat < 0,1%). Sama dengan parcel-neighbor. */
-export const metersToDegrees = (m: number) => m / 111_320;
-
 export interface LonLat {
   lon: number;
   lat: number;
@@ -63,27 +62,29 @@ export function distanceMeters(a: LonLat, b: LonLat): number {
 }
 
 /**
- * Urutkan vertex SEARAH JARUM JAM mulai dari yang paling utara (lintang
- * terbesar; seri → bujur terkecil). Deterministik — nomor patok sama di
- * layar, PDF, dan ekspor. Vertex penutup ganda dibuang oleh pemanggil.
+ * Urutkan vertex SATU RING searah jarum jam mulai dari yang paling utara
+ * (lintang terbesar; seri → bujur terkecil). Masukan = ring dalam URUTAN
+ * BATAS seperti dikembalikan PostGIS (tanpa titik penutup); fungsi ini hanya
+ * membalik arah bila ring berlawanan jarum jam (luas bertanda > 0) dan
+ * memutar titik awal — TIDAK mengurutkan ulang menurut sudut dari titik
+ * tengah: cara itu hanya benar untuk poligon cembung, sedangkan pada lahan
+ * berbentuk L/U nomor patok melompat menyeberangi cekungan (temuan review
+ * 2026-09-14). Deterministik — nomor sama di layar, PDF, dan ekspor.
  */
-export function orderClockwiseFromNorth(points: LonLat[]): LonLat[] {
-  if (points.length < 3) return [...points];
-  const cx = points.reduce((s, p) => s + p.lon, 0) / points.length;
-  const cy = points.reduce((s, p) => s + p.lat, 0) / points.length;
-  // Sudut dari utara searah jarum jam: atan2(dx, dy) — utara = 0, timur = 90°.
-  const angle = (p: LonLat) => {
-    const a = (Math.atan2(p.lon - cx, p.lat - cy) * 180) / Math.PI;
-    return (a + 360) % 360;
-  };
-  const sorted = [...points].sort((a, b) => angle(a) - angle(b) || b.lat - a.lat || a.lon - b.lon);
-  // Mulai dari vertex paling utara — bukan sudut 0 persis (poligon miring bisa
-  // punya vertex "utara" pada sudut kecil di kedua sisi).
-  let start = 0;
-  for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i].lat > sorted[start].lat || (sorted[i].lat === sorted[start].lat && sorted[i].lon < sorted[start].lon)) start = i;
+export function orderClockwiseFromNorth(ring: LonLat[]): LonLat[] {
+  if (ring.length < 3) return [...ring];
+  // Luas bertanda (shoelace) pada bidang lon/lat: > 0 = berlawanan jarum jam.
+  let area2 = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], b = ring[(i + 1) % ring.length];
+    area2 += a.lon * b.lat - b.lon * a.lat;
   }
-  return [...sorted.slice(start), ...sorted.slice(0, start)];
+  const cw = area2 > 0 ? [...ring].reverse() : [...ring];
+  let start = 0;
+  for (let i = 1; i < cw.length; i++) {
+    if (cw[i].lat > cw[start].lat || (cw[i].lat === cw[start].lat && cw[i].lon < cw[start].lon)) start = i;
+  }
+  return [...cw.slice(start), ...cw.slice(0, start)];
 }
 
 /** Patok yang sudah ada di sekitar vertex (hasil kueri). */
@@ -95,6 +96,8 @@ export interface NearbyMarker {
   parcelIds: string[];
   /** Sudah tertaut ke lahan yang sedang diproses. */
   linkedToThisParcel: boolean;
+  /** false = semua tautannya pernah dilepas; disnap → dihidupkan lagi (idempoten). Bawaan true. */
+  isActive?: boolean;
 }
 
 export interface MarkerCandidate {
@@ -112,20 +115,24 @@ export interface MarkerCandidate {
 }
 
 /**
- * Rencanakan patok dari daftar vertex (sudah disederhanakan & diurutkan) dan
- * patok yang ada di sekitarnya. Murni & idempoten: dijalankan ulang → vertex
+ * Rencanakan patok dari ring-ring vertex (sudah disederhanakan, urutan batas
+ * PostGIS) dan patok yang ada di sekitarnya. Murni & idempoten: dijalankan ulang → vertex
  * yang sudah tertaut dilewati, tidak pernah menggeser/menghapus patok lama.
  * Satu patok yang ada hanya dipakai oleh satu vertex (yang terdekat).
  */
-export function planMarkersFromVertices(vertices: LonLat[], nearby: NearbyMarker[], snapM = MARKER_SNAP_M): MarkerCandidate[] {
-  const ordered = orderClockwiseFromNorth(vertices);
+export function planMarkersFromVertices(rings: LonLat[][], nearby: NearbyMarker[], snapM = MARKER_SNAP_M): MarkerCandidate[] {
+  // Multipoligon: tiap bagian dinomori berurutan (bagian 1 dulu, lalu bagian 2), masing-masing searah jarum jam dari utara.
+  const ordered = rings.flatMap((ring) => orderClockwiseFromNorth(ring));
   const used = new Set<string>();
   return ordered.map((v, i) => {
     let best: { m: NearbyMarker; d: number } | null = null;
     for (const m of nearby) {
       if (used.has(m.id)) continue;
       const d = distanceMeters(v, m);
-      if (d <= snapM && (!best || d < best.d)) best = { m, d };
+      if (d > snapM) continue;
+      // Terdekat menang; seri (< 1 cm) → yang aktif lebih dulu daripada yang nonaktif.
+      const better = !best || d < best.d - 0.01 || (Math.abs(d - best.d) <= 0.01 && (m.isActive ?? true) && !(best.m.isActive ?? true));
+      if (better) best = { m, d };
     }
     if (best) used.add(best.m.id);
     return {

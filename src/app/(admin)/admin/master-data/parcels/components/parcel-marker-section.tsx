@@ -65,7 +65,8 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
   const canCreate = permissions.includes("CREATE");
   const canEdit = permissions.includes("EDIT");
   const canDelete = permissions.includes("DELETE");
-  const canExport = permissions.includes("EXPORT") || permissions.includes("VIEW");
+  // Unduh Excel = izin EXPORT (docs/standards/rbac.md) — bukan VIEW.
+  const canExport = permissions.includes("EXPORT");
   const [formTarget, setFormTarget] = useState<{ item: LandMarkerItem | null } | null>(null);
   const [removeTarget, setRemoveTarget] = useState<LandMarkerItem | null>(null);
   const [preview, setPreview] = useState<{ candidates: MarkerCandidate[]; keep: Set<number> } | null>(null);
@@ -75,31 +76,43 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
   const markers = data.markers;
   const points = markers.map((m) => ({ id: m.id, sequenceNo: m.sequenceNo, longitude: m.longitude, latitude: m.latitude, nkt: m.nkt }));
 
+  // Semua pemanggil action: try/finally supaya tombol tidak terkunci bila action
+  // melempar (sesi habis, jaringan) — bukan hanya bila mengembalikan success:false.
   async function openPreview() {
     setBusy(true);
-    const res = await previewMarkersFromPolygon(landParcelId);
-    setBusy(false);
-    if (!res.success) {
-      toast.error(res.error);
-      return;
+    try {
+      const res = await previewMarkersFromPolygon(landParcelId);
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      const candidates = res.data!;
+      setPreview({ candidates, keep: new Set(candidates.filter((c) => !c.alreadyLinked).map((c) => c.sequenceNo)) });
+    } catch {
+      toast.error("Gagal memuat pratinjau — periksa koneksi lalu coba lagi");
+    } finally {
+      setBusy(false);
     }
-    const candidates = res.data!;
-    setPreview({ candidates, keep: new Set(candidates.filter((c) => !c.alreadyLinked).map((c) => c.sequenceNo)) });
   }
 
   async function confirmPreview() {
     if (!preview) return;
     setBusy(true);
-    const res = await createMarkersFromPolygon({ landParcelId, keepSequenceNos: [...preview.keep] });
-    setBusy(false);
-    if (!res.success) {
-      toast.error(res.error);
-      return;
+    try {
+      const res = await createMarkersFromPolygon({ landParcelId, keepSequenceNos: [...preview.keep] });
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      const s = res.data!;
+      toast.success(`Patok dibuat: ${s.created} baru · ${s.linked} ditautkan ke patok lahan lain · ${s.skipped} sudah ada`);
+      setPreview(null);
+      router.refresh();
+    } catch {
+      toast.error("Gagal menyimpan — periksa koneksi lalu coba lagi");
+    } finally {
+      setBusy(false);
     }
-    const s = res.data!;
-    toast.success(`Patok dibuat: ${s.created} baru · ${s.linked} ditautkan ke patok lahan lain · ${s.skipped} sudah ada`);
-    setPreview(null);
-    router.refresh();
   }
 
   async function move(index: number, dir: -1 | 1) {
@@ -108,13 +121,18 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
     if (j < 0 || j >= order.length) return;
     [order[index], order[j]] = [order[j], order[index]];
     setReordering(true);
-    const res = await renumberLandMarkers({ landParcelId, order });
-    setReordering(false);
-    if (!res.success) {
-      toast.error(res.error);
-      return;
+    try {
+      const res = await renumberLandMarkers({ landParcelId, order });
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      router.refresh();
+    } catch {
+      toast.error("Gagal mengurutkan ulang — periksa koneksi lalu coba lagi");
+    } finally {
+      setReordering(false);
     }
-    router.refresh();
   }
 
   async function downloadCoordinates() {

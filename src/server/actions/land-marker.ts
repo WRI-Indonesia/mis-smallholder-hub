@@ -5,11 +5,12 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
-import { getAccessContext, farmerRelationAccessFilter, farmerGroupAccessFilter } from "@/lib/access-context";
+import { getAccessContext, farmerRelationAccessFilter, farmerGroupAccessFilter, type AccessContext } from "@/lib/access-context";
 import { s3, S3_BUCKET, getPresignedUrl } from "@/lib/s3";
 import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import {
   MARKER_MAX_DISTANCE_M,
+  MARKER_MOVE_EPSILON_M,
   MARKER_PHOTO_MAX_BYTES,
   MARKER_PHOTO_TYPES,
   MARKER_SNAP_M,
@@ -44,12 +45,22 @@ const MENU = "master-data-parcels";
 type FieldErrors = Record<string, string[]>;
 type Result<T = { id: string }> = ActionResult<T> | { success: false; error: FieldErrors };
 
-async function resolveParcel(landParcelId: string) {
-  const access = await getAccessContext();
+const PARCEL_SELECT = { id: true, parcelUid: true, parcelId: true, revision: true, geometry: true } as const;
+
+async function resolveParcel(landParcelId: string, access?: AccessContext) {
+  const ctx = access ?? (await getAccessContext());
   return prisma.landParcel.findFirst({
-    where: { id: landParcelId, isActive: true, ...farmerRelationAccessFilter(access) },
-    select: { id: true, parcelUid: true, parcelId: true, revision: true, geometry: true },
+    where: { id: landParcelId, isActive: true, ...farmerRelationAccessFilter(ctx) },
+    select: PARCEL_SELECT,
   });
+}
+
+/** Pesan galat DB yang bisa ditindaklanjuti (unique nomor patok / tautan) — bukan teks Prisma mentah. */
+function dbError(e: unknown, fallback: string): string {
+  const code = typeof e === "object" && e !== null && "code" in e ? (e as { code?: string }).code : undefined;
+  if (code === "P2002") return "Nomor patok bentrok dengan perubahan lain pada lahan ini — muat ulang halaman lalu coba lagi";
+  console.error("land-marker:", e);
+  return fallback;
 }
 
 async function userId() {
@@ -57,9 +68,9 @@ async function userId() {
   return session?.user?.id ?? null;
 }
 
-/** Nomor urut berikutnya untuk tautan aktif lahan. */
-async function nextSequenceNo(parcelUid: string): Promise<number> {
-  const agg = await prisma.landParcelMarker.aggregate({ where: { parcelUid, isActive: true }, _max: { sequenceNo: true } });
+/** Nomor urut berikutnya untuk tautan aktif lahan — dipanggil DI DALAM transaksi penulisnya. */
+async function nextSequenceNo(parcelUid: string, tx: Prisma.TransactionClient): Promise<number> {
+  const agg = await tx.landParcelMarker.aggregate({ where: { parcelUid, isActive: true }, _max: { sequenceNo: true } });
   return (agg._max.sequenceNo ?? 0) + 1;
 }
 
@@ -76,9 +87,9 @@ async function assertNearParcel(landParcelId: string, lon: number, lat: number):
 
 export async function getLandParcelMarkers(landParcelId: string): Promise<LandParcelMarkers | null> {
   if (!(await hasPermission(MENU, "VIEW"))) throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  const parcel = await resolveParcel(landParcelId);
-  if (!parcel) return null;
   const access = await getAccessContext();
+  const parcel = await resolveParcel(landParcelId, access);
+  if (!parcel) return null;
 
   const links = await prisma.landParcelMarker.findMany({
     where: { parcelUid: parcel.parcelUid, isActive: true },
@@ -172,7 +183,7 @@ export async function previewMarkersFromPolygon(landParcelId: string): Promise<A
   if (!parcel) return { success: false, error: "Lahan tidak ditemukan atau di luar akses Anda" };
   if (!parcel.geometry) return { success: false, error: "Lahan belum punya poligon — unggah shapefile lebih dulu" };
   const [vertices, nearby] = await Promise.all([fetchSimplifiedVertices(landParcelId), fetchNearbyMarkers(landParcelId, parcel.parcelUid)]);
-  if (vertices.length < 3) return { success: false, error: "Poligon lahan tidak punya cukup vertex" };
+  if (vertices.length === 0) return { success: false, error: "Poligon lahan tidak punya cukup vertex" };
   return { success: true, data: planMarkersFromVertices(vertices, nearby, MARKER_SNAP_M) };
 }
 
@@ -194,11 +205,9 @@ export async function createMarkersFromPolygon(
   const uid = await userId();
   let created = 0, linked = 0, skipped = 0;
 
+  try {
   await prisma.$transaction(async (tx) => {
-    let seq = await (async () => {
-      const agg = await tx.landParcelMarker.aggregate({ where: { parcelUid: parcel.parcelUid, isActive: true }, _max: { sequenceNo: true } });
-      return (agg._max.sequenceNo ?? 0) + 1;
-    })();
+    let seq = await nextSequenceNo(parcel.parcelUid, tx);
     for (const c of plan) {
       if (!keep.has(c.sequenceNo)) continue;
       if (c.alreadyLinked) { skipped++; continue; }
@@ -226,6 +235,9 @@ export async function createMarkersFromPolygon(
       }
     }
   });
+  } catch (e) {
+    return { success: false, error: dbError(e, "Gagal menyimpan patok dari poligon") };
+  }
   return { success: true, data: { created, linked, skipped } };
 }
 
@@ -244,19 +256,25 @@ export async function createLandMarker(input: unknown): Promise<Result> {
   const { landParcelId: _ignored, ...d } = parsed.data;
   void _ignored;
   const uid = await userId();
-  const seq = await nextSequenceNo(parcel.parcelUid);
-  const row = await prisma.$transaction(async (tx) => {
-    const m = await tx.landMarker.create({
-      data: {
-        longitude: d.longitude, latitude: d.latitude, source: "MANUAL", condition: d.condition, type: d.type ?? null,
-        installedAt: d.installedAt ?? null, installedBy: d.installedBy ?? null, notes: d.notes ?? null, createdBy: uid,
-      },
-      select: { id: true },
-    });
-    await tx.landParcelMarker.create({ data: { parcelUid: parcel.parcelUid, markerId: m.id, sequenceNo: seq, createdBy: uid } });
-    return m;
-  });
-  return { success: true, data: row };
+  try {
+    // Nomor berikutnya dihitung di dalam transaksi — dua tab yang menambah bersamaan
+    // tidak boleh sama-sama memilih nomor yang sama lalu satu gagal di unique index.
+    const row = await prisma.$transaction(async (tx) => {
+      const seq = await nextSequenceNo(parcel.parcelUid, tx);
+      const m = await tx.landMarker.create({
+        data: {
+          longitude: d.longitude, latitude: d.latitude, source: "MANUAL", condition: d.condition, type: d.type ?? null,
+          installedAt: d.installedAt ?? null, installedBy: d.installedBy ?? null, notes: d.notes ?? null, createdBy: uid,
+        },
+        select: { id: true },
+      });
+      await tx.landParcelMarker.create({ data: { parcelUid: parcel.parcelUid, markerId: m.id, sequenceNo: seq, createdBy: uid } });
+      return m;
+    }, { isolationLevel: "Serializable" });
+    return { success: true, data: row };
+  } catch (e) {
+    return { success: false, error: dbError(e, "Gagal menambah patok") };
+  }
 }
 
 export async function updateLandMarker(input: unknown): Promise<Result> {
@@ -272,21 +290,28 @@ export async function updateLandMarker(input: unknown): Promise<Result> {
   });
   if (!link) return { success: false, error: "Patok tidak ditemukan pada lahan ini" };
   const d = parsed.data;
-  const moved = distanceMeters({ lon: link.marker.longitude, lat: link.marker.latitude }, { lon: d.longitude, lat: d.latitude }) > 0.05;
+  // Form mengirim ulang koordinat yang DIBULATKAN 6 desimal (≤ ~8 cm selisih dari
+  // nilai tersimpan) — ambang 20 cm supaya ubah kondisi saja tidak dianggap
+  // "digeser" (temuan review 2026-09-14); bila tak digeser, koordinat asli dibiarkan.
+  const moved = distanceMeters({ lon: link.marker.longitude, lat: link.marker.latitude }, { lon: d.longitude, lat: d.latitude }) > MARKER_MOVE_EPSILON_M;
   if (moved && parcel.geometry) {
     const err = await assertNearParcel(parcel.id, d.longitude, d.latitude);
     if (err) return { success: false, error: { longitude: [err] } };
   }
-  await prisma.landMarker.update({
-    where: { id: d.markerId },
-    data: {
-      longitude: d.longitude, latitude: d.latitude,
-      // Koordinat digeser tangan = hasil pengukuran, bukan lagi vertex poligon.
-      source: moved && link.marker.source === "POLYGON_VERTEX" ? "GPS" : link.marker.source,
-      condition: d.condition, type: d.type ?? null, installedAt: d.installedAt ?? null,
-      installedBy: d.installedBy ?? null, notes: d.notes ?? null, modifiedBy: await userId(),
-    },
-  });
+  try {
+    await prisma.landMarker.update({
+      where: { id: d.markerId },
+      data: {
+        ...(moved ? { longitude: d.longitude, latitude: d.latitude } : {}),
+        // Koordinat digeser tangan = hasil pengukuran, bukan lagi vertex poligon.
+        source: moved && link.marker.source === "POLYGON_VERTEX" ? "GPS" : link.marker.source,
+        condition: d.condition, type: d.type ?? null, installedAt: d.installedAt ?? null,
+        installedBy: d.installedBy ?? null, notes: d.notes ?? null, modifiedBy: await userId(),
+      },
+    });
+  } catch (e) {
+    return { success: false, error: dbError(e, "Gagal menyimpan patok") };
+  }
   return { success: true, data: { id: d.markerId } };
 }
 
@@ -298,11 +323,15 @@ export async function unlinkLandMarker(landParcelId: string, markerId: string): 
   const uid = await userId();
   const link = await prisma.landParcelMarker.findFirst({ where: { parcelUid: parcel.parcelUid, markerId, isActive: true }, select: { id: true } });
   if (!link) return { success: false, error: "Patok tidak ditemukan pada lahan ini" };
-  await prisma.$transaction(async (tx) => {
-    await tx.landParcelMarker.update({ where: { id: link.id }, data: { isActive: false, modifiedBy: uid } });
-    const remaining = await tx.landParcelMarker.count({ where: { markerId, isActive: true } });
-    if (remaining === 0) await tx.landMarker.update({ where: { id: markerId }, data: { isActive: false, modifiedBy: uid } });
-  });
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.landParcelMarker.update({ where: { id: link.id }, data: { isActive: false, modifiedBy: uid } });
+      const remaining = await tx.landParcelMarker.count({ where: { markerId, isActive: true } });
+      if (remaining === 0) await tx.landMarker.update({ where: { id: markerId }, data: { isActive: false, modifiedBy: uid } });
+    });
+  } catch (e) {
+    return { success: false, error: dbError(e, "Gagal melepas patok") };
+  }
   return { success: true };
 }
 
@@ -320,11 +349,17 @@ export async function renumberLandMarkers(input: unknown): Promise<ActionResult>
     return { success: false, error: "Daftar urutan harus memuat semua patok lahan ini, masing-masing sekali" };
   }
   const uid = await userId();
-  await prisma.$transaction(async (tx) => {
-    // Dua tahap agar partial unique (parcel_uid, sequence_no) tidak tertabrak di tengah.
-    for (let i = 0; i < order.length; i++) await tx.landParcelMarker.update({ where: { id: byMarker.get(order[i])! }, data: { sequenceNo: 1000 + i } });
-    for (let i = 0; i < order.length; i++) await tx.landParcelMarker.update({ where: { id: byMarker.get(order[i])! }, data: { sequenceNo: i + 1, modifiedBy: uid } });
-  });
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Dua tahap agar partial unique (parcel_uid, sequence_no) tidak tertabrak di tengah.
+      // Parkir di nomor NEGATIF — nomor positif berapa pun bisa sudah dipakai
+      // (unggahan menerima nomor bebas, mis. 1000; temuan review 2026-09-14).
+      for (let i = 0; i < order.length; i++) await tx.landParcelMarker.update({ where: { id: byMarker.get(order[i])! }, data: { sequenceNo: -(i + 1) } });
+      for (let i = 0; i < order.length; i++) await tx.landParcelMarker.update({ where: { id: byMarker.get(order[i])! }, data: { sequenceNo: i + 1, modifiedBy: uid } });
+    });
+  } catch (e) {
+    return { success: false, error: dbError(e, "Gagal mengurutkan ulang patok") };
+  }
   return { success: true };
 }
 
@@ -514,8 +549,12 @@ export interface LandMarkerUploadSummary {
 /**
  * Terapkan baris titik patok per lahan. Aturan: nomor urut yang SUDAH ADA di
  * lahan → perbarui koordinat/atribut patok itu (koordinat → source GPS);
+ * tanpa nomor tetapi ≤ 5 m dari patok yang sudah tertaut ke lahan ini →
+ * perbarui patok itu (unggah ulang berkas yang sama idempoten, bukan kembaran);
  * nomor baru / tanpa nomor → patok baru + tautan, dengan snap ≤ 5 m ke patok
- * lahan lain. Guard ≤ 100 m dari batas per titik (lat/long tertukar).
+ * lahan lain (termasuk patok nonaktif → dihidupkan). Guard ≤ 100 m dari batas
+ * per titik (lat/long tertukar). Satu transaksi PER LAHAN: galat DB pada satu
+ * lahan masuk `rejected`, lahan lain tetap diproses.
  */
 export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResult<LandMarkerUploadSummary>> {
   if (!(await hasPermission("bulk-upload-parcels", "CREATE"))) return { success: false, error: "Tidak memiliki izin untuk menyimpan data" };
@@ -528,68 +567,108 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
   const byParcel = new Map<string, LandMarkerUploadRow[]>();
   for (const r of rows) byParcel.set(r.landParcelId, [...(byParcel.get(r.landParcelId) ?? []), r]);
 
+  // Scope dihitung SEKALI untuk seluruh batch (bukan auth() per lahan).
+  const access = await getAccessContext();
+  const parcels = await prisma.landParcel.findMany({
+    where: { id: { in: [...byParcel.keys()] }, isActive: true, ...farmerRelationAccessFilter(access) },
+    select: PARCEL_SELECT,
+  });
+  const parcelById = new Map(parcels.map((p) => [p.id, p]));
+
   for (const [landParcelId, group] of byParcel) {
-    const parcel = await resolveParcel(landParcelId);
+    const parcel = parcelById.get(landParcelId);
     if (!parcel) {
       for (const r of group) summary.rejected.push({ landParcelId, parcelId: null, sequenceNo: r.sequenceNo, reason: "Lahan tidak ditemukan atau di luar akses Anda" });
       continue;
     }
-    // Guard jarak untuk seluruh titik lahan ini sekaligus.
-    const dists = parcel.geometry ? await distancesToParcelBoundary(landParcelId, group.map((r) => ({ lon: r.longitude, lat: r.latitude }))) : group.map(() => 0);
-    const swapped = parcel.geometry ? await distancesToParcelBoundary(landParcelId, group.map((r) => ({ lon: r.latitude, lat: r.longitude }))) : group.map(() => 0);
+    // Guard jarak: satu kueri untuk 2N titik (asli + tertukar).
+    const n = group.length;
+    const dists = parcel.geometry
+      ? await distancesToParcelBoundary(landParcelId, [
+          ...group.map((r) => ({ lon: r.longitude, lat: r.latitude })),
+          ...group.map((r) => ({ lon: r.latitude, lat: r.longitude })),
+        ])
+      : new Array<number>(2 * n).fill(0);
     const nearby = parcel.geometry ? await fetchNearbyMarkers(landParcelId, parcel.parcelUid) : [];
     const existing = await prisma.landParcelMarker.findMany({
       where: { parcelUid: parcel.parcelUid, isActive: true },
       select: { id: true, sequenceNo: true, markerId: true },
     });
     const bySeq = new Map(existing.map((l) => [l.sequenceNo, l]));
-    let nextSeq = (existing.reduce((m, l) => Math.max(m, l.sequenceNo), 0)) + 1;
+    const byMarker = new Map(existing.map((l) => [l.markerId, l]));
+    let nextSeq = existing.reduce((m, l) => Math.max(m, l.sequenceNo), 0) + 1;
     const usedNearby = new Set<string>();
+    const local = { created: 0, updated: 0, linked: 0, rejected: [] as LandMarkerUploadSummary["rejected"] };
 
-    for (let i = 0; i < group.length; i++) {
-      const r = group[i];
-      const point = { lon: r.longitude, lat: r.latitude };
-      const err = checkMarkerNearParcel(point, (p) => (p.lon === point.lon ? dists[i] : swapped[i]), MARKER_MAX_DISTANCE_M);
-      if (err) { summary.rejected.push({ landParcelId, parcelId: parcel.parcelId, sequenceNo: r.sequenceNo, reason: err }); continue; }
-      const attrs = {
-        condition: r.condition ?? undefined,
-        type: r.type ?? undefined,
-        installedAt: r.installedAt ? new Date(`${r.installedAt}T00:00:00Z`) : undefined,
-        installedBy: r.installedBy ?? undefined,
-        notes: r.notes ?? undefined,
-      };
-      const link = r.sequenceNo != null ? bySeq.get(r.sequenceNo) : undefined;
-      if (link) {
-        await prisma.landMarker.update({ where: { id: link.markerId }, data: { longitude: r.longitude, latitude: r.latitude, source: "GPS", ...attrs, modifiedBy: uid } });
-        summary.updated++;
-        continue;
-      }
-      // Patok baru: snap ke patok lahan lain ≤ 5 m (belum tertaut ke lahan ini).
-      let snap: { id: string; d: number } | null = null;
-      for (const m of nearby) {
-        if (usedNearby.has(m.id) || m.linkedToThisParcel) continue;
-        const d = distanceMeters(point, m);
-        if (d <= MARKER_SNAP_M && (!snap || d < snap.d)) snap = { id: m.id, d };
-      }
-      const seq = r.sequenceNo ?? nextSeq++;
-      if (r.sequenceNo != null && r.sequenceNo >= nextSeq) nextSeq = r.sequenceNo + 1;
+    try {
       await prisma.$transaction(async (tx) => {
-        let markerId: string;
-        if (snap) {
-          usedNearby.add(snap.id);
-          markerId = snap.id;
-          await tx.landMarker.update({ where: { id: markerId }, data: { isActive: true, ...attrs, modifiedBy: uid } });
-          summary.linked++;
-        } else {
-          const m = await tx.landMarker.create({ data: { longitude: r.longitude, latitude: r.latitude, source: "GPS", ...attrs, createdBy: uid }, select: { id: true } });
-          markerId = m.id;
-          summary.created++;
+        for (let i = 0; i < n; i++) {
+          const r = group[i];
+          const point = { lon: r.longitude, lat: r.latitude };
+          const err = checkMarkerNearParcel(point, (p) => (p.lon === point.lon && p.lat === point.lat ? dists[i] : dists[n + i]), MARKER_MAX_DISTANCE_M);
+          if (err) { local.rejected.push({ landParcelId, parcelId: parcel.parcelId, sequenceNo: r.sequenceNo, reason: err }); continue; }
+          const attrs = {
+            condition: r.condition ?? undefined,
+            type: r.type ?? undefined,
+            installedAt: r.installedAt ? new Date(`${r.installedAt}T00:00:00Z`) : undefined,
+            installedBy: r.installedBy ?? undefined,
+            notes: r.notes ?? undefined,
+          };
+
+          // (a) Nomor yang sudah ada di lahan → perbarui patok itu.
+          let target = r.sequenceNo != null ? bySeq.get(r.sequenceNo) : undefined;
+          // (b) Tanpa nomor → titik ≤ 5 m dari patok yang SUDAH tertaut ke lahan ini = patok yang sama (unggah ulang idempoten).
+          if (!target && r.sequenceNo == null) {
+            let best: { link: { id: string; sequenceNo: number; markerId: string }; d: number } | null = null;
+            for (const m of nearby) {
+              const link = m.linkedToThisParcel ? byMarker.get(m.id) : undefined;
+              if (!link || usedNearby.has(m.id)) continue;
+              const d = distanceMeters(point, m);
+              if (d <= MARKER_SNAP_M && (!best || d < best.d)) best = { link, d };
+            }
+            if (best) { target = best.link; usedNearby.add(best.link.markerId); }
+          }
+          if (target) {
+            await tx.landMarker.update({ where: { id: target.markerId }, data: { longitude: r.longitude, latitude: r.latitude, source: "GPS", isActive: true, ...attrs, modifiedBy: uid } });
+            local.updated++;
+            continue;
+          }
+
+          // (c) Patok baru: snap ke patok lahan lain (atau patok nonaktif) ≤ 5 m yang belum tertaut ke lahan ini.
+          let snap: { id: string; d: number } | null = null;
+          for (const m of nearby) {
+            if (usedNearby.has(m.id) || m.linkedToThisParcel) continue;
+            const d = distanceMeters(point, m);
+            if (d <= MARKER_SNAP_M && (!snap || d < snap.d)) snap = { id: m.id, d };
+          }
+          const seq = r.sequenceNo ?? nextSeq++;
+          if (r.sequenceNo != null && r.sequenceNo >= nextSeq) nextSeq = r.sequenceNo + 1;
+          let markerId: string;
+          if (snap) {
+            usedNearby.add(snap.id);
+            markerId = snap.id;
+            await tx.landMarker.update({ where: { id: markerId }, data: { isActive: true, ...attrs, modifiedBy: uid } });
+            local.linked++;
+          } else {
+            const m = await tx.landMarker.create({ data: { longitude: r.longitude, latitude: r.latitude, source: "GPS", ...attrs, createdBy: uid }, select: { id: true } });
+            markerId = m.id;
+            local.created++;
+          }
+          const old = await tx.landParcelMarker.findUnique({ where: { parcelUid_markerId: { parcelUid: parcel.parcelUid, markerId } }, select: { id: true } });
+          const link = old
+            ? await tx.landParcelMarker.update({ where: { id: old.id }, data: { isActive: true, sequenceNo: seq, modifiedBy: uid }, select: { id: true } })
+            : await tx.landParcelMarker.create({ data: { parcelUid: parcel.parcelUid, markerId, sequenceNo: seq, createdBy: uid }, select: { id: true } });
+          // Tautan NYATA (bukan sentinel) — baris berikutnya yang menyebut nomor ini memperbarui patok yang sama.
+          const rec = { id: link.id, sequenceNo: seq, markerId };
+          bySeq.set(seq, rec);
+          byMarker.set(markerId, rec);
         }
-        const old = await tx.landParcelMarker.findUnique({ where: { parcelUid_markerId: { parcelUid: parcel.parcelUid, markerId } }, select: { id: true } });
-        if (old) await tx.landParcelMarker.update({ where: { id: old.id }, data: { isActive: true, sequenceNo: seq, modifiedBy: uid } });
-        else await tx.landParcelMarker.create({ data: { parcelUid: parcel.parcelUid, markerId, sequenceNo: seq, createdBy: uid } });
       });
-      bySeq.set(seq, { id: "", sequenceNo: seq, markerId: "" });
+      summary.created += local.created; summary.updated += local.updated; summary.linked += local.linked;
+      summary.rejected.push(...local.rejected);
+    } catch (e) {
+      const reason = dbError(e, "Gagal menyimpan patok lahan ini");
+      for (const r of group) summary.rejected.push({ landParcelId, parcelId: parcel.parcelId, sequenceNo: r.sequenceNo, reason });
     }
   }
   return { success: true, data: summary };

@@ -65,16 +65,21 @@ export function ParcelMarkerFormModal({ open, onClose, landParcelId, item }: Pro
       installedBy: str(form, "installedBy"),
       notes: str(form, "notes"),
     };
-    const result = item ? await updateLandMarker({ ...data, markerId: item.id }) : await createLandMarker(data);
-    setIsLoading(false);
-    if (!result.success) {
-      if (typeof result.error === "string") toast.error(result.error);
-      else setErrors((result.error as Record<string, string[]>) ?? {});
-      return;
+    try {
+      const result = item ? await updateLandMarker({ ...data, markerId: item.id }) : await createLandMarker(data);
+      if (!result.success) {
+        if (typeof result.error === "string") toast.error(result.error);
+        else setErrors((result.error as Record<string, string[]>) ?? {});
+        return;
+      }
+      toast.success(`Patok berhasil ${isEdit ? "diubah" : "ditambahkan"}`);
+      onClose();
+      router.refresh();
+    } catch {
+      toast.error("Gagal menyimpan — periksa koneksi lalu coba lagi");
+    } finally {
+      setIsLoading(false);
     }
-    toast.success(`Patok berhasil ${isEdit ? "diubah" : "ditambahkan"}`);
-    onClose();
-    router.refresh();
   }
 
   async function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -85,15 +90,20 @@ export function ParcelMarkerFormModal({ open, onClose, landParcelId, item }: Pro
     fd.set("file", file);
     fd.set("landParcelId", landParcelId);
     fd.set("markerId", item.id);
-    const res = await uploadLandMarkerPhoto(fd);
-    setUploading(false);
-    if (!res.success) {
-      toast.error(res.error);
-      return;
+    try {
+      const res = await uploadLandMarkerPhoto(fd);
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      setPhotoUrl(res.data!.url);
+      toast.success("Foto patok tersimpan");
+      router.refresh();
+    } catch {
+      toast.error("Gagal mengunggah foto — periksa koneksi lalu coba lagi");
+    } finally {
+      setUploading(false);
     }
-    setPhotoUrl(res.data!.url);
-    toast.success("Foto patok tersimpan");
-    router.refresh();
   }
 
   return (

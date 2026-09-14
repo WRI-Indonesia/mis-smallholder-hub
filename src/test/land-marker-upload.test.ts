@@ -47,9 +47,15 @@ describe("autoMatchMarkerUploadColumns — alias header Excel & atribut DBF", ()
     expect(Object.keys(m).sort()).toEqual(MARKER_UPLOAD_FIELDS.map((f) => f.key).sort());
   });
 
-  it("nama atribut DBF/GPS umum: parcel_id, no, lat/lon, cond, type, installed", () => {
-    const m = autoMatchMarkerUploadColumns(["PARCEL_ID", "NO", "LAT", "LON", "COND", "TYPE", "INSTALLED"]);
-    expect(m).toMatchObject({ parcelId: "PARCEL_ID", sequenceNo: "NO", latitude: "LAT", longitude: "LON", condition: "COND", type: "TYPE", installedAt: "INSTALLED" });
+  it("nama atribut DBF/GPS umum: parcel_id, no_patok, lat/lon, cond, type, installed", () => {
+    const m = autoMatchMarkerUploadColumns(["PARCEL_ID", "NO_PATOK", "LAT", "LON", "COND", "TYPE", "INSTALLED"]);
+    expect(m).toMatchObject({ parcelId: "PARCEL_ID", sequenceNo: "NO_PATOK", latitude: "LAT", longitude: "LON", condition: "COND", type: "TYPE", installedAt: "INSTALLED" });
+  });
+
+  it("kolom nomor BARIS ('No', 'Nomor') TIDAK terpetakan ke No Patok — nomor baris akan menimpa koordinat patok bernomor sama (review 2026-09-14)", () => {
+    const m = autoMatchMarkerUploadColumns(["No", "ID Lahan", "Lintang", "Bujur"]);
+    expect(m.sequenceNo).toBeUndefined();
+    expect(autoMatchMarkerUploadColumns(["Nomor", "ID Lahan"]).sequenceNo).toBeUndefined();
   });
 
   it("x/y diterima sebagai bujur/lintang", () => {
@@ -108,11 +114,14 @@ describe("parseCoordCell / parseSequenceCell", () => {
 });
 
 describe("markerFeaturesToRecords — shapefile Point → record ber-header template", () => {
-  it("koordinat dari geometri Point mengisi Lintang/Bujur; atribut lain ikut", () => {
+  it("koordinat dari geometri Point mengisi Lintang/Bujur (kunci PERTAMA — menang atas atribut DBF X/Y saat auto-match); atribut lain ikut", () => {
     const out = markerFeaturesToRecords([
-      { index: 0, properties: { parcel_id: "LHN-1.A", no: 1, cond: "Ada" }, geometry: { type: "Point", coordinates: [101.19, 0.52] } },
+      { index: 0, properties: { parcel_id: "LHN-1.A", no_patok: 1, cond: "Ada", X: 215432.1, Y: 57890.2 }, geometry: { type: "Point", coordinates: [101.19, 0.52] } },
     ]);
-    expect(out.records).toEqual([{ parcel_id: "LHN-1.A", no: 1, cond: "Ada", Lintang: 0.52, Bujur: 101.19 }]);
+    expect(out.records).toEqual([{ Lintang: 0.52, Bujur: 101.19, parcel_id: "LHN-1.A", no_patok: 1, cond: "Ada", X: 215432.1, Y: 57890.2 }]);
+    expect(Object.keys(out.records[0]).slice(0, 2)).toEqual(["Lintang", "Bujur"]);
+    const headers = [...new Set(out.records.flatMap((r) => Object.keys(r)))];
+    expect(autoMatchMarkerUploadColumns(headers)).toMatchObject({ latitude: "Lintang", longitude: "Bujur" });
     expect(out.rowNumbers).toEqual([1]);
     expect(out.skipped).toEqual([]);
   });
