@@ -395,6 +395,8 @@ export async function uploadLandMarkerPhoto(formData: FormData): Promise<ActionR
 // ─── Ekspor per Lembaga ───
 
 export interface LandMarkerExportRow {
+  /** Patok fisik — dasar pengelompokan "satu baris per patok" di unduhan. */
+  markerId: string;
   parcelId: string;
   farmerCode: string;
   farmerName: string;
@@ -445,7 +447,7 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
               sequenceNo: true,
               marker: {
                 select: {
-                  longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
+                  id: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
                   parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
                 },
               },
@@ -463,6 +465,7 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
     for (const l of p.identity.markers) {
       const others = l.marker.parcels.filter((x) => x.parcelUid !== p.parcelUid);
       rows.push({
+        markerId: l.marker.id,
         parcelId: p.parcelId,
         farmerCode: p.farmer.farmerId,
         farmerName: p.farmer.name,
@@ -495,7 +498,7 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
 export async function getMapMarkerExportRows(
   filters: { provinceId?: string | null; districtId: string; farmerGroupId?: string | null },
   nktOnly = false,
-): Promise<ActionResult<{ rows: (LandMarkerExportRow & { markerId: string })[]; label: string | null }>> {
+): Promise<ActionResult<{ rows: LandMarkerExportRow[]; label: string | null }>> {
   if (!(await hasPermission("map-parcel", "EXPORT"))) return { success: false, error: "Tidak memiliki izin untuk mengekspor data ini" };
   if (typeof filters?.districtId !== "string" || !filters.districtId) return { success: false, error: "Pilih Distrik terlebih dahulu" };
   const access = await getAccessContext();
@@ -538,7 +541,7 @@ export async function getMapMarkerExportRows(
       : Promise.resolve(null),
     prisma.district.findUnique({ where: { id: filters.districtId }, select: { name: true } }),
   ]);
-  const rows: (LandMarkerExportRow & { markerId: string })[] = [];
+  const rows: LandMarkerExportRow[] = [];
   for (const p of parcels) {
     const own = isNktAffected(p.identity.nkt?.status);
     for (const l of p.identity.markers) {

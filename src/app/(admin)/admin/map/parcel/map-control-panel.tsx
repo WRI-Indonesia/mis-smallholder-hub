@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame, Minimize2, MapPinned, Download, Printer } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronDown, SlidersHorizontal, Layers, List, Loader2, Flame, Minimize2, MapPinned, Download, Printer, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ export type LayerZoomTarget = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "m
 
 /** Baris legenda yang punya unduhan sendiri (#331) — format spasial mengikuti tipe fitur baris (Point/Polygon). */
 export type LegendExportRow = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "markers" | "markersNkt";
-export type LegendExportFormat = "xlsx" | ParcelExportFormat;
+export type LegendExportFormat = "xlsx" | "pdf" | ParcelExportFormat;
 
 interface Props {
   provinces: MapSelectOption[];
@@ -189,6 +189,8 @@ interface LegendRowProps {
   /** Unduhan baris (#331): null = tanpa tombol (izin EXPORT tidak ada). */
   onExport?: ((format: LegendExportFormat) => void) | null;
   exporting?: boolean;
+  /** Item PDF (peta + tabel) hanya bila izin PRINT. */
+  canPrint?: boolean;
   /** Tipe fitur spasial baris — label item unduhan ("Shapefile · Point"). */
   featureType?: "Point" | "Polygon";
 }
@@ -200,7 +202,7 @@ const LEGEND_EXPORT_ITEMS: { format: LegendExportFormat; label: string }[] = [
   { format: "kml", label: "KML" },
 ];
 
-function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType }: LegendRowProps) {
+function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType, canPrint }: LegendRowProps) {
   return (
     <div className="flex items-center gap-2.5 py-1">
       <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} aria-label={label} />
@@ -224,6 +226,17 @@ function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant =
         {label}
       </button>
       <span className="text-xs font-mono text-muted-foreground tabular-nums">{count}</span>
+      {/* Zoom ke layer sebagai ikon (permintaan owner 2026-09-14) — klik label tetap berfungsi, tapi tidak terlihat sebagai aksi. */}
+      <button
+        type="button"
+        onClick={onZoomTo}
+        disabled={count === 0}
+        title={`Zoom ke ${label}`}
+        aria-label={`Zoom ke ${label}`}
+        className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:pointer-events-none"
+      >
+        <Crosshair className="h-3.5 w-3.5" />
+      </button>
       {onExport && (
         // Unduh per baris (#331): Excel atribut + spasial sesuai tipe fitur baris.
         <DropdownMenu>
@@ -241,6 +254,12 @@ function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant =
                 {item.format !== "xlsx" && featureType && <span className="ml-auto text-[10px] text-muted-foreground">{featureType}</span>}
               </DropdownMenuItem>
             ))}
+            {canPrint && (
+              <DropdownMenuItem onClick={() => onExport("pdf")}>
+                PDF
+                <span className="ml-auto text-[10px] text-muted-foreground">peta + tabel</span>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
@@ -443,6 +462,7 @@ export function MapControlPanel(props: Props) {
                       onZoomTo={() => onZoomLayer("kt")}
                       onExport={canExport ? (f) => onLegendExport("kt", f) : null}
                       exporting={legendExporting === "kt"}
+                      canPrint={canPrint}
                       featureType="Point"
                     />
                     <LegendRow
@@ -454,6 +474,7 @@ export function MapControlPanel(props: Props) {
                       onZoomTo={() => onZoomLayer("parcelPoints")}
                       onExport={canExport ? (f) => onLegendExport("parcelPoints", f) : null}
                       exporting={legendExporting === "parcelPoints"}
+                      canPrint={canPrint}
                       featureType="Point"
                     />
                     <LegendRow
@@ -466,6 +487,7 @@ export function MapControlPanel(props: Props) {
                       variant="area"
                       onExport={canExport ? (f) => onLegendExport("parcelAreas", f) : null}
                       exporting={legendExporting === "parcelAreas"}
+                      canPrint={canPrint}
                       featureType="Polygon"
                     />
                     {/* NKT (#328): hitungan = lahan INCLUDED/AFFECTED pada hasil filter; 0 bila belum ada asesmen. */}
@@ -479,6 +501,7 @@ export function MapControlPanel(props: Props) {
                       variant="area"
                       onExport={canExport ? (f) => onLegendExport("nkt", f) : null}
                       exporting={legendExporting === "nkt"}
+                      canPrint={canPrint}
                       featureType="Polygon"
                     />
                     {/* Patok (#331): dua layer/warna — titiknya dimuat malas saat dicentang. */}
@@ -492,6 +515,7 @@ export function MapControlPanel(props: Props) {
                       variant="square"
                       onExport={canExport ? (f) => onLegendExport("markers", f) : null}
                       exporting={legendExporting === "markers"}
+                      canPrint={canPrint}
                       featureType="Point"
                     />
                     <LegendRow
@@ -504,6 +528,7 @@ export function MapControlPanel(props: Props) {
                       variant="square"
                       onExport={canExport ? (f) => onLegendExport("markersNkt", f) : null}
                       exporting={legendExporting === "markersNkt"}
+                      canPrint={canPrint}
                       featureType="Point"
                     />
                   </div>

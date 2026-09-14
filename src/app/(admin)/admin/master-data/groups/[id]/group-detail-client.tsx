@@ -31,7 +31,7 @@ import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-exp
 import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 import { getFarmerGroupMarkerExportRows } from "@/server/actions/land-marker";
-import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_SOURCE_LABELS, LAND_MARKER_TYPE_LABELS, fmtCoord, labelOf } from "@/lib/land-marker";
+import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_SOURCE_LABELS, LAND_MARKER_TYPE_LABELS, fmtCoord, labelOf, uniqueMarkerRows } from "@/lib/land-marker";
 import { exportToExcel } from "@/lib/xlsx";
 
 const ParcelsDistributionMap = dynamic(
@@ -231,17 +231,18 @@ export function GroupDetailClient({
         toast.info("Belum ada patok tercatat pada lahan Lembaga ini");
         return;
       }
+      // Satu baris per patok fisik, lahan pemakai digabung, urut KT → Blok (format sama dengan Peta Lahan, keputusan owner 2026-09-14).
+      const unique = uniqueMarkerRows(res.data.rows);
       await exportToExcel({
         filename: `patok-${parcelExportFileBase(res.data.label, new Date())}`,
         sheetName: "Patok",
         columns: [
-          { header: "ID Lahan", key: "parcelId", width: 28 },
-          { header: "ID Petani", key: "farmerCode", width: 24 },
-          { header: "Nama Petani", key: "farmerName", width: 26 },
-          { header: "Lembaga Petani", key: "groupName", width: 26 },
           { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
           { header: "Blok", key: "blok", width: 10 },
-          { header: "No Patok", key: "sequenceNo", width: 10 },
+          { header: "Lahan (ID Petani · ID Lahan #no)", key: "lahan", width: 60 },
+          { header: "Nama Petani", key: "farmerNames", width: 30 },
+          { header: "Lembaga Petani", key: "groupName", width: 26 },
+          { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
           { header: "Lintang", key: "latitude", width: 14 },
           { header: "Bujur", key: "longitude", width: 14 },
           { header: "Kondisi", key: "condition", width: 16 },
@@ -250,10 +251,9 @@ export function GroupDetailClient({
           { header: "Dipasang oleh", key: "installedBy", width: 20 },
           { header: "Sumber koordinat", key: "source", width: 16 },
           { header: "NKT", key: "nkt", width: 8 },
-          { header: "Dipakai juga oleh", key: "sharedWith", width: 30 },
           { header: "Keterangan", key: "notes", width: 30 },
         ],
-        data: res.data.rows.map((r) => ({
+        data: unique.map((r) => ({
           ...r,
           subGroupLv2: r.subGroupLv2 ?? "",
           blok: r.blok ?? "",
@@ -265,11 +265,10 @@ export function GroupDetailClient({
           installedBy: r.installedBy ?? "",
           source: labelOf(LAND_MARKER_SOURCE_LABELS, r.source),
           nkt: r.nkt ? "Ya" : "",
-          sharedWith: r.sharedWith.join(", "),
           notes: r.notes ?? "",
         })),
       });
-      toast.success(`${formatNumber(res.data.rows.length)} patok diunduh`);
+      toast.success(`${formatNumber(unique.length)} patok diunduh (${formatNumber(res.data.rows.length)} tautan lahan)`);
     } catch {
       toast.error("Gagal membuat berkas unduhan patok");
     } finally {

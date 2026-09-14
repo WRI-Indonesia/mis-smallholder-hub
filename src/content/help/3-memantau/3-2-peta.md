@@ -17,7 +17,7 @@ icon: Map
 
 **Unduh per baris Legenda** — Bila punya izin Export, tiap baris Legenda punya ikon unduh: **Excel** (atribut) atau **Shapefile/GeoJSON/KML** — bentuknya mengikuti baris: baris *Point* (Lembaga, titik lahan, patok) menghasilkan titik, baris *Area/NKT* menghasilkan poligon. Baris Lahan NKT hanya berisi lahan termasuk/terdampak.
 
-**Zoom lewat panel kiri** — Klik teks label pada Legenda (Point Lembaga Petani, Point/Area Lahan Petani, Lahan NKT, Patok) atau label "Tampilkan titik api" untuk langsung zoom ke sebaran data layer tersebut; kotak centangnya tetap untuk menampilkan/menyembunyikan layer.
+**Zoom lewat panel kiri** — Klik ikon **bidik** (⌖) di kanan tiap baris Legenda atau teks labelnya (Point Lembaga Petani, Point/Area Lahan Petani, Lahan NKT, Patok), atau label "Tampilkan titik api" untuk langsung zoom ke sebaran data layer tersebut; kotak centangnya tetap untuk menampilkan/menyembunyikan layer.
 
 **Peta BMP** — Peta tematik: pilih layer Ketersediaan Data Produksi atau Produktivitas (Ton/Ha). Pilih Lembaga terlebih dulu, lalu klik Muat Data.
 

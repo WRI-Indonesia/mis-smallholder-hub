@@ -167,3 +167,84 @@ export function checkMarkerNearParcel(
 
 /** Format koordinat 6 desimal (≈ 0,1 m) — cukup untuk berkas STDB/SKT. */
 export const fmtCoord = (n: number) => n.toFixed(6);
+
+/** Baris ekspor patok per tautan lahan (bentuk `LandMarkerExportRow` di action) — dikelompokkan per patok fisik. */
+export interface MarkerLinkRow {
+  markerId: string;
+  parcelId: string;
+  farmerCode: string;
+  farmerName: string;
+  groupName: string;
+  subGroupLv2: string | null;
+  blok: string | null;
+  sequenceNo: number;
+  latitude: number;
+  longitude: number;
+  condition: string;
+  type: string | null;
+  installedAt: string | null;
+  installedBy: string | null;
+  source: string;
+  nkt: boolean;
+  notes: string | null;
+}
+
+export interface UniqueMarkerRow {
+  markerId: string;
+  /** KT & Blok terkecil (alfabet) di antara lahan pemakai — basis urutan; kosong di akhir. */
+  subGroupLv2: string | null;
+  blok: string | null;
+  /** "ID Petani · ID Lahan #n, ID Petani · ID Lahan #n" — semua lahan pemakai, urut ID Lahan. */
+  lahan: string;
+  farmerNames: string;
+  groupName: string;
+  parcelCount: number;
+  latitude: number;
+  longitude: number;
+  condition: string;
+  type: string | null;
+  installedAt: string | null;
+  installedBy: string | null;
+  source: string;
+  nkt: boolean;
+  notes: string | null;
+}
+
+/**
+ * Satu baris per patok FISIK (keputusan owner 2026-09-14 untuk unduhan Peta
+ * Lahan): lahan pemakai digabung satu kolom "ID Petani · ID Lahan #no" dipisah
+ * koma, diurutkan Kelompok Tani lalu Blok (kosong di akhir), lalu ID Lahan
+ * pertama. NKT = salah satu lahan pemakai kena NKT.
+ */
+export function uniqueMarkerRows(rows: MarkerLinkRow[]): UniqueMarkerRow[] {
+  const byId = new Map<string, MarkerLinkRow[]>();
+  for (const r of rows) byId.set(r.markerId, [...(byId.get(r.markerId) ?? []), r]);
+  const minStr = (vals: (string | null)[]) => {
+    const v = vals.filter((x): x is string => !!x && x.trim() !== "").sort((a, b) => a.localeCompare(b, "id"));
+    return v[0] ?? null;
+  };
+  const out: UniqueMarkerRow[] = [...byId.values()].map((g) => {
+    const sorted = [...g].sort((a, b) => a.parcelId.localeCompare(b.parcelId));
+    const first = sorted[0];
+    return {
+      markerId: first.markerId,
+      subGroupLv2: minStr(g.map((x) => x.subGroupLv2)),
+      blok: minStr(g.map((x) => x.blok)),
+      lahan: sorted.map((x) => `${x.farmerCode} · ${x.parcelId} #${x.sequenceNo}`).join(", "),
+      farmerNames: [...new Set(sorted.map((x) => x.farmerName))].join(", "),
+      groupName: [...new Set(sorted.map((x) => x.groupName))].join(", "),
+      parcelCount: g.length,
+      latitude: first.latitude,
+      longitude: first.longitude,
+      condition: first.condition,
+      type: first.type,
+      installedAt: first.installedAt,
+      installedBy: first.installedBy,
+      source: first.source,
+      nkt: g.some((x) => x.nkt),
+      notes: first.notes,
+    };
+  });
+  const cmp = (a: string | null, b: string | null) => (a === b ? 0 : a === null ? 1 : b === null ? -1 : a.localeCompare(b, "id", { numeric: true }));
+  return out.sort((a, b) => cmp(a.subGroupLv2, b.subGroupLv2) || cmp(a.blok, b.blok) || a.lahan.localeCompare(b.lahan));
+}

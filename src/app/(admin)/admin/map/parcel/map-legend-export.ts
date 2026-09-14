@@ -2,10 +2,25 @@ import type { Feature, FeatureCollection, MultiPolygon, Point, Polygon } from "g
 import { exportToExcel } from "@/lib/xlsx";
 import { downloadFeatureExport } from "@/lib/parcel-spatial-download";
 import { toAsciiDbf, toDbfProperties, parcelExportFileBase, type ParcelExportFormat, type ParcelExportProperties } from "@/lib/parcel-export-data";
-import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_SOURCE_LABELS, LAND_MARKER_TYPE_LABELS, fmtCoord, labelOf } from "@/lib/land-marker";
+import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_SOURCE_LABELS, LAND_MARKER_TYPE_LABELS, fmtCoord, labelOf, uniqueMarkerRows, type UniqueMarkerRow } from "@/lib/land-marker";
 import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import type { LandMarkerExportRow } from "@/server/actions/land-marker";
 import type { KTPoint } from "@/types/map";
+import { buildLayerReportDoc, type LayerReportContext, type LayerReportInput } from "@/lib/layer-report-pdf";
+import type { ParcelFeature } from "@/types/map";
+
+/** Konteks lahan (poligon hasil filter yang sudah dimuat peta) di belakang titik — NKT diarsir merah/amber. */
+export function parcelContext(parcels: ParcelFeature[]): LayerReportContext {
+  return {
+    fc: { type: "FeatureCollection", features: parcels.map((p) => ({ type: "Feature", geometry: p.geometry, properties: { nktStatus: p.nktStatus } })) },
+    colorOf: (p) => (p.nktStatus === "INCLUDED" ? RED : p.nktStatus === "AFFECTED" ? AMBER : null),
+  };
+}
+const CONTEXT_LEGEND: { color: [number, number, number]; label: string }[] = [
+  { color: [223, 200, 243], label: "Lahan lain (25 %)" },
+  { color: [220, 38, 38], label: "Lahan termasuk NKT" },
+  { color: [245, 158, 11], label: "Lahan terdampak NKT" },
+];
 
 /**
  * Unduhan per baris legenda Peta Lahan (#331) — helper klien murni (tanpa
@@ -13,7 +28,21 @@ import type { KTPoint } from "@/types/map";
  * dan format spasialnya mengikuti tipe fitur baris (Point/Polygon). Nama
  * berkas: `<baris>-<label filter>-<stempel WIB>`.
  */
-export type LegendFormat = "xlsx" | ParcelExportFormat;
+export type LegendFormat = "xlsx" | "pdf" | ParcelExportFormat;
+
+const RED: [number, number, number] = [220, 38, 38];
+const AMBER: [number, number, number] = [245, 158, 11];
+const PURPLE: [number, number, number] = [126, 34, 206];
+const GREEN: [number, number, number] = [34, 197, 94];
+const BLUE: [number, number, number] = [59, 130, 246];
+const YELLOW: [number, number, number] = [250, 204, 21];
+const NKT_RED: [number, number, number] = [239, 68, 68];
+
+const printedAt = (now: Date) => new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(now);
+
+function savePdf(input: LayerReportInput, base: string) {
+  buildLayerReportDoc(input).save(`${base}.pdf`);
+}
 
 const base = (slug: string, label: string | null, now: Date) => `${slug}-${parcelExportFileBase(label, now)}`;
 
@@ -27,7 +56,7 @@ function centroidOf(g: Polygon | MultiPolygon): [number, number] {
 
 // ─── Lembaga Petani (Point) ───
 
-export async function exportKtRow(format: LegendFormat, kts: KTPoint[], label: string | null, now: Date) {
+export async function exportKtRow(format: LegendFormat, kts: KTPoint[], label: string | null, now: Date, context?: LayerReportContext) {
   const b = base("lembaga", label, now);
   if (format === "xlsx") {
     await exportToExcel({
@@ -52,6 +81,26 @@ export async function exportKtRow(format: LegendFormat, kts: KTPoint[], label: s
       properties: { kodeLembaga: k.code, lembaga: k.name, distrik: k.districtName },
     })),
   };
+  if (format === "pdf") {
+    savePdf({
+      title: "Point Lembaga Petani",
+      subtitle: `${label ?? "Semua"} · ${kts.length} lembaga · dicetak ${printedAt(now)}`,
+      fc,
+      context,
+      style: { color: GREEN, numbered: true },
+      legend: [{ color: GREEN, label: "Lembaga Petani" }, ...(context ? CONTEXT_LEGEND : [])],
+      columns: [
+        { header: "No", key: "no", align: "right", width: 10 },
+        { header: "Kode", key: "code", width: 26 },
+        { header: "Nama Lembaga", key: "name" },
+        { header: "Distrik", key: "districtName", width: 30 },
+        { header: "Lintang", key: "lat", align: "right", width: 24 },
+        { header: "Bujur", key: "long", align: "right", width: 24 },
+      ],
+      rows: kts.map((k, i) => ({ no: i + 1, code: k.code, name: k.name, districtName: k.districtName, lat: fmtCoord(k.lat), long: fmtCoord(k.long) })),
+    }, b);
+    return;
+  }
   await downloadFeatureExport(format, fc, b, {
     shpLayer: "lembaga",
     toDbf: (p) => ({ kd_lembaga: toAsciiDbf(String(p.kodeLembaga ?? "")), lembaga: toAsciiDbf(String(p.lembaga ?? "")), distrik: toAsciiDbf(String(p.distrik ?? "")) }),
@@ -95,6 +144,7 @@ export async function exportParcelRow(
   fc: ParcelFc,
   label: string | null,
   now: Date,
+  context?: LayerReportContext,
 ): Promise<number> {
   const features = row === "nkt" ? fc.features.filter((f) => isNktAffected(nktCodeFromLabel(f.properties.nkt))) : fc.features;
   const slug = row === "parcelPoints" ? "titik-lahan" : row === "nkt" ? "lahan-nkt" : "lahan";
@@ -120,6 +170,60 @@ export async function exportParcelRow(
     });
     return features.length;
   }
+  if (format === "pdf") {
+    const isPoint = row === "parcelPoints";
+    const fcPdf: FeatureCollection<Point | Polygon | MultiPolygon, Record<string, unknown>> = {
+      type: "FeatureCollection",
+      features: features.map((f) => ({
+        type: "Feature",
+        geometry: isPoint ? { type: "Point", coordinates: centroidOf(f.geometry) } : f.geometry,
+        properties: f.properties,
+      })),
+    };
+    const nktColor = (p: Record<string, unknown>) => {
+      const code = nktCodeFromLabel((p.nkt as string | null) ?? null);
+      return code === "INCLUDED" ? RED : code === "AFFECTED" ? AMBER : isPoint ? BLUE : PURPLE;
+    };
+    savePdf({
+      title: row === "nkt" ? "Lahan NKT (termasuk/terdampak)" : isPoint ? "Point Lahan Petani" : "Area Lahan Petani",
+      subtitle: `${label ?? "Semua"} · ${features.length} lahan · dicetak ${printedAt(now)}`,
+      fc: fcPdf,
+      // Titik lahan & lahan NKT: lahan lain sebagai konteks; Area Lahan sudah menggambar semua poligonnya sendiri.
+      context: row === "parcelAreas" ? undefined : context,
+      style: { colorOf: nktColor, numbered: true },
+      legend: row === "nkt"
+        ? [{ color: RED, label: "Termasuk NKT" }, { color: AMBER, label: "Terdampak NKT" }, ...(context ? [CONTEXT_LEGEND[0]] : [])]
+        : isPoint
+          ? [{ color: BLUE, label: "Titik lahan" }, ...(context ? CONTEXT_LEGEND : [])]
+          : [{ color: PURPLE, label: "Lahan" }, { color: RED, label: "Termasuk NKT" }, { color: AMBER, label: "Terdampak NKT" }],
+      columns: [
+        { header: "No", key: "no", align: "right", width: 9 },
+        { header: "ID Lahan", key: "idLahan", width: 40 },
+        { header: "Petani", key: "namaPetani" },
+        { header: "Lembaga", key: "lembaga", width: 30 },
+        { header: "KT / Blok", key: "ktBlok", width: 22 },
+        { header: "Luas (ha)", key: "luasHa", align: "right", width: 16 },
+        { header: "NKT", key: "nkt", width: 24 },
+        ...(isPoint ? [{ header: "Lintang, Bujur", key: "coord", width: 34 }] : [{ header: "Tahun Tanam", key: "tahunTanam", align: "right" as const, width: 18 }]),
+      ],
+      rows: features.map((f, i) => {
+        const p = f.properties;
+        const [lon, lat] = isPoint ? centroidOf(f.geometry) : [0, 0];
+        return {
+          no: i + 1,
+          idLahan: p.idLahan,
+          namaPetani: p.namaPetani,
+          lembaga: p.lembaga,
+          ktBlok: [p.kelompokTani, p.blok].filter(Boolean).join(" / "),
+          luasHa: p.luasHa != null ? new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(p.luasHa as number) : null,
+          nkt: p.nkt ?? "Belum dinilai",
+          coord: isPoint ? `${fmtCoord(lat)}, ${fmtCoord(lon)}` : null,
+          tahunTanam: p.tahunTanam,
+        };
+      }),
+    }, b);
+    return features.length;
+  }
   if (row === "parcelPoints") {
     const pts: FeatureCollection<Point, Record<string, unknown>> = {
       type: "FeatureCollection",
@@ -141,16 +245,15 @@ function nktCodeFromLabel(label: string | null): string | null {
   return "NOT_AFFECTED";
 }
 
-// ─── Patok (Point) ───
+// ─── Patok (Point) — satu baris/fitur per patok FISIK (keputusan owner 2026-09-14) ───
 
 const MARKER_XLSX_COLUMNS = [
-  { header: "ID Lahan", key: "parcelId", width: 28 },
-  { header: "ID Petani", key: "farmerCode", width: 24 },
-  { header: "Nama Petani", key: "farmerName", width: 26 },
-  { header: "Lembaga Petani", key: "groupName", width: 26 },
   { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
   { header: "Blok", key: "blok", width: 10 },
-  { header: "No Patok", key: "sequenceNo", width: 10 },
+  { header: "Lahan (ID Petani · ID Lahan #no)", key: "lahan", width: 60 },
+  { header: "Nama Petani", key: "farmerNames", width: 30 },
+  { header: "Lembaga Petani", key: "groupName", width: 26 },
+  { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
   { header: "Lintang", key: "latitude", width: 14 },
   { header: "Bujur", key: "longitude", width: 14 },
   { header: "Kondisi", key: "condition", width: 16 },
@@ -159,20 +262,12 @@ const MARKER_XLSX_COLUMNS = [
   { header: "Dipasang oleh", key: "installedBy", width: 20 },
   { header: "Sumber koordinat", key: "source", width: 16 },
   { header: "NKT", key: "nkt", width: 8 },
-  { header: "Dipakai juga oleh", key: "sharedWith", width: 30 },
   { header: "Keterangan", key: "notes", width: 30 },
 ];
 
-export async function exportMarkerRow(
-  row: "markers" | "markersNkt",
-  format: LegendFormat,
-  rows: (LandMarkerExportRow & { markerId: string })[],
-  label: string | null,
-  now: Date,
-): Promise<number> {
-  const b = base(row === "markersNkt" ? "patok-nkt" : "patok", label, now);
-  if (rows.length === 0) return 0;
-  const fmt = (r: LandMarkerExportRow) => ({
+/** Baris unik patok → nilai siap tampil (label Indonesia, koordinat 6 desimal). */
+export function formatUniqueMarkerRow(r: UniqueMarkerRow) {
+  return {
     ...r,
     subGroupLv2: r.subGroupLv2 ?? "",
     blok: r.blok ?? "",
@@ -184,44 +279,84 @@ export async function exportMarkerRow(
     installedBy: r.installedBy ?? "",
     source: labelOf(LAND_MARKER_SOURCE_LABELS, r.source),
     nkt: r.nkt ? "Ya" : "",
-    sharedWith: r.sharedWith.join(", "),
     notes: r.notes ?? "",
-  });
+  };
+}
+
+export async function exportMarkerRow(
+  row: "markers" | "markersNkt",
+  format: LegendFormat,
+  rows: LandMarkerExportRow[],
+  label: string | null,
+  now: Date,
+  context?: LayerReportContext,
+): Promise<number> {
+  const b = base(row === "markersNkt" ? "patok-nkt" : "patok", label, now);
+  if (rows.length === 0) return 0;
+  const unique = uniqueMarkerRows(rows);
+  const data = unique.map(formatUniqueMarkerRow);
   if (format === "xlsx") {
-    await exportToExcel({ filename: b, sheetName: "Patok", columns: MARKER_XLSX_COLUMNS, data: rows.map(fmt) });
-    return rows.length;
+    await exportToExcel({ filename: b, sheetName: "Patok", columns: MARKER_XLSX_COLUMNS, data });
+    return unique.length;
   }
-  // Spasial: SATU fitur per patok fisik (baris Excel = per lahan) — lahan pemakai digabung "ID #n; …".
-  const byMarker = new Map<string, (LandMarkerExportRow & { markerId: string })[]>();
-  for (const r of rows) byMarker.set(r.markerId, [...(byMarker.get(r.markerId) ?? []), r]);
+  if (format === "pdf") {
+    savePdf({
+      title: row === "markersNkt" ? "Patok lahan NKT" : "Patok lahan",
+      subtitle: `${label ?? "Semua"} · ${unique.length} patok · ${rows.length} tautan lahan · urut Kelompok Tani, Blok · dicetak ${printedAt(now)}`,
+      fc: {
+        type: "FeatureCollection",
+        features: unique.map((r) => ({ type: "Feature", geometry: { type: "Point", coordinates: [r.longitude, r.latitude] }, properties: { nkt: r.nkt } })),
+      },
+      context,
+      style: { colorOf: (p) => (p.nkt ? NKT_RED : YELLOW), numbered: true },
+      legend: [{ color: YELLOW, label: "Patok lahan" }, { color: NKT_RED, label: "Patok lahan NKT" }, ...(context ? CONTEXT_LEGEND : [])],
+      columns: [
+        { header: "No", key: "no", align: "right", width: 9 },
+        { header: "KT / Blok", key: "ktBlok", width: 24 },
+        { header: "Lahan (ID Petani · ID Lahan #no)", key: "lahan" },
+        { header: "Kondisi", key: "condition", width: 20 },
+        { header: "NKT", key: "nkt", width: 10, align: "center" },
+        { header: "Lintang, Bujur", key: "coord", width: 34 },
+      ],
+      rows: data.map((r, i) => ({
+        no: i + 1,
+        ktBlok: [r.subGroupLv2, r.blok].filter(Boolean).join(" / "),
+        lahan: r.lahan,
+        condition: r.condition,
+        nkt: r.nkt,
+        coord: `${r.latitude}, ${r.longitude}`,
+      })),
+    }, b);
+    return unique.length;
+  }
   const fc: FeatureCollection<Point, Record<string, unknown>> = {
     type: "FeatureCollection",
-    features: [...byMarker.entries()].map(([id, group]) => {
-      const r = group[0];
-      const f = fmt(r);
-      return {
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [r.longitude, r.latitude] },
-        properties: {
-          idPatok: id,
-          lahan: group.map((x) => `${x.parcelId} #${x.sequenceNo}`).join("; "),
-          petani: [...new Set(group.map((x) => x.farmerName))].join("; "),
-          lembaga: r.groupName,
-          kondisi: f.condition,
-          jenis: f.type,
-          dipasang: f.installedAt,
-          oleh: f.installedBy,
-          sumber: f.source,
-          nkt: f.nkt,
-          keterangan: f.notes,
-        },
-      };
-    }),
+    features: data.map((r) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [r.longitude, r.latitude] },
+      properties: {
+        idPatok: r.markerId,
+        kelompokTani: r.subGroupLv2,
+        blok: r.blok,
+        lahan: r.lahan,
+        petani: r.farmerNames,
+        lembaga: r.groupName,
+        kondisi: r.condition,
+        jenis: r.type,
+        dipasang: r.installedAt,
+        oleh: r.installedBy,
+        sumber: r.source,
+        nkt: r.nkt,
+        keterangan: r.notes,
+      },
+    })),
   };
   await downloadFeatureExport(format, fc, b, {
     shpLayer: row === "markersNkt" ? "patok_nkt" : "patok",
     toDbf: (p) => ({
       id_patok: String(p.idPatok ?? ""),
+      kel_tani: toAsciiDbf(String(p.kelompokTani ?? "")),
+      blok: toAsciiDbf(String(p.blok ?? "")),
       lahan: toAsciiDbf(String(p.lahan ?? "")),
       petani: toAsciiDbf(String(p.petani ?? "")),
       lembaga: toAsciiDbf(String(p.lembaga ?? "")),
@@ -234,5 +369,5 @@ export async function exportMarkerRow(
       keterangan: toAsciiDbf(String(p.keterangan ?? "")),
     }),
   });
-  return byMarker.size;
+  return unique.length;
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildPDF } from "@/lib/pdf";
 import { buildFarmPassportDoc } from "@/lib/farm-passport";
+import { buildLayerReportDoc } from "@/lib/layer-report-pdf";
 import { buildBmpMapDoc } from "@/lib/bmp-map-print";
 import { buildFireMapDoc } from "@/lib/fire-map-print";
 import { imageFormatOf } from "@/lib/map-capture";
@@ -355,5 +356,41 @@ describe("imageFormatOf (lib/map-capture)", () => {
     expect(imageFormatOf("data:image/jpeg;base64,/9j/4AAQ")).toBe("JPEG");
     expect(imageFormatOf(PNG_1PX_URL)).toBe("PNG");
     expect(imageFormatOf("")).toBe("PNG");
+  });
+});
+
+describe("buildLayerReportDoc (lib/layer-report-pdf) — PDF per baris legenda Peta Lahan (#331)", () => {
+  const D = 0.0009;
+  it("poligon + titik: judul, subjudul, legenda, tabel multi-halaman, footer per halaman", () => {
+    const rows = Array.from({ length: 80 }, (_, i) => ({ no: i + 1, id: `LHN-${i + 1}`, nkt: i % 7 === 0 ? "Terdampak NKT" : "Belum dinilai" }));
+    const doc = buildLayerReportDoc({
+      title: "Lahan NKT (termasuk/terdampak)",
+      subtitle: "ISH-1401-03 · 80 lahan · dicetak hari ini",
+      fc: {
+        type: "FeatureCollection",
+        features: rows.map((r, i) => ({
+          type: "Feature",
+          geometry: i % 2 === 0
+            ? { type: "Polygon", coordinates: [[[101 + i * D, 0.5], [101 + (i + 1) * D, 0.5], [101 + (i + 1) * D, 0.5 + D], [101 + i * D, 0.5 + D], [101 + i * D, 0.5]]] }
+            : { type: "Point", coordinates: [101 + i * D, 0.5 + 2 * D] },
+          properties: { nkt: r.nkt },
+        })),
+      },
+      style: { colorOf: (p) => (p.nkt === "Terdampak NKT" ? [245, 158, 11] : [126, 34, 206]), numbered: true },
+      legend: [{ color: [245, 158, 11], label: "Terdampak NKT" }],
+      columns: [{ header: "No", key: "no", align: "right", width: 10 }, { header: "ID Lahan", key: "id" }, { header: "NKT", key: "nkt" }],
+      rows,
+    });
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+    const text = pdfText(doc);
+    expect(text).toContain("Lahan NKT (termasuk/terdampak)");
+    expect(text).toContain("ISH-1401-03");
+    expect(text).toContain("LHN-80");
+    expect(text).toContain("Hal. 1/");
+  });
+
+  it("tanpa fitur → tetap terbit dengan keterangan peta kosong", () => {
+    const doc = buildLayerReportDoc({ title: "Patok lahan", subtitle: "—", fc: { type: "FeatureCollection", features: [] }, columns: [{ header: "No", key: "no" }], rows: [] });
+    expect(pdfText(doc)).toContain("Tidak ada fitur untuk digambar");
   });
 });

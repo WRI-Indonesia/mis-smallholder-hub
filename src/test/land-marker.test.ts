@@ -7,7 +7,9 @@ import {
   planMarkersFromVertices,
   checkMarkerNearParcel,
   fmtCoord,
+  uniqueMarkerRows,
   type NearbyMarker,
+  type MarkerLinkRow,
 } from "@/lib/land-marker";
 
 /**
@@ -155,5 +157,37 @@ describe("fmtCoord", () => {
   it("6 desimal (≈ 0,1 m)", () => {
     expect(fmtCoord(101.1912345678)).toBe("101.191235");
     expect(fmtCoord(0.5)).toBe("0.500000");
+  });
+});
+
+describe("uniqueMarkerRows — unduhan patok satu baris per patok fisik (keputusan owner 2026-09-14)", () => {
+  const link = (o: Partial<MarkerLinkRow>): MarkerLinkRow => ({
+    markerId: "m1", parcelId: "HJP.0001.A", farmerCode: "P-1", farmerName: "Budi", groupName: "KP HJP",
+    subGroupLv2: null, blok: "31 G", sequenceNo: 1, latitude: 0.52, longitude: 101.19, condition: "PRESENT", type: null,
+    installedAt: null, installedBy: null, source: "POLYGON_VERTEX", nkt: false, notes: null, ...o,
+  });
+
+  it("patok bersama → satu baris; kolom lahan = 'ID Petani · ID Lahan #no' dipisah koma, urut ID Lahan; NKT bila salah satu lahan kena", () => {
+    const rows = uniqueMarkerRows([
+      link({ parcelId: "HJP.0002.B", farmerCode: "P-2", farmerName: "Cici", sequenceNo: 4, nkt: true }),
+      link({ parcelId: "HJP.0001.A", farmerCode: "P-1", sequenceNo: 1 }),
+    ]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].lahan).toBe("P-1 · HJP.0001.A #1, P-2 · HJP.0002.B #4");
+    expect(rows[0].farmerNames).toBe("Budi, Cici");
+    expect(rows[0].parcelCount).toBe(2);
+    expect(rows[0].nkt).toBe(true);
+  });
+
+  it("urut Kelompok Tani lalu Blok (numerik-aware), kosong di akhir; KT/Blok patok bersama = nilai terkecil di antara lahan pemakainya", () => {
+    const rows = uniqueMarkerRows([
+      link({ markerId: "a", subGroupLv2: "KT Maju", blok: "10" }),
+      link({ markerId: "b", subGroupLv2: "KT Maju", blok: "2" }),
+      link({ markerId: "c", subGroupLv2: null, blok: "1" }),
+      link({ markerId: "d", subGroupLv2: "KT Bersama", blok: "5" }),
+      link({ markerId: "d", parcelId: "HJP.0009.Z", subGroupLv2: "KT Aman", blok: "7" }),
+    ]);
+    expect(rows.map((r) => r.markerId)).toEqual(["d", "b", "a", "c"]);
+    expect(rows[0]).toMatchObject({ subGroupLv2: "KT Aman", blok: "5" });
   });
 });

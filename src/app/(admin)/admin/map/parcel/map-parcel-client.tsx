@@ -17,7 +17,7 @@ import type {
   MapSelectOption,
   MapGroupOption,
 } from "@/types/map";
-import { exportKtRow, exportMarkerRow, exportParcelRow } from "./map-legend-export";
+import { exportKtRow, exportMarkerRow, exportParcelRow, parcelContext } from "./map-legend-export";
 import type { FeatureCollection, MultiPolygon } from "geojson";
 import { filterPointsWithinAreas } from "@/lib/fire-alert";
 import { getAdminBoundaries } from "@/server/actions/fire-boundary";
@@ -406,26 +406,29 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
   const [legendExporting, setLegendExporting] = useState<LegendExportRow | null>(null);
   const handleLegendExport = async (row: LegendExportRow, format: LegendExportFormat) => {
     if (!districtId || !mapData || legendExporting) return;
+    if (format === "pdf" && !canPrint) { toast.error("Tidak memiliki izin untuk mencetak"); return; }
     setLegendExporting(row);
     const now = new Date();
+    // Konteks lahan untuk PDF (poligon yang sudah dimuat peta — tanpa panggilan server tambahan).
+    const context = format === "pdf" ? parcelContext(mapData.parcels) : undefined;
     try {
       if (row === "kt") {
         const label = loadedArea?.districtName ?? null;
-        await exportKtRow(format, mapData.kelompokTani, label, now);
+        await exportKtRow(format, mapData.kelompokTani, label, now, context);
         toast.success(`${mapData.kelompokTani.length} Lembaga diunduh`);
         return;
       }
       if (row === "markers" || row === "markersNkt") {
         const res = await getMapMarkerExportRows({ provinceId, districtId, farmerGroupId }, row === "markersNkt");
         if (!res.success || !res.data) { toast.error(res.success ? "Gagal menyiapkan data patok" : res.error); return; }
-        const n = await exportMarkerRow(row, format, res.data.rows, res.data.label, now);
+        const n = await exportMarkerRow(row, format, res.data.rows, res.data.label, now, context);
         if (n === 0) toast.info("Tidak ada patok pada filter ini");
         else toast.success(`${n} ${format === "xlsx" ? "baris patok" : "patok"} diunduh`);
         return;
       }
       const res = await getMapParcelExportData({ provinceId, districtId, farmerGroupId });
       if (!res.success || !res.data) { toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error); return; }
-      const n = await exportParcelRow(row, format, res.data.fc, res.data.label, now);
+      const n = await exportParcelRow(row, format, res.data.fc, res.data.label, now, context);
       if (n === 0) toast.info(row === "nkt" ? "Tidak ada lahan NKT ber-poligon pada filter ini" : "Tidak ada lahan ber-poligon pada filter ini");
       else toast.success(`${n} lahan diunduh`);
     } catch {
