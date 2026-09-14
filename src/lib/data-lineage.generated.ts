@@ -22,11 +22,13 @@ export const DATA_LINEAGE: DataLineage = [
     "route": "(admin)/admin/bulk-upload/parcels",
     "models": {
       "farmer": "R",
+      "landMarker": "W",
       "landParcel": "RW",
       "landParcelBorder": "RW",
       "landParcelDocument": "RW",
       "landParcelExternalId": "RW",
       "landParcelIdentity": "W",
+      "landParcelMarker": "RW",
       "landParcelNkt": "RW",
       "landParcelStdb": "RW",
       "landStdb": "RW",
@@ -37,7 +39,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/land-parcel-detail-save.ts",
       "src/lib/land-parcel-identity.ts",
       "src/server/actions/bulk-upload-parcel-detail.ts",
-      "src/server/actions/bulk-upload-parcel.ts"
+      "src/server/actions/bulk-upload-parcel.ts",
+      "src/server/actions/land-marker.ts"
     ],
     "dynamicAccess": null
   },
@@ -302,6 +305,7 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/server/actions/farmer-group.ts",
+      "src/server/actions/land-marker.ts",
       "src/server/actions/land-parcel-export.ts"
     ],
     "dynamicAccess": null
@@ -313,11 +317,13 @@ export const DATA_LINEAGE: DataLineage = [
       "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
+      "landMarker": "W",
       "landParcel": "RW",
       "landParcelBorder": "RW",
       "landParcelDocument": "RW",
       "landParcelExternalId": "RW",
       "landParcelIdentity": "RW",
+      "landParcelMarker": "RW",
       "landParcelNkt": "RW",
       "landParcelProgram": "RW",
       "landParcelStdb": "RW",
@@ -332,6 +338,7 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
+      "src/server/actions/land-marker.ts",
       "src/server/actions/land-parcel-export.ts",
       "src/server/actions/land-parcel-satellite.ts",
       "src/server/actions/land-parcel.ts",

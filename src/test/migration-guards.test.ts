@@ -68,6 +68,26 @@ describe("migrasi land_parcel_nkt — satelit status NKT 1:1 (#328)", () => {
   });
 });
 
+describe("migrasi land_marker — patok batas: geom generated + GiST + partial unique nomor urut (#329)", () => {
+  const m = migrationFiles().find((f) => f.name.endsWith("_land_marker"));
+
+  it("berkas migrasi ada; geom patok GENERATED dari lon/lat; GiST pola *_geom_idx", () => {
+    expect(m).toBeDefined();
+    expect(m!.sql).toMatch(/"geom" geometry\(Point, 4326\) GENERATED ALWAYS AS \(ST_SetSRID\(ST_MakePoint\("longitude", "latitude"\), 4326\)\) STORED/);
+    expect(m!.sql).toMatch(/CREATE INDEX "tbl_land_marker_geom_idx" ON "tbl_land_marker" USING GIST \("geom"\)/);
+  });
+
+  it("tautan: FK ke tbl_land_parcel_identity (utuh lintas revisi) + unique (parcel_uid, marker_id) + partial unique nomor urut aktif", () => {
+    expect(m!.sql).toMatch(/"tbl_land_parcel_marker_parcel_uid_fkey" FOREIGN KEY \("parcel_uid"\) REFERENCES "tbl_land_parcel_identity"\("id"\)/);
+    expect(m!.sql).toMatch(/CREATE UNIQUE INDEX "tbl_land_parcel_marker_parcel_uid_marker_id_key"/);
+    expect(m!.sql).toMatch(/CREATE UNIQUE INDEX "uniq_land_parcel_marker_seq" ON "tbl_land_parcel_marker"\("parcel_uid", "sequence_no"\) WHERE "is_active"/);
+  });
+
+  it("tidak menyentuh tbl_land_parcel (drop index/default geom dibuang)", () => {
+    expect(ddlOnly(m!.sql)).not.toMatch(/tbl_land_parcel"?\s+(ALTER|DROP)/i);
+  });
+});
+
 describe("migrasi land_parcel_satellites — backfill parcel_uid sebelum NOT NULL", () => {
   const m = migrationFiles().find((f) => f.name.endsWith("_land_parcel_satellites"));
 

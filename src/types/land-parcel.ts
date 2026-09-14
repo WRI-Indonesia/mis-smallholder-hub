@@ -142,3 +142,40 @@ export interface LandParcelSatellites {
   border: LandParcelBorderItem | null;
   nkt: LandParcelNktItem | null;
 }
+
+// --- Patok batas (#329) — satu patok fisik dipakai bersama lahan berdampingan ---
+
+export interface LandMarkerItem {
+  /** LandParcelMarker.id (tautan lahan ini). */
+  linkId: string;
+  /** LandMarker.id. */
+  id: string;
+  sequenceNo: number;
+  sourceRevision: number | null;
+  longitude: number;
+  latitude: number;
+  source: "POLYGON_VERTEX" | "GPS" | "MANUAL";
+  condition: "PRESENT" | "MISSING" | "DAMAGED" | "NOT_INSTALLED";
+  type: "CONCRETE" | "WOOD" | "PIPE" | "NATURAL" | "OTHER" | null;
+  installedAt: Date | null;
+  installedBy: string | null;
+  photoKey: string | null;
+  photoName: string | null;
+  /** Presigned 1 jam; null bila tak ada foto. */
+  photoUrl: string | null;
+  notes: string | null;
+  modifiedAt: Date;
+  /** Lahan lain yang memakai patok yang sama (identitas selalu lengkap, pola #327); `landParcelId` null bila di luar scope. */
+  sharedWith: { parcelId: string; landParcelId: string | null; farmerName: string; groupName: string; nktAffected: boolean }[];
+  /** Turunan: lahan ini atau salah satu lahan pemakai patok ini termasuk/terdampak NKT (#328). */
+  nkt: boolean;
+}
+
+export interface LandParcelMarkers {
+  parcelUid: string;
+  revision: number;
+  hasGeometry: boolean;
+  /** Ada tautan dari revisi poligon yang lebih lama — tawarkan "jalankan ulang". */
+  polygonChangedSince: boolean;
+  markers: LandMarkerItem[];
+}

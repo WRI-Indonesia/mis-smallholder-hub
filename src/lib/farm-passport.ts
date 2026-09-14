@@ -4,6 +4,7 @@ import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
 import type { ParcelPassport } from "@/types/map";
 import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel } from "@/lib/parcel-neighbor";
+import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_TYPE_LABELS, labelOf } from "@/lib/land-marker";
 
 const EMERALD: [number, number, number] = [16, 185, 129];
 const SLATE_800: [number, number, number] = [30, 41, 59];
@@ -11,6 +12,10 @@ const SLATE_600: [number, number, number] = [71, 85, 105];
 const SLATE_400: [number, number, number] = [148, 163, 184];
 const SLATE_200: [number, number, number] = [226, 232, 240];
 const AREA_FILL: [number, number, number] = [209, 240, 224];
+const MARKER_FILL: [number, number, number] = [253, 224, 71];
+const MARKER_EDGE: [number, number, number] = [133, 77, 14];
+const NKT_RED: [number, number, number] = [239, 68, 68];
+const NKT_RED_DARK: [number, number, number] = [153, 27, 27];
 
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -131,6 +136,7 @@ function drawParcelMap(
   doc: jsPDF,
   geometry: ParcelPassport["parcel"]["geometry"],
   neighbors: ParcelPassport["neighbors"],
+  markers: ParcelPassport["markers"],
   box: Box,
   label: string,
 ) {
@@ -225,6 +231,21 @@ function drawParcelMap(
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
   doc.text(label, lx, ly, { align: "center", baseline: "middle" });
+
+  // Patok batas (#329): persegi bernomor di atas segalanya — kuning untuk patok
+  // lahan biasa, MERAH bila lahan pemakainya kena NKT (dua warna, keputusan
+  // owner 2026-09-14; sama dengan legenda peta). Nomor = tabel "Patok Batas".
+  for (const m of markers) {
+    const [px, py] = project(m.longitude, m.latitude);
+    doc.setFillColor(...(m.nkt ? NKT_RED : MARKER_FILL));
+    doc.setDrawColor(...(m.nkt ? NKT_RED_DARK : MARKER_EDGE));
+    doc.setLineWidth(0.3);
+    doc.rect(px - 2.1, py - 2.1, 4.2, 4.2, "FD");
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...(m.nkt ? ([255, 255, 255] as [number, number, number]) : SLATE_800));
+    doc.text(String(m.sequenceNo), px, py + 0.1, { align: "center", baseline: "middle" });
+  }
 
   drawMapDecorations(doc, box, mmPerMeter);
   doc.restoreGraphicsState();
@@ -331,7 +352,7 @@ function sectionHeading(doc: jsPDF, text: string, y: number) {
  */
 export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-  const { farmer, group, parcel, legal, training, production, neighbors, neighborsOmitted } = data;
+  const { farmer, group, parcel, legal, training, production, neighbors, neighborsOmitted, markers } = data;
 
   // ── Komposisi (#298, rombak total atas masukan owner "terlalu rapat"):
   //   hal. 1 — header ber-ID besar, 4 kartu ringkasan (cermin halaman web),
@@ -445,7 +466,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   doc.setDrawColor(...SLATE_200);
   doc.setLineWidth(0.4);
   doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h, "S");
-  drawParcelMap(doc, parcel.geometry, neighbors, mapBox, parcel.parcelId.split(".").find((x) => /^[A-Z]$/i.test(x)) ?? parcel.parcelId);
+  drawParcelMap(doc, parcel.geometry, neighbors, markers, mapBox, parcel.parcelId.split(".").find((x) => /^[A-Z]$/i.test(x)) ?? parcel.parcelId);
   // Titik tengah pindah ke bawah kotak — kiri-bawah kotak kini dipakai skala batang (#327).
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
@@ -641,6 +662,40 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
       doc.text(wrapped, MARGIN, y + 2);
       y += 4.5 * wrapped.length + 1.5;
     }
+  }
+
+  // ── Patok Batas (#329) — hanya bila ada; nomor = persegi kuning di peta.
+  // Koordinat 6 desimal (≈ 0,1 m) agar bisa dipakai kembali di GPS lapangan.
+  if (markers.length > 0) {
+    // Jeda kecil setelah baris meta legalitas (UL Parcel Code/Program) supaya judul tidak menempel.
+    y = ensureSpace(doc, y + 4, 30);
+    sectionHeading(doc, "Patok Batas", y);
+    y += 5;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...SLATE_600);
+    doc.text(`${markers.length} patok · persegi bernomor di peta: kuning = patok lahan, merah = patok lahan NKT (lahan pemakainya termasuk/terdampak NKT)`, MARGIN, y + 1);
+    y += 4;
+    autoTable(doc, {
+      head: [["No", "Lintang", "Bujur", "Kondisi", "Jenis", "Dipasang", "NKT", "Juga patok lahan"]],
+      body: markers.map((m) => [
+        String(m.sequenceNo),
+        m.latitude.toFixed(6),
+        m.longitude.toFixed(6),
+        labelOf(LAND_MARKER_CONDITION_LABELS, m.condition),
+        labelOf(LAND_MARKER_TYPE_LABELS, m.type),
+        fmtDate(m.installedAt),
+        m.nkt ? "Ya" : "",
+        m.sharedWith.length ? m.sharedWith.join(", ") : "—",
+      ]),
+      startY: y,
+      theme: "striped",
+      // Lebar No/NKT cukup untuk judul kolom satu baris pada font 9 (header "No"/"NKT" sempat terpenggal).
+      columnStyles: { 0: { halign: "right", cellWidth: 12 }, 1: { halign: "right" }, 2: { halign: "right" }, 6: { halign: "center", cellWidth: 14 } },
+      ...tableCommon,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 12;
   }
 
   // ── Pelatihan + Produksi — sejak #327 (keputusan owner 2026-09-14) section

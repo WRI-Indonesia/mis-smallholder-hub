@@ -282,4 +282,10 @@ export type ParcelPassport = {
   neighbors: ParcelNeighbor[];
   /** Tetangga yang tidak ikut karena cap — dicetak sebagai "+N lahan lain". */
   neighborsOmitted: number;
+  /**
+   * Patok batas (#329), urut nomor — persegi bernomor di peta + tabel "Patok
+   * Batas". `sharedWith` = ID Lahan lain yang memakai patok yang sama; `nkt`
+   * turunan dari status lahan pemakainya. Kosong = belum ada patok (tabel tidak dicetak).
+   */
+  markers: { sequenceNo: number; longitude: number; latitude: number; condition: string; type: string | null; installedAt: string | null; sharedWith: string[]; nkt: boolean }[];
 };

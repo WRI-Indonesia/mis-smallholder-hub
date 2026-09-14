@@ -125,6 +125,7 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     },
     neighbors: [],
     neighborsOmitted: 0,
+    markers: [],
   };
 
   it("portrait A4, minimal 1 halaman, tanpa throw", () => {
@@ -246,6 +247,23 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     expect((text.match(/Terdampak NKT/g) ?? []).length).toBeGreaterThanOrEqual(2); // badge header + baris NKT
     expect(text).toContain("NKT 4");
     expect(text).toContain("0,09 ha");
+  });
+
+  it("Patok (#329): tanpa patok → tidak ada section; ada patok → tabel 'Patok Batas' bernomor, NKT turunan, lahan pemakai lain", () => {
+    expect(pdfText(buildFarmPassportDoc(passport))).not.toContain("Patok Batas");
+    const withMarkers: ParcelPassport = {
+      ...passport,
+      markers: [
+        { sequenceNo: 1, longitude: 101.1912, latitude: 0.5235, condition: "PRESENT", type: "CONCRETE", installedAt: "2026-09-01T00:00:00.000Z", sharedWith: ["SH-0002.A"], nkt: true },
+        { sequenceNo: 2, longitude: 101.1918, latitude: 0.5235, condition: "NOT_INSTALLED", type: null, installedAt: null, sharedWith: [], nkt: false },
+      ],
+    };
+    const text = pdfText(buildFarmPassportDoc(withMarkers));
+    expect(text).toContain("Patok Batas");
+    expect(text).toContain("Beton");
+    expect(text).toContain("Belum dipasang");
+    expect(text).toContain("SH-0002.A");
+    expect(text).toContain("101.191200");
   });
 
   it("geometri tak tersedia (ring < 3 titik) → tetap terbit tanpa throw", () => {

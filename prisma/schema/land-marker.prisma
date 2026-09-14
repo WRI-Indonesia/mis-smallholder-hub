@@ -1,0 +1,90 @@
+// land-marker.prisma — patok batas lahan (#329). "Marker", bukan "boundary":
+// nama itu sudah dipakai poligon batas (#266).
+//
+// SATU patok fisik = SATU baris LandMarker, ditautkan M:N ke lahan lewat
+// LandParcelMarker (nomor urut PER LAHAN — patok yang sama bisa #3 di lahan A
+// dan #1 di lahan B). Keputusan owner 2026-09-14: sudut yang dipakai bersama
+// lahan berdampingan (93% lahan bertetangga ≤ 25 m, celah digitasi 0–4 m)
+// tidak boleh jadi 2–4 baris dengan koordinat selisih beberapa meter; saat
+// "Buat patok dari poligon", vertex ≤ MARKER_SNAP_M (5 m) dari patok yang
+// sudah ada DITAUTKAN, bukan dibuat baru. Pola yang sama dengan STDB.
+//
+// Tanda NKT pada patok = TURUNAN dari lahan yang ditautkan (#328) — tidak
+// disimpan di sini.
+
+enum LandMarkerCondition {
+  PRESENT       // ada
+  MISSING       // hilang
+  DAMAGED       // rusak
+  NOT_INSTALLED // belum dipasang
+}
+
+enum LandMarkerType {
+  CONCRETE // beton
+  WOOD     // kayu
+  PIPE     // pipa
+  NATURAL  // tanda alam (pohon, batu)
+  OTHER
+}
+
+enum LandMarkerSource {
+  POLYGON_VERTEX // diturunkan dari vertex poligon
+  GPS            // koordinat hasil pengukuran lapangan
+  MANUAL         // diisi tangan di form
+}
+
+model LandMarker {
+  id          String              @id @default(cuid())
+  longitude   Float               @map("longitude") // WGS84
+  latitude    Float               @map("latitude")
+  // Turunan PostGIS dari lon/lat — GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(...), 4326))
+  // STORED + GiST `tbl_land_marker_geom_idx` (pola #317 Fase 1): dipakai snap ≤ 5 m
+  // saat generate/unggah. Unsupported → tidak terbaca Prisma Client; Prisma akan
+  // selalu mengusulkan DROP index-nya — jangan pernah diterima.
+  geom        Unsupported("geometry(Point, 4326)")?
+  source      LandMarkerSource    @map("source")
+  condition   LandMarkerCondition @default(NOT_INSTALLED) @map("condition")
+  type        LandMarkerType?     @map("type")
+  installedAt DateTime?           @map("installed_at")
+  installedBy String?             @map("installed_by")
+  photoKey    String?             @map("photo_key") // S3 key (pola evidence pelatihan); presigned saat dibaca
+  photoName   String?             @map("photo_name")
+  notes       String?             @map("notes")
+  // Nonaktif hanya bila tak punya tautan aktif lagi (dilepas dari semua lahan);
+  // koordinat tidak pernah dihapus keras.
+  isActive    Boolean             @default(true) @map("is_active")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  createdBy   String?             @map("created_by")
+  modifiedAt  DateTime            @updatedAt @map("modified_at")
+  modifiedBy  String?             @map("modified_by")
+
+  parcels LandParcelMarker[]
+
+  @@index([isActive])
+  @@map("tbl_land_marker")
+}
+
+// Tautan lahan × patok + nomor urut per lahan. Keunikan nomor urut per lahan
+// hanya untuk tautan AKTIF — partial unique index tulis tangan di migrasi
+// (`uniq_land_parcel_marker_seq`), Prisma tak bisa mendeklarasikannya (#306).
+model LandParcelMarker {
+  id             String             @id @default(cuid())
+  parcelUid      String             @map("parcel_uid")
+  parcel         LandParcelIdentity @relation(fields: [parcelUid], references: [id])
+  markerId       String             @map("marker_id")
+  marker         LandMarker         @relation(fields: [markerId], references: [id])
+  sequenceNo     Int                @map("sequence_no")
+  // Revisi poligon yang melahirkan tautan ini (POLYGON_VERTEX) — UI memberi
+  // petunjuk "poligon berubah sejak patok dibuat" bila < revisi aktif.
+  sourceRevision Int?               @map("source_revision")
+  isActive       Boolean            @default(true) @map("is_active")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  createdBy      String?            @map("created_by")
+  modifiedAt     DateTime           @updatedAt @map("modified_at")
+  modifiedBy     String?            @map("modified_by")
+
+  @@unique([parcelUid, markerId])
+  @@index([markerId])
+  @@index([parcelUid, isActive])
+  @@map("tbl_land_parcel_marker")
+}

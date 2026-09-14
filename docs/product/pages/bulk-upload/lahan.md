@@ -59,8 +59,8 @@ Halaman: Lahan (/admin/bulk-upload/parcels)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| "Upload Massal Lahan" | Heading (`h2`) | Deskripsi: *"Poligon lahan dari ZIP Shapefile (.shp, .dbf, .shx, .prj), atau detail lahan — surat kepemilikan, STDB, UL Parcel Code — dari Excel untuk lahan yang sudah terdaftar."* |
-| Tabs | `Tabs` (`@/components/ui/tabs`) | *"Poligon (Shapefile ZIP)"* (bawaan) · *"Detail Lahan (Excel)"* — satu menu key, satu set izin (keputusan owner 2026-08-27: tanpa menu baru) |
+| "Upload Massal Lahan" | Heading (`h2`) | Deskripsi: *"Poligon lahan dari ZIP Shapefile (.shp, .dbf, .shx, .prj); detail lahan — surat kepemilikan, STDB, UL Parcel Code, sepadan, NKT — dari Excel; atau titik patok batas (Excel/CSV GPS atau shapefile Point) untuk lahan yang sudah terdaftar."* |
+| Tabs | `Tabs` (`@/components/ui/tabs`) | *"Poligon (Shapefile ZIP)"* (bawaan) · *"Detail Lahan (Excel)"* · *"Patok (Excel/Shapefile titik)"* (#329) — satu menu key, satu set izin (keputusan owner 2026-08-27: tanpa menu baru) |
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `bulk-upload-parcels` (`findTutorialForMenu`), dibuka di tab baru |
 | "1. Pilih ZIP Shapefile" | Card + Input `type="file"` (`accept=".zip"`) | Keterangan *"Unggah arsip ZIP (.zip) yang berisi berkas .shp, .dbf, .shx, dan .prj dari shapefile lahan."* |
 | Info berkas | Teks | *"Shapefile: **nama.zip** (N fitur/baris terdeteksi)"* |
@@ -138,3 +138,14 @@ Mengisi satelit lahan (`tbl_land_parcel_document`, `tbl_land_stdb` + `tbl_land_p
 | Nomor/nama/luas terisi, jenis kosong | **Bukan error** — disimpan sebagai `OTHER` dengan `typeRaw` null (1.046 baris di data sumber; keputusan: jenis tak diketahui ≠ tak ada surat) |
 | Luas tertera bukan angka | *"Luas tertera tidak valid: "X""* (0 = kosong, bukan error) |
 | Tanpa surat, STDB, kode, maupun KT | *"Tidak ada data detail (surat, STDB, UL Parcel Code, atau kelompok tani) untuk disimpan"* |
+
+## Tab "Patok (Excel/Shapefile titik)" (#329)
+
+Mengisi `tbl_land_marker` + `tbl_land_parcel_marker` dari titik GPS lapangan. Excel/CSV **dan** ZIP shapefile Point dinormalisasi ke record ber-header yang sama (`markerFeaturesToRecords` — koordinat dari geometri Point, atribut DBF ikut sebagai kolom), lalu alur tiga langkah seperti Detail Lahan. Komponen `ParcelMarkerUploadClient`; helper murni `src/lib/land-marker-upload.ts`.
+
+| Objek | Keterangan |
+|---|---|
+| Kolom | `ID Lahan`* · `ID Petani` (wajib hanya bila ID Lahan dipakai > 1 petani — dihitung **global**, paritas server) · `No Patok` · `Lintang`* · `Bujur`* · `Kondisi` · `Jenis` · `Tanggal Pemasangan` · `Dipasang oleh` · `Keterangan`. Auto-match `MARKER_UPLOAD_AUTO_MATCH_RULES` termasuk nama atribut DBF (`parcel_id`, `no`, `lat/lon`, `x/y`, `cond`, `type`, `installed`); tombol **Unduh Template Excel** |
+| Pencocokan lahan | `matchLandMarkerUploadParcels(ids)` — hanya ID yang ada di berkas (pola #241), dalam scope; membawa `hasGeometry` (lewat kolom generated `geom`, bukan JSON), nomor patok aktif (label "Perbarui patok #n") |
+| Aturan baris | Nomor yang **sudah ada** di lahan → koordinat & atribut patok itu diperbarui (`source` → GPS, berlaku juga untuk lahan lain pemakainya); nomor baru/kosong → patok baru + tautan, **snap ≤ 5 m** ke patok lahan tetangga; > 100 m dari batas ditolak server (per baris, tidak membatalkan batch); lahan tanpa poligon ditolak; nomor ganda dalam berkas ditolak; kondisi/jenis menerima label Indonesia, enum, alias lapangan ("tidak ada" = hilang, "belum ada" = belum dipasang — pembersih teks bebas, bukan token kosong STDB); lat/long tertukar (\|lat\| > 12 & \|lon\| ≤ 12) ditandai sebelum kirim, menggantikan pesan "di luar rentang" |
+| Simpan | `bulkUpsertLandMarkers` (CREATE `bulk-upload-parcels`, ≤ 20.000 baris) — ringkasan baru · diperbarui · ditautkan · ditolak (ID Lahan + nomor + alasan) |

@@ -30,13 +30,15 @@ import { ParcelProductionChart } from "../components/parcel-production-chart";
 import { ParcelProductionMonthModal } from "../components/parcel-production-month-modal";
 import { ParcelLegalSection } from "../components/parcel-legal-section";
 import { ParcelSatelliteFormModal } from "../components/parcel-satellite-form-modal";
+import { ParcelMarkerSection } from "../components/parcel-marker-section";
+import { ParcelNeighborList } from "../components/parcel-neighbor-list";
 import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/validations/land-parcel-satellite.schema";
-import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel, type ParcelNeighbor } from "@/lib/parcel-neighbor";
+import { NEIGHBOR_DISTANCE_M, type ParcelNeighbor } from "@/lib/parcel-neighbor";
 import { isNktAffected, landNktStatusLabel, nktCategoryShort, NKT_CATEGORY_DESCRIPTIONS, type NktCategoryCode } from "@/lib/land-parcel-satellite-format";
 import { deleteLandParcelNkt } from "@/server/actions/land-parcel-satellite";
 
 import type { Geometry, Position } from "geojson";
-import type { LandParcel, FarmerSelect, LandParcelSatellites } from "@/types/land-parcel";
+import type { LandParcel, FarmerSelect, LandParcelSatellites, LandParcelMarkers } from "@/types/land-parcel";
 import type { ProductionSummary, ProductionYear } from "@/types/map";
 import type { ParcelTreeData } from "@/server/actions/tree";
 import { formatNumber } from "@/lib/format";
@@ -65,6 +67,8 @@ interface Props {
   /** Lahan tetangga ≤ 25 m (#327) — sudah lewat aturan scope; nomor = urutan array + 1 (sama dengan PDF). */
   neighbors: ParcelNeighbor[];
   neighborsOmitted: number;
+  /** Patok batas (#329) — null bila di luar scope. */
+  markers: LandParcelMarkers | null;
 }
 
 const formatDecimal = (n: number) =>
@@ -191,6 +195,7 @@ export function ParcelDetailClient({
   satellites,
   neighbors,
   neighborsOmitted,
+  markers,
 }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -230,6 +235,7 @@ export function ParcelDetailClient({
   const stdbCount = satellites?.stdbs.length ?? 0;
   const vendorCount = satellites?.externalIds.length ?? 0;
   const programCount = satellites?.programs.length ?? 0;
+  const markerCount = markers?.markers.length ?? 0;
   // Program TIDAK ikut hitungan legalitas (koreksi owner 2026-08-28) — tab & KPI-nya sendiri.
   const legalCount = docCount + stdbCount + vendorCount;
   // Jenis surat unik (akronim) untuk nilai kartu, mis. "SHM · SKT".
@@ -444,7 +450,7 @@ export function ParcelDetailClient({
 
       {/* Tabs (#298): konsisten dengan Detail Petani; tiap tab satu kartu */}
       <Tabs defaultValue="informasi" className="w-full">
-        <TabsList className="grid w-full max-w-[520px] grid-cols-4 mb-4">
+        <TabsList className="grid w-full max-w-[640px] grid-cols-5 mb-4">
           <TabsTrigger value="informasi">Informasi</TabsTrigger>
           <TabsTrigger value="legalitas">
             Legalitas
@@ -459,6 +465,12 @@ export function ParcelDetailClient({
             )}
           </TabsTrigger>
           <TabsTrigger value="produksi">Produksi</TabsTrigger>
+          <TabsTrigger value="patok">
+            Patok
+            {markerCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-primary">{formatNumber(markerCount)}</span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Informasi: peta 60% kiri, atribut + pemilik di kanan ── */}
@@ -513,55 +525,9 @@ export function ParcelDetailClient({
             </div>
 
             {/* Lahan tetangga (#327): legenda nomor di peta — di bawah peta (bukan kolom kanan) karena
-                ini milik peta, dan urutan/nomornya sama dengan Profil Lahan PDF. Hanya lahan yang
-                terdaftar di MIS; jalan/sungai/lahan belum dipetakan tak muncul (untuk itu ada Sepadan). */}
-            <div className="mt-4 rounded-lg border p-4 space-y-3">
-              <h3 className="text-sm font-semibold">Lahan Tetangga (≤ {NEIGHBOR_DISTANCE_M} m)</h3>
-              {neighbors.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Tidak ada lahan lain yang terdaftar di MIS dalam {NEIGHBOR_DISTANCE_M} m.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-xs text-muted-foreground">
-                        <th className="py-1.5 pr-2 font-medium w-8">No</th>
-                        <th className="py-1.5 pr-3 font-medium">Pemilik</th>
-                        <th className="py-1.5 pr-3 font-medium">ID Lahan</th>
-                        <th className="py-1.5 pr-3 font-medium">Lembaga</th>
-                        <th className="py-1.5 font-medium text-right">Jarak</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {neighbors.map((n, i) => (
-                        <tr key={n.id} className="border-b last:border-0">
-                          <td className="py-1.5 pr-2 font-mono text-muted-foreground">{i + 1}</td>
-                          <td className="py-1.5 pr-3 whitespace-nowrap">
-                            {neighborOwnerLabel(n)}
-                            {!n.inScope && <span className="ml-1 text-xs text-muted-foreground" title="Halaman detail lahan ini di luar akses Anda">(di luar akses)</span>}
-                          </td>
-                          <td className="py-1.5 pr-3 font-mono">
-                            {n.inScope ? (
-                              <Link href={`/admin/master-data/parcels/${n.id}`} className="text-primary hover:underline">{n.parcelId}</Link>
-                            ) : n.parcelId}
-                          </td>
-                          <td className="py-1.5 pr-3 whitespace-nowrap">{n.groupName}</td>
-                          <td className="py-1.5 text-right tabular-nums whitespace-nowrap">
-                            {n.distanceM === 0
-                              ? n.overlaps
-                                ? <span className="text-amber-600" title="Interior poligon beririsan — indikasi tumpang tindih">Tumpang tindih ⚠</span>
-                                : "Bersinggungan"
-                              : `${n.distanceM} m`}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {neighborsOmitted > 0 && (
-                    <p className="mt-2 text-xs text-muted-foreground">+{neighborsOmitted} lahan lain dalam {NEIGHBOR_DISTANCE_M} m tidak ditampilkan.</p>
-                  )}
-                </div>
-              )}
-            </div>
+                ini milik peta, dan urutan/nomornya sama dengan Profil Lahan PDF. Komponen bersama
+                dengan tab Patok (#329). */}
+            <ParcelNeighborList neighbors={neighbors} omitted={neighborsOmitted} className="mt-4" />
           </div>
 
           <div className="space-y-4 lg:col-span-2">
@@ -937,6 +903,26 @@ export function ParcelDetailClient({
           </>
         )}
         </Card>
+        </TabsContent>
+
+        {/* ── Patok (#329): patok fisik bersama via parcelUid; nomor = urutan di peta & PDF ── */}
+        <TabsContent value="patok">
+          {markers ? (
+            <ParcelMarkerSection
+              landParcelId={parcel.id}
+              parcelId={parcel.parcelId}
+              geometry={geometry}
+              data={markers}
+              neighbors={neighbors}
+              neighborsOmitted={neighborsOmitted}
+              permissions={permissions}
+              farmerName={parcel.farmer.name}
+              farmerCode={parcel.farmer.farmerId}
+              groupName={parcel.farmer.farmerGroup.name}
+            />
+          ) : (
+            <Val value={null} />
+          )}
         </TabsContent>
       </Tabs>
 

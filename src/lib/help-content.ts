@@ -53,11 +53,13 @@ import tMenambahLahan from "@/content/help/tutorial/t-2-menambah-lahan.md";
 import tMencatatPelatihan from "@/content/help/tutorial/t-3-mencatat-pelatihan.md";
 import tMencatatProduksi from "@/content/help/tutorial/t-4-mencatat-produksi.md";
 import tMencatatLegalitasLahan from "@/content/help/tutorial/t-5-mencatat-legalitas-lahan.md";
+import tMengelolaPatokLahan from "@/content/help/tutorial/t-6-mengelola-patok-lahan.md";
 import uUnggahPetani from "@/content/help/tutorial/u-1-unggah-petani.md";
 import uUnggahProduksi from "@/content/help/tutorial/u-2-unggah-produksi.md";
 import uUnggahLahan from "@/content/help/tutorial/u-3-unggah-lahan.md";
 import uUnggahPohon from "@/content/help/tutorial/u-4-unggah-pohon.md";
 import uUnggahDetailLahan from "@/content/help/tutorial/u-5-unggah-detail-lahan.md";
+import uUnggahPatok from "@/content/help/tutorial/u-6-unggah-patok.md";
 import pMembacaDashboard from "@/content/help/tutorial/p-1-membaca-dashboard.md";
 import pCakupanPelatihan from "@/content/help/tutorial/p-2-cakupan-pelatihan.md";
 import pMembacaPeta from "@/content/help/tutorial/p-3-membaca-peta.md";
@@ -180,6 +182,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "mencatat-pelatihan", source: tMencatatPelatihan },
       { id: "mencatat-produksi", source: tMencatatProduksi },
       { id: "mencatat-legalitas-lahan", source: tMencatatLegalitasLahan },
+      { id: "mengelola-patok-lahan", source: tMengelolaPatokLahan },
     ],
   },
   {
@@ -194,6 +197,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "unggah-produksi", source: uUnggahProduksi },
       { id: "unggah-lahan", source: uUnggahLahan },
       { id: "unggah-detail-lahan", source: uUnggahDetailLahan },
+      { id: "unggah-patok", source: uUnggahPatok },
       { id: "unggah-pohon", source: uUnggahPohon },
     ],
   },

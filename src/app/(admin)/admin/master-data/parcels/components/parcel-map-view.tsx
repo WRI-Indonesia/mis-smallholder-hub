@@ -38,6 +38,12 @@ interface Props {
    * layer sibling (biru) yang punya tautan detail.
    */
   neighbors?: ParcelNeighbor[];
+  /**
+   * Patok batas (#329): persegi kecil bernomor (amber; tepi merah bila lahan
+   * pemakainya kena NKT). Nomor sama dengan tabel & Profil Lahan PDF; ikut
+   * dihitung dalam bounds supaya patok GPS yang menyimpang tetap terlihat.
+   */
+  markerPoints?: { id: string; sequenceNo: number; longitude: number; latitude: number; nkt: boolean }[];
 }
 
 // Kumpulkan semua posisi [lng, lat] dari struktur koordinat GeoJSON apa pun
@@ -97,6 +103,7 @@ export function ParcelMapView({
   siblingLabel,
   treePoints,
   neighbors,
+  markerPoints,
 }: Props) {
   const [styleKey, setStyleKey] = useState<MapStyleKey>("hybrid");
   const { mapStyle, labelBeforeId, syncStyle, registerImageFallback } = useVectorBasemap(styleKey);
@@ -167,6 +174,9 @@ export function ParcelMapView({
   }
   for (const t of treePoints ?? []) {
     allPositions.push([t.longitude, t.latitude]);
+  }
+  for (const m of markerPoints ?? []) {
+    allPositions.push([m.longitude, m.latitude]);
   }
   let bounds: [[number, number], [number, number]] | null = null;
   if (allPositions.length > 0) {
@@ -388,6 +398,18 @@ export function ParcelMapView({
           <Marker key={`n-${l.id}`} longitude={l.c[0]} latitude={l.c[1]} anchor="center" offset={[0, -14]} style={{ pointerEvents: "none" }}>
             <span className="pointer-events-none inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-slate-600 bg-white px-1 font-mono text-[10px] font-bold text-slate-700 shadow">
               {l.index}
+            </span>
+          </Marker>
+        ))}
+        {/* Patok (#329): persegi bernomor — bentuk berbeda dari lingkaran tetangga supaya dua penomoran tak tertukar. */}
+        {(markerPoints ?? []).map((m) => (
+          <Marker key={`m-${m.id}`} longitude={m.longitude} latitude={m.latitude} anchor="center" style={{ pointerEvents: "none" }}>
+            <span
+              // Dua warna (keputusan owner 2026-09-14): patok lahan biasa kuning, patok lahan NKT merah — sama dengan legenda Peta Lahan.
+              className={`pointer-events-none inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 px-1 font-mono text-[10px] font-bold shadow ${m.nkt ? "border-red-800 bg-red-500 text-white" : "border-amber-700 bg-amber-400 text-amber-950"}`}
+              title={`Patok #${m.sequenceNo}${m.nkt ? " · lahan terdampak NKT" : ""}`}
+            >
+              {m.sequenceNo}
             </span>
           </Marker>
         ))}
