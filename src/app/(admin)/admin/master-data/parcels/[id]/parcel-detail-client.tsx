@@ -29,6 +29,9 @@ import { ParcelMapView } from "../components/parcel-map-view";
 import { ParcelProductionChart } from "../components/parcel-production-chart";
 import { ParcelProductionMonthModal } from "../components/parcel-production-month-modal";
 import { ParcelLegalSection } from "../components/parcel-legal-section";
+import { ParcelSatelliteFormModal } from "../components/parcel-satellite-form-modal";
+import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/validations/land-parcel-satellite.schema";
+import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel, type ParcelNeighbor } from "@/lib/parcel-neighbor";
 
 import type { Geometry, Position } from "geojson";
 import type { LandParcel, FarmerSelect, LandParcelSatellites } from "@/types/land-parcel";
@@ -57,6 +60,9 @@ interface Props {
   siblingParcels: SiblingParcel[];
   /** Satelit lahan (#296) — null bila lahan di luar scope (tak seharusnya terjadi: page sudah 404). */
   satellites: LandParcelSatellites | null;
+  /** Lahan tetangga ≤ 25 m (#327) — sudah lewat aturan scope; nomor = urutan array + 1 (sama dengan PDF). */
+  neighbors: ParcelNeighbor[];
+  neighborsOmitted: number;
 }
 
 const formatDecimal = (n: number) =>
@@ -181,10 +187,13 @@ export function ParcelDetailClient({
   productionPermissions,
   siblingParcels,
   satellites,
+  neighbors,
+  neighborsOmitted,
 }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [monthModal, setMonthModal] = useState<{ period: string; title: string } | null>(null);
+  const [borderModal, setBorderModal] = useState(false);
   const router = useRouter();
 
   const canEdit = permissions.includes("EDIT");
@@ -455,6 +464,7 @@ export function ParcelDetailClient({
               label={shortParcelLabel(parcel.parcelId)}
               siblingLabel={shortParcelLabel}
               treePoints={trees?.points}
+              neighbors={neighbors}
             />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground mt-2">
               <span className="flex items-center gap-2">
@@ -473,6 +483,12 @@ export function ParcelDetailClient({
                   Biru = lahan lain milik petani ini
                 </span>
               )}
+              {neighbors.length > 0 && (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-3 shrink-0 rounded-sm border border-dashed border-slate-600" />
+                  Putus-putus = lahan tetangga (≤ {NEIGHBOR_DISTANCE_M} m), bernomor
+                </span>
+              )}
               {center && (
                 <a
                   href={`https://www.google.com/maps?q=${center.lat.toFixed(6)},${center.lng.toFixed(6)}`}
@@ -484,6 +500,57 @@ export function ParcelDetailClient({
                   {center.lat.toFixed(5)}, {center.lng.toFixed(5)}
                   <ExternalLink className="h-3 w-3" />
                 </a>
+              )}
+            </div>
+
+            {/* Lahan tetangga (#327): legenda nomor di peta — di bawah peta (bukan kolom kanan) karena
+                ini milik peta, dan urutan/nomornya sama dengan Profil Lahan PDF. Hanya lahan yang
+                terdaftar di MIS; jalan/sungai/lahan belum dipetakan tak muncul (untuk itu ada Sepadan). */}
+            <div className="mt-4 rounded-lg border p-4 space-y-3">
+              <h3 className="text-sm font-semibold">Lahan Tetangga (≤ {NEIGHBOR_DISTANCE_M} m)</h3>
+              {neighbors.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Tidak ada lahan lain yang terdaftar di MIS dalam {NEIGHBOR_DISTANCE_M} m.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-xs text-muted-foreground">
+                        <th className="py-1.5 pr-2 font-medium w-8">No</th>
+                        <th className="py-1.5 pr-3 font-medium">Pemilik</th>
+                        <th className="py-1.5 pr-3 font-medium">ID Lahan</th>
+                        <th className="py-1.5 pr-3 font-medium">Lembaga</th>
+                        <th className="py-1.5 font-medium text-right">Jarak</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {neighbors.map((n, i) => (
+                        <tr key={n.id} className="border-b last:border-0">
+                          <td className="py-1.5 pr-2 font-mono text-muted-foreground">{i + 1}</td>
+                          <td className="py-1.5 pr-3 whitespace-nowrap">
+                            {neighborOwnerLabel(n)}
+                            {!n.inScope && <span className="ml-1 text-xs text-muted-foreground">(di luar akses)</span>}
+                          </td>
+                          <td className="py-1.5 pr-3 font-mono">
+                            {n.inScope ? (
+                              <Link href={`/admin/master-data/parcels/${n.id}`} className="text-primary hover:underline">{n.parcelId}</Link>
+                            ) : n.parcelId}
+                          </td>
+                          <td className="py-1.5 pr-3 whitespace-nowrap">{n.groupName}</td>
+                          <td className="py-1.5 text-right tabular-nums whitespace-nowrap">
+                            {n.distanceM === 0
+                              ? n.overlaps
+                                ? <span className="text-amber-600" title="Interior poligon beririsan — indikasi tumpang tindih">Tumpang tindih ⚠</span>
+                                : "Bersinggungan"
+                              : `${n.distanceM} m`}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {neighborsOmitted > 0 && (
+                    <p className="mt-2 text-xs text-muted-foreground">+{neighborsOmitted} lahan lain dalam {NEIGHBOR_DISTANCE_M} m tidak ditampilkan.</p>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -599,6 +666,41 @@ export function ParcelDetailClient({
                 </div>
               )}
             </div>
+
+            {/* Sepadan (#326): dengan siapa/apa lahan berbatasan di tiap sisi — satelit
+                1:1 ke identitas, jadi tak hilang saat poligon direvisi. Hanya sisi yang
+                terisi yang tampil (pola #298); sengaja TIDAK ikut hitungan Kelengkapan Data. */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">Sepadan</h3>
+                {canEdit && satellites && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 px-2" onClick={() => setBorderModal(true)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> {satellites.border ? "Ubah" : "Isi"}
+                  </Button>
+                )}
+              </div>
+              {satellites?.border ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {LAND_BORDER_SIDES.filter((side) => satellites.border?.[side]).map((side) => (
+                    <FieldItem key={side} label={LAND_BORDER_SIDE_LABELS[side]}>
+                      <span className="font-normal">{satellites.border?.[side]}</span>
+                    </FieldItem>
+                  ))}
+                  {satellites.border.notes && (
+                    <div className="col-span-2">
+                      <FieldItem label="Catatan">
+                        <span className="whitespace-pre-wrap font-normal">{satellites.border.notes}</span>
+                      </FieldItem>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Sepadan belum diisi — batas Utara/Timur/Selatan/Barat menurut SKT atau hasil cek lapangan.
+                </p>
+              )}
+            </div>
+
           </div>
         </div>
         </Card>
@@ -750,6 +852,15 @@ export function ParcelDetailClient({
         parcel={parcel}
         farmers={farmers}
       />
+
+      {canEdit && borderModal && (
+        <ParcelSatelliteFormModal
+          open
+          onClose={() => setBorderModal(false)}
+          landParcelId={parcel.id}
+          target={{ kind: "border", item: satellites?.border ?? null }}
+        />
+      )}
 
       {canEditProduction && monthModal && (
         <ParcelProductionMonthModal

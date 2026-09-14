@@ -43,4 +43,6 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Blok** — penanda blok kebun bila organisasi Anda memakainya.
 
+**Sepadan** (hanya di detail lahan dan Profil Lahan PDF, bukan kolom tabel) — dengan siapa atau apa lahan berbatasan di sisi Utara, Timur, Selatan, dan Barat, ditulis bebas seperti pada SKT: "Lahan Pak Budi", "Jalan desa", "Sungai", "PT X". Ini catatan lapangan, bukan hasil hitungan peta — jadi bisa menyebut jalan, sungai, atau lahan yang belum terdaftar di MIS. Berbeda dengan *lahan tetangga* yang dihitung dari poligon dan hanya memuat lahan yang ada di MIS.
+
 **Revisi** — bertambah otomatis setiap data lahan diperbarui. Jejak riwayat, bukan kolom yang perlu diisi.

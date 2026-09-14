@@ -1,12 +1,12 @@
 ---
-title: Mengunggah detail lahan (surat, STDB, UL Parcel Code) dari Excel
+title: Mengunggah detail lahan (surat, STDB, UL Parcel Code, sepadan) dari Excel
 icon: Upload
 menuKey: bulk-upload-parcels
 permission: CREATE
 duration: 10
 href: /admin/bulk-upload/parcels
 hrefLabel: Buka halaman Upload Lahan
-goal: Surat kepemilikan, nomor STDB, dan UL Parcel Code menempel pada lahan yang sudah ada — sekaligus untuk satu kabupaten.
+goal: Surat kepemilikan, nomor STDB, UL Parcel Code, dan sepadan menempel pada lahan yang sudah ada — sekaligus untuk satu kabupaten.
 ---
 
 ## Sebelum mulai
@@ -15,7 +15,7 @@ Ini **bukan** cara menambah lahan. Setiap baris harus menunjuk **ID Lahan** yang
 
 + Detail menempel pada *identitas* lahan, bukan pada satu versi poligon. Jadi kalau nanti poligonnya direvisi lewat unggah shapefile ulang, surat dan STDB-nya tetap ikut — tidak perlu diunggah lagi.
 
-Kolom yang dikenali otomatis dari berkas `MIS_<Kabupaten>_data-lahan.xlsx`: ID Lahan, ID Petani, Jenis Surat Tanah, Nomor Surat, Nama tertera di Surat, Luas tertera di Surat, Nomor STDB, `parcel_code`, dan Nama Kelompok Tani. Kolom lain di berkas (nama petani, lembaga, luas poligon) diabaikan — sudah ada di sistem.
+Kolom yang dikenali otomatis dari berkas `MIS_<Kabupaten>_data-lahan.xlsx`: ID Lahan, ID Petani, Jenis Surat Tanah, Nomor Surat, Nama tertera di Surat, Luas tertera di Surat, Nomor STDB, `parcel_code`, Nama Kelompok Tani, dan empat kolom **Sepadan** (Utara/Timur/Selatan/Barat — judul kolom "Sepadan Utara", "Batas Utara", "Sebelah Utara", atau cukup "Utara" semuanya dikenali). Kolom lain di berkas (nama petani, lembaga, luas poligon) diabaikan — sudah ada di sistem.
 
 Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 
@@ -36,6 +36,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di Langkah 1.
 + Penyimpanan berjalan per 500 baris. Bila gagal di tengah, pesan menyebut berapa baris yang sudah tersimpan — cukup **unggah ulang berkas yang sama**: baris yang sudah masuk tidak digandakan (tampil sebagai "tanpa perubahan" di ringkasan).
 + Unggah ulang berkas yang sama **aman**: surat dengan nomor yang sama diperbarui, bukan digandakan; STDB dan UL Parcel Code juga dicocokkan dulu.
 + **Nama Kelompok Tani** hanya mengisi lahan yang di sistem masih kosong — yang sudah terisi **tidak ditimpa** (di pratinjau ditandai *"(sudah ada)"*). Untuk mengubah KT lahan, pakai form Edit Lahan.
++ **Sepadan** memakai aturan sebaliknya: sel yang **terisi menimpa** nilai lama (data sepadan wajar dikoreksi lewat pendataan ulang), sel yang **kosong dibiarkan** — tidak mengosongkan yang sudah ada. Mengosongkan sepadan hanya bisa lewat kotak Sepadan di detail lahan.
 
 > [!penting] Satu nomor **STDB boleh muncul di beberapa baris** selama ID Petaninya sama — STDB memang terbit per petani dan menutup semua persilnya. Yang ditolak adalah nomor STDB yang sama dengan **petani berbeda**.
 
@@ -51,7 +52,7 @@ Sel bertuliskan **"belum ada"**, **"belum dapat"**, atau **"n/a"** dulu diperlak
 
 ## Hasil
 
-Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB lengkap dengan **tahapnya**, UL Parcel Code) dan ringkasannya di detail petani. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
+Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: Surat kepemilikan, STDB lengkap dengan **tahapnya**, UL Parcel Code; tab **Informasi**: kotak **Sepadan**) dan ringkasannya di detail petani. Sepadan juga tercetak di **Profil Lahan (PDF)**. Luas tertera di surat disimpan **terpisah** dari luas poligon; selisih keduanya memang informasi, bukan kesalahan.
 
 ## Kalau bermasalah
 

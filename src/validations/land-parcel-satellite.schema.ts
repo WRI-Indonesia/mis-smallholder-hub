@@ -127,6 +127,30 @@ export const updateLandParcelProgramSchema = programBase
   .extend({ id: z.string().min(1) })
   .refine(programDateOrder.check, programDateOrder.opts);
 
+// ---- Sepadan (#326) — satelit 1:1, keempat sisi opsional; semua kosong = hapus.
+export const LAND_BORDER_SIDES = ["north", "east", "south", "west"] as const;
+export type LandBorderSide = (typeof LAND_BORDER_SIDES)[number];
+/** Label arah, urutan searah jarum jam — dipakai form, detail, PDF, dan importer. */
+export const LAND_BORDER_SIDE_LABELS: Record<LandBorderSide, string> = {
+  north: "Utara",
+  east: "Timur",
+  south: "Selatan",
+  west: "Barat",
+};
+export const landParcelBorderSchema = z.object({
+  landParcelId: z.string().min(1, "Lahan tidak valid"),
+  north: optText(200),
+  east: optText(200),
+  south: optText(200),
+  west: optText(200),
+  notes: optText(500),
+});
+
+/** Empat sisi saja (tanpa landParcelId/notes) — dipakai Bulk Upload Lahan (atribut DBF). */
+export const landParcelBorderSidesSchema = landParcelBorderSchema.omit({ landParcelId: true, notes: true });
+
+export type LandParcelBorderInput = z.infer<typeof landParcelBorderSchema>;
+export type LandParcelBorderSidesInput = z.infer<typeof landParcelBorderSidesSchema>;
 export type LandParcelDocumentInput = z.infer<typeof landParcelDocumentSchema>;
 export type LandStdbInput = z.infer<typeof landStdbSchema>;
 export type LandParcelExternalIdInput = z.infer<typeof landParcelExternalIdSchema>;

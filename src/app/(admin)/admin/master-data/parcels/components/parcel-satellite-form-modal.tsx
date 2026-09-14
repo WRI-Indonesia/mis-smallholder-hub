@@ -20,7 +20,9 @@ import {
   updateLandParcelExternalId,
   createLandParcelProgram,
   updateLandParcelProgram,
+  upsertLandParcelBorder,
 } from "@/server/actions/land-parcel-satellite";
+import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/validations/land-parcel-satellite.schema";
 import {
   PARCEL_MAPPERS,
   DEFAULT_PARCEL_MAPPER,
@@ -32,6 +34,7 @@ import type {
   LandStdbItem,
   LandParcelExternalIdItem,
   LandParcelProgramItem,
+  LandParcelBorderItem,
 } from "@/types/land-parcel";
 
 /**
@@ -44,7 +47,9 @@ export type SatelliteFormTarget =
   | { kind: "document"; item: LandParcelDocumentItem | null }
   | { kind: "stdb"; item: LandStdbItem | null }
   | { kind: "externalId"; item: LandParcelExternalIdItem | null }
-  | { kind: "program"; item: LandParcelProgramItem | null };
+  | { kind: "program"; item: LandParcelProgramItem | null }
+  // Sepadan (#326): satelit 1:1 — `item` null berarti belum pernah diisi; keduanya lewat upsert.
+  | { kind: "border"; item: LandParcelBorderItem | null };
 
 interface Props {
   open: boolean;
@@ -58,6 +63,7 @@ const TITLES: Record<SatelliteFormTarget["kind"], string> = {
   stdb: "STDB",
   externalId: "UL Parcel Code",
   program: "Program",
+  border: "Sepadan",
 };
 
 const STATUS_OPTIONS = [
@@ -134,6 +140,16 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
       result = target.item
         ? await updateLandParcelExternalId({ id: target.item.id, ...data })
         : await createLandParcelExternalId({ landParcelId, ...data });
+    } else if (target.kind === "border") {
+      // Semua sisi kosong sah (= hapus) — server meng-NULL-kan kolom, baris tetap.
+      result = await upsertLandParcelBorder({
+        landParcelId,
+        north: str(form, "north"),
+        east: str(form, "east"),
+        south: str(form, "south"),
+        west: str(form, "west"),
+        notes: str(form, "notes"),
+      });
     } else {
       const data = { programType: "DEMPLOT_PBU", status, startDate: str(form, "startDate"), endDate: str(form, "endDate"), notes: str(form, "notes") };
       result = target.item ? await updateLandParcelProgram({ id: target.item.id, ...data }) : await createLandParcelProgram({ landParcelId, ...data });
@@ -154,6 +170,7 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
   const stdb = target.kind === "stdb" ? target.item : null;
   const ext = target.kind === "externalId" ? target.item : null;
   const prog = target.kind === "program" ? target.item : null;
+  const border = target.kind === "border" ? target.item : null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -332,6 +349,24 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
                 <Label htmlFor="mappedAt">Tanggal Pemetaan</Label>
                 <Input id="mappedAt" name="mappedAt" type="date" defaultValue={toDateInput(ext?.mappedAt)} />
                 {fieldError("mappedAt")}
+              </div>
+            </>
+          )}
+
+          {target.kind === "border" && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Dengan siapa/apa lahan ini berbatasan di tiap sisi — teks bebas, mis. &ldquo;Lahan Pak Budi&rdquo;,
+                &ldquo;Jalan desa&rdquo;, &ldquo;Sungai&rdquo;, &ldquo;PT X&rdquo;. Kosongkan semua untuk menghapus.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {LAND_BORDER_SIDES.map((side) => (
+                  <div key={side} className="space-y-2">
+                    <Label htmlFor={`border-${side}`}>{LAND_BORDER_SIDE_LABELS[side]}</Label>
+                    <Input id={`border-${side}`} name={side} maxLength={200} defaultValue={border?.[side] ?? ""} />
+                    {fieldError(side)}
+                  </div>
+                ))}
               </div>
             </>
           )}

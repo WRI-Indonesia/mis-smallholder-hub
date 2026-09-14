@@ -68,6 +68,17 @@ Nama di kolom pertama adalah **persona ilustratif**; kolom Role memakai enum `Ro
 | `farmerRelationAccessFilter(access)` | Model ber-relasi `farmer` (mis. `LandParcel`, `ProductionRecord`, `TrainingParticipant`) |
 | `getAccessibleDistrictIds(access)` | Daftar id district yang boleh diakses (`null` = ALL); `BY_FARMER_GROUP` di-resolve ke district lembaga yang di-assign |
 
+### Pengecualian scope yang tercatat
+
+Aturan dasar: setiap pembacaan hanya mengembalikan baris dalam scope user. Dua pengecualian **disengaja** dan harus tetap terdaftar di sini — keduanya untuk data spasial yang tak bisa dinilai tanpa melihat "sisi lain":
+
+| Pengecualian | Apa yang tembus scope | Apa yang TIDAK tembus | Alasan & guard |
+|---|---|---|---|
+| **Lahan tetangga** (#327) — `fetchParcelNeighbors` (`src/lib/parcel-neighbor-query.ts`), dipakai Profil Lahan (PDF, tiga menu pemanggil) dan peta Detail Lahan | **Poligon**, ID Lahan, jarak, dan **nama Lembaga** semua lahan aktif MIS ≤ 25 m dari lahan yang dilihat — apa pun scope user | **Nama & kode petani** tetangga di luar scope: di-`null`-kan **di server** (`applyNeighborScope`) sebelum keluar dari fungsi, bukan disembunyikan di UI. Tautan ke detail lahan tetangga hanya untuk yang dalam scope (halaman detailnya sendiri 404 bila di luar scope) | Peta yang menghilangkan lahan di sebelahnya menyesatkan di lapangan, tetapi Profil Lahan bisa dicetak siapa pun yang punya akses menu Lahan/Peta/Petani, jadi identitas petani lain tidak boleh ikut. Scope ditentukan lewat kueri kedua ber-`farmerRelationAccessFilter` — aturan akses tidak ditulis ulang di SQL. Lebih konservatif daripada pengecualian #317 di bawah |
+| **Topology check** (#317 Fase 2, direncanakan) — `getParcelTopologyFindings` | Pasangan lahan yang bertumpang tindih bila **minimal satu sisi** dalam scope user; sisi lawan ditampilkan **lengkap** (nama petani, ID lahan, lembaga) | Pasangan yang kedua sisinya di luar scope | Verifikasi klaim ganda mustahil tanpa identitas sisi lawan; dibatasi izin menu khusus `data-analyst-parcel-overlap` (bukan menu umum). Preseden: `getAdminBoundaries` (#266) |
+
+Menambah pengecualian baru = menambah baris di tabel ini **dan** komentar di fungsinya.
+
 ### Permission Resolution Priority
 
 1. **SUPERADMIN** → Grant all, skip all filters

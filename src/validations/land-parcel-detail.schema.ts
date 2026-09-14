@@ -31,6 +31,17 @@ export const landParcelDetailRowSchema = z.object({
     .nullable(),
   externalCode: trimmed.nullable(),
   subGroupLv2: trimmed.nullable(),
+  // Sepadan (#326): sisi null = tidak disentuh (bukan dikosongkan); objek null/absen
+  // = tak ada sel sepadan. Opsional agar skrip import lama & fixture tetap sah.
+  border: z
+    .object({
+      north: trimmed.nullable(),
+      east: trimmed.nullable(),
+      south: trimmed.nullable(),
+      west: trimmed.nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 /**

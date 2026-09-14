@@ -3,6 +3,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
 import type { ParcelPassport } from "@/types/map";
+import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel } from "@/lib/parcel-neighbor";
 
 const EMERALD: [number, number, number] = [16, 185, 129];
 const SLATE_800: [number, number, number] = [30, 41, 59];
@@ -14,6 +15,8 @@ const AREA_FILL: [number, number, number] = [209, 240, 224];
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 const PAGE_W = 210;
+/** Label arah sepadan (#326), urutan searah jarum jam — sama dengan Detail Lahan. */
+const SIDE_LABELS = { north: "Utara", east: "Timur", south: "Selatan", west: "Barat" } as const;
 const PAGE_H = 297;
 const MARGIN = 14;
 const CONTENT_W = PAGE_W - MARGIN * 2;
@@ -66,19 +69,75 @@ function ensureSpace(doc: jsPDF, y: number, need: number): number {
   return 16;
 }
 
-/** Exterior ring of a Polygon / MultiPolygon, with the duplicate closing point removed. */
-function exteriorRing(geometry: ParcelPassport["parcel"]["geometry"]): Position[] {
-  const ring = geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0];
-  if (!ring || ring.length < 3) return [];
-  const last = ring[ring.length - 1];
-  const first = ring[0];
-  return last[0] === first[0] && last[1] === first[1] ? ring.slice(0, -1) : ring;
+/** Semua ring luar (tiap poligon MultiPolygon) tanpa titik penutup ganda. */
+function exteriorRings(geometry: ParcelPassport["parcel"]["geometry"]): Position[][] {
+  const polys = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+  return polys
+    .map((poly) => poly?.[0] ?? [])
+    .filter((ring) => ring.length >= 3)
+    .map((ring) => {
+      const last = ring[ring.length - 1];
+      const first = ring[0];
+      return last[0] === first[0] && last[1] === first[1] ? ring.slice(0, -1) : ring;
+    });
 }
 
-/** Draw the parcel polygon fitted (aspect-preserving) inside the given mm box. */
-function drawPolygon(doc: jsPDF, geometry: ParcelPassport["parcel"]["geometry"], box: { x: number; y: number; w: number; h: number }, label: string) {
-  const ring = exteriorRing(geometry);
-  if (ring.length < 3) {
+type Box = { x: number; y: number; w: number; h: number };
+type Projector = (lon: number, lat: number) => [number, number];
+
+/** Poligon (ring luar) sebagai path jsPDF; `style` null = hanya membangun path (untuk clip). */
+function strokeRing(doc: jsPDF, ring: Position[], project: Projector, style: "S" | "FD") {
+  const pts = ring.map(([lon, lat]) => project(lon, lat));
+  const segs = pts.slice(1).map((p, i) => [p[0] - pts[i][0], p[1] - pts[i][1]]);
+  doc.lines(segs, pts[0][0], pts[0][1], [1, 1], style, true);
+}
+
+/** Skala batang (kiri-bawah) + panah utara "U" (kanan-atas) — pola #180 Laporan Lahan. */
+function drawMapDecorations(doc: jsPDF, box: Box, mmPerMeter: number) {
+  // Panjang "bulat" terbesar yang muat ≤ 1/3 lebar kotak.
+  const candidates = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
+  const maxMm = box.w / 3;
+  let meters = candidates[0];
+  for (const c of candidates) if (c * mmPerMeter <= maxMm) meters = c;
+  const barMm = meters * mmPerMeter;
+  const bx = box.x + 4;
+  const by = box.y + box.h - 5;
+  doc.setDrawColor(...SLATE_800);
+  doc.setLineWidth(0.5);
+  doc.line(bx, by, bx + barMm, by);
+  doc.line(bx, by - 1.2, bx, by + 1.2);
+  doc.line(bx + barMm, by - 1.2, bx + barMm, by + 1.2);
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_800);
+  doc.text(`${meters} m`, bx + barMm / 2, by - 1.8, { align: "center" });
+
+  // Panah utara.
+  const nx = box.x + box.w - 5;
+  const ny = box.y + 4;
+  doc.setFillColor(...SLATE_800);
+  doc.triangle(nx, ny, nx - 1.6, ny + 4.5, nx + 1.6, ny + 4.5, "F");
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  doc.text("U", nx, ny + 8, { align: "center" });
+}
+
+/**
+ * Peta lahan (#327): lahan ini solid emerald di tengah, lahan tetangga ≤ 25 m
+ * (sudah lewat aturan scope) putus-putus abu bernomor. Bingkai = bbox lahan
+ * ini + margin — bukan bbox gabungan — supaya lahan yang dicetak tetap dominan;
+ * tetangga yang lebih besar DIPOTONG di tepi (clip), nomornya ditempel ke tepi
+ * dalam. Skala batang + panah utara agar "≤ 25 m" terbaca di kertas.
+ */
+function drawParcelMap(
+  doc: jsPDF,
+  geometry: ParcelPassport["parcel"]["geometry"],
+  neighbors: ParcelPassport["neighbors"],
+  box: Box,
+  label: string,
+) {
+  const rings = exteriorRings(geometry);
+  if (rings.length === 0) {
     doc.setFontSize(9);
     doc.setTextColor(...SLATE_400);
     doc.text("Geometri lahan tidak tersedia", box.x + box.w / 2, box.y + box.h / 2, { align: "center" });
@@ -86,38 +145,162 @@ function drawPolygon(doc: jsPDF, geometry: ParcelPassport["parcel"]["geometry"],
   }
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
-  for (const [lon, lat] of ring) {
+  for (const [lon, lat] of rings.flat()) {
     minLon = Math.min(minLon, lon);
     maxLon = Math.max(maxLon, lon);
     minLat = Math.min(minLat, lat);
     maxLat = Math.max(maxLat, lat);
   }
-  const spanLon = maxLon - minLon || 1e-6;
-  const spanLat = maxLat - minLat || 1e-6;
-  const pad = 6;
-  const availW = box.w - pad * 2;
-  const availH = box.h - pad * 2;
-  const s = Math.min(availW / spanLon, availH / spanLat);
-  const drawW = spanLon * s;
+  const midLat = (minLat + maxLat) / 2;
+  const cosLat = Math.max(0.2, Math.cos((midLat * Math.PI) / 180));
+  // Margin: 40% span terbesar atau ≈50 m — supaya tetangga bersinggungan terlihat
+  // meski lahannya kecil, tanpa membuat lahan utama jadi titik.
+  const spanLon0 = maxLon - minLon || 1e-6;
+  const spanLat0 = maxLat - minLat || 1e-6;
+  const fiftyMDeg = 50 / 111_320;
+  const marginDeg = Math.max(0.4 * Math.max(spanLon0 * cosLat, spanLat0), fiftyMDeg);
+  minLon -= marginDeg / cosLat; maxLon += marginDeg / cosLat;
+  minLat -= marginDeg; maxLat += marginDeg;
+  const spanLon = maxLon - minLon;
+  const spanLat = maxLat - minLat;
+  // mm per derajat: sumbu lon dikoreksi cos(lat) supaya bentuk tidak gepeng.
+  const s = Math.min(box.w / (spanLon * cosLat), box.h / spanLat);
+  const drawW = spanLon * cosLat * s;
   const drawH = spanLat * s;
-  const offX = box.x + pad + (availW - drawW) / 2;
-  const offY = box.y + pad + (availH - drawH) / 2;
+  const offX = box.x + (box.w - drawW) / 2;
+  const offY = box.y + (box.h - drawH) / 2;
+  const project: Projector = (lon, lat) => [offX + (lon - minLon) * cosLat * s, offY + (maxLat - lat) * s];
+  const mmPerMeter = s / 111_320;
 
-  // Project lon/lat → mm (flip Y so north is up).
-  const pts = ring.map(([lon, lat]) => [offX + (lon - minLon) * s, offY + (maxLat - lat) * s] as [number, number]);
-  const segs = pts.slice(1).map((p, i) => [p[0] - pts[i][0], p[1] - pts[i][1]]);
+  // Clip semua gambar ke kotak peta — tetangga besar terpotong, bukan meluber.
+  doc.saveGraphicsState();
+  doc.rect(box.x, box.y, box.w, box.h, null);
+  doc.clip();
+  doc.discardPath();
 
+  // Tetangga dulu (di bawah lahan utama).
+  const numberAt: { x: number; y: number; n: number }[] = [];
+  neighbors.forEach((nb, i) => {
+    const nrings = exteriorRings(nb.geometry);
+    if (nrings.length === 0) return;
+    doc.setLineDashPattern([1.2, 0.8], 0);
+    doc.setLineWidth(0.4);
+    if (nb.sameFarmer) doc.setDrawColor(2, 132, 199);
+    else doc.setDrawColor(...SLATE_600);
+    for (const ring of nrings) strokeRing(doc, ring, project, "S");
+    doc.setLineDashPattern([], 0);
+    // Nomor di centroid ring terbesar; bila di luar kotak, tempel ke tepi dalam.
+    const big = nrings.reduce((a, b) => (b.length > a.length ? b : a));
+    const c = big.reduce(([ax, ay], [lon, lat]) => [ax + lon, ay + lat], [0, 0]).map((v) => v / big.length);
+    const [px, py] = project(c[0], c[1]);
+    // Tepi bawah disisakan 9 mm untuk skala batang; sisi lain 4 mm.
+    numberAt.push({
+      x: Math.min(Math.max(px, box.x + 4), box.x + box.w - 4),
+      y: Math.min(Math.max(py, box.y + 4), box.y + box.h - 9),
+      n: i + 1,
+    });
+  });
+
+  // Lahan ini — solid, di atas tetangga.
   doc.setDrawColor(...EMERALD);
   doc.setFillColor(...AREA_FILL);
   doc.setLineWidth(0.6);
-  doc.lines(segs, pts[0][0], pts[0][1], [1, 1], "FD", true);
+  for (const ring of rings) strokeRing(doc, ring, project, "FD");
 
-  // Label at the polygon's drawn centroid.
-  const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
-  const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  // Nomor tetangga: lingkaran putih bertepi abu.
+  for (const { x, y, n } of numberAt) {
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...SLATE_600);
+    doc.setLineWidth(0.3);
+    doc.circle(x, y, 2.2, "FD");
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...SLATE_800);
+    doc.text(String(n), x, y, { align: "center", baseline: "middle" });
+  }
+
+  // Label lahan ini di centroid ring pertama.
+  const main = rings[0];
+  const mc = main.reduce(([ax, ay], [lon, lat]) => [ax + lon, ay + lat], [0, 0]).map((v) => v / main.length);
+  const [lx, ly] = project(mc[0], mc[1]);
   doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
-  doc.text(label, cx, cy, { align: "center", baseline: "middle" });
+  doc.text(label, lx, ly, { align: "center", baseline: "middle" });
+
+  drawMapDecorations(doc, box, mmPerMeter);
+  doc.restoreGraphicsState();
+}
+
+/** Potong teks agar muat `maxW` mm (dengan "…"). */
+function fitText(doc: jsPDF, text: string, maxW: number): string {
+  if (doc.getTextWidth(text) <= maxW) return text;
+  let t = text;
+  while (t.length > 1 && doc.getTextWidth(`${t}…`) > maxW) t = t.slice(0, -1);
+  return `${t}…`;
+}
+
+/**
+ * Legenda tetangga di bawah peta: No · Pemilik · ID Lahan · Lembaga · Jarak.
+ * SELALU dicetak — kosong pun berbunyi "Tidak ada lahan lain dalam 25 m"
+ * supaya pembaca tahu itu hasil cek, bukan luput cetak. Mengembalikan y bawah.
+ */
+function drawNeighborLegend(doc: jsPDF, neighbors: ParcelPassport["neighbors"], omitted: number, x: number, y: number, w: number): number {
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...SLATE_800);
+  doc.text(`Lahan Tetangga (dalam ${NEIGHBOR_DISTANCE_M} m)`, x, y);
+  y += 3.6;
+  if (neighbors.length === 0) {
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...SLATE_600);
+    doc.text(`Tidak ada lahan lain yang terdaftar di MIS dalam ${NEIGHBOR_DISTANCE_M} m.`, x, y);
+    return y + 3;
+  }
+  // Kolom: No 5 · Pemilik 30% · ID Lahan 44% (ID lengkap ±27 karakter) · Lembaga sisa · Jarak 11.
+  const noW = 5, distW = 11;
+  const rest = w - noW - distW;
+  const ownerW = rest * 0.3, idW = rest * 0.44, groupW = rest - ownerW - idW;
+  const cx = [x, x + noW, x + noW + ownerW, x + noW + ownerW + idW, x + w];
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_400);
+  doc.text("No", cx[0], y);
+  doc.text("Pemilik", cx[1], y);
+  doc.text("ID Lahan", cx[2], y);
+  doc.text("Lembaga", cx[3], y);
+  doc.text("Jarak", cx[4], y, { align: "right" });
+  y += 1;
+  doc.setDrawColor(...SLATE_200);
+  doc.setLineWidth(0.3);
+  doc.line(x, y, x + w, y);
+  y += 3;
+  doc.setFontSize(7);
+  neighbors.forEach((n, i) => {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...SLATE_800);
+    doc.text(String(i + 1), cx[0], y);
+    // Kolom sempit: varian pendek untuk lahan sendiri (layar memakai label panjang).
+    doc.text(fitText(doc, n.sameFarmer ? "Petani ini" : neighborOwnerLabel(n), ownerW - 1.5), cx[1], y);
+    doc.text(fitText(doc, n.parcelId, idW - 1.5), cx[2], y);
+    doc.text(fitText(doc, n.groupName, groupW - 1.5), cx[3], y);
+    const dist = n.distanceM === 0 ? (n.overlaps ? "tindih !" : "singgung") : `${n.distanceM} m`;
+    doc.text(dist, cx[4], y, { align: "right" });
+    y += 3.4;
+  });
+  if (omitted > 0) {
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...SLATE_600);
+    doc.text(`+${omitted} lahan lain dalam ${NEIGHBOR_DISTANCE_M} m tidak ditampilkan.`, x, y);
+    y += 3;
+  }
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(...SLATE_400);
+  doc.text("Hanya lahan yang terdaftar di MIS; pemilik di luar akses pencetak ditampilkan Lembaga-nya saja.", x, y, { maxWidth: w });
+  return y + 3;
 }
 
 function sectionHeading(doc: jsPDF, text: string, y: number) {
@@ -136,7 +319,7 @@ function sectionHeading(doc: jsPDF, text: string, y: number) {
  */
 export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-  const { farmer, group, parcel, legal, training, production } = data;
+  const { farmer, group, parcel, legal, training, production, neighbors, neighborsOmitted } = data;
 
   // ── Komposisi (#298, rombak total atas masukan owner "terlalu rapat"):
   //   hal. 1 — header ber-ID besar, 4 kartu ringkasan (cermin halaman web),
@@ -240,11 +423,13 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   doc.setDrawColor(...SLATE_200);
   doc.setLineWidth(0.4);
   doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h, "S");
-  drawPolygon(doc, parcel.geometry, mapBox, parcel.parcelId.split(".").find((x) => /^[A-Z]$/i.test(x)) ?? parcel.parcelId);
-  doc.setFontSize(7.5);
+  drawParcelMap(doc, parcel.geometry, neighbors, mapBox, parcel.parcelId.split(".").find((x) => /^[A-Z]$/i.test(x)) ?? parcel.parcelId);
+  // Titik tengah pindah ke bawah kotak — kiri-bawah kotak kini dipakai skala batang (#327).
+  doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
-  doc.text(`Titik tengah: ${parcel.centroid[1].toFixed(6)}, ${parcel.centroid[0].toFixed(6)}`, mapBox.x + 2, mapBox.y + mapBox.h - 3);
+  doc.text(`Titik tengah: ${parcel.centroid[1].toFixed(6)}, ${parcel.centroid[0].toFixed(6)}`, mapBox.x, mapBox.y + mapBox.h + 3.2);
+  const legendBottom = drawNeighborLegend(doc, neighbors, neighborsOmitted, mapBox.x, mapBox.y + mapBox.h + 7, mapBox.w);
 
   const colW = COL2_W;
   const attr = (items: { label: string; value: string }[], x: number, yy: number, labelW: number, maxW: number) => {
@@ -301,7 +486,50 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     28,
     colW,
   );
-  y = Math.max(mapBox.y + mapBox.h, ry) + 6;
+  // ── Sepadan (#326) di kolom kanan, di bawah Pemilik — kolom kanan biasanya
+  // lebih pendek daripada peta + legenda tetangga, jadi ini memakai ruang yang
+  // memang kosong dan halaman 1 tetap memuat Legalitas (Pelatihan + Produksi
+  // sengaja halaman 2). Blok SELALU dicetak ("—" bila kosong): pembaca perlu
+  // tahu sepadan memang belum didata, bukan luput cetak.
+  ry += 3;
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...SLATE_800);
+  doc.text("Sepadan", COL2_X, ry);
+  doc.setDrawColor(...EMERALD);
+  doc.line(COL2_X, ry + 1.5, COL2_X + 26, ry + 1.5);
+  ry += 5.5;
+  // Grid 2×2 (U · T / S · B): label kecil di atas nilai — lebih hemat tinggi
+  // daripada empat baris label/nilai, dan urutannya tetap searah jarum jam.
+  const halfW = colW / 2;
+  const sides = ["north", "east", "south", "west"] as const;
+  for (let r = 0; r < 2; r++) {
+    let rowBottom = ry;
+    for (let c = 0; c < 2; c++) {
+      const side = sides[r * 2 + c];
+      const x = COL2_X + halfW * c;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...SLATE_400);
+      doc.text(SIDE_LABELS[side], x, ry);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...SLATE_800);
+      const lines = doc.splitTextToSize(orDash(parcel.border?.[side]), halfW - 3) as string[];
+      doc.text(lines, x, ry + 4);
+      rowBottom = Math.max(rowBottom, ry + 4 + 4 * (lines.length - 1));
+    }
+    ry = rowBottom + 5.5;
+  }
+  if (parcel.border?.notes) {
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...SLATE_600);
+    const lines = doc.splitTextToSize(`Catatan sepadan: ${parcel.border.notes}`, colW) as string[];
+    doc.text(lines, COL2_X, ry - 1);
+    ry += 3.8 * lines.length;
+  }
+  y = Math.max(legendBottom, ry) + 4;
   if (parcel.notes) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");

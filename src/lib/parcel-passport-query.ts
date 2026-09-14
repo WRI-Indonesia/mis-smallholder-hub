@@ -8,6 +8,8 @@ import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { summarizeProduction } from "@/lib/map-data";
+import { fetchParcelNeighbors } from "@/lib/parcel-neighbor-query";
+import { NEIGHBOR_LIMIT_PDF } from "@/lib/parcel-neighbor";
 import type { ActionResult } from "@/types/action-result";
 import type { FarmerTrainingItem, ParcelPassport } from "@/types/map";
 
@@ -102,6 +104,8 @@ export async function fetchParcelPassport(
           },
           externalIds: { where: { isActive: true }, select: { source: true, code: true } },
           programs: { where: { isActive: true }, select: { programType: true, status: true, startDate: true, endDate: true } },
+          // Sepadan (#326) — 1:1; keempat sisi NULL berarti pernah dihapus, diperlakukan sama dengan belum diisi.
+          border: { select: { north: true, east: true, south: true, west: true, notes: true } },
         },
       },
       farmer: {
@@ -143,7 +147,7 @@ export async function fetchParcelPassport(
   }
 
   const farmer = parcel.farmer;
-  const [training, prodRecords, treeCount] = await Promise.all([
+  const [training, prodRecords, treeCount, neighborhood] = await Promise.all([
     computeFarmerTrainingItems(farmer.id),
     includeProduction
       ? prisma.productionRecord.findMany({
@@ -152,6 +156,8 @@ export async function fetchParcelPassport(
         })
       : Promise.resolve([]),
     prisma.tree.count({ where: { landParcelId, isActive: true } }),
+    // Lahan tetangga (#327) — cap PDF; scope sudah diterapkan di dalamnya.
+    fetchParcelNeighbors(landParcelId, NEIGHBOR_LIMIT_PDF),
   ]);
 
   return {
@@ -187,6 +193,9 @@ export async function fetchParcelPassport(
         species: parcel.species,
         isPsr: parcel.isPsr,
         treeCount,
+        border: parcel.identity.border && (parcel.identity.border.north || parcel.identity.border.east || parcel.identity.border.south || parcel.identity.border.west)
+          ? parcel.identity.border
+          : null,
       },
       legal: {
         documents: parcel.identity.documents,
@@ -207,6 +216,8 @@ export async function fetchParcelPassport(
       },
       training,
       production: summarizeProduction(prodRecords),
+      neighbors: neighborhood.neighbors,
+      neighborsOmitted: neighborhood.omitted,
     },
   };
 }

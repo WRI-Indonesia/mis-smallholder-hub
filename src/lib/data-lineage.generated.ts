@@ -23,6 +23,7 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "farmer": "R",
       "landParcel": "RW",
+      "landParcelBorder": "RW",
       "landParcelDocument": "RW",
       "landParcelExternalId": "RW",
       "landParcelIdentity": "W",
@@ -254,6 +255,7 @@ export const DATA_LINEAGE: DataLineage = [
       "tree": "R"
     },
     "modules": [
+      "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/fire-boundary.ts",
@@ -277,6 +279,7 @@ export const DATA_LINEAGE: DataLineage = [
       "tree": "R"
     },
     "modules": [
+      "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
@@ -310,6 +313,7 @@ export const DATA_LINEAGE: DataLineage = [
       "farmer": "R",
       "farmerGroup": "R",
       "landParcel": "RW",
+      "landParcelBorder": "RW",
       "landParcelDocument": "RW",
       "landParcelExternalId": "RW",
       "landParcelIdentity": "RW",
@@ -322,6 +326,7 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/lib/land-parcel-identity.ts",
+      "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",

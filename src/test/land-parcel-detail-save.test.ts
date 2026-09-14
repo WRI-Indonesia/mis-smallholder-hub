@@ -276,3 +276,43 @@ describe("fetchParcelDetailExistingState — pasangan STDB aktif/nonaktif", () =
     expect(plan.linkCreates).toEqual([{ parcelUid: "uid-1", stdbId: "s-aktif" }]);
   });
 });
+
+describe("planLandParcelDetailRows — sepadan (#326): sel terisi menimpa, sel kosong dibiarkan", () => {
+  const border = (o: Partial<NonNullable<LandParcelDetailRowInput["border"]>>) => ({ north: null, east: null, south: null, west: null, ...o });
+
+  it("DB kosong → satu create per lahan yang memuat hanya sisi terisi; baris ganda digabung, sisi terakhir menang", () => {
+    const plan = planLandParcelDetailRows(
+      [row({ border: border({ north: "Lahan Pak Budi" }) }), row({ border: border({ north: "Lahan Pak Budi (revisi)", south: "Jalan" }) })],
+      emptyExistingState(),
+    );
+    expect(plan.borderCreates).toEqual([{ parcelUid: "uid-1", north: "Lahan Pak Budi (revisi)", east: null, south: "Jalan", west: null }]);
+    expect(plan.summary).toMatchObject({ bordersCreated: 1, bordersUpdated: 0, bordersUnchanged: 0 });
+  });
+
+  it("sudah ada → hanya sisi yang BERUBAH masuk update; sel kosong di file tidak mengosongkan nilai lama", () => {
+    const existing = emptyExistingState();
+    existing.borders.set("uid-1", { id: "b1", north: "Lahan Pak Budi", east: "Sungai", south: null, west: null });
+    const plan = planLandParcelDetailRows([row({ border: border({ north: "Lahan Pak Budi", south: "Jalan desa" }) })], existing);
+    expect(plan.borderUpdates).toEqual([{ id: "b1", data: { south: "Jalan desa" } }]);
+    // `east: null` di file TIDAK menghasilkan `east: null` di update.
+    expect(plan.borderUpdates[0].data).not.toHaveProperty("east");
+    expect(plan.summary).toMatchObject({ bordersUpdated: 1, bordersCreated: 0 });
+  });
+
+  it("semua sisi di file sudah sama dengan DB → unchanged, tanpa query", () => {
+    const existing = emptyExistingState();
+    existing.borders.set("uid-1", { id: "b1", north: "Lahan Pak Budi", east: null, south: null, west: null });
+    const plan = planLandParcelDetailRows([row({ border: border({ north: "Lahan Pak Budi" }) })], existing);
+    expect(plan.borderUpdates).toEqual([]);
+    expect(plan.summary).toMatchObject({ bordersUnchanged: 1, bordersUpdated: 0 });
+  });
+
+  it("baris tanpa sel sepadan (border null/absen) tidak menyentuh sepadan sama sekali", () => {
+    const existing = emptyExistingState();
+    existing.borders.set("uid-1", { id: "b1", north: "Lahan Pak Budi", east: null, south: null, west: null });
+    const plan = planLandParcelDetailRows([row({ subGroupLv2: "KT Maju" }), row({ border: null })], existing);
+    expect(plan.borderCreates).toEqual([]);
+    expect(plan.borderUpdates).toEqual([]);
+    expect(plan.summary).toMatchObject({ bordersCreated: 0, bordersUpdated: 0, bordersUnchanged: 0 });
+  });
+});

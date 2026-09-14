@@ -174,6 +174,11 @@ export const PARCEL_DETAIL_TARGET_FIELDS = [
   { key: "stdbNumber", label: "Nomor STDB", required: false, desc: "Per petani; satu nomor boleh menutup beberapa lahan" },
   { key: "externalCode", label: "UL Parcel Code (parcel_code)", required: false, desc: "Kode hasil pemetaan pihak ketiga" },
   { key: "subGroupLv2", label: "Nama Kelompok Tani", required: false, desc: "Mengisi Kelompok Tani lahan HANYA bila di sistem masih kosong (tidak menimpa)" },
+  // Sepadan (#326): sel terisi MENIMPA nilai lama, sel kosong dibiarkan (tidak mengosongkan).
+  { key: "borderNorth", label: "Sepadan Utara", required: false, desc: "Tetangga/batas di sisi utara — teks bebas; sel terisi menimpa, sel kosong dibiarkan" },
+  { key: "borderEast", label: "Sepadan Timur", required: false, desc: "Tetangga/batas di sisi timur — teks bebas" },
+  { key: "borderSouth", label: "Sepadan Selatan", required: false, desc: "Tetangga/batas di sisi selatan — teks bebas" },
+  { key: "borderWest", label: "Sepadan Barat", required: false, desc: "Tetangga/batas di sisi barat — teks bebas" },
 ] as const;
 
 export type ParcelDetailFieldKey = (typeof PARCEL_DETAIL_TARGET_FIELDS)[number]["key"];
@@ -188,6 +193,12 @@ export const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string
   stdbNumber: ["nomor stdb", "no stdb", "no. stdb", "nomor_stdb", "no_stdb", "stdb"],
   externalCode: ["parcel_code", "parcel code", "parcelcode", "ul parcel code", "parcel_cod", "external_code"],
   subGroupLv2: ["nama kelompok tani", "kelompok tani", "kelompok_tani", "nama_kelompok_tani", "group_name", "sub_group_lv2", "kt"],
+  // Pencocokan header harus PERSIS (setelah lowercase/trim) — alias dibuat
+  // lengkap supaya ejaan lapangan ("Batas Utara", "Sebelah Utara", "U") terbaca.
+  borderNorth: ["sepadan utara", "sepadan_utara", "batas utara", "batas_utara", "sebelah utara", "sebelah_utara", "utara", "north", "u"],
+  borderEast: ["sepadan timur", "sepadan_timur", "batas timur", "batas_timur", "sebelah timur", "sebelah_timur", "timur", "east", "t"],
+  borderSouth: ["sepadan selatan", "sepadan_selatan", "batas selatan", "batas_selatan", "sebelah selatan", "sebelah_selatan", "selatan", "south", "s"],
+  borderWest: ["sepadan barat", "sepadan_barat", "batas barat", "batas_barat", "sebelah barat", "sebelah_barat", "barat", "west", "b"],
 };
 
 export function autoMatchParcelDetailColumns(headers: string[]): Partial<Record<ParcelDetailFieldKey, string>> {
@@ -230,6 +241,8 @@ export interface ParcelDetailRow {
   externalCode: string | null;
   /** Diisi ke LandParcel.subGroupLv2 hanya bila DB kosong (server yang memutuskan). */
   subGroupLv2: string | null;
+  /** Sepadan (#326): hanya sisi yang terisi di file; null = tidak ada sel sepadan sama sekali. */
+  border: { north: string | null; east: string | null; south: string | null; west: string | null } | null;
 }
 
 export interface ParcelDetailValidatedRow {
@@ -347,14 +360,19 @@ export function validateParcelDetailRows(
       errors.push(`UL Parcel Code "${externalCode}" dipakai lebih dari satu lahan di file — kode unik per lahan`);
     }
     const subGroupLv2 = r.subGroupLv2 || null;
+    const borderSides = { north: r.borderNorth || null, east: r.borderEast || null, south: r.borderSouth || null, west: r.borderWest || null };
+    const border = Object.values(borderSides).some(Boolean) ? borderSides : null;
+    for (const [side, v] of Object.entries(borderSides)) {
+      if (v && v.length > 200) errors.push(`Sepadan ${side === "north" ? "Utara" : side === "east" ? "Timur" : side === "south" ? "Selatan" : "Barat"} lebih dari 200 karakter`);
+    }
 
     // Nomor/nama/luas terisi tanpa jenis (1.046 baris di data sumber): jenisnya
     // tak diketahui, bukan tak ada — simpan sebagai OTHER (typeRaw null) agar
     // datanya tidak terbuang; UI menampilkannya sebagai "Lainnya".
     const hasDocFields = Boolean(r.documentNumber || r.holderName || area.value !== null);
     const docType: LandDocumentTypeCode | null = doc.type ?? (hasDocFields && !doc.custodyNote ? "OTHER" : null);
-    const hasAny = Boolean(docType || doc.custodyNote || stdb || externalCode || subGroupLv2);
-    if (!hasAny) errors.push("Tidak ada data detail (surat, STDB, UL Parcel Code, atau kelompok tani) untuk disimpan");
+    const hasAny = Boolean(docType || doc.custodyNote || stdb || externalCode || subGroupLv2 || border);
+    if (!hasAny) errors.push("Tidak ada data detail (surat, STDB, UL Parcel Code, kelompok tani, atau sepadan) untuk disimpan");
 
     const isValid = errors.length === 0 && Boolean(pair);
     const data: ParcelDetailRow | null =
@@ -377,6 +395,7 @@ export function validateParcelDetailRows(
             stdb,
             externalCode,
             subGroupLv2,
+            border,
           }
         : null;
 

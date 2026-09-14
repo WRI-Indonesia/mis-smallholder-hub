@@ -13,6 +13,7 @@ import {
   updateLandParcelExternalIdSchema,
   landParcelProgramSchema,
   updateLandParcelProgramSchema,
+  landParcelBorderSchema,
   type SatelliteKind,
 } from "@/validations/land-parcel-satellite.schema";
 import { LAND_STDB_OPEN_STAGES, isOpenStdbStage } from "@/lib/land-parcel-satellite-format";
@@ -260,6 +261,34 @@ export async function updateLandParcelProgram(input: unknown): Promise<Result> {
   if (!existing) return { success: false, error: "Program tidak ditemukan atau di luar akses Anda" };
   await prisma.landParcelProgram.update({ where: { id }, data: { ...data, modifiedBy: await userId() } });
   return { success: true, data: { id } };
+}
+
+// ─── Sepadan (#326) ───
+
+/**
+ * Simpan sepadan U/T/S/B — satelit 1:1, jadi satu action `upsert` by parcelUid
+ * (bukan pasangan create/update/deactivate seperti satelit 1:N). Semua sisi
+ * kosong = "hapus": kolom di-NULL-kan, baris tetap (modified_by tercatat).
+ * isActive sengaja tidak disentuh — dengan @unique(parcel_uid), baris nonaktif
+ * akan menghalangi pengisian ulang.
+ */
+export async function upsertLandParcelBorder(input: unknown): Promise<Result> {
+  if (!(await hasPermission(MENU, "EDIT"))) return { success: false, error: "Tidak memiliki izin untuk mengubah sepadan" };
+  const parsed = landParcelBorderSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors as FieldErrors };
+  const parcel = await resolveParcel(parsed.data.landParcelId);
+  if (!parcel) return { success: false, error: "Lahan tidak ditemukan atau di luar akses Anda" };
+  const { landParcelId: _ignored, ...sides } = parsed.data;
+  void _ignored;
+  const uid = await userId();
+  const data = { north: sides.north ?? null, east: sides.east ?? null, south: sides.south ?? null, west: sides.west ?? null, notes: sides.notes ?? null };
+  const row = await prisma.landParcelBorder.upsert({
+    where: { parcelUid: parcel.parcelUid },
+    create: { ...data, parcelUid: parcel.parcelUid, createdBy: uid },
+    update: { ...data, modifiedBy: uid },
+    select: { id: true },
+  });
+  return { success: true, data: row };
 }
 
 // ─── Nonaktifkan (soft delete) ───

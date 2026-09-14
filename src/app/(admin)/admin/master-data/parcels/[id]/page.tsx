@@ -5,6 +5,7 @@ import {
   getLandParcelProduction,
   getFarmerSiblingParcels,
   getLandParcelSatellites,
+  getLandParcelNeighbors,
 } from "@/server/actions/land-parcel";
 import { getParcelTrees } from "@/server/actions/tree";
 import { getFarmerOptions } from "@/lib/select-options";
@@ -17,12 +18,13 @@ export default async function ParcelDetailPage({ params }: { params: Promise<{ i
   await requirePermission("master-data-parcels");
   const { id } = await params;
 
-  const [parcel, production, trees, satellites, farmers, permissions, productionPermissions] =
+  const [parcel, production, trees, satellites, neighborhood, farmers, permissions, productionPermissions] =
     await Promise.all([
       getLandParcelById(id),
       getLandParcelProduction(id),
       getParcelTrees(id),
       getLandParcelSatellites(id),
+      getLandParcelNeighbors(id),
       getFarmerOptions("master-data-parcels"),
       getUserPermissionsForMenu("master-data-parcels"),
       getUserPermissionsForMenu("master-data-production"),
@@ -44,6 +46,8 @@ export default async function ParcelDetailPage({ params }: { params: Promise<{ i
         permissions={permissions}
         productionPermissions={productionPermissions}
         siblingParcels={siblingParcels as unknown as SiblingParcel[]}
+        neighbors={neighborhood.neighbors}
+        neighborsOmitted={neighborhood.omitted}
       />
     </div>
   );

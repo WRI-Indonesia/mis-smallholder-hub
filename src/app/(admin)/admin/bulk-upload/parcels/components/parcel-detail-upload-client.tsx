@@ -176,7 +176,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
     }
     const s = result.data!;
     toast.success(
-      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui${s.documentsUnchanged ? ` / ${s.documentsUnchanged} tanpa perubahan` : ""} · STDB ${s.stdbsCreated} baru${s.stdbsPendingCreated ? ` (${s.stdbsPendingCreated} belum bernomor)` : ""}, ${s.stdbLinksCreated} tautan${s.stdbsPendingSkipped ? ` / ${s.stdbsPendingSkipped} petani "belum ada" dilewati (sudah punya STDB)` : ""} · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsUnchanged ? ` / ${s.externalIdsUnchanged} tanpa perubahan` : ""}${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled}`,
+      `${s.rows} baris tersimpan — surat ${s.documentsCreated} baru / ${s.documentsUpdated} diperbarui${s.documentsUnchanged ? ` / ${s.documentsUnchanged} tanpa perubahan` : ""} · STDB ${s.stdbsCreated} baru${s.stdbsPendingCreated ? ` (${s.stdbsPendingCreated} belum bernomor)` : ""}, ${s.stdbLinksCreated} tautan${s.stdbsPendingSkipped ? ` / ${s.stdbsPendingSkipped} petani "belum ada" dilewati (sudah punya STDB)` : ""} · UL Parcel Code ${s.externalIdsCreated} baru / ${s.externalIdsUpdated} diperbarui${s.externalIdsUnchanged ? ` / ${s.externalIdsUnchanged} tanpa perubahan` : ""}${s.externalIdsSkipped ? ` / ${s.externalIdsSkipped} dilewati (kode aktif di lahan lain)` : ""} · kelompok tani terisi ${s.subGroupsFilled} · sepadan ${s.bordersCreated} baru / ${s.bordersUpdated} diperbarui${s.bordersUnchanged ? ` / ${s.bordersUnchanged} tanpa perubahan` : ""}`,
       { duration: 8000 },
     );
     setValidated([]);
@@ -220,6 +220,10 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
           stdbNumber: "1637/53/1401/6/2025",
           externalCode: "ID080d781b4",
           subGroupLv2: "Kelompok Tani Karya Maju",
+          borderNorth: "Lahan Pak Budi",
+          borderEast: "Jalan desa",
+          borderSouth: "Sungai",
+          borderWest: "Lahan Pak Ahmad",
         },
         {
           parcelId: "APSS.0001.B.14.01.10.2012",
@@ -231,6 +235,10 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
           stdbNumber: "1637/53/1401/6/2025",
           externalCode: "",
           subGroupLv2: "",
+          borderNorth: "",
+          borderEast: "",
+          borderSouth: "",
+          borderWest: "",
         },
       ],
     });
@@ -248,9 +256,9 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, UL Parcel Code, dan Nama Kelompok Tani (hanya
-            mengisi yang masih kosong) per <strong>ID Lahan</strong> yang sudah terdaftar. Poligon lahan tetap diunggah
-            lewat tab Shapefile.
+            Surat kepemilikan (SHM/SKT/SKGR/…), nomor STDB, UL Parcel Code, Nama Kelompok Tani (hanya
+            mengisi yang masih kosong), dan Sepadan Utara/Timur/Selatan/Barat (sel terisi menimpa, sel kosong
+            dibiarkan) per <strong>ID Lahan</strong> yang sudah terdaftar. Poligon lahan tetap diunggah lewat tab Shapefile.
           </p>
           <div className="flex items-center gap-4 mt-2">
             <Input type="file" accept=".xlsx,.csv" onChange={handleFileChange} className="max-w-md" />
@@ -423,6 +431,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                   <TableHead>STDB</TableHead>
                   <TableHead>UL Parcel Code</TableHead>
                   <TableHead>Kelompok Tani</TableHead>
+                  <TableHead>Sepadan (U · T · S · B)</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="min-w-[220px]">Detail Error</TableHead>
                 </TableRow>
@@ -430,7 +439,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
                       Tidak ada data untuk filter ini.
                     </TableCell>
                   </TableRow>
@@ -458,6 +467,11 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
                           ? r._dbSubGroupLv2
                             ? <span className="text-muted-foreground" title={`Sudah terisi di sistem: ${r._dbSubGroupLv2}`}>{r._raw.subGroupLv2} <em>(sudah ada)</em></span>
                             : r._raw.subGroupLv2
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {r.data?.border || r._raw.borderNorth || r._raw.borderEast || r._raw.borderSouth || r._raw.borderWest
+                          ? [r._raw.borderNorth, r._raw.borderEast, r._raw.borderSouth, r._raw.borderWest].map((v) => v || "·").join(" · ")
                           : "—"}
                       </TableCell>
                       <TableCell>

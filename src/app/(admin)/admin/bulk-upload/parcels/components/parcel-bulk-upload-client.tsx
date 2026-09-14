@@ -75,6 +75,8 @@ interface ParcelValidatedRow {
   notes: string | null;
   subGroupLv2: string | null;
   blok: string | null;
+  /** Sepadan (#326) dari atribut DBF — hanya sisi terisi; null bila tak ada satu pun. */
+  border: { north: string | null; east: string | null; south: string | null; west: string | null } | null;
 }
 
 function isGeometryEqual(g1: unknown, g2: unknown) {
@@ -112,6 +114,11 @@ const TARGET_FIELDS = [
   { key: "blok", label: "Blok", required: false, desc: "Blok kebun" },
   { key: "revision", label: "Revisi", required: false, desc: "Angka revisi (default 0)" },
   { key: "notes", label: "Catatan", required: false, desc: "Catatan tambahan" },
+  // Sepadan (#326): ditulis ke satelit identitas lahan (utuh lintas revisi); sel terisi menimpa, kosong dibiarkan.
+  { key: "borderNorth", label: "Sepadan Utara", required: false, desc: "Kolom DBF: bts_utara / sep_utara / utara" },
+  { key: "borderEast", label: "Sepadan Timur", required: false, desc: "Kolom DBF: bts_timur / sep_timur / timur" },
+  { key: "borderSouth", label: "Sepadan Selatan", required: false, desc: "Kolom DBF: bts_selatan / sep_selatan / selatan" },
+  { key: "borderWest", label: "Sepadan Barat", required: false, desc: "Kolom DBF: bts_barat / sep_barat / barat" },
 ];
 
 // Aturan auto-match + normalisasi dipisah ke `@/lib/parcel-bulk-mapping` (teruji).
@@ -202,6 +209,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       area: null,
       landStatus: null,
       cropType: null,
+      border: null,
       notes: null,
       subGroupLv2: null,
       blok: null,
@@ -328,6 +336,15 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     );
     normalized.blok = normalizeAttr(mapping["blok"] ? props[mapping["blok"]] : null);
 
+    // 8c. Sepadan (#326) — opsional per sisi; tanpa satu pun sisi → null (tidak menyentuh satelit).
+    const sides = {
+      north: normalizeAttr(mapping["borderNorth"] ? props[mapping["borderNorth"]] : null),
+      east: normalizeAttr(mapping["borderEast"] ? props[mapping["borderEast"]] : null),
+      south: normalizeAttr(mapping["borderSouth"] ? props[mapping["borderSouth"]] : null),
+      west: normalizeAttr(mapping["borderWest"] ? props[mapping["borderWest"]] : null),
+    };
+    normalized.border = Object.values(sides).some(Boolean) ? sides : null;
+
     // 9. Geometry validation
     if (
       !feat.geometry ||
@@ -393,6 +410,10 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       { header: "Blok", key: "blok", width: 12 },
       { header: "Revisi", key: "revision", width: 12 },
       { header: "Catatan", key: "notes", width: 25 },
+      { header: "Sepadan Utara", key: "borderNorth", width: 18 },
+      { header: "Sepadan Timur", key: "borderEast", width: 18 },
+      { header: "Sepadan Selatan", key: "borderSouth", width: 18 },
+      { header: "Sepadan Barat", key: "borderWest", width: 18 },
       { header: "Status Validasi", key: "status", width: 15 },
       { header: "Detail Error", key: "keterangan", width: 45 },
     ];
@@ -421,6 +442,10 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
         blok: row.blok || row._original.blok || "",
         revision: row.revision !== undefined ? row.revision : row._original.revision || 0,
         notes: row.notes || row._original.notes || "",
+        borderNorth: row.border?.north ?? row._original.borderNorth ?? "",
+        borderEast: row.border?.east ?? row._original.borderEast ?? "",
+        borderSouth: row.border?.south ?? row._original.borderSouth ?? "",
+        borderWest: row.border?.west ?? row._original.borderWest ?? "",
         status: row._isValid ? "VALID" : "ERROR",
         keterangan: row._errors.join("; "),
       });
@@ -458,6 +483,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       notes: d.notes,
       subGroupLv2: d.subGroupLv2,
       blok: d.blok,
+      border: d.border,
     }));
 
     const result = await bulkCreateLandParcels(toSave);

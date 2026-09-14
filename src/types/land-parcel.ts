@@ -108,10 +108,22 @@ export interface LandParcelProgramItem {
   notes: string | null;
 }
 
+/** Sepadan U/T/S/B (#326) — satelit 1:1; null bila belum pernah diisi. */
+export interface LandParcelBorderItem {
+  id: string;
+  north: string | null;
+  east: string | null;
+  south: string | null;
+  west: string | null;
+  notes: string | null;
+  modifiedAt: Date;
+}
+
 export interface LandParcelSatellites {
   parcelUid: string;
   documents: LandParcelDocumentItem[];
   stdbs: LandStdbItem[];
   externalIds: LandParcelExternalIdItem[];
   programs: LandParcelProgramItem[];
+  border: LandParcelBorderItem | null;
 }

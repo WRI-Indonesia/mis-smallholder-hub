@@ -20,6 +20,10 @@ intro: Smallholder HUB MIS adalah sistem informasi data petani sawit swadaya: pe
 
 **STDB** — Surat Tanda Daftar Budidaya, terdaftar atas nama petani; satu STDB bisa menutup beberapa lahan petani yang sama.
 
+**Sepadan** — Dengan siapa atau apa sebuah lahan berbatasan di sisi Utara, Timur, Selatan, dan Barat (lahan petani lain, jalan, sungai, kebun perusahaan). Dicatat bebas seperti pada SKT, di kotak **Sepadan** tab Informasi Detail Lahan, dan ikut tercetak di Profil Lahan. Bukan hasil hitungan peta — untuk itu ada *lahan tetangga*.
+
+**Lahan tetangga** — Lahan lain yang **terdaftar di MIS** dan bersinggungan atau berjarak ≤ 25 m dari sebuah lahan, dihitung otomatis dari poligonnya. Tampil bergaris putus-putus bernomor di peta Detail Lahan dan Profil Lahan, dengan legenda pemilik/ID lahan/lembaga/jarak. Jalan, sungai, kebun perusahaan, atau lahan petani yang belum dipetakan tidak akan muncul di sini — catat lewat *Sepadan*. Nama pemilik hanya ditampilkan bila lahan itu dalam akses Anda.
+
 **UL Parcel Code** — Kode lahan hasil pemetaan, unik per pemeta; dipakai untuk mencocokkan lahan dengan data pemetaan eksternal. **Pemeta** dicatat pada setiap kode: seluruh kode yang ada sekarang berasal dari **Meridia**, vendor yang ditugaskan donor (UL); ke depan pemetaan bisa swadaya atau dibantu WRI, dan kode dari pemeta berbeda hidup berdampingan pada lahan yang sama.
 
 **Titik api (hotspot)** — Deteksi anomali panas oleh satelit VIIRS (NASA FIRMS), bukan konfirmasi kebakaran. Ditampilkan di Peta Lahan dan Fire Alert dengan rentang 24 jam / 5 / 10 / 30 hari; rentang harinya dihitung menurut **tanggal UTC** (satuan yang dipakai satelit), sehingga "5 hari" berarti 5 hari kalender UTC termasuk hari ini.

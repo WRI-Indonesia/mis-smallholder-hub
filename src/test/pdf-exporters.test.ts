@@ -5,6 +5,36 @@ import { buildBmpMapDoc } from "@/lib/bmp-map-print";
 import { buildFireMapDoc } from "@/lib/fire-map-print";
 import { imageFormatOf } from "@/lib/map-capture";
 import type { ParcelPassport } from "@/types/map";
+import { inflateSync } from "node:zlib";
+import type { jsPDF } from "jspdf";
+
+/**
+ * Teks yang tercetak di PDF jsPDF (compress: true): tiap content stream
+ * di-inflate, lalu string di dalam tanda kurung operator Tj/TJ dikumpulkan.
+ * Cukup untuk menegaskan "label X ada / nama Y TIDAK ada" — bukan parser PDF.
+ */
+function pdfText(doc: jsPDF): string {
+  const bytes = Buffer.from(doc.output("arraybuffer"));
+  const out: string[] = [];
+  let pos = 0;
+  for (;;) {
+    const start = bytes.indexOf("stream", pos, "latin1");
+    if (start < 0) break;
+    const bodyStart = bytes[start + 6] === 0x0d ? start + 8 : start + 7;
+    const end = bytes.indexOf("endstream", bodyStart, "latin1");
+    if (end < 0) break;
+    const raw = bytes.subarray(bodyStart, end);
+    let text: string;
+    try {
+      text = inflateSync(raw).toString("latin1");
+    } catch {
+      text = raw.toString("latin1");
+    }
+    for (const m of text.matchAll(/\(((?:\\.|[^\\)])*)\)\s*Tj/g)) out.push(m[1].replace(/\\([()\\])/g, "$1"));
+    pos = end + 9;
+  }
+  return out.join("\n");
+}
 
 // TD-019: exporter lama dipisah build-vs-save (pola #179) — test struktural
 // memverifikasi dokumen jsPDF asli (orientasi/halaman/tanpa-throw), karena
@@ -71,6 +101,7 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
       species: "Elaeis guineensis",
       isPsr: false,
       treeCount: 286,
+      border: null,
     },
     legal: {
       documents: [
@@ -91,6 +122,8 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
       totalKg: 1800,
       recordCount: 3,
     },
+    neighbors: [],
+    neighborsOmitted: 0,
   };
 
   it("portrait A4, minimal 1 halaman, tanpa throw", () => {
@@ -113,6 +146,68 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
       },
     };
     expect(buildFarmPassportDoc(many).getNumberOfPages()).toBeGreaterThanOrEqual(2);
+  });
+
+  it("sepadan belum diisi → blok Sepadan tetap tercetak dengan label keempat arah (#326)", () => {
+    const text = pdfText(buildFarmPassportDoc(passport));
+    expect(text).toContain("Sepadan");
+    for (const side of ["Utara", "Timur", "Selatan", "Barat"]) expect(text).toContain(side);
+  });
+
+  it("sepadan terisi → nilai tiap sisi + catatan tercetak (#326)", () => {
+    const withBorder: ParcelPassport = {
+      ...passport,
+      parcel: { ...passport.parcel, border: { north: "Lahan Pak Budi", east: "Jalan desa", south: null, west: "Sungai Kecil", notes: "dari SKT 2019" } },
+    };
+    const text = pdfText(buildFarmPassportDoc(withBorder));
+    expect(text).toContain("Lahan Pak Budi");
+    expect(text).toContain("Jalan desa");
+    expect(text).toContain("Sungai Kecil");
+    expect(text).toContain("Catatan sepadan: dari SKT 2019");
+  });
+
+  const neighbor = (i: number, o: Partial<ParcelPassport["neighbors"][number]> = {}): ParcelPassport["neighbors"][number] => ({
+    id: `n${i}`,
+    parcelId: `LHN-10${i}`,
+    geometry: { type: "Polygon", coordinates: [[[101.51, 0.74], [101.53, 0.74], [101.53, 0.76], [101.51, 0.76], [101.51, 0.74]]] },
+    distanceM: 0,
+    overlaps: false,
+    farmerName: `Tetangga ${i}`,
+    farmerCode: `SH-10${i}`,
+    groupName: "Lembaga Uji",
+    inScope: true,
+    sameFarmer: false,
+    ...o,
+  });
+
+  it("tanpa tetangga → legenda tetap tercetak berbunyi 'Tidak ada lahan lain' (#327)", () => {
+    const text = pdfText(buildFarmPassportDoc(passport));
+    expect(text).toContain("Lahan Tetangga");
+    expect(text).toContain("Tidak ada lahan lain yang terdaftar di MIS dalam 25 m.");
+  });
+
+  it("3 tetangga → 3 baris legenda bernomor + nama pemilik + ID lahan (#327)", () => {
+    const text = pdfText(buildFarmPassportDoc({ ...passport, neighbors: [neighbor(1), neighbor(2, { distanceM: 12.5 }), neighbor(3, { sameFarmer: true })] }));
+    for (const n of ["Tetangga 1", "Tetangga 2", "LHN-101", "LHN-102", "LHN-103"]) expect(text).toContain(n);
+    expect(text).toContain("12.5 m");
+    expect(text).toContain("Petani ini");
+  });
+
+  it("tetangga di luar scope → nama petani TIDAK tercetak, Lembaga tetap (#327)", () => {
+    const outside = neighbor(1, { farmerName: null, farmerCode: null, inScope: false, groupName: "Lembaga Lain" });
+    const text = pdfText(buildFarmPassportDoc({ ...passport, neighbors: [outside] }));
+    expect(text).not.toContain("Tetangga 1");
+    expect(text).toContain("Lembaga Lain");
+  });
+
+  it("tetangga terpotong cap → baris '+N lahan lain' (#327)", () => {
+    const text = pdfText(buildFarmPassportDoc({ ...passport, neighbors: Array.from({ length: 12 }, (_, i) => neighbor(i + 1)), neighborsOmitted: 3 }));
+    expect(text).toContain("+3 lahan lain dalam 25 m tidak ditampilkan.");
+  });
+
+  it("tetangga jauh lebih besar dari bingkai → terpotong (clip), tidak melempar error (#327)", () => {
+    const huge = neighbor(1, { geometry: { type: "Polygon", coordinates: [[[100, -1], [103, -1], [103, 2], [100, 2], [100, -1]]] } });
+    expect(() => buildFarmPassportDoc({ ...passport, neighbors: [huge] })).not.toThrow();
   });
 
   it("geometri tak tersedia (ring < 3 titik) → tetap terbit tanpa throw", () => {

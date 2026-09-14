@@ -1,4 +1,5 @@
 import type { Polygon, MultiPolygon } from "geojson";
+import type { ParcelNeighbor } from "@/lib/parcel-neighbor";
 
 /** Filter input for the Peta Lahan map. District is required to bound the query. */
 export type MapFilters = {
@@ -245,6 +246,8 @@ export type ParcelPassport = {
     species: string | null;
     isPsr: boolean;
     treeCount: number;
+    /** Sepadan U/T/S/B (#326) — null bila belum diisi; PDF tetap mencetak bloknya dengan "—". */
+    border: { north: string | null; east: string | null; south: string | null; west: string | null; notes: string | null } | null;
   };
   /** Legalitas lahan (#296/#298) — satelit via parcelUid. */
   legal: {
@@ -264,4 +267,12 @@ export type ParcelPassport = {
   };
   training: FarmerTrainingItem[];
   production: ProductionSummary;
+  /**
+   * Lahan tetangga ≤ 25 m (#327) — sudah dipangkas ke NEIGHBOR_LIMIT_PDF dan
+   * sudah melewati aturan scope (nama di luar scope null). Kosong = memang
+   * tidak ada lahan MIS di sekitarnya; PDF tetap mencetak legendanya.
+   */
+  neighbors: ParcelNeighbor[];
+  /** Tetangga yang tidak ikut karena cap — dicetak sebagai "+N lahan lain". */
+  neighborsOmitted: number;
 };

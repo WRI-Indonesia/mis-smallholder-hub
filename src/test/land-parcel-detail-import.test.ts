@@ -139,6 +139,13 @@ describe("autoMatchParcelDetailColumns — header berkas sumber", () => {
   it("header shapefile terpotong 10 karakter (parcel_cod) tetap dikenali", () => {
     expect(autoMatchParcelDetailColumns(["ID_Lahan", "parcel_cod"]).externalCode).toBe("parcel_cod");
   });
+  it("alias sepadan (#326): ejaan lapangan 'Batas Utara' / 'Sebelah Timur' / 'S' / 'Barat' terbaca", () => {
+    const m = autoMatchParcelDetailColumns(["ID Lahan", "ID Petani", "Batas Utara", "Sebelah Timur", "S", "Barat"]);
+    expect(m.borderNorth).toBe("Batas Utara");
+    expect(m.borderEast).toBe("Sebelah Timur");
+    expect(m.borderSouth).toBe("S");
+    expect(m.borderWest).toBe("Barat");
+  });
   it("alias label UI 'UL Parcel Code' (huruf campur) cocok — review pasca-v0.30.0", () => {
     expect(autoMatchParcelDetailColumns(["UL Parcel Code"]).externalCode).toBe("UL Parcel Code");
     expect(autoMatchParcelDetailColumns(["ul parcel code"]).externalCode).toBe("ul parcel code");
@@ -171,7 +178,25 @@ describe("validateParcelDetailRows", () => {
       stdb: { number: "1637/53/1401/6/2025", issuedYear: 2025, stage: "TERBIT" },
       externalCode: "ID080d781b4",
       subGroupLv2: null,
+      border: null,
     });
+  });
+
+  it("sepadan (#326): hanya sisi terisi yang terbawa; baris yang hanya berisi sepadan tetap valid", () => {
+    const m = { ...mapping, borderNorth: "Utara", borderEast: "Timur", borderSouth: "Selatan", borderWest: "Barat" } as const;
+    const [r] = validateParcelDetailRows(
+      [row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", Utara: " Lahan Pak Budi ", Timur: "", Selatan: "Jalan desa", Barat: "-" })],
+      m, parcels,
+    );
+    expect(r._isValid).toBe(true);
+    expect(r.data?.border).toEqual({ north: "Lahan Pak Budi", east: null, south: "Jalan desa", west: null });
+  });
+
+  it("sepadan (#326): sisi > 200 karakter ditolak", () => {
+    const m = { ...mapping, borderNorth: "Utara" } as const;
+    const [r] = validateParcelDetailRows([row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", Utara: "x".repeat(201) })], m, parcels);
+    expect(r._isValid).toBe(false);
+    expect(r._errors.join(" ")).toMatch(/Sepadan Utara lebih dari 200 karakter/);
   });
 
   it("Nama Kelompok Tani ikut terbawa; baris yang hanya berisi KT tetap valid", () => {

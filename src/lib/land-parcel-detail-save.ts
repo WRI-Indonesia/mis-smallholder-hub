@@ -17,6 +17,8 @@ import type { LandParcelDetailRowInput } from "@/validations/land-parcel-detail.
  *   PEMETA berkas ini (Meridia/WRI/Swadaya, keputusan owner 2026-08-28), dikirim
  *   pemanggil; kode yang sama dari pemeta berbeda hidup berdampingan;
  * - Nama Kelompok Tani: isi LandParcel.subGroupLv2 baris aktif HANYA bila kosong.
+ * - Sepadan (#326): satelit 1:1 per parcelUid — sel TERISI menimpa nilai lama,
+ *   sel KOSONG dibiarkan (tidak mengosongkan; pola dokumen, bukan pola KT).
  *
  * Bentuk (#300): 3 tahap per batch — PREFETCH (5 `findMany`), PLAN (murni,
  * `planLandParcelDetailRows`, teruji tanpa DB), EXECUTE (`createMany` untuk
@@ -46,6 +48,10 @@ export interface ParcelDetailSaveSummary {
   externalIdsSkipped: number;
   /** LandParcel.subGroupLv2 yang terisi (hanya yang sebelumnya kosong). */
   subGroupsFilled: number;
+  /** Sepadan (#326): baris baru / sisi yang berubah / semua sisi di file sudah sama. */
+  bordersCreated: number;
+  bordersUpdated: number;
+  bordersUnchanged: number;
 }
 
 export function emptyParcelDetailSummary(rows: number): ParcelDetailSaveSummary {
@@ -63,6 +69,9 @@ export function emptyParcelDetailSummary(rows: number): ParcelDetailSaveSummary 
     externalIdsUnchanged: 0,
     externalIdsSkipped: 0,
     subGroupsFilled: 0,
+    bordersCreated: 0,
+    bordersUpdated: 0,
+    bordersUnchanged: 0,
   };
 }
 
@@ -93,9 +102,19 @@ export interface DocumentFields {
   custodyNote: string | null;
 }
 
+/** Empat sisi sepadan (#326) — null = belum diisi / tidak disentuh. */
+export interface BorderSides {
+  north: string | null;
+  east: string | null;
+  south: string | null;
+  west: string | null;
+}
+
 export interface ParcelDetailExistingState {
   /** docKey → dokumen aktif (id + field yang bisa berubah). */
   documents: Map<string, { id: string } & DocumentFields>;
+  /** parcelUid → baris sepadan yang sudah ada (1:1). */
+  borders: Map<string, { id: string } & BorderSides>;
   /** stdbKey → STDB BERNOMOR (aktif atau tidak). Baris tanpa nomor tidak masuk peta ini. */
   stdbs: Map<string, { id: string; isActive: boolean }>;
   /** openStdbKey → berkas STDB terbuka milik petani (#306); paling banyak satu. */
@@ -111,6 +130,7 @@ export interface ParcelDetailExistingState {
 export function emptyExistingState(): ParcelDetailExistingState {
   return {
     documents: new Map(),
+    borders: new Map(),
     stdbs: new Map(),
     openStdbs: new Map(),
     farmersWithActiveStdb: new Set(),
@@ -136,6 +156,9 @@ export interface ParcelDetailPlan {
   externalIdUpdates: Array<{ code: string; parcelUid: string }>;
   /** parcelUid → nama KT (isi bila kosong; dihitung server lewat updateMany). */
   subGroupFills: Map<string, string>;
+  /** Sepadan (#326): baris baru hanya memuat sisi yang terisi; update hanya sisi yang berubah. */
+  borderCreates: Array<{ parcelUid: string } & BorderSides>;
+  borderUpdates: Array<{ id: string; data: Partial<BorderSides> }>;
   summary: ParcelDetailSaveSummary;
 }
 
@@ -165,8 +188,13 @@ export function planLandParcelDetailRows(
     externalIdCreates: [],
     externalIdUpdates: [],
     subGroupFills: new Map(),
+    borderCreates: [],
+    borderUpdates: [],
     summary,
   };
+  const pendingBorderCreate = new Map<string, ParcelDetailPlan["borderCreates"][number]>();
+  const pendingBorderUpdate = new Map<string, ParcelDetailPlan["borderUpdates"][number]>();
+  const unchangedBorders = new Set<string>();
   // Indeks per batch agar baris ganda tidak menggandakan create.
   const pendingDocCreate = new Map<string, ParcelDetailPlan["documentCreates"][number]>();
   const pendingDocUpdate = new Map<string, ParcelDetailPlan["documentUpdates"][number]>();
@@ -303,6 +331,38 @@ export function planLandParcelDetailRows(
 
     // --- Kelompok Tani: isi bila kosong (dieksekusi lewat satu updateMany) ---
     if (r.subGroupLv2) plan.subGroupFills.set(r.parcelUid, r.subGroupLv2);
+
+    // --- Sepadan (#326): hanya sisi yang terisi di file yang ditulis ---
+    if (r.border) {
+      const filled = Object.fromEntries(
+        (Object.entries(r.border) as [keyof BorderSides, string | null][]).filter(([, v]) => v),
+      ) as Partial<BorderSides>;
+      const inDb = existing.borders.get(r.parcelUid);
+      const pendingCreate = pendingBorderCreate.get(r.parcelUid);
+      if (pendingCreate) {
+        Object.assign(pendingCreate, filled); // baris ganda: sisi terakhir menang
+      } else if (inDb) {
+        const changed = Object.fromEntries(
+          (Object.entries(filled) as [keyof BorderSides, string][]).filter(([k, v]) => inDb[k] !== v),
+        ) as Partial<BorderSides>;
+        const prev = pendingBorderUpdate.get(r.parcelUid);
+        if (prev) Object.assign(prev.data, changed);
+        else if (Object.keys(changed).length) {
+          const upd = { id: inDb.id, data: changed };
+          pendingBorderUpdate.set(r.parcelUid, upd);
+          plan.borderUpdates.push(upd);
+          summary.bordersUpdated++;
+        } else if (!unchangedBorders.has(r.parcelUid)) {
+          unchangedBorders.add(r.parcelUid);
+          summary.bordersUnchanged++;
+        }
+      } else {
+        const create = { parcelUid: r.parcelUid, north: null, east: null, south: null, west: null, ...filled };
+        pendingBorderCreate.set(r.parcelUid, create);
+        plan.borderCreates.push(create);
+        summary.bordersCreated++;
+      }
+    }
   }
 
   return plan;
@@ -320,8 +380,9 @@ export async function fetchParcelDetailExistingState(
   const farmerIds = [...new Set(rows.filter((r) => r.stdb).map((r) => r.farmerDbId))];
   const stdbNumbers = [...new Set(rows.flatMap((r) => (r.stdb?.number ? [r.stdb.number] : [])))];
   const codes = [...new Set(rows.flatMap((r) => (r.externalCode ? [r.externalCode] : [])))];
+  const borderUids = [...new Set(rows.filter((r) => r.border).map((r) => r.parcelUid))];
 
-  const [documents, stdbs, externalIds] = await Promise.all([
+  const [documents, stdbs, externalIds, borders] = await Promise.all([
     tx.landParcelDocument.findMany({
       where: { parcelUid: { in: uids }, isActive: true },
       select: { id: true, parcelUid: true, type: true, number: true, typeRaw: true, holderName: true, statedArea: true, custodyNote: true },
@@ -342,7 +403,14 @@ export async function fetchParcelDetailExistingState(
           select: { code: true, parcelUid: true, isActive: true },
         })
       : Promise.resolve([]),
+    borderUids.length
+      ? tx.landParcelBorder.findMany({
+          where: { parcelUid: { in: borderUids } },
+          select: { id: true, parcelUid: true, north: true, east: true, south: true, west: true },
+        })
+      : Promise.resolve([]),
   ]);
+  for (const b of borders) state.borders.set(b.parcelUid, { id: b.id, north: b.north, east: b.east, south: b.south, west: b.west });
   for (const d of documents) state.documents.set(docKey(d.parcelUid, d.type, d.number), { id: d.id, typeRaw: d.typeRaw, holderName: d.holderName, statedArea: d.statedArea, custodyNote: d.custodyNote });
   for (const s of stdbs) {
     if (s.number) {
@@ -438,6 +506,14 @@ async function executeParcelDetailPlan(tx: Prisma.TransactionClient, plan: Parce
       where: { source_code: { source, code: u.code } },
       data: { parcelUid: u.parcelUid, isActive: true, modifiedBy: userId },
     });
+  }
+
+  // Sepadan (#326): baris baru sekaligus; update per baris hanya sisi yang berubah.
+  if (plan.borderCreates.length) {
+    await tx.landParcelBorder.createMany({ data: plan.borderCreates.map((b) => ({ ...b, createdBy: userId })) });
+  }
+  for (const u of plan.borderUpdates) {
+    await tx.landParcelBorder.update({ where: { id: u.id }, data: { ...u.data, modifiedBy: userId } });
   }
 
   // Kelompok Tani: satu updateMany per nama KT (nama berbeda → data berbeda).
