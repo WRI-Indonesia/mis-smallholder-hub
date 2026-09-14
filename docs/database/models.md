@@ -326,8 +326,13 @@ Satelit menempel ke `parcelUid`, bukan ke baris revisi — tak perlu repoint:
 | `tbl_land_parcel_stdb` | `LandParcelStdb` | M:N lahan ↔ STDB | satu-satunya M:N di keluarga satelit; daftar persil yang akan diajukan justru disusun pada tahap `PERSIAPAN_DATA`, jauh sebelum ada nomor. Audit lengkap sejak **#299** (`modified_at`/`modified_by` — `is_active` di tabel ini ditoggle dua jalur: `unlinkLandStdb`/`createLandStdb` dan `applyLandParcelDetailRows`) |
 | `tbl_land_parcel_external_id` | `LandParcelExternalId` | 1:N, unik `(source, code)` | UL Parcel Code (mis. `ID080d781b4`) + **`rawGeometry Json?`** poligon mentah vendor (opsional, keputusan owner). `source` = **pemeta** (`MERIDIA` \| `WRI` \| `SWADAYA`, isian bebas diizinkan) — bukan nama kolom Excel; nilai lama `parcel_code` dimigrasi ke `MERIDIA` 2026-08-28 (6.953 baris prod & staging-local) |
 | `tbl_land_parcel_program` | `LandParcelProgram` | 1:N | Keikutsertaan program: `programType` (`DEMPLOT_PBU`), `status`, `startDate/endDate` — level lahan dulu; entitas Program/PBU bisa ditambah sebagai FK tanpa mengubah baris |
+| `tbl_land_parcel_border` | `LandParcelBorder` | **1:1** (`parcel_uid` UNIQUE) | **Sepadan** (#326): `north/east/south/west` teks bebas ("Lahan Pak Budi", "Jalan desa", "Sungai", "PT X") + `notes`. Menempel ke identitas — bukan kolom di `LandParcel` — karena upload ulang shapefile membuat baris lahan baru dari atribut DBF dan kolom non-DBF hilang. **Hapus = kosongkan keempat kolom, baris tetap**; `is_active` tidak dipakai sebagai jalur hapus (baris nonaktif + UNIQUE akan memblokir pengisian ulang, pelajaran #306). Jalur tulis: form Detail Lahan (`upsertLandParcelBorder`), import Excel Data Lahan Detail, atribut DBF Bulk Upload Lahan — dua importer memakai aturan **sel terisi menimpa, sel kosong dibiarkan** (pola dokumen, bukan pola KT isi-bila-kosong). Berbeda dari **lahan tetangga** (#327) yang dihitung dari geometri dan hanya memuat lahan terdaftar di MIS |
 
 Scope RBAC satelit: lewat `identity.farmer` (`farmerRelationAccessFilter` pola sama dengan `LandParcel`). Sumber data awal: `MIS_<KAB>_data-lahan.xlsx` (7.177 baris, 3 kabupaten) — statistik & bug sumber yang wajib dilaporkan parser ada di Decision Log 2026-08-27.
+
+## LandParcel.geom — turunan PostGIS (#317 Fase 1, via #327)
+
+`LandParcel.geometry` (JSONB, GeoJSON Polygon/MultiPolygon) tetap **sumber kebenaran & jalur render**. Sejak migrasi `20260914100000_land_parcel_geom`, kolom **`geom geometry(MultiPolygon, 4326)`** adalah `GENERATED ALWAYS AS (...) STORED` — Postgres mengisinya dari `geometry` (`ST_Multi(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(geometry::text), 4326)))`, dijaga `CASE` pada `type` karena `ST_GeomFromGeoJSON` melempar error untuk JSON `null`/objek asing). Konsekuensi: **tanpa backfill, tanpa perubahan jalur tulis, mustahil divergen** — beda dengan dual-column manual `FarmerGroupBoundary`/`AdministrativeBoundary` yang dijaga lewat `$executeRaw`. Di Prisma `Unsupported(...)` (tak terbaca Client); dipakai hanya lewat `$queryRaw` — lahan tetangga ≤ 25 m (#327, `ST_DWithin` + GiST `tbl_land_parcel_geom_idx`) dan topology check (#317 Fase 2+). Prisma akan **selalu** mengusulkan `DROP INDEX tbl_land_parcel_geom_idx` di migrasi berikutnya — jangan pernah diterima (dijaga `migration-guards.test.ts`).
 
 ## FarmerGroupBoundary (Boundary Lembaga, #266)
 
@@ -359,12 +364,13 @@ prisma/schema/
 ├── farmer-group-boundary.prisma # FarmerGroupBoundary (poligon ICS, dual-column PostGIS+Json, #266)
 ├── administrative-boundary.prisma # AdministrativeBoundary (batas BIG per level, #266)
 ├── farmer.prisma         # Farmer
-├── land-parcel.prisma    # LandParcel
+├── land-parcel.prisma    # LandParcel (+ geom generated PostGIS, #317 Fase 1)
 ├── land-parcel-identity.prisma # LandParcelIdentity (parcelUid — identitas stabil antar revisi, #296)
 ├── land-parcel-document.prisma # LandParcelDocument + enum LandDocumentType (surat kepemilikan, #296)
 ├── land-stdb.prisma      # LandStdb (per petani) + LandParcelStdb (M:N ke lahan, #296)
 ├── land-parcel-external-id.prisma # LandParcelExternalId (UL Parcel Code + rawGeometry opsional, #296)
 ├── land-parcel-program.prisma # LandParcelProgram + enum LandProgramType/Status (demplot PBU, #296)
+├── land-parcel-border.prisma # LandParcelBorder (sepadan U/T/S/B, satelit 1:1, #326)
 ├── tree.prisma           # Tree (titik pohon sawit per lahan, #238)
 ├── reference-benchmark.prisma # ReferenceBenchmark (angka acuan manual per lembaga, #243)
 ├── production.prisma     # ProductionRecord

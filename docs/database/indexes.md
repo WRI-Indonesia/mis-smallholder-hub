@@ -40,6 +40,7 @@
 | Farmer | UNIQUE | `(farmerGroupId, farmerId)` | ID Petani unik per Lembaga (TD-024, migration 20260721060000) |
 | **Land Parcel** | | | |
 | LandParcel | PK | `id` (CUID) | Primary key |
+| LandParcel | GIST | `geom` | Index spasial PostGIS pada kolom **generated** (`ST_DWithin` tetangga ≤ 25 m #327, topology #317) — manual di migration 20260914100000, nama `tbl_land_parcel_geom_idx` (pola `*_geom_idx` yang dijaga test) |
 | **Land Parcel Identity & Satelit (#296)** | | | |
 | LandParcelIdentity | PK | `id` (CUID) = `parcelUid` | Identitas stabil antar revisi |
 | LandParcelIdentity | UNIQUE | `(farmerId, parcelId)` | Satu identitas per pasangan petani+ID lahan |
@@ -51,6 +52,8 @@
 | LandParcelExternalId | PK | `id` (CUID) | Primary key |
 | LandParcelExternalId | UNIQUE | `(source, code)` | UL Parcel Code unik per sumber |
 | LandParcelProgram | PK | `id` (CUID) | Primary key |
+| LandParcelBorder | PK | `id` (CUID) | Primary key |
+| LandParcelBorder | UNIQUE | `parcelUid` | Sepadan 1:1 per identitas lahan (#326) — sekaligus index baca `findUnique` |
 | **Tree** | | | |
 | Tree | PK | `id` (CUID) | Primary key |
 | **Training** | | | |

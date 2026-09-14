@@ -32,6 +32,7 @@ erDiagram
     LandParcelIdentity ||--o{ LandParcelDocument : "surat kepemilikan"
     LandParcelIdentity ||--o{ LandParcelExternalId : "UL Parcel Code"
     LandParcelIdentity ||--o{ LandParcelProgram : "program (demplot PBU)"
+    LandParcelIdentity ||--o| LandParcelBorder : "sepadan U/T/S/B (1:1, #326)"
     Farmer ||--o{ LandStdb : "STDB per petani"
     LandParcelIdentity ||--o{ LandParcelStdb : "M:N"
     LandStdb ||--o{ LandParcelStdb : "M:N"
@@ -80,7 +81,7 @@ erDiagram
 | **Farmer Group** | FarmerGroup | **= Lembaga Petani** (level teratas; label lama "Kelompok Tani" mislabel → relabel TD-013/#147). District-based, location coordinates, category (EX_PLASMA/SWADAYA), tipe grup (ASOSIASI/KOPERASI), tahun bergabung program (`join_year`) + tahun berdiri (`established_year`), sertifikasi RSPO (`rspo_cert_status` CERTIFIED/PLANNED + `rspo_cert_year`, status boleh tanpa tahun) (#160), sertifikasi ISPO (`ispo_cert_status` + `ispo_cert_year`) + assurance SAP/MAP (`sap_map_assurance_status` + `sap_map_assurance_year`) — enum generik `CertStatus`, aturan sama dengan RSPO (#169) |
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
 | **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking; `blok` (blok kebun); `cropType` (Komoditas) + `species` + `isPsr` (PSR/replanting, default false); **Kelompok Tani interim** `subGroupLv2` per-lahan (#146; Gapoktan `subGroupLv1` di-drop #189); `parcelUid` → `LandParcelIdentity` (identitas stabil antar revisi, #296) |
-| **Land Parcel Satellites** (#296) | LandParcelIdentity, LandParcelDocument, LandStdb, LandParcelStdb, LandParcelExternalId, LandParcelProgram | Identitas per `(farmerId, parcelId)` lintas revisi; surat kepemilikan (enum `LandDocumentType`, nomor tidak unik, `holderName`, `statedArea`); STDB per petani M:N ke lahan; UL Parcel Code + `rawGeometry` opsional; program demplot PBU — detail di [models.md](./models.md#landparcelidentity--satelit-lahan-296-decision-log-2026-08-27) |
+| **Land Parcel Satellites** (#296) | LandParcelIdentity, LandParcelDocument, LandStdb, LandParcelStdb, LandParcelExternalId, LandParcelProgram, LandParcelBorder | Identitas per `(farmerId, parcelId)` lintas revisi; surat kepemilikan (enum `LandDocumentType`, nomor tidak unik, `holderName`, `statedArea`); STDB per petani M:N ke lahan; UL Parcel Code + `rawGeometry` opsional; program demplot PBU; **sepadan** U/T/S/B teks bebas 1:1 (#326) — detail di [models.md](./models.md#landparcelidentity--satelit-lahan-296-decision-log-2026-08-27) |
 | **Tree** | Tree | Titik pohon sawit per lahan (#238) — deteksi model + koreksi manusia (`source` auto/moved/added/verified), koordinat WGS84, `vigor`, revisi **per-set** (upload ulang nonaktifkan set lama), relasi `landParcelId` + kunci bisnis `parcelId`; skala 10⁵–10⁶ baris → wajib agregat |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
 | **Production** | ProductionRecord | Yield tracking per farmer/parcel with period (YYYY-MM), harvest number (1-4), duplicate validation |
@@ -278,6 +279,7 @@ erDiagram
         Float location_lat
         Float location_long
         Json polygon
+        Geometry geom "generated dari polygon (#317 Fase 1)"
         Float area
         Int planting_year
         String sub_group_lv2

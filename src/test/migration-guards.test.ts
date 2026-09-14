@@ -22,10 +22,16 @@ function migrationFiles() {
     .map((m) => ({ ...m, sql: readFileSync(m.path, "utf8") }));
 }
 
+/** SQL tanpa komentar baris `--` — header migrasi memuat petunjuk ROLLBACK
+ *  (mis. `DROP INDEX "..._geom_idx"`) yang bukan DDL dan tak boleh dihitung. */
+function ddlOnly(sql: string) {
+  return sql.replace(/--[^\n]*/g, "");
+}
+
 describe("migrasi Prisma — index GiST manual tidak boleh di-drop", () => {
   it("tidak ada migrasi yang menjatuhkan *_geom_idx", () => {
     const offenders = migrationFiles()
-      .filter((m) => /DROP\s+INDEX\s+(IF\s+EXISTS\s+)?"?[a-z_]*_geom_idx"?/i.test(m.sql))
+      .filter((m) => /DROP\s+INDEX\s+(IF\s+EXISTS\s+)?"?[a-z_]*_geom_idx"?/i.test(ddlOnly(m.sql)))
       .map((m) => m.name);
     expect(offenders).toEqual([]);
   });
@@ -35,7 +41,7 @@ describe("migrasi Prisma — index GiST manual tidak boleh di-drop", () => {
     const created = files.flatMap((m) => [...m.sql.matchAll(/CREATE INDEX "([a-z_]+_geom_idx)"/gi)].map((x) => x[1]));
     expect(created.length).toBeGreaterThan(0);
     for (const idx of created) {
-      const dropped = files.some((m) => new RegExp(`DROP\\s+INDEX\\s+(IF\\s+EXISTS\\s+)?"?${idx}"?`, "i").test(m.sql));
+      const dropped = files.some((m) => new RegExp(`DROP\\s+INDEX\\s+(IF\\s+EXISTS\\s+)?"?${idx}"?`, "i").test(ddlOnly(m.sql)));
       expect(dropped, `${idx} di-drop oleh sebuah migrasi`).toBe(false);
     }
   });
@@ -178,5 +184,51 @@ describe("migrasi land_stdb_stage — partial unique index pengganti @@unique (#
     expect(backfill).toBeLessThan(notNull);
     // NOT NULL langsung tanpa default gagal pada tabel berisi.
     expect(sql).not.toMatch(/ADD COLUMN\s+"modified_at" TIMESTAMP\(3\) NOT NULL,/);
+  });
+});
+
+describe("migrasi land_parcel_geom — kolom generated + GiST (#317 Fase 1 via #327)", () => {
+  const m = migrationFiles().find((f) => f.name.endsWith("_land_parcel_geom"));
+
+  it("berkas migrasi ada", () => {
+    expect(m).toBeDefined();
+  });
+
+  it("geom adalah GENERATED ... STORED dari geometry (bukan kolom biasa yang harus dijaga aplikasi)", () => {
+    expect(m!.sql).toMatch(
+      /ADD COLUMN "geom" geometry\(MultiPolygon, 4326\)\s+GENERATED ALWAYS AS \([\s\S]*?ST_GeomFromGeoJSON\("geometry"::text\)[\s\S]*?\) STORED/,
+    );
+  });
+
+  it("ekspresi dijaga CASE pada type — ST_GeomFromGeoJSON melempar error untuk JSON null/objek asing", () => {
+    const stmt = m!.sql.slice(m!.sql.indexOf('ADD COLUMN "geom"'));
+    const expr = stmt.slice(0, stmt.indexOf("STORED"));
+    expect(expr).toMatch(/CASE[\s\S]*?WHEN \("geometry" ->> 'type'\) IN \('Polygon', 'MultiPolygon'\)/);
+    expect(expr).toMatch(/ST_Multi\(ST_MakeValid\(ST_SetSRID\(/);
+  });
+
+  it("GiST dibuat manual dengan nama pola *_geom_idx yang dijaga test di atas", () => {
+    expect(m!.sql).toMatch(/CREATE INDEX "tbl_land_parcel_geom_idx" ON "tbl_land_parcel" USING GIST \("geom"\)/);
+  });
+
+  it("tidak menyentuh jalur tulis: tanpa UPDATE/backfill (Postgres mengisi saat ALTER)", () => {
+    expect(ddlOnly(m!.sql)).not.toMatch(/\bUPDATE\b/i);
+  });
+});
+
+describe("migrasi land_parcel_border — satelit sepadan 1:1 (#326)", () => {
+  const m = migrationFiles().find((f) => f.name.endsWith("_land_parcel_border"));
+
+  it("berkas migrasi ada", () => {
+    expect(m).toBeDefined();
+  });
+
+  it("FK menunjuk tbl_land_parcel_identity, bukan tbl_land_parcel (utuh lintas revisi)", () => {
+    expect(m!.sql).toMatch(/REFERENCES "tbl_land_parcel_identity"\("id"\)/);
+    expect(m!.sql).not.toMatch(/REFERENCES "tbl_land_parcel"\(/);
+  });
+
+  it("satu baris per identitas lahan (unique parcel_uid)", () => {
+    expect(m!.sql).toMatch(/CREATE UNIQUE INDEX "tbl_land_parcel_border_parcel_uid_key" ON "tbl_land_parcel_border"\("parcel_uid"\)/);
   });
 });
