@@ -22,6 +22,7 @@ vi.mock("@/lib/access-context", () => ({
 }));
 vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "user-1" } }) }));
 vi.mock("@/lib/parcel-passport-query", () => ({ fetchParcelPassport: vi.fn(), computeFarmerTrainingItems: vi.fn() }));
+vi.mock("@/lib/land-marker-query", () => ({ fetchFarmerGroupMarkerPoints: vi.fn(), fetchFarmerMarkerPoints: vi.fn() }));
 
 const db = vi.hoisted(() => ({
   farmerGroup: { findFirst: vi.fn(), findMany: vi.fn() },
@@ -34,6 +35,7 @@ vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
 const { getNktReportData } = await import("@/server/actions/report");
 const { getMapMarkers } = await import("@/server/actions/map");
+const { getFarmerGroupNktReportData } = await import("@/server/actions/farmer-group");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -67,7 +69,8 @@ describe("getNktReportData — Laporan NKT per Lembaga (#332)", () => {
     const res = await getNktReportData("kt-1");
     expect(res.success).toBe(false);
     expect(res.success === false && res.error).toMatch(/tidak memiliki akses/);
-    expect(db.farmerGroup.findFirst.mock.calls[0][0].where).toMatchObject({ id: "kt-1", isActive: true, districtId: { in: ["1404"] } });
+    // Scope lewat AND (anti BUG-007) — pemuat bersama `loadNktReportData`.
+    expect(db.farmerGroup.findFirst.mock.calls[0][0].where).toMatchObject({ id: "kt-1", isActive: true, AND: { districtId: { in: ["1404"] } } });
     expect(db.landParcel.findMany).not.toHaveBeenCalled();
   });
 
@@ -78,6 +81,16 @@ describe("getNktReportData — Laporan NKT per Lembaga (#332)", () => {
     expect(where).toEqual({ isActive: true, farmer: { isActive: true, farmerGroupId: "kt-1" } });
     expect(db.landMarker.count).not.toHaveBeenCalled();
     expect(res.success && res.data).not.toHaveProperty("markersNkt");
+  });
+
+  it("pintu kedua Detail Lembaga: getFarmerGroupNktReportData digate master-data-groups:PRINT — data identik dari pemuat bersama", async () => {
+    const res = await getFarmerGroupNktReportData("kt-1");
+    expect(hasPermission).toHaveBeenCalledExactlyOnceWith("master-data-groups", "PRINT");
+    expect(res.success && res.data?.parcels.length).toBe(2);
+    hasPermission.mockResolvedValue(false);
+    const denied = await getFarmerGroupNktReportData("kt-1");
+    expect(denied.success).toBe(false);
+    expect(hasPermission).not.toHaveBeenCalledWith("report-land-parcel", "PRINT");
   });
 
   it("baris NKT diserialisasi: assessedAt → 'yyyy-mm-dd', lahan tanpa NKT → null, kop Lembaga + Distrik", async () => {

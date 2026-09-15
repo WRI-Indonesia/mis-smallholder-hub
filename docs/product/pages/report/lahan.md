@@ -131,7 +131,7 @@ Cakupan/Status Surat/Jenis Surat/Status STDB/NKT → fragment `where` Prisma lew
 
 ## Laporan NKT per Lembaga (PDF, #332)
 
-Tombol **Laporan NKT** (ikon perisai, merah) di toolbar ekspor — muncul bersama Excel/PDF bila ada baris; digate izin `PRINT` yang sama (`report-land-parcel`). Berbeda dari PDF laporan legalitas: **tidak mengikuti filter** — sumbernya `getNktReportData(farmerGroupId)` (`src/server/actions/report.ts`: PRINT + cakupan akses Lembaga + `isActive`) yang memuat **seluruh lahan aktif Lembaga** (`identity.nkt` + geometri). Builder murni `buildNktReportDoc` (`src/lib/nkt-report.ts`) menyusun `LayerReportInput` untuk `buildLayerReportDoc` (landscape A4, pola PDF legenda Peta Lahan #331):
+Tombol **Laporan NKT** (ikon perisai, merah) di toolbar ekspor — muncul bersama Excel/PDF bila ada baris; digate izin `PRINT` yang sama (`report-land-parcel`). **Pintu kedua:** tombol yang sama di Detail Lembaga › tab Lahan (gate `master-data-groups:PRINT`, action `getFarmerGroupNktReportData`); keduanya memakai pemuat bersama `loadNktReportData` (`src/lib/nkt-report-query.ts`) — menu key di-hardcode per entry point (#313). Berbeda dari PDF laporan legalitas: **tidak mengikuti filter** — sumbernya `getNktReportData(farmerGroupId)` (`src/server/actions/report.ts`: PRINT + cakupan akses Lembaga + `isActive`) yang memuat **seluruh lahan aktif Lembaga** (`identity.nkt` + geometri). Builder murni `buildNktReportDoc` (`src/lib/nkt-report.ts`) menyusun `LayerReportInput` untuk `buildLayerReportDoc` (landscape A4, pola PDF legenda Peta Lahan #331):
 
 | Bagian | Isi |
 |---|---|

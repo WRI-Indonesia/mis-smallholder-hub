@@ -12,7 +12,7 @@ import {
   TrendingUp,
   ClipboardCheck,
   ShieldAlert,
-  Landmark,
+  Milestone,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-exp
 import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 import { getFarmerGroupMarkerExportRows } from "@/server/actions/land-marker";
+import { getFarmerGroupNktReportData } from "@/server/actions/farmer-group";
 import { uniqueMarkerRows, MARKER_XLSX_COLUMNS, formatUniqueMarkerRow } from "@/lib/land-marker";
 import { exportToExcel } from "@/lib/xlsx";
 
@@ -83,6 +84,8 @@ interface Props {
   canEditParcel: boolean;
   /** EXPORT menu Lembaga Petani — gate tombol "Unduh Lahan" (#313). */
   canExportParcels: boolean;
+  /** PRINT menu Lembaga Petani — gate tombol "Laporan NKT" (#332, pintu kedua). */
+  canPrint: boolean;
 }
 
 const formatDecimal = (n: number) =>
@@ -181,6 +184,7 @@ export function GroupDetailClient({
   canViewParcel,
   canEditParcel,
   canExportParcels,
+  canPrint,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const { summary, struktur, pelatihan, produksi } = detail;
@@ -219,6 +223,27 @@ export function GroupDetailClient({
       toast.error("Gagal membuat berkas unduhan lahan");
     } finally {
       setExporting(false);
+    }
+  }
+
+  // Laporan NKT Lembaga ini (#332, pintu kedua — permintaan owner 2026-09-15):
+  // data & PDF sama dengan tombol di Report › Lahan, gate PRINT menu Lembaga Petani.
+  const [printingNkt, setPrintingNkt] = useState(false);
+  async function handlePrintNkt() {
+    if (printingNkt) return;
+    setPrintingNkt(true);
+    try {
+      const res = await getFarmerGroupNktReportData(group.id);
+      if (!res.success || !res.data) {
+        toast.error(res.success ? "Data laporan NKT kosong" : res.error);
+        return;
+      }
+      const { buildNktReportDoc, nktReportFilename } = await import("@/lib/nkt-report");
+      buildNktReportDoc(res.data).save(nktReportFilename(res.data));
+    } catch (err) {
+      toast.error((err instanceof Error && err.message) || "Gagal membuat Laporan NKT");
+    } finally {
+      setPrintingNkt(false);
     }
   }
 
@@ -495,7 +520,7 @@ export function GroupDetailClient({
             />
             {/* Patok (#331): patok fisik unik Lembaga ini; % terpasang = kondisi Ada. */}
             <SummaryCard
-              icon={Landmark}
+              icon={Milestone}
               title="Patok"
               value={formatNumber(markerPoints.length)}
               sub={
@@ -512,15 +537,30 @@ export function GroupDetailClient({
               </h2>
               {/* Unduh lahan lembaga ini sebagai SHP/GeoJSON/KML (#313) —
                   cakupannya sudah pasti satu Lembaga, jadi tak perlu filter. */}
-              {canExportParcels && (
-                <ParcelExportMenu
-                  disabled={polygonCount === 0}
-                  disabledReason="Lembaga ini belum punya lahan ber-poligon"
-                  exporting={exporting}
-                  onExport={handleParcelExport}
-                  extraItems={[{ key: "markers", label: "Patok batas (Excel)", onSelect: handleMarkerExport }]}
-                />
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {canPrint && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrintNkt}
+                    disabled={printingNkt}
+                    className="h-9 gap-2 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-400"
+                    title="Laporan NKT Lembaga ini (PDF — seluruh lahan aktif)"
+                  >
+                    <ShieldAlert className="h-4 w-4" />
+                    {printingNkt ? "Menyusun…" : "Laporan NKT"}
+                  </Button>
+                )}
+                {canExportParcels && (
+                  <ParcelExportMenu
+                    disabled={polygonCount === 0}
+                    disabledReason="Lembaga ini belum punya lahan ber-poligon"
+                    exporting={exporting}
+                    onExport={handleParcelExport}
+                    extraItems={[{ key: "markers", label: "Patok batas (Excel)", onSelect: handleMarkerExport }]}
+                  />
+                )}
+              </div>
             </div>
             <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} markerPoints={markerPoints} />
           </Card>

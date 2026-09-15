@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { ExpressionSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers, Landmark } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers, Milestone } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
@@ -895,7 +895,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
               <div className="w-[272px]">
                 <PopupHeader
                   accent={Number(selected.props.nkt) === 1 ? "red" : "amber"}
-                  icon={<Landmark className="h-4 w-4" />}
+                  icon={<Milestone className="h-4 w-4" />}
                   title={String(selected.props.code ?? "Patok")}
                   subtitle={Number(selected.props.nkt) === 1 ? "Patok lahan NKT" : "Patok lahan"}
                 />

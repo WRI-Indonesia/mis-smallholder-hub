@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Download, Landmark, Loader2, Printer } from "lucide-react";
+import { Download, Milestone, Loader2, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,7 +111,7 @@ export function MarkerReportClient({ districts, canExport, canPrint }: Props) {
             <FilterCombobox options={groups} value={farmerGroupId} onSelect={(id) => { setFarmerGroupId(id); setRows(null); }} allLabel="Semua Lembaga Petani" searchPlaceholder="Cari lembaga…" emptyLabel="Lembaga tidak ditemukan" widthClass="w-[260px]" disabled={!districtId} />
           </div>
           <Button onClick={load} disabled={!districtId || isPending} className="h-9">
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Landmark className="mr-2 h-4 w-4" />} Muat Data
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Milestone className="mr-2 h-4 w-4" />} Muat Data
           </Button>
           {rows && (
             <>

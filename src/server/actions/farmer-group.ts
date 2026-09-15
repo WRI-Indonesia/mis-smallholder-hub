@@ -2,6 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { fetchFarmerGroupMarkerPoints } from "@/lib/land-marker-query";
+import { loadNktReportData } from "@/lib/nkt-report-query";
+import type { NktReportData } from "@/lib/nkt-report";
+import type { ActionResult } from "@/types/action-result";
 import { nktAffectedStatusWhere, PARCEL_NKT_MARKER_SELECT, parcelNktPatok } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer-group.schema";
@@ -402,4 +405,18 @@ export async function getDistrictsForSelect() {
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+}
+
+/**
+ * Laporan NKT per Lembaga dari Detail Lembaga › tab Lahan (permintaan owner
+ * 2026-09-15) — gate `master-data-groups` PRINT (menu key di-hardcode per entry
+ * point, #313); data & PDF sama persis dengan tombol di Report › Lahan (#332).
+ */
+export async function getFarmerGroupNktReportData(farmerGroupId: string): Promise<ActionResult<NktReportData>> {
+  if (!(await hasPermission("master-data-groups", "PRINT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mencetak laporan" };
+  }
+  const data = await loadNktReportData(farmerGroupId, await getAccessContext());
+  if (!data) return { success: false, error: "Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses" };
+  return { success: true, data };
 }

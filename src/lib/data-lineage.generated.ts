@@ -306,6 +306,7 @@ export const DATA_LINEAGE: DataLineage = [
       "trainingPackage": "R"
     },
     "modules": [
+      "src/lib/nkt-report-query.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/land-marker.ts",
       "src/server/actions/land-parcel-export.ts"
@@ -433,6 +434,7 @@ export const DATA_LINEAGE: DataLineage = [
       "landParcel": "R"
     },
     "modules": [
+      "src/lib/nkt-report-query.ts",
       "src/server/actions/report.ts"
     ],
     "dynamicAccess": null
