@@ -47,8 +47,10 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | File | Isi |
 |------|-----|
 | [qa/README.md](./qa/README.md) | Proses QA/QC manual: kapan (setelah deploy staging, sebelum PR ke `main`), siapa, aturan bukti (gitignored — repo publik) |
-| [qa/_template/](./qa/_template/) | Master 6 berkas per rilis: scope · smoke · kasus uji · QC data · temuan · sign-off |
-| [qa/v0.35.0/](./qa/v0.35.0/) | Rilis pertama yang memakai proses ini (siklus #326–#338) |
+| [qa/_template/](./qa/_template/) | Master per rilis: scope (akun & persiapan data) · smoke `SM-nn` · kasus uji `TC-<issue>-nn` ber-tag P0/P1/P2 · QC data · temuan · sign-off · template lembar run |
+| [qa/regression.md](./qa/regression.md) | Kasus `[regresi]` yang ikut setiap rilis (lahir dari temuan review/bug) |
+| [qa/v0.35.0/](./qa/v0.35.0/) | Rilis pertama yang memakai proses ini (siklus #326–#338): 40 kasus uji + 4 persiapan data |
+| `scripts/qa/` | `data-qc.ts` (cek DB read-only → tabel markdown) · `new-run.mjs` (lembar run dari spesifikasi) · `summary.mjs` (rekap Pass/Fail per run) |
 
 ## 📊 Proyek (`project/`) — status delivery & proses
 

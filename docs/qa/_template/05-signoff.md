@@ -2,8 +2,12 @@
 
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
-| Developer | | | Go / No-go | gate lokal hijau, `02` lengkap |
-| QA | | | Go / No-go | `01` staging + `02` selesai, `04` tuntas |
+| Developer | | | Go / No-go | gate lokal hijau; `02` lengkap; temuan blocker/major diperbaiki |
+| QA | | | Go / No-go | run staging: semua P0 Pass; Fail tersisa hanya minor ber-issue |
 | Owner | | | Go / No-go | known issues diterima |
 
-Prasyarat tag `vX.Y.Z`: ketiga baris **Go**; migrasi prod applied + checksum disegarkan; smoke prod (`01` kolom P) diisi ≤ 1 jam setelah deploy.
+## Setelah perbaikan temuan — apa yang diulang
+
+Bukan seluruh suite: run ulang (`new-run.mjs --label ulang --only <ID,ID,…>`) memuat **kasus yang Fail** + **smoke P0 halaman yang tersentuh perbaikan** + `regression.md`. Seluruh suite diulang hanya bila perbaikan menyentuh lapisan bersama (RBAC, DataTable, PDF builder, migrasi).
+
+Prasyarat tag `vX.Y.Z`: ketiga baris **Go**; migrasi prod applied + checksum disegarkan; run prod (`--only P0`) diisi ≤ 1 jam setelah deploy.

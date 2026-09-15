@@ -5,17 +5,11 @@
 | Versi | vX.Y.Z (MAJOR/MINOR/PATCH — alasan) |
 | Rentang | `<tag rilis sebelumnya>..<commit terakhir mvp>` (`n` commit) |
 | Migrasi | ada / tidak — daftar di `00-scope.md` |
-| Staging | `mis-staging` · deploy run `<id>` · diuji `YYYY-MM-DD` oleh `<nama/peran>` |
-| Prod | `mis-prod` · deploy run `<id>` · smoke `YYYY-MM-DD` oleh `<nama/peran>` |
+| Run | lihat `runs/` — satu berkas per eksekusi |
 
-## Ringkasan
+## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/vX.Y.Z`)
 
-| Berkas | Pass | Fail | Blocked | N/A |
-|---|---:|---:|---:|---:|
-| `01-smoke.md` (staging) | | | | |
-| `01-smoke.md` (prod) | | | | |
-| `02-test-cases.md` | | | | |
-| `03-data-qc.md` | | | | |
+_(belum ada run)_
 
 ## Keputusan
 

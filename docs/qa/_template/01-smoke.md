@@ -1,38 +1,92 @@
 # 01 · Smoke test per menu
 
-Dijalankan **dua kali**: setelah deploy staging (kolom S) dan setelah deploy prod (kolom P). Satu peran non-SUPERADMIN ter-scope (mis. OPERATOR satu Distrik) wajib ikut — bug scope tidak terlihat dari SUPERADMIN. Status: Pass / Fail / Blocked / N/A.
+Checklist **tetap** (tumbuh saat menu bertambah). Dijalankan tiap run — staging penuh, prod cukup `[P0]`. Peran non-SUPERADMIN **wajib**: bug scope tidak terlihat dari SUPERADMIN. **Konsol browser** diperiksa di tiap halaman (kolom sendiri di lembar run), bukan satu baris di akhir.
 
-**Peran diuji:** SUPERADMIN `<akun>` · OPERATOR ter-scope `<akun, scope>` · DONOR `<akun>`
+Format blok: `### SM-nn · <Menu › Sub-menu> [P0|P1|P2] (menit)` → `Peran:` · `Langkah:` · `Harapan:`.
 
-| # | Menu › Sub-menu | Langkah minimum | Peran | S | P | Catatan / bukti |
-|---|---|---|---|---|---|---|
-| 1 | Login · Profil | login, ganti tema, logout | semua | | | |
-| 2 | Dashboard › Main | filter Distrik/Tahun, klik 1 kartu → dialog | SUPERADMIN | | | |
-| 3 | Dashboard › BMP | ganti tahun, kartu & grafik terisi | SUPERADMIN | | | |
-| 4 | Dashboard › Pelatihan | matriks + drill-down 1 sel | OPERATOR | | | |
-| 5 | Dashboard › Risk Management › Fire Alert | muat rentang 5 hari, cetak PDF 1 lembaga | SUPERADMIN | | | |
-| 6 | Report › Petani | filter wajib → Excel & PDF terunduh | OPERATOR | | | |
-| 7 | Report › Lahan | pilih Lembaga, filter legalitas, PDF | OPERATOR | | | |
-| 8 | Report › Pelatihan | dua tab, Excel | OPERATOR | | | |
-| 9 | Report › Produksi | matriks bulanan, PDF | OPERATOR | | | |
-| 10 | Report › Kelompok Tani (Summary) | selektor kolom, Excel | OPERATOR | | | |
-| 11 | Report › Kelompok Tani (Detail) | pilih Lembaga, buka semua, PDF | OPERATOR | | | |
-| 12 | Report › Patok | Distrik → Muat Data, Excel | OPERATOR | | | |
-| 13 | Map › Peta Lahan | Muat Data 1 Distrik, toggle tiap baris legenda, popup lahan, Unduh 1 baris | OPERATOR | | | |
-| 14 | Map › Peta BMP | pilih Lembaga, popup, cetak | SUPERADMIN | | | |
-| 15 | Master Data › Lembaga Petani | daftar, detail 5 tab, Excel | OPERATOR | | | |
-| 16 | Master Data › Petani | daftar, cari NIK, detail tab Lahan | OPERATOR | | | |
-| 17 | Master Data › Pelatihan | daftar, detail peserta | OPERATOR | | | |
-| 18 | Master Data › Lahan | filter, detail 5 tab, Profil Lahan PDF | OPERATOR | | | |
-| 19 | Master Data › Produksi | daftar, filter | OPERATOR | | | |
-| 20 | Data Analyst › Ringkasan Petani | filter, Excel | SUPERADMIN | | | |
-| 21 | Data Analyst › Analisa Ketersediaan Data | index + 1 seksi anomali | SUPERADMIN | | | |
-| 22 | Data Analyst › Dashboard Ketersediaan Data | matriks terisi | SUPERADMIN | | | |
-| 23 | Data Analyst › Komparasi Data Acuan · Metrik Rilis · Peta Data & Skema | halaman terbuka, angka terisi | SUPERADMIN | | | |
-| 24 | Bulk Upload › Petani · Produksi · Lahan (3 tab) · Pohon | tiap tab terbuka, unduh template | OPERATOR | | | |
-| 25 | Tools › Dashboard Snapshot · Snapshot BMP | daftar terbuka (tanpa generate) | SUPERADMIN | | | |
-| 26 | Settings › Users · Menu · Roles · Regions | halaman terbuka, matriks izin memuat menu baru | SUPERADMIN | | | |
-| 27 | Bantuan | indeks, cari 1 kata, buka 1 tutorial baru | DONOR | | | |
-| 28 | Scope | OPERATOR ter-scope **tidak** melihat Lembaga/Distrik lain di dropdown & daftar | OPERATOR | | | |
-| 29 | DONOR | menu Master Data/Bulk Upload/Settings **tidak** tampil; Report & Map terbuka read-only | DONOR | | | |
-| 30 | Konsol browser | tidak ada error merah selama 1–29 | — | | | |
+### SM-01 · Login · Profil [P0] (2 mnt)
+Peran: semua akun uji · Langkah: login, ganti tema, logout · Harapan: masuk ke dashboard sesuai peran.
+
+### SM-02 · Dashboard › Main [P1] (2 mnt)
+Peran: SUPERADMIN · Langkah: filter Distrik/Tahun, klik 1 kartu → dialog · Harapan: angka mengikuti filter; dialog terbuka.
+
+### SM-03 · Dashboard › BMP [P1] (2 mnt)
+Peran: SUPERADMIN · Langkah: ganti tahun · Harapan: kartu & grafik terisi.
+
+### SM-04 · Dashboard › Pelatihan [P1] (2 mnt)
+Peran: OPERATOR · Langkah: matriks + drill-down 1 sel · Harapan: modal daftar petani.
+
+### SM-05 · Dashboard › Risk Management › Fire Alert [P1] (3 mnt)
+Peran: SUPERADMIN · Langkah: muat rentang 5 hari, cetak PDF 1 lembaga · Harapan: PDF terunduh.
+
+### SM-06 · Report › Petani [P0] (2 mnt)
+Peran: OPERATOR · Langkah: filter wajib → Excel & PDF · Harapan: kedua berkas terunduh, jumlah baris = layar.
+
+### SM-07 · Report › Lahan [P0] (3 mnt)
+Peran: OPERATOR · Langkah: pilih Lembaga, 1 filter legalitas, PDF · Harapan: KPI mengikuti filter; PDF terunduh.
+
+### SM-08 · Report › Pelatihan [P1] (2 mnt)
+Peran: OPERATOR · Langkah: dua tab, Excel · Harapan: Excel 2 sheet.
+
+### SM-09 · Report › Produksi [P1] (2 mnt)
+Peran: OPERATOR · Langkah: matriks bulanan, PDF · Harapan: PDF landscape.
+
+### SM-10 · Report › Kelompok Tani (Summary) [P1] (2 mnt)
+Peran: OPERATOR · Langkah: selektor kolom, Excel · Harapan: kolom Excel = kolom aktif.
+
+### SM-11 · Report › Kelompok Tani (Detail) [P1] (2 mnt)
+Peran: OPERATOR · Langkah: pilih Lembaga, Buka semua, PDF · Harapan: seluruh roster ikut.
+
+### SM-12 · Report › Patok [P0] (2 mnt)
+Peran: OPERATOR, lalu DONOR · Langkah: Distrik → Muat Data, Excel · Harapan: KPI kondisi + tabel; DONOR **tanpa** tombol Excel.
+
+### SM-13 · Map › Peta Lahan [P0] (4 mnt)
+Peran: OPERATOR · Langkah: Muat Data 1 Distrik, toggle tiap baris legenda, popup lahan, unduh 1 baris · Harapan: semua layer tergambar; popup lengkap; unduhan sesuai tipe baris.
+
+### SM-14 · Map › Peta BMP [P1] (2 mnt)
+Peran: SUPERADMIN · Langkah: pilih Lembaga, popup, cetak · Harapan: PDF + matriks.
+
+### SM-15 · Master Data › Lembaga Petani [P0] (3 mnt)
+Peran: OPERATOR · Langkah: daftar, detail 5 tab, Excel · Harapan: hanya Lembaga dalam scope.
+
+### SM-16 · Master Data › Petani [P0] (3 mnt)
+Peran: OPERATOR · Langkah: cari NIK, detail tab Lahan · Harapan: NIK tersensor di layar.
+
+### SM-17 · Master Data › Pelatihan [P1] (2 mnt)
+Peran: OPERATOR · Langkah: daftar, detail peserta · Harapan: terbuka.
+
+### SM-18 · Master Data › Lahan [P0] (3 mnt)
+Peran: OPERATOR · Langkah: filter, detail 5 tab, Profil Lahan PDF · Harapan: PDF ≤ 2 halaman.
+
+### SM-19 · Master Data › Produksi [P1] (1 mnt)
+Peran: OPERATOR · Langkah: daftar, filter · Harapan: terbuka.
+
+### SM-20 · Data Analyst › Ringkasan Petani [P1] (1 mnt)
+Peran: SUPERADMIN · Langkah: filter, Excel · Harapan: terbuka.
+
+### SM-21 · Data Analyst › Analisa Ketersediaan Data [P1] (1 mnt)
+Peran: SUPERADMIN · Langkah: index + 1 seksi anomali · Harapan: terbuka.
+
+### SM-22 · Data Analyst › Dashboard Ketersediaan Data [P1] (1 mnt)
+Peran: SUPERADMIN · Langkah: matriks · Harapan: terisi.
+
+### SM-23 · Data Analyst › Komparasi Data Acuan · Metrik Rilis · Peta Data & Skema [P2] (2 mnt)
+Peran: SUPERADMIN · Langkah: buka ketiganya · Harapan: angka terisi; Peta Data memuat tabel baru rilis ini.
+
+### SM-24 · Bulk Upload › Petani · Produksi · Lahan (tiap tab) · Pohon [P0] (3 mnt)
+Peran: OPERATOR · Langkah: tiap tab terbuka, unduh template · Harapan: template terunduh.
+
+### SM-25 · Tools › Dashboard Snapshot · Snapshot BMP [P2] (1 mnt)
+Peran: SUPERADMIN · Langkah: daftar terbuka (tanpa generate) · Harapan: terbuka.
+
+### SM-26 · Settings › Users · Menu · Roles · Regions [P0] (3 mnt)
+Peran: SUPERADMIN · Langkah: buka keempatnya; matriks Roles memuat menu baru rilis ini · Harapan: izin = seed.
+
+### SM-27 · Bantuan [P1] (2 mnt)
+Peran: DONOR · Langkah: indeks, cari 1 kata, buka 1 tutorial baru rilis ini · Harapan: render, tanpa 404.
+
+### SM-28 · Scope OPERATOR [P0] (2 mnt)
+Peran: OPERATOR · Langkah: dropdown Distrik/Lembaga di Report & Master Data · Harapan: **tidak** ada Lembaga/Distrik di luar scope.
+
+### SM-29 · Menu DONOR [P0] (1 mnt)
+Peran: DONOR · Langkah: sidebar · Harapan: Master Data/Bulk Upload/Settings **tidak** tampil; Report & Map read-only.

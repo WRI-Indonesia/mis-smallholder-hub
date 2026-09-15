@@ -1,7 +1,15 @@
-# 02 · Kasus uji per issue
+# 02 · Kasus uji per issue — vX.Y.Z
 
-ID = `TC-<issue>-<nn>`. Ditulis dev saat menutup issue; dijalankan QA di **staging** (env lain hanya bila disebut). Data uji memakai **kode**, bukan nama orang.
+Satu **blok** per kasus. Ditulis dev saat menutup issue; dijalankan QA di staging; hasil di `runs/`. Data uji memakai **kode** (Lembaga/lahan), bukan nama orang. Tag: `[P0]` wajib tiap run · `[P1]` · `[P2]`; `[regresi]` = disalin ke `../regression.md` saat rilis ditutup.
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|
-| TC-…-01 | | 1. … 2. … | | | | staging | | `evidence/…` |
+Format: `### TC-<issue>-<nn> · <judul> [P0] [regresi] (<menit> mnt)` lalu `Prasyarat:` · `Langkah:` (bernomor) · `Harapan:` (bullet) · opsional `Baseline dev:`.
+
+## #<issue> — <judul>
+
+### TC-<issue>-01 · … [P1] (3 mnt)
+Prasyarat: …
+Langkah:
+1. …
+2. …
+Harapan:
+- …

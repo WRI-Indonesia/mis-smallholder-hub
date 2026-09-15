@@ -1,24 +1,16 @@
-# 03 · QC data & DB
+# 03 · QC data & DB — vX.Y.Z
 
-Kueri **read-only** (`psql`/`prisma studio`), dijalankan **sebelum** dan **sesudah** migrasi di tiap env. Cetak DB efektif dulu (`docs/standards/environments.md`). Harapan diambil dari DB lokal yang identik prod (`mis-staging-local`).
+Kueri hidup di **`scripts/qa/data-qc.ts`** (read-only, cetak DB efektif). Jalankan **sebelum & sesudah** migrasi di tiap env, tempel keluarannya ke lembar run:
 
-## A. Migrasi & skema
+```bash
+npx dotenv -e .env.staging -- npx tsx scripts/qa/data-qc.ts              # semua bagian
+npx dotenv -e .env.prod    -- npx tsx scripts/qa/data-qc.ts --section A,B
+```
 
-| # | Pemeriksaan | Kueri / perintah | Harapan | staging sebelum | staging sesudah | prod sebelum | prod sesudah |
-|---|---|---|---|---|---|---|---|
-| A1 | Migrasi pending | `npx dotenv -e .env.<env> -- npx prisma migrate status` | daftar = `00-scope.md` | | | | |
-| A2 | Checksum | `migration-guards.test.ts` hijau setelah `refresh-applied-checksums` | ✓ | | | | |
+Berkas ini hanya menjelaskan **maksud** tiap cek dan harapannya; bila cek berubah, ubah skripnya lalu perbarui baris di sini. Cek yang tidak bisa diotomasi (perintah terpisah) ditandai *manual*.
 
-## B. Angka bisnis (tidak boleh berubah karena migrasi)
-
-| # | Pemeriksaan | Kueri | Harapan | staging | prod |
-|---|---|---|---|---|---|
-| B1 | Lahan aktif | `select count(*) from tbl_land_parcel where is_active` | | | |
-| B2 | Petani aktif | `select count(*) from tbl_farmer where is_active` | | | |
-
-## C. Izin & menu
-
-| # | Pemeriksaan | Perintah | Harapan | staging | prod |
-|---|---|---|---|---|---|
-| C1 | Seed ↔ DB selaras | `npm run rbac:compare` | 0 selisih tak disengaja | | |
-| C2 | Menu baru tampil per peran | Settings › Roles matriks | sesuai `role-permissions.csv` | | |
+| ID | Bagian | Maksud | Harapan | Otomatis? |
+|---|---|---|---|---|
+| A1 | Migrasi | migrasi pending vs applied | sesudah: 0 pending | ✓ |
+| B1 | Angka bisnis | lahan aktif tidak berubah karena migrasi | = run sebelum | ✓ (bandingkan dua run) |
+| C1 | Izin | seed ↔ DB | `npm run rbac:compare` 0 selisih | manual |

@@ -6,19 +6,13 @@
 | Rentang | `fac9078` (v0.34.1, 2026-09-02) .. HEAD `mvp` — 26 commit (#317 F1, #326–#332, review 2026-09-15, #336–#338) |
 | Migrasi | **5** — `20260914100000_land_parcel_geom` · `…100100_land_parcel_border` · `…150000_land_parcel_nkt` · `…170000_land_marker` · `…200000_land_marker_code` (lihat #333) |
 | Seed | menu `report-marker` + 16 izin — `scripts/seed/seed-menu-report-marker.mjs` (dry-run → `--apply`) |
-| Staging | `mis-staging` · deploy run `—` · diuji `—` oleh `—` |
-| Prod | `mis-prod` · deploy run `—` · smoke `—` oleh `—` |
+| Run | lihat `runs/` — satu berkas per eksekusi (`node scripts/qa/new-run.mjs --version v0.35.0 --env staging`) |
 
 Baseline dev (`mis-dev` = snapshot prod 2026-09-14 + 5 migrasi): smoke 7 halaman 2026-09-15 tanpa error konsol — HJP 559 lahan · 21 NKT · 1.015 patok · 62 patok NKT (Decision Log 2026-09-15).
 
-## Ringkasan
+## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v0.35.0`)
 
-| Berkas | Pass | Fail | Blocked | N/A |
-|---|---:|---:|---:|---:|
-| `01-smoke.md` (staging) | | | | |
-| `01-smoke.md` (prod) | | | | |
-| `02-test-cases.md` | | | | |
-| `03-data-qc.md` | | | | |
+_(belum ada run)_
 
 ## Keputusan
 

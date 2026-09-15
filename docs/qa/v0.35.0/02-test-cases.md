@@ -1,98 +1,300 @@
 # 02 · Kasus uji per issue — v0.35.0
 
-ID = `TC-<issue>-<nn>`. Dijalankan QA di **staging** setelah migrasi + seed (#333). Data uji memakai **kode** (Lembaga HJP `ICS-1401-03`, lahan `HJP.0001.A.14.01.10.2002`), bukan nama orang. Kolom *Baseline dev* = hasil smoke 2026-09-15 di `mis-dev` (bukan pengganti hasil staging).
+Satu **blok** per kasus; hasil di `runs/`. Dijalankan sebagai **OPERATOR ter-scope Kampar** kecuali disebut lain. Data uji: Lembaga HJP `ICS-1401-03`, lahan `HJP.0001.A.14.01.10.2002`; angka acuan dari `TC-PREP-04` (bukan angka dev di bawah — dev memakai snapshot prod + patok seluruh HJP). Prasyarat umum: `TC-PREP-01…04` selesai.
+
+`Baseline dev` = hasil smoke dev 2026-09-15 di `mis-dev` (HJP 559 lahan · 21 NKT · 1.015 patok · 62 patok NKT) — hanya pembanding bentuk, bukan pengganti hasil staging.
 
 ## #317 F1 — geom + GiST
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-317-01 | Migrasi applied | Bulk Upload › Lahan › Poligon: unggah ulang shapefile 1 lahan (revisi +1) | Upload sukses; kolom `geom` terisi otomatis (cek `03` A3), tanpa error transaksi | ✓ (14.003 baris identik) | | | staging | | |
+### TC-317-01 · Upload ulang poligon mengisi `geom` otomatis [P0] (5 mnt)
+Prasyarat: shapefile ZIP 1 lahan HJP yang sudah ada (revisi +1); `data-qc.ts` A3 sebelum = 0 NULL.
+Langkah:
+1. Bulk Upload › Lahan › Poligon → unggah → validasi → Simpan
+2. `data-qc.ts --section A`
+Harapan:
+- Upload sukses tanpa error transaksi; A3 tetap 0 NULL (baris revisi baru ikut terisi)
+Baseline dev: 14.003 baris identik, 0 NULL
 
 ## #326 — Sepadan
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-326-01 | OPERATOR EDIT Lahan; `HJP.0001.A` | Detail Lahan › Informasi › kotak Sepadan › **Isi** → Utara "Jalan desa", Timur kosong → Simpan | Blok menampilkan hanya sisi terisi; refresh tetap ada | ✓ | | | staging | | |
-| TC-326-02 | TC-326-01 | Ubah → kosongkan semua → Simpan | "Sepadan belum diisi" + tombol Isi; baris DB tetap ada (`03` B6) | ✓ | | | staging | | |
-| TC-326-03 | Template Detail Lahan | Bulk Upload › Lahan › Detail Lahan: Excel dengan kolom `Sepadan Utara` terisi, `Sepadan Timur` kosong untuk lahan yang sudah punya Timur | Utara **ditimpa**, Timur **tidak dikosongkan**; ringkasan `sepadan diperbarui` benar | ✓ (test) | | | staging | | |
-| TC-326-04 | Poligon | Bulk Upload › Lahan › Poligon: shapefile DBF berkolom `bts_utara` | Auto-match ke Sepadan Utara; setelah upload, revisi baru **tetap** membawa sepadan lama (menempel ke identitas) | ✓ (test) | | | staging | | |
+### TC-326-01 · Isi sepadan sebagian [P1] (3 mnt)
+Prasyarat: EDIT Lahan; `HJP.0001.A`.
+Langkah:
+1. Detail Lahan › Informasi › kotak Sepadan › **Isi**
+2. Utara "Jalan desa", Timur kosong → Simpan; refresh
+Harapan:
+- Blok hanya menampilkan sisi terisi; tetap ada setelah refresh
+
+### TC-326-02 · Kosongkan semua = hapus, baris tetap [P1] (2 mnt)
+Prasyarat: TC-326-01.
+Langkah:
+1. Ubah → kosongkan semua → Simpan
+Harapan:
+- "Sepadan belum diisi" + tombol Isi; `data-qc.ts` B6 = 1 baris semua NULL
+
+### TC-326-03 · Import Excel: terisi menimpa, kosong membiarkan [P1] (5 mnt)
+Prasyarat: TC-326-01 (Utara terisi); Excel Detail Lahan 1 baris: `Sepadan Utara` = "Sungai", `Sepadan Timur` kosong.
+Langkah:
+1. Bulk Upload › Lahan › Detail Lahan → validasi → Simpan
+Harapan:
+- Utara **ditimpa** "Sungai"; Timur **tidak** dikosongkan; ringkasan `sepadan diperbarui 1`
+
+### TC-326-04 · Shapefile DBF `bts_utara` + sepadan utuh lintas revisi [P1] (5 mnt)
+Prasyarat: shapefile lahan HJP.0001.A dengan kolom DBF `bts_utara`; lalu shapefile yang sama **tanpa** kolom itu.
+Langkah:
+1. Unggah yang berkolom → auto-match ke Sepadan Utara → Simpan
+2. Unggah yang tanpa kolom (revisi +1)
+Harapan:
+- Setelah langkah 2 Detail Lahan **masih** menampilkan sepadan (menempel ke identitas)
 
 ## #327 — Tetangga ≤ 25 m
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-327-01 | `HJP.0001.A` | Detail Lahan › Informasi | Tetangga putus-putus abu bernomor 1…n + tabel legenda (No · Pemilik · ID Lahan · Lembaga); klik nomor → popup | ✓ (5 tetangga) | | | staging | | |
-| TC-327-02 | OPERATOR ter-scope Lembaga lain dari tetangga | Buka lahan yang tetangganya milik Lembaga di luar scope | **Nama petani tetangga tetap tampil** (revisi owner); tautan detail tidak ada | belum diuji | | | staging | | |
-| TC-327-03 | PRINT | Profil Lahan (PDF) dari Detail Lahan **dan** dari popup Peta Lahan | Peta ber-skala + panah utara, tetangga putus-putus bernomor, legenda; 0 tetangga → baris "Tidak ada lahan lain dalam 25 m"; tetap ≤ 2 halaman | ✓ | | | staging | | |
+### TC-327-01 · Tetangga di peta Detail Lahan [P0] (2 mnt)
+Prasyarat: `HJP.0001.A`.
+Langkah:
+1. Detail Lahan › Informasi; klik nomor tetangga
+Harapan:
+- Poligon putus-putus abu bernomor 1…n + tabel legenda (No · Pemilik · ID Lahan · Lembaga); popup nama pemilik
+Baseline dev: 5 tetangga
+
+### TC-327-02 · Nama petani tetangga luar scope tetap tampil [P0] (3 mnt)
+Prasyarat: OPERATOR ter-scope; lahan di tepi Lembaga yang tetangganya milik Lembaga lain (cari via Peta Lahan).
+Langkah:
+1. Detail Lahan → legenda tetangga
+Harapan:
+- Nama & kode petani tetangga **tampil** (revisi owner 2026-09-14); tautan ke detail lahan tetangga **tidak** ada
+
+### TC-327-03 · Profil Lahan PDF dari dua pintu [P1] (3 mnt)
+Prasyarat: PRINT.
+Langkah:
+1. Detail Lahan › Profil Lahan (PDF)
+2. Peta Lahan › popup lahan yang sama › Profil Lahan
+Harapan:
+- Keduanya identik: skala + panah utara, tetangga bernomor, legenda; ≤ 2 halaman; 0 tetangga → "Tidak ada lahan lain dalam 25 m"
 
 ## #328 — Status NKT
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-328-01 | EDIT Lahan | Detail Lahan › kotak NKT › Isi: Terdampak, kategori NKT 4, tanggal, asesor → Simpan | Badge merah **Terdampak NKT** di header; kotak menampilkan kategori/tanggal/asesor; form **tidak** menawarkan "Termasuk" | ✓ | | | staging | | |
-| TC-328-02 | TC-328-01 | Ubah → status Tidak terdampak (biarkan centang kategori) → Simpan | Tersimpan **tanpa kategori** ("Tidak terdampak", bukan "— NKT 4") | ✓ (test) | | | staging | | |
-| TC-328-03 | TC-328-01; DELETE | Kotak NKT › Hapus | Kembali "Belum dinilai NKT"; baris DB hilang (`03` B7) | ✓ | | | staging | | |
-| TC-328-04 | `template_nkt_lahan.xlsx` | Bulk Upload › Lahan › Detail Lahan: template NKT, set **bawaan berkas** Terdampak + NKT 4; satu baris kolom Status = `0`, satu = `tidak`, satu kosong | Kosong → Terdampak (bawaan); `0` dan `tidak` → **Tidak terdampak** (bukan terbalik); ringkasan `nkt dibuat/diperbarui` benar | ✓ (test review 09-15) | | | staging | | |
-| TC-328-05 | HJP ber-NKT | Report › Lahan: filter **NKT = Terdampak**; kolom NKT; KPI | Baris = 21; KPI "Termasuk/terdampak NKT 21"; Excel & PDF membawa kolom & filter | ✓ (21) | | | staging | | |
-| TC-328-06 | Peta Lahan Kampar | Legenda **Lahan NKT** (nyala bawaan) | 21 poligon merah; hitungan 21; popup lahan baris NKT = status / "Belum dinilai" | ✓ | | | staging | | |
+### TC-328-01 · Isi NKT lewat form [P0] (3 mnt)
+Prasyarat: EDIT; lahan HJP **tanpa** NKT (bukan 21 lahan Lampiran).
+Langkah:
+1. Detail Lahan › kotak NKT › Isi: Terdampak, NKT 4, tanggal, asesor → Simpan
+Harapan:
+- Badge merah **Terdampak NKT** di header; kotak menampilkan kategori/tanggal/asesor; form **tidak** menawarkan "Termasuk"
+
+### TC-328-02 · Tidak terdampak menghapus kategori [P1] (2 mnt)
+Prasyarat: TC-328-01.
+Langkah:
+1. Ubah → Tidak terdampak (biarkan centang NKT 4) → Simpan
+Harapan:
+- Tersimpan **tanpa** kategori ("Tidak terdampak", bukan "— NKT 4")
+
+### TC-328-03 · Hapus NKT = baris hilang [P1] (2 mnt)
+Prasyarat: TC-328-02; DELETE.
+Langkah:
+1. Kotak NKT › Hapus
+Harapan:
+- "Belum dinilai NKT"; `data-qc.ts` B7 = 0 untuk lahan itu
+
+### TC-328-04 · Import dengan bawaan berkas; `0`/`tidak` tidak terbalik [P0] [regresi] (5 mnt)
+Prasyarat: template NKT 3 baris lahan HJP tanpa NKT: Status `0` · `tidak` · kosong; bawaan berkas Terdampak + NKT 4.
+Langkah:
+1. Bulk Upload › Lahan › Detail Lahan → validasi
+Harapan:
+- Kosong → Terdampak (bawaan); `0` dan `tidak` → **Tidak terdampak**
+- Simpan → ringkasan `nkt dibuat 3`
+
+### TC-328-05 · Laporan Lahan filter & KPI NKT [P0] (3 mnt)
+Prasyarat: TC-PREP-01.
+Langkah:
+1. Report › Lahan › HJP › NKT = Terdampak; nyalakan kolom NKT; Excel & PDF
+Harapan:
+- Baris = 21 (+ yang dibuat TC-328-04); KPI "Termasuk/terdampak NKT" sama; Excel/PDF membawa kolom & filter
+
+### TC-328-06 · Layer Lahan NKT di Peta Lahan [P0] (2 mnt)
+Langkah:
+1. Peta Lahan Kampar › Muat Data; legenda **Lahan NKT** (nyala bawaan); klik satu poligon merah
+Harapan:
+- Poligon merah = jumlah KPI TC-328-05; popup baris NKT = status; lahan lain "Belum dinilai"
 
 ## #329 — Patok batas
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-329-01 | CREATE Lahan; lahan berpoligon **tanpa** patok | Tab Patok › **Buat patok dari poligon** → pratinjau → centang semua → Simpan | Patok bernomor searah jarum jam dari utara; vertex berhimpit (lengkung) tidak jadi puluhan patok; kode `HJP-PTK-00nnnn` | ✓ (4 patok segi empat) | | | staging | | |
-| TC-329-02 | TC-329-01 pada lahan **tetangga** yang berbagi sudut | Buat patok dari poligon di lahan tetangga | Sudut bersama **ditautkan** (ringkasan "ditautkan ke patok lahan lain"), bukan patok baru; tab menampilkan "juga patok lahan …" | ✓ (2.292 tautan / 1.015 patok) | | | staging | | |
-| TC-329-03 | TC-329-01 | Jalankan ulang Buat patok dari poligon | 0 dibuat (idempoten) | ✓ | | | staging | | |
-| TC-329-04 | EDIT | Ubah patok: geser koordinat 300 m | Ditolak "… m dari batas lahan (maks 100 m)"; tukar lat/long → pesan menyebut tertukar | ✓ (test) | | | staging | | |
-| TC-329-05 | Foto ≤ 5 MB jpg | Unggah foto patok | Thumbnail tampil; unggah kedua menggantikan | belum diuji | | | staging | | |
-| TC-329-06 | DELETE | Lepas patok yang dipakai 2 lahan, lalu lepas dari lahan kedua | Setelah lepas pertama patok tetap aktif (masih dipakai); setelah kedua patok nonaktif | ✓ (test) | | | staging | | |
-| TC-329-07 | Template patok (Excel) 3 baris, 1 tanpa No Patok | Bulk Upload › Lahan › **Patok**: validasi → simpan; unggah berkas yang sama sekali lagi | Ringkasan pertama: baru/diperbarui/ditautkan; unggah kedua: 0 baru (idempoten); baris ≤ 5 m dari patok lahan sendiri → diperbarui | ✓ (test) | | | staging | | |
+### TC-329-01 · Buat patok dari poligon [P0] (3 mnt)
+Prasyarat: CREATE; lahan berpoligon **tanpa** patok (bukan 3 lahan TC-PREP-02).
+Langkah:
+1. Tab Patok › Buat patok dari poligon → pratinjau → centang semua → Simpan
+Harapan:
+- Nomor searah jarum jam dari utara; kode `HJP-PTK-00nnnn`; lengkung digitasi tidak jadi puluhan patok
+
+### TC-329-02 · Sudut bersama ditautkan, bukan digandakan [P0] (3 mnt)
+Prasyarat: TC-329-01 pada lahan tetangganya.
+Langkah:
+1. Buat patok dari poligon di lahan tetangga
+Harapan:
+- Ringkasan "ditautkan ke patok lahan lain" > 0; tab menampilkan "juga patok lahan …"
+
+### TC-329-03 · Idempoten [P1] (1 mnt)
+Langkah:
+1. Jalankan ulang Buat patok dari poligon pada lahan TC-329-01
+Harapan:
+- 0 dibuat, 0 ditautkan
+
+### TC-329-04 · Guard koordinat [P1] (2 mnt)
+Prasyarat: EDIT.
+Langkah:
+1. Ubah patok: geser 300 m → Simpan
+2. Ubah: tukar lat/long → Simpan
+Harapan:
+- (1) ditolak "… m dari batas lahan (maks 100 m)"; (2) pesan menyebut lat/long tertukar
+
+### TC-329-05 · Foto patok [P2] (2 mnt)
+Prasyarat: jpg ≤ 5 MB.
+Langkah:
+1. Unggah foto; unggah foto kedua
+Harapan:
+- Thumbnail tampil; foto kedua menggantikan
+
+### TC-329-06 · Lepas patok bersama [P1] (3 mnt)
+Prasyarat: DELETE; patok yang dipakai 2 lahan.
+Langkah:
+1. Lepas dari lahan A → cek lahan B
+2. Lepas dari lahan B
+Harapan:
+- (1) patok tetap ada di lahan B; (2) patok nonaktif (tidak muncul di Report › Patok)
+
+### TC-329-07 · Unggah Excel patok idempoten [P0] (5 mnt)
+Prasyarat: TC-PREP-03 (berkas yang sama).
+Langkah:
+1. Unggah ulang `input/patok-gps-hjp.xlsx`
+Harapan:
+- 0 baru; baris ≤ 5 m dari patok lahan sendiri → diperbarui
 
 ## #330 — NKT di menu harian
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-330-01 | HJP | MD › Lahan: filter **NKT: Terdampak NKT** | 21 baris, badge NKT merah di kolom ID Lahan; filter **Patok: Ada** menyaring; kolom NKT/Patok bisa dinyalakan & ikut Excel | ✓ (21) | | | staging | | |
-| TC-330-02 | HJP | MD › Lembaga › Detail HJP › tab Lahan | KPI **Lahan NKT** 21 (41,33 ha · 538 belum dinilai); legenda peta "Lahan NKT 21"; popup lahan menyebut status | ✓ | | | staging | | |
-| TC-330-03 | Petani pemilik `HJP.0001.A` | MD › Petani › Detail › tab Lahan | Kolom NKT di tabel lahan; tepi merah di peta sebaran | ✓ | | | staging | | |
+### TC-330-01 · Master Data Lahan filter NKT & Patok [P0] (3 mnt)
+Langkah:
+1. MD › Lahan: NKT = Terdampak NKT; lalu Patok = Ada; nyalakan kolom NKT/Patok; Excel
+Harapan:
+- Jumlah = TC-328-05; badge NKT merah di kolom ID Lahan; Excel membawa kolom yang aktif
+
+### TC-330-02 · Detail Lembaga HJP tab Lahan [P0] (2 mnt)
+Langkah:
+1. MD › Lembaga Petani › HJP › tab Lahan
+Harapan:
+- KPI **Lahan NKT** = TC-PREP-04 D1; legenda peta "Lahan NKT n"; popup lahan menyebut status
+
+### TC-330-03 · Detail Petani tab Lahan [P1] (2 mnt)
+Prasyarat: petani pemilik `HJP.0001.A`.
+Langkah:
+1. MD › Petani › detail › tab Lahan
+Harapan:
+- Kolom NKT di tabel lahan; tepi merah di peta sebaran
 
 ## #331 — Patok di semua menu · kode · Report › Patok
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-331-01 | Peta Lahan Kampar dimuat | Centang **Patok lahan**, lalu **Patok lahan NKT** | Titik kuning lalu merah muncul; hitungan baris kuning = patok non-NKT (953 di dev, ≠ total 1.015); ikon zoom membawa ke titik | ✓ (953 / 62) | | | staging | | |
-| TC-331-02 | TC-331-01 | Untick → tick lagi cepat; ganti dropdown Lembaga **tanpa** Muat Data | Titik tetap muncul (tidak macet); titik **tidak** berganti mengikuti dropdown sebelum Muat Data | ✓ (fix review) | | | staging | | |
-| TC-331-03 | EXPORT map-parcel | Ikon unduh baris **Patok lahan NKT** → Excel; baris **Area Lahan** → Shapefile; baris **Patok lahan** → PDF (PRINT) | Excel satu baris per patok fisik, kolom Kode Patok; SHP Polygon; PDF landscape peta + tabel per lahan | ✓ | | | staging | | |
-| TC-331-04 | HJP | Report › Lahan: filter **Patok = Ada**, kolom Patok; KPI Ada Patok | Baris & KPI konsisten dengan Master Data (559 · 2.292 tautan) | ✓ | | | staging | | |
-| TC-331-05 | HJP | MD › Lembaga › Detail HJP › tab Lahan: KPI Patok; legenda peta Patok/Patok NKT; **Unduh patok** | KPI "1.015 · 0 % terpasang · 62 patok NKT"; legenda 953/62; Excel kolom sama dengan Peta Lahan | ✓ | | | staging | | |
-| TC-331-06 | Peran OPERATOR/MANAGEMENT/DONOR | **Report › Patok** tampil di sidebar; Distrik Kampar → Muat Data; filter Kondisi/NKT; Excel (OPERATOR) ; DONOR **tanpa** Excel, ada PDF | Menu & izin sesuai seed (ADMIN 5, OPERATOR/MANAGEMENT/SUPERADMIN 3, DONOR 2); 1.015 patok, KPI kondisi | ✓ (SUPERADMIN) | | | staging | | |
-| TC-331-07 | Bulk Upload Patok, Excel berkolom **Kode Patok** | (a) kode patok lahan ini; (b) kode patok Lembaga lain > 100 m dari titik; (c) kode tak dikenal | (a) diperbarui; (b) **ditolak** "bukan patok lahan ini …"; (c) ditolak "tidak ditemukan" | ✓ (test review 09-15) | | | staging | | |
+### TC-331-01 · Layer patok Peta Lahan & hitungan legenda [P0] (3 mnt)
+Langkah:
+1. Peta Lahan Kampar › Muat Data; centang Patok lahan, lalu Patok lahan NKT; klik ikon zoom
+Harapan:
+- Titik kuning lalu merah; hitungan baris kuning = patok **non-NKT** (≠ total), merah = patok NKT (D3)
+Baseline dev: 953 / 62
+
+### TC-331-02 · Unduhan per baris legenda [P0] (4 mnt)
+Prasyarat: EXPORT `map-parcel`; PRINT untuk PDF.
+Langkah:
+1. Baris Patok lahan NKT → Excel; baris Area Lahan → Shapefile; baris Patok lahan → PDF
+Harapan:
+- Excel satu baris per patok fisik ber-kolom Kode Patok; SHP Polygon; PDF landscape peta + tabel per lahan
+
+### TC-331-03 · Laporan Lahan filter & KPI patok [P1] (2 mnt)
+Langkah:
+1. Report › Lahan › HJP › Patok = Ada; kolom Patok
+Harapan:
+- Baris & KPI "Ada Patok" konsisten dengan MD › Lahan filter Patok = Ada
+
+### TC-331-04 · Detail Lembaga KPI Patok + Unduh patok [P1] (3 mnt)
+Langkah:
+1. MD › Lembaga › HJP › tab Lahan; legenda Patok/Patok NKT; **Unduh patok**
+Harapan:
+- KPI "n patok · % terpasang · n patok NKT" = D2/D3; Excel kolom sama dengan unduhan Peta Lahan
+
+### TC-331-05 · Report › Patok per peran [P0] (4 mnt)
+Prasyarat: OPERATOR, lalu DONOR.
+Langkah:
+1. Sidebar Report › Patok; Distrik Kampar → Muat Data; filter Kondisi = Belum dipasang; NKT = Ya; Excel
+2. Ulangi sebagai DONOR
+Harapan:
+- Menu tampil untuk keduanya; OPERATOR ada Excel; DONOR **tanpa** Excel, PDF ada; jumlah = D2
+
+### TC-331-06 · Kode patok tampil konsisten [P1] (2 mnt)
+Langkah:
+1. Bandingkan kode satu patok di: tab Patok, popup Peta Lahan, PDF Profil Lahan, Excel Report › Patok
+Harapan:
+- Kode identik di keempatnya
+
+### TC-331-07 · Unggahan ber-Kode Patok: sendiri / tetangga dekat / tak dikenal [P0] [regresi] (5 mnt)
+Prasyarat: Excel 3 baris: (a) kode patok lahan ini; (b) kode patok lahan tetangga ≤ 100 m; (c) `HJP-PTK-999999`.
+Langkah:
+1. Bulk Upload › Lahan › Patok → validasi → Simpan
+Harapan:
+- (a) diperbarui; (b) ditautkan; (c) ditolak "tidak ditemukan". (Kode Lembaga lain > 100 m: lihat TC-REV-03)
 
 ## #332 — Laporan NKT (PDF, 3 KPI)
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-332-01 | PRINT report-land-parcel; HJP | Report › Lahan › pilih HJP → filter apa pun → **Laporan NKT** | PDF `Laporan_NKT_ISH_1401_03_<tgl>.pdf`; **3 KPI**: Total lahan 559 (21 dinilai · 538 belum) · Lahan NKT 21 (41,33 ha) · Luas NKT 1,16 ha; isi **tidak** mengikuti filter | ✓ (6 KPI → direvisi 3) | | | staging | | |
-| TC-332-02 | TC-332-01 | Buka PDF | Peta ikhtisar (konteks ungu berlabel, NKT merah bernomor) + peta rinci per klaster A–E; tabel 21 baris; ringkasan "NKT 4 — 21"; kop menyebut sumber asesmen | ✓ (7 hal.) | | | staging | | |
-| TC-332-03 | Lembaga **tanpa** baris NKT | Laporan NKT | PDF tetap terbit: KPI 0, tabel kosong, "sumber asesmen belum dicatat" | belum diuji | | | staging | | |
+### TC-332-01 · Laporan NKT mengabaikan filter [P0] (3 mnt)
+Prasyarat: PRINT `report-land-parcel`.
+Langkah:
+1. Report › Lahan › HJP › pasang filter Status Surat apa pun → **Laporan NKT**
+Harapan:
+- Berkas `Laporan_NKT_ISH_1401_03_<tgl>.pdf`; **3 KPI**: Total lahan (n dinilai · n belum) · Lahan NKT (Σ ha) · Luas NKT; isi = seluruh lahan aktif, bukan hasil filter
 
-## Review 2026-09-15 — regresi yang dikunci
+### TC-332-02 · Isi PDF [P1] (3 mnt)
+Langkah:
+1. Buka PDF TC-332-01
+Harapan:
+- Peta ikhtisar (konteks ungu berlabel nama petani, NKT merah bernomor) + peta rinci per klaster bila fitur kecil; tabel hanya lahan NKT; ringkasan per kategori; kop menyebut sumber asesmen
+Baseline dev: 7 halaman, 5 klaster A–E
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-REV-01 | Shapefile Point patok yang DBF-nya punya kolom `LINTANG`/`BUJUR` lama | Bulk Upload › Patok | Koordinat memakai **geometri**, bukan atribut | ✓ (test) | | | staging | | |
-| TC-REV-02 | Dua baris GPS di titik sama tanpa No Patok | Bulk Upload › Patok | 1 dibuat + 1 diperbarui (bukan 2 patok) | ✓ (test) | | | staging | | |
-| TC-REV-03 | Lahan dengan GeoJSON cacat (`geom` NULL) | Tambah patok manual | Tidak menolak dengan "Infinity m"; guard dilewati | ✓ (test) | | | staging | | |
-| TC-REV-04 | Detail Lembaga HJP | Muat halaman, ukur waktu tab Lahan | Tidak lebih lambat dari v0.34.1 secara kasat mata (patok dimuat sejajar; lazy → #335) | — | | | staging | | |
-| TC-REV-05 | Report › Lahan filter NKT "Terdampak" | Bandingkan jumlah dengan Peta Lahan hitungan Lahan NKT | Sama (satu konstanta `NKT_AFFECTED_STATUSES`) | ✓ (21 = 21) | | | staging | | |
+### TC-332-03 · Lembaga tanpa NKT [P2] (2 mnt)
+Prasyarat: Lembaga lain tanpa baris NKT.
+Langkah:
+1. Laporan NKT
+Harapan:
+- PDF terbit: KPI 0, tabel kosong, "sumber asesmen belum dicatat"
 
 ## #336 · #337 · #338 — hasil audit menu
 
-| ID | Prasyarat & data uji | Langkah | Hasil harapan | Baseline dev | Hasil aktual | Status | Env | Tester · tanggal | Bukti |
-|---|---|---|---|---|---|---|---|---|---|
-| TC-336-01 | Peta Lahan Kampar | Klik `HJP.0001.A` | Popup baris **Patok: 4 patok**; lahan tanpa patok → "Belum ada patok" | ✓ (4) | | | staging | | |
-| TC-337-01 | HJP | Report › KT (Summary): Kolom → nyalakan **Lahan NKT** & **Patok** | Baris HJP: Lahan NKT 21 (merah), Patok 2.292; kartu Lahan NKT 21; Excel/PDF ikut kolom | ✓ (builder) | | | staging | | |
-| TC-337-02 | HJP | Report › KT (Detail) HJP › Buka semua | Header seksi "… 21 Lahan NKT · 2.292 Patok"; kolom Lahan NKT/Patok per petani ("—" bila 0) | ✓ | | | staging | | |
-| TC-337-03 | Lembaga tanpa NKT/patok | Report › KT (Detail) | Header seksi **tanpa** "Lahan NKT/Patok"; kolom "—" | belum diuji | | | staging | | |
-| TC-338-01 | — | MD › Lembaga Petani: Kolom → **Lahan NKT**; urutkan menurun | HJP teratas dengan badge "21 NKT"; Excel memuat kolom | ✓ (kueri) | | | staging | | |
-| TC-338-02 | — | MD › Petani: Kolom → **Lahan NKT**; filter Lembaga HJP; urutkan | 21 petani berbadge; lainnya "—" | ✓ (kueri: 21) | | | staging | | |
+### TC-336-01 · Popup lahan menyebut jumlah patok [P1] (2 mnt)
+Langkah:
+1. Peta Lahan Kampar › klik `HJP.0001.A`; klik lahan tanpa patok
+Harapan:
+- "Patok: n patok" (= tab Patok); lahan tanpa patok → "Belum ada patok"
+
+### TC-337-01 · Report KT Summary kolom Lahan NKT & Patok [P1] (3 mnt)
+Langkah:
+1. Report › KT (Summary) › Kolom → nyalakan Lahan NKT & Patok; Excel; PDF
+Harapan:
+- Baris HJP: Lahan NKT (merah) = D1, Patok = Σ tautan (D2); "—" bila 0; kartu Lahan NKT; Excel/PDF ikut kolom
+
+### TC-337-02 · Report KT Detail [P1] (2 mnt)
+Langkah:
+1. Report › KT (Detail) › HJP › Buka semua
+Harapan:
+- Header seksi "… n Lahan NKT · n Patok"; kolom Lahan NKT/Patok per petani ("—" bila 0)
+
+### TC-337-03 · Lembaga tanpa NKT/patok [P2] (1 mnt)
+Langkah:
+1. Report › KT (Detail) › Lembaga lain
+Harapan:
+- Header seksi **tanpa** "Lahan NKT/Patok"; kolom "—"
+
+### TC-338-01 · Daftar Lembaga kolom Lahan NKT [P1] (2 mnt)
+Langkah:
+1. MD › Lembaga Petani › Kolom → Lahan NKT; urutkan menurun; Excel
+Harapan:
+- HJP teratas berbadge "n NKT" (= D1); Excel memuat kolom (karena dinyalakan)
+
+### TC-338-02 · Daftar Petani kolom Lahan NKT [P1] (2 mnt)
+Langkah:
+1. MD › Petani › filter Lembaga HJP › Kolom → Lahan NKT; urutkan
+Harapan:
+- Petani ber-lahan NKT berbadge; lainnya "—"; jumlah petani berbadge = D1 (bila 1 lahan/petani)
