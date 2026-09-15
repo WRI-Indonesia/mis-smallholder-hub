@@ -30,6 +30,11 @@
 | LandParcelStdb | `stdbId` | LandStdb | `id` | RESTRICT | CASCADE |
 | LandParcelExternalId | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
 | LandParcelProgram | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
+| **Sepadan, NKT & Patok (#326 #328 #329)** | | | | | |
+| LandParcelBorder | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
+| LandParcelNkt | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
+| LandParcelMarker | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
+| LandParcelMarker | `markerId` | LandMarker | `id` | RESTRICT | CASCADE |
 | **Tree** | | | | | |
 | Tree | `landParcelId` | LandParcel | `id` | RESTRICT | CASCADE |
 | **Production** | | | | | |
@@ -94,6 +99,12 @@
 | **LandStdb** | `(farmerId, number)` | UNIQUE COMPOSITE | Nomor STDB unik per petani; nonaktif tetap memegang slot |
 | **LandParcelStdb** | `(parcelUid, stdbId)` | UNIQUE COMPOSITE | Tautan lahan↔STDB tidak ganda |
 | **LandParcelExternalId** | `(source, code)` | UNIQUE COMPOSITE | UL Parcel Code unik per sumber; nonaktif tetap memegang slot ("Kode ini sudah dipakai lahan lain") |
+| **LandParcelBorder** | `parcelUid` | UNIQUE | Sepadan 1:1 per identitas lahan (#326). **Hapus = kosongkan keempat kolom**, bukan toggle `isActive` — baris nonaktif akan memblokir pengisian ulang |
+| **LandParcelNkt** | `parcelUid` | UNIQUE | Status NKT 1:1 per identitas lahan (#328). Tanpa baris = belum dinilai; **hapus = hapus baris**. Zod: `categories` ≥ 1 kecuali `NOT_AFFECTED`, `assessedAt` ≤ hari ini |
+| **LandMarker** | `code` | UNIQUE, NOT NULL | Kode patok fisik `<SINGKATAN>-PTK-000123` (#331); deret per awalan di `LandMarkerCounter` (`INSERT … ON CONFLICT DO UPDATE … RETURNING`, atomik) |
+| LandMarker | `longitude`, `latitude` | NOT NULL; Zod −180..180 / −90..90 + ≤ 100 m dari batas lahan | Guard koordinat tertukar / salah desimal pada data GPS (#329); `geom` GENERATED dari keduanya |
+| **LandParcelMarker** | `(parcelUid, markerId)` | UNIQUE COMPOSITE | Satu tautan per pasangan lahan–patok; tautan yang dilepas diaktifkan ulang, bukan dibuat baru |
+| LandParcelMarker | `(parcelUid, sequenceNo) WHERE is_active` | UNIQUE partial (`uniq_land_parcel_marker_seq`, manual) | Nomor patok unik per lahan hanya untuk tautan aktif (pola #306) |
 | **TrainingPackage** | `code` | UNIQUE, ENUM | Training category code harus unik |
 | **TrainingParticipant** | `(activityId, farmerId)` | UNIQUE COMPOSITE | Satu farmer hanya bisa terdaftar 1x di satu training |
 | **ProductionRecord** | `(farmerId, parcelId, period, harvestNumber)` | UNIQUE COMPOSITE | Tidak boleh duplicate entri produksi untuk kombinasi farmer/parcel/periode/panen |

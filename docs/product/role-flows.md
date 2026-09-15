@@ -54,7 +54,7 @@
 Tipe pengguna untuk pihak donor/funder — **VIEW-only** pada subset menu. Cakupan data mengikuti aturan yang sama (tanpa assignment = `ALL`, dengan assignment = ter-scope).
 
 - **Dashboard**: ✅ Main Dashboard + BMP + Dashboard Pelatihan (VIEW) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
-- **Report**: 🔲 View reports (Petani, Pelatihan, Produksi, Kelompok Tani, Lahan) — ekspor Excel/PDF diizinkan
+- **Report**: 🔲 View reports (Petani, Pelatihan, Produksi, Kelompok Tani, Lahan, **Patok** #331) — ekspor Excel/PDF diizinkan (Patok: VIEW + PRINT saja, tanpa EXPORT)
 - **Map**: ✅ Peta Lahan + Peta BMP (VIEW)
 - **Bantuan**: ✅ VIEW
 - **Master Data**: ❌ No access

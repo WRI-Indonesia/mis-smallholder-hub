@@ -126,7 +126,8 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 | ✅ [Produksi](./pages/report/produksi.md) | `report-production` | RPT-03 (#132) | Matriks bulanan per petani/lahan + Excel & PDF landscape |
 | ✅ [Kelompok Tani (Summary)](./pages/report/kelompok-tani-summary.md) | `report-kelompok-tani` | RPT-04 (#154) | Agregat real-time Lembaga × KT + column selector + Excel & PDF |
 | ✅ [Kelompok Tani (Detail)](./pages/report/kelompok-tani-detail.md) | `report-kelompok-tani-detail` | RPT-04 (#154) | Roster per Lembaga: KT→Petani collapsible + Excel & PDF |
-| ✅ [Lahan](./pages/report/lahan.md) | `report-land-parcel` | RPT-05 (#177/#179/#180) | Roster datar 1 baris = 1 lahan per Lembaga + PDF landscape ber-peta poligon & grid index + Excel multi-sheet ber-gambar |
+| ✅ [Lahan](./pages/report/lahan.md) | `report-land-parcel` | RPT-05 (#177/#179/#180, #305, #318, #328, #331, #332) | Roster datar 1 baris = 1 lahan per Lembaga + filter/KPI legalitas, NKT & patok + PDF landscape ber-peta poligon (latar peta opsional) & grid index + Excel multi-sheet ber-gambar + tombol **Laporan NKT** (PDF per Lembaga, mengabaikan filter) |
+| ✅ [Patok](./pages/report/patok.md) | `report-marker` | MD-08 langkah awal (#331) | Laporan patok batas per Distrik/Lembaga — satu baris per patok fisik (kode `<Lembaga>-PTK-000123`, lahan pemakai, kondisi, NKT turunan) + KPI kondisi + Excel/SHP/GeoJSON/KML/PDF |
 
 ### 🔧 Tools — `/admin/tools` (🟠 TOOLS-01)
 

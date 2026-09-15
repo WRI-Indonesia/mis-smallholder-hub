@@ -18,6 +18,7 @@ Shapefile, Excel, ZIP, dan apa pun yang berisi data petani/pengguna **tetap di `
 | `seed-boundary-lembaga.ts` | 30 poligon ICS (UTM 47S → WGS84) → `tbl_farmer_group_boundary`, ditulis `geojson` + `geom` PostGIS | `Groups-Boundary.zip` |
 | `seed-batas-administrasi.ts` | 12 kabupaten BIG → `tbl_administrative_boundary`, `geojson` disimpan tersimplifikasi 0,001° | `Batas_Administrasi_Kabupaten_Riau.zip` |
 | `seed-menu-only.ts` | menu + role-permissions saja, tanpa `prisma db seed` penuh (yang tidak idempotent) | — |
+| `seed-menu-report-marker.mjs` | **parsial**: hanya menu `report-marker` (Report › Patok, #331) + izin per peran dari `role-permissions.csv`; hanya menambah yang belum ada (tidak memulihkan izin yang sengaja dihapus admin) | — |
 
 `seed-menu-only.ts` juga ber-`--apply`, tetapi seeder menu/RBAC tak bisa mem-preview perubahan — dry-run-nya hanya menyatakan tujuan dan DB yang akan disentuh. Perhatikan peringatannya: `seedRolePermissions` memakai upsert `update: {}`, sehingga baris permission yang sengaja **dihapus admin akan dipulihkan**.
 
