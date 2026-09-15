@@ -22,7 +22,7 @@ Halaman: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
 ├── Roster collapsible
 │   │   └── Seksi Kelompok Tani
 │   │       └── Tabel Petani
-│   │           └── Kolom: No, Nama Petani, ID Petani, Jml Lahan, Luas (Ha)
+│   │           └── Kolom: No, Nama Petani, ID Petani, Jml Lahan, Luas (Ha), Lahan NKT, Patok (#337)
 │   └── Seksi Kelompok Tani → Tabel Petani
 └── Ekspor
     ├── Excel
@@ -49,7 +49,7 @@ Halaman: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
 | "Distrik" | Filter (combobox + search, opsional) | Primitif `FilterCombobox` (#212); default "Semua Distrik", empty "Distrik tidak ditemukan." |
 | "Lembaga Petani *" | Filter (combobox + search, wajib) | Primitif `FilterCombobox` (#212); placeholder "Pilih Lembaga Petani"; memilih nilai langsung memuat laporan; empty "Lembaga Petani tidak ditemukan." |
 | Catatan filter | Teks bantu | "Pilih satu Lembaga Petani untuk menampilkan roster rinci. Filter Distrik opsional (mempersempit daftar Lembaga)." |
-| Kartu KPI | 4 kartu | "Kelompok Tani", "Total Petani", "Total Lahan", "Total Luas" |
+| Kartu KPI | 5 kartu | "Kelompok Tani", "Total Petani", "Total Lahan", "Total Luas", **"Lahan NKT"** (#337) |
 | "Buka semua" / "Tutup semua" | Tombol | Default semua seksi tertutup |
 | Seksi collapsible | Header seksi | Satu seksi per Kelompok Tani dengan "`<n>` Petani · `<n>` Lahan · `<n>` Ha". Nilai kosong ditampilkan "(tidak diketahui)" |
 | Empty state | Kartu | "Pilih Lembaga Petani" / saat memuat "Memuat laporan..."; bila tanpa data: "Tidak Ada Data" — "Lembaga Petani ini belum memiliki lahan aktif dengan data Kelompok Tani." |
@@ -65,6 +65,8 @@ Halaman: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
 | ID Petani | mono |
 | Jml Lahan | rata kanan |
 | Luas (Ha) | rata kanan, 2 desimal |
+| Lahan NKT | rata kanan; **merah tebal bila > 0**, "—" bila 0 (#337). Header seksi KT ikut menampilkan "n Lahan NKT" / "n Patok" hanya bila > 0 |
+| Patok | rata kanan; Σ tautan patok aktif lahan petani di KT tsb (patok bersama dihitung per lahan), "—" bila 0 (#337). Halaman ini belum punya selektor kolom (#308) → kedua kolom selalu tampil |
 
 ## Opsi ekspor
 
@@ -72,5 +74,5 @@ Halaman: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
 
 | Format | Keterangan |
 |---|---|
-| Excel | Sheet "Detail KT", file `Laporan_Kelompok_Tani_Detail_<Lembaga>`; kolom No, Kelompok Tani, Nama Petani, ID Petani, Jml Lahan, Luas (Ha) + baris Total — digate izin `EXPORT` (#245) |
+| Excel | Sheet "Detail KT", file `Laporan_Kelompok_Tani_Detail_<Lembaga>`; kolom No, Kelompok Tani, Nama Petani, ID Petani, Jml Lahan, Luas (Ha), Lahan NKT, Patok + baris Total — digate izin `EXPORT` (#245) |
 | PDF | Judul "LAPORAN KELOMPOK TANI (DETAIL)", metadata Lembaga Petani & Distrik; kolom sama + baris Total — digate izin `PRINT` (#245) |

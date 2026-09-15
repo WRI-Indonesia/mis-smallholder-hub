@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma, type LandDocumentType, type LandStdbStage } from "@prisma/client";
+import { Prisma, type LandDocumentType, type LandStdbStage, type LandNktStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerRelationAccessFilter } from "@/lib/access-context";
@@ -29,7 +29,10 @@ import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
-import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
+import { LAND_STDB_STAGES, LAND_NKT_STATUSES, nktAffectedStatusWhere, PARCEL_NKT_MARKER_SELECT, parcelNktPatok } from "@/lib/land-parcel-satellite-format";
+import type { ActionResult } from "@/types/action-result";
+import type { NktReportData } from "@/lib/nkt-report";
+import { loadNktReportData } from "@/lib/nkt-report-query";
 
 // ─── Helper dropdown bersama (TD-018) — dedup 5 pasang action per menu report ───
 // Non-exported (bukan server action); permission key per-menu tetap di action pemanggil.
@@ -489,6 +492,8 @@ export async function getKelompokTaniReport(
           farmerGroup: { select: { name: true } },
         },
       },
+      // NKT & patok per KT (#337): hanya status + hitungan tautan aktif, bukan baris satelitnya.
+      identity: { select: PARCEL_NKT_MARKER_SELECT },
     },
   });
 
@@ -498,6 +503,7 @@ export async function getKelompokTaniReport(
     lembagaTani: p.farmer.farmerGroup.name,
     area: p.area,
     subGroupLv2: p.subGroupLv2,
+    ...parcelNktPatok(p.identity),
   }));
 
   return buildKelompokTaniReport(raw);
@@ -569,11 +575,43 @@ function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParc
     });
   }
 
+  // NKT (#328) — nilai disaring terhadap daftar sah (pola documentTypes).
+  const nkt = filters.nktStatus;
+  if (nkt === "affected") {
+    out.push({ identity: { nkt: { is: nktAffectedStatusWhere() } } });
+  } else if (nkt === "assessed") {
+    out.push({ identity: { nkt: { isNot: null } } });
+  } else if (nkt === "unassessed") {
+    out.push({ identity: { nkt: null } });
+  } else if (nkt && (LAND_NKT_STATUSES as readonly string[]).includes(nkt)) {
+    out.push({ identity: { nkt: { is: { status: nkt as LandNktStatus } } } });
+  }
+
+  // Patok (#331) — tautan aktif lahan; `installed` = tak ada patok selain PRESENT (dan ada patok).
+  const marker = filters.marker;
+  if (marker === "with") {
+    out.push({ identity: { markers: { some: { isActive: true } } } });
+  } else if (marker === "without") {
+    out.push({ identity: { markers: { none: { isActive: true } } } });
+  } else if (marker === "installed") {
+    out.push({ identity: { markers: { some: { isActive: true }, none: { isActive: true, marker: { condition: { not: "PRESENT" } } } } } });
+  } else if (marker === "problem") {
+    out.push({ identity: { markers: { some: { isActive: true, marker: { condition: { not: "PRESENT" } } } } } });
+  }
+
   return out;
 }
 
 export async function getDistrictsForLandParcelReport() {
   return districtsForMenus(["report-land-parcel"]);
+}
+
+export async function getDistrictsForMarkerReport() {
+  return districtsForMenus(["report-marker"]);
+}
+
+export async function getFarmerGroupsForMarkerReport(districtId?: string | null) {
+  return farmerGroupsForMenus(["report-marker"], districtId);
 }
 
 export async function getFarmerGroupsForLandParcelReport(districtId?: string | null) {
@@ -633,6 +671,9 @@ export async function getLandParcelReport(
           stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true, stage: true } } } },
           externalIds: { where: { isActive: true }, select: { source: true, code: true } },
           programs: { where: { isActive: true }, select: { programType: true, status: true } },
+          nkt: { select: { status: true, categories: true, affectedAreaHa: true, assessedAt: true, assessor: true } },
+          // Patok (#331): hanya kondisi tiap tautan aktif — kolom "Patok" & filter.
+          markers: { where: { isActive: true }, select: { marker: { select: { condition: true } } } },
         },
       },
     },
@@ -657,6 +698,8 @@ export async function getLandParcelReport(
     stdbs: p.identity.stdbLinks.map((l) => l.stdb),
     externalIds: p.identity.externalIds,
     programs: p.identity.programs,
+    nkt: p.identity.nkt,
+    markerConditions: p.identity.markers.map((m) => m.marker.condition),
   }));
 
   return buildLandParcelReport(raw, filters);
@@ -697,6 +740,20 @@ export async function getLandParcelReportGeometries(
 }
 
 /**
+ * Laporan NKT per Lembaga (#332) dari Report › Lahan — gate `report-land-parcel`
+ * PRINT; pemuat bersama `loadNktReportData` (pintu kedua: Detail Lembaga,
+ * `getFarmerGroupNktReportData` di farmer-group.ts dengan gate menunya sendiri).
+ */
+export async function getNktReportData(farmerGroupId: string): Promise<ActionResult<NktReportData>> {
+  if (!(await hasPermission("report-land-parcel", "PRINT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mencetak laporan" };
+  }
+  const data = await loadNktReportData(farmerGroupId, await getAccessContext());
+  if (!data) return { success: false, error: "Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses" };
+  return { success: true, data };
+}
+
+/**
  * Report Kelompok Tani (Detail) — roster 1 Lembaga: hierarki KT →
  * daftar Petani. RBAC 3-layer: `report-kelompok-tani-detail` VIEW + scope
  * (`farmerRelationAccessFilter` via `AND`) + `isActive`. Lembaga wajib & harus
@@ -734,6 +791,7 @@ export async function getKelompokTaniDetailReport(
       area: true,
       subGroupLv2: true,
       farmer: { select: { id: true, farmerId: true, name: true } },
+      identity: { select: PARCEL_NKT_MARKER_SELECT },
     },
   });
 
@@ -743,6 +801,7 @@ export async function getKelompokTaniDetailReport(
     farmerName: p.farmer.name,
     area: p.area,
     subGroupLv2: p.subGroupLv2,
+    ...parcelNktPatok(p.identity),
   }));
 
   return buildKelompokTaniDetailReport(group.id, group.name, raw);

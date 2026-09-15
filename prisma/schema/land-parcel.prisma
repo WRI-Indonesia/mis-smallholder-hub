@@ -14,6 +14,14 @@ model LandParcel {
   identity      LandParcelIdentity @relation(fields: [parcelUid], references: [id])
   blok          String?     @map("blok") // Blok kebun
   geometry      Json?       @map("geometry") // GeoJSON polygon
+  // #317 Fase 1 (dikerjakan lewat #327): turunan PostGIS dari `geometry`,
+  // GENERATED ALWAYS AS (...) STORED — Postgres yang mengisinya, jadi mustahil
+  // divergen dari `geometry` (beda dengan dual-column manual FarmerGroupBoundary).
+  // `geometry` Json TETAP sumber kebenaran & jalur render; `geom` murni untuk
+  // kueri spasial via $queryRaw (tetangga #327, topology #317). Tidak terbaca
+  // Prisma Client (Unsupported). GiST `tbl_land_parcel_geom_idx` dibuat manual
+  // di migrasi — Prisma akan selalu mengusulkan DROP-nya, jangan pernah diterima.
+  geom          Unsupported("geometry(MultiPolygon, 4326)")?
   area          Float?      @map("area") // Area in hectares
   landStatus    String?     @map("land_status") // e.g., "Owned", "Leased", "Shared"
   cropType      String?     @map("crop_type") // Komoditas, e.g., "Kelapa Sawit"

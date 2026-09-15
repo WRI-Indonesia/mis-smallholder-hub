@@ -6,6 +6,7 @@ import {
   summarizeStdb,
   parcelMapperShort,
   summarizePrograms,
+  landNktStatusLabel,
   type DocSummaryInput,
   type StdbSummaryInput,
   type ExternalIdSummaryInput,
@@ -77,6 +78,8 @@ export interface ParcelExportRow {
     stdbLinks: { stdb: StdbSummaryInput }[];
     externalIds: ExternalIdSummaryInput[];
     programs: ProgramSummaryInput[];
+    /** Status NKT (#331) — opsional agar pemanggil lama tetap valid. */
+    nkt?: { status: string } | null;
   } | null;
 }
 
@@ -115,6 +118,8 @@ export interface ParcelExportProperties {
   namaDiSurat: string | null;
   luasSurat: number | null;
   program: string | null;
+  /** Label pendek status NKT (#331): "Termasuk NKT" / "Terdampak NKT" / "Tidak terdampak" / null = belum dinilai. */
+  nkt: string | null;
   [key: string]: unknown;
 }
 
@@ -196,6 +201,7 @@ export function buildParcelExportFeatures(rows: ParcelExportRow[]): {
         namaDiSurat: summarizeHolderNames(docs),
         luasSurat: sumStatedArea(docs),
         program: summarizePrograms(row.identity?.programs ?? []),
+        nkt: row.identity?.nkt ? landNktStatusLabel(row.identity.nkt.status, true) : null,
       },
     });
   }
@@ -253,6 +259,7 @@ export function toDbfProperties(p: ParcelExportProperties): Record<string, unkno
     nm_surat: str(p.namaDiSurat),
     luas_surat: p.luasSurat,
     program: str(p.program),
+    nkt: str(p.nkt),
   };
 }
 
@@ -261,13 +268,13 @@ export function toDbfProperties(p: ParcelExportProperties): Record<string, unkno
  * ring dalam/lubang tetap ikut) — khusus jalur SHP karena `@mapbox/shp-write`
  * rewel soal MultiPolygon (risiko di #313). GeoJSON/KML memakai geometri asli.
  */
-export function explodeMultiPolygons(
-  fc: FeatureCollection<Polygon | MultiPolygon, ParcelExportProperties>
-): FeatureCollection<Polygon, ParcelExportProperties> {
-  const features: Feature<Polygon, ParcelExportProperties>[] = [];
+export function explodeMultiPolygons<P = ParcelExportProperties>(
+  fc: FeatureCollection<Polygon | MultiPolygon, P>
+): FeatureCollection<Polygon, P> {
+  const features: Feature<Polygon, P>[] = [];
   for (const f of fc.features) {
     if (f.geometry.type === "Polygon") {
-      features.push(f as Feature<Polygon, ParcelExportProperties>);
+      features.push(f as Feature<Polygon, P>);
     } else {
       for (const coordinates of f.geometry.coordinates) {
         features.push({

@@ -1,8 +1,11 @@
-import { documentTypeShort, landStdbStageLabel, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort } from "@/lib/land-parcel-satellite-format";
+import { documentTypeShort, landStdbStageLabel, LAND_PROGRAM_LABELS, LAND_PROGRAM_STATUS_LABELS, parcelMapperShort, LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, isNktAffected, landNktStatusLabel, summarizeNkt } from "@/lib/land-parcel-satellite-format";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
 import type { ParcelPassport } from "@/types/map";
+import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel } from "@/lib/parcel-neighbor";
+import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_TYPE_LABELS, labelOf } from "@/lib/land-marker";
+import { drawGraticule } from "@/lib/layer-report-pdf";
 
 const EMERALD: [number, number, number] = [16, 185, 129];
 const SLATE_800: [number, number, number] = [30, 41, 59];
@@ -10,6 +13,10 @@ const SLATE_600: [number, number, number] = [71, 85, 105];
 const SLATE_400: [number, number, number] = [148, 163, 184];
 const SLATE_200: [number, number, number] = [226, 232, 240];
 const AREA_FILL: [number, number, number] = [209, 240, 224];
+const MARKER_FILL: [number, number, number] = [253, 224, 71];
+const MARKER_EDGE: [number, number, number] = [133, 77, 14];
+const NKT_RED: [number, number, number] = [239, 68, 68];
+const NKT_RED_DARK: [number, number, number] = [153, 27, 27];
 
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -66,58 +73,290 @@ function ensureSpace(doc: jsPDF, y: number, need: number): number {
   return 16;
 }
 
-/** Exterior ring of a Polygon / MultiPolygon, with the duplicate closing point removed. */
-function exteriorRing(geometry: ParcelPassport["parcel"]["geometry"]): Position[] {
-  const ring = geometry.type === "Polygon" ? geometry.coordinates[0] : geometry.coordinates[0]?.[0];
-  if (!ring || ring.length < 3) return [];
-  const last = ring[ring.length - 1];
-  const first = ring[0];
-  return last[0] === first[0] && last[1] === first[1] ? ring.slice(0, -1) : ring;
+/** Semua ring luar (tiap poligon MultiPolygon) tanpa titik penutup ganda. */
+function exteriorRings(geometry: ParcelPassport["parcel"]["geometry"]): Position[][] {
+  const polys = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+  return polys
+    .map((poly) => poly?.[0] ?? [])
+    .filter((ring) => ring.length >= 3)
+    .map((ring) => {
+      const last = ring[ring.length - 1];
+      const first = ring[0];
+      return last[0] === first[0] && last[1] === first[1] ? ring.slice(0, -1) : ring;
+    });
 }
 
-/** Draw the parcel polygon fitted (aspect-preserving) inside the given mm box. */
-function drawPolygon(doc: jsPDF, geometry: ParcelPassport["parcel"]["geometry"], box: { x: number; y: number; w: number; h: number }, label: string) {
-  const ring = exteriorRing(geometry);
-  if (ring.length < 3) {
+type Box = { x: number; y: number; w: number; h: number };
+type Projector = (lon: number, lat: number) => [number, number];
+
+/** Poligon (ring luar) sebagai path jsPDF; `style` null = hanya membangun path (untuk clip). */
+function strokeRing(doc: jsPDF, ring: Position[], project: Projector, style: "S" | "FD") {
+  const pts = ring.map(([lon, lat]) => project(lon, lat));
+  const segs = pts.slice(1).map((p, i) => [p[0] - pts[i][0], p[1] - pts[i][1]]);
+  doc.lines(segs, pts[0][0], pts[0][1], [1, 1], style, true);
+}
+
+/** Skala batang (kiri-bawah) + panah utara "U" (kanan-atas) — pola #180 Laporan Lahan. */
+function drawMapDecorations(doc: jsPDF, box: Box, mmPerMeter: number) {
+  // Panjang "bulat" terbesar yang muat ≤ 1/3 lebar kotak.
+  const candidates = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
+  const maxMm = box.w / 3;
+  let meters = candidates[0];
+  for (const c of candidates) if (c * mmPerMeter <= maxMm) meters = c;
+  const barMm = meters * mmPerMeter;
+  const bx = box.x + 4;
+  const by = box.y + box.h - 5;
+  doc.setDrawColor(...SLATE_800);
+  doc.setLineWidth(0.5);
+  doc.line(bx, by, bx + barMm, by);
+  doc.line(bx, by - 1.2, bx, by + 1.2);
+  doc.line(bx + barMm, by - 1.2, bx + barMm, by + 1.2);
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_800);
+  doc.text(`${meters} m`, bx + barMm / 2, by - 1.8, { align: "center" });
+
+  // Panah utara.
+  const nx = box.x + box.w - 5;
+  const ny = box.y + 4;
+  doc.setFillColor(...SLATE_800);
+  doc.triangle(nx, ny, nx - 1.6, ny + 4.5, nx + 1.6, ny + 4.5, "F");
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  doc.text("U", nx, ny + 8, { align: "center" });
+}
+
+/**
+ * Bingkai peta Profil Lahan (murni, diuji): bbox lahan ini + PATOK-nya + margin.
+ * Patok ikut bbox (#329) karena patok GPS sah sampai 100 m dari batas — lebih
+ * jauh dari margin 50 m — dan gambar di-clip ke kotak, sehingga persegi bernomor
+ * bisa lenyap padahal tercantum di tabel "Patok Batas"; peta layar
+ * (`parcel-map-view.tsx`) sudah memasukkan patok ke bounds (review 2026-09-15).
+ * Margin: 40% span terbesar atau ≈50 m — supaya tetangga bersinggungan terlihat
+ * meski lahannya kecil, tanpa membuat lahan utama jadi titik.
+ */
+export function passportMapFrame(
+  rings: Position[][],
+  markers: { longitude: number; latitude: number }[],
+): { minLon: number; maxLon: number; minLat: number; maxLat: number; cosLat: number } {
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+  const points: [number, number][] = [...rings.flat().map(([lon, lat]) => [lon, lat] as [number, number]), ...markers.map((m) => [m.longitude, m.latitude] as [number, number])];
+  for (const [lon, lat] of points) {
+    minLon = Math.min(minLon, lon);
+    maxLon = Math.max(maxLon, lon);
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+  }
+  const midLat = (minLat + maxLat) / 2;
+  const cosLat = Math.max(0.2, Math.cos((midLat * Math.PI) / 180));
+  const spanLon0 = maxLon - minLon || 1e-6;
+  const spanLat0 = maxLat - minLat || 1e-6;
+  const fiftyMDeg = 50 / 111_320;
+  const marginDeg = Math.max(0.4 * Math.max(spanLon0 * cosLat, spanLat0), fiftyMDeg);
+  return {
+    minLon: minLon - marginDeg / cosLat,
+    maxLon: maxLon + marginDeg / cosLat,
+    minLat: minLat - marginDeg,
+    maxLat: maxLat + marginDeg,
+    cosLat,
+  };
+}
+
+/**
+ * Peta lahan (#327): lahan ini solid emerald di tengah, lahan tetangga ≤ 25 m
+ * (sudah lewat aturan scope) putus-putus abu bernomor. Bingkai = bbox lahan
+ * ini (+ patoknya) + margin — bukan bbox gabungan — supaya lahan yang dicetak tetap dominan;
+ * tetangga yang lebih besar DIPOTONG di tepi (clip), nomornya ditempel ke tepi
+ * dalam. Skala batang + panah utara agar "≤ 25 m" terbaca di kertas.
+ */
+function drawParcelMap(
+  doc: jsPDF,
+  geometry: ParcelPassport["parcel"]["geometry"],
+  neighbors: ParcelPassport["neighbors"],
+  markers: ParcelPassport["markers"],
+  box: Box,
+  label: string,
+) {
+  const rings = exteriorRings(geometry);
+  if (rings.length === 0) {
     doc.setFontSize(9);
     doc.setTextColor(...SLATE_400);
     doc.text("Geometri lahan tidak tersedia", box.x + box.w / 2, box.y + box.h / 2, { align: "center" });
     return;
   }
 
-  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
-  for (const [lon, lat] of ring) {
-    minLon = Math.min(minLon, lon);
-    maxLon = Math.max(maxLon, lon);
-    minLat = Math.min(minLat, lat);
-    maxLat = Math.max(maxLat, lat);
-  }
-  const spanLon = maxLon - minLon || 1e-6;
-  const spanLat = maxLat - minLat || 1e-6;
-  const pad = 6;
-  const availW = box.w - pad * 2;
-  const availH = box.h - pad * 2;
-  const s = Math.min(availW / spanLon, availH / spanLat);
-  const drawW = spanLon * s;
+  const { minLon, maxLon, minLat, maxLat, cosLat } = passportMapFrame(rings, markers);
+  const spanLon = maxLon - minLon;
+  const spanLat = maxLat - minLat;
+  // mm per derajat: sumbu lon dikoreksi cos(lat) supaya bentuk tidak gepeng.
+  const s = Math.min(box.w / (spanLon * cosLat), box.h / spanLat);
+  const drawW = spanLon * cosLat * s;
   const drawH = spanLat * s;
-  const offX = box.x + pad + (availW - drawW) / 2;
-  const offY = box.y + pad + (availH - drawH) / 2;
+  const offX = box.x + (box.w - drawW) / 2;
+  const offY = box.y + (box.h - drawH) / 2;
+  const project: Projector = (lon, lat) => [offX + (lon - minLon) * cosLat * s, offY + (maxLat - lat) * s];
+  const mmPerMeter = s / 111_320;
 
-  // Project lon/lat → mm (flip Y so north is up).
-  const pts = ring.map(([lon, lat]) => [offX + (lon - minLon) * s, offY + (maxLat - lat) * s] as [number, number]);
-  const segs = pts.slice(1).map((p, i) => [p[0] - pts[i][0], p[1] - pts[i][1]]);
+  // Clip semua gambar ke kotak peta — tetangga besar terpotong, bukan meluber.
+  doc.saveGraphicsState();
+  doc.rect(box.x, box.y, box.w, box.h, null);
+  doc.clip();
+  doc.discardPath();
+  // Kisi koordinat di latar (#331, permintaan owner) — sebelum poligon supaya tidak menimpa.
+  drawGraticule(doc, box, { minLon, maxLon, minLat, maxLat }, project);
 
+  // Tetangga dulu (di bawah lahan utama).
+  const numberAt: { x: number; y: number; n: number }[] = [];
+  neighbors.forEach((nb, i) => {
+    const nrings = exteriorRings(nb.geometry);
+    if (nrings.length === 0) return;
+    doc.setLineDashPattern([1.2, 0.8], 0);
+    doc.setLineWidth(0.4);
+    if (nb.sameFarmer) doc.setDrawColor(2, 132, 199);
+    else doc.setDrawColor(...SLATE_600);
+    for (const ring of nrings) strokeRing(doc, ring, project, "S");
+    doc.setLineDashPattern([], 0);
+    // Nomor di centroid ring terbesar; bila di luar kotak, tempel ke tepi dalam.
+    const big = nrings.reduce((a, b) => (b.length > a.length ? b : a));
+    const c = big.reduce(([ax, ay], [lon, lat]) => [ax + lon, ay + lat], [0, 0]).map((v) => v / big.length);
+    const [px, py] = project(c[0], c[1]);
+    // Tepi bawah disisakan 9 mm untuk skala batang; sisi lain 4 mm.
+    numberAt.push({
+      x: Math.min(Math.max(px, box.x + 4), box.x + box.w - 4),
+      y: Math.min(Math.max(py, box.y + 4), box.y + box.h - 9),
+      n: i + 1,
+    });
+  });
+
+  // Lahan ini — solid, di atas tetangga.
   doc.setDrawColor(...EMERALD);
   doc.setFillColor(...AREA_FILL);
   doc.setLineWidth(0.6);
-  doc.lines(segs, pts[0][0], pts[0][1], [1, 1], "FD", true);
+  for (const ring of rings) strokeRing(doc, ring, project, "FD");
 
-  // Label at the polygon's drawn centroid.
-  const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
-  const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  // Nomor tetangga: lingkaran putih bertepi abu.
+  for (const { x, y, n } of numberAt) {
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...SLATE_600);
+    doc.setLineWidth(0.3);
+    doc.circle(x, y, 2.2, "FD");
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...SLATE_800);
+    doc.text(String(n), x, y, { align: "center", baseline: "middle" });
+  }
+
+  // Label lahan ini di centroid ring pertama.
+  const main = rings[0];
+  const mc = main.reduce(([ax, ay], [lon, lat]) => [ax + lon, ay + lat], [0, 0]).map((v) => v / main.length);
+  const [lx, ly] = project(mc[0], mc[1]);
   doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
-  doc.text(label, cx, cy, { align: "center", baseline: "middle" });
+  doc.text(label, lx, ly, { align: "center", baseline: "middle" });
+
+  // Patok batas (#329): persegi bernomor di atas segalanya — kuning untuk patok
+  // lahan biasa, MERAH bila lahan pemakainya kena NKT (dua warna, keputusan
+  // owner 2026-09-14; sama dengan legenda peta). Nomor = tabel "Patok Batas".
+  for (const m of markers) {
+    const [px, py] = project(m.longitude, m.latitude);
+    doc.setFillColor(...(m.nkt ? NKT_RED : MARKER_FILL));
+    doc.setDrawColor(...(m.nkt ? NKT_RED_DARK : MARKER_EDGE));
+    doc.setLineWidth(0.3);
+    doc.rect(px - 2.1, py - 2.1, 4.2, 4.2, "FD");
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...(m.nkt ? ([255, 255, 255] as [number, number, number]) : SLATE_800));
+    doc.text(String(m.sequenceNo), px, py + 0.1, { align: "center", baseline: "middle" });
+  }
+
+  drawMapDecorations(doc, box, mmPerMeter);
+  doc.restoreGraphicsState();
+}
+
+/**
+ * Bungkus teks maksimal `maxLines` baris selebar `maxW`; baris terakhir diberi
+ * "…" bila terpotong. Untuk kolom kanan halaman 1 yang TIDAK punya pemenggalan
+ * halaman (tata letak dua kolom): nilai sepanjang skema (200/500 karakter) tak
+ * boleh mendorong konten melewati footer (review 2026-09-14).
+ */
+function clampLines(doc: jsPDF, text: string, maxW: number, maxLines: number): string[] {
+  const lines = doc.splitTextToSize(text, maxW) as string[];
+  if (lines.length <= maxLines) return lines;
+  const kept = lines.slice(0, maxLines);
+  kept[maxLines - 1] = fitText(doc, `${kept[maxLines - 1]}…`, maxW);
+  return kept;
+}
+
+/** Potong teks agar muat `maxW` mm (dengan "…"). */
+function fitText(doc: jsPDF, text: string, maxW: number): string {
+  if (doc.getTextWidth(text) <= maxW) return text;
+  let t = text;
+  while (t.length > 1 && doc.getTextWidth(`${t}…`) > maxW) t = t.slice(0, -1);
+  return `${t}…`;
+}
+
+/**
+ * Legenda tetangga di bawah peta: No · Pemilik · ID Lahan · Lembaga · Jarak.
+ * SELALU dicetak — kosong pun berbunyi "Tidak ada lahan lain dalam 25 m"
+ * supaya pembaca tahu itu hasil cek, bukan luput cetak. Mengembalikan y bawah.
+ */
+function drawNeighborLegend(doc: jsPDF, neighbors: ParcelPassport["neighbors"], omitted: number, x: number, y: number, w: number): number {
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...SLATE_800);
+  doc.text(`Lahan Tetangga (dalam ${NEIGHBOR_DISTANCE_M} m)`, x, y);
+  y += 3.6;
+  if (neighbors.length === 0) {
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...SLATE_600);
+    doc.text(`Tidak ada lahan lain yang terdaftar di MIS dalam ${NEIGHBOR_DISTANCE_M} m.`, x, y);
+    return y + 3;
+  }
+  // Kolom: No 5 · Pemilik 30% · ID Lahan 44% (ID lengkap ±27 karakter) · Lembaga sisa · Jarak 11.
+  const noW = 5, distW = 11;
+  const rest = w - noW - distW;
+  const ownerW = rest * 0.3, idW = rest * 0.44, groupW = rest - ownerW - idW;
+  const cx = [x, x + noW, x + noW + ownerW, x + noW + ownerW + idW, x + w];
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_400);
+  doc.text("No", cx[0], y);
+  doc.text("Pemilik", cx[1], y);
+  doc.text("ID Lahan", cx[2], y);
+  doc.text("Lembaga", cx[3], y);
+  doc.text("Jarak", cx[4], y, { align: "right" });
+  y += 1;
+  doc.setDrawColor(...SLATE_200);
+  doc.setLineWidth(0.3);
+  doc.line(x, y, x + w, y);
+  y += 3;
+  doc.setFontSize(7);
+  neighbors.forEach((n, i) => {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...SLATE_800);
+    doc.text(String(i + 1), cx[0], y);
+    // Kolom sempit: varian pendek untuk lahan sendiri (layar memakai label panjang).
+    doc.text(fitText(doc, n.sameFarmer ? "Petani ini" : neighborOwnerLabel(n), ownerW - 1.5), cx[1], y);
+    doc.text(fitText(doc, n.parcelId, idW - 1.5), cx[2], y);
+    doc.text(fitText(doc, n.groupName, groupW - 1.5), cx[3], y);
+    const dist = n.distanceM === 0 ? (n.overlaps ? "tindih !" : "singgung") : `${n.distanceM} m`;
+    doc.text(dist, cx[4], y, { align: "right" });
+    y += 3.4;
+  });
+  if (omitted > 0) {
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...SLATE_600);
+    doc.text(`+${omitted} lahan lain dalam ${NEIGHBOR_DISTANCE_M} m tidak ditampilkan.`, x, y);
+    y += 3;
+  }
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(...SLATE_400);
+  doc.text("Hanya lahan yang terdaftar di MIS — jalan, sungai, dan lahan yang belum dipetakan tidak muncul.", x, y, { maxWidth: w });
+  return y + 3;
 }
 
 function sectionHeading(doc: jsPDF, text: string, y: number) {
@@ -136,7 +375,7 @@ function sectionHeading(doc: jsPDF, text: string, y: number) {
  */
 export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-  const { farmer, group, parcel, legal, training, production } = data;
+  const { farmer, group, parcel, legal, training, production, neighbors, neighborsOmitted, markers } = data;
 
   // ── Komposisi (#298, rombak total atas masukan owner "terlalu rapat"):
   //   hal. 1 — header ber-ID besar, 4 kartu ringkasan (cermin halaman web),
@@ -172,17 +411,27 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   doc.text(`Milik ${farmer.name}  ·  ${orDash(group.name)}  ·  ${orDash(group.districtName)}, ${orDash(group.provinceName)}`, MARGIN, 30);
   // Badge PSR / komoditas di kanan
   // Badge hanya untuk yang bermakna: PSR (bila ya) dan komoditas — "Non-PSR" tidak ditampilkan (owner).
-  const badges = [parcel.isPsr ? "PSR (replanting)" : null, parcel.cropType ?? null].filter((b): b is string => Boolean(b));
+  // NKT (#328) ikut sebagai badge berwarna (merah termasuk / amber terdampak) —
+  // status yang harus terlihat sebelum apa pun, sama dengan header Detail Lahan.
+  const nktBadge = parcel.nkt && isNktAffected(parcel.nkt.status) ? landNktStatusLabel(parcel.nkt.status, true) : null;
+  const badges: { text: string; tone: "neutral" | "red" | "amber" }[] = [
+    nktBadge ? { text: nktBadge, tone: "red" } : null,
+    parcel.isPsr ? { text: "PSR (replanting)", tone: "neutral" as const } : null,
+    parcel.cropType ? { text: parcel.cropType, tone: "neutral" as const } : null,
+  ].filter((b): b is { text: string; tone: "neutral" | "red" | "amber" } => Boolean(b));
   let bx = PAGE_W - MARGIN;
   doc.setFontSize(7.5);
   for (const b of badges.reverse()) {
-    const w = doc.getTextWidth(b) + 5;
+    const w = doc.getTextWidth(b.text) + 5;
     bx -= w;
-    doc.setFillColor(241, 245, 249);
-    doc.setDrawColor(...SLATE_200);
+    if (b.tone === "red") { doc.setFillColor(254, 226, 226); doc.setDrawColor(220, 38, 38); }
+    else if (b.tone === "amber") { doc.setFillColor(254, 243, 199); doc.setDrawColor(217, 119, 6); }
+    else { doc.setFillColor(241, 245, 249); doc.setDrawColor(...SLATE_200); }
     doc.roundedRect(bx, 20, w, 6, 1.5, 1.5, "FD");
-    doc.setTextColor(...SLATE_600);
-    doc.text(b, bx + w / 2, 24.1, { align: "center" });
+    if (b.tone === "red") doc.setTextColor(153, 27, 27);
+    else if (b.tone === "amber") doc.setTextColor(146, 64, 14);
+    else doc.setTextColor(...SLATE_600);
+    doc.text(b.text, bx + w / 2, 24.1, { align: "center" });
     bx -= 2;
   }
   doc.setDrawColor(...SLATE_200);
@@ -240,11 +489,13 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   doc.setDrawColor(...SLATE_200);
   doc.setLineWidth(0.4);
   doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h, "S");
-  drawPolygon(doc, parcel.geometry, mapBox, parcel.parcelId.split(".").find((x) => /^[A-Z]$/i.test(x)) ?? parcel.parcelId);
-  doc.setFontSize(7.5);
+  drawParcelMap(doc, parcel.geometry, neighbors, markers, mapBox, parcel.parcelId.split(".").find((x) => /^[A-Z]$/i.test(x)) ?? parcel.parcelId);
+  // Titik tengah pindah ke bawah kotak — kiri-bawah kotak kini dipakai skala batang (#327).
+  doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_600);
-  doc.text(`Titik tengah: ${parcel.centroid[1].toFixed(6)}, ${parcel.centroid[0].toFixed(6)}`, mapBox.x + 2, mapBox.y + mapBox.h - 3);
+  doc.text(`Titik tengah: ${parcel.centroid[1].toFixed(6)}, ${parcel.centroid[0].toFixed(6)}`, mapBox.x, mapBox.y + mapBox.h + 3.2);
+  const legendBottom = drawNeighborLegend(doc, neighbors, neighborsOmitted, mapBox.x, mapBox.y + mapBox.h + 7, mapBox.w);
 
   const colW = COL2_W;
   const attr = (items: { label: string; value: string }[], x: number, yy: number, labelW: number, maxW: number) => {
@@ -272,6 +523,8 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
       { label: "Komoditas", value: `${orDash(parcel.cropType)}${parcel.species ? ` (${parcel.species})` : ""}` },
       { label: "Tahun Tanam", value: `${orDash(parcel.plantingYear)}${plantAge != null ? ` (${plantAge} th)` : ""}${parcel.isPsr ? " · PSR" : ""}` },
       { label: "Pohon Sawit", value: parcel.treeCount > 0 ? `${fmtNum(parcel.treeCount)}${parcel.area ? ` (${fmtNum(Math.round(parcel.treeCount / parcel.area))}/ha)` : ""}` : "—" },
+      // NKT (#328): satu baris ringkas; belum dinilai → "Belum dinilai" (bukan "—", supaya beda dengan "tidak terdampak").
+      { label: "NKT", value: summarizeNkt(parcel.nkt) + (parcel.nkt?.affectedAreaHa != null ? ` · ${fmtArea(parcel.nkt.affectedAreaHa)}` : "") },
     ],
     COL2_X,
     ry,
@@ -301,7 +554,54 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     28,
     colW,
   );
-  y = Math.max(mapBox.y + mapBox.h, ry) + 6;
+  // ── Sepadan (#326) di kolom kanan, di bawah Pemilik — kolom kanan biasanya
+  // lebih pendek daripada peta + legenda tetangga, jadi ini memakai ruang yang
+  // memang kosong. Anggaran tinggi halaman 1 ketat (Legalitas harus tetap di
+  // halaman 1, Pelatihan+Produksi selalu halaman 2 — #298): kosong → SATU
+  // baris; terisi → grid 2×2 label+nilai sebaris, nilai dipangkas 2 baris.
+  // Blok selalu dicetak: pembaca perlu tahu sepadan belum didata, bukan luput cetak.
+  ry += 3;
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...SLATE_800);
+  doc.text("Sepadan", COL2_X, ry);
+  doc.setDrawColor(...EMERALD);
+  doc.line(COL2_X, ry + 1.5, COL2_X + 26, ry + 1.5);
+  ry += 5.5;
+  if (!parcel.border) {
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...SLATE_600);
+    doc.text("Belum diisi — batas Utara / Timur / Selatan / Barat.", COL2_X, ry);
+    ry += 4;
+  } else {
+    // Empat baris label+nilai sebaris (label 14 mm, nilai ±35 karakter/baris,
+    // dipangkas 2 baris): grid 2×2 terbukti terlalu sempit untuk nilai lazim
+    // seperti "Lahan Pak Budi".
+    const labelW = 14;
+    for (const side of LAND_BORDER_SIDES) {
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...SLATE_400);
+      doc.text(LAND_BORDER_SIDE_LABELS[side], COL2_X, ry);
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...SLATE_800);
+      const lines = clampLines(doc, orDash(parcel.border[side]), colW - labelW, 2);
+      doc.text(lines, COL2_X + labelW, ry);
+      ry += 4.2 + 3.8 * (lines.length - 1);
+    }
+    ry += 0.5;
+    if (parcel.border.notes) {
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(...SLATE_600);
+      const lines = clampLines(doc, `Catatan sepadan: ${parcel.border.notes}`, colW, 2);
+      doc.text(lines, COL2_X, ry - 1);
+      ry += 3.6 * lines.length;
+    }
+  }
+  y = Math.max(legendBottom, ry) + 4;
   if (parcel.notes) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
@@ -387,8 +687,53 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     }
   }
 
-  // ── Halaman 2: Pelatihan + Produksi
-  y = ensureSpace(doc, y, 999);
+  // ── Patok Batas (#329) — hanya bila ada; nomor = persegi kuning di peta.
+  // Koordinat 6 desimal (≈ 0,1 m) agar bisa dipakai kembali di GPS lapangan.
+  if (markers.length > 0) {
+    // Jeda kecil setelah baris meta legalitas (UL Parcel Code/Program) supaya judul tidak menempel.
+    y = ensureSpace(doc, y + 4, 30);
+    sectionHeading(doc, "Patok Batas", y);
+    y += 5;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...SLATE_600);
+    doc.text(`${markers.length} patok · persegi bernomor di peta: kuning = patok lahan, merah = patok lahan NKT (lahan pemakainya termasuk/terdampak NKT)`, MARGIN, y + 1);
+    y += 4;
+    autoTable(doc, {
+      head: [["No", "Kode", "Lintang", "Bujur", "Kondisi", "Jenis", "Dipasang", "NKT", "Juga patok lahan"]],
+      body: markers.map((m) => [
+        String(m.sequenceNo),
+        m.code,
+        m.latitude.toFixed(6),
+        m.longitude.toFixed(6),
+        labelOf(LAND_MARKER_CONDITION_LABELS, m.condition),
+        labelOf(LAND_MARKER_TYPE_LABELS, m.type),
+        fmtDate(m.installedAt),
+        m.nkt ? "Ya" : "",
+        m.sharedWith.length ? m.sharedWith.join(", ") : "—",
+      ]),
+      startY: y,
+      theme: "striped",
+      // Lebar No/NKT cukup untuk judul kolom satu baris pada font 9 (header "No"/"NKT" sempat terpenggal).
+      ...tableCommon,
+      // Sembilan kolom (ada Kode sejak #331): font 8 + padding 2 supaya "HJP-PTK-000123" dan
+      // "Belum dipasang" muat satu baris dan kolom "Juga patok lahan" masih punya ruang.
+      styles: { font: "helvetica", cellPadding: 2, overflow: "linebreak" },
+      headStyles: { ...tableCommon.headStyles, fontSize: 8 },
+      bodyStyles: { ...tableCommon.bodyStyles, fontSize: 8 },
+      columnStyles: { 0: { halign: "right", cellWidth: 10 }, 1: { cellWidth: 27 }, 2: { halign: "right", cellWidth: 18 }, 3: { halign: "right", cellWidth: 20 }, 4: { cellWidth: 26 }, 5: { cellWidth: 18 }, 6: { cellWidth: 21 }, 7: { halign: "center", cellWidth: 10 } },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 12;
+  }
+
+  // ── Pelatihan + Produksi — sejak #327 (keputusan owner 2026-09-14) section
+  // MENGALIR: dulu Pelatihan selalu dipaksa mulai halaman 2 (#298), tetapi
+  // dengan legenda tetangga + sepadan halaman 1 sudah penuh, dan pemaksaan
+  // itu membuat lahan berlegalitas penuh jadi 3 halaman (Legalitas meluber ke
+  // halaman 2, Pelatihan ke halaman 3). Kini pindah halaman hanya bila sisa
+  // ruang tak cukup untuk judul + tabelnya.
+  y = ensureSpace(doc, y, 40);
   sectionHeading(doc, "Pelatihan", y);
   y += 5;
   autoTable(doc, {

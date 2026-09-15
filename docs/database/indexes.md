@@ -40,6 +40,7 @@
 | Farmer | UNIQUE | `(farmerGroupId, farmerId)` | ID Petani unik per Lembaga (TD-024, migration 20260721060000) |
 | **Land Parcel** | | | |
 | LandParcel | PK | `id` (CUID) | Primary key |
+| LandParcel | GIST | `geom` | Index spasial PostGIS pada kolom **generated** (`ST_DWithin` tetangga ≤ 25 m #327, topology #317) — manual di migration 20260914100000, nama `tbl_land_parcel_geom_idx` (pola `*_geom_idx` yang dijaga test) |
 | **Land Parcel Identity & Satelit (#296)** | | | |
 | LandParcelIdentity | PK | `id` (CUID) = `parcelUid` | Identitas stabil antar revisi |
 | LandParcelIdentity | UNIQUE | `(farmerId, parcelId)` | Satu identitas per pasangan petani+ID lahan |
@@ -51,6 +52,21 @@
 | LandParcelExternalId | PK | `id` (CUID) | Primary key |
 | LandParcelExternalId | UNIQUE | `(source, code)` | UL Parcel Code unik per sumber |
 | LandParcelProgram | PK | `id` (CUID) | Primary key |
+| LandParcelBorder | PK | `id` (CUID) | Primary key |
+| LandParcelBorder | UNIQUE | `parcelUid` | Sepadan 1:1 per identitas lahan (#326) — sekaligus index baca `findUnique` |
+| LandParcelNkt | PK | `id` (CUID) | Primary key |
+| LandParcelNkt | UNIQUE | `parcelUid` | Status NKT 1:1 per identitas lahan (#328) |
+| LandParcelNkt | INDEX | `status` | Filter Laporan Lahan / hitungan layer peta per status |
+| LandMarker | PK | `id` (CUID) | Primary key |
+| LandMarker | UNIQUE | `code` | Kode patok fisik `HJP-PTK-000123` (#331) — kunci unggah ulang & rujukan laporan |
+| LandMarkerCounter | PK | `prefix` | Deret kode per awalan Lembaga; diperbarui atomik (`ON CONFLICT DO UPDATE … RETURNING`) |
+| LandMarker | GIST (manual, `tbl_land_marker_geom_idx`) | `geom` | Snap ≤ 5 m "Buat patok dari poligon" & unggahan (`ST_DWithin` patok ↔ geometri lahan) (#329); dijaga `migration-guards.test.ts` seperti `*_geom_idx` lain |
+| LandMarker | INDEX | `isActive` | Kueri patok aktif |
+| LandParcelMarker | PK | `id` (CUID) | Primary key |
+| LandParcelMarker | UNIQUE | `(parcelUid, markerId)` | Satu tautan per pasangan lahan–patok; tautan yang dilepas diaktifkan ulang, bukan dibuat baru |
+| LandParcelMarker | UNIQUE partial (manual, `uniq_land_parcel_marker_seq`) | `(parcelUid, sequenceNo) WHERE is_active` | Nomor patok unik per lahan hanya untuk tautan aktif (pola partial STDB #306); urut-ulang dua fase menghindari tabrakan sementara |
+| LandParcelMarker | INDEX | `markerId` | Daftar lahan pemakai satu patok ("juga patok lahan …", NKT turunan) |
+| LandParcelMarker | INDEX | `(parcelUid, isActive)` | Daftar patok satu lahan |
 | **Tree** | | | |
 | Tree | PK | `id` (CUID) | Primary key |
 | **Training** | | | |

@@ -171,3 +171,124 @@ export function summarizeStdb(items: StdbSummaryInput[]): string | null {
   const u = [...new Set(parts.filter(Boolean))];
   return u.length ? u.join("; ") : null;
 }
+
+// ─── Sepadan (#326) ───
+
+/** Empat sisi sepadan, urutan searah jarum jam — satu-satunya sumber urutan & label
+ *  (form, detail, PDF, importer). Modul ini daun (tanpa import), aman diimpor dari mana pun. */
+export const LAND_BORDER_SIDES = ["north", "east", "south", "west"] as const;
+export type LandBorderSide = (typeof LAND_BORDER_SIDES)[number];
+export const LAND_BORDER_SIDE_LABELS: Record<LandBorderSide, string> = {
+  north: "Utara",
+  east: "Timur",
+  south: "Selatan",
+  west: "Barat",
+};
+
+/**
+ * Baris sepadan dianggap TERISI bila ada satu sisi atau catatan. Baris yang
+ * keempat kolomnya NULL adalah bekas "hapus" (baris tetap ada, lihat
+ * land-parcel-border.prisma) dan harus tampil sebagai belum diisi — di Detail
+ * Lahan maupun PDF, lewat predikat yang sama.
+ */
+export function hasBorderContent(
+  b: { north: string | null; east: string | null; south: string | null; west: string | null; notes: string | null } | null | undefined,
+): boolean {
+  return Boolean(b && (b.north || b.east || b.south || b.west || b.notes));
+}
+
+// ─── NKT / HCV (#328) ───
+
+export const LAND_NKT_STATUSES = ["INCLUDED", "AFFECTED", "NOT_AFFECTED"] as const;
+/**
+ * Pilihan yang DITAWARKAN form/importer/filter (keputusan owner 2026-09-14:
+ * "termasuk = terdampak") — INCLUDED tetap sah di DB/validasi untuk data lama,
+ * tetapi tidak ditawarkan lagi; parser importer memetakan "termasuk" → AFFECTED.
+ */
+export const LAND_NKT_STATUS_OPTIONS = ["AFFECTED", "NOT_AFFECTED"] as const;
+export type LandNktStatusCode = (typeof LAND_NKT_STATUSES)[number];
+export const LAND_NKT_STATUS_LABELS: Record<LandNktStatusCode, string> = {
+  INCLUDED: "Termasuk area NKT",
+  AFFECTED: "Terdampak NKT",
+  NOT_AFFECTED: "Tidak terdampak",
+};
+/** Label pendek untuk badge/kolom laporan. */
+export const LAND_NKT_STATUS_SHORT: Record<LandNktStatusCode, string> = {
+  INCLUDED: "Termasuk NKT",
+  AFFECTED: "Terdampak NKT",
+  NOT_AFFECTED: "Tidak terdampak",
+};
+export function landNktStatusLabel(status: string, short = false): string {
+  return (short ? LAND_NKT_STATUS_SHORT : LAND_NKT_STATUS_LABELS)[status as LandNktStatusCode] ?? status;
+}
+/**
+ * Kebalikan `LAND_NKT_STATUS_SHORT` — untuk atribut ekspor lahan yang hanya membawa
+ * label pendek (`ParcelExportProperties.nkt`, #331). Dipasangkan dengan tabelnya sendiri
+ * (bukan `startsWith("Terdampak")`) supaya relabel tidak diam-diam mengosongkan saringan
+ * "Lahan NKT" (review 2026-09-15). Label tak dikenal / kosong → null (belum dinilai).
+ */
+export function landNktStatusFromShortLabel(label: string | null | undefined): LandNktStatusCode | null {
+  if (!label) return null;
+  const hit = (Object.entries(LAND_NKT_STATUS_SHORT) as [LandNktStatusCode, string][]).find(([, l]) => l === label);
+  return hit ? hit[0] : null;
+}
+/** Status yang berarti lahan "kena" NKT — satu-satunya definisi (KPI, layer peta, PDF, tanda turunan patok #329). */
+export const NKT_AFFECTED_STATUSES: readonly LandNktStatusCode[] = ["INCLUDED", "AFFECTED"];
+export function isNktAffected(status: string | null | undefined): boolean {
+  return (NKT_AFFECTED_STATUSES as readonly string[]).includes(status ?? "");
+}
+/**
+ * Fragmen `where` Prisma untuk relasi `nkt` "lahan kena NKT" — SATU definisi
+ * untuk daftar Lembaga/Petani, Laporan Lahan, dan hitungan Peta Lahan (review
+ * 2026-09-15: sebelumnya literal `status: { in: [...] }` tersalin di 5 tempat).
+ * Objek polos (bukan `Prisma.validator`) agar berkas ini tetap bebas Prisma.
+ */
+export const nktAffectedStatusWhere = () => ({ status: { in: [...NKT_AFFECTED_STATUSES] } });
+/**
+ * `select` identitas lahan untuk turunan NKT + jumlah patok aktif (status saja +
+ * `_count` tautan aktif — bukan baris satelitnya). Dipakai `getMapData`,
+ * `getKelompokTaniReport`, `getKelompokTaniDetailReport`.
+ */
+export const PARCEL_NKT_MARKER_SELECT = {
+  nkt: { select: { status: true } },
+  _count: { select: { markers: { where: { isActive: true } } } },
+} as const;
+export type ParcelNktMarkerIdentity = { nkt: { status: string } | null; _count: { markers: number } };
+/** Turunan per lahan dari `PARCEL_NKT_MARKER_SELECT`: kena NKT? + jumlah tautan patok aktif. */
+export function parcelNktPatok(identity: ParcelNktMarkerIdentity): { nkt: boolean; patok: number } {
+  return { nkt: isNktAffected(identity.nkt?.status), patok: identity._count.markers };
+}
+
+export const NKT_CATEGORIES = ["NKT_1", "NKT_2", "NKT_3", "NKT_4", "NKT_5", "NKT_6"] as const;
+export type NktCategoryCode = (typeof NKT_CATEGORIES)[number];
+/** Label pendek ("NKT 1") — chip, kolom, PDF. */
+export function nktCategoryShort(c: string): string {
+  return c.replace(/^NKT_/, "NKT ");
+}
+/** Keterangan satu kalimat per kategori (tooltip / bantuan). */
+export const NKT_CATEGORY_DESCRIPTIONS: Record<NktCategoryCode, string> = {
+  NKT_1: "Keanekaragaman hayati penting (spesies langka, endemik, terancam)",
+  NKT_2: "Lanskap / ekosistem tingkat lanskap yang utuh",
+  NKT_3: "Ekosistem langka, terancam, atau hampir punah",
+  NKT_4: "Jasa lingkungan penting (sempadan sungai, DAS, pengendali erosi)",
+  NKT_5: "Kebutuhan dasar masyarakat lokal",
+  NKT_6: "Identitas budaya / tradisi masyarakat",
+};
+/** "NKT 1, NKT 4" — kosong → null. */
+export function summarizeNktCategories(categories: readonly string[] | null | undefined): string | null {
+  if (!categories?.length) return null;
+  return categories.map(nktCategoryShort).join(", ");
+}
+/**
+ * Ringkasan satu baris untuk PDF/laporan: `Terdampak NKT — NKT 1, NKT 4 (asesmen
+ * 2025-03-12, WRI)`. Belum dinilai → "Belum dinilai".
+ */
+export function summarizeNkt(
+  nkt: { status: string; categories: readonly string[]; assessedAt: Date | string | null; assessor: string | null } | null | undefined,
+): string {
+  if (!nkt) return "Belum dinilai";
+  const cats = summarizeNktCategories(nkt.categories);
+  const when = nkt.assessedAt ? new Date(nkt.assessedAt).toISOString().slice(0, 10) : null;
+  const meta = [when ? `asesmen ${when}` : null, nkt.assessor].filter(Boolean).join(", ");
+  return `${landNktStatusLabel(nkt.status, true)}${cats ? ` — ${cats}` : ""}${meta ? ` (${meta})` : ""}`;
+}

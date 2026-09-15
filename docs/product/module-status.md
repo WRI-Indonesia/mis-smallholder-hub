@@ -23,7 +23,7 @@
 | MD-01 | Regions | 4-level hierarchy, tree UI, CRUD |
 | MD-02 | Farmer Groups | List, CRUD, RBAC filtering, agregat petani/persil/luas; identitas & sertifikasi: Tipe Grup, Tahun Berdiri/Bergabung, RSPO (#160), ISPO + Assurance SAP/MAP (#169); **detail = profil 360° ber-Tabs** (5 cards incl. skor DA-02, struktur #154, peta sebaran lahan, pelatihan pre→post, produksi Ton/Ha + 4 kategori) (#171) |
 | MD-03 | Farmers | Full CRUD, RBAC, joinedYear; **detail = profil 360° ber-Tabs** (5 cards incl. Kelengkapan Profil & Produktivitas, lahan + peta shared + PDF Profil Lahan #134, checklist paket, produksi per tahun/bulanan) (#172) |
-| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping KT/Blok (#150); identitas stabil `parcelUid` + satelit surat/STDB/UL Parcel Code/program, tab Legalitas & CRUD manual (#296); detail ber-tabs + PDF Profil Lahan 2 halaman (#298) |
+| MD-04 | Land Parcels | Geolocation, polygon geometry, area tracking, revision history, ZIP Shapefile bulk upload (#88) + mapping KT/Blok (#150); identitas stabil `parcelUid` + satelit surat/STDB/UL Parcel Code/program, tab Legalitas & CRUD manual (#296); detail ber-tabs + PDF Profil Lahan 2 halaman (#298); **2026-09-14:** `geom` PostGIS generated + GiST (#317 Fase 1), sepadan U/T/S/B `LandParcelBorder` (#326), lahan tetangga ≤ 25 m di peta & PDF (#327), status NKT `LandParcelNkt` (#328), patok batas `LandMarker`/`LandParcelMarker` M:N + kode unik `<Lembaga>-PTK-000123` + unggah GPS/shapefile Point (#329, #331), NKT & patok di Master Data/Detail Lembaga/Petani (#330) |
 | MD-05 | Training | 3 model, activities, participants (pre/post-test), evidence upload S3 |
 | MD-06 | Production | ProductionRecord, period + harvest number, duplicate validation (#89) |
 | DASH-01 | Main Dashboard | Snapshot-backed, 14 summary cards (+Total Kelompok Tani #148, +3 card sertifikasi RSPO/ISPO/SAP-MAP #169), filter client-side (#99); peta:info panel 60:40, badge sertifikasi + konten 2 kolom di info panel |
@@ -39,7 +39,7 @@
 | RPT-02 | Report Pelatihan | 2 tab + Excel 2-sheet + PDF (#108) |
 | RPT-03 | Report Produksi | Matriks bulanan per petani/lahan + Excel + PDF landscape (#132) |
 | RPT-04 | Report Kelompok Tani | **2 submenu.** **(Summary)** agregat real-time Lembaga×KT turunan dari lahan (distinct petani/lahan/**luas**); filter Distrik/Lembaga opsional + search + **column selector** + 6 card + Excel & PDF. **(Detail)** roster per 1 Lembaga: hierarki KT→daftar Petani (jml lahan/luas), **section collapsible** (default tutup) + 5 card + Excel & PDF flat (#154) |
-| RPT-05 | Report Lahan | Roster datar real-time 1 baris = 1 lahan aktif per **Lembaga (wajib)**: Lembaga | Nama Petani | ID Petani | ID Lahan | KT + Tahun Tanam + Luas (kolom ekstra Blok/Komoditas/Species/PSR via column selector); **PDF landscape ber-peta poligon vektor** dengan label per ceklis (No/Nama/ID Petani/ID Lahan/KT) **adaptif** (vertikal 90°/auto-scale sesuai bbox poligon) + **grid index fleksibel Baris × Kolom** (ikhtisar A1… + halaman per sel) + **preview SVG on-page** (helper layout sama dengan PDF) + **Excel multi-sheet ber-gambar peta** (sheet Lahan + index; sheet per sel + peta sel); polish #180: anti-tumpang label, skala batang + panah utara, mini-index posisi sel |
+| RPT-05 | Report Lahan | Roster datar real-time 1 baris = 1 lahan aktif per **Lembaga (wajib)**: Lembaga | Nama Petani | ID Petani | ID Lahan | KT + Tahun Tanam + Luas (kolom ekstra Blok/Komoditas/Species/PSR via column selector); **PDF landscape ber-peta poligon vektor** dengan label per ceklis (No/Nama/ID Petani/ID Lahan/KT) **adaptif** (vertikal 90°/auto-scale sesuai bbox poligon) + **grid index fleksibel Baris × Kolom** (ikhtisar A1… + halaman per sel) + **preview SVG on-page** (helper layout sama dengan PDF) + **Excel multi-sheet ber-gambar peta** (sheet Lahan + index; sheet per sel + peta sel); polish #180: anti-tumpang label, skala batang + panah utara, mini-index posisi sel; filter & KPI legalitas (#305), latar peta cetak (#318), filter/kolom/KPI **NKT** (#328) & **patok** (#331), tombol **Laporan NKT** PDF per Lembaga (#332). **Menu saudara baru `report-marker` Report › Patok** (#331): satu baris per patok fisik, KPI kondisi, Excel/spasial/PDF — belum punya baris Phase Status sendiri (menumpang MD-08, dinaikkan saat rilis) |
 | DASH-05 | Card Total Kelompok Tani | Kartu Main Dashboard = distinct `subGroupLv2` per Lembaga (snapshot-backed); filter generate dinonaktifkan (Semua Data); 0 sampai data #150 (#148) |
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
@@ -93,15 +93,23 @@
 
 ### Covered Modules
 
-Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris = **47 file / 722 test**.
+Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **satelit lahan** di bawah ditambahkan 2026-09-15). Total suite per **2026-09-15 (pasca-#339) = 86 file / 1.507 test**; angka per baris lama adalah cerminan tanggal penulisannya.
 
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
 | Bantuan: parser, materi, hak akses, media S3 (HELP-01/02, #184 #185) | help-content.test.ts, help-media.test.ts | 91 | ✅ |
+| Bantuan: registrasi berkas ↔ `CHAPTER_SOURCES`, frontmatter ↔ `menu.csv`, cakupan tutorial 32/35 ber-pengecualian eksplisit (#257, review #339) | help-registry.test.ts | 9 | ✅ |
+| Laporan Lahan: kolom ↔ baris ekspor Excel/PDF dari satu definisi (review #339, kelas #323) | report-land-parcel-export.test.ts | 4 | ✅ |
 | Map (MAP-01/02/03) + ruler/label geodesik | map.test.ts, map-geo.test.ts | 62 | ✅ |
 | RBAC & Access Context (#125 #127) | rbac.test.ts, rbac-permission.test.ts, rbac-server-guards.test.ts, access-context.test.ts | 50 | ✅ |
 | Region | region.test.ts | 42 | ✅ |
 | User | user-action.test.ts, user-data-access.test.ts, user-menu-access.test.ts | 40 | ✅ |
+| Import & simpan Detail Lahan — sepadan, NKT, bawaan berkas (#296 #326 #328) | land-parcel-detail-import.test.ts, land-parcel-detail-save.test.ts | 109 | ✅ |
+| Patok batas — helper murni, Zod, unggahan, guard/scope/aturan Kode Patok (#329 #331, review 09-15) | land-marker.test.ts, land-marker-schema.test.ts, land-marker-upload.test.ts, land-marker-guard.test.ts | 84 | ✅ |
+| Satelit lahan — skema, format label, guard sepadan/NKT (#326 #328) | land-parcel-satellite-schema.test.ts, land-parcel-satellite-format.test.ts, land-parcel-satellite-nkt-guard.test.ts | 49 | ✅ |
+| Migrasi — checksum applied, `*_geom_idx`, partial unique (#303 #317 #329) | migration-guards.test.ts | 32 | ✅ |
+| Laporan NKT & layer patok Peta Lahan — builder, guard, tuple (#331 #332) | nkt-report.test.ts, nkt-report-map-marker-guard.test.ts | 14 | ✅ |
+| Lahan tetangga ≤ 25 m — helper murni (#327) | parcel-neighbor.test.ts | 6 | ✅ |
 | Report Lahan (#177 #179 #180) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts | 33 | ✅ |
 | Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
 | Data Completeness (DA-02) | data-completeness.test.ts | 33 | ✅ |

@@ -134,6 +134,8 @@ async function exportParcels(
             },
             externalIds: { where: { isActive: true }, select: { source: true, code: true } },
             programs: { where: { isActive: true }, select: { programType: true, status: true } },
+            // NKT (#331): status saja — kolom `nkt` di atribut ekspor & dasar unduhan baris "Lahan NKT".
+            nkt: { select: { status: true } },
           },
         },
       },

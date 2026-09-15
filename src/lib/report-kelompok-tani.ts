@@ -14,6 +14,10 @@ export interface KtRawParcel {
   area: number | null;
   /** Kelompok Tani (Sub Lv.2). */
   subGroupLv2: string | null;
+  /** Lahan termasuk/terdampak NKT (#337) — `parcelNktPatok(identity).nkt`. */
+  nkt: boolean;
+  /** Jumlah tautan patok aktif lahan ini (#337). */
+  patok: number;
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -43,16 +47,22 @@ export function buildKelompokTaniReport(
       petani: Set<string>;
       lahan: number;
       luas: number;
+      lahanNkt: number;
+      patok: number;
     }
   >();
 
   const allPetani = new Set<string>();
   const distinctLembaga = new Set<string>();
   let totalLuas = 0;
+  let totalLahanNkt = 0;
+  let totalPatok = 0;
 
   for (const p of parcels) {
     const g2 = clean(p.subGroupLv2);
     const area = p.area ?? 0;
+    const nkt = p.nkt ? 1 : 0;
+    const patok = p.patok;
     const key = `${p.farmerGroupId}||${(g2 ?? "").toLowerCase()}`;
 
     let grp = groups.get(key);
@@ -64,16 +74,22 @@ export function buildKelompokTaniReport(
         petani: new Set(),
         lahan: 0,
         luas: 0,
+        lahanNkt: 0,
+        patok: 0,
       };
       groups.set(key, grp);
     }
     grp.petani.add(p.farmerId);
     grp.lahan += 1;
     grp.luas += area;
+    grp.lahanNkt += nkt;
+    grp.patok += patok;
 
     allPetani.add(p.farmerId);
     distinctLembaga.add(p.farmerGroupId);
     totalLuas += area;
+    totalLahanNkt += nkt;
+    totalPatok += patok;
   }
 
   const rows: KelompokTaniReportRow[] = Array.from(groups.entries()).map(
@@ -85,6 +101,8 @@ export function buildKelompokTaniReport(
       totalPetani: g.petani.size,
       totalLahan: g.lahan,
       totalLuas: g.luas,
+      totalLahanNkt: g.lahanNkt,
+      totalPatok: g.patok,
     }),
   );
 
@@ -104,6 +122,8 @@ export function buildKelompokTaniReport(
       totalPetani: allPetani.size,
       totalLahan: parcels.length,
       totalLuas,
+      totalLahanNkt,
+      totalPatok,
     },
     rows,
   };

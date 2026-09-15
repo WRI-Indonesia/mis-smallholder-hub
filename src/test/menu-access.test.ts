@@ -160,3 +160,32 @@ describe("spesifikasi peran (rbac.md §Inventaris Role) ditegakkan seed", () => 
     }
   });
 });
+
+describe("ikon & seed parsial menu — konsisten dengan kode (review 2026-09-15)", () => {
+  const menuRows = read("menu.csv").map((line) => {
+    const [key, parentKey, title, url, icon, order] = line.split(",");
+    return { key, parentKey, title, url, icon, order: Number(order) };
+  });
+
+  it("setiap ikon di menu.csv terdaftar di ICON_MAP — nama asing tampil TANPA ikon di sidebar (map-parcel `MapPinned` sejak #113)", async () => {
+    const { ICON_MAP } = await import("@/lib/icon-map");
+    const asing = menuRows.filter((m) => m.icon && !(m.icon in ICON_MAP)).map((m) => `${m.key}:${m.icon}`);
+    expect(asing, "ikon tidak dikenal ICON_MAP (sidebar & Menu Management jatuh ke kosong)").toEqual([]);
+  });
+
+  it("seed parsial report-marker (scripts/seed) = baris menu.csv & role-permissions.csv — ikon Landmark→Milestone sempat hanya di satu sisi", () => {
+    const script = readFileSync(join(__dirname, "../../scripts/seed/seed-menu-report-marker.mjs"), "utf-8");
+    const menuLine = script.match(/const MENU = \{([^}]+)\}/)?.[1] ?? "";
+    const field = (name: string) => menuLine.match(new RegExp(`${name}:\\s*"([^"]*)"`))?.[1] ?? menuLine.match(new RegExp(`${name}:\\s*(\\d+)`))?.[1];
+    const csv = menuRows.find((m) => m.key === "report-marker");
+    expect(csv, "report-marker tidak ada di menu.csv").toBeDefined();
+    expect({ key: field("key"), parentKey: field("parentKey"), title: field("title"), url: field("url"), icon: field("icon"), order: Number(field("order")) })
+      .toEqual({ key: csv!.key, parentKey: csv!.parentKey, title: csv!.title, url: csv!.url, icon: csv!.icon, order: csv!.order });
+
+    const permsBlock = script.match(/const PERMS = \{([\s\S]*?)\n\};/)?.[1] ?? "";
+    const scripted = new Set<string>();
+    for (const m of permsBlock.matchAll(/(\w+):\s*\[([^\]]*)\]/g)) for (const p of m[2].matchAll(/"(\w+)"/g)) scripted.add(`${m[1]}:${p[1]}`);
+    const fromCsv = new Set(grants.filter((g) => g.menuKey === "report-marker").map((g) => `${g.role}:${g.permission}`));
+    expect([...scripted].sort()).toEqual([...fromCsv].sort());
+  });
+});

@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getFarmersForMapping, getExistingParcelIds } from "@/server/actions/bulk-upload-parcel";
 import { ParcelBulkUploadClient } from "./components/parcel-bulk-upload-client";
 import { ParcelDetailUploadClient } from "./components/parcel-detail-upload-client";
+import { ParcelMarkerUploadClient } from "./components/parcel-marker-upload-client";
 
 export default async function ParcelBulkUploadPage() {
   await requirePermission("bulk-upload-parcels");
@@ -22,17 +23,19 @@ export default async function ParcelBulkUploadPage() {
             <HelpHint menuKey="bulk-upload-parcels" />
           </div>
           <p className="text-muted-foreground">
-            Poligon lahan dari ZIP Shapefile (.shp, .dbf, .shx, .prj), atau detail lahan — surat
-            kepemilikan, STDB, UL Parcel Code — dari Excel untuk lahan yang sudah terdaftar.
+            Poligon lahan dari ZIP Shapefile (.shp, .dbf, .shx, .prj); detail lahan — surat
+            kepemilikan, STDB, UL Parcel Code, sepadan, NKT — dari Excel; atau titik patok batas
+            (Excel/CSV GPS atau shapefile Point) untuk lahan yang sudah terdaftar.
           </p>
         </div>
       </div>
-      {/* Dua mode dalam satu menu/izin (keputusan owner 2026-08-27, #296):
-          keduanya mengisi entitas lahan yang sama, dikunci ID Lahan. */}
+      {/* Tiga mode dalam satu menu/izin (keputusan owner 2026-08-27, #296; patok #329):
+          semuanya mengisi entitas lahan yang sama, dikunci ID Lahan. */}
       <Tabs defaultValue="shapefile">
         <TabsList>
           <TabsTrigger value="shapefile">Poligon (Shapefile ZIP)</TabsTrigger>
           <TabsTrigger value="detail">Detail Lahan (Excel)</TabsTrigger>
+          <TabsTrigger value="marker">Patok (Excel/Shapefile titik)</TabsTrigger>
         </TabsList>
         <TabsContent value="shapefile" className="pt-4">
           <ParcelBulkUploadClient
@@ -43,6 +46,9 @@ export default async function ParcelBulkUploadPage() {
         </TabsContent>
         <TabsContent value="detail" className="pt-4">
           <ParcelDetailUploadClient permissions={permissions} />
+        </TabsContent>
+        <TabsContent value="marker" className="pt-4">
+          <ParcelMarkerUploadClient permissions={permissions} />
         </TabsContent>
       </Tabs>
     </div>

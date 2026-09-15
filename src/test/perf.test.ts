@@ -26,6 +26,9 @@ import { addParticipantsSchema } from "@/validations/training-participant.schema
 import { deriveFarmerSubGroups } from "@/lib/farmer-sub-groups";
 import { formatRspoCert } from "@/lib/farmer-group-labels";
 import { readSheetRows, type RawSheetRow } from "@/lib/excel-sheet-reader";
+import { uniqueMarkerRows, groupMarkersByParcel, planMarkersFromVertices, type MarkerLinkRow, type NearbyMarker } from "@/lib/land-marker";
+import { buildNktReportInput, summarizeNktReport, type NktReportData, type NktReportParcel } from "@/lib/nkt-report";
+import { buildLayerReportDoc } from "@/lib/layer-report-pdf";
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
@@ -888,5 +891,74 @@ describe("Performance - Pembacaan sheet import (#301, pure logic)", () => {
     expect(duration).toBeLessThan(100);
     expect(result.headerRowNumber).toBe(3);
     expect(result.rows).toHaveLength(7000);
+  });
+});
+
+describe("Performance - Patok & Laporan NKT (#329/#331/#332, pure logic)", () => {
+  // Skala HJP nyata (mis-dev 2026-09-15): 1.015 patok / 2.292 tautan / 559 lahan.
+  const D = 0.0009;
+  const linkRows: MarkerLinkRow[] = Array.from({ length: 2300 }, (_, i) => {
+    const marker = i % 1015;
+    return {
+      markerId: `m-${marker}`, code: `HJP-PTK-${String(marker + 1).padStart(6, "0")}`,
+      parcelId: `HJP.${String(i % 559).padStart(4, "0")}.A`, farmerCode: `HJP.${i % 559}`, farmerName: `Petani ${i % 559}`,
+      groupName: "KP Hasrat Jaya Pagaruyung", subGroupLv2: String(10 + (i % 30)), blok: "FGHL"[i % 4],
+      sequenceNo: (i % 4) + 1, latitude: 0.52 + (marker % 40) * D, longitude: 101.19 + Math.floor(marker / 40) * D,
+      condition: "NOT_INSTALLED", type: null, installedAt: null, installedBy: null, source: "POLYGON_VERTEX", nkt: i % 17 === 0, notes: null,
+    };
+  });
+
+  it("uniqueMarkerRows + groupMarkersByParcel: 2.300 tautan / 1.015 patok under 150ms (localeCompare numeric ≈ 40 ms)", () => {
+    const start = performance.now();
+    const unique = uniqueMarkerRows(linkRows);
+    const groups = groupMarkersByParcel(linkRows, unique);
+    const duration = performance.now() - start;
+    console.log(`  uniqueMarkerRows+groupMarkersByParcel (2.300 tautan): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(150);
+    expect(unique).toHaveLength(1015);
+    expect(groups.length).toBeGreaterThan(0);
+  });
+
+  it("planMarkersFromVertices: poligon 60 vertex vs 500 patok tetangga under 20ms", () => {
+    const ring = Array.from({ length: 60 }, (_, i) => {
+      const a = (i / 60) * 2 * Math.PI;
+      return { lon: 101.19 + 0.002 * Math.cos(a), lat: 0.52 + 0.002 * Math.sin(a) };
+    });
+    const nearby: NearbyMarker[] = Array.from({ length: 500 }, (_, i) => ({
+      id: `m-${i}`, lon: 101.19 + 0.002 * Math.cos(i), lat: 0.52 + 0.002 * Math.sin(i), parcelIds: [`HJP.${i}.A`], linkedToThisParcel: false, isActive: true,
+    }));
+    const start = performance.now();
+    const plan = planMarkersFromVertices([ring], nearby);
+    const duration = performance.now() - start;
+    console.log(`  planMarkersFromVertices (60 vertex × 500 patok): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(20);
+    expect(plan).toHaveLength(60);
+  });
+
+  it("buildNktReportInput (559 lahan, 21 NKT) under 30ms; buildLayerReportDoc PDF-nya under 1.500ms", () => {
+    const square = (i: number) => ({
+      type: "Polygon" as const,
+      coordinates: [[[101.19 + (i % 40) * D, 0.52 + Math.floor(i / 40) * D], [101.19 + (i % 40 + 1) * D, 0.52 + Math.floor(i / 40) * D], [101.19 + (i % 40 + 1) * D, 0.52 + (Math.floor(i / 40) + 1) * D], [101.19 + (i % 40) * D, 0.52 + (Math.floor(i / 40) + 1) * D], [101.19 + (i % 40) * D, 0.52 + Math.floor(i / 40) * D]]],
+    });
+    const parcels: NktReportParcel[] = Array.from({ length: 559 }, (_, i) => ({
+      id: `lp-${i}`, parcelId: `HJP.${String(i).padStart(4, "0")}.A`, farmerName: `Petani Nomor ${i}`, farmerCode: `HJP.${i}`,
+      subGroupLv2: null, blok: "17 L", area: 1.9, geometry: square(i),
+      nkt: i % 27 === 0 ? { status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.05, affectedLengthM: 110, assessedAt: "2025-03-12", assessor: null, source: "Lampiran III", notes: null } : null,
+    }));
+    const data: NktReportData = { group: { name: "KP Hasrat Jaya Pagaruyung", code: "ISH-1401-03", abrv: "HJP", districtName: "Kampar" }, parcels, printedAt: "2026-09-15T03:00:00.000Z" };
+
+    const t0 = performance.now();
+    const input = buildNktReportInput(data);
+    const tInput = performance.now() - t0;
+    console.log(`  buildNktReportInput (559 lahan): ${tInput.toFixed(2)}ms`);
+    expect(tInput).toBeLessThan(30);
+    expect(summarizeNktReport(data).affected).toBe(21);
+    expect(input.rows).toHaveLength(21);
+
+    const t1 = performance.now();
+    const doc = buildLayerReportDoc(input);
+    const tDoc = performance.now() - t1;
+    console.log(`  buildLayerReportDoc Laporan NKT (559 konteks + 21 fitur): ${tDoc.toFixed(2)}ms, ${doc.getNumberOfPages()} halaman`);
+    expect(tDoc).toBeLessThan(1500);
   });
 });

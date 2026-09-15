@@ -25,6 +25,9 @@ model LandParcelIdentity {
   stdbLinks   LandParcelStdb[]
   externalIds LandParcelExternalId[]
   programs    LandParcelProgram[]
+  border      LandParcelBorder? // sepadan U/T/S/B, 1:1 (#326)
+  nkt         LandParcelNkt?    // status NKT hasil asesmen, 1:1 (#328)
+  markers     LandParcelMarker[] // patok batas, M:N bernomor urut (#329)
 
   // Satu identitas per pasangan petani × ID lahan, lintas revisi.
   @@unique([farmerId, parcelId])

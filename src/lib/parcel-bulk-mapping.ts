@@ -17,6 +17,14 @@ export const PARCEL_AUTO_MATCH_RULES: Record<string, string[]> = {
   // Kelompok Tani per-lahan interim (#146/#150). Level Gapoktan/KUD dihapus #189.
   subGroupLv2: ["kelompok_tani", "kelompoktani", "poktan", "kt", "nama_kt", "klp_tani", "sub_group_2", "subgrouplv2", "sub2"],
   blok: ["blok", "block", "blok_kebun", "blk"],
+  // Sepadan (#326) — nama kolom DBF maksimal 10 karakter, jadi alias pendek
+  // (bts_utara/sep_utara) yang realistis; yang panjang untuk GeoJSON/GPKG.
+  // TANPA alias satu huruf (u/t/s/b): kolom "B" (blok) atau "T" (tahun) akan
+  // terpetakan ke sepadan dan menimpa data identitas lahan diam-diam (review 2026-09-14).
+  borderNorth: ["bts_utara", "sep_utara", "sepadan_u", "sepadan_utara", "batas_utara", "utara", "north"],
+  borderEast: ["bts_timur", "sep_timur", "sepadan_t", "sepadan_timur", "batas_timur", "timur", "east"],
+  borderSouth: ["bts_selatan", "sep_selatan", "sepadan_s", "sepadan_selatan", "batas_selatan", "selatan", "south"],
+  borderWest: ["bts_barat", "sep_barat", "sepadan_b", "sepadan_barat", "batas_barat", "barat", "west"],
 };
 
 /**

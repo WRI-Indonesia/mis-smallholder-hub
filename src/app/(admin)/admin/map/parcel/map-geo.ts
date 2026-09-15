@@ -4,23 +4,14 @@
  * unit-tested in isolation.
  */
 
-const EARTH_RADIUS_M = 6371008.8; // mean Earth radius
-const toRad = (d: number) => (d * Math.PI) / 180;
+import { EARTH_RADIUS_M, toRad, haversineMeters } from "@/lib/geo";
 
 export const PARCEL_LABEL_FONT_PX = 10;
 
 export type LngLat = [number, number];
 
-/** Geodesic (haversine) distance in meters between two [lng, lat] points. */
-export function haversineMeters(a: LngLat, b: LngLat): number {
-  const dLat = toRad(b[1] - a[1]);
-  const dLng = toRad(b[0] - a[0]);
-  const lat1 = toRad(a[1]);
-  const lat2 = toRad(b[1]);
-  const h =
-    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+// Haversine tinggal di `lib/geo.ts` (satu implementasi bersama patok, review 2026-09-15).
+export { haversineMeters };
 
 /**
  * 8-point compass, clockwise from north (Bahasa Indonesia). Abbreviation and

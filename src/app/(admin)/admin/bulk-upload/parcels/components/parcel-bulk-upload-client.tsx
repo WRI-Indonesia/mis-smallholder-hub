@@ -33,6 +33,8 @@ import {
   autoMatchColumns,
   normalizeAttr,
 } from "@/lib/parcel-bulk-mapping";
+import { LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
+import { cleanFreeTextCell } from "@/lib/land-parcel-detail-import";
 import { ParcelBulkUploadMap } from "./parcel-bulk-upload-map";
 
 interface FarmerMapping {
@@ -75,6 +77,8 @@ interface ParcelValidatedRow {
   notes: string | null;
   subGroupLv2: string | null;
   blok: string | null;
+  /** Sepadan (#326) dari atribut DBF — hanya sisi terisi; null bila tak ada satu pun. */
+  border: { north: string | null; east: string | null; south: string | null; west: string | null } | null;
 }
 
 function isGeometryEqual(g1: unknown, g2: unknown) {
@@ -112,6 +116,11 @@ const TARGET_FIELDS = [
   { key: "blok", label: "Blok", required: false, desc: "Blok kebun" },
   { key: "revision", label: "Revisi", required: false, desc: "Angka revisi (default 0)" },
   { key: "notes", label: "Catatan", required: false, desc: "Catatan tambahan" },
+  // Sepadan (#326): ditulis ke satelit identitas lahan (utuh lintas revisi); sel terisi menimpa, kosong dibiarkan.
+  { key: "borderNorth", label: "Sepadan Utara", required: false, desc: "Kolom DBF: bts_utara / sep_utara / utara" },
+  { key: "borderEast", label: "Sepadan Timur", required: false, desc: "Kolom DBF: bts_timur / sep_timur / timur" },
+  { key: "borderSouth", label: "Sepadan Selatan", required: false, desc: "Kolom DBF: bts_selatan / sep_selatan / selatan" },
+  { key: "borderWest", label: "Sepadan Barat", required: false, desc: "Kolom DBF: bts_barat / sep_barat / barat" },
 ];
 
 // Aturan auto-match + normalisasi dipisah ke `@/lib/parcel-bulk-mapping` (teruji).
@@ -202,6 +211,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       area: null,
       landStatus: null,
       cropType: null,
+      border: null,
       notes: null,
       subGroupLv2: null,
       blok: null,
@@ -328,6 +338,24 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     );
     normalized.blok = normalizeAttr(mapping["blok"] ? props[mapping["blok"]] : null);
 
+    // 8c. Sepadan (#326) — opsional per sisi; tanpa satu pun sisi → null (tidak menyentuh satelit).
+    // Pembersih yang SAMA dengan jalur Excel (`cleanFreeTextCell`): placeholder DBF
+    // seperti "-", "0", "null" adalah sel kosong, bukan nilai sepadan — sisi terisi
+    // MENIMPA nilai lama, jadi "-" tak boleh lolos (temuan review 2026-09-14).
+    const sideCell = (key: string) => (mapping[key] ? cleanFreeTextCell(props[mapping[key]]) || null : null);
+    const sides = {
+      north: sideCell("borderNorth"),
+      east: sideCell("borderEast"),
+      south: sideCell("borderSouth"),
+      west: sideCell("borderWest"),
+    };
+    normalized.border = Object.values(sides).some(Boolean) ? sides : null;
+    // Batas 200 karakter dicek DI SINI juga (server `optText(200)` menolak seluruh
+    // batch tanpa nomor baris) — kolom DBF karakter bisa sampai 254 karakter.
+    for (const [side, v] of Object.entries(sides)) {
+      if (v && v.length > 200) errors.push(`Sepadan ${LAND_BORDER_SIDE_LABELS[side as keyof typeof LAND_BORDER_SIDE_LABELS]} lebih dari 200 karakter`);
+    }
+
     // 9. Geometry validation
     if (
       !feat.geometry ||
@@ -393,6 +421,10 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       { header: "Blok", key: "blok", width: 12 },
       { header: "Revisi", key: "revision", width: 12 },
       { header: "Catatan", key: "notes", width: 25 },
+      { header: "Sepadan Utara", key: "borderNorth", width: 18 },
+      { header: "Sepadan Timur", key: "borderEast", width: 18 },
+      { header: "Sepadan Selatan", key: "borderSouth", width: 18 },
+      { header: "Sepadan Barat", key: "borderWest", width: 18 },
       { header: "Status Validasi", key: "status", width: 15 },
       { header: "Detail Error", key: "keterangan", width: 45 },
     ];
@@ -421,6 +453,10 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
         blok: row.blok || row._original.blok || "",
         revision: row.revision !== undefined ? row.revision : row._original.revision || 0,
         notes: row.notes || row._original.notes || "",
+        borderNorth: row.border?.north ?? row._original.borderNorth ?? "",
+        borderEast: row.border?.east ?? row._original.borderEast ?? "",
+        borderSouth: row.border?.south ?? row._original.borderSouth ?? "",
+        borderWest: row.border?.west ?? row._original.borderWest ?? "",
         status: row._isValid ? "VALID" : "ERROR",
         keterangan: row._errors.join("; "),
       });
@@ -458,6 +494,7 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
       notes: d.notes,
       subGroupLv2: d.subGroupLv2,
       blok: d.blok,
+      border: d.border,
     }));
 
     const result = await bulkCreateLandParcels(toSave);

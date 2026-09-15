@@ -23,7 +23,8 @@ Halaman: Lembaga Petani (/admin/master-data/groups)
 │   └── Tombol: Kolom
 ├── Tabel
 │   ├── Kolom: Kode, Nama, Distrik, Tipe Grup, Kategori, Total Petani,
-│   │          Total Persil, Luas Lahan, Tahun Bergabung Program,
+│   │          Total Persil, Luas Lahan, Lahan NKT (#338, hidden),
+│   │          Tahun Bergabung Program,
 │   │          Tahun Berdiri Lembaga, Sertifikasi RSPO, Sertifikasi ISPO,
 │   │          Assurance SAP/MAP, Lat, Long, Status
 │   └── Aksi baris: Lihat, Edit, Nonaktifkan
@@ -49,7 +50,7 @@ Halaman: Lembaga Petani (/admin/master-data/groups)
 | Filter Status | Select | SUPERADMIN saja (lihat objek bersama) |
 | Pencarian | Filter | `Cari nama, kode, atau singkatan...` (`name`, `code`, `abrv`) |
 | Tombol `Tambah Lembaga Petani` | Tombol | CREATE — buka `GroupFormModal` mode tambah |
-| Tabel daftar | Tabel | Kolom: `Kode`, `Nama`, `Distrik`, `Tipe Grup` (badge), `Kategori` (Ex Plasma/Swadaya), `Total Petani`, `Total Persil` (hidden default), `Luas Lahan`, `Tahun Bergabung Program`, `Tahun Berdiri Lembaga`, `Sertifikasi RSPO`, `Sertifikasi ISPO`, `Assurance SAP/MAP`, `Lat` (hidden), `Long` (hidden), `Status` (SUPERADMIN) |
+| Tabel daftar | Tabel | Kolom: `Kode`, `Nama`, `Distrik`, `Tipe Grup` (badge), `Kategori` (Ex Plasma/Swadaya), `Total Petani`, `Total Persil` (hidden default), `Luas Lahan`, `Lahan NKT` (hidden default, #338 — badge merah "n NKT" bila > 0, "—" bila 0; `nktCount` dari `groupBy` ketiga di `getFarmerGroups`: lahan aktif dengan `identity.nkt.status ∈ NKT_AFFECTED_STATUSES`, ikut Excel **bila kolomnya dinyalakan** — DataTable hanya mengekspor kolom aktif), `Tahun Bergabung Program`, `Tahun Berdiri Lembaga`, `Sertifikasi RSPO`, `Sertifikasi ISPO`, `Assurance SAP/MAP`, `Lat` (hidden), `Long` (hidden), `Status` (SUPERADMIN) |
 | Aksi baris | Tombol | Lihat → `/admin/master-data/groups/{id}`; Edit → modal; Nonaktifkan → `toggleFarmerGroupActive` |
 | Ekspor | Tombol | `data-farmer-groups` |
 | `GroupFormModal` | Dialog | Lihat di bawah |

@@ -144,6 +144,10 @@ export interface KelompokTaniReportRow {
   totalLahan: number;
   /** Total luas (Ha) lahan aktif di kombinasi ini. */
   totalLuas: number;
+  /** Lahan termasuk/terdampak NKT di kombinasi ini (#337). */
+  totalLahanNkt: number;
+  /** Jumlah tautan patok aktif pada lahan-lahan kombinasi ini (patok bersama dihitung per lahan, #337). */
+  totalPatok: number;
 }
 
 export interface KelompokTaniReportSummary {
@@ -152,6 +156,8 @@ export interface KelompokTaniReportSummary {
   totalPetani: number; // distinct petani keseluruhan
   totalLahan: number; // total lahan aktif
   totalLuas: number; // total luas (Ha) lahan aktif
+  totalLahanNkt: number; // lahan termasuk/terdampak NKT (#337)
+  totalPatok: number; // tautan patok aktif (#337)
 }
 
 export interface KelompokTaniReportResult {
@@ -189,6 +195,13 @@ export interface LandParcelLegalFilters {
   stdbStatus?: string;
   /** `gte` = selisih |luas tertera − poligon| ≥ `AREA_DIFF_THRESHOLD_HA`. */
   areaDiff?: "all" | "gte";
+  /**
+   * NKT (#328): `all` | `affected` (INCLUDED atau AFFECTED) | `assessed` (ada baris) |
+   * `unassessed` (tanpa baris) | satu nilai `LandNktStatus`.
+   */
+  nktStatus?: string;
+  /** Patok (#331): `all` | `with` (≥ 1 patok aktif) | `without` | `installed` (semua patok Ada) | `problem` (ada yang Hilang/Rusak/Belum dipasang). */
+  marker?: string;
 }
 
 export interface LandParcelReportFilters extends LandParcelLegalFilters {
@@ -236,6 +249,16 @@ export interface LandParcelReportRow {
   program: string | null;
   /** Selisih |luas tertera − poligon| ≥ ambang bersama (#305). */
   selisihLuasBesar: boolean;
+  /** Status NKT ringkas (#328): "Terdampak NKT — NKT 4 (asesmen 2025-03-12, WRI)"; null = belum dinilai. */
+  nkt: string | null;
+  /** Kode status NKT mentah (INCLUDED/AFFECTED/NOT_AFFECTED), null = belum dinilai — untuk badge/gaya. */
+  nktStatus: string | null;
+  /** Luas area NKT di dalam lahan (ha), null bila tak dicatat. */
+  luasNkt: number | null;
+  /** Jumlah patok aktif (#331). */
+  patok: number;
+  /** Ringkasan kondisi patok: "4 ada" / "2 ada · 1 hilang · 1 belum dipasang"; null = tanpa patok. */
+  patokKondisi: string | null;
 }
 
 export interface LandParcelReportSummary {
@@ -254,6 +277,14 @@ export interface LandParcelReportSummary {
   totalAdaStdb: number;
   /** Lahan dengan selisih luas tertera vs poligon ≥ ambang. */
   totalSelisihLuas: number;
+  /** Lahan termasuk/terdampak NKT (INCLUDED/AFFECTED, #328). */
+  totalNkt: number;
+  /** Lahan yang sudah dinilai NKT (ada baris, termasuk NOT_AFFECTED). */
+  totalDinilaiNkt: number;
+  /** Lahan dengan ≥ 1 patok aktif (#331). */
+  totalAdaPatok: number;
+  /** Jumlah tautan patok pada lahan-lahan hasil filter (patok bersama dihitung per lahan). */
+  totalPatok: number;
 }
 
 export interface LandParcelReportResult {
@@ -273,6 +304,10 @@ export interface KtDetailPetani {
   totalLahan: number;
   /** Total luas (Ha) lahan petani ini pada KT tsb. */
   totalLuas: number;
+  /** Lahan termasuk/terdampak NKT petani ini pada KT tsb (#337). */
+  totalLahanNkt: number;
+  /** Tautan patok aktif pada lahan petani ini di KT tsb (#337). */
+  totalPatok: number;
 }
 
 export interface KtDetailKelompokTani {
@@ -281,6 +316,8 @@ export interface KtDetailKelompokTani {
   totalPetani: number;
   totalLahan: number;
   totalLuas: number;
+  totalLahanNkt: number;
+  totalPatok: number;
   petani: KtDetailPetani[];
 }
 
@@ -289,6 +326,8 @@ export interface KelompokTaniDetailReportSummary {
   totalPetani: number; // distinct petani di Lembaga
   totalLahan: number;
   totalLuas: number;
+  totalLahanNkt: number; // (#337)
+  totalPatok: number; // (#337)
 }
 
 export interface KelompokTaniDetailReportResult {

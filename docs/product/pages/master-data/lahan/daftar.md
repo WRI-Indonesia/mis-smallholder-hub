@@ -12,6 +12,8 @@ Halaman: Lahan (/admin/master-data/parcels)
 ├── Toolbar
 │   ├── Filter: Distrik (combobox)
 │   ├── Filter: Lembaga Petani (combobox, cascade dari Distrik)
+│   ├── Filter: NKT (Semua / Termasuk-terdampak / Termasuk / Terdampak / Tidak / Belum dinilai, #330)
+│   ├── Filter: Patok (Semua / Sudah ada / Belum ada, #330)
 │   ├── Filter: Status (SUPERADMIN)
 │   ├── Filter: Pencarian
 │   ├── Tombol: Tambah Lahan
@@ -42,10 +44,12 @@ Halaman: Lahan (/admin/master-data/parcels)
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-parcels` (`findTutorialForMenu`), dibuka di tab baru |
 | Filter Distrik | Combobox | `Semua Distrik` (`DistrictGroupFilter`, `src/components/shared/district-group-filter.tsx`) |
 | Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` — daftar ikut menyempit saat Distrik dipilih; pilihan yang tidak cocok di-reset ke `Semua` |
-| Filter Status | Select | SUPERADMIN saja |
+| Filter NKT | Select (#330) | Klien atas payload list: `all` · `affected` (INCLUDED+AFFECTED, `isNktAffected`) · satu status · `none` (belum dinilai = tanpa baris NKT). `getLandParcels` membawa `identity.nkt.status` saja |
+| Filter Patok | Select (#330/#331) | `all` · `with` (`markerCount > 0`) · `without`; `markerCount` = `_count.markers WHERE is_active` dari identitas |
+| Filter Status | Select | SUPERADMIN saja; label "Semua Status / Aktif / Nonaktif" (function-child `SelectValue`, sebelumnya nilai mentah "active") |
 | Pencarian | Filter | `Cari ID Lahan atau nama petani...` (parcelId, nama & ID petani) |
 | Tombol `Tambah Lahan` | Tombol | CREATE — buka `ParcelFormModal` |
-| Tabel daftar | Tabel | Kolom: `ID Lahan`, `Blok` (hidden default), `Nama Petani`, `ID Petani`, `Lembaga Petani`, `Kelompok Tani` (hidden), `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Species`, `PSR` (badge PSR/Non-PSR), `Tahun Tanam`, `Revisi`, `Status` (SUPERADMIN) |
+| Tabel daftar | Tabel | Kolom: `ID Lahan` (+ **badge NKT** merah bila termasuk/terdampak, #330), `NKT` (hidden; label pendek / "Belum dinilai"), `Patok` (hidden; jumlah patok aktif), `Blok` (hidden default), `Nama Petani`, `ID Petani`, `Lembaga Petani`, `Kelompok Tani` (hidden), `Luas (ha)`, `Status Kepemilikan`, `Komoditas`, `Species`, `PSR` (badge PSR/Non-PSR), `Tahun Tanam`, `Revisi`, `Status` (SUPERADMIN); ekspor Excel ikut kolom NKT & Patok |
 | Aksi baris | Tombol | Lihat → `/admin/master-data/parcels/{id}`; Edit → modal; Nonaktifkan → `toggleLandParcelActive` |
 | Ekspor | Tombol | `data-lahan` (termasuk kolom distrik) |
 | Unduh Lahan | Dropdown (`ParcelExportMenu`) | Ekspor spasial SHP ZIP / GeoJSON / KML (#313), gate izin `EXPORT`; **nonaktif selama filter Distrik & Lembaga masih "Semua"** (tooltip "Pilih Distrik atau Lembaga Petani terlebih dahulu"); memanggil `getMasterDataParcelExportData(filters)` (menu key `master-data-parcels` di-hardcode di server) — atribut lengkap termasuk legalitas, hanya lahan ber-poligon. Selalu **revisi aktif saja** — filter Status (SUPERADMIN) tidak berlaku di sini, berbeda dengan tombol Excel yang mengekspor baris tabel apa adanya |

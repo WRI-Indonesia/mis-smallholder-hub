@@ -17,7 +17,7 @@
  *   bukan dipilih diam-diam.
  */
 import { autoMatchColumns } from "@/lib/parcel-bulk-mapping";
-import type { LandStdbStageCode } from "@/lib/land-parcel-satellite-format";
+import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, type LandStdbStageCode } from "@/lib/land-parcel-satellite-format";
 
 /** Cermin enum Prisma `LandDocumentType` — literal agar aman di bundle klien. */
 export const LAND_DOCUMENT_TYPES = [
@@ -75,6 +75,20 @@ export function cleanCell(value: unknown): string {
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   const s = String(value).trim().replace(/\s+/g, " ");
   return EMPTY_TOKENS.has(s.toLowerCase()) ? "" : s;
+}
+
+/**
+ * Pembersih untuk sel TEKS BEBAS (sepadan, #326): hanya token benar-benar
+ * kosong ("", "-", "null", …) yang dibuang. `cleanCell` juga membuang
+ * "tidak ada"/"belum ada" karena itu placeholder kolom STDB — pada sepadan,
+ * "Tidak ada" adalah jawaban yang sah ("tidak ada tetangga di sisi ini") dan
+ * tidak boleh hilang diam-diam (review 2026-09-14).
+ */
+export function cleanFreeTextCell(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const s = String(value).trim().replace(/\s+/g, " ");
+  return BLANK_TOKENS.has(s.toLowerCase()) ? "" : s;
 }
 
 /** `true` bila sel menyatakan "belum ada, sedang diurus" — bukan sel yang dibiarkan kosong. */
@@ -154,14 +168,102 @@ export function parseStdbNumber(raw: unknown): ParsedStdb | null {
   return { number: text, issuedYear: year >= 1990 && year <= 2100 ? year : null, stage: "TERBIT" };
 }
 
-/** Luas tertera (ha): angka > 0; koma desimal diterima; 0/kosong → null. */
+/** Luas tertera (ha): angka > 0; koma desimal diterima; 0/kosong → null. Satu parser dengan Luas NKT. */
 export function parseStatedArea(raw: unknown): { value: number | null; error: string | null } {
+  return parsePositiveNumber(raw, "Luas tertera");
+}
+
+// ─── NKT (#328) ───
+
+export type NktStatusCode = "INCLUDED" | "AFFECTED" | "NOT_AFFECTED";
+
+/**
+ * Sel Status NKT → enum. Ejaan lapangan beragam; NEGASI dicek lebih dulu di
+ * mana pun letaknya ("Lahan tidak terdampak", "not included", "unaffected")
+ * supaya tidak terbalik jadi positif, lalu termasuk vs terdampak dibedakan.
+ * Boolean Excel / 1 / 0 / ya / tidak diterima. Sel tak dikenal → error (bukan
+ * diam-diam dianggap terdampak); kosong → null (bawaan berkas yang memutuskan).
+ */
+export function parseNktStatus(raw: unknown): { status: NktStatusCode | null; error: string | null } {
+  if (typeof raw === "boolean") return { status: raw ? "AFFECTED" : "NOT_AFFECTED", error: null };
+  const rawText = raw === null || raw === undefined ? "" : String(raw).trim().toLowerCase();
+  if (rawText === "0" || rawText === "false") return { status: "NOT_AFFECTED", error: null };
+  if (rawText === "1" || rawText === "true") return { status: "AFFECTED", error: null };
+  const text = cleanFreeTextCell(raw).toLowerCase();
+  if (!text) return { status: null, error: null };
+  // Semua token negasi BERBATAS KATA: tanpa itu "T-aman- Nasional" terbaca "aman" → tidak terdampak (temuan review 2026-09-14).
+  // "no"/"non" hanya sebagai jawaban utuh atau tepat sebelum kata status ("non-NKT", "no affected") —
+  // "Terdampak (No. SK 12/2025)" memuat "No." sebagai nomor surat, bukan negasi (temuan review 2026-09-15).
+  if (/^(no|n|non)$/.test(text)) return { status: "NOT_AFFECTED", error: null };
+  if (/\b(tidak|bukan|tdk|not|bersih|aman|bebas)\b|\b(non|no)[\s-]*(terdampak|termasuk|affected|included|nkt|hcv)\b|\bun(affected|included)\b/.test(text)) return { status: "NOT_AFFECTED", error: null };
+  // "Termasuk" = terdampak (keputusan owner 2026-09-14) — keduanya AFFECTED; INCLUDED hanya data lama.
+  if (/termasuk|included|di dalam|dalam area|inside|terdampak|affected|kena|berbatasan|sempadan|\bya\b|\byes\b|\by$|\btrue\b/.test(text)) return { status: "AFFECTED", error: null };
+  return { status: null, error: `Status NKT tidak dikenal: "${cleanFreeTextCell(raw)}" (isi: termasuk / terdampak / tidak)` };
+}
+
+/**
+ * "1,4" / "NKT 1; NKT 4" / "1 4" / "NKT_1" → ["NKT_1","NKT_4"]; angka di luar 1–6 → error.
+ * Bila ada token "NKT n" / "HCV n", hanya angka SETELAH awalan itu yang dibaca — angka
+ * lain di sel ("sempadan 50 m", "asesmen 2024") diabaikan. Tanpa awalan, dibaca
+ * bilangan utuh sebagai token (bukan tiap digit): "13" = 13 (di luar 1–6), bukan 1 & 3.
+ */
+export function parseNktCategories(raw: unknown): { categories: string[]; error: string | null } {
+  const text = cleanFreeTextCell(raw);
+  if (!text) return { categories: [], error: null };
+  const prefixed = [...text.matchAll(/\b(?:nkt|hcv)[\s_-]*(\d+)/gi)].map((m) => Number(m[1]));
+  const nums = prefixed.length > 0 ? prefixed : [...text.matchAll(/\d+/g)].map((m) => Number(m[0]));
+  if (nums.length === 0) return { categories: [], error: `Kategori NKT tidak dikenal: "${text}" (isi angka 1–6, mis. "1,4")` };
+  const bad = nums.filter((n) => n < 1 || n > 6);
+  if (bad.length) return { categories: [], error: `Kategori NKT di luar 1–6: "${text}"` };
+  return { categories: [...new Set(nums)].sort().map((n) => `NKT_${n}`), error: null };
+}
+
+/**
+ * Angka desimal positif: koma desimal Indonesia ("0,088") maupun titik ("0.088")
+ * diterima. Bila titik DAN koma sama-sama ada, pemisah yang muncul TERAKHIR
+ * adalah desimal dan yang lain ribuan — "1.234,5" maupun "1,234.5" = 1234,5
+ * (sebelumnya format Inggris jadi 1,2345 tanpa error; temuan review 2026-09-15).
+ * 0/kosong → null; NEGATIF → error (salah ketik tanda, bukan sel kosong);
+ * di atas `max` → error (batas skema server, supaya batch tidak ditolak utuh).
+ */
+export function parsePositiveNumber(raw: unknown, label: string, max = 10_000): { value: number | null; error: string | null } {
   const text = cleanCell(raw);
   if (!text) return { value: null, error: null };
-  const n = Number(text.replace(",", "."));
-  if (!Number.isFinite(n)) return { value: null, error: `Luas tertera tidak valid: "${text}"` };
-  if (n <= 0) return { value: null, error: null };
+  const lastComma = text.lastIndexOf(",");
+  const lastDot = text.lastIndexOf(".");
+  const normalized =
+    lastComma > -1 && lastDot > -1
+      ? lastComma > lastDot ? text.replace(/\./g, "").replace(",", ".") : text.replace(/,/g, "")
+      : text.replace(",", ".");
+  const n = Number(normalized);
+  if (!Number.isFinite(n)) return { value: null, error: `${label} tidak valid: "${text}"` };
+  if (n < 0) return { value: null, error: `${label} negatif: "${text}"` };
+  if (n === 0) return { value: null, error: null };
+  if (n > max) return { value: null, error: `${label} terlalu besar: "${text}" (maks ${max})` };
   return { value: n, error: null };
+}
+
+/** yyyy-mm-dd (termasuk Date Excel via cleanCell) atau dd/mm/yyyy · dd-mm-yyyy → ISO yyyy-mm-dd. */
+export function parseDateCell(raw: unknown, label: string): { value: string | null; error: string | null } {
+  const text = cleanCell(raw);
+  if (!text) return { value: null, error: null };
+  let m = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  let y: number, mo: number, d: number;
+  if (m) [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  else if ((m = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/))) [d, mo, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  else return { value: null, error: `${label} tidak valid: "${text}" (pakai yyyy-mm-dd atau dd/mm/yyyy)` };
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  if (date.getUTCMonth() !== mo - 1 || date.getUTCDate() !== d || y < 1990 || y > 2100) return { value: null, error: `${label} tidak valid: "${text}"` };
+  if (date.getTime() > Date.now() + 24 * 3600 * 1000) return { value: null, error: `${label} di masa depan: "${text}"` };
+  return { value: date.toISOString().slice(0, 10), error: null };
+}
+
+/** Nilai bawaan per berkas untuk daftar "terdampak NKT" yang tak punya kolom status/kategori (Lampiran HJP). */
+export interface NktFileDefaults {
+  status: NktStatusCode | null;
+  categories: string[];
+  assessedAt: string | null;
+  assessor: string | null;
 }
 
 export const PARCEL_DETAIL_TARGET_FIELDS = [
@@ -174,6 +276,22 @@ export const PARCEL_DETAIL_TARGET_FIELDS = [
   { key: "stdbNumber", label: "Nomor STDB", required: false, desc: "Per petani; satu nomor boleh menutup beberapa lahan" },
   { key: "externalCode", label: "UL Parcel Code (parcel_code)", required: false, desc: "Kode hasil pemetaan pihak ketiga" },
   { key: "subGroupLv2", label: "Nama Kelompok Tani", required: false, desc: "Mengisi Kelompok Tani lahan HANYA bila di sistem masih kosong (tidak menimpa)" },
+  // Sepadan (#326): sel terisi MENIMPA nilai lama, sel kosong dibiarkan (tidak mengosongkan).
+  { key: "borderNorth", label: "Sepadan Utara", required: false, desc: "Tetangga/batas di sisi utara — teks bebas; sel terisi menimpa, sel kosong dibiarkan" },
+  { key: "borderEast", label: "Sepadan Timur", required: false, desc: "Tetangga/batas di sisi timur — teks bebas" },
+  { key: "borderSouth", label: "Sepadan Selatan", required: false, desc: "Tetangga/batas di sisi selatan — teks bebas" },
+  { key: "borderWest", label: "Sepadan Barat", required: false, desc: "Tetangga/batas di sisi barat — teks bebas" },
+  // Blok kebun: isi HANYA bila di sistem masih kosong (aturan sama dengan Kelompok Tani) —
+  // Lembaga plasma memakai Blok, Lembaga swadaya memakai Kelompok Tani (#328).
+  { key: "blok", label: "Blok", required: false, desc: "Mengisi Blok lahan HANYA bila di sistem masih kosong (tidak menimpa)" },
+  // NKT (#328): status asesmen per lahan. Sel terisi menimpa (asesmen terbaru menang);
+  // berkas daftar "terdampak" tanpa kolom status memakai nilai bawaan per berkas.
+  { key: "nktStatus", label: "Status NKT", required: false, desc: "termasuk / terdampak / tidak (ejaan bebas); kosong → nilai bawaan berkas" },
+  { key: "nktCategories", label: "Kategori NKT", required: false, desc: "1,4 / NKT 1; NKT 4 — boleh lebih dari satu" },
+  { key: "nktAreaHa", label: "Luas NKT Area (ha)", required: false, desc: "Luas area NKT di dalam lahan (desimal, ha)" },
+  { key: "nktLengthM", label: "Panjang NKT (m)", required: false, desc: "Panjang segmen NKT di lahan, mis. sempadan sungai (meter)" },
+  { key: "nktAssessedAt", label: "Tanggal Asesmen NKT", required: false, desc: "yyyy-mm-dd atau dd/mm/yyyy" },
+  { key: "nktAssessor", label: "Asesor / Sumber NKT", required: false, desc: "Asesor, lembaga penilai, atau nama laporan" },
 ] as const;
 
 export type ParcelDetailFieldKey = (typeof PARCEL_DETAIL_TARGET_FIELDS)[number]["key"];
@@ -188,6 +306,22 @@ export const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string
   stdbNumber: ["nomor stdb", "no stdb", "no. stdb", "nomor_stdb", "no_stdb", "stdb"],
   externalCode: ["parcel_code", "parcel code", "parcelcode", "ul parcel code", "parcel_cod", "external_code"],
   subGroupLv2: ["nama kelompok tani", "kelompok tani", "kelompok_tani", "nama_kelompok_tani", "group_name", "sub_group_lv2", "kt"],
+  // Pencocokan header harus PERSIS (setelah lowercase/trim) — alias dibuat
+  // lengkap supaya ejaan lapangan ("Batas Utara", "Sebelah Utara") terbaca.
+  // Tanpa alias satu huruf: header "S"/"T"/"B" bisa berarti apa saja, dan sel
+  // sepadan MENIMPA nilai lama saat unggah ulang (review 2026-09-14).
+  borderNorth: ["sepadan utara", "sepadan_utara", "batas utara", "batas_utara", "sebelah utara", "sebelah_utara", "utara", "north"],
+  borderEast: ["sepadan timur", "sepadan_timur", "batas timur", "batas_timur", "sebelah timur", "sebelah_timur", "timur", "east"],
+  borderSouth: ["sepadan selatan", "sepadan_selatan", "batas selatan", "batas_selatan", "sebelah selatan", "sebelah_selatan", "selatan", "south"],
+  borderWest: ["sepadan barat", "sepadan_barat", "batas barat", "batas_barat", "sebelah barat", "sebelah_barat", "barat", "west"],
+  blok: ["blok", "block", "blok kebun", "blok_kebun"],
+  // Header Lampiran HJP: "Luas NKT Area (ha)", "LENGTH"; sisanya ejaan umum laporan asesmen.
+  nktStatus: ["status nkt", "status_nkt", "nkt", "terdampak nkt", "status hcv", "hcv"],
+  nktCategories: ["kategori nkt", "kategori_nkt", "kategori", "nkt kategori", "kategori hcv", "hcv category", "nkt_category"],
+  nktAreaHa: ["luas nkt area (ha)", "luas nkt area", "luas_nkt_area", "luas nkt", "luas_nkt", "luas area nkt", "nkt area", "nkt_area", "nkt area (ha)", "size nkt", "hcv area (ha)", "hcv_area"],
+  nktLengthM: ["length", "length (m)", "length_m", "panjang", "panjang (m)", "panjang nkt", "panjang_nkt", "panjang nkt (m)"],
+  nktAssessedAt: ["tanggal asesmen nkt", "tanggal asesmen", "tgl asesmen", "tanggal_asesmen", "assessed_at", "tanggal penilaian"],
+  nktAssessor: ["asesor / sumber nkt", "asesor/sumber nkt", "asesor nkt", "asesor", "sumber nkt", "penilai", "assessor", "lembaga penilai"],
 };
 
 export function autoMatchParcelDetailColumns(headers: string[]): Partial<Record<ParcelDetailFieldKey, string>> {
@@ -209,6 +343,8 @@ export interface ParcelRef {
   farmerDbId: string;
   /** Kelompok Tani yang sudah tersimpan di lahan (LandParcel.subGroupLv2) — untuk pratinjau. */
   subGroupLv2?: string | null;
+  /** Blok yang sudah tersimpan (LandParcel.blok) — pratinjau "(sudah ada)", aturan sama dengan KT (#328). */
+  blok?: string | null;
 }
 
 /** Satu baris siap kirim ke server (sudah ternormalisasi). */
@@ -230,6 +366,20 @@ export interface ParcelDetailRow {
   externalCode: string | null;
   /** Diisi ke LandParcel.subGroupLv2 hanya bila DB kosong (server yang memutuskan). */
   subGroupLv2: string | null;
+  /** Sepadan (#326): hanya sisi yang terisi di file; null = tidak ada sel sepadan sama sekali. */
+  border: { north: string | null; east: string | null; south: string | null; west: string | null } | null;
+  /** Blok: diisi ke LandParcel.blok hanya bila DB kosong (server yang memutuskan). */
+  blok: string | null;
+  /** NKT (#328): status hasil asesmen; null = baris tidak membawa data NKT. Field null = tidak disentuh. */
+  nkt: {
+    status: NktStatusCode;
+    /** null = tidak disentuh (bawaan berkas pun kosong); [] hanya sah untuk NOT_AFFECTED. */
+    categories: string[] | null;
+    affectedAreaHa: number | null;
+    affectedLengthM: number | null;
+    assessedAt: string | null;
+    assessor: string | null;
+  } | null;
 }
 
 export interface ParcelDetailValidatedRow {
@@ -240,17 +390,35 @@ export interface ParcelDetailValidatedRow {
   _farmerName: string;
   /** Kelompok Tani yang sudah ada di DB untuk lahan ini (pratinjau "tidak akan ditimpa"). */
   _dbSubGroupLv2: string | null;
+  /** Blok yang sudah ada di DB untuk lahan ini (pratinjau "tidak akan ditimpa", #328). */
+  _dbBlok: string | null;
   data: ParcelDetailRow | null;
 }
 
 type RawRow = Record<string, unknown>;
 type Mapping = Partial<Record<ParcelDetailFieldKey, string>>;
 
+const FREE_TEXT_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["borderNorth", "borderEast", "borderSouth", "borderWest", "nktAssessor", "nktCategories"]);
+
+/**
+ * Sel Status NKT TIDAK boleh lewat pembersih umum: `cleanFreeTextCell` menganggap
+ * "0" kosong dan meng-string-kan boolean Excel jadi "false" — dua bentuk yang
+ * `parseNktStatus` justru terima sebagai "tidak terdampak". Lewat pembersih umum,
+ * "0" jatuh ke bawaan berkas (bisa terbalik jadi terdampak) dan FALSE jadi error
+ * "tidak dikenal" (temuan review 2026-09-15). Boolean → "1"/"0", "0" dipertahankan.
+ */
+export function rawNktStatusCell(value: unknown): string {
+  if (typeof value === "boolean") return value ? "1" : "0";
+  if (value === null || value === undefined) return "";
+  const s = String(value).trim().replace(/\s+/g, " ");
+  return s === "0" ? s : cleanFreeTextCell(s);
+}
+
 function readRaw(row: RawRow, mapping: Mapping): Record<ParcelDetailFieldKey, string> {
   const out = {} as Record<ParcelDetailFieldKey, string>;
   for (const f of PARCEL_DETAIL_TARGET_FIELDS) {
     const col = mapping[f.key];
-    out[f.key] = col ? cleanCell(row[col]) : "";
+    out[f.key] = !col ? "" : f.key === "nktStatus" ? rawNktStatusCell(row[col]) : FREE_TEXT_KEYS.has(f.key) ? cleanFreeTextCell(row[col]) : cleanCell(row[col]);
   }
   return out;
 }
@@ -275,6 +443,8 @@ export function validateParcelDetailRows(
   mapping: Mapping,
   parcels: ParcelRef[],
   rowNumbers?: number[],
+  /** Bawaan NKT per berkas (#328): bila `status` diisi, SEMUA baris valid mendapat NKT kecuali selnya sendiri menyatakan lain. */
+  nktDefaults?: NktFileDefaults,
 ): ParcelDetailValidatedRow[] {
   const lower = (s: string) => s.toLowerCase();
   const byPair = new Map<string, ParcelRef>();
@@ -347,14 +517,61 @@ export function validateParcelDetailRows(
       errors.push(`UL Parcel Code "${externalCode}" dipakai lebih dari satu lahan di file — kode unik per lahan`);
     }
     const subGroupLv2 = r.subGroupLv2 || null;
+    const borderSides = { north: r.borderNorth || null, east: r.borderEast || null, south: r.borderSouth || null, west: r.borderWest || null };
+    const border = Object.values(borderSides).some(Boolean) ? borderSides : null;
+    for (const side of LAND_BORDER_SIDES) {
+      const v = borderSides[side];
+      if (v && v.length > 200) errors.push(`Sepadan ${LAND_BORDER_SIDE_LABELS[side]} lebih dari 200 karakter`);
+    }
 
     // Nomor/nama/luas terisi tanpa jenis (1.046 baris di data sumber): jenisnya
     // tak diketahui, bukan tak ada — simpan sebagai OTHER (typeRaw null) agar
     // datanya tidak terbuang; UI menampilkannya sebagai "Lainnya".
     const hasDocFields = Boolean(r.documentNumber || r.holderName || area.value !== null);
     const docType: LandDocumentTypeCode | null = doc.type ?? (hasDocFields && !doc.custodyNote ? "OTHER" : null);
-    const hasAny = Boolean(docType || doc.custodyNote || stdb || externalCode || subGroupLv2);
-    if (!hasAny) errors.push("Tidak ada data detail (surat, STDB, UL Parcel Code, atau kelompok tani) untuk disimpan");
+    const blok = r.blok || null;
+
+    // --- NKT (#328): sel baris menang atas bawaan berkas; bawaan berkas membuat SEMUA baris ber-NKT ---
+    const nktStatusCell = parseNktStatus(r.nktStatus);
+    if (nktStatusCell.error) errors.push(nktStatusCell.error);
+    const nktCats = parseNktCategories(r.nktCategories);
+    if (nktCats.error) errors.push(nktCats.error);
+    const nktArea = parsePositiveNumber(r.nktAreaHa, "Luas NKT", 10_000);
+    if (nktArea.error) errors.push(nktArea.error);
+    const nktLength = parsePositiveNumber(r.nktLengthM, "Panjang NKT", 100_000);
+    if (nktLength.error) errors.push(nktLength.error);
+    const nktDate = parseDateCell(r.nktAssessedAt, "Tanggal asesmen NKT");
+    if (nktDate.error) errors.push(nktDate.error);
+    const nktAssessorCell = cleanFreeTextCell(r.nktAssessor) || null;
+    // Batas panjang teks = batas skema server (`trimmed.max(200)`): dicek di sini
+    // supaya satu sel kepanjangan tidak menolak seluruh batch tanpa nomor baris.
+    if (nktAssessorCell && nktAssessorCell.length > 200) errors.push("Asesor / Sumber NKT lebih dari 200 karakter");
+    if (blok && blok.length > 200) errors.push("Blok lebih dari 200 karakter");
+    if (nktDefaults?.assessor && nktDefaults.assessor.length > 200) errors.push("Asesor / sumber bawaan berkas lebih dari 200 karakter");
+    const hasNktCell = Boolean(nktStatusCell.status || nktCats.categories.length || nktArea.value !== null || nktLength.value !== null || nktDate.value || nktAssessorCell);
+    let nkt: ParcelDetailRow["nkt"] = null;
+    if (hasNktCell || nktDefaults?.status) {
+      const status = nktStatusCell.status ?? nktDefaults?.status ?? null;
+      if (!status) {
+        errors.push("Status NKT wajib — isi kolom Status NKT atau pilih status bawaan berkas");
+      } else {
+        const categories = nktCats.categories.length ? nktCats.categories : nktDefaults?.categories.length ? nktDefaults.categories : null;
+        if (status !== "NOT_AFFECTED" && !categories) {
+          errors.push("Kategori NKT wajib untuk lahan yang termasuk/terdampak — isi kolom Kategori NKT atau kategori bawaan berkas");
+        }
+        nkt = {
+          status,
+          categories: status === "NOT_AFFECTED" ? [] : categories,
+          affectedAreaHa: nktArea.value,
+          affectedLengthM: nktLength.value,
+          assessedAt: nktDate.value ?? nktDefaults?.assessedAt ?? null,
+          assessor: nktAssessorCell ?? nktDefaults?.assessor ?? null,
+        };
+      }
+    }
+
+    const hasAny = Boolean(docType || doc.custodyNote || stdb || externalCode || subGroupLv2 || border || blok || nkt);
+    if (!hasAny) errors.push("Tidak ada data detail (surat, STDB, UL Parcel Code, kelompok tani, blok, sepadan, atau NKT) untuk disimpan");
 
     const isValid = errors.length === 0 && Boolean(pair);
     const data: ParcelDetailRow | null =
@@ -377,6 +594,9 @@ export function validateParcelDetailRows(
             stdb,
             externalCode,
             subGroupLv2,
+            border,
+            blok,
+            nkt,
           }
         : null;
 
@@ -387,6 +607,7 @@ export function validateParcelDetailRows(
       _raw: r,
       _farmerName: pair?.farmerName ?? farmerRef?.farmerName ?? "",
       _dbSubGroupLv2: pair?.subGroupLv2 ?? null,
+      _dbBlok: pair?.blok ?? null,
       data,
     };
   });

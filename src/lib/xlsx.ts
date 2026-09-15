@@ -4,6 +4,8 @@ export interface ExportColumn {
   header: string;
   key: string;
   width?: number;
+  /** Sel multi-baris ("\n" di nilai) — wrapText + rata atas supaya tiap baris terbaca (#331). */
+  wrap?: boolean;
 }
 
 export async function exportToExcel({
@@ -40,6 +42,12 @@ export async function exportToExcel({
 
   // Add data
   worksheet.addRows(data);
+
+  // Kolom multi-baris: wrapText agar "\n" di nilai tampil sebagai baris, bukan satu baris panjang.
+  columns.forEach((col, i) => {
+    if (!col.wrap) return;
+    worksheet.getColumn(i + 1).alignment = { wrapText: true, vertical: "top" };
+  });
 
   // Auto-fit columns if width not specified
   worksheet.columns.forEach((column) => {

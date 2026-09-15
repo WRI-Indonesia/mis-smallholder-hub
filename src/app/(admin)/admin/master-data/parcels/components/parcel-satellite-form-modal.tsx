@@ -20,18 +20,28 @@ import {
   updateLandParcelExternalId,
   createLandParcelProgram,
   updateLandParcelProgram,
+  upsertLandParcelBorder,
+  upsertLandParcelNkt,
 } from "@/server/actions/land-parcel-satellite";
+import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/validations/land-parcel-satellite.schema";
 import {
   PARCEL_MAPPERS,
   DEFAULT_PARCEL_MAPPER,
   LAND_STDB_STAGES,
   LAND_STDB_STAGE_LABELS,
+  LAND_NKT_STATUS_OPTIONS,
+  LAND_NKT_STATUS_LABELS,
+  NKT_CATEGORIES,
+  NKT_CATEGORY_DESCRIPTIONS,
+  nktCategoryShort,
 } from "@/lib/land-parcel-satellite-format";
 import type {
   LandParcelDocumentItem,
   LandStdbItem,
   LandParcelExternalIdItem,
   LandParcelProgramItem,
+  LandParcelBorderItem,
+  LandParcelNktItem,
 } from "@/types/land-parcel";
 
 /**
@@ -44,7 +54,11 @@ export type SatelliteFormTarget =
   | { kind: "document"; item: LandParcelDocumentItem | null }
   | { kind: "stdb"; item: LandStdbItem | null }
   | { kind: "externalId"; item: LandParcelExternalIdItem | null }
-  | { kind: "program"; item: LandParcelProgramItem | null };
+  | { kind: "program"; item: LandParcelProgramItem | null }
+  // Sepadan (#326): satelit 1:1 — `item` null berarti belum pernah diisi; keduanya lewat upsert.
+  | { kind: "border"; item: LandParcelBorderItem | null }
+  // NKT (#328): satelit 1:1 — `item` null berarti belum dinilai; keduanya lewat upsert.
+  | { kind: "nkt"; item: LandParcelNktItem | null };
 
 interface Props {
   open: boolean;
@@ -58,6 +72,8 @@ const TITLES: Record<SatelliteFormTarget["kind"], string> = {
   stdb: "STDB",
   externalId: "UL Parcel Code",
   program: "Program",
+  border: "Sepadan",
+  nkt: "Status NKT",
 };
 
 const STATUS_OPTIONS = [
@@ -82,6 +98,9 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
   const isTerbit = stdbStage === "TERBIT";
   const needsStageNote = stdbStage === "REVISI" || stdbStage === "DITOLAK";
   const isEdit = Boolean(target.item);
+  // NKT (#328): status mengatur apakah kategori wajib; checkbox kategori terkontrol.
+  const [nktStatus, setNktStatus] = useState<string>(target.kind === "nkt" ? (target.item?.status ?? "AFFECTED") : "AFFECTED");
+  const [nktCategories, setNktCategories] = useState<string[]>(target.kind === "nkt" ? (target.item?.categories ?? []) : []);
 
   // Fungsi biasa (bukan komponen) — komponen yang dibuat saat render melanggar rules-of-hooks/react-compiler.
   const fieldError = (k: string) => (errors[k]?.length ? <p className="text-xs text-destructive">{errors[k][0]}</p> : null);
@@ -134,6 +153,28 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
       result = target.item
         ? await updateLandParcelExternalId({ id: target.item.id, ...data })
         : await createLandParcelExternalId({ landParcelId, ...data });
+    } else if (target.kind === "nkt") {
+      result = await upsertLandParcelNkt({
+        landParcelId,
+        status: nktStatus,
+        categories: nktCategories,
+        affectedAreaHa: str(form, "affectedAreaHa"),
+        affectedLengthM: str(form, "affectedLengthM"),
+        assessedAt: str(form, "assessedAt"),
+        assessor: str(form, "assessor"),
+        source: str(form, "source"),
+        notes: str(form, "notes"),
+      });
+    } else if (target.kind === "border") {
+      // Semua sisi kosong sah (= hapus) — server meng-NULL-kan kolom, baris tetap.
+      result = await upsertLandParcelBorder({
+        landParcelId,
+        north: str(form, "north"),
+        east: str(form, "east"),
+        south: str(form, "south"),
+        west: str(form, "west"),
+        notes: str(form, "notes"),
+      });
     } else {
       const data = { programType: "DEMPLOT_PBU", status, startDate: str(form, "startDate"), endDate: str(form, "endDate"), notes: str(form, "notes") };
       result = target.item ? await updateLandParcelProgram({ id: target.item.id, ...data }) : await createLandParcelProgram({ landParcelId, ...data });
@@ -154,6 +195,8 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
   const stdb = target.kind === "stdb" ? target.item : null;
   const ext = target.kind === "externalId" ? target.item : null;
   const prog = target.kind === "program" ? target.item : null;
+  const border = target.kind === "border" ? target.item : null;
+  const nkt = target.kind === "nkt" ? target.item : null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -332,6 +375,95 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
                 <Label htmlFor="mappedAt">Tanggal Pemetaan</Label>
                 <Input id="mappedAt" name="mappedAt" type="date" defaultValue={toDateInput(ext?.mappedAt)} />
                 {fieldError("mappedAt")}
+              </div>
+            </>
+          )}
+
+          {target.kind === "nkt" && (
+            <>
+              <div className="space-y-2">
+                <Label>Status *</Label>
+                <Select value={nktStatus} onValueChange={(v) => setNktStatus(v ?? "AFFECTED")}>
+                  {/* base-ui SelectValue menampilkan nilai mentah — function-child untuk label (pola dashboard). */}
+                  <SelectTrigger className="w-full h-9">
+                    <SelectValue>{(value: string) => LAND_NKT_STATUS_LABELS[value as keyof typeof LAND_NKT_STATUS_LABELS] ?? value}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Data lama "Termasuk" tetap tampil sebagai pilihan agar tidak diganti diam-diam saat form dibuka. */}
+                    {(nktStatus === "INCLUDED" ? ["INCLUDED", ...LAND_NKT_STATUS_OPTIONS] : [...LAND_NKT_STATUS_OPTIONS]).map((st) => (
+                      <SelectItem key={st} value={st}>{LAND_NKT_STATUS_LABELS[st as keyof typeof LAND_NKT_STATUS_LABELS]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Terdampak</strong> = lahan termasuk di dalam atau berbatasan dengan area NKT (mis. sempadan sungai);
+                  <strong> Tidak terdampak</strong> = sudah dinilai dan bersih. Lahan yang belum pernah dinilai tidak perlu diisi.
+                </p>
+                {fieldError("status")}
+              </div>
+              <div className="space-y-2">
+                <Label>Kategori NKT{nktStatus !== "NOT_AFFECTED" && " *"}</Label>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                  {NKT_CATEGORIES.map((c) => (
+                    <label key={c} className="flex items-start gap-2 text-sm cursor-pointer" title={NKT_CATEGORY_DESCRIPTIONS[c]}>
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-3.5 w-3.5 accent-primary"
+                        checked={nktCategories.includes(c)}
+                        onChange={(e) => setNktCategories((prev) => (e.target.checked ? [...prev, c] : prev.filter((x) => x !== c)))}
+                      />
+                      <span><span className="font-medium">{nktCategoryShort(c)}</span> <span className="text-xs text-muted-foreground">{NKT_CATEGORY_DESCRIPTIONS[c]}</span></span>
+                    </label>
+                  ))}
+                </div>
+                {fieldError("categories")}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="affectedAreaHa">Luas area NKT (ha)</Label>
+                  <Input id="affectedAreaHa" name="affectedAreaHa" inputMode="decimal" defaultValue={nkt?.affectedAreaHa ?? ""} />
+                  {fieldError("affectedAreaHa")}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="affectedLengthM">Panjang (m)</Label>
+                  <Input id="affectedLengthM" name="affectedLengthM" inputMode="decimal" defaultValue={nkt?.affectedLengthM ?? ""} />
+                  {fieldError("affectedLengthM")}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="assessedAt">Tanggal Asesmen</Label>
+                  <Input id="assessedAt" name="assessedAt" type="date" defaultValue={toDateInput(nkt?.assessedAt)} />
+                  {fieldError("assessedAt")}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="assessor">Asesor / Lembaga Penilai</Label>
+                  <Input id="assessor" name="assessor" defaultValue={nkt?.assessor ?? ""} />
+                  {fieldError("assessor")}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="source">Sumber (nama/nomor laporan asesmen)</Label>
+                <Input id="source" name="source" defaultValue={nkt?.source ?? ""} />
+                {fieldError("source")}
+              </div>
+            </>
+          )}
+
+          {target.kind === "border" && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Dengan siapa/apa lahan ini berbatasan di tiap sisi — teks bebas, mis. &ldquo;Lahan Pak Budi&rdquo;,
+                &ldquo;Jalan desa&rdquo;, &ldquo;Sungai&rdquo;, &ldquo;PT X&rdquo;. Kosongkan semua untuk menghapus.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {LAND_BORDER_SIDES.map((side) => (
+                  <div key={side} className="space-y-2">
+                    <Label htmlFor={`border-${side}`}>{LAND_BORDER_SIDE_LABELS[side]}</Label>
+                    <Input id={`border-${side}`} name={side} maxLength={200} defaultValue={border?.[side] ?? ""} />
+                    {fieldError(side)}
+                  </div>
+                ))}
               </div>
             </>
           )}

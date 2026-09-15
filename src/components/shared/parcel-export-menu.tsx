@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ParcelExportFormat } from "@/lib/parcel-export-data";
@@ -23,6 +24,8 @@ interface Props {
   /** Ekspor sedang berjalan — trigger menampilkan spinner dan nonaktif. */
   exporting?: boolean;
   onExport: (format: ParcelExportFormat) => void;
+  /** Item tambahan non-spasial (mis. "Patok batas (Excel)", #329) — dirender setelah pemisah. */
+  extraItems?: { key: string; label: string; onSelect: () => void }[];
   className?: string;
 }
 
@@ -30,7 +33,7 @@ interface Props {
  * Dropdown "Unduh Lahan" (SHP ZIP / GeoJSON / KML) — dipakai Peta Lahan dan
  * Master Data → Lahan (#313). Gate permission EXPORT dilakukan pemanggil.
  */
-export function ParcelExportMenu({ disabled, disabledReason, exporting, onExport, className }: Props) {
+export function ParcelExportMenu({ disabled, disabledReason, exporting, onExport, extraItems, className }: Props) {
   const isDisabled = disabled || exporting;
   return (
     // Tooltip di span pembungkus — elemen disabled tidak memunculkan `title`.
@@ -53,6 +56,16 @@ export function ParcelExportMenu({ disabled, disabledReason, exporting, onExport
               {item.label}
             </DropdownMenuItem>
           ))}
+          {extraItems && extraItems.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              {extraItems.map((item) => (
+                <DropdownMenuItem key={item.key} onClick={item.onSelect}>
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </span>

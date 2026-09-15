@@ -53,11 +53,13 @@ import tMenambahLahan from "@/content/help/tutorial/t-2-menambah-lahan.md";
 import tMencatatPelatihan from "@/content/help/tutorial/t-3-mencatat-pelatihan.md";
 import tMencatatProduksi from "@/content/help/tutorial/t-4-mencatat-produksi.md";
 import tMencatatLegalitasLahan from "@/content/help/tutorial/t-5-mencatat-legalitas-lahan.md";
+import tMengelolaPatokLahan from "@/content/help/tutorial/t-6-mengelola-patok-lahan.md";
 import uUnggahPetani from "@/content/help/tutorial/u-1-unggah-petani.md";
 import uUnggahProduksi from "@/content/help/tutorial/u-2-unggah-produksi.md";
 import uUnggahLahan from "@/content/help/tutorial/u-3-unggah-lahan.md";
 import uUnggahPohon from "@/content/help/tutorial/u-4-unggah-pohon.md";
 import uUnggahDetailLahan from "@/content/help/tutorial/u-5-unggah-detail-lahan.md";
+import uUnggahPatok from "@/content/help/tutorial/u-6-unggah-patok.md";
 import pMembacaDashboard from "@/content/help/tutorial/p-1-membaca-dashboard.md";
 import pCakupanPelatihan from "@/content/help/tutorial/p-2-cakupan-pelatihan.md";
 import pMembacaPeta from "@/content/help/tutorial/p-3-membaca-peta.md";
@@ -68,6 +70,7 @@ import lLaporanPelatihan from "@/content/help/tutorial/l-4-laporan-pelatihan.md"
 import lLaporanProduksi from "@/content/help/tutorial/l-5-laporan-produksi.md";
 import lLaporanKelompokTani from "@/content/help/tutorial/l-6-laporan-kelompok-tani.md";
 import lMenyaringLegalitasLahan from "@/content/help/tutorial/l-7-menyaring-legalitas-lahan.md";
+import lLaporanPatok from "@/content/help/tutorial/l-8-laporan-patok.md";
 import pDashboardBmp from "@/content/help/tutorial/p-4-dashboard-bmp.md";
 import pPetaLahan from "@/content/help/tutorial/p-5-peta-lahan.md";
 import pKetersediaanData from "@/content/help/tutorial/p-6-ketersediaan-data.md";
@@ -180,6 +183,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "mencatat-pelatihan", source: tMencatatPelatihan },
       { id: "mencatat-produksi", source: tMencatatProduksi },
       { id: "mencatat-legalitas-lahan", source: tMencatatLegalitasLahan },
+      { id: "mengelola-patok-lahan", source: tMengelolaPatokLahan },
     ],
   },
   {
@@ -194,6 +198,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "unggah-produksi", source: uUnggahProduksi },
       { id: "unggah-lahan", source: uUnggahLahan },
       { id: "unggah-detail-lahan", source: uUnggahDetailLahan },
+      { id: "unggah-patok", source: uUnggahPatok },
       { id: "unggah-pohon", source: uUnggahPohon },
     ],
   },
@@ -230,6 +235,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "membuat-laporan", source: lMembuatLaporan },
       { id: "laporan-lahan", source: lLaporanLahan },
       { id: "menyaring-legalitas-lahan", source: lMenyaringLegalitasLahan },
+      { id: "laporan-patok", source: lLaporanPatok },
       { id: "laporan-pelatihan", source: lLaporanPelatihan },
       { id: "laporan-produksi", source: lLaporanProduksi },
       { id: "laporan-kelompok-tani", source: lLaporanKelompokTani },
@@ -307,7 +313,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
     slug: "laporan",
     section: "konsep",
     title: "Laporan & Cetak",
-    summary: "Enam laporan siap unduh (Excel & PDF), termasuk Laporan Lahan yang menyertakan peta.",
+    summary: "Tujuh laporan siap unduh (Excel & PDF), termasuk Laporan Lahan yang menyertakan peta dan Laporan Patok.",
     icon: Printer,
     topics: [{ id: "report", source: report }],
   },

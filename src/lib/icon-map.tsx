@@ -32,6 +32,10 @@ import {
   // Agriculture & Nature
   Leaf,
   Sprout,
+  Landmark,
+  Milestone,
+  Signpost,
+  Fence,
   Flower2,
   TreePine,
   Sun,
@@ -118,6 +122,11 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   // Agriculture & Nature
   Leaf: Leaf,
   Sprout: Sprout,
+  Landmark: Landmark,
+  // Patok batas (Report › Patok): tiang penanda / rambu / pagar — tiga pilihan agar bisa diganti dari Menu Management.
+  Milestone: Milestone,
+  Signpost: Signpost,
+  Fence: Fence,
   Flower2: Flower2,
   TreePine: TreePine,
   Sun: Sun,

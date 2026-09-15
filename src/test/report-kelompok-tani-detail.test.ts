@@ -6,6 +6,8 @@ const P = (o: Partial<KtDetailRawParcel> & { farmerId: string }): KtDetailRawPar
   farmerName: `Petani ${o.farmerId}`,
   area: 1,
   subGroupLv2: null,
+  nkt: false,
+  patok: 0,
   ...o,
 });
 
@@ -93,7 +95,24 @@ describe("buildKelompokTaniDetailReport", () => {
       totalPetani: 0,
       totalLahan: 0,
       totalLuas: 0,
+      totalLahanNkt: 0,
+      totalPatok: 0,
     });
     expect(r.lembagaTani).toBe("Lembaga A");
+  });
+
+  it("NKT & patok per petani dan per KT (#337)", () => {
+    const r = build([
+      P({ farmerId: "f1", subGroupLv2: "KT A", nkt: true, patok: 4 }),
+      P({ farmerId: "f1", subGroupLv2: "KT A", patok: 3 }),
+      P({ farmerId: "f2", subGroupLv2: "KT A" }),
+    ]);
+    const kt = r.kelompokTaniList[0];
+    expect([kt.totalLahanNkt, kt.totalPatok]).toEqual([1, 7]);
+    const f1 = kt.petani.find((p) => p.farmerId === "f1")!;
+    expect([f1.totalLahanNkt, f1.totalPatok]).toEqual([1, 7]);
+    const f2 = kt.petani.find((p) => p.farmerId === "f2")!;
+    expect([f2.totalLahanNkt, f2.totalPatok]).toEqual([0, 0]);
+    expect([r.summary.totalLahanNkt, r.summary.totalPatok]).toEqual([1, 7]);
   });
 });

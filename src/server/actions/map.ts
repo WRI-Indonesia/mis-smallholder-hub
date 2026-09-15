@@ -11,9 +11,11 @@ import {
 } from "@/lib/access-context";
 import { buildMapData, buildBmpMapData, summarizeProduction } from "@/lib/map-data";
 import { mapFilterSchema, bmpMapFilterSchema } from "@/validations/map.schema";
+import { nktAffectedStatusWhere, isNktAffected, PARCEL_NKT_MARKER_SELECT } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 import type {
   MapDataWire,
+  MapMarkerWire,
   MapFilters,
   MapSelectOption,
   MapGroupOption,
@@ -136,7 +138,15 @@ export async function getMapData(
     AND: farmerGroupAccessFilter(access),
   };
 
-  const [groups, parcelRows] = await Promise.all([
+  // Hitungan patok (#331) untuk baris legenda — titiknya dimuat malas (getMapMarkers).
+  // Ikut Promise.all yang sama, bukan serial sesudahnya: dua count berkorelasi
+  // dalam ini sempat menambah latensi di jalur kritis "Muat Data" (review 2026-09-15).
+  const markerScope = {
+    isActive: true,
+    parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } } } } },
+  } as const;
+
+  const [groups, parcelRows, markers, markersNkt] = await Promise.all([
     prisma.farmerGroup.findMany({
       where: groupWhere,
       select: {
@@ -167,11 +177,67 @@ export async function getMapData(
         farmer: {
           select: { name: true, farmerId: true, farmerGroup: { select: { name: true } } },
         },
+        // NKT (#328): hanya status — cukup untuk gaya layer & popup, jangan tarik seluruh baris.
+        // Patok (#336): hanya HITUNGAN tautan aktif — titiknya tetap dimuat malas (getMapMarkers).
+        identity: { select: PARCEL_NKT_MARKER_SELECT },
       },
+    }),
+    prisma.landMarker.count({ where: markerScope }),
+    prisma.landMarker.count({
+      where: { ...markerScope, AND: [{ parcels: { some: { isActive: true, parcel: { nkt: nktAffectedStatusWhere() } } } }] },
     }),
   ]);
 
-  return { success: true, data: buildMapData(groups, parcelRows) };
+  const data = buildMapData(groups, parcelRows);
+  return { success: true, data: { ...data, counts: { ...data.counts, markers, markersNkt } } };
+}
+
+/**
+ * Titik patok (#331) untuk layer "Patok lahan" / "Patok lahan NKT" — dimuat
+ * MALAS saat salah satu layer dicentang. Scope sama dengan getMapData
+ * (Lembaga di filter + akses user). Satu tuple per patok fisik walau dipakai
+ * beberapa lahan; `parcels` = "ID Lahan #nomor; …" untuk popup. NKT turunan =
+ * salah satu lahan pemakai (di mana pun) termasuk/terdampak.
+ */
+export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<MapMarkerWire>> {
+  if (!(await hasPermission(MENU_KEY, VIEW))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengakses data ini" };
+  }
+  const parsed = mapFilterSchema.safeParse(filters);
+  if (!parsed.success) return { success: false, error: "Filter tidak valid" };
+  const { provinceId, districtId, farmerGroupId } = parsed.data;
+  const access = await getAccessContext();
+  const groupWhere = {
+    isActive: true,
+    districtId,
+    ...(farmerGroupId ? { id: farmerGroupId } : {}),
+    ...(provinceId ? { district: { provinceId } } : {}),
+    AND: farmerGroupAccessFilter(access),
+  };
+  const rows = await prisma.landMarker.findMany({
+    where: {
+      isActive: true,
+      parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } } } } },
+    },
+    select: {
+      id: true, code: true, longitude: true, latitude: true, condition: true,
+      parcels: { where: { isActive: true }, select: { sequenceNo: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } }, orderBy: { parcel: { parcelId: "asc" } } },
+    },
+  });
+  return {
+    success: true,
+    data: {
+      markers: rows.map((m) => [
+        m.id,
+        m.longitude,
+        m.latitude,
+        m.parcels.some((l) => isNktAffected(l.parcel.nkt?.status)) ? 1 : 0,
+        m.condition,
+        m.parcels.map((l) => `${l.parcel.parcelId} #${l.sequenceNo}`).join("; "),
+        m.code,
+      ]),
+    },
+  };
 }
 
 const BMP_MENU_KEY = "map-bmp";

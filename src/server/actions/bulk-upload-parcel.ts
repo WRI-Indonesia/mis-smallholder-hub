@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { landParcelSchema, type LandParcelInput } from "@/validations/land-parcel.schema";
+import { landParcelBorderSidesSchema, type LandParcelBorderSidesInput } from "@/validations/land-parcel-satellite.schema";
 import { formatFieldErrors } from "@/lib/validation-message";
 import { getAccessContext } from "@/lib/access-context";
 import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
@@ -107,8 +108,11 @@ export async function bulkCreateLandParcels(
     }
   }
 
-  // Validate all records before saving
-  const validatedRecords: Array<LandParcelInput & { revision?: number }> = [];
+  // Validate all records before saving. Sepadan (#326) divalidasi TERPISAH:
+  // `landParcelSchema` menulis ke LandParcel (dan membuang kunci asing), sedangkan
+  // sepadan menempel ke identitas lahan — ikut skema lahan berarti hilang di
+  // revisi berikutnya, persis masalah yang dihindari keputusan owner.
+  const validatedRecords: Array<LandParcelInput & { revision?: number; border: LandParcelBorderSidesInput | null }> = [];
   for (const item of dataList) {
     const parsed = landParcelSchema.safeParse(item);
     if (!parsed.success) {
@@ -120,7 +124,15 @@ export async function bulkCreateLandParcels(
         ),
       };
     }
-    validatedRecords.push(parsed.data);
+    let border: LandParcelBorderSidesInput | null = null;
+    if (item.border != null) {
+      const sides = landParcelBorderSidesSchema.safeParse(item.border);
+      if (!sides.success) {
+        return { success: false, error: formatFieldErrors(sides.error.flatten().fieldErrors, "Ada sepadan yang tidak lolos validasi") };
+      }
+      border = sides.data;
+    }
+    validatedRecords.push({ ...parsed.data, border });
   }
 
   try {
@@ -145,7 +157,7 @@ export async function bulkCreateLandParcels(
         existing.map((d) => [pairKey(d.farmerId, d.parcelId), { id: d.id, revision: d.revision, geometry: d.geometry }])
       );
 
-      for (const record of validatedRecords) {
+      for (const { border, ...record } of validatedRecords) {
         const duplicate = activeByPair.get(pairKey(record.farmerId, record.parcelId)) ?? null;
 
         let finalRevision = record.revision ?? 0;
@@ -167,6 +179,19 @@ export async function bulkCreateLandParcels(
         // memakai identitas yang sama, sehingga satelit (dokumen/STDB/dll.)
         // tak perlu ikut di-repoint seperti produksi & pohon di bawah.
         const identity = await tx.landParcelIdentity.upsert(parcelIdentityUpsertArgs(record, userId));
+
+        // Sepadan (#326) ke satelit identitas: sisi TERISI menimpa, sisi kosong
+        // dibiarkan (tidak mengosongkan) — pola yang sama dengan import Excel.
+        const filledSides = border
+          ? Object.fromEntries(Object.entries(border).filter(([, v]) => typeof v === "string" && v.length > 0))
+          : {};
+        if (Object.keys(filledSides).length > 0) {
+          await tx.landParcelBorder.upsert({
+            where: { parcelUid: identity.id },
+            create: { ...filledSides, parcelUid: identity.id, createdBy: userId },
+            update: { ...filledSides, modifiedBy: userId },
+          });
+        }
 
         const created = await tx.landParcel.create({
           data: {

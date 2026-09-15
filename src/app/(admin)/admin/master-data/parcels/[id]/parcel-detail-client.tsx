@@ -29,9 +29,16 @@ import { ParcelMapView } from "../components/parcel-map-view";
 import { ParcelProductionChart } from "../components/parcel-production-chart";
 import { ParcelProductionMonthModal } from "../components/parcel-production-month-modal";
 import { ParcelLegalSection } from "../components/parcel-legal-section";
+import { ParcelSatelliteFormModal } from "../components/parcel-satellite-form-modal";
+import { ParcelMarkerSection } from "../components/parcel-marker-section";
+import { ParcelNeighborList } from "../components/parcel-neighbor-list";
+import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/validations/land-parcel-satellite.schema";
+import { NEIGHBOR_DISTANCE_M, type ParcelNeighbor } from "@/lib/parcel-neighbor";
+import { isNktAffected, landNktStatusLabel, nktCategoryShort, NKT_CATEGORY_DESCRIPTIONS, type NktCategoryCode } from "@/lib/land-parcel-satellite-format";
+import { deleteLandParcelNkt } from "@/server/actions/land-parcel-satellite";
 
 import type { Geometry, Position } from "geojson";
-import type { LandParcel, FarmerSelect, LandParcelSatellites } from "@/types/land-parcel";
+import type { LandParcel, FarmerSelect, LandParcelSatellites, LandParcelMarkers } from "@/types/land-parcel";
 import type { ProductionSummary, ProductionYear } from "@/types/map";
 import type { ParcelTreeData } from "@/server/actions/tree";
 import { formatNumber } from "@/lib/format";
@@ -57,6 +64,11 @@ interface Props {
   siblingParcels: SiblingParcel[];
   /** Satelit lahan (#296) — null bila lahan di luar scope (tak seharusnya terjadi: page sudah 404). */
   satellites: LandParcelSatellites | null;
+  /** Lahan tetangga ≤ 25 m (#327) — sudah lewat aturan scope; nomor = urutan array + 1 (sama dengan PDF). */
+  neighbors: ParcelNeighbor[];
+  neighborsOmitted: number;
+  /** Patok batas (#329) — null bila di luar scope. */
+  markers: LandParcelMarkers | null;
 }
 
 const formatDecimal = (n: number) =>
@@ -181,10 +193,15 @@ export function ParcelDetailClient({
   productionPermissions,
   siblingParcels,
   satellites,
+  neighbors,
+  neighborsOmitted,
+  markers,
 }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [monthModal, setMonthModal] = useState<{ period: string; title: string } | null>(null);
+  const [borderModal, setBorderModal] = useState(false);
+  const [nktModal, setNktModal] = useState(false);
   const router = useRouter();
 
   const canEdit = permissions.includes("EDIT");
@@ -218,6 +235,7 @@ export function ParcelDetailClient({
   const stdbCount = satellites?.stdbs.length ?? 0;
   const vendorCount = satellites?.externalIds.length ?? 0;
   const programCount = satellites?.programs.length ?? 0;
+  const markerCount = markers?.markers.length ?? 0;
   // Program TIDAK ikut hitungan legalitas (koreksi owner 2026-08-28) — tab & KPI-nya sendiri.
   const legalCount = docCount + stdbCount + vendorCount;
   // Jenis surat unik (akronim) untuk nilai kartu, mis. "SHM · SKT".
@@ -337,6 +355,12 @@ export function ParcelDetailClient({
               {/* Hanya PSR yang ditampilkan — "Non-PSR" hanya menambah badge tanpa informasi
                   (sejalan dengan PDF #298); statusnya tetap terbaca di tab Program. */}
               {parcel.isPsr && <Badge variant="secondary">PSR (Replanting)</Badge>}
+              {/* NKT (#328): status yang harus terlihat sebelum apa pun — merah bila termasuk, amber bila terdampak. */}
+              {satellites?.nkt && isNktAffected(satellites.nkt.status) && (
+                <Badge className="bg-red-600 hover:bg-red-600">
+                  {landNktStatusLabel(satellites.nkt.status, true)}
+                </Badge>
+              )}
               {parcel.cropType && <Badge variant="secondary">{parcel.cropType}</Badge>}
               {parcel.subGroupLv2 && <Badge variant="outline">{parcel.subGroupLv2}</Badge>}
             </div>
@@ -426,7 +450,7 @@ export function ParcelDetailClient({
 
       {/* Tabs (#298): konsisten dengan Detail Petani; tiap tab satu kartu */}
       <Tabs defaultValue="informasi" className="w-full">
-        <TabsList className="grid w-full max-w-[520px] grid-cols-4 mb-4">
+        <TabsList className="grid w-full max-w-[640px] grid-cols-5 mb-4">
           <TabsTrigger value="informasi">Informasi</TabsTrigger>
           <TabsTrigger value="legalitas">
             Legalitas
@@ -441,6 +465,12 @@ export function ParcelDetailClient({
             )}
           </TabsTrigger>
           <TabsTrigger value="produksi">Produksi</TabsTrigger>
+          <TabsTrigger value="patok">
+            Patok
+            {markerCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-primary">{formatNumber(markerCount)}</span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Informasi: peta 60% kiri, atribut + pemilik di kanan ── */}
@@ -455,6 +485,7 @@ export function ParcelDetailClient({
               label={shortParcelLabel(parcel.parcelId)}
               siblingLabel={shortParcelLabel}
               treePoints={trees?.points}
+              neighbors={neighbors}
             />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground mt-2">
               <span className="flex items-center gap-2">
@@ -473,6 +504,12 @@ export function ParcelDetailClient({
                   Biru = lahan lain milik petani ini
                 </span>
               )}
+              {neighbors.length > 0 && (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-3 shrink-0 rounded-sm border border-dashed border-slate-600" />
+                  Putus-putus = lahan tetangga (≤ {NEIGHBOR_DISTANCE_M} m), bernomor
+                </span>
+              )}
               {center && (
                 <a
                   href={`https://www.google.com/maps?q=${center.lat.toFixed(6)},${center.lng.toFixed(6)}`}
@@ -486,6 +523,11 @@ export function ParcelDetailClient({
                 </a>
               )}
             </div>
+
+            {/* Lahan tetangga (#327): legenda nomor di peta — di bawah peta (bukan kolom kanan) karena
+                ini milik peta, dan urutan/nomornya sama dengan Profil Lahan PDF. Komponen bersama
+                dengan tab Patok (#329). */}
+            <ParcelNeighborList neighbors={neighbors} omitted={neighborsOmitted} className="mt-4" />
           </div>
 
           <div className="space-y-4 lg:col-span-2">
@@ -597,6 +639,126 @@ export function ParcelDetailClient({
                     </div>
                   </FieldItem>
                 </div>
+              )}
+            </div>
+
+            {/* Sepadan (#326): dengan siapa/apa lahan berbatasan di tiap sisi — satelit
+                1:1 ke identitas, jadi tak hilang saat poligon direvisi. Hanya sisi yang
+                terisi yang tampil (pola #298); sengaja TIDAK ikut hitungan Kelengkapan Data. */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">Sepadan</h3>
+                {canEdit && satellites && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 px-2" onClick={() => setBorderModal(true)}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> {satellites.border ? "Ubah" : "Isi"}
+                  </Button>
+                )}
+              </div>
+              {satellites?.border ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {LAND_BORDER_SIDES.filter((side) => satellites.border?.[side]).map((side) => (
+                    <FieldItem key={side} label={LAND_BORDER_SIDE_LABELS[side]}>
+                      <span className="font-normal">{satellites.border?.[side]}</span>
+                    </FieldItem>
+                  ))}
+                  {satellites.border.notes && (
+                    <div className="col-span-2">
+                      <FieldItem label="Catatan">
+                        <span className="whitespace-pre-wrap font-normal">{satellites.border.notes}</span>
+                      </FieldItem>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Sepadan belum diisi — batas Utara/Timur/Selatan/Barat menurut SKT atau hasil cek lapangan.
+                </p>
+              )}
+            </div>
+
+            {/* NKT (#328): status hasil asesmen manual — satelit 1:1; tanpa baris = belum dinilai.
+                Sengaja TIDAK ikut Kelengkapan Data (alasan sama dengan sepadan). */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">NKT (Nilai Konservasi Tinggi)</h3>
+                {satellites && (
+                  <div className="flex items-center gap-1">
+                    {canEdit && (
+                      <Button type="button" variant="ghost" size="sm" className="h-7 px-2" onClick={() => setNktModal(true)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" /> {satellites.nkt ? "Ubah" : "Isi"}
+                      </Button>
+                    )}
+                    {canDelete && satellites.nkt && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-destructive hover:text-destructive"
+                        title="Hapus status NKT (kembali ke belum dinilai)"
+                        onClick={async () => {
+                          if (!confirm("Hapus status NKT lahan ini? Lahan kembali berstatus belum dinilai.")) return;
+                          const res = await deleteLandParcelNkt(parcel.id);
+                          if (res.success) {
+                            toast.success("Status NKT dihapus");
+                            router.refresh();
+                          } else toast.error(typeof res.error === "string" ? res.error : "Gagal menghapus status NKT");
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              {satellites?.nkt ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <FieldItem label="Status">
+                    <span className={isNktAffected(satellites.nkt.status) ? "text-red-600" : undefined}>
+                      {landNktStatusLabel(satellites.nkt.status)}
+                    </span>
+                  </FieldItem>
+                  <FieldItem label="Kategori">
+                    {satellites.nkt.categories.length === 0 ? (
+                      <span className="font-normal text-muted-foreground">—</span>
+                    ) : (
+                      <span className="flex flex-wrap gap-1">
+                        {satellites.nkt.categories.map((c) => (
+                          <Badge key={c} variant="outline" title={NKT_CATEGORY_DESCRIPTIONS[c as NktCategoryCode]}>{nktCategoryShort(c)}</Badge>
+                        ))}
+                      </span>
+                    )}
+                  </FieldItem>
+                  {(satellites.nkt.affectedAreaHa != null || satellites.nkt.affectedLengthM != null) && (
+                    <FieldItem label="Luas / panjang area NKT">
+                      <span className="tabular-nums">
+                        {satellites.nkt.affectedAreaHa != null ? `${formatDecimal(satellites.nkt.affectedAreaHa)} ha` : "—"}
+                        {satellites.nkt.affectedLengthM != null && (
+                          <span className="text-muted-foreground font-normal"> · {formatNumber(Math.round(satellites.nkt.affectedLengthM))} m</span>
+                        )}
+                      </span>
+                    </FieldItem>
+                  )}
+                  <FieldItem label="Asesmen">
+                    <span className="font-normal">
+                      {satellites.nkt.assessedAt ? formatDate(satellites.nkt.assessedAt) : "—"}
+                      {satellites.nkt.assessor && ` · ${satellites.nkt.assessor}`}
+                    </span>
+                  </FieldItem>
+                  {satellites.nkt.source && (
+                    <div className="col-span-2">
+                      <FieldItem label="Sumber"><span className="font-normal">{satellites.nkt.source}</span></FieldItem>
+                    </div>
+                  )}
+                  {satellites.nkt.notes && (
+                    <div className="col-span-2">
+                      <FieldItem label="Catatan"><span className="whitespace-pre-wrap font-normal">{satellites.nkt.notes}</span></FieldItem>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Belum dinilai — status termasuk/terdampak NKT diisi dari hasil asesmen (kategori NKT 1–6, tanggal, asesor).
+                </p>
               )}
             </div>
           </div>
@@ -742,6 +904,26 @@ export function ParcelDetailClient({
         )}
         </Card>
         </TabsContent>
+
+        {/* ── Patok (#329): patok fisik bersama via parcelUid; nomor = urutan di peta & PDF ── */}
+        <TabsContent value="patok">
+          {markers ? (
+            <ParcelMarkerSection
+              landParcelId={parcel.id}
+              parcelId={parcel.parcelId}
+              geometry={geometry}
+              data={markers}
+              neighbors={neighbors}
+              neighborsOmitted={neighborsOmitted}
+              permissions={permissions}
+              farmerName={parcel.farmer.name}
+              farmerCode={parcel.farmer.farmerId}
+              groupName={parcel.farmer.farmerGroup.name}
+            />
+          ) : (
+            <Val value={null} />
+          )}
+        </TabsContent>
       </Tabs>
 
       <ParcelFormModal
@@ -750,6 +932,24 @@ export function ParcelDetailClient({
         parcel={parcel}
         farmers={farmers}
       />
+
+      {canEdit && nktModal && (
+        <ParcelSatelliteFormModal
+          open
+          onClose={() => setNktModal(false)}
+          landParcelId={parcel.id}
+          target={{ kind: "nkt", item: satellites?.nkt ?? null }}
+        />
+      )}
+
+      {canEdit && borderModal && (
+        <ParcelSatelliteFormModal
+          open
+          onClose={() => setBorderModal(false)}
+          landParcelId={parcel.id}
+          target={{ kind: "border", item: satellites?.border ?? null }}
+        />
+      )}
 
       {canEditProduction && monthModal && (
         <ParcelProductionMonthModal

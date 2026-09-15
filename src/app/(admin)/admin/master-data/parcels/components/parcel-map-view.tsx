@@ -11,6 +11,7 @@ import { TREE_POINT_PAINT, MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } 
 import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { MAP_POPUP_PROPS, MapPopupHeader, MapPopupRows, useMapPopupAutoPan } from "@/components/shared/map-popup";
 import { formatArea } from "@/lib/format";
+import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel, type ParcelNeighbor } from "@/lib/parcel-neighbor";
 
 interface Props {
   geometry: Geometry | null | undefined;
@@ -30,6 +31,19 @@ interface Props {
   siblingLabel?: (parcelId: string) => string;
   /** Titik pohon sawit (#238) — dirender lingkaran kuning di atas poligon. */
   treePoints?: { longitude: number; latitude: number }[];
+  /**
+   * Lahan tetangga ≤ 25 m (#327): garis putus-putus abu + nomor urut (sama
+   * dengan legenda Profil Lahan PDF) + popup saat diklik. Tetangga milik petani
+   * yang sama tetap bernomor (konsisten dengan PDF) tetapi kliknya ditangani
+   * layer sibling (biru) yang punya tautan detail.
+   */
+  neighbors?: ParcelNeighbor[];
+  /**
+   * Patok batas (#329): persegi kecil bernomor (amber; tepi merah bila lahan
+   * pemakainya kena NKT). Nomor sama dengan tabel & Profil Lahan PDF; ikut
+   * dihitung dalam bounds supaya patok GPS yang menyimpang tetap terlihat.
+   */
+  markerPoints?: { id: string; sequenceNo: number; longitude: number; latitude: number; nkt: boolean }[];
 }
 
 // Kumpulkan semua posisi [lng, lat] dari struktur koordinat GeoJSON apa pun
@@ -74,6 +88,12 @@ interface SiblingSelection {
   lngLat: [number, number];
 }
 
+interface NeighborSelection {
+  neighbor: ParcelNeighbor;
+  index: number;
+  lngLat: [number, number];
+}
+
 export function ParcelMapView({
   geometry,
   heightClassName = "h-96",
@@ -82,10 +102,13 @@ export function ParcelMapView({
   label,
   siblingLabel,
   treePoints,
+  neighbors,
+  markerPoints,
 }: Props) {
   const [styleKey, setStyleKey] = useState<MapStyleKey>("hybrid");
   const { mapStyle, labelBeforeId, syncStyle, registerImageFallback } = useVectorBasemap(styleKey);
   const [selected, setSelected] = useState<SiblingSelection | null>(null);
+  const [selectedNeighbor, setSelectedNeighbor] = useState<NeighborSelection | null>(null);
 
   const parsedGeometry =
     typeof geometry === "string"
@@ -122,9 +145,19 @@ export function ParcelMapView({
     .filter((x): x is { c: [number, number]; parcelId: string } => x.c != null && typeof x.parcelId === "string")
     .map((x) => ({ ...x, text: siblingLabel ? siblingLabel(x.parcelId) : x.parcelId })), [siblingFeatures, siblingLabel]);
 
+  // Tetangga (#327): nomor urut = indeks + 1, urutan sudah jarak-lalu-ID dari server.
+  const neighborFeatures = useMemo(() => (neighbors ?? []).map((n, i) => ({
+    type: "Feature" as const,
+    geometry: n.geometry as Geometry,
+    properties: { index: i + 1, id: n.id, sameFarmer: n.sameFarmer },
+  })), [neighbors]);
+  const neighborLabels = useMemo(() => neighborFeatures
+    .map((f) => ({ c: centroid(f.geometry), index: f.properties.index, id: f.properties.id }))
+    .filter((x): x is { c: [number, number]; index: number; id: string } => x.c != null), [neighborFeatures]);
+
   const mapRef = useRef<MapRef>(null);
   // Geser peta agar popup lahan lain tidak terpotong tepi (pola parcels-distribution-map).
-  useMapPopupAutoPan(mapRef, selected?.id ?? null);
+  useMapPopupAutoPan(mapRef, selected?.id ?? selectedNeighbor?.neighbor.id ?? null);
   const [viewport, setViewport] = useState({
     longitude: 101.8,
     latitude: 0.6,
@@ -141,6 +174,9 @@ export function ParcelMapView({
   }
   for (const t of treePoints ?? []) {
     allPositions.push([t.longitude, t.latitude]);
+  }
+  for (const m of markerPoints ?? []) {
+    allPositions.push([m.longitude, m.latitude]);
   }
   let bounds: [[number, number], [number, number]] | null = null;
   if (allPositions.length > 0) {
@@ -238,6 +274,19 @@ export function ParcelMapView({
   // Klik lahan lain (biru) → popup ringkas + tautan detail. Klik lahan ini tidak
   // memunculkan apa pun: atributnya sudah tampil di panel kanan halaman.
   const onClick = (event: MapLayerMouseEvent) => {
+    // Tetangga (#327) — tetangga milik petani yang sama tidak ada di layer ini
+    // (lihat filter `neighbor-fill`), jadi kliknya jatuh ke sibling di bawah.
+    const nf = event.features?.find((x) => x.layer.id === "neighbor-fill");
+    if (nf && neighbors) {
+      const idx = Number((nf.properties as { index?: number }).index);
+      const n = neighbors[idx - 1];
+      if (n) {
+        setSelected(null);
+        setSelectedNeighbor({ neighbor: n, index: idx, lngLat: [event.lngLat.lng, event.lngLat.lat] });
+        return;
+      }
+    }
+    setSelectedNeighbor(null);
     const f = event.features?.find((x) => x.layer.id === "sibling-fill");
     if (!f || !siblings) {
       setSelected(null);
@@ -276,8 +325,39 @@ export function ParcelMapView({
         interactiveLayerIds={[
           ...(parsedGeometry && hasValidCoordinates ? ["parcel-polygon"] : []),
           ...(siblings && siblingFeatures.length > 0 ? ["sibling-fill"] : []),
+          ...(neighborFeatures.length > 0 ? ["neighbor-fill"] : []),
         ]}
       >
+        {neighborFeatures.length > 0 && (
+          <Source type="geojson" data={{ type: "FeatureCollection" as const, features: neighborFeatures }}>
+            {/* Isian nyaris transparan = area klik; tetangga milik petani sama dikecualikan
+                (sudah biru sebagai sibling, popup sibling punya tautan detail). */}
+            <Layer
+              id="neighbor-fill"
+              type="fill"
+              beforeId={labelBeforeId}
+              filter={["!", ["get", "sameFarmer"]]}
+              paint={{ "fill-color": "#64748b", "fill-opacity": 0.06 }}
+            />
+            {/* Casing putih di bawah garis gelap: putus-putus tetap terbaca di citra satelit (basemap bawaan). */}
+            <Layer
+              id="neighbor-line-casing"
+              type="line"
+              beforeId={labelBeforeId}
+              paint={{ "line-color": "#ffffff", "line-width": 4, "line-opacity": 0.85, "line-dasharray": [2, 2] }}
+            />
+            <Layer
+              id="neighbor-line"
+              type="line"
+              beforeId={labelBeforeId}
+              paint={{
+                "line-color": ["case", ["get", "sameFarmer"], "#0284c7", "#334155"],
+                "line-width": 2,
+                "line-dasharray": [2, 2],
+              }}
+            />
+          </Source>
+        )}
         {siblingFeatures.length > 0 && (
           <Source
             type="geojson"
@@ -313,6 +393,26 @@ export function ParcelMapView({
             </span>
           </Marker>
         )}
+        {/* Nomor tetangga (#327) — sama dengan legenda PDF; badge kecil agar tak menutupi label sibling. */}
+        {neighborLabels.map((l) => (
+          <Marker key={`n-${l.id}`} longitude={l.c[0]} latitude={l.c[1]} anchor="center" offset={[0, -14]} style={{ pointerEvents: "none" }}>
+            <span className="pointer-events-none inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-slate-600 bg-white px-1 font-mono text-[10px] font-bold text-slate-700 shadow">
+              {l.index}
+            </span>
+          </Marker>
+        ))}
+        {/* Patok (#329): persegi bernomor — bentuk berbeda dari lingkaran tetangga supaya dua penomoran tak tertukar. */}
+        {(markerPoints ?? []).map((m) => (
+          <Marker key={`m-${m.id}`} longitude={m.longitude} latitude={m.latitude} anchor="center" style={{ pointerEvents: "none" }}>
+            <span
+              // Dua warna (keputusan owner 2026-09-14): patok lahan biasa kuning, patok lahan NKT merah — sama dengan legenda Peta Lahan.
+              className={`pointer-events-none inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 px-1 font-mono text-[10px] font-bold shadow ${m.nkt ? "border-red-800 bg-red-500 text-white" : "border-amber-700 bg-amber-400 text-amber-950"}`}
+              title={`Patok #${m.sequenceNo}${m.nkt ? " · lahan terdampak NKT" : ""}`}
+            >
+              {m.sequenceNo}
+            </span>
+          </Marker>
+        ))}
         {siblingLabels.map((l) => (
           <Marker key={l.parcelId} longitude={l.c[0]} latitude={l.c[1]} anchor="center" style={{ pointerEvents: "none" }}>
             <span className="pointer-events-none rounded-md border border-[#0284c7] bg-[#0ea5e9] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white shadow">
@@ -349,6 +449,50 @@ export function ParcelMapView({
                 >
                   Buka detail lahan <ExternalLink className="h-3.5 w-3.5" />
                 </Link>
+              </div>
+            </div>
+          </Popup>
+        )}
+        {selectedNeighbor && (
+          <Popup
+            key={`n-${selectedNeighbor.neighbor.id}`}
+            longitude={selectedNeighbor.lngLat[0]}
+            latitude={selectedNeighbor.lngLat[1]}
+            onClose={() => setSelectedNeighbor(null)}
+            {...MAP_POPUP_PROPS}
+          >
+            <div className="w-max min-w-[260px] max-w-[380px]">
+              <MapPopupHeader
+                accent="slate"
+                icon={<LandPlot className="h-5 w-5 text-muted-foreground" />}
+                title={`Lahan tetangga #${selectedNeighbor.index} (≤ ${NEIGHBOR_DISTANCE_M} m)`}
+                rows={[{ label: "ID Lahan", value: selectedNeighbor.neighbor.parcelId, mono: true }]}
+              />
+              <MapPopupRows
+                className="px-3.5 py-2"
+                rows={[
+                  { label: "Pemilik", value: neighborOwnerLabel(selectedNeighbor.neighbor) },
+                  { label: "ID Petani", value: selectedNeighbor.neighbor.farmerCode, mono: true },
+                  { label: "Lembaga", value: selectedNeighbor.neighbor.groupName },
+                  {
+                    label: "Jarak",
+                    value: selectedNeighbor.neighbor.distanceM === 0
+                      ? (selectedNeighbor.neighbor.overlaps ? "Tumpang tindih ⚠" : "Bersinggungan")
+                      : `${selectedNeighbor.neighbor.distanceM} m`,
+                  },
+                ]}
+              />
+              <div className="border-t px-3.5 py-2 text-xs">
+                {selectedNeighbor.neighbor.inScope ? (
+                  <Link
+                    href={`/admin/master-data/parcels/${selectedNeighbor.neighbor.id}`}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                  >
+                    Buka detail lahan <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground">Di luar akses Anda — halaman detailnya tidak bisa dibuka.</span>
+                )}
               </div>
             </div>
           </Popup>

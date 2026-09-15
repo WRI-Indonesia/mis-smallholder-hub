@@ -20,6 +20,10 @@ import {
   type StdbSummaryInput,
   type ExternalIdSummaryInput,
   type ProgramSummaryInput,
+  isNktAffected,
+  summarizeNkt,
+  landNktStatusLabel,
+  LAND_NKT_STATUSES,
 } from "@/lib/land-parcel-satellite-format";
 
 /** Satu baris lahan mentah (sudah ter-scope) untuk Report Lahan. */
@@ -62,6 +66,19 @@ export interface LpRawParcel {
   externalIds?: ExternalIdSummaryInput[];
   /** Program lahan aktif (#305). */
   programs?: ProgramSummaryInput[];
+  /** Status NKT (#328) — null/undefined = belum dinilai. */
+  nkt?: { status: string; categories: string[]; affectedAreaHa: number | null; assessedAt: Date | string | null; assessor: string | null } | null;
+  /** Kondisi tiap patok aktif lahan ini (#331) — enum LandMarkerCondition. */
+  markerConditions?: string[];
+}
+
+/** "4 ada · 1 hilang" — urutan tetap Ada · Hilang · Rusak · Belum dipasang; null bila tanpa patok. */
+export function summarizeMarkerConditions(conditions: string[]): string | null {
+  if (conditions.length === 0) return null;
+  const order: [string, string][] = [["PRESENT", "ada"], ["MISSING", "hilang"], ["DAMAGED", "rusak"], ["NOT_INSTALLED", "belum dipasang"]];
+  const counts = new Map<string, number>();
+  for (const c of conditions) counts.set(c, (counts.get(c) ?? 0) + 1);
+  return order.filter(([k]) => counts.has(k)).map(([k, label]) => `${counts.get(k)} ${label}`).join(" · ");
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -91,6 +108,10 @@ export function buildLandParcelReport(
   let totalAdaSurat = 0;
   let totalAdaStdb = 0;
   let totalSelisihLuas = 0;
+  let totalNkt = 0;
+  let totalDinilaiNkt = 0;
+  let totalAdaPatok = 0;
+  let totalPatok = 0;
 
   const rows: LandParcelReportRow[] = parcels.flatMap((p) => {
     const docs = p.documents ?? [];
@@ -113,6 +134,11 @@ export function buildLandParcelReport(
     if (docs.length > 0) totalAdaSurat++;
     if ((p.stdbs ?? []).length > 0) totalAdaStdb++;
     if (selisihLuasBesar) totalSelisihLuas++;
+    if (p.nkt) totalDinilaiNkt++;
+    if (isNktAffected(p.nkt?.status)) totalNkt++;
+    const markerCount = p.markerConditions?.length ?? 0;
+    if (markerCount > 0) totalAdaPatok++;
+    totalPatok += markerCount;
 
     return {
       id: p.id,
@@ -135,6 +161,11 @@ export function buildLandParcelReport(
       ulParcelCode: summarizeExternalIds(externalIds),
       program: summarizePrograms(p.programs ?? []),
       selisihLuasBesar,
+      nkt: p.nkt ? summarizeNkt(p.nkt) : null,
+      nktStatus: p.nkt?.status ?? null,
+      luasNkt: p.nkt?.affectedAreaHa ?? null,
+      patok: p.markerConditions?.length ?? 0,
+      patokKondisi: summarizeMarkerConditions(p.markerConditions ?? []),
     };
   });
 
@@ -157,8 +188,103 @@ export function buildLandParcelReport(
       totalAdaSurat,
       totalAdaStdb,
       totalSelisihLuas,
+      totalNkt,
+      totalDinilaiNkt,
+      totalAdaPatok,
+      totalPatok,
     },
     rows,
+  };
+}
+
+// ─── Kolom & baris ekspor (Excel / sheet per sel / PDF) ─────────────────────
+// Satu definisi untuk ketiga jalur ekspor. Pelajaran #323/TD-039: kolom yang
+// kuncinya tak dipetakan di baris terbit KOSONG tanpa error — kolom Patok
+// (#331) sempat begitu di Excel & PDF karena kolom dan baris ditulis di dua
+// tempat terpisah. `report-land-parcel-export.test.ts` menjaga tiap kunci
+// kolom punya nilai di baris.
+
+/** Kolom opsional Laporan Lahan (selektor kolom); kolom identitas selalu tampil. */
+export type LandParcelOptionalCol =
+  | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
+  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt" | "patok";
+
+export interface LandParcelExportColumn {
+  header: string;
+  key: string;
+  /** Kolom opsional yang mengendalikannya; tanpa `col` = selalu tampil. */
+  col?: LandParcelOptionalCol;
+}
+
+export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
+  { header: "No", key: "no" },
+  { header: "Lembaga Petani", key: "lembagaTani" },
+  { header: "Nama Petani", key: "namaPetani" },
+  { header: "ID Petani", key: "idPetani" },
+  { header: "ID Lahan", key: "idLahan" },
+  { header: "Kelompok Tani", key: "kelompokTani", col: "kelompokTani" },
+  { header: "Blok", key: "blok", col: "blok" },
+  { header: "Komoditas", key: "komoditas", col: "komoditas" },
+  { header: "Species", key: "species", col: "species" },
+  { header: "PSR", key: "psr", col: "psr" },
+  { header: "Tahun Tanam", key: "tahunTanam", col: "tahunTanam" },
+  { header: "Luas (Ha)", key: "luas", col: "luas" },
+  { header: "Surat Kepemilikan", key: "surat", col: "surat" },
+  { header: "Nama di Surat", key: "namaDiSurat", col: "namaDiSurat" },
+  { header: "Luas Tertera (Ha)", key: "luasTertera", col: "luasTertera" },
+  { header: "STDB", key: "stdb", col: "stdb" },
+  { header: "UL Parcel Code", key: "ulParcelCode", col: "ulParcelCode" },
+  { header: "Program", key: "program", col: "program" },
+  { header: "NKT", key: "nkt", col: "nkt" },
+  { header: "Luas NKT (Ha)", key: "luasNkt", col: "luasNkt" },
+  // Patok (#331): satu toggle → dua kolom (jumlah + ringkasan kondisi).
+  { header: "Patok", key: "patok", col: "patok" },
+  { header: "Kondisi Patok", key: "patokKondisi", col: "patok" },
+];
+
+/** Kolom ekspor sesuai selektor kolom halaman (`show`), urutan tetap. */
+export function landParcelExportColumns(
+  show: (col: LandParcelOptionalCol) => boolean,
+): { header: string; key: string }[] {
+  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => !c.col || show(c.col)).map(({ header, key }) => ({ header, key }));
+}
+
+/**
+ * Satu baris ekspor. `decimal` menentukan bentuk angka desimal: Excel memakai
+ * Number (bisa dijumlahkan), PDF string lokal id-ID. Nilai kosong → `empty`,
+ * kecuali NKT ("Belum dinilai" eksplisit, #328 — sel kosong akan terbaca
+ * "tidak terdampak") dan jumlah patok (0 = belum ada).
+ */
+export function landParcelExportRow(
+  row: LandParcelReportRow,
+  index: number,
+  decimal: (n: number, digits: number) => string | number,
+  empty = "-",
+): Record<string, string | number> {
+  const text = (v: string | null) => v ?? empty;
+  return {
+    no: index + 1,
+    lembagaTani: row.lembagaTani,
+    namaPetani: row.namaPetani,
+    idPetani: row.idPetani,
+    idLahan: row.idLahan,
+    kelompokTani: text(row.kelompokTani),
+    blok: text(row.blok),
+    komoditas: text(row.komoditas),
+    species: text(row.species),
+    psr: row.psr ? "PSR" : "Non-PSR",
+    tahunTanam: row.tahunTanam ?? empty,
+    luas: row.luas != null ? decimal(row.luas, 2) : empty,
+    surat: text(row.surat),
+    namaDiSurat: text(row.namaDiSurat),
+    luasTertera: row.luasTertera != null ? decimal(row.luasTertera, 2) : empty,
+    stdb: text(row.stdb),
+    ulParcelCode: text(row.ulParcelCode),
+    program: text(row.program),
+    nkt: row.nkt ?? "Belum dinilai",
+    luasNkt: row.luasNkt != null ? decimal(row.luasNkt, 3) : empty,
+    patok: row.patok,
+    patokKondisi: text(row.patokKondisi),
   };
 }
 
@@ -193,6 +319,19 @@ export function describeLegalFilters(filters: LandParcelLegalFilters): { label: 
   else if (filters.stdbStatus && filters.stdbStatus !== "all") {
     out.push({ label: "Status STDB", value: `Tahap ${landStdbStageLabel(filters.stdbStatus)}` });
   }
+  // NKT (#328) — teks harus menyepakati `landParcelLegalWhere` (invarian #305).
+  const nkt = filters.nktStatus;
+  if (nkt === "affected") out.push({ label: "NKT", value: "Termasuk atau terdampak NKT" });
+  else if (nkt === "assessed") out.push({ label: "NKT", value: "Sudah dinilai (termasuk yang tidak terdampak)" });
+  else if (nkt === "unassessed") out.push({ label: "NKT", value: "Belum dinilai" });
+  else if (nkt && nkt !== "all" && (LAND_NKT_STATUSES as readonly string[]).includes(nkt)) {
+    out.push({ label: "NKT", value: landNktStatusLabel(nkt) });
+  }
+  const marker = filters.marker;
+  if (marker === "with") out.push({ label: "Patok", value: "Sudah ada patok" });
+  else if (marker === "without") out.push({ label: "Patok", value: "Belum ada patok" });
+  else if (marker === "installed") out.push({ label: "Patok", value: "Semua patok ada (terpasang)" });
+  else if (marker === "problem") out.push({ label: "Patok", value: "Ada patok hilang/rusak/belum dipasang" });
   if (filters.areaDiff === "gte") {
     out.push({ label: "Selisih Luas", value: `≥ ${formatHa(AREA_DIFF_THRESHOLD_HA)} Ha (luas surat vs poligon)` });
   }
@@ -242,6 +381,22 @@ export function describeLegalSummary(
       label: `Selisih Luas ≥ ${formatHa(AREA_DIFF_THRESHOLD_HA)} Ha`,
       value: formatCount(summary.totalSelisihLuas),
       note: "luas di surat vs luas poligon",
+    },
+    {
+      // NKT (#328): penyebutnya lahan yang SUDAH DINILAI, bukan penyebut legalitas —
+      // "5 dari 8.000 lahan" akan terbaca 0% padahal asesmen baru menyentuh 60 lahan.
+      label: "Termasuk/terdampak NKT",
+      value: formatCount(summary.totalNkt),
+      note:
+        summary.totalDinilaiNkt > 0
+          ? `${Math.round((summary.totalNkt / summary.totalDinilaiNkt) * 100)}% dari ${formatCount(summary.totalDinilaiNkt)} lahan yang sudah dinilai NKT`
+          : "belum ada lahan yang dinilai NKT",
+    },
+    {
+      // Patok (#331): lahan dengan ≥ 1 patok — penyebut = lahan hasil filter (patok wajar ada di semua lahan).
+      label: "Ada Patok",
+      value: formatCount(summary.totalAdaPatok),
+      note: `${summary.totalLahan > 0 ? `${Math.round((summary.totalAdaPatok / summary.totalLahan) * 100)}%` : "—"} dari ${formatCount(summary.totalLahan)} lahan hasil filter · ${formatCount(summary.totalPatok)} tautan patok`,
     },
   ];
 }

@@ -22,6 +22,9 @@ export interface DetailRawParcel {
   /** Basis filter Exclude matriks produksi (#239). */
   isPsr: boolean;
   plantingYear: number | null;
+  /** Kena NKT & jumlah tautan patok aktif (#337) — ikut ke struktur KT (`buildKelompokTaniDetailReport`). */
+  nkt: boolean;
+  patok: number;
 }
 
 export interface DetailRawFarmer {
@@ -128,6 +131,8 @@ export function buildFarmerGroupDetail(
       farmerName: f.name,
       area: p.area,
       subGroupLv2: p.subGroupLv2,
+      nkt: p.nkt,
+      patok: p.patok,
     }))
   );
   const struktur = buildKelompokTaniDetailReport(farmerGroupId, groupName, rawParcels);

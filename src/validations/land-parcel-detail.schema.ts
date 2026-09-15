@@ -31,6 +31,39 @@ export const landParcelDetailRowSchema = z.object({
     .nullable(),
   externalCode: trimmed.nullable(),
   subGroupLv2: trimmed.nullable(),
+  // Sepadan (#326): sisi null = tidak disentuh (bukan dikosongkan); objek null/absen
+  // = tak ada sel sepadan. Opsional agar skrip import lama & fixture tetap sah.
+  border: z
+    .object({
+      north: trimmed.nullable(),
+      east: trimmed.nullable(),
+      south: trimmed.nullable(),
+      west: trimmed.nullable(),
+    })
+    .nullable()
+    .optional(),
+  /** Blok: isi hanya bila DB kosong (pola subGroupLv2). */
+  blok: trimmed.nullable().optional(),
+  // NKT (#328): status wajib bila objek ada; categories null = tidak disentuh.
+  // Invarian "kategori ≥ 1 kecuali NOT_AFFECTED" DIJAGA DI SINI juga — bukan hanya
+  // di validator klien — supaya pemanggil lain (skrip lokal) tak bisa menulis
+  // baris AFFECTED tanpa kategori.
+  nkt: z
+    .object({
+      status: z.enum(["INCLUDED", "AFFECTED", "NOT_AFFECTED"]),
+      categories: z.array(z.enum(["NKT_1", "NKT_2", "NKT_3", "NKT_4", "NKT_5", "NKT_6"])).nullable(),
+      affectedAreaHa: z.number().positive().max(10000).nullable(),
+      affectedLengthM: z.number().positive().max(100_000).nullable(),
+      assessedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+      assessor: trimmed.nullable(),
+    })
+    .superRefine((n, ctx) => {
+      if (n.status !== "NOT_AFFECTED" && !(n.categories && n.categories.length > 0)) {
+        ctx.addIssue({ code: "custom", path: ["categories"], message: "Kategori NKT wajib untuk lahan yang termasuk/terdampak" });
+      }
+    })
+    .nullable()
+    .optional(),
 });
 
 /**
