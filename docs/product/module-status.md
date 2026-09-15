@@ -93,7 +93,7 @@
 
 ### Covered Modules
 
-Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris = **47 file / 722 test**.
+Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **satelit lahan** di bawah ditambahkan 2026-09-15). Total suite per **2026-09-15 = 83 file / 1.477 test**; angka per baris lama adalah cerminan tanggal penulisannya.
 
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
@@ -102,6 +102,12 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31). Total baris
 | RBAC & Access Context (#125 #127) | rbac.test.ts, rbac-permission.test.ts, rbac-server-guards.test.ts, access-context.test.ts | 50 | ✅ |
 | Region | region.test.ts | 42 | ✅ |
 | User | user-action.test.ts, user-data-access.test.ts, user-menu-access.test.ts | 40 | ✅ |
+| Import & simpan Detail Lahan — sepadan, NKT, bawaan berkas (#296 #326 #328) | land-parcel-detail-import.test.ts, land-parcel-detail-save.test.ts | 109 | ✅ |
+| Patok batas — helper murni, Zod, unggahan, guard/scope/aturan Kode Patok (#329 #331, review 09-15) | land-marker.test.ts, land-marker-schema.test.ts, land-marker-upload.test.ts, land-marker-guard.test.ts | 84 | ✅ |
+| Satelit lahan — skema, format label, guard sepadan/NKT (#326 #328) | land-parcel-satellite-schema.test.ts, land-parcel-satellite-format.test.ts, land-parcel-satellite-nkt-guard.test.ts | 49 | ✅ |
+| Migrasi — checksum applied, `*_geom_idx`, partial unique (#303 #317 #329) | migration-guards.test.ts | 32 | ✅ |
+| Laporan NKT & layer patok Peta Lahan — builder, guard, tuple (#331 #332) | nkt-report.test.ts, nkt-report-map-marker-guard.test.ts | 14 | ✅ |
+| Lahan tetangga ≤ 25 m — helper murni (#327) | parcel-neighbor.test.ts | 6 | ✅ |
 | Report Lahan (#177 #179 #180) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts | 33 | ✅ |
 | Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
 | Data Completeness (DA-02) | data-completeness.test.ts | 33 | ✅ |
