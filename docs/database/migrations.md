@@ -77,6 +77,7 @@ Sebelum deploy migration ke production, pastikan:
 - [ ] Test di local dev environment dulu
 - [ ] Test di staging environment dengan production-like data volume
 - [ ] Backup database production sebelum migrate — cek dulu `pg_dump --version` ≥ versi server (staging & prod **PG 18**; Homebrew `postgresql@17` ditolak, pakai `/opt/homebrew/opt/postgresql@18/bin/pg_dump`; #309)
+- [ ] **Migrasi ber-ekspresi** (kolom `GENERATED`, backfill `UPDATE … SET x = f(y)`, CHECK ber-fungsi): jalankan ekspresi yang sama sebagai `SELECT` baca-saja atas **seluruh baris** dulu (`default_transaction_read_only = on`) — `ALTER … GENERATED … STORED` mengeksekusi ekspresi per baris dalam satu transaksi, satu baris cacat menggagalkan seluruh migrasi setelah mengunci tabel (#333: 14.003 baris `geom` dievaluasi < 1 dtk sebelum `migrate deploy`)
 - [ ] Ada rollback plan jika migration gagal
 - [ ] Semua query di codebase sudah update (jika ada breaking change)
 - [ ] Index creation untuk tabel besar dilakukan CONCURRENTLY (jika perlu)
