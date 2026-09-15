@@ -3,6 +3,7 @@
  * label, penomoran vertex, dan perencanaan "Buat patok dari poligon".
  * Kueri DB-nya di `land-marker-query.ts`.
  */
+import { haversineMeters } from "@/lib/geo";
 
 /** Vertex ≤ jarak ini dari patok yang sudah ada DITAUTKAN, bukan dibuat baru (keputusan owner 2026-09-14). */
 export const MARKER_SNAP_M = 5;
@@ -51,14 +52,9 @@ export interface LonLat {
   lat: number;
 }
 
-/** Jarak haversine (m) — duplikat kecil dari map-geo agar modul ini bebas impor klien. */
+/** Jarak haversine (m) — implementasi bersama `lib/geo.ts` (sama dengan penggaris Peta Lahan). */
 export function distanceMeters(a: LonLat, b: LonLat): number {
-  const R = 6_371_000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLon = toRad(b.lon - a.lon);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
+  return haversineMeters([a.lon, a.lat], [b.lon, b.lat]);
 }
 
 /**
@@ -118,23 +114,33 @@ export interface MarkerCandidate {
  * Rencanakan patok dari ring-ring vertex (sudah disederhanakan, urutan batas
  * PostGIS) dan patok yang ada di sekitarnya. Murni & idempoten: dijalankan ulang → vertex
  * yang sudah tertaut dilewati, tidak pernah menggeser/menghapus patok lama.
- * Satu patok yang ada hanya dipakai oleh satu vertex (yang terdekat).
+ * Satu patok yang ada hanya dipakai oleh satu vertex (yang terdekat) — pasangan
+ * vertex×patok diurutkan menurut jarak SECARA GLOBAL lalu diambil serakah, bukan
+ * per vertex menurut nomor: dengan urutan nomor, V1 (lebih utara) yang 4,5 m dari
+ * patok M akan merebutnya walau V2 hanya 1 m, lalu V2 melahirkan patok kembar
+ * 1 m dari M (temuan review 2026-09-15).
  */
 export function planMarkersFromVertices(rings: LonLat[][], nearby: NearbyMarker[], snapM = MARKER_SNAP_M): MarkerCandidate[] {
   // Multipoligon: tiap bagian dinomori berurutan (bagian 1 dulu, lalu bagian 2), masing-masing searah jarum jam dari utara.
   const ordered = rings.flatMap((ring) => orderClockwiseFromNorth(ring));
-  const used = new Set<string>();
-  return ordered.map((v, i) => {
-    let best: { m: NearbyMarker; d: number } | null = null;
+  const pairs: { vi: number; m: NearbyMarker; d: number }[] = [];
+  ordered.forEach((v, vi) => {
     for (const m of nearby) {
-      if (used.has(m.id)) continue;
       const d = distanceMeters(v, m);
-      if (d > snapM) continue;
-      // Terdekat menang; seri (< 1 cm) → yang aktif lebih dulu daripada yang nonaktif.
-      const better = !best || d < best.d - 0.01 || (Math.abs(d - best.d) <= 0.01 && (m.isActive ?? true) && !(best.m.isActive ?? true));
-      if (better) best = { m, d };
+      if (d <= snapM) pairs.push({ vi, m, d });
     }
-    if (best) used.add(best.m.id);
+  });
+  // Terdekat menang; seri (< 1 cm) → yang aktif lebih dulu daripada yang nonaktif.
+  pairs.sort((a, b) => (Math.abs(a.d - b.d) <= 0.01 ? Number(b.m.isActive ?? true) - Number(a.m.isActive ?? true) : a.d - b.d));
+  const byVertex = new Map<number, { m: NearbyMarker; d: number }>();
+  const used = new Set<string>();
+  for (const p of pairs) {
+    if (byVertex.has(p.vi) || used.has(p.m.id)) continue;
+    byVertex.set(p.vi, p);
+    used.add(p.m.id);
+  }
+  return ordered.map((v, i) => {
+    const best = byVertex.get(i) ?? null;
     return {
       sequenceNo: i + 1,
       lon: v.lon,

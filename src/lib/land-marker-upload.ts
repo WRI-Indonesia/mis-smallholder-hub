@@ -118,8 +118,12 @@ export function parseCoordCell(raw: unknown, label: string, min: number, max: nu
 }
 
 export function parseSequenceCell(raw: unknown): { value: number | null; error: string | null } {
-  // Angka ditangani langsung: `cleanCell` menganggap "0" token kosong, padahal 0 = nomor tak sah.
-  const text = typeof raw === "number" ? String(raw) : cleanCell(raw);
+  // `cleanCell` menganggap "0" token kosong, padahal 0 = nomor tak sah — dan CSV
+  // mengirim SEMUA sel sebagai string, sehingga "0" teks sempat lolos sebagai
+  // "tanpa nomor" (= patok baru) sementara 0 numerik ditolak (review 2026-09-15).
+  // Sel yang bernilai angka (apa pun tipenya) dibaca mentah; sisanya lewat cleanCell.
+  const trimmed = typeof raw === "number" ? String(raw) : typeof raw === "string" ? raw.trim() : "";
+  const text = /^-?\d+(\.\d+)?$/.test(trimmed) ? trimmed : cleanCell(raw);
   if (!text) return { value: null, error: null };
   const n = Number(text);
   if (!Number.isInteger(n) || n <= 0) return { value: null, error: `No Patok harus bilangan bulat positif: "${text}"` };

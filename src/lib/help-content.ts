@@ -313,7 +313,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
     slug: "laporan",
     section: "konsep",
     title: "Laporan & Cetak",
-    summary: "Enam laporan siap unduh (Excel & PDF), termasuk Laporan Lahan yang menyertakan peta.",
+    summary: "Tujuh laporan siap unduh (Excel & PDF), termasuk Laporan Lahan yang menyertakan peta dan Laporan Patok.",
     icon: Printer,
     topics: [{ id: "report", source: report }],
   },

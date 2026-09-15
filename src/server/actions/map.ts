@@ -138,7 +138,15 @@ export async function getMapData(
     AND: farmerGroupAccessFilter(access),
   };
 
-  const [groups, parcelRows] = await Promise.all([
+  // Hitungan patok (#331) untuk baris legenda — titiknya dimuat malas (getMapMarkers).
+  // Ikut Promise.all yang sama, bukan serial sesudahnya: dua count berkorelasi
+  // dalam ini sempat menambah latensi di jalur kritis "Muat Data" (review 2026-09-15).
+  const markerScope = {
+    isActive: true,
+    parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } } } } },
+  } as const;
+
+  const [groups, parcelRows, markers, markersNkt] = await Promise.all([
     prisma.farmerGroup.findMany({
       where: groupWhere,
       select: {
@@ -174,14 +182,6 @@ export async function getMapData(
         identity: { select: PARCEL_NKT_MARKER_SELECT },
       },
     }),
-  ]);
-
-  // Hitungan patok (#331) untuk baris legenda — titiknya dimuat malas (getMapMarkers).
-  const markerScope = {
-    isActive: true,
-    parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } } } } },
-  } as const;
-  const [markers, markersNkt] = await Promise.all([
     prisma.landMarker.count({ where: markerScope }),
     prisma.landMarker.count({
       where: { ...markerScope, AND: [{ parcels: { some: { isActive: true, parcel: { nkt: nktAffectedStatusWhere() } } } }] },

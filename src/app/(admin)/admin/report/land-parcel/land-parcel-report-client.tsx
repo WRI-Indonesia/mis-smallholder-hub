@@ -45,6 +45,9 @@ import {
   resolveLabelCollisions,
   describeLegalFilters,
   describeLegalSummary,
+  landParcelExportColumns,
+  landParcelExportRow,
+  type LandParcelOptionalCol as ColKey,
   type LpGeoJson,
   type LpMapLayout,
   type LpGridSplit,
@@ -104,10 +107,8 @@ const clampGrid = (v: number, max: number) =>
 // Blok, Komoditas, Species, PSR opsional via selektor kolom.
 // Kolom legalitas (#296): Surat, Nama di Surat, Luas Tertera, STDB — opsional, default mati.
 // Kolom legalitas #305/TD-035: UL Parcel Code & Program — juga default mati,
-// supaya lebar roster harian tidak berubah.
-type ColKey =
-  | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
-  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt" | "patok";
+// supaya lebar roster harian tidak berubah. Tipe kunci (`ColKey` =
+// `LandParcelOptionalCol`) dan kolom ekspor ada di `lib/report-land-parcel.ts`.
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "kelompokTani", label: "Kelompok Tani" },
   { key: "blok", label: "Blok" },
@@ -287,8 +288,9 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const selectedDistrictObj = districts.find((d) => d.id === selectedDistrict);
   const selectedGroupObj = farmerGroups.find((g) => g.id === selectedFarmerGroup);
 
-  const formatLuas = (num: number) =>
-    new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+  const formatDecimal = (num: number, digits: number) =>
+    new Intl.NumberFormat("id-ID", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(num);
+  const formatLuas = (num: number) => formatDecimal(num, 2);
   const displayOrEmpty = (v: string | null) => v ?? EMPTY;
 
   const reportRows = useMemo(() => reportData?.rows ?? [], [reportData]);
@@ -438,60 +440,18 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     (show("psr") ? 1 : 0) +
     (show("tahunTanam") ? 1 : 0);
 
-  const buildExportColumns = () => [
-    { header: "No", key: "no" },
-    { header: "Lembaga Petani", key: "lembagaTani" },
-    { header: "Nama Petani", key: "namaPetani" },
-    { header: "ID Petani", key: "idPetani" },
-    { header: "ID Lahan", key: "idLahan" },
-    ...(show("kelompokTani") ? [{ header: "Kelompok Tani", key: "kelompokTani" }] : []),
-    ...(show("blok") ? [{ header: "Blok", key: "blok" }] : []),
-    ...(show("komoditas") ? [{ header: "Komoditas", key: "komoditas" }] : []),
-    ...(show("species") ? [{ header: "Species", key: "species" }] : []),
-    ...(show("psr") ? [{ header: "PSR", key: "psr" }] : []),
-    ...(show("tahunTanam") ? [{ header: "Tahun Tanam", key: "tahunTanam" }] : []),
-    ...(show("luas") ? [{ header: "Luas (Ha)", key: "luas" }] : []),
-    ...(show("surat") ? [{ header: "Surat Kepemilikan", key: "surat" }] : []),
-    ...(show("namaDiSurat") ? [{ header: "Nama di Surat", key: "namaDiSurat" }] : []),
-    ...(show("luasTertera") ? [{ header: "Luas Tertera (Ha)", key: "luasTertera" }] : []),
-    ...(show("stdb") ? [{ header: "STDB", key: "stdb" }] : []),
-    ...(show("ulParcelCode") ? [{ header: "UL Parcel Code", key: "ulParcelCode" }] : []),
-    ...(show("program") ? [{ header: "Program", key: "program" }] : []),
-    ...(show("nkt") ? [{ header: "NKT", key: "nkt" }] : []),
-    ...(show("luasNkt") ? [{ header: "Luas NKT (Ha)", key: "luasNkt" }] : []),
-    ...(show("patok") ? [{ header: "Patok", key: "patok" }, { header: "Kondisi Patok", key: "patokKondisi" }] : []),
-  ];
+  // Kolom & baris ekspor dari satu definisi di lib (kolom Patok sempat kosong
+  // di Excel/PDF karena baris ditulis terpisah dari kolom — review 09-15).
+  const buildExportColumns = () => landParcelExportColumns(show);
 
   const scopeLabel = () =>
     selectedGroupObj?.name.replace(/\s+/g, "_") ??
     selectedDistrictObj?.name.replace(/\s+/g, "_") ??
     "Semua";
 
-  // Baris export (dipakai sheet penuh Excel, subset per sel, dan PDF).
+  // Baris export Excel (sheet penuh + subset per sel): desimal sebagai Number.
   const buildExportRows = (): Record<string, string | number>[] =>
-    reportRows.map((row, idx) => ({
-      no: idx + 1,
-      lembagaTani: row.lembagaTani,
-      namaPetani: row.namaPetani,
-      idPetani: row.idPetani,
-      idLahan: row.idLahan,
-      kelompokTani: displayOrEmpty(row.kelompokTani),
-      blok: displayOrEmpty(row.blok),
-      komoditas: displayOrEmpty(row.komoditas),
-      species: displayOrEmpty(row.species),
-      psr: row.psr ? "PSR" : "Non-PSR",
-      tahunTanam: row.tahunTanam ?? EMPTY,
-      luas: row.luas != null ? Number(row.luas.toFixed(2)) : EMPTY,
-      surat: displayOrEmpty(row.surat),
-      namaDiSurat: displayOrEmpty(row.namaDiSurat),
-      luasTertera: row.luasTertera != null ? Number(row.luasTertera.toFixed(2)) : EMPTY,
-      stdb: displayOrEmpty(row.stdb),
-      ulParcelCode: displayOrEmpty(row.ulParcelCode),
-      program: displayOrEmpty(row.program),
-      // NKT (#328): belum dinilai ditulis eksplisit — sel kosong akan terbaca "tidak terdampak".
-      nkt: row.nkt ?? "Belum dinilai",
-      luasNkt: row.luasNkt != null ? Number(row.luasNkt.toFixed(3)) : EMPTY,
-    }));
+    reportRows.map((row, idx) => landParcelExportRow(row, idx, (n, digits) => Number(n.toFixed(digits)), EMPTY));
 
   const totalRow = (): Record<string, string | number> => ({
     no: "",
@@ -653,28 +613,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       return;
     }
 
-    const data: Record<string, string | number>[] = reportRows.map((row, idx) => ({
-      no: idx + 1,
-      lembagaTani: row.lembagaTani,
-      namaPetani: row.namaPetani,
-      idPetani: row.idPetani,
-      idLahan: row.idLahan,
-      kelompokTani: displayOrEmpty(row.kelompokTani),
-      blok: displayOrEmpty(row.blok),
-      komoditas: displayOrEmpty(row.komoditas),
-      species: displayOrEmpty(row.species),
-      psr: row.psr ? "PSR" : "Non-PSR",
-      tahunTanam: row.tahunTanam ?? EMPTY,
-      luas: row.luas != null ? formatLuas(row.luas) : EMPTY,
-      surat: displayOrEmpty(row.surat),
-      namaDiSurat: displayOrEmpty(row.namaDiSurat),
-      luasTertera: row.luasTertera != null ? formatLuas(row.luasTertera) : EMPTY,
-      stdb: displayOrEmpty(row.stdb),
-      ulParcelCode: displayOrEmpty(row.ulParcelCode),
-      program: displayOrEmpty(row.program),
-      nkt: row.nkt ?? "Belum dinilai",
-      luasNkt: row.luasNkt != null ? formatLuas(row.luasNkt) : EMPTY,
-    }));
+    // Baris PDF: desimal sebagai string lokal id-ID (kolom sama dengan Excel).
+    const data: Record<string, string | number>[] = reportRows.map((row, idx) =>
+      landParcelExportRow(row, idx, formatDecimal, EMPTY),
+    );
 
     if (show("luas")) {
       data.push({

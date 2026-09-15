@@ -197,6 +197,97 @@ export function buildLandParcelReport(
   };
 }
 
+// ─── Kolom & baris ekspor (Excel / sheet per sel / PDF) ─────────────────────
+// Satu definisi untuk ketiga jalur ekspor. Pelajaran #323/TD-039: kolom yang
+// kuncinya tak dipetakan di baris terbit KOSONG tanpa error — kolom Patok
+// (#331) sempat begitu di Excel & PDF karena kolom dan baris ditulis di dua
+// tempat terpisah. `report-land-parcel-export.test.ts` menjaga tiap kunci
+// kolom punya nilai di baris.
+
+/** Kolom opsional Laporan Lahan (selektor kolom); kolom identitas selalu tampil. */
+export type LandParcelOptionalCol =
+  | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
+  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt" | "patok";
+
+export interface LandParcelExportColumn {
+  header: string;
+  key: string;
+  /** Kolom opsional yang mengendalikannya; tanpa `col` = selalu tampil. */
+  col?: LandParcelOptionalCol;
+}
+
+export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
+  { header: "No", key: "no" },
+  { header: "Lembaga Petani", key: "lembagaTani" },
+  { header: "Nama Petani", key: "namaPetani" },
+  { header: "ID Petani", key: "idPetani" },
+  { header: "ID Lahan", key: "idLahan" },
+  { header: "Kelompok Tani", key: "kelompokTani", col: "kelompokTani" },
+  { header: "Blok", key: "blok", col: "blok" },
+  { header: "Komoditas", key: "komoditas", col: "komoditas" },
+  { header: "Species", key: "species", col: "species" },
+  { header: "PSR", key: "psr", col: "psr" },
+  { header: "Tahun Tanam", key: "tahunTanam", col: "tahunTanam" },
+  { header: "Luas (Ha)", key: "luas", col: "luas" },
+  { header: "Surat Kepemilikan", key: "surat", col: "surat" },
+  { header: "Nama di Surat", key: "namaDiSurat", col: "namaDiSurat" },
+  { header: "Luas Tertera (Ha)", key: "luasTertera", col: "luasTertera" },
+  { header: "STDB", key: "stdb", col: "stdb" },
+  { header: "UL Parcel Code", key: "ulParcelCode", col: "ulParcelCode" },
+  { header: "Program", key: "program", col: "program" },
+  { header: "NKT", key: "nkt", col: "nkt" },
+  { header: "Luas NKT (Ha)", key: "luasNkt", col: "luasNkt" },
+  // Patok (#331): satu toggle → dua kolom (jumlah + ringkasan kondisi).
+  { header: "Patok", key: "patok", col: "patok" },
+  { header: "Kondisi Patok", key: "patokKondisi", col: "patok" },
+];
+
+/** Kolom ekspor sesuai selektor kolom halaman (`show`), urutan tetap. */
+export function landParcelExportColumns(
+  show: (col: LandParcelOptionalCol) => boolean,
+): { header: string; key: string }[] {
+  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => !c.col || show(c.col)).map(({ header, key }) => ({ header, key }));
+}
+
+/**
+ * Satu baris ekspor. `decimal` menentukan bentuk angka desimal: Excel memakai
+ * Number (bisa dijumlahkan), PDF string lokal id-ID. Nilai kosong → `empty`,
+ * kecuali NKT ("Belum dinilai" eksplisit, #328 — sel kosong akan terbaca
+ * "tidak terdampak") dan jumlah patok (0 = belum ada).
+ */
+export function landParcelExportRow(
+  row: LandParcelReportRow,
+  index: number,
+  decimal: (n: number, digits: number) => string | number,
+  empty = "-",
+): Record<string, string | number> {
+  const text = (v: string | null) => v ?? empty;
+  return {
+    no: index + 1,
+    lembagaTani: row.lembagaTani,
+    namaPetani: row.namaPetani,
+    idPetani: row.idPetani,
+    idLahan: row.idLahan,
+    kelompokTani: text(row.kelompokTani),
+    blok: text(row.blok),
+    komoditas: text(row.komoditas),
+    species: text(row.species),
+    psr: row.psr ? "PSR" : "Non-PSR",
+    tahunTanam: row.tahunTanam ?? empty,
+    luas: row.luas != null ? decimal(row.luas, 2) : empty,
+    surat: text(row.surat),
+    namaDiSurat: text(row.namaDiSurat),
+    luasTertera: row.luasTertera != null ? decimal(row.luasTertera, 2) : empty,
+    stdb: text(row.stdb),
+    ulParcelCode: text(row.ulParcelCode),
+    program: text(row.program),
+    nkt: row.nkt ?? "Belum dinilai",
+    luasNkt: row.luasNkt != null ? decimal(row.luasNkt, 3) : empty,
+    patok: row.patok,
+    patokKondisi: text(row.patokKondisi),
+  };
+}
+
 /**
  * Filter legalitas aktif → pasangan label/nilai untuk header PDF & Excel (#305).
  *

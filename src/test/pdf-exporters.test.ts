@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildPDF } from "@/lib/pdf";
-import { buildFarmPassportDoc } from "@/lib/farm-passport";
+import { buildFarmPassportDoc, passportMapFrame } from "@/lib/farm-passport";
 import { buildLayerReportDoc, graticuleStep } from "@/lib/layer-report-pdf";
 import { buildBmpMapDoc } from "@/lib/bmp-map-print";
 import { buildFireMapDoc } from "@/lib/fire-map-print";
@@ -237,6 +237,19 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     expect(text).toContain("SH-0002.A");
     expect(text).toContain("SH-PTK-000001");
     expect(text).toContain("101.191200");
+  });
+
+  it("bingkai peta memuat patok di luar margin 50 m — patok GPS sah sampai 100 m dari batas, gambar di-clip (review 2026-09-15)", () => {
+    // Lahan ±80 m: margin = max(40% span, 50 m) = 50 m; patok 80 m di timur batas sebelumnya terpotong.
+    const D = 0.0007; // ≈ 78 m
+    const ring = [[101.19, 0.52], [101.19 + D, 0.52], [101.19 + D, 0.52 + D], [101.19, 0.52 + D], [101.19, 0.52]];
+    const far = { longitude: 101.19 + D + 80 / 111_320, latitude: 0.52 + D / 2 };
+    const tanpa = passportMapFrame([ring], []);
+    expect(far.longitude).toBeGreaterThan(tanpa.maxLon);
+    const dengan = passportMapFrame([ring], [far]);
+    expect(dengan.maxLon).toBeGreaterThan(far.longitude);
+    // Lahan tetap terbaca: lebar lahan masih ≥ ¼ lebar bingkai walau patok di jarak maksimal (bukan jadi titik).
+    expect(D / (dengan.maxLon - dengan.minLon)).toBeGreaterThan(0.25);
   });
 
   it("geometri tak tersedia (ring < 3 titik) → tetap terbit tanpa throw", () => {

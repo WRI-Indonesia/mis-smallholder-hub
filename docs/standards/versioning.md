@@ -94,7 +94,7 @@ Lima metrik tetap, diukur ulang tiap rilis; laporkan sebagai tabel delta (tanpa 
 | # | KPI | Cara ukur | Baseline v0.21.0 |
 | - | --- | --------- | ---------------- |
 | 1 | Payload peta distrik terbesar | Proyeksi `getMapData` distrik ber-persil terbanyak (sampel ≥500 persil nyata) | 2,67 MB |
-| 2 | Cakupan tutorial Bantuan | Menu **daun** ber-tutorial ÷ total menu daun aktif — dihitung dari frontmatter `menuKey` pada `src/content/help/**`, bukan ditaksir. Menu induk (wadah grup) tidak dihitung karena tak punya halaman. | 23/28 (82%) |
+| 2 | Cakupan tutorial Bantuan | Menu **daun** ber-tutorial ÷ total menu daun aktif — dihitung dari frontmatter `menuKey` pada `src/content/help/**`, bukan ditaksir. Menu induk (wadah grup) tidak dihitung karena tak punya halaman. Sejak #339 (2026-09-15) angkanya **dijaga `src/test/help-registry.test.ts`**: menu daun baru tanpa tutorial membuat gate merah kecuali dinyatakan eksplisit di `TANPA_TUTORIAL` (per 2026-09-15: 32/35). | 23/28 (82%) |
 | 3 | Test otomatis | Jumlah test `npm test` | 748 |
 | 4 | Bug terbuka | Issue open berlabel `bug` | 0 |
 | 5 | Tech debt aktif | Item aktif di [tech-debt.md](../project/tech-debt.md) | 12 (10 per 07-28 + TD-030/031) |

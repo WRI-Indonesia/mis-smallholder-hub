@@ -43,16 +43,25 @@ import type { LandMarkerItem, LandParcelMarkers } from "@/types/land-parcel";
  * kondisi/foto berlaku untuk semua lahan yang menautkannya.
  */
 const MENU = "master-data-parcels";
+/**
+ * Transaksi per lahan berjalan 2–4 query PER PATOK (generate poligon, urut-ulang
+ * dua fase, unggahan) — 60 vertex lewat tunnel prod ±30 ms RTT sudah melewati
+ * bawaan Prisma 5 s (P2028) dan seluruh lahan ditolak; preseden
+ * `bulk-upload-tree.ts`/`bulk-upload-parcel-detail.ts` (temuan review 2026-09-15).
+ */
+const MARKER_TX_TIMEOUT_MS = 30_000;
 type FieldErrors = Record<string, string[]>;
 type Result<T = { id: string }> = ActionResult<T> | { success: false; error: FieldErrors };
 
-const PARCEL_SELECT = {
-  id: true, parcelUid: true, parcelId: true, revision: true, geometry: true,
+const PARCEL_BASE_SELECT = {
+  id: true, parcelUid: true, parcelId: true, revision: true,
   // Awalan kode patok = singkatan Lembaga lahan pembuat (fallback kode Lembaga).
   farmer: { select: { farmerGroup: { select: { abrv: true, code: true } } } },
 } as const;
-type ResolvedParcel = NonNullable<Awaited<ReturnType<typeof resolveParcel>>>;
-const prefixOf = (p: ResolvedParcel) => markerCodePrefix(p.farmer.farmerGroup.abrv, p.farmer.farmerGroup.code);
+/** Satu lahan (tab Patok): JSON poligon ikut dibaca — dipakai pratinjau & guard. */
+const PARCEL_SELECT = { ...PARCEL_BASE_SELECT, geometry: true } as const;
+const prefixOf = (p: { farmer: { farmerGroup: { abrv: string | null; code: string | null } } }) =>
+  markerCodePrefix(p.farmer.farmerGroup.abrv, p.farmer.farmerGroup.code);
 
 async function resolveParcel(landParcelId: string, access?: AccessContext) {
   const ctx = access ?? (await getAccessContext());
@@ -79,6 +88,30 @@ async function userId() {
 async function nextSequenceNo(parcelUid: string, tx: Prisma.TransactionClient): Promise<number> {
   const agg = await tx.landParcelMarker.aggregate({ where: { parcelUid, isActive: true }, _max: { sequenceNo: true } });
   return (agg._max.sequenceNo ?? 0) + 1;
+}
+
+/**
+ * Tautan lahan↔patok di dalam transaksi: pasangan `(parcelUid, markerId)` UNIQUE —
+ * tautan lama yang nonaktif (pernah dilepas) diaktifkan ulang dengan nomor baru,
+ * kalau belum ada dibuat. Satu `upsert` = satu round-trip; sebelumnya
+ * findUnique + update/create disalin di tiga tempat dan sempat menyimpang
+ * (`sourceRevision` hanya di satu salinan) — review 2026-09-15.
+ */
+async function upsertParcelLink(
+  tx: Prisma.TransactionClient,
+  parcelUid: string,
+  markerId: string,
+  sequenceNo: number,
+  uid: string | null,
+  sourceRevision?: number,
+): Promise<{ id: string }> {
+  const rev = sourceRevision !== undefined ? { sourceRevision } : {};
+  return tx.landParcelMarker.upsert({
+    where: { parcelUid_markerId: { parcelUid, markerId } },
+    update: { isActive: true, sequenceNo, modifiedBy: uid, ...rev },
+    create: { parcelUid, markerId, sequenceNo, createdBy: uid, ...rev },
+    select: { id: true },
+  });
 }
 
 /** Guard ≤ MARKER_MAX_DISTANCE_M dari batas lahan (lat/long tertukar, desimal salah tempel). */
@@ -237,16 +270,9 @@ export async function createMarkersFromPolygon(
         linked++;
       }
       // Tautan lama nonaktif untuk pasangan ini → aktifkan ulang (unique parcelUid+markerId).
-      const existingLink = await tx.landParcelMarker.findUnique({ where: { parcelUid_markerId: { parcelUid: parcel.parcelUid, markerId } }, select: { id: true } });
-      if (existingLink) {
-        await tx.landParcelMarker.update({ where: { id: existingLink.id }, data: { isActive: true, sequenceNo: seq++, sourceRevision: parcel.revision, modifiedBy: uid } });
-      } else {
-        await tx.landParcelMarker.create({
-          data: { parcelUid: parcel.parcelUid, markerId, sequenceNo: seq++, sourceRevision: parcel.revision, createdBy: uid },
-        });
-      }
+      await upsertParcelLink(tx, parcel.parcelUid, markerId, seq++, uid, parcel.revision);
     }
-  });
+  }, { timeout: MARKER_TX_TIMEOUT_MS });
   } catch (e) {
     return { success: false, error: dbError(e, "Gagal menyimpan patok dari poligon") };
   }
@@ -369,7 +395,7 @@ export async function renumberLandMarkers(input: unknown): Promise<ActionResult>
       // (unggahan menerima nomor bebas, mis. 1000; temuan review 2026-09-14).
       for (let i = 0; i < order.length; i++) await tx.landParcelMarker.update({ where: { id: byMarker.get(order[i])! }, data: { sequenceNo: -(i + 1) } });
       for (let i = 0; i < order.length; i++) await tx.landParcelMarker.update({ where: { id: byMarker.get(order[i])! }, data: { sequenceNo: i + 1, modifiedBy: uid } });
-    });
+    }, { timeout: MARKER_TX_TIMEOUT_MS });
   } catch (e) {
     return { success: false, error: dbError(e, "Gagal mengurutkan ulang patok") };
   }
@@ -435,6 +461,71 @@ export interface LandMarkerExportRow {
 }
 
 /**
+ * Lahan → patok untuk baris ekspor (`LandMarkerExportRow`) — satu select & satu
+ * pemetaan untuk Detail Lembaga, baris legenda Peta Lahan, dan Report › Patok
+ * (sebelumnya dua salinan ±45 baris yang harus diubah serempak; review 2026-09-15).
+ */
+const MARKER_EXPORT_PARCEL_SELECT = {
+  parcelId: true, parcelUid: true, subGroupLv2: true, blok: true,
+  farmer: { select: { farmerId: true, name: true, farmerGroup: { select: { name: true } } } },
+  identity: {
+    select: {
+      nkt: { select: { status: true } },
+      markers: {
+        where: { isActive: true },
+        orderBy: { sequenceNo: "asc" },
+        select: {
+          sequenceNo: true,
+          marker: {
+            select: {
+              id: true, code: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
+              parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.LandParcelSelect;
+type MarkerExportParcel = Prisma.LandParcelGetPayload<{ select: typeof MARKER_EXPORT_PARCEL_SELECT }>;
+
+/** Satu baris per patok per lahan; NKT turunan = lahan ini ATAU salah satu lahan pemakai lain. `nktOnly` menyaring ke patok NKT saja. */
+function markerExportRows(parcels: MarkerExportParcel[], nktOnly = false): LandMarkerExportRow[] {
+  const rows: LandMarkerExportRow[] = [];
+  for (const p of parcels) {
+    const own = isNktAffected(p.identity.nkt?.status);
+    for (const l of p.identity.markers) {
+      const others = l.marker.parcels.filter((x) => x.parcelUid !== p.parcelUid);
+      const nkt = own || others.some((x) => isNktAffected(x.parcel.nkt?.status));
+      if (nktOnly && !nkt) continue;
+      rows.push({
+        markerId: l.marker.id,
+        code: l.marker.code,
+        parcelId: p.parcelId,
+        farmerCode: p.farmer.farmerId,
+        farmerName: p.farmer.name,
+        groupName: p.farmer.farmerGroup.name,
+        subGroupLv2: p.subGroupLv2,
+        blok: p.blok,
+        sequenceNo: l.sequenceNo,
+        latitude: l.marker.latitude,
+        longitude: l.marker.longitude,
+        condition: l.marker.condition,
+        type: l.marker.type,
+        installedAt: l.marker.installedAt ? l.marker.installedAt.toISOString().slice(0, 10) : null,
+        installedBy: l.marker.installedBy,
+        source: l.marker.source,
+        nkt,
+        parcelNkt: own,
+        sharedWith: others.map((x) => x.parcel.parcelId),
+        notes: l.marker.notes,
+      });
+    }
+  }
+  return rows;
+}
+
+/**
  * Semua patok aktif lahan aktif satu Lembaga — item "Patok batas (Excel)" di
  * menu Unduh Lahan pada Detail Lembaga; digate `master-data-groups:EXPORT`
  * (pola `getFarmerGroupParcelExportData`: hanya id lembaga, scope tetap
@@ -452,61 +543,10 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
 
   const parcels = await prisma.landParcel.findMany({
     where: { isActive: true, farmer: { isActive: true, farmerGroupId } },
-    select: {
-      parcelId: true, parcelUid: true, subGroupLv2: true, blok: true,
-      farmer: { select: { farmerId: true, name: true } },
-      identity: {
-        select: {
-          nkt: { select: { status: true } },
-          markers: {
-            where: { isActive: true },
-            orderBy: { sequenceNo: "asc" },
-            select: {
-              sequenceNo: true,
-              marker: {
-                select: {
-                  id: true, code: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
-                  parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+    select: MARKER_EXPORT_PARCEL_SELECT,
     orderBy: { parcelId: "asc" },
   });
-
-  const rows: LandMarkerExportRow[] = [];
-  for (const p of parcels) {
-    const own = isNktAffected(p.identity.nkt?.status);
-    for (const l of p.identity.markers) {
-      const others = l.marker.parcels.filter((x) => x.parcelUid !== p.parcelUid);
-      rows.push({
-        markerId: l.marker.id,
-        code: l.marker.code,
-        parcelId: p.parcelId,
-        farmerCode: p.farmer.farmerId,
-        farmerName: p.farmer.name,
-        groupName: group.name,
-        subGroupLv2: p.subGroupLv2,
-        blok: p.blok,
-        sequenceNo: l.sequenceNo,
-        latitude: l.marker.latitude,
-        longitude: l.marker.longitude,
-        condition: l.marker.condition,
-        type: l.marker.type,
-        installedAt: l.marker.installedAt ? l.marker.installedAt.toISOString().slice(0, 10) : null,
-        installedBy: l.marker.installedBy,
-        source: l.marker.source,
-        nkt: own || others.some((x) => isNktAffected(x.parcel.nkt?.status)),
-        parcelNkt: own,
-        sharedWith: others.map((x) => x.parcel.parcelId),
-        notes: l.marker.notes,
-      });
-    }
-  }
-  return { success: true, data: { rows, label: group.code?.trim() || group.name } };
+  return { success: true, data: { rows: markerExportRows(parcels), label: group.code?.trim() || group.name } };
 }
 
 /**
@@ -555,28 +595,7 @@ async function markerRowsForFilters(
   const [parcels, group, district] = await Promise.all([
     prisma.landParcel.findMany({
       where: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } },
-      select: {
-        parcelId: true, parcelUid: true, subGroupLv2: true, blok: true,
-        farmer: { select: { farmerId: true, name: true, farmerGroup: { select: { name: true } } } },
-        identity: {
-          select: {
-            nkt: { select: { status: true } },
-            markers: {
-              where: { isActive: true },
-              orderBy: { sequenceNo: "asc" },
-              select: {
-                sequenceNo: true,
-                marker: {
-                  select: {
-                    id: true, code: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
-                    parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      select: MARKER_EXPORT_PARCEL_SELECT,
       orderBy: { parcelId: "asc" },
     }),
     filters.farmerGroupId
@@ -584,37 +603,7 @@ async function markerRowsForFilters(
       : Promise.resolve(null),
     prisma.district.findUnique({ where: { id: filters.districtId }, select: { name: true } }),
   ]);
-  const rows: LandMarkerExportRow[] = [];
-  for (const p of parcels) {
-    const own = isNktAffected(p.identity.nkt?.status);
-    for (const l of p.identity.markers) {
-      const others = l.marker.parcels.filter((x) => x.parcelUid !== p.parcelUid);
-      const nkt = own || others.some((x) => isNktAffected(x.parcel.nkt?.status));
-      if (nktOnly && !nkt) continue;
-      rows.push({
-        markerId: l.marker.id,
-        code: l.marker.code,
-        parcelId: p.parcelId,
-        farmerCode: p.farmer.farmerId,
-        farmerName: p.farmer.name,
-        groupName: p.farmer.farmerGroup.name,
-        subGroupLv2: p.subGroupLv2,
-        blok: p.blok,
-        sequenceNo: l.sequenceNo,
-        latitude: l.marker.latitude,
-        longitude: l.marker.longitude,
-        condition: l.marker.condition,
-        type: l.marker.type,
-        installedAt: l.marker.installedAt ? l.marker.installedAt.toISOString().slice(0, 10) : null,
-        installedBy: l.marker.installedBy,
-        source: l.marker.source,
-        nkt,
-        parcelNkt: own,
-        sharedWith: others.map((x) => x.parcel.parcelId),
-        notes: l.marker.notes,
-      });
-    }
-  }
+  const rows = markerExportRows(parcels, nktOnly);
   const label = filters.farmerGroupId ? (group?.code?.trim() || group?.name || null) : (district?.name ?? null);
   return { rows, label };
 }
@@ -704,9 +693,17 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
   const access = await getAccessContext();
   const parcels = await prisma.landParcel.findMany({
     where: { id: { in: [...byParcel.keys()] }, isActive: true, ...farmerRelationAccessFilter(access) },
-    select: PARCEL_SELECT,
+    select: PARCEL_BASE_SELECT,
   });
   const parcelById = new Map(parcels.map((p) => [p.id, p]));
+  // Ada/tidaknya poligon lewat kolom generated `geom` (satu kueri ringan untuk
+  // seluruh batch) — bukan menarik JSON poligon 500+ lahan hanya untuk `!= null`,
+  // dan agar sama dengan pemeriksaan validasi (`matchLandMarkerUploadParcels`):
+  // JSON cacat → geometry terisi tetapi geom NULL (review 2026-09-15).
+  const withGeom = parcels.length
+    ? await prisma.$queryRaw<{ id: string }[]>`SELECT id FROM tbl_land_parcel WHERE id IN (${Prisma.join(parcels.map((p) => p.id))}) AND geom IS NOT NULL`
+    : [];
+  const geomIds = new Set(withGeom.map((r) => r.id));
 
   for (const [landParcelId, group] of byParcel) {
     const parcel = parcelById.get(landParcelId);
@@ -716,13 +713,14 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
     }
     // Guard jarak: satu kueri untuk 2N titik (asli + tertukar).
     const n = group.length;
-    const dists = parcel.geometry
+    const hasGeom = geomIds.has(parcel.id);
+    const dists = hasGeom
       ? await distancesToParcelBoundary(landParcelId, [
           ...group.map((r) => ({ lon: r.longitude, lat: r.latitude })),
           ...group.map((r) => ({ lon: r.latitude, lat: r.longitude })),
         ])
       : new Array<number>(2 * n).fill(0);
-    const nearby = parcel.geometry ? await fetchNearbyMarkers(landParcelId, parcel.parcelUid) : [];
+    const nearby = hasGeom ? await fetchNearbyMarkers(landParcelId, parcel.parcelUid) : [];
     const existing = await prisma.landParcelMarker.findMany({
       where: { parcelUid: parcel.parcelUid, isActive: true },
       select: { id: true, sequenceNo: true, markerId: true },
@@ -778,9 +776,7 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
             } else {
               const seq = r.sequenceNo != null && !bySeq.has(r.sequenceNo) ? r.sequenceNo : nextSeq++;
               if (seq >= nextSeq) nextSeq = seq + 1;
-              const created = oldLink
-                ? await tx.landParcelMarker.update({ where: { id: oldLink.id }, data: { isActive: true, sequenceNo: seq, modifiedBy: uid }, select: { id: true } })
-                : await tx.landParcelMarker.create({ data: { parcelUid: parcel.parcelUid, markerId: m.id, sequenceNo: seq, createdBy: uid }, select: { id: true } });
+              const created = await upsertParcelLink(tx, parcel.parcelUid, m.id, seq, uid);
               const rec = { id: created.id, sequenceNo: seq, markerId: m.id };
               bySeq.set(seq, rec); byMarker.set(m.id, rec);
               local.linked++;
@@ -833,16 +829,13 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
             // melahirkan kembaran beberapa cm di sebelahnya (review 2026-09-15).
             nearby.push({ id: markerId, lon: r.longitude, lat: r.latitude, parcelIds: [parcel.parcelId], linkedToThisParcel: true, isActive: true });
           }
-          const old = await tx.landParcelMarker.findUnique({ where: { parcelUid_markerId: { parcelUid: parcel.parcelUid, markerId } }, select: { id: true } });
-          const link = old
-            ? await tx.landParcelMarker.update({ where: { id: old.id }, data: { isActive: true, sequenceNo: seq, modifiedBy: uid }, select: { id: true } })
-            : await tx.landParcelMarker.create({ data: { parcelUid: parcel.parcelUid, markerId, sequenceNo: seq, createdBy: uid }, select: { id: true } });
+          const link = await upsertParcelLink(tx, parcel.parcelUid, markerId, seq, uid);
           // Tautan NYATA (bukan sentinel) — baris berikutnya yang menyebut nomor ini memperbarui patok yang sama.
           const rec = { id: link.id, sequenceNo: seq, markerId };
           bySeq.set(seq, rec);
           byMarker.set(markerId, rec);
         }
-      });
+      }, { timeout: MARKER_TX_TIMEOUT_MS });
       summary.created += local.created; summary.updated += local.updated; summary.linked += local.linked;
       summary.rejected.push(...local.rejected);
     } catch (e) {

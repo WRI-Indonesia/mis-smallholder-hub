@@ -192,7 +192,10 @@ export function parseNktStatus(raw: unknown): { status: NktStatusCode | null; er
   const text = cleanFreeTextCell(raw).toLowerCase();
   if (!text) return { status: null, error: null };
   // Semua token negasi BERBATAS KATA: tanpa itu "T-aman- Nasional" terbaca "aman" → tidak terdampak (temuan review 2026-09-14).
-  if (/\b(tidak|bukan|tdk|non|no|not|bersih|aman|bebas)\b|\bun(affected|included)\b/.test(text)) return { status: "NOT_AFFECTED", error: null };
+  // "no"/"non" hanya sebagai jawaban utuh atau tepat sebelum kata status ("non-NKT", "no affected") —
+  // "Terdampak (No. SK 12/2025)" memuat "No." sebagai nomor surat, bukan negasi (temuan review 2026-09-15).
+  if (/^(no|n|non)$/.test(text)) return { status: "NOT_AFFECTED", error: null };
+  if (/\b(tidak|bukan|tdk|not|bersih|aman|bebas)\b|\b(non|no)[\s-]*(terdampak|termasuk|affected|included|nkt|hcv)\b|\bun(affected|included)\b/.test(text)) return { status: "NOT_AFFECTED", error: null };
   // "Termasuk" = terdampak (keputusan owner 2026-09-14) — keduanya AFFECTED; INCLUDED hanya data lama.
   if (/termasuk|included|di dalam|dalam area|inside|terdampak|affected|kena|berbatasan|sempadan|\bya\b|\byes\b|\by$|\btrue\b/.test(text)) return { status: "AFFECTED", error: null };
   return { status: null, error: `Status NKT tidak dikenal: "${cleanFreeTextCell(raw)}" (isi: termasuk / terdampak / tidak)` };
@@ -217,14 +220,22 @@ export function parseNktCategories(raw: unknown): { categories: string[]; error:
 
 /**
  * Angka desimal positif: koma desimal Indonesia ("0,088") maupun titik ("0.088")
- * diterima; "1.234,5" = seribu (titik ribuan hanya dibuang bila ada koma).
+ * diterima. Bila titik DAN koma sama-sama ada, pemisah yang muncul TERAKHIR
+ * adalah desimal dan yang lain ribuan — "1.234,5" maupun "1,234.5" = 1234,5
+ * (sebelumnya format Inggris jadi 1,2345 tanpa error; temuan review 2026-09-15).
  * 0/kosong → null; NEGATIF → error (salah ketik tanda, bukan sel kosong);
  * di atas `max` → error (batas skema server, supaya batch tidak ditolak utuh).
  */
 export function parsePositiveNumber(raw: unknown, label: string, max = 10_000): { value: number | null; error: string | null } {
   const text = cleanCell(raw);
   if (!text) return { value: null, error: null };
-  const n = Number(text.replace(/\./g, (m, i, str) => (str.indexOf(",") > -1 ? "" : m)).replace(",", "."));
+  const lastComma = text.lastIndexOf(",");
+  const lastDot = text.lastIndexOf(".");
+  const normalized =
+    lastComma > -1 && lastDot > -1
+      ? lastComma > lastDot ? text.replace(/\./g, "").replace(",", ".") : text.replace(/,/g, "")
+      : text.replace(",", ".");
+  const n = Number(normalized);
   if (!Number.isFinite(n)) return { value: null, error: `${label} tidak valid: "${text}"` };
   if (n < 0) return { value: null, error: `${label} negatif: "${text}"` };
   if (n === 0) return { value: null, error: null };

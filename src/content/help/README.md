@@ -8,7 +8,7 @@ Materi panduan aplikasi disimpan sebagai file Markdown di folder ini — **bisa 
 2. Edit teksnya, simpan, buat commit/PR. Riwayat perubahan tercatat di git.
 3. Urutan bab & topik ditentukan array `CHAPTER_SOURCES` di `src/lib/help-content.ts`, **bukan** awalan angka pada nama berkas — awalan itu hanya kosmetik agar folder mudah dibaca. Menambah topik = tambah berkas `.md` + satu baris import + satu entri di array tersebut. Nomor `bab.topik` yang tampil di UI dihitung dari posisi di array itu, jadi menyisipkan entri akan menggeser nomor entri sesudahnya.
 
-Menambah topik baru: buat file `.md` baru **dan** daftarkan di `src/lib/help-content.ts` (satu baris import) — langkah ini masih perlu developer karena bundling dilakukan saat build.
+Menambah topik baru: buat file `.md` baru **dan** daftarkan di `src/lib/help-content.ts` (satu baris import + entri `topics[]`) — langkah ini masih perlu developer karena bundling dilakukan saat build. `src/test/help-registry.test.ts` menjaga: berkas yang belum didaftarkan, import yang berkasnya hilang, `menuKey`/`href` tutorial yang tak cocok dengan `prisma/seeds/data/menu.csv`, dan menu daun baru yang belum punya tutorial (harus dinyatakan di `TANPA_TUTORIAL` bila memang ditunda) membuat `npm test` merah.
 
 ## Format yang didukung
 

@@ -121,6 +121,20 @@ describe("planMarkersFromVertices — snap ≤ 5 m, patok bersama, idempoten", (
     expect(plan.filter((c) => c.existingMarkerId === "m1").length).toBe(1);
   });
 
+  it("patok direbut vertex TERDEKAT secara global, bukan vertex bernomor lebih dulu — 4,5 m dari V1 (utara) & 1 m dari V2 → V2 yang menaut (review 2026-09-15)", () => {
+    // V1 paling utara (nomor 1), V2 4 m di selatannya; patok M 1 m di bawah V2 (4,5 m dari V1 — masih ≤ 5 m).
+    const V1 = { lon: 101.19, lat: 0.52 + 4 / 111_320 };
+    const V2 = { lon: 101.19, lat: 0.52 };
+    const V3 = { lon: 101.19 + D, lat: 0.52 };
+    const V4 = { lon: 101.19 + D, lat: 0.52 + D };
+    const m = nearby("m1", 101.19, 0.52 - 1 / 111_320);
+    const plan = planMarkersFromVertices([[V1, V2, V3, V4]], [m]);
+    const linked = plan.filter((c) => c.existingMarkerId === "m1");
+    expect(linked.length).toBe(1);
+    expect(linked[0].snapDistanceM).toBeCloseTo(1, 0);
+    expect(plan.find((c) => c.lat === V1.lat)?.existingMarkerId).toBeNull();
+  });
+
   it("dijalankan ulang → vertex yang sudah tertaut ke lahan ini ditandai alreadyLinked (dilewati saat simpan)", () => {
     const existing = SQUARE.map((p, i) => nearby(`own-${i}`, p.lon, p.lat, { parcelIds: ["LHN-A"], linkedToThisParcel: true }));
     const plan = planMarkersFromVertices([SQUARE], existing);

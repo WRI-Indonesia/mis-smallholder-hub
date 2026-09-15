@@ -93,11 +93,13 @@
 
 ### Covered Modules
 
-Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **satelit lahan** di bawah ditambahkan 2026-09-15). Total suite per **2026-09-15 = 83 file / 1.477 test**; angka per baris lama adalah cerminan tanggal penulisannya.
+Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **satelit lahan** di bawah ditambahkan 2026-09-15). Total suite per **2026-09-15 (pasca-#339) = 86 file / 1.507 test**; angka per baris lama adalah cerminan tanggal penulisannya.
 
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
 | Bantuan: parser, materi, hak akses, media S3 (HELP-01/02, #184 #185) | help-content.test.ts, help-media.test.ts | 91 | ✅ |
+| Bantuan: registrasi berkas ↔ `CHAPTER_SOURCES`, frontmatter ↔ `menu.csv`, cakupan tutorial 32/35 ber-pengecualian eksplisit (#257, review #339) | help-registry.test.ts | 9 | ✅ |
+| Laporan Lahan: kolom ↔ baris ekspor Excel/PDF dari satu definisi (review #339, kelas #323) | report-land-parcel-export.test.ts | 4 | ✅ |
 | Map (MAP-01/02/03) + ruler/label geodesik | map.test.ts, map-geo.test.ts | 62 | ✅ |
 | RBAC & Access Context (#125 #127) | rbac.test.ts, rbac-permission.test.ts, rbac-server-guards.test.ts, access-context.test.ts | 50 | ✅ |
 | Region | region.test.ts | 42 | ✅ |

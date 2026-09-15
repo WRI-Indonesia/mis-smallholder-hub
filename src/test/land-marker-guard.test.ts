@@ -37,7 +37,7 @@ vi.mock("@/lib/land-marker-query", () => q);
 const db = vi.hoisted(() => {
   const model = () => ({
     findFirst: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), count: vi.fn(), aggregate: vi.fn(),
-    create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), groupBy: vi.fn(),
+    create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), groupBy: vi.fn(), upsert: vi.fn(),
   });
   const m = {
     landParcel: model(),
@@ -77,6 +77,8 @@ beforeEach(() => {
   db.landParcelMarker.aggregate.mockResolvedValue({ _max: { sequenceNo: 0 } });
   db.landParcelMarker.create.mockImplementation(async ({ data }: { data: { sequenceNo: number } }) => ({ id: `link-${data.sequenceNo}` }));
   db.landParcelMarker.update.mockImplementation(async ({ where }: { where: { id: string } }) => ({ id: where.id }));
+  // Tautan lahan↔patok lewat satu upsert (parcelUid_markerId) — lihat `upsertParcelLink`.
+  db.landParcelMarker.upsert.mockImplementation(async ({ create }: { create: { sequenceNo: number } }) => ({ id: `link-${create.sequenceNo}` }));
   db.landParcelMarker.count.mockResolvedValue(0);
   db.landMarker.findUnique.mockResolvedValue(null);
   db.landMarker.update.mockResolvedValue({ id: "m-x" });
@@ -84,7 +86,8 @@ beforeEach(() => {
   db.landMarker.create.mockImplementation(async () => ({ id: `m-new-${++created}` }));
   db.farmerGroup.findFirst.mockResolvedValue({ id: "kt-1", code: "ISH-1401-03", name: "HJP" });
   db.district.findUnique.mockResolvedValue(null);
-  db.$queryRaw.mockResolvedValue([]);
+  // `geom IS NOT NULL` batch (bulkUpsertLandMarkers/matchLandMarkerUploadParcels): lahan uji ber-poligon.
+  db.$queryRaw.mockResolvedValue([{ id: PARCEL.id }]);
   q.fetchSimplifiedVertices.mockResolvedValue([[{ lon: 101.19, lat: 0.52 }, { lon: 101.191, lat: 0.52 }, { lon: 101.191, lat: 0.521 }, { lon: 101.19, lat: 0.521 }]]);
   q.fetchNearbyMarkers.mockResolvedValue([]);
   q.distancesToParcelBoundary.mockImplementation(async (_id: string, pts: unknown[]) => pts.map(() => 0));
@@ -178,7 +181,7 @@ describe("bulkUpsertLandMarkers — aturan Kode Patok (review 2026-09-15)", () =
     const res = await actions.bulkUpsertLandMarkers([uploadRow({ code: "HJP-PTK-000010" })]);
     expect(res.success && res.data?.rejected[0]?.reason).toMatch(/bukan patok lahan ini/);
     expect(db.landMarker.update).not.toHaveBeenCalled();
-    expect(db.landParcelMarker.create).not.toHaveBeenCalled();
+    expect(db.landParcelMarker.upsert).not.toHaveBeenCalled();
   });
 
   it("kode patok yang sudah tertaut aktif ke lahan ini → diperbarui (source GPS)", async () => {
@@ -193,7 +196,7 @@ describe("bulkUpsertLandMarkers — aturan Kode Patok (review 2026-09-15)", () =
     db.landMarker.findUnique.mockResolvedValue({ id: "m-nb", longitude: POINT.lon + 0.0002, latitude: POINT.lat }); // ±22 m
     const res = await actions.bulkUpsertLandMarkers([uploadRow({ code: "HJP-PTK-000002" })]);
     expect(res.success && res.data?.linked).toBe(1);
-    expect(db.landParcelMarker.create.mock.calls[0][0].data).toMatchObject({ parcelUid: "uid-1", markerId: "m-nb", sequenceNo: 1 });
+    expect(db.landParcelMarker.upsert.mock.calls[0][0].create).toMatchObject({ parcelUid: "uid-1", markerId: "m-nb", sequenceNo: 1 });
   });
 
   it("kode tidak dikenal → ditolak dengan pesan yang menyebut kodenya", async () => {
@@ -210,11 +213,17 @@ describe("bulkUpsertLandMarkers — idempoten di dalam satu batch", () => {
     expect(q.allocateMarkerCodes).toHaveBeenCalledTimes(1);
   });
 
+  it("transaksi per lahan menaikkan timeout Prisma (2–4 query per patok; bawaan 5 s gagal P2028 lewat tunnel prod — review 2026-09-15)", async () => {
+    await actions.bulkUpsertLandMarkers([uploadRow()]);
+    const opts = db.$transaction.mock.calls[0][1] as { timeout?: number } | undefined;
+    expect(opts?.timeout, "bulkUpsertLandMarkers tanpa { timeout } — seluruh lahan ditolak pada batch besar").toBeGreaterThanOrEqual(20_000);
+  });
+
   it("nomor yang belum ada + titik ≤ 5 m dari patok lahan lain → tautkan (snap), bukan buat", async () => {
     q.fetchNearbyMarkers.mockResolvedValue([{ id: "m-nb", lon: POINT.lon, lat: POINT.lat, parcelIds: ["HJP.0002.A"], linkedToThisParcel: false, isActive: true }]);
     const res = await actions.bulkUpsertLandMarkers([uploadRow({ sequenceNo: 3 })]);
     expect(res.success && [res.data?.created, res.data?.linked]).toEqual([0, 1]);
-    expect(db.landParcelMarker.create.mock.calls[0][0].data).toMatchObject({ markerId: "m-nb", sequenceNo: 3 });
+    expect(db.landParcelMarker.upsert.mock.calls[0][0].create).toMatchObject({ markerId: "m-nb", sequenceNo: 3 });
   });
 
   it("titik > 100 m dari batas lahan → baris ditolak (guard jarak), lahan tanpa geom valid → guard dilewati", async () => {
@@ -225,6 +234,18 @@ describe("bulkUpsertLandMarkers — idempoten di dalam satu batch", () => {
     q.distancesToParcelBoundary.mockImplementation(async (_id: string, pts: unknown[]) => pts.map(() => Number.POSITIVE_INFINITY));
     const noGeom = await actions.bulkUpsertLandMarkers([uploadRow()]);
     expect(noGeom.success && noGeom.data?.created).toBe(1);
+  });
+
+  it("ada/tidaknya poligon dari `geom IS NOT NULL` (satu kueri batch), bukan JSON `geometry` — lahan tanpa geom: guard & snap dilewati, patok tetap dibuat (review 2026-09-15)", async () => {
+    db.$queryRaw.mockResolvedValue([]); // tidak ada lahan ber-geom
+    q.distancesToParcelBoundary.mockClear();
+    q.fetchNearbyMarkers.mockClear();
+    const res = await actions.bulkUpsertLandMarkers([uploadRow()]);
+    expect(res.success && res.data?.created).toBe(1);
+    expect(q.distancesToParcelBoundary).not.toHaveBeenCalled();
+    expect(q.fetchNearbyMarkers).not.toHaveBeenCalled();
+    // Select batch tidak menarik JSON poligon.
+    expect(db.landParcel.findMany.mock.calls[0][0].select).not.toHaveProperty("geometry");
   });
 });
 

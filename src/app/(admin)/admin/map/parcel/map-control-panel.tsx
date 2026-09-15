@@ -197,6 +197,13 @@ interface LegendRowProps {
   featureType?: "Point" | "Polygon";
   /** Data baris sedang dimuat (layer malas) — hitungan diganti spinner. */
   loading?: boolean;
+  /**
+   * Jumlah data yang DIPAKAI aksi baris (zoom/unduh) bila berbeda dari `count`
+   * yang ditampilkan — baris "Patok lahan" menampilkan patok non-NKT tetapi
+   * mengunduh/zoom SELURUH patok fisik; tanpa ini, Lembaga yang semua patoknya
+   * menyentuh lahan NKT kehilangan tombol unduh/zoom-nya (review 2026-09-15).
+   */
+  actionCount?: number;
 }
 
 const LEGEND_EXPORT_ITEMS: { format: LegendExportFormat; label: string }[] = [
@@ -206,7 +213,8 @@ const LEGEND_EXPORT_ITEMS: { format: LegendExportFormat; label: string }[] = [
   { format: "kml", label: "KML" },
 ];
 
-function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType, canPrint, loading }: LegendRowProps) {
+function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType, canPrint, loading, actionCount }: LegendRowProps) {
+  const empty = (actionCount ?? count) === 0;
   return (
     <div className="flex items-center gap-2.5 py-1">
       <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} aria-label={label} />
@@ -223,7 +231,7 @@ function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant =
       <button
         type="button"
         onClick={onZoomTo}
-        disabled={count === 0}
+        disabled={empty}
         title="Zoom ke sebaran data layer"
         className="flex-1 text-left text-sm hover:underline disabled:cursor-default disabled:no-underline"
       >
@@ -236,7 +244,7 @@ function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant =
       <button
         type="button"
         onClick={onZoomTo}
-        disabled={count === 0}
+        disabled={empty}
         title={`Zoom ke ${label}`}
         aria-label={`Zoom ke ${label}`}
         className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:pointer-events-none"
@@ -247,7 +255,7 @@ function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant =
         // Unduh per baris (#331): Excel atribut + spasial sesuai tipe fitur baris.
         <DropdownMenu>
           <DropdownMenuTrigger
-            disabled={count === 0 || exporting}
+            disabled={empty || exporting}
             title={`Unduh ${label}`}
             className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:pointer-events-none"
           >
@@ -515,11 +523,13 @@ export function MapControlPanel(props: Props) {
                         Hitungan baris kuning = patok NON-NKT (layer `marker-point` memfilter nkt==0;
                         sama dengan legenda peta sebaran Detail Lembaga/Petani) — sebelumnya memakai
                         total sehingga 62 titik "hilang" (review 2026-09-15). Unduhan barisnya tetap
-                        seluruh patok fisik (kolom NKT membedakan), lihat katalog peta-lahan.md. */}
+                        seluruh patok fisik (kolom NKT membedakan) — maka tombol unduh/zoom hidup
+                        selama ADA patok (`actionCount`), bukan hanya bila ada patok non-NKT. */}
                     <LegendRow
                       color="#facc15"
                       label="Patok lahan"
                       count={Math.max(0, (counts.markers ?? 0) - (counts.markersNkt ?? 0))}
+                      actionCount={counts.markers ?? 0}
                       loading={markerLoading}
                       checked={layers.markers}
                       onToggle={(v) => onLayersChange({ ...layers, markers: v })}

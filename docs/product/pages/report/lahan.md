@@ -112,9 +112,12 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | UL Parcel Code | Opsional (#305), mono — `kode (Pemeta)` distinct dari `identity.externalIds` aktif |
 | Program | Opsional (#305) — `<Program> — <Status>` dari `LAND_PROGRAM_LABELS`/`LAND_PROGRAM_STATUS_LABELS` (bukan peta label kedua) |
 | NKT | Opsional (#328) — `summarizeNkt`: "Terdampak NKT — NKT 4 (asesmen 2025-03-12, HJP)"; **belum dinilai ditulis "Belum dinilai"** (di layar & ekspor — sel kosong akan terbaca "tidak terdampak"); merah bila termasuk, amber bila terdampak |
-| Luas NKT (Ha) | Opsional (#328) — `affected_area_ha`, 3 desimal di Excel |
+| Luas NKT (Ha) | Opsional (#328) — `affected_area_ha`, 3 desimal di Excel & PDF |
+| Patok · Kondisi Patok | Opsional (#331) — satu toggle → dua kolom ekspor: jumlah tautan patok aktif (`0` = belum ada) + ringkasan kondisi "2 ada · 1 hilang" (`summarizeMarkerConditions`); di layar "4 · 4 belum dipasang" / "Belum ada" |
 
 Agregasi: baris footer "Total" berisi jumlah Luas (Ha), hanya muncul bila kolom Luas aktif.
+
+**Kolom & baris ekspor dari satu definisi** (review #339, 2026-09-15): `LAND_PARCEL_EXPORT_COLUMNS` / `landParcelExportColumns(show)` / `landParcelExportRow(row, i, decimal, empty)` di `src/lib/report-land-parcel.ts` — dipakai Excel (sheet Lahan + sheet per sel; desimal `Number`), dan PDF (desimal string id-ID). Sebelumnya kolom didefinisikan di satu tempat dan baris ditulis di dua tempat (Excel & PDF) sehingga kolom **Patok/Kondisi Patok terbit kosong** di keduanya tanpa error (kelas #323/TD-039). `report-land-parcel-export.test.ts` menjaga setiap kunci kolom punya nilai di baris.
 
 ### Di mana filter dikerjakan (#305)
 

@@ -152,6 +152,14 @@ Penjaga tambahan:
 
 `src/server/actions/bulk-upload-parcel.ts` — ZIP Shapefile diparse langsung dari buffer (`shpjs`), mapping atribut `.dbf` (incl. Kelompok Tani & Blok #150), validasi geometri (`@turf/turf`) → preview → simpan. Mengikuti **revision tracking**: duplikat aktif ditolak; duplikat nonaktif diizinkan dengan `revision + 1`.
 
+## Upload Detail Lahan (Excel — tab kedua Upload Lahan, #296 · #326 · #328)
+
+`src/server/actions/bulk-upload-parcel-detail.ts` (`getParcelsForDetailMapping`, `bulkSaveLandParcelDetails`) + parser murni `src/lib/land-parcel-detail-import.ts` — Excel Lampiran/pendataan dibaca di klien, header dipetakan ke 19+ ejaan kolom (surat kepemilikan, STDB & tahapannya, UL Parcel Code per pemeta, program, **Sepadan U/T/S/B** #326, **NKT** status/kategori/luas/panjang/tanggal/asesor #328, KT & Blok), lahan dicocokkan ke identitas aktif dalam scope → preview per lahan → simpan transaksional ke tabel satelit `LandParcelIdentity`. Aturan tulis per jenis: dokumen/sepadan **sel terisi menimpa, kosong dibiarkan**; KT/Blok **isi bila kosong**; status NKT **selalu menimpa** (asesmen terbaru menang) dengan **bawaan per berkas** (panel status/kategori/tanggal/asesor untuk daftar tanpa kolom status) dan tombol **Template NKT**.
+
+## Upload Patok (Excel/CSV atau shapefile titik — tab ketiga Upload Lahan, #329 · #331)
+
+`src/server/actions/land-marker.ts` (`matchLandMarkerUploadParcels`, `bulkUpsertLandMarkers`) + parser murni `src/lib/land-marker-upload.ts` — titik GPS per lahan (kolom ID Lahan, No Patok opsional, **Kode Patok** opsional, Lintang/Bujur, kondisi/jenis/tanggal) atau shapefile Point (atribut `.dbf`; `Lintang`/`Bujur` di DBF diabaikan bila geometri ada). Lahan dicocokkan dalam scope → preview → **satu transaksi per lahan**: nomor yang ada → perbarui koordinat (`source=GPS`); tanpa nomor ≤ 5 m dari patok lahan sendiri → perbarui (idempoten); baru → patok baru + snap ≤ 5 m ke patok tetangga (patok bersama M:N) + kode `<SINGKATAN>-PTK-000123` dari `LandMarkerCounter`; ber-**Kode Patok** hanya boleh menyentuh patok yang sudah tertaut ke lahan itu atau ≤ 100 m dari titik yang diunggah (celah kepemilikan, review 09-15). Guard koordinat ≤ 100 m dari batas lahan + deteksi lat/long tertukar. Rincian model: `docs/database/models.md` §`tbl_land_marker`.
+
 ## Upload Pohon Sawit (Shapefile ZIP point, #238)
 
 `src/server/actions/bulk-upload-tree.ts` + helper murni `src/lib/tree-upload.ts` — ZIP shapefile **point** diparse (`shpjs`), titik dikelompokkan per atribut `parcel_id` (satu ZIP boleh multi-lahan), dicocokkan ke lahan aktif dalam scope → preview per lahan (jumlah titik, kerapatan pohon/ha, status Baru/Revisi/Tidak ditemukan) → simpan transaksional. **Revisi per-set**: upload ulang menonaktifkan seluruh set pohon lama lahan tsb, set baru `revision + 1`; revisi lahan me-repoint semua pohon ke baris lahan baru (pola productionRecord).

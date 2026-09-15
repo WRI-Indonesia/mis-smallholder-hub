@@ -10,12 +10,13 @@ Sumber: `git log fac9078..HEAD`, `gh issue list --state closed`, Decision Log 20
 | 4 | #328 | Status NKT per lahan | MD › Lahan › Detail; Bulk Upload › Detail Lahan; Report › Lahan; Map › Peta Lahan; PDF | `20260914150000` | — | 1-1, 2-1, u-5, l-7, p-5, r-2 | `TC-328-01…06` |
 | 5 | #329 | Patok batas lahan | MD › Lahan › Detail › Patok; Bulk Upload › Lahan › **Patok**; PDF; MD › Lembaga › Detail | `20260914170000` | — | t-6, u-6, 2-2, 1-1 | `TC-329-01…07` |
 | 6 | #330 | NKT di menu harian | MD › Lahan › Daftar; MD › Lembaga/Petani › Detail › Lahan | — | — | 2-1, r-2 | `TC-330-01…03` |
-| 7 | #331 | Patok di semua menu, kode unik, Report › Patok | Map › Peta Lahan; Report › Lahan; MD › Lembaga/Petani › Detail; **Report › Patok** | `20260914200000` | **menu `report-marker`** + 16 izin | l-8, p-5, p-12, 3-2 | `TC-331-01…07` |
-| 8 | #332 | Laporan NKT per Lembaga (PDF, 3 KPI) | Report › Lahan › Laporan NKT | — | — (PRINT `report-land-parcel`) | l-2, l-7 | `TC-332-01…03` |
+| 7 | #331 | Patok di semua menu, kode unik, Report › Patok | Map › Peta Lahan; Report › Lahan; MD › Lembaga/Petani › Detail; **Report › Patok** | `20260914200000` | **menu `report-marker`** + 16 izin (ikon `Milestone`) | l-8, p-5, p-12, 3-2, 4-1 | `TC-331-01…08` |
+| 8 | #332 | Laporan NKT per Lembaga (PDF, 3 KPI) | Report › Lahan › Laporan NKT; **MD › Lembaga › Detail › Lahan** (pintu kedua, revisi owner 09-15) | — | — (PRINT `report-land-parcel` / PRINT `master-data-groups`) | l-2, l-7, 2-1 | `TC-332-01…04` |
 | 9 | Review 09-15 | 12 perbaikan review | Peta Lahan, Bulk Upload Patok & Detail Lahan, Detail Lembaga | — | — | — | `TC-REV-01…05` (di `../regression.md`) |
 | 10 | #336 | Popup lahan menyebut jumlah patok | Map › Peta Lahan › popup | — | — | p-5 | `TC-336-01` |
 | 11 | #337 | Kolom Lahan NKT & Patok per KT/petani | Report › KT (Summary) & (Detail) | — | — | l-6 | `TC-337-01…03` |
 | 12 | #338 | Kolom Lahan NKT di daftar | MD › Lembaga Petani › Daftar; MD › Petani › Daftar | — | — | 2-1, r-1 | `TC-338-01…02` |
+| 13 | Revisi owner 09-15 + #339 | Laporan NKT pintu kedua, ikon Milestone; review pra-rilis (13 perbaikan) | MD › Lembaga › Detail › Lahan; Report › Lahan (ekspor kolom Patok); Bulk Upload › Detail Lahan & Patok (parser); PDF Profil Lahan; Peta Lahan (baris Patok lahan) | — | — (seed ikon `report-marker` → Milestone) | 2-1, l-2, 4-1 | `TC-332-04`, `TC-331-08`, `TC-REV-06…08` (di `../regression.md`) |
 
 ## Di luar lingkup pengujian (sengaja)
 

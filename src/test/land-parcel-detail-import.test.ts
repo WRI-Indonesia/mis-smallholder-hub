@@ -379,6 +379,15 @@ describe("NKT (#328) — parser sel", () => {
     expect(parseNktStatus("aman").status).toBe("NOT_AFFECTED");
     expect(parseNktStatus("bersih dari NKT").status).toBe("NOT_AFFECTED");
   });
+  it("parseNktStatus: 'No.' nomor surat & 'non-sempadan' di sel positif tidak membalik status; 'no'/'non-NKT'/'not affected' tetap negasi (review 2026-09-15)", () => {
+    expect(parseNktStatus("Terdampak (No. SK 12/2025)").status).toBe("AFFECTED");
+    expect(parseNktStatus("Termasuk – non-sempadan").status).toBe("AFFECTED");
+    expect(parseNktStatus("no").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("N").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("non-NKT").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("no affected").status).toBe("NOT_AFFECTED");
+    expect(parseNktStatus("not affected").status).toBe("NOT_AFFECTED");
+  });
   it("parseNktCategories: angka lain di sel diabaikan bila ada awalan 'NKT n'; tanpa awalan dibaca bilangan utuh, bukan per digit (review 2026-09-14)", () => {
     expect(parseNktCategories("NKT 4 (sempadan 50 m)").categories).toEqual(["NKT_4"]);
     expect(parseNktCategories("NKT 1, NKT 4 - asesmen 2024").categories).toEqual(["NKT_1", "NKT_4"]);
@@ -408,6 +417,13 @@ describe("NKT (#328) — parser sel", () => {
     expect(parsePositiveNumber("1.952", "L").value).toBeCloseTo(1.952);
     expect(parsePositiveNumber("1.234,5", "L").value).toBeCloseTo(1234.5);
     expect(parsePositiveNumber("x", "L").error).toBeTruthy();
+  });
+  it("parsePositiveNumber: format Inggris '1,234.5' = 1234,5 (pemisah terakhir = desimal), bukan 1,2345 diam-diam (review 2026-09-15)", () => {
+    expect(parsePositiveNumber("1,234.5", "L").value).toBeCloseTo(1234.5);
+    expect(parsePositiveNumber("1,176.03", "L").value).toBeCloseTo(1176.03);
+    expect(parsePositiveNumber("2,500.00", "L").value).toBeCloseTo(2500);
+    expect(parsePositiveNumber("1.234.567,8", "L").error).toBeTruthy(); // di atas max, bukan salah baca
+    expect(parsePositiveNumber("1,234,567", "L").error).toMatch(/tidak valid/);
   });
   it("parsePositiveNumber: negatif → ERROR (bukan diam-diam kosong); di atas batas skema → error; parseStatedArea memakai parser yang sama", () => {
     expect(parsePositiveNumber("-0,088", "Luas NKT").error).toMatch(/negatif/);

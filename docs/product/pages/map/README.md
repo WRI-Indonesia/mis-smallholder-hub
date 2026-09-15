@@ -41,5 +41,5 @@ Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawa
 
 | # | Sub menu | Key | URL | Icon | Order | Dokumen |
 |---|---|---|---|---|---|---|
-| 1 | Peta Lahan | `map-parcel` | `/admin/map/parcel` | `MapPinned` | 1 | [peta-lahan.md](./peta-lahan.md) |
+| 1 | Peta Lahan | `map-parcel` | `/admin/map/parcel` | `MapPin` | 1 | [peta-lahan.md](./peta-lahan.md) |
 | 2 | Peta BMP | `map-bmp` | `/admin/map/bmp` | `Sprout` | 2 | [peta-bmp.md](./peta-bmp.md) |

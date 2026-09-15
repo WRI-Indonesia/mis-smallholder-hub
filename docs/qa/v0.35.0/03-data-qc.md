@@ -27,7 +27,7 @@ Harapan bagian A/B = `mis-staging-local` (snapshot prod 2026-09-14 + 5 migrasi, 
 | B7 | Angka bisnis | NKT "hapus" = baris hilang (setelah TC-328-03) | 0 | ✓ (parameter `--parcel`) |
 | B8 | Angka bisnis | kode patok unik & ber-awalan Lembaga | count = distinct; awalan `HJP-PTK-` | ✓ |
 | B9 | Angka bisnis | counter = nomor terbesar per awalan | sama | ✓ |
-| C1 | Izin | seed menu dry-run | sebelum: "BELUM ADA — akan dibuat 16" · sesudah: "SUDAH ADA — 0" | manual: `node scripts/seed/seed-menu-report-marker.mjs` |
+| C1 | Izin | seed menu dry-run | sebelum: "BELUM ADA — akan dibuat 16" · sesudah: "SUDAH ADA — skip" **dan tanpa baris "ikon … → Milestone"** (DB yang di-seed sebelum 2026-09-15 menampilkan `ikon Landmark → Milestone` — jalankan `--apply`) | manual: `node scripts/seed/seed-menu-report-marker.mjs` |
 | C2 | Izin | menu `report-marker` + 16 izin di DB | 1 menu · 16 baris (ADMIN 5 · OPERATOR/MANAGEMENT/SUPERADMIN 3 · DONOR 2) | ✓ |
 | C3 | Izin | seed ↔ DB selaras | `npm run rbac:compare` 470 baris, 0 selisih | manual |
 | C4 | Izin | urutan sidebar | Report › … › Patok terakhir (order 7) | ✓ |

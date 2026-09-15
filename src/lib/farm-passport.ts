@@ -127,9 +127,45 @@ function drawMapDecorations(doc: jsPDF, box: Box, mmPerMeter: number) {
 }
 
 /**
+ * Bingkai peta Profil Lahan (murni, diuji): bbox lahan ini + PATOK-nya + margin.
+ * Patok ikut bbox (#329) karena patok GPS sah sampai 100 m dari batas — lebih
+ * jauh dari margin 50 m — dan gambar di-clip ke kotak, sehingga persegi bernomor
+ * bisa lenyap padahal tercantum di tabel "Patok Batas"; peta layar
+ * (`parcel-map-view.tsx`) sudah memasukkan patok ke bounds (review 2026-09-15).
+ * Margin: 40% span terbesar atau ≈50 m — supaya tetangga bersinggungan terlihat
+ * meski lahannya kecil, tanpa membuat lahan utama jadi titik.
+ */
+export function passportMapFrame(
+  rings: Position[][],
+  markers: { longitude: number; latitude: number }[],
+): { minLon: number; maxLon: number; minLat: number; maxLat: number; cosLat: number } {
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+  const points: [number, number][] = [...rings.flat().map(([lon, lat]) => [lon, lat] as [number, number]), ...markers.map((m) => [m.longitude, m.latitude] as [number, number])];
+  for (const [lon, lat] of points) {
+    minLon = Math.min(minLon, lon);
+    maxLon = Math.max(maxLon, lon);
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+  }
+  const midLat = (minLat + maxLat) / 2;
+  const cosLat = Math.max(0.2, Math.cos((midLat * Math.PI) / 180));
+  const spanLon0 = maxLon - minLon || 1e-6;
+  const spanLat0 = maxLat - minLat || 1e-6;
+  const fiftyMDeg = 50 / 111_320;
+  const marginDeg = Math.max(0.4 * Math.max(spanLon0 * cosLat, spanLat0), fiftyMDeg);
+  return {
+    minLon: minLon - marginDeg / cosLat,
+    maxLon: maxLon + marginDeg / cosLat,
+    minLat: minLat - marginDeg,
+    maxLat: maxLat + marginDeg,
+    cosLat,
+  };
+}
+
+/**
  * Peta lahan (#327): lahan ini solid emerald di tengah, lahan tetangga ≤ 25 m
  * (sudah lewat aturan scope) putus-putus abu bernomor. Bingkai = bbox lahan
- * ini + margin — bukan bbox gabungan — supaya lahan yang dicetak tetap dominan;
+ * ini (+ patoknya) + margin — bukan bbox gabungan — supaya lahan yang dicetak tetap dominan;
  * tetangga yang lebih besar DIPOTONG di tepi (clip), nomornya ditempel ke tepi
  * dalam. Skala batang + panah utara agar "≤ 25 m" terbaca di kertas.
  */
@@ -149,23 +185,7 @@ function drawParcelMap(
     return;
   }
 
-  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
-  for (const [lon, lat] of rings.flat()) {
-    minLon = Math.min(minLon, lon);
-    maxLon = Math.max(maxLon, lon);
-    minLat = Math.min(minLat, lat);
-    maxLat = Math.max(maxLat, lat);
-  }
-  const midLat = (minLat + maxLat) / 2;
-  const cosLat = Math.max(0.2, Math.cos((midLat * Math.PI) / 180));
-  // Margin: 40% span terbesar atau ≈50 m — supaya tetangga bersinggungan terlihat
-  // meski lahannya kecil, tanpa membuat lahan utama jadi titik.
-  const spanLon0 = maxLon - minLon || 1e-6;
-  const spanLat0 = maxLat - minLat || 1e-6;
-  const fiftyMDeg = 50 / 111_320;
-  const marginDeg = Math.max(0.4 * Math.max(spanLon0 * cosLat, spanLat0), fiftyMDeg);
-  minLon -= marginDeg / cosLat; maxLon += marginDeg / cosLat;
-  minLat -= marginDeg; maxLat += marginDeg;
+  const { minLon, maxLon, minLat, maxLat, cosLat } = passportMapFrame(rings, markers);
   const spanLon = maxLon - minLon;
   const spanLat = maxLat - minLat;
   // mm per derajat: sumbu lon dikoreksi cos(lat) supaya bentuk tidak gepeng.

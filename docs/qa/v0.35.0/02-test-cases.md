@@ -238,6 +238,13 @@ Langkah:
 Harapan:
 - (a) diperbarui; (b) ditautkan; (c) ditolak "tidak ditemukan". (Kode Lembaga lain > 100 m: lihat TC-REV-03)
 
+### TC-331-08 · Ikon menu Report › Patok = Milestone setelah seed [P1] (1 mnt)
+Asal: revisi owner 2026-09-15 (`Landmark` → `Milestone`; seed parsial kini menyinkronkan ikon). Prasyarat: `seed-menu-report-marker.mjs --apply` sudah dijalankan di env ini (C1).
+Langkah:
+1. Sidebar Report › Patok; Settings › Menu › cari `report-marker`
+Harapan:
+- Ikon tiang penanda (Milestone) di sidebar; kolom Icon di Menu Management = `Milestone`; pilihan `Milestone`/`Signpost`/`Fence` tersedia di pemilih ikon
+
 ## #332 — Laporan NKT (PDF, 3 KPI)
 
 ### TC-332-01 · Laporan NKT mengabaikan filter [P0] (3 mnt)
@@ -260,6 +267,14 @@ Langkah:
 1. Laporan NKT
 Harapan:
 - PDF terbit: KPI 0, tabel kosong, "sumber asesmen belum dicatat"
+
+### TC-332-04 · Pintu kedua: Laporan NKT dari Detail Lembaga › Lahan [P0] (3 mnt)
+Asal: revisi owner 2026-09-15 (`21dcd01`). Prasyarat: OPERATOR ber-PRINT `master-data-groups`; lalu akun TANPA PRINT `master-data-groups` (mis. DONOR — tidak punya master data sama sekali).
+Langkah:
+1. Master Data › Lembaga Petani › HJP › tab **Lahan** → tombol merah **Laporan NKT**
+2. Bandingkan dengan berkas TC-332-01
+Harapan:
+- PDF terbit dengan nama & isi **identik** (jumlah halaman, 3 KPI, tabel); tombol **tidak tampil** bagi akun tanpa PRINT `master-data-groups` walau ia punya PRINT `report-land-parcel`
 
 ## #336 · #337 · #338 — hasil audit menu
 

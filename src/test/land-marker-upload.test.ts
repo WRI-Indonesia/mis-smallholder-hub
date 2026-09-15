@@ -111,6 +111,14 @@ describe("parseCoordCell / parseSequenceCell", () => {
     expect(parseSequenceCell("2.5").error).toMatch(/bilangan bulat/);
     expect(parseSequenceCell(0).error).toMatch(/bilangan bulat/);
   });
+
+  it("No Patok '0' sebagai TEKS (CSV) ditolak sama seperti 0 numerik — bukan diam-diam jadi patok baru (review 2026-09-15)", () => {
+    expect(parseSequenceCell("0").error).toMatch(/bilangan bulat/);
+    expect(parseSequenceCell(" 0 ").error).toMatch(/bilangan bulat/);
+    expect(parseSequenceCell("-1").error).toMatch(/bilangan bulat/);
+    expect(parseSequenceCell("-")).toEqual({ value: null, error: null });
+    expect(parseSequenceCell("n/a")).toEqual({ value: null, error: null });
+  });
 });
 
 describe("markerFeaturesToRecords — shapefile Point → record ber-header template", () => {
