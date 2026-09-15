@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { toast } from "sonner";
-import { FileText, Download, Building2, Users, Layers, Sprout, Printer, Search, SlidersHorizontal, MapPin } from "lucide-react";
+import { FileText, Download, Building2, Users, Layers, Sprout, Printer, Search, SlidersHorizontal, MapPin, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,13 +42,18 @@ interface Props {
 
 const UNKNOWN = "(tidak diketahui)";
 
-type ColKey = "kelompokTani" | "totalPetani" | "totalLahan" | "totalLuas";
+type ColKey = "kelompokTani" | "totalPetani" | "totalLahan" | "totalLuas" | "totalLahanNkt" | "totalPatok";
 const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "kelompokTani", label: "Kelompok Tani" },
   { key: "totalPetani", label: "Total Petani" },
   { key: "totalLahan", label: "Total Lahan" },
   { key: "totalLuas", label: "Total Luas" },
+  // #337 — tersembunyi bawaan; angka per KT untuk menyusun kerja lapangan.
+  { key: "totalLahanNkt", label: "Lahan NKT" },
+  { key: "totalPatok", label: "Patok" },
 ];
+/** Kolom numerik (rata kanan di tabel & PDF). */
+const NUMERIC_COLS: ReadonlySet<string> = new Set(["no", "totalPetani", "totalLahan", "totalLuas", "totalLahanNkt", "totalPatok"]);
 
 export function KelompokTaniReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
@@ -134,15 +139,17 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
         acc.totalPetani += r.totalPetani;
         acc.totalLahan += r.totalLahan;
         acc.totalLuas += r.totalLuas;
+        acc.totalLahanNkt += r.totalLahanNkt;
+        acc.totalPatok += r.totalPatok;
         return acc;
       },
-      { totalPetani: 0, totalLahan: 0, totalLuas: 0 },
+      { totalPetani: 0, totalLahan: 0, totalLuas: 0, totalLahanNkt: 0, totalPatok: 0 },
     );
   }, [filteredRows]);
 
   // Kolom teks yang tampil (untuk colSpan footer & kolom kosong pencarian).
   const textColCount = 1 + (show("kelompokTani") ? 1 : 0); // Lembaga + opsional
-  const numericColCount = (show("totalPetani") ? 1 : 0) + (show("totalLahan") ? 1 : 0) + (show("totalLuas") ? 1 : 0);
+  const numericColCount = (show("totalPetani") ? 1 : 0) + (show("totalLahan") ? 1 : 0) + (show("totalLuas") ? 1 : 0) + (show("totalLahanNkt") ? 1 : 0) + (show("totalPatok") ? 1 : 0);
   const visibleColCount = 1 + textColCount + numericColCount; // No + teks + numerik
 
   const buildExportColumns = () => [
@@ -152,6 +159,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
     ...(show("totalPetani") ? [{ header: "Total Petani", key: "totalPetani" }] : []),
     ...(show("totalLahan") ? [{ header: "Total Lahan", key: "totalLahan" }] : []),
     ...(show("totalLuas") ? [{ header: "Total Luas (Ha)", key: "totalLuas" }] : []),
+    ...(show("totalLahanNkt") ? [{ header: "Lahan NKT", key: "totalLahanNkt" }] : []),
+    ...(show("totalPatok") ? [{ header: "Patok", key: "totalPatok" }] : []),
   ];
 
   const scopeLabel = () =>
@@ -170,6 +179,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
       totalPetani: row.totalPetani,
       totalLahan: row.totalLahan,
       totalLuas: Number(row.totalLuas.toFixed(2)),
+      totalLahanNkt: row.totalLahanNkt,
+      totalPatok: row.totalPatok,
     }));
 
     data.push({
@@ -179,6 +190,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
       totalPetani: filteredTotals.totalPetani,
       totalLahan: filteredTotals.totalLahan,
       totalLuas: Number(filteredTotals.totalLuas.toFixed(2)),
+      totalLahanNkt: filteredTotals.totalLahanNkt,
+      totalPatok: filteredTotals.totalPatok,
     });
 
     await exportToExcel({
@@ -199,6 +212,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
       totalPetani: formatNumber(row.totalPetani),
       totalLahan: formatNumber(row.totalLahan),
       totalLuas: formatLuas(row.totalLuas),
+      totalLahanNkt: formatNumber(row.totalLahanNkt),
+      totalPatok: formatNumber(row.totalPatok),
     }));
 
     data.push({
@@ -208,13 +223,15 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
       totalPetani: formatNumber(filteredTotals.totalPetani),
       totalLahan: formatNumber(filteredTotals.totalLahan),
       totalLuas: formatLuas(filteredTotals.totalLuas),
+      totalLahanNkt: formatNumber(filteredTotals.totalLahanNkt),
+      totalPatok: formatNumber(filteredTotals.totalPatok),
     });
 
     // Rata kanan untuk No + kolom numerik, dihitung dari posisi kolom aktual.
     const cols = buildExportColumns();
     const columnStyles: Record<number, Record<string, string | number>> = {};
     cols.forEach((c, i) => {
-      if (c.key === "no" || c.key === "totalPetani" || c.key === "totalLahan" || c.key === "totalLuas") {
+      if (NUMERIC_COLS.has(c.key)) {
         columnStyles[i] = { halign: "right" };
       }
     });
@@ -240,6 +257,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
         { label: "Total Petani", value: formatNumber(reportData.summary.totalPetani), icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
         { label: "Total Lahan", value: formatNumber(reportData.summary.totalLahan), icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
         { label: "Total Luas", value: formatLuas(reportData.summary.totalLuas), icon: MapPin, badge: "Ha", badgeClass: "bg-rose-50 text-rose-700 border-rose-200" },
+        // #337 — lahan NKT lintas KT; patok cukup di kolom (angka bukan "per lahan", patok bersama dihitung per tautan).
+        { label: "Lahan NKT", value: formatNumber(reportData.summary.totalLahanNkt), icon: ShieldAlert, badge: "NKT", badgeClass: "bg-red-50 text-red-700 border-red-200" },
       ]
     : [];
 
@@ -384,6 +403,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
                 {show("totalPetani") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Petani</th>}
                 {show("totalLahan") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Lahan</th>}
                 {show("totalLuas") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Total Luas (Ha)</th>}
+                {show("totalLahanNkt") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Lahan NKT</th>}
+                {show("totalPatok") && <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Patok</th>}
               </tr>
             </thead>
             <tbody>
@@ -406,6 +427,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
                     {show("totalPetani") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(row.totalPetani)}</td>}
                     {show("totalLahan") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(row.totalLahan)}</td>}
                     {show("totalLuas") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatLuas(row.totalLuas)}</td>}
+                    {show("totalLahanNkt") && <td className={cn("px-3 py-2 text-right tabular-nums whitespace-nowrap", row.totalLahanNkt > 0 && "font-semibold text-red-700 dark:text-red-400")}>{formatNumber(row.totalLahanNkt)}</td>}
+                    {show("totalPatok") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(row.totalPatok)}</td>}
                   </tr>
                 ))
               )}
@@ -418,6 +441,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
                   {show("totalPetani") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(filteredTotals.totalPetani)}</td>}
                   {show("totalLahan") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(filteredTotals.totalLahan)}</td>}
                   {show("totalLuas") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatLuas(filteredTotals.totalLuas)}</td>}
+                  {show("totalLahanNkt") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(filteredTotals.totalLahanNkt)}</td>}
+                  {show("totalPatok") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(filteredTotals.totalPatok)}</td>}
                 </tr>
               </tfoot>
             )}

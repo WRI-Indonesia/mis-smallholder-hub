@@ -144,6 +144,10 @@ export interface KelompokTaniReportRow {
   totalLahan: number;
   /** Total luas (Ha) lahan aktif di kombinasi ini. */
   totalLuas: number;
+  /** Lahan termasuk/terdampak NKT di kombinasi ini (#337). */
+  totalLahanNkt: number;
+  /** Jumlah tautan patok aktif pada lahan-lahan kombinasi ini (patok bersama dihitung per lahan, #337). */
+  totalPatok: number;
 }
 
 export interface KelompokTaniReportSummary {
@@ -152,6 +156,8 @@ export interface KelompokTaniReportSummary {
   totalPetani: number; // distinct petani keseluruhan
   totalLahan: number; // total lahan aktif
   totalLuas: number; // total luas (Ha) lahan aktif
+  totalLahanNkt: number; // lahan termasuk/terdampak NKT (#337)
+  totalPatok: number; // tautan patok aktif (#337)
 }
 
 export interface KelompokTaniReportResult {
@@ -298,6 +304,10 @@ export interface KtDetailPetani {
   totalLahan: number;
   /** Total luas (Ha) lahan petani ini pada KT tsb. */
   totalLuas: number;
+  /** Lahan termasuk/terdampak NKT petani ini pada KT tsb (#337). */
+  totalLahanNkt: number;
+  /** Tautan patok aktif pada lahan petani ini di KT tsb (#337). */
+  totalPatok: number;
 }
 
 export interface KtDetailKelompokTani {
@@ -306,6 +316,8 @@ export interface KtDetailKelompokTani {
   totalPetani: number;
   totalLahan: number;
   totalLuas: number;
+  totalLahanNkt: number;
+  totalPatok: number;
   petani: KtDetailPetani[];
 }
 
@@ -314,6 +326,8 @@ export interface KelompokTaniDetailReportSummary {
   totalPetani: number; // distinct petani di Lembaga
   totalLahan: number;
   totalLuas: number;
+  totalLahanNkt: number; // (#337)
+  totalPatok: number; // (#337)
 }
 
 export interface KelompokTaniDetailReportResult {

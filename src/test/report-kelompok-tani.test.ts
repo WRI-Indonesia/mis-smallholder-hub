@@ -26,6 +26,18 @@ describe("buildKelompokTaniReport", () => {
     expect(ktB.totalLahan).toBe(1);
   });
 
+  it("NKT & patok per KT (#337): lahan NKT dihitung per lahan, patok = Σ tautan (patok bersama dihitung per lahan); tanpa field → 0", () => {
+    const r = buildKelompokTaniReport([
+      P({ farmerId: "f1", farmerGroupId: "lg1", subGroupLv2: "KT A", nkt: true, patok: 4 }),
+      P({ farmerId: "f1", farmerGroupId: "lg1", subGroupLv2: "KT A", nkt: false, patok: 4 }),
+      P({ farmerId: "f2", farmerGroupId: "lg1", subGroupLv2: "KT B", nkt: true }),
+      P({ farmerId: "f3", farmerGroupId: "lg1", subGroupLv2: "KT C" }), // pemanggil lama tanpa nkt/patok
+    ]);
+    const by = Object.fromEntries(r.rows.map((x) => [x.kelompokTani, [x.totalLahanNkt, x.totalPatok]]));
+    expect(by).toEqual({ "KT A": [1, 8], "KT B": [1, 0], "KT C": [0, 0] });
+    expect([r.summary.totalLahanNkt, r.summary.totalPatok]).toEqual([2, 8]);
+  });
+
   it("normalisasi trim/case → typo spasi/kapital tak memecah baris", () => {
     const r = buildKelompokTaniReport([
       P({ farmerId: "f1", farmerGroupId: "lg1", subGroupLv2: "KT Maju" }),
@@ -80,6 +92,8 @@ describe("buildKelompokTaniReport", () => {
       totalPetani: 0,
       totalLahan: 0,
       totalLuas: 0,
+      totalLahanNkt: 0,
+      totalPatok: 0,
     });
   });
 });

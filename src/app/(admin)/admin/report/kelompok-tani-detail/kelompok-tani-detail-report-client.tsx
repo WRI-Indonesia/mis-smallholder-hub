@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { toast } from "sonner";
-import { ChevronRight, FileText, Download, Layers, Users, Sprout, MapPin, Printer } from "lucide-react";
+import { ChevronRight, FileText, Download, Layers, Users, Sprout, MapPin, Printer, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,6 +96,9 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
         `${formatNumber(kt.totalPetani)} Petani`,
         `${formatNumber(kt.totalLahan)} Lahan`,
         `${formatLuas(kt.totalLuas)} Ha`,
+        // #337 — hanya bila ada, supaya header KT tanpa NKT/patok tetap ringkas.
+        ...(kt.totalLahanNkt > 0 ? [`${formatNumber(kt.totalLahanNkt)} Lahan NKT`] : []),
+        ...(kt.totalPatok > 0 ? [`${formatNumber(kt.totalPatok)} Patok`] : []),
       ],
     }));
   }, [reportData]);
@@ -122,7 +125,11 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
     { header: "ID Petani", key: "farmerCode" },
     { header: "Jml Lahan", key: "totalLahan" },
     { header: "Luas (Ha)", key: "totalLuas" },
+    { header: "Lahan NKT", key: "totalLahanNkt" },
+    { header: "Patok", key: "totalPatok" },
   ];
+  /** Kolom numerik (rata kanan di PDF). */
+  const NUMERIC_COLS: ReadonlySet<string> = new Set(["no", "totalLahan", "totalLuas", "totalLahanNkt", "totalPatok"]);
 
   const flattenRows = (numeric: boolean): Record<string, string | number>[] => {
     if (!reportData) return [];
@@ -138,6 +145,8 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
           farmerCode: p.farmerCode,
           totalLahan: numeric ? p.totalLahan : formatNumber(p.totalLahan),
           totalLuas: numeric ? Number(p.totalLuas.toFixed(2)) : formatLuas(p.totalLuas),
+          totalLahanNkt: numeric ? p.totalLahanNkt : formatNumber(p.totalLahanNkt),
+          totalPatok: numeric ? p.totalPatok : formatNumber(p.totalPatok),
         });
       }
     }
@@ -157,6 +166,8 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
       farmerCode: "",
       totalLahan: reportData.summary.totalLahan,
       totalLuas: Number(reportData.summary.totalLuas.toFixed(2)),
+      totalLahanNkt: reportData.summary.totalLahanNkt,
+      totalPatok: reportData.summary.totalPatok,
     });
     await exportToExcel({
       filename: `Laporan_Kelompok_Tani_Detail_${scopeLabel()}`,
@@ -176,11 +187,13 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
       farmerCode: "",
       totalLahan: formatNumber(reportData.summary.totalLahan),
       totalLuas: formatLuas(reportData.summary.totalLuas),
+      totalLahanNkt: formatNumber(reportData.summary.totalLahanNkt),
+      totalPatok: formatNumber(reportData.summary.totalPatok),
     });
     const cols = buildExportColumns();
     const columnStyles: Record<number, Record<string, string | number>> = {};
     cols.forEach((c, i) => {
-      if (c.key === "no" || c.key === "totalLahan" || c.key === "totalLuas") {
+      if (NUMERIC_COLS.has(c.key)) {
         columnStyles[i] = { halign: "right" };
       }
     });
@@ -203,6 +216,8 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
         { label: "Total Petani", value: formatNumber(reportData.summary.totalPetani), icon: Users, badge: "Petani", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
         { label: "Total Lahan", value: formatNumber(reportData.summary.totalLahan), icon: Sprout, badge: "Lahan", badgeClass: "bg-purple-50 text-purple-700 border-purple-200" },
         { label: "Total Luas", value: formatLuas(reportData.summary.totalLuas), icon: MapPin, badge: "Ha", badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+        // #337
+        { label: "Lahan NKT", value: formatNumber(reportData.summary.totalLahanNkt), icon: ShieldAlert, badge: "NKT", badgeClass: "bg-red-50 text-red-700 border-red-200" },
       ]
     : [];
 
@@ -216,6 +231,8 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
             <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">ID Petani</th>
             <th className="px-3 py-1.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Jml Lahan</th>
             <th className="px-3 py-1.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Luas (Ha)</th>
+            <th className="px-3 py-1.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Lahan NKT</th>
+            <th className="px-3 py-1.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap tabular-nums">Patok</th>
           </tr>
         </thead>
         <tbody>
@@ -226,6 +243,8 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
               <td className="px-3 py-1.5 font-mono text-xs text-muted-foreground whitespace-nowrap">{p.farmerCode}</td>
               <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">{formatNumber(p.totalLahan)}</td>
               <td className="px-3 py-1.5 text-right tabular-nums whitespace-nowrap">{formatLuas(p.totalLuas)}</td>
+              <td className={cn("px-3 py-1.5 text-right tabular-nums whitespace-nowrap", p.totalLahanNkt > 0 ? "font-semibold text-red-700 dark:text-red-400" : "text-muted-foreground")}>{p.totalLahanNkt > 0 ? formatNumber(p.totalLahanNkt) : "—"}</td>
+              <td className={cn("px-3 py-1.5 text-right tabular-nums whitespace-nowrap", p.totalPatok === 0 && "text-muted-foreground")}>{p.totalPatok > 0 ? formatNumber(p.totalPatok) : "—"}</td>
             </tr>
           ))}
         </tbody>
@@ -272,7 +291,7 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
 
       {/* Summary Cards */}
       {reportData && (
-        <div className={"grid gap-4 sm:grid-cols-2 lg:grid-cols-4 print:hidden"}>
+        <div className={"grid gap-4 sm:grid-cols-2 lg:grid-cols-5 print:hidden"}>
           {summaryCards.map((c) => (
             <Card key={c.label} className="shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
