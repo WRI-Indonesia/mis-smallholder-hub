@@ -108,7 +108,7 @@ function expandParcelTuple(
     cropType,
     landStatus,
     nktStatus: nktStatus ?? null,
-    markerCount: markerCount ?? 0,
+    markerCount,
     geometry,
   };
 }

@@ -149,7 +149,7 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
 
   // Kolom teks yang tampil (untuk colSpan footer & kolom kosong pencarian).
   const textColCount = 1 + (show("kelompokTani") ? 1 : 0); // Lembaga + opsional
-  const numericColCount = (show("totalPetani") ? 1 : 0) + (show("totalLahan") ? 1 : 0) + (show("totalLuas") ? 1 : 0) + (show("totalLahanNkt") ? 1 : 0) + (show("totalPatok") ? 1 : 0);
+  const numericColCount = [...visibleCols].filter((k) => NUMERIC_COLS.has(k)).length;
   const visibleColCount = 1 + textColCount + numericColCount; // No + teks + numerik
 
   const buildExportColumns = () => [
@@ -427,8 +427,8 @@ export function KelompokTaniReportClient({ districts, canExport, canPrint }: Pro
                     {show("totalPetani") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(row.totalPetani)}</td>}
                     {show("totalLahan") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(row.totalLahan)}</td>}
                     {show("totalLuas") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatLuas(row.totalLuas)}</td>}
-                    {show("totalLahanNkt") && <td className={cn("px-3 py-2 text-right tabular-nums whitespace-nowrap", row.totalLahanNkt > 0 && "font-semibold text-red-700 dark:text-red-400")}>{formatNumber(row.totalLahanNkt)}</td>}
-                    {show("totalPatok") && <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{formatNumber(row.totalPatok)}</td>}
+                    {show("totalLahanNkt") && <td className={cn("px-3 py-2 text-right tabular-nums whitespace-nowrap", row.totalLahanNkt > 0 ? "font-semibold text-red-700 dark:text-red-400" : "text-muted-foreground")}>{row.totalLahanNkt > 0 ? formatNumber(row.totalLahanNkt) : "—"}</td>}
+                    {show("totalPatok") && <td className={cn("px-3 py-2 text-right tabular-nums whitespace-nowrap", row.totalPatok === 0 && "text-muted-foreground")}>{row.totalPatok > 0 ? formatNumber(row.totalPatok) : "—"}</td>}
                   </tr>
                 ))
               )}

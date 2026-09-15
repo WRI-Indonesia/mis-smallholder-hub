@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { fetchFarmerMarkerPoints } from "@/lib/land-marker-query";
-import { NKT_AFFECTED_STATUSES, summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
+import { nktAffectedStatusWhere, summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
 import type { FarmerInput, UpdateFarmerInput } from "@/validations/farmer.schema";
@@ -65,7 +65,7 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
         },
       },
       // Lahan NKT per petani (#338): satu hitungan relasi ber-filter, bukan N+1 dan bukan baris lahan.
-      _count: { select: { landParcels: { where: { isActive: true, identity: { nkt: { status: { in: [...NKT_AFFECTED_STATUSES] } } } } } } },
+      _count: { select: { landParcels: { where: { isActive: true, identity: { nkt: nktAffectedStatusWhere() } } } } },
     },
     orderBy: { name: "asc" },
   });

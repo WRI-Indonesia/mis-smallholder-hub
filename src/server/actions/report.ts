@@ -29,7 +29,7 @@ import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
-import { LAND_STDB_STAGES, LAND_NKT_STATUSES, NKT_AFFECTED_STATUSES, isNktAffected } from "@/lib/land-parcel-satellite-format";
+import { LAND_STDB_STAGES, LAND_NKT_STATUSES, nktAffectedStatusWhere, PARCEL_NKT_MARKER_SELECT, parcelNktPatok } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 import type { NktReportData } from "@/lib/nkt-report";
 
@@ -492,7 +492,7 @@ export async function getKelompokTaniReport(
         },
       },
       // NKT & patok per KT (#337): hanya status + hitungan tautan aktif, bukan baris satelitnya.
-      identity: { select: { nkt: { select: { status: true } }, _count: { select: { markers: { where: { isActive: true } } } } } },
+      identity: { select: PARCEL_NKT_MARKER_SELECT },
     },
   });
 
@@ -502,8 +502,7 @@ export async function getKelompokTaniReport(
     lembagaTani: p.farmer.farmerGroup.name,
     area: p.area,
     subGroupLv2: p.subGroupLv2,
-    nkt: isNktAffected(p.identity?.nkt?.status),
-    patok: p.identity?._count.markers ?? 0,
+    ...parcelNktPatok(p.identity),
   }));
 
   return buildKelompokTaniReport(raw);
@@ -578,7 +577,7 @@ function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParc
   // NKT (#328) — nilai disaring terhadap daftar sah (pola documentTypes).
   const nkt = filters.nktStatus;
   if (nkt === "affected") {
-    out.push({ identity: { nkt: { is: { status: { in: [...NKT_AFFECTED_STATUSES] } } } } });
+    out.push({ identity: { nkt: { is: nktAffectedStatusWhere() } } });
   } else if (nkt === "assessed") {
     out.push({ identity: { nkt: { isNot: null } } });
   } else if (nkt === "unassessed") {
@@ -828,7 +827,7 @@ export async function getKelompokTaniDetailReport(
       area: true,
       subGroupLv2: true,
       farmer: { select: { id: true, farmerId: true, name: true } },
-      identity: { select: { nkt: { select: { status: true } }, _count: { select: { markers: { where: { isActive: true } } } } } },
+      identity: { select: PARCEL_NKT_MARKER_SELECT },
     },
   });
 
@@ -838,8 +837,7 @@ export async function getKelompokTaniDetailReport(
     farmerName: p.farmer.name,
     area: p.area,
     subGroupLv2: p.subGroupLv2,
-    nkt: isNktAffected(p.identity?.nkt?.status),
-    patok: p.identity?._count.markers ?? 0,
+    ...parcelNktPatok(p.identity),
   }));
 
   return buildKelompokTaniDetailReport(group.id, group.name, raw);

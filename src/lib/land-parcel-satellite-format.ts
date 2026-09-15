@@ -237,6 +237,27 @@ export const NKT_AFFECTED_STATUSES: readonly LandNktStatusCode[] = ["INCLUDED", 
 export function isNktAffected(status: string | null | undefined): boolean {
   return (NKT_AFFECTED_STATUSES as readonly string[]).includes(status ?? "");
 }
+/**
+ * Fragmen `where` Prisma untuk relasi `nkt` "lahan kena NKT" — SATU definisi
+ * untuk daftar Lembaga/Petani, Laporan Lahan, dan hitungan Peta Lahan (review
+ * 2026-09-15: sebelumnya literal `status: { in: [...] }` tersalin di 5 tempat).
+ * Objek polos (bukan `Prisma.validator`) agar berkas ini tetap bebas Prisma.
+ */
+export const nktAffectedStatusWhere = () => ({ status: { in: [...NKT_AFFECTED_STATUSES] } });
+/**
+ * `select` identitas lahan untuk turunan NKT + jumlah patok aktif (status saja +
+ * `_count` tautan aktif — bukan baris satelitnya). Dipakai `getMapData`,
+ * `getKelompokTaniReport`, `getKelompokTaniDetailReport`.
+ */
+export const PARCEL_NKT_MARKER_SELECT = {
+  nkt: { select: { status: true } },
+  _count: { select: { markers: { where: { isActive: true } } } },
+} as const;
+export type ParcelNktMarkerIdentity = { nkt: { status: string } | null; _count: { markers: number } };
+/** Turunan per lahan dari `PARCEL_NKT_MARKER_SELECT`: kena NKT? + jumlah tautan patok aktif. */
+export function parcelNktPatok(identity: ParcelNktMarkerIdentity): { nkt: boolean; patok: number } {
+  return { nkt: isNktAffected(identity.nkt?.status), patok: identity._count.markers };
+}
 
 export const NKT_CATEGORIES = ["NKT_1", "NKT_2", "NKT_3", "NKT_4", "NKT_5", "NKT_6"] as const;
 export type NktCategoryCode = (typeof NKT_CATEGORIES)[number];

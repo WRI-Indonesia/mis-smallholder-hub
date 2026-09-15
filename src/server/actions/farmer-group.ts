@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { fetchFarmerGroupMarkerPoints } from "@/lib/land-marker-query";
-import { NKT_AFFECTED_STATUSES } from "@/lib/land-parcel-satellite-format";
+import { nktAffectedStatusWhere, PARCEL_NKT_MARKER_SELECT, parcelNktPatok } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer-group.schema";
 import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
@@ -69,7 +69,7 @@ export async function getFarmerGroups(search?: string) {
       where: {
         isActive: true,
         farmer: { isActive: true, farmerGroupId: { in: groupIds } },
-        identity: { nkt: { status: { in: [...NKT_AFFECTED_STATUSES] } } },
+        identity: { nkt: nktAffectedStatusWhere() },
       },
       _count: { _all: true },
     }),
@@ -185,8 +185,8 @@ export async function getFarmerGroupDetail(id: string) {
             // Dipakai untuk cek kelengkapan (computeCompleteness) + peta
             // sebaran lahan di tab Lahan (mapParcels).
             geometry: true,
-            // Status NKT (#330): KPI "Lahan NKT" + tepi merah/legenda/popup di peta sebaran — hanya status.
-            identity: { select: { nkt: { select: { status: true } } } },
+            // Status NKT (#330) + jumlah patok (#337): KPI, peta sebaran, dan struktur KT — status + count, bukan baris satelit.
+            identity: { select: PARCEL_NKT_MARKER_SELECT },
           },
         },
         trainingParticipants: {
@@ -223,6 +223,7 @@ export async function getFarmerGroupDetail(id: string) {
         blok: p.blok,
         isPsr: p.isPsr,
         plantingYear: p.plantingYear,
+        ...parcelNktPatok(p.identity),
       })),
       trainingParticipants: f.trainingParticipants.map((tp) => ({
         packageCode: tp.activity.package.code,

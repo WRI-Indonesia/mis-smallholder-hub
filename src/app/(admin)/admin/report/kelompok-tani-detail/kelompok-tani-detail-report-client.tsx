@@ -31,6 +31,8 @@ interface Props {
 }
 
 const UNKNOWN = "(tidak diketahui)";
+/** Kolom numerik (rata kanan di PDF) — modul scope, sama dengan klien Summary. */
+const NUMERIC_COLS: ReadonlySet<string> = new Set(["no", "totalLahan", "totalLuas", "totalLahanNkt", "totalPatok"]);
 
 export function KelompokTaniDetailReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
@@ -128,8 +130,6 @@ export function KelompokTaniDetailReportClient({ districts, canExport, canPrint 
     { header: "Lahan NKT", key: "totalLahanNkt" },
     { header: "Patok", key: "totalPatok" },
   ];
-  /** Kolom numerik (rata kanan di PDF). */
-  const NUMERIC_COLS: ReadonlySet<string> = new Set(["no", "totalLahan", "totalLuas", "totalLahanNkt", "totalPatok"]);
 
   const flattenRows = (numeric: boolean): Record<string, string | number>[] => {
     if (!reportData) return [];

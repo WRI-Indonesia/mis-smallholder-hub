@@ -14,10 +14,10 @@ export interface KtRawParcel {
   area: number | null;
   /** Kelompok Tani (Sub Lv.2). */
   subGroupLv2: string | null;
-  /** Lahan termasuk/terdampak NKT (#337) — `isNktAffected(identity.nkt.status)`; opsional (pemanggil lama). */
-  nkt?: boolean;
-  /** Jumlah tautan patok aktif lahan ini (#337); opsional. */
-  patok?: number;
+  /** Lahan termasuk/terdampak NKT (#337) — `parcelNktPatok(identity).nkt`. */
+  nkt: boolean;
+  /** Jumlah tautan patok aktif lahan ini (#337). */
+  patok: number;
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -62,7 +62,7 @@ export function buildKelompokTaniReport(
     const g2 = clean(p.subGroupLv2);
     const area = p.area ?? 0;
     const nkt = p.nkt ? 1 : 0;
-    const patok = p.patok ?? 0;
+    const patok = p.patok;
     const key = `${p.farmerGroupId}||${(g2 ?? "").toLowerCase()}`;
 
     let grp = groups.get(key);

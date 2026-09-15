@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { NktCountBadge } from "@/components/shared/nkt-count-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Building, Users, User, UserCheck } from "lucide-react";
 import { FarmerFormModal } from "./farmer-form-modal";
@@ -182,14 +183,7 @@ export function FarmerListClient({
       sortable: true,
       defaultVisible: false,
       cellClassName: "text-sm tabular-nums",
-      render: (row) =>
-        row.nktCount > 0 ? (
-          <Badge variant="outline" className="border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
-            {formatNumber(row.nktCount)} NKT
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
+      render: (row) => <NktCountBadge count={row.nktCount} />,
     },
   ];
 

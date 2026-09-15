@@ -5,6 +5,8 @@ const P = (o: Partial<KtRawParcel> & { farmerId: string; farmerGroupId: string }
   lembagaTani: "Lembaga A",
   area: 1,
   subGroupLv2: null,
+  nkt: false,
+  patok: 0,
   ...o,
 });
 
@@ -26,12 +28,12 @@ describe("buildKelompokTaniReport", () => {
     expect(ktB.totalLahan).toBe(1);
   });
 
-  it("NKT & patok per KT (#337): lahan NKT dihitung per lahan, patok = Σ tautan (patok bersama dihitung per lahan); tanpa field → 0", () => {
+  it("NKT & patok per KT (#337): lahan NKT dihitung per lahan, patok = Σ tautan (patok bersama dihitung per lahan)", () => {
     const r = buildKelompokTaniReport([
       P({ farmerId: "f1", farmerGroupId: "lg1", subGroupLv2: "KT A", nkt: true, patok: 4 }),
       P({ farmerId: "f1", farmerGroupId: "lg1", subGroupLv2: "KT A", nkt: false, patok: 4 }),
       P({ farmerId: "f2", farmerGroupId: "lg1", subGroupLv2: "KT B", nkt: true }),
-      P({ farmerId: "f3", farmerGroupId: "lg1", subGroupLv2: "KT C" }), // pemanggil lama tanpa nkt/patok
+      P({ farmerId: "f3", farmerGroupId: "lg1", subGroupLv2: "KT C" }), // tanpa NKT/patok
     ]);
     const by = Object.fromEntries(r.rows.map((x) => [x.kelompokTani, [x.totalLahanNkt, x.totalPatok]]));
     expect(by).toEqual({ "KT A": [1, 8], "KT B": [1, 0], "KT C": [0, 0] });

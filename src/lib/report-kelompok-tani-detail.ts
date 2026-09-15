@@ -15,10 +15,10 @@ export interface KtDetailRawParcel {
   area: number | null;
   /** Kelompok Tani (Sub Lv.2). */
   subGroupLv2: string | null;
-  /** Lahan termasuk/terdampak NKT (#337); opsional (pemanggil lama). */
-  nkt?: boolean;
-  /** Jumlah tautan patok aktif lahan ini (#337); opsional. */
-  patok?: number;
+  /** Lahan termasuk/terdampak NKT (#337) — `parcelNktPatok(identity).nkt`. */
+  nkt: boolean;
+  /** Jumlah tautan patok aktif lahan ini (#337). */
+  patok: number;
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -67,7 +67,7 @@ export function buildKelompokTaniDetailReport(
     const g2 = clean(p.subGroupLv2);
     const area = p.area ?? 0;
     const nkt = p.nkt ? 1 : 0;
-    const patok = p.patok ?? 0;
+    const patok = p.patok;
 
     let kt = ktMap.get(norm(g2));
     if (!kt) {

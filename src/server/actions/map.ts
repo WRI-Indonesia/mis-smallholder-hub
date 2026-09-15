@@ -11,7 +11,7 @@ import {
 } from "@/lib/access-context";
 import { buildMapData, buildBmpMapData, summarizeProduction } from "@/lib/map-data";
 import { mapFilterSchema, bmpMapFilterSchema } from "@/validations/map.schema";
-import { NKT_AFFECTED_STATUSES, isNktAffected } from "@/lib/land-parcel-satellite-format";
+import { nktAffectedStatusWhere, isNktAffected, PARCEL_NKT_MARKER_SELECT } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 import type {
   MapDataWire,
@@ -171,7 +171,7 @@ export async function getMapData(
         },
         // NKT (#328): hanya status — cukup untuk gaya layer & popup, jangan tarik seluruh baris.
         // Patok (#336): hanya HITUNGAN tautan aktif — titiknya tetap dimuat malas (getMapMarkers).
-        identity: { select: { nkt: { select: { status: true } }, _count: { select: { markers: { where: { isActive: true } } } } } },
+        identity: { select: PARCEL_NKT_MARKER_SELECT },
       },
     }),
   ]);
@@ -184,7 +184,7 @@ export async function getMapData(
   const [markers, markersNkt] = await Promise.all([
     prisma.landMarker.count({ where: markerScope }),
     prisma.landMarker.count({
-      where: { ...markerScope, AND: [{ parcels: { some: { isActive: true, parcel: { nkt: { status: { in: [...NKT_AFFECTED_STATUSES] } } } } } }] },
+      where: { ...markerScope, AND: [{ parcels: { some: { isActive: true, parcel: { nkt: nktAffectedStatusWhere() } } } }] },
     }),
   ]);
 

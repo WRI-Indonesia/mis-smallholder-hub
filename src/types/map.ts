@@ -83,8 +83,8 @@ export type ParcelWireTuple = [
   geometry: Polygon | MultiPolygon,
   /** #328 — ditambahkan di akhir agar posisi lama tak bergeser. */
   nktStatus: string | null,
-  /** #336 — jumlah patok aktif; opsional agar payload lama/tanpa hitungan tetap valid. */
-  markerCount?: number,
+  /** #336 — jumlah patok aktif (tautan aktif); wajib seperti `nktStatus`. */
+  markerCount: number,
 ];
 
 export type MapDataWire = {

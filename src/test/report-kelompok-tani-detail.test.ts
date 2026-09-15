@@ -6,6 +6,8 @@ const P = (o: Partial<KtDetailRawParcel> & { farmerId: string }): KtDetailRawPar
   farmerName: `Petani ${o.farmerId}`,
   area: 1,
   subGroupLv2: null,
+  nkt: false,
+  patok: 0,
   ...o,
 });
 
@@ -99,7 +101,7 @@ describe("buildKelompokTaniDetailReport", () => {
     expect(r.lembagaTani).toBe("Lembaga A");
   });
 
-  it("NKT & patok per petani dan per KT (#337); tanpa field → 0", () => {
+  it("NKT & patok per petani dan per KT (#337)", () => {
     const r = build([
       P({ farmerId: "f1", subGroupLv2: "KT A", nkt: true, patok: 4 }),
       P({ farmerId: "f1", subGroupLv2: "KT A", patok: 3 }),
