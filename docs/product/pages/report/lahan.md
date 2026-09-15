@@ -129,6 +129,21 @@ Cakupan/Status Surat/Jenis Surat/Status STDB/NKT → fragment `where` Prisma lew
 | Excel | File `Laporan_Lahan_<Lembaga/Distrik/Semua>`; sheet **"Ringkasan"** di posisi pertama (kolom Bagian · Keterangan · Nilai · Catatan) berisi filter legalitas aktif + 4 angka ringkasan, lalu sheet "Lahan" berisi seluruh baris + gambar peta (PNG hasil rasterisasi SVG). Ringkasan sengaja jadi **sheet tersendiri**, bukan baris catatan di atas tabel: menyisipkan baris di atas header membuat data tak lagi mulai di baris 1 dan merusak AutoFilter/pivot (revisi owner 2026-08-29). Bila grid aktif: tambahan satu sheet per sel grid berisi subset baris sel + gambar peta sel. Kolom mengikuti selektor kolom. Bila geometri belum termuat: "Geometri lahan masih dimuat — coba lagi sebentar." Tombol digate izin `EXPORT` (#245) |
 | PDF | File `Laporan_Lahan_<…>` via `exportLandParcelReportPDF`; metadata Distrik & Lembaga Petani (grid 2 kolom), lalu **blok penuh-lebar** `sections`: "Filter Legalitas" (`describeLegalFilters`) dan "Ringkasan Legalitas" (`describeLegalSummary`) — keduanya di luar grid metadata karena kolomnya hanya 90 mm sedangkan kalimat filter jauh lebih panjang, dan tiap baris dibungkus `splitTextToSize`. Tanpa filter, ekspor "tanpa surat" terbaca seperti roster lengkap; tanpa ringkasan, pembaca dapat daftar tanpa tahu proporsinya. Kolom mengikuti selektor kolom + baris Total; menyertakan halaman peta sesuai pengaturan grid & label — digate izin `PRINT` (#245) |
 
+## Laporan NKT per Lembaga (PDF, #332)
+
+Tombol **Laporan NKT** (ikon perisai, merah) di toolbar ekspor — muncul bersama Excel/PDF bila ada baris; digate izin `PRINT` yang sama (`report-land-parcel`). Berbeda dari PDF laporan legalitas: **tidak mengikuti filter** — sumbernya `getNktReportData(farmerGroupId)` (`src/server/actions/report.ts`: PRINT + cakupan akses Lembaga + `isActive`) yang memuat **seluruh lahan aktif Lembaga** (`identity.nkt` + geometri) dan hitungan patok NKT turunan (patok aktif yang ditautkan ke lahan Lembaga ini **dan** ke lahan berstatus NKT). Builder murni `buildNktReportDoc` (`src/lib/nkt-report.ts`) menyusun `LayerReportInput` untuk `buildLayerReportDoc` (landscape A4, pola PDF legenda Peta Lahan #331):
+
+| Bagian | Isi |
+|---|---|
+| Kop | Kicker "SMALLHOLDER HUB · LAPORAN NKT", judul "Laporan NKT — <nama Lembaga>", subjudul kode · Distrik · **sumber asesmen** (gabungan asesor/sumber unik dari baris NKT) · waktu cetak WIB |
+| KPI (6 kotak) | Lahan aktif (belum dinilai) · Sudah dinilai (tidak terdampak) · **Lahan NKT** (Σ luas poligon) · Luas area NKT (Σ `affected_area_ha`) · Panjang (Σ `affected_length_m`) · Patok NKT |
+| Peta | Semua lahan Lembaga sebagai **konteks** ungu tipis (12 %) berlabel nama petani; lahan NKT **merah bernomor** (nomor = urutan tabel); halaman **peta rinci per klaster** bila fitur < 6 mm; graticule + skala + panah utara. Centroid jangkar nomor = **centroid luasan** (shoelace), bukan rata-rata simpul — sisi yang didigitasi rapat menarik rata-rata simpul ke tepi dan nomor menabrak nama |
+| Tabel lahan NKT | Hanya lahan `isNktAffected` (INCLUDED ∪ AFFECTED): No · ID Lahan · Petani · ID Petani · KT / Blok · Luas (ha) · Status · Kategori (`NKT 4`) · Luas NKT (ha) · Panjang (m) · **Tanggal · Catatan** — asesor/sumber dicantumkan per baris **hanya bila tidak seragam** (seragam → cukup di kop; menulisnya 21× dinilai boros) |
+| Ringkasan | Tabel "Ringkasan per kategori NKT": kategori · keterangan (`NKT_CATEGORY_DESCRIPTIONS`) · jumlah lahan (lahan dua kategori dihitung di keduanya) |
+| Berkas | `Laporan_NKT_<kode Lembaga aman>_<yyyymmdd>.pdf` (`nktReportFilename`) |
+
+Lahan NKT tanpa poligon tetap masuk tabel (tidak digambar). Lahan tanpa baris NKT = "belum dinilai" — masuk KPI, tidak masuk tabel.
+
 ## Patok (#331)
 
 | Objek | Keterangan |

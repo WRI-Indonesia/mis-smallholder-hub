@@ -29,7 +29,9 @@ import { buildKelompokTaniReport, type KtRawParcel } from "@/lib/report-kelompok
 import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parcel";
 import { buildKelompokTaniDetailReport, type KtDetailRawParcel } from "@/lib/report-kelompok-tani-detail";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
-import { LAND_STDB_STAGES, LAND_NKT_STATUSES } from "@/lib/land-parcel-satellite-format";
+import { LAND_STDB_STAGES, LAND_NKT_STATUSES, NKT_AFFECTED_STATUSES } from "@/lib/land-parcel-satellite-format";
+import type { ActionResult } from "@/types/action-result";
+import type { NktReportData } from "@/lib/nkt-report";
 
 // ─── Helper dropdown bersama (TD-018) — dedup 5 pasang action per menu report ───
 // Non-exported (bukan server action); permission key per-menu tetap di action pemanggil.
@@ -731,6 +733,67 @@ export async function getLandParcelReportGeometries(
     },
     select: { id: true, geometry: true },
   });
+}
+
+/**
+ * Laporan NKT per Lembaga (#332) — data untuk PDF: seluruh lahan aktif Lembaga
+ * (poligon untuk peta konteks) + baris NKT + jumlah patok NKT. Gate
+ * `report-land-parcel` PRINT; Lembaga wajib dalam cakupan akses.
+ */
+export async function getNktReportData(farmerGroupId: string): Promise<ActionResult<NktReportData>> {
+  if (!(await hasPermission("report-land-parcel", "PRINT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mencetak laporan" };
+  }
+  const access = await getAccessContext();
+  const accessFilter =
+    access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
+    access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } :
+    {};
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id: farmerGroupId, isActive: true, ...accessFilter },
+    select: { id: true, name: true, code: true, abrv: true, district: { select: { name: true } } },
+  });
+  if (!group) return { success: false, error: "Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses" };
+
+  const [parcels, markersNkt] = await Promise.all([
+    prisma.landParcel.findMany({
+      where: { isActive: true, farmer: { isActive: true, farmerGroupId } },
+      select: {
+        id: true, parcelId: true, area: true, subGroupLv2: true, blok: true, geometry: true,
+        farmer: { select: { name: true, farmerId: true } },
+        identity: { select: { nkt: { select: { status: true, categories: true, affectedAreaHa: true, affectedLengthM: true, assessedAt: true, assessor: true, source: true, notes: true } } } },
+      },
+      orderBy: { parcelId: "asc" },
+    }),
+    prisma.landMarker.count({
+      where: {
+        isActive: true,
+        parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroupId } } } } } },
+        AND: [{ parcels: { some: { isActive: true, parcel: { nkt: { status: { in: [...NKT_AFFECTED_STATUSES] } } } } } }],
+      },
+    }),
+  ]);
+  return {
+    success: true,
+    data: {
+      group: { name: group.name, code: group.code, abrv: group.abrv, districtName: group.district?.name ?? null },
+      parcels: parcels.map((p) => ({
+        id: p.id,
+        parcelId: p.parcelId,
+        farmerName: p.farmer.name,
+        farmerCode: p.farmer.farmerId,
+        subGroupLv2: p.subGroupLv2,
+        blok: p.blok,
+        area: p.area,
+        geometry: p.geometry,
+        nkt: p.identity.nkt
+          ? { ...p.identity.nkt, assessedAt: p.identity.nkt.assessedAt ? p.identity.nkt.assessedAt.toISOString().slice(0, 10) : null }
+          : null,
+      })),
+      markersNkt,
+      printedAt: new Date().toISOString(),
+    },
+  };
 }
 
 /**

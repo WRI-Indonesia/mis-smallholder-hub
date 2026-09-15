@@ -57,6 +57,12 @@ export interface LayerReportInput {
   rows: Record<string, unknown>[];
   /** Catatan kaki halaman (bawaan: catatan legalitas). */
   footnote?: string;
+  /** Kop atas (mis. "SMALLHOLDER HUB · LAPORAN NKT"); bawaan "… · PETA LAHAN". */
+  kicker?: string;
+  /** Kotak KPI di bawah subjudul (#332) — maks 6, satu baris. */
+  kpis?: { label: string; value: string; note?: string }[];
+  /** Tabel tambahan setelah tabel utama (mis. ringkasan kategori NKT). */
+  extraTables?: { title: string; columns: LayerReportInput["columns"]; rows: Record<string, unknown>[] }[];
 }
 
 type Box = { x: number; y: number; w: number; h: number };
@@ -90,9 +96,23 @@ function exteriorRings(g: LayerReportGeometry): Position[][] {
   return [];
 }
 
+/**
+ * Centroid luasan (shoelace) — bukan rata-rata simpul, supaya sisi yang
+ * didigitasi rapat (banyak simpul) tidak menarik titik jangkar nomor ke tepi.
+ * Cadangan rata-rata simpul bila luas ≈ 0 (ring degeneratif).
+ */
 function ringCentroid(ring: Position[]): [number, number] {
-  const [sx, sy] = ring.reduce(([ax, ay], [x, y]) => [ax + x, ay + y], [0, 0]);
-  return [sx / ring.length, sy / ring.length];
+  let a = 0, cx = 0, cy = 0;
+  for (let i = 0, n = ring.length; i < n; i++) {
+    const [x0, y0] = ring[i], [x1, y1] = ring[(i + 1) % n];
+    const cross = x0 * y1 - x1 * y0;
+    a += cross; cx += (x0 + x1) * cross; cy += (y0 + y1) * cross;
+  }
+  if (Math.abs(a) < 1e-12) {
+    const [sx, sy] = ring.reduce(([ax, ay], [x, y]) => [ax + x, ay + y], [0, 0]);
+    return [sx / ring.length, sy / ring.length];
+  }
+  return [cx / (3 * a), cy / (3 * a)];
 }
 
 function strokeRing(doc: jsPDF, ring: Position[], project: Projector, style: "S" | "FD" | "F") {
@@ -249,14 +269,22 @@ function drawPolygonLabel(doc: jsPDF, ring: Position[], project: Projector, labe
   const parts = label.split(/\s+/);
   const short = parts.length > 1 ? `${parts[0]} ${parts.slice(1).map((p) => p[0] + ".").join("")}` : label;
   const diag = Math.hypot(w, h);
-  const fits = (tw: number) => (tw <= w * 0.9 ? 0 : tw <= h * 0.9 ? 90 : tw <= diag * 0.85 ? (Math.atan2(h, w) * 180) / Math.PI : null);
+  // Bila ada nomor di pusat (dyMm > 0), teks vertikal/diagonal digeser sepanjang
+  // arahnya sendiri sehingga berawal tepat setelah kotak nomor → hanya separuh
+  // panjang poligon (dikurangi kotak nomor) yang tersedia.
+  const numPad = dyMm > 0 ? 2.5 : 0;
+  const along = (len: number) => (dyMm > 0 ? len / 2 : len) - numPad;
+  const fits = (tw: number) => (tw <= w * 0.9 ? 0 : tw <= along(h * 0.9) ? 90 : tw <= along(diag * 0.85) ? (Math.atan2(h, w) * 180) / Math.PI : null);
   let text = label;
   let angle = fits(doc.getTextWidth(text));
   if (angle === null) { text = short; angle = fits(doc.getTextWidth(text)); }
   if (angle === null) return;
   const tw = doc.getTextWidth(text);
-  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 + dyMm;
   const rad = (angle * Math.PI) / 180;
+  const shift = angle === 0 ? 0 : numPad + tw / 2;
+  // Pusat = centroid luasan (jangkar nomor yang sama) agar geseran relatif nomor tepat.
+  const [c0x, c0y] = project(...ringCentroid(ring));
+  const cx = c0x - shift * Math.cos(rad), cy = c0y + (angle === 0 ? dyMm : shift * Math.sin(rad));
   // jsPDF memutar berlawanan jarum jam; y kertas ke bawah → arah teks (cos, −sin),
   // arah "bawah" relatif teks (sin, cos). Jangkar = pusat − ½ lebar teks + ½ tinggi huruf.
   const ax = cx - (tw / 2) * Math.cos(rad) + 0.6 * Math.sin(rad);
@@ -472,11 +500,11 @@ function drawLegend(doc: jsPDF, legend: LayerReportInput["legend"], x0: number, 
   return y + 5;
 }
 
-function drawHeader(doc: jsPDF, title: string, subtitle: string) {
+function drawHeader(doc: jsPDF, title: string, subtitle: string, kicker = "SMALLHOLDER HUB · PETA LAHAN") {
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...EMERALD);
-  doc.text("SMALLHOLDER HUB · PETA LAHAN", MARGIN, 14);
+  doc.text(kicker, MARGIN, 14);
   doc.setFontSize(15);
   doc.setTextColor(...SLATE_800);
   doc.text(title, MARGIN, 22);
@@ -505,8 +533,36 @@ export function buildLayerReportDoc(input: LayerReportInput): jsPDF {
   const numberable = !!style.numbered && n > 0 && n <= NUMBER_LIMIT;
   const allIdx = input.fc.features.map((_, i) => i);
 
-  drawHeader(doc, input.title, input.subtitle);
-  const mapBox: Box = { x: MARGIN, y: 32, w: CONTENT_W, h: 122 };
+  drawHeader(doc, input.title, input.subtitle, input.kicker);
+  // KPI (#332): kotak-kotak kecil satu baris; peta bergeser ke bawah secukupnya.
+  let mapTop = 32;
+  if (input.kpis && input.kpis.length > 0) {
+    const kpis = input.kpis.slice(0, 6);
+    const gap = 3;
+    const w = (CONTENT_W - gap * (kpis.length - 1)) / kpis.length;
+    kpis.forEach((k, i) => {
+      const x = MARGIN + i * (w + gap);
+      doc.setDrawColor(...SLATE_200);
+      doc.setFillColor(248, 250, 252);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(x, 31, w, 17, 1.2, 1.2, "FD");
+      doc.setFontSize(6.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...SLATE_400);
+      doc.text(k.label.toUpperCase(), x + 3, 35.5);
+      doc.setFontSize(12);
+      doc.setTextColor(...SLATE_800);
+      doc.text(k.value, x + 3, 42);
+      if (k.note) {
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...SLATE_600);
+        doc.text(k.note, x + 3, 46.2, { maxWidth: w - 6 });
+      }
+    });
+    mapTop = 52;
+  }
+  const mapBox: Box = { x: MARGIN, y: mapTop, w: CONTENT_W, h: 122 - (mapTop - 32) };
   doc.setDrawColor(...SLATE_200);
   doc.setLineWidth(0.4);
   doc.rect(mapBox.x, mapBox.y, mapBox.w, mapBox.h, "S");
@@ -538,7 +594,7 @@ export function buildLayerReportDoc(input: LayerReportInput): jsPDF {
     clusters.forEach((idx, k) => {
       doc.addPage();
       const label = String.fromCharCode(65 + k);
-      drawHeader(doc, `${input.title} — peta rinci ${clusters.length > 1 ? label : ""}`.trim(), `${idx.length} fitur · nomor = urutan tabel`);
+      drawHeader(doc, `${input.title} — peta rinci ${clusters.length > 1 ? label : ""}`.trim(), `${idx.length} fitur · nomor = urutan tabel`, input.kicker);
       const detailBox: Box = { x: MARGIN, y: 32, w: CONTENT_W, h: 150 };
       doc.setDrawColor(...SLATE_200);
       doc.setLineWidth(0.4);
@@ -567,6 +623,31 @@ export function buildLayerReportDoc(input: LayerReportInput): jsPDF {
     columnStyles: Object.fromEntries(input.columns.map((c, i) => [i, { halign: c.align ?? "left", ...(c.width ? { cellWidth: c.width } : {}) }])),
     pageBreak: "auto",
   });
+
+  // Tabel tambahan (#332): judul kecil + autoTable lanjutan.
+  for (const t of input.extraTables ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let yy = ((doc as any).lastAutoTable?.finalY ?? y) + 8;
+    // Pindah halaman hanya bila judul + kepala + ≤ 3 baris pertama tak muat (autoTable memotong sisanya).
+    if (yy + 12 + Math.min(t.rows.length, 3) * 5 > CONTENT_BOTTOM) { doc.addPage(); yy = 16; }
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...SLATE_800);
+    doc.text(t.title, MARGIN, yy);
+    autoTable(doc, {
+      head: [t.columns.map((c) => c.header)],
+      body: t.rows.map((r) => t.columns.map((c) => { const v = r[c.key]; return v === null || v === undefined || v === "" ? "—" : String(v); })),
+      startY: yy + 3,
+      theme: "striped",
+      margin: { left: MARGIN, right: MARGIN, bottom: PAGE_H - CONTENT_BOTTOM, top: 14 },
+      styles: { font: "helvetica", fontSize: 7.5, cellPadding: 1.6, overflow: "linebreak" },
+      headStyles: { fillColor: EMERALD, textColor: [255, 255, 255], fontSize: 7.5, fontStyle: "bold" },
+      bodyStyles: { textColor: SLATE_600 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: Object.fromEntries(t.columns.map((c, i) => [i, { halign: c.align ?? "left", ...(c.width ? { cellWidth: c.width } : {}) }])),
+      pageBreak: "auto",
+    });
+  }
 
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {

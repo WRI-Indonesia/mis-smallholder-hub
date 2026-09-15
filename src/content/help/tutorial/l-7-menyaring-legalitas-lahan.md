@@ -54,6 +54,22 @@ Baik Excel maupun PDF membawa **filter yang sedang aktif** dan **lima angka ring
 | **Excel** | Sheet **Ringkasan** di urutan pertama. Sheet **Lahan** dibiarkan bersih — barisnya tetap mulai dari baris 1 supaya filter dan pivot Excel tetap jalan |
 | **PDF** | Blok **Filter Legalitas** dan **Ringkasan Legalitas** di halaman pertama, di bawah nama Distrik/Lembaga |
 
+## Laporan NKT satu Lembaga (PDF)
+
+Untuk pihak yang hanya butuh gambaran NKT — fasilitator, mitra asesmen, auditor — ada cetakan tersendiri: tombol merah **Laporan NKT** di toolbar (di samping PDF; butuh izin cetak). Isinya **seluruh lahan aktif Lembaga**, bukan hasil filter, supaya angkanya selalu utuh:
+
+| Bagian | Isi |
+| --- | --- |
+| **Kop** | Nama & kode Lembaga, Distrik, **sumber asesmen** (asesor/sumber yang tercatat di baris NKT), waktu cetak |
+| **Enam angka** | Lahan aktif (berapa belum dinilai) · Sudah dinilai (berapa tidak terdampak) · Lahan NKT (Σ luas poligonnya) · Luas area NKT · Panjang sempadan/koridor · Patok NKT |
+| **Peta** | Semua lahan Lembaga tergambar tipis berlabel nama petani; lahan NKT **merah bernomor** — nomor sama dengan nomor di tabel. Bila persilnya kecil, menyusul halaman **peta rinci** per gugus (A, B, …) |
+| **Tabel** | Hanya lahan NKT: ID Lahan, petani, KT/Blok, luas, status, kategori, luas & panjang area NKT, tanggal, catatan |
+| **Ringkasan** | Jumlah lahan per kategori NKT 1–6 |
+
++ Asesor/sumber ditulis sekali di kop bila semua baris sama; kolom per baris hanya memuatnya bila Lembaga punya lebih dari satu sumber asesmen.
++ Lahan yang belum dinilai ikut dihitung di kotak angka tetapi tidak masuk tabel — tabel adalah daftar kerja lahan NKT, bukan roster.
++ Angka "Luas area NKT" dan "Panjang" hanya terisi bila kolom itu diisi saat asesmen/import (Lampiran laporan asesmen biasanya menyediakannya).
+
 ## Membaca kartu ringkasan
 
 Lima kartu di atas tabel mengikuti filter yang sedang aktif:

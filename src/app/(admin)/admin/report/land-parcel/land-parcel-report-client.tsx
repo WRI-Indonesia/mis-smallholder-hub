@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useTransition, type ReactNode, type ReactElement } from "react";
 import { toast } from "sonner";
-import { FileText, Download, Users, Layers, Sprout, Printer, SlidersHorizontal, MapPin, Grid3x3 } from "lucide-react";
+import { FileText, Download, Users, Layers, Sprout, Printer, SlidersHorizontal, MapPin, Grid3x3, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,7 @@ import {
   getFarmerGroupsForLandParcelReport,
   getLandParcelReport,
   getLandParcelReportGeometries,
+  getNktReportData,
 } from "@/server/actions/report";
 import type { LandParcelLegalFilters, LandParcelReportResult } from "@/types/report";
 import { LAND_DOCUMENT_TYPES, LAND_DOCUMENT_TYPE_LABELS } from "@/lib/land-parcel-detail-import";
@@ -622,6 +623,29 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     }
   };
 
+  /**
+   * Laporan NKT per Lembaga (#332): PDF landscape terpisah dari laporan legal —
+   * seluruh lahan aktif Lembaga (bukan hasil filter), lahan NKT merah bernomor.
+   */
+  const [printingNkt, setPrintingNkt] = useState(false);
+  const handlePrintNkt = async () => {
+    if (!selectedFarmerGroup || printingNkt) return;
+    setPrintingNkt(true);
+    try {
+      const res = await getNktReportData(selectedFarmerGroup);
+      if (!res.success || !res.data) {
+        toast.error(res.success ? "Data laporan NKT kosong" : res.error);
+        return;
+      }
+      const { buildNktReportDoc, nktReportFilename } = await import("@/lib/nkt-report");
+      buildNktReportDoc(res.data).save(nktReportFilename(res.data));
+    } catch (err) {
+      toast.error((err instanceof Error && err.message) || "Gagal membuat Laporan NKT");
+    } finally {
+      setPrintingNkt(false);
+    }
+  };
+
   const handleExportPDF = async () => {
     if (!reportData || !selectedFarmerGroup) return;
     if (!geoms) {
@@ -1156,6 +1180,19 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
             >
               <Printer className="h-4 w-4" />
               {preparingMaps ? "Menyiapkan peta…" : "PDF"}
+            </Button>
+          )}
+          {canPrint && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintNkt}
+              disabled={printingNkt}
+              className="h-9 gap-2 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900 dark:text-red-400"
+              title="Laporan NKT Lembaga ini (seluruh lahan aktif, tidak mengikuti filter)"
+            >
+              <ShieldAlert className="h-4 w-4" />
+              {printingNkt ? "Menyusun…" : "Laporan NKT"}
             </Button>
           )}
         </div>
