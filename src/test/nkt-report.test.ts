@@ -54,7 +54,7 @@ describe("buildNktReportInput", () => {
     expect(input.rows.map((r) => r.parcelId)).toEqual(["HJP.0001.A", "HJP.0002.A"]);
     expect(input.rows[1]).toMatchObject({ no: 2, categories: "NKT 1, NKT 4", nktArea: "0,50", nktLength: "—" });
     expect(String(input.rows[1].assessed)).toContain("sempadan sungai");
-    expect(input.legend.map((l) => l.label)).toEqual(["Lahan NKT", "Lahan lain"]);
+    expect(input.legend?.map((l) => l.label)).toEqual(["Lahan NKT", "Lahan lain"]);
     expect(input.extraTables?.[0].rows.map((r) => [r.cat, r.n])).toEqual([["NKT 1", "1"], ["NKT 4", "2"]]);
   });
 

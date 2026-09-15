@@ -90,6 +90,8 @@ interface Props {
   /** Unduh per baris legenda (#331): Excel + SHP/GeoJSON/KML sesuai tipe fitur baris. */
   onLegendExport: (row: LegendExportRow, format: LegendExportFormat) => void;
   legendExporting: LegendExportRow | null;
+  /** Titik patok sedang dimuat malas (#331) — spinner di dua baris patok. */
+  markerLoading?: boolean;
   helpSlot?: React.ReactNode;
 }
 
@@ -193,6 +195,8 @@ interface LegendRowProps {
   canPrint?: boolean;
   /** Tipe fitur spasial baris — label item unduhan ("Shapefile · Point"). */
   featureType?: "Point" | "Polygon";
+  /** Data baris sedang dimuat (layer malas) — hitungan diganti spinner. */
+  loading?: boolean;
 }
 
 const LEGEND_EXPORT_ITEMS: { format: LegendExportFormat; label: string }[] = [
@@ -202,7 +206,7 @@ const LEGEND_EXPORT_ITEMS: { format: LegendExportFormat; label: string }[] = [
   { format: "kml", label: "KML" },
 ];
 
-function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType, canPrint }: LegendRowProps) {
+function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType, canPrint, loading }: LegendRowProps) {
   return (
     <div className="flex items-center gap-2.5 py-1">
       <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} aria-label={label} />
@@ -225,7 +229,9 @@ function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant =
       >
         {label}
       </button>
-      <span className="text-xs font-mono text-muted-foreground tabular-nums">{count}</span>
+      <span className="text-xs font-mono text-muted-foreground tabular-nums">
+        {loading ? <Loader2 className="h-3 w-3 animate-spin" aria-label="Memuat" /> : count}
+      </span>
       {/* Zoom ke layer sebagai ikon (permintaan owner 2026-09-14) — klik label tetap berfungsi, tapi tidak terlihat sebagai aksi. */}
       <button
         type="button"
@@ -320,6 +326,7 @@ export function MapControlPanel(props: Props) {
     onHotspotDownloadShp, onHotspotPrintPdf, hotspotPdfCalculating, onHotspotShowSummary,
     canExport, canPrint,
     onParcelExport, parcelExporting, onLegendExport, legendExporting,
+    markerLoading,
     helpSlot,
   } = props;
 
@@ -504,11 +511,16 @@ export function MapControlPanel(props: Props) {
                       canPrint={canPrint}
                       featureType="Polygon"
                     />
-                    {/* Patok (#331): dua layer/warna — titiknya dimuat malas saat dicentang. */}
+                    {/* Patok (#331): dua layer/warna — titiknya dimuat malas saat dicentang.
+                        Hitungan baris kuning = patok NON-NKT (layer `marker-point` memfilter nkt==0;
+                        sama dengan legenda peta sebaran Detail Lembaga/Petani) — sebelumnya memakai
+                        total sehingga 62 titik "hilang" (review 2026-09-15). Unduhan barisnya tetap
+                        seluruh patok fisik (kolom NKT membedakan), lihat katalog peta-lahan.md. */}
                     <LegendRow
                       color="#facc15"
                       label="Patok lahan"
-                      count={counts.markers ?? 0}
+                      count={Math.max(0, (counts.markers ?? 0) - (counts.markersNkt ?? 0))}
+                      loading={markerLoading}
                       checked={layers.markers}
                       onToggle={(v) => onLayersChange({ ...layers, markers: v })}
                       onZoomTo={() => onZoomLayer("markers")}
@@ -522,6 +534,7 @@ export function MapControlPanel(props: Props) {
                       color="#ef4444"
                       label="Patok lahan NKT"
                       count={counts.markersNkt ?? 0}
+                      loading={markerLoading}
                       checked={layers.markersNkt}
                       onToggle={(v) => onLayersChange({ ...layers, markersNkt: v })}
                       onZoomTo={() => onZoomLayer("markersNkt")}

@@ -574,7 +574,7 @@ function landParcelLegalWhere(filters: LandParcelReportFilters): Prisma.LandParc
   // NKT (#328) — nilai disaring terhadap daftar sah (pola documentTypes).
   const nkt = filters.nktStatus;
   if (nkt === "affected") {
-    out.push({ identity: { nkt: { is: { status: { in: ["INCLUDED", "AFFECTED"] } } } } });
+    out.push({ identity: { nkt: { is: { status: { in: [...NKT_AFFECTED_STATUSES] } } } } });
   } else if (nkt === "assessed") {
     out.push({ identity: { nkt: { isNot: null } } });
   } else if (nkt === "unassessed") {

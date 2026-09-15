@@ -33,7 +33,7 @@ import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-exp
 import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 import { getFarmerGroupMarkerExportRows } from "@/server/actions/land-marker";
-import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_SOURCE_LABELS, LAND_MARKER_TYPE_LABELS, fmtCoord, labelOf, uniqueMarkerRows } from "@/lib/land-marker";
+import { uniqueMarkerRows, MARKER_XLSX_COLUMNS, formatUniqueMarkerRow } from "@/lib/land-marker";
 import { exportToExcel } from "@/lib/xlsx";
 
 const ParcelsDistributionMap = dynamic(
@@ -236,42 +236,14 @@ export function GroupDetailClient({
         toast.info("Belum ada patok tercatat pada lahan Lembaga ini");
         return;
       }
-      // Satu baris per patok fisik, lahan pemakai digabung, urut KT → Blok (format sama dengan Peta Lahan, keputusan owner 2026-09-14).
+      // Satu baris per patok fisik, lahan pemakai digabung, urut KT → Blok — kolom & format
+      // SAMA dengan unduhan Peta Lahan / Report › Patok (satu definisi di lib/land-marker, review 2026-09-15).
       const unique = uniqueMarkerRows(res.data.rows);
       await exportToExcel({
         filename: `patok-${parcelExportFileBase(res.data.label, new Date())}`,
         sheetName: "Patok",
-        columns: [
-          { header: "Kode Patok", key: "code", width: 18 },
-          { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
-          { header: "Blok", key: "blok", width: 10 },
-          { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 60, wrap: true },
-          { header: "Lembaga Petani", key: "groupName", width: 26 },
-          { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
-          { header: "Lintang", key: "latitude", width: 14 },
-          { header: "Bujur", key: "longitude", width: 14 },
-          { header: "Kondisi", key: "condition", width: 16 },
-          { header: "Jenis", key: "type", width: 12 },
-          { header: "Tanggal Pemasangan", key: "installedAt", width: 14 },
-          { header: "Dipasang oleh", key: "installedBy", width: 20 },
-          { header: "Sumber koordinat", key: "source", width: 16 },
-          { header: "NKT", key: "nkt", width: 8 },
-          { header: "Keterangan", key: "notes", width: 30 },
-        ],
-        data: unique.map((r) => ({
-          ...r,
-          subGroupLv2: r.subGroupLv2 ?? "",
-          blok: r.blok ?? "",
-          latitude: Number(fmtCoord(r.latitude)),
-          longitude: Number(fmtCoord(r.longitude)),
-          condition: labelOf(LAND_MARKER_CONDITION_LABELS, r.condition),
-          type: labelOf(LAND_MARKER_TYPE_LABELS, r.type),
-          installedAt: r.installedAt ?? "",
-          installedBy: r.installedBy ?? "",
-          source: labelOf(LAND_MARKER_SOURCE_LABELS, r.source),
-          nkt: r.nkt ? "Ya" : "",
-          notes: r.notes ?? "",
-        })),
+        columns: MARKER_XLSX_COLUMNS,
+        data: unique.map(formatUniqueMarkerRow),
       });
       toast.success(`${formatNumber(unique.length)} patok diunduh (${formatNumber(res.data.rows.length)} tautan lahan)`);
     } catch {

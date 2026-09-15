@@ -121,7 +121,7 @@ export async function getFarmerGroupDetail(id: string) {
   });
   if (!group) return null;
 
-  const [trainingPackages, activities, farmers] = await Promise.all([
+  const [trainingPackages, activities, farmers, markerPoints] = await Promise.all([
     // Paket wajib (exclude OTHER) — basis cakupan pelatihan (pola DA-02).
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
@@ -188,9 +188,10 @@ export async function getFarmerGroupDetail(id: string) {
         },
       },
     }),
+    // Patok (#331) — sejajar dengan kueri lain, bukan setelahnya (review 2026-09-15).
+    fetchFarmerGroupMarkerPoints(group.id),
   ]);
 
-  const markerPoints = await fetchFarmerGroupMarkerPoints(group.id);
   const detail = buildFarmerGroupDetail(
     group.id,
     group.name,

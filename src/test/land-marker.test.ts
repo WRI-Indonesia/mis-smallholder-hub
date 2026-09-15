@@ -143,6 +143,10 @@ describe("checkMarkerNearParcel — guard ≤ 100 m + deteksi lat/long tertukar"
     expect(checkMarkerNearParcel({ lon: 101.19, lat: 0.52 }, () => MARKER_MAX_DISTANCE_M)).toBeNull();
   });
 
+  it("jarak tak-hingga (lahan tanpa geom valid) → guard dilewati, bukan pesan 'Infinity m'", () => {
+    expect(checkMarkerNearParcel({ lon: 101.19, lat: 0.52 }, () => Number.POSITIVE_INFINITY)).toBeNull();
+  });
+
   it("jauh, tetapi versi tertukar dekat → pesan menyebut lat/long tertukar", () => {
     const msg = checkMarkerNearParcel({ lon: 0.52, lat: 101.19 }, (p) => (p.lon === 101.19 ? 3 : 11_000_000));
     expect(msg).toMatch(/tertukar/);

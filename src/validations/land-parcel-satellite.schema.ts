@@ -170,14 +170,22 @@ function refineNkt(d: z.infer<typeof nktBase>, ctx: z.RefinementCtx) {
   if (d.assessedAt && d.assessedAt.getTime() > Date.now() + 24 * 3600 * 1000) {
     ctx.addIssue({ code: "custom", path: ["assessedAt"], message: "Tanggal asesmen tidak boleh di masa depan" });
   }
-  // Duplikat kategori dibuang diam-diam (checkbox tak bisa ganda; importer bisa).
-  // NOT_AFFECTED selalu tanpa kategori — sama dengan importer; kalau tidak,
-  // form yang beralih status tanpa mencentang-hapus akan menyimpan "Tidak terdampak — NKT 4".
-  d.categories = d.status === "NOT_AFFECTED" ? [] : [...new Set(d.categories)];
 }
+/**
+ * Normalisasi SETELAH validasi, sebagai `.transform()` — bukan mutasi di dalam
+ * superRefine (review 2026-09-15). Duplikat kategori dibuang diam-diam (checkbox
+ * tak bisa ganda; importer bisa). NOT_AFFECTED selalu tanpa kategori — sama dengan
+ * importer; kalau tidak, form yang beralih status tanpa mencentang-hapus akan
+ * menyimpan "Tidak terdampak — NKT 4".
+ */
+const normalizeNkt = <T extends z.infer<typeof nktBase>>(d: T): T => ({
+  ...d,
+  categories: d.status === "NOT_AFFECTED" ? [] : [...new Set(d.categories)],
+});
 export const landParcelNktSchema = nktBase
   .extend({ landParcelId: z.string().min(1, "Lahan tidak valid") })
-  .superRefine(refineNkt);
+  .superRefine(refineNkt)
+  .transform(normalizeNkt);
 export type LandParcelNktInput = z.infer<typeof landParcelNktSchema>;
 
 export type LandParcelBorderInput = z.infer<typeof landParcelBorderSchema>;

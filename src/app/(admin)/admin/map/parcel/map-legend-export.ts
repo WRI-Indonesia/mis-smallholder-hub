@@ -2,8 +2,8 @@ import type { Feature, FeatureCollection, MultiPolygon, Point, Polygon } from "g
 import { exportToExcel } from "@/lib/xlsx";
 import { downloadFeatureExport } from "@/lib/parcel-spatial-download";
 import { toAsciiDbf, toDbfProperties, parcelExportFileBase, type ParcelExportFormat, type ParcelExportProperties } from "@/lib/parcel-export-data";
-import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_SOURCE_LABELS, LAND_MARKER_TYPE_LABELS, fmtCoord, labelOf, uniqueMarkerRows, groupMarkersByParcel, type UniqueMarkerRow } from "@/lib/land-marker";
-import { isNktAffected } from "@/lib/land-parcel-satellite-format";
+import { LAND_MARKER_CONDITION_LABELS, fmtCoord, labelOf, uniqueMarkerRows, groupMarkersByParcel, MARKER_XLSX_COLUMNS, formatUniqueMarkerRow } from "@/lib/land-marker";
+import { isNktAffected, landNktStatusFromShortLabel } from "@/lib/land-parcel-satellite-format";
 import type { LandMarkerExportRow } from "@/server/actions/land-marker";
 import type { KTPoint } from "@/types/map";
 import { buildLayerReportDoc, type LayerReportContext, type LayerReportInput } from "@/lib/layer-report-pdf";
@@ -148,7 +148,7 @@ export async function exportParcelRow(
   now: Date,
   context?: LayerReportContext,
 ): Promise<number> {
-  const features = row === "nkt" ? fc.features.filter((f) => isNktAffected(nktCodeFromLabel(f.properties.nkt))) : fc.features;
+  const features = row === "nkt" ? fc.features.filter((f) => isNktAffected(landNktStatusFromShortLabel(f.properties.nkt))) : fc.features;
   const slug = row === "parcelPoints" ? "titik-lahan" : row === "nkt" ? "lahan-nkt" : "lahan";
   const b = base(slug, label, now);
   if (features.length === 0) return 0;
@@ -182,7 +182,7 @@ export async function exportParcelRow(
         properties: f.properties,
       })),
     };
-    const nktColor = (p: Record<string, unknown>) => (isNktAffected(nktCodeFromLabel((p.nkt as string | null) ?? null)) ? RED : isPoint ? BLUE : PURPLE);
+    const nktColor = (p: Record<string, unknown>) => (isNktAffected(landNktStatusFromShortLabel(typeof p.nkt === "string" ? p.nkt : null)) ? RED : isPoint ? BLUE : PURPLE);
     savePdf({
       title: row === "nkt" ? "Lahan NKT (termasuk/terdampak)" : isPoint ? "Point Lahan Petani" : "Area Lahan Petani",
       subtitle: `${label ?? "Semua"} · ${features.length} lahan · dicetak ${printedAt(now)}`,
@@ -236,51 +236,7 @@ export async function exportParcelRow(
   return features.length;
 }
 
-/** Label pendek NKT di atribut ekspor → kode status (untuk saringan baris "Lahan NKT"). */
-function nktCodeFromLabel(label: string | null): string | null {
-  if (!label) return null;
-  if (label.startsWith("Termasuk")) return "INCLUDED";
-  if (label.startsWith("Terdampak")) return "AFFECTED";
-  return "NOT_AFFECTED";
-}
-
 // ─── Patok (Point) — satu baris/fitur per patok FISIK (keputusan owner 2026-09-14) ───
-
-const MARKER_XLSX_COLUMNS = [
-  { header: "Kode Patok", key: "code", width: 18 },
-  { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
-  { header: "Blok", key: "blok", width: 10 },
-  { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 60, wrap: true },
-  { header: "Lembaga Petani", key: "groupName", width: 26 },
-  { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
-  { header: "Lintang", key: "latitude", width: 14 },
-  { header: "Bujur", key: "longitude", width: 14 },
-  { header: "Kondisi", key: "condition", width: 16 },
-  { header: "Jenis", key: "type", width: 12 },
-  { header: "Tanggal Pemasangan", key: "installedAt", width: 14 },
-  { header: "Dipasang oleh", key: "installedBy", width: 20 },
-  { header: "Sumber koordinat", key: "source", width: 16 },
-  { header: "NKT", key: "nkt", width: 8 },
-  { header: "Keterangan", key: "notes", width: 30 },
-];
-
-/** Baris unik patok → nilai siap tampil (label Indonesia, koordinat 6 desimal). */
-export function formatUniqueMarkerRow(r: UniqueMarkerRow) {
-  return {
-    ...r,
-    subGroupLv2: r.subGroupLv2 ?? "",
-    blok: r.blok ?? "",
-    latitude: Number(fmtCoord(r.latitude)),
-    longitude: Number(fmtCoord(r.longitude)),
-    condition: labelOf(LAND_MARKER_CONDITION_LABELS, r.condition),
-    type: labelOf(LAND_MARKER_TYPE_LABELS, r.type),
-    installedAt: r.installedAt ?? "",
-    installedBy: r.installedBy ?? "",
-    source: labelOf(LAND_MARKER_SOURCE_LABELS, r.source),
-    nkt: r.nkt ? "Ya" : "",
-    notes: r.notes ?? "",
-  };
-}
 
 export async function exportMarkerRow(
   row: "markers" | "markersNkt",

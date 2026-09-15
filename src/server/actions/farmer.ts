@@ -112,7 +112,7 @@ export async function getFarmerDetail(id: string) {
 
   const access = await getAccessContext();
 
-  const [farmer, trainingPackages] = await Promise.all([
+  const [farmer, trainingPackages, markerPoints] = await Promise.all([
     prisma.farmer.findFirst({
       where: {
         id,
@@ -175,6 +175,8 @@ export async function getFarmerDetail(id: string) {
       select: { code: true, name: true },
       orderBy: { code: "asc" },
     }),
+    // Patok (#331) — sejajar dengan kueri lain; dibuang bila petani di luar scope (return null).
+    fetchFarmerMarkerPoints(id),
   ]);
   if (!farmer) return null;
 
@@ -234,7 +236,7 @@ export async function getFarmerDetail(id: string) {
     },
     detail,
     // Patok (#331): titik di peta sebaran + ringkasan.
-    markerPoints: await fetchFarmerMarkerPoints(farmer.id),
+    markerPoints,
     // Tabel persil (tanpa geometry) + poligon peta (pola #171).
     parcels: farmer.landParcels.map((p) => ({
       id: p.id,

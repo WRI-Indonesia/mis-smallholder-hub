@@ -151,6 +151,11 @@ export function planMarkersFromVertices(rings: LonLat[][], nearby: NearbyMarker[
  * Deteksi lat/long tertukar: bila titik jauh dari lahan tetapi versi tertukarnya
  * dekat, itu hampir pasti kesalahan kolom di GPS/Excel. Mengembalikan pesan
  * error yang menyebut perbaikannya, atau null bila titik sah.
+ *
+ * Jarak tak-hingga = lahan tidak punya `geom` yang valid (GeoJSON cacat →
+ * kolom generated NULL, lihat migrasi 20260914100000) padahal `geometry` JSON
+ * terisi; guard tidak bisa dijalankan → dilewati, sama seperti lahan tanpa
+ * poligon (review 2026-09-15: sebelumnya menolak dengan "Infinity m").
  */
 export function checkMarkerNearParcel(
   point: LonLat,
@@ -158,7 +163,7 @@ export function checkMarkerNearParcel(
   maxM = MARKER_MAX_DISTANCE_M,
 ): string | null {
   const d = distanceToBoundaryM(point);
-  if (d <= maxM) return null;
+  if (!Number.isFinite(d) || d <= maxM) return null;
   const swapped = { lon: point.lat, lat: point.lon };
   const ds = distanceToBoundaryM(swapped);
   if (ds <= maxM) return `Koordinat ${Math.round(d)} m dari batas lahan — lat/long tampaknya tertukar (bila ditukar: ${Math.round(ds)} m)`;
@@ -319,4 +324,43 @@ export function groupMarkersByParcel(rows: MarkerLinkRow[], unique: UniqueMarker
   const out = [...byParcel.values()];
   for (const g of out) g.markers.sort((a, b) => a.sequenceNo - b.sequenceNo);
   return out.sort((a, b) => cmp(a.subGroupLv2, b.subGroupLv2) || cmp(a.blok, b.blok) || a.parcelId.localeCompare(b.parcelId));
+}
+
+// ─── Unduhan Excel patok (satu baris per patok fisik) ───
+
+/** Kolom Excel unduhan patok — SATU definisi untuk Peta Lahan, Report › Patok, dan Detail Lembaga (review 2026-09-15). */
+export const MARKER_XLSX_COLUMNS = [
+  { header: "Kode Patok", key: "code", width: 18 },
+  { header: "Kelompok Tani", key: "subGroupLv2", width: 20 },
+  { header: "Blok", key: "blok", width: 10 },
+  { header: "Lahan (Nama Petani · ID Petani · ID Lahan #no)", key: "lahan", width: 60, wrap: true },
+  { header: "Lembaga Petani", key: "groupName", width: 26 },
+  { header: "Jumlah Lahan", key: "parcelCount", width: 10 },
+  { header: "Lintang", key: "latitude", width: 14 },
+  { header: "Bujur", key: "longitude", width: 14 },
+  { header: "Kondisi", key: "condition", width: 16 },
+  { header: "Jenis", key: "type", width: 12 },
+  { header: "Tanggal Pemasangan", key: "installedAt", width: 14 },
+  { header: "Dipasang oleh", key: "installedBy", width: 20 },
+  { header: "Sumber koordinat", key: "source", width: 16 },
+  { header: "NKT", key: "nkt", width: 8 },
+  { header: "Keterangan", key: "notes", width: 30 },
+];
+
+/** Baris unik patok → nilai siap tampil (label Indonesia, koordinat 6 desimal). */
+export function formatUniqueMarkerRow(r: UniqueMarkerRow) {
+  return {
+    ...r,
+    subGroupLv2: r.subGroupLv2 ?? "",
+    blok: r.blok ?? "",
+    latitude: Number(fmtCoord(r.latitude)),
+    longitude: Number(fmtCoord(r.longitude)),
+    condition: labelOf(LAND_MARKER_CONDITION_LABELS, r.condition),
+    type: labelOf(LAND_MARKER_TYPE_LABELS, r.type),
+    installedAt: r.installedAt ?? "",
+    installedBy: r.installedBy ?? "",
+    source: labelOf(LAND_MARKER_SOURCE_LABELS, r.source),
+    nkt: r.nkt ? "Ya" : "",
+    notes: r.notes ?? "",
+  };
 }

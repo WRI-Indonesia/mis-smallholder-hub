@@ -126,6 +126,13 @@ describe("markerFeaturesToRecords — shapefile Point → record ber-header temp
     expect(out.skipped).toEqual([]);
   });
 
+  it("atribut DBF bernama Lintang/Bujur (survei lama) TIDAK menimpa koordinat geometri (review 2026-09-15)", () => {
+    const out = markerFeaturesToRecords([
+      { index: 0, properties: { parcel_id: "LHN-1.A", LINTANG: 0.9, bujur: 100.1 }, geometry: { type: "Point", coordinates: [101.19, 0.52] } },
+    ]);
+    expect(out.records).toEqual([{ Lintang: 0.52, Bujur: 101.19, parcel_id: "LHN-1.A" }]);
+  });
+
   it("geometri bukan Point → dilewati dengan alasan; tanpa geometri → record tetap (koordinat dari atribut bila ada)", () => {
     const out = markerFeaturesToRecords([
       { index: 0, properties: { parcel_id: "A" }, geometry: { type: "Polygon", coordinates: [] } },

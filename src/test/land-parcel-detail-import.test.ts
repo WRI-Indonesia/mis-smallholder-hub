@@ -448,6 +448,19 @@ describe("validateParcelDetailRows — NKT (#328) & Blok", () => {
     expect(b._errors.join(" ")).toMatch(/Kategori NKT wajib/);
   });
 
+  it("sel Status NKT '0' / FALSE (boolean Excel) lewat pipeline = tidak terdampak — tidak jatuh ke bawaan berkas, tidak error (review 2026-09-15)", () => {
+    const m = { ...mapping, nktStatus: "Status" } as const;
+    const dflt = { status: "AFFECTED" as const, categories: ["NKT_4" as const], assessedAt: null, assessor: null };
+    const [zero] = validateParcelDetailRows([{ ...hjpRow, Status: 0 }], m, parcels, undefined, dflt);
+    expect(zero._isValid).toBe(true);
+    expect(zero.data?.nkt?.status).toBe("NOT_AFFECTED");
+    const [bool] = validateParcelDetailRows([{ ...hjpRow, Status: false }], m, parcels, undefined, dflt);
+    expect(bool._isValid).toBe(true);
+    expect(bool.data?.nkt?.status).toBe("NOT_AFFECTED");
+    const [one] = validateParcelDetailRows([{ ...hjpRow, Status: true }], m, parcels, undefined, dflt);
+    expect(one.data?.nkt?.status).toBe("AFFECTED");
+  });
+
   it("bawaan berkas TIDAK menyentuh baris tanpa satu pun sel NKT bila status bawaan kosong", () => {
     const [r] = validateParcelDetailRows([{ ID_Lahan: "HJP.0001.A", ID_Petani: "HJP.0001", Blok: "17 L" }], mapping, parcels, undefined, { status: null, categories: ["NKT_4"], assessedAt: null, assessor: null });
     expect(r._isValid).toBe(true);

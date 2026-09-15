@@ -187,8 +187,8 @@ export type NktStatusCode = "INCLUDED" | "AFFECTED" | "NOT_AFFECTED";
 export function parseNktStatus(raw: unknown): { status: NktStatusCode | null; error: string | null } {
   if (typeof raw === "boolean") return { status: raw ? "AFFECTED" : "NOT_AFFECTED", error: null };
   const rawText = raw === null || raw === undefined ? "" : String(raw).trim().toLowerCase();
-  if (rawText === "0") return { status: "NOT_AFFECTED", error: null };
-  if (rawText === "1") return { status: "AFFECTED", error: null };
+  if (rawText === "0" || rawText === "false") return { status: "NOT_AFFECTED", error: null };
+  if (rawText === "1" || rawText === "true") return { status: "AFFECTED", error: null };
   const text = cleanFreeTextCell(raw).toLowerCase();
   if (!text) return { status: null, error: null };
   // Semua token negasi BERBATAS KATA: tanpa itu "T-aman- Nasional" terbaca "aman" → tidak terdampak (temuan review 2026-09-14).
@@ -387,13 +387,27 @@ export interface ParcelDetailValidatedRow {
 type RawRow = Record<string, unknown>;
 type Mapping = Partial<Record<ParcelDetailFieldKey, string>>;
 
-const FREE_TEXT_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["borderNorth", "borderEast", "borderSouth", "borderWest", "nktAssessor", "nktStatus", "nktCategories"]);
+const FREE_TEXT_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["borderNorth", "borderEast", "borderSouth", "borderWest", "nktAssessor", "nktCategories"]);
+
+/**
+ * Sel Status NKT TIDAK boleh lewat pembersih umum: `cleanFreeTextCell` menganggap
+ * "0" kosong dan meng-string-kan boolean Excel jadi "false" — dua bentuk yang
+ * `parseNktStatus` justru terima sebagai "tidak terdampak". Lewat pembersih umum,
+ * "0" jatuh ke bawaan berkas (bisa terbalik jadi terdampak) dan FALSE jadi error
+ * "tidak dikenal" (temuan review 2026-09-15). Boolean → "1"/"0", "0" dipertahankan.
+ */
+export function rawNktStatusCell(value: unknown): string {
+  if (typeof value === "boolean") return value ? "1" : "0";
+  if (value === null || value === undefined) return "";
+  const s = String(value).trim().replace(/\s+/g, " ");
+  return s === "0" ? s : cleanFreeTextCell(s);
+}
 
 function readRaw(row: RawRow, mapping: Mapping): Record<ParcelDetailFieldKey, string> {
   const out = {} as Record<ParcelDetailFieldKey, string>;
   for (const f of PARCEL_DETAIL_TARGET_FIELDS) {
     const col = mapping[f.key];
-    out[f.key] = col ? (FREE_TEXT_KEYS.has(f.key) ? cleanFreeTextCell(row[col]) : cleanCell(row[col])) : "";
+    out[f.key] = !col ? "" : f.key === "nktStatus" ? rawNktStatusCell(row[col]) : FREE_TEXT_KEYS.has(f.key) ? cleanFreeTextCell(row[col]) : cleanCell(row[col]);
   }
   return out;
 }

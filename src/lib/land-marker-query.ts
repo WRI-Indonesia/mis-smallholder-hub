@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { MARKER_SIMPLIFY_M, MARKER_SNAP_M, formatMarkerCode, type LonLat, type NearbyMarker } from "@/lib/land-marker";
 import { metersToDegrees } from "@/lib/parcel-neighbor";
+import { NKT_AFFECTED_STATUSES } from "@/lib/land-parcel-satellite-format";
 
 /**
  * Kueri PostGIS untuk patok batas (#329). NOTE: tanpa cek permission — caller
@@ -158,7 +159,7 @@ async function fetchMarkerPointsWhere(farmerWhere: Prisma.Sql): Promise<MarkerPo
            EXISTS (
              SELECT 1 FROM tbl_land_parcel_marker l2
              JOIN tbl_land_parcel_nkt n ON n.parcel_uid = l2.parcel_uid
-             WHERE l2.marker_id = m.id AND l2.is_active AND n.status IN ('INCLUDED', 'AFFECTED')
+             WHERE l2.marker_id = m.id AND l2.is_active AND n.status::text IN (${Prisma.join([...NKT_AFFECTED_STATUSES])})
            ) AS nkt
     FROM tbl_land_marker m
     WHERE m.is_active AND EXISTS (

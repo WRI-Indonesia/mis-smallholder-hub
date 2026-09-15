@@ -168,8 +168,13 @@ export function markerFeaturesToRecords(features: MarkerFeatureInput[]): {
     }
     // Kunci geometri DITARUH LEBIH DULU: auto-match memilih header pertama yang cocok,
     // jadi Lintang/Bujur dari geometri menang atas atribut DBF X/Y/LAT/LON yang bisa
-    // berisi UTM atau nilai basi (temuan review 2026-09-14).
-    const rec: Record<string, unknown> = hasGeom ? { Lintang: lat, Bujur: lon, ...(f.properties ?? {}) } : { ...(f.properties ?? {}) };
+    // berisi UTM atau nilai basi (temuan review 2026-09-14). Atribut DBF yang kebetulan
+    // bernama Lintang/Bujur DIBUANG — bila ikut di-spread ia menimpa nilai geometri
+    // (review 2026-09-15); geometri shapefile selalu menang.
+    const props = Object.fromEntries(
+      Object.entries(f.properties ?? {}).filter(([k]) => !hasGeom || !/^(lintang|bujur)$/i.test(k.trim())),
+    );
+    const rec: Record<string, unknown> = hasGeom ? { Lintang: lat, Bujur: lon, ...props } : props;
     records.push(rec);
     rowNumbers.push(f.index + 1);
   }

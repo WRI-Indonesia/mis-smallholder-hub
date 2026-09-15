@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  landNktStatusFromShortLabel,
+  landNktStatusLabel,
   documentTypeShort,
   parcelMapperLabel,
   parcelMapperShort,
@@ -159,5 +161,15 @@ describe("NKT (#328) — label & ringkasan", () => {
     expect(isNktAffected("AFFECTED")).toBe(true);
     expect(isNktAffected("NOT_AFFECTED")).toBe(false);
     expect(isNktAffected(null)).toBe(false);
+  });
+});
+
+describe("landNktStatusFromShortLabel — kebalikan LAND_NKT_STATUS_SHORT (review 2026-09-15)", () => {
+  it("tiap label pendek kembali ke kodenya; kosong/tak dikenal → null", () => {
+    for (const code of ["INCLUDED", "AFFECTED", "NOT_AFFECTED"] as const) {
+      expect(landNktStatusFromShortLabel(landNktStatusLabel(code, true))).toBe(code);
+    }
+    expect(landNktStatusFromShortLabel(null)).toBeNull();
+    expect(landNktStatusFromShortLabel("Terdampak")).toBeNull();
   });
 });

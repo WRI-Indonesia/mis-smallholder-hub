@@ -221,6 +221,17 @@ export const LAND_NKT_STATUS_SHORT: Record<LandNktStatusCode, string> = {
 export function landNktStatusLabel(status: string, short = false): string {
   return (short ? LAND_NKT_STATUS_SHORT : LAND_NKT_STATUS_LABELS)[status as LandNktStatusCode] ?? status;
 }
+/**
+ * Kebalikan `LAND_NKT_STATUS_SHORT` — untuk atribut ekspor lahan yang hanya membawa
+ * label pendek (`ParcelExportProperties.nkt`, #331). Dipasangkan dengan tabelnya sendiri
+ * (bukan `startsWith("Terdampak")`) supaya relabel tidak diam-diam mengosongkan saringan
+ * "Lahan NKT" (review 2026-09-15). Label tak dikenal / kosong → null (belum dinilai).
+ */
+export function landNktStatusFromShortLabel(label: string | null | undefined): LandNktStatusCode | null {
+  if (!label) return null;
+  const hit = (Object.entries(LAND_NKT_STATUS_SHORT) as [LandNktStatusCode, string][]).find(([, l]) => l === label);
+  return hit ? hit[0] : null;
+}
 /** Status yang berarti lahan "kena" NKT — satu-satunya definisi (KPI, layer peta, PDF, tanda turunan patok #329). */
 export const NKT_AFFECTED_STATUSES: readonly LandNktStatusCode[] = ["INCLUDED", "AFFECTED"];
 export function isNktAffected(status: string | null | undefined): boolean {

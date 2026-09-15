@@ -748,13 +748,26 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
             notes: r.notes ?? undefined,
           };
 
-          // (0) Kode patok (HJP-PTK-000123) → patok itu, apa pun lahannya: perbarui; bila belum
-          //     tertaut ke lahan ini → tautkan (menempelkan patok fisik yang dikenal ke lahan lain).
+          // (0) Kode patok (HJP-PTK-000123) → patok itu: perbarui; bila belum tertaut ke lahan
+          //     ini → tautkan (menempelkan patok fisik yang dikenal ke lahan lain).
+          //     Kepemilikan (review 2026-09-15): kode berurutan mudah salah ketik/ditebak, dan
+          //     guard 100 m hanya memeriksa titik baris terhadap lahan INI — tanpa cek berikut,
+          //     satu salah ketik memindahkan patok Lembaga lain ratusan km. Patok ber-kode hanya
+          //     boleh disentuh bila sudah tertaut ke lahan ini (aktif/pernah) ATAU posisinya
+          //     sekarang ≤ MARKER_MAX_DISTANCE_M dari titik yang diunggah (patok fisik yang sama).
           if (r.code) {
-            const m = await tx.landMarker.findUnique({ where: { code: r.code }, select: { id: true } });
+            const m = await tx.landMarker.findUnique({ where: { code: r.code }, select: { id: true, longitude: true, latitude: true } });
             if (!m) { local.rejected.push({ landParcelId, parcelId: parcel.parcelId, sequenceNo: r.sequenceNo, reason: `Kode patok ${r.code} tidak ditemukan` }); continue; }
-            await tx.landMarker.update({ where: { id: m.id }, data: { longitude: r.longitude, latitude: r.latitude, source: "GPS", isActive: true, ...attrs, modifiedBy: uid } });
             const link = byMarker.get(m.id);
+            const oldLink = link ? null : await tx.landParcelMarker.findUnique({ where: { parcelUid_markerId: { parcelUid: parcel.parcelUid, markerId: m.id } }, select: { id: true } });
+            if (!link && !oldLink) {
+              const dm = distanceMeters(point, { lon: m.longitude, lat: m.latitude });
+              if (!(dm <= MARKER_MAX_DISTANCE_M)) {
+                local.rejected.push({ landParcelId, parcelId: parcel.parcelId, sequenceNo: r.sequenceNo, reason: `Kode patok ${r.code} bukan patok lahan ini dan berjarak ${Math.round(dm)} m dari titik yang diunggah (maks ${MARKER_MAX_DISTANCE_M} m) — periksa kodenya` });
+                continue;
+              }
+            }
+            await tx.landMarker.update({ where: { id: m.id }, data: { longitude: r.longitude, latitude: r.latitude, source: "GPS", isActive: true, ...attrs, modifiedBy: uid } });
             if (link) {
               if (r.sequenceNo != null && r.sequenceNo !== link.sequenceNo && !bySeq.has(r.sequenceNo)) {
                 await tx.landParcelMarker.update({ where: { id: link.id }, data: { sequenceNo: r.sequenceNo, modifiedBy: uid } });
@@ -765,9 +778,8 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
             } else {
               const seq = r.sequenceNo != null && !bySeq.has(r.sequenceNo) ? r.sequenceNo : nextSeq++;
               if (seq >= nextSeq) nextSeq = seq + 1;
-              const old = await tx.landParcelMarker.findUnique({ where: { parcelUid_markerId: { parcelUid: parcel.parcelUid, markerId: m.id } }, select: { id: true } });
-              const created = old
-                ? await tx.landParcelMarker.update({ where: { id: old.id }, data: { isActive: true, sequenceNo: seq, modifiedBy: uid }, select: { id: true } })
+              const created = oldLink
+                ? await tx.landParcelMarker.update({ where: { id: oldLink.id }, data: { isActive: true, sequenceNo: seq, modifiedBy: uid }, select: { id: true } })
                 : await tx.landParcelMarker.create({ data: { parcelUid: parcel.parcelUid, markerId: m.id, sequenceNo: seq, createdBy: uid }, select: { id: true } });
               const rec = { id: created.id, sequenceNo: seq, markerId: m.id };
               bySeq.set(seq, rec); byMarker.set(m.id, rec);
@@ -816,6 +828,10 @@ export async function bulkUpsertLandMarkers(input: unknown): Promise<ActionResul
             const m = await tx.landMarker.create({ data: { code, longitude: r.longitude, latitude: r.latitude, source: "GPS", ...attrs, createdBy: uid }, select: { id: true } });
             markerId = m.id;
             local.created++;
+            // Ikut daftar `nearby` (diambil sekali sebelum transaksi) supaya baris berikutnya
+            // di batch yang sama pada titik ≤ 5 m memperbarui patok ini lewat (b), bukan
+            // melahirkan kembaran beberapa cm di sebelahnya (review 2026-09-15).
+            nearby.push({ id: markerId, lon: r.longitude, lat: r.latitude, parcelIds: [parcel.parcelId], linkedToThisParcel: true, isActive: true });
           }
           const old = await tx.landParcelMarker.findUnique({ where: { parcelUid_markerId: { parcelUid: parcel.parcelUid, markerId } }, select: { id: true } });
           const link = old
