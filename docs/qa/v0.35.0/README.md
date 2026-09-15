@@ -16,7 +16,7 @@ _(belum ada run)_
 
 ## Keputusan
 
-**Go / No-go:** — 
+**Go / No-go:** **Go** (owner, 2026-09-15) — **tanpa run QA staging** (deploy staging OOM #340, diputuskan `mvp → main` langsung; lihat `05-signoff.md`). Pengganti: review rentang penuh #339, smoke `mis-dev`, `data-qc.ts` A–C ✓ di `mis-staging` & `mis-prod` pra-merge. Wajib setelah deploy prod: `node scripts/qa/new-run.mjs --version v0.35.0 --env prod --only P0`. 
 
 ## Known issues yang dibawa (kandidat)
 

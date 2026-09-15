@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot checksum migrasi yang sudah APPLIED di mis-prod (#303). Jangan edit manual — segarkan dengan scripts/migrations/refresh-applied-checksums.ts setelah setiap migrate deploy.",
   "source": "mis-prod",
-  "refreshedAt": "2026-08-29",
+  "refreshedAt": "2026-09-15",
   "checksums": {
     "20260521232859_init": "80ee9d999c0a3ab5c32f51a11fb0c32645a3ad6806ae872f2ef0f0a05826a0e0",
     "20260606104223_add_farmer_group_indexes": "9d9c8e28a3f07fdb659f5a38fd71b0e44c3cde53db041ea9e76cc714221b99d9",
@@ -31,6 +31,11 @@
     "20260819041658_farmer_group_boundary": "83c2954ea10cdbd5238a0c8dc63578c4842a8608133f17a544951f528e7c8043",
     "20260819073337_administrative_boundary": "20d7322e78a4af37f1fc542a43a149c3531bc1e4640674beee01b9fccf3ab837",
     "20260827053327_land_parcel_satellites": "40cab8168cbe75c9cf2517b59403886b745e178f3244cfe8f889d5e6bb7c9c01",
-    "20260829031525_land_stdb_stage": "23c088ffd2783475973dc07ca48ae054a666ec041e70e109b88b3bd54302b239"
+    "20260829031525_land_stdb_stage": "23c088ffd2783475973dc07ca48ae054a666ec041e70e109b88b3bd54302b239",
+    "20260914100000_land_parcel_geom": "4af071ca2941aaaa0080186b28a6e3d6ca7b3733f17a1a5c546f87120fb30ece",
+    "20260914100100_land_parcel_border": "c7b6d42c1c543928e007da99a3fcb04578ea2c9f7f5049222adee90ef984da64",
+    "20260914150000_land_parcel_nkt": "2485303a7dc56dbe8b87b8f763df0fd2c6cd839400cc0c033783767d09df027e",
+    "20260914170000_land_marker": "2070cd376522ccb4a65977a23fffc75a0aa91a89d454bd75120894191c6cccb0",
+    "20260914200000_land_marker_code": "3affbd391cd590fd4123986100805d1679372bf8f617421235d4c1ff04c800ed"
   }
 }
