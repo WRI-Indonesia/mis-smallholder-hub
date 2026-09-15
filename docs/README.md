@@ -42,6 +42,14 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [product/module-status.md](./product/module-status.md) | Cerminan status modul (kanonis di `project/roadmap.md`) |
 | [product/pages/README.md](./product/pages/README.md) | Katalog Menu → Sub Menu → Page → Object (satu file per menu utama) |
 
+## 🧪 QA/QC (`qa/`) — pengujian manual per rilis
+
+| File | Isi |
+|------|-----|
+| [qa/README.md](./qa/README.md) | Proses QA/QC manual: kapan (setelah deploy staging, sebelum PR ke `main`), siapa, aturan bukti (gitignored — repo publik) |
+| [qa/_template/](./qa/_template/) | Master 6 berkas per rilis: scope · smoke · kasus uji · QC data · temuan · sign-off |
+| [qa/v0.35.0/](./qa/v0.35.0/) | Rilis pertama yang memakai proses ini (siklus #326–#338) |
+
 ## 📊 Proyek (`project/`) — status delivery & proses
 
 | File | Isi |
