@@ -24,7 +24,7 @@ Halaman: Petani (/admin/master-data/farmers)
 │   └── Tombol: Kolom
 ├── Tabel
 │   ├── Kolom: ID Petani, Nama, L/P, NIK, Tempat Lahir, Tanggal Lahir,
-│   │          Status, Lembaga Petani, Tahun Bergabung, Distrik
+│   │          Status, Lembaga Petani, Tahun Bergabung, Distrik, Lahan NKT (#338, hidden)
 │   └── Aksi baris: Lihat, Edit, Nonaktifkan
 └── Dialog
     └── FarmerFormModal (Tambah / Edit Petani)
@@ -49,7 +49,7 @@ Halaman: Petani (/admin/master-data/farmers)
 | Filter Status | Select | SUPERADMIN saja |
 | Pencarian | Filter | `Cari nama, ID petani, atau NIK...` (`name`, `farmerId`, `nik`) |
 | Tombol `Tambah Petani` | Tombol | CREATE — buka `FarmerFormModal` |
-| Tabel daftar | Tabel | Kolom: `ID Petani`, `Nama`, `L/P` (badge), `NIK` (disensor `maskNik`), `Tempat Lahir`, `Tanggal Lahir` (disensor `maskBirthDate`), `Status` (SUPERADMIN), `Lembaga Petani`, `Tahun Bergabung`, `Distrik` |
+| Tabel daftar | Tabel | Kolom: `ID Petani`, `Nama`, `L/P` (badge), `NIK` (disensor `maskNik`), `Tempat Lahir`, `Tanggal Lahir` (disensor `maskBirthDate`), `Status` (SUPERADMIN), `Lembaga Petani`, `Tahun Bergabung`, `Distrik`, `Lahan NKT` (hidden default, #338 — badge merah "n NKT" bila > 0; `nktCount` dari `_count.landParcels` ber-filter status NKT di `getFarmers`, satu kueri tanpa N+1; ikut Excel) |
 | Aksi baris | Tombol | Lihat → `/admin/master-data/farmers/{id}`; Edit → modal; Nonaktifkan → `toggleFarmerActive` |
 | Ekspor | Tombol | `data-farmers` — NIK & tanggal lahir diekspor penuh (tidak disensor) |
 

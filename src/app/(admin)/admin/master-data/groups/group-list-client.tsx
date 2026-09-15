@@ -55,6 +55,8 @@ interface FarmerGroup {
   farmersCount: number;
   parcelsCount: number;
   totalArea: number;
+  /** Lahan aktif termasuk/terdampak NKT (#338). */
+  nktCount: number;
 }
 
 interface District {
@@ -168,6 +170,22 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       render: (row) => `${formatArea(row.totalArea)} Ha`,
     },
     {
+      // #338 — mati bawaan; nyalakan lewat selektor kolom untuk mencari Lembaga ber-lahan NKT.
+      key: "nktCount",
+      label: "Lahan NKT",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm tabular-nums",
+      render: (row) =>
+        row.nktCount > 0 ? (
+          <Badge variant="outline" className="border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+            {formatNumber(row.nktCount)} NKT
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
       key: "joinYear",
       label: "Tahun Bergabung Program",
       sortable: true,
@@ -249,6 +267,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       farmersCount: g.farmersCount,
       parcelsCount: g.parcelsCount,
       totalArea: g.totalArea,
+      nktCount: g.nktCount,
       joinYear: g.joinYear ?? "—",
       establishedYear: g.establishedYear ?? "—",
       rspoCertYear: formatRspoCert(g),

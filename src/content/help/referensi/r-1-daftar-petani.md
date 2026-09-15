@@ -47,6 +47,8 @@ Keempat kartu di atas tabel **mengikuti filter yang sedang aktif**, bukan seluru
 
 **Distrik** — diturunkan dari lembaga, bukan diisi terpisah di data petani.
 
+**Lahan NKT** — tersembunyi bawaan (nyalakan lewat tombol Kolom): berapa lahan aktif petani ini yang termasuk/terdampak NKT menurut asesmen yang tercatat; badge merah bila ada, "—" bila tidak. Urutkan kolom ini untuk menemukan petani ber-lahan NKT. Rinciannya di tab Lahan halaman detail.
+
 ## Tombol
 
 **Tambah Petani** — hanya muncul bila akun Anda punya izin menambah data pada menu ini.

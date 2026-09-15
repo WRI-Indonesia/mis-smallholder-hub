@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { fetchFarmerGroupMarkerPoints } from "@/lib/land-marker-query";
+import { NKT_AFFECTED_STATUSES } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer-group.schema";
 import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
@@ -51,7 +52,7 @@ export async function getFarmerGroups(search?: string) {
   // menarik 1 baris per petani + per lahan hanya untuk dihitung di JS, dan array
   // mentahnya tidak lagi ikut terkirim ke client (#163).
   const groupIds = groups.map((g) => g.id);
-  const [farmers, parcelAggs] = await Promise.all([
+  const [farmers, parcelAggs, nktAggs] = await Promise.all([
     prisma.farmer.findMany({
       where: { isActive: true, farmerGroupId: { in: groupIds } },
       select: { id: true, farmerGroupId: true },
@@ -62,12 +63,22 @@ export async function getFarmerGroups(search?: string) {
       _count: { _all: true },
       _sum: { area: true },
     }),
+    // Lahan NKT per Lembaga (#338): agregat ketiga dengan pola yang sama — tanpa menarik baris lahan.
+    prisma.landParcel.groupBy({
+      by: ["farmerId"],
+      where: {
+        isActive: true,
+        farmer: { isActive: true, farmerGroupId: { in: groupIds } },
+        identity: { nkt: { status: { in: [...NKT_AFFECTED_STATUSES] } } },
+      },
+      _count: { _all: true },
+    }),
   ]);
 
   const farmerToGroup = new Map(farmers.map((f) => [f.id, f.farmerGroupId]));
-  const stats = new Map<string, { farmersCount: number; parcelsCount: number; totalArea: number }>();
+  const stats = new Map<string, { farmersCount: number; parcelsCount: number; totalArea: number; nktCount: number }>();
   for (const f of farmers) {
-    const s = stats.get(f.farmerGroupId) ?? { farmersCount: 0, parcelsCount: 0, totalArea: 0 };
+    const s = stats.get(f.farmerGroupId) ?? { farmersCount: 0, parcelsCount: 0, totalArea: 0, nktCount: 0 };
     s.farmersCount += 1;
     stats.set(f.farmerGroupId, s);
   }
@@ -77,12 +88,17 @@ export async function getFarmerGroups(search?: string) {
     s.parcelsCount += p._count._all;
     s.totalArea += p._sum.area ?? 0;
   }
+  for (const p of nktAggs) {
+    const s = stats.get(farmerToGroup.get(p.farmerId) ?? "");
+    if (s) s.nktCount += p._count._all;
+  }
 
   return groups.map((g) => ({
     ...g,
     farmersCount: stats.get(g.id)?.farmersCount ?? 0,
     parcelsCount: stats.get(g.id)?.parcelsCount ?? 0,
     totalArea: stats.get(g.id)?.totalArea ?? 0,
+    nktCount: stats.get(g.id)?.nktCount ?? 0,
   }));
 }
 

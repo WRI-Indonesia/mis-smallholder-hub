@@ -51,6 +51,8 @@ interface Farmer {
   birthDate: Date | string | null;
   joinedYear: number | null;
   isActive: boolean;
+  /** Lahan aktif termasuk/terdampak NKT (#338). */
+  nktCount: number;
 }
 
 interface Props {
@@ -173,6 +175,22 @@ export function FarmerListClient({
       cellClassName: "text-sm text-muted-foreground",
       render: (row) => row.farmerGroup.district.name,
     },
+    {
+      // #338 — mati bawaan; nyalakan lewat selektor kolom.
+      key: "nktCount",
+      label: "Lahan NKT",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm tabular-nums",
+      render: (row) =>
+        row.nktCount > 0 ? (
+          <Badge variant="outline" className="border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+            {formatNumber(row.nktCount)} NKT
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
   ];
 
   const getExportRow = (f: Farmer) => {
@@ -183,6 +201,7 @@ export function FarmerListClient({
       farmerGroup: f.farmerGroup.name,
       joinedYear: f.joinedYear ?? "—",
       district: f.farmerGroup.district.name,
+      nktCount: f.nktCount,
       nik: f.nik ?? "—",
       address: f.address ?? "—",
       birthPlace: f.birthPlace ?? "—",

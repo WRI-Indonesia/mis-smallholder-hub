@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { fetchFarmerMarkerPoints } from "@/lib/land-marker-query";
-import { summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
+import { NKT_AFFECTED_STATUSES, summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
 import type { FarmerInput, UpdateFarmerInput } from "@/validations/farmer.schema";
@@ -44,7 +44,7 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
 
   // Select ramping sesuai interface Farmer di list client (+ round-trip form
   // edit) — hindari full-row farmerGroup/district ikut terkirim per petani (#163).
-  return prisma.farmer.findMany({
+  const farmers = await prisma.farmer.findMany({
     where,
     select: {
       id: true,
@@ -64,9 +64,12 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
           district: { select: { id: true, name: true } },
         },
       },
+      // Lahan NKT per petani (#338): satu hitungan relasi ber-filter, bukan N+1 dan bukan baris lahan.
+      _count: { select: { landParcels: { where: { isActive: true, identity: { nkt: { status: { in: [...NKT_AFFECTED_STATUSES] } } } } } } },
     },
     orderBy: { name: "asc" },
   });
+  return farmers.map(({ _count, ...f }) => ({ ...f, nktCount: _count.landParcels }));
 }
 
 export async function getFarmerById(id: string) {
