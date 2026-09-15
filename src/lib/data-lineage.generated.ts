@@ -430,7 +430,6 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "district": "R",
       "farmerGroup": "R",
-      "landMarker": "R",
       "landParcel": "R"
     },
     "modules": [

@@ -40,7 +40,7 @@ Hanya lahan ber-poligon yang muncul di petanya.
 + PDF berformat landscape: halaman pertama ikhtisar, disusul peta per sel, lalu tabel. Excel-nya multi-sheet dan turut menyertakan gambar peta.
 + Bila latar peta dipakai, tombolnya berubah jadi **Menyiapkan peta…** sebentar: berkas menunggu sampai semua halaman punya latarnya. Tidak perlu menunggu preview selesai sebelum menekan unduh.
 9. Perlu laporan khusus NKT untuk Lembaga ini? Klik tombol merah **Laporan NKT** di samping PDF.
-+ Berkas ini **tidak mengikuti filter** — isinya seluruh lahan aktif Lembaga: kop dengan sumber asesmen, enam angka ringkasan (lahan aktif, sudah dinilai, lahan NKT, luas area NKT, panjang, patok NKT), peta seluruh lahan dengan lahan NKT merah bernomor (plus peta rinci per gugus bila persilnya kecil), tabel **hanya lahan NKT**, dan ringkasan per kategori NKT 1–6. Nama berkasnya `Laporan_NKT_<kode Lembaga>_<tanggal>.pdf`. Rinciannya di tutorial *Menyaring lahan yang belum punya surat atau STDB* (bagian Laporan NKT).
++ Berkas ini **tidak mengikuti filter** — isinya seluruh lahan aktif Lembaga: kop dengan sumber asesmen, tiga angka ringkasan (total lahan, lahan NKT, luas NKT), peta seluruh lahan dengan lahan NKT merah bernomor (plus peta rinci per gugus bila persilnya kecil), tabel **hanya lahan NKT**, dan ringkasan per kategori NKT 1–6. Nama berkasnya `Laporan_NKT_<kode Lembaga>_<tanggal>.pdf`. Rinciannya di tutorial *Menyaring lahan yang belum punya surat atau STDB* (bagian Laporan NKT).
 
 ## Kalau bermasalah
 

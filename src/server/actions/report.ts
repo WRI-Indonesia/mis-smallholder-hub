@@ -737,8 +737,8 @@ export async function getLandParcelReportGeometries(
 
 /**
  * Laporan NKT per Lembaga (#332) — data untuk PDF: seluruh lahan aktif Lembaga
- * (poligon untuk peta konteks) + baris NKT + jumlah patok NKT. Gate
- * `report-land-parcel` PRINT; Lembaga wajib dalam cakupan akses.
+ * (poligon untuk peta konteks) + baris NKT. Gate `report-land-parcel` PRINT;
+ * Lembaga wajib dalam cakupan akses.
  */
 export async function getNktReportData(farmerGroupId: string): Promise<ActionResult<NktReportData>> {
   if (!(await hasPermission("report-land-parcel", "PRINT"))) {
@@ -755,24 +755,15 @@ export async function getNktReportData(farmerGroupId: string): Promise<ActionRes
   });
   if (!group) return { success: false, error: "Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses" };
 
-  const [parcels, markersNkt] = await Promise.all([
-    prisma.landParcel.findMany({
-      where: { isActive: true, farmer: { isActive: true, farmerGroupId } },
-      select: {
-        id: true, parcelId: true, area: true, subGroupLv2: true, blok: true, geometry: true,
-        farmer: { select: { name: true, farmerId: true } },
-        identity: { select: { nkt: { select: { status: true, categories: true, affectedAreaHa: true, affectedLengthM: true, assessedAt: true, assessor: true, source: true, notes: true } } } },
-      },
-      orderBy: { parcelId: "asc" },
-    }),
-    prisma.landMarker.count({
-      where: {
-        isActive: true,
-        parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroupId } } } } } },
-        AND: [{ parcels: { some: { isActive: true, parcel: { nkt: { status: { in: [...NKT_AFFECTED_STATUSES] } } } } } }],
-      },
-    }),
-  ]);
+  const parcels = await prisma.landParcel.findMany({
+    where: { isActive: true, farmer: { isActive: true, farmerGroupId } },
+    select: {
+      id: true, parcelId: true, area: true, subGroupLv2: true, blok: true, geometry: true,
+      farmer: { select: { name: true, farmerId: true } },
+      identity: { select: { nkt: { select: { status: true, categories: true, affectedAreaHa: true, affectedLengthM: true, assessedAt: true, assessor: true, source: true, notes: true } } } },
+    },
+    orderBy: { parcelId: "asc" },
+  });
   return {
     success: true,
     data: {
@@ -790,7 +781,6 @@ export async function getNktReportData(farmerGroupId: string): Promise<ActionRes
           ? { ...p.identity.nkt, assessedAt: p.identity.nkt.assessedAt ? p.identity.nkt.assessedAt.toISOString().slice(0, 10) : null }
           : null,
       })),
-      markersNkt,
       printedAt: new Date().toISOString(),
     },
   };

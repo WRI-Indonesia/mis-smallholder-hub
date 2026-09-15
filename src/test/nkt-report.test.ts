@@ -28,7 +28,6 @@ const data: NktReportData = {
     parcel(4, null),
     parcel(5, null),
   ],
-  markersNkt: 7,
   printedAt: "2026-09-14T12:00:00.000Z",
 };
 
@@ -45,10 +44,11 @@ describe("summarizeNktReport", () => {
 });
 
 describe("buildNktReportInput", () => {
-  it("KPI 6 kotak, fitur peta = lahan NKT saja, konteks = semua lahan, baris tabel hanya lahan NKT, kategori 'NKT 1'", () => {
+  it("KPI 3 kotak (total · lahan NKT · luas NKT — revisi owner 2026-09-15), fitur peta = lahan NKT saja, konteks = semua lahan, baris tabel hanya lahan NKT, kategori 'NKT 1'", () => {
     const input = buildNktReportInput(data);
     expect(input.kicker).toBe("SMALLHOLDER HUB · LAPORAN NKT");
-    expect(input.kpis?.map((k) => k.value)).toEqual(["5", "3", "2", "0,60 ha", "100 m", "7"]);
+    expect(input.kpis?.map((k) => [k.label, k.value])).toEqual([["Total lahan", "5"], ["Lahan NKT", "2"], ["Luas NKT", "0,60 ha"]]);
+    expect(input.kpis?.[0].note).toBe("3 sudah dinilai · 2 belum");
     expect(input.fc.features).toHaveLength(2);
     expect(input.context?.fc.features).toHaveLength(5);
     expect(input.rows.map((r) => r.parcelId)).toEqual(["HJP.0001.A", "HJP.0002.A"]);
@@ -85,7 +85,8 @@ describe("buildNktReportDoc / nktReportFilename", () => {
     const text = pdfText(doc);
     expect(text).toContain("LAPORAN NKT");
     expect(text).toContain("KP Hasrat Jaya Pagaruyung");
-    expect(text).toContain("PATOK NKT"); // label KPI dicetak kapital
+    expect(text).toContain("LUAS NKT"); // label KPI dicetak kapital
+    expect(text).not.toContain("PATOK NKT"); // kotak dicoret (revisi owner 2026-09-15)
     expect(text).toContain("HJP.0002.A");
     expect(text).not.toContain("HJP.0003.A");
     expect(text).toContain("Ringkasan per kategori NKT");

@@ -32,8 +32,6 @@ export interface NktReportParcel {
 export interface NktReportData {
   group: { name: string; code: string | null; abrv: string | null; districtName: string | null };
   parcels: NktReportParcel[];
-  /** Patok yang salah satu lahan pemakainya kena NKT. */
-  markersNkt: number;
   printedAt: string;
 }
 
@@ -73,13 +71,13 @@ export function buildNktReportInput(data: NktReportData): LayerReportInput {
     kicker: "SMALLHOLDER HUB · LAPORAN NKT",
     title: `Laporan NKT — ${data.group.name}`,
     subtitle: `${label}${data.group.districtName ? ` · ${data.group.districtName}` : ""} · ${s.assessors.length ? `sumber asesmen: ${s.assessors.join("; ")}` : "sumber asesmen belum dicatat"} · dicetak ${printed}`,
+    // Tiga kotak saja (revisi owner 2026-09-15): total lahan · lahan NKT · luas NKT.
+    // Sudah dinilai/tidak terdampak, panjang, dan patok NKT dicoret dari kop —
+    // panjang tetap ada per baris tabel; angka lain cukup di catatan kecil.
     kpis: [
-      { label: "Lahan aktif", value: fmtNum(s.total), note: `${fmtNum(s.unassessed)} belum dinilai` },
-      { label: "Sudah dinilai", value: fmtNum(s.assessed), note: `${fmtNum(s.clean)} tidak terdampak` },
+      { label: "Total lahan", value: fmtNum(s.total), note: `${fmtNum(s.assessed)} sudah dinilai · ${fmtNum(s.unassessed)} belum` },
       { label: "Lahan NKT", value: fmtNum(s.affected), note: `${fmtHa(s.areaAffectedParcels)} ha luas lahan` },
-      { label: "Luas area NKT", value: `${fmtHa(s.nktArea)} ha`, note: "di dalam lahan (Lampiran asesmen)" },
-      { label: "Panjang", value: `${fmtNum(Math.round(s.nktLength))} m`, note: "sempadan/koridor NKT" },
-      { label: "Patok NKT", value: fmtNum(data.markersNkt), note: "patok lahan NKT (turunan)" },
+      { label: "Luas NKT", value: `${fmtHa(s.nktArea)} ha`, note: "area NKT di dalam lahan (Lampiran asesmen)" },
     ],
     fc: {
       type: "FeatureCollection",

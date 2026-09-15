@@ -61,14 +61,14 @@ Untuk pihak yang hanya butuh gambaran NKT — fasilitator, mitra asesmen, audito
 | Bagian | Isi |
 | --- | --- |
 | **Kop** | Nama & kode Lembaga, Distrik, **sumber asesmen** (asesor/sumber yang tercatat di baris NKT), waktu cetak |
-| **Enam angka** | Lahan aktif (berapa belum dinilai) · Sudah dinilai (berapa tidak terdampak) · Lahan NKT (Σ luas poligonnya) · Luas area NKT · Panjang sempadan/koridor · Patok NKT |
+| **Tiga angka** | Total lahan (catatan: berapa sudah/belum dinilai) · Lahan NKT (catatan: Σ luas poligonnya) · Luas NKT (Σ luas area NKT di dalam lahan) |
 | **Peta** | Semua lahan Lembaga tergambar tipis berlabel nama petani; lahan NKT **merah bernomor** — nomor sama dengan nomor di tabel. Bila persilnya kecil, menyusul halaman **peta rinci** per gugus (A, B, …) |
 | **Tabel** | Hanya lahan NKT: ID Lahan, petani, KT/Blok, luas, status, kategori, luas & panjang area NKT, tanggal, catatan |
 | **Ringkasan** | Jumlah lahan per kategori NKT 1–6 |
 
 + Asesor/sumber ditulis sekali di kop bila semua baris sama; kolom per baris hanya memuatnya bila Lembaga punya lebih dari satu sumber asesmen.
 + Lahan yang belum dinilai ikut dihitung di kotak angka tetapi tidak masuk tabel — tabel adalah daftar kerja lahan NKT, bukan roster.
-+ Angka "Luas area NKT" dan "Panjang" hanya terisi bila kolom itu diisi saat asesmen/import (Lampiran laporan asesmen biasanya menyediakannya).
++ Angka "Luas NKT" (dan kolom Panjang di tabel) hanya terisi bila kolom itu diisi saat asesmen/import (Lampiran laporan asesmen biasanya menyediakannya).
 
 ## Membaca kartu ringkasan
 
