@@ -17,8 +17,9 @@ Baseline dev (`mis-dev` = snapshot prod 2026-09-14 + 5 migrasi): smoke 7 halaman
 | 2026-09-15-prod.md | Smoke | 8 | 0 | 4 | 0 | 0 |
 | 2026-09-15-prod.md | Kasus uji | 10 | 0 | 11 | 0 | 0 |
 | 2026-09-15-prod.md | Regresi | 1 | 0 | 2 | 0 | 0 |
+| 2026-09-15-prod-ulang.md | Smoke | 2 | 0 | 0 | 0 | 0 |
 
-Run prod `--only P0` (2026-09-15 21:20–21:45, ≤ 1 jam setelah deploy): **19 Pass · 0 Fail · 17 Blocked**. Blocked = kasus yang **menulis** data (TC-PREP, import NKT, generate/unggah patok, form — prod tidak diisi data uji) atau butuh akun OPERATOR/DONOR/SUPERADMIN yang sesinya segar (#342). Kasus NKT/patok di prod terverifikasi pada empty state; verifikasi isi sudah dilakukan di `mis-dev` 2026-09-15 dan bisa diulang di staging (kode = v0.35.0, DB = 34 migrasi). Temuan: **#342** (role JWT beku — perilaku lama, bukan regresi). `data-qc.ts` prod A1–A6 · B8–B9 · C2 · C4 ✓.
+Run prod `--only P0` (2026-09-15 21:20–21:45, ≤ 1 jam setelah deploy): **19 Pass · 0 Fail · 17 Blocked**; run ulang 21:55 (`-ulang`, SM-24 & SM-26 setelah logout/login ulang): **+2 Pass** → smoke P0 **10/12 Pass**, 2 Blocked hanya karena tanpa akun OPERATOR/DONOR. Blocked = kasus yang **menulis** data (TC-PREP, import NKT, generate/unggah patok, form — prod tidak diisi data uji) atau butuh akun OPERATOR/DONOR/SUPERADMIN yang sesinya segar (#342). Kasus NKT/patok di prod terverifikasi pada empty state; verifikasi isi sudah dilakukan di `mis-dev` 2026-09-15 dan bisa diulang di staging (kode = v0.35.0, DB = 34 migrasi). Temuan: **#342** (role JWT beku — perilaku lama, bukan regresi). `data-qc.ts` prod A1–A6 · B8–B9 · C2 · C4 ✓.
 
 ## Keputusan
 
