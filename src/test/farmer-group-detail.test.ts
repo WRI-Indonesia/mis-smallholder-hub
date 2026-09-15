@@ -11,7 +11,7 @@ const PACKAGES = [
 ];
 
 function parcel(id: string, area: number | null, opts: Partial<DetailRawFarmer["landParcels"][number]> = {}) {
-  return { id, area, subGroupLv2: null, blok: null, isPsr: false, plantingYear: null, ...opts };
+  return { id, area, subGroupLv2: null, blok: null, isPsr: false, plantingYear: null, nkt: false, patok: 0, ...opts };
 }
 
 /** Periods "YYYY-MM" berturut mulai start, sebanyak n — untuk kategori ketersediaan. */

@@ -7,17 +7,22 @@ import {
   getDistrictsForMap,
   getFarmerGroupsForMap,
   getMapData,
+  getMapMarkers,
 } from "@/server/actions/map";
+import { getMapMarkerExportRows } from "@/server/actions/land-marker";
 import { expandMapData } from "@/lib/map-data";
 import type {
   MapData,
+  MapFilters,
+  MapMarkerTuple,
   MapSelectOption,
   MapGroupOption,
 } from "@/types/map";
+import { exportKtRow, exportMarkerRow, exportParcelRow, parcelContext } from "./map-legend-export";
 import type { FeatureCollection, MultiPolygon } from "geojson";
 import { filterPointsWithinAreas } from "@/lib/fire-alert";
 import { getAdminBoundaries } from "@/server/actions/fire-boundary";
-import { MapControlPanel, type LayerVisibility, type LayerZoomTarget } from "./map-control-panel";
+import { MapControlPanel, type LayerVisibility, type LayerZoomTarget, type LegendExportRow, type LegendExportFormat } from "./map-control-panel";
 import {
   DEFAULT_OVERLAY_STATE,
   buildSymbology,
@@ -81,7 +86,25 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
     kt: true,
     parcelPoints: false,
     parcelAreas: true,
+    nkt: true,
+    // Patok (#331) default mati — ribuan titik; dimuat malas saat dicentang.
+    markers: false,
+    markersNkt: false,
   });
+  // Titik patok untuk filter yang sedang dimuat; null = belum diminta. Di-reset saat data peta dimuat ulang.
+  const [markerData, setMarkerData] = useState<MapMarkerTuple[] | null>(null);
+  const [markerLoading, setMarkerLoading] = useState(false);
+  // Kunci filter yang datanya sudah ada ATAU sedang dimuat — diset saat permintaan dimulai
+  // supaya efek yang jalan ulang tidak memicu permintaan kembar; dibatalkan bila gagal.
+  const markerFilterKey = useRef<string | null>(null);
+  // Nomor permintaan terakhir: respons yang lebih tua diabaikan, dan hanya permintaan
+  // terakhir yang mematikan `markerLoading` (review 2026-09-15: flag pernah macet `true`
+  // karena `finally` dijaga `cancelled`, lalu semua run berikutnya bail di `markerLoading`).
+  const markerRequest = useRef(0);
+  // Filter yang BENAR-BENAR dipakai memuat mapData — patok harus mengikuti ini, bukan pilihan
+  // dropdown yang bisa berubah tanpa Muat Data (kalau tidak, titik patok Lembaga L digambar di
+  // atas poligon seluruh Distrik).
+  const [loadedFilters, setLoadedFilters] = useState<MapFilters | null>(null);
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAY_STATE);
   const [customLayers, setCustomLayers] = useState<CustomLayer[]>([]);
   const [hotspot, setHotspot] = useState<HotspotState>(DEFAULT_HOTSPOT_STATE);
@@ -360,8 +383,77 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
       if (res.success) {
         setMapData(res.data ? expandMapData(res.data) : null);
         setLoadedArea(area);
+        setLoadedFilters({ provinceId, districtId, farmerGroupId });
+        setMarkerData(null);
+        markerFilterKey.current = null;
       }
     });
+  };
+
+  // Muat titik patok saat salah satu layer patok dicentang dan belum ada untuk filter yang
+  // dimuat (#331). Kunci = filter mapData; permintaan lebih baru membatalkan yang lama.
+  const wantMarkers = layers.markers || layers.markersNkt;
+  useEffect(() => {
+    if (!wantMarkers || !mapData || !loadedFilters) return;
+    const key = `${loadedFilters.provinceId ?? ""}|${loadedFilters.districtId}|${loadedFilters.farmerGroupId ?? ""}`;
+    if (markerFilterKey.current === key) return; // sudah ada / sedang dimuat untuk filter ini
+    markerFilterKey.current = key;
+    const reqId = ++markerRequest.current;
+    setMarkerLoading(true);
+    getMapMarkers(loadedFilters)
+      .then((res) => {
+        if (reqId !== markerRequest.current) return; // sudah ada permintaan lebih baru
+        if (!res.success || !res.data) {
+          toast.error(res.success ? "Gagal memuat patok" : res.error);
+          markerFilterKey.current = null; // boleh dicoba lagi
+          return;
+        }
+        setMarkerData(res.data.markers);
+      })
+      .catch(() => {
+        if (reqId !== markerRequest.current) return;
+        toast.error("Gagal memuat patok");
+        markerFilterKey.current = null;
+      })
+      .finally(() => { if (reqId === markerRequest.current) setMarkerLoading(false); });
+  }, [wantMarkers, mapData, loadedFilters]);
+
+  // Unduh per baris legenda (#331) — Excel + spasial sesuai tipe fitur baris.
+  const [legendExporting, setLegendExporting] = useState<LegendExportRow | null>(null);
+  // Baris legenda mengunduh apa yang ditampilkan → filter yang DIMUAT (`loadedFilters`),
+  // bukan pilihan dropdown; tombol "Unduh Lahan" di panel filter sengaja tetap ikut dropdown (#313).
+  const handleLegendExport = async (row: LegendExportRow, format: LegendExportFormat) => {
+    if (!loadedFilters || !mapData || legendExporting) return;
+    if (format === "pdf" && !canPrint) { toast.error("Tidak memiliki izin untuk mencetak"); return; }
+    setLegendExporting(row);
+    const now = new Date();
+    // Konteks lahan untuk PDF (poligon yang sudah dimuat peta — tanpa panggilan server tambahan).
+    const context = format === "pdf" ? parcelContext(mapData.parcels) : undefined;
+    try {
+      if (row === "kt") {
+        const label = loadedArea?.districtName ?? null;
+        await exportKtRow(format, mapData.kelompokTani, label, now, context);
+        toast.success(`${mapData.kelompokTani.length} Lembaga diunduh`);
+        return;
+      }
+      if (row === "markers" || row === "markersNkt") {
+        const res = await getMapMarkerExportRows(loadedFilters, row === "markersNkt");
+        if (!res.success || !res.data) { toast.error(res.success ? "Gagal menyiapkan data patok" : res.error); return; }
+        const n = await exportMarkerRow(row, format, res.data.rows, res.data.label, now, context);
+        if (n === 0) toast.info("Tidak ada patok pada filter ini");
+        else toast.success(`${n} ${format === "xlsx" ? "baris patok" : "patok"} diunduh`);
+        return;
+      }
+      const res = await getMapParcelExportData(loadedFilters);
+      if (!res.success || !res.data) { toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error); return; }
+      const n = await exportParcelRow(row, format, res.data.fc, res.data.label, now, context);
+      if (n === 0) toast.info(row === "nkt" ? "Tidak ada lahan NKT ber-poligon pada filter ini" : "Tidak ada lahan ber-poligon pada filter ini");
+      else toast.success(`${n} lahan diunduh`);
+    } catch {
+      toast.error("Gagal membuat berkas unduhan");
+    } finally {
+      setLegendExporting(null);
+    }
   };
 
   const handleLoad = () => {
@@ -378,6 +470,9 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
       }
       setMapData(res.data ? expandMapData(res.data) : null);
       setLoadedArea(area);
+      setLoadedFilters({ provinceId, districtId, farmerGroupId });
+      setMarkerData(null);
+      markerFilterKey.current = null;
       setFilterOpen(false);
       const total =
         (res.data?.counts.kt ?? 0) + (res.data?.counts.parcelAreas ?? 0);
@@ -405,6 +500,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
         canEditParcel={canEditParcel}
         canPrintParcel={canPrintParcel}
         onParcelUpdated={reloadMapData}
+        markers={markerData}
       />
 
       <MapControlPanel
@@ -446,6 +542,9 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
         canPrint={canPrint}
         onParcelExport={handleParcelExport}
         parcelExporting={parcelExporting}
+        onLegendExport={handleLegendExport}
+        legendExporting={legendExporting}
+        markerLoading={markerLoading}
       />
 
       <HotspotSummaryDialog

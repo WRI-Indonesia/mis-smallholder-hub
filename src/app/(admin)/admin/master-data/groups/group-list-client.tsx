@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { NktCountBadge } from "@/components/shared/nkt-count-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -55,6 +56,8 @@ interface FarmerGroup {
   farmersCount: number;
   parcelsCount: number;
   totalArea: number;
+  /** Lahan aktif termasuk/terdampak NKT (#338). */
+  nktCount: number;
 }
 
 interface District {
@@ -168,6 +171,15 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       render: (row) => `${formatArea(row.totalArea)} Ha`,
     },
     {
+      // #338 — mati bawaan; nyalakan lewat selektor kolom untuk mencari Lembaga ber-lahan NKT.
+      key: "nktCount",
+      label: "Lahan NKT",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm tabular-nums",
+      render: (row) => <NktCountBadge count={row.nktCount} />,
+    },
+    {
       key: "joinYear",
       label: "Tahun Bergabung Program",
       sortable: true,
@@ -249,6 +261,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
       farmersCount: g.farmersCount,
       parcelsCount: g.parcelsCount,
       totalArea: g.totalArea,
+      nktCount: g.nktCount,
       joinYear: g.joinYear ?? "—",
       establishedYear: g.establishedYear ?? "—",
       rspoCertYear: formatRspoCert(g),

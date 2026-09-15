@@ -39,6 +39,7 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
       detail={result.detail}
       parcels={result.parcels}
       mapParcels={result.mapParcels}
+      markerPoints={result.markerPoints}
       treeSummary={treeSummary}
       treePoints={treePoints}
       canEdit={canEdit}

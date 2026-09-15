@@ -19,6 +19,18 @@ describe("parcel bulk mapping (#150)", () => {
       expect(m.blok).toBe("BLOK");
     });
 
+    it("sepadan (#326): alias DBF ≤10 karakter (BTS_UTARA/SEP_TIMUR) dan nama arah polos dikenali", () => {
+      const m = autoMatchColumns(["ID_LAHAN", "ID_PETANI", "BTS_UTARA", "SEP_TIMUR", "SELATAN", "bts_barat"], ALL_KEYS);
+      expect(m.borderNorth).toBe("BTS_UTARA");
+      expect(m.borderEast).toBe("SEP_TIMUR");
+      expect(m.borderSouth).toBe("SELATAN");
+      expect(m.borderWest).toBe("bts_barat");
+      // Kolom satu huruf (B = blok? T = tahun?) TIDAK terpetakan ke sepadan.
+      const single = autoMatchColumns(["ID_LAHAN", "ID_PETANI", "B", "T", "S", "U"], ALL_KEYS);
+      expect(single.borderWest).toBeUndefined();
+      expect(single.borderEast).toBeUndefined();
+    });
+
     it("match case-insensitive + trim; alias poktan/kt dikenali", () => {
       const m = autoMatchColumns(["Poktan", "blk"], ALL_KEYS);
       expect(m.subGroupLv2).toBe("Poktan");

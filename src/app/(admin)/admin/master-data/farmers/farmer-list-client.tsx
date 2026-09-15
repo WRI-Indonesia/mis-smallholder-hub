@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { NktCountBadge } from "@/components/shared/nkt-count-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Building, Users, User, UserCheck } from "lucide-react";
 import { FarmerFormModal } from "./farmer-form-modal";
@@ -51,6 +52,8 @@ interface Farmer {
   birthDate: Date | string | null;
   joinedYear: number | null;
   isActive: boolean;
+  /** Lahan aktif termasuk/terdampak NKT (#338). */
+  nktCount: number;
 }
 
 interface Props {
@@ -173,6 +176,15 @@ export function FarmerListClient({
       cellClassName: "text-sm text-muted-foreground",
       render: (row) => row.farmerGroup.district.name,
     },
+    {
+      // #338 — mati bawaan; nyalakan lewat selektor kolom.
+      key: "nktCount",
+      label: "Lahan NKT",
+      sortable: true,
+      defaultVisible: false,
+      cellClassName: "text-sm tabular-nums",
+      render: (row) => <NktCountBadge count={row.nktCount} />,
+    },
   ];
 
   const getExportRow = (f: Farmer) => {
@@ -183,6 +195,7 @@ export function FarmerListClient({
       farmerGroup: f.farmerGroup.name,
       joinedYear: f.joinedYear ?? "—",
       district: f.farmerGroup.district.name,
+      nktCount: f.nktCount,
       nik: f.nik ?? "—",
       address: f.address ?? "—",
       birthPlace: f.birthPlace ?? "—",

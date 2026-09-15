@@ -1,6 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { fetchFarmerGroupMarkerPoints } from "@/lib/land-marker-query";
+import { loadNktReportData } from "@/lib/nkt-report-query";
+import type { NktReportData } from "@/lib/nkt-report";
+import type { ActionResult } from "@/types/action-result";
+import { nktAffectedStatusWhere, PARCEL_NKT_MARKER_SELECT, parcelNktPatok } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerGroupSchema, updateFarmerGroupSchema } from "@/validations/farmer-group.schema";
 import type { FarmerGroupInput, UpdateFarmerGroupInput } from "@/validations/farmer-group.schema";
@@ -50,7 +55,7 @@ export async function getFarmerGroups(search?: string) {
   // menarik 1 baris per petani + per lahan hanya untuk dihitung di JS, dan array
   // mentahnya tidak lagi ikut terkirim ke client (#163).
   const groupIds = groups.map((g) => g.id);
-  const [farmers, parcelAggs] = await Promise.all([
+  const [farmers, parcelAggs, nktAggs] = await Promise.all([
     prisma.farmer.findMany({
       where: { isActive: true, farmerGroupId: { in: groupIds } },
       select: { id: true, farmerGroupId: true },
@@ -61,12 +66,22 @@ export async function getFarmerGroups(search?: string) {
       _count: { _all: true },
       _sum: { area: true },
     }),
+    // Lahan NKT per Lembaga (#338): agregat ketiga dengan pola yang sama — tanpa menarik baris lahan.
+    prisma.landParcel.groupBy({
+      by: ["farmerId"],
+      where: {
+        isActive: true,
+        farmer: { isActive: true, farmerGroupId: { in: groupIds } },
+        identity: { nkt: nktAffectedStatusWhere() },
+      },
+      _count: { _all: true },
+    }),
   ]);
 
   const farmerToGroup = new Map(farmers.map((f) => [f.id, f.farmerGroupId]));
-  const stats = new Map<string, { farmersCount: number; parcelsCount: number; totalArea: number }>();
+  const stats = new Map<string, { farmersCount: number; parcelsCount: number; totalArea: number; nktCount: number }>();
   for (const f of farmers) {
-    const s = stats.get(f.farmerGroupId) ?? { farmersCount: 0, parcelsCount: 0, totalArea: 0 };
+    const s = stats.get(f.farmerGroupId) ?? { farmersCount: 0, parcelsCount: 0, totalArea: 0, nktCount: 0 };
     s.farmersCount += 1;
     stats.set(f.farmerGroupId, s);
   }
@@ -76,12 +91,17 @@ export async function getFarmerGroups(search?: string) {
     s.parcelsCount += p._count._all;
     s.totalArea += p._sum.area ?? 0;
   }
+  for (const p of nktAggs) {
+    const s = stats.get(farmerToGroup.get(p.farmerId) ?? "");
+    if (s) s.nktCount += p._count._all;
+  }
 
   return groups.map((g) => ({
     ...g,
     farmersCount: stats.get(g.id)?.farmersCount ?? 0,
     parcelsCount: stats.get(g.id)?.parcelsCount ?? 0,
     totalArea: stats.get(g.id)?.totalArea ?? 0,
+    nktCount: stats.get(g.id)?.nktCount ?? 0,
   }));
 }
 
@@ -120,7 +140,7 @@ export async function getFarmerGroupDetail(id: string) {
   });
   if (!group) return null;
 
-  const [trainingPackages, activities, farmers] = await Promise.all([
+  const [trainingPackages, activities, farmers, markerPoints] = await Promise.all([
     // Paket wajib (exclude OTHER) — basis cakupan pelatihan (pola DA-02).
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
@@ -168,6 +188,8 @@ export async function getFarmerGroupDetail(id: string) {
             // Dipakai untuk cek kelengkapan (computeCompleteness) + peta
             // sebaran lahan di tab Lahan (mapParcels).
             geometry: true,
+            // Status NKT (#330) + jumlah patok (#337): KPI, peta sebaran, dan struktur KT — status + count, bukan baris satelit.
+            identity: { select: PARCEL_NKT_MARKER_SELECT },
           },
         },
         trainingParticipants: {
@@ -185,6 +207,8 @@ export async function getFarmerGroupDetail(id: string) {
         },
       },
     }),
+    // Patok (#331) — sejajar dengan kueri lain, bukan setelahnya (review 2026-09-15).
+    fetchFarmerGroupMarkerPoints(group.id),
   ]);
 
   const detail = buildFarmerGroupDetail(
@@ -202,6 +226,7 @@ export async function getFarmerGroupDetail(id: string) {
         blok: p.blok,
         isPsr: p.isPsr,
         plantingYear: p.plantingYear,
+        ...parcelNktPatok(p.identity),
       })),
       trainingParticipants: f.trainingParticipants.map((tp) => ({
         packageCode: tp.activity.package.code,
@@ -265,6 +290,8 @@ export async function getFarmerGroupDetail(id: string) {
       healthScore: completeness.healthScore,
       totalAnomalies: completeness.totalAnomalies,
     },
+    // Patok (#331): titik di peta sebaran + KPI kondisi.
+    markerPoints,
     // Poligon untuk peta sebaran lahan (tab Lahan) — hanya field yang dipakai peta/popup.
     mapParcels: farmers.flatMap((f) =>
       f.landParcels.map((p) => ({
@@ -277,6 +304,7 @@ export async function getFarmerGroupDetail(id: string) {
         blok: p.blok,
         area: p.area,
         geometry: p.geometry,
+        nktStatus: p.identity.nkt?.status ?? null,
       }))
     ),
   };
@@ -377,4 +405,18 @@ export async function getDistrictsForSelect() {
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+}
+
+/**
+ * Laporan NKT per Lembaga dari Detail Lembaga › tab Lahan (permintaan owner
+ * 2026-09-15) — gate `master-data-groups` PRINT (menu key di-hardcode per entry
+ * point, #313); data & PDF sama persis dengan tombol di Report › Lahan (#332).
+ */
+export async function getFarmerGroupNktReportData(farmerGroupId: string): Promise<ActionResult<NktReportData>> {
+  if (!(await hasPermission("master-data-groups", "PRINT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mencetak laporan" };
+  }
+  const data = await loadNktReportData(farmerGroupId, await getAccessContext());
+  if (!data) return { success: false, error: "Lembaga Petani tidak ditemukan atau Anda tidak memiliki akses" };
+  return { success: true, data };
 }

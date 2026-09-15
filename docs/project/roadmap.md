@@ -241,7 +241,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 
 - **Evidence:** `LandParcel` model ✅, `src/server/actions/land-parcel.ts` (165 LOC) ✅, `src/server/actions/bulk-upload-parcel.ts` (222 LOC) ✅, validation schema ✅, UI list/detail/form ✅, ZIP Shapefile bulk upload dengan column mapping ✅, 14 unit tests ✅. **Data Pohon Sawit (#238, 2026-08-08):** model `Tree` (`tbl_tree`) ✅, bulk upload ZIP shapefile point (`bulk-upload-tree.ts` + helper murni `lib/tree-upload.ts`) ✅, detail lahan: kartu Pohon Sawit + titik di peta Informasi Lahan; detail petani (tab Lahan): kolom Jumlah Pohon + titik di peta Sebaran Lahan ✅, revisi per-set + repoint saat lahan berevisi ✅.
 - **Evidence (lanjutan):** **Identitas & satelit lahan (#296, 2026-08-27):** `LandParcelIdentity.parcelUid` + 5 tabel satelit ✅, import Excel tab Detail Lahan ✅, tab Legalitas + CRUD manual ✅, kolom legalitas Report Lahan & tab Lahan Petani ✅; **#298** Detail Lahan ber-tabs + PDF Profil Lahan 2 halaman ✅; **#297** audit test (suite 1072) ✅.
-- **Next step:** Maintain (migrasi `20260827053327` sudah di prod, #302 2026-08-27); expand to Production dependency. Fase 2 pohon: layer titik di Peta Lahan.
+- **Evidence (2026-09-14, siklus #326–#332):** **#317 Fase 1** kolom `LandParcel.geom` **GENERATED** dari `geometry` JSONB + GiST `tbl_land_parcel_geom_idx` (migrasi `20260914100000`, tanpa backfill, tanpa perubahan jalur tulis; `ST_CollectionExtract` menjaga ring kolinear tak menggagalkan bulk upload) ✅; **#326 sepadan** `LandParcelBorder` 1:1 (teks bebas U/T/S/B; form, import Excel Detail Lahan, atribut DBF shapefile, PDF Profil Lahan; hapus = kosongkan kolom) ✅; **#327 lahan tetangga ≤ 25 m** (`ST_DWithin` via GiST, poligon putus-putus bernomor + legenda di peta Detail Lahan & PDF Profil Lahan; nama petani tetangga selalu tampil — revisi owner) ✅. Satelit NKT (#328) & patok (#329–#331) dicatat di **MD-08**.
+- **Next step:** Maintain; **5 migrasi `20260914*` baru applied `mis-dev` + `mis-staging-local`, belum staging/prod** (satu siklus deploy + seed menu `report-marker` + refresh `applied-checksums.json` #303); expand to Production dependency. Fase 2 pohon: layer titik di Peta Lahan. #317 Fase 2 (deteksi tumpang tindih) kini bisa langsung memakai `geom`.
 
 </details>
 
@@ -270,10 +271,14 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 </details>
 
 <details>
-<summary><strong>MD-08</strong> · 🔲 Planned — HCV</summary>
+<summary><strong>MD-08</strong> · 🔲 Planned — HCV (langkah pertama sudah masuk kode, status dinaikkan ke Partial pada rilis berikutnya)</summary>
 
-- **Evidence:** No HCV model/route/action/UI.
-- **Next step:** Define scope.
+- **Catatan status:** kode #328 sudah di `mvp` (2026-09-14) tetapi baris Phase Status sengaja belum diubah — Roadmap % dijaga test `roadmap.test.ts` agar selalu sama dengan baris rilis terakhir di `metrics.md`, jadi perubahan status ikut siklus rilis (bump → changelog → metrics), bukan commit fitur.
+- **Evidence (#328, 2026-09-14):** status NKT per lahan — `LandParcelNkt` (satelit 1:1 identitas lahan; status termasuk/terdampak/tidak, kategori NKT 1–6, luas & panjang area NKT, tanggal/asesor/sumber), form + hapus di Detail Lahan, kolom & template tersendiri di importer Data Lahan Detail (dengan bawaan per berkas untuk daftar "terdampak" ala Lampiran asesmen), filter/kolom/KPI di Laporan Lahan, layer "Lahan NKT" di Peta Lahan, badge + baris di Profil Lahan PDF. Tanpa menu baru (menumpang menu Lahan).
+- **Evidence (#329, 2026-09-14):** patok batas lahan — `LandMarker` + `LandParcelMarker` (patok fisik dipakai bersama lahan berdampingan, nomor per lahan), tab Patok di Detail Lahan (generate dari poligon, tambah/ubah/urutkan/lepas, foto), unggah GPS Excel/CSV & shapefile Point, PDF, ekspor per Lembaga; tanda **NKT turunan** di tiap patok (merah) dari status lahan pemakainya.
+- **Evidence (#330–#332, 2026-09-14):** NKT & patok di semua menu harian — filter NKT/Patok + badge di Master Data Lahan, KPI Lahan NKT & Patok + layer di Detail Lembaga/Petani (#330); layer patok (kuning/merah) + unduh/PDF per baris legenda di Peta Lahan, kode patok unik `<Lembaga>-PTK-000123`, filter/kolom/KPI patok di Laporan Lahan, menu **Report › Patok** (#331); **Laporan NKT per Lembaga (PDF)** dari Report › Lahan — KPI, peta lahan NKT bernomor, tabel lahan NKT, ringkasan kategori (#332).
+- **Belum:** layer poligon area NKT + deteksi spasial, riwayat asesmen per tahun, luas/rekomendasi pengelolaan lanjutan, dokumen laporan asesmen (S3), tindak lanjut, dashboard NKT.
+- **Next step:** kumpulkan data asesmen Lembaga lain (HJP sudah ada Lampiran III), lalu putuskan apakah modul asesmen penuh dibutuhkan.
 
 </details>
 

@@ -40,6 +40,10 @@ Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil ker
 4. **Identifikasi file `docs/` lain yang terdampak** (peta cepat di Docs sync) dan perbarui **sebelum commit** — di-commit **bersama** kode. Temuan ketidakpatuhan dilaporkan ke owner, bukan didiamkan.
 5. **Bantuan (`src/content/help/`)** — setiap **perubahan atau penambahan fitur** wajib diperiksa dampaknya ke materi Bantuan: apakah ada tutorial/konsep yang jadi **keliru** (label tombol berubah, langkah bertambah, aturan validasi berubah), dan apakah alur baru itu **perlu tutorial baru**. Perbarui bersama kode, jangan ditunda — panduan yang salah lebih berbahaya daripada panduan yang belum ada, karena pengguna terlanjur memercayainya.
 
+### Issue Close — Kasus uji manual (bersama retro)
+
+Saat menutup issue fitur/bug, tulis kasus uji manualnya di `docs/qa/<versi berikutnya>/02-test-cases.md` (ID `TC-<issue>-<nn>`: prasyarat & data uji ber-kode, langkah, hasil harapan) — QA menjalankannya di staging sebelum rilis; lihat [../qa/README.md](../qa/README.md). Kasus uji adalah turunan langsung dari smoke test yang dilakukan dev saat mengerjakan issue, jadi ditulis saat masih hangat, bukan saat rilis.
+
 ### Issue Close — Retrospektif wajib (sebelum close)
 
 Sebelum menutup GitHub Issue: (1) **recheck** dulu (rule/gate/konsistensi tercapai), lalu (2) tulis **comment retrospektif** — **compact + section collapsible** (`<details><summary>`), berisi **6 bagian**:

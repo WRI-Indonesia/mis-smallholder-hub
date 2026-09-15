@@ -188,6 +188,7 @@ const ACCENTS = {
   emerald: "bg-emerald-500/10",
   amber: "bg-amber-500/10",
   red: "bg-red-500/10",
+  slate: "bg-slate-500/10", // lahan tetangga (#327) — netral, bukan milik petani ini
 } as const;
 
 export type MapPopupAccent = keyof typeof ACCENTS;

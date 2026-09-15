@@ -1,0 +1,30 @@
+// land-parcel-border.prisma — sepadan (batas) lahan per arah mata angin (#326).
+// Satelit 1:1 dari LandParcelIdentity: sepadan ikut LAHAN, bukan ikut revisi
+// poligon — upload ulang shapefile membuat baris LandParcel baru dari atribut
+// DBF, kolom yang tak ada di DBF hilang; menempel ke identitas membuatnya utuh.
+// Teks bebas (keputusan owner 2026-09-14): "Lahan Pak Budi", "Jalan desa",
+// "Sungai", "PT X" — bukan tautan ke lahan lain. Tetangga yang terdeteksi dari
+// geometri (#327) adalah hal terpisah: itu hanya lahan yang terdaftar di MIS.
+//
+// Semantik hapus = KOSONGKAN keempat kolom, baris tetap (modified_by tercatat).
+// Jangan toggle isActive untuk "hapus": dengan @unique(parcel_uid), baris
+// nonaktif akan menghalangi pengisian ulang (pelajaran kunci unik #306).
+// isActive tetap ada demi konvensi, tidak dipakai action sebagai jalur hapus.
+
+model LandParcelBorder {
+  id         String             @id @default(cuid())
+  parcelUid  String             @unique @map("parcel_uid")
+  parcel     LandParcelIdentity @relation(fields: [parcelUid], references: [id])
+  north      String?            @map("north")
+  east       String?            @map("east")
+  south      String?            @map("south")
+  west       String?            @map("west")
+  notes      String?            @map("notes") // mis. sumber: "dari SKT 2019", "hasil cek lapangan"
+  isActive   Boolean            @default(true) @map("is_active")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  createdBy  String?            @map("created_by")
+  modifiedAt DateTime           @updatedAt @map("modified_at")
+  modifiedBy String?            @map("modified_by")
+
+  @@map("tbl_land_parcel_border")
+}

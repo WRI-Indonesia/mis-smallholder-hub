@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
+import { fetchFarmerMarkerPoints } from "@/lib/land-marker-query";
+import { nktAffectedStatusWhere, summarizeDocuments, summarizeStdb } from "@/lib/land-parcel-satellite-format";
 import { auth } from "@/lib/auth";
 import { farmerSchema, updateFarmerSchema } from "@/validations/farmer.schema";
 import type { FarmerInput, UpdateFarmerInput } from "@/validations/farmer.schema";
@@ -43,7 +44,7 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
 
   // Select ramping sesuai interface Farmer di list client (+ round-trip form
   // edit) — hindari full-row farmerGroup/district ikut terkirim per petani (#163).
-  return prisma.farmer.findMany({
+  const farmers = await prisma.farmer.findMany({
     where,
     select: {
       id: true,
@@ -63,9 +64,12 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
           district: { select: { id: true, name: true } },
         },
       },
+      // Lahan NKT per petani (#338): satu hitungan relasi ber-filter, bukan N+1 dan bukan baris lahan.
+      _count: { select: { landParcels: { where: { isActive: true, identity: { nkt: nktAffectedStatusWhere() } } } } },
     },
     orderBy: { name: "asc" },
   });
+  return farmers.map(({ _count, ...f }) => ({ ...f, nktCount: _count.landParcels }));
 }
 
 export async function getFarmerById(id: string) {
@@ -111,7 +115,7 @@ export async function getFarmerDetail(id: string) {
 
   const access = await getAccessContext();
 
-  const [farmer, trainingPackages] = await Promise.all([
+  const [farmer, trainingPackages, markerPoints] = await Promise.all([
     prisma.farmer.findFirst({
       where: {
         id,
@@ -142,6 +146,8 @@ export async function getFarmerDetail(id: string) {
               select: {
                 documents: { where: { isActive: true }, select: { type: true, number: true, holderName: true, statedArea: true } },
                 stdbLinks: { where: { isActive: true, stdb: { isActive: true } }, select: { stdb: { select: { number: true, stage: true } } } },
+                // Status NKT (#330): kolom tabel lahan + peta sebaran.
+                nkt: { select: { status: true } },
               },
             },
           },
@@ -172,6 +178,8 @@ export async function getFarmerDetail(id: string) {
       select: { code: true, name: true },
       orderBy: { code: "asc" },
     }),
+    // Patok (#331) — sejajar dengan kueri lain; dibuang bila petani di luar scope (return null).
+    fetchFarmerMarkerPoints(id),
   ]);
   if (!farmer) return null;
 
@@ -230,6 +238,8 @@ export async function getFarmerDetail(id: string) {
       },
     },
     detail,
+    // Patok (#331): titik di peta sebaran + ringkasan.
+    markerPoints,
     // Tabel persil (tanpa geometry) + poligon peta (pola #171).
     parcels: farmer.landParcels.map((p) => ({
       id: p.id,
@@ -243,6 +253,7 @@ export async function getFarmerDetail(id: string) {
       revision: p.revision,
       surat: summarizeDocuments(p.identity.documents),
       stdb: summarizeStdb(p.identity.stdbLinks.map((l) => l.stdb)),
+      nktStatus: p.identity.nkt?.status ?? null,
     })),
     mapParcels: farmer.landParcels.map((p) => ({
       id: p.id,
@@ -254,6 +265,7 @@ export async function getFarmerDetail(id: string) {
       blok: p.blok,
       area: p.area,
       geometry: p.geometry,
+      nktStatus: p.identity.nkt?.status ?? null,
     })),
   };
 }

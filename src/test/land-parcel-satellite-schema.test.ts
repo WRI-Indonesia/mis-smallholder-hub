@@ -6,7 +6,13 @@ import {
   updateLandStdbSchema,
   landParcelExternalIdSchema,
   landParcelProgramSchema,
+  landParcelBorderSchema,
+  landParcelBorderSidesSchema,
+  LAND_BORDER_SIDES,
+  landParcelNktSchema,
 } from "@/validations/land-parcel-satellite.schema";
+import { landParcelSchema } from "@/validations/land-parcel.schema";
+import { landParcelDetailRowSchema } from "@/validations/land-parcel-detail.schema";
 
 /** CRUD manual satelit lahan (#296 tahap 3c) — input form (string FormData) → nilai tersimpan. */
 describe("land-parcel-satellite.schema", () => {
@@ -105,5 +111,85 @@ describe("land-parcel-satellite.schema", () => {
   it("program: status/jenis di luar enum ditolak", () => {
     expect(landParcelProgramSchema.safeParse({ landParcelId: "lp1", programType: "PSR", status: "ACTIVE" }).success).toBe(false);
     expect(landParcelProgramSchema.safeParse({ landParcelId: "lp1", programType: "DEMPLOT_PBU", status: "DONE" }).success).toBe(false);
+  });
+
+  describe("sepadan (#326)", () => {
+    it("keempat sisi opsional, di-trim, kosong/whitespace → null; semua kosong SAH (= hapus)", () => {
+      const r = landParcelBorderSchema.safeParse({ landParcelId: "lp1", north: "  Lahan Pak Budi ", east: "", south: "   ", notes: "" });
+      expect(r.success).toBe(true);
+      expect(r.success && r.data).toMatchObject({ north: "Lahan Pak Budi", east: null, south: null, notes: null });
+      expect(r.success && r.data.west).toBeUndefined();
+      const empty = landParcelBorderSchema.safeParse({ landParcelId: "lp1", north: "", east: "", south: "", west: "", notes: "" });
+      expect(empty.success).toBe(true);
+    });
+
+    it("sisi > 200 karakter / catatan > 500 ditolak per field; landParcelId wajib", () => {
+      const bad = landParcelBorderSchema.safeParse({ landParcelId: "lp1", north: "x".repeat(201), notes: "y".repeat(501) });
+      expect(bad.success).toBe(false);
+      const errs = bad.error!.flatten().fieldErrors;
+      expect(errs.north).toBeDefined();
+      expect(errs.notes).toBeDefined();
+      expect(landParcelBorderSchema.safeParse({ landParcelId: "", north: "a" }).success).toBe(false);
+    });
+
+    it("varian sisi-saja untuk Bulk Upload Lahan: tanpa landParcelId/notes, kunci asing dibuang", () => {
+      const r = landParcelBorderSidesSchema.safeParse({ north: "Jalan", notes: "x", landParcelId: "lp1" });
+      expect(r.success).toBe(true);
+      expect(r.success && Object.keys(r.data)).toEqual(["north"]);
+      expect(LAND_BORDER_SIDES).toEqual(["north", "east", "south", "west"]);
+    });
+
+    it("landParcelSchema MEMBUANG kunci `border` — alasan sepadan divalidasi terpisah di bulkCreateLandParcels", () => {
+      const r = landParcelSchema.safeParse({ farmerId: "f1", parcelId: "P1", border: { north: "Jalan" } });
+      expect(r.success).toBe(true);
+      expect(r.success && "border" in r.data).toBe(false);
+    });
+  });
+
+  describe("NKT (#328)", () => {
+    const base = { landParcelId: "lp1", status: "AFFECTED", categories: ["NKT_4"], assessedAt: "2025-03-12", assessor: "WRI", affectedAreaHa: "0,088", affectedLengthM: "176.026" };
+
+    it("terdampak + kategori + angka koma diterima; tanggal string → Date", () => {
+      const r = landParcelNktSchema.safeParse(base);
+      expect(r.success).toBe(true);
+      expect(r.success && r.data).toMatchObject({ status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: 176.026, assessor: "WRI" });
+      expect(r.success && r.data.assessedAt).toBeInstanceOf(Date);
+    });
+
+    it("kategori wajib ≥ 1 kecuali NOT_AFFECTED; kategori string '1,4'-gaya importer dinormalkan & dedup", () => {
+      const noCat = landParcelNktSchema.safeParse({ ...base, categories: [] });
+      expect(noCat.success).toBe(false);
+      expect(noCat.error!.flatten().fieldErrors.categories).toBeDefined();
+      expect(landParcelNktSchema.safeParse({ ...base, status: "NOT_AFFECTED", categories: [] }).success).toBe(true);
+      const dup = landParcelNktSchema.safeParse({ ...base, categories: "NKT_1,NKT_4, NKT_1" });
+      expect(dup.success && dup.data.categories).toEqual(["NKT_1", "NKT_4"]);
+      // "1,4" dan "NKT 1; NKT 4" (gaya importer/manusia) dinormalkan ke kode enum.
+      const digits = landParcelNktSchema.safeParse({ ...base, categories: "1,4" });
+      expect(digits.success && digits.data.categories).toEqual(["NKT_1", "NKT_4"]);
+      const spaced = landParcelNktSchema.safeParse({ ...base, categories: "NKT 1; NKT 4" });
+      expect(spaced.success && spaced.data.categories).toEqual(["NKT_1", "NKT_4"]);
+    });
+
+    it("skema baris import menjaga invarian yang sama: AFFECTED tanpa kategori ditolak di SERVER, bukan hanya di klien", () => {
+      const row = { parcelUid: "u", farmerDbId: "f", parcelId: "P", document: null, custodyNote: null, stdb: null, externalCode: null, subGroupLv2: null };
+      const bad = landParcelDetailRowSchema.safeParse({ ...row, nkt: { status: "AFFECTED", categories: null, affectedAreaHa: null, affectedLengthM: null, assessedAt: null, assessor: null } });
+      expect(bad.success).toBe(false);
+      const ok = landParcelDetailRowSchema.safeParse({ ...row, nkt: { status: "NOT_AFFECTED", categories: [], affectedAreaHa: null, affectedLengthM: null, assessedAt: null, assessor: null } });
+      expect(ok.success).toBe(true);
+    });
+
+    it("NOT_AFFECTED selalu tanpa kategori — checkbox yang tertinggal dicentang tidak ikut tersimpan (review 2026-09-14)", () => {
+      const r = landParcelNktSchema.safeParse({ ...base, status: "NOT_AFFECTED", categories: ["NKT_4"] });
+      expect(r.success && r.data.categories).toEqual([]);
+    });
+
+    it("status/kategori di luar enum, tanggal masa depan, luas ≤ 0 ditolak per field", () => {
+      expect(landParcelNktSchema.safeParse({ ...base, status: "MAYBE" }).success).toBe(false);
+      expect(landParcelNktSchema.safeParse({ ...base, categories: ["NKT_7"] }).success).toBe(false);
+      const future = landParcelNktSchema.safeParse({ ...base, assessedAt: "2999-01-01" });
+      expect(future.success).toBe(false);
+      expect(future.error!.flatten().fieldErrors.assessedAt).toBeDefined();
+      expect(landParcelNktSchema.safeParse({ ...base, affectedAreaHa: "0" }).success).toBe(false);
+    });
   });
 });

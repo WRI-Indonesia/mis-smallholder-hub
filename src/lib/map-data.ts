@@ -1,4 +1,5 @@
 import { centroid, truncate } from "@turf/turf";
+import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import type { Polygon, MultiPolygon } from "geojson";
 import type {
   MapData,
@@ -38,6 +39,8 @@ export type RawParcel = {
   cropType: string | null;
   landStatus: string | null;
   farmer: { name: string; farmerId: string; farmerGroup: { name: string } | null } | null;
+  /** Status NKT via identitas (#328) + jumlah patok aktif (#336) — opsional agar pemanggil lama (BMP) tetap valid. */
+  identity?: { nkt: { status: string } | null; _count?: { markers: number } } | null;
 };
 
 /**
@@ -82,6 +85,8 @@ const parcelTuple = (p: RawParcel, geometry: Polygon | MultiPolygon): ParcelWire
   p.cropType,
   p.landStatus,
   slimGeometry(geometry),
+  p.identity?.nkt?.status ?? null,
+  p.identity?._count?.markers ?? 0,
 ];
 
 /** Bagian bersama expand: tuple wire + lookup petani → ParcelFeature (tanpa centroid). */
@@ -89,7 +94,7 @@ function expandParcelTuple(
   t: ParcelWireTuple,
   farmers: Record<string, MapFarmerTuple>
 ): Omit<ParcelFeature, "centroid" | "geometry"> & { geometry: Polygon | MultiPolygon } {
-  const [id, parcelId, farmerId, area, plantingYear, cropType, landStatus, geometry] = t;
+  const [id, parcelId, farmerId, area, plantingYear, cropType, landStatus, geometry, nktStatus, markerCount] = t;
   const f = farmers[farmerId];
   return {
     id,
@@ -102,6 +107,8 @@ function expandParcelTuple(
     plantingYear,
     cropType,
     landStatus,
+    nktStatus: nktStatus ?? null,
+    markerCount,
     geometry,
   };
 }
@@ -143,6 +150,8 @@ export function buildMapData(groups: RawGroup[], parcels: RawParcel[]): MapDataW
     farmers,
     counts: {
       kt: kelompokTani.length,
+      // NKT (#328): lahan INCLUDED/AFFECTED — indeks 8 = nktStatus (lihat ParcelWireTuple).
+      nkt: parcelTuples.filter((t) => isNktAffected(t[8])).length,
       parcelPoints: parcelTuples.length,
       parcelAreas: parcelTuples.length,
     },
@@ -342,8 +351,9 @@ export function buildBmpMapData(
 export function expandBmpMapData(wire: BmpMapDataWire): BmpMapData {
   return {
     parcels: wire.parcels.flatMap((t): BmpParcelFeature[] => {
-      const production = t[8];
-      const base = expandParcelTuple(t.slice(0, 8) as unknown as ParcelWireTuple, wire.farmers);
+      // Elemen terakhir = produksi; sisanya tuple persil dasar (panjangnya boleh bertambah, #328).
+      const production = t[t.length - 1] as Record<string, number>;
+      const base = expandParcelTuple(t.slice(0, -1) as unknown as ParcelWireTuple, wire.farmers);
       const center = safeCentroid(base.geometry);
       if (!center) return [];
       const uniqueSorted = Object.keys(production).sort();

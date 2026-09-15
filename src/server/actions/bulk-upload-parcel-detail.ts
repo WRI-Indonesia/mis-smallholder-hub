@@ -35,6 +35,7 @@ export async function getParcelsForDetailMapping(): Promise<ParcelRef[]> {
       parcelId: true,
       farmerId: true,
       subGroupLv2: true,
+      blok: true,
       farmer: { select: { farmerId: true, name: true } },
     },
     orderBy: { parcelId: "asc" },
@@ -46,6 +47,7 @@ export async function getParcelsForDetailMapping(): Promise<ParcelRef[]> {
     farmerName: r.farmer.name,
     farmerDbId: r.farmerId,
     subGroupLv2: r.subGroupLv2,
+    blok: r.blok,
   }));
 }
 

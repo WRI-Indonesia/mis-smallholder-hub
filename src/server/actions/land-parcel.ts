@@ -16,6 +16,9 @@ import { summarizeProduction } from "@/lib/map-data";
 import { fetchParcelPassport } from "@/lib/parcel-passport-query";
 import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
 import type { ActionResult } from "@/types/action-result";
+import { fetchParcelNeighbors } from "@/lib/parcel-neighbor-query";
+import { NEIGHBOR_LIMIT_SCREEN, type ParcelNeighbor } from "@/lib/parcel-neighbor";
+import { hasBorderContent } from "@/lib/land-parcel-satellite-format";
 import type { ParcelPassport, ProductionSummary } from "@/types/map";
 import type { LandParcelSatellites } from "@/types/land-parcel";
 
@@ -86,9 +89,23 @@ export async function getLandParcels(search?: string, farmerId?: string) {
           },
         },
       },
+      // Status NKT (#328) + jumlah patok aktif (#329) — filter/badge/kolom daftar;
+      // hanya status & hitungan, bukan baris satelitnya.
+      identity: {
+        select: {
+          nkt: { select: { status: true } },
+          _count: { select: { markers: { where: { isActive: true } } } },
+        },
+      },
     },
     orderBy: { parcelId: "asc" },
-  });
+  }).then((rows) =>
+    rows.map(({ identity, ...p }) => ({
+      ...p,
+      nktStatus: identity.nkt?.status ?? null,
+      markerCount: identity._count.markers,
+    })),
+  );
 }
 
 export async function getLandParcelById(id: string) {
@@ -180,6 +197,24 @@ export async function getFarmerSiblingParcels(farmerId: string, excludeParcelDbI
  * Data Farm Passport ("Profil Lahan" PDF) untuk halaman Detail Lahan — guard
  * menu Lahan, berbeda dari varian menu Peta (map.ts) dan Petani (farmer.ts).
  */
+/**
+ * Lahan tetangga ≤ 25 m untuk peta Detail Lahan (#327) — guard menu Lahan;
+ * scope (nama di luar scope dibuang) diterapkan di `fetchParcelNeighbors`.
+ * Lahan tanpa geometri / di luar akses → kosong, bukan error: peta tetap tampil.
+ */
+export async function getLandParcelNeighbors(landParcelId: string): Promise<{ neighbors: ParcelNeighbor[]; omitted: number }> {
+  if (!(await hasPermission("master-data-parcels", "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+  const parcel = await prisma.landParcel.findFirst({
+    where: { id: landParcelId, isActive: true, ...farmerRelationAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!parcel) return { neighbors: [], omitted: 0 };
+  return fetchParcelNeighbors(landParcelId, NEIGHBOR_LIMIT_SCREEN, access);
+}
+
 export async function getLandParcelPassport(
   landParcelId: string,
 ): Promise<ActionResult<ParcelPassport>> {
@@ -403,7 +438,7 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
   if (!parcel) return null;
   const uid = parcel.parcelUid;
 
-  const [documents, stdbLinks, externalIds, programs] = await Promise.all([
+  const [documents, stdbLinks, externalIds, programs, border, nkt] = await Promise.all([
     prisma.landParcelDocument.findMany({
       where: { parcelUid: uid, isActive: true },
       select: { id: true, type: true, typeRaw: true, number: true, holderName: true, statedArea: true, issuedYear: true, custodyNote: true, fileUrl: true, notes: true },
@@ -434,6 +469,16 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
       select: { id: true, programType: true, status: true, startDate: true, endDate: true, notes: true },
       orderBy: { startDate: "desc" },
     }),
+    // Sepadan (#326): 1:1, baris ada tapi keempat sisi NULL = pernah dihapus → tampil sebagai belum diisi.
+    prisma.landParcelBorder.findUnique({
+      where: { parcelUid: uid },
+      select: { id: true, north: true, east: true, south: true, west: true, notes: true, modifiedAt: true },
+    }),
+    // NKT (#328): 1:1, tanpa baris = belum dinilai.
+    prisma.landParcelNkt.findUnique({
+      where: { parcelUid: uid },
+      select: { id: true, status: true, categories: true, affectedAreaHa: true, affectedLengthM: true, assessedAt: true, assessor: true, source: true, notes: true, modifiedAt: true },
+    }),
   ]);
 
   return {
@@ -460,5 +505,7 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
     })),
     externalIds,
     programs,
+    border: hasBorderContent(border) ? border : null,
+    nkt,
   };
 }

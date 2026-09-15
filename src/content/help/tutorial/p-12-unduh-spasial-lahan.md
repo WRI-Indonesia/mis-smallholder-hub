@@ -11,7 +11,7 @@ goal: Anda bisa mengunduh poligon lahan beratribut lengkap sebagai Shapefile, Ge
 
 ## Sebelum mulai
 
-Tombol **Unduh Lahan** tersedia di tiga tempat: panel kiri **Peta Lahan** (di bawah tombol Muat Data), toolbar **Master Data → Lahan**, dan tab **Lahan** pada halaman detail **Lembaga Petani** (di kanan judul Sebaran Lahan). Ketiganya menghasilkan berkas dengan atribut yang sama; pilih yang alurnya paling dekat dengan pekerjaan Anda.
+Tombol **Unduh Lahan** tersedia di tiga tempat: panel kiri **Peta Lahan** (di bawah tombol Muat Data), toolbar **Master Data → Lahan**, dan tab **Lahan** pada halaman detail **Lembaga Petani** (di kanan judul Sebaran Lahan). Ketiganya menghasilkan berkas dengan atribut yang sama (termasuk kolom **NKT**); pilih yang alurnya paling dekat dengan pekerjaan Anda. Di Peta Lahan, setelah data dimuat, setiap baris **Legenda** juga punya ikon unduh sendiri — Excel atau Shapefile/GeoJSON/KML yang bentuknya mengikuti baris: titik untuk Lembaga/titik lahan/patok, poligon untuk area lahan dan lahan NKT.
 
 Unduhan selalu mengikuti **filter aktif** — per Distrik atau per Lembaga Petani. Tidak ada mode "semua wilayah sekaligus"; ini disengaja agar berkasnya tetap ringan dan cakupannya jelas. Dari halaman detail Lembaga Petani tak ada filter yang perlu dipilih: cakupannya sudah pasti lembaga yang sedang Anda buka.
 

@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useMemo, useEffect, useState, useCallback, type ReactNode } from "react";
+import { landNktStatusLabel, isNktAffected, NKT_AFFECTED_STATUSES } from "@/lib/land-parcel-satellite-format";
 import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { ExpressionSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers, Milestone } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
@@ -18,7 +19,8 @@ import { ParcelEditModalHost } from "@/app/(admin)/admin/master-data/parcels/com
 import { MapPopupHighlight, MapPopupSection, MapPopupRows, useMapPopupAutoPan, useMapPopupDrag, MapPopupDragHandle } from "@/components/shared/map-popup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmerTraining, getParcelProduction, getParcelPassport } from "@/server/actions/map";
-import type { MapData, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
+import type { MapData, MapMarkerTuple, ParcelFeature, FarmerTrainingItem, ProductionSummary } from "@/types/map";
+import { LAND_MARKER_CONDITION_LABELS, labelOf } from "@/lib/land-marker";
 import type { LayerVisibility, LayerZoomTarget } from "./map-control-panel";
 import {
   MAP_OVERLAYS,
@@ -73,7 +75,7 @@ const MEASURE_COLOR = "#f59e0b";
 type SelectedFeature = {
   longitude: number;
   latitude: number;
-  kind: "kt" | "parcel" | "hotspot" | "custom";
+  kind: "kt" | "parcel" | "hotspot" | "custom" | "marker";
   props: Record<string, unknown>;
   /** Untuk kind "custom": nama & warna layer GIS tambahan asal fitur. */
   layerName?: string;
@@ -99,9 +101,11 @@ interface Props {
   canPrintParcel: boolean;
   /** Dipanggil setelah Edit Lahan berhasil — refetch GeoJSON (data di-fetch di klien). */
   onParcelUpdated: () => void;
+  /** Titik patok (#331), dimuat malas oleh klien saat layer patok dicentang; null = belum ada. */
+  markers: MapMarkerTuple[] | null;
 }
 
-export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, canPrintParcel, onParcelUpdated }: Props) {
+export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequest, layerZoomRequest, pointZoomRequest, hotspot, hotspotData, canViewParcel, canEditParcel, canPrintParcel, onParcelUpdated, markers }: Props) {
   const mapRef = useRef<MapRef>(null);
   const { resolvedTheme } = useTheme();
 
@@ -249,6 +253,19 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     [data, layers.parcelPoints]
   );
 
+  // Patok (#331): satu source, dua layer (kuning / merah NKT) difilter properti `nkt`.
+  const markerGeojson = useMemo<FeatureCollection<Point>>(
+    () => ({
+      type: "FeatureCollection",
+      features: (markers ?? []).map(([id, lon, lat, nkt, condition, parcels, code]) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [lon, lat] },
+        properties: { id, nkt, condition, parcels, code },
+      })),
+    }),
+    [markers]
+  );
+
   // Current zoom drives the "does the label fit inside the polygon" test.
   const [zoom, setZoom] = useState(9);
 
@@ -340,10 +357,18 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       );
     } else if (layerZoomRequest.target === "kt") {
       fitCoords((data?.kelompokTani ?? []).map((kt) => [kt.long, kt.lat] as [number, number]));
+    } else if (layerZoomRequest.target === "nkt") {
+      // NKT (#328): hanya lahan termasuk/terdampak; tanpa satu pun → fitCoords tidak melakukan apa-apa.
+      fitCoords((data?.parcels ?? []).filter((p) => isNktAffected(p.nktStatus)).map((p) => p.centroid));
+    } else if (layerZoomRequest.target === "markers" || layerZoomRequest.target === "markersNkt") {
+      // Patok (#331): titik belum dimuat (layer baru dicentang) → jatuh ke sebaran lahan.
+      const wantNkt = layerZoomRequest.target === "markersNkt";
+      const pts = (markers ?? []).filter((m) => !wantNkt || m[3] === 1).map((m) => [m[1], m[2]] as [number, number]);
+      fitCoords(pts.length > 0 ? pts : (data?.parcels ?? []).map((p) => p.centroid));
     } else {
       fitCoords((data?.parcels ?? []).map((p) => p.centroid));
     }
-  }, [layerZoomRequest, data, hotspotData, fitCoords]);
+  }, [layerZoomRequest, data, hotspotData, markers, fitCoords]);
 
   // Zoom ke satu titik api dari klik baris tabel ringkasan.
   const handledPointZoomToken = useRef<number | null>(null);
@@ -412,13 +437,17 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     } else if (layerId === "parcel-point") {
       const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "parcel", props: feature.properties ?? {} });
-    } else if (layerId === "parcel-fill") {
+    } else if (layerId === "parcel-fill" || layerId === "parcel-nkt-fill") {
+      // NKT (#328): layer sorotan ikut bisa diklik supaya popup tetap ada saat Area Lahan dimatikan.
       setSelected({
         longitude: e.lngLat.lng,
         latitude: e.lngLat.lat,
         kind: "parcel",
         props: feature.properties ?? {},
       });
+    } else if (layerId === "marker-point" || layerId === "marker-nkt-point") {
+      const [longitude, latitude] = (feature.geometry as Point).coordinates;
+      setSelected({ longitude, latitude, kind: "marker", props: feature.properties ?? {} });
     } else if (layerId === "hotspot-point") {
       const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "hotspot", props: feature.properties ?? {} });
@@ -448,6 +477,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       "kt-point",
       "parcel-point",
       "parcel-fill",
+      "parcel-nkt-fill",
+      "marker-point",
+      "marker-nkt-point",
       "hotspot-point",
       ...customLayers.flatMap((l) =>
         l.kind === "vector"
@@ -590,14 +622,35 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             type="fill"
             beforeId={labelBeforeId}
             layout={vis(layers.parcelAreas)}
-            paint={{ "fill-color": "#22c55e", "fill-opacity": 0.2 }}
+            // Ungu (keputusan owner 2026-09-14, #328): hijau dilepas agar sorotan NKT merah/amber
+            // dan titik Lembaga hijau tidak bersaing dengan area lahan.
+            paint={{ "fill-color": "#a855f7", "fill-opacity": 0.2 }}
           />
           <Layer
             id="parcel-outline"
             type="line"
             beforeId={labelBeforeId}
             layout={vis(layers.parcelAreas)}
-            paint={{ "line-color": "#16a34a", "line-width": 1.5 }}
+            paint={{ "line-color": "#7e22ce", "line-width": 1.5 }}
+          />
+          {/* NKT (#328): sorotan lahan termasuk (merah) / terdampak (amber) di atas area lahan;
+              toggle sendiri, tetap tampil walau layer Area dimatikan agar bisa dilihat sendirian. */}
+          <Layer
+            id="parcel-nkt-fill"
+            type="fill"
+            beforeId={labelBeforeId}
+            layout={vis(layers.nkt)}
+            filter={["in", ["get", "nktStatus"], ["literal", [...NKT_AFFECTED_STATUSES]]]}
+            // Satu warna untuk INCLUDED & AFFECTED — "termasuk = terdampak" (owner 2026-09-14).
+            paint={{ "fill-color": "#dc2626", "fill-opacity": 0.25 }}
+          />
+          <Layer
+            id="parcel-nkt-outline"
+            type="line"
+            beforeId={labelBeforeId}
+            layout={vis(layers.nkt)}
+            filter={["in", ["get", "nktStatus"], ["literal", [...NKT_AFFECTED_STATUSES]]]}
+            paint={{ "line-color": "#b91c1c", "line-width": 2.5 }}
           />
           {/* Highlight lahan yang popup-nya terbuka — poligon tetangga bergaya
               seragam sulit dibedakan dari yang dipilih. Selalu tampil saat ada
@@ -654,6 +707,25 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
               "circle-stroke-width": 1.5,
               "circle-stroke-color": "#ffffff",
             }}
+          />
+        </Source>
+
+        {/* Patok (#331): persegi kuning = patok lahan, merah = patok lahan NKT (turunan);
+            dua layer terpisah agar bisa dinyalakan sendiri-sendiri. Source kosong sampai dimuat malas. */}
+        <Source id="marker-source" type="geojson" data={markerGeojson}>
+          <Layer
+            id="marker-point"
+            type="circle"
+            layout={vis(layers.markers)}
+            filter={["==", ["get", "nkt"], 0]}
+            paint={{ "circle-color": "#facc15", "circle-radius": 4.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#854d0e" }}
+          />
+          <Layer
+            id="marker-nkt-point"
+            type="circle"
+            layout={vis(layers.markersNkt)}
+            filter={["==", ["get", "nkt"], 1]}
+            paint={{ "circle-color": "#ef4444", "circle-radius": 4.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#7f1d1d" }}
           />
         </Source>
 
@@ -818,6 +890,28 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
                 <p className="px-3.5 pb-3 text-[10px] leading-snug text-muted-foreground">
                   Deteksi anomali panas (VIIRS 375 m), bukan konfirmasi kebakaran. Sumber: NASA FIRMS · jeda ±3 jam.
                 </p>
+              </div>
+            ) : selected.kind === "marker" ? (
+              <div className="w-[272px]">
+                <PopupHeader
+                  accent={Number(selected.props.nkt) === 1 ? "red" : "amber"}
+                  icon={<Milestone className="h-4 w-4" />}
+                  title={String(selected.props.code ?? "Patok")}
+                  subtitle={Number(selected.props.nkt) === 1 ? "Patok lahan NKT" : "Patok lahan"}
+                />
+                <MapPopupRows
+                  className="border-t px-3.5 py-3"
+                  rows={[
+                    { label: "Lahan · No", value: String(selected.props.parcels ?? "—"), mono: true },
+                    { label: "Kondisi", value: labelOf(LAND_MARKER_CONDITION_LABELS, String(selected.props.condition ?? "")) },
+                    { label: "NKT", value: Number(selected.props.nkt) === 1 ? "Lahan pemakai termasuk/terdampak NKT" : "—" },
+                    {
+                      label: "Koordinat",
+                      value: `${selected.latitude.toFixed(6)}, ${selected.longitude.toFixed(6)}`,
+                      mono: true,
+                    },
+                  ]}
+                />
               </div>
             ) : selected.kind === "kt" ? (
               <div className="w-[252px]">
@@ -1039,6 +1133,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
 const ACCENTS = {
   emerald: { bar: "bg-emerald-500", tint: "bg-emerald-500/10", text: "text-emerald-600 dark:text-emerald-400" },
+  amber: { bar: "bg-amber-400", tint: "bg-amber-400/10", text: "text-amber-700 dark:text-amber-400" },
   blue: { bar: "bg-blue-500", tint: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400" },
   red: { bar: "bg-red-500", tint: "bg-red-500/10", text: "text-red-600 dark:text-red-400" },
 };
@@ -1204,6 +1299,10 @@ function ParcelPopupBody({
               { label: "Tahun Tanam", value: props.plantingYear },
               { label: "Komoditas", value: props.cropType },
               { label: "Status Lahan", value: props.landStatus },
+              // NKT (#328): belum dinilai ditulis eksplisit — "—" akan terbaca "tidak terdampak".
+              { label: "NKT", value: props.nktStatus ? landNktStatusLabel(String(props.nktStatus)) : "Belum dinilai" },
+              // Patok (#336): hitungan tautan aktif dari payload peta; titiknya di layer Patok / tab Patok Detail Lahan.
+              { label: "Patok", value: Number(props.markerCount) > 0 ? `${Number(props.markerCount)} patok` : "Belum ada patok" },
             ]}
           />
         </MapPopupSection>
@@ -1456,5 +1555,7 @@ function parcelProps(p: ParcelFeature) {
     plantingYear: p.plantingYear,
     cropType: p.cropType,
     landStatus: p.landStatus,
+    nktStatus: p.nktStatus,
+    markerCount: p.markerCount,
   };
 }

@@ -19,6 +19,10 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Lembaga Petani** — mempersempit ke satu lembaga. Pilihannya ikut menyempit bila Distrik sudah dipilih.
 
+**NKT** — menyaring menurut status Nilai Konservasi Tinggi: *Terdampak NKT*, *Tidak terdampak* (sudah dinilai bersih), atau *Belum dinilai* (belum ada asesmen). Lahan yang kena NKT juga diberi badge merah di kolom ID Lahan.
+
+**Patok** — *Sudah ada patok* / *Belum ada patok* (patok batas dari tab Patok di detail lahan).
+
 **Status** — hanya untuk SUPERADMIN.
 
 **Kotak pencarian** — menelusuri ID Lahan, nama petani, dan ID Petani sekaligus.
@@ -33,6 +37,8 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Status Kepemilikan** — Milik Sendiri, Sewa, atau Bagi Hasil. Sering diminta saat audit sertifikasi untuk memastikan hak garap jelas.
 
+**NKT** (kolom tersembunyi, aktifkan lewat tombol Kolom) — status NKT pendek atau *Belum dinilai*. **Patok** — jumlah patok batas yang tercatat.
+
 **Komoditas / Species** — jenis tanaman. Komoditas berisi **Kelapa Sawit** untuk seluruh lahan yang didata MIS saat ini; kolom yang dibiarkan kosong (termasuk lewat Unggah Lahan) otomatis terisi Kelapa Sawit, bukan kosong. Species diisi nama ilmiah bila diperlukan laporan teknis.
 
 **PSR** — penanda lahan sedang diremajakan. Tanpa penanda ini, lahan PSR akan terbaca sebagai lahan bermasalah pada analisa ketersediaan data, padahal nol hasil memang wajar selama peremajaan.
@@ -42,5 +48,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 **Kelompok Tani** — kelompok di bawah Lembaga Petani. Untuk sementara disimpan **per lahan**, belum sebagai tabel tersendiri. Tulis namanya persis sama untuk semua lahan di kelompok yang sama — beda satu spasi akan terhitung sebagai dua kelompok berbeda.
 
 **Blok** — penanda blok kebun bila organisasi Anda memakainya.
+
+**Sepadan** (hanya di detail lahan dan Profil Lahan PDF, bukan kolom tabel) — dengan siapa atau apa lahan berbatasan di sisi Utara, Timur, Selatan, dan Barat, ditulis bebas seperti pada SKT: "Lahan Pak Budi", "Jalan desa", "Sungai", "PT X". Ini catatan lapangan, bukan hasil hitungan peta — jadi bisa menyebut jalan, sungai, atau lahan yang belum terdaftar di MIS. Berbeda dengan *lahan tetangga* yang dihitung dari poligon dan hanya memuat lahan yang ada di MIS.
 
 **Revisi** — bertambah otomatis setiap data lahan diperbarui. Jejak riwayat, bukan kolom yang perlu diisi.

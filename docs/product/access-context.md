@@ -68,6 +68,19 @@ Nama di kolom pertama adalah **persona ilustratif**; kolom Role memakai enum `Ro
 | `farmerRelationAccessFilter(access)` | Model ber-relasi `farmer` (mis. `LandParcel`, `ProductionRecord`, `TrainingParticipant`) |
 | `getAccessibleDistrictIds(access)` | Daftar id district yang boleh diakses (`null` = ALL); `BY_FARMER_GROUP` di-resolve ke district lembaga yang di-assign |
 
+### Pengecualian scope yang tercatat
+
+Aturan dasar: setiap pembacaan hanya mengembalikan baris dalam scope user. Dua pengecualian **disengaja** dan harus tetap terdaftar di sini — keduanya untuk data spasial yang tak bisa dinilai tanpa melihat "sisi lain":
+
+| Pengecualian | Apa yang tembus scope | Apa yang TIDAK tembus | Alasan & guard |
+|---|---|---|---|
+| **Lahan tetangga** (#327) — `fetchParcelNeighbors` (`src/lib/parcel-neighbor-query.ts`), dipakai Profil Lahan (PDF, tiga menu pemanggil) dan peta Detail Lahan | **Poligon dan identitas lengkap** (nama & kode petani, ID Lahan, Lembaga, jarak) semua lahan aktif MIS ≤ 25 m dari lahan yang dilihat — apa pun scope user | **Tautan ke halaman detail** tetangga: hanya untuk yang dalam scope (`inScope`, kueri kedua ber-`farmerRelationAccessFilter`); halaman detail tetangga di luar scope tetap 404 | Peta yang menghilangkan lahan di sebelahnya menyesatkan di lapangan, dan **nama pemilik tetangga adalah alat verifikasi** (keputusan owner 2026-09-14 — bentuk awal "nama hanya dalam scope" dibatalkan saat review). Aturan yang sama dengan pengecualian #317 di bawah; aturan akses tidak ditulis ulang di SQL. Dicetak siapa pun yang punya izin PRINT menu Lahan/Peta/Petani |
+| **Patok bersama** (#329) — `getLandParcelMarkers`, PDF, ekspor per Lembaga | **ID Lahan, nama petani & Lembaga** semua lahan lain yang memakai patok yang sama ("juga patok lahan …"), dan **tanda NKT turunan** dari status lahan-lahan itu — apa pun scope user | **Tautan ke halaman detail** lahan pemakai lain hanya bila dalam scope (`landParcelId` null di luar scope); akses ke patok selalu lewat **baris lahan** yang diminta (`resolveParcel` ber-`farmerRelationAccessFilter`), tidak ada endpoint per patok | Patok fisik yang sama memang berdiri di batas dua–empat lahan; menyembunyikan pemakai lain membuat "patok bersama" tak bisa diverifikasi di lapangan. Aturan sama dengan tetangga #327 |
+| **Patok di Peta Lahan** (#331) — `getMapMarkers`, `getMapMarkerExportRows` | Titik patok + "ID Lahan #n" semua lahan pemakainya, tanda NKT turunan | Scope = Lembaga di filter ∧ akses user (`farmerGroupAccessFilter` di `AND`, pola `getMapData`); patok hanya muncul bila salah satu lahan pemakainya ada di filter; unduhan digate `map-parcel:EXPORT` | Sama dengan aturan patok bersama: ID lahan pemakai lain bukan rahasia, tetapi datasetnya sendiri hanya untuk wilayah yang boleh dilihat |
+| **Topology check** (#317 Fase 2, direncanakan) — `getParcelTopologyFindings` | Pasangan lahan yang bertumpang tindih bila **minimal satu sisi** dalam scope user; sisi lawan ditampilkan **lengkap** (nama petani, ID lahan, lembaga) | Pasangan yang kedua sisinya di luar scope | Verifikasi klaim ganda mustahil tanpa identitas sisi lawan; dibatasi izin menu khusus `data-analyst-parcel-overlap` (bukan menu umum). Preseden: `getAdminBoundaries` (#266) |
+
+Menambah pengecualian baru = menambah baris di tabel ini **dan** komentar di fungsinya.
+
 ### Permission Resolution Priority
 
 1. **SUPERADMIN** → Grant all, skip all filters

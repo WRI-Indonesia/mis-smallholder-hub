@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { buildPDF } from "@/lib/pdf";
-import { buildFarmPassportDoc } from "@/lib/farm-passport";
+import { buildFarmPassportDoc, passportMapFrame } from "@/lib/farm-passport";
+import { buildLayerReportDoc, graticuleStep } from "@/lib/layer-report-pdf";
 import { buildBmpMapDoc } from "@/lib/bmp-map-print";
 import { buildFireMapDoc } from "@/lib/fire-map-print";
 import { imageFormatOf } from "@/lib/map-capture";
 import type { ParcelPassport } from "@/types/map";
+import { pdfText } from "./pdf-text";
 
 // TD-019: exporter lama dipisah build-vs-save (pola #179) — test struktural
 // memverifikasi dokumen jsPDF asli (orientasi/halaman/tanpa-throw), karena
@@ -71,6 +73,8 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
       species: "Elaeis guineensis",
       isPsr: false,
       treeCount: 286,
+      border: null,
+      nkt: null,
     },
     legal: {
       documents: [
@@ -91,6 +95,9 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
       totalKg: 1800,
       recordCount: 3,
     },
+    neighbors: [],
+    neighborsOmitted: 0,
+    markers: [],
   };
 
   it("portrait A4, minimal 1 halaman, tanpa throw", () => {
@@ -113,6 +120,136 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
       },
     };
     expect(buildFarmPassportDoc(many).getNumberOfPages()).toBeGreaterThanOrEqual(2);
+  });
+
+  it("sepadan belum diisi → blok Sepadan tetap tercetak dengan label keempat arah (#326)", () => {
+    const text = pdfText(buildFarmPassportDoc(passport));
+    expect(text).toContain("Sepadan");
+    for (const side of ["Utara", "Timur", "Selatan", "Barat"]) expect(text).toContain(side);
+  });
+
+  it("sepadan terisi → nilai tiap sisi + catatan tercetak (#326)", () => {
+    const withBorder: ParcelPassport = {
+      ...passport,
+      parcel: { ...passport.parcel, border: { north: "Lahan Pak Budi", east: "Jalan desa", south: null, west: "Sungai Kecil", notes: "dari SKT 2019" } },
+    };
+    const text = pdfText(buildFarmPassportDoc(withBorder));
+    expect(text).toContain("Lahan Pak Budi");
+    expect(text).toContain("Jalan desa");
+    expect(text).toContain("Sungai Kecil");
+    expect(text).toContain("Catatan sepadan: dari SKT 2019");
+  });
+
+  const neighbor = (i: number, o: Partial<ParcelPassport["neighbors"][number]> = {}): ParcelPassport["neighbors"][number] => ({
+    id: `n${i}`,
+    parcelId: `LHN-10${i}`,
+    geometry: { type: "Polygon", coordinates: [[[101.51, 0.74], [101.53, 0.74], [101.53, 0.76], [101.51, 0.76], [101.51, 0.74]]] },
+    distanceM: 0,
+    overlaps: false,
+    farmerName: `Tetangga ${i}`,
+    farmerCode: `SH-10${i}`,
+    groupName: "Lembaga Uji",
+    inScope: true,
+    sameFarmer: false,
+    ...o,
+  });
+
+  it("tanpa tetangga → legenda tetap tercetak berbunyi 'Tidak ada lahan lain' (#327)", () => {
+    const text = pdfText(buildFarmPassportDoc(passport));
+    expect(text).toContain("Lahan Tetangga");
+    expect(text).toContain("Tidak ada lahan lain yang terdaftar di MIS dalam 25 m.");
+  });
+
+  it("3 tetangga → 3 baris legenda bernomor + nama pemilik + ID lahan (#327)", () => {
+    const text = pdfText(buildFarmPassportDoc({ ...passport, neighbors: [neighbor(1), neighbor(2, { distanceM: 12.5 }), neighbor(3, { sameFarmer: true })] }));
+    for (const n of ["Tetangga 1", "Tetangga 2", "LHN-101", "LHN-102", "LHN-103"]) expect(text).toContain(n);
+    expect(text).toContain("12.5 m");
+    expect(text).toContain("Petani ini");
+  });
+
+  it("tetangga di luar scope → nama petani & Lembaga TETAP tercetak (alat verifikasi lapangan, keputusan owner 2026-09-14)", () => {
+    const outside = neighbor(1, { inScope: false, groupName: "Lembaga Lain" });
+    const text = pdfText(buildFarmPassportDoc({ ...passport, neighbors: [outside] }));
+    expect(text).toContain("Tetangga 1");
+    expect(text).toContain("Lembaga Lain");
+  });
+
+  it("tetangga terpotong cap → baris '+N lahan lain' (#327)", () => {
+    const text = pdfText(buildFarmPassportDoc({ ...passport, neighbors: Array.from({ length: 12 }, (_, i) => neighbor(i + 1)), neighborsOmitted: 3 }));
+    expect(text).toContain("+3 lahan lain dalam 25 m tidak ditampilkan.");
+  });
+
+  it("tetangga jauh lebih besar dari bingkai → terpotong (clip), tidak melempar error (#327)", () => {
+    const huge = neighbor(1, { geometry: { type: "Polygon", coordinates: [[[100, -1], [103, -1], [103, 2], [100, 2], [100, -1]]] } });
+    expect(() => buildFarmPassportDoc({ ...passport, neighbors: [huge] })).not.toThrow();
+  });
+
+  it("sepadan sepanjang batas skema (4×200 + catatan 500) dipangkas 2 baris — kolom kanan tak melewati footer; 7 tetangga tetap 2 halaman (review 2026-09-14)", () => {
+    const long = "x".repeat(200);
+    const heavy = (n: number): ParcelPassport => ({
+      ...passport,
+      parcel: { ...passport.parcel, border: { north: long, east: long, south: long, west: long, notes: "y".repeat(500) } },
+      neighbors: Array.from({ length: n }, (_, i) => neighbor(i + 1)),
+    });
+    // Section mengalir (keputusan owner 2026-09-14, mencabut "Pelatihan selalu halaman 2" #298):
+    // legalitas penuh + sepadan maksimal + 7 atau 12 tetangga tetap 2 halaman, tak ada yang hilang.
+    const usual = buildFarmPassportDoc(heavy(7));
+    expect(usual.getNumberOfPages()).toBe(2);
+    // Dipangkas: dari 4×200 karakter "x" hanya ±2 baris per sisi yang tercetak.
+    expect((pdfText(usual).match(/x/g) ?? []).length).toBeLessThan(400);
+    const dense = buildFarmPassportDoc(heavy(12));
+    expect(dense.getNumberOfPages()).toBe(2);
+    expect(pdfText(dense)).toContain("Legalitas & Dokumen");
+    expect(pdfText(dense)).toContain("Pelatihan");
+  });
+
+  it("legalitas penuh tanpa tetangga/sepadan → tetap 2 halaman seperti sebelum #326/#327 (regresi tata letak)", () => {
+    expect(buildFarmPassportDoc(passport).getNumberOfPages()).toBe(2);
+  });
+
+  it("NKT (#328): belum dinilai → baris 'NKT  Belum dinilai' tanpa badge; terdampak → badge + ringkasan kategori/luas", () => {
+    const none = pdfText(buildFarmPassportDoc(passport));
+    expect(none).toContain("Belum dinilai");
+    expect(none).not.toContain("Terdampak NKT");
+    const affected: ParcelPassport = {
+      ...passport,
+      parcel: { ...passport.parcel, nkt: { status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: 176, assessedAt: "2025-03-12T00:00:00.000Z", assessor: "HJP", source: null } },
+    };
+    const text = pdfText(buildFarmPassportDoc(affected));
+    expect((text.match(/Terdampak NKT/g) ?? []).length).toBeGreaterThanOrEqual(2); // badge header + baris NKT
+    expect(text).toContain("NKT 4");
+    expect(text).toContain("0,09 ha");
+  });
+
+  it("Patok (#329): tanpa patok → tidak ada section; ada patok → tabel 'Patok Batas' bernomor, NKT turunan, lahan pemakai lain", () => {
+    expect(pdfText(buildFarmPassportDoc(passport))).not.toContain("Patok Batas");
+    const withMarkers: ParcelPassport = {
+      ...passport,
+      markers: [
+        { sequenceNo: 1, code: "SH-PTK-000001", longitude: 101.1912, latitude: 0.5235, condition: "PRESENT", type: "CONCRETE", installedAt: "2026-09-01T00:00:00.000Z", sharedWith: ["SH-0002.A"], nkt: true },
+        { sequenceNo: 2, code: "SH-PTK-000002", longitude: 101.1918, latitude: 0.5235, condition: "NOT_INSTALLED", type: null, installedAt: null, sharedWith: [], nkt: false },
+      ],
+    };
+    const text = pdfText(buildFarmPassportDoc(withMarkers));
+    expect(text).toContain("Patok Batas");
+    expect(text).toContain("Beton");
+    expect(text).toContain("Belum dipasang");
+    expect(text).toContain("SH-0002.A");
+    expect(text).toContain("SH-PTK-000001");
+    expect(text).toContain("101.191200");
+  });
+
+  it("bingkai peta memuat patok di luar margin 50 m — patok GPS sah sampai 100 m dari batas, gambar di-clip (review 2026-09-15)", () => {
+    // Lahan ±80 m: margin = max(40% span, 50 m) = 50 m; patok 80 m di timur batas sebelumnya terpotong.
+    const D = 0.0007; // ≈ 78 m
+    const ring = [[101.19, 0.52], [101.19 + D, 0.52], [101.19 + D, 0.52 + D], [101.19, 0.52 + D], [101.19, 0.52]];
+    const far = { longitude: 101.19 + D + 80 / 111_320, latitude: 0.52 + D / 2 };
+    const tanpa = passportMapFrame([ring], []);
+    expect(far.longitude).toBeGreaterThan(tanpa.maxLon);
+    const dengan = passportMapFrame([ring], [far]);
+    expect(dengan.maxLon).toBeGreaterThan(far.longitude);
+    // Lahan tetap terbaca: lebar lahan masih ≥ ¼ lebar bingkai walau patok di jarak maksimal (bukan jadi titik).
+    expect(D / (dengan.maxLon - dengan.minLon)).toBeGreaterThan(0.25);
   });
 
   it("geometri tak tersedia (ring < 3 titik) → tetap terbit tanpa throw", () => {
@@ -204,5 +341,84 @@ describe("imageFormatOf (lib/map-capture)", () => {
     expect(imageFormatOf("data:image/jpeg;base64,/9j/4AAQ")).toBe("JPEG");
     expect(imageFormatOf(PNG_1PX_URL)).toBe("PNG");
     expect(imageFormatOf("")).toBe("PNG");
+  });
+});
+
+describe("buildLayerReportDoc (lib/layer-report-pdf) — PDF per baris legenda Peta Lahan (#331)", () => {
+  const D = 0.0009;
+  it("poligon + titik: judul, subjudul, legenda, tabel multi-halaman, footer per halaman", () => {
+    const rows = Array.from({ length: 80 }, (_, i) => ({ no: i + 1, id: `LHN-${i + 1}`, nkt: i % 7 === 0 ? "Terdampak NKT" : "Belum dinilai" }));
+    const doc = buildLayerReportDoc({
+      title: "Lahan NKT (termasuk/terdampak)",
+      subtitle: "ISH-1401-03 · 80 lahan · dicetak hari ini",
+      fc: {
+        type: "FeatureCollection",
+        features: rows.map((r, i) => ({
+          type: "Feature",
+          geometry: i % 2 === 0
+            ? { type: "Polygon", coordinates: [[[101 + i * D, 0.5], [101 + (i + 1) * D, 0.5], [101 + (i + 1) * D, 0.5 + D], [101 + i * D, 0.5 + D], [101 + i * D, 0.5]]] }
+            : { type: "Point", coordinates: [101 + i * D, 0.5 + 2 * D] },
+          properties: { nkt: r.nkt },
+        })),
+      },
+      style: { colorOf: (p) => (p.nkt === "Terdampak NKT" ? [245, 158, 11] : [126, 34, 206]), numbered: true },
+      legend: [{ color: [245, 158, 11], label: "Terdampak NKT" }],
+      columns: [{ header: "No", key: "no", align: "right", width: 10 }, { header: "ID Lahan", key: "id" }, { header: "NKT", key: "nkt" }],
+      rows,
+    });
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+    const text = pdfText(doc);
+    expect(text).toContain("Lahan NKT (termasuk/terdampak)");
+    expect(text).toContain("ISH-1401-03");
+    expect(text).toContain("LHN-80");
+    expect(text).toContain("Hal. 1/");
+  });
+
+  it("landscape A4; fitur kecil berdempetan → halaman peta rinci per klaster bernomor (owner 2026-09-14), nomor tidak dicetak di atas 200 fitur", () => {
+    // Dua blok terpisah 3 km, masing-masing 30 lahan 40 m × 40 m — di ikhtisar < 6 mm → dua halaman rinci A/B.
+    const cell = 0.00036;
+    const block = (ox: number, oy: number) =>
+      Array.from({ length: 30 }, (_, i) => ({
+        type: "Feature" as const,
+        geometry: { type: "Polygon" as const, coordinates: [[[ox + (i % 6) * cell, oy + Math.floor(i / 6) * cell], [ox + (i % 6 + 1) * cell, oy + Math.floor(i / 6) * cell], [ox + (i % 6 + 1) * cell, oy + (Math.floor(i / 6) + 1) * cell], [ox + (i % 6) * cell, oy + (Math.floor(i / 6) + 1) * cell], [ox + (i % 6) * cell, oy + Math.floor(i / 6) * cell]]] },
+        properties: {},
+      }));
+    const features = [...block(101.1, 0.5), ...block(101.13, 0.52)];
+    const doc = buildLayerReportDoc({
+      title: "Lahan NKT", subtitle: "uji klaster", fc: { type: "FeatureCollection", features },
+      style: { color: [220, 38, 38], numbered: true },
+      columns: [{ header: "No", key: "no" }], rows: features.map((_, i) => ({ no: i + 1 })),
+    });
+    expect(Math.round(doc.internal.pageSize.getWidth())).toBe(297);
+    const text = pdfText(doc);
+    expect(text).toContain("peta rinci A");
+    expect(text).toContain("peta rinci B");
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(4);
+
+    const many = Array.from({ length: 250 }, (_, i) => ({ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: [101 + i * 0.001, 0.5] }, properties: {} }));
+    const big = buildLayerReportDoc({ title: "Patok", subtitle: "uji", fc: { type: "FeatureCollection", features: many }, style: { numbered: true }, columns: [{ header: "No", key: "no" }], rows: [] });
+    expect(pdfText(big)).toContain("Nomor tidak dicetak");
+  });
+
+  it("tanpa fitur → tetap terbit dengan keterangan peta kosong", () => {
+    const doc = buildLayerReportDoc({ title: "Patok lahan", subtitle: "—", fc: { type: "FeatureCollection", features: [] }, columns: [{ header: "No", key: "no" }], rows: [] });
+    expect(pdfText(doc)).toContain("Tidak ada fitur untuk digambar");
+  });
+});
+
+describe("graticuleStep — interval kisi koordinat peta PDF (#331)", () => {
+  it("memilih interval bulat supaya ≤ 7 garis pada bentang: 0,003° → 0,0005; 0,02° → 0,005; 0,3° → 0,05; 5° → 1", () => {
+    expect(graticuleStep(0.003)).toBe(0.0005);
+    expect(graticuleStep(0.02)).toBe(0.005);
+    expect(graticuleStep(0.3)).toBe(0.05);
+    expect(graticuleStep(5)).toBe(1);
+  });
+  it("label koordinat tercetak di tepi peta layer & Profil Lahan", () => {
+    const D = 0.0009;
+    const doc = buildLayerReportDoc({
+      title: "Uji", subtitle: "-", columns: [{ header: "No", key: "no" }], rows: [],
+      fc: { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "Polygon", coordinates: [[[101.19, 0.52], [101.19 + D, 0.52], [101.19 + D, 0.52 + D], [101.19, 0.52 + D], [101.19, 0.52]]] }, properties: {} }] },
+    });
+    expect(pdfText(doc)).toMatch(/101\.19\d\d/);
   });
 });

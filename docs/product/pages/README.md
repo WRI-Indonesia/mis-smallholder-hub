@@ -38,7 +38,7 @@ docs/product/pages/
 ├── report/                       Menu: Report
 │   ├── petani.md · pelatihan.md · produksi.md
 │   ├── kelompok-tani-summary.md · kelompok-tani-detail.md
-│   └── lahan.md
+│   └── lahan.md · patok.md
 ├── tools/                        Menu: Tools
 │   ├── dashboard-snapshot/       daftar · detail
 │   └── dashboard-snapshot-bmp/   daftar · detail
@@ -61,7 +61,7 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 | 2 | Settings | `settings` | `/admin/settings` | 4 | [settings/](./settings/README.md) |
 | 3 | Bulk Upload | `bulk-upload` | `/admin/bulk-upload` | 3 | [bulk-upload/](./bulk-upload/README.md) |
 | 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 3 | [data-analyst/](./data-analyst/README.md) |
-| 5 | Report | `report` | `/admin/report` | 6 | [report/](./report/README.md) |
+| 5 | Report | `report` | `/admin/report` | 7 | [report/](./report/README.md) |
 | 6 | Tools | `tools` | `/admin/tools` | 2 | [tools/](./tools/README.md) |
 | 7 | Map | `map` | `/admin/map` | 2 | [map/](./map/README.md) |
 | 9 | Bantuan | `help` | `/admin/help` | — (tree bab/topik) | [bantuan/](./bantuan/README.md) |

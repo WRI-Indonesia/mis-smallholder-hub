@@ -15,6 +15,10 @@ export interface KtDetailRawParcel {
   area: number | null;
   /** Kelompok Tani (Sub Lv.2). */
   subGroupLv2: string | null;
+  /** Lahan termasuk/terdampak NKT (#337) — `parcelNktPatok(identity).nkt`. */
+  nkt: boolean;
+  /** Jumlah tautan patok aktif lahan ini (#337). */
+  patok: number;
 }
 
 /** Trim; string kosong/whitespace → null. */
@@ -48,24 +52,32 @@ export function buildKelompokTaniDetailReport(
     petani: Map<string, KtDetailPetani>;
     lahan: number;
     luas: number;
+    lahanNkt: number;
+    patok: number;
   }
 
   const ktMap = new Map<string, KtAcc>();
   const allPetani = new Set<string>();
   let totalLahan = 0;
   let totalLuas = 0;
+  let totalLahanNkt = 0;
+  let totalPatok = 0;
 
   for (const p of parcels) {
     const g2 = clean(p.subGroupLv2);
     const area = p.area ?? 0;
+    const nkt = p.nkt ? 1 : 0;
+    const patok = p.patok;
 
     let kt = ktMap.get(norm(g2));
     if (!kt) {
-      kt = { kelompokTani: g2, petani: new Map(), lahan: 0, luas: 0 };
+      kt = { kelompokTani: g2, petani: new Map(), lahan: 0, luas: 0, lahanNkt: 0, patok: 0 };
       ktMap.set(norm(g2), kt);
     }
     kt.lahan += 1;
     kt.luas += area;
+    kt.lahanNkt += nkt;
+    kt.patok += patok;
 
     let petani = kt.petani.get(p.farmerId);
     if (!petani) {
@@ -75,15 +87,21 @@ export function buildKelompokTaniDetailReport(
         name: p.farmerName,
         totalLahan: 0,
         totalLuas: 0,
+        totalLahanNkt: 0,
+        totalPatok: 0,
       };
       kt.petani.set(p.farmerId, petani);
     }
     petani.totalLahan += 1;
     petani.totalLuas += area;
+    petani.totalLahanNkt += nkt;
+    petani.totalPatok += patok;
 
     allPetani.add(p.farmerId);
     totalLahan += 1;
     totalLuas += area;
+    totalLahanNkt += nkt;
+    totalPatok += patok;
   }
 
   let totalKelompokTani = 0;
@@ -99,6 +117,8 @@ export function buildKelompokTaniDetailReport(
         totalPetani: petani.length,
         totalLahan: kt.lahan,
         totalLuas: kt.luas,
+        totalLahanNkt: kt.lahanNkt,
+        totalPatok: kt.patok,
         petani,
       };
     })
@@ -112,6 +132,8 @@ export function buildKelompokTaniDetailReport(
       totalPetani: allPetani.size,
       totalLahan,
       totalLuas,
+      totalLahanNkt,
+      totalPatok,
     },
     kelompokTaniList,
   };

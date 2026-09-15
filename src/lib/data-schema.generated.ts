@@ -1353,6 +1353,272 @@ export const DATA_SCHEMA: SchemaMap = {
       ]
     },
     {
+      "name": "LandMarker",
+      "clientName": "landMarker",
+      "tableName": "tbl_land_marker",
+      "domain": "land-marker",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": true,
+          "dbName": "code",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "longitude",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "longitude",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "latitude",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "latitude",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "source",
+          "type": "LandMarkerSource",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "source",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "condition",
+          "type": "LandMarkerCondition",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "condition",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "type",
+          "type": "LandMarkerType",
+          "kind": "enum",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "type",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "installedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "installed_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "installedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "installed_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "photoKey",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "photo_key",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "photoName",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "photo_name",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "notes",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcels",
+          "type": "LandParcelMarker",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 17,
+      "compoundUnique": [],
+      "indexes": [
+        [
+          "isActive"
+        ]
+      ]
+    },
+    {
+      "name": "LandMarkerCounter",
+      "clientName": "landMarkerCounter",
+      "tableName": "tbl_land_marker_counter",
+      "domain": "land-marker",
+      "fields": [
+        {
+          "name": "prefix",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": "prefix",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "lastNo",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "last_no",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 2,
+      "compoundUnique": [],
+      "indexes": []
+    },
+    {
       "name": "LandParcel",
       "clientName": "landParcel",
       "tableName": "tbl_land_parcel",
@@ -1667,6 +1933,175 @@ export const DATA_SCHEMA: SchemaMap = {
           "parcelUid"
         ]
       ]
+    },
+    {
+      "name": "LandParcelBorder",
+      "clientName": "landParcelBorder",
+      "tableName": "tbl_land_parcel_border",
+      "domain": "land-parcel-border",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcelUid",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": true,
+          "dbName": "parcel_uid",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcel",
+          "type": "LandParcelIdentity",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "parcelUid"
+          ]
+        },
+        {
+          "name": "north",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "north",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "east",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "east",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "south",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "south",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "west",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "west",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "notes",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 12,
+      "compoundUnique": [],
+      "indexes": []
     },
     {
       "name": "LandParcelDocument",
@@ -2250,6 +2685,42 @@ export const DATA_SCHEMA: SchemaMap = {
           "dbName": null,
           "relationName": null,
           "relationFields": []
+        },
+        {
+          "name": "border",
+          "type": "LandParcelBorder",
+          "kind": "relation",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "nkt",
+          "type": "LandParcelNkt",
+          "kind": "relation",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "markers",
+          "type": "LandParcelMarker",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
         }
       ],
       "scalarCount": 8,
@@ -2262,6 +2733,387 @@ export const DATA_SCHEMA: SchemaMap = {
       "indexes": [
         [
           "isActive"
+        ]
+      ]
+    },
+    {
+      "name": "LandParcelMarker",
+      "clientName": "landParcelMarker",
+      "tableName": "tbl_land_parcel_marker",
+      "domain": "land-marker",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcelUid",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "parcel_uid",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcel",
+          "type": "LandParcelIdentity",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "parcelUid"
+          ]
+        },
+        {
+          "name": "markerId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "marker_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "marker",
+          "type": "LandMarker",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "markerId"
+          ]
+        },
+        {
+          "name": "sequenceNo",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "sequence_no",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "sourceRevision",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "source_revision",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 10,
+      "compoundUnique": [
+        [
+          "parcelUid",
+          "markerId"
+        ]
+      ],
+      "indexes": [
+        [
+          "markerId"
+        ],
+        [
+          "parcelUid",
+          "isActive"
+        ]
+      ]
+    },
+    {
+      "name": "LandParcelNkt",
+      "clientName": "landParcelNkt",
+      "tableName": "tbl_land_parcel_nkt",
+      "domain": "land-parcel-nkt",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcelUid",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": true,
+          "dbName": "parcel_uid",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcel",
+          "type": "LandParcelIdentity",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "parcelUid"
+          ]
+        },
+        {
+          "name": "status",
+          "type": "LandNktStatus",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "status",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "categories",
+          "type": "NktCategory",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "categories",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "affectedAreaHa",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "affected_area_ha",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "affectedLengthM",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "affected_length_m",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "assessedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "assessed_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "assessor",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "assessor",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "source",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "notes",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 15,
+      "compoundUnique": [],
+      "indexes": [
+        [
+          "status"
         ]
       ]
     },
@@ -5935,6 +6787,15 @@ export const DATA_SCHEMA: SchemaMap = {
       "isSelf": false
     },
     {
+      "key": "LandMarker↔LandParcelMarker",
+      "from": "LandMarker",
+      "to": "LandParcelMarker",
+      "kind": "1:n",
+      "fromField": "parcels",
+      "toField": "marker",
+      "isSelf": false
+    },
+    {
       "key": "LandParcel↔ProductionRecord",
       "from": "LandParcel",
       "to": "ProductionRecord",
@@ -5962,6 +6823,15 @@ export const DATA_SCHEMA: SchemaMap = {
       "isSelf": false
     },
     {
+      "key": "LandParcelBorder↔LandParcelIdentity",
+      "from": "LandParcelIdentity",
+      "to": "LandParcelBorder",
+      "kind": "1:1",
+      "fromField": "border",
+      "toField": "parcel",
+      "isSelf": false
+    },
+    {
       "key": "LandParcelDocument↔LandParcelIdentity",
       "from": "LandParcelIdentity",
       "to": "LandParcelDocument",
@@ -5976,6 +6846,24 @@ export const DATA_SCHEMA: SchemaMap = {
       "to": "LandParcelExternalId",
       "kind": "1:n",
       "fromField": "externalIds",
+      "toField": "parcel",
+      "isSelf": false
+    },
+    {
+      "key": "LandParcelIdentity↔LandParcelMarker",
+      "from": "LandParcelIdentity",
+      "to": "LandParcelMarker",
+      "kind": "1:n",
+      "fromField": "markers",
+      "toField": "parcel",
+      "isSelf": false
+    },
+    {
+      "key": "LandParcelIdentity↔LandParcelNkt",
+      "from": "LandParcelIdentity",
+      "to": "LandParcelNkt",
+      "kind": "1:1",
+      "fromField": "nkt",
       "toField": "parcel",
       "isSelf": false
     },
@@ -6206,6 +7094,45 @@ export const DATA_SCHEMA: SchemaMap = {
       "domain": "land-parcel-document"
     },
     {
+      "name": "LandMarkerCondition",
+      "values": [
+        "PRESENT",
+        "MISSING",
+        "DAMAGED",
+        "NOT_INSTALLED"
+      ],
+      "domain": "land-marker"
+    },
+    {
+      "name": "LandMarkerSource",
+      "values": [
+        "POLYGON_VERTEX",
+        "GPS",
+        "MANUAL"
+      ],
+      "domain": "land-marker"
+    },
+    {
+      "name": "LandMarkerType",
+      "values": [
+        "CONCRETE",
+        "WOOD",
+        "PIPE",
+        "NATURAL",
+        "OTHER"
+      ],
+      "domain": "land-marker"
+    },
+    {
+      "name": "LandNktStatus",
+      "values": [
+        "INCLUDED",
+        "AFFECTED",
+        "NOT_AFFECTED"
+      ],
+      "domain": "land-parcel-nkt"
+    },
+    {
       "name": "LandProgramStatus",
       "values": [
         "PLANNED",
@@ -6232,6 +7159,18 @@ export const DATA_SCHEMA: SchemaMap = {
         "DITOLAK"
       ],
       "domain": "land-stdb"
+    },
+    {
+      "name": "NktCategory",
+      "values": [
+        "NKT_1",
+        "NKT_2",
+        "NKT_3",
+        "NKT_4",
+        "NKT_5",
+        "NKT_6"
+      ],
+      "domain": "land-parcel-nkt"
     },
     {
       "name": "PermissionLevel",

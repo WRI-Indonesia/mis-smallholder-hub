@@ -7,7 +7,7 @@
 | Menu key | `report` |
 | URL | `/admin/report` |
 | Icon | `FileText` |
-| Sub menu | 6 — Petani (`report-farmer`), Pelatihan (`report-training`), Produksi (`report-production`), Kelompok Tani (Summary) (`report-kelompok-tani`), Kelompok Tani (Detail) (`report-kelompok-tani-detail`), Lahan (`report-land-parcel`) |
+| Sub menu | 7 — Petani (`report-farmer`), Pelatihan (`report-training`), Produksi (`report-production`), Kelompok Tani (Summary) (`report-kelompok-tani`), Kelompok Tani (Detail) (`report-kelompok-tani-detail`), Lahan (`report-land-parcel`), Patok (`report-marker`, #331) |
 
 ## Diagram objek
 
@@ -23,8 +23,10 @@ Menu: Report (/admin/report)
 │   └── Page: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 ├── Sub Menu: Kelompok Tani (Detail) (report-kelompok-tani-detail)
 │   └── Page: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
-└── Sub Menu: Lahan (report-land-parcel)
-    └── Page: Laporan Lahan (/admin/report/land-parcel)
+├── Sub Menu: Lahan (report-land-parcel)
+│   └── Page: Laporan Lahan (/admin/report/land-parcel)
+└── Sub Menu: Patok (report-marker, #331)
+    └── Page: Laporan Patok (/admin/report/marker)
 ```
 
 ## Daftar sub menu
@@ -37,6 +39,7 @@ Menu: Report (/admin/report)
 | 4 | Kelompok Tani (Summary) | `report-kelompok-tani` | `/admin/report/kelompok-tani` | [kelompok-tani-summary.md](./kelompok-tani-summary.md) |
 | 5 | Kelompok Tani (Detail) | `report-kelompok-tani-detail` | `/admin/report/kelompok-tani-detail` | [kelompok-tani-detail.md](./kelompok-tani-detail.md) |
 | 6 | Lahan | `report-land-parcel` | `/admin/report/land-parcel` | [lahan.md](./lahan.md) |
+| 7 | Patok | `report-marker` | `/admin/report/marker` | [patok.md](./patok.md) |
 
 ## Page: `/admin/report` (route induk)
 

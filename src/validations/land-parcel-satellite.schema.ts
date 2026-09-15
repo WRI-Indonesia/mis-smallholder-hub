@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
-import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
+import { LAND_STDB_STAGES, LAND_NKT_STATUSES, NKT_CATEGORIES } from "@/lib/land-parcel-satellite-format";
 
 /**
  * CRUD manual satelit lahan (#296 tahap 3c). Semua input mengacu ke baris
@@ -8,15 +8,16 @@ import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
  * `parcelUid` setelah cek scope; klien tidak pernah mengirim parcelUid.
  */
 
-const optText = (max = 200) =>
+/** Teks opsional: "" → null, trim, maks `max` — dipakai juga skema patok (#329), jangan digandakan. */
+export const optText = (max = 200) =>
   z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), z.string().trim().max(max).nullable().optional());
 
-const optNumber = (msg: string) =>
+const optNumber = (msg: string, max = 10000, maxMsg = "Luas terlalu besar") =>
   z.preprocess((v) => {
     if (v === "" || v === undefined || v === null) return null;
     const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
     return Number.isNaN(n) ? NaN : n;
-  }, z.number({ message: msg }).positive(msg).max(10000, "Luas terlalu besar").nullable().optional());
+  }, z.number({ message: msg }).positive(msg).max(max, maxMsg).nullable().optional());
 
 const optYear = z.preprocess((v) => {
   if (v === "" || v === undefined || v === null) return null;
@@ -24,7 +25,8 @@ const optYear = z.preprocess((v) => {
   return Number.isNaN(n) ? NaN : n;
 }, z.number({ message: "Tahun tidak valid" }).int().min(1900, "Tahun minimal 1900").max(2100, "Tahun maksimal 2100").nullable().optional());
 
-const optDate = z.preprocess((v) => {
+/** Tanggal opsional dari input `date` ("" → null) — dipakai juga skema patok (#329). */
+export const optDate = z.preprocess((v) => {
   if (v === "" || v === undefined || v === null) return null;
   return typeof v === "string" ? new Date(v) : v;
 }, z.date({ message: "Tanggal tidak valid" }).nullable().optional());
@@ -127,6 +129,67 @@ export const updateLandParcelProgramSchema = programBase
   .extend({ id: z.string().min(1) })
   .refine(programDateOrder.check, programDateOrder.opts);
 
+// ---- Sepadan (#326) — satelit 1:1, keempat sisi opsional; semua kosong = hapus.
+// Urutan & label sisi tinggal di modul daun `land-parcel-satellite-format.ts`;
+// diekspor ulang di sini untuk pemakai lama.
+export { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, type LandBorderSide } from "@/lib/land-parcel-satellite-format";
+export const landParcelBorderSchema = z.object({
+  landParcelId: z.string().min(1, "Lahan tidak valid"),
+  north: optText(200),
+  east: optText(200),
+  south: optText(200),
+  west: optText(200),
+  notes: optText(500),
+});
+
+/** Empat sisi saja (tanpa landParcelId/notes) — dipakai Bulk Upload Lahan (atribut DBF). */
+export const landParcelBorderSidesSchema = landParcelBorderSchema.omit({ landParcelId: true, notes: true });
+
+// ---- NKT (#328) — satelit 1:1; kategori wajib ≥ 1 kecuali NOT_AFFECTED; tanggal ≤ hari ini.
+const nktBase = z.object({
+  status: z.enum(LAND_NKT_STATUSES, { message: "Status NKT wajib dipilih" }),
+  // FormData mengirim checkbox berulang → string[]; string "1,4" / "NKT 1; NKT_4" dinormalkan ke kode enum.
+  categories: z.preprocess(
+    (v) => {
+      const list = typeof v === "string" ? v.split(/[,;]+/).map((x) => x.trim()).filter(Boolean) : Array.isArray(v) ? v : [];
+      return list.map((x) => (typeof x === "string" ? x.replace(/^\s*(?:NKT[\s_-]*)?(\d)\s*$/i, "NKT_$1") : x));
+    },
+    z.array(z.enum(NKT_CATEGORIES, { message: "Kategori NKT tidak dikenal" })),
+  ),
+  affectedAreaHa: optNumber("Luas NKT harus angka lebih dari 0"),
+  affectedLengthM: optNumber("Panjang harus angka lebih dari 0", 100_000, "Panjang terlalu besar"),
+  assessedAt: optDate,
+  assessor: optText(200),
+  source: optText(200),
+  notes: optText(1000),
+});
+function refineNkt(d: z.infer<typeof nktBase>, ctx: z.RefinementCtx) {
+  if (d.status !== "NOT_AFFECTED" && d.categories.length === 0) {
+    ctx.addIssue({ code: "custom", path: ["categories"], message: "Pilih minimal satu kategori NKT untuk lahan yang termasuk/terdampak" });
+  }
+  if (d.assessedAt && d.assessedAt.getTime() > Date.now() + 24 * 3600 * 1000) {
+    ctx.addIssue({ code: "custom", path: ["assessedAt"], message: "Tanggal asesmen tidak boleh di masa depan" });
+  }
+}
+/**
+ * Normalisasi SETELAH validasi, sebagai `.transform()` — bukan mutasi di dalam
+ * superRefine (review 2026-09-15). Duplikat kategori dibuang diam-diam (checkbox
+ * tak bisa ganda; importer bisa). NOT_AFFECTED selalu tanpa kategori — sama dengan
+ * importer; kalau tidak, form yang beralih status tanpa mencentang-hapus akan
+ * menyimpan "Tidak terdampak — NKT 4".
+ */
+const normalizeNkt = <T extends z.infer<typeof nktBase>>(d: T): T => ({
+  ...d,
+  categories: d.status === "NOT_AFFECTED" ? [] : [...new Set(d.categories)],
+});
+export const landParcelNktSchema = nktBase
+  .extend({ landParcelId: z.string().min(1, "Lahan tidak valid") })
+  .superRefine(refineNkt)
+  .transform(normalizeNkt);
+export type LandParcelNktInput = z.infer<typeof landParcelNktSchema>;
+
+export type LandParcelBorderInput = z.infer<typeof landParcelBorderSchema>;
+export type LandParcelBorderSidesInput = z.infer<typeof landParcelBorderSidesSchema>;
 export type LandParcelDocumentInput = z.infer<typeof landParcelDocumentSchema>;
 export type LandStdbInput = z.infer<typeof landStdbSchema>;
 export type LandParcelExternalIdInput = z.infer<typeof landParcelExternalIdSchema>;

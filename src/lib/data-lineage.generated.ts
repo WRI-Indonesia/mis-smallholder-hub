@@ -22,10 +22,14 @@ export const DATA_LINEAGE: DataLineage = [
     "route": "(admin)/admin/bulk-upload/parcels",
     "models": {
       "farmer": "R",
+      "landMarker": "RW",
       "landParcel": "RW",
+      "landParcelBorder": "RW",
       "landParcelDocument": "RW",
       "landParcelExternalId": "RW",
       "landParcelIdentity": "W",
+      "landParcelMarker": "RW",
+      "landParcelNkt": "RW",
       "landParcelStdb": "RW",
       "landStdb": "RW",
       "productionRecord": "W",
@@ -35,7 +39,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/land-parcel-detail-save.ts",
       "src/lib/land-parcel-identity.ts",
       "src/server/actions/bulk-upload-parcel-detail.ts",
-      "src/server/actions/bulk-upload-parcel.ts"
+      "src/server/actions/bulk-upload-parcel.ts",
+      "src/server/actions/land-marker.ts"
     ],
     "dynamicAccess": null
   },
@@ -247,6 +252,7 @@ export const DATA_LINEAGE: DataLineage = [
       "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
+      "landMarker": "R",
       "landParcel": "R",
       "productionRecord": "R",
       "province": "R",
@@ -254,9 +260,11 @@ export const DATA_LINEAGE: DataLineage = [
       "tree": "R"
     },
     "modules": [
+      "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/fire-boundary.ts",
+      "src/server/actions/land-marker.ts",
       "src/server/actions/land-parcel-export.ts",
       "src/server/actions/land-parcel.ts",
       "src/server/actions/map.ts"
@@ -277,6 +285,7 @@ export const DATA_LINEAGE: DataLineage = [
       "tree": "R"
     },
     "modules": [
+      "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
@@ -297,7 +306,9 @@ export const DATA_LINEAGE: DataLineage = [
       "trainingPackage": "R"
     },
     "modules": [
+      "src/lib/nkt-report-query.ts",
       "src/server/actions/farmer-group.ts",
+      "src/server/actions/land-marker.ts",
       "src/server/actions/land-parcel-export.ts"
     ],
     "dynamicAccess": null
@@ -309,10 +320,14 @@ export const DATA_LINEAGE: DataLineage = [
       "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
+      "landMarker": "W",
       "landParcel": "RW",
+      "landParcelBorder": "RW",
       "landParcelDocument": "RW",
       "landParcelExternalId": "RW",
       "landParcelIdentity": "RW",
+      "landParcelMarker": "RW",
+      "landParcelNkt": "RW",
       "landParcelProgram": "RW",
       "landParcelStdb": "RW",
       "landStdb": "RW",
@@ -322,9 +337,11 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/lib/land-parcel-identity.ts",
+      "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
+      "src/server/actions/land-marker.ts",
       "src/server/actions/land-parcel-export.ts",
       "src/server/actions/land-parcel-satellite.ts",
       "src/server/actions/land-parcel.ts",
@@ -417,6 +434,24 @@ export const DATA_LINEAGE: DataLineage = [
       "landParcel": "R"
     },
     "modules": [
+      "src/lib/nkt-report-query.ts",
+      "src/server/actions/report.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
+    "menuKey": "report-marker",
+    "route": "(admin)/admin/report/marker",
+    "models": {
+      "district": "R",
+      "farmerGroup": "R",
+      "landMarker": "RW",
+      "landParcel": "R",
+      "landParcelMarker": "RW",
+      "landParcelNkt": "R"
+    },
+    "modules": [
+      "src/server/actions/land-marker.ts",
       "src/server/actions/report.ts"
     ],
     "dynamicAccess": null

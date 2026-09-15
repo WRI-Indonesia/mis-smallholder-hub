@@ -1,4 +1,5 @@
 import type { Polygon, MultiPolygon } from "geojson";
+import type { ParcelNeighbor } from "@/lib/parcel-neighbor";
 
 /** Filter input for the Peta Lahan map. District is required to bound the query. */
 export type MapFilters = {
@@ -31,6 +32,10 @@ export type ParcelFeature = {
   plantingYear: number | null;
   cropType: string | null;
   landStatus: string | null;
+  /** Status NKT (#328): INCLUDED/AFFECTED/NOT_AFFECTED, null = belum dinilai — gaya layer & popup. */
+  nktStatus: string | null;
+  /** Jumlah patok aktif yang tertaut ke lahan ini (#336) — baris "Patok" di popup. */
+  markerCount: number;
   /** Centroid derived from the polygon, as [long, lat]. */
   centroid: [number, number];
   geometry: Polygon | MultiPolygon;
@@ -39,7 +44,20 @@ export type ParcelFeature = {
 export type MapData = {
   kelompokTani: KTPoint[];
   parcels: ParcelFeature[];
-  counts: { kt: number; parcelPoints: number; parcelAreas: number };
+  /**
+   * `nkt` (#328) = lahan INCLUDED/AFFECTED; `markers`/`markersNkt` (#331) =
+   * patok aktif lahan pada filter (patok NKT = salah satu lahan pemakainya kena
+   * NKT). Opsional agar payload lama tetap valid. Titik patoknya sendiri
+   * dimuat malas lewat `getMapMarkers` saat layernya dicentang.
+   */
+  counts: { kt: number; parcelPoints: number; parcelAreas: number; nkt?: number; markers?: number; markersNkt?: number };
+};
+
+/** Satu patok di Peta Lahan (#331) — tuple ringkas: [id, lon, lat, nkt 0/1, kondisi, "ID Lahan #n; …", kode]. */
+export type MapMarkerTuple = [id: string, lon: number, lat: number, nkt: 0 | 1, condition: string, parcels: string, code: string];
+
+export type MapMarkerWire = {
+  markers: MapMarkerTuple[];
 };
 
 // ── Wire format (#223) ─────────────────────────────────────────────────────
@@ -63,6 +81,10 @@ export type ParcelWireTuple = [
   cropType: string | null,
   landStatus: string | null,
   geometry: Polygon | MultiPolygon,
+  /** #328 — ditambahkan di akhir agar posisi lama tak bergeser. */
+  nktStatus: string | null,
+  /** #336 — jumlah patok aktif (tautan aktif); wajib seperti `nktStatus`. */
+  markerCount: number,
 ];
 
 export type MapDataWire = {
@@ -245,6 +267,10 @@ export type ParcelPassport = {
     species: string | null;
     isPsr: boolean;
     treeCount: number;
+    /** Sepadan U/T/S/B (#326) — null bila belum diisi; PDF tetap mencetak bloknya dengan "—". */
+    border: { north: string | null; east: string | null; south: string | null; west: string | null; notes: string | null } | null;
+    /** Status NKT (#328) — null = belum dinilai; PDF mencetak badge + baris "NKT". */
+    nkt: { status: string; categories: string[]; affectedAreaHa: number | null; affectedLengthM: number | null; assessedAt: string | null; assessor: string | null; source: string | null } | null;
   };
   /** Legalitas lahan (#296/#298) — satelit via parcelUid. */
   legal: {
@@ -264,4 +290,18 @@ export type ParcelPassport = {
   };
   training: FarmerTrainingItem[];
   production: ProductionSummary;
+  /**
+   * Lahan tetangga ≤ 25 m (#327) — sudah dipangkas ke NEIGHBOR_LIMIT_PDF dan
+   * sudah melewati aturan scope (nama di luar scope null). Kosong = memang
+   * tidak ada lahan MIS di sekitarnya; PDF tetap mencetak legendanya.
+   */
+  neighbors: ParcelNeighbor[];
+  /** Tetangga yang tidak ikut karena cap — dicetak sebagai "+N lahan lain". */
+  neighborsOmitted: number;
+  /**
+   * Patok batas (#329), urut nomor — persegi bernomor di peta + tabel "Patok
+   * Batas". `sharedWith` = ID Lahan lain yang memakai patok yang sama; `nkt`
+   * turunan dari status lahan pemakainya. Kosong = belum ada patok (tabel tidak dicetak).
+   */
+  markers: { sequenceNo: number; code: string; longitude: number; latitude: number; condition: string; type: string | null; installedAt: string | null; sharedWith: string[]; nkt: boolean }[];
 };
