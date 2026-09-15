@@ -95,6 +95,17 @@ describe("buildMapData", () => {
     expect(byId).toEqual({ p1: "AFFECTED", p2: "NOT_AFFECTED", p3: null });
   });
 
+  it("Patok (#336): jumlah tautan aktif ikut tuple (elemen ke-10) → markerCount; tanpa _count → 0", () => {
+    const result = buildMapData([], [
+      parcel({ id: "p1", identity: { nkt: null, _count: { markers: 4 } } }),
+      parcel({ id: "p2", identity: { nkt: { status: "AFFECTED" } } }),
+      parcel({ id: "p3" }),
+    ]);
+    expect(result.parcels.map((t) => t[9])).toEqual([4, 0, 0]);
+    const byId = Object.fromEntries(expandMapData(result).parcels.map((p) => [p.id, p.markerCount]));
+    expect(byId).toEqual({ p1: 4, p2: 0, p3: 0 });
+  });
+
   it("dedupes the farmers lookup across parcels of the same farmer (#223)", () => {
     const result = buildMapData([], [parcel(), parcel({ id: "p2" })]);
     expect(result.parcels).toHaveLength(2);

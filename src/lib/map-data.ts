@@ -39,8 +39,8 @@ export type RawParcel = {
   cropType: string | null;
   landStatus: string | null;
   farmer: { name: string; farmerId: string; farmerGroup: { name: string } | null } | null;
-  /** Status NKT via identitas (#328) — opsional agar pemanggil lama (BMP) tetap valid. */
-  identity?: { nkt: { status: string } | null } | null;
+  /** Status NKT via identitas (#328) + jumlah patok aktif (#336) — opsional agar pemanggil lama (BMP) tetap valid. */
+  identity?: { nkt: { status: string } | null; _count?: { markers: number } } | null;
 };
 
 /**
@@ -86,6 +86,7 @@ const parcelTuple = (p: RawParcel, geometry: Polygon | MultiPolygon): ParcelWire
   p.landStatus,
   slimGeometry(geometry),
   p.identity?.nkt?.status ?? null,
+  p.identity?._count?.markers ?? 0,
 ];
 
 /** Bagian bersama expand: tuple wire + lookup petani → ParcelFeature (tanpa centroid). */
@@ -93,7 +94,7 @@ function expandParcelTuple(
   t: ParcelWireTuple,
   farmers: Record<string, MapFarmerTuple>
 ): Omit<ParcelFeature, "centroid" | "geometry"> & { geometry: Polygon | MultiPolygon } {
-  const [id, parcelId, farmerId, area, plantingYear, cropType, landStatus, geometry, nktStatus] = t;
+  const [id, parcelId, farmerId, area, plantingYear, cropType, landStatus, geometry, nktStatus, markerCount] = t;
   const f = farmers[farmerId];
   return {
     id,
@@ -107,6 +108,7 @@ function expandParcelTuple(
     cropType,
     landStatus,
     nktStatus: nktStatus ?? null,
+    markerCount: markerCount ?? 0,
     geometry,
   };
 }

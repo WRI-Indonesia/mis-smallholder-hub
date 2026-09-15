@@ -34,6 +34,8 @@ export type ParcelFeature = {
   landStatus: string | null;
   /** Status NKT (#328): INCLUDED/AFFECTED/NOT_AFFECTED, null = belum dinilai — gaya layer & popup. */
   nktStatus: string | null;
+  /** Jumlah patok aktif yang tertaut ke lahan ini (#336) — baris "Patok" di popup. */
+  markerCount: number;
   /** Centroid derived from the polygon, as [long, lat]. */
   centroid: [number, number];
   geometry: Polygon | MultiPolygon;
@@ -81,6 +83,8 @@ export type ParcelWireTuple = [
   geometry: Polygon | MultiPolygon,
   /** #328 — ditambahkan di akhir agar posisi lama tak bergeser. */
   nktStatus: string | null,
+  /** #336 — jumlah patok aktif; opsional agar payload lama/tanpa hitungan tetap valid. */
+  markerCount?: number,
 ];
 
 export type MapDataWire = {

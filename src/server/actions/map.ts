@@ -170,7 +170,8 @@ export async function getMapData(
           select: { name: true, farmerId: true, farmerGroup: { select: { name: true } } },
         },
         // NKT (#328): hanya status — cukup untuk gaya layer & popup, jangan tarik seluruh baris.
-        identity: { select: { nkt: { select: { status: true } } } },
+        // Patok (#336): hanya HITUNGAN tautan aktif — titiknya tetap dimuat malas (getMapMarkers).
+        identity: { select: { nkt: { select: { status: true } }, _count: { select: { markers: { where: { isActive: true } } } } } },
       },
     }),
   ]);

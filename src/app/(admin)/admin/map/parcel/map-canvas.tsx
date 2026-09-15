@@ -1301,6 +1301,8 @@ function ParcelPopupBody({
               { label: "Status Lahan", value: props.landStatus },
               // NKT (#328): belum dinilai ditulis eksplisit — "—" akan terbaca "tidak terdampak".
               { label: "NKT", value: props.nktStatus ? landNktStatusLabel(String(props.nktStatus)) : "Belum dinilai" },
+              // Patok (#336): hitungan tautan aktif dari payload peta; titiknya di layer Patok / tab Patok Detail Lahan.
+              { label: "Patok", value: Number(props.markerCount) > 0 ? `${Number(props.markerCount)} patok` : "Belum ada patok" },
             ]}
           />
         </MapPopupSection>
@@ -1554,5 +1556,6 @@ function parcelProps(p: ParcelFeature) {
     cropType: p.cropType,
     landStatus: p.landStatus,
     nktStatus: p.nktStatus,
+    markerCount: p.markerCount,
   };
 }
