@@ -54,6 +54,7 @@ import tMencatatPelatihan from "@/content/help/tutorial/t-3-mencatat-pelatihan.m
 import tMencatatProduksi from "@/content/help/tutorial/t-4-mencatat-produksi.md";
 import tMencatatLegalitasLahan from "@/content/help/tutorial/t-5-mencatat-legalitas-lahan.md";
 import tMengelolaPatokLahan from "@/content/help/tutorial/t-6-mengelola-patok-lahan.md";
+import tMencatatMonevBmp from "@/content/help/tutorial/t-7-mencatat-monev-bmp.md";
 import uUnggahPetani from "@/content/help/tutorial/u-1-unggah-petani.md";
 import uUnggahProduksi from "@/content/help/tutorial/u-2-unggah-produksi.md";
 import uUnggahLahan from "@/content/help/tutorial/u-3-unggah-lahan.md";
@@ -80,6 +81,7 @@ import pMetrikRilis from "@/content/help/tutorial/p-8-metrik-rilis.md";
 import pPetaDataSkema from "@/content/help/tutorial/p-10-peta-data-skema.md";
 import pFireAlert from "@/content/help/tutorial/p-11-fire-alert.md";
 import pUnduhSpasialLahan from "@/content/help/tutorial/p-12-unduh-spasial-lahan.md";
+import pDashboardMonevBmp from "@/content/help/tutorial/p-13-dashboard-monev-bmp.md";
 import aAnalisaData from "@/content/help/tutorial/a-1-analisa-data.md";
 import aMengelolaPengguna from "@/content/help/tutorial/a-2-mengelola-pengguna.md";
 import aMengaturIzinPeran from "@/content/help/tutorial/a-3-mengatur-izin-peran.md";
@@ -184,6 +186,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "mencatat-produksi", source: tMencatatProduksi },
       { id: "mencatat-legalitas-lahan", source: tMencatatLegalitasLahan },
       { id: "mengelola-patok-lahan", source: tMengelolaPatokLahan },
+      { id: "mencatat-monev-bmp", source: tMencatatMonevBmp },
     ],
   },
   {
@@ -214,6 +217,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "cakupan-pelatihan", source: pCakupanPelatihan },
       { id: "membaca-peta", source: pMembacaPeta },
       { id: "dashboard-bmp", source: pDashboardBmp },
+      { id: "dashboard-monev-bmp", source: pDashboardMonevBmp },
       { id: "peta-lahan", source: pPetaLahan },
       { id: "unduh-spasial-lahan", source: pUnduhSpasialLahan },
       { id: "fire-alert", source: pFireAlert },

@@ -1,0 +1,37 @@
+// bmp-assessment.prisma — hasil Monev BMP (Monitoring & Evaluasi Best Management
+// Practices) per PETANI per tahun (#344, keputusan owner 2026-09-18). Skor akhir
+// saja; rincian per indikator di luar lingkup. Kategori (Teladan / Praktisi /
+// Perintis / Belum Implementasi) TIDAK disimpan — dihitung dari skor lewat
+// konstanta ambang di src/lib/bmp-assessment.ts agar revisi ambang konsisten ke
+// seluruh riwayat.
+//
+// FK utama ke Farmer, bukan satelit lahan: data lapangan menilai praktik
+// petani (satu skor untuk semua lahannya) dan 18% baris rekap tanpa lahan.
+// `parcelUid` hanya mencatat lahan yang dikunjungi saat survei.
+//
+// Satu penilaian AKTIF per (petani, tahun) dijaga di server action — bukan
+// @@unique (baris nonaktif akan memblokir isi ulang, pelajaran #306/#326) dan
+// bukan partial index (Prisma selalu mengusulkan DROP-nya, seperti GiST #317).
+
+model BmpAssessment {
+  id         String              @id @default(cuid())
+  farmerId   String              @map("farmer_id")
+  farmer     Farmer              @relation(fields: [farmerId], references: [id])
+  surveyYear Int                 @map("survey_year")
+  surveyDate DateTime?           @map("survey_date")
+  score      Float               @map("score") // 0.00–3.00, 2 desimal (dijaga Zod)
+  parcelUid  String?             @map("parcel_uid") // lahan yang dikunjungi, opsional
+  parcel     LandParcelIdentity? @relation(fields: [parcelUid], references: [id])
+  assessor   String?             @map("assessor") // penilai / fasilitator
+  notes      String?             @map("notes")
+  isActive   Boolean             @default(true) @map("is_active")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  createdBy  String?             @map("created_by")
+  modifiedAt DateTime            @updatedAt @map("modified_at")
+  modifiedBy String?             @map("modified_by")
+
+  @@index([farmerId, surveyYear])
+  @@index([surveyYear])
+  @@index([isActive])
+  @@map("tbl_bmp_assessment")
+}

@@ -313,6 +313,15 @@ Farmer (1) ─→ (N) TrainingParticipant
 <details>
 <summary><strong>File Structure</strong> — Struktur file Prisma schema</summary>
 
+## BmpAssessment — Monev BMP (#344)
+
+- **Grain = petani per tahun survei**, bukan lahan (keputusan owner 2026-09-18 atas rekap Rokan Hulu: petani multi-lahan punya satu skor, 18% baris tanpa lahan). FK utama `farmerId` (pola `TrainingParticipant`); `parcelUid` **opsional** = lahan yang dikunjungi saat survei, menunjuk `LandParcelIdentity` (stabil antar revisi).
+- **Hanya skor akhir** (`score` Float 0–3, 2 desimal) — rincian per indikator BMP di luar lingkup. **Kategori tidak disimpan**: dihitung dari skor lewat `BMP_ASSESSMENT_CATEGORIES` (`src/lib/bmp-assessment.ts`): Teladan **> 2,50** (ketat — skor 2,50 diberi label Praktisi oleh tim lapangan), Praktisi ≥ 1,50, Perintis ≥ 1,00, Belum Implementasi < 1,00. Revisi ambang otomatis konsisten ke seluruh riwayat.
+- **Satu baris aktif per (petani, tahun)** dijaga di server action, bukan UNIQUE/partial index (lihat constraints.md). Hapus = soft delete; restore ditolak bila tahun itu sudah punya baris aktif lain.
+- **Jalur input**: form (Master Data › Monev BMP; tab Monev BMP di Detail Petani) dan **import Excel format rekap** (satu sheet = satu Lembaga karena `Farmer.farmerId` hanya unik per Lembaga; header dua baris multi-tahun; upsert per petani-tahun; baris tanpa ID petani dilewati; lahan tak dikenal → disimpan tanpa lahan; tanggal masa depan/beda tahun → dikosongkan dengan peringatan).
+- **Dashboard Monev BMP** realtime (pola Dashboard Pelatihan, tanpa snapshot) — terpisah dari BMP Dashboard (Produksi) yang snapshot-backed dengan grain produksi bulanan.
+- Izin: menu `master-data-bmp-monev` (data) dan `dashboard-bmp-monev` (visualisasi), cermin Pelatihan; scope lewat relasi `farmer` (`farmerRelationAccessFilter`).
+
 ## LandParcelIdentity & satelit lahan (#296, Decision Log 2026-08-27)
 
 `LandParcel` berevisi dengan **id baru per baris** (bulk upload: baris lama `is_active=false`, baris baru `revision+1`), sehingga tabel yang menunjuk `LandParcel.id` harus di-repoint tiap revisi (pola `Tree`/produksi). **`tbl_land_parcel_identity`** (`parcelUid`) adalah jangkar tetap: satu baris per `(farmerId, parcelId)` — unik, dibuat/di-upsert saat revisi 0 (`createLandParcel`, bulk upload) dan tidak berganti. `LandParcel.parcelUid` NOT NULL (backfill di migrasi). Tabel ini **sengaja hanya identitas** — geometri/atribut fisik tetap di `LandParcel`; `LandParcel` bukan tabel bridging (keputusan owner: `farmerId`+`parcelId` adalah identitas & basis scope RBAC).

@@ -389,7 +389,8 @@ export async function getDistrictsForSelect() {
     (await hasPermission("master-data-farmers", "VIEW")) ||
     (await hasPermission("master-data-training", "VIEW")) ||
     (await hasPermission("master-data-parcels", "VIEW")) ||
-    (await hasPermission("master-data-production", "VIEW"));
+    (await hasPermission("master-data-production", "VIEW")) ||
+    (await hasPermission("master-data-bmp-monev", "VIEW"));
   if (!allowed) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }

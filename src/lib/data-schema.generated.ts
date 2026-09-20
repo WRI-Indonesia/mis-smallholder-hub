@@ -195,6 +195,212 @@ export const DATA_SCHEMA: SchemaMap = {
       ]
     },
     {
+      "name": "BmpAssessment",
+      "clientName": "bmpAssessment",
+      "tableName": "tbl_bmp_assessment",
+      "domain": "bmp-assessment",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "farmerId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "farmer_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "farmer",
+          "type": "Farmer",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "farmerId"
+          ]
+        },
+        {
+          "name": "surveyYear",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "survey_year",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "surveyDate",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "survey_date",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "score",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "score",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcelUid",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "parcel_uid",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "parcel",
+          "type": "LandParcelIdentity",
+          "kind": "relation",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "parcelUid"
+          ]
+        },
+        {
+          "name": "assessor",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "assessor",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "notes",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 13,
+      "compoundUnique": [],
+      "indexes": [
+        [
+          "farmerId",
+          "surveyYear"
+        ],
+        [
+          "surveyYear"
+        ],
+        [
+          "isActive"
+        ]
+      ]
+    },
+    {
       "name": "BmpDashboardSnapshot",
       "clientName": "bmpDashboardSnapshot",
       "tableName": "tbl_snapshot_bmp_dashboard",
@@ -812,6 +1018,18 @@ export const DATA_SCHEMA: SchemaMap = {
         {
           "name": "productionRecords",
           "type": "ProductionRecord",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "bmpAssessments",
+          "type": "BmpAssessment",
           "kind": "relation",
           "isRequired": true,
           "isList": true,
@@ -2713,6 +2931,18 @@ export const DATA_SCHEMA: SchemaMap = {
         {
           "name": "markers",
           "type": "LandParcelMarker",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "bmpAssessments",
+          "type": "BmpAssessment",
           "kind": "relation",
           "isRequired": true,
           "isList": true,
@@ -6697,6 +6927,15 @@ export const DATA_SCHEMA: SchemaMap = {
       "isSelf": false
     },
     {
+      "key": "BmpAssessment↔Farmer",
+      "from": "Farmer",
+      "to": "BmpAssessment",
+      "kind": "1:n",
+      "fromField": "bmpAssessments",
+      "toField": "farmer",
+      "isSelf": false
+    },
+    {
       "key": "Farmer↔LandParcel",
       "from": "Farmer",
       "to": "LandParcel",
@@ -6811,6 +7050,15 @@ export const DATA_SCHEMA: SchemaMap = {
       "kind": "1:n",
       "fromField": "trees",
       "toField": "landParcel",
+      "isSelf": false
+    },
+    {
+      "key": "BmpAssessment↔LandParcelIdentity",
+      "from": "LandParcelIdentity",
+      "to": "BmpAssessment",
+      "kind": "1:n",
+      "fromField": "bmpAssessments",
+      "toField": "parcel",
       "isSelf": false
     },
     {

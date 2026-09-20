@@ -35,6 +35,9 @@
 | LandParcelNkt | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
 | LandParcelMarker | `parcelUid` | LandParcelIdentity | `id` | RESTRICT | CASCADE |
 | LandParcelMarker | `markerId` | LandMarker | `id` | RESTRICT | CASCADE |
+| **Monev BMP (#344)** | | | | | |
+| BmpAssessment | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
+| BmpAssessment | `parcelUid` (nullable) | LandParcelIdentity | `id` | SET NULL | CASCADE |
 | **Tree** | | | | | |
 | Tree | `landParcelId` | LandParcel | `id` | RESTRICT | CASCADE |
 | **Production** | | | | | |
@@ -101,6 +104,7 @@
 | **LandParcelExternalId** | `(source, code)` | UNIQUE COMPOSITE | UL Parcel Code unik per sumber; nonaktif tetap memegang slot ("Kode ini sudah dipakai lahan lain") |
 | **LandParcelBorder** | `parcelUid` | UNIQUE | Sepadan 1:1 per identitas lahan (#326). **Hapus = kosongkan keempat kolom**, bukan toggle `isActive` — baris nonaktif akan memblokir pengisian ulang |
 | **LandParcelNkt** | `parcelUid` | UNIQUE | Status NKT 1:1 per identitas lahan (#328). Tanpa baris = belum dinilai; **hapus = hapus baris**. Zod: `categories` ≥ 1 kecuali `NOT_AFFECTED`, `assessedAt` ≤ hari ini |
+| **BmpAssessment** | `(farmerId, surveyYear)` | **Tanpa UNIQUE** — satu baris AKTIF per petani-tahun dijaga `createBmpAssessment`/`updateBmpAssessment`/`toggleBmpAssessmentActive`/`importBmpAssessments` (#344) | Bukan `@@unique` (baris nonaktif akan memblokir isi ulang, pelajaran #306/#326) dan bukan partial index (Prisma selalu mengusulkan DROP-nya, seperti GiST #317). Zod: `score` 0–3 dibulatkan 2 desimal, `surveyYear` 2020–tahun depan, `surveyDate` ≤ hari ini & tahun = `surveyYear`; `parcelUid` harus milik petani yang sama (dicek action) |
 | **LandMarker** | `code` | UNIQUE, NOT NULL | Kode patok fisik `<SINGKATAN>-PTK-000123` (#331); deret per awalan di `LandMarkerCounter` (`INSERT … ON CONFLICT DO UPDATE … RETURNING`, atomik) |
 | LandMarker | `longitude`, `latitude` | NOT NULL; Zod −180..180 / −90..90 + ≤ 100 m dari batas lahan | Guard koordinat tertukar / salah desimal pada data GPS (#329); `geom` GENERATED dari keduanya |
 | **LandParcelMarker** | `(parcelUid, markerId)` | UNIQUE COMPOSITE | Satu tautan per pasangan lahan–patok; tautan yang dilepas diaktifkan ulang, bukan dibuat baru |

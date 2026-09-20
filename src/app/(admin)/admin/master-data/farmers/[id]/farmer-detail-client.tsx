@@ -9,6 +9,7 @@ import {
   Loader2,
   Map as MapIcon,
   Pencil,
+  Plus,
   Printer,
   BookOpen,
   TrendingUp,
@@ -30,7 +31,11 @@ import type { FarmerDetailData } from "@/lib/farmer-detail";
 import type { DistributionMapParcel } from "@/components/shared/parcels-distribution-map";
 import type { MarkerPoint } from "@/lib/land-marker-query";
 import type { FarmerTreeParcelSummary } from "@/server/actions/tree";
+import type { BmpAssessmentListItem } from "@/server/actions/bmp-assessment";
 import { formatNumber } from "@/lib/format";
+import { formatScore } from "@/lib/bmp-assessment";
+import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
+import { BmpAssessmentFormModal } from "@/app/(admin)/admin/master-data/bmp-monev/bmp-assessment-form-modal";
 
 const ParcelsDistributionMap = dynamic(
   () =>
@@ -91,6 +96,10 @@ interface Props {
   canEditParcel: boolean;
   /** PRINT menu Petani — gate tombol PDF "Profil Lahan" per baris lahan. */
   canPrint: boolean;
+  /** Riwayat Monev BMP (#344), terbaru di atas; kosong bila tanpa izin VIEW menu Monev BMP. */
+  bmpAssessments: BmpAssessmentListItem[];
+  /** Izin menu `master-data-bmp-monev` — gate tab & tombol Tambah/Edit. */
+  bmpPermissions: string[];
 }
 
 const formatDecimal = (n: number) =>
@@ -100,6 +109,12 @@ const formatDate = (d: Date | null) =>
     ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(
         new Date(d),
       )
+    : "—";
+
+// Tanggal yang disimpan UTC tengah malam (survei Monev BMP) — baca komponen UTC agar tak mundur sehari di WIB.
+const formatUtcDate = (d: Date | string | null) =>
+  d
+    ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(d))
     : "—";
 
 // Umur dalam tahun dari tanggal lahir; null bila tak diketahui.
@@ -192,8 +207,16 @@ export function FarmerDetailClient({
   canViewParcel,
   canEditParcel,
   canPrint,
+  bmpAssessments,
+  bmpPermissions,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
+  const [bmpForm, setBmpForm] = useState<{ open: boolean; row: BmpAssessmentListItem | null }>({ open: false, row: null });
+  const canViewBmp = bmpPermissions.includes("VIEW");
+  const canCreateBmp = bmpPermissions.includes("CREATE");
+  const canEditBmp = bmpPermissions.includes("EDIT");
+  // Kategori terkini = penilaian tahun terbaru (daftar sudah terurut tahun desc).
+  const latestBmp = bmpAssessments[0] ?? null;
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
   const { summary, subGroups, pelatihan, produksi } = detail;
 
@@ -252,6 +275,11 @@ export function FarmerDetailClient({
               <Badge variant={farmer.isActive ? "default" : "outline"}>
                 {farmer.isActive ? "Aktif" : "Nonaktif"}
               </Badge>
+              {latestBmp && (
+                <span title={`Monev BMP ${latestBmp.surveyYear}: skor ${formatScore(latestBmp.score)}`}>
+                  <BmpCategoryBadge score={latestBmp.score} />
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -317,11 +345,12 @@ export function FarmerDetailClient({
 
       {/* Tabs */}
       <Tabs defaultValue="ringkasan" className="w-full">
-        <TabsList className="grid w-full max-w-[480px] grid-cols-4 mb-4">
+        <TabsList className={`grid w-full mb-4 ${canViewBmp ? "max-w-[600px] grid-cols-5" : "max-w-[480px] grid-cols-4"}`}>
           <TabsTrigger value="ringkasan">Ringkasan</TabsTrigger>
           <TabsTrigger value="lahan">Lahan</TabsTrigger>
           <TabsTrigger value="pelatihan">Pelatihan</TabsTrigger>
           <TabsTrigger value="produksi">Produksi</TabsTrigger>
+          {canViewBmp && <TabsTrigger value="monev-bmp">Monev BMP</TabsTrigger>}
         </TabsList>
 
         {/* ── Ringkasan ── */}
@@ -568,6 +597,71 @@ export function FarmerDetailClient({
             </p>
           </Card>
         </TabsContent>
+
+        {/* ── Monev BMP (#344): riwayat skor per tahun, izin menumpang menu Monev BMP ── */}
+        {canViewBmp && (
+          <TabsContent value="monev-bmp" className="space-y-4">
+            <Card className="p-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Riwayat Monev BMP ({formatNumber(bmpAssessments.length)})
+                </h2>
+                {canCreateBmp && (
+                  <Button size="sm" variant="outline" onClick={() => setBmpForm({ open: true, row: null })}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah Penilaian
+                  </Button>
+                )}
+              </div>
+              {bmpAssessments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Belum ada penilaian Monev BMP untuk petani ini.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                        <th className="py-2 pr-4">Tahun</th>
+                        <th className="py-2 pr-4">Tgl Survei</th>
+                        <th className="py-2 pr-4 text-right">Skor</th>
+                        <th className="py-2 pr-4">Kategori</th>
+                        <th className="py-2 pr-4">Lahan Dikunjungi</th>
+                        <th className="py-2 pr-4">Penilai</th>
+                        <th className="py-2 pr-4">Catatan</th>
+                        {canEditBmp && <th className="py-2 text-right">Aksi</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bmpAssessments.map((a) => (
+                        <tr key={a.id} className="border-b last:border-0">
+                          <td className="py-2 pr-4 tabular-nums font-medium">{a.surveyYear}</td>
+                          <td className="py-2 pr-4 whitespace-nowrap">{formatUtcDate(a.surveyDate)}</td>
+                          <td className="py-2 pr-4 text-right tabular-nums">{formatScore(a.score)}</td>
+                          <td className="py-2 pr-4">
+                            <BmpCategoryBadge score={a.score} />
+                          </td>
+                          <td className="py-2 pr-4 font-mono text-xs">{a.parcelId ?? <span className="font-sans text-sm text-muted-foreground">—</span>}</td>
+                          <td className="py-2 pr-4">{a.assessor ?? "—"}</td>
+                          <td className="py-2 pr-4 text-muted-foreground">{a.notes ?? "—"}</td>
+                          {canEditBmp && (
+                            <td className="py-2 text-right">
+                              <Button size="sm" variant="ghost" onClick={() => setBmpForm({ open: true, row: a })}>
+                                <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                              </Button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Kategori: Teladan {">"} 2,50 · Praktisi 1,50–2,50 · Perintis 1,00–1,49 · Belum Implementasi {"<"} 1,00 (skala 0–3). Kelola seluruh data di{" "}
+                <Link href="/admin/master-data/bmp-monev" className="text-primary hover:underline">Master Data › Monev BMP</Link>.
+              </p>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {canEdit && (
@@ -577,6 +671,22 @@ export function FarmerDetailClient({
           onClose={() => setShowEdit(false)}
           farmer={farmer}
           farmerGroups={farmerGroups}
+        />
+      )}
+      {canViewBmp && (
+        <BmpAssessmentFormModal
+          key={bmpForm.row?.id ?? "new"}
+          open={bmpForm.open}
+          onClose={() => setBmpForm({ open: false, row: null })}
+          assessment={bmpForm.row}
+          farmerGroups={[]}
+          fixedFarmer={{
+            id: farmer.id,
+            name: farmer.name,
+            farmerId: farmer.farmerId,
+            farmerGroupId: farmer.farmerGroup.id,
+            farmerGroupName: farmer.farmerGroup.name,
+          }}
         />
       )}
     </div>

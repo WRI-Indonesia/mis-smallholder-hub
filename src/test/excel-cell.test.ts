@@ -39,6 +39,15 @@ describe("cellValueToPrimitive", () => {
     ).toBe("Peta KUD");
   });
 
+  it("hyperlink ber-teks rich text (rekap Monev BMP #344) → teks gabungan, bukan [object Object]", () => {
+    expect(
+      cellValueToPrimitive({
+        text: { richText: [{ text: "ASPEK RSB." }, { text: "0063.A.14.06.07.2013" }] },
+        hyperlink: "https://example.com/lahan",
+      } as unknown as Parameters<typeof cellValueToPrimitive>[0]),
+    ).toBe("ASPEK RSB.0063.A.14.06.07.2013");
+  });
+
   it("mengambil result dari sel formula, termasuk result berupa error", () => {
     expect(cellValueToPrimitive({ formula: "A1&B1", result: "PTN-001" })).toBe("PTN-001");
     expect(cellValueToPrimitive({ formula: "SUM(A:A)", result: 7 })).toBe(7);

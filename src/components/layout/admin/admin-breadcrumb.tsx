@@ -16,6 +16,7 @@ export function useBreadcrumbs() {
     farmers: "Data Petani",
     groups: "Lembaga Petani",
     parcels: "Data Lahan",
+    "bmp-monev": "Monev BMP",
     regions: "Region / Wilayah",
     cms: "CMS",
     news: "Berita",

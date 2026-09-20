@@ -36,10 +36,12 @@ map,,Map,/admin/map,Map,7,TRUE,TRUE
 map-parcel,map,Peta Lahan,/admin/map/parcel,MapPin,1,TRUE,TRUE
 map-bmp,map,Peta BMP,/admin/map/bmp,Sprout,2,TRUE,TRUE
 dashboard-bmp,dashboard,BMP Dashboard (Produksi),/admin/dashboard/bmp,Sprout,2,TRUE,TRUE
-dashboard-training,dashboard,Dashboard Pelatihan,/admin/dashboard/training,GraduationCap,3,TRUE,TRUE
+dashboard-training,dashboard,Dashboard Pelatihan,/admin/dashboard/training,GraduationCap,4,TRUE,TRUE
 dashboard-snapshot-bmp,tools,Dashboard Snapshot BMP,/admin/tools/snapshot-bmp,Camera,2,TRUE,TRUE
 help,,Bantuan,/admin/help,HelpCircle,9,TRUE,TRUE
 dashboard-metrics,data-analyst,Metrik Rilis,/admin/dashboard/metrics,Activity,6,TRUE,TRUE
 bulk-upload-trees,bulk-upload,Pohon Sawit,/admin/bulk-upload/trees,TreePine,4,TRUE,TRUE
-dashboard-risk,dashboard,Risk Management,/admin/dashboard/risk,ShieldAlert,4,TRUE,TRUE
+dashboard-risk,dashboard,Risk Management,/admin/dashboard/risk,ShieldAlert,5,TRUE,TRUE
 dashboard-risk-fire,dashboard-risk,Fire Alert,/admin/dashboard/risk/fire,Flame,1,TRUE,TRUE
+master-data-bmp-monev,master-data,Monev BMP,/admin/master-data/bmp-monev,ClipboardCheck,6,TRUE,TRUE
+dashboard-bmp-monev,dashboard,Monev BMP,/admin/dashboard/bmp-monev,ClipboardCheck,3,TRUE,TRUE

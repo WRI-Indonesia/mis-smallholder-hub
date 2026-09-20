@@ -57,6 +57,10 @@
 | LandParcelNkt | PK | `id` (CUID) | Primary key |
 | LandParcelNkt | UNIQUE | `parcelUid` | Status NKT 1:1 per identitas lahan (#328) |
 | LandParcelNkt | INDEX | `status` | Filter Laporan Lahan / hitungan layer peta per status |
+| BmpAssessment | PK | `id` (CUID) | Primary key |
+| BmpAssessment | INDEX | `(farmerId, surveyYear)` | Riwayat per petani + cek "sudah ada tahun ini" (#344) |
+| BmpAssessment | INDEX | `surveyYear` | Filter tahun survei daftar/dashboard |
+| BmpAssessment | INDEX | `isActive` | Soft delete |
 | LandMarker | PK | `id` (CUID) | Primary key |
 | LandMarker | UNIQUE | `code` | Kode patok fisik `HJP-PTK-000123` (#331) — kunci unggah ulang & rujukan laporan |
 | LandMarkerCounter | PK | `prefix` | Deret kode per awalan Lembaga; diperbarui atomik (`ON CONFLICT DO UPDATE … RETURNING`) |

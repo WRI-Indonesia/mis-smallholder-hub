@@ -90,9 +90,9 @@ describe("registrasi materi Bantuan ↔ CHAPTER_SOURCES (help-content.ts)", () =
     expect(yatim, "import ke berkas yang hilang — build akan gagal").toEqual([]);
   });
 
-  it("38 tutorial · 4 referensi · 13 konsep (angka di katalog docs/product/pages/bantuan/README.md)", () => {
+  it("40 tutorial · 4 referensi · 13 konsep (angka di katalog docs/product/pages/bantuan/README.md)", () => {
     const files = contentFiles();
-    expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(38);
+    expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(40);
     expect(files.filter((f) => f.startsWith("referensi/")).length).toBe(4);
     expect(files.filter((f) => /^\d-/.test(f)).length).toBe(13);
   });
@@ -144,7 +144,7 @@ describe("cakupan tutorial per menu daun aktif (#257)", () => {
     }
   });
 
-  it("angka cakupan = 32/35 (metrics.md & versioning.md §Metrik Nilai Rilis)", () => {
-    expect([leaves.length - Object.keys(TANPA_TUTORIAL).length, leaves.length]).toEqual([32, 35]);
+  it("angka cakupan = 34/37 (metrics.md & versioning.md §Metrik Nilai Rilis)", () => {
+    expect([leaves.length - Object.keys(TANPA_TUTORIAL).length, leaves.length]).toEqual([34, 37]);
   });
 });
