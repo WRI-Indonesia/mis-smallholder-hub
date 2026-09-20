@@ -82,8 +82,8 @@ describe("getBmpMonevDashboardView — activityScores memakai skor Lembaga tahun
     expect(g.assessments.find((a) => a.farmerId === "f-1")?.activityScores).toEqual([2.3, 0]);
     expect(g.assessments.find((a) => a.farmerId === "f-2")?.activityScores).toBeNull();
     expect(g.groupProfiles).toEqual([{ surveyYear: 2026, scores: { l1: 2 } }]);
-    expect(view.data.activities.map((a) => a.code)).toEqual(["1.1", "1.2"]);
-    expect(view.data.indicators.map((i) => i.criteriaCode)).toEqual(["1.1.1", "1.1.1", "1.2.3"]);
+    expect(view.data.activities?.map((a) => a.code)).toEqual(["1.1", "1.2"]);
+    expect(view.data.indicators?.map((i) => i.criteriaCode)).toEqual(["1.1.1", "1.1.1", "1.2.3"]);
     expect(view.data.indicatorStats).toEqual(expect.arrayContaining([
       expect.objectContaining({ groupId: "g-1", surveyYear: 2026, indicatorId: "i1", sum: 3, n: 1, nullCount: 0 }),
       expect.objectContaining({ indicatorId: "i2", sum: 0, n: 0, nullCount: 1 }),
