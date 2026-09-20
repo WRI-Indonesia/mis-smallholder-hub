@@ -135,6 +135,11 @@ describe("rincian indikator (#346): profil kegiatan, indikator terlemah, profil 
     const rows = bmpMonevActivityProfile(groups, 2026, activities, indicators);
     expect(rows.map((r) => [r.code, r.avg, r.max, r.n])).toEqual([["1.1", 1.5, 3, 2], ["1.2", 0.68, 1.05, 2]]);
     expect(bmpMonevActivityProfile(groups, 2025, activities, indicators)[0]).toMatchObject({ avg: null, n: 0 });
+    // Dua baris aktif petani-tahun (data lama): yang dipakai = skor TERTINGGI (sama dengan kartu lain), bukan yang pertama punya rincian.
+    const dup = [g("b", [{ farmerId: "f9", year: 2026, score: 1.1, act: [1, 0.5] }, { farmerId: "f9", year: 2026, score: 2.4, act: null }])];
+    expect(bmpMonevActivityProfile(dup, 2026, activities, indicators)[0]).toMatchObject({ avg: null, n: 0 });
+    const dup2 = [g("b", [{ farmerId: "f9", year: 2026, score: 1.1, act: [1, 0.5] }, { farmerId: "f9", year: 2026, score: 2.4, act: [2.5, 1] }])];
+    expect(bmpMonevActivityProfile(dup2, 2026, activities, indicators)[0]).toMatchObject({ avg: 2.5, n: 1 });
   });
 
   it("indikator terlemah: hanya individu berbobot, rerata atas ber-skor, tak-dinilai dihitung terpisah, urut naik", () => {

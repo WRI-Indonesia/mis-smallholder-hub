@@ -85,6 +85,7 @@ export const DATA_LINEAGE: DataLineage = [
     "route": "(admin)/admin/dashboard/bmp-monev",
     "models": {
       "bmpAssessment": "R",
+      "bmpGroupAssessment": "R",
       "bmpIndicator": "R",
       "farmerGroup": "R"
     },

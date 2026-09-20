@@ -22,7 +22,7 @@ import {
   updateBmpAssessment,
   type BmpAssessmentListItem,
 } from "@/server/actions/bmp-assessment";
-import { BMP_SCORE_MAX, BMP_SCORE_MIN, bmpAssessmentCategory, parseScore } from "@/lib/bmp-assessment";
+import { BMP_SCORE_MAX, BMP_SCORE_MIN, bmpAssessmentCategory, formatUtcDate, fromUtcDay, parseScore, toUtcDay } from "@/lib/bmp-assessment";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 
 interface FarmerGroupOption {
@@ -53,15 +53,6 @@ interface Props {
 
 const NO_PARCEL = "_none";
 
-const formatDisplayDate = (d: Date | null) =>
-  d
-    ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(d)
-    : "Pilih tanggal (opsional)";
-
-/** Kalender memberi Date lokal; simpan sebagai UTC tengah malam agar tak bergeser hari (pola import). */
-const toUtcDay = (d: Date) => new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-/** Kebalikannya untuk tampilan kalender: UTC tengah malam → Date lokal tanggal yang sama. */
-const fromUtcDay = (d: Date) => new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 
 export function BmpAssessmentFormModal({ open, onClose, assessment, farmerGroups, fixedFarmer }: Props) {
   const router = useRouter();
@@ -297,7 +288,7 @@ export function BmpAssessmentFormModal({ open, onClose, assessment, farmerGroups
                   <PopoverTrigger
                     render={
                       <Button type="button" variant="outline" className="flex-1 justify-start text-left font-normal h-10 border-input bg-transparent">
-                        <span className={cn("flex-1 truncate", !surveyDate && "text-muted-foreground")}>{formatDisplayDate(surveyDate)}</span>
+                        <span className={cn("flex-1 truncate", !surveyDate && "text-muted-foreground")}>{formatUtcDate(surveyDate, "Pilih tanggal (opsional)")}</span>
                       </Button>
                     }
                   />

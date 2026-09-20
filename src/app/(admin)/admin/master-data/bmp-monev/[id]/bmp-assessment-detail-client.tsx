@@ -10,14 +10,11 @@ import { BreadcrumbOverride } from "@/components/layout/admin/breadcrumb-overrid
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 import { BmpScoreChip } from "@/components/shared/bmp-score-chip";
 import { formatNumber } from "@/lib/format";
-import { formatScore } from "@/lib/bmp-assessment";
+import { formatScore, formatUtcDate } from "@/lib/bmp-assessment";
 import { BMP_EXCLUSIVE_CRITERIA, bmpScoreLabel, bmpWeightedSlotKey, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
 import type { BmpAssessmentDetailView } from "@/server/actions/bmp-assessment-detail";
 import { BmpIndicatorEditModal } from "./bmp-indicator-edit-modal";
 import { BmpActivityRaport } from "./bmp-activity-raport";
-
-const formatUtcDate = (d: Date | string | null) =>
-  d ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(d)) : "—";
 
 /**
  * Halaman detail penilaian (#346). Skor tersimpan = angka resmi; hitung ulang

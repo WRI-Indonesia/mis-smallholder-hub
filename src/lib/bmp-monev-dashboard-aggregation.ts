@@ -286,11 +286,17 @@ export function bmpMonevActivityProfile(
   const sums = activities.map(() => 0);
   let n = 0;
   for (const g of groups) {
-    // Satu penilaian per petani-tahun (skor tertinggi) — konsisten dengan yearAssessments.
-    const seen = new Set<string>();
+    // Satu penilaian per petani-tahun = yang berskor TERTINGGI (sama dengan
+    // yearAssessments), lalu pakai activityScores-nya bila ada — bukan "yang
+    // pertama punya rincian", supaya kartu-kartu tak memilih baris berbeda.
+    const best = new Map<string, BmpMonevAssessmentEntry>();
     for (const a of g.assessments) {
-      if (a.surveyYear !== year || !a.activityScores || seen.has(a.farmerId)) continue;
-      seen.add(a.farmerId);
+      if (a.surveyYear !== year) continue;
+      const prev = best.get(a.farmerId);
+      if (!prev || a.score > prev.score) best.set(a.farmerId, a);
+    }
+    for (const a of best.values()) {
+      if (!a.activityScores) continue;
       n++;
       a.activityScores.forEach((v, i) => (sums[i] += v));
     }

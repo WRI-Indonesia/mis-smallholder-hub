@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardCheck, FileSpreadsheet, Plus, Users, Building, Gauge, Building2 } from "lucide-react";
 import { toast } from "sonner";
-import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
+import { TableActions } from "@/components/shared/table-actions";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 import {
   DistrictGroupFilter,
@@ -22,6 +23,7 @@ import {
   bmpAssessmentCategory,
   formatScore,
   type BmpAssessmentCategoryKey,
+  formatUtcDate,
 } from "@/lib/bmp-assessment";
 import { formatNumber } from "@/lib/format";
 import { BmpAssessmentFormModal } from "./bmp-assessment-form-modal";
@@ -35,14 +37,6 @@ interface Props {
   isSuperAdmin: boolean;
 }
 
-const formatDate = (d: Date | string | null) => {
-  if (!d) return "—";
-  const date = new Date(d);
-  if (isNaN(date.getTime())) return "—";
-  // Tanggal survei disimpan UTC tengah malam — baca komponen UTC agar tidak
-  // mundur sehari di zona WIB.
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(date);
-};
 
 export function BmpMonevListClient({ initialRows, farmerGroups, districts, permissions, isSuperAdmin }: Props) {
   const router = useRouter();
@@ -54,6 +48,8 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editRow, setEditRow] = useState<BmpAssessmentListItem | null>(null);
+  // Naik tiap kali "Tambah" dibuka → modal di-remount, state isian sebelumnya tak terbawa (temuan review).
+  const [formNonce, setFormNonce] = useState(0);
 
   const years = useMemo(
     () => [...new Set(initialRows.map((r) => r.surveyYear))].sort((a, b) => b - a),
@@ -120,7 +116,7 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
       sortable: true,
       cellClassName: "text-sm text-muted-foreground tabular-nums whitespace-nowrap",
       sortValue: (r) => (r.surveyDate ? new Date(r.surveyDate).getTime() : null),
-      render: (r) => formatDate(r.surveyDate),
+      render: (r) => formatUtcDate(r.surveyDate),
     },
     {
       key: "score",
@@ -174,7 +170,7 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
     farmerGroupName: r.farmerGroupName,
     districtName: r.districtName,
     surveyYear: r.surveyYear,
-    surveyDate: formatDate(r.surveyDate),
+    surveyDate: formatUtcDate(r.surveyDate),
     score: r.score,
     id: bmpAssessmentCategory(r.score).label,
     parcelId: r.parcelId ?? "",
@@ -259,6 +255,7 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
         className="h-9"
         onClick={() => {
           setEditRow(null);
+          setFormNonce((n) => n + 1);
           setShowForm(true);
         }}
       >
@@ -340,13 +337,19 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
                   type: "view",
                   onClick: () => router.push(`/admin/master-data/bmp-monev/${r.id}`),
                 },
-                {
-                  type: "edit",
-                  onClick: () => {
-                    setEditRow(r);
-                    setShowForm(true);
-                  },
-                },
+                // Baris nonaktif hanya bisa diaktifkan kembali — `updateBmpAssessment`
+                // menolak baris nonaktif, jadi tombol Ubah disembunyikan (temuan review).
+                ...(r.isActive
+                  ? [
+                      {
+                        type: "edit" as const,
+                        onClick: () => {
+                          setEditRow(r);
+                          setShowForm(true);
+                        },
+                      },
+                    ]
+                  : []),
                 {
                   type: "delete",
                   isActive: r.isActive,
@@ -359,7 +362,7 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
       </Card>
 
       <BmpAssessmentFormModal
-        key={editRow?.id ?? "new"}
+        key={editRow?.id ?? `new-${formNonce}`}
         open={showForm}
         onClose={() => {
           setShowForm(false);

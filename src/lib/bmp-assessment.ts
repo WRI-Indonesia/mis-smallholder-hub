@@ -60,6 +60,28 @@ export function bmpAssessmentCategory(score: number): BmpAssessmentCategory {
   return BMP_ASSESSMENT_CATEGORIES[BMP_ASSESSMENT_CATEGORIES.length - 1];
 }
 
+/** Skor indikator di luar rubrik 0–3 (mis. 4 dari form survei yang diterima + ditandai). */
+export function isOutOfRubric(score: number | null | undefined): boolean {
+  return score != null && (score < BMP_SCORE_MIN || score > BMP_SCORE_MAX);
+}
+
+/**
+ * Tanggal survei disimpan UTC tengah malam → tampilkan komponen UTC-nya
+ * ("07 Jun 2026") supaya tidak mundur sehari di zona WIB/WITA/WIT. Satu
+ * pemformat untuk daftar, detail, tab Petani, dialog import, dan form.
+ */
+export function formatUtcDate(d: Date | string | null | undefined, empty = "—"): string {
+  if (!d) return empty;
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return empty;
+  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(date);
+}
+
+/** Kalender memberi Date lokal; simpan sebagai UTC tengah malam agar tak bergeser hari (pola import). */
+export const toUtcDay = (d: Date) => new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+/** Kebalikannya untuk tampilan kalender: UTC tengah malam → Date lokal tanggal yang sama. */
+export const fromUtcDay = (d: Date) => new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+
 /** Pembulatan skor ke 2 desimal (half-up), aman dari artefak float. */
 export function roundScore(score: number): number {
   return Math.round((score + Number.EPSILON) * 100) / 100;

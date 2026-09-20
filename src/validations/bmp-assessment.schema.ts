@@ -140,6 +140,8 @@ export const saveBmpAssessmentDetailsSchema = z.object({
 export type SaveBmpAssessmentDetailsInput = z.input<typeof saveBmpAssessmentDetailsSchema>;
 
 const groupAssessmentFields = {
+  /** Diisi saat UBAH: baris aktif yang dimaksud. Tanpa id = TAMBAH → ditolak bila Lembaga-tahun itu sudah punya penilaian aktif. */
+  id: z.string().min(1).optional(),
   farmerGroupId: z.string().min(1, "Lembaga Petani wajib dipilih"),
   surveyYear: surveyYearField,
   surveyDate: surveyDateField,
@@ -159,8 +161,12 @@ export const bmpSurveyFormImportSchema = z
     farmerId: z.string().min(1, "Petani wajib dipilih"),
     surveyYear: surveyYearField,
     surveyDate: surveyDateField,
-    /** Skor akhir menurut form (Total raport) — angka resmi yang disimpan. */
-    score: scoreField,
+    /**
+     * Skor akhir hasil hitung ulang klien (atau total form bila tanpa rincian).
+     * Batas 4, bukan 3: skor indikator 4 di luar rubrik diterima (owner), sehingga
+     * totalnya bisa melewati 3,00 — jangan menggagalkan seluruh batch karenanya.
+     */
+    score: z.number({ message: "Skor harus berupa angka" }).min(BMP_SCORE_MIN, `Skor minimal ${BMP_SCORE_MIN}`).max(BMP_SCORE_MAX + 1, "Skor akhir tidak masuk akal (> 4)").transform(roundScore),
     individu: z.array(z.object({ indicatorId: z.string().min(1), score: importedIndicatorScore, notes: indicatorNotes })).max(64),
     lembaga: z.array(z.object({ indicatorId: z.string().min(1), score: importedIndicatorScore, notes: indicatorNotes })).max(64),
   })

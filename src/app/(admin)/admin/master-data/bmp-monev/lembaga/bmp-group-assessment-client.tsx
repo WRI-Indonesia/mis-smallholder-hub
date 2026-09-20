@@ -17,14 +17,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { formatUtcDate, fromUtcDay, isOutOfRubric, toUtcDay } from "@/lib/bmp-assessment";
 import { bmpScoreLabel, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
 import { BmpScoreChip, bmpScoreColor } from "@/components/shared/bmp-score-chip";
 import { upsertBmpGroupAssessment, type BmpGroupAssessmentItem } from "@/server/actions/bmp-assessment-detail";
 
-const formatUtcDate = (d: Date | string | null) =>
-  d ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(d)) : "—";
-const toUtcDay = (d: Date) => new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-const fromUtcDay = (d: Date) => new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 
 interface Props {
   rows: BmpGroupAssessmentItem[];
@@ -170,13 +167,19 @@ function BmpGroupAssessmentModal({
     }
     setSaving(true);
     try {
+      // Skor di luar rubrik (4 hasil import) yang tidak diubah tidak dikirim: form
+      // manual dibatasi 0–3, dan baris yang tak dikirim tidak disentuh server.
+      const original = new Map((row?.details ?? []).map((d) => [d.indicatorId, d]));
       const res = await upsertBmpGroupAssessment({
+        id: row?.id,
         farmerGroupId,
         surveyYear: Number(surveyYear),
         surveyDate,
         assessor: assessor || null,
         notes: notes || null,
-        rows: indicators.map((i) => ({ indicatorId: i.id, score: scores[i.id].score, notes: scores[i.id].notes || null })),
+        rows: indicators
+          .filter((i) => !(isOutOfRubric(scores[i.id].score) && scores[i.id].score === original.get(i.id)?.score && (scores[i.id].notes || null) === (original.get(i.id)?.notes ?? null)))
+          .map((i) => ({ indicatorId: i.id, score: scores[i.id].score, notes: scores[i.id].notes || null })),
       });
       if (!res.success) {
         toast.error(res.error);

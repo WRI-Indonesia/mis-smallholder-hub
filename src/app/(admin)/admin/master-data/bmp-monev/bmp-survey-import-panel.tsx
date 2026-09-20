@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatNumber } from "@/lib/format";
 import { readXlsxWorkbookRaw } from "@/lib/excel-sheet-reader";
-import { formatScore } from "@/lib/bmp-assessment";
+import { BMP_SCORE_MAX, formatScore, formatUtcDate } from "@/lib/bmp-assessment";
+import { SURVEY_DATE_FUTURE_TOLERANCE_MS } from "@/validations/bmp-assessment.schema";
 import { bmpWeightedSlotKey, matchFarmerName, parseBmpSurveyForm, recomputeBmpScore, type BmpIndicatorRef, type BmpNameMatchConfidence, type BmpSurveyFormParsed } from "@/lib/bmp-survey-form";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 import { getBmpImportRefs, type BmpImportFarmerRef } from "@/server/actions/bmp-assessment";
@@ -115,6 +116,12 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
       await Promise.all(Array.from({ length: Math.min(3, files.length) }, worker));
       for (const { file, sheets } of parsedAll) {
         const parsed = parseBmpSurveyForm(file.name, sheets, indList);
+        // Periode di masa depan (salah ketik tahun) dikosongkan + peringatan — sama
+        // dengan jalur rekap; kalau dibiarkan, server menolak SELURUH batch.
+        if (parsed.surveyDate && parsed.surveyDate.getTime() > Date.now() + SURVEY_DATE_FUTURE_TOLERANCE_MS) {
+          parsed.warnings.push(`Periode ${formatUtcDate(parsed.surveyDate)} di masa depan — tanggal dikosongkan`);
+          parsed.surveyDate = null;
+        }
         const surveyYear = parsed.surveyDate?.getUTCFullYear() ?? yearFromFileName(file.name) ?? new Date().getUTCFullYear();
         // Nama kembar: prioritaskan petani yang sudah punya skor tahun itu dari rekap (#344).
         const preferIds = new Set(refList.filter((r) => r.assessedYears.includes(surveyYear)).map((r) => r.farmerDbId));
@@ -305,6 +312,7 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
                           )}
                           {mismatch && <p className="text-muted-foreground">Total di form {formatScore(r.formScore!)} — disimpan hasil hitung ulang</p>}
                           {r.outOfRange > 0 && <p className="text-amber-700">{r.outOfRange} skor di luar 0–3</p>}
+                          {r.score != null && r.score > BMP_SCORE_MAX && <p className="text-amber-700">Skor akhir {formatScore(r.score)} melebihi 3,00 karena skor di luar rubrik — tetap disimpan apa adanya</p>}
                           {r.parsed.warnings.filter((w) => !w.startsWith("Nama di header") && !w.startsWith("Skor ")).map((w, j) => (
                             <p key={j} className="text-amber-700">{w}</p>
                           ))}

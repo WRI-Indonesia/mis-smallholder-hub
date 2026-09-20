@@ -179,7 +179,7 @@ export async function getBmpMonevPriorityFarmers(
       id: true,
       farmerId: true,
       score: true,
-      farmer: { select: { name: true, farmerId: true, farmerGroup: { select: { name: true } } } },
+      farmer: { select: { name: true, farmerId: true, farmerGroupId: true, farmerGroup: { select: { name: true } } } },
       details: { where: { isActive: true }, select: { indicatorId: true, score: true } },
     },
     orderBy: [{ score: order === "highest" ? "desc" : "asc" }, { farmer: { name: "asc" } }],
@@ -194,6 +194,23 @@ export async function getBmpMonevPriorityFarmers(
     },
   });
   const byId = new Map(indicators.map((i) => [i.id, i]));
+  // Skor Lembaga tahun itu ikut dihitung (sama dengan `getBmpMonevDashboardView`)
+  // supaya kelima kegiatan dibandingkan pada skala 0–3 yang sama — tanpa ini
+  // Training (individu hanya 0,3 dari 1,0) selalu tampak "terlemah" (temuan review).
+  const groupIds = [...new Set(rows.map((r) => r.farmer.farmerGroupId))];
+  const groupAssessments = await prisma.bmpGroupAssessment.findMany({
+    where: { farmerGroupId: { in: groupIds }, surveyYear: filter.year, isActive: true },
+    select: { farmerGroupId: true, details: { where: { isActive: true }, select: { indicatorId: true, score: true } } },
+  });
+  const lembagaByGroup = new Map<string, Map<string, number | null>>();
+  for (const ga of groupAssessments) {
+    const m = new Map<string, number | null>();
+    for (const d of ga.details) {
+      const ind = byId.get(d.indicatorId);
+      if (ind) m.set(ind.code, d.score);
+    }
+    lembagaByGroup.set(ga.farmerGroupId, m);
+  }
   return rows.map((r) => {
     let weakestActivity: string | null = null;
     let strongestActivity: string | null = null;
@@ -203,10 +220,8 @@ export async function getBmpMonevPriorityFarmers(
         const ind = byId.get(d.indicatorId);
         if (ind) individu.set(ind.code, d.score);
       }
-      // Hanya kegiatan yang punya indikator individu berbobot (Lembaga tak dihitung di sini).
-      const rc = recomputeBmpScore(indicators, individu, new Map());
-      const candidates = rc.activities.filter((a) => indicators.some((i) => i.activityCode === a.activityCode && i.level === "INDIVIDU" && i.inFinalScore));
-      candidates.sort((a, b) => a.indicatorScore - b.indicatorScore);
+      const rc = recomputeBmpScore(indicators, individu, lembagaByGroup.get(r.farmer.farmerGroupId) ?? new Map());
+      const candidates = [...rc.activities].sort((a, b) => a.indicatorScore - b.indicatorScore);
       weakestActivity = candidates[0]?.activityName ?? null;
       strongestActivity = candidates.at(-1)?.activityName ?? null;
     }

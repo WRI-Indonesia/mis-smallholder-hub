@@ -28,7 +28,7 @@ const IND = [
 const db = vi.hoisted(() => ({
   farmer: { findMany: vi.fn() },
   farmerGroup: { findFirst: vi.fn() },
-  bmpIndicator: { findMany: vi.fn() },
+  bmpIndicator: { findMany: vi.fn(), findUnique: vi.fn() },
   bmpAssessment: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   bmpAssessmentDetail: { upsert: vi.fn() },
   bmpGroupAssessment: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
@@ -97,8 +97,19 @@ describe("saveBmpAssessmentDetails", () => {
     expect(bad.success).toBe(false);
     expect((bad as { error: string }).error).toMatch(/level Lembaga/);
 
+    db.bmpIndicator.findUnique.mockResolvedValueOnce({ code: "1.1.1.1" });
     const zod = await saveBmpAssessmentDetails({ assessmentId: "a-1", rows: [{ indicatorId: "i1", score: 4 }] });
     expect(zod.success).toBe(false);
+    // Pesan validasi menyebut indikatornya, bukan "Skor maksimal 3" telanjang (temuan review).
+    expect((zod as { error: string }).error).toBe("Skor maksimal 3 — indikator 1.1.1.1");
+  });
+
+  it("petani tanpa rincian individu (hanya skor rekap) → recomputed null walau Lembaga punya penilaian, sehingga tak ada peringatan '≠ skor' palsu", async () => {
+    db.bmpAssessment.findFirst.mockResolvedValueOnce({ id: "a-1", farmerId: "f-1", surveyYear: 2026, surveyDate: null, score: 2.3, assessor: null, notes: null, isActive: true, farmer: { farmerId: "X.1", name: "A", farmerGroupId: "g-1", farmerGroup: { name: "G" } }, parcel: null, details: [] });
+    db.bmpGroupAssessment.findFirst.mockResolvedValueOnce({ id: "ga-1", farmerGroupId: "g-1", surveyYear: 2026, surveyDate: null, assessor: null, notes: null, farmerGroup: { name: "G" }, details: [{ indicatorId: "l1", score: 2, weightUsed: 0.7, notes: null }] });
+    const view = await getBmpAssessmentDetailView("a-1");
+    expect(view?.recomputed).toBeNull();
+    expect(view?.groupAssessment?.id).toBe("ga-1");
   });
 
   it("applyRecomputedScore → skor tersimpan ditimpa hasil hitung ulang dari state DB", async () => {
@@ -125,9 +136,20 @@ describe("upsertBmpGroupAssessment", () => {
     expect(db.bmpGroupAssessment.create.mock.calls[0][0].data).toMatchObject({ farmerGroupId: "g-1", surveyYear: 2026, assessor: "Tim", createdBy: "user-1" });
     expect(db.bmpGroupAssessmentDetail.upsert.mock.calls[0][0].create).toMatchObject({ groupAssessmentId: "ga-1", indicatorId: "l1", score: 2, weightUsed: 0.7 });
 
+    // TAMBAH saat Lembaga-tahun sudah punya baris aktif → ditolak (tidak menimpa diam-diam)
     db.bmpGroupAssessment.findFirst.mockResolvedValueOnce({ id: "ga-1" });
-    await upsertBmpGroupAssessment({ farmerGroupId: "g-1", surveyYear: 2026, rows: [{ indicatorId: "l1", score: 3 }] });
+    const dupAdd = await upsertBmpGroupAssessment({ farmerGroupId: "g-1", surveyYear: 2026, rows: [{ indicatorId: "l1", score: 3 }] });
+    expect(dupAdd.success).toBe(false);
+    expect((dupAdd as { error: string }).error).toMatch(/tombol Ubah/);
+    expect(db.bmpGroupAssessment.update).not.toHaveBeenCalled();
+    // UBAH dengan id baris yang sama → update
+    db.bmpGroupAssessment.findFirst.mockResolvedValueOnce({ id: "ga-1" });
+    await upsertBmpGroupAssessment({ id: "ga-1", farmerGroupId: "g-1", surveyYear: 2026, rows: [{ indicatorId: "l1", score: 3 }] });
     expect(db.bmpGroupAssessment.update).toHaveBeenCalledTimes(1);
+    // UBAH tapi barisnya sudah nonaktif → ditolak
+    db.bmpGroupAssessment.findFirst.mockResolvedValueOnce(null);
+    const gone = await upsertBmpGroupAssessment({ id: "ga-9", farmerGroupId: "g-1", surveyYear: 2026, rows: [] });
+    expect(gone.success).toBe(false);
 
     db.bmpGroupAssessment.create.mockRejectedValueOnce(Object.assign(new Error("dup"), { code: "P2002" }));
     const race = await upsertBmpGroupAssessment({ farmerGroupId: "g-1", surveyYear: 2027, rows: [] });
@@ -177,6 +199,33 @@ describe("importBmpSurveyForms", () => {
     const res = await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [{ ...form("a.xlsx", "f-1"), individu: [], lembaga: [] }] });
     expect(res.success).toBe(true);
     expect(db.bmpAssessment.create.mock.calls[0][0].data).toMatchObject({ farmerId: "f-1", score: 1.83 });
+  });
+
+  it("level indikator tertukar (Lembaga di `individu` / individu di `lembaga`) → form ditolak, bukan ditulis ke tabel yang salah", async () => {
+    const res = await importBmpSurveyForms({
+      farmerGroupId: "g-1",
+      forms: [
+        { ...form("a.xlsx", "f-1"), individu: [{ indicatorId: "l1", score: 2, notes: null }], lembaga: [] },
+        { ...form("b.xlsx", "f-2"), individu: [], lembaga: [{ indicatorId: "i1", score: 2, notes: null }] },
+      ],
+    });
+    expect(res.success && res.data?.rejected.map((r) => r.reason)).toEqual(["Level indikator tidak sesuai (individu ↔ Lembaga tertukar)", "Level indikator tidak sesuai (individu ↔ Lembaga tertukar)"]);
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("filter akses petani dipasang lewat AND — mode BY_FARMER_GROUP tidak menimpa syarat anggota Lembaga terpilih", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["g-1", "g-2"] });
+    await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [form("a.xlsx", "f-1")] });
+    const where = db.farmer.findMany.mock.calls[0][0].where;
+    expect(where.farmerGroupId).toBe("g-1");
+    expect(where.AND).toEqual([{ farmerGroupId: { in: ["g-1", "g-2"] } }]);
+  });
+
+  it("skor akhir hasil hitung ulang boleh > 3 (skor 4 di luar rubrik) sampai 4 — tidak menggagalkan batch", async () => {
+    const res = await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [{ ...form("a.xlsx", "f-1"), score: 3.4, individu: [], lembaga: [] }] });
+    expect(res.success).toBe(true);
+    expect(db.bmpAssessment.create.mock.calls[0][0].data.score).toBe(3.4);
+    expect((await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [{ ...form("a.xlsx", "f-1"), score: 4.5 }] })).success).toBe(false);
   });
 
   it("skor indikator 4 diterima lewat import (bukan form manual); transaksi gagal → tak ada klaim tersimpan", async () => {

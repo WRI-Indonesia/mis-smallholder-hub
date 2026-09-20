@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatScore } from "@/lib/bmp-assessment";
+import { formatScore, isOutOfRubric } from "@/lib/bmp-assessment";
 import { bmpScoreLabel, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
 import { saveBmpAssessmentDetails, type BmpIndicatorScoreItem } from "@/server/actions/bmp-assessment-detail";
 import { bmpScoreColor } from "@/components/shared/bmp-score-chip";
@@ -48,10 +48,15 @@ export function BmpIndicatorEditModal({
   async function handleSave() {
     setSaving(true);
     try {
+      // Skor di luar rubrik (4 hasil import) yang tidak diubah tidak dikirim: form
+      // manual dibatasi 0–3, dan indikator yang tak dikirim tidak disentuh server.
+      const original = new Map(details.map((d) => [d.indicatorId, d]));
       const res = await saveBmpAssessmentDetails({
         assessmentId,
         applyRecomputedScore: apply,
-        rows: indicators.map((ind) => ({ indicatorId: ind.id, score: rows[ind.id].score, notes: rows[ind.id].notes || null })),
+        rows: indicators
+          .filter((ind) => !(isOutOfRubric(rows[ind.id].score) && rows[ind.id].score === original.get(ind.id)?.score && (rows[ind.id].notes || null) === (original.get(ind.id)?.notes ?? null)))
+          .map((ind) => ({ indicatorId: ind.id, score: rows[ind.id].score, notes: rows[ind.id].notes || null })),
       });
       if (!res.success) {
         toast.error(res.error);

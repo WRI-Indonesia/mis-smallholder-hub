@@ -35,7 +35,7 @@ import type { MarkerPoint } from "@/lib/land-marker-query";
 import type { FarmerTreeParcelSummary } from "@/server/actions/tree";
 import type { BmpAssessmentListItem } from "@/server/actions/bmp-assessment";
 import { formatNumber } from "@/lib/format";
-import { formatScore } from "@/lib/bmp-assessment";
+import { formatScore, formatUtcDate } from "@/lib/bmp-assessment";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 import { BmpAssessmentFormModal } from "@/app/(admin)/admin/master-data/bmp-monev/bmp-assessment-form-modal";
 import { BmpAssessmentInlineDetail } from "@/app/(admin)/admin/master-data/bmp-monev/bmp-assessment-inline-detail";
@@ -114,11 +114,6 @@ const formatDate = (d: Date | null) =>
       )
     : "—";
 
-// Tanggal yang disimpan UTC tengah malam (survei Monev BMP) — baca komponen UTC agar tak mundur sehari di WIB.
-const formatUtcDate = (d: Date | string | null) =>
-  d
-    ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(d))
-    : "—";
 
 // Umur dalam tahun dari tanggal lahir; null bila tak diketahui.
 function ageFrom(birthDate: Date | null): number | null {
@@ -214,7 +209,8 @@ export function FarmerDetailClient({
   bmpPermissions,
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
-  const [bmpForm, setBmpForm] = useState<{ open: boolean; row: BmpAssessmentListItem | null }>({ open: false, row: null });
+  // `nonce` naik tiap "Tambah" → modal di-remount, isian petani sebelumnya tak terbawa.
+  const [bmpForm, setBmpForm] = useState<{ open: boolean; row: BmpAssessmentListItem | null; nonce: number }>({ open: false, row: null, nonce: 0 });
   // Baris tahun yang dibuka → rincian indikator dimuat malas (#346).
   const [bmpOpenRows, setBmpOpenRows] = useState<Set<string>>(new Set());
   const canViewBmp = bmpPermissions.includes("VIEW");
@@ -612,7 +608,7 @@ export function FarmerDetailClient({
                   Riwayat Monev BMP ({formatNumber(bmpAssessments.length)})
                 </h2>
                 {canCreateBmp && (
-                  <Button size="sm" variant="outline" onClick={() => setBmpForm({ open: true, row: null })}>
+                  <Button size="sm" variant="outline" onClick={() => setBmpForm((f) => ({ open: true, row: null, nonce: f.nonce + 1 }))}>
                     <Plus className="h-4 w-4 mr-2" />
                     Tambah Penilaian
                   </Button>
@@ -667,7 +663,7 @@ export function FarmerDetailClient({
                           <td className="py-2 pr-4 text-muted-foreground">{a.notes ?? "—"}</td>
                           {canEditBmp && (
                             <td className="py-2 text-right">
-                              <Button size="sm" variant="ghost" onClick={() => setBmpForm({ open: true, row: a })}>
+                              <Button size="sm" variant="ghost" onClick={() => setBmpForm((f) => ({ open: true, row: a, nonce: f.nonce }))}>
                                 <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                               </Button>
                             </td>
@@ -706,9 +702,9 @@ export function FarmerDetailClient({
       )}
       {canViewBmp && (
         <BmpAssessmentFormModal
-          key={bmpForm.row?.id ?? "new"}
+          key={bmpForm.row?.id ?? `new-${bmpForm.nonce}`}
           open={bmpForm.open}
-          onClose={() => setBmpForm({ open: false, row: null })}
+          onClose={() => setBmpForm((f) => ({ open: false, row: null, nonce: f.nonce }))}
           assessment={bmpForm.row}
           farmerGroups={[]}
           fixedFarmer={{

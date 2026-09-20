@@ -23,6 +23,7 @@ import {
   resolveBmpImportRows,
   type BmpImportParseResult,
   type BmpImportResolvedRow,
+  formatUtcDate,
 } from "@/lib/bmp-assessment";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 import { getBmpImportRefs, importBmpAssessments, type BmpImportSummary } from "@/server/actions/bmp-assessment";
@@ -41,9 +42,6 @@ interface Props {
   onClose: () => void;
   farmerGroups: { id: string; name: string }[];
 }
-
-const formatDate = (d: Date | null) =>
-  d ? new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(d) : "—";
 
 export function BmpMonevImportDialog({ open, onClose, farmerGroups }: Props) {
   const router = useRouter();
@@ -262,7 +260,8 @@ export function BmpMonevImportDialog({ open, onClose, farmerGroups }: Props) {
               <TabsTrigger value="survei">Form survei per petani (banyak berkas)</TabsTrigger>
             </TabsList>
             <TabsContent value="survei" className="pt-3">
-              <BmpSurveyImportPanel farmerGroupId={farmerGroupId} farmerGroupName={selectedGroup?.name ?? null} assessor={assessor} />
+              {/* key = Lembaga: ganti Lembaga → panel di-remount, daftar petani & pratinjau lama tidak terbawa (temuan review). */}
+              <BmpSurveyImportPanel key={farmerGroupId} farmerGroupId={farmerGroupId} farmerGroupName={selectedGroup?.name ?? null} assessor={assessor} />
             </TabsContent>
             <TabsContent value="rekap" className="pt-3 space-y-4">
           <div className="space-y-1.5">
@@ -377,7 +376,7 @@ export function BmpMonevImportDialog({ open, onClose, farmerGroups }: Props) {
                           {r.dbFarmerName ?? <span className="text-muted-foreground">{r.farmerName ?? "—"}</span>}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{r.surveyYear}</TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">{formatDate(r.surveyDateToSave)}</TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">{formatUtcDate(r.surveyDateToSave)}</TableCell>
                         <TableCell className="text-right tabular-nums">{formatScore(r.score)}</TableCell>
                         <TableCell>
                           <BmpCategoryBadge score={r.score} />

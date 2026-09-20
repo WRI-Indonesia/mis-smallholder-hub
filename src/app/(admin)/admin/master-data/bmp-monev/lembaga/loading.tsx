@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { TableSkeleton } from "@/components/shared";
+import { TableSkeleton } from "@/components/shared/table-skeleton";
 
 export default function BmpGroupAssessmentLoading() {
   return (

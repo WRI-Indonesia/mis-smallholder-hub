@@ -19,6 +19,7 @@ import {
 } from "@/validations/bmp-assessment.schema";
 import { cleanId } from "@/lib/bmp-assessment";
 import type { ActionResult } from "@/types/action-result";
+import { isPrismaUniqueViolation } from "@/lib/prisma-errors";
 
 /**
  * Monev BMP (#344) — skor per petani per tahun. Tiga lapis di setiap action:
@@ -36,9 +37,6 @@ const DUPLICATE_YEAR_MESSAGE = (year: number) => `Petani ini sudah punya penilai
  * (Prisma P2002). Cek `findFirst` di action tetap ada untuk pesan yang ramah;
  * index-lah yang menjamin atomik saat dua permintaan bersamaan.
  */
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
-}
 
 export interface BmpAssessmentListItem {
   id: string;
@@ -258,7 +256,7 @@ export async function createBmpAssessment(
     });
     return { success: true, id: created.id };
   } catch (error) {
-    if (isUniqueViolation(error)) return { success: false, error: { surveyYear: [DUPLICATE_YEAR_MESSAGE(data.surveyYear)] } };
+    if (isPrismaUniqueViolation(error)) return { success: false, error: { surveyYear: [DUPLICATE_YEAR_MESSAGE(data.surveyYear)] } };
     throw error;
   }
 }
@@ -305,7 +303,7 @@ export async function updateBmpAssessment(
       },
     });
   } catch (error) {
-    if (isUniqueViolation(error)) return { success: false, error: { surveyYear: [DUPLICATE_YEAR_MESSAGE(data.surveyYear)] } };
+    if (isPrismaUniqueViolation(error)) return { success: false, error: { surveyYear: [DUPLICATE_YEAR_MESSAGE(data.surveyYear)] } };
     throw error;
   }
   return { success: true };
@@ -340,7 +338,7 @@ export async function toggleBmpAssessmentActive(id: string): Promise<ActionResul
       data: { isActive: !row.isActive, modifiedBy: session?.user?.id ?? null },
     });
   } catch (error) {
-    if (isUniqueViolation(error)) return { success: false, error: `Tahun ${row.surveyYear} sudah punya penilaian aktif — tidak bisa diaktifkan kembali` };
+    if (isPrismaUniqueViolation(error)) return { success: false, error: `Tahun ${row.surveyYear} sudah punya penilaian aktif — tidak bisa diaktifkan kembali` };
     throw error;
   }
   return { success: true };
@@ -500,10 +498,10 @@ export async function importBmpAssessments(input: BmpAssessmentImportInput): Pro
         await tx.bmpAssessment.createMany({ data: creates });
         summary.created += creates.length;
       }
-    });
+    }, { timeout: 120_000 }); // ≤ 5.000 update berurutan (pola bulk upload lain: 20–120 s, bukan 5 s bawaan)
   } catch (error) {
     console.error("Import Monev BMP error:", error);
-    if (isUniqueViolation(error)) {
+    if (isPrismaUniqueViolation(error)) {
       return { success: false, error: "Ada petani yang baru saja diberi penilaian tahun itu oleh pengguna lain — muat ulang halaman lalu validasi kembali (tidak ada baris yang tersimpan)" };
     }
     return { success: false, error: "Gagal menyimpan data ke database — tidak ada baris yang tersimpan, coba lagi" };

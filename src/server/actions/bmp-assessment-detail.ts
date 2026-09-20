@@ -14,6 +14,7 @@ import {
 } from "@/validations/bmp-assessment.schema";
 import { recomputeBmpScore, type BmpIndicatorRef, type BmpRecomputeResult } from "@/lib/bmp-survey-form";
 import type { ActionResult } from "@/types/action-result";
+import { isPrismaUniqueViolation } from "@/lib/prisma-errors";
 
 /**
  * Rincian Monev BMP (#346): master indikator, skor per indikator individu per
@@ -47,10 +48,6 @@ const indicatorSelect = {
   scoreLabel3: true,
   sortOrder: true,
 } as const;
-
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
-}
 
 /** Master indikator aktif, urut tampil. Dipakai form, pratinjau import, dan halaman detail. */
 export async function getBmpIndicators(): Promise<BmpIndicatorRef[]> {
@@ -180,7 +177,10 @@ export async function getBmpAssessmentDetailView(id: string): Promise<BmpAssessm
     const ind = byId.get(d.indicatorId);
     if (ind) lembaga.set(ind.code, d.score);
   }
-  const hasDetails = a.details.length > 0 || (group?.details.length ?? 0) > 0;
+  // Hitung ulang hanya bila petani punya rincian individu; penilaian Lembaga
+  // saja akan menghasilkan total dari 18 nol dan peringatan "≠ skor" palsu
+  // untuk petani yang hanya punya skor rekap (temuan review).
+  const hasDetails = a.details.length > 0;
   const outOfRange = [...a.details, ...(group?.details ?? [])]
     .filter((d) => d.score != null && (d.score < 0 || d.score > 3))
     .map((d) => byId.get(d.indicatorId)?.code ?? d.indicatorId);
@@ -215,7 +215,7 @@ export async function saveBmpAssessmentDetails(input: SaveBmpAssessmentDetailsIn
     return { success: false, error: "Tidak memiliki izin untuk mengubah rincian Monev BMP" };
   }
   const parsed = saveBmpAssessmentDetailsSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Data rincian tidak valid" };
+  if (!parsed.success) return { success: false, error: await describeRowIssue(parsed.error.issues[0], input.rows) };
   const { assessmentId, rows, applyRecomputedScore } = parsed.data;
 
   const access = await getAccessContext();
@@ -277,7 +277,7 @@ export async function upsertBmpGroupAssessment(input: BmpGroupAssessmentInput): 
     return { success: false, error: "Tidak memiliki izin untuk mengubah penilaian Lembaga" };
   }
   const parsed = bmpGroupAssessmentSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Data penilaian Lembaga tidak valid" };
+  if (!parsed.success) return { success: false, error: await describeRowIssue(parsed.error.issues[0], input.rows) };
   const data = parsed.data;
 
   const access = await getAccessContext();
@@ -301,6 +301,11 @@ export async function upsertBmpGroupAssessment(input: BmpGroupAssessmentInput): 
         where: { farmerGroupId: data.farmerGroupId, surveyYear: data.surveyYear, isActive: true },
         select: { id: true },
       });
+      // TAMBAH tidak boleh diam-diam menimpa penilaian aktif Lembaga-tahun itu
+      // (14 skor + tanggal/penilai/catatan akan tergantikan isian kosong); UBAH
+      // hanya boleh menyentuh baris yang memang sedang dibuka (temuan review).
+      if (existing && existing.id !== data.id) throw new GroupYearTakenError();
+      if (data.id && !existing) throw new GroupRowMissingError();
       const head = existing
         ? await tx.bmpGroupAssessment.update({
             where: { id: existing.id },
@@ -323,9 +328,26 @@ export async function upsertBmpGroupAssessment(input: BmpGroupAssessmentInput): 
     });
     return { success: true, data: { id } };
   } catch (error) {
-    if (isUniqueViolation(error)) return { success: false, error: "Penilaian Lembaga tahun itu baru saja dibuat pengguna lain — muat ulang halaman" };
+    if (error instanceof GroupYearTakenError) return { success: false, error: `Lembaga ini sudah punya penilaian aktif tahun ${data.surveyYear} — buka lewat tombol Ubah, bukan Tambah` };
+    if (error instanceof GroupRowMissingError) return { success: false, error: "Penilaian Lembaga yang diubah sudah tidak aktif — muat ulang halaman" };
+    if (isPrismaUniqueViolation(error)) return { success: false, error: "Penilaian Lembaga tahun itu baru saja dibuat pengguna lain — muat ulang halaman" };
     throw error;
   }
+}
+
+class GroupYearTakenError extends Error {}
+class GroupRowMissingError extends Error {}
+
+/**
+ * Pesan validasi yang menyebut indikatornya: skema hanya tahu `rows[i].score`,
+ * pengguna melihat 14–18 baris — "Skor maksimal 3" saja tak menunjuk baris mana.
+ */
+async function describeRowIssue(issue: { message: string; path: PropertyKey[] } | undefined, rows: { indicatorId: string }[] | undefined): Promise<string> {
+  if (!issue) return "Data tidak valid";
+  const [head, idx] = issue.path;
+  if (head !== "rows" || typeof idx !== "number" || !rows?.[idx]) return issue.message;
+  const ind = await prisma.bmpIndicator.findUnique({ where: { id: rows[idx].indicatorId }, select: { code: true } });
+  return `${issue.message} — indikator ${ind?.code ?? `baris ${idx + 1}`}`;
 }
 
 // ── Import form survei per petani ─────────────────────────────────────────
@@ -371,7 +393,9 @@ export async function importBmpSurveyForms(input: BmpSurveyImportInput): Promise
 
   const farmerIds = [...new Set(forms.map((f) => f.farmerId))];
   const farmers = await prisma.farmer.findMany({
-    where: { id: { in: farmerIds }, farmerGroupId, isActive: true, ...farmerAccessFilter(access) },
+    // `AND`, bukan spread: pada mode BY_FARMER_GROUP filter akses juga berkunci
+    // `farmerGroupId` dan akan menimpa syarat "anggota Lembaga terpilih" (#127).
+    where: { id: { in: farmerIds }, farmerGroupId, isActive: true, AND: [farmerAccessFilter(access)] },
     select: { id: true },
   });
   const validFarmer = new Set(farmers.map((f) => f.id));
@@ -393,6 +417,12 @@ export async function importBmpSurveyForms(input: BmpSurveyImportInput): Promise
     }
     if ([...f.individu, ...f.lembaga].some((r) => !byId.has(r.indicatorId))) {
       summary.rejected.push({ fileName: f.fileName, reason: "Ada indikator yang tidak dikenal" });
+      continue;
+    }
+    // Level harus cocok dengan tabelnya (sama dengan form manual): skor Lembaga
+    // tidak boleh masuk rincian petani dan sebaliknya (temuan review).
+    if (f.individu.some((r) => byId.get(r.indicatorId)!.level !== "INDIVIDU") || f.lembaga.some((r) => byId.get(r.indicatorId)!.level !== "LEMBAGA")) {
+      summary.rejected.push({ fileName: f.fileName, reason: "Level indikator tidak sesuai (individu ↔ Lembaga tertukar)" });
       continue;
     }
     seenFarmerYear.add(key);
@@ -492,7 +522,7 @@ export async function importBmpSurveyForms(input: BmpSurveyImportInput): Promise
     );
   } catch (error) {
     console.error("Import form survei Monev BMP error:", error);
-    if (isUniqueViolation(error)) {
+    if (isPrismaUniqueViolation(error)) {
       return { success: false, error: "Ada petani/Lembaga yang baru saja diberi penilaian tahun itu oleh pengguna lain — muat ulang lalu validasi kembali (tidak ada yang tersimpan)" };
     }
     return { success: false, error: "Gagal menyimpan ke database — tidak ada yang tersimpan, coba lagi" };
