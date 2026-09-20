@@ -33,7 +33,23 @@ const BAND_OPACITY: Record<string, number> = { BELUM: 0.28, PERINTIS: 0.3, PRAKT
 export const bmpRadarShortName = (name: string) => name.replace(/\s*\(.*\)$/, "").replace("Pengendalian ", "").replace("Hama Penyakit Terpadu", "PHPT");
 
 /** SVG radar 5 sumbu + legenda pita + tooltip per sumbu. */
-export function BmpActivityRadarSvg({ rowsA, rowsB, labelA = "A", labelB = "B" }: { rowsA: BmpRadarRow[]; rowsB?: BmpRadarRow[] | null; labelA?: string; labelB?: string }) {
+export function BmpActivityRadarSvg({
+  rowsA,
+  rowsB,
+  labelA = "A",
+  labelB = "B",
+  showLegend = true,
+  className = "max-w-[440px]",
+}: {
+  rowsA: BmpRadarRow[];
+  rowsB?: BmpRadarRow[] | null;
+  labelA?: string;
+  labelB?: string;
+  /** Legenda pita kategori di bawah grafik — dimatikan pada tampilan ringkas (rincian inline tab Petani). */
+  showLegend?: boolean;
+  /** Lebar maksimum wadah (kelas Tailwind). */
+  className?: string;
+}) {
   const [hover, setHover] = useState<number | null>(null);
   const n = rowsA.length;
   const cx = 50;
@@ -48,7 +64,7 @@ export function BmpActivityRadarSvg({ rowsA, rowsB, labelA = "A", labelB = "B" }
   const valueText = (r: BmpRadarRow) => (r.value == null ? "—" : r.max !== BMP_SCORE_MAX ? `${formatScore(r.value)} / ${formatScore(r.max)} (setara ${formatScore(scaled(r))})` : formatScore(r.value));
 
   return (
-    <div className="relative mx-auto w-full max-w-[440px]">
+    <div className={`relative mx-auto w-full ${className}`}>
       <svg viewBox="-16 6 132 86" className="w-full">
         {/* Pita kategori: cincin pentagon (evenodd) dari luar ke dalam, tidak saling tumpang. */}
         {BANDS.map((b) => (
@@ -92,6 +108,7 @@ export function BmpActivityRadarSvg({ rowsA, rowsB, labelA = "A", labelB = "B" }
           </text>
         ))}
       </svg>
+      {showLegend && (
       <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
         {[...BANDS].reverse().map((b) => (
           <span key={b.key} className="inline-flex items-center gap-1">
@@ -100,6 +117,7 @@ export function BmpActivityRadarSvg({ rowsA, rowsB, labelA = "A", labelB = "B" }
           </span>
         ))}
       </div>
+      )}
       {hover !== null && (
         <div className="pointer-events-none absolute left-1/2 top-1 z-10 -translate-x-1/2 rounded-md border bg-popover px-2.5 py-2 text-xs shadow-md whitespace-nowrap">
           <div className="font-semibold">{rowsA[hover].name}</div>

@@ -183,7 +183,7 @@ export async function exportParcelRow(
     };
     const nktColor = (p: Record<string, unknown>) => (isNktAffected(landNktStatusFromShortLabel(typeof p.nkt === "string" ? p.nkt : null)) ? RED : isPoint ? BLUE : PURPLE);
     savePdf({
-      title: row === "nkt" ? "Lahan NKT (termasuk/terdampak)" : isPoint ? "Point Lahan Petani" : "Area Lahan Petani",
+      title: row === "nkt" ? "Lahan terdampak NKT" : isPoint ? "Point Lahan Petani" : "Area Lahan Petani",
       subtitle: `${label ?? "Semua"} · ${features.length} lahan · dicetak ${printedAt(now)}`,
       fc: fcPdf,
       // Titik lahan & lahan NKT: lahan lain sebagai konteks; Area Lahan sudah menggambar semua poligonnya sendiri.

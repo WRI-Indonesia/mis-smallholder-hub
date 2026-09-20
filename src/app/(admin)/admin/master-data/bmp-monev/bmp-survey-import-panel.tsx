@@ -16,7 +16,7 @@ import { SURVEY_DATE_FUTURE_TOLERANCE_MS } from "@/validations/bmp-assessment.sc
 import { bmpWeightedSlotKey, matchFarmerName, parseBmpSurveyForm, recomputeBmpScore, type BmpIndicatorRef, type BmpNameMatchConfidence, type BmpSurveyFormParsed } from "@/lib/bmp-survey-form";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 import { getBmpImportRefs, type BmpImportFarmerRef } from "@/server/actions/bmp-assessment";
-import { getBmpIndicators, importBmpSurveyForms, type BmpSurveyImportSummary } from "@/server/actions/bmp-assessment-detail";
+import { getBmpGroupAssessments, getBmpIndicators, importBmpSurveyForms, type BmpSurveyImportSummary } from "@/server/actions/bmp-assessment-detail";
 
 /**
  * Tab "Form survei per petani" (#346): banyak berkas `.xlsx` sekaligus untuk
@@ -74,6 +74,8 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
   const [saving, setSaving] = useState(false);
   const [refs, setRefs] = useState<BmpImportFarmerRef[] | null>(null);
   const [indicators, setIndicators] = useState<BmpIndicatorRef[] | null>(null);
+  /** Penilaian Lembaga tersimpan per tahun (kode → skor) — fallback hitung ulang pratinjau bila berkas tanpa sheet Lembaga, sama dengan server. */
+  const [storedGroup, setStoredGroup] = useState<Map<number, Map<string, number | null>> | null>(null);
   const [rows, setRows] = useState<FormRow[]>([]);
   const [unreadable, setUnreadable] = useState<{ fileName: string; reason: string }[]>([]);
   const [result, setResult] = useState<BmpSurveyImportSummary | null>(null);
@@ -103,8 +105,21 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
     setReading(true);
     setResult(null);
     try {
-      const [refList, indList] = await Promise.all([refs ?? getBmpImportRefs(farmerGroupId), indicators ?? getBmpIndicators()]);
+      const [refList, indList, groupList] = await Promise.all([refs ?? getBmpImportRefs(farmerGroupId), indicators ?? getBmpIndicators(), storedGroup ?? getBmpGroupAssessments()]);
       setRefs(refList);
+      // Set Lembaga tersimpan per tahun untuk Lembaga ini — pratinjau harus menghitung
+      // ulang dengan dasar yang sama seperti server (QA lokal v0.36.0: pratinjau 1,76 vs
+      // tersimpan 2,21 untuk berkas tanpa sheet Lembaga).
+      const storedByYear =
+        storedGroup ??
+        new Map(
+          (groupList as Awaited<ReturnType<typeof getBmpGroupAssessments>>)
+            .filter((g) => g.farmerGroupId === farmerGroupId)
+            .map((g) => [g.surveyYear, new Map(g.details.map((d) => [indList.find((i) => i.id === d.indicatorId)?.code ?? d.indicatorId, d.score]))]),
+        );
+      setStoredGroup(storedByYear);
+      // Set Lembaga batch = berkas pertama tahun itu yang memuat sheet Lembaga (aturan server).
+      const batchGroup = new Map<number, Map<string, number | null>>();
       setIndicators(indList);
       const candidates = refList.map((r) => ({ farmerDbId: r.farmerDbId, name: r.farmerName, farmerCode: r.farmerCode }));
       const out: FormRow[] = [];
@@ -146,7 +161,11 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
         const preferIds = new Set(refList.filter((r) => r.assessedYears.includes(surveyYear)).map((r) => r.farmerDbId));
         const match = matchFarmerName(parsed.fileFarmerName, candidates, { preferIds });
         const headerConflict = Boolean(parsed.fileFarmerName && parsed.headerFarmerName && parsed.warnings.some((w) => w.startsWith("Nama di header")));
-        const rc = recomputeBmpScore(indList, new Map(parsed.individu.map((x) => [x.code, x.score])), new Map(parsed.lembaga.map((x) => [x.code, x.score])));
+        if (parsed.lembaga.length > 0 && !batchGroup.has(surveyYear)) batchGroup.set(surveyYear, new Map(parsed.lembaga.map((x) => [x.code, x.score])));
+        const lembagaForCalc = batchGroup.get(surveyYear) ?? storedByYear.get(surveyYear) ?? new Map<string, number | null>();
+        // Awalan bukan "Skor " — peringatan berawalan "Skor " (per indikator) disembunyikan di tabel.
+        if (parsed.lembaga.length === 0 && storedByYear.has(surveyYear)) parsed.warnings.push("Penilaian Lembaga tersimpan tahun ini dipakai untuk hitung ulang");
+        const rc = recomputeBmpScore(indList, new Map(parsed.individu.map((x) => [x.code, x.score])), lembagaForCalc);
         const ref = refList.find((r) => r.farmerDbId === match.farmerDbId);
         out.push({
           parsed,
@@ -214,6 +233,7 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
       setRows([]);
       setUnreadable([]);
       setRefs(null);
+      setStoredGroup(null);
       toast.success(`Form tersimpan: ${formatNumber(res.data.assessmentsCreated)} penilaian baru · ${formatNumber(res.data.assessmentsUpdated)} diperbarui · ${formatNumber(res.data.detailRows)} skor indikator`);
       router.refresh();
     } catch (err) {

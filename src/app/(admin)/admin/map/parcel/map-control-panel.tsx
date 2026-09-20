@@ -500,7 +500,7 @@ export function MapControlPanel(props: Props) {
                     {/* NKT (#328): hitungan = lahan INCLUDED/AFFECTED pada hasil filter; 0 bila belum ada asesmen. */}
                     <LegendRow
                       color="#dc2626"
-                      label="Lahan NKT (termasuk/terdampak)"
+                      label="Lahan terdampak NKT"
                       count={counts.nkt ?? 0}
                       checked={layers.nkt}
                       onToggle={(v) => onLayersChange({ ...layers, nkt: v })}

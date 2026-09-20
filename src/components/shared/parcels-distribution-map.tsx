@@ -560,7 +560,7 @@ export function ParcelsDistributionMap({
               <label className="flex cursor-pointer items-center gap-2 text-xs">
                 <input type="checkbox" className="h-3.5 w-3.5 accent-primary" checked={showNkt} onChange={(e) => setShowNkt(e.target.checked)} />
                 <span className="h-3 w-3 shrink-0 rounded-sm border-2" style={{ borderColor: NKT_COLOR, backgroundColor: `${NKT_COLOR}22` }} />
-                <span className="flex-1 truncate" title="Lahan termasuk/terdampak NKT">Lahan NKT</span>
+                <span className="flex-1 truncate" title="Lahan terdampak NKT">Lahan NKT</span>
                 <span className="tabular-nums text-muted-foreground">{nktCount}</span>
               </label>
             )}

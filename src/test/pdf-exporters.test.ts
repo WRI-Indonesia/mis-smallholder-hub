@@ -349,7 +349,7 @@ describe("buildLayerReportDoc (lib/layer-report-pdf) — PDF per baris legenda P
   it("poligon + titik: judul, subjudul, legenda, tabel multi-halaman, footer per halaman", () => {
     const rows = Array.from({ length: 80 }, (_, i) => ({ no: i + 1, id: `LHN-${i + 1}`, nkt: i % 7 === 0 ? "Terdampak NKT" : "Belum dinilai" }));
     const doc = buildLayerReportDoc({
-      title: "Lahan NKT (termasuk/terdampak)",
+      title: "Lahan terdampak NKT",
       subtitle: "ISH-1401-03 · 80 lahan · dicetak hari ini",
       fc: {
         type: "FeatureCollection",
@@ -368,7 +368,7 @@ describe("buildLayerReportDoc (lib/layer-report-pdf) — PDF per baris legenda P
     });
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
     const text = pdfText(doc);
-    expect(text).toContain("Lahan NKT (termasuk/terdampak)");
+    expect(text).toContain("Lahan terdampak NKT");
     expect(text).toContain("ISH-1401-03");
     expect(text).toContain("LHN-80");
     expect(text).toContain("Hal. 1/");
