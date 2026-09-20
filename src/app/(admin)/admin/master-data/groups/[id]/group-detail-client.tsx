@@ -525,7 +525,7 @@ export function GroupDetailClient({
               value={formatNumber(markerPoints.length)}
               sub={
                 markerPoints.length > 0
-                  ? `${Math.round((markerPoints.filter((m) => m.condition === "PRESENT").length / markerPoints.length) * 100)}% terpasang · ${formatNumber(markerPoints.filter((m) => m.nkt).length)} patok NKT`
+                  ? `${Math.round((markerPoints.filter((m) => m.condition === "PRESENT").length / markerPoints.length) * 100)}% terpasang`
                   : "Belum ada patok"
               }
             />

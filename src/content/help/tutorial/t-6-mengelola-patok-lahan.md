@@ -21,14 +21,14 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Buat patok dari poligo
 ## Langkah
 
 1. Buka **Master Data → Lahan**, klik tombol detail pada baris lahan, lalu buka tab **Patok**.
-+ Peta menampilkan patok sebagai persegi bernomor — **kuning** untuk patok biasa, **merah** bila lahan pemakainya termasuk/terdampak NKT (lahan ini *atau* lahan tetangga yang memakai patok yang sama). Lahan tetangga dalam 25 m ikut tergambar putus-putus, dengan daftarnya di bawah peta.
++ Peta menampilkan patok sebagai persegi **kuning** bernomor. Semua patok di tab ini adalah *patok lahan* (batas kebun) — status NKT lahan tidak mengubah warnanya; patok NKT (batas area NKT, mis. sempadan sungai) akan menjadi jenis data tersendiri. Lahan tetangga dalam 25 m ikut tergambar putus-putus, dengan daftarnya di bawah peta.
 2. Klik **Buat patok dari poligon** untuk menurunkan patok dari sudut-sudut poligon.
 + Sistem menyederhanakan garis batas (±1 m) supaya lengkung hasil digitasi tidak jadi puluhan patok, lalu menomori sudut **searah jarum jam mulai dari yang paling utara**.
 + Pada dialog pratinjau, kolom **Hasil** memberi tahu: *Patok baru*, *Tautkan ke patok lahan X (d m)* — sudut ini ≤ 5 m dari patok yang sudah dibuat di lahan tetangga, jadi ditautkan bukan digandakan — atau *Sudah ada di lahan ini* (dilewati). Hilangkan centang pada sudut yang di lapangan bukan patok, lalu klik **Simpan**.
 + Aman dijalankan berulang: sudut yang sudah punya patok tidak dibuat dua kali.
 3. Untuk patok yang tidak ada di sudut poligon (mis. di tengah sisi), klik **Tambah patok** dan isi lintang/bujur hasil GPS.
 + Koordinat harus berada ≤ 100 m dari batas lahan. Lintang dan bujur yang tertukar ditolak dengan petunjuk — periksa kolomnya.
-4. Klik ikon **pensil** pada baris patok untuk mencatat **kondisi** (Ada / Hilang / Rusak / Belum dipasang), **jenis**, tanggal & petugas pemasangan, keterangan, dan **foto** (JPG/PNG/WebP ≤ 5 MB; foto tersimpan langsung saat dipilih).
+4. Klik ikon **pensil** pada baris patok untuk mencatat **kondisi** (Ada / Hilang / Rusak / Belum dipasang), **bahan** (beton / kayu / pipa / tanda alam / lainnya), tanggal & petugas pemasangan, keterangan, dan **foto** (JPG/PNG/WebP ≤ 5 MB; foto tersimpan langsung saat dipilih).
 + Bila patok itu dipakai lahan lain, formulir menampilkan peringatan — perubahan berlaku untuk semuanya.
 5. Pakai panah **↑ ↓** untuk mengubah urutan nomor bila penomoran lapangan berbeda; klik **Unduh koordinat** untuk berkas Excel patok lahan ini.
 6. Ikon **lepas tautan** melepas patok dari lahan ini saja. Patok yang masih dipakai lahan lain tetap ada; patok tanpa pemakai dinonaktifkan (koordinatnya tersimpan sebagai riwayat).
@@ -37,7 +37,7 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Buat patok dari poligo
 
 ## Hasil
 
-Tab **Patok** menampilkan jumlah patok di judul tabnya. **Profil Lahan (PDF)** menggambar patok sebagai persegi bernomor di peta (kuning/merah) dan menambahkan tabel **Patok Batas** (koordinat 6 desimal, kondisi, jenis, tanggal, NKT, lahan lain pemakai). Pada **Detail Lembaga Petani → tab Lahan**, menu **Unduh Lahan** punya pilihan **Patok batas (Excel)** untuk seluruh lahan lembaga itu.
+Tab **Patok** menampilkan jumlah patok di judul tabnya. **Profil Lahan (PDF)** menggambar patok sebagai persegi kuning bernomor di peta dan menambahkan tabel **Patok Batas** (koordinat 6 desimal, kondisi, bahan, tanggal, lahan lain pemakai). Pada **Detail Lembaga Petani → tab Lahan**, menu **Unduh Lahan** punya pilihan **Patok batas (Excel)** untuk seluruh lahan lembaga itu.
 
 ## Kalau bermasalah
 

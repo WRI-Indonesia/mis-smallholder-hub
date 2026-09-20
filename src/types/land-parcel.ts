@@ -172,9 +172,7 @@ export interface LandMarkerItem {
   notes: string | null;
   modifiedAt: Date;
   /** Lahan lain yang memakai patok yang sama (identitas selalu lengkap, pola #327); `landParcelId` null bila di luar scope. */
-  sharedWith: { parcelId: string; landParcelId: string | null; farmerName: string; groupName: string; nktAffected: boolean }[];
-  /** Turunan: lahan ini atau salah satu lahan pemakai patok ini termasuk/terdampak NKT (#328). */
-  nkt: boolean;
+  sharedWith: { parcelId: string; landParcelId: string | null; farmerName: string; groupName: string }[];
 }
 
 export interface LandParcelMarkers {

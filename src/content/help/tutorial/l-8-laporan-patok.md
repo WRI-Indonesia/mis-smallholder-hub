@@ -18,8 +18,8 @@ Laporan ini membaca patok yang sudah tercatat (tab **Patok** di detail lahan, at
 ## Langkah
 
 1. Buka **Report → Patok**, pilih **Distrik** (wajib) dan bila perlu **Lembaga Petani**, lalu klik **Muat Data**.
-2. Baca kartu ringkasan: jumlah patok, berapa yang **Ada**, **Hilang**, **Rusak**, **Belum dipasang**, dan berapa **patok lahan NKT**.
-3. Saring dengan **Kondisi** (mis. *Hilang* untuk daftar kerja pemasangan ulang) atau **NKT** (*Patok lahan NKT* untuk lampiran laporan NKT).
+2. Baca kartu ringkasan: jumlah patok, berapa yang **Ada**, **Hilang**, **Rusak**, dan **Belum dipasang**.
+3. Saring dengan **Kondisi** (mis. *Hilang* untuk daftar kerja pemasangan ulang).
 + Tabel dan kartu "Daftar Patok (N dari M)" mengikuti saringan; unduhan pun hanya memuat baris yang tampil.
 4. Klik **Unduh**: **Excel** (satu baris per patok, kolom Kode Patok, lahan pemakai satu per baris), **Shapefile/GeoJSON/KML** (titik), atau **PDF** (peta klaster + tabel per lahan) — sesuai izin Export/Print Anda.
 

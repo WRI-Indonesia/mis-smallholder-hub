@@ -30,30 +30,11 @@ import { AvailabilityMatrix } from "./availability-matrix";
 import { AvailabilityGroupChart } from "./availability-group-chart";
 import { AvailabilityAnomalyPanel } from "./availability-anomaly-panel";
 import type { BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
+import { formatGeneratedAt } from "@/lib/format";
 
 const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
   EX_PLASMA: "Ex-Plasma",
   SWADAYA: "Swadaya",
-};
-
-const formatGeneratedAt = (iso: string) => {
-  const d = new Date(iso);
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "Mei",
-    "Jun",
-    "Jul",
-    "Agu",
-    "Sep",
-    "Okt",
-    "Nov",
-    "Des",
-  ];
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
 export function DataAvailabilityClient({ view, helpSlot }: { view: DataAvailabilityView; helpSlot?: React.ReactNode }) {

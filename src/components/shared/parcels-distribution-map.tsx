@@ -43,8 +43,8 @@ interface Props {
    * agar ikut checklist legenda; tanpa itu titik dianggap tanpa-KT.
    */
   treePoints?: { longitude: number; latitude: number; landParcelId?: string }[];
-  /** Patok batas (#331): dua layer — kuning (patok lahan) & merah (patok lahan NKT), toggle sendiri di legenda; popup kode. */
-  markerPoints?: { id: string; code: string; longitude: number; latitude: number; condition: string; nkt: boolean }[];
+  /** Patok batas (#331): satu layer kuning untuk semua patok lahan (#345), toggle sendiri di legenda; popup kode. */
+  markerPoints?: { id: string; code: string; longitude: number; latitude: number; condition: string }[];
 }
 
 /** Palet kategorikal per Kelompok Tani — berulang bila KT > 12; tanpa-KT = abu. */
@@ -124,23 +124,21 @@ export function ParcelsDistributionMap({
   const [hiddenKts, setHiddenKts] = useState<Set<string>>(new Set());
   // Sorotan NKT (#330) — toggle sendiri, terpisah dari checklist KT.
   const [showNkt, setShowNkt] = useState(true);
-  // Patok (#331) — dua toggle; default mati supaya peta Lembaga (ribuan titik) tetap ringan.
+  // Patok (#331) — satu toggle; default mati supaya peta Lembaga (ribuan titik) tetap ringan.
   const [showMarkers, setShowMarkers] = useState(false);
-  const [showMarkersNkt, setShowMarkersNkt] = useState(false);
-  const [selectedMarker, setSelectedMarker] = useState<{ lngLat: [number, number]; code: string; condition: string; nkt: boolean } | null>(null);
+  const [selectedMarker, setSelectedMarker] = useState<{ lngLat: [number, number]; code: string; condition: string } | null>(null);
   const markerGeojson = useMemo<FeatureCollection>(
     () => ({
       type: "FeatureCollection",
       features: (markerPoints ?? []).map((m) => ({
         type: "Feature",
         geometry: { type: "Point", coordinates: [m.longitude, m.latitude] },
-        properties: { id: m.id, code: m.code, condition: m.condition, nkt: m.nkt ? 1 : 0 },
+        properties: { id: m.id, code: m.code, condition: m.condition },
       })),
     }),
     [markerPoints],
   );
   const markerCount = markerPoints?.length ?? 0;
-  const markerNktCount = markerPoints?.filter((m) => m.nkt).length ?? 0;
   const [zoom, setZoom] = useState(13);
   const [selected, setSelected] = useState<SelectedParcel | null>(null);
   const [editParcelId, setEditParcelId] = useState<string | null>(null);
@@ -364,10 +362,10 @@ export function ParcelsDistributionMap({
       return;
     }
     const props = f.properties as Record<string, unknown>;
-    if (f.layer?.id === "group-markers" || f.layer?.id === "group-markers-nkt") {
+    if (f.layer?.id === "group-markers") {
       const [lng, lat] = (f.geometry as Point).coordinates;
       setSelected(null);
-      setSelectedMarker({ lngLat: [lng, lat], code: String(props.code ?? ""), condition: String(props.condition ?? ""), nkt: Number(props.nkt) === 1 });
+      setSelectedMarker({ lngLat: [lng, lat], code: String(props.code ?? ""), condition: String(props.condition ?? "") });
       return;
     }
     setSelectedMarker(null);
@@ -391,7 +389,7 @@ export function ParcelsDistributionMap({
         ref={mapRef}
         initialViewState={combinedBounds ? { bounds: combinedBounds, fitBoundsOptions: { padding: 40 } } : { longitude: 101.8, latitude: 0.6, zoom: 9 }}
         mapStyle={mapStyle}
-        interactiveLayerIds={["group-parcels-fill", "group-markers", "group-markers-nkt"]}
+        interactiveLayerIds={["group-parcels-fill", "group-markers"]}
         onLoad={(e) => {
           registerImageFallback(e.target);
           syncStyle(e.target);
@@ -423,22 +421,14 @@ export function ParcelsDistributionMap({
           </Source>
         )}
 
-        {/* Patok (#331): warna sama dengan Peta Lahan & tab Patok. */}
+        {/* Patok (#331): satu layer kuning, warna sama dengan Peta Lahan & tab Patok (#345: layer merah turunan dihapus). */}
         {markerCount > 0 && (
           <Source type="geojson" data={markerGeojson}>
             <Layer
               id="group-markers"
               type="circle"
-              filter={["==", ["get", "nkt"], 0]}
               layout={{ visibility: showMarkers ? "visible" : "none" }}
               paint={{ "circle-color": "#facc15", "circle-radius": 4.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#854d0e" }}
-            />
-            <Layer
-              id="group-markers-nkt"
-              type="circle"
-              filter={["==", ["get", "nkt"], 1]}
-              layout={{ visibility: showMarkersNkt ? "visible" : "none" }}
-              paint={{ "circle-color": "#ef4444", "circle-radius": 4.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#7f1d1d" }}
             />
           </Source>
         )}
@@ -451,7 +441,6 @@ export function ParcelsDistributionMap({
                 icon={<Landmark className="h-5 w-5 text-muted-foreground" />}
                 title={selectedMarker.code}
                 rows={[
-                  { label: "Jenis", value: selectedMarker.nkt ? "Patok lahan NKT" : "Patok lahan" },
                   { label: "Kondisi", value: labelOf(LAND_MARKER_CONDITION_LABELS, selectedMarker.condition) },
                   { label: "Koordinat", value: `${selectedMarker.lngLat[1].toFixed(6)}, ${selectedMarker.lngLat[0].toFixed(6)}`, mono: true },
                 ]}
@@ -571,7 +560,7 @@ export function ParcelsDistributionMap({
               <label className="flex cursor-pointer items-center gap-2 text-xs">
                 <input type="checkbox" className="h-3.5 w-3.5 accent-primary" checked={showNkt} onChange={(e) => setShowNkt(e.target.checked)} />
                 <span className="h-3 w-3 shrink-0 rounded-sm border-2" style={{ borderColor: NKT_COLOR, backgroundColor: `${NKT_COLOR}22` }} />
-                <span className="flex-1 truncate" title="Lahan termasuk/terdampak NKT">Lahan NKT</span>
+                <span className="flex-1 truncate" title="Lahan terdampak NKT">Lahan NKT</span>
                 <span className="tabular-nums text-muted-foreground">{nktCount}</span>
               </label>
             )}
@@ -580,15 +569,7 @@ export function ParcelsDistributionMap({
                 <input type="checkbox" className="h-3.5 w-3.5 accent-primary" checked={showMarkers} onChange={(e) => setShowMarkers(e.target.checked)} />
                 <span className="h-3 w-3 shrink-0 rounded-[2px] border-2 border-[#854d0e] bg-[#facc15]" />
                 <span className="flex-1 truncate" title="Patok batas lahan">Patok lahan</span>
-                <span className="tabular-nums text-muted-foreground">{markerCount - markerNktCount}</span>
-              </label>
-            )}
-            {markerNktCount > 0 && (
-              <label className="flex cursor-pointer items-center gap-2 text-xs">
-                <input type="checkbox" className="h-3.5 w-3.5 accent-primary" checked={showMarkersNkt} onChange={(e) => setShowMarkersNkt(e.target.checked)} />
-                <span className="h-3 w-3 shrink-0 rounded-[2px] border-2 border-[#7f1d1d] bg-[#ef4444]" />
-                <span className="flex-1 truncate" title="Patok yang lahan pemakainya termasuk/terdampak NKT">Patok lahan NKT</span>
-                <span className="tabular-nums text-muted-foreground">{markerNktCount}</span>
+                <span className="tabular-nums text-muted-foreground">{markerCount}</span>
               </label>
             )}
           </div>

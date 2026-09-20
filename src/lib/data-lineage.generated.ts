@@ -81,6 +81,20 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "dashboard-bmp-monev",
+    "route": "(admin)/admin/dashboard/bmp-monev",
+    "models": {
+      "bmpAssessment": "R",
+      "bmpGroupAssessment": "R",
+      "bmpIndicator": "R",
+      "farmerGroup": "R"
+    },
+    "modules": [
+      "src/server/actions/dashboard-bmp-monev.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "dashboard-main",
     "route": "(admin)/admin/dashboard/main",
     "models": {
@@ -233,6 +247,7 @@ export const DATA_LINEAGE: DataLineage = [
       "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
+      "landMarker": "R",
       "landParcel": "R",
       "productionRecord": "R",
       "province": "R"
@@ -272,13 +287,40 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "master-data-bmp-monev",
+    "route": "(admin)/admin/master-data/bmp-monev",
+    "models": {
+      "bmpAssessment": "RW",
+      "bmpAssessmentDetail": "W",
+      "bmpGroupAssessment": "RW",
+      "bmpGroupAssessmentDetail": "W",
+      "bmpIndicator": "R",
+      "district": "R",
+      "farmer": "R",
+      "farmerGroup": "R",
+      "landParcel": "R",
+      "landParcelIdentity": "R"
+    },
+    "modules": [
+      "src/lib/select-options.ts",
+      "src/server/actions/bmp-assessment-detail.ts",
+      "src/server/actions/bmp-assessment.ts",
+      "src/server/actions/farmer-group.ts"
+    ],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "master-data-farmers",
     "route": "(admin)/admin/master-data/farmers",
     "models": {
+      "bmpAssessment": "RW",
+      "bmpGroupAssessment": "R",
+      "bmpIndicator": "R",
       "district": "R",
       "farmer": "RW",
       "farmerGroup": "R",
       "landParcel": "R",
+      "landParcelIdentity": "R",
       "productionRecord": "R",
       "trainingPackage": "R",
       "trainingParticipant": "R",
@@ -288,6 +330,8 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
+      "src/server/actions/bmp-assessment-detail.ts",
+      "src/server/actions/bmp-assessment.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/farmer.ts",
       "src/server/actions/tree.ts"
@@ -447,8 +491,7 @@ export const DATA_LINEAGE: DataLineage = [
       "farmerGroup": "R",
       "landMarker": "RW",
       "landParcel": "R",
-      "landParcelMarker": "RW",
-      "landParcelNkt": "R"
+      "landParcelMarker": "RW"
     },
     "modules": [
       "src/server/actions/land-marker.ts",

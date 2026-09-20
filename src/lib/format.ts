@@ -41,3 +41,29 @@ export const MONTH_NAMES_ID = [
   "November",
   "Desember",
 ] as const;
+
+/** Nama bulan Bahasa Indonesia singkat 3 huruf, indeks 0 = Jan. */
+export const MONTH_SHORT_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"] as const;
+
+/**
+ * Cap waktu "data per" di header dashboard — `dd-Mon-yy HH:mm` waktu lokal
+ * browser (mis. "20-Sep-26 11:50"). Semula tersalin di 5 klien dashboard
+ * (review #347) — satu sumber di sini.
+ */
+export const formatGeneratedAt = (iso: string) => {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}-${MONTH_SHORT_ID[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+/**
+ * Batas atas sumbu Y grafik: nilai "bulat" 1/2/5 × 10^n pertama ≥ maks data
+ * (mis. 730 → 1.000, 42 → 50). `floor` = nilai saat data ≤ 0. Semula tersalin
+ * di 4 grafik (review #347).
+ */
+export function axisMax(dataMax: number, floor = 10): number {
+  if (dataMax <= 0) return floor;
+  const pow = Math.pow(10, Math.floor(Math.log10(dataMax)));
+  for (const m of [1, 2, 5, 10]) if (dataMax <= m * pow) return m * pow;
+  return 10 * pow;
+}

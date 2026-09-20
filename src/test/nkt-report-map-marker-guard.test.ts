@@ -7,7 +7,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  *   Lembaga wajib dalam cakupan akses, SELURUH lahan aktif (bukan hasil filter),
  *   tanggal asesmen diserialisasi yyyy-mm-dd, tanpa kueri patok (revisi 3 KPI).
  * - `getMapMarkers` (Peta Lahan, layer patok malas): VIEW `map-parcel`, scope
- *   lewat AND (anti BUG-007), tuple ringkas + NKT turunan dari lahan pemakai.
+ *   lewat AND (anti BUG-007), tuple ringkas tanpa tanda NKT turunan (#345) — kueri
+ *   tidak lagi menarik status NKT lahan pemakai.
  */
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
@@ -118,21 +119,22 @@ describe("getMapMarkers — layer patok malas Peta Lahan (#331)", () => {
     expect(groupWhere).toMatchObject({ isActive: true, districtId: "1401", id: "kt-2", AND: { id: { in: ["kt-1"] } } });
   });
 
-  it("tuple ringkas: NKT = 1 bila SALAH SATU lahan pemakai kena NKT; 'ID Lahan #n' digabung", async () => {
+  it("tuple ringkas [id, lon, lat, kondisi, 'ID Lahan #n; …', kode] — tanpa flag NKT turunan (#345); select tidak menarik status NKT lahan", async () => {
     db.landMarker.findMany.mockResolvedValue([
       { id: "m-1", code: "HJP-PTK-000001", longitude: 101.19, latitude: 0.52, condition: "PRESENT", parcels: [
-        { sequenceNo: 2, parcel: { parcelId: "HJP.0001.A", nkt: { status: "AFFECTED" } } },
-        { sequenceNo: 4, parcel: { parcelId: "HJP.0002.A", nkt: null } },
+        { sequenceNo: 2, parcel: { parcelId: "HJP.0001.A" } },
+        { sequenceNo: 4, parcel: { parcelId: "HJP.0002.A" } },
       ] },
       { id: "m-2", code: "HJP-PTK-000002", longitude: 101.2, latitude: 0.53, condition: "MISSING", parcels: [
-        { sequenceNo: 1, parcel: { parcelId: "HJP.0003.A", nkt: { status: "NOT_AFFECTED" } } },
+        { sequenceNo: 1, parcel: { parcelId: "HJP.0003.A" } },
       ] },
     ]);
     const res = await getMapMarkers({ districtId: "1401" });
     expect(res.success && res.data?.markers).toEqual([
-      ["m-1", 101.19, 0.52, 1, "PRESENT", "HJP.0001.A #2; HJP.0002.A #4", "HJP-PTK-000001"],
-      ["m-2", 101.2, 0.53, 0, "MISSING", "HJP.0003.A #1", "HJP-PTK-000002"],
+      ["m-1", 101.19, 0.52, "PRESENT", "HJP.0001.A #2; HJP.0002.A #4", "HJP-PTK-000001"],
+      ["m-2", 101.2, 0.53, "MISSING", "HJP.0003.A #1", "HJP-PTK-000002"],
     ]);
+    expect(db.landMarker.findMany.mock.calls[0][0].select.parcels.select.parcel.select).not.toHaveProperty("nkt");
   });
 
   it("filter tidak valid (tanpa districtId) → gagal sebelum DB", async () => {

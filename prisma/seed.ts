@@ -13,6 +13,7 @@ import { seedFarmers } from "./seeds/seed-farmers";
 import { seedMenu } from "./seeds/seed-menu";
 import { seedRolePermissions } from "./seeds/seed-role-permissions";
 import { seedTrainingPackages } from "./seeds/seed-training-packages";
+import { seedBmpIndicators } from "./seeds/seed-bmp-indicators";
 
 async function main() {
   console.log("🌱 Starting seed...\n");
@@ -44,6 +45,7 @@ async function main() {
     // Training Packages (no dependencies)
     console.log("\n--- Training Packages ---");
     await seedTrainingPackages(prisma);
+    await seedBmpIndicators(prisma);
 
     // 4. Menu (no dependencies)
     console.log("\n--- Menu ---");

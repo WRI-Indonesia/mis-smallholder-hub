@@ -81,14 +81,14 @@ describe("parseMarkerCondition / parseMarkerType — label Indonesia, enum, alia
     expect(parseMarkerCondition("belum ada").value).toBe("NOT_INSTALLED");
   });
 
-  it("jenis: label, enum, alias; tak dikenal → error", () => {
+  it("bahan (dulu jenis): label, enum, alias; tak dikenal → error", () => {
     expect(parseMarkerType("Beton").value).toBe("CONCRETE");
     expect(parseMarkerType("semen").value).toBe("CONCRETE");
     expect(parseMarkerType("PIPE").value).toBe("PIPE");
     expect(parseMarkerType("tanda alam").value).toBe("NATURAL");
     expect(parseMarkerType("pohon").value).toBe("NATURAL");
     expect(parseMarkerType("").value).toBeNull();
-    expect(parseMarkerType("plastik").error).toMatch(/Jenis tidak dikenal/);
+    expect(parseMarkerType("plastik").error).toMatch(/Bahan tidak dikenal/);
   });
 });
 
@@ -211,14 +211,14 @@ describe("validateMarkerUploadRows — pencocokan lahan & aturan baris", () => {
     expect(rows[1].errors[0]).toMatch(/sudah ada di baris 2/);
   });
 
-  it("kondisi/jenis/tanggal tak valid dan teks terlalu panjang → error per kolom, tidak menghentikan baris lain", () => {
+  it("kondisi/bahan/tanggal tak valid dan teks terlalu panjang → error per kolom, tidak menghentikan baris lain", () => {
     const rows = validateMarkerUploadRows(
       [row({ Kondisi: "bagus", Jenis: "plastik", "Tanggal Pemasangan": "31/02/2026", "Dipasang oleh": "x".repeat(201) }), row()],
       MAPPING,
       match([ref()]),
     );
     expect(rows[0].errors.length).toBe(4);
-    expect(rows[0].errors.join(" ")).toMatch(/Kondisi tidak dikenal.*Jenis tidak dikenal.*Tanggal Pemasangan tidak valid.*200 karakter/);
+    expect(rows[0].errors.join(" ")).toMatch(/Kondisi tidak dikenal.*Bahan tidak dikenal.*Tanggal Pemasangan tidak valid.*200 karakter/);
     expect(rows[1].errors).toEqual([]);
   });
 

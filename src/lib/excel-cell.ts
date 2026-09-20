@@ -18,7 +18,10 @@ export function cellValueToPrimitive(value: CellValue): PrimitiveCellValue {
   if (typeof value !== "object") return value;
   if ("error" in value) return null;
   if ("richText" in value) return value.richText.map((part) => part.text).join("");
-  if ("hyperlink" in value) return value.text ?? value.hyperlink;
+  // `text` hyperlink bisa berupa rich text (objek) — rekap Monev BMP (#344)
+  // menaruh ID lahan sebagai tautan ber-rich-text; tanpa rekursi ini nilainya
+  // jadi "[object Object]".
+  if ("hyperlink" in value) return cellValueToPrimitive((value.text ?? value.hyperlink) as CellValue);
   if ("formula" in value || "sharedFormula" in value) {
     return cellValueToPrimitive(value.result as CellValue);
   }

@@ -132,7 +132,7 @@ function readCsvFile(file: File, options: ReadSheetOptions): Promise<SheetReadRe
 }
 
 /** Baris mentah satu worksheet exceljs. */
-function worksheetRows(worksheet: Excel.Worksheet): RawSheetRow[] {
+export function worksheetRows(worksheet: Excel.Worksheet): RawSheetRow[] {
   const rows: RawSheetRow[] = [];
   worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
     // Normalisasi ke primitif: sel error/rich text/formula dari exceljs berupa
@@ -190,4 +190,21 @@ export async function readSpreadsheetFile(
   if (ext === "csv") return readCsvFile(file, options);
   if (ext === "xlsx") return readXlsxFile(file, options);
   throw new Error("Hanya mendukung berkas Excel (.xlsx) atau CSV");
+}
+
+/**
+ * Baca SELURUH sheet terlihat sebagai baris mentah (tanpa deteksi header) —
+ * untuk importer yang header-nya bukan satu baris, mis. rekap Monev BMP (#344)
+ * dengan header dua baris (tahun di sel merge + sub-kolom). Pengguna memilih
+ * sheet mana yang diimpor; parser domain yang menafsirkan header-nya.
+ */
+export async function readXlsxWorkbookRaw(file: File): Promise<{ name: string; rows: RawSheetRow[] }[]> {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  if (ext !== "xlsx") throw new Error("Hanya mendukung berkas Excel (.xlsx)");
+  const workbook = new Excel.Workbook();
+  await workbook.xlsx.load(await file.arrayBuffer());
+  const visible = workbook.worksheets.filter((ws) => ws.state !== "hidden" && ws.state !== "veryHidden");
+  const pool = visible.length > 0 ? visible : workbook.worksheets;
+  if (pool.length === 0) throw new Error("Tidak ada sheet berisi data");
+  return pool.map((ws) => ({ name: ws.name, rows: worksheetRows(ws) }));
 }

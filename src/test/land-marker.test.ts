@@ -186,31 +186,19 @@ describe("uniqueMarkerRows — unduhan patok satu baris per patok fisik (keputus
   const link = (o: Partial<MarkerLinkRow>): MarkerLinkRow => ({
     markerId: "m1", code: "HJP-PTK-000001", parcelId: "HJP.0001.A", farmerCode: "P-1", farmerName: "Budi", groupName: "KP HJP",
     subGroupLv2: null, blok: "31 G", sequenceNo: 1, latitude: 0.52, longitude: 101.19, condition: "PRESENT", type: null,
-    installedAt: null, installedBy: null, source: "POLYGON_VERTEX", nkt: false, notes: null, ...o,
+    installedAt: null, installedBy: null, source: "POLYGON_VERTEX", notes: null, ...o,
   });
 
-  it("patok bersama → satu baris; kolom lahan = 'ID Petani · ID Lahan #no' dipisah koma, urut ID Lahan; NKT bila salah satu lahan kena", () => {
+  it("patok bersama → satu baris; kolom lahan = 'ID Petani · ID Lahan #no' satu per baris, urut ID Lahan — semua lahan pemakai dicantumkan (#345: tanpa saringan/tanda NKT turunan)", () => {
     const rows = uniqueMarkerRows([
-      link({ parcelId: "HJP.0002.B", farmerCode: "P-2", farmerName: "Cici", sequenceNo: 4, nkt: true }),
+      link({ parcelId: "HJP.0002.B", farmerCode: "P-2", farmerName: "Cici", sequenceNo: 4 }),
       link({ parcelId: "HJP.0001.A", farmerCode: "P-1", sequenceNo: 1 }),
     ]);
     expect(rows).toHaveLength(1);
     expect(rows[0].lahan).toBe("Budi · P-1 · HJP.0001.A #1\nCici · P-2 · HJP.0002.B #4");
     expect(rows[0].farmerNames).toBe("Budi, Cici");
     expect(rows[0].parcelCount).toBe(2);
-    expect(rows[0].nkt).toBe(true);
-  });
-
-  it("nktParcelsOnly: kolom Lahan hanya lahan yang kena NKT (parcelNkt), pemakai bersih tetap dihitung", () => {
-    const rows = uniqueMarkerRows(
-      [
-        link({ parcelId: "HJP.0002.B", farmerCode: "P-2", farmerName: "Cici", sequenceNo: 4, nkt: true, parcelNkt: true }),
-        link({ parcelId: "HJP.0001.A", farmerCode: "P-1", nkt: true, parcelNkt: false }),
-      ],
-      { nktParcelsOnly: true },
-    );
-    expect(rows[0].lahan).toBe("Cici · P-2 · HJP.0002.B #4");
-    expect(rows[0].parcelCount).toBe(2);
+    expect(rows[0]).not.toHaveProperty("nkt");
   });
 
   it("urut Kelompok Tani lalu Blok (numerik-aware), kosong di akhir; KT/Blok patok bersama = nilai terkecil di antara lahan pemakainya", () => {
@@ -247,19 +235,18 @@ describe("groupMarkersByParcel — tabel PDF per lahan (owner 2026-09-14: jangan
   const link = (o: Partial<MarkerLinkRow>): MarkerLinkRow => ({
     markerId: "m1", code: "HJP-PTK-000001", parcelId: "HJP.0009.D", farmerCode: "P-9", farmerName: "Agus", groupName: "KP HJP",
     subGroupLv2: null, blok: "15 L", sequenceNo: 1, latitude: 0.52, longitude: 101.19, condition: "PRESENT", type: null,
-    installedAt: null, installedBy: null, source: "GPS", nkt: true, parcelNkt: true, notes: null, ...o,
+    installedAt: null, installedBy: null, source: "GPS", notes: null, ...o,
   });
-  it("satu baris per lahan; patok urut nomor lahan dengan nomor peta dari daftar unik; nktOnly membuang lahan bersih", () => {
+  it("satu baris per lahan; patok urut nomor lahan dengan nomor peta dari daftar unik; semua lahan pemakai ikut (#345)", () => {
     const rows = [
       link({ markerId: "a", code: "HJP-PTK-000001", sequenceNo: 2 }),
       link({ markerId: "b", code: "HJP-PTK-000002", sequenceNo: 1 }),
-      link({ markerId: "b", code: "HJP-PTK-000002", parcelId: "HJP.0010.A", farmerName: "Budi", farmerCode: "P-10", sequenceNo: 4, nkt: true, parcelNkt: false }),
+      link({ markerId: "b", code: "HJP-PTK-000002", parcelId: "HJP.0010.A", farmerName: "Budi", farmerCode: "P-10", sequenceNo: 4 }),
     ];
     const unique = uniqueMarkerRows(rows);
     const all = groupMarkersByParcel(rows, unique);
     expect(all.map((g) => g.parcelId)).toEqual(["HJP.0009.D", "HJP.0010.A"]);
     expect(all[0].markers.map((m) => `${m.mapNo}:${m.sequenceNo}`)).toEqual([`${unique.findIndex((u) => u.markerId === "b") + 1}:1`, `${unique.findIndex((u) => u.markerId === "a") + 1}:2`]);
-    const nkt = groupMarkersByParcel(rows, unique, { nktOnly: true });
-    expect(nkt.map((g) => g.parcelId)).toEqual(["HJP.0009.D"]);
+    expect(all[0]).not.toHaveProperty("nkt");
   });
 });

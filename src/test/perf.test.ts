@@ -29,6 +29,20 @@ import { readSheetRows, type RawSheetRow } from "@/lib/excel-sheet-reader";
 import { uniqueMarkerRows, groupMarkersByParcel, planMarkersFromVertices, type MarkerLinkRow, type NearbyMarker } from "@/lib/land-marker";
 import { buildNktReportInput, summarizeNktReport, type NktReportData, type NktReportParcel } from "@/lib/nkt-report";
 import { buildLayerReportDoc } from "@/lib/layer-report-pdf";
+import { parseBmpImportRows, resolveBmpImportRows, type BmpImportRawRow } from "@/lib/bmp-assessment";
+import { matchFarmerName, recomputeBmpScore, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
+import {
+  bmpMonevActivityProfile,
+  bmpMonevGroupProfiles,
+  bmpMonevGroupRows,
+  bmpMonevScoreHistogram,
+  bmpMonevTotals,
+  bmpMonevTrend,
+  bmpMonevWeakestIndicators,
+  type BmpMonevGroupEntry,
+  type BmpMonevIndicator,
+  type BmpMonevIndicatorStat,
+} from "@/lib/bmp-monev-dashboard-aggregation";
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
@@ -904,7 +918,7 @@ describe("Performance - Patok & Laporan NKT (#329/#331/#332, pure logic)", () =>
       parcelId: `HJP.${String(i % 559).padStart(4, "0")}.A`, farmerCode: `HJP.${i % 559}`, farmerName: `Petani ${i % 559}`,
       groupName: "KP Hasrat Jaya Pagaruyung", subGroupLv2: String(10 + (i % 30)), blok: "FGHL"[i % 4],
       sequenceNo: (i % 4) + 1, latitude: 0.52 + (marker % 40) * D, longitude: 101.19 + Math.floor(marker / 40) * D,
-      condition: "NOT_INSTALLED", type: null, installedAt: null, installedBy: null, source: "POLYGON_VERTEX", nkt: i % 17 === 0, notes: null,
+      condition: "NOT_INSTALLED", type: null, installedAt: null, installedBy: null, source: "POLYGON_VERTEX", notes: null,
     };
   });
 
@@ -960,5 +974,103 @@ describe("Performance - Patok & Laporan NKT (#329/#331/#332, pure logic)", () =>
     const tDoc = performance.now() - t1;
     console.log(`  buildLayerReportDoc Laporan NKT (559 konteks + 21 fitur): ${tDoc.toFixed(2)}ms, ${doc.getNumberOfPages()} halaman`);
     expect(tDoc).toBeLessThan(1500);
+  });
+});
+
+describe("Performance - Monev BMP (#344/#346, pure logic)", () => {
+  // Skala proyeksi owner 2028: 12.000 petani; dashboard realtime (tanpa snapshot)
+  // menghitung ulang skor per penilaian di action lalu mengagregasi di klien.
+  const IND: BmpIndicatorRef[] = [];
+  const acts = [["1.1", 0.1], ["1.2", 0.35], ["1.3", 0.1], ["1.4", 0.1], ["1.5", 0.35]] as const;
+  let sort = 0;
+  for (const [ac, aw] of acts) {
+    for (let k = 1; k <= 6; k++) {
+      const level = k <= 4 ? "INDIVIDU" : "LEMBAGA";
+      IND.push({
+        id: `${ac}-${k}`, code: `${ac}.${k}.1`, activityCode: ac, activityName: `Kegiatan ${ac}`, activityWeight: aw, criteriaCode: `${ac}.${k}`,
+        criteriaName: "", seq: 1, level, name: `Indikator ${ac}.${k}`, weight: k <= 4 ? 0.2 : 0.1, inFinalScore: true,
+        scoreLabel0: null, scoreLabel1: null, scoreLabel2: null, scoreLabel3: null, sortOrder: ++sort,
+      } as BmpIndicatorRef);
+    }
+  }
+  const MONEV_IND: BmpMonevIndicator[] = IND.map((i) => ({ id: i.id, code: i.code, level: i.level as "LEMBAGA" | "INDIVIDU", name: i.name, activityCode: i.activityCode, activityName: i.activityName, criteriaCode: i.criteriaCode, weight: i.weight, inFinalScore: i.inFinalScore, sortOrder: i.sortOrder }));
+  const ACTIVITIES = acts.map(([code, weight]) => ({ code, name: `Kegiatan ${code}`, weight }));
+  const individu = new Map(IND.filter((i) => i.level === "INDIVIDU").map((i, k) => [i.code, k % 4]));
+  const lembaga = new Map(IND.filter((i) => i.level === "LEMBAGA").map((i, k) => [i.code, k % 4]));
+
+  it("recomputeBmpScore × 12.000 penilaian (30 indikator) under 300ms", () => {
+    const start = performance.now();
+    let sum = 0;
+    for (let i = 0; i < 12_000; i++) sum += recomputeBmpScore(IND, individu, lembaga).total;
+    const duration = performance.now() - start;
+    console.log(`  recomputeBmpScore ×12.000: ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(300);
+    expect(sum).toBeGreaterThan(0);
+  });
+
+  // 40 Lembaga × 300 petani × 3 tahun = 36.000 penilaian ber-rincian (activityScores 5 angka).
+  const GROUPS: BmpMonevGroupEntry[] = Array.from({ length: 40 }, (_, g) => ({
+    id: `g-${g}`, name: `Lembaga ${g}`, code: `L${g}`, districtId: `d-${g % 4}`, districtName: `Distrik ${g % 4}`, totalFarmers: 320,
+    assessments: Array.from({ length: 900 }, (_, i) => ({
+      farmerId: `f-${g}-${i % 300}`, surveyYear: 2024 + Math.floor(i / 300), score: Math.round(((i * 7) % 300) / 100 * 100) / 100,
+      activityScores: [1 + (i % 3) * 0.5, 2, 1.5, 0.5 + (i % 5) * 0.5, 2.5],
+    })),
+    groupProfiles: [2024, 2025, 2026].map((y) => ({ surveyYear: y, scores: Object.fromEntries(IND.filter((x) => x.level === "LEMBAGA").map((x, k) => [x.id, (k + g) % 4])) })),
+  }));
+  const STATS: BmpMonevIndicatorStat[] = GROUPS.flatMap((g) => [2024, 2025, 2026].flatMap((y) => IND.filter((x) => x.level === "INDIVIDU").map((x, k) => ({ groupId: g.id, surveyYear: y, indicatorId: x.id, sum: 300 * (k % 4), n: 280, nullCount: 20 }))));
+
+  it("agregasi dashboard (40 Lembaga · 36.000 penilaian): rows + totals + histogram + tren + profil kegiatan + terlemah + profil Lembaga under 250ms", () => {
+    const start = performance.now();
+    const rows = bmpMonevGroupRows(GROUPS, 2026);
+    const totals = bmpMonevTotals(GROUPS, 2026);
+    const hist = bmpMonevScoreHistogram(GROUPS, 2026);
+    const trend = bmpMonevTrend(GROUPS);
+    const profile = bmpMonevActivityProfile(GROUPS, 2026, ACTIVITIES, MONEV_IND);
+    const weakest = bmpMonevWeakestIndicators(GROUPS, 2026, MONEV_IND, STATS);
+    const groupProfiles = bmpMonevGroupProfiles(GROUPS, 2026, "avg");
+    const duration = performance.now() - start;
+    console.log(`  agregasi Monev (36.000 penilaian): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(250);
+    expect(rows).toHaveLength(40);
+    expect(totals.assessedFarmers).toBe(12_000);
+    expect(hist).toHaveLength(12);
+    expect(trend.map((t) => t.year)).toEqual([2024, 2025, 2026]);
+    expect(profile[0].n).toBe(12_000);
+    expect(weakest.length).toBeGreaterThan(0);
+    expect(groupProfiles).toHaveLength(40);
+  });
+
+  it("parseBmpImportRows + resolveBmpImportRows: rekap 5.000 baris × 3 blok tahun under 200ms", () => {
+    const header: BmpImportRawRow[] = [
+      { rowNumber: 1, values: ["No", "Nama Petani", "Id Petani", "Lokasi Kebun", "Blok", "Luas Lahan", 2025, null, null, 2026, null, null, 2027, null, null] },
+      { rowNumber: 2, values: ["No", "Nama Petani", "Id Petani", "Lokasi Kebun", "Blok", "Luas Lahan", "Tgl Survey", "Skor", "Kriteria", "Tgl Survey", "Skor", "Kriteria", "Tgl Survey", "Skor", "Kriteria"] },
+    ];
+    const rows: BmpImportRawRow[] = Array.from({ length: 5000 }, (_, i) => ({
+      rowNumber: i + 3,
+      values: [i + 1, `Petani ${i}`, `SKPE.14.06.09.2001.${String(i).padStart(4, "0")}`, `SKPE.${String(i).padStart(4, "0")}.A`, null, 1.5, "10 Juni 25", 1.2, "Perintis", "26 Juni 26", 1.83, "Praktisi", null, null, null],
+    }));
+    const refs = Array.from({ length: 5000 }, (_, i) => ({ farmerCode: `SKPE.14.06.09.2001.${String(i).padStart(4, "0")}`, farmerDbId: `f-${i}`, farmerName: `Petani ${i}`, parcels: [{ parcelId: `SKPE.${String(i).padStart(4, "0")}.A`, parcelUid: `u-${i}` }], assessedYears: [2025] }));
+    const start = performance.now();
+    const parsed = parseBmpImportRows([...header, ...rows]);
+    const resolved = resolveBmpImportRows(parsed.rows, refs, new Date("2026-09-20T00:00:00Z"));
+    const duration = performance.now() - start;
+    console.log(`  parse+resolve rekap 5.000 baris: ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(200);
+    expect(parsed.rows).toHaveLength(10_000);
+    expect(resolved.filter((r) => r.status === "UNKNOWN_FARMER")).toHaveLength(0);
+  });
+
+  it("matchFarmerName: 300 berkas × 300 petani (fuzzy Levenshtein; ≈ 1 ms/berkas terisolasi) under 600ms", () => {
+    // nameKey hanya menyimpan huruf — nama sintetis harus berbeda per HURUF, bukan angka.
+    const letters = (n: number) => { let s = ""; do { s = String.fromCharCode(97 + (n % 26)) + s; n = Math.floor(n / 26); } while (n > 0); return s.padStart(4, "z"); };
+    const farmers = Array.from({ length: 300 }, (_, i) => ({ farmerDbId: `f-${i}`, name: `Petani ${letters(i * 31)} ${letters(i * 17 + 3)}`, farmerCode: `L.${i}` }));
+    const names = Array.from({ length: 300 }, (_, i) => (i % 3 === 0 ? `Petani ${letters(i * 31)} ${letters(i * 17 + 3)}` : `Petani ${letters(i * 31)} ${letters(i * 17 + 3)}x`));
+    const start = performance.now();
+    let exact = 0;
+    for (const n of names) if (matchFarmerName(n, farmers).confidence === "EXACT") exact++;
+    const duration = performance.now() - start;
+    console.log(`  matchFarmerName 300×300: ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(600);
+    expect(exact).toBe(100);
   });
 });

@@ -41,6 +41,16 @@ erDiagram
     LandParcelIdentity ||--o{ LandParcelStdb : "M:N"
     LandStdb ||--o{ LandParcelStdb : "M:N"
     
+    %% MONEV BMP (#344) — skor per PETANI per tahun; lahan dikunjungi opsional
+    Farmer ||--o{ BmpAssessment : "skor Monev BMP per tahun"
+    LandParcelIdentity ||--o{ BmpAssessment : "lahan dikunjungi (opsional)"
+    %% RINCIAN MONEV BMP (#346) — master 32 indikator, skor per indikator individu, penilaian Lembaga per tahun
+    BmpAssessment ||--o{ BmpAssessmentDetail : "skor 18 indikator individu"
+    BmpIndicator ||--o{ BmpAssessmentDetail : "indikator (level INDIVIDU)"
+    FarmerGroup ||--o{ BmpGroupAssessment : "penilaian Lembaga per tahun"
+    BmpGroupAssessment ||--o{ BmpGroupAssessmentDetail : "skor 14 indikator Lembaga"
+    BmpIndicator ||--o{ BmpGroupAssessmentDetail : "indikator (level LEMBAGA)"
+
     %% PRODUCTION RECORD
     Farmer ||--o{ ProductionRecord : "records production"
     LandParcel ||--o{ ProductionRecord : "from parcel"
@@ -85,6 +95,7 @@ erDiagram
 | **Farmer Group** | FarmerGroup | **= Lembaga Petani** (level teratas; label lama "Kelompok Tani" mislabel → relabel TD-013/#147). District-based, location coordinates, category (EX_PLASMA/SWADAYA), tipe grup (ASOSIASI/KOPERASI), tahun bergabung program (`join_year`) + tahun berdiri (`established_year`), sertifikasi RSPO (`rspo_cert_status` CERTIFIED/PLANNED + `rspo_cert_year`, status boleh tanpa tahun) (#160), sertifikasi ISPO (`ispo_cert_status` + `ispo_cert_year`) + assurance SAP/MAP (`sap_map_assurance_status` + `sap_map_assurance_year`) — enum generik `CertStatus`, aturan sama dengan RSPO (#169) |
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
 | **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking; `blok` (blok kebun); `cropType` (Komoditas) + `species` + `isPsr` (PSR/replanting, default false); **Kelompok Tani interim** `subGroupLv2` per-lahan (#146; Gapoktan `subGroupLv1` di-drop #189); `parcelUid` → `LandParcelIdentity` (identitas stabil antar revisi, #296) |
+| **Monev BMP** (#344, #346) | BmpAssessment, BmpIndicator, BmpAssessmentDetail, BmpGroupAssessment, BmpGroupAssessmentDetail | Skor Monev BMP per petani per tahun (skala 0–3), lahan dikunjungi opsional, penilai, catatan; kategori Teladan/Praktisi/Perintis/Belum dihitung dari skor via `src/lib/bmp-assessment.ts`. **Rincian** (#346): master 32 indikator (5 kegiatan berbobot, 18 individu + 14 Lembaga, 21 berbobot), skor 0–3 per indikator individu per penilaian, penilaian Lembaga per tahun (6 indikatornya masuk skor petani); hitung ulang `recomputeBmpScore` hanya verifikasi — `BmpAssessment.score` tetap resmi. Dashboard realtime (pola Pelatihan) terpisah dari BMP Dashboard (Produksi) — detail di [models.md](./models.md#bmpassessment--monev-bmp-344) |
 | **Land Parcel Satellites** (#296) | LandParcelIdentity, LandParcelDocument, LandStdb, LandParcelStdb, LandParcelExternalId, LandParcelProgram, LandParcelBorder, LandParcelNkt, LandMarker, LandParcelMarker, LandMarkerCounter | Identitas per `(farmerId, parcelId)` lintas revisi; surat kepemilikan (enum `LandDocumentType`, nomor tidak unik, `holderName`, `statedArea`); STDB per petani M:N ke lahan; UL Parcel Code + `rawGeometry` opsional; program demplot PBU; **sepadan** U/T/S/B teks bebas 1:1 (#326); **status NKT** hasil asesmen 1:1 (#328, MD-08 sebagian); **patok batas** fisik dipakai bersama lahan berdampingan, M:N bernomor per lahan (#329) — detail di [models.md](./models.md#landparcelidentity--satelit-lahan-296-decision-log-2026-08-27) |
 | **Tree** | Tree | Titik pohon sawit per lahan (#238) — deteksi model + koreksi manusia (`source` auto/moved/added/verified), koordinat WGS84, `vigor`, revisi **per-set** (upload ulang nonaktifkan set lama), relasi `landParcelId` + kunci bisnis `parcelId`; skala 10⁵–10⁶ baris → wajib agregat |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
@@ -119,7 +130,9 @@ erDiagram
 
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
-| **2.10.0** | 2026-08-08 | Tree model (#238): `tbl_tree` titik pohon sawit per lahan, bulk upload ZIP shapefile point, revisi per-set — applied mis-prod | MEDIUM (new table, additive) |
+| **2.12.0** | 2026-09-20 | Rincian Monev BMP (#346): `BmpIndicator` → `ref_bmp_indicator` (32 indikator, 5 kegiatan berbobot, level LEMBAGA/INDIVIDU, bobot, rubrik 0–3; seed CSV), `BmpAssessmentDetail` → `tbl_bmp_assessment_detail` (skor indikator individu per penilaian, `weightUsed`), `BmpGroupAssessment` + `BmpGroupAssessmentDetail` (penilaian Lembaga per tahun, partial unique aktif). Migrasi `20260920120000_bmp_indicator_detail` (manual, additive). Plus `20260920100000_bmp_assessment_unique_active` (partial unique petani-tahun, review #344) | LOW–MEDIUM (4 tabel + 1 enum baru, additive) |
+| 2.11.0 | 2026-09-18 | Monev BMP (#344): `BmpAssessment` → `tbl_bmp_assessment` — skor 0–3 per **petani** per tahun survei (FK `farmerId`; `parcelUid` opsional = lahan dikunjungi), kategori dihitung dari skor (tidak disimpan); satu baris aktif per petani-tahun dijaga di action. Migrasi `20260918120000_bmp_assessment` (manual dari `migrate diff`, tanpa backfill) | LOW (new table, additive) |
+| 2.10.0 | 2026-08-08 | Tree model (#238): `tbl_tree` titik pohon sawit per lahan, bulk upload ZIP shapefile point, revisi per-set — applied mis-prod | MEDIUM (new table, additive) |
 | 2.9.0 | 2026-07-20 | Field lahan `species` (String?) + `isPsr` (Boolean default false — PSR = Peremajaan Sawit Rakyat); `cropType` = Komoditas, data fix 4.163 lahan → "Kelapa Sawit" | LOW (additive) |
 | 2.8.0 | 2026-07-16 | Sertifikasi Lembaga Petani (#169): `FarmerGroup.ispoCertYear` + `ispoCertStatus` + `sapMapAssuranceYear` + `sapMapAssuranceStatus` (enum generik `CertStatus` CERTIFIED/PLANNED — `RspoCertStatus` existing dibiarkan) | LOW (4 nullable columns + 1 enum, additive) |
 | 2.7.0 | 2026-07-15 | Dashboard BMP snapshot (#166, DASH-04): BmpDashboardSnapshot → `tbl_snapshot_bmp_dashboard` (snapshot pattern kedua, data JSON per Lembaga) — migration applied + seed menu/permission (approval owner) | MEDIUM (new table, additive) |

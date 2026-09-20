@@ -45,16 +45,16 @@ export type MapData = {
   kelompokTani: KTPoint[];
   parcels: ParcelFeature[];
   /**
-   * `nkt` (#328) = lahan INCLUDED/AFFECTED; `markers`/`markersNkt` (#331) =
-   * patok aktif lahan pada filter (patok NKT = salah satu lahan pemakainya kena
-   * NKT). Opsional agar payload lama tetap valid. Titik patoknya sendiri
-   * dimuat malas lewat `getMapMarkers` saat layernya dicentang.
+   * `nkt` (#328) = lahan INCLUDED/AFFECTED; `markers` (#331) = patok lahan aktif
+   * pada filter — semua patok = patok lahan, tanpa turunan NKT (#345). Opsional
+   * agar payload lama tetap valid. Titik patoknya sendiri dimuat malas lewat
+   * `getMapMarkers` saat layernya dicentang.
    */
-  counts: { kt: number; parcelPoints: number; parcelAreas: number; nkt?: number; markers?: number; markersNkt?: number };
+  counts: { kt: number; parcelPoints: number; parcelAreas: number; nkt?: number; markers?: number };
 };
 
-/** Satu patok di Peta Lahan (#331) — tuple ringkas: [id, lon, lat, nkt 0/1, kondisi, "ID Lahan #n; …", kode]. */
-export type MapMarkerTuple = [id: string, lon: number, lat: number, nkt: 0 | 1, condition: string, parcels: string, code: string];
+/** Satu patok di Peta Lahan (#331) — tuple ringkas: [id, lon, lat, kondisi, "ID Lahan #n; …", kode]. */
+export type MapMarkerTuple = [id: string, lon: number, lat: number, condition: string, parcels: string, code: string];
 
 export type MapMarkerWire = {
   markers: MapMarkerTuple[];
@@ -300,8 +300,8 @@ export type ParcelPassport = {
   neighborsOmitted: number;
   /**
    * Patok batas (#329), urut nomor — persegi bernomor di peta + tabel "Patok
-   * Batas". `sharedWith` = ID Lahan lain yang memakai patok yang sama; `nkt`
-   * turunan dari status lahan pemakainya. Kosong = belum ada patok (tabel tidak dicetak).
+   * Batas". `sharedWith` = ID Lahan lain yang memakai patok yang sama. Semua
+   * patok lahan (#345, tanpa tanda NKT turunan). Kosong = belum ada patok (tabel tidak dicetak).
    */
-  markers: { sequenceNo: number; code: string; longitude: number; latitude: number; condition: string; type: string | null; installedAt: string | null; sharedWith: string[]; nkt: boolean }[];
+  markers: { sequenceNo: number; code: string; longitude: number; latitude: number; condition: string; type: string | null; installedAt: string | null; sharedWith: string[] }[];
 };

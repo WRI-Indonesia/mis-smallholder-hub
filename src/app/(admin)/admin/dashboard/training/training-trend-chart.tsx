@@ -5,7 +5,7 @@ import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TRAINING_PACKAGE_SHORT } from "@/lib/training-dashboard-aggregation";
 import type { TrainingPackageCode, TrainingTrendBucket } from "@/types/dashboard";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, axisMax } from "@/lib/format";
 
 /** Warna seri per paket — dipakai bersama batang stacked dan legenda. */
 const PACKAGE_COLORS: Record<TrainingPackageCode, string> = {
@@ -17,14 +17,6 @@ const PACKAGE_COLORS: Record<TrainingPackageCode, string> = {
 };
 
 /** Ceiling sumbu yang rapi (1/2/5 × 10^k) — mengikuti pola BmpTrendChart. */
-function axisMax(dataMax: number): number {
-  if (dataMax <= 0) return 10;
-  const pow = Math.pow(10, Math.floor(Math.log10(dataMax)));
-  for (const m of [1, 2, 5, 10]) {
-    if (dataMax <= m * pow) return m * pow;
-  }
-  return 10 * pow;
-}
 
 function axisDivisions(max: number): number {
   return String(max).startsWith("2") ? 4 : 5;

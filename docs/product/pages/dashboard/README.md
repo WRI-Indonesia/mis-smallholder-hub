@@ -13,6 +13,8 @@ Menu: Dashboard (/admin/dashboard)
 │   └── Page: /admin/dashboard/main
 ├── Sub Menu: BMP Dashboard (Produksi) (dashboard-bmp)
 │   └── Page: /admin/dashboard/bmp
+├── Sub Menu: Monev BMP (dashboard-bmp-monev) — #344
+│   └── Page: /admin/dashboard/bmp-monev
 ├── Sub Menu: Dashboard Pelatihan (dashboard-training)
 │   └── Page: /admin/dashboard/training
 └── Sub Menu: Risk Management (dashboard-risk) — grup level-3 pertama
@@ -30,7 +32,7 @@ Menu: Dashboard (/admin/dashboard)
 | URL | `/admin/dashboard` |
 | Icon | `LayoutDashboard` |
 | Order | `0` |
-| Sub menu | 4 — Main Dashboard (`dashboard-main`), BMP Dashboard (Produksi) (`dashboard-bmp`), Dashboard Pelatihan (`dashboard-training`), Risk Management (`dashboard-risk`, grup level-3 berisi `dashboard-risk-fire`) |
+| Sub menu | 5 — Main Dashboard (`dashboard-main`), BMP Dashboard (Produksi) (`dashboard-bmp`), Monev BMP (`dashboard-bmp-monev`, order 3 — #344), Dashboard Pelatihan (`dashboard-training`, order 4), Risk Management (`dashboard-risk`, order 5, grup level-3 berisi `dashboard-risk-fire`) |
 | Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (untuk `dashboard` dan sub menunya; `prisma/seeds/data/role-permissions.csv`) |
 
 Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
@@ -41,8 +43,9 @@ Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 |---|---|---|---|---|---|
 | 1 | Main Dashboard | `dashboard-main` | `/admin/dashboard/main` | 1 | [main-dashboard.md](./main-dashboard.md) |
 | 2 | BMP Dashboard (Produksi) | `dashboard-bmp` | `/admin/dashboard/bmp` | 1 | [bmp-dashboard-produksi.md](./bmp-dashboard-produksi.md) |
-| 3 | Dashboard Pelatihan | `dashboard-training` | `/admin/dashboard/training` | 1 | [dashboard-pelatihan.md](./dashboard-pelatihan.md) |
-| 4 | Risk Management → Fire Alert | `dashboard-risk` → `dashboard-risk-fire` | `/admin/dashboard/risk/fire` | 1 | [risk-management-fire-alert.md](./risk-management-fire-alert.md) |
+| 3 | Monev BMP | `dashboard-bmp-monev` | `/admin/dashboard/bmp-monev` | 1 | [dashboard-monev-bmp.md](./dashboard-monev-bmp.md) |
+| 4 | Dashboard Pelatihan | `dashboard-training` | `/admin/dashboard/training` | 1 | [dashboard-pelatihan.md](./dashboard-pelatihan.md) |
+| 5 | Risk Management → Fire Alert | `dashboard-risk` → `dashboard-risk-fire` | `/admin/dashboard/risk/fire` | 1 | [risk-management-fire-alert.md](./risk-management-fire-alert.md) |
 
 ## Redirect
 

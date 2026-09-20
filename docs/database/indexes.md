@@ -57,6 +57,17 @@
 | LandParcelNkt | PK | `id` (CUID) | Primary key |
 | LandParcelNkt | UNIQUE | `parcelUid` | Status NKT 1:1 per identitas lahan (#328) |
 | LandParcelNkt | INDEX | `status` | Filter Laporan Lahan / hitungan layer peta per status |
+| BmpAssessment | PK | `id` (CUID) | Primary key |
+| BmpAssessment | INDEX | `(farmerId, surveyYear)` | Riwayat per petani + cek "sudah ada tahun ini" (#344) |
+| BmpAssessment | INDEX | `surveyYear` | Filter tahun survei daftar/dashboard |
+| BmpAssessment | INDEX | `isActive` | Soft delete |
+| BmpAssessment | PARTIAL UNIQUE | `(farmerId, surveyYear) WHERE is_active` | `uniq_bmp_assessment_farmer_year_active` — satu penilaian aktif per petani-tahun, tulis tangan (migrasi `20260920100000`) |
+| BmpIndicator | PK / UNIQUE | `id` · `(code, level)` | Master indikator (#346) |
+| BmpIndicator | INDEX | `activityCode` | Kelompokkan per kegiatan |
+| BmpAssessmentDetail | UNIQUE | `(assessmentId, indicatorId)` | Upsert per indikator |
+| BmpGroupAssessment | INDEX | `(farmerGroupId, surveyYear)` · `isActive` | Penilaian Lembaga per tahun |
+| BmpGroupAssessment | PARTIAL UNIQUE | `(farmerGroupId, surveyYear) WHERE is_active` | `uniq_bmp_group_assessment_group_year_active` (tulis tangan) |
+| BmpGroupAssessmentDetail | UNIQUE | `(groupAssessmentId, indicatorId)` | Upsert per indikator |
 | LandMarker | PK | `id` (CUID) | Primary key |
 | LandMarker | UNIQUE | `code` | Kode patok fisik `HJP-PTK-000123` (#331) — kunci unggah ulang & rujukan laporan |
 | LandMarkerCounter | PK | `prefix` | Deret kode per awalan Lembaga; diperbarui atomik (`ON CONFLICT DO UPDATE … RETURNING`) |
@@ -65,7 +76,7 @@
 | LandParcelMarker | PK | `id` (CUID) | Primary key |
 | LandParcelMarker | UNIQUE | `(parcelUid, markerId)` | Satu tautan per pasangan lahan–patok; tautan yang dilepas diaktifkan ulang, bukan dibuat baru |
 | LandParcelMarker | UNIQUE partial (manual, `uniq_land_parcel_marker_seq`) | `(parcelUid, sequenceNo) WHERE is_active` | Nomor patok unik per lahan hanya untuk tautan aktif (pola partial STDB #306); urut-ulang dua fase menghindari tabrakan sementara |
-| LandParcelMarker | INDEX | `markerId` | Daftar lahan pemakai satu patok ("juga patok lahan …", NKT turunan) |
+| LandParcelMarker | INDEX | `markerId` | Daftar lahan pemakai satu patok ("juga patok lahan …") |
 | LandParcelMarker | INDEX | `(parcelUid, isActive)` | Daftar patok satu lahan |
 | **Tree** | | | |
 | Tree | PK | `id` (CUID) | Primary key |

@@ -28,7 +28,8 @@ export const MARKER_UPLOAD_FIELDS = [
   { key: "latitude", label: "Lintang", required: true },
   { key: "longitude", label: "Bujur", required: true },
   { key: "condition", label: "Kondisi", required: false },
-  { key: "type", label: "Jenis", required: false },
+  // "Bahan" (owner 2026-09-20, #345): beton/kayu/pipa/tanda alam — alias "jenis" tetap diterima untuk berkas lama.
+  { key: "type", label: "Bahan", required: false },
   { key: "installedAt", label: "Tanggal Pemasangan", required: false },
   { key: "installedBy", label: "Dipasang oleh", required: false },
   { key: "notes", label: "Keterangan", required: false },
@@ -46,7 +47,7 @@ export const MARKER_UPLOAD_AUTO_MATCH_RULES: Record<MarkerUploadFieldKey, string
   latitude: ["lintang", "lat", "latitude", "y"],
   longitude: ["bujur", "lon", "lng", "long", "longitude", "x"],
   condition: ["kondisi", "condition", "cond", "status patok", "status"],
-  type: ["jenis", "jenis patok", "type", "tipe", "bahan"],
+  type: ["bahan", "bahan patok", "jenis", "jenis patok", "type", "tipe"],
   installedAt: ["tanggal pemasangan", "tgl pemasangan", "tanggal_pemasangan", "tgl_pasang", "dipasang", "installed", "installed_at", "tanggal"],
   installedBy: ["dipasang oleh", "dipasang_oleh", "installed_by", "oleh", "pemasang", "surveyor"],
   notes: ["keterangan", "ket", "catatan", "notes", "note", "remarks"],
@@ -97,7 +98,7 @@ export function parseMarkerType(raw: unknown): { value: LandMarkerTypeCode | nul
   const byLabel = LAND_MARKER_TYPES.find((t) => LAND_MARKER_TYPE_LABELS[t].toLowerCase() === key);
   if (byLabel) return { value: byLabel, error: null };
   if (TYPE_ALIASES[key]) return { value: TYPE_ALIASES[key], error: null };
-  return { value: null, error: `Jenis tidak dikenal: "${text}" (Beton / Kayu / Pipa / Tanda alam / Lainnya)` };
+  return { value: null, error: `Bahan tidak dikenal: "${text}" (Beton / Kayu / Pipa / Tanda alam / Lainnya)` };
 }
 
 /** Teks koordinat: trim saja — `cleanCell` membuang "0", padahal 0 adalah koordinat sah (CSV mengirim string). */

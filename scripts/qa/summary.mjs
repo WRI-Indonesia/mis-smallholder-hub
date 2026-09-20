@@ -32,6 +32,9 @@ for (const f of runs) {
   for (const line of text.split("\n")) {
     const h = line.match(/^## (Smoke|Kasus uji|Regresi)/);
     if (h) { section = h[1]; counts[section] ??= { Pass: 0, Fail: 0, Blocked: 0, "N/A": 0, kosong: 0 }; continue; }
+    // Heading lain (QC data, Catatan run) mengakhiri bagian — tabel `data-qc.ts` yang ditempel
+    // di bawah Regresi jangan terhitung "belum diisi" (run prod v0.35.0).
+    if (/^## /.test(line)) { section = ""; continue; }
     if (!section || !line.startsWith("|") || line.startsWith("|---") || line.startsWith("| ID")) continue;
     const cells = line.split("|").slice(1, -1).map((c) => c.trim());
     if (cells.length < 3) continue;
