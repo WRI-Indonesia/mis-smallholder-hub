@@ -89,7 +89,6 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
     nkt: true,
     // Patok (#331) default mati — ribuan titik; dimuat malas saat dicentang.
     markers: false,
-    markersNkt: false,
   });
   // Titik patok untuk filter yang sedang dimuat; null = belum diminta. Di-reset saat data peta dimuat ulang.
   const [markerData, setMarkerData] = useState<MapMarkerTuple[] | null>(null);
@@ -390,9 +389,9 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
     });
   };
 
-  // Muat titik patok saat salah satu layer patok dicentang dan belum ada untuk filter yang
+  // Muat titik patok saat layer patok dicentang dan belum ada untuk filter yang
   // dimuat (#331). Kunci = filter mapData; permintaan lebih baru membatalkan yang lama.
-  const wantMarkers = layers.markers || layers.markersNkt;
+  const wantMarkers = layers.markers;
   useEffect(() => {
     if (!wantMarkers || !mapData || !loadedFilters) return;
     const key = `${loadedFilters.provinceId ?? ""}|${loadedFilters.districtId}|${loadedFilters.farmerGroupId ?? ""}`;
@@ -436,10 +435,10 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
         toast.success(`${mapData.kelompokTani.length} Lembaga diunduh`);
         return;
       }
-      if (row === "markers" || row === "markersNkt") {
-        const res = await getMapMarkerExportRows(loadedFilters, row === "markersNkt");
+      if (row === "markers") {
+        const res = await getMapMarkerExportRows(loadedFilters);
         if (!res.success || !res.data) { toast.error(res.success ? "Gagal menyiapkan data patok" : res.error); return; }
-        const n = await exportMarkerRow(row, format, res.data.rows, res.data.label, now, context);
+        const n = await exportMarkerRow(format, res.data.rows, res.data.label, now, context);
         if (n === 0) toast.info("Tidak ada patok pada filter ini");
         else toast.success(`${n} ${format === "xlsx" ? "baris patok" : "patok"} diunduh`);
         return;

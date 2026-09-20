@@ -13,6 +13,7 @@ docs/product/pages/
 ├── dashboard/                    Menu: Dashboard
 │   ├── main-dashboard.md
 │   ├── bmp-dashboard-produksi.md
+│   ├── dashboard-monev-bmp.md
 │   ├── dashboard-pelatihan.md
 │   └── risk-management-fire-alert.md
 ├── master-data/                  Menu: Master Data
@@ -20,7 +21,8 @@ docs/product/pages/
 │   ├── petani/                   daftar · detail
 │   ├── pelatihan/                daftar · detail
 │   ├── lahan/                    daftar · detail
-│   └── produksi/                 daftar · tambah · detail · ubah
+│   ├── produksi/                 daftar · tambah · detail · ubah
+│   └── monev-bmp/                daftar · detail · penilaian-lembaga
 ├── settings/                     Menu: Settings
 │   ├── user-management.md
 │   ├── menu-management.md
@@ -56,8 +58,8 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 
 | # | Menu | Key | URL | Sub menu | Dokumen |
 |---|------|-----|-----|----------|---------|
-| 0 | Dashboard | `dashboard` | `/admin/dashboard` | 3 | [dashboard/](./dashboard/README.md) |
-| 1 | Master Data | `master-data` | `/admin/master-data` | 5 | [master-data/](./master-data/README.md) |
+| 0 | Dashboard | `dashboard` | `/admin/dashboard` | 5 | [dashboard/](./dashboard/README.md) |
+| 1 | Master Data | `master-data` | `/admin/master-data` | 6 | [master-data/](./master-data/README.md) |
 | 2 | Settings | `settings` | `/admin/settings` | 4 | [settings/](./settings/README.md) |
 | 3 | Bulk Upload | `bulk-upload` | `/admin/bulk-upload` | 3 | [bulk-upload/](./bulk-upload/README.md) |
 | 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 3 | [data-analyst/](./data-analyst/README.md) |

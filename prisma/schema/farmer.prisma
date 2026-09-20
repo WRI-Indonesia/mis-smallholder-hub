@@ -27,6 +27,7 @@ model Farmer {
   landParcelIdentities LandParcelIdentity[]
   landStdbs            LandStdb[]
   productionRecords    ProductionRecord[]
+  bmpAssessments       BmpAssessment[] // Monev BMP per tahun (#344)
 
   // Keunikan ID Petani berlaku PER LEMBAGA (TD-024, keputusan owner 2026-07-21):
   // nomor petani adalah milik lembaga masing-masing, jadi lembaga berbeda boleh

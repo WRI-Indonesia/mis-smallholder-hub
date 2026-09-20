@@ -9,7 +9,7 @@
 
 ## SUPERADMIN
 
-- **Dashboard**: ✅ Main Dashboard + BMP (semua snapshot, semua data) · ✅ **Dashboard Pelatihan** (live query, semua Lembaga) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
+- **Dashboard**: ✅ Main Dashboard + BMP (semua snapshot, semua data) · ✅ **Dashboard Pelatihan** (live query, semua Lembaga) · ✅ **Dashboard Monev BMP** (live query, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
 - **Master Data**: ✅ Full CRUD, all regions/groups/farmers
 - **Settings**: ✅ User/Role/Menu/Region management
 - **Report**: ✅ All reports, all data
@@ -18,8 +18,8 @@
 
 ## ADMIN (District/Province Level)
 
-- **Dashboard**: ✅ Main Dashboard + BMP (snapshot dalam scope distrik + org-wide) · ✅ **Dashboard Pelatihan** (live query, ter-scope distrik via `farmerGroupAccessFilter` per request) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
-- **Master Data**: ✅ CRUD penuh Pelatihan/Lahan/Produksi (scope distrik); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`)
+- **Dashboard**: ✅ Main Dashboard + BMP (snapshot dalam scope distrik + org-wide) · ✅ **Dashboard Pelatihan** (live query, ter-scope distrik via `farmerGroupAccessFilter` per request) · ✅ **Dashboard Monev BMP** (live query, scope sama, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
+- **Master Data**: ✅ CRUD penuh Pelatihan/Lahan/Produksi (scope distrik) · ✅ **Monev BMP** CREATE/EDIT/VIEW/EXPORT (tanpa DELETE, #344); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`)
 - **Settings**: ❌ No access (tidak ada baris seed `settings-*` untuk ADMIN)
 - **Report**: ✅ Semua report (data ter-scope)
 - **Bulk Upload**: ✅ Petani, Lahan, Pohon Sawit & Produksi (CREATE+VIEW, scope masing-masing)
@@ -29,8 +29,8 @@
 
 ## OPERATOR (Field Level)
 
-- **Dashboard**: ✅ Main Dashboard + BMP (VIEW; snapshot dalam scope KT + org-wide) · ✅ **Dashboard Pelatihan** (VIEW; live query ter-scope Lembaga yang di-assign) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
-- **Master Data**: ✅ Pelatihan CRUD penuh; Lahan & Produksi CREATE/EDIT/VIEW (**tanpa DELETE**); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`) — dalam scope Lembaga yang di-assign
+- **Dashboard**: ✅ Main Dashboard + BMP (VIEW; snapshot dalam scope KT + org-wide) · ✅ **Dashboard Pelatihan** (VIEW; live query ter-scope Lembaga yang di-assign) · ✅ **Dashboard Monev BMP** (VIEW, scope sama, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
+- **Master Data**: ✅ Pelatihan CRUD penuh; Lahan & Produksi CREATE/EDIT/VIEW (**tanpa DELETE**); **Monev BMP VIEW/EXPORT** (#344); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`) — dalam scope Lembaga yang di-assign
 - **Settings**: ❌ No access
 - **Report**: ✅ Semua report (data ter-scope Lembaga)
 - **Bulk Upload**: ✅ Petani & Produksi (CREATE+VIEW); Lahan & Pohon Sawit hanya VIEW warisan dari `bulk-upload` (tanpa CREATE)
@@ -40,7 +40,7 @@
 
 ## MANAGEMENT (Read-Only)
 
-- **Dashboard**: ✅ Main Dashboard + BMP (view all metrics, organization-wide) · ✅ **Dashboard Pelatihan** (VIEW, organization-wide) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
+- **Dashboard**: ✅ Main Dashboard + BMP (view all metrics, organization-wide) · ✅ **Dashboard Pelatihan** (VIEW, organization-wide) · ✅ **Dashboard Monev BMP** (VIEW, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
 - **Master Data**: 🟠 View-only (semua modul master data VIEW, tanpa CRUD)
 - **Settings**: ❌ No access
 - **Report**: ✅ View all reports (all data)
@@ -53,7 +53,7 @@
 
 Tipe pengguna untuk pihak donor/funder — **VIEW-only** pada subset menu. Cakupan data mengikuti aturan yang sama (tanpa assignment = `ALL`, dengan assignment = ter-scope).
 
-- **Dashboard**: ✅ Main Dashboard + BMP + Dashboard Pelatihan (VIEW) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
+- **Dashboard**: ✅ Main Dashboard + BMP + Dashboard Pelatihan + Dashboard Monev BMP (VIEW) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
 - **Report**: 🔲 View reports (Petani, Pelatihan, Produksi, Kelompok Tani, Lahan, **Patok** #331) — ekspor Excel/PDF diizinkan (Patok: VIEW + PRINT saja, tanpa EXPORT)
 - **Map**: ✅ Peta Lahan + Peta BMP (VIEW)
 - **Bantuan**: ✅ VIEW

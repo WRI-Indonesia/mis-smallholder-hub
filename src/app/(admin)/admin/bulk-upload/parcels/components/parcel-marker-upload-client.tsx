@@ -192,7 +192,7 @@ export function ParcelMarkerUploadClient({ permissions }: Props) {
             <Label htmlFor="marker-file">Berkas titik patok — Excel (.xlsx), CSV, atau ZIP Shapefile Point</Label>
             <p className="text-xs text-muted-foreground mt-1">
               Kolom: <span className="font-mono">ID Lahan</span> (wajib), <span className="font-mono">Lintang</span>, <span className="font-mono">Bujur</span> (wajib — dari geometri bila shapefile),
-              <span className="font-mono"> No Patok</span>, <span className="font-mono">ID Petani</span> (bila ID Lahan dipakai &gt;1 petani), Kondisi, Jenis, Tanggal Pemasangan, Dipasang oleh, Keterangan.
+              <span className="font-mono"> No Patok</span>, <span className="font-mono">ID Petani</span> (bila ID Lahan dipakai &gt;1 petani), Kondisi, Bahan, Tanggal Pemasangan, Dipasang oleh, Keterangan.
               Nomor patok yang sudah ada di lahan diperbarui koordinatnya; nomor baru/kosong menjadi patok baru — titik ≤ {MARKER_SNAP_M} m dari patok lahan tetangga ditautkan ke patok itu. Titik &gt; {MARKER_MAX_DISTANCE_M} m dari batas lahan ditolak.
             </p>
           </div>
@@ -278,7 +278,7 @@ export function ParcelMarkerUploadClient({ permissions }: Props) {
                   <TableHead>Petani</TableHead>
                   <TableHead className="text-right">No</TableHead>
                   <TableHead>Koordinat</TableHead>
-                  <TableHead>Kondisi · Jenis</TableHead>
+                  <TableHead>Kondisi · Bahan</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>

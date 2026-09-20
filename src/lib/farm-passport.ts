@@ -15,8 +15,6 @@ const SLATE_200: [number, number, number] = [226, 232, 240];
 const AREA_FILL: [number, number, number] = [209, 240, 224];
 const MARKER_FILL: [number, number, number] = [253, 224, 71];
 const MARKER_EDGE: [number, number, number] = [133, 77, 14];
-const NKT_RED: [number, number, number] = [239, 68, 68];
-const NKT_RED_DARK: [number, number, number] = [153, 27, 27];
 
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -255,18 +253,18 @@ function drawParcelMap(
   doc.setTextColor(...SLATE_600);
   doc.text(label, lx, ly, { align: "center", baseline: "middle" });
 
-  // Patok batas (#329): persegi bernomor di atas segalanya — kuning untuk patok
-  // lahan biasa, MERAH bila lahan pemakainya kena NKT (dua warna, keputusan
-  // owner 2026-09-14; sama dengan legenda peta). Nomor = tabel "Patok Batas".
+  // Patok batas (#329): persegi kuning bernomor di atas segalanya — semua patok
+  // lahan satu warna (#345: warna merah "patok lahan NKT" turunan dihapus;
+  // patok NKT kelak entitas sendiri). Nomor = tabel "Patok Batas".
   for (const m of markers) {
     const [px, py] = project(m.longitude, m.latitude);
-    doc.setFillColor(...(m.nkt ? NKT_RED : MARKER_FILL));
-    doc.setDrawColor(...(m.nkt ? NKT_RED_DARK : MARKER_EDGE));
+    doc.setFillColor(...MARKER_FILL);
+    doc.setDrawColor(...MARKER_EDGE);
     doc.setLineWidth(0.3);
     doc.rect(px - 2.1, py - 2.1, 4.2, 4.2, "FD");
     doc.setFontSize(6);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...(m.nkt ? ([255, 255, 255] as [number, number, number]) : SLATE_800));
+    doc.setTextColor(...SLATE_800);
     doc.text(String(m.sequenceNo), px, py + 0.1, { align: "center", baseline: "middle" });
   }
 
@@ -697,10 +695,11 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_600);
-    doc.text(`${markers.length} patok · persegi bernomor di peta: kuning = patok lahan, merah = patok lahan NKT (lahan pemakainya termasuk/terdampak NKT)`, MARGIN, y + 1);
+    doc.text(`${markers.length} patok · persegi kuning bernomor di peta = patok lahan; patok di batas bersama juga dipakai lahan tetangga`, MARGIN, y + 1);
     y += 4;
     autoTable(doc, {
-      head: [["No", "Kode", "Lintang", "Bujur", "Kondisi", "Jenis", "Dipasang", "NKT", "Juga patok lahan"]],
+      // "Bahan" (owner 2026-09-20, #345): beton/kayu/pipa/tanda alam — bukan "jenis" patok.
+      head: [["No", "Kode", "Lintang", "Bujur", "Kondisi", "Bahan", "Dipasang", "Juga patok lahan"]],
       body: markers.map((m) => [
         String(m.sequenceNo),
         m.code,
@@ -709,19 +708,17 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
         labelOf(LAND_MARKER_CONDITION_LABELS, m.condition),
         labelOf(LAND_MARKER_TYPE_LABELS, m.type),
         fmtDate(m.installedAt),
-        m.nkt ? "Ya" : "",
         m.sharedWith.length ? m.sharedWith.join(", ") : "—",
       ]),
       startY: y,
       theme: "striped",
-      // Lebar No/NKT cukup untuk judul kolom satu baris pada font 9 (header "No"/"NKT" sempat terpenggal).
       ...tableCommon,
-      // Sembilan kolom (ada Kode sejak #331): font 8 + padding 2 supaya "HJP-PTK-000123" dan
+      // Delapan kolom (ada Kode sejak #331): font 8 + padding 2 supaya "HJP-PTK-000123" dan
       // "Belum dipasang" muat satu baris dan kolom "Juga patok lahan" masih punya ruang.
       styles: { font: "helvetica", cellPadding: 2, overflow: "linebreak" },
       headStyles: { ...tableCommon.headStyles, fontSize: 8 },
       bodyStyles: { ...tableCommon.bodyStyles, fontSize: 8 },
-      columnStyles: { 0: { halign: "right", cellWidth: 10 }, 1: { cellWidth: 27 }, 2: { halign: "right", cellWidth: 18 }, 3: { halign: "right", cellWidth: 20 }, 4: { cellWidth: 26 }, 5: { cellWidth: 18 }, 6: { cellWidth: 21 }, 7: { halign: "center", cellWidth: 10 } },
+      columnStyles: { 0: { halign: "right", cellWidth: 10 }, 1: { cellWidth: 27 }, 2: { halign: "right", cellWidth: 18 }, 3: { halign: "right", cellWidth: 20 }, 4: { cellWidth: 26 }, 5: { cellWidth: 18 }, 6: { cellWidth: 21 } },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     y = (doc as any).lastAutoTable.finalY + 12;

@@ -2,7 +2,6 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { MARKER_SIMPLIFY_M, MARKER_SNAP_M, formatMarkerCode, type LonLat, type NearbyMarker } from "@/lib/land-marker";
 import { metersToDegrees } from "@/lib/parcel-neighbor";
-import { NKT_AFFECTED_STATUSES } from "@/lib/land-parcel-satellite-format";
 
 /**
  * Kueri PostGIS untuk patok batas (#329). NOTE: tanpa cek permission — caller
@@ -143,24 +142,19 @@ export interface MarkerPoint {
   longitude: number;
   latitude: number;
   condition: string;
-  /** Salah satu lahan pemakai (di mana pun) termasuk/terdampak NKT. */
-  nkt: boolean;
 }
 
 /**
  * Titik patok untuk peta sebaran Detail Lembaga / Detail Petani (#331): satu
  * baris per patok fisik yang dipakai lahan aktif milik petani dalam scope
  * pemanggil (`farmerWhere` = fragmen SQL pada alias `f`). Tanpa cek permission —
- * caller sudah lewat guard halaman detail.
+ * caller sudah lewat guard halaman detail. Semua patok = patok lahan — tanda
+ * "NKT turunan" dari status lahan pemakai dihapus (#345); patok NKT kelak
+ * entitas/tipe sendiri dari buffer sungai.
  */
 async function fetchMarkerPointsWhere(farmerWhere: Prisma.Sql): Promise<MarkerPoint[]> {
-  const rows = await prisma.$queryRaw<{ id: string; code: string; longitude: number; latitude: number; condition: string; nkt: boolean }[]>`
-    SELECT m.id, m.code, m.longitude, m.latitude, m.condition,
-           EXISTS (
-             SELECT 1 FROM tbl_land_parcel_marker l2
-             JOIN tbl_land_parcel_nkt n ON n.parcel_uid = l2.parcel_uid
-             WHERE l2.marker_id = m.id AND l2.is_active AND n.status::text IN (${Prisma.join([...NKT_AFFECTED_STATUSES])})
-           ) AS nkt
+  const rows = await prisma.$queryRaw<{ id: string; code: string; longitude: number; latitude: number; condition: string }[]>`
+    SELECT m.id, m.code, m.longitude, m.latitude, m.condition
     FROM tbl_land_marker m
     WHERE m.is_active AND EXISTS (
       SELECT 1 FROM tbl_land_parcel_marker l
@@ -170,7 +164,7 @@ async function fetchMarkerPointsWhere(farmerWhere: Prisma.Sql): Promise<MarkerPo
     )
     ORDER BY m.code
   `;
-  return rows.map((r) => ({ ...r, longitude: Number(r.longitude), latitude: Number(r.latitude), nkt: Boolean(r.nkt) }));
+  return rows.map((r) => ({ ...r, longitude: Number(r.longitude), latitude: Number(r.latitude) }));
 }
 
 export const fetchFarmerGroupMarkerPoints = (farmerGroupId: string) => fetchMarkerPointsWhere(Prisma.sql`f.farmer_group_id = ${farmerGroupId}`);

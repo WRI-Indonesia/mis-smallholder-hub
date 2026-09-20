@@ -14,7 +14,6 @@ const PURPLE: [number, number, number] = [126, 34, 206];
 const GREEN: [number, number, number] = [34, 197, 94];
 const BLUE: [number, number, number] = [59, 130, 246];
 const YELLOW: [number, number, number] = [250, 204, 21];
-const NKT_RED: [number, number, number] = [239, 68, 68];
 
 /** Konteks lahan (poligon hasil filter yang sudah dimuat peta) di belakang titik — NKT diarsir merah/amber. */
 export function parcelContext(parcels: ParcelFeature[]): LayerReportContext {
@@ -184,7 +183,7 @@ export async function exportParcelRow(
     };
     const nktColor = (p: Record<string, unknown>) => (isNktAffected(landNktStatusFromShortLabel(typeof p.nkt === "string" ? p.nkt : null)) ? RED : isPoint ? BLUE : PURPLE);
     savePdf({
-      title: row === "nkt" ? "Lahan NKT (termasuk/terdampak)" : isPoint ? "Point Lahan Petani" : "Area Lahan Petani",
+      title: row === "nkt" ? "Lahan terdampak NKT" : isPoint ? "Point Lahan Petani" : "Area Lahan Petani",
       subtitle: `${label ?? "Semua"} · ${features.length} lahan · dicetak ${printedAt(now)}`,
       fc: fcPdf,
       // Titik lahan & lahan NKT: lahan lain sebagai konteks; Area Lahan sudah menggambar semua poligonnya sendiri.
@@ -239,17 +238,16 @@ export async function exportParcelRow(
 // ─── Patok (Point) — satu baris/fitur per patok FISIK (keputusan owner 2026-09-14) ───
 
 export async function exportMarkerRow(
-  row: "markers" | "markersNkt",
   format: LegendFormat,
   rows: LandMarkerExportRow[],
   label: string | null,
   now: Date,
   context?: LayerReportContext,
 ): Promise<number> {
-  const b = base(row === "markersNkt" ? "patok-nkt" : "patok", label, now);
+  // Semua patok = patok lahan (#345): unduhan "patok-nkt" turunan dihapus.
+  const b = base("patok", label, now);
   if (rows.length === 0) return 0;
-  // Patok NKT: kolom Lahan hanya memuat lahan yang kena NKT (owner 2026-09-14).
-  const unique = uniqueMarkerRows(rows, { nktParcelsOnly: row === "markersNkt" });
+  const unique = uniqueMarkerRows(rows);
   const data = unique.map(formatUniqueMarkerRow);
   if (format === "xlsx") {
     await exportToExcel({ filename: b, sheetName: "Patok", columns: MARKER_XLSX_COLUMNS, data });
@@ -258,23 +256,23 @@ export async function exportMarkerRow(
   if (format === "pdf") {
     // Tabel per LAHAN (owner 2026-09-14: baris per patok mengulang nama/ID petani);
     // nomor di peta = urutan patok unik, dicantumkan di tiap patok pada sel "Patok".
-    const groups = groupMarkersByParcel(rows, unique, { nktOnly: row === "markersNkt" });
+    const groups = groupMarkersByParcel(rows, unique);
     savePdf({
-      title: row === "markersNkt" ? "Patok lahan NKT" : "Patok lahan",
+      title: "Patok lahan",
       subtitle: `${label ?? "Semua"} · ${unique.length} patok · ${groups.length} lahan · urut Kelompok Tani, Blok · dicetak ${printedAt(now)}`,
       fc: {
         type: "FeatureCollection",
-        features: unique.map((r) => ({ type: "Feature", geometry: { type: "Point", coordinates: [r.longitude, r.latitude] }, properties: { nkt: r.nkt } })),
+        features: unique.map((r) => ({ type: "Feature", geometry: { type: "Point", coordinates: [r.longitude, r.latitude] }, properties: {} })),
       },
       context,
-      style: { colorOf: (p) => (p.nkt ? NKT_RED : YELLOW), numbered: true },
-      legend: [{ color: YELLOW, label: "Patok lahan" }, { color: NKT_RED, label: "Patok lahan NKT" }, ...(context ? CONTEXT_LEGEND : [])],
+      style: { colorOf: () => YELLOW, numbered: true },
+      legend: [{ color: YELLOW, label: "Patok lahan" }, ...(context ? CONTEXT_LEGEND : [])],
       columns: [
         { header: "No", key: "no", align: "right", width: 9 },
         { header: "KT / Blok", key: "ktBlok", width: 22 },
         { header: "Nama Petani", key: "farmerName", width: 38 },
         { header: "ID Petani", key: "farmerCode", width: 42 },
-        { header: row === "markersNkt" ? "ID Lahan NKT" : "ID Lahan", key: "parcelId", width: 44 },
+        { header: "ID Lahan", key: "parcelId", width: 44 },
         // Empat kolom sejajar per patok (satu patok per baris sel) — bukan satu sel gabungan.
         { header: "No peta", key: "mapNo", align: "right", width: 14 },
         { header: "Kode Patok", key: "code", width: 32 },
@@ -309,17 +307,17 @@ export async function exportMarkerRow(
         petani: r.farmerNames,
         lembaga: r.groupName,
         kondisi: r.condition,
-        jenis: r.type,
+        // "bahan" (owner 2026-09-20, #345) — dulu "jenis".
+        bahan: r.type,
         dipasang: r.installedAt,
         oleh: r.installedBy,
         sumber: r.source,
-        nkt: r.nkt,
         keterangan: r.notes,
       },
     })),
   };
   await downloadFeatureExport(format, fc, b, {
-    shpLayer: row === "markersNkt" ? "patok_nkt" : "patok",
+    shpLayer: "patok",
     toDbf: (p) => ({
       id_patok: String(p.idPatok ?? ""),
       kode: String(p.kodePatok ?? ""),
@@ -329,11 +327,10 @@ export async function exportMarkerRow(
       petani: toAsciiDbf(String(p.petani ?? "")),
       lembaga: toAsciiDbf(String(p.lembaga ?? "")),
       kondisi: toAsciiDbf(String(p.kondisi ?? "")),
-      jenis: toAsciiDbf(String(p.jenis ?? "")),
+      bahan: toAsciiDbf(String(p.bahan ?? "")),
       dipasang: String(p.dipasang ?? ""),
       oleh: toAsciiDbf(String(p.oleh ?? "")),
       sumber: toAsciiDbf(String(p.sumber ?? "")),
-      nkt: String(p.nkt ?? ""),
       keterangan: toAsciiDbf(String(p.keterangan ?? "")),
     }),
   });

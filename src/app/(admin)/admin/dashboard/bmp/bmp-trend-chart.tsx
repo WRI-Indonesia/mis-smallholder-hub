@@ -5,6 +5,7 @@ import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { bmpChartSeries } from "@/lib/bmp-dashboard-aggregation";
 import type { BmpMonthlyStat } from "@/types/dashboard";
+import { axisMax } from "@/lib/format";
 
 const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 const BAR_COLOR = "#22c55e"; // emerald-500 — konsisten dgn chart Peta BMP
@@ -16,14 +17,6 @@ const formatAxis = (n: number) =>
   new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
 
 /** Round up to a tidy axis ceiling (1/2/5 × 10^k) — skala adaptif mengikuti data. */
-function axisMax(dataMax: number): number {
-  if (dataMax <= 0) return 10;
-  const pow = Math.pow(10, Math.floor(Math.log10(dataMax)));
-  for (const m of [1, 2, 5, 10]) {
-    if (dataMax <= m * pow) return m * pow;
-  }
-  return 10 * pow;
-}
 
 /**
  * Tick sumbu kiri selalu angka bulat: ceiling 2×10^k dibagi 4 (step 0,5×10^k),

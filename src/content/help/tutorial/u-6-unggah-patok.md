@@ -15,7 +15,7 @@ Ini untuk **titik patok**, bukan poligon lahan. Setiap baris/titik harus menunju
 
 Dua bentuk berkas diterima di tab yang sama:
 
-- **Excel (.xlsx) / CSV** — kolom: `ID Lahan`*, `ID Petani` (hanya bila ID Lahan dipakai lebih dari satu petani), `Kode Patok` (mis. `HJP-PTK-000123` — bila diisi, patok itulah yang diperbarui; patok yang belum tertaut ke lahan ini ikut ditautkan), `No Patok`, `Lintang`*, `Bujur`*, `Kondisi`, `Jenis`, `Tanggal Pemasangan`, `Dipasang oleh`, `Keterangan`. Tombol **Unduh Template Excel** memberi contohnya.
+- **Excel (.xlsx) / CSV** — kolom: `ID Lahan`*, `ID Petani` (hanya bila ID Lahan dipakai lebih dari satu petani), `Kode Patok` (mis. `HJP-PTK-000123` — bila diisi, patok itulah yang diperbarui; patok yang belum tertaut ke lahan ini ikut ditautkan), `No Patok`, `Lintang`*, `Bujur`*, `Kondisi`, `Bahan` (judul lama `Jenis` masih dikenali), `Tanggal Pemasangan`, `Dipasang oleh`, `Keterangan`. Tombol **Unduh Template Excel** memberi contohnya.
 - **ZIP shapefile titik (Point)** — koordinat diambil dari geometrinya (WGS84); atribut DBF seperti `parcel_id`, `no_patok`, `cond`, `type`, `installed` dikenali otomatis, sisanya bisa dipetakan manual. Kolom bernama `No`/`Nomor` sengaja **tidak** dianggap nomor patok (biasanya nomor baris) — petakan manual bila memang nomor patok.
 
 + Kondisi menerima *Ada / Hilang / Rusak / Belum dipasang* (juga ejaan lapangan seperti "tidak ada", "patah"); jenis menerima *Beton / Kayu / Pipa / Tanda alam / Lainnya* (juga "semen", "paralon", "pohon").

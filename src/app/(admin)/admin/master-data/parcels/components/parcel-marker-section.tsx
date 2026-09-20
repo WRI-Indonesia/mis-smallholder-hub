@@ -74,7 +74,7 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
   const [reordering, setReordering] = useState(false);
 
   const markers = data.markers;
-  const points = markers.map((m) => ({ id: m.id, sequenceNo: m.sequenceNo, longitude: m.longitude, latitude: m.latitude, nkt: m.nkt }));
+  const points = markers.map((m) => ({ id: m.id, sequenceNo: m.sequenceNo, longitude: m.longitude, latitude: m.latitude }));
 
   // Semua pemanggil action: try/finally supaya tombol tidak terkunci bila action
   // melempar (sesi habis, jaringan) — bukan hanya bila mengembalikan success:false.
@@ -148,10 +148,9 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
         { header: "Lintang", key: "lat", width: 14 },
         { header: "Bujur", key: "lon", width: 14 },
         { header: "Kondisi", key: "condition", width: 16 },
-        { header: "Jenis", key: "type", width: 12 },
+        { header: "Bahan", key: "type", width: 12 },
         { header: "Dipasang", key: "installedAt", width: 12 },
         { header: "Sumber koordinat", key: "source", width: 16 },
-        { header: "NKT", key: "nkt", width: 8 },
         { header: "Dipakai juga oleh", key: "shared", width: 30 },
         { header: "Keterangan", key: "notes", width: 30 },
       ],
@@ -168,7 +167,6 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
         type: labelOf(LAND_MARKER_TYPE_LABELS, m.type),
         installedAt: m.installedAt ? new Date(m.installedAt).toISOString().slice(0, 10) : "",
         source: labelOf(LAND_MARKER_SOURCE_LABELS, m.source),
-        nkt: m.nkt ? "Ya" : "",
         shared: m.sharedWith.map((s) => s.parcelId).join(", "),
         notes: m.notes ?? "",
       })),
@@ -182,7 +180,6 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
           <h3 className="text-base font-semibold">Patok Batas</h3>
           <p className="text-xs text-muted-foreground">
             Satu patok fisik dipakai bersama lahan berdampingan — sudut ≤ {MARKER_SNAP_M} m dari patok yang ada ditautkan, bukan digandakan.
-            Tanda <span className="font-medium text-red-600">NKT</span> ikut dari status lahan pemakainya.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -217,7 +214,6 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
           <ParcelMapView geometry={geometry} heightClassName="h-[460px]" label={parcelId.split(".").find((x) => /^[A-Z]$/i.test(x)) ?? parcelId} markerPoints={points} neighbors={neighbors} />
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm border-2 border-amber-700 bg-amber-400" /> Patok lahan</span>
-            <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm border-2 border-red-800 bg-red-500" /> Patok lahan NKT (lahan pemakainya termasuk/terdampak NKT)</span>
             {neighbors.length > 0 && (
               <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 shrink-0 rounded-sm border border-dashed border-slate-600" /> Putus-putus = lahan tetangga (≤ {NEIGHBOR_DISTANCE_M} m), bernomor</span>
             )}
@@ -239,7 +235,6 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
                     <th className="py-1.5 pr-2 font-medium w-10">No</th>
                     <th className="py-1.5 pr-3 font-medium">Kode · Koordinat</th>
                     <th className="py-1.5 pr-3 font-medium">Kondisi</th>
-                    <th className="py-1.5 pr-3 font-medium">NKT</th>
                     <th className="py-1.5 font-medium text-right"></th>
                   </tr>
                 </thead>
@@ -284,7 +279,6 @@ export function ParcelMarkerSection({ landParcelId, parcelId, geometry, data, ne
                           {labelOf(LAND_MARKER_CONDITION_LABELS, m.condition)}
                         </Badge>
                       </td>
-                      <td className="py-2 pr-3">{m.nkt ? <Badge className="bg-red-600 hover:bg-red-600">NKT</Badge> : <span className="text-muted-foreground">—</span>}</td>
                       <td className="py-2 text-right whitespace-nowrap">
                         {canEdit && (
                           <>

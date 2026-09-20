@@ -39,26 +39,7 @@ import { TrainingEffectivenessPanel } from "./training-effectiveness-panel";
 import { TrainingPassPanel } from "./training-pass-panel";
 import { TrainingQualityPanel } from "./training-quality-panel";
 import type { TrainingDashboardView } from "@/types/dashboard";
-
-const formatGeneratedAt = (iso: string) => {
-  const d = new Date(iso);
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "Mei",
-    "Jun",
-    "Jul",
-    "Agu",
-    "Sep",
-    "Okt",
-    "Nov",
-    "Des",
-  ];
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
+import { formatGeneratedAt } from "@/lib/format";
 
 export function TrainingDashboardClient({
   view,

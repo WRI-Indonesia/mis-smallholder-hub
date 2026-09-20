@@ -14,7 +14,7 @@ intro: Semua laporan bisa diunduh sebagai Excel (izin Export) dan PDF (izin Prin
 
 **Laporan NKT (PDF)** — Tombol merah **Laporan NKT** di Report → Lahan (dan di detail Lembaga Petani → tab Lahan) mencetak laporan khusus NKT satu Lembaga: tiga angka ringkasan (total lahan, lahan NKT, luas NKT), peta seluruh lahan dengan lahan NKT merah bernomor, tabel lahan NKT, dan ringkasan per kategori NKT 1–6. Laporan ini **tidak mengikuti filter** — isinya selalu seluruh lahan aktif Lembaga. Butuh izin Print.
 
-**Patok** — Daftar patok batas satu Distrik atau Lembaga: satu baris per patok fisik (patok yang dipakai beberapa lahan tampil sekali dengan semua lahan pemakainya), kode patok `HJP-PTK-000123`, kondisi (Ada/Hilang/Rusak/Belum dipasang), dan tanda patok lahan NKT. Pilih Distrik (wajib) → **Muat Data**; saring dengan Kondisi atau NKT; unduh Excel, Shapefile/GeoJSON/KML (titik), atau PDF (peta + tabel). Dipakai untuk menyusun daftar kerja pemasangan ulang dan lampiran laporan NKT.
+**Patok** — Daftar patok batas satu Distrik atau Lembaga: satu baris per patok fisik (patok yang dipakai beberapa lahan tampil sekali dengan semua lahan pemakainya), kode patok `HJP-PTK-000123`, kondisi (Ada/Hilang/Rusak/Belum dipasang), dan bahan. Pilih Distrik (wajib) → **Muat Data**; saring dengan Kondisi; unduh Excel, Shapefile/GeoJSON/KML (titik), atau PDF (peta + tabel). Dipakai untuk menyusun daftar kerja pemasangan ulang dan lampiran laporan NKT.
 
 **Peta pada Laporan Lahan** — PDF Laporan Lahan menyertakan peta poligon. Di panel Peta Cetak Anda dapat memecah peta menjadi beberapa halaman (isi jumlah baris dan kolom), memilih Latar Peta, dan memilih isi label poligon (No, Nama, ID Petani, ID Lahan, Kelompok Tani). Pratinjau di layar sama dengan hasil cetak.
 

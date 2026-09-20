@@ -1,6 +1,7 @@
-import { requirePermission, hasPermission } from "@/lib/rbac";
+import { requirePermission, hasPermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { getFarmerDetail } from "@/server/actions/farmer";
 import { getFarmerTreePoints } from "@/server/actions/tree";
+import { getFarmerBmpAssessments } from "@/server/actions/bmp-assessment";
 import { getFarmerGroupOptions } from "@/lib/select-options";
 import { notFound } from "next/navigation";
 import { FarmerDetailClient } from "./farmer-detail-client";
@@ -14,12 +15,15 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
 
   const canEdit = await hasPermission("master-data-farmers", "EDIT");
   const farmerGroups = canEdit ? await getFarmerGroupOptions("master-data-farmers") : [];
-  const [canViewParcel, canEditParcel, canPrint, treePoints] = await Promise.all([
+  const [canViewParcel, canEditParcel, canPrint, treePoints, bmpPermissions] = await Promise.all([
     hasPermission("master-data-parcels", "VIEW"),
     hasPermission("master-data-parcels", "EDIT"),
     hasPermission("master-data-farmers", "PRINT"),
     getFarmerTreePoints(id),
+    // Tab Monev BMP (#344) menumpang izin menu Monev BMP: tanpa VIEW tab disembunyikan.
+    getUserPermissionsForMenu("master-data-bmp-monev"),
   ]);
+  const bmpAssessments = bmpPermissions.includes("VIEW") ? await getFarmerBmpAssessments(id) : [];
 
   // Jumlah pohon per lahan diturunkan dari titik yang sudah di-fetch —
   // dulu round-trip terpisah `getFarmerTreeSummary` dengan hasil identik (#241).
@@ -47,6 +51,8 @@ export default async function FarmerDetailPage({ params }: { params: Promise<{ i
       canViewParcel={canViewParcel}
       canEditParcel={canEditParcel}
       canPrint={canPrint}
+      bmpAssessments={bmpAssessments}
+      bmpPermissions={bmpPermissions}
     />
   );
 }

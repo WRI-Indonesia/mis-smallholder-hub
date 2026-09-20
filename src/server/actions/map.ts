@@ -11,7 +11,7 @@ import {
 } from "@/lib/access-context";
 import { buildMapData, buildBmpMapData, summarizeProduction } from "@/lib/map-data";
 import { mapFilterSchema, bmpMapFilterSchema } from "@/validations/map.schema";
-import { nktAffectedStatusWhere, isNktAffected, PARCEL_NKT_MARKER_SELECT } from "@/lib/land-parcel-satellite-format";
+import { PARCEL_NKT_MARKER_SELECT } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 import type {
   MapDataWire,
@@ -139,14 +139,15 @@ export async function getMapData(
   };
 
   // Hitungan patok (#331) untuk baris legenda — titiknya dimuat malas (getMapMarkers).
-  // Ikut Promise.all yang sama, bukan serial sesudahnya: dua count berkorelasi
-  // dalam ini sempat menambah latensi di jalur kritis "Muat Data" (review 2026-09-15).
+  // Ikut Promise.all yang sama, bukan serial sesudahnya: count berkorelasi ini
+  // sempat menambah latensi di jalur kritis "Muat Data" (review 2026-09-15).
+  // Semua patok = patok lahan (#345) — hitungan "patok NKT" turunan dihapus.
   const markerScope = {
     isActive: true,
     parcels: { some: { isActive: true, parcel: { revisions: { some: { isActive: true, farmer: { isActive: true, farmerGroup: groupWhere } } } } } },
   } as const;
 
-  const [groups, parcelRows, markers, markersNkt] = await Promise.all([
+  const [groups, parcelRows, markers] = await Promise.all([
     prisma.farmerGroup.findMany({
       where: groupWhere,
       select: {
@@ -183,21 +184,17 @@ export async function getMapData(
       },
     }),
     prisma.landMarker.count({ where: markerScope }),
-    prisma.landMarker.count({
-      where: { ...markerScope, AND: [{ parcels: { some: { isActive: true, parcel: { nkt: nktAffectedStatusWhere() } } } }] },
-    }),
   ]);
 
   const data = buildMapData(groups, parcelRows);
-  return { success: true, data: { ...data, counts: { ...data.counts, markers, markersNkt } } };
+  return { success: true, data: { ...data, counts: { ...data.counts, markers } } };
 }
 
 /**
- * Titik patok (#331) untuk layer "Patok lahan" / "Patok lahan NKT" — dimuat
- * MALAS saat salah satu layer dicentang. Scope sama dengan getMapData
- * (Lembaga di filter + akses user). Satu tuple per patok fisik walau dipakai
- * beberapa lahan; `parcels` = "ID Lahan #nomor; …" untuk popup. NKT turunan =
- * salah satu lahan pemakai (di mana pun) termasuk/terdampak.
+ * Titik patok (#331) untuk layer "Patok lahan" — dimuat MALAS saat layer
+ * dicentang. Scope sama dengan getMapData (Lembaga di filter + akses user).
+ * Satu tuple per patok fisik walau dipakai beberapa lahan; `parcels` =
+ * "ID Lahan #nomor; …" untuk popup. Tanpa tanda NKT turunan (#345).
  */
 export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<MapMarkerWire>> {
   if (!(await hasPermission(MENU_KEY, VIEW))) {
@@ -221,7 +218,7 @@ export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<M
     },
     select: {
       id: true, code: true, longitude: true, latitude: true, condition: true,
-      parcels: { where: { isActive: true }, select: { sequenceNo: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } }, orderBy: { parcel: { parcelId: "asc" } } },
+      parcels: { where: { isActive: true }, select: { sequenceNo: true, parcel: { select: { parcelId: true } } }, orderBy: { parcel: { parcelId: "asc" } } },
     },
   });
   return {
@@ -231,7 +228,6 @@ export async function getMapMarkers(filters: MapFilters): Promise<ActionResult<M
         m.id,
         m.longitude,
         m.latitude,
-        m.parcels.some((l) => isNktAffected(l.parcel.nkt?.status)) ? 1 : 0,
         m.condition,
         m.parcels.map((l) => `${l.parcel.parcelId} #${l.sequenceNo}`).join("; "),
         m.code,

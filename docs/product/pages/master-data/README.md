@@ -18,11 +18,15 @@ Menu: Master Data (/admin/master-data)
 ├── Sub Menu: Lahan (/admin/master-data/parcels)
 │   ├── Page: Lahan (daftar)
 │   └── Page: Detail Lahan
-└── Sub Menu: Produksi (/admin/master-data/production)
-    ├── Page: Produksi (daftar)
-    ├── Page: Tambah Data Produksi
-    ├── Page: Detail Produksi
-    └── Page: Edit Data Produksi
+├── Sub Menu: Produksi (/admin/master-data/production)
+│   ├── Page: Produksi (daftar)
+│   ├── Page: Tambah Data Produksi
+│   ├── Page: Detail Produksi
+│   └── Page: Edit Data Produksi
+└── Sub Menu: Monev BMP (/admin/master-data/bmp-monev) — #344/#346
+    ├── Page: Monev BMP (daftar) + dialog Tambah/Ubah + dialog Import (rekap · form survei)
+    ├── Page: Detail Penilaian ([id])
+    └── Page: Penilaian Lembaga (/lembaga)
 ```
 
 | Atribut | Nilai |
@@ -30,7 +34,7 @@ Menu: Master Data (/admin/master-data)
 | Menu key | `master-data` |
 | URL | `/admin/master-data` |
 | Icon | `Database` |
-| Sub menu | 5 — Lembaga Petani (`master-data-groups`), Petani (`master-data-farmers`), Pelatihan (`master-data-training`), Lahan (`master-data-parcels`), Produksi (`master-data-production`) |
+| Sub menu | 6 — Lembaga Petani (`master-data-groups`), Petani (`master-data-farmers`), Pelatihan (`master-data-training`), Lahan (`master-data-parcels`), Produksi (`master-data-production`), Monev BMP (`master-data-bmp-monev`, #344) |
 | File | `src/app/(admin)/admin/master-data/page.tsx` — `redirect("/admin/master-data/farmers")` (tidak ada halaman index sendiri) |
 
 ## Daftar sub menu
@@ -42,6 +46,7 @@ Menu: Master Data (/admin/master-data)
 | 3 | Pelatihan | `master-data-training` | `/admin/master-data/training` | `GraduationCap` | [pelatihan/](./pelatihan/README.md) |
 | 4 | Lahan | `master-data-parcels` | `/admin/master-data/parcels` | `Map` | [lahan/](./lahan/README.md) |
 | 5 | Produksi | `master-data-production` | `/admin/master-data/production` | `TrendingUp` | [produksi/](./produksi/README.md) |
+| 6 | Monev BMP | `master-data-bmp-monev` | `/admin/master-data/bmp-monev` | `ClipboardCheck` | [monev-bmp/](./monev-bmp/README.md) |
 
 ## Objek bersama (dipakai di semua halaman daftar)
 

@@ -4,7 +4,7 @@ Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain)
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |
 |---|---|---|---|---|---|---|---|---|
-| 1 | TC-… | | | | staging | #… | fix rilis ini / defer | `evidence/…` |
+| 1 | SM-24 · SM-26 | Bulk Upload › Lahan · Settings — dibuka dari sesi `demo@wri.org` | Dialihkan ke `/admin`; sidebar tanpa Bulk Upload/Settings, padahal `tbl_user.role` = SUPERADMIN (diubah 2026-09-11). Role dibekukan di JWT saat sign-in (`auth.config.ts`), perubahan role/nonaktif tidak berlaku pada sesi hidup | major (keamanan: penurunan role tak berlaku) | prod | #342 | defer — bukan regresi v0.35.0 (perilaku lama); perbaikan di siklus berikutnya. **Terkonfirmasi 21:50:** `/api/auth/session` masih `OPERATOR` walau token baru dirotasi (`expires` bergeser), berubah `SUPERADMIN` hanya setelah logout/login; SM-24/26 lalu Pass (`-ulang`) | run `2026-09-15-prod.md`, `-ulang.md` |
 
 ## Membuka issue dari temuan
 

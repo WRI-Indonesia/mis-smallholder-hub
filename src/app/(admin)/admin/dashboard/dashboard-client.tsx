@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DashboardSummaryCards } from "./summary-cards";
 import { ktStatsForYear, sumKelompokTaniStats } from "@/lib/dashboard-aggregation";
 import { formatCertStatus } from "@/lib/farmer-group-labels";
-import { formatArea } from "@/lib/format";
+import { formatArea, formatGeneratedAt } from "@/lib/format";
 import type { DashboardSnapshotView, KTDetails } from "@/types/dashboard";
 
 const DashboardMap = dynamic(() => import("./dashboard-map").then((m) => m.DashboardMap), {
@@ -47,13 +47,6 @@ function CertBadge({ scheme, year, status }: { scheme: string; year?: number | n
     </Badge>
   );
 }
-
-const formatGeneratedAt = (iso: string) => {
-  const d = new Date(iso);
-  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
 
 export function DashboardClient({ initialView, helpSlot }: Props) {
   const [districtId, setDistrictId] = useState<string | null>(null);
