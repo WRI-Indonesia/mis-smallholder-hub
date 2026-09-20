@@ -8,6 +8,7 @@ import {
   parseSurveyDate,
   resolveBmpImportRows,
   roundScore,
+  toUtcDay,
   type BmpImportRawRow,
 } from "@/lib/bmp-assessment";
 import { bmpAssessmentSchema, bmpAssessmentImportSchema } from "@/validations/bmp-assessment.schema";
@@ -78,10 +79,16 @@ describe("parseSurveyDate — format kolom Tgl Survey rekap", () => {
     expect(parseSurveyDate("12 Bulanan 2026")).toBeNull();
   });
 
-  it("sel Date lokal WIB tengah malam → hari yang sama dalam UTC (tidak mundur sehari)", () => {
-    const local = new Date(2026, 6, 8); // 8 Juli 2026 00:00 lokal
-    const utcMidnightSameDay = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()));
-    expect(parseSurveyDate(local)?.getTime()).toBe(utcMidnightSameDay.getTime());
+  it("sel Date dibaca dari KOMPONEN UTC-nya (kontrak exceljs: Date sel = UTC tengah malam) — bukan komponen lokal", () => {
+    // exceljs memberi Date UTC tengah malam untuk sel tanggal → hari yang sama, waktu dibuang.
+    expect(iso(parseSurveyDate(new Date("2026-07-08T00:00:00Z")))).toBe("2026-07-08");
+    expect(iso(parseSurveyDate(new Date("2026-07-08T13:45:00Z")))).toBe("2026-07-08");
+    // Konsekuensi yang disengaja & didokumentasikan: Date "tengah malam lokal" yang
+    // dibuat di zona timur UTC (WIB = 17:00Z sehari sebelumnya) JATUH ke hari sebelumnya —
+    // jalur form/kalender karena itu memakai `toUtcDay`, bukan `parseSurveyDate`.
+    const wibMidnight = new Date("2026-07-07T17:00:00Z"); // = 8 Juli 00:00 WIB
+    expect(iso(parseSurveyDate(wibMidnight))).toBe("2026-07-07");
+    expect(iso(toUtcDay(new Date(2026, 6, 8)))).toBe("2026-07-08"); // kalender lokal → hari yang sama
   });
 });
 

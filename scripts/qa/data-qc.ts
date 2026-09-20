@@ -20,7 +20,7 @@ type Row = Record<string, unknown>;
 type Expect = string | number | null | ((v: string, rows: Row[]) => boolean);
 interface Check {
   id: string;
-  section: "A" | "B" | "C" | "D";
+  section: "A" | "B" | "C" | "D" | "E";
   purpose: string;
   sql: string;
   /** Kolom yang ditampilkan sebagai "aktual" (bawaan: seluruh kolom baris pertama digabung " · "). */
@@ -33,7 +33,7 @@ interface Check {
 
 const args = process.argv.slice(2);
 const opt = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
-const sections = (opt("--section") ?? "A,B,C,D").split(",").map((s) => s.trim().toUpperCase());
+const sections = (opt("--section") ?? "A,B,C,D,E").split(",").map((s) => s.trim().toUpperCase());
 const parcelId = opt("--parcel") ?? null;
 
 function dbLabel(url: string | undefined): string {
@@ -49,6 +49,8 @@ const MIGRATIONS = [
   "20260914170000_land_marker",
   "20260914200000_land_marker_code",
 ];
+/** v0.36.0 — Monev BMP (#344, #346). */
+const MIGRATIONS_MONEV = ["20260918120000_bmp_assessment", "20260920100000_bmp_assessment_unique_active", "20260920120000_bmp_indicator_detail"];
 const joinRow = (rows: Row[]) => (rows[0] ? Object.values(rows[0]).map((v) => String(v)).join(" · ") : "(tidak ada baris)");
 
 const CHECKS: Check[] = [
@@ -135,10 +137,50 @@ const CHECKS: Check[] = [
     sql: `select (select count(*) from tbl_land_marker where is_active)::int as patok, (select count(*) from tbl_land_parcel_marker where is_active)::int as tautan`,
     pick: (r) => `${r[0]?.patok} patok / ${r[0]?.tautan} tautan`, expect: null, expectLabel: "≥ 8 / ≥ 12 setelah TC-PREP-02/03",
   },
+  // D3 (patok NKT turunan) dihapus bersama konsepnya — #345 tahap 1.
+  // ── E · Monev BMP (v0.36.0: #344 + #346) ─────────────────────────────────
   {
-    id: "D3", section: "D", purpose: "patok NKT (turunan dari lahan pemakai)",
-    sql: `select count(distinct l.marker_id)::int as n from tbl_land_parcel_marker l join tbl_land_parcel_nkt k on k.parcel_uid=l.parcel_uid join tbl_land_marker m on m.id=l.marker_id where l.is_active and m.is_active and k.status in ('INCLUDED','AFFECTED')`,
-    expect: null, expectLabel: "> 0 setelah TC-PREP",
+    id: "E1", section: "E", purpose: "3 migrasi Monev BMP applied",
+    sql: `select count(*)::int as n from _prisma_migrations where migration_name = any($1::text[]) and finished_at is not null`,
+    expect: (v) => v === "3", expectLabel: "3 (sesudah) · 0 (sebelum)",
+  },
+  {
+    id: "E2", section: "E", purpose: "5 tabel Monev: ref_bmp_indicator · tbl_bmp_assessment · _detail · tbl_bmp_group_assessment · _detail",
+    sql: `select count(*)::int as n from information_schema.tables where table_schema='public' and table_name in ('ref_bmp_indicator','tbl_bmp_assessment','tbl_bmp_assessment_detail','tbl_bmp_group_assessment','tbl_bmp_group_assessment_detail')`,
+    expect: "5", expectLabel: "5",
+  },
+  {
+    id: "E3", section: "E", purpose: "partial unique satu aktif per petani-tahun & per Lembaga-tahun (WHERE is_active)",
+    sql: `select string_agg(indexname || case when indexdef ilike '%where%is_active%' then ' ✓' else ' ✗' end, ' · ' order by indexname) as s from pg_indexes where indexname in ('uniq_bmp_assessment_farmer_year_active','uniq_bmp_group_assessment_group_year_active')`,
+    pick: (r) => String(r[0]?.s ?? "(tidak ada)"),
+    expect: (v) => v.split(" · ").length === 2 && !v.includes("✗"), expectLabel: "2 index, keduanya ber-WHERE",
+  },
+  {
+    id: "E4", section: "E", purpose: "master indikator ter-seed: 32 baris = 18 INDIVIDU + 14 LEMBAGA, 21 berbobot",
+    sql: `select count(*)::int as total, count(*) filter (where level='INDIVIDU')::int as individu, count(*) filter (where level='LEMBAGA')::int as lembaga, count(*) filter (where in_final_score and weight is not null)::int as weighted from ref_bmp_indicator where is_active`,
+    pick: (r) => `${r[0]?.total} · ${r[0]?.individu} · ${r[0]?.lembaga} · ${r[0]?.weighted}`,
+    expect: (v) => v === "32 · 18 · 14 · 21", expectLabel: "32 · 18 · 14 · 21 (sebelum seed: 0)",
+  },
+  {
+    id: "E5", section: "E", purpose: "menu master-data-bmp-monev + dashboard-bmp-monev + 33 izin (cermin Pelatihan)",
+    sql: `select (select count(*) from tbl_menu_item where key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active group by role order by role) x) as per_role`,
+    pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
+    expect: (_v, rows) => Number(rows[0]?.menu) === 2 && Number(rows[0]?.perms) === 33, expectLabel: "2 menu · 33 izin (ADMIN 10 · SUPERADMIN 9 · OPERATOR/MANAGEMENT 6 · DONOR 2)",
+  },
+  {
+    id: "E6", section: "E", purpose: "urutan sidebar Dashboard (Monev BMP ke-3, Pelatihan 4, Risk 5)",
+    sql: `select string_agg(key, ' → ' order by "order") as seq from tbl_menu_item where parent_key='dashboard' and is_active`,
+    pick: (r) => String(r[0]?.seq), expect: (_v, rows) => /dashboard-bmp\b.*dashboard-bmp-monev.*dashboard-training.*dashboard-risk/.test(String(rows[0]?.seq)), expectLabel: "… → dashboard-bmp → dashboard-bmp-monev → dashboard-training → dashboard-risk",
+  },
+  {
+    id: "E7", section: "E", purpose: "tidak ada dua penilaian AKTIF untuk petani-tahun yang sama (dijaga E3)",
+    sql: `select count(*)::int as n from (select farmer_id, survey_year from tbl_bmp_assessment where is_active group by 1,2 having count(*) > 1) d`,
+    expect: "0", expectLabel: "0",
+  },
+  {
+    id: "E8", section: "E", purpose: "penilaian aktif · ber-rincian · penilaian Lembaga aktif · skor di luar 0–3",
+    sql: `select (select count(*) from tbl_bmp_assessment where is_active)::int as a, (select count(distinct assessment_id) from tbl_bmp_assessment_detail where is_active)::int as d, (select count(*) from tbl_bmp_group_assessment where is_active)::int as g, (select count(*) from tbl_bmp_assessment where is_active and (score < 0 or score > 3))::int as oor`,
+    pick: (r) => `${r[0]?.a} · ${r[0]?.d} · ${r[0]?.g} · ${r[0]?.oor} di luar 0–3`, expect: null, expectLabel: "prod: 0 sebelum import UI; mis-dev 188 · 184 · 8 · 0",
   },
 ];
 
@@ -157,7 +199,7 @@ async function main() {
       let rows: Row[] = [];
       let actual: string;
       try {
-        const res = await pool.query(c.sql, c.needsParcel ? [parcelId] : c.id === "A1" ? [MIGRATIONS] : []);
+        const res = await pool.query(c.sql, c.needsParcel ? [parcelId] : c.id === "A1" ? [MIGRATIONS] : c.id === "E1" ? [MIGRATIONS_MONEV] : []);
         rows = res.rows as Row[];
         actual = c.pick ? c.pick(rows) : joinRow(rows);
       } catch (e) {

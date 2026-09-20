@@ -93,7 +93,7 @@ export function BmpAssessmentInlineDetail({ assessmentId }: { assessmentId: stri
         })}
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Indikator Lembaga {groupAssessment ? <Badge variant="secondary" className="text-[10px]">terisi {groupAssessment.details.filter((d) => d.score != null).length}/14</Badge> : <Badge variant="outline" className="text-[10px]">belum ada</Badge>} ·{" "}
+        Indikator Lembaga {groupAssessment ? <Badge variant="secondary" className="text-[10px]">terisi {groupAssessment.details.filter((d) => d.score != null).length}/{indicators.filter((i) => i.level === "LEMBAGA").length}</Badge> : <Badge variant="outline" className="text-[10px]">belum ada</Badge>} ·{" "}
         <Link href={`/admin/master-data/bmp-monev/${assessmentId}`} className="text-primary hover:underline">
           Buka detail penilaian lengkap
         </Link>

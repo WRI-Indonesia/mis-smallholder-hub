@@ -3,11 +3,13 @@
 -- saja (0–3); kategori Teladan/Praktisi/Perintis/Belum TIDAK disimpan — dihitung
 -- dari skor lewat konstanta di src/lib/bmp-assessment.ts.
 -- FK utama ke tbl_farmer (penilaian praktik petani), `parcel_uid` opsional =
--- lahan yang dikunjungi (identitas stabil antar revisi). Tanpa UNIQUE
--- (farmer_id, survey_year): satu penilaian AKTIF per petani-tahun dijaga di
--- server action (baris nonaktif tidak boleh memblokir isi ulang — pelajaran
--- #306/#326; partial index dihindari karena Prisma selalu mengusulkan DROP-nya).
--- Tanpa backfill; additive.
+-- lahan yang dikunjungi (identitas stabil antar revisi). Tanpa UNIQUE penuh
+-- (farmer_id, survey_year): baris nonaktif tidak boleh memblokir isi ulang
+-- (pelajaran #306/#326). Satu penilaian AKTIF per petani-tahun dijaga oleh
+-- PARTIAL UNIQUE `uniq_bmp_assessment_farmer_year_active` yang ditambahkan
+-- migrasi berikutnya `20260920100000_bmp_assessment_unique_active` (temuan
+-- review #344) — JANGAN terima usulan DROP-nya dari `migrate diff` (dijaga
+-- migration-guards.test.ts). Tanpa backfill; additive.
 -- DISUNTING dari `migrate diff`: `DROP INDEX *_geom_idx` & `ALTER COLUMN geom DROP
 -- DEFAULT` dibuang (pola #328/#329; dijaga migration-guards.test.ts).
 --

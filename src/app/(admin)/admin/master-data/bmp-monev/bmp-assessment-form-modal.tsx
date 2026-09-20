@@ -133,19 +133,22 @@ export function BmpAssessmentFormModal({ open, onClose, assessment, farmerGroups
     };
 
     setIsLoading(true);
-    const result = isEdit
-      ? await updateBmpAssessment({ id: assessment.id, ...payload })
-      : await createBmpAssessment(payload);
-    setIsLoading(false);
-
-    if (!result.success) {
-      if (typeof result.error === "string") toast.error(result.error);
-      else setErrors(result.error);
-      return;
+    try {
+      const result = isEdit ? await updateBmpAssessment({ id: assessment.id, ...payload }) : await createBmpAssessment(payload);
+      if (!result.success) {
+        if (typeof result.error === "string") toast.error(result.error);
+        else setErrors(result.error);
+        return;
+      }
+      toast.success(isEdit ? "Penilaian Monev BMP diperbarui" : "Penilaian Monev BMP disimpan");
+      onClose();
+      router.refresh();
+    } catch (err) {
+      // Action melempar (sesi kedaluwarsa, jaringan) — tombol tidak boleh terkunci tanpa pesan (pola parcel-marker-section).
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan penilaian");
+    } finally {
+      setIsLoading(false);
     }
-    toast.success(isEdit ? "Penilaian Monev BMP diperbarui" : "Penilaian Monev BMP disimpan");
-    onClose();
-    router.refresh();
   }
 
   const selectedGroup = farmerGroups.find((g) => g.id === farmerGroupId);

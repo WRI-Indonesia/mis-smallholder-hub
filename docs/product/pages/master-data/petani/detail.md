@@ -9,7 +9,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 ├── Header
 │   ├── BreadcrumbOverride
 │   ├── Tombol kembali, avatar inisial, nama, ID petani
-│   ├── Badge: L/P, Lembaga, Kelompok Tani, Aktif/Nonaktif
+│   ├── Badge: L/P, Lembaga, Kelompok Tani, Aktif/Nonaktif, kategori Monev BMP terbaru (#344)
 │   └── Tombol: Edit
 ├── Kartu ringkasan
 │   ├── Lahan
@@ -26,11 +26,14 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 │   ├── Pelatihan
 │   │   ├── Checklist: Paket Wajib
 │   │   └── Tabel: Riwayat Partisipasi (n)
-│   └── Produksi
-│       ├── Tombol filter: Semua Lahan / Exclude + switch Tahun › Lahan / Lahan › Tahun
-│       ├── Matriks: Produksi Bulanan (Kg) — collapsible, expandable per lahan (#239)
-│       ├── Matriks: Ketersediaan Data Bulanan — collapsible, expandable per lahan (#239)
-│       └── Kartu: Ketersediaan Data Produksi per Lahan
+│   ├── Produksi
+│   │   ├── Tombol filter: Semua Lahan / Exclude + switch Tahun › Lahan / Lahan › Tahun
+│   │   ├── Matriks: Produksi Bulanan (Kg) — collapsible, expandable per lahan (#239)
+│   │   ├── Matriks: Ketersediaan Data Bulanan — collapsible, expandable per lahan (#239)
+│   │   └── Kartu: Ketersediaan Data Produksi per Lahan
+│   └── Monev BMP (#344/#346, tampil bila punya izin VIEW `master-data-bmp-monev`)
+│       ├── Tombol: Tambah Penilaian (BmpAssessmentFormModal fixedFarmer)
+│       └── Tabel: skor per tahun (skor · kategori · tanggal · lahan · penilai) — klik tahun → rincian ringkas (BmpAssessmentInlineDetail, lazy) + tombol Ubah
 └── Dialog
     └── FarmerFormModal (Edit Petani)
 ```
@@ -50,7 +53,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | Header | Heading | Tombol kembali, avatar inisial (placeholder, TD-017), nama, ID petani, badge L/P + Lembaga (link) + Kelompok Tani + `Aktif`/`Nonaktif` |
 | Tombol `Edit` | Tombol | EDIT — buka `FarmerFormModal` |
 | Kartu ringkasan (5) | Kartu | `Lahan` (persil + Ha), `Produksi` (Ton), `Pelatihan` (n/n paket), `Kelengkapan Profil` (n/n + field yang belum), `Produktivitas Terakhir` (Ton/Ha) |
-| Tabs | Tab | `Ringkasan`, `Lahan`, `Pelatihan`, `Produksi` |
+| Tabs | Tab | `Ringkasan`, `Lahan`, `Pelatihan`, `Produksi`, `Monev BMP` (#344 — gate izin VIEW `master-data-bmp-monev`, data `getFarmerBmpAssessments`) |
 | Tab Ringkasan | Kartu | Field: `Lembaga Petani` (link), `Distrik`, `Jenis Kelamin`, `NIK` (disensor), `Tempat, Tanggal Lahir` (+ umur), `Tahun Bergabung`, `Alamat`, `Dibuat`, `Terakhir Diubah` |
 | Tab Lahan — `Daftar Lahan (n)` | Tabel | `Kode Lahan` (link detail lahan **tab baru** — pola #224, gate `canViewParcel`), `Kelompok Tani`, `Blok`, `Surat` (ringkasan `JENIS nomor` dokumen aktif, #296), `STDB` (nomor, #296), `NKT` (badge merah bila termasuk/terdampak, "Tidak" bila dinilai bersih, "—" belum dinilai, #330), `Luas (Ha)`, `Tahun Tanam`, `Jumlah Pohon` (dihitung di page dari `getFarmerTreePoints`, "—" bila belum ada, #238/#241), `Revisi`, `Profil Lahan`; empty state `Petani ini belum memiliki lahan.` |
 | Tombol `PDF` per baris lahan | Tombol | Unduh Farm Passport via `getFarmerParcelPassport` + `generateFarmPassportPdf` — digate izin `PRINT` (#245) |
@@ -58,5 +61,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | Tab Pelatihan — `Paket Wajib` | Checklist | Per paket: ikon ✓/✗, label, jumlah partisipasi (`n×`) atau `Belum` |
 | Tab Pelatihan — `Riwayat Partisipasi (n)` | Tabel | `Tanggal`, `Paket`, `Lokasi`, `Pre → Post Test`; empty state `Belum pernah mengikuti pelatihan.` |
 | Tab Produksi | Matriks + kartu | Pola detail Lembaga (`ProductionMonthlyMatrix` #239) dengan perbedaan Petani: satuan sel bulanan & Total = **Kg**; kolom `Luas (Ha)` + `Umur/PSR` di kanan kolom pertama matriks produksi; prop `parcelBreakdown` (`buildParcelYearBreakdown` — per lahan per tahun, record tanpa lahan = baris "Tanpa Lahan") mengaktifkan **switch grouping** `Tahun › Lahan` (baris tahun → expand sub-baris per lahan) / `Lahan › Tahun` (baris lahan → expand per tahun; Produktivitas baris lahan = rata-rata tahunan Σproduksi ÷ luas ÷ tahun ber-data); empty state `Belum ada data produksi untuk petani ini.` |
+
+| Tab Monev BMP | Tabel expandable | Satu baris per tahun survei (skor `formatScore`, badge kategori, tanggal UTC, lahan dikunjungi, penilai); klik baris → `BmpAssessmentInlineDetail` (raport kegiatan + indikator, dimuat malas lewat `getBmpAssessmentDetailView`) + tautan ke halaman detail; tombol `Tambah Penilaian` (CREATE) membuka `BmpAssessmentFormModal` dengan petani terkunci (`fixedFarmer`, modal di-remount per buka). Header ikut menampilkan badge kategori tahun terbaru |
 
 Dialog `FarmerFormModal` (field lengkap) didokumentasikan di [daftar.md](./daftar.md#dialog-farmerformmodal-farmersfarmer-form-modaltsx).

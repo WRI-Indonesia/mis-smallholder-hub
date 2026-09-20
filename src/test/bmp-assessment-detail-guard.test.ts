@@ -5,11 +5,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * rincian individu hanya untuk indikator level INDIVIDU; penilaian Lembaga
  * hanya indikator LEMBAGA, satu aktif per Lembaga-tahun (P2002 ditangkap);
  * import form: petani harus anggota Lembaga & dalam scope, tak dipakai dua
- * form, skor akhir = total form, tanggal hanya ditimpa bila ada, penilaian
- * Lembaga dari berkas pertama dengan peringatan bila berkas lain berbeda.
+ * form, skor akhir = HITUNG ULANG dari rincian (total form hanya bila tanpa
+ * rincian; keputusan owner 2026-09-20), tanggal hanya ditimpa bila ada,
+ * penilaian Lembaga dari berkas pertama (atau yang tersimpan di DB) dengan
+ * peringatan bila berkas lain berbeda; rincian ditulis massal (ON CONFLICT).
  */
 const hasPermission = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/rbac", () => ({ hasPermission }));
+const isSuperAdmin = vi.hoisted(() => vi.fn(async () => false));
+vi.mock("@/lib/rbac", () => ({ hasPermission, isSuperAdmin }));
 
 const getAccessContext = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/access-context", () => ({
@@ -34,6 +37,7 @@ const db = vi.hoisted(() => ({
   bmpGroupAssessment: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   bmpGroupAssessmentDetail: { upsert: vi.fn() },
   $transaction: vi.fn(),
+  $executeRaw: vi.fn(async () => 1),
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
@@ -177,9 +181,10 @@ describe("importBmpSurveyForms", () => {
     expect(db.$transaction).toHaveBeenCalledTimes(1);
     // Skor akhir = hitung ulang (0,1 × (2×0,3 + 2×0,7) = 0,2), BUKAN total form 1,83 (keputusan owner 2026-09-20: maks harus 3, rumus form menjumlahkan kriteria alternatif).
     expect(db.bmpAssessment.create.mock.calls[0][0].data).toMatchObject({ farmerId: "f-1", surveyYear: 2026, score: 0.2, createdBy: "user-1" });
-    // Penilaian Lembaga: sekali per tahun dari berkas pertama
+    // Penilaian Lembaga: sekali per tahun dari berkas pertama; rincian ditulis massal —
+    // satu $executeRaw per induk (1 set Lembaga + 2 penilaian), bukan per indikator.
     expect(db.bmpGroupAssessment.create).toHaveBeenCalledTimes(1);
-    expect(db.bmpGroupAssessmentDetail.upsert).toHaveBeenCalledTimes(1);
+    expect(db.$executeRaw).toHaveBeenCalledTimes(3);
   });
 
   it("penilaian petani yang sudah ada diperbarui (skor = hitung ulang dengan set Lembaga berkas pertama; tanggal hanya bila ada); skor Lembaga berbeda antar berkas → peringatan, berkas pertama dipakai", async () => {
@@ -192,7 +197,8 @@ describe("importBmpSurveyForms", () => {
     expect(db.bmpAssessment.create.mock.calls[0][0].data).toMatchObject({ farmerId: "f-2", score: 0.2 });
     expect("surveyDate" in upd).toBe(false);
     expect(res.success && res.data?.warnings[0]).toMatch(/berbeda dari "a.xlsx"/);
-    expect(db.bmpGroupAssessmentDetail.upsert.mock.calls[0][0].create.score).toBe(2);
+    // Set Lembaga yang ditulis = berkas pertama (skor 2), dipakai pula untuk hitung ulang f-2 (0,2 bukan 0,27)
+    expect(db.bmpAssessment.create.mock.calls[0][0].data).toMatchObject({ farmerId: "f-2", score: 0.2 });
   });
 
   it("berkas tanpa rincian sama sekali: skor akhir = total form (tak ada yang bisa dihitung ulang)", async () => {
@@ -228,10 +234,36 @@ describe("importBmpSurveyForms", () => {
     expect((await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [{ ...form("a.xlsx", "f-1"), score: 4.5 }] })).success).toBe(false);
   });
 
+  it("batch tanpa sheet Lembaga: hitung ulang memakai penilaian Lembaga yang SUDAH tersimpan (bukan 0); tanpa keduanya → peringatan", async () => {
+    db.bmpGroupAssessment.findFirst.mockResolvedValueOnce({ details: [{ indicatorId: "l1", score: 3 }] });
+    const res = await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [{ ...form("a.xlsx", "f-1"), lembaga: [] }] });
+    // 0,1 × (2×0,3 + 3×0,7) = 0,27 — skor Lembaga dari DB ikut dihitung
+    expect(db.bmpAssessment.create.mock.calls[0][0].data.score).toBe(0.27);
+    expect(res.success && res.data?.warnings).toEqual([]);
+    vi.clearAllMocks();
+    db.$transaction.mockImplementation(async (fn: (tx: typeof db) => Promise<unknown>) => fn(db));
+    db.bmpGroupAssessment.findFirst.mockResolvedValueOnce(null);
+    const res2 = await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [{ ...form("b.xlsx", "f-2"), lembaga: [] }] });
+    expect(res2.success && res2.data?.warnings[0]).toMatch(/belum ada penilaian Lembaga tersimpan/);
+  });
+
+  it("nama berkas kembar untuk dua petani berbeda: skor tiap penilaian mengikuti form-nya sendiri (kunci = objek form, bukan nama berkas)", async () => {
+    const res = await importBmpSurveyForms({
+      farmerGroupId: "g-1",
+      forms: [
+        { ...form("Suparman.xlsx", "f-1"), individu: [{ indicatorId: "i1", score: 3, notes: null }] },
+        { ...form("Suparman.xlsx", "f-2"), individu: [{ indicatorId: "i1", score: 1, notes: null }] },
+      ],
+    });
+    expect(res.success && res.data?.assessmentsCreated).toBe(2);
+    const scores = db.bmpAssessment.create.mock.calls.map((c) => [c[0].data.farmerId, c[0].data.score]);
+    expect(scores).toEqual([["f-1", 0.23], ["f-2", 0.17]]); // 0,1×(3×0,3+2×0,7) · 0,1×(1×0,3+2×0,7)
+  });
+
   it("skor indikator 4 diterima lewat import (bukan form manual); transaksi gagal → tak ada klaim tersimpan", async () => {
     const ok = await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [{ ...form("a.xlsx", "f-1"), individu: [{ indicatorId: "i1", score: 4, notes: null }] }] });
     expect(ok.success).toBe(true);
-    expect(db.bmpAssessmentDetail.upsert.mock.calls[0][0].create.score).toBe(4);
+    expect(db.$executeRaw).toHaveBeenCalled(); // rincian (termasuk skor 4) ditulis massal apa adanya
 
     db.$transaction.mockRejectedValueOnce(new Error("boom"));
     const bad = await importBmpSurveyForms({ farmerGroupId: "g-1", forms: [form("a.xlsx", "f-1")] });

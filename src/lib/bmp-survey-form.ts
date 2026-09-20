@@ -208,9 +208,13 @@ export function parseBmpSurveyForm(
       if (!isBlank(rawScore)) {
         const n = typeof rawScore === "number" ? rawScore : parseScore(String(rawScore));
         if (n == null) out.warnings.push(`Skor ${hit.code} "${String(rawScore)}" bukan angka — dianggap kosong`);
-        else {
+        else if (n < 0 || n > 9) {
+          // Batas yang sama dengan skema import (0–9): salah ketik jelas ("33") dikosongkan di
+          // pratinjau, bukan menggagalkan seluruh batch di server tanpa menyebut berkasnya.
+          out.warnings.push(`Skor ${hit.code} = ${n} tidak masuk akal — dianggap kosong`);
+        } else {
           score = Math.round(n);
-          if (score < 0 || score > 3) out.warnings.push(`Skor ${hit.code} = ${score} di luar rubrik 0–3 (diterima, ditandai)`);
+          if (score > 3) out.warnings.push(`Skor ${hit.code} = ${score} di luar rubrik 0–3 (diterima, ditandai)`);
         }
       }
       result.push({ indicatorId: hit.id, code: hit.code, level, score, notes });

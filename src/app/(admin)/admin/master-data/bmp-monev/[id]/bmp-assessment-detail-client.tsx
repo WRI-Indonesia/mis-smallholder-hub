@@ -205,7 +205,7 @@ export function BmpAssessmentDetailClient({ view, permissions }: { view: BmpAsse
             Penilaian Lembaga <strong>{a.farmerGroupName}</strong> tahun {a.surveyYear}:{" "}
             {groupAssessment ? (
               <>
-                {formatNumber(groupAssessment.details.filter((d) => d.score != null).length)} dari 14 indikator terisi · survei {formatUtcDate(groupAssessment.surveyDate)}
+                {formatNumber(groupAssessment.details.filter((d) => d.score != null).length)} dari {formatNumber(indicators.filter((i) => i.level === "LEMBAGA").length)} indikator terisi · survei {formatUtcDate(groupAssessment.surveyDate)}
               </>
             ) : (
               <span className="text-muted-foreground">belum ada — indikator Lembaga dihitung 0</span>

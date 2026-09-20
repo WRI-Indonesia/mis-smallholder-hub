@@ -304,13 +304,13 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     const map = mapRef.current?.getMap();
     if (map) map.easeTo({ pitch: Math.max(0, Math.min(MAX_PITCH, map.getPitch() + deg)), duration: 300 });
   }, []);
+  // Efek samping (easeTo) di luar updater state — updater harus murni (StrictMode
+  // memanggilnya dua kali; React boleh menundanya ke render). Temuan review #347.
   const toggleTerrain = useCallback(() => {
-    setTerrainOn((on) => {
-      const map = mapRef.current?.getMap();
-      if (!on && map && map.getPitch() < 20) map.easeTo({ pitch: TERRAIN_DEFAULT_PITCH, duration: 600 });
-      return !on;
-    });
-  }, []);
+    const map = mapRef.current?.getMap();
+    if (!terrainOn && map && map.getPitch() < 20) map.easeTo({ pitch: TERRAIN_DEFAULT_PITCH, duration: 600 });
+    setTerrainOn(!terrainOn);
+  }, [terrainOn]);
 
   // Bounds + centroid per named parcel — computed once per dataset (zoom-independent),
   // so the per-zoom label pass only runs the cheap fit math.

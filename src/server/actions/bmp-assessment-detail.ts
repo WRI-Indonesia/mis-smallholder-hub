@@ -1,8 +1,10 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { hasPermission } from "@/lib/rbac";
+import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import { getAccessContext, farmerAccessFilter, farmerGroupAccessFilter, farmerRelationAccessFilter } from "@/lib/access-context";
 import {
   bmpGroupAssessmentSchema,
@@ -139,9 +141,19 @@ export async function getBmpAssessmentDetailView(id: string): Promise<BmpAssessm
   if (!(await hasPermission(MENU_KEY, "VIEW"))) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+  return loadBmpAssessmentDetailView(id);
+}
+
+/**
+ * Pemuat tanpa cek izin menu — dipakai `getBmpAssessmentDetailView` (VIEW) dan
+ * `saveBmpAssessmentDetails` (EDIT) supaya pengguna ber-EDIT tanpa VIEW tidak
+ * mendapat exception setelah tulisannya sudah tersimpan (temuan review #347).
+ * Baris nonaktif hanya terlihat SUPERADMIN (lapisan soft delete, sama dengan daftar).
+ */
+async function loadBmpAssessmentDetailView(id: string): Promise<BmpAssessmentDetailView | null> {
   const access = await getAccessContext();
   const a = await prisma.bmpAssessment.findFirst({
-    where: { id, AND: [farmerRelationAccessFilter(access)] },
+    where: { id, ...((await isSuperAdmin()) ? {} : { isActive: true, farmer: { isActive: true } }), AND: [farmerRelationAccessFilter(access)] },
     select: {
       id: true,
       farmerId: true,
@@ -247,7 +259,7 @@ export async function saveBmpAssessmentDetails(input: SaveBmpAssessmentDetailsIn
   });
 
   // Hitung ulang dari state tersimpan (bukan payload) supaya angka yang dilaporkan = yang ada di DB.
-  const view = await getBmpAssessmentDetailView(assessmentId);
+  const view = await loadBmpAssessmentDetailView(assessmentId);
   const recomputed = view?.recomputed?.total ?? null;
   if (applyRecomputedScore && recomputed != null) {
     await prisma.bmpAssessment.update({ where: { id: assessmentId }, data: { score: recomputed, modifiedBy: userId } });
@@ -446,18 +458,31 @@ export async function importBmpSurveyForms(input: BmpSurveyImportInput): Promise
   }
 
   // Skor akhir = hitung ulang sistem (bukan total raport form — rumus form
-  // menjumlahkan kriteria alternatif). Set Lembaga = yang akan tersimpan (berkas pertama
-  // tahun itu) supaya skor petani = raport yang nanti tampil di halaman detail.
-  const finalScore = new Map<string, number>();
+  // menjumlahkan kriteria alternatif). Set Lembaga = yang akan tersimpan: berkas
+  // pertama tahun itu, atau — bila batch tanpa sheet Lembaga — penilaian Lembaga
+  // yang SUDAH ada di DB, supaya 6 indikator Lembaga tidak dihitung 0 dan skor
+  // petani = raport yang nanti tampil di halaman detail (temuan review #347).
+  const storedGroupRows = new Map<number, { indicatorId: string; score: number | null }[]>();
+  for (const year of years) {
+    if (groupSets.has(year)) continue;
+    const existingGroup = await prisma.bmpGroupAssessment.findFirst({
+      where: { farmerGroupId, surveyYear: year, isActive: true },
+      select: { details: { where: { isActive: true }, select: { indicatorId: true, score: true } } },
+    });
+    if (existingGroup) storedGroupRows.set(year, existingGroup.details);
+    else summary.warnings.push(`Tahun ${year}: berkas tidak memuat skor Lembaga dan belum ada penilaian Lembaga tersimpan — 6 indikator Lembaga dihitung 0 pada skor akhir`);
+  }
+  // Kunci = objek form (nama berkas tidak unik: nama kembar dari dua folder bisa dipetakan ke dua petani).
+  const finalScore = new Map<object, number>();
   for (const f of accepted) {
-    const groupRows = groupSets.get(f.surveyYear)?.rows ?? f.lembaga;
+    const groupRows = groupSets.get(f.surveyYear)?.rows ?? storedGroupRows.get(f.surveyYear) ?? f.lembaga;
     if (f.individu.length + groupRows.length === 0) {
-      finalScore.set(f.fileName, f.score);
+      finalScore.set(f, f.score);
       continue;
     }
     const individu = new Map(f.individu.map((r) => [byId.get(r.indicatorId)!.code, r.score]));
     const lembaga = new Map(groupRows.map((r) => [byId.get(r.indicatorId)!.code, r.score]));
-    finalScore.set(f.fileName, recomputeBmpScore(indicators, individu, lembaga).total);
+    finalScore.set(f, recomputeBmpScore(indicators, individu, lembaga).total);
   }
 
   const session = await auth();
@@ -474,14 +499,7 @@ export async function importBmpSurveyForms(input: BmpSurveyImportInput): Promise
             ? await tx.bmpGroupAssessment.update({ where: { id: existing.id }, data: { ...(groupSurveyDate(year) ? { surveyDate: groupSurveyDate(year) } : {}), ...(assessor ? { assessor } : {}), modifiedBy: userId }, select: { id: true } })
             : await tx.bmpGroupAssessment.create({ data: { farmerGroupId, surveyYear: year, surveyDate: groupSurveyDate(year), assessor: assessor ?? null, createdBy: userId }, select: { id: true } });
           summary.groupAssessmentId = head.id;
-          for (const r of set.rows) {
-            const ind = byId.get(r.indicatorId)!;
-            await tx.bmpGroupAssessmentDetail.upsert({
-              where: { groupAssessmentId_indicatorId: { groupAssessmentId: head.id, indicatorId: r.indicatorId } },
-              create: { groupAssessmentId: head.id, indicatorId: r.indicatorId, score: r.score, weightUsed: ind.weight, notes: r.notes, createdBy: userId },
-              update: { score: r.score, weightUsed: ind.weight, notes: r.notes, isActive: true, modifiedBy: userId },
-            });
-          }
+          await upsertDetailRowsBulk(tx, "tbl_bmp_group_assessment_detail", "group_assessment_id", head.id, set.rows.map((r) => ({ indicatorId: r.indicatorId, score: r.score, weightUsed: byId.get(r.indicatorId)!.weight, notes: r.notes })), userId);
         }
         // Penilaian petani + rincian individu
         const existing = await tx.bmpAssessment.findMany({
@@ -495,27 +513,19 @@ export async function importBmpSurveyForms(input: BmpSurveyImportInput): Promise
           if (id) {
             await tx.bmpAssessment.update({
               where: { id },
-              data: { score: finalScore.get(f.fileName)!, ...(f.surveyDate ? { surveyDate: f.surveyDate } : {}), ...(assessor ? { assessor } : {}), modifiedBy: userId },
+              data: { score: finalScore.get(f)!, ...(f.surveyDate ? { surveyDate: f.surveyDate } : {}), ...(assessor ? { assessor } : {}), modifiedBy: userId },
             });
             assessmentId = id;
             summary.assessmentsUpdated++;
           } else {
             const created = await tx.bmpAssessment.create({
-              data: { farmerId: f.farmerId, surveyYear: f.surveyYear, surveyDate: f.surveyDate ?? null, score: finalScore.get(f.fileName)!, assessor: assessor ?? null, createdBy: userId },
+              data: { farmerId: f.farmerId, surveyYear: f.surveyYear, surveyDate: f.surveyDate ?? null, score: finalScore.get(f)!, assessor: assessor ?? null, createdBy: userId },
               select: { id: true },
             });
             assessmentId = created.id;
             summary.assessmentsCreated++;
           }
-          for (const r of f.individu) {
-            const ind = byId.get(r.indicatorId)!;
-            await tx.bmpAssessmentDetail.upsert({
-              where: { assessmentId_indicatorId: { assessmentId, indicatorId: r.indicatorId } },
-              create: { assessmentId, indicatorId: r.indicatorId, score: r.score, weightUsed: ind.weight, notes: r.notes ?? null, createdBy: userId },
-              update: { score: r.score, weightUsed: ind.weight, notes: r.notes ?? null, isActive: true, modifiedBy: userId },
-            });
-            summary.detailRows++;
-          }
+          summary.detailRows += await upsertDetailRowsBulk(tx, "tbl_bmp_assessment_detail", "assessment_id", assessmentId, f.individu.map((r) => ({ indicatorId: r.indicatorId, score: r.score, weightUsed: byId.get(r.indicatorId)!.weight, notes: r.notes ?? null })), userId);
         }
       },
       { timeout: 120_000 },
@@ -528,4 +538,32 @@ export async function importBmpSurveyForms(input: BmpSurveyImportInput): Promise
     return { success: false, error: "Gagal menyimpan ke database — tidak ada yang tersimpan, coba lagi" };
   }
   return { success: true, data: summary };
+}
+
+/**
+ * Upsert rincian satu induk dalam SATU pernyataan (`INSERT … ON CONFLICT DO
+ * UPDATE`), bukan satu round-trip per indikator: 300 form × (18 + 14) upsert
+ * berurutan ≈ 6.000 await — lewat tunnel prod melampaui timeout transaksi 120 s
+ * dan seluruh import batal (temuan review #347). Kolom & constraint mengikuti
+ * migrasi `20260920120000_bmp_indicator_detail`; id memakai UUID (PK string).
+ */
+async function upsertDetailRowsBulk(
+  tx: Prisma.TransactionClient,
+  table: "tbl_bmp_assessment_detail" | "tbl_bmp_group_assessment_detail",
+  parentColumn: "assessment_id" | "group_assessment_id",
+  parentId: string,
+  rows: { indicatorId: string; score: number | null; weightUsed: number | null; notes: string | null }[],
+  userId: string | null,
+): Promise<number> {
+  if (rows.length === 0) return 0;
+  const values = rows.map(
+    (r) => Prisma.sql`(${randomUUID()}, ${parentId}, ${r.indicatorId}, ${r.score}, ${r.weightUsed}, ${r.notes}, true, now(), ${userId}, now(), ${userId})`,
+  );
+  await tx.$executeRaw`
+    INSERT INTO ${Prisma.raw(`"${table}"`)} (id, ${Prisma.raw(`"${parentColumn}"`)}, indicator_id, score, weight_used, notes, is_active, created_at, created_by, modified_at, modified_by)
+    VALUES ${Prisma.join(values)}
+    ON CONFLICT (${Prisma.raw(`"${parentColumn}"`)}, indicator_id) DO UPDATE SET
+      score = EXCLUDED.score, weight_used = EXCLUDED.weight_used, notes = EXCLUDED.notes,
+      is_active = true, modified_at = now(), modified_by = EXCLUDED.modified_by`;
+  return rows.length;
 }

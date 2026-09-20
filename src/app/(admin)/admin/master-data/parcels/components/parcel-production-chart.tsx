@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProductionYear } from "@/types/map";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, axisMax } from "@/lib/format";
 
 const MONTH_LABELS = [
   "Jan",
@@ -20,14 +20,6 @@ const MONTH_LABELS = [
 ];
 
 /** Ceiling sumbu yang rapi (1/2/5 × 10^k) — mengikuti pola TrainingTrendChart. */
-function axisMax(dataMax: number): number {
-  if (dataMax <= 0) return 10;
-  const pow = Math.pow(10, Math.floor(Math.log10(dataMax)));
-  for (const m of [1, 2, 5, 10]) {
-    if (dataMax <= m * pow) return m * pow;
-  }
-  return 10 * pow;
-}
 
 function axisDivisions(max: number): number {
   return String(max).startsWith("2") ? 4 : 5;

@@ -1,6 +1,7 @@
 // bmp-assessment.prisma — hasil Monev BMP (Monitoring & Evaluasi Best Management
 // Practices) per PETANI per tahun (#344, keputusan owner 2026-09-18). Skor akhir
-// saja; rincian per indikator di luar lingkup. Kategori (Teladan / Praktisi /
+// di sini; rincian per indikator + penilaian Lembaga menyusul di
+// bmp-indicator.prisma (#346). Kategori (Teladan / Praktisi /
 // Perintis / Belum Implementasi) TIDAK disimpan — dihitung dari skor lewat
 // konstanta ambang di src/lib/bmp-assessment.ts agar revisi ambang konsisten ke
 // seluruh riwayat.

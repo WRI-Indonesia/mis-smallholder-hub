@@ -188,6 +188,8 @@ function BmpGroupAssessmentModal({
       toast.success("Penilaian Lembaga tersimpan");
       onClose();
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan penilaian Lembaga");
     } finally {
       setSaving(false);
     }

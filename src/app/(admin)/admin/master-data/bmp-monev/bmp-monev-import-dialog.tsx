@@ -170,10 +170,11 @@ export function BmpMonevImportDialog({ open, onClose, farmerGroups }: Props) {
   }
 
   async function handleDownloadTemplate() {
-    // Template satu tahun: kolom identitas + blok tahun berjalan. Header
-    // dua baris format rekap tidak bisa ditulis exportToExcel (satu header),
-    // jadi template memakai header tunggal "Tgl Survey 2026" / "Skor 2026" —
-    // parser mengenali keduanya karena tahun tetap berada di baris header.
+    // Template satu tahun: kolom identitas + blok tahun berjalan. Header dua
+    // baris format rekap tidak bisa ditulis exportToExcel (satu header), jadi
+    // tahun ditaruh sebagai KOLOM sendiri berjudul "2026" tepat sebelum
+    // "Tgl Survey" / "Skor" — parser membaca blok tahun dari sel tahun di
+    // baris header (satu baris pun dikenali, lihat parseBmpImportRows).
     const year = new Date().getFullYear();
     await exportToExcel({
       filename: "Template_Import_Monev_BMP",

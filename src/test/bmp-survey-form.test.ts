@@ -138,6 +138,16 @@ describe("parseBmpSurveyForm", () => {
     expect(p.warnings.some((w) => w.includes("bukan angka"))).toBe(true);
   });
 
+  it("skor tidak masuk akal (> 9 / negatif) dikosongkan di parser + peringatan — batas sama dengan skema import, supaya server tak menolak seluruh batch (review #347)", () => {
+    const p = parseBmpSurveyForm(
+      "x - 2026 - A.xlsx",
+      sheets({ ind: [["1.2", "Pemupukan", "1.2.3", "k", "Menerapkan metode 5 T", 33, null], ["1.2", "Pemupukan", "1.2.3", "k", "Menggunaan bahan organik", -1, null]] }),
+      INDICATORS,
+    );
+    expect(p.individu.map((x) => [x.code, x.score])).toEqual([["1.2.3.1", null], ["1.2.3.2", null]]);
+    expect(p.warnings.filter((w) => w.includes("tidak masuk akal"))).toHaveLength(2);
+  });
+
   it("indikator master yang tak ada di sheet dilaporkan; sheet hilang dilaporkan", () => {
     const p = parseBmpSurveyForm("x - 2026 - A.xlsx", sheets({ ind: [["1.1", "Training", "1.1.1", "k", "Sudah mendapatkan pelatihan", 1, null]] }).filter((s) => s.name !== "Form Survey Lembaga"), INDICATORS);
     expect(p.lembaga).toEqual([]);

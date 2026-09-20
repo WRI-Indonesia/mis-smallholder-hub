@@ -164,4 +164,14 @@ Penjaga tambahan:
 
 `src/server/actions/bulk-upload-tree.ts` + helper murni `src/lib/tree-upload.ts` — ZIP shapefile **point** diparse (`shpjs`), titik dikelompokkan per atribut `parcel_id` (satu ZIP boleh multi-lahan), dicocokkan ke lahan aktif dalam scope → preview per lahan (jumlah titik, kerapatan pohon/ha, status Baru/Revisi/Tidak ditemukan) → simpan transaksional. **Revisi per-set**: upload ulang menonaktifkan seluruh set pohon lama lahan tsb, set baru `revision + 1`; revisi lahan me-repoint semua pohon ke baris lahan baru (pola productionRecord).
 
+## Monev BMP — input skor, import rekap, import form survei (Master Data › Monev BMP, #344 · #346)
+
+Tiga jalur masuk untuk satu tabel `BmpAssessment` (satu baris **aktif** per petani-tahun, dijaga partial unique + cek `findFirst` di action + P2002):
+
+1. **Form manual** (`createBmpAssessment` / `updateBmpAssessment`, `bmpAssessmentSchema`): Lembaga → Petani → tahun → skor 0–3 (+ tanggal, lahan dikunjungi, penilai, catatan). Duplikat aktif ditolak dengan pesan tahun; baris nonaktif tidak bisa diubah (aktifkan dulu).
+2. **Rekap skor (satu sheet)** (`importBmpAssessments`): pilih Lembaga (ID petani hanya unik per Lembaga) → `parseBmpImportRows` (header dua baris, blok tahun ber-merge, `SUB_HEADERS`) → `resolveBmpImportRows` (cocokkan ID Petani + lahan, tanggal masa depan/beda tahun dikosongkan dengan peringatan) → pratinjau → upsert per petani-tahun dalam satu transaksi (timeout 120 s); tanggal/lahan hanya ditimpa bila terisi. Skor rekap disimpan apa adanya (tanpa rincian).
+3. **Form survei per petani (banyak berkas)** (`importBmpSurveyForms`): tiap `.xlsx` = satu petani; identitas = **nama berkas** (`farmerNameFromFileName` → `matchFarmerName` EXACT/FUZZY/AMBIGUOUS/NONE + dropdown); skor indikator dari sheet Survey Lembaga/Individu (`parseBmpSurveyForm`, pemetaan kriteria + awalan teks → fallback urutan); server memvalidasi petani ∈ Lembaga ∈ scope (`AND`), level indikator, petani tak dipakai dua berkas; **skor akhir = `recomputeBmpScore`** (kriteria alternatif 1.3.2 petani ATAU pekerja dihitung sekali; total raport form hanya pembanding, dipakai bila berkas tanpa rincian); penilaian Lembaga tahun itu di-upsert sekali dari berkas pertama; satu transaksi.
+
+Rincian: `saveBmpAssessmentDetails` (grid 18 indikator individu, upsert per indikator yang dikirim, opsi timpa skor tersimpan dengan hitung ulang) dan `upsertBmpGroupAssessment` (14 indikator Lembaga; Tambah ditolak bila Lembaga-tahun sudah aktif, Ubah membawa `id`). Semua tulisan mengisi `createdBy`/`modifiedBy`, `revalidatePath` ke daftar, detail, dan dashboard Monev.
+
 </details>

@@ -8,7 +8,7 @@ import { formatScore } from "@/lib/bmp-assessment";
 import { bmpMonevGroupIndicatorAverages, type BmpMonevGroupProfileRow, type BmpMonevGroupProfileSort, type BmpMonevIndicator } from "@/lib/bmp-monev-dashboard-aggregation";
 
 /**
- * Profil kelembagaan (#346): Lembaga × 14 indikator level LEMBAGA sebagai
+ * Profil kelembagaan (#346): Lembaga × indikator level LEMBAGA (14 di master saat ini) sebagai
  * chip skor 0–3 (ramp satu hue — magnitudo, bukan kategori). Lembaga tanpa
  * penilaian tahun itu tetap tampil bertanda supaya cakupan kelembagaan terbaca.
  */
@@ -38,7 +38,7 @@ export function BmpMonevGroupHeatmap({
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-primary" /> Profil Kelembagaan — 14 indikator Lembaga ({yearLabel})
+            <Building2 className="h-4 w-4 text-primary" /> Profil Kelembagaan — {cols.length} indikator Lembaga ({yearLabel})
           </CardTitle>
           <div className="flex items-center gap-1 text-xs">
             <span className="text-muted-foreground">Urutkan:</span>

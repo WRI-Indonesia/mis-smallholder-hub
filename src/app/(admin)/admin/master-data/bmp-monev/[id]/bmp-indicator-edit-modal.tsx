@@ -66,6 +66,8 @@ export function BmpIndicatorEditModal({
       toast.success(`Rincian tersimpan${rc != null ? ` · hitung ulang ${formatScore(rc)}${apply ? " (skor tersimpan ditimpa)" : ""}` : ""}`);
       onClose();
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan rincian");
     } finally {
       setSaving(false);
     }

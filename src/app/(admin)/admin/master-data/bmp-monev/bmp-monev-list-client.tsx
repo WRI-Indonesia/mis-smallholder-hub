@@ -74,12 +74,16 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
   });
 
   async function handleToggleActive(id: string) {
-    const result = await toggleBmpAssessmentActive(id);
-    if (result.success) {
-      toast.success("Status berhasil diubah");
-      router.refresh();
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await toggleBmpAssessmentActive(id);
+      if (result.success) {
+        toast.success("Status berhasil diubah");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengubah status");
     }
   }
 
@@ -90,13 +94,18 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
       sortable: true,
       cellClassName: "text-sm",
       render: (r) => (
-        <div className="flex flex-col">
-          <Link href={`/admin/master-data/farmers/${r.farmerId}`} className="font-medium text-primary hover:underline">
-            {r.farmerName}
-          </Link>
-          <span className="font-mono text-[11px] text-muted-foreground">{r.farmerCode}</span>
-        </div>
+        <Link href={`/admin/master-data/farmers/${r.farmerId}`} className="font-medium text-primary hover:underline">
+          {r.farmerName}
+        </Link>
       ),
+    },
+    // Kolom sendiri (bukan hanya sub-teks di kolom Petani) supaya ID ikut ke Excel —
+    // ekspor mengikuti kolom yang tampil; ID = kunci untuk import rekap (review #347).
+    {
+      key: "farmerCode",
+      label: "ID Petani",
+      sortable: true,
+      cellClassName: "font-mono text-xs text-muted-foreground",
     },
     {
       key: "farmerGroupName",

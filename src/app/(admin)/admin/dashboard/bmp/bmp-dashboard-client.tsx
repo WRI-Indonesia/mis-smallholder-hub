@@ -22,6 +22,7 @@ import { BmpTrendChart } from "./bmp-trend-chart";
 import { BmpCategoryPanel, type BmpComparisonRow } from "./bmp-category-panel";
 import { BmpRankingChart } from "./bmp-ranking-chart";
 import type { BmpDataMode, BmpFarmerGroupCategory, BmpSnapshotView } from "@/types/dashboard";
+import { formatGeneratedAt } from "@/lib/format";
 
 interface Props {
   initialView: BmpSnapshotView | null;
@@ -32,13 +33,6 @@ interface Props {
 const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
   EX_PLASMA: "Ex-Plasma",
   SWADAYA: "Swadaya",
-};
-
-const formatGeneratedAt = (iso: string) => {
-  const d = new Date(iso);
-  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
 export function BmpDashboardClient({ initialView, helpSlot }: Props) {

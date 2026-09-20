@@ -54,9 +54,17 @@ const confidenceLabel: Record<BmpNameMatchConfidence, { label: string; variant: 
   NONE: { label: "Tak ditemukan", variant: "destructive" },
 };
 
+/**
+ * Tahun dari nama berkas bila Periode kosong (80/192 berkas Rohul): utamakan
+ * token di antara pemisah " - " (`… - 2026 - Nama.xlsx`), kalau tidak ada pakai
+ * token 20xx TERAKHIR — ID petani seperti `SKPE.14.06.09.2001.0022` mendahului
+ * tahun dan token pertamanya bukan tahun survei (temuan review #347).
+ */
 function yearFromFileName(fileName: string): number | null {
-  const m = fileName.match(/\b(20\d{2})\b/);
-  return m ? Number(m[1]) : null;
+  const sep = fileName.match(/\s-\s(20\d{2})\s-\s/);
+  if (sep) return Number(sep[1]);
+  const all = [...fileName.matchAll(/\b(20\d{2})\b/g)];
+  return all.length ? Number(all[all.length - 1][1]) : null;
 }
 
 export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor, disabled }: Props) {
@@ -67,6 +75,7 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
   const [refs, setRefs] = useState<BmpImportFarmerRef[] | null>(null);
   const [indicators, setIndicators] = useState<BmpIndicatorRef[] | null>(null);
   const [rows, setRows] = useState<FormRow[]>([]);
+  const [unreadable, setUnreadable] = useState<{ fileName: string; reason: string }[]>([]);
   const [result, setResult] = useState<BmpSurveyImportSummary | null>(null);
 
   // Kriteria alternatif (petani ATAU pekerja) dihitung satu slot: 15, bukan 16.
@@ -102,19 +111,29 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
       // exceljs di browser ±3–5 dtk per form (sheet berformat 1.000 baris) —
       // dibaca beberapa sekaligus dengan progres agar 30 berkas tidak terasa macet.
       setProgress({ done: 0, total: files.length });
-      const parsedAll = new Array<{ file: File; sheets: Awaited<ReturnType<typeof readXlsxWorkbookRaw>> }>(files.length);
+      const parsedAll = new Array<{ file: File; sheets: Awaited<ReturnType<typeof readXlsxWorkbookRaw>> } | null>(files.length).fill(null);
+      // Berkas yang gagal dibaca (bukan .xlsx, rusak, tanpa sheet) dicatat per nama —
+      // tidak menggugurkan berkas lain yang sudah terbaca (temuan review #347).
+      const unreadable: { fileName: string; reason: string }[] = [];
       let next = 0;
       let done = 0;
       const worker = async () => {
         while (next < files.length) {
           const i = next++;
-          parsedAll[i] = { file: files[i], sheets: await readXlsxWorkbookRaw(files[i]) };
+          try {
+            parsedAll[i] = { file: files[i], sheets: await readXlsxWorkbookRaw(files[i]) };
+          } catch (err) {
+            unreadable.push({ fileName: files[i].name, reason: err instanceof Error ? err.message : "Gagal membaca berkas" });
+          }
           done++;
           setProgress({ done, total: files.length });
         }
       };
       await Promise.all(Array.from({ length: Math.min(3, files.length) }, worker));
-      for (const { file, sheets } of parsedAll) {
+      setUnreadable((prev) => [...prev, ...unreadable]);
+      for (const entry of parsedAll) {
+        if (!entry) continue;
+        const { file, sheets } = entry;
         const parsed = parseBmpSurveyForm(file.name, sheets, indList);
         // Periode di masa depan (salah ketik tahun) dikosongkan + peringatan — sama
         // dengan jalur rekap; kalau dibiarkan, server menolak SELURUH batch.
@@ -151,7 +170,7 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
       out.sort((a, b) => (a.parsed.fileFarmerName ?? "").localeCompare(b.parsed.fileFarmerName ?? ""));
       setRows((prev) => [...prev, ...out]);
       const sure = out.filter((r) => r.confidence === "EXACT").length;
-      toast.success(`${formatNumber(out.length)} form terbaca · ${formatNumber(sure)} cocok yakin · ${formatNumber(out.length - sure)} perlu diperiksa`);
+      toast.success(`${formatNumber(out.length)} form terbaca · ${formatNumber(sure)} cocok yakin · ${formatNumber(out.length - sure)} perlu diperiksa${unreadable.length ? ` · ${formatNumber(unreadable.length)} berkas gagal dibaca` : ""}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal membaca berkas");
     } finally {
@@ -193,6 +212,7 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
       }
       setResult(res.data);
       setRows([]);
+      setUnreadable([]);
       setRefs(null);
       toast.success(`Form tersimpan: ${formatNumber(res.data.assessmentsCreated)} penilaian baru · ${formatNumber(res.data.assessmentsUpdated)} diperbarui · ${formatNumber(res.data.detailRows)} skor indikator`);
       router.refresh();
@@ -213,7 +233,7 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
           <Input id="survey-files" type="file" accept=".xlsx" multiple onChange={handleFiles} disabled={disabled || reading || saving || !farmerGroupId} />
         </div>
         {rows.length > 0 && (
-          <Button variant="outline" size="sm" onClick={() => { setRows([]); setResult(null); }} disabled={saving}>
+          <Button variant="outline" size="sm" onClick={() => { setRows([]); setUnreadable([]); setResult(null); }} disabled={saving}>
             Kosongkan daftar
           </Button>
         )}
@@ -224,6 +244,19 @@ export function BmpSurveyImportPanel({ farmerGroupId, farmerGroupName, assessor,
         rincian (total raport form hanya pembanding — rumus form menjumlahkan petani <em>dan</em> pekerja pada Identifikasi Gulma, sistem memakai salah satu); penilaian Lembaga
         tahun itu diisi dari berkas pertama. Skor di luar 0–3 diterima dan ditandai.
       </p>
+
+      {unreadable.length > 0 && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          <p className="font-medium">{formatNumber(unreadable.length)} berkas gagal dibaca dan dilewati:</p>
+          <ul className="mt-1 list-disc pl-4">
+            {unreadable.map((u, i) => (
+              <li key={`${u.fileName}-${i}`}>
+                <span className="font-mono">{u.fileName}</span> — {u.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {reading && (
         <div className="space-y-1.5">

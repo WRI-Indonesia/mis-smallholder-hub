@@ -3,18 +3,12 @@
 import { useState } from "react";
 import { BarChart2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, axisMax } from "@/lib/format";
 import { bmpAssessmentCategoryByKey, formatScore } from "@/lib/bmp-assessment";
 import type { BmpMonevScoreBin } from "@/lib/bmp-monev-dashboard-aggregation";
 import { BmpMonevCategoryLegend } from "./bmp-monev-category-legend";
 
 /** Ceiling sumbu yang rapi (1/2/5 × 10^k) — pola BmpTrendChart. */
-function axisMax(dataMax: number): number {
-  if (dataMax <= 0) return 5;
-  const pow = Math.pow(10, Math.floor(Math.log10(dataMax)));
-  for (const m of [1, 2, 5, 10]) if (dataMax <= m * pow) return m * pow;
-  return 10 * pow;
-}
 
 /**
  * Sebaran skor petani dinilai — histogram bin 0,25 (0–3), warna bin mengikuti
@@ -24,7 +18,7 @@ function axisMax(dataMax: number): number {
 export function BmpMonevScoreHistogram({ bins, avgScore, yearLabel }: { bins: BmpMonevScoreBin[]; avgScore: number | null; yearLabel: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const total = bins.reduce((s, b) => s + b.count, 0);
-  const max = axisMax(Math.max(0, ...bins.map((b) => b.count)));
+  const max = axisMax(Math.max(0, ...bins.map((b) => b.count)), 5);
   const divisions = String(max).startsWith("2") ? 4 : 5;
   const fractions = Array.from({ length: divisions + 1 }, (_, i) => i / divisions);
   const slot = 100 / bins.length;
