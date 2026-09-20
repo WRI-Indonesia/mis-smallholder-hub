@@ -383,6 +383,18 @@ export const DATA_SCHEMA: SchemaMap = {
           "dbName": "modified_by",
           "relationName": null,
           "relationFields": []
+        },
+        {
+          "name": "details",
+          "type": "BmpAssessmentDetail",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
         }
       ],
       "scalarCount": 13,
@@ -399,6 +411,182 @@ export const DATA_SCHEMA: SchemaMap = {
           "isActive"
         ]
       ]
+    },
+    {
+      "name": "BmpAssessmentDetail",
+      "clientName": "bmpAssessmentDetail",
+      "tableName": "tbl_bmp_assessment_detail",
+      "domain": "bmp-indicator",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "assessmentId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "assessment_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "assessment",
+          "type": "BmpAssessment",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "assessmentId"
+          ]
+        },
+        {
+          "name": "indicatorId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "indicator_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "indicator",
+          "type": "BmpIndicator",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "indicatorId"
+          ]
+        },
+        {
+          "name": "score",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "score",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "weightUsed",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "weight_used",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "notes",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 11,
+      "compoundUnique": [
+        [
+          "assessmentId",
+          "indicatorId"
+        ]
+      ],
+      "indexes": []
     },
     {
       "name": "BmpDashboardSnapshot",
@@ -559,6 +747,667 @@ export const DATA_SCHEMA: SchemaMap = {
         ],
         [
           "isActive"
+        ]
+      ]
+    },
+    {
+      "name": "BmpGroupAssessment",
+      "clientName": "bmpGroupAssessment",
+      "tableName": "tbl_bmp_group_assessment",
+      "domain": "bmp-indicator",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "farmerGroupId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "farmer_group_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "farmerGroup",
+          "type": "FarmerGroup",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "farmerGroupId"
+          ]
+        },
+        {
+          "name": "surveyYear",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "survey_year",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "surveyDate",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "survey_date",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "assessor",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "assessor",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "notes",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "details",
+          "type": "BmpGroupAssessmentDetail",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 11,
+      "compoundUnique": [],
+      "indexes": [
+        [
+          "farmerGroupId",
+          "surveyYear"
+        ],
+        [
+          "isActive"
+        ]
+      ]
+    },
+    {
+      "name": "BmpGroupAssessmentDetail",
+      "clientName": "bmpGroupAssessmentDetail",
+      "tableName": "tbl_bmp_group_assessment_detail",
+      "domain": "bmp-indicator",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "groupAssessmentId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "group_assessment_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "groupAssessment",
+          "type": "BmpGroupAssessment",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "groupAssessmentId"
+          ]
+        },
+        {
+          "name": "indicatorId",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "indicator_id",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "indicator",
+          "type": "BmpIndicator",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": [
+            "indicatorId"
+          ]
+        },
+        {
+          "name": "score",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "score",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "weightUsed",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "weight_used",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "notes",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 11,
+      "compoundUnique": [
+        [
+          "groupAssessmentId",
+          "indicatorId"
+        ]
+      ],
+      "indexes": []
+    },
+    {
+      "name": "BmpIndicator",
+      "clientName": "bmpIndicator",
+      "tableName": "ref_bmp_indicator",
+      "domain": "bmp-indicator",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": true,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "code",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "code",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "activityCode",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "activity_code",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "activityName",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "activity_name",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "activityWeight",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "activity_weight",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "criteriaCode",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "criteria_code",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "criteriaName",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "criteria_name",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "seq",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "seq",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "level",
+          "type": "BmpIndicatorLevel",
+          "kind": "enum",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "level",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "name",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "weight",
+          "type": "Float",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "weight",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "inFinalScore",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "in_final_score",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "scoreLabel0",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "score_label_0",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "scoreLabel1",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "score_label_1",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "scoreLabel2",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "score_label_2",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "scoreLabel3",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "score_label_3",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "sortOrder",
+          "type": "Int",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "sort_order",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "is_active",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "created_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedAt",
+          "type": "DateTime",
+          "kind": "scalar",
+          "isRequired": true,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_at",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "modifiedBy",
+          "type": "String",
+          "kind": "scalar",
+          "isRequired": false,
+          "isList": false,
+          "isId": false,
+          "isUnique": false,
+          "dbName": "modified_by",
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "assessmentDetails",
+          "type": "BmpAssessmentDetail",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "groupDetails",
+          "type": "BmpGroupAssessmentDetail",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        }
+      ],
+      "scalarCount": 22,
+      "compoundUnique": [
+        [
+          "code",
+          "level"
+        ]
+      ],
+      "indexes": [
+        [
+          "activityCode"
         ]
       ]
     },
@@ -1382,6 +2231,18 @@ export const DATA_SCHEMA: SchemaMap = {
         {
           "name": "activities",
           "type": "TrainingActivity",
+          "kind": "relation",
+          "isRequired": true,
+          "isList": true,
+          "isId": false,
+          "isUnique": false,
+          "dbName": null,
+          "relationName": null,
+          "relationFields": []
+        },
+        {
+          "name": "bmpGroupAssessments",
+          "type": "BmpGroupAssessment",
           "kind": "relation",
           "isRequired": true,
           "isList": true,
@@ -6873,6 +7734,42 @@ export const DATA_SCHEMA: SchemaMap = {
   ],
   "relations": [
     {
+      "key": "BmpAssessment↔BmpAssessmentDetail",
+      "from": "BmpAssessment",
+      "to": "BmpAssessmentDetail",
+      "kind": "1:n",
+      "fromField": "details",
+      "toField": "assessment",
+      "isSelf": false
+    },
+    {
+      "key": "BmpGroupAssessment↔BmpGroupAssessmentDetail",
+      "from": "BmpGroupAssessment",
+      "to": "BmpGroupAssessmentDetail",
+      "kind": "1:n",
+      "fromField": "details",
+      "toField": "groupAssessment",
+      "isSelf": false
+    },
+    {
+      "key": "BmpAssessmentDetail↔BmpIndicator",
+      "from": "BmpIndicator",
+      "to": "BmpAssessmentDetail",
+      "kind": "1:n",
+      "fromField": "assessmentDetails",
+      "toField": "indicator",
+      "isSelf": false
+    },
+    {
+      "key": "BmpGroupAssessmentDetail↔BmpIndicator",
+      "from": "BmpIndicator",
+      "to": "BmpGroupAssessmentDetail",
+      "kind": "1:n",
+      "fromField": "groupDetails",
+      "toField": "indicator",
+      "isSelf": false
+    },
+    {
       "key": "AdministrativeBoundary↔District",
       "from": "District",
       "to": "AdministrativeBoundary",
@@ -6978,6 +7875,15 @@ export const DATA_SCHEMA: SchemaMap = {
       "kind": "1:n",
       "fromField": "trainingParticipants",
       "toField": "farmer",
+      "isSelf": false
+    },
+    {
+      "key": "BmpGroupAssessment↔FarmerGroup",
+      "from": "FarmerGroup",
+      "to": "BmpGroupAssessment",
+      "kind": "1:n",
+      "fromField": "bmpGroupAssessments",
+      "toField": "farmerGroup",
       "isSelf": false
     },
     {
@@ -7288,6 +8194,14 @@ export const DATA_SCHEMA: SchemaMap = {
         "DESA"
       ],
       "domain": "config"
+    },
+    {
+      "name": "BmpIndicatorLevel",
+      "values": [
+        "LEMBAGA",
+        "INDIVIDU"
+      ],
+      "domain": "bmp-indicator"
     },
     {
       "name": "CertStatus",

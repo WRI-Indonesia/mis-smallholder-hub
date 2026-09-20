@@ -328,3 +328,26 @@ describe("migrasi bmp_assessment — partial unique aktif per petani-tahun (#344
     expect(second!.sql).toMatch(/CREATE UNIQUE INDEX "uniq_bmp_assessment_farmer_year_active" ON "tbl_bmp_assessment"\("farmer_id", "survey_year"\) WHERE "is_active"/);
   });
 });
+
+/** Rincian Monev BMP (#346): 4 tabel + enum, partial unique penilaian Lembaga aktif per tahun, tanpa sentuh geom. */
+describe("migrasi bmp_indicator_detail — master indikator + rincian + penilaian Lembaga (#346)", () => {
+  const m = migrationFiles().find((f) => f.name.endsWith("_bmp_indicator_detail"));
+
+  it("berkas ada; 4 tabel + enum level; unique (code, level) & per (penilaian, indikator); partial unique Lembaga aktif per tahun", () => {
+    expect(m).toBeDefined();
+    expect(m!.sql).toMatch(/CREATE TYPE "BmpIndicatorLevel" AS ENUM \('LEMBAGA', 'INDIVIDU'\)/);
+    for (const t of ["ref_bmp_indicator", "tbl_bmp_assessment_detail", "tbl_bmp_group_assessment", "tbl_bmp_group_assessment_detail"]) {
+      expect(m!.sql).toMatch(new RegExp(`CREATE TABLE "${t}"`));
+    }
+    expect(m!.sql).toMatch(/CREATE UNIQUE INDEX "ref_bmp_indicator_code_level_key" ON "ref_bmp_indicator"\("code", "level"\)/);
+    expect(m!.sql).toMatch(/CREATE UNIQUE INDEX "tbl_bmp_assessment_detail_assessment_id_indicator_id_key"/);
+    expect(m!.sql).toMatch(/CREATE UNIQUE INDEX "uniq_bmp_group_assessment_group_year_active" ON "tbl_bmp_group_assessment"\("farmer_group_id", "survey_year"\) WHERE "is_active"/);
+  });
+
+  it("FK rincian ke tbl_bmp_assessment & ref_bmp_indicator (RESTRICT); tanpa DROP INDEX geom / DROP DEFAULT", () => {
+    expect(m!.sql).toMatch(/REFERENCES "tbl_bmp_assessment"\("id"\) ON DELETE RESTRICT/);
+    expect(m!.sql).toMatch(/REFERENCES "ref_bmp_indicator"\("id"\) ON DELETE RESTRICT/);
+    expect(m!.sql).toMatch(/REFERENCES "tbl_farmer_group"\("id"\) ON DELETE RESTRICT/);
+    expect(ddlOnly(m!.sql)).not.toMatch(/_geom_idx|DROP DEFAULT/);
+  });
+});

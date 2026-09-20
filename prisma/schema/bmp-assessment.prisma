@@ -32,6 +32,8 @@ model BmpAssessment {
   modifiedAt DateTime            @updatedAt @map("modified_at")
   modifiedBy String?             @map("modified_by")
 
+  details BmpAssessmentDetail[] // skor per indikator individu (#346)
+
   @@index([farmerId, surveyYear])
   @@index([surveyYear])
   @@index([isActive])

@@ -38,6 +38,12 @@
 | **Monev BMP (#344)** | | | | | |
 | BmpAssessment | `farmerId` | Farmer | `id` | RESTRICT | CASCADE |
 | BmpAssessment | `parcelUid` (nullable) | LandParcelIdentity | `id` | SET NULL | CASCADE |
+| **Rincian Monev BMP (#346)** | | | | | |
+| BmpAssessmentDetail | `assessmentId` | BmpAssessment | `id` | RESTRICT | CASCADE |
+| BmpAssessmentDetail | `indicatorId` | BmpIndicator | `id` | RESTRICT | CASCADE |
+| BmpGroupAssessment | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
+| BmpGroupAssessmentDetail | `groupAssessmentId` | BmpGroupAssessment | `id` | RESTRICT | CASCADE |
+| BmpGroupAssessmentDetail | `indicatorId` | BmpIndicator | `id` | RESTRICT | CASCADE |
 | **Tree** | | | | | |
 | Tree | `landParcelId` | LandParcel | `id` | RESTRICT | CASCADE |
 | **Production** | | | | | |
@@ -105,6 +111,10 @@
 | **LandParcelBorder** | `parcelUid` | UNIQUE | Sepadan 1:1 per identitas lahan (#326). **Hapus = kosongkan keempat kolom**, bukan toggle `isActive` — baris nonaktif akan memblokir pengisian ulang |
 | **LandParcelNkt** | `parcelUid` | UNIQUE | Status NKT 1:1 per identitas lahan (#328). Tanpa baris = belum dinilai; **hapus = hapus baris**. Zod: `categories` ≥ 1 kecuali `NOT_AFFECTED`, `assessedAt` ≤ hari ini |
 | **BmpAssessment** | `(farmerId, surveyYear) WHERE is_active` | **PARTIAL UNIQUE** `uniq_bmp_assessment_farmer_year_active` (migrasi `20260920100000`, temuan review #344) | Satu baris AKTIF per petani-tahun; baris nonaktif tak memegang slot (isi ulang setelah soft delete sah — pelajaran #306/#326). Action tetap `findFirst` dulu untuk pesan ramah, index yang menjamin atomik (P2002 ditangkap: create/update/toggle/import). Tulis tangan seperti #306/#329 — Prisma akan mengusulkan DROP-nya, jangan diterima. Zod: `score` 0–3 dibulatkan 2 desimal, `surveyYear` 2020–tahun depan, `surveyDate` ≤ hari ini (+24 jam toleransi zona WIB/WITA/WIT karena disimpan UTC tengah malam) & tahun = `surveyYear`; `parcelUid` harus milik petani yang sama (dicek action) |
+| **BmpIndicator** | `(code, level)` | UNIQUE COMPOSITE | Dua kode ada di dua level (1.2.2.2 acuan pemupukan, 1.5.1.2 infrastruktur) — kode saja tidak unik (#346). Master di-seed dari CSV; `weight` null = informatif |
+| **BmpAssessmentDetail** | `(assessmentId, indicatorId)` | UNIQUE COMPOSITE | Satu skor per indikator per penilaian; rincian di-upsert utuh (isActive mengikuti induk). `score` Int? 0–3 dari form manual; import menerima 0–9 (skor 4 di form RSB diterima + ditandai, keputusan owner 2026-09-20) |
+| **BmpGroupAssessment** | `(farmerGroupId, surveyYear) WHERE is_active` | **PARTIAL UNIQUE** `uniq_bmp_group_assessment_group_year_active` | Satu penilaian Lembaga aktif per tahun (tulis tangan, pola #306/#329) |
+| **BmpGroupAssessmentDetail** | `(groupAssessmentId, indicatorId)` | UNIQUE COMPOSITE | Satu skor per indikator Lembaga per penilaian |
 | **LandMarker** | `code` | UNIQUE, NOT NULL | Kode patok fisik `<SINGKATAN>-PTK-000123` (#331); deret per awalan di `LandMarkerCounter` (`INSERT … ON CONFLICT DO UPDATE … RETURNING`, atomik) |
 | LandMarker | `longitude`, `latitude` | NOT NULL; Zod −180..180 / −90..90 + ≤ 100 m dari batas lahan | Guard koordinat tertukar / salah desimal pada data GPS (#329); `geom` GENERATED dari keduanya |
 | **LandParcelMarker** | `(parcelUid, markerId)` | UNIQUE COMPOSITE | Satu tautan per pasangan lahan–patok; tautan yang dilepas diaktifkan ulang, bukan dibuat baru |

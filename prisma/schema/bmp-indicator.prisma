@@ -1,0 +1,121 @@
+// bmp-indicator.prisma — rincian Monev BMP (#346): master indikator + skor per
+// indikator untuk penilaian PETANI (BmpAssessment) dan penilaian LEMBAGA
+// (BmpGroupAssessment). Sumber: form survei tim lapangan "Form Penilaian
+// (Gabungan)" — 5 kegiatan berbobot (Training 0,10 · Pemupukan 0,35 · Gulma
+// 0,10 · PHPT 0,10 · Panen 0,35), 32 indikator (18 individu + 14 lembaga; 21
+// berbobot, sisanya informatif), skor 0–3 + catatan.
+//
+// Skor akhir petani = Σ bobot kegiatan × Σ (bobot indikator × skor); sel kosong
+// = 0. Skor petani BERGANTUNG 6 indikator lembaga (standar teknis kerja 0,7,
+// infrastruktur 0,2, transportasi/taksasi/catatan produksi 0,05) — karena itu
+// penilaian Lembaga disimpan per Lembaga-tahun dan dibaca saat menghitung
+// ulang. `BmpAssessment.score` tetap angka resmi; hitung ulang hanya untuk
+// verifikasi/tampilan (keputusan owner 2026-09-20).
+//
+// Bobot disalin ke baris rincian (`weightUsed`) saat disimpan agar revisi
+// rubrik di master tidak mengubah riwayat. Master di-seed dari
+// prisma/seeds/data/bmp-indicators.csv (dibangkitkan dari sheet Panduan).
+
+enum BmpIndicatorLevel {
+  LEMBAGA
+  INDIVIDU
+}
+
+model BmpIndicator {
+  id             String            @id @default(cuid())
+  code           String            @map("code") // "1.2.3.2" — kriteria + no urut
+  activityCode   String            @map("activity_code") // "1.2"
+  activityName   String            @map("activity_name") // "Pemupukan"
+  activityWeight Float             @map("activity_weight") // 0.35
+  criteriaCode   String            @map("criteria_code") // "1.2.3"
+  criteriaName   String            @map("criteria_name")
+  seq            Int               @map("seq") // no urut dalam kriteria
+  level          BmpIndicatorLevel @map("level")
+  name           String            @map("name")
+  weight         Float?            @map("weight") // null = informatif, tak masuk skor akhir
+  inFinalScore   Boolean           @default(false) @map("in_final_score")
+  scoreLabel0    String?           @map("score_label_0") // deskripsi rubrik skor 0
+  scoreLabel1    String?           @map("score_label_1")
+  scoreLabel2    String?           @map("score_label_2")
+  scoreLabel3    String?           @map("score_label_3")
+  sortOrder      Int               @map("sort_order")
+  isActive       Boolean           @default(true) @map("is_active")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  createdBy      String?           @map("created_by")
+  modifiedAt     DateTime          @updatedAt @map("modified_at")
+  modifiedBy     String?           @map("modified_by")
+
+  assessmentDetails BmpAssessmentDetail[]
+  groupDetails      BmpGroupAssessmentDetail[]
+
+  // Dua kode muncul di dua level (1.2.2.2 acuan pemupukan, 1.5.1.2 infrastruktur).
+  @@unique([code, level])
+  @@index([activityCode])
+  @@map("ref_bmp_indicator")
+}
+
+// Skor indikator INDIVIDU per penilaian petani. score null = tidak dinilai
+// (sel kosong di form). Nilai di luar 0–3 (skor 4 di 7 sel RSB) diterima lewat
+// import dan ditandai di UI — keputusan owner; form manual menolak > 3.
+model BmpAssessmentDetail {
+  id           String        @id @default(cuid())
+  assessmentId String        @map("assessment_id")
+  assessment   BmpAssessment @relation(fields: [assessmentId], references: [id])
+  indicatorId  String        @map("indicator_id")
+  indicator    BmpIndicator  @relation(fields: [indicatorId], references: [id])
+  score        Int?          @map("score")
+  weightUsed   Float?        @map("weight_used")
+  notes        String?       @map("notes")
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  createdBy    String?       @map("created_by")
+  modifiedAt   DateTime      @updatedAt @map("modified_at")
+  modifiedBy   String?       @map("modified_by")
+
+  // Satu baris per (penilaian, indikator): rincian di-replace utuh saat disimpan,
+  // tidak di-soft-delete per baris (isActive mengikuti induknya).
+  @@unique([assessmentId, indicatorId])
+  @@map("tbl_bmp_assessment_detail")
+}
+
+// Penilaian LEMBAGA per tahun survei (14 indikator level LEMBAGA). Satu baris
+// aktif per (Lembaga, tahun) — partial unique index tulis tangan di migrasi.
+model BmpGroupAssessment {
+  id            String      @id @default(cuid())
+  farmerGroupId String      @map("farmer_group_id")
+  farmerGroup   FarmerGroup @relation(fields: [farmerGroupId], references: [id])
+  surveyYear    Int         @map("survey_year")
+  surveyDate    DateTime?   @map("survey_date")
+  assessor      String?     @map("assessor")
+  notes         String?     @map("notes")
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  createdBy     String?     @map("created_by")
+  modifiedAt    DateTime    @updatedAt @map("modified_at")
+  modifiedBy    String?     @map("modified_by")
+
+  details BmpGroupAssessmentDetail[]
+
+  @@index([farmerGroupId, surveyYear])
+  @@index([isActive])
+  @@map("tbl_bmp_group_assessment")
+}
+
+model BmpGroupAssessmentDetail {
+  id                String             @id @default(cuid())
+  groupAssessmentId String             @map("group_assessment_id")
+  groupAssessment   BmpGroupAssessment @relation(fields: [groupAssessmentId], references: [id])
+  indicatorId       String             @map("indicator_id")
+  indicator         BmpIndicator       @relation(fields: [indicatorId], references: [id])
+  score             Int?               @map("score")
+  weightUsed        Float?             @map("weight_used")
+  notes             String?            @map("notes")
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  createdBy         String?            @map("created_by")
+  modifiedAt        DateTime           @updatedAt @map("modified_at")
+  modifiedBy        String?            @map("modified_by")
+
+  @@unique([groupAssessmentId, indicatorId])
+  @@map("tbl_bmp_group_assessment_detail")
+}

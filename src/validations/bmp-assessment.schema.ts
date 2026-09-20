@@ -104,3 +104,71 @@ export const bmpAssessmentImportSchema = z.object({
 });
 
 export type BmpAssessmentImportInput = z.input<typeof bmpAssessmentImportSchema>;
+
+// ── Rincian indikator (#346) ──────────────────────────────────────────────
+
+/** Skor indikator dari FORM MANUAL: 0–3 atau null (tidak dinilai). */
+const manualIndicatorScore = z.number().int("Skor harus bilangan bulat").min(0, "Skor minimal 0").max(3, "Skor maksimal 3").nullable();
+/**
+ * Skor indikator dari IMPORT form survei: 0–9 — nilai di luar rubrik (skor 4 di
+ * 7 sel RSB) diterima dan ditandai di UI (keputusan owner 2026-09-20); batas 9
+ * hanya menolak salah ketik yang jelas.
+ */
+const importedIndicatorScore = z.number().int("Skor harus bilangan bulat").min(0, "Skor minimal 0").max(9, "Skor tidak masuk akal").nullable();
+
+const indicatorNotes = z
+  .string()
+  .trim()
+  .max(500, "Catatan indikator maksimal 500 karakter")
+  .transform((s) => (s === "" ? null : s))
+  .nullable()
+  .optional();
+
+export const bmpIndicatorScoreSchema = z.object({
+  indicatorId: z.string().min(1, "Indikator tidak valid"),
+  score: manualIndicatorScore,
+  notes: indicatorNotes,
+});
+
+/** Simpan rincian indikator INDIVIDU satu penilaian petani (form manual). */
+export const saveBmpAssessmentDetailsSchema = z.object({
+  assessmentId: z.string().min(1, "Penilaian tidak valid"),
+  rows: z.array(bmpIndicatorScoreSchema).min(1, "Tidak ada indikator").max(64),
+  /** Timpa `BmpAssessment.score` dengan hasil hitung ulang — hanya bila pengguna memintanya secara eksplisit. */
+  applyRecomputedScore: z.boolean().optional(),
+});
+export type SaveBmpAssessmentDetailsInput = z.input<typeof saveBmpAssessmentDetailsSchema>;
+
+const groupAssessmentFields = {
+  farmerGroupId: z.string().min(1, "Lembaga Petani wajib dipilih"),
+  surveyYear: surveyYearField,
+  surveyDate: surveyDateField,
+  assessor: optionalText(120, "Nama penilai"),
+  notes: optionalText(2000, "Catatan"),
+  rows: z.array(bmpIndicatorScoreSchema).max(64),
+};
+
+/** Penilaian LEMBAGA per tahun (14 indikator level LEMBAGA) — buat/ubah dari form manual. */
+export const bmpGroupAssessmentSchema = z.object(groupAssessmentFields).superRefine(refineAssessment);
+export type BmpGroupAssessmentInput = z.input<typeof bmpGroupAssessmentSchema>;
+
+/** Satu form survei per petani hasil pratinjau klien (identitas = petani terpilih di dropdown). */
+export const bmpSurveyFormImportSchema = z
+  .object({
+    fileName: z.string().trim().min(1).max(300),
+    farmerId: z.string().min(1, "Petani wajib dipilih"),
+    surveyYear: surveyYearField,
+    surveyDate: surveyDateField,
+    /** Skor akhir menurut form (Total raport) — angka resmi yang disimpan. */
+    score: scoreField,
+    individu: z.array(z.object({ indicatorId: z.string().min(1), score: importedIndicatorScore, notes: indicatorNotes })).max(64),
+    lembaga: z.array(z.object({ indicatorId: z.string().min(1), score: importedIndicatorScore, notes: indicatorNotes })).max(64),
+  })
+  .superRefine(refineAssessment);
+
+export const bmpSurveyImportSchema = z.object({
+  farmerGroupId: z.string().min(1, "Lembaga Petani wajib dipilih"),
+  assessor: optionalText(120, "Nama penilai"),
+  forms: z.array(bmpSurveyFormImportSchema).min(1, "Tidak ada form untuk diimpor").max(300, "Maksimal 300 form per putaran"),
+});
+export type BmpSurveyImportInput = z.input<typeof bmpSurveyImportSchema>;

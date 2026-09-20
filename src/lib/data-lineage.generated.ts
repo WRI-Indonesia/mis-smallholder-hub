@@ -84,6 +84,8 @@ export const DATA_LINEAGE: DataLineage = [
     "menuKey": "dashboard-bmp-monev",
     "route": "(admin)/admin/dashboard/bmp-monev",
     "models": {
+      "bmpAssessment": "R",
+      "bmpIndicator": "R",
       "farmerGroup": "R"
     },
     "modules": [
@@ -287,6 +289,10 @@ export const DATA_LINEAGE: DataLineage = [
     "route": "(admin)/admin/master-data/bmp-monev",
     "models": {
       "bmpAssessment": "RW",
+      "bmpAssessmentDetail": "W",
+      "bmpGroupAssessment": "RW",
+      "bmpGroupAssessmentDetail": "W",
+      "bmpIndicator": "R",
       "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
@@ -295,6 +301,7 @@ export const DATA_LINEAGE: DataLineage = [
     },
     "modules": [
       "src/lib/select-options.ts",
+      "src/server/actions/bmp-assessment-detail.ts",
       "src/server/actions/bmp-assessment.ts",
       "src/server/actions/farmer-group.ts"
     ],
@@ -305,6 +312,8 @@ export const DATA_LINEAGE: DataLineage = [
     "route": "(admin)/admin/master-data/farmers",
     "models": {
       "bmpAssessment": "RW",
+      "bmpGroupAssessment": "R",
+      "bmpIndicator": "R",
       "district": "R",
       "farmer": "RW",
       "farmerGroup": "R",
@@ -319,6 +328,7 @@ export const DATA_LINEAGE: DataLineage = [
       "src/lib/parcel-neighbor-query.ts",
       "src/lib/parcel-passport-query.ts",
       "src/lib/select-options.ts",
+      "src/server/actions/bmp-assessment-detail.ts",
       "src/server/actions/bmp-assessment.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/farmer.ts",

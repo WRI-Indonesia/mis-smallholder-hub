@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ChevronDown,
+  ChevronRight,
   ClipboardCheck,
   Loader2,
   Map as MapIcon,
@@ -36,6 +38,7 @@ import { formatNumber } from "@/lib/format";
 import { formatScore } from "@/lib/bmp-assessment";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 import { BmpAssessmentFormModal } from "@/app/(admin)/admin/master-data/bmp-monev/bmp-assessment-form-modal";
+import { BmpAssessmentInlineDetail } from "@/app/(admin)/admin/master-data/bmp-monev/bmp-assessment-inline-detail";
 
 const ParcelsDistributionMap = dynamic(
   () =>
@@ -212,6 +215,8 @@ export function FarmerDetailClient({
 }: Props) {
   const [showEdit, setShowEdit] = useState(false);
   const [bmpForm, setBmpForm] = useState<{ open: boolean; row: BmpAssessmentListItem | null }>({ open: false, row: null });
+  // Baris tahun yang dibuka → rincian indikator dimuat malas (#346).
+  const [bmpOpenRows, setBmpOpenRows] = useState<Set<string>>(new Set());
   const canViewBmp = bmpPermissions.includes("VIEW");
   const canCreateBmp = bmpPermissions.includes("CREATE");
   const canEditBmp = bmpPermissions.includes("EDIT");
@@ -632,8 +637,26 @@ export function FarmerDetailClient({
                     </thead>
                     <tbody>
                       {bmpAssessments.map((a) => (
-                        <tr key={a.id} className="border-b last:border-0">
-                          <td className="py-2 pr-4 tabular-nums font-medium">{a.surveyYear}</td>
+                        <Fragment key={a.id}>
+                        <tr className="border-b last:border-0">
+                          <td className="py-2 pr-4 tabular-nums font-medium">
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                              onClick={() =>
+                                setBmpOpenRows((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(a.id)) next.delete(a.id);
+                                  else next.add(a.id);
+                                  return next;
+                                })
+                              }
+                              title="Lihat rincian indikator"
+                            >
+                              {bmpOpenRows.has(a.id) ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                              {a.surveyYear}
+                            </button>
+                          </td>
                           <td className="py-2 pr-4 whitespace-nowrap">{formatUtcDate(a.surveyDate)}</td>
                           <td className="py-2 pr-4 text-right tabular-nums">{formatScore(a.score)}</td>
                           <td className="py-2 pr-4">
@@ -650,6 +673,14 @@ export function FarmerDetailClient({
                             </td>
                           )}
                         </tr>
+                        {bmpOpenRows.has(a.id) && (
+                          <tr className="border-b last:border-0 bg-muted/20">
+                            <td colSpan={canEditBmp ? 8 : 7} className="px-3">
+                              <BmpAssessmentInlineDetail assessmentId={a.id} />
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>

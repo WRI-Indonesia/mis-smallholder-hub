@@ -26,6 +26,8 @@ import {
 } from "@/lib/bmp-assessment";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
 import { getBmpImportRefs, importBmpAssessments, type BmpImportSummary } from "@/server/actions/bmp-assessment";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BmpSurveyImportPanel } from "./bmp-survey-import-panel";
 
 /**
  * Import Excel format rekap Monev BMP (#344): satu berkas/sheet = satu Lembaga
@@ -206,7 +208,7 @@ export function BmpMonevImportDialog({ open, onClose, farmerGroups }: Props) {
         {/* `min-w-0`: DialogContent adalah grid; tanpa ini anak grid ber-min-width
             auto ikut selebar tabel pratinjau dan menjebol lebar dialog. */}
         <div className="min-w-0 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5 flex flex-col">
               <Label>Lembaga Petani *</Label>
               <Popover open={groupOpen} onOpenChange={setGroupOpen}>
@@ -251,10 +253,21 @@ export function BmpMonevImportDialog({ open, onClose, farmerGroups }: Props) {
               <Label htmlFor="import-assessor">Penilai / Fasilitator (opsional, berlaku semua baris)</Label>
               <Input id="import-assessor" value={assessor} onChange={(e) => setAssessor(e.target.value)} maxLength={120} placeholder="Nama penilai" disabled={saving} />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="import-file">Berkas Excel (.xlsx) *</Label>
-              <Input id="import-file" type="file" accept=".xlsx" onChange={handleFileChange} disabled={reading || saving} />
-            </div>
+          </div>
+
+          {/* Dua sumber (#344 rekap skor, #346 form survei per petani) — satu Lembaga per putaran untuk keduanya. */}
+          <Tabs defaultValue="rekap">
+            <TabsList>
+              <TabsTrigger value="rekap">Rekap skor (satu sheet)</TabsTrigger>
+              <TabsTrigger value="survei">Form survei per petani (banyak berkas)</TabsTrigger>
+            </TabsList>
+            <TabsContent value="survei" className="pt-3">
+              <BmpSurveyImportPanel farmerGroupId={farmerGroupId} farmerGroupName={selectedGroup?.name ?? null} assessor={assessor} />
+            </TabsContent>
+            <TabsContent value="rekap" className="pt-3 space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="import-file">Berkas Excel rekap (.xlsx) *</Label>
+            <Input id="import-file" type="file" accept=".xlsx" onChange={handleFileChange} disabled={reading || saving} className="max-w-md" />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -415,6 +428,8 @@ export function BmpMonevImportDialog({ open, onClose, farmerGroups }: Props) {
               </div>
             </div>
           )}
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>

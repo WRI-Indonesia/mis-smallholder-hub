@@ -10,19 +10,27 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+  bmpMonevActivityProfile,
   bmpMonevAvailableYears,
+  bmpMonevGroupProfiles,
   bmpMonevGroupRows,
   bmpMonevScoreHistogram,
   bmpMonevTotals,
   bmpMonevTrend,
+  bmpMonevWeakestIndicators,
   filterBmpMonevGroups,
   type BmpMonevDashboardView,
+  type BmpMonevGroupProfileSort,
 } from "@/lib/bmp-monev-dashboard-aggregation";
+import { BmpMonevActivityRadar, type BmpMonevRadarSelection } from "./bmp-monev-activity-radar";
+import { BmpMonevWeakestIndicators } from "./bmp-monev-weakest-indicators";
+import { BmpMonevGroupHeatmap } from "./bmp-monev-group-heatmap";
 import { BmpMonevScoreCards } from "./bmp-monev-score-cards";
 import { BmpMonevCategoryOverview } from "./bmp-monev-category-overview";
 import { BmpMonevScoreHistogram } from "./bmp-monev-score-histogram";
-import { BmpMonevDistributionChart } from "./bmp-monev-distribution-chart";
-import { BmpMonevRankingChart } from "./bmp-monev-ranking-chart";
+import { BmpMonevGroupBoard } from "./bmp-monev-group-board";
+import { BmpMonevPriorityFarmers } from "./bmp-monev-priority-farmers";
+import { BmpMonevSection } from "./bmp-monev-section";
 import { BmpMonevTrendChart } from "./bmp-monev-trend-chart";
 import { BmpMonevGroupTable } from "./bmp-monev-group-table";
 
@@ -78,6 +86,19 @@ export function BmpMonevDashboardClient({
   const rows = useMemo(() => (year == null ? [] : bmpMonevGroupRows(groups, year)), [groups, year]);
   const trend = useMemo(() => bmpMonevTrend(groups), [groups]);
   const histogram = useMemo(() => (year == null ? [] : bmpMonevScoreHistogram(groups, year)), [groups, year]);
+  // Rincian indikator (#346) — payload lama tanpa `activities` tetap jalan (kartu disembunyikan).
+  const activities = useMemo(() => view.data.activities ?? [], [view.data.activities]);
+  const indicatorCatalog = useMemo(() => view.data.indicators ?? [], [view.data.indicators]);
+  const indicatorStats = useMemo(() => view.data.indicatorStats ?? [], [view.data.indicatorStats]);
+  const activityProfile = useMemo(() => (year == null ? [] : bmpMonevActivityProfile(groups, year, activities, indicatorCatalog)), [groups, year, activities, indicatorCatalog]);
+  const weakest = useMemo(() => (year == null ? [] : bmpMonevWeakestIndicators(groups, year, indicatorCatalog, indicatorStats)), [groups, year, indicatorCatalog, indicatorStats]);
+  const [profileSort, setProfileSort] = useState<BmpMonevGroupProfileSort>("avg");
+  const groupProfiles = useMemo(() => (year == null ? [] : bmpMonevGroupProfiles(groups, year, profileSort)), [groups, year, profileSort]);
+  const hasDetails = activities.length > 0 && (activityProfile[0]?.n ?? 0) > 0;
+  const hasGroupProfiles = groupProfiles.some((g) => g.hasProfile);
+  // Seri B radar mengikuti filter dashboard sebagai pilihan awal (Lembaga > Distrik),
+  // tetapi setelah itu bebas dipilih — komponen di-remount lewat `key` saat filter berubah.
+  const radarDefaultB: BmpMonevRadarSelection | null = groupId ? { kind: "group", id: groupId } : districtId ? { kind: "district", id: districtId } : null;
 
   const yearLabel = year == null ? "—" : String(year);
   const selectedDistrict = districtOptions.find((d) => d.id === districtId);
@@ -215,28 +236,38 @@ export function BmpMonevDashboardClient({
         </div>
       ) : (
         <>
-          {/* Urutan baca (revisi owner 2026-09-19): angka besar → sebaran kategori
-              (jawaban utama Monev) → per Lembaga → bentuk sebaran & tren → tabel
-              terlipat di paling bawah supaya tidak terasa seperti Master Data. */}
-          <BmpMonevScoreCards totals={totals} yearLabel={yearLabel} />
+          {/* Alur baca (revisi UX owner 2026-09-19/20): 1 gambaran umum → 2 Lembaga
+              (papan gabungan komposisi+rerata+cakupan, klik = filter; profil
+              kelembagaan) → 3 kegiatan & indikator (radar pembanding) → 4 tindak lanjut
+              (petani prioritas, sebaran, tren) → tabel terlipat paling bawah. */}
+          <BmpMonevSection step={1} title="Gambaran umum" lead="Seberapa jauh petani sudah menerapkan BMP pada tahun survei terpilih.">
+            <BmpMonevScoreCards totals={totals} yearLabel={yearLabel} />
+            <BmpMonevCategoryOverview totals={totals} yearLabel={yearLabel} />
+          </BmpMonevSection>
 
-          <BmpMonevCategoryOverview totals={totals} yearLabel={yearLabel} />
+          <BmpMonevSection step={2} title="Lembaga Petani" lead="Lembaga mana yang unggul dan tertinggal — komposisi kategori, rerata, cakupan survei, dan profil kelembagaannya.">
+            <BmpMonevGroupBoard rows={rows} yearLabel={yearLabel} selectedGroupId={groupId} onSelectGroup={setGroupId} />
+            {hasGroupProfiles && <BmpMonevGroupHeatmap rows={groupProfiles} indicators={indicatorCatalog} yearLabel={yearLabel} sort={profileSort} onSortChange={setProfileSort} />}
+          </BmpMonevSection>
 
-          <div className="grid gap-4 lg:grid-cols-5">
-            <div className="lg:col-span-3">
-              <BmpMonevDistributionChart rows={rows} yearLabel={yearLabel} />
+          {(hasDetails || hasGroupProfiles) && (
+            <BmpMonevSection step={3} title="Kegiatan & indikator" lead="Bandingkan profil 5 kegiatan antar cakupan (semua · distrik · Lembaga) dan lihat indikator apa yang paling lemah — bahan materi pendampingan.">
+              <BmpMonevActivityRadar key={`${districtId ?? ""}|${groupId ?? ""}|${year}`} allGroups={allGroups} year={year!} activities={activities} indicators={indicatorCatalog} defaultB={radarDefaultB} />
+              <BmpMonevWeakestIndicators rows={weakest} yearLabel={yearLabel} />
+            </BmpMonevSection>
+          )}
+
+          <BmpMonevSection step={hasDetails || hasGroupProfiles ? 4 : 3} title="Tindak lanjut & tren" lead="Siapa yang perlu dikunjungi dulu dan siapa yang bisa jadi contoh, bagaimana bentuk sebaran skornya, dan perubahannya antar tahun survei.">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <BmpMonevPriorityFarmers districtId={districtId} groupId={groupId} year={year!} order="lowest" />
+              <BmpMonevPriorityFarmers districtId={districtId} groupId={groupId} year={year!} order="highest" />
             </div>
-            <div className="lg:col-span-2">
-              <BmpMonevRankingChart rows={rows} yearLabel={yearLabel} />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <BmpMonevScoreHistogram bins={histogram} avgScore={totals.avgScore} yearLabel={yearLabel} />
+              <BmpMonevTrendChart buckets={trend} activeYear={year} />
             </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <BmpMonevScoreHistogram bins={histogram} avgScore={totals.avgScore} yearLabel={yearLabel} />
-            <BmpMonevTrendChart buckets={trend} activeYear={year} />
-          </div>
-
-          <BmpMonevGroupTable rows={rows} year={year} canExport={canExport} />
+            <BmpMonevGroupTable rows={rows} year={year} canExport={canExport} />
+          </BmpMonevSection>
         </>
       )}
     </div>

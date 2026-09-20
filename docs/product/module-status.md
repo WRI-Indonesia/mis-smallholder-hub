@@ -113,7 +113,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **sate
 | Lahan tetangga ≤ 25 m — helper murni (#327) | parcel-neighbor.test.ts | 6 | ✅ |
 | Report Lahan (#177 #179 #180) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts | 33 | ✅ |
 | Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
-| Monev BMP (DASH-08, #344) | bmp-assessment.test.ts · dashboard-bmp-monev.test.ts · bmp-assessment-guard.test.ts | 21 · 9 · 13 | ✅ |
+| Monev BMP (DASH-08, #344/#346) | bmp-assessment.test.ts · dashboard-bmp-monev.test.ts · bmp-assessment-guard.test.ts · bmp-survey-form.test.ts · bmp-assessment-detail-guard.test.ts | 24 · 11 · 16 · 10 · 8 | ✅ |
 | Data Completeness (DA-02) | data-completeness.test.ts | 33 | ✅ |
 | Dashboard Ketersediaan Data (DA-03) | dashboard-data-availability.test.ts | 21 | ✅ |
 | Training | training-activity.test.ts, training-participant.test.ts | 29 | ✅ |

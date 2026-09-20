@@ -1,0 +1,501 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { hasPermission } from "@/lib/rbac";
+import { getAccessContext, farmerAccessFilter, farmerGroupAccessFilter, farmerRelationAccessFilter } from "@/lib/access-context";
+import {
+  bmpGroupAssessmentSchema,
+  bmpSurveyImportSchema,
+  saveBmpAssessmentDetailsSchema,
+  type BmpGroupAssessmentInput,
+  type BmpSurveyImportInput,
+  type SaveBmpAssessmentDetailsInput,
+} from "@/validations/bmp-assessment.schema";
+import { recomputeBmpScore, type BmpIndicatorRef, type BmpRecomputeResult } from "@/lib/bmp-survey-form";
+import type { ActionResult } from "@/types/action-result";
+
+/**
+ * Rincian Monev BMP (#346): master indikator, skor per indikator individu per
+ * penilaian petani, penilaian Lembaga per tahun, dan import form survei.
+ * Izin menumpang menu `master-data-bmp-monev` (data) — sama dengan skor akhir.
+ * `BmpAssessment.score` adalah angka resmi. Import form survei menyimpan
+ * **hasil hitung ulang** (`recomputeBmpScore`: kriteria alternatif petani/
+ * pekerja dihitung sekali sehingga maks 3,00 — owner 2026-09-20; rumus form
+ * menjumlahkan keduanya, totalnya bisa 3,60), bukan total raport form; total
+ * form hanya pembanding. Di luar import, hitung ulang hanya untuk verifikasi
+ * kecuali pengguna secara eksplisit meminta menimpanya.
+ */
+const MENU_KEY = "master-data-bmp-monev";
+
+const indicatorSelect = {
+  id: true,
+  code: true,
+  activityCode: true,
+  activityName: true,
+  activityWeight: true,
+  criteriaCode: true,
+  criteriaName: true,
+  seq: true,
+  level: true,
+  name: true,
+  weight: true,
+  inFinalScore: true,
+  scoreLabel0: true,
+  scoreLabel1: true,
+  scoreLabel2: true,
+  scoreLabel3: true,
+  sortOrder: true,
+} as const;
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
+}
+
+/** Master indikator aktif, urut tampil. Dipakai form, pratinjau import, dan halaman detail. */
+export async function getBmpIndicators(): Promise<BmpIndicatorRef[]> {
+  if (!(await hasPermission(MENU_KEY, "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  return prisma.bmpIndicator.findMany({ where: { isActive: true }, select: indicatorSelect, orderBy: { sortOrder: "asc" } });
+}
+
+export interface BmpIndicatorScoreItem {
+  indicatorId: string;
+  score: number | null;
+  weightUsed: number | null;
+  notes: string | null;
+}
+
+export interface BmpGroupAssessmentItem {
+  id: string;
+  farmerGroupId: string;
+  farmerGroupName: string;
+  surveyYear: number;
+  surveyDate: Date | null;
+  assessor: string | null;
+  notes: string | null;
+  details: BmpIndicatorScoreItem[];
+}
+
+export interface BmpAssessmentDetailView {
+  assessment: {
+    id: string;
+    farmerId: string;
+    farmerCode: string;
+    farmerName: string;
+    farmerGroupId: string;
+    farmerGroupName: string;
+    surveyYear: number;
+    surveyDate: Date | null;
+    score: number;
+    parcelId: string | null;
+    assessor: string | null;
+    notes: string | null;
+    isActive: boolean;
+  };
+  indicators: BmpIndicatorRef[];
+  details: BmpIndicatorScoreItem[];
+  /** Penilaian Lembaga tahun yang sama (sumber indikator level LEMBAGA); null bila belum ada. */
+  groupAssessment: BmpGroupAssessmentItem | null;
+  /** Hitung ulang dari rincian; null bila belum ada rincian sama sekali. */
+  recomputed: BmpRecomputeResult | null;
+  /** Skor indikator di luar 0–3 (diterima dari import, ditandai). */
+  outOfRange: string[];
+}
+
+const groupAssessmentSelect = {
+  id: true,
+  farmerGroupId: true,
+  surveyYear: true,
+  surveyDate: true,
+  assessor: true,
+  notes: true,
+  farmerGroup: { select: { name: true } },
+  details: { where: { isActive: true }, select: { indicatorId: true, score: true, weightUsed: true, notes: true } },
+} as const;
+
+type GroupRow = {
+  id: string;
+  farmerGroupId: string;
+  surveyYear: number;
+  surveyDate: Date | null;
+  assessor: string | null;
+  notes: string | null;
+  farmerGroup: { name: string };
+  details: BmpIndicatorScoreItem[];
+};
+
+const toGroupItem = (g: GroupRow): BmpGroupAssessmentItem => ({
+  id: g.id,
+  farmerGroupId: g.farmerGroupId,
+  farmerGroupName: g.farmerGroup.name,
+  surveyYear: g.surveyYear,
+  surveyDate: g.surveyDate,
+  assessor: g.assessor,
+  notes: g.notes,
+  details: g.details,
+});
+
+/** Halaman detail satu penilaian: rincian individu + penilaian Lembaga tahun itu + hitung ulang. */
+export async function getBmpAssessmentDetailView(id: string): Promise<BmpAssessmentDetailView | null> {
+  if (!(await hasPermission(MENU_KEY, "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+  const a = await prisma.bmpAssessment.findFirst({
+    where: { id, AND: [farmerRelationAccessFilter(access)] },
+    select: {
+      id: true,
+      farmerId: true,
+      surveyYear: true,
+      surveyDate: true,
+      score: true,
+      assessor: true,
+      notes: true,
+      isActive: true,
+      farmer: { select: { farmerId: true, name: true, farmerGroupId: true, farmerGroup: { select: { name: true } } } },
+      parcel: { select: { parcelId: true } },
+      details: { where: { isActive: true }, select: { indicatorId: true, score: true, weightUsed: true, notes: true } },
+    },
+  });
+  if (!a) return null;
+
+  const [indicators, group] = await Promise.all([
+    prisma.bmpIndicator.findMany({ where: { isActive: true }, select: indicatorSelect, orderBy: { sortOrder: "asc" } }),
+    prisma.bmpGroupAssessment.findFirst({
+      where: { farmerGroupId: a.farmer.farmerGroupId, surveyYear: a.surveyYear, isActive: true },
+      select: groupAssessmentSelect,
+    }),
+  ]);
+
+  const byId = new Map(indicators.map((i) => [i.id, i]));
+  const individu = new Map<string, number | null>();
+  for (const d of a.details) {
+    const ind = byId.get(d.indicatorId);
+    if (ind) individu.set(ind.code, d.score);
+  }
+  const lembaga = new Map<string, number | null>();
+  for (const d of group?.details ?? []) {
+    const ind = byId.get(d.indicatorId);
+    if (ind) lembaga.set(ind.code, d.score);
+  }
+  const hasDetails = a.details.length > 0 || (group?.details.length ?? 0) > 0;
+  const outOfRange = [...a.details, ...(group?.details ?? [])]
+    .filter((d) => d.score != null && (d.score < 0 || d.score > 3))
+    .map((d) => byId.get(d.indicatorId)?.code ?? d.indicatorId);
+
+  return {
+    assessment: {
+      id: a.id,
+      farmerId: a.farmerId,
+      farmerCode: a.farmer.farmerId,
+      farmerName: a.farmer.name,
+      farmerGroupId: a.farmer.farmerGroupId,
+      farmerGroupName: a.farmer.farmerGroup.name,
+      surveyYear: a.surveyYear,
+      surveyDate: a.surveyDate,
+      score: a.score,
+      parcelId: a.parcel?.parcelId ?? null,
+      assessor: a.assessor,
+      notes: a.notes,
+      isActive: a.isActive,
+    },
+    indicators,
+    details: a.details,
+    groupAssessment: group ? toGroupItem(group) : null,
+    recomputed: hasDetails ? recomputeBmpScore(indicators, individu, lembaga) : null,
+    outOfRange,
+  };
+}
+
+/** Simpan skor indikator INDIVIDU satu penilaian (form manual, EDIT). Upsert per indikator; indikator yang tak dikirim tidak disentuh. */
+export async function saveBmpAssessmentDetails(input: SaveBmpAssessmentDetailsInput): Promise<ActionResult<{ recomputedScore: number | null }>> {
+  if (!(await hasPermission(MENU_KEY, "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah rincian Monev BMP" };
+  }
+  const parsed = saveBmpAssessmentDetailsSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Data rincian tidak valid" };
+  const { assessmentId, rows, applyRecomputedScore } = parsed.data;
+
+  const access = await getAccessContext();
+  const a = await prisma.bmpAssessment.findFirst({
+    where: { id: assessmentId, isActive: true, AND: [farmerRelationAccessFilter(access)] },
+    select: { id: true, surveyYear: true, farmer: { select: { farmerGroupId: true } } },
+  });
+  if (!a) return { success: false, error: "Penilaian tidak ditemukan atau tidak dalam akses Anda" };
+
+  const indicators = await prisma.bmpIndicator.findMany({ where: { isActive: true }, select: indicatorSelect });
+  const byId = new Map(indicators.map((i) => [i.id, i]));
+  for (const r of rows) {
+    const ind = byId.get(r.indicatorId);
+    if (!ind) return { success: false, error: "Ada indikator yang tidak dikenal" };
+    if (ind.level !== "INDIVIDU") return { success: false, error: `Indikator ${ind.code} adalah level Lembaga — ubah lewat Penilaian Lembaga` };
+  }
+
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  await prisma.$transaction(async (tx) => {
+    for (const r of rows) {
+      const ind = byId.get(r.indicatorId)!;
+      await tx.bmpAssessmentDetail.upsert({
+        where: { assessmentId_indicatorId: { assessmentId, indicatorId: r.indicatorId } },
+        create: { assessmentId, indicatorId: r.indicatorId, score: r.score, weightUsed: ind.weight, notes: r.notes ?? null, createdBy: userId },
+        update: { score: r.score, weightUsed: ind.weight, notes: r.notes ?? null, isActive: true, modifiedBy: userId },
+      });
+    }
+  });
+
+  // Hitung ulang dari state tersimpan (bukan payload) supaya angka yang dilaporkan = yang ada di DB.
+  const view = await getBmpAssessmentDetailView(assessmentId);
+  const recomputed = view?.recomputed?.total ?? null;
+  if (applyRecomputedScore && recomputed != null) {
+    await prisma.bmpAssessment.update({ where: { id: assessmentId }, data: { score: recomputed, modifiedBy: userId } });
+  }
+  return { success: true, data: { recomputedScore: recomputed } };
+}
+
+// ── Penilaian Lembaga ─────────────────────────────────────────────────────
+
+/** Daftar penilaian Lembaga aktif dalam scope (semua tahun), terbaru dulu. */
+export async function getBmpGroupAssessments(): Promise<BmpGroupAssessmentItem[]> {
+  if (!(await hasPermission(MENU_KEY, "VIEW"))) {
+    throw new Error("Tidak memiliki izin untuk mengakses data ini");
+  }
+  const access = await getAccessContext();
+  const rows = await prisma.bmpGroupAssessment.findMany({
+    where: { isActive: true, farmerGroup: { isActive: true, AND: [farmerGroupAccessFilter(access)] } },
+    select: groupAssessmentSelect,
+    orderBy: [{ surveyYear: "desc" }, { farmerGroup: { name: "asc" } }],
+  });
+  return rows.map(toGroupItem);
+}
+
+/** Buat/ubah penilaian Lembaga (satu aktif per Lembaga-tahun): upsert baris induk + rincian 14 indikator. */
+export async function upsertBmpGroupAssessment(input: BmpGroupAssessmentInput): Promise<ActionResult<{ id: string }>> {
+  if (!(await hasPermission(MENU_KEY, "EDIT"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengubah penilaian Lembaga" };
+  }
+  const parsed = bmpGroupAssessmentSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Data penilaian Lembaga tidak valid" };
+  const data = parsed.data;
+
+  const access = await getAccessContext();
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id: data.farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!group) return { success: false, error: "Lembaga Petani tidak ditemukan atau tidak dalam akses Anda" };
+
+  const indicators = await prisma.bmpIndicator.findMany({ where: { isActive: true, level: "LEMBAGA" }, select: indicatorSelect });
+  const byId = new Map(indicators.map((i) => [i.id, i]));
+  for (const r of data.rows) {
+    if (!byId.has(r.indicatorId)) return { success: false, error: "Ada indikator yang bukan level Lembaga / tidak dikenal" };
+  }
+
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  try {
+    const id = await prisma.$transaction(async (tx) => {
+      const existing = await tx.bmpGroupAssessment.findFirst({
+        where: { farmerGroupId: data.farmerGroupId, surveyYear: data.surveyYear, isActive: true },
+        select: { id: true },
+      });
+      const head = existing
+        ? await tx.bmpGroupAssessment.update({
+            where: { id: existing.id },
+            data: { surveyDate: data.surveyDate ?? null, assessor: data.assessor ?? null, notes: data.notes ?? null, modifiedBy: userId },
+            select: { id: true },
+          })
+        : await tx.bmpGroupAssessment.create({
+            data: { farmerGroupId: data.farmerGroupId, surveyYear: data.surveyYear, surveyDate: data.surveyDate ?? null, assessor: data.assessor ?? null, notes: data.notes ?? null, createdBy: userId },
+            select: { id: true },
+          });
+      for (const r of data.rows) {
+        const ind = byId.get(r.indicatorId)!;
+        await tx.bmpGroupAssessmentDetail.upsert({
+          where: { groupAssessmentId_indicatorId: { groupAssessmentId: head.id, indicatorId: r.indicatorId } },
+          create: { groupAssessmentId: head.id, indicatorId: r.indicatorId, score: r.score, weightUsed: ind.weight, notes: r.notes ?? null, createdBy: userId },
+          update: { score: r.score, weightUsed: ind.weight, notes: r.notes ?? null, isActive: true, modifiedBy: userId },
+        });
+      }
+      return head.id;
+    });
+    return { success: true, data: { id } };
+  } catch (error) {
+    if (isUniqueViolation(error)) return { success: false, error: "Penilaian Lembaga tahun itu baru saja dibuat pengguna lain — muat ulang halaman" };
+    throw error;
+  }
+}
+
+// ── Import form survei per petani ─────────────────────────────────────────
+
+export interface BmpSurveyImportSummary {
+  assessmentsCreated: number;
+  assessmentsUpdated: number;
+  detailRows: number;
+  groupAssessmentId: string | null;
+  /** Peringatan non-fatal (mis. set skor Lembaga antar berkas berbeda). */
+  warnings: string[];
+  rejected: { fileName: string; reason: string }[];
+}
+
+/**
+ * Simpan batch form survei satu Lembaga (satu transaksi): per form → upsert
+ * `BmpAssessment` (skor akhir = **hitung ulang** dari rincian individu + set
+ * Lembaga tahun itu; total form hanya dipakai bila berkas
+ * tak memuat rincian sama sekali; tanggal hanya bila form memuatnya)
+ * + rincian individu (replace per indikator); penilaian Lembaga tahun itu
+ * di-upsert SEKALI dari set skor lembaga berkas pertama (berkas lain yang
+ * berbeda → peringatan, bukan ditimpa bergantian). Klien mengirim `farmerId`
+ * hasil pilihan pratinjau — server memastikan petani aktif, anggota Lembaga,
+ * dalam scope, dan tidak dipakai dua form.
+ */
+export async function importBmpSurveyForms(input: BmpSurveyImportInput): Promise<ActionResult<BmpSurveyImportSummary>> {
+  if (!(await hasPermission(MENU_KEY, "CREATE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengimpor form survei Monev BMP" };
+  }
+  const parsed = bmpSurveyImportSchema.safeParse(input);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    return { success: false, error: first ? `Data import tidak valid: ${first.message}` : "Data import tidak valid" };
+  }
+  const { farmerGroupId, assessor, forms } = parsed.data;
+
+  const access = await getAccessContext();
+  const group = await prisma.farmerGroup.findFirst({
+    where: { id: farmerGroupId, isActive: true, AND: farmerGroupAccessFilter(access) },
+    select: { id: true },
+  });
+  if (!group) return { success: false, error: "Lembaga Petani tidak ditemukan atau tidak dalam akses Anda" };
+
+  const farmerIds = [...new Set(forms.map((f) => f.farmerId))];
+  const farmers = await prisma.farmer.findMany({
+    where: { id: { in: farmerIds }, farmerGroupId, isActive: true, ...farmerAccessFilter(access) },
+    select: { id: true },
+  });
+  const validFarmer = new Set(farmers.map((f) => f.id));
+  const indicators = await prisma.bmpIndicator.findMany({ where: { isActive: true }, select: indicatorSelect });
+  const byId = new Map(indicators.map((i) => [i.id, i]));
+
+  const summary: BmpSurveyImportSummary = { assessmentsCreated: 0, assessmentsUpdated: 0, detailRows: 0, groupAssessmentId: null, warnings: [], rejected: [] };
+  const seenFarmerYear = new Set<string>();
+  const accepted: typeof forms = [];
+  for (const f of forms) {
+    if (!validFarmer.has(f.farmerId)) {
+      summary.rejected.push({ fileName: f.fileName, reason: "Petani tidak ditemukan di Lembaga ini / di luar akses" });
+      continue;
+    }
+    const key = `${f.farmerId}:${f.surveyYear}`;
+    if (seenFarmerYear.has(key)) {
+      summary.rejected.push({ fileName: f.fileName, reason: `Petani yang sama sudah dipakai form lain untuk tahun ${f.surveyYear}` });
+      continue;
+    }
+    if ([...f.individu, ...f.lembaga].some((r) => !byId.has(r.indicatorId))) {
+      summary.rejected.push({ fileName: f.fileName, reason: "Ada indikator yang tidak dikenal" });
+      continue;
+    }
+    seenFarmerYear.add(key);
+    accepted.push(f);
+  }
+  if (accepted.length === 0) return { success: true, data: summary };
+
+  // Penilaian Lembaga: set skor dari berkas pertama yang memuatnya; berkas lain dibandingkan.
+  const years = [...new Set(accepted.map((f) => f.surveyYear))];
+  if (years.length > 1) summary.warnings.push(`Berkas memuat ${years.length} tahun survei berbeda (${years.join(", ")}) — penilaian Lembaga diambil per tahun dari berkas pertama masing-masing`);
+  const groupSets = new Map<number, { fileName: string; rows: { indicatorId: string; score: number | null; notes: string | null }[] }>();
+  for (const f of accepted) {
+    if (f.lembaga.length === 0) continue;
+    const ref = groupSets.get(f.surveyYear);
+    if (!ref) {
+      groupSets.set(f.surveyYear, { fileName: f.fileName, rows: f.lembaga.map((r) => ({ indicatorId: r.indicatorId, score: r.score, notes: r.notes ?? null })) });
+      continue;
+    }
+    const sig = (rows: { indicatorId: string; score: number | null }[]) => rows.map((r) => `${r.indicatorId}=${r.score ?? "-"}`).sort().join("|");
+    if (sig(ref.rows) !== sig(f.lembaga)) summary.warnings.push(`Skor Lembaga di "${f.fileName}" berbeda dari "${ref.fileName}" — yang dipakai berkas pertama`);
+  }
+
+  // Skor akhir = hitung ulang sistem (bukan total raport form — rumus form
+  // menjumlahkan kriteria alternatif). Set Lembaga = yang akan tersimpan (berkas pertama
+  // tahun itu) supaya skor petani = raport yang nanti tampil di halaman detail.
+  const finalScore = new Map<string, number>();
+  for (const f of accepted) {
+    const groupRows = groupSets.get(f.surveyYear)?.rows ?? f.lembaga;
+    if (f.individu.length + groupRows.length === 0) {
+      finalScore.set(f.fileName, f.score);
+      continue;
+    }
+    const individu = new Map(f.individu.map((r) => [byId.get(r.indicatorId)!.code, r.score]));
+    const lembaga = new Map(groupRows.map((r) => [byId.get(r.indicatorId)!.code, r.score]));
+    finalScore.set(f.fileName, recomputeBmpScore(indicators, individu, lembaga).total);
+  }
+
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  const groupSurveyDate = (year: number) => accepted.find((f) => f.surveyYear === year && f.surveyDate)?.surveyDate ?? null;
+
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        // Penilaian Lembaga per tahun
+        for (const [year, set] of groupSets) {
+          const existing = await tx.bmpGroupAssessment.findFirst({ where: { farmerGroupId, surveyYear: year, isActive: true }, select: { id: true } });
+          const head = existing
+            ? await tx.bmpGroupAssessment.update({ where: { id: existing.id }, data: { ...(groupSurveyDate(year) ? { surveyDate: groupSurveyDate(year) } : {}), ...(assessor ? { assessor } : {}), modifiedBy: userId }, select: { id: true } })
+            : await tx.bmpGroupAssessment.create({ data: { farmerGroupId, surveyYear: year, surveyDate: groupSurveyDate(year), assessor: assessor ?? null, createdBy: userId }, select: { id: true } });
+          summary.groupAssessmentId = head.id;
+          for (const r of set.rows) {
+            const ind = byId.get(r.indicatorId)!;
+            await tx.bmpGroupAssessmentDetail.upsert({
+              where: { groupAssessmentId_indicatorId: { groupAssessmentId: head.id, indicatorId: r.indicatorId } },
+              create: { groupAssessmentId: head.id, indicatorId: r.indicatorId, score: r.score, weightUsed: ind.weight, notes: r.notes, createdBy: userId },
+              update: { score: r.score, weightUsed: ind.weight, notes: r.notes, isActive: true, modifiedBy: userId },
+            });
+          }
+        }
+        // Penilaian petani + rincian individu
+        const existing = await tx.bmpAssessment.findMany({
+          where: { farmerId: { in: accepted.map((f) => f.farmerId) }, isActive: true },
+          select: { id: true, farmerId: true, surveyYear: true },
+        });
+        const existingByKey = new Map(existing.map((e) => [`${e.farmerId}:${e.surveyYear}`, e.id]));
+        for (const f of accepted) {
+          const id = existingByKey.get(`${f.farmerId}:${f.surveyYear}`);
+          let assessmentId: string;
+          if (id) {
+            await tx.bmpAssessment.update({
+              where: { id },
+              data: { score: finalScore.get(f.fileName)!, ...(f.surveyDate ? { surveyDate: f.surveyDate } : {}), ...(assessor ? { assessor } : {}), modifiedBy: userId },
+            });
+            assessmentId = id;
+            summary.assessmentsUpdated++;
+          } else {
+            const created = await tx.bmpAssessment.create({
+              data: { farmerId: f.farmerId, surveyYear: f.surveyYear, surveyDate: f.surveyDate ?? null, score: finalScore.get(f.fileName)!, assessor: assessor ?? null, createdBy: userId },
+              select: { id: true },
+            });
+            assessmentId = created.id;
+            summary.assessmentsCreated++;
+          }
+          for (const r of f.individu) {
+            const ind = byId.get(r.indicatorId)!;
+            await tx.bmpAssessmentDetail.upsert({
+              where: { assessmentId_indicatorId: { assessmentId, indicatorId: r.indicatorId } },
+              create: { assessmentId, indicatorId: r.indicatorId, score: r.score, weightUsed: ind.weight, notes: r.notes ?? null, createdBy: userId },
+              update: { score: r.score, weightUsed: ind.weight, notes: r.notes ?? null, isActive: true, modifiedBy: userId },
+            });
+            summary.detailRows++;
+          }
+        }
+      },
+      { timeout: 120_000 },
+    );
+  } catch (error) {
+    console.error("Import form survei Monev BMP error:", error);
+    if (isUniqueViolation(error)) {
+      return { success: false, error: "Ada petani/Lembaga yang baru saja diberi penilaian tahun itu oleh pengguna lain — muat ulang lalu validasi kembali (tidak ada yang tersimpan)" };
+    }
+    return { success: false, error: "Gagal menyimpan ke database — tidak ada yang tersimpan, coba lagi" };
+  }
+  return { success: true, data: summary };
+}

@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
+  bmpMonevActivityProfile,
   bmpMonevAvailableYears,
+  bmpMonevGroupProfiles,
   bmpMonevGroupRows,
   bmpMonevScoreHistogram,
   bmpMonevTotals,
   bmpMonevTrend,
+  bmpMonevWeakestIndicators,
   filterBmpMonevGroups,
   BMP_MONEV_STACK_ORDER,
   type BmpMonevGroupEntry,
@@ -105,5 +108,54 @@ describe("bmpMonevScoreHistogram", () => {
     expect(bmpMonevScoreHistogram(GROUPS, 2024).every((b) => b.count === 0)).toBe(true);
     const bins = bmpMonevScoreHistogram([group("x", 1, [["a", 2026, 1.0], ["a", 2026, 2.0]])], 2026);
     expect(bins.reduce((s, b) => s + b.count, 0)).toBe(1);
+  });
+});
+
+describe("rincian indikator (#346): profil kegiatan, indikator terlemah, profil kelembagaan", () => {
+  const activities = [
+    { code: "1.1", name: "Training", weight: 0.1 },
+    { code: "1.2", name: "Pemupukan", weight: 0.35 },
+  ];
+  const indicators = [
+    { id: "i1", code: "1.1.1.1", criteriaCode: "1.1.1", level: "INDIVIDU" as const, name: "Pelatihan", activityCode: "1.1", activityName: "Training", weight: 0.3, inFinalScore: true, sortOrder: 1 },
+    { id: "l1", code: "1.1.1.2", criteriaCode: "1.1.1", level: "LEMBAGA" as const, name: "Standar teknis", activityCode: "1.1", activityName: "Training", weight: 0.7, inFinalScore: true, sortOrder: 2 },
+    { id: "i2", code: "1.2.3.1", criteriaCode: "1.2.3", level: "INDIVIDU" as const, name: "5 T", activityCode: "1.2", activityName: "Pemupukan", weight: 0.35, inFinalScore: true, sortOrder: 3 },
+    { id: "l2", code: "1.2.1.1", criteriaCode: "1.2.1", level: "LEMBAGA" as const, name: "Unit manajemen", activityCode: "1.2", activityName: "Pemupukan", weight: null, inFinalScore: false, sortOrder: 4 },
+  ];
+  const g = (id: string, entries: { farmerId: string; year: number; score: number; act: number[] | null }[], profiles: BmpMonevGroupEntry["groupProfiles"] = []): BmpMonevGroupEntry => ({
+    ...group(id, 5, []),
+    assessments: entries.map((e) => ({ farmerId: e.farmerId, surveyYear: e.year, score: e.score, activityScores: e.act })),
+    groupProfiles: profiles,
+  });
+
+  it("profil kegiatan: rerata skor kegiatan atas petani ber-rincian saja; maks = Σ bobot × 3; duplikat petani-tahun sekali", () => {
+    const groups = [
+      g("a", [{ farmerId: "f1", year: 2026, score: 2, act: [2, 1] }, { farmerId: "f1", year: 2026, score: 2, act: [2, 1] }, { farmerId: "f2", year: 2026, score: 1, act: [1, 0.35] }, { farmerId: "f3", year: 2026, score: 1, act: null }]),
+    ];
+    const rows = bmpMonevActivityProfile(groups, 2026, activities, indicators);
+    expect(rows.map((r) => [r.code, r.avg, r.max, r.n])).toEqual([["1.1", 1.5, 3, 2], ["1.2", 0.68, 1.05, 2]]);
+    expect(bmpMonevActivityProfile(groups, 2025, activities, indicators)[0]).toMatchObject({ avg: null, n: 0 });
+  });
+
+  it("indikator terlemah: hanya individu berbobot, rerata atas ber-skor, tak-dinilai dihitung terpisah, urut naik", () => {
+    const groups = [g("a", []), g("b", [])];
+    const stats = [
+      { groupId: "a", surveyYear: 2026, indicatorId: "i1", sum: 6, n: 3, nullCount: 1 },
+      { groupId: "b", surveyYear: 2026, indicatorId: "i1", sum: 3, n: 3, nullCount: 0 },
+      { groupId: "a", surveyYear: 2026, indicatorId: "i2", sum: 1, n: 2, nullCount: 4 },
+      { groupId: "a", surveyYear: 2026, indicatorId: "l1", sum: 0, n: 2, nullCount: 0 }, // lembaga → diabaikan
+      { groupId: "c", surveyYear: 2026, indicatorId: "i2", sum: 0, n: 5, nullCount: 0 }, // di luar filter
+      { groupId: "a", surveyYear: 2025, indicatorId: "i2", sum: 0, n: 5, nullCount: 0 }, // tahun lain
+    ];
+    const rows = bmpMonevWeakestIndicators(groups, 2026, indicators, stats);
+    expect(rows.map((r) => [r.code, r.avg, r.n, r.nullCount])).toEqual([["1.2.3.1", 0.5, 2, 4], ["1.1.1.1", 1.5, 6, 1]]);
+  });
+
+  it("profil kelembagaan: Lembaga ber-profil dulu (urut rerata turun / abjad), tanpa profil tetap ada bertanda; rerata sederhana abaikan sel kosong", () => {
+    const groups = [g("z", [], []), g("a", [], [{ surveyYear: 2026, scores: { l1: 2, l2: null } }, { surveyYear: 2025, scores: { l1: 1, l2: 0 } }]), g("b", [], [{ surveyYear: 2026, scores: { l1: 3, l2: 3 } }])];
+    const rows = bmpMonevGroupProfiles(groups, 2026);
+    expect(rows.map((r) => [r.id, r.hasProfile, r.avg, r.filled])).toEqual([["b", true, 3, 2], ["a", true, 2, 1], ["z", false, null, 0]]);
+    expect(rows[1].scores.l2).toBeNull();
+    expect(bmpMonevGroupProfiles(groups, 2026, "name").map((r) => r.id)).toEqual(["a", "b", "z"]);
   });
 });

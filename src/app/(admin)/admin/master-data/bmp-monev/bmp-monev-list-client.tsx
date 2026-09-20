@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ClipboardCheck, FileSpreadsheet, Plus, Users, Building, Gauge } from "lucide-react";
+import { ClipboardCheck, FileSpreadsheet, Plus, Users, Building, Gauge, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { TableActions, DataTable, type DataTableColumn } from "@/components/shared";
 import { BmpCategoryBadge } from "@/components/shared/bmp-category-badge";
@@ -239,12 +239,21 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
   );
 
   const canCreate = permissions.includes("CREATE");
-  const toolbarRight = canCreate ? (
+  const toolbarRight = (
     <div className="flex items-center gap-2">
+      <Link href="/admin/master-data/bmp-monev/lembaga">
+        <Button size="sm" variant="ghost" className="h-9">
+          <Building2 className="h-4 w-4 mr-2" />
+          Penilaian Lembaga
+        </Button>
+      </Link>
+      {canCreate && (
       <Button size="sm" variant="outline" className="h-9" onClick={() => setShowImport(true)}>
         <FileSpreadsheet className="h-4 w-4 mr-2" />
         Import Excel
       </Button>
+      )}
+      {canCreate && (
       <Button
         size="sm"
         className="h-9"
@@ -256,8 +265,9 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
         <Plus className="h-4 w-4 mr-2" />
         Tambah Penilaian
       </Button>
+      )}
     </div>
-  ) : undefined;
+  );
 
   // KPI ringkas mengikuti filter — sinkron dengan tabel di bawahnya.
   const active = filtered.filter((r) => r.isActive);
@@ -326,6 +336,10 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
             <TableActions
               permissions={permissions}
               actions={[
+                {
+                  type: "view",
+                  onClick: () => router.push(`/admin/master-data/bmp-monev/${r.id}`),
+                },
                 {
                   type: "edit",
                   onClick: () => {
