@@ -9,6 +9,10 @@ import {
   resolveBmpImportRows,
   roundScore,
   toUtcDay,
+  fromUtcDay,
+  formatUtcDate,
+  isOutOfRubric,
+  bmpAssessmentCategoryByKey,
   type BmpImportRawRow,
 } from "@/lib/bmp-assessment";
 import { bmpAssessmentSchema, bmpAssessmentImportSchema } from "@/validations/bmp-assessment.schema";
@@ -296,5 +300,35 @@ describe("Zod bmpAssessmentSchema", () => {
     });
     // score bukan number → ditolak (tidak di-coerce diam-diam)
     expect(ok.success).toBe(false);
+  });
+});
+
+describe("helper tanggal & rubrik bersama (review #347: satu sumber untuk 6 klien)", () => {
+  it("formatUtcDate membaca komponen UTC (tidak mundur sehari di WIB), menerima string/Date, kosong & tak valid → placeholder", () => {
+    expect(formatUtcDate(new Date("2026-09-20T00:00:00Z"))).toBe("20 Sep 2026");
+    expect(formatUtcDate("2026-06-26T00:00:00.000Z")).toBe("26 Jun 2026");
+    expect(formatUtcDate(null)).toBe("—");
+    expect(formatUtcDate(undefined, "Pilih tanggal")).toBe("Pilih tanggal");
+    expect(formatUtcDate("bukan tanggal")).toBe("—");
+  });
+
+  it("toUtcDay ↔ fromUtcDay bolak-balik mempertahankan tanggal kalender", () => {
+    const local = new Date(2026, 8, 20, 15, 30); // 20 Sep 2026 sore lokal
+    const utc = toUtcDay(local);
+    expect(utc.toISOString()).toBe("2026-09-20T00:00:00.000Z");
+    const back = fromUtcDay(utc);
+    expect([back.getFullYear(), back.getMonth(), back.getDate(), back.getHours()]).toEqual([2026, 8, 20, 0]);
+  });
+
+  it("isOutOfRubric: 0–3 di dalam; 4/−1 di luar; null/undefined bukan", () => {
+    expect([0, 1, 2, 3].map(isOutOfRubric)).toEqual([false, false, false, false]);
+    expect([4, -1, 33].map(isOutOfRubric)).toEqual([true, true, true]);
+    expect(isOutOfRubric(null)).toBe(false);
+    expect(isOutOfRubric(undefined)).toBe(false);
+  });
+
+  it("bmpAssessmentCategoryByKey mengembalikan konstanta yang sama dengan bmpAssessmentCategory", () => {
+    expect(bmpAssessmentCategoryByKey("TELADAN")).toBe(bmpAssessmentCategory(2.51));
+    expect(bmpAssessmentCategoryByKey("BELUM").min).toBe(0);
   });
 });

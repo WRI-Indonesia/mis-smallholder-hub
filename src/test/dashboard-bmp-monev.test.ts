@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   bmpMonevActivityProfile,
   bmpMonevAvailableYears,
+  bmpMonevGroupIndicatorAverages,
   bmpMonevGroupProfiles,
   bmpMonevGroupRows,
   bmpMonevScoreHistogram,
@@ -162,5 +163,16 @@ describe("rincian indikator (#346): profil kegiatan, indikator terlemah, profil 
     expect(rows.map((r) => [r.id, r.hasProfile, r.avg, r.filled])).toEqual([["b", true, 3, 2], ["a", true, 2, 1], ["z", false, null, 0]]);
     expect(rows[1].scores.l2).toBeNull();
     expect(bmpMonevGroupProfiles(groups, 2026, "name").map((r) => r.id)).toEqual(["a", "b", "z"]);
+  });
+});
+
+describe("bmpMonevGroupIndicatorAverages — rerata kolom heatmap kelembagaan", () => {
+  it("hanya Lembaga ber-profil; sel kosong diabaikan; indikator tanpa nilai → null; 2 desimal", () => {
+    const rows = [
+      { id: "a", name: "A", scores: { l1: 3, l2: null }, hasProfile: true, avg: 3, filled: 1 },
+      { id: "b", name: "B", scores: { l1: 2, l2: 1 }, hasProfile: true, avg: 1.5, filled: 2 },
+      { id: "c", name: "C", scores: { l1: 0, l2: 0 }, hasProfile: false, avg: null, filled: 0 },
+    ];
+    expect(bmpMonevGroupIndicatorAverages(rows, ["l1", "l2", "l3"])).toEqual({ l1: 2.5, l2: 1, l3: null });
   });
 });

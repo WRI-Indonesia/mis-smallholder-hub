@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   bmpActivityMaxScore,
   bmpScoreLabel,
+  bmpWeightedSlotKey,
   farmerNameFromFileName,
   levenshtein,
   matchFarmerName,
@@ -194,6 +195,12 @@ describe("recomputeBmpScore — rumus form (Σ bobot kegiatan × Σ bobot indika
     expect(act(new Map([["1.3.2.1", 2], ["1.3.2.2", 2], ["1.3.3.1", 3], ["1.3.3.2", 3]]))).toMatchObject({ indicatorScore: 2.8 });
     // Keduanya kosong: satu slot kosong (bukan dua)
     expect(act(new Map([["1.3.3.1", 3], ["1.3.3.2", 3]]))).toMatchObject({ indicatorScore: 2.4, missingWeighted: 1 });
+  });
+
+  it("bmpWeightedSlotKey: pasangan alternatif berbagi satu slot per level; indikator lain = id sendiri", () => {
+    expect(bmpWeightedSlotKey({ id: "g1", criteriaCode: "1.3.2", level: "INDIVIDU" })).toBe(bmpWeightedSlotKey({ id: "g2", criteriaCode: "1.3.2", level: "INDIVIDU" }));
+    expect(bmpWeightedSlotKey({ id: "g1", criteriaCode: "1.3.2", level: "INDIVIDU" })).not.toBe(bmpWeightedSlotKey({ id: "g9", criteriaCode: "1.3.2", level: "LEMBAGA" }));
+    expect(bmpWeightedSlotKey({ id: "i1", criteriaCode: "1.1.1", level: "INDIVIDU" })).toBe("i1");
   });
 
   it("bmpScoreLabel: label rubrik per skor, null bila tak didefinisikan / di luar 0–3", () => {
