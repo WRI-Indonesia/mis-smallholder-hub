@@ -22,7 +22,7 @@ export default async function MarkerReportPage() {
           <HelpHint menuKey="report-marker" />
         </div>
         <p className="text-muted-foreground">
-          Patok batas lahan per Distrik/Lembaga Petani — kondisi, lahan pemakai, tanda NKT; satu baris per patok fisik
+          Patok batas lahan per Distrik/Lembaga Petani — kondisi, bahan, lahan pemakai; satu baris per patok fisik
         </p>
       </div>
       <MarkerReportClient

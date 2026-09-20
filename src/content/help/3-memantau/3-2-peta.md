@@ -13,7 +13,9 @@ icon: Map
 
 **Lahan NKT** — Legenda punya layer **Lahan NKT (termasuk/terdampak)**: lahan yang menurut hasil asesmen termasuk area NKT disorot **merah**, yang terdampak (mis. sempadan sungai) **amber**, di atas area lahan biasa. Hitungan di sampingnya = jumlah lahan NKT pada data yang dimuat; nol berarti asesmen belum diunggah untuk wilayah itu, bukan berarti bebas NKT. Popup lahan menulis statusnya — atau "Belum dinilai".
 
-**Patok lahan** — Dua layer lagi di Legenda: **Patok lahan** (titik kuning) dan **Patok lahan NKT** (titik merah — patok yang salah satu lahan pemakainya termasuk/terdampak NKT). Keduanya mati bawaan; titiknya baru dimuat saat dicentang. Klik titik untuk melihat **kode patok** (`HJP-PTK-000123`), lahan pemakainya beserta nomor patok di tiap lahan, kondisi, dan koordinat.
+**Tampilan 3D** — Tombol **gunung** di kanan bawah menyalakan **Terrain 3D** (relief permukaan dari DEM AWS Terrain Tiles, peta ikut dimiringkan); kotak di bawahnya memutar (30°) dan memiringkan (15°) peta tanpa perlu drag kanan / Ctrl+drag; tombol **kompas** menunjuk utara dan mengembalikan peta ke utara & 2D. Terrain mati bawaan dan tidak memengaruhi cetak PDF.
+
+**Patok lahan** — Satu layer lagi di Legenda: **Patok lahan** (titik kuning) — seluruh patok batas kebun, apa pun status NKT lahannya. Mati bawaan; titiknya baru dimuat saat dicentang. Klik titik untuk melihat **kode patok** (`HJP-PTK-000123`), lahan pemakainya beserta nomor patok di tiap lahan, kondisi, dan koordinat.
 
 **Unduh per baris Legenda** — Bila punya izin Export, tiap baris Legenda punya ikon unduh: **Excel** (atribut) atau **Shapefile/GeoJSON/KML** — bentuknya mengikuti baris: baris *Point* (Lembaga, titik lahan, patok) menghasilkan titik, baris *Area/NKT* menghasilkan poligon. Baris Lahan NKT hanya berisi lahan termasuk/terdampak.
 

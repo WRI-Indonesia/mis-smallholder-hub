@@ -168,6 +168,27 @@ export const MAP_STYLE_LABELS: Record<MapStyleKey, { short: string; full: string
   hybrid: { short: "HYBRID", full: "Hybrid — citra + label" },
 };
 
+// ---------------------------------------------------------------------------
+// Terrain 3D (owner 2026-09-20): relief dari DEM global agar tampilan miring
+// (pitch) di Peta Lahan lebih bermakna. AWS Terrain Tiles (Mapzen, encoding
+// Terrarium) — tanpa API key/registrasi, resolusi ±30 m (SRTM) sampai z15.
+// Dataran Riau landai (0–100 m) sehingga exaggeration > 1 dipakai; sumbernya
+// hanya dimuat saat terrain dinyalakan (source ditambah kondisional).
+// ---------------------------------------------------------------------------
+
+export const TERRAIN_DEM_SOURCE_ID = "terrain-dem";
+/** Source kedua (tile sama) khusus hillshade — MapLibre memperingatkan bila hillshade & terrain berbagi source. */
+export const TERRAIN_HILLSHADE_SOURCE_ID = "terrain-dem-hillshade";
+export const TERRAIN_DEM_TILES = ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"];
+export const TERRAIN_DEM_ENCODING = "terrarium" as const;
+export const TERRAIN_DEM_MAXZOOM = 15;
+export const TERRAIN_DEM_ATTRIBUTION =
+  'Terrain &copy; <a href="https://registry.opendata.aws/terrain-tiles/">AWS Terrain Tiles</a> (Mapzen; SRTM, ETOPO1, dll.)';
+/** Pembesaran relief — dataran gambut Riau nyaris rata; 1 = skala asli. */
+export const TERRAIN_EXAGGERATION = 1.6;
+/** Kemiringan kamera saat terrain dinyalakan dari tampilan 2D (derajat). */
+export const TERRAIN_DEFAULT_PITCH = 60;
+
 /** Citra Google: men-taint canvas, sehingga capture cetak PDF gagal di sini. */
 export const IMAGERY_STYLE_KEYS: MapStyleKey[] = ["satellite", "hybrid"];
 

@@ -149,7 +149,8 @@ export function ParcelMarkerFormModal({ open, onClose, landParcelId, item }: Pro
               {fieldError("condition")}
             </div>
             <div className="space-y-2">
-              <Label>Jenis</Label>
+              {/* "Bahan" (owner 2026-09-20, #345): beton/kayu/pipa/tanda alam — bukan "jenis" patok. */}
+              <Label>Bahan</Label>
               <Select value={type} onValueChange={(v) => setType(v ?? "_none")}>
                 <SelectTrigger className="w-full h-9">
                   <SelectValue>{(v: string) => (v === "_none" ? "—" : labelOf(LAND_MARKER_TYPE_LABELS, v))}</SelectValue>

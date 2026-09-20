@@ -223,9 +223,6 @@ export interface MarkerLinkRow {
   installedAt: string | null;
   installedBy: string | null;
   source: string;
-  nkt: boolean;
-  /** Lahan baris ini sendiri kena NKT (opsional; bawaan = `nkt`). */
-  parcelNkt?: boolean;
   notes: string | null;
 }
 
@@ -235,7 +232,7 @@ export interface UniqueMarkerRow {
   /** KT & Blok terkecil (alfabet) di antara lahan pemakai — basis urutan; kosong di akhir. */
   subGroupLv2: string | null;
   blok: string | null;
-  /** "Nama Petani · ID Petani · ID Lahan #n" per baris (dipisah "\n" bila lebih dari satu) — lahan pemakai (hanya yang kena NKT bila `nktParcelsOnly`), urut ID Lahan. */
+  /** "Nama Petani · ID Petani · ID Lahan #n" per baris (dipisah "\n" bila lebih dari satu) — semua lahan pemakai, urut ID Lahan. */
   lahan: string;
   farmerNames: string;
   groupName: string;
@@ -247,7 +244,6 @@ export interface UniqueMarkerRow {
   installedAt: string | null;
   installedBy: string | null;
   source: string;
-  nkt: boolean;
   notes: string | null;
 }
 
@@ -255,9 +251,10 @@ export interface UniqueMarkerRow {
  * Satu baris per patok FISIK (keputusan owner 2026-09-14 untuk unduhan Peta
  * Lahan): lahan pemakai digabung satu kolom "ID Petani · ID Lahan #no" dipisah
  * koma, diurutkan Kelompok Tani lalu Blok (kosong di akhir), lalu ID Lahan
- * pertama. NKT = salah satu lahan pemakai kena NKT.
+ * pertama. Semua patok = patok lahan (#345) — tidak ada lagi saringan/tanda
+ * "NKT turunan" dari status lahan pemakai.
  */
-export function uniqueMarkerRows(rows: MarkerLinkRow[], opts: { nktParcelsOnly?: boolean } = {}): UniqueMarkerRow[] {
+export function uniqueMarkerRows(rows: MarkerLinkRow[]): UniqueMarkerRow[] {
   const byId = new Map<string, MarkerLinkRow[]>();
   for (const r of rows) byId.set(r.markerId, [...(byId.get(r.markerId) ?? []), r]);
   const minStr = (vals: (string | null)[]) => {
@@ -265,12 +262,8 @@ export function uniqueMarkerRows(rows: MarkerLinkRow[], opts: { nktParcelsOnly?:
     return v[0] ?? null;
   };
   const out: UniqueMarkerRow[] = [...byId.values()].map((g) => {
-    const sorted = [...g].sort((a, b) => a.parcelId.localeCompare(b.parcelId));
-    // Patok NKT (owner 2026-09-14): kolom Lahan hanya lahan yang kena NKT — lahan tetangga
-    // yang bersih tetap dihitung pemakai tetapi tidak dicantumkan.
-    const listed = opts.nktParcelsOnly ? sorted.filter((x) => x.parcelNkt ?? x.nkt) : sorted;
-    const shown = listed.length > 0 ? listed : sorted;
-    const first = sorted[0];
+    const shown = [...g].sort((a, b) => a.parcelId.localeCompare(b.parcelId));
+    const first = shown[0];
     return {
       markerId: first.markerId,
       code: first.code,
@@ -288,7 +281,6 @@ export function uniqueMarkerRows(rows: MarkerLinkRow[], opts: { nktParcelsOnly?:
       installedAt: first.installedAt,
       installedBy: first.installedBy,
       source: first.source,
-      nkt: g.some((x) => x.nkt),
       notes: first.notes,
     };
   });
@@ -302,7 +294,6 @@ export interface ParcelMarkerGroup {
   farmerName: string;
   subGroupLv2: string | null;
   blok: string | null;
-  nkt: boolean;
   /** Patok lahan ini, urut nomor per lahan; `mapNo` = nomor patok di peta/daftar unik (1-based). */
   markers: { mapNo: number; code: string; sequenceNo: number; condition: string }[];
 }
@@ -310,18 +301,17 @@ export interface ParcelMarkerGroup {
 /**
  * Tabel PDF patok dikelompokkan PER LAHAN (owner 2026-09-14: baris per patok
  * mengulang nama/ID petani berkali-kali). `unique` = hasil `uniqueMarkerRows`
- * (urutan = nomor di peta). Bila `nktOnly`, hanya lahan yang kena NKT.
+ * (urutan = nomor di peta).
  */
-export function groupMarkersByParcel(rows: MarkerLinkRow[], unique: UniqueMarkerRow[], opts: { nktOnly?: boolean } = {}): ParcelMarkerGroup[] {
+export function groupMarkersByParcel(rows: MarkerLinkRow[], unique: UniqueMarkerRow[]): ParcelMarkerGroup[] {
   const mapNo = new Map(unique.map((u, i) => [u.markerId, i + 1]));
   const byParcel = new Map<string, ParcelMarkerGroup>();
   for (const r of rows) {
-    if (opts.nktOnly && !(r.parcelNkt ?? r.nkt)) continue;
     const no = mapNo.get(r.markerId);
     if (!no) continue;
     let g = byParcel.get(r.parcelId);
     if (!g) {
-      g = { parcelId: r.parcelId, farmerCode: r.farmerCode, farmerName: r.farmerName, subGroupLv2: r.subGroupLv2, blok: r.blok, nkt: r.parcelNkt ?? r.nkt, markers: [] };
+      g = { parcelId: r.parcelId, farmerCode: r.farmerCode, farmerName: r.farmerName, subGroupLv2: r.subGroupLv2, blok: r.blok, markers: [] };
       byParcel.set(r.parcelId, g);
     }
     g.markers.push({ mapNo: no, code: r.code, sequenceNo: r.sequenceNo, condition: r.condition });
@@ -345,11 +335,11 @@ export const MARKER_XLSX_COLUMNS = [
   { header: "Lintang", key: "latitude", width: 14 },
   { header: "Bujur", key: "longitude", width: 14 },
   { header: "Kondisi", key: "condition", width: 16 },
-  { header: "Jenis", key: "type", width: 12 },
+  // "Bahan" (owner 2026-09-20, #345): nilainya beton/kayu/pipa/tanda alam — bukan "jenis" patok.
+  { header: "Bahan", key: "type", width: 12 },
   { header: "Tanggal Pemasangan", key: "installedAt", width: 14 },
   { header: "Dipasang oleh", key: "installedBy", width: 20 },
   { header: "Sumber koordinat", key: "source", width: 16 },
-  { header: "NKT", key: "nkt", width: 8 },
   { header: "Keterangan", key: "notes", width: 30 },
 ];
 
@@ -366,7 +356,6 @@ export function formatUniqueMarkerRow(r: UniqueMarkerRow) {
     installedAt: r.installedAt ?? "",
     installedBy: r.installedBy ?? "",
     source: labelOf(LAND_MARKER_SOURCE_LABELS, r.source),
-    nkt: r.nkt ? "Ya" : "",
     notes: r.notes ?? "",
   };
 }

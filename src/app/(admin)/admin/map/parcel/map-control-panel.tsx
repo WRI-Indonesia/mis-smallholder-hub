@@ -32,16 +32,15 @@ export type LayerVisibility = {
   parcelAreas: boolean;
   /** Lahan termasuk/terdampak NKT (#328) — sorotan merah/amber di atas area lahan. */
   nkt: boolean;
-  /** Patok lahan (kuning) & patok lahan NKT (merah) (#331) — dua layer, titiknya dimuat malas saat dicentang. */
+  /** Patok lahan (kuning, #331) — satu layer untuk semua patok (#345); titiknya dimuat malas saat dicentang. */
   markers: boolean;
-  markersNkt: boolean;
 };
 
 /** Layer internal yang bisa dituju tombol zoom di panel (klik label). */
-export type LayerZoomTarget = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "markers" | "markersNkt" | "hotspot";
+export type LayerZoomTarget = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "markers" | "hotspot";
 
 /** Baris legenda yang punya unduhan sendiri (#331) — format spasial mengikuti tipe fitur baris (Point/Polygon). */
-export type LegendExportRow = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "markers" | "markersNkt";
+export type LegendExportRow = "kt" | "parcelPoints" | "parcelAreas" | "nkt" | "markers";
 export type LegendExportFormat = "xlsx" | "pdf" | ParcelExportFormat;
 
 interface Props {
@@ -197,13 +196,6 @@ interface LegendRowProps {
   featureType?: "Point" | "Polygon";
   /** Data baris sedang dimuat (layer malas) — hitungan diganti spinner. */
   loading?: boolean;
-  /**
-   * Jumlah data yang DIPAKAI aksi baris (zoom/unduh) bila berbeda dari `count`
-   * yang ditampilkan — baris "Patok lahan" menampilkan patok non-NKT tetapi
-   * mengunduh/zoom SELURUH patok fisik; tanpa ini, Lembaga yang semua patoknya
-   * menyentuh lahan NKT kehilangan tombol unduh/zoom-nya (review 2026-09-15).
-   */
-  actionCount?: number;
 }
 
 const LEGEND_EXPORT_ITEMS: { format: LegendExportFormat; label: string }[] = [
@@ -213,8 +205,8 @@ const LEGEND_EXPORT_ITEMS: { format: LegendExportFormat; label: string }[] = [
   { format: "kml", label: "KML" },
 ];
 
-function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType, canPrint, loading, actionCount }: LegendRowProps) {
-  const empty = (actionCount ?? count) === 0;
+function LegendRow({ color, label, count, checked, onToggle, onZoomTo, variant = "dot", onExport, exporting, featureType, canPrint, loading }: LegendRowProps) {
+  const empty = count === 0;
   return (
     <div className="flex items-center gap-2.5 py-1">
       <Checkbox checked={checked} onCheckedChange={(v) => onToggle(!!v)} aria-label={label} />
@@ -519,17 +511,13 @@ export function MapControlPanel(props: Props) {
                       canPrint={canPrint}
                       featureType="Polygon"
                     />
-                    {/* Patok (#331): dua layer/warna — titiknya dimuat malas saat dicentang.
-                        Hitungan baris kuning = patok NON-NKT (layer `marker-point` memfilter nkt==0;
-                        sama dengan legenda peta sebaran Detail Lembaga/Petani) — sebelumnya memakai
-                        total sehingga 62 titik "hilang" (review 2026-09-15). Unduhan barisnya tetap
-                        seluruh patok fisik (kolom NKT membedakan) — maka tombol unduh/zoom hidup
-                        selama ADA patok (`actionCount`), bukan hanya bila ada patok non-NKT. */}
+                    {/* Patok (#331): satu layer kuning untuk SEMUA patok fisik — titiknya dimuat
+                        malas saat dicentang. Baris merah "Patok lahan NKT" (turunan status lahan
+                        pemakai) dihapus (#345): patok NKT kelak entitas sendiri dari buffer sungai. */}
                     <LegendRow
                       color="#facc15"
                       label="Patok lahan"
-                      count={Math.max(0, (counts.markers ?? 0) - (counts.markersNkt ?? 0))}
-                      actionCount={counts.markers ?? 0}
+                      count={counts.markers ?? 0}
                       loading={markerLoading}
                       checked={layers.markers}
                       onToggle={(v) => onLayersChange({ ...layers, markers: v })}
@@ -537,20 +525,6 @@ export function MapControlPanel(props: Props) {
                       variant="square"
                       onExport={canExport ? (f) => onLegendExport("markers", f) : null}
                       exporting={legendExporting === "markers"}
-                      canPrint={canPrint}
-                      featureType="Point"
-                    />
-                    <LegendRow
-                      color="#ef4444"
-                      label="Patok lahan NKT"
-                      count={counts.markersNkt ?? 0}
-                      loading={markerLoading}
-                      checked={layers.markersNkt}
-                      onToggle={(v) => onLayersChange({ ...layers, markersNkt: v })}
-                      onZoomTo={() => onZoomLayer("markersNkt")}
-                      variant="square"
-                      onExport={canExport ? (f) => onLegendExport("markersNkt", f) : null}
-                      exporting={legendExporting === "markersNkt"}
                       canPrint={canPrint}
                       featureType="Point"
                     />

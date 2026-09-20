@@ -247,6 +247,7 @@ export const DATA_LINEAGE: DataLineage = [
       "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
+      "landMarker": "R",
       "landParcel": "R",
       "productionRecord": "R",
       "province": "R"
@@ -490,8 +491,7 @@ export const DATA_LINEAGE: DataLineage = [
       "farmerGroup": "R",
       "landMarker": "RW",
       "landParcel": "R",
-      "landParcelMarker": "RW",
-      "landParcelNkt": "R"
+      "landParcelMarker": "RW"
     },
     "modules": [
       "src/server/actions/land-marker.ts",

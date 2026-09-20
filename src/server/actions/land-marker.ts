@@ -7,7 +7,6 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, farmerRelationAccessFilter, farmerGroupAccessFilter, type AccessContext } from "@/lib/access-context";
 import { s3, S3_BUCKET, getPresignedUrl } from "@/lib/s3";
-import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import {
   MARKER_MAX_DISTANCE_M,
   MARKER_MOVE_EPSILON_M,
@@ -142,14 +141,13 @@ export async function getLandParcelMarkers(landParcelId: string): Promise<LandPa
         select: {
           id: true, code: true, longitude: true, latitude: true, source: true, condition: true, type: true,
           installedAt: true, installedBy: true, photoKey: true, photoName: true, notes: true, modifiedAt: true,
-          // Lahan LAIN yang memakai patok yang sama + status NKT-nya (tanda turunan).
+          // Lahan LAIN yang memakai patok yang sama (konteks "patok bersama").
           parcels: {
             where: { isActive: true, parcelUid: { not: parcel.parcelUid } },
             select: {
               parcel: {
                 select: {
                   parcelId: true,
-                  nkt: { select: { status: true } },
                   farmer: { select: { name: true, farmerGroup: { select: { name: true } } } },
                   revisions: { where: { isActive: true }, select: { id: true, farmer: { select: { farmerGroupId: true, farmerGroup: { select: { districtId: true } } } } }, take: 1 },
                 },
@@ -160,9 +158,6 @@ export async function getLandParcelMarkers(landParcelId: string): Promise<LandPa
       },
     },
   });
-  const ownNkt = await prisma.landParcelNkt.findUnique({ where: { parcelUid: parcel.parcelUid }, select: { status: true } });
-  const ownAffected = isNktAffected(ownNkt?.status);
-
   const inScope = (p: { farmer: { farmerGroupId: string; farmerGroup: { districtId: string } } }) =>
     access.mode === "ALL" ||
     (access.mode === "BY_FARMER_GROUP" && access.ids.includes(p.farmer.farmerGroupId)) ||
@@ -178,7 +173,6 @@ export async function getLandParcelMarkers(landParcelId: string): Promise<LandPa
           landParcelId: active && inScope(active) ? active.id : null,
           farmerName: x.parcel.farmer.name,
           groupName: x.parcel.farmer.farmerGroup.name,
-          nktAffected: isNktAffected(x.parcel.nkt?.status),
         };
       });
       return {
@@ -200,8 +194,6 @@ export async function getLandParcelMarkers(landParcelId: string): Promise<LandPa
         notes: m.notes,
         modifiedAt: m.modifiedAt,
         sharedWith: shared,
-        // Turunan: lahan ini ATAU salah satu lahan lain yang memakai patok ini kena NKT.
-        nkt: ownAffected || shared.some((x) => x.nktAffected),
       };
     }),
   );
@@ -452,10 +444,6 @@ export interface LandMarkerExportRow {
   installedAt: string | null;
   installedBy: string | null;
   source: string;
-  /** Turunan: lahan INI atau lahan lain pemakai patok kena NKT. */
-  nkt: boolean;
-  /** Lahan baris ini sendiri kena NKT — untuk menyaring kolom "Lahan" pada unduhan Patok NKT. */
-  parcelNkt: boolean;
   sharedWith: string[];
   notes: string | null;
 }
@@ -470,7 +458,6 @@ const MARKER_EXPORT_PARCEL_SELECT = {
   farmer: { select: { farmerId: true, name: true, farmerGroup: { select: { name: true } } } },
   identity: {
     select: {
-      nkt: { select: { status: true } },
       markers: {
         where: { isActive: true },
         orderBy: { sequenceNo: "asc" },
@@ -479,7 +466,7 @@ const MARKER_EXPORT_PARCEL_SELECT = {
           marker: {
             select: {
               id: true, code: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true, installedBy: true, source: true, notes: true,
-              parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
+              parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true } } } },
             },
           },
         },
@@ -489,15 +476,12 @@ const MARKER_EXPORT_PARCEL_SELECT = {
 } satisfies Prisma.LandParcelSelect;
 type MarkerExportParcel = Prisma.LandParcelGetPayload<{ select: typeof MARKER_EXPORT_PARCEL_SELECT }>;
 
-/** Satu baris per patok per lahan; NKT turunan = lahan ini ATAU salah satu lahan pemakai lain. `nktOnly` menyaring ke patok NKT saja. */
-function markerExportRows(parcels: MarkerExportParcel[], nktOnly = false): LandMarkerExportRow[] {
+/** Satu baris per patok per lahan — semua patok = patok lahan, tanpa tanda/saringan NKT turunan (#345). */
+function markerExportRows(parcels: MarkerExportParcel[]): LandMarkerExportRow[] {
   const rows: LandMarkerExportRow[] = [];
   for (const p of parcels) {
-    const own = isNktAffected(p.identity.nkt?.status);
     for (const l of p.identity.markers) {
       const others = l.marker.parcels.filter((x) => x.parcelUid !== p.parcelUid);
-      const nkt = own || others.some((x) => isNktAffected(x.parcel.nkt?.status));
-      if (nktOnly && !nkt) continue;
       rows.push({
         markerId: l.marker.id,
         code: l.marker.code,
@@ -515,8 +499,6 @@ function markerExportRows(parcels: MarkerExportParcel[], nktOnly = false): LandM
         installedAt: l.marker.installedAt ? l.marker.installedAt.toISOString().slice(0, 10) : null,
         installedBy: l.marker.installedBy,
         source: l.marker.source,
-        nkt,
-        parcelNkt: own,
         sharedWith: others.map((x) => x.parcel.parcelId),
         notes: l.marker.notes,
       });
@@ -550,18 +532,16 @@ export async function getFarmerGroupMarkerExportRows(farmerGroupId: string): Pro
 }
 
 /**
- * Patok pada filter Peta Lahan (#331) — unduhan baris legenda "Patok lahan" /
- * "Patok lahan NKT"; digate `map-parcel:EXPORT`. Satu baris per patok per
- * lahan (Excel) — klien mengelompokkan per `markerId` untuk fitur Point.
- * `nktOnly` = hanya patok yang salah satu lahan pemakainya kena NKT.
+ * Patok pada filter Peta Lahan (#331) — unduhan baris legenda "Patok lahan";
+ * digate `map-parcel:EXPORT`. Satu baris per patok per lahan (Excel) — klien
+ * mengelompokkan per `markerId` untuk fitur Point.
  */
 export async function getMapMarkerExportRows(
   filters: { provinceId?: string | null; districtId: string; farmerGroupId?: string | null },
-  nktOnly = false,
 ): Promise<ActionResult<{ rows: LandMarkerExportRow[]; label: string | null }>> {
   if (!(await hasPermission("map-parcel", "EXPORT"))) return { success: false, error: "Tidak memiliki izin untuk mengekspor data ini" };
   if (typeof filters?.districtId !== "string" || !filters.districtId) return { success: false, error: "Pilih Distrik terlebih dahulu" };
-  return { success: true, data: await markerRowsForFilters(filters, nktOnly) };
+  return { success: true, data: await markerRowsForFilters(filters) };
 }
 
 /**
@@ -582,7 +562,6 @@ export async function getMarkerReportRows(
 /** Inti kueri bersama Peta Lahan & Report › Patok — scope akses via AND (pola getMapData). */
 async function markerRowsForFilters(
   filters: { provinceId?: string | null; districtId: string; farmerGroupId?: string | null },
-  nktOnly = false,
 ): Promise<{ rows: LandMarkerExportRow[]; label: string | null }> {
   const access = await getAccessContext();
   const groupWhere = {
@@ -603,7 +582,7 @@ async function markerRowsForFilters(
       : Promise.resolve(null),
     prisma.district.findUnique({ where: { id: filters.districtId }, select: { name: true } }),
   ]);
-  const rows = markerExportRows(parcels, nktOnly);
+  const rows = markerExportRows(parcels);
   const label = filters.farmerGroupId ? (group?.code?.trim() || group?.name || null) : (district?.name ?? null);
   return { rows, label };
 }

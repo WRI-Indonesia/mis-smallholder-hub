@@ -221,13 +221,13 @@ describe("buildFarmPassportDoc (lib/farm-passport)", () => {
     expect(text).toContain("0,09 ha");
   });
 
-  it("Patok (#329): tanpa patok → tidak ada section; ada patok → tabel 'Patok Batas' bernomor, NKT turunan, lahan pemakai lain", () => {
+  it("Patok (#329): tanpa patok → tidak ada section; ada patok → tabel 'Patok Batas' bernomor, kolom Bahan, lahan pemakai lain — tanpa kolom NKT turunan (#345)", () => {
     expect(pdfText(buildFarmPassportDoc(passport))).not.toContain("Patok Batas");
     const withMarkers: ParcelPassport = {
       ...passport,
       markers: [
-        { sequenceNo: 1, code: "SH-PTK-000001", longitude: 101.1912, latitude: 0.5235, condition: "PRESENT", type: "CONCRETE", installedAt: "2026-09-01T00:00:00.000Z", sharedWith: ["SH-0002.A"], nkt: true },
-        { sequenceNo: 2, code: "SH-PTK-000002", longitude: 101.1918, latitude: 0.5235, condition: "NOT_INSTALLED", type: null, installedAt: null, sharedWith: [], nkt: false },
+        { sequenceNo: 1, code: "SH-PTK-000001", longitude: 101.1912, latitude: 0.5235, condition: "PRESENT", type: "CONCRETE", installedAt: "2026-09-01T00:00:00.000Z", sharedWith: ["SH-0002.A"] },
+        { sequenceNo: 2, code: "SH-PTK-000002", longitude: 101.1918, latitude: 0.5235, condition: "NOT_INSTALLED", type: null, installedAt: null, sharedWith: [] },
       ],
     };
     const text = pdfText(buildFarmPassportDoc(withMarkers));

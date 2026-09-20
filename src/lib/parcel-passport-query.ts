@@ -10,7 +10,7 @@ import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context"
 import { summarizeProduction } from "@/lib/map-data";
 import { fetchParcelNeighbors } from "@/lib/parcel-neighbor-query";
 import { NEIGHBOR_LIMIT_PDF } from "@/lib/parcel-neighbor";
-import { hasBorderContent, isNktAffected } from "@/lib/land-parcel-satellite-format";
+import { hasBorderContent } from "@/lib/land-parcel-satellite-format";
 import type { ActionResult } from "@/types/action-result";
 import type { FarmerTrainingItem, ParcelPassport } from "@/types/map";
 
@@ -109,7 +109,7 @@ export async function fetchParcelPassport(
           border: { select: { north: true, east: true, south: true, west: true, notes: true } },
           // NKT (#328) — status terkini; null = belum dinilai.
           nkt: { select: { status: true, categories: true, affectedAreaHa: true, affectedLengthM: true, assessedAt: true, assessor: true, source: true } },
-          // Patok batas (#329) — tautan aktif + lahan lain pemakai patok (untuk "bersama" & NKT turunan).
+          // Patok batas (#329) — tautan aktif + lahan lain pemakai patok (konteks "bersama").
           markers: {
             where: { isActive: true },
             orderBy: { sequenceNo: "asc" },
@@ -118,7 +118,7 @@ export async function fetchParcelPassport(
               marker: {
                 select: {
                   code: true, longitude: true, latitude: true, condition: true, type: true, installedAt: true,
-                  parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true, nkt: { select: { status: true } } } } } },
+                  parcels: { where: { isActive: true }, select: { parcelUid: true, parcel: { select: { parcelId: true } } } },
                 },
               },
             },
@@ -249,8 +249,6 @@ export async function fetchParcelPassport(
           type: l.marker.type,
           installedAt: l.marker.installedAt ? l.marker.installedAt.toISOString() : null,
           sharedWith: others.map((x) => x.parcel.parcelId),
-          // Turunan (sama dengan getLandParcelMarkers): lahan ini ATAU lahan lain pemakai patok kena NKT.
-          nkt: isNktAffected(parcel.identity.nkt?.status) || others.some((x) => isNktAffected(x.parcel.nkt?.status)),
         };
       }),
     },

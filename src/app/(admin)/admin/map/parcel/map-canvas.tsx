@@ -6,12 +6,24 @@ import { useTheme } from "next-themes";
 import Map, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { ExpressionSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers, Milestone } from "lucide-react";
+import { MapPin, GraduationCap, BarChart3, Info, Check, Loader2, User, Printer, Flame, Ruler, X, Undo2, List, Search, Crosshair, Maximize, Layers, Milestone, Navigation, Mountain, RotateCcw, RotateCw, ChevronsUp, ChevronsDown } from "lucide-react";
 import { toast } from "sonner";
 import type { FeatureCollection, Point } from "geojson";
 import { cn } from "@/lib/utils";
 import { formatArea } from "@/lib/format";
-import { MAP_STYLE_KEYS, MAP_STYLE_LABELS, type MapStyleKey } from "@/lib/map-style";
+import {
+  MAP_STYLE_KEYS,
+  MAP_STYLE_LABELS,
+  TERRAIN_DEFAULT_PITCH,
+  TERRAIN_DEM_ATTRIBUTION,
+  TERRAIN_DEM_ENCODING,
+  TERRAIN_DEM_MAXZOOM,
+  TERRAIN_DEM_SOURCE_ID,
+  TERRAIN_DEM_TILES,
+  TERRAIN_EXAGGERATION,
+  TERRAIN_HILLSHADE_SOURCE_ID,
+  type MapStyleKey,
+} from "@/lib/map-style";
 import { useVectorBasemap } from "@/hooks/use-vector-basemap";
 import { Button } from "@/components/ui/button";
 import { ParcelPopupActions } from "@/app/(admin)/admin/master-data/parcels/components/parcel-popup-actions";
@@ -253,14 +265,14 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     [data, layers.parcelPoints]
   );
 
-  // Patok (#331): satu source, dua layer (kuning / merah NKT) difilter properti `nkt`.
+  // Patok (#331): satu source, satu layer kuning — semua patok = patok lahan (#345).
   const markerGeojson = useMemo<FeatureCollection<Point>>(
     () => ({
       type: "FeatureCollection",
-      features: (markers ?? []).map(([id, lon, lat, nkt, condition, parcels, code]) => ({
+      features: (markers ?? []).map(([id, lon, lat, condition, parcels, code]) => ({
         type: "Feature",
         geometry: { type: "Point", coordinates: [lon, lat] },
-        properties: { id, nkt, condition, parcels, code },
+        properties: { id, condition, parcels, code },
       })),
     }),
     [markers]
@@ -268,6 +280,37 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
 
   // Current zoom drives the "does the label fit inside the polygon" test.
   const [zoom, setZoom] = useState(9);
+  // Arah/kemiringan kamera (owner 2026-09-20): peta bisa diputar & dimiringkan (drag
+  // kanan / Ctrl+drag) sehingga utara tak lagi di atas — tombol kompas memutar
+  // ikonnya mengikuti arah dan mengembalikan ke utara + 2D. Dibaca saat gerakan
+  // selesai (bukan tiap frame) supaya komponen besar ini tidak re-render terus.
+  const [heading, setHeading] = useState({ bearing: 0, pitch: 0 });
+  const resetNorth = useCallback(() => {
+    mapRef.current?.getMap().easeTo({ bearing: 0, pitch: 0, duration: 400 });
+  }, []);
+  // Terrain 3D (owner 2026-09-20): relief DEM + hillshade. Source DEM hanya
+  // dipasang saat aktif (tanpa unduhan tile diam-diam); prop `terrain`
+  // react-maplibre memasang ulang terrain tiap basemap berganti. Menyalakan dari
+  // tampilan 2D ikut memiringkan kamera supaya reliefnya langsung terlihat.
+  const [terrainOn, setTerrainOn] = useState(false);
+  // Widget putar & miring (owner 2026-09-20): pengganti drag kanan / Ctrl+drag yang
+  // tidak semua pengguna tahu — langkah tetap 30° / 15°, batas pitch 0–75°.
+  const MAX_PITCH = 75;
+  const rotateBy = useCallback((deg: number) => {
+    const map = mapRef.current?.getMap();
+    if (map) map.easeTo({ bearing: map.getBearing() + deg, duration: 300 });
+  }, []);
+  const tiltBy = useCallback((deg: number) => {
+    const map = mapRef.current?.getMap();
+    if (map) map.easeTo({ pitch: Math.max(0, Math.min(MAX_PITCH, map.getPitch() + deg)), duration: 300 });
+  }, []);
+  const toggleTerrain = useCallback(() => {
+    setTerrainOn((on) => {
+      const map = mapRef.current?.getMap();
+      if (!on && map && map.getPitch() < 20) map.easeTo({ pitch: TERRAIN_DEFAULT_PITCH, duration: 600 });
+      return !on;
+    });
+  }, []);
 
   // Bounds + centroid per named parcel — computed once per dataset (zoom-independent),
   // so the per-zoom label pass only runs the cheap fit math.
@@ -360,10 +403,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
     } else if (layerZoomRequest.target === "nkt") {
       // NKT (#328): hanya lahan termasuk/terdampak; tanpa satu pun → fitCoords tidak melakukan apa-apa.
       fitCoords((data?.parcels ?? []).filter((p) => isNktAffected(p.nktStatus)).map((p) => p.centroid));
-    } else if (layerZoomRequest.target === "markers" || layerZoomRequest.target === "markersNkt") {
+    } else if (layerZoomRequest.target === "markers") {
       // Patok (#331): titik belum dimuat (layer baru dicentang) → jatuh ke sebaran lahan.
-      const wantNkt = layerZoomRequest.target === "markersNkt";
-      const pts = (markers ?? []).filter((m) => !wantNkt || m[3] === 1).map((m) => [m[1], m[2]] as [number, number]);
+      const pts = (markers ?? []).map((m) => [m[1], m[2]] as [number, number]);
       fitCoords(pts.length > 0 ? pts : (data?.parcels ?? []).map((p) => p.centroid));
     } else {
       fitCoords((data?.parcels ?? []).map((p) => p.centroid));
@@ -445,7 +487,7 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
         kind: "parcel",
         props: feature.properties ?? {},
       });
-    } else if (layerId === "marker-point" || layerId === "marker-nkt-point") {
+    } else if (layerId === "marker-point") {
       const [longitude, latitude] = (feature.geometry as Point).coordinates;
       setSelected({ longitude, latitude, kind: "marker", props: feature.properties ?? {} });
     } else if (layerId === "hotspot-point") {
@@ -479,7 +521,6 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
       "parcel-fill",
       "parcel-nkt-fill",
       "marker-point",
-      "marker-nkt-point",
       "hotspot-point",
       ...customLayers.flatMap((l) =>
         l.kind === "vector"
@@ -518,6 +559,9 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
         ref={mapRef}
         initialViewState={{ longitude: 101.8, latitude: 0.6, zoom: 9 }}
         mapStyle={mapStyle}
+        // `undefined` dibiarkan react-maplibre (terrain tidak dilepas) — `null` yang melepasnya.
+        terrain={terrainOn ? { source: TERRAIN_DEM_SOURCE_ID, exaggeration: TERRAIN_EXAGGERATION } : (null as unknown as undefined)}
+        maxPitch={MAX_PITCH}
         interactiveLayerIds={interactiveLayerIds}
         onLoad={(e) => {
           registerImageFallback(e.target);
@@ -527,6 +571,11 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
         }}
         onStyleData={(e) => syncStyle(e.target)}
         onZoomEnd={(e) => setZoom(quantizeZoom(e.viewState.zoom))}
+        onMoveEnd={(e) => {
+          const b = Math.round(e.viewState.bearing);
+          const p = Math.round(e.viewState.pitch);
+          setHeading((h) => (h.bearing === b && h.pitch === p ? h : { bearing: b, pitch: p }));
+        }}
         onClick={handleClick}
         onMouseMove={(e) => {
           e.target.getCanvas().style.cursor = measuring
@@ -542,6 +591,34 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           console.warn("Map source error:", e.error?.message ?? e.error);
         }}
       >
+        {/* Terrain 3D: DEM (raster-dem) untuk `terrain` + hillshade tipis di atas basemap,
+            di bawah semua overlay/data. Dipasang hanya saat aktif. */}
+        {terrainOn && (
+          <>
+            <Source
+              id={TERRAIN_DEM_SOURCE_ID}
+              type="raster-dem"
+              tiles={TERRAIN_DEM_TILES}
+              encoding={TERRAIN_DEM_ENCODING}
+              tileSize={256}
+              maxzoom={TERRAIN_DEM_MAXZOOM}
+              attribution={TERRAIN_DEM_ATTRIBUTION}
+            />
+            {/* Source kedua (URL sama, tile dari cache browser) — MapLibre menganjurkan hillshade
+                tidak berbagi source dengan terrain. Layer dipasang belakangan (saat tombol ditekan)
+                → sisipkan di bawah overlay paling bawah, bukan di atas data lahan; layer overlay
+                selalu ada (hanya visibility yang berganti). */}
+            <Source id={TERRAIN_HILLSHADE_SOURCE_ID} type="raster-dem" tiles={TERRAIN_DEM_TILES} encoding={TERRAIN_DEM_ENCODING} tileSize={256} maxzoom={TERRAIN_DEM_MAXZOOM}>
+              <Layer
+                id="terrain-hillshade"
+                type="hillshade"
+                beforeId={`overlay-${MAP_OVERLAYS[MAP_OVERLAYS.length - 1].key}-layer`}
+                paint={{ "hillshade-exaggeration": 0.35 }}
+              />
+            </Source>
+          </>
+        )}
+
         {/* Peta lainnya (raster overlay) — below farmer data layers.
             Rendered in reverse so the first entry in MAP_OVERLAYS ends up on top. */}
         {[...MAP_OVERLAYS].reverse().map((o) => (
@@ -710,22 +787,15 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
           />
         </Source>
 
-        {/* Patok (#331): persegi kuning = patok lahan, merah = patok lahan NKT (turunan);
-            dua layer terpisah agar bisa dinyalakan sendiri-sendiri. Source kosong sampai dimuat malas. */}
+        {/* Patok (#331): persegi kuning = patok lahan — satu layer untuk semua patok
+            (#345: layer merah "patok lahan NKT" turunan dihapus; patok NKT kelak entitas
+            sendiri dari buffer sungai). Source kosong sampai dimuat malas. */}
         <Source id="marker-source" type="geojson" data={markerGeojson}>
           <Layer
             id="marker-point"
             type="circle"
             layout={vis(layers.markers)}
-            filter={["==", ["get", "nkt"], 0]}
             paint={{ "circle-color": "#facc15", "circle-radius": 4.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#854d0e" }}
-          />
-          <Layer
-            id="marker-nkt-point"
-            type="circle"
-            layout={vis(layers.markersNkt)}
-            filter={["==", ["get", "nkt"], 1]}
-            paint={{ "circle-color": "#ef4444", "circle-radius": 4.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#7f1d1d" }}
           />
         </Source>
 
@@ -894,17 +964,16 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
             ) : selected.kind === "marker" ? (
               <div className="w-[272px]">
                 <PopupHeader
-                  accent={Number(selected.props.nkt) === 1 ? "red" : "amber"}
+                  accent="amber"
                   icon={<Milestone className="h-4 w-4" />}
                   title={String(selected.props.code ?? "Patok")}
-                  subtitle={Number(selected.props.nkt) === 1 ? "Patok lahan NKT" : "Patok lahan"}
+                  subtitle="Patok lahan"
                 />
                 <MapPopupRows
                   className="border-t px-3.5 py-3"
                   rows={[
                     { label: "Lahan · No", value: String(selected.props.parcels ?? "—"), mono: true },
                     { label: "Kondisi", value: labelOf(LAND_MARKER_CONDITION_LABELS, String(selected.props.condition ?? "")) },
-                    { label: "NKT", value: Number(selected.props.nkt) === 1 ? "Lahan pemakai termasuk/terdampak NKT" : "—" },
                     {
                       label: "Koordinat",
                       value: `${selected.latitude.toFixed(6)}, ${selected.longitude.toFixed(6)}`,
@@ -1090,8 +1159,56 @@ export function MapCanvas({ data, layers, overlays, customLayers, customZoomRequ
         )}
       </div>
 
-      {/* Bottom-right controls: zoom-to-all + basemap switcher */}
+      {/* Bottom-right controls: terrain 3D + kompas/reset utara + zoom-to-all + basemap switcher */}
       <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-2">
+        <button
+          onClick={toggleTerrain}
+          title={terrainOn ? "Matikan terrain 3D" : "Terrain 3D — relief permukaan (AWS Terrain Tiles); miringkan peta dengan drag kanan / Ctrl+drag"}
+          aria-pressed={terrainOn}
+          aria-label="Terrain 3D"
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-md border shadow-md backdrop-blur-sm transition-colors",
+            terrainOn ? "bg-primary text-primary-foreground border-primary" : "bg-background/90 text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <Mountain className="h-4 w-4" />
+        </button>
+        {(() => {
+          const tilted = heading.bearing !== 0 || heading.pitch !== 0;
+          return (
+            <button
+              onClick={resetNorth}
+              title={tilted ? `Kembali ke utara & tampilan 2D (arah ${heading.bearing}°, miring ${heading.pitch}°)` : "Utara di atas — putar peta dengan drag kanan / Ctrl+drag"}
+              aria-label="Kembali ke utara & tampilan 2D"
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-md border shadow-md backdrop-blur-sm transition-colors",
+                tilted ? "bg-primary text-primary-foreground border-primary" : "bg-background/90 text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              {/* Ikon panah utara diputar berlawanan bearing sehingga selalu menunjuk utara sebenarnya. */}
+              <Navigation className="h-4 w-4 transition-transform" style={{ transform: `rotate(${-heading.bearing - 45}deg)` }} />
+            </button>
+          );
+        })()}
+        {/* Putar & miringkan — dua pasang tombol kecil dalam satu kotak seperti pemilih basemap. */}
+        <div className="flex flex-col gap-1 rounded-md border bg-background/90 p-1 shadow-md backdrop-blur-sm">
+          <div className="flex gap-1">
+            <button onClick={() => rotateBy(-30)} title="Putar kiri 30°" aria-label="Putar kiri" className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => rotateBy(30)} title="Putar kanan 30°" aria-label="Putar kanan" className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              <RotateCw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="flex gap-1">
+            <button onClick={() => tiltBy(15)} disabled={heading.pitch >= MAX_PITCH} title="Miringkan 15° (3D)" aria-label="Miringkan" className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent">
+              <ChevronsUp className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => tiltBy(-15)} disabled={heading.pitch <= 0} title="Tegakkan 15° (2D)" aria-label="Tegakkan" className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent">
+              <ChevronsDown className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
         {data && data.parcels.length + data.kelompokTani.length > 0 && (
           <button
             onClick={() => fitAll()}

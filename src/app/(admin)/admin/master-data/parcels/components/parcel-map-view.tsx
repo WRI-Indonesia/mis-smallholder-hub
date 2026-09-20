@@ -43,7 +43,7 @@ interface Props {
    * pemakainya kena NKT). Nomor sama dengan tabel & Profil Lahan PDF; ikut
    * dihitung dalam bounds supaya patok GPS yang menyimpang tetap terlihat.
    */
-  markerPoints?: { id: string; sequenceNo: number; longitude: number; latitude: number; nkt: boolean }[];
+  markerPoints?: { id: string; sequenceNo: number; longitude: number; latitude: number }[];
 }
 
 // Kumpulkan semua posisi [lng, lat] dari struktur koordinat GeoJSON apa pun
@@ -405,9 +405,9 @@ export function ParcelMapView({
         {(markerPoints ?? []).map((m) => (
           <Marker key={`m-${m.id}`} longitude={m.longitude} latitude={m.latitude} anchor="center" style={{ pointerEvents: "none" }}>
             <span
-              // Dua warna (keputusan owner 2026-09-14): patok lahan biasa kuning, patok lahan NKT merah — sama dengan legenda Peta Lahan.
-              className={`pointer-events-none inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 px-1 font-mono text-[10px] font-bold shadow ${m.nkt ? "border-red-800 bg-red-500 text-white" : "border-amber-700 bg-amber-400 text-amber-950"}`}
-              title={`Patok #${m.sequenceNo}${m.nkt ? " · lahan terdampak NKT" : ""}`}
+              // Satu warna kuning untuk semua patok lahan (#345: warna merah "patok lahan NKT" turunan dihapus) — sama dengan legenda Peta Lahan.
+              className="pointer-events-none inline-flex h-5 min-w-5 items-center justify-center rounded-sm border-2 border-amber-700 bg-amber-400 px-1 font-mono text-[10px] font-bold text-amber-950 shadow"
+              title={`Patok #${m.sequenceNo}`}
             >
               {m.sequenceNo}
             </span>

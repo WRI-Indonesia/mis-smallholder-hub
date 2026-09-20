@@ -904,7 +904,7 @@ describe("Performance - Patok & Laporan NKT (#329/#331/#332, pure logic)", () =>
       parcelId: `HJP.${String(i % 559).padStart(4, "0")}.A`, farmerCode: `HJP.${i % 559}`, farmerName: `Petani ${i % 559}`,
       groupName: "KP Hasrat Jaya Pagaruyung", subGroupLv2: String(10 + (i % 30)), blok: "FGHL"[i % 4],
       sequenceNo: (i % 4) + 1, latitude: 0.52 + (marker % 40) * D, longitude: 101.19 + Math.floor(marker / 40) * D,
-      condition: "NOT_INSTALLED", type: null, installedAt: null, installedBy: null, source: "POLYGON_VERTEX", nkt: i % 17 === 0, notes: null,
+      condition: "NOT_INSTALLED", type: null, installedAt: null, installedBy: null, source: "POLYGON_VERTEX", notes: null,
     };
   });
 

@@ -76,7 +76,7 @@
 | LandParcelMarker | PK | `id` (CUID) | Primary key |
 | LandParcelMarker | UNIQUE | `(parcelUid, markerId)` | Satu tautan per pasangan lahan–patok; tautan yang dilepas diaktifkan ulang, bukan dibuat baru |
 | LandParcelMarker | UNIQUE partial (manual, `uniq_land_parcel_marker_seq`) | `(parcelUid, sequenceNo) WHERE is_active` | Nomor patok unik per lahan hanya untuk tautan aktif (pola partial STDB #306); urut-ulang dua fase menghindari tabrakan sementara |
-| LandParcelMarker | INDEX | `markerId` | Daftar lahan pemakai satu patok ("juga patok lahan …", NKT turunan) |
+| LandParcelMarker | INDEX | `markerId` | Daftar lahan pemakai satu patok ("juga patok lahan …") |
 | LandParcelMarker | INDEX | `(parcelUid, isActive)` | Daftar patok satu lahan |
 | **Tree** | | | |
 | Tree | PK | `id` (CUID) | Primary key |
