@@ -116,6 +116,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | DASH-05     | Dashboard: Card Total Kelompok Tani | ✅ Done        | Done    | inti      |
 | DASH-06     | Dashboard Pelatihan                 | ✅ Done        | Done    | inti      |
 | DASH-07     | Dashboard Risk Management: Fire Alert | ✅ Done      | Done    | inti      |
+| DASH-08     | Monev BMP: skor per petani + rincian indikator + dashboard | ✅ Done | Done | inti      |
 | MAP-01      | Map: Peta Lahan                     | ✅ Done        | Done    | inti      |
 | MAP-02      | Map: Peta BMP (Layer 1)             | ✅ Done        | Done    | inti      |
 | MAP-03      | Map: Peta BMP Layer 2 (Produktivitas) | ✅ Done      | Done    | inti      |
@@ -393,9 +394,9 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 </details>
 
 <details>
-<summary><strong>DASH-08</strong> · (baris Phase Status menyusul saat rilis) — Monev BMP: skor per petani per tahun + dashboard (#344)</summary>
+<summary><strong>DASH-08</strong> · ✅ Done (v0.36.0, 2026-09-20) — Monev BMP: skor per petani per tahun + rincian indikator + dashboard (#344, #346)</summary>
 
-- **Catatan status:** baris `DASH-08` di tabel Phase Status **ditambahkan saat rilis berikutnya** bersama baris `metrics.md` (konvensi MD-08: `roadmap.test.ts` menjaga Roadmap % = baris rilis terakhir; menambah fase sekarang menggeser penyebut). Kode #344 sudah di `mvp` sejak 2026-09-18.
+- **Catatan status:** baris `DASH-08` ditambahkan ke Phase Status saat rilis **v0.36.0** (2026-09-20) sebagai ✅ Done · inti — roadmap 88,2% → **88,5%** (80,5/91).
 
 - **#344 (2026-09-18, kode selesai — menunggu migrasi & seed lokal, lalu smoke):** tindak lanjut catatan out-of-scope #166. Sumber: rekap Excel tim lapangan Rokan Hulu (8 Lembaga, 206 skor survei 2026). **Keputusan owner:** grain **per petani per tahun** (bukan lahan; lahan dikunjungi opsional), **hanya skor akhir** (tanpa indikator), blok baseline 2024 skala 0–100 diabaikan, import Excel + form koreksi, tiga penempatan (Master Data › Monev BMP, Dashboard › Monev BMP, tab Monev BMP di Detail Petani), layer Peta BMP → issue terpisah. **Temuan saat uji parser:** skor tepat 2,50 diberi label Praktisi oleh tim lapangan → rubrik `> 2,50` dibaca **ketat** (Teladan ≥ 2,51), mengoreksi asumsi awal ≥ 2,50.
 - **Skema:** `BmpAssessment` → `tbl_bmp_assessment` (migrasi `20260918120000`, manual dari `migrate diff`, additive). Kategori **tidak disimpan** — `BMP_ASSESSMENT_CATEGORIES` di `lib/bmp-assessment.ts`. Satu baris aktif per petani-tahun: cek di action + **partial unique index** `uniq_bmp_assessment_farmer_year_active` (migrasi `20260920100000`, temuan review — cek `findFirst` saja tidak atomik). Review 2026-09-20 juga memperbaiki toleransi tanggal WIB (UTC tengah malam vs `Date.now()`) dan impor ulang yang menghapus tanggal tersimpan.
