@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  * tertinggi di seluruh halaman; null = "—" (tidak dinilai); di luar 0–3
  * (skor 4 dari import) = amber + tanda peringatan, bukan disembunyikan.
  */
-export const BMP_SCORE_COLORS: Record<0 | 1 | 2 | 3, string> = {
+const BMP_SCORE_COLORS: Record<0 | 1 | 2 | 3, string> = {
   0: "#9ca3af",
   1: "#84cc16",
   2: "#16a34a",

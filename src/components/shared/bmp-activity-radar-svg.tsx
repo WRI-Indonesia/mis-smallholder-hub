@@ -30,7 +30,7 @@ const BANDS = [...BMP_ASSESSMENT_CATEGORIES].map((c, i, arr) => ({ ...c, lo: c.k
 const BAND_OPACITY: Record<string, number> = { BELUM: 0.28, PERINTIS: 0.3, PRAKTISI: 0.3, TELADAN: 0.42 };
 
 /** Nama pendek untuk label sumbu. */
-export const bmpRadarShortName = (name: string) => name.replace(/\s*\(.*\)$/, "").replace("Pengendalian ", "").replace("Hama Penyakit Terpadu", "PHPT");
+const bmpRadarShortName = (name: string) => name.replace(/\s*\(.*\)$/, "").replace("Pengendalian ", "").replace("Hama Penyakit Terpadu", "PHPT");
 
 /** SVG radar 5 sumbu + legenda pita + tooltip per sumbu. */
 export function BmpActivityRadarSvg({

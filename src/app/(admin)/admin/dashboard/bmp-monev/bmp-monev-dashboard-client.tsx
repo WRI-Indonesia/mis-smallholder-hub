@@ -10,7 +10,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  bmpMonevActivityProfile,
   bmpMonevAvailableYears,
   bmpMonevGroupProfiles,
   bmpMonevGroupRows,
@@ -84,11 +83,10 @@ export function BmpMonevDashboardClient({
   const activities = useMemo(() => view.data.activities ?? [], [view.data.activities]);
   const indicatorCatalog = useMemo(() => view.data.indicators ?? [], [view.data.indicators]);
   const indicatorStats = useMemo(() => view.data.indicatorStats ?? [], [view.data.indicatorStats]);
-  const activityProfile = useMemo(() => (year == null ? [] : bmpMonevActivityProfile(groups, year, activities, indicatorCatalog)), [groups, year, activities, indicatorCatalog]);
   const weakest = useMemo(() => (year == null ? [] : bmpMonevWeakestIndicators(groups, year, indicatorCatalog, indicatorStats)), [groups, year, indicatorCatalog, indicatorStats]);
   const [profileSort, setProfileSort] = useState<BmpMonevGroupProfileSort>("avg");
   const groupProfiles = useMemo(() => (year == null ? [] : bmpMonevGroupProfiles(groups, year, profileSort)), [groups, year, profileSort]);
-  const hasDetails = activities.length > 0 && (activityProfile[0]?.n ?? 0) > 0;
+  const hasDetails = activities.length > 0 && groups.some((g) => g.assessments.some((a) => a.surveyYear === year && a.activityScores));
   const hasGroupProfiles = groupProfiles.some((g) => g.hasProfile);
   // Seri B radar mengikuti filter dashboard sebagai pilihan awal (Lembaga > Distrik),
   // tetapi setelah itu bebas dipilih — komponen di-remount lewat `key` saat filter berubah.

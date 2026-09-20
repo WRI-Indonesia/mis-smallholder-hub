@@ -122,7 +122,7 @@ export interface BmpMonevTrendBucket {
   byCategory: BmpMonevCategoryCounts;
 }
 
-export function emptyCategoryCounts(): BmpMonevCategoryCounts {
+function emptyCategoryCounts(): BmpMonevCategoryCounts {
   return { TELADAN: 0, PRAKTISI: 0, PERINTIS: 0, BELUM: 0 };
 }
 
@@ -236,7 +236,7 @@ export interface BmpMonevScoreBin {
   categoryKey: BmpAssessmentCategoryKey;
 }
 
-export const BMP_MONEV_HISTOGRAM_BIN = 0.25;
+const BMP_MONEV_HISTOGRAM_BIN = 0.25;
 
 /**
  * Histogram skor petani dinilai pada tahun terpilih, bin 0,25 dari 0 sampai 3

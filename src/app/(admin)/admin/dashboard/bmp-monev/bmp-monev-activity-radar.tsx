@@ -36,6 +36,13 @@ export type BmpMonevRadarSelection = { kind: "all" } | { kind: "district"; id: s
 const SERIES_COLORS = BMP_RADAR_SERIES_COLORS;
 const toRadar = (rows: BmpMonevActivityProfileRow[]): BmpRadarRow[] => rows.map((r) => ({ code: r.code, name: r.name, value: r.avg, max: r.max }));
 
+/** Subset Lembaga untuk satu seri — murni, di luar komponen supaya bukan dependensi hook. */
+function subsetGroups(allGroups: BmpMonevGroupEntry[], sel: BmpMonevRadarSelection): BmpMonevGroupEntry[] {
+  if (sel.kind === "all") return allGroups;
+  if (sel.kind === "district") return allGroups.filter((g) => g.districtId === sel.id);
+  return allGroups.filter((g) => g.id === sel.id);
+}
+
 function encode(sel: BmpMonevRadarSelection): string {
   return sel.kind === "all" ? "all" : `${sel.kind}:${sel.id}`;
 }
@@ -63,22 +70,19 @@ export function BmpMonevActivityRadar({
   const [b, setB] = useState<BmpMonevRadarSelection | null>(defaultB);
 
   // Opsi hanya yang punya rincian pada tahun ini — memilih yang kosong hanya menghasilkan garis nol.
-  const hasDetail = (g: BmpMonevGroupEntry) => g.assessments.some((x) => x.surveyYear === year && x.activityScores);
+  const withDetail = useMemo(() => allGroups.filter((g) => g.assessments.some((x) => x.surveyYear === year && x.activityScores)), [allGroups, year]);
   const districts = useMemo(() => {
     const m = new Map<string, string>();
-    for (const g of allGroups) if (hasDetail(g)) m.set(g.districtId, g.districtName);
+    for (const g of withDetail) m.set(g.districtId, g.districtName);
     return [...m.entries()].map(([id, name]) => ({ id, name })).sort((x, y) => x.name.localeCompare(y.name));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allGroups, year]);
-  const groups = useMemo(() => allGroups.filter(hasDetail).sort((x, y) => x.name.localeCompare(y.name)), [allGroups, year]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [withDetail]);
+  const groups = useMemo(() => [...withDetail].sort((x, y) => x.name.localeCompare(y.name)), [withDetail]);
 
-  const subset = (sel: BmpMonevRadarSelection) =>
-    sel.kind === "all" ? allGroups : sel.kind === "district" ? allGroups.filter((g) => g.districtId === sel.id) : allGroups.filter((g) => g.id === sel.id);
   const label = (sel: BmpMonevRadarSelection) =>
     sel.kind === "all" ? "Semua Lembaga (rataan cakupan)" : sel.kind === "district" ? `Distrik ${districts.find((d) => d.id === sel.id)?.name ?? ""}` : (groups.find((g) => g.id === sel.id)?.name ?? "Lembaga");
 
-  const rowsA = useMemo(() => bmpMonevActivityProfile(subset(a), year, activities, indicators), [a, allGroups, year, activities, indicators]); // eslint-disable-line react-hooks/exhaustive-deps
-  const rowsB = useMemo(() => (b ? bmpMonevActivityProfile(subset(b), year, activities, indicators) : null), [b, allGroups, year, activities, indicators]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rowsA = useMemo(() => bmpMonevActivityProfile(subsetGroups(allGroups, a), year, activities, indicators), [a, allGroups, year, activities, indicators]);
+  const rowsB = useMemo(() => (b ? bmpMonevActivityProfile(subsetGroups(allGroups, b), year, activities, indicators) : null), [b, allGroups, year, activities, indicators]);
 
   const nA = rowsA[0]?.n ?? 0;
   const nB = rowsB?.[0]?.n ?? 0;

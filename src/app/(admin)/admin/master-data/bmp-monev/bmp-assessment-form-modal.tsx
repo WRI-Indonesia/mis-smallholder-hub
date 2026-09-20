@@ -37,7 +37,7 @@ interface FarmerOption {
 }
 
 /** Petani terkunci — dipakai dari tab Monev BMP di Detail Petani. */
-export interface FixedFarmer extends FarmerOption {
+interface FixedFarmer extends FarmerOption {
   farmerGroupId: string;
   farmerGroupName: string;
 }
