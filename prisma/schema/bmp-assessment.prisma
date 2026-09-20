@@ -9,9 +9,11 @@
 // petani (satu skor untuk semua lahannya) dan 18% baris rekap tanpa lahan.
 // `parcelUid` hanya mencatat lahan yang dikunjungi saat survei.
 //
-// Satu penilaian AKTIF per (petani, tahun) dijaga di server action — bukan
-// @@unique (baris nonaktif akan memblokir isi ulang, pelajaran #306/#326) dan
-// bukan partial index (Prisma selalu mengusulkan DROP-nya, seperti GiST #317).
+// Satu penilaian AKTIF per (petani, tahun): cek di server action (pesan ramah)
+// + partial unique index tulis tangan `uniq_bmp_assessment_farmer_year_active`
+// (migrasi 20260920100000; pola #306/#329 — Prisma tak bisa mendeklarasikannya,
+// jangan pernah terima usulan DROP-nya dari `migrate diff`). Bukan @@unique:
+// baris nonaktif tak boleh memblokir isi ulang (pelajaran #306/#326).
 
 model BmpAssessment {
   id         String              @id @default(cuid())

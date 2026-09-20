@@ -305,3 +305,26 @@ describe("migrasi land_parcel_border — satelit sepadan 1:1 (#326)", () => {
     expect(m!.sql).toMatch(/CREATE UNIQUE INDEX "tbl_land_parcel_border_parcel_uid_key" ON "tbl_land_parcel_border"\("parcel_uid"\)/);
   });
 });
+
+/**
+ * Monev BMP (#344): partial unique index satu penilaian aktif per petani-tahun
+ * ditulis tangan (temuan review 2026-09-20) — pola #306/#329. Migrasi pertama
+ * sengaja tanpa UNIQUE; jangan ada yang "merapikan" menjadi @@unique penuh
+ * (baris nonaktif akan memblokir isi ulang).
+ */
+describe("migrasi bmp_assessment — partial unique aktif per petani-tahun (#344)", () => {
+  const first = migrationFiles().find((m) => m.name.endsWith("_bmp_assessment"));
+  const second = migrationFiles().find((m) => m.name.endsWith("_bmp_assessment_unique_active"));
+
+  it("migrasi tabel: tanpa UNIQUE penuh (farmer_id, survey_year), FK ke farmer & identitas lahan", () => {
+    expect(first).toBeDefined();
+    expect(ddlOnly(first!.sql)).not.toMatch(/CREATE UNIQUE INDEX[^\n]*tbl_bmp_assessment/);
+    expect(first!.sql).toMatch(/REFERENCES "tbl_farmer"\("id"\) ON DELETE RESTRICT/);
+    expect(first!.sql).toMatch(/REFERENCES "tbl_land_parcel_identity"\("id"\) ON DELETE SET NULL/);
+  });
+
+  it("migrasi index: partial unique WHERE is_active, bukan unique penuh", () => {
+    expect(second).toBeDefined();
+    expect(second!.sql).toMatch(/CREATE UNIQUE INDEX "uniq_bmp_assessment_farmer_year_active" ON "tbl_bmp_assessment"\("farmer_id", "survey_year"\) WHERE "is_active"/);
+  });
+});

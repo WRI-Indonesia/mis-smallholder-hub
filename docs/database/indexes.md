@@ -61,6 +61,7 @@
 | BmpAssessment | INDEX | `(farmerId, surveyYear)` | Riwayat per petani + cek "sudah ada tahun ini" (#344) |
 | BmpAssessment | INDEX | `surveyYear` | Filter tahun survei daftar/dashboard |
 | BmpAssessment | INDEX | `isActive` | Soft delete |
+| BmpAssessment | PARTIAL UNIQUE | `(farmerId, surveyYear) WHERE is_active` | `uniq_bmp_assessment_farmer_year_active` — satu penilaian aktif per petani-tahun, tulis tangan (migrasi `20260920100000`) |
 | LandMarker | PK | `id` (CUID) | Primary key |
 | LandMarker | UNIQUE | `code` | Kode patok fisik `HJP-PTK-000123` (#331) — kunci unggah ulang & rujukan laporan |
 | LandMarkerCounter | PK | `prefix` | Deret kode per awalan Lembaga; diperbarui atomik (`ON CONFLICT DO UPDATE … RETURNING`) |

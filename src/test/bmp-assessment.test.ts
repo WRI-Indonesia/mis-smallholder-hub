@@ -205,6 +205,22 @@ describe("resolveBmpImportRows — pratinjau: status, lahan, peringatan tanggal"
     expect(out[1].warnings[0]).toMatch(/tidak dikenal/);
   });
 
+  it("'hari ini' pukul 06:30 WIB (UTC tengah malam > now) TIDAK dianggap masa depan; lusa tetap masa depan", () => {
+    const now = new Date("2026-09-17T23:30:00.000Z"); // 18 Sep 06:30 WIB
+    const out = resolveBmpImportRows(
+      [
+        { ...base, surveyDate: new Date("2026-09-18T00:00:00.000Z") },
+        { ...base, surveyDate: new Date("2026-09-20T00:00:00.000Z") },
+      ],
+      refs,
+      now,
+    );
+    expect(out[0].surveyDateToSave?.toISOString().slice(0, 10)).toBe("2026-09-18");
+    expect(out[0].warnings).toEqual([]);
+    expect(out[1].surveyDateToSave).toBeNull();
+    expect(out[1].warnings[0]).toMatch(/masa depan/);
+  });
+
   it("tanggal masa depan / beda tahun / tak terbaca → dikosongkan dengan peringatan, skor tetap masuk", () => {
     const out = resolveBmpImportRows(
       [
@@ -236,6 +252,14 @@ describe("Zod bmpAssessmentSchema", () => {
     expect(bmpAssessmentSchema.safeParse({ farmerId: "f1", surveyYear: new Date().getUTCFullYear() + 2, score: 1 }).success).toBe(false);
   });
 
+  it("tanggal hari ini (UTC tengah malam) diterima walau jam lokal WIB belum lewat 07:00", () => {
+    const today = new Date();
+    const utcMidnightToday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    // Simulasi pukul 06:30 WIB = UTC-midnight hari ini + 0 → selalu ≤ now + 24 jam.
+    const r = bmpAssessmentSchema.safeParse({ farmerId: "f1", surveyYear: utcMidnightToday.getUTCFullYear(), score: 1, surveyDate: utcMidnightToday });
+    expect(r.success).toBe(true);
+  });
+
   it("tanggal masa depan atau bukan tahun survei ditolak; teks kosong → null", () => {
     const future = new Date(Date.now() + 7 * 86_400_000);
     const r1 = bmpAssessmentSchema.safeParse({ farmerId: "f1", surveyYear: future.getUTCFullYear(), score: 1, surveyDate: future });
@@ -244,6 +268,16 @@ describe("Zod bmpAssessmentSchema", () => {
     expect(r2.success).toBe(false);
     const r3 = bmpAssessmentSchema.safeParse({ farmerId: "f1", surveyYear: 2026, score: 1, surveyDate: "2026-06-01", parcelUid: "  ", assessor: " ", notes: "" });
     expect(r3.success && r3.data).toMatchObject({ parcelUid: null, assessor: null, notes: null });
+  });
+
+  it("baris import memakai refine tanggal yang sama: masa depan / beda tahun ditolak di server", () => {
+    const future = new Date(Date.now() + 7 * 86_400_000);
+    const bad1 = bmpAssessmentImportSchema.safeParse({ farmerGroupId: "g1", rows: [{ rowNumber: 3, farmerCode: "X.1", parcelId: null, surveyYear: future.getUTCFullYear(), surveyDate: future, score: 1 }] });
+    expect(bad1.success).toBe(false);
+    const bad2 = bmpAssessmentImportSchema.safeParse({ farmerGroupId: "g1", rows: [{ rowNumber: 3, farmerCode: "X.1", parcelId: null, surveyYear: 2026, surveyDate: "2027-01-01", score: 1 }] });
+    expect(bad2.success).toBe(false);
+    const ok = bmpAssessmentImportSchema.safeParse({ farmerGroupId: "g1", rows: [{ rowNumber: 3, farmerCode: "X.1", parcelId: null, surveyYear: 2026, surveyDate: "2026-06-26", score: 1 }] });
+    expect(ok.success).toBe(true);
   });
 
   it("batch import: minimal satu baris, maksimal 5.000, lembaga wajib", () => {

@@ -29,6 +29,17 @@ import type { ActionResult } from "@/types/action-result";
 
 const MENU_KEY = "master-data-bmp-monev";
 
+const DUPLICATE_YEAR_MESSAGE = (year: number) => `Petani ini sudah punya penilaian aktif tahun ${year} — ubah yang ada`;
+
+/**
+ * Pelanggaran partial unique index `uniq_bmp_assessment_farmer_year_active`
+ * (Prisma P2002). Cek `findFirst` di action tetap ada untuk pesan yang ramah;
+ * index-lah yang menjamin atomik saat dua permintaan bersamaan.
+ */
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
+}
+
 export interface BmpAssessmentListItem {
   id: string;
   farmerId: string;
@@ -228,28 +239,28 @@ export async function createBmpAssessment(
     where: { farmerId: data.farmerId, surveyYear: data.surveyYear, isActive: true },
     select: { id: true },
   });
-  if (duplicate) {
-    return {
-      success: false,
-      error: { surveyYear: [`Petani ini sudah punya penilaian aktif tahun ${data.surveyYear} — ubah yang ada`] },
-    };
-  }
+  if (duplicate) return { success: false, error: { surveyYear: [DUPLICATE_YEAR_MESSAGE(data.surveyYear)] } };
 
   const session = await auth();
-  const created = await prisma.bmpAssessment.create({
-    data: {
-      farmerId: data.farmerId,
-      surveyYear: data.surveyYear,
-      surveyDate: data.surveyDate ?? null,
-      score: data.score,
-      parcelUid: data.parcelUid ?? null,
-      assessor: data.assessor ?? null,
-      notes: data.notes ?? null,
-      createdBy: session?.user?.id ?? null,
-    },
-    select: { id: true },
-  });
-  return { success: true, id: created.id };
+  try {
+    const created = await prisma.bmpAssessment.create({
+      data: {
+        farmerId: data.farmerId,
+        surveyYear: data.surveyYear,
+        surveyDate: data.surveyDate ?? null,
+        score: data.score,
+        parcelUid: data.parcelUid ?? null,
+        assessor: data.assessor ?? null,
+        notes: data.notes ?? null,
+        createdBy: session?.user?.id ?? null,
+      },
+      select: { id: true },
+    });
+    return { success: true, id: created.id };
+  } catch (error) {
+    if (isUniqueViolation(error)) return { success: false, error: { surveyYear: [DUPLICATE_YEAR_MESSAGE(data.surveyYear)] } };
+    throw error;
+  }
 }
 
 export async function updateBmpAssessment(
@@ -276,27 +287,27 @@ export async function updateBmpAssessment(
     where: { farmerId: data.farmerId, surveyYear: data.surveyYear, isActive: true, id: { not: id } },
     select: { id: true },
   });
-  if (duplicate) {
-    return {
-      success: false,
-      error: { surveyYear: [`Petani ini sudah punya penilaian aktif tahun ${data.surveyYear}`] },
-    };
-  }
+  if (duplicate) return { success: false, error: { surveyYear: [DUPLICATE_YEAR_MESSAGE(data.surveyYear)] } };
 
   const session = await auth();
-  await prisma.bmpAssessment.update({
-    where: { id },
-    data: {
-      farmerId: data.farmerId,
-      surveyYear: data.surveyYear,
-      surveyDate: data.surveyDate ?? null,
-      score: data.score,
-      parcelUid: data.parcelUid ?? null,
-      assessor: data.assessor ?? null,
-      notes: data.notes ?? null,
-      modifiedBy: session?.user?.id ?? null,
-    },
-  });
+  try {
+    await prisma.bmpAssessment.update({
+      where: { id },
+      data: {
+        farmerId: data.farmerId,
+        surveyYear: data.surveyYear,
+        surveyDate: data.surveyDate ?? null,
+        score: data.score,
+        parcelUid: data.parcelUid ?? null,
+        assessor: data.assessor ?? null,
+        notes: data.notes ?? null,
+        modifiedBy: session?.user?.id ?? null,
+      },
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) return { success: false, error: { surveyYear: [DUPLICATE_YEAR_MESSAGE(data.surveyYear)] } };
+    throw error;
+  }
   return { success: true };
 }
 
@@ -323,10 +334,15 @@ export async function toggleBmpAssessmentActive(id: string): Promise<ActionResul
   }
 
   const session = await auth();
-  await prisma.bmpAssessment.update({
-    where: { id },
-    data: { isActive: !row.isActive, modifiedBy: session?.user?.id ?? null },
-  });
+  try {
+    await prisma.bmpAssessment.update({
+      where: { id },
+      data: { isActive: !row.isActive, modifiedBy: session?.user?.id ?? null },
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) return { success: false, error: `Tahun ${row.surveyYear} sudah punya penilaian aktif — tidak bisa diaktifkan kembali` };
+    throw error;
+  }
   return { success: true };
 }
 
@@ -446,14 +462,17 @@ export async function importBmpAssessments(input: BmpAssessmentImportInput): Pro
   const session = await auth();
   const userId = session?.user?.id ?? null;
   const farmerIds = [...new Set([...planned.values()].map((p) => p.farmerDbId))];
-  const existing = await prisma.bmpAssessment.findMany({
-    where: { farmerId: { in: farmerIds }, isActive: true },
-    select: { id: true, farmerId: true, surveyYear: true },
-  });
-  const existingByKey = new Map(existing.map((e) => [`${e.farmerId}:${e.surveyYear}`, e.id]));
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Cek baris aktif DI DALAM transaksi; balapan dua operator yang lolos cek
+      // ini tetap ditangkap partial unique index `uniq_bmp_assessment_farmer_year_active`
+      // (P2002 → seluruh transaksi batal, bukan dua baris aktif).
+      const existing = await tx.bmpAssessment.findMany({
+        where: { farmerId: { in: farmerIds }, isActive: true },
+        select: { id: true, farmerId: true, surveyYear: true },
+      });
+      const existingByKey = new Map(existing.map((e) => [`${e.farmerId}:${e.surveyYear}`, e.id]));
       const creates: { farmerId: string; surveyYear: number; surveyDate: Date | null; score: number; parcelUid: string | null; assessor: string | null; createdBy: string | null }[] = [];
       for (const [key, p] of planned) {
         const id = existingByKey.get(key);
@@ -461,10 +480,12 @@ export async function importBmpAssessments(input: BmpAssessmentImportInput): Pro
           await tx.bmpAssessment.update({
             where: { id },
             data: {
-              surveyDate: p.surveyDate,
               score: p.score,
-              // Lahan hanya ditimpa bila berkas menyebutkan lahan yang dikenal —
-              // berkas tanpa kolom lahan tidak boleh menghapus lahan yang sudah tercatat.
+              // Tanggal & lahan hanya ditimpa bila berkas memuatnya — berkas
+              // tanpa kolom tanggal/lahan (atau tanggal yang dikosongkan di
+              // pratinjau) tidak boleh menghapus nilai yang sudah tercatat;
+              // unggah ulang harus benar-benar aman, bukan hanya untuk skor.
+              ...(p.surveyDate ? { surveyDate: p.surveyDate } : {}),
               ...(p.parcelUid ? { parcelUid: p.parcelUid } : {}),
               ...(assessor ? { assessor } : {}),
               modifiedBy: userId,
@@ -482,6 +503,9 @@ export async function importBmpAssessments(input: BmpAssessmentImportInput): Pro
     });
   } catch (error) {
     console.error("Import Monev BMP error:", error);
+    if (isUniqueViolation(error)) {
+      return { success: false, error: "Ada petani yang baru saja diberi penilaian tahun itu oleh pengguna lain — muat ulang halaman lalu validasi kembali (tidak ada baris yang tersimpan)" };
+    }
     return { success: false, error: "Gagal menyimpan data ke database — tidak ada baris yang tersimpan, coba lagi" };
   }
   return { success: true, data: summary };

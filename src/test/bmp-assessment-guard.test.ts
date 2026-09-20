@@ -3,9 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 /**
  * Guard 3 lapis & semantik tulis Monev BMP (#344) — tanpa DB, pola mock
  * `land-parcel-satellite-nkt-guard.test.ts`. Aturan yang dijaga: satu
- * penilaian AKTIF per (petani, tahun) ditegakkan di action (bukan unique
- * index); lahan wajib milik petani yang sama; import meresolusi kode → CUID
- * ulang di server dan upsert per petani-tahun; scope lewat relasi `farmer`.
+ * penilaian AKTIF per (petani, tahun) — cek di action untuk pesan ramah, dan
+ * pelanggaran partial unique index (P2002) ditangkap tanpa 500; lahan wajib
+ * milik petani yang sama; import meresolusi kode → CUID ulang di server dan
+ * upsert per petani-tahun tanpa menghapus tanggal/lahan tersimpan; scope lewat
+ * relasi `farmer`.
  */
 const hasPermission = vi.hoisted(() => vi.fn());
 const isSuperAdmin = vi.hoisted(() => vi.fn());
@@ -111,6 +113,20 @@ describe("create/update — satu penilaian aktif per (petani, tahun), lahan mili
     expect(db.bmpAssessment.create).not.toHaveBeenCalled();
   });
 
+  it("create: balapan lolos findFirst tapi kena partial unique index (P2002) → fieldError surveyYear, bukan 500", async () => {
+    db.bmpAssessment.create.mockRejectedValueOnce(Object.assign(new Error("Unique constraint"), { code: "P2002" }));
+    const res = await createBmpAssessment(INPUT);
+    expect(res.success).toBe(false);
+    expect((res as { error: Record<string, string[]> }).error.surveyYear[0]).toMatch(/sudah punya penilaian aktif/);
+  });
+
+  it("create: tanggal hari ini (UTC tengah malam) diterima — toleransi zona WIB", async () => {
+    const t = new Date();
+    const todayUtc = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()));
+    const res = await createBmpAssessment({ ...INPUT, surveyYear: todayUtc.getUTCFullYear(), surveyDate: todayUtc });
+    expect(res.success).toBe(true);
+  });
+
   it("create: lahan bukan milik petani → ditolak", async () => {
     db.landParcelIdentity.findFirst.mockResolvedValue(null);
     const res = await createBmpAssessment(INPUT);
@@ -189,11 +205,26 @@ describe("import — resolusi ulang di server, upsert per petani-tahun", () => {
     ]);
   });
 
-  it("berkas tanpa kolom lahan tidak menghapus lahan yang sudah tercatat (parcelUid tak disentuh saat update)", async () => {
-    await importBmpAssessments({ farmerGroupId: "g-1", rows: [{ ...rows[0], parcelId: null }] });
+  it("berkas tanpa kolom lahan/tanggal tidak menghapus lahan & tanggal yang sudah tercatat (tak disentuh saat update)", async () => {
+    await importBmpAssessments({ farmerGroupId: "g-1", rows: [{ ...rows[0], parcelId: null, surveyDate: null }] });
     const data = db.bmpAssessment.update.mock.calls[0][0].data;
     expect("parcelUid" in data).toBe(false);
+    expect("surveyDate" in data).toBe(false);
     expect("assessor" in data).toBe(false);
+    expect(data.score).toBe(1.83);
+  });
+
+  it("cek baris aktif dilakukan DI DALAM transaksi; pelanggaran unique (P2002) → pesan tunggal, tanpa klaim sebagian tersimpan", async () => {
+    // findMany baris aktif dipanggil lewat tx (mock yang sama) setelah $transaction dimulai
+    await importBmpAssessments({ farmerGroupId: "g-1", rows: [rows[0]] });
+    expect(db.$transaction).toHaveBeenCalledTimes(1);
+    expect(db.bmpAssessment.findMany).toHaveBeenCalledTimes(1);
+
+    db.bmpAssessment.findMany.mockResolvedValueOnce([]);
+    db.bmpAssessment.createMany.mockRejectedValueOnce(Object.assign(new Error("Unique constraint"), { code: "P2002" }));
+    const res = await importBmpAssessments({ farmerGroupId: "g-1", rows: [rows[1]] });
+    expect(res.success).toBe(false);
+    expect((res as { error: string }).error).toMatch(/pengguna lain/);
   });
 
   it("duplikat petani-tahun dalam berkas: baris terakhir dipakai, yang tertimpa dilaporkan", async () => {

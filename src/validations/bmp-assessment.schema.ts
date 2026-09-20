@@ -50,9 +50,17 @@ const assessmentFields = {
   notes: optionalText(2000, "Catatan"),
 };
 
+/**
+ * Tanggal disimpan sebagai UTC tengah malam, sedangkan pengguna di WIB/WITA/WIT
+ * (+7..+9 jam): "hari ini" yang dipilih pukul 06:30 WIB = 2026-09-20T00:00Z >
+ * `Date.now()`. Toleransi 24 jam (pola `land-marker.schema.ts`) agar hari ini
+ * selalu sah; tanggal lusa tetap ditolak.
+ */
+export const SURVEY_DATE_FUTURE_TOLERANCE_MS = 24 * 3600 * 1000;
+
 function refineAssessment(v: { surveyYear: number; surveyDate?: Date | null }, ctx: z.RefinementCtx) {
   if (!v.surveyDate) return;
-  if (v.surveyDate.getTime() > Date.now()) {
+  if (v.surveyDate.getTime() > Date.now() + SURVEY_DATE_FUTURE_TOLERANCE_MS) {
     ctx.addIssue({ code: "custom", path: ["surveyDate"], message: "Tanggal survei tidak boleh di masa depan" });
   }
   if (v.surveyDate.getUTCFullYear() !== v.surveyYear) {
@@ -75,14 +83,19 @@ export type UpdateBmpAssessmentInput = z.input<typeof updateBmpAssessmentSchema>
  * (ID Petani per Lembaga, ID Lahan) — server yang meresolusi ke CUID dalam
  * scope, klien tidak dipercaya mengirim CUID.
  */
-export const bmpAssessmentImportRowSchema = z.object({
-  rowNumber: z.number().int().min(1),
-  farmerCode: z.string().trim().min(1, "ID Petani wajib ada"),
-  parcelId: z.string().trim().min(1).nullable(),
-  surveyYear: surveyYearField,
-  surveyDate: surveyDateField,
-  score: scoreField,
-});
+// Refine tanggal yang sama dengan form tunggal: klien memang sudah
+// mengosongkan tanggal masa depan/beda tahun di pratinjau, tetapi action adalah
+// endpoint HTTP — payload langsung tidak boleh menyimpan apa yang form tolak.
+export const bmpAssessmentImportRowSchema = z
+  .object({
+    rowNumber: z.number().int().min(1),
+    farmerCode: z.string().trim().min(1, "ID Petani wajib ada"),
+    parcelId: z.string().trim().min(1).nullable(),
+    surveyYear: surveyYearField,
+    surveyDate: surveyDateField,
+    score: scoreField,
+  })
+  .superRefine(refineAssessment);
 
 export const bmpAssessmentImportSchema = z.object({
   farmerGroupId: z.string().min(1, "Lembaga Petani wajib dipilih"),

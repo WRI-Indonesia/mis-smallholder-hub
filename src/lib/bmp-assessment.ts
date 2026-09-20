@@ -380,7 +380,9 @@ export function resolveBmpImportRows(
     const warnings: string[] = [];
     let surveyDateToSave = row.surveyDate;
     if (row.surveyDateRaw) warnings.push(`Tanggal "${row.surveyDateRaw}" tidak terbaca — dikosongkan`);
-    if (surveyDateToSave && surveyDateToSave.getTime() > now.getTime()) {
+    // Toleransi 24 jam: tanggal UTC tengah malam vs `now` lokal WIB (lihat
+    // SURVEY_DATE_FUTURE_TOLERANCE_MS di skema) — "hari ini" tidak boleh dianggap masa depan.
+    if (surveyDateToSave && surveyDateToSave.getTime() > now.getTime() + 24 * 3600 * 1000) {
       warnings.push("Tanggal survei di masa depan — dikosongkan, periksa berkas");
       surveyDateToSave = null;
     } else if (surveyDateToSave && surveyDateToSave.getUTCFullYear() !== row.surveyYear) {
