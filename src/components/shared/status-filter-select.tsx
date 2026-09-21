@@ -13,10 +13,10 @@ export const STATUS_FILTER_ITEMS: { value: StatusFilterValue; label: string }[] 
 ];
 
 /**
- * Filter Status (Semua / Aktif / Nonaktif) untuk halaman daftar (#350).
- * `items` diteruskan ke `Select.Root` supaya `SelectValue` menampilkan LABEL
- * ("Aktif"), bukan nilai mentah ("active") — sebelumnya blok yang sama
- * disalin di 6 halaman dan semuanya menampilkan nilai mentah pada pemicunya.
+ * Filter Status (Semua / Aktif / Nonaktif) untuk halaman daftar (#350) —
+ * satu komponen menggantikan 7 blok salinan. Label pemicu dijamin oleh
+ * wrapper `Select` (menurunkan `items` dari `SelectItem`); `items` eksplisit
+ * di sini hanya menegaskan sumber labelnya.
  */
 export function StatusFilterSelect({
   value,
@@ -32,7 +32,7 @@ export function StatusFilterSelect({
 }) {
   return (
     <Select value={value} onValueChange={(v) => onChange((v as StatusFilterValue | null) ?? fallback)} items={STATUS_FILTER_ITEMS}>
-      <SelectTrigger className={cn("h-9 w-[140px]", className)} aria-label="Filter status">
+      <SelectTrigger className={cn("w-[140px]", className)} aria-label="Filter status">
         <SelectValue placeholder="Status" />
       </SelectTrigger>
       <SelectContent>

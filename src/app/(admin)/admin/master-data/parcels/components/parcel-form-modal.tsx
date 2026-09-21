@@ -31,13 +31,6 @@ import { cn } from "@/lib/utils";
 
 import type { LandParcel, FarmerSelect } from "@/types/land-parcel";
 
-/** Pilihan Status Kepemilikan — `items` supaya pemicu Select menampilkan label, bukan nilai (#350). */
-const LAND_STATUS_ITEMS = [
-  { value: "Owned", label: "Milik Sendiri (Owned)" },
-  { value: "Leased", label: "Sewa (Leased)" },
-  { value: "Shared", label: "Bagi Hasil (Shared)" },
-];
-
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -211,16 +204,14 @@ export function ParcelFormModal({ open, onClose, parcel, farmers, onSaved }: Pro
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="landStatus">Status Kepemilikan</Label>
-              <Select name="landStatus" defaultValue={parcel?.landStatus ?? ""} items={LAND_STATUS_ITEMS}>
+              <Select name="landStatus" defaultValue={parcel?.landStatus ?? ""}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {LAND_STATUS_ITEMS.map((i) => (
-                    <SelectItem key={i.value} value={i.value}>
-                      {i.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="Owned">Milik Sendiri (Owned)</SelectItem>
+                  <SelectItem value="Leased">Sewa (Leased)</SelectItem>
+                  <SelectItem value="Shared">Bagi Hasil (Shared)</SelectItem>
                 </SelectContent>
               </Select>
               {errors.landStatus && (

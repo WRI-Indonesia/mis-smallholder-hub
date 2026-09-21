@@ -29,13 +29,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
 
-/** Filter Lahan — `items` supaya pemicu menampilkan label ("Terpetakan"), bukan "true" (#350). */
-const HAS_PARCEL_ITEMS = [
-  { value: "all", label: "Semua Lahan" },
-  { value: "true", label: "Terpetakan" },
-  { value: "false", label: "Belum Terpetakan" },
-];
-
 interface ProductionRecord {
   id: string;
   isActive: boolean;
@@ -226,16 +219,14 @@ export function ProductionListClient({
       />
 
       {/* Lahan filter */}
-      <Select value={hasParcelFilter} onValueChange={(val) => setHasParcelFilter(val ?? "all")} items={HAS_PARCEL_ITEMS}>
+      <Select value={hasParcelFilter} onValueChange={(val) => setHasParcelFilter(val ?? "all")}>
         <SelectTrigger className="w-[160px] h-9">
           <SelectValue placeholder="Lahan" />
         </SelectTrigger>
         <SelectContent>
-          {HAS_PARCEL_ITEMS.map((i) => (
-            <SelectItem key={i.value} value={i.value}>
-              {i.label}
-            </SelectItem>
-          ))}
+          <SelectItem value="all">Semua Lahan</SelectItem>
+          <SelectItem value="true">Terpetakan</SelectItem>
+          <SelectItem value="false">Belum Terpetakan</SelectItem>
         </SelectContent>
       </Select>
 
