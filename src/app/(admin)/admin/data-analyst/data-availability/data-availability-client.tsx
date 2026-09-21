@@ -33,7 +33,7 @@ import { CATEGORY_LABELS } from "./domain-meta";
 import { AvailabilityDomainLaggards } from "./availability-domain-laggards";
 import { AvailabilityAnomalyPanel } from "./availability-anomaly-panel";
 import type { AvailabilityDomainKey, AvailabilityScoreBand, BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
-import { formatGeneratedAt } from "@/lib/format";
+import { formatGeneratedAt, formatPct } from "@/lib/format";
 
 /** Tampilan matriks: radar = bawaan (owner, #352 putaran 4), heatmap & modul lewat `?tampilan=`. */
 type MatrixView = "radar" | "heatmap" | "modul";
@@ -202,7 +202,7 @@ export function DataAvailabilityClient({
             name: g.name,
             code: g.code ?? "",
             ...Object.fromEntries(
-              g.moduleCoverage.map((m) => [m.key, m.pct == null ? "belum dimulai" : `${m.pct.toFixed(1)}%`]),
+              g.moduleCoverage.map((m) => [m.key, m.pct == null ? "belum dimulai" : `${formatPct(m.pct)}%`]),
             ),
           })),
         },

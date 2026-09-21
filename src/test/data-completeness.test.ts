@@ -737,6 +737,24 @@ describe("check kualitas (#352 putaran 2)", () => {
     expect(d.cards.find((c) => c.label === "Di Luar Boundary ICS")!.value).toBe(1);
   });
 
+  it("Lahan: kartu \"Persil kena NKT\" menghitung INCLUDED (legacy) + AFFECTED — satu definisi dengan KPI/peta/laporan", () => {
+    const base = { ...validParcel, modules: { ...NO_PARCEL_MODULES, nkt: true } };
+    const d = computeLahanDomain(
+      [
+        farmer({
+          landParcels: [
+            { ...base, id: "p1", parcelId: "P1", modules: { ...base.modules, nktStatus: "AFFECTED" } },
+            { ...base, id: "p2", parcelId: "P2", modules: { ...base.modules, nktStatus: "INCLUDED" } },
+            { ...base, id: "p3", parcelId: "P3", modules: { ...base.modules, nktStatus: "NOT_AFFECTED" } },
+            { ...base, id: "p4", parcelId: "P4", modules: { ...base.modules, nkt: false, nktStatus: null } },
+          ],
+        }),
+      ],
+      2026
+    );
+    expect(d.cards.find((c) => c.label === "Persil kena NKT")!.value).toBe(2);
+  });
+
   it("Pelatihan: nilai turun & di luar rentang; Produksi: 0 kg & bulan bolong", () => {
     const t = computePelatihanDomain(
       [

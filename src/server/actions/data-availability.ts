@@ -3,13 +3,13 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
-import { getAccessContext, farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-context";
+import { getAccessContext } from "@/lib/access-context";
+import { farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-scope";
 import { buildAvailabilityEntry } from "@/lib/data-availability-aggregation";
 import { currentPeriod } from "@/lib/data-completeness";
 import {
   farmerModuleFlags,
   groupModuleFlags,
-  loadEstimateRecordIds,
   loadModuleFlagSets,
   parcelGeometryAreaHa,
   parcelModuleFlags,
@@ -55,7 +55,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
   // agar himpunannya sama dengan persil yang memang dinilai; scope digabung
   // lewat relasi farmer (bukan spread `districtId` literal — pitfall BUG-007);
   // (4) kehadiran modul (#352 A1) + id record Estimasi, pola yang sama.
-  const [trainingPackages, groups, withGeometry, moduleSets, estimateIds] = await Promise.all([
+  const [trainingPackages, groups, withGeometry, moduleSets] = await Promise.all([
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
       select: { code: true, name: true },
@@ -144,7 +144,6 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
       scope: rawFarmerGroupScope(access),
       referenceYear,
     }),
-    loadEstimateRecordIds(farmerWhere),
   ]);
   const geometryIds = new Set(withGeometry.map((p) => p.id));
 
@@ -212,7 +211,9 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
           parcelId: r.parcelId,
           period: r.period,
           yieldKg: r.yieldKg,
-          isEstimate: estimateIds.has(r.id),
+          // Label "Estimasi" hanya dipakai kartu DA-02; di sini skor tidak
+          // membutuhkannya → scan `notes ILIKE` dilewati (review pra-rilis #352).
+          isEstimate: false,
         })),
         modules: farmerModuleFlags(moduleSets, f.id),
       })),

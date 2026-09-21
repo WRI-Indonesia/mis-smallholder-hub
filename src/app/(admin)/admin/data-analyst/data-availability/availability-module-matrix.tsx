@@ -18,7 +18,6 @@ import type {
 } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
 
-const formatPct = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(n);
 
 type SortKey = "name" | string;
 
@@ -229,7 +228,7 @@ function ModuleCell({
   return (
     <Tooltip>
       <TooltipTrigger render={<HeatCell score={cell.pct} emphasis={bold} />}>
-        {yesNo ? (cell.covered ? "✓" : "✗") : formatPct(cell.pct)}
+        {yesNo ? (cell.covered ? "✓" : "✗") : formatNumber(Math.round(cell.pct))}
       </TooltipTrigger>
       <StatTooltipContent title={label} subtitle={groupName} footer={`Band: ${BAND_LABEL[band]}`}>
         <StatTooltipRow chip={BAND_BAR[band]} label="Terisi" value={`${formatNumber(cell.covered)} / ${formatNumber(cell.total)}`} pct={cell.pct} />

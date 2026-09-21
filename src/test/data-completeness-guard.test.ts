@@ -12,23 +12,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
 const getAccessContext = vi.hoisted(() => vi.fn());
-// `@/lib/access-context` menarik next-auth (tak ada `next/server` di env node),
-// jadi seluruh modul di-mock; `rawFarmerGroupScope` disalin apa adanya (murni).
-vi.mock("@/lib/access-context", () => ({
-  getAccessContext,
-  farmerGroupAccessFilter: (access: { mode: string; ids: string[] }) =>
-    access.mode === "BY_FARMER_GROUP"
-      ? { id: { in: access.ids } }
-      : access.mode === "BY_DISTRICT"
-        ? { districtId: { in: access.ids } }
-        : {},
-  rawFarmerGroupScope: (access: { mode: string; ids: string[] }, groupIds?: string[]) => {
-    const scopedGroups = access.mode === "BY_FARMER_GROUP" ? access.ids : undefined;
-    const ids =
-      groupIds && scopedGroups ? groupIds.filter((id) => scopedGroups.includes(id)) : (groupIds ?? scopedGroups);
-    return { groupIds: ids, districtIds: access.mode === "BY_DISTRICT" ? access.ids : undefined };
-  },
-}));
+// `@/lib/access-context` menarik next-auth (tak ada `next/server` di env node)
+// → hanya `getAccessContext` yang di-mock; helper scope murni
+// (`farmerGroupAccessFilter`, `rawFarmerGroupScope`) diimpor action dari
+// `@/lib/access-scope` yang ASLI, jadi jalur SQL mentah diuji sungguhan
+// (review pra-rilis #352: sebelumnya salinan).
+vi.mock("@/lib/access-context", () => ({ getAccessContext }));
 
 const db = vi.hoisted(() => {
   const groupBy = () => vi.fn().mockResolvedValue([]);
@@ -157,6 +146,13 @@ describe("analyzeFarmerGroupCompleteness — scope", () => {
       farmer: { isActive: true, farmerGroup: groupWhere },
       notes: { contains: "estimasi", mode: "insensitive" },
     });
+    // Poligon GeoJSON tidak diangkut — kehadiran geometry lewat id-set ber-scope (review pra-rilis #352).
+    const parcelSelect = db.farmerGroup.findFirst.mock.calls[0][0].select.farmers.select.landParcels.select;
+    expect(parcelSelect.geometry).toBeUndefined();
+    expect(db.landParcel.findMany.mock.calls[0][0]).toMatchObject({
+      where: { isActive: true, geometry: { not: expect.anything() }, farmer: { isActive: true, farmerGroup: groupWhere } },
+      select: { id: true },
+    });
   });
 
   it("13 kueri satelit memakai scope Lembaga lewat relasi petani/Lembaga, bukan id-set persil", async () => {
@@ -214,13 +210,11 @@ describe("getDataAvailabilityView — scope satelit lintas Lembaga", () => {
     const farmerWhere = { isActive: true, farmerGroup: groupWhere };
     expect(db.farmerGroup.findMany.mock.calls[0][0].where).toMatchObject(groupWhere);
     expect(db.landParcel.findMany.mock.calls[0][0].where).toMatchObject({ isActive: true, farmer: farmerWhere });
-    // Kolom `notes` produksi tidak ikut kueri utama — label Estimasi lewat id-set (review #352).
+    // Kolom `notes` produksi tidak ikut kueri utama; scan id-set "Estimasi" pun
+    // DILEWATI di DA-03 — labelnya hanya dipakai kartu DA-02 (review pra-rilis #352).
     const farmerSelect = db.farmerGroup.findMany.mock.calls[0][0].select.farmers.select;
     expect(farmerSelect.productionRecords.select).toEqual({ id: true, parcelId: true, period: true, yieldKg: true });
-    expect(db.productionRecord.findMany.mock.calls[0][0].where).toMatchObject({
-      farmer: farmerWhere,
-      notes: { contains: "estimasi", mode: "insensitive" },
-    });
+    expect(db.productionRecord.findMany).not.toHaveBeenCalled();
     expect(db.landParcelDocument.groupBy.mock.calls[0][0].where).toMatchObject({
       isActive: true,
       parcel: { isActive: true, farmer: farmerWhere },

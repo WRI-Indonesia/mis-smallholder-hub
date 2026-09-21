@@ -34,6 +34,9 @@ export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: Availabi
           {AVAILABILITY_DOMAIN_KEYS.map((key) => {
             // Lembaga yang sudah 100 % bukan "tertinggal" — disembunyikan agar daftar tidak berisi noise.
             const rows = domainLaggards(groups, key, n).filter((r) => r.score < 100);
+            // "Semua 100 %" hanya bila memang ada Lembaga yang dinilai (profil: semua;
+            // domain lain: yang berpetani) — irisan kosong/tereksklusi bukan prestasi.
+            const eligible = key === "profil" ? groups.length : groups.filter((g) => g.totalFarmers > 0).length;
             const Icon = DOMAIN_ICONS[key];
             return (
               <div key={key} className="rounded-lg border p-3">
@@ -41,7 +44,11 @@ export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: Availabi
                   <Icon className="h-3.5 w-3.5" /> {AVAILABILITY_DOMAIN_LABELS[key]}
                 </div>
                 {rows.length === 0 ? (
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400">Semua Lembaga sudah 100 %.</p>
+                  eligible === 0 ? (
+                    <p className="text-xs text-muted-foreground">{groups.length === 0 ? "Tidak ada Lembaga pada irisan ini." : "Belum ada Lembaga berpetani pada irisan ini."}</p>
+                  ) : (
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400">Semua Lembaga sudah 100 %.</p>
+                  )
                 ) : (
                   <ol className="space-y-2.5">
                     {rows.map((r, i) => (

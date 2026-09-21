@@ -1,8 +1,10 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
-import { getAccessContext, farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-context";
+import { getAccessContext } from "@/lib/access-context";
+import { farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-scope";
 import { computeCompleteness, currentPeriod } from "@/lib/data-completeness";
 import {
   farmerModuleFlags,
@@ -42,7 +44,7 @@ export async function getDistrictsForCompleteness() {
 }
 
 /** Farmer-group list (cascading by district), scoped to the user's data-access. */
-export async function getFarmerGroupsForCompleteness(districtId?: string | null) {
+export async function getFarmerGroupsForCompleteness() {
   await requireView();
   const access = await getAccessContext();
 
@@ -50,7 +52,6 @@ export async function getFarmerGroupsForCompleteness(districtId?: string | null)
     where: {
       isActive: true,
       ...farmerGroupAccessFilter(access),
-      ...(districtId ? { districtId } : {}),
     },
     select: { id: true, name: true, code: true, districtId: true },
     orderBy: { name: "asc" },
@@ -81,7 +82,7 @@ export async function analyzeFarmerGroupCompleteness(
   const farmerWhere = { isActive: true, farmerGroup: groupWhere };
 
   // Paket wajib (isActive, exclude OTHER) — kolom matriks & basis cakupan pelatihan.
-  const [trainingPackages, group, moduleSets, estimateIds] = await Promise.all([
+  const [trainingPackages, group, withGeometry, moduleSets, estimateIds] = await Promise.all([
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
       select: { code: true, name: true },
@@ -129,7 +130,6 @@ export async function analyzeFarmerGroupCompleteness(
                 id: true,
                 parcelUid: true,
                 parcelId: true,
-                geometry: true,
                 area: true,
                 plantingYear: true,
                 cropType: true,
@@ -157,6 +157,12 @@ export async function analyzeFarmerGroupCompleteness(
         },
       },
     }),
+    // Kehadiran geometry per persil sebagai id-set (pola DA-03) — poligon GeoJSON
+    // penuh tidak diangkut hanya untuk cek `!= null` (review pra-rilis #352).
+    prisma.landParcel.findMany({
+      where: { isActive: true, geometry: { not: Prisma.DbNull }, farmer: farmerWhere },
+      select: { id: true },
+    }),
     // Kehadiran modul (#352 A1) + flag spasial — id-set per satelit, scope lewat relasi petani.
     loadModuleFlagSets({
       farmerWhere,
@@ -166,6 +172,7 @@ export async function analyzeFarmerGroupCompleteness(
     }),
     loadEstimateRecordIds(farmerWhere),
   ]);
+  const geometryIds = new Set(withGeometry.map((p) => p.id));
 
   if (!group) {
     throw new Error("Lembaga Petani tidak ditemukan atau di luar akses Anda");
@@ -207,7 +214,8 @@ export async function analyzeFarmerGroupCompleteness(
       landParcels: f.landParcels.map((p) => ({
         id: p.id,
         parcelId: p.parcelId,
-        geometry: p.geometry,
+        // Sentinel `{}` bila persil punya geometry — scoring hanya menguji kehadiran.
+        geometry: geometryIds.has(p.id) ? {} : null,
         area: p.area,
         plantingYear: p.plantingYear,
         cropType: p.cropType,

@@ -9,7 +9,7 @@ export default async function DataCompletenessPage() {
 
   const [districts, farmerGroups, permissions] = await Promise.all([
     getDistrictsForCompleteness(),
-    getFarmerGroupsForCompleteness(null),
+    getFarmerGroupsForCompleteness(),
     getUserPermissionsForMenu("data-analyst-data-completeness"),
   ]);
 

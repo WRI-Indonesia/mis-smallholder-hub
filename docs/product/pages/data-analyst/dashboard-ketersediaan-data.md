@@ -148,7 +148,7 @@ Pilihan owner dari empat usulan "out of the box" (peta kesiapan data · treemap 
 |---|---|---|
 | Judul | Heading kartu | "Paling tertinggal per domain" (ikon `ListOrdered`); sub: "5 Lembaga berskor terendah tiap domain … Lembaga tanpa petani tidak diikutkan" |
 | Kolom domain (5) | Kotak kecil | `domainLaggards(groups, key, 5)` disaring skor < 100: baris "{i}. {nama}" (deep link DA-02) · skor % warna band · "{distrik} · {n} petani" · `BandBar`; seri skor → petani terbanyak dulu |
-| Empty state | Teks hijau | "Semua Lembaga sudah 100 %." |
+| Empty state | Teks | "Semua Lembaga sudah 100 %." (hijau) hanya bila ada Lembaga yang dinilai (profil: semua; domain lain: berpetani); irisan kosong → "Tidak ada Lembaga pada irisan ini.", semua tanpa petani → "Belum ada Lembaga berpetani pada irisan ini." (review pra-rilis #352) |
 
 ## Panel Anomali Terbanyak (`AvailabilityAnomalyPanel`)
 

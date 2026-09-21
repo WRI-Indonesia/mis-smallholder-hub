@@ -22,6 +22,7 @@ import type {
   PriorityItem,
   ProfileCheck,
 } from "@/types/data-completeness";
+import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import {
   anomalyDef,
   BIRTH_DATE_DAY_ANCHOR_HOURS,
@@ -431,7 +432,9 @@ export function computeLahanDomain(farmers: CompletenessFarmerInput[], reference
 
   const weightByKey = new Map(PARCEL_CHECKS.map((c) => [c.anomalyKey, c.weight / PARCEL_CHECK_WEIGHT_TOTAL]));
   const weightLabelByKey = new Map(PARCEL_CHECKS.map((c) => [c.anomalyKey, `${c.weight}/${PARCEL_CHECK_WEIGHT_TOTAL}`]));
-  const nktAffected = parcels.filter(({ parcel }) => parcel.modules?.nktStatus === "AFFECTED").length;
+  // Kena NKT = INCLUDED (legacy) + AFFECTED — satu definisi dengan KPI Detail
+  // Lembaga, layer peta, dan laporan (review pra-rilis #352).
+  const nktAffected = parcels.filter(({ parcel }) => isNktAffected(parcel.modules?.nktStatus)).length;
 
   return {
     domain: "lahan",
@@ -443,7 +446,7 @@ export function computeLahanDomain(farmers: CompletenessFarmerInput[], reference
       { label: "Petani Tanpa Lahan", value: noParcel.length },
       { label: "Persil dengan Anomali", value: flaggedParcels.size },
       { label: "Total Luas (ha)", value: totalArea.toFixed(2) },
-      { label: "Persil NKT (AFFECTED)", value: nktAffected },
+      { label: "Persil kena NKT", value: nktAffected },
       { label: "Di Luar Boundary ICS", value: boundaryChecked.length > 0 ? outsideBoundary.length : "—" },
     ],
     anomalies,

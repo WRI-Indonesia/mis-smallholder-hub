@@ -142,7 +142,7 @@ function ScoreBadge({ score }: { score: number }) {
         BAND_TEXT[band]
       )}
     >
-      {score.toFixed(0)}%
+      {formatNumber(Math.round(score))}%
     </span>
   );
 }
@@ -188,6 +188,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
           setOpenSections(Object.fromEntries(DOMAIN_ORDER.map((d) => [d, d === lowest])));
           if (!silent) toast.success("Analisis ketersediaan data berhasil dimuat");
         } catch (err) {
+          if (analyzedFor.current !== groupId) return; // request Lembaga yang sudah diganti
           toast.error(err instanceof Error ? err.message : "Gagal memuat analisis data");
         }
       });
@@ -616,7 +617,7 @@ function PriorityPanel({ result, onJump }: { result: DataCompletenessResult; onJ
                       {p.label}
                     </button>
                     <span className="shrink-0 text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-                      +{p.indexGain.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} poin
+                      +{formatPct(p.indexGain)} poin
                     </span>
                   </div>
                   <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -846,7 +847,9 @@ function itemsForRow(row: CheckRow, domain: DomainResult | null, result: DataCom
 function CheckRowItem({ row, items, defaultOpen = false }: { row: CheckRow; items: AnomalyItem[]; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const okPct = row.total > 0 ? ((row.total - row.flagged) / row.total) * 100 : null;
-  const expandable = row.flagged > 0 && (items.length > 0 || row.systemic);
+  // Setiap baris bermasalah bisa dibuka — walau tanpa rincian entitas (temuan
+  // tingkat Lembaga seperti "KT tanpa aktivitas") "Perbaiki lewat" tetap tampil (review pra-rilis #352).
+  const expandable = row.flagged > 0;
   const inactive = !row.applicable;
 
   const status = inactive ? (
@@ -1142,13 +1145,13 @@ function KelompokTaniPanel({ rows }: { rows: DataCompletenessResult["byKelompokT
                     <td className={cn("px-3 py-1.5 font-medium", r.name.startsWith("(") && "italic text-muted-foreground")}>{r.name}</td>
                     <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(r.farmers)}</td>
                     <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(r.parcels)}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">{r.areaHa.toLocaleString("id-ID", { maximumFractionDigits: 1 })}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">{formatPct(r.areaHa)}</td>
                     <td className="px-3 py-1.5">
                       <span className="flex items-center gap-2">
                         <span className="w-20">
                           <BandBar pct={r.lahanScore} className="h-1.5" />
                         </span>
-                        <span className={cn("text-xs font-semibold tabular-nums", BAND_TEXT[scoreBand(r.lahanScore)])}>{r.lahanScore.toFixed(0)}%</span>
+                        <span className={cn("text-xs font-semibold tabular-nums", BAND_TEXT[scoreBand(r.lahanScore)])}>{formatNumber(Math.round(r.lahanScore))}%</span>
                       </span>
                     </td>
                     <td className="px-3 py-1.5">
@@ -1156,12 +1159,12 @@ function KelompokTaniPanel({ rows }: { rows: DataCompletenessResult["byKelompokT
                         <span className="w-20">
                           <BandBar pct={r.petaniScore} className="h-1.5" />
                         </span>
-                        <span className={cn("text-xs font-semibold tabular-nums", BAND_TEXT[scoreBand(r.petaniScore)])}>{r.petaniScore.toFixed(0)}%</span>
+                        <span className={cn("text-xs font-semibold tabular-nums", BAND_TEXT[scoreBand(r.petaniScore)])}>{formatNumber(Math.round(r.petaniScore))}%</span>
                       </span>
                     </td>
                     <td className="px-3 py-1.5 text-xs tabular-nums">
                       {formatNumber(r.parcelsProducing)} / {formatNumber(r.parcels)}{" "}
-                      <span className="text-muted-foreground">({r.parcelsProducingPct.toFixed(0)}%)</span>
+                      <span className="text-muted-foreground">({formatNumber(Math.round(r.parcelsProducingPct))}%)</span>
                     </td>
                   </tr>
                 ))}

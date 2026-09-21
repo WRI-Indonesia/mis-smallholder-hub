@@ -8,7 +8,7 @@ import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-too
 import { ScoreGauge } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
 import { scoreBand, topSystemicAnomalies } from "@/lib/data-availability-aggregation";
-import { anomalyDef } from "@/lib/data-completeness-registry";
+import { anomalyDef, SYSTEMIC_THRESHOLD } from "@/lib/data-completeness-registry";
 import { BAND_BAR, BAND_TEXT, BAND_LABEL } from "@/lib/score-band-styles";
 import type { AvailabilityBandDistribution, AvailabilityGroupEntry, AvailabilityScoreBand, AvailabilityTotals } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
@@ -204,7 +204,7 @@ export function AvailabilityHero({
             )}
             <p className="mt-3 flex items-center gap-1 border-t pt-2 text-[11px] text-muted-foreground">
               <span className="truncate">
-                Kolom ≥ 95 % kosong — urusan unggah massal, bukan perbaikan satu per satu.
+                Kolom ≥ {Math.round(SYSTEMIC_THRESHOLD * 100)} % kosong — urusan unggah massal, bukan perbaikan satu per satu.
                 {activeBand && " Mengikuti filter band."}
               </span>
               <span className="ml-auto inline-flex shrink-0 items-center gap-0.5">

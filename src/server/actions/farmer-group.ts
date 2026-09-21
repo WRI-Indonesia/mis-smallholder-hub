@@ -18,7 +18,6 @@ import {
 } from "@/lib/access-context";
 import { buildFarmerGroupDetail } from "@/lib/farmer-group-detail";
 import { computeCompleteness } from "@/lib/data-completeness";
-import { loadEstimateRecordIds } from "@/lib/data-completeness-query";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
 
 export async function getFarmerGroups(search?: string) {
@@ -125,7 +124,7 @@ export async function getFarmerGroupDetail(id: string) {
   });
   if (!group) return null;
 
-  const [trainingPackages, activities, farmers, markerPoints, estimateIds] = await Promise.all([
+  const [trainingPackages, activities, farmers, markerPoints] = await Promise.all([
     // Paket wajib (exclude OTHER) — basis cakupan pelatihan (pola DA-02).
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
@@ -196,8 +195,6 @@ export async function getFarmerGroupDetail(id: string) {
     }),
     // Patok (#331) — sejajar dengan kueri lain, bukan setelahnya (review 2026-09-15).
     fetchFarmerGroupMarkerPoints(group.id),
-    // Id record produksi "Estimasi" (#352) — id-set, bukan kolom notes di kueri utama.
-    loadEstimateRecordIds({ isActive: true, farmerGroupId: id }),
   ]);
 
   const detail = buildFarmerGroupDetail(
@@ -290,7 +287,9 @@ export async function getFarmerGroupDetail(id: string) {
         parcelId: r.parcelId,
         period: r.period,
         yieldKg: r.yieldKg,
-        isEstimate: estimateIds.has(r.id),
+        // Kartu KPI hanya memakai healthScore — label Estimasi (kartu DA-02) tak
+        // dibutuhkan, scan `notes ILIKE` dilewati (review pra-rilis #352).
+        isEstimate: false,
       })),
     })),
   };

@@ -25,7 +25,7 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 ├── Seksi collapsible (state terkontrol; default hanya seksi berskor TERENDAH yang terbuka)
 │   ├── Profil Lembaga Petani — baris per check: inti (6) · kualitas (sertifikasi, tahun berdiri, koordinat) · modul (boundary, acuan, Monev Lembaga, sertifikasi terisi)
 │   ├── Petani — kartu + Checklist
-│   ├── Lahan — 6 kartu (+NKT AFFECTED, di luar boundary) + Checklist + tabel Per Kelompok Tani
+│   ├── Lahan — 6 kartu (+"Persil kena NKT" = INCLUDED + AFFECTED via `isNktAffected`, di luar boundary) + Checklist + tabel Per Kelompok Tani
 │   ├── Pelatihan — kartu + Ringkasan per Paket · Matriks Cakupan · Petani Belum Lengkap + Checklist (non-paket)
 │   └── Produksi — 6 kartu + Checklist
 ├── Checklist (dipakai semua domain; putaran 2)
@@ -49,6 +49,7 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 | Guard | `requirePermission("data-analyst-data-completeness")` |
 | Server action / data | `getDistrictsForCompleteness()`, `getFarmerGroupsForCompleteness(districtId)` (mengembalikan `districtId` untuk cascade client), `analyzeFarmerGroupCompleteness(farmerGroupId)` — `src/server/actions/data-completeness.ts` (`MENU_KEY = "data-analyst-data-completeness"`, guard `hasPermission(MENU_KEY, "VIEW")` + `getAccessContext()`); kehadiran modul lewat `loadModuleFlagSets` di `src/lib/data-completeness-query.ts` (id-set per satelit, scope lewat relasi `parcel.farmer`, sejajar dengan kueri utama) |
 | Logika | `src/lib/data-completeness.ts` (skor, anomali, checklist, prioritas, per-KT — murni) + **registri** `src/lib/data-completeness-registry.ts` (label, jenis, grain, rute perbaikan, `foldable`, bobot tier, katalog modul, konstanta ambang) |
+| Muatan persil | Kehadiran geometry per persil lewat **id-set** (`landParcel.findMany` where `geometry not DbNull`, select id) — poligon GeoJSON tidak diangkut hanya untuk cek `!= null` (review pra-rilis #352, pola DA-03); label "Estimasi" (`loadEstimateRecordIds`, scan `notes ILIKE`) hanya di DA-02 — DA-03 & kartu KPI Detail Lembaga melewatinya (`isEstimate: false`) |
 | Kueri PostGIS (putaran 2) | `loadModuleFlagSets` juga menjalankan 3 `$queryRaw`: persil ber-geometry yang tidak beririsan boundary ICS Lembaganya, luas poligon `ST_Area(geom::geography)` per persil, koordinat Lembaga vs poligon kabupaten BIG — scope lewat parameter array `groupIds`/`districtIds` (cermin `groupWhere`) |
 | Persistensi filter | `useUrlFilters()` (TD-021) — kunci `lembaga`, `distrik`; id di luar daftar scope → peringatan, action tidak dipanggil |
 | Warna skor | Satu sumber `scoreBand` (`data-availability-aggregation.ts`) + `src/lib/score-band-styles.ts` — sama dengan DA-03 dan kartu KPI Detail Lembaga (`scoreTone` lama dihapus) |
