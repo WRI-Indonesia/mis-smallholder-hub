@@ -18,42 +18,6 @@ export async function getRolePermissions() {
   });
 }
 
-export async function toggleRolePermission(
-  role: Role,
-  menuKey: string,
-  permission: PermissionLevel
-): Promise<ActionResult<{ granted: boolean }>> {
-  if (!(await hasPermission("settings-roles", "EDIT"))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengubah permission" };
-  }
-
-  // SUPERADMIN selalu memiliki akses penuh (bypass di rbac) — permission-nya tidak boleh diubah.
-  if (role === "SUPERADMIN") {
-    return { success: false, error: "Permission SUPERADMIN tidak dapat diubah" };
-  }
-
-  const existing = await prisma.rolePermission.findFirst({
-    where: { role, menuKey, permission },
-  });
-
-  const session = await auth();
-
-  if (existing) {
-    // Toggle isActive
-    await prisma.rolePermission.update({
-      where: { id: existing.id },
-      data: { isActive: !existing.isActive, modifiedBy: session?.user?.id ?? null },
-    });
-    return { success: true, data: { granted: !existing.isActive } };
-  }
-
-  // Create new
-  await prisma.rolePermission.create({
-    data: { role, menuKey, permission, createdBy: session?.user?.id ?? null },
-  });
-  return { success: true, data: { granted: true } };
-}
-
 export interface RolePermissionUpdate {
   role: Role;
   menuKey: string;

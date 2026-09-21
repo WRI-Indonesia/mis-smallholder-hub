@@ -88,11 +88,6 @@ export type ProfileCheck = {
   value?: string | null;  // nilai aktual bila ada
 };
 
-// Filters/args sent to the analyze action
-export type CompletenessFilters = {
-  farmerGroupId: string;
-};
-
 // Full result returned by analyzeFarmerGroupCompleteness
 export type DataCompletenessResult = {
   group: {

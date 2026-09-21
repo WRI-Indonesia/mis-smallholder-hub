@@ -105,22 +105,6 @@ export async function getFarmerGroups(search?: string) {
   }));
 }
 
-export async function getFarmerGroupById(id: string) {
-  if (!(await hasPermission("master-data-groups", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  const access = await getAccessContext();
-
-  // Scope enforced (cegah akses KT lintas wilayah via id). `AND` agar filter scope
-  // `{ id: { in } }` (mode BY_FARMER_GROUP) tidak menimpa literal `id`. Hanya
-  // SUPERADMIN yang boleh membuka detail KT nonaktif; user lain dibatasi ke aktif.
-  return prisma.farmerGroup.findFirst({
-    where: { id, AND: farmerGroupAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
-    include: { district: { select: { id: true, name: true } } },
-  });
-}
-
 /**
  * Profil 360° satu Lembaga (#171): profil + agregat Petani/KT/Lahan/Pelatihan/
  * Produksi + skor kelengkapan DA-02. Real-time (keputusan #153/#154 — detail 1

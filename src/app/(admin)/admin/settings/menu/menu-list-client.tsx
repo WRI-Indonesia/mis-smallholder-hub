@@ -18,7 +18,7 @@ import { Plus, Search, ChevronRight, ChevronDown } from "lucide-react";
 import { MenuFormModal } from "./menu-form-modal";
 import { deleteMenuItem } from "@/server/actions/menu";
 import { toast } from "sonner";
-import { ICON_MAP } from "@/lib/icon-map";
+import { renderIcon } from "@/lib/icon-map";
 import { TableActions, DeleteDialog } from "@/components/shared";
 import { buildMenuTree, collapsibleKeys, flattenTree } from "@/lib/menu-tree";
 import { useCollapseState } from "@/lib/use-collapse-state";
@@ -89,12 +89,6 @@ export function MenuListClient({
     } else {
       toast.error(typeof result.error === "string" ? result.error : "Gagal menonaktifkan menu item");
     }
-  }
-
-  function renderIcon(name: string | null) {
-    if (!name) return null;
-    const Icon = ICON_MAP[name];
-    return Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null;
   }
 
   function rowActions(item: MenuItemData) {
@@ -190,7 +184,7 @@ export function MenuListClient({
                     ) : (
                       <span className="w-5 shrink-0" />
                     )}
-                    {renderIcon(item.icon)}
+                    {renderIcon(item.icon, "h-4 w-4 text-muted-foreground")}
                     <span className={depth >= 1 ? "text-muted-foreground" : undefined}>{item.title}</span>
                   </div>
                 </TableCell>

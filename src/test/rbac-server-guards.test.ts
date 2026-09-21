@@ -38,7 +38,7 @@ describe("RBAC scope — farmerGroupAccessFilter (create/update/bulk farmer targ
   });
 });
 
-describe("RBAC scope — filter petani by-id (getFarmerById/updateFarmer/toggleFarmerActive)", () => {
+describe("RBAC scope — filter petani by-id (getFarmerDetail/updateFarmer/toggleFarmerActive)", () => {
   // Mirror dari inline accessFilter di farmer.ts.
   function farmerAccessFilter(access: AccessContext) {
     return access.mode === "BY_FARMER_GROUP"
@@ -64,7 +64,8 @@ describe("RBAC scope — filter petani by-id (getFarmerById/updateFarmer/toggleF
   });
 });
 
-describe("RBAC guard — toggleRolePermission menolak perubahan SUPERADMIN", () => {
+describe("RBAC guard — permission SUPERADMIN terkunci (setRolePermissions mengabaikan entri SUPERADMIN)", () => {
+  // Mirror dari guard EDIT + pengabaian entri SUPERADMIN di role-permission.ts.
   function canToggle(hasEdit: boolean, role: string): { ok: boolean; reason?: string } {
     if (!hasEdit) return { ok: false, reason: "no-permission" };
     if (role === "SUPERADMIN") return { ok: false, reason: "superadmin-locked" };

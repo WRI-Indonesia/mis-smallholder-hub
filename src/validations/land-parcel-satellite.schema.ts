@@ -186,14 +186,8 @@ export const landParcelNktSchema = nktBase
   .extend({ landParcelId: z.string().min(1, "Lahan tidak valid") })
   .superRefine(refineNkt)
   .transform(normalizeNkt);
-export type LandParcelNktInput = z.infer<typeof landParcelNktSchema>;
 
-export type LandParcelBorderInput = z.infer<typeof landParcelBorderSchema>;
 export type LandParcelBorderSidesInput = z.infer<typeof landParcelBorderSidesSchema>;
-export type LandParcelDocumentInput = z.infer<typeof landParcelDocumentSchema>;
-export type LandStdbInput = z.infer<typeof landStdbSchema>;
-export type LandParcelExternalIdInput = z.infer<typeof landParcelExternalIdSchema>;
-export type LandParcelProgramInput = z.infer<typeof landParcelProgramSchema>;
 
 /** Jenis satelit — dipakai modal & action toggle. */
 export type SatelliteKind = "document" | "stdb" | "externalId" | "program";

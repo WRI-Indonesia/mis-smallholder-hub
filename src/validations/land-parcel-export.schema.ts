@@ -13,5 +13,3 @@ export const parcelExportFilterSchema = z
   .refine((v) => Boolean(v.districtId) || Boolean(v.farmerGroupId), {
     message: "Pilih Distrik atau Lembaga Petani terlebih dahulu",
   });
-
-export type ParcelExportFilterInput = z.infer<typeof parcelExportFilterSchema>;

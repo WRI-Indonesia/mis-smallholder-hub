@@ -76,7 +76,7 @@ Terjemahkan `AccessContext` (dari `getAccessContext()`) ke Prisma `where` fragme
 
 Mode `ALL` → `{}` (tanpa batasan).
 
-> ⚠️ **Pitfall key-collision** — `farmerGroupAccessFilter` mengembalikan `{ id: { in } }`. Saat digabung dengan literal `id` (mis. cek by-id `getFarmerGroupById`, atau validasi KT target `createFarmer`), **jangan** spread (`{ id, ...filter }`) karena `id` tertimpa dan scope bocor. Gunakan `AND`: `{ id, AND: farmerGroupAccessFilter(access) }`.
+> ⚠️ **Pitfall key-collision** — `farmerGroupAccessFilter` mengembalikan `{ id: { in } }`. Saat digabung dengan literal `id` (mis. cek by-id `getFarmerGroupDetail`, atau validasi KT target `createFarmer`), **jangan** spread (`{ id, ...filter }`) karena `id` tertimpa dan scope bocor. Gunakan `AND`: `{ id, AND: farmerGroupAccessFilter(access) }`.
 
 #### Soft-delete: pola tampil & restore record nonaktif (keputusan #127)
 
