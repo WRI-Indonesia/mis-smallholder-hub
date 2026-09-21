@@ -476,22 +476,42 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
           {/* Overview: gauge + identitas + strip domain */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex flex-col gap-6 md:flex-row md:items-center">
-                {/* Instrumen: angka Index besar + pentagon lima domain berangka — satu sumber
-                    untuk skor (owner, #352 putaran 4: tanpa cincin gauge, tanpa kartu domain).
-                    Label sumbu = tautan ke seksi domain (menggantikan kartu); bobot ada di
-                    tooltip & judul seksi. */}
+              {/* Urutan baca (owner): identitas Lembaga di kiri → instrumen (angka Index +
+                  radar) → aksi Excel di ujung — konsisten dengan kartu radar Semua Lembaga
+                  (nama kiri, skor kanan). */}
+              <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-6">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl font-bold leading-tight">
+                    {result.group.name}
+                    {result.group.code && <span className="ml-2 font-mono text-sm font-normal text-muted-foreground">{result.group.code}</span>}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {result.group.districtName} · {formatNumber(result.totalFarmers)} petani ·{" "}
+                    <span className="font-medium text-red-600 dark:text-red-400">{formatNumber(result.totalAnomalies)} temuan</span>
+                  </p>
+                  <p className="mt-3 max-w-xl text-xs leading-relaxed text-muted-foreground">
+                    Angka besar = Index (0–100); pentagon = skor lima domain — klik nama sumbu untuk membuka seksinya. Bobot tiap domain ada di judul seksi.
+                  </p>
+                </div>
+
+                {/* Instrumen: angka Index besar (label band di bawahnya) + pentagon lima domain
+                    berangka — satu sumber untuk skor (#352 putaran 4: tanpa cincin gauge, tanpa
+                    kartu domain). Label sumbu = tautan ke seksi domain; bobot ada di tooltip &
+                    judul seksi. Proporsi: strip pendek (radar 260 px), angka sebesar tinggi radar. */}
                 <Tooltip>
-                  <TooltipTrigger render={<div className="flex shrink-0 items-center gap-3 self-center" />}>
-                    <span className={cn("cursor-help text-5xl font-bold leading-none tabular-nums", BAND_TEXT[scoreBand(result.healthScore)])}>
-                      {Math.round(result.healthScore)}
-                    </span>
+                  <TooltipTrigger render={<div className="flex shrink-0 items-center gap-5 self-center md:border-l md:pl-6" />}>
+                    <div className="flex cursor-help flex-col items-center gap-1.5">
+                      <span className={cn("text-7xl font-bold leading-none tabular-nums", BAND_TEXT[scoreBand(result.healthScore)])}>
+                        {Math.round(result.healthScore)}
+                      </span>
+                      <span className={cn("whitespace-nowrap text-[11px] font-semibold", BAND_TEXT[scoreBand(result.healthScore)])}>{bandLabel(result.healthScore)}</span>
+                    </div>
                     <RadarChart
                       name={result.group.name}
                       total={result.healthScore}
                       scores={Object.fromEntries(DOMAIN_ORDER.map((d) => [d, domainScore(d)])) as Record<CompletenessDomainKey, number>}
                       onAxisClick={jumpTo}
-                      className="w-[280px]"
+                      className="w-[260px]"
                     />
                   </TooltipTrigger>
                   <StatTooltipContent title="Index = Σ (skor domain × bobot)" footer={`Band: ${bandLabel(result.healthScore)} · klik nama sumbu untuk membuka seksinya`}>
@@ -506,31 +526,12 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
                   </StatTooltipContent>
                 </Tooltip>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg font-bold leading-tight">
-                        {result.group.name}
-                        {result.group.code && <span className="ml-2 font-mono text-sm text-muted-foreground">{result.group.code}</span>}
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        {result.group.districtName} · {formatNumber(result.totalFarmers)} petani ·{" "}
-                        <span className="font-medium text-red-600 dark:text-red-400">{formatNumber(result.totalAnomalies)} temuan</span>
-                        {" · "}
-                        <span className={cn("font-medium", BAND_TEXT[scoreBand(result.healthScore)])}>{bandLabel(result.healthScore)}</span>
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Angka besar = Index (0–100); pentagon = skor lima domain — klik nama sumbu untuk membuka seksinya. Bobot tiap domain ada di judul seksi.
-                      </p>
-                    </div>
-                    {canExport && (
-                      <Button variant="outline" onClick={handleDownload} className="h-9">
-                        <Download className="mr-2 h-4 w-4" />
-                        Excel
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                {canExport && (
+                  <Button variant="outline" onClick={handleDownload} className="h-9 shrink-0 self-start md:self-center">
+                    <Download className="mr-2 h-4 w-4" />
+                    Excel
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
