@@ -42,9 +42,12 @@ export function RadarDetailDialog({
   onClose: () => void;
 }) {
   const entry = index >= 0 ? entries[index] : undefined;
-  const hasPrev = index > 0;
-  const hasNext = index >= 0 && index < entries.length - 1;
+  // Saat animasi tutup (`open` false, isi masih terpasang) navigasi dimatikan
+  // supaya ← → / ◀ ▶ tidak mengganti Lembaga di tengah fade-out.
+  const hasPrev = open && index > 0;
+  const hasNext = open && index >= 0 && index < entries.length - 1;
   const go = (delta: number) => {
+    if (!open) return;
     const next = index + delta;
     if (index >= 0 && next >= 0 && next < entries.length) onIndexChange(next);
   };

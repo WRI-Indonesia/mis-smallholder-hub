@@ -74,7 +74,7 @@ export function AvailabilityDomainCards({
               <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                 <span className="truncate">{meta.count(totals)}</span>
                 {critical > 0 ? (
-                  <span className="shrink-0 font-semibold text-rose-600 dark:text-rose-400" title="Lembaga berskor <50 pada domain ini (tanpa Lembaga tanpa petani)">
+                  <span className="shrink-0 font-semibold text-rose-600 dark:text-rose-400" title={`Lembaga berskor <${BAND_THRESHOLDS.warn} pada domain ini (tanpa Lembaga tanpa petani)`}>
                     {critical} kritis
                   </span>
                 ) : (

@@ -16,7 +16,7 @@ import type { AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber, formatPct } from "@/lib/format";
 import { entryDomainScores } from "./domain-meta";
 import { useMatrixRows, type MatrixSortKey } from "./matrix-rows";
-import { emptyRowsMessage, MatrixLimitToggle, MatrixSearch } from "./matrix-toolbar";
+import { emptyRowsMessage, MatrixLimitToggle, MatrixSearch, rowsSummary } from "./matrix-toolbar";
 import { RadarDetailDialog } from "./availability-radar-dialog";
 
 const SORT_OPTIONS: { key: MatrixSortKey; label: string }[] = [
@@ -110,7 +110,7 @@ export function AvailabilityRadarGrid({
             <Pentagon className="h-4 w-4 text-primary" /> Radar per Lembaga
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            {formatNumber(rows.length)} Lembaga{m.critical > 0 ? ` · ${formatNumber(m.critical)} berskor kritis (<${BAND_THRESHOLDS.warn})` : ""} — pentagon penuh = lengkap, gepeng ke satu
+            {rowsSummary(rows.length, m.critical)} — pentagon penuh = lengkap, gepeng ke satu
             sisi = domain itu kosong. Klik grafik untuk memperbesar, klik nama Lembaga untuk daftar kerjanya; kartu domain di atas mengurutkan per domain.
           </span>
         </div>

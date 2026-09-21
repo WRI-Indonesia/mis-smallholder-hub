@@ -7,12 +7,12 @@ import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { HeatCell, HeatLegend } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
-import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, BAND_THRESHOLDS, domainScoreOf, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainScoreOf, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, bandLabel } from "@/lib/score-band-styles";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber, formatPct } from "@/lib/format";
 import { useMatrixRows, type MatrixSortKey } from "./matrix-rows";
-import { emptyRowsMessage, MatrixLimitToggle, MatrixSearch } from "./matrix-toolbar";
+import { emptyRowsMessage, MatrixLimitToggle, MatrixSearch, rowsSummary } from "./matrix-toolbar";
 
 /** Sel skor domain — heatmap solid (#352 putaran 4), tooltip terstruktur (#213). */
 function ScoreCell({ score, label, groupName }: { score: number; label: string; groupName: string }) {
@@ -77,7 +77,7 @@ export function AvailabilityMatrix({
             <Grid3x3 className="h-4 w-4 text-primary" /> Matriks per Lembaga
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            {formatNumber(rows.length)} Lembaga{m.critical > 0 ? ` · ${formatNumber(m.critical)} berskor kritis (<${BAND_THRESHOLDS.warn})` : ""} — warna sel mengikuti skor (merah → hijau);
+            {rowsSummary(rows.length, m.critical)} — warna sel mengikuti skor (merah → hijau);
             klik judul kolom untuk mengurutkan, klik nama Lembaga untuk rincian & daftar kerjanya.
           </span>
         </div>

@@ -45,8 +45,8 @@ export const BAND_THRESHOLDS = { warn: 50, good: 80, full: 100 } as const;
 
 /**
  * Band skor — satu sumber warna untuk card, bar chart, dan matriks.
- * Ambang mengikuti konvensi hijau/kuning/merah dashboard lain: 80–99 baik,
- * 50–79 perlu perhatian, <50 kritis. Skor 100 dibedakan sebagai band
+ * Ambang mengikuti konvensi hijau/kuning/merah dashboard lain: 80 – <100 baik,
+ * 50 – <80 perlu perhatian, <50 kritis. Skor 100 dibedakan sebagai band
  * tersendiri (lengkap penuh) — "sudah tuntas" harus terbaca berbeda dari
  * "sudah baik tapi masih ada yang kurang".
  */

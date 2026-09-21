@@ -223,11 +223,11 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
     const ringkasanRows = [
       { metrik: "Lembaga Petani", nilai: `${result.group.name}${result.group.code ? ` (${result.group.code})` : ""}` },
       { metrik: "Distrik", nilai: result.group.districtName },
-      { metrik: "Index Ketersediaan Data", nilai: `${result.healthScore}%` },
+      { metrik: "Index Ketersediaan Data", nilai: `${formatNumber(result.healthScore)}%` },
       { metrik: "Total Petani", nilai: result.totalFarmers },
       { metrik: "Total Temuan Anomali", nilai: result.totalAnomalies },
-      { metrik: `Skor Profil Lembaga Petani (bobot ${weightPct("profil")}%)`, nilai: `${result.profileScore}%` },
-      ...result.domains.map((d) => ({ metrik: `Skor ${d.label} (bobot ${weightPct(d.domain)}%)`, nilai: `${d.score}%` })),
+      { metrik: `Skor Profil Lembaga Petani (bobot ${weightPct("profil")}%)`, nilai: `${formatPct(result.profileScore)}%` },
+      ...result.domains.map((d) => ({ metrik: `Skor ${d.label} (bobot ${weightPct(d.domain)}%)`, nilai: `${formatPct(d.score)}%` })),
       { metrik: "Periode acuan kebaruan produksi", nilai: result.referencePeriod },
     ];
 
@@ -334,7 +334,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
             data: training.incompleteFarmers.map((f) => ({
               farmerId: f.farmerId,
               farmerName: f.farmerName,
-              coverage: `${f.doneCount}/${f.total} (${f.coveragePct}%)`,
+              coverage: `${f.doneCount}/${f.total} (${formatPct(f.coveragePct)}%)`,
               missing: f.missing.join(", "),
             })),
           },

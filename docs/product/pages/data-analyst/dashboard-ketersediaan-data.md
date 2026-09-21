@@ -57,7 +57,7 @@ Halaman: Ketersediaan Data — Semua Lembaga (/admin/data-analyst/data-availabil
   - Domain petani/lahan/pelatihan/produksi = rata-rata **tertimbang jumlah petani** per Lembaga (`Σ(skor × petani) / Σ petani`; fallback rata-rata sederhana bila Σ petani = 0).
   - Profil = rata-rata sederhana per Lembaga (satu profil per Lembaga, tak terkait ukuran).
   - Skor Keseluruhan = `DOMAIN_WEIGHTS` atas kelima skor portfolio itu.
-- **Band skor** (`scoreBand`, satu sumber warna untuk card/bar/matriks — dan sejak #352 juga DA-02 & kartu KPI Detail Lembaga): 100 lengkap penuh (emerald tua pekat — dibedakan dari "baik", selaras #194 di matriks Pelatihan), 80–99 baik (emerald), 50–79 perlu perhatian (amber), <50 kritis (rose pekat). Sel dibuat kontras antar-band, bukan pastel seragam.
+- **Band skor** (`scoreBand`, satu sumber warna untuk card/bar/matriks — dan sejak #352 juga DA-02 & kartu KPI Detail Lembaga): 100 lengkap penuh (emerald tua pekat — dibedakan dari "baik", selaras #194 di matriks Pelatihan), 80 – <100 baik (emerald), 50 – <80 perlu perhatian (amber), <50 kritis (rose pekat). Sel dibuat kontras antar-band, bukan pastel seragam.
 - Payload tanpa daftar petani per anomali (PII + ukuran) — `{key, label, count, entityCount, total, systemic}`; profil yang belum lengkap disintesis sebagai anomali `profil-tidak-lengkap` supaya Σ count panel = `totalAnomalies` DA-02. Anomali **sistemik** (#352 A3, `count = 1`) dipisah ke `topSystemicAnomalies` (Σ `entityCount`); invarian Σ count per entitas + Σ Lembaga terdampak sistemik = Σ `totalAnomalies` dijaga test.
 - **Cakupan modul** (#352 A1, informatif): `moduleCoverage[] = {key, covered, total, pct|null}` per Lembaga; portfolio `moduleCoverageTotals` = Σ covered / Σ total **hanya atas Lembaga yang modulnya berlaku** (`pct != null`); label/domain/rute perbaikan dicari client dari `MODULE_CATALOG`.
 
@@ -85,7 +85,7 @@ Halaman: Ketersediaan Data — Semua Lembaga (/admin/data-analyst/data-availabil
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Cincin Skor Keseluruhan | `ScoreGauge` 120 px | Angka bulat, warna band; tooltip: skor + temuan anomali; di sampingnya label band ("50–79 — perlu perhatian") dan "rata-rata tertimbang n Lembaga · n temuan"; 3 angka ringkas di kanan baris yang sama |
+| Cincin Skor Keseluruhan | `ScoreGauge` 120 px | Angka bulat, warna band; tooltip: skor + temuan anomali; di sampingnya label band ("50 – <80 — perlu perhatian") dan "rata-rata tertimbang n Lembaga · n temuan"; 3 angka ringkas di kanan baris yang sama |
 | Distribusi Lembaga per band | Stacked bar (`BAND_BAR`) urut kritis → lengkap | Lebar segmen ∝ jumlah Lembaga; angka di dalam segmen; klik segmen/legenda → `?band=` (segmen lain meredup, tombol "hapus filter band"); legenda band kosong dinonaktifkan; tooltip jumlah + persen |
 | Angka ringkas | 3 kotak (baris cincin) | Lembaga · Petani · Persil (irisan) |
 | Aksi lintas Lembaga | Kotak setinggi kolom kiri, daftar bernomor (maks 3) | `topSystemicAnomalies` atas irisan yang SAMA dengan panel Anomali (termasuk filter band): label (truncate) · "n · n Lembaga" · tautan menu pertama `fix` registri + kolom (rute lengkap & alternatif di `title`); catatan kaki satu baris "Kolom ≥ 95 % kosong — urusan unggah massal…" (+ "Mengikuti filter band") + "Panel Anomali →" |

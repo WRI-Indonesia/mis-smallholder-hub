@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { filterMatrixRows, LOWEST_N, sortKeyLabel, sortMatrixRows } from "@/app/(admin)/admin/data-analyst/data-availability/matrix-rows";
+import { canLimitRows, filterMatrixRows, isSearching, limitRows, LOWEST_N, sortKeyLabel, sortMatrixRows } from "@/app/(admin)/admin/data-analyst/data-availability/matrix-rows";
+import { emptyRowsMessage } from "@/app/(admin)/admin/data-analyst/data-availability/matrix-toolbar";
 import { BAND_LABEL, bandLabel } from "@/lib/score-band-styles";
 import { BAND_THRESHOLDS, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
@@ -81,7 +82,32 @@ describe("band: ambang & label satu sumber", () => {
     expect(scoreBand(BAND_THRESHOLDS.good)).toBe("good");
     expect(scoreBand(BAND_THRESHOLDS.full)).toBe("full");
     expect(bandLabel(51)).toBe(BAND_LABEL.warn);
+    expect(bandLabel(79.6)).toBe("50 – <80 — perlu perhatian");
+    expect(bandLabel(99.5)).toBe("80 – <100 — baik");
     expect(bandLabel(100)).toBe("100 — lengkap penuh");
     expect(bandLabel(8)).toBe("<50 — kritis");
+  });
+});
+
+describe("Ringkas vs pencarian (spasi saja = bukan pencarian)", () => {
+  const many = Array.from({ length: 12 }, (_, i) => entry({ id: `g${i}`, name: `L${i}` }));
+
+  it("isSearching men-trim; limitRows memotong hanya saat Ringkas aktif tanpa pencarian", () => {
+    expect(isSearching("  ")).toBe(false);
+    expect(isSearching(" a ")).toBe(true);
+    expect(limitRows(many, false, isSearching(" "))).toHaveLength(LOWEST_N);
+    expect(limitRows(many, false, isSearching("L1"))).toHaveLength(12);
+    expect(limitRows(many, true, false)).toHaveLength(12);
+  });
+
+  it("canLimitRows: tombol hanya bila > LOWEST_N dan tidak sedang mencari (spasi tidak menghilangkannya)", () => {
+    expect(canLimitRows(12, isSearching(" "))).toBe(true);
+    expect(canLimitRows(12, isSearching("x"))).toBe(false);
+    expect(canLimitRows(LOWEST_N, false)).toBe(false);
+  });
+
+  it("emptyRowsMessage: spasi saja → pesan filter, bukan pesan pencarian", () => {
+    expect(emptyRowsMessage("  ")).toBe("Tidak ada Lembaga Petani pada filter ini.");
+    expect(emptyRowsMessage(" zzz ")).toBe('Tidak ada Lembaga yang cocok dengan "zzz".');
   });
 });

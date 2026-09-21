@@ -43,6 +43,15 @@ export function sortKeyLabel(sortKey: MatrixSortKey): string {
 /** Batas tampilan "Ringkas": 10 baris/kartu pertama menurut urutan aktif. */
 export const LOWEST_N = 10;
 
+/** Spasi saja = bukan pencarian (selaras `filterMatrixRows` yang men-trim). */
+export const isSearching = (query: string) => query.trim().length > 0;
+
+/** Baris yang ditampilkan: semua bila "Tampilkan semua" atau sedang mencari, selainnya `LOWEST_N` pertama. */
+export const limitRows = <T,>(sorted: T[], showAll: boolean, searching: boolean): T[] => (showAll || searching ? sorted : sorted.slice(0, LOWEST_N));
+
+/** Toggle Ringkas hanya relevan tanpa pencarian dan bila ada yang bisa disembunyikan. */
+export const canLimitRows = (total: number, searching: boolean) => !searching && total > LOWEST_N;
+
 /**
  * State bersama heatmap & radar (review #352 putaran 4: sebelumnya disalin):
  * kotak cari, toggle Ringkas/semua, hasil urut+saring, jumlah tersembunyi,
@@ -51,21 +60,20 @@ export const LOWEST_N = 10;
 export function useMatrixRows(rows: AvailabilityGroupEntry[], sortKey: MatrixSortKey, sortAsc: boolean) {
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(true);
-  // Spasi saja = bukan pencarian (sama dengan `filterMatrixRows` yang men-trim).
-  const searching = query.trim().length > 0;
+  const searching = isSearching(query);
   const sorted = useMemo(() => sortMatrixRows(filterMatrixRows(rows, query), sortKey, sortAsc), [rows, query, sortKey, sortAsc]);
-  const limited = showAll || searching ? sorted : sorted.slice(0, LOWEST_N);
+  const limited = limitRows(sorted, showAll, searching);
   const critical = useMemo(() => bandDistribution(rows).bad, [rows]);
   return {
     query,
     setQuery,
+    searching,
     showAll,
     setShowAll,
     sorted,
     limited,
     hiddenCount: sorted.length - limited.length,
     critical,
-    /** Toggle Ringkas hanya relevan tanpa pencarian dan bila ada yang bisa disembunyikan. */
-    canLimit: !searching && sorted.length > LOWEST_N,
+    canLimit: canLimitRows(sorted.length, searching),
   };
 }

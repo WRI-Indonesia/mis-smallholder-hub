@@ -1,6 +1,6 @@
 // Skala warna kontinu untuk heatmap skor (#352 putaran 4, pilihan owner):
 // gradasi merah → kuning → hijau yang titik jangkarnya ditempatkan pada ambang
-// band `scoreBand` (<50 kritis · 50–79 perlu perhatian · 80–99 baik · 100 penuh),
+// band `scoreBand` (<50 kritis · 50 – <80 perlu perhatian · 80 – <100 baik · 100 penuh),
 // supaya legenda band di kartu/hero tetap "membaca" warna heatmap yang sama.
 // Skor 100 memakai hijau tua terpisah (bukan ujung gradasi) — "lengkap penuh"
 // adalah status, bukan sekadar nilai tertinggi.

@@ -41,16 +41,16 @@ function RadarLayers({
   onAxisClick?: (key: AvailabilityDomainKey) => void;
 }) {
   const values = AVAILABILITY_DOMAIN_KEYS.map((k) => scores[k]);
-  const outer = radarPoints(FULL, frame);
-  const poly = radarPoints(values, frame);
-  const labels = radarPoints(FULL, { ...frame, r: labelRadius });
+  const outer = radarPoints(FULL, frame, BAND_THRESHOLDS.full);
+  const poly = radarPoints(values, frame, BAND_THRESHOLDS.full);
+  const labels = radarPoints(FULL, { ...frame, r: labelRadius }, BAND_THRESHOLDS.full);
   const totalColor = rgbCss(heatRgb(total));
   return (
     <>
       {RINGS.map((ring) => (
         <polygon
           key={ring}
-          points={toPointsAttr(radarPoints(AVAILABILITY_DOMAIN_KEYS.map(() => ring), frame))}
+          points={toPointsAttr(radarPoints(AVAILABILITY_DOMAIN_KEYS.map(() => ring), frame, BAND_THRESHOLDS.full))}
           className="fill-none stroke-border"
           strokeWidth={ring === BAND_THRESHOLDS.full ? 1 : 0.75}
           strokeDasharray={ring === BAND_THRESHOLDS.full ? undefined : "2 2"}

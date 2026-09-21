@@ -4,7 +4,8 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
-import { LOWEST_N, sortKeyLabel, type MatrixSortKey } from "./matrix-rows";
+import { BAND_THRESHOLDS } from "@/lib/data-availability-aggregation";
+import { isSearching, LOWEST_N, sortKeyLabel, type MatrixSortKey } from "./matrix-rows";
 
 /** Kotak cari Lembaga / kode / distrik — sama di heatmap & radar. */
 export function MatrixSearch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -49,6 +50,10 @@ export function MatrixLimitToggle({
   );
 }
 
-/** Keadaan kosong bersama. */
+/** Keadaan kosong bersama (spasi saja = bukan pencarian, selaras `isSearching`). */
 export const emptyRowsMessage = (query: string) =>
-  query ? `Tidak ada Lembaga yang cocok dengan "${query}".` : "Tidak ada Lembaga Petani pada filter ini.";
+  isSearching(query) ? `Tidak ada Lembaga yang cocok dengan "${query.trim()}".` : "Tidak ada Lembaga Petani pada filter ini.";
+
+/** Ringkasan header: "{n} Lembaga · {k} berskor kritis (<50)" — satu sumber untuk heatmap & radar. */
+export const rowsSummary = (total: number, critical: number) =>
+  `${formatNumber(total)} Lembaga${critical > 0 ? ` · ${formatNumber(critical)} berskor kritis (<${BAND_THRESHOLDS.warn})` : ""}`;

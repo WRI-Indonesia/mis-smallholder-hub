@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HEAT_FULL, HEAT_GRADIENT_CSS, HEAT_STOPS, heatRgb, heatStyle, relativeLuminance } from "@/lib/score-heat";
+import { HEAT_FULL, HEAT_GRADIENT_CSS, HEAT_STOPS, HEAT_TEXT_LUMINANCE_THRESHOLD, heatRgb, heatStyle, relativeLuminance } from "@/lib/score-heat";
 
 /**
  * Skala warna heatmap DA-03 (#352 putaran 4): jangkar pada ambang band,
@@ -68,8 +68,8 @@ describe("relativeLuminance", () => {
   it("hitam 0, putih 1, hijau tua < ambang, kuning > ambang", () => {
     expect(relativeLuminance([0, 0, 0])).toBe(0);
     expect(relativeLuminance([255, 255, 255])).toBeCloseTo(1, 5);
-    expect(relativeLuminance(HEAT_FULL)).toBeLessThan(0.35);
-    expect(relativeLuminance([250, 204, 21])).toBeGreaterThan(0.35);
+    expect(relativeLuminance(HEAT_FULL)).toBeLessThan(HEAT_TEXT_LUMINANCE_THRESHOLD);
+    expect(relativeLuminance([250, 204, 21])).toBeGreaterThan(HEAT_TEXT_LUMINANCE_THRESHOLD);
   });
 });
 
