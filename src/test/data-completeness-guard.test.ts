@@ -12,20 +12,23 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
 const getAccessContext = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/access-context", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/access-context")>();
-  return {
-    getAccessContext,
-    farmerGroupAccessFilter: (access: { mode: string; ids: string[] }) =>
-      access.mode === "BY_FARMER_GROUP"
-        ? { id: { in: access.ids } }
-        : access.mode === "BY_DISTRICT"
-          ? { districtId: { in: access.ids } }
-          : {},
-    // Helper murni — pakai implementasi asli (cermin scope untuk kueri PostGIS mentah).
-    rawFarmerGroupScope: actual.rawFarmerGroupScope,
-  };
-});
+// `@/lib/access-context` menarik next-auth (tak ada `next/server` di env node),
+// jadi seluruh modul di-mock; `rawFarmerGroupScope` disalin apa adanya (murni).
+vi.mock("@/lib/access-context", () => ({
+  getAccessContext,
+  farmerGroupAccessFilter: (access: { mode: string; ids: string[] }) =>
+    access.mode === "BY_FARMER_GROUP"
+      ? { id: { in: access.ids } }
+      : access.mode === "BY_DISTRICT"
+        ? { districtId: { in: access.ids } }
+        : {},
+  rawFarmerGroupScope: (access: { mode: string; ids: string[] }, groupIds?: string[]) => {
+    const scopedGroups = access.mode === "BY_FARMER_GROUP" ? access.ids : undefined;
+    const ids =
+      groupIds && scopedGroups ? groupIds.filter((id) => scopedGroups.includes(id)) : (groupIds ?? scopedGroups);
+    return { groupIds: ids, districtIds: access.mode === "BY_DISTRICT" ? access.ids : undefined };
+  },
+}));
 
 const db = vi.hoisted(() => {
   const groupBy = () => vi.fn().mockResolvedValue([]);
