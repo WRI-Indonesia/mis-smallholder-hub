@@ -32,9 +32,8 @@ Halaman: Ketersediaan Data — Semua Lembaga (/admin/data-analyst/data-availabil
 │   ├── Bawaan 10 baris terendah + "Tampilkan semua (n) — m tersembunyi"; pencarian menampilkan semua yang cocok
 │   ├── Legenda band (sekali)
 │   └── Tampilan modul: Matriks cakupan modul (baris portfolio + kolom per modul, ✓/✗ tingkat Lembaga, "—" belum dimulai)
-└── Baris bawah
-    ├── Paling tertinggal per domain — 5 kolom kecil (Profil…Produksi), 5 Lembaga terendah + bar mini; Lembaga tanpa petani dikeluarkan
-    └── Panel Anomali Terbanyak (Per entitas · Kolom belum pernah diisi)
+├── Paling tertinggal per domain (penuh-lebar) — 5 kolom kecil (Profil…Produksi), sampai 5 Lembaga terendah < 100 % + distrik · petani + bar mini; Lembaga tanpa petani dikeluarkan
+└── Panel Anomali Terbanyak (penuh-lebar, dua seksi berdampingan: Per entitas · Kolom belum pernah diisi — 8 baris masing-masing)
 ```
 
 ## Atribut halaman
@@ -133,16 +132,17 @@ Klik kartu → `?urut=<domain>` (matriks diurut menaik pada domain itu, kartu be
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Heading kartu | "Paling tertinggal per domain" (ikon `ListOrdered`); sub: "5 Lembaga berskor terendah tiap domain … Lembaga tanpa petani tidak diikutkan" |
-| Kolom domain (5) | Kotak kecil | `domainLaggards(groups, key, 5)`: baris "{i}. {nama}" (deep link DA-02, `title` distrik + petani) · skor % warna band · `BandBar`; seri skor → petani terbanyak dulu |
-| Empty state | Teks | "Tidak ada Lembaga." |
+| Kolom domain (5) | Kotak kecil | `domainLaggards(groups, key, 5)` disaring skor < 100: baris "{i}. {nama}" (deep link DA-02) · skor % warna band · "{distrik} · {n} petani" · `BandBar`; seri skor → petani terbanyak dulu |
+| Empty state | Teks hijau | "Semua Lembaga sudah 100 %." |
 
 ## Panel Anomali Terbanyak (`AvailabilityAnomalyPanel`)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Heading kartu | "Anomali Terbanyak" (ikon `AlertTriangle` amber); sub: "Dijumlah lintas Lembaga pada irisan yang sedang tampil. Klik label → Lembaga terdampak terbanyak." |
+| Tata letak | Grid 2 kolom (md+) | Kedua bagian berdampingan, kartu penuh-lebar di bawah "Paling tertinggal per domain" |
 | Bagian "Per entitas — bisa dikejar per petani/persil" | Bar amber (maks 8) | `topAnomalies` (anomali non-sistemik, Σ `count`); label = deep link `?lembaga=<Lembaga terdampak terbanyak>`; tooltip: rute perbaikan (registri) + daftar ≤ 6 Lembaga terbanyak; "di {n} Lembaga" |
-| Bagian "Kolom belum pernah diisi — sistemik (≥ 95 % kosong)" | Bar slate (maks 6) | `topSystemicAnomalies` (Σ `entityCount`, Lembaga terdampak = Lembaga yang kolom itu praktis kosong) — ikon `Columns3` |
+| Bagian "Kolom belum pernah diisi — sistemik (≥ 95 % kosong)" | Bar slate (maks 8) | `topSystemicAnomalies` (Σ `entityCount`, Lembaga terdampak = Lembaga yang kolom itu praktis kosong) — ikon `Columns3` |
 | Link tindak lanjut | Link | "Buka Ketersediaan Data — Per Lembaga untuk daftar petaninya →" |
 | Empty state | Teks | Per bagian: "Tidak ada anomali per entitas pada filter ini. 🎉" / "Tidak ada kolom yang kosong sistemik pada filter ini." |
 

@@ -304,12 +304,10 @@ export function DataAvailabilityClient({
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <AvailabilityDomainLaggards groups={groups} />
-        </div>
-        <AvailabilityAnomalyPanel groups={groups} />
-      </div>
+      {/* Baris bawah ditumpuk penuh-lebar: kartu tertinggal pendek, panel anomali
+          tinggi — berdampingan menyisakan 2/3 baris kosong (masukan owner). */}
+      <AvailabilityDomainLaggards groups={groups} />
+      <AvailabilityAnomalyPanel groups={groups} />
     </div>
   );
 }

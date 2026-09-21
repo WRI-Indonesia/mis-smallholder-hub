@@ -33,13 +33,15 @@ export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: Availabi
           <ListOrdered className="h-4 w-4 text-primary" /> Paling tertinggal per domain
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          {n} Lembaga berskor terendah tiap domain pada irisan yang tampil — daftar kunjungan per urusan. Lembaga tanpa petani tidak diikutkan.
+          Sampai {n} Lembaga berskor terendah (di bawah 100 %) tiap domain pada irisan yang tampil — daftar kunjungan per urusan. Lembaga tanpa
+          petani tidak diikutkan.
         </p>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {DOMAIN_ORDER.map((key) => {
-            const rows = domainLaggards(groups, key, n);
+            // Lembaga yang sudah 100 % bukan "tertinggal" — disembunyikan agar daftar tidak berisi noise.
+            const rows = domainLaggards(groups, key, n).filter((r) => r.score < 100);
             const Icon = ICON[key];
             return (
               <div key={key} className="rounded-lg border p-3">
@@ -47,21 +49,24 @@ export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: Availabi
                   <Icon className="h-3.5 w-3.5" /> {AVAILABILITY_DOMAIN_LABELS[key]}
                 </div>
                 {rows.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Tidak ada Lembaga.</p>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400">Semua Lembaga sudah 100 %.</p>
                 ) : (
-                  <ol className="space-y-2">
+                  <ol className="space-y-2.5">
                     {rows.map((r, i) => (
                       <li key={r.id} className="text-xs">
                         <div className="flex items-baseline justify-between gap-2">
                           <Link
                             href={`/admin/data-analyst/data-completeness?lembaga=${r.id}`}
                             className="min-w-0 truncate font-medium hover:text-primary hover:underline"
-                            title={`${r.name} · ${r.districtName} · ${formatNumber(r.totalFarmers)} petani`}
+                            title={`${r.name} · ${r.districtName}`}
                           >
                             <span className="mr-1 text-muted-foreground">{i + 1}.</span>
                             {r.name}
                           </Link>
                           <span className={cn("shrink-0 font-semibold tabular-nums", BAND_TEXT[scoreBand(r.score)])}>{Math.round(r.score)}%</span>
+                        </div>
+                        <div className="truncate text-[11px] text-muted-foreground">
+                          {r.districtName} · {formatNumber(r.totalFarmers)} petani
                         </div>
                         <BandBar pct={r.score} className="mt-1 h-1.5" />
                       </li>

@@ -55,12 +55,12 @@ function AnomalyRow({ a, max, unit, chip }: { a: AvailabilityAnomalySummary; max
  */
 export function AvailabilityAnomalyPanel({ groups }: { groups: AvailabilityGroupEntry[] }) {
   const perEntity = topAnomalies(groups, 8);
-  const systemic = topSystemicAnomalies(groups, 6);
+  const systemic = topSystemicAnomalies(groups, 8);
   const maxEntity = perEntity.length > 0 ? perEntity[0].count : 0;
   const maxSystemic = systemic.length > 0 ? systemic[0].count : 0;
 
   return (
-    <Card className="h-full flex flex-col border border-border/60 shadow-sm">
+    <Card className="border border-border/60 shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-amber-500" /> Anomali Terbanyak
@@ -69,38 +69,41 @@ export function AvailabilityAnomalyPanel({ groups }: { groups: AvailabilityGroup
           Dijumlah lintas Lembaga pada irisan yang sedang tampil. Klik label → Lembaga terdampak terbanyak.
         </p>
       </CardHeader>
-      <CardContent className="flex-1 space-y-5">
-        <section>
-          <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Per entitas — bisa dikejar per petani/persil</h4>
-          {perEntity.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Tidak ada anomali per entitas pada filter ini. 🎉</p>
-          ) : (
-            <div className="space-y-2.5">
-              {perEntity.map((a) => (
-                <AnomalyRow key={a.key} a={a} max={maxEntity} unit="Temuan" chip="bg-amber-400" />
-              ))}
-            </div>
-          )}
-        </section>
+      <CardContent>
+        {/* Dua seksi berdampingan (penuh-lebar) — bukan satu kolom tinggi. */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <section>
+            <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Per entitas — bisa dikejar per petani/persil</h4>
+            {perEntity.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Tidak ada anomali per entitas pada filter ini. 🎉</p>
+            ) : (
+              <div className="space-y-2.5">
+                {perEntity.map((a) => (
+                  <AnomalyRow key={a.key} a={a} max={maxEntity} unit="Temuan" chip="bg-amber-400" />
+                ))}
+              </div>
+            )}
+          </section>
 
-        <section>
-          <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-            <Columns3 className="h-3.5 w-3.5" /> Kolom belum pernah diisi — sistemik (≥ 95 % kosong)
-          </h4>
-          {systemic.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Tidak ada kolom yang kosong sistemik pada filter ini.</p>
-          ) : (
-            <div className="space-y-2.5">
-              {systemic.map((a) => (
-                <AnomalyRow key={a.key} a={a} max={maxSystemic} unit="Entitas kosong" chip="bg-slate-400" />
-              ))}
-            </div>
-          )}
-        </section>
+          <section>
+            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+              <Columns3 className="h-3.5 w-3.5" /> Kolom belum pernah diisi — sistemik (≥ 95 % kosong)
+            </h4>
+            {systemic.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Tidak ada kolom yang kosong sistemik pada filter ini.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {systemic.map((a) => (
+                  <AnomalyRow key={a.key} a={a} max={maxSystemic} unit="Entitas kosong" chip="bg-slate-400" />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
 
         <Link
           href="/admin/data-analyst/data-completeness"
-          className="inline-block text-xs font-medium text-primary hover:underline"
+          className="mt-4 inline-block text-xs font-medium text-primary hover:underline"
         >
           Buka Ketersediaan Data — Per Lembaga untuk daftar petaninya →
         </Link>
