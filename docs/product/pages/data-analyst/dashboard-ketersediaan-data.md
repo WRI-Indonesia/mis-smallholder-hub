@@ -113,7 +113,7 @@ Pilihan owner dari tiga opsi (bar anggaran skor · bar data per sel · heatmap p
 | Kolom "Lembaga Petani" | Kolom tabel (sortable) | Nama = **deep link** `/admin/data-analyst/data-completeness?lembaga={id}` berwarna primary + ikon `ExternalLink`, di-truncate dengan `title`; "{kode} · {distrik}" kecil di baris yang sama; baris ber-hover |
 | Kolom "Skor Total" | Kolom tabel (sortable, bawaan menaik) | Tepat setelah nama; `HeatCell emphasis` (tebal, ring) berwarna `heatStyle(healthScore)`; tooltip band + temuan |
 | Kolom "Petani (n)" | Kolom tabel (sortable) | Jumlah petani aktif |
-| Kolom domain (5) | Kolom tabel (sortable) | Profil, Petani, Lahan, Pelatihan, Produksi — `HeatCell` solid: latar `heatRgb(skor)` (gradasi merah-700 → amber → lime → emerald-500; 100 = emerald-800), teks putih/gelap dipilih dari luminansi WCAG (ambang 0,35), angka 1 desimal tanpa "%"; tooltip band |
+| Kolom domain (5) | Kolom tabel (sortable) | Profil, Petani, Lahan, Pelatihan, Produksi — `HeatCell` solid: latar `heatRgb(skor)` (gradasi merah-700 → amber → lime → emerald-500; 100 = emerald-800), teks putih/hitam dipilih dari luminansi WCAG (ambang 0,18 — kontras ≥ 4,5:1 di seluruh ramp, review putaran 4–5), angka 1 desimal tanpa "%"; tooltip band |
 | Batas baris | Toggle | **Bawaan semua baris** (nilai heatmap ada pada gambaran utuhnya) + "Ringkas — 10 baris pertama saja (urut … menaik/menurun)" / "Tampilkan semua ({n}) — {m} tersembunyi"; saat mencari, semua yang cocok tampil |
 | Legenda | `HeatLegend` | Ramp gradasi 0 → 99 dengan garis ambang 50 & 80 dan label segmen kritis · perhatian · baik, swatch terpisah "100 — lengkap penuh" |
 | Empty state | Teks | "Tidak ada Lembaga Petani pada filter ini." / "Tidak ada Lembaga yang cocok dengan \"{q}\"." |

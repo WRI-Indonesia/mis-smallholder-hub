@@ -10,7 +10,7 @@ import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-too
 import { HeatCell, HeatLegend } from "@/components/shared/score-visuals";
 import { scoreBand } from "@/lib/data-availability-aggregation";
 import { MODULE_CATALOG, MODULE_DOMAIN_LABELS } from "@/lib/data-completeness-registry";
-import { BAND_BAR, BAND_LEGEND } from "@/lib/score-band-styles";
+import { BAND_BAR, BAND_LABEL } from "@/lib/score-band-styles";
 import type {
   AvailabilityGroupEntry,
   AvailabilityModuleCoverage,
@@ -231,7 +231,7 @@ function ModuleCell({
       <TooltipTrigger render={<HeatCell score={cell.pct} emphasis={bold} />}>
         {yesNo ? (cell.covered ? "✓" : "✗") : formatPct(cell.pct)}
       </TooltipTrigger>
-      <StatTooltipContent title={label} subtitle={groupName} footer={`Band: ${BAND_LEGEND.find((s) => s.band === band)?.label ?? ""}`}>
+      <StatTooltipContent title={label} subtitle={groupName} footer={`Band: ${BAND_LABEL[band]}`}>
         <StatTooltipRow chip={BAND_BAR[band]} label="Terisi" value={`${formatNumber(cell.covered)} / ${formatNumber(cell.total)}`} pct={cell.pct} />
       </StatTooltipContent>
     </Tooltip>

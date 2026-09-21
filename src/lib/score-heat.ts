@@ -52,12 +52,13 @@ export function relativeLuminance([r, g, b]: Rgb): number {
 }
 
 /**
- * Ambang: latar lebih terang dari ini → teks gelap, selainnya putih. 0,2 =
- * titik seimbang rasio kontras putih vs gelap (≈4,2:1) pada ramp ini; dengan
- * 0,35 angka di sel oranye (skor ≈22–42, tepat rentang kritis) berteks putih
- * hanya 2,6–4,0:1 (review #352 putaran 4).
+ * Ambang: latar lebih terang dari ini → teks hitam, selainnya putih. Dengan
+ * teks hitam murni dan ambang 0,18, kontras minimum di sepanjang ramp 0–99
+ * = 4,6:1 (≥ 4,5:1 WCAG AA teks normal — angka sel 11 px bukan teks besar);
+ * ambang 0,35 (semula) menyisakan 2,6–4,0:1 di sel oranye skor ≈22–42
+ * (review #352 putaran 4–5).
  */
-export const HEAT_TEXT_LUMINANCE_THRESHOLD = 0.2;
+export const HEAT_TEXT_LUMINANCE_THRESHOLD = 0.18;
 
 export const rgbCss = ([r, g, b]: Rgb) => `rgb(${r} ${g} ${b})`;
 
@@ -66,7 +67,7 @@ export function heatStyle(score: number): { backgroundColor: string; color: stri
   const rgb = heatRgb(score);
   return {
     backgroundColor: rgbCss(rgb),
-    color: relativeLuminance(rgb) > HEAT_TEXT_LUMINANCE_THRESHOLD ? "rgb(28 25 23)" : "rgb(255 255 255)",
+    color: relativeLuminance(rgb) > HEAT_TEXT_LUMINANCE_THRESHOLD ? "rgb(0 0 0)" : "rgb(255 255 255)",
   };
 }
 

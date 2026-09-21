@@ -51,7 +51,7 @@ import {
   SYSTEMIC_THRESHOLD,
 } from "@/lib/data-completeness-registry";
 import { maskIfNik } from "@/lib/mask";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatPct } from "@/lib/format";
 import type {
   AnomalyItem,
   CheckKind,
@@ -251,7 +251,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
           jenis: KIND_META.modul.label,
           bermasalah: m.total - m.covered,
           total: m.total,
-          pct: m.pct == null ? "belum ada di Lembaga ini" : `${m.pct.toFixed(1)}%`,
+          pct: m.pct == null ? "belum ada di Lembaga ini" : `${formatPct(m.pct)}%`,
           fix: fixText(m.fix),
         })),
       ...result.domains.flatMap((d) =>
@@ -261,7 +261,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
           jenis: KIND_META[c.kind].label + (c.systemic ? " · sistemik" : ""),
           bermasalah: c.flagged,
           total: c.total,
-          pct: !c.applicable ? "belum ada di Lembaga ini" : c.total > 0 ? `${(((c.total - c.flagged) / c.total) * 100).toFixed(1)}%` : "—",
+          pct: !c.applicable ? "belum ada di Lembaga ini" : c.total > 0 ? `${formatPct(((c.total - c.flagged) / c.total) * 100)}%` : "—",
           fix: fixText(c.fix),
         }))
       ),
@@ -521,7 +521,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
                         key={d}
                         chip={BAND_BAR[scoreBand(domainScore(d))]}
                         label={`${MODULE_DOMAIN_LABELS[d]} × ${weightPct(d)}%`}
-                        value={`${domainScore(d).toFixed(1)}%`}
+                        value={`${formatPct(domainScore(d))}%`}
                       />
                     ))}
                   </StatTooltipContent>
@@ -712,7 +712,7 @@ function SectionShell({
                     <ScoreBadge score={score} />
                   </TooltipTrigger>
                   <StatTooltipContent title={`${title} · bobot ${weightPct} % dari Index`} subtitle={formula} footer={`Band: ${bandLabel(score)}`}>
-                    <StatTooltipRow chip={BAND_BAR[scoreBand(score)]} label="Skor domain" value={`${score.toFixed(1)}%`} />
+                    <StatTooltipRow chip={BAND_BAR[scoreBand(score)]} label="Skor domain" value={`${formatPct(score)}%`} />
                   </StatTooltipContent>
                 </Tooltip>
                 <ChevronDown className={cn("h-4 w-4 transition-transform", open ? "rotate-180" : "")} />

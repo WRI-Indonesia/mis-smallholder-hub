@@ -30,7 +30,7 @@ function entry(overrides: Partial<AvailabilityGroupEntry> = {}): AvailabilityGro
 const rows = [
   entry({ id: "a", name: "Beta", code: "ISH-1401-02", districtName: "Kampar", totalFarmers: 300, healthScore: 51, domainScores: { petani: 62, lahan: 60, pelatihan: 54, produksi: 0 } }),
   entry({ id: "b", name: "alpha", code: "ISH-1408-07", districtName: "Siak", totalFarmers: 20, healthScore: 88, profileScore: 100, domainScores: { petani: 90, lahan: 80, pelatihan: 85, produksi: 90 } }),
-  entry({ id: "c", name: "Gamma", code: "ISH-1406-10", districtName: "Rokan Hulu", totalFarmers: 0, healthScore: 8, profileScore: 83, domainScores: { petani: 0, lahan: 0, pelatihan: 0, produksi: 0 } }),
+  entry({ id: "c", name: "Gamma", code: "ISH-1406-10", districtName: "Rokan Hulu", totalFarmers: 0, healthScore: 8, profileScore: 83, domainScores: { petani: 0, lahan: 0, pelatihan: 0, produksi: 5 } }),
 ];
 
 describe("filterMatrixRows", () => {
@@ -58,7 +58,7 @@ describe("sortMatrixRows", () => {
   it("jumlah petani & domain (profil memakai profileScore)", () => {
     expect(sortMatrixRows(rows, "totalFarmers", true).map((r) => r.id)).toEqual(["c", "b", "a"]);
     expect(sortMatrixRows(rows, "profil", true).map((r) => r.id)).toEqual(["a", "c", "b"]);
-    expect(sortMatrixRows(rows, "produksi", false).map((r) => r.id)).toEqual(["b", "a", "c"]);
+    expect(sortMatrixRows(rows, "produksi", false).map((r) => r.id)).toEqual(["b", "c", "a"]);
   });
 });
 

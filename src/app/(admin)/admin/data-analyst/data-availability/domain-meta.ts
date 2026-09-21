@@ -24,7 +24,6 @@ export const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
   SWADAYA: "Swadaya",
 };
 
-
 /** Lima skor domain sebuah Lembaga sebagai peta — input `RadarChart` bersama. */
 export const entryDomainScores = (e: AvailabilityGroupEntry): Record<AvailabilityDomainKey, number> =>
   Object.fromEntries(AVAILABILITY_DOMAIN_KEYS.map((k) => [k, domainScoreOf(e, k)])) as Record<AvailabilityDomainKey, number>;

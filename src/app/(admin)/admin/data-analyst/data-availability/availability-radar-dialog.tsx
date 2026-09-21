@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ClipboardList, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,42 +21,36 @@ import { CATEGORY_LABELS, DOMAIN_ICONS, entryDomainScores } from "./domain-meta"
  * terbaca sebagai jumlahnya dan poin yang hilang terlihat per domain) +
  * tautan daftar kerja & Detail Lembaga. Footer: ◀ ▶ mengikuti urutan aktif
  * grid (juga tombol panah kiri/kanan) supaya bisa "membalik" radar besar
- * satu per satu tanpa menutup modal.
+ * satu per satu tanpa menutup modal. Induk memegang `open` terpisah dari
+ * Lembaga terpilih (`index`), jadi saat menutup isinya tetap terpasang selama
+ * animasi keluar Base UI (100 ms) — tanpa state tambahan di sini (review #352
+ * putaran 4–5).
  */
 export function RadarDetailDialog({
   entries,
   index,
+  open,
   onIndexChange,
   onClose,
 }: {
   /** Daftar pada urutan aktif (setelah cari & urut). */
   entries: AvailabilityGroupEntry[];
-  /** Indeks Lembaga yang terbuka; null = tertutup. */
-  index: number | null;
+  /** Indeks Lembaga terpilih pada `entries`; -1 = tidak ada di daftar. */
+  index: number;
+  open: boolean;
   onIndexChange: (next: number) => void;
   onClose: () => void;
 }) {
-  const open = index != null && index < entries.length;
-  // Isi terakhir dipertahankan saat menutup: Base UI masih memainkan animasi
-  // keluar (100 ms) setelah `index` jadi null — tanpa ini popup kosong berkedip
-  // (review #352 putaran 4).
-  // Pola "simpan info render sebelumnya" (setState saat render, bukan di effect).
-  const [shown, setShown] = useState<{ entry: AvailabilityGroupEntry; index: number } | null>(null);
-  if (open && (shown?.entry !== entries[index] || shown.index !== index)) {
-    setShown({ entry: entries[index], index });
-  }
-  const entry = shown?.entry;
-  const shownIndex = shown?.index ?? 0;
-  const hasPrev = open && index > 0;
-  const hasNext = open && index < entries.length - 1;
+  const entry = index >= 0 ? entries[index] : undefined;
+  const hasPrev = index > 0;
+  const hasNext = index >= 0 && index < entries.length - 1;
   const go = (delta: number) => {
-    if (!open) return;
     const next = index + delta;
-    if (next >= 0 && next < entries.length) onIndexChange(next);
+    if (index >= 0 && next >= 0 && next < entries.length) onIndexChange(next);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open && entry != null} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
         className="sm:max-w-4xl"
         onKeyDown={(e) => {
@@ -154,7 +147,7 @@ export function RadarDetailDialog({
 
             <DialogFooter className="flex-row items-center justify-between sm:justify-between">
               <span className="text-xs text-muted-foreground">
-                {formatNumber(shownIndex + 1)} / {formatNumber(entries.length)} pada urutan aktif · tombol ← → untuk berpindah
+                {formatNumber(index + 1)} / {formatNumber(entries.length)} pada urutan aktif · tombol ← → untuk berpindah
               </span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => go(-1)} disabled={!hasPrev} className="gap-1">

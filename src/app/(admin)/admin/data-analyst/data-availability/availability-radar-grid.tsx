@@ -10,7 +10,7 @@ import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { HeatCell, HeatLegend } from "@/components/shared/score-visuals";
 import { RadarChart } from "@/components/shared/radar-chart";
-import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainScoreOf, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, BAND_THRESHOLDS, domainScoreOf, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, bandLabel } from "@/lib/score-band-styles";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber, formatPct } from "@/lib/format";
@@ -93,8 +93,13 @@ export function AvailabilityRadarGrid({
   headerControl?: React.ReactNode;
 }) {
   const m = useMatrixRows(rows, sortKey, sortAsc);
-  /** Indeks kartu yang dibuka di modal (pada `sorted`, bukan `limited`, agar ◀ ▶ menjangkau semua). */
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // Modal: Lembaga terpilih disimpan sebagai id (bukan indeks) supaya tetap
+  // menunjuk Lembaga yang sama bila urutan/irisan berubah, dan `open` terpisah
+  // agar isi tetap terpasang selama animasi tutup. Indeks pada `sorted` (bukan
+  // `limited`) agar ◀ ▶ menjangkau semua kartu.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const openIndex = openId == null ? -1 : m.sorted.findIndex((e) => e.id === openId);
   const DirIcon = sortAsc ? ArrowDownAZ : ArrowUpZA;
 
   return (
@@ -105,7 +110,7 @@ export function AvailabilityRadarGrid({
             <Pentagon className="h-4 w-4 text-primary" /> Radar per Lembaga
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            {formatNumber(rows.length)} Lembaga{m.critical > 0 ? ` · ${formatNumber(m.critical)} berskor kritis (<50)` : ""} — pentagon penuh = lengkap, gepeng ke satu
+            {formatNumber(rows.length)} Lembaga{m.critical > 0 ? ` · ${formatNumber(m.critical)} berskor kritis (<${BAND_THRESHOLDS.warn})` : ""} — pentagon penuh = lengkap, gepeng ke satu
             sisi = domain itu kosong. Klik grafik untuk memperbesar, klik nama Lembaga untuk daftar kerjanya; kartu domain di atas mengurutkan per domain.
           </span>
         </div>
@@ -145,15 +150,24 @@ export function AvailabilityRadarGrid({
           <div className="flex min-h-[160px] items-center justify-center text-sm text-muted-foreground">{emptyRowsMessage(m.query)}</div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {m.limited.map((e, i) => (
-              <RadarCard key={e.id} entry={e} onOpen={() => setOpenIndex(i)} />
+            {m.limited.map((e) => (
+              <RadarCard
+                key={e.id}
+                entry={e}
+                onOpen={() => {
+                  setOpenId(e.id);
+                  setOpen(true);
+                }}
+              />
             ))}
           </div>
         )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <HeatLegend label="Skala warna">
-            <span>isian = Skor Total · titik sudut = skor domain · cincin = ambang 50 / 80 / 100</span>
+            <span>
+              isian = Skor Total · titik sudut = skor domain · cincin = ambang {BAND_THRESHOLDS.warn} / {BAND_THRESHOLDS.good} / {BAND_THRESHOLDS.full}
+            </span>
           </HeatLegend>
           {m.canLimit && (
             <MatrixLimitToggle
@@ -168,7 +182,13 @@ export function AvailabilityRadarGrid({
           )}
         </div>
       </CardContent>
-      <RadarDetailDialog entries={m.sorted} index={openIndex} onIndexChange={setOpenIndex} onClose={() => setOpenIndex(null)} />
+      <RadarDetailDialog
+        entries={m.sorted}
+        index={openIndex}
+        open={open}
+        onIndexChange={(i) => setOpenId(m.sorted[i]?.id ?? null)}
+        onClose={() => setOpen(false)}
+      />
     </Card>
   );
 }

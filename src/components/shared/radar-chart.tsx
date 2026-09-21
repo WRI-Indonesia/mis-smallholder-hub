@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 /** Cincin pada ambang band (`BAND_THRESHOLDS`): 50 · 80 · 100. */
 const RINGS = [BAND_THRESHOLDS.warn, BAND_THRESHOLDS.good, BAND_THRESHOLDS.full];
-const FULL = AVAILABILITY_DOMAIN_KEYS.map(() => 100);
+const FULL = AVAILABILITY_DOMAIN_KEYS.map(() => BAND_THRESHOLDS.full);
 
 export type RadarScores = Record<AvailabilityDomainKey, number>;
 
@@ -52,8 +52,8 @@ function RadarLayers({
           key={ring}
           points={toPointsAttr(radarPoints(AVAILABILITY_DOMAIN_KEYS.map(() => ring), frame))}
           className="fill-none stroke-border"
-          strokeWidth={ring === 100 ? 1 : 0.75}
-          strokeDasharray={ring === 100 ? undefined : "2 2"}
+          strokeWidth={ring === BAND_THRESHOLDS.full ? 1 : 0.75}
+          strokeDasharray={ring === BAND_THRESHOLDS.full ? undefined : "2 2"}
         />
       ))}
       {outer.map(([x, y], i) => (

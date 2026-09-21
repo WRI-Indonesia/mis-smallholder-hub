@@ -51,8 +51,11 @@ export const LOWEST_N = 10;
 export function useMatrixRows(rows: AvailabilityGroupEntry[], sortKey: MatrixSortKey, sortAsc: boolean) {
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(true);
+  // Spasi saja = bukan pencarian (sama dengan `filterMatrixRows` yang men-trim).
+  const searching = query.trim().length > 0;
   const sorted = useMemo(() => sortMatrixRows(filterMatrixRows(rows, query), sortKey, sortAsc), [rows, query, sortKey, sortAsc]);
-  const limited = showAll || query ? sorted : sorted.slice(0, LOWEST_N);
+  const limited = showAll || searching ? sorted : sorted.slice(0, LOWEST_N);
+  const critical = useMemo(() => bandDistribution(rows).bad, [rows]);
   return {
     query,
     setQuery,
@@ -61,8 +64,8 @@ export function useMatrixRows(rows: AvailabilityGroupEntry[], sortKey: MatrixSor
     sorted,
     limited,
     hiddenCount: sorted.length - limited.length,
-    critical: bandDistribution(rows).bad,
+    critical,
     /** Toggle Ringkas hanya relevan tanpa pencarian dan bila ada yang bisa disembunyikan. */
-    canLimit: !query && sorted.length > LOWEST_N,
+    canLimit: !searching && sorted.length > LOWEST_N,
   };
 }

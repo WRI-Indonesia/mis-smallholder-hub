@@ -5,7 +5,7 @@ import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { BandBar } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
-import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainCriticalCount, scoreBand } from "@/lib/data-availability-aggregation";
+import { BAND_THRESHOLDS, AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainCriticalCount, scoreBand } from "@/lib/data-availability-aggregation";
 import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
 import { BAND_BAR, BAND_TEXT } from "@/lib/score-band-styles";
 import type { AvailabilityDomainKey, AvailabilityGroupEntry, AvailabilityTotals } from "@/types/dashboard";
@@ -93,7 +93,7 @@ export function AvailabilityDomainCards({
               footer="Klik untuk mengurutkan matriks pada domain ini"
             >
               <StatTooltipRow chip={BAND_BAR[band]} label="Skor domain" value={`${formatPct(score)}%`} />
-              <StatTooltipRow chip="bg-rose-500" label="Lembaga kritis (<50)" value={critical} />
+              <StatTooltipRow chip="bg-rose-500" label={`Lembaga kritis (<${BAND_THRESHOLDS.warn})`} value={critical} />
             </StatTooltipContent>
           </Tooltip>
         );
