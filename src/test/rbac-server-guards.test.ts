@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { normalizeRolePermissionUpdates } from "@/lib/role-permission-updates";
 
 /**
  * Guard/scope logic yang menutup celah RBAC audit P0 (#125).
@@ -64,24 +65,45 @@ describe("RBAC scope — filter petani by-id (getFarmerDetail/updateFarmer/toggl
   });
 });
 
-describe("RBAC guard — permission SUPERADMIN terkunci (setRolePermissions mengabaikan entri SUPERADMIN)", () => {
-  // Mirror dari guard EDIT + pengabaian entri SUPERADMIN di role-permission.ts.
-  function canToggle(hasEdit: boolean, role: string): { ok: boolean; reason?: string } {
-    if (!hasEdit) return { ok: false, reason: "no-permission" };
-    if (role === "SUPERADMIN") return { ok: false, reason: "superadmin-locked" };
-    return { ok: true };
+describe("RBAC guard — setRolePermissions: entri SUPERADMIN diabaikan, dedup entri terakhir menang", () => {
+  // Guard EDIT tetap mirror (hasPermission menarik next-auth); normalisasi payload
+  // diuji lewat fungsi aslinya (#353 — sebelumnya mirror toggle per sel yang sudah dihapus).
+  function canEdit(hasEdit: boolean): { ok: boolean; reason?: string } {
+    return hasEdit ? { ok: true } : { ok: false, reason: "no-permission" };
   }
 
   it("tanpa izin EDIT settings-roles → ditolak", () => {
-    expect(canToggle(false, "ADMIN")).toEqual({ ok: false, reason: "no-permission" });
+    expect(canEdit(false)).toEqual({ ok: false, reason: "no-permission" });
   });
 
-  it("dengan izin tapi target SUPERADMIN → ditolak", () => {
-    expect(canToggle(true, "SUPERADMIN")).toEqual({ ok: false, reason: "superadmin-locked" });
+  it("entri SUPERADMIN dibuang, entri role lain tetap", () => {
+    const valid = normalizeRolePermissionUpdates([
+      { role: "SUPERADMIN", menuKey: "settings-roles", permission: "EDIT", granted: false },
+      { role: "OPERATOR", menuKey: "master-data-farmers", permission: "VIEW", granted: true },
+    ]);
+    expect(valid).toEqual([
+      { role: "OPERATOR", menuKey: "master-data-farmers", permission: "VIEW", granted: true },
+    ]);
   });
 
-  it("dengan izin dan target non-SUPERADMIN → diizinkan", () => {
-    expect(canToggle(true, "OPERATOR")).toEqual({ ok: true });
+  it("payload hanya SUPERADMIN → kosong (action mengembalikan count 0 tanpa menyentuh DB)", () => {
+    expect(
+      normalizeRolePermissionUpdates([
+        { role: "SUPERADMIN", menuKey: "settings-roles", permission: "VIEW", granted: true },
+      ])
+    ).toEqual([]);
+  });
+
+  it("dedup per (role, menuKey, permission) — entri terakhir menang", () => {
+    const valid = normalizeRolePermissionUpdates([
+      { role: "ADMIN", menuKey: "report-farmer", permission: "EXPORT", granted: true },
+      { role: "ADMIN", menuKey: "report-farmer", permission: "EXPORT", granted: false },
+      { role: "ADMIN", menuKey: "report-farmer", permission: "PRINT", granted: true },
+    ]);
+    expect(valid).toEqual([
+      { role: "ADMIN", menuKey: "report-farmer", permission: "EXPORT", granted: false },
+      { role: "ADMIN", menuKey: "report-farmer", permission: "PRINT", granted: true },
+    ]);
   });
 });
 

@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import type { Role, PermissionLevel } from "@prisma/client";
 import type { ActionResult } from "@/types/action-result";
+import { normalizeRolePermissionUpdates, type RolePermissionUpdate } from "@/lib/role-permission-updates";
 
 export async function getRolePermissions() {
   if (!(await hasPermission("settings-roles", "VIEW"))) {
@@ -18,12 +19,7 @@ export async function getRolePermissions() {
   });
 }
 
-export interface RolePermissionUpdate {
-  role: Role;
-  menuKey: string;
-  permission: PermissionLevel;
-  granted: boolean;
-}
+export type { RolePermissionUpdate };
 
 /**
  * Set banyak permission ke keadaan eksplisit dalam satu round-trip (transaksi).
@@ -39,12 +35,7 @@ export async function setRolePermissions(
 
   const session = await auth();
   const userId = session?.user?.id ?? null;
-  // Dedup per (role, menuKey, permission) — entri terakhir menang; SUPERADMIN diabaikan.
-  const byKey = new Map<string, RolePermissionUpdate>();
-  for (const u of updates) {
-    if (u.role !== "SUPERADMIN") byKey.set(`${u.role}|${u.menuKey}|${u.permission}`, u);
-  }
-  const valid = [...byKey.values()];
+  const valid = normalizeRolePermissionUpdates(updates);
   if (valid.length === 0) return { success: true, data: { count: 0 } };
 
   // Batch (#246): satu findMany + updateMany aktif/nonaktif + createMany — bukan
