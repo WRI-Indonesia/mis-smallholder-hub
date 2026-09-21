@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
 
 interface ProductionRecord {
   id: string;
@@ -67,7 +68,7 @@ export function ProductionListClient({
   const [farmerGroupFilter, setFarmerGroupFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("");
   const [hasParcelFilter, setHasParcelFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const router = useRouter();
 
   const filtered = initialRecords.filter((r) => {
@@ -231,16 +232,7 @@ export function ProductionListClient({
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (
-        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="active">Aktif</SelectItem>
-            <SelectItem value="inactive">Nonaktif</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
     </div>
   );

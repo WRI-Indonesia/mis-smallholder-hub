@@ -33,6 +33,7 @@ import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
 import { getMasterDataParcelExportData } from "@/server/actions/land-parcel-export";
 import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
+import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
 
 interface Props {
   initialParcels: unknown[];
@@ -54,7 +55,7 @@ export function ParcelListClient({
 }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   // NKT (#328): all · affected (termasuk+terdampak) · INCLUDED/AFFECTED/NOT_AFFECTED · none (belum dinilai).
   const [nktFilter, setNktFilter] = useState("all");
   // Patok (#329): all · with · without.
@@ -330,17 +331,7 @@ export function ParcelListClient({
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (
-        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
-          <SelectTrigger className="w-[140px] h-9">
-            {/* Label, bukan nilai mentah "active" (base-ui menampilkan value bila tanpa function-child). */}
-            <SelectValue>{(v: string) => (v === "all" ? "Semua Status" : v === "inactive" ? "Nonaktif" : "Aktif")}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="active">Aktif</SelectItem>
-            <SelectItem value="inactive">Nonaktif</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
     </div>
   );

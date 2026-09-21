@@ -23,24 +23,16 @@ Font UI utama (`body`) memakai family **"Acumin Pro Condensed"** dengan fallback
 **Arial → Helvetica → sans-serif** (rekomendasi WRI). Bila file hilang, UI jatuh
 ke fallback tsb, bukan font generik acak.
 
-## Tersedia (opsional, belum di-`@font-face`) — Acumin Pro (lebar normal)
+## Acumin Pro (lebar normal) — hanya TTF untuk embed PDF
 
-| File | Weight | Format |
-|------|--------|--------|
-| `acumin-pro-regular.woff2` | 400 | woff2 |
-| `acumin-pro-regular.woff`  | 400 | woff 1.0 |
-| `acumin-pro-bold.woff`     | 700 | woff 1.0 |
-| `acumin-pro-italic.woff`   | 400 italic | woff 1.0 |
-| `acumin-pro-bold-italic.woff` | 700 italic | woff 1.0 |
-
-Varian **lebar normal** (bukan condensed) — WRI memakainya untuk header/H1.
-Belum dirujuk CSS; tambahkan blok `@font-face` family "Acumin Pro" bila ingin
-dipakai untuk heading, dengan woff2 lebih dulu lalu woff sebagai fallback:
-
-```css
-src: url("/fonts/acumin-pro-regular.woff2") format("woff2"),
-     url("/fonts/acumin-pro-regular.woff") format("woff");
-```
+Varian **lebar normal** (bukan condensed) hanya disimpan sebagai `.ttf` untuk
+**embed jsPDF** (lihat "File turunan" di bawah). Lima berkas web-nya
+(`acumin-pro-{regular.woff2,regular.woff,bold.woff,italic.woff,bold-italic.woff}`,
+236 KB) **dihapus 2026-09-21 (#353)** — sejak ditambahkan tidak pernah dirujuk
+`@font-face` mana pun, sementara repo ini publik (lisensi, lihat di bawah).
+Bila kelak heading perlu family "Acumin Pro", ambil ulang dari
+<https://brand.wri.org/fonts/> dan daftarkan `@font-face` di `globals.css`
+(woff2 lebih dulu, nama berkas kebab-case).
 
 > Nama berkas **wajib kebab-case tanpa spasi**. Berkas yang mengandung spasi
 > memaksa URL ter-encode (`/fonts/Acumin%20Pro.woff2`) — mudah salah ketik dan
@@ -51,7 +43,7 @@ src: url("/fonts/acumin-pro-regular.woff2") format("woff2"),
 > dan distribusikan lewat jalur lain.
 
 File turunan:
-- `acumin-pro-{regular,bold,italic}.ttf` — hasil konversi WOFF (outline CFF/OTTO) → TrueType via fonttools/cu2qu, khusus untuk **embed jsPDF** (laporan Fire Alert #266); jsPDF tidak membaca WOFF/OTF-CFF.
+- `acumin-pro-{regular,bold,italic}.ttf` — hasil konversi WOFF (outline CFF/OTTO) → TrueType via fonttools/cu2qu, khusus untuk **embed jsPDF** (laporan Fire Alert #266); jsPDF tidak membaca WOFF/OTF-CFF. Dimuat `fire-alert-client.tsx` → `fire-map-print.ts`; gagal fetch → fallback helvetica.
 - `Acumin-*.otf` — **dihapus 2026-08-20 (#273)**. Salinan sumber desktop (CFF) yang tidak dirujuk kode
   sama sekali, sementara repo ini **publik** — lihat catatan lisensi di atas. Bila perlu konversi ulang,
   ambil `.otf` sumber dari Adobe Fonts / <https://brand.wri.org/fonts/>, jangan commit kembali ke repo.

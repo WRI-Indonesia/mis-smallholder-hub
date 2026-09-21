@@ -63,14 +63,6 @@ classDiagram
         F
     }
 
-    class ActivityStatus {
-        <<reserved — belum dipakai model manapun>>
-        DRAFT
-        PENDING_APPROVAL
-        APPROVED
-        REJECTED
-    }
-
     class TrainingCategory {
         PAKET_1_BMP_PC_RSPO_NKT
         PAKET_2_MK
@@ -305,6 +297,7 @@ Farmer (1) ─→ (N) TrainingParticipant
 - **Relasi baca**: `landParcelId` (FK ke `LandParcel.id`) adalah **satu-satunya jalur baca** — semua query pohon (detail lahan, overlay peta, agregat count) lewat FK ini. Set aktif per lahan berevisi per-set (upload ulang menonaktifkan set lama, `revision + 1`).
 - **`parcelId` = kolom arsip/audit** (keputusan #241): menyimpan kunci bisnis lahan (`LandParcel.parcelId`) saat upload sebagai **jangkar pemulihan manual** — lahan berevisi mendapat `id` baru dan pohon aktif di-repoint saat revisi; bila repoint terlewat/salah, keterkaitan masih bisa direkonstruksi dari kolom ini. **Tidak ada jalur baca aplikasi yang memakai/fallback ke kolom ini** — itu disengaja, bukan utang; jangan menambah jalur baca berbasis `parcelId` tanpa keputusan baru (parcelId hanya unik per petani, lookup global bisa ambigu).
 - **Audit sumber**: `sourceFile` (nama ZIP asal), `modelVersion`, `source` (auto/moved/added/verified).
+- **Tanpa `surveyedAt`** — kolom `surveyed_at` ("tanggal ekspor/survei sumber") dihapus 2026-09-21 (#353): kontrak DBF shapefile pohon tidak punya atribut tanggal, pengunggah tidak memetakannya, 0/286 terisi di prod. Jejak waktu set pohon = `createdAt` + `sourceFile`.
 
 </details>
 

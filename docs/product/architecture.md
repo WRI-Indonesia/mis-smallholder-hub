@@ -114,8 +114,8 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|
 | ✅ [Ringkasan Petani](./pages/data-analyst/ringkasan-petani.md) | `data-analyst-farmer-summary` | DA-01 (#103) | Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel |
-| ✅ [Analisa Ketersediaan Data](./pages/data-analyst/analisa-ketersediaan-data.md) | `data-analyst-data-completeness` | DA-02 (#118, #122) | Index Ketersediaan Data + 5 section anomali (Profil KT, Petani, Lahan, Pelatihan, Produksi) + Excel multi-sheet |
-| ✅ [Dashboard Ketersediaan Data](./pages/data-analyst/dashboard-ketersediaan-data.md) | `data-analyst-data-availability` | DA-03 (#193) | Roll-up skor DA-02 lintas Lembaga: 6 KPI + matriks Lembaga×domain + bar chart terendah-dulu + panel anomali; live query, tanpa DONOR |
+| ✅ [Ketersediaan Data — Per Lembaga](./pages/data-analyst/analisa-ketersediaan-data.md) | `data-analyst-data-completeness` | DA-02 (#118, #122, #352) | Index Ketersediaan Data (registri check, bobot tampil) + cakupan modul informatif + 5 section anomali (Profil KT, Petani, Lahan, Pelatihan, Produksi) berdaftar kerja bertautan & anomali sistemik dilipat + Excel multi-sheet; `?lembaga=` |
+| ✅ [Ketersediaan Data — Semua Lembaga](./pages/data-analyst/dashboard-ketersediaan-data.md) | `data-analyst-data-availability` | DA-03 (#193, #352) | Roll-up skor DA-02 lintas Lembaga: 6 KPI + matriks Lembaga×domain / Lembaga×modul + bar chart terendah-dulu + panel anomali (per entitas vs sistemik) + Excel; deep link ke DA-02; live query, tanpa DONOR |
 
 ### 📈 Report — `/admin/report`
 

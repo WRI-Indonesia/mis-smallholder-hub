@@ -161,17 +161,6 @@
   }
 }
 
-@layer utilities {
-  .text-xxs {
-    font-size: 0.625rem; /* 10px */
-    line-height: 0.875rem;
-  }
-  .text-huge {
-    font-size: 4rem; /* 64px */
-    line-height: 1.1;
-  }
-}
-
 /* Maplibre Popup Global Style Overrides */
 .maplibregl-popup-content {
   padding: 0 !important;

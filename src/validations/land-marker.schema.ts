@@ -73,6 +73,4 @@ export const landMarkerUploadRowSchema = z.object({
 });
 export const landMarkerUploadBatchSchema = z.array(landMarkerUploadRowSchema).min(1).max(20000);
 
-export type CreateLandMarkerInput = z.infer<typeof createLandMarkerSchema>;
-export type UpdateLandMarkerInput = z.infer<typeof updateLandMarkerSchema>;
 export type LandMarkerUploadRow = z.infer<typeof landMarkerUploadRowSchema>;

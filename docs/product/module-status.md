@@ -49,8 +49,8 @@
 | HELP-01 | Bantuan | Panduan in-app: **indeks → bab → topik** (satu topik = satu halaman, `/admin/help/[chapter]/[topic]`), sidebar tree + **pencarian** client-side, tombol topik sebelumnya/berikutnya. **Konten Markdown** di `src/content/help/**.md` (editable tanpa menyentuh kode; frontmatter title/icon/intro), parser subset tanpa dependency + dukungan **gambar, video, sematan YouTube/Vimeo, dan aset S3 privat (`s3://key` → presigned per-request, #185)**; menu top-level, 5 role VIEW. 6 bab / 12 topik: istilah domain, akun, hak akses, cara memakai Bantuan (#207), Master Data, Bulk Upload, Dashboard, Peta, Data Analyst, Report, Tools, FAQ (#182 #183 #184) |
 | HELP-02 | Bantuan: Tutorial per Tugas | Tiga lapis (tutorial/konsep/referensi); 28 tutorial + 4 referensi dengan **dua tingkat kedalaman dari satu sumber** (baris `+`); toggle Ringkas/Detail & lipat daftar isi tanpa JS; personalisasi per izin; bantuan kontekstual `HelpHint` di 29 halaman — termasuk 2 halaman peta full-screen, di header panel filter via prop `helpSlot` (#207); +`u-4` unggah pohon (#238) |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
-| DA-02 | Analisa Ketersediaan Data | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193 |
-| DA-03 | Dashboard Ketersediaan Data | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks, bar chart, panel anomali); live query; tanpa DONOR (#193) |
+| DA-02 | Ketersediaan Data — Per Lembaga | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193; #352: registri check (tempat lahir, KT, blok, tipe grup, tahun berdiri; tier 1/3 tahun tanam/status/blok), cakupan modul informatif, anomali sistemik dilipat, daftar kerja bertautan + Perbaiki lewat, `?lembaga=` & analisa otomatis |
+| DA-03 | Ketersediaan Data — Semua Lembaga | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks inti / modul, bar chart, panel anomali per entitas vs sistemik, Excel); deep link ke DA-02; live query; tanpa DONOR (#193, #352) |
  
 **Total Tests**: **49 files / 787 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
 
@@ -114,8 +114,9 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **sate
 | Report Lahan (#177 #179 #180) | report-land-parcel.test.ts, report-land-parcel-pdf.test.ts, report-land-parcel-xlsx.test.ts | 33 | ✅ |
 | Dashboard Pelatihan (DASH-06) | dashboard-training.test.ts | 33 | ✅ |
 | Monev BMP (DASH-08, #344/#346) | bmp-assessment.test.ts · dashboard-bmp-monev.test.ts · bmp-assessment-guard.test.ts · bmp-survey-form.test.ts · bmp-assessment-detail-guard.test.ts | 24 · 11 · 16 · 10 · 8 | ✅ |
-| Data Completeness (DA-02) | data-completeness.test.ts | 33 | ✅ |
-| Dashboard Ketersediaan Data (DA-03) | dashboard-data-availability.test.ts | 21 | ✅ |
+| Data Completeness (DA-02) | data-completeness.test.ts | 48 | ✅ |
+| Dashboard Ketersediaan Data (DA-03) | dashboard-data-availability.test.ts | 26 | ✅ |
+| Guard action Ketersediaan Data (#352) | data-completeness-guard.test.ts | 6 | ✅ |
 | Training | training-activity.test.ts, training-participant.test.ts | 29 | ✅ |
 | Menu (incl. tree 3-level #187) | menu-action.test.ts, menu-filter.test.ts, menu-tree.test.ts | 29 | ✅ |
 | Performance | perf.test.ts | 23 | ✅ |

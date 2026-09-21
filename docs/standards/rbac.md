@@ -126,7 +126,7 @@ Untuk melakukan override permission menu per user (grant/revoke):
 ### Role & Permission Matrix UI
 
 Untuk mengelola permission per role (matriks role × menu × 6 izin di Settings — header ikon per izin, grup Data ┊ Keluaran, preset baris via dropdown `ListChecks`, toggle satu kolom via klik ikon header, hover highlight silang):
-- **Server Actions** — di `src/server/actions/role-permission.ts`: `getRolePermissions`, `toggleRolePermission` (satu sel), dan `setRolePermissions(updates[])` — set banyak permission ke keadaan eksplisit dalam **satu transaksi** untuk aksi massal (toggle satu baris penuh, kaskade induk → anak).
+- **Server Actions** — di `src/server/actions/role-permission.ts`: `getRolePermissions` dan `setRolePermissions(updates[])` — set satu atau banyak permission ke keadaan eksplisit dalam **satu transaksi** (satu sel, satu baris penuh, kaskade induk → anak); `toggleRolePermission` per sel dihapus #353 (tak terpakai sejak #187).
 - **SUPERADMIN dikecualikan dari matriks** (keputusan governance): kolom yang tampil/diedit hanya `EDITABLE_ROLES = ROLES.filter((r) => r !== "SUPERADMIN")` (`role-matrix-client.tsx`), dan `setRolePermissions` mengabaikan entri role SUPERADMIN — SUPERADMIN bypass RBAC sehingga permission-nya tidak perlu (dan tidak boleh) diatur dari UI.
 
 ### Hierarchical Menu Management (3-Level Support)

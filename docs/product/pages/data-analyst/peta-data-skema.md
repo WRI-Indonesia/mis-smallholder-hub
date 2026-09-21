@@ -13,7 +13,7 @@ Dari tiga lapis standar, halaman ini **hanya memakai lapis pertama** (`requirePe
 | Lapis | Status | Alasan |
 |---|---|---|
 | Menu permission | dipakai | `requirePermission("data-analyst-data-map")` di page + `hasPermission` di tiap action |
-| Access context | **sengaja tidak dipakai** | Yang ditampilkan bentuk & keterisian *skema* secara nasional, bukan baris milik wilayah tertentu; menyaring 22 entitas heterogen ke satu scope tidak punya arti yang konsisten |
+| Access context | **sengaja tidak dipakai** | Yang ditampilkan bentuk & keterisian *skema* secara nasional, bukan baris milik wilayah tertentu; menyaring 40 entitas heterogen (angka per 2026-09-21; artefak `build:schema`) ke satu scope tidak punya arti yang konsisten |
 | Soft delete | dipakai | Hitungan baris & keterisian memakai `isActive: true` bila entitasnya punya kolom itu |
 
 Konsekuensi lapis kedua: angka di halaman ini bersifat **nasional**, sehingga menu ini hanya pantas untuk peran non-wilayah. Yang menjaganya adalah izin menu induk, bukan ketiadaan baris di sub-menu ini (#262). Catatan yang sama ada di kepala `src/server/actions/data-map.ts` dan `scripts/local/other/seed-data-map-menu.ts`.

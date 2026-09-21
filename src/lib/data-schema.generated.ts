@@ -6735,18 +6735,6 @@ export const DATA_SCHEMA: SchemaMap = {
           "relationFields": []
         },
         {
-          "name": "surveyedAt",
-          "type": "DateTime",
-          "kind": "scalar",
-          "isRequired": false,
-          "isList": false,
-          "isId": false,
-          "isUnique": false,
-          "dbName": "surveyed_at",
-          "relationName": null,
-          "relationFields": []
-        },
-        {
           "name": "sourceFile",
           "type": "String",
           "kind": "scalar",
@@ -6831,7 +6819,7 @@ export const DATA_SCHEMA: SchemaMap = {
           "relationFields": []
         }
       ],
-      "scalarCount": 19,
+      "scalarCount": 18,
       "compoundUnique": [],
       "indexes": [
         [
@@ -8176,16 +8164,6 @@ export const DATA_SCHEMA: SchemaMap = {
     }
   ],
   "enums": [
-    {
-      "name": "ActivityStatus",
-      "values": [
-        "DRAFT",
-        "PENDING_APPROVAL",
-        "APPROVED",
-        "REJECTED"
-      ],
-      "domain": "config"
-    },
     {
       "name": "AdminBoundaryLevel",
       "values": [

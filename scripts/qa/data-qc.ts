@@ -20,7 +20,7 @@ type Row = Record<string, unknown>;
 type Expect = string | number | null | ((v: string, rows: Row[]) => boolean);
 interface Check {
   id: string;
-  section: "A" | "B" | "C" | "D" | "E";
+  section: "A" | "B" | "C" | "D" | "E" | "F";
   purpose: string;
   sql: string;
   /** Kolom yang ditampilkan sebagai "aktual" (bawaan: seluruh kolom baris pertama digabung " · "). */
@@ -33,7 +33,7 @@ interface Check {
 
 const args = process.argv.slice(2);
 const opt = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
-const sections = (opt("--section") ?? "A,B,C,D,E").split(",").map((s) => s.trim().toUpperCase());
+const sections = (opt("--section") ?? "A,B,C,D,E,F").split(",").map((s) => s.trim().toUpperCase());
 const parcelId = opt("--parcel") ?? null;
 
 function dbLabel(url: string | undefined): string {
@@ -51,6 +51,13 @@ const MIGRATIONS = [
 ];
 /** v0.36.0 — Monev BMP (#344, #346). */
 const MIGRATIONS_MONEV = ["20260918120000_bmp_assessment", "20260920100000_bmp_assessment_unique_active", "20260920120000_bmp_indicator_detail"];
+/** Rilis setelah v0.36.0 — #353 bagian E (skema) + #352 P4 (menu); deploy = #357. */
+const MIGRATIONS_353E = ["20260921120000_drop_activity_status_tree_surveyed_at"];
+/** Label & order menu Ketersediaan Data dari `prisma/seeds/data/menu.csv` (#352 P4) — DB yang belum di-seed tampil ✗ di F3. */
+const MENU_352 = [
+  { key: "data-analyst-data-availability", title: "Ketersediaan Data — Semua Lembaga", order: 2 },
+  { key: "data-analyst-data-completeness", title: "Ketersediaan Data — Per Lembaga", order: 3 },
+];
 const joinRow = (rows: Row[]) => (rows[0] ? Object.values(rows[0]).map((v) => String(v)).join(" · ") : "(tidak ada baris)");
 
 const CHECKS: Check[] = [
@@ -182,6 +189,24 @@ const CHECKS: Check[] = [
     sql: `select (select count(*) from tbl_bmp_assessment where is_active)::int as a, (select count(distinct assessment_id) from tbl_bmp_assessment_detail where is_active)::int as d, (select count(*) from tbl_bmp_group_assessment where is_active)::int as g, (select count(*) from tbl_bmp_assessment where is_active and (score < 0 or score > 3))::int as oor`,
     pick: (r) => `${r[0]?.a} · ${r[0]?.d} · ${r[0]?.g} · ${r[0]?.oor} di luar 0–3`, expect: null, expectLabel: "prod: 0 sebelum import UI; mis-dev 188 · 184 · 8 · 0",
   },
+  // ── F: rilis setelah v0.36.0 — #353 E (DROP enum + kolom) & #352 P4 (menu) ──
+  {
+    id: "F1", section: "F", purpose: "migrasi #353 E applied (drop ActivityStatus + tbl_tree.surveyed_at)",
+    sql: `select count(*)::int as n from _prisma_migrations where migration_name = any($1::text[]) and finished_at is not null`,
+    expect: "1", expectLabel: "1 (sesudah) · 0 (sebelum)",
+  },
+  {
+    id: "F2", section: "F", purpose: "enum ActivityStatus & kolom tbl_tree.surveyed_at tidak ada lagi",
+    sql: `select (select count(*) from pg_type where typname = 'ActivityStatus')::int as e, (select count(*) from information_schema.columns where table_name = 'tbl_tree' and column_name = 'surveyed_at')::int as c`,
+    pick: (r) => `enum ${r[0]?.e} · kolom ${r[0]?.c}`, expect: (_v, rows) => Number(rows[0]?.e) === 0 && Number(rows[0]?.c) === 0, expectLabel: "enum 0 · kolom 0",
+  },
+  {
+    id: "F3", section: "F", purpose: "menu Ketersediaan Data: label & order = menu.csv (#352 P4; ✗ = seed-menu-only belum dijalankan)",
+    sql: `select key, title, "order" from tbl_menu_item where key = any($1::text[]) order by "order"`,
+    pick: (r) => r.map((x) => `${x.title}:${x.order}`).join(" · ") || "(tidak ada)",
+    expect: (_v, rows) => MENU_352.every((m) => rows.some((x) => x.key === m.key && x.title === m.title && Number(x.order) === m.order)),
+    expectLabel: MENU_352.map((m) => `${m.title}:${m.order}`).join(" · "),
+  },
 ];
 
 async function main() {
@@ -199,7 +224,8 @@ async function main() {
       let rows: Row[] = [];
       let actual: string;
       try {
-        const res = await pool.query(c.sql, c.needsParcel ? [parcelId] : c.id === "A1" ? [MIGRATIONS] : c.id === "E1" ? [MIGRATIONS_MONEV] : []);
+        const params = c.needsParcel ? [parcelId] : c.id === "A1" ? [MIGRATIONS] : c.id === "E1" ? [MIGRATIONS_MONEV] : c.id === "F1" ? [MIGRATIONS_353E] : c.id === "F3" ? [MENU_352.map((m) => m.key)] : [];
+        const res = await pool.query(c.sql, params);
         rows = res.rows as Row[];
         actual = c.pick ? c.pick(rows) : joinRow(rows);
       } catch (e) {

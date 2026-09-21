@@ -123,7 +123,7 @@ export async function getUntrainedFarmers(
   // Server Action = endpoint HTTP: nilai bisa datang di luar UI. Tipe TypeScript
   // tidak menjaga runtime, dan nilai ngawur akan menembus ke Prisma sebagai
   // enum/Date tak valid (500). Dijaga di sini — bukan Zod, mengikuti konvensi
-  // repo untuk read action berparameter skalar (lih. `getFarmerById`).
+  // repo untuk read action berparameter skalar (lih. `getFarmerDetail`).
   if (packageCode !== "ANY" && !TRAINING_PACKAGE_ORDER.includes(packageCode)) {
     throw new Error("Paket pelatihan tidak dikenal");
   }

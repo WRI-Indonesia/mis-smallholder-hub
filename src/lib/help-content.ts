@@ -94,6 +94,7 @@ import rDaftarPetani from "@/content/help/referensi/r-1-daftar-petani.md";
 import rDaftarLahan from "@/content/help/referensi/r-2-daftar-lahan.md";
 import rDaftarPelatihan from "@/content/help/referensi/r-3-daftar-pelatihan.md";
 import rDaftarProduksi from "@/content/help/referensi/r-4-daftar-produksi.md";
+import rKetersediaanData from "@/content/help/referensi/r-5-ketersediaan-data.md";
 
 type IconType = React.ComponentType<{ className?: string }>;
 
@@ -274,6 +275,7 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "daftar-lahan", source: rDaftarLahan },
       { id: "daftar-pelatihan", source: rDaftarPelatihan },
       { id: "daftar-produksi", source: rDaftarProduksi },
+      { id: "ketersediaan-data-skor", source: rKetersediaanData },
     ],
   },
   {

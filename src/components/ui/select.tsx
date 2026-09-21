@@ -6,7 +6,45 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+/**
+ * Kumpulkan `{ value, label }` dari elemen `SelectItem` di bawah `children`
+ * (menembus `SelectContent`/`SelectGroup`/fragment/array). Dipakai `Select`
+ * untuk menurunkan `items` otomatis: tanpa `items`, `SelectValue` base-ui
+ * menampilkan `String(value)` mentah di pemicu ("active", "M", cuid, "_empty")
+ * — bug yang berulang per halaman (#350). Menurunkannya di wrapper menutup
+ * seluruh kelas itu, termasuk Select yang ditulis gaya shadcn/Radix kelak.
+ */
+export function collectSelectItems(node: React.ReactNode, out: { value: unknown; label: React.ReactNode }[]) {
+  React.Children.forEach(node, (child) => {
+    if (!React.isValidElement(child)) return
+    const props = child.props as { value?: unknown; children?: React.ReactNode }
+    if (child.type === SelectItem) {
+      out.push({ value: props.value, label: props.children })
+      return
+    }
+    if (props.children != null) collectSelectItems(props.children, out)
+  })
+}
+
+function Select<Value, Multiple extends boolean | undefined = false>({
+  items,
+  children,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  // Sengaja tanpa useMemo: `children` berganti identitas tiap render, dan
+  // menelusuri belasan elemen lebih murah daripada perbandingan dependensinya.
+  let derived = items
+  if (derived === undefined) {
+    const out: { value: unknown; label: React.ReactNode }[] = []
+    collectSelectItems(children, out)
+    if (out.length) derived = out
+  }
+  return (
+    <SelectPrimitive.Root items={derived} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (

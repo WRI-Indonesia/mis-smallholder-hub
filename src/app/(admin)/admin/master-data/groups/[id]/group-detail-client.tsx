@@ -27,6 +27,8 @@ import type { DistributionMapParcel } from "@/components/shared/parcels-distribu
 import type { MarkerPoint } from "@/lib/land-marker-query";
 import { formatNumber } from "@/lib/format";
 import { isNktAffected } from "@/lib/land-parcel-satellite-format";
+import { scoreBand } from "@/lib/data-availability-aggregation";
+import { BAND_TEXT, bandLabel } from "@/lib/score-band-styles";
 import { toast } from "sonner";
 import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
 import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-export";
@@ -74,7 +76,7 @@ interface GroupRow {
 interface Props {
   group: GroupRow;
   detail: FarmerGroupDetailData;
-  completeness: { healthScore: number; totalAnomalies: number };
+  completeness: { healthScore: number };
   mapParcels: DistributionMapParcel[];
   /** Patok batas Lembaga (#331) — titik di peta sebaran + KPI kondisi. */
   markerPoints: MarkerPoint[];
@@ -122,12 +124,15 @@ function SummaryCard({
   value,
   sub,
   href,
+  valueClassName,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   value: string;
   sub?: React.ReactNode;
   href?: string;
+  /** Warna nilai, mis. band skor Ketersediaan Data (#352 B4). */
+  valueClassName?: string;
 }) {
   const body = (
     <CardContent className="p-4">
@@ -137,7 +142,7 @@ function SummaryCard({
         </p>
         <Icon className="h-4 w-4 shrink-0 text-primary" />
       </div>
-      <h3 className="text-xl font-bold mt-1.5 tabular-nums">{value}</h3>
+      <h3 className={`text-xl font-bold mt-1.5 tabular-nums ${valueClassName ?? ""}`}>{value}</h3>
       {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
     </CardContent>
   );
@@ -345,12 +350,14 @@ export function GroupDetailClient({
               : "Belum ada data"
           }
         />
+        {/* Deep link ke DA-02 dengan Lembaga ini terpilih; warna = band skor (#352 B4). */}
         <SummaryCard
           icon={ClipboardCheck}
           title="Kelengkapan Data"
           value={`${Math.round(completeness.healthScore)}%`}
-          sub={`${formatNumber(completeness.totalAnomalies)} anomali · lihat analisa →`}
-          href="/admin/data-analyst/data-completeness"
+          valueClassName={BAND_TEXT[scoreBand(completeness.healthScore)]}
+          sub={`${bandLabel(completeness.healthScore)} · lihat analisa →`}
+          href={`/admin/data-analyst/data-completeness?lembaga=${group.id}`}
         />
       </div>
 

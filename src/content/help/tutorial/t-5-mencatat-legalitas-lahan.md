@@ -11,7 +11,7 @@ goal: Satu lahan punya catatan legalitas yang lengkap — surat kepemilikan, STD
 
 ## Sebelum mulai
 
-Untuk **banyak lahan sekaligus**, pakai Bulk Upload → Lahan → tab **Detail Lahan (Excel)**. Halaman ini untuk **satu lahan**: melengkapi yang kurang, membetulkan yang salah, atau mendaftarkan **program** (demplot PBU) — program memang hanya bisa dicatat dari sini.
+Untuk **banyak lahan sekaligus**, pakai Bulk Upload → Upload Data Lahan → tab **Detail Lahan (Excel)**. Halaman ini untuk **satu lahan**: melengkapi yang kurang, membetulkan yang salah, atau mendaftarkan **program** (demplot PBU) — program memang hanya bisa dicatat dari sini.
 
 + Semua catatan ini menempel pada *identitas* lahan, bukan pada satu versi poligon. Kalau poligonnya kelak direvisi lewat unggah shapefile, catatannya tetap ikut.
 

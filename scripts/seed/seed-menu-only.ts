@@ -7,8 +7,9 @@
  *
  * Menulis DB, jadi mengikuti pakem yang sama dengan dua skrip seed lainnya:
  * mencetak DB efektif lebih dulu dan **tidak menulis apa pun tanpa `--apply`**.
- * Berbeda dari keduanya, seeder menu/RBAC tak bisa mem-preview perubahan —
- * dry-run di sini hanya menyatakan tujuan dan DB yang akan disentuh.
+ * Dry-run mencetak DIFF menu (dibuat / diperbarui: kolom lama → baru) supaya
+ * perubahan label/order (mis. #352 P4) terlihat sebelum menulis ke prod;
+ * RBAC tetap hanya dinyatakan (upsert `update: {}` = tidak mengubah yang ada).
  *
  * Jalankan (dry-run default, tulis dengan --apply):
  *   npx dotenv -e .env -- npx tsx scripts/seed/seed-menu-only.ts
@@ -19,7 +20,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
-import { seedMenu } from "../../prisma/seeds/seed-menu";
+import { diffMenuSeed, seedMenu } from "../../prisma/seeds/seed-menu";
 import { seedRolePermissions } from "../../prisma/seeds/seed-role-permissions";
 
 const APPLY = process.argv.includes("--apply");
@@ -40,22 +41,26 @@ async function main() {
     `Mode       : ${APPLY ? "APPLY (menulis DB)" : "DRY-RUN (tanpa menulis; tambah --apply untuk menulis)"}\n`
   );
 
-  if (!APPLY) {
-    console.log("Akan meng-upsert seluruh baris menu + role-permission dari");
-    console.log("prisma/seeds/data/{menu,role-permissions}.csv ke DB di atas.");
-    // `seedRolePermissions` memakai upsert dengan `update: {}`, sehingga baris
-    // yang sengaja DIHAPUS admin akan hidup kembali — pemberian akses diam-diam
-    // bila skrip ini dijalankan ke prod tanpa disadari.
-    console.log("Catatan: baris permission yang sebelumnya dihapus admin akan DIPULIHKAN.\n");
-    console.log("DRY-RUN selesai. Jalankan ulang dengan --apply untuk menulis.");
-    return;
-  }
-
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });
 
   try {
+    if (!APPLY) {
+      console.log("Akan meng-upsert seluruh baris menu + role-permission dari");
+      console.log("prisma/seeds/data/{menu,role-permissions}.csv ke DB di atas.\n");
+      const diff = await diffMenuSeed(prisma);
+      console.log(`--- Menu (diff, baca-saja) --- ${diff.create.length} dibuat · ${diff.update.length} diperbarui · ${diff.unchanged} sama`);
+      for (const r of diff.create) console.log(`  + ${r.key} — "${r.title}" (${r.parentKey ?? "induk"} · order ${r.order})`);
+      for (const u of diff.update) console.log(`  ~ ${u.key}: ${u.changes.join(" · ")}`);
+      // `seedRolePermissions` memakai upsert dengan `update: {}`, sehingga baris
+      // yang sengaja DIHAPUS admin akan hidup kembali — pemberian akses diam-diam
+      // bila skrip ini dijalankan ke prod tanpa disadari.
+      console.log("\nCatatan: baris permission yang sebelumnya dihapus admin akan DIPULIHKAN (cek `npm run rbac:compare`).");
+      console.log("DRY-RUN selesai. Jalankan ulang dengan --apply untuk menulis.");
+      return;
+    }
+
     console.log("--- Menu ---");
     await seedMenu(prisma);
 

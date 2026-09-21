@@ -13,7 +13,7 @@
 
 1. **Pick Issue** — Ambil GitHub Issue yang sudah di-approve
 2. **Implement** — Kerjakan **hanya** scope issue
-3. **QA Lokal** — `npm run lint`, `npm run build`, dan `npm test` (lihat Pre-Commit Gate)
+3. **QA Lokal** — `npm run lint`, `npm run build`, `npm run typecheck`, dan `npm test` (lihat Pre-Commit Gate)
 4. **Performance Test** — Pastikan tidak ada regresi; **pure logic baru** yang menyentuh hot-path (agregasi, sort, validasi array besar) diberi perf test di `src/test/perf.test.ts`
 5. **Docs Compliance Check** — Recheck hasil kerja terhadap folder `docs/` (format di bawah): patuh **rule**, ikuti **workflow**, **progress** tercermin, dan file docs terdampak ter-update
 6. **Report** — Changed files, hasil verifikasi, QA notes, risk, dan **Analisa Improvement** (format di bawah)
@@ -35,7 +35,7 @@ Penyaluran: ringkas di **Report** ke owner + section **🧭 Feedback & improveme
 Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil kerja terhadap `docs/`:
 
 1. **Rule** — `standards/*` (code-standards, rbac, ui-ux, architecture, principles): perubahan mengikuti konvensi (3 lapis keamanan, `ActionResult`, Zod, soft delete, kebab-case, surgical change).
-2. **Workflow** — file ini: urutan Issue Workflow diikuti (scope issue, Pre-Commit Gate 4 gate, approval DB/destructive, retro sebelum close).
+2. **Workflow** — file ini: urutan Issue Workflow diikuti (scope issue, Pre-Commit Gate 5 gate, approval DB/destructive, retro sebelum close).
 3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Active Issues), `changelog.md` (Decision Log/Changelog), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
 4. **Identifikasi file `docs/` lain yang terdampak** (peta cepat di Docs sync) dan perbarui **sebelum commit** — di-commit **bersama** kode. Temuan ketidakpatuhan dilaporkan ke owner, bukan didiamkan.
 5. **Bantuan (`src/content/help/`)** — setiap **perubahan atau penambahan fitur** wajib diperiksa dampaknya ke materi Bantuan: apakah ada tutorial/konsep yang jadi **keliru** (label tombol berubah, langkah bertambah, aturan validasi berubah), dan apakah alur baru itu **perlu tutorial baru**. Perbarui bersama kode, jangan ditunda — panduan yang salah lebih berbahaya daripada panduan yang belum ada, karena pengguna terlanjur memercayainya.
@@ -59,12 +59,13 @@ Contoh penerapan: komentar penutup **#146 / #147 / #149 / #155**.
 
 ### Pre-Commit Gate (wajib, dijalankan lokal)
 
-Sebelum **setiap commit dari lokal**, keempat gate ini **wajib hijau** — jangan commit bila ada yang merah (akar BUG-006/#126: `lint` tak pernah dienforce lalu drift ke 193 error):
+Sebelum **setiap commit dari lokal**, kelima gate ini **wajib hijau** — jangan commit bila ada yang merah (akar BUG-006/#126: `lint` tak pernah dienforce lalu drift ke 193 error):
 
 | Gate | Perintah / Aksi | Lolos bila |
 |------|----------|------------|
 | Lint | `npm run lint` | **exit 0** — 0 error (warning boleh, tapi disepakati terpisah) |
-| Typecheck/Build | `npm run build` (atau `npx tsc --noEmit` untuk cek cepat) | 0 type error |
+| Build | `npm run build` | build ✓ (juga meregenerasi `.next/types` yang dibaca Typecheck) |
+| Typecheck | `npm run typecheck` (`tsc --noEmit`, **mencakup `src/test/**`** — `next build` tidak mengetik-cek berkas test, #288). Jalankan **setelah** Build: `tsconfig` juga memuat `.next/types/**` sehingga rute yang baru dihapus/diganti nama meninggalkan validator usang sampai build berikutnya | 0 type error |
 | Test | `npm test` | semua lulus, **tidak ada** test di-skip |
 | **Docs sync** | Review & update `docs/` yang terdampak | Dokumentasi terkait sudah diperbarui & konsisten, di-commit **bersama** kode |
 
@@ -77,7 +78,7 @@ Sebelum **setiap commit dari lokal**, keempat gate ini **wajib hijau** — janga
 
 Tidak perlu dihafal: `npm test` akan gagal bila artefaknya basi, dengan pesan yang menyebut entitas/menu yang berubah beserta perintah regenerasinya. Artefaknya **di-commit** supaya perubahan jalur data terlihat di diff PR, bukan terjadi diam-diam.
 
-Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `scripts/**` diperbolehkan — bukan kode aplikasi). Keempat gate di atas **tidak dijalankan CI** — enforcement-nya disiplin lokal, sesuai keputusan project owner. Yang berjalan di CI adalah pemindaian keamanan & deployment (lihat di bawah).
+Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `scripts/**` diperbolehkan — bukan kode aplikasi). Kelima gate di atas **tidak dijalankan CI** — enforcement-nya disiplin lokal, sesuai keputusan project owner. Yang berjalan di CI adalah pemindaian keamanan & deployment (lihat di bawah).
 
 **Docs sync (wajib, sebelum commit):** setiap perubahan yang menyentuh skema/migrasi/kolom, modul/fitur, status delivery, atau aturan **harus** memperbarui file `docs/` yang relevan **sebelum commit** dan di-commit **bersama** kodenya — jangan dipisah/ditunda. Peta cepat:
 

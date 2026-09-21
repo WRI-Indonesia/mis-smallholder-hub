@@ -23,7 +23,7 @@ Dua bentuk berkas diterima di tab yang sama:
 
 ## Langkah
 
-1. Buka menu **Bulk Upload → Lahan**, pilih tab **Patok (Excel/Shapefile titik)**, lalu pilih berkasnya.
+1. Buka menu **Bulk Upload → Upload Data Lahan**, pilih tab **Patok (Excel/Shapefile titik)**, lalu pilih berkasnya.
 + Untuk shapefile, sistem memberi tahu bila ada fitur yang bukan titik (dilewati).
 2. Periksa **Pemetaan kolom**. Kolom wajib (ID Lahan, Lintang, Bujur) harus terpetakan; kolom lain boleh dikosongkan.
 3. Klik **Validasi**. Sistem mencocokkan ID Lahan dengan lahan aktif dalam akses Anda dan menampilkan pratinjau per baris.

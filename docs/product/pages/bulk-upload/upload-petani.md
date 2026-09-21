@@ -1,11 +1,11 @@
-# Upload Petani
+# Upload Data Petani
 
 [← Menu Bulk Upload](./README.md) · [← Katalog halaman](../README.md)
 
 ## Diagram objek
 
 ```text
-Halaman: Upload Petani (/admin/bulk-upload/farmers)
+Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 ├── Header
 │   └── h2 "Upload Massal Petani" + deskripsi
 ├── Langkah 1 — Pilih Lembaga Petani
