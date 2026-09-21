@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { scoreBand } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, BAND_TEXT } from "@/lib/score-band-styles";
+import { HEAT_FULL, HEAT_GRADIENT_CSS, heatStyle, rgbCss } from "@/lib/score-heat";
 
 /**
  * Visual skor band (#352): dipakai Ketersediaan Data — Per Lembaga, Semua
@@ -63,6 +64,69 @@ export function BandBar({ pct, className, inactive }: { pct: number; className?:
           style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Sel heatmap (#352 putaran 4): latar solid dari skala kontinu `heatStyle`,
+ * angka kecil di dalam sel. `emphasis` untuk kolom Skor Total (lebih tebal,
+ * ber-ring) supaya tetap jadi angka utama di antara sel domain.
+ */
+export function HeatCell({
+  score,
+  children,
+  emphasis,
+  className,
+  ...rest
+}: React.HTMLAttributes<HTMLDivElement> & { score: number; emphasis?: boolean }) {
+  return (
+    <div
+      {...rest}
+      style={{ ...heatStyle(score), ...rest.style }}
+      className={cn(
+        "flex h-7 w-full items-center justify-center rounded-[3px] tabular-nums",
+        emphasis ? "rounded-md text-sm font-bold ring-1 ring-inset ring-black/15" : "text-[11px] font-semibold",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Segmen legenda skala: label band di bawah ramp, diposisikan pada rentang skornya. */
+const HEAT_SEGMENTS: { from: number; to: number; label: string }[] = [
+  { from: 0, to: 50, label: "kritis" },
+  { from: 50, to: 80, label: "perhatian" },
+  { from: 80, to: 100, label: "baik" },
+];
+
+/** Legenda heatmap: ramp gradasi 0→99 bertanda ambang band + swatch 100. */
+export function HeatLegend({ label = "Skala skor", className, children }: { label?: string; className?: string; children?: React.ReactNode }) {
+  return (
+    <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground", className)}>
+      <span className="font-medium">{label}:</span>
+      <span className="inline-flex items-start gap-1.5">
+        <span className="tabular-nums leading-3">0</span>
+        <span className="relative inline-block w-52" style={{ height: 24 }} title="Merah → kuning → hijau mengikuti skor; garis = ambang 50 dan 80">
+          <span className="absolute inset-x-0 top-0 h-3 rounded-sm" style={{ background: HEAT_GRADIENT_CSS }} />
+          {HEAT_SEGMENTS.map((seg) => (
+            <span key={seg.label} className="absolute top-3 text-[10px] leading-3" style={{ left: `${seg.from}%`, width: `${seg.to - seg.from}%` }}>
+              <span className="block truncate text-center">{seg.label}</span>
+            </span>
+          ))}
+          {[50, 80].map((t) => (
+            <span key={t} className="absolute top-0 h-3 w-px bg-background" style={{ left: `${t}%` }} />
+          ))}
+        </span>
+        <span className="tabular-nums leading-3">99</span>
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="inline-block h-3 w-4 rounded-sm" style={{ backgroundColor: rgbCss(HEAT_FULL) }} />
+        100 — lengkap penuh
+      </span>
+      {children}
     </div>
   );
 }

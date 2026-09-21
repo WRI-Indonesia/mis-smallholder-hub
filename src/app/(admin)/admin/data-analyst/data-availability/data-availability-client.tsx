@@ -25,19 +25,18 @@ import {
 import { MODULE_CATALOG, MODULE_DOMAIN_LABELS } from "@/lib/data-completeness-registry";
 import { AvailabilityHero } from "./availability-hero";
 import { AvailabilityDomainCards } from "./availability-domain-cards";
-import { AvailabilityMatrix, type MatrixSortKey } from "./availability-matrix";
+import { AvailabilityMatrix } from "./availability-matrix";
 import { AvailabilityModuleMatrix } from "./availability-module-matrix";
+import { AvailabilityRadarGrid } from "./availability-radar-grid";
+import type { MatrixSortKey } from "./matrix-rows";
+import { CATEGORY_LABELS } from "./domain-meta";
 import { AvailabilityDomainLaggards } from "./availability-domain-laggards";
 import { AvailabilityAnomalyPanel } from "./availability-anomaly-panel";
 import type { AvailabilityDomainKey, AvailabilityScoreBand, BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
 import { formatGeneratedAt } from "@/lib/format";
 
-const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
-  EX_PLASMA: "Ex-Plasma",
-  SWADAYA: "Swadaya",
-};
-
-type MatrixView = "inti" | "modul";
+/** Tampilan matriks: radar = bawaan (owner, #352 putaran 4), heatmap & modul lewat `?tampilan=`. */
+type MatrixView = "radar" | "heatmap" | "modul";
 const BANDS: AvailabilityScoreBand[] = ["full", "good", "warn", "bad"];
 
 export function DataAvailabilityClient({
@@ -79,7 +78,7 @@ export function DataAvailabilityClient({
     : null;
 
   const viewParam = get("tampilan");
-  const matrixView: MatrixView = viewParam === "modul" ? "modul" : "inti";
+  const matrixView: MatrixView = viewParam === "modul" || viewParam === "heatmap" ? viewParam : "radar";
 
   // Urutan matriks di URL (review #352 putaran 3): `?urut=` kunci + `?arah=turun`
   // (bawaan menaik). Satu tempat untuk kartu domain, judul kolom, dan tautan.
@@ -106,7 +105,7 @@ export function DataAvailabilityClient({
   const setCategory = (v: BmpFarmerGroupCategory | null) => setMany({ kategori: v, band: null, ...keepGroup(districtId, v) });
   const setGroupId = (v: string | null) => setMany({ lembaga: v, band: null });
   const setBand = (v: AvailabilityScoreBand | null) => setMany({ band: v });
-  const setMatrixView = (v: MatrixView) => setMany({ tampilan: v === "inti" ? null : v });
+  const setMatrixView = (v: MatrixView) => setMany({ tampilan: v === "radar" ? null : v });
   const setSort = (key: MatrixSortKey, asc: boolean) => setMany({ urut: key === "health" ? null : key, arah: asc ? null : "turun" });
 
   const [matrixEl, setMatrixEl] = useState<HTMLDivElement | null>(null);
@@ -148,10 +147,11 @@ export function DataAvailabilityClient({
   const totals = useMemo(() => availabilityTotals(scope), [scope]);
   const moduleTotals = useMemo(() => moduleCoverageTotals(groups), [groups]);
 
-  // Kartu domain → matriks INTI diurut menaik pada domain itu (tampilan modul
-  // punya urutan sendiri, jadi dipindah dulu ke inti); klik lagi = kembali ke total.
+  // Kartu domain → radar/heatmap diurut menaik pada domain itu (tampilan modul
+  // punya urutan sendiri, jadi dipindah dulu ke bawaan = radar); klik lagi =
+  // kembali ke total.
   const selectDomain = (key: AvailabilityDomainKey) => {
-    setMany({ urut: sortKey === key ? null : key, arah: null, tampilan: null });
+    setMany({ urut: sortKey === key ? null : key, arah: null, tampilan: matrixView === "heatmap" ? "heatmap" : null });
     matrixEl?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -212,8 +212,11 @@ export function DataAvailabilityClient({
   const matrixTabs = (
     <Tabs value={matrixView} onValueChange={(v) => setMatrixView(v as MatrixView)}>
       <TabsList className="h-8">
-        <TabsTrigger value="inti" className="text-xs">
-          Kelengkapan inti
+        <TabsTrigger value="radar" className="text-xs">
+          Radar
+        </TabsTrigger>
+        <TabsTrigger value="heatmap" className="text-xs">
+          Heatmap
         </TabsTrigger>
         <TabsTrigger value="modul" className="text-xs">
           Cakupan modul
@@ -301,12 +304,14 @@ export function DataAvailabilityClient({
       <AvailabilityDomainCards
         totals={totals}
         groups={scope}
-        activeSort={matrixView === "inti" && AVAILABILITY_DOMAIN_KEYS.includes(sortKey as AvailabilityDomainKey) ? (sortKey as AvailabilityDomainKey) : null}
+        activeSort={matrixView !== "modul" && AVAILABILITY_DOMAIN_KEYS.includes(sortKey as AvailabilityDomainKey) ? (sortKey as AvailabilityDomainKey) : null}
         onSelect={selectDomain}
       />
 
       <div ref={setMatrixEl} className="scroll-mt-4">
-        {matrixView === "inti" ? (
+        {matrixView === "radar" ? (
+          <AvailabilityRadarGrid rows={groups} sortKey={sortKey} sortAsc={sortAsc} onSortChange={setSort} headerControl={matrixTabs} />
+        ) : matrixView === "heatmap" ? (
           <AvailabilityMatrix rows={groups} sortKey={sortKey} sortAsc={sortAsc} onSortChange={setSort} headerControl={matrixTabs} />
         ) : (
           <AvailabilityModuleMatrix rows={groups} totals={moduleTotals} headerControl={matrixTabs} />

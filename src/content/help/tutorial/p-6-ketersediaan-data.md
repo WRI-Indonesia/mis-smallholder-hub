@@ -25,8 +25,11 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 3. Lihat lima **kartu domain** — skor besar berwarna band, bobotnya terhadap Skor Keseluruhan, jumlah entitas, dan berapa Lembaga yang kritis di domain itu.
 + Skor domain adalah rata-rata seluruh lembaga yang **tertimbang jumlah petani** — lembaga besar berpengaruh lebih besar. Warna: hijau tua khusus 100 (lengkap penuh), hijau 80–99, kuning 50–79, merah <50 — warna yang sama dipakai di halaman Per Lembaga dan kartu Detail Lembaga.
 + **Klik kartu domain** untuk mengurutkan matriks dari yang terendah pada domain itu; klik lagi untuk kembali ke urutan Skor Total.
-4. Baca **Matriks per Lembaga**. Skor Total ada tepat di samping nama; lima kolom domain berwarna lembut supaya yang paling menyimpang mudah terlihat. Bawaannya hanya 10 baris pertama menurut urutan aktif yang tampil (urutan bawaan: Skor Total terendah dulu — jadi 10 Lembaga tertinggal) — klik **Tampilkan semua** untuk seluruhnya, atau ketik di kotak **Cari Lembaga**. Klik judul kolom untuk mengurutkan; klik lagi untuk membalik arah.
-+ Di header matriks, pilih **Kelengkapan inti** (skor yang membentuk Index) atau **Cakupan modul** (informatif: % persil ber-surat, ber-STDB, dinilai NKT, ber-patok, ber-pohon; % petani ber-Monev BMP; boundary ICS, acuan MD, dan lainnya). Cakupan modul **tidak** masuk Index; sel bergaris berarti modul itu belum dimulai di Lembaga tersebut.
+4. Baca **Radar per Lembaga** (tampilan bawaan): tiap Lembaga satu kartu ber-pentagon lima sumbu — Profil di atas, lalu searah jarum jam Petani, Lahan, Pelatihan, Produksi — dengan Skor Total di pojok kartu. Bentuknya yang dibaca: pentagon penuh = lengkap, gepeng ke satu sisi = domain itu kosong; cincin putus-putus menandai ambang 50 dan 80, isian berwarna skala Skor Total, titik sudut berwarna skor domainnya. Angka ada di label sumbu dan tooltip Skor Total. **Klik grafiknya** untuk membukanya sebagai jendela besar: kiri radar, kanan tabel domain (bobot, skor, dan *kontribusi* = bobot × skor — jadi terlihat berapa poin Skor Total yang hilang di tiap domain) beserta tombol ke daftar kerja dan Detail Lembaga; tombol **Sebelumnya/Berikutnya** (atau panah ← →) berpindah ke Lembaga lain mengikuti urutan yang tampil. Urutan bawaan: Skor Total terendah dulu; ubah lewat pilihan **Urut** + tombol arah di header, atau klik kartu domain di atas; ketik di kotak **Cari Lembaga** untuk menyaring; **Ringkas** menyisakan 10 kartu pertama.
++ Di header ada tiga tampilan: **Radar**, **Heatmap**, dan **Cakupan modul**. Tampilan yang dipilih ikut tersimpan di alamat halaman.
++ **Heatmap** = tabel padat Lembaga × domain: tiap sel diwarnai mengikuti skornya (merah → kuning → hijau; hijau tua khusus 100) dengan angka kecil di dalamnya. Pola langsung terbaca dari warnanya — misalnya kolom Produksi yang merah di hampir semua baris berarti masalahnya sistemik, bukan per Lembaga. Klik judul kolom untuk mengurutkan; klik lagi untuk membalik arah.
++ Skala warnanya kontinu (dipakai radar maupun heatmap), tetapi garis pada legenda menandai ambang band yang sama (50 dan 80), jadi "merah = kritis, kuning = perlu perhatian, hijau = baik" tetap berlaku.
++ **Cakupan modul** (informatif: % persil ber-surat, ber-STDB, dinilai NKT, ber-patok, ber-pohon; % petani ber-Monev BMP; boundary ICS, acuan MD, dan lainnya) **tidak** masuk Index; sel bergaris berarti modul itu belum dimulai di Lembaga tersebut.
 + **Klik nama Lembaga** untuk membuka halaman Per Lembaga dengan Lembaga itu sudah terpilih.
 5. Gunakan filter **Kategori**, **Distrik**, dan **Lembaga** di kanan atas untuk mempersempit.
 + Filter, band, urutan, dan tampilan tersimpan di alamat halaman, jadi tampilannya bisa di-bookmark atau dikirim ke rekan kerja.
@@ -42,7 +45,7 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 
 **Semua skor 0 / halaman kosong** — kemungkinan tidak ada lembaga dalam cakupan akses Anda, atau filter Distrik/Kategori/Lembaga terlalu sempit. Kembalikan filter ke "Semua".
 
-**Matriks hanya menampilkan sebagian Lembaga** — bawaannya 10 baris pertama menurut urutan aktif, atau sedang ada filter band (lihat "hapus filter band" di hero). Klik **Tampilkan semua**.
+**Radar/matriks hanya menampilkan sebagian Lembaga** — tombol **Ringkas** sedang aktif (hanya 10 kartu/baris pertama menurut urutan aktif) atau ada filter band (lihat "hapus filter band" di hero). Klik **Tampilkan semua**.
 
 **Skor tidak berubah setelah data diperbaiki** — muat ulang halamannya; angka dihitung saat halaman dibuka.
 

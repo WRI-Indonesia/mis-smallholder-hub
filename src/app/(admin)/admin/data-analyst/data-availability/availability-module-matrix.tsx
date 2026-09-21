@@ -7,9 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
+import { HeatCell, HeatLegend } from "@/components/shared/score-visuals";
 import { scoreBand } from "@/lib/data-availability-aggregation";
 import { MODULE_CATALOG, MODULE_DOMAIN_LABELS } from "@/lib/data-completeness-registry";
-import { BAND_BAR, BAND_CELL, BAND_LEGEND } from "@/lib/score-band-styles";
+import { BAND_BAR, BAND_LEGEND } from "@/lib/score-band-styles";
 import type {
   AvailabilityGroupEntry,
   AvailabilityModuleCoverage,
@@ -22,9 +23,10 @@ const formatPct = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractio
 type SortKey = "name" | string;
 
 /**
- * Matriks Lembaga × modul (#352 A1/B3) — informatif, di luar Index. Band warna
- * sama dengan matriks kelengkapan; sel abu-abu bergaris = modul belum dimulai
- * di Lembaga itu (tidak berlaku, keluar dari penyebut portfolio).
+ * Matriks Lembaga × modul (#352 A1/B3) — informatif, di luar Index. Heatmap
+ * dengan skala warna yang sama dengan matriks kelengkapan (putaran 4); sel
+ * abu-abu bergaris = modul belum dimulai di Lembaga itu (tidak berlaku, keluar
+ * dari penyebut portfolio).
  */
 export function AvailabilityModuleMatrix({
   rows,
@@ -110,7 +112,7 @@ export function AvailabilityModuleMatrix({
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm border-separate border-spacing-y-1">
+                <table className="w-full text-sm border-separate border-spacing-[2px]">
                   <thead>
                     <tr className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       <th className="text-left py-2 pr-4 font-semibold sticky left-0 bg-background z-10">
@@ -133,7 +135,7 @@ export function AvailabilityModuleMatrix({
                       {MODULE_CATALOG.map((m) => {
                         const t = totalsByKey.get(m.key);
                         return (
-                          <th key={m.key} className="py-1 px-1 font-semibold">
+                          <th key={m.key} className="p-0 font-semibold">
                             <ModuleCell
                               cell={t ? { key: m.key, covered: t.covered, total: t.total, pct: t.pct } : null}
                               label={m.label}
@@ -148,20 +150,23 @@ export function AvailabilityModuleMatrix({
                   <tbody>
                     {sorted.map((e) => (
                       <tr key={e.id} className="align-middle">
-                        <td className="py-1.5 pr-4 sticky left-0 bg-background z-10">
-                          <Link
-                            href={`/admin/data-analyst/data-completeness?lembaga=${e.id}`}
-                            className="font-medium leading-tight hover:text-primary hover:underline"
-                          >
-                            {e.name}
-                          </Link>
-                          <div className="text-xs text-muted-foreground">
-                            {e.code ? `${e.code} · ` : ""}
-                            {e.districtName}
+                        <td className="py-0 pr-4 sticky left-0 bg-background z-10">
+                          <div className="flex h-7 min-w-0 items-center gap-2 whitespace-nowrap">
+                            <Link
+                              href={`/admin/data-analyst/data-completeness?lembaga=${e.id}`}
+                              className="min-w-0 truncate font-medium leading-tight hover:text-primary hover:underline"
+                              title={e.name}
+                            >
+                              {e.name}
+                            </Link>
+                            <span className="shrink-0 text-[11px] text-muted-foreground">
+                              {e.code ? `${e.code} · ` : ""}
+                              {e.districtName}
+                            </span>
                           </div>
                         </td>
                         {MODULE_CATALOG.map((m) => (
-                          <td key={m.key} className="py-1.5 px-1">
+                          <td key={m.key} className="p-0">
                             <ModuleCell
                               cell={e.moduleCoverage.find((x) => x.key === m.key) ?? null}
                               label={m.label}
@@ -177,19 +182,12 @@ export function AvailabilityModuleMatrix({
               </div>
             )}
 
-            <div className="flex flex-wrap items-center gap-3 mt-4 text-xs text-muted-foreground">
-              <span className="font-medium">Band cakupan:</span>
-              {BAND_LEGEND.map((s) => (
-                <span key={s.band} className="inline-flex items-center gap-1.5">
-                  <span className={`inline-block h-3 w-5 rounded ${BAND_CELL[s.band]}`} />
-                  {s.label}
-                </span>
-              ))}
+            <HeatLegend label="Skala cakupan" className="mt-4">
               <span className="inline-flex items-center gap-1.5">
-                <span className="inline-block h-3 w-5 rounded border border-dashed bg-muted/40" />
+                <span className="inline-block h-3 w-4 rounded-sm border border-dashed bg-muted/40" />
                 belum dimulai di Lembaga itu
               </span>
-            </div>
+            </HeatLegend>
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
@@ -216,7 +214,7 @@ function ModuleCell({
       <Tooltip>
         <TooltipTrigger
           render={
-            <div className="w-full rounded-md border border-dashed bg-muted/40 px-2 py-1.5 text-center text-xs text-muted-foreground" />
+            <div className="flex h-7 w-full items-center justify-center rounded-[3px] border border-dashed bg-muted/40 text-xs text-muted-foreground" />
           }
         >
           —
@@ -230,14 +228,8 @@ function ModuleCell({
   const band = scoreBand(cell.pct);
   return (
     <Tooltip>
-      <TooltipTrigger
-        render={
-          <div
-            className={`w-full rounded-md px-2 py-1.5 text-center tabular-nums text-sm ${bold ? "font-bold" : "font-semibold"} ${BAND_CELL[band]}`}
-          />
-        }
-      >
-        {yesNo ? (cell.covered ? "✓" : "✗") : `${formatPct(cell.pct)}%`}
+      <TooltipTrigger render={<HeatCell score={cell.pct} emphasis={bold} />}>
+        {yesNo ? (cell.covered ? "✓" : "✗") : formatPct(cell.pct)}
       </TooltipTrigger>
       <StatTooltipContent title={label} subtitle={groupName} footer={`Band: ${BAND_LEGEND.find((s) => s.band === band)?.label ?? ""}`}>
         <StatTooltipRow chip={BAND_BAR[band]} label="Terisi" value={`${formatNumber(cell.covered)} / ${formatNumber(cell.total)}`} pct={cell.pct} />

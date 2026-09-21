@@ -32,7 +32,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
-import { BandBar, ScoreGauge } from "@/components/shared/score-visuals";
+import { BandBar } from "@/components/shared/score-visuals";
+import { RadarChart } from "@/components/shared/radar-chart";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { analyzeFarmerGroupCompleteness } from "@/server/actions/data-completeness";
 import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
@@ -98,7 +99,8 @@ const DOMAIN_ORDER: CompletenessDomainKey[] = ["profil", "petani", "lahan", "pel
 
 const weightPct = (d: CompletenessDomainKey) => Math.round(DOMAIN_WEIGHTS[d] * 100);
 
-// Rumus singkat per domain — isi tooltip strip skor (#352 B2, menutup 6h).
+// Rumus singkat per domain — tooltip badge skor di judul seksi (#352 B2, menutup 6h;
+// semula di kartu domain strip skor yang dihapus pada putaran 4).
 // Nama field diturunkan dari registri supaya tooltip tidak usang saat check bertambah.
 const fieldName = (anomalyKey: string) => ANOMALY_CATALOG[anomalyKey]?.fix.field ?? anomalyKey;
 const farmerFields = FARMER_FIELD_CHECKS.map((c) => fieldName(c.anomalyKey)).join(", ");
@@ -475,11 +477,24 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col gap-6 md:flex-row md:items-center">
+                {/* Instrumen: angka Index besar + pentagon lima domain berangka — satu sumber
+                    untuk skor (owner, #352 putaran 4: tanpa cincin gauge, tanpa kartu domain).
+                    Label sumbu = tautan ke seksi domain (menggantikan kartu); bobot ada di
+                    tooltip & judul seksi. */}
                 <Tooltip>
-                  <TooltipTrigger render={<div className="cursor-help self-center" />}>
-                    <ScoreGauge score={result.healthScore} />
+                  <TooltipTrigger render={<div className="flex shrink-0 items-center gap-3 self-center" />}>
+                    <span className={cn("cursor-help text-5xl font-bold leading-none tabular-nums", BAND_TEXT[scoreBand(result.healthScore)])}>
+                      {Math.round(result.healthScore)}
+                    </span>
+                    <RadarChart
+                      name={result.group.name}
+                      total={result.healthScore}
+                      scores={Object.fromEntries(DOMAIN_ORDER.map((d) => [d, domainScore(d)])) as Record<CompletenessDomainKey, number>}
+                      onAxisClick={jumpTo}
+                      className="w-[280px]"
+                    />
                   </TooltipTrigger>
-                  <StatTooltipContent title="Index = Σ (skor domain × bobot)" footer={`Band: ${bandLabel(result.healthScore)}`}>
+                  <StatTooltipContent title="Index = Σ (skor domain × bobot)" footer={`Band: ${bandLabel(result.healthScore)} · klik nama sumbu untuk membuka seksinya`}>
                     {DOMAIN_ORDER.map((d) => (
                       <StatTooltipRow
                         key={d}
@@ -491,7 +506,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
                   </StatTooltipContent>
                 </Tooltip>
 
-                <div className="min-w-0 flex-1 space-y-3">
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h2 className="text-lg font-bold leading-tight">
@@ -504,6 +519,9 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
                         {" · "}
                         <span className={cn("font-medium", BAND_TEXT[scoreBand(result.healthScore)])}>{bandLabel(result.healthScore)}</span>
                       </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Angka besar = Index (0–100); pentagon = skor lima domain — klik nama sumbu untuk membuka seksinya. Bobot tiap domain ada di judul seksi.
+                      </p>
                     </div>
                     {canExport && (
                       <Button variant="outline" onClick={handleDownload} className="h-9">
@@ -511,44 +529,6 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
                         Excel
                       </Button>
                     )}
-                  </div>
-
-                  {/* Strip domain: bar mini + bobot; klik = buka & gulir ke seksi (menutup 6g/6h) */}
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                    {DOMAIN_ORDER.map((d) => {
-                      const score = domainScore(d);
-                      const Icon = DOMAIN_ICONS[d];
-                      return (
-                        <Tooltip key={d}>
-                          <TooltipTrigger
-                            render={
-                              <button
-                                type="button"
-                                onClick={() => jumpTo(d)}
-                                className="rounded-lg border px-3 py-2 text-left transition-colors hover:bg-muted/60"
-                              />
-                            }
-                          >
-                            <div className="flex items-center justify-between gap-2 text-xs">
-                              <span className="flex min-w-0 items-center gap-1.5 font-medium">
-                                <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                <span className="truncate">{MODULE_DOMAIN_LABELS[d]}</span>
-                              </span>
-                              <span className={cn("shrink-0 font-semibold tabular-nums", BAND_TEXT[scoreBand(score)])}>{score.toFixed(0)}%</span>
-                            </div>
-                            <BandBar pct={score} className="mt-1.5 h-1.5" />
-                            <div className="mt-1 text-[10px] text-muted-foreground">bobot {weightPct(d)} % Index</div>
-                          </TooltipTrigger>
-                          <StatTooltipContent
-                            title={`${MODULE_DOMAIN_LABELS[d]} · bobot ${weightPct(d)} % dari Index`}
-                            subtitle={DOMAIN_FORMULA[d]}
-                            footer="Klik untuk membuka seksinya"
-                          >
-                            <StatTooltipRow chip={BAND_BAR[scoreBand(score)]} label="Skor domain" value={`${score.toFixed(1)}%`} />
-                          </StatTooltipContent>
-                        </Tooltip>
-                      );
-                    })}
                   </div>
                 </div>
               </div>
@@ -679,6 +659,8 @@ function SectionShell({
   open,
   onOpenChange,
   summary,
+  weightPct,
+  formula,
   children,
 }: {
   id: string;
@@ -689,6 +671,10 @@ function SectionShell({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   summary?: React.ReactNode;
+  /** Bobot domain terhadap Index (%) — tampil di judul sejak kartu domain di strip dihapus (#352 putaran 4). */
+  weightPct: number;
+  /** Rumus skor domain — tooltip badge skor (semula tooltip kartu domain). */
+  formula: string;
   children: React.ReactNode;
 }) {
   return (
@@ -701,6 +687,9 @@ function SectionShell({
                 <span className="flex items-center gap-2 font-semibold">
                   <Icon className="h-5 w-5 text-muted-foreground" />
                   {title}
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground" title="Bobot domain ini terhadap Index">
+                    bobot {weightPct} % Index
+                  </span>
                 </span>
                 {summary && <span className="mt-0.5 block text-xs text-muted-foreground">{summary}</span>}
               </span>
@@ -716,7 +705,14 @@ function SectionShell({
                     Lengkap
                   </Badge>
                 )}
-                <ScoreBadge score={score} />
+                <Tooltip>
+                  <TooltipTrigger render={<span className="cursor-help" />}>
+                    <ScoreBadge score={score} />
+                  </TooltipTrigger>
+                  <StatTooltipContent title={`${title} · bobot ${weightPct} % dari Index`} subtitle={formula} footer={`Band: ${bandLabel(score)}`}>
+                    <StatTooltipRow chip={BAND_BAR[scoreBand(score)]} label="Skor domain" value={`${score.toFixed(1)}%`} />
+                  </StatTooltipContent>
+                </Tooltip>
                 <ChevronDown className={cn("h-4 w-4 transition-transform", open ? "rotate-180" : "")} />
               </span>
             </button>
@@ -1008,6 +1004,8 @@ function ProfileSection({
       anomalyCount={failed}
       open={open}
       onOpenChange={onOpenChange}
+      weightPct={weightPct("profil")}
+      formula={DOMAIN_FORMULA.profil}
       summary={`${PROFILE_CHECKS.length} check inti · ${result.profileChecks.length - PROFILE_CHECKS.length} check kualitas · ${rows.filter((r) => r.kind === "modul").length} modul`}
     >
       <div className="space-y-3">
@@ -1091,6 +1089,8 @@ function DomainSection({
       anomalyCount={domain.totalAnomalies}
       open={open}
       onOpenChange={onOpenChange}
+      weightPct={weightPct(domain.domain)}
+      formula={DOMAIN_FORMULA[domain.domain]}
       summary={`${scored.length} check berskor · ${others.filter((c) => c.kind === "kualitas").length} check kualitas · ${others.filter((c) => c.kind === "modul").length} modul`}
     >
       <div className="space-y-5">
@@ -1234,6 +1234,8 @@ function TrainingSection({
       anomalyCount={domain.totalAnomalies}
       open={open}
       onOpenChange={onOpenChange}
+      weightPct={weightPct("pelatihan")}
+      formula={DOMAIN_FORMULA.pelatihan}
       summary={`${t.packages.length} paket wajib · ${rows.filter((c) => c.kind === "kualitas").length} check kualitas · ${rows.filter((c) => c.kind === "modul").length} modul`}
     >
       <div className="space-y-5">

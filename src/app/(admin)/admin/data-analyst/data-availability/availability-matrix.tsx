@@ -8,41 +8,39 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
+import { HeatCell, HeatLegend } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
 import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, bandDistribution, domainScoreOf, scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_BAR, BAND_CELL, BAND_CELL_SOFT, BAND_LEGEND } from "@/lib/score-band-styles";
-import type { AvailabilityDomainKey, AvailabilityGroupEntry } from "@/types/dashboard";
+import { BAND_BAR } from "@/lib/score-band-styles";
+import type { AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
 import { bandLabel, formatScore } from "./domain-meta";
-
-export type MatrixSortKey = "name" | "totalFarmers" | "health" | AvailabilityDomainKey;
+import { filterMatrixRows, sortKeyLabel, sortMatrixRows, type MatrixSortKey } from "./matrix-rows";
 
 const LOWEST_N = 10;
 
-/** Sel skor domain — latar lembut + teks band (#352 putaran 3), tooltip terstruktur (#213). */
+/** Sel skor domain — heatmap solid (#352 putaran 4), tooltip terstruktur (#213). */
 function ScoreCell({ score, label, groupName }: { score: number; label: string; groupName: string }) {
-  const band = scoreBand(score);
   return (
     <Tooltip>
-      <TooltipTrigger
-        render={<div className={cn("w-full rounded-md px-2 py-1.5 text-center text-sm font-semibold tabular-nums", BAND_CELL_SOFT[band])} />}
-      >
-        {formatScore(score)}%
-      </TooltipTrigger>
+      <TooltipTrigger render={<HeatCell score={score} />}>{formatScore(score)}</TooltipTrigger>
       <StatTooltipContent title={label} subtitle={groupName} footer={`Band: ${bandLabel(score)}`}>
-        <StatTooltipRow chip={BAND_BAR[band]} label="Skor kelengkapan" value={`${formatScore(score)}%`} />
+        <StatTooltipRow chip={BAND_BAR[scoreBand(score)]} label="Skor kelengkapan" value={`${formatScore(score)}%`} />
       </StatTooltipContent>
     </Tooltip>
   );
 }
 
 /**
- * Matriks Lembaga × domain (#352 putaran 3): Skor Total tepat di samping nama
- * (angka terpenting dulu), sel domain lembut supaya outlier terbaca, kolom
- * jumlah berlabel "Petani (n)", kotak cari, toggle "10 baris / semua",
- * urutan (kunci + arah) dikendalikan pemanggil lewat URL — kartu domain dan
- * judul kolom memakai jalur yang sama. Segmented control tampilan
- * (inti | modul) diserahkan ke pemanggil lewat `headerControl`.
+ * Matriks Lembaga × domain sebagai heatmap padat (#352 putaran 4, pilihan
+ * owner dari tiga opsi — sebelumnya pil pastel per sel yang terasa monoton):
+ * baris rapat satu garis, sel solid dengan gradasi merah→kuning→hijau
+ * (`heatStyle`, jangkar di ambang band) dan angka kecil di dalamnya, sehingga
+ * pola kolom (mis. Produksi kosong di hampir semua Lembaga) langsung
+ * tertangkap mata. Bawaannya semua baris tampil — nilai heatmap ada pada
+ * gambaran utuhnya; "Ringkas" menyisakan 10 baris pertama. Skor Total tepat di
+ * samping nama, urutan (kunci + arah) dikendalikan pemanggil lewat URL, dan
+ * segmented control tampilan (inti | modul) lewat `headerControl`.
  */
 export function AvailabilityMatrix({
   rows,
@@ -59,28 +57,9 @@ export function AvailabilityMatrix({
 }) {
   const asc = sortAsc;
   const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(true);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((e) => e.name.toLowerCase().includes(q) || (e.code ?? "").toLowerCase().includes(q) || e.districtName.toLowerCase().includes(q));
-  }, [rows, query]);
-
-  const sorted = useMemo(() => {
-    const value = (e: AvailabilityGroupEntry): string | number => {
-      if (sortKey === "name") return e.name.toLowerCase();
-      if (sortKey === "totalFarmers") return e.totalFarmers;
-      if (sortKey === "health") return e.healthScore;
-      return domainScoreOf(e, sortKey);
-    };
-    return [...filtered].sort((a, b) => {
-      const va = value(a);
-      const vb = value(b);
-      const cmp = typeof va === "string" ? va.localeCompare(vb as string) : (va as number) - (vb as number);
-      return asc ? cmp : -cmp;
-    });
-  }, [filtered, sortKey, asc]);
+  const sorted = useMemo(() => sortMatrixRows(filterMatrixRows(rows, query), sortKey, asc), [rows, query, sortKey, asc]);
 
   const limited = showAll || query ? sorted : sorted.slice(0, LOWEST_N);
   const hiddenCount = sorted.length - limited.length;
@@ -102,8 +81,7 @@ export function AvailabilityMatrix({
   );
 
   const critical = bandDistribution(rows).bad;
-  const orderLabel =
-    sortKey === "health" ? "skor total" : sortKey === "name" ? "nama" : sortKey === "totalFarmers" ? "jumlah petani" : AVAILABILITY_DOMAIN_LABELS[sortKey].toLowerCase();
+  const orderLabel = sortKeyLabel(sortKey);
 
   return (
     <Card className="border border-border/60 shadow-sm">
@@ -113,8 +91,8 @@ export function AvailabilityMatrix({
             <Grid3x3 className="h-4 w-4 text-primary" /> Matriks per Lembaga
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            {formatNumber(rows.length)} Lembaga{critical > 0 ? ` · ${formatNumber(critical)} berskor kritis (<50)` : ""} — klik judul kolom untuk mengurutkan,
-            klik nama Lembaga untuk rincian & daftar kerjanya.
+            {formatNumber(rows.length)} Lembaga{critical > 0 ? ` · ${formatNumber(critical)} berskor kritis (<50)` : ""} — warna sel mengikuti skor (merah → hijau);
+            klik judul kolom untuk mengurutkan, klik nama Lembaga untuk rincian & daftar kerjanya.
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -139,25 +117,26 @@ export function AvailabilityMatrix({
         ) : (
           <div className="overflow-x-auto">
             {/* `table-fixed` + lebar kolom eksplisit: lebar tidak dihitung ulang dari
-                isi baris saat urutan/irisan berubah (masukan owner: kolom "bergeser"). */}
-            <table className="w-full min-w-[880px] table-fixed border-separate border-spacing-y-1 text-sm">
+                isi baris saat urutan/irisan berubah (masukan owner: kolom "bergeser").
+                `border-spacing-[2px]` = celah tipis antar sel ala heatmap. */}
+            <table className="w-full min-w-[880px] table-fixed border-separate border-spacing-[2px] text-sm">
               <colgroup>
                 <col />
-                <col className="w-[104px]" />
-                <col className="w-[88px]" />
+                <col className="w-[80px]" />
+                <col className="w-[72px]" />
                 {AVAILABILITY_DOMAIN_KEYS.map((key) => (
-                  <col key={key} className="w-[108px]" />
+                  <col key={key} className="w-[96px]" />
                 ))}
               </colgroup>
               <thead>
                 <tr className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <th className="py-2 pr-4 text-left font-semibold">{headBtn("name", "Lembaga Petani")}</th>
-                  <th className="whitespace-nowrap px-2 py-2 text-center font-semibold">
+                  <th className="py-1.5 pr-3 text-left font-semibold">{headBtn("name", "Lembaga Petani")}</th>
+                  <th className="whitespace-nowrap px-1 py-1.5 text-center font-semibold">
                     {headBtn("health", "Skor Total", "Skor kelengkapan berbobot lintas domain")}
                   </th>
-                  <th className="whitespace-nowrap px-3 py-2 text-right font-semibold">{headBtn("totalFarmers", "Petani (n)", "Jumlah petani aktif")}</th>
+                  <th className="whitespace-nowrap px-2 py-1.5 text-right font-semibold">{headBtn("totalFarmers", "Petani (n)", "Jumlah petani aktif")}</th>
                   {AVAILABILITY_DOMAIN_KEYS.map((key) => (
-                    <th key={key} className="whitespace-nowrap px-2 py-2 text-center font-semibold">
+                    <th key={key} className="whitespace-nowrap px-1 py-1.5 text-center font-semibold">
                       {headBtn(key, AVAILABILITY_DOMAIN_LABELS[key].replace("Profil Lembaga", "Profil"))}
                     </th>
                   ))}
@@ -166,39 +145,35 @@ export function AvailabilityMatrix({
               <tbody>
                 {limited.map((e) => (
                   <tr key={e.id} className="group/row align-middle">
-                    <td className="rounded-l-md py-1.5 pr-4 transition-colors group-hover/row:bg-muted/50">
-                      {/* Deep link ke DA-02 dengan Lembaga terpilih (#352 B3). */}
-                      <Link
-                        href={`/admin/data-analyst/data-completeness?lembaga=${e.id}`}
-                        className="flex max-w-full items-center gap-1 font-medium leading-tight text-primary hover:underline"
-                        title={e.name}
-                      >
-                        <span className="truncate">{e.name}</span>
-                        <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
-                      </Link>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {e.code ? `${e.code} · ` : ""}
-                        {e.districtName}
+                    <td className="rounded-md px-1 py-0 pr-3 transition-colors group-hover/row:bg-muted/50">
+                      {/* Satu baris: nama (deep link ke DA-02, #352 B3) + kode · distrik. */}
+                      <div className="flex h-7 min-w-0 items-center gap-2">
+                        <Link
+                          href={`/admin/data-analyst/data-completeness?lembaga=${e.id}`}
+                          className="flex min-w-0 items-center gap-1 font-medium leading-tight text-primary hover:underline"
+                          title={e.name}
+                        >
+                          <span className="truncate">{e.name}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
+                        </Link>
+                        <span className="shrink-0 truncate text-[11px] text-muted-foreground">
+                          {e.code ? `${e.code} · ` : ""}
+                          {e.districtName}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-1 py-1.5">
+                    <td className="p-0">
                       <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <div className={cn("w-full rounded-md px-2 py-1.5 text-center text-base font-bold tabular-nums ring-1 ring-inset ring-border/60", BAND_CELL[scoreBand(e.healthScore)])} />
-                          }
-                        >
-                          {formatNumber(e.healthScore)}
-                        </TooltipTrigger>
+                        <TooltipTrigger render={<HeatCell score={e.healthScore} emphasis />}>{formatNumber(e.healthScore)}</TooltipTrigger>
                         <StatTooltipContent title="Skor Total — berbobot lintas domain" subtitle={e.name} footer={`Band: ${bandLabel(e.healthScore)}`}>
                           <StatTooltipRow chip={BAND_BAR[scoreBand(e.healthScore)]} label="Skor kelengkapan" value={`${formatNumber(e.healthScore)}/100`} />
                           <StatTooltipRow chip="bg-amber-400" label="Temuan anomali" value={e.totalAnomalies} />
                         </StatTooltipContent>
                       </Tooltip>
                     </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{formatNumber(e.totalFarmers)}</td>
+                    <td className="px-2 py-0 text-right text-xs tabular-nums text-muted-foreground">{formatNumber(e.totalFarmers)}</td>
                     {AVAILABILITY_DOMAIN_KEYS.map((key) => (
-                      <td key={key} className="px-1 py-1.5 last:rounded-r-md">
+                      <td key={key} className="p-0">
                         <ScoreCell score={domainScoreOf(e, key)} label={AVAILABILITY_DOMAIN_LABELS[key]} groupName={e.name} />
                       </td>
                     ))}
@@ -210,21 +185,12 @@ export function AvailabilityMatrix({
         )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-medium">Band skor:</span>
-            {BAND_LEGEND.map((s) => (
-              <span key={s.band} className="inline-flex items-center gap-1.5" title="Kiri: sel domain (lembut) · kanan: Skor Total (pekat)">
-                <span className={cn("inline-block h-3 w-4 rounded-l", BAND_CELL_SOFT[s.band])} />
-                <span className={cn("-ml-1.5 inline-block h-3 w-4 rounded-r", BAND_CELL[s.band])} />
-                {s.label}
-              </span>
-            ))}
-          </div>
+          <HeatLegend />
           {!query && sorted.length > LOWEST_N && (
             <Button variant="ghost" size="sm" className="h-7" onClick={() => setShowAll((v) => !v)}>
               {showAll
-                ? `Ringkas — ${LOWEST_N} baris pertama saja`
-                : `Tampilkan semua (${formatNumber(sorted.length)}) — ${formatNumber(hiddenCount)} tersembunyi (urut ${orderLabel} ${asc ? "menaik" : "menurun"})`}
+                ? `Ringkas — ${LOWEST_N} baris pertama saja (urut ${orderLabel} ${asc ? "menaik" : "menurun"})`
+                : `Tampilkan semua (${formatNumber(sorted.length)}) — ${formatNumber(hiddenCount)} tersembunyi`}
             </Button>
           )}
         </div>

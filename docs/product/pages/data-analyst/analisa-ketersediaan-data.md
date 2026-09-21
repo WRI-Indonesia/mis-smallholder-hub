@@ -16,9 +16,8 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 │   └── Tombol Muat ulang (analisa berjalan OTOMATIS saat Lembaga dipilih / ?lembaga= ada)
 ├── Empty state awal · Peringatan "di luar akses" bila ?lembaga= tidak ada di daftar scope
 ├── Header hasil
-│   ├── Cincin Index (SVG, warna band; tooltip = Σ skor domain × bobot)
-│   ├── Identitas Lembaga (nama + kode, Distrik · petani · n temuan · band) + tombol Excel (gate EXPORT)
-│   └── 5 kartu domain "nama · skor · bar mini · bobot % Index" — tooltip rumus; klik = buka + gulir ke seksi
+│   ├── Angka Index besar (text-5xl, warna band) + Radar pentagon lima domain berangka (`RadarChart` bersama, 280 px) — label sumbu = tautan (klik → buka + gulir ke seksi); tooltip = Σ skor domain × bobot (#352 putaran 4)
+│   └── Identitas Lembaga (nama + kode, Distrik · petani · n temuan · band, baris petunjuk "angka besar = Index; pentagon = skor lima domain — klik nama sumbu…") + tombol Excel (gate EXPORT) — kartu domain DIHAPUS (redundan dengan radar)
 ├── Peringatan 0 petani
 ├── Prioritas perbaikan (putaran 2): 6 tindakan berskor dengan Δ Index (poin), bar relatif, n/total, Perbaiki lewat; klik label = gulir ke seksi
 ├── Buka semua / Tutup semua
@@ -45,7 +44,7 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 | Sub menu | Ketersediaan Data — Per Lembaga (`data-analyst-data-completeness`, order 3) |
 | Route | `/admin/data-analyst/data-completeness` — query `?lembaga=<FarmerGroup.id>` (deep link dari DA-03 & kartu KPI Detail Lembaga), `?distrik=<District.id>` opsional |
 | File | `src/app/(admin)/admin/data-analyst/data-completeness/page.tsx` (Server Component) + `data-completeness-client.tsx` (Client Component) + `loading.tsx` |
-| Tipe | Halaman analisis 1 Lembaga Petani (filter → analisa otomatis → cincin Index + kartu domain → prioritas perbaikan → seksi collapsible per domain ber-checklist) |
+| Tipe | Halaman analisis 1 Lembaga Petani (filter → analisa otomatis → angka Index + radar → prioritas perbaikan → seksi collapsible per domain ber-checklist) |
 | Guard | `requirePermission("data-analyst-data-completeness")` |
 | Server action / data | `getDistrictsForCompleteness()`, `getFarmerGroupsForCompleteness(districtId)` (mengembalikan `districtId` untuk cascade client), `analyzeFarmerGroupCompleteness(farmerGroupId)` — `src/server/actions/data-completeness.ts` (`MENU_KEY = "data-analyst-data-completeness"`, guard `hasPermission(MENU_KEY, "VIEW")` + `getAccessContext()`); kehadiran modul lewat `loadModuleFlagSets` di `src/lib/data-completeness-query.ts` (id-set per satelit, scope lewat relasi `parcel.farmer`, sejajar dengan kueri utama) |
 | Logika | `src/lib/data-completeness.ts` (skor, anomali, checklist, prioritas, per-KT — murni) + **registri** `src/lib/data-completeness-registry.ts` (label, jenis, grain, rute perbaikan, `foldable`, bobot tier, katalog modul, konstanta ambang) |
@@ -65,9 +64,8 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 | Empty state awal | Kartu | "Pilih Lembaga Petani — analisa berjalan otomatis" / "Menganalisa Lembaga Petani…" |
 | Peringatan di luar akses | Kartu amber | "Lembaga Petani pada tautan ini tidak ditemukan atau di luar akses Anda. Pilih Lembaga lain dari daftar." |
 | Header hasil | Kartu ringkasan | Nama Lembaga + kode (mono), baris "`<Distrik>` · `<n>` petani · `<n>` temuan anomali" |
-| Cincin Index | SVG gauge | Angka Index di tengah, cincin berwarna band; tooltip `StatTooltip` "Index = Σ (skor domain × bobot)" per domain |
+| Index + radar | Angka `text-5xl` warna band + `RadarChart` (`src/components/shared/radar-chart.tsx`, 280 px, `onAxisClick={jumpTo}`) | Keputusan owner berturut-turut: cincin gauge + radar + kartu → "redundan" → "dilebur" (cincin melingkari pentagon) → "aneh, cukup angka + radar" → analisa 6 varian → **#6: angka Index + radar berangka, tanpa kartu domain**. Pentagon = `RadarLayers` yang sama dengan grid/modal Semua Lembaga (isian warna skala Index, titik sudut warna skor domain, cincin ambang 50/80/100, label "Domain skor"); **label sumbu = tautan** (`cursor-pointer`, hover primary + underline, `<title>` "Buka seksi …") → `jumpTo` (buka seksi + `scrollIntoView`), menggantikan kartu sebagai navigasi; tooltip `StatTooltip` "Index = Σ (skor domain × bobot)" per domain + footer petunjuk klik |
 | "Excel" | Tombol ekspor | Ikon `Download`; multi-sheet, nama file `analisa-ketersediaan-<kode atau nama>-<yyyyMMdd>` — digate izin `EXPORT` (#245) |
-| Kartu domain | 5 tombol | Nama · skor berwarna band · bar mini · "bobot n % Index"; tooltip rumus domain (nama field diturunkan dari registri); klik → buka seksi + `scrollIntoView` |
 | "Prioritas perbaikan" | Kartu | 6 tindakan berskor: nomor, label (klik → seksi), "+n poin", bar relatif, domain · n/total · Perbaiki lewat (tautan); bila kosong → kartu hijau "Semua check berskor sudah lengkap" |
 | "Buka semua / Tutup semua" | Tombol ghost | Mengatur state buka semua seksi |
 | Peringatan 0 petani | Kartu peringatan | "Lembaga Petani ini belum memiliki data petani aktif — domain Petani, Lahan, Pelatihan, dan Produksi kosong." |
@@ -93,7 +91,7 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 
 ## Seksi collapsible
 
-(masing-masing menampilkan badge "`<n>` temuan" / "Lengkap" + badge skor; state terkontrol — default hanya seksi berskor terendah yang terbuka, tombol Buka semua / Tutup semua)
+(masing-masing menampilkan judul + chip **"bobot n % Index"** (pindah dari kartu domain yang dihapus, #352 putaran 4), badge "`<n>` temuan" / "Lengkap", badge skor ber-tooltip **rumus domain** (`DOMAIN_FORMULA`, nama field dari registri — pindah dari tooltip kartu); state terkontrol — default hanya seksi berskor terendah yang terbuka, tombol Buka semua / Tutup semua)
 
 | Seksi | Isi |
 |---|---|

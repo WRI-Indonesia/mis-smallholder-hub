@@ -15,8 +15,15 @@ export default function DataAvailabilityDashboardLoading() {
           <Skeleton key={i} className="h-32" />
         ))}
       </div>
-      {/* Matriks (10 baris) */}
-      <Skeleton className="h-[560px]" />
+      {/* Radar per Lembaga (bawaan): header + grid kartu pentagon */}
+      <div className="space-y-4 rounded-xl border p-6">
+        <Skeleton className="h-8 w-80" />
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Skeleton key={i} className="h-[212px]" />
+          ))}
+        </div>
+      </div>
       {/* Paling tertinggal per domain + panel anomali */}
       <Skeleton className="h-[300px]" />
       <Skeleton className="h-[420px]" />
