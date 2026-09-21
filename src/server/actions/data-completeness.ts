@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
-import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
+import { getAccessContext, farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-context";
 import { computeCompleteness, currentPeriod } from "@/lib/data-completeness";
 import {
   farmerModuleFlags,
@@ -161,7 +161,7 @@ export async function analyzeFarmerGroupCompleteness(
     loadModuleFlagSets({
       farmerWhere,
       groupWhere,
-      scope: { groupIds: [farmerGroupId], districtIds: access.mode === "BY_DISTRICT" ? access.ids : undefined },
+      scope: rawFarmerGroupScope(access, [farmerGroupId]),
       referenceYear,
     }),
     loadEstimateRecordIds(farmerWhere),

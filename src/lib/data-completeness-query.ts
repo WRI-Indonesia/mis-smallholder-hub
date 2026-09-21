@@ -40,6 +40,8 @@ export interface ModuleFlagSets {
   /** Petani yang salah satu penilaian Monev-nya tanpa rincian indikator. */
   farmerBmpNoDetails: Set<string>;
   group: Record<"boundary" | "benchmark" | "bmpGroupAssessment", Set<string>>; // keyed FarmerGroup.id
+  /** Lembaga ber-boundary dengan `geom` terisi — hanya ini yang bisa dicek "di luar boundary". */
+  groupBoundaryGeom: Set<string>;
   /** Lembaga yang koordinatnya di luar poligon kabupaten (hanya yang bisa dicek). */
   groupCoordinateOutside: Map<string, boolean>;
 }
@@ -89,6 +91,7 @@ export async function loadModuleFlagSets(args: {
     boundaries,
     benchmarks,
     groupBmp,
+    boundaryGeom,
     outsideBoundary,
     geometryArea,
     coordinateOutside,
@@ -143,18 +146,27 @@ export async function loadModuleFlagSets(args: {
       by: ["farmerGroupId"],
       where: { isActive: true, surveyYear: referenceYear, farmerGroup: groupWhere },
     }),
+    // Lembaga ber-boundary yang `geom`-nya terisi (baris hanya-geojson tak bisa dicek).
+    prisma.$queryRaw<{ id: string }[]>`
+      SELECT DISTINCT g.id
+      FROM tbl_farmer_group g
+      JOIN tbl_farmer_group_boundary b ON b.farmer_group_id = g.id AND b.is_active AND b.geom IS NOT NULL
+      WHERE ${rawScope}`,
     // Persil ber-geometry yang TIDAK beririsan dengan satu pun boundary ICS
-    // Lembaganya — hanya Lembaga yang punya boundary (#266). GiST di kedua `geom`.
+    // Lembaganya — hanya Lembaga yang punya boundary ber-geom (#266). GiST di kedua `geom`.
     prisma.$queryRaw<{ id: string }[]>`
       SELECT p.id
       FROM tbl_land_parcel p
       JOIN tbl_farmer f ON f.id = p.farmer_id AND f.is_active
       JOIN tbl_farmer_group g ON g.id = f.farmer_group_id
       WHERE p.is_active AND p.geom IS NOT NULL AND ${rawScope}
-        AND EXISTS (SELECT 1 FROM tbl_farmer_group_boundary b WHERE b.farmer_group_id = g.id AND b.is_active)
+        AND EXISTS (
+          SELECT 1 FROM tbl_farmer_group_boundary b
+          WHERE b.farmer_group_id = g.id AND b.is_active AND b.geom IS NOT NULL
+        )
         AND NOT EXISTS (
           SELECT 1 FROM tbl_farmer_group_boundary b
-          WHERE b.farmer_group_id = g.id AND b.is_active AND ST_Intersects(b.geom, p.geom)
+          WHERE b.farmer_group_id = g.id AND b.is_active AND b.geom IS NOT NULL AND ST_Intersects(b.geom, p.geom)
         )`,
     // Luas poligon (ha) dari kolom generated `geom` — pembanding kolom `area`.
     prisma.$queryRaw<{ id: string; ha: number }[]>`
@@ -199,6 +211,7 @@ export async function loadModuleFlagSets(args: {
       benchmark: ids(benchmarks, "farmerGroupId"),
       bmpGroupAssessment: ids(groupBmp, "farmerGroupId"),
     },
+    groupBoundaryGeom: ids(boundaryGeom, "id"),
     groupCoordinateOutside: new Map(coordinateOutside.map((r) => [r.id, r.outside])),
   };
 }
@@ -209,8 +222,8 @@ export function parcelModuleFlags(
   groupId: string
 ): ParcelModuleFlags {
   const p = sets.parcel;
-  // Di luar boundary hanya bisa dicek bila Lembaga punya boundary DAN persil ber-geometry.
-  const boundaryCheckable = sets.group.boundary.has(groupId) && sets.parcelGeometryAreaHa.has(parcel.id);
+  // Di luar boundary hanya bisa dicek bila Lembaga punya boundary ber-geom DAN persil ber-geometry.
+  const boundaryCheckable = sets.groupBoundaryGeom.has(groupId) && sets.parcelGeometryAreaHa.has(parcel.id);
   return {
     document: p.document.has(parcel.parcelUid),
     stdbIssued: p.stdbIssued.has(parcel.parcelUid),

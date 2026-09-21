@@ -54,7 +54,7 @@ Halaman: Detail Lembaga Petani (/admin/master-data/groups/[id])
 | `BreadcrumbOverride` | Navigasi | Menampilkan nama Lembaga, bukan id URL |
 | Header | Heading | Tombol kembali, nama lembaga, kode (mono), badge `RSPO`/`ISPO`/`SAP/MAP` + `Aktif`/`Nonaktif` |
 | Tombol `Edit` | Tombol | EDIT — buka `GroupFormModal` |
-| Kartu ringkasan (5) | Kartu | `Total Petani` (L/P), `Kelompok Tani` (Blok), `Persil Lahan` (Ha), `Produksi` (Ton, tahun ber-data), `Kelengkapan Data` (% berwarna band `scoreBand` + "n temuan anomali", link ke `/admin/data-analyst/data-completeness?lembaga=<id>` — Lembaga langsung terpilih & teranalisa, #352) |
+| Kartu ringkasan (5) | Kartu | `Total Petani` (L/P), `Kelompok Tani` (Blok), `Persil Lahan` (Ha), `Produksi` (Ton, tahun ber-data), `Kelengkapan Data` (% berwarna band `scoreBand` + label band, link ke `/admin/data-analyst/data-completeness?lembaga=<id>` — Lembaga langsung terpilih & teranalisa, #352; jumlah temuan sengaja tidak ditampilkan karena sebagian check kualitas butuh kueri satelit yang tidak dimuat kartu ini) |
 | Tabs | Tab | `Ringkasan`, `Petani`, `Lahan`, `Pelatihan`, `Produksi` |
 | Tab Ringkasan — profil | Kartu | Field: `Distrik`, `Kategori`, `Tipe Grup`, `Singkatan`, `Tahun Berdiri Lembaga`, `Tahun Bergabung Program`, `Sertifikasi RSPO`, `Sertifikasi ISPO`, `Assurance SAP/MAP`, `Koordinat`, `Dibuat`, `Terakhir Diubah` |
 | Tab Ringkasan — `Struktur Kelembagaan (dari lahan)` | Tabel | Kolom `Kelompok Tani`, `Petani`, `Lahan`, `Luas (Ha)`; link `Lihat roster lengkap →`; empty state `Belum ada data Kelompok Tani dari lahan.` |

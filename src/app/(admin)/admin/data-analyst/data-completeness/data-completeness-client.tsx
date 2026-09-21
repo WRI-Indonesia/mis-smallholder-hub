@@ -115,10 +115,11 @@ const KIND_META: Record<CheckKind, { label: string; className: string; hint: str
   inti: { label: "Inti", className: "bg-primary/10 text-primary", hint: "Masuk skor domain (bobot penuh)" },
   lapangan: { label: "Lapangan", className: "bg-sky-500/10 text-sky-700 dark:text-sky-400", hint: "Masuk skor domain (bobot 1/3 — atribut lapangan)" },
   validitas: { label: "Validitas", className: "bg-violet-500/10 text-violet-700 dark:text-violet-400", hint: "Masuk skor domain (nilai harus sahih/unik)" },
+  relasi: { label: "Relasi", className: "bg-slate-500/10 text-slate-700 dark:text-slate-300", hint: "Informatif — hubungan antar data (lahan, produksi), tidak mengubah skor; bisa dilipat sistemik" },
   kualitas: { label: "Kualitas", className: "bg-amber-500/10 text-amber-700 dark:text-amber-400", hint: "Informatif — konsistensi/plausibilitas, tidak mengubah skor" },
   modul: { label: "Modul", className: "bg-teal-500/10 text-teal-700 dark:text-teal-400", hint: "Informatif — cakupan modul tambahan, tidak mengubah skor" },
 };
-const KIND_ORDER: CheckKind[] = ["inti", "lapangan", "validitas", "kualitas", "modul"];
+const KIND_ORDER: CheckKind[] = ["inti", "lapangan", "validitas", "relasi", "kualitas", "modul"];
 
 const GRAIN_LABEL: Record<CheckRow["grain"], string> = {
   lembaga: "Lembaga",
@@ -281,6 +282,18 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
         pct: c.complete ? "100%" : "0%",
         fix: fixText(c.fix),
       })),
+      // Modul tingkat Lembaga (boundary, acuan, Monev Lembaga, sertifikasi) — dari moduleCoverage domain profil.
+      ...result.moduleCoverage
+        .filter((m) => m.domain === "profil")
+        .map((m) => ({
+          domain: MODULE_DOMAIN_LABELS.profil,
+          check: m.label,
+          jenis: KIND_META.modul.label,
+          bermasalah: m.total - m.covered,
+          total: m.total,
+          pct: m.pct == null ? "belum ada di Lembaga ini" : `${m.pct.toFixed(1)}%`,
+          fix: fixText(m.fix),
+        })),
       ...result.domains.flatMap((d) =>
         d.checks.map((c) => ({
           domain: d.label,
@@ -627,16 +640,19 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
 function PriorityPanel({ result, onJump }: { result: DataCompletenessResult; onJump: (d: CompletenessDomainKey) => void }) {
   const items = result.priorities.slice(0, 6);
   if (items.length === 0) {
+    const perfect = result.healthScore === 100;
     return (
-      <Card className="border-emerald-500/40 bg-emerald-500/5">
-        <CardContent className="flex items-center gap-2 py-4 text-sm text-emerald-700 dark:text-emerald-400">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Semua check berskor sudah lengkap — Index 100. Sisa temuan (bila ada) bersifat kualitas/modul.
+      <Card className={cn(perfect ? "border-emerald-500/40 bg-emerald-500/5" : "border-amber-500/40 bg-amber-500/5")}>
+        <CardContent className={cn("flex items-center gap-2 py-4 text-sm", perfect ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400")}>
+          {perfect ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
+          {perfect
+            ? "Semua check berskor sudah lengkap — Index 100. Sisa temuan (bila ada) bersifat kualitas/modul."
+            : "Tidak ada tindakan per entitas yang bisa diusulkan — domain berskor 0 karena belum ada petani/persil untuk dinilai. Daftarkan petani & lahannya dulu."}
         </CardContent>
       </Card>
     );
   }
-  const maxGain = items[0].indexGain;
+  const maxGain = Math.max(items[0].indexGain, 0.1);
   return (
     <Card>
       <CardContent className="pt-5">

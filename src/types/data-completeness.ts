@@ -11,9 +11,11 @@ export type CompletenessGrain = "lembaga" | "petani" | "persil" | "aktivitas";
 
 /**
  * Jenis check (#352 putaran 2): `inti`/`lapangan`/`validitas` masuk skor domain;
- * `kualitas` (konsistensi/plausibilitas) dan `modul` (cakupan satelit) informatif.
+ * `relasi` (hubungan antar data — bisa dilipat sistemik), `kualitas`
+ * (konsistensi/plausibilitas — tak pernah dilipat) dan `modul` (cakupan
+ * satelit) informatif.
  */
-export type CheckKind = "inti" | "lapangan" | "validitas" | "kualitas" | "modul";
+export type CheckKind = "inti" | "lapangan" | "validitas" | "relasi" | "kualitas" | "modul";
 
 // Rute perbaikan satu anomali/modul: menu tujuan + kolom yang diisi (#352 B2 "Perbaiki lewat").
 export type CompletenessFix = {

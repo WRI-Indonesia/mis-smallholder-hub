@@ -35,7 +35,9 @@ Setiap baris checklist berchip jenis:
 
 **Inti** — kolom wajib, masuk skor domain dengan bobot penuh. **Lapangan** — tahun tanam, status lahan, blok: masuk skor dengan bobot sepertiga. **Validitas** — nilai harus sahih/unik (NIK 16 digit & tidak duplikat, ID Petani unik): masuk skor.
 
-**Kualitas** — konsistensi & kewajaran, **tidak** mengubah skor: tanggal lahir vs NIK (digit 7–12 = hari-bulan-tahun, hari +40 untuk perempuan), jenis kelamin vs NIK, umur di luar 17–90 tahun, kemungkinan petani ganda (nama & tanggal lahir sama), Monev BMP tanpa rincian indikator, persil di luar boundary ICS, luas kolom vs luas poligon berbeda > 20 %, luas di luar 0,05–25 ha, tahun tanam < 1970 atau di masa depan, nilai post-test turun, nilai di luar 0–100, record produksi 0 kg, bulan produksi bolong, sertifikasi tahun-tanpa-status, tahun bergabung sebelum tahun berdiri, koordinat Lembaga di luar poligon kabupaten. Check yang tidak bisa dinilai (mis. Lembaga tanpa boundary) tidak ditampilkan atau bertanda "tidak ada yang bisa dicek".
+**Kualitas** — konsistensi & kewajaran, **tidak** mengubah skor: tanggal lahir vs NIK (digit 7–12 = hari-bulan-tahun, hari +40 untuk perempuan; tanggal dibaca sebagai hari yang dimaksud apa pun zona waktu penyimpanannya), jenis kelamin vs NIK, umur di luar 17–90 tahun, kemungkinan petani ganda (nama & tanggal lahir sama), Monev BMP tanpa rincian indikator, persil di luar boundary ICS, luas kolom vs luas poligon berbeda > 20 %, luas di luar 0,05–25 ha, tahun tanam < 1970 atau di masa depan, nilai post-test turun, nilai di luar 0–100, record produksi 0 kg, bulan produksi bolong, sertifikasi ber-tahun tanpa status (status tanpa tahun sah), tahun bergabung sebelum tahun berdiri, koordinat Lembaga di luar poligon kabupaten. Check yang tidak bisa dinilai (mis. Lembaga tanpa boundary) tidak ditampilkan atau bertanda "tidak ada yang bisa dicek".
+
+**Relasi** — hubungan antar data, **tidak** mengubah skor: petani tanpa lahan, petani berlahan tanpa produksi, produksi tanpa ID lahan, lahan tanpa produksi. Berbeda dari Kualitas, jenis ini boleh dilipat menjadi temuan sistemik bila kosong hampir seluruhnya.
 
 **Modul** — cakupan modul tambahan, lihat bawah.
 
@@ -43,7 +45,7 @@ Setiap baris checklist berchip jenis:
 
 **Per entitas** — satu baris per petani/persil yang bermasalah; jumlahnya masuk badge "n temuan" dan panel Anomali Terbanyak bagian *Per entitas*.
 
-**Sistemik** — bila satu check "kolom kosong" kosong pada ≥ 95 % entitas Lembaga (dan Lembaga punya ≥ 10 entitas), anomali itu dilipat menjadi **satu** temuan agregat "kolom belum pernah diisi". Check validitas, kualitas, dan paket pelatihan tidak pernah dilipat. Skor domain tidak berubah oleh pelipatan ini — hanya cara menghitung temuannya. Daftar lengkap tetap tersedia di Excel.
+**Sistemik** — bila satu check "kolom kosong" (Inti, Lapangan, Relasi) kosong pada ≥ 95 % entitas Lembaga (dan Lembaga punya ≥ 10 entitas), anomali itu dilipat menjadi **satu** temuan agregat "kolom belum pernah diisi". Check validitas, kualitas, dan paket pelatihan tidak pernah dilipat. Skor domain tidak berubah oleh pelipatan ini — hanya cara menghitung temuannya. Daftar lengkap tetap tersedia di Excel.
 
 **Perbaiki lewat** — tiap jenis anomali membawa menu tujuan dan kolom yang diisi, dari satu registri yang sama dengan yang dipakai skor.
 
@@ -53,7 +55,7 @@ Kenaikan Index bila satu check berskor dilengkapi 100 % = bobot domain × (berma
 
 ## Per Kelompok Tani
 
-Kelompok Tani diambil dari kolom KT tiap lahan. Skor Lahan KT = rata-rata kelengkapan persil di KT itu; Skor Petani KT = rata-rata check petani pemilik lahan di KT itu (satu petani bisa muncul di beberapa KT); Persil Berproduksi = persil non-PSR yang punya record produksi. Urutan: skor lahan terendah dulu.
+Kelompok Tani diambil dari kolom KT tiap lahan. Skor Lahan KT = rata-rata kelengkapan persil di KT itu; Skor Petani KT = rata-rata check petani pemilik lahan di KT itu (satu petani bisa muncul di beberapa KT); Persil Berproduksi = persil (termasuk PSR) yang punya record produksi, dari seluruh persil KT itu. Urutan: skor lahan terendah dulu.
 
 ## Cakupan modul
 

@@ -167,7 +167,9 @@ describe("computeProfileChecks", () => {
       modules: { boundary: true, benchmark: true, bmpGroupAssessment: false, coordinateOutsideDistrict: true },
     });
     const checks = computeProfileChecks(g);
-    expect(checks.find((c) => c.key === "sertifikasi-tidak-konsisten")).toMatchObject({ complete: false, value: "RSPO: 2024 / —" });
+    expect(checks.find((c) => c.key === "sertifikasi-tidak-konsisten")).toMatchObject({ complete: false, value: "RSPO: tahun 2024, status kosong" });
+    // Status TANPA tahun sah (#160/#169) — bukan anomali.
+    expect(computeProfileChecks(group({ ispoCertStatus: "CERTIFIED", ispoCertYear: null })).find((c) => c.key === "sertifikasi-tidak-konsisten")!.complete).toBe(true);
     expect(checks.find((c) => c.key === "tahun-bergabung-sebelum-berdiri")!.complete).toBe(false);
     expect(checks.find((c) => c.key === "koordinat-di-luar-distrik")!.complete).toBe(false);
     // Skor profil hanya dari check inti — tetap 100 walau 3 check kualitas gagal; temuan +3.
@@ -637,6 +639,41 @@ describe("check kualitas (#352 putaran 2)", () => {
     expect(nikBirthParts("1471019908900001")).toBeNull(); // hari 99 → bukan tanggal
     expect(birthDateParts(new Date("1990-08-15T00:00:00Z"))).toEqual({ day: 15, month: 8, year: 1990 });
     expect(birthDateParts(new Date("1990-08-14T17:00:00Z"))).toEqual({ day: 15, month: 8, year: 1990 });
+    // Bentuk simpanan lain di prod (review #352): WIB historis +7:30, WITA, WIT → tetap hari yang dimaksud.
+    expect(birthDateParts(new Date("1958-11-18T16:30:00Z"))).toEqual({ day: 19, month: 11, year: 1958 });
+    expect(birthDateParts(new Date("1990-08-14T16:00:00Z"))).toEqual({ day: 15, month: 8, year: 1990 });
+    expect(birthDateParts(new Date("1990-08-14T15:00:00Z"))).toEqual({ day: 15, month: 8, year: 1990 });
+  });
+
+  it("dup-nik hanya untuk NIK sahih — baris invalid & duplikat saling lepas", () => {
+    const d = computePetaniDomain([
+      farmer({ id: "a", farmerId: "A", name: "A", nik: "123" }),
+      farmer({ id: "b", farmerId: "B", name: "B", nik: "123" }),
+    ]);
+    expect(d.anomalies.find((x) => x.key === "invalid-nik")!.entityCount).toBe(2);
+    expect(d.anomalies.find((x) => x.key === "dup-nik")).toBeUndefined();
+  });
+
+  it("kt-tanpa-aktivitas ikut checklist (baris Lembaga 0/1 atau 1/1) dan temuan", () => {
+    const withAct = computePelatihanDomain([farmer()], [P1], [{ packageCode: P1.code, hasEvidence: true }]);
+    expect(withAct.checks.find((c) => c.key === "kt-tanpa-aktivitas")).toMatchObject({ flagged: 0, total: 1, kind: "inti" });
+    const noAct = computePelatihanDomain([farmer()], [P1], []);
+    expect(noAct.checks.find((c) => c.key === "kt-tanpa-aktivitas")).toMatchObject({ flagged: 1, total: 1 });
+    expect(noAct.anomalies.find((a) => a.key === "kt-tanpa-aktivitas")!.count).toBe(1);
+  });
+
+  it("jenis 'relasi' (petani tanpa lahan, lahan tanpa produksi, …) informatif tapi boleh dilipat; 'kualitas' tidak", () => {
+    const relasi = Object.entries(ANOMALY_CATALOG).filter(([, d]) => d.kind === "relasi").map(([k]) => k);
+    expect(relasi.sort()).toEqual(["berlahan-tanpa-produksi", "lahan-tanpa-produksi", "petani-tanpa-lahan", "produksi-tanpa-persil"]);
+    for (const [, d] of Object.entries(ANOMALY_CATALOG)) {
+      if (d.kind === "kualitas") expect(d.foldable).toBe(false);
+      if (d.kind === "relasi") expect(d.foldable).toBe(true);
+    }
+    // 20 petani tanpa lahan → satu temuan sistemik, baris checklist tanpa bobot.
+    const d = computeLahanDomain(Array.from({ length: 20 }, (_, i) => farmer({ id: `f${i}`, farmerId: `F-${i}`, name: `P${i}` })));
+    const a = d.anomalies.find((x) => x.key === "petani-tanpa-lahan")!;
+    expect(a.systemic).toBe(true);
+    expect(d.checks.find((c) => c.key === "petani-tanpa-lahan")!.weight).toBeUndefined();
   });
 
   it("NIK ↔ tanggal lahir: cocok lolos; tertukar hari/bulan diberi petunjuk; NIK tak valid tidak dicek", () => {
@@ -803,6 +840,11 @@ describe("check kualitas (#352 putaran 2)", () => {
     expect(rows[0]).toMatchObject({ lahanScore: 80, petaniScore: 83.3 }); // petani B tanpa NIK
     expect(rows[1]).toMatchObject({ farmers: 1, parcels: 1, lahanScore: 80, parcelsProducing: 0, parcelsProducingPct: 0 });
     expect(rows[2]).toMatchObject({ lahanScore: 100, parcelsProducing: 1, parcelsProducingPct: 100, areaHa: 1.5 });
+    // Persil PSR ber-produksi tetap dihitung berproduksi; penyebut = semua persil KT (review #352).
+    const psr = computeByKelompokTani([
+      farmer({ landParcels: [{ ...validParcel, id: "p9", parcelId: "P9", isPsr: true, subGroupLv2: "KT PSR" }], productionRecords: [freshRecord("r9", "p9")] }),
+    ]);
+    expect(psr[0]).toMatchObject({ name: "KT PSR", parcelsProducing: 1, parcelsProducingPct: 100 });
   });
 });
 

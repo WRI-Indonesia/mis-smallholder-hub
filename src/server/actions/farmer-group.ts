@@ -236,6 +236,8 @@ export async function getFarmerGroupDetail(id: string) {
   // Skor kelengkapan DA-02 (card + link — rincian tetap di halaman Analisa).
   // Tanpa `modules`: cakupan modul (#352 A1) informatif & di luar Index, jadi
   // kartu ini tak perlu kueri satelit — skornya tetap identik dengan DA-02.
+  // Jumlah temuan TIDAK dikirim: sebagian check kualitas butuh flag satelit
+  // sehingga angkanya akan berbeda dari halaman DA-02 (review #352).
   const completenessInput: CompletenessGroupInput = {
     id: group.id,
     name: group.name,
@@ -297,10 +299,7 @@ export async function getFarmerGroupDetail(id: string) {
   return {
     group,
     detail,
-    completeness: {
-      healthScore: completeness.healthScore,
-      totalAnomalies: completeness.totalAnomalies,
-    },
+    completeness: { healthScore: completeness.healthScore },
     // Patok (#331): titik di peta sebaran + KPI kondisi.
     markerPoints,
     // Poligon untuk peta sebaran lahan (tab Lahan) — hanya field yang dipakai peta/popup.

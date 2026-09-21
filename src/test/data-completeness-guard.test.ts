@@ -12,15 +12,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
 const getAccessContext = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/access-context", () => ({
-  getAccessContext,
-  farmerGroupAccessFilter: (access: { mode: string; ids: string[] }) =>
-    access.mode === "BY_FARMER_GROUP"
-      ? { id: { in: access.ids } }
-      : access.mode === "BY_DISTRICT"
-        ? { districtId: { in: access.ids } }
-        : {},
-}));
+vi.mock("@/lib/access-context", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/access-context")>();
+  return {
+    getAccessContext,
+    farmerGroupAccessFilter: (access: { mode: string; ids: string[] }) =>
+      access.mode === "BY_FARMER_GROUP"
+        ? { id: { in: access.ids } }
+        : access.mode === "BY_DISTRICT"
+          ? { districtId: { in: access.ids } }
+          : {},
+    // Helper murni — pakai implementasi asli (cermin scope untuk kueri PostGIS mentah).
+    rawFarmerGroupScope: actual.rawFarmerGroupScope,
+  };
+});
 
 const db = vi.hoisted(() => {
   const groupBy = () => vi.fn().mockResolvedValue([]);
@@ -124,8 +129,8 @@ describe("analyzeFarmerGroupCompleteness — scope", () => {
   it("kueri PostGIS mentah (boundary, luas poligon, koordinat) membawa scope Lembaga & distrik sebagai parameter", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d-1"] });
     await analyzeFarmerGroupCompleteness("g-1");
-    // 3 kueri mentah; tiap kueri menyisipkan array scope (id Lembaga + distrik) sebagai nilai parameter.
-    expect(db.$queryRaw).toHaveBeenCalledTimes(3);
+    // 4 kueri mentah; tiap kueri menyisipkan array scope (id Lembaga + distrik) sebagai nilai parameter.
+    expect(db.$queryRaw).toHaveBeenCalledTimes(4);
     for (const call of db.$queryRaw.mock.calls) {
       const values = JSON.stringify(call.slice(1));
       expect(values).toContain('["g-1"]');

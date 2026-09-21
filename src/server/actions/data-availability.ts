@@ -3,7 +3,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
-import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
+import { getAccessContext, farmerGroupAccessFilter, rawFarmerGroupScope } from "@/lib/access-context";
 import { buildAvailabilityEntry } from "@/lib/data-availability-aggregation";
 import { currentPeriod } from "@/lib/data-completeness";
 import {
@@ -141,10 +141,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
     loadModuleFlagSets({
       farmerWhere,
       groupWhere,
-      scope: {
-        groupIds: access.mode === "BY_FARMER_GROUP" ? access.ids : undefined,
-        districtIds: access.mode === "BY_DISTRICT" ? access.ids : undefined,
-      },
+      scope: rawFarmerGroupScope(access),
       referenceYear,
     }),
     loadEstimateRecordIds(farmerWhere),

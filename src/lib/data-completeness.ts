@@ -24,7 +24,7 @@ import type {
 } from "@/types/data-completeness";
 import {
   anomalyDef,
-  BIRTH_DATE_TZ_OFFSET_HOURS,
+  BIRTH_DATE_DAY_ANCHOR_HOURS,
   FARMER_AGE_MAX,
   FARMER_AGE_MIN,
   FARMER_CHECK_COUNT,
@@ -76,14 +76,44 @@ export function monthsBetween(from: string, to: string): number {
 
 /**
  * Komponen tanggal lahir seperti yang DIMAKSUD pengguna. Kolom `birth_date`
- * tersimpan sebagai timestamp tanpa zona: sebagian baris `00:00 UTC`, sebagian
- * `17:00 UTC` (= 00:00 WIB hari berikutnya, hasil form browser). Menggeser
- * +7 jam lalu membaca komponen UTC memberi tanggal lokal yang benar untuk
- * kedua bentuk itu.
+ * tersimpan sebagai timestamp tanpa zona dengan beragam jam (00:00 UTC dari
+ * impor; 17:00 / 16:30 / 16:00 / 15:00 UTC = tengah malam WIB / WIB historis /
+ * WITA / WIT dari form browser). Menggeser +12 jam lalu membaca komponen UTC
+ * = membulatkan ke hari terdekat — benar untuk semua bentuk itu.
  */
 export function birthDateParts(d: Date): { day: number; month: number; year: number } {
-  const shifted = new Date(d.getTime() + BIRTH_DATE_TZ_OFFSET_HOURS * 3600 * 1000);
+  const shifted = new Date(d.getTime() + BIRTH_DATE_DAY_ANCHOR_HOURS * 3600 * 1000);
   return { day: shifted.getUTCDate(), month: shifted.getUTCMonth() + 1, year: shifted.getUTCFullYear() };
+}
+
+/** Peta jumlah NIK & ID Petani (trim) — pembeda "unik" untuk check NIK/ID. */
+function identityCounts(farmers: CompletenessFarmerInput[]) {
+  const nikCount = new Map<string, number>();
+  const farmerIdCount = new Map<string, number>();
+  for (const f of farmers) {
+    const nik = f.nik?.trim();
+    if (nik) nikCount.set(nik, (nikCount.get(nik) ?? 0) + 1);
+    const fid = f.farmerId?.trim();
+    if (fid) farmerIdCount.set(fid, (farmerIdCount.get(fid) ?? 0) + 1);
+  }
+  return { nikCount, farmerIdCount };
+}
+
+/**
+ * Proporsi check petani yang lolos (0–1): NIK sahih & unik, ID Petani unik,
+ * lalu FARMER_FIELD_CHECKS — satu sumber untuk skor domain Petani & rincian per KT.
+ */
+export function farmerCompleteness(
+  f: CompletenessFarmerInput,
+  counts: ReturnType<typeof identityCounts>
+): number {
+  const nik = f.nik?.trim();
+  const nikOk = !!nik && NIK_REGEX.test(nik) && (counts.nikCount.get(nik) ?? 0) === 1;
+  const fid = f.farmerId?.trim();
+  const farmerIdOk = !!fid && (counts.farmerIdCount.get(fid) ?? 0) === 1;
+  const passed =
+    (nikOk ? 1 : 0) + (farmerIdOk ? 1 : 0) + FARMER_FIELD_CHECKS.reduce((s, c) => s + (c.complete(f) ? 1 : 0), 0);
+  return passed / FARMER_CHECK_COUNT;
 }
 
 /**
@@ -211,18 +241,16 @@ export function computePetaniDomain(farmers: CompletenessFarmerInput[], referenc
   const total = farmers.length;
   const refYear = referenceYear ?? Number(currentPeriod().slice(0, 4));
 
-  const nikCount = new Map<string, number>();
-  const farmerIdCount = new Map<string, number>();
-  for (const f of farmers) {
-    const nik = f.nik?.trim();
-    if (nik) nikCount.set(nik, (nikCount.get(nik) ?? 0) + 1);
-    const fid = f.farmerId?.trim();
-    if (fid) farmerIdCount.set(fid, (farmerIdCount.get(fid) ?? 0) + 1);
-  }
+  const counts = identityCounts(farmers);
+  const { nikCount, farmerIdCount } = counts;
 
   const noNik = farmers.filter((f) => isBlank(f.nik));
   const invalidNik = farmers.filter((f) => !isBlank(f.nik) && !NIK_REGEX.test(f.nik!.trim()));
-  const dupNik = farmers.filter((f) => !isBlank(f.nik) && (nikCount.get(f.nik!.trim()) ?? 0) > 1);
+  // Duplikat hanya dinilai pada NIK sahih — baris invalid & duplikat saling lepas
+  // (satu petani satu baris NIK; Σ Δ prioritas tidak menghitung ganda).
+  const dupNik = farmers.filter(
+    (f) => !isBlank(f.nik) && NIK_REGEX.test(f.nik!.trim()) && (nikCount.get(f.nik!.trim()) ?? 0) > 1
+  );
   const dupFarmerId = farmers.filter(
     (f) => !isBlank(f.farmerId) && (farmerIdCount.get(f.farmerId.trim()) ?? 0) > 1
   );
@@ -301,21 +329,7 @@ export function computePetaniDomain(farmers: CompletenessFarmerInput[], referenc
   const completeFarmers = total - flagged.size;
 
   // Skor graded: rata-rata proporsi check per petani.
-  const checksPassed = (f: CompletenessFarmerInput): number => {
-    const nik = f.nik?.trim();
-    const nikOk = !!nik && NIK_REGEX.test(nik) && (nikCount.get(nik) ?? 0) === 1;
-    const fid = f.farmerId?.trim();
-    const farmerIdOk = !!fid && (farmerIdCount.get(fid) ?? 0) === 1;
-    return (
-      (nikOk ? 1 : 0) +
-      (farmerIdOk ? 1 : 0) +
-      FARMER_FIELD_CHECKS.reduce((s, c) => s + (c.complete(f) ? 1 : 0), 0)
-    );
-  };
-  const score =
-    total > 0
-      ? (farmers.reduce((s, f) => s + checksPassed(f) / FARMER_CHECK_COUNT, 0) / total) * 100
-      : 0;
+  const score = total > 0 ? (farmers.reduce((s, f) => s + farmerCompleteness(f, counts), 0) / total) * 100 : 0;
 
   // Bobot per check inti/validitas = 1 dari FARMER_CHECK_COUNT (NIK: 3 baris berbagi satu check).
   const w = 1 / FARMER_CHECK_COUNT;
@@ -535,7 +549,23 @@ export function computePelatihanDomain(
     .map((f) => toItem(f));
 
   const packageWeight = requiredCodes.length > 0 ? 1 / requiredCodes.length : undefined;
+  // Anomali tingkat Lembaga (satu temuan tanpa daftar entitas): penyebut 1 Lembaga,
+  // entityCount 1 bila tak ada aktivitas sama sekali — ikut checklist & Excel.
+  const noActivityDef = anomalyDef("kt-tanpa-aktivitas");
+  const noActivity: DomainAnomaly = {
+    key: "kt-tanpa-aktivitas",
+    label: noActivityDef.label,
+    kind: noActivityDef.kind,
+    count: activities.length === 0 ? 1 : 0,
+    entityCount: activities.length === 0 ? 1 : 0,
+    total: 1,
+    grain: noActivityDef.grain,
+    systemic: false,
+    fix: noActivityDef.fix,
+    items: [],
+  };
   const all: DomainAnomaly[] = [
+    noActivity,
     ...packageCoverage.map((p) =>
       anomaly(`${PACKAGE_ANOMALY_PREFIX}${p.code}`, p.notCoveredFarmers, total, `Belum ikut ${p.label}`)
     ),
@@ -545,23 +575,6 @@ export function computePelatihanDomain(
     anomaly("nilai-di-luar-rentang", scoreOutOfRange, participants.length),
   ];
   const anomalies = withFindings(all);
-
-  if (activities.length === 0) {
-    // Anomali tingkat Lembaga — satu temuan tanpa daftar entitas (penyebut 0 → tak pernah "sistemik").
-    const def = anomalyDef("kt-tanpa-aktivitas");
-    anomalies.unshift({
-      key: "kt-tanpa-aktivitas",
-      label: def.label,
-      kind: def.kind,
-      count: 1,
-      entityCount: 1,
-      total: 0,
-      grain: def.grain,
-      systemic: false,
-      fix: def.fix,
-      items: [],
-    });
-  }
 
   return {
     domain: "pelatihan",
@@ -784,24 +797,8 @@ export function computeByKelompokTani(farmers: CompletenessFarmerInput[]): Kelom
   const producingParcelIds = new Set<string>();
   for (const f of farmers) for (const r of f.productionRecords) if (r.parcelId) producingParcelIds.add(r.parcelId);
 
-  const nikCount = new Map<string, number>();
-  const farmerIdCount = new Map<string, number>();
-  for (const f of farmers) {
-    const nik = f.nik?.trim();
-    if (nik) nikCount.set(nik, (nikCount.get(nik) ?? 0) + 1);
-    const fid = f.farmerId?.trim();
-    if (fid) farmerIdCount.set(fid, (farmerIdCount.get(fid) ?? 0) + 1);
-  }
-  const farmerScore = (f: CompletenessFarmerInput) => {
-    const nik = f.nik?.trim();
-    const nikOk = !!nik && NIK_REGEX.test(nik) && (nikCount.get(nik) ?? 0) === 1;
-    const fid = f.farmerId?.trim();
-    const farmerIdOk = !!fid && (farmerIdCount.get(fid) ?? 0) === 1;
-    return (
-      ((nikOk ? 1 : 0) + (farmerIdOk ? 1 : 0) + FARMER_FIELD_CHECKS.reduce((s, c) => s + (c.complete(f) ? 1 : 0), 0)) /
-      FARMER_CHECK_COUNT
-    );
-  };
+  const counts = identityCounts(farmers);
+  const farmerScore = (f: CompletenessFarmerInput) => farmerCompleteness(f, counts);
 
   type Acc = { farmers: Set<string>; farmerScores: number[]; parcels: number; area: number; lahan: number; producing: number };
   const acc = new Map<string, Acc>();
@@ -813,7 +810,8 @@ export function computeByKelompokTani(farmers: CompletenessFarmerInput[]): Kelom
       a.parcels += 1;
       a.area += p.area ?? 0;
       a.lahan += parcelCompleteness(p);
-      if (!p.isPsr && producingParcelIds.has(p.id)) a.producing += 1;
+      // Persil berproduksi = persil (PSR atau bukan) yang punya record produksi — penyebutnya semua persil KT.
+      if (producingParcelIds.has(p.id)) a.producing += 1;
       if (!seenKt.has(name)) {
         seenKt.add(name);
         a.farmers.add(f.id);

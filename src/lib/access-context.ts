@@ -52,6 +52,25 @@ export function farmerGroupAccessFilter(access: AccessContext) {
 }
 
 /**
+ * Cermin `farmerGroupAccessFilter` untuk kueri SQL mentah (PostGIS) yang tidak
+ * bisa memakai objek where Prisma: daftar id Lembaga / distrik, `undefined` =
+ * tanpa batasan. Satu sumber agar mode akses baru tidak bocor di jalur mentah
+ * (review #352). Sisipkan `groupIds` tambahan bila kueri hanya untuk satu Lembaga.
+ */
+export function rawFarmerGroupScope(
+  access: AccessContext,
+  groupIds?: string[],
+): { groupIds?: string[]; districtIds?: string[] } {
+  const scopedGroups = access.mode === "BY_FARMER_GROUP" ? access.ids : undefined;
+  const ids =
+    groupIds && scopedGroups ? groupIds.filter((id) => scopedGroups.includes(id)) : (groupIds ?? scopedGroups);
+  return {
+    groupIds: ids,
+    districtIds: access.mode === "BY_DISTRICT" ? access.ids : undefined,
+  };
+}
+
+/**
  * Prisma `where` fragment scoping a query on a model that carries a
  * `farmerGroupId` field + `farmerGroup` relation (e.g. `Farmer`,
  * `TrainingActivity`). Replaces the hand-written ternary repeated across actions.

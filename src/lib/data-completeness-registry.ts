@@ -46,8 +46,13 @@ export const PARCEL_AREA_MAX_HA = 25;
 export const PARCEL_AREA_MISMATCH_RATIO = 0.2;
 /** Tahun tanam wajar (batas bawah; batas atas = tahun acuan). */
 export const PLANTING_YEAR_MIN = 1970;
-/** Offset zona waktu penyimpanan tanggal lahir (WIB, UTC+7) — lihat `birthDateParts`. */
-export const BIRTH_DATE_TZ_OFFSET_HOURS = 7;
+/**
+ * Jangkar pembacaan tanggal lahir: +12 jam lalu baca komponen UTC = "bulatkan
+ * ke hari terdekat". Menangani semua bentuk penyimpanan yang ada (00:00 UTC,
+ * 17:00 UTC = WIB, 16:30 UTC = WIB historis pra-1964, 16:00/15:00 = WITA/WIT)
+ * — jangkar +7 jam gagal untuk 615 petani di prod (review #352).
+ */
+export const BIRTH_DATE_DAY_ANCHOR_HOURS = 12;
 
 // ── Rute perbaikan (menu tujuan + kolom) ──
 
@@ -156,7 +161,8 @@ const quality = (
 export const ANOMALY_CATALOG: Record<string, AnomalyDef> = {
   // Profil Lembaga (disintesis DA-03 dari check profil yang gagal)
   "profil-tidak-lengkap": strict("Profil Lembaga belum lengkap", "profil", "lembaga", FIX.groupForm("kolom profil yang kosong"), "inti"),
-  "sertifikasi-tidak-konsisten": quality("Tahun sertifikasi tanpa status (atau sebaliknya)", "profil", "lembaga", FIX.groupForm("Tahun & Status RSPO / ISPO / SAP-MAP")),
+  // Status tanpa tahun SAH (#160/#169: ada yang tersertifikasi tanpa info tahun) — hanya tahun tanpa status yang janggal.
+  "sertifikasi-tidak-konsisten": quality("Tahun sertifikasi terisi tanpa status", "profil", "lembaga", FIX.groupForm("Status RSPO / ISPO / SAP-MAP")),
   "tahun-bergabung-sebelum-berdiri": quality("Tahun bergabung program lebih awal dari tahun berdiri", "profil", "lembaga", FIX.groupForm("Tahun Berdiri / Tahun Bergabung")),
   "koordinat-di-luar-distrik": quality("Koordinat Lembaga di luar poligon kabupaten", "profil", "lembaga", FIX.groupForm("Latitude/Longitude")),
   // Petani
@@ -174,7 +180,9 @@ export const ANOMALY_CATALOG: Record<string, AnomalyDef> = {
   "petani-kemungkinan-ganda": quality("Kemungkinan petani ganda (nama & tanggal lahir sama)", "petani", "petani", FIX.farmerForm("gabungkan / nonaktifkan salah satu")),
   "monev-tanpa-rincian": quality("Penilaian Monev BMP tanpa rincian indikator (rekap saja)", "petani", "petani", FIX.bmp()),
   // Lahan
-  "petani-tanpa-lahan": blank("Petani tanpa lahan aktif", "lahan", "petani", FIX.parcelShapefile("poligon lahan")),
+  // Check RELASI: hubungan antar data (bukan kolom entitas) — tidak masuk skor,
+  // tetapi "kolom kosong" secara semantik sehingga boleh dilipat sistemik.
+  "petani-tanpa-lahan": blank("Petani tanpa lahan aktif", "lahan", "petani", FIX.parcelShapefile("poligon lahan"), "relasi"),
   "persil-tanpa-geometry": blank("Persil tanpa geometry", "lahan", "persil", FIX.parcelShapefile("geometry")),
   "persil-tanpa-luas": blank("Persil tanpa luas", "lahan", "persil", FIX.parcelShapefile("area")),
   "persil-tanpa-jenis-tanaman": blank("Persil tanpa jenis tanaman", "lahan", "persil", FIX.parcelShapefile("crop_type")),
@@ -194,9 +202,9 @@ export const ANOMALY_CATALOG: Record<string, AnomalyDef> = {
   "nilai-di-luar-rentang": quality("Nilai pre/post-test di luar 0–100", "pelatihan", "petani", FIX.training("Nilai Pre/Post-test")),
   // Produksi
   "petani-tanpa-produksi": blank("Petani tanpa data produksi", "produksi", "petani", FIX.production()),
-  "berlahan-tanpa-produksi": blank("Petani punya lahan (non-PSR) tapi tanpa produksi", "produksi", "petani", FIX.production(), "kualitas"),
+  "berlahan-tanpa-produksi": blank("Petani punya lahan (non-PSR) tapi tanpa produksi", "produksi", "petani", FIX.production(), "relasi"),
   // Kolom ID Lahan pada baris produksi kosong → "kolom kosong", boleh dilipat.
-  "produksi-tanpa-persil": blank("Produksi tidak terhubung ke persil", "produksi", "petani", FIX.production("ID Lahan pada baris produksi"), "kualitas"),
+  "produksi-tanpa-persil": blank("Produksi tidak terhubung ke persil", "produksi", "petani", FIX.production("ID Lahan pada baris produksi"), "relasi"),
   "produksi-basi": strict(
     `Produksi tidak diperbarui ≥ ${PRODUCTION_STALE_MONTHS} bulan terakhir`,
     "produksi",
@@ -204,7 +212,7 @@ export const ANOMALY_CATALOG: Record<string, AnomalyDef> = {
     FIX.production("periode bulan berjalan"),
     "kualitas",
   ),
-  "lahan-tanpa-produksi": blank("Lahan aktif (non-PSR) tanpa produksi", "produksi", "persil", FIX.production("ID Lahan pada baris produksi"), "kualitas"),
+  "lahan-tanpa-produksi": blank("Lahan aktif (non-PSR) tanpa produksi", "produksi", "persil", FIX.production("ID Lahan pada baris produksi"), "relasi"),
   "produksi-nol": quality("Record produksi bernilai 0 kg", "produksi", "petani", FIX.production("Hasil (kg)")),
   "produksi-bulan-bolong": quality("Bulan produksi bolong di antara periode pertama dan terakhir", "produksi", "petani", FIX.production("periode yang terlewat")),
 };
@@ -274,11 +282,12 @@ export const PROFILE_QUALITY_CHECKS: {
 }[] = [
   {
     key: "sertifikasi-tidak-konsisten",
-    complete: (g) => certPairs(g).every(([, year, status]) => (year == null) === isBlank(status)),
+    // Sama dengan `hasStatusIfYear` di farmer-group.schema.ts: tahun ⇒ status wajib.
+    complete: (g) => certPairs(g).every(([, year, status]) => year == null || !isBlank(status)),
     value: (g) =>
       certPairs(g)
-        .filter(([, year, status]) => (year == null) !== isBlank(status))
-        .map(([name, year, status]) => `${name}: ${year ?? "—"} / ${status ?? "—"}`)
+        .filter(([, year, status]) => year != null && isBlank(status))
+        .map(([name, year]) => `${name}: tahun ${year}, status kosong`)
         .join("; ") || null,
   },
   {

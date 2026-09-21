@@ -28,7 +28,7 @@ import type { MarkerPoint } from "@/lib/land-marker-query";
 import { formatNumber } from "@/lib/format";
 import { isNktAffected } from "@/lib/land-parcel-satellite-format";
 import { scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_TEXT } from "@/lib/score-band-styles";
+import { BAND_LEGEND, BAND_TEXT } from "@/lib/score-band-styles";
 import { toast } from "sonner";
 import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
 import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-export";
@@ -76,7 +76,7 @@ interface GroupRow {
 interface Props {
   group: GroupRow;
   detail: FarmerGroupDetailData;
-  completeness: { healthScore: number; totalAnomalies: number };
+  completeness: { healthScore: number };
   mapParcels: DistributionMapParcel[];
   /** Patok batas Lembaga (#331) — titik di peta sebaran + KPI kondisi. */
   markerPoints: MarkerPoint[];
@@ -356,7 +356,7 @@ export function GroupDetailClient({
           title="Kelengkapan Data"
           value={`${Math.round(completeness.healthScore)}%`}
           valueClassName={BAND_TEXT[scoreBand(completeness.healthScore)]}
-          sub={`${formatNumber(completeness.totalAnomalies)} temuan anomali · lihat analisa →`}
+          sub={`${BAND_LEGEND.find((b) => b.band === scoreBand(completeness.healthScore))?.label ?? ""} · lihat analisa →`}
           href={`/admin/data-analyst/data-completeness?lembaga=${group.id}`}
         />
       </div>
