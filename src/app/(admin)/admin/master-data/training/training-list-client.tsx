@@ -36,15 +36,9 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
 
 export const TRAINING_CATEGORY_LABELS: Record<string, string> = {
   PAKET_1_BMP_PC_RSPO_NKT: "Paket 1 - BMP + P&C RSPO + NKT",
@@ -110,7 +104,7 @@ export function TrainingListClient({
   const [groupFilter, setGroupFilter] = useState("all");
   const [packageFilter, setPackageFilter] = useState("all");
   const [packageComboOpen, setPackageComboOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const [showForm, setShowForm] = useState(false);
   const [editActivity, setEditActivity] = useState<TrainingActivity | null>(null);
   const router = useRouter();
@@ -330,16 +324,7 @@ export function TrainingListClient({
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (
-        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="active">Aktif</SelectItem>
-            <SelectItem value="inactive">Nonaktif</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
     </div>
   );

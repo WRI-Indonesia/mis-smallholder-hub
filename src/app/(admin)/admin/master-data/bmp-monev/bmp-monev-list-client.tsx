@@ -28,6 +28,7 @@ import {
 import { formatNumber } from "@/lib/format";
 import { BmpAssessmentFormModal } from "./bmp-assessment-form-modal";
 import { BmpMonevImportDialog } from "./bmp-monev-import-dialog";
+import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
 
 interface Props {
   initialRows: BmpAssessmentListItem[];
@@ -44,7 +45,7 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
   const [groupFilter, setGroupFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editRow, setEditRow] = useState<BmpAssessmentListItem | null>(null);
@@ -229,16 +230,7 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
         </SelectContent>
       </Select>
       {isSuperAdmin && (
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "active")}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="active">Aktif</SelectItem>
-            <SelectItem value="inactive">Nonaktif</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
     </div>
   );

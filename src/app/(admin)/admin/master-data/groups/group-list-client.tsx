@@ -6,13 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NktCountBadge } from "@/components/shared/nkt-count-badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, Building, Users, Layers, Trees } from "lucide-react";
 import { GroupFormModal } from "./group-form-modal";
 import { toggleFarmerGroupActive } from "@/server/actions/farmer-group";
@@ -31,6 +24,7 @@ import {
   formatSapMapAssurance,
 } from "@/lib/farmer-group-labels";
 import { formatNumber, formatArea } from "@/lib/format";
+import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
 
 interface FarmerGroup {
   id: string;
@@ -80,7 +74,7 @@ const certSortValue = (year: number | null, status: string | null) =>
 
 export function GroupListClient({ initialGroups, districts, permissions, isSuperAdmin }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const [showForm, setShowForm] = useState(false);
   const [editGroup, setEditGroup] = useState<FarmerGroup | null>(null);
   const router = useRouter();
@@ -287,16 +281,7 @@ export function GroupListClient({ initialGroups, districts, permissions, isSuper
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "active")}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="active">Aktif</SelectItem>
-            <SelectItem value="inactive">Nonaktif</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
     </div>
   );

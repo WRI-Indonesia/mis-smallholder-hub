@@ -10,9 +10,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   ChevronRight, ChevronDown, Search, Plus, Pencil, Trash2, RotateCcw, Map, Building2, MapPin, Home,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +17,7 @@ import {
   toggleProvinceActive, toggleDistrictActive, toggleSubdistrictActive, toggleVillageActive,
 } from "@/server/actions/region";
 import { RegionFormModal, type RegionLevel, type RegionFormData } from "./region-form-modal";
+import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -121,7 +119,7 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
   const [, startTransition] = useTransition();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("all");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Modal state
@@ -383,16 +381,7 @@ export function RegionListClient({ initialData, permissions }: RegionListClientP
             />
           </div>
 
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Semua Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
-              <SelectItem value="active">Aktif</SelectItem>
-              <SelectItem value="inactive">Nonaktif</SelectItem>
-            </SelectContent>
-          </Select>
+          <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} fallback="all" className="w-[150px]" />
 
           {permissions.includes("CREATE") && (
             <Button onClick={() => openCreate("province")}>

@@ -8,6 +8,9 @@ export default defineConfig({
     // kelak: pasang lagi `jsdom` (devDep) lalu `// @vitest-environment jsdom` per berkas.
     environment: 'node',
     globals: true,
+    // Zona waktu runner dipin (#288): test tanggal (NIK ↔ tanggal lahir +12 jam,
+    // WIB vs UTC di snapshot/laporan) tidak boleh bergantung TZ mesin.
+    env: { TZ: 'UTC' },
   },
   resolve: {
     alias: {

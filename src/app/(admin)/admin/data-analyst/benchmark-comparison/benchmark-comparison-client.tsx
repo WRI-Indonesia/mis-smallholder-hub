@@ -238,6 +238,8 @@ export function BenchmarkComparisonClient({ view, canEdit, canExport }: Props) {
         <Select
           value={districtFilter}
           onValueChange={(v) => setMany({ distrik: v === "all" ? null : v })}
+          // `items`: pemicu menampilkan nama distrik, bukan id (#350).
+          items={[{ value: "all", label: "Semua distrik" }, ...localView.sections.map((s) => ({ value: s.districtId, label: s.districtName }))]}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Semua distrik" />

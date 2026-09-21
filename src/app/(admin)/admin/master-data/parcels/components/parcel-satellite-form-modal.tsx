@@ -209,7 +209,7 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
             <>
               <div className="space-y-2">
                 <Label>Jenis Surat *</Label>
-                <Select value={docType} onValueChange={(v) => setDocType(v ?? "")}>
+                <Select value={docType} onValueChange={(v) => setDocType(v ?? "")} items={LAND_DOCUMENT_TYPES.map((t) => ({ value: t, label: LAND_DOCUMENT_TYPE_LABELS[t] }))}>
                   <SelectTrigger className="w-full h-9"><SelectValue placeholder="Pilih jenis surat" /></SelectTrigger>
                   <SelectContent>
                     {LAND_DOCUMENT_TYPES.map((t) => (
@@ -255,7 +255,7 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
             <>
               <div className="space-y-2">
                 <Label>Tahap *</Label>
-                <Select value={stdbStage} onValueChange={(v) => setStdbStage(v ?? "TERBIT")}>
+                <Select value={stdbStage} onValueChange={(v) => setStdbStage(v ?? "TERBIT")} items={LAND_STDB_STAGES.map((s) => ({ value: s, label: LAND_STDB_STAGE_LABELS[s] }))}>
                   <SelectTrigger className="w-full h-9"><SelectValue placeholder="Pilih tahap" /></SelectTrigger>
                   <SelectContent>
                     {LAND_STDB_STAGES.map((s) => (

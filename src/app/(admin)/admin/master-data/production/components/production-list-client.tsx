@@ -27,6 +27,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
+
+/** Filter Lahan — `items` supaya pemicu menampilkan label ("Terpetakan"), bukan "true" (#350). */
+const HAS_PARCEL_ITEMS = [
+  { value: "all", label: "Semua Lahan" },
+  { value: "true", label: "Terpetakan" },
+  { value: "false", label: "Belum Terpetakan" },
+];
 
 interface ProductionRecord {
   id: string;
@@ -67,7 +75,7 @@ export function ProductionListClient({
   const [farmerGroupFilter, setFarmerGroupFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("");
   const [hasParcelFilter, setHasParcelFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const router = useRouter();
 
   const filtered = initialRecords.filter((r) => {
@@ -218,29 +226,22 @@ export function ProductionListClient({
       />
 
       {/* Lahan filter */}
-      <Select value={hasParcelFilter} onValueChange={(val) => setHasParcelFilter(val ?? "all")}>
+      <Select value={hasParcelFilter} onValueChange={(val) => setHasParcelFilter(val ?? "all")} items={HAS_PARCEL_ITEMS}>
         <SelectTrigger className="w-[160px] h-9">
           <SelectValue placeholder="Lahan" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Semua Lahan</SelectItem>
-          <SelectItem value="true">Terpetakan</SelectItem>
-          <SelectItem value="false">Belum Terpetakan</SelectItem>
+          {HAS_PARCEL_ITEMS.map((i) => (
+            <SelectItem key={i.value} value={i.value}>
+              {i.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (
-        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="active">Aktif</SelectItem>
-            <SelectItem value="inactive">Nonaktif</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
     </div>
   );
