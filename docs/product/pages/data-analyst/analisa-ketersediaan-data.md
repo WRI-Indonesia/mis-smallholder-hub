@@ -75,7 +75,7 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 
 ## Aturan skor (per 2026-09-21, #352 — melanjutkan #193)
 
-- **Bobot antar domain** (`DOMAIN_WEIGHTS`, `src/lib/data-completeness.ts`): profil 10%, petani 25%, lahan 25%, pelatihan 20%, produksi 20% → Index Ketersediaan Data. Bobot **tampil di UI** (strip skor) dan di Excel.
+- **Bobot antar domain** (`DOMAIN_WEIGHTS`, `src/lib/data-completeness.ts`): profil 10%, petani 25%, lahan 25%, pelatihan 20%, produksi 20% → Index Ketersediaan Data. Bobot **tampil di UI** (judul tiap seksi domain "bobot n % Index" + tooltip angka Index; strip skor lama dengan kartu domain dihapus pada #352 putaran 4) dan di Excel.
 - **Registri deklaratif** (`src/lib/data-completeness-registry.ts`): `PROFILE_CHECKS`, `FARMER_FIELD_CHECKS`, `PARCEL_CHECKS` (berbobot), `ANOMALY_CATALOG` (label · domain · grain · `fix`), `MODULE_CATALOG`, konstanta `CORE_WEIGHT`/`FIELD_TIER_WEIGHT`, `SYSTEMIC_THRESHOLD`/`SYSTEMIC_MIN_ENTITIES`, `PRODUCTION_STALE_MONTHS`. Tabel/kolom baru cukup menambah satu entri.
 - **Profil** — 6 check: kode, koordinat, tahun bergabung, singkatan, **tipe grup**, **tahun berdiri** (2 terakhir baru #352).
 - **Petani** — GRADED per field (#193): rata-rata per petani dari **6** check — NIK (terisi, 16 digit, tidak duplikat), ID Petani tidak duplikat, alamat, tanggal lahir, **tempat lahir** (baru #352), tahun bergabung.

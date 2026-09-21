@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { scoreBand } from "@/lib/data-availability-aggregation";
+import { BAND_THRESHOLDS, scoreBand } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, BAND_TEXT } from "@/lib/score-band-styles";
 import { HEAT_FULL, HEAT_GRADIENT_CSS, heatStyle, rgbCss } from "@/lib/score-heat";
 
@@ -95,12 +95,13 @@ export function HeatCell({
   );
 }
 
-/** Segmen legenda skala: label band di bawah ramp, diposisikan pada rentang skornya. */
+/** Segmen legenda skala: label band di bawah ramp, diposisikan pada rentang skornya (ambang dari `BAND_THRESHOLDS`). */
 const HEAT_SEGMENTS: { from: number; to: number; label: string }[] = [
-  { from: 0, to: 50, label: "kritis" },
-  { from: 50, to: 80, label: "perhatian" },
-  { from: 80, to: 100, label: "baik" },
+  { from: 0, to: BAND_THRESHOLDS.warn, label: "kritis" },
+  { from: BAND_THRESHOLDS.warn, to: BAND_THRESHOLDS.good, label: "perhatian" },
+  { from: BAND_THRESHOLDS.good, to: BAND_THRESHOLDS.full, label: "baik" },
 ];
+const HEAT_TICKS = [BAND_THRESHOLDS.warn, BAND_THRESHOLDS.good];
 
 /** Legenda heatmap: ramp gradasi 0→99 bertanda ambang band + swatch 100. */
 export function HeatLegend({ label = "Skala skor", className, children }: { label?: string; className?: string; children?: React.ReactNode }) {
@@ -109,14 +110,14 @@ export function HeatLegend({ label = "Skala skor", className, children }: { labe
       <span className="font-medium">{label}:</span>
       <span className="inline-flex items-start gap-1.5">
         <span className="tabular-nums leading-3">0</span>
-        <span className="relative inline-block w-52" style={{ height: 24 }} title="Merah → kuning → hijau mengikuti skor; garis = ambang 50 dan 80">
+        <span className="relative inline-block w-52" style={{ height: 24 }} title={`Merah → kuning → hijau mengikuti skor; garis = ambang ${BAND_THRESHOLDS.warn} dan ${BAND_THRESHOLDS.good}`}>
           <span className="absolute inset-x-0 top-0 h-3 rounded-sm" style={{ background: HEAT_GRADIENT_CSS }} />
           {HEAT_SEGMENTS.map((seg) => (
             <span key={seg.label} className="absolute top-3 text-[10px] leading-3" style={{ left: `${seg.from}%`, width: `${seg.to - seg.from}%` }}>
               <span className="block truncate text-center">{seg.label}</span>
             </span>
           ))}
-          {[50, 80].map((t) => (
+          {HEAT_TICKS.map((t) => (
             <span key={t} className="absolute top-0 h-3 w-px bg-background" style={{ left: `${t}%` }} />
           ))}
         </span>

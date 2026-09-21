@@ -1,26 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Pentagon, ArrowDownAZ, ArrowUpZA, ExternalLink, Search, Maximize2 } from "lucide-react";
+import { Pentagon, ArrowDownAZ, ArrowUpZA, ExternalLink, Maximize2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { HeatCell, HeatLegend } from "@/components/shared/score-visuals";
-import { cn } from "@/lib/utils";
-import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, bandDistribution, domainScoreOf, scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_BAR } from "@/lib/score-band-styles";
-import type { AvailabilityGroupEntry } from "@/types/dashboard";
-import { formatNumber } from "@/lib/format";
-import { bandLabel, formatScore, shortDomainLabel, entryDomainScores } from "./domain-meta";
-import { filterMatrixRows, sortKeyLabel, sortMatrixRows, type MatrixSortKey } from "./matrix-rows";
 import { RadarChart } from "@/components/shared/radar-chart";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainScoreOf, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
+import { BAND_BAR, bandLabel } from "@/lib/score-band-styles";
+import type { AvailabilityGroupEntry } from "@/types/dashboard";
+import { formatNumber, formatPct } from "@/lib/format";
+import { entryDomainScores } from "./domain-meta";
+import { useMatrixRows, type MatrixSortKey } from "./matrix-rows";
+import { emptyRowsMessage, MatrixLimitToggle, MatrixSearch } from "./matrix-toolbar";
 import { RadarDetailDialog } from "./availability-radar-dialog";
-
-const LOWEST_N = 10;
 
 const SORT_OPTIONS: { key: MatrixSortKey; label: string }[] = [
   { key: "health", label: "Skor Total" },
@@ -47,7 +44,7 @@ function RadarCard({ entry, onOpen }: { entry: AvailabilityGroupEntry; onOpen: (
           <StatTooltipContent title="Skor Total — berbobot lintas domain" subtitle={entry.name} footer={`Band: ${bandLabel(entry.healthScore)}`}>
             {AVAILABILITY_DOMAIN_KEYS.map((k) => {
               const s = domainScoreOf(entry, k);
-              return <StatTooltipRow key={k} chip={BAND_BAR[scoreBand(s)]} label={AVAILABILITY_DOMAIN_LABELS[k]} value={`${formatScore(s)}%`} />;
+              return <StatTooltipRow key={k} chip={BAND_BAR[scoreBand(s)]} label={AVAILABILITY_DOMAIN_LABELS[k]} value={`${formatPct(s)}%`} />;
             })}
           </StatTooltipContent>
         </Tooltip>
@@ -95,15 +92,9 @@ export function AvailabilityRadarGrid({
   onSortChange: (key: MatrixSortKey, asc: boolean) => void;
   headerControl?: React.ReactNode;
 }) {
-  const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(true);
+  const m = useMatrixRows(rows, sortKey, sortAsc);
   /** Indeks kartu yang dibuka di modal (pada `sorted`, bukan `limited`, agar ◀ ▶ menjangkau semua). */
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const sorted = useMemo(() => sortMatrixRows(filterMatrixRows(rows, query), sortKey, sortAsc), [rows, query, sortKey, sortAsc]);
-  const limited = showAll || query ? sorted : sorted.slice(0, LOWEST_N);
-  const hiddenCount = sorted.length - limited.length;
-  const critical = bandDistribution(rows).bad;
   const DirIcon = sortAsc ? ArrowDownAZ : ArrowUpZA;
 
   return (
@@ -114,7 +105,7 @@ export function AvailabilityRadarGrid({
             <Pentagon className="h-4 w-4 text-primary" /> Radar per Lembaga
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            {formatNumber(rows.length)} Lembaga{critical > 0 ? ` · ${formatNumber(critical)} berskor kritis (<50)` : ""} — pentagon penuh = lengkap, gepeng ke satu
+            {formatNumber(rows.length)} Lembaga{m.critical > 0 ? ` · ${formatNumber(m.critical)} berskor kritis (<50)` : ""} — pentagon penuh = lengkap, gepeng ke satu
             sisi = domain itu kosong. Klik grafik untuk memperbesar, klik nama Lembaga untuk daftar kerjanya; kartu domain di atas mengurutkan per domain.
           </span>
         </div>
@@ -146,26 +137,15 @@ export function AvailabilityRadarGrid({
           >
             <DirIcon className="h-4 w-4" />
           </Button>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari Lembaga / kode / distrik"
-              className="h-8 w-[220px] pl-8 text-xs"
-              aria-label="Cari Lembaga"
-            />
-          </div>
+          <MatrixSearch value={m.query} onChange={m.setQuery} />
         </div>
       </div>
       <CardContent className="border-t pt-4">
-        {sorted.length === 0 ? (
-          <div className="flex min-h-[160px] items-center justify-center text-sm text-muted-foreground">
-            {query ? `Tidak ada Lembaga yang cocok dengan "${query}".` : "Tidak ada Lembaga Petani pada filter ini."}
-          </div>
+        {m.sorted.length === 0 ? (
+          <div className="flex min-h-[160px] items-center justify-center text-sm text-muted-foreground">{emptyRowsMessage(m.query)}</div>
         ) : (
-          <div className={cn("grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5")}>
-            {limited.map((e, i) => (
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {m.limited.map((e, i) => (
               <RadarCard key={e.id} entry={e} onOpen={() => setOpenIndex(i)} />
             ))}
           </div>
@@ -175,16 +155,20 @@ export function AvailabilityRadarGrid({
           <HeatLegend label="Skala warna">
             <span>isian = Skor Total · titik sudut = skor domain · cincin = ambang 50 / 80 / 100</span>
           </HeatLegend>
-          {!query && sorted.length > LOWEST_N && (
-            <Button variant="ghost" size="sm" className="h-7" onClick={() => setShowAll((v) => !v)}>
-              {showAll
-                ? `Ringkas — ${LOWEST_N} kartu pertama saja (urut ${sortKeyLabel(sortKey)} ${sortAsc ? "menaik" : "menurun"})`
-                : `Tampilkan semua (${formatNumber(sorted.length)}) — ${formatNumber(hiddenCount)} tersembunyi`}
-            </Button>
+          {m.canLimit && (
+            <MatrixLimitToggle
+              showAll={m.showAll}
+              onToggle={() => m.setShowAll((v) => !v)}
+              total={m.sorted.length}
+              hiddenCount={m.hiddenCount}
+              sortKey={sortKey}
+              sortAsc={sortAsc}
+              unit="kartu"
+            />
           )}
         </div>
       </CardContent>
-      <RadarDetailDialog entries={sorted} index={openIndex} onIndexChange={setOpenIndex} onClose={() => setOpenIndex(null)} />
+      <RadarDetailDialog entries={m.sorted} index={openIndex} onIndexChange={setOpenIndex} onClose={() => setOpenIndex(null)} />
     </Card>
   );
 }

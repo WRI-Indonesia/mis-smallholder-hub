@@ -43,11 +43,21 @@ describe("heatRgb", () => {
 });
 
 describe("heatStyle — kontras teks", () => {
-  it("latar gelap (0, 100) → teks putih; latar terang (kuning 65, lime 80) → teks gelap", () => {
+  it("latar gelap (0, 100) → teks putih; oranye 30–42 (rentang kritis) & terang (65, 80) → teks gelap", () => {
     expect(heatStyle(0).color).toBe("rgb(255 255 255)");
     expect(heatStyle(100).color).toBe("rgb(255 255 255)");
-    expect(heatStyle(65).color).toBe("rgb(28 25 23)");
-    expect(heatStyle(80).color).toBe("rgb(28 25 23)");
+    for (const s of [30, 40, 42, 65, 80]) expect(heatStyle(s).color).toBe("rgb(28 25 23)");
+  });
+
+  it("kontras teks ≥ 4:1 di sepanjang ramp 0–99 (titik silang putih/gelap ≈ 4,17:1; AA teks besar 3:1 terpenuhi)", () => {
+    const contrast = (l1: number, l2: number) => (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    const white = 1;
+    const dark = relativeLuminance([28, 25, 23]);
+    for (let s = 0; s < 100; s += 1) {
+      const bg = relativeLuminance(heatRgb(s));
+      const fg = heatStyle(s).color === "rgb(255 255 255)" ? white : dark;
+      expect(contrast(bg, fg)).toBeGreaterThanOrEqual(4);
+    }
   });
 
   it("backgroundColor = rgb dari heatRgb", () => {

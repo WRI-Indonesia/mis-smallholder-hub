@@ -9,8 +9,8 @@ import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainCriticalCou
 import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
 import { BAND_BAR, BAND_TEXT } from "@/lib/score-band-styles";
 import type { AvailabilityDomainKey, AvailabilityGroupEntry, AvailabilityTotals } from "@/types/dashboard";
-import { formatNumber } from "@/lib/format";
-import { DOMAIN_ICONS, formatScore } from "./domain-meta";
+import { formatNumber, formatPct } from "@/lib/format";
+import { DOMAIN_ICONS } from "./domain-meta";
 
 const DOMAIN_META: Record<AvailabilityDomainKey, { count: (t: AvailabilityTotals) => string; basis: string }> = {
   profil: { count: (t) => `${formatNumber(t.totalGroups)} Lembaga`, basis: "rata-rata sederhana per Lembaga" },
@@ -67,7 +67,7 @@ export function AvailabilityDomainCards({
                 <span className="text-[10px] text-muted-foreground">{Math.round(DOMAIN_WEIGHTS[key] * 100)} %</span>
               </div>
               <div className={cn("mt-2 text-3xl font-bold tabular-nums leading-none", BAND_TEXT[band])}>
-                {formatScore(score)}
+                {formatPct(score)}
                 <span className="text-base font-semibold">%</span>
               </div>
               <BandBar pct={score} className="mt-2 h-1.5" />
@@ -92,7 +92,7 @@ export function AvailabilityDomainCards({
               subtitle={`Skor portfolio ${meta.basis}`}
               footer="Klik untuk mengurutkan matriks pada domain ini"
             >
-              <StatTooltipRow chip={BAND_BAR[band]} label="Skor domain" value={`${formatScore(score)}%`} />
+              <StatTooltipRow chip={BAND_BAR[band]} label="Skor domain" value={`${formatPct(score)}%`} />
               <StatTooltipRow chip="bg-rose-500" label="Lembaga kritis (<50)" value={critical} />
             </StatTooltipContent>
           </Tooltip>

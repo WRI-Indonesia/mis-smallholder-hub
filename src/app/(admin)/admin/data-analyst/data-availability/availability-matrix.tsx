@@ -1,31 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Grid3x3, ArrowUpDown, ExternalLink, Search } from "lucide-react";
+import { Grid3x3, ArrowUpDown, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { HeatCell, HeatLegend } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
-import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, bandDistribution, domainScoreOf, scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_BAR } from "@/lib/score-band-styles";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainScoreOf, scoreBand, shortDomainLabel } from "@/lib/data-availability-aggregation";
+import { BAND_BAR, bandLabel } from "@/lib/score-band-styles";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
-import { formatNumber } from "@/lib/format";
-import { bandLabel, formatScore } from "./domain-meta";
-import { filterMatrixRows, sortKeyLabel, sortMatrixRows, type MatrixSortKey } from "./matrix-rows";
-
-const LOWEST_N = 10;
+import { formatNumber, formatPct } from "@/lib/format";
+import { useMatrixRows, type MatrixSortKey } from "./matrix-rows";
+import { emptyRowsMessage, MatrixLimitToggle, MatrixSearch } from "./matrix-toolbar";
 
 /** Sel skor domain — heatmap solid (#352 putaran 4), tooltip terstruktur (#213). */
 function ScoreCell({ score, label, groupName }: { score: number; label: string; groupName: string }) {
   return (
     <Tooltip>
-      <TooltipTrigger render={<HeatCell score={score} />}>{formatScore(score)}</TooltipTrigger>
+      <TooltipTrigger render={<HeatCell score={score} />}>{formatPct(score)}</TooltipTrigger>
       <StatTooltipContent title={label} subtitle={groupName} footer={`Band: ${bandLabel(score)}`}>
-        <StatTooltipRow chip={BAND_BAR[scoreBand(score)]} label="Skor kelengkapan" value={`${formatScore(score)}%`} />
+        <StatTooltipRow chip={BAND_BAR[scoreBand(score)]} label="Skor kelengkapan" value={`${formatPct(score)}%`} />
       </StatTooltipContent>
     </Tooltip>
   );
@@ -40,7 +35,8 @@ function ScoreCell({ score, label, groupName }: { score: number; label: string; 
  * tertangkap mata. Bawaannya semua baris tampil — nilai heatmap ada pada
  * gambaran utuhnya; "Ringkas" menyisakan 10 baris pertama. Skor Total tepat di
  * samping nama, urutan (kunci + arah) dikendalikan pemanggil lewat URL, dan
- * segmented control tampilan (inti | modul) lewat `headerControl`.
+ * segmented control tampilan (radar | heatmap | modul) lewat `headerControl`.
+ * State cari/ringkas dari `useMatrixRows` (bersama dengan grid radar).
  */
 export function AvailabilityMatrix({
   rows,
@@ -55,18 +51,11 @@ export function AvailabilityMatrix({
   onSortChange: (key: MatrixSortKey, asc: boolean) => void;
   headerControl?: React.ReactNode;
 }) {
-  const asc = sortAsc;
-  const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(true);
-
-  const sorted = useMemo(() => sortMatrixRows(filterMatrixRows(rows, query), sortKey, asc), [rows, query, sortKey, asc]);
-
-  const limited = showAll || query ? sorted : sorted.slice(0, LOWEST_N);
-  const hiddenCount = sorted.length - limited.length;
+  const m = useMatrixRows(rows, sortKey, sortAsc);
 
   // Klik judul yang sama = balik arah; judul lain = kunci baru, menaik
   // (nama A→Z; kolom skor: yang paling rendah muncul dulu).
-  const toggleSort = (key: MatrixSortKey) => onSortChange(key, key === sortKey ? !asc : true);
+  const toggleSort = (key: MatrixSortKey) => onSortChange(key, key === sortKey ? !sortAsc : true);
 
   const headBtn = (key: MatrixSortKey, label: string, title?: string) => (
     <button
@@ -80,9 +69,6 @@ export function AvailabilityMatrix({
     </button>
   );
 
-  const critical = bandDistribution(rows).bad;
-  const orderLabel = sortKeyLabel(sortKey);
-
   return (
     <Card className="border border-border/60 shadow-sm">
       <div className="flex flex-col gap-3 px-6 py-4 lg:flex-row lg:items-start lg:justify-between">
@@ -91,29 +77,18 @@ export function AvailabilityMatrix({
             <Grid3x3 className="h-4 w-4 text-primary" /> Matriks per Lembaga
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            {formatNumber(rows.length)} Lembaga{critical > 0 ? ` · ${formatNumber(critical)} berskor kritis (<50)` : ""} — warna sel mengikuti skor (merah → hijau);
+            {formatNumber(rows.length)} Lembaga{m.critical > 0 ? ` · ${formatNumber(m.critical)} berskor kritis (<50)` : ""} — warna sel mengikuti skor (merah → hijau);
             klik judul kolom untuk mengurutkan, klik nama Lembaga untuk rincian & daftar kerjanya.
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {headerControl}
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari Lembaga / kode / distrik"
-              className="h-8 w-[220px] pl-8 text-xs"
-              aria-label="Cari Lembaga"
-            />
-          </div>
+          <MatrixSearch value={m.query} onChange={m.setQuery} />
         </div>
       </div>
       <CardContent className="border-t pt-4">
-        {sorted.length === 0 ? (
-          <div className="flex min-h-[160px] items-center justify-center text-sm text-muted-foreground">
-            {query ? `Tidak ada Lembaga yang cocok dengan "${query}".` : "Tidak ada Lembaga Petani pada filter ini."}
-          </div>
+        {m.sorted.length === 0 ? (
+          <div className="flex min-h-[160px] items-center justify-center text-sm text-muted-foreground">{emptyRowsMessage(m.query)}</div>
         ) : (
           <div className="overflow-x-auto">
             {/* `table-fixed` + lebar kolom eksplisit: lebar tidak dihitung ulang dari
@@ -137,13 +112,13 @@ export function AvailabilityMatrix({
                   <th className="whitespace-nowrap px-2 py-1.5 text-right font-semibold">{headBtn("totalFarmers", "Petani (n)", "Jumlah petani aktif")}</th>
                   {AVAILABILITY_DOMAIN_KEYS.map((key) => (
                     <th key={key} className="whitespace-nowrap px-1 py-1.5 text-center font-semibold">
-                      {headBtn(key, AVAILABILITY_DOMAIN_LABELS[key].replace("Profil Lembaga", "Profil"))}
+                      {headBtn(key, shortDomainLabel(key))}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {limited.map((e) => (
+                {m.limited.map((e) => (
                   <tr key={e.id} className="group/row align-middle">
                     <td className="rounded-md px-1 py-0 pr-3 transition-colors group-hover/row:bg-muted/50">
                       {/* Satu baris: nama (deep link ke DA-02, #352 B3) + kode · distrik. */}
@@ -186,12 +161,16 @@ export function AvailabilityMatrix({
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
           <HeatLegend />
-          {!query && sorted.length > LOWEST_N && (
-            <Button variant="ghost" size="sm" className="h-7" onClick={() => setShowAll((v) => !v)}>
-              {showAll
-                ? `Ringkas — ${LOWEST_N} baris pertama saja (urut ${orderLabel} ${asc ? "menaik" : "menurun"})`
-                : `Tampilkan semua (${formatNumber(sorted.length)}) — ${formatNumber(hiddenCount)} tersembunyi`}
-            </Button>
+          {m.canLimit && (
+            <MatrixLimitToggle
+              showAll={m.showAll}
+              onToggle={() => m.setShowAll((v) => !v)}
+              total={m.sorted.length}
+              hiddenCount={m.hiddenCount}
+              sortKey={sortKey}
+              sortAsc={sortAsc}
+              unit="baris"
+            />
           )}
         </div>
       </CardContent>

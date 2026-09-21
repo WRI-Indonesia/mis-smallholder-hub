@@ -5,7 +5,7 @@
 // Skor 100 memakai hijau tua terpisah (bukan ujung gradasi) — "lengkap penuh"
 // adalah status, bukan sekadar nilai tertinggi.
 
-import { scoreBand } from "@/lib/data-availability-aggregation";
+import { BAND_THRESHOLDS, scoreBand } from "@/lib/data-availability-aggregation";
 
 export type Rgb = readonly [number, number, number];
 
@@ -13,11 +13,11 @@ export type Rgb = readonly [number, number, number];
 export const HEAT_STOPS: readonly (readonly [number, Rgb])[] = [
   [0, [185, 28, 28]], // red-700
   [25, [239, 68, 68]], // red-500
-  [50, [245, 158, 11]], // amber-500
+  [BAND_THRESHOLDS.warn, [245, 158, 11]], // amber-500 — ambang "perlu perhatian"
   [65, [250, 204, 21]], // yellow-400
-  [80, [163, 230, 53]], // lime-400
+  [BAND_THRESHOLDS.good, [163, 230, 53]], // lime-400 — ambang "baik"
   [92, [74, 222, 128]], // green-400
-  [100, [16, 185, 129]], // emerald-500 — ujung gradasi (99,9)
+  [BAND_THRESHOLDS.full, [16, 185, 129]], // emerald-500 — ujung gradasi (99,9)
 ];
 
 /** Warna khusus skor 100 (emerald-800, senada `BAND_BAR.full`). */
@@ -51,8 +51,13 @@ export function relativeLuminance([r, g, b]: Rgb): number {
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-/** Ambang: latar lebih terang dari ini → teks gelap (kuning/lime/hijau muda), selainnya putih. */
-export const HEAT_TEXT_LUMINANCE_THRESHOLD = 0.35;
+/**
+ * Ambang: latar lebih terang dari ini → teks gelap, selainnya putih. 0,2 =
+ * titik seimbang rasio kontras putih vs gelap (≈4,2:1) pada ramp ini; dengan
+ * 0,35 angka di sel oranye (skor ≈22–42, tepat rentang kritis) berteks putih
+ * hanya 2,6–4,0:1 (review #352 putaran 4).
+ */
+export const HEAT_TEXT_LUMINANCE_THRESHOLD = 0.2;
 
 export const rgbCss = ([r, g, b]: Rgb) => `rgb(${r} ${g} ${b})`;
 

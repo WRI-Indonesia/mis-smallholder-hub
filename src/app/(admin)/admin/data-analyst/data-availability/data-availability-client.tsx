@@ -78,7 +78,8 @@ export function DataAvailabilityClient({
     : null;
 
   const viewParam = get("tampilan");
-  const matrixView: MatrixView = viewParam === "modul" || viewParam === "heatmap" ? viewParam : "radar";
+  // `inti` = nilai lama (v0.36) untuk tabel — bookmark lama tetap membuka heatmap.
+  const matrixView: MatrixView = viewParam === "modul" || viewParam === "heatmap" ? viewParam : viewParam === "inti" ? "heatmap" : "radar";
 
   // Urutan matriks di URL (review #352 putaran 3): `?urut=` kunci + `?arah=turun`
   // (bawaan menaik). Satu tempat untuk kartu domain, judul kolom, dan tautan.

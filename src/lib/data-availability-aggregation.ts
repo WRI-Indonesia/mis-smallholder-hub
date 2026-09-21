@@ -33,6 +33,16 @@ export const AVAILABILITY_DOMAIN_LABELS: Record<AvailabilityDomainKey, string> =
   produksi: "Produksi",
 };
 
+/** Label domain pendek untuk judul kolom/sumbu ("Profil Lembaga" → "Profil") — satu sumber (review #352 putaran 4). */
+export const shortDomainLabel = (key: AvailabilityDomainKey) => AVAILABILITY_DOMAIN_LABELS[key].replace("Profil Lembaga", "Profil");
+
+/**
+ * Ambang band skor — satu sumber untuk `scoreBand`, cincin radar, legenda
+ * heatmap, dan jangkar skala warna (review #352 putaran 4: sebelumnya 50/80/100
+ * ditulis ulang di empat tempat).
+ */
+export const BAND_THRESHOLDS = { warn: 50, good: 80, full: 100 } as const;
+
 /**
  * Band skor — satu sumber warna untuk card, bar chart, dan matriks.
  * Ambang mengikuti konvensi hijau/kuning/merah dashboard lain: 80–99 baik,
@@ -41,9 +51,9 @@ export const AVAILABILITY_DOMAIN_LABELS: Record<AvailabilityDomainKey, string> =
  * "sudah baik tapi masih ada yang kurang".
  */
 export function scoreBand(score: number): AvailabilityScoreBand {
-  if (score >= 100) return "full";
-  if (score >= 80) return "good";
-  if (score >= 50) return "warn";
+  if (score >= BAND_THRESHOLDS.full) return "full";
+  if (score >= BAND_THRESHOLDS.good) return "good";
+  if (score >= BAND_THRESHOLDS.warn) return "warn";
   return "bad";
 }
 

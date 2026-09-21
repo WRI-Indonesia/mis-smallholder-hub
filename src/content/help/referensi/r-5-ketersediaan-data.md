@@ -11,7 +11,7 @@ hrefLabel: Buka Ketersediaan Data — Semua Lembaga
 
 Satu angka 0–100 per Lembaga Petani, dipakai sama persis oleh tiga tempat: halaman **Semua Lembaga**, halaman **Per Lembaga**, dan kartu **Kelengkapan Data** di Detail Lembaga.
 
-**Rumus** — Index = Profil × 10 % + Petani × 25 % + Lahan × 25 % + Pelatihan × 20 % + Produksi × 20 %. Bobot ini tampil di strip skor halaman Per Lembaga.
+**Rumus** — Index = Profil × 10 % + Petani × 25 % + Lahan × 25 % + Pelatihan × 20 % + Produksi × 20 %. Di halaman Per Lembaga, bobot ini tertulis di judul tiap seksi domain ("bobot n % Index") dan di tooltip angka Index; radar di atas hanya menampilkan skor per domain.
 
 **Warna band** — hijau tua 100 (lengkap penuh), hijau 80–99 (baik), kuning 50–79 (perlu perhatian), merah <50 (kritis). Ambang yang sama dipakai di ketiga tempat.
 

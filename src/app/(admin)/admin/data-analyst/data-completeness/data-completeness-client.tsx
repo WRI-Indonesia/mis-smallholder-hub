@@ -38,7 +38,7 @@ import { useUrlFilters } from "@/hooks/use-url-filters";
 import { analyzeFarmerGroupCompleteness } from "@/server/actions/data-completeness";
 import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
 import { scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_BAR, BAND_LEGEND, BAND_TEXT } from "@/lib/score-band-styles";
+import { BAND_BAR, BAND_TEXT, bandLabel } from "@/lib/score-band-styles";
 import {
   ANOMALY_CATALOG,
   FARMER_CHECK_COUNT,
@@ -131,7 +131,6 @@ const GRAIN_LABEL: Record<CheckRow["grain"], string> = {
   aktivitas: "aktivitas",
 };
 
-const bandLabel = (score: number) => BAND_LEGEND.find((s) => s.band === scoreBand(score))?.label ?? "";
 
 /** Badge skor — warna satu sumber `scoreBand` (#352 B2, menutup 6c). */
 function ScoreBadge({ score }: { score: number }) {
@@ -498,9 +497,11 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
                     berangka — satu sumber untuk skor (#352 putaran 4: tanpa cincin gauge, tanpa
                     kartu domain). Label sumbu = tautan ke seksi domain; bobot ada di tooltip &
                     judul seksi. Proporsi: strip pendek (radar 260 px), angka sebesar tinggi radar. */}
+                {/* Di layar sempit blok ini boleh mengecil: radar `w-full max-w` + `flex-1`,
+                    tanpa `shrink-0` (review #352 putaran 4: 360 px → melimpah). */}
                 <Tooltip>
-                  <TooltipTrigger render={<div className="flex shrink-0 items-center gap-5 self-center md:border-l md:pl-6" />}>
-                    <div className="flex cursor-help flex-col items-center gap-1.5">
+                  <TooltipTrigger render={<div className="flex min-w-0 items-center gap-5 self-stretch md:shrink-0 md:self-center md:border-l md:pl-6" />}>
+                    <div className="flex shrink-0 cursor-help flex-col items-center gap-1.5">
                       <span className={cn("text-7xl font-bold leading-none tabular-nums", BAND_TEXT[scoreBand(result.healthScore)])}>
                         {Math.round(result.healthScore)}
                       </span>
@@ -511,7 +512,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
                       total={result.healthScore}
                       scores={Object.fromEntries(DOMAIN_ORDER.map((d) => [d, domainScore(d)])) as Record<CompletenessDomainKey, number>}
                       onAxisClick={jumpTo}
-                      className="w-[260px]"
+                      className="min-w-0 flex-1 md:w-[260px] md:flex-none"
                     />
                   </TooltipTrigger>
                   <StatTooltipContent title="Index = Σ (skor domain × bobot)" footer={`Band: ${bandLabel(result.healthScore)} · klik nama sumbu untuk membuka seksinya`}>

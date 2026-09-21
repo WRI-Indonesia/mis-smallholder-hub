@@ -1,17 +1,15 @@
 "use client";
 
-import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS } from "@/lib/data-availability-aggregation";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, BAND_THRESHOLDS, shortDomainLabel } from "@/lib/data-availability-aggregation";
 import { heatRgb, rgbCss } from "@/lib/score-heat";
 import { radarLabelAnchor, radarPoints, toPointsAttr, type RadarFrame } from "@/lib/radar-geometry";
+import { formatPct } from "@/lib/format";
 import type { AvailabilityDomainKey } from "@/types/dashboard";
 import { cn } from "@/lib/utils";
 
-/** Cincin pada ambang band (`scoreBand`): 50 · 80 · 100. */
-const RINGS = [50, 80, 100];
+/** Cincin pada ambang band (`BAND_THRESHOLDS`): 50 · 80 · 100. */
+const RINGS = [BAND_THRESHOLDS.warn, BAND_THRESHOLDS.good, BAND_THRESHOLDS.full];
 const FULL = AVAILABILITY_DOMAIN_KEYS.map(() => 100);
-
-const formatScore = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
-const axisLabel = (key: AvailabilityDomainKey) => AVAILABILITY_DOMAIN_LABELS[key].replace("Profil Lembaga", "Profil");
 
 export type RadarScores = Record<AvailabilityDomainKey, number>;
 
@@ -72,29 +70,53 @@ function RadarLayers({
           className="stroke-background"
           strokeWidth={1}
         >
-          <title>{`${AVAILABILITY_DOMAIN_LABELS[AVAILABILITY_DOMAIN_KEYS[i]]}: ${formatScore(values[i])}%`}</title>
+          <title>{`${AVAILABILITY_DOMAIN_LABELS[AVAILABILITY_DOMAIN_KEYS[i]]}: ${formatPct(values[i])}%`}</title>
         </circle>
       ))}
-      {labels.map(([x, y], i) => (
-        <text
-          key={AVAILABILITY_DOMAIN_KEYS[i]}
-          x={x}
-          y={y}
-          textAnchor={radarLabelAnchor(i, AVAILABILITY_DOMAIN_KEYS.length)}
-          dominantBaseline="middle"
-          className={cn("fill-muted-foreground", labelClass, onAxisClick && "cursor-pointer hover:fill-primary hover:underline")}
-          onClick={onAxisClick ? () => onAxisClick(AVAILABILITY_DOMAIN_KEYS[i]) : undefined}
-        >
-          {onAxisClick && <title>{`Buka seksi ${AVAILABILITY_DOMAIN_LABELS[AVAILABILITY_DOMAIN_KEYS[i]]}`}</title>}
-          {axisLabel(AVAILABILITY_DOMAIN_KEYS[i])}
-          {showValues && (
-            <>
-              {" "}
-              <tspan className="fill-foreground font-semibold tabular-nums">{formatScore(values[i])}</tspan>
-            </>
-          )}
-        </text>
-      ))}
+      {labels.map(([x, y], i) => {
+        const key = AVAILABILITY_DOMAIN_KEYS[i];
+        const activate = onAxisClick ? () => onAxisClick(key) : undefined;
+        return (
+          <text
+            key={key}
+            x={x}
+            y={y}
+            textAnchor={radarLabelAnchor(i, AVAILABILITY_DOMAIN_KEYS.length)}
+            dominantBaseline="middle"
+            className={cn(
+              "fill-muted-foreground",
+              labelClass,
+              activate && "cursor-pointer outline-none hover:fill-primary hover:underline focus-visible:fill-primary focus-visible:underline",
+            )}
+            // Label = tautan sungguhan bila bisa diklik: bisa di-Tab, Enter/Spasi, dan
+            // terbaca pembaca layar (review #352 putaran 4 — kartu domain yang digantikannya
+            // adalah <button>).
+            role={activate ? "link" : undefined}
+            tabIndex={activate ? 0 : undefined}
+            aria-label={activate ? `Buka seksi ${AVAILABILITY_DOMAIN_LABELS[key]} (skor ${formatPct(values[i])} %)` : undefined}
+            onClick={activate}
+            onKeyDown={
+              activate
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      activate();
+                    }
+                  }
+                : undefined
+            }
+          >
+            {activate && <title>{`Buka seksi ${AVAILABILITY_DOMAIN_LABELS[key]}`}</title>}
+            {shortDomainLabel(key)}
+            {showValues && (
+              <>
+                {" "}
+                <tspan className="fill-foreground font-semibold tabular-nums">{formatPct(values[i])}</tspan>
+              </>
+            )}
+          </text>
+        );
+      })}
     </>
   );
 }
@@ -128,8 +150,17 @@ export function RadarChart({
   onAxisClick?: (key: AvailabilityDomainKey) => void;
   className?: string;
 }) {
+  // `overflow-visible`: label kiri (anchor end) bisa melewati tepi viewBox pada
+  // metrik glyph yang lebih lebar — jangan terpotong (review #352 putaran 4).
+  // Dengan label bisa diklik, svg = grup berisi tautan (bukan `img` yang
+  // menyembunyikan anaknya dari teknologi bantu).
   return (
-    <svg viewBox={`0 0 ${CHART_VIEW.w} ${CHART_VIEW.h}`} className={cn("h-auto w-full", className)} role="img" aria-label={`Radar ${name}`}>
+    <svg
+      viewBox={`0 0 ${CHART_VIEW.w} ${CHART_VIEW.h}`}
+      className={cn("h-auto w-full overflow-visible", className)}
+      role={onAxisClick ? "group" : "img"}
+      aria-label={`Radar ${name}`}
+    >
       <RadarLayers
         frame={CHART_FRAME}
         labelRadius={CHART_FRAME.r + CHART_LABEL_OFFSET}

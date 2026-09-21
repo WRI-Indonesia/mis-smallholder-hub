@@ -1,21 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ClipboardList, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { HeatCell } from "@/components/shared/score-visuals";
-import { cn } from "@/lib/utils";
-import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainScoreOf } from "@/lib/data-availability-aggregation";
-import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
-import { BAND_TEXT } from "@/lib/score-band-styles";
-import { scoreBand } from "@/lib/data-availability-aggregation";
-import type { AvailabilityGroupEntry } from "@/types/dashboard";
-import { formatNumber } from "@/lib/format";
-import { bandLabel, CATEGORY_LABELS, DOMAIN_ICONS, formatScore, entryDomainScores } from "./domain-meta";
 import { RadarChart } from "@/components/shared/radar-chart";
-
-const formatPts = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
+import { cn } from "@/lib/utils";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainScoreOf, scoreBand } from "@/lib/data-availability-aggregation";
+import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
+import { BAND_TEXT, bandLabel } from "@/lib/score-band-styles";
+import type { AvailabilityGroupEntry } from "@/types/dashboard";
+import { formatNumber, formatPct } from "@/lib/format";
+import { CATEGORY_LABELS, DOMAIN_ICONS, entryDomainScores } from "./domain-meta";
 
 /**
  * Modal radar besar (#352 putaran 4, permintaan owner "kalau diklik tampil
@@ -39,17 +37,27 @@ export function RadarDetailDialog({
   onIndexChange: (next: number) => void;
   onClose: () => void;
 }) {
-  const entry = index != null ? entries[index] : undefined;
-  const hasPrev = index != null && index > 0;
-  const hasNext = index != null && index < entries.length - 1;
+  const open = index != null && index < entries.length;
+  // Isi terakhir dipertahankan saat menutup: Base UI masih memainkan animasi
+  // keluar (100 ms) setelah `index` jadi null — tanpa ini popup kosong berkedip
+  // (review #352 putaran 4).
+  // Pola "simpan info render sebelumnya" (setState saat render, bukan di effect).
+  const [shown, setShown] = useState<{ entry: AvailabilityGroupEntry; index: number } | null>(null);
+  if (open && (shown?.entry !== entries[index] || shown.index !== index)) {
+    setShown({ entry: entries[index], index });
+  }
+  const entry = shown?.entry;
+  const shownIndex = shown?.index ?? 0;
+  const hasPrev = open && index > 0;
+  const hasNext = open && index < entries.length - 1;
   const go = (delta: number) => {
-    if (index == null) return;
+    if (!open) return;
     const next = index + delta;
     if (next >= 0 && next < entries.length) onIndexChange(next);
   };
 
   return (
-    <Dialog open={entry != null} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
         className="sm:max-w-4xl"
         onKeyDown={(e) => {
@@ -108,11 +116,11 @@ export function RadarDetailDialog({
                           <td className="py-1.5 text-right tabular-nums text-muted-foreground">{Math.round(weight)} %</td>
                           <td className="py-1.5 pl-3">
                             <HeatCell score={score} className="h-6 w-16 text-xs">
-                              {formatScore(score)}
+                              {formatPct(score)}
                             </HeatCell>
                           </td>
                           <td className="py-1.5 pl-3 text-right tabular-nums">
-                            <span className="font-semibold">{formatPts((weight * score) / 100)}</span>
+                            <span className="font-semibold">{formatPct((weight * score) / 100)}</span>
                             <span className="text-muted-foreground"> / {Math.round(weight)}</span>
                           </td>
                         </tr>
@@ -130,7 +138,8 @@ export function RadarDetailDialog({
                   </tbody>
                 </table>
                 <p className="text-xs text-muted-foreground">
-                  Kontribusi = bobot × skor domain; selisihnya terhadap bobot adalah poin yang masih bisa direbut di domain itu.
+                  Kontribusi = bobot × skor domain; selisihnya terhadap bobot adalah poin yang masih bisa direbut di domain itu. Skor Total dibulatkan ke
+                  bilangan bulat dari nilai mentah, jadi jumlah kontribusi bisa berbeda ±0,5.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Link href={`/admin/data-analyst/data-completeness?lembaga=${entry.id}`} className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
@@ -145,7 +154,7 @@ export function RadarDetailDialog({
 
             <DialogFooter className="flex-row items-center justify-between sm:justify-between">
               <span className="text-xs text-muted-foreground">
-                {formatNumber((index ?? 0) + 1)} / {formatNumber(entries.length)} pada urutan aktif · tombol ← → untuk berpindah
+                {formatNumber(shownIndex + 1)} / {formatNumber(entries.length)} pada urutan aktif · tombol ← → untuk berpindah
               </span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => go(-1)} disabled={!hasPrev} className="gap-1">

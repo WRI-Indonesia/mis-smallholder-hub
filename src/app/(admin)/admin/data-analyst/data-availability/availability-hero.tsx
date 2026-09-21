@@ -9,7 +9,7 @@ import { ScoreGauge } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
 import { scoreBand, topSystemicAnomalies } from "@/lib/data-availability-aggregation";
 import { anomalyDef } from "@/lib/data-completeness-registry";
-import { BAND_BAR, BAND_LEGEND, BAND_TEXT } from "@/lib/score-band-styles";
+import { BAND_BAR, BAND_TEXT, BAND_LABEL } from "@/lib/score-band-styles";
 import type { AvailabilityBandDistribution, AvailabilityGroupEntry, AvailabilityScoreBand, AvailabilityTotals } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
 
@@ -38,7 +38,6 @@ export function AvailabilityHero({
 }) {
   const total = totals.totalGroups;
   const overallBand = scoreBand(totals.overallScore);
-  const bandLabel = (b: AvailabilityScoreBand) => BAND_LEGEND.find((l) => l.band === b)?.label ?? b;
   const actions = topSystemicAnomalies(actionGroups, 3);
 
   // Irisan kosong (filter basi) bukan skor 0 — tampilkan keadaan kosong, bukan cincin merah.
@@ -73,7 +72,7 @@ export function AvailabilityHero({
               </Tooltip>
               <div className="min-w-0">
                 <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Skor Keseluruhan</div>
-                <div className={cn("mt-0.5 text-lg font-bold leading-tight", BAND_TEXT[overallBand])}>{bandLabel(overallBand)}</div>
+                <div className={cn("mt-0.5 text-lg font-bold leading-tight", BAND_TEXT[overallBand])}>{BAND_LABEL[overallBand]}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
                   rata-rata tertimbang {formatNumber(total)} Lembaga · {formatNumber(totals.totalAnomalies)} temuan
                 </div>
@@ -127,7 +126,7 @@ export function AvailabilityHero({
                       >
                         {n}
                       </TooltipTrigger>
-                      <StatTooltipContent title={bandLabel(b)} footer={active ? "Klik lagi untuk melepas filter" : "Klik untuk menyaring matriks"}>
+                      <StatTooltipContent title={BAND_LABEL[b]} footer={active ? "Klik lagi untuk melepas filter" : "Klik untuk menyaring matriks"}>
                         <StatTooltipRow chip={BAND_BAR[b]} label="Lembaga" value={n} pct={total > 0 ? (n / total) * 100 : 0} />
                       </StatTooltipContent>
                     </Tooltip>
@@ -152,7 +151,7 @@ export function AvailabilityHero({
                       aria-pressed={active}
                     >
                       <span className={cn("inline-block h-2 w-2 rounded-full", BAND_BAR[b])} />
-                      {bandLabel(b)}
+                      {BAND_LABEL[b]}
                       <span className="tabular-nums font-semibold text-foreground">{distribution[b]}</span>
                     </button>
                   );
