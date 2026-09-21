@@ -47,6 +47,6 @@ Ketersediaan Data punya dua halaman yang berurutan: **Semua Lembaga** (ringkasan
 
 **Temuan tidak berkurang setelah data diperbaiki** — klik **Muat ulang**. Bila masih sama, periksa apakah perbaikannya benar-benar tersimpan di Master Data.
 
-**Skor Lahan tidak naik walau poligon lengkap** — cek seksi Lahan: Kelompok Tani, tahun tanam, status lahan, dan blok juga dinilai (tiga yang terakhir berbobot lebih ringan). Kelompok Tani & blok bisa diisi massal lewat **Bulk Upload › Lahan › Detail Lahan**.
+**Skor Lahan tidak naik walau poligon lengkap** — cek seksi Lahan: Kelompok Tani, tahun tanam, status lahan, dan blok juga dinilai (tiga yang terakhir berbobot lebih ringan). Kelompok Tani & blok bisa diisi massal lewat **Bulk Upload › Upload Data Lahan › Detail Lahan**.
 
 **Banyak petani "tanggal lahir tidak cocok dengan NIK" berkomentar "hari/bulan tertukar?"** — tanggal lahirnya kemungkinan terbalik hari/bulannya saat diimpor dulu (NIK menyimpan hari-bulan-tahun di digit 7–12). Perbaiki lewat Master Data › Petani atau unggah ulang kolom Tanggal Lahir; bila NIK-nya yang salah, perbaiki NIK-nya.

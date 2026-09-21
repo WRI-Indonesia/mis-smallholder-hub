@@ -33,7 +33,7 @@ Isi lahannya bila memungkinkan; tanpa lahan, produksi tetap tersimpan tapi tidak
 + Dashboard menampilkannya dalam ton, tetapi konversinya dilakukan sistem. Memasukkan angka dalam ton akan membuat produksi terbaca seribu kali lebih kecil.
 7. Klik **Simpan**.
 
-> [!tip] Punya data satu musim penuh dalam Excel? Pakai **Bulk Upload → Upload Produksi** — jauh lebih cepat dan tervalidasi sebelum tersimpan.
+> [!tip] Punya data satu musim penuh dalam Excel? Pakai **Bulk Upload → Upload Data Produksi** — jauh lebih cepat dan tervalidasi sebelum tersimpan.
 
 > [!tip] Untuk mengisi atau mengoreksi produksi **satu lahan** bulan demi bulan, ada jalur yang lebih cepat: buka **Detail Lahan** (Master Data → Lahan → tombol detail), lalu klik sel bulan pada tabel produksinya. Muncul jendela berisi 4 slot panen (kg + tanggal) untuk bulan itu — petani dan lahannya sudah terisi otomatis.
 

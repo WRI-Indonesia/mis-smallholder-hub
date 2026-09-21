@@ -5,7 +5,7 @@ menuKey: bulk-upload-production
 permission: CREATE
 duration: 10
 href: /admin/bulk-upload/production
-hrefLabel: Buka halaman Upload Produksi
+hrefLabel: Buka halaman Upload Data Produksi
 goal: Data panen satu musim atau satu tahun masuk sekaligus dari berkas Excel.
 ---
 
@@ -19,7 +19,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di kanan atas Langkah 1.
 
 ## Langkah
 
-1. Buka menu **Bulk Upload → Upload Produksi**.
+1. Buka menu **Bulk Upload → Upload Data Produksi**.
 2. Klik **Unduh Template Excel** bila Anda ingin memakai format bawaan.
 3. Pada **Langkah 1**, pilih berkas `.xlsx` atau `.csv`.
 4. Pada **Langkah 2 — Petakan Atribut Kolom**, cocokkan kolom berkas dengan kolom sistem: ID Petani, Periode, Tanggal Panen, Panen Ke-, Hasil (kg), dan ID Lahan.

@@ -5,7 +5,7 @@ menuKey: bulk-upload-parcels
 permission: CREATE
 duration: 15
 href: /admin/bulk-upload/parcels
-hrefLabel: Buka halaman Upload Lahan
+hrefLabel: Buka halaman Upload Data Lahan
 goal: Poligon lahan masuk ke sistem sehingga bisa tampil di peta dan dipakai laporan ber-peta.
 ---
 
@@ -23,7 +23,7 @@ Tabel atribut `.dbf` harus memuat **ID Petani** dan **ID Lahan**, karena dari si
 
 ## Langkah
 
-1. Buka menu **Bulk Upload → Lahan**; pastikan tab **Poligon (Shapefile ZIP)** yang aktif (tab bawaan).
+1. Buka menu **Bulk Upload → Upload Data Lahan**; pastikan tab **Poligon (Shapefile ZIP)** yang aktif (tab bawaan).
 + Tab satunya, **Detail Lahan (Excel)**, untuk surat/STDB/UL Parcel Code lahan yang sudah ada — bukan untuk poligon.
 2. Pada **Langkah 1**, pilih berkas `.zip`. Sistem membaca isinya dan menyebut jumlah fitur yang terdeteksi.
 + Bila jumlah fitur jauh berbeda dari yang Anda harapkan, hentikan di sini — biasanya berarti ZIP-nya memuat layer yang salah.
@@ -51,6 +51,6 @@ Lahan tampil di **Peta Lahan**, dan bisa dipakai di **Laporan Lahan** yang menye
 
 **Semua baris error "petani tidak ditemukan"** — kolom ID Petani salah dipetakan, atau petaninya memang belum terdaftar.
 
-+ Bila petaninya belum ada, daftarkan lebih dulu — lewat form Master Data untuk beberapa orang, atau **Upload Petani** bila jumlahnya banyak. Unggahan lahan tidak bisa membuat petani baru.
++ Bila petaninya belum ada, daftarkan lebih dulu — lewat form Master Data untuk beberapa orang, atau **Upload Data Petani** bila jumlahnya banyak. Unggahan lahan tidak bisa membuat petani baru.
 
 **Poligon tampil tapi bentuknya aneh atau bertumpuk** — geometri belum tertutup rapi di perangkat lunak GIS asal. Perbaiki di sana lalu ekspor ulang.

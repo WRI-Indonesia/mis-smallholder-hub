@@ -63,22 +63,22 @@ const FIX = {
     href: "/admin/master-data/groups",
   }),
   farmerForm: (field: string): CompletenessFix => ({
-    menu: "Master Data › Petani (Edit) · Bulk Upload › Upload Petani",
+    menu: "Master Data › Petani (Edit) · Bulk Upload › Upload Data Petani",
     field,
     href: "/admin/master-data/farmers",
   }),
   parcelShapefile: (field: string): CompletenessFix => ({
-    menu: "Bulk Upload › Lahan (shapefile) · Master Data › Lahan (Edit)",
+    menu: "Bulk Upload › Upload Data Lahan (shapefile) · Master Data › Lahan (Edit)",
     field,
     href: "/admin/bulk-upload/parcels",
   }),
   parcelDetail: (field: string): CompletenessFix => ({
-    menu: "Bulk Upload › Lahan › Detail Lahan (Excel) · Master Data › Lahan (Edit)",
+    menu: "Bulk Upload › Upload Data Lahan › Detail Lahan (Excel) · Master Data › Lahan (Edit)",
     field,
     href: "/admin/bulk-upload/parcels",
   }),
   parcelMarker: (): CompletenessFix => ({
-    menu: "Bulk Upload › Lahan › Patok · Master Data › Lahan › Patok",
+    menu: "Bulk Upload › Upload Data Lahan › Patok · Master Data › Lahan › Patok",
     href: "/admin/bulk-upload/parcels",
   }),
   trees: (): CompletenessFix => ({
@@ -95,7 +95,7 @@ const FIX = {
     href: "/admin/master-data/training",
   }),
   production: (field?: string): CompletenessFix => ({
-    menu: "Bulk Upload › Upload Produksi · Master Data › Produksi",
+    menu: "Bulk Upload › Upload Data Produksi · Master Data › Produksi",
     field,
     href: "/admin/bulk-upload/production",
   }),

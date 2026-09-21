@@ -31,6 +31,6 @@ Kode patok (`HJP-PTK-000123`) di laporan sama dengan yang tertulis di patok fisi
 
 **Tombol Muat Data nonaktif** — Distrik belum dipilih.
 
-**"Tidak ada patok pada filter ini"** — lahan di wilayah itu belum punya patok; buat dari poligon di detail lahan atau unggah titik GPS lewat Bulk Upload → Lahan → tab Patok.
+**"Tidak ada patok pada filter ini"** — lahan di wilayah itu belum punya patok; buat dari poligon di detail lahan atau unggah titik GPS lewat Bulk Upload → Upload Data Lahan → tab Patok.
 
 **Menu Patok tidak muncul** — akun Anda belum diberi izin menu Report → Patok; minta administrator lewat Settings → Izin Peran.
