@@ -7,7 +7,7 @@ import { computeCompleteness, currentPeriod } from "@/lib/data-completeness";
 import {
   farmerModuleFlags,
   groupModuleFlags,
-  isEstimateNote,
+  loadEstimateRecordIds,
   loadModuleFlagSets,
   parcelModuleFlags,
 } from "@/lib/data-completeness-query";
@@ -70,21 +70,24 @@ export async function analyzeFarmerGroupCompleteness(
 
   const referencePeriod = currentPeriod();
   const referenceYear = Number(referencePeriod.slice(0, 4));
-  const farmerWhere = { isActive: true, farmerGroupId };
+  // Scope Lembaga (termasuk distrik untuk BY_DISTRICT) dipasang ke SEMUA kueri —
+  // satelit ikut kosong bila Lembaga di luar akses, bukan dimuat lalu dibuang.
+  const groupWhere = {
+    id: farmerGroupId,
+    isActive: true,
+    ...(access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } : {}),
+  };
+  const farmerWhere = { isActive: true, farmerGroup: groupWhere };
 
   // Paket wajib (isActive, exclude OTHER) — kolom matriks & basis cakupan pelatihan.
-  const [trainingPackages, group, moduleSets] = await Promise.all([
+  const [trainingPackages, group, moduleSets, estimateIds] = await Promise.all([
     prisma.trainingPackage.findMany({
       where: { isActive: true, code: { not: "OTHER" } },
       select: { code: true, name: true },
       orderBy: { code: "asc" },
     }),
     prisma.farmerGroup.findFirst({
-      where: {
-        id: farmerGroupId,
-        isActive: true,
-        ...(access.mode === "BY_DISTRICT" ? { districtId: { in: access.ids } } : {}),
-      },
+      where: groupWhere,
       select: {
         id: true,
         name: true,
@@ -143,14 +146,15 @@ export async function analyzeFarmerGroupCompleteness(
             },
             productionRecords: {
               where: { isActive: true },
-              select: { id: true, parcelId: true, period: true, notes: true },
+              select: { id: true, parcelId: true, period: true },
             },
           },
         },
       },
     }),
     // Kehadiran modul (#352 A1) — id-set per satelit, scope lewat relasi petani.
-    loadModuleFlagSets({ farmerWhere, groupWhere: { id: farmerGroupId }, referenceYear }),
+    loadModuleFlagSets({ farmerWhere, groupWhere, referenceYear }),
+    loadEstimateRecordIds(farmerWhere),
   ]);
 
   if (!group) {
@@ -206,7 +210,7 @@ export async function analyzeFarmerGroupCompleteness(
         id: r.id,
         parcelId: r.parcelId,
         period: r.period,
-        isEstimate: isEstimateNote(r.notes),
+        isEstimate: estimateIds.has(r.id),
       })),
       modules: farmerModuleFlags(moduleSets, f.id),
     })),

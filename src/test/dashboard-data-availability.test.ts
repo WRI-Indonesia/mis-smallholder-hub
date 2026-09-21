@@ -10,7 +10,7 @@ import {
   scoreBand,
 } from "@/lib/data-availability-aggregation";
 import { computeCompleteness, DOMAIN_WEIGHTS } from "@/lib/data-completeness";
-import { SYSTEMIC_MIN_ENTITIES } from "@/lib/data-completeness-registry";
+import { anomalyDef, SYSTEMIC_MIN_ENTITIES } from "@/lib/data-completeness-registry";
 import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
 import type { AvailabilityAnomalyCount, AvailabilityGroupEntry } from "@/types/dashboard";
 
@@ -132,6 +132,9 @@ describe("buildAvailabilityEntry", () => {
     const sum = e.anomalies.reduce((s, a) => s + a.count, 0);
     expect(sum).toBe(e.totalAnomalies);
     expect(e.anomalies.find((a) => a.key === "profil-tidak-lengkap")!.count).toBe(1);
+    // Terdaftar di registri (label & rute perbaikan), bukan disintesis di luar katalog (review #352).
+    expect(e.anomalies.find((a) => a.key === "profil-tidak-lengkap")!.label).toBe(anomalyDef("profil-tidak-lengkap").label);
+    expect(anomalyDef("profil-tidak-lengkap").fix.href).toBe("/admin/master-data/groups");
   });
 
   it("Σ count tetap == totalAnomalies saat ada anomali sistemik (#352 A3)", () => {

@@ -556,6 +556,41 @@ describe("anomali sistemik (#352 A3)", () => {
     expect(d.totalAnomalies).toBe(2);
     expect(d.score).toBeCloseTo((4 / 6) * 100, 6); // NIK & alamat gagal, 4 check lolos
   });
+
+  it("hanya check 'kolom kosong' yang dilipat — validitas/kebaruan/paket tetap per entitas walau 100 %", () => {
+    const foldable = Object.entries(ANOMALY_CATALOG).filter(([, d]) => d.foldable).map(([k]) => k);
+    expect(foldable).not.toContain("invalid-nik");
+    expect(foldable).not.toContain("dup-nik");
+    expect(foldable).not.toContain("produksi-basi");
+    expect(foldable).toContain("persil-tanpa-status");
+    expect(anomalyDef("belum-paket-X").foldable).toBe(false);
+
+    // 20 petani semua ber-NIK 15 digit → tetap 20 temuan, bukan 1 "kolom belum diisi".
+    const invalid = computePetaniDomain(
+      Array.from({ length: 20 }, (_, i) => farmer({ id: `f${i}`, farmerId: `F-${i}`, nik: "123456789012345" }))
+    ).anomalies.find((a) => a.key === "invalid-nik")!;
+    expect(invalid.systemic).toBe(false);
+    expect(invalid.count).toBe(20);
+
+    // 20 petani ber-produksi semua basi → 20 temuan (sinyal "seluruh Lembaga tertinggal" tetap terlihat).
+    const stale = computeProduksiDomain(
+      Array.from({ length: 20 }, (_, i) =>
+        farmer({ id: `f${i}`, farmerId: `F-${i}`, productionRecords: [{ id: `r${i}`, parcelId: null, period: "2026-01", isEstimate: false }] })
+      ),
+      REF
+    ).anomalies.find((a) => a.key === "produksi-basi")!;
+    expect(stale.systemic).toBe(false);
+    expect(stale.count).toBe(20);
+  });
+
+  it("penyebut pre/post-test = petani yang punya partisipasi, bukan seluruh petani", () => {
+    const withPart = farmer({ id: "a", farmerId: "F-A", trainingParticipants: [participant(P1.code, null, null)] });
+    const without = farmer({ id: "b", farmerId: "F-B" });
+    const d = computePelatihanDomain([withPart, without], [P1], [{ packageCode: P1.code, hasEvidence: true }]);
+    const pre = d.anomalies.find((a) => a.key === "peserta-tanpa-pretest")!;
+    expect(pre.entityCount).toBe(1);
+    expect(pre.total).toBe(1);
+  });
 });
 
 describe("computeCompleteness (orchestrator)", () => {

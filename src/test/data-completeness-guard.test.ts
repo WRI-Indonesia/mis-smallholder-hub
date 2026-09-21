@@ -30,6 +30,7 @@ const db = vi.hoisted(() => {
     farmerGroup: { findFirst: vi.fn(), findMany: findMany() },
     district: { findMany: findMany() },
     landParcel: { findMany: findMany() },
+    productionRecord: { findMany: findMany() },
     landParcelDocument: { groupBy: groupBy() },
     landParcelStdb: { groupBy: groupBy() },
     landParcelExternalId: { groupBy: groupBy() },
@@ -95,6 +96,7 @@ beforeEach(() => {
   for (const q of SATELLITE_QUERIES) q.mockResolvedValue([]);
   db.trainingPackage.findMany.mockResolvedValue([]);
   db.landParcel.findMany.mockResolvedValue([]);
+  db.productionRecord.findMany.mockResolvedValue([]);
 });
 
 describe("guard izin", () => {
@@ -116,14 +118,21 @@ describe("analyzeFarmerGroupCompleteness — scope", () => {
     for (const q of SATELLITE_QUERIES) expect(q).not.toHaveBeenCalled();
   });
 
-  it("BY_DISTRICT: kueri Lembaga difilter districtId; Lembaga luar distrik → 'di luar akses'", async () => {
+  it("BY_DISTRICT: kueri Lembaga DAN satelit difilter districtId; Lembaga luar distrik → 'di luar akses'", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d-1"] });
     db.farmerGroup.findFirst.mockResolvedValue(null);
     await expect(analyzeFarmerGroupCompleteness("g-1")).rejects.toThrow(/di luar akses/);
-    expect(db.farmerGroup.findFirst.mock.calls[0][0].where).toMatchObject({
-      id: "g-1",
+    const groupWhere = { id: "g-1", isActive: true, districtId: { in: ["d-1"] } };
+    expect(db.farmerGroup.findFirst.mock.calls[0][0].where).toMatchObject(groupWhere);
+    // Satelit tidak dimuat "lalu dibuang": scope distrik ikut di relasi Lembaga (review #352).
+    expect(db.landParcelDocument.groupBy.mock.calls[0][0].where).toMatchObject({
+      parcel: { farmer: { isActive: true, farmerGroup: groupWhere } },
+    });
+    expect(db.farmerGroupBoundary.groupBy.mock.calls[0][0].where).toMatchObject({ farmerGroup: groupWhere });
+    expect(db.productionRecord.findMany.mock.calls[0][0].where).toMatchObject({
       isActive: true,
-      districtId: { in: ["d-1"] },
+      farmer: { isActive: true, farmerGroup: groupWhere },
+      notes: { contains: "estimasi", mode: "insensitive" },
     });
   });
 
@@ -132,7 +141,8 @@ describe("analyzeFarmerGroupCompleteness — scope", () => {
     expect(result.group.id).toBe("g-1");
     expect(result.moduleCoverage.length).toBeGreaterThan(0);
 
-    const farmerWhere = { isActive: true, farmerGroupId: "g-1" };
+    const groupWhere = { id: "g-1", isActive: true };
+    const farmerWhere = { isActive: true, farmerGroup: groupWhere };
     const parcelScope = { isActive: true, farmer: farmerWhere };
     const arg = (fn: ReturnType<typeof vi.fn>) => fn.mock.calls[0][0];
 
@@ -157,9 +167,9 @@ describe("analyzeFarmerGroupCompleteness — scope", () => {
     expect(arg(db.landStdb.groupBy).where).toMatchObject({ isActive: true, farmer: farmerWhere });
     expect(arg(db.bmpAssessment.groupBy).where).toMatchObject({ isActive: true, farmer: farmerWhere });
     expect(arg(db.bmpAssessment.groupBy).where.surveyYear).toBe(new Date().getFullYear());
-    expect(arg(db.farmerGroupBoundary.groupBy).where).toMatchObject({ isActive: true, farmerGroup: { id: "g-1" } });
-    expect(arg(db.referenceBenchmark.findMany).where).toMatchObject({ isActive: true, farmerGroup: { id: "g-1" } });
-    expect(arg(db.bmpGroupAssessment.groupBy).where).toMatchObject({ isActive: true, farmerGroup: { id: "g-1" } });
+    expect(arg(db.farmerGroupBoundary.groupBy).where).toMatchObject({ isActive: true, farmerGroup: groupWhere });
+    expect(arg(db.referenceBenchmark.findMany).where).toMatchObject({ isActive: true, farmerGroup: groupWhere });
+    expect(arg(db.bmpGroupAssessment.groupBy).where).toMatchObject({ isActive: true, farmerGroup: groupWhere });
 
     // NKT & Border: semantik hapus berbeda → TANPA filter isActive (docs/database/models.md).
     expect(arg(db.landParcelNkt.findMany).where).toEqual({ parcel: parcelScope });
@@ -181,6 +191,13 @@ describe("getDataAvailabilityView — scope satelit lintas Lembaga", () => {
     const farmerWhere = { isActive: true, farmerGroup: groupWhere };
     expect(db.farmerGroup.findMany.mock.calls[0][0].where).toMatchObject(groupWhere);
     expect(db.landParcel.findMany.mock.calls[0][0].where).toMatchObject({ isActive: true, farmer: farmerWhere });
+    // Kolom `notes` produksi tidak ikut kueri utama — label Estimasi lewat id-set (review #352).
+    const farmerSelect = db.farmerGroup.findMany.mock.calls[0][0].select.farmers.select;
+    expect(farmerSelect.productionRecords.select).toEqual({ id: true, parcelId: true, period: true });
+    expect(db.productionRecord.findMany.mock.calls[0][0].where).toMatchObject({
+      farmer: farmerWhere,
+      notes: { contains: "estimasi", mode: "insensitive" },
+    });
     expect(db.landParcelDocument.groupBy.mock.calls[0][0].where).toMatchObject({
       isActive: true,
       parcel: { isActive: true, farmer: farmerWhere },

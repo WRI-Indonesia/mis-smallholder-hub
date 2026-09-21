@@ -5,6 +5,7 @@
 
 import { computeCompleteness, DOMAIN_WEIGHTS } from "@/lib/data-completeness";
 import type { CompletenessOptions } from "@/lib/data-completeness";
+import { anomalyDef } from "@/lib/data-completeness-registry";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
 import type {
   AvailabilityAnomalyCount,
@@ -66,7 +67,7 @@ export function buildAvailabilityEntry(
   if (profileFailed > 0) {
     anomalies.push({
       key: "profil-tidak-lengkap",
-      label: "Profil Lembaga belum lengkap",
+      label: anomalyDef("profil-tidak-lengkap").label,
       count: profileFailed,
       entityCount: profileFailed,
       total: result.profileChecks.length,

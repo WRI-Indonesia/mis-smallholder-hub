@@ -99,47 +99,71 @@ export type AnomalyDef = {
   domain: CompletenessDomainKey;
   grain: CompletenessGrain;
   fix: CompletenessFix;
+  /**
+   * Boleh dilipat jadi temuan sistemik "kolom belum pernah diisi" (A3) —
+   * hanya check "kolom kosong". Check validitas/kebaruan (NIK tidak sahih,
+   * duplikat, produksi basi, belum ikut paket) TIDAK dilipat: sinyalnya justru
+   * makin penting saat menyentuh seluruh Lembaga (review #352).
+   */
+  foldable: boolean;
 };
+
+const blank = (
+  label: string,
+  domain: CompletenessDomainKey,
+  grain: CompletenessGrain,
+  fix: CompletenessFix,
+): AnomalyDef => ({ label, domain, grain, fix, foldable: true });
+const strict = (
+  label: string,
+  domain: CompletenessDomainKey,
+  grain: CompletenessGrain,
+  fix: CompletenessFix,
+): AnomalyDef => ({ label, domain, grain, fix, foldable: false });
 
 /**
  * Metadata tiap kunci anomali. Predikatnya tetap eksplisit di
  * `data-completeness.ts` (NIK sahih+unik, kebaruan produksi, dsb. bukan sekadar
- * "kolom kosong") — registri memegang label, grain, dan rute perbaikan.
+ * "kolom kosong") — registri memegang label, grain, rute perbaikan, dan
+ * kelayakan dilipat.
  */
 export const ANOMALY_CATALOG: Record<string, AnomalyDef> = {
+  // Profil Lembaga (disintesis DA-03 dari check profil yang gagal)
+  "profil-tidak-lengkap": strict("Profil Lembaga belum lengkap", "profil", "lembaga", FIX.groupForm("kolom profil yang kosong")),
   // Petani
-  "no-nik": { label: "Petani tanpa NIK", domain: "petani", grain: "petani", fix: FIX.farmerForm("NIK") },
-  "invalid-nik": { label: "NIK tidak valid (bukan 16 digit)", domain: "petani", grain: "petani", fix: FIX.farmerForm("NIK") },
-  "dup-nik": { label: "NIK duplikat dalam Lembaga Petani", domain: "petani", grain: "petani", fix: FIX.farmerForm("NIK") },
-  "dup-farmer-id": { label: "ID Petani duplikat dalam Lembaga Petani", domain: "petani", grain: "petani", fix: FIX.farmerForm("ID Petani") },
-  "no-address": { label: "Petani tanpa alamat", domain: "petani", grain: "petani", fix: FIX.farmerForm("Alamat") },
-  "no-birth-date": { label: "Petani tanpa tanggal lahir", domain: "petani", grain: "petani", fix: FIX.farmerForm("Tanggal Lahir") },
-  "no-birth-place": { label: "Petani tanpa tempat lahir", domain: "petani", grain: "petani", fix: FIX.farmerForm("Tempat Lahir") },
-  "no-joined-year": { label: "Petani tanpa tahun bergabung", domain: "petani", grain: "petani", fix: FIX.farmerForm("Tahun Bergabung") },
+  "no-nik": blank("Petani tanpa NIK", "petani", "petani", FIX.farmerForm("NIK")),
+  "invalid-nik": strict("NIK tidak valid (bukan 16 digit)", "petani", "petani", FIX.farmerForm("NIK")),
+  "dup-nik": strict("NIK duplikat dalam Lembaga Petani", "petani", "petani", FIX.farmerForm("NIK")),
+  "dup-farmer-id": strict("ID Petani duplikat dalam Lembaga Petani", "petani", "petani", FIX.farmerForm("ID Petani")),
+  "no-address": blank("Petani tanpa alamat", "petani", "petani", FIX.farmerForm("Alamat")),
+  "no-birth-date": blank("Petani tanpa tanggal lahir", "petani", "petani", FIX.farmerForm("Tanggal Lahir")),
+  "no-birth-place": blank("Petani tanpa tempat lahir", "petani", "petani", FIX.farmerForm("Tempat Lahir")),
+  "no-joined-year": blank("Petani tanpa tahun bergabung", "petani", "petani", FIX.farmerForm("Tahun Bergabung")),
   // Lahan
-  "petani-tanpa-lahan": { label: "Petani tanpa lahan aktif", domain: "lahan", grain: "petani", fix: FIX.parcelShapefile("poligon lahan") },
-  "persil-tanpa-geometry": { label: "Persil tanpa geometry", domain: "lahan", grain: "persil", fix: FIX.parcelShapefile("geometry") },
-  "persil-tanpa-luas": { label: "Persil tanpa luas", domain: "lahan", grain: "persil", fix: FIX.parcelShapefile("area") },
-  "persil-tanpa-jenis-tanaman": { label: "Persil tanpa jenis tanaman", domain: "lahan", grain: "persil", fix: FIX.parcelShapefile("crop_type") },
-  "persil-tanpa-kelompok-tani": { label: "Persil tanpa Kelompok Tani", domain: "lahan", grain: "persil", fix: FIX.parcelDetail("Nama Kelompok Tani") },
-  "persil-tanpa-tahun-tanam": { label: "Persil tanpa tahun tanam", domain: "lahan", grain: "persil", fix: FIX.parcelShapefile("planting_year") },
-  "persil-tanpa-status": { label: "Persil tanpa status lahan", domain: "lahan", grain: "persil", fix: FIX.parcelShapefile("land_status") },
-  "persil-tanpa-blok": { label: "Persil tanpa blok", domain: "lahan", grain: "persil", fix: FIX.parcelDetail("Blok") },
+  "petani-tanpa-lahan": blank("Petani tanpa lahan aktif", "lahan", "petani", FIX.parcelShapefile("poligon lahan")),
+  "persil-tanpa-geometry": blank("Persil tanpa geometry", "lahan", "persil", FIX.parcelShapefile("geometry")),
+  "persil-tanpa-luas": blank("Persil tanpa luas", "lahan", "persil", FIX.parcelShapefile("area")),
+  "persil-tanpa-jenis-tanaman": blank("Persil tanpa jenis tanaman", "lahan", "persil", FIX.parcelShapefile("crop_type")),
+  "persil-tanpa-kelompok-tani": blank("Persil tanpa Kelompok Tani", "lahan", "persil", FIX.parcelDetail("Nama Kelompok Tani")),
+  "persil-tanpa-tahun-tanam": blank("Persil tanpa tahun tanam", "lahan", "persil", FIX.parcelShapefile("planting_year")),
+  "persil-tanpa-status": blank("Persil tanpa status lahan", "lahan", "persil", FIX.parcelShapefile("land_status")),
+  "persil-tanpa-blok": blank("Persil tanpa blok", "lahan", "persil", FIX.parcelDetail("Blok")),
   // Pelatihan
-  "kt-tanpa-aktivitas": { label: "Lembaga Petani belum memiliki aktivitas pelatihan", domain: "pelatihan", grain: "lembaga", fix: FIX.training() },
-  "peserta-tanpa-pretest": { label: "Peserta tanpa nilai pre-test", domain: "pelatihan", grain: "petani", fix: FIX.training("Nilai Pre-test") },
-  "peserta-tanpa-posttest": { label: "Peserta tanpa nilai post-test", domain: "pelatihan", grain: "petani", fix: FIX.training("Nilai Post-test") },
+  "kt-tanpa-aktivitas": strict("Lembaga Petani belum memiliki aktivitas pelatihan", "pelatihan", "lembaga", FIX.training()),
+  "peserta-tanpa-pretest": strict("Peserta tanpa nilai pre-test", "pelatihan", "petani", FIX.training("Nilai Pre-test")),
+  "peserta-tanpa-posttest": strict("Peserta tanpa nilai post-test", "pelatihan", "petani", FIX.training("Nilai Post-test")),
   // Produksi
-  "petani-tanpa-produksi": { label: "Petani tanpa data produksi", domain: "produksi", grain: "petani", fix: FIX.production() },
-  "berlahan-tanpa-produksi": { label: "Petani punya lahan (non-PSR) tapi tanpa produksi", domain: "produksi", grain: "petani", fix: FIX.production() },
-  "produksi-tanpa-persil": { label: "Produksi tidak terhubung ke persil", domain: "produksi", grain: "petani", fix: FIX.production("ID Lahan pada baris produksi") },
-  "produksi-basi": {
-    label: `Produksi tidak diperbarui ≥ ${PRODUCTION_STALE_MONTHS} bulan terakhir`,
-    domain: "produksi",
-    grain: "petani",
-    fix: FIX.production("periode bulan berjalan"),
-  },
-  "lahan-tanpa-produksi": { label: "Lahan aktif (non-PSR) tanpa produksi", domain: "produksi", grain: "persil", fix: FIX.production("ID Lahan pada baris produksi") },
+  "petani-tanpa-produksi": blank("Petani tanpa data produksi", "produksi", "petani", FIX.production()),
+  "berlahan-tanpa-produksi": blank("Petani punya lahan (non-PSR) tapi tanpa produksi", "produksi", "petani", FIX.production()),
+  // Kolom ID Lahan pada baris produksi kosong → "kolom kosong", boleh dilipat.
+  "produksi-tanpa-persil": blank("Produksi tidak terhubung ke persil", "produksi", "petani", FIX.production("ID Lahan pada baris produksi")),
+  "produksi-basi": strict(
+    `Produksi tidak diperbarui ≥ ${PRODUCTION_STALE_MONTHS} bulan terakhir`,
+    "produksi",
+    "petani",
+    FIX.production("periode bulan berjalan"),
+  ),
+  "lahan-tanpa-produksi": blank("Lahan aktif (non-PSR) tanpa produksi", "produksi", "persil", FIX.production("ID Lahan pada baris produksi")),
 };
 
 /** Prefix kunci anomali dinamis "belum ikut paket X" (satu per paket wajib). */
@@ -148,7 +172,7 @@ export const PACKAGE_ANOMALY_PREFIX = "belum-paket-";
 /** Metadata anomali per kunci — kunci dinamis paket dipetakan ke satu entri. */
 export function anomalyDef(key: string): AnomalyDef {
   if (key.startsWith(PACKAGE_ANOMALY_PREFIX)) {
-    return { label: key, domain: "pelatihan", grain: "petani", fix: FIX.training("peserta aktivitas paket ini") };
+    return strict(key, "pelatihan", "petani", FIX.training("peserta aktivitas paket ini"));
   }
   const def = ANOMALY_CATALOG[key];
   if (!def) throw new Error(`Anomali "${key}" belum terdaftar di ANOMALY_CATALOG`);

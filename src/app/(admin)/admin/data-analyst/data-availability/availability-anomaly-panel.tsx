@@ -14,7 +14,7 @@ const MAX_TOOLTIP_GROUPS = 6;
 function AnomalyRow({ a, max, unit, chip }: { a: AvailabilityAnomalySummary; max: number; unit: string; chip: string }) {
   const top = a.groups[0];
   const rest = a.groups.length - MAX_TOOLTIP_GROUPS;
-  const fix = a.key === "profil-tidak-lengkap" ? null : anomalyDef(a.key).fix;
+  const fix = anomalyDef(a.key).fix;
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2 text-xs">
@@ -33,7 +33,7 @@ function AnomalyRow({ a, max, unit, chip }: { a: AvailabilityAnomalySummary; max
         </TooltipTrigger>
         <StatTooltipContent
           title={a.label}
-          subtitle={fix ? (fix.field ? `${fix.menu} › ${fix.field}` : fix.menu) : undefined}
+          subtitle={fix.field ? `${fix.menu} › ${fix.field}` : fix.menu}
           footer={`${formatNumber(a.groupsAffected)} Lembaga · klik label untuk membuka ${top.name}`}
         >
           <StatTooltipRow chip={chip} label={unit} value={a.count} />

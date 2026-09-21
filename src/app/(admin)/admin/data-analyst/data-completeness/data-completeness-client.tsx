@@ -35,8 +35,12 @@ import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
 import { scoreBand } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, BAND_LEGEND, BAND_TEXT } from "@/lib/score-band-styles";
 import {
+  ANOMALY_CATALOG,
   FARMER_CHECK_COUNT,
+  FARMER_FIELD_CHECKS,
   MODULE_DOMAIN_LABELS,
+  PACKAGE_ANOMALY_PREFIX,
+  PARCEL_CHECKS,
   PARCEL_CHECK_WEIGHT_TOTAL,
   PROFILE_CHECKS,
 } from "@/lib/data-completeness-registry";
@@ -89,10 +93,14 @@ const DOMAIN_ORDER: CompletenessDomainKey[] = ["profil", "petani", "lahan", "pel
 const weightPct = (d: CompletenessDomainKey) => Math.round(DOMAIN_WEIGHTS[d] * 100);
 
 // Rumus singkat per domain — isi tooltip strip skor (#352 B2, menutup 6h).
+// Nama field diturunkan dari registri supaya tooltip tidak usang saat check bertambah.
+const fieldName = (anomalyKey: string) => ANOMALY_CATALOG[anomalyKey]?.fix.field ?? anomalyKey;
+const farmerFields = FARMER_FIELD_CHECKS.map((c) => fieldName(c.anomalyKey)).join(", ");
+const parcelFields = PARCEL_CHECKS.map((c) => `${fieldName(c.anomalyKey)} ×${c.weight}`).join(", ");
 const DOMAIN_FORMULA: Record<CompletenessDomainKey, string> = {
   profil: `${PROFILE_CHECKS.length} check profil terisi ÷ ${PROFILE_CHECKS.length}`,
-  petani: `rata-rata per petani: check lolos ÷ ${FARMER_CHECK_COUNT} (NIK sahih & unik, ID unik, alamat, tgl lahir, tempat lahir, thn bergabung)`,
-  lahan: `rata-rata per persil: Σ bobot atribut terisi ÷ ${PARCEL_CHECK_WEIGHT_TOTAL} (geometry, luas, jenis tanaman, KT = bobot 3; tahun tanam, status, blok = bobot 1)`,
+  petani: `rata-rata per petani: check lolos ÷ ${FARMER_CHECK_COUNT} (NIK sahih & unik, ID Petani unik, ${farmerFields})`,
+  lahan: `rata-rata per persil: Σ bobot atribut terisi ÷ ${PARCEL_CHECK_WEIGHT_TOTAL} (${parcelFields})`,
   pelatihan: "rata-rata per petani: paket wajib yang diikuti ÷ jumlah paket wajib",
   produksi: "petani yang punya ≥1 record produksi ÷ total petani",
 };
@@ -135,11 +143,16 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
   const [isPending, startTransition] = useTransition();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
+  // Lembaga yang sedang dianalisa — respons yang datang untuk Lembaga lain
+  // (pengguna berganti pilihan saat request berjalan) diabaikan (review #352).
+  const analyzedFor = useRef<string | null>(null);
+
   const analyze = useCallback(
     (groupId: string, silent = false) => {
       startTransition(async () => {
         try {
           const data = await analyzeFarmerGroupCompleteness(groupId);
+          if (analyzedFor.current !== groupId) return;
           setResult(data);
           // Default hanya seksi berskor terendah yang terbuka (menutup 6g).
           const scores: [CompletenessDomainKey, number][] = [
@@ -158,8 +171,8 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
   );
 
   // Analisa otomatis (keputusan #352 P5): saat `?lembaga=` ada di URL awal dan
-  // tiap kali Lembaga dipilih — tombol tinggal "Muat ulang".
-  const analyzedFor = useRef<string | null>(null);
+  // tiap kali Lembaga dipilih — tombol tinggal "Muat ulang". Hasil Lembaga
+  // sebelumnya dikosongkan begitu pilihan berganti.
   useEffect(() => {
     if (!selectedFarmerGroup) {
       analyzedFor.current = null;
@@ -168,6 +181,7 @@ export function DataCompletenessClient({ districts, initialFarmerGroups, canExpo
     }
     if (analyzedFor.current === selectedFarmerGroup) return;
     analyzedFor.current = selectedFarmerGroup;
+    setResult(null);
     analyze(selectedFarmerGroup, true);
   }, [selectedFarmerGroup, analyze]);
 
@@ -675,8 +689,8 @@ function ProfileSection({
               {c.label}
               {!c.complete && (
                 <span className="text-xs text-muted-foreground">
-                  · isi di{" "}
-                  <Link href={`${c.fix.href}/${result.group.id}`} className="text-primary hover:underline">
+                  · isi {c.fix.field ? `kolom ${c.fix.field} ` : ""}di{" "}
+                  <Link href={`/admin/master-data/groups/${result.group.id}`} className="text-primary hover:underline">
                     Detail Lembaga › Edit
                   </Link>
                 </span>
@@ -910,7 +924,7 @@ function TrainingSection({
   const t = domain.training!;
   const noActivityPackages = t.packageCoverage.filter((p) => !p.hasActivity);
   // Anomali selain "belum ikut paket" (yang sudah tergambar di kartu per paket).
-  const otherAnomalies = domain.anomalies.filter((a) => !a.key.startsWith("belum-paket-"));
+  const otherAnomalies = domain.anomalies.filter((a) => !a.key.startsWith(PACKAGE_ANOMALY_PREFIX));
   return (
     <SectionShell
       id={SECTION_ID.pelatihan}

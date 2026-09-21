@@ -34,7 +34,7 @@ const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
   SWADAYA: "Swadaya",
 };
 
-type Tampilan = "inti" | "modul";
+type MatrixView = "inti" | "modul";
 
 export function DataAvailabilityClient({
   view,
@@ -62,16 +62,35 @@ export function DataAvailabilityClient({
       : null;
 
   // Filter Lembaga (#352 B3) — memfokuskan bar chart & matriks ke satu Lembaga.
+  // Divalidasi terhadap irisan Distrik/Kategori (bukan seluruh daftar) supaya
+  // tautan basi tidak menghasilkan dashboard kosong tanpa penjelasan (review #352).
   const groupParam = get("lembaga");
-  const groupId = allGroups.some((g) => g.id === groupParam) ? groupParam : null;
+  const groupId = allGroups.some(
+    (g) =>
+      g.id === groupParam &&
+      (!districtId || g.districtId === districtId) &&
+      (!category || g.category === category),
+  )
+    ? groupParam
+    : null;
 
-  const tampilanParam = get("tampilan");
-  const tampilan: Tampilan = tampilanParam === "modul" ? "modul" : "inti";
+  const viewParam = get("tampilan");
+  const matrixView: MatrixView = viewParam === "modul" ? "modul" : "inti";
 
-  const setDistrictId = (v: string | null) => setMany({ distrik: v });
-  const setCategory = (v: BmpFarmerGroupCategory | null) => setMany({ kategori: v });
+  // Lembaga terpilih yang tidak lagi masuk irisan Distrik/Kategori baru
+  // di-reset (pola DistrictGroupFilter) — bukan diam-diam menampilkan irisan kosong.
+  const keepGroup = (
+    districtId: string | null,
+    category: BmpFarmerGroupCategory | null,
+  ): Record<string, string | null> => {
+    const g = groupId ? allGroups.find((x) => x.id === groupId) : undefined;
+    const fits = !!g && (!districtId || g.districtId === districtId) && (!category || g.category === category);
+    return fits ? {} : { lembaga: null };
+  };
+  const setDistrictId = (v: string | null) => setMany({ distrik: v, ...keepGroup(v, category) });
+  const setCategory = (v: BmpFarmerGroupCategory | null) => setMany({ kategori: v, ...keepGroup(districtId, v) });
   const setGroupId = (v: string | null) => setMany({ lembaga: v });
-  const setTampilan = (v: Tampilan) => setMany({ tampilan: v === "inti" ? null : v });
+  const setMatrixView = (v: MatrixView) => setMany({ tampilan: v === "inti" ? null : v });
 
   const districtOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -229,14 +248,14 @@ export function DataAvailabilityClient({
       <AvailabilityScoreCards totals={totals} />
 
       {/* Segmented control (#352 B3): Kelengkapan inti (Index) | Cakupan modul (informatif) */}
-      <Tabs value={tampilan} onValueChange={(v) => setTampilan(v as Tampilan)}>
+      <Tabs value={matrixView} onValueChange={(v) => setMatrixView(v as MatrixView)}>
         <TabsList>
           <TabsTrigger value="inti">Kelengkapan inti</TabsTrigger>
           <TabsTrigger value="modul">Cakupan modul</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {tampilan === "inti" ? (
+      {matrixView === "inti" ? (
         <AvailabilityMatrix rows={groups} />
       ) : (
         <AvailabilityModuleMatrix rows={groups} totals={moduleTotals} />

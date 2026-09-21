@@ -79,7 +79,7 @@ function anomaly(key: string, items: AnomalyItem[], total: number, labelOverride
   const def = anomalyDef(key);
   const entityCount = items.length;
   const systemic =
-    total >= SYSTEMIC_MIN_ENTITIES && entityCount / total >= SYSTEMIC_THRESHOLD;
+    def.foldable && total >= SYSTEMIC_MIN_ENTITIES && entityCount / total >= SYSTEMIC_THRESHOLD;
   return {
     key,
     label: labelOverride ?? def.label,
@@ -322,15 +322,17 @@ export function computePelatihanDomain(
     }));
 
   // Anomali domain: belum-ikut per paket + kelengkapan nilai (pre/post-test) + KT tanpa aktivitas.
-  const noPreTest = farmers.filter((f) => f.trainingParticipants.some((p) => p.preTestScore == null));
-  const noPostTest = farmers.filter((f) => f.trainingParticipants.some((p) => p.postTestScore == null));
+  // Penyebut nilai pre/post-test = petani yang punya partisipasi (hanya mereka yang bisa ditandai).
+  const participants = farmers.filter((f) => f.trainingParticipants.length > 0);
+  const noPreTest = participants.filter((f) => f.trainingParticipants.some((p) => p.preTestScore == null));
+  const noPostTest = participants.filter((f) => f.trainingParticipants.some((p) => p.postTestScore == null));
 
   const anomalies: DomainAnomaly[] = [
     ...packageCoverage
       .filter((p) => p.notCovered > 0)
       .map((p) => anomaly(`${PACKAGE_ANOMALY_PREFIX}${p.code}`, p.notCoveredFarmers, total, `Belum ikut ${p.label}`)),
-    anomaly("peserta-tanpa-pretest", noPreTest.map((f) => toItem(f)), total),
-    anomaly("peserta-tanpa-posttest", noPostTest.map((f) => toItem(f)), total),
+    anomaly("peserta-tanpa-pretest", noPreTest.map((f) => toItem(f)), participants.length),
+    anomaly("peserta-tanpa-posttest", noPostTest.map((f) => toItem(f)), participants.length),
   ].filter((a) => a.entityCount > 0);
 
   if (activities.length === 0) {
