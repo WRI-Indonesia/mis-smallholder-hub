@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "csv-parse/sync";
 import { describe, expect, it } from "vitest";
+import { readMenuSeed } from "../../prisma/seeds/seed-menu";
 
 /**
  * Penjaga drift seed ↔ katalog produk (kandidat dari retro #347, dipasang di
@@ -45,5 +46,18 @@ describe("menu.csv ↔ docs/product/pages", () => {
       seen.set(slot, r.key);
     }
     expect(clashes).toEqual([]);
+  });
+});
+
+describe("readMenuSeed (seeder menu)", () => {
+  it("membaca 46 baris CSV dengan key unik; P4 terbaca; seed memperbarui kolom struktural baris yang ada", () => {
+    const rows = readMenuSeed();
+    expect(rows.length).toBe(menuRows.length);
+    expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
+    const avail = rows.find((r) => r.key === "data-analyst-data-availability")!;
+    expect(avail).toMatchObject({ title: "Ketersediaan Data — Semua Lembaga", order: 2, parentKey: "data-analyst", isActive: true, isVisible: true });
+    // Kontrak sumber kebenaran: seedMenu mem-upsert kolom struktural (bukan `update: {}`).
+    const src = readFileSync("prisma/seeds/seed-menu.ts", "utf8");
+    expect(src).toMatch(/update:\s*\{\s*parentKey: row\.parentKey, title: row\.title, url: row\.url, icon: row\.icon, order: row\.order\s*\}/);
   });
 });
