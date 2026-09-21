@@ -149,7 +149,7 @@ Harapan:
 Peran: DONOR (baca-saja).
 Langkah: Bantuan › cari "radar" dan "bobot"; buka a-1, p-6, r-5; klik tombol "Buka …" di p-6.
 Harapan:
-- Ketiganya render tanpa 404; teks menyebut Radar/Heatmap/Cakupan modul, angka Index + radar, label sumbu bisa diklik, bobot di judul seksi, band "80 – <100"; tombol menuju halaman (DONOR: tombol Semua Lembaga tidak diberikan bila tanpa izin)
+- Ketiganya render tanpa 404; teks menyebut Radar/Heatmap/Cakupan modul, angka Index + radar, label sumbu bisa diklik, bobot di judul seksi, band "80 – <100"; tombol menuju halaman; DONOR tetap bisa membaca dengan banner "Menu ini di luar hak akses akun Anda" (desain Bantuan: tutorial di luar hak akses boleh dibaca, diberi keterangan)
 
 ## #353 — Audit dead code (bagian E: skema)
 
