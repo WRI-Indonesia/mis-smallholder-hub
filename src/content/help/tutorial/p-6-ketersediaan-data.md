@@ -25,7 +25,7 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 3. Lihat lima **kartu domain** — skor besar berwarna band, bobotnya terhadap Skor Keseluruhan, jumlah entitas, dan berapa Lembaga yang kritis di domain itu.
 + Skor domain adalah rata-rata seluruh lembaga yang **tertimbang jumlah petani** — lembaga besar berpengaruh lebih besar. Warna: hijau tua khusus 100 (lengkap penuh), hijau 80–99, kuning 50–79, merah <50 — warna yang sama dipakai di halaman Per Lembaga dan kartu Detail Lembaga.
 + **Klik kartu domain** untuk mengurutkan matriks dari yang terendah pada domain itu; klik lagi untuk kembali ke urutan Skor Total.
-4. Baca **Matriks per Lembaga**. Skor Total ada tepat di samping nama; lima kolom domain berwarna lembut supaya yang paling menyimpang mudah terlihat. Bawaannya hanya 10 Lembaga terendah yang tampil — klik **Tampilkan semua** untuk seluruhnya, atau ketik di kotak **Cari Lembaga**.
+4. Baca **Matriks per Lembaga**. Skor Total ada tepat di samping nama; lima kolom domain berwarna lembut supaya yang paling menyimpang mudah terlihat. Bawaannya hanya 10 baris pertama menurut urutan aktif yang tampil (urutan bawaan: Skor Total terendah dulu — jadi 10 Lembaga tertinggal) — klik **Tampilkan semua** untuk seluruhnya, atau ketik di kotak **Cari Lembaga**. Klik judul kolom untuk mengurutkan; klik lagi untuk membalik arah.
 + Di header matriks, pilih **Kelengkapan inti** (skor yang membentuk Index) atau **Cakupan modul** (informatif: % persil ber-surat, ber-STDB, dinilai NKT, ber-patok, ber-pohon; % petani ber-Monev BMP; boundary ICS, acuan MD, dan lainnya). Cakupan modul **tidak** masuk Index; sel bergaris berarti modul itu belum dimulai di Lembaga tersebut.
 + **Klik nama Lembaga** untuk membuka halaman Per Lembaga dengan Lembaga itu sudah terpilih.
 5. Gunakan filter **Kategori**, **Distrik**, dan **Lembaga** di kanan atas untuk mempersempit.
@@ -42,7 +42,7 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 
 **Semua skor 0 / halaman kosong** — kemungkinan tidak ada lembaga dalam cakupan akses Anda, atau filter Distrik/Kategori/Lembaga terlalu sempit. Kembalikan filter ke "Semua".
 
-**Matriks hanya menampilkan sebagian Lembaga** — bawaannya 10 terendah, atau sedang ada filter band (lihat "hapus filter band" di hero). Klik **Tampilkan semua**.
+**Matriks hanya menampilkan sebagian Lembaga** — bawaannya 10 baris pertama menurut urutan aktif, atau sedang ada filter band (lihat "hapus filter band" di hero). Klik **Tampilkan semua**.
 
 **Skor tidak berubah setelah data diperbaiki** — muat ulang halamannya; angka dihitung saat halaman dibuka.
 

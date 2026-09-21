@@ -1,27 +1,24 @@
 "use client";
 
-import { Building2, Users, Map, GraduationCap, TrendingUp, ArrowDownWideNarrow } from "lucide-react";
+import { ArrowDownWideNarrow } from "lucide-react";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { BandBar } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
-import { AVAILABILITY_DOMAIN_LABELS, domainCriticalCount, scoreBand } from "@/lib/data-availability-aggregation";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainCriticalCount, scoreBand } from "@/lib/data-availability-aggregation";
 import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
 import { BAND_BAR, BAND_TEXT } from "@/lib/score-band-styles";
 import type { AvailabilityDomainKey, AvailabilityGroupEntry, AvailabilityTotals } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
+import { DOMAIN_ICONS, formatScore } from "./domain-meta";
 
-const formatScore = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
-
-const DOMAIN_META: Record<AvailabilityDomainKey, { icon: React.ComponentType<{ className?: string }>; count: (t: AvailabilityTotals) => string; basis: string }> = {
-  profil: { icon: Building2, count: (t) => `${formatNumber(t.totalGroups)} Lembaga`, basis: "rata-rata sederhana per Lembaga" },
-  petani: { icon: Users, count: (t) => `${formatNumber(t.totalFarmers)} petani`, basis: "tertimbang jumlah petani" },
-  lahan: { icon: Map, count: (t) => `${formatNumber(t.totalParcels)} persil`, basis: "tertimbang jumlah petani" },
-  pelatihan: { icon: GraduationCap, count: (t) => `${formatNumber(t.totalActivities)} sesi`, basis: "tertimbang jumlah petani" },
-  produksi: { icon: TrendingUp, count: (t) => `${formatNumber(t.farmersWithProduction)} / ${formatNumber(t.totalFarmers)} petani ber-produksi`, basis: "tertimbang jumlah petani" },
+const DOMAIN_META: Record<AvailabilityDomainKey, { count: (t: AvailabilityTotals) => string; basis: string }> = {
+  profil: { count: (t) => `${formatNumber(t.totalGroups)} Lembaga`, basis: "rata-rata sederhana per Lembaga" },
+  petani: { count: (t) => `${formatNumber(t.totalFarmers)} petani`, basis: "tertimbang jumlah petani" },
+  lahan: { count: (t) => `${formatNumber(t.totalParcels)} persil`, basis: "tertimbang jumlah petani" },
+  pelatihan: { count: (t) => `${formatNumber(t.totalActivities)} sesi`, basis: "tertimbang jumlah petani" },
+  produksi: { count: (t) => `${formatNumber(t.farmersWithProduction)} / ${formatNumber(t.totalFarmers)} petani ber-produksi`, basis: "tertimbang jumlah petani" },
 };
-
-const DOMAIN_ORDER: AvailabilityDomainKey[] = ["profil", "petani", "lahan", "pelatihan", "produksi"];
 
 /**
  * Kartu domain DA-03 (#352 putaran 3): SKOR yang memimpin (besar, warna band)
@@ -41,12 +38,12 @@ export function AvailabilityDomainCards({
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      {DOMAIN_ORDER.map((key) => {
+      {AVAILABILITY_DOMAIN_KEYS.map((key) => {
         const meta = DOMAIN_META[key];
         const score = totals.domainScores[key];
         const band = scoreBand(score);
         const critical = domainCriticalCount(groups, key);
-        const Icon = meta.icon;
+        const Icon = DOMAIN_ICONS[key];
         const active = activeSort === key;
         return (
           <Tooltip key={key}>
@@ -77,7 +74,9 @@ export function AvailabilityDomainCards({
               <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                 <span className="truncate">{meta.count(totals)}</span>
                 {critical > 0 ? (
-                  <span className="shrink-0 font-semibold text-rose-600 dark:text-rose-400">{critical} kritis</span>
+                  <span className="shrink-0 font-semibold text-rose-600 dark:text-rose-400" title="Lembaga berskor <50 pada domain ini (tanpa Lembaga tanpa petani)">
+                    {critical} kritis
+                  </span>
                 ) : (
                   <span className="shrink-0">0 kritis</span>
                 )}

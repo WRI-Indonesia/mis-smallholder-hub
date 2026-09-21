@@ -9,20 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { cn } from "@/lib/utils";
-import { AVAILABILITY_DOMAIN_LABELS, domainScoreOf, scoreBand } from "@/lib/data-availability-aggregation";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, bandDistribution, domainScoreOf, scoreBand } from "@/lib/data-availability-aggregation";
 import { BAND_BAR, BAND_CELL, BAND_CELL_SOFT, BAND_LEGEND } from "@/lib/score-band-styles";
 import type { AvailabilityDomainKey, AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
-
-const formatScore = (n: number) =>
-  new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(n);
+import { bandLabel, formatScore } from "./domain-meta";
 
 export type MatrixSortKey = "name" | "totalFarmers" | "health" | AvailabilityDomainKey;
 
-const DOMAIN_COLUMNS: AvailabilityDomainKey[] = ["profil", "petani", "lahan", "pelatihan", "produksi"];
 const LOWEST_N = 10;
-
-const bandLabel = (score: number) => BAND_LEGEND.find((s) => s.band === scoreBand(score))?.label ?? "";
 
 /** Sel skor domain — latar lembut + teks band (#352 putaran 3), tooltip terstruktur (#213). */
 function ScoreCell({ score, label, groupName }: { score: number; label: string; groupName: string }) {
@@ -44,22 +39,25 @@ function ScoreCell({ score, label, groupName }: { score: number; label: string; 
 /**
  * Matriks Lembaga × domain (#352 putaran 3): Skor Total tepat di samping nama
  * (angka terpenting dulu), sel domain lembut supaya outlier terbaca, kolom
- * jumlah berlabel "Petani (n)", kotak cari, toggle "10 terendah / semua",
- * urutan bisa dikendalikan dari kartu domain. Segmented control tampilan
+ * jumlah berlabel "Petani (n)", kotak cari, toggle "10 baris / semua",
+ * urutan (kunci + arah) dikendalikan pemanggil lewat URL — kartu domain dan
+ * judul kolom memakai jalur yang sama. Segmented control tampilan
  * (inti | modul) diserahkan ke pemanggil lewat `headerControl`.
  */
 export function AvailabilityMatrix({
   rows,
   sortKey,
-  onSortKeyChange,
+  sortAsc,
+  onSortChange,
   headerControl,
 }: {
   rows: AvailabilityGroupEntry[];
   sortKey: MatrixSortKey;
-  onSortKeyChange: (key: MatrixSortKey) => void;
+  sortAsc: boolean;
+  onSortChange: (key: MatrixSortKey, asc: boolean) => void;
   headerControl?: React.ReactNode;
 }) {
-  const [asc, setAsc] = useState(true);
+  const asc = sortAsc;
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
 
@@ -87,14 +85,9 @@ export function AvailabilityMatrix({
   const limited = showAll || query ? sorted : sorted.slice(0, LOWEST_N);
   const hiddenCount = sorted.length - limited.length;
 
-  const toggleSort = (key: MatrixSortKey) => {
-    if (key === sortKey) setAsc((v) => !v);
-    else {
-      onSortKeyChange(key);
-      // Nama menaik A→Z; kolom skor menaik agar yang paling rendah muncul dulu.
-      setAsc(true);
-    }
-  };
+  // Klik judul yang sama = balik arah; judul lain = kunci baru, menaik
+  // (nama A→Z; kolom skor: yang paling rendah muncul dulu).
+  const toggleSort = (key: MatrixSortKey) => onSortChange(key, key === sortKey ? !asc : true);
 
   const headBtn = (key: MatrixSortKey, label: string, title?: string) => (
     <button
@@ -108,7 +101,9 @@ export function AvailabilityMatrix({
     </button>
   );
 
-  const critical = rows.filter((r) => scoreBand(r.healthScore) === "bad").length;
+  const critical = bandDistribution(rows).bad;
+  const orderLabel =
+    sortKey === "health" ? "skor total" : sortKey === "name" ? "nama" : sortKey === "totalFarmers" ? "jumlah petani" : AVAILABILITY_DOMAIN_LABELS[sortKey].toLowerCase();
 
   return (
     <Card className="border border-border/60 shadow-sm">
@@ -143,7 +138,17 @@ export function AvailabilityMatrix({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-separate border-spacing-y-1 text-sm">
+            {/* `table-fixed` + lebar kolom eksplisit: lebar tidak dihitung ulang dari
+                isi baris saat urutan/irisan berubah (masukan owner: kolom "bergeser"). */}
+            <table className="w-full min-w-[880px] table-fixed border-separate border-spacing-y-1 text-sm">
+              <colgroup>
+                <col />
+                <col className="w-[104px]" />
+                <col className="w-[88px]" />
+                {AVAILABILITY_DOMAIN_KEYS.map((key) => (
+                  <col key={key} className="w-[108px]" />
+                ))}
+              </colgroup>
               <thead>
                 <tr className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <th className="py-2 pr-4 text-left font-semibold">{headBtn("name", "Lembaga Petani")}</th>
@@ -151,7 +156,7 @@ export function AvailabilityMatrix({
                     {headBtn("health", "Skor Total", "Skor kelengkapan berbobot lintas domain")}
                   </th>
                   <th className="whitespace-nowrap px-3 py-2 text-right font-semibold">{headBtn("totalFarmers", "Petani (n)", "Jumlah petani aktif")}</th>
-                  {DOMAIN_COLUMNS.map((key) => (
+                  {AVAILABILITY_DOMAIN_KEYS.map((key) => (
                     <th key={key} className="whitespace-nowrap px-2 py-2 text-center font-semibold">
                       {headBtn(key, AVAILABILITY_DOMAIN_LABELS[key].replace("Profil Lembaga", "Profil"))}
                     </th>
@@ -165,12 +170,13 @@ export function AvailabilityMatrix({
                       {/* Deep link ke DA-02 dengan Lembaga terpilih (#352 B3). */}
                       <Link
                         href={`/admin/data-analyst/data-completeness?lembaga=${e.id}`}
-                        className="inline-flex items-center gap-1 font-medium leading-tight text-primary hover:underline"
+                        className="flex max-w-full items-center gap-1 font-medium leading-tight text-primary hover:underline"
+                        title={e.name}
                       >
-                        {e.name}
-                        <ExternalLink className="h-3 w-3 opacity-50" />
+                        <span className="truncate">{e.name}</span>
+                        <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
                       </Link>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="truncate text-xs text-muted-foreground">
                         {e.code ? `${e.code} · ` : ""}
                         {e.districtName}
                       </div>
@@ -191,7 +197,7 @@ export function AvailabilityMatrix({
                       </Tooltip>
                     </td>
                     <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{formatNumber(e.totalFarmers)}</td>
-                    {DOMAIN_COLUMNS.map((key) => (
+                    {AVAILABILITY_DOMAIN_KEYS.map((key) => (
                       <td key={key} className="px-1 py-1.5 last:rounded-r-md">
                         <ScoreCell score={domainScoreOf(e, key)} label={AVAILABILITY_DOMAIN_LABELS[key]} groupName={e.name} />
                       </td>
@@ -207,15 +213,18 @@ export function AvailabilityMatrix({
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-medium">Band skor:</span>
             {BAND_LEGEND.map((s) => (
-              <span key={s.band} className="inline-flex items-center gap-1.5">
-                <span className={cn("inline-block h-3 w-5 rounded", BAND_CELL[s.band])} />
+              <span key={s.band} className="inline-flex items-center gap-1.5" title="Kiri: sel domain (lembut) · kanan: Skor Total (pekat)">
+                <span className={cn("inline-block h-3 w-4 rounded-l", BAND_CELL_SOFT[s.band])} />
+                <span className={cn("-ml-1.5 inline-block h-3 w-4 rounded-r", BAND_CELL[s.band])} />
                 {s.label}
               </span>
             ))}
           </div>
           {!query && sorted.length > LOWEST_N && (
             <Button variant="ghost" size="sm" className="h-7" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? `Tampilkan ${LOWEST_N} teratas saja` : `Tampilkan semua (${formatNumber(sorted.length)}) — ${formatNumber(hiddenCount)} tersembunyi`}
+              {showAll
+                ? `Ringkas — ${LOWEST_N} baris pertama saja`
+                : `Tampilkan semua (${formatNumber(sorted.length)}) — ${formatNumber(hiddenCount)} tersembunyi (urut ${orderLabel} ${asc ? "menaik" : "menurun"})`}
             </Button>
           )}
         </div>

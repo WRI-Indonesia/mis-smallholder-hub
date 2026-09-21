@@ -25,47 +25,75 @@ const BAND_ORDER: AvailabilityScoreBand[] = ["bad", "warn", "good", "full"];
 export function AvailabilityHero({
   totals,
   distribution,
-  groups,
+  actionGroups,
   activeBand,
   onBandChange,
 }: {
   totals: AvailabilityTotals;
   distribution: AvailabilityBandDistribution;
-  groups: AvailabilityGroupEntry[];
+  /** Irisan untuk "Aksi lintas Lembaga" — sama dengan panel Anomali (sudah termasuk filter band). */
+  actionGroups: AvailabilityGroupEntry[];
   activeBand: AvailabilityScoreBand | null;
   onBandChange: (band: AvailabilityScoreBand | null) => void;
 }) {
   const total = totals.totalGroups;
   const overallBand = scoreBand(totals.overallScore);
   const bandLabel = (b: AvailabilityScoreBand) => BAND_LEGEND.find((l) => l.band === b)?.label ?? b;
-  const actions = topSystemicAnomalies(groups, 3);
+  const actions = topSystemicAnomalies(actionGroups, 3);
+
+  // Irisan kosong (filter basi) bukan skor 0 — tampilkan keadaan kosong, bukan cincin merah.
+  if (total === 0) {
+    return (
+      <Card className="border border-dashed border-border/60">
+        <CardContent className="flex min-h-[140px] flex-col items-center justify-center gap-1 py-8 text-center">
+          <p className="text-sm font-medium">Tidak ada Lembaga Petani pada filter ini.</p>
+          <p className="text-xs text-muted-foreground">Kembalikan Kategori / Distrik / Lembaga ke &quot;Semua&quot; — atau cakupan akses Anda memang belum memuat Lembaga.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border border-border/60 shadow-sm">
       <CardContent className="pt-6">
-        <div className="grid gap-6 lg:grid-cols-[auto_1fr_minmax(280px,1fr)]">
-          {/* Cincin skor */}
-          <div className="flex items-center gap-4">
-            <Tooltip>
-              <TooltipTrigger render={<div className="cursor-help" />}>
-                <ScoreGauge score={totals.overallScore} size={140} label="Skor" />
-              </TooltipTrigger>
-              <StatTooltipContent title="Skor Keseluruhan" subtitle="Rata-rata tertimbang jumlah petani, lalu berbobot 5 domain">
-                <StatTooltipRow chip={BAND_BAR[overallBand]} label="Skor" value={`${formatNumber(totals.overallScore)} / 100`} />
-                <StatTooltipRow chip="bg-amber-400" label="Temuan anomali" value={totals.totalAnomalies} />
-              </StatTooltipContent>
-            </Tooltip>
-            <div className="space-y-1">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Skor Keseluruhan</div>
-              <div className={cn("text-sm font-semibold", BAND_TEXT[overallBand])}>{bandLabel(overallBand)}</div>
-              <div className="text-xs text-muted-foreground">
-                {formatNumber(total)} Lembaga · {formatNumber(totals.totalAnomalies)} temuan
+        {/* Dua kolom seimbang (masukan owner): kiri = cincin + label + angka ringkas
+            di satu baris, distribusi band selebar kolom di bawahnya (justify-between
+            agar dasarnya sejajar); kanan = aksi lintas Lembaga setinggi kolom kiri. */}
+        <div className="grid gap-6 lg:grid-cols-12 lg:items-stretch">
+          <div className="flex flex-col justify-between gap-6 lg:col-span-7">
+            <div className="flex flex-wrap items-center gap-5">
+              <Tooltip>
+                <TooltipTrigger render={<div className="cursor-help" />}>
+                  <ScoreGauge score={totals.overallScore} size={120} label="Skor" />
+                </TooltipTrigger>
+                <StatTooltipContent title="Skor Keseluruhan" subtitle="Rata-rata tertimbang jumlah petani, lalu berbobot 5 domain">
+                  <StatTooltipRow chip={BAND_BAR[overallBand]} label="Skor" value={`${formatNumber(totals.overallScore)} / 100`} />
+                  <StatTooltipRow chip="bg-amber-400" label="Temuan anomali" value={totals.totalAnomalies} />
+                </StatTooltipContent>
+              </Tooltip>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Skor Keseluruhan</div>
+                <div className={cn("mt-0.5 text-lg font-bold leading-tight", BAND_TEXT[overallBand])}>{bandLabel(overallBand)}</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  rata-rata tertimbang {formatNumber(total)} Lembaga · {formatNumber(totals.totalAnomalies)} temuan
+                </div>
+              </div>
+              <div className="ml-auto grid grid-cols-3 gap-2">
+                {[
+                  { icon: Building2, label: "Lembaga", value: totals.totalGroups },
+                  { icon: Users, label: "Petani", value: totals.totalFarmers },
+                  { icon: Map, label: "Persil", value: totals.totalParcels },
+                ].map((s) => (
+                  <div key={s.label} className="min-w-[96px] rounded-lg border bg-muted/30 px-3 py-2">
+                    <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <s.icon className="h-3.5 w-3.5" /> {s.label}
+                    </div>
+                    <div className="text-lg font-bold tabular-nums leading-tight">{formatNumber(s.value)}</div>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Distribusi band + angka ringkas */}
-          <div className="space-y-4">
             <div>
               <div className="mb-1.5 flex items-center justify-between text-xs">
                 <span className="font-semibold uppercase tracking-wider text-muted-foreground">Distribusi Lembaga per band</span>
@@ -75,7 +103,7 @@ export function AvailabilityHero({
                   </button>
                 )}
               </div>
-              <div className="flex h-5 w-full overflow-hidden rounded-md bg-muted">
+              <div className="flex h-6 w-full overflow-hidden rounded-md bg-muted">
                 {BAND_ORDER.map((b) => {
                   const n = distribution[b];
                   if (n === 0) return null;
@@ -106,60 +134,67 @@ export function AvailabilityHero({
                   );
                 })}
               </div>
-              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                {BAND_ORDER.map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => onBandChange(activeBand === b ? null : b)}
-                    className={cn("inline-flex items-center gap-1.5 rounded px-1 hover:bg-muted", activeBand === b && "bg-muted font-semibold text-foreground")}
-                  >
-                    <span className={cn("inline-block h-2.5 w-2.5 rounded-full", BAND_BAR[b])} />
-                    {bandLabel(b)} · <span className="tabular-nums">{distribution[b]}</span>
-                  </button>
-                ))}
+              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                {BAND_ORDER.map((b) => {
+                  const empty = distribution[b] === 0;
+                  const active = activeBand === b;
+                  return (
+                    <button
+                      key={b}
+                      type="button"
+                      disabled={empty}
+                      onClick={() => onBandChange(active ? null : b)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-muted-foreground transition-colors",
+                        empty ? "cursor-default opacity-40" : "hover:bg-muted",
+                        active && "border-foreground/30 bg-muted font-semibold text-foreground",
+                      )}
+                      aria-pressed={active}
+                    >
+                      <span className={cn("inline-block h-2 w-2 rounded-full", BAND_BAR[b])} />
+                      {bandLabel(b)}
+                      <span className="tabular-nums font-semibold text-foreground">{distribution[b]}</span>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { icon: Building2, label: "Lembaga", value: totals.totalGroups },
-                { icon: Users, label: "Petani", value: totals.totalFarmers },
-                { icon: Map, label: "Persil", value: totals.totalParcels },
-              ].map((s) => (
-                <div key={s.label} className="rounded-lg border bg-muted/30 px-3 py-2">
-                  <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <s.icon className="h-3.5 w-3.5" /> {s.label}
-                  </div>
-                  <div className="text-lg font-bold tabular-nums">{formatNumber(s.value)}</div>
-                </div>
-              ))}
             </div>
           </div>
 
-          {/* Aksi lintas Lembaga */}
-          <div className="rounded-lg border bg-muted/20 p-3">
-            <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {/* Aksi lintas Lembaga — setinggi kolom kiri */}
+          <div className="flex flex-col rounded-lg border bg-muted/20 p-4 lg:col-span-5">
+            <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <Columns3 className="h-3.5 w-3.5" /> Aksi lintas Lembaga
             </div>
             {actions.length === 0 ? (
               <p className="text-sm text-muted-foreground">Tidak ada kolom yang kosong sistemik pada irisan ini.</p>
             ) : (
-              <ol className="space-y-2">
+              <ol className="flex-1 space-y-2.5">
                 {actions.map((a, i) => {
                   const fix = anomalyDef(a.key).fix;
+                  // Satu menu tujuan saja di baris (alternatif & kolom lengkap di tooltip) — agar tiap aksi cukup dua baris.
+                  const primaryMenu = fix.menu.split(" · ")[0];
+                  const fullRoute = fix.field ? `${fix.menu} › ${fix.field}` : fix.menu;
                   return (
-                    <li key={a.key} className="flex gap-2 text-sm">
+                    <li key={a.key} className="flex gap-2.5 text-sm">
                       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-500/15 text-[11px] font-bold">{i + 1}</span>
-                      <div className="min-w-0">
-                        <div className="font-medium leading-snug">{a.label}</div>
-                        <div className="text-xs text-muted-foreground">
-                          <span className="tabular-nums">{formatNumber(a.count)}</span> entitas · {formatNumber(a.groupsAffected)} Lembaga ·{" "}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="min-w-0 truncate font-medium leading-snug" title={a.label}>
+                            {a.label}
+                          </span>
+                          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                            {formatNumber(a.count)} · {formatNumber(a.groupsAffected)} Lembaga
+                          </span>
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground" title={fullRoute}>
                           {fix.href ? (
                             <Link href={fix.href} className="text-primary hover:underline">
-                              {fix.field ? `${fix.menu} › ${fix.field}` : fix.menu}
+                              {primaryMenu}
+                              {fix.field ? ` › ${fix.field}` : ""}
                             </Link>
                           ) : (
-                            fix.menu
+                            primaryMenu
                           )}
                         </div>
                       </div>
@@ -168,10 +203,13 @@ export function AvailabilityHero({
                 })}
               </ol>
             )}
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Kolom yang belum pernah diisi (≥ 95 % kosong) — urusan unggah massal, bukan perbaikan satu per satu.{" "}
-              <span className="inline-flex items-center gap-0.5">
-                Rincian di panel Anomali <ArrowRight className="h-3 w-3" />
+            <p className="mt-3 flex items-center gap-1 border-t pt-2 text-[11px] text-muted-foreground">
+              <span className="truncate">
+                Kolom ≥ 95 % kosong — urusan unggah massal, bukan perbaikan satu per satu.
+                {activeBand && " Mengikuti filter band."}
+              </span>
+              <span className="ml-auto inline-flex shrink-0 items-center gap-0.5">
+                Panel Anomali <ArrowRight className="h-3 w-3" />
               </span>
             </p>
           </div>

@@ -22,6 +22,9 @@ import type {
   BmpFarmerGroupCategory,
 } from "@/types/dashboard";
 
+/** Urutan tampil domain — satu sumber untuk kartu, matriks, laggards, Excel. */
+export const AVAILABILITY_DOMAIN_KEYS: AvailabilityDomainKey[] = ["profil", "petani", "lahan", "pelatihan", "produksi"];
+
 export const AVAILABILITY_DOMAIN_LABELS: Record<AvailabilityDomainKey, string> = {
   profil: "Profil Lembaga",
   petani: "Petani",
@@ -166,9 +169,13 @@ export function domainLaggards(
     .slice(0, n);
 }
 
-/** Jumlah Lembaga berskor kritis (<50) pada satu domain. */
+/**
+ * Jumlah Lembaga berskor kritis (<50) pada satu domain. Konsisten dengan
+ * `domainLaggards`: Lembaga tanpa petani tidak dihitung kritis pada domain
+ * berbasis petani (skor 0-nya = belum dinilai).
+ */
 export function domainCriticalCount(groups: AvailabilityGroupEntry[], key: AvailabilityDomainKey): number {
-  return groups.filter((g) => scoreBand(domainScoreOf(g, key)) === "bad").length;
+  return groups.filter((g) => (key === "profil" || g.totalFarmers > 0) && scoreBand(domainScoreOf(g, key)) === "bad").length;
 }
 
 /**
@@ -238,13 +245,6 @@ export function availabilityTotals(groups: AvailabilityGroupEntry[]): Availabili
     overallScore,
     domainScores,
   };
-}
-
-/** Lembaga urut skor terendah dulu — yang paling butuh dikejar tampil teratas. */
-export function availabilityScoreRows(groups: AvailabilityGroupEntry[]): AvailabilityGroupEntry[] {
-  return [...groups].sort(
-    (a, b) => a.healthScore - b.healthScore || a.name.localeCompare(b.name),
-  );
 }
 
 function summarizeAnomalies(

@@ -3,7 +3,6 @@ import {
   buildAvailabilityEntry,
   filterAvailabilityGroups,
   availabilityTotals,
-  availabilityScoreRows,
   bandDistribution,
   domainCriticalCount,
   domainLaggards,
@@ -310,23 +309,6 @@ describe("availabilityTotals", () => {
   });
 });
 
-describe("availabilityScoreRows", () => {
-  it("urut skor terendah dulu, seri diurut nama", () => {
-    const rows = availabilityScoreRows([
-      entry({ id: "a", name: "Zebra", healthScore: 40 }),
-      entry({ id: "b", name: "Alpha", healthScore: 90 }),
-      entry({ id: "c", name: "Beta", healthScore: 40 }),
-    ]);
-    expect(rows.map((r) => r.id)).toEqual(["c", "a", "b"]);
-  });
-
-  it("tidak memutasi array asal", () => {
-    const src = [entry({ healthScore: 90 }), entry({ id: "g2", healthScore: 10 })];
-    availabilityScoreRows(src);
-    expect(src[0].healthScore).toBe(90);
-  });
-});
-
 describe("topAnomalies", () => {
   it("merge count per key lintas Lembaga + hitung Lembaga terdampak, urut Lembaga terbanyak dulu", () => {
     const r = topAnomalies([
@@ -401,9 +383,10 @@ describe("hero DA-03 (#352 putaran 3): distribusi band, filter band, paling tert
     expect(domainLaggards(groups, "produksi", 5).map((l) => l.id)).toEqual(["c", "b", "a"]); // z tanpa petani tidak ikut
     expect(domainLaggards(groups, "profil", 1).map((l) => l.id)).toEqual(["b"]); // profil 75 (default entry) < 80 (z)
   });
-  it("domainCriticalCount menghitung skor domain < 50", () => {
-    expect(domainCriticalCount(groups, "petani")).toBe(3);
-    expect(domainCriticalCount(groups, "lahan")).toBe(2);
+  it("domainCriticalCount menghitung skor domain < 50 — Lembaga tanpa petani tidak dihitung (konsisten laggards)", () => {
+    expect(domainCriticalCount(groups, "petani")).toBe(2); // b, c; z (0 petani) tidak
+    expect(domainCriticalCount(groups, "lahan")).toBe(1);
+    expect(domainCriticalCount(groups, "profil")).toBe(0);
   });
 });
 

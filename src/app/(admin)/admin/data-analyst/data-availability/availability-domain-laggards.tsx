@@ -1,23 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Users, Map, GraduationCap, TrendingUp, ListOrdered } from "lucide-react";
+import { ListOrdered } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BandBar } from "@/components/shared/score-visuals";
 import { cn } from "@/lib/utils";
-import { AVAILABILITY_DOMAIN_LABELS, domainLaggards, scoreBand } from "@/lib/data-availability-aggregation";
+import { AVAILABILITY_DOMAIN_KEYS, AVAILABILITY_DOMAIN_LABELS, domainLaggards, scoreBand } from "@/lib/data-availability-aggregation";
 import { BAND_TEXT } from "@/lib/score-band-styles";
-import type { AvailabilityDomainKey, AvailabilityGroupEntry } from "@/types/dashboard";
+import type { AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
-
-const DOMAIN_ORDER: AvailabilityDomainKey[] = ["profil", "petani", "lahan", "pelatihan", "produksi"];
-const ICON: Record<AvailabilityDomainKey, React.ComponentType<{ className?: string }>> = {
-  profil: Building2,
-  petani: Users,
-  lahan: Map,
-  pelatihan: GraduationCap,
-  produksi: TrendingUp,
-};
+import { DOMAIN_ICONS } from "./domain-meta";
 
 /**
  * "Paling tertinggal per domain" (#352 putaran 3) — menggantikan bar chart skor
@@ -39,10 +31,10 @@ export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: Availabi
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {DOMAIN_ORDER.map((key) => {
+          {AVAILABILITY_DOMAIN_KEYS.map((key) => {
             // Lembaga yang sudah 100 % bukan "tertinggal" — disembunyikan agar daftar tidak berisi noise.
             const rows = domainLaggards(groups, key, n).filter((r) => r.score < 100);
-            const Icon = ICON[key];
+            const Icon = DOMAIN_ICONS[key];
             return (
               <div key={key} className="rounded-lg border p-3">
                 <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
