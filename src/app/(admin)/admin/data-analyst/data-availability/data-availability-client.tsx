@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Download } from "lucide-react";
 import { useUrlFilters } from "@/hooks/use-url-filters";
@@ -17,16 +17,18 @@ import { FilterCombobox } from "@/components/shared/filter-combobox";
 import {
   AVAILABILITY_DOMAIN_LABELS,
   availabilityTotals,
+  bandDistribution,
   filterAvailabilityGroups,
   moduleCoverageTotals,
 } from "@/lib/data-availability-aggregation";
 import { MODULE_CATALOG, MODULE_DOMAIN_LABELS } from "@/lib/data-completeness-registry";
-import { AvailabilityScoreCards } from "./availability-score-cards";
-import { AvailabilityMatrix } from "./availability-matrix";
+import { AvailabilityHero } from "./availability-hero";
+import { AvailabilityDomainCards } from "./availability-domain-cards";
+import { AvailabilityMatrix, type MatrixSortKey } from "./availability-matrix";
 import { AvailabilityModuleMatrix } from "./availability-module-matrix";
-import { AvailabilityGroupChart } from "./availability-group-chart";
+import { AvailabilityDomainLaggards } from "./availability-domain-laggards";
 import { AvailabilityAnomalyPanel } from "./availability-anomaly-panel";
-import type { BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
+import type { AvailabilityDomainKey, AvailabilityScoreBand, BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
 import { formatGeneratedAt } from "@/lib/format";
 
 const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
@@ -35,6 +37,8 @@ const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
 };
 
 type MatrixView = "inti" | "modul";
+const BANDS: AvailabilityScoreBand[] = ["full", "good", "warn", "bad"];
+const DOMAIN_KEYS: AvailabilityDomainKey[] = ["profil", "petani", "lahan", "pelatihan", "produksi"];
 
 export function DataAvailabilityClient({
   view,
@@ -61,7 +65,7 @@ export function DataAvailabilityClient({
       ? (categoryParam as BmpFarmerGroupCategory)
       : null;
 
-  // Filter Lembaga (#352 B3) — memfokuskan bar chart & matriks ke satu Lembaga.
+  // Filter Lembaga (#352 B3) — memfokuskan semua panel ke satu Lembaga.
   // Divalidasi terhadap irisan Distrik/Kategori (bukan seluruh daftar) supaya
   // tautan basi tidak menghasilkan dashboard kosong tanpa penjelasan (review #352).
   const groupParam = get("lembaga");
@@ -74,23 +78,39 @@ export function DataAvailabilityClient({
     ? groupParam
     : null;
 
+  // Band skor total (klik segmen distribusi di hero) — `?band=`.
+  const bandParam = get("band");
+  const band = BANDS.includes(bandParam as AvailabilityScoreBand) ? (bandParam as AvailabilityScoreBand) : null;
+
   const viewParam = get("tampilan");
   const matrixView: MatrixView = viewParam === "modul" ? "modul" : "inti";
+
+  // Urutan matriks: `?urut=` domain (dari kartu domain) atau bawaan skor total menaik.
+  const sortParam = get("urut");
+  const sortKey: MatrixSortKey = DOMAIN_KEYS.includes(sortParam as AvailabilityDomainKey)
+    ? (sortParam as AvailabilityDomainKey)
+    : sortParam === "name" || sortParam === "totalFarmers"
+      ? sortParam
+      : "health";
 
   // Lembaga terpilih yang tidak lagi masuk irisan Distrik/Kategori baru
   // di-reset (pola DistrictGroupFilter) — bukan diam-diam menampilkan irisan kosong.
   const keepGroup = (
-    districtId: string | null,
-    category: BmpFarmerGroupCategory | null,
+    nextDistrictId: string | null,
+    nextCategory: BmpFarmerGroupCategory | null,
   ): Record<string, string | null> => {
     const g = groupId ? allGroups.find((x) => x.id === groupId) : undefined;
-    const fits = !!g && (!districtId || g.districtId === districtId) && (!category || g.category === category);
+    const fits = !!g && (!nextDistrictId || g.districtId === nextDistrictId) && (!nextCategory || g.category === nextCategory);
     return fits ? {} : { lembaga: null };
   };
   const setDistrictId = (v: string | null) => setMany({ distrik: v, ...keepGroup(v, category) });
   const setCategory = (v: BmpFarmerGroupCategory | null) => setMany({ kategori: v, ...keepGroup(districtId, v) });
   const setGroupId = (v: string | null) => setMany({ lembaga: v });
+  const setBand = (v: AvailabilityScoreBand | null) => setMany({ band: v });
   const setMatrixView = (v: MatrixView) => setMany({ tampilan: v === "inti" ? null : v });
+  const setSortKey = (v: MatrixSortKey) => setMany({ urut: v === "health" ? null : v });
+
+  const [matrixEl, setMatrixEl] = useState<HTMLDivElement | null>(null);
 
   const districtOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -109,19 +129,26 @@ export function DataAvailabilityClient({
     [view.data, districtId, category],
   );
 
-  // Satu irisan dipakai bersama oleh seluruh panel di bawah.
-  const groups = useMemo(
+  // Irisan hero/kartu = Distrik/Kategori/Lembaga (distribusi band dihitung dari sini);
+  // irisan matriks & panel bawah ditambah filter band.
+  const scope = useMemo(
     () => filterAvailabilityGroups(view.data, { districtId, category, groupId }),
     [view.data, districtId, category, groupId],
   );
+  const groups = useMemo(() => (band ? filterAvailabilityGroups({ groups: scope }, { band }) : scope), [scope, band]);
 
-  const totals = useMemo(() => availabilityTotals(groups), [groups]);
+  const totals = useMemo(() => availabilityTotals(scope), [scope]);
+  const distribution = useMemo(() => bandDistribution(scope), [scope]);
   const moduleTotals = useMemo(() => moduleCoverageTotals(groups), [groups]);
+
+  const selectDomain = (key: AvailabilityDomainKey) => {
+    setSortKey(sortKey === key ? "health" : key);
+    matrixEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // Ekspor matriks (#352 B3, menutup 6l): dua sheet — kelengkapan inti & cakupan modul.
   const handleExport = async () => {
     const { exportMultiSheetToExcel } = await import("@/lib/xlsx");
-    const domainKeys = ["profil", "petani", "lahan", "pelatihan", "produksi"] as const;
     await exportMultiSheetToExcel({
       filename: `ketersediaan-data-semua-lembaga-${format(new Date(), "yyyyMMdd")}`,
       sheets: [
@@ -134,7 +161,7 @@ export function DataAvailabilityClient({
             { header: "Kategori", key: "category" },
             { header: "Petani", key: "farmers" },
             { header: "Persil", key: "parcels" },
-            ...domainKeys.map((k) => ({ header: `Skor ${AVAILABILITY_DOMAIN_LABELS[k]}`, key: k })),
+            ...DOMAIN_KEYS.map((k) => ({ header: `Skor ${AVAILABILITY_DOMAIN_LABELS[k]}`, key: k })),
             { header: "Skor Total", key: "health" },
             { header: "Temuan Anomali", key: "anomalies" },
           ],
@@ -173,6 +200,19 @@ export function DataAvailabilityClient({
     });
   };
 
+  const matrixTabs = (
+    <Tabs value={matrixView} onValueChange={(v) => setMatrixView(v as MatrixView)}>
+      <TabsList className="h-8">
+        <TabsTrigger value="inti" className="text-xs">
+          Kelengkapan inti
+        </TabsTrigger>
+        <TabsTrigger value="modul" className="text-xs">
+          Cakupan modul
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -186,7 +226,7 @@ export function DataAvailabilityClient({
             <span className="font-medium text-foreground">
               {formatGeneratedAt(view.generatedAt)}
             </span>
-            . Klik baris Lembaga untuk rinciannya.
+            . Klik nama Lembaga untuk rinciannya.
           </p>
         </div>
 
@@ -245,25 +285,28 @@ export function DataAvailabilityClient({
         </div>
       </div>
 
-      <AvailabilityScoreCards totals={totals} />
+      {/* Hero: skor, distribusi band (filter), angka ringkas, aksi lintas Lembaga */}
+      <AvailabilityHero totals={totals} distribution={distribution} groups={scope} activeBand={band} onBandChange={setBand} />
 
-      {/* Segmented control (#352 B3): Kelengkapan inti (Index) | Cakupan modul (informatif) */}
-      <Tabs value={matrixView} onValueChange={(v) => setMatrixView(v as MatrixView)}>
-        <TabsList>
-          <TabsTrigger value="inti">Kelengkapan inti</TabsTrigger>
-          <TabsTrigger value="modul">Cakupan modul</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Kartu domain — skor memimpin; klik = urutkan matriks pada domain itu */}
+      <AvailabilityDomainCards
+        totals={totals}
+        groups={scope}
+        activeSort={DOMAIN_KEYS.includes(sortKey as AvailabilityDomainKey) ? (sortKey as AvailabilityDomainKey) : null}
+        onSelect={selectDomain}
+      />
 
-      {matrixView === "inti" ? (
-        <AvailabilityMatrix rows={groups} />
-      ) : (
-        <AvailabilityModuleMatrix rows={groups} totals={moduleTotals} />
-      )}
+      <div ref={setMatrixEl} className="scroll-mt-4">
+        {matrixView === "inti" ? (
+          <AvailabilityMatrix rows={groups} sortKey={sortKey} onSortKeyChange={setSortKey} headerControl={matrixTabs} />
+        ) : (
+          <AvailabilityModuleMatrix rows={groups} totals={moduleTotals} headerControl={matrixTabs} />
+        )}
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <AvailabilityGroupChart groups={groups} />
+          <AvailabilityDomainLaggards groups={groups} />
         </div>
         <AvailabilityAnomalyPanel groups={groups} />
       </div>

@@ -1,0 +1,78 @@
+"use client";
+
+import Link from "next/link";
+import { Building2, Users, Map, GraduationCap, TrendingUp, ListOrdered } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BandBar } from "@/components/shared/score-visuals";
+import { cn } from "@/lib/utils";
+import { AVAILABILITY_DOMAIN_LABELS, domainLaggards, scoreBand } from "@/lib/data-availability-aggregation";
+import { BAND_TEXT } from "@/lib/score-band-styles";
+import type { AvailabilityDomainKey, AvailabilityGroupEntry } from "@/types/dashboard";
+import { formatNumber } from "@/lib/format";
+
+const DOMAIN_ORDER: AvailabilityDomainKey[] = ["profil", "petani", "lahan", "pelatihan", "produksi"];
+const ICON: Record<AvailabilityDomainKey, React.ComponentType<{ className?: string }>> = {
+  profil: Building2,
+  petani: Users,
+  lahan: Map,
+  pelatihan: GraduationCap,
+  produksi: TrendingUp,
+};
+
+/**
+ * "Paling tertinggal per domain" (#352 putaran 3) — menggantikan bar chart skor
+ * total yang menduplikasi kolom matriks. Lima kolom kecil, masing-masing 5
+ * Lembaga terendah pada domain itu: langsung menjawab "untuk Produksi,
+ * Lembaga mana yang didatangi dulu?". Lembaga tanpa petani dikeluarkan.
+ */
+export function AvailabilityDomainLaggards({ groups, n = 5 }: { groups: AvailabilityGroupEntry[]; n?: number }) {
+  return (
+    <Card className="border border-border/60 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <ListOrdered className="h-4 w-4 text-primary" /> Paling tertinggal per domain
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          {n} Lembaga berskor terendah tiap domain pada irisan yang tampil — daftar kunjungan per urusan. Lembaga tanpa petani tidak diikutkan.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {DOMAIN_ORDER.map((key) => {
+            const rows = domainLaggards(groups, key, n);
+            const Icon = ICON[key];
+            return (
+              <div key={key} className="rounded-lg border p-3">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Icon className="h-3.5 w-3.5" /> {AVAILABILITY_DOMAIN_LABELS[key]}
+                </div>
+                {rows.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Tidak ada Lembaga.</p>
+                ) : (
+                  <ol className="space-y-2">
+                    {rows.map((r, i) => (
+                      <li key={r.id} className="text-xs">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <Link
+                            href={`/admin/data-analyst/data-completeness?lembaga=${r.id}`}
+                            className="min-w-0 truncate font-medium hover:text-primary hover:underline"
+                            title={`${r.name} · ${r.districtName} · ${formatNumber(r.totalFarmers)} petani`}
+                          >
+                            <span className="mr-1 text-muted-foreground">{i + 1}.</span>
+                            {r.name}
+                          </Link>
+                          <span className={cn("shrink-0 font-semibold tabular-nums", BAND_TEXT[scoreBand(r.score)])}>{Math.round(r.score)}%</span>
+                        </div>
+                        <BandBar pct={r.score} className="mt-1 h-1.5" />
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

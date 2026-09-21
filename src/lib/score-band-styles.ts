@@ -26,6 +26,16 @@ export const BAND_CELL: Record<AvailabilityScoreBand, string> = {
   bad: "bg-rose-500 text-white dark:bg-rose-700 dark:text-rose-50",
 };
 
+// Varian lembut untuk sel domain matriks DA-03 (#352 putaran 3): latar tipis +
+// teks berwarna band, supaya kolom yang merah seluruhnya (produksi 0 % di 27
+// Lembaga) tidak menenggelamkan outlier; kolom Skor Total tetap `BAND_CELL`.
+export const BAND_CELL_SOFT: Record<AvailabilityScoreBand, string> = {
+  full: "bg-emerald-800/15 text-emerald-900 dark:bg-emerald-400/20 dark:text-emerald-300",
+  good: "bg-emerald-500/12 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
+  warn: "bg-amber-400/15 text-amber-800 dark:bg-amber-400/20 dark:text-amber-300",
+  bad: "bg-rose-500/12 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300",
+};
+
 export const BAND_LEGEND: { band: AvailabilityScoreBand; label: string }[] = [
   { band: "full", label: "100 — lengkap penuh" },
   { band: "good", label: "80–99 — baik" },

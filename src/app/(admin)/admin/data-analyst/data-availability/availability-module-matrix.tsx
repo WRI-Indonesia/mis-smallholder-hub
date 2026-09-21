@@ -29,9 +29,12 @@ type SortKey = "name" | string;
 export function AvailabilityModuleMatrix({
   rows,
   totals,
+  headerControl,
 }: {
   rows: AvailabilityGroupEntry[];
   totals: AvailabilityModuleSummary[];
+  /** Segmented control tampilan (inti | modul) dari pemanggil. */
+  headerControl?: React.ReactNode;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [asc, setAsc] = useState(true);
@@ -77,25 +80,28 @@ export function AvailabilityModuleMatrix({
   return (
     <Card className="border border-border/60 shadow-sm">
       <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger
-          render={
-            <button type="button" className="flex w-full items-start justify-between gap-3 px-6 py-4 text-left">
-              <span className="min-w-0">
-                <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <Rows3 className="h-4 w-4 text-primary" /> Matriks Cakupan Modul per Lembaga
+        <div className="flex flex-col gap-3 px-6 py-4 lg:flex-row lg:items-start lg:justify-between">
+          <CollapsibleTrigger
+            render={
+              <button type="button" className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left">
+                <span className="min-w-0">
+                  <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Rows3 className="h-4 w-4 text-primary" /> Matriks Cakupan Modul per Lembaga
+                  </span>
+                  <span className="block text-xs text-muted-foreground mt-1">
+                    {open
+                      ? "Informatif — tidak masuk Index. % entitas (persil/petani) yang sudah mengisi modul; tingkat Lembaga = ada/tidak. Sel bergaris = modul belum dimulai di Lembaga itu."
+                      : `${formatNumber(rows.length)} Lembaga · ${MODULE_CATALOG.length} modul`}
+                  </span>
                 </span>
-                <span className="block text-xs text-muted-foreground mt-1">
-                  {open
-                    ? "Informatif — tidak masuk Index. % entitas (persil/petani) yang sudah mengisi modul; tingkat Lembaga = ada/tidak. Sel bergaris = modul belum dimulai di Lembaga itu."
-                    : `${formatNumber(rows.length)} Lembaga · ${MODULE_CATALOG.length} modul`}
-                </span>
-              </span>
-              <ChevronDown
-                className={`h-4 w-4 shrink-0 mt-0.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
-              />
-            </button>
-          }
-        />
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 mt-0.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+                />
+              </button>
+            }
+          />
+          {headerControl && <div className="shrink-0">{headerControl}</div>}
+        </div>
         <CollapsibleContent>
           <CardContent className="border-t pt-4">
             {sorted.length === 0 ? (

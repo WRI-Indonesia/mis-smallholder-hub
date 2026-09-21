@@ -4,6 +4,9 @@ import {
   filterAvailabilityGroups,
   availabilityTotals,
   availabilityScoreRows,
+  bandDistribution,
+  domainCriticalCount,
+  domainLaggards,
   topAnomalies,
   topSystemicAnomalies,
   moduleCoverageTotals,
@@ -377,6 +380,30 @@ describe("topAnomalies", () => {
     const sumFindings =
       perEntity.reduce((s, a) => s + a.count, 0) + systemic.reduce((s, a) => s + a.groupsAffected, 0);
     expect(sumFindings).toBe(entries.reduce((s, e) => s + e.totalAnomalies, 0));
+  });
+});
+
+describe("hero DA-03 (#352 putaran 3): distribusi band, filter band, paling tertinggal per domain", () => {
+  const groups = [
+    entry({ id: "a", name: "A", healthScore: 100, totalFarmers: 10, domainScores: { petani: 100, lahan: 100, pelatihan: 100, produksi: 100 } }),
+    entry({ id: "b", name: "B", healthScore: 85, totalFarmers: 50, domainScores: { petani: 40, lahan: 90, pelatihan: 90, produksi: 90 } }),
+    entry({ id: "c", name: "C", healthScore: 60, totalFarmers: 20, domainScores: { petani: 40, lahan: 30, pelatihan: 60, produksi: 0 } }),
+    entry({ id: "z", name: "Z kosong", healthScore: 8, totalFarmers: 0, profileScore: 80, domainScores: { petani: 0, lahan: 0, pelatihan: 0, produksi: 0 } }),
+  ];
+  it("bandDistribution menghitung Lembaga per band", () => {
+    expect(bandDistribution(groups)).toEqual({ full: 1, good: 1, warn: 1, bad: 1 });
+  });
+  it("filter band mempersempit irisan", () => {
+    expect(filterAvailabilityGroups({ groups }, { band: "bad" }).map((g) => g.id)).toEqual(["z"]);
+  });
+  it("domainLaggards: skor menaik, seri → petani terbanyak dulu; Lembaga tanpa petani dikeluarkan kecuali profil", () => {
+    expect(domainLaggards(groups, "petani", 2).map((l) => l.id)).toEqual(["b", "c"]); // 40 vs 40 → B (50 petani) dulu
+    expect(domainLaggards(groups, "produksi", 5).map((l) => l.id)).toEqual(["c", "b", "a"]); // z tanpa petani tidak ikut
+    expect(domainLaggards(groups, "profil", 1).map((l) => l.id)).toEqual(["b"]); // profil 75 (default entry) < 80 (z)
+  });
+  it("domainCriticalCount menghitung skor domain < 50", () => {
+    expect(domainCriticalCount(groups, "petani")).toBe(3);
+    expect(domainCriticalCount(groups, "lahan")).toBe(2);
   });
 });
 

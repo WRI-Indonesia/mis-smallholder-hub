@@ -32,6 +32,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { FilterCombobox } from "@/components/shared/filter-combobox";
+import { BandBar, ScoreGauge } from "@/components/shared/score-visuals";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { analyzeFarmerGroupCompleteness } from "@/server/actions/data-completeness";
 import { DOMAIN_WEIGHTS } from "@/lib/data-completeness";
@@ -142,48 +143,6 @@ function ScoreBadge({ score }: { score: number }) {
     >
       {score.toFixed(0)}%
     </span>
-  );
-}
-
-/** Cincin skor (SVG) — Index besar di tengah, warna band. */
-function ScoreGauge({ score, size = 132 }: { score: number; size?: number }) {
-  const band = scoreBand(score);
-  const stroke = 11;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const filled = (Math.max(0, Math.min(100, score)) / 100) * c;
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-muted" />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${filled} ${c - filled}`}
-          className={cn("transition-[stroke-dasharray] duration-700", BAND_TEXT[band])}
-          stroke="currentColor"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn("text-3xl font-bold tabular-nums leading-none", BAND_TEXT[band])}>{score}</span>
-        <span className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Index</span>
-      </div>
-    </div>
-  );
-}
-
-/** Bar tipis 0–100 dengan warna band. */
-function BandBar({ pct, className, inactive }: { pct: number; className?: string; inactive?: boolean }) {
-  return (
-    <div className={cn("h-2 w-full overflow-hidden rounded-full bg-muted", inactive && "border border-dashed bg-muted/40", className)}>
-      {!inactive && (
-        <div className={cn("h-full rounded-full transition-[width] duration-500", BAND_BAR[scoreBand(pct)])} style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
-      )}
-    </div>
   );
 }
 

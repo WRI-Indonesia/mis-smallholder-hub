@@ -473,6 +473,8 @@ export interface AvailabilitySliceFilter {
   districtId?: string | null;
   category?: BmpFarmerGroupCategory | null;
   groupId?: string | null;
+  /** Band skor total (klik segmen distribusi di hero). */
+  band?: AvailabilityScoreBand | null;
 }
 
 /** KPI baris atas — skor portfolio pada irisan yang tampil. */
@@ -489,6 +491,18 @@ export interface AvailabilityTotals {
 }
 
 export type AvailabilityScoreBand = "full" | "good" | "warn" | "bad";
+
+/** Jumlah Lembaga per band skor total (hero DA-03, #352 putaran 3). */
+export type AvailabilityBandDistribution = Record<AvailabilityScoreBand, number>;
+
+/** Lembaga paling tertinggal pada satu domain (small multiples DA-03). */
+export interface AvailabilityLaggard {
+  id: string;
+  name: string;
+  districtName: string;
+  totalFarmers: number;
+  score: number;
+}
 
 /** Satu tipe anomali dijumlah lintas Lembaga pada irisan yang tampil. */
 export interface AvailabilityAnomalySummary {

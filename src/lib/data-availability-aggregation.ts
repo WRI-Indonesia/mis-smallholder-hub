@@ -10,9 +10,11 @@ import type { CompletenessGroupInput } from "@/types/data-completeness";
 import type {
   AvailabilityAnomalyCount,
   AvailabilityAnomalySummary,
+  AvailabilityBandDistribution,
   AvailabilityDashboardData,
   AvailabilityDomainKey,
   AvailabilityGroupEntry,
+  AvailabilityLaggard,
   AvailabilityModuleSummary,
   AvailabilityScoreBand,
   AvailabilitySliceFilter,
@@ -121,7 +123,7 @@ export function buildAvailabilityEntry(
   };
 }
 
-/** Persempit data per-Lembaga sesuai pilihan Distrik/Kategori/Lembaga. */
+/** Persempit data per-Lembaga sesuai pilihan Distrik/Kategori/Lembaga/band. */
 export function filterAvailabilityGroups(
   data: AvailabilityDashboardData,
   filter: AvailabilitySliceFilter,
@@ -130,8 +132,43 @@ export function filterAvailabilityGroups(
     if (filter.districtId && g.districtId !== filter.districtId) return false;
     if (filter.category && g.category !== filter.category) return false;
     if (filter.groupId && g.id !== filter.groupId) return false;
+    if (filter.band && scoreBand(g.healthScore) !== filter.band) return false;
     return true;
   });
+}
+
+/** Skor satu domain pada entri (profil di kolom terpisah). */
+export function domainScoreOf(e: AvailabilityGroupEntry, key: AvailabilityDomainKey): number {
+  return key === "profil" ? e.profileScore : e.domainScores[key];
+}
+
+/** Jumlah Lembaga per band skor total — "berapa yang kritis / perlu perhatian / baik / lengkap". */
+export function bandDistribution(groups: AvailabilityGroupEntry[]): AvailabilityBandDistribution {
+  const dist: AvailabilityBandDistribution = { full: 0, good: 0, warn: 0, bad: 0 };
+  for (const g of groups) dist[scoreBand(g.healthScore)] += 1;
+  return dist;
+}
+
+/**
+ * Lembaga paling tertinggal per domain (skor menaik, seri diurut petani terbanyak
+ * lalu nama). Lembaga tanpa petani dikeluarkan untuk domain berbasis petani —
+ * skor 0-nya artinya "belum ada yang dinilai", bukan "tertinggal".
+ */
+export function domainLaggards(
+  groups: AvailabilityGroupEntry[],
+  key: AvailabilityDomainKey,
+  n = 5,
+): AvailabilityLaggard[] {
+  return groups
+    .filter((g) => key === "profil" || g.totalFarmers > 0)
+    .map((g) => ({ id: g.id, name: g.name, districtName: g.districtName, totalFarmers: g.totalFarmers, score: domainScoreOf(g, key) }))
+    .sort((a, b) => a.score - b.score || b.totalFarmers - a.totalFarmers || a.name.localeCompare(b.name))
+    .slice(0, n);
+}
+
+/** Jumlah Lembaga berskor kritis (<50) pada satu domain. */
+export function domainCriticalCount(groups: AvailabilityGroupEntry[], key: AvailabilityDomainKey): number {
+  return groups.filter((g) => scoreBand(domainScoreOf(g, key)) === "bad").length;
 }
 
 /**
