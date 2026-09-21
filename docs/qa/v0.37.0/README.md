@@ -4,7 +4,7 @@
 |---|---|
 | Versi | v0.37.0 (MINOR — fitur baru DA-02/DA-03, tanpa breaking) |
 | Rentang | `c7d9fb9` (v0.36.0) .. `mvp` HEAD |
-| Migrasi | 1 (`20260921120000_drop_activity_status_tree_surveyed_at`, #353 E) + seed menu (`seed-menu-only.ts --apply`, diff 3 baris) — applied **lokal saja**; staging/prod → **#357** |
+| Migrasi | 1 (`20260921120000_drop_activity_status_tree_surveyed_at`, #353 E) + seed menu (`seed-menu-only.ts --apply`; diff prod 4 baris: 2 × P4 + `bulk-upload` 9→10 + `dashboard-bmp-monev` 3→4) — applied `mis-dev`, **`mis-staging` & `mis-prod` 2026-09-21** (#357: dump → prasyarat → `migrate deploy` → seed → `data-qc` A/B/F ✓ · `rbac:compare` selaras); deploy staging run 35593998388 hijau |
 | Berkas | [00-scope](./00-scope.md) · [01-smoke](./01-smoke.md) · [02-test-cases](./02-test-cases.md) · [03-data-qc](./03-data-qc.md) · [04-findings](./04-findings.md) · [05-signoff](./05-signoff.md) · [runs/](./runs/) |
 
 ## Rekap (`node scripts/qa/summary.mjs docs/qa/v0.37.0`)
@@ -21,7 +21,7 @@
 
 ## Keputusan
 
-**Go / No-go (lokal):** **Go** untuk lanjut #357 (deploy staging) — 2026-09-21, dev + owner (owner menjalankan login peran). Syarat sisa: unduhan Excel/PDF & regresi patok/NKT diverifikasi di staging (`--only P0` + TC-REV-*), `05-signoff.md` baris QA/owner diisi setelah run staging.
+**Go (2026-09-21, owner "lanjut")** — QA lokal 35 Pass / 0 Fail (termasuk peran); staging: migrasi + seed + deploy hijau, **smoke UI staging tidak dijalankan** (URL staging tidak tersedia di docs/secret) → sign-off QA **Terbatas** (pola v0.35/v0.36). Run prod `--only P0` diisi ≤ 1 jam setelah deploy `main`.
 
 ## Known issues yang dibawa
 
