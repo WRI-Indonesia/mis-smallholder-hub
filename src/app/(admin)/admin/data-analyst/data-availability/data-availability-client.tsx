@@ -1,19 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { format } from "date-fns";
+import { Download } from "lucide-react";
 import { useUrlFilters } from "@/hooks/use-url-filters";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -21,12 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import {
+  AVAILABILITY_DOMAIN_LABELS,
   availabilityTotals,
   filterAvailabilityGroups,
+  moduleCoverageTotals,
 } from "@/lib/data-availability-aggregation";
+import { MODULE_CATALOG, MODULE_DOMAIN_LABELS } from "@/lib/data-completeness-registry";
 import { AvailabilityScoreCards } from "./availability-score-cards";
 import { AvailabilityMatrix } from "./availability-matrix";
+import { AvailabilityModuleMatrix } from "./availability-module-matrix";
 import { AvailabilityGroupChart } from "./availability-group-chart";
 import { AvailabilityAnomalyPanel } from "./availability-anomaly-panel";
 import type { BmpFarmerGroupCategory, DataAvailabilityView } from "@/types/dashboard";
@@ -37,7 +34,17 @@ const CATEGORY_LABELS: Record<BmpFarmerGroupCategory, string> = {
   SWADAYA: "Swadaya",
 };
 
-export function DataAvailabilityClient({ view, helpSlot }: { view: DataAvailabilityView; helpSlot?: React.ReactNode }) {
+type Tampilan = "inti" | "modul";
+
+export function DataAvailabilityClient({
+  view,
+  canExport,
+  helpSlot,
+}: {
+  view: DataAvailabilityView;
+  canExport: boolean;
+  helpSlot?: React.ReactNode;
+}) {
   // Filter disimpan di query string (TD-021) agar tampilan bisa di-bookmark &
   // dikirim ke rekan, dan bertahan saat halaman dimuat ulang.
   const { get, setMany } = useUrlFilters();
@@ -54,10 +61,17 @@ export function DataAvailabilityClient({ view, helpSlot }: { view: DataAvailabil
       ? (categoryParam as BmpFarmerGroupCategory)
       : null;
 
+  // Filter Lembaga (#352 B3) — memfokuskan bar chart & matriks ke satu Lembaga.
+  const groupParam = get("lembaga");
+  const groupId = allGroups.some((g) => g.id === groupParam) ? groupParam : null;
+
+  const tampilanParam = get("tampilan");
+  const tampilan: Tampilan = tampilanParam === "modul" ? "modul" : "inti";
+
   const setDistrictId = (v: string | null) => setMany({ distrik: v });
   const setCategory = (v: BmpFarmerGroupCategory | null) => setMany({ kategori: v });
-
-  const [districtOpen, setDistrictOpen] = useState(false);
+  const setGroupId = (v: string | null) => setMany({ lembaga: v });
+  const setTampilan = (v: Tampilan) => setMany({ tampilan: v === "inti" ? null : v });
 
   const districtOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -67,22 +81,85 @@ export function DataAvailabilityClient({ view, helpSlot }: { view: DataAvailabil
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [allGroups]);
 
-  // Satu irisan dipakai bersama oleh seluruh panel di bawah.
-  const groups = useMemo(
-    () => filterAvailabilityGroups(view.data, { districtId, category }),
+  // Opsi Lembaga mengikuti Distrik/Kategori terpilih (cascade).
+  const groupOptions = useMemo(
+    () =>
+      filterAvailabilityGroups(view.data, { districtId, category })
+        .map((g) => ({ id: g.id, name: g.name, code: g.code }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [view.data, districtId, category],
   );
 
-  const totals = useMemo(() => availabilityTotals(groups), [groups]);
+  // Satu irisan dipakai bersama oleh seluruh panel di bawah.
+  const groups = useMemo(
+    () => filterAvailabilityGroups(view.data, { districtId, category, groupId }),
+    [view.data, districtId, category, groupId],
+  );
 
-  const selectedDistrict = districtOptions.find((d) => d.id === districtId);
+  const totals = useMemo(() => availabilityTotals(groups), [groups]);
+  const moduleTotals = useMemo(() => moduleCoverageTotals(groups), [groups]);
+
+  // Ekspor matriks (#352 B3, menutup 6l): dua sheet — kelengkapan inti & cakupan modul.
+  const handleExport = async () => {
+    const { exportMultiSheetToExcel } = await import("@/lib/xlsx");
+    const domainKeys = ["profil", "petani", "lahan", "pelatihan", "produksi"] as const;
+    await exportMultiSheetToExcel({
+      filename: `ketersediaan-data-semua-lembaga-${format(new Date(), "yyyyMMdd")}`,
+      sheets: [
+        {
+          name: "Kelengkapan Inti",
+          columns: [
+            { header: "Lembaga Petani", key: "name" },
+            { header: "Kode", key: "code" },
+            { header: "Distrik", key: "district" },
+            { header: "Kategori", key: "category" },
+            { header: "Petani", key: "farmers" },
+            { header: "Persil", key: "parcels" },
+            ...domainKeys.map((k) => ({ header: `Skor ${AVAILABILITY_DOMAIN_LABELS[k]}`, key: k })),
+            { header: "Skor Total", key: "health" },
+            { header: "Temuan Anomali", key: "anomalies" },
+          ],
+          data: groups.map((g) => ({
+            name: g.name,
+            code: g.code ?? "",
+            district: g.districtName,
+            category: CATEGORY_LABELS[g.category],
+            farmers: g.totalFarmers,
+            parcels: g.totalParcels,
+            profil: g.profileScore,
+            petani: g.domainScores.petani,
+            lahan: g.domainScores.lahan,
+            pelatihan: g.domainScores.pelatihan,
+            produksi: g.domainScores.produksi,
+            health: g.healthScore,
+            anomalies: g.totalAnomalies,
+          })),
+        },
+        {
+          name: "Cakupan Modul",
+          columns: [
+            { header: "Lembaga Petani", key: "name" },
+            { header: "Kode", key: "code" },
+            ...MODULE_CATALOG.map((m) => ({ header: `${MODULE_DOMAIN_LABELS[m.domain]} · ${m.label}`, key: m.key })),
+          ],
+          data: groups.map((g) => ({
+            name: g.name,
+            code: g.code ?? "",
+            ...Object.fromEntries(
+              g.moduleCoverage.map((m) => [m.key, m.pct == null ? "belum dimulai" : `${m.pct.toFixed(1)}%`]),
+            ),
+          })),
+        },
+      ],
+    });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">Dashboard Ketersediaan Data</h1>
+            <h1 className="text-2xl font-bold">Ketersediaan Data — Semua Lembaga</h1>
             {helpSlot}
           </div>
           <p className="text-muted-foreground">
@@ -90,6 +167,7 @@ export function DataAvailabilityClient({ view, helpSlot }: { view: DataAvailabil
             <span className="font-medium text-foreground">
               {formatGeneratedAt(view.generatedAt)}
             </span>
+            . Klik baris Lembaga untuk rinciannya.
           </p>
         </div>
 
@@ -118,68 +196,51 @@ export function DataAvailabilityClient({ view, helpSlot }: { view: DataAvailabil
           </Select>
 
           {/* Distrik */}
-          <Popover open={districtOpen} onOpenChange={setDistrictOpen}>
-            <PopoverTrigger
-              render={
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  className="w-[180px] justify-between h-9 font-normal"
-                >
-                  <span className={cn("truncate", !districtId && "text-muted-foreground")}>
-                    {selectedDistrict?.name ?? "Semua Distrik"}
-                  </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              }
-            />
-            <PopoverContent className="w-[220px] p-0" align="end">
-              <Command>
-                <CommandInput placeholder="Cari distrik..." />
-                <CommandList>
-                  <CommandEmpty>Distrik tidak ditemukan.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem
-                      value="Semua Distrik"
-                      onSelect={() => {
-                        setDistrictId(null);
-                        setDistrictOpen(false);
-                      }}
-                    >
-                      <Check
-                        className={cn("mr-2 h-4 w-4", !districtId ? "opacity-100" : "opacity-0")}
-                      />
-                      Semua Distrik
-                    </CommandItem>
-                    {districtOptions.map((d) => (
-                      <CommandItem
-                        key={d.id}
-                        value={d.name}
-                        onSelect={() => {
-                          setDistrictId(d.id);
-                          setDistrictOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            districtId === d.id ? "opacity-100" : "opacity-0",
-                          )}
-                        />
-                        {d.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <FilterCombobox
+            options={districtOptions}
+            value={districtId}
+            onSelect={setDistrictId}
+            allLabel="Semua Distrik"
+            searchPlaceholder="Cari distrik..."
+            emptyLabel="Distrik tidak ditemukan."
+            widthClass="w-[180px]"
+          />
+
+          {/* Lembaga (#352 B3) */}
+          <FilterCombobox
+            options={groupOptions}
+            value={groupId}
+            onSelect={setGroupId}
+            allLabel="Semua Lembaga"
+            searchPlaceholder="Cari lembaga petani..."
+            emptyLabel="Lembaga Petani tidak ditemukan."
+            widthClass="w-[220px]"
+          />
+
+          {canExport && (
+            <Button variant="outline" className="h-9" onClick={handleExport} disabled={groups.length === 0}>
+              <Download className="mr-2 h-4 w-4" />
+              Excel
+            </Button>
+          )}
         </div>
       </div>
 
       <AvailabilityScoreCards totals={totals} />
 
-      <AvailabilityMatrix rows={groups} />
+      {/* Segmented control (#352 B3): Kelengkapan inti (Index) | Cakupan modul (informatif) */}
+      <Tabs value={tampilan} onValueChange={(v) => setTampilan(v as Tampilan)}>
+        <TabsList>
+          <TabsTrigger value="inti">Kelengkapan inti</TabsTrigger>
+          <TabsTrigger value="modul">Cakupan modul</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {tampilan === "inti" ? (
+        <AvailabilityMatrix rows={groups} />
+      ) : (
+        <AvailabilityModuleMatrix rows={groups} totals={moduleTotals} />
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">

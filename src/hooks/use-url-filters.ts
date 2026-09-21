@@ -27,21 +27,25 @@ export function useUrlFilters() {
 
   const get = useCallback((key: string): string | null => params.get(key), [params]);
 
-  /** Ubah beberapa kunci sekaligus — satu `replace`, bukan satu per perubahan. */
+  /**
+   * Ubah beberapa kunci sekaligus — satu `replace`, bukan satu per perubahan.
+   * `replaceState` dipanggil di event handler, BUKAN di dalam updater
+   * `setParams`: updater dijalankan React saat render berikutnya, dan Next.js
+   * mem-patch replaceState menjadi setState Router → peringatan "Cannot update
+   * a component (Router) while rendering" (temuan smoke #352).
+   */
   const setMany = useCallback(
     (values: Record<string, string | null>) => {
-      setParams((prev) => {
-        const next = new URLSearchParams(prev.toString());
-        for (const [key, value] of Object.entries(values)) {
-          if (value == null || value === "") next.delete(key);
-          else next.set(key, value);
-        }
-        const qs = next.toString();
-        window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
-        return next;
-      });
+      const next = new URLSearchParams(params.toString());
+      for (const [key, value] of Object.entries(values)) {
+        if (value == null || value === "") next.delete(key);
+        else next.set(key, value);
+      }
+      const qs = next.toString();
+      window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
+      setParams(next);
     },
-    [pathname],
+    [pathname, params],
   );
 
   const set = useCallback(

@@ -1,37 +1,44 @@
-# Analisa Ketersediaan Data
+# Ketersediaan Data — Per Lembaga
 
 [← Menu Data Analyst](./README.md) · [← Katalog halaman](../README.md)
 
-> Roll-up lintas Lembaga dari scoring halaman ini tersedia di [Dashboard Ketersediaan Data](./dashboard-ketersediaan-data.md) (DA-03, #193, satu menu ini juga) — skornya identik karena memakai `computeCompleteness` yang sama.
+> Label menu **"Ketersediaan Data — Per Lembaga"** (order 3) sejak #352 (keputusan owner P4, 2026-09-21) — sebelumnya "Analisa Ketersediaan Data" (order 2). Key, route, dan RolePermission tidak berubah. Halaman ini adalah drill-down dari [Ketersediaan Data — Semua Lembaga](./dashboard-ketersediaan-data.md) (DA-03, order 2): skornya identik karena memakai `computeCompleteness` yang sama.
 
 ## Diagram objek
 
 ```text
-Halaman: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
+Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completeness)
 ├── Header
-│   └── Judul + deskripsi
-├── Filter
-│   ├── Distrik (combobox + search)
-│   ├── Lembaga Petani * (combobox + search, wajib)
-│   └── Tombol Analisa
-├── Empty state awal
+│   └── Judul + deskripsi (+ tautan ke halaman Semua Lembaga)
+├── Filter (state di URL: ?distrik=&lembaga=)
+│   ├── Distrik (FilterCombobox, "Semua Distrik", w-full sm:w-[200px])
+│   ├── Lembaga Petani * (FilterCombobox, cascade dari Distrik di client, wajib)
+│   └── Tombol Muat ulang (analisa berjalan OTOMATIS saat Lembaga dipilih / ?lembaga= ada)
+├── Empty state awal · Peringatan "di luar akses" bila ?lembaga= tidak ada di daftar scope
 ├── Header hasil
-│   ├── Kartu ringkasan Lembaga (nama + kode, District · petani · anomali)
-│   ├── Index Ketersediaan Data (kartu KPI skor)
-│   ├── Chip domain (Profil, Petani, Lahan, Pelatihan, Produksi)
-│   └── Peringatan 0 petani
-├── Seksi collapsible
-│   ├── Profil Lembaga Petani (daftar cek)
-│   ├── Petani (kartu + anomali → Tabel rincian anomali)
-│   ├── Lahan (kartu + anomali → Tabel rincian anomali)
-│   ├── Pelatihan
-│   │   ├── Ringkasan per Paket
-│   │   ├── Matriks Cakupan
-│   │   └── Petani Belum Lengkap
-│   └── Produksi (kartu + anomali → Tabel rincian anomali)
-├── Tabel rincian anomali (dipakai semua domain)
-│   ├── Kolom: ID Petani, Nama Petani, Detail
-│   └── Batas render 50 baris + Tampilkan semua / Ringkas
+│   ├── Kartu ringkasan Lembaga (nama + kode, Distrik · petani · n temuan anomali)
+│   ├── Index Ketersediaan Data (warna band; tooltip = Σ skor domain × bobot)
+│   └── Tombol Excel (gate EXPORT)
+├── Strip skor (navigasi mini)
+│   ├── 5 chip "Domain · bobot % · skor" — tooltip rumus; klik = buka + gulir ke seksi
+│   └── Buka semua / Tutup semua
+├── Peringatan 0 petani
+├── Blok Cakupan Modul (collapsible, informatif — di luar Index)
+│   └── Chip per modul per domain: "%"/"ada"/"tidak ada"; abu-abu bergaris = "belum ada di Lembaga ini"
+├── Seksi collapsible (state terkontrol; default hanya seksi berskor TERENDAH yang terbuka)
+│   ├── Profil Lembaga Petani (6 check; check gagal → tautan Detail Lembaga › Edit)
+│   ├── Petani (kartu + anomali)
+│   ├── Lahan (kartu + anomali)
+│   ├── Pelatihan (Ringkasan per Paket · Matriks Cakupan · Petani Belum Lengkap · anomali lain)
+│   └── Produksi (6 kartu + anomali)
+├── Blok anomali (dipakai semua domain)
+│   ├── Sistemik (≥ 95 % entitas kosong, ≥ 10 entitas) → kotak amber satu temuan agregat
+│   │   ├── badge "sistemik · n / total <grain>" + penjelasan + Perbaiki lewat
+│   │   └── "Tampilkan daftar (n)" → tabel (opsional)
+│   └── Per entitas → SubCollapsible berbadge count
+│       ├── Baris "Perbaiki lewat: <menu> › <kolom>" (tautan bila ada href)
+│       └── Tabel daftar kerja: ID Petani · Nama Petani (→ Detail Petani) · Detail / ID Lahan (→ Detail Lahan)
+│           └── Batas render 50 baris + Tampilkan semua / Ringkas
 └── Ekspor
     └── Excel multi-sheet (tanpa CSV/PDF)
 ```
@@ -40,72 +47,79 @@ Halaman: Analisa Ketersediaan Data (/admin/data-analyst/data-completeness)
 
 | Atribut | Nilai |
 |---|---|
-| Sub menu | Analisa Ketersediaan Data (`data-analyst-data-completeness`) |
-| Route | `/admin/data-analyst/data-completeness` |
+| Sub menu | Ketersediaan Data — Per Lembaga (`data-analyst-data-completeness`, order 3) |
+| Route | `/admin/data-analyst/data-completeness` — query `?lembaga=<FarmerGroup.id>` (deep link dari DA-03 & kartu KPI Detail Lembaga), `?distrik=<District.id>` opsional |
 | File | `src/app/(admin)/admin/data-analyst/data-completeness/page.tsx` (Server Component) + `data-completeness-client.tsx` (Client Component) + `loading.tsx` |
-| Tipe | Halaman analisis 1 Lembaga Petani (filter → Analisa → seksi collapsible per domain) |
+| Tipe | Halaman analisis 1 Lembaga Petani (filter → analisa otomatis → strip skor → cakupan modul → seksi collapsible per domain) |
 | Guard | `requirePermission("data-analyst-data-completeness")` |
-| Server action / data | `getDistrictsForCompleteness()`, `getFarmerGroupsForCompleteness(districtId)`, `analyzeFarmerGroupCompleteness(farmerGroupId)` — `src/server/actions/data-completeness.ts` (`MENU_KEY = "data-analyst-data-completeness"`, guard `hasPermission(MENU_KEY, "VIEW")` + `getAccessContext()`); logika skor/anomali di `src/lib/data-completeness.ts` |
+| Server action / data | `getDistrictsForCompleteness()`, `getFarmerGroupsForCompleteness(districtId)` (mengembalikan `districtId` untuk cascade client), `analyzeFarmerGroupCompleteness(farmerGroupId)` — `src/server/actions/data-completeness.ts` (`MENU_KEY = "data-analyst-data-completeness"`, guard `hasPermission(MENU_KEY, "VIEW")` + `getAccessContext()`); kehadiran modul lewat `loadModuleFlagSets` di `src/lib/data-completeness-query.ts` (id-set per satelit, scope lewat relasi `parcel.farmer`, sejajar dengan kueri utama) |
+| Logika | `src/lib/data-completeness.ts` (skor & anomali, murni) + **registri** `src/lib/data-completeness-registry.ts` (label, grain, rute perbaikan, bobot tier, katalog modul, konstanta) |
+| Persistensi filter | `useUrlFilters()` (TD-021) — kunci `lembaga`, `distrik`; id di luar daftar scope → peringatan, action tidak dipanggil |
+| Warna skor | Satu sumber `scoreBand` (`data-availability-aggregation.ts`) + `src/lib/score-band-styles.ts` — sama dengan DA-03 dan kartu KPI Detail Lembaga (`scoreTone` lama dihapus) |
 
 ## Objek halaman
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `data-analyst-data-completeness` (`findTutorialForMenu`), dibuka di tab baru |
-| "Analisa Ketersediaan Data" | Heading | `h1`; deskripsi: "Periksa kelengkapan dan anomali data satu Lembaga Petani (Petani, Lahan, Pelatihan, Produksi)" |
-| "Distrik" | Filter (combobox + search) | Placeholder "Cari distrik..."; opsi "Semua Distrik"; empty "Distrik tidak ditemukan." |
-| "Lembaga Petani" | Filter (combobox + search, **wajib**) | Placeholder tombol "Pilih Lembaga Petani"; placeholder cari "Cari lembaga petani..."; empty "Lembaga Petani tidak ditemukan."; tanpa opsi "semua" |
-| "Analisa" | Tombol | Disabled sampai Lembaga Petani dipilih; label "Menganalisa..." saat pending |
-| Empty state awal | Kartu | Ikon `ClipboardCheck` + "Pilih District dan Lembaga Petani, lalu klik Analisa" |
-| Header hasil | Kartu ringkasan | Nama Lembaga + kode (mono), baris "`<District>` · `<n>` petani · `<n>` anomali" |
-| "Index Ketersediaan Data" | Kartu KPI | Skor persen; warna: ≥85 hijau, ≥60 amber, <60 merah |
+| "Ketersediaan Data — Per Lembaga" | Heading | `h1`; deskripsi: "Rincian kelengkapan & daftar kerja anomali satu Lembaga Petani (Profil, Petani, Lahan, Pelatihan, Produksi). Ringkasan lintas Lembaga ada di Ketersediaan Data — Semua Lembaga." |
+| "Distrik" | Filter (combobox + search) | `FilterCombobox`; opsi "Semua Distrik"; mengganti Distrik yang tidak memuat Lembaga terpilih mengosongkan `?lembaga=` |
+| "Lembaga Petani" | Filter (combobox + search, **wajib**) | Placeholder "Pilih Lembaga Petani"; daftar = Lembaga dalam scope, disaring Distrik di client; memilih = analisa otomatis (keputusan owner P5) |
+| "Muat ulang" | Tombol | Disabled sampai Lembaga terpilih; label "Menganalisa..." saat pending — menghitung ulang setelah data diperbaiki |
+| Empty state awal | Kartu | "Pilih Lembaga Petani — analisa berjalan otomatis" / "Menganalisa Lembaga Petani…" |
+| Peringatan di luar akses | Kartu amber | "Lembaga Petani pada tautan ini tidak ditemukan atau di luar akses Anda. Pilih Lembaga lain dari daftar." |
+| Header hasil | Kartu ringkasan | Nama Lembaga + kode (mono), baris "`<Distrik>` · `<n>` petani · `<n>` temuan anomali" |
+| "Index Ketersediaan Data" | Kartu KPI | Skor persen berwarna band; tooltip `StatTooltip` "Index = Σ (skor domain × bobot)" per domain |
 | "Excel" | Tombol ekspor | Ikon `Download`; multi-sheet, nama file `analisa-ketersediaan-<kode atau nama>-<yyyyMMdd>` — digate izin `EXPORT` (#245) |
-| Chip domain | Badge skor | "Profil Lembaga Petani" + 4 domain (Petani, Lahan, Pelatihan, Produksi) masing-masing dengan badge skor % |
+| Strip skor | 5 chip tombol | "Profil Lembaga · 10 %", "Petani · 25 %", "Lahan · 25 %", "Pelatihan · 20 %", "Produksi · 20 %" + badge skor; tooltip rumus domain; klik → buka seksi + `scrollIntoView` |
+| "Buka semua / Tutup semua" | Tombol ghost | Mengatur state buka semua seksi |
 | Peringatan 0 petani | Kartu peringatan | "Lembaga Petani ini belum memiliki data petani aktif — domain Petani, Lahan, Pelatihan, dan Produksi kosong." |
+| "Cakupan Modul" | Collapsible | Badge "`<n>`/15 modul dimulai"; chip per modul (label registri) — persen berwarna band / "ada"/"tidak ada" (tingkat Lembaga) / *belum ada di Lembaga ini* (abu-abu bergaris); tooltip: terisi/total + rute perbaikan |
 
-## Aturan skor (per 2026-07-28, #193)
+## Aturan skor (per 2026-09-21, #352 — melanjutkan #193)
 
-- **Bobot antar domain** (`DOMAIN_WEIGHTS`, `src/lib/data-completeness.ts`): profil 10%, petani 25%, lahan 25%, pelatihan 20%, produksi 20% → Index Ketersediaan Data.
-- **Skor domain Petani & Lahan = GRADED per field** (keputusan owner #193, mengganti formula lama all-or-nothing yang membuat skor kolaps ke 0% padahal sebagian field terisi):
-  - Petani: tiap petani dinilai dari proporsi 5 check yang lolos — NIK (terisi, 16 digit, tidak duplikat), ID Petani tidak duplikat, alamat, tanggal lahir, tahun bergabung — lalu dirata-rata lintas petani.
-  - Lahan: tiap persil dinilai dari proporsi 5 atribut terisi — geometry, luas (>0), tahun tanam, jenis tanaman, status lahan — lalu dirata-rata lintas persil.
-  - Daftar anomali **tidak berubah**; kartu "Petani Lengkap"/"Persil dengan Anomali" tetap memakai definisi tanpa-anomali-sama-sekali.
-- Profil (proporsi 4 check), Pelatihan (rata-rata % cakupan paket per petani), dan Produksi (% petani ber-produksi) sudah graded sejak awal — tidak berubah.
-- Skor di [Dashboard Ketersediaan Data](./dashboard-ketersediaan-data.md) otomatis mengikuti formula yang sama (satu sumber: `computeCompleteness`).
+- **Bobot antar domain** (`DOMAIN_WEIGHTS`, `src/lib/data-completeness.ts`): profil 10%, petani 25%, lahan 25%, pelatihan 20%, produksi 20% → Index Ketersediaan Data. Bobot **tampil di UI** (strip skor) dan di Excel.
+- **Registri deklaratif** (`src/lib/data-completeness-registry.ts`): `PROFILE_CHECKS`, `FARMER_FIELD_CHECKS`, `PARCEL_CHECKS` (berbobot), `ANOMALY_CATALOG` (label · domain · grain · `fix`), `MODULE_CATALOG`, konstanta `CORE_WEIGHT`/`FIELD_TIER_WEIGHT`, `SYSTEMIC_THRESHOLD`/`SYSTEMIC_MIN_ENTITIES`, `PRODUCTION_STALE_MONTHS`. Tabel/kolom baru cukup menambah satu entri.
+- **Profil** — 6 check: kode, koordinat, tahun bergabung, singkatan, **tipe grup**, **tahun berdiri** (2 terakhir baru #352).
+- **Petani** — GRADED per field (#193): rata-rata per petani dari **6** check — NIK (terisi, 16 digit, tidak duplikat), ID Petani tidak duplikat, alamat, tanggal lahir, **tempat lahir** (baru #352), tahun bergabung.
+- **Lahan** — GRADED **berbobot** per persil (keputusan owner #352 P2): geometry, luas (>0), jenis tanaman, **Kelompok Tani** (`subGroupLv2`) = bobot 3 (inti); tahun tanam, status lahan, **blok** = bobot 1 (tier "atribut lapangan" = 1/3 inti). Total bobot 15. Alasan: tahun tanam & status lahan kosong di 94 %/98 % persil prod tanpa alur pengisian rutin — dengan bobot penuh, skor Lahan 28/30 Lembaga terkunci di 60; blok (89,5 % kosong) diperlakukan sama.
+- **Pelatihan** — tetap (rata-rata % cakupan paket wajib per petani).
+- **Produksi** — skor tetap % petani ber-produksi (P1: check baru tidak mengubah Index). Baru #352: anomali **kebaruan** `produksi-basi` (petani ber-produksi yang periode terakhirnya ≥ `PRODUCTION_STALE_MONTHS` = 3 bulan sebelum periode acuan = bulan berjalan; `monthsBetween ≥ 3`), anomali **grain lahan** `lahan-tanpa-produksi` (lahan aktif non-PSR tanpa record tertaut, `parcelDbId` → Detail Lahan), `isPsr` dikecualikan dari `berlahan-tanpa-produksi`, kartu informatif "Lahan Berproduksi (non-PSR)" dan "Record Estimasi" (notes berlabel *Estimasi*, bukan anomali).
+- **Anomali sistemik** (A3): bila satu check kosong pada ≥ 95 % entitas (`SYSTEMIC_THRESHOLD`) dan Lembaga punya ≥ 10 entitas (`SYSTEMIC_MIN_ENTITIES`), `DomainAnomaly.systemic = true`, `count = 1` (temuan agregat), `entityCount`/`total` tetap; `items` tetap dibawa untuk Excel. Skor domain **tidak** berubah — hanya cara menghitung temuan (`totalAnomalies` = Σ `count`).
+- **Cakupan modul** (A1, keputusan owner P1: informatif, tidak masuk Index): `computeModuleCoverage` hanya bila input memuat `modules` (kartu KPI Detail Lembaga tidak memuatnya). Tiga keadaan: terisi (pct), kosong (pct 0), **tidak berlaku** (`applicable: false`, pct null) bila modul bergrain petani/persil/aktivitas belum diisi satu pun di Lembaga itu; modul tingkat Lembaga selalu berlaku. Sertifikasi null = netral (P3: bukan anomali; enum `NONE` ditunda).
+- Skor di [Ketersediaan Data — Semua Lembaga](./dashboard-ketersediaan-data.md) otomatis mengikuti formula yang sama (satu sumber: `computeCompleteness`).
 
 ## Seksi collapsible
 
-(masing-masing menampilkan badge "`<n>` anomali" / "Lengkap" + badge skor; terbuka otomatis bila ada anomali)
+(masing-masing menampilkan badge "`<n>` temuan" / "Lengkap" + badge skor; state terkontrol — default hanya seksi berskor terendah yang terbuka, tombol Buka semua / Tutup semua)
 
 | Seksi | Isi |
 |---|---|
-| Profil Lembaga Petani | Daftar cek: "Kode Lembaga Petani", "Koordinat Lokasi", "Tahun Bergabung", "Singkatan (Abrv)" — tiap baris badge "Lengkap"/"Belum" |
-| Petani | Kartu: "Total Petani", "Petani Lengkap", "Petani dengan Anomali", "% Kelengkapan Field". Anomali: "Petani tanpa NIK", "NIK tidak valid (bukan 16 digit)", "NIK duplikat dalam Lembaga Petani", "ID Petani duplikat dalam Lembaga Petani", "Petani tanpa alamat", "Petani tanpa tanggal lahir", "Petani tanpa tahun bergabung" |
-| Lahan | Kartu: "Total Persil Aktif", "Petani Tanpa Lahan", "Persil dengan Anomali", "Total Luas (ha)". Anomali: "Petani tanpa lahan aktif", "Persil tanpa geometry", "Persil tanpa luas", "Persil tanpa tahun tanam", "Persil tanpa jenis tanaman", "Persil tanpa status lahan" |
-| Pelatihan | Kartu: "Total Petani", "Petani Lengkap", "Belum Lengkap", "% Cakupan Paket". Tampilan khusus cakupan paket (lihat bawah). Anomali: "Belum ikut `<paket>`" per paket, "Peserta tanpa nilai pre-test", "Peserta tanpa nilai post-test", dan "Lembaga Petani belum memiliki aktivitas pelatihan" bila berlaku |
-| Produksi | Kartu: "Total Petani", "Petani dengan Produksi", "Petani Tanpa Produksi", "Berlahan Tanpa Produksi". Anomali: "Petani tanpa data produksi", "Petani punya lahan tapi tanpa produksi", "Produksi tidak terhubung ke persil" |
+| Profil Lembaga Petani | Daftar cek: "Kode Lembaga Petani", "Koordinat Lokasi", "Tahun Bergabung", "Singkatan (Abrv)", "Tipe Grup", "Tahun Berdiri" — tiap baris badge "Lengkap"/"Belum"; check gagal → tautan "isi di Detail Lembaga › Edit" |
+| Petani | Kartu: "Total Petani", "Petani Lengkap", "Petani dengan Anomali", "% Kelengkapan Field". Anomali: "Petani tanpa NIK", "NIK tidak valid (bukan 16 digit)", "NIK duplikat dalam Lembaga Petani", "ID Petani duplikat dalam Lembaga Petani", "Petani tanpa alamat", "Petani tanpa tanggal lahir", "Petani tanpa tempat lahir", "Petani tanpa tahun bergabung" |
+| Lahan | Kartu: "Total Persil Aktif", "Petani Tanpa Lahan", "Persil dengan Anomali", "Total Luas (ha)". Anomali: "Petani tanpa lahan aktif", "Persil tanpa geometry", "Persil tanpa luas", "Persil tanpa jenis tanaman", "Persil tanpa Kelompok Tani", "Persil tanpa tahun tanam", "Persil tanpa status lahan", "Persil tanpa blok" (item persil membawa `parcelDbId` → Detail Lahan) |
+| Pelatihan | Kartu: "Total Petani", "Petani Lengkap", "Belum Lengkap", "% Cakupan Paket". Tampilan khusus cakupan paket (lihat bawah). Anomali: "Belum ikut `<paket>`" per paket (tergambar di kartu paket), "Peserta tanpa nilai pre-test", "Peserta tanpa nilai post-test", dan "Lembaga Petani belum memiliki aktivitas pelatihan" — tiga terakhir kini tampil sebagai blok anomali di bawah sub-seksi |
+| Produksi | Kartu: "Total Petani", "Petani dengan Produksi", "Petani Tanpa Produksi", "Berlahan Tanpa Produksi", "Lahan Berproduksi (non-PSR)", "Record Estimasi". Anomali: "Petani tanpa data produksi", "Petani punya lahan (non-PSR) tapi tanpa produksi", "Produksi tidak terhubung ke persil", "Produksi tidak diperbarui ≥ 3 bulan terakhir" (detail `terakhir YYYY-MM`), "Lahan aktif (non-PSR) tanpa produksi" |
 
-## Tabel rincian anomali
+## Blok anomali & tabel daftar kerja
 
-(dipakai di semua domain)
-
-| Kolom | Keterangan |
+| Objek | Keterangan |
 |---|---|
-| ID Petani | mono |
-| Nama Petani | |
-| Detail | nilai yang menyerupai NIK disensor di layar (`maskIfNik`); Excel tetap penuh |
-
-Paginasi: render dibatasi 50 baris awal, dengan tombol "Tampilkan semua (`<n>`)" / "Ringkas" dan teks "Menampilkan `<n>` dari `<n>` baris".
+| Blok sistemik | Kotak amber: label + badge "sistemik · `<entityCount>` / `<total>` `<grain>`", teks penjelasan, baris *Perbaiki lewat*, tombol "Tampilkan daftar (n)" / "Sembunyikan daftar" |
+| SubCollapsible per entitas | Judul label anomali + badge count; isi: baris *Perbaiki lewat* + tabel |
+| "Perbaiki lewat" | `fix.menu › fix.field` dari registri; tautan `Link` bila `fix.href` ada (mis. `/admin/master-data/farmers`, `/admin/bulk-upload/parcels`); tanpa tautan untuk boundary (skrip seed) |
+| Kolom tabel | ID Petani (mono) · Nama Petani (→ `/admin/master-data/farmers/<farmerDbId>`) · Detail **atau** ID Lahan (→ `/admin/master-data/parcels/<parcelDbId>` bila item bergrain persil); nilai menyerupai NIK disensor di layar (`maskIfNik`); Excel tetap penuh |
+| Paginasi | Render dibatasi 50 baris awal, tombol "Tampilkan semua (`<n>`)" / "Ringkas", teks "Menampilkan `<n>` dari `<n>` baris" |
 
 ## Sub-seksi domain Pelatihan
 
 | Sub-seksi | Objek |
 |---|---|
 | "Ringkasan per Paket" | Kartu per paket: label paket, "`<covered>`/`<total>` sudah ikut · `<n>` belum", badge % cakupan; expand → tabel "Petani belum ikut paket ini" |
-| "Matriks Cakupan" | Tabel matriks: kolom "Petani" (sticky) + satu kolom per paket, sel centang/silang; badge "`<n>` petani"; batas render 50 baris + "Tampilkan semua" |
-| "Petani Belum Lengkap" | Tabel kolom: ID Petani, Nama Petani, Cakupan (`done/total (pct%)`), Paket yang Masih Kurang; batas render 50 baris; bila kosong: "Semua petani sudah mengikuti seluruh paket wajib." |
+| "Matriks Cakupan" | Tabel matriks: kolom "Petani" (sticky, nama → Detail Petani) + satu kolom per paket, sel centang/silang; badge "`<n>` petani"; batas render 50 baris + "Tampilkan semua" |
+| "Petani Belum Lengkap" | Tabel kolom: ID Petani, Nama Petani (→ Detail Petani), Cakupan (`done/total (pct%)`), Paket yang Masih Kurang; batas render 50 baris; bila kosong: "Semua petani sudah mengikuti seluruh paket wajib." |
 
-Banner tambahan: "Belum ada aktivitas pelatihan di KT ini untuk paket: `<daftar paket>`." dan "Belum ada paket pelatihan wajib terdaftar." bila tidak ada paket wajib.
+Banner tambahan: "Belum ada aktivitas pelatihan di Lembaga ini untuk paket: `<daftar paket>`." dan "Belum ada paket pelatihan wajib terdaftar." bila tidak ada paket wajib.
 
 ## Opsi ekspor
 
@@ -113,7 +127,8 @@ Excel multi-sheet (`exportMultiSheetToExcel`), tidak ada CSV/PDF:
 
 | Sheet | Kolom |
 |---|---|
-| Ringkasan | Metrik, Nilai (Lembaga Petani, District, Index Ketersediaan Data, Total Petani, Total Anomali, Skor Profil Lembaga Petani, Skor per domain) |
-| Petani / Lahan / Pelatihan / Produksi (satu sheet per domain) | Anomali, ID Petani, Nama Petani, Detail |
+| Ringkasan | Metrik, Nilai (Lembaga Petani, Distrik, Index Ketersediaan Data, Total Petani, Total Temuan Anomali, Skor Profil Lembaga Petani (bobot 10%), Skor per domain (bobot …%), Periode acuan kebaruan produksi) |
+| Petani / Lahan / Pelatihan / Produksi (satu sheet per domain) | Anomali (label; sistemik ditandai "(sistemik: n/total)"), ID Petani, Nama Petani, Detail, **Perbaiki lewat** |
 | Matriks Pelatihan | ID Petani, Nama Petani, satu kolom per paket (isi "Ya"/"Belum") |
 | Petani Belum Lengkap | ID Petani, Nama Petani, Cakupan, Paket yang Masih Kurang |
+| **Cakupan Modul** | Domain, Modul, Terisi, Total, Cakupan (% atau "belum ada di Lembaga ini"), Perbaiki lewat |

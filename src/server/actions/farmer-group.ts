@@ -18,6 +18,7 @@ import {
 } from "@/lib/access-context";
 import { buildFarmerGroupDetail } from "@/lib/farmer-group-detail";
 import { computeCompleteness } from "@/lib/data-completeness";
+import { isEstimateNote } from "@/lib/data-completeness-query";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
 
 export async function getFarmerGroups(search?: string) {
@@ -137,6 +138,7 @@ export async function getFarmerGroupDetail(id: string) {
         id: true,
         trainingDate: true,
         location: true,
+        evidenceKey: true,
         package: { select: { code: true, name: true } },
         participants: {
           where: { isActive: true },
@@ -154,6 +156,7 @@ export async function getFarmerGroupDetail(id: string) {
         gender: true,
         nik: true,
         address: true,
+        birthPlace: true,
         birthDate: true,
         joinedYear: true,
         landParcels: {
@@ -187,7 +190,8 @@ export async function getFarmerGroupDetail(id: string) {
         },
         productionRecords: {
           where: { isActive: true },
-          select: { id: true, parcelId: true, period: true, yieldKg: true },
+          // `notes` hanya untuk label "Estimasi" (#352) — kartu DA-02, bukan skor.
+          select: { id: true, parcelId: true, period: true, yieldKg: true, notes: true },
         },
       },
     }),
@@ -229,32 +233,41 @@ export async function getFarmerGroupDetail(id: string) {
   );
 
   // Skor kelengkapan DA-02 (card + link — rincian tetap di halaman Analisa).
+  // Tanpa `modules`: cakupan modul (#352 A1) informatif & di luar Index, jadi
+  // kartu ini tak perlu kueri satelit — skornya tetap identik dengan DA-02.
   const completenessInput: CompletenessGroupInput = {
     id: group.id,
     name: group.name,
     code: group.code,
     abrv: group.abrv,
     joinYear: group.joinYear,
+    groupType: group.groupType,
+    establishedYear: group.establishedYear,
     locationLat: group.locationLat,
     locationLong: group.locationLong,
     district: { id: group.district.id, name: group.district.name },
     trainingPackages,
-    activities: activities.map((a) => ({ packageCode: a.package.code })),
+    activities: activities.map((a) => ({ packageCode: a.package.code, hasEvidence: a.evidenceKey != null })),
     farmers: farmers.map((f) => ({
       id: f.id,
       farmerId: f.farmerId,
       name: f.name,
       nik: f.nik,
       address: f.address,
+      birthPlace: f.birthPlace,
       birthDate: f.birthDate,
       joinedYear: f.joinedYear,
       landParcels: f.landParcels.map((p) => ({
+        id: p.id,
         parcelId: p.parcelId,
         geometry: p.geometry,
         area: p.area,
         plantingYear: p.plantingYear,
         cropType: p.cropType,
         landStatus: p.landStatus,
+        subGroupLv2: p.subGroupLv2,
+        blok: p.blok,
+        isPsr: p.isPsr,
       })),
       trainingParticipants: f.trainingParticipants.map((tp) => ({
         id: tp.id,
@@ -262,7 +275,12 @@ export async function getFarmerGroupDetail(id: string) {
         postTestScore: tp.postTestScore,
         packageCode: tp.activity.package.code,
       })),
-      productionRecords: f.productionRecords.map((r) => ({ id: r.id, parcelId: r.parcelId })),
+      productionRecords: f.productionRecords.map((r) => ({
+        id: r.id,
+        parcelId: r.parcelId,
+        period: r.period,
+        isEstimate: isEstimateNote(r.notes),
+      })),
     })),
   };
   const completeness = computeCompleteness(completenessInput);

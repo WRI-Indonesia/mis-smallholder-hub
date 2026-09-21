@@ -14,7 +14,7 @@ goal: Mengetahui data apa saja yang sebenarnya ada di sistem, kolom mana yang ti
 Halaman ini menjelaskan **bentuk datanya**, bukan isi datanya. Ia tidak menampilkan nama petani atau angka produksi, melainkan: entitas apa yang ada, kolom apa saja di dalamnya, bagaimana antar-entitas terhubung, dan seberapa banyak kolom itu benar-benar diisi.
 + Semua angkanya diturunkan otomatis — struktur dari berkas skema database, jalur data dari kode aplikasi, keterisian dari hitungan langsung ke database. Tidak ada daftar yang diketik manual, jadi tidak ada yang bisa basi tanpa ketahuan.
 
-Angka di halaman ini bersifat **nasional**, tidak disaring per wilayah atau per Lembaga — jadi apa yang Anda lihat bukan hanya wilayah kerja Anda. Untuk kelengkapan data per Lembaga, pakai **Analisa Ketersediaan Data**.
+Angka di halaman ini bersifat **nasional**, tidak disaring per wilayah atau per Lembaga — jadi apa yang Anda lihat bukan hanya wilayah kerja Anda. Untuk kelengkapan data per Lembaga, pakai **Ketersediaan Data — Per Lembaga**.
 
 ## Langkah
 
@@ -25,7 +25,7 @@ Angka di halaman ini bersifat **nasional**, tidak disaring per wilayah atau per 
 4. Pindah ke tab **Keterisian** untuk melihat seberapa terisi tiap entitas. Tiga kartu di atas meringkas: total baris, entitas yang tabelnya ada tapi masih kosong, dan kolom yang tidak pernah terisi sama sekali.
 + Kotak kuning "Kolom yang ada di skema tapi tidak pernah diisi" adalah daftar kerja paling langsung: entah kolom itu memang belum dipakai, entah alur pengisiannya terlewat. Keduanya perlu keputusan.
 5. Klik nama entitas untuk membuka rincian kolomnya: persen terisi, batang, dan jumlah `terisi / total`. Kolom bertanda **wajib** selalu 100% karena database menolak nilai kosong — yang menarik justru kolom opsional dengan persen rendah.
-+ Yang dihitung adalah nilai kosong (NULL), bukan isi yang tidak bermakna. Kolom berisi tanda `-` atau spasi tetap terhitung terisi. Untuk menilai *kualitas* isian per Lembaga, gunakan Analisa Ketersediaan Data.
++ Yang dihitung adalah nilai kosong (NULL), bukan isi yang tidak bermakna. Kolom berisi tanda `-` atau spasi tetap terhitung terisi. Untuk menilai *kualitas* isian per Lembaga, gunakan Ketersediaan Data — Per Lembaga.
 6. Di bagian bawah tab itu ada blok **Belum ada di sistem** — modul data yang sudah direncanakan tapi belum punya tabel, diambil dari roadmap. Inilah jawaban "butuh tambah apa".
 7. Tab **Jalur data** menjawab arah sebaliknya: menu mana mengambil data dari entitas apa. Baca per baris untuk satu menu, atau per kolom untuk melihat siapa saja yang menyentuh satu entitas.
 + **R** berarti hanya membaca, **W** menulis, **RW** keduanya. Centang "hanya menu yang menulis" untuk mempersempit ke menu yang bisa mengubah data — berguna saat menelusuri dari mana suatu perubahan data bisa berasal.

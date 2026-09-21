@@ -428,7 +428,20 @@ export type AvailabilityDomainKey = "profil" | "petani" | "lahan" | "pelatihan" 
 export interface AvailabilityAnomalyCount {
   key: string;
   label: string;
+  /** Temuan (= entityCount, atau 1 bila dilipat sistemik — #352 A3). */
   count: number;
+  entityCount: number;
+  total: number;
+  systemic: boolean;
+}
+
+/** Cakupan satu modul pada satu Lembaga (#352 A1) — label/domain dari MODULE_CATALOG. */
+export interface AvailabilityModuleCoverage {
+  key: string;
+  covered: number;
+  total: number;
+  /** null = tidak berlaku (modul belum dimulai di Lembaga ini). */
+  pct: number | null;
 }
 
 /** Entri per Lembaga Petani — grain dashboard; semua panel di-slice dari sini. */
@@ -449,6 +462,7 @@ export interface AvailabilityGroupEntry {
   domainScores: Record<Exclude<AvailabilityDomainKey, "profil">, number>;
   totalAnomalies: number;
   anomalies: AvailabilityAnomalyCount[];
+  moduleCoverage: AvailabilityModuleCoverage[];
 }
 
 export interface AvailabilityDashboardData {
@@ -458,6 +472,7 @@ export interface AvailabilityDashboardData {
 export interface AvailabilitySliceFilter {
   districtId?: string | null;
   category?: BmpFarmerGroupCategory | null;
+  groupId?: string | null;
 }
 
 /** KPI baris atas — skor portfolio pada irisan yang tampil. */
@@ -479,9 +494,22 @@ export type AvailabilityScoreBand = "full" | "good" | "warn" | "bad";
 export interface AvailabilityAnomalySummary {
   key: string;
   label: string;
+  /** Σ temuan (per entitas) atau Σ entitas terdampak (sistemik). */
   count: number;
   /** Berapa Lembaga yang memiliki anomali ini. */
   groupsAffected: number;
+  /** Lembaga terdampak, terbanyak dulu — deep link & tooltip (#352 B3). */
+  groups: { id: string; name: string; count: number }[];
+}
+
+/** Cakupan satu modul dijumlah lintas Lembaga (hanya Lembaga yang modulnya berlaku). */
+export interface AvailabilityModuleSummary {
+  key: string;
+  covered: number;
+  total: number;
+  pct: number | null;
+  /** Lembaga yang modulnya berlaku (sudah dimulai). */
+  groupsApplicable: number;
 }
 
 export interface DataAvailabilityView {

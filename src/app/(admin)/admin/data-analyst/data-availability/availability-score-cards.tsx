@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gauge, Building2, Users, Map, GraduationCap, TrendingUp } from "lucide-react";
 import { scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_TEXT } from "./score-band-styles";
+import { BAND_TEXT } from "@/lib/score-band-styles";
 import type { AvailabilityTotals } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
 

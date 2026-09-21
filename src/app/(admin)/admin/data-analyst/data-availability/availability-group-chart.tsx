@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
 import { availabilityScoreRows, scoreBand } from "@/lib/data-availability-aggregation";
-import { BAND_BAR, BAND_LEGEND } from "./score-band-styles";
+import { BAND_BAR, BAND_LEGEND } from "@/lib/score-band-styles";
 import type { AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
 
@@ -39,7 +39,13 @@ export function AvailabilityGroupChart({ groups }: { groups: AvailabilityGroupEn
                 <div key={e.id}>
                   <div className="flex items-baseline justify-between gap-2 text-xs">
                     <span className="truncate font-medium">
-                      {e.name}
+                      {/* Deep link ke DA-02 dengan Lembaga terpilih (#352 B3). */}
+                      <Link
+                        href={`/admin/data-analyst/data-completeness?lembaga=${e.id}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {e.name}
+                      </Link>
                       <span className="text-muted-foreground font-normal">
                         {" "}
                         · {e.districtName} · {formatNumber(e.totalFarmers)} petani
@@ -89,7 +95,7 @@ export function AvailabilityGroupChart({ groups }: { groups: AvailabilityGroupEn
             href="/admin/data-analyst/data-completeness"
             className="ml-auto font-medium text-primary hover:underline"
           >
-            Analisa detail per Lembaga →
+            Ketersediaan Data — Per Lembaga →
           </Link>
         </div>
       </CardContent>

@@ -4,6 +4,7 @@
 // Kept free of Prisma/Next imports so it is directly unit-testable.
 
 import { computeCompleteness, DOMAIN_WEIGHTS } from "@/lib/data-completeness";
+import type { CompletenessOptions } from "@/lib/data-completeness";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
 import type {
   AvailabilityAnomalyCount,
@@ -11,6 +12,7 @@ import type {
   AvailabilityDashboardData,
   AvailabilityDomainKey,
   AvailabilityGroupEntry,
+  AvailabilityModuleSummary,
   AvailabilityScoreBand,
   AvailabilitySliceFilter,
   AvailabilityTotals,
@@ -53,8 +55,9 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 export function buildAvailabilityEntry(
   input: CompletenessGroupInput,
   meta: { category: BmpFarmerGroupCategory; districtId: string },
+  options: CompletenessOptions = {},
 ): AvailabilityGroupEntry {
-  const result = computeCompleteness(input);
+  const result = computeCompleteness(input, options);
 
   const domainScores = { petani: 0, lahan: 0, pelatihan: 0, produksi: 0 };
   const anomalies: AvailabilityAnomalyCount[] = [];
@@ -65,13 +68,23 @@ export function buildAvailabilityEntry(
       key: "profil-tidak-lengkap",
       label: "Profil Lembaga belum lengkap",
       count: profileFailed,
+      entityCount: profileFailed,
+      total: result.profileChecks.length,
+      systemic: false,
     });
   }
 
   for (const domain of result.domains) {
     domainScores[domain.domain] = domain.score;
     for (const a of domain.anomalies) {
-      anomalies.push({ key: a.key, label: a.label, count: a.count });
+      anomalies.push({
+        key: a.key,
+        label: a.label,
+        count: a.count,
+        entityCount: a.entityCount,
+        total: a.total,
+        systemic: a.systemic,
+      });
     }
   }
 
@@ -91,10 +104,16 @@ export function buildAvailabilityEntry(
     domainScores,
     totalAnomalies: result.totalAnomalies,
     anomalies,
+    moduleCoverage: result.moduleCoverage.map((m) => ({
+      key: m.key,
+      covered: m.covered,
+      total: m.total,
+      pct: m.pct,
+    })),
   };
 }
 
-/** Persempit data per-Lembaga sesuai pilihan Distrik/Kategori. */
+/** Persempit data per-Lembaga sesuai pilihan Distrik/Kategori/Lembaga. */
 export function filterAvailabilityGroups(
   data: AvailabilityDashboardData,
   filter: AvailabilitySliceFilter,
@@ -102,6 +121,7 @@ export function filterAvailabilityGroups(
   return data.groups.filter((g) => {
     if (filter.districtId && g.districtId !== filter.districtId) return false;
     if (filter.category && g.category !== filter.category) return false;
+    if (filter.groupId && g.id !== filter.groupId) return false;
     return true;
   });
 }
@@ -182,24 +202,86 @@ export function availabilityScoreRows(groups: AvailabilityGroupEntry[]): Availab
   );
 }
 
-/** Top-N tipe anomali dijumlah lintas Lembaga, terbanyak dulu. */
-export function topAnomalies(
+function summarizeAnomalies(
   groups: AvailabilityGroupEntry[],
-  n = 10,
+  pick: (a: AvailabilityAnomalyCount) => boolean,
+  value: (a: AvailabilityAnomalyCount) => number,
+  n: number,
 ): AvailabilityAnomalySummary[] {
   const acc = new Map<string, AvailabilityAnomalySummary>();
   for (const g of groups) {
     for (const a of g.anomalies) {
+      if (!pick(a)) continue;
+      const v = value(a);
       const e = acc.get(a.key);
       if (e) {
-        e.count += a.count;
+        e.count += v;
         e.groupsAffected += 1;
+        e.groups.push({ id: g.id, name: g.name, count: v });
       } else {
-        acc.set(a.key, { key: a.key, label: a.label, count: a.count, groupsAffected: 1 });
+        acc.set(a.key, {
+          key: a.key,
+          label: a.label,
+          count: v,
+          groupsAffected: 1,
+          groups: [{ id: g.id, name: g.name, count: v }],
+        });
       }
     }
+  }
+  for (const e of acc.values()) {
+    e.groups.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }
   return [...acc.values()]
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
     .slice(0, n);
+}
+
+/**
+ * Top-N tipe anomali PER ENTITAS (bisa dikejar per petani/persil) dijumlah
+ * lintas Lembaga, terbanyak dulu. Anomali yang dilipat sistemik di suatu
+ * Lembaga tidak ikut di sini — lihat `topSystemicAnomalies` (#352 A3).
+ */
+export function topAnomalies(
+  groups: AvailabilityGroupEntry[],
+  n = 10,
+): AvailabilityAnomalySummary[] {
+  return summarizeAnomalies(groups, (a) => !a.systemic, (a) => a.count, n);
+}
+
+/**
+ * Top-N "kolom belum pernah diisi" — anomali sistemik (≥ 95 % entitas kosong
+ * di Lembaga itu) dijumlah ENTITAS-nya lintas Lembaga; `groupsAffected` =
+ * berapa Lembaga yang kolom itu praktis kosong seluruhnya.
+ */
+export function topSystemicAnomalies(
+  groups: AvailabilityGroupEntry[],
+  n = 10,
+): AvailabilityAnomalySummary[] {
+  return summarizeAnomalies(groups, (a) => a.systemic, (a) => a.entityCount, n);
+}
+
+/**
+ * Cakupan modul portfolio (#352 A1): Σ covered / Σ total hanya atas Lembaga
+ * yang modulnya BERLAKU (sudah dimulai) — Lembaga yang belum memulai modul
+ * tidak menyeret persennya. Modul yang belum berlaku di satu Lembaga pun →
+ * pct null.
+ */
+export function moduleCoverageTotals(groups: AvailabilityGroupEntry[]): AvailabilityModuleSummary[] {
+  const acc = new Map<string, AvailabilityModuleSummary>();
+  for (const g of groups) {
+    for (const m of g.moduleCoverage) {
+      const e = acc.get(m.key) ?? { key: m.key, covered: 0, total: 0, pct: null, groupsApplicable: 0 };
+      if (m.pct != null) {
+        e.covered += m.covered;
+        e.total += m.total;
+        e.groupsApplicable += 1;
+      }
+      acc.set(m.key, e);
+    }
+  }
+  for (const e of acc.values()) {
+    e.pct = e.groupsApplicable > 0 && e.total > 0 ? round1((e.covered / e.total) * 100) : null;
+  }
+  return [...acc.values()];
 }

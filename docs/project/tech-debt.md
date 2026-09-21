@@ -226,7 +226,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-029 | Combobox bulk upload petani: daftar Lembaga tanpa scope filter | P1 | ✅ 2026-07-28 |
 | TD-036 | `MAP_STYLES` basemap tersalin di 6 canvas peta → satu sumber `src/lib/map-style.ts` (+`PARCEL_MAP_STYLES`, id `esri-dark`/`osm-light`, 7 test) | P3 | ✅ 2026-08-28 (#307, bersama layer label Dark) |
 | TD-020 | Dashboard Pelatihan: live query tanpa ambang perf | P3 | ✅ 2026-07-21 |
-| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan + Dashboard Ketersediaan Data) |
+| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan + Dashboard Ketersediaan Data) · 2026-09-21 (#352: Ketersediaan Data Per Lembaga) |
 
 **TD-001** — S3/PDF utility belum terintegrasi ke modul Training. Evidence: Training + evidence upload S3 sudah terintegrasi via `upload.ts` (#81); CLI `get-link`/`pdf-manager` tetap sebagai utilitas. Owner: Backend/Storage Lead. Validation: evidence upload berfungsi di app; sisa CLI tak load dotenv → TD-011. ✅
 
@@ -244,7 +244,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 **TD-020** — Dashboard Pelatihan live query tanpa pagar. Ditambahkan perf test di `src/test/perf.test.ts` atas fixture **60.000 baris kehadiran** (~7× volume hari ini): KPI + matriks + tren + skor + kualitas data harus selesai <1.200 ms, disertai test kebenaran agar cepat saja tidak cukup. Bila ambangnya merah, itu sinyal menimbang pola snapshot — **bukan** melonggarkan ambangnya. ✅
 
-**TD-021** — 🟡 **Sebagian.** Hook bersama `src/hooks/use-url-filters.ts` dibuat (memakai `router.replace` + `scroll: false` agar mengubah filter tidak menumpuk riwayat browser maupun melompatkan gulir; nilai kosong dihapus dari query supaya URL bawaan tetap bersih) dan **diterapkan di Dashboard Pelatihan** — filter Distrik/Lembaga/Kategori/Tahun kini bisa di-bookmark & dikirim. **Sisa:** Main Dashboard & BMP Dashboard belum memakainya; keduanya punya filter lebih kompleks (mis. mode Rataan & Kelengkapan Data) sehingga sengaja tidak diborong dalam satu sesi. Sort matriks cakupan juga belum ikut. 🟡
+**TD-021** — 🟡 **Sebagian.** Hook bersama `src/hooks/use-url-filters.ts` dibuat (memakai `router.replace` + `scroll: false` agar mengubah filter tidak menumpuk riwayat browser maupun melompatkan gulir; nilai kosong dihapus dari query supaya URL bawaan tetap bersih) dan **diterapkan di Dashboard Pelatihan** — filter Distrik/Lembaga/Kategori/Tahun kini bisa di-bookmark & dikirim. **2026-09-21 (#352):** diterapkan juga di **Ketersediaan Data — Per Lembaga** (`?lembaga=` & `?distrik=`, jadi target deep link dari dashboard & Detail Lembaga) dan diperluas di **Semua Lembaga** (`?lembaga=`, `?tampilan=`). Temuan smoke #352: `replaceState` di dalam updater `setParams` dijalankan React saat render (Next mem-patch replaceState → setState Router) → peringatan "Cannot update a component (Router) while rendering"; diperbaiki dengan memanggil `replaceState` di event handler. **Sisa:** Main Dashboard & BMP Dashboard belum memakainya; keduanya punya filter lebih kompleks (mis. mode Rataan & Kelengkapan Data) sehingga sengaja tidak diborong dalam satu sesi. Sort matriks cakupan juga belum ikut. 🟡
 
 **TD-006** — `docs/rule.md` menyebut folder dashboard components yang tidak ada. Owner: Tech Lead. Validation: tree arsitektur disinkronkan (audit 2026-07-10): `components/dashboard` dihapus, `hooks/`+`api/` ditambah; docs arsitektur sinkron dengan struktur repo. ✅
 

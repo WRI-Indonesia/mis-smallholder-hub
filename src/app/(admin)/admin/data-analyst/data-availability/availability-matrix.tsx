@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Grid3x3, ArrowUpDown, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { Grid3x3, ArrowUpDown, ChevronDown, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,7 +11,7 @@ import {
   AVAILABILITY_DOMAIN_LABELS,
   scoreBand,
 } from "@/lib/data-availability-aggregation";
-import { BAND_BAR, BAND_CELL, BAND_LEGEND } from "./score-band-styles";
+import { BAND_BAR, BAND_CELL, BAND_LEGEND } from "@/lib/score-band-styles";
 import type { AvailabilityDomainKey, AvailabilityGroupEntry } from "@/types/dashboard";
 import { formatNumber } from "@/lib/format";
 
@@ -116,7 +117,7 @@ export function AvailabilityMatrix({ rows }: { rows: AvailabilityGroupEntry[] })
                 </span>
                 <span className="block text-xs text-muted-foreground mt-1">
                   {open
-                    ? "Skor kelengkapan tiap domain data per Lembaga Petani. Klik judul kolom untuk mengurutkan; detail anomali per Lembaga ada di halaman Analisa Ketersediaan Data."
+                    ? "Skor kelengkapan tiap domain data per Lembaga Petani. Klik judul kolom untuk mengurutkan; klik nama Lembaga untuk rincian & daftar kerja anomalinya."
                     : `${formatNumber(rows.length)} Lembaga${critical > 0 ? ` · ${formatNumber(critical)} berskor kritis (<50)` : ""}`}
                 </span>
               </span>
@@ -159,7 +160,14 @@ export function AvailabilityMatrix({ rows }: { rows: AvailabilityGroupEntry[] })
                     {sorted.map((e) => (
                       <tr key={e.id} className="align-middle">
                         <td className="py-1.5 pr-4">
-                          <div className="font-medium leading-tight">{e.name}</div>
+                          {/* Deep link ke DA-02 dengan Lembaga terpilih (#352 B3). */}
+                          <Link
+                            href={`/admin/data-analyst/data-completeness?lembaga=${e.id}`}
+                            className="group/link font-medium leading-tight hover:text-primary hover:underline"
+                          >
+                            {e.name}
+                            <ExternalLink className="ml-1 inline h-3 w-3 opacity-0 transition-opacity group-hover/link:opacity-70" />
+                          </Link>
                           <div className="text-xs text-muted-foreground">
                             {e.code ? `${e.code} · ` : ""}
                             {e.districtName}

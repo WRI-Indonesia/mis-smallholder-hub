@@ -187,11 +187,25 @@ export const DATA_LINEAGE: DataLineage = [
     "menuKey": "data-analyst-data-availability",
     "route": "(admin)/admin/data-analyst/data-availability",
     "models": {
+      "bmpAssessment": "R",
+      "bmpGroupAssessment": "R",
       "farmerGroup": "R",
+      "farmerGroupBoundary": "R",
       "landParcel": "R",
-      "trainingPackage": "R"
+      "landParcelBorder": "R",
+      "landParcelDocument": "R",
+      "landParcelExternalId": "R",
+      "landParcelMarker": "R",
+      "landParcelNkt": "R",
+      "landParcelProgram": "R",
+      "landParcelStdb": "R",
+      "landStdb": "R",
+      "referenceBenchmark": "R",
+      "trainingPackage": "R",
+      "tree": "R"
     },
     "modules": [
+      "src/lib/data-completeness-query.ts",
       "src/server/actions/data-availability.ts"
     ],
     "dynamicAccess": null
@@ -200,11 +214,25 @@ export const DATA_LINEAGE: DataLineage = [
     "menuKey": "data-analyst-data-completeness",
     "route": "(admin)/admin/data-analyst/data-completeness",
     "models": {
+      "bmpAssessment": "R",
+      "bmpGroupAssessment": "R",
       "district": "R",
       "farmerGroup": "R",
-      "trainingPackage": "R"
+      "farmerGroupBoundary": "R",
+      "landParcelBorder": "R",
+      "landParcelDocument": "R",
+      "landParcelExternalId": "R",
+      "landParcelMarker": "R",
+      "landParcelNkt": "R",
+      "landParcelProgram": "R",
+      "landParcelStdb": "R",
+      "landStdb": "R",
+      "referenceBenchmark": "R",
+      "trainingPackage": "R",
+      "tree": "R"
     },
     "modules": [
+      "src/lib/data-completeness-query.ts",
       "src/server/actions/data-completeness.ts"
     ],
     "dynamicAccess": null
