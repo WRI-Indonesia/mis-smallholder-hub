@@ -21,9 +21,10 @@ import { rasterTileTemplate, MAP_STYLE_KEYS } from "@/lib/map-style";
 import { buildLandParcelMapLayout } from "@/lib/report-land-parcel";
 
 // Latar peta cetak Laporan Lahan (#318). Yang diuji di sini murni angka &
-// konfigurasi — penjahitan tile butuh canvas nyata (jsdom hanya menyediakan
-// stub), jadi `composeReportBasemap` sengaja tidak diuji di sini; jaminannya
-// ada pada matematika di bawah + uji route proxy.
+// konfigurasi — penjahitan tile butuh `Image` + canvas 2D nyata (suite berjalan
+// di environment `node` tanpa DOM sejak #353; jsdom pun hanya stub canvas), jadi
+// `composeReportBasemap` sengaja tidak diuji di sini; jaminannya ada pada
+// matematika di bawah + uji route proxy (TD-038).
 
 describe("matematika tile Web Mercator", () => {
   it("memetakan bujur ke sumbu-x tile", () => {

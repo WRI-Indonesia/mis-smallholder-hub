@@ -351,3 +351,18 @@ describe("migrasi bmp_indicator_detail — master indikator + rincian + penilaia
     expect(ddlOnly(m!.sql)).not.toMatch(/_geom_idx|DROP DEFAULT/);
   });
 });
+
+/** Cleanup #353 bagian E: drop enum yatim + kolom pohon yang tak pernah ditulis — hanya dua DDL itu, tanpa sentuh geom. */
+describe("migrasi drop_activity_status_tree_surveyed_at — enum yatim + kolom kosong (#353)", () => {
+  const m = migrationFiles().find((f) => f.name.endsWith("_drop_activity_status_tree_surveyed_at"));
+
+  it("berkas ada; hanya DROP COLUMN surveyed_at + DROP TYPE ActivityStatus; tanpa DROP INDEX geom / DROP DEFAULT", () => {
+    expect(m).toBeDefined();
+    const ddl = ddlOnly(m!.sql);
+    expect(ddl).toMatch(/ALTER TABLE "tbl_tree" DROP COLUMN "surveyed_at";/);
+    expect(ddl).toMatch(/DROP TYPE "ActivityStatus";/);
+    expect(ddl).not.toMatch(/_geom_idx|DROP DEFAULT|DROP TABLE/);
+    // Rollback wajib di header (kolom nullable tanpa data, enum tanpa pemakai).
+    expect(m!.sql).toMatch(/ROLLBACK:/);
+  });
+});

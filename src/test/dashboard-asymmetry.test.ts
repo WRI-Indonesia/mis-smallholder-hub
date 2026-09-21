@@ -272,6 +272,14 @@ describe("Invarian skor — Dashboard Ketersediaan Data", () => {
     code: null, // profil sengaja tak lengkap agar anomali profil ikut teruji
     abrv: "SKM",
     joinYear: 2015,
+    groupType: null,
+    establishedYear: null,
+    rspoCertYear: null,
+    rspoCertStatus: null,
+    ispoCertYear: null,
+    ispoCertStatus: null,
+    sapMapAssuranceYear: null,
+    sapMapAssuranceStatus: null,
     locationLat: 1.23,
     locationLong: 103.4,
     district: { id: "d-1", name: "Distrik A" },
@@ -284,8 +292,10 @@ describe("Invarian skor — Dashboard Ketersediaan Data", () => {
     id,
     farmerId: `F-${id}`,
     name: `Petani ${id}`,
+    gender: null,
     nik,
     address: null,
+    birthPlace: null,
     birthDate: null,
     joinedYear: null,
     landParcels: [],
@@ -328,9 +338,12 @@ describe("Invarian skor — Dashboard Ketersediaan Data", () => {
     // Tiap tipe anomali petani menandai satu petani paling banyak sekali,
     // jadi count per tipe ≤ totalFarmers (penyebut kartu Petani).
     const e = entries[0];
-    const petaniKeys = ["no-nik", "invalid-nik", "no-address", "no-birth-date", "no-joined-year"];
+    const petaniKeys = ["no-nik", "invalid-nik", "no-address", "no-birth-date", "no-birth-place", "no-joined-year"];
     for (const a of e.anomalies.filter((x) => petaniKeys.includes(x.key))) {
       expect(a.count).toBeLessThanOrEqual(e.totalFarmers);
+      // Pembilang ≤ penyebut juga untuk entitas terdampak (pelipatan sistemik #352 tak mengubahnya).
+      expect(a.entityCount).toBeLessThanOrEqual(a.total);
+      expect(a.total).toBe(e.totalFarmers);
     }
   });
 });

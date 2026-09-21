@@ -21,7 +21,7 @@ Tersedia dua berkas contoh di Langkah 1: **Unduh Template Excel** (semua kolom) 
 
 ## Langkah
 
-1. Buka menu **Bulk Upload → Lahan**, lalu pilih tab **Detail Lahan (Excel)**.
+1. Buka menu **Bulk Upload → Upload Data Lahan**, lalu pilih tab **Detail Lahan (Excel)**.
 + Sistem memuat daftar lahan aktif dalam akses Anda begitu tab dibuka — jumlahnya tampil di samping nama berkas. Tombol validasi baru aktif setelah daftar itu selesai dimuat.
 2. Pada **Langkah 1**, pilih berkas `.xlsx` atau `.csv`.
 + Bila berkas punya beberapa sheet, sistem memakai sheet bernama **Data**; kalau tidak ada, sheet pertama yang berisi.

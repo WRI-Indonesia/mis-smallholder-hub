@@ -1,45 +1,45 @@
 key,parent_key,title,url,icon,order,is_active,is_visible
 dashboard,,Dashboard,/admin/dashboard,LayoutDashboard,0,TRUE,TRUE
 dashboard-main,dashboard,Main Dashboard,/admin/dashboard/main,LayoutDashboard,1,TRUE,TRUE
-master-data,,Master Data,/admin/master-data,Database,1,TRUE,TRUE
+master-data,,Master Data,/admin/master-data,Database,3,TRUE,TRUE
 master-data-groups,master-data,Lembaga Petani,/admin/master-data/groups,Users,1,TRUE,TRUE
 master-data-farmers,master-data,Petani,/admin/master-data/farmers,User,2,TRUE,TRUE
-settings,,Settings,/admin/settings,Settings,2,TRUE,TRUE
+settings,,Settings,/admin/settings,Settings,99,TRUE,TRUE
 settings-users,settings,User Management,/admin/settings/users,UserCog,1,TRUE,TRUE
 settings-menu,settings,Menu Management,/admin/settings/menu,Menu,2,TRUE,TRUE
 settings-roles,settings,Role & Permission,/admin/settings/roles,Shield,3,TRUE,TRUE
 settings-regions,settings,Regions,/admin/settings/regions,MapPin,4,TRUE,TRUE
-bulk-upload,,Bulk Upload,/admin/bulk-upload,Upload,3,TRUE,TRUE
-bulk-upload-farmers,bulk-upload,Upload Petani,/admin/bulk-upload/farmers,User,1,TRUE,TRUE
-bulk-upload-production,bulk-upload,Upload Produksi,/admin/bulk-upload/production,TrendingUp,2,TRUE,TRUE
+bulk-upload,,Bulk Upload,/admin/bulk-upload,Upload,10,TRUE,TRUE
+bulk-upload-farmers,bulk-upload,Upload Data Petani,/admin/bulk-upload/farmers,User,1,TRUE,TRUE
+bulk-upload-production,bulk-upload,Upload Data Produksi,/admin/bulk-upload/production,TrendingUp,2,TRUE,TRUE
 master-data-training,master-data,Pelatihan,/admin/master-data/training,GraduationCap,3,TRUE,TRUE
 master-data-parcels,master-data,Lahan,/admin/master-data/parcels,Map,4,TRUE,TRUE
-bulk-upload-parcels,bulk-upload,Lahan,/admin/bulk-upload/parcels,Map,3,TRUE,TRUE
+bulk-upload-parcels,bulk-upload,Upload Data Lahan,/admin/bulk-upload/parcels,Map,3,TRUE,TRUE
 master-data-production,master-data,Produksi,/admin/master-data/production,TrendingUp,5,TRUE,TRUE
 data-analyst,,Data Analyst,/admin/data-analyst,BarChart3,4,TRUE,TRUE
 data-analyst-farmer-summary,data-analyst,Ringkasan Petani,/admin/data-analyst/farmer-summary,Users,1,TRUE,TRUE
-data-analyst-data-completeness,data-analyst,Analisa Ketersediaan Data,/admin/data-analyst/data-completeness,ClipboardCheck,2,TRUE,TRUE
-data-analyst-data-availability,data-analyst,Dashboard Ketersediaan Data,/admin/data-analyst/data-availability,Gauge,3,TRUE,TRUE
+data-analyst-data-availability,data-analyst,Ketersediaan Data — Semua Lembaga,/admin/data-analyst/data-availability,Gauge,2,TRUE,TRUE
+data-analyst-data-completeness,data-analyst,Ketersediaan Data — Per Lembaga,/admin/data-analyst/data-completeness,ClipboardCheck,3,TRUE,TRUE
 data-analyst-benchmark-comparison,data-analyst,Komparasi Data Acuan,/admin/data-analyst/benchmark-comparison,GitCompare,4,TRUE,TRUE
-data-analyst-data-map,data-analyst,Peta Data & Skema,/admin/data-analyst/data-map,Network,5,TRUE,TRUE
-report,,Report,/admin/report,FileText,5,TRUE,TRUE
+data-analyst-data-map,data-analyst,Peta Data & Skema,/admin/data-analyst/data-map,Network,6,TRUE,TRUE
+report,,Report,/admin/report,FileText,1,TRUE,TRUE
 report-farmer,report,Petani,/admin/report/farmer,User,1,TRUE,TRUE
-report-training,report,Pelatihan,/admin/report/training,GraduationCap,2,TRUE,TRUE
-report-production,report,Produksi,/admin/report/production,TrendingUp,3,TRUE,TRUE
-report-kelompok-tani,report,Kelompok Tani (Summary),/admin/report/kelompok-tani,Network,4,TRUE,TRUE
-report-kelompok-tani-detail,report,Kelompok Tani (Detail),/admin/report/kelompok-tani-detail,ClipboardList,5,TRUE,TRUE
-report-land-parcel,report,Lahan,/admin/report/land-parcel,Sprout,6,TRUE,TRUE
+report-training,report,Pelatihan,/admin/report/training,GraduationCap,3,TRUE,TRUE
+report-production,report,Produksi,/admin/report/production,TrendingUp,4,TRUE,TRUE
+report-kelompok-tani,report,Kelompok Tani (Summary),/admin/report/kelompok-tani,BookOpen,5,TRUE,TRUE
+report-kelompok-tani-detail,report,Kelompok Tani (Detail),/admin/report/kelompok-tani-detail,ClipboardList,6,TRUE,TRUE
+report-land-parcel,report,Lahan,/admin/report/land-parcel,Sprout,2,TRUE,TRUE
 report-marker,report,Patok,/admin/report/marker,Milestone,7,TRUE,TRUE
 tools,,Tools,/admin/tools,Wrench,6,TRUE,TRUE
 dashboard-snapshot,tools,Dashboard Snapshot,/admin/tools/snapshot,Camera,1,TRUE,TRUE
-map,,Map,/admin/map,Map,7,TRUE,TRUE
+map,,Map,/admin/map,Map,2,TRUE,TRUE
 map-parcel,map,Peta Lahan,/admin/map/parcel,MapPin,1,TRUE,TRUE
 map-bmp,map,Peta BMP,/admin/map/bmp,Sprout,2,TRUE,TRUE
 dashboard-bmp,dashboard,BMP Dashboard (Produksi),/admin/dashboard/bmp,Sprout,2,TRUE,TRUE
 dashboard-training,dashboard,Dashboard Pelatihan,/admin/dashboard/training,GraduationCap,4,TRUE,TRUE
 dashboard-snapshot-bmp,tools,Dashboard Snapshot BMP,/admin/tools/snapshot-bmp,Camera,2,TRUE,TRUE
 help,,Bantuan,/admin/help,HelpCircle,9,TRUE,TRUE
-dashboard-metrics,data-analyst,Metrik Rilis,/admin/dashboard/metrics,Activity,6,TRUE,TRUE
+dashboard-metrics,data-analyst,Metrik Rilis,/admin/dashboard/metrics,Activity,5,TRUE,TRUE
 bulk-upload-trees,bulk-upload,Pohon Sawit,/admin/bulk-upload/trees,TreePine,4,TRUE,TRUE
 dashboard-risk,dashboard,Risk Management,/admin/dashboard/risk,ShieldAlert,5,TRUE,TRUE
 dashboard-risk-fire,dashboard-risk,Fire Alert,/admin/dashboard/risk/fire,Flame,1,TRUE,TRUE

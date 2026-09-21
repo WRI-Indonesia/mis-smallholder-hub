@@ -4,18 +4,26 @@
 // Kept free of Prisma/Next imports so it is directly unit-testable.
 
 import { computeCompleteness, DOMAIN_WEIGHTS } from "@/lib/data-completeness";
+import type { CompletenessOptions } from "@/lib/data-completeness";
+import { anomalyDef } from "@/lib/data-completeness-registry";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
 import type {
   AvailabilityAnomalyCount,
   AvailabilityAnomalySummary,
+  AvailabilityBandDistribution,
   AvailabilityDashboardData,
   AvailabilityDomainKey,
   AvailabilityGroupEntry,
+  AvailabilityLaggard,
+  AvailabilityModuleSummary,
   AvailabilityScoreBand,
   AvailabilitySliceFilter,
   AvailabilityTotals,
   BmpFarmerGroupCategory,
 } from "@/types/dashboard";
+
+/** Urutan tampil domain — satu sumber untuk kartu, matriks, laggards, Excel. */
+export const AVAILABILITY_DOMAIN_KEYS: AvailabilityDomainKey[] = ["profil", "petani", "lahan", "pelatihan", "produksi"];
 
 export const AVAILABILITY_DOMAIN_LABELS: Record<AvailabilityDomainKey, string> = {
   profil: "Profil Lembaga",
@@ -25,17 +33,27 @@ export const AVAILABILITY_DOMAIN_LABELS: Record<AvailabilityDomainKey, string> =
   produksi: "Produksi",
 };
 
+/** Label domain pendek untuk judul kolom/sumbu ("Profil Lembaga" → "Profil") — satu sumber (review #352 putaran 4). */
+export const shortDomainLabel = (key: AvailabilityDomainKey) => AVAILABILITY_DOMAIN_LABELS[key].replace("Profil Lembaga", "Profil");
+
+/**
+ * Ambang band skor — satu sumber untuk `scoreBand`, cincin radar, legenda
+ * heatmap, dan jangkar skala warna (review #352 putaran 4: sebelumnya 50/80/100
+ * ditulis ulang di empat tempat).
+ */
+export const BAND_THRESHOLDS = { warn: 50, good: 80, full: 100 } as const;
+
 /**
  * Band skor — satu sumber warna untuk card, bar chart, dan matriks.
- * Ambang mengikuti konvensi hijau/kuning/merah dashboard lain: 80–99 baik,
- * 50–79 perlu perhatian, <50 kritis. Skor 100 dibedakan sebagai band
+ * Ambang mengikuti konvensi hijau/kuning/merah dashboard lain: 80 – <100 baik,
+ * 50 – <80 perlu perhatian, <50 kritis. Skor 100 dibedakan sebagai band
  * tersendiri (lengkap penuh) — "sudah tuntas" harus terbaca berbeda dari
  * "sudah baik tapi masih ada yang kurang".
  */
 export function scoreBand(score: number): AvailabilityScoreBand {
-  if (score >= 100) return "full";
-  if (score >= 80) return "good";
-  if (score >= 50) return "warn";
+  if (score >= BAND_THRESHOLDS.full) return "full";
+  if (score >= BAND_THRESHOLDS.good) return "good";
+  if (score >= BAND_THRESHOLDS.warn) return "warn";
   return "bad";
 }
 
@@ -53,25 +71,43 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 export function buildAvailabilityEntry(
   input: CompletenessGroupInput,
   meta: { category: BmpFarmerGroupCategory; districtId: string },
+  options: CompletenessOptions = {},
 ): AvailabilityGroupEntry {
-  const result = computeCompleteness(input);
+  const result = computeCompleteness(input, options);
 
   const domainScores = { petani: 0, lahan: 0, pelatihan: 0, produksi: 0 };
   const anomalies: AvailabilityAnomalyCount[] = [];
 
-  const profileFailed = result.profileChecks.filter((c) => !c.complete).length;
+  const coreProfile = result.profileChecks.filter((c) => c.kind === "inti");
+  const profileFailed = coreProfile.filter((c) => !c.complete).length;
   if (profileFailed > 0) {
     anomalies.push({
       key: "profil-tidak-lengkap",
-      label: "Profil Lembaga belum lengkap",
+      label: anomalyDef("profil-tidak-lengkap").label,
       count: profileFailed,
+      entityCount: profileFailed,
+      total: coreProfile.length,
+      systemic: false,
     });
+  }
+  // Check kualitas profil yang gagal (#352 putaran 2) — satu temuan per check,
+  // agar Σ count tetap == totalAnomalies.
+  for (const c of result.profileChecks) {
+    if (c.kind !== "kualitas" || c.complete) continue;
+    anomalies.push({ key: c.key, label: c.label, count: 1, entityCount: 1, total: 1, systemic: false });
   }
 
   for (const domain of result.domains) {
     domainScores[domain.domain] = domain.score;
     for (const a of domain.anomalies) {
-      anomalies.push({ key: a.key, label: a.label, count: a.count });
+      anomalies.push({
+        key: a.key,
+        label: a.label,
+        count: a.count,
+        entityCount: a.entityCount,
+        total: a.total,
+        systemic: a.systemic,
+      });
     }
   }
 
@@ -91,10 +127,16 @@ export function buildAvailabilityEntry(
     domainScores,
     totalAnomalies: result.totalAnomalies,
     anomalies,
+    moduleCoverage: result.moduleCoverage.map((m) => ({
+      key: m.key,
+      covered: m.covered,
+      total: m.total,
+      pct: m.pct,
+    })),
   };
 }
 
-/** Persempit data per-Lembaga sesuai pilihan Distrik/Kategori. */
+/** Persempit data per-Lembaga sesuai pilihan Distrik/Kategori/Lembaga/band. */
 export function filterAvailabilityGroups(
   data: AvailabilityDashboardData,
   filter: AvailabilitySliceFilter,
@@ -102,8 +144,48 @@ export function filterAvailabilityGroups(
   return data.groups.filter((g) => {
     if (filter.districtId && g.districtId !== filter.districtId) return false;
     if (filter.category && g.category !== filter.category) return false;
+    if (filter.groupId && g.id !== filter.groupId) return false;
+    if (filter.band && scoreBand(g.healthScore) !== filter.band) return false;
     return true;
   });
+}
+
+/** Skor satu domain pada entri (profil di kolom terpisah). */
+export function domainScoreOf(e: AvailabilityGroupEntry, key: AvailabilityDomainKey): number {
+  return key === "profil" ? e.profileScore : e.domainScores[key];
+}
+
+/** Jumlah Lembaga per band skor total — "berapa yang kritis / perlu perhatian / baik / lengkap". */
+export function bandDistribution(groups: AvailabilityGroupEntry[]): AvailabilityBandDistribution {
+  const dist: AvailabilityBandDistribution = { full: 0, good: 0, warn: 0, bad: 0 };
+  for (const g of groups) dist[scoreBand(g.healthScore)] += 1;
+  return dist;
+}
+
+/**
+ * Lembaga paling tertinggal per domain (skor menaik, seri diurut petani terbanyak
+ * lalu nama). Lembaga tanpa petani dikeluarkan untuk domain berbasis petani —
+ * skor 0-nya artinya "belum ada yang dinilai", bukan "tertinggal".
+ */
+export function domainLaggards(
+  groups: AvailabilityGroupEntry[],
+  key: AvailabilityDomainKey,
+  n = 5,
+): AvailabilityLaggard[] {
+  return groups
+    .filter((g) => key === "profil" || g.totalFarmers > 0)
+    .map((g) => ({ id: g.id, name: g.name, districtName: g.districtName, totalFarmers: g.totalFarmers, score: domainScoreOf(g, key) }))
+    .sort((a, b) => a.score - b.score || b.totalFarmers - a.totalFarmers || a.name.localeCompare(b.name))
+    .slice(0, n);
+}
+
+/**
+ * Jumlah Lembaga berskor kritis (<50) pada satu domain. Konsisten dengan
+ * `domainLaggards`: Lembaga tanpa petani tidak dihitung kritis pada domain
+ * berbasis petani (skor 0-nya = belum dinilai).
+ */
+export function domainCriticalCount(groups: AvailabilityGroupEntry[], key: AvailabilityDomainKey): number {
+  return groups.filter((g) => (key === "profil" || g.totalFarmers > 0) && scoreBand(domainScoreOf(g, key)) === "bad").length;
 }
 
 /**
@@ -175,31 +257,86 @@ export function availabilityTotals(groups: AvailabilityGroupEntry[]): Availabili
   };
 }
 
-/** Lembaga urut skor terendah dulu — yang paling butuh dikejar tampil teratas. */
-export function availabilityScoreRows(groups: AvailabilityGroupEntry[]): AvailabilityGroupEntry[] {
-  return [...groups].sort(
-    (a, b) => a.healthScore - b.healthScore || a.name.localeCompare(b.name),
-  );
-}
-
-/** Top-N tipe anomali dijumlah lintas Lembaga, terbanyak dulu. */
-export function topAnomalies(
+function summarizeAnomalies(
   groups: AvailabilityGroupEntry[],
-  n = 10,
+  pick: (a: AvailabilityAnomalyCount) => boolean,
+  value: (a: AvailabilityAnomalyCount) => number,
+  n: number,
 ): AvailabilityAnomalySummary[] {
   const acc = new Map<string, AvailabilityAnomalySummary>();
   for (const g of groups) {
     for (const a of g.anomalies) {
+      if (!pick(a)) continue;
+      const v = value(a);
       const e = acc.get(a.key);
       if (e) {
-        e.count += a.count;
+        e.count += v;
         e.groupsAffected += 1;
+        e.groups.push({ id: g.id, name: g.name, count: v });
       } else {
-        acc.set(a.key, { key: a.key, label: a.label, count: a.count, groupsAffected: 1 });
+        acc.set(a.key, {
+          key: a.key,
+          label: a.label,
+          count: v,
+          groupsAffected: 1,
+          groups: [{ id: g.id, name: g.name, count: v }],
+        });
       }
     }
+  }
+  for (const e of acc.values()) {
+    e.groups.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }
   return [...acc.values()]
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
     .slice(0, n);
+}
+
+/**
+ * Top-N tipe anomali PER ENTITAS (bisa dikejar per petani/persil) dijumlah
+ * lintas Lembaga, terbanyak dulu. Anomali yang dilipat sistemik di suatu
+ * Lembaga tidak ikut di sini — lihat `topSystemicAnomalies` (#352 A3).
+ */
+export function topAnomalies(
+  groups: AvailabilityGroupEntry[],
+  n = 10,
+): AvailabilityAnomalySummary[] {
+  return summarizeAnomalies(groups, (a) => !a.systemic, (a) => a.count, n);
+}
+
+/**
+ * Top-N "kolom belum pernah diisi" — anomali sistemik (≥ 95 % entitas kosong
+ * di Lembaga itu) dijumlah ENTITAS-nya lintas Lembaga; `groupsAffected` =
+ * berapa Lembaga yang kolom itu praktis kosong seluruhnya.
+ */
+export function topSystemicAnomalies(
+  groups: AvailabilityGroupEntry[],
+  n = 10,
+): AvailabilityAnomalySummary[] {
+  return summarizeAnomalies(groups, (a) => a.systemic, (a) => a.entityCount, n);
+}
+
+/**
+ * Cakupan modul portfolio (#352 A1): Σ covered / Σ total hanya atas Lembaga
+ * yang modulnya BERLAKU (sudah dimulai) — Lembaga yang belum memulai modul
+ * tidak menyeret persennya. Modul yang belum berlaku di satu Lembaga pun →
+ * pct null.
+ */
+export function moduleCoverageTotals(groups: AvailabilityGroupEntry[]): AvailabilityModuleSummary[] {
+  const acc = new Map<string, AvailabilityModuleSummary>();
+  for (const g of groups) {
+    for (const m of g.moduleCoverage) {
+      const e = acc.get(m.key) ?? { key: m.key, covered: 0, total: 0, pct: null, groupsApplicable: 0 };
+      if (m.pct != null) {
+        e.covered += m.covered;
+        e.total += m.total;
+        e.groupsApplicable += 1;
+      }
+      acc.set(m.key, e);
+    }
+  }
+  for (const e of acc.values()) {
+    e.pct = e.groupsApplicable > 0 && e.total > 0 ? round1((e.covered / e.total) * 100) : null;
+  }
+  return [...acc.values()];
 }

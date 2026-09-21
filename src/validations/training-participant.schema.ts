@@ -29,5 +29,3 @@ export const addParticipantsSchema = z.object({
     )
     .min(1, "Minimal satu peserta harus dipilih"),
 });
-
-export type AddParticipantsInput = z.infer<typeof addParticipantsSchema>;

@@ -9,7 +9,7 @@
 | Icon | `Upload` |
 | Order | `3` |
 | Parent | — (menu level 1) |
-| Sub menu | 4 — Upload Petani (`bulk-upload-farmers`), Upload Produksi (`bulk-upload-production`), Lahan (`bulk-upload-parcels`), Pohon Sawit (`bulk-upload-trees`) |
+| Sub menu | 4 — Upload Data Petani (`bulk-upload-farmers`), Upload Data Produksi (`bulk-upload-production`), Upload Data Lahan (`bulk-upload-parcels`), Pohon Sawit (`bulk-upload-trees`) |
 | Halaman induk | `src/app/(admin)/admin/bulk-upload/page.tsx` — hanya `redirect("/admin/bulk-upload/farmers")`, tidak ada UI |
 | Sumber metadata | `prisma/seeds/data/menu.csv` baris `bulk-upload`, `bulk-upload-farmers`, `bulk-upload-production`, `bulk-upload-parcels`, `bulk-upload-trees` |
 
@@ -18,8 +18,8 @@
 ```text
 Menu: Bulk Upload (/admin/bulk-upload)
 └── Redirect → /admin/bulk-upload/farmers (tanpa UI)
-    ├── Upload Petani    (/admin/bulk-upload/farmers)    — bulk-upload-farmers
-    ├── Upload Produksi  (/admin/bulk-upload/production) — bulk-upload-production
+    ├── Upload Data Petani    (/admin/bulk-upload/farmers)    — bulk-upload-farmers
+    ├── Upload Data Produksi  (/admin/bulk-upload/production) — bulk-upload-production
     ├── Lahan            (/admin/bulk-upload/parcels)    — bulk-upload-parcels
     └── Pohon Sawit      (/admin/bulk-upload/trees)      — bulk-upload-trees
 ```
@@ -28,9 +28,9 @@ Menu: Bulk Upload (/admin/bulk-upload)
 
 | # | Sub menu | Menu key | URL | Icon | Order | Dokumen |
 |---|---|---|---|---|---|---|
-| 1 | Upload Petani | `bulk-upload-farmers` | `/admin/bulk-upload/farmers` | `User` | `1` | [upload-petani.md](./upload-petani.md) |
-| 2 | Upload Produksi | `bulk-upload-production` | `/admin/bulk-upload/production` | `TrendingUp` | `2` | [upload-produksi.md](./upload-produksi.md) |
-| 3 | Lahan | `bulk-upload-parcels` | `/admin/bulk-upload/parcels` | `Map` | `3` | [lahan.md](./lahan.md) |
+| 1 | Upload Data Petani | `bulk-upload-farmers` | `/admin/bulk-upload/farmers` | `User` | `1` | [upload-petani.md](./upload-petani.md) |
+| 2 | Upload Data Produksi | `bulk-upload-production` | `/admin/bulk-upload/production` | `TrendingUp` | `2` | [upload-produksi.md](./upload-produksi.md) |
+| 3 | Upload Data Lahan | `bulk-upload-parcels` | `/admin/bulk-upload/parcels` | `Map` | `3` | [lahan.md](./lahan.md) |
 | 4 | Pohon Sawit | `bulk-upload-trees` | `/admin/bulk-upload/trees` | `TreePine` | `4` | [pohon.md](./pohon.md) |
 
 ## Permission bawaan seed

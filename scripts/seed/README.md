@@ -17,10 +17,10 @@ Shapefile, Excel, ZIP, dan apa pun yang berisi data petani/pengguna **tetap di `
 | --- | --- | --- |
 | `seed-boundary-lembaga.ts` | 30 poligon ICS (UTM 47S → WGS84) → `tbl_farmer_group_boundary`, ditulis `geojson` + `geom` PostGIS | `Groups-Boundary.zip` |
 | `seed-batas-administrasi.ts` | 12 kabupaten BIG → `tbl_administrative_boundary`, `geojson` disimpan tersimplifikasi 0,001° | `Batas_Administrasi_Kabupaten_Riau.zip` |
-| `seed-menu-only.ts` | menu + role-permissions saja, tanpa `prisma db seed` penuh (yang tidak idempotent) | — |
+| `seed-menu-only.ts` | menu + role-permissions saja, tanpa `prisma db seed` penuh (yang tidak idempotent). Menu: baris baru dibuat, baris yang ada **diperbarui kolom strukturalnya** (judul, url, ikon, order, induk); `isActive`/`isVisible` tidak disentuh | — |
 | `seed-menu-report-marker.mjs` | **parsial**: hanya menu `report-marker` (Report › Patok, #331) + izin per peran dari `role-permissions.csv`; hanya menambah yang belum ada (tidak memulihkan izin yang sengaja dihapus admin) | — |
 
-`seed-menu-only.ts` juga ber-`--apply`, tetapi seeder menu/RBAC tak bisa mem-preview perubahan — dry-run-nya hanya menyatakan tujuan dan DB yang akan disentuh. Perhatikan peringatannya: `seedRolePermissions` memakai upsert `update: {}`, sehingga baris permission yang sengaja **dihapus admin akan dipulihkan**.
+`seed-menu-only.ts` juga ber-`--apply`; dry-run-nya mencetak **diff menu** (dibuat / diperbarui: `kolom: lama → baru`) — jalankan dan baca diff itu sebelum `--apply` ke staging/prod. `menu.csv` adalah **sumber kebenaran struktur & label** menu: sampai 2026-09-21 `seedMenu` memakai `update: {}` sehingga CSV dan prod saling menjauh (15 baris — urutan Report/Map/Master Data/Settings, judul Upload Data …) tanpa ada yang sadar; CSV disinkronkan ke prod pada QA v0.37.0 dan sejak itu perubahan harus lewat CSV, bukan Menu Management UI (kecuali `isActive`/`isVisible`). Perhatikan peringatannya: `seedRolePermissions` memakai upsert `update: {}`, sehingga baris permission yang sengaja **dihapus admin akan dipulihkan** — cek `npm run rbac:compare` dulu.
 
 `data/boundary-mapping.csv` memetakan nama ICS di shapefile → `FarmerGroup.code`, karena keduanya tidak sama persis. Satu poligon bisa dimiliki beberapa lembaga (kode dipisah `+`). Ini hasil pemetaan manual — bagian yang paling mahal dibuat ulang, dan alasan utama ia ikut di-track.
 

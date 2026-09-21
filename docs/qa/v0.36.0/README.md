@@ -19,7 +19,7 @@
 ## Go/No-go
 
 - Lokal: **Go** untuk lanjut ke #348 (deploy staging) — jalur tulis Monev (form, rekap, form survei, rincian, Lembaga, nonaktif) terbukti; QC E1–E8 ✓.
-- Staging: belum dijalankan (butuh #348 + akun OPERATOR ter-scope Rokan Hulu & DONOR untuk 23 smoke + 6 kasus Blocked).
+- Staging: migrasi + seed applied & deploy hijau (#348); suite penuh **tidak dijalankan** (tanpa akun OPERATOR/DONOR) — owner memutuskan rilis (sign-off "Terbatas"). Run prod `--only P0` menyusul ≤ 1 jam setelah deploy.
 
 ## Known issues
 

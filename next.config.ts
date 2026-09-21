@@ -11,14 +11,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "16mb",
     },
   },
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-    ],
-  },
   webpack: (config) => {
     config.module.rules.push({
       test: /\.csv$/,

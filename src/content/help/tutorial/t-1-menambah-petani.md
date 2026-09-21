@@ -17,7 +17,7 @@ Petani selalu melekat pada satu **Lembaga Petani**. Kalau lembaganya belum ada, 
 
 Siapkan: nama lengkap, **ID Petani**, jenis kelamin, dan nama lembaga. Sisanya boleh menyusul.
 
-+ **ID Petani** adalah nomor milik organisasi Anda, bukan buatan sistem. Nomor inilah yang dipakai mencocokkan data pada tiga jalur unggahan massal: Upload Petani, Upload Produksi, dan shapefile Lahan. Kalau penomorannya tidak konsisten sejak awal, ketiga unggahan itu akan gagal mencocokkan dan Anda harus memperbaiki berkas sumbernya berulang kali. Sepakati polanya di tingkat organisasi sebelum input massal dimulai.
++ **ID Petani** adalah nomor milik organisasi Anda, bukan buatan sistem. Nomor inilah yang dipakai mencocokkan data pada tiga jalur unggahan massal: Upload Data Petani, Upload Data Produksi, dan shapefile Lahan. Kalau penomorannya tidak konsisten sejak awal, ketiga unggahan itu akan gagal mencocokkan dan Anda harus memperbaiki berkas sumbernya berulang kali. Sepakati polanya di tingkat organisasi sebelum input massal dimulai.
 
 ## Langkah
 
@@ -46,7 +46,7 @@ Petani muncul di tabel, kartu **Total Petani** bertambah satu, dan namanya ketem
 
 + Pencarian menelusuri tiga kolom sekaligus: nama, ID Petani, dan NIK. Jadi Anda bisa memastikan lewat ID atau NIK bila ada beberapa petani dengan nama mirip. Kalau petaninya tidak ketemu padahal baru saja disimpan, periksa filter Distrik dan Lembaga Petani di atas tabel — filter yang masih aktif dari pencarian sebelumnya bisa menyembunyikannya.
 
-> [!tip] Perlu mendaftarkan puluhan petani sekaligus? Pakai **Bulk Upload → Upload Petani** dengan berkas Excel, jangan satu per satu.
+> [!tip] Perlu mendaftarkan puluhan petani sekaligus? Pakai **Bulk Upload → Upload Data Petani** dengan berkas Excel, jangan satu per satu.
 
 ## Kalau bermasalah
 

@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import bcrypt from "bcryptjs";
 import { computeCompleteness, computePelatihanDomain } from "@/lib/data-completeness";
+import {
+  availabilityTotals,
+  buildAvailabilityEntry,
+  moduleCoverageTotals,
+  topAnomalies,
+  topSystemicAnomalies,
+} from "@/lib/data-availability-aggregation";
 import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
 import {
   buildProductionMatrix,
@@ -175,23 +182,41 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       id: `db-${i}`,
       farmerId: `F-${i}`,
       name: `Petani ${i}`,
+      gender: i % 2 === 0 ? ("M" as const) : ("F" as const),
       nik: i % 2 === 0 ? "1234567890123456" : null,
       address: i % 3 === 0 ? null : "Jl. Mawar",
+      birthPlace: i % 5 === 0 ? null : "Pekanbaru",
       birthDate: new Date("1990-01-01"),
       joinedYear: 2020,
       landParcels:
         i % 2 === 0
           ? [
               {
+                id: `lp-${i}`,
                 parcelId: `P-${i}`,
                 geometry: { type: "Polygon" },
                 area: 1.5,
                 plantingYear: 2018,
                 cropType: "Palm",
                 landStatus: "Owned",
+                subGroupLv2: i % 4 === 0 ? "KT A" : null,
+                blok: null,
+                isPsr: false,
+                // Flag modul (#352 A1) — sebagian terisi agar cakupan ikut terhitung.
+                modules: {
+                  document: i % 3 === 0,
+                  stdbIssued: i % 7 === 0,
+                  externalId: i % 2 === 0,
+                  nkt: i % 11 === 0,
+                  border: false,
+                  marker: i % 2 === 0,
+                  tree: false,
+                  program: false,
+                },
               },
             ]
           : [],
+      modules: { stdb: i % 7 === 0, bmpAssessment: i % 9 === 0 },
       // Each farmer attends a rotating subset of packages → mix of complete/partial.
       trainingParticipants: PACKAGES.filter((_, pi) => (i + pi) % 4 !== 0).map((p) => ({
         id: `tp-${i}-${p.code}`,
@@ -199,13 +224,16 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
         postTestScore: i % 3 === 0 ? 90 : null,
         packageCode: p.code,
       })),
-      productionRecords: i % 2 === 0 ? [{ id: `pr-${i}`, parcelId: `P-${i}` }] : [],
+      productionRecords:
+        i % 2 === 0
+          ? [{ id: `pr-${i}`, parcelId: `lp-${i}`, period: i % 6 === 0 ? "2025-12" : "2026-08", yieldKg: i % 13 === 0 ? 0 : 120, isEstimate: i % 10 === 0 }]
+          : [],
     }));
   }
 
   it("computePelatihanDomain handles 5000 farmers × 4 packages under 100ms", () => {
     const farmers = makeFarmers(5000);
-    const activities = PACKAGES.map((p) => ({ packageCode: p.code }));
+    const activities = PACKAGES.map((p) => ({ packageCode: p.code, hasEvidence: true }));
 
     const start = performance.now();
     const d = computePelatihanDomain(farmers, PACKAGES, activities);
@@ -224,21 +252,74 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       code: "KTPERF",
       abrv: "KP",
       joinYear: 2015,
+      groupType: "KOPERASI",
+      establishedYear: 2010,
+      rspoCertYear: null,
+      rspoCertStatus: null,
+      ispoCertYear: null,
+      ispoCertStatus: null,
+      sapMapAssuranceYear: null,
+      sapMapAssuranceStatus: null,
       locationLat: 1.23,
       locationLong: 103.4,
       district: { id: "d-1", name: "Distrik A" },
-      activities: PACKAGES.map((p) => ({ packageCode: p.code })),
+      activities: PACKAGES.map((p) => ({ packageCode: p.code, hasEvidence: true })),
       trainingPackages: PACKAGES,
       farmers: makeFarmers(5000),
+      modules: { boundary: true, benchmark: true, bmpGroupAssessment: false },
     };
 
     const start = performance.now();
-    const result = computeCompleteness(grp);
+    const result = computeCompleteness(grp, { referencePeriod: "2026-09" });
     const duration = performance.now() - start;
 
-    console.log(`  computeCompleteness (5 domain, 5000 petani): ${duration.toFixed(2)}ms`);
+    console.log(`  computeCompleteness (5 domain + cakupan modul, 5000 petani): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(200);
     expect(result.totalFarmers).toBe(5000);
+    expect(result.moduleCoverage.length).toBeGreaterThan(0);
+  });
+
+  // Skala 2028 (proyeksi owner: 12.000 petani lintas ±40 Lembaga) untuk jalur
+  // DA-03 dengan satelit (#352): 40 × buildAvailabilityEntry + agregasi panel.
+  it("DA-03 skala 2028: 40 Lembaga × 300 petani + cakupan modul + panel agregasi under 1500ms", () => {
+    const groups: CompletenessGroupInput[] = Array.from({ length: 40 }, (_, gi) => ({
+      id: `g-${gi}`,
+      name: `Lembaga ${gi}`,
+      code: `L${gi}`,
+      abrv: "L",
+      joinYear: 2015,
+      groupType: "KOPERASI",
+      establishedYear: null,
+      rspoCertYear: null,
+      rspoCertStatus: null,
+      ispoCertYear: null,
+      ispoCertStatus: null,
+      sapMapAssuranceYear: null,
+      sapMapAssuranceStatus: null,
+      locationLat: 1,
+      locationLong: 101,
+      district: { id: `d-${gi % 4}`, name: `Distrik ${gi % 4}` },
+      activities: PACKAGES.map((p) => ({ packageCode: p.code, hasEvidence: gi % 2 === 0 })),
+      trainingPackages: PACKAGES,
+      farmers: makeFarmers(300).map((f) => ({ ...f, id: `${gi}-${f.id}` })),
+      modules: { boundary: gi % 3 !== 0, benchmark: true, bmpGroupAssessment: gi % 5 === 0 },
+    }));
+
+    const start = performance.now();
+    const entries = groups.map((g) =>
+      buildAvailabilityEntry(g, { category: "SWADAYA", districtId: g.district.id }, { referencePeriod: "2026-09" }),
+    );
+    const totals = availabilityTotals(entries);
+    const top = topAnomalies(entries);
+    const systemic = topSystemicAnomalies(entries);
+    const modules = moduleCoverageTotals(entries);
+    const duration = performance.now() - start;
+
+    console.log(`  DA-03 skala 2028 (40 Lembaga × 300 petani, satelit): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(1500);
+    expect(totals.totalFarmers).toBe(12000);
+    expect(top.length + systemic.length).toBeGreaterThan(0);
+    expect(modules.length).toBeGreaterThan(0);
   });
 });
 

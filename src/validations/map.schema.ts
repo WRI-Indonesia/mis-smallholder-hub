@@ -9,8 +9,6 @@ export const mapFilterSchema = z.object({
   farmerGroupId: z.string().min(1).nullish(),
 });
 
-export type MapFilterInput = z.infer<typeof mapFilterSchema>;
-
 // Peta BMP (MAP-02): Lembaga Petani is required; Provinsi/Distrik are optional
 // (they only narrow the KT dropdown). Same non-CUID tolerance as above.
 export const bmpMapFilterSchema = z.object({
@@ -18,5 +16,3 @@ export const bmpMapFilterSchema = z.object({
   districtId: z.string().min(1).nullish(),
   farmerGroupId: z.string().min(1, { message: "Lembaga Petani wajib dipilih" }),
 });
-
-export type BmpMapFilterInput = z.infer<typeof bmpMapFilterSchema>;

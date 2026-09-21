@@ -33,7 +33,7 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Buat patok dari poligo
 5. Pakai panah **↑ ↓** untuk mengubah urutan nomor bila penomoran lapangan berbeda; klik **Unduh koordinat** untuk berkas Excel patok lahan ini.
 6. Ikon **lepas tautan** melepas patok dari lahan ini saja. Patok yang masih dipakai lahan lain tetap ada; patok tanpa pemakai dinonaktifkan (koordinatnya tersimpan sebagai riwayat).
 
-> [!info] Banyak lahan sekaligus? Titik GPS lapangan bisa diunggah lewat **Bulk Upload → Lahan → tab Patok** (Excel/CSV atau shapefile titik) — lihat tutorial *Mengunggah titik patok*.
+> [!info] Banyak lahan sekaligus? Titik GPS lapangan bisa diunggah lewat **Bulk Upload → Upload Data Lahan → tab Patok** (Excel/CSV atau shapefile titik) — lihat tutorial *Mengunggah titik patok*.
 
 ## Hasil
 
@@ -41,7 +41,7 @@ Tab **Patok** menampilkan jumlah patok di judul tabnya. **Profil Lahan (PDF)** m
 
 ## Kalau bermasalah
 
-**Tombol "Buat patok dari poligon" nonaktif** — lahan belum punya poligon. Unggah shapefile-nya dulu lewat Bulk Upload → Lahan.
+**Tombol "Buat patok dari poligon" nonaktif** — lahan belum punya poligon. Unggah shapefile-nya dulu lewat Bulk Upload → Upload Data Lahan.
 
 **"Koordinat N m dari batas lahan — lat/long tampaknya tertukar"** — nilai lintang dan bujur terbalik di formulir. Di Riau lintang sekitar 0–2 dan bujur sekitar 100–103.
 

@@ -5,7 +5,7 @@ menuKey: bulk-upload-farmers
 permission: CREATE
 duration: 10
 href: /admin/bulk-upload/farmers
-hrefLabel: Buka halaman Upload Petani
+hrefLabel: Buka halaman Upload Data Petani
 goal: Puluhan hingga ratusan petani terdaftar sekaligus dari satu berkas Excel.
 ---
 
@@ -21,7 +21,7 @@ Kolom di Excel Anda **tidak harus bernama persis** seperti di sistem — nanti a
 
 ## Langkah
 
-1. Buka menu **Bulk Upload → Upload Petani**.
+1. Buka menu **Bulk Upload → Upload Data Petani**.
 2. Pada **Langkah 1**, pilih **Lembaga Petani** tujuan. Selama ini belum dipilih, kotak berkas masih terkunci.
 3. Pada **Langkah 2**, pilih berkas `.xlsx` atau `.csv`. Sistem akan memberi tahu jumlah baris yang terbaca.
 4. Di bagian **Petakan Kolom Data**, cocokkan tiap kolom sistem dengan kolom di berkas Anda. Sebagian sudah tercocokkan otomatis — periksa tetap.

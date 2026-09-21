@@ -56,10 +56,6 @@ export const fmtDate = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
   return `${d} ${MONTHS_ID[m - 1]} ${y}`;
 };
-export const fmtDateShort = (iso: string) => {
-  const [, m, d] = iso.split("-").map(Number);
-  return `${d} ${MONTHS_ID[m - 1]}`;
-};
 
 /** Nilai RVS dengan prefiks ≈ untuk baris estimasi (spec §2.3). */
 export const fmtRvs = (r: Pick<ReleaseMetric, "rvs" | "isEstimated">) =>

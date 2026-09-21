@@ -20,15 +20,9 @@ import {
   type DistrictFilterOption,
   type GroupFilterOption,
 } from "@/components/shared/district-group-filter";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { maskNik, maskBirthDate } from "@/lib/mask";
 import { formatNumber } from "@/lib/format";
+import { StatusFilterSelect, type StatusFilterValue } from "@/components/shared/status-filter-select";
 
 interface Farmer {
   id: string;
@@ -73,7 +67,7 @@ export function FarmerListClient({
 }: Props) {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("active");
   const [showForm, setShowForm] = useState(false);
   const [editFarmer, setEditFarmer] = useState<Farmer | null>(null);
   const router = useRouter();
@@ -223,16 +217,7 @@ export function FarmerListClient({
 
       {/* Status filter — hanya SUPERADMIN */}
       {isSuperAdmin && (
-        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val ?? "active")}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="active">Aktif</SelectItem>
-            <SelectItem value="inactive">Nonaktif</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusFilterSelect value={statusFilter} onChange={setStatusFilter} />
       )}
     </div>
   );

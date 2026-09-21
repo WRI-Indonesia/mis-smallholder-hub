@@ -72,36 +72,6 @@ export async function getFarmers(search?: string, farmerGroupId?: string) {
   return farmers.map(({ _count, ...f }) => ({ ...f, nktCount: _count.landParcels }));
 }
 
-export async function getFarmerById(id: string) {
-  if (!(await hasPermission("master-data-farmers", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  const access = await getAccessContext();
-
-  // Scope enforced. Hanya SUPERADMIN yang boleh membuka detail record nonaktif;
-  // user lain dibatasi ke record aktif.
-  return prisma.farmer.findFirst({
-    where: {
-      id,
-      ...farmerAccessFilter(access),
-      ...((await isSuperAdmin()) ? {} : { isActive: true }),
-    },
-    include: {
-      farmerGroup: {
-        include: {
-          district: true,
-        },
-      },
-      // KT turunan (#152): keanggotaan sub-kelompok bersifat per-lahan (#146).
-      landParcels: {
-        where: { isActive: true },
-        select: { subGroupLv2: true },
-      },
-    },
-  });
-}
-
 /**
  * Profil 360° satu Petani (#172): profil + Lahan (tabel + peta) + Pelatihan
  * (checklist paket + riwayat ber-skor) + Produksi (per tahun + bulanan +

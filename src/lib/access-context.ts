@@ -1,10 +1,9 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export type AccessContext =
-  | { mode: "ALL" }
-  | { mode: "BY_FARMER_GROUP"; ids: string[] }
-  | { mode: "BY_DISTRICT"; ids: string[] };
+export type { AccessContext } from "@/lib/access-scope";
+export { farmerGroupAccessFilter, rawFarmerGroupScope, farmerAccessFilter, farmerRelationAccessFilter } from "@/lib/access-scope";
+import type { AccessContext } from "@/lib/access-scope";
 
 export async function getAccessContext(): Promise<AccessContext> {
   const session = await auth();
@@ -40,40 +39,6 @@ export async function getAccessContext(): Promise<AccessContext> {
   for (const ud of user.districts) ids.add(ud.districtId);
 
   return { mode: "BY_DISTRICT", ids: [...ids] };
-}
-
-/** Prisma `where` fragment scoping a FarmerGroup query to the user's data-access. */
-export function farmerGroupAccessFilter(access: AccessContext) {
-  return access.mode === "BY_FARMER_GROUP"
-    ? { id: { in: access.ids } }
-    : access.mode === "BY_DISTRICT"
-    ? { districtId: { in: access.ids } }
-    : {};
-}
-
-/**
- * Prisma `where` fragment scoping a query on a model that carries a
- * `farmerGroupId` field + `farmerGroup` relation (e.g. `Farmer`,
- * `TrainingActivity`). Replaces the hand-written ternary repeated across actions.
- */
-export function farmerAccessFilter(access: AccessContext) {
-  return access.mode === "BY_FARMER_GROUP"
-    ? { farmerGroupId: { in: access.ids } }
-    : access.mode === "BY_DISTRICT"
-    ? { farmerGroup: { districtId: { in: access.ids } } }
-    : {};
-}
-
-/**
- * Prisma `where` fragment scoping a query on a model that owns a `farmer`
- * relation (e.g. `LandParcel`, `ProductionRecord`, `TrainingParticipant`).
- */
-export function farmerRelationAccessFilter(access: AccessContext) {
-  return access.mode === "BY_FARMER_GROUP"
-    ? { farmer: { farmerGroupId: { in: access.ids } } }
-    : access.mode === "BY_DISTRICT"
-    ? { farmer: { farmerGroup: { districtId: { in: access.ids } } } }
-    : {};
 }
 
 /**

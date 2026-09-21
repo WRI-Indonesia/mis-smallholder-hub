@@ -105,22 +105,6 @@ export async function getFarmerGroups(search?: string) {
   }));
 }
 
-export async function getFarmerGroupById(id: string) {
-  if (!(await hasPermission("master-data-groups", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses data ini");
-  }
-
-  const access = await getAccessContext();
-
-  // Scope enforced (cegah akses KT lintas wilayah via id). `AND` agar filter scope
-  // `{ id: { in } }` (mode BY_FARMER_GROUP) tidak menimpa literal `id`. Hanya
-  // SUPERADMIN yang boleh membuka detail KT nonaktif; user lain dibatasi ke aktif.
-  return prisma.farmerGroup.findFirst({
-    where: { id, AND: farmerGroupAccessFilter(access), ...((await isSuperAdmin()) ? {} : { isActive: true }) },
-    include: { district: { select: { id: true, name: true } } },
-  });
-}
-
 /**
  * Profil 360° satu Lembaga (#171): profil + agregat Petani/KT/Lahan/Pelatihan/
  * Produksi + skor kelengkapan DA-02. Real-time (keputusan #153/#154 — detail 1
@@ -153,6 +137,7 @@ export async function getFarmerGroupDetail(id: string) {
         id: true,
         trainingDate: true,
         location: true,
+        evidenceKey: true,
         package: { select: { code: true, name: true } },
         participants: {
           where: { isActive: true },
@@ -170,6 +155,7 @@ export async function getFarmerGroupDetail(id: string) {
         gender: true,
         nik: true,
         address: true,
+        birthPlace: true,
         birthDate: true,
         joinedYear: true,
         landParcels: {
@@ -245,32 +231,50 @@ export async function getFarmerGroupDetail(id: string) {
   );
 
   // Skor kelengkapan DA-02 (card + link — rincian tetap di halaman Analisa).
+  // Tanpa `modules`: cakupan modul (#352 A1) informatif & di luar Index, jadi
+  // kartu ini tak perlu kueri satelit — skornya tetap identik dengan DA-02.
+  // Jumlah temuan TIDAK dikirim: sebagian check kualitas butuh flag satelit
+  // sehingga angkanya akan berbeda dari halaman DA-02 (review #352).
   const completenessInput: CompletenessGroupInput = {
     id: group.id,
     name: group.name,
     code: group.code,
     abrv: group.abrv,
     joinYear: group.joinYear,
+    groupType: group.groupType,
+    establishedYear: group.establishedYear,
+    rspoCertYear: group.rspoCertYear,
+    rspoCertStatus: group.rspoCertStatus,
+    ispoCertYear: group.ispoCertYear,
+    ispoCertStatus: group.ispoCertStatus,
+    sapMapAssuranceYear: group.sapMapAssuranceYear,
+    sapMapAssuranceStatus: group.sapMapAssuranceStatus,
     locationLat: group.locationLat,
     locationLong: group.locationLong,
     district: { id: group.district.id, name: group.district.name },
     trainingPackages,
-    activities: activities.map((a) => ({ packageCode: a.package.code })),
+    activities: activities.map((a) => ({ packageCode: a.package.code, hasEvidence: a.evidenceKey != null })),
     farmers: farmers.map((f) => ({
       id: f.id,
       farmerId: f.farmerId,
       name: f.name,
+      gender: f.gender,
       nik: f.nik,
       address: f.address,
+      birthPlace: f.birthPlace,
       birthDate: f.birthDate,
       joinedYear: f.joinedYear,
       landParcels: f.landParcels.map((p) => ({
+        id: p.id,
         parcelId: p.parcelId,
         geometry: p.geometry,
         area: p.area,
         plantingYear: p.plantingYear,
         cropType: p.cropType,
         landStatus: p.landStatus,
+        subGroupLv2: p.subGroupLv2,
+        blok: p.blok,
+        isPsr: p.isPsr,
       })),
       trainingParticipants: f.trainingParticipants.map((tp) => ({
         id: tp.id,
@@ -278,7 +282,15 @@ export async function getFarmerGroupDetail(id: string) {
         postTestScore: tp.postTestScore,
         packageCode: tp.activity.package.code,
       })),
-      productionRecords: f.productionRecords.map((r) => ({ id: r.id, parcelId: r.parcelId })),
+      productionRecords: f.productionRecords.map((r) => ({
+        id: r.id,
+        parcelId: r.parcelId,
+        period: r.period,
+        yieldKg: r.yieldKg,
+        // Kartu KPI hanya memakai healthScore — label Estimasi (kartu DA-02) tak
+        // dibutuhkan, scan `notes ILIKE` dilewati (review pra-rilis #352).
+        isEstimate: false,
+      })),
     })),
   };
   const completeness = computeCompleteness(completenessInput);
@@ -286,10 +298,7 @@ export async function getFarmerGroupDetail(id: string) {
   return {
     group,
     detail,
-    completeness: {
-      healthScore: completeness.healthScore,
-      totalAnomalies: completeness.totalAnomalies,
-    },
+    completeness: { healthScore: completeness.healthScore },
     // Patok (#331): titik di peta sebaran + KPI kondisi.
     markerPoints,
     // Poligon untuk peta sebaran lahan (tab Lahan) — hanya field yang dipakai peta/popup.
