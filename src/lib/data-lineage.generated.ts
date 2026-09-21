@@ -200,6 +200,7 @@ export const DATA_LINEAGE: DataLineage = [
       "landParcelProgram": "R",
       "landParcelStdb": "R",
       "landStdb": "R",
+      "productionRecord": "R",
       "referenceBenchmark": "R",
       "trainingPackage": "R",
       "tree": "R"
@@ -227,6 +228,7 @@ export const DATA_LINEAGE: DataLineage = [
       "landParcelProgram": "R",
       "landParcelStdb": "R",
       "landStdb": "R",
+      "productionRecord": "R",
       "referenceBenchmark": "R",
       "trainingPackage": "R",
       "tree": "R"
@@ -374,10 +376,12 @@ export const DATA_LINEAGE: DataLineage = [
       "farmer": "R",
       "farmerGroup": "RW",
       "landParcel": "R",
+      "productionRecord": "R",
       "trainingActivity": "R",
       "trainingPackage": "R"
     },
     "modules": [
+      "src/lib/data-completeness-query.ts",
       "src/lib/nkt-report-query.ts",
       "src/server/actions/farmer-group.ts",
       "src/server/actions/land-marker.ts",

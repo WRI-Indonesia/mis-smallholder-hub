@@ -11,6 +11,7 @@ import {
   groupModuleFlags,
   loadEstimateRecordIds,
   loadModuleFlagSets,
+  parcelGeometryAreaHa,
   parcelModuleFlags,
 } from "@/lib/data-completeness-query";
 import type { CompletenessGroupInput } from "@/types/data-completeness";
@@ -71,8 +72,11 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
         joinYear: true,
         groupType: true,
         establishedYear: true,
+        rspoCertYear: true,
         rspoCertStatus: true,
+        ispoCertYear: true,
         ispoCertStatus: true,
+        sapMapAssuranceYear: true,
         sapMapAssuranceStatus: true,
         locationLat: true,
         locationLong: true,
@@ -88,6 +92,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
             id: true,
             farmerId: true,
             name: true,
+            gender: true,
             nik: true,
             address: true,
             birthPlace: true,
@@ -122,7 +127,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
             },
             productionRecords: {
               where: { isActive: true },
-              select: { id: true, parcelId: true, period: true },
+              select: { id: true, parcelId: true, period: true, yieldKg: true },
             },
           },
         },
@@ -133,7 +138,15 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
       where: { isActive: true, geometry: { not: Prisma.DbNull }, farmer: farmerWhere },
       select: { id: true },
     }),
-    loadModuleFlagSets({ farmerWhere, groupWhere, referenceYear }),
+    loadModuleFlagSets({
+      farmerWhere,
+      groupWhere,
+      scope: {
+        groupIds: access.mode === "BY_FARMER_GROUP" ? access.ids : undefined,
+        districtIds: access.mode === "BY_DISTRICT" ? access.ids : undefined,
+      },
+      referenceYear,
+    }),
     loadEstimateRecordIds(farmerWhere),
   ]);
   const geometryIds = new Set(withGeometry.map((p) => p.id));
@@ -147,6 +160,12 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
       joinYear: g.joinYear,
       groupType: g.groupType,
       establishedYear: g.establishedYear,
+      rspoCertYear: g.rspoCertYear,
+      rspoCertStatus: g.rspoCertStatus,
+      ispoCertYear: g.ispoCertYear,
+      ispoCertStatus: g.ispoCertStatus,
+      sapMapAssuranceYear: g.sapMapAssuranceYear,
+      sapMapAssuranceStatus: g.sapMapAssuranceStatus,
       locationLat: g.locationLat,
       locationLong: g.locationLong,
       district: g.district,
@@ -159,6 +178,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
         id: f.id,
         farmerId: f.farmerId,
         name: f.name,
+        gender: f.gender,
         nik: f.nik,
         address: f.address,
         birthPlace: f.birthPlace,
@@ -177,7 +197,8 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
           subGroupLv2: p.subGroupLv2,
           blok: p.blok,
           isPsr: p.isPsr,
-          modules: parcelModuleFlags(moduleSets, p),
+          geometryAreaHa: parcelGeometryAreaHa(moduleSets, p.id),
+          modules: parcelModuleFlags(moduleSets, p, g.id),
         })),
         // Hanya partisipasi pada activity Lembaga ini — sama dengan filter
         // `activity.farmerGroupId` di DA-02.
@@ -193,6 +214,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
           id: r.id,
           parcelId: r.parcelId,
           period: r.period,
+          yieldKg: r.yieldKg,
           isEstimate: estimateIds.has(r.id),
         })),
         modules: farmerModuleFlags(moduleSets, f.id),

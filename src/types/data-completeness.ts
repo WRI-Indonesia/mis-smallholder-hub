@@ -9,6 +9,12 @@ export type CompletenessDomainKey = "profil" | CompletenessDomain;
 // Grain entitas yang dinilai — penyebut untuk pelipatan anomali sistemik (#352 A3).
 export type CompletenessGrain = "lembaga" | "petani" | "persil" | "aktivitas";
 
+/**
+ * Jenis check (#352 putaran 2): `inti`/`lapangan`/`validitas` masuk skor domain;
+ * `kualitas` (konsistensi/plausibilitas) dan `modul` (cakupan satelit) informatif.
+ */
+export type CheckKind = "inti" | "lapangan" | "validitas" | "kualitas" | "modul";
+
 // Rute perbaikan satu anomali/modul: menu tujuan + kolom yang diisi (#352 B2 "Perbaiki lewat").
 export type CompletenessFix = {
   menu: string;      // "Master Data › Petani"
@@ -29,6 +35,7 @@ export type AnomalyItem = {
 export type DomainAnomaly = {
   key: string;        // "no-nik", "invalid-nik", ...
   label: string;      // "Petani tanpa NIK"
+  kind: CheckKind;
   /**
    * Jumlah TEMUAN yang dihitung badge & totalAnomalies: sama dengan
    * `entityCount`, atau 1 bila anomali dilipat sebagai sistemik (#352 A3).
@@ -49,6 +56,30 @@ export type DomainCard = {
   value: number | string;
 };
 
+/**
+ * Satu baris checklist domain (#352 putaran 2) — SEMUA check tampil, termasuk
+ * yang lolos penuh, supaya pengguna melihat "apa saja yang dicek" dan % OK-nya.
+ * Daftar entitas bermasalah dicari client lewat `key` di `anomalies` (check
+ * inti/validitas/kualitas) atau `missing` di `ModuleCoverage` (modul).
+ */
+export type CheckRow = {
+  key: string;
+  label: string;
+  kind: CheckKind;
+  grain: CompletenessGrain;
+  /** Entitas bermasalah / entitas diperiksa. */
+  flagged: number;
+  total: number;
+  /** Bobot check dalam skor domain sebagai pecahan 0–1 (inti/lapangan/validitas); undefined bila informatif. */
+  weight?: number;
+  /** Bobot untuk tampilan, mis. "3/15", "1/6", "1/4 paket". */
+  weightLabel?: string;
+  systemic: boolean;
+  /** false = modul belum dimulai di Lembaga ini (tidak berlaku). */
+  applicable: boolean;
+  fix: CompletenessFix;
+};
+
 // Result for one domain (petani/lahan/pelatihan/produksi)
 export type DomainResult = {
   domain: CompletenessDomain;
@@ -57,7 +88,33 @@ export type DomainResult = {
   totalAnomalies: number;
   cards: DomainCard[];
   anomalies: DomainAnomaly[];
+  /** Checklist lengkap domain (inti → validitas → kualitas → modul). */
+  checks: CheckRow[];
   training?: TrainingCoverageDetail; // hanya pada domain "pelatihan"
+};
+
+/** Satu tindakan perbaikan berdampak ke Index — urut dampak terbesar (#352 putaran 2). */
+export type PriorityItem = {
+  key: string;
+  domain: CompletenessDomainKey;
+  label: string;
+  flagged: number;
+  total: number;
+  /** Kenaikan Index (poin, 0–100) bila check ini lengkap 100 %. */
+  indexGain: number;
+  fix: CompletenessFix;
+};
+
+/** Rincian per Kelompok Tani (subGroupLv2 lahan) di dalam satu Lembaga (#352 putaran 2). */
+export type KelompokTaniRow = {
+  name: string;          // "(tanpa Kelompok Tani)" bila kosong
+  farmers: number;
+  parcels: number;
+  areaHa: number;
+  lahanScore: number;    // rata-rata skor persil KT ini, 0–100
+  petaniScore: number;   // rata-rata check petani pemilik lahan di KT ini, 0–100
+  parcelsProducing: number;
+  parcelsProducingPct: number;
 };
 
 // ── DA-02b: detail cakupan pelatihan per paket (Domain Pelatihan) ──
@@ -108,6 +165,7 @@ export type TrainingCoverageDetail = {
 export type ProfileCheck = {
   key: string;
   label: string;
+  kind: CheckKind;        // inti (masuk skor) atau kualitas (informatif)
   complete: boolean;
   value?: string | null;  // nilai aktual bila ada
   fix: CompletenessFix;
@@ -128,6 +186,8 @@ export type ModuleCoverage = {
   pct: number | null;
   applicable: boolean;
   fix: CompletenessFix;
+  /** Entitas yang belum mengisi modul (daftar kerja; kosong untuk grain lembaga/aktivitas). */
+  missing: AnomalyItem[];
 };
 
 // Full result returned by analyzeFarmerGroupCompleteness
@@ -146,6 +206,10 @@ export type DataCompletenessResult = {
   domains: DomainResult[];  // petani, lahan, pelatihan, produksi
   /** Cakupan modul (A1) — kosong bila input tidak memuat flag modul. */
   moduleCoverage: ModuleCoverage[];
+  /** Tindakan berdampak terbesar ke Index, urut turun (maks 8). */
+  priorities: PriorityItem[];
+  /** Rincian per Kelompok Tani (urut skor lahan terendah). */
+  byKelompokTani: KelompokTaniRow[];
   /** Periode acuan (YYYY-MM) untuk check kebaruan produksi. */
   referencePeriod: string;
 };
@@ -158,14 +222,15 @@ export type GroupModuleFlags = {
   boundary: boolean;            // FarmerGroupBoundary aktif (#266)
   benchmark: boolean;           // ReferenceBenchmark aktif (#243)
   bmpGroupAssessment: boolean;  // BmpGroupAssessment aktif tahun acuan (#346)
-  rspoCertStatus: string | null;
-  ispoCertStatus: string | null;
-  sapMapAssuranceStatus: string | null;
+  /** Titik koordinat Lembaga di luar poligon kabupaten (BIG); null = tak bisa dicek (tanpa boundary/koordinat). */
+  coordinateOutsideDistrict?: boolean | null;
 };
 
 export type FarmerModuleFlags = {
   stdb: boolean;           // ≥1 LandStdb aktif (tahap apa pun)
   bmpAssessment: boolean;  // BmpAssessment aktif tahun acuan
+  /** Penilaian Monev BMP (tahun mana pun) tanpa satu pun rincian indikator — rekap saja. */
+  bmpAssessmentNoDetails?: boolean;
 };
 
 export type ParcelModuleFlags = {
@@ -177,6 +242,10 @@ export type ParcelModuleFlags = {
   marker: boolean;      // ≥1 LandParcelMarker aktif
   tree: boolean;        // ≥1 Tree aktif pada revisi lahan aktif
   program: boolean;     // ≥1 LandParcelProgram aktif
+  /** Status NKT bila dinilai ("AFFECTED" | "NOT_AFFECTED"). */
+  nktStatus?: string | null;
+  /** Poligon tidak beririsan dengan boundary ICS Lembaga; null = tak bisa dicek (tanpa boundary/geometry). */
+  outsideBoundary?: boolean | null;
 };
 
 export type CompletenessGroupInput = {
@@ -187,6 +256,12 @@ export type CompletenessGroupInput = {
   joinYear: number | null;
   groupType: string | null;
   establishedYear: number | null;
+  rspoCertYear: number | null;
+  rspoCertStatus: string | null;
+  ispoCertYear: number | null;
+  ispoCertStatus: string | null;
+  sapMapAssuranceYear: number | null;
+  sapMapAssuranceStatus: string | null;
   locationLat: number | null;
   locationLong: number | null;
   district: { id: string; name: string };
@@ -208,6 +283,8 @@ export type CompletenessParcelInput = {
   subGroupLv2: string | null; // Kelompok Tani
   blok: string | null;
   isPsr: boolean;             // replanting → produksi 0 wajar
+  /** Luas poligon (ha) dari PostGIS `ST_Area(geom::geography)`; undefined bila tidak dimuat, null bila tanpa geometry. */
+  geometryAreaHa?: number | null;
   modules?: ParcelModuleFlags;
 };
 
@@ -215,6 +292,7 @@ export type CompletenessFarmerInput = {
   id: string;
   farmerId: string;
   name: string;
+  gender: "M" | "F" | null;
   nik: string | null;
   address: string | null;
   birthPlace: string | null;
@@ -231,6 +309,7 @@ export type CompletenessFarmerInput = {
     id: string;
     parcelId: string | null; // LandParcel.id
     period: string;          // YYYY-MM
+    yieldKg: number;
     isEstimate: boolean;     // notes berlabel "Estimasi" (impor #TBR/#RSB)
   }[];
   modules?: FarmerModuleFlags;

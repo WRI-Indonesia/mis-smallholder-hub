@@ -182,6 +182,7 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       id: `db-${i}`,
       farmerId: `F-${i}`,
       name: `Petani ${i}`,
+      gender: i % 2 === 0 ? ("M" as const) : ("F" as const),
       nik: i % 2 === 0 ? "1234567890123456" : null,
       address: i % 3 === 0 ? null : "Jl. Mawar",
       birthPlace: i % 5 === 0 ? null : "Pekanbaru",
@@ -225,7 +226,7 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       })),
       productionRecords:
         i % 2 === 0
-          ? [{ id: `pr-${i}`, parcelId: `lp-${i}`, period: i % 6 === 0 ? "2025-12" : "2026-08", isEstimate: i % 10 === 0 }]
+          ? [{ id: `pr-${i}`, parcelId: `lp-${i}`, period: i % 6 === 0 ? "2025-12" : "2026-08", yieldKg: i % 13 === 0 ? 0 : 120, isEstimate: i % 10 === 0 }]
           : [],
     }));
   }
@@ -253,20 +254,19 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       joinYear: 2015,
       groupType: "KOPERASI",
       establishedYear: 2010,
+      rspoCertYear: null,
+      rspoCertStatus: null,
+      ispoCertYear: null,
+      ispoCertStatus: null,
+      sapMapAssuranceYear: null,
+      sapMapAssuranceStatus: null,
       locationLat: 1.23,
       locationLong: 103.4,
       district: { id: "d-1", name: "Distrik A" },
       activities: PACKAGES.map((p) => ({ packageCode: p.code, hasEvidence: true })),
       trainingPackages: PACKAGES,
       farmers: makeFarmers(5000),
-      modules: {
-        boundary: true,
-        benchmark: true,
-        bmpGroupAssessment: false,
-        rspoCertStatus: null,
-        ispoCertStatus: null,
-        sapMapAssuranceStatus: null,
-      },
+      modules: { boundary: true, benchmark: true, bmpGroupAssessment: false },
     };
 
     const start = performance.now();
@@ -290,20 +290,19 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       joinYear: 2015,
       groupType: "KOPERASI",
       establishedYear: null,
+      rspoCertYear: null,
+      rspoCertStatus: null,
+      ispoCertYear: null,
+      ispoCertStatus: null,
+      sapMapAssuranceYear: null,
+      sapMapAssuranceStatus: null,
       locationLat: 1,
       locationLong: 101,
       district: { id: `d-${gi % 4}`, name: `Distrik ${gi % 4}` },
       activities: PACKAGES.map((p) => ({ packageCode: p.code, hasEvidence: gi % 2 === 0 })),
       trainingPackages: PACKAGES,
       farmers: makeFarmers(300).map((f) => ({ ...f, id: `${gi}-${f.id}` })),
-      modules: {
-        boundary: gi % 3 !== 0,
-        benchmark: true,
-        bmpGroupAssessment: gi % 5 === 0,
-        rspoCertStatus: null,
-        ispoCertStatus: null,
-        sapMapAssuranceStatus: null,
-      },
+      modules: { boundary: gi % 3 !== 0, benchmark: true, bmpGroupAssessment: gi % 5 === 0 },
     }));
 
     const start = performance.now();

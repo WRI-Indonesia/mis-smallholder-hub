@@ -5,6 +5,7 @@
 // KPI Detail Lembaga mengikuti tanpa disentuh. Bebas Prisma/Next.
 
 import type {
+  CheckKind,
   CompletenessDomainKey,
   CompletenessFarmerInput,
   CompletenessFix,
@@ -33,6 +34,20 @@ export const SYSTEMIC_MIN_ENTITIES = 10;
 
 /** Kebaruan produksi: tanpa record dalam N bulan terakhir → "produksi basi" (P7). */
 export const PRODUCTION_STALE_MONTHS = 3;
+
+// ── Ambang check kualitas (#352 putaran 2) — konstanta, bukan konfigurasi ──
+/** Umur petani wajar (tahun) — di luar rentang ini tanggal lahir patut dicek. */
+export const FARMER_AGE_MIN = 17;
+export const FARMER_AGE_MAX = 90;
+/** Luas persil smallholder wajar (ha). */
+export const PARCEL_AREA_MIN_HA = 0.05;
+export const PARCEL_AREA_MAX_HA = 25;
+/** Selisih luas kolom vs luas poligon PostGIS yang dianggap tidak konsisten. */
+export const PARCEL_AREA_MISMATCH_RATIO = 0.2;
+/** Tahun tanam wajar (batas bawah; batas atas = tahun acuan). */
+export const PLANTING_YEAR_MIN = 1970;
+/** Offset zona waktu penyimpanan tanggal lahir (WIB, UTC+7) — lihat `birthDateParts`. */
+export const BIRTH_DATE_TZ_OFFSET_HOURS = 7;
 
 // ── Rute perbaikan (menu tujuan + kolom) ──
 
@@ -99,6 +114,8 @@ export type AnomalyDef = {
   domain: CompletenessDomainKey;
   grain: CompletenessGrain;
   fix: CompletenessFix;
+  /** inti/lapangan/validitas masuk skor; kualitas informatif (#352 putaran 2). */
+  kind: CheckKind;
   /**
    * Boleh dilipat jadi temuan sistemik "kolom belum pernah diisi" (A3) —
    * hanya check "kolom kosong". Check validitas/kebaruan (NIK tidak sahih,
@@ -113,13 +130,22 @@ const blank = (
   domain: CompletenessDomainKey,
   grain: CompletenessGrain,
   fix: CompletenessFix,
-): AnomalyDef => ({ label, domain, grain, fix, foldable: true });
+  kind: CheckKind = "inti",
+): AnomalyDef => ({ label, domain, grain, fix, kind, foldable: true });
 const strict = (
   label: string,
   domain: CompletenessDomainKey,
   grain: CompletenessGrain,
   fix: CompletenessFix,
-): AnomalyDef => ({ label, domain, grain, fix, foldable: false });
+  kind: CheckKind = "validitas",
+): AnomalyDef => ({ label, domain, grain, fix, kind, foldable: false });
+/** Check kualitas (konsistensi/plausibilitas) — informatif, tak pernah dilipat. */
+const quality = (
+  label: string,
+  domain: CompletenessDomainKey,
+  grain: CompletenessGrain,
+  fix: CompletenessFix,
+): AnomalyDef => ({ label, domain, grain, fix, kind: "kualitas", foldable: false });
 
 /**
  * Metadata tiap kunci anomali. Predikatnya tetap eksplisit di
@@ -129,7 +155,10 @@ const strict = (
  */
 export const ANOMALY_CATALOG: Record<string, AnomalyDef> = {
   // Profil Lembaga (disintesis DA-03 dari check profil yang gagal)
-  "profil-tidak-lengkap": strict("Profil Lembaga belum lengkap", "profil", "lembaga", FIX.groupForm("kolom profil yang kosong")),
+  "profil-tidak-lengkap": strict("Profil Lembaga belum lengkap", "profil", "lembaga", FIX.groupForm("kolom profil yang kosong"), "inti"),
+  "sertifikasi-tidak-konsisten": quality("Tahun sertifikasi tanpa status (atau sebaliknya)", "profil", "lembaga", FIX.groupForm("Tahun & Status RSPO / ISPO / SAP-MAP")),
+  "tahun-bergabung-sebelum-berdiri": quality("Tahun bergabung program lebih awal dari tahun berdiri", "profil", "lembaga", FIX.groupForm("Tahun Berdiri / Tahun Bergabung")),
+  "koordinat-di-luar-distrik": quality("Koordinat Lembaga di luar poligon kabupaten", "profil", "lembaga", FIX.groupForm("Latitude/Longitude")),
   // Petani
   "no-nik": blank("Petani tanpa NIK", "petani", "petani", FIX.farmerForm("NIK")),
   "invalid-nik": strict("NIK tidak valid (bukan 16 digit)", "petani", "petani", FIX.farmerForm("NIK")),
@@ -139,31 +168,45 @@ export const ANOMALY_CATALOG: Record<string, AnomalyDef> = {
   "no-birth-date": blank("Petani tanpa tanggal lahir", "petani", "petani", FIX.farmerForm("Tanggal Lahir")),
   "no-birth-place": blank("Petani tanpa tempat lahir", "petani", "petani", FIX.farmerForm("Tempat Lahir")),
   "no-joined-year": blank("Petani tanpa tahun bergabung", "petani", "petani", FIX.farmerForm("Tahun Bergabung")),
+  "nik-tanggal-lahir": quality("Tanggal lahir tidak cocok dengan NIK (digit 7–12)", "petani", "petani", FIX.farmerForm("Tanggal Lahir / NIK")),
+  "nik-jenis-kelamin": quality("Jenis kelamin tidak cocok dengan NIK (tanggal +40 = perempuan)", "petani", "petani", FIX.farmerForm("Jenis Kelamin / NIK")),
+  "umur-tidak-wajar": quality(`Umur di luar ${FARMER_AGE_MIN}–${FARMER_AGE_MAX} tahun`, "petani", "petani", FIX.farmerForm("Tanggal Lahir")),
+  "petani-kemungkinan-ganda": quality("Kemungkinan petani ganda (nama & tanggal lahir sama)", "petani", "petani", FIX.farmerForm("gabungkan / nonaktifkan salah satu")),
+  "monev-tanpa-rincian": quality("Penilaian Monev BMP tanpa rincian indikator (rekap saja)", "petani", "petani", FIX.bmp()),
   // Lahan
   "petani-tanpa-lahan": blank("Petani tanpa lahan aktif", "lahan", "petani", FIX.parcelShapefile("poligon lahan")),
   "persil-tanpa-geometry": blank("Persil tanpa geometry", "lahan", "persil", FIX.parcelShapefile("geometry")),
   "persil-tanpa-luas": blank("Persil tanpa luas", "lahan", "persil", FIX.parcelShapefile("area")),
   "persil-tanpa-jenis-tanaman": blank("Persil tanpa jenis tanaman", "lahan", "persil", FIX.parcelShapefile("crop_type")),
   "persil-tanpa-kelompok-tani": blank("Persil tanpa Kelompok Tani", "lahan", "persil", FIX.parcelDetail("Nama Kelompok Tani")),
-  "persil-tanpa-tahun-tanam": blank("Persil tanpa tahun tanam", "lahan", "persil", FIX.parcelShapefile("planting_year")),
-  "persil-tanpa-status": blank("Persil tanpa status lahan", "lahan", "persil", FIX.parcelShapefile("land_status")),
-  "persil-tanpa-blok": blank("Persil tanpa blok", "lahan", "persil", FIX.parcelDetail("Blok")),
+  "persil-tanpa-tahun-tanam": blank("Persil tanpa tahun tanam", "lahan", "persil", FIX.parcelShapefile("planting_year"), "lapangan"),
+  "persil-tanpa-status": blank("Persil tanpa status lahan", "lahan", "persil", FIX.parcelShapefile("land_status"), "lapangan"),
+  "persil-tanpa-blok": blank("Persil tanpa blok", "lahan", "persil", FIX.parcelDetail("Blok"), "lapangan"),
+  "persil-di-luar-boundary": quality("Persil di luar boundary ICS Lembaga", "lahan", "persil", FIX.parcelShapefile("geometry / Lembaga pemilik")),
+  "luas-beda-geometri": quality(`Luas kolom ≠ luas poligon (> ${PARCEL_AREA_MISMATCH_RATIO * 100} %)`, "lahan", "persil", FIX.parcelShapefile("area")),
+  "luas-tidak-wajar": quality(`Luas di luar ${PARCEL_AREA_MIN_HA}–${PARCEL_AREA_MAX_HA} ha`, "lahan", "persil", FIX.parcelShapefile("area")),
+  "tahun-tanam-tidak-wajar": quality(`Tahun tanam < ${PLANTING_YEAR_MIN} atau di masa depan`, "lahan", "persil", FIX.parcelShapefile("planting_year")),
   // Pelatihan
-  "kt-tanpa-aktivitas": strict("Lembaga Petani belum memiliki aktivitas pelatihan", "pelatihan", "lembaga", FIX.training()),
-  "peserta-tanpa-pretest": strict("Peserta tanpa nilai pre-test", "pelatihan", "petani", FIX.training("Nilai Pre-test")),
-  "peserta-tanpa-posttest": strict("Peserta tanpa nilai post-test", "pelatihan", "petani", FIX.training("Nilai Post-test")),
+  "kt-tanpa-aktivitas": strict("Lembaga Petani belum memiliki aktivitas pelatihan", "pelatihan", "lembaga", FIX.training(), "inti"),
+  "peserta-tanpa-pretest": strict("Peserta tanpa nilai pre-test", "pelatihan", "petani", FIX.training("Nilai Pre-test"), "kualitas"),
+  "peserta-tanpa-posttest": strict("Peserta tanpa nilai post-test", "pelatihan", "petani", FIX.training("Nilai Post-test"), "kualitas"),
+  "nilai-turun": quality("Nilai post-test lebih rendah dari pre-test", "pelatihan", "petani", FIX.training("Nilai Pre/Post-test")),
+  "nilai-di-luar-rentang": quality("Nilai pre/post-test di luar 0–100", "pelatihan", "petani", FIX.training("Nilai Pre/Post-test")),
   // Produksi
   "petani-tanpa-produksi": blank("Petani tanpa data produksi", "produksi", "petani", FIX.production()),
-  "berlahan-tanpa-produksi": blank("Petani punya lahan (non-PSR) tapi tanpa produksi", "produksi", "petani", FIX.production()),
+  "berlahan-tanpa-produksi": blank("Petani punya lahan (non-PSR) tapi tanpa produksi", "produksi", "petani", FIX.production(), "kualitas"),
   // Kolom ID Lahan pada baris produksi kosong → "kolom kosong", boleh dilipat.
-  "produksi-tanpa-persil": blank("Produksi tidak terhubung ke persil", "produksi", "petani", FIX.production("ID Lahan pada baris produksi")),
+  "produksi-tanpa-persil": blank("Produksi tidak terhubung ke persil", "produksi", "petani", FIX.production("ID Lahan pada baris produksi"), "kualitas"),
   "produksi-basi": strict(
     `Produksi tidak diperbarui ≥ ${PRODUCTION_STALE_MONTHS} bulan terakhir`,
     "produksi",
     "petani",
     FIX.production("periode bulan berjalan"),
+    "kualitas",
   ),
-  "lahan-tanpa-produksi": blank("Lahan aktif (non-PSR) tanpa produksi", "produksi", "persil", FIX.production("ID Lahan pada baris produksi")),
+  "lahan-tanpa-produksi": blank("Lahan aktif (non-PSR) tanpa produksi", "produksi", "persil", FIX.production("ID Lahan pada baris produksi"), "kualitas"),
+  "produksi-nol": quality("Record produksi bernilai 0 kg", "produksi", "petani", FIX.production("Hasil (kg)")),
+  "produksi-bulan-bolong": quality("Bulan produksi bolong di antara periode pertama dan terakhir", "produksi", "petani", FIX.production("periode yang terlewat")),
 };
 
 /** Prefix kunci anomali dinamis "belum ikut paket X" (satu per paket wajib). */
@@ -172,7 +215,7 @@ export const PACKAGE_ANOMALY_PREFIX = "belum-paket-";
 /** Metadata anomali per kunci — kunci dinamis paket dipetakan ke satu entri. */
 export function anomalyDef(key: string): AnomalyDef {
   if (key.startsWith(PACKAGE_ANOMALY_PREFIX)) {
-    return strict(key, "pelatihan", "petani", FIX.training("peserta aktivitas paket ini"));
+    return strict(key, "pelatihan", "petani", FIX.training("peserta aktivitas paket ini"), "inti");
   }
   const def = ANOMALY_CATALOG[key];
   if (!def) throw new Error(`Anomali "${key}" belum terdaftar di ANOMALY_CATALOG`);
@@ -191,6 +234,7 @@ export type ProfileCheckDef = {
 
 const isBlank = (v: string | null | undefined) => !v || v.trim().length === 0;
 
+/** Check inti profil — proporsinya = skor Profil (bobot 10 % Index). */
 export const PROFILE_CHECKS: ProfileCheckDef[] = [
   { key: "code", label: "Kode Lembaga Petani", fix: FIX.groupForm("Kode"), complete: (g) => !isBlank(g.code), value: (g) => g.code },
   {
@@ -209,6 +253,43 @@ export const PROFILE_CHECKS: ProfileCheckDef[] = [
     fix: FIX.groupForm("Tahun Berdiri Lembaga"),
     complete: (g) => g.establishedYear != null,
     value: (g) => (g.establishedYear != null ? String(g.establishedYear) : null),
+  },
+];
+
+const certPairs = (g: CompletenessGroupInput): [string, number | null, string | null][] => [
+  ["RSPO", g.rspoCertYear, g.rspoCertStatus],
+  ["ISPO", g.ispoCertYear, g.ispoCertStatus],
+  ["SAP/MAP", g.sapMapAssuranceYear, g.sapMapAssuranceStatus],
+];
+
+/**
+ * Check kualitas profil — informatif (tidak masuk skor Profil). Kuncinya
+ * sama dengan ANOMALY_CATALOG (label & rute perbaikan diambil dari sana).
+ * `complete` = null bila tidak bisa dicek (mis. tanpa boundary/koordinat).
+ */
+export const PROFILE_QUALITY_CHECKS: {
+  key: string;
+  complete: (g: CompletenessGroupInput) => boolean | null;
+  value: (g: CompletenessGroupInput) => string | null;
+}[] = [
+  {
+    key: "sertifikasi-tidak-konsisten",
+    complete: (g) => certPairs(g).every(([, year, status]) => (year == null) === isBlank(status)),
+    value: (g) =>
+      certPairs(g)
+        .filter(([, year, status]) => (year == null) !== isBlank(status))
+        .map(([name, year, status]) => `${name}: ${year ?? "—"} / ${status ?? "—"}`)
+        .join("; ") || null,
+  },
+  {
+    key: "tahun-bergabung-sebelum-berdiri",
+    complete: (g) => g.joinYear == null || g.establishedYear == null || g.joinYear >= g.establishedYear,
+    value: (g) => (g.joinYear != null && g.establishedYear != null ? `bergabung ${g.joinYear} < berdiri ${g.establishedYear}` : null),
+  },
+  {
+    key: "koordinat-di-luar-distrik",
+    complete: (g) => (g.modules?.coordinateOutsideDistrict == null ? null : !g.modules.coordinateOutsideDistrict),
+    value: (g) => (g.locationLat != null && g.locationLong != null ? `${g.locationLat}, ${g.locationLong}` : null),
   },
 ];
 
@@ -273,9 +354,7 @@ export type ModuleDef = {
  * bukan anomali; nilai NONE ditunda ke issue terpisah).
  */
 const certStatusFilled = (g: CompletenessGroupInput): number =>
-  [g.modules?.rspoCertStatus, g.modules?.ispoCertStatus, g.modules?.sapMapAssuranceStatus].filter(
-    (s) => !isBlank(s ?? null),
-  ).length;
+  [g.rspoCertStatus, g.ispoCertStatus, g.sapMapAssuranceStatus].filter((s) => !isBlank(s)).length;
 
 export const MODULE_CATALOG: ModuleDef[] = [
   // Profil Lembaga

@@ -63,16 +63,23 @@ export function buildAvailabilityEntry(
   const domainScores = { petani: 0, lahan: 0, pelatihan: 0, produksi: 0 };
   const anomalies: AvailabilityAnomalyCount[] = [];
 
-  const profileFailed = result.profileChecks.filter((c) => !c.complete).length;
+  const coreProfile = result.profileChecks.filter((c) => c.kind === "inti");
+  const profileFailed = coreProfile.filter((c) => !c.complete).length;
   if (profileFailed > 0) {
     anomalies.push({
       key: "profil-tidak-lengkap",
       label: anomalyDef("profil-tidak-lengkap").label,
       count: profileFailed,
       entityCount: profileFailed,
-      total: result.profileChecks.length,
+      total: coreProfile.length,
       systemic: false,
     });
+  }
+  // Check kualitas profil yang gagal (#352 putaran 2) — satu temuan per check,
+  // agar Σ count tetap == totalAnomalies.
+  for (const c of result.profileChecks) {
+    if (c.kind !== "kualitas" || c.complete) continue;
+    anomalies.push({ key: c.key, label: c.label, count: 1, entityCount: 1, total: 1, systemic: false });
   }
 
   for (const domain of result.domains) {

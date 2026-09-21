@@ -21,6 +21,7 @@ function farmer(overrides: Partial<CompletenessFarmerInput> = {}): CompletenessF
     id: "db-1",
     farmerId: "F-001",
     name: "Petani A",
+    gender: "M",
     nik: "1234567890123456",
     address: "Jl. Mawar",
     birthPlace: "Pekanbaru",
@@ -45,6 +46,12 @@ function group(overrides: Partial<CompletenessGroupInput> = {}): CompletenessGro
     joinYear: 2015,
     groupType: "KOPERASI",
     establishedYear: 2010,
+    rspoCertYear: null,
+    rspoCertStatus: null,
+    ispoCertYear: null,
+    ispoCertStatus: null,
+    sapMapAssuranceYear: null,
+    sapMapAssuranceStatus: null,
     locationLat: 1.23,
     locationLong: 103.4,
     district: { id: "d-1", name: "Distrik A" },
@@ -137,6 +144,16 @@ describe("buildAvailabilityEntry", () => {
     expect(anomalyDef("profil-tidak-lengkap").fix.href).toBe("/admin/master-data/groups");
   });
 
+  it("check kualitas profil gagal → satu anomali per check di payload; Σ count == totalAnomalies", () => {
+    const e = buildAvailabilityEntry(group({ rspoCertYear: 2024, joinYear: 2005, establishedYear: 2010 }), META, REF);
+    expect(e.anomalies.map((a) => a.key)).toEqual(
+      expect.arrayContaining(["sertifikasi-tidak-konsisten", "tahun-bergabung-sebelum-berdiri"]),
+    );
+    expect(e.anomalies.find((a) => a.key === "profil-tidak-lengkap")).toBeUndefined();
+    expect(e.profileScore).toBe(100);
+    expect(e.anomalies.reduce((s, a) => s + a.count, 0)).toBe(e.totalAnomalies);
+  });
+
   it("Σ count tetap == totalAnomalies saat ada anomali sistemik (#352 A3)", () => {
     const farmers = Array.from({ length: SYSTEMIC_MIN_ENTITIES }, (_, i) =>
       farmer({ id: `f${i}`, farmerId: `F-${i}`, nik: null }),
@@ -173,7 +190,7 @@ describe("buildAvailabilityEntry", () => {
         farmers: [
           farmer({
             landParcels: [parcel, { ...parcel, id: "lp-2", parcelId: "P-2" }],
-            productionRecords: [{ id: "r1", parcelId: null, period: "2026-09", isEstimate: false }],
+            productionRecords: [{ id: "r1", parcelId: null, period: "2026-09", yieldKg: 10, isEstimate: false }],
           }),
           farmer({ id: "db-2", farmerId: "F-002", nik: "2222222222222222" }),
         ],
@@ -200,14 +217,7 @@ describe("buildAvailabilityEntry", () => {
   });
 
   it("cakupan modul dirampingkan ke {key, covered, total, pct} (#352 A1)", () => {
-    const modules = {
-      boundary: true,
-      benchmark: false,
-      bmpGroupAssessment: false,
-      rspoCertStatus: null,
-      ispoCertStatus: null,
-      sapMapAssuranceStatus: null,
-    };
+    const modules = { boundary: true, benchmark: false, bmpGroupAssessment: false };
     const e = buildAvailabilityEntry(group({ modules }), META, REF);
     expect(e.moduleCoverage.length).toBeGreaterThan(0);
     for (const m of e.moduleCoverage) expect(Object.keys(m).sort()).toEqual(["covered", "key", "pct", "total"]);

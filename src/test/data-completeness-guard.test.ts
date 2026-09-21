@@ -26,6 +26,7 @@ const db = vi.hoisted(() => {
   const groupBy = () => vi.fn().mockResolvedValue([]);
   const findMany = () => vi.fn().mockResolvedValue([]);
   return {
+    $queryRaw: vi.fn().mockResolvedValue([]),
     trainingPackage: { findMany: findMany() },
     farmerGroup: { findFirst: vi.fn(), findMany: findMany() },
     district: { findMany: findMany() },
@@ -97,6 +98,7 @@ beforeEach(() => {
   db.trainingPackage.findMany.mockResolvedValue([]);
   db.landParcel.findMany.mockResolvedValue([]);
   db.productionRecord.findMany.mockResolvedValue([]);
+  db.$queryRaw.mockResolvedValue([]);
 });
 
 describe("guard izin", () => {
@@ -116,6 +118,19 @@ describe("analyzeFarmerGroupCompleteness — scope", () => {
     await expect(analyzeFarmerGroupCompleteness("g-1")).rejects.toThrow(/akses/);
     expect(db.farmerGroup.findFirst).not.toHaveBeenCalled();
     for (const q of SATELLITE_QUERIES) expect(q).not.toHaveBeenCalled();
+    expect(db.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("kueri PostGIS mentah (boundary, luas poligon, koordinat) membawa scope Lembaga & distrik sebagai parameter", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d-1"] });
+    await analyzeFarmerGroupCompleteness("g-1");
+    // 3 kueri mentah; tiap kueri menyisipkan array scope (id Lembaga + distrik) sebagai nilai parameter.
+    expect(db.$queryRaw).toHaveBeenCalledTimes(3);
+    for (const call of db.$queryRaw.mock.calls) {
+      const values = JSON.stringify(call.slice(1));
+      expect(values).toContain('["g-1"]');
+      expect(values).toContain('["d-1"]');
+    }
   });
 
   it("BY_DISTRICT: kueri Lembaga DAN satelit difilter districtId; Lembaga luar distrik → 'di luar akses'", async () => {
@@ -193,7 +208,7 @@ describe("getDataAvailabilityView — scope satelit lintas Lembaga", () => {
     expect(db.landParcel.findMany.mock.calls[0][0].where).toMatchObject({ isActive: true, farmer: farmerWhere });
     // Kolom `notes` produksi tidak ikut kueri utama — label Estimasi lewat id-set (review #352).
     const farmerSelect = db.farmerGroup.findMany.mock.calls[0][0].select.farmers.select;
-    expect(farmerSelect.productionRecords.select).toEqual({ id: true, parcelId: true, period: true });
+    expect(farmerSelect.productionRecords.select).toEqual({ id: true, parcelId: true, period: true, yieldKg: true });
     expect(db.productionRecord.findMany.mock.calls[0][0].where).toMatchObject({
       farmer: farmerWhere,
       notes: { contains: "estimasi", mode: "insensitive" },

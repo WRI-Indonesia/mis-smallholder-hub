@@ -1,13 +1,17 @@
 import { describe, it, expect } from "vitest";
 import {
+  birthDateParts,
+  computeByKelompokTani,
   computeCompleteness,
   computeModuleCoverage,
   computePetaniDomain,
   computeLahanDomain,
   computePelatihanDomain,
+  computePriorities,
   computeProduksiDomain,
   computeProfileChecks,
   monthsBetween,
+  nikBirthParts,
   NIK_REGEX,
 } from "@/lib/data-completeness";
 import {
@@ -35,6 +39,7 @@ function farmer(overrides: Partial<CompletenessFarmerInput> = {}): CompletenessF
     id: "db-1",
     farmerId: "F-001",
     name: "Petani A",
+    gender: "M",
     nik: "1234567890123456",
     address: "Jl. Mawar",
     birthPlace: "Pekanbaru",
@@ -66,6 +71,7 @@ const freshRecord = (id = "pr-1", parcelId: string | null = "lp-1") => ({
   id,
   parcelId,
   period: REF,
+  yieldKg: 100,
   isEstimate: false,
 });
 
@@ -81,6 +87,12 @@ function group(overrides: Partial<CompletenessGroupInput> = {}): CompletenessGro
     joinYear: 2015,
     groupType: "KOPERASI",
     establishedYear: 2010,
+    rspoCertYear: null,
+    rspoCertStatus: null,
+    ispoCertYear: null,
+    ispoCertStatus: null,
+    sapMapAssuranceYear: null,
+    sapMapAssuranceStatus: null,
     locationLat: 1.23,
     locationLong: 103.4,
     district: { id: "d-1", name: "Distrik A" },
@@ -115,9 +127,6 @@ const GROUP_MODULES: GroupModuleFlags = {
   boundary: true,
   benchmark: false,
   bmpGroupAssessment: true,
-  rspoCertStatus: "CERTIFIED",
-  ispoCertStatus: null,
-  sapMapAssuranceStatus: null,
 };
 
 describe("NIK_REGEX", () => {
@@ -135,7 +144,7 @@ describe("computeProfileChecks", () => {
   it("marks all complete for a fully filled group", () => {
     const checks = computeProfileChecks(group());
     expect(checks.every((c) => c.complete)).toBe(true);
-    expect(checks.map((c) => c.key)).toEqual([
+    expect(checks.filter((c) => c.kind === "inti").map((c) => c.key)).toEqual([
       "code",
       "coordinates",
       "join-year",
@@ -143,6 +152,28 @@ describe("computeProfileChecks", () => {
       "group-type",
       "established-year",
     ]);
+    // Check kualitas profil ikut (yang bisa dinilai); koordinat-di-luar-distrik butuh flag boundary.
+    expect(checks.filter((c) => c.kind === "kualitas").map((c) => c.key)).toEqual([
+      "sertifikasi-tidak-konsisten",
+      "tahun-bergabung-sebelum-berdiri",
+    ]);
+  });
+  it("#352 putaran 2: kualitas profil — sertifikasi tak konsisten, bergabung sebelum berdiri, koordinat di luar kabupaten", () => {
+    const g = group({
+      rspoCertYear: 2024,
+      rspoCertStatus: null,
+      joinYear: 2005,
+      establishedYear: 2010,
+      modules: { boundary: true, benchmark: true, bmpGroupAssessment: false, coordinateOutsideDistrict: true },
+    });
+    const checks = computeProfileChecks(g);
+    expect(checks.find((c) => c.key === "sertifikasi-tidak-konsisten")).toMatchObject({ complete: false, value: "RSPO: 2024 / —" });
+    expect(checks.find((c) => c.key === "tahun-bergabung-sebelum-berdiri")!.complete).toBe(false);
+    expect(checks.find((c) => c.key === "koordinat-di-luar-distrik")!.complete).toBe(false);
+    // Skor profil hanya dari check inti — tetap 100 walau 3 check kualitas gagal; temuan +3.
+    const r = computeCompleteness(g, { referencePeriod: REF });
+    expect(r.profileScore).toBe(100);
+    expect(r.totalAnomalies).toBe(3);
   });
   it("flags missing coordinates and code", () => {
     const checks = computeProfileChecks(group({ code: null, locationLat: null }));
@@ -187,7 +218,7 @@ describe("computePetaniDomain", () => {
     expect(d.anomalies.find((a) => a.key === "no-joined-year")!.count).toBe(1);
   });
   it("scores 100 when all farmers are complete", () => {
-    const d = computePetaniDomain([farmer(), farmer({ id: "db-2", farmerId: "F-002", nik: "2222222222222222" })]);
+    const d = computePetaniDomain([farmer(), farmer({ id: "db-2", farmerId: "F-002", name: "Petani B", nik: "2222222222222222" })]);
     expect(d.score).toBe(100);
     expect(d.anomalies).toHaveLength(0);
   });
@@ -442,7 +473,7 @@ describe("computeProduksiDomain", () => {
     expect(Number.isNaN(monthsBetween("2026-6", "2026-09"))).toBe(true);
     const at = (period: string) =>
       computeProduksiDomain(
-        [farmer({ productionRecords: [{ id: "a", parcelId: "lp-1", period: "2024-01", isEstimate: false }, { id: "b", parcelId: "lp-1", period, isEstimate: false }] })],
+        [farmer({ productionRecords: [{ id: "a", parcelId: "lp-1", period: "2024-01", yieldKg: 1, isEstimate: false }, { id: "b", parcelId: "lp-1", period, yieldKg: 1, isEstimate: false }] })],
         REF
       ).anomalies.find((x) => x.key === "produksi-basi");
     expect(at("2026-06")).toBeDefined(); // selisih 3 → basi
@@ -481,6 +512,7 @@ describe("registri check (#352)", () => {
   it("modul: tiga keadaan — terisi, kosong, tidak berlaku — keluar-masuk penyebut", () => {
     const g = group({
       modules: GROUP_MODULES,
+      rspoCertStatus: "CERTIFIED",
       farmers: [
         farmer({
           modules: { stdb: true, bmpAssessment: false },
@@ -527,7 +559,7 @@ describe("registri check (#352)", () => {
 describe("anomali sistemik (#352 A3)", () => {
   const many = (n: number, blankFrom: number) =>
     Array.from({ length: n }, (_, i) =>
-      farmer({ id: `f${i}`, farmerId: `F-${i}`, nik: null, address: i >= blankFrom ? null : "Jl. X" })
+      farmer({ id: `f${i}`, farmerId: `F-${i}`, name: `Petani ${i}`, nik: null, address: i >= blankFrom ? null : "Jl. X" })
     );
 
   it("dilipat tepat di ambang 95 % (20 petani: 19 kosong → sistemik, 18 → per entitas)", () => {
@@ -575,7 +607,7 @@ describe("anomali sistemik (#352 A3)", () => {
     // 20 petani ber-produksi semua basi → 20 temuan (sinyal "seluruh Lembaga tertinggal" tetap terlihat).
     const stale = computeProduksiDomain(
       Array.from({ length: 20 }, (_, i) =>
-        farmer({ id: `f${i}`, farmerId: `F-${i}`, productionRecords: [{ id: `r${i}`, parcelId: null, period: "2026-01", isEstimate: false }] })
+        farmer({ id: `f${i}`, farmerId: `F-${i}`, productionRecords: [{ id: `r${i}`, parcelId: null, period: "2026-01", yieldKg: 1, isEstimate: false }] })
       ),
       REF
     ).anomalies.find((a) => a.key === "produksi-basi")!;
@@ -590,6 +622,187 @@ describe("anomali sistemik (#352 A3)", () => {
     const pre = d.anomalies.find((a) => a.key === "peserta-tanpa-pretest")!;
     expect(pre.entityCount).toBe(1);
     expect(pre.total).toBe(1);
+  });
+});
+
+describe("check kualitas (#352 putaran 2)", () => {
+  // NIK 1471 01 | 15 08 90 | 0001 → lahir 15-08-1990, laki-laki.
+  const NIK_M = "1471011508900001";
+  // Hari +40 → perempuan: 55 08 90 → 15-08-1990.
+  const NIK_F = "1471015508900002";
+
+  it("nikBirthParts & birthDateParts: hari +40 = perempuan; timestamp 17:00 UTC = tanggal WIB berikutnya", () => {
+    expect(nikBirthParts(NIK_M)).toEqual({ day: 15, month: 8, yy: 90, female: false });
+    expect(nikBirthParts(NIK_F)).toEqual({ day: 15, month: 8, yy: 90, female: true });
+    expect(nikBirthParts("1471019908900001")).toBeNull(); // hari 99 → bukan tanggal
+    expect(birthDateParts(new Date("1990-08-15T00:00:00Z"))).toEqual({ day: 15, month: 8, year: 1990 });
+    expect(birthDateParts(new Date("1990-08-14T17:00:00Z"))).toEqual({ day: 15, month: 8, year: 1990 });
+  });
+
+  it("NIK ↔ tanggal lahir: cocok lolos; tertukar hari/bulan diberi petunjuk; NIK tak valid tidak dicek", () => {
+    const ok = farmer({ id: "a", farmerId: "A", name: "A", nik: NIK_M, birthDate: new Date("1990-08-15T00:00:00Z") });
+    // NIK 03-12-71 vs tersimpan 12-03-1971 → hari/bulan tertukar (pola impor lama di prod).
+    const swapNik = "1471010312710003";
+    const swapped = farmer({ id: "c", farmerId: "C", name: "C", nik: swapNik, birthDate: new Date("1971-03-12T00:00:00Z") });
+    const invalid = farmer({ id: "d", farmerId: "D", name: "D", nik: "123", birthDate: new Date("1990-08-15T00:00:00Z") });
+    const d = computePetaniDomain([ok, swapped, invalid], 2026);
+    const a = d.anomalies.find((x) => x.key === "nik-tanggal-lahir")!;
+    expect(a.total).toBe(2); // invalid NIK tidak dicek
+    expect(a.items.map((i) => i.farmerId)).toEqual(["C"]);
+    expect(a.items[0].detail).toContain("hari/bulan tertukar?");
+    expect(a.kind).toBe("kualitas");
+    // Kualitas tidak mengubah skor petani (semua field terisi → 100, kecuali NIK "123" tak sahih).
+    expect(d.score).toBeCloseTo(((6 + 6 + 5) / 6 / 3) * 100, 6);
+  });
+
+  it("NIK ↔ jenis kelamin, umur tidak wajar, kemungkinan ganda, Monev tanpa rincian", () => {
+    const farmers = [
+      farmer({ id: "a", farmerId: "A", name: "Siti", gender: "M", nik: NIK_F, birthDate: new Date("1990-08-15T00:00:00Z") }),
+      farmer({ id: "b", farmerId: "B", name: "Budi", gender: "M", nik: null, birthDate: new Date("2015-01-01T00:00:00Z") }),
+      farmer({ id: "c", farmerId: "C", name: "Andi  Wijaya", nik: null, birthDate: new Date("1980-05-05T00:00:00Z") }),
+      farmer({ id: "d", farmerId: "D", name: "andi wijaya", nik: null, birthDate: new Date("1980-05-05T00:00:00Z") }),
+      farmer({ id: "e", farmerId: "E", name: "Eko", nik: null, modules: { stdb: false, bmpAssessment: true, bmpAssessmentNoDetails: true } }),
+      farmer({ id: "f", farmerId: "F", name: "Fani", nik: null, modules: { stdb: false, bmpAssessment: true, bmpAssessmentNoDetails: false } }),
+    ];
+    const d = computePetaniDomain(farmers, 2026);
+    expect(d.anomalies.find((x) => x.key === "nik-jenis-kelamin")!.items.map((i) => i.farmerId)).toEqual(["A"]);
+    expect(d.anomalies.find((x) => x.key === "umur-tidak-wajar")!.items[0]).toMatchObject({ farmerId: "B", detail: "11 tahun" });
+    expect(d.anomalies.find((x) => x.key === "petani-kemungkinan-ganda")!.items.map((i) => i.farmerId)).toEqual(["C", "D"]);
+    const monev = d.anomalies.find((x) => x.key === "monev-tanpa-rincian")!;
+    expect(monev.items.map((i) => i.farmerId)).toEqual(["E"]);
+    expect(monev.total).toBe(2); // hanya petani ber-penilaian yang dicek
+  });
+
+  it("Lahan: di luar boundary (hanya yang bisa dicek), luas ≠ poligon > 20 %, luas & tahun tanam tidak wajar", () => {
+    const base = { ...validParcel, modules: { ...NO_PARCEL_MODULES } };
+    const d = computeLahanDomain(
+      [
+        farmer({
+          landParcels: [
+            { ...base, id: "p1", parcelId: "P1", geometryAreaHa: 1.5, modules: { ...NO_PARCEL_MODULES, outsideBoundary: false } },
+            { ...base, id: "p2", parcelId: "P2", geometryAreaHa: 2.5, modules: { ...NO_PARCEL_MODULES, outsideBoundary: true } }, // 1.5 vs 2.5 → 40 %
+            { ...base, id: "p3", parcelId: "P3", area: 0.01, plantingYear: 1950, modules: { ...NO_PARCEL_MODULES, outsideBoundary: null } },
+            { ...base, id: "p4", parcelId: "P4", area: 30, plantingYear: 2030 },
+          ],
+        }),
+      ],
+      2026
+    );
+    const by = (k: string) => d.anomalies.find((x) => x.key === k)!;
+    expect(by("persil-di-luar-boundary")).toMatchObject({ total: 2, entityCount: 1 });
+    expect(by("persil-di-luar-boundary").items[0].parcelDbId).toBe("p2");
+    expect(by("luas-beda-geometri")).toMatchObject({ total: 2, entityCount: 1 });
+    expect(by("luas-beda-geometri").items[0].detail).toContain("kolom 1.50 ha vs poligon 2.50 ha");
+    expect(by("luas-tidak-wajar").items.map((i) => i.parcelDbId)).toEqual(["p3", "p4"]);
+    expect(by("tahun-tanam-tidak-wajar").items.map((i) => i.parcelDbId)).toEqual(["p3", "p4"]);
+    // Kualitas tidak masuk skor: keempat persil lengkap secara atribut → 100.
+    expect(d.score).toBe(100);
+    expect(d.cards.find((c) => c.label === "Di Luar Boundary ICS")!.value).toBe(1);
+  });
+
+  it("Pelatihan: nilai turun & di luar rentang; Produksi: 0 kg & bulan bolong", () => {
+    const t = computePelatihanDomain(
+      [
+        farmer({ id: "a", farmerId: "A", name: "A", trainingParticipants: [participant(P1.code, 80, 60)] }),
+        farmer({ id: "b", farmerId: "B", name: "B", trainingParticipants: [participant(P1.code, 50, 120)] }),
+        farmer({ id: "c", farmerId: "C", name: "C", trainingParticipants: [] }),
+      ],
+      [P1],
+      [{ packageCode: P1.code, hasEvidence: true }]
+    );
+    expect(t.anomalies.find((x) => x.key === "nilai-turun")).toMatchObject({ total: 2, entityCount: 1 });
+    expect(t.anomalies.find((x) => x.key === "nilai-turun")!.items[0].detail).toBe("pre 80 → post 60");
+    expect(t.anomalies.find((x) => x.key === "nilai-di-luar-rentang")!.items.map((i) => i.farmerId)).toEqual(["B"]);
+
+    const p = computeProduksiDomain(
+      [
+        farmer({
+          landParcels: [validParcel],
+          productionRecords: [
+            { id: "r1", parcelId: "lp-1", period: "2026-05", yieldKg: 0, isEstimate: false },
+            { id: "r2", parcelId: "lp-1", period: "2026-07", yieldKg: 50, isEstimate: false },
+            { id: "r3", parcelId: "lp-1", period: "2026-09", yieldKg: 50, isEstimate: false },
+          ],
+        }),
+      ],
+      REF
+    );
+    expect(p.anomalies.find((x) => x.key === "produksi-nol")!.items[0].detail).toBe("1 record 0 kg");
+    expect(p.anomalies.find((x) => x.key === "produksi-bulan-bolong")!.items[0].detail).toBe("2 bulan bolong (2026-05 … 2026-09)");
+    expect(p.score).toBe(100);
+  });
+
+  it("checklist domain memuat SEMUA check (termasuk lolos) + baris modul; bobot hanya untuk check berskor", () => {
+    const r = computeCompleteness(
+      group({
+        modules: GROUP_MODULES,
+        farmers: [farmer({ landParcels: [{ ...validParcel, modules: { ...NO_PARCEL_MODULES, document: true } }], modules: { stdb: true, bmpAssessment: false } })],
+      }),
+      { referencePeriod: REF }
+    );
+    const lahan = r.domains.find((d) => d.domain === "lahan")!;
+    const keys = lahan.checks.map((c) => c.key);
+    expect(keys).toContain("persil-tanpa-geometry"); // lolos (0 temuan) tetap tampil
+    expect(keys).toContain("surat-tanah"); // modul menempel ke domain Lahan
+    expect(keys).toContain("nkt");
+    expect(lahan.checks.find((c) => c.key === "persil-tanpa-geometry")).toMatchObject({ kind: "inti", flagged: 0, total: 1, weight: 3 / 15 });
+    expect(lahan.checks.find((c) => c.key === "persil-tanpa-blok")).toMatchObject({ kind: "lapangan", weight: 1 / 15 });
+    expect(lahan.checks.find((c) => c.key === "luas-tidak-wajar")).toMatchObject({ kind: "kualitas", weight: undefined });
+    expect(lahan.checks.find((c) => c.key === "surat-tanah")).toMatchObject({ kind: "modul", flagged: 0, total: 1, applicable: true });
+    expect(lahan.checks.find((c) => c.key === "nkt")).toMatchObject({ kind: "modul", applicable: false });
+    const petani = r.domains.find((d) => d.domain === "petani")!;
+    expect(petani.checks.find((c) => c.key === "monev-petani")).toMatchObject({ kind: "modul", applicable: false });
+    // Modul yang berlaku membawa daftar kerja `missing`.
+    expect(r.moduleCoverage.find((m) => m.key === "surat-tanah")!.missing).toEqual([]);
+    expect(r.moduleCoverage.find((m) => m.key === "nkt")!.missing).toEqual([]); // tidak berlaku → tanpa daftar
+  });
+
+  it("prioritas perbaikan: Δ Index = bobot domain × pangsa × bobot check, urut terbesar", () => {
+    // 10 petani: 5 tanpa alamat (petani 25 % × 0,5 × 1/6 = 2,08), semua tanpa produksi (20 % × 1 = 20),
+    // 10 persil tanpa KT (lahan 25 % × 1 × 3/15 = 5), profil kode kosong (10 % × 1/6 = 1,67).
+    const farmers = Array.from({ length: 10 }, (_, i) =>
+      farmer({
+        id: `f${i}`,
+        farmerId: `F-${i}`,
+        name: `Petani ${i}`,
+        nik: `14710115089000${String(i).padStart(2, "0")}`,
+        address: i < 5 ? null : "Jl",
+        landParcels: [{ ...validParcel, id: `lp${i}`, parcelId: `P${i}`, subGroupLv2: null }],
+        trainingParticipants: [participant(P1.code)],
+      })
+    );
+    const r = computeCompleteness(group({ code: null, farmers }), { referencePeriod: REF });
+    expect(r.priorities.slice(0, 4).map((p) => [p.key, p.indexGain])).toEqual([
+      ["produksi:petani-tanpa-produksi", 20],
+      ["lahan:persil-tanpa-kelompok-tani", 5],
+      ["petani:no-address", 2.1],
+      ["profil:code", 1.7],
+    ]);
+    // Konsistensi: Index + Σ gain semua prioritas ≈ 100 (semua check berskor dilengkapi).
+    const totalGain = computePriorities(r.profileChecks, r.domains, 100).reduce((s, p) => s + p.indexGain, 0);
+    expect(Math.round(r.healthScore + totalGain)).toBe(100);
+  });
+
+  it("rincian per Kelompok Tani: skor lahan/petani per KT, lahan berproduksi, urut terendah dulu", () => {
+    const farmers = [
+      farmer({
+        id: "a",
+        farmerId: "A",
+        name: "A",
+        landParcels: [
+          { ...validParcel, id: "p1", parcelId: "P1", subGroupLv2: "KT Mawar" },
+          { ...validParcel, id: "p2", parcelId: "P2", subGroupLv2: "KT Melati", landStatus: null, plantingYear: null, blok: null },
+        ],
+        productionRecords: [freshRecord("r1", "p1")],
+      }),
+      farmer({ id: "b", farmerId: "B", name: "B", nik: null, landParcels: [{ ...validParcel, id: "p3", parcelId: "P3", subGroupLv2: null }] }),
+    ];
+    const rows = computeByKelompokTani(farmers);
+    // Dua KT seri 80 (KT Melati: 3 atribut lapangan kosong = 3/15; tanpa KT: bobot 3 hilang) → urut nama.
+    expect(rows.map((r) => r.name)).toEqual(["(tanpa Kelompok Tani)", "KT Melati", "KT Mawar"]);
+    expect(rows[0]).toMatchObject({ lahanScore: 80, petaniScore: 83.3 }); // petani B tanpa NIK
+    expect(rows[1]).toMatchObject({ farmers: 1, parcels: 1, lahanScore: 80, parcelsProducing: 0, parcelsProducingPct: 0 });
+    expect(rows[2]).toMatchObject({ lahanScore: 100, parcelsProducing: 1, parcelsProducingPct: 100, areaHa: 1.5 });
   });
 });
 
