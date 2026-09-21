@@ -20,7 +20,6 @@ model Tree {
   vigor        Float?     @map("vigor") // Skor kesehatan pohon (bila ada)
   source       String?    @map("source") // auto | moved | added | verified
   modelVersion String?    @map("model_version") // Versi model deteksi
-  surveyedAt   DateTime?  @map("surveyed_at") // Tanggal ekspor/survei sumber
   sourceFile   String?    @map("source_file") // Nama ZIP asal (audit)
   // Pola revisi per-set: upload ulang menonaktifkan seluruh set pohon lama
   // lahan tsb dan menyisipkan set baru dengan revision + 1.

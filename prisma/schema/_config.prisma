@@ -27,13 +27,6 @@ enum PermissionLevel {
   PRINT
 }
 
-enum ActivityStatus {
-  DRAFT
-  PENDING_APPROVAL
-  APPROVED
-  REJECTED
-}
-
 enum FarmerGroupCategory {
   EX_PLASMA
   SWADAYA
