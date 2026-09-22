@@ -144,6 +144,8 @@ describe("buildFarmerProfileDoc — Bagian A + lampiran", () => {
     expect(text).toContain("belum dipetakan");
     expect(text).toContain("1 lahan belum dipetakan");
     expect(text).toContain("Peta Sebaran Lahan");
+    // Tanpa lahan NKT → keterangan "Merah = lahan NKT" tidak dicetak (owner 2026-09-22).
+    expect(text).not.toContain("Merah = lahan NKT");
     // Lampiran: dua Profil Lahan penuh, bernomor 1 & 2 dari 2 — lahan B (tanpa geometri) tidak ikut.
     expect(text).toContain("Lampiran 1 dari 2");
     expect(text).toContain("Lampiran 2 dari 2");
@@ -180,8 +182,8 @@ describe("buildFarmerProfileDoc — Bagian A + lampiran", () => {
     expect(text).not.toContain("PROFIL LAHAN");
   });
 
-  it("matriks gabungan = Σ lahan (total kg & Luas Terdata), rekap per lahan per tahun ber-kolom Umur/PSR & bulan terisi", () => {
-    const data = profile([parcel(1), parcel(2, { isPsr: true, plantingYear: null }), parcel(3)]);
+  it("matriks gabungan = Σ lahan (total kg & Luas Terdata); rekap per lahan = PIVOT satu baris per lahan (≤ 3 tahun) ber-kolom Umur/PSR, kg · Ton/Ha · Bulan per tahun + baris Total", () => {
+    const data = profile([parcel(1), parcel(2, { isPsr: true, plantingYear: null }), parcel(3)], { parcelPassports: [], includeParcels: false });
     const text = pdfText(buildFarmerProfileDoc(data));
     expect(text).toContain("Total tercatat 3.000 kg");
     expect(text).toContain("Rekap per Lahan per Tahun");
@@ -189,6 +191,21 @@ describe("buildFarmerProfileDoc — Bagian A + lampiran", () => {
     expect(text).toContain("10 thn"); // currentYear 2026 − 2016
     expect(text).toContain("1/12");
     expect(text).toContain("Luas Terdata (Ha)");
+    // Pivot: judul kelompok tahun + sub-judul kg/Ton/Ha/Bulan; ID lahan dicetak SEKALI (bukan per tahun).
+    expect(text).toContain("Bulan");
+    expect(text).toContain("kg");
+    expect((text.match(/SH-0001\.A/g) ?? []).length).toBe(2); // tabel Daftar Lahan + rekap (tanpa lampiran)
+  });
+
+  it("rekap: > 3 tahun ber-data → kembali ke baris-per-tahun tanpa mengulang ID/Luas/Umur (fallback lebar)", () => {
+    const data = profile([parcel(1)], { parcelPassports: [], includeParcels: false });
+    const base = data.production.parcelBreakdown[0];
+    data.production.parcelBreakdown = [2026, 2025, 2024, 2023].map((year) => ({ ...base, year }));
+    const text = pdfText(buildFarmerProfileDoc(data));
+    expect(text).toContain("Bulan Terisi");
+    expect(text).toContain("2023");
+    // ID lahan sekali di rekap (baris berikutnya kosong) + sekali di Daftar Lahan.
+    expect((text.match(/SH-0001\.A/g) ?? []).length).toBe(2);
   });
 
   it("pelatihan = SATU tabel Paket | Tanggal | Pre / Post Test (owner 2026-09-22): tiap partisipasi satu baris urut paket wajib, paket belum diikuti → baris 'Belum'", () => {
@@ -238,6 +255,7 @@ describe("buildFarmerProfileDoc — Bagian A + lampiran", () => {
     // Kolom NKT tabel: "Terdampak" tanpa akhiran (kolom sudah berjudul NKT); badge lampiran tetap "Terdampak NKT".
     expect(text).toContain("Terdampak");
     expect(text).toContain("Terdampak NKT");
+    expect(text).toContain("Merah = lahan NKT");
     expect(text).toContain("Lampiran 3 dari 3");
     // Skala batang di bingkai 26 km memakai kandidat km (#343) — tak lagi mentok di 1000 m.
     expect(text).toMatch(/\d+ km/);

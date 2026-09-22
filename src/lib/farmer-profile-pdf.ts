@@ -478,6 +478,10 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
       headStyles: { ...tableCommon.headStyles, fontSize: 7 },
       bodyStyles: { ...tableCommon.bodyStyles, fontSize: 7.5 },
       footStyles: { fillColor: [241, 245, 249], textColor: SLATE_800, fontSize: 7.5, fontStyle: "bold" },
+      // Baris Total rata kanan di kolom angka (footStyles tidak mewarisi columnStyles).
+      didParseCell: (d) => {
+        if (d.section === "foot" && d.column.index >= 7) d.cell.styles.halign = "right";
+      },
       columnStyles: {
         0: { halign: "right", cellWidth: 7 }, 1: { cellWidth: 34 }, 2: { cellWidth: 20 }, 3: { cellWidth: 11 },
         4: { cellWidth: 19 }, 5: { cellWidth: 21 }, 6: { cellWidth: 17 },
@@ -516,7 +520,9 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...SLATE_600);
-    doc.text("Lingkaran bernomor = titik tengah lahan; nomor = kolom No pada Daftar Lahan = nomor lampiran. Merah = lahan NKT.", MARGIN, y);
+    // "Merah = lahan NKT" hanya bila memang ada penanda merah di peta (owner 2026-09-22).
+    const hasNkt = parcels.some((p, i) => numbers[i] != null && isNktAffected(p.nktStatus));
+    doc.text(`Lingkaran bernomor = titik tengah lahan; nomor = kolom No pada Daftar Lahan = nomor lampiran.${hasNkt ? " Merah = lahan NKT." : ""}`, MARGIN, y);
     y += 3.6;
     doc.setFont("helvetica", "italic");
     doc.text("Bentuk & batas tiap lahan: lihat lampiran Profil Lahan.", MARGIN, y);
@@ -622,30 +628,103 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
   y += 9;
 
   // Rekap per lahan per tahun — rincian bulanan per lahan TIDAK diulang (ada di lampiran).
-  const rows = [...production.parcelBreakdown].sort((a, b) => a.label.localeCompare(b.label, "id") || b.year - a.year);
-  y = ensureSpace(doc, y, blockNeed(rows.length + 1, 6.4, 11));
-  subHeading(doc, "Rekap per Lahan per Tahun", y);
-  y += 3;
+  // Bentuk PIVOT (owner 2026-09-22, "biar lebih enak dibaca"): satu baris per
+  // lahan, tahun berjajar sebagai kelompok kolom kg · Ton/Ha · bulan, urutan
+  // tahun = matriks di atasnya (terbaru dulu) + baris Total dari `perYear`
+  // supaya kedua tabel saling mengikat. Lebih dari 4 tahun ber-data → terlalu
+  // lebar → kembali ke baris-per-tahun, tetapi ID/Luas/Umur hanya di baris
+  // pertama tiap lahan (tanpa pengulangan).
   const umur = (r: { isPsr: boolean; plantingYear: number | null }) =>
     r.isPsr ? "PSR" : r.plantingYear != null ? `${production.currentYear - r.plantingYear} thn` : "—";
-  autoTable(doc, {
-    head: [["Lahan", "Tahun", "Luas (Ha)", "Umur/PSR", "Produksi (kg)", "Ton/Ha", "Bulan Terisi"]],
-    body: rows.map((r) => [
-      r.label,
-      String(r.year),
-      r.area != null ? fmtDec(r.area) : "—",
-      umur(r),
-      fmtNum(r.totalKg),
-      r.productivityTonHa > 0 ? fmtDec(r.productivityTonHa) : "—",
-      `${Object.keys(r.months).length}/12`,
-    ]),
-    startY: y,
-    theme: "striped",
-    ...profileTable(),
-    columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "center" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
-  });
+  const monthsFilled = (r: { months: Record<number, unknown> }) => `${Object.keys(r.months).length}/12`;
+  const years = [...new Set(production.parcelBreakdown.map((r) => r.year))].sort((a, b) => b - a);
+  const byParcel = new Map<string, { label: string; area: number | null; isPsr: boolean; plantingYear: number | null; rows: Map<number, (typeof production.parcelBreakdown)[number]> }>();
+  for (const r of [...production.parcelBreakdown].sort((a, b) => a.label.localeCompare(b.label, "id") || b.year - a.year)) {
+    const g = byParcel.get(r.parcelKey) ?? { label: r.label, area: r.area, isPsr: r.isPsr, plantingYear: r.plantingYear, rows: new Map() };
+    g.rows.set(r.year, r);
+    byParcel.set(r.parcelKey, g);
+  }
+  const groups = [...byParcel.values()];
+  // ≤ 3 tahun: tiap sub-kolom ≥ 12 mm sehingga judul "Ton/Ha" 7,5 pt masih satu baris (prod: maks 3 tahun/petani).
+  const pivot = years.length <= 3;
+  const rowCount = pivot ? groups.length + 2 : production.parcelBreakdown.length + 1;
+  y = ensureSpace(doc, y, blockNeed(rowCount, 6.4, pivot ? 18 : 11));
+  subHeading(doc, "Rekap per Lahan per Tahun", y);
+  y += 3;
+  const perYear = new Map(production.all.perYear.map((p) => [p.year, p]));
+  const tonHa = (n: number) => (n > 0 ? fmtDec(n) : "—");
+  if (pivot) {
+    const yearCols = years.length * 3;
+    autoTable(doc, {
+      head: [
+        [
+          { content: "Lahan", rowSpan: 2 }, { content: "Luas (Ha)", rowSpan: 2, styles: { halign: "right" } }, { content: "Umur/PSR", rowSpan: 2, styles: { halign: "center" } },
+          ...years.map((yr) => ({ content: String(yr), colSpan: 3, styles: { halign: "center" as const } })),
+        ],
+        years.flatMap(() => [{ content: "kg", styles: { halign: "right" as const } }, { content: "Ton/Ha", styles: { halign: "right" as const } }, { content: "Bulan", styles: { halign: "right" as const } }]),
+      ],
+      body: groups.map((g) => [
+        g.label,
+        g.area != null ? fmtDec(g.area) : "—",
+        umur(g),
+        ...years.flatMap((yr) => {
+          const r = g.rows.get(yr);
+          return r ? [fmtNum(r.totalKg), tonHa(r.productivityTonHa), monthsFilled(r)] : ["—", "—", "—"];
+        }),
+      ]),
+      foot: [[
+        "Total", fmtDec(production.all.totalArea), "",
+        ...years.flatMap((yr) => {
+          const p = perYear.get(yr);
+          return p ? [fmtNum(p.totalKg), tonHa(p.productivityTonHa), `${p.months.length}/12`] : ["", "", ""];
+        }),
+      ]],
+      startY: y,
+      theme: "striped",
+      ...profileTable(),
+      headStyles: { ...profileTable().headStyles, fontSize: 7.5 },
+      footStyles: { fillColor: [241, 245, 249], textColor: SLATE_800, fontSize: 8, fontStyle: "bold" },
+      // Lahan 38 (ID panjang satu baris) · Luas 13 · Umur/PSR 19 = 70 mm; tiap tahun berbagi sisa 112 mm (≥ 37 mm per tahun).
+      columnStyles: {
+        0: { cellWidth: 38 }, 1: { halign: "right", cellWidth: 13 }, 2: { halign: "center", cellWidth: 19 },
+        ...Object.fromEntries(Array.from({ length: yearCols }, (_, i) => [3 + i, { halign: "right" }])),
+      },
+      // Baris Total: rata kanan mengikuti kolom angka (footStyles tidak mewarisi columnStyles).
+      didParseCell: (d) => {
+        if (d.section === "foot" && d.column.index >= 1) d.cell.styles.halign = d.column.index === 2 ? "center" : "right";
+      },
+      // Garis pemisah tipis di kiri tiap kelompok tahun supaya tiga kolomnya terbaca satu kesatuan.
+      didDrawCell: (d) => {
+        if (d.column.index >= 3 && (d.column.index - 3) % 3 === 0) {
+          doc.setDrawColor(...SLATE_200);
+          doc.setLineWidth(0.3);
+          doc.line(d.cell.x, d.cell.y, d.cell.x, d.cell.y + d.cell.height);
+        }
+      },
+    });
+  } else {
+    const body: string[][] = [];
+    for (const g of groups) {
+      [...g.rows.values()].forEach((r, i) => {
+        body.push([i === 0 ? g.label : "", String(r.year), i === 0 ? (g.area != null ? fmtDec(g.area) : "—") : "", i === 0 ? umur(g) : "", fmtNum(r.totalKg), tonHa(r.productivityTonHa), monthsFilled(r)]);
+      });
+    }
+    autoTable(doc, {
+      head: [["Lahan", "Tahun", "Luas (Ha)", "Umur/PSR", "Produksi (kg)", "Ton/Ha", "Bulan Terisi"]],
+      body,
+      startY: y,
+      theme: "striped",
+      ...profileTable(),
+      columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "center" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
+    });
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY;
+  y = (doc as any).lastAutoTable.finalY + 3.5;
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...SLATE_400);
+  doc.text("Bulan = jumlah bulan ber-data dari 12; Ton/Ha lahan = produksi ÷ luas lahan. Rincian bulanan tiap lahan ada di lampiran Profil Lahan.", MARGIN, y + 2, { maxWidth: CONTENT_W });
+  y += 6;
   return drawBmpSection(doc, data, y + SECTION_GAP);
 }
 
