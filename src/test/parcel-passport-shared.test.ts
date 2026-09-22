@@ -64,4 +64,13 @@ describe("fetchParcelPassport — parameter `shared`", () => {
     expect(fetchParcelNeighbors).toHaveBeenCalledWith("lp-1", expect.any(Number), access);
     if (res.success) expect(res.data!.training).toBe(TRAINING);
   });
+
+  it("includeInactiveFarmer: filter farmer.isActive dilepas HANYA bila diminta (SUPERADMIN Profil Petani nonaktif, review #343); bawaan tetap aktif saja", async () => {
+    await fetchParcelPassport("lp-1", true, { access: { mode: "ALL" }, training: TRAINING, includeInactiveFarmer: true });
+    expect(db.landParcel.findFirst.mock.calls[0][0].where.farmer).not.toHaveProperty("isActive");
+    await fetchParcelPassport("lp-1", true, { access: { mode: "ALL" }, training: TRAINING });
+    expect(db.landParcel.findFirst.mock.calls[1][0].where.farmer).toMatchObject({ isActive: true });
+    // Lahan nonaktif tetap tidak pernah ditemukan — kelonggaran hanya di sisi petani.
+    expect(db.landParcel.findFirst.mock.calls[0][0].where.isActive).toBe(true);
+  });
 });

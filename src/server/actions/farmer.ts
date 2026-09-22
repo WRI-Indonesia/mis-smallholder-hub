@@ -325,13 +325,16 @@ export async function getFarmerProfilePassport(
   }
 
   const access = await getAccessContext();
+  // Petani nonaktif hanya bisa dicetak SUPERADMIN — sama dengan siapa yang bisa
+  // membuka detailnya; kelonggaran yang sama diteruskan ke kueri lampiran
+  // (`includeInactiveFarmer`), kalau tidak semua lampiran "tidak ditemukan" (review #343).
+  const superAdmin = await isSuperAdmin();
   const [farmer, trainingPackages] = await Promise.all([
     prisma.farmer.findFirst({
       where: {
         id: farmerId,
         ...farmerAccessFilter(access),
-        // Petani nonaktif hanya bisa dicetak SUPERADMIN — sama dengan siapa yang bisa membuka detailnya.
-        ...((await isSuperAdmin()) ? {} : { isActive: true }),
+        ...(superAdmin ? {} : { isActive: true }),
       },
       select: {
         id: true,
@@ -507,7 +510,7 @@ export async function getFarmerProfilePassport(
       const training = await computeFarmerTrainingItems(farmer.id);
       for (let i = 0; i < mapped.length; i += PROFILE_PASSPORT_CONCURRENCY) {
         const chunk = mapped.slice(i, i + PROFILE_PASSPORT_CONCURRENCY);
-        const results = await Promise.all(chunk.map((p) => fetchParcelPassport(p.id, true, { access, training })));
+        const results = await Promise.all(chunk.map((p) => fetchParcelPassport(p.id, true, { access, training, includeInactiveFarmer: superAdmin && !farmer.isActive })));
         for (const r of results) {
           if (!r.success || !r.data) return { success: false, error: r.success ? "Data lahan tidak ditemukan" : r.error };
           parcelPassports.push(r.data);

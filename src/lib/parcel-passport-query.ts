@@ -62,14 +62,23 @@ export async function computeFarmerTrainingItems(farmerId: string): Promise<Farm
 export async function fetchParcelPassport(
   landParcelId: string,
   includeProduction = true,
-  shared: { access?: AccessContext; training?: FarmerTrainingItem[] } = {},
+  shared: {
+    access?: AccessContext;
+    training?: FarmerTrainingItem[];
+    /**
+     * Lahan milik petani NONAKTIF ikut ditemukan — hanya untuk pemanggil yang
+     * sudah melonggarkan filter petaninya sendiri (SUPERADMIN di Profil Petani,
+     * review #343): tanpa ini lampiran petani nonaktif gagal "tidak ditemukan".
+     */
+    includeInactiveFarmer?: boolean;
+  } = {},
 ): Promise<ActionResult<ParcelPassport>> {
   const access = shared.access ?? (await getAccessContext());
   const parcel = await prisma.landParcel.findFirst({
     where: {
       id: landParcelId,
       isActive: true,
-      farmer: { isActive: true, farmerGroup: farmerGroupAccessFilter(access) },
+      farmer: { ...(shared.includeInactiveFarmer ? {} : { isActive: true }), farmerGroup: farmerGroupAccessFilter(access) },
     },
     select: {
       parcelId: true,

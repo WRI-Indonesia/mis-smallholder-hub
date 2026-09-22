@@ -54,9 +54,12 @@ export function useFarmerProfilePrint() {
     }
   };
 
-  /** Mulai cetak; lahan > ambang → tanya dulu Lengkap / Ringkasan saja. */
+  /** Mulai cetak; lahan > ambang → tanya dulu Lengkap / Ringkasan saja. Satu per satu — baris lain tetap bisa diklik tapi diberi tahu (review #343). */
   const print = (target: FarmerPrintTarget) => {
-    if (loadingId) return;
+    if (loadingId) {
+      toast.info("Profil Petani lain sedang disiapkan — tunggu sampai selesai.");
+      return;
+    }
     if (target.parcelCount > PROFILE_APPENDIX_CONFIRM_THRESHOLD) setPending(target);
     else void run(target, true);
   };

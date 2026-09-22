@@ -107,6 +107,23 @@ describe("guard & scope", () => {
     expect(db.farmer.findFirst.mock.calls[0][0].where).not.toHaveProperty("isActive");
     if (res.success) expect(res.data!.farmer.isActive).toBe(false);
   });
+
+  it("SUPERADMIN + petani nonaktif BER-LAHAN: lampiran diminta dengan includeInactiveFarmer (review #343 — semula semua lampiran 'tidak ditemukan' → aksi gagal)", async () => {
+    isSuperAdmin.mockResolvedValue(true);
+    db.farmer.findFirst.mockResolvedValue({ ...farmerRow([parcelRow(1), parcelRow(2)]), isActive: false });
+    const res = await getFarmerProfilePassport("f-1");
+    expect(res.success).toBe(true);
+    if (!res.success) return;
+    expect(res.data!.parcelPassports).toHaveLength(2);
+    for (const call of passportQuery.fetchParcelPassport.mock.calls) expect(call[2]).toMatchObject({ includeInactiveFarmer: true });
+  });
+
+  it("petani AKTIF (SUPERADMIN atau bukan): lampiran TIDAK melonggarkan filter petani nonaktif", async () => {
+    isSuperAdmin.mockResolvedValue(true);
+    db.farmer.findFirst.mockResolvedValue(farmerRow([parcelRow(1)]));
+    await getFarmerProfilePassport("f-1");
+    expect(passportQuery.fetchParcelPassport.mock.calls[0][2]).toMatchObject({ includeInactiveFarmer: false });
+  });
 });
 
 describe("Bagian A + lampiran", () => {
@@ -136,7 +153,7 @@ describe("Bagian A + lampiran", () => {
     expect(getAccessContext).toHaveBeenCalledTimes(1);
     for (const call of passportQuery.fetchParcelPassport.mock.calls) {
       expect(call[1]).toBe(true);
-      expect(call[2]).toEqual({ access: { mode: "ALL", ids: [] }, training: expect.any(Array) });
+      expect(call[2]).toEqual({ access: { mode: "ALL", ids: [] }, training: expect.any(Array), includeInactiveFarmer: false });
     }
     // Bagian A = buildFarmerDetail: angka identik dengan Detail Petani.
     expect(d.summary.totalParcels).toBe(3);
