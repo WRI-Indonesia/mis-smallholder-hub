@@ -182,30 +182,31 @@ describe("buildFarmerProfileDoc — Bagian A + lampiran", () => {
     expect(text).not.toContain("PROFIL LAHAN");
   });
 
-  it("matriks gabungan = Σ lahan (total kg & Luas Terdata); rekap per lahan = PIVOT satu baris per lahan (≤ 3 tahun) ber-kolom Umur/PSR, kg · Ton/Ha · Bulan per tahun + baris Total", () => {
+  it("matriks gabungan = Σ lahan (total kg & Luas Terdata); rekap per lahan = KELOMPOK per lahan (kepala: Luas · Umur/PSR · Σ kg · rata-rata Ton/Ha · n thn; lalu baris tahun)", () => {
     const data = profile([parcel(1), parcel(2, { isPsr: true, plantingYear: null }), parcel(3)], { parcelPassports: [], includeParcels: false });
     const text = pdfText(buildFarmerProfileDoc(data));
     expect(text).toContain("Total tercatat 3.000 kg");
     expect(text).toContain("Rekap per Lahan per Tahun");
+    expect(text).toContain("Lahan / Tahun");
     expect(text).toContain("PSR");
-    expect(text).toContain("10 thn"); // currentYear 2026 − 2016
+    expect(text).toContain("10 thn"); // umur: currentYear 2026 − 2016
+    expect(text).toContain("1 thn"); // jumlah tahun ber-data di baris kepala lahan
     expect(text).toContain("1/12");
     expect(text).toContain("Luas Terdata (Ha)");
-    // Pivot: judul kelompok tahun + sub-judul kg/Ton/Ha/Bulan; ID lahan dicetak SEKALI (bukan per tahun).
-    expect(text).toContain("Bulan");
-    expect(text).toContain("kg");
-    expect((text.match(/SH-0001\.A/g) ?? []).length).toBe(2); // tabel Daftar Lahan + rekap (tanpa lampiran)
+    // ID lahan dicetak SEKALI di rekap (baris tahun di bawahnya tanpa ID) + sekali di Daftar Lahan.
+    expect((text.match(/SH-0001\.A/g) ?? []).length).toBe(2);
   });
 
-  it("rekap: > 3 tahun ber-data → kembali ke baris-per-tahun tanpa mengulang ID/Luas/Umur (fallback lebar)", () => {
+  it("rekap: 10 tahun ber-data tetap satu bentuk — tumbuh ke bawah (10 baris tahun di bawah kepala lahan), ID tak diulang, rata-rata Ton/Ha = Σ kg ÷ luas ÷ tahun", () => {
     const data = profile([parcel(1)], { parcelPassports: [], includeParcels: false });
-    const base = data.production.parcelBreakdown[0];
-    data.production.parcelBreakdown = [2026, 2025, 2024, 2023].map((year) => ({ ...base, year }));
+    const base = data.production.parcelBreakdown[0]; // 1.000 kg, luas 2 ha → 0,50 Ton/Ha per tahun
+    data.production.parcelBreakdown = Array.from({ length: 10 }, (_, i) => ({ ...base, year: 2026 - i }));
     const text = pdfText(buildFarmerProfileDoc(data));
-    expect(text).toContain("Bulan Terisi");
-    expect(text).toContain("2023");
-    // ID lahan sekali di rekap (baris berikutnya kosong) + sekali di Daftar Lahan.
+    for (const yr of [2026, 2021, 2017]) expect(text).toContain(String(yr));
+    expect(text).toContain("10 thn"); // jumlah tahun (umur lahan juga 10 thn — keduanya sah)
+    expect(text).toContain("10.000"); // Σ kg di baris kepala
     expect((text.match(/SH-0001\.A/g) ?? []).length).toBe(2);
+    expect(text).not.toContain("Bulan Terisi");
   });
 
   it("pelatihan = SATU tabel Paket | Tanggal | Pre / Post Test (owner 2026-09-22): tiap partisipasi satu baris urut paket wajib, paket belum diikuti → baris 'Belum'", () => {
