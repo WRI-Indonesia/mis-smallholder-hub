@@ -9,7 +9,13 @@
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v0.38.0`)
 
-_(belum ada run)_
+| Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-09-22-local.md | Smoke | 10 | 0 | 21 | 0 | 0 |
+| 2026-09-22-local.md | Kasus uji | 7 | 0 | 1 | 1 | 0 |
+| 2026-09-22-local.md | Regresi | 3 | 0 | 6 | 0 | 0 |
+
+Run lokal `mis-dev` 2026-09-22 (Claude dev, SUPERADMIN): seluruh kasus #343/#360/seed **Pass** (TC-343-04 Blocked — butuh login OPERATOR); Blocked di smoke/regresi = unduhan & peran yang tak berubah sejak run prod v0.37.0 (render 38/38 rute 200 OK). 4 temuan peningkatan diperbaiki di commit yang sama (lihat lembar run). Run staging/prod + peran OPERATOR/DONOR menyusul setelah deploy (#361).
 
 ## Keputusan
 

@@ -175,9 +175,10 @@ const CHECKS: Check[] = [
     expect: (_v, rows) => Number(rows[0]?.menu) === 2 && Number(rows[0]?.perms) === 33, expectLabel: "2 menu · 33 izin (ADMIN 10 · SUPERADMIN 9 · OPERATOR/MANAGEMENT 6 · DONOR 2)",
   },
   {
-    id: "E6", section: "E", purpose: "urutan sidebar Dashboard (Monev BMP ke-3, Pelatihan 4, Risk 5)",
+    // Urutan = menu.csv sejak v0.37.0 (diubah admin di prod 2026-09-21, CSV disamakan): Main → Pelatihan → BMP → Monev BMP → Risk.
+    id: "E6", section: "E", purpose: "urutan sidebar Dashboard = menu.csv (Pelatihan 2 · BMP 3 · Monev BMP 4 · Risk 5)",
     sql: `select string_agg(key, ' → ' order by "order") as seq from tbl_menu_item where parent_key='dashboard' and is_active`,
-    pick: (r) => String(r[0]?.seq), expect: (_v, rows) => /dashboard-bmp\b.*dashboard-bmp-monev.*dashboard-training.*dashboard-risk/.test(String(rows[0]?.seq)), expectLabel: "… → dashboard-bmp → dashboard-bmp-monev → dashboard-training → dashboard-risk",
+    pick: (r) => String(r[0]?.seq), expect: (_v, rows) => /dashboard-main.*dashboard-training.*dashboard-bmp\b.*dashboard-bmp-monev.*dashboard-risk/.test(String(rows[0]?.seq)), expectLabel: "dashboard-main → dashboard-training → dashboard-bmp → dashboard-bmp-monev → dashboard-risk",
   },
   {
     id: "E7", section: "E", purpose: "tidak ada dua penilaian AKTIF untuk petani-tahun yang sama (dijaga E3)",
@@ -188,6 +189,12 @@ const CHECKS: Check[] = [
     id: "E8", section: "E", purpose: "penilaian aktif · ber-rincian · penilaian Lembaga aktif · skor di luar 0–3",
     sql: `select (select count(*) from tbl_bmp_assessment where is_active)::int as a, (select count(distinct assessment_id) from tbl_bmp_assessment_detail where is_active)::int as d, (select count(*) from tbl_bmp_group_assessment where is_active)::int as g, (select count(*) from tbl_bmp_assessment where is_active and (score < 0 or score > 3))::int as oor`,
     pick: (r) => `${r[0]?.a} · ${r[0]?.d} · ${r[0]?.g} · ${r[0]?.oor} di luar 0–3`, expect: null, expectLabel: "prod: 0 sebelum import UI; mis-dev 188 · 184 · 8 · 0",
+  },
+  {
+    // #360 (v0.38.0): seed parsial `seed-bmp-indicators.ts` mengganti nama kegiatan 1.1 — ✗ = belum di-seed di env ini (#361).
+    id: "E9", section: "E", purpose: "nama kegiatan 1.1 = Knowledge (seed #360; ✗ = seed-bmp-indicators belum dijalankan)",
+    sql: `select string_agg(distinct activity_name, ' · ') as s from ref_bmp_indicator where activity_code = '1.1' and is_active`,
+    pick: (r) => String(r[0]?.s ?? "(tidak ada)"), expect: (v) => v === "Knowledge (Petani dan Pekerja)", expectLabel: "Knowledge (Petani dan Pekerja)",
   },
   // ── F: rilis setelah v0.36.0 — #353 E (DROP enum + kolom) & #352 P4 (menu) ──
   {

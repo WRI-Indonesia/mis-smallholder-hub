@@ -75,11 +75,13 @@ export function assignParcelNumbers(parcels: Pick<FarmerProfileParcel, "geometry
 }
 
 /**
- * Bingkai peta sebaran (murni, diuji): bbox semua titik + margin 10 % span
+ * Bingkai peta sebaran (murni, diuji): bbox semua titik + margin 15 % span
  * terbesar atau ≈ 100 m — bukan 40 % seperti Profil Lahan (`passportMapFrame`),
  * karena pada bingkai 26 km (sebaran maks di prod) margin 40 % membuang
  * separuh kertas untuk kekosongan, sementara pada lahan tunggal (≈ 100 m)
- * margin 100 m menjaga poligon tidak menempel tepi kotak.
+ * margin 100 m menjaga poligon tidak menempel tepi kotak. 15 % (semula 10 %):
+ * QA lokal v0.38.0 — pada sebaran 26 km di kotak 60 mm penanda bernomor
+ * nyaris menyentuh tepi & label graticule.
  */
 export function overviewMapFrame(points: [number, number][]): { minLon: number; maxLon: number; minLat: number; maxLat: number; cosLat: number } {
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -94,7 +96,7 @@ export function overviewMapFrame(points: [number, number][]): { minLon: number; 
   const spanLon0 = maxLon - minLon || 1e-6;
   const spanLat0 = maxLat - minLat || 1e-6;
   const hundredMDeg = 100 / 111_320;
-  const marginDeg = Math.max(0.1 * Math.max(spanLon0 * cosLat, spanLat0), hundredMDeg);
+  const marginDeg = Math.max(0.15 * Math.max(spanLon0 * cosLat, spanLat0), hundredMDeg);
   return {
     minLon: minLon - marginDeg / cosLat,
     maxLon: maxLon + marginDeg / cosLat,
@@ -470,8 +472,10 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
       startY: y,
       theme: "striped",
       ...tableCommon,
-      // 12 kolom dalam 182 mm (Σ lebar tetap 174 + Rev. sisa 8): font 7,5 + padding 1,4;
-      // Kode Lahan 34 mm memuat ID panjang "SSJ.14.01.12.2007.0002.A" satu baris.
+      // 12 kolom dalam 182 mm (Σ lebar tetap 172 + Rev. sisa 10): font 7,5 + padding 1,4.
+      // Kode Lahan 40 mm ber-font 7 memuat ID terpanjang prod (30 karakter,
+      // "ASPEK RSB.0088.A.14.06.03.2002") satu baris — QA lokal v0.38.0 menemukan
+      // ID 24 karakter sudah membungkus di 34 mm.
       styles: { font: "helvetica", cellPadding: 1.4, overflow: "linebreak" },
       headStyles: { ...tableCommon.headStyles, fontSize: 7 },
       bodyStyles: { ...tableCommon.bodyStyles, fontSize: 7.5 },
@@ -481,8 +485,8 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
         if (d.section === "foot" && d.column.index >= 7) d.cell.styles.halign = "right";
       },
       columnStyles: {
-        0: { halign: "right", cellWidth: 7 }, 1: { cellWidth: 34 }, 2: { cellWidth: 20 }, 3: { cellWidth: 11 },
-        4: { cellWidth: 19 }, 5: { cellWidth: 21 }, 6: { cellWidth: 17 },
+        0: { halign: "right", cellWidth: 7 }, 1: { cellWidth: 40, fontSize: 7 }, 2: { cellWidth: 18 }, 3: { cellWidth: 10 },
+        4: { cellWidth: 17 }, 5: { cellWidth: 19 }, 6: { cellWidth: 17 },
         7: { halign: "right", cellWidth: 12 }, 8: { halign: "right", cellWidth: 11 }, 9: { halign: "right", cellWidth: 11 },
         10: { halign: "right", cellWidth: 10 }, 11: { halign: "right" },
       },
@@ -743,9 +747,9 @@ function drawBmpSection(doc: jsPDF, data: FarmerProfilePassport, y: number): num
     styles: { font: "helvetica", cellPadding: 1.5, overflow: "linebreak" },
     headStyles: { ...tableCommon.headStyles, fontSize: 7 },
     // 11 kolom: 6 tetap = 106 mm, 5 kegiatan berbagi ≈ 76 mm (≈ 15 mm — "Pemupukan" 7 pt muat satu baris);
-    // Lahan Dikunjungi 28 mm: ID panjang "ITM.0043.A.14.06.06.2017" boleh 2 baris.
+    // Tgl Survei 21 mm ("25 Jun 2026" satu baris — QA lokal v0.38.0), Lahan Dikunjungi 27 mm: ID panjang boleh 2 baris.
     columnStyles: {
-      0: { cellWidth: 11 }, 1: { cellWidth: 18 }, 2: { halign: "right", cellWidth: 11 }, 3: { cellWidth: 22 }, 4: { cellWidth: 28 }, 5: { cellWidth: 16 },
+      0: { cellWidth: 11 }, 1: { cellWidth: 21 }, 2: { halign: "right", cellWidth: 11 }, 3: { cellWidth: 20 }, 4: { cellWidth: 27 }, 5: { cellWidth: 16 },
       ...Object.fromEntries(activityCols.map((_, i) => [6 + i, { halign: "right" }])),
     },
   });

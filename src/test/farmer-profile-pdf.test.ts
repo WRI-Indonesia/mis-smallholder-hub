@@ -125,10 +125,10 @@ describe("overviewMapFrame — bingkai peta sebaran", () => {
     expect(f.minLat).toBeCloseTo(0.75 - m, 6);
     expect(f.maxLat).toBeCloseTo(0.75 + D + m, 6);
   });
-  it("sebaran 26 km → margin 10 % span (≈ 2,6 km), bukan minimum 100 m", () => {
+  it("sebaran 26 km → margin 15 % span (≈ 3,9 km), bukan minimum 100 m", () => {
     const span = 26_000 / 111_320;
     const f = overviewMapFrame([[101.5, 0.75], [101.5 + span, 0.75]]);
-    expect(f.maxLat - f.minLat).toBeCloseTo(2 * 0.1 * span * f.cosLat, 6);
+    expect(f.maxLat - f.minLat).toBeCloseTo(2 * 0.15 * span * f.cosLat, 6);
   });
 });
 
