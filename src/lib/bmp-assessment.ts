@@ -125,6 +125,14 @@ export function roundScore(score: number): number {
 export const formatScore = (n: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
+/**
+ * Nama pendek kegiatan untuk label sumbu radar & judul kolom sempit:
+ * "Knowledge (Petani dan Pekerja)" → "Knowledge", "Pengendalian Hama Penyakit
+ * Terpadu (PHPT)" → "PHPT". Satu sumber untuk SVG layar dan PDF (#343).
+ */
+export const bmpActivityShortName = (name: string) =>
+  name.replace(/\s*\(.*\)$/, "").replace("Pengendalian ", "").replace("Hama Penyakit Terpadu", "PHPT");
+
 // ── Tanggal survei ────────────────────────────────────────────────────────
 
 const MONTHS_ID: Record<string, number> = {

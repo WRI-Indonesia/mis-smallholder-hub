@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| Versi | v0.38.0 (MAJOR/MINOR/PATCH — alasan) |
-| Rentang | `<tag rilis sebelumnya>..<commit terakhir mvp>` (`n` commit) |
-| Migrasi | ada / tidak — daftar di `00-scope.md` |
+| Versi | v0.38.0 (MINOR — fitur baru Profil Petani PDF #343 + fix Dashboard Monev BMP #360) |
+| Rentang | `v0.37.0..mvp` (`57dc846..HEAD`) |
+| Migrasi | tidak — hanya seed parsial indikator BMP (2 baris nama kegiatan), lihat `00-scope.md` |
 | Run | lihat `runs/` — satu berkas per eksekusi |
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v0.38.0`)

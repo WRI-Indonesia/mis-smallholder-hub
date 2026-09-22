@@ -39,7 +39,7 @@ import {
 } from "@/lib/farm-passport";
 import { drawGraticule } from "@/lib/layer-report-pdf";
 import { isNktAffected, landNktStatusLabel } from "@/lib/land-parcel-satellite-format";
-import { BMP_ASSESSMENT_CATEGORIES, BMP_SCORE_MAX, bmpAssessmentCategory, formatScore, formatUtcDate } from "@/lib/bmp-assessment";
+import { BMP_ASSESSMENT_CATEGORIES, BMP_SCORE_MAX, bmpActivityShortName, bmpAssessmentCategory, formatScore, formatUtcDate } from "@/lib/bmp-assessment";
 import type { FarmerProfileBmpActivity, FarmerProfileParcel, FarmerProfilePassport } from "@/types/farmer-profile";
 
 const NKT_EDGE: [number, number, number] = [220, 38, 38];
@@ -50,8 +50,6 @@ const BMP_SERIES: [number, number, number] = [37, 99, 235];
 const hexToRgb = (hex: string): [number, number, number] => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 /** Campur warna ke putih (0 = warna asli, 1 = putih) — latar badge/pita tanpa GState. */
 const tint = (c: [number, number, number], t: number): [number, number, number] => [Math.round(255 - (255 - c[0]) * (1 - t)), Math.round(255 - (255 - c[1]) * (1 - t)), Math.round(255 - (255 - c[2]) * (1 - t))];
-/** Nama pendek kegiatan untuk kolom/sumbu — sama dengan `bmpRadarShortName` di SVG layar (komponen "use client", tak diimpor ke sini). */
-const bmpShortName = (name: string) => name.replace(/\s*\(.*\)$/, "").replace("Pengendalian ", "").replace("Hama Penyakit Terpadu", "PHPT");
 
 const fmtDec = (n: number, digits = 2) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(n);
@@ -213,7 +211,7 @@ export function drawBmpRadar(doc: jsPDF, cx: number, cy: number, R: number, rows
     const [x, y] = pt(i, R + 3);
     const a = angle(i);
     const align: "left" | "center" | "right" = Math.abs(Math.cos(a)) < 0.2 ? "center" : Math.cos(a) > 0 ? "left" : "right";
-    doc.text(bmpShortName(r.name), x, y + (Math.sin(a) > 0.2 ? 2 : Math.sin(a) < -0.2 ? -0.5 : 0.8), { align });
+    doc.text(bmpActivityShortName(r.name), x, y + (Math.sin(a) > 0.2 ? 2 : Math.sin(a) < -0.2 ? -0.5 : 0.8), { align });
     doc.setFontSize(5.5);
     doc.setTextColor(...BMP_SERIES);
     doc.text(formatScore(scaled(r)), x, y + (Math.sin(a) > 0.2 ? 4.6 : Math.sin(a) < -0.2 ? 2.1 : 3.4), { align });
@@ -726,7 +724,7 @@ function drawBmpSection(doc: jsPDF, data: FarmerProfilePassport, y: number): num
   // Kolom kegiatan mengikuti penilaian pertama yang punya rincian (master sama untuk semua tahun).
   const activityCols = bmp.assessments.find((a) => a.activities.length > 0)?.activities.map((a) => ({ code: a.code, name: a.name })) ?? [];
   autoTable(doc, {
-    head: [["Tahun", "Tgl Survei", "Skor", "Kategori", "Lahan Dikunjungi", "Penilai", ...activityCols.map((c) => bmpShortName(c.name))]],
+    head: [["Tahun", "Tgl Survei", "Skor", "Kategori", "Lahan Dikunjungi", "Penilai", ...activityCols.map((c) => bmpActivityShortName(c.name))]],
     body: bmp.assessments.map((a) => [
       String(a.surveyYear),
       formatUtcDate(a.surveyDate),

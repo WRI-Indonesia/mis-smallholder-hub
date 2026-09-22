@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BMP_ASSESSMENT_CATEGORIES, BMP_SCORE_MAX, formatScore } from "@/lib/bmp-assessment";
+import { BMP_ASSESSMENT_CATEGORIES, BMP_SCORE_MAX, bmpActivityShortName, formatScore } from "@/lib/bmp-assessment";
 
 /**
  * Spider chart 5 kegiatan BMP (#346, owner 2026-09-20) — dipakai Dashboard
@@ -29,8 +29,6 @@ export const BMP_RADAR_SERIES_COLORS = { a: "#2563eb", b: "#ea580c" } as const;
 const BANDS = [...BMP_ASSESSMENT_CATEGORIES].map((c, i, arr) => ({ ...c, lo: c.key === "TELADAN" ? 2.5 : c.min, hi: i === 0 ? BMP_SCORE_MAX : arr[i - 1].key === "TELADAN" ? 2.5 : arr[i - 1].min }));
 const BAND_OPACITY: Record<string, number> = { BELUM: 0.28, PERINTIS: 0.3, PRAKTISI: 0.3, TELADAN: 0.42 };
 
-/** Nama pendek untuk label sumbu. */
-const bmpRadarShortName = (name: string) => name.replace(/\s*\(.*\)$/, "").replace("Pengendalian ", "").replace("Hama Penyakit Terpadu", "PHPT");
 
 /** SVG radar 5 sumbu + legenda pita + tooltip per sumbu. */
 export function BmpActivityRadarSvg({
@@ -89,7 +87,7 @@ export function BmpActivityRadarSvg({
           const anchor = Math.abs(x - cx) < 2 ? "middle" : x > cx ? "start" : "end";
           return (
             <text key={`l${i}`} x={x} y={y} fontSize="3.4" textAnchor={anchor} dominantBaseline="middle" className="fill-foreground" fontWeight={hover === i ? 700 : 500}>
-              {bmpRadarShortName(r.name)}
+              {bmpActivityShortName(r.name)}
             </text>
           );
         })}

@@ -51,3 +51,34 @@ Langkah:
 1. Detail Lahan (lahan yang sama dengan TC-343-01) → **Profil Lahan (PDF)**; juga dari tab Lahan Detail Petani (tombol PDF) dan popup Peta Lahan
 Harapan:
 - Tetap 2 halaman dengan section **Pelatihan** (Paket Pelatihan · Status · Tanggal Mengikuti) dan tanpa baris *Lampiran*; tabel Patok Batas berkolom **Patok Bersama Lahan Tetangga**; metadata Title "Profil Lahan <ID Lahan>"
+
+## #360 — Dashboard Monev BMP: definisi "Menerapkan BMP" + tooltip kategori
+
+### TC-360-01 · Kartu Menerapkan BMP & label batang memakai skor ≥ 1,00 [P0] (3 mnt)
+Prasyarat: Dashboard › Monev BMP, filter Distrik Rokan Hulu, Survei 2026 (8 Lembaga, 188 petani di prod-snapshot).
+Langkah:
+1. Baca kartu KPI **Menerapkan BMP** dan label kanan batang 100 % di kartu **Sebaran Kategori Petani**
+2. Master Data › Monev BMP (filter yang sama) → baca sub-teks KPI **Rerata Skor**
+Harapan:
+- Kartu = **188 (100 %)** (Perintis + Praktisi + Teladan), sub-teks "…berkategori Perintis, Praktisi, atau Teladan"; label batang "menerapkan BMP: 188 petani (100 %)"; "belum menerapkan" = Belum Implementasi saja (0)
+- Sub-teks KPI Master Data "188 menerapkan BMP (skor ≥ 1,00)" — angka sama dengan dashboard
+
+### TC-360-02 · Tooltip arti kategori & nama kegiatan Knowledge [P1] (2 mnt)
+Langkah:
+1. Arahkan kursor / Tab ke ubin **Belum Implementasi**, **Perintis**, **Praktisi**, **Teladan** (ikon ⓘ di label)
+2. Buka radar (dashboard atau Detail Petani › Monev BMP) → sumbu atas
+Harapan:
+- Tooltip: judul = label + rentang skor, isi = arti tingkat (Teladan: "Hampir semua praktik BMP … (champion)"); ubin bisa difokus keyboard
+- Sumbu atas radar & lipatan 1.1 bertuliskan **Knowledge (Petani dan Pekerja)** (bukan "Training") — setelah seed indikator env itu dijalankan (`TC-SEED-01`)
+
+## Seed
+
+### TC-SEED-01 · Seed parsial indikator BMP (nama kegiatan 1.1) [P0] (3 mnt)
+Prasyarat: akses DB env (staging/prod saat deploy); `npx dotenv -e .env.<env> -- npx tsx scripts/seed/seed-bmp-indicators.ts` (dry-run) lalu `--apply`.
+Langkah:
+1. Dry-run → baca diff (2 baris `activity_name` 1.1.1.1 & 1.1.1.2)
+2. `--apply` → buka Dashboard › Monev BMP radar & Master Data › Monev BMP › detail penilaian
+Harapan:
+- Dry-run hanya 2 baris berubah, tidak ada baris baru/hilang; skor & bobot tidak berubah
+- Label kegiatan 1.1 = "Knowledge (Petani dan Pekerja)"; skor petani & kategori tidak berubah sebelum/sesudah
+
