@@ -46,10 +46,13 @@ jobs:
             EOF
             chmod 600 .env
 
-            # BUILD
-            npm install
+            # BUILD — `npm ci` (lock-file, tanpa audit/fund: lebih ringan & deterministik) dan
+            # `free -m` sebelum/sesudah build sebagai jejak diagnosis memori (#340: OOM tanpa data).
+            free -m || true
+            npm ci --no-audit --no-fund
             npx prisma generate
             npm run build
+            free -m || true
 
             # RELOAD
             pm2 reload mis-main || pm2 start npm --name "mis-main" -- start -- -p 3000
