@@ -101,7 +101,7 @@ export function BmpActivityRadarSvg({
           const p1 = [cx + Math.cos(a1) * (R + 4), cy + Math.sin(a1) * (R + 4)];
           return <path key={`h${i}`} d={`M${cx},${cy} L${p0[0]},${p0[1]} A${R + 4},${R + 4} 0 0 1 ${p1[0]},${p1[1]} Z`} fill="transparent" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} />;
         })}
-        {/* Label batas pita di sumbu atas (Training) */}
+        {/* Label batas pita di sumbu atas (Knowledge) */}
         {[1, 1.5, 2.5, 3].map((v) => (
           <text key={v} x={cx + 1.2} y={cy - (v / BMP_SCORE_MAX) * R + 0.2} fontSize="2.5" className="fill-foreground stroke-background" dominantBaseline="middle" strokeWidth="0.6" paintOrder="stroke">
             {formatScore(v)}

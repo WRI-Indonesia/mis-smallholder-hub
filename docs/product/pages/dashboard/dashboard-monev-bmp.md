@@ -12,8 +12,8 @@ Halaman: Dashboard Monev BMP (/admin/dashboard/bmp-monev)
 │   ├── Judul + HelpHint · deskripsi + tanggal data · tautan ke BMP Dashboard (Produksi)
 │   └── Filter: Distrik (combobox) · Lembaga Petani (combobox, cascade) · Tahun survei (select, default tahun terbaru ber-data) — tersimpan di URL (?distrik&lembaga&tahun)
 ├── Seksi 1 · Gambaran umum
-│   ├── Kartu KPI (4): Petani Dinilai (dari petani aktif) · Rerata Skor · Menerapkan BMP (Teladan+Praktisi dari dinilai) · Lembaga Tercakup
-│   └── Sebaran Kategori Petani: 4 ubin (jumlah + %) + batang 100% (urut terendah → tertinggi)
+│   ├── Kartu KPI (4): Petani Dinilai (dari petani aktif) · Rerata Skor · Menerapkan BMP (Perintis+Praktisi+Teladan dari dinilai, #360) · Lembaga Tercakup
+│   └── Sebaran Kategori Petani: 4 ubin (jumlah + %, tooltip arti kategori) + batang 100% (urut terendah → tertinggi)
 ├── Seksi 2 · Lembaga Petani
 │   ├── Papan Lembaga Petani: baris = peringkat · nama (klik = filter Lembaga) · batang komposisi · rerata + badge · cakupan; urut Rerata / Cakupan / Abjad; legenda kategori
 │   └── Profil Kelembagaan (bila ada rincian): heatmap Lembaga × 14 indikator Lembaga (chip 0–3) + kolom Rerata + baris rerata kolom; urut Rerata / Abjad; ★ = ikut skor petani
@@ -40,8 +40,8 @@ Halaman: Dashboard Monev BMP (/admin/dashboard/bmp-monev)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Filter Distrik / Lembaga / Tahun | Combobox · Select | `useUrlFilters` (TD-021): `?distrik=&lembaga=&tahun=`; tahun hanya yang punya data; Lembaga menyempit mengikuti Distrik |
-| Kartu KPI (4) | Kartu | Petani Dinilai (pembagi = **seluruh petani aktif** Lembaga terpilih, termasuk yang belum disurvei), Rerata Skor (0–3), Menerapkan BMP (pembagi = dinilai), Lembaga Tercakup (dari Lembaga aktif) |
-| Sebaran Kategori Petani | Kartu hero | `bmpMonevTotals` → 4 ubin + batang 100%; palet ordinal abu → hijau makin gelap (validasi skill dataviz) |
+| Kartu KPI (4) | Kartu | Petani Dinilai (pembagi = **seluruh petani aktif** Lembaga terpilih, termasuk yang belum disurvei), Rerata Skor (0–3), Menerapkan BMP (Perintis + Praktisi + Teladan = skor ≥ 1,00; pembagi = dinilai), Lembaga Tercakup (dari Lembaga aktif) |
+| Sebaran Kategori Petani | Kartu hero | `bmpMonevTotals` → 4 ubin + batang 100%; palet ordinal abu → hijau makin gelap (validasi skill dataviz); tiap ubin ber-tooltip arti kategori dari `BMP_ASSESSMENT_CATEGORIES[].description` (ikon Info, ubin bisa difokus) |
 | Papan Lembaga Petani | Kartu | `bmpMonevGroupRows`; komposisi = proporsi dari petani **dinilai**; cakupan = dinilai ÷ aktif; klik nama → `setGroupId` (tombol "Semua Lembaga" melepas) |
 | Profil Kelembagaan | Heatmap | `bmpMonevGroupProfiles(sort)` + `bmpMonevGroupIndicatorAverages`; hanya Lembaga yang punya penilaian Lembaga tahun itu |
 | Profil 5 Kegiatan BMP | Radar + tabel | `BmpMonevActivityRadar` → `bmpMonevActivityProfile(subset)` dari **seluruh** `groups` (bukan hasil filter) untuk A dan B; SVG bersama `components/shared/bmp-activity-radar-svg.tsx` (skala 0–3, pita kategori redup, seri biru/oranye tervalidasi CVD); maks kegiatan = `bmpActivityMaxScore` (kriteria alternatif Gulma dihitung sekali → 3,00) |

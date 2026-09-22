@@ -42,14 +42,15 @@ export function BmpMonevScoreCards({ totals, yearLabel }: { totals: BmpMonevTota
     {
       title: "Menerapkan BMP",
       value: totals.assessedFarmers > 0 ? formatNumber(totals.adopters) : "—",
-      // Teladan + Praktisi = sudah menerapkan praktik (skor ≥ 1,50); pembagi
-      // petani dinilai — bukan seluruh petani — karena yang belum dinilai
-      // tidak diketahui statusnya.
+      // Perintis + Praktisi + Teladan = sudah menerapkan praktik (skor ≥ 1,00,
+      // owner #360 — Perintis sudah mulai menerapkan); pembagi petani dinilai
+      // — bukan seluruh petani — karena yang belum dinilai tidak diketahui
+      // statusnya.
       sub:
         totals.assessedFarmers > 0 ? (
           <>
             <StatEmph kind="percent">{pct(totals.adopters, totals.assessedFarmers)}</StatEmph> dari{" "}
-            <StatEmph kind="total">{formatNumber(totals.assessedFarmers)}</StatEmph> petani dinilai berkategori Teladan atau Praktisi
+            <StatEmph kind="total">{formatNumber(totals.assessedFarmers)}</StatEmph> petani dinilai berkategori Perintis, Praktisi, atau Teladan
           </>
         ) : (
           "belum ada penilaian"

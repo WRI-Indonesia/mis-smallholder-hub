@@ -272,10 +272,9 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
   const farmerCount = new Set(active.map((r) => r.farmerId)).size;
   const groupCount = new Set(active.map((r) => r.farmerGroupId)).size;
   const avg = active.length > 0 ? active.reduce((s, r) => s + r.score, 0) / active.length : null;
-  const adopters = active.filter((r) => {
-    const k = bmpAssessmentCategory(r.score).key;
-    return k === "TELADAN" || k === "PRAKTISI";
-  }).length;
+  // Menerapkan BMP = semua kecuali Belum Implementasi (skor ≥ 1,00) — definisi
+  // yang sama dengan kartu KPI Dashboard Monev BMP (#360).
+  const adopters = active.filter((r) => bmpAssessmentCategory(r.score).key !== "BELUM").length;
 
   const kpis = [
     { title: "Penilaian", value: formatNumber(active.length), icon: ClipboardCheck },
@@ -284,7 +283,7 @@ export function BmpMonevListClient({ initialRows, farmerGroups, districts, permi
     {
       title: "Rerata Skor",
       value: avg == null ? "—" : formatScore(avg),
-      sub: active.length > 0 ? `${formatNumber(adopters)} Teladan + Praktisi` : undefined,
+      sub: active.length > 0 ? `${formatNumber(adopters)} menerapkan BMP (skor ≥ 1,00)` : undefined,
       icon: Gauge,
     },
   ];

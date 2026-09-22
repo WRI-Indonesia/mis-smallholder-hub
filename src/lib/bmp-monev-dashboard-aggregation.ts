@@ -98,7 +98,11 @@ export interface BmpMonevTotals {
   totalFarmers: number;
   /** Rerata skor petani dinilai; null bila belum ada. */
   avgScore: number | null;
-  /** Teladan + Praktisi (sudah menerapkan BMP). */
+  /**
+   * Sudah menerapkan BMP = Teladan + Praktisi + Perintis (skor ≥ 1,00);
+   * hanya Belum Implementasi yang belum (owner #360 — Perintis sudah mulai
+   * menerapkan, semula terhitung "belum").
+   */
   adopters: number;
   groupsCovered: number;
   groupsTotal: number;
@@ -206,7 +210,7 @@ export function bmpMonevTotals(groups: BmpMonevGroupEntry[], year: number): BmpM
     assessedFarmers: scores.length,
     totalFarmers,
     avgScore: avgOf(scores),
-    adopters: byCategory.TELADAN + byCategory.PRAKTISI,
+    adopters: byCategory.TELADAN + byCategory.PRAKTISI + byCategory.PERINTIS,
     groupsCovered,
     groupsTotal: groups.length,
     byCategory,

@@ -1,7 +1,7 @@
 // bmp-indicator.prisma — rincian Monev BMP (#346): master indikator + skor per
 // indikator untuk penilaian PETANI (BmpAssessment) dan penilaian LEMBAGA
 // (BmpGroupAssessment). Sumber: form survei tim lapangan "Form Penilaian
-// (Gabungan)" — 5 kegiatan berbobot (Training 0,10 · Pemupukan 0,35 · Gulma
+// (Gabungan)" — 5 kegiatan berbobot (Knowledge 0,10 · Pemupukan 0,35 · Gulma
 // 0,10 · PHPT 0,10 · Panen 0,35), 32 indikator (18 individu + 14 lembaga; 21
 // berbobot, sisanya informatif), skor 0–3 + catatan.
 //

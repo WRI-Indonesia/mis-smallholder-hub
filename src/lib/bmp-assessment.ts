@@ -22,6 +22,12 @@ export interface BmpAssessmentCategory {
   /** Teks rentang untuk legenda/tabel rubrik. */
   range: string;
   /**
+   * Arti tingkat dalam praktik — tooltip ubin dashboard (#360). Rekap & form
+   * survei hanya memuat rentang skor; narasi diturunkan dari pola rubrik
+   * indikator (0 belum · 1 tahu/rencana · 2 ada belum penuh · 3 diterapkan).
+   */
+  description: string;
+  /**
    * Warna seri (dashboard, badge). Skala ordinal: abu untuk "belum" (tanpa
    * praktik), lalu satu hue hijau makin gelap = adopsi makin tinggi. Divalidasi
    * (skill dataviz, 2026-09-18): CVD ΔE ≥ 8, normal ≥ 15; kontras hijau muda
@@ -32,10 +38,38 @@ export interface BmpAssessmentCategory {
 
 /** Urutan TERTINGGI → terendah, sama dengan tabel rubrik rekap. */
 export const BMP_ASSESSMENT_CATEGORIES: readonly BmpAssessmentCategory[] = [
-  { key: "TELADAN", label: "Teladan", min: 2.51, range: "> 2,50", color: "#166534" },
-  { key: "PRAKTISI", label: "Praktisi", min: 1.5, range: "1,50 – 2,50", color: "#16a34a" },
-  { key: "PERINTIS", label: "Perintis", min: 1.0, range: "1,00 – 1,49", color: "#84cc16" },
-  { key: "BELUM", label: "Belum Implementasi", min: 0, range: "< 1,00", color: "#9ca3af" },
+  {
+    key: "TELADAN",
+    label: "Teladan",
+    min: 2.51,
+    range: "> 2,50",
+    color: "#166534",
+    description: "Hampir semua praktik BMP dijalankan sesuai standar secara konsisten; layak jadi contoh bagi petani lain (champion).",
+  },
+  {
+    key: "PRAKTISI",
+    label: "Praktisi",
+    min: 1.5,
+    range: "1,50 – 2,50",
+    color: "#16a34a",
+    description: "Sebagian besar praktik BMP sudah dijalankan, meski belum semuanya sesuai standar atau konsisten.",
+  },
+  {
+    key: "PERINTIS",
+    label: "Perintis",
+    min: 1.0,
+    range: "1,00 – 1,49",
+    color: "#84cc16",
+    description: "Mulai menerapkan sebagian praktik BMP; kebanyakan masih tahap tahu atau rencana, belum konsisten.",
+  },
+  {
+    key: "BELUM",
+    label: "Belum Implementasi",
+    min: 0,
+    range: "< 1,00",
+    color: "#9ca3af",
+    description: "Praktik BMP belum dijalankan — petani belum tahu atau baru tahu, belum ada yang diterapkan.",
+  },
 ] as const;
 
 export const BMP_SCORE_MIN = 0;
