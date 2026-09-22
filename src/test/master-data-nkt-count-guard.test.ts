@@ -64,14 +64,20 @@ describe("getFarmerGroups — nktCount per Lembaga (#338)", () => {
 });
 
 describe("getFarmers — nktCount per petani (#338)", () => {
-  it("_count.landParcels ber-filter NKT dipetakan ke nktCount, `_count` tidak bocor ke klien", async () => {
+  it("_count.landParcels ber-filter NKT dipetakan ke nktCount, `_count` tidak bocor ke klien; parcelCount (#343) dari groupBy kedua, 0 bila tanpa lahan", async () => {
     db.farmer.findMany.mockResolvedValue([
       { id: "f1", name: "Abdul", farmerId: "HJP.1", farmerGroup: { name: "HJP", district: { id: "1401", name: "Kampar" } }, _count: { landParcels: 2 } },
       { id: "f2", name: "Budi", farmerId: "HJP.2", farmerGroup: { name: "HJP", district: { id: "1401", name: "Kampar" } }, _count: { landParcels: 0 } },
     ]);
+    db.landParcel.groupBy.mockResolvedValue([{ farmerId: "f1", _count: { _all: 12 } }]);
     const rows = await getFarmers();
-    expect(rows.map((f) => [f.farmerId, f.nktCount])).toEqual([["HJP.1", 2], ["HJP.2", 0]]);
+    expect(rows.map((f) => [f.farmerId, f.nktCount, f.parcelCount])).toEqual([["HJP.1", 2, 12], ["HJP.2", 0, 0]]);
     expect(rows[0]).not.toHaveProperty("_count");
+    // groupBy memakai where petani yang sama (scope + status) — bukan seluruh tabel lahan.
+    const countCall = db.landParcel.groupBy.mock.calls[0][0];
+    expect(countCall.by).toEqual(["farmerId"]);
+    expect(countCall.where.isActive).toBe(true);
+    expect(countCall.where.farmer).toMatchObject({ isActive: true });
 
     const select = db.farmer.findMany.mock.calls[0][0].select;
     expect(select._count.select.landParcels.where).toMatchObject({ isActive: true, identity: { nkt: { status: { in: expect.arrayContaining(["AFFECTED"]) } } } });
@@ -81,5 +87,6 @@ describe("getFarmers — nktCount per petani (#338)", () => {
     hasPermission.mockResolvedValue(false);
     await expect(getFarmers()).rejects.toThrow(/izin/);
     expect(db.farmer.findMany).not.toHaveBeenCalled();
+    expect(db.landParcel.groupBy).not.toHaveBeenCalled();
   });
 });

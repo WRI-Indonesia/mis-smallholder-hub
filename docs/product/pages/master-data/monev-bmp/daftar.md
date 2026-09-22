@@ -13,7 +13,7 @@ Halaman: Monev BMP (/admin/master-data/bmp-monev)
 │   ├── Penilaian (baris aktif)
 │   ├── Petani Dinilai (unik)
 │   ├── Lembaga Petani (unik)
-│   └── Rerata Skor (sub: n Teladan + Praktisi)
+│   └── Rerata Skor (sub: n menerapkan BMP = skor ≥ 1,00, definisi #360)
 ├── Toolbar
 │   ├── Filter: Distrik · Lembaga Petani (DistrictGroupFilter, cascade)
 │   ├── Filter: Tahun survei (select, dari data)

@@ -25,9 +25,10 @@ Halaman: Petani (/admin/master-data/farmers)
 ├── Tabel
 │   ├── Kolom: ID Petani, Nama, L/P, NIK, Tempat Lahir, Tanggal Lahir,
 │   │          Status, Lembaga Petani, Tahun Bergabung, Distrik, Lahan NKT (#338, hidden)
-│   └── Aksi baris: Lihat, Edit, Nonaktifkan
+│   └── Aksi baris: Lihat, Edit, Nonaktifkan, Profil Petani (PDF) (#343, izin PRINT)
 └── Dialog
-    └── FarmerFormModal (Tambah / Edit Petani)
+    ├── FarmerFormModal (Tambah / Edit Petani)
+    └── Cetak Profil Petani — Lengkap / Ringkasan saja (#343, hanya bila lahan > 10)
 ```
 
 | Atribut | Nilai |
@@ -50,7 +51,7 @@ Halaman: Petani (/admin/master-data/farmers)
 | Pencarian | Filter | `Cari nama, ID petani, atau NIK...` (`name`, `farmerId`, `nik`) |
 | Tombol `Tambah Petani` | Tombol | CREATE — buka `FarmerFormModal` |
 | Tabel daftar | Tabel | Kolom: `ID Petani`, `Nama`, `L/P` (badge), `NIK` (disensor `maskNik`), `Tempat Lahir`, `Tanggal Lahir` (disensor `maskBirthDate`), `Status` (SUPERADMIN), `Lembaga Petani`, `Tahun Bergabung`, `Distrik`, `Lahan NKT` (hidden default, #338 — badge merah "n NKT" bila > 0; `nktCount` dari `_count.landParcels` ber-filter status NKT di `getFarmers`, satu kueri tanpa N+1; ikut Excel **bila kolomnya dinyalakan** — DataTable hanya mengekspor kolom aktif) |
-| Aksi baris | Tombol | Lihat → `/admin/master-data/farmers/{id}`; Edit → modal; Nonaktifkan → `toggleFarmerActive` |
+| Aksi baris | Tombol | Lihat → `/admin/master-data/farmers/{id}`; Edit → modal; Nonaktifkan → `toggleFarmerActive`; **Profil Petani (PDF)** (`TableActions` tipe `print`, ikon printer, gate PRINT, #343) → hook `useFarmerProfilePrint` yang sama dengan Detail Petani (toast progres, hanya baris itu yang berputar — baris lain tetap bisa diklik tetapi dijawab toast *"Profil Petani lain sedang disiapkan — tunggu sampai selesai."* (satu cetakan per waktu); lahan > 10 → dialog Lengkap / Ringkasan saja berdasarkan `parcelCount` dari `getFarmers`, `groupBy` kedua di samping `_count` NKT) |
 | Ekspor | Tombol | `data-farmers` — NIK & tanggal lahir diekspor penuh (tidak disensor) |
 
 ## Dialog: `FarmerFormModal` (`farmers/farmer-form-modal.tsx`)

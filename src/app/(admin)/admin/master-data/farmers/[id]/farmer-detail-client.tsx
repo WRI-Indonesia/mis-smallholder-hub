@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FarmerFormModal } from "../farmer-form-modal";
+import { useFarmerProfilePrint } from "../farmer-profile-print";
 import { BreadcrumbOverride } from "@/components/layout/admin/breadcrumb-override";
 import { ProductionMonthlyMatrix } from "@/components/shared/production-monthly-matrix";
 import { getFarmerParcelPassport } from "@/server/actions/farmer";
@@ -97,7 +98,7 @@ interface Props {
   farmerGroups: { id: string; name: string }[];
   canViewParcel: boolean;
   canEditParcel: boolean;
-  /** PRINT menu Petani — gate tombol PDF "Profil Lahan" per baris lahan. */
+  /** PRINT menu Petani — gate tombol "Profil Petani (PDF)" di header & PDF "Profil Lahan" per baris lahan. */
   canPrint: boolean;
   /** Riwayat Monev BMP (#344), terbaru di atas; kosong bila tanpa izin VIEW menu Monev BMP. */
   bmpAssessments: BmpAssessmentListItem[];
@@ -219,6 +220,8 @@ export function FarmerDetailClient({
   // Kategori terkini = penilaian tahun terbaru (daftar sudah terurut tahun desc).
   const latestBmp = bmpAssessments[0] ?? null;
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
+  // Profil Petani (PDF, #343): toast progres + dialog Lengkap/Ringkasan bila lahan > 10.
+  const profilePrint = useFarmerProfilePrint();
   const { summary, subGroups, pelatihan, produksi } = detail;
 
   const age = ageFrom(farmer.birthDate);
@@ -284,12 +287,29 @@ export function FarmerDetailClient({
             </div>
           </div>
         </div>
-        {canEdit && (
-          <Button size="sm" variant="outline" onClick={() => setShowEdit(true)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canPrint && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={profilePrint.loadingId != null}
+              onClick={() => profilePrint.print({ id: farmer.id, name: farmer.name, parcelCount: parcels.length })}
+            >
+              {profilePrint.loadingId ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4 mr-2" />
+              )}
+              Profil Petani (PDF)
+            </Button>
+          )}
+          {canEdit && (
+            <Button size="sm" variant="outline" onClick={() => setShowEdit(true)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -691,6 +711,7 @@ export function FarmerDetailClient({
         )}
       </Tabs>
 
+      {canPrint && profilePrint.dialog}
       {canEdit && (
         <FarmerFormModal
           key={farmer.id}

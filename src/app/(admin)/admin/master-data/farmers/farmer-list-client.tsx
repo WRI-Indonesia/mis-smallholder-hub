@@ -8,6 +8,7 @@ import { NktCountBadge } from "@/components/shared/nkt-count-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Building, Users, User, UserCheck } from "lucide-react";
 import { FarmerFormModal } from "./farmer-form-modal";
+import { useFarmerProfilePrint } from "./farmer-profile-print";
 import { toggleFarmerActive } from "@/server/actions/farmer";
 import { toast } from "sonner";
 import {
@@ -48,6 +49,8 @@ interface Farmer {
   isActive: boolean;
   /** Lahan aktif termasuk/terdampak NKT (#338). */
   nktCount: number;
+  /** Lahan aktif (#343) — dasar dialog "> 10 lahan" sebelum mencetak Profil Petani. */
+  parcelCount: number;
 }
 
 interface Props {
@@ -71,6 +74,8 @@ export function FarmerListClient({
   const [showForm, setShowForm] = useState(false);
   const [editFarmer, setEditFarmer] = useState<Farmer | null>(null);
   const router = useRouter();
+  // Profil Petani (PDF) per baris (#343): hanya baris yang diproses yang berputar.
+  const profilePrint = useFarmerProfilePrint();
 
   const filtered = initialFarmers.filter((f) => {
     const matchGroup = groupFilter === "all" || f.farmerGroupId === groupFilter;
@@ -341,11 +346,20 @@ export function FarmerListClient({
                   isActive: farmer.isActive,
                   onClick: () => handleToggleActive(farmer.id),
                 },
+                {
+                  type: "print",
+                  title: "Profil Petani (PDF)",
+                  loading: profilePrint.loadingId === farmer.id,
+                  onClick: () =>
+                    profilePrint.print({ id: farmer.id, name: farmer.name, parcelCount: farmer.parcelCount }),
+                },
               ]}
             />
           )}
         />
       </Card>
+
+      {permissions.includes("PRINT") && profilePrint.dialog}
 
       <FarmerFormModal
         key={editFarmer?.id ?? "new"}

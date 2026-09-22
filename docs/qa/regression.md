@@ -58,3 +58,15 @@ Langkah:
 1. Detail Lahan → Unduh PDF Profil Lahan
 Harapan:
 - Persegi bernomor patok itu **terlihat** di peta (bingkai melebar), dan tercantum di tabel Patok Batas
+
+### TC-REV-09 · Profil Petani (PDF) — 1 lahan, tanpa lahan, > 10 lahan [P1] [regresi] (5 mnt)
+Asal: #343 (2026-09-22). Prasyarat: petani 1 lahan ber-poligon; petani tanpa lahan (Data Analyst › Ringkasan Petani › tab Petani Tanpa Lahan); petani > 10 lahan (mis. lahan terbanyak di Lembaga).
+Langkah:
+1. Detail Petani (1 lahan) → **Profil Petani (PDF)**; buka berkasnya
+2. Daftar Petani → ikon printer pada baris petani **tanpa lahan**
+3. Daftar Petani → ikon printer pada baris petani **> 10 lahan** → dialog → **Ringkasan saja**; ulangi → **Lengkap**
+Harapan:
+- (1) ≈ 4 halaman: ringkasan (identitas ber-NIK penuh, 5 kartu = kartu layar, Daftar Lahan No 1, peta sebaran penanda ① ) lalu *Lampiran 1 dari 1* = Profil Lahan penuh; footer `Hal. n/N` menerus
+- (2) tombol **aktif**; PDF 1 halaman berisi identitas, *Petani ini belum memiliki lahan.*, pelatihan, produksi — tanpa peta/lampiran, tanpa galat
+- (3) dialog menyebut ±N halaman (M lahan); *Ringkasan saja* → PDF tanpa lampiran, cepat; *Lengkap* → toast "Menyiapkan Profil Petani — M lahan…", hanya baris itu berputar, PDF berisi M lampiran bernomor = kolom No tabel
+

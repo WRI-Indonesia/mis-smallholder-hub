@@ -13,7 +13,7 @@ goal: Setiap sudut lahan punya patok bernomor dengan koordinat, kondisi, dan fot
 
 **Patok** adalah tanda batas fisik di sudut lahan (beton, kayu, pipa, atau tanda alam). Sistem menyimpannya terpisah dari poligon: poligon boleh direvisi lewat unggah shapefile, patoknya tetap.
 
-+ Satu patok fisik biasanya berdiri di pertemuan **dua sampai empat lahan**. Karena itu patok dicatat **sekali** dan ditautkan ke semua lahan pemakainya — mengubah koordinat, kondisi, atau fotonya berlaku untuk semua lahan itu. Tabel patok menyebut lahan lain pemakainya di bawah koordinat ("Juga patok lahan …").
++ Satu patok fisik biasanya berdiri di pertemuan **dua sampai empat lahan**. Karena itu patok dicatat **sekali** dan ditautkan ke semua lahan pemakainya — mengubah koordinat, kondisi, atau fotonya berlaku untuk semua lahan itu. Tabel patok menyebut lahan lain pemakainya di bawah koordinat ("Juga patok lahan …"; di PDF Profil Lahan kolomnya bernama **Patok Bersama Lahan Tetangga**).
 + Nomor patok berlaku **per lahan** (lahan A menyebutnya patok #2, lahan tetangga mungkin #4). Nomor yang sama dipakai di peta, tabel, unduhan koordinat, dan Profil Lahan PDF. Selain nomor, tiap patok fisik punya **kode unik** seperti `HJP-PTK-000123` (singkatan Lembaga · PTK · nomor urut) yang sama di semua lahan pemakainya — kode inilah yang ditulis di patok fisik dan dipakai saat mengunggah ulang koordinat.
 
 Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Buat patok dari poligon** dan **Tambah patok** butuh izin tambah, pensil & panah urutan butuh izin ubah, ikon lepas tautan butuh izin hapus.
