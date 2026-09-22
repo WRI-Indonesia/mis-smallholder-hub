@@ -10,7 +10,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 │   ├── BreadcrumbOverride
 │   ├── Tombol kembali, avatar inisial, nama, ID petani
 │   ├── Badge: L/P, Lembaga, Kelompok Tani, Aktif/Nonaktif, kategori Monev BMP terbaru (#344)
-│   └── Tombol: Edit
+│   └── Tombol: Profil Petani (PDF) (#343, izin PRINT), Edit
 ├── Kartu ringkasan
 │   ├── Lahan
 │   ├── Produksi
@@ -35,15 +35,16 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 │       ├── Tombol: Tambah Penilaian (BmpAssessmentFormModal fixedFarmer)
 │       └── Tabel: skor per tahun (skor · kategori · tanggal · lahan · penilai) — klik tahun → rincian ringkas (BmpAssessmentInlineDetail, lazy) + tombol Ubah
 └── Dialog
-    └── FarmerFormModal (Edit Petani)
+    ├── FarmerFormModal (Edit Petani)
+    └── Cetak Profil Petani — Lengkap / Ringkasan saja (#343, hanya bila lahan > 10)
 ```
 
 | Atribut | Nilai |
 |---|---|
 | File | `farmers/[id]/page.tsx` + `farmers/[id]/farmer-detail-client.tsx` |
 | Tipe | Server Component + client component |
-| Guard | `requirePermission("master-data-farmers")`; `hasPermission(...,"EDIT")` untuk tombol Edit; `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate aksi popup peta); `notFound()` bila kosong |
-| Server action / data | `getFarmerDetail(id)` → `{ farmer, detail, parcels, mapParcels }`, `getFarmerTreePoints(id)` (`src/server/actions/tree.ts`, #238; jumlah pohon per lahan diturunkan di page dari titik ini — action `getFarmerTreeSummary` dihapus #241), `getFarmerGroupOptions` (bila boleh edit), `getFarmerParcelPassport(parcelId)` untuk PDF |
+| Guard | `requirePermission("master-data-farmers")`; `hasPermission(...,"EDIT")` untuk tombol Edit; `hasPermission(...,"PRINT")` → prop `canPrint` (tombol Profil Petani + PDF per baris lahan); `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate aksi popup peta); `notFound()` bila kosong |
+| Server action / data | `getFarmerDetail(id)` → `{ farmer, detail, parcels, mapParcels }`, `getFarmerTreePoints(id)` (`src/server/actions/tree.ts`, #238; jumlah pohon per lahan diturunkan di page dari titik ini — action `getFarmerTreeSummary` dihapus #241), `getFarmerGroupOptions` (bila boleh edit), `getFarmerParcelPassport(parcelId)` untuk PDF per lahan, `getFarmerProfilePassport(farmerId, { includeParcels })` untuk PDF Profil Petani (#343) |
 
 ## Objek halaman
 
@@ -51,6 +52,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 |---|---|---|
 | `BreadcrumbOverride` | Navigasi | Menampilkan ID Petani, bukan CUID |
 | Header | Heading | Tombol kembali, avatar inisial (placeholder, TD-017), nama, ID petani, badge L/P + Lembaga (link) + Kelompok Tani + `Aktif`/`Nonaktif` |
+| Tombol `Profil Petani (PDF)` | Tombol | PRINT (#343) — hook bersama `useFarmerProfilePrint` (`farmers/farmer-profile-print.tsx`): toast progres *"Menyiapkan Profil Petani — M lahan…"*, ikon berputar, lalu `getFarmerProfilePassport` → `generateFarmerProfilePdf` (`src/lib/farmer-profile-pdf.ts`, dynamic import). Lahan **> 10** → dialog **Cetak Profil Petani** *"Dokumen … akan berisi ±N halaman (M lahan). Cetak lengkap … atau ringkasan saja?"* dengan tombol `Ringkasan saja` (Bagian A saja, `includeParcels:false` — kueri lahan berat tak disentuh) / `Lengkap` (bawaan). Nama berkas `Profil_Petani_<Lembaga>_<Nama>_<ID Petani>.pdf` |
 | Tombol `Edit` | Tombol | EDIT — buka `FarmerFormModal` |
 | Kartu ringkasan (5) | Kartu | `Lahan` (persil + Ha), `Produksi` (Ton), `Pelatihan` (n/n paket), `Kelengkapan Profil` (n/n + field yang belum), `Produktivitas Terakhir` (Ton/Ha) |
 | Tabs | Tab | `Ringkasan`, `Lahan`, `Pelatihan`, `Produksi`, `Monev BMP` (#344 — gate izin VIEW `master-data-bmp-monev`, data `getFarmerBmpAssessments`) |
@@ -65,3 +67,15 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | Tab Monev BMP | Tabel expandable | Satu baris per tahun survei (skor `formatScore`, badge kategori, tanggal UTC, lahan dikunjungi, penilai); klik baris → `BmpAssessmentInlineDetail` (raport kegiatan + indikator, dimuat malas lewat `getBmpAssessmentDetailView`) + tautan ke halaman detail; tombol `Tambah Penilaian` (CREATE) membuka `BmpAssessmentFormModal` dengan petani terkunci (`fixedFarmer`, modal di-remount per buka). Header ikut menampilkan badge kategori tahun terbaru |
 
 Dialog `FarmerFormModal` (field lengkap) didokumentasikan di [daftar.md](./daftar.md#dialog-farmerformmodal-farmersfarmer-form-modaltsx).
+
+## PDF Profil Petani (#343)
+
+A4 portrait (jsPDF, gaya & helper bersama `src/lib/farm-passport.ts`), data dari `getFarmerProfilePassport` (`src/server/actions/farmer.ts`; tipe `FarmerProfilePassport` di `src/types/farmer-profile.ts`). **Angka Bagian A = angka Detail Petani** karena sama-sama lewat `buildFarmerDetail`.
+
+| Bagian | Isi |
+|---|---|
+| A — Ringkasan Petani | Header (nama, ID Petani, badge L/P · Lembaga · Aktif/Nonaktif, "Dicetak"); **Identitas** dua kolom (Lembaga + kode, Kelompok Tani distinct dari lahan, Distrik, Provinsi, Jenis Kelamin, Tahun Bergabung · **NIK & tanggal lahir penuh** — dokumen resmi, standar ui-ux §Masking — tempat lahir + umur, Alamat, Dibuat, Terakhir Diubah); **5 kartu** sama dengan layar; **Daftar Lahan** (No · Kode Lahan · Kelompok Tani · Blok · Surat · STDB · NKT · Luas · Tahun Tanam · Pohon · Patok · Rev. + baris total) — **No = nomor penanda di peta = nomor lampiran**, lahan tanpa poligon tercantum dengan catatan *belum dipetakan* tanpa nomor; **Peta Sebaran Lahan** (fit-bounds semua lahan ber-geometri, poligon di bawah, **lingkaran bernomor di centroid** — merah bila NKT — graticule, skala batang sampai km, panah utara; dilewati bila tak ada geometri); **Pelatihan** — **satu tabel** `Paket · Tanggal · Pre / Post Test` (owner 2026-09-22, menggantikan checklist + riwayat terpisah): tiap partisipasi satu baris urut paket wajib, paket wajib yang belum diikuti tetap satu baris *Belum* (miring abu), paket lain (OTHER) menyusul; Lokasi tidak dicetak; **Produksi** (matriks gabungan semua lahan Tahun × Luas Terdata × 12 bulan × Total × Ton/Ha — Ton/Ha = produksi ÷ luas terdata, sama dengan layar; lalu Rekap per Lahan per Tahun: Luas · Umur/PSR · kg · Ton/Ha · Bulan Terisi n/12). **Monev BMP** (owner 2026-09-22; **hanya bila pengguna punya VIEW `master-data-bmp-monev`** — aturan tab di layar; tanpa izin section & badge tidak dicetak, `bmp: null`): badge kategori terbaru di header (warna `BMP_ASSESSMENT_CATEGORIES`), tabel per tahun `Tahun · Tgl Survei · Skor · Kategori · Lahan Dikunjungi · Penilai · 5 kolom skor kegiatan` (nama pendek `bmpShortName`, sama dengan sumbu radar layar) + legenda rentang kategori, lalu **radar vektor** tahun terbaru ber-rincian (`drawBmpRadar`: pita 4 kategori, nilai setara 0–3) + daftar kegiatan `kode nama · n/m terisi · skor / max` + "Indikator Lembaga terisi n/m" — angka dari `getBmpAssessmentDetailView` per penilaian (sama dengan rincian inline tab #346). Empty state: *Petani ini belum memiliki lahan.* / *Belum pernah mengikuti pelatihan.* / *Belum ada data produksi untuk petani ini.* / *Belum ada penilaian Monev BMP untuk petani ini.* |
+| B — Lampiran | Satu **Profil Lahan penuh** per lahan ber-geometri, urut nomor tabel, mulai halaman baru, baris kecil *"Lampiran n dari N"* kanan-atas; isi sama dengan PDF Profil Lahan berdiri sendiri (`drawFarmPassport` — `buildFarmPassportDoc` kini pembungkusnya) **kecuali section Pelatihan yang dilewati** (owner 2026-09-22: sudah terwakili tabel pelatihan Bagian A). Dilewati seluruhnya bila pengguna memilih *Ringkasan saja*. |
+| Footer & metadata | `Hal. n/N` **menerus** seluruh dokumen (satu pass di akhir), catatan hukum & brand sama dengan Profil Lahan; `setProperties` title/subject/author (juga ditambahkan ke Profil Lahan) |
+
+Jumlah pohon & patok per lahan dihitung `groupBy` (`tree`, `landParcelMarker`) — bukan memuat titik (pola #335). Lampiran: `computeFarmerTrainingItems` + akses dihitung **sekali** lalu dioper ke `fetchParcelPassport(id, true, { access, training })`, dijalankan per **chunk 5 paralel** (pool pg 10). Petani nonaktif hanya bisa dicetak SUPERADMIN (sama dengan siapa yang bisa membuka detailnya). Unit test: `src/test/farmer-profile-pdf.test.ts`, `farmer-profile-passport-guard.test.ts`, `parcel-passport-shared.test.ts`.

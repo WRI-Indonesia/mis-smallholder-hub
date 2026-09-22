@@ -26,7 +26,7 @@ Siapkan: nama lengkap, **ID Petani**, jenis kelamin, dan nama lembaga. Sisanya b
 2. Pilih **Lembaga Petani** — ketik sebagian nama untuk menyaring.
 + Daftar yang muncul hanya lembaga dalam wilayah kerja akun Anda, jadi wajar bila jauh lebih pendek daripada daftar seluruh organisasi. Pembatasan ini berlaku di seluruh sistem, bukan hanya di form ini: laporan dan dashboard Anda pun hanya menghitung lembaga yang sama. Karena itu angka total bisa berbeda antar pengguna, dan itu normal.
 3. Isi **Nama** dengan nama lengkap sesuai dokumen.
-+ Nama ini muncul di daftar hadir pelatihan, Laporan Petani, Laporan Lahan, dan Profil Lahan PDF yang kadang diserahkan ke pihak ketiga. Hindari singkatan dan gelar. Kalau nama di KTP berbeda dengan nama panggilan yang dipakai sehari-hari di lapangan, pakai nama KTP di sini agar cocok saat verifikasi sertifikasi.
++ Nama ini muncul di daftar hadir pelatihan, Laporan Petani, Laporan Lahan, serta Profil Lahan dan Profil Petani PDF yang kadang diserahkan ke pihak ketiga. Hindari singkatan dan gelar. Kalau nama di KTP berbeda dengan nama panggilan yang dipakai sehari-hari di lapangan, pakai nama KTP di sini agar cocok saat verifikasi sertifikasi.
 4. Isi **ID Petani**. Harus unik **di dalam lembaga ini**.
 + Lembaga berbeda boleh memakai nomor yang sama — nomor petani adalah milik lembaga masing-masing. Sistem menolak bila nomornya sudah dipakai di lembaga yang sama, jadi Anda tidak bisa membuat data ganda tanpa sadar. Hati-hati saat menyalin dari Excel: nol di depan sering hilang karena sel diperlakukan sebagai angka, sehingga `007` berubah jadi `7` dan tidak lagi cocok dengan berkas unggahan Anda.
 5. Pilih **Jenis Kelamin**.

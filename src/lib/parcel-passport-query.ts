@@ -6,7 +6,7 @@
 import { centroid } from "@turf/turf";
 import type { Polygon, MultiPolygon } from "geojson";
 import { prisma } from "@/lib/prisma";
-import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
+import { getAccessContext, farmerGroupAccessFilter, type AccessContext } from "@/lib/access-context";
 import { summarizeProduction } from "@/lib/map-data";
 import { fetchParcelNeighbors } from "@/lib/parcel-neighbor-query";
 import { NEIGHBOR_LIMIT_PDF } from "@/lib/parcel-neighbor";
@@ -55,13 +55,16 @@ export async function computeFarmerTrainingItems(farmerId: string): Promise<Farm
  * RBAC-scoped via the parcel's farmer group.
  *
  * Pass `includeProduction: false` when the caller already holds the parcel's
- * production summary.
+ * production summary. `shared` (#343): Profil Petani memanggil ini per lahan
+ * (sampai 40×) — akses & checklist pelatihan petani dihitung SEKALI oleh
+ * pemanggil lalu dioper, bukan diulang per lahan; pemanggil lama tak berubah.
  */
 export async function fetchParcelPassport(
   landParcelId: string,
-  includeProduction = true
+  includeProduction = true,
+  shared: { access?: AccessContext; training?: FarmerTrainingItem[] } = {},
 ): Promise<ActionResult<ParcelPassport>> {
-  const access = await getAccessContext();
+  const access = shared.access ?? (await getAccessContext());
   const parcel = await prisma.landParcel.findFirst({
     where: {
       id: landParcelId,
@@ -165,7 +168,7 @@ export async function fetchParcelPassport(
 
   const farmer = parcel.farmer;
   const [training, prodRecords, treeCount, neighborhood] = await Promise.all([
-    computeFarmerTrainingItems(farmer.id),
+    shared.training ?? computeFarmerTrainingItems(farmer.id),
     includeProduction
       ? prisma.productionRecord.findMany({
           where: { parcelId: landParcelId, isActive: true },

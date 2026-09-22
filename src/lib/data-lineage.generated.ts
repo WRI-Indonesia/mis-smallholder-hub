@@ -351,6 +351,7 @@ export const DATA_LINEAGE: DataLineage = [
       "farmerGroup": "R",
       "landParcel": "R",
       "landParcelIdentity": "R",
+      "landParcelMarker": "R",
       "productionRecord": "R",
       "trainingPackage": "R",
       "trainingParticipant": "R",
