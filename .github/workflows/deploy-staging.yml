@@ -50,10 +50,13 @@ jobs:
             # GUARD: gagal keras bila secret belum diisi (jangan deploy dengan .env kosong)
             grep -q "DATABASE_URL" .env || { echo "::error::secret MIS_STAGING_ENV kosong / tanpa DATABASE_URL — deploy dibatalkan"; exit 1; }
 
-            # BUILD
-            npm install
+            # BUILD — `npm ci` (lock-file, tanpa audit/fund: lebih ringan & deterministik) dan
+            # `free -m` sebelum/sesudah build sebagai jejak diagnosis memori (#340: OOM tanpa data).
+            free -m || true
+            npm ci --no-audit --no-fund
             npx prisma generate
             npm run build
+            free -m || true
 
             # RELOAD
             pm2 reload mis-staging || pm2 start npm --name "mis-staging" -- start -- -p 3000

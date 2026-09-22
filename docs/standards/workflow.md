@@ -65,7 +65,7 @@ Sebelum **setiap commit dari lokal**, kelima gate ini **wajib hijau** — jangan
 |------|----------|------------|
 | Lint | `npm run lint` | **exit 0** — 0 error (warning boleh, tapi disepakati terpisah) |
 | Build | `npm run build` | build ✓ (juga meregenerasi `.next/types` yang dibaca Typecheck) |
-| Typecheck | `npm run typecheck` (`tsc --noEmit`, **mencakup `src/test/**`** — `next build` tidak mengetik-cek berkas test, #288). Jalankan **setelah** Build: `tsconfig` juga memuat `.next/types/**` sehingga rute yang baru dihapus/diganti nama meninggalkan validator usang sampai build berikutnya | 0 type error |
+| Typecheck | `npm run typecheck` (`tsc --noEmit -p tsconfig.typecheck.json`, **mencakup `src/test/**`** — `next build` tidak mengetik-cek berkas test, #288; sejak v0.38.0 `tsconfig.json` mengecualikan `src/test` agar tahap type-check `next build` di server ber-RAM kecil tidak OOM — berkas test hanya diperiksa lewat perintah ini). Jalankan **setelah** Build: `tsconfig` juga memuat `.next/types/**` sehingga rute yang baru dihapus/diganti nama meninggalkan validator usang sampai build berikutnya | 0 type error |
 | Test | `npm test` | semua lulus, **tidak ada** test di-skip |
 | **Docs sync** | Review & update `docs/` yang terdampak | Dokumentasi terkait sudah diperbarui & konsisten, di-commit **bersama** kode |
 

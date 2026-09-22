@@ -1,0 +1,8 @@
+{
+  "// catatan": "Gate lokal `npm run typecheck` (#288): sama dengan tsconfig.json TETAPI mencakup src/test/**. tsconfig.json sendiri mengecualikan src/test sejak v0.38.0 supaya tahap 'Running TypeScript' di `next build` pada server staging/prod (heap Node ±1 GB) tidak kehabisan memori — pemeriksaan tipe berkas test tetap wajib, di sini.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": ".next/cache/tsconfig.typecheck.tsbuildinfo"
+  },
+  "exclude": ["node_modules", "prisma/backup", "prisma/seeds", "prisma/seed.ts", "scripts"]
+}
