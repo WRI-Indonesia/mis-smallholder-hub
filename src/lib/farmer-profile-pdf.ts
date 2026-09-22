@@ -12,6 +12,7 @@ import autoTable from "jspdf-autotable";
 import type { Position } from "geojson";
 import {
   AREA_FILL,
+  CONTENT_BOTTOM,
   CONTENT_W,
   EMERALD,
   MARGIN,
@@ -242,7 +243,34 @@ function drawAttrs(doc: jsPDF, items: { label: string; value: string }[], x: num
   return cy;
 }
 
-/** Sub-judul di dalam section (mis. "Riwayat Partisipasi (n)"). */
+/** Jarak baku antar section Bagian A (mm) — sama dengan `finalY + 12` di Profil Lahan. */
+const SECTION_GAP = 12;
+
+/**
+ * Kepadatan tabel Bagian A seragam: font 8 / padding 1,8 (Pelatihan, Rekap,
+ * Monev BMP). Pengecualian yang lebih rapat: Daftar Lahan 12 kolom (7,5/1,4)
+ * dan matriks bulanan 16 kolom (7/1,5). Lampiran Profil Lahan memakai gayanya
+ * sendiri (9/2,6) — tidak disentuh.
+ */
+function profileTable() {
+  const t = passportTableCommon();
+  return {
+    ...t,
+    styles: { font: "helvetica", cellPadding: 1.8, overflow: "linebreak" as const },
+    headStyles: { ...t.headStyles, fontSize: 8 },
+    bodyStyles: { ...t.bodyStyles, fontSize: 8 },
+  };
+}
+
+/**
+ * Perkiraan tinggi judul + tabel (mm) untuk `ensureSpace` SEBELUM judul
+ * digambar — supaya judul tidak tertinggal yatim di dasar halaman sementara
+ * tabelnya pindah, dan tabel pendek tidak menyisakan satu baris di halaman
+ * berikutnya. Tabel panjang tetap boleh pecah (dibatasi `cap`).
+ */
+const blockNeed = (rows: number, rowH = 6.4, headH = 13, cap = 80) => Math.min(headH + rows * rowH, cap);
+
+/** Sub-judul di dalam section (mis. "Rekap per Lahan per Tahun"). */
 function subHeading(doc: jsPDF, text: string, y: number) {
   doc.setFontSize(9.5);
   doc.setFont("helvetica", "bold");
@@ -407,10 +435,10 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
     if (all.length > 2) sub[1] = fitText(doc, `${sub[1]}…`, cardW - 6);
     doc.text(sub, x + 3, y + 17.5);
   });
-  y += cardH + 10;
+  y += cardH + SECTION_GAP;
 
   // ── Daftar Lahan — No = nomor peta sebaran = nomor lampiran.
-  y = ensureSpace(doc, y, 30);
+  y = ensureSpace(doc, y, blockNeed(Math.min(parcels.length, 4) + 1, 7));
   sectionHeading(doc, `Daftar Lahan (${fmtNum(parcels.length)})`, y);
   y += 5;
   if (parcels.length === 0) {
@@ -426,7 +454,8 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
         orDash(p.blok),
         orDash(p.surat),
         orDash(p.stdb),
-        isNktAffected(p.nktStatus) ? landNktStatusLabel(p.nktStatus!, true) : p.nktStatus ? "Tidak" : "—",
+        // Kolom sudah berjudul NKT → "Terdampak"/"Termasuk" tanpa akhiran (muat satu baris di 17 mm).
+        isNktAffected(p.nktStatus) ? landNktStatusLabel(p.nktStatus!, true).replace(/ NKT$/, "") : p.nktStatus ? "Tidak" : "—",
         p.area != null ? fmtDec(p.area) : "—",
         orDash(p.plantingYear),
         p.treeCount > 0 ? fmtNum(p.treeCount) : "—",
@@ -451,7 +480,7 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
       footStyles: { fillColor: [241, 245, 249], textColor: SLATE_800, fontSize: 7.5, fontStyle: "bold" },
       columnStyles: {
         0: { halign: "right", cellWidth: 7 }, 1: { cellWidth: 34 }, 2: { cellWidth: 20 }, 3: { cellWidth: 11 },
-        4: { cellWidth: 20 }, 5: { cellWidth: 21 }, 6: { cellWidth: 17 },
+        4: { cellWidth: 19 }, 5: { cellWidth: 21 }, 6: { cellWidth: 17 },
         7: { halign: "right", cellWidth: 12 }, 8: { halign: "right", cellWidth: 11 }, 9: { halign: "right", cellWidth: 11 },
         10: { halign: "right", cellWidth: 10 }, 11: { halign: "right" },
       },
@@ -465,14 +494,17 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
       doc.text(`${fmtNum(unmapped)} lahan belum dipetakan (tanpa poligon) — tercantum tanpa nomor peta dan tanpa lampiran Profil Lahan.`, MARGIN, y);
       y += 4;
     }
-    y += 6;
+    y += SECTION_GAP - 4;
   }
 
   // ── Peta Sebaran Lahan — hanya bila ada geometri; bagian berikutnya naik bila tidak.
   if (mappedCount > 0) {
-    // 80 mm: petani 1–2 lahan (mayoritas) masih memuat peta di halaman 1.
-    const mapH = 80;
-    y = ensureSpace(doc, y, mapH + 22);
+    // Tinggi adaptif 60–80 mm: pakai sisa halaman bila masih ≥ 60 mm (peta
+    // ikut di halaman 1 untuk petani 1–4 lahan), selebihnya halaman baru 80 mm.
+    const MAP_MAX = 80, MAP_MIN = 55, MAP_EXTRA = 23; // EXTRA = judul 5 + keterangan 2 baris + jarak section
+    const room = CONTENT_BOTTOM - y - MAP_EXTRA;
+    const mapH = room >= MAP_MIN ? Math.min(MAP_MAX, room) : MAP_MAX;
+    y = ensureSpace(doc, y, mapH + MAP_EXTRA);
     sectionHeading(doc, "Peta Sebaran Lahan", y);
     y += 5;
     const box: Box = { x: MARGIN, y, w: CONTENT_W, h: mapH };
@@ -488,7 +520,7 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
     y += 3.6;
     doc.setFont("helvetica", "italic");
     doc.text("Bentuk & batas tiap lahan: lihat lampiran Profil Lahan.", MARGIN, y);
-    y += 10;
+    y += SECTION_GAP - 2;
   }
 
   // ── Pelatihan — SATU tabel (owner 2026-09-22, smoke prod: "dalam satu table
@@ -496,7 +528,8 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
   // Baris = tiap partisipasi, urut paket wajib (urutan checklist layar), paket
   // lain (OTHER) menyusul; paket wajib yang belum diikuti tetap satu baris
   // "Belum" supaya makna checklist tidak hilang. Lokasi tidak dicetak.
-  y = ensureSpace(doc, y, 40);
+  const trainingRowCount = Math.max(training.checklist.length, 1) + Math.max(training.history.length - training.checklist.length, 0);
+  y = ensureSpace(doc, y, blockNeed(trainingRowCount + 1));
   sectionHeading(doc, "Pelatihan", y);
   y += 5;
   const score = (h: { preTestScore: number | null; postTestScore: number | null }) =>
@@ -522,7 +555,7 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
       body: trainingRows,
       startY: y,
       theme: "striped",
-      ...tableCommon,
+      ...profileTable(),
       columnStyles: { 1: { cellWidth: 34 }, 2: { halign: "right", cellWidth: 32 } },
       // Baris "Belum" dibedakan (miring, abu) dari tanggal — tanpa mengubah teksnya.
       didParseCell: (data) => {
@@ -533,18 +566,18 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
       },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 6;
+    y = (doc as any).lastAutoTable.finalY;
   }
-  y += 6;
+  y += SECTION_GAP;
 
   // ── Produksi: matriks gabungan semua lahan + rekap per lahan per tahun.
-  // Butuh judul + baris pengantar + kepala tabel + 1 baris (≈ 30 mm); sisa baris pecah halaman sendiri (autoTable).
-  y = ensureSpace(doc, y, production.all.perYear.length === 0 ? 14 : 30);
+  // Judul + pengantar + matriks (tahun ber-data biasanya ≤ 3 → satu blok).
+  y = ensureSpace(doc, y, production.all.perYear.length === 0 ? 14 : blockNeed(production.all.perYear.length + 1, 6, 22, 60));
   sectionHeading(doc, "Produksi", y);
   y += 5;
   if (production.all.perYear.length === 0) {
     y = emptyLine(doc, "Belum ada data produksi untuk petani ini.", y);
-    return drawBmpSection(doc, data, y + 6);
+    return drawBmpSection(doc, data, y + SECTION_GAP - 9);
   }
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -589,12 +622,12 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
   y += 9;
 
   // Rekap per lahan per tahun — rincian bulanan per lahan TIDAK diulang (ada di lampiran).
-  y = ensureSpace(doc, y, 24);
+  const rows = [...production.parcelBreakdown].sort((a, b) => a.label.localeCompare(b.label, "id") || b.year - a.year);
+  y = ensureSpace(doc, y, blockNeed(rows.length + 1, 6.4, 11));
   subHeading(doc, "Rekap per Lahan per Tahun", y);
   y += 3;
   const umur = (r: { isPsr: boolean; plantingYear: number | null }) =>
     r.isPsr ? "PSR" : r.plantingYear != null ? `${production.currentYear - r.plantingYear} thn` : "—";
-  const rows = [...production.parcelBreakdown].sort((a, b) => a.label.localeCompare(b.label, "id") || b.year - a.year);
   autoTable(doc, {
     head: [["Lahan", "Tahun", "Luas (Ha)", "Umur/PSR", "Produksi (kg)", "Ton/Ha", "Bulan Terisi"]],
     body: rows.map((r) => [
@@ -608,15 +641,12 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
     ]),
     startY: y,
     theme: "striped",
-    ...tableCommon,
-    styles: { font: "helvetica", cellPadding: 1.8 },
-    headStyles: { ...tableCommon.headStyles, fontSize: 8 },
-    bodyStyles: { ...tableCommon.bodyStyles, fontSize: 8 },
+    ...profileTable(),
     columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "center" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 6;
-  return drawBmpSection(doc, data, y + 6);
+  y = (doc as any).lastAutoTable.finalY;
+  return drawBmpSection(doc, data, y + SECTION_GAP);
 }
 
 /**
@@ -628,8 +658,11 @@ function drawFarmerSummary(doc: jsPDF, data: FarmerProfilePassport): number {
 function drawBmpSection(doc: jsPDF, data: FarmerProfilePassport, y: number): number {
   const { bmp } = data;
   if (!bmp) return y;
-  const tableCommon = passportTableCommon();
-  y = ensureSpace(doc, y, bmp.assessments.length === 0 ? 14 : 40);
+  const tableCommon = profileTable();
+  // Satu blok utuh: judul + tabel + legenda + radar (≈ 72 mm) — radar sendirian
+  // di halaman berikutnya terbaca yatim; tabel > 5 tahun boleh pecah (cap).
+  const hasRadar = bmp.assessments.some((a) => a.activities.length > 0);
+  y = ensureSpace(doc, y, bmp.assessments.length === 0 ? 14 : blockNeed(bmp.assessments.length + 1, 8, 20 + (hasRadar ? 72 : 0), 130));
   sectionHeading(doc, "Monev BMP", y);
   y += 5;
   if (bmp.assessments.length === 0) return emptyLine(doc, "Belum ada penilaian Monev BMP untuk petani ini.", y);
@@ -655,10 +688,10 @@ function drawBmpSection(doc: jsPDF, data: FarmerProfilePassport, y: number): num
     ...tableCommon,
     styles: { font: "helvetica", cellPadding: 1.5, overflow: "linebreak" },
     headStyles: { ...tableCommon.headStyles, fontSize: 7 },
-    bodyStyles: { ...tableCommon.bodyStyles, fontSize: 8 },
-    // 6 kolom tetap = 106 mm; 5 kolom kegiatan berbagi sisa ≈ 76 mm (≈ 15 mm — "Knowledge" 7 pt muat satu baris).
+    // 11 kolom: 6 tetap = 106 mm, 5 kegiatan berbagi ≈ 76 mm (≈ 15 mm — "Pemupukan" 7 pt muat satu baris);
+    // Lahan Dikunjungi 28 mm: ID panjang "ITM.0043.A.14.06.06.2017" boleh 2 baris.
     columnStyles: {
-      0: { cellWidth: 12 }, 1: { cellWidth: 18 }, 2: { halign: "right", cellWidth: 12 }, 3: { cellWidth: 20 }, 4: { cellWidth: 26 }, 5: { cellWidth: 18 },
+      0: { cellWidth: 11 }, 1: { cellWidth: 18 }, 2: { halign: "right", cellWidth: 11 }, 3: { cellWidth: 22 }, 4: { cellWidth: 28 }, 5: { cellWidth: 16 },
       ...Object.fromEntries(activityCols.map((_, i) => [6 + i, { halign: "right" }])),
     },
   });
@@ -670,12 +703,12 @@ function drawBmpSection(doc: jsPDF, data: FarmerProfilePassport, y: number): num
   doc.text(`Kategori: ${BMP_ASSESSMENT_CATEGORIES.map((c) => `${c.label} ${c.range}`).join(" · ")} (skala 0–3). Kolom kegiatan = skor kegiatan /3.`, MARGIN, y + 2, { maxWidth: CONTENT_W });
   y += 9;
 
-  // Radar tahun terbaru yang punya rincian + daftar kegiatan (kanan).
+  // Radar tahun terbaru yang punya rincian + daftar kegiatan (kanan) — satu blok utuh.
   const latest = bmp.assessments.find((a) => a.activities.length > 0);
   if (!latest) return y;
   const R = 22;
   const boxH = 2 * R + 20;
-  y = ensureSpace(doc, y, boxH + 6);
+  y = ensureSpace(doc, y, boxH + 8);
   subHeading(doc, `Rincian ${latest.surveyYear} — skor ${formatScore(latest.score)} (${bmpAssessmentCategory(latest.score).label})`, y);
   y += 4;
   const radarW = 70;

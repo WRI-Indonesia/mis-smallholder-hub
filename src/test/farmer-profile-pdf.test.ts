@@ -235,6 +235,8 @@ describe("buildFarmerProfileDoc — Bagian A + lampiran", () => {
     const parcels = [parcel(1), parcel(2, { nktStatus: "AFFECTED" }), parcel(3, { geometry: square(101.5 + far, 0.75 + far), centroid: [101.5 + far + D / 2, 0.75 + far + D / 2] })];
     const doc = buildFarmerProfileDoc(profile(parcels));
     const text = pdfText(doc);
+    // Kolom NKT tabel: "Terdampak" tanpa akhiran (kolom sudah berjudul NKT); badge lampiran tetap "Terdampak NKT".
+    expect(text).toContain("Terdampak");
     expect(text).toContain("Terdampak NKT");
     expect(text).toContain("Lampiran 3 dari 3");
     // Skala batang di bingkai 26 km memakai kandidat km (#343) — tak lagi mentok di 1000 m.
