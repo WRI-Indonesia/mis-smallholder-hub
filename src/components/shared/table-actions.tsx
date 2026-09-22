@@ -1,14 +1,16 @@
 "use client";
 
-import { Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { Eye, Pencil, Trash2, RotateCcw, Printer, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface TableAction {
-  type: "view" | "edit" | "delete";
+  type: "view" | "edit" | "delete" | "print";
   onClick: () => void;
   title?: string;
   /** Required for delete type: true means active (shows Trash2/Nonaktifkan), false means inactive (shows RotateCcw/Aktifkan kembali) */
   isActive?: boolean;
+  /** print (#343): tombol baris ini sedang memproses — ikon berputar + nonaktif; baris lain tetap aktif. */
+  loading?: boolean;
 }
 
 interface TableActionsProps {
@@ -21,7 +23,7 @@ export function TableActions({ permissions, actions, className }: TableActionsPr
   return (
     <div className={`flex items-center space-x-1 ${className ?? ""}`}>
       {actions.map((action, idx) => {
-        const { type, onClick, title, isActive } = action;
+        const { type, onClick, title, isActive, loading } = action;
 
         if (type === "view") {
           if (!permissions.includes("VIEW")) return null;
@@ -68,6 +70,23 @@ export function TableActions({ permissions, actions, className }: TableActionsPr
               onClick={onClick}
             >
               <Icon className="h-4 w-4" />
+            </Button>
+          );
+        }
+
+        // Cetak/unduh PDF per baris (#343) — gate izin PRINT, sama dengan tombol PDF di halaman detail.
+        if (type === "print") {
+          if (!permissions.includes("PRINT")) return null;
+          return (
+            <Button
+              key={idx}
+              variant="ghost"
+              size="icon"
+              title={title ?? "Cetak"}
+              onClick={onClick}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
             </Button>
           );
         }

@@ -40,12 +40,14 @@ Untuk aksi dalam tabel (tombol Edit, Lihat, Hapus, Nonaktifkan, dll), ikuti atur
   - Aksi **Lihat**: Gunakan icon `<Eye className="h-4 w-4" />` dengan `title="Lihat"`.
   - Aksi **Edit**: Gunakan icon `<Pencil className="h-4 w-4" />` dengan `title="Edit"`.
   - Aksi **Nonaktifkan**: Gunakan icon `<Trash2 className="h-4 w-4" />` dengan `title="Nonaktifkan"`.
+  - Aksi **Cetak/PDF per baris** (#343): Gunakan icon `<Printer className="h-4 w-4" />` dengan `title` yang menyebut dokumennya (mis. `"Profil Petani (PDF)"`); saat baris itu diproses ikon berganti `<Loader2 className="h-4 w-4 animate-spin" />` dan tombolnya nonaktif — **baris lain tetap aktif** (pola `pdfLoadingId`).
 - **Visibilitas Berbasis Izin (Role & Permission)**: Semua tombol aksi dan tombol penambahan data (Tambah/Create) harus dilindungi (show/hide) secara dinamis menggunakan daftar izin (`permissions`) yang diperoleh dari backend:
   - Tombol **Tambah / Create** di atas tabel di-render jika: `permissions.includes("CREATE")`.
   - Tombol **Lihat / View** di-render jika: `permissions.includes("VIEW")`.
   - Tombol **Edit** di-render jika: `permissions.includes("EDIT")`.
   - Tombol **Nonaktifkan / Aktifkan kembali (Delete/Restore)** di-render jika: `permissions.includes("DELETE")`.
-- **Abstraksi Komponen (`TableActions`)**: Gunakan komponen pembungkus `<TableActions>` dari `@/components/shared` untuk merender seluruh tombol aksi baris tabel secara otomatis berdasarkan daftar izin (`permissions`) dan array konfigurasi `actions` untuk menghindari pengulangan kode inline.
+  - Tombol **Cetak/PDF** di-render jika: `permissions.includes("PRINT")` — sama dengan tombol PDF di halaman detail (#245).
+- **Abstraksi Komponen (`TableActions`)**: Gunakan komponen pembungkus `<TableActions>` dari `@/components/shared` untuk merender seluruh tombol aksi baris tabel secara otomatis berdasarkan daftar izin (`permissions`) dan array konfigurasi `actions` untuk menghindari pengulangan kode inline. Tipe aksi: `view` · `edit` · `delete` (+ `isActive`) · **`print`** (#343: `title`, `loading` — generik, dipakai Daftar Petani untuk Profil Petani; menu lain tinggal menambah entri, bukan tombol inline).
 - **Loading Placeholder (`TableSkeleton`)**: Gunakan komponen `<TableSkeleton>` pada file `loading.tsx` dari menu tabel bersangkutan untuk menampilkan placeholder table-row loading saat data sedang dimuat secara asinkron, guna meminimalkan layout shift.
 - **Combobox filter (STANDAR — #211/#212/#217)**: filter dropdown ber-pencarian memakai primitif `FilterCombobox` (`src/components/shared/filter-combobox.tsx`; Popover + Command). Dua semantik: `allLabel` = filter opsional dengan item teratas "Semua …", `placeholder` = pilihan wajib gaya "Pilih …" (+ `disabled` untuk dependensi antar-filter). Teks empty baku: "{Entitas} tidak ditemukan." Pasangan **Distrik → Lembaga Petani cascade** (pilih distrik menyaring lembaga; lembaga di luar distrik baru di-reset ke "Semua") memakai komposisi `DistrictGroupFilter` (`district-group-filter.tsx`). Jangan menulis ulang markup Popover+Command per halaman — itu sumber drift yang diperbaiki #212.
 - **Tooltip data (STANDAR — #213)**: sel/bar yang membawa **angka** memakai tooltip terstruktur `StatTooltipContent` + `StatTooltipRow` (`src/components/shared/stat-tooltip.tsx`; judul + subtitle konteks + baris chip/label/angka/persen + footer bergaris) — bukan `title` native. `title` native tetap dipakai untuk hint aksi/label & helper truncate, serta grid ber-ratusan sel (mis. titik bulanan matriks BMP) demi performa render.
@@ -118,7 +120,7 @@ Data pribadi petani **wajib disensor di semua tampilan layar** via helper `src/l
 
 - **NIK** → `maskNik()`: hanya 4 digit depan + 2 belakang yang tampil, sisanya `*` (mis. `1471**********56`). Untuk kolom Detail generik yang bisa berisi NIK atau nilai lain, gunakan `maskIfNik()` (hanya string 10–16 digit yang di-mask).
 - **Tanggal lahir** → `maskBirthDate()`: tanggal & bulan disensor, tahun tampil (`** *** 1980`). Umur boleh ditampilkan.
-- **Excel/PDF export sengaja TIDAK disensor** — hasil export bisa diedit lalu di-upload ulang via bulk; nilai ter-sensor akan merusak data. PDF Farm Passport (dokumen resmi milik petani) juga tetap penuh.
+- **Excel/PDF export sengaja TIDAK disensor** — hasil export bisa diedit lalu di-upload ulang via bulk; nilai ter-sensor akan merusak data. PDF Farm Passport (dokumen resmi milik petani) juga tetap penuh — demikian pula **PDF Profil Petani** (#343, `src/lib/farmer-profile-pdf.ts`): NIK & tanggal lahir penuh di bagian Identitas.
 - Halaman baru yang menampilkan NIK/tanggal lahir wajib memakai helper ini — jangan render nilai mentah.
 
 ### Bulk Upload UI/UX & Validation Pattern
@@ -205,7 +207,8 @@ Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (ko
   - Tile proxy overlay: `src/app/api/map-overlay/[key]/route.ts` (forward ke ArcGIS `export`, toleran TLS chain upstream, whitelist per-overlay)
   - Hotspot NASA FIRMS: proxy `src/app/api/map-hotspot/route.ts` (auth-guarded) + helper murni `src/lib/firms.ts` + client `src/app/(admin)/admin/map/parcel/map-hotspot.ts`; unit test `src/test/firms.test.ts`
   - Ruler & label fit: `src/app/(admin)/admin/map/parcel/map-geo.ts` (jarak/luas geodesik + `parcelLabelFit`/`geomBounds`); unit test `src/test/map-geo.test.ts`
-  - Farm Passport PDF: `src/lib/farm-passport.ts` (jsPDF A4, 2 halaman: kartu ringkasan, layout lahan/polygon vektor, informasi & pemilik, Legalitas & Dokumen (#298), pelatihan, produksi) — di-generate dari `getParcelPassport`
+  - Farm Passport PDF: `src/lib/farm-passport.ts` (jsPDF A4, 2 halaman: kartu ringkasan, layout lahan/polygon vektor, informasi & pemilik, Legalitas & Dokumen (#298), pelatihan, produksi) — di-generate dari `getParcelPassport`; sejak #343 isinya digambar `drawFarmPassport(doc, data, { appendix? })` (tanpa pass footer) dan `buildFarmPassportDoc` hanya pembungkus, sementara konstanta warna/margin + helper (`drawFooter`, `ensureSpace`, `sectionHeading`, `drawMapDecorations`, `fmt*`, `passportTableCommon`) diekspor untuk dipakai ulang — jangan menyalin gaya ke exporter PDF baru
+  - Profil Petani PDF (#343): `src/lib/farmer-profile-pdf.ts` — Bagian A ringkasan petani (identitas, 5 kartu, Daftar Lahan bernomor, peta sebaran penanda bernomor `drawParcelsOverviewMap`, pelatihan, produksi gabungan + rekap per lahan) + Bagian B lampiran Profil Lahan per lahan (`drawFarmPassport`), footer `Hal. n/N` menerus; data `getFarmerProfilePassport` (`farmer.ts`), tipe `src/types/farmer-profile.ts`; tombol header Detail Petani & aksi baris Daftar Petani lewat hook `farmers/farmer-profile-print.tsx` (dialog Lengkap / Ringkasan saja bila lahan > 10)
 
 ### Pola Konten Bantuan (HELP-02)
 

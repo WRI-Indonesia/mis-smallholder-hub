@@ -11,7 +11,7 @@ goal: Setiap peran hanya bisa membuka menu yang memang menjadi tugasnya — berl
 
 ## Sebelum mulai
 
-Halaman ini menyetel izin bawaan tiap peran (ADMIN, OPERATOR, MANAGEMENT, DONOR) atas setiap menu — enam izin per menu dalam dua kelompok. Kelompok data: **Create** (menambah), **View** (melihat), **Edit** (mengubah), **Delete** (menonaktifkan); kelompok keluaran: **Export** (mengunduh Excel/data mentah) dan **Print** (mencetak/unduh PDF). Arahkan kursor ke ikon di kepala kolom untuk melihat nama izinnya.
+Halaman ini menyetel izin bawaan tiap peran (ADMIN, OPERATOR, MANAGEMENT, DONOR) atas setiap menu — enam izin per menu dalam dua kelompok. Kelompok data: **Create** (menambah), **View** (melihat), **Edit** (mengubah), **Delete** (menonaktifkan); kelompok keluaran: **Export** (mengunduh Excel/data mentah) dan **Print** (mencetak/unduh PDF — mis. Profil Lahan dan Profil Petani di menu Petani). Arahkan kursor ke ikon di kepala kolom untuk melihat nama izinnya.
 
 + Perubahan di sini berlaku untuk **semua pengguna** dengan peran tersebut. Pengecualian untuk satu orang saja diatur lewat dialog **Hak Akses Menu** di User Management — pengaturan per pengguna itu menimpa aturan peran (lihat tutorial *Menambah pengguna & mengatur haknya*). SUPERADMIN tidak ikut diatur di sini karena selalu berakses penuh.
 

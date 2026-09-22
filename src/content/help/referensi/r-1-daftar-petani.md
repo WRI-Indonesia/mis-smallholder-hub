@@ -31,7 +31,7 @@ Keempat kartu di atas tabel **mengikuti filter yang sedang aktif**, bukan seluru
 
 **ID Petani** — nomor milik organisasi Anda, bukan buatan sistem. Unik **per Lembaga**: lembaga berbeda boleh memakai nomor yang sama.
 
-**Nama** — nama lengkap sesuai dokumen. Muncul juga di daftar hadir pelatihan, laporan, dan Profil Lahan.
+**Nama** — nama lengkap sesuai dokumen. Muncul juga di daftar hadir pelatihan, laporan, Profil Lahan, dan Profil Petani (PDF).
 
 **L/P** — jenis kelamin. Menggerakkan angka partisipasi perempuan di Dashboard Pelatihan.
 

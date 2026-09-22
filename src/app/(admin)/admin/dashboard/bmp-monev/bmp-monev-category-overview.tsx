@@ -1,5 +1,7 @@
-import { PieChart } from "lucide-react";
+import { Info, PieChart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatTooltipContent } from "@/components/shared/stat-tooltip";
 import { formatNumber, formatPct } from "@/lib/format";
 import { BMP_MONEV_STACK_ORDER, type BmpMonevTotals } from "@/lib/bmp-monev-dashboard-aggregation";
 
@@ -7,7 +9,8 @@ import { BMP_MONEV_STACK_ORDER, type BmpMonevTotals } from "@/lib/bmp-monev-dash
  * Hero dashboard: jawaban utama Monev — berapa petani di tiap kategori.
  * Empat ubin (jumlah + % dari petani dinilai, urut terendah → tertinggi seperti
  * batang) di atas satu batang 100% seluruh petani dinilai. Warna dari konstanta
- * kategori; label selalu menyertai warna.
+ * kategori; label selalu menyertai warna. Tiap ubin ber-tooltip arti kategori
+ * (`description` konstanta, #360) — ikon Info penanda, ubin bisa difokus.
  */
 export function BmpMonevCategoryOverview({ totals, yearLabel }: { totals: BmpMonevTotals; yearLabel: string }) {
   const total = totals.assessedFarmers;
@@ -29,19 +32,34 @@ export function BmpMonevCategoryOverview({ totals, yearLabel }: { totals: BmpMon
           {BMP_MONEV_STACK_ORDER.map((c) => {
             const n = totals.byCategory[c.key];
             return (
-              <div key={c.key} className="rounded-lg border border-border/60 p-3 flex items-stretch gap-3">
-                <span className="w-1.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} aria-hidden />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate">{c.label}</p>
-                  <p className="text-2xl font-bold tabular-nums leading-tight mt-1">
-                    {formatNumber(n)}
-                    <span className="ml-1.5 text-sm font-medium text-muted-foreground">petani</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {total > 0 ? `${formatPct(pct(n))}%` : "—"} · skor {c.range}
-                  </p>
-                </div>
-              </div>
+              <Tooltip key={c.key}>
+                <TooltipTrigger
+                  render={
+                    <div
+                      tabIndex={0}
+                      className="rounded-lg border border-border/60 p-3 flex items-stretch gap-3 cursor-help focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    />
+                  }
+                >
+                  <span className="w-1.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} aria-hidden />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate flex items-center gap-1">
+                      {c.label}
+                      <Info className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+                    </p>
+                    <p className="text-2xl font-bold tabular-nums leading-tight mt-1">
+                      {formatNumber(n)}
+                      <span className="ml-1.5 text-sm font-medium text-muted-foreground">petani</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {total > 0 ? `${formatPct(pct(n))}%` : "—"} · skor {c.range}
+                    </p>
+                  </div>
+                </TooltipTrigger>
+                <StatTooltipContent title={c.label} subtitle={`skor ${c.range}`}>
+                  <p className="max-w-[16rem] whitespace-normal font-normal">{c.description}</p>
+                </StatTooltipContent>
+              </Tooltip>
             );
           })}
         </div>

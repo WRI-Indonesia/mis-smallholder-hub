@@ -51,9 +51,16 @@ describe("bmpMonevTotals", () => {
     expect(t.totalFarmers).toBe(20);
     expect(t.avgScore).toBe(2.02); // (2.6+1.8+1.2+2.0+2.5)/5
     expect(t.byCategory).toEqual({ TELADAN: 1, PRAKTISI: 3, PERINTIS: 1, BELUM: 0 });
-    expect(t.adopters).toBe(4);
+    expect(t.adopters).toBe(5); // Teladan + Praktisi + Perintis (#360) — hanya Belum yang tidak dihitung
     expect(t.groupsCovered).toBe(2);
     expect(t.groupsTotal).toBe(3);
+  });
+
+  it("menerapkan BMP = Perintis + Praktisi + Teladan; Belum Implementasi (< 1,00) tidak dihitung (#360)", () => {
+    // 2025: satu petani 0,9 = Belum → dinilai 1, adopter 0
+    expect(bmpMonevTotals(GROUPS, 2025)).toMatchObject({ assessedFarmers: 1, adopters: 0, byCategory: { BELUM: 1 } });
+    const mixed = [group("x", 4, [["f1", 2026, 0.99], ["f2", 2026, 1.0], ["f3", 2026, 1.5], ["f4", 2026, 2.51]])];
+    expect(bmpMonevTotals(mixed, 2026)).toMatchObject({ assessedFarmers: 4, adopters: 3 });
   });
 
   it("tahun tanpa data → nol & rerata null; duplikat petani-tahun tidak dihitung dua kali (skor tertinggi)", () => {

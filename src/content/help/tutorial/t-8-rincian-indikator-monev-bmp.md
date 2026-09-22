@@ -11,7 +11,7 @@ goal: Skor 30 indikator dari form survei per petani masuk ke MIS beserta penilai
 
 ## Sebelum mulai
 
-Selain skor akhir, Monev BMP punya **rincian**: 5 kegiatan berbobot (Training 0,10 · Pemupukan 0,35 · Pengendalian Gulma 0,10 · PHPT 0,10 · Panen 0,35) dan **32 indikator** berskor 0–3 — 18 dinilai per **petani**, 14 dinilai per **Lembaga**. Skor akhir = Σ bobot kegiatan × Σ (bobot indikator × skor); indikator tanpa bobot bersifat informatif. Pada Identifikasi Gulma hanya **salah satu** yang ditanya — petani *atau* pekerja (bobot 0,2) — sehingga Σ bobot efektif tiap kegiatan = 1,0 dan skor kegiatan maupun skor akhir maksimal **3,00**.
+Selain skor akhir, Monev BMP punya **rincian**: 5 kegiatan berbobot (Knowledge 0,10 · Pemupukan 0,35 · Pengendalian Gulma 0,10 · PHPT 0,10 · Panen 0,35) dan **32 indikator** berskor 0–3 — 18 dinilai per **petani**, 14 dinilai per **Lembaga**. Skor akhir = Σ bobot kegiatan × Σ (bobot indikator × skor); indikator tanpa bobot bersifat informatif. Pada Identifikasi Gulma hanya **salah satu** yang ditanya — petani *atau* pekerja (bobot 0,2) — sehingga Σ bobot efektif tiap kegiatan = 1,0 dan skor kegiatan maupun skor akhir maksimal **3,00**.
 
 + Enam indikator Lembaga (standar teknis kerja, infrastruktur panen, transportasi, taksasi produksi, catatan produksi, …) ikut masuk ke skor akhir **setiap petani** Lembaga itu. Karena itu penilaian Lembaga disimpan sekali per Lembaga per tahun, bukan diulang di tiap petani.
 

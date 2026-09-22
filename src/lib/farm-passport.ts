@@ -7,41 +7,52 @@ import { NEIGHBOR_DISTANCE_M, neighborOwnerLabel } from "@/lib/parcel-neighbor";
 import { LAND_MARKER_CONDITION_LABELS, LAND_MARKER_TYPE_LABELS, labelOf } from "@/lib/land-marker";
 import { drawGraticule } from "@/lib/layer-report-pdf";
 
-const EMERALD: [number, number, number] = [16, 185, 129];
-const SLATE_800: [number, number, number] = [30, 41, 59];
-const SLATE_600: [number, number, number] = [71, 85, 105];
-const SLATE_400: [number, number, number] = [148, 163, 184];
-const SLATE_200: [number, number, number] = [226, 232, 240];
-const AREA_FILL: [number, number, number] = [209, 240, 224];
+// Konstanta & helper tata letak diekspor (#343) supaya Profil Petani
+// (`farmer-profile-pdf.ts`) memakai gaya yang sama persis, bukan menyalin.
+export const EMERALD: [number, number, number] = [16, 185, 129];
+export const SLATE_800: [number, number, number] = [30, 41, 59];
+export const SLATE_600: [number, number, number] = [71, 85, 105];
+export const SLATE_400: [number, number, number] = [148, 163, 184];
+export const SLATE_200: [number, number, number] = [226, 232, 240];
+export const AREA_FILL: [number, number, number] = [209, 240, 224];
 const MARKER_FILL: [number, number, number] = [253, 224, 71];
 const MARKER_EDGE: [number, number, number] = [133, 77, 14];
 
-const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+export const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
-const PAGE_W = 210;
-const PAGE_H = 297;
-const MARGIN = 14;
-const CONTENT_W = PAGE_W - MARGIN * 2;
+export const PAGE_W = 210;
+export const PAGE_H = 297;
+export const MARGIN = 14;
+export const CONTENT_W = PAGE_W - MARGIN * 2;
 /** Batas bawah konten sebelum footer; lewat ini → halaman baru (#298: PDF boleh >1 halaman). */
-const CONTENT_BOTTOM = 268;
+export const CONTENT_BOTTOM = 268;
 
+/** Gaya tabel autoTable bersama (striped, header emerald, tak menabrak footer). */
+export const passportTableCommon = () => ({
+  margin: { left: MARGIN, right: MARGIN, bottom: PAGE_H - CONTENT_BOTTOM }, // jangan menabrak footer
+  styles: { font: "helvetica", cellPadding: 2.6 },
+  pageBreak: "auto" as const,
+  headStyles: { fillColor: EMERALD, textColor: [255, 255, 255] as [number, number, number], fontSize: 9, fontStyle: "bold" as const },
+  bodyStyles: { fontSize: 9, textColor: SLATE_600 },
+  alternateRowStyles: { fillColor: [248, 250, 252] as [number, number, number] },
+});
 
-const fmtArea = (n: number | null) =>
+export const fmtArea = (n: number | null) =>
   n == null ? "—" : `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
 
-const fmtNum = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(n);
+export const fmtNum = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(n);
 
-const fmtDate = (iso: string | null) => {
+export const fmtDate = (iso: string | null) => {
   if (!iso) return "—";
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, "0")} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;
 };
 
-const orDash = (v: string | number | null | undefined) =>
+export const orDash = (v: string | number | null | undefined) =>
   v === null || v === undefined || v === "" ? "—" : String(v);
 
 /** Footer tiap halaman: catatan hukum + brand + nomor halaman. */
-function drawFooter(doc: jsPDF, page: number, total: number) {
+export function drawFooter(doc: jsPDF, page: number, total: number) {
   doc.setDrawColor(...SLATE_200);
   doc.setLineWidth(0.4);
   doc.line(MARGIN, 275, PAGE_W - MARGIN, 275);
@@ -62,8 +73,18 @@ function drawFooter(doc: jsPDF, page: number, total: number) {
   doc.text(`Hal. ${page}/${total}`, PAGE_W - MARGIN, 280, { align: "right" });
 }
 
+/** Footer + nomor halaman menerus di SEMUA halaman dokumen; dipanggil sekali di akhir. */
+export function drawFootersOnAllPages(doc: jsPDF) {
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    drawFooter(doc, i, total);
+  }
+  doc.setPage(total);
+}
+
 /** Pastikan masih ada ruang `need` mm sebelum footer; kalau tidak, halaman baru. Mengembalikan y baru. */
-function ensureSpace(doc: jsPDF, y: number, need: number): number {
+export function ensureSpace(doc: jsPDF, y: number, need: number): number {
   if (y + need <= CONTENT_BOTTOM) return y;
   doc.addPage();
   doc.setFillColor(...EMERALD);
@@ -72,7 +93,7 @@ function ensureSpace(doc: jsPDF, y: number, need: number): number {
 }
 
 /** Semua ring luar (tiap poligon MultiPolygon) tanpa titik penutup ganda. */
-function exteriorRings(geometry: ParcelPassport["parcel"]["geometry"]): Position[][] {
+export function exteriorRings(geometry: ParcelPassport["parcel"]["geometry"]): Position[][] {
   const polys = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
   return polys
     .map((poly) => poly?.[0] ?? [])
@@ -84,20 +105,22 @@ function exteriorRings(geometry: ParcelPassport["parcel"]["geometry"]): Position
     });
 }
 
-type Box = { x: number; y: number; w: number; h: number };
-type Projector = (lon: number, lat: number) => [number, number];
+export type Box = { x: number; y: number; w: number; h: number };
+export type Projector = (lon: number, lat: number) => [number, number];
 
 /** Poligon (ring luar) sebagai path jsPDF; `style` null = hanya membangun path (untuk clip). */
-function strokeRing(doc: jsPDF, ring: Position[], project: Projector, style: "S" | "FD") {
+export function strokeRing(doc: jsPDF, ring: Position[], project: Projector, style: "S" | "FD") {
   const pts = ring.map(([lon, lat]) => project(lon, lat));
   const segs = pts.slice(1).map((p, i) => [p[0] - pts[i][0], p[1] - pts[i][1]]);
   doc.lines(segs, pts[0][0], pts[0][1], [1, 1], style, true);
 }
 
 /** Skala batang (kiri-bawah) + panah utara "U" (kanan-atas) — pola #180 Laporan Lahan. */
-function drawMapDecorations(doc: jsPDF, box: Box, mmPerMeter: number) {
-  // Panjang "bulat" terbesar yang muat ≤ 1/3 lebar kotak.
-  const candidates = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
+export function drawMapDecorations(doc: jsPDF, box: Box, mmPerMeter: number) {
+  // Panjang "bulat" terbesar yang muat ≤ 1/3 lebar kotak. Kandidat km (#343)
+  // hanya terpakai peta sebaran petani (bingkai sampai 26 km); pada skala
+  // lahan (≤ 1 km) tak pernah muat, jadi Profil Lahan tidak berubah.
+  const candidates = [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000];
   const maxMm = box.w / 3;
   let meters = candidates[0];
   for (const c of candidates) if (c * mmPerMeter <= maxMm) meters = c;
@@ -112,7 +135,7 @@ function drawMapDecorations(doc: jsPDF, box: Box, mmPerMeter: number) {
   doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_800);
-  doc.text(`${meters} m`, bx + barMm / 2, by - 1.8, { align: "center" });
+  doc.text(meters >= 1000 ? `${meters / 1000} km` : `${meters} m`, bx + barMm / 2, by - 1.8, { align: "center" });
 
   // Panah utara.
   const nx = box.x + box.w - 5;
@@ -287,7 +310,7 @@ function clampLines(doc: jsPDF, text: string, maxW: number, maxLines: number): s
 }
 
 /** Potong teks agar muat `maxW` mm (dengan "…"). */
-function fitText(doc: jsPDF, text: string, maxW: number): string {
+export function fitText(doc: jsPDF, text: string, maxW: number): string {
   if (doc.getTextWidth(text) <= maxW) return text;
   let t = text;
   while (t.length > 1 && doc.getTextWidth(`${t}…`) > maxW) t = t.slice(0, -1);
@@ -357,7 +380,7 @@ function drawNeighborLegend(doc: jsPDF, neighbors: ParcelPassport["neighbors"], 
   return y + 3;
 }
 
-function sectionHeading(doc: jsPDF, text: string, y: number) {
+export function sectionHeading(doc: jsPDF, text: string, y: number) {
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...SLATE_800);
@@ -368,26 +391,24 @@ function sectionHeading(doc: jsPDF, text: string, y: number) {
 }
 
 /**
- * Build dokumen Profil Lahan (tanpa save) — dipisah dari
- * `generateFarmPassportPdf` agar bisa diverifikasi unit test (TD-019).
+ * Gambar seluruh isi Profil Lahan ke `doc` (#343: dipisah dari
+ * `buildFarmPassportDoc`) — TANPA pass footer, supaya bisa dirangkai sebagai
+ * lampiran Profil Petani dengan nomor halaman menerus. `appendix` = mulai
+ * halaman baru + baris kecil "Lampiran n dari N" di kanan-atas halaman
+ * pertamanya; isi selebihnya sama dengan Profil Lahan berdiri sendiri KECUALI
+ * section Pelatihan yang dilewati (sudah ada di ringkasan petani — owner
+ * 2026-09-22), sehingga halaman lampiran tetap bisa diserahkan ke petani.
  */
-export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+export function drawFarmPassport(doc: jsPDF, data: ParcelPassport, opts: { appendix?: { no: number; total: number } } = {}) {
   const { farmer, group, parcel, legal, training, production, neighbors, neighborsOmitted, markers } = data;
+  if (opts.appendix) doc.addPage();
 
   // ── Komposisi (#298, rombak total atas masukan owner "terlalu rapat"):
   //   hal. 1 — header ber-ID besar, 4 kartu ringkasan (cermin halaman web),
   //            peta (kiri) + Informasi Lahan & Pemilik (kanan), Legalitas & Dokumen
   //   hal. 2 — Pelatihan, Produksi (dengan Ton/Ha)
   //   Footer + nomor halaman di semua halaman; tabel boleh pecah halaman.
-  const tableCommon = {
-    margin: { left: MARGIN, right: MARGIN, bottom: PAGE_H - CONTENT_BOTTOM }, // jangan menabrak footer
-    styles: { font: "helvetica", cellPadding: 2.6 },
-    pageBreak: "auto" as const,
-    headStyles: { fillColor: EMERALD, textColor: [255, 255, 255] as [number, number, number], fontSize: 9, fontStyle: "bold" as const },
-    bodyStyles: { fontSize: 9, textColor: SLATE_600 },
-    alternateRowStyles: { fillColor: [248, 250, 252] as [number, number, number] },
-  };
+  const tableCommon = passportTableCommon();
   const now = new Date();
   const plantAge = parcel.plantingYear != null ? now.getFullYear() - parcel.plantingYear : null;
 
@@ -397,6 +418,12 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...SLATE_400);
+  if (opts.appendix) {
+    // Di sela pita emerald (4 mm) dan baris "Dicetak" (14 mm) — tak menggeser apa pun.
+    doc.setFontSize(7);
+    doc.text(`Lampiran ${opts.appendix.no} dari ${opts.appendix.total}`, PAGE_W - MARGIN, 8.5, { align: "right" });
+    doc.setFontSize(9);
+  }
   doc.text("SMALLHOLDER HUB  ·  PROFIL LAHAN", MARGIN, 14);
   doc.text(`Dicetak ${fmtDate(now.toISOString())}`, PAGE_W - MARGIN, 14, { align: "right" });
   doc.setFontSize(20);
@@ -699,7 +726,8 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     y += 4;
     autoTable(doc, {
       // "Bahan" (owner 2026-09-20, #345): beton/kayu/pipa/tanda alam — bukan "jenis" patok.
-      head: [["No", "Kode", "Lintang", "Bujur", "Kondisi", "Bahan", "Dipasang", "Juga patok lahan"]],
+      // "Patok Bersama Lahan Tetangga" (owner 2026-09-22, smoke #343) — semula "Juga patok lahan".
+      head: [["No", "Kode", "Lintang", "Bujur", "Kondisi", "Bahan", "Dipasang", "Patok Bersama Lahan Tetangga"]],
       body: markers.map((m) => [
         String(m.sequenceNo),
         m.code,
@@ -714,7 +742,7 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
       theme: "striped",
       ...tableCommon,
       // Delapan kolom (ada Kode sejak #331): font 8 + padding 2 supaya "HJP-PTK-000123" dan
-      // "Belum dipasang" muat satu baris dan kolom "Juga patok lahan" masih punya ruang.
+      // "Belum dipasang" muat satu baris dan kolom "Patok Bersama Lahan Tetangga" masih punya ruang.
       styles: { font: "helvetica", cellPadding: 2, overflow: "linebreak" },
       headStyles: { ...tableCommon.headStyles, fontSize: 8 },
       bodyStyles: { ...tableCommon.bodyStyles, fontSize: 8 },
@@ -730,18 +758,23 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
   // itu membuat lahan berlegalitas penuh jadi 3 halaman (Legalitas meluber ke
   // halaman 2, Pelatihan ke halaman 3). Kini pindah halaman hanya bila sisa
   // ruang tak cukup untuk judul + tabelnya.
-  y = ensureSpace(doc, y, 40);
-  sectionHeading(doc, "Pelatihan", y);
-  y += 5;
-  autoTable(doc, {
-    head: [["Paket Pelatihan", "Status", "Tanggal Mengikuti"]],
-    body: training.map((t) => [t.label, t.completed ? "Selesai" : "Belum", t.date ? fmtDate(t.date) : "—"]),
-    startY: y,
-    theme: "striped",
-    ...tableCommon,
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 12;
+  // Sebagai LAMPIRAN Profil Petani (#343) section Pelatihan DILEWATI — sudah
+  // terwakili tabel pelatihan Bagian A (owner 2026-09-22: "ini sudah diwakili
+  // di atas, untuk lahan tidak usah ada"); Profil Lahan berdiri sendiri tetap.
+  if (!opts.appendix) {
+    y = ensureSpace(doc, y, 40);
+    sectionHeading(doc, "Pelatihan", y);
+    y += 5;
+    autoTable(doc, {
+      head: [["Paket Pelatihan", "Status", "Tanggal Mengikuti"]],
+      body: training.map((t) => [t.label, t.completed ? "Selesai" : "Belum", t.date ? fmtDate(t.date) : "—"]),
+      startY: y,
+      theme: "striped",
+      ...tableCommon,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 12;
+  }
 
   y = ensureSpace(doc, y, production.recordCount === 0 ? 14 : 36);
   sectionHeading(doc, "Produksi", y);
@@ -781,14 +814,23 @@ export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
     doc.setTextColor(...SLATE_400);
     doc.text(`Ton/Ha = produksi tahun tsb ÷ luas lahan (${fmtArea(parcel.area)}).`, MARGIN, y + 2);
   }
+}
 
+/**
+ * Build dokumen Profil Lahan (tanpa save) — dipisah dari
+ * `generateFarmPassportPdf` agar bisa diverifikasi unit test (TD-019).
+ */
+export function buildFarmPassportDoc(data: ParcelPassport): jsPDF {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  drawFarmPassport(doc, data);
   // Footer di SEMUA halaman
-  const total = doc.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
-    doc.setPage(i);
-    drawFooter(doc, i, total);
-  }
-  doc.setPage(total);
+  drawFootersOnAllPages(doc);
+  // Metadata berkas (#343) — membantu saat PDF beredar di luar MIS.
+  doc.setProperties({
+    title: `Profil Lahan ${data.parcel.parcelId}`,
+    subject: `Profil Lahan ${data.parcel.parcelId} — ${data.farmer.name} · ${orDash(data.group.name)}`,
+    author: "Smallholder HUB",
+  });
   return doc;
 }
 
