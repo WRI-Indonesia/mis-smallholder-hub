@@ -13,6 +13,7 @@ import {
   formatUtcDate,
   isOutOfRubric,
   bmpAssessmentCategoryByKey,
+  bmpActivityShortName,
   type BmpImportRawRow,
 } from "@/lib/bmp-assessment";
 import { bmpAssessmentSchema, bmpAssessmentImportSchema } from "@/validations/bmp-assessment.schema";
@@ -22,6 +23,23 @@ import { bmpAssessmentSchema, bmpAssessmentImportSchema } from "@/validations/bm
  * sesuai cara tim lapangan menerapkannya), parser tanggal 6 format rekap,
  * parser Excel header dua baris multi-tahun, dan resolusi pratinjau import.
  */
+
+describe("BMP_ASSESSMENT_CATEGORIES — arti kategori (#360) & nama pendek kegiatan (#343)", () => {
+  it("tiap kategori punya `description` non-kosong (tooltip ubin dashboard, badge Profil Petani) — satu sumber", () => {
+    for (const c of BMP_ASSESSMENT_CATEGORIES) {
+      expect(c.description.length).toBeGreaterThan(20);
+      expect(c.description.endsWith(".")).toBe(true);
+    }
+    expect(bmpAssessmentCategoryByKey("TELADAN").description).toContain("champion");
+  });
+  it("bmpActivityShortName: buang keterangan dalam kurung & awalan 'Pengendalian', PHPT dipendekkan", () => {
+    expect(bmpActivityShortName("Knowledge (Petani dan Pekerja)")).toBe("Knowledge");
+    expect(bmpActivityShortName("Pengendalian Gulma")).toBe("Gulma");
+    expect(bmpActivityShortName("Pengendalian Hama Penyakit Terpadu (PHPT)")).toBe("PHPT");
+    expect(bmpActivityShortName("Pemupukan")).toBe("Pemupukan");
+    expect(bmpActivityShortName("Panen")).toBe("Panen");
+  });
+});
 
 describe("bmpAssessmentCategory — rubrik rekap Rokan Hulu", () => {
   it("batas: Teladan KETAT > 2,50 (2,50 = Praktisi, seperti label tim lapangan ITM), lainnya inklusif", () => {
