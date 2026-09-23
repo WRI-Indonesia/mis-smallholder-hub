@@ -25,7 +25,9 @@ QC data lokal (`scripts/qa/data-qc.ts`, read-only): **20 ✓ · 1 ✗ · 9 cetak
 
 **Syarat khusus rilis ini — wajib dicek sebelum Go:**
 
-1. **`AdministrativeBoundary.geom` terisi 12/12 di `mis-prod`.** `getRiauOutline()` (#280) membaca kolom itu; bila kosong, fungsi mengembalikan `null` dan kedua halaman **diam-diam kembali ke perilaku lama** tanpa satu pun pesan galat — perbaikannya tidak aktif di produksi dan tak ada yang tahu. Query baca-saja: `SELECT count(*) FILTER (WHERE geom IS NOT NULL), count(*) FROM tbl_administrative_boundary WHERE is_active AND level='KABUPATEN';` (lokal 12/12 ✓, prod **belum dicek** — butuh persetujuan owner).
+1. ✅ **`AdministrativeBoundary.geom` terisi 12/12** — diverifikasi baca-saja 2026-09-23 di **`mis-dev` 12/12**, **`mis-staging` 12/12**, dan **`mis-prod` 12/12**; outline prod terbentuk **84 polygon / 75 kB**, identik dengan lokal. `getRiauOutline()` (#280) karena itu **aktif di produksi**, bukan jatuh diam-diam ke fallback.
+
+   Celah yang ditutup, diukur **pada data produksi**: **9,399 km²** dari 90.049,1 km² wilayah Riau berada di luar semua poligon kabupaten tersimplifikasi — angka yang sama persis dengan pengukuran lokal, karena batas BIG-nya memang data yang sama.
 2. **Angka titik api akan naik tipis** di Fire Alert dan Peta Lahan dibanding v0.38.0. Itu **disengaja** (#280 menutup celah 9,4 km²), bukan regresi. Penguji yang membandingkan dengan angka lama harus diberi tahu lebih dulu.
 
 ## Pernyataan MVP (khusus v1.0.0)
