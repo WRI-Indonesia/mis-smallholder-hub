@@ -18,9 +18,9 @@ Sumber: `git log v1.0.0..HEAD` (di `mvp`: `chore(release): v1.0.0` `55e6472`..HE
 | Langkah | `mis-staging` | `mis-prod` |
 |---|---|---|
 | 1. Dump | `scripts/dump-prod/<tgl>/mis-staging-before-v1.1.0.dump` | `…/mis-prod-before-kt-374.dump` (dump migrasi #373 sudah ada) |
-| 2. Migrasi #373 | `npx dotenv -e .env.staging -- npx prisma migrate deploy` | ✅ sudah (2026-09-23) |
+| 2. Migrasi #373 | ✅ 2026-09-23 (dump `mis-staging-before-v1.1.0.dump`) | ✅ sudah (2026-09-23) |
 | 3. Data #374 — dry-run | `npx dotenv -e .env.staging -- npx tsx scripts/local/other/clean-kt-tidak-ada-374.ts` | `npx dotenv -e .env.prod -- npx tsx …/clean-kt-tidak-ada-374.ts` — harapan **417 baris / 3 Lembaga** (ISH-1401-01 314 · ISH-1408-05 102 · ISH-1401-05 1; gladi `mis-staging-local` sama) |
-| 4. Data #374 — tulis | `… --write` (backup otomatis ke `tmp-backup/`, verifikasi sisa 0 lalu COMMIT) | `… --write` **setelah approval owner** |
+| 4. Data #374 — tulis | ✅ 2026-09-23 — 417 baris, sisa 0, backup `tmp-backup/kt-tidak-ada-374-mis-staging-*.json` | `… --write` **setelah approval owner** |
 | 5. Deploy | `mvp → staging` | PR `staging → main` (merge = deploy prod) |
 | 6. Snapshot | — | Buat snapshot Main Dashboard baru (angka KT per Lembaga) |
 | 7. Checksum | — | tak perlu lagi untuk #373 (`applied-checksums.json` sudah disegarkan) |
