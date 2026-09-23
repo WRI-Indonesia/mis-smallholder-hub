@@ -448,6 +448,15 @@ describe("validateParcelDetailRows — NKT (#328) & Blok", () => {
     expect(r.data?.blok).toBe("17 L");
   });
 
+  it("Blok isian pengganti (\"--\", lolos cleanCell) = kosong di pratinjau, sama dengan skema server (#374)", () => {
+    const blokOnly = { parcelId: "ID_Lahan", farmerId: "ID_Petani", blok: "Blok" } as const;
+    for (const v of ["Tidak Ada", "-", "--", "---"]) {
+      const [r] = validateParcelDetailRows([{ ID_Lahan: "HJP.0001.A", ID_Petani: "HJP.0001", Blok: v }], blokOnly, parcels);
+      expect(r._isValid).toBe(false);
+      expect(r._errors.join(" ")).toContain("Tidak ada data detail");
+    }
+  });
+
   it("tanpa bawaan status → baris yang membawa sel NKT ditolak dengan pesan yang menyebut bawaan berkas", () => {
     const [r] = validateParcelDetailRows([hjpRow], mapping, parcels);
     expect(r._isValid).toBe(false);

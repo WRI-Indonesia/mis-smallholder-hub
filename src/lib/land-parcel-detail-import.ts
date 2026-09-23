@@ -524,7 +524,8 @@ export function validateParcelDetailRows(
     // datanya tidak terbuang; UI menampilkannya sebagai "Lainnya".
     const hasDocFields = Boolean(r.documentNumber || r.holderName || area.value !== null);
     const docType: LandDocumentTypeCode | null = doc.type ?? (hasDocFields && !doc.custodyNote ? "OTHER" : null);
-    const blok = r.blok || null;
+    // Aturan isian pengganti sama dengan KT & skema server (#374) — "--" lolos cleanCell.
+    const blok = r.blok ? cleanGroupInput(r.blok) : null;
 
     // --- NKT (#328): sel baris menang atas bawaan berkas; bawaan berkas membuat SEMUA baris ber-NKT ---
     const nktStatusCell = parseNktStatus(r.nktStatus);
