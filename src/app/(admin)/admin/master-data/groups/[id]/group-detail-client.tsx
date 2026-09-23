@@ -34,7 +34,7 @@ import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
 import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-export";
 import { exportParcelRow, type ParcelXlsxOptions } from "@/app/(admin)/admin/map/parcel/map-legend-export";
 import { ParcelXlsxDialog } from "@/app/(admin)/admin/map/parcel/parcel-xlsx-dialog";
-import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
+import { exportFileBase, parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 import { getFarmerGroupMarkerExportRows } from "@/server/actions/land-marker";
 import { getFarmerGroupNktReportData } from "@/server/actions/farmer-group";
@@ -295,7 +295,7 @@ export function GroupDetailClient({
       // SAMA dengan unduhan Peta Lahan / Report › Patok (satu definisi di lib/land-marker, review 2026-09-15).
       const unique = uniqueMarkerRows(res.data.rows);
       await exportToExcel({
-        filename: `patok-${parcelExportFileBase(res.data.label, new Date())}`,
+        filename: exportFileBase("patok", res.data.label, new Date()),
         sheetName: "Patok",
         columns: MARKER_XLSX_COLUMNS,
         data: unique.map(formatUniqueMarkerRow),

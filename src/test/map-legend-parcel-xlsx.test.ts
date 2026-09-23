@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { planParcelXlsxSheets } from "@/app/(admin)/admin/map/parcel/map-legend-export";
+import { legendFileBase, planParcelXlsxSheets } from "@/app/(admin)/admin/map/parcel/map-legend-export";
 
 /** Modal Excel baris lahan Legenda Peta Lahan (#371): pecahan sheet + urutan. */
 
@@ -42,5 +42,18 @@ describe("planParcelXlsxSheets", () => {
     const sheets = planParcelXlsxSheets(FEATURES, { split: "kelompokTani", order: "pemilik" });
     expect(sheets.map((s) => s.name)).toEqual(["Semua", "KT A", "KT B", "Tanpa KT"]);
     expect(ids(sheets[1].features)).toEqual(["L2", "L4"]);
+  });
+});
+
+describe("legendFileBase (#375) — tanpa 'lahan' berulang", () => {
+  const now = new Date("2026-09-23T14:08:00Z"); // 21:08 WIB
+  it.each([
+    ["lahan", "lahan_ish-1401-01_20260923-2108"],
+    ["titik-lahan", "titik-lahan_ish-1401-01_20260923-2108"],
+    ["lahan-nkt", "lahan-nkt_ish-1401-01_20260923-2108"],
+    ["lembaga", "lembaga_ish-1401-01_20260923-2108"],
+    ["patok", "patok_ish-1401-01_20260923-2108"],
+  ])("%s → %s", (slug, expected) => {
+    expect(legendFileBase(slug, "ISH-1401-01", now)).toBe(expected);
   });
 });

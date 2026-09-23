@@ -3,7 +3,7 @@ import { exportToExcel, exportMultiSheetToExcel } from "@/lib/xlsx";
 import { compareParcelGroupLabels as cmpText, groupLandParcelRows, sortByMapPosition, type LandParcelRowOrder } from "@/lib/report-land-parcel";
 import { safeSheetName } from "@/lib/report-land-parcel-xlsx";
 import { downloadFeatureExport } from "@/lib/parcel-spatial-download";
-import { toAsciiDbf, toDbfProperties, parcelExportFileBase, type ParcelExportFormat, type ParcelExportProperties } from "@/lib/parcel-export-data";
+import { toAsciiDbf, toDbfProperties, exportFileBase, type ParcelExportFormat, type ParcelExportProperties } from "@/lib/parcel-export-data";
 import { LAND_MARKER_CONDITION_LABELS, fmtCoord, labelOf, uniqueMarkerRows, groupMarkersByParcel, MARKER_XLSX_COLUMNS, formatUniqueMarkerRow } from "@/lib/land-marker";
 import { isNktAffected, landNktStatusFromShortLabel } from "@/lib/land-parcel-satellite-format";
 import { formatParcelNodes } from "@/lib/parcel-node-coords";
@@ -48,7 +48,8 @@ function savePdf(input: LayerReportInput, base: string) {
   buildLayerReportDoc(input).save(`${base}.pdf`);
 }
 
-const base = (slug: string, label: string | null, now: Date) => `${slug}-${parcelExportFileBase(label, now)}`;
+/** Nama berkas unduhan legenda: `<baris>_<label>_<stempel WIB>` (#375). */
+export const legendFileBase = (slug: string, label: string | null, now: Date) => exportFileBase(slug, label, now);
 
 /** Titik tengah sederhana (rata-rata vertex ring luar pertama) — cukup untuk fitur "Point Lahan". */
 function centroidOf(g: Polygon | MultiPolygon): [number, number] {
@@ -61,7 +62,7 @@ function centroidOf(g: Polygon | MultiPolygon): [number, number] {
 // ─── Lembaga Petani (Point) ───
 
 export async function exportKtRow(format: LegendFormat, kts: KTPoint[], label: string | null, now: Date, context?: LayerReportContext) {
-  const b = base("lembaga", label, now);
+  const b = legendFileBase("lembaga", label, now);
   if (format === "xlsx") {
     await exportToExcel({
       filename: b,
@@ -198,7 +199,7 @@ export async function exportParcelRow(
 ): Promise<number> {
   const features = row === "nkt" ? fc.features.filter((f) => isNktAffected(landNktStatusFromShortLabel(f.properties.nkt))) : fc.features;
   const slug = row === "parcelPoints" ? "titik-lahan" : row === "nkt" ? "lahan-nkt" : "lahan";
-  const b = base(slug, label, now);
+  const b = legendFileBase(slug, label, now);
   if (features.length === 0) return 0;
   if (format === "xlsx") {
     const withCoord = row === "parcelPoints";
@@ -306,7 +307,7 @@ export async function exportMarkerRow(
   context?: LayerReportContext,
 ): Promise<number> {
   // Semua patok = patok lahan (#345): unduhan "patok-nkt" turunan dihapus.
-  const b = base("patok", label, now);
+  const b = legendFileBase("patok", label, now);
   if (rows.length === 0) return 0;
   const unique = uniqueMarkerRows(rows);
   const data = unique.map(formatUniqueMarkerRow);
