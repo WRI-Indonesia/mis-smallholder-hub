@@ -13,11 +13,11 @@ Migrasi #373 sudah berjalan di mis-prod sementara aplikasi prod masih v1.0.0 (TD
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v1.1.0`)
 
-_(belum ada run)_
+_(`summary.mjs` 2026-09-23: run staging **0/62 baris terisi** — hasil per kasus tidak dicatat di repo; lihat `05-signoff.md`)_
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: run staging penuh oleh tester (keputusan owner 2026-09-23), termasuk **TC-373-02 sisi B** dengan akun OPERATOR ter-scope — satu-satunya perilaku yang belum pernah terlihat di layar (smoke lokal 2026-09-23 hanya SUPERADMIN).
+**Go** — 2026-09-23, owner (QA staging dinyatakan selesai oleh owner; lembar run tak terisi). Syarat semula: run staging penuh oleh tester (keputusan owner 2026-09-23), termasuk **TC-373-02 sisi B** dengan akun OPERATOR ter-scope — satu-satunya perilaku yang belum pernah terlihat di layar (smoke lokal 2026-09-23 hanya SUPERADMIN).
 
 **Syarat khusus rilis ini:**
 
