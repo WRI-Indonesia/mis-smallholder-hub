@@ -45,17 +45,19 @@ const SHEET_NAME_MAX = 31;
 
 /**
  * Nama sheet yang sah di Excel (#371): tanpa `[ ] : * ? / \`, tanpa apostrof di
- * ujung, ≤ 31 karakter, unik tak peka huruf besar-kecil terhadap `used` (yang
- * ikut diperbarui) — bentrok diberi akhiran " (2)", " (3)" … yang tetap muat.
- * Nama KT bebas diketik pengguna, dan ExcelJS melempar galat untuk nama tak sah.
+ * ujung, ≤ 31 karakter (nama panjang dipendekkan dengan "…"), unik tak peka
+ * huruf besar-kecil terhadap `used` (yang ikut diperbarui) — bentrok diberi
+ * akhiran " (2)", " (3)" … yang tetap muat. Nama KT/Blok bebas diketik
+ * pengguna, dan ExcelJS melempar galat untuk nama tak sah.
  */
 export function safeSheetName(label: string, used: Set<string>): string {
   const clean = label.replace(/[[\]:*?/\\]/g, " ").replace(/\s+/g, " ").trim().replace(/^'+|'+$/g, "").trim() || "Sheet";
-  let name = clean.slice(0, SHEET_NAME_MAX).trim();
-  for (let n = 2; used.has(name.toLowerCase()); n++) {
-    const suffix = ` (${n})`;
-    name = `${clean.slice(0, SHEET_NAME_MAX - suffix.length).trim()}${suffix}`;
-  }
+  const build = (suffix: string) => {
+    const room = SHEET_NAME_MAX - suffix.length;
+    return `${clean.length <= room ? clean : `${clean.slice(0, room - 1).trimEnd()}…`}${suffix}`;
+  };
+  let name = build("");
+  for (let n = 2; used.has(name.toLowerCase()); n++) name = build(` (${n})`);
   used.add(name.toLowerCase());
   return name;
 }

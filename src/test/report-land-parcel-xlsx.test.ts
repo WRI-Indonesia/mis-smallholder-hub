@@ -101,6 +101,7 @@ describe("safeSheetName (#371)", () => {
     expect(safeSheetName("KT [Maju]: A/B*C?\\D", new Set())).toBe("KT Maju A B C D");
     expect(safeSheetName("'Harapan'", new Set())).toBe("Harapan");
     const long = safeSheetName("Kelompok Tani Sumber Rejeki Makmur Sejahtera", new Set());
+    expect(long).toBe("Kelompok Tani Sumber Rejeki Ma…");
     expect(long.length).toBeLessThanOrEqual(31);
     expect(safeSheetName("///", new Set())).toBe("Sheet");
   });

@@ -316,33 +316,37 @@ export const LAND_PARCEL_SHEET_SPLIT_LABELS: Record<LandParcelSheetSplit, string
 const NO_KT = "Tanpa KT";
 const NO_BLOK = "Tanpa Blok";
 const sheetCollator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "base" });
+// Isian pengganti "kosong" yang diketik apa adanya (KT "Tidak Ada": 417 lahan di
+// 3 Lembaga, uji Sei Galuh 2026-09-23) — digabung ke grup "Tanpa …".
+const EMPTY_PLACEHOLDER = /^(tidak ada|-+)$/i;
+const groupValue = (v: string | null) => {
+  const t = v?.trim();
+  return t && !EMPTY_PLACEHOLDER.test(t) ? t : null;
+};
 
 /**
- * Kelompokkan baris roster per KT atau per `KT – Blok` (nama Blok bisa sama di
- * KT berbeda). Urutan grup natural ("2" < "10"), grup "Tanpa …" di akhir;
- * urutan baris di dalam grup mengikuti roster.
+ * Kelompokkan baris roster per KT atau per Blok — label = nama KT/Blok itu
+ * sendiri (owner 2026-09-23: sheet per Blok bernama Blok-nya, lintas KT; KT
+ * tiap lahan tetap terbaca di kolom Kelompok Tani). Urutan grup natural
+ * ("2 F" < "11 F"), grup "Tanpa …" di akhir; urutan baris ikut roster.
  */
 export function groupLandParcelRows<T extends { kelompokTani: string | null; blok: string | null }>(
   rows: readonly T[],
   by: Exclude<LandParcelSheetSplit, "grid">,
 ): { label: string; rows: T[] }[] {
-  const groups = new Map<string, { kt: string | null; blok: string | null; rows: T[] }>();
+  // Kunci tak peka huruf besar-kecil & spasi ganda ("DUSUN 3" = "Dusun  3"),
+  // label = ejaan pertama yang ditemui — dua ejaan akan jadi dua sheet "(2)".
+  const groups = new Map<string, { label: string | null; rows: T[] }>();
   for (const r of rows) {
-    const kt = r.kelompokTani?.trim() || null;
-    const blok = by === "blok" ? r.blok?.trim() || null : null;
-    const key = JSON.stringify([kt, blok]);
+    const value = groupValue(by === "blok" ? r.blok : r.kelompokTani)?.replace(/\s+/g, " ") ?? null;
+    const key = value?.toLocaleLowerCase("id-ID") ?? "";
     const g = groups.get(key);
     if (g) g.rows.push(r);
-    else groups.set(key, { kt, blok, rows: [r] });
+    else groups.set(key, { label: value, rows: [r] });
   }
-  const cmpPart = (a: string | null, b: string | null) =>
-    a === b ? 0 : a === null ? 1 : b === null ? -1 : sheetCollator.compare(a, b);
   return [...groups.values()]
-    .sort((a, b) => cmpPart(a.kt, b.kt) || cmpPart(a.blok, b.blok))
-    .map((g) => ({
-      label: by === "blok" ? `${g.kt ?? NO_KT} – ${g.blok ?? NO_BLOK}` : (g.kt ?? NO_KT),
-      rows: g.rows,
-    }));
+    .sort((a, b) => (a.label === b.label ? 0 : a.label === null ? 1 : b.label === null ? -1 : sheetCollator.compare(a.label, b.label)))
+    .map((g) => ({ label: g.label ?? (by === "blok" ? NO_BLOK : NO_KT), rows: g.rows }));
 }
 
 /**

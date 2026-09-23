@@ -577,33 +577,34 @@ describe("NKT di Laporan Lahan (#328)", () => {
 
 describe("groupLandParcelRows (#371)", () => {
   const r = (id: string, kelompokTani: string | null, blok: string | null) => ({ id, kelompokTani, blok });
+  // Pola data Sei Galuh (uji owner 2026-09-23): KT "Tidak Ada", Blok senama lintas KT, "DUSUN n".
   const ROWS = [
-    r("1", "KT 10", "33 F"),
-    r("2", "KT 2", "33 F"),
-    r("3", null, "A"),
-    r("4", "KT 2", null),
-    r("5", "KT 2", "10"),
-    r("6", "KT 2", "2"),
-    r("7", "KT 10", "33 F"),
+    r("1", "KUD Terbit Sentosa Makmur", "11 F"),
+    r("2", "Tidak Ada", "2 F"),
+    r("3", null, null),
+    r("4", "KUD Terbit Sentosa Makmur", "2 F"),
+    r("5", "KUD Terbit Sentosa Makmur", "11 G"),
+    r("6", "Tidak Ada", "DUSUN 3"),
+    r("7", "Deli makmur", null),
+    r("8", "KUD Terbit Sentosa Makmur", "Dusun  3"),
   ];
 
-  it("per KT: urutan natural, Tanpa KT di akhir, urutan baris ikut roster", () => {
+  it("per KT: urutan natural, KT 'Tidak Ada' digabung ke Tanpa KT (di akhir), urutan baris ikut roster", () => {
     const g = groupLandParcelRows(ROWS, "kelompokTani");
-    expect(g.map((x) => x.label)).toEqual(["KT 2", "KT 10", "Tanpa KT"]);
-    expect(g[1].rows.map((x) => x.id)).toEqual(["1", "7"]);
+    expect(g.map((x) => x.label)).toEqual(["Deli makmur", "KUD Terbit Sentosa Makmur", "Tanpa KT"]);
+    expect(g[1].rows.map((x) => x.id)).toEqual(["1", "4", "5", "8"]);
+    expect(g[2].rows.map((x) => x.id)).toEqual(["2", "3", "6"]);
     expect(g.reduce((n, x) => n + x.rows.length, 0)).toBe(ROWS.length);
   });
 
-  it("per Blok: 'KT – Blok', Blok senama di KT berbeda terpisah, Tanpa Blok di akhir KT-nya", () => {
+  it("per Blok: label = nama Blok saja, lintas KT; tak peka huruf besar-kecil/spasi; Tanpa Blok di akhir", () => {
     const g = groupLandParcelRows(ROWS, "blok");
-    expect(g.map((x) => x.label)).toEqual([
-      "KT 2 – 2", "KT 2 – 10", "KT 2 – 33 F", "KT 2 – Tanpa Blok",
-      "KT 10 – 33 F",
-      "Tanpa KT – A",
-    ]);
+    expect(g.map((x) => x.label)).toEqual(["2 F", "11 F", "11 G", "DUSUN 3", "Tanpa Blok"]);
+    expect(g[0].rows.map((x) => x.id)).toEqual(["2", "4"]);
+    expect(g[3].rows.map((x) => x.id)).toEqual(["6", "8"]);
   });
 
-  it("KT/Blok berisi spasi saja = kosong", () => {
-    expect(groupLandParcelRows([r("1", "  ", " ")], "blok").map((x) => x.label)).toEqual(["Tanpa KT – Tanpa Blok"]);
+  it("isian kosong: spasi saja, 'Tidak Ada', '-' → Tanpa …", () => {
+    expect(groupLandParcelRows([r("1", "  ", " "), r("2", "tidak ada", "-")], "blok").map((x) => x.label)).toEqual(["Tanpa Blok"]);
   });
 });
