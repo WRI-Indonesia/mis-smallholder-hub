@@ -13,6 +13,7 @@ import {
   type LpRawParcel,
   type LpMapBox,
   groupLandParcelRows,
+  sortByMapPosition,
 } from "@/lib/report-land-parcel";
 import type { LandParcelReportSummary } from "@/types/report";
 
@@ -606,5 +607,33 @@ describe("groupLandParcelRows (#371)", () => {
 
   it("isian kosong: spasi saja, 'Tidak Ada', '-' → Tanpa …", () => {
     expect(groupLandParcelRows([r("1", "  ", " "), r("2", "tidak ada", "-")], "blok").map((x) => x.label)).toEqual(["Tanpa Blok"]);
+  });
+});
+
+describe("sortByMapPosition (#371) — utara dulu, kiri → kanan, lalu baris berikutnya", () => {
+  // Tata letak Blok 1 F Sei Galuh (uji owner 2026-09-23): baris atas 6 lahan
+  // (tepi atas tak persis sejajar), baris bawah 3 lahan; x = bujur, y = lintang.
+  const box = (id: string, x: number, yTop: number, w = 1, h = 2) => ({
+    id,
+    geometry: { type: "Polygon", coordinates: [[[x, yTop], [x + w, yTop], [x + w, yTop - h], [x, yTop - h], [x, yTop]]] },
+  });
+  const PARCELS = [
+    box("agus", 5, 10.02), box("akhmad", 3, 8), box("sartini", 7, 10.02), box("sugiatmono", 6, 10.02),
+    box("suyadi", 1, 9.99), box("tukiran", 0, 9.99), box("wahyudi-a", 2, 8), box("wahyudi-b", 1, 8), box("yanti", 3, 10),
+    { id: "tanpa-geom", geometry: null },
+  ];
+
+  it("urutan baca peta; lahan tanpa geometri di akhir", () => {
+    expect(sortByMapPosition(PARCELS, (p) => p.geometry).map((p) => p.id)).toEqual([
+      "tukiran", "suyadi", "yanti", "agus", "sugiatmono", "sartini",
+      "wahyudi-b", "wahyudi-a", "akhmad",
+      "tanpa-geom",
+    ]);
+  });
+
+  it("MultiPolygon memakai bbox semua bagian", () => {
+    const multi = { id: "m", geometry: { type: "MultiPolygon", coordinates: [[[[0, 0], [1, 0], [1, 1], [0, 0]]], [[[10, 0], [11, 0], [11, 1], [10, 0]]]] } };
+    const left = box("kiri", -5, 1, 1, 1);
+    expect(sortByMapPosition([multi, left], (p) => p.geometry).map((p) => p.id)).toEqual(["kiri", "m"]);
   });
 });

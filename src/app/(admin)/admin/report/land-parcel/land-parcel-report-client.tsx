@@ -48,8 +48,11 @@ import {
   landParcelExportColumns,
   landParcelExportRow,
   groupLandParcelRows,
+  sortByMapPosition,
   LAND_PARCEL_SHEET_SPLIT_LABELS,
+  LAND_PARCEL_ROW_ORDER_LABELS,
   type LandParcelSheetSplit,
+  type LandParcelRowOrder,
   type LandParcelOptionalCol as ColKey,
   type LpGeoJson,
   type LpMapLayout,
@@ -149,6 +152,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const [gridRows, setGridRows] = useState(1);
   // Pecah sheet Excel (#371): per sel grid (bawaan), per Kelompok Tani, atau per Blok.
   const [sheetSplit, setSheetSplit] = useState<LandParcelSheetSplit>("grid");
+  // Urutan No (#371): abjad pemilik (urutan server) atau posisi lahan di peta.
+  const [rowOrder, setRowOrder] = useState<LandParcelRowOrder>("pemilik");
   const [gridCols, setGridCols] = useState(1);
   // Ceklis isi label poligon di peta (minimal satu).
   const [labelParts, setLabelParts] = useState<Set<LabelKey>>(new Set<LabelKey>(["no"]));
@@ -302,7 +307,11 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const formatLuas = (num: number) => formatDecimal(num, 2);
   const displayOrEmpty = (v: string | null) => v ?? EMPTY;
 
-  const reportRows = useMemo(() => reportData?.rows ?? [], [reportData]);
+  // Satu urutan untuk tabel, peta, PDF, dan Excel — nomor di peta = kolom No.
+  const reportRows = useMemo(() => {
+    const rows = reportData?.rows ?? [];
+    return rowOrder === "posisi" && geoms ? sortByMapPosition(rows, (r) => geoms.get(r.id)) : rows;
+  }, [reportData, rowOrder, geoms]);
 
   const toggleLabelPart = (k: LabelKey) =>
     setLabelParts((prev) => {
@@ -529,7 +538,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     const split = gridRows * gridCols > 1 ? splitParcelsIntoGrid(mapParcels, gridRows, gridCols) : null;
     // Sheet per sel grid hanya di mode "Grid peta"; mode KT/Blok (#371) diganti sheet grup tanpa gambar.
     const useGrid = sheetSplit === "grid" && split !== null && split.cells.length > 0 && !!fullLayout.frame;
-    const groups = sheetSplit === "grid" ? [] : groupLandParcelRows(reportRows, sheetSplit);
+    // Mode posisi: urutan baca dihitung ulang di dalam tiap grup (baris peta grup ≠ baris peta Lembaga).
+    const groups = (sheetSplit === "grid" ? [] : groupLandParcelRows(reportRows, sheetSplit)).map((g) =>
+      rowOrder === "posisi" ? { ...g, rows: sortByMapPosition(g.rows, (r) => geoms.get(r.id)) } : g,
+    );
     // Peta per KT/Blok (owner 2026-09-23): lahan grup saja, label No mengikuti
     // No sheet (mulai 1 lagi). Latar ikut batas grid (BASEMAP_MAX_CELLS) — di
     // atasnya poligon tetap digambar tanpa latar.
@@ -651,6 +663,9 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
             note: c.note,
           })),
           // Berkas yang beredar harus menjelaskan dirinya (#371); mode Grid tak menambah baris.
+          ...(rowOrder === "pemilik"
+            ? []
+            : [{ section: "Berkas", label: "Urutan No", value: LAND_PARCEL_ROW_ORDER_LABELS[rowOrder] }]),
           ...(sheetSplit === "grid"
             ? []
             : [{
@@ -738,6 +753,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       metadata: [
         { label: "Distrik", value: selectedDistrictObj?.name ?? "Semua Distrik" },
         { label: "Lembaga Petani", value: selectedGroupObj?.name ?? "-" },
+        ...(rowOrder === "pemilik" ? [] : [{ label: "Urutan No", value: LAND_PARCEL_ROW_ORDER_LABELS[rowOrder] }]),
       ],
       // Filter & ringkasan wajib tercetak (#305): tanpa filter, PDF hasil
       // saringan "tanpa surat" terbaca seperti roster lengkap; tanpa ringkasan,
@@ -1145,6 +1161,17 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       {/* Toolbar: kolom + export */}
       {reportData && reportData.rows.length > 0 && (
         <div className="flex items-center justify-end gap-2 print:hidden">
+          <select
+            aria-label="Urutan No"
+            title="Urutan No — berlaku untuk tabel, peta, PDF, dan Excel"
+            value={rowOrder}
+            onChange={(e) => setRowOrder(e.target.value as LandParcelRowOrder)}
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+          >
+            {(Object.keys(LAND_PARCEL_ROW_ORDER_LABELS) as LandParcelRowOrder[]).map((k) => (
+              <option key={k} value={k}>Urut: {LAND_PARCEL_ROW_ORDER_LABELS[k]}</option>
+            ))}
+          </select>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 px-3 h-9 text-sm font-medium border rounded-md bg-background hover:bg-accent hover:text-accent-foreground outline-none transition-colors">
               <SlidersHorizontal className="h-4 w-4" />

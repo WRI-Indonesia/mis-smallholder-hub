@@ -520,6 +520,49 @@ export function exteriorRings(geometry: LpGeoJson | null | undefined): Position[
     .filter((r): r is Position[] => r !== null);
 }
 
+// ─── Urutan No (#371) ───────────────────────────────────────────────────────
+
+export type LandParcelRowOrder = "pemilik" | "posisi";
+
+export const LAND_PARCEL_ROW_ORDER_LABELS: Record<LandParcelRowOrder, string> = {
+  pemilik: "Abjad pemilik",
+  posisi: "Posisi lahan (utara → selatan, kiri → kanan)",
+};
+
+/**
+ * Urutan baca peta (owner 2026-09-23): baris paling utara dulu, kiri → kanan,
+ * lalu baris di bawahnya. Satu "baris" = lahan paling utara yang tersisa +
+ * semua lahan yang titik tengahnya masih di dalam rentang lintang lahan itu —
+ * lahan bersebelahan yang tak persis sejajar tetap satu baris. Titik tengah =
+ * tengah bbox ring luar. Tanpa geometri → di akhir, urutan asal.
+ */
+export function sortByMapPosition<T>(items: readonly T[], geometryOf: (item: T) => LpGeoJson | null | undefined): T[] {
+  const placed: { item: T; cx: number; cy: number; minY: number }[] = [];
+  const rest: T[] = [];
+  for (const item of items) {
+    const pts = exteriorRings(geometryOf(item)).flat();
+    if (pts.length === 0) {
+      rest.push(item);
+      continue;
+    }
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    placed.push({ item, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, minY });
+  }
+  placed.sort((a, b) => b.cy - a.cy);
+  const out: T[] = [];
+  let i = 0;
+  while (i < placed.length) {
+    const seed = placed[i];
+    let j = i + 1;
+    while (j < placed.length && placed[j].cy >= seed.minY) j++;
+    out.push(...placed.slice(i, j).sort((a, b) => a.cx - b.cx).map((p) => p.item));
+    i = j;
+  }
+  return [...out, ...rest];
+}
+
 /** Luas ring (shoelace, satuan derajat²) — untuk memilih ring label MultiPolygon. */
 function ringArea(ring: Position[]): number {
   let sum = 0;
