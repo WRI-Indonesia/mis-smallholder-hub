@@ -99,7 +99,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **sate
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
 | Bantuan: parser, materi, hak akses, media S3 (HELP-01/02, #184 #185) | help-content.test.ts, help-media.test.ts | 91 | ✅ |
-| Bantuan: registrasi berkas ↔ `CHAPTER_SOURCES`, frontmatter ↔ `menu.csv`, cakupan tutorial 34/37 ber-pengecualian eksplisit (#257, review #339; +2 menu Monev BMP #344) | help-registry.test.ts | 9 | ✅ |
+| Bantuan: registrasi berkas ↔ `CHAPTER_SOURCES`, frontmatter ↔ `menu.csv`, cakupan tutorial 35/37 ber-pengecualian eksplisit (#257, review #339; +2 menu Monev BMP #344; `help` ber-`menuKey` konsep 2026-09-23) | help-registry.test.ts | 10 | ✅ |
 | Laporan Lahan: kolom ↔ baris ekspor Excel/PDF dari satu definisi (review #339, kelas #323) | report-land-parcel-export.test.ts | 4 | ✅ |
 | Map (MAP-01/02/03) + ruler/label geodesik | map.test.ts, map-geo.test.ts | 62 | ✅ |
 | RBAC & Access Context (#125 #127) | rbac.test.ts, rbac-permission.test.ts, rbac-server-guards.test.ts, access-context.test.ts | 50 | ✅ |
