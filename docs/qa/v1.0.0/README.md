@@ -9,7 +9,15 @@
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v1.0.0`)
 
-_(belum ada run)_
+| Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-09-23-local.md | Smoke | 0 | 0 | 0 | 0 | 31 |
+| 2026-09-23-local.md | Kasus uji | 5 | 0 | 4 | 0 | 0 |
+| 2026-09-23-local.md | Regresi | 0 | 0 | 0 | 0 | 9 |
+
+**Run lokal 2026-09-23 — 5 Pass · 0 Fail · 4 Blocked.** Dijalankan otomatis (Claude in Chrome), SUPERADMIN saja, lingkup sempit. **Bukan pengganti QA manusia**: smoke 31 kasus dan regresi 9 kasus belum dijalankan, begitu pula peran OPERATOR & DONOR — dan justru dari peran ter-scope itulah bug cakupan biasanya terlihat.
+
+QC data lokal (`scripts/qa/data-qc.ts`, read-only): **20 ✓ · 1 ✗ · 9 cetak-saja**. Yang ✗ adalah **F3** — label menu masih `Data — All Lembaga`, yaitu #364; DB lokal disegarkan dari prod sehingga ikut terbawa. Bukan regresi rilis ini.
 
 ## Keputusan
 
