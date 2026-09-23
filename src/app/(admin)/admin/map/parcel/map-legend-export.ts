@@ -1,6 +1,6 @@
 import type { Feature, FeatureCollection, MultiPolygon, Point, Polygon } from "geojson";
 import { exportToExcel, exportMultiSheetToExcel } from "@/lib/xlsx";
-import { groupLandParcelRows, sortByMapPosition, type LandParcelRowOrder } from "@/lib/report-land-parcel";
+import { compareParcelGroupLabels as cmpText, groupLandParcelRows, sortByMapPosition, type LandParcelRowOrder } from "@/lib/report-land-parcel";
 import { safeSheetName } from "@/lib/report-land-parcel-xlsx";
 import { downloadFeatureExport } from "@/lib/parcel-spatial-download";
 import { toAsciiDbf, toDbfProperties, parcelExportFileBase, type ParcelExportFormat, type ParcelExportProperties } from "@/lib/parcel-export-data";
@@ -149,10 +149,6 @@ export interface ParcelXlsxOptions {
   split: ParcelXlsxSplit;
   order: LandParcelRowOrder;
 }
-
-const collator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "base" });
-const cmpText = (a: string | null, b: string | null) =>
-  a === b ? 0 : a === null ? 1 : b === null ? -1 : collator.compare(a, b);
 
 /**
  * Rencana sheet Excel baris lahan (pola Laporan Lahan #371): urut abjad

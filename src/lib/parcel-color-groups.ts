@@ -60,3 +60,22 @@ export function buildParcelColorGroups(
         : { key, label, color: PARCEL_GROUP_COLORS[i++ % PARCEL_GROUP_COLORS.length] },
     );
 }
+
+/**
+ * Titik label nama grup (Blok): titik tengah lahan ANGGOTA yang terdekat ke
+ * rerata titik tengah anggota. Bukan tengah bbox gabungan — Blok yang
+ * lahannya terpencar (utara & selatan) akan berlabel di atas Blok lain, dan
+ * saat warna berulang pembaca salah menisbahkan lahan (review wrap-up #372).
+ */
+export function groupLabelAnchor(centroids: readonly [number, number][]): [number, number] | null {
+  if (centroids.length === 0) return null;
+  const mx = centroids.reduce((s, c) => s + c[0], 0) / centroids.length;
+  const my = centroids.reduce((s, c) => s + c[1], 0) / centroids.length;
+  let best = centroids[0];
+  let bestD = Infinity;
+  for (const c of centroids) {
+    const d = (c[0] - mx) ** 2 + (c[1] - my) ** 2;
+    if (d < bestD) [best, bestD] = [c, d];
+  }
+  return best;
+}

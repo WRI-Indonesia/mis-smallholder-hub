@@ -556,9 +556,14 @@ export function sortByMapPosition<T>(items: readonly T[], geometryOf: (item: T) 
       rest.push(item);
       continue;
     }
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
-    const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    // Loop, bukan Math.min(...xs): spread ratusan ribu vertex melempar RangeError.
+    let [minX, maxX, minY, maxY] = [Infinity, -Infinity, Infinity, -Infinity];
+    for (const [x, y] of pts) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
     placed.push({ item, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, minY });
   }
   placed.sort((a, b) => b.cy - a.cy);

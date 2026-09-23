@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildParcelColorGroups,
+  groupLabelAnchor,
   parcelColorGroupKey,
   PARCEL_GROUP_COLORS,
   NO_GROUP_COLOR,
@@ -41,5 +42,18 @@ describe("buildParcelColorGroups", () => {
     const many = Array.from({ length: PARCEL_GROUP_COLORS.length + 2 }, (_, i) => r(null, `B${i + 1}`));
     const g = buildParcelColorGroups(many, "blok");
     expect(g[PARCEL_GROUP_COLORS.length].color).toBe(PARCEL_GROUP_COLORS[0]);
+  });
+});
+
+describe("groupLabelAnchor — label Blok di atas lahan Blok itu sendiri (review wrap-up)", () => {
+  it("Blok terpencar utara & selatan: label di lahan anggota, bukan di tengah kosong/Blok lain", () => {
+    const north: [number, number][] = [[0, 10], [1, 10]];
+    const south: [number, number][] = [[0, 0]];
+    const anchor = groupLabelAnchor([...north, ...south]);
+    expect([...north, ...south]).toContainEqual(anchor);
+    expect(anchor).not.toEqual([1 / 3, 20 / 3]); // rerata = di antara, bukan di lahan
+  });
+  it("tanpa titik → null", () => {
+    expect(groupLabelAnchor([])).toBeNull();
   });
 });

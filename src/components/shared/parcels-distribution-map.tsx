@@ -5,6 +5,7 @@ import MapGL, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } fro
 import type { LayerProps } from "react-map-gl/maplibre";
 import {
   buildParcelColorGroups,
+  groupLabelAnchor,
   parcelColorGroupKey,
   NO_GROUP_COLOR,
   NO_GROUP_KEY,
@@ -163,8 +164,6 @@ export function ParcelsDistributionMap({
     const positions: [number, number][] = [];
     const countByKey = new Map<string, number>();
     const labels: { name: string; bounds: [number, number, number, number]; centroid: [number, number]; ktKey: string }[] = [];
-    // Bbox gabungan per grup — posisi label nama Blok (#372).
-    const groupBounds = new Map<string, [number, number, number, number]>();
     let nktCount = 0;
     for (const p of parcels) {
       const geom = parseGeometry(p.geometry);
@@ -196,10 +195,6 @@ export function ParcelsDistributionMap({
       positions.push(...featurePositions);
       // Label nama petani di dalam poligon (pola Peta Lahan: hanya bila muat).
       const b = geomBounds(geom);
-      if (b) {
-        const gb = groupBounds.get(ktKey);
-        groupBounds.set(ktKey, gb ? [Math.min(gb[0], b[0]), Math.min(gb[1], b[1]), Math.max(gb[2], b[2]), Math.max(gb[3], b[3])] : b);
-      }
       if (b && featurePositions.length > 0) {
         const centroid: [number, number] = [
           featurePositions.reduce((s, c) => s + c[0], 0) / featurePositions.length,
@@ -225,15 +220,14 @@ export function ParcelsDistributionMap({
     const legendRows = groups
       .filter((g) => (countByKey.get(g.key) ?? 0) > 0)
       .map((g) => ({ ...g, count: countByKey.get(g.key) ?? 0 }));
-    // Label nama Blok di tengah bbox gabungan tiap Blok (bukan "Tanpa Blok").
+    // Label nama Blok di atas salah satu lahan Blok itu sendiri (`groupLabelAnchor`), bukan "Tanpa Blok".
     const groupLabels =
       colorBy === "blok"
-        ? legendRows
-            .filter((g) => g.key !== NO_GROUP_KEY && groupBounds.has(g.key))
-            .map((g) => {
-              const [minX, minY, maxX, maxY] = groupBounds.get(g.key)!;
-              return { key: g.key, label: g.label, center: [(minX + maxX) / 2, (minY + maxY) / 2] as [number, number] };
-            })
+        ? legendRows.flatMap((g) => {
+            if (g.key === NO_GROUP_KEY) return [];
+            const center = groupLabelAnchor(labels.filter((l) => l.ktKey === g.key).map((l) => l.centroid));
+            return center ? [{ key: g.key, label: g.label, center }] : [];
+          })
         : [];
 
     const fc: FeatureCollection = { type: "FeatureCollection", features };

@@ -473,7 +473,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   // `rows` = subset per KT/Blok (#371) → No mulai 1 lagi per sheet.
   const buildExportRows = (rows = reportRows): Record<string, string | number>[] =>
     rows.map((row, idx) =>
-      landParcelExportRow(row, idx, (n, digits) => Number(n.toFixed(digits)), EMPTY, formatParcelNodes(geoms?.get(row.id))),
+      landParcelExportRow(row, idx, (n, digits) => Number(n.toFixed(digits)), EMPTY, show("koordinat") ? formatParcelNodes(geoms?.get(row.id)) : undefined),
     );
 
   const totalRow = (totalLuas = reportTotalLuas): Record<string, string | number> => ({
@@ -557,17 +557,28 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
         linesByNo: new Map(parcels.map((p) => [p.no, p.labelLines])),
       };
     });
-    const groupBasemap = isTileBasemap(activeBasemap) && groups.length <= BASEMAP_MAX_CELLS;
-    if (isTileBasemap(activeBasemap) && !groupBasemap) {
+    // Mode KT/Blok tak memakai grid → kunci latar karena grid besar
+    // (`basemapLocked`) tak berlaku; batasnya jumlah sheet grup (review wrap-up).
+    const groupBasemapKey: ReportBasemapKey = sheetSplit === "grid" ? activeBasemap : basemap;
+    const groupAttribution = REPORT_BASEMAP_ATTRIBUTION[groupBasemapKey];
+    const groupBasemap = isTileBasemap(groupBasemapKey) && groups.length <= BASEMAP_MAX_CELLS;
+    if (isTileBasemap(groupBasemapKey) && !groupBasemap) {
       toast.info(`Latar peta tidak dipasang di ${groups.length} sheet ${LAND_PARCEL_SHEET_SPLIT_LABELS[sheetSplit]} (maks. ${BASEMAP_MAX_CELLS}) — poligon tetap tergambar.`);
     }
     const groupBasemaps: (string | undefined)[] = [];
+    // Ikhtisar sheet Lahan: pada mode grup dengan grid terkunci, latarnya dijahit di sini.
+    let overviewBasemap = mapImages.get("");
+    let overviewAttribution = basemapAttribution;
     if (groupBasemap) {
       setPreparingMaps(true);
       try {
+        if (basemapLocked && fullLayout.frame) {
+          overviewBasemap = await composeForBox(groupBasemapKey, fullLayout.frame, PREVIEW_BOX, basemapDim);
+          overviewAttribution = groupAttribution;
+        }
         // Berurutan (pola ensureBasemaps) — tak menghantam proxy tile sekaligus.
         for (const m of groupMaps) {
-          groupBasemaps.push(m.layout.frame ? await composeForBox(activeBasemap, m.layout.frame, PREVIEW_BOX, basemapDim) : undefined);
+          groupBasemaps.push(m.layout.frame ? await composeForBox(groupBasemapKey, m.layout.frame, PREVIEW_BOX, basemapDim) : undefined);
         }
       } catch (err) {
         toast.error((err instanceof Error && err.message) || "Gagal menyiapkan latar peta");
@@ -591,7 +602,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                     layout={layout}
                     linesByNo={groupLines}
                     basemapUrl={groupBasemaps[gi]}
-                    attribution={groupBasemap ? basemapAttribution : undefined}
+                    attribution={groupBasemap ? groupAttribution : undefined}
                   />,
                 )
               : null,
@@ -615,8 +626,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               <LayoutSvg
                 layout={fullLayout}
                 linesByNo={linesByNo}
-                basemapUrl={mapImages.get("")}
-                attribution={basemapAttribution}
+                basemapUrl={overviewBasemap}
+                attribution={overviewAttribution}
               />,
             );
       }

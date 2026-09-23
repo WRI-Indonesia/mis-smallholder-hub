@@ -637,3 +637,12 @@ describe("sortByMapPosition (#371) — utara dulu, kiri → kanan, lalu baris be
     expect(sortByMapPosition([multi, left], (p) => p.geometry).map((p) => p.id)).toEqual(["kiri", "m"]);
   });
 });
+
+describe("sortByMapPosition — poligon sangat padat (review wrap-up)", () => {
+  it("300.000 vertex tidak melempar RangeError (spread Math.min diganti loop)", () => {
+    const ring = Array.from({ length: 300_000 }, (_, i) => [101 + (i % 1000) * 1e-6, -0.5 - Math.floor(i / 1000) * 1e-6]);
+    const dense = { id: "padat", geometry: { type: "Polygon", coordinates: [ring] } };
+    const small = { id: "kecil", geometry: { type: "Polygon", coordinates: [[[100, 1], [100.001, 1], [100.001, 0.999], [100, 1]]] } };
+    expect(sortByMapPosition([dense, small], (p) => p.geometry).map((p) => p.id)).toEqual(["kecil", "padat"]);
+  });
+});
