@@ -49,6 +49,8 @@ const FIRMS_BASE = "https://firms.modaps.eosdis.nasa.gov/api/area/csv";
 const AVAILABILITY_BASE = "https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv";
 // Satu jendela biasanya 1–3 s, pernah 7 s; jendela-jendela diambil paralel
 // sehingga batas ini berlaku untuk yang paling lambat, bukan jumlahnya.
+// Mode Bulan menambah satu tahap SERIAL di depan (data_availability), jadi
+// anggarannya disetel ulang sesudah tahap itu — batas berlaku per tahap.
 const TIMEOUT_MS = 30_000;
 // Jendela terakhir (berakhir hari ini UTC): FIRMS NRT berjeda ~3 jam, polling
 // lebih rapat cuma membakar kuota (~5000 transaksi / 10 menit per key).
@@ -111,7 +113,7 @@ export async function GET(req: NextRequest) {
   // membaca body untuk mengisi cache, dan cache itulah yang membuat retry
   // berikutnya murah. Sisa yang menggantung diabort timer pada 30 s.
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  let timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   const fetchAvailability = async (): Promise<FirmsAvailability> => {
     const res = await fetch(`${AVAILABILITY_BASE}/${mapKey}/ALL`, {
@@ -147,7 +149,13 @@ export async function GET(req: NextRequest) {
     let coverage: HotspotCoverage | null = null;
     let maxAge = 1800;
     if (month !== null) {
-      const plan = monthWindows(month, now, await fetchAvailability())!;
+      const availability = await fetchAvailability();
+      // Tahap serial sudah lewat: setel ulang anggaran agar jendela mendapat
+      // 30 s penuh. Tanpa ini, availability yang lambat (mis. entri cache
+      // dingin) menghabiskan jatah dan seluruh jendela yang sehat ikut diabort.
+      clearTimeout(timer);
+      timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+      const plan = monthWindows(month, now, availability)!;
       windows = plan.windows;
       const isCurrentMonth = plan.to === now.toISOString().slice(0, 10);
       // Bulan berjalan: jendela terakhir (berakhir hari ini) menyegarkan

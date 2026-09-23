@@ -292,6 +292,21 @@ describe("buildBmpMapDoc (lib/bmp-map-print)", () => {
   });
 });
 
+/**
+ * Posisi-y tiap penempatan gambar pada content stream PDF (unit PDF, origin
+ * kiri-bawah). Nilai ≤ 0 berarti gambar digambar di luar halaman — jsPDF
+ * menerimanya tanpa galat, jadi hanya koordinat ini yang membuktikannya.
+ */
+function imagePlacementYs(doc: ReturnType<typeof buildFireMapDoc>): number[] {
+  const pages = (doc as unknown as { internal: { pages: string[][] } }).internal.pages;
+  const ys: number[] = [];
+  for (let i = 1; i < pages.length; i++) {
+    const body = (pages[i] ?? []).join("\n");
+    for (const m of body.matchAll(/[-\d.]+ 0 0 [-\d.]+ [-\d.]+ ([-\d.]+) cm/g)) ys.push(Number(m[1]));
+  }
+  return ys;
+}
+
 describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
   const base = {
     subtitle: "Smallholder Hub Group",
@@ -387,6 +402,37 @@ describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
     it("tanpa lembaga ber-titik api → kalimat kosong di rekap lembaga, tanpa throw", () => {
       const text = pdfText(buildFireMapDoc({ ...opts, rows: [], monthly: { ...monthly, byGroup: [] } }));
       expect(text).toContain("Tidak ada titik api dalam boundary lembaga pada periode ini.");
+    });
+
+    it("seksi bulanan panjang → peta pindah halaman, tidak tergambar di luar halaman", () => {
+      // drawMapImage tidak pernah addPage sendiri dan `y` sesudah tiga seksi
+      // bulanan bisa di mana saja. Tanpa guard, judul + peta 88 mm ditempatkan
+      // pada y NEGATIF (terukur -37 mm pada 5 kab/14 lembaga, -179 mm pada
+      // 13/14) — di luar MediaBox, jadi peta hilang diam-diam dari PDF tanpa
+      // menambah halaman. Jumlah halaman karena itu bukan sinyal; yang diuji
+      // adalah koordinat penempatan gambar di content stream.
+      const padat = {
+        ...opts,
+        monthly: {
+          ...monthly,
+          byKabupaten: Array.from({ length: 13 }, (_, i) => ({
+            name: `Kabupaten ${i + 1}`,
+            total: 10,
+            inside: 2,
+            high: 1,
+          })),
+          byGroup: Array.from({ length: 14 }, (_, i) => ({
+            name: `Lembaga ${i + 1}`,
+            districtName: "Kampar",
+            count: 4,
+            high: 1,
+            shared: 0,
+          })),
+        },
+      };
+      const ys = imagePlacementYs(buildFireMapDoc(padat));
+      expect(ys.length).toBeGreaterThan(0);
+      expect(ys.every((y) => y > 0)).toBe(true);
     });
 
     it("laporan rentang live tetap tanpa seksi bulanan dan tetap 'Rentang Waktu'", () => {

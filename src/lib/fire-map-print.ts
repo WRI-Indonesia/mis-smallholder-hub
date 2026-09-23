@@ -230,6 +230,14 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
   }
 
   // ── Peta Sebaran Titik Api ────────────────────────────────────────────────
+  // Sesudah seksi bulanan `y` bisa di mana saja (terukur 115–269 mm), dan
+  // drawMapImage tidak pernah addPage sendiri: tanpa guard ini judul + peta
+  // 88 mm tergambar di luar MediaBox dan HILANG diam-diam dari PDF. Pola sama
+  // dengan heading() di drawMonthlySections dan peta per-Lembaga.
+  if (y + 5 + 88 > doc.internal.pageSize.getHeight() - MARGIN) {
+    doc.addPage("a4", "portrait");
+    y = MARGIN + 4;
+  }
   doc.setFont(F, "bold");
   doc.setFontSize(12);
   doc.setTextColor(20);

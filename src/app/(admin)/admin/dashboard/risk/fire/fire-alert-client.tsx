@@ -402,7 +402,8 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
       const exportedAt = formatExportedAt(now);
 
       // Laporan bulanan (#365): label periode + tren harian, rekap kabupaten
-      // (poligon BIG, konsisten dengan kartu), rekap lembaga, sumber & celah.
+      // (poligon BIG; scope distrik memakai angka kartu, lihat byKabupaten),
+      // rekap lembaga, sumber & celah.
       let rangeLabel: string;
       let monthly: FireMonthlySection | undefined;
       if (month && coverage) {
@@ -411,9 +412,17 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         const partial = coverage.to.slice(0, 7) === utcMonth(now);
         rangeLabel = `${formatHotspotMonth(month)} (${partial ? "parsial, " : ""}${formatHotspotRange(from, to)})`;
         // Scope distrik: scopeFc sudah terpangkas ke poligonnya → baris
-        // "Kab. Lainnya" pasti 0, dibuang (selalu baris terakhir).
+        // "Kab. Lainnya" pasti 0, dibuang (selalu baris terakhir). Sisa satu
+        // baris = kabupaten scope itu sendiri, jadi wajib sama persis dengan
+        // kartu ringkasan di PDF yang sama. `summarizeByNamedArea` menghitung
+        // "dalam boundary" per poligon kabupaten (pemilik mana pun), kartu
+        // menghitung per kepemilikan lembaga di distrik scope — buffer 1,5 km
+        // bisa melewati batas kabupaten sehingga keduanya beda DUA arah.
+        // Angka kartu yang menang.
         const byKabupaten = scopeArea
-          ? summarizeByNamedArea(scopeFc, [scopeArea], "Kab. Lainnya").slice(0, -1)
+          ? summarizeByNamedArea(scopeFc, [scopeArea], "Kab. Lainnya")
+              .slice(0, -1)
+              .map((r) => ({ ...r, inside: insideFeatures.length }))
           : summarizeByNamedArea(scopeFc, programAreas, "Kab. Lainnya");
         monthly = {
           daily: countHotspotsByDay(scopeFc, coverage.from, coverage.to, coverage.missingDates),

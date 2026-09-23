@@ -197,6 +197,38 @@ describe("GET /api/map-hotspot — mode Bulan dari arsip SP / NRT (#365)", () =>
     expect(res.headers.get("Cache-Control")).toBe("private, max-age=86400");
   });
 
+  it("anggaran 30 s disetel ulang sesudah data_availability — tahap serial tidak memakan jatah jendela", async () => {
+    // `fetchAvailability` berjalan SERIAL sebelum jendela. Bila timer tetap
+    // yang diarmed di awal, availability lambat (entri cache dingin) menyisakan
+    // jatah tipis dan jendela yang sehat ikut diabort → 502 palsu.
+    vi.useFakeTimers({
+      now: new Date("2026-09-22T10:00:00Z"),
+      toFake: ["Date", "setTimeout", "clearTimeout"],
+    });
+    const after = (ms: number, body: string, signal?: AbortSignal | null) =>
+      new Promise<Response>((resolve, reject) => {
+        const t = setTimeout(() => resolve(new Response(body, { status: 200 })), ms);
+        signal?.addEventListener("abort", () => {
+          clearTimeout(t);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      });
+    fetchMock.mockImplementation((url: string, init?: { signal?: AbortSignal | null }) =>
+      String(url).includes("data_availability")
+        ? after(25_000, AVAIL_CSV, init?.signal) // lambat, tapi masih di bawah 30 s
+        : after(8_000, CSV_OK, init?.signal)
+    );
+
+    const pending = GET(req("bbox=100,-1.4,104.7,3&month=2025-01"));
+    // 25 s availability + 8 s jendela = 33 s > TIMEOUT_MS, tapi tiap tahap
+    // sendiri di bawah 30 s — harus lolos.
+    await vi.advanceTimersByTimeAsync(40_000);
+    const res = await pending;
+
+    expect(res.status).toBe(200);
+    expect(areaCalls()).toHaveLength(7);
+  });
+
   it("respons bulan lampau = FeatureCollection + foreign member coverage (sumber & tanggal kosong)", async () => {
     const res = await GET(req("bbox=100,-1.4,104.7,3&month=2025-01"));
     const body = await res.json();
