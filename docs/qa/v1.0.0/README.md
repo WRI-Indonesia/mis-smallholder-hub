@@ -21,7 +21,7 @@ QC data lokal (`scripts/qa/data-qc.ts`, read-only): **20 ✓ · 1 ✗ · 9 cetak
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: …
+**Go / No-go:** **Developer Go — terbatas** (Claude, 2026-09-23). **QA & Owner belum.** Rilis ini **belum memenuhi prasyarat tag**: run staging belum ada, dan run lokal tidak menguji peran OPERATOR/DONOR. Rincian beserta urutan yang disarankan ada di `05-signoff.md`.
 
 **Syarat khusus rilis ini — wajib dicek sebelum Go:**
 

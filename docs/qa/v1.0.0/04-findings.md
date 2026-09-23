@@ -4,7 +4,9 @@ Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain)
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |
 |---|---|---|---|---|---|---|---|---|
-| 1 | TC-… | | | | staging | #… | fix rilis ini / defer | `evidence/…` |
+| — | — | — | **Tidak ada temuan dari run lokal 2026-09-23** (5 Pass · 0 Fail · 4 Blocked). Blocked bukan temuan: kasusnya tak terpicu / butuh simulasi kegagalan jaringan. | — | local | — | — | — |
+
+Enam temuan review pra-rilis (`/code-review high` rentang penuh, bukan QA) tercatat di Decision Log `changelog.md` 2026-09-23 dan sudah ditindak sebelum rilis: 5 diperbaiki di `433551a`, 1 (dua angka "Dalam Boundary") diputuskan owner dan diperbaiki di `de1edb7`.
 
 ## Membuka issue dari temuan
 
