@@ -197,6 +197,31 @@ export function hotspotRowCells(r: HotspotNearestRow): {
 export const NEAR_KM_THRESHOLD = 15;
 
 /** Baris hasil kalkulasi yang < 15 km dari lembaga, urut jarak terdekat. */
+/**
+ * Batas baris tabel titik api — modal Ringkasan maupun PDF (#286 butir 5 & 6).
+ *
+ * Hari biasa jauh di bawah ini (1.906 titik se-bbox Riau untuk 30 hari, yang
+ * < 15 km hanya sebagian kecil). Musim karhutla berbeda: >1.000 titik/hari,
+ * dan jalur "tanpa data Lembaga" memakai SELURUH titik, bukan yang < 15 km —
+ * `autoTable` puluhan ribu baris membekukan tab bermenit-menit atau OOM.
+ * Bukan virtualisasi karena dokumen cetak memang harus punya ujung; yang
+ * dijaga adalah pembacanya diberi tahu bahwa daftarnya dipotong.
+ */
+export const HOTSPOT_TABLE_ROW_CAP = 500;
+
+/**
+ * Potong daftar baris tabel titik api pada `HOTSPOT_TABLE_ROW_CAP`. Satu
+ * aturan dipakai modal Ringkasan dan PDF supaya angka "n lainnya" di kedua
+ * tempat tak bisa berbeda.
+ */
+export function hotspotTablePlan(candidates: HotspotNearestRow[]): {
+  rows: HotspotNearestRow[];
+  truncated: number;
+} {
+  const rows = candidates.slice(0, HOTSPOT_TABLE_ROW_CAP);
+  return { rows, truncated: candidates.length - rows.length };
+}
+
 export function filterNearSorted(rows: HotspotNearestRow[]): HotspotNearestRow[] {
   return rows
     .filter((r) => r.nearest !== null && r.nearest.meters / 1000 < NEAR_KM_THRESHOLD)
@@ -230,6 +255,7 @@ export async function printHotspotPdf(
   const RED: [number, number, number] = [239, 68, 68];
   const MARGIN = 14;
   const PAGE_H = 210; // A4 landscape
+  const PAGE_W = 297;
 
   const counts = countByConfidence(fc);
   const total = counts.high + counts.nominal + counts.low;
@@ -244,7 +270,7 @@ export async function printHotspotPdf(
   // Tabel: hanya titik < 15 km, terdekat dulu. Tanpa data lembaga jarak tak
   // terhitung → tampilkan semua apa adanya (urutan waktu deteksi bawaan).
   const near = filterNearSorted(all);
-  const rows = hasDistance ? near : all;
+  const { rows, truncated } = hotspotTablePlan(hasDistance ? near : all);
 
   const doc = new jsPDF({ orientation: "landscape", compress: true });
 
@@ -276,25 +302,38 @@ export async function printHotspotPdf(
     MARGIN,
     31
   );
-  doc.text(
-    hasDistance
-      ? `Berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani: ${formatNumber(near.length)} titik — tabel hanya memuat titik tsb, diurutkan dari yang terdekat.`
-      : "Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki titik Lembaga Petani; tabel memuat semua titik.",
-    MARGIN,
-    37
-  );
+  const noteLines = doc.splitTextToSize(
+    [
+      hasDistance
+        ? `Berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani: ${formatNumber(near.length)} titik — tabel hanya memuat titik tsb, diurutkan dari yang terdekat.`
+        : "Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki titik Lembaga Petani; tabel memuat semua titik.",
+      // Pemotongan HARUS tertulis di dokumen: PDF beredar lepas dari layar
+      // yang membuatnya, dan tabel yang diam-diam terpotong terbaca sebagai
+      // "sekian titik saja yang ada".
+      truncated > 0
+        ? `Tabel dipotong pada ${formatNumber(HOTSPOT_TABLE_ROW_CAP)} baris pertama; ${formatNumber(truncated)} titik lainnya tidak dicetak — unduh SHP untuk data lengkap.`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" "),
+    PAGE_W - MARGIN * 2
+  ) as string[];
+  doc.text(noteLines, MARGIN, 37);
+  // Tabel turun mengikuti tinggi keterangan — tanpa ini baris kedua (muncul
+  // saat tabel dipotong) tertimpa header tabel di startY tetap 43.
+  const tableStartY = 43 + (noteLines.length - 1) * 4.5;
 
   if (rows.length === 0) {
     doc.setFontSize(10);
-    doc.text(`Tidak ada titik api berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani.`, MARGIN, 47);
+    doc.text(`Tidak ada titik api berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani.`, MARGIN, tableStartY + 4);
     doc.setFontSize(8);
-    doc.text(PDF_DISCLAIMER, MARGIN, 55);
+    doc.text(PDF_DISCLAIMER, MARGIN, tableStartY + 12);
     doc.save(`${fileBase(dayRange, now)}.pdf`);
     return;
   }
 
   autoTable(doc, {
-    startY: 43,
+    startY: tableStartY,
     margin: { left: MARGIN, right: MARGIN },
     head: [
       ["No", "Waktu Deteksi (WIB)", "Satelit", "Keyakinan", "FRP (MW)", "Lintang", "Bujur", "Lembaga Terdekat", "Jarak (km) & Arah dari Kantor Lembaga"],

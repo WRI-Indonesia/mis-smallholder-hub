@@ -162,9 +162,16 @@ export function pointInIndexedArea(pt: Position, area: IndexedArea): boolean {
   const [x, y] = pt;
   const [w, s, e, n] = area.bbox;
   if (x < w || x > e || y < s || y > n) return false;
+  // Area berpolygon TUNGGAL: bbox area = bbox polygon itu, jadi cek kedua
+  // selalu lolos — murni biaya. Berlaku untuk 8 dari 12 kabupaten BIG dan
+  // untuk scope cetak per distrik. Kecil tapi nyata: `summarizeByNamedArea`
+  // 12 kabupaten × 9.929 titik terukur 9,19 → 8,92 ms (min dari 30 kali).
+  const many = area.polygons.length > 1;
   for (const poly of area.polygons) {
-    const [pw, ps, pe, pn] = poly.bbox;
-    if (x < pw || x > pe || y < ps || y > pn) continue;
+    if (many) {
+      const [pw, ps, pe, pn] = poly.bbox;
+      if (x < pw || x > pe || y < ps || y > pn) continue;
+    }
     if (!pointInIndexedRing(pt, poly.outer)) continue;
     let inHole = false;
     for (const hole of poly.holes) {
@@ -178,6 +185,15 @@ export function pointInIndexedArea(pt: Position, area: IndexedArea): boolean {
   return false;
 }
 
+/**
+ * Boundary lembaga SENGAJA tidak memakai `indexArea` (#286 butir 4, diukur
+ * 2026-09-23): 31 boundary, mayoritas satu polygon ±209 verteks, dan bbox-nya
+ * sudah menolak ±96% pasangan titik×boundary sebelum ring disentuh. Indeks pita
+ * justru menambah biaya pada jalur penolakan itu — `findContainingBoundaries`
+ * 30.000 titik terukur **3,96 ms → 4,63 ms** (min dari 30 kali, pembanding
+ * berstruktur identik). Yang berat ada di klip provinsi, dan itu sudah
+ * ter-index.
+ */
 export function indexBoundaries(boundaries: FireBoundary[]): FireBoundaryIndexed[] {
   return boundaries.map((b) => ({ ...b, bbox: multiPolygonBbox(b.geometry) }));
 }
