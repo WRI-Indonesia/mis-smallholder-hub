@@ -71,6 +71,8 @@ import lMemperbaruiDashboard from "@/content/help/tutorial/l-3-memperbarui-dashb
 import lLaporanPelatihan from "@/content/help/tutorial/l-4-laporan-pelatihan.md";
 import lLaporanProduksi from "@/content/help/tutorial/l-5-laporan-produksi.md";
 import lLaporanKelompokTani from "@/content/help/tutorial/l-6-laporan-kelompok-tani.md";
+import lRosterKelompokTani from "@/content/help/tutorial/l-10-roster-kelompok-tani.md";
+import lSnapshotBmp from "@/content/help/tutorial/l-11-snapshot-bmp.md";
 import lMenyaringLegalitasLahan from "@/content/help/tutorial/l-7-menyaring-legalitas-lahan.md";
 import lLaporanPatok from "@/content/help/tutorial/l-8-laporan-patok.md";
 import lMencetakProfilPetani from "@/content/help/tutorial/l-9-mencetak-profil-petani.md";
@@ -248,7 +250,9 @@ const CHAPTER_SOURCES: ChapterSource[] = [
       { id: "laporan-pelatihan", source: lLaporanPelatihan },
       { id: "laporan-produksi", source: lLaporanProduksi },
       { id: "laporan-kelompok-tani", source: lLaporanKelompokTani },
+      { id: "roster-kelompok-tani", source: lRosterKelompokTani },
       { id: "memperbarui-dashboard", source: lMemperbaruiDashboard },
+      { id: "snapshot-bmp", source: lSnapshotBmp },
     ],
   },
   {

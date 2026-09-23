@@ -142,6 +142,173 @@ describe("GET /api/map-hotspot — rentang 10 & 30 hari dari beberapa jendela FI
   });
 });
 
+describe("GET /api/map-hotspot — mode Bulan dari arsip SP / NRT (#365)", () => {
+  const AVAIL_URL = `https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/${TEST_KEY}/ALL`;
+  const AVAIL_CSV = [
+    "data_id,min_date,max_date",
+    "VIIRS_SNPP_NRT,2026-07-01,2026-09-22",
+    "VIIRS_SNPP_SP,2012-01-20,2026-06-30",
+  ].join("\n");
+  const areaBase = (source: string) =>
+    `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${TEST_KEY}/${source}/100,-1.4,104.7,3`;
+  const areaCalls = () =>
+    fetchMock.mock.calls.filter((c) => !String(c[0]).includes("data_availability"));
+
+  beforeEach(() => {
+    vi.useFakeTimers({ now: new Date("2026-09-22T10:00:00Z"), toFake: ["Date"] });
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).includes("data_availability")
+        ? new Response(AVAIL_CSV, { status: 200 })
+        : new Response(CSV_OK, { status: 200 })
+    );
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("400 bila month dan dayRange dikirim bersamaan — bukan diam-diam memilih salah satu", async () => {
+    const res = await GET(req("bbox=100,-1.4,104.7,3&month=2025-01&dayRange=5"));
+    expect(res.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("400 untuk month tak valid: bulan depan, sebelum 2020, bentuk longgar", async () => {
+    for (const m of ["2026-10", "2019-12", "2026-9", "2025-01-01", "abc", ""]) {
+      const res = await GET(req(`bbox=100,-1.4,104.7,3&month=${encodeURIComponent(m)}`));
+      expect(res.status, `month=${JSON.stringify(m)}`).toBe(400);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("bulan lampau: ketersediaan dibaca dulu, lalu 7 jendela SP ber-DATE dari tanggal 1; cache arsip 30 hari", async () => {
+    const res = await GET(req("bbox=100,-1.4,104.7,3&month=2025-01"));
+    expect(res.status).toBe(200);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(AVAIL_URL);
+    expect(fetchMock.mock.calls[0][1]?.next?.revalidate).toBe(21600);
+    const calls = areaCalls();
+    expect(calls.map((c) => String(c[0]))).toEqual([
+      `${areaBase("VIIRS_SNPP_SP")}/5/2025-01-01`,
+      `${areaBase("VIIRS_SNPP_SP")}/5/2025-01-06`,
+      `${areaBase("VIIRS_SNPP_SP")}/5/2025-01-11`,
+      `${areaBase("VIIRS_SNPP_SP")}/5/2025-01-16`,
+      `${areaBase("VIIRS_SNPP_SP")}/5/2025-01-21`,
+      `${areaBase("VIIRS_SNPP_SP")}/5/2025-01-26`,
+      `${areaBase("VIIRS_SNPP_SP")}/1/2025-01-31`,
+    ]);
+    expect(calls.every((c) => c[1]?.next?.revalidate === 30 * 24 * 3600)).toBe(true);
+    expect(res.headers.get("Cache-Control")).toBe("private, max-age=86400");
+  });
+
+  it("anggaran 30 s disetel ulang sesudah data_availability — tahap serial tidak memakan jatah jendela", async () => {
+    // `fetchAvailability` berjalan SERIAL sebelum jendela. Bila timer tetap
+    // yang diarmed di awal, availability lambat (entri cache dingin) menyisakan
+    // jatah tipis dan jendela yang sehat ikut diabort → 502 palsu.
+    vi.useFakeTimers({
+      now: new Date("2026-09-22T10:00:00Z"),
+      toFake: ["Date", "setTimeout", "clearTimeout"],
+    });
+    const after = (ms: number, body: string, signal?: AbortSignal | null) =>
+      new Promise<Response>((resolve, reject) => {
+        const t = setTimeout(() => resolve(new Response(body, { status: 200 })), ms);
+        signal?.addEventListener("abort", () => {
+          clearTimeout(t);
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      });
+    fetchMock.mockImplementation((url: string, init?: { signal?: AbortSignal | null }) =>
+      String(url).includes("data_availability")
+        ? after(25_000, AVAIL_CSV, init?.signal) // lambat, tapi masih di bawah 30 s
+        : after(8_000, CSV_OK, init?.signal)
+    );
+
+    const pending = GET(req("bbox=100,-1.4,104.7,3&month=2025-01"));
+    // 25 s availability + 8 s jendela = 33 s > TIMEOUT_MS, tapi tiap tahap
+    // sendiri di bawah 30 s — harus lolos.
+    await vi.advanceTimersByTimeAsync(40_000);
+    const res = await pending;
+
+    expect(res.status).toBe(200);
+    expect(areaCalls()).toHaveLength(7);
+  });
+
+  it("respons bulan lampau = FeatureCollection + foreign member coverage (sumber & tanggal kosong)", async () => {
+    const res = await GET(req("bbox=100,-1.4,104.7,3&month=2025-01"));
+    const body = await res.json();
+    expect(body.type).toBe("FeatureCollection");
+    expect(body.features).toHaveLength(1); // baris sama di 7 jendela → dedup
+    expect(body.coverage).toEqual({
+      month: "2025-01",
+      from: "2025-01-01",
+      to: "2025-01-31",
+      sources: ["VIIRS_SNPP_SP"],
+      missingDates: [],
+    });
+  });
+
+  it("bulan berjalan: dipangkas ke hari ini (UTC), sumber NRT, revalidate seperti rentang live, max-age 30 menit", async () => {
+    const res = await GET(req("bbox=100,-1.4,104.7,3&month=2026-09"));
+    expect(res.status).toBe(200);
+    const calls = areaCalls();
+    expect(calls.map((c) => String(c[0]))).toEqual([
+      `${areaBase("VIIRS_SNPP_NRT")}/5/2026-09-01`,
+      `${areaBase("VIIRS_SNPP_NRT")}/5/2026-09-06`,
+      `${areaBase("VIIRS_SNPP_NRT")}/5/2026-09-11`,
+      `${areaBase("VIIRS_SNPP_NRT")}/5/2026-09-16`,
+      `${areaBase("VIIRS_SNPP_NRT")}/2/2026-09-21`,
+    ]);
+    expect(calls.map((c) => c[1]?.next?.revalidate)).toEqual([21600, 21600, 21600, 21600, 3600]);
+    expect(res.headers.get("Cache-Control")).toBe("private, max-age=1800");
+    const body = await res.json();
+    expect(body.coverage).toMatchObject({ month: "2026-09", to: "2026-09-22", sources: ["VIIRS_SNPP_NRT"] });
+  });
+
+  it("celah ketersediaan dilaporkan di coverage.missingDates, jendela di kedua sumber tetap diambil", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).includes("data_availability")
+        ? new Response(
+            "data_id,min_date,max_date\nVIIRS_SNPP_NRT,2026-07-07,2026-09-22\nVIIRS_SNPP_SP,2012-01-20,2026-07-03",
+            { status: 200 }
+          )
+        : new Response(CSV_OK, { status: 200 })
+    );
+    const res = await GET(req("bbox=100,-1.4,104.7,3&month=2026-07"));
+    expect(res.status).toBe(200);
+    const urls = areaCalls().map((c) => String(c[0]));
+    expect(urls[0]).toBe(`${areaBase("VIIRS_SNPP_SP")}/3/2026-07-01`);
+    expect(urls[1]).toBe(`${areaBase("VIIRS_SNPP_NRT")}/5/2026-07-07`);
+    const body = await res.json();
+    expect(body.coverage.sources).toEqual(["VIIRS_SNPP_SP", "VIIRS_SNPP_NRT"]);
+    expect(body.coverage.missingDates).toEqual(["2026-07-04", "2026-07-05", "2026-07-06"]);
+  });
+
+  it("502 bila endpoint ketersediaan gagal atau membalas teks error — tanpa menebak sumber, tanpa bocor key", async () => {
+    for (const reply of [new Response("boom", { status: 500 }), new Response("Invalid MAP_KEY.", { status: 200 })]) {
+      fetchMock.mockReset().mockImplementation(async (url: string) =>
+        String(url).includes("data_availability") ? reply.clone() : new Response(CSV_OK, { status: 200 })
+      );
+      const res = await GET(req("bbox=100,-1.4,104.7,3&month=2025-01"));
+      expect(res.status).toBe(502);
+      expect(await res.text()).not.toContain(TEST_KEY);
+      expect(areaCalls()).toHaveLength(0);
+    }
+  });
+
+  it("satu jendela arsip gagal → 502, bukan bulan yang diam-diam bolong", async () => {
+    let n = 0;
+    fetchMock.mockImplementation(async (url: string) => {
+      if (String(url).includes("data_availability")) return new Response(AVAIL_CSV, { status: 200 });
+      return ++n === 4 ? new Response("boom", { status: 500 }) : new Response(CSV_OK, { status: 200 });
+    });
+    const res = await GET(req("bbox=100,-1.4,104.7,3&month=2025-01"));
+    expect(res.status).toBe(502);
+  });
+
+  it("mode rentang live tidak menyentuh endpoint ketersediaan dan tetap tanpa coverage", async () => {
+    const res = await GET(req("bbox=100,-1.4,104.7,3&dayRange=5"));
+    expect(res.status).toBe(200);
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("data_availability"))).toBe(false);
+    expect((await res.json()).coverage).toBeUndefined();
+  });
+});
+
 describe("GET /api/map-hotspot — jalur sukses", () => {
   it("meneruskan CSV FIRMS sebagai GeoJSON FeatureCollection + header cache", async () => {
     const res = await GET(req(VALID_QS));

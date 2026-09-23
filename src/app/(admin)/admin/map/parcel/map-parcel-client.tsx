@@ -21,7 +21,7 @@ import type {
 import { exportKtRow, exportMarkerRow, exportParcelRow, parcelContext } from "./map-legend-export";
 import type { FeatureCollection, MultiPolygon } from "geojson";
 import { filterPointsWithinAreas } from "@/lib/fire-alert";
-import { getAdminBoundaries } from "@/server/actions/fire-boundary";
+import { getRiauOutline } from "@/server/actions/fire-boundary";
 import { MapControlPanel, type LayerVisibility, type LayerZoomTarget, type LegendExportRow, type LegendExportFormat } from "./map-control-panel";
 import {
   DEFAULT_OVERLAY_STATE,
@@ -108,13 +108,15 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
   const [customLayers, setCustomLayers] = useState<CustomLayer[]>([]);
   const [hotspot, setHotspot] = useState<HotspotState>(DEFAULT_HOTSPOT_STATE);
   const [hotspotData, setHotspotData] = useState<FeatureCollection | null>(null);
-  // Poligon 12 kabupaten BIG untuk memangkas titik api ke Provinsi Riau (#269).
-  // Dimuat MALAS — hanya saat layer Titik Api dinyalakan, dan hanya sekali —
-  // karena geometrinya ±165 KB dan mayoritas kunjungan tak membuka layer ini.
+  // Outline Provinsi Riau (12 kabupaten BIG DI-UNION lalu disederhanakan) untuk
+  // memangkas titik api (#269, diperbaiki #280 — poligon per kabupaten yang
+  // disederhanakan sendiri-sendiri menyisakan celah di batas bersama dan
+  // menelan titik diam-diam). Dimuat MALAS — hanya saat layer Titik Api
+  // dinyalakan, dan hanya sekali.
   const riauAreasRef = useRef<Promise<{ geometry: MultiPolygon }[]> | null>(null);
   const loadRiauAreas = useCallback(() => {
-    riauAreasRef.current ??= getAdminBoundaries()
-      .then((rows) => rows.map((r) => ({ geometry: r.geometry })))
+    riauAreasRef.current ??= getRiauOutline()
+      .then((outline) => (outline ? [{ geometry: outline }] : []))
       // Batas belum ter-seed / gagal dimuat → jangan gagalkan layer titik api;
       // pemanggil menampilkan titik apa adanya (fallback yang disengaja).
       .catch(() => {
@@ -220,11 +222,11 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
         if (!active) return;
         // Area API FIRMS hanya menerima bbox PERSEGI, sehingga RIAU_BBOX ikut
         // menangkap Semenanjung Malaysia, Sumbar, Jambi, dan Kepri. Dipangkas
-        // ke gabungan poligon kabupaten BIG — sama seperti Dashboard Fire Alert
+        // ke outline Provinsi Riau — sama seperti Dashboard Fire Alert
         // (#266), agar angka kedua halaman tidak berbeda untuk rentang yang
         // sama. Disaring SEBELUM setHotspotData, jadi peta, legenda, hitungan
         // terdekat, ekspor SHP, dan PDF semuanya ikut (#269).
-        // Batas belum ter-seed → tampil apa adanya, bukan peta kosong.
+        // Outline belum ter-seed → tampil apa adanya, bukan peta kosong.
         const fc = areas.length > 0 ? filterPointsWithinAreas(raw, areas) : raw;
         setHotspotData(fc);
         if (fc.features.length === 0) {

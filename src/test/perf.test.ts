@@ -38,6 +38,7 @@ import { buildNktReportInput, summarizeNktReport, type NktReportData, type NktRe
 import { buildLayerReportDoc } from "@/lib/layer-report-pdf";
 import { parseBmpImportRows, resolveBmpImportRows, type BmpImportRawRow } from "@/lib/bmp-assessment";
 import { matchFarmerName, recomputeBmpScore, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
+import { filterPointsWithinAreas } from "@/lib/fire-alert";
 import {
   bmpMonevActivityProfile,
   bmpMonevGroupProfiles,
@@ -1153,5 +1154,57 @@ describe("Performance - Monev BMP (#344/#346, pure logic)", () => {
     console.log(`  matchFarmerName 300×300: ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(600);
     expect(exact).toBe(100);
+  });
+});
+
+describe("Performance - DASH-07 klip titik api ke outline provinsi (#280/#286)", () => {
+  // Outline Riau ter-union (#280) adalah SATU MultiPolygon berisi ±84 pulau,
+  // dan bbox-nya nyaris seluas bbox FIRMS — jadi pra-cek bbox tingkat-area
+  // praktis tak menyaring apa pun dan tiap titik jatuh ke ray casting ring
+  // daratan yang beribu sisi. Itulah kenapa ring di-index per pita lintang.
+  //
+  // Skala uji mengikuti #286: musim karhutla 2019 ≈ 1.000 titik/hari →
+  // ±30.000 titik untuk satu bulan. Ambang 1.200 ms diambil dari #286
+  // ("klasifikasi harus tetap <1.200 ms tanpa membekukan UI"); terukur pada
+  // geometri Riau asli: 17 ms (sebelum index: 309 ms).
+  it("memangkas 30.000 titik terhadap outline 84 pulau (±12k verteks) under 1200ms", () => {
+    // Daratan: lingkaran ber-8.000 verteks (ring padat, seperti batas provinsi
+    // hasil simplify) + 83 pulau kecil di sekelilingnya.
+    const ring = (cx: number, cy: number, r: number, n: number) =>
+      Array.from({ length: n + 1 }, (_, i) => {
+        const a = (2 * Math.PI * (i % n)) / n;
+        return [cx + r * Math.cos(a), cy + r * Math.sin(a)] as [number, number];
+      });
+    const coordinates = [[ring(102.5, 0.75, 2.2, 8000)]];
+    for (let i = 0; i < 83; i++) {
+      const a = (2 * Math.PI * i) / 83;
+      coordinates.push([ring(102.5 + 2.6 * Math.cos(a), 0.75 + 2.6 * Math.sin(a), 0.05, 48)]);
+    }
+    const outline = { type: "MultiPolygon" as const, coordinates };
+
+    let seed = 42;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    const fc = {
+      type: "FeatureCollection" as const,
+      features: Array.from({ length: 30_000 }, () => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [100 + rnd() * 5, -1.5 + rnd() * 4.5] },
+        properties: {},
+      })),
+    };
+
+    const start = performance.now();
+    const kept = filterPointsWithinAreas(fc, [{ geometry: outline }]);
+    const duration = performance.now() - start;
+
+    console.log(
+      `  klip 30.000 titik → ${kept.features.length} di dalam (${outline.coordinates.length} polygon): ${duration.toFixed(2)}ms`,
+    );
+    expect(duration).toBeLessThan(1200);
+    // Lingkaran r=2,2 di dalam kotak 5×4,5 → ±68% titik di dalam bila bujur
+    // sangkar penuh; di sini kotaknya lebih lebar dari lingkaran, jadi cukup
+    // pastikan klip benar-benar bekerja (bukan meloloskan/menolak semua).
+    expect(kept.features.length).toBeGreaterThan(5_000);
+    expect(kept.features.length).toBeLessThan(25_000);
   });
 });

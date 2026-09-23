@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
-import type { FeatureCollection } from "geojson";
+import type { FeatureCollection, MultiPolygon } from "geojson";
 import {
   RIAU_BBOX,
   confidenceLabel,
   countByConfidence,
   fetchHotspots,
+  fetchHotspotsForMonth,
   formatWib,
   hotspotWindowLabel,
   satelliteLabel,
@@ -17,18 +18,25 @@ import {
 import {
   classifyHotspots,
   combinedBbox,
+  buildScopeUniverse,
+  countHotspotsByDay,
   countHotspotsByGroup,
   countPointsByNamedArea,
   countUniqueInsideByDistrict,
+  describeHotspotSources,
   filterPointsWithinAreas,
   formatExportedAt,
+  formatHotspotMonth,
   formatHotspotRange,
   hotspotWindowStart,
   indexBoundaries,
   multiPolygonBbox,
+  summarizeByNamedArea,
   summarizeFire,
   type FireBoundary,
 } from "@/lib/fire-alert";
+import { HOTSPOT_MONTH_MIN, parseHotspotMonth, utcMonth, type HotspotCoverage } from "@/lib/firms";
+import type { FireMonthlySection } from "@/lib/fire-map-print";
 import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
 import { FireAlertPanel, type FirePrintScope } from "./fire-alert-panel";
 import { type FireMapCaptureFn, type FireMapZoomFn } from "./fire-map-canvas";
@@ -92,19 +100,35 @@ const FireMapCanvas = dynamic(
 
 interface Props {
   boundaries: FireBoundary[];
-  /** Garis batas kabupaten (BIG, tersimplifikasi) sebagai konteks peta. */
+  /** Garis batas kabupaten (BIG, tersimplifikasi) sebagai konteks peta & scope cetak per distrik. */
   adminBoundaries: AdminBoundaryLine[];
+  /**
+   * Outline Riau ter-union untuk MEMANGKAS titik api (#280). Dipisah dari
+   * `adminBoundaries` karena poligon kabupaten disederhanakan sendiri-sendiri
+   * dan menyisakan celah di batas bersama; null = belum ter-seed → jatuh ke
+   * poligon kabupaten (perilaku lama, bukan peta kosong).
+   */
+  riauOutline: MultiPolygon | null;
   /** PRINT menu Fire Alert — gate seksi Print Map. */
   canPrint: boolean;
   /** HelpHint dirender di server agar markdown Bantuan tak masuk bundle client. */
   helpSlot?: React.ReactNode;
 }
 
-export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlot }: Props) {
+export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canPrint, helpSlot }: Props) {
   const indexed = useMemo(() => indexBoundaries(boundaries), [boundaries]);
+  // Area pemangkas: outline ter-union bila ada, poligon kabupaten bila belum.
+  const clipAreas = useMemo(
+    () => (riauOutline ? [{ geometry: riauOutline }] : adminBoundaries),
+    [riauOutline, adminBoundaries]
+  );
 
   // Default 5 hari (#266); pilihan lain lihat HOTSPOT_DAY_RANGES (#284).
   const [dayRange, setDayRange] = useState<HotspotDayRange>(5);
+  // Mode Bulan (#365): "YYYY-MM" dari arsip FIRMS; null = rentang live di atas.
+  const [month, setMonth] = useState<string | null>(null);
+  // Cakupan periode dari proxy (sumber SP/NRT, tanggal kosong) — hanya mode Bulan.
+  const [coverage, setCoverage] = useState<HotspotCoverage | null>(null);
   const [classified, setClassified] = useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(true);
   const [printScope, setPrintScope] = useState<FirePrintScope>("riau");
@@ -115,26 +139,51 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
   const [printProgress, setPrintProgress] = useState<{ done: number; total: number } | null>(null);
   const printAbortRef = useRef<AbortController | null>(null);
 
-  // Fetch se-bbox Riau → pangkas ke Provinsi Riau (poligon kabupaten BIG —
-  // bbox FIRMS persegi ikut mencakup Malaysia/Sumbar/Jambi) → klasifikasi
-  // point-in-polygon di klien (volume kecil).
+  // Fetch se-bbox Riau → pangkas ke Provinsi Riau (outline ter-union — bbox
+  // FIRMS persegi ikut mencakup Malaysia/Sumbar/Jambi) → klasifikasi
+  // point-in-polygon di klien.
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    fetchHotspots(RIAU_BBOX, dayRange, Date.now(), controller.signal)
+    const load = month
+      ? fetchHotspotsForMonth(RIAU_BBOX, month, controller.signal).then(({ fc, coverage: cov }) => {
+          setCoverage(cov);
+          return fc;
+        })
+      : fetchHotspots(RIAU_BBOX, dayRange, Date.now(), controller.signal).then((fc) => {
+          setCoverage(null);
+          return fc;
+        });
+    load
       .then((fc) => {
-        setClassified(classifyHotspots(filterPointsWithinAreas(fc, adminBoundaries), indexed));
+        setClassified(classifyHotspots(filterPointsWithinAreas(fc, clipAreas), indexed));
         setLoading(false);
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
         console.warn("Fire alert fetch failed:", err);
         setClassified(null);
+        // Tanpa ini, sumber & daftar tanggal kosong milik bulan SEBELUMNYA
+        // tetap tercetak di bawah label bulan yang baru dipilih.
+        setCoverage(null);
         setLoading(false);
         toast.error("Gagal memuat titik api dari NASA FIRMS");
       });
     return () => controller.abort();
-  }, [dayRange, indexed, adminBoundaries]);
+  }, [dayRange, month, indexed, clipAreas]);
+
+  const handleDayRangeChange = useCallback((d: HotspotDayRange) => {
+    setMonth(null);
+    setDayRange(d);
+  }, []);
+  // Bulan di luar [HOTSPOT_MONTH_MIN, bulan berjalan] dipangkas ke batasnya —
+  // mis. ganti tahun ke tahun berjalan saat bulan terpilih belum tiba.
+  const handleMonthChange = useCallback((m: string) => {
+    const now = new Date();
+    setMonth(parseHotspotMonth(m, now) ?? (m < HOTSPOT_MONTH_MIN ? HOTSPOT_MONTH_MIN : utcMonth(now)));
+  }, []);
+  // Label periode untuk judul tabel panel dan PDF: "Januari 2025" / "5 hari terakhir".
+  const periodLabel = month ? formatHotspotMonth(month) : `${hotspotWindowLabel(dayRange)} terakhir`;
 
   const summary = useMemo(() => (classified ? summarizeFire(classified) : null), [classified]);
   const rows = useMemo(
@@ -234,6 +283,12 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
       toast.error("Peta belum siap");
       return;
     }
+    // Mode Bulan tanpa coverage = data di layar bukan dari fetch bulan ini
+    // (mis. state belum sinkron) — jangan cetak laporan bulanan dari data live.
+    if (month && !coverage) {
+      toast.error("Cakupan periode belum termuat, coba lagi");
+      return;
+    }
 
     // Scope → bbox zoom + irisan data. Boundary ICS sudah dibuat TERMASUK
     // buffer 1,5 km (keputusan owner) — deteksi cukup point-in-polygon.
@@ -275,8 +330,6 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
       toast.error("Batas kabupaten distrik ini belum tersedia — cetak per distrik tidak bisa dilakukan");
       return;
     }
-    const scopeFc = scopeArea ? filterPointsWithinAreas(classified, [scopeArea]) : classified;
-    const conf = countByConfidence(scopeFc);
     const scopeGroupRows = scopeDistrictId
       ? rows.filter((r) => r.districtId === scopeDistrictId)
       : rows;
@@ -291,6 +344,21 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         (id) => groupDistrict.get(id) === scopeDistrictId
       );
     });
+    // Semesta dokumen scope distrik = titik di poligon kabupaten BIG-nya
+    // DITAMBAH titik milik lembaga distrik itu yang jatuh di luar poligon
+    // (boundary ICS sudah termasuk buffer 1,5 km, jadi kepemilikan bisa
+    // melewati batas kabupaten). Satu aturan untuk seluruh dokumen: "dalam
+    // boundary" = KEPEMILIKAN lembaga distrik scope (keputusan owner
+    // 2026-09-23, melanjutkan "angka kartu yang menang" dari #294).
+    //
+    // Sebelum ini, kartu & Rekap Kabupaten memakai kepemilikan sementara Tren
+    // Harian memakai poligon — menjumlahkan kolom "Dalam Boundary" Tren Harian
+    // tidak menghasilkan angka Rekap Kabupaten di dokumen yang SAMA.
+    const scopeFc: FeatureCollection = scopeArea
+      ? buildScopeUniverse(filterPointsWithinAreas(classified, [scopeArea]), insideFeatures)
+      : classified;
+    const conf = countByConfidence(scopeFc);
+
     const detailRows = insideFeatures
       .map((f) => ({
         iso: (f.properties?.acqDatetime as string) ?? "",
@@ -360,14 +428,58 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         return;
       }
       const now = new Date();
-      const start = hotspotWindowStart(now, dayRange);
       const exportedAt = formatExportedAt(now);
+
+      // Laporan bulanan (#365): label periode + tren harian, rekap kabupaten
+      // (poligon BIG; scope distrik memakai angka kartu, lihat byKabupaten),
+      // rekap lembaga, sumber & celah.
+      let rangeLabel: string;
+      let monthly: FireMonthlySection | undefined;
+      if (month && coverage) {
+        const from = new Date(`${coverage.from}T00:00:00Z`);
+        const to = new Date(`${coverage.to}T00:00:00Z`);
+        const partial = coverage.to.slice(0, 7) === utcMonth(now);
+        rangeLabel = `${formatHotspotMonth(month)} (${partial ? "parsial, " : ""}${formatHotspotRange(from, to)})`;
+        // Scope distrik: satu baris = kabupaten itu sendiri, dihitung langsung
+        // dari semesta dokumen. `summarizeByNamedArea` tidak dipakai di sini
+        // karena ia memangkas ke poligon — titik milik lembaga distrik ini
+        // yang berada di kabupaten tetangga akan jatuh ke "Kab. Lainnya" lalu
+        // terbuang, padahal kartu menghitungnya.
+        const byKabupaten = scopeArea
+          ? [
+              {
+                name: scopeArea.name,
+                total: scopeFc.features.length,
+                inside: insideFeatures.length,
+                high: scopeFc.features.filter((f) => f.properties?.confBucket === "high").length,
+              },
+            ]
+          : summarizeByNamedArea(scopeFc, programAreas, "Kab. Lainnya");
+        monthly = {
+          daily: countHotspotsByDay(scopeFc, coverage.from, coverage.to, coverage.missingDates),
+          byKabupaten,
+          byGroup: scopeGroupRows
+            .filter((r) => r.count > 0)
+            .map((r) => ({
+              name: r.name,
+              districtName: r.districtName,
+              count: r.count,
+              high: r.high,
+              shared: r.shared,
+            })),
+          sourceNote: describeHotspotSources(coverage.sources),
+          missingDates: coverage.missingDates,
+        };
+      } else {
+        const start = hotspotWindowStart(now, dayRange);
+        rangeLabel = `${hotspotWindowLabel(dayRange)} terakhir (${formatHotspotRange(start, now)})`;
+      }
 
       const { generateFireMapPdf } = await import("@/lib/fire-map-print");
       generateFireMapPdf({
         subtitle: "Smallholder Hub Group",
         kabupatenLabel,
-        rangeLabel: `${hotspotWindowLabel(dayRange)} terakhir (${formatHotspotRange(start, now)})`,
+        rangeLabel,
         exportedAt,
         logo,
         fonts,
@@ -384,7 +496,8 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         imageHeightPx: shot.height,
         rows: detailRows,
         groupMaps,
-        fileName: `laporan-titik-api-${scopeSlug}.pdf`,
+        monthly,
+        fileName: `laporan-titik-api-${scopeSlug}${month ? `-${month}` : ""}.pdf`,
       });
     } catch (err) {
       console.warn("Fire alert print failed:", err);
@@ -418,7 +531,11 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         <FireAlertPanel
           helpSlot={helpSlot}
           dayRange={dayRange}
-          onDayRangeChange={setDayRange}
+          onDayRangeChange={handleDayRangeChange}
+          month={month}
+          onMonthChange={handleMonthChange}
+          coverage={coverage}
+          periodLabel={periodLabel}
           loading={loading}
           summary={summary}
           confInside={confInside}

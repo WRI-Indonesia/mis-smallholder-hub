@@ -292,6 +292,21 @@ describe("buildBmpMapDoc (lib/bmp-map-print)", () => {
   });
 });
 
+/**
+ * Posisi-y tiap penempatan gambar pada content stream PDF (unit PDF, origin
+ * kiri-bawah). Nilai ≤ 0 berarti gambar digambar di luar halaman — jsPDF
+ * menerimanya tanpa galat, jadi hanya koordinat ini yang membuktikannya.
+ */
+function imagePlacementYs(doc: ReturnType<typeof buildFireMapDoc>): number[] {
+  const pages = (doc as unknown as { internal: { pages: string[][] } }).internal.pages;
+  const ys: number[] = [];
+  for (let i = 1; i < pages.length; i++) {
+    const body = (pages[i] ?? []).join("\n");
+    for (const m of body.matchAll(/[-\d.]+ 0 0 [-\d.]+ [-\d.]+ ([-\d.]+) cm/g)) ys.push(Number(m[1]));
+  }
+  return ys;
+}
+
 describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
   const base = {
     subtitle: "Smallholder Hub Group",
@@ -330,6 +345,103 @@ describe("buildFireMapDoc (lib/fire-map-print) — Laporan Titik Api", () => {
     const gm = { name: "Kepau Jaya", count: 2, shared: 1, dataUrl: PNG_1PX_URL, widthPx: 800, heightPx: 500 };
     const doc = buildFireMapDoc({ ...base, rows: [row(1)], groupMaps: [gm, { ...gm, name: "PPKS" }] });
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+  });
+
+  // Laporan bulanan (#365): judul & label meta berganti, tiga seksi baru
+  // setelah kartu, catatan metodologi menyebut sumber + tanggal kosong.
+  describe("varian Laporan Bulanan (#365)", () => {
+    const daily = Array.from({ length: 31 }, (_, i) => {
+      const date = `2025-01-${String(i + 1).padStart(2, "0")}`;
+      const total = i === 9 ? 40 : i % 3; // puncak 10 Jan
+      return { date, inside: Math.min(total, 2), outside: Math.max(0, total - 2), total, available: date !== "2025-01-20" };
+    });
+    const monthly = {
+      daily,
+      byKabupaten: [
+        { name: "Kampar", total: 30, inside: 4, high: 3 },
+        { name: "Siak", total: 12, inside: 2, high: 0 },
+        { name: "Kab. Lainnya", total: 88, inside: 0, high: 10 },
+      ],
+      byGroup: [{ name: "Kepau Jaya", districtName: "Kampar", count: 4, high: 3, shared: 1 }],
+      sourceNote: "arsip NASA FIRMS VIIRS SNPP Standard Processing (data terproses ulang)",
+      missingDates: ["2025-01-20"],
+    };
+    const opts = {
+      ...base,
+      rangeLabel: "Januari 2025 (1–31 Jan 2025)",
+      rows: [row(1)],
+      monthly,
+    };
+
+    it("judul 'Laporan Bulanan', meta 'Periode', dan tiga seksi rekap tercetak", () => {
+      const text = pdfText(buildFireMapDoc(opts));
+      expect(text).toContain("Laporan Bulanan Titik Api (Hotspot)");
+      expect(text).toContain("Periode: ");
+      // En dash tidak terdekode pdfText (WinAnsi helvetica) — cek dua sisinya.
+      expect(text).toContain("Januari 2025 (1");
+      expect(text).toContain("31 Jan 2025)");
+      expect(text).toContain("Tren Harian");
+      expect(text).toContain("Rekap per Kabupaten");
+      expect(text).toContain("Rekap per Lembaga (ber-titik api)");
+      // Baris tren: hari puncak, hari kosong ditandai, bukan 0.
+      expect(text).toContain("Jum, 10 Jan");
+      expect(text).toContain("tidak tersedia di FIRMS");
+      // Rekap kabupaten + total; rekap lembaga.
+      expect(text).toContain("Kab. Lainnya");
+      expect(text).toContain("Kepau Jaya");
+    });
+
+    it("catatan metodologi menyebut sumber yang dipakai & tanggal kosong, bukan 'jeda ±3 jam' NRT", () => {
+      const text = pdfText(buildFireMapDoc(opts));
+      expect(text).toContain("Standard Processing");
+      expect(text).toContain("20 Jan 2025");
+      expect(text).toContain("TIDAK termasuk dalam angka");
+      expect(text).not.toContain("jeda pembaruan data");
+    });
+
+    it("tanpa lembaga ber-titik api → kalimat kosong di rekap lembaga, tanpa throw", () => {
+      const text = pdfText(buildFireMapDoc({ ...opts, rows: [], monthly: { ...monthly, byGroup: [] } }));
+      expect(text).toContain("Tidak ada titik api dalam boundary lembaga pada periode ini.");
+    });
+
+    it("seksi bulanan panjang → peta pindah halaman, tidak tergambar di luar halaman", () => {
+      // drawMapImage tidak pernah addPage sendiri dan `y` sesudah tiga seksi
+      // bulanan bisa di mana saja. Tanpa guard, judul + peta 88 mm ditempatkan
+      // pada y NEGATIF (terukur -37 mm pada 5 kab/14 lembaga, -179 mm pada
+      // 13/14) — di luar MediaBox, jadi peta hilang diam-diam dari PDF tanpa
+      // menambah halaman. Jumlah halaman karena itu bukan sinyal; yang diuji
+      // adalah koordinat penempatan gambar di content stream.
+      const padat = {
+        ...opts,
+        monthly: {
+          ...monthly,
+          byKabupaten: Array.from({ length: 13 }, (_, i) => ({
+            name: `Kabupaten ${i + 1}`,
+            total: 10,
+            inside: 2,
+            high: 1,
+          })),
+          byGroup: Array.from({ length: 14 }, (_, i) => ({
+            name: `Lembaga ${i + 1}`,
+            districtName: "Kampar",
+            count: 4,
+            high: 1,
+            shared: 0,
+          })),
+        },
+      };
+      const ys = imagePlacementYs(buildFireMapDoc(padat));
+      expect(ys.length).toBeGreaterThan(0);
+      expect(ys.every((y) => y > 0)).toBe(true);
+    });
+
+    it("laporan rentang live tetap tanpa seksi bulanan dan tetap 'Rentang Waktu'", () => {
+      const text = pdfText(buildFireMapDoc({ ...base, rows: [row(1)] }));
+      expect(text).toContain("Laporan Titik Api (Hotspot)");
+      expect(text).toContain("Rentang Waktu: ");
+      expect(text).not.toContain("Tren Harian");
+      expect(text).toContain("jeda pembaruan data");
+    });
   });
 });
 

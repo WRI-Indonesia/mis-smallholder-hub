@@ -5,7 +5,7 @@
  */
 
 import type { FeatureCollection } from "geojson";
-import { HOTSPOT_DAY_RANGES, type HotspotDayRange } from "@/lib/firms";
+import { HOTSPOT_DAY_RANGES, type HotspotCoverage, type HotspotDayRange } from "@/lib/firms";
 
 // Re-export untuk modul Peta Lahan (dokumentasi rentang ada di lib/firms.ts).
 export { HOTSPOT_DAY_RANGES, type HotspotDayRange };
@@ -162,4 +162,26 @@ export async function fetchHotspots(
   if (!res.ok) throw new Error("Gagal memuat titik api");
   const fc = (await res.json()) as FeatureCollection;
   return processHotspots(fc, dayRange, now);
+}
+
+/**
+ * Titik api satu bulan kalender (`month` = YYYY-MM) dari proxy mode Bulan
+ * (#365). Proxy memilih arsip SP / NRT per jendela dan menyertakan
+ * `coverage` (periode efektif, sumber, tanggal kosong) — dikembalikan
+ * terpisah agar pemakai wajib menanganinya, bukan tersembunyi di properti.
+ * `processHotspots` hanya menandai bucket (rentang 5 = tanpa pemangkasan 24
+ * jam); `ageDays` yang dihasilkannya tak bermakna untuk bulan lampau dan
+ * tidak dipakai Fire Alert.
+ */
+export async function fetchHotspotsForMonth(
+  bbox: [number, number, number, number],
+  month: string,
+  signal?: AbortSignal
+): Promise<{ fc: FeatureCollection; coverage: HotspotCoverage }> {
+  const [w, s, e, n] = bbox;
+  const res = await fetch(`/api/map-hotspot?bbox=${w},${s},${e},${n}&month=${month}`, { signal });
+  if (!res.ok) throw new Error("Gagal memuat titik api");
+  const body = (await res.json()) as FeatureCollection & { coverage?: HotspotCoverage };
+  if (!body.coverage) throw new Error("Respons proxy tanpa coverage");
+  return { fc: processHotspots(body, 5, Date.now()), coverage: body.coverage };
 }

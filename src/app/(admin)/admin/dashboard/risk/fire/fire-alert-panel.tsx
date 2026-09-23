@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, Loader2, Printer, ShieldAlert, X } from "lucide-react";
+import { CalendarDays, Flame, Loader2, Printer, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -15,22 +15,54 @@ import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent, StatTooltipRow } from "@/components/shared/stat-tooltip";
-import { HOTSPOT_DAY_RANGES, type HotspotDayRange } from "@/lib/firms";
+import {
+  FIRMS_SOURCES,
+  HOTSPOT_DAY_RANGES,
+  HOTSPOT_MONTH_MIN,
+  parseHotspotMonth,
+  utcMonth,
+  type HotspotCoverage,
+  type HotspotDayRange,
+} from "@/lib/firms";
 import {
   HOTSPOT_CONF_COLORS,
   HOTSPOT_CONF_LABELS,
   hotspotWindowLabel,
   type HotspotConfBucket,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
-import type { AreaCount, FireGroupCount, FireSummary } from "@/lib/fire-alert";
+import {
+  formatDateList,
+  formatHotspotRange,
+  type AreaCount,
+  type FireGroupCount,
+  type FireSummary,
+} from "@/lib/fire-alert";
 
 /** Scope cetak: seluruh Riau atau satu distrik (keputusan owner: tanpa per-lembaga). */
 export type FirePrintScope = "riau" | `district:${string}`;
+
+/** "Januari" … "Desember" — indeks 0–11, untuk pemilih bulan. */
+const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
+  new Intl.DateTimeFormat("id-ID", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2020, i, 1)))
+);
+
+/** Label sumber ringkas di panel; kalimat lengkapnya ada di catatan metodologi PDF. */
+const SOURCE_SHORT: Record<string, string> = {
+  [FIRMS_SOURCES.sp]: "arsip Standard Processing",
+  [FIRMS_SOURCES.nrt]: "near-real-time (NRT)",
+};
 
 interface Props {
   helpSlot?: React.ReactNode;
   dayRange: HotspotDayRange;
   onDayRangeChange: (d: HotspotDayRange) => void;
+  /** Mode Bulan (#365): "YYYY-MM"; null = rentang live `dayRange`. */
+  month: string | null;
+  onMonthChange: (month: string) => void;
+  /** Cakupan periode dari proxy — hanya terisi di mode Bulan. */
+  coverage: HotspotCoverage | null;
+  /** "Januari 2025" / "5 hari terakhir" — judul tabel lembaga. */
+  periodLabel: string;
   loading: boolean;
   summary: FireSummary | null;
   /** Breakdown confidence titik DALAM boundary. */
@@ -61,6 +93,10 @@ export function FireAlertPanel({
   helpSlot,
   dayRange,
   onDayRangeChange,
+  month,
+  onMonthChange,
+  coverage,
+  periodLabel,
   loading,
   summary,
   confInside,
@@ -79,6 +115,20 @@ export function FireAlertPanel({
   printProgress,
   onCancelPrint,
 }: Props) {
+  // Opsi tahun/bulan dibatasi [HOTSPOT_MONTH_MIN, bulan berjalan UTC] — bulan
+  // yang belum tiba tidak ditawarkan, bukan ditolak setelah dipilih.
+  const now = new Date();
+  const currentMonth = utcMonth(now);
+  const firstYear = Number(HOTSPOT_MONTH_MIN.slice(0, 4));
+  const lastYear = Number(currentMonth.slice(0, 4));
+  const years = Array.from({ length: lastYear - firstYear + 1 }, (_, i) => String(lastYear - i));
+  const selectedYear = month?.slice(0, 4) ?? currentMonth.slice(0, 4);
+  const selectedMonth = month?.slice(5, 7) ?? currentMonth.slice(5, 7);
+  const monthOptions = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).filter(
+    (mm) => parseHotspotMonth(`${selectedYear}-${mm}`, now) !== null
+  );
+  const isPartial = coverage !== null && coverage.to.slice(0, 7) === currentMonth;
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 border-b px-4 py-3">
@@ -88,7 +138,8 @@ export function FireAlertPanel({
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
-        {/* Rentang waktu — mengikuti Peta Lahan (24 jam / 5 / 10 / 30 hari, #284). */}
+        {/* Rentang waktu — mengikuti Peta Lahan (24 jam / 5 / 10 / 30 hari, #284)
+            + mode Bulan kalender dari arsip FIRMS (#365). */}
         <div>
           <p className="mb-1.5 text-xs font-medium text-muted-foreground">Rentang waktu</p>
           <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
@@ -98,7 +149,7 @@ export function FireAlertPanel({
                 onClick={() => onDayRangeChange(d)}
                 className={cn(
                   "rounded px-2 py-1.5 text-xs font-medium transition-colors",
-                  dayRange === d
+                  month === null && dayRange === d
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
@@ -106,7 +157,88 @@ export function FireAlertPanel({
                 {hotspotWindowLabel(d)} terakhir
               </button>
             ))}
+            {/* Masuk mode Bulan = bulan lalu: laporan bulanan lazimnya untuk
+                bulan yang sudah rampung; bulan berjalan tetap bisa dipilih. */}
+            <button
+              onClick={() => month === null && onMonthChange(utcMonth(now, -1))}
+              className={cn(
+                "col-span-2 flex items-center justify-center gap-1.5 rounded px-2 py-1.5 text-xs font-medium transition-colors",
+                month !== null
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <CalendarDays className="h-3.5 w-3.5" /> Bulan tertentu (laporan bulanan)
+            </button>
           </div>
+          {month !== null && (
+            <div className="mt-1.5 space-y-1.5">
+              <div className="grid grid-cols-[1fr_5.5rem] gap-1.5">
+                <Select
+                  value={selectedMonth}
+                  onValueChange={(v) => v && onMonthChange(`${selectedYear}-${v}`)}
+                  items={Object.fromEntries(monthOptions.map((mm) => [mm, MONTH_NAMES[Number(mm) - 1]]))}
+                >
+                  <SelectTrigger className="h-8 w-full text-xs" aria-label="Bulan">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((mm) => (
+                      <SelectItem key={mm} value={mm}>
+                        {MONTH_NAMES[Number(mm) - 1]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={selectedYear}
+                  onValueChange={(v) => v && onMonthChange(`${v}-${selectedMonth}`)}
+                  items={Object.fromEntries(years.map((y) => [y, y]))}
+                >
+                  <SelectTrigger className="h-8 w-full text-xs" aria-label="Tahun">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((y) => (
+                      <SelectItem key={y} value={y}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Cakupan dari proxy: bulan berjalan = parsial; sumber yang
+                  dipakai; tanggal kosong disebut terang — FIRMS memangkas
+                  jendela di luar ketersediaan tanpa galat. */}
+              {coverage && !loading && (
+                <div className="space-y-0.5 text-[10px] leading-snug text-muted-foreground">
+                  {isPartial && (
+                    <p>
+                      Bulan berjalan — data{" "}
+                      {formatHotspotRange(
+                        new Date(`${coverage.from}T00:00:00Z`),
+                        new Date(`${coverage.to}T00:00:00Z`)
+                      )}{" "}
+                      (parsial).
+                    </p>
+                  )}
+                  <p>
+                    Sumber FIRMS:{" "}
+                    {coverage.sources.length > 0
+                      ? coverage.sources.map((src) => SOURCE_SHORT[src] ?? src).join(" + ")
+                      : "tidak ada"}
+                    .
+                  </p>
+                  {coverage.missingDates.length > 0 && (
+                    <p className="font-medium text-amber-700 dark:text-amber-400">
+                      {formatNumber(coverage.missingDates.length)} tanggal belum tersedia di FIRMS:{" "}
+                      {formatDateList(coverage.missingDates)}.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Kartu ringkasan */}
@@ -202,7 +334,7 @@ export function FireAlertPanel({
             (baris 0 disembunyikan, keputusan owner; berlaku juga di PDF). */}
         <div>
           <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-            Titik api per lembaga ({hotspotWindowLabel(dayRange)} terakhir)
+            Titik api per lembaga ({periodLabel})
           </p>
           <div className="overflow-hidden rounded-md border">
             <table className="w-full text-xs">
@@ -265,7 +397,7 @@ export function FireAlertPanel({
                   rows.every((r) => r.count === 0) && (
                     <tr>
                       <td colSpan={2} className="px-2.5 py-4 text-center text-muted-foreground">
-                        Tidak ada titik api dalam boundary lembaga pada rentang ini.
+                        Tidak ada titik api dalam boundary lembaga pada {month ? "periode" : "rentang"} ini.
                       </td>
                     </tr>
                   )
@@ -328,7 +460,8 @@ export function FireAlertPanel({
               </>
             ) : (
               <>
-                <Printer className="h-3.5 w-3.5" /> Cetak Peta (PDF)
+                <Printer className="h-3.5 w-3.5" />{" "}
+                {month ? "Cetak Laporan Bulanan (PDF)" : "Cetak Peta (PDF)"}
               </>
             )}
           </Button>

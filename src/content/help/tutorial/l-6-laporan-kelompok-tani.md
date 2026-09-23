@@ -6,7 +6,7 @@ permission: VIEW
 duration: 7
 href: /admin/report/kelompok-tani
 hrefLabel: Buka Laporan Kelompok Tani
-goal: Rekap Kelompok Tani lintas lembaga (Ringkasan) atau roster anggota per KT satu lembaga (Detail), terunduh sebagai Excel atau PDF.
+goal: Rekap Kelompok Tani lintas lembaga — jumlah petani, lahan, dan luas per KT — terunduh sebagai Excel atau PDF.
 ---
 
 ## Sebelum mulai
@@ -26,10 +26,7 @@ Kelompok Tani di sini dibaca dari **data lahan** (field Kelompok Tani pada tiap 
 + Kotak **Cari** menyaring baris berdasarkan nama lembaga/KT; baris "Total" di bawah tabel mengikuti hasil pencarian, sedangkan kartu di atas tetap menghitung semuanya — jadi keduanya bisa berbeda saat pencarian aktif.
 4. Unduh lewat **Excel** atau **PDF**.
 + Hasil unduhan mengikuti pencarian dan pengaturan kolom yang sedang aktif. Kosongkan kotak Cari dulu bila ingin berkas lengkap.
-5. Untuk roster anggota, buka **Report → Kelompok Tani (Detail)** lalu pilih **Lembaga Petani** (wajib).
-+ Tampil satu seksi per KT yang bisa dibuka-tutup (ada tombol "Buka semua"), berisi tabel petani beserta ID, jumlah lahan, luas, **Lahan NKT**, dan **Patok** ("—" bila nol; judul seksi KT juga menyebut "n Lahan NKT" bila ada). Unduhan Excel/PDF selalu memuat seluruh roster, terlepas seksi mana yang sedang terbuka.
-
-> [!penting] Satu petani yang lahannya tercatat di dua KT berbeda muncul di kedua seksi (lahannya dipecah per KT). Karena itu menjumlahkan angka per seksi bisa melebihi kartu Total Petani, yang menghitung orang unik.
+5. Butuh daftar namanya, bukan jumlahnya? Lanjutkan ke **Report → Kelompok Tani (Detail)** — langkahnya ada di [Menyusun roster anggota per Kelompok Tani](/admin/help/tutorial-laporan/roster-kelompok-tani).
 
 ## Kalau bermasalah
 
