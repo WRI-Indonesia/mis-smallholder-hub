@@ -3,17 +3,23 @@ import type { FeatureCollection, MultiPolygon } from "geojson";
 import {
   classifyHotspots,
   combinedBbox,
+  countHotspotsByDay,
   countHotspotsByGroup,
   countPointsByNamedArea,
   countUniqueInsideByDistrict,
+  describeHotspotSources,
   filterPointsWithinAreas,
+  formatDateList,
   formatExportedAt,
+  formatHotspotDay,
+  formatHotspotMonth,
   formatHotspotRange,
   hotspotWindowStart,
   findContainingBoundary,
   indexBoundaries,
   multiPolygonBbox,
   pointInMultiPolygon,
+  summarizeByNamedArea,
   summarizeFire,
   type FireBoundary,
 } from "@/lib/fire-alert";
@@ -233,6 +239,126 @@ describe("countPointsByNamedArea", () => {
       { name: "Siak", count: 0 },
       { name: "Kab. Lainnya", count: 1 },
     ]);
+  });
+});
+
+describe("summarizeByNamedArea & countHotspotsByGroup.high (#365)", () => {
+  const areas = [
+    { name: "Kampar", geometry: square(101, 0, 102, 1) },
+    { name: "Siak", geometry: square(103, 0, 104, 1) },
+  ];
+  const bounds = [boundary({ farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 101.5, 1) })];
+  // Titik ber-confBucket seperti hasil processHotspots + inBoundary hasil classifyHotspots.
+  const fc = (): FeatureCollection =>
+    classifyHotspots(
+      {
+        type: "FeatureCollection",
+        features: (
+          [
+            [101.2, 0.5, "high"], // Kampar, dalam boundary Alpha, tinggi
+            [101.3, 0.5, "nominal"], // Kampar, dalam boundary
+            [101.8, 0.5, "high"], // Kampar, luar boundary, tinggi
+            [103.5, 0.5, "low"], // Siak
+            [105, 0.5, "high"], // lainnya, tinggi
+          ] as [number, number, string][]
+        ).map(([lng, lat, confBucket]) => ({
+          type: "Feature" as const,
+          geometry: { type: "Point" as const, coordinates: [lng, lat] },
+          properties: { confBucket },
+        })),
+      },
+      indexBoundaries(bounds)
+    );
+
+  it("rekap per wilayah: total / dalam boundary / keyakinan tinggi + bucket lainnya, 0 tetap muncul", () => {
+    expect(summarizeByNamedArea(fc(), areas, "Kab. Lainnya")).toEqual([
+      { name: "Kampar", total: 3, inside: 2, high: 2 },
+      { name: "Siak", total: 1, inside: 0, high: 0 },
+      { name: "Kab. Lainnya", total: 1, inside: 0, high: 1 },
+    ]);
+    // Bentuk ringkas tetap identik dengan sebelumnya.
+    expect(countPointsByNamedArea(fc(), areas, "Kab. Lainnya").map((r) => r.count)).toEqual([3, 1, 1]);
+  });
+
+  it("baris lembaga membawa jumlah keyakinan tinggi dalam boundary-nya", () => {
+    const rows = countHotspotsByGroup(fc(), bounds);
+    expect(rows.map((r) => [r.name, r.count, r.high])).toEqual([["Alpha", 2, 1]]);
+  });
+});
+
+describe("countHotspotsByDay (#365)", () => {
+  const bounds = [boundary({ farmerGroupId: "g1", geometry: square(101, 0, 102, 1) })];
+  const fc = classifyHotspots(
+    {
+      type: "FeatureCollection",
+      features: (
+        [
+          [101.5, 0.5, "2026-07-01"], // dalam
+          [103, 0.5, "2026-07-01"], // luar
+          [101.5, 0.6, "2026-07-03"], // dalam
+          [101.5, 0.7, "2026-08-01"], // di luar periode → diabaikan
+        ] as [number, number, string][]
+      ).map(([lng, lat, acqDate]) => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [lng, lat] },
+        properties: { acqDate },
+      })),
+    },
+    indexBoundaries(bounds)
+  );
+
+  it("semua tanggal periode muncul (0 tetap ada), dalam/luar/total per tanggal UTC acq_date", () => {
+    const daily = countHotspotsByDay(fc, "2026-07-01", "2026-07-04");
+    expect(daily).toEqual([
+      { date: "2026-07-01", inside: 1, outside: 1, total: 2, available: true },
+      { date: "2026-07-02", inside: 0, outside: 0, total: 0, available: true },
+      { date: "2026-07-03", inside: 1, outside: 0, total: 1, available: true },
+      { date: "2026-07-04", inside: 0, outside: 0, total: 0, available: true },
+    ]);
+  });
+
+  it("tanggal kosong (celah SP/NRT) ditandai available: false, bukan 0 biasa", () => {
+    const daily = countHotspotsByDay(fc, "2026-07-01", "2026-07-03", ["2026-07-02"]);
+    expect(daily.map((d) => d.available)).toEqual([true, false, true]);
+  });
+
+  it("satu bulan penuh: 31 baris Januari, 29 baris Feb 2024 (kabisat)", () => {
+    expect(countHotspotsByDay(fc, "2025-01-01", "2025-01-31")).toHaveLength(31);
+    expect(countHotspotsByDay(fc, "2024-02-01", "2024-02-29")).toHaveLength(29);
+  });
+});
+
+describe("label & keterangan laporan bulanan (#365)", () => {
+  it("formatHotspotMonth: 'Januari 2025' — tidak bergeser oleh zona browser", () => {
+    expect(formatHotspotMonth("2025-01")).toBe("Januari 2025");
+    expect(formatHotspotMonth("2026-12")).toBe("Desember 2026");
+  });
+
+  it("formatHotspotDay: hari + tanggal + bulan singkat, tanggal UTC apa adanya", () => {
+    expect(formatHotspotDay("2025-01-01")).toBe("Rab, 1 Jan");
+    expect(formatHotspotDay("2026-07-31")).toBe("Jum, 31 Jul");
+  });
+
+  it("formatDateList: hari-hari sebulan yang sama digabung, lintas bulan dipisah ';'", () => {
+    expect(formatDateList(["2026-07-04", "2026-07-05", "2026-07-06"])).toBe("4, 5, 6 Jul 2026");
+    expect(formatDateList(["2026-07-31", "2026-08-01"])).toBe("31 Jul 2026; 1 Agu 2026");
+    expect(formatDateList(["2026-07-04"])).toBe("4 Jul 2026");
+  });
+
+  it("label periode PDF: awal–akhir bulan dari tanggal UTC 00.00 tetap terbaca 1–31", () => {
+    expect(
+      formatHotspotRange(new Date("2025-01-01T00:00:00Z"), new Date("2025-01-31T00:00:00Z"))
+    ).toBe("1–31 Jan 2025");
+  });
+
+  it("describeHotspotSources menyebut hanya sumber yang dipakai", () => {
+    expect(describeHotspotSources(["VIIRS_SNPP_SP"])).toContain("Standard Processing");
+    expect(describeHotspotSources(["VIIRS_SNPP_SP"])).not.toContain("NRT");
+    expect(describeHotspotSources(["VIIRS_SNPP_NRT"])).toContain("near-real-time");
+    const both = describeHotspotSources(["VIIRS_SNPP_SP", "VIIRS_SNPP_NRT"]);
+    expect(both).toContain("Standard Processing");
+    expect(both).toContain(" dan ");
+    expect(describeHotspotSources([])).toContain("tidak ada sumber");
   });
 });
 

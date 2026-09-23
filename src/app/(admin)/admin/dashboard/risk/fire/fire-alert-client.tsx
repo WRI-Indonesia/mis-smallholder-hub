@@ -9,6 +9,7 @@ import {
   confidenceLabel,
   countByConfidence,
   fetchHotspots,
+  fetchHotspotsForMonth,
   formatWib,
   hotspotWindowLabel,
   satelliteLabel,
@@ -17,18 +18,24 @@ import {
 import {
   classifyHotspots,
   combinedBbox,
+  countHotspotsByDay,
   countHotspotsByGroup,
   countPointsByNamedArea,
   countUniqueInsideByDistrict,
+  describeHotspotSources,
   filterPointsWithinAreas,
   formatExportedAt,
+  formatHotspotMonth,
   formatHotspotRange,
   hotspotWindowStart,
   indexBoundaries,
   multiPolygonBbox,
+  summarizeByNamedArea,
   summarizeFire,
   type FireBoundary,
 } from "@/lib/fire-alert";
+import { HOTSPOT_MONTH_MIN, parseHotspotMonth, utcMonth, type HotspotCoverage } from "@/lib/firms";
+import type { FireMonthlySection } from "@/lib/fire-map-print";
 import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
 import { FireAlertPanel, type FirePrintScope } from "./fire-alert-panel";
 import { type FireMapCaptureFn, type FireMapZoomFn } from "./fire-map-canvas";
@@ -105,6 +112,10 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
 
   // Default 5 hari (#266); pilihan lain lihat HOTSPOT_DAY_RANGES (#284).
   const [dayRange, setDayRange] = useState<HotspotDayRange>(5);
+  // Mode Bulan (#365): "YYYY-MM" dari arsip FIRMS; null = rentang live di atas.
+  const [month, setMonth] = useState<string | null>(null);
+  // Cakupan periode dari proxy (sumber SP/NRT, tanggal kosong) — hanya mode Bulan.
+  const [coverage, setCoverage] = useState<HotspotCoverage | null>(null);
   const [classified, setClassified] = useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(true);
   const [printScope, setPrintScope] = useState<FirePrintScope>("riau");
@@ -121,7 +132,16 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    fetchHotspots(RIAU_BBOX, dayRange, Date.now(), controller.signal)
+    const load = month
+      ? fetchHotspotsForMonth(RIAU_BBOX, month, controller.signal).then(({ fc, coverage: cov }) => {
+          setCoverage(cov);
+          return fc;
+        })
+      : fetchHotspots(RIAU_BBOX, dayRange, Date.now(), controller.signal).then((fc) => {
+          setCoverage(null);
+          return fc;
+        });
+    load
       .then((fc) => {
         setClassified(classifyHotspots(filterPointsWithinAreas(fc, adminBoundaries), indexed));
         setLoading(false);
@@ -134,7 +154,20 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         toast.error("Gagal memuat titik api dari NASA FIRMS");
       });
     return () => controller.abort();
-  }, [dayRange, indexed, adminBoundaries]);
+  }, [dayRange, month, indexed, adminBoundaries]);
+
+  const handleDayRangeChange = useCallback((d: HotspotDayRange) => {
+    setMonth(null);
+    setDayRange(d);
+  }, []);
+  // Bulan di luar [HOTSPOT_MONTH_MIN, bulan berjalan] dipangkas ke batasnya —
+  // mis. ganti tahun ke tahun berjalan saat bulan terpilih belum tiba.
+  const handleMonthChange = useCallback((m: string) => {
+    const now = new Date();
+    setMonth(parseHotspotMonth(m, now) ?? (m < HOTSPOT_MONTH_MIN ? HOTSPOT_MONTH_MIN : utcMonth(now)));
+  }, []);
+  // Label periode untuk judul tabel panel dan PDF: "Januari 2025" / "5 hari terakhir".
+  const periodLabel = month ? formatHotspotMonth(month) : `${hotspotWindowLabel(dayRange)} terakhir`;
 
   const summary = useMemo(() => (classified ? summarizeFire(classified) : null), [classified]);
   const rows = useMemo(
@@ -232,6 +265,12 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
     const capture = captureRef.current;
     if (!capture) {
       toast.error("Peta belum siap");
+      return;
+    }
+    // Mode Bulan tanpa coverage = data di layar bukan dari fetch bulan ini
+    // (mis. state belum sinkron) — jangan cetak laporan bulanan dari data live.
+    if (month && !coverage) {
+      toast.error("Cakupan periode belum termuat, coba lagi");
       return;
     }
 
@@ -360,14 +399,47 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         return;
       }
       const now = new Date();
-      const start = hotspotWindowStart(now, dayRange);
       const exportedAt = formatExportedAt(now);
+
+      // Laporan bulanan (#365): label periode + tren harian, rekap kabupaten
+      // (poligon BIG, konsisten dengan kartu), rekap lembaga, sumber & celah.
+      let rangeLabel: string;
+      let monthly: FireMonthlySection | undefined;
+      if (month && coverage) {
+        const from = new Date(`${coverage.from}T00:00:00Z`);
+        const to = new Date(`${coverage.to}T00:00:00Z`);
+        const partial = coverage.to.slice(0, 7) === utcMonth(now);
+        rangeLabel = `${formatHotspotMonth(month)} (${partial ? "parsial, " : ""}${formatHotspotRange(from, to)})`;
+        // Scope distrik: scopeFc sudah terpangkas ke poligonnya → baris
+        // "Kab. Lainnya" pasti 0, dibuang (selalu baris terakhir).
+        const byKabupaten = scopeArea
+          ? summarizeByNamedArea(scopeFc, [scopeArea], "Kab. Lainnya").slice(0, -1)
+          : summarizeByNamedArea(scopeFc, programAreas, "Kab. Lainnya");
+        monthly = {
+          daily: countHotspotsByDay(scopeFc, coverage.from, coverage.to, coverage.missingDates),
+          byKabupaten,
+          byGroup: scopeGroupRows
+            .filter((r) => r.count > 0)
+            .map((r) => ({
+              name: r.name,
+              districtName: r.districtName,
+              count: r.count,
+              high: r.high,
+              shared: r.shared,
+            })),
+          sourceNote: describeHotspotSources(coverage.sources),
+          missingDates: coverage.missingDates,
+        };
+      } else {
+        const start = hotspotWindowStart(now, dayRange);
+        rangeLabel = `${hotspotWindowLabel(dayRange)} terakhir (${formatHotspotRange(start, now)})`;
+      }
 
       const { generateFireMapPdf } = await import("@/lib/fire-map-print");
       generateFireMapPdf({
         subtitle: "Smallholder Hub Group",
         kabupatenLabel,
-        rangeLabel: `${hotspotWindowLabel(dayRange)} terakhir (${formatHotspotRange(start, now)})`,
+        rangeLabel,
         exportedAt,
         logo,
         fonts,
@@ -384,7 +456,8 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         imageHeightPx: shot.height,
         rows: detailRows,
         groupMaps,
-        fileName: `laporan-titik-api-${scopeSlug}.pdf`,
+        monthly,
+        fileName: `laporan-titik-api-${scopeSlug}${month ? `-${month}` : ""}.pdf`,
       });
     } catch (err) {
       console.warn("Fire alert print failed:", err);
@@ -418,7 +491,11 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         <FireAlertPanel
           helpSlot={helpSlot}
           dayRange={dayRange}
-          onDayRangeChange={setDayRange}
+          onDayRangeChange={handleDayRangeChange}
+          month={month}
+          onMonthChange={handleMonthChange}
+          coverage={coverage}
+          periodLabel={periodLabel}
           loading={loading}
           summary={summary}
           confInside={confInside}
