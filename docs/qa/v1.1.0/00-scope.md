@@ -8,7 +8,7 @@ Sumber: `git log v1.0.0..HEAD` (di `mvp`: `chore(release): v1.0.0` `55e6472`..HE
 | 2 | #371 | Excel per KT/Blok + Urutan No | Report › Lahan · Peta Lahan · Master Data › Lembaga Petani (detail) | — | — | `l-2`, `3-2-peta`, `p-12` | `TC-371-01…07` |
 | 3 | #372 | Sebaran Lahan warna per KT/Blok | Master Data › Lembaga Petani (detail) | — | — | `2-1-master-data` | `TC-372-01…02` |
 | 4 | #373 | UL Parcel Code boleh di >1 lahan | Master Data › Lahan (detail, Legalitas) · Bulk Upload › Detail Lahan | **`20260923120000_external_id_shared_code`** | — | `t-5`, `1-1-istilah` | `TC-373-01…04` |
-| 5 | #374 | KT "Tidak Ada" = kosong | Master Data › Lahan (form) · Bulk Upload › Lahan & Detail Lahan · Detail Lembaga · Report › Kelompok Tani | — (**data**: 417 baris) | — | `u-3`, `u-5`, `l-6` | `TC-374-01…03` |
+| 5 | #374 | KT "Tidak Ada" = kosong | Master Data › Lahan (form) · Bulk Upload › Lahan & Detail Lahan · Detail Lembaga · Report › Kelompok Tani | — (**data**: 417 baris) | — | `u-3`, `u-5`, `l-6` | `TC-374-01…04` |
 | 6 | #375 | Nama berkas unduhan legenda | Peta Lahan · Detail Lembaga | — | — | — | `TC-375-01` |
 
 ## Urutan penerapan per lingkungan (runbook)

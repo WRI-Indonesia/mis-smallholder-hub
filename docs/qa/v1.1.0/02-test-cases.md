@@ -201,6 +201,14 @@ Harapan:
 - Langkah 2: pratinjau tidak menandai KT akan diisi; KT lahan tetap kosong.
 - Kembalikan KT lahan uji ke nilai semula.
 
+### TC-374-04 · Pratinjau Detail Lahan: Blok "--" = kosong [P2] [regresi] (3 mnt)
+Prasyarat: izin Bulk Upload Lahan; satu lahan uji yang terdaftar (ID Lahan + ID Petani).
+Langkah:
+1. Bulk Upload → Upload Data Lahan → tab **Detail Lahan**; unggah berkas satu baris berisi ID Lahan, ID Petani, dan **Blok** `--` saja (kolom lain kosong).
+Harapan:
+- Baris **ditolak** di pratinjau: *"Tidak ada data detail (surat, STDB, UL Parcel Code, kelompok tani, blok, sepadan, atau NKT) untuk disimpan"* — bukan valid lalu tersimpan kosong. Tidak ada yang ditulis.
+- Catatan: `Tidak Ada` dan `-` sudah dikosongkan sejak #296; `--` adalah kasus yang dulu lolos (wrap-up `00bcc2f`).
+
 ## #375 — Nama berkas unduhan legenda
 
 ### TC-375-01 · Nama berkas tanpa "lahan" berulang [P2] (4 mnt)
