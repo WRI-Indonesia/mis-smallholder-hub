@@ -33,6 +33,7 @@ import {
   autoMatchColumns,
   normalizeAttr,
 } from "@/lib/parcel-bulk-mapping";
+import { cleanGroupInput } from "@/lib/group-placeholder";
 import { LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
 import { cleanFreeTextCell } from "@/lib/land-parcel-detail-import";
 import { ParcelBulkUploadMap } from "./parcel-bulk-upload-map";
@@ -332,10 +333,10 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     // 8. Notes
     normalized.notes = props[mapping["notes"]]?.toString().trim() || null;
 
-    // 8b. Sub-kelompok interim + blok (#150) — opsional, trim, kosong → null.
-    normalized.subGroupLv2 = normalizeAttr(
-      mapping["subGroupLv2"] ? props[mapping["subGroupLv2"]] : null,
-    );
+    // 8b. Sub-kelompok interim + blok (#150) — opsional, trim, kosong → null;
+    // KT "Tidak Ada"/"-" = kosong (#374, sama dengan skema server).
+    const kt = normalizeAttr(mapping["subGroupLv2"] ? props[mapping["subGroupLv2"]] : null);
+    normalized.subGroupLv2 = kt ? cleanGroupInput(kt) : null;
     normalized.blok = normalizeAttr(mapping["blok"] ? props[mapping["blok"]] : null);
 
     // 8c. Sepadan (#326) — opsional per sisi; tanpa satu pun sisi → null (tidak menyentuh satelit).

@@ -16,6 +16,7 @@
  *   dipakai petani berbeda — keduanya salah ketik sumber, wajib DILAPORKAN,
  *   bukan dipilih diam-diam.
  */
+import { cleanGroupInput } from "@/lib/group-placeholder";
 import { autoMatchColumns } from "@/lib/parcel-bulk-mapping";
 import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, type LandStdbStageCode } from "@/lib/land-parcel-satellite-format";
 
@@ -509,7 +510,8 @@ export function validateParcelDetailRows(
     // Kode yang sama di >1 lahan TIDAK ditolak (keputusan owner 2026-09-23):
     // klaim ganda vendor disimpan dulu, dicek silang belakangan.
     const externalCode = r.externalCode || null;
-    const subGroupLv2 = r.subGroupLv2 || null;
+    // "Tidak Ada"/"-" = kosong (#374) — pratinjau sama dengan skema server.
+    const subGroupLv2 = r.subGroupLv2 ? cleanGroupInput(r.subGroupLv2) : null;
     const borderSides = { north: r.borderNorth || null, east: r.borderEast || null, south: r.borderSouth || null, west: r.borderWest || null };
     const border = Object.values(borderSides).some(Boolean) ? borderSides : null;
     for (const side of LAND_BORDER_SIDES) {

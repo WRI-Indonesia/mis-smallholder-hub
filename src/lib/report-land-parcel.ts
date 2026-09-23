@@ -1,5 +1,6 @@
 import type { Position } from "geojson";
 import type { ParcelNodes } from "@/lib/parcel-node-coords";
+import { EMPTY_GROUP_PLACEHOLDER } from "@/lib/group-placeholder";
 import type {
   LandParcelLegalFilters,
   LandParcelReportResult,
@@ -316,9 +317,6 @@ export const LAND_PARCEL_SHEET_SPLIT_LABELS: Record<LandParcelSheetSplit, string
 const NO_KT = "Tanpa KT";
 const NO_BLOK = "Tanpa Blok";
 const sheetCollator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "base" });
-// Isian pengganti "kosong" yang diketik apa adanya (KT "Tidak Ada": 417 lahan di
-// 3 Lembaga, uji Sei Galuh 2026-09-23) — digabung ke grup "Tanpa …".
-const EMPTY_PLACEHOLDER = /^(tidak ada|-+)$/i;
 
 /**
  * Nilai KT/Blok untuk pengelompokan (Excel #371, warna peta #372): trim + spasi
@@ -327,7 +325,7 @@ const EMPTY_PLACEHOLDER = /^(tidak ada|-+)$/i;
  */
 export function parcelGroupValue(v: string | null | undefined): string | null {
   const t = v?.trim().replace(/\s+/g, " ");
-  return t && !EMPTY_PLACEHOLDER.test(t) ? t : null;
+  return t && !EMPTY_GROUP_PLACEHOLDER.test(t) ? t : null;
 }
 
 /** Urutan natural nama grup ("2 F" < "11 F"); null ("Tanpa …") di akhir. */
