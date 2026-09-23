@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { legendFileBase, planParcelXlsxSheets } from "@/app/(admin)/admin/map/parcel/map-legend-export";
+import { LEGEND_FILE_PREFIX, planParcelXlsxSheets } from "@/app/(admin)/admin/map/parcel/map-legend-export";
+import { exportFileBase, parcelExportFileBase } from "@/lib/parcel-export-data";
 
 /** Modal Excel baris lahan Legenda Peta Lahan (#371): pecahan sheet + urutan. */
 
@@ -45,15 +46,21 @@ describe("planParcelXlsxSheets", () => {
   });
 });
 
-describe("legendFileBase (#375) — tanpa 'lahan' berulang", () => {
+describe("nama berkas legenda (#375)", () => {
   const now = new Date("2026-09-23T14:08:00Z"); // 21:08 WIB
-  it.each([
-    ["lahan", "lahan_ish-1401-01_20260923-2108"],
-    ["titik-lahan", "titik-lahan_ish-1401-01_20260923-2108"],
-    ["lahan-nkt", "lahan-nkt_ish-1401-01_20260923-2108"],
-    ["lembaga", "lembaga_ish-1401-01_20260923-2108"],
-    ["patok", "patok_ish-1401-01_20260923-2108"],
-  ])("%s → %s", (slug, expected) => {
-    expect(legendFileBase(slug, "ISH-1401-01", now)).toBe(expected);
+  it("tanpa 'lahan' berulang: <awalan>_<label>_<stempel>", () => {
+    expect(Object.values(LEGEND_FILE_PREFIX).map((p) => exportFileBase(p, "ISH-1401-01", now))).toEqual([
+      "lembaga_ish-1401-01_20260923-2108",
+      "titik-lahan_ish-1401-01_20260923-2108",
+      "area-lahan_ish-1401-01_20260923-2108",
+      "lahan-nkt_ish-1401-01_20260923-2108",
+      "patok_ish-1401-01_20260923-2108",
+    ]);
+  });
+  it("awalan unik & tidak ada yang sama dengan Unduh Lahan (browser akan menimpa/menomori ulang)", () => {
+    const prefixes = Object.values(LEGEND_FILE_PREFIX);
+    expect(new Set(prefixes).size).toBe(prefixes.length);
+    const unduhLahan = parcelExportFileBase("ISH-1401-01", now);
+    for (const p of prefixes) expect(exportFileBase(p, "ISH-1401-01", now)).not.toBe(unduhLahan);
   });
 });

@@ -48,8 +48,19 @@ function savePdf(input: LayerReportInput, base: string) {
   buildLayerReportDoc(input).save(`${base}.pdf`);
 }
 
-/** Nama berkas unduhan legenda: `<baris>_<label>_<stempel WIB>` (#375). */
-export const legendFileBase = (slug: string, label: string | null, now: Date) => exportFileBase(slug, label, now);
+/**
+ * Awalan nama berkas unduhan per baris legenda: `<awalan>_<label>_<stempel WIB>`
+ * (#375). Area Lahan = "area-lahan", BUKAN "lahan" — "lahan_…" milik tombol
+ * Unduh Lahan (`parcelExportFileBase`) di halaman yang sama; nama kembar membuat
+ * browser menimpa/menomori ulang salah satunya (review #375).
+ */
+export const LEGEND_FILE_PREFIX = {
+  kt: "lembaga",
+  parcelPoints: "titik-lahan",
+  parcelAreas: "area-lahan",
+  nkt: "lahan-nkt",
+  markers: "patok",
+} as const;
 
 /** Titik tengah sederhana (rata-rata vertex ring luar pertama) — cukup untuk fitur "Point Lahan". */
 function centroidOf(g: Polygon | MultiPolygon): [number, number] {
@@ -62,7 +73,7 @@ function centroidOf(g: Polygon | MultiPolygon): [number, number] {
 // ─── Lembaga Petani (Point) ───
 
 export async function exportKtRow(format: LegendFormat, kts: KTPoint[], label: string | null, now: Date, context?: LayerReportContext) {
-  const b = legendFileBase("lembaga", label, now);
+  const b = exportFileBase(LEGEND_FILE_PREFIX.kt, label, now);
   if (format === "xlsx") {
     await exportToExcel({
       filename: b,
@@ -198,8 +209,8 @@ export async function exportParcelRow(
   xlsxOptions?: ParcelXlsxOptions,
 ): Promise<number> {
   const features = row === "nkt" ? fc.features.filter((f) => isNktAffected(landNktStatusFromShortLabel(f.properties.nkt))) : fc.features;
-  const slug = row === "parcelPoints" ? "titik-lahan" : row === "nkt" ? "lahan-nkt" : "lahan";
-  const b = legendFileBase(slug, label, now);
+  const slug = LEGEND_FILE_PREFIX[row];
+  const b = exportFileBase(slug, label, now);
   if (features.length === 0) return 0;
   if (format === "xlsx") {
     const withCoord = row === "parcelPoints";
@@ -293,7 +304,8 @@ export async function exportParcelRow(
     return features.length;
   }
   const polys: FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>> = { type: "FeatureCollection", features: features as Feature<Polygon | MultiPolygon, Record<string, unknown>>[] };
-  await downloadFeatureExport(format, polys, b, { shpLayer: slug.replace("-", "_"), toDbf: (p) => toDbfProperties(p as ParcelExportProperties) });
+  // Nama layer di dalam ZIP tetap "lahan"/"lahan_nkt" seperti sebelum #375 (alur GIS pengguna).
+  await downloadFeatureExport(format, polys, b, { shpLayer: row === "nkt" ? "lahan_nkt" : "lahan", toDbf: (p) => toDbfProperties(p as ParcelExportProperties) });
   return features.length;
 }
 
@@ -307,7 +319,7 @@ export async function exportMarkerRow(
   context?: LayerReportContext,
 ): Promise<number> {
   // Semua patok = patok lahan (#345): unduhan "patok-nkt" turunan dihapus.
-  const b = legendFileBase("patok", label, now);
+  const b = exportFileBase(LEGEND_FILE_PREFIX.markers, label, now);
   if (rows.length === 0) return 0;
   const unique = uniqueMarkerRows(rows);
   const data = unique.map(formatUniqueMarkerRow);

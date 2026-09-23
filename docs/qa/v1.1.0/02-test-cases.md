@@ -208,5 +208,5 @@ Prasyarat: Peta Lahan, Lembaga **ISH-1401-01** dimuat.
 Langkah:
 1. Unduh Excel dari baris Point Lembaga, Point Lahan, Area Lahan (1 sheet), Patok; lalu Unduh Lahan › GeoJSON.
 Harapan:
-- `lembaga_ish-1401-01_…`, `titik-lahan_ish-1401-01_…`, `lahan_ish-1401-01_…`, `patok_ish-1401-01_…`; tak ada `lahan-lahan_` atau `patok-lahan_`.
+- `lembaga_ish-1401-01_…`, `titik-lahan_ish-1401-01_…`, **`area-lahan_ish-1401-01_…`**, `patok_ish-1401-01_…`; tak ada `lahan-lahan_` atau `patok-lahan_`. Area Lahan sengaja **bukan** `lahan_…` — itu nama Unduh Lahan; dua unduhan dalam menit yang sama tidak boleh bernama kembar.
 - Unduh Lahan GeoJSON tetap `lahan_ish-1401-01_<tanggal-jam>.geojson`.
