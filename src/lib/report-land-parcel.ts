@@ -303,6 +303,48 @@ export function landParcelExportRow(
   };
 }
 
+// ─── Pecah sheet Excel per Kelompok Tani / Blok (#371) ──────────────────────
+
+export type LandParcelSheetSplit = "grid" | "kelompokTani" | "blok";
+
+export const LAND_PARCEL_SHEET_SPLIT_LABELS: Record<LandParcelSheetSplit, string> = {
+  grid: "Grid peta",
+  kelompokTani: "Kelompok Tani",
+  blok: "Blok",
+};
+
+const NO_KT = "Tanpa KT";
+const NO_BLOK = "Tanpa Blok";
+const sheetCollator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "base" });
+
+/**
+ * Kelompokkan baris roster per KT atau per `KT – Blok` (nama Blok bisa sama di
+ * KT berbeda). Urutan grup natural ("2" < "10"), grup "Tanpa …" di akhir;
+ * urutan baris di dalam grup mengikuti roster.
+ */
+export function groupLandParcelRows<T extends { kelompokTani: string | null; blok: string | null }>(
+  rows: readonly T[],
+  by: Exclude<LandParcelSheetSplit, "grid">,
+): { label: string; rows: T[] }[] {
+  const groups = new Map<string, { kt: string | null; blok: string | null; rows: T[] }>();
+  for (const r of rows) {
+    const kt = r.kelompokTani?.trim() || null;
+    const blok = by === "blok" ? r.blok?.trim() || null : null;
+    const key = JSON.stringify([kt, blok]);
+    const g = groups.get(key);
+    if (g) g.rows.push(r);
+    else groups.set(key, { kt, blok, rows: [r] });
+  }
+  const cmpPart = (a: string | null, b: string | null) =>
+    a === b ? 0 : a === null ? 1 : b === null ? -1 : sheetCollator.compare(a, b);
+  return [...groups.values()]
+    .sort((a, b) => cmpPart(a.kt, b.kt) || cmpPart(a.blok, b.blok))
+    .map((g) => ({
+      label: by === "blok" ? `${g.kt ?? NO_KT} – ${g.blok ?? NO_BLOK}` : (g.kt ?? NO_KT),
+      rows: g.rows,
+    }));
+}
+
 /**
  * Filter legalitas aktif → pasangan label/nilai untuk header PDF & Excel (#305).
  *

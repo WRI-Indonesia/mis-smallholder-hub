@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLandParcelWorkbook } from "@/lib/report-land-parcel-xlsx";
+import { buildLandParcelWorkbook, safeSheetName } from "@/lib/report-land-parcel-xlsx";
 
 // PNG 1×1 valid untuk uji penempelan gambar.
 const PNG_1PX =
@@ -93,5 +93,45 @@ describe("buildLandParcelWorkbook — sheet Ringkasan", () => {
     const wb = buildLandParcelWorkbook({ columns: COLS, fullData: [row(1)] });
     expect(wb.worksheets.map((w) => w.name)).toEqual(["Lahan"]);
     expect(wb.getWorksheet("Lahan")!.getCell("A1").value).toBe("No");
+  });
+});
+
+describe("safeSheetName (#371)", () => {
+  it("buang karakter terlarang & apostrof ujung, potong ≤ 31 karakter", () => {
+    expect(safeSheetName("KT [Maju]: A/B*C?\\D", new Set())).toBe("KT Maju A B C D");
+    expect(safeSheetName("'Harapan'", new Set())).toBe("Harapan");
+    const long = safeSheetName("Kelompok Tani Sumber Rejeki Makmur Sejahtera", new Set());
+    expect(long.length).toBeLessThanOrEqual(31);
+    expect(safeSheetName("///", new Set())).toBe("Sheet");
+  });
+
+  it("bentrok tak peka huruf besar-kecil → akhiran (2), (3) yang tetap muat 31 karakter", () => {
+    const used = new Set<string>();
+    expect(safeSheetName("KT Maju", used)).toBe("KT Maju");
+    expect(safeSheetName("kt maju", used)).toBe("kt maju (2)");
+    expect(safeSheetName("KT MAJU", used)).toBe("KT MAJU (3)");
+    const name = "Kelompok Tani Sumber Rejeki Makmur";
+    safeSheetName(name, used);
+    const dup = safeSheetName(name, used);
+    expect(dup.endsWith(" (2)")).toBe(true);
+    expect(dup.length).toBeLessThanOrEqual(31);
+  });
+});
+
+describe("buildLandParcelWorkbook — sheet per Kelompok Tani / Blok (#371)", () => {
+  it("urutan Ringkasan, Lahan, grup…; tanpa sheet Peta; KT bernama 'Lahan' tidak menabrak", () => {
+    const wb = buildLandParcelWorkbook({
+      columns: COLS,
+      fullData: [row(1), row(2), row(3)],
+      infoSheet: [{ section: "Berkas", label: "Pecah sheet", value: "Kelompok Tani (3 sheet)" }],
+      groupSheets: [
+        { label: "KT Maju", data: [row(1)] },
+        { label: "Lahan", data: [row(2)] },
+        { label: "Tanpa KT", data: [row(3)] },
+      ],
+    });
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Ringkasan", "Lahan", "KT Maju", "Lahan (2)", "Tanpa KT"]);
+    expect(wb.getWorksheet("KT Maju")!.rowCount).toBe(2);
+    expect(wb.getWorksheet("Lahan (2)")!.getImages()).toHaveLength(0);
   });
 });

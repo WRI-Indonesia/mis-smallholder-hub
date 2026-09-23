@@ -12,6 +12,7 @@ import {
   describeLegalSummary,
   type LpRawParcel,
   type LpMapBox,
+  groupLandParcelRows,
 } from "@/lib/report-land-parcel";
 import type { LandParcelReportSummary } from "@/types/report";
 
@@ -571,5 +572,38 @@ describe("NKT di Laporan Lahan (#328)", () => {
     expect(v("INCLUDED")).toBe("Termasuk area NKT");
     expect(v("all")).toBeUndefined();
     expect(v("bogus")).toBeUndefined();
+  });
+});
+
+describe("groupLandParcelRows (#371)", () => {
+  const r = (id: string, kelompokTani: string | null, blok: string | null) => ({ id, kelompokTani, blok });
+  const ROWS = [
+    r("1", "KT 10", "33 F"),
+    r("2", "KT 2", "33 F"),
+    r("3", null, "A"),
+    r("4", "KT 2", null),
+    r("5", "KT 2", "10"),
+    r("6", "KT 2", "2"),
+    r("7", "KT 10", "33 F"),
+  ];
+
+  it("per KT: urutan natural, Tanpa KT di akhir, urutan baris ikut roster", () => {
+    const g = groupLandParcelRows(ROWS, "kelompokTani");
+    expect(g.map((x) => x.label)).toEqual(["KT 2", "KT 10", "Tanpa KT"]);
+    expect(g[1].rows.map((x) => x.id)).toEqual(["1", "7"]);
+    expect(g.reduce((n, x) => n + x.rows.length, 0)).toBe(ROWS.length);
+  });
+
+  it("per Blok: 'KT – Blok', Blok senama di KT berbeda terpisah, Tanpa Blok di akhir KT-nya", () => {
+    const g = groupLandParcelRows(ROWS, "blok");
+    expect(g.map((x) => x.label)).toEqual([
+      "KT 2 – 2", "KT 2 – 10", "KT 2 – 33 F", "KT 2 – Tanpa Blok",
+      "KT 10 – 33 F",
+      "Tanpa KT – A",
+    ]);
+  });
+
+  it("KT/Blok berisi spasi saja = kosong", () => {
+    expect(groupLandParcelRows([r("1", "  ", " ")], "blok").map((x) => x.label)).toEqual(["Tanpa KT – Tanpa Blok"]);
   });
 });

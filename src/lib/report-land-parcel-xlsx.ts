@@ -21,6 +21,8 @@ export interface LpExcelInput {
   overviewImage?: LpExcelImage | null;
   /** Satu sheet per sel grid berisi subset baris + gambar peta selnya. */
   cellSheets?: { label: string; data: Record<string, string | number>[]; image?: LpExcelImage | null }[];
+  /** Satu sheet per Kelompok Tani / Blok (#371), tabel saja — nama disanitasi `safeSheetName`. */
+  groupSheets?: { label: string; data: Record<string, string | number>[] }[];
   /**
    * Filter aktif + ringkasan legalitas (#305). Dirender sebagai sheet
    * **"Ringkasan" tersendiri di posisi pertama**, bukan baris catatan di atas
@@ -37,6 +39,25 @@ export interface LpExcelInfoRow {
   label: string;
   value: string;
   note?: string;
+}
+
+const SHEET_NAME_MAX = 31;
+
+/**
+ * Nama sheet yang sah di Excel (#371): tanpa `[ ] : * ? / \`, tanpa apostrof di
+ * ujung, ≤ 31 karakter, unik tak peka huruf besar-kecil terhadap `used` (yang
+ * ikut diperbarui) — bentrok diberi akhiran " (2)", " (3)" … yang tetap muat.
+ * Nama KT bebas diketik pengguna, dan ExcelJS melempar galat untuk nama tak sah.
+ */
+export function safeSheetName(label: string, used: Set<string>): string {
+  const clean = label.replace(/[[\]:*?/\\]/g, " ").replace(/\s+/g, " ").trim().replace(/^'+|'+$/g, "").trim() || "Sheet";
+  let name = clean.slice(0, SHEET_NAME_MAX).trim();
+  for (let n = 2; used.has(name.toLowerCase()); n++) {
+    const suffix = ` (${n})`;
+    name = `${clean.slice(0, SHEET_NAME_MAX - suffix.length).trim()}${suffix}`;
+  }
+  used.add(name.toLowerCase());
+  return name;
 }
 
 function fillSheet(
@@ -84,6 +105,7 @@ export function buildLandParcelWorkbook({
   fullData,
   overviewImage,
   cellSheets = [],
+  groupSheets = [],
   infoSheet = [],
 }: Omit<LpExcelInput, "filename">): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
@@ -101,6 +123,12 @@ export function buildLandParcelWorkbook({
     fillSheet(ws, columns, cell.data);
     if (cell.image) addSheetImage(wb, ws, cell.image, columns.length + 1);
   }
+
+  // Nama tetap + sheet sel dicadangkan dulu: KT bernama "Lahan" tak boleh
+  // menabrak sheet penuh.
+  const used = new Set(wb.worksheets.map((w) => w.name.toLowerCase()));
+  used.add("ringkasan");
+  for (const g of groupSheets) fillSheet(wb.addWorksheet(safeSheetName(g.label, used)), columns, g.data);
 
   return wb;
 }
