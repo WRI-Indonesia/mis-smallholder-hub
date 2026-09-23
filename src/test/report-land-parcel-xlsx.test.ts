@@ -120,19 +120,20 @@ describe("safeSheetName (#371)", () => {
 });
 
 describe("buildLandParcelWorkbook — sheet per Kelompok Tani / Blok (#371)", () => {
-  it("urutan Ringkasan, Lahan, grup…; tanpa sheet Peta; KT bernama 'Lahan' tidak menabrak", () => {
+  it("urutan Ringkasan, Lahan, grup…; tanpa sheet Peta; gambar peta grup ikut; KT bernama 'Lahan' tidak menabrak", () => {
     const wb = buildLandParcelWorkbook({
       columns: COLS,
       fullData: [row(1), row(2), row(3)],
       infoSheet: [{ section: "Berkas", label: "Pecah sheet", value: "Kelompok Tani (3 sheet)" }],
       groupSheets: [
-        { label: "KT Maju", data: [row(1)] },
+        { label: "KT Maju", data: [row(1)], image: IMG },
         { label: "Lahan", data: [row(2)] },
         { label: "Tanpa KT", data: [row(3)] },
       ],
     });
     expect(wb.worksheets.map((w) => w.name)).toEqual(["Ringkasan", "Lahan", "KT Maju", "Lahan (2)", "Tanpa KT"]);
     expect(wb.getWorksheet("KT Maju")!.rowCount).toBe(2);
+    expect(wb.getWorksheet("KT Maju")!.getImages()).toHaveLength(1);
     expect(wb.getWorksheet("Lahan (2)")!.getImages()).toHaveLength(0);
   });
 });

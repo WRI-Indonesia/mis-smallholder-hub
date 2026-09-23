@@ -530,15 +530,63 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     // Sheet per sel grid hanya di mode "Grid peta"; mode KT/Blok (#371) diganti sheet grup tanpa gambar.
     const useGrid = sheetSplit === "grid" && split !== null && split.cells.length > 0 && !!fullLayout.frame;
     const groups = sheetSplit === "grid" ? [] : groupLandParcelRows(reportRows, sheetSplit);
-    const groupSheets = groups.map((g) => {
-      const data = buildExportRows(g.rows);
+    // Peta per KT/Blok (owner 2026-09-23): lahan grup saja, label No mengikuti
+    // No sheet (mulai 1 lagi). Latar ikut batas grid (BASEMAP_MAX_CELLS) — di
+    // atasnya poligon tetap digambar tanpa latar.
+    const rowIdx = new Map(reportRows.map((r, i) => [r.id, i]));
+    const groupMaps = groups.map((g) => {
+      const parcels = g.rows.map((row, i) => {
+        const base = mapParcels[rowIdx.get(row.id)!];
+        const labelLines = labelParts.has("no") ? [String(i + 1), ...base.labelLines.slice(1)] : base.labelLines;
+        return { no: i + 1, geometry: base.geometry, labelLines };
+      });
       return {
-        label: g.label,
-        data: show("luas") ? [...data, totalRow(g.rows.reduce((sum, r) => sum + (r.luas ?? 0), 0))] : data,
+        layout: buildLandParcelMapLayout(parcels, PREVIEW_BOX),
+        linesByNo: new Map(parcels.map((p) => [p.no, p.labelLines])),
       };
     });
+    const groupBasemap = isTileBasemap(activeBasemap) && groups.length <= BASEMAP_MAX_CELLS;
+    if (isTileBasemap(activeBasemap) && !groupBasemap) {
+      toast.info(`Latar peta tidak dipasang di ${groups.length} sheet ${LAND_PARCEL_SHEET_SPLIT_LABELS[sheetSplit]} (maks. ${BASEMAP_MAX_CELLS}) — poligon tetap tergambar.`);
+    }
+    const groupBasemaps: (string | undefined)[] = [];
+    if (groupBasemap) {
+      setPreparingMaps(true);
+      try {
+        // Berurutan (pola ensureBasemaps) — tak menghantam proxy tile sekaligus.
+        for (const m of groupMaps) {
+          groupBasemaps.push(m.layout.frame ? await composeForBox(activeBasemap, m.layout.frame, PREVIEW_BOX, basemapDim) : undefined);
+        }
+      } catch (err) {
+        toast.error((err instanceof Error && err.message) || "Gagal menyiapkan latar peta");
+        return;
+      } finally {
+        setPreparingMaps(false);
+      }
+    }
 
     try {
+      const groupSheets = await Promise.all(
+        groups.map(async (g, gi) => {
+          const data = buildExportRows(g.rows);
+          const { layout, linesByNo: groupLines } = groupMaps[gi];
+          return {
+            label: g.label,
+            data: show("luas") ? [...data, totalRow(g.rows.reduce((sum, r) => sum + (r.luas ?? 0), 0))] : data,
+            image: layout.polygons.length > 0
+              ? await toPng(
+                  <LayoutSvg
+                    layout={layout}
+                    linesByNo={groupLines}
+                    basemapUrl={groupBasemaps[gi]}
+                    attribution={groupBasemap ? basemapAttribution : undefined}
+                  />,
+                )
+              : null,
+          };
+        }),
+      );
+
       let overviewImage: LpExcelImage | null = null;
       if (fullLayout.polygons.length > 0) {
         overviewImage = useGrid
@@ -609,7 +657,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
                 section: "Berkas",
                 label: "Pecah sheet",
                 value: `${LAND_PARCEL_SHEET_SPLIT_LABELS[sheetSplit]} (${groups.length} sheet)`,
-                note: "Satu sheet per grup, tanpa gambar peta; sheet Lahan tetap berisi seluruh baris",
+                note: "Satu sheet per grup + peta lahan grup (No = No sheet); sheet Lahan tetap berisi seluruh baris",
               }]),
         ],
       });

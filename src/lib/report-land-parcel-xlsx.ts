@@ -21,8 +21,8 @@ export interface LpExcelInput {
   overviewImage?: LpExcelImage | null;
   /** Satu sheet per sel grid berisi subset baris + gambar peta selnya. */
   cellSheets?: { label: string; data: Record<string, string | number>[]; image?: LpExcelImage | null }[];
-  /** Satu sheet per Kelompok Tani / Blok (#371), tabel saja — nama disanitasi `safeSheetName`. */
-  groupSheets?: { label: string; data: Record<string, string | number>[] }[];
+  /** Satu sheet per Kelompok Tani / Blok (#371) + gambar peta grup — nama disanitasi `safeSheetName`. */
+  groupSheets?: { label: string; data: Record<string, string | number>[]; image?: LpExcelImage | null }[];
   /**
    * Filter aktif + ringkasan legalitas (#305). Dirender sebagai sheet
    * **"Ringkasan" tersendiri di posisi pertama**, bukan baris catatan di atas
@@ -130,7 +130,11 @@ export function buildLandParcelWorkbook({
   // menabrak sheet penuh.
   const used = new Set(wb.worksheets.map((w) => w.name.toLowerCase()));
   used.add("ringkasan");
-  for (const g of groupSheets) fillSheet(wb.addWorksheet(safeSheetName(g.label, used)), columns, g.data);
+  for (const g of groupSheets) {
+    const ws = wb.addWorksheet(safeSheetName(g.label, used));
+    fillSheet(ws, columns, g.data);
+    if (g.image) addSheetImage(wb, ws, g.image, columns.length + 1);
+  }
 
   return wb;
 }
