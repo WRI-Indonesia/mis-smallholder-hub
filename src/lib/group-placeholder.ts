@@ -6,8 +6,12 @@
  */
 export const EMPTY_GROUP_PLACEHOLDER = /^(tidak ada|-+)$/i;
 
-/** Nilai KT/Blok untuk DISIMPAN: trim; kosong atau isian pengganti → null. */
+/**
+ * Nilai KT/Blok untuk DISIMPAN: trim + spasi ganda (termasuk NBSP) dirapatkan —
+ * sama dengan `parcelGroupValue`, supaya "Tidak  Ada" tak lolos penjaga padahal
+ * pengelompokan menganggapnya kosong (review #374); kosong/isian pengganti → null.
+ */
 export function cleanGroupInput(value: string): string | null {
-  const t = value.trim();
+  const t = value.trim().replace(/\s+/g, " ");
   return t && !EMPTY_GROUP_PLACEHOLDER.test(t) ? t : null;
 }

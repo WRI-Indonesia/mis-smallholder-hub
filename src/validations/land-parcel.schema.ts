@@ -14,7 +14,8 @@ export const DEFAULT_CROP_TYPE = "Kelapa Sawit";
 export const landParcelSchema = z.object({
   farmerId: z.string().min(1, "Petani wajib dipilih"),
   parcelId: z.string().min(1, "ID Lahan wajib diisi"),
-  blok: z.string().nullable().optional(),
+  // Blok — aturan isian pengganti sama dengan KT (#374).
+  blok: z.preprocess((v) => (typeof v === "string" ? cleanGroupInput(v) : v), z.string().nullable().optional()),
   geometry: z.any().nullable().optional(),
   area: z.preprocess((val) => {
     if (val === "" || val === undefined || val === null) return null;

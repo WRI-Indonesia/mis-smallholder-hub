@@ -45,7 +45,7 @@ export const landParcelDetailRowSchema = z.object({
     .nullable()
     .optional(),
   /** Blok: isi hanya bila DB kosong (pola subGroupLv2). */
-  blok: trimmed.nullable().optional(),
+  blok: z.preprocess((v) => (typeof v === "string" ? cleanGroupInput(v) : v), trimmed.nullable().optional()),
   // NKT (#328): status wajib bila objek ada; categories null = tidak disentuh.
   // Invarian "kategori ≥ 1 kecuali NOT_AFFECTED" DIJAGA DI SINI juga — bukan hanya
   // di validator klien — supaya pemanggil lain (skrip lokal) tak bisa menulis

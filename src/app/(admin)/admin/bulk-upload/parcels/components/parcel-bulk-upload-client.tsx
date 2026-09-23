@@ -337,7 +337,8 @@ export function ParcelBulkUploadClient({ farmers, existingParcels, permissions }
     // KT "Tidak Ada"/"-" = kosong (#374, sama dengan skema server).
     const kt = normalizeAttr(mapping["subGroupLv2"] ? props[mapping["subGroupLv2"]] : null);
     normalized.subGroupLv2 = kt ? cleanGroupInput(kt) : null;
-    normalized.blok = normalizeAttr(mapping["blok"] ? props[mapping["blok"]] : null);
+    const blok = normalizeAttr(mapping["blok"] ? props[mapping["blok"]] : null);
+    normalized.blok = blok ? cleanGroupInput(blok) : null;
 
     // 8c. Sepadan (#326) — opsional per sisi; tanpa satu pun sisi → null (tidak menyentuh satelit).
     // Pembersih yang SAMA dengan jalur Excel (`cleanFreeTextCell`): placeholder DBF

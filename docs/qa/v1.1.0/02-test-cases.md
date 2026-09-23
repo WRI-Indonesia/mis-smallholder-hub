@@ -201,6 +201,14 @@ Harapan:
 - Langkah 2: pratinjau tidak menandai KT akan diisi; KT lahan tetap kosong.
 - Kembalikan KT lahan uji ke nilai semula.
 
+### TC-374-04 · Pratinjau Detail Lahan: Blok "--" = kosong [P2] [regresi] (3 mnt)
+Prasyarat: izin Bulk Upload Lahan; satu lahan uji yang terdaftar (ID Lahan + ID Petani).
+Langkah:
+1. Bulk Upload → Upload Data Lahan → tab **Detail Lahan**; unggah berkas satu baris berisi ID Lahan, ID Petani, dan **Blok** `--` saja (kolom lain kosong).
+Harapan:
+- Baris **ditolak** di pratinjau: *"Tidak ada data detail (surat, STDB, UL Parcel Code, kelompok tani, blok, sepadan, atau NKT) untuk disimpan"* — bukan valid lalu tersimpan kosong. Tidak ada yang ditulis.
+- Catatan: `Tidak Ada` dan `-` sudah dikosongkan sejak #296; `--` adalah kasus yang dulu lolos (wrap-up `00bcc2f`).
+
 ## #375 — Nama berkas unduhan legenda
 
 ### TC-375-01 · Nama berkas tanpa "lahan" berulang [P2] (4 mnt)
@@ -208,5 +216,5 @@ Prasyarat: Peta Lahan, Lembaga **ISH-1401-01** dimuat.
 Langkah:
 1. Unduh Excel dari baris Point Lembaga, Point Lahan, Area Lahan (1 sheet), Patok; lalu Unduh Lahan › GeoJSON.
 Harapan:
-- `lembaga_ish-1401-01_…`, `titik-lahan_ish-1401-01_…`, `lahan_ish-1401-01_…`, `patok_ish-1401-01_…`; tak ada `lahan-lahan_` atau `patok-lahan_`.
+- `lembaga_ish-1401-01_…`, `titik-lahan_ish-1401-01_…`, **`area-lahan_ish-1401-01_…`**, `patok_ish-1401-01_…`; tak ada `lahan-lahan_` atau `patok-lahan_`. Area Lahan sengaja **bukan** `lahan_…` — itu nama Unduh Lahan; dua unduhan dalam menit yang sama tidak boleh bernama kembar.
 - Unduh Lahan GeoJSON tetap `lahan_ish-1401-01_<tanggal-jam>.geojson`.
