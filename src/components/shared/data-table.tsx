@@ -112,6 +112,12 @@ export interface DataTableProps<T> {
    * tampilan sementara layar menampilkan nomor aslinya.
    */
   getExportRow?: (row: T, index: number) => Record<string, unknown>;
+  /** Klik baris → pilih (mis. preview peta di panel samping). Tanpa ini baris tidak bisa diklik. */
+  onRowClick?: (row: T) => void;
+  /** `rowKey` baris terpilih — disorot; halaman tabel ikut berpindah ke baris ini. */
+  selectedRowKey?: string | null;
+  /** Baris setelah pencarian & urutan (semua halaman) — mis. untuk navigasi Sebelumnya/Berikutnya di luar tabel. */
+  onVisibleRowsChange?: (rows: T[]) => void;
 }
 
 /**
@@ -210,6 +216,9 @@ export function DataTable<T>({
   exportFilename,
   canExport = false,
   getExportRow,
+  onRowClick,
+  selectedRowKey,
+  onVisibleRowsChange,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
@@ -314,6 +323,19 @@ export function DataTable<T>({
   useEffect(() => {
     setPage(0);
   }, [search, data]);
+
+  // Baris terpilih selalu terlihat: pindah ke halamannya saat pilihan, data,
+  // atau urutan berubah (dideklarasikan SETELAH reset di atas agar menang).
+  useEffect(() => {
+    if (selectedRowKey == null) return;
+    const idx = sortedData.findIndex((row) => rowKey(row) === selectedRowKey);
+    if (idx >= 0) setPage(Math.floor(idx / pageSize));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRowKey, sortedData, pageSize]);
+
+  useEffect(() => {
+    onVisibleRowsChange?.(sortedData);
+  }, [sortedData, onVisibleRowsChange]);
 
   // ─── Sort handler ───────────────────────────────────────────────────────
 
@@ -476,7 +498,25 @@ export function DataTable<T>({
               </TableRow>
             ) : (
               paginatedData.map((row) => (
-                <TableRow key={rowKey(row)}>
+                <TableRow
+                  key={rowKey(row)}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  // Baris yang bisa dipilih juga bisa difokus & dipilih dengan Enter/Spasi.
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onRowClick(row);
+                          }
+                        }
+                      : undefined
+                  }
+                  aria-selected={onRowClick ? rowKey(row) === selectedRowKey : undefined}
+                  data-state={selectedRowKey != null && rowKey(row) === selectedRowKey ? "selected" : undefined}
+                  className={onRowClick ? "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" : undefined}
+                >
                   {hasActions && (
                     <TableCell className="w-[1%] whitespace-nowrap">
                       {renderActions(row)}

@@ -85,6 +85,9 @@ const DINYATAKAN: Record<string, string[]> = {
   // Metrik internal pengembangan (#227). MANAGEMENT ikut karena audiens Roadmap %
   // dan Papan KPI memang manajemen/donor (versioning.md §Metrik Nilai Rilis).
   "dashboard-metrics": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
+  // Pengecualian scope #317: sisi lawan pasangan tumpang tindih tampil lengkap
+  // (nama petani, Lembaga) walau di luar scope — DONOR sengaja tidak diberi.
+  "data-analyst-parcel-overlap": ["ADMIN", "MANAGEMENT", "OPERATOR", "SUPERADMIN"],
   // Administrasi sistem.
   "settings-roles": ["SUPERADMIN"],
   "settings-menu": ["SUPERADMIN"],

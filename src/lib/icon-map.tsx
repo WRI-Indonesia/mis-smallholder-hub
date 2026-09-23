@@ -28,6 +28,7 @@ import {
   TrendingDown,
   Activity,
   Gauge,
+  Layers,
   GitCompare,
   // Agriculture & Nature
   Leaf,
@@ -134,6 +135,8 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   // Education & Training
   GraduationCap: GraduationCap,
   Gauge: Gauge,
+  // Data Analyst › Tumpang Tindih Lahan (#317): lapisan poligon yang bertumpuk.
+  Layers: Layers,
   BookOpen: BookOpen,
   BookMarked: BookMarked,
   Library: Library,

@@ -65,6 +65,8 @@ ADMIN,data-analyst-data-completeness,EXPORT
 ADMIN,data-analyst-data-completeness,PRINT
 ADMIN,data-analyst-data-completeness,VIEW
 ADMIN,data-analyst-data-map,VIEW
+ADMIN,data-analyst-parcel-overlap,EXPORT
+ADMIN,data-analyst-parcel-overlap,VIEW
 ADMIN,help,EXPORT
 ADMIN,help,PRINT
 ADMIN,help,VIEW
@@ -198,6 +200,8 @@ MANAGEMENT,data-analyst-data-completeness,EXPORT
 MANAGEMENT,data-analyst-data-completeness,PRINT
 MANAGEMENT,data-analyst-data-completeness,VIEW
 MANAGEMENT,data-analyst-data-map,VIEW
+MANAGEMENT,data-analyst-parcel-overlap,EXPORT
+MANAGEMENT,data-analyst-parcel-overlap,VIEW
 MANAGEMENT,help,EXPORT
 MANAGEMENT,help,PRINT
 MANAGEMENT,help,VIEW
@@ -265,6 +269,8 @@ OPERATOR,data-analyst-data-availability,VIEW
 OPERATOR,data-analyst-data-completeness,EXPORT
 OPERATOR,data-analyst-data-completeness,PRINT
 OPERATOR,data-analyst-data-completeness,VIEW
+OPERATOR,data-analyst-parcel-overlap,EXPORT
+OPERATOR,data-analyst-parcel-overlap,VIEW
 OPERATOR,help,EXPORT
 OPERATOR,help,PRINT
 OPERATOR,help,VIEW
@@ -369,6 +375,8 @@ SUPERADMIN,data-analyst-data-map,VIEW
 SUPERADMIN,data-analyst-farmer-summary,EXPORT
 SUPERADMIN,data-analyst-farmer-summary,PRINT
 SUPERADMIN,data-analyst-farmer-summary,VIEW
+SUPERADMIN,data-analyst-parcel-overlap,EXPORT
+SUPERADMIN,data-analyst-parcel-overlap,VIEW
 SUPERADMIN,data-analyst,VIEW
 SUPERADMIN,help,EXPORT
 SUPERADMIN,help,PRINT

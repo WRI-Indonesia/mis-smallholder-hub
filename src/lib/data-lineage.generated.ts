@@ -264,6 +264,13 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "data-analyst-parcel-overlap",
+    "route": "(admin)/admin/data-analyst/parcel-overlap",
+    "models": {},
+    "modules": [],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "help",
     "route": "(admin)/admin/help",
     "models": {},
