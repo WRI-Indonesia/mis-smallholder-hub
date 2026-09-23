@@ -36,7 +36,7 @@ Tersedia dua berkas contoh di Langkah 1: **Unduh Template Excel** (semua kolom) 
 7. Perbaiki error bila ada, lalu klik **Simpan N Baris Valid**.
 + Penyimpanan berjalan per 500 baris. Bila gagal di tengah, pesan menyebut berapa baris yang sudah tersimpan — cukup **unggah ulang berkas yang sama**: baris yang sudah masuk tidak digandakan (tampil sebagai "tanpa perubahan" di ringkasan).
 + Unggah ulang berkas yang sama **aman**: surat dengan nomor yang sama diperbarui, bukan digandakan; STDB dan UL Parcel Code juga dicocokkan dulu.
-+ **Nama Kelompok Tani** hanya mengisi lahan yang di sistem masih kosong — yang sudah terisi **tidak ditimpa** (di pratinjau ditandai *"(sudah ada)"*). Untuk mengubah KT lahan, pakai form Edit Lahan.
++ **Nama Kelompok Tani** hanya mengisi lahan yang di sistem masih kosong — yang sudah terisi **tidak ditimpa** (di pratinjau ditandai *"(sudah ada)"*). Untuk mengubah KT lahan, pakai form Edit Lahan. Isian **"Tidak Ada"** atau **"-"** dianggap kosong — tidak mengisi KT lahan.
 + **Sepadan** memakai aturan sebaliknya: sel yang **terisi menimpa** nilai lama (data sepadan wajar dikoreksi lewat pendataan ulang), sel yang **kosong dibiarkan** — tidak mengosongkan yang sudah ada. Mengosongkan sepadan hanya bisa lewat kotak Sepadan di detail lahan.
 + **Blok** mengikuti aturan Kelompok Tani: hanya mengisi yang masih kosong. Lembaga plasma biasanya memakai Blok, Lembaga swadaya memakai Kelompok Tani — template NKT memuat keduanya.
 + **NKT**: status di berkas (atau bawaan berkas) **menimpa** status lama — asesmen terbaru yang berlaku; luas/panjang/tanggal/asesor hanya ditimpa bila selnya terisi. Baris yang membawa data NKT tapi statusnya tak diketahui (tidak ada di kolom maupun bawaan) ditolak, bukan ditebak.

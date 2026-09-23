@@ -173,3 +173,40 @@ Harapan:
 - Validasi **tidak** menolak kode ganda.
 - Toast ringkasan memuat "(n juga dipakai lahan lain — cek silang)".
 - Unggah ulang berkas yang sama: kode "tanpa perubahan", tidak ada record ganda.
+
+## #374 — KT "Tidak Ada" = kosong
+
+### TC-374-01 · Data bersih di lingkungan uji [P0] (2 mnt)
+Prasyarat: akses baca DB lingkungan yang diuji.
+Langkah:
+1. `SELECT count(*) FROM tbl_land_parcel WHERE trim(sub_group_lv2) ILIKE 'tidak ada';`
+Harapan:
+- **0**. Bila > 0, pembersihan data (#374) belum dijalankan di lingkungan ini — catat, jangan Fail-kan fitur lain.
+Baseline dev: mis-dev 417 → 0 (2026-09-23).
+
+### TC-374-02 · Detail Lembaga: KT tanpa "Tidak Ada" [P1] (3 mnt)
+Prasyarat: TC-374-01 = 0; Detail Lembaga **ISH-1401-01**.
+Langkah:
+1. Lihat kartu **Kelompok Tani** dan tabel **Struktur Kelembagaan** (tab Ringkasan).
+Harapan:
+- Kartu = **2**; tabel: Deli makmur, KUD Terbit Sentosa Makmur, **(tidak diketahui)** (326 lahan); tidak ada baris "Tidak Ada".
+
+### TC-374-03 · Input "Tidak Ada" disimpan kosong [P1] [regresi] (5 mnt)
+Prasyarat: izin Edit Lahan.
+Langkah:
+1. Edit satu lahan uji: isi Kelompok Tani `Tidak Ada`, simpan.
+2. Import Detail Lahan satu baris dengan Nama Kelompok Tani `-` untuk lahan ber-KT kosong.
+Harapan:
+- Langkah 1: KT lahan tersimpan **kosong** (detail lahan menampilkan KT belum diisi).
+- Langkah 2: pratinjau tidak menandai KT akan diisi; KT lahan tetap kosong.
+- Kembalikan KT lahan uji ke nilai semula.
+
+## #375 — Nama berkas unduhan legenda
+
+### TC-375-01 · Nama berkas tanpa "lahan" berulang [P2] (4 mnt)
+Prasyarat: Peta Lahan, Lembaga **ISH-1401-01** dimuat.
+Langkah:
+1. Unduh Excel dari baris Point Lembaga, Point Lahan, Area Lahan (1 sheet), Patok; lalu Unduh Lahan › GeoJSON.
+Harapan:
+- `lembaga_ish-1401-01_…`, `titik-lahan_ish-1401-01_…`, `lahan_ish-1401-01_…`, `patok_ish-1401-01_…`; tak ada `lahan-lahan_` atau `patok-lahan_`.
+- Unduh Lahan GeoJSON tetap `lahan_ish-1401-01_<tanggal-jam>.geojson`.

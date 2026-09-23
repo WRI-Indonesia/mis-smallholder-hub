@@ -15,7 +15,7 @@ Ada dua menu laporan Kelompok Tani dengan tujuan berbeda: **Ringkasan** untuk re
 
 Kelompok Tani di sini dibaca dari **data lahan** (field Kelompok Tani pada tiap persil), bukan dari daftar tersendiri.
 
-+ Konsekuensinya: petani yang belum punya lahan aktif tidak muncul di kedua laporan ini, dan lahan yang field Kelompok Tani-nya kosong dikelompokkan sebagai baris "(tidak diketahui)" di urutan paling bawah. Penulisan nama dinormalkan — "KT Melati" dan "kt melati" dihitung satu KT.
++ Konsekuensinya: petani yang belum punya lahan aktif tidak muncul di kedua laporan ini, dan lahan yang field Kelompok Tani-nya kosong dikelompokkan sebagai baris "(tidak diketahui)" di urutan paling bawah. Isian "Tidak Ada" atau "-" tidak lagi diterima sebagai nama KT — sistem menyimpannya kosong, jadi lahannya masuk "(tidak diketahui)". Penulisan nama dinormalkan — "KT Melati" dan "kt melati" dihitung satu KT.
 
 ## Langkah
 
