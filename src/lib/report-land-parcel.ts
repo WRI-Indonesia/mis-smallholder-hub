@@ -319,10 +319,21 @@ const sheetCollator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "
 // Isian pengganti "kosong" yang diketik apa adanya (KT "Tidak Ada": 417 lahan di
 // 3 Lembaga, uji Sei Galuh 2026-09-23) — digabung ke grup "Tanpa …".
 const EMPTY_PLACEHOLDER = /^(tidak ada|-+)$/i;
-const groupValue = (v: string | null) => {
-  const t = v?.trim();
+
+/**
+ * Nilai KT/Blok untuk pengelompokan (Excel #371, warna peta #372): trim + spasi
+ * ganda dirapatkan; kosong / "Tidak Ada" / "-" → null (grup "Tanpa …").
+ * Bandingkan kunci dengan `.toLocaleLowerCase("id-ID")` — tak peka huruf besar-kecil.
+ */
+export function parcelGroupValue(v: string | null | undefined): string | null {
+  const t = v?.trim().replace(/\s+/g, " ");
   return t && !EMPTY_PLACEHOLDER.test(t) ? t : null;
-};
+}
+
+/** Urutan natural nama grup ("2 F" < "11 F"); null ("Tanpa …") di akhir. */
+export function compareParcelGroupLabels(a: string | null, b: string | null): number {
+  return a === b ? 0 : a === null ? 1 : b === null ? -1 : sheetCollator.compare(a, b);
+}
 
 /**
  * Kelompokkan baris roster per KT atau per Blok — label = nama KT/Blok itu
@@ -338,14 +349,14 @@ export function groupLandParcelRows<T extends { kelompokTani: string | null; blo
   // label = ejaan pertama yang ditemui — dua ejaan akan jadi dua sheet "(2)".
   const groups = new Map<string, { label: string | null; rows: T[] }>();
   for (const r of rows) {
-    const value = groupValue(by === "blok" ? r.blok : r.kelompokTani)?.replace(/\s+/g, " ") ?? null;
+    const value = parcelGroupValue(by === "blok" ? r.blok : r.kelompokTani);
     const key = value?.toLocaleLowerCase("id-ID") ?? "";
     const g = groups.get(key);
     if (g) g.rows.push(r);
     else groups.set(key, { label: value, rows: [r] });
   }
   return [...groups.values()]
-    .sort((a, b) => (a.label === b.label ? 0 : a.label === null ? 1 : b.label === null ? -1 : sheetCollator.compare(a.label, b.label)))
+    .sort((a, b) => compareParcelGroupLabels(a.label, b.label))
     .map((g) => ({ label: g.label ?? (by === "blok" ? NO_BLOK : NO_KT), rows: g.rows }));
 }
 

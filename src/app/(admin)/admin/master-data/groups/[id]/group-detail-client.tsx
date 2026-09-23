@@ -569,7 +569,7 @@ export function GroupDetailClient({
                 )}
               </div>
             </div>
-            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} markerPoints={markerPoints} />
+            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} markerPoints={markerPoints} allowColorByBlok />
           </Card>
           <p className="text-sm text-muted-foreground">
             Detail per lahan ada di{" "}
