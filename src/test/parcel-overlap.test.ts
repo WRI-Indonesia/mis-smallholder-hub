@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Prisma } from "@prisma/client";
 import {
+  OVERLAP_GEOMETRY_CHUNK,
   OVERLAP_PCT_DEFAULT,
   buildOverlapRows,
   filterOverlapRows,
@@ -239,6 +240,12 @@ describe("guard getParcelOverlapGeometries", () => {
     expect(db.$queryRaw).not.toHaveBeenCalled();
   });
 
+  it("ekspor > batas per panggilan ditolak (client memecah per OVERLAP_GEOMETRY_CHUNK)", async () => {
+    const keys = Array.from({ length: OVERLAP_GEOMETRY_CHUNK + 1 }, (_, i) => `a${i}|b${i}`);
+    expect(await getParcelOverlapGeometries(keys, "export")).toMatchObject({ success: false });
+    expect(await getParcelOverlapGeometries(keys.slice(0, OVERLAP_GEOMETRY_CHUNK), "export")).toMatchObject({ success: true });
+  });
+
   it("memakai scope yang sama (minimal satu sisi) & membuang irisan kosong", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["g-1"] });
     const poly = { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] };
@@ -246,7 +253,10 @@ describe("guard getParcelOverlapGeometries", () => {
     const res = await getParcelOverlapGeometries(["a|b"], "export");
     expect(res).toEqual({ success: true, data: [{ key: "a|b", a: poly, b: poly, intersection: null }] });
     const q = sentQuery();
-    expect(q.sql.replace(/\s+/g, " ")).toMatch(/WHERE \(\(.*ga\.id = ANY.*\)\) OR \(\(.*gb\.id = ANY/);
+    const flat = q.sql.replace(/\s+/g, " ");
+    // Kunci pasangan dari client tidak dipercaya: harus benar-benar beririsan (review #317).
+    expect(flat).toMatch(/WHERE a\.id < b\.id .*AND ST_Intersects\(a\.geom, b\.geom\) AND NOT ST_Touches\(a\.geom, b\.geom\)/);
+    expect(flat).toMatch(/AND \(\(\(.*ga\.id = ANY.*\)\) OR \(\(.*gb\.id = ANY/);
     expect(q.values).toContainEqual(["a"]);
     expect(q.values).toContainEqual(["b"]);
   });

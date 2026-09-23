@@ -6,7 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, rawFarmerGroupScope, type AccessContext } from "@/lib/access-context";
-import { buildOverlapRows, type OverlapRaw, type ParcelOverlapRow } from "@/lib/parcel-overlap";
+import { OVERLAP_GEOMETRY_CHUNK, buildOverlapRows, type OverlapRaw, type ParcelOverlapRow } from "@/lib/parcel-overlap";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -115,8 +115,11 @@ export interface OverlapPairGeometry {
   intersection: Polygon | MultiPolygon | null;
 }
 
-/** Maksimum pasangan per permintaan geometri (ekspor semua temuan terukur 137). */
-const MAX_GEOMETRY_PAIRS = 2000;
+/**
+ * Maksimum pasangan per permintaan geometri (ekspor semua temuan terukur 136).
+ * Ekspor lebih besar dipecah per potongan di client (`OVERLAP_GEOMETRY_CHUNK`).
+ */
+const MAX_GEOMETRY_PAIRS = OVERLAP_GEOMETRY_CHUNK;
 const pairKeysSchema = z
   .array(z.string().max(130).regex(/^[a-z0-9]+\|[a-z0-9]+$/i))
   .min(1)
@@ -125,7 +128,8 @@ const pairKeysSchema = z
 /**
  * Geometri pasangan (lahan A, lahan B, irisan) untuk preview peta (1 pasangan,
  * izin VIEW) atau ekspor SHP/GeoJSON (banyak pasangan, izin EXPORT). Pasangan
- * yang kedua sisinya di luar scope dibuang — aturan sama dengan daftar temuan.
+ * yang kedua sisinya di luar scope, atau yang ternyata tidak beririsan, dibuang —
+ * aturan sama dengan daftar temuan (kunci pasangan datang dari client, tidak dipercaya).
  */
 export async function getParcelOverlapGeometries(
   keys: string[],
@@ -162,7 +166,11 @@ export async function getParcelOverlapGeometries(
     JOIN tbl_farmer fb ON fb.id = b.farmer_id AND fb.is_active
     JOIN tbl_farmer_group ga ON ga.id = fa.farmer_group_id
     JOIN tbl_farmer_group gb ON gb.id = fb.farmer_group_id
-    WHERE ${aIn} OR ${bIn}
+    WHERE a.id < b.id
+      -- Hanya pasangan yang BENAR-BENAR beririsan (review #317): tanpa ini kunci
+      -- buatan "lahanSendiri|lahanLain" membocorkan poligon lahan mana pun di luar scope.
+      AND ST_Intersects(a.geom, b.geom) AND NOT ST_Touches(a.geom, b.geom)
+      AND (${aIn} OR ${bIn})
   `;
 
   const polygonal = (g: Geometry | null): Polygon | MultiPolygon | null => {

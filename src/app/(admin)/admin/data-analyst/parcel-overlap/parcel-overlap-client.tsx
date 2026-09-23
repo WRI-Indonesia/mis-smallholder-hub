@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { exportFileBase } from "@/lib/parcel-export-data";
 import {
   OVERLAP_DUPLICATE_PCT,
+  OVERLAP_GEOMETRY_CHUNK,
   OVERLAP_KINDS,
   OVERLAP_KIND_LABEL,
   OVERLAP_LEVELS,
@@ -327,12 +328,17 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
     if (visibleRows.length === 0) return;
     setExporting(true);
     try {
-      const res = await getParcelOverlapGeometries(visibleRows.map((r) => r.key), "export");
-      if (!res.success) {
-        toast.error(res.error);
-        return;
+      // Dipecah per potongan — batas per panggilan action, daftar bisa melampauinya.
+      const byKey = new Map<string, OverlapPairGeometry>();
+      const keys = visibleRows.map((r) => r.key);
+      for (let i = 0; i < keys.length; i += OVERLAP_GEOMETRY_CHUNK) {
+        const res = await getParcelOverlapGeometries(keys.slice(i, i + OVERLAP_GEOMETRY_CHUNK), "export");
+        if (!res.success) {
+          toast.error(res.error);
+          return;
+        }
+        for (const g of res.data ?? []) byKey.set(g.key, g);
       }
-      const byKey = new Map((res.data ?? []).map((g) => [g.key, g]));
       const features = visibleRows.flatMap((r) => {
         const g = byKey.get(r.key);
         if (!g?.intersection) return [];

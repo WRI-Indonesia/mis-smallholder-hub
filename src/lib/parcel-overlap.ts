@@ -13,6 +13,8 @@ export const OVERLAP_MIN_AREA_M2 = 100;
 export const OVERLAP_MIN_PCT = 1;
 /** Di atas ambang ini (terhadap lahan terkecil) lahan dianggap "Duplikat"/"Tercakup". */
 export const OVERLAP_DUPLICATE_PCT = 90;
+/** Pasangan per panggilan `getParcelOverlapGeometries`; ekspor spasial dipecah per potongan ini. */
+export const OVERLAP_GEOMETRY_CHUNK = 2000;
 
 /**
  * Pilihan filter persen (terhadap lahan terkecil). "all" = semua temuan yang
