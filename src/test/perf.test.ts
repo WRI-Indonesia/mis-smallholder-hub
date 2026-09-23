@@ -39,6 +39,7 @@ import { buildLayerReportDoc } from "@/lib/layer-report-pdf";
 import { parseBmpImportRows, resolveBmpImportRows, type BmpImportRawRow } from "@/lib/bmp-assessment";
 import { matchFarmerName, recomputeBmpScore, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
 import { filterPointsWithinAreas } from "@/lib/fire-alert";
+import { buildOverlapRows, filterOverlapRows, overlapFilterOptions, pairCountByParcel, type OverlapRaw } from "@/lib/parcel-overlap";
 import {
   bmpMonevActivityProfile,
   bmpMonevGroupProfiles,
@@ -1206,5 +1207,36 @@ describe("Performance - DASH-07 klip titik api ke outline provinsi (#280/#286)",
     // pastikan klip benar-benar bekerja (bukan meloloskan/menolak semua).
     expect(kept.features.length).toBeGreaterThan(5_000);
     expect(kept.features.length).toBeLessThan(25_000);
+  });
+});
+
+describe("Performance - #317 Tumpang Tindih Lahan (pure logic)", () => {
+  // Halaman merakit & menyaring SELURUH temuan di browser; filter/chip dihitung
+  // ulang tiap klik. Terukur 136 pasangan di mis-dev (14.174 lahan) — uji 20.000
+  // (≈ 150× hari ini, jauh di atas proyeksi 2028 12.000 petani) agar tetap linear.
+  it("builds + filters + options + pair counts for 20k pairs under 150ms", () => {
+    const side = (i: number, g: number) => ({
+      id: `p${i}`, parcelId: `L-${i}`, kelompokTani: null, farmerId: `f${i % 9000}`, farmerCode: `SH-${i}`,
+      farmerName: `Petani ${i}`, groupId: `g${g}`, groupName: `Lembaga ${g}`, districtId: `d${g % 12}`,
+      districtName: `Distrik ${g % 12}`, areaM2: 5_000 + (i % 20_000),
+    });
+    const raws: OverlapRaw[] = Array.from({ length: 20_000 }, (_, i) => ({
+      intersectionM2: 50 + ((i * 37) % 9_000),
+      a: side(2 * i, i % 60),
+      b: side(2 * i + 1, (i * 7) % 60),
+    }));
+
+    const start = performance.now();
+    const rows = buildOverlapRows(raws, new Set());
+    const filtered = filterOverlapRows(rows, { pct: "25", kind: "CROSS_GROUP", level: null, groupId: "g3", districtId: null });
+    const options = overlapFilterOptions(rows);
+    const counts = pairCountByParcel(rows);
+    const duration = performance.now() - start;
+
+    console.log(`  parcel overlap (${raws.length} → ${rows.length} pasangan, ${filtered.length} tersaring): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(150);
+    expect(rows.length).toBeGreaterThan(15_000);
+    expect(options.groups).toHaveLength(60);
+    expect(counts.size).toBe(rows.length * 2);
   });
 });

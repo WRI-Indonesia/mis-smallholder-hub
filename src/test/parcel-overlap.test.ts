@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Prisma } from "@prisma/client";
 import {
   OVERLAP_GEOMETRY_CHUNK,
+  OVERLAP_LEVEL_RANK,
+  OVERLAP_LEVELS,
   OVERLAP_PCT_DEFAULT,
   buildOverlapRows,
   filterOverlapRows,
@@ -53,6 +55,12 @@ describe("jenis & label pasangan", () => {
     expect(overlapKind({ farmerId: "f", groupId: "g1" }, { farmerId: "f", groupId: "g2" })).toBe("SAME_FARMER");
     expect(overlapKind({ farmerId: "f1", groupId: "g1" }, { farmerId: "f2", groupId: "g1" })).toBe("SAME_GROUP");
     expect(overlapKind({ farmerId: "f1", groupId: "g1" }, { farmerId: "f2", groupId: "g2" })).toBe("CROSS_GROUP");
+  });
+
+  it("urutan sortir Label mengikuti tingkat (Duplikat → Tercakup → Sebagian), bukan jenis", () => {
+    expect([...OVERLAP_LEVELS].sort((x, y) => OVERLAP_LEVEL_RANK[y] - OVERLAP_LEVEL_RANK[x]).reverse()).toEqual(["DUPLICATE", "CONTAINED", "PARTIAL"]);
+    expect(OVERLAP_LEVEL_RANK.DUPLICATE).toBeLessThan(OVERLAP_LEVEL_RANK.CONTAINED);
+    expect(OVERLAP_LEVEL_RANK.CONTAINED).toBeLessThan(OVERLAP_LEVEL_RANK.PARTIAL);
   });
 
   it("Duplikat = > 90% dari kedua lahan; Tercakup = hanya lahan kecil > 90%; sisanya Sebagian", () => {
@@ -197,6 +205,9 @@ describe("guard getParcelOverlaps", () => {
     expect(q.values).toContainEqual(["g-1"]);
     expect(q.sql).toMatch(/a\.is_active/);
     expect(q.sql).toMatch(/b\.is_active/);
+    // Soft delete berlaku juga untuk Lembaga (review #317).
+    expect(q.sql).toMatch(/ga\.id = fa\.farmer_group_id AND ga\.is_active/);
+    expect(q.sql).toMatch(/gb\.id = fb\.farmer_group_id AND gb\.is_active/);
   });
 
   it("BY_DISTRICT: id distrik diteruskan ke fragmen scope; tanpa daftar Lembaga", async () => {
@@ -246,6 +257,21 @@ describe("guard getParcelOverlapGeometries", () => {
     expect(await getParcelOverlapGeometries(keys.slice(0, OVERLAP_GEOMETRY_CHUNK), "export")).toMatchObject({ success: true });
   });
 
+  it("ekspor tidak mengirim poligon utuh kedua lahan; baris ekspor tanpa a/b tetap dikembalikan", async () => {
+    const inter = { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] };
+    db.$queryRaw.mockResolvedValue([{ aId: "a", bId: "b", ga: null, gb: null, gi: inter }]);
+    const res = await getParcelOverlapGeometries(["a|b"], "export");
+    expect(res).toEqual({ success: true, data: [{ key: "a|b", a: null, b: null, intersection: inter }] });
+    const q = sentQuery();
+    expect(q.sql.replace(/\s+/g, " ")).toMatch(/CASE WHEN \?::text = 'preview' THEN a\.geometry END AS ga/);
+    expect(q.values).toContain("export");
+  });
+
+  it("preview tanpa poligon lahan (data rusak) dibuang, bukan dikirim setengah", async () => {
+    db.$queryRaw.mockResolvedValue([{ aId: "a", bId: "b", ga: null, gb: null, gi: null }]);
+    expect(await getParcelOverlapGeometries(["a|b"], "preview")).toEqual({ success: true, data: [] });
+  });
+
   it("memakai scope yang sama (minimal satu sisi) & membuang irisan kosong", async () => {
     getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["g-1"] });
     const poly = { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] };
@@ -254,6 +280,8 @@ describe("guard getParcelOverlapGeometries", () => {
     expect(res).toEqual({ success: true, data: [{ key: "a|b", a: poly, b: poly, intersection: null }] });
     const q = sentQuery();
     const flat = q.sql.replace(/\s+/g, " ");
+    expect(flat).toMatch(/ga\.id = fa\.farmer_group_id AND ga\.is_active/);
+    expect(flat).toMatch(/gb\.id = fb\.farmer_group_id AND gb\.is_active/);
     // Kunci pasangan dari client tidak dipercaya: harus benar-benar beririsan (review #317).
     expect(flat).toMatch(/WHERE a\.id < b\.id .*AND ST_Intersects\(a\.geom, b\.geom\) AND NOT ST_Touches\(a\.geom, b\.geom\)/);
     expect(flat).toMatch(/AND \(\(\(.*ga\.id = ANY.*\)\) OR \(\(.*gb\.id = ANY/);

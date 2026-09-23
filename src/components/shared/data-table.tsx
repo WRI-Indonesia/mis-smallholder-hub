@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -118,6 +118,17 @@ export interface DataTableProps<T> {
   selectedRowKey?: string | null;
   /** Baris setelah pencarian & urutan (semua halaman) — mis. untuk navigasi Sebelumnya/Berikutnya di luar tabel. */
   onVisibleRowsChange?: (rows: T[]) => void;
+}
+
+/** Dua daftar kunci baris identik (isi & urutan). */
+export function sameKeys(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((k, i) => k === b[i]);
+}
+
+/** Target klik berada di kontrol interaktif di dalam baris (bukan baris itu sendiri). */
+function isInnerControl(target: EventTarget, row: Element): boolean {
+  const el = target instanceof Element ? target.closest("button,a,input,select,textarea,[role=button],[role=checkbox]") : null;
+  return !!el && el !== row && row.contains(el);
 }
 
 /**
@@ -324,17 +335,29 @@ export function DataTable<T>({
     setPage(0);
   }, [search, data]);
 
-  // Baris terpilih selalu terlihat: pindah ke halamannya saat pilihan, data,
-  // atau urutan berubah (dideklarasikan SETELAH reset di atas agar menang).
+  // Baris terpilih terlihat: pindah ke halamannya HANYA saat pilihan berubah
+  // (mis. tombol Berikutnya melewati batas halaman). Sortir / ubah jumlah baris
+  // tetap kembali ke halaman 1 seperti biasa (review #317). Dideklarasikan
+  // SETELAH reset di atas agar menang saat data & pilihan berubah bersamaan.
   useEffect(() => {
     if (selectedRowKey == null) return;
     const idx = sortedData.findIndex((row) => rowKey(row) === selectedRowKey);
     if (idx >= 0) setPage(Math.floor(idx / pageSize));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRowKey, sortedData, pageSize]);
+  }, [selectedRowKey]);
 
+  // Lapor hanya bila urutan KUNCI berubah: `sortedData` dihitung ulang setiap
+  // kali `columns` berganti identitas (kolom inline di pemanggil), dan pemanggil
+  // yang menyimpan hasilnya ke state akan render ulang → loop tak berujung saat
+  // ada kolom yang disortir (temuan verifikasi #317, "Maximum update depth").
+  const reportedKeys = useRef<string[] | null>(null);
   useEffect(() => {
-    onVisibleRowsChange?.(sortedData);
+    if (!onVisibleRowsChange) return;
+    const keys = sortedData.map(rowKey);
+    if (reportedKeys.current && sameKeys(reportedKeys.current, keys)) return;
+    reportedKeys.current = keys;
+    onVisibleRowsChange(sortedData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortedData, onVisibleRowsChange]);
 
   // ─── Sort handler ───────────────────────────────────────────────────────
@@ -500,13 +523,14 @@ export function DataTable<T>({
               paginatedData.map((row) => (
                 <TableRow
                   key={rowKey(row)}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  // Klik/tombol dari kontrol di dalam baris (Aksi, tautan) bukan pemilihan baris.
+                  onClick={onRowClick ? (e) => !isInnerControl(e.target, e.currentTarget) && onRowClick(row) : undefined}
                   // Baris yang bisa dipilih juga bisa difokus & dipilih dengan Enter/Spasi.
                   tabIndex={onRowClick ? 0 : undefined}
                   onKeyDown={
                     onRowClick
                       ? (e) => {
-                          if (e.key === "Enter" || e.key === " ") {
+                          if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
                             e.preventDefault();
                             onRowClick(row);
                           }

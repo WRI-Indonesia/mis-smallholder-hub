@@ -20,13 +20,14 @@ Halaman: Tumpang Tindih Lahan (/admin/data-analyst/parcel-overlap)
 │   ├── Kiri: DataTable (klik / Enter / Spasi = pilih; baris terpilih disorot & halaman tabel mengikutinya)
 │   │   ├── Kolom: Lahan A · Lahan B (ID lahan + badge "+N" bila lahan punya pasangan lain, nama petani;
 │   │   │   Lembaga hanya untuk Lintas Lembaga, selebihnya di tooltip) · % · Irisan (% terkecil · ha, A/B) ·
-│   │   │   Label (badge bertooltip arti + jenis ringkas)
+│   │   │   Label (badge bertooltip arti + jenis ringkas; sortir Duplikat → Tercakup → Sebagian)
 │   │   ├── Pencarian ID lahan / nama / ID petani, paginasi bawaan 25
 │   │   └── Toolbar (izin EXPORT): Excel · Spasial ▾ (Shapefile ZIP / GeoJSON — poligon irisan)
 │   └── Kanan (sticky): preview — pasangan pertama terpilih otomatis
-│       ├── Navigasi: ‹ Sebelumnya · "n / N · ↑/↓" · Berikutnya › (urutan = tampilan tabel; panah ↑/↓ di keyboard,
-│       │   diabaikan saat fokus di kotak isian/combobox)
-│       ├── Peta: lahan A biru, lahan B oranye (garis putus), irisan merah (isi + garis); Zoom ke Lahan; basemap; legenda
+│       ├── Navigasi: ‹ Sebelumnya · "n / N · ↑/↓" · Berikutnya › (urutan = tampilan tabel); panah ↑/↓ hanya
+│       │   saat fokus di tabel/preview (bukan kotak isian, combobox, kanvas peta) — di luar itu halaman tetap tergulir
+│       ├── Peta: lahan A biru, lahan B oranye (garis putus), irisan merah (isi + garis); Zoom ke Lahan; basemap; legenda;
+│       │   saat pasangan berikutnya dimuat, peta sebelumnya tetap tampil berlapis spinner (basemap terpilih bertahan)
 │       └── Kartu A & B: petani (kode), Kelompok Tani, Lembaga, Distrik, luas poligon, % tertumpang, "+N lahan lain",
 │           Buka Detail Lahan (tab baru) / "Di luar akses Anda"
 └── Catatan kaki: definisi %, Duplikat/Tercakup, ambang buang, arti +N
@@ -54,7 +55,8 @@ Halaman: Tumpang Tindih Lahan (/admin/data-analyst/parcel-overlap)
 | Ambang buang | irisan < 100 m² **dan** < 1% lahan terkecil (keputusan #317) |
 | Filter % | ketat `>` (> 50% tidak memuat pasangan tepat 50,0%) |
 | Label (chip = filter) | **Duplikat**: > 90% dari kedua lahan · **Tercakup**: lahan kecil > 90% tetapi < 90% dari lahan besar · **Sebagian**: sisanya |
-| Scope | minimal satu sisi dalam scope; sisi lawan tampil lengkap — [access-context.md](../../access-context.md) |
+| Scope | minimal satu sisi dalam scope; sisi lawan tampil lengkap — [access-context.md](../../access-context.md). Geometri hanya untuk pasangan yang benar-benar beririsan (kunci dari client tidak dipercaya) |
+| Soft delete | lahan, petani, **dan Lembaga** aktif saja |
 
 Terukur 2026-09-23 di `mis-dev` (snapshot prod, 14.174 lahan): 137 pasangan lolos ambang buang; > 10% = 82, > 25% = 74, > 50% = 72, > 75% = 71, > 90% = 70, di antaranya 25 Duplikat dan 45 Tercakup; kueri 256 ms.
 
@@ -63,4 +65,4 @@ Terukur 2026-09-23 di `mis-dev` (snapshot prod, 14.174 lahan): 137 pasangan lolo
 | Tombol | Isi |
 |---|---|
 | Excel | Satu sheet "Tumpang Tindih", mengikuti filter, pencarian & urutan tabel: Label, Jenis, % thd Lahan Terkecil, Luas Irisan, lalu per sisi A/B: ID Lahan, ID Petani, Nama Petani, Kelompok Tani, Lembaga, Distrik, Luas Poligon, % |
-| Spasial | Mengikuti filter, pencarian & urutan tabel. Poligon **irisan** (satu layer `irisan`), atribut `label, jenis, pct_min, irisan_ha, lahan_a, petani_a, lembaga_a, pct_a, lahan_b, petani_b, lembaga_b, pct_b` |
+| Spasial | Mengikuti filter, pencarian & urutan tabel; action ekspor hanya mengirim irisan (bukan poligon utuh A/B), dipecah per 2.000 pasangan. Poligon **irisan** (satu layer `irisan`), atribut `label, jenis, pct_min, irisan_ha, lahan_a, petani_a, lembaga_a, pct_a, lahan_b, petani_b, lembaga_b, pct_b` |

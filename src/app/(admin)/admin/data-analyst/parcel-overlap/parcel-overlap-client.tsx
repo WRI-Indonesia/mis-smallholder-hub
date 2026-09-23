@@ -30,6 +30,7 @@ import {
   OVERLAP_LEVELS,
   OVERLAP_LEVEL_HINT,
   OVERLAP_LEVEL_LABEL,
+  OVERLAP_LEVEL_RANK,
   OVERLAP_MIN_AREA_M2,
   OVERLAP_MIN_PCT,
   OVERLAP_PCT_DEFAULT,
@@ -229,21 +230,32 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
     const key = effectiveKey;
     requested.current.add(key);
     setLoadingKey(key);
-    getParcelOverlapGeometries([key], "preview").then((res) => {
-      setLoadingKey((k) => (k === key ? null : k));
-      if (!res.success) {
+    getParcelOverlapGeometries([key], "preview")
+      .then((res) => {
+        if (!res.success) {
+          requested.current.delete(key);
+          toast.error(res.error);
+          return;
+        }
+        const g = res.data?.[0];
+        if (!g) {
+          toast.error("Geometri lahan tidak ditemukan — lahan mungkin sudah diubah. Muat ulang halaman.");
+          return;
+        }
+        setGeoms((prev) => ({ ...prev, [key]: g }));
+      })
+      // Galat jaringan/server: lepas kunci agar memilih ulang pasangan ini mencoba lagi.
+      .catch(() => {
         requested.current.delete(key);
-        toast.error(res.error);
-        return;
-      }
-      const g = res.data?.[0];
-      if (!g) {
-        toast.error("Geometri lahan tidak ditemukan — lahan mungkin sudah diubah. Muat ulang halaman.");
-        return;
-      }
-      setGeoms((prev) => ({ ...prev, [key]: g }));
-    });
+        toast.error("Gagal memuat peta pasangan ini. Coba pilih lagi.");
+      })
+      .finally(() => setLoadingKey((k) => (k === key ? null : k)));
   }, [effectiveKey, geoms]);
+
+  // Pilihan yang hilang dari hasil dilepas — tanpa ini melepas filter memulihkan pilihan lama (review #317).
+  useEffect(() => {
+    if (selectedKey && selectedIndex < 0 && visibleRows.length > 0) setSelectedKey(null);
+  }, [selectedKey, selectedIndex, visibleRows.length]);
 
   const selectRow = useCallback((r: ParcelOverlapRow) => {
     setSelectedKey(r.key);
@@ -261,17 +273,24 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
     [visibleRows, position]
   );
 
-  // ↑/↓ = pasangan sebelumnya/berikutnya, kecuali saat mengetik atau memakai kontrol lain.
+  // ↑/↓ = pasangan sebelumnya/berikutnya — HANYA saat fokus di tabel/panel preview
+  // (review #317): di luar itu panah tetap menggulir halaman, dan kanvas peta
+  // tetap memakai panah untuk menggeser peta.
+  const workAreaRef = useRef<HTMLDivElement>(null);
+  const onWorkAreaKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key !== "ArrowDown" && e.key !== "ArrowUp") || e.altKey || e.ctrlKey || e.metaKey || e.defaultPrevented) return;
+    if (isTypingTarget(e.target) || (e.target instanceof HTMLElement && e.target.closest(".maplibregl-map"))) return;
+    e.preventDefault();
+    step(e.key === "ArrowDown" ? 1 : -1);
+    // Fokus ikut ke baris baru (bila fokus sedang di tabel) — lihat efek di bawah.
+    focusSelectedRow.current = !!(e.target instanceof HTMLElement && e.target.closest("tr"));
+  };
+  const focusSelectedRow = useRef(false);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.key !== "ArrowDown" && e.key !== "ArrowUp") || e.altKey || e.ctrlKey || e.metaKey) return;
-      if (isTypingTarget(e.target)) return;
-      e.preventDefault();
-      step(e.key === "ArrowDown" ? 1 : -1);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [step]);
+    if (!focusSelectedRow.current) return;
+    focusSelectedRow.current = false;
+    workAreaRef.current?.querySelector<HTMLElement>('tr[data-state="selected"]')?.focus();
+  }, [effectiveKey]);
 
   const fileBase = () => exportFileBase("tumpang-tindih-lahan", pct === "all" ? null : `lebih-${pct}persen`, new Date());
 
@@ -376,9 +395,13 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
     }
   };
 
-  const others = (r: ParcelOverlapRow, side: "a" | "b") => (pairCounts.get(r[side].id) ?? 1) - 1;
+  const others = useCallback(
+    (r: ParcelOverlapRow, side: "a" | "b") => (pairCounts.get(r[side].id) ?? 1) - 1,
+    [pairCounts]
+  );
 
-  const columns: DataTableColumn<ParcelOverlapRow>[] = [
+  // Stabil antar-render: DataTable menghitung ulang urutan saat `columns` berganti identitas.
+  const columns = useMemo<DataTableColumn<ParcelOverlapRow>[]>(() => [
     {
       key: "a",
       label: "Lahan A",
@@ -421,11 +444,16 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
           </div>
         </div>
       ),
-      sortValue: (r) => r.kind,
+      sortValue: (r) => OVERLAP_LEVEL_RANK[r.level],
     },
-  ];
+  ], [others]);
 
+  // Selama geometri pasangan berikutnya dimuat, peta pasangan sebelumnya tetap
+  // tampil (berlapis spinner) — peta tidak di-unmount, pilihan basemap tidak hilang (review #317).
   const selectedGeom = selected ? geoms[selected.key] : undefined;
+  const lastGeom = useRef<OverlapPairGeometry | undefined>(undefined);
+  if (selectedGeom) lastGeom.current = selectedGeom;
+  const shownGeom = selected ? (selectedGeom ?? lastGeom.current) : undefined;
 
   return (
     <div className="space-y-3">
@@ -522,7 +550,7 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
         <span className="text-muted-foreground">· total irisan {formatArea(totalHa)} ha</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div ref={workAreaRef} onKeyDown={onWorkAreaKeyDown} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="min-w-0">
           <DataTable
             columns={columns}
@@ -598,8 +626,15 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
                   <MousePointerClick className="h-6 w-6" />
                   Tidak ada pasangan untuk ditampilkan.
                 </div>
-              ) : selectedGeom ? (
-                <OverlapPreviewMap a={selectedGeom.a} b={selectedGeom.b} intersection={selectedGeom.intersection} />
+              ) : shownGeom?.a && shownGeom.b ? (
+                <div className="relative">
+                  <OverlapPreviewMap a={shownGeom.a} b={shownGeom.b} intersection={shownGeom.intersection} />
+                  {!selectedGeom && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-md bg-background/40">
+                      {loadingKey === selected.key ? <Loader2 className="h-6 w-6 animate-spin" /> : null}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="flex h-[420px] items-center justify-center rounded-md border bg-muted/20 text-sm text-muted-foreground">
                   {loadingKey === selected.key ? <Loader2 className="h-5 w-5 animate-spin" /> : "Geometri belum tersedia."}

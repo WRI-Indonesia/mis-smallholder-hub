@@ -50,6 +50,7 @@
 | HELP-02 | Bantuan: Tutorial per Tugas | Tiga lapis (tutorial/konsep/referensi); 28 tutorial + 4 referensi dengan **dua tingkat kedalaman dari satu sumber** (baris `+`); toggle Ringkas/Detail & lipat daftar isi tanpa JS; personalisasi per izin; bantuan kontekstual `HelpHint` di 29 halaman — termasuk 2 halaman peta full-screen, di header panel filter via prop `helpSlot` (#207); +`u-4` unggah pohon (#238) |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Ketersediaan Data — Per Lembaga | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193; #352: registri check (tempat lahir, KT, blok, tipe grup, tahun berdiri; tier 1/3 tahun tanam/status/blok), cakupan modul informatif, anomali sistemik dilipat, daftar kerja bertautan + Perbaiki lewat, `?lembaga=` & analisa otomatis |
+| #317 | Tumpang Tindih Lahan | 🟠 Fase 2 tab Tumpang Tindih (2026-09-24): menu `data-analyst-parcel-overlap`, live PostGIS self-join, split view tabel + peta, Duplikat/Tercakup/Sebagian, ekspor Excel + SHP/GeoJSON irisan; Luar Boundary/Selisih Luas/guard upload/layer peta belum |
 | DA-03 | Ketersediaan Data — Semua Lembaga | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks inti / modul, bar chart, panel anomali per entitas vs sistemik, Excel); deep link ke DA-02; live query; tanpa DONOR (#193, #352) |
  
 **Total Tests**: **49 files / 787 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
@@ -140,6 +141,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **sate
 | Middleware | middleware.test.ts | 5 | ✅ |
 | Auth | auth.test.ts | 5 | ✅ |
 | Data Analyst (DA-01) | data-analyst.test.ts | 4 | ✅ |
+| Tumpang Tindih Lahan (#317): ambang, % terkecil, label & urutan, filter, guard 3 lapis + scope minimal-satu-sisi + kunci pasangan harus beririsan, ekspor tanpa poligon utuh | parcel-overlap.test.ts | 23 | ✅ |
 | Profile | profile.test.ts | 3 | ✅ |
 
 ### Need Coverage

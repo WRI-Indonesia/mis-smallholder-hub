@@ -179,3 +179,21 @@ describe("buildExportRows — dengan transformer", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 });
+
+// Review #317 — `onVisibleRowsChange` hanya dipanggil bila urutan KUNCI
+// berubah. Tanpa pembanding ini, halaman yang menyimpan hasilnya ke state dan
+// memberi `columns` inline berputar tanpa henti begitu satu kolom disortir
+// ("Maximum update depth exceeded" di Tumpang Tindih Lahan).
+import { sameKeys } from "@/components/shared/data-table";
+
+describe("sameKeys — penjaga loop onVisibleRowsChange", () => {
+  it("isi & urutan sama → true (tidak melapor ulang meski array baru)", () => {
+    expect(sameKeys(["a", "b"], ["a", "b"])).toBe(true);
+    expect(sameKeys([], [])).toBe(true);
+  });
+  it("urutan, isi, atau panjang berbeda → false (lapor)", () => {
+    expect(sameKeys(["a", "b"], ["b", "a"])).toBe(false);
+    expect(sameKeys(["a", "b"], ["a", "c"])).toBe(false);
+    expect(sameKeys(["a"], ["a", "b"])).toBe(false);
+  });
+});

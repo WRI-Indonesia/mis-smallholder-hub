@@ -25,12 +25,14 @@ Tumpang tindih hampir mustahil ditemukan lewat mata di peta. Halaman ini memband
 + Jenis pasangan menentukan tindak lanjutnya. **Petani sama** biasanya berarti lahan yang sama terinput dua kali, sehingga luasnya terhitung ganda. **Beda petani, satu Lembaga** perlu cek batas di lapangan. **Lintas Lembaga** berarti satu lahan mungkin terdaftar di dua Lembaga.
 + Filter Distrik dan Lembaga cocok bila **salah satu** lahan dalam pasangan berada di sana.
 + Semua filter tersimpan di alamat halaman, jadi tautannya bisa dikirim ke rekan dan akan menampilkan daftar yang sama.
-4. Baca kolom **Label** di tabel, atau klik chip **Duplikat / Tercakup / Sebagian** di atas tabel untuk menampilkan satu label saja. Chip **Semua** (atau klik chip yang aktif sekali lagi) menampilkan semua label kembali.
+4. Baca kolom **Label** di tabel (klik judul kolomnya untuk mengurutkan Duplikat → Tercakup → Sebagian), atau klik chip **Duplikat / Tercakup / Sebagian** di atas tabel untuk menampilkan satu label saja. Chip **Semua** (atau klik chip yang aktif sekali lagi) menampilkan semua label kembali.
 + Arahkan kursor ke badge label untuk melihat artinya. Angka pada chip mengikuti filter lain, jadi tetap terbaca saat salah satu chip aktif.
 + **Duplikat**: irisannya lebih dari 90% dari kedua lahan, jadi kedua poligon hampir identik. Umumnya ini entri ganda.
 + **Tercakup**: lahan kecil lebih dari 90% berada di dalam lahan yang lebih besar. Mungkin lahan dipecah lalu lahan induknya tidak dihapus, atau batasnya salah.
 + **Sebagian**: hanya sebagian lahan yang menumpuk.
-5. Periksa pasangan di panel kanan. Pasangan pertama langsung tampil; klik baris lain, atau pakai tombol **Sebelumnya / Berikutnya** (juga tombol panah ↑/↓ di keyboard), untuk berpindah. Di peta, lahan A biru, lahan B oranye, irisan merah.
+5. Periksa pasangan di panel kanan. Pasangan pertama langsung tampil; klik baris lain, atau pakai tombol **Sebelumnya / Berikutnya**, untuk berpindah. Di peta, lahan A biru, lahan B oranye, irisan merah.
++ Setelah mengklik salah satu baris, tombol panah ↑/↓ di keyboard juga berpindah pasangan. Di luar tabel dan panel preview, panah tetap menggulir halaman seperti biasa; di atas peta, panah menggeser peta.
++ Pilihan latar peta (mis. SAT) tetap dipakai saat berpindah pasangan.
 + Di bawah peta tampil ringkasan kedua lahan: petani, Kelompok Tani, Lembaga, Distrik, luas poligon, dan persen yang tertumpang. Tautan **Buka Detail Lahan** membuka halaman lahan itu di **tab baru**, sehingga filter dan posisi Anda di sini tidak hilang.
 + Tanda **+N** di samping ID lahan berarti lahan itu juga tumpang tindih dengan N lahan lain. Ketik ID lahannya di kotak cari untuk melihat semua pasangannya.
 + Nama Lembaga hanya ditulis di tabel untuk pasangan **Lintas Lembaga**. Untuk pasangan lain, arahkan kursor ke sel lahan untuk melihat Lembaga dan Distriknya.
@@ -46,6 +48,6 @@ Tumpang tindih hampir mustahil ditemukan lewat mata di peta. Halaman ini memband
 
 **Tertulis "Di luar akses Anda — Detail Lahan tidak bisa dibuka"** — lahan itu milik wilayah atau Lembaga yang tidak ditugaskan ke akun Anda. Hubungi pengguna yang memegang wilayah tersebut, atau admin.
 
-**Tombol panah ↑/↓ tidak berpindah pasangan** — kursor sedang berada di kotak cari atau pilihan filter. Klik area kosong halaman atau salah satu baris tabel dulu.
+**Tombol panah ↑/↓ tidak berpindah pasangan** — panah hanya bekerja saat fokus ada di tabel atau panel preview (bukan di kotak cari, pilihan filter, atau peta). Klik salah satu baris tabel dulu.
 
 **Setelah memperbaiki lahan, pasangannya masih ada** — muat ulang halaman. Daftar dihitung saat halaman dibuka, jadi perubahan baru terlihat setelah dimuat ulang.

@@ -46,6 +46,9 @@ export const OVERLAP_LEVEL_LABEL: Record<OverlapLevel, string> = {
   CONTAINED: "Tercakup",
   PARTIAL: "Sebagian",
 };
+/** Urutan sortir kolom Label: Duplikat → Tercakup → Sebagian (bukan abjad jenis — review #317). */
+export const OVERLAP_LEVEL_RANK: Record<OverlapLevel, number> = { DUPLICATE: 0, CONTAINED: 1, PARTIAL: 2 };
+
 /** Arti tiap label — tooltip badge di halaman (satu sumber dengan tutorial Bantuan). */
 export const OVERLAP_LEVEL_HINT: Record<OverlapLevel, string> = {
   DUPLICATE: `Irisan > ${OVERLAP_DUPLICATE_PCT}% dari kedua lahan — poligon hampir identik, umumnya entri ganda.`,

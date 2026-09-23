@@ -77,8 +77,8 @@ export async function getParcelOverlaps(): Promise<ParcelOverlapRow[]> {
      AND ST_Intersects(a.geom, b.geom) AND NOT ST_Touches(a.geom, b.geom)
     JOIN tbl_farmer fa ON fa.id = a.farmer_id AND fa.is_active
     JOIN tbl_farmer fb ON fb.id = b.farmer_id AND fb.is_active
-    JOIN tbl_farmer_group ga ON ga.id = fa.farmer_group_id
-    JOIN tbl_farmer_group gb ON gb.id = fb.farmer_group_id
+    JOIN tbl_farmer_group ga ON ga.id = fa.farmer_group_id AND ga.is_active
+    JOIN tbl_farmer_group gb ON gb.id = fb.farmer_group_id AND gb.is_active
     JOIN reg_district da ON da.id = ga.district_id
     JOIN reg_district db ON db.id = gb.district_id
     WHERE a.is_active AND a.geom IS NOT NULL
@@ -109,8 +109,9 @@ export async function getParcelOverlaps(): Promise<ParcelOverlapRow[]> {
 
 export interface OverlapPairGeometry {
   key: string;
-  a: Polygon | MultiPolygon;
-  b: Polygon | MultiPolygon;
+  /** Poligon utuh lahan A/B — hanya diisi untuk `preview`; `null` pada ekspor. */
+  a: Polygon | MultiPolygon | null;
+  b: Polygon | MultiPolygon | null;
   /** Area irisan (poligon saja; titik/garis hasil ST_Intersection dibuang). */
   intersection: Polygon | MultiPolygon | null;
 }
@@ -154,18 +155,20 @@ export async function getParcelOverlapGeometries(
   const access = await getAccessContext();
   const aIn = groupInScope("ga", access);
   const bIn = groupInScope("gb", access);
-  const rows = await prisma.$queryRaw<{ aId: string; bId: string; ga: Geometry; gb: Geometry; gi: Geometry | null }[]>`
+  const rows = await prisma.$queryRaw<{ aId: string; bId: string; ga: Geometry | null; gb: Geometry | null; gi: Geometry | null }[]>`
     SELECT
       a.id AS "aId", b.id AS "bId",
-      a.geometry AS ga, b.geometry AS gb,
+      -- Ekspor hanya memakai irisan — poligon utuh kedua lahan tidak dikirim (review #317).
+      CASE WHEN ${purpose}::text = 'preview' THEN a.geometry END AS ga,
+      CASE WHEN ${purpose}::text = 'preview' THEN b.geometry END AS gb,
       ST_AsGeoJSON(ST_CollectionExtract(ST_Intersection(a.geom, b.geom), 3), 7)::json AS gi
     FROM unnest(${aIds}::text[], ${bIds}::text[]) AS k(a_id, b_id)
     JOIN tbl_land_parcel a ON a.id = k.a_id AND a.is_active AND a.geom IS NOT NULL
     JOIN tbl_land_parcel b ON b.id = k.b_id AND b.is_active AND b.geom IS NOT NULL
     JOIN tbl_farmer fa ON fa.id = a.farmer_id AND fa.is_active
     JOIN tbl_farmer fb ON fb.id = b.farmer_id AND fb.is_active
-    JOIN tbl_farmer_group ga ON ga.id = fa.farmer_group_id
-    JOIN tbl_farmer_group gb ON gb.id = fb.farmer_group_id
+    JOIN tbl_farmer_group ga ON ga.id = fa.farmer_group_id AND ga.is_active
+    JOIN tbl_farmer_group gb ON gb.id = fb.farmer_group_id AND gb.is_active
     WHERE a.id < b.id
       -- Hanya pasangan yang BENAR-BENAR beririsan (review #317): tanpa ini kunci
       -- buatan "lahanSendiri|lahanLain" membocorkan poligon lahan mana pun di luar scope.
@@ -181,7 +184,7 @@ export async function getParcelOverlapGeometries(
   for (const r of rows) {
     const a = polygonal(r.ga);
     const b = polygonal(r.gb);
-    if (!a || !b) continue;
+    if (purpose === "preview" && (!a || !b)) continue;
     const inter = polygonal(r.gi);
     // ST_CollectionExtract tanpa poligon menghasilkan MULTIPOLYGON EMPTY.
     data.push({ key: `${r.aId}|${r.bId}`, a, b, intersection: inter && inter.coordinates.length > 0 ? inter : null });

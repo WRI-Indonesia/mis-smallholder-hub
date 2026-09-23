@@ -52,14 +52,14 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 
 ## 2. Struktur Menu Sidebar
 
-9 menu top-level / 28 sub menu (`menu.csv`), urut sesuai kolom `order`:
+9 menu top-level / 38 sub menu (`menu.csv`, dihitung ulang 2026-09-24 saat #317 — angka lama 28 sudah usang), urut sesuai kolom `order`:
 
 ```text
-📊 Dashboard          (3 sub)   📈 Report        (6 sub)
-📁 Master Data        (5 sub)   🔧 Tools         (2 sub)
+📊 Dashboard          (5 sub, + Risk Management › Fire Alert)   📈 Report        (7 sub)
+📁 Master Data        (6 sub)   🔧 Tools         (2 sub)
 ⚙️  Settings           (4 sub)   🗺️  Map           (2 sub)
-📤 Bulk Upload        (3 sub)   ❓ Bantuan       (halaman bab/topik, tanpa sub menu)
-📉 Data Analyst       (3 sub)
+📤 Bulk Upload        (4 sub)   ❓ Bantuan       (halaman bab/topik, tanpa sub menu)
+📉 Data Analyst       (7 sub, termasuk Metrik Rilis `dashboard-metrics`)
 ```
 
 Halaman non-menu: `/admin/profile` (Ubah Kata Sandi) · `/login` · route publik. Lihat [pages/halaman-non-menu/](./pages/halaman-non-menu/README.md).
@@ -116,6 +116,7 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 | ✅ [Ringkasan Petani](./pages/data-analyst/ringkasan-petani.md) | `data-analyst-farmer-summary` | DA-01 (#103) | Filter distrik/KT + 2 tab (Detail Petani, Petani Tanpa Lahan) + kartu agregat + Excel |
 | ✅ [Ketersediaan Data — Per Lembaga](./pages/data-analyst/analisa-ketersediaan-data.md) | `data-analyst-data-completeness` | DA-02 (#118, #122, #352) | Index Ketersediaan Data (registri check, bobot tampil) + cakupan modul informatif + 5 section anomali (Profil KT, Petani, Lahan, Pelatihan, Produksi) berdaftar kerja bertautan & anomali sistemik dilipat + Excel multi-sheet; `?lembaga=` |
 | ✅ [Ketersediaan Data — Semua Lembaga](./pages/data-analyst/dashboard-ketersediaan-data.md) | `data-analyst-data-availability` | DA-03 (#193, #352) | Roll-up skor DA-02 lintas Lembaga: 6 KPI + matriks Lembaga×domain / Lembaga×modul + bar chart terendah-dulu + panel anomali (per entitas vs sistemik) + Excel; deep link ke DA-02; live query, tanpa DONOR |
+| 🟠 [Tumpang Tindih Lahan](./pages/data-analyst/tumpang-tindih-lahan.md) | `data-analyst-parcel-overlap` | #317 Fase 2 (tab Tumpang Tindih) | Self-join `ST_Intersects` atas `LandParcel.geom` (GiST), live; split view tabel + peta preview; filter %/jenis/Distrik/Lembaga/label di URL; Duplikat vs Tercakup; Excel + SHP/GeoJSON irisan; scope minimal satu sisi; tanpa DONOR. Tab Luar Boundary/Selisih Luas + guard upload + layer peta belum |
 
 ### 📈 Report — `/admin/report`
 

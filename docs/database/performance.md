@@ -69,7 +69,7 @@ Bentuknya: **10.781 `Polygon` + 172 `MultiPolygon`**, dan **95,9% poligon punya 
 
 - **`ST_Simplify` tidak relevan** — tidak ada yang bisa disederhanakan dari poligon 4–6 titik.
 - **Vector tiles & filter bbox/viewport tidak relevan** untuk dataset seukuran ini; ongkos infrastrukturnya jauh melebihi 3 MB yang dihemat.
-- **`jsonb` (bukan tipe `geometry` PostGIS) adalah pilihan yang tepat untuk jalur tampilan**: MapLibre membutuhkan GeoJSON, sehingga `jsonb` dikirim apa adanya, sedangkan kolom `geometry` wajib melewati `ST_AsGeoJSON()` per baris. PostGIS tetap masuk akal bila kelak dibutuhkan kueri spasial (irisan, jarak, dalam-poligon) — bukan untuk menampilkan.
+- **`jsonb` (bukan tipe `geometry` PostGIS) adalah pilihan yang tepat untuk jalur tampilan**: MapLibre membutuhkan GeoJSON, sehingga `jsonb` dikirim apa adanya, sedangkan kolom `geometry` wajib melewati `ST_AsGeoJSON()` per baris. PostGIS tetap masuk akal bila kelak dibutuhkan kueri spasial (irisan, jarak, dalam-poligon) — bukan untuk menampilkan. *(Kini terjadi: kolom turunan `LandParcel.geom` GENERATED + GiST (#317 Fase 1) dipakai lahan tetangga #327, snap patok #329, dan Tumpang Tindih Lahan #317 Fase 2 — self-join penuh 256 ms / 14.174 lahan di mis-dev 2026-09-23; `geometry` jsonb tetap jalur tampilan.)*
 
 **Metode ukur**: panjang JSON terserialisasi (`Buffer.byteLength(JSON.stringify(geometry))`) per baris, dijalankan read-only. Angka penyimpanan fisik `jsonb` di disk bisa sedikit berbeda karena overhead biner dan TOAST, tetapi ordenya sama — ratusan byte, bukan puluhan KB.
 
