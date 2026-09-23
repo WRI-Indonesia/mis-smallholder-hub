@@ -12,6 +12,7 @@
 ### Issue Workflow
 
 1. **Pick Issue** — Ambil GitHub Issue yang sudah di-approve
+   - **Temuan hasil pembacaan kode yang belum terbukti** (mis. "celah ini *bisa* menelan data") wajib diawali satu langkah **ukur dulu** yang murah — satu query, satu skrip sekali pakai — sebelum memilih solusinya. Tanpa besaran masalah, opsi-opsi yang ongkosnya berbeda tidak bisa dibandingkan, dan issue-nya mengendap. Untuk bug yang **gagal secara diam**, laporan lapangan tidak akan pernah datang, jadi menunggu bukti dari pengguna sama dengan tidak mengerjakannya. (Contoh: #280 mengendap 5 minggu; satu query `ST_Difference` memberi angka 9,4 km² dan keputusannya langsung jelas.)
 2. **Implement** — Kerjakan **hanya** scope issue
 3. **QA Lokal** — `npm run lint`, `npm run build`, `npm run typecheck`, dan `npm test` (lihat Pre-Commit Gate)
 4. **Performance Test** — Pastikan tidak ada regresi; **pure logic baru** yang menyentuh hot-path (agregasi, sort, validasi array besar) diberi perf test di `src/test/perf.test.ts`

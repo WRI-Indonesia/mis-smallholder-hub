@@ -16,7 +16,7 @@ export default async function SnapshotBmpPage() {
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">Dashboard Snapshot BMP</h1>
-          <HelpHint menuKey="dashboard-snapshot" />
+          <HelpHint menuKey="dashboard-snapshot-bmp" />
         </div>
         <p className="text-muted-foreground">
           Buat dan kelola snapshot historis dari data dashboard BMP

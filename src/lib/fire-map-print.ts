@@ -1,7 +1,8 @@
 import jsPDF from "jspdf";
 import { imageFormatOf } from "@/lib/map-capture";
 import { formatNumber } from "@/lib/format";
-import autoTable from "jspdf-autotable";
+import { formatDateList, formatHotspotDay, type AreaSummary, type DailyCount } from "@/lib/fire-alert";
+import autoTable, { type UserOptions } from "jspdf-autotable";
 
 /**
  * "Laporan Titik Api (Hotspot)" — PDF A4 portrait Dashboard Fire Alert (#266),
@@ -11,6 +12,13 @@ import autoTable from "jspdf-autotable";
  * `public/fonts/*.woff` CFF→TrueType) di-embed bila tersedia — fallback
  * helvetica. Boundary lembaga (ICS) sudah dibuat TERMASUK buffer 1,5 km.
  * Build dipisah dari save (pola TD-019) untuk unit test.
+ *
+ * Varian **Laporan Bulanan** (#365, `opts.monthly`): judul & label meta
+ * berubah, dan setelah kartu ringkasan disisipkan Tren Harian, Rekap per
+ * Kabupaten, Rekap per Lembaga; catatan metodologi menyebut sumber FIRMS
+ * yang dipakai (arsip SP / NRT) dan tanggal yang kosong. Struktur lainnya
+ * (peta, tabel detail lengkap, lampiran per lembaga) sama — prinsip #287:
+ * laporan tidak dipangkas.
  */
 
 const RED: [number, number, number] = [192, 0, 0];
@@ -38,6 +46,26 @@ export type FireGroupMap = {
   dataUrl: string;
   widthPx: number;
   heightPx: number;
+};
+
+/** Baris rekap lembaga laporan bulanan — hanya lembaga ber-titik api. */
+export type FireGroupSummaryRow = {
+  name: string;
+  districtName: string;
+  count: number;
+  high: number;
+  shared: number;
+};
+
+export type FireMonthlySection = {
+  daily: DailyCount[];
+  /** Full Riau: kabupaten program + "Kab. Lainnya"; per Distrik: satu baris. */
+  byKabupaten: AreaSummary[];
+  byGroup: FireGroupSummaryRow[];
+  /** Kalimat sumber (`describeHotspotSources`) untuk catatan metodologi. */
+  sourceNote: string;
+  /** Tanggal (UTC) yang tak tersedia di FIRMS — dicetak eksplisit, bukan diam-diam 0. */
+  missingDates: string[];
 };
 
 export type FireReportOptions = {
@@ -69,6 +97,8 @@ export type FireReportOptions = {
   rows: FireReportRow[];
   /** Peta per lembaga ber-titik api — halaman lampiran setelah tabel. */
   groupMaps?: FireGroupMap[];
+  /** Seksi khusus laporan bulanan (#365); kosong = laporan rentang live. */
+  monthly?: FireMonthlySection;
   fileName?: string;
 };
 
@@ -102,7 +132,11 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
   doc.setFont(F, "bold");
   doc.setFontSize(16.5);
   doc.setTextColor(...RED);
-  doc.text("Laporan Titik Api (Hotspot)", MARGIN, y0 + 5.5);
+  doc.text(
+    opts.monthly ? "Laporan Bulanan Titik Api (Hotspot)" : "Laporan Titik Api (Hotspot)",
+    MARGIN,
+    y0 + 5.5
+  );
 
   doc.setFont(F, "normal");
   doc.setFontSize(10.5);
@@ -121,7 +155,7 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
   const metaY = y0 + 20;
   metaRow("Provinsi", "Riau", metaY);
   metaRow("Kabupaten", opts.kabupatenLabel, metaY + 5);
-  metaRow("Rentang Waktu", opts.rangeLabel, metaY + 10);
+  metaRow(opts.monthly ? "Periode" : "Rentang Waktu", opts.rangeLabel, metaY + 10);
   metaRow("Tanggal Export", opts.exportedAt, metaY + 15);
 
   let y = metaY + 15 + 6;
@@ -190,7 +224,20 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
   });
   y += cardH + 9;
 
+  // ── Seksi laporan bulanan: tren harian, rekap kabupaten, rekap lembaga ────
+  if (opts.monthly) {
+    y = drawMonthlySections(doc, F, opts.monthly, y);
+  }
+
   // ── Peta Sebaran Titik Api ────────────────────────────────────────────────
+  // Sesudah seksi bulanan `y` bisa di mana saja (terukur 115–269 mm), dan
+  // drawMapImage tidak pernah addPage sendiri: tanpa guard ini judul + peta
+  // 88 mm tergambar di luar MediaBox dan HILANG diam-diam dari PDF. Pola sama
+  // dengan heading() di drawMonthlySections dan peta per-Lembaga.
+  if (y + 5 + 88 > doc.internal.pageSize.getHeight() - MARGIN) {
+    doc.addPage("a4", "portrait");
+    y = MARGIN + 4;
+  }
   doc.setFont(F, "bold");
   doc.setFontSize(12);
   doc.setTextColor(20);
@@ -309,9 +356,18 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
   }
 
   // ── Catatan metodologi (paling akhir) ─────────────────────────────────────
+  // Laporan bulanan menyebut sumber yang benar-benar dipakai (arsip SP tidak
+  // punya "jeda ±3 jam") dan tanggal kosong — pembaca harus tahu angka 0 di
+  // tanggal itu bukan "tidak ada api".
+  const sourceSentence = opts.monthly
+    ? `Sumber: ${opts.monthly.sourceNote}. Hari dihitung menurut tanggal UTC (satuan satelit).` +
+      (opts.monthly.missingDates.length > 0
+        ? ` Tanggal ${formatDateList(opts.monthly.missingDates)} tidak tersedia di FIRMS saat laporan dibuat dan TIDAK termasuk dalam angka.`
+        : "")
+    : "Sumber: NASA FIRMS (LANCE/EOSDIS), jeda pembaruan data ±3 jam.";
   const note =
     "Catatan metodologi: Data merupakan deteksi anomali panas VIIRS resolusi 375 m, bukan konfirmasi kebakaran di " +
-    "lapangan. Sumber: NASA FIRMS (LANCE/EOSDIS), jeda pembaruan data ±3 jam. Tabel hanya memuat titik hotspot " +
+    `lapangan. ${sourceSentence} Tabel hanya memuat titik hotspot ` +
     "yang berada dalam boundary lembaga petani dampingan (boundary sudah termasuk buffer 1,5 km). Titik pada " +
     "wilayah boundary yang tumpang-tindih diatribusikan ke tiap lembaga pemiliknya; angka ringkasan menghitung titik unik.";
   const pageH = doc.internal.pageSize.getHeight();
@@ -325,6 +381,152 @@ export function buildFireMapDoc(opts: FireReportOptions): jsPDF {
   doc.text(note, MARGIN, y, { maxWidth: contentW });
 
   return doc;
+}
+
+const lastTableY = (doc: jsPDF, fallback: number) =>
+  (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? fallback;
+
+/** Tiga seksi laporan bulanan setelah kartu ringkasan; kembalikan y bawah. */
+function drawMonthlySections(
+  doc: jsPDF,
+  F: string,
+  m: FireMonthlySection,
+  y: number
+): number {
+  const pageH = doc.internal.pageSize.getHeight();
+  const heading = (title: string) => {
+    // Judul + minimal 2 baris tabel harus muat, kalau tidak pindah halaman.
+    if (y + 18 > pageH - MARGIN) {
+      doc.addPage("a4", "portrait");
+      y = MARGIN + 4;
+    }
+    doc.setFont(F, "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(20);
+    doc.text(title, MARGIN, y);
+    y += 3.5;
+  };
+  const table = (o: UserOptions) => {
+    autoTable(doc, {
+      startY: y,
+      margin: { top: 16, left: MARGIN, right: MARGIN, bottom: 16 },
+      theme: "grid",
+      styles: {
+        font: F,
+        fontSize: 7.5,
+        cellPadding: 1.6,
+        valign: "middle",
+        lineColor: [215, 215, 215],
+        lineWidth: 0.1,
+        textColor: 30,
+      },
+      headStyles: {
+        font: F,
+        fillColor: RED,
+        textColor: 255,
+        fontStyle: "bold",
+        lineColor: [215, 215, 215],
+        lineWidth: 0.1,
+      },
+      alternateRowStyles: { fillColor: [246, 246, 246] },
+      ...o,
+    });
+    y = lastTableY(doc, y) + 8;
+  };
+  const num = (n: number) => formatNumber(n);
+
+  // Tren harian — bar porsi terhadap hari terbanyak; hari puncak ditebalkan
+  // merah; tanggal kosong ditandai eksplisit, bukan 0 yang menyesatkan.
+  heading("Tren Harian");
+  const maxTotal = Math.max(0, ...m.daily.filter((d) => d.available).map((d) => d.total));
+  table({
+    head: [["Tanggal (UTC)", "Dalam Boundary", "Luar Boundary", "Total", "Porsi terhadap hari puncak"]],
+    body: m.daily.map((d) => [
+      formatHotspotDay(d.date),
+      d.available ? num(d.inside) : "—",
+      d.available ? num(d.outside) : "—",
+      d.available ? num(d.total) : "—",
+      d.available ? "" : "tidak tersedia di FIRMS",
+    ]),
+    columnStyles: {
+      0: { cellWidth: 30 },
+      1: { cellWidth: 28, halign: "right" },
+      2: { cellWidth: 28, halign: "right" },
+      3: { cellWidth: 22, halign: "right", fontStyle: "bold" },
+      4: { halign: "left", textColor: 120, fontStyle: "italic" },
+    },
+    didParseCell: (d) => {
+      if (d.section !== "body") return;
+      const row = m.daily[d.row.index];
+      if (row?.available && maxTotal > 0 && row.total === maxTotal && d.column.index <= 3) {
+        d.cell.styles.textColor = RED;
+        d.cell.styles.fontStyle = "bold";
+      }
+    },
+    didDrawCell: (d) => {
+      if (d.section !== "body" || d.column.index !== 4) return;
+      const row = m.daily[d.row.index];
+      if (!row?.available || maxTotal === 0 || row.total === 0) return;
+      const w = (d.cell.width - 3) * (row.total / maxTotal);
+      doc.setFillColor(...(row.total === maxTotal ? RED : AMBER));
+      doc.rect(d.cell.x + 1.5, d.cell.y + 1.2, w, d.cell.height - 2.4, "F");
+    },
+  });
+
+  // Rekap per kabupaten + baris total.
+  heading("Rekap per Kabupaten");
+  const kabTotal = m.byKabupaten.reduce(
+    (acc, r) => ({ total: acc.total + r.total, inside: acc.inside + r.inside, high: acc.high + r.high }),
+    { total: 0, inside: 0, high: 0 }
+  );
+  table({
+    head: [["Kabupaten", "Total Titik Api", "Dalam Boundary", "Keyakinan Tinggi"]],
+    body: [
+      ...m.byKabupaten.map((r) => [r.name, num(r.total), num(r.inside), num(r.high)]),
+      ["Total", num(kabTotal.total), num(kabTotal.inside), num(kabTotal.high)],
+    ],
+    columnStyles: {
+      1: { cellWidth: 34, halign: "right" },
+      2: { cellWidth: 34, halign: "right" },
+      3: { cellWidth: 34, halign: "right" },
+    },
+    didParseCell: (d) => {
+      if (d.section === "body" && d.row.index === m.byKabupaten.length) {
+        d.cell.styles.fontStyle = "bold";
+        d.cell.styles.fillColor = [238, 238, 238];
+      }
+    },
+  });
+
+  // Rekap per lembaga — hanya yang ber-titik api (konsisten dengan panel & lampiran).
+  heading("Rekap per Lembaga (ber-titik api)");
+  if (m.byGroup.length === 0) {
+    doc.setFont(F, "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(80);
+    doc.text("Tidak ada titik api dalam boundary lembaga pada periode ini.", MARGIN, y + 5);
+    y += 14;
+  } else {
+    table({
+      head: [["No", "Lembaga", "Kabupaten", "Titik Api", "Keyakinan Tinggi", "Di Wilayah Tumpang-tindih"]],
+      body: m.byGroup.map((r, i) => [
+        num(i + 1),
+        r.name,
+        r.districtName,
+        num(r.count),
+        num(r.high),
+        r.shared > 0 ? num(r.shared) : "—",
+      ]),
+      columnStyles: {
+        0: { cellWidth: 9, halign: "center" },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 22, halign: "right", fontStyle: "bold" },
+        4: { cellWidth: 28, halign: "right" },
+        5: { cellWidth: 36, halign: "right" },
+      },
+    });
+  }
+  return y;
 }
 
 /** Gambar peta aspect-fit (atau placeholder bila null); kembalikan y bawah. */

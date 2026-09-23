@@ -1,19 +1,28 @@
 import { describe, it, expect } from "vitest";
-import type { FeatureCollection, MultiPolygon } from "geojson";
+import type { Feature, FeatureCollection, MultiPolygon } from "geojson";
 import {
   classifyHotspots,
   combinedBbox,
+  countHotspotsByDay,
   countHotspotsByGroup,
   countPointsByNamedArea,
   countUniqueInsideByDistrict,
+  describeHotspotSources,
+  buildScopeUniverse,
   filterPointsWithinAreas,
+  formatDateList,
+  indexArea,
+  pointInIndexedArea,
   formatExportedAt,
+  formatHotspotDay,
+  formatHotspotMonth,
   formatHotspotRange,
   hotspotWindowStart,
   findContainingBoundary,
   indexBoundaries,
   multiPolygonBbox,
   pointInMultiPolygon,
+  summarizeByNamedArea,
   summarizeFire,
   type FireBoundary,
 } from "@/lib/fire-alert";
@@ -221,6 +230,106 @@ describe("filterPointsWithinAreas", () => {
   });
 });
 
+describe("indexArea & pointInIndexedArea (#280)", () => {
+  /** Persegi berlubang: cincin luar + satu lubang di tengah. */
+  const donut: MultiPolygon = {
+    type: "MultiPolygon",
+    coordinates: [
+      [
+        [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]],
+        [[4, 4], [6, 4], [6, 6], [4, 6], [4, 4]],
+      ],
+    ],
+  };
+
+  it("setara pointInMultiPolygon — termasuk lubang", () => {
+    const area = indexArea(donut);
+    for (const pt of [[1, 1], [5, 5], [20, 20], [9.9, 0.1]] as [number, number][]) {
+      expect(pointInIndexedArea(pt, area), `titik ${pt.join(",")}`).toBe(
+        pointInMultiPolygon(pt, donut)
+      );
+    }
+    expect(pointInIndexedArea([5, 5], area)).toBe(false); // di lubang
+    expect(pointInIndexedArea([1, 1], area)).toBe(true);
+  });
+
+  it("bbox per polygon menolak titik di celah antar-pulau tanpa menguji ring-nya", () => {
+    // Dua pulau berjauhan: bbox gabungan mencakup celah di antaranya, jadi
+    // bbox tingkat-area saja tidak cukup untuk menolak titik di celah itu.
+    const islands: MultiPolygon = {
+      type: "MultiPolygon",
+      coordinates: [...square(0, 0, 1, 1).coordinates, ...square(9, 9, 10, 10).coordinates],
+    };
+    const area = indexArea(islands);
+    expect(area.polygons).toHaveLength(2);
+    expect(area.bbox).toEqual([0, 0, 10, 10]);
+    expect(pointInIndexedArea([5, 5], area)).toBe(false);
+    expect(pointInIndexedArea([0.5, 0.5], area)).toBe(true);
+    expect(pointInIndexedArea([9.5, 9.5], area)).toBe(true);
+  });
+
+  it("ring TAK TERTUTUP tetap setara pointInRing — sisi penutup tidak hilang", () => {
+    // `geojson` ditulis skrip seed di luar aplikasi tanpa constraint DB
+    // (lihat `asMultiPolygon`). Ring tanpa titik penutup dulu membuat indeks
+    // melewatkan sisi terakhir→pertama — persis kelas kehilangan titik diam
+    // yang diperbaiki #280.
+    //
+    // Belah ketupat, BUKAN persegi: sisi penutup persegi selalu jatuh di tepi
+    // bbox sehingga tak ada titik sah di sebelah kirinya, dan tesnya lolos
+    // walau bug-nya ada. Di sini sisi penutup (10,5)→(5,0) miring di dalam
+    // bbox, jadi (6,2) hanya terbaca "di dalam" bila sisi itu ikut diuji.
+    const openDiamond: MultiPolygon = {
+      type: "MultiPolygon",
+      coordinates: [[[[5, 0], [0, 5], [5, 10], [10, 5]]]],
+    };
+    const closedDiamond: MultiPolygon = {
+      type: "MultiPolygon",
+      coordinates: [[[[5, 0], [0, 5], [5, 10], [10, 5], [5, 0]]]],
+    };
+    const open = indexArea(openDiamond);
+    expect(pointInIndexedArea([6, 2], open)).toBe(true);
+    for (const pt of [[6, 2], [5, 5], [1, 1], [9, 9], [0.5, 5]] as [number, number][]) {
+      expect(pointInIndexedArea(pt, open), `titik ${pt.join(",")}`).toBe(
+        pointInMultiPolygon(pt, closedDiamond)
+      );
+    }
+  });
+
+  it("polygon tanpa cincin luar dilewati, tidak membuat bbox Infinity", () => {
+    const area = indexArea({ type: "MultiPolygon", coordinates: [[], square(0, 0, 1, 1).coordinates[0]] });
+    expect(area.polygons).toHaveLength(1);
+    expect(area.bbox).toEqual([0, 0, 1, 1]);
+  });
+});
+
+describe("celah antar-kabupaten pada klip titik api (#280)", () => {
+  // Inti bug: tiap kabupaten disederhanakan INDEPENDEN, jadi batas bersamanya
+  // tak lagi berimpit — menyisakan pita tipis yang berada di luar KEDUANYA.
+  // Di sini pita itu dibuat eksplisit: A berakhir di x=5, B baru mulai di
+  // x=5,01. Union melarutkan batas dalam lebih dulu sehingga pita tak pernah
+  // terbentuk. Terukur di mis-dev: 9,4 km² wilayah Riau tak tertutup.
+  const kabA = square(0, 0, 5, 10);
+  const kabB = square(5.01, 0, 10, 10);
+  const union = square(0, 0, 10, 10);
+  const diCelah: [number, number] = [5.005, 5];
+
+  it("poligon per kabupaten menelan titik di celah — union tidak", () => {
+    const fc = hotspotFc([diCelah, [2, 5], [8, 5]]);
+
+    const perKabupaten = filterPointsWithinAreas(fc, [{ geometry: kabA }, { geometry: kabB }]);
+    expect(perKabupaten.features).toHaveLength(2);
+    expect(perKabupaten.features.map((f) => (f.geometry as { coordinates: number[] }).coordinates)).not.toContainEqual(diCelah);
+
+    const terUnion = filterPointsWithinAreas(fc, [{ geometry: union }]);
+    expect(terUnion.features).toHaveLength(3);
+  });
+
+  it("titik di luar provinsi tetap dibuang oleh outline ter-union", () => {
+    const fc = hotspotFc([[-1, 5], [11, 5], [5, 20]]);
+    expect(filterPointsWithinAreas(fc, [{ geometry: union }]).features).toHaveLength(0);
+  });
+});
+
 describe("countPointsByNamedArea", () => {
   it("menghitung per wilayah (urutan input dipertahankan, 0 tetap muncul) + bucket lainnya", () => {
     const areas = [
@@ -233,6 +342,126 @@ describe("countPointsByNamedArea", () => {
       { name: "Siak", count: 0 },
       { name: "Kab. Lainnya", count: 1 },
     ]);
+  });
+});
+
+describe("summarizeByNamedArea & countHotspotsByGroup.high (#365)", () => {
+  const areas = [
+    { name: "Kampar", geometry: square(101, 0, 102, 1) },
+    { name: "Siak", geometry: square(103, 0, 104, 1) },
+  ];
+  const bounds = [boundary({ farmerGroupId: "g1", name: "Alpha", geometry: square(101, 0, 101.5, 1) })];
+  // Titik ber-confBucket seperti hasil processHotspots + inBoundary hasil classifyHotspots.
+  const fc = (): FeatureCollection =>
+    classifyHotspots(
+      {
+        type: "FeatureCollection",
+        features: (
+          [
+            [101.2, 0.5, "high"], // Kampar, dalam boundary Alpha, tinggi
+            [101.3, 0.5, "nominal"], // Kampar, dalam boundary
+            [101.8, 0.5, "high"], // Kampar, luar boundary, tinggi
+            [103.5, 0.5, "low"], // Siak
+            [105, 0.5, "high"], // lainnya, tinggi
+          ] as [number, number, string][]
+        ).map(([lng, lat, confBucket]) => ({
+          type: "Feature" as const,
+          geometry: { type: "Point" as const, coordinates: [lng, lat] },
+          properties: { confBucket },
+        })),
+      },
+      indexBoundaries(bounds)
+    );
+
+  it("rekap per wilayah: total / dalam boundary / keyakinan tinggi + bucket lainnya, 0 tetap muncul", () => {
+    expect(summarizeByNamedArea(fc(), areas, "Kab. Lainnya")).toEqual([
+      { name: "Kampar", total: 3, inside: 2, high: 2 },
+      { name: "Siak", total: 1, inside: 0, high: 0 },
+      { name: "Kab. Lainnya", total: 1, inside: 0, high: 1 },
+    ]);
+    // Bentuk ringkas tetap identik dengan sebelumnya.
+    expect(countPointsByNamedArea(fc(), areas, "Kab. Lainnya").map((r) => r.count)).toEqual([3, 1, 1]);
+  });
+
+  it("baris lembaga membawa jumlah keyakinan tinggi dalam boundary-nya", () => {
+    const rows = countHotspotsByGroup(fc(), bounds);
+    expect(rows.map((r) => [r.name, r.count, r.high])).toEqual([["Alpha", 2, 1]]);
+  });
+});
+
+describe("countHotspotsByDay (#365)", () => {
+  const bounds = [boundary({ farmerGroupId: "g1", geometry: square(101, 0, 102, 1) })];
+  const fc = classifyHotspots(
+    {
+      type: "FeatureCollection",
+      features: (
+        [
+          [101.5, 0.5, "2026-07-01"], // dalam
+          [103, 0.5, "2026-07-01"], // luar
+          [101.5, 0.6, "2026-07-03"], // dalam
+          [101.5, 0.7, "2026-08-01"], // di luar periode → diabaikan
+        ] as [number, number, string][]
+      ).map(([lng, lat, acqDate]) => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [lng, lat] },
+        properties: { acqDate },
+      })),
+    },
+    indexBoundaries(bounds)
+  );
+
+  it("semua tanggal periode muncul (0 tetap ada), dalam/luar/total per tanggal UTC acq_date", () => {
+    const daily = countHotspotsByDay(fc, "2026-07-01", "2026-07-04");
+    expect(daily).toEqual([
+      { date: "2026-07-01", inside: 1, outside: 1, total: 2, available: true },
+      { date: "2026-07-02", inside: 0, outside: 0, total: 0, available: true },
+      { date: "2026-07-03", inside: 1, outside: 0, total: 1, available: true },
+      { date: "2026-07-04", inside: 0, outside: 0, total: 0, available: true },
+    ]);
+  });
+
+  it("tanggal kosong (celah SP/NRT) ditandai available: false, bukan 0 biasa", () => {
+    const daily = countHotspotsByDay(fc, "2026-07-01", "2026-07-03", ["2026-07-02"]);
+    expect(daily.map((d) => d.available)).toEqual([true, false, true]);
+  });
+
+  it("satu bulan penuh: 31 baris Januari, 29 baris Feb 2024 (kabisat)", () => {
+    expect(countHotspotsByDay(fc, "2025-01-01", "2025-01-31")).toHaveLength(31);
+    expect(countHotspotsByDay(fc, "2024-02-01", "2024-02-29")).toHaveLength(29);
+  });
+});
+
+describe("label & keterangan laporan bulanan (#365)", () => {
+  it("formatHotspotMonth: 'Januari 2025' — tidak bergeser oleh zona browser", () => {
+    expect(formatHotspotMonth("2025-01")).toBe("Januari 2025");
+    expect(formatHotspotMonth("2026-12")).toBe("Desember 2026");
+  });
+
+  it("formatHotspotDay: hari + tanggal + bulan singkat, tanggal UTC apa adanya", () => {
+    expect(formatHotspotDay("2025-01-01")).toBe("Rab, 1 Jan");
+    expect(formatHotspotDay("2026-07-31")).toBe("Jum, 31 Jul");
+  });
+
+  it("formatDateList: hari-hari sebulan yang sama digabung, lintas bulan dipisah ';'", () => {
+    expect(formatDateList(["2026-07-04", "2026-07-05", "2026-07-06"])).toBe("4, 5, 6 Jul 2026");
+    expect(formatDateList(["2026-07-31", "2026-08-01"])).toBe("31 Jul 2026; 1 Agu 2026");
+    expect(formatDateList(["2026-07-04"])).toBe("4 Jul 2026");
+  });
+
+  it("label periode PDF: awal–akhir bulan dari tanggal UTC 00.00 tetap terbaca 1–31", () => {
+    expect(
+      formatHotspotRange(new Date("2025-01-01T00:00:00Z"), new Date("2025-01-31T00:00:00Z"))
+    ).toBe("1–31 Jan 2025");
+  });
+
+  it("describeHotspotSources menyebut hanya sumber yang dipakai", () => {
+    expect(describeHotspotSources(["VIIRS_SNPP_SP"])).toContain("Standard Processing");
+    expect(describeHotspotSources(["VIIRS_SNPP_SP"])).not.toContain("NRT");
+    expect(describeHotspotSources(["VIIRS_SNPP_NRT"])).toContain("near-real-time");
+    const both = describeHotspotSources(["VIIRS_SNPP_SP", "VIIRS_SNPP_NRT"]);
+    expect(both).toContain("Standard Processing");
+    expect(both).toContain(" dan ");
+    expect(describeHotspotSources([])).toContain("tidak ada sumber");
   });
 });
 
@@ -307,5 +536,65 @@ describe("label rentang waktu laporan", () => {
   it("tanggal & jam sama-sama dibaca WIB, bukan zona browser", () => {
     // 23.00 UTC 19 Agu = 06.00 WIB 20 Agu — tanggalnya harus ikut maju.
     expect(formatExportedAt(new Date("2026-08-19T23:00:00Z"))).toBe("20 Agu 2026, 06.00 WIB");
+  });
+});
+
+describe("buildScopeUniverse — satu aturan \"Dalam Boundary\" per dokumen (review 2026-09-23)", () => {
+  /** Titik ber-tanggal & status boundary; identitas objek yang dipakai. */
+  const pt = (date: string, inBoundary: "in" | "out"): Feature => ({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [101, 0.5] },
+    properties: { acqDate: date, inBoundary, confidence: "n" },
+  });
+
+  // Milik lembaga distrik scope, ADA di poligon kabupaten.
+  const ownedInside = pt("2025-01-02", "in");
+  // Milik lembaga distrik scope tapi DI LUAR poligon (buffer 1,5 km melewati
+  // batas kabupaten) — kartu menghitungnya, klip poligon tidak.
+  const ownedOutsidePolygon = pt("2025-01-02", "in");
+  // Ada di poligon tapi milik lembaga distrik LAIN.
+  const foreignOwned = pt("2025-01-03", "in");
+  // Ada di poligon, di luar boundary mana pun.
+  const plain = pt("2025-01-03", "out");
+
+  const inPolygon: FeatureCollection = {
+    type: "FeatureCollection",
+    features: [ownedInside, foreignOwned, plain],
+  };
+  const insideFeatures = [ownedInside, ownedOutsidePolygon];
+
+  it("menggabungkan titik poligon dengan titik milik lembaga di luar poligon", () => {
+    const u = buildScopeUniverse(inPolygon, insideFeatures);
+    expect(u.features).toHaveLength(4);
+    expect(u.features).toContain(ownedOutsidePolygon);
+  });
+
+  it("titik milik lembaga distrik LAIN diturunkan jadi \"out\"", () => {
+    const u = buildScopeUniverse(inPolygon, insideFeatures);
+    const foreign = u.features.find(
+      (f) => f.properties?.acqDate === "2025-01-03" && f !== plain
+    );
+    expect(foreign?.properties?.inBoundary).toBe("out");
+    // Objek asli TIDAK dimutasi — `classified` dipakai ulang untuk scope lain.
+    expect(foreignOwned.properties?.inBoundary).toBe("in");
+  });
+
+  it("INVARIAN: jumlah kolom Dalam Boundary Tren Harian = angka kartu", () => {
+    // Inilah temuan review-nya: sebelum perbaikan, `daily` dihitung dari
+    // scopeFc berbasis POLIGON sementara kartu & Rekap Kabupaten berbasis
+    // KEPEMILIKAN, sehingga dua angka bernama sama berbeda di dokumen yang
+    // sama. Menjumlahkan kolomnya harus menghasilkan angka kartu.
+    const u = buildScopeUniverse(inPolygon, insideFeatures);
+    const daily = countHotspotsByDay(u, "2025-01-01", "2025-01-05");
+    const sumInside = daily.reduce((a, d) => a + d.inside, 0);
+    expect(sumInside).toBe(insideFeatures.length);
+    expect(daily.reduce((a, d) => a + d.total, 0)).toBe(u.features.length);
+  });
+
+  it("scope Full Riau tidak melewati fungsi ini — perilakunya tak berubah", () => {
+    // Tanpa poligon scope, klien memakai `classified` apa adanya; fungsi ini
+    // hanya dipanggil pada scope distrik.
+    const u = buildScopeUniverse(inPolygon, []);
+    expect(u.features.filter((f) => f.properties?.inBoundary === "in")).toHaveLength(0);
   });
 });

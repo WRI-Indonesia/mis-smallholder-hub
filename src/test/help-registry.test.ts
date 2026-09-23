@@ -64,15 +64,28 @@ const tutorials = contentFiles()
   .map((f) => ({ file: f, fm: frontmatter(readFileSync(join(HELP_DIR, f), "utf-8")) }));
 
 /**
+ * Materi di luar lapis `tutorial/` yang tetap mengklaim satu menu lewat
+ * `menuKey`. Definisi metrik (`standards/versioning.md` §Metrik Nilai Rilis)
+ * menghitung frontmatter di **seluruh** `src/content/help/**`, bukan hanya
+ * lapis tutorial — satu-satunya pemakai hari ini adalah topik konsep
+ * "Cara Memakai Bantuan" untuk menu `help` (#257): halaman Bantuan tak bisa
+ * punya tutorial ke dirinya sendiri, materinya berupa konsep.
+ */
+const nonTutorialsBerMenu = contentFiles()
+  .filter((f) => !f.startsWith("tutorial/"))
+  .map((f) => ({ file: f, fm: frontmatter(readFileSync(join(HELP_DIR, f), "utf-8")) }))
+  .filter((t) => t.fm.menuKey);
+
+/**
  * Menu daun aktif yang DINYATAKAN belum punya tutorial (#257). Menghapus baris
  * dari sini = menulis tutorialnya (atau menambah `menuKey` pada tutorial yang
  * sudah mencakupnya); menambah baris di sini wajib disertai alasan.
+ *
+ * **Kosong sejak 2026-09-23** — cakupan 37/37 (#257 tuntas). Baris baru di sini
+ * berarti ada menu yang sengaja dirilis tanpa materi pengguna; sertakan alasan
+ * dan issue-nya, jangan dipakai sekadar untuk menghijaukan gate.
  */
-const TANPA_TUTORIAL: Record<string, string> = {
-  "report-kelompok-tani-detail": "#257 — l-6 hanya ber-menuKey Summary; alur Detail (flat per KT) belum ditulis",
-  "dashboard-snapshot-bmp": "#257 — l-3 hanya ber-menuKey dashboard-snapshot; Snapshot BMP punya struktur data sendiri",
-  help: "#257 — topik konsep 1-4 'Cara Memakai Bantuan' ada, tetapi bukan tutorial ber-menuKey (keputusan: kecualikan atau beri menuKey)",
-};
+const TANPA_TUTORIAL: Record<string, string> = {};
 
 describe("registrasi materi Bantuan ↔ CHAPTER_SOURCES (help-content.ts)", () => {
   it("setiap berkas .md materi diimpor dan dipasang sebagai topik", () => {
@@ -90,9 +103,9 @@ describe("registrasi materi Bantuan ↔ CHAPTER_SOURCES (help-content.ts)", () =
     expect(yatim, "import ke berkas yang hilang — build akan gagal").toEqual([]);
   });
 
-  it("42 tutorial · 5 referensi · 13 konsep (angka di katalog docs/product/pages/bantuan/README.md)", () => {
+  it("44 tutorial · 5 referensi · 13 konsep (angka di katalog docs/product/pages/bantuan/README.md)", () => {
     const files = contentFiles();
-    expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(42);
+    expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(44);
     expect(files.filter((f) => f.startsWith("referensi/")).length).toBe(5);
     expect(files.filter((f) => /^\d-/.test(f)).length).toBe(13);
   });
@@ -121,6 +134,14 @@ describe("frontmatter tutorial ↔ menu.csv", () => {
     }
   });
 
+  it("menuKey materi non-tutorial dikenal menu.csv", () => {
+    for (const t of nonTutorialsBerMenu) {
+      for (const key of t.fm.menuKey.split(/[,\s]+/).filter(Boolean)) {
+        expect(menuByKey.get(key), `${t.file}: menuKey "${key}" tidak ada di menu.csv`).toBeDefined();
+      }
+    }
+  });
+
   it("permission memakai level izin yang dikenal RBAC", () => {
     const levels = new Set(["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT", "PRINT"]);
     for (const t of tutorials) expect(levels.has(t.fm.permission), `${t.file}: permission "${t.fm.permission}"`).toBe(true);
@@ -130,7 +151,9 @@ describe("frontmatter tutorial ↔ menu.csv", () => {
 describe("cakupan tutorial per menu daun aktif (#257)", () => {
   const parents = new Set(menus.map((m) => m.parentKey).filter(Boolean));
   const leaves = menus.filter((m) => m.isActive && !parents.has(m.key));
-  const covered = new Set(tutorials.flatMap((t) => t.fm.menuKey.split(/[,\s]+/).filter(Boolean)));
+  const covered = new Set(
+    [...tutorials, ...nonTutorialsBerMenu].flatMap((t) => t.fm.menuKey.split(/[,\s]+/).filter(Boolean)),
+  );
 
   it("menu daun tanpa tutorial = persis yang dinyatakan di TANPA_TUTORIAL", () => {
     const missing = leaves.filter((m) => !covered.has(m.key)).map((m) => m.key).sort();
@@ -144,7 +167,7 @@ describe("cakupan tutorial per menu daun aktif (#257)", () => {
     }
   });
 
-  it("angka cakupan = 34/37 (metrics.md & versioning.md §Metrik Nilai Rilis)", () => {
-    expect([leaves.length - Object.keys(TANPA_TUTORIAL).length, leaves.length]).toEqual([34, 37]);
+  it("angka cakupan = 37/37 (metrics.md & versioning.md §Metrik Nilai Rilis)", () => {
+    expect([leaves.length - Object.keys(TANPA_TUTORIAL).length, leaves.length]).toEqual([37, 37]);
   });
 });

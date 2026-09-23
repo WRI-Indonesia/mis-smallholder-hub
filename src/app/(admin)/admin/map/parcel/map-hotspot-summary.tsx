@@ -28,7 +28,12 @@ import {
   type HotspotConfBucket,
   type HotspotDayRange,
 } from "./map-hotspot";
-import { NEAR_KM_THRESHOLD, hotspotRowCells, type HotspotNearestRow } from "./map-hotspot-export";
+import {
+  NEAR_KM_THRESHOLD,
+  hotspotRowCells,
+  hotspotTablePlan,
+  type HotspotNearestRow,
+} from "./map-hotspot-export";
 
 interface Props {
   open: boolean;
@@ -141,6 +146,10 @@ export function HotspotSummaryDialog({
   canPrint,
 }: Props) {
   const total = counts.high + counts.nominal + counts.low;
+  // Tabel tanpa virtualisasi + modal yang terbuka otomatis = ribuan baris
+  // sekaligus saat musim karhutla (#286 butir 5). Aturan potongnya sama
+  // persis dengan PDF supaya angka "n lainnya" tak bisa berbeda.
+  const shown = hotspotTablePlan(nearRows);
   // Wilayah data LAHAN yang dimuat — bukan cakupan titik apinya, yang selalu
   // se-Provinsi Riau. Dipakai untuk melabeli jarak "< 15 km", karena Lembaga
   // Petani pembanding hanya yang ada di data yang dimuat itu.
@@ -266,6 +275,11 @@ export function HotspotSummaryDialog({
         </div>
 
         {/* Tabel titik < 15 km */}
+        {/* Modal ini terbuka OTOMATIS begitu kalkulasi selesai, dan tabelnya
+            tanpa virtualisasi. Pada musim karhutla baris < 15 km bisa ribuan
+            (#286 butir 5) — dipotong agar modal tidak membekukan tab, dengan
+            keterangan eksplisit supaya angka kartu di atas tidak terbaca
+            sebagai jumlah baris yang tampil. */}
         {!distancesAvailable ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             Tabel titik terdekat membutuhkan titik Lembaga Petani pada data yang dimuat.
@@ -294,7 +308,7 @@ export function HotspotSummaryDialog({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {nearRows.map((r, i) => {
+                {shown.rows.map((r, i) => {
                   const cells = hotspotRowCells(r);
                   return (
                     <TableRow
@@ -323,6 +337,14 @@ export function HotspotSummaryDialog({
                 })}
               </TableBody>
             </Table>
+            {shown.truncated > 0 && (
+              <p className="border-t bg-muted/40 px-3 py-2 text-center text-xs text-muted-foreground">
+                Menampilkan {formatNumber(shown.rows.length)} baris terdekat dari{" "}
+                {formatNumber(nearRows.length)} titik &lt; {NEAR_KM_THRESHOLD} km —{" "}
+                {formatNumber(shown.truncated)} lainnya tidak ditampilkan. Unduh SHP untuk data
+                lengkap.
+              </p>
+            )}
           </div>
         )}
 

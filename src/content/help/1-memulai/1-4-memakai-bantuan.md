@@ -1,6 +1,8 @@
 ---
 title: Cara Memakai Bantuan
 icon: HelpCircle
+menuKey: help
+permission: VIEW
 intro: Bantuan disusun agar Anda cepat menemukan jawaban — mulai dari tugas yang ingin dikerjakan, bukan dari nama menu.
 ---
 

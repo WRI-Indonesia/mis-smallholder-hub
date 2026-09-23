@@ -8,9 +8,12 @@ import {
   hotspotAgeLabel,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot";
 import {
+  HOTSPOT_TABLE_ROW_CAP,
   calcHotspotNearest,
   fileBase,
   hotspotRowCells,
+  hotspotTablePlan,
+  type HotspotNearestRow,
 } from "@/app/(admin)/admin/map/parcel/map-hotspot-export";
 import type { KTPoint } from "@/types/map";
 
@@ -188,5 +191,46 @@ describe("calcHotspotNearest — arah ke lembaga terdekat (#293)", () => {
     };
     const rows = await calcHotspotNearest(fc(feature), []);
     expect(hotspotRowCells(rows[0]).distanceDir).toBe("—");
+  });
+});
+
+describe("hotspotTablePlan — batas baris tabel titik api (#286 butir 5 & 6)", () => {
+  /** Baris tiruan; hanya urutannya yang diuji, isinya tak dibaca. */
+  const rows = (n: number): HotspotNearestRow[] =>
+    Array.from({ length: n }, (_, i) => ({
+      f: { type: "Feature", geometry: { type: "Point", coordinates: [101, i / 1000] }, properties: {} },
+      lon: 101,
+      lat: i / 1000,
+      nearest: null,
+    })) as unknown as HotspotNearestRow[];
+
+  it("di bawah batas → semua baris tampil, tanpa keterangan potongan", () => {
+    const plan = hotspotTablePlan(rows(120));
+    expect(plan.rows).toHaveLength(120);
+    expect(plan.truncated).toBe(0);
+  });
+
+  it("tepat di batas → tidak dianggap terpotong", () => {
+    const plan = hotspotTablePlan(rows(HOTSPOT_TABLE_ROW_CAP));
+    expect(plan.rows).toHaveLength(HOTSPOT_TABLE_ROW_CAP);
+    expect(plan.truncated).toBe(0);
+  });
+
+  it("musim karhutla (20.000 baris) → dipotong & sisanya dilaporkan", () => {
+    // Tanpa pemotongan, angka ini masuk utuh ke autoTable (PDF beku/OOM) dan
+    // ke tabel modal tanpa virtualisasi — itu isi #286 butir 5 & 6.
+    const plan = hotspotTablePlan(rows(20_000));
+    expect(plan.rows).toHaveLength(HOTSPOT_TABLE_ROW_CAP);
+    expect(plan.truncated).toBe(20_000 - HOTSPOT_TABLE_ROW_CAP);
+    expect(plan.rows.length + plan.truncated).toBe(20_000);
+  });
+
+  it("mempertahankan urutan masukan — yang tampil adalah yang TERDEKAT", () => {
+    // Pemanggil sudah mengurutkan dari jarak terdekat (`filterNearSorted`);
+    // memotong dengan `slice` dari depan berarti yang dibuang justru yang
+    // terjauh. Kalau urutannya diacak, potongan ini jadi salah ambil.
+    const plan = hotspotTablePlan(rows(HOTSPOT_TABLE_ROW_CAP + 10));
+    expect(plan.rows[0].lat).toBe(0);
+    expect(plan.rows[HOTSPOT_TABLE_ROW_CAP - 1].lat).toBe((HOTSPOT_TABLE_ROW_CAP - 1) / 1000);
   });
 });

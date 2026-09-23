@@ -10,7 +10,7 @@ Menggunakan **Semantic Versioning** (`MAJOR.MINOR.PATCH`) yang diadaptasi untuk 
 
 | Bump | Kapan dianggap naik versi | Contoh |
 | --- | --- | --- |
-| **MAJOR** | Perubahan yang memutus kompatibilitas: migrasi DB yang butuh intervensi manual/berisiko data, perombakan RBAC/alur login, perubahan struktur data yang membuat data lama tidak kompatibel, atau milestone besar (go-live produksi = `1.0.0`) | Penggantian mekanisme autentikasi yang memutus semua sesi/integrasi login, atau perubahan skema breaking pasca-1.0 yang butuh migrasi manual. (Catatan: restrukturisasi hierarki #189 memenuhi kriteria ini, tapi dirilis sebagai MINOR `0.16.0` sesuai aturan Pre-1.0.) |
+| **MAJOR** | Perubahan yang memutus kompatibilitas: migrasi DB yang butuh intervensi manual/berisiko data, perombakan RBAC/alur login, perubahan struktur data yang membuat data lama tidak kompatibel, atau milestone besar (`1.0.0` = MVP, dirilis 2026-09-23) | Penggantian mekanisme autentikasi yang memutus semua sesi/integrasi login, atau perubahan skema breaking pasca-1.0 yang butuh migrasi manual. (Catatan: restrukturisasi hierarki #189 memenuhi kriteria ini, tapi dirilis sebagai MINOR `0.16.0` sesuai aturan Pre-1.0.) |
 | **MINOR** | Fitur baru yang terlihat pengguna: satu phase roadmap berstatus ✅ Done, modul/menu baru, kolom atau alur baru di UI | Phase MAP-01 selesai, bulk upload region baru, report baru |
 | **PATCH** | Perbaikan tanpa fitur baru: bugfix, perbaikan performa, penyesuaian UI kecil, koreksi validasi | Perbaikan performa list action (#163) |
 
@@ -25,12 +25,19 @@ Prefix commit menentukan bump minimal pada rilis berikutnya:
 - Hanya `docs:` / `chore:` / `refactor:` → tidak perlu rilis
 - Breaking change (lihat kriteria MAJOR) → **MAJOR** — tandai di body commit dengan `BREAKING CHANGE:`
 
-### Aturan Pre-1.0
+### Aturan Pre-1.0 — **DICABUT 2026-09-23 (v1.0.0)**
 
-Selama versi masih `0.x`:
+Berlaku untuk rilis `0.1.0`–`0.38.0` dan disimpan di sini agar riwayat versi lama tetap terbaca: MAJOR ditahan di `0`, sehingga perubahan breaking cukup menaikkan MINOR (mis. `0.5.0` → `0.6.0`) — itulah sebabnya restrukturisasi hierarki #189 terbit sebagai `0.16.0`, bukan `1.0.0`. `1.0.0` disimpan untuk milestone.
 
-- MAJOR ditahan di `0`; perubahan breaking cukup menaikkan MINOR (mis. `0.5.0` → `0.6.0`).
-- `1.0.0` disimpan untuk **go-live produksi**.
+Aturan ini **tidak berlaku lagi** sejak `1.0.0`.
+
+### Aturan Pasca-1.0
+
+`1.0.0` dirilis **2026-09-23** atas keputusan owner: sistem dinyatakan mencapai **MVP**. Yang perlu dicatat supaya angka ini tidak salah dibaca kemudian:
+
+- **MVP ≠ roadmap 100%.** Roadmap saat `1.0.0` terbit ada di **88,2%** (`roadmap.md` Phase Status). `1.0.0` menyatakan *cakupan minimum yang dianggap layak dipakai*, bukan *seluruh fase selesai*. Sisa fase tetap berjalan dan akan terbit sebagai MINOR di atas `1.x`.
+- **MAJOR sekarang benar-benar berarti breaking.** Sejak `1.0.0`, kriteria MAJOR di tabel di atas dipakai apa adanya — tidak ada lagi pengecualian yang menurunkannya menjadi MINOR. Yang memicu `2.0.0`: migrasi DB yang butuh intervensi manual atau berisiko data, perombakan RBAC/alur login yang memutus sesi/integrasi, dan perubahan struktur data yang membuat data lama tidak kompatibel. Commit-nya wajib menandai `BREAKING CHANGE:` di body.
+- **Ragu antara MAJOR dan MINOR?** Pertanyaannya bukan "seberapa besar pekerjaannya" melainkan "apakah operator/data yang ada hari ini tetap jalan tanpa langkah manual". Bila butuh langkah manual, itu MAJOR.
 
 ## Alur Rilis
 
@@ -77,7 +84,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 
 ### 1. Progres Roadmap Tertimbang (audiens: manajemen/donor)
 
-Persentase menuju go-live `1.0.0`, dihitung dari tabel **Phase Status** di [roadmap.md](../project/roadmap.md):
+Persentase kelengkapan fase, dihitung dari tabel **Phase Status** di [roadmap.md](../project/roadmap.md). **Catatan sejak 2026-09-23:** metrik ini dulu dibaca sebagai "progres menuju `1.0.0`". `1.0.0` sudah terbit pada **88,2%** karena MVP diputuskan dari cakupan yang dianggap layak pakai, bukan dari angka ini — jadi metriknya tetap berguna sebagai progres fase, tetapi **bukan lagi hitung mundur menuju versi**:
 
 - **Bobot phase** — dibaca dari kolom **`Bobot`** pada tabel Phase Status roadmap.md, satu baris satu fase: `inti` = **2** (fase penentu kelayakan go-live — stream PLATFORM, MD-01…06, DASH, MAP, RPT, BULK, HELP, DA), `pendukung` = **1** (pelengkap/pasca-go-live — MD-07…11, TOOLS, CMS, COMM, OPS). Kolom itu **satu-satunya sumber klasifikasi**; daftar stream di sini hanya glosarium, bukan acuan.
 - **Nilai status** — ✅ Done = 1 · 🟠 Partial = 0,5 · lainnya = 0.
@@ -94,7 +101,7 @@ Lima metrik tetap, diukur ulang tiap rilis; laporkan sebagai tabel delta (tanpa 
 | # | KPI | Cara ukur | Baseline v0.21.0 |
 | - | --- | --------- | ---------------- |
 | 1 | Payload peta distrik terbesar | Proyeksi `getMapData` distrik ber-persil terbanyak (sampel ≥500 persil nyata) | 2,67 MB |
-| 2 | Cakupan tutorial Bantuan | Menu **daun** ber-tutorial ÷ total menu daun aktif — dihitung dari frontmatter `menuKey` pada `src/content/help/**`, bukan ditaksir. Menu induk (wadah grup) tidak dihitung karena tak punya halaman. Sejak #339 (2026-09-15) angkanya **dijaga `src/test/help-registry.test.ts`**: menu daun baru tanpa tutorial membuat gate merah kecuali dinyatakan eksplisit di `TANPA_TUTORIAL` (per 2026-09-15: 32/35; per 2026-09-18: 34/37 — +2 menu Monev BMP #344, keduanya ber-tutorial). | 23/28 (82%) |
+| 2 | Cakupan tutorial Bantuan | Menu **daun** ber-tutorial ÷ total menu daun aktif — dihitung dari frontmatter `menuKey` pada `src/content/help/**`, bukan ditaksir. Menu induk (wadah grup) tidak dihitung karena tak punya halaman. Sejak #339 (2026-09-15) angkanya **dijaga `src/test/help-registry.test.ts`**: menu daun baru tanpa tutorial membuat gate merah kecuali dinyatakan eksplisit di `TANPA_TUTORIAL` (per 2026-09-15: 32/35; per 2026-09-18: 34/37 — +2 menu Monev BMP #344, keduanya ber-tutorial; per 2026-09-23: **37/37** — `TANPA_TUTORIAL` **kosong**, #257 tuntas: menu `help` ditutup topik konsep 1-4 "Cara Memakai Bantuan" yang diberi `menuKey`, lalu `report-kelompok-tani-detail` (`l-10`) dan `dashboard-snapshot-bmp` (`l-11`) ditulis tutorialnya). Sesuai definisi di atas (frontmatter `src/content/help/**`), yang dihitung adalah **setiap** materi ber-`menuKey`, bukan hanya lapis `tutorial/` — halaman Bantuan tak bisa punya tutorial ke dirinya sendiri. | 23/28 (82%) |
 | 3 | Test otomatis | Jumlah test `npm test` | 748 |
 | 4 | Bug terbuka | Issue open berlabel `bug` | 0 |
 | 5 | Tech debt aktif | Item aktif di [tech-debt.md](../project/tech-debt.md) | 12 (10 per 07-28 + TD-030/031) |

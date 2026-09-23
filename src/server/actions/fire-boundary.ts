@@ -82,22 +82,31 @@ export type AdminBoundaryLine = {
 };
 
 /**
- * Garis batas administrasi kabupaten (BIG) sebagai konteks peta Fire Alert,
- * dan penyaring wilayah Provinsi Riau untuk titik api Peta Lahan (#269).
- * Sengaja TANPA filter access-context: ini garis referensi publik se-Riau
- * (setara basemap), bukan data program per wilayah.
- *
- * Dua halaman memakainya, jadi cukup salah satu izin VIEW — pola yang sama
- * dengan proxy `/api/map-hotspot`, dicek berurutan agar pemegang
- * `dashboard-risk-fire` (pemanggil terbanyak) tak membayar query kedua.
+ * Dua halaman memakai batas administrasi, jadi cukup salah satu izin VIEW —
+ * pola yang sama dengan proxy `/api/map-hotspot`, dicek berurutan agar
+ * pemegang `dashboard-risk-fire` (pemanggil terbanyak) tak membayar query
+ * kedua.
  */
-export async function getAdminBoundaries(): Promise<AdminBoundaryLine[]> {
+async function requireBoundaryRead(): Promise<void> {
   if (
     !(await hasPermission(MENU_KEY, VIEW)) &&
     !(await hasPermission("map-parcel", VIEW))
   ) {
     throw new Error("Tidak memiliki izin untuk mengakses data ini");
   }
+}
+
+/**
+ * Garis batas administrasi kabupaten (BIG) sebagai konteks peta Fire Alert,
+ * dan penyaring wilayah Provinsi Riau untuk titik api Peta Lahan (#269).
+ * Sengaja TANPA filter access-context: ini garis referensi publik se-Riau
+ * (setara basemap), bukan data program per wilayah.
+ *
+ * Untuk **memangkas** titik api ke Riau, pakai `getRiauOutline()` — bukan
+ * fungsi ini (#280).
+ */
+export async function getAdminBoundaries(): Promise<AdminBoundaryLine[]> {
+  await requireBoundaryRead();
   const rows = await prisma.administrativeBoundary.findMany({
     where: { level: "KABUPATEN", isActive: true },
     select: { id: true, name: true, districtId: true, geojson: true },
@@ -109,4 +118,65 @@ export async function getAdminBoundaries(): Promise<AdminBoundaryLine[]> {
       return geometry ? { id: r.id, name: r.name, districtId: r.districtId, geometry } : null;
     })
     .filter((b): b is AdminBoundaryLine => b !== null);
+}
+
+/**
+ * Outline Provinsi Riau: 12 poligon kabupaten BIG **di-union lebih dulu**
+ * (`geom` resolusi penuh) lalu disederhanakan satu kali.
+ *
+ * Kenapa bukan `getAdminBoundaries()` (#280): kolom cache `geojson`
+ * disederhanakan **per kabupaten dan independen**, sehingga batas bersama dua
+ * kabupaten tetangga tak lagi berimpit persis. Titik api yang jatuh di celah
+ * tipis antara dua poligon berada di luar KEDUANYA → hilang dari Fire Alert
+ * dan Peta Lahan tanpa jejak apa pun. Terukur di mis-dev: **9,4 km²** wilayah
+ * Riau tidak tertutup satu pun poligon kabupaten tersimplifikasi. Union
+ * melarutkan batas dalam lebih dulu, jadi celah itu tidak pernah terbentuk —
+ * hasilnya malah lebih kecil (75 KB vs 90 KB).
+ *
+ * `geom` tetap sumber kebenaran spasial; yang berubah hanya urutan
+ * union → simplify, bukan simplify → union.
+ */
+export async function getRiauOutline(): Promise<MultiPolygon | null> {
+  await requireBoundaryRead();
+  return cachedOutline();
+}
+
+/** Hasil query mentah — satu baris, satu kolom. */
+type OutlineRow = { geojson: unknown };
+
+/**
+ * `ST_Union` 12 kabupaten resolusi penuh memakan ±450 ms (terukur mis-dev),
+ * terlalu mahal per muat halaman. Datanya hanya berubah saat skrip seed batas
+ * administrasi dijalankan, jadi hasilnya ditahan di memori proses.
+ *
+ * TTL tetap ada supaya re-seed tak menuntut restart; 6 jam mengikuti pola
+ * `data_availability` FIRMS. Promise-nya yang di-cache (bukan hasilnya) agar
+ * dua permintaan bersamaan tidak memicu dua union.
+ */
+const OUTLINE_TTL_MS = 6 * 60 * 60 * 1000;
+let outlineCache: { at: number; value: Promise<MultiPolygon | null> } | null = null;
+
+function cachedOutline(): Promise<MultiPolygon | null> {
+  const now = Date.now();
+  if (outlineCache && now - outlineCache.at < OUTLINE_TTL_MS) return outlineCache.value;
+  const value = queryRiauOutline().catch((err) => {
+    // Kegagalan tak boleh dikunci selama 6 jam — pemanggil jatuh ke poligon
+    // per kabupaten, dan percobaan berikutnya harus benar-benar mencoba lagi.
+    outlineCache = null;
+    throw err;
+  });
+  outlineCache = { at: now, value };
+  return value;
+}
+
+async function queryRiauOutline(): Promise<MultiPolygon | null> {
+  const rows = await prisma.$queryRaw<OutlineRow[]>`
+    SELECT ST_AsGeoJSON(
+             ST_Multi(ST_SimplifyPreserveTopology(ST_Union("geom"), 0.001))
+           )::jsonb AS geojson
+    FROM "tbl_administrative_boundary"
+    WHERE "is_active" = true AND "level" = 'KABUPATEN' AND "geom" IS NOT NULL
+  `;
+  // Tanpa baris yang memenuhi syarat, ST_Union mengembalikan NULL (bukan nol baris).
+  return rows[0]?.geojson == null ? null : asMultiPolygon(rows[0].geojson, "Outline Riau");
 }

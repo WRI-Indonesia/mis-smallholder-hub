@@ -7,7 +7,14 @@ import {
   upstreamWindows,
   utcMidnightDaysAgo,
   mergeHotspotCollections,
+  parseDataAvailability,
+  parseHotspotMonth,
+  monthWindows,
   HOTSPOT_DAY_RANGES,
+  HOTSPOT_MONTH_MIN,
+  FIRMS_SOURCES,
+  utcMonth,
+  type FirmsAvailability,
 } from "@/lib/firms";
 import type { Feature } from "geojson";
 
@@ -94,6 +101,177 @@ describe("upstreamWindows (#284)", () => {
   it("utcMidnightDaysAgo: 0 = 00.00 UTC hari ini", () => {
     expect(utcMidnightDaysAgo(now, 0).toISOString()).toBe("2026-08-24T00:00:00.000Z");
     expect(utcMidnightDaysAgo(now, 29).toISOString()).toBe("2026-07-26T00:00:00.000Z");
+  });
+});
+
+describe("parseDataAvailability (#365)", () => {
+  const CSV = [
+    "data_id,min_date,max_date",
+    "MODIS_NRT,2026-07-01,2026-09-22",
+    "VIIRS_SNPP_NRT,2026-07-01,2026-09-22",
+    "VIIRS_SNPP_SP,2012-01-20,2026-06-30",
+    "VIIRS_NOAA20_NRT,2026-07-01,2026-09-22",
+  ].join("\n");
+
+  it("mengambil hanya SP & NRT VIIRS SNPP dari daftar ALL", () => {
+    expect(parseDataAvailability(CSV)).toEqual({
+      sp: { min: "2012-01-20", max: "2026-06-30" },
+      nrt: { min: "2026-07-01", max: "2026-09-22" },
+    });
+  });
+
+  it("teks error (bukan CSV) atau header tak dikenal → kedua sumber null", () => {
+    expect(parseDataAvailability("Invalid MAP_KEY.")).toEqual({ sp: null, nrt: null });
+    expect(parseDataAvailability("source,from,to\nVIIRS_SNPP_SP,2012-01-20,2026-06-30")).toEqual({
+      sp: null,
+      nrt: null,
+    });
+  });
+
+  it("baris bertanggal rusak atau terbalik dilewati, sumber lain tetap terbaca", () => {
+    const csv =
+      "data_id,min_date,max_date\nVIIRS_SNPP_SP,2012/01/20,2026-06-30\nVIIRS_SNPP_NRT,2026-09-22,2026-07-01\nVIIRS_SNPP_NRT,2026-07-01,2026-09-22";
+    expect(parseDataAvailability(csv)).toEqual({
+      sp: null,
+      nrt: { min: "2026-07-01", max: "2026-09-22" },
+    });
+  });
+});
+
+describe("parseHotspotMonth (#365)", () => {
+  const now = new Date("2026-09-22T10:00:00Z");
+
+  it("menerima YYYY-MM dari batas bawah sampai bulan berjalan (UTC)", () => {
+    expect(parseHotspotMonth(HOTSPOT_MONTH_MIN, now)).toBe("2020-01");
+    expect(parseHotspotMonth("2025-01", now)).toBe("2025-01");
+    expect(parseHotspotMonth("2026-09", now)).toBe("2026-09");
+  });
+
+  it("menolak bulan depan, sebelum batas bawah, bulan 00/13, dan bentuk longgar", () => {
+    for (const raw of ["2026-10", "2019-12", "2026-00", "2026-13", "2026-9", "2026-09-01", " 2026-09", "abc", "", null]) {
+      expect(parseHotspotMonth(raw, now), `month=${JSON.stringify(raw)}`).toBeNull();
+    }
+  });
+
+  it("utcMonth: bulan UTC + offset, melintasi tahun", () => {
+    expect(utcMonth(now)).toBe("2026-09");
+    expect(utcMonth(now, -1)).toBe("2026-08");
+    expect(utcMonth(new Date("2026-01-15T00:00:00Z"), -1)).toBe("2025-12");
+    // 1 Okt 05.00 WIB = 30 Sep 22.00 UTC → masih September.
+    expect(utcMonth(new Date("2026-09-30T22:00:00Z"))).toBe("2026-09");
+  });
+
+  it("bulan berjalan dihitung UTC — 1 Okt 05.00 WIB masih September", () => {
+    expect(parseHotspotMonth("2026-10", new Date("2026-09-30T22:00:00Z"))).toBeNull();
+    expect(parseHotspotMonth("2026-09", new Date("2026-09-30T22:00:00Z"))).toBe("2026-09");
+  });
+});
+
+describe("monthWindows (#365)", () => {
+  const now = new Date("2026-09-22T10:00:00Z");
+  const avail: FirmsAvailability = {
+    sp: { min: "2012-01-20", max: "2026-06-30" },
+    nrt: { min: "2026-07-01", max: "2026-09-22" },
+  };
+  const SP = FIRMS_SOURCES.sp;
+  const NRT = FIRMS_SOURCES.nrt;
+
+  it("bulan lampau di arsip: 31 hari = 7 jendela SP dari tanggal 1 (6×5 + 1), tanpa celah", () => {
+    const plan = monthWindows("2025-01", now, avail)!;
+    expect(plan.from).toBe("2025-01-01");
+    expect(plan.to).toBe("2025-01-31");
+    expect(plan.missingDates).toEqual([]);
+    expect(plan.windows).toEqual([
+      { dayRange: 5, date: "2025-01-01", source: SP },
+      { dayRange: 5, date: "2025-01-06", source: SP },
+      { dayRange: 5, date: "2025-01-11", source: SP },
+      { dayRange: 5, date: "2025-01-16", source: SP },
+      { dayRange: 5, date: "2025-01-21", source: SP },
+      { dayRange: 5, date: "2025-01-26", source: SP },
+      { dayRange: 1, date: "2025-01-31", source: SP },
+    ]);
+  });
+
+  it("panjang bulan: Feb 2024 (kabisat) 29 hari → jendela terakhir 3 hari; Apr 30 hari → 6 jendela penuh", () => {
+    const feb = monthWindows("2024-02", now, avail)!;
+    expect(feb.to).toBe("2024-02-29");
+    expect(feb.windows.at(-1)).toEqual({ dayRange: 4, date: "2024-02-26", source: SP });
+    const apr = monthWindows("2025-04", now, avail)!;
+    expect(apr.windows).toHaveLength(6);
+    expect(apr.windows.reduce((s, w) => s + w.dayRange, 0)).toBe(30);
+  });
+
+  it("bulan berjalan dipangkas ke hari ini (UTC) dan dilayani NRT", () => {
+    const plan = monthWindows("2026-09", now, avail)!;
+    expect(plan.to).toBe("2026-09-22");
+    expect(plan.windows).toEqual([
+      { dayRange: 5, date: "2026-09-01", source: NRT },
+      { dayRange: 5, date: "2026-09-06", source: NRT },
+      { dayRange: 5, date: "2026-09-11", source: NRT },
+      { dayRange: 5, date: "2026-09-16", source: NRT },
+      { dayRange: 2, date: "2026-09-21", source: NRT },
+    ]);
+    expect(plan.missingDates).toEqual([]);
+  });
+
+  it("NRT dianggap terbuka sampai hari ini walau max_date yang dicache tertinggal", () => {
+    const stale = { ...avail, nrt: { min: "2026-07-01", max: "2026-09-20" } };
+    const plan = monthWindows("2026-09", now, stale)!;
+    expect(plan.missingDates).toEqual([]);
+    expect(plan.windows.at(-1)).toEqual({ dayRange: 2, date: "2026-09-21", source: NRT });
+  });
+
+  it("SP diutamakan bila kedua sumber menyimpan tanggal yang sama (overlap)", () => {
+    const overlap = { ...avail, sp: { min: "2012-01-20", max: "2026-07-15" } };
+    const plan = monthWindows("2026-07", now, overlap)!;
+    expect(plan.windows.map((w) => w.source)).toEqual([SP, SP, SP, NRT, NRT, NRT, NRT]);
+    expect(plan.windows[2]).toEqual({ dayRange: 5, date: "2026-07-11", source: SP });
+    // Jendela NRT dimulai tepat setelah SP berakhir, dikelompokkan 5 hari dari situ.
+    expect(plan.windows[3]).toEqual({ dayRange: 5, date: "2026-07-16", source: NRT });
+    expect(plan.windows.at(-1)).toEqual({ dayRange: 1, date: "2026-07-31", source: NRT });
+  });
+
+  it("celah SP tertinggal & NRT sudah lewat → tanggal masuk missingDates, jendela di kedua sisi tetap utuh", () => {
+    const gap = {
+      sp: { min: "2012-01-20", max: "2026-07-03" },
+      nrt: { min: "2026-07-07", max: "2026-09-22" },
+    };
+    const plan = monthWindows("2026-07", now, gap)!;
+    expect(plan.missingDates).toEqual(["2026-07-04", "2026-07-05", "2026-07-06"]);
+    expect(plan.windows[0]).toEqual({ dayRange: 3, date: "2026-07-01", source: SP });
+    expect(plan.windows[1]).toEqual({ dayRange: 5, date: "2026-07-07", source: NRT });
+    // Semua hari tercakup: jendela + celah = 31.
+    expect(plan.windows.reduce((s, w) => s + w.dayRange, 0) + plan.missingDates.length).toBe(31);
+  });
+
+  it("sumber yang tidak dilaporkan FIRMS (null) tidak dipakai", () => {
+    const plan = monthWindows("2025-01", now, { sp: null, nrt: avail.nrt })!;
+    expect(plan.windows).toEqual([]);
+    expect(plan.missingDates).toHaveLength(31);
+  });
+
+  it("bulan tak valid → null (validasi sama dengan parseHotspotMonth)", () => {
+    expect(monthWindows("2026-10", now, avail)).toBeNull();
+    expect(monthWindows("2019-12", now, avail)).toBeNull();
+  });
+
+  it("properti: jendela tak pernah >5 hari, berurutan tanpa tumpang tindih, urut tanggal", () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    for (const [month, a] of [
+      ["2025-01", avail],
+      ["2026-07", { sp: { min: "2012-01-20", max: "2026-07-13" }, nrt: { min: "2026-07-16", max: "2026-09-22" } }],
+      ["2026-09", avail],
+    ] as const) {
+      const plan = monthWindows(month, now, a)!;
+      let prevEnd = 0;
+      for (const w of plan.windows) {
+        expect(w.dayRange).toBeGreaterThanOrEqual(1);
+        expect(w.dayRange).toBeLessThanOrEqual(5);
+        const start = Date.parse(`${w.date}T00:00:00Z`);
+        expect(start).toBeGreaterThan(prevEnd);
+        prevEnd = start + (w.dayRange - 1) * DAY;
+      }
+    }
   });
 });
 

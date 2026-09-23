@@ -12,6 +12,10 @@
 !.yarn/versions
 .kilo/*
 .kiro/*
+
+# claude code — setelan per-mesin (perintah di .claude/commands/ tetap di-commit)
+.claude/settings.local.json
+
 # testing
 /coverage
 

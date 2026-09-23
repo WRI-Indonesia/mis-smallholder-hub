@@ -9,15 +9,28 @@ import type { FeatureCollection, Feature } from "geojson";
 export const HOTSPOT_DAY_RANGES = [1, 5, 10, 30] as const;
 export type HotspotDayRange = (typeof HOTSPOT_DAY_RANGES)[number];
 
+/**
+ * Sumber FIRMS yang dipakai proxy (#365). NRT = near-real-time, tersedia
+ * ±3 bulan terakhir; SP = arsip *standard processing* (terproses ulang,
+ * lebih akurat) yang terbit ±3 bulan setelahnya dan menjangkau 2012.
+ * Keduanya dilayani Area API yang sama, termasuk parameter DATE dan cap
+ * 5 hari (diverifikasi 2026-09-22).
+ */
+export const FIRMS_SOURCES = { nrt: "VIIRS_SNPP_NRT", sp: "VIIRS_SNPP_SP" } as const;
+export type FirmsSource = (typeof FIRMS_SOURCES)[keyof typeof FIRMS_SOURCES];
+
+/** Bulan kalender paling awal yang boleh dipilih di mode Bulan (keputusan owner #365). */
+export const HOTSPOT_MONTH_MIN = "2020-01";
+
 /** Cap FIRMS: satu request area maksimal 5 hari ("Expects [1..5]"). */
 const FIRMS_MAX_DAYS = 5;
 
 /**
  * Satu request ke FIRMS Area API. `date` (YYYY-MM-DD, UTC) = hari pertama
  * jendela — bila kosong FIRMS mengembalikan "hari ini (UTC) mundur
- * dayRange-1 hari".
+ * dayRange-1 hari". `source` kosong = NRT (mode rentang live).
  */
-export type UpstreamWindow = { dayRange: number; date?: string };
+export type UpstreamWindow = { dayRange: number; date?: string; source?: FirmsSource };
 
 /** 00:00 UTC pada `days` hari sebelum tanggal UTC milik `now` (0 = hari ini UTC). */
 export function utcMidnightDaysAgo(now: Date, days: number): Date {
@@ -57,6 +70,141 @@ export function upstreamWindows(dayRange: number, now: Date): UpstreamWindow[] |
     windows.push({ dayRange: FIRMS_MAX_DAYS, date: utcDateString(utcMidnightDaysAgo(now, back)) });
   }
   return windows;
+}
+
+/** Rentang tanggal UTC inklusif (YYYY-MM-DD) dari endpoint data_availability FIRMS. */
+export type DateRange = { min: string; max: string };
+/** Ketersediaan dua sumber yang dipakai proxy; null = sumber tak dilaporkan FIRMS. */
+export type FirmsAvailability = { sp: DateRange | null; nrt: DateRange | null };
+
+const isIsoDate = (v: string | undefined): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+/**
+ * Parse CSV `data_availability` FIRMS (`data_id,min_date,max_date`, satu
+ * baris per sumber). Hanya SP & NRT VIIRS SNPP yang diambil; baris rusak
+ * atau teks error (bukan CSV) menghasilkan null di sumber itu — pemanggil
+ * yang memutuskan apakah itu fatal.
+ */
+export function parseDataAvailability(csv: string): FirmsAvailability {
+  const out: FirmsAvailability = { sp: null, nrt: null };
+  const lines = csv.trim().split(/\r?\n/);
+  const header = lines[0]?.split(",") ?? [];
+  const iId = header.indexOf("data_id");
+  const iMin = header.indexOf("min_date");
+  const iMax = header.indexOf("max_date");
+  if (iId < 0 || iMin < 0 || iMax < 0) return out;
+  for (let r = 1; r < lines.length; r++) {
+    const cols = lines[r].split(",");
+    const id = cols[iId];
+    const min = cols[iMin];
+    const max = cols[iMax];
+    if (!isIsoDate(min) || !isIsoDate(max) || min > max) continue;
+    if (id === FIRMS_SOURCES.sp) out.sp = { min, max };
+    else if (id === FIRMS_SOURCES.nrt) out.nrt = { min, max };
+  }
+  return out;
+}
+
+/** "YYYY-MM" bulan UTC milik `now`, digeser `offsetMonths` (−1 = bulan lalu). */
+export function utcMonth(now: Date, offsetMonths = 0): string {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offsetMonths, 1))
+    .toISOString()
+    .slice(0, 7);
+}
+
+/**
+ * Validasi parameter `month` (YYYY-MM): bentuk ketat, bulan 01–12, tidak
+ * lebih awal dari `HOTSPOT_MONTH_MIN`, tidak melewati bulan berjalan
+ * (UTC). Null = tak valid.
+ */
+export function parseHotspotMonth(raw: string | null, now: Date): string | null {
+  if (!raw || !/^\d{4}-(0[1-9]|1[0-2])$/.test(raw)) return null;
+  if (raw < HOTSPOT_MONTH_MIN) return null;
+  if (raw > utcDateString(now).slice(0, 7)) return null;
+  return raw;
+}
+
+/** Jendela mode Bulan: selalu ber-DATE dan ber-sumber eksplisit. */
+export type MonthWindow = { dayRange: number; date: string; source: FirmsSource };
+
+export type MonthPlan = {
+  /** Hari pertama & terakhir (UTC, inklusif) yang diminta — bulan berjalan dipangkas ke hari ini. */
+  from: string;
+  to: string;
+  windows: MonthWindow[];
+  /** Tanggal dalam [from, to] yang tak tercakup SP maupun NRT — laporan wajib menyebutnya. */
+  missingDates: string[];
+};
+
+/**
+ * Foreign member `coverage` pada FeatureCollection respons mode Bulan
+ * (RFC 7946 §6.1 — MapLibre mengabaikannya). Klien memakainya untuk label
+ * periode, catatan sumber di PDF, dan peringatan tanggal kosong.
+ */
+export type HotspotCoverage = {
+  month: string;
+  from: string;
+  to: string;
+  /** Sumber yang benar-benar dipakai, urut kemunculan (mis. ["VIIRS_SNPP_SP"] atau keduanya). */
+  sources: FirmsSource[];
+  missingDates: string[];
+};
+
+/**
+ * Bulan kalender → daftar jendela FIRMS ≤5 hari ber-DATE + sumber per
+ * jendela (#365). Tiap hari dipetakan dulu ke sumbernya — **SP diutamakan**
+ * bila hari itu berada dalam rentang arsip (data terproses ulang), sisanya
+ * NRT bila ≥ `min_date`-nya (NRT dianggap terbuka sampai hari ini: nilai
+ * `max_date` yang dicache bisa tertinggal sehari dari hari berjalan) — lalu
+ * hari-hari berurutan bersumber sama dikelompokkan per 5 hari dari tanggal 1.
+ * Pengelompokan dari tanggal 1 membuat URL jendela bulan lampau stabil
+ * (cache) dan jendela bulan berjalan yang sudah rampung tetap terpakai
+ * ulang saat hari bertambah.
+ *
+ * Hari tanpa sumber (celah saat SP tertinggal dan NRT sudah lewat) masuk
+ * `missingDates`, bukan dilewati diam-diam: FIRMS memangkas jendela di luar
+ * ketersediaan tanpa galat (diverifikasi 2026-09-22 — SP 28 Jun–2 Jul hanya
+ * mengembalikan 28–30 Jun), jadi celah mustahil dideteksi dari respons.
+ * Null = bulan tak valid (lihat `parseHotspotMonth`).
+ */
+export function monthWindows(
+  month: string,
+  now: Date,
+  availability: FirmsAvailability
+): MonthPlan | null {
+  if (!parseHotspotMonth(month, now)) return null;
+  const [y, m] = month.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const today = utcDateString(now);
+  const from = `${month}-01`;
+  const to = today.slice(0, 7) === month ? today : `${month}-${String(lastDay).padStart(2, "0")}`;
+
+  const sourceFor = (date: string): FirmsSource | null => {
+    const { sp, nrt } = availability;
+    if (sp && date >= sp.min && date <= sp.max) return FIRMS_SOURCES.sp;
+    if (nrt && date >= nrt.min) return FIRMS_SOURCES.nrt;
+    return null;
+  };
+
+  const windows: MonthWindow[] = [];
+  const missingDates: string[] = [];
+  let current: MonthWindow | null = null;
+  for (let d = 1; d <= Number(to.slice(8, 10)); d++) {
+    const date = `${month}-${String(d).padStart(2, "0")}`;
+    const source = sourceFor(date);
+    if (!source) {
+      missingDates.push(date);
+      current = null;
+      continue;
+    }
+    if (current && current.source === source && current.dayRange < FIRMS_MAX_DAYS) {
+      current.dayRange++;
+      continue;
+    }
+    current = { dayRange: 1, date, source };
+    windows.push(current);
+  }
+  return { from, to, windows, missingDates };
 }
 
 /**
