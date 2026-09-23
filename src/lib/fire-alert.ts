@@ -41,6 +41,143 @@ export function multiPolygonBbox(geometry: MultiPolygon): [number, number, numbe
   return [w, s, e, n];
 }
 
+/**
+ * Ring ter-index untuk ray casting: titik-titiknya apa adanya, ditambah
+ * **bucket lintang**. Ray casting horizontal pada garis `y` hanya peduli pada
+ * sisi yang melintasi `y`; tanpa bucket, tiap titik menguji SELURUH sisi ring.
+ * Ring daratan Riau ter-union punya ribuan sisi, jadi bedanya bukan kosmetik.
+ *
+ * `bands[b]` memuat indeks titik `i` yang sisinya (`i-1` → `i`) menyentuh pita
+ * lintang ke-b. Satu sisi bisa masuk beberapa pita; sisi horizontal masuk satu.
+ */
+type IndexedRing = {
+  bbox: [number, number, number, number];
+  pts: Position[];
+  bands: Uint32Array[];
+  y0: number;
+  bandH: number;
+};
+
+/** Satu polygon yang sudah dipisah ring luar/lubang beserta bbox-nya sendiri. */
+type IndexedPolygon = {
+  bbox: [number, number, number, number];
+  outer: IndexedRing;
+  holes: IndexedRing[];
+};
+
+/**
+ * MultiPolygon yang disiapkan untuk uji point-in-polygon massal (#280/#286).
+ *
+ * Dua hal yang tidak dilakukan `pointInMultiPolygon`, dan keduanya baru terasa
+ * pada geometri besar:
+ * 1. **bbox per polygon.** Outline Riau ter-union adalah satu MultiPolygon
+ *    berisi ±84 pulau; tanpa bbox per polygon, satu titik di tengah daratan
+ *    diuji terhadap ring seluruh pulau hanya karena berada di bbox provinsi.
+ * 2. **Lubang dipisah sekali di sini.** `pointInMultiPolygon` memanggil
+ *    `polygon.slice(1)` di dalam loop — satu alokasi array per titik per
+ *    polygon.
+ */
+export type IndexedArea = {
+  bbox: [number, number, number, number];
+  polygons: IndexedPolygon[];
+};
+
+function ringBbox(ring: Position[]): [number, number, number, number] {
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const [lng, lat] of ring) {
+    if (lng < w) w = lng;
+    if (lng > e) e = lng;
+    if (lat < s) s = lat;
+    if (lat > n) n = lat;
+  }
+  return [w, s, e, n];
+}
+
+/**
+ * ±32 sisi per pita: cukup kasar agar biaya indeks kecil, cukup halus agar
+ * ring besar terpotong ratusan kali. Dibatasi 256 supaya ring kecil tak
+ * membuat lebih banyak pita daripada sisinya.
+ */
+function indexRing(ring: Position[]): IndexedRing {
+  const bbox = ringBbox(ring);
+  const [, s, , n] = bbox;
+  const bandCount = Math.max(1, Math.min(256, Math.ceil(ring.length / 32)));
+  // Ring horizontal sempurna (tinggi 0) tetap butuh satu pita yang sah.
+  const bandH = (n - s) / bandCount || 1;
+  const buckets: number[][] = Array.from({ length: bandCount }, () => []);
+  const bandOf = (y: number) =>
+    Math.max(0, Math.min(bandCount - 1, Math.floor((y - s) / bandH)));
+  for (let i = 1; i < ring.length; i++) {
+    const lo = bandOf(Math.min(ring[i - 1][1], ring[i][1]));
+    const hi = bandOf(Math.max(ring[i - 1][1], ring[i][1]));
+    for (let b = lo; b <= hi; b++) buckets[b].push(i);
+  }
+  return {
+    bbox,
+    pts: ring,
+    bands: buckets.map((b) => Uint32Array.from(b)),
+    y0: s,
+    bandH,
+  };
+}
+
+/** Ray casting even-odd memakai bucket lintang — setara `pointInRing`. */
+function pointInIndexedRing(pt: Position, ring: IndexedRing): boolean {
+  const [x, y] = pt;
+  const [w, s, e, n] = ring.bbox;
+  if (x < w || x > e || y < s || y > n) return false;
+  const band = ring.bands[
+    Math.max(0, Math.min(ring.bands.length - 1, Math.floor((y - ring.y0) / ring.bandH)))
+  ];
+  let inside = false;
+  for (let k = 0; k < band.length; k++) {
+    const i = band[k];
+    const [xi, yi] = ring.pts[i];
+    const [xj, yj] = ring.pts[i - 1];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** Siapkan `geometry` untuk diuji berkali-kali. Hitung sekali, pakai per titik. */
+export function indexArea(geometry: MultiPolygon): IndexedArea {
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  const polygons: IndexedPolygon[] = [];
+  for (const polygon of geometry.coordinates) {
+    const ring = polygon[0];
+    if (!ring || ring.length === 0) continue;
+    const outer = indexRing(ring);
+    const [bw, bs, be, bn] = outer.bbox;
+    if (bw < w) w = bw;
+    if (bs < s) s = bs;
+    if (be > e) e = be;
+    if (bn > n) n = bn;
+    polygons.push({ bbox: outer.bbox, outer, holes: polygon.slice(1).map(indexRing) });
+  }
+  return { bbox: [w, s, e, n], polygons };
+}
+
+/** Uji titik terhadap area ter-index — setara `pointInMultiPolygon`, tanpa alokasi. */
+export function pointInIndexedArea(pt: Position, area: IndexedArea): boolean {
+  const [x, y] = pt;
+  const [w, s, e, n] = area.bbox;
+  if (x < w || x > e || y < s || y > n) return false;
+  for (const poly of area.polygons) {
+    const [pw, ps, pe, pn] = poly.bbox;
+    if (x < pw || x > pe || y < ps || y > pn) continue;
+    if (!pointInIndexedRing(pt, poly.outer)) continue;
+    let inHole = false;
+    for (const hole of poly.holes) {
+      if (pointInIndexedRing(pt, hole)) {
+        inHole = true;
+        break;
+      }
+    }
+    if (!inHole) return true;
+  }
+  return false;
+}
+
 export function indexBoundaries(boundaries: FireBoundary[]): FireBoundaryIndexed[] {
   return boundaries.map((b) => ({ ...b, bbox: multiPolygonBbox(b.geometry) }));
 }
@@ -224,15 +361,11 @@ export function filterPointsWithinAreas(
   areas: { geometry: MultiPolygon }[]
 ): FeatureCollection {
   if (areas.length === 0) return fc;
-  const indexed = areas.map((a) => ({ ...a, bbox: multiPolygonBbox(a.geometry) }));
+  const indexed = areas.map((a) => indexArea(a.geometry));
   const features = fc.features.filter((f) => {
     if (f.geometry.type !== "Point") return false;
     const pt = f.geometry.coordinates as Position;
-    return indexed.some((a) => {
-      const [w, s, e, n] = a.bbox;
-      if (pt[0] < w || pt[0] > e || pt[1] < s || pt[1] > n) return false;
-      return pointInMultiPolygon(pt, a.geometry);
-    });
+    return indexed.some((a) => pointInIndexedArea(pt, a));
   });
   return { type: "FeatureCollection", features };
 }
@@ -254,7 +387,7 @@ export function summarizeByNamedArea(
   areas: { name: string; geometry: MultiPolygon }[],
   otherLabel: string
 ): AreaSummary[] {
-  const indexed = areas.map((a) => ({ ...a, bbox: multiPolygonBbox(a.geometry) }));
+  const indexed = areas.map((a) => ({ name: a.name, area: indexArea(a.geometry) }));
   const blank = (name: string): AreaSummary => ({ name, total: 0, inside: 0, high: 0 });
   const rows = new Map<string, AreaSummary>(areas.map((a) => [a.name, blank(a.name)]));
   const other = blank(otherLabel);
@@ -263,9 +396,7 @@ export function summarizeByNamedArea(
     const pt = f.geometry.coordinates as Position;
     let hit: AreaSummary = other;
     for (const a of indexed) {
-      const [w, s, e, n] = a.bbox;
-      if (pt[0] < w || pt[0] > e || pt[1] < s || pt[1] > n) continue;
-      if (pointInMultiPolygon(pt, a.geometry)) {
+      if (pointInIndexedArea(pt, a.area)) {
         hit = rows.get(a.name) ?? other;
         break;
       }

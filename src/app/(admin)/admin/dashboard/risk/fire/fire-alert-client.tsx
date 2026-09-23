@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
-import type { FeatureCollection } from "geojson";
+import type { FeatureCollection, MultiPolygon } from "geojson";
 import {
   RIAU_BBOX,
   confidenceLabel,
@@ -99,16 +99,28 @@ const FireMapCanvas = dynamic(
 
 interface Props {
   boundaries: FireBoundary[];
-  /** Garis batas kabupaten (BIG, tersimplifikasi) sebagai konteks peta. */
+  /** Garis batas kabupaten (BIG, tersimplifikasi) sebagai konteks peta & scope cetak per distrik. */
   adminBoundaries: AdminBoundaryLine[];
+  /**
+   * Outline Riau ter-union untuk MEMANGKAS titik api (#280). Dipisah dari
+   * `adminBoundaries` karena poligon kabupaten disederhanakan sendiri-sendiri
+   * dan menyisakan celah di batas bersama; null = belum ter-seed → jatuh ke
+   * poligon kabupaten (perilaku lama, bukan peta kosong).
+   */
+  riauOutline: MultiPolygon | null;
   /** PRINT menu Fire Alert — gate seksi Print Map. */
   canPrint: boolean;
   /** HelpHint dirender di server agar markdown Bantuan tak masuk bundle client. */
   helpSlot?: React.ReactNode;
 }
 
-export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlot }: Props) {
+export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canPrint, helpSlot }: Props) {
   const indexed = useMemo(() => indexBoundaries(boundaries), [boundaries]);
+  // Area pemangkas: outline ter-union bila ada, poligon kabupaten bila belum.
+  const clipAreas = useMemo(
+    () => (riauOutline ? [{ geometry: riauOutline }] : adminBoundaries),
+    [riauOutline, adminBoundaries]
+  );
 
   // Default 5 hari (#266); pilihan lain lihat HOTSPOT_DAY_RANGES (#284).
   const [dayRange, setDayRange] = useState<HotspotDayRange>(5);
@@ -126,9 +138,9 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
   const [printProgress, setPrintProgress] = useState<{ done: number; total: number } | null>(null);
   const printAbortRef = useRef<AbortController | null>(null);
 
-  // Fetch se-bbox Riau → pangkas ke Provinsi Riau (poligon kabupaten BIG —
-  // bbox FIRMS persegi ikut mencakup Malaysia/Sumbar/Jambi) → klasifikasi
-  // point-in-polygon di klien (volume kecil).
+  // Fetch se-bbox Riau → pangkas ke Provinsi Riau (outline ter-union — bbox
+  // FIRMS persegi ikut mencakup Malaysia/Sumbar/Jambi) → klasifikasi
+  // point-in-polygon di klien.
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -143,7 +155,7 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         });
     load
       .then((fc) => {
-        setClassified(classifyHotspots(filterPointsWithinAreas(fc, adminBoundaries), indexed));
+        setClassified(classifyHotspots(filterPointsWithinAreas(fc, clipAreas), indexed));
         setLoading(false);
       })
       .catch((err) => {
@@ -154,7 +166,7 @@ export function FireAlertClient({ boundaries, adminBoundaries, canPrint, helpSlo
         toast.error("Gagal memuat titik api dari NASA FIRMS");
       });
     return () => controller.abort();
-  }, [dayRange, month, indexed, adminBoundaries]);
+  }, [dayRange, month, indexed, clipAreas]);
 
   const handleDayRangeChange = useCallback((d: HotspotDayRange) => {
     setMonth(null);

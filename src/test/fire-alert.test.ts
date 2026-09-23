@@ -10,6 +10,8 @@ import {
   describeHotspotSources,
   filterPointsWithinAreas,
   formatDateList,
+  indexArea,
+  pointInIndexedArea,
   formatExportedAt,
   formatHotspotDay,
   formatHotspotMonth,
@@ -224,6 +226,79 @@ describe("filterPointsWithinAreas", () => {
     const filtered = filterPointsWithinAreas(fc, areas);
     expect(filtered.features).toHaveLength(2);
     expect(filterPointsWithinAreas(fc, []).features).toHaveLength(3);
+  });
+});
+
+describe("indexArea & pointInIndexedArea (#280)", () => {
+  /** Persegi berlubang: cincin luar + satu lubang di tengah. */
+  const donut: MultiPolygon = {
+    type: "MultiPolygon",
+    coordinates: [
+      [
+        [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]],
+        [[4, 4], [6, 4], [6, 6], [4, 6], [4, 4]],
+      ],
+    ],
+  };
+
+  it("setara pointInMultiPolygon — termasuk lubang", () => {
+    const area = indexArea(donut);
+    for (const pt of [[1, 1], [5, 5], [20, 20], [9.9, 0.1]] as [number, number][]) {
+      expect(pointInIndexedArea(pt, area), `titik ${pt.join(",")}`).toBe(
+        pointInMultiPolygon(pt, donut)
+      );
+    }
+    expect(pointInIndexedArea([5, 5], area)).toBe(false); // di lubang
+    expect(pointInIndexedArea([1, 1], area)).toBe(true);
+  });
+
+  it("bbox per polygon menolak titik di celah antar-pulau tanpa menguji ring-nya", () => {
+    // Dua pulau berjauhan: bbox gabungan mencakup celah di antaranya, jadi
+    // bbox tingkat-area saja tidak cukup untuk menolak titik di celah itu.
+    const islands: MultiPolygon = {
+      type: "MultiPolygon",
+      coordinates: [...square(0, 0, 1, 1).coordinates, ...square(9, 9, 10, 10).coordinates],
+    };
+    const area = indexArea(islands);
+    expect(area.polygons).toHaveLength(2);
+    expect(area.bbox).toEqual([0, 0, 10, 10]);
+    expect(pointInIndexedArea([5, 5], area)).toBe(false);
+    expect(pointInIndexedArea([0.5, 0.5], area)).toBe(true);
+    expect(pointInIndexedArea([9.5, 9.5], area)).toBe(true);
+  });
+
+  it("polygon tanpa cincin luar dilewati, tidak membuat bbox Infinity", () => {
+    const area = indexArea({ type: "MultiPolygon", coordinates: [[], square(0, 0, 1, 1).coordinates[0]] });
+    expect(area.polygons).toHaveLength(1);
+    expect(area.bbox).toEqual([0, 0, 1, 1]);
+  });
+});
+
+describe("celah antar-kabupaten pada klip titik api (#280)", () => {
+  // Inti bug: tiap kabupaten disederhanakan INDEPENDEN, jadi batas bersamanya
+  // tak lagi berimpit — menyisakan pita tipis yang berada di luar KEDUANYA.
+  // Di sini pita itu dibuat eksplisit: A berakhir di x=5, B baru mulai di
+  // x=5,01. Union melarutkan batas dalam lebih dulu sehingga pita tak pernah
+  // terbentuk. Terukur di mis-dev: 9,4 km² wilayah Riau tak tertutup.
+  const kabA = square(0, 0, 5, 10);
+  const kabB = square(5.01, 0, 10, 10);
+  const union = square(0, 0, 10, 10);
+  const diCelah: [number, number] = [5.005, 5];
+
+  it("poligon per kabupaten menelan titik di celah — union tidak", () => {
+    const fc = hotspotFc([diCelah, [2, 5], [8, 5]]);
+
+    const perKabupaten = filterPointsWithinAreas(fc, [{ geometry: kabA }, { geometry: kabB }]);
+    expect(perKabupaten.features).toHaveLength(2);
+    expect(perKabupaten.features.map((f) => (f.geometry as { coordinates: number[] }).coordinates)).not.toContainEqual(diCelah);
+
+    const terUnion = filterPointsWithinAreas(fc, [{ geometry: union }]);
+    expect(terUnion.features).toHaveLength(3);
+  });
+
+  it("titik di luar provinsi tetap dibuang oleh outline ter-union", () => {
+    const fc = hotspotFc([[-1, 5], [11, 5], [5, 20]]);
+    expect(filterPointsWithinAreas(fc, [{ geometry: union }]).features).toHaveLength(0);
   });
 });
 
