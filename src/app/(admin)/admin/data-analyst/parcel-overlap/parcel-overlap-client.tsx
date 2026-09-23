@@ -292,7 +292,13 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
     workAreaRef.current?.querySelector<HTMLElement>('tr[data-state="selected"]')?.focus();
   }, [effectiveKey]);
 
-  const fileBase = () => exportFileBase("tumpang-tindih-lahan", pct === "all" ? null : `lebih-${pct}persen`, new Date());
+  // Nama berkas menyebut cakupannya: Lembaga/Distrik aktif + ambang % (dulu
+  // selalu "terfilter" — menyesatkan saat tanpa filter, dan nama Lembaga hilang).
+  const fileBase = () => {
+    const where = options.groups.find((g) => g.id === groupId)?.name ?? options.districts.find((d) => d.id === districtId)?.name;
+    const parts = [where, pct === "all" ? null : `lebih-${pct}persen`, level ? OVERLAP_LEVEL_LABEL[level] : null].filter(Boolean);
+    return exportFileBase("tumpang-tindih-lahan", parts.length ? parts.join("-") : "semua", new Date());
+  };
 
   const exportExcel = async () => {
     const { exportToExcel } = await import("@/lib/xlsx");

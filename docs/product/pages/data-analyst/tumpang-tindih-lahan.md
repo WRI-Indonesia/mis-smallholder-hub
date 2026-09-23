@@ -62,6 +62,8 @@ Terukur 2026-09-23 di `mis-dev` (snapshot prod, 14.174 lahan): 137 pasangan lolo
 
 ## Ekspor
 
+Nama berkas: `tumpang-tindih-lahan_<Lembaga|Distrik>-lebih-<N>persen-<Label>_<YYYYMMDD-HHmm>` (bagian yang tidak difilter dilewati; tanpa filter apa pun = `…_semua_…`).
+
 | Tombol | Isi |
 |---|---|
 | Excel | Satu sheet "Tumpang Tindih", mengikuti filter, pencarian & urutan tabel: Label, Jenis, % thd Lahan Terkecil, Luas Irisan, lalu per sisi A/B: ID Lahan, ID Petani, Nama Petani, Kelompok Tani, Lembaga, Distrik, Luas Poligon, % |
