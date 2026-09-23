@@ -114,7 +114,7 @@ Halaman: Laporan Lahan (/admin/report/land-parcel)
 | NKT | Opsional (#328) — `summarizeNkt`: "Terdampak NKT — NKT 4 (asesmen 2025-03-12, HJP)"; **belum dinilai ditulis "Belum dinilai"** (di layar & ekspor — sel kosong akan terbaca "tidak terdampak"); merah bila termasuk, amber bila terdampak |
 | Luas NKT (Ha) | Opsional (#328) — `affected_area_ha`, 3 desimal di Excel & PDF |
 | Patok · Kondisi Patok | Opsional (#331) — satu toggle → dua kolom ekspor: jumlah tautan patok aktif (`0` = belum ada) + ringkasan kondisi "2 ada · 1 hilang" (`summarizeMarkerConditions`); di layar "4 · 4 belum dipasang" / "Belum ada" |
-| Koordinat · Jumlah Node | **Excel saja** (#370, flag `excelOnly`; `landParcelExportColumns(show, { excel: true })`), default nyala, di ujung kanan: seluruh node poligon `Lintang,Bujur` 6 desimal, `; ` antar-node, `\|` antar-ring (lubang/MultiPolygon), node penutup tak diulang, dipotong `… (n node lagi)` di batas sel Excel — `formatParcelNodes` (`src/lib/parcel-node-coords.ts`); Jumlah Node = jumlah penuh walau teks terpotong |
+| Jumlah Node · Koordinat | **Excel saja** (#370, flag `excelOnly`; `landParcelExportColumns(show, { excel: true })`), default nyala, di ujung kanan: seluruh node poligon `Lintang,Bujur` 6 desimal, `; ` antar-node, `\|` antar-ring (lubang/MultiPolygon), node penutup tak diulang, dipotong `… (n node lagi)` di batas sel Excel — `formatParcelNodes` (`src/lib/parcel-node-coords.ts`); Jumlah Node = jumlah penuh walau teks terpotong |
 
 Agregasi: baris footer "Total" berisi jumlah Luas (Ha), hanya muncul bila kolom Luas aktif.
 

@@ -82,7 +82,7 @@ describe("landParcelExportColumns × landParcelExportRow — kolom ↔ baris", (
 
   it("Koordinat (#370): ujung kanan, isi dari node poligon; tanpa geometri → kosong", () => {
     const keys = landParcelExportColumns(() => true, { excel: true }).map((c) => c.key);
-    expect(keys.slice(-2)).toEqual(["koordinat", "jumlahNode"]);
+    expect(keys.slice(-2)).toEqual(["jumlahNode", "koordinat"]);
     const row = landParcelExportRow(ROW, 0, excelDecimal, "-", formatParcelNodes(GEOM));
     expect(row.koordinat).toBe("-0.500000,101.000000; -0.500000,101.001000; -0.501000,101.001000");
     expect(row.jumlahNode).toBe(3);

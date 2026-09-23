@@ -163,7 +163,7 @@ export async function exportParcelRow(
       columns: withCoord
         ? [PARCEL_XLSX_COLUMNS[0], { header: "Lintang", key: "lat", width: 14 }, { header: "Bujur", key: "lon", width: 14 }, ...PARCEL_XLSX_COLUMNS.slice(1)]
         : withNodes
-          ? [...PARCEL_XLSX_COLUMNS, { header: "Koordinat", key: "koordinat", width: 80, wrap: true }, { header: "Jumlah Node", key: "jumlahNode", width: 12 }]
+          ? [...PARCEL_XLSX_COLUMNS, { header: "Jumlah Node", key: "jumlahNode", width: 12 }, { header: "Koordinat", key: "koordinat", width: 80, wrap: true }]
           : PARCEL_XLSX_COLUMNS,
       data: features.map((f) => {
         const [lon, lat] = withCoord ? centroidOf(f.geometry) : [null, null];

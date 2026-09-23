@@ -244,9 +244,9 @@ export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
   // Patok (#331): satu toggle → dua kolom (jumlah + ringkasan kondisi).
   { header: "Patok", key: "patok", col: "patok" },
   { header: "Kondisi Patok", key: "patokKondisi", col: "patok" },
-  // Koordinat (#370): seluruh node poligon + jumlahnya, di ujung kanan, Excel saja.
-  { header: "Koordinat", key: "koordinat", col: "koordinat", excelOnly: true },
+  // Koordinat (#370): jumlah node lalu seluruh node poligon, di ujung kanan, Excel saja.
   { header: "Jumlah Node", key: "jumlahNode", col: "koordinat", excelOnly: true },
+  { header: "Koordinat", key: "koordinat", col: "koordinat", excelOnly: true },
 ];
 
 /**

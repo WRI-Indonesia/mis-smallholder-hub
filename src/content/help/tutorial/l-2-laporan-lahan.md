@@ -25,7 +25,7 @@ Hanya lahan ber-poligon yang muncul di petanya.
 2. Pilih **Distrik** lalu **Lembaga Petani**. Lembaga wajib dipilih.
 3. Periksa empat kartu ringkasan: Total Petani, Kelompok Tani, Total Lahan, Total Luas.
 + Tombol **Kolom** mengatur kolom tabel & ekspor. Selain atribut lahan, tersedia kolom legalitas — **Surat Kepemilikan**, **Nama di Surat**, **Luas Tertera**, **STDB** — yang bawaannya mati; nyalakan bila laporan dipakai untuk verifikasi kepemilikan. Luas Tertera adalah angka di surat, sengaja terpisah dari Luas poligon dan tidak ikut baris Total.
-+ Kolom **Koordinat (Excel)** (bawaannya menyala) hanya terbit di unduhan **Excel** — tidak di tabel layar maupun PDF. Isinya dua kolom di ujung kanan: **Koordinat** (seluruh titik sudut poligon sebagai `Lintang,Bujur` dipisah `; `, bisa ditempel ke Google Maps) dan **Jumlah Node**. Matikan bila tidak perlu agar berkas lebih ringan.
++ Kolom **Koordinat (Excel)** (bawaannya menyala) hanya terbit di unduhan **Excel** — tidak di tabel layar maupun PDF. Isinya dua kolom di ujung kanan: **Jumlah Node** lalu **Koordinat** (seluruh titik sudut poligon sebagai `Lintang,Bujur` dipisah `; `, bisa ditempel ke Google Maps). Matikan bila tidak perlu agar berkas lebih ringan.
 + Gunakan kartu ini sebagai pemeriksaan cepat. Bila Total Lahan jauh lebih kecil dari yang Anda tahu, kemungkinan sebagian lahan lembaga itu belum diunggah.
 4. Atur **Grid Index** — jumlah Baris × Kolom peta cetak.
 + Grid membagi wilayah lembaga menjadi sel-sel yang dicetak satu per satu, sehingga poligon tetap terbaca di kertas A4. Wilayah luas butuh grid lebih rapat; lembaga kecil cukup 1×1.
