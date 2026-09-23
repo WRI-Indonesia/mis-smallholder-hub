@@ -1,4 +1,5 @@
 import type { Position } from "geojson";
+import type { ParcelNodes } from "@/lib/parcel-node-coords";
 import type {
   LandParcelLegalFilters,
   LandParcelReportResult,
@@ -207,13 +208,16 @@ export function buildLandParcelReport(
 /** Kolom opsional Laporan Lahan (selektor kolom); kolom identitas selalu tampil. */
 export type LandParcelOptionalCol =
   | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
-  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt" | "patok";
+  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt" | "patok"
+  | "koordinat";
 
 export interface LandParcelExportColumn {
   header: string;
   key: string;
   /** Kolom opsional yang mengendalikannya; tanpa `col` = selalu tampil. */
   col?: LandParcelOptionalCol;
+  /** Hanya terbit di Excel (#370) — string node poligon akan merusak tabel PDF. */
+  excelOnly?: true;
 }
 
 export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
@@ -240,26 +244,35 @@ export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
   // Patok (#331): satu toggle → dua kolom (jumlah + ringkasan kondisi).
   { header: "Patok", key: "patok", col: "patok" },
   { header: "Kondisi Patok", key: "patokKondisi", col: "patok" },
+  // Koordinat (#370): seluruh node poligon + jumlahnya, di ujung kanan, Excel saja.
+  { header: "Koordinat", key: "koordinat", col: "koordinat", excelOnly: true },
+  { header: "Jumlah Node", key: "jumlahNode", col: "koordinat", excelOnly: true },
 ];
 
-/** Kolom ekspor sesuai selektor kolom halaman (`show`), urutan tetap. */
+/**
+ * Kolom ekspor sesuai selektor kolom halaman (`show`), urutan tetap. Kolom
+ * `excelOnly` hanya ikut bila `opts.excel` — jalur PDF memanggil tanpa opsi.
+ */
 export function landParcelExportColumns(
   show: (col: LandParcelOptionalCol) => boolean,
+  opts: { excel?: boolean } = {},
 ): { header: string; key: string }[] {
-  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => !c.col || show(c.col)).map(({ header, key }) => ({ header, key }));
+  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => (!c.col || show(c.col)) && (!c.excelOnly || opts.excel)).map(({ header, key }) => ({ header, key }));
 }
 
 /**
  * Satu baris ekspor. `decimal` menentukan bentuk angka desimal: Excel memakai
  * Number (bisa dijumlahkan), PDF string lokal id-ID. Nilai kosong → `empty`,
  * kecuali NKT ("Belum dinilai" eksplisit, #328 — sel kosong akan terbaca
- * "tidak terdampak") dan jumlah patok (0 = belum ada).
+ * "tidak terdampak") dan jumlah patok (0 = belum ada). `nodes` = hasil
+ * `formatParcelNodes` untuk kolom Koordinat Excel (#370); jalur PDF tak mengirimnya.
  */
 export function landParcelExportRow(
   row: LandParcelReportRow,
   index: number,
   decimal: (n: number, digits: number) => string | number,
   empty = "-",
+  nodes?: Pick<ParcelNodes, "text" | "count">,
 ): Record<string, string | number> {
   const text = (v: string | null) => v ?? empty;
   return {
@@ -285,6 +298,8 @@ export function landParcelExportRow(
     luasNkt: row.luasNkt != null ? decimal(row.luasNkt, 3) : empty,
     patok: row.patok,
     patokKondisi: text(row.patokKondisi),
+    koordinat: nodes?.text || empty,
+    jumlahNode: nodes ? nodes.count : empty,
   };
 }
 

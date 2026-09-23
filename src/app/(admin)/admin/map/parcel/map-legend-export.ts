@@ -4,6 +4,7 @@ import { downloadFeatureExport } from "@/lib/parcel-spatial-download";
 import { toAsciiDbf, toDbfProperties, parcelExportFileBase, type ParcelExportFormat, type ParcelExportProperties } from "@/lib/parcel-export-data";
 import { LAND_MARKER_CONDITION_LABELS, fmtCoord, labelOf, uniqueMarkerRows, groupMarkersByParcel, MARKER_XLSX_COLUMNS, formatUniqueMarkerRow } from "@/lib/land-marker";
 import { isNktAffected, landNktStatusFromShortLabel } from "@/lib/land-parcel-satellite-format";
+import { formatParcelNodes } from "@/lib/parcel-node-coords";
 import type { LandMarkerExportRow } from "@/server/actions/land-marker";
 import type { KTPoint } from "@/types/map";
 import { buildLayerReportDoc, type LayerReportContext, type LayerReportInput } from "@/lib/layer-report-pdf";
@@ -153,19 +154,26 @@ export async function exportParcelRow(
   if (features.length === 0) return 0;
   if (format === "xlsx") {
     const withCoord = row === "parcelPoints";
+    // Area Lahan (#370): seluruh node poligon di UJUNG KANAN — urutan kolom lama
+    // tidak bergeser bagi olahan turunan. Titik lahan & lahan NKT tidak ikut.
+    const withNodes = row === "parcelAreas";
     await exportToExcel({
       filename: b,
       sheetName: "Data",
       columns: withCoord
         ? [PARCEL_XLSX_COLUMNS[0], { header: "Lintang", key: "lat", width: 14 }, { header: "Bujur", key: "lon", width: 14 }, ...PARCEL_XLSX_COLUMNS.slice(1)]
-        : PARCEL_XLSX_COLUMNS,
+        : withNodes
+          ? [...PARCEL_XLSX_COLUMNS, { header: "Koordinat", key: "koordinat", width: 80, wrap: true }, { header: "Jumlah Node", key: "jumlahNode", width: 12 }]
+          : PARCEL_XLSX_COLUMNS,
       data: features.map((f) => {
         const [lon, lat] = withCoord ? centroidOf(f.geometry) : [null, null];
         const p = f.properties;
+        const nodes = withNodes ? formatParcelNodes(f.geometry) : null;
         return {
           ...Object.fromEntries(PARCEL_XLSX_COLUMNS.map((c) => [c.key, p[c.key] ?? ""])),
           nkt: p.nkt ?? "Belum dinilai",
           ...(withCoord ? { lat: Number(fmtCoord(lat as number)), lon: Number(fmtCoord(lon as number)) } : {}),
+          ...(nodes ? { koordinat: nodes.text, jumlahNode: nodes.count } : {}),
         };
       }),
     });

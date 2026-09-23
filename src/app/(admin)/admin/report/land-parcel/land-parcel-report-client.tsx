@@ -67,6 +67,7 @@ import {
   type ReportBasemapKey,
 } from "@/lib/report-basemap";
 import { formatNumber } from "@/lib/format";
+import { formatParcelNodes } from "@/lib/parcel-node-coords";
 
 interface District {
   id: string;
@@ -128,10 +129,13 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "luasNkt", label: "Luas NKT (Ha)" },
   // Patok (#331) — jumlah + ringkasan kondisi; default mati.
   { key: "patok", label: "Patok" },
+  // Koordinat node poligon (#370) — HANYA di Excel (tabel layar & PDF tidak
+  // punya kolom ini); default nyala.
+  { key: "koordinat", label: "Koordinat (Excel)" },
 ];
 
 /** Kolom yang menyala saat halaman dibuka — dipakai juga tombol "Bawaan". */
-const DEFAULT_COLS: ColKey[] = ["kelompokTani", "tahunTanam", "luas"];
+const DEFAULT_COLS: ColKey[] = ["kelompokTani", "tahunTanam", "luas", "koordinat"];
 
 export function LandParcelReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
@@ -442,7 +446,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
 
   // Kolom & baris ekspor dari satu definisi di lib (kolom Patok sempat kosong
   // di Excel/PDF karena baris ditulis terpisah dari kolom — review 09-15).
-  const buildExportColumns = () => landParcelExportColumns(show);
+  // Kolom `excelOnly` (Koordinat, #370) hanya ikut bila `excel`.
+  const buildExportColumns = (opts?: { excel?: boolean }) => landParcelExportColumns(show, opts);
 
   const scopeLabel = () =>
     selectedGroupObj?.name.replace(/\s+/g, "_") ??
@@ -450,8 +455,11 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     "Semua";
 
   // Baris export Excel (sheet penuh + subset per sel): desimal sebagai Number.
+  // Node poligon (#370) dari geometri yang sudah termuat — handler menolak jalan bila belum.
   const buildExportRows = (): Record<string, string | number>[] =>
-    reportRows.map((row, idx) => landParcelExportRow(row, idx, (n, digits) => Number(n.toFixed(digits)), EMPTY));
+    reportRows.map((row, idx) =>
+      landParcelExportRow(row, idx, (n, digits) => Number(n.toFixed(digits)), EMPTY, formatParcelNodes(geoms?.get(row.id))),
+    );
 
   const totalRow = (): Record<string, string | number> => ({
     no: "",
@@ -472,6 +480,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     program: "",
     tahunTanam: "",
     luas: Number(reportTotalLuas.toFixed(2)),
+    koordinat: "",
+    jumlahNode: "",
   });
 
   // Excel (#179): sheet "Lahan" penuh + gambar peta index; grid aktif → tambah
@@ -483,7 +493,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       return;
     }
 
-    const cols = buildExportColumns();
+    const cols = buildExportColumns({ excel: true });
     const rows = buildExportRows();
     const fullData = show("luas") ? [...rows, totalRow()] : rows;
 

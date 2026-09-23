@@ -5,6 +5,7 @@ import {
   landParcelExportRow,
   type LandParcelOptionalCol,
 } from "@/lib/report-land-parcel";
+import { formatParcelNodes } from "@/lib/parcel-node-coords";
 import type { LandParcelReportRow } from "@/types/report";
 
 /**
@@ -52,18 +53,44 @@ const EMPTY_ROW: LandParcelReportRow = {
   nkt: null, nktStatus: null, luasNkt: null, patok: 0, patokKondisi: null,
 };
 
+const GEOM = { type: "Polygon", coordinates: [[[101, -0.5], [101.001, -0.5], [101.001, -0.501], [101, -0.5]]] };
+
 const excelDecimal = (n: number, d: number) => Number(n.toFixed(d));
 
 describe("landParcelExportColumns × landParcelExportRow — kolom ↔ baris", () => {
-  it("setiap kunci kolom (semua kolom menyala) punya nilai di baris — terisi maupun kosong", () => {
-    const cols = landParcelExportColumns(() => true);
+  it("Excel: setiap kunci kolom (semua kolom menyala, termasuk excelOnly) punya nilai di baris — terisi maupun kosong", () => {
+    const cols = landParcelExportColumns(() => true, { excel: true });
     expect(cols.length).toBe(LAND_PARCEL_EXPORT_COLUMNS.length);
-    for (const row of [landParcelExportRow(ROW, 0, excelDecimal), landParcelExportRow(EMPTY_ROW, 1, excelDecimal)]) {
+    const nodes = formatParcelNodes(GEOM);
+    for (const row of [landParcelExportRow(ROW, 0, excelDecimal, "-", nodes), landParcelExportRow(EMPTY_ROW, 1, excelDecimal, "-", formatParcelNodes(null))]) {
       for (const c of cols) {
         expect(row, `kunci "${c.key}" (kolom "${c.header}") tidak dipetakan — kolom akan terbit kosong`).toHaveProperty(c.key);
         expect(row[c.key], `kunci "${c.key}" bernilai undefined`).not.toBeUndefined();
       }
     }
+  });
+
+  it("PDF: kolom excelOnly (Koordinat, #370) absen walau toggle-nya menyala; sisanya tetap terpetakan", () => {
+    const cols = landParcelExportColumns(() => true);
+    const keys = cols.map((c) => c.key);
+    expect(keys).not.toContain("koordinat");
+    expect(keys).not.toContain("jumlahNode");
+    expect(cols.length).toBe(LAND_PARCEL_EXPORT_COLUMNS.filter((c) => !c.excelOnly).length);
+    const row = landParcelExportRow(ROW, 0, excelDecimal, "—");
+    for (const c of cols) expect(row[c.key], `kunci "${c.key}" bernilai undefined`).not.toBeUndefined();
+  });
+
+  it("Koordinat (#370): ujung kanan, isi dari node poligon; tanpa geometri → kosong", () => {
+    const keys = landParcelExportColumns(() => true, { excel: true }).map((c) => c.key);
+    expect(keys.slice(-2)).toEqual(["koordinat", "jumlahNode"]);
+    const row = landParcelExportRow(ROW, 0, excelDecimal, "-", formatParcelNodes(GEOM));
+    expect(row.koordinat).toBe("-0.500000,101.000000; -0.500000,101.001000; -0.501000,101.001000");
+    expect(row.jumlahNode).toBe(3);
+    const none = landParcelExportRow(EMPTY_ROW, 0, excelDecimal, "-", formatParcelNodes(null));
+    expect(none.koordinat).toBe("-");
+    expect(none.jumlahNode).toBe(0);
+    const off = landParcelExportColumns((c) => c !== "koordinat", { excel: true }).map((c) => c.key);
+    expect(off).not.toContain("koordinat");
   });
 
   it("kolom Patok (#331): jumlah & ringkasan kondisi ikut ke Excel/PDF (regresi review 09-15)", () => {

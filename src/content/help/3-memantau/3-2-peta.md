@@ -17,7 +17,7 @@ icon: Map
 
 **Patok lahan** — Satu layer lagi di Legenda: **Patok lahan** (titik kuning) — seluruh patok batas kebun, apa pun status NKT lahannya. Mati bawaan; titiknya baru dimuat saat dicentang. Klik titik untuk melihat **kode patok** (`HJP-PTK-000123`), lahan pemakainya beserta nomor patok di tiap lahan, kondisi, dan koordinat.
 
-**Unduh per baris Legenda** — Bila punya izin Export, tiap baris Legenda punya ikon unduh: **Excel** (atribut) atau **Shapefile/GeoJSON/KML** — bentuknya mengikuti baris: baris *Point* (Lembaga, titik lahan, patok) menghasilkan titik, baris *Area/NKT* menghasilkan poligon. Baris Lahan NKT hanya berisi lahan termasuk/terdampak.
+**Unduh per baris Legenda** — Bila punya izin Export, tiap baris Legenda punya ikon unduh: **Excel** (atribut) atau **Shapefile/GeoJSON/KML** — bentuknya mengikuti baris: baris *Point* (Lembaga, titik lahan, patok) menghasilkan titik, baris *Area/NKT* menghasilkan poligon. Baris Lahan NKT hanya berisi lahan termasuk/terdampak. Excel baris *Area Lahan Petani* menyertakan dua kolom di ujung kanan: **Koordinat** — seluruh titik sudut (node) poligon sebagai `Lintang,Bujur` dipisah `; ` (bisa ditempel ke Google Maps; lahan berlubang/berbagian dipisah ` | `) — dan **Jumlah Node**. Lahan dengan node sangat banyak dipotong dengan penanda `… (n node lagi)`; geometri utuh tetap ada di unduhan Shapefile/GeoJSON/KML.
 
 **Zoom lewat panel kiri** — Klik ikon **bidik** (⌖) di kanan tiap baris Legenda atau teks labelnya (Point Lembaga Petani, Point/Area Lahan Petani, Lahan NKT, Patok), atau label "Tampilkan titik api" untuk langsung zoom ke sebaran data layer tersebut; kotak centangnya tetap untuk menampilkan/menyembunyikan layer.
 
