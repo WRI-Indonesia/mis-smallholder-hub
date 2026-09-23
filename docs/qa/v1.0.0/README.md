@@ -21,7 +21,7 @@ QC data lokal (`scripts/qa/data-qc.ts`, read-only): **20 ✓ · 1 ✗ · 9 cetak
 
 ## Keputusan
 
-**Go / No-go:** **Developer Go — terbatas** (Claude, 2026-09-23). **QA & Owner belum.** Rilis ini **belum memenuhi prasyarat tag**: run staging belum ada, dan run lokal tidak menguji peran OPERATOR/DONOR. Rincian beserta urutan yang disarankan ada di `05-signoff.md`.
+**Go / No-go:** **GO** (owner, 2026-09-23) — Developer *Go terbatas* · QA **dilewati** · Owner *Go*. **QA staging sengaja tidak dijalankan** atas keputusan owner (preseden v0.35.0 & v0.36.0). Konsekuensinya tercatat di `05-signoff.md`: peran **OPERATOR & DONOR tidak diuji di lingkungan mana pun**, dan **cap 500 baris #286 belum pernah terlihat bekerja pada data nyata**. Mitigasi: deploy staging hijau dengan kode identik, syarat Go #1 diverifikasi langsung di prod, rilis tanpa migrasi/seed/izin sehingga rollback = deploy commit sebelumnya.
 
 **Syarat khusus rilis ini — wajib dicek sebelum Go:**
 
