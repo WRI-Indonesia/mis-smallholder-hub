@@ -4,7 +4,7 @@ Satu **blok** per kasus. Ditulis dev saat menutup issue; dijalankan QA di stagin
 
 Format: `### TC-<issue>-<nn> · <judul> [P0] [regresi] (<menit> mnt)` lalu `Prasyarat:` · `Langkah:` (bernomor) · `Harapan:` (bullet) · opsional `Baseline dev:`.
 
-> **Data uji utama:** Lembaga **ISH-1401-01** (APSS - Sei Galuh, Distrik Kampar) — 541 lahan, 3 KT (termasuk isian **"Tidak Ada"** = 314 lahan), 30 Blok + 162 lahan tanpa Blok. Blok **1 F** = 9 lahan dalam dua baris (6 atas, 3 bawah) — tata letak yang dipakai owner untuk menilai urutan posisi.
+> **Data uji utama:** Lembaga **ISH-1401-01** (APSS - Sei Galuh, Distrik Kampar) — 541 lahan, 2 KT + isian **"Tidak Ada"** = 314 lahan (sebelum pembersihan data #374; sesudahnya kosong — pengelompokan Excel/peta sama saja), 30 Blok + 162 lahan tanpa Blok. Blok **1 F** = 9 lahan dalam dua baris (6 atas, 3 bawah) — tata letak yang dipakai owner untuk menilai urutan posisi.
 
 ## #370 — Excel lahan: kolom Jumlah Node + Koordinat
 
@@ -134,7 +134,7 @@ Langkah:
 Harapan:
 - Legenda: Deli makmur, KUD Terbit Sentosa Makmur, **Tanpa Kelompok Tani** (abu, 326) — tidak ada baris "Tidak Ada".
 - Detail Petani: tidak ada tombol Kelompok Tani · Blok.
-- Catatan: tabel **Struktur Kelembagaan** di tab Ringkasan masih menampilkan "Tidak Ada" sebagai KT — **diketahui**, bukan bagian rilis ini.
+- Tabel **Struktur Kelembagaan** di tab Ringkasan: lihat TC-374-02 (bergantung pada pembersihan data #374 di lingkungan uji).
 
 ## #373 — UL Parcel Code boleh di >1 lahan
 
