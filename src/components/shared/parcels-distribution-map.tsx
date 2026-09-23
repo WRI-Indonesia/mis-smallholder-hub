@@ -3,6 +3,15 @@
 import { useMemo, useRef, useState } from "react";
 import MapGL, { Source, Layer, Popup, type MapRef, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { LayerProps } from "react-map-gl/maplibre";
+import {
+  buildParcelColorGroups,
+  groupLabelAnchor,
+  parcelColorGroupKey,
+  NO_GROUP_COLOR,
+  NO_GROUP_KEY,
+  PARCEL_COLOR_BY_LABELS,
+  type ParcelColorBy,
+} from "@/lib/parcel-color-groups";
 import type { Feature, FeatureCollection, Geometry, Point, Polygon, MultiPolygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Target, User, Info, Landmark } from "lucide-react";
@@ -45,17 +54,10 @@ interface Props {
   treePoints?: { longitude: number; latitude: number; landParcelId?: string }[];
   /** Patok batas (#331): satu layer kuning untuk semua patok lahan (#345), toggle sendiri di legenda; popup kode. */
   markerPoints?: { id: string; code: string; longitude: number; latitude: number; condition: string }[];
+  /** Pilihan "Warna berdasarkan: Kelompok Tani · Blok" di legenda (#372, Detail Lembaga). */
+  allowColorByBlok?: boolean;
 }
 
-/** Palet kategorikal per Kelompok Tani — berulang bila KT > 12; tanpa-KT = abu. */
-const KT_COLORS = [
-  "#16a34a", "#2563eb", "#ea580c", "#9333ea", "#0d9488",
-  "#dc2626", "#ca8a04", "#db2777", "#4f46e5", "#65a30d",
-  "#0891b2", "#b45309",
-];
-const NO_KT_COLOR = "#94a3b8";
-const NO_KT_LABEL = "Tanpa Kelompok Tani";
-const NO_KT_KEY = "__tanpa_kt__";
 
 /** Kumpulkan semua [lng, lat] valid dari nested coordinates (Polygon/MultiPolygon). */
 function collectPositions(coords: unknown, out: [number, number][]): void {
@@ -115,12 +117,15 @@ export function ParcelsDistributionMap({
   canEditParcel = false,
   treePoints,
   markerPoints,
+  allowColorByBlok = false,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [styleKey, setStyleKey] = useState<MapStyleKey>("hybrid");
   const { mapStyle, labelFont, labelsReady, labelBeforeId, syncStyle, registerImageFallback } =
     useVectorBasemap(styleKey);
-  // KT yang disembunyikan via checklist legenda.
+  // Dasar warna & checklist legenda (#372): Kelompok Tani (bawaan) atau Blok.
+  const [colorBy, setColorBy] = useState<ParcelColorBy>("kelompokTani");
+  // Grup (KT/Blok sesuai `colorBy`) yang disembunyikan via checklist legenda.
   const [hiddenKts, setHiddenKts] = useState<Set<string>>(new Set());
   // Sorotan NKT (#330) — toggle sendiri, terpisah dari checklist KT.
   const [showNkt, setShowNkt] = useState(true);
@@ -148,36 +153,24 @@ export function ParcelsDistributionMap({
   // Popup bisa digeser agar tidak menutupi lahan yang dipilih (pola Peta Lahan).
   const popupDrag = useMapPopupDrag(popupKey);
 
-  const { collection, bounds, validCount, legend, labelBase, nktCount } = useMemo(() => {
-    // KT → warna: distinct ternormalisasi (trim + case-insensitive, konsisten
-    // #154), label = varian pertama, urut alfabetis agar penetapan warna stabil.
-    const ktLabels = new Map<string, string>();
-    for (const p of parcels) {
-      const label = p.kelompokTani?.trim();
-      if (!label) continue;
-      const key = label.toLowerCase();
-      if (!ktLabels.has(key)) ktLabels.set(key, label);
-    }
-    const sortedKeys = [...ktLabels.keys()].sort((a, b) => a.localeCompare(b));
-    const colorByKey = new Map<string, string>(
-      sortedKeys.map((key, i) => [key, KT_COLORS[i % KT_COLORS.length]])
-    );
+  const { collection, bounds, validCount, legend, labelBase, nktCount, groupLabelBase } = useMemo(() => {
+    // Grup → warna (#372; dulu KT saja, #171/#172): aturan grup sama dengan
+    // Excel per KT/Blok (#371) — tak peka huruf besar-kecil, "Tidak Ada" = tanpa
+    // grup, urutan natural — supaya penetapan warna stabil.
+    const groups = buildParcelColorGroups(parcels, colorBy);
+    const colorByKey = new Map(groups.map((g) => [g.key, g.color]));
 
     const features: Feature[] = [];
     const positions: [number, number][] = [];
     const countByKey = new Map<string, number>();
     const labels: { name: string; bounds: [number, number, number, number]; centroid: [number, number]; ktKey: string }[] = [];
-    let noKtCount = 0;
     let nktCount = 0;
     for (const p of parcels) {
       const geom = parseGeometry(p.geometry);
       if (!geom) continue;
-      const label = p.kelompokTani?.trim();
-      const key = label ? label.toLowerCase() : null;
-      const color = key ? colorByKey.get(key) ?? NO_KT_COLOR : NO_KT_COLOR;
-      if (key) countByKey.set(key, (countByKey.get(key) ?? 0) + 1);
-      else noKtCount += 1;
-      const ktKey = key ?? NO_KT_KEY;
+      const ktKey = parcelColorGroupKey(p, colorBy);
+      const color = colorByKey.get(ktKey) ?? NO_GROUP_COLOR;
+      countByKey.set(ktKey, (countByKey.get(ktKey) ?? 0) + 1);
       features.push({
         type: "Feature",
         geometry: geom,
@@ -223,20 +216,23 @@ export function ParcelsDistributionMap({
       b = [[minLng, minLat], [maxLng, maxLat]];
     }
 
-    const legendRows = sortedKeys
-      .filter((key) => (countByKey.get(key) ?? 0) > 0)
-      .map((key) => ({
-        key,
-        label: ktLabels.get(key)!,
-        color: colorByKey.get(key)!,
-        count: countByKey.get(key) ?? 0,
-      }));
-    if (noKtCount > 0)
-      legendRows.push({ key: NO_KT_KEY, label: NO_KT_LABEL, color: NO_KT_COLOR, count: noKtCount });
+    // Legenda hanya grup yang punya poligon (lahan tanpa geometri tak tergambar).
+    const legendRows = groups
+      .filter((g) => (countByKey.get(g.key) ?? 0) > 0)
+      .map((g) => ({ ...g, count: countByKey.get(g.key) ?? 0 }));
+    // Label nama Blok di atas salah satu lahan Blok itu sendiri (`groupLabelAnchor`), bukan "Tanpa Blok".
+    const groupLabels =
+      colorBy === "blok"
+        ? legendRows.flatMap((g) => {
+            if (g.key === NO_GROUP_KEY) return [];
+            const center = groupLabelAnchor(labels.filter((l) => l.ktKey === g.key).map((l) => l.centroid));
+            return center ? [{ key: g.key, label: g.label, center }] : [];
+          })
+        : [];
 
     const fc: FeatureCollection = { type: "FeatureCollection", features };
-    return { collection: fc, bounds: b, validCount: features.length, legend: legendRows, labelBase: labels, nktCount };
-  }, [parcels]);
+    return { collection: fc, bounds: b, validCount: features.length, legend: legendRows, labelBase: labels, nktCount, groupLabelBase: groupLabels };
+  }, [parcels, colorBy]);
 
   // Hanya render KT yang tercentang di legenda.
   const visibleCollection: FeatureCollection = useMemo(
@@ -250,20 +246,15 @@ export function ParcelsDistributionMap({
   // Titik pohon sawit (#238) — ber-ktKey agar ikut checklist legenda KT.
   const treeFeatures = useMemo(() => {
     if (!treePoints || treePoints.length === 0) return [];
-    const ktKeyByParcelId = new Map(
-      parcels.map((p) => {
-        const label = p.kelompokTani?.trim();
-        return [p.id, label ? label.toLowerCase() : NO_KT_KEY];
-      }),
-    );
+    const ktKeyByParcelId = new Map(parcels.map((p) => [p.id, parcelColorGroupKey(p, colorBy)]));
     return treePoints.map((t) => ({
       type: "Feature" as const,
       geometry: { type: "Point" as const, coordinates: [t.longitude, t.latitude] },
       properties: {
-        ktKey: (t.landParcelId ? ktKeyByParcelId.get(t.landParcelId) : null) ?? NO_KT_KEY,
+        ktKey: (t.landParcelId ? ktKeyByParcelId.get(t.landParcelId) : null) ?? NO_GROUP_KEY,
       },
     }));
-  }, [treePoints, parcels]);
+  }, [treePoints, parcels, colorBy]);
 
   // Titik pohon yang tampil mengikuti KT tercentang — jangan biarkan titik
   // "mengambang" saat KT-nya disembunyikan dari legenda.
@@ -289,6 +280,17 @@ export function ParcelsDistributionMap({
     });
     return { type: "FeatureCollection", features };
   }, [labelBase, hiddenKts, zoom]);
+
+  // Label nama Blok (#372) — hanya Blok yang tercentang.
+  const groupLabelGeojson = useMemo<FeatureCollection>(
+    () => ({
+      type: "FeatureCollection",
+      features: groupLabelBase
+        .filter((g) => !hiddenKts.has(g.key))
+        .map((g) => ({ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: g.center }, properties: { name: g.label } })),
+    }),
+    [groupLabelBase, hiddenKts],
+  );
 
   // Bounds gabungan poligon + titik pohon — titik lahan tanpa poligon tetap
   // terjangkau "Zoom ke semua" dan zoom awal.
@@ -471,6 +473,23 @@ export function ParcelsDistributionMap({
         </Source>
         )}
 
+        {/* Label nama Blok (#372): pembeda Blok yang sewarna saat Blok > palet. */}
+        {labelsReady && groupLabelGeojson.features.length > 0 && (
+          <Source type="geojson" data={groupLabelGeojson}>
+            <Layer
+              id="group-blok-label"
+              type="symbol"
+              layout={{
+                "text-field": ["get", "name"],
+                "text-font": [labelFont],
+                "text-size": 14,
+                "text-allow-overlap": false,
+              }}
+              paint={{ "text-color": "#111827", "text-halo-color": "#ffffff", "text-halo-width": 2 }}
+            />
+          </Source>
+        )}
+
         {selected && (
           <Popup
             key={popupKey}
@@ -529,10 +548,32 @@ export function ParcelsDistributionMap({
         />
       )}
 
-      {/* Legenda + checklist show/hide per Kelompok Tani — kiri atas */}
+      {/* Legenda + checklist show/hide per Kelompok Tani / Blok — kiri atas */}
       <div className="absolute top-3 left-3 z-10 bg-background/90 backdrop-blur-sm border rounded-md shadow-md p-2.5 max-h-[calc(100%-6rem)] w-52 overflow-y-auto">
+        {allowColorByBlok && (
+          <div className="mb-2 flex rounded border p-0.5" role="radiogroup" aria-label="Warna berdasarkan">
+            {(Object.keys(PARCEL_COLOR_BY_LABELS) as ParcelColorBy[]).map((k) => (
+              <button
+                key={k}
+                role="radio"
+                aria-checked={colorBy === k}
+                onClick={() => {
+                  if (k === colorBy) return;
+                  setColorBy(k);
+                  // Kunci grup berganti → checklist lama tak berlaku lagi.
+                  setHiddenKts(new Set());
+                }}
+                className={`flex-1 rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                  colorBy === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {PARCEL_COLOR_BY_LABELS[k]}
+              </button>
+            ))}
+          </div>
+        )}
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-          Legenda — Kelompok Tani
+          Legenda — {PARCEL_COLOR_BY_LABELS[colorBy]}
         </p>
         <ul className="space-y-1">
           {legend.map((row) => (

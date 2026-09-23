@@ -42,7 +42,7 @@ STDB tidak lahir bernomor. Nomornya baru keluar dari dinas di tahap terakhir, ja
 + **Revisi bukan Ditolak.** Selama tahapnya *Revisi*, berkasnya masih dihitung sebagai pengajuan yang berjalan. *Ditolak* menutup berkas itu — pakai hanya bila memang tidak akan dilanjutkan dengan berkas tersebut. Keduanya wajib diberi **Catatan Tahap** (alasannya).
 + **Satu petani hanya boleh punya satu berkas yang sedang berjalan** (Persiapan Data / Pengajuan / Revisi). Lahan lain yang ikut dalam pengajuan yang sama ditautkan ke berkas itu, bukan dibuatkan berkas baru. Petani boleh punya banyak STDB yang sudah **Terbit**.
 + Kolom **Nomor**, **Tanggal Terbit**, dan **Tahun Terbit** hanya muncul pada tahap *Terbit* — supaya baris pengajuan tidak pernah terbaca seolah STDB-nya sudah keluar.
-+ **UL Parcel Code** — pasangan sumber + kode harus unik; kode yang sudah dipakai lahan lain ditolak.
++ **UL Parcel Code** — satu lahan tidak boleh punya kode yang sama dua kali untuk pemeta yang sama. Kode yang **sudah dipakai lahan lain tetap diterima**: barisnya diberi tanda amber *"Juga dipakai …"* berisi ID lahan lain itu (bisa diklik bila lahan itu masuk cakupan akses Anda; di luar cakupan hanya tampil ID-nya), supaya klaim ganda bisa dicek silang lalu diperbaiki di lahan yang keliru.
 + **Program** — untuk saat ini hanya *Demplot PBU*; status Direncanakan / Berjalan / Selesai / Dibatalkan, tanggal selesai tidak boleh mendahului tanggal mulai.
 5. Untuk mengubah, klik ikon **pensil** di ujung baris; untuk menghapus, klik ikon **tempat sampah**, lalu konfirmasi.
 + Menghapus surat/kode/program hanya **menonaktifkan** (data tersimpan sebagai riwayat). Pada STDB ikonnya **lepas tautan**: STDB-nya tetap ada untuk petani dan lahan lain, hanya kaitan ke lahan ini yang dilepas.
@@ -61,6 +61,8 @@ Baris STDB menampilkan **tahapnya** (yang sudah Terbit tampil polos tanpa penand
 
 **"Nomor STDB ini sudah terdaftar untuk petani yang sama"** saat mengubah — Anda mengganti nomor menjadi nomor STDB lain milik petani itu. Bila maksudnya menautkan lahan ke STDB tersebut, lepas STDB ini lalu **Tambah** STDB dengan nomor itu.
 
-**"Kode ini sudah dipakai lahan lain untuk sumber yang sama"** — UL Parcel Code unik per sumber. Cari lahan pemakainya lewat pencarian di Master Data → Lahan (atau detail lahan yang bersangkutan), lalu perbaiki di sana lebih dulu.
+**"Lahan ini sudah punya kode ini untuk pemeta yang sama"** — kode itu sudah tercatat di lahan ini; tidak perlu ditambah lagi.
+
+**Baris kode bertanda amber "Juga dipakai …"** — kode yang sama tercatat di lahan lain (biasanya vendor memetakan dua lahan dengan satu kode, atau huruf lahan tergeser). Klik ID lahan di tanda itu, bandingkan poligon & petaninya, lalu hapus kode dari lahan yang keliru. ID yang tampil sebagai teks biasa (tak bisa diklik) berada di luar cakupan akses Anda — mintalah pengguna yang memegang Lembaga itu untuk memeriksanya. Tanda hilang sendiri begitu kode hanya tersisa di satu lahan.
 
 **"Lahan tidak ditemukan atau di luar akses Anda"** — lahan nonaktif atau di luar wilayah/lembaga akses Anda; aktifkan kembali lahan dulu (SUPERADMIN) atau minta akses.

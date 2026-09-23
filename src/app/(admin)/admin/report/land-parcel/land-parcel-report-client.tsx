@@ -47,6 +47,12 @@ import {
   describeLegalSummary,
   landParcelExportColumns,
   landParcelExportRow,
+  groupLandParcelRows,
+  sortByMapPosition,
+  LAND_PARCEL_SHEET_SPLIT_LABELS,
+  LAND_PARCEL_ROW_ORDER_LABELS,
+  type LandParcelSheetSplit,
+  type LandParcelRowOrder,
   type LandParcelOptionalCol as ColKey,
   type LpGeoJson,
   type LpMapLayout,
@@ -67,6 +73,7 @@ import {
   type ReportBasemapKey,
 } from "@/lib/report-basemap";
 import { formatNumber } from "@/lib/format";
+import { formatParcelNodes } from "@/lib/parcel-node-coords";
 
 interface District {
   id: string;
@@ -128,10 +135,13 @@ const TOGGLEABLE: { key: ColKey; label: string }[] = [
   { key: "luasNkt", label: "Luas NKT (Ha)" },
   // Patok (#331) — jumlah + ringkasan kondisi; default mati.
   { key: "patok", label: "Patok" },
+  // Koordinat node poligon (#370) — HANYA di Excel (tabel layar & PDF tidak
+  // punya kolom ini); default nyala.
+  { key: "koordinat", label: "Koordinat (Excel)" },
 ];
 
 /** Kolom yang menyala saat halaman dibuka — dipakai juga tombol "Bawaan". */
-const DEFAULT_COLS: ColKey[] = ["kelompokTani", "tahunTanam", "luas"];
+const DEFAULT_COLS: ColKey[] = ["kelompokTani", "tahunTanam", "luas", "koordinat"];
 
 export function LandParcelReportClient({ districts, canExport, canPrint }: Props) {
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
@@ -140,6 +150,10 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
 
   // Grid index (#179): pecah peta jadi baris × kolom (fleksibel, input user).
   const [gridRows, setGridRows] = useState(1);
+  // Pecah sheet Excel (#371): per sel grid (bawaan), per Kelompok Tani, atau per Blok.
+  const [sheetSplit, setSheetSplit] = useState<LandParcelSheetSplit>("grid");
+  // Urutan No (#371): abjad pemilik (urutan server) atau posisi lahan di peta.
+  const [rowOrder, setRowOrder] = useState<LandParcelRowOrder>("pemilik");
   const [gridCols, setGridCols] = useState(1);
   // Ceklis isi label poligon di peta (minimal satu).
   const [labelParts, setLabelParts] = useState<Set<LabelKey>>(new Set<LabelKey>(["no"]));
@@ -293,7 +307,11 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
   const formatLuas = (num: number) => formatDecimal(num, 2);
   const displayOrEmpty = (v: string | null) => v ?? EMPTY;
 
-  const reportRows = useMemo(() => reportData?.rows ?? [], [reportData]);
+  // Satu urutan untuk tabel, peta, PDF, dan Excel — nomor di peta = kolom No.
+  const reportRows = useMemo(() => {
+    const rows = reportData?.rows ?? [];
+    return rowOrder === "posisi" && geoms ? sortByMapPosition(rows, (r) => geoms.get(r.id)) : rows;
+  }, [reportData, rowOrder, geoms]);
 
   const toggleLabelPart = (k: LabelKey) =>
     setLabelParts((prev) => {
@@ -442,7 +460,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
 
   // Kolom & baris ekspor dari satu definisi di lib (kolom Patok sempat kosong
   // di Excel/PDF karena baris ditulis terpisah dari kolom — review 09-15).
-  const buildExportColumns = () => landParcelExportColumns(show);
+  // Kolom `excelOnly` (Koordinat, #370) hanya ikut bila `excel`.
+  const buildExportColumns = (opts?: { excel?: boolean }) => landParcelExportColumns(show, opts);
 
   const scopeLabel = () =>
     selectedGroupObj?.name.replace(/\s+/g, "_") ??
@@ -450,10 +469,14 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     "Semua";
 
   // Baris export Excel (sheet penuh + subset per sel): desimal sebagai Number.
-  const buildExportRows = (): Record<string, string | number>[] =>
-    reportRows.map((row, idx) => landParcelExportRow(row, idx, (n, digits) => Number(n.toFixed(digits)), EMPTY));
+  // Node poligon (#370) dari geometri yang sudah termuat — handler menolak jalan bila belum.
+  // `rows` = subset per KT/Blok (#371) → No mulai 1 lagi per sheet.
+  const buildExportRows = (rows = reportRows): Record<string, string | number>[] =>
+    rows.map((row, idx) =>
+      landParcelExportRow(row, idx, (n, digits) => Number(n.toFixed(digits)), EMPTY, show("koordinat") ? formatParcelNodes(geoms?.get(row.id)) : undefined),
+    );
 
-  const totalRow = (): Record<string, string | number> => ({
+  const totalRow = (totalLuas = reportTotalLuas): Record<string, string | number> => ({
     no: "",
     lembagaTani: "Total",
     namaPetani: "",
@@ -471,7 +494,9 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     ulParcelCode: "",
     program: "",
     tahunTanam: "",
-    luas: Number(reportTotalLuas.toFixed(2)),
+    luas: Number(totalLuas.toFixed(2)),
+    koordinat: "",
+    jumlahNode: "",
   });
 
   // Excel (#179): sheet "Lahan" penuh + gambar peta index; grid aktif → tambah
@@ -483,7 +508,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       return;
     }
 
-    const cols = buildExportColumns();
+    const cols = buildExportColumns({ excel: true });
     const rows = buildExportRows();
     const fullData = show("luas") ? [...rows, totalRow()] : rows;
 
@@ -511,9 +536,80 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
     const fullLayout = buildLandParcelMapLayout(mapParcels, PREVIEW_BOX);
     const linesByNo = new Map(mapParcels.map((p) => [p.no, p.labelLines]));
     const split = gridRows * gridCols > 1 ? splitParcelsIntoGrid(mapParcels, gridRows, gridCols) : null;
-    const useGrid = split !== null && split.cells.length > 0 && !!fullLayout.frame;
+    // Sheet per sel grid hanya di mode "Grid peta"; mode KT/Blok (#371) diganti sheet grup tanpa gambar.
+    const useGrid = sheetSplit === "grid" && split !== null && split.cells.length > 0 && !!fullLayout.frame;
+    // Mode posisi: urutan baca dihitung ulang di dalam tiap grup (baris peta grup ≠ baris peta Lembaga).
+    const groups = (sheetSplit === "grid" ? [] : groupLandParcelRows(reportRows, sheetSplit)).map((g) =>
+      rowOrder === "posisi" ? { ...g, rows: sortByMapPosition(g.rows, (r) => geoms.get(r.id)) } : g,
+    );
+    // Peta per KT/Blok (owner 2026-09-23): lahan grup saja, label No mengikuti
+    // No sheet (mulai 1 lagi). Latar ikut batas grid (BASEMAP_MAX_CELLS) — di
+    // atasnya poligon tetap digambar tanpa latar.
+    const rowIdx = new Map(reportRows.map((r, i) => [r.id, i]));
+    const groupMaps = groups.map((g) => {
+      const parcels = g.rows.map((row, i) => {
+        const base = mapParcels[rowIdx.get(row.id)!];
+        const labelLines = labelParts.has("no") ? [String(i + 1), ...base.labelLines.slice(1)] : base.labelLines;
+        return { no: i + 1, geometry: base.geometry, labelLines };
+      });
+      return {
+        layout: buildLandParcelMapLayout(parcels, PREVIEW_BOX),
+        linesByNo: new Map(parcels.map((p) => [p.no, p.labelLines])),
+      };
+    });
+    // Mode KT/Blok tak memakai grid → kunci latar karena grid besar
+    // (`basemapLocked`) tak berlaku; batasnya jumlah sheet grup (review wrap-up).
+    const groupBasemapKey: ReportBasemapKey = sheetSplit === "grid" ? activeBasemap : basemap;
+    const groupAttribution = REPORT_BASEMAP_ATTRIBUTION[groupBasemapKey];
+    const groupBasemap = isTileBasemap(groupBasemapKey) && groups.length <= BASEMAP_MAX_CELLS;
+    if (isTileBasemap(groupBasemapKey) && !groupBasemap) {
+      toast.info(`Latar peta tidak dipasang di ${groups.length} sheet ${LAND_PARCEL_SHEET_SPLIT_LABELS[sheetSplit]} (maks. ${BASEMAP_MAX_CELLS}) — poligon tetap tergambar.`);
+    }
+    const groupBasemaps: (string | undefined)[] = [];
+    // Ikhtisar sheet Lahan: pada mode grup dengan grid terkunci, latarnya dijahit di sini.
+    let overviewBasemap = mapImages.get("");
+    let overviewAttribution = basemapAttribution;
+    if (groupBasemap) {
+      setPreparingMaps(true);
+      try {
+        if (basemapLocked && fullLayout.frame) {
+          overviewBasemap = await composeForBox(groupBasemapKey, fullLayout.frame, PREVIEW_BOX, basemapDim);
+          overviewAttribution = groupAttribution;
+        }
+        // Berurutan (pola ensureBasemaps) — tak menghantam proxy tile sekaligus.
+        for (const m of groupMaps) {
+          groupBasemaps.push(m.layout.frame ? await composeForBox(groupBasemapKey, m.layout.frame, PREVIEW_BOX, basemapDim) : undefined);
+        }
+      } catch (err) {
+        toast.error((err instanceof Error && err.message) || "Gagal menyiapkan latar peta");
+        return;
+      } finally {
+        setPreparingMaps(false);
+      }
+    }
 
     try {
+      const groupSheets = await Promise.all(
+        groups.map(async (g, gi) => {
+          const data = buildExportRows(g.rows);
+          const { layout, linesByNo: groupLines } = groupMaps[gi];
+          return {
+            label: g.label,
+            data: show("luas") ? [...data, totalRow(g.rows.reduce((sum, r) => sum + (r.luas ?? 0), 0))] : data,
+            image: layout.polygons.length > 0
+              ? await toPng(
+                  <LayoutSvg
+                    layout={layout}
+                    linesByNo={groupLines}
+                    basemapUrl={groupBasemaps[gi]}
+                    attribution={groupBasemap ? groupAttribution : undefined}
+                  />,
+                )
+              : null,
+          };
+        }),
+      );
+
       let overviewImage: LpExcelImage | null = null;
       if (fullLayout.polygons.length > 0) {
         overviewImage = useGrid
@@ -530,8 +626,8 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               <LayoutSvg
                 layout={fullLayout}
                 linesByNo={linesByNo}
-                basemapUrl={mapImages.get("")}
-                attribution={basemapAttribution}
+                basemapUrl={overviewBasemap}
+                attribution={overviewAttribution}
               />,
             );
       }
@@ -557,11 +653,12 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
         : [];
 
       await exportLandParcelReportExcel({
-        filename: `Laporan_Lahan_${scopeLabel()}`,
+        filename: `Laporan_Lahan_${scopeLabel()}${sheetSplit === "kelompokTani" ? "_per_KT" : sheetSplit === "blok" ? "_per_Blok" : ""}`,
         columns: cols,
         fullData,
         overviewImage,
         cellSheets,
+        groupSheets,
         // Sheet "Ringkasan" tersendiri, bukan baris di atas tabel: sheet data
         // harus tetap mulai di baris 1 agar AutoFilter/pivot Excel jalan.
         infoSheet: [
@@ -576,6 +673,18 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
             value: c.value,
             note: c.note,
           })),
+          // Berkas yang beredar harus menjelaskan dirinya (#371); mode Grid tak menambah baris.
+          ...(rowOrder === "pemilik"
+            ? []
+            : [{ section: "Berkas", label: "Urutan No", value: LAND_PARCEL_ROW_ORDER_LABELS[rowOrder] }]),
+          ...(sheetSplit === "grid"
+            ? []
+            : [{
+                section: "Berkas",
+                label: "Pecah sheet",
+                value: `${LAND_PARCEL_SHEET_SPLIT_LABELS[sheetSplit]} (${groups.length} sheet)`,
+                note: "Satu sheet per grup + peta lahan grup (No = No sheet); sheet Lahan tetap berisi seluruh baris",
+              }]),
         ],
       });
     } catch (err) {
@@ -655,6 +764,7 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       metadata: [
         { label: "Distrik", value: selectedDistrictObj?.name ?? "Semua Distrik" },
         { label: "Lembaga Petani", value: selectedGroupObj?.name ?? "-" },
+        ...(rowOrder === "pemilik" ? [] : [{ label: "Urutan No", value: LAND_PARCEL_ROW_ORDER_LABELS[rowOrder] }]),
       ],
       // Filter & ringkasan wajib tercetak (#305): tanpa filter, PDF hasil
       // saringan "tanpa surat" terbaca seperti roster lengkap; tanpa ringkasan,
@@ -1062,6 +1172,17 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
       {/* Toolbar: kolom + export */}
       {reportData && reportData.rows.length > 0 && (
         <div className="flex items-center justify-end gap-2 print:hidden">
+          <select
+            aria-label="Urutan No"
+            title="Urutan No — berlaku untuk tabel, peta, PDF, dan Excel"
+            value={rowOrder}
+            onChange={(e) => setRowOrder(e.target.value as LandParcelRowOrder)}
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+          >
+            {(Object.keys(LAND_PARCEL_ROW_ORDER_LABELS) as LandParcelRowOrder[]).map((k) => (
+              <option key={k} value={k}>Urut: {LAND_PARCEL_ROW_ORDER_LABELS[k]}</option>
+            ))}
+          </select>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 px-3 h-9 text-sm font-medium border rounded-md bg-background hover:bg-accent hover:text-accent-foreground outline-none transition-colors">
               <SlidersHorizontal className="h-4 w-4" />
@@ -1100,6 +1221,19 @@ export function LandParcelReportClient({ districts, canExport, canPrint }: Props
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+          {canExport && (
+            <select
+              aria-label="Pecah sheet Excel per"
+              title="Pecah sheet Excel per — hanya berlaku untuk unduhan Excel"
+              value={sheetSplit}
+              onChange={(e) => setSheetSplit(e.target.value as LandParcelSheetSplit)}
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+            >
+              {(Object.keys(LAND_PARCEL_SHEET_SPLIT_LABELS) as LandParcelSheetSplit[]).map((k) => (
+                <option key={k} value={k}>Sheet per {LAND_PARCEL_SHEET_SPLIT_LABELS[k]}</option>
+              ))}
+            </select>
+          )}
           {canExport && (
             <Button
               variant="outline"

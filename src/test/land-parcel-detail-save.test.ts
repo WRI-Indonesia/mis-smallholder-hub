@@ -111,18 +111,33 @@ describe("planLandParcelDetailRows — STDB per petani + tautan M:N", () => {
 });
 
 describe("planLandParcelDetailRows — UL Parcel Code", () => {
-  it("baru → create; milik lahan sama & aktif → unchanged; nonaktif → update (reaktivasi/pindah); aktif milik lahan lain → skip", () => {
+  it("baru → create; aktif di lahan ini → unchanged; nonaktif di lahan ini → reaktivasi; nonaktif di lahan lain → create", () => {
     const existing = emptyExistingState();
-    existing.externalIds.set("SAME", { parcelUid: "uid-1", isActive: true });
-    existing.externalIds.set("INACTIVE", { parcelUid: "uid-old", isActive: false });
-    existing.externalIds.set("TAKEN", { parcelUid: "uid-other", isActive: true });
+    existing.externalIds.set("SAME", [{ id: "e1", parcelUid: "uid-1", isActive: true }]);
+    existing.externalIds.set("OWN_OFF", [{ id: "e2", parcelUid: "uid-1", isActive: false }]);
+    existing.externalIds.set("OTHER_OFF", [{ id: "e3", parcelUid: "uid-old", isActive: false }]);
     const plan = planLandParcelDetailRows(
-      [row({ externalCode: "NEW" }), row({ externalCode: "SAME" }), row({ externalCode: "INACTIVE" }), row({ externalCode: "TAKEN" }), row({ externalCode: "NEW" })],
+      [row({ externalCode: "NEW" }), row({ externalCode: "SAME" }), row({ externalCode: "OWN_OFF" }), row({ externalCode: "OTHER_OFF" }), row({ externalCode: "NEW" })],
       existing,
     );
-    expect(plan.externalIdCreates).toEqual([{ parcelUid: "uid-1", code: "NEW" }]);
-    expect(plan.externalIdUpdates).toEqual([{ code: "INACTIVE", parcelUid: "uid-1" }]);
-    expect(plan.summary).toMatchObject({ externalIdsCreated: 1, externalIdsUnchanged: 1, externalIdsUpdated: 1, externalIdsSkipped: 1 });
+    expect(plan.externalIdCreates).toEqual([{ parcelUid: "uid-1", code: "NEW" }, { parcelUid: "uid-1", code: "OTHER_OFF" }]);
+    expect(plan.externalIdUpdates).toEqual([{ id: "e2" }]);
+    expect(plan.summary).toMatchObject({ externalIdsCreated: 2, externalIdsUnchanged: 1, externalIdsUpdated: 1, externalIdsShared: 0 });
+  });
+
+  it("kode aktif di lahan lain TIDAK dipindah — lahan ini dapat record sendiri, dihitung shared (keputusan owner 2026-09-23)", () => {
+    const existing = emptyExistingState();
+    existing.externalIds.set("TAKEN", [{ id: "e9", parcelUid: "uid-other", isActive: true }]);
+    const plan = planLandParcelDetailRows([row({ externalCode: "TAKEN" })], existing);
+    expect(plan.externalIdCreates).toEqual([{ parcelUid: "uid-1", code: "TAKEN" }]);
+    expect(plan.externalIdUpdates).toEqual([]);
+    expect(plan.summary).toMatchObject({ externalIdsCreated: 1, externalIdsShared: 1 });
+  });
+
+  it("kode sama untuk dua lahan dalam satu berkas → keduanya dibuat & dihitung shared", () => {
+    const plan = planLandParcelDetailRows([row({ externalCode: "DUP" }), row({ parcelUid: "uid-2", externalCode: "DUP" })], emptyExistingState());
+    expect(plan.externalIdCreates).toEqual([{ parcelUid: "uid-1", code: "DUP" }, { parcelUid: "uid-2", code: "DUP" }]);
+    expect(plan.summary).toMatchObject({ externalIdsCreated: 2, externalIdsShared: 2 });
   });
 });
 
@@ -135,10 +150,10 @@ describe("planLandParcelDetailRows — Kelompok Tani & ringkasan", () => {
 
   it("mergeParcelDetailSummary menjumlahkan semua counter kecuali rows", () => {
     const total = emptyParcelDetailSummary(1000);
-    const part = { ...emptyParcelDetailSummary(500), documentsCreated: 3, externalIdsSkipped: 2 };
+    const part = { ...emptyParcelDetailSummary(500), documentsCreated: 3, externalIdsShared: 2 };
     mergeParcelDetailSummary(total, part);
     mergeParcelDetailSummary(total, part);
-    expect(total).toMatchObject({ rows: 1000, documentsCreated: 6, externalIdsSkipped: 4 });
+    expect(total).toMatchObject({ rows: 1000, documentsCreated: 6, externalIdsShared: 4 });
   });
 
   it("baris tanpa detail apa pun tidak menghasilkan operasi", () => {

@@ -313,7 +313,7 @@ describe("validateParcelDetailRows", () => {
     expect(r.data?.stdb).toBeNull();
   });
 
-  it("UL Parcel Code yang sama di dua lahan berbeda → kedua baris error (kode unik per lahan)", () => {
+  it("UL Parcel Code yang sama di dua lahan berbeda → keduanya valid (klaim ganda boleh, keputusan owner 2026-09-23)", () => {
     const rs = validateParcelDetailRows(
       [
         row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", parcel_code: "ID0001" }),
@@ -321,8 +321,8 @@ describe("validateParcelDetailRows", () => {
       ],
       mapping, parcels,
     );
-    expect(rs.every((r) => !r._isValid)).toBe(true);
-    expect(rs[0]._errors.join(" ")).toContain("dipakai lebih dari satu lahan");
+    expect(rs.every((r) => r._isValid)).toBe(true);
+    expect(rs.map((r) => r.data?.externalCode)).toEqual(["ID0001", "id0001"]);
   });
 
   it("kode sama di baris ganda lahan yang SAMA tidak dianggap bentrok", () => {

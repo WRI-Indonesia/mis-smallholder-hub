@@ -141,7 +141,8 @@ export interface LandParcelSatellites {
   parcelUid: string;
   documents: LandParcelDocumentItem[];
   stdbs: LandStdbItem[];
-  externalIds: LandParcelExternalIdItem[];
+  /** `otherParcels` = lahan lain yang juga memegang kode ini (klaim ganda, keputusan owner 2026-09-23) — untuk cek silang. */
+  externalIds: (LandParcelExternalIdItem & { otherParcels: { parcelId: string; id: string | null }[] })[];
   programs: LandParcelProgramItem[];
   border: LandParcelBorderItem | null;
   nkt: LandParcelNktItem | null;

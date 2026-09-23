@@ -1,4 +1,6 @@
 import type { Position } from "geojson";
+import type { ParcelNodes } from "@/lib/parcel-node-coords";
+import { EMPTY_GROUP_PLACEHOLDER } from "@/lib/group-placeholder";
 import type {
   LandParcelLegalFilters,
   LandParcelReportResult,
@@ -207,13 +209,16 @@ export function buildLandParcelReport(
 /** Kolom opsional Laporan Lahan (selektor kolom); kolom identitas selalu tampil. */
 export type LandParcelOptionalCol =
   | "kelompokTani" | "blok" | "komoditas" | "species" | "psr" | "tahunTanam" | "luas"
-  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt" | "patok";
+  | "surat" | "namaDiSurat" | "luasTertera" | "stdb" | "ulParcelCode" | "program" | "nkt" | "luasNkt" | "patok"
+  | "koordinat";
 
 export interface LandParcelExportColumn {
   header: string;
   key: string;
   /** Kolom opsional yang mengendalikannya; tanpa `col` = selalu tampil. */
   col?: LandParcelOptionalCol;
+  /** Hanya terbit di Excel (#370) — string node poligon akan merusak tabel PDF. */
+  excelOnly?: true;
 }
 
 export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
@@ -240,26 +245,35 @@ export const LAND_PARCEL_EXPORT_COLUMNS: readonly LandParcelExportColumn[] = [
   // Patok (#331): satu toggle → dua kolom (jumlah + ringkasan kondisi).
   { header: "Patok", key: "patok", col: "patok" },
   { header: "Kondisi Patok", key: "patokKondisi", col: "patok" },
+  // Koordinat (#370): jumlah node lalu seluruh node poligon, di ujung kanan, Excel saja.
+  { header: "Jumlah Node", key: "jumlahNode", col: "koordinat", excelOnly: true },
+  { header: "Koordinat", key: "koordinat", col: "koordinat", excelOnly: true },
 ];
 
-/** Kolom ekspor sesuai selektor kolom halaman (`show`), urutan tetap. */
+/**
+ * Kolom ekspor sesuai selektor kolom halaman (`show`), urutan tetap. Kolom
+ * `excelOnly` hanya ikut bila `opts.excel` — jalur PDF memanggil tanpa opsi.
+ */
 export function landParcelExportColumns(
   show: (col: LandParcelOptionalCol) => boolean,
+  opts: { excel?: boolean } = {},
 ): { header: string; key: string }[] {
-  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => !c.col || show(c.col)).map(({ header, key }) => ({ header, key }));
+  return LAND_PARCEL_EXPORT_COLUMNS.filter((c) => (!c.col || show(c.col)) && (!c.excelOnly || opts.excel)).map(({ header, key }) => ({ header, key }));
 }
 
 /**
  * Satu baris ekspor. `decimal` menentukan bentuk angka desimal: Excel memakai
  * Number (bisa dijumlahkan), PDF string lokal id-ID. Nilai kosong → `empty`,
  * kecuali NKT ("Belum dinilai" eksplisit, #328 — sel kosong akan terbaca
- * "tidak terdampak") dan jumlah patok (0 = belum ada).
+ * "tidak terdampak") dan jumlah patok (0 = belum ada). `nodes` = hasil
+ * `formatParcelNodes` untuk kolom Koordinat Excel (#370); jalur PDF tak mengirimnya.
  */
 export function landParcelExportRow(
   row: LandParcelReportRow,
   index: number,
   decimal: (n: number, digits: number) => string | number,
   empty = "-",
+  nodes?: Pick<ParcelNodes, "text" | "count">,
 ): Record<string, string | number> {
   const text = (v: string | null) => v ?? empty;
   return {
@@ -285,7 +299,63 @@ export function landParcelExportRow(
     luasNkt: row.luasNkt != null ? decimal(row.luasNkt, 3) : empty,
     patok: row.patok,
     patokKondisi: text(row.patokKondisi),
+    koordinat: nodes?.text || empty,
+    jumlahNode: nodes ? nodes.count : empty,
   };
+}
+
+// ─── Pecah sheet Excel per Kelompok Tani / Blok (#371) ──────────────────────
+
+export type LandParcelSheetSplit = "grid" | "kelompokTani" | "blok";
+
+export const LAND_PARCEL_SHEET_SPLIT_LABELS: Record<LandParcelSheetSplit, string> = {
+  grid: "Grid peta",
+  kelompokTani: "Kelompok Tani",
+  blok: "Blok",
+};
+
+const NO_KT = "Tanpa KT";
+const NO_BLOK = "Tanpa Blok";
+const sheetCollator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "base" });
+
+/**
+ * Nilai KT/Blok untuk pengelompokan (Excel #371, warna peta #372): trim + spasi
+ * ganda dirapatkan; kosong / "Tidak Ada" / "-" → null (grup "Tanpa …").
+ * Bandingkan kunci dengan `.toLocaleLowerCase("id-ID")` — tak peka huruf besar-kecil.
+ */
+export function parcelGroupValue(v: string | null | undefined): string | null {
+  const t = v?.trim().replace(/\s+/g, " ");
+  return t && !EMPTY_GROUP_PLACEHOLDER.test(t) ? t : null;
+}
+
+/** Urutan natural nama grup ("2 F" < "11 F"); null ("Tanpa …") di akhir. */
+export function compareParcelGroupLabels(a: string | null, b: string | null): number {
+  return a === b ? 0 : a === null ? 1 : b === null ? -1 : sheetCollator.compare(a, b);
+}
+
+/**
+ * Kelompokkan baris roster per KT atau per Blok — label = nama KT/Blok itu
+ * sendiri (owner 2026-09-23: sheet per Blok bernama Blok-nya, lintas KT; KT
+ * tiap lahan tetap terbaca di kolom Kelompok Tani). Urutan grup natural
+ * ("2 F" < "11 F"), grup "Tanpa …" di akhir; urutan baris ikut roster.
+ */
+export function groupLandParcelRows<T extends { kelompokTani: string | null; blok: string | null }>(
+  rows: readonly T[],
+  by: Exclude<LandParcelSheetSplit, "grid">,
+): { label: string; rows: T[] }[] {
+  // Kunci tak peka huruf besar-kecil & spasi ganda ("DUSUN 3" = "Dusun  3"),
+  // label = ejaan pertama yang ditemui — dua ejaan akan jadi dua sheet "(2)".
+  const groups = new Map<string, { label: string | null; rows: T[] }>();
+  for (const r of rows) {
+    const value = parcelGroupValue(by === "blok" ? r.blok : r.kelompokTani);
+    const key = value?.toLocaleLowerCase("id-ID") ?? "";
+    const g = groups.get(key);
+    if (g) g.rows.push(r);
+    else groups.set(key, { label: value, rows: [r] });
+  }
+  return [...groups.values()]
+    .sort((a, b) => compareParcelGroupLabels(a.label, b.label))
+    .map((g) => ({ label: g.label ?? (by === "blok" ? NO_BLOK : NO_KT), rows: g.rows }));
 }
 
 /**
@@ -457,6 +527,54 @@ export function exteriorRings(geometry: LpGeoJson | null | undefined): Position[
   return rawRings
     .map(cleanRing)
     .filter((r): r is Position[] => r !== null);
+}
+
+// ─── Urutan No (#371) ───────────────────────────────────────────────────────
+
+export type LandParcelRowOrder = "pemilik" | "posisi";
+
+export const LAND_PARCEL_ROW_ORDER_LABELS: Record<LandParcelRowOrder, string> = {
+  pemilik: "Abjad pemilik",
+  posisi: "Posisi lahan (utara → selatan, kiri → kanan)",
+};
+
+/**
+ * Urutan baca peta (owner 2026-09-23): baris paling utara dulu, kiri → kanan,
+ * lalu baris di bawahnya. Satu "baris" = lahan paling utara yang tersisa +
+ * semua lahan yang titik tengahnya masih di dalam rentang lintang lahan itu —
+ * lahan bersebelahan yang tak persis sejajar tetap satu baris. Titik tengah =
+ * tengah bbox ring luar. Tanpa geometri → di akhir, urutan asal.
+ */
+export function sortByMapPosition<T>(items: readonly T[], geometryOf: (item: T) => LpGeoJson | null | undefined): T[] {
+  const placed: { item: T; cx: number; cy: number; minY: number }[] = [];
+  const rest: T[] = [];
+  for (const item of items) {
+    const pts = exteriorRings(geometryOf(item)).flat();
+    if (pts.length === 0) {
+      rest.push(item);
+      continue;
+    }
+    // Loop, bukan Math.min(...xs): spread ratusan ribu vertex melempar RangeError.
+    let [minX, maxX, minY, maxY] = [Infinity, -Infinity, Infinity, -Infinity];
+    for (const [x, y] of pts) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    placed.push({ item, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, minY });
+  }
+  placed.sort((a, b) => b.cy - a.cy);
+  const out: T[] = [];
+  let i = 0;
+  while (i < placed.length) {
+    const seed = placed[i];
+    let j = i + 1;
+    while (j < placed.length && placed[j].cy >= seed.minY) j++;
+    out.push(...placed.slice(i, j).sort((a, b) => a.cx - b.cx).map((p) => p.item));
+    i = j;
+  }
+  return [...out, ...rest];
 }
 
 /** Luas ring (shoelace, satuan derajat²) — untuk memilih ring label MultiPolygon. */

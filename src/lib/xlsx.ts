@@ -114,6 +114,11 @@ export async function exportMultiSheetToExcel({
     // Add data
     worksheet.addRows(sheet.data);
 
+    sheet.columns.forEach((col, i) => {
+      if (!col.wrap) return;
+      worksheet.getColumn(i + 1).alignment = { wrapText: true, vertical: "top" };
+    });
+
     // Auto-fit columns if width not specified
     worksheet.columns.forEach((column) => {
       if (!column.width) {

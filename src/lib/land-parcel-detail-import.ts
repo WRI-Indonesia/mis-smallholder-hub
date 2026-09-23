@@ -16,6 +16,7 @@
  *   dipakai petani berbeda — keduanya salah ketik sumber, wajib DILAPORKAN,
  *   bukan dipilih diam-diam.
  */
+import { cleanGroupInput } from "@/lib/group-placeholder";
 import { autoMatchColumns } from "@/lib/parcel-bulk-mapping";
 import { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, type LandStdbStageCode } from "@/lib/land-parcel-satellite-format";
 
@@ -464,13 +465,7 @@ export function validateParcelDetailRows(
   // Lintas-baris: ID Lahan → himpunan ID Petani; STDB → himpunan ID Petani.
   const farmersPerParcel = new Map<string, Set<string>>();
   const farmersPerStdb = new Map<string, Set<string>>();
-  const pairsPerCode = new Map<string, Set<string>>();
   for (const r of raws) {
-    if (r.externalCode) {
-      const s = pairsPerCode.get(lower(r.externalCode)) ?? new Set();
-      s.add(`${lower(r.farmerId ?? "")}\u0000${lower(r.parcelId ?? "")}`);
-      pairsPerCode.set(lower(r.externalCode), s);
-    }
     if (r.parcelId && r.farmerId) {
       const s = farmersPerParcel.get(lower(r.parcelId)) ?? new Set();
       s.add(lower(r.farmerId));
@@ -512,11 +507,11 @@ export function validateParcelDetailRows(
     if (stdb?.number && (farmersPerStdb.get(lower(stdb.number))?.size ?? 0) > 1) {
       errors.push(`Nomor STDB "${stdb.number}" dipakai ID Petani berbeda di file — STDB terbit per petani`);
     }
+    // Kode yang sama di >1 lahan TIDAK ditolak (keputusan owner 2026-09-23):
+    // klaim ganda vendor disimpan dulu, dicek silang belakangan.
     const externalCode = r.externalCode || null;
-    if (externalCode && (pairsPerCode.get(lower(externalCode))?.size ?? 0) > 1) {
-      errors.push(`UL Parcel Code "${externalCode}" dipakai lebih dari satu lahan di file — kode unik per lahan`);
-    }
-    const subGroupLv2 = r.subGroupLv2 || null;
+    // "Tidak Ada"/"-" = kosong (#374) — pratinjau sama dengan skema server.
+    const subGroupLv2 = r.subGroupLv2 ? cleanGroupInput(r.subGroupLv2) : null;
     const borderSides = { north: r.borderNorth || null, east: r.borderEast || null, south: r.borderSouth || null, west: r.borderWest || null };
     const border = Object.values(borderSides).some(Boolean) ? borderSides : null;
     for (const side of LAND_BORDER_SIDES) {

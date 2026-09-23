@@ -304,15 +304,22 @@ export function wibFileStamp(now: Date): string {
 }
 
 /**
- * Basis nama file `lahan_<kd-lembaga|distrik>_<YYYYMMDD-HHmm>`; label
- * di-slug-kan (huruf kecil, spasi → "-", karakter aneh dibuang).
+ * Basis nama file `<prefix>_<kd-lembaga|distrik>_<YYYYMMDD-HHmm>`; label
+ * di-slug-kan (huruf kecil, spasi → "-", karakter aneh dibuang). Unduhan
+ * legenda (#375) memakai prefix barisnya ("titik-lahan", "patok", …) —
+ * dulu `<baris>-` ditempel di depan `lahan_…` sehingga jadi "lahan-lahan_…".
  */
-export function parcelExportFileBase(label: string | null, now: Date): string {
+export function exportFileBase(prefix: string, label: string | null, now: Date): string {
   const slug = (label ?? "")
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
-  return `lahan_${slug || "terfilter"}_${wibFileStamp(now)}`;
+  return `${prefix}_${slug || "terfilter"}_${wibFileStamp(now)}`;
+}
+
+/** Nama file tombol Unduh Lahan (SHP/GeoJSON/KML): `lahan_<kd-lembaga|distrik>_<YYYYMMDD-HHmm>`. */
+export function parcelExportFileBase(label: string | null, now: Date): string {
+  return exportFileBase("lahan", label, now);
 }

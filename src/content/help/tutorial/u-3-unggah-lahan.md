@@ -28,6 +28,7 @@ Tabel atribut `.dbf` harus memuat **ID Petani** dan **ID Lahan**, karena dari si
 2. Pada **Langkah 1**, pilih berkas `.zip`. Sistem membaca isinya dan menyebut jumlah fitur yang terdeteksi.
 + Bila jumlah fitur jauh berbeda dari yang Anda harapkan, hentikan di sini — biasanya berarti ZIP-nya memuat layer yang salah.
 3. Pada **Langkah 2 — Petakan Atribut Kolom**, cocokkan kolom tabel atribut dengan kolom sistem.
++ Kolom **Kelompok Tani** yang berisi **"Tidak Ada"** atau **"-"** disimpan sebagai kosong — lahan itu tercatat *tanpa Kelompok Tani*, bukan ber-KT bernama "Tidak Ada". Hal yang sama berlaku di form Tambah/Edit Lahan.
 + Nama kolom di shapefile sering terpotong menjadi 10 karakter (batas format DBF), misalnya `ID_PETANI` jadi `ID_PETAN`. Itu normal — cocokkan berdasarkan isinya, bukan namanya. **Komoditas** boleh dibiarkan tak dipetakan: baris yang kosong otomatis tersimpan sebagai **Kelapa Sawit**, dan pratinjau sudah menampilkannya begitu — jadi yang Anda lihat sama dengan yang tersimpan.
 + Bila tabel atribut memuat **sepadan** (dengan siapa/apa lahan berbatasan di sisi Utara/Timur/Selatan/Barat), petakan ke empat kolom **Sepadan …**. Kolom bernama `BTS_UTARA`, `SEP_UTARA`, atau `UTARA` (dan padanannya untuk timur/selatan/barat) dikenali otomatis. Sepadan disimpan pada *identitas* lahan, jadi tetap utuh saat poligonnya direvisi; sel yang terisi menimpa nilai lama, sel kosong dibiarkan.
 4. Klik **Validasi Data Shapefile**.

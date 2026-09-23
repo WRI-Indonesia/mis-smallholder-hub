@@ -18,7 +18,8 @@ import type {
   MapSelectOption,
   MapGroupOption,
 } from "@/types/map";
-import { exportKtRow, exportMarkerRow, exportParcelRow, parcelContext } from "./map-legend-export";
+import { exportKtRow, exportMarkerRow, exportParcelRow, parcelContext, type ParcelXlsxOptions } from "./map-legend-export";
+import { ParcelXlsxDialog } from "./parcel-xlsx-dialog";
 import type { FeatureCollection, MultiPolygon } from "geojson";
 import { filterPointsWithinAreas } from "@/lib/fire-alert";
 import { getRiauOutline } from "@/server/actions/fire-boundary";
@@ -423,8 +424,14 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
   const [legendExporting, setLegendExporting] = useState<LegendExportRow | null>(null);
   // Baris legenda mengunduh apa yang ditampilkan → filter yang DIMUAT (`loadedFilters`),
   // bukan pilihan dropdown; tombol "Unduh Lahan" di panel filter sengaja tetap ikut dropdown (#313).
-  const handleLegendExport = async (row: LegendExportRow, format: LegendExportFormat) => {
+  // Excel baris lahan + filter 1 Lembaga → modal pilihan sheet/urutan dulu (#371).
+  const [xlsxDialogRow, setXlsxDialogRow] = useState<"parcelPoints" | "parcelAreas" | "nkt" | null>(null);
+  const handleLegendExport = async (row: LegendExportRow, format: LegendExportFormat, xlsxOptions?: ParcelXlsxOptions) => {
     if (!loadedFilters || !mapData || legendExporting) return;
+    if (format === "xlsx" && !xlsxOptions && loadedFilters.farmerGroupId && (row === "parcelPoints" || row === "parcelAreas" || row === "nkt")) {
+      setXlsxDialogRow(row);
+      return;
+    }
     if (format === "pdf" && !canPrint) { toast.error("Tidak memiliki izin untuk mencetak"); return; }
     setLegendExporting(row);
     const now = new Date();
@@ -447,7 +454,7 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
       }
       const res = await getMapParcelExportData(loadedFilters);
       if (!res.success || !res.data) { toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error); return; }
-      const n = await exportParcelRow(row, format, res.data.fc, res.data.label, now, context);
+      const n = await exportParcelRow(row, format, res.data.fc, res.data.label, now, context, xlsxOptions);
       if (n === 0) toast.info(row === "nkt" ? "Tidak ada lahan NKT ber-poligon pada filter ini" : "Tidak ada lahan ber-poligon pada filter ini");
       else toast.success(`${n} lahan diunduh`);
     } catch {
@@ -546,6 +553,18 @@ export function MapParcelClient({ provinces, canViewParcel, canEditParcel, canPr
         onLegendExport={handleLegendExport}
         legendExporting={legendExporting}
         markerLoading={markerLoading}
+      />
+
+      <ParcelXlsxDialog
+        key={xlsxDialogRow ?? "closed"}
+        open={xlsxDialogRow !== null}
+        title={xlsxDialogRow === "parcelPoints" ? "Point Lahan Petani" : xlsxDialogRow === "nkt" ? "Lahan terdampak NKT" : "Area Lahan Petani"}
+        onCancel={() => setXlsxDialogRow(null)}
+        onConfirm={(opts) => {
+          const row = xlsxDialogRow;
+          setXlsxDialogRow(null);
+          if (row) void handleLegendExport(row, "xlsx", opts);
+        }}
       />
 
       <HotspotSummaryDialog

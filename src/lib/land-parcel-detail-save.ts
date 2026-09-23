@@ -47,8 +47,12 @@ export interface ParcelDetailSaveSummary {
   externalIdsUpdated: number;
   /** Kode sudah menempel di lahan yang sama — tidak ada query. */
   externalIdsUnchanged: number;
-  /** Kode aktif milik lahan lain — tidak dipindah (selaras `createLandParcelExternalId`). */
-  externalIdsSkipped: number;
+  /**
+   * Kode yang juga AKTIF di lahan lain — tetap disimpan (keputusan owner
+   * 2026-09-23: klaim ganda vendor dicatat dulu, dicek silang belakangan).
+   * Subset dari created/updated/unchanged, bukan operasi tersendiri.
+   */
+  externalIdsShared: number;
   /** LandParcel.subGroupLv2 yang terisi (hanya yang sebelumnya kosong). */
   subGroupsFilled: number;
   /** Sepadan (#326): baris baru / sisi yang berubah / semua sisi di file sudah sama. */
@@ -76,7 +80,7 @@ export function emptyParcelDetailSummary(rows: number): ParcelDetailSaveSummary 
     externalIdsCreated: 0,
     externalIdsUpdated: 0,
     externalIdsUnchanged: 0,
-    externalIdsSkipped: 0,
+    externalIdsShared: 0,
     subGroupsFilled: 0,
     bordersCreated: 0,
     bordersUpdated: 0,
@@ -149,8 +153,8 @@ export interface ParcelDetailExistingState {
   farmersWithActiveStdb: Set<string>;
   /** linkKey → tautan lahan↔STDB. */
   links: Map<string, { id: string; isActive: boolean }>;
-  /** code (sumber parcel_code) → pemegang saat ini. */
-  externalIds: Map<string, { parcelUid: string; isActive: boolean }>;
+  /** code (per pemeta) → SEMUA record kode itu, di lahan mana pun (satu kode boleh di >1 lahan). */
+  externalIds: Map<string, Array<{ id: string; parcelUid: string; isActive: boolean }>>;
 }
 
 export function emptyExistingState(): ParcelDetailExistingState {
@@ -179,8 +183,8 @@ export interface ParcelDetailPlan {
   linkCreatesPendingStdb: Array<{ parcelUid: string; stdbKey: string }>;
   linkReactivateIds: string[];
   externalIdCreates: Array<{ parcelUid: string; code: string }>;
-  /** Kode yang sudah ada tapi harus diarahkan/diaktifkan ke lahan ini. */
-  externalIdUpdates: Array<{ code: string; parcelUid: string }>;
+  /** Record kode nonaktif milik lahan ini yang diaktifkan kembali. */
+  externalIdUpdates: Array<{ id: string }>;
   /** parcelUid → nama KT (isi bila kosong; dihitung server lewat updateMany). */
   subGroupFills: Map<string, string>;
   /** Sepadan (#326): baris baru hanya memuat sisi yang terisi; update hanya sisi yang berubah. */
@@ -249,7 +253,9 @@ export function planLandParcelDetailRows(
   const farmersWithNumberedStdbInBatch = farmersWithNumberedStdb ?? farmersWithNumberedStdbIn(rows);
   const pendingLinks = new Set<string>();
   const reactivatedLinks = new Set<string>();
-  const pendingCodes = new Map<string, "create" | "update" | "skip" | "unchanged">();
+  const pendingCodes = new Set<string>();
+  const parcelsPerCode = new Map<string, Set<string>>();
+  for (const r of rows) if (r.externalCode) parcelsPerCode.set(r.externalCode, (parcelsPerCode.get(r.externalCode) ?? new Set()).add(r.parcelUid));
 
   for (const r of rows) {
     // --- Dokumen kepemilikan (atau status penguasaan tanpa jenis → OTHER tanpa nomor) ---
@@ -348,21 +354,21 @@ export function planLandParcelDetailRows(
     // --- UL Parcel Code ---
     if (r.externalCode) {
       const code = r.externalCode;
-      if (!pendingCodes.has(code)) {
-        const holder = existing.externalIds.get(code);
-        if (holder && holder.isActive && holder.parcelUid !== r.parcelUid) {
-          // Kode masih aktif di lahan lain (mungkin di luar scope pengunggah): jangan dipindah diam-diam.
-          pendingCodes.set(code, "skip");
-          summary.externalIdsSkipped++;
-        } else if (holder && holder.isActive) {
-          pendingCodes.set(code, "unchanged");
+      const ck = `${r.parcelUid}${SEP}${code}`;
+      if (!pendingCodes.has(ck)) {
+        pendingCodes.add(ck);
+        const records = existing.externalIds.get(code) ?? [];
+        const own = records.find((e) => e.parcelUid === r.parcelUid);
+        // Kode aktif di lahan lain TIDAK dipindah — lahan ini mendapat record
+        // sendiri, keduanya tetap aktif (keputusan owner 2026-09-23).
+        const sharedInDb = records.some((e) => e.isActive && e.parcelUid !== r.parcelUid);
+        if (sharedInDb || (parcelsPerCode.get(code)?.size ?? 0) > 1) summary.externalIdsShared++;
+        if (own?.isActive) {
           summary.externalIdsUnchanged++;
-        } else if (holder) {
-          pendingCodes.set(code, "update");
-          plan.externalIdUpdates.push({ code, parcelUid: r.parcelUid });
+        } else if (own) {
+          plan.externalIdUpdates.push({ id: own.id });
           summary.externalIdsUpdated++;
         } else {
-          pendingCodes.set(code, "create");
           plan.externalIdCreates.push({ parcelUid: r.parcelUid, code });
           summary.externalIdsCreated++;
         }
@@ -478,7 +484,7 @@ export async function fetchParcelDetailExistingState(
     codes.length
       ? tx.landParcelExternalId.findMany({
           where: { source, code: { in: codes } },
-          select: { code: true, parcelUid: true, isActive: true },
+          select: { id: true, code: true, parcelUid: true, isActive: true },
         })
       : Promise.resolve([]),
     borderUids.length
@@ -522,7 +528,7 @@ export async function fetchParcelDetailExistingState(
     if (s.isActive && isOpenStdbStage(s.stage)) state.openStdbs.set(openStdbKey(s.farmerId), { id: s.id, isActive: true });
     if (s.isActive) state.farmersWithActiveStdb.add(s.farmerId);
   }
-  for (const e of externalIds) state.externalIds.set(e.code, { parcelUid: e.parcelUid, isActive: e.isActive });
+  for (const e of externalIds) state.externalIds.set(e.code, [...(state.externalIds.get(e.code) ?? []), { id: e.id, parcelUid: e.parcelUid, isActive: e.isActive }]);
 
   if (stdbs.length) {
     const links = await tx.landParcelStdb.findMany({
@@ -596,10 +602,10 @@ async function executeParcelDetailPlan(tx: Prisma.TransactionClient, plan: Parce
       data: plan.externalIdCreates.map((e) => ({ ...e, source, createdBy: userId })),
     });
   }
-  for (const u of plan.externalIdUpdates) {
-    await tx.landParcelExternalId.update({
-      where: { source_code: { source, code: u.code } },
-      data: { parcelUid: u.parcelUid, isActive: true, modifiedBy: userId },
+  if (plan.externalIdUpdates.length) {
+    await tx.landParcelExternalId.updateMany({
+      where: { id: { in: plan.externalIdUpdates.map((u) => u.id) } },
+      data: { isActive: true, modifiedBy: userId },
     });
   }
 

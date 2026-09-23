@@ -1,7 +1,7 @@
 {
   "_comment": "Snapshot checksum migrasi yang sudah APPLIED di mis-prod (#303). Jangan edit manual — segarkan dengan scripts/migrations/refresh-applied-checksums.ts setelah setiap migrate deploy.",
   "source": "mis-prod",
-  "refreshedAt": "2026-09-21",
+  "refreshedAt": "2026-09-23",
   "checksums": {
     "20260521232859_init": "80ee9d999c0a3ab5c32f51a11fb0c32645a3ad6806ae872f2ef0f0a05826a0e0",
     "20260606104223_add_farmer_group_indexes": "9d9c8e28a3f07fdb659f5a38fd71b0e44c3cde53db041ea9e76cc714221b99d9",
@@ -40,6 +40,7 @@
     "20260918120000_bmp_assessment": "da9c7f6b22be42b56536ef5a6461486d1ddbde12ec700e2336f4c1ee6148fccf",
     "20260920100000_bmp_assessment_unique_active": "46607e2e08acfb448e2d6c94e74110c9991caf3950f9135e53496dc5455065db",
     "20260920120000_bmp_indicator_detail": "68d59b42b649b07bfbb3b6b9d42e852fc1c761b1d0a068db1980aa0875b76d38",
-    "20260921120000_drop_activity_status_tree_surveyed_at": "5d7f73335557c390079c157863af02f93e2ef0c28aea1735e78801d10340bb6d"
+    "20260921120000_drop_activity_status_tree_surveyed_at": "5d7f73335557c390079c157863af02f93e2ef0c28aea1735e78801d10340bb6d",
+    "20260923120000_external_id_shared_code": "7770a265de33367f5f5d6ae61967647b621b1d90351acd669210df51dc0d4f85"
   }
 }
