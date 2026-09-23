@@ -162,6 +162,9 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
         if (controller.signal.aborted) return;
         console.warn("Fire alert fetch failed:", err);
         setClassified(null);
+        // Tanpa ini, sumber & daftar tanggal kosong milik bulan SEBELUMNYA
+        // tetap tercetak di bawah label bulan yang baru dipilih.
+        setCoverage(null);
         setLoading(false);
         toast.error("Gagal memuat titik api dari NASA FIRMS");
       });

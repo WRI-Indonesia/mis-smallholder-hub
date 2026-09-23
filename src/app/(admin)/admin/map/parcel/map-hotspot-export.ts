@@ -196,7 +196,6 @@ export function hotspotRowCells(r: HotspotNearestRow): {
 /** Ambang laporan/ringkasan: hanya titik api berjarak < 15 km dari Lembaga Petani. */
 export const NEAR_KM_THRESHOLD = 15;
 
-/** Baris hasil kalkulasi yang < 15 km dari lembaga, urut jarak terdekat. */
 /**
  * Batas baris tabel titik api — modal Ringkasan maupun PDF (#286 butir 5 & 6).
  *
@@ -222,6 +221,7 @@ export function hotspotTablePlan(candidates: HotspotNearestRow[]): {
   return { rows, truncated: candidates.length - rows.length };
 }
 
+/** Baris hasil kalkulasi yang < 15 km dari lembaga, urut jarak terdekat. */
 export function filterNearSorted(rows: HotspotNearestRow[]): HotspotNearestRow[] {
   return rows
     .filter((r) => r.nearest !== null && r.nearest.meters / 1000 < NEAR_KM_THRESHOLD)
@@ -306,7 +306,9 @@ export async function printHotspotPdf(
     [
       hasDistance
         ? `Berjarak < ${NEAR_KM_THRESHOLD} km dari Lembaga Petani: ${formatNumber(near.length)} titik — tabel hanya memuat titik tsb, diurutkan dari yang terdekat.`
-        : "Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki titik Lembaga Petani; tabel memuat semua titik.",
+        : // Klausa "semua titik" hanya benar bila tak ada yang dipotong —
+          // kalau tidak, dua kalimat berturut-turut saling menyangkal.
+          `Jarak ke Lembaga Petani tidak dapat dihitung — data peta yang dimuat tidak memiliki titik Lembaga Petani${truncated > 0 ? "." : "; tabel memuat semua titik."}`,
       // Pemotongan HARUS tertulis di dokumen: PDF beredar lepas dari layar
       // yang membuatnya, dan tabel yang diam-diam terpotong terbaca sebagai
       // "sekian titik saja yang ada".

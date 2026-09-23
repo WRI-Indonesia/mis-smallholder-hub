@@ -267,6 +267,33 @@ describe("indexArea & pointInIndexedArea (#280)", () => {
     expect(pointInIndexedArea([9.5, 9.5], area)).toBe(true);
   });
 
+  it("ring TAK TERTUTUP tetap setara pointInRing — sisi penutup tidak hilang", () => {
+    // `geojson` ditulis skrip seed di luar aplikasi tanpa constraint DB
+    // (lihat `asMultiPolygon`). Ring tanpa titik penutup dulu membuat indeks
+    // melewatkan sisi terakhir→pertama — persis kelas kehilangan titik diam
+    // yang diperbaiki #280.
+    //
+    // Belah ketupat, BUKAN persegi: sisi penutup persegi selalu jatuh di tepi
+    // bbox sehingga tak ada titik sah di sebelah kirinya, dan tesnya lolos
+    // walau bug-nya ada. Di sini sisi penutup (10,5)→(5,0) miring di dalam
+    // bbox, jadi (6,2) hanya terbaca "di dalam" bila sisi itu ikut diuji.
+    const openDiamond: MultiPolygon = {
+      type: "MultiPolygon",
+      coordinates: [[[[5, 0], [0, 5], [5, 10], [10, 5]]]],
+    };
+    const closedDiamond: MultiPolygon = {
+      type: "MultiPolygon",
+      coordinates: [[[[5, 0], [0, 5], [5, 10], [10, 5], [5, 0]]]],
+    };
+    const open = indexArea(openDiamond);
+    expect(pointInIndexedArea([6, 2], open)).toBe(true);
+    for (const pt of [[6, 2], [5, 5], [1, 1], [9, 9], [0.5, 5]] as [number, number][]) {
+      expect(pointInIndexedArea(pt, open), `titik ${pt.join(",")}`).toBe(
+        pointInMultiPolygon(pt, closedDiamond)
+      );
+    }
+  });
+
   it("polygon tanpa cincin luar dilewati, tidak membuat bbox Infinity", () => {
     const area = indexArea({ type: "MultiPolygon", coordinates: [[], square(0, 0, 1, 1).coordinates[0]] });
     expect(area.polygons).toHaveLength(1);

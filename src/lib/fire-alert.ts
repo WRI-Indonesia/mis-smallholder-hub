@@ -98,7 +98,18 @@ function ringBbox(ring: Position[]): [number, number, number, number] {
  * ring besar terpotong ratusan kali. Dibatasi 256 supaya ring kecil tak
  * membuat lebih banyak pita daripada sisinya.
  */
-function indexRing(ring: Position[]): IndexedRing {
+function indexRing(input: Position[]): IndexedRing {
+  // `pointInRing` menutup ring secara implisit (`j = ring.length - 1`), jadi
+  // sisi terakhir → pertama SELALU diuji. Indeks ini memasangkan (i-1, i)
+  // sehingga sisi itu hilang bila ring datang tak tertutup — dan kolom
+  // `geojson` ditulis skrip seed di luar aplikasi, tanpa constraint DB yang
+  // menjamin bentuknya (lihat `asMultiPolygon`). Ring yang belum tertutup
+  // ditutup di sini supaya keduanya benar-benar setara; ring normal tak
+  // tersentuh.
+  const first = input[0];
+  const last = input[input.length - 1];
+  const ring =
+    first && last && (first[0] !== last[0] || first[1] !== last[1]) ? [...input, first] : input;
   const bbox = ringBbox(ring);
   const [, s, , n] = bbox;
   const bandCount = Math.max(1, Math.min(256, Math.ceil(ring.length / 32)));

@@ -191,6 +191,11 @@ export async function GET(req: NextRequest) {
       headers: { "Cache-Control": `private, max-age=${maxAge}` },
     });
   } catch {
+    // `Promise.all` menolak pada kegagalan PERTAMA; jendela lain masih
+    // terbang. Membuang timer saja meninggalkan mereka tanpa pemutus — Node
+    // `fetch` tak punya timeout bawaan, jadi soketnya menggantung sampai
+    // upstream menutup. Abort dulu, baru bersihkan timernya.
+    controller.abort();
     clearTimeout(timer);
     return new Response("Upstream error", { status: 502 });
   }
