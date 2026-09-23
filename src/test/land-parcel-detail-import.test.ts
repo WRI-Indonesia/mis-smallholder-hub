@@ -313,7 +313,7 @@ describe("validateParcelDetailRows", () => {
     expect(r.data?.stdb).toBeNull();
   });
 
-  it("UL Parcel Code yang sama di dua lahan berbeda → kedua baris error (kode unik per lahan)", () => {
+  it("UL Parcel Code yang sama di dua lahan berbeda → keduanya valid (klaim ganda boleh, keputusan owner 2026-09-23)", () => {
     const rs = validateParcelDetailRows(
       [
         row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", parcel_code: "ID0001" }),
@@ -321,8 +321,8 @@ describe("validateParcelDetailRows", () => {
       ],
       mapping, parcels,
     );
-    expect(rs.every((r) => !r._isValid)).toBe(true);
-    expect(rs[0]._errors.join(" ")).toContain("dipakai lebih dari satu lahan");
+    expect(rs.every((r) => r._isValid)).toBe(true);
+    expect(rs.map((r) => r.data?.externalCode)).toEqual(["ID0001", "id0001"]);
   });
 
   it("kode sama di baris ganda lahan yang SAMA tidak dianggap bentrok", () => {
@@ -446,6 +446,15 @@ describe("validateParcelDetailRows — NKT (#328) & Blok", () => {
     expect(r._isValid).toBe(true);
     expect(r.data?.nkt).toEqual({ status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.088, affectedLengthM: 176.026, assessedAt: "2025-03-12", assessor: "Laporan NKT HJP" });
     expect(r.data?.blok).toBe("17 L");
+  });
+
+  it("Blok isian pengganti (\"--\", lolos cleanCell) = kosong di pratinjau, sama dengan skema server (#374)", () => {
+    const blokOnly = { parcelId: "ID_Lahan", farmerId: "ID_Petani", blok: "Blok" } as const;
+    for (const v of ["Tidak Ada", "-", "--", "---"]) {
+      const [r] = validateParcelDetailRows([{ ID_Lahan: "HJP.0001.A", ID_Petani: "HJP.0001", Blok: v }], blokOnly, parcels);
+      expect(r._isValid).toBe(false);
+      expect(r._errors.join(" ")).toContain("Tidak ada data detail");
+    }
   });
 
   it("tanpa bawaan status → baris yang membawa sel NKT ditolak dengan pesan yang menyebut bawaan berkas", () => {

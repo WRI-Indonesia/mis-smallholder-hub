@@ -3578,11 +3578,16 @@ export const DATA_SCHEMA: SchemaMap = {
       "scalarCount": 12,
       "compoundUnique": [
         [
+          "parcelUid",
           "source",
           "code"
         ]
       ],
       "indexes": [
+        [
+          "source",
+          "code"
+        ],
         [
           "parcelUid",
           "isActive"

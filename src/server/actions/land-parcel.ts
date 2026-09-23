@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { sharedCodeParcels } from "@/lib/parcel-shared-code";
 import { auth } from "@/lib/auth";
 import { landParcelSchema, updateLandParcelSchema } from "@/validations/land-parcel.schema";
 import type { LandParcelInput, UpdateLandParcelInput } from "@/validations/land-parcel.schema";
@@ -481,6 +482,26 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
     }),
   ]);
 
+  // Kode yang sama boleh menempel di >1 lahan (keputusan owner 2026-09-23) —
+  // pemakai lain ditampilkan agar klaim ganda bisa dicek silang. PENGECUALIAN
+  // SCOPE tercatat (docs/product/access-context.md): tautan hanya dalam scope,
+  // lihat `sharedCodeParcels`.
+  const sharers = externalIds.length
+    ? await prisma.landParcelExternalId.findMany({
+        where: { isActive: true, parcelUid: { not: uid }, OR: externalIds.map((e) => ({ source: e.source, code: e.code })) },
+        select: {
+          source: true,
+          code: true,
+          parcel: {
+            select: {
+              parcelId: true,
+              revisions: { where: { isActive: true }, select: { id: true, farmer: { select: { farmerGroupId: true, farmerGroup: { select: { districtId: true } } } } }, take: 1 },
+            },
+          },
+        },
+      })
+    : [];
+
   return {
     parcelUid: uid,
     documents,
@@ -503,7 +524,7 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
         .filter((p) => p.parcel.revisions.length > 0)
         .map((p) => ({ parcelId: p.parcel.parcelId, id: p.parcel.revisions[0].id })),
     })),
-    externalIds,
+    externalIds: externalIds.map((e) => ({ ...e, otherParcels: sharedCodeParcels(e, sharers, access) })),
     programs,
     border: hasBorderContent(border) ? border : null,
     nkt,

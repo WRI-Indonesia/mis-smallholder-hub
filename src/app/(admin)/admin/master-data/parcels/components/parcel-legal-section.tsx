@@ -373,6 +373,21 @@ export function ParcelLegalSection({ data, parcelArea, landParcelId, permissions
                     <>
                       <Chip title={parcelMapperLabel(e.source)}>Pemeta: {parcelMapperShort(e.source)}</Chip>
                       {mapped && <Chip>Dipetakan {mapped}</Chip>}
+                      {e.otherParcels.length > 0 && (
+                        <span className="flex flex-wrap items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+                          Juga dipakai
+                          {e.otherParcels.map((p) =>
+                            p.id ? (
+                              <Link key={p.id} href={`/admin/master-data/parcels/${p.id}`} className="rounded-md bg-amber-500/10 px-1.5 py-0.5 font-mono text-[11px] hover:underline">
+                                {p.parcelId}
+                              </Link>
+                            ) : (
+                              <span key={p.parcelId} className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px]">{p.parcelId}</span>
+                            ),
+                          )}
+                          — cek silang
+                        </span>
+                      )}
                       {e.notes && <span className="text-xs text-muted-foreground">{e.notes}</span>}
                     </>
                   }

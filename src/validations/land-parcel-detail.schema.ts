@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cleanGroupInput } from "@/lib/group-placeholder";
 import { LAND_DOCUMENT_TYPES } from "@/lib/land-parcel-detail-import";
 import { LAND_STDB_STAGES } from "@/lib/land-parcel-satellite-format";
 
@@ -30,7 +31,8 @@ export const landParcelDetailRowSchema = z.object({
     })
     .nullable(),
   externalCode: trimmed.nullable(),
-  subGroupLv2: trimmed.nullable(),
+  // Isian pengganti "Tidak Ada"/"-" = kosong (#374) → tak mengisi KT lahan.
+  subGroupLv2: z.preprocess((v) => (typeof v === "string" ? cleanGroupInput(v) : v), trimmed.nullable()),
   // Sepadan (#326): sisi null = tidak disentuh (bukan dikosongkan); objek null/absen
   // = tak ada sel sepadan. Opsional agar skrip import lama & fixture tetap sah.
   border: z
@@ -43,7 +45,7 @@ export const landParcelDetailRowSchema = z.object({
     .nullable()
     .optional(),
   /** Blok: isi hanya bila DB kosong (pola subGroupLv2). */
-  blok: trimmed.nullable().optional(),
+  blok: z.preprocess((v) => (typeof v === "string" ? cleanGroupInput(v) : v), trimmed.nullable().optional()),
   // NKT (#328): status wajib bila objek ada; categories null = tidak disentuh.
   // Invarian "kategori ≥ 1 kecuali NOT_AFFECTED" DIJAGA DI SINI juga — bukan hanya
   // di validator klien — supaya pemanggil lain (skrip lokal) tak bisa menulis

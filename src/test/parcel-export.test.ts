@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildParcelExportFeatures,
   explodeMultiPolygons,
+  exportFileBase,
   parcelExportFileBase,
   parcelExportGroupWhere,
   toDbfProperties,
@@ -292,5 +293,13 @@ describe("parcelExportFileBase", () => {
   it("label kosong/null → fallback 'terfilter'", () => {
     expect(parcelExportFileBase(null, now)).toBe("lahan_terfilter_20260901-1005");
     expect(parcelExportFileBase("  ", now)).toBe("lahan_terfilter_20260901-1005");
+  });
+});
+
+describe("exportFileBase (#375)", () => {
+  it("prefix bebas; parcelExportFileBase tetap berawalan lahan_", () => {
+    const now = new Date("2026-09-01T03:05:00Z");
+    expect(exportFileBase("patok", "LP-01", now)).toBe("patok_lp-01_20260901-1005");
+    expect(parcelExportFileBase("LP-01", now)).toBe(exportFileBase("lahan", "LP-01", now));
   });
 });

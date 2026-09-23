@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cleanGroupInput } from "@/lib/group-placeholder";
 
 /**
  * Komoditas bawaan saat kolomnya kosong (keputusan owner 2026-09-01: seluruh
@@ -13,7 +14,8 @@ export const DEFAULT_CROP_TYPE = "Kelapa Sawit";
 export const landParcelSchema = z.object({
   farmerId: z.string().min(1, "Petani wajib dipilih"),
   parcelId: z.string().min(1, "ID Lahan wajib diisi"),
-  blok: z.string().nullable().optional(),
+  // Blok — aturan isian pengganti sama dengan KT (#374).
+  blok: z.preprocess((v) => (typeof v === "string" ? cleanGroupInput(v) : v), z.string().nullable().optional()),
   geometry: z.any().nullable().optional(),
   area: z.preprocess((val) => {
     if (val === "" || val === undefined || val === null) return null;
@@ -36,7 +38,9 @@ export const landParcelSchema = z.object({
     return isNaN(parsed) ? null : parsed;
   }, z.number().int().min(1900, "Tahun tanam minimal 1900").max(2100, "Tahun tanam maksimal 2100").nullable().optional()),
   notes: z.string().nullable().optional(),
-  subGroupLv2: z.string().nullable().optional(), // Kelompok Tani
+  // Kelompok Tani — isian pengganti "Tidak Ada"/"-" disimpan kosong (#374);
+  // dipakai form lahan DAN upload shapefile (bulk-upload-parcel).
+  subGroupLv2: z.preprocess((v) => (typeof v === "string" ? cleanGroupInput(v) : v), z.string().nullable().optional()),
 });
 
 export const updateLandParcelSchema = landParcelSchema.extend({

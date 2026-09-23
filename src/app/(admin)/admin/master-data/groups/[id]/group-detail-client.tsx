@@ -32,7 +32,9 @@ import { BAND_TEXT, bandLabel } from "@/lib/score-band-styles";
 import { toast } from "sonner";
 import { ParcelExportMenu } from "@/components/shared/parcel-export-menu";
 import { getFarmerGroupParcelExportData } from "@/server/actions/land-parcel-export";
-import { parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
+import { exportParcelRow, type ParcelXlsxOptions } from "@/app/(admin)/admin/map/parcel/map-legend-export";
+import { ParcelXlsxDialog } from "@/app/(admin)/admin/map/parcel/parcel-xlsx-dialog";
+import { exportFileBase, parcelExportFileBase, type ParcelExportFormat } from "@/lib/parcel-export-data";
 import { downloadParcelExport } from "@/lib/parcel-spatial-download";
 import { getFarmerGroupMarkerExportRows } from "@/server/actions/land-marker";
 import { getFarmerGroupNktReportData } from "@/server/actions/farmer-group";
@@ -231,6 +233,29 @@ export function GroupDetailClient({
     }
   }
 
+  // Excel lahan (owner 2026-09-23, #371): format & modal sama dengan Peta Lahan ›
+  // Area Lahan Petani — Lembaga di sini selalu satu, jadi modal selalu muncul.
+  const [xlsxOpen, setXlsxOpen] = useState(false);
+  async function handleParcelXlsx(opts: ParcelXlsxOptions) {
+    setXlsxOpen(false);
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const res = await getFarmerGroupParcelExportData(group.id);
+      if (!res.success || !res.data) {
+        toast.error(res.success ? "Gagal menyiapkan data lahan" : res.error);
+        return;
+      }
+      const n = await exportParcelRow("parcelAreas", "xlsx", res.data.fc, res.data.label, new Date(), undefined, opts);
+      if (n === 0) toast.info("Tidak ada lahan ber-poligon pada Lembaga ini");
+      else toast.success(`${formatNumber(n)} lahan diunduh`);
+    } catch {
+      toast.error("Gagal membuat berkas unduhan lahan");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   // Laporan NKT Lembaga ini (#332, pintu kedua — permintaan owner 2026-09-15):
   // data & PDF sama dengan tombol di Report › Lahan, gate PRINT menu Lembaga Petani.
   const [printingNkt, setPrintingNkt] = useState(false);
@@ -270,7 +295,7 @@ export function GroupDetailClient({
       // SAMA dengan unduhan Peta Lahan / Report › Patok (satu definisi di lib/land-marker, review 2026-09-15).
       const unique = uniqueMarkerRows(res.data.rows);
       await exportToExcel({
-        filename: `patok-${parcelExportFileBase(res.data.label, new Date())}`,
+        filename: exportFileBase("patok", res.data.label, new Date()),
         sheetName: "Patok",
         columns: MARKER_XLSX_COLUMNS,
         data: unique.map(formatUniqueMarkerRow),
@@ -564,12 +589,22 @@ export function GroupDetailClient({
                     disabledReason="Lembaga ini belum punya lahan ber-poligon"
                     exporting={exporting}
                     onExport={handleParcelExport}
-                    extraItems={[{ key: "markers", label: "Patok batas (Excel)", onSelect: handleMarkerExport }]}
+                    extraItems={[
+                      { key: "parcels-xlsx", label: "Lahan (Excel)", onSelect: () => setXlsxOpen(true) },
+                      { key: "markers", label: "Patok batas (Excel)", onSelect: handleMarkerExport },
+                    ]}
                   />
                 )}
               </div>
             </div>
-            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} markerPoints={markerPoints} />
+            <ParcelXlsxDialog
+              key={xlsxOpen ? "open" : "closed"}
+              open={xlsxOpen}
+              title="Lahan"
+              onCancel={() => setXlsxOpen(false)}
+              onConfirm={(opts) => void handleParcelXlsx(opts)}
+            />
+            <ParcelsDistributionMap parcels={mapParcels} canViewParcel={canViewParcel} canEditParcel={canEditParcel} markerPoints={markerPoints} allowColorByBlok />
           </Card>
           <p className="text-sm text-muted-foreground">
             Detail per lahan ada di{" "}

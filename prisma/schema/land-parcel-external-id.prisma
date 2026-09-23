@@ -22,9 +22,12 @@ model LandParcelExternalId {
   modifiedAt  DateTime           @updatedAt @map("modified_at")
   modifiedBy  String?            @map("modified_by")
 
-  // Unik per penerbit, bukan per lahan (satu lahan boleh punya kode dari
-  // beberapa penerbit).
-  @@unique([source, code])
+  // Unik per (lahan, penerbit, kode): satu lahan boleh punya beberapa kode
+  // (gabungan poligon vendor) dan — keputusan owner 2026-09-23 — satu kode
+  // BOLEH menempel di >1 lahan (klaim ganda vendor dicatat dulu, dicek silang
+  // belakangan; cari lewat indeks (source, code) di bawah).
+  @@unique([parcelUid, source, code])
+  @@index([source, code])
   @@index([parcelUid, isActive])
   @@map("tbl_land_parcel_external_id")
 }

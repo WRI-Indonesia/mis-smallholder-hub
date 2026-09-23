@@ -50,7 +50,8 @@
 | LandParcelStdb | PK | `id` (CUID) | Primary key |
 | LandParcelStdb | UNIQUE | `(parcelUid, stdbId)` | Tautan lahan↔STDB tidak ganda |
 | LandParcelExternalId | PK | `id` (CUID) | Primary key |
-| LandParcelExternalId | UNIQUE | `(source, code)` | UL Parcel Code unik per sumber |
+| LandParcelExternalId | UNIQUE | `(parcelUid, source, code)` | Kode tak ganda di lahan yang sama (sejak 2026-09-23; dulu `(source, code)`) |
+| LandParcelExternalId | INDEX | `(source, code)` | Cari lahan lain pemakai kode yang sama (cek silang klaim ganda, tab Legalitas) |
 | LandParcelProgram | PK | `id` (CUID) | Primary key |
 | LandParcelBorder | PK | `id` (CUID) | Primary key |
 | LandParcelBorder | UNIQUE | `parcelUid` | Sepadan 1:1 per identitas lahan (#326) — sekaligus index baca `findUnique` |
