@@ -80,11 +80,12 @@ const nonTutorialsBerMenu = contentFiles()
  * Menu daun aktif yang DINYATAKAN belum punya tutorial (#257). Menghapus baris
  * dari sini = menulis tutorialnya (atau menambah `menuKey` pada tutorial yang
  * sudah mencakupnya); menambah baris di sini wajib disertai alasan.
+ *
+ * **Kosong sejak 2026-09-23** — cakupan 37/37 (#257 tuntas). Baris baru di sini
+ * berarti ada menu yang sengaja dirilis tanpa materi pengguna; sertakan alasan
+ * dan issue-nya, jangan dipakai sekadar untuk menghijaukan gate.
  */
-const TANPA_TUTORIAL: Record<string, string> = {
-  "report-kelompok-tani-detail": "#257 — l-6 hanya ber-menuKey Summary; alur Detail (flat per KT) belum ditulis",
-  "dashboard-snapshot-bmp": "#257 — l-3 hanya ber-menuKey dashboard-snapshot; Snapshot BMP punya struktur data sendiri",
-};
+const TANPA_TUTORIAL: Record<string, string> = {};
 
 describe("registrasi materi Bantuan ↔ CHAPTER_SOURCES (help-content.ts)", () => {
   it("setiap berkas .md materi diimpor dan dipasang sebagai topik", () => {
@@ -102,9 +103,9 @@ describe("registrasi materi Bantuan ↔ CHAPTER_SOURCES (help-content.ts)", () =
     expect(yatim, "import ke berkas yang hilang — build akan gagal").toEqual([]);
   });
 
-  it("42 tutorial · 5 referensi · 13 konsep (angka di katalog docs/product/pages/bantuan/README.md)", () => {
+  it("44 tutorial · 5 referensi · 13 konsep (angka di katalog docs/product/pages/bantuan/README.md)", () => {
     const files = contentFiles();
-    expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(42);
+    expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(44);
     expect(files.filter((f) => f.startsWith("referensi/")).length).toBe(5);
     expect(files.filter((f) => /^\d-/.test(f)).length).toBe(13);
   });
@@ -166,7 +167,7 @@ describe("cakupan tutorial per menu daun aktif (#257)", () => {
     }
   });
 
-  it("angka cakupan = 35/37 (metrics.md & versioning.md §Metrik Nilai Rilis)", () => {
-    expect([leaves.length - Object.keys(TANPA_TUTORIAL).length, leaves.length]).toEqual([35, 37]);
+  it("angka cakupan = 37/37 (metrics.md & versioning.md §Metrik Nilai Rilis)", () => {
+    expect([leaves.length - Object.keys(TANPA_TUTORIAL).length, leaves.length]).toEqual([37, 37]);
   });
 });

@@ -13,7 +13,7 @@ export default async function KelompokTaniDetailReportPage() {
       <div className="print:hidden">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">Laporan Kelompok Tani (Detail)</h1>
-          <HelpHint menuKey="report-kelompok-tani" />
+          <HelpHint menuKey="report-kelompok-tani-detail" />
         </div>
         <p className="text-muted-foreground">
           Roster per Lembaga Petani: rincian Kelompok Tani &rarr; daftar Petani (turunan data lahan)
