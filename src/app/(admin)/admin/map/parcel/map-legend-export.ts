@@ -1,5 +1,7 @@
 import type { Feature, FeatureCollection, MultiPolygon, Point, Polygon } from "geojson";
-import { exportToExcel } from "@/lib/xlsx";
+import { exportToExcel, exportMultiSheetToExcel } from "@/lib/xlsx";
+import { groupLandParcelRows, sortByMapPosition, type LandParcelRowOrder } from "@/lib/report-land-parcel";
+import { safeSheetName } from "@/lib/report-land-parcel-xlsx";
 import { downloadFeatureExport } from "@/lib/parcel-spatial-download";
 import { toAsciiDbf, toDbfProperties, parcelExportFileBase, type ParcelExportFormat, type ParcelExportProperties } from "@/lib/parcel-export-data";
 import { LAND_MARKER_CONDITION_LABELS, fmtCoord, labelOf, uniqueMarkerRows, groupMarkersByParcel, MARKER_XLSX_COLUMNS, formatUniqueMarkerRow } from "@/lib/land-marker";
@@ -139,6 +141,54 @@ const PARCEL_XLSX_COLUMNS = [
 ];
 
 type ParcelFc = FeatureCollection<Polygon | MultiPolygon, ParcelExportProperties>;
+type ParcelFeatureRow = ParcelFc["features"][number];
+
+/** Pilihan modal Excel baris lahan legenda (owner 2026-09-23, #371). */
+export type ParcelXlsxSplit = "single" | "kelompokTani" | "blok";
+export interface ParcelXlsxOptions {
+  split: ParcelXlsxSplit;
+  order: LandParcelRowOrder;
+}
+
+const collator = new Intl.Collator("id-ID", { numeric: true, sensitivity: "base" });
+const cmpText = (a: string | null, b: string | null) =>
+  a === b ? 0 : a === null ? 1 : b === null ? -1 : collator.compare(a, b);
+
+/**
+ * Rencana sheet Excel baris lahan (pola Laporan Lahan #371): urut abjad
+ * (Lembaga → KT → nama petani → ID Lahan) atau posisi peta; 1 sheet "Data",
+ * atau sheet "Semua" + satu sheet per KT/Blok (urutan posisi dihitung ulang
+ * per sheet). Modal pilihan hanya muncul bila filter = 1 Lembaga (owner):
+ * KT/Blok senama ("1 F") ada di banyak Lembaga.
+ */
+export function planParcelXlsxSheets(
+  features: readonly ParcelFeatureRow[],
+  { split, order }: ParcelXlsxOptions,
+): { name: string; features: ParcelFeatureRow[] }[] {
+  const sortRows = (rows: readonly ParcelFeatureRow[]) =>
+    order === "posisi"
+      ? sortByMapPosition(rows, (f) => f.geometry)
+      : [...rows].sort((a, b) => {
+          const p = a.properties;
+          const q = b.properties;
+          return cmpText(p.lembaga, q.lembaga) || cmpText(p.kelompokTani, q.kelompokTani) ||
+            cmpText(p.namaPetani, q.namaPetani) || cmpText(p.idLahan as string | null, q.idLahan as string | null);
+        });
+  const sorted = sortRows(features);
+  if (split === "single") return [{ name: "Data", features: sorted }];
+  const groups = groupLandParcelRows(
+    sorted.map((f) => ({ kelompokTani: f.properties.kelompokTani, blok: f.properties.blok, f })),
+    split,
+  );
+  const used = new Set(["semua"]);
+  return [
+    { name: "Semua", features: sorted },
+    ...groups.map((g) => {
+      const rows = g.rows.map((r) => r.f);
+      return { name: safeSheetName(g.label, used), features: order === "posisi" ? sortRows(rows) : rows };
+    }),
+  ];
+}
 
 export async function exportParcelRow(
   row: "parcelPoints" | "parcelAreas" | "nkt",
@@ -147,6 +197,8 @@ export async function exportParcelRow(
   label: string | null,
   now: Date,
   context?: LayerReportContext,
+  /** Pilihan modal (hanya filter 1 Lembaga); tanpa = 1 sheet, urutan asal. */
+  xlsxOptions?: ParcelXlsxOptions,
 ): Promise<number> {
   const features = row === "nkt" ? fc.features.filter((f) => isNktAffected(landNktStatusFromShortLabel(f.properties.nkt))) : fc.features;
   const slug = row === "parcelPoints" ? "titik-lahan" : row === "nkt" ? "lahan-nkt" : "lahan";
@@ -157,26 +209,31 @@ export async function exportParcelRow(
     // Area Lahan (#370): seluruh node poligon di UJUNG KANAN — urutan kolom lama
     // tidak bergeser bagi olahan turunan. Titik lahan & lahan NKT tidak ikut.
     const withNodes = row === "parcelAreas";
-    await exportToExcel({
-      filename: b,
-      sheetName: "Data",
-      columns: withCoord
-        ? [PARCEL_XLSX_COLUMNS[0], { header: "Lintang", key: "lat", width: 14 }, { header: "Bujur", key: "lon", width: 14 }, ...PARCEL_XLSX_COLUMNS.slice(1)]
-        : withNodes
-          ? [...PARCEL_XLSX_COLUMNS, { header: "Jumlah Node", key: "jumlahNode", width: 12 }, { header: "Koordinat", key: "koordinat", width: 80, wrap: true }]
-          : PARCEL_XLSX_COLUMNS,
-      data: features.map((f) => {
-        const [lon, lat] = withCoord ? centroidOf(f.geometry) : [null, null];
-        const p = f.properties;
-        const nodes = withNodes ? formatParcelNodes(f.geometry) : null;
-        return {
-          ...Object.fromEntries(PARCEL_XLSX_COLUMNS.map((c) => [c.key, p[c.key] ?? ""])),
-          nkt: p.nkt ?? "Belum dinilai",
-          ...(withCoord ? { lat: Number(fmtCoord(lat as number)), lon: Number(fmtCoord(lon as number)) } : {}),
-          ...(nodes ? { koordinat: nodes.text, jumlahNode: nodes.count } : {}),
-        };
-      }),
-    });
+    const columns = withCoord
+      ? [PARCEL_XLSX_COLUMNS[0], { header: "Lintang", key: "lat", width: 14 }, { header: "Bujur", key: "lon", width: 14 }, ...PARCEL_XLSX_COLUMNS.slice(1)]
+      : withNodes
+        ? [...PARCEL_XLSX_COLUMNS, { header: "Jumlah Node", key: "jumlahNode", width: 12 }, { header: "Koordinat", key: "koordinat", width: 80, wrap: true }]
+        : PARCEL_XLSX_COLUMNS;
+    const toRow = (f: ParcelFeatureRow) => {
+      const [lon, lat] = withCoord ? centroidOf(f.geometry) : [null, null];
+      const p = f.properties;
+      const nodes = withNodes ? formatParcelNodes(f.geometry) : null;
+      return {
+        ...Object.fromEntries(PARCEL_XLSX_COLUMNS.map((c) => [c.key, p[c.key] ?? ""])),
+        nkt: p.nkt ?? "Belum dinilai",
+        ...(withCoord ? { lat: Number(fmtCoord(lat as number)), lon: Number(fmtCoord(lon as number)) } : {}),
+        ...(nodes ? { koordinat: nodes.text, jumlahNode: nodes.count } : {}),
+      };
+    };
+    const sheets = xlsxOptions ? planParcelXlsxSheets(features, xlsxOptions) : [{ name: "Data", features }];
+    if (!xlsxOptions || xlsxOptions.split === "single") {
+      await exportToExcel({ filename: b, sheetName: "Data", columns, data: sheets[0].features.map(toRow) });
+    } else {
+      await exportMultiSheetToExcel({
+        filename: `${b}_per_${xlsxOptions.split === "blok" ? "Blok" : "KT"}`,
+        sheets: sheets.map((sh) => ({ name: sh.name, columns, data: sh.features.map(toRow) })),
+      });
+    }
     return features.length;
   }
   if (format === "pdf") {
