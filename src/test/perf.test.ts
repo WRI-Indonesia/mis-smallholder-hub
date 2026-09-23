@@ -943,7 +943,7 @@ describe("Performance - Import Detail Lahan planner (#300, pure logic)", () => {
       if (i % 10 < 3) {
         existing.documents.set(docKey(uid, "SHM", `S-${i}`), { id: `d${i}`, typeRaw: "SHM", holderName: "Abdul", statedArea: 0.25, custodyNote: null });
         existing.stdbs.set(stdbKey(farmer, `N-${Math.floor(i / 3)}`), { id: `s${i}`, isActive: true });
-        existing.externalIds.set(`CODE-${i}`, { parcelUid: uid, isActive: true });
+        existing.externalIds.set(`CODE-${i}`, [{ id: `e${i}`, parcelUid: uid, isActive: true }]);
       }
       return {
         parcelUid: uid, farmerDbId: farmer, parcelId: `P-${i}`,

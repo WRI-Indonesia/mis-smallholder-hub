@@ -481,6 +481,15 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
     }),
   ]);
 
+  // Kode yang sama boleh menempel di >1 lahan (keputusan owner 2026-09-23) —
+  // pemakai lain ditampilkan agar klaim ganda bisa dicek silang.
+  const sharers = externalIds.length
+    ? await prisma.landParcelExternalId.findMany({
+        where: { isActive: true, parcelUid: { not: uid }, OR: externalIds.map((e) => ({ source: e.source, code: e.code })) },
+        select: { source: true, code: true, parcel: { select: { parcelId: true, revisions: { where: { isActive: true }, select: { id: true }, take: 1 } } } },
+      })
+    : [];
+
   return {
     parcelUid: uid,
     documents,
@@ -503,7 +512,13 @@ export async function getLandParcelSatellites(landParcelId: string): Promise<Lan
         .filter((p) => p.parcel.revisions.length > 0)
         .map((p) => ({ parcelId: p.parcel.parcelId, id: p.parcel.revisions[0].id })),
     })),
-    externalIds,
+    externalIds: externalIds.map((e) => ({
+      ...e,
+      // Sama dengan STDB: hanya lahan yang masih punya revisi aktif.
+      otherParcels: sharers
+        .filter((o) => o.source === e.source && o.code === e.code && o.parcel.revisions.length > 0)
+        .map((o) => ({ parcelId: o.parcel.parcelId, id: o.parcel.revisions[0].id })),
+    })),
     programs,
     border: hasBorderContent(border) ? border : null,
     nkt,

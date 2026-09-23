@@ -215,13 +215,13 @@ export async function createLandParcelExternalId(input: unknown): Promise<Result
   if (!parcel) return { success: false, error: "Lahan tidak ditemukan atau di luar akses Anda" };
   const { landParcelId: _ignored, ...data } = parsed.data;
   void _ignored;
-  const clash = await prisma.landParcelExternalId.findUnique({ where: { source_code: { source: data.source, code: data.code } }, select: { parcelUid: true, isActive: true } });
-  if (clash && clash.isActive && clash.parcelUid !== parcel.parcelUid) {
-    return { success: false, error: { code: ["Kode ini sudah dipakai lahan lain untuk sumber yang sama"] } };
-  }
+  // Kode yang sama BOLEH menempel di lahan lain (keputusan owner 2026-09-23);
+  // yang dijaga hanya duplikat di lahan ini sendiri.
+  const own = await prisma.landParcelExternalId.findUnique({ where: { parcelUid_source_code: { parcelUid: parcel.parcelUid, source: data.source, code: data.code } }, select: { id: true, isActive: true } });
+  if (own?.isActive) return { success: false, error: { code: ["Lahan ini sudah punya kode ini untuk pemeta yang sama"] } };
   const uid = await userId();
-  const row = clash
-    ? await prisma.landParcelExternalId.update({ where: { source_code: { source: data.source, code: data.code } }, data: { ...data, parcelUid: parcel.parcelUid, isActive: true, modifiedBy: uid }, select: { id: true } })
+  const row = own
+    ? await prisma.landParcelExternalId.update({ where: { id: own.id }, data: { ...data, isActive: true, modifiedBy: uid }, select: { id: true } })
     : await prisma.landParcelExternalId.create({ data: { ...data, parcelUid: parcel.parcelUid, createdBy: uid }, select: { id: true } });
   return { success: true, data: row };
 }
@@ -233,8 +233,8 @@ export async function updateLandParcelExternalId(input: unknown): Promise<Result
   const { id, ...data } = parsed.data;
   const existing = await prisma.landParcelExternalId.findFirst({ where: { id, isActive: true, ...(await satelliteScope()) }, select: { id: true, parcelUid: true } });
   if (!existing) return { success: false, error: "UL Parcel Code tidak ditemukan atau di luar akses Anda" };
-  const clash = await prisma.landParcelExternalId.findUnique({ where: { source_code: { source: data.source, code: data.code } }, select: { id: true } });
-  if (clash && clash.id !== id) return { success: false, error: { code: ["Kode ini sudah dipakai record lain untuk sumber yang sama"] } };
+  const clash = await prisma.landParcelExternalId.findUnique({ where: { parcelUid_source_code: { parcelUid: existing.parcelUid, source: data.source, code: data.code } }, select: { id: true } });
+  if (clash && clash.id !== id) return { success: false, error: { code: ["Lahan ini sudah punya kode ini untuk pemeta yang sama"] } };
   await prisma.landParcelExternalId.update({ where: { id }, data: { ...data, modifiedBy: await userId() } });
   return { success: true, data: { id } };
 }
