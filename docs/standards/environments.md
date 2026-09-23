@@ -41,9 +41,9 @@ npx dotenv -e .env.prod -- npx prisma studio         # inspeksi DB prod
 
 Mekanisme: `dotenv -e` men-set variabel di process environment **sebelum** proses anak berjalan; `dotenv/config` maupun loader `.env` Next.js **tidak menimpa** variabel yang sudah ter-set, sehingga file yang dipilih selalu menang atas `.env`.
 
-## Refresh DB Local dari Prod
+## Refresh DB Non-Prod dari Prod (local, staging-local, staging)
 
-DB local (`localhost:5432/mis-dev`, Postgres.app **18** sejak 2026-09-14) adalah **snapshot prod**. Untuk menyegarkan (tunnel `:1234` harus aktif; `pg_dump`/`pg_restore` wajib versi ≥ PG prod — prod **PostgreSQL 18.3**; sejak local juga PG 18, client bawaan Postgres.app `/Applications/Postgres.app/Contents/Versions/18/bin/` sudah cukup; `postgresql@18`/`libpq` Homebrew tetap bisa dipakai):
+Ketiga DB non-prod — **local** (`localhost:5432/mis-dev`, Postgres.app **18** sejak 2026-09-14), **staging-local** (`localhost:5432/mis-staging-local`), dan **staging** (tunnel `:1235`) — adalah **snapshot prod**, dan semuanya disegarkan dari satu dump `mis-prod` yang sama. Prasyarat: tunnel prod `:1234` aktif (plus `:1235` bila staging ikut), dan `pg_dump`/`pg_restore` **versi ≥ PG prod** — prod **PostgreSQL 18.3**; sejak local juga PG 18, client bawaan Postgres.app `/Applications/Postgres.app/Contents/Versions/18/bin/` sudah cukup; `postgresql@18`/`libpq` Homebrew tetap bisa dipakai. Yang berbeda antar-target hanya **cara mengosongkan DB tujuan**: DB lokal di-`drop database` (kita pemiliknya), staging di-`drop schema` (user staging bukan pemilik database). Ambil dump prod, lalu isi DB lokal — untuk `mis-staging-local`, ganti nama DB di dua baris terakhir:
 
 ```bash
 mkdir -p scripts/dump-prod/$(date +%F)   # folder di-gitignore — dump berisi data pribadi petani, jangan pernah commit
@@ -52,9 +52,9 @@ psql "postgresql://postgres:postgres@localhost:5432/postgres" -c 'drop database 
 /opt/homebrew/opt/libpq/bin/pg_restore --no-owner --no-privileges -d "postgresql://postgres:postgres@localhost:5432/mis-dev" scripts/dump-prod/$(date +%F)/mis-prod.dump
 ```
 
-Dump membawa `_prisma_migrations`, jadi status migrasi local otomatis sama dengan prod.
+Dump membawa `_prisma_migrations`, jadi status migrasi tiap target otomatis sama dengan prod.
 
-Cara yang sama berlaku untuk menyegarkan **staging** (ganti target restore ke `.env.staging`; wipe dengan `drop schema public cascade; create schema public;` karena user staging bukan pemilik database), termasuk untuk menyalin `mis-staging-local` → `mis-staging`:
+Untuk **staging** langkahnya sama, dengan dua beda: wipe-nya `drop schema public cascade; create schema public;`, dan isi lama **di-backup dulu** karena wipe ini tidak bisa dibatalkan. Contoh di bawah kebetulan menyalin `mis-staging-local` → `mis-staging`; untuk menyegarkan staging **dari prod**, lewati baris kedua dan ganti berkas yang di-`pg_restore` menjadi `mis-prod.dump`:
 
 ```bash
 npx dotenv -e .env.staging      -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-before-refresh.dump'   # backup dulu
