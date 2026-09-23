@@ -18,6 +18,7 @@ import {
 import {
   classifyHotspots,
   combinedBbox,
+  buildScopeUniverse,
   countHotspotsByDay,
   countHotspotsByGroup,
   countPointsByNamedArea,
@@ -329,8 +330,6 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
       toast.error("Batas kabupaten distrik ini belum tersedia — cetak per distrik tidak bisa dilakukan");
       return;
     }
-    const scopeFc = scopeArea ? filterPointsWithinAreas(classified, [scopeArea]) : classified;
-    const conf = countByConfidence(scopeFc);
     const scopeGroupRows = scopeDistrictId
       ? rows.filter((r) => r.districtId === scopeDistrictId)
       : rows;
@@ -345,6 +344,21 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
         (id) => groupDistrict.get(id) === scopeDistrictId
       );
     });
+    // Semesta dokumen scope distrik = titik di poligon kabupaten BIG-nya
+    // DITAMBAH titik milik lembaga distrik itu yang jatuh di luar poligon
+    // (boundary ICS sudah termasuk buffer 1,5 km, jadi kepemilikan bisa
+    // melewati batas kabupaten). Satu aturan untuk seluruh dokumen: "dalam
+    // boundary" = KEPEMILIKAN lembaga distrik scope (keputusan owner
+    // 2026-09-23, melanjutkan "angka kartu yang menang" dari #294).
+    //
+    // Sebelum ini, kartu & Rekap Kabupaten memakai kepemilikan sementara Tren
+    // Harian memakai poligon — menjumlahkan kolom "Dalam Boundary" Tren Harian
+    // tidak menghasilkan angka Rekap Kabupaten di dokumen yang SAMA.
+    const scopeFc: FeatureCollection = scopeArea
+      ? buildScopeUniverse(filterPointsWithinAreas(classified, [scopeArea]), insideFeatures)
+      : classified;
+    const conf = countByConfidence(scopeFc);
+
     const detailRows = insideFeatures
       .map((f) => ({
         iso: (f.properties?.acqDatetime as string) ?? "",
@@ -426,18 +440,20 @@ export function FireAlertClient({ boundaries, adminBoundaries, riauOutline, canP
         const to = new Date(`${coverage.to}T00:00:00Z`);
         const partial = coverage.to.slice(0, 7) === utcMonth(now);
         rangeLabel = `${formatHotspotMonth(month)} (${partial ? "parsial, " : ""}${formatHotspotRange(from, to)})`;
-        // Scope distrik: scopeFc sudah terpangkas ke poligonnya → baris
-        // "Kab. Lainnya" pasti 0, dibuang (selalu baris terakhir). Sisa satu
-        // baris = kabupaten scope itu sendiri, jadi wajib sama persis dengan
-        // kartu ringkasan di PDF yang sama. `summarizeByNamedArea` menghitung
-        // "dalam boundary" per poligon kabupaten (pemilik mana pun), kartu
-        // menghitung per kepemilikan lembaga di distrik scope — buffer 1,5 km
-        // bisa melewati batas kabupaten sehingga keduanya beda DUA arah.
-        // Angka kartu yang menang.
+        // Scope distrik: satu baris = kabupaten itu sendiri, dihitung langsung
+        // dari semesta dokumen. `summarizeByNamedArea` tidak dipakai di sini
+        // karena ia memangkas ke poligon — titik milik lembaga distrik ini
+        // yang berada di kabupaten tetangga akan jatuh ke "Kab. Lainnya" lalu
+        // terbuang, padahal kartu menghitungnya.
         const byKabupaten = scopeArea
-          ? summarizeByNamedArea(scopeFc, [scopeArea], "Kab. Lainnya")
-              .slice(0, -1)
-              .map((r) => ({ ...r, inside: insideFeatures.length }))
+          ? [
+              {
+                name: scopeArea.name,
+                total: scopeFc.features.length,
+                inside: insideFeatures.length,
+                high: scopeFc.features.filter((f) => f.properties?.confBucket === "high").length,
+              },
+            ]
           : summarizeByNamedArea(scopeFc, programAreas, "Kab. Lainnya");
         monthly = {
           daily: countHotspotsByDay(scopeFc, coverage.from, coverage.to, coverage.missingDates),

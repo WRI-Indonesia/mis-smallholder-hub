@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { FeatureCollection, MultiPolygon } from "geojson";
+import type { Feature, FeatureCollection, MultiPolygon } from "geojson";
 import {
   classifyHotspots,
   combinedBbox,
@@ -8,6 +8,7 @@ import {
   countPointsByNamedArea,
   countUniqueInsideByDistrict,
   describeHotspotSources,
+  buildScopeUniverse,
   filterPointsWithinAreas,
   formatDateList,
   indexArea,
@@ -535,5 +536,65 @@ describe("label rentang waktu laporan", () => {
   it("tanggal & jam sama-sama dibaca WIB, bukan zona browser", () => {
     // 23.00 UTC 19 Agu = 06.00 WIB 20 Agu — tanggalnya harus ikut maju.
     expect(formatExportedAt(new Date("2026-08-19T23:00:00Z"))).toBe("20 Agu 2026, 06.00 WIB");
+  });
+});
+
+describe("buildScopeUniverse — satu aturan \"Dalam Boundary\" per dokumen (review 2026-09-23)", () => {
+  /** Titik ber-tanggal & status boundary; identitas objek yang dipakai. */
+  const pt = (date: string, inBoundary: "in" | "out"): Feature => ({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [101, 0.5] },
+    properties: { acqDate: date, inBoundary, confidence: "n" },
+  });
+
+  // Milik lembaga distrik scope, ADA di poligon kabupaten.
+  const ownedInside = pt("2025-01-02", "in");
+  // Milik lembaga distrik scope tapi DI LUAR poligon (buffer 1,5 km melewati
+  // batas kabupaten) — kartu menghitungnya, klip poligon tidak.
+  const ownedOutsidePolygon = pt("2025-01-02", "in");
+  // Ada di poligon tapi milik lembaga distrik LAIN.
+  const foreignOwned = pt("2025-01-03", "in");
+  // Ada di poligon, di luar boundary mana pun.
+  const plain = pt("2025-01-03", "out");
+
+  const inPolygon: FeatureCollection = {
+    type: "FeatureCollection",
+    features: [ownedInside, foreignOwned, plain],
+  };
+  const insideFeatures = [ownedInside, ownedOutsidePolygon];
+
+  it("menggabungkan titik poligon dengan titik milik lembaga di luar poligon", () => {
+    const u = buildScopeUniverse(inPolygon, insideFeatures);
+    expect(u.features).toHaveLength(4);
+    expect(u.features).toContain(ownedOutsidePolygon);
+  });
+
+  it("titik milik lembaga distrik LAIN diturunkan jadi \"out\"", () => {
+    const u = buildScopeUniverse(inPolygon, insideFeatures);
+    const foreign = u.features.find(
+      (f) => f.properties?.acqDate === "2025-01-03" && f !== plain
+    );
+    expect(foreign?.properties?.inBoundary).toBe("out");
+    // Objek asli TIDAK dimutasi — `classified` dipakai ulang untuk scope lain.
+    expect(foreignOwned.properties?.inBoundary).toBe("in");
+  });
+
+  it("INVARIAN: jumlah kolom Dalam Boundary Tren Harian = angka kartu", () => {
+    // Inilah temuan review-nya: sebelum perbaikan, `daily` dihitung dari
+    // scopeFc berbasis POLIGON sementara kartu & Rekap Kabupaten berbasis
+    // KEPEMILIKAN, sehingga dua angka bernama sama berbeda di dokumen yang
+    // sama. Menjumlahkan kolomnya harus menghasilkan angka kartu.
+    const u = buildScopeUniverse(inPolygon, insideFeatures);
+    const daily = countHotspotsByDay(u, "2025-01-01", "2025-01-05");
+    const sumInside = daily.reduce((a, d) => a + d.inside, 0);
+    expect(sumInside).toBe(insideFeatures.length);
+    expect(daily.reduce((a, d) => a + d.total, 0)).toBe(u.features.length);
+  });
+
+  it("scope Full Riau tidak melewati fungsi ini — perilakunya tak berubah", () => {
+    // Tanpa poligon scope, klien memakai `classified` apa adanya; fungsi ini
+    // hanya dipanggil pada scope distrik.
+    const u = buildScopeUniverse(inPolygon, []);
+    expect(u.features.filter((f) => f.properties?.inBoundary === "in")).toHaveLength(0);
   });
 });

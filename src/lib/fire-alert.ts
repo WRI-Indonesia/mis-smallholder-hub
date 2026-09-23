@@ -448,6 +448,33 @@ export function countPointsByNamedArea(
   return summarizeByNamedArea(fc, areas, otherLabel).map(({ name, total }) => ({ name, count: total }));
 }
 
+/**
+ * Semesta satu dokumen laporan scope distrik: titik di dalam poligon kabupaten
+ * DITAMBAH titik milik lembaga distrik itu yang jatuh di luar poligon (boundary
+ * ICS sudah termasuk buffer 1,5 km, jadi kepemilikan bisa melewati batas
+ * kabupaten). `inBoundary` ditulis ulang mengikuti **kepemilikan**, supaya
+ * seluruh angka dokumen memakai satu aturan: kartu ringkasan, Rekap per
+ * Kabupaten, dan kolom "Dalam Boundary" Tren Harian menjadi mustahil berbeda
+ * (keputusan owner 2026-09-23, melanjutkan "angka kartu yang menang" #294).
+ *
+ * `insideFeatures` harus berasal dari `classified` yang sama dengan `inPolygon`
+ * — dicocokkan lewat identitas objek, bukan koordinat.
+ */
+export function buildScopeUniverse(
+  inPolygon: FeatureCollection,
+  insideFeatures: Feature[]
+): FeatureCollection {
+  const insideSet = new Set(insideFeatures);
+  return {
+    type: "FeatureCollection",
+    features: [...new Set([...inPolygon.features, ...insideFeatures])].map((f) =>
+      insideSet.has(f) || f.properties?.inBoundary !== "in"
+        ? f
+        : { ...f, properties: { ...f.properties, inBoundary: "out" } }
+    ),
+  };
+}
+
 /** Satu baris tren harian laporan bulanan (#365); tanggal = `acq_date` FIRMS (UTC). */
 export type DailyCount = {
   date: string;
