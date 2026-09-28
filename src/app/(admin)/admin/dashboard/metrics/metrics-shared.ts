@@ -1,4 +1,5 @@
 import type { ReleaseMetric } from "@/types/release-metrics";
+import { CATEGORICAL } from "@/lib/chart-palette";
 
 /**
  * Konstanta bersama Dashboard Metrik Rilis (#227). Warna mengikuti spec owner
@@ -8,11 +9,11 @@ import type { ReleaseMetric } from "@/types/release-metrics";
  * pernah per peringkat; pasangan light/dark eksplisit (jangan hardcode satu).
  */
 export const SERIES = {
-  weekday: { light: "#1baf7a", dark: "#199e70", label: "Senin–Jumat" },
-  saturday: { light: "#eda100", dark: "#c98500", label: "Sabtu" },
-  sunday: { light: "#e87ba4", dark: "#d55181", label: "Minggu" },
-  growth: { light: "#2a78d6", dark: "#3987e5", label: "RVS" }, // dipakai juga utk test (semantik "pertumbuhan")
-  roadmap: { light: "#eb6834", dark: "#d95926", label: "Roadmap" },
+  weekday: { ...CATEGORICAL[2], label: "Senin–Jumat" },
+  saturday: { ...CATEGORICAL[3], label: "Sabtu" },
+  sunday: { ...CATEGORICAL[4], label: "Minggu" },
+  growth: { ...CATEGORICAL[0], label: "RVS" }, // dipakai juga utk test (semantik "pertumbuhan")
+  roadmap: { ...CATEGORICAL[1], label: "Roadmap" },
 } as const;
 
 export const seriesColor = (key: keyof typeof SERIES, dark: boolean) =>
@@ -93,7 +94,5 @@ export function windowSlice<T>(pts: T[], at: (p: T) => number, windowDays: numbe
   return kept.length >= 2 ? kept : pts.slice(-2);
 }
 
-/** Repo GitHub proyek — tautan versi (release tag) & issue di Daftar rilis. */
-export const REPO_URL = "https://github.com/WRI-Indonesia/mis-smallholder-hub";
-export const releaseUrl = (version: string) => `${REPO_URL}/releases/tag/${version}`;
-export const issueUrl = (ref: string) => `${REPO_URL}/issues/${ref.replace("#", "")}`;
+/** Repo GitHub proyek — tautan versi & issue; sumbernya kini `src/lib/repo-links.ts` (dipakai juga Sprint Mingguan). */
+export { REPO_URL, releaseUrl, issueUrl } from "@/lib/repo-links";

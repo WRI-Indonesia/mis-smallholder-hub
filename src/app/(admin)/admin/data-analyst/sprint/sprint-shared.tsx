@@ -1,21 +1,25 @@
 import { Fragment } from "react";
 import { parseInline } from "@/lib/markdown-lite";
-import type { SprintCategory, SprintItemStatus } from "@/lib/sprint-plan";
-import { issueUrl } from "@/app/(admin)/admin/dashboard/metrics/metrics-shared";
+import { SPRINT_CATEGORIES, type SprintCategory, type SprintItemStatus } from "@/lib/sprint-plan";
+import { CATEGORICAL } from "@/lib/chart-palette";
+import { issueUrl } from "@/lib/repo-links";
 
 /**
- * Warna kategori = slot 1–6 palet kategorikal tervalidasi yang juga dipakai
- * Metrik Rilis (urutan tetap, lolos validator untuk batang bertumpuk/adjacent).
- * Warna mengikuti kategori, bukan peringkat; teks tidak pernah memakai warna ini.
+ * Warna kategori = slot 1–6 palet kategorikal bersama (`src/lib/chart-palette.ts`,
+ * juga dipakai Metrik Rilis), urut `SPRINT_CATEGORIES`. Warna mengikuti
+ * kategori, bukan peringkat; teks tidak pernah memakai warna ini.
  */
-export const CATEGORY_COLOR: Record<SprintCategory, { light: string; dark: string }> = {
-  Keamanan: { light: "#2a78d6", dark: "#3987e5" },
-  Rilis: { light: "#eb6834", dark: "#d95926" },
-  Performa: { light: "#1baf7a", dark: "#199e70" },
-  Data: { light: "#eda100", dark: "#c98500" },
-  Fitur: { light: "#e87ba4", dark: "#d55181" },
-  Kerapian: { light: "#008300", dark: "#008300" },
-};
+export const CATEGORY_COLOR = Object.fromEntries(SPRINT_CATEGORIES.map((c, i) => [c, CATEGORICAL[i]])) as Record<
+  SprintCategory,
+  { light: string; dark: string }
+>;
+
+const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+/** "2026-09-28" → "28 Sep 2026" (atau "28 Sep" tanpa tahun). */
+export function fmtDate(iso: string, withYear = true): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return withYear ? `${d} ${MONTHS_ID[m - 1]} ${y}` : `${d} ${MONTHS_ID[m - 1]}`;
+}
 
 export const STATUS_STYLE: Record<SprintItemStatus, string> = {
   todo: "border-border text-muted-foreground",
@@ -29,33 +33,62 @@ export const STATUS_STYLE: Record<SprintItemStatus, string> = {
  * Markdown inline sel tabel (`**tebal**`, `` `kode` ``, tautan) + `#nnn`
  * menjadi tautan issue GitHub. Sengaja tidak memakai renderer Bantuan: tautan
  * issue hanya bermakna di halaman ini.
+ *
+ * `links={false}` merender teks polos tanpa `<a>` — wajib bila dipakai DI DALAM
+ * `<button>` (konten interaktif bersarang = HTML tak valid; klik #nnn di
+ * Firefox/pembaca layar jatuh ke tombol, bukan ke tautan).
  */
-export function Inline({ text }: { text: string }) {
+export function Inline({ text, links = true }: { text: string; links?: boolean }) {
   return (
     <>
       {parseInline(text).map((part, i) => {
-        if (part.type === "strong") return <strong key={i} className="font-medium"><IssueLinks text={part.value} /></strong>;
+        if (part.type === "strong") return <strong key={i} className="font-medium"><IssueLinks text={part.value} links={links} /></strong>;
         if (part.type === "code") return <code key={i} className="rounded bg-muted px-1 py-0.5 text-[0.85em]">{part.value}</code>;
-        if (part.type === "link") return <a key={i} href={part.href} className="underline underline-offset-2" target="_blank" rel="noopener noreferrer">{part.value}</a>;
-        return <IssueLinks key={i} text={part.value} />;
+        if (part.type === "link") {
+          return links ? <a key={i} href={part.href} className="underline underline-offset-2" target="_blank" rel="noopener noreferrer">{part.value}</a> : <Fragment key={i}>{part.value}</Fragment>;
+        }
+        return <IssueLinks key={i} text={part.value} links={links} />;
       })}
     </>
   );
 }
 
-function IssueLinks({ text }: { text: string }) {
+function IssueLinks({ text, links }: { text: string; links: boolean }) {
   return (
     <>
       {text.split(/(#\d+)/g).map((p, i) =>
-        /^#\d+$/.test(p) ? (
-          <a key={i} href={issueUrl(p)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+        links && /^#\d+$/.test(p) ? (
+          <a key={i} href={issueUrl(p)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
             {p}
           </a>
+        ) : /^#\d+$/.test(p) ? (
+          <span key={i} className="text-primary">{p}</span>
         ) : (
           <Fragment key={i}>{p}</Fragment>
         )
       )}
     </>
+  );
+}
+
+/** Tautan GitHub untuk setiap `#nnn` sebuah butir — dirender DI LUAR tombol baris. */
+export function IssueRefLinks({ refs }: { refs: string[] }) {
+  if (refs.length === 0) return null;
+  return (
+    <span className="flex shrink-0 gap-1">
+      {refs.map((ref) => (
+        <a
+          key={ref}
+          href={issueUrl(ref)}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`Buka ${ref} di GitHub`}
+          className="rounded border px-1.5 py-0.5 text-xs text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {ref} ↗
+        </a>
+      ))}
+    </span>
   );
 }
 

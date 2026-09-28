@@ -10,6 +10,7 @@ import {
   sprintPhase,
   sprintProgress,
   sprintVelocity,
+  splitRow,
 } from "@/lib/sprint-plan";
 
 // Vitest tidak memuat `.md` (itu rule webpack), jadi test membaca file nyata
@@ -99,6 +100,39 @@ describe("parseSprintPlan — fixture", () => {
     expect(() => parseSprintPlan(sprint([]))).toThrow(/tanpa baris/);
     expect(() => parseSprintPlan(doc("#### Sprint 1 — tanpa tanggal"))).toThrow(/heading tak dikenal/);
     expect(() => parseSprintPlan("# kosong")).toThrow(/Sprint Focus/);
+    expect(() => parseSprintPlan(sprint(["| 1 | A | Rilis | S | t | 🔲 Todo | — |", "| 1 | B | Rilis | S | t | 🔲 Todo | — |"]))).toThrow(/dobel/);
+    const dup = ["#### Sprint 1 · 2026-09-28 → 2026-10-04 — A", "", table(["| 1 | A | Rilis | S | t | 🔲 Todo | — |"]), ""];
+    expect(() => parseSprintPlan(doc([...dup, ...dup].join("\n")))).toThrow(/dua kali/);
+  });
+
+  it("blok <details> di tengah section DILEWATI, bukan menghentikan parse sprint berikutnya", () => {
+    const plan = parseSprintPlan(
+      doc(
+        [
+          "#### Sprint 1 · 2026-09-28 → 2026-10-04 — A",
+          "",
+          table(["| 1 | A | Rilis | S | t | 🔲 Todo | — |"]),
+          "",
+          "<details>",
+          "<summary>catatan</summary>",
+          "| 9 | X | Rilis | S | t | 🔲 Todo | — |",
+          "</details>",
+          "",
+          "#### Sprint 2 · 2026-10-05 → 2026-10-11 — B",
+          "",
+          table(["| 1 | B | Data | M | t | 🔲 Todo | — |"]),
+        ].join("\n")
+      )
+    );
+    expect(plan.sprints.map((s) => [s.number, s.items.length])).toEqual([[1, 1], [2, 1]]);
+  });
+
+  it("pipa ter-escape `\\|` di dalam sel (GFM) tidak memecah kolom", () => {
+    expect(splitRow("| 1 | a | `BATAS_LAHAN\\|NKT` x | d |")).toEqual(["1", "a", "`BATAS_LAHAN|NKT` x", "d"]);
+    const plan = parseSprintPlan(
+      doc(["#### Sprint 1 · 2026-09-28 → 2026-10-04 — A", "", table(["| 1 | #345 | Fitur | L | kolom `purpose BATAS_LAHAN\\|NKT` | 🔲 Todo | — |"])].join("\n"))
+    );
+    expect(plan.sprints[0].items[0].target).toBe("kolom `purpose BATAS_LAHAN|NKT`");
   });
 });
 
@@ -140,24 +174,50 @@ describe("analisa sprint", () => {
     )
   );
 
-  it("velocity: rencana tanpa butir Digeser; rata-rata hanya dari sprint yang sudah lewat", () => {
+  it("velocity: komitmen awal TERMASUK butir yang kemudian digeser (selisih terlihat); rata-rata dari sprint lewat", () => {
     const v = sprintVelocity(plan, "2026-10-06");
     expect(v.rows).toEqual([
-      { number: 1, phase: "past", planned: 4, done: 3 },
-      { number: 2, phase: "active", planned: 3, done: 0 },
-      { number: 3, phase: "upcoming", planned: 5, done: 0 },
+      { number: 1, phase: "past", planned: 9, moved: 5, done: 3 },
+      { number: 2, phase: "active", planned: 8, moved: 5, done: 0 },
+      { number: 3, phase: "upcoming", planned: 5, moved: 0, done: 0 },
     ]);
     expect(v.average).toBe(3);
     expect(sprintVelocity(plan, "2026-09-28").average).toBeNull();
   });
 
-  it("keputusan tertunda hanya dari sprint aktif & mendatang", () => {
-    expect(pendingDecisions(plan, "2026-10-06").map((d) => [d.sprint, d.item.issueRefs[0]])).toEqual([[2, "#13"]]);
-    expect(pendingDecisions(plan, "2026-09-30")).toHaveLength(2);
+  it("keputusan tertunda: butir ⚖️ sprint yang sudah lewat TIDAK hilang, ditandai terlambat", () => {
+    expect(pendingDecisions(plan, "2026-10-06").map((d) => [d.sprint, d.phase, d.item.issueRefs[0]])).toEqual([
+      [1, "past", "#12"],
+      [2, "active", "#13"],
+    ]);
   });
 
-  it("carry-over menghitung berapa kali digeser dan sprint terakhir tempatnya berada", () => {
-    expect(carryOvers(plan)).toEqual([{ ref: "#11", issue: "**#11** B", movedFrom: [1, 2], latestSprint: 3 }]);
+  it("carry-over: berapa kali digeser + sprint tujuan terakhir", () => {
+    expect(carryOvers(plan)).toEqual([{ issue: "**#11** B", movedFrom: [1, 2], destination: 3 }]);
+  });
+
+  it("carry-over dikunci per baris Issue: satu baris ber-2 issue = 1 butir; digeser tanpa tujuan = belum dijadwalkan", () => {
+    const p = parseSprintPlan(
+      doc(
+        [
+          "#### Sprint 1 · 2026-09-28 → 2026-10-04 — Satu",
+          "",
+          table([
+            "| 1 | **#253** · **#320** | Performa | M | t | ⏭️ Digeser | — |",
+            "| 2 | **#286 butir 2** | Keamanan | S | t | ⏭️ Digeser | — |",
+            "| 3 | **#286 butir 1 & 3** | Keamanan | M | t | 🔲 Todo | — |",
+          ]),
+          "",
+          "#### Sprint 2 · 2026-10-05 → 2026-10-11 — Dua",
+          "",
+          table(["| 1 | **#286 butir 1 & 3** | Keamanan | M | t | 🔲 Todo | — |"]),
+        ].join("\n")
+      )
+    );
+    expect(carryOvers(p)).toEqual([
+      { issue: "**#253** · **#320**", movedFrom: [1], destination: null },
+      { issue: "**#286 butir 2**", movedFrom: [1], destination: null },
+    ]);
   });
 
   it("hari ke-n dalam sprint aktif; null di luar rentang", () => {

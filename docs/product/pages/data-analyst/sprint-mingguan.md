@@ -26,15 +26,17 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 │   │   · bilah progres POIN + "x/y butir selesai"
 │   ├── Kotak "Butuh keputusan owner (n)" — butir ⚖️ + teks keputusan + poin tertahan (hanya bila ada)
 │   ├── Kelompok butir: Dikerjakan · Belum dimulai · Selesai · Digeser (butir ⚖️ TIDAK diulang di sini)
-│   │   └── Baris: issue (#nnn → GitHub) · titik kategori · ukuran "M · 3"; klik → Target & Keputusan
+│   │   └── Baris: tombol (issue teks polos · titik kategori · ukuran "M · 3"; klik → Target & Keputusan)
+│   │       + tautan "#nnn ↗" ke GitHub DI LUAR tombol (tidak ada <a> bersarang dalam <button>)
 │   └── Backlog (bila dipilih) — daftar bernomor dari "#### Backlog …"
 └── Tab Analisa
-    ├── 3 stat: velocity rata-rata (sprint lewat saja; "—" bila belum ada) · poin tertahan keputusan · butir digeser
-    ├── Velocity per sprint — batang rencana (netral) vs selesai (slot 1) + garis putus rata-rata + label angka
+    ├── 3 stat: velocity rata-rata (sprint lewat saja; "—" bila belum ada) · poin tertahan keputusan (+ n terlambat) · butir digeser
+    ├── Velocity per sprint — batang KOMITMEN AWAL (netral, termasuk butir yang kemudian digeser) vs selesai (slot 1)
+    │   + garis putus rata-rata + label angka
     ├── Komposisi fokus — batang bertumpuk 100% per sprint, warna = kategori (slot 1–6 palet Metrik Rilis),
     │   celah 2px; angka di teks bertinta netral di bawah batang (bukan di dalam batang: slot terang kurang kontras)
-    ├── Keputusan tertunda — tabel butir ⚖️ sprint berjalan & mendatang
-    └── Carry-over — issue ber-status Digeser: dari sprint mana, sprint terakhirnya, berapa kali
+    ├── Keputusan tertunda — SEMUA butir ⚖️; yang berasal dari sprint lewat ditandai "terlambat" (tidak hilang dari antrean)
+    └── Carry-over — butir ber-status Digeser: dari sprint mana → sprint tujuan (atau "belum dijadwalkan"), berapa kali
 ```
 
 ## Format sumber (`docs/project/sprint.md` §Sprint Focus)
@@ -49,10 +51,11 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 | Keputusan owner | teks; `—` = tidak ada | `decision: string \| null` |
 | Heading backlog | `#### Backlog …` diikuti daftar `1. …` | `backlog: string[]` |
 
-- Butir yang digeser ditulis di sprint asal dengan ⏭️, **lalu** ditulis ulang di sprint tujuan. Carry-over dihitung dari situ (rujukan `#nnn` yang sama; tanpa `#nnn`, dari teks kolom Issue).
-- Butir ⏭️ tidak dihitung ke total butir/poin sprint asalnya, supaya tidak terhitung dua kali.
-- Riwayat fokus lama di blok `<details>` **tidak** diparse.
-- Format rusak (status/kategori/poin tak dikenal, jumlah kolom ≠ 7, heading `####` asing, sprint tanpa baris) **melempar**, jadi build gagal alih-alih salah render diam-diam.
+- Butir yang digeser ditulis di sprint asal dengan ⏭️, **lalu** ditulis ulang di sprint tujuan dengan **teks kolom Issue yang sama persis**. Carry-over dikunci per teks Issue (satu baris = satu butir), bukan per `#nnn`: "**#253** · **#320**" satu butir, "#286 butir 2" dan "#286 butir 1 & 3" dua butir.
+- Dua hitungan sengaja berbeda untuk butir ⏭️: **progres sprint** (kartu ringkasan) tidak menghitungnya, karena itu sisa kerja sprint tujuan; **velocity** menghitungnya di komitmen sprint asal, supaya selisih rencana vs selesai terlihat.
+- Pipa di dalam sel wajib di-escape `\|` (aturan GFM, juga di dalam `kode`); parser mengembalikannya menjadi `|`.
+- Blok `<details>` di dalam §Sprint Focus (riwayat fokus lama, catatan) **dilewati**, tidak menghentikan parse; section berakhir di heading `###` berikutnya.
+- Format rusak (status/kategori/poin tak dikenal, jumlah kolom ≠ 7, heading `####` asing, sprint tanpa baris, nomor sprint atau nomor baris dobel) **melempar**, jadi build gagal alih-alih salah render diam-diam.
 
 ## Kode
 
@@ -60,8 +63,10 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 |---|---|
 | `src/lib/sprint-plan.ts` | Parser murni `parseSprintPlan` + `sprintPhase`, `sprintDay`, `sprintProgress` (butir & poin), `sprintVelocity`, `pendingDecisions`, `carryOvers`, `sprintComposition` |
 | `src/lib/sprint-plan-data.ts` | Import `sprint.md` + parse sekali (jangan diimport dari test) |
-| `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih minggu, tab Sprint) · `sprint-analysis.tsx` (tab Analisa) · `sprint-shared.tsx` (warna kategori, `Inline` + tautan issue, bilah progres) · `loading.tsx` |
-| `src/test/sprint-plan.test.ts` | File nyata (Senin→Minggu berurutan) + fixture + format rusak + batas fase + velocity/keputusan/carry-over/hari ke-n |
+| `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih minggu, tab Sprint) · `sprint-analysis.tsx` (tab Analisa) · `sprint-shared.tsx` (warna kategori, `fmtDate`, `Inline` + `IssueRefLinks`, bilah progres) · `loading.tsx` |
+| `src/lib/chart-palette.ts` · `src/lib/repo-links.ts` | Palet kategorikal & tautan repo bersama — dipakai juga Metrik Rilis (review #378: dulu disalin/diimpor lintas route) |
+| `scripts/seed/seed-menu-key.mjs <key>` | Seed parsial generik: menu + izin dibaca dari CSV |
+| `src/test/sprint-plan.test.ts` | File nyata (Senin→Minggu berurutan) + fixture + format rusak + batas fase + velocity/keputusan/carry-over/hari ke-n + temuan review (pipa ter-escape, `<details>` di tengah, dobel, keputusan terlambat, carry-over per baris) |
 
 ## Batas yang disadari
 

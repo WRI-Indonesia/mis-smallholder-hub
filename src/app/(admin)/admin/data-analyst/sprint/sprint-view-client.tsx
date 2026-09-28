@@ -17,8 +17,7 @@ import {
   type SprintPhase,
   type SprintPlan,
 } from "@/lib/sprint-plan";
-import { fmtDate } from "@/app/(admin)/admin/dashboard/metrics/metrics-shared";
-import { CATEGORY_COLOR, Inline, ProgressBar, STATUS_STYLE } from "./sprint-shared";
+import { CATEGORY_COLOR, Inline, IssueRefLinks, ProgressBar, STATUS_STYLE, fmtDate } from "./sprint-shared";
 import { SprintAnalysis } from "./sprint-analysis";
 
 const PHASE_LABEL: Record<SprintPhase, string> = { active: "Minggu ini", upcoming: "Mendatang", past: "Selesai" };
@@ -60,19 +59,22 @@ function ItemRow({ item }: { item: SprintItem }) {
   const [open, setOpen] = useState(false);
   return (
     <li className="border-b last:border-0">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-start gap-2 py-2.5 text-left text-sm hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
-      >
-        <ChevronRight className={cn("mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />
-        <span className={cn("min-w-0 flex-1", item.status === "moved" && "text-muted-foreground")}>
-          <Inline text={item.issue} />
-        </span>
-        <span className="hidden sm:inline-flex"><CategoryDot item={item} /></span>
-        <SizeBadge item={item} />
-      </button>
+      <div className="flex items-start gap-2 hover:bg-muted/40">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-w-0 flex-1 items-start gap-2 py-2.5 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <ChevronRight className={cn("mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />
+          <span className={cn("min-w-0 flex-1", item.status === "moved" && "text-muted-foreground")}>
+            <Inline text={item.issue} links={false} />
+          </span>
+          <span className="hidden sm:inline-flex"><CategoryDot item={item} /></span>
+          <SizeBadge item={item} />
+        </button>
+        <span className="py-2"><IssueRefLinks refs={item.issueRefs} /></span>
+      </div>
       {open && (
         <dl className="mb-3 ml-6 grid gap-1 rounded-md bg-muted/40 p-3 text-sm sm:grid-cols-[9rem_1fr]">
           <dt className="text-muted-foreground">Target minggu ini</dt>
@@ -244,7 +246,7 @@ export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: str
                   {phases[i] === "past" && <span className="text-xs font-normal text-muted-foreground">· selesai</span>}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {fmtDate(s.start).replace(/ \d{4}$/, "")} – {fmtDate(s.end).replace(/ \d{4}$/, "")}
+                  {fmtDate(s.start, false)} – {fmtDate(s.end, false)}
                 </span>
                 <span className="text-xs tabular-nums text-muted-foreground">{p.donePoints}/{p.totalPoints} poin</span>
               </button>
@@ -276,7 +278,7 @@ export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: str
         )}
 
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
-          <ExternalLink className="h-3 w-3" /> Nomor issue (#…) membuka GitHub di tab baru · klik baris untuk melihat target & keputusan.
+          <ExternalLink className="h-3 w-3" /> Tombol #… ↗ membuka issue di GitHub (tab baru) · klik baris untuk melihat target & keputusan.
         </p>
       </TabsContent>
 

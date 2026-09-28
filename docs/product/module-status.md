@@ -143,7 +143,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **sate
 | Auth | auth.test.ts | 5 | ✅ |
 | Data Analyst (DA-01) | data-analyst.test.ts | 4 | ✅ |
 | Tumpang Tindih Lahan (#317): ambang, % terkecil, label & urutan, filter, guard 3 lapis + scope minimal-satu-sisi + kunci pasangan harus beririsan, ekspor tanpa poligon utuh | parcel-overlap.test.ts | 23 | ✅ |
-| Sprint Mingguan (#378): parser sprint.md nyata (Senin→Minggu berurutan) + fixture status/kategori/poin/backlog + format rusak melempar + batas fase + velocity/keputusan/carry-over/hari ke-n | sprint-plan.test.ts | 13 | ✅ |
+| Sprint Mingguan (#378): parser sprint.md nyata (Senin→Minggu berurutan) + fixture status/kategori/poin/backlog + format rusak melempar + batas fase + velocity/keputusan/carry-over/hari ke-n | sprint-plan.test.ts | 16 | ✅ |
 | Profile | profile.test.ts | 3 | ✅ |
 
 ### Need Coverage

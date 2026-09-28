@@ -15,6 +15,7 @@ import {
 import { CATEGORY_COLOR, Inline } from "./sprint-shared";
 
 const PHASE_SHORT: Record<SprintPhase, string> = { active: "berjalan", upcoming: "rencana", past: "selesai" };
+const PHASE_DECISION: Record<SprintPhase, string> = { active: "minggu ini", upcoming: "mendatang", past: "terlambat" };
 
 /** Warna kategori sebagai variabel CSS light/dark — satu elemen, dua mode. */
 const catVars = (c: (typeof SPRINT_CATEGORIES)[number]) =>
@@ -55,7 +56,7 @@ function VelocityChart({ rows, average }: ReturnType<typeof sprintVelocity>) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30" /> Direncanakan</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30" /> Komitmen awal (termasuk yang kemudian digeser)</span>
         <span className="flex items-center gap-1.5"><span className={cn("h-2.5 w-2.5 rounded-sm", CAT_BG)} style={catVars("Keamanan")} /> Selesai</span>
         {average !== null && <span>Garis putus = rata-rata selesai ({average.toFixed(1).replace(".", ",")} poin)</span>}
       </div>
@@ -68,7 +69,7 @@ function VelocityChart({ rows, average }: ReturnType<typeof sprintVelocity>) {
             </span>
             <div className="relative space-y-0.5">
               {[
-                { v: r.planned, cls: "bg-muted-foreground/30", style: undefined, label: "direncanakan" },
+                { v: r.planned, cls: "bg-muted-foreground/30", style: undefined, label: r.moved > 0 ? `direncanakan (${r.moved} poin kemudian digeser)` : "direncanakan" },
                 { v: r.done, cls: CAT_BG, style: catVars("Keamanan"), label: "selesai" },
               ].map((b) => (
                 <div key={b.label} className="flex items-center gap-2" title={`Sprint ${r.number}: ${b.v} poin ${b.label}`}>
@@ -138,6 +139,7 @@ export function SprintAnalysis({ plan, today }: { plan: SprintPlan; today: strin
   const pending = pendingDecisions(plan, today);
   const carry = carryOvers(plan);
   const pendingPoints = pending.reduce((s, d) => s + d.item.points, 0);
+  const overdue = pending.filter((d) => d.phase === "past").length;
 
   return (
     <div className="space-y-4">
@@ -147,11 +149,15 @@ export function SprintAnalysis({ plan, today }: { plan: SprintPlan; today: strin
           value={velocity.average === null ? "—" : `${velocity.average.toFixed(1).replace(".", ",")} poin`}
           note={velocity.average === null ? "belum ada sprint yang selesai" : "per minggu, dari sprint yang sudah selesai"}
         />
-        <Stat label="Tertahan keputusan owner" value={`${pendingPoints} poin`} note={`${pending.length} butir di sprint berjalan & mendatang`} />
+        <Stat
+          label="Tertahan keputusan owner"
+          value={`${pendingPoints} poin`}
+          note={overdue > 0 ? `${pending.length} butir · ${overdue} terlambat dari sprint yang sudah lewat` : `${pending.length} butir menunggu keputusan`}
+        />
         <Stat label="Butir digeser" value={String(carry.length)} note={carry.length === 0 ? "belum ada carry-over" : "issue yang pindah sprint minimal sekali"} />
       </div>
 
-      <Section title="Velocity per sprint" subtitle="Poin direncanakan vs selesai. Butir yang digeser tidak dihitung di sprint asalnya.">
+      <Section title="Velocity per sprint" subtitle="Poin komitmen awal vs selesai. Butir yang digeser tetap dihitung di komitmen sprint asalnya, jadi selisihnya terlihat.">
         <VelocityChart {...velocity} />
       </Section>
 
@@ -160,7 +166,7 @@ export function SprintAnalysis({ plan, today }: { plan: SprintPlan; today: strin
       </Section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Section title="Keputusan tertunda" subtitle="Semua butir ⚖️ di sprint berjalan & mendatang — bahan rapat owner.">
+        <Section title="Keputusan tertunda" subtitle="Semua butir ⚖️ yang belum diputuskan, termasuk yang terlambat dari sprint lalu — bahan rapat owner.">
           {pending.length === 0 ? (
             <p className="text-sm text-muted-foreground">Tidak ada keputusan yang ditunggu.</p>
           ) : (
@@ -176,7 +182,9 @@ export function SprintAnalysis({ plan, today }: { plan: SprintPlan; today: strin
               <tbody>
                 {pending.map((d) => (
                   <tr key={`${d.sprint}-${d.item.no}`} className="border-b align-top last:border-0">
-                    <td className="py-1.5 pr-2 tabular-nums">{d.sprint}</td>
+                    <td className={cn("py-1.5 pr-2 tabular-nums", d.phase === "past" && "font-semibold text-amber-700 dark:text-amber-300")}>
+                      {d.sprint} <span className="text-xs font-normal text-muted-foreground">· {PHASE_DECISION[d.phase]}</span>
+                    </td>
                     <td className="py-1.5 pr-2"><Inline text={d.item.issue} /></td>
                     <td className="py-1.5 pr-2 text-muted-foreground"><Inline text={d.item.decision ?? "—"} /></td>
                     <td className="py-1.5 text-right tabular-nums">{d.item.points}</td>
@@ -195,15 +203,17 @@ export function SprintAnalysis({ plan, today }: { plan: SprintPlan; today: strin
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
                   <th className="py-1.5 pr-2 font-medium">Issue</th>
-                  <th className="py-1.5 pr-2 font-medium">Digeser dari</th>
+                  <th className="py-1.5 pr-2 font-medium">Digeser dari → ke</th>
                   <th className="py-1.5 text-right font-medium">Kali</th>
                 </tr>
               </thead>
               <tbody>
                 {carry.map((c) => (
-                  <tr key={c.ref} className="border-b align-top last:border-0">
+                  <tr key={c.issue} className="border-b align-top last:border-0">
                     <td className="py-1.5 pr-2"><Inline text={c.issue} /></td>
-                    <td className="py-1.5 pr-2 text-muted-foreground">Sprint {c.movedFrom.join(", ")} → {c.latestSprint}</td>
+                    <td className="py-1.5 pr-2 text-muted-foreground">
+                      Sprint {c.movedFrom.join(", ")} → {c.destination === null ? "belum dijadwalkan" : `Sprint ${c.destination}`}
+                    </td>
                     <td className={cn("py-1.5 text-right tabular-nums", c.movedFrom.length > 1 && "font-semibold text-amber-700 dark:text-amber-300")}>{c.movedFrom.length}</td>
                   </tr>
                 ))}

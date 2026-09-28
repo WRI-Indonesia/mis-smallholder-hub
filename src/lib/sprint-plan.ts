@@ -83,17 +83,24 @@ function parseStatus(cell: string, where: string): SprintItemStatus {
   return hit[1];
 }
 
-function splitRow(line: string): string[] {
-  return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+/**
+ * Pecah baris tabel GFM pada `|` yang TIDAK di-escape. `\|` (wajib di GFM untuk
+ * pipa di dalam sel, termasuk di dalam `kode`) dikembalikan menjadi `|`.
+ */
+export function splitRow(line: string): string[] {
+  const body = line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "");
+  return body.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"));
 }
 
 export function parseSprintPlan(markdown: string): SprintPlan {
   const start = markdown.indexOf("### Sprint Focus");
   if (start === -1) throw new Error("sprint.md: section 'Sprint Focus' tidak ditemukan");
   const rest = markdown.slice(start);
-  // Berhenti di riwayat fokus lama (<details>) atau section ### berikutnya.
-  const stops = [rest.indexOf("\n<details>"), rest.indexOf("\n### ", 1)].filter((i) => i !== -1);
-  const section = stops.length > 0 ? rest.slice(0, Math.min(...stops)) : rest;
+  // Section berakhir di heading ### berikutnya. Blok <details> di dalamnya
+  // (riwayat fokus lama, catatan) DILEWATI, bukan jadi titik berhenti — kalau
+  // berhenti, catatan terlipat di bawah Sprint 2 diam-diam membuang Sprint 3+.
+  const end = rest.indexOf("\n### ", 1);
+  const section = end === -1 ? rest : rest.slice(0, end);
 
   const sprints: Sprint[] = [];
   const backlog: string[] = [];
@@ -101,8 +108,15 @@ export function parseSprintPlan(markdown: string): SprintPlan {
   let current: Sprint | null = null;
   let inBacklog = false;
 
+  let detailsDepth = 0;
+
   for (const raw of section.split("\n")) {
     const line = raw.trim();
+    if (line.startsWith("<details")) detailsDepth++;
+    if (detailsDepth > 0) {
+      if (line.startsWith("</details>")) detailsDepth--;
+      continue;
+    }
     const heading = line.match(SPRINT_HEADING);
     if (heading) {
       current = { number: Number(heading[1]), start: heading[2], end: heading[3], title: heading[4].trim(), items: [] };
@@ -149,7 +163,15 @@ export function parseSprintPlan(markdown: string): SprintPlan {
   }
 
   if (sprints.length === 0) throw new Error("sprint.md: tidak ada sprint terparse — format heading berubah?");
+  const seen = new Set<number>();
   for (const s of sprints) {
+    if (seen.has(s.number)) throw new Error(`sprint.md: Sprint ${s.number} muncul dua kali`);
+    seen.add(s.number);
+    const rows = new Set<number>();
+    for (const i of s.items) {
+      if (rows.has(i.no)) throw new Error(`sprint.md: Sprint ${s.number} baris ${i.no} dobel`);
+      rows.add(i.no);
+    }
     if (s.items.length === 0) throw new Error(`sprint.md: Sprint ${s.number} tanpa baris tabel`);
     if (s.start > s.end) throw new Error(`sprint.md: Sprint ${s.number} tanggal mulai sesudah selesai`);
   }
@@ -185,55 +207,69 @@ export function sprintProgress(sprint: Pick<Sprint, "items">) {
   };
 }
 
-export type SprintVelocity = { number: number; phase: SprintPhase; planned: number; done: number };
+export type SprintVelocity = { number: number; phase: SprintPhase; planned: number; moved: number; done: number };
 
 /**
- * Velocity per sprint: poin direncanakan (tanpa butir Digeser) vs selesai.
+ * Velocity per sprint: poin KOMITMEN (termasuk butir yang kemudian Digeser —
+ * justru itu yang harus terlihat sebagai selisih rencana vs selesai) vs selesai.
+ * Berbeda dengan `sprintProgress`, yang menghitung sisa kerja sprint itu sendiri.
  * `average` hanya dari sprint yang sudah lewat — sprint berjalan belum selesai
  * dan akan menarik rata-rata ke bawah. null bila belum ada sprint lewat.
  */
 export function sprintVelocity(plan: Pick<SprintPlan, "sprints">, today: string) {
   const rows: SprintVelocity[] = plan.sprints.map((s) => {
     const p = sprintProgress(s);
-    return { number: s.number, phase: sprintPhase(s, today), planned: p.totalPoints, done: p.donePoints };
+    const moved = s.items.filter((i) => i.status === "moved").reduce((t, i) => t + i.points, 0);
+    return { number: s.number, phase: sprintPhase(s, today), planned: p.totalPoints + moved, moved, done: p.donePoints };
   });
   const past = rows.filter((r) => r.phase === "past");
   const average = past.length === 0 ? null : past.reduce((s, r) => s + r.done, 0) / past.length;
   return { rows, average };
 }
 
-export type PendingDecision = { sprint: number; item: SprintItem };
-
-/** Butir ⚖️ di sprint aktif & mendatang — sprint lewat adalah riwayat, bukan antrean. */
-export function pendingDecisions(plan: Pick<SprintPlan, "sprints">, today: string): PendingDecision[] {
-  return plan.sprints
-    .filter((s) => sprintPhase(s, today) !== "past")
-    .flatMap((s) => s.items.filter((i) => i.status === "decision").map((item) => ({ sprint: s.number, item })));
-}
-
-export type CarryOver = { ref: string; issue: string; movedFrom: number[]; latestSprint: number };
+export type PendingDecision = { sprint: number; phase: SprintPhase; item: SprintItem };
 
 /**
- * Carry-over: rujukan issue yang ber-status Digeser di satu atau lebih sprint.
- * Satu butir tanpa `#nnn` (mis. "Rilis v1.2.0") dikenali dari teks kolom Issue.
+ * Semua butir ⚖️ di sprint mana pun. Butir ⚖️ di sprint yang sudah LEWAT tetap
+ * masuk (fase "past" = terlambat): keputusan yang belum diambil tidak boleh
+ * hilang dari antrean hanya karena minggunya berganti. Yang sudah dipindah
+ * berstatus ⏭️, jadi tidak ikut.
+ */
+export function pendingDecisions(plan: Pick<SprintPlan, "sprints">, today: string): PendingDecision[] {
+  return plan.sprints.flatMap((s) =>
+    s.items.filter((i) => i.status === "decision").map((item) => ({ sprint: s.number, phase: sprintPhase(s, today), item }))
+  );
+}
+
+export type CarryOver = {
+  issue: string;
+  movedFrom: number[];
+  /** Sprint tempat butir ini ditulis ulang sesudah pergeseran terakhir; null = belum dijadwalkan (mis. ke backlog). */
+  destination: number | null;
+};
+
+/**
+ * Carry-over dikunci pada **teks kolom Issue** (satu baris = satu butir), bukan
+ * per `#nnn`: baris "**#253** · **#320**" adalah satu butir, sedangkan
+ * "#286 butir 2" dan "#286 butir 1 & 3" adalah dua butir berbeda. Konsekuensinya
+ * butir yang digeser harus ditulis ulang dengan teks Issue yang sama persis.
  */
 export function carryOvers(plan: Pick<SprintPlan, "sprints">): CarryOver[] {
-  const byKey = new Map<string, CarryOver>();
+  const byIssue = new Map<string, CarryOver>();
   for (const s of plan.sprints) {
     for (const item of s.items) {
-      const keys = item.issueRefs.length > 0 ? item.issueRefs : [item.issue];
-      for (const key of keys) {
-        const entry = byKey.get(key);
-        if (item.status === "moved") {
-          if (entry) entry.movedFrom.push(s.number);
-          else byKey.set(key, { ref: key, issue: item.issue, movedFrom: [s.number], latestSprint: s.number });
-        }
-        const e = byKey.get(key);
-        if (e) e.latestSprint = Math.max(e.latestSprint, s.number);
+      const entry = byIssue.get(item.issue);
+      if (item.status === "moved") {
+        if (entry) {
+          entry.movedFrom.push(s.number);
+          entry.destination = null;
+        } else byIssue.set(item.issue, { issue: item.issue, movedFrom: [s.number], destination: null });
+      } else if (entry) {
+        entry.destination = s.number;
       }
     }
   }
-  return [...byKey.values()].sort((a, b) => b.movedFrom.length - a.movedFrom.length || a.movedFrom[0] - b.movedFrom[0]);
+  return [...byIssue.values()].sort((a, b) => b.movedFrom.length - a.movedFrom.length || a.movedFrom[0] - b.movedFrom[0]);
 }
 
 /** Poin per kategori (tanpa butir Digeser), urut `SPRINT_CATEGORIES`, kategori nol ikut (0). */
