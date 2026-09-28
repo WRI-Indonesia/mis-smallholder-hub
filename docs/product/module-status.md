@@ -51,6 +51,7 @@
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Ketersediaan Data — Per Lembaga | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193; #352: registri check (tempat lahir, KT, blok, tipe grup, tahun berdiri; tier 1/3 tahun tanam/status/blok), cakupan modul informatif, anomali sistemik dilipat, daftar kerja bertautan + Perbaiki lewat, `?lembaga=` & analisa otomatis |
 | #317 | Tumpang Tindih Lahan | 🟠 Fase 2 tab Tumpang Tindih (2026-09-24): menu `data-analyst-parcel-overlap`, live PostGIS self-join, split view tabel + peta, Duplikat/Tercakup/Sebagian, ekspor Excel + SHP/GeoJSON irisan; Luar Boundary/Selisih Luas/guard upload/layer peta belum |
+| #378 | Sprint Mingguan | ✅ (2026-09-28): menu `data-analyst-sprint`, parser `sprint-plan.ts` atas `docs/project/sprint.md` (build-time), tab Sprint (pemilih minggu, progres poin S/M/L, Butuh keputusan) + tab Analisa (velocity, komposisi, keputusan tertunda, carry-over); SUPERADMIN/ADMIN/MANAGEMENT |
 | DA-03 | Ketersediaan Data — Semua Lembaga | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks inti / modul, bar chart, panel anomali per entitas vs sistemik, Excel); deep link ke DA-02; live query; tanpa DONOR (#193, #352) |
  
 **Total Tests**: **49 files / 787 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
@@ -100,7 +101,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **sate
 | Module | Test File | Tests | Status |
 |--------|-----------|-------|--------|
 | Bantuan: parser, materi, hak akses, media S3 (HELP-01/02, #184 #185) | help-content.test.ts, help-media.test.ts | 91 | ✅ |
-| Bantuan: registrasi berkas ↔ `CHAPTER_SOURCES`, frontmatter ↔ `menu.csv`, cakupan tutorial **38/38** tanpa pengecualian tersisa (#257 tuntas 2026-09-23; `TANPA_TUTORIAL` kosong — baris baru di sana = menu dirilis tanpa materi pengguna) | help-registry.test.ts | 10 | ✅ |
+| Bantuan: registrasi berkas ↔ `CHAPTER_SOURCES`, frontmatter ↔ `menu.csv`, cakupan tutorial **39/39** tanpa pengecualian tersisa (#257 tuntas 2026-09-23; `TANPA_TUTORIAL` kosong — baris baru di sana = menu dirilis tanpa materi pengguna) | help-registry.test.ts | 10 | ✅ |
 | Laporan Lahan: kolom ↔ baris ekspor Excel/PDF dari satu definisi (review #339, kelas #323) | report-land-parcel-export.test.ts | 4 | ✅ |
 | Map (MAP-01/02/03) + ruler/label geodesik | map.test.ts, map-geo.test.ts | 62 | ✅ |
 | RBAC & Access Context (#125 #127) | rbac.test.ts, rbac-permission.test.ts, rbac-server-guards.test.ts, access-context.test.ts | 50 | ✅ |
@@ -142,6 +143,7 @@ Per-file, urut jumlah test terbanyak (`npx vitest run`, 2026-07-31; baris **sate
 | Auth | auth.test.ts | 5 | ✅ |
 | Data Analyst (DA-01) | data-analyst.test.ts | 4 | ✅ |
 | Tumpang Tindih Lahan (#317): ambang, % terkecil, label & urutan, filter, guard 3 lapis + scope minimal-satu-sisi + kunci pasangan harus beririsan, ekspor tanpa poligon utuh | parcel-overlap.test.ts | 23 | ✅ |
+| Sprint Mingguan (#378): parser sprint.md nyata (Senin→Minggu berurutan) + fixture status/kategori/poin/backlog + format rusak melempar + batas fase + velocity/keputusan/carry-over/hari ke-n | sprint-plan.test.ts | 13 | ✅ |
 | Profile | profile.test.ts | 3 | ✅ |
 
 ### Need Coverage

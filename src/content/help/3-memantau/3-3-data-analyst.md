@@ -13,6 +13,8 @@ icon: BarChart3
 
 **Peta Data & Skema** — Menjelaskan *bentuk* datanya, bukan isinya: entitas apa saja yang ada di sistem, bagaimana antar-entitas terhubung, kolom mana yang ternyata tidak pernah diisi, dan menu mana mengambil data dari entitas apa. Angkanya bersifat nasional — tidak disaring per wilayah, jadi yang tampil bukan hanya wilayah kerja Anda. Untuk kelengkapan data per Lembaga, pakai Ketersediaan Data — Per Lembaga.
 
+**Sprint Mingguan** — Rencana pengembangan aplikasi per minggu (Senin–Minggu), juga tentang aplikasinya sendiri, bukan data petani. Tab **Sprint** menampilkan minggu ini: kemajuan dalam poin (S = 1, M = 3, L = 5), kotak **Butuh keputusan owner**, dan butir per status. Tab **Analisa** menampilkan velocity, komposisi fokus per kategori, keputusan tertunda, dan carry-over. Isinya diambil dari dokumen sprint di repositori, jadi baru berubah setelah aplikasi dirilis ulang.
+
 **Metrik Rilis** — Memantau pengembangan aplikasinya sendiri, bukan data petani: kecepatan rilis, kemajuan menuju go-live, jumlah test, dan kualitas. Menu ini berada di grup Data Analyst meskipun alamat halamannya masih `/admin/dashboard/metrics`.
 
 **Komparasi Data Acuan** — Membandingkan angka acuan manual (rekap GDrive "MD 1st SOW") dengan angka MIS live per Lembaga Petani: petani, persil, luas lahan, petani terlatih per paket, dan petani berdata produksi. Selisih = acuan − MIS; sel oranye menandai metrik yang datanya di MIS masih kurang dari acuan. Angka acuan dientry manual di halaman ini (peran dengan izin EDIT), sisi MIS dihitung langsung saat halaman dibuka.

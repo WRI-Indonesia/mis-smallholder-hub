@@ -29,6 +29,7 @@ import {
   Activity,
   Gauge,
   Layers,
+  CalendarRange,
   GitCompare,
   // Agriculture & Nature
   Leaf,
@@ -137,6 +138,8 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Gauge: Gauge,
   // Data Analyst › Tumpang Tindih Lahan (#317): lapisan poligon yang bertumpuk.
   Layers: Layers,
+  // Data Analyst › Sprint Mingguan (#378): rentang satu minggu kerja.
+  CalendarRange: CalendarRange,
   BookOpen: BookOpen,
   BookMarked: BookMarked,
   Library: Library,

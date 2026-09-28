@@ -7,7 +7,7 @@
 | Menu key | `data-analyst` |
 | URL | `/admin/data-analyst` |
 | Icon | `BarChart3` |
-| Sub menu | 7 — Ringkasan Petani (`data-analyst-farmer-summary`), Ketersediaan Data — Semua Lembaga (`data-analyst-data-availability`), Ketersediaan Data — Per Lembaga (`data-analyst-data-completeness`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Peta Data & Skema (`data-analyst-data-map`, SUPERADMIN/ADMIN/MANAGEMENT), Tumpang Tindih Lahan (`data-analyst-parcel-overlap`, SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR), Metrik Rilis (`dashboard-metrics`, SUPERADMIN/ADMIN/MANAGEMENT) |
+| Sub menu | 8 — Ringkasan Petani (`data-analyst-farmer-summary`), Ketersediaan Data — Semua Lembaga (`data-analyst-data-availability`), Ketersediaan Data — Per Lembaga (`data-analyst-data-completeness`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Peta Data & Skema (`data-analyst-data-map`, SUPERADMIN/ADMIN/MANAGEMENT), Tumpang Tindih Lahan (`data-analyst-parcel-overlap`, SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR), Sprint Mingguan (`data-analyst-sprint`, SUPERADMIN/ADMIN/MANAGEMENT), Metrik Rilis (`dashboard-metrics`, SUPERADMIN/ADMIN/MANAGEMENT) |
 
 ## Diagram objek
 
@@ -25,6 +25,8 @@ Menu: Data Analyst (/admin/data-analyst)
 │   └── Page: Peta Data & Skema (/admin/data-analyst/data-map)
 ├── Sub Menu: Tumpang Tindih Lahan (data-analyst-parcel-overlap) — SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR
 │   └── Page: Tumpang Tindih Lahan (/admin/data-analyst/parcel-overlap)
+├── Sub Menu: Sprint Mingguan (data-analyst-sprint) — SUPERADMIN/ADMIN/MANAGEMENT
+│   └── Page: Sprint Mingguan (/admin/data-analyst/sprint)
 └── Sub Menu: Metrik Rilis (dashboard-metrics) — SUPERADMIN/ADMIN/MANAGEMENT
     └── Page: Metrik Rilis (/admin/dashboard/metrics)
 ```
@@ -43,6 +45,7 @@ Menu: Data Analyst (/admin/data-analyst)
 | 4 | Komparasi Data Acuan | `data-analyst-benchmark-comparison` | `/admin/data-analyst/benchmark-comparison` | [komparasi-data-acuan.md](./komparasi-data-acuan.md) |
 | 5 | Peta Data & Skema | `data-analyst-data-map` | `/admin/data-analyst/data-map` | [peta-data-skema.md](./peta-data-skema.md) |
 | 6 | Tumpang Tindih Lahan | `data-analyst-parcel-overlap` | `/admin/data-analyst/parcel-overlap` | [tumpang-tindih-lahan.md](./tumpang-tindih-lahan.md) |
+| 7 | Sprint Mingguan | `data-analyst-sprint` | `/admin/data-analyst/sprint` | [sprint-mingguan.md](./sprint-mingguan.md) |
 | — | Metrik Rilis | `dashboard-metrics` | `/admin/dashboard/metrics` | [metrik-rilis.md](./metrik-rilis.md) |
 
 ## Catatan route induk

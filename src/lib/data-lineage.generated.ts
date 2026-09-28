@@ -271,6 +271,13 @@ export const DATA_LINEAGE: DataLineage = [
     "dynamicAccess": null
   },
   {
+    "menuKey": "data-analyst-sprint",
+    "route": "(admin)/admin/data-analyst/sprint",
+    "models": {},
+    "modules": [],
+    "dynamicAccess": null
+  },
+  {
     "menuKey": "help",
     "route": "(admin)/admin/help",
     "models": {},

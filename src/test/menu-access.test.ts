@@ -88,6 +88,8 @@ const DINYATAKAN: Record<string, string[]> = {
   // Pengecualian scope #317: sisi lawan pasangan tumpang tindih tampil lengkap
   // (nama petani, Lembaga) walau di luar scope — DONOR sengaja tidak diberi.
   "data-analyst-parcel-overlap": ["ADMIN", "MANAGEMENT", "OPERATOR", "SUPERADMIN"],
+  // Rencana sprint pengembangan (#378) — audiens sama dengan Metrik Rilis.
+  "data-analyst-sprint": ["ADMIN", "MANAGEMENT", "SUPERADMIN"],
   // Administrasi sistem.
   "settings-roles": ["SUPERADMIN"],
   "settings-menu": ["SUPERADMIN"],
