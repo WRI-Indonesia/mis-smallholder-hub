@@ -35,7 +35,7 @@ Baseline dev: `mis-dev` (snapshot prod) 2026-09-24 — **136** · Duplikat 24 ·
 ### TC-317-03 · Filter tersimpan di URL & bawaan [P1] (5 mnt)
 Langkah:
 1. Buka halaman tanpa query string.
-2. Pilih Tumpang tindih `> 50%`, Jenis `Lintas Lembaga`, Lembaga `ISH-1408-04`, klik chip `Tercakup`.
+2. Pilih Tumpang tindih `> 50%`, Jenis `Lintas Lembaga`, Lembaga `ICS-1408-04 (ASERMISAS)`, klik chip `Tercakup`.
 3. Salin URL, buka di tab baru.
 4. Klik chip `Semua`.
 Harapan:
@@ -61,18 +61,18 @@ Harapan:
 - Langkah 7: peta bergeser, pasangan tidak berpindah.
 
 ### TC-317-05 · Scope: minimal satu sisi, sisi lawan lengkap [P0] [regresi] (8 mnt)
-Prasyarat: akun B = user BY_FARMER_GROUP yang hanya memegang **ISH-1408-04 (ASERMISAS)**; akun A = SUPERADMIN.
+Prasyarat: akun B = user BY_FARMER_GROUP yang hanya memegang **ICS-1408-04 (ASERMISAS)**; akun A = SUPERADMIN.
 Langkah:
-1. Akun A: filter Lembaga ISH-1408-04 → catat jumlah pasangan.
+1. Akun A: filter Lembaga ICS-1408-04 → catat jumlah pasangan.
 2. Akun B: buka halaman tanpa filter.
 3. Akun B: pilih pasangan Lintas Lembaga (mis. lahan `MIS.*` vs `DYN.*`/`SSB.*`), lihat kartu A & B.
 Harapan:
 - Jumlah di akun B = jumlah akun A langkah 1 (semua pasangan yang **salah satu** sisinya ASERMISAS; tidak ada pasangan tanpa sisi ASERMISAS).
 - Kartu sisi lain Lembaga menampilkan nama & kode petani, Lembaga, poligon lengkap, dengan teks **"Di luar akses Anda — Detail Lahan tidak bisa dibuka"** (tanpa tautan). Sisi ASERMISAS punya tautan **Buka Detail Lahan** (tab baru).
-Baseline dev: ISH-1408-04 = **60** pasangan (59 dengan sisi lawan di luar Lembaga).
+Baseline dev: ICS-1408-04 = **60** pasangan (59 dengan sisi lawan di luar Lembaga).
 
 ### TC-317-06 · Ekspor Excel & Spasial [P1] (8 mnt)
-Prasyarat: akun dengan izin Export; filter Lembaga ISH-1408-04.
+Prasyarat: akun dengan izin Export; filter Lembaga ICS-1408-04.
 Langkah:
 1. Klik **Excel**; buka berkasnya.
 2. **Spasial ▾ → Shapefile (ZIP)**; buka di QGIS.
@@ -82,7 +82,7 @@ Harapan:
 - Excel: sheet "Tumpang Tindih", baris = jumlah pasangan, 20 kolom (Label, Jenis, %, Luas Irisan, lalu 8 kolom per sisi A/B) tanpa kolom kosong total (Kelompok Tani boleh kosong mengikuti data).
 - SHP: satu layer `irisan` Polygon WGS84, atribut `label, jenis, pct_min, irisan_ha, lahan_a, petani_a, lembaga_a, pct_a, lahan_b, petani_b, lembaga_b, pct_b`; poligon jatuh tepat di irisan lahan. Jumlah fitur ≥ jumlah pasangan (irisan MultiPolygon dipecah).
 - Langkah 3: tombol Excel & Spasial tidak tampil.
-Baseline dev: ISH-1408-04 → 60 baris Excel, 61 fitur SHP.
+Baseline dev: ICS-1408-04 → 60 baris Excel, 61 fitur SHP.
 
 ### TC-317-07 · Regresi DataTable di halaman lain [P1] [regresi] (4 mnt)
 Langkah:

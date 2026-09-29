@@ -11,7 +11,15 @@
 
 ## Rekap (tempel keluaran `node scripts/qa/summary.mjs docs/qa/v1.2.0`)
 
-_(belum ada run)_
+| Run | Bagian | Pass | Fail | Blocked | N/A | Belum diisi |
+|---|---|---:|---:|---:|---:|---:|
+| 2026-09-29-local.md | Smoke | 6 | 0 | 0 | 0 | 27 |
+| 2026-09-29-local.md | Kasus uji | 22 | 0 | 0 | 0 | 0 |
+| 2026-09-29-local.md | Regresi | 0 | 0 | 0 | 0 | 9 |
+
+_Semua Fail sudah merujuk issue._
+
+Run `2026-09-29-local`: seluruh **22 kasus uji Pass** (lintas SUPERADMIN, ADMIN ber-scope Lembaga + override Menu Management, OPERATOR Rokan Hulu, DONOR). Smoke: 6 Pass, 8 sebagian (halaman & scope dicek, unduhan/aksi lengkap belum), sisanya belum; regresi belum dijalankan — keduanya untuk run staging.
 
 ## Keputusan
 

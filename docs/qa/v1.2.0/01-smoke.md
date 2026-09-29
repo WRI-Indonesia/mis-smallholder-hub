@@ -76,7 +76,7 @@ Peran: SUPERADMIN, lalu OPERATOR · Langkah: pilih Lembaga (analisa otomatis), k
 Peran: SUPERADMIN · Langkah: buka ketiganya · Harapan: angka terisi; Peta Data memuat tabel baru rilis ini.
 
 ### SM-24 · Bulk Upload › Petani · Produksi · Lahan (tiap tab) · Pohon [P0] (3 mnt)
-Peran: OPERATOR · Langkah: tiap tab terbuka, unduh template · Harapan: template terunduh.
+Peran: ADMIN · Langkah: tiap tab terbuka, unduh template · Harapan: template terunduh.
 
 ### SM-25 · Tools › Dashboard Snapshot · Snapshot BMP [P2] (1 mnt)
 Peran: SUPERADMIN · Langkah: daftar terbuka (tanpa generate) · Harapan: terbuka.

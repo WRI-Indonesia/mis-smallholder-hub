@@ -6,7 +6,8 @@ Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain)
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |
 |---|---|---|---|---|---|---|---|---|
-| 1 | TC-… | | | | staging | #… | fix rilis ini / defer | `evidence/…` |
+| 1 | SM-24 | Bulk Upload · spesifikasi smoke | Spesifikasi menyebut peran OPERATOR, padahal OPERATOR tak punya menu Bulk Upload (seed & prod) — kasus tak bisa dijalankan sesuai tulisan | minor (dokumen) | local | — | diperbaiki di spesifikasi (peran → ADMIN) | — |
+| 2 | TC-317-03/05/06 | spesifikasi kasus uji | Kode Lembaga ASERMISAS tertulis `ISH-1408-04`, yang benar `ICS-1408-04` | minor (dokumen) | local | — | diperbaiki | — |
 
 ## Membuka issue dari temuan
 
