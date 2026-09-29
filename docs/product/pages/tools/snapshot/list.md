@@ -27,7 +27,7 @@ Halaman: Daftar Snapshot (/admin/tools/snapshot)
 | Client | `src/app/(admin)/admin/tools/snapshot/snapshot-client.tsx` |
 | Tipe | Server Component (list) → Client Component (form generate + tabel) |
 | Guard | `requirePermission("dashboard-snapshot")` |
-| Server action / data | `getSnapshots()` (`src/server/actions/snapshot.ts`; `getSnapshotFilterOptions()` masih ada di action tetapi tidak lagi dipanggil halaman), `getUserPermissionsForMenu("dashboard-snapshot")`; mutasi `generateSnapshot()` (CREATE), `deleteSnapshot()` (DELETE) |
+| Server action / data | `getSnapshots()` (`src/server/actions/snapshot.ts`; `getSnapshotFilterOptions()` dihapus 2026-09-29 — tanpa pemanggil sejak filter generate dicabut), `getUserPermissionsForMenu("dashboard-snapshot")`; mutasi `generateSnapshot()` (CREATE), `deleteSnapshot()` (DELETE) |
 | Loading | `loading.tsx` |
 
 ## Objek halaman

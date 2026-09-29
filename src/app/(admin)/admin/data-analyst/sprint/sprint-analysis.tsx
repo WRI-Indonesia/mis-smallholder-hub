@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   SPRINT_CATEGORIES,
   SPRINT_STACK_ORDER,
+  SPRINT_STATUS_LABEL,
   carryOvers,
   pendingDecisions,
   planTotals,
@@ -34,12 +35,12 @@ const fmt1 = (n: number) => n.toFixed(1).replace(".", ",");
  * "dikerjakan"; selalu berpasangan dengan label di legenda & tooltip.
  */
 const STACK: Record<SprintItemStatus, { label: string; swatch: string; fill: string }> = {
-  done: { label: "Selesai", swatch: "bg-[#0ca30c]", fill: "bg-[#0ca30c]" },
-  progress: { label: "Dikerjakan", swatch: "bg-[#3987e5]", fill: "bg-[#3987e5]" },
-  decision: { label: "Menunggu keputusan", swatch: "bg-[#fab219]", fill: "bg-[#fab219]" },
-  todo: { label: "Belum dimulai", swatch: "bg-muted-foreground/25", fill: "bg-muted-foreground/25" },
+  done: { label: SPRINT_STATUS_LABEL.done, swatch: "bg-[#0ca30c]", fill: "bg-[#0ca30c]" },
+  progress: { label: SPRINT_STATUS_LABEL.progress, swatch: "bg-[#3987e5]", fill: "bg-[#3987e5]" },
+  decision: { label: SPRINT_STATUS_LABEL.decision, swatch: "bg-[#fab219]", fill: "bg-[#fab219]" },
+  todo: { label: SPRINT_STATUS_LABEL.todo, swatch: "bg-muted-foreground/25", fill: "bg-muted-foreground/25" },
   moved: {
-    label: "Digeser",
+    label: SPRINT_STATUS_LABEL.moved,
     swatch: "border border-dashed border-muted-foreground/60",
     fill: "border border-dashed border-muted-foreground/60 bg-transparent",
   },
@@ -126,7 +127,7 @@ function LoadTimeline({ plan, today, average }: { plan: SprintPlan; today: strin
         <div className="relative" style={{ height: PLOT_H }}>
           {ticks.map((t) => (
             <span key={t} className="absolute right-0 -translate-y-1/2 text-[10px] tabular-nums text-muted-foreground" style={{ bottom: `${(t / yMax) * 100}%` }}>
-              {t}
+              {Number.isInteger(t) ? t : fmt1(t)}
             </span>
           ))}
         </div>
@@ -160,8 +161,10 @@ function LoadTimeline({ plan, today, average }: { plan: SprintPlan; today: strin
                     hover === sprint.number && "bg-muted/60"
                   )}
                 >
-                  <span className="mb-1 text-center text-xs font-semibold tabular-nums">{total}</span>
-                  <div className="flex flex-col-reverse gap-[2px]" style={{ height: `${(total / yMax) * 100}%` }}>
+                  {/* Label total di luar alur flex (absolute): bila ikut, batang setinggi
+                      yMax menyusut ±10% dan tak lagi sejajar sumbu Y & garis rata-rata. */}
+                  <div className="relative flex shrink-0 flex-col-reverse gap-[2px]" style={{ height: `${(total / yMax) * 100}%` }}>
+                    <span className="absolute inset-x-0 bottom-full mb-1 text-center text-xs font-semibold tabular-nums">{total}</span>
                     {segs.map((k, i) => (
                       <div
                         key={k}
@@ -333,6 +336,14 @@ export function SprintAnalysis({ plan, today }: { plan: SprintPlan; today: strin
   const totals = planTotals(plan);
   const overdue = pending.filter((d) => d.phase === "past").length;
   const thisWeek = pending.filter((d) => d.phase === "active").length;
+  const upcoming = pending.length - overdue - thisWeek;
+  // Rincian per urgensi yang nol tidak ditulis — dulu "0 minggu ini" tampil
+  // di samping poin yang seluruhnya milik sprint mendatang.
+  const pendingBreakdown = [
+    overdue > 0 && `${overdue} terlambat`,
+    thisWeek > 0 && `${thisWeek} minggu ini`,
+    upcoming > 0 && `${upcoming} mendatang`,
+  ].filter(Boolean);
   const active = plan.sprints.find((s) => sprintPhase(s, today) === "active");
   const activeProgress = active ? sprintProgress(active) : null;
 
@@ -353,7 +364,7 @@ export function SprintAnalysis({ plan, today }: { plan: SprintPlan; today: strin
           note={
             pending.length === 0
               ? "tidak ada yang menunggu"
-              : `${Math.round(totals.pendingShare * 100)}% rencana · ${overdue > 0 ? `${overdue} terlambat · ` : ""}${thisWeek} minggu ini`
+              : [`${Math.round(totals.pendingShare * 100)}% rencana`, ...pendingBreakdown].join(" · ")
           }
         />
         <Stat

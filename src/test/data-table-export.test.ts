@@ -180,20 +180,61 @@ describe("buildExportRows — dengan transformer", () => {
   });
 });
 
-// Review #317 — `onVisibleRowsChange` hanya dipanggil bila urutan KUNCI
+// Review #317 — `onVisibleRowsChange` hanya dipanggil bila BARISNYA (objek/urutan)
 // berubah. Tanpa pembanding ini, halaman yang menyimpan hasilnya ke state dan
 // memberi `columns` inline berputar tanpa henti begitu satu kolom disortir
 // ("Maximum update depth exceeded" di Tumpang Tindih Lahan).
-import { sameKeys } from "@/components/shared/data-table";
+import { isRowSelectionClick, sameItems } from "@/components/shared/data-table";
 
-describe("sameKeys — penjaga loop onVisibleRowsChange", () => {
-  it("isi & urutan sama → true (tidak melapor ulang meski array baru)", () => {
-    expect(sameKeys(["a", "b"], ["a", "b"])).toBe(true);
-    expect(sameKeys([], [])).toBe(true);
+describe("sameItems — penjaga loop onVisibleRowsChange", () => {
+  const a = { key: "a" };
+  const b = { key: "b" };
+  it("objek & urutan sama → true (tidak melapor ulang meski array baru)", () => {
+    expect(sameItems([a, b], [a, b])).toBe(true);
+    expect(sameItems([], [])).toBe(true);
   });
   it("urutan, isi, atau panjang berbeda → false (lapor)", () => {
-    expect(sameKeys(["a", "b"], ["b", "a"])).toBe(false);
-    expect(sameKeys(["a", "b"], ["a", "c"])).toBe(false);
-    expect(sameKeys(["a"], ["a", "b"])).toBe(false);
+    expect(sameItems([a, b], [b, a])).toBe(false);
+    expect(sameItems([a], [a, b])).toBe(false);
+  });
+  it("data segar berkunci sama (refresh) → false: baris baru tetap dilaporkan (review wrap-up)", () => {
+    expect(sameItems([a, b], [{ key: "a" }, { key: "b" }])).toBe(false);
   });
 });
+
+describe("isRowSelectionClick — klik yang memilih baris", () => {
+  // Elemen tiruan secukupnya: suite tanpa DOM (vitest environment node).
+  type Fake = { parent: Fake | null; matches: boolean; closest: (s: string) => Fake | null };
+  const el = (parent: Fake | null, matches = false): Fake => {
+    const self: Fake = {
+      parent,
+      matches,
+      closest: () => {
+        for (let n: Fake | null = self; n; n = n.parent) if (n.matches) return n;
+        return null;
+      },
+    };
+    return self;
+  };
+  const rowOf = (root: Fake) => ({
+    contains: (n: Node | null) => {
+      for (let x = n as unknown as Fake | null; x; x = x.parent) if (x === root) return true;
+      return false;
+    },
+  });
+  const row = el(null);
+  const r = rowOf(row);
+
+  it("klik sel biasa di dalam baris → pilih", () => {
+    expect(isRowSelectionClick(el(el(row)) as unknown as EventTarget, r)).toBe(true);
+  });
+  it("klik tombol/tautan di dalam baris → bukan pemilihan", () => {
+    const button = el(row, true);
+    expect(isRowSelectionClick(el(button) as unknown as EventTarget, r)).toBe(false);
+  });
+  it("klik konten portal (menu Aksi, dialog hapus) — di luar DOM baris → bukan pemilihan (review wrap-up)", () => {
+    const portalItem = el(el(null)); // menuitem tanpa selector cocok, bukan turunan baris
+    expect(isRowSelectionClick(portalItem as unknown as EventTarget, r)).toBe(false);
+  });
+});
+

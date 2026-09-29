@@ -24,7 +24,7 @@ vi.mock("@/lib/auth", () => ({ auth: async () => session.value }));
 const revalidatePath = vi.hoisted(() => vi.fn());
 vi.mock("next/cache", () => ({ revalidatePath }));
 
-const dq = vi.hoisted(() => ({ aggregateDashboardData: vi.fn(), getDashboardFilterOptions: vi.fn() }));
+const dq = vi.hoisted(() => ({ aggregateDashboardData: vi.fn() }));
 vi.mock("@/lib/dashboard-query", () => dq);
 vi.mock("@/lib/dashboard-aggregation", () => ({
   toSnapshotData: (d: unknown) => d,
@@ -51,7 +51,6 @@ beforeEach(() => {
   getAccessContext.mockResolvedValue({ mode: "ALL" });
   getAccessibleDistrictIds.mockResolvedValue(null);
   dq.aggregateDashboardData.mockResolvedValue({ totalPetani: 5 });
-  dq.getDashboardFilterOptions.mockResolvedValue({ districts: [], joinedYears: [] });
   SNAP.findFirst.mockResolvedValue(null);
   SNAP.findMany.mockResolvedValue([]);
   SNAP.create.mockResolvedValue({ id: "s-new" });
@@ -60,7 +59,6 @@ beforeEach(() => {
 describe("guard — menu dashboard-snapshot", () => {
   const cases: [string, () => Promise<unknown>, string][] = [
     ["generateSnapshot", () => actions.generateSnapshot({}), "CREATE"],
-    ["getSnapshotFilterOptions", () => actions.getSnapshotFilterOptions(), "VIEW"],
     ["getSnapshots", () => actions.getSnapshots(), "VIEW"],
     ["getSnapshotById", () => actions.getSnapshotById("s-1"), "VIEW"],
     ["deleteSnapshot", () => actions.deleteSnapshot("s-1"), "DELETE"],
@@ -74,7 +72,6 @@ describe("guard — menu dashboard-snapshot", () => {
 
   it("izin ditolak → baca melempar, mutasi { success:false }, DB tak disentuh", async () => {
     hasPermission.mockResolvedValue(false);
-    await expect(actions.getSnapshotFilterOptions()).rejects.toThrow(/izin/);
     await expect(actions.getSnapshots()).rejects.toThrow(/izin/);
     await expect(actions.getSnapshotById("s-1")).rejects.toThrow(/izin/);
     expect((await actions.generateSnapshot({})).success).toBe(false);
@@ -84,7 +81,6 @@ describe("guard — menu dashboard-snapshot", () => {
     expect(SNAP.create).not.toHaveBeenCalled();
     expect(SNAP.update).not.toHaveBeenCalled();
     expect(dq.aggregateDashboardData).not.toHaveBeenCalled();
-    expect(dq.getDashboardFilterOptions).not.toHaveBeenCalled();
   });
 });
 

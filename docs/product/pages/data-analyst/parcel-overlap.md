@@ -27,6 +27,7 @@ Halaman: Tumpang Tindih Lahan (/admin/data-analyst/parcel-overlap)
 │   └── Kanan (sticky): preview — pasangan pertama terpilih otomatis
 │       ├── Navigasi: ‹ Sebelumnya · "n / N · ↑/↓" · Berikutnya › (urutan = tampilan tabel); panah ↑/↓ hanya
 │       │   saat fokus di tabel/preview (bukan kotak isian, combobox, kanvas peta) — di luar itu halaman tetap tergulir
+│       │   Fokus di baris ikut ke baris baru, juga saat ia di halaman tabel lain (`DataTable` `selectedRowKey`; wrap-up 2026-09-29 — dulu fokus jatuh ke <body> tiap 25 baris)
 │       ├── Peta: lahan A biru, lahan B oranye (garis putus), irisan merah (isi + garis); Zoom ke Lahan; basemap; legenda;
 │       │   saat pasangan berikutnya dimuat, peta sebelumnya tetap tampil berlapis spinner (basemap terpilih bertahan)
 │       └── Kartu A & B: petani (kode), Kelompok Tani, Lembaga, Distrik, luas poligon, % tertumpang, "+N lahan lain",

@@ -128,7 +128,7 @@ Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#7
 | ✅ [Komparasi Data Acuan](pages/data-analyst/benchmark-comparison.md) | `data-analyst-benchmark-comparison` | DA-06 (#243) | Angka acuan manual per Lembaga vs data MIS |
 | ✅ [Metrik Rilis](pages/data-analyst/metrics.md) | `dashboard-metrics` | — | Roadmap %, KPI & RVS per rilis dari `docs/project/metrics.md` + Detail Roadmap (route `/admin/dashboard/metrics`) |
 | ✅ [Peta Data & Skema](pages/data-analyst/data-map.md) | `data-analyst-data-map` | DA-07 | Lineage menu → entitas + skema dari artefak `*.generated.ts` |
-| ✅ [Sprint Mingguan](pages/data-analyst/sprint.md) | `data-analyst-sprint` | #378 | Rencana sprint mingguan dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis): tab Sprint (pemilih minggu, progres poin S/M/L, kotak Butuh keputusan, butir per status) + tab Analisa (velocity, komposisi fokus, keputusan tertunda, carry-over) |
+| 🟠 [Sprint Mingguan](pages/data-analyst/sprint.md) | `data-analyst-sprint` | #378 | Rencana sprint mingguan dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis): tab Sprint (pemilih minggu, progres poin S/M/L, kotak Butuh keputusan, butir per status) + tab Analisa (kartu ringkasan, beban & kemajuan per status, fokus per kategori, keputusan menunggu owner, carry-over) |
 
 ### 📈 Report — `/admin/report`
 

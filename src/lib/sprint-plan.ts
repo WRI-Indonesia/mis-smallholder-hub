@@ -64,7 +64,7 @@ const STATUS_PREFIX: [string, SprintItemStatus][] = [
 ];
 
 export const SPRINT_STATUS_LABEL: Record<SprintItemStatus, string> = {
-  todo: "Todo",
+  todo: "Belum dimulai",
   progress: "Dikerjakan",
   decision: "Menunggu keputusan",
   done: "Selesai",
@@ -112,11 +112,14 @@ export function parseSprintPlan(markdown: string): SprintPlan {
 
   for (const raw of section.split("\n")) {
     const line = raw.trim();
-    if (line.startsWith("<details")) detailsDepth++;
-    if (detailsDepth > 0) {
-      if (line.startsWith("</details>")) detailsDepth--;
-      continue;
-    }
+    // Hitung per baris, bukan "baris diawali tag": `<details>…</details>` satu
+    // baris atau `teks </details>` dulu membuat kedalaman tak pernah kembali 0 →
+    // sisa section (Sprint berikutnya, Backlog) terbuang diam-diam.
+    const opens = line.match(/<details\b/g)?.length ?? 0;
+    const closes = line.match(/<\/details>/g)?.length ?? 0;
+    const inDetails = detailsDepth > 0 || opens > 0;
+    detailsDepth = Math.max(0, detailsDepth + opens - closes);
+    if (inDetails) continue;
     const heading = line.match(SPRINT_HEADING);
     if (heading) {
       current = { number: Number(heading[1]), start: heading[2], end: heading[3], title: heading[4].trim(), items: [] };

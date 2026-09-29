@@ -281,16 +281,10 @@ export function ParcelOverlapClient({ rows, canExport }: Props) {
     if ((e.key !== "ArrowDown" && e.key !== "ArrowUp") || e.altKey || e.ctrlKey || e.metaKey || e.defaultPrevented) return;
     if (isTypingTarget(e.target) || (e.target instanceof HTMLElement && e.target.closest(".maplibregl-map"))) return;
     e.preventDefault();
+    // Fokus di baris tabel ikut ke baris baru — ditangani DataTable (`selectedRowKey`),
+    // termasuk saat baris baru ada di halaman tabel lain.
     step(e.key === "ArrowDown" ? 1 : -1);
-    // Fokus ikut ke baris baru (bila fokus sedang di tabel) — lihat efek di bawah.
-    focusSelectedRow.current = !!(e.target instanceof HTMLElement && e.target.closest("tr"));
   };
-  const focusSelectedRow = useRef(false);
-  useEffect(() => {
-    if (!focusSelectedRow.current) return;
-    focusSelectedRow.current = false;
-    workAreaRef.current?.querySelector<HTMLElement>('tr[data-state="selected"]')?.focus();
-  }, [effectiveKey]);
 
   // Nama berkas menyebut cakupannya: Lembaga/Distrik aktif + ambang % (dulu
   // selalu "terfilter" — menyesatkan saat tanpa filter, dan nama Lembaga hilang).

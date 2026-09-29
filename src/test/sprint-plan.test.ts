@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 import {
+  SPRINT_STACK_ORDER,
+  SPRINT_STATUS_LABEL,
   carryOvers,
   parseSprintPlan,
   pendingDecisions,
   sprintComposition,
   sprintDay,
   sprintPhase,
+  planTotals,
   sprintProgress,
+  sprintStatusPoints,
   sprintVelocity,
   splitRow,
 } from "@/lib/sprint-plan";
@@ -127,6 +131,33 @@ describe("parseSprintPlan — fixture", () => {
     expect(plan.sprints.map((s) => [s.number, s.items.length])).toEqual([[1, 1], [2, 1]]);
   });
 
+  it.each([
+    ["satu baris", ["<details><summary>catatan</summary>isi</details>"]],
+    ["tag tutup setelah teks", ["<details>", "<summary>catatan</summary>", "| 9 | X | Rilis | S | t | 🔲 Todo | — |", "isi terakhir </details>"]],
+  ])("blok <details> %s tidak menelan sprint berikutnya (review wrap-up #378)", (_, block) => {
+    const plan = parseSprintPlan(
+      doc(
+        [
+          "#### Sprint 1 · 2026-09-28 → 2026-10-04 — A",
+          "",
+          table(["| 1 | A | Rilis | S | t | 🔲 Todo | — |"]),
+          "",
+          ...block,
+          "",
+          "#### Sprint 2 · 2026-10-05 → 2026-10-11 — B",
+          "",
+          table(["| 1 | B | Data | M | t | 🔲 Todo | — |"]),
+          "",
+          "#### Backlog (urut prioritas)",
+          "",
+          "1. Z",
+        ].join("\n")
+      )
+    );
+    expect(plan.sprints.map((s) => [s.number, s.items.length])).toEqual([[1, 1], [2, 1]]);
+    expect(plan.backlog).toEqual(["Z"]);
+  });
+
   it("pipa ter-escape `\\|` di dalam sel (GFM) tidak memecah kolom", () => {
     expect(splitRow("| 1 | a | `BATAS_LAHAN\\|NKT` x | d |")).toEqual(["1", "a", "`BATAS_LAHAN|NKT` x", "d"]);
     const plan = parseSprintPlan(
@@ -183,6 +214,26 @@ describe("analisa sprint", () => {
     ]);
     expect(v.average).toBe(3);
     expect(sprintVelocity(plan, "2026-09-28").average).toBeNull();
+  });
+
+  it("poin per status: tumpukan kolom Analisa = komitmen awal velocity (termasuk digeser)", () => {
+    expect(sprintStatusPoints(plan.sprints[0])).toEqual({ done: 3, progress: 0, decision: 1, todo: 0, moved: 5 });
+    const v = sprintVelocity(plan, "2026-10-06");
+    plan.sprints.forEach((s, i) => {
+      const pts = sprintStatusPoints(s);
+      expect(SPRINT_STACK_ORDER.reduce((t, k) => t + pts[k], 0)).toBe(v.rows[i].planned);
+    });
+  });
+
+  it("urutan tumpukan memuat setiap status tepat sekali, berlabel sama dengan UI", () => {
+    expect([...SPRINT_STACK_ORDER].sort()).toEqual(Object.keys(SPRINT_STATUS_LABEL).sort());
+    expect(SPRINT_STATUS_LABEL.todo).toBe("Belum dimulai");
+  });
+
+  it("total rencana: butir digeser TIDAK dihitung dua kali; porsi tertahan keputusan", () => {
+    // S1 = 3 + 1 (tanpa B digeser), S2 = 3 (tanpa B digeser), S3 = 5 (B mendarat).
+    expect(planTotals(plan)).toEqual({ sprints: 3, points: 12, pendingPoints: 4, pendingShare: 4 / 12, end: "2026-10-18" });
+    expect(planTotals({ sprints: [] })).toEqual({ sprints: 0, points: 0, pendingPoints: 0, pendingShare: 0, end: null });
   });
 
   it("keputusan tertunda: butir ⚖️ sprint yang sudah lewat TIDAK hilang, ditandai terlambat", () => {
