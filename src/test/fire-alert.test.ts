@@ -18,7 +18,7 @@ import {
   formatHotspotMonth,
   formatHotspotRange,
   hotspotWindowStart,
-  findContainingBoundary,
+  findContainingBoundaries,
   indexBoundaries,
   multiPolygonBbox,
   pointInMultiPolygon,
@@ -101,15 +101,15 @@ describe("pointInMultiPolygon", () => {
   });
 });
 
-describe("findContainingBoundary & classifyHotspots", () => {
+describe("findContainingBoundaries & classifyHotspots", () => {
   const boundaries = indexBoundaries([
     boundary({ farmerGroupId: "g1", name: "Lembaga Satu", geometry: square(101, 0, 102, 1) }),
     boundary({ farmerGroupId: "g2", name: "Lembaga Dua", geometry: square(103, 0, 104, 1), districtId: "d2", districtName: "Siak" }),
   ]);
 
   it("bbox pre-check tidak salah menolak titik di dalam", () => {
-    expect(findContainingBoundary([103.5, 0.5], boundaries)?.farmerGroupId).toBe("g2");
-    expect(findContainingBoundary([100, 0.5], boundaries)).toBeNull();
+    expect(findContainingBoundaries([103.5, 0.5], boundaries)[0]?.farmerGroupId).toBe("g2");
+    expect(findContainingBoundaries([100, 0.5], boundaries)).toEqual([]);
   });
 
   it("menandai in/out + groupIds/groupName dan mempertahankan properti lama", () => {

@@ -107,8 +107,8 @@ export const landParcelExternalIdSchema = z.object({
 export const updateLandParcelExternalIdSchema = landParcelExternalIdSchema.omit({ landParcelId: true }).extend({ id: z.string().min(1) });
 
 // ---- Program
-export const LAND_PROGRAM_TYPES = ["DEMPLOT_PBU"] as const;
-export const LAND_PROGRAM_STATUSES = ["PLANNED", "ACTIVE", "COMPLETED", "CANCELLED"] as const;
+const LAND_PROGRAM_TYPES = ["DEMPLOT_PBU"] as const;
+const LAND_PROGRAM_STATUSES = ["PLANNED", "ACTIVE", "COMPLETED", "CANCELLED"] as const;
 // Basis tanpa refine — zod 4 membuang refine saat .omit/.extend, jadi refine
 // dipasang di akhir pada kedua varian lewat helper yang sama.
 const programBase = z.object({
@@ -132,7 +132,7 @@ export const updateLandParcelProgramSchema = programBase
 // ---- Sepadan (#326) — satelit 1:1, keempat sisi opsional; semua kosong = hapus.
 // Urutan & label sisi tinggal di modul daun `land-parcel-satellite-format.ts`;
 // diekspor ulang di sini untuk pemakai lama.
-export { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS, type LandBorderSide } from "@/lib/land-parcel-satellite-format";
+export { LAND_BORDER_SIDES, LAND_BORDER_SIDE_LABELS } from "@/lib/land-parcel-satellite-format";
 export const landParcelBorderSchema = z.object({
   landParcelId: z.string().min(1, "Lahan tidak valid"),
   north: optText(200),

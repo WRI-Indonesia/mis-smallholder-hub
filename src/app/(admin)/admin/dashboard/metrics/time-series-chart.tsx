@@ -28,7 +28,7 @@ export type SeriesPoint = {
 };
 
 /** Konteks penggambar anotasi (plateau, penanda "mulai diukur", label lonjakan). */
-export type PlotContext = {
+type PlotContext = {
   x: (t: number) => number;
   y: (v: number) => number;
   w: number;

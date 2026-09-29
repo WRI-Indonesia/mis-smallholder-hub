@@ -297,7 +297,7 @@ export const PARCEL_DETAIL_TARGET_FIELDS = [
 
 export type ParcelDetailFieldKey = (typeof PARCEL_DETAIL_TARGET_FIELDS)[number]["key"];
 
-export const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string[]> = {
+const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string[]> = {
   parcelId: ["id lahan", "id_lahan", "idlahan", "parcel_id", "parcelid", "kode lahan", "kode_lahan"],
   farmerId: ["id petani", "id_petani", "idpetani", "farmer_id", "farmerid", "kode petani", "kode_petani"],
   documentType: ["jenis surat tanah", "jenis surat", "jenis_surat", "jenis_surat_tanah", "document_type", "tipe surat"],
@@ -408,7 +408,7 @@ const FREE_TEXT_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["borderNorth"
  * "0" jatuh ke bawaan berkas (bisa terbalik jadi terdampak) dan FALSE jadi error
  * "tidak dikenal" (temuan review 2026-09-15). Boolean → "1"/"0", "0" dipertahankan.
  */
-export function rawNktStatusCell(value: unknown): string {
+function rawNktStatusCell(value: unknown): string {
   if (typeof value === "boolean") return value ? "1" : "0";
   if (value === null || value === undefined) return "";
   const s = String(value).trim().replace(/\s+/g, " ");

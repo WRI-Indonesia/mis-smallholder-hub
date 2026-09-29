@@ -1,14 +1,13 @@
 import { requirePermission, getUserPermissionsForMenu } from "@/lib/rbac";
 import { HelpHint } from "@/app/(admin)/admin/help/help-hint";
-import { getSnapshots, getSnapshotFilterOptions } from "@/server/actions/snapshot";
+import { getSnapshots } from "@/server/actions/snapshot";
 import { SnapshotClient } from "./snapshot-client";
 
 export default async function SnapshotPage() {
   await requirePermission("dashboard-snapshot");
 
-  const [snapshots, filterOptions, permissions] = await Promise.all([
+  const [snapshots, permissions] = await Promise.all([
     getSnapshots(),
-    getSnapshotFilterOptions(),
     getUserPermissionsForMenu("dashboard-snapshot"),
   ]);
 
@@ -23,7 +22,7 @@ export default async function SnapshotPage() {
           Buat dan kelola snapshot historis dari data dashboard
         </p>
       </div>
-      <SnapshotClient snapshots={snapshots} filterOptions={filterOptions} permissions={permissions} />
+      <SnapshotClient snapshots={snapshots} permissions={permissions} />
     </div>
   );
 }

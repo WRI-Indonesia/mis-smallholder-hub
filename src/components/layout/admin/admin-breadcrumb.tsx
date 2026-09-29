@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { ChevronRight } from "lucide-react"
 import { useBreadcrumbOverride } from "./breadcrumb-override"
 
-export function useBreadcrumbs() {
+function useBreadcrumbs() {
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
   
@@ -19,19 +19,10 @@ export function useBreadcrumbs() {
     "bmp-monev": "Monev BMP",
     lembaga: "Penilaian Lembaga",
     regions: "Region / Wilayah",
-    cms: "CMS",
-    news: "Berita",
-    knowledge: "Knowledge Management",
-    community: "Komunitas",
-    pages: "Konfigurasi Halaman",
     tools: "Tools",
-    import: "Import Data",
-    export: "Export Laporan",
-    geo: "Geospatial",
     settings: "Setting",
     users: "User Management",
     roles: "Role & Permission",
-    system: "Konfigurasi Sistem",
   }
 
   return segments.map((seg, idx) => ({

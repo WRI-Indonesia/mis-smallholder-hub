@@ -37,7 +37,7 @@ export const MARKER_UPLOAD_FIELDS = [
 export type MarkerUploadFieldKey = (typeof MARKER_UPLOAD_FIELDS)[number]["key"];
 
 /** Alias header (lowercase, persis) — termasuk nama atribut DBF ≤ 10 karakter. */
-export const MARKER_UPLOAD_AUTO_MATCH_RULES: Record<MarkerUploadFieldKey, string[]> = {
+const MARKER_UPLOAD_AUTO_MATCH_RULES: Record<MarkerUploadFieldKey, string[]> = {
   parcelId: ["id lahan", "id_lahan", "idlahan", "parcel_id", "parcelid", "land_id", "kode lahan"],
   farmerCode: ["id petani", "id_petani", "idpetani", "farmer_id", "farmerid", "kode petani"],
   code: ["kode patok", "kode_patok", "kodepatok", "kode", "code", "marker_code", "id patok", "id_patok", "patok_code"],

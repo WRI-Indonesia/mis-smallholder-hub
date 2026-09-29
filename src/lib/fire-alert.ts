@@ -245,14 +245,6 @@ export function findContainingBoundaries(
   return hits;
 }
 
-/** Boundary pertama yang memuat titik (urutan input; null bila di luar semua). */
-export function findContainingBoundary(
-  pt: Position,
-  boundaries: FireBoundaryIndexed[]
-): FireBoundaryIndexed | null {
-  return findContainingBoundaries(pt, boundaries)[0] ?? null;
-}
-
 /**
  * Tandai tiap titik api: `inBoundary` ("in"/"out"); bila di dalam juga
  * `groupIds` (SEMUA lembaga pemilik — satu poligon bisa bersama, mis. KSJ &

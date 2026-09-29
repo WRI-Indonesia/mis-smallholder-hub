@@ -27,7 +27,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { TRAINING_CATEGORY_LABELS } from "./training-list-client";
+import { TRAINING_CATEGORY_LABELS } from "@/lib/training-category-labels";
 import { Calendar } from "@/components/ui/calendar";
 import { id } from "date-fns/locale";
 

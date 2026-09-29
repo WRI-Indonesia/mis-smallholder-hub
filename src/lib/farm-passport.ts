@@ -21,7 +21,7 @@ const MARKER_EDGE: [number, number, number] = [133, 77, 14];
 export const MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 export const PAGE_W = 210;
-export const PAGE_H = 297;
+const PAGE_H = 297;
 export const MARGIN = 14;
 export const CONTENT_W = PAGE_W - MARGIN * 2;
 /** Batas bawah konten sebelum footer; lewat ini → halaman baru (#298: PDF boleh >1 halaman). */
@@ -37,7 +37,7 @@ export const passportTableCommon = () => ({
   alternateRowStyles: { fillColor: [248, 250, 252] as [number, number, number] },
 });
 
-export const fmtArea = (n: number | null) =>
+const fmtArea = (n: number | null) =>
   n == null ? "—" : `${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ha`;
 
 export const fmtNum = (n: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(n);
@@ -52,7 +52,7 @@ export const orDash = (v: string | number | null | undefined) =>
   v === null || v === undefined || v === "" ? "—" : String(v);
 
 /** Footer tiap halaman: catatan hukum + brand + nomor halaman. */
-export function drawFooter(doc: jsPDF, page: number, total: number) {
+function drawFooter(doc: jsPDF, page: number, total: number) {
   doc.setDrawColor(...SLATE_200);
   doc.setLineWidth(0.4);
   doc.line(MARGIN, 275, PAGE_W - MARGIN, 275);

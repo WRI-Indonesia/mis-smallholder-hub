@@ -213,7 +213,7 @@ export const LAND_NKT_STATUS_LABELS: Record<LandNktStatusCode, string> = {
   NOT_AFFECTED: "Tidak terdampak",
 };
 /** Label pendek untuk badge/kolom laporan. */
-export const LAND_NKT_STATUS_SHORT: Record<LandNktStatusCode, string> = {
+const LAND_NKT_STATUS_SHORT: Record<LandNktStatusCode, string> = {
   INCLUDED: "Termasuk NKT",
   AFFECTED: "Terdampak NKT",
   NOT_AFFECTED: "Tidak terdampak",

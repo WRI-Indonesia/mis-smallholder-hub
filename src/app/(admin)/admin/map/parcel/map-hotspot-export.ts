@@ -22,6 +22,7 @@ import {
   haversineMeters,
 } from "./map-geo";
 import { formatArea, formatNumber } from "@/lib/format";
+import { wibFileStamp } from "@/lib/parcel-export-data";
 
 const windowLabel = (dayRange: HotspotDayRange) => `${hotspotWindowLabel(dayRange)} terakhir`;
 
@@ -31,21 +32,6 @@ const PDF_DISCLAIMER =
 
 /** Keterangan kolom "Jarak (km) & Arah dari Kantor Lembaga" pada PDF (#293). */
 const PDF_BEARING_NOTE = `Arah diukur dari kantor Lembaga Petani menuju titik api (0° = utara) — ${COMPASS_LEGEND_ID}.`;
-
-/** Timestamp WIB ringkas untuk nama file, mis. "20260810-1417". */
-function wibFileStamp(now: Date): string {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(now);
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  return `${get("year")}${get("month")}${get("day")}-${get("hour")}${get("minute")}`;
-}
 
 export function fileBase(dayRange: HotspotDayRange, now: Date): string {
   return `titik-api-riau-${dayRange === 1 ? "24jam" : `${dayRange}hari`}-${wibFileStamp(now)}`;
@@ -167,7 +153,7 @@ export async function calcHotspotNearest(
 }
 
 /** Format jarak meter → "x,xx" km (id-ID, 2 desimal via formatter bersama). */
-export const formatKm = (meters: number) => formatArea(meters / 1000);
+const formatKm = (meters: number) => formatArea(meters / 1000);
 
 /** Sel baris deteksi yang sama untuk tabel modal ringkasan & tabel PDF
  *  (dedup #241). Keyakinan tidak ikut: modal memakai badge, PDF label teks. */

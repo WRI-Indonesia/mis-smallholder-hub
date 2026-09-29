@@ -68,7 +68,7 @@ const HYBRID: StyleSpecification = {
  * karena uji coba Fire Alert (#307) menyusun pilihannya sendiri; saat uji coba
  * dipromosikan ke `MAP_STYLES`, ekspor ini bisa dicabut lagi.
  */
-export const SATELLITE: StyleSpecification = {
+const SATELLITE: StyleSpecification = {
   version: 8,
   glyphs: GLYPHS,
   sources: {

@@ -128,7 +128,6 @@ export const DATA_LINEAGE: DataLineage = [
     "menuKey": "dashboard-snapshot",
     "route": "(admin)/admin/tools/snapshot",
     "models": {
-      "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
       "mainDashboardSnapshot": "RW"
@@ -657,6 +656,14 @@ export const UNMAPPED_ROUTES: UnmappedRoute[] = [
     "reason": "tanpa-requirePermission"
   },
   {
+    "route": "(admin)/admin/dashboard/risk",
+    "reason": "tanpa-requirePermission"
+  },
+  {
+    "route": "(admin)/admin/data-analyst",
+    "reason": "tanpa-requirePermission"
+  },
+  {
     "route": "(admin)/admin/map",
     "reason": "tanpa-requirePermission"
   },
@@ -670,6 +677,10 @@ export const UNMAPPED_ROUTES: UnmappedRoute[] = [
   },
   {
     "route": "(admin)/admin/report",
+    "reason": "tanpa-requirePermission"
+  },
+  {
+    "route": "(admin)/admin/settings",
     "reason": "tanpa-requirePermission"
   },
   {
