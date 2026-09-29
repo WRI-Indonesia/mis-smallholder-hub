@@ -56,13 +56,14 @@ src/
 
 ## Ringkasan Teknis
 
-Diverifikasi **2026-09-29** terhadap kode di branch `mvp` (app `v1.1.0`).
-
-| Aspek | Angka | Catatan |
+<!-- GENERATED:tech-summary — npm run build:docs; jangan sunting tangan -->
+| Aspek | Angka | Sumber |
 |---|---|---|
-| Test | **111 file / 1.916 test passing** ✅ | `npx vitest run`; rincian coverage di [roadmap.md § OPS-01](../project/roadmap.md) |
-| Server Actions | **39 file** | `src/server/actions/` — satu file per domain, seluruh akses data lewat sini |
-| Prisma | **25 file schema / 40 model / 39 migrasi** | `prisma/schema/` modular; semua model ber-audit field + `isActive` (pengecualian: [constraints.md](../database/constraints.md#soft-delete-pattern)) |
-| Menu | **9 top-level / 38 sub menu + 1 level-3** | `prisma/seeds/data/menu.csv` |
-| Materi Bantuan | **65 file Markdown** | `src/content/help/**` |
-| Fase selesai | lihat [roadmap.md § Phase Status](../project/roadmap.md#phase-status-indeks) | — |
+| Berkas test | **112** | `src/test/**/*.test.ts(x)` — jumlah kasus uji per rilis di [metrics.md](../project/metrics.md) |
+| Server Actions | **39 berkas** | `src/server/actions/` — satu berkas per domain, seluruh akses data lewat sini |
+| Prisma | **25 berkas skema · 40 model · 19 enum · 39 migrasi** | `prisma/schema/`, `prisma/migrations/` |
+| Menu | **9 top-level · 38 sub menu · 1 level-3** | `prisma/seeds/data/menu.csv` |
+| Materi Bantuan | **65 berkas Markdown** | `src/content/help/**` |
+<!-- /GENERATED:tech-summary -->
+
+Status fase: [roadmap.md § Phase Status](../project/roadmap.md#phase-status-indeks). Semua model ber-audit field + `isActive` (pengecualian: [decisions/0001](../decisions/0001-soft-delete-dan-pengecualian.md)).

@@ -52,15 +52,19 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 
 ## 2. Struktur Menu Sidebar
 
-9 menu top-level / 38 sub menu + 1 menu level-3 (Fire Alert) (`menu.csv`, dihitung ulang 2026-09-29), urut sesuai kolom `order`:
+<!-- GENERATED:menu-summary — npm run build:docs; jangan sunting tangan -->
+**9 menu top-level · 38 sub menu · 1 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
 
-```text
-📊 Dashboard          (5 sub, + Risk Management › Fire Alert)   📈 Report        (7 sub)
-📁 Master Data        (6 sub)   🔧 Tools         (2 sub)
-⚙️  Settings           (4 sub)   🗺️  Map           (2 sub)
-📤 Bulk Upload        (4 sub)   ❓ Bantuan       (halaman bab/topik, tanpa sub menu)
-📉 Data Analyst       (8 sub, termasuk Metrik Rilis `dashboard-metrics`)
-```
+- **Dashboard** (`dashboard`, order 0) — 5 sub menu + Fire Alert (level 3)
+- **Report** (`report`, order 1) — 7 sub menu
+- **Map** (`map`, order 2) — 2 sub menu
+- **Master Data** (`master-data`, order 3) — 6 sub menu
+- **Data Analyst** (`data-analyst`, order 4) — 8 sub menu
+- **Tools** (`tools`, order 6) — 2 sub menu
+- **Bantuan** (`help`, order 9) — tanpa sub menu
+- **Bulk Upload** (`bulk-upload`, order 10) — 4 sub menu
+- **Settings** (`settings`, order 99) — 4 sub menu
+<!-- /GENERATED:menu-summary -->
 
 Halaman non-menu: `/admin/profile` (Ubah Kata Sandi) · `/login` · route publik. Lihat [pages/non-menu/](pages/non-menu/README.md).
 

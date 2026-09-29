@@ -15,6 +15,7 @@
     "pdf:list": "node scripts/pdf-manager.js list",
     "build:lineage": "tsx scripts/build-lineage.ts",
     "build:schema": "tsx scripts/build-schema.ts",
+    "build:docs": "tsx scripts/build-docs.ts",
     "rbac:compare": "tsx scripts/compare-role-permissions.ts",
     "rbac:export": "tsx scripts/export-role-permissions.ts"
   },

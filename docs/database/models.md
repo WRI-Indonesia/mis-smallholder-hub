@@ -20,74 +20,33 @@
 
 ## Enums
 
-```mermaid
-classDiagram
-    class Role {
-        SUPERADMIN
-        ADMIN
-        OPERATOR
-        MANAGEMENT
-        DONOR
-    }
-
-    class PermissionLevel {
-        CREATE
-        VIEW
-        EDIT
-        DELETE
-        EXPORT
-        PRINT
-    }
-
-    class FarmerGroupCategory {
-        EX_PLASMA
-        SWADAYA
-    }
-
-    class FarmerGroupType {
-        ASOSIASI
-        KOPERASI
-    }
-
-    class RspoCertStatus {
-        CERTIFIED
-        PLANNED
-    }
-
-    class CertStatus {
-        <<generik — ISPO, SAP/MAP (#169)>>
-        CERTIFIED
-        PLANNED
-    }
-
-    class Gender {
-        M
-        F
-    }
-
-    class TrainingCategory {
-        PAKET_1_BMP_PC_RSPO_NKT
-        PAKET_2_MK
-        PAKET_2_K3
-        PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV
-        OTHER
-    }
-```
-
-Enum lain di luar diagram di atas:
+<!-- GENERATED:enums — npm run build:docs; jangan sunting tangan -->
+19 enum di `prisma/schema/`.
 
 | Enum | Nilai | Berkas |
 |---|---|---|
 | `AdminBoundaryLevel` | KABUPATEN · KECAMATAN · DESA | `_config.prisma` |
-| `LandDocumentType` | SHM · SKT · SKGR · SK · SKST · SKTC · SKGK · SPPT · SKRPT · SKKT · SKTB · HIBAH · JUAL_BELI · OTHER | `land-parcel-document.prisma` |
-| `LandProgramType` / `LandProgramStatus` | DEMPLOT_PBU / PLANNED · ACTIVE · COMPLETED · CANCELLED | `land-parcel-program.prisma` |
-| `LandStdbStage` | PERSIAPAN_DATA · PENGAJUAN · REVISI · TERBIT · DITOLAK | `land-stdb.prisma` |
-| `LandNktStatus` | INCLUDED (disembunyikan dari UI, TD-040) · AFFECTED · NOT_AFFECTED | `land-parcel-nkt.prisma` |
-| `NktCategory` | NKT_1 … NKT_6 | `land-parcel-nkt.prisma` |
-| `LandMarkerCondition` | PRESENT · MISSING · DAMAGED · NOT_INSTALLED | `land-marker.prisma` |
-| `LandMarkerType` | CONCRETE · WOOD · PIPE · NATURAL · OTHER | `land-marker.prisma` |
-| `LandMarkerSource` | POLYGON_VERTEX · GPS · MANUAL | `land-marker.prisma` |
 | `BmpIndicatorLevel` | LEMBAGA · INDIVIDU | `bmp-indicator.prisma` |
+| `CertStatus` | CERTIFIED · PLANNED | `_config.prisma` |
+| `FarmerGroupCategory` | EX_PLASMA · SWADAYA | `_config.prisma` |
+| `FarmerGroupType` | ASOSIASI · KOPERASI | `_config.prisma` |
+| `Gender` | M · F | `farmer.prisma` |
+| `LandDocumentType` | SHM · SKT · SKGR · SK · SKST · SKTC · SKGK · SPPT · SKRPT · SKKT · SKTB · HIBAH · JUAL_BELI · OTHER | `land-parcel-document.prisma` |
+| `LandMarkerCondition` | PRESENT · MISSING · DAMAGED · NOT_INSTALLED | `land-marker.prisma` |
+| `LandMarkerSource` | POLYGON_VERTEX · GPS · MANUAL | `land-marker.prisma` |
+| `LandMarkerType` | CONCRETE · WOOD · PIPE · NATURAL · OTHER | `land-marker.prisma` |
+| `LandNktStatus` | INCLUDED · AFFECTED · NOT_AFFECTED | `land-parcel-nkt.prisma` |
+| `LandProgramStatus` | PLANNED · ACTIVE · COMPLETED · CANCELLED | `land-parcel-program.prisma` |
+| `LandProgramType` | DEMPLOT_PBU | `land-parcel-program.prisma` |
+| `LandStdbStage` | PERSIAPAN_DATA · PENGAJUAN · REVISI · TERBIT · DITOLAK | `land-stdb.prisma` |
+| `NktCategory` | NKT_1 · NKT_2 · NKT_3 · NKT_4 · NKT_5 · NKT_6 | `land-parcel-nkt.prisma` |
+| `PermissionLevel` | CREATE · VIEW · EDIT · DELETE · EXPORT · PRINT | `_config.prisma` |
+| `Role` | SUPERADMIN · ADMIN · OPERATOR · MANAGEMENT · DONOR | `_config.prisma` |
+| `RspoCertStatus` | CERTIFIED · PLANNED | `_config.prisma` |
+| `TrainingCategory` | PAKET_1_BMP_PC_RSPO_NKT · PAKET_2_MK · PAKET_2_K3 · PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV · OTHER | `_config.prisma` |
+<!-- /GENERATED:enums -->
+
+Catatan: `LandNktStatus.INCLUDED` hidup di DB tetapi disembunyikan dari UI (TD-040); `CertStatus` adalah enum generik untuk ISPO & SAP/MAP (#169).
 
 </details>
 

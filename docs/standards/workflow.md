@@ -70,12 +70,13 @@ Sebelum **setiap commit dari lokal**, kelima gate ini **wajib hijau** — jangan
 | Test | `npm test` | semua lulus, **tidak ada** test di-skip |
 | **Docs sync** | Review & update `docs/` yang terdampak | Dokumentasi terkait sudah diperbarui & konsisten, di-commit **bersama** kode |
 
-**Artefak turunan.** Dua berkas di `src/lib/*.generated.ts` diturunkan dari kode dan skema, bukan ditulis tangan:
+**Artefak turunan.** Dua berkas di `src/lib/*.generated.ts` dan blok bertanda `<!-- GENERATED:… -->` di `docs/` diturunkan dari kode dan skema, bukan ditulis tangan:
 
 | Perintah | Menghasilkan | Regenerasi wajib saat |
 |---|---|---|
 | `npm run build:schema` | `data-schema.generated.ts` | `prisma/schema/*.prisma` berubah |
 | `npm run build:lineage` | `data-lineage.generated.ts` | rute ber-`requirePermission`, import halaman, atau pemanggilan Prisma di action berubah |
+| `npm run build:docs` | blok `GENERATED` di `docs/` (enum, tabel & ringkasan menu, angka teknis) | skema/enum, `menu.csv`, jumlah berkas test/action/migrasi/Bantuan berubah |
 
 Tidak perlu dihafal: `npm test` akan gagal bila artefaknya basi, dengan pesan yang menyebut entitas/menu yang berubah beserta perintah regenerasinya. Artefaknya **di-commit** supaya perubahan jalur data terlihat di diff PR, bukan terjadi diam-diam.
 

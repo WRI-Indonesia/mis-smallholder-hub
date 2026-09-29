@@ -46,6 +46,7 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 
 ## Daftar menu
 
+<!-- GENERATED:menu-top — npm run build:docs; jangan sunting tangan -->
 | Order | Menu | Key | URL | Sub menu | Dokumen |
 |---|------|-----|-----|----------|---------|
 | 0 | Dashboard | `dashboard` | `/admin/dashboard` | 5 | [dashboard/](./dashboard/README.md) |
@@ -57,7 +58,9 @@ Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, 
 | 9 | Bantuan | `help` | `/admin/help` | — (tree bab/topik) | [help/](./help/README.md) |
 | 10 | Bulk Upload | `bulk-upload` | `/admin/bulk-upload` | 4 | [bulk-upload/](./bulk-upload/README.md) |
 | 99 | Settings | `settings` | `/admin/settings` | 4 | [settings/](./settings/README.md) |
-| — | Halaman non-menu | — | `/login`, `/admin/profile`, `/` | — | [non-menu/](./non-menu/README.md) |
+<!-- /GENERATED:menu-top -->
+
+Halaman non-menu (`/login`, `/admin/profile`, `/`): [non-menu/](./non-menu/README.md).
 
 ## Cara membaca
 
