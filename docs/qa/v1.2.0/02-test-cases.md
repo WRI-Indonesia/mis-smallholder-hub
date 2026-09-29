@@ -50,13 +50,13 @@ Langkah:
 2. Klik judul kolom **Label**, lalu klik lagi.
 3. Klik judul kolom **Lahan A**.
 4. Pilih basemap `SAT`, klik **Berikutnya ›** tiga kali.
-5. Klik satu baris tabel, tekan ↓ dua kali, lalu ↑ sekali.
+5. Klik baris **ke-25** (terakhir di halaman 1 tabel), tekan ↓ dua kali, lalu ↑ dua kali.
 6. Klik di area kosong di luar tabel, tekan ↓.
 7. Klik peta, tekan ↓.
 Harapan:
 - Langkah 2–3: **halaman tidak crash** ("Terjadi Kesalahan" = Fail — bug loop render yang ditemukan saat wrap-up); Label naik = Duplikat → Tercakup → Sebagian, turun diawali Sebagian; setelah sortir tabel kembali ke halaman 1.
 - Langkah 4: peta tetap tampil selama memuat (berlapis spinner), basemap tetap `SAT`; penghitung "n / N" naik satu per klik.
-- Langkah 5: pasangan & sorotan baris berpindah satu per tekan; fokus ikut ke baris baru; bila melewati batas halaman, tabel pindah halaman.
+- Langkah 5: pasangan & sorotan baris berpindah satu per tekan (25 → 26 → 27 → 26 → 25); tabel pindah ke halaman 2 lalu kembali ke halaman 1; **fokus tetap di baris terpilih** sehingga ↓ kedua dan ↑ tetap bekerja (dulu fokus jatuh ke halaman di batas 25 baris dan panah mulai menggulir — temuan wrap-up 2026-09-29).
 - Langkah 6: halaman **menggulir**, pasangan tidak berpindah.
 - Langkah 7: peta bergeser, pasangan tidak berpindah.
 
@@ -90,3 +90,73 @@ Langkah:
 2. Master Data › Lembaga Petani: urutkan kolom, cari, pindah halaman.
 Harapan:
 - Tidak ada crash; sortir mengembalikan ke halaman 1; tombol aksi bekerja seperti biasa; baris **tidak** bisa difokus/dipilih (perilaku lama — hanya tabel ber-`onRowClick` yang berubah).
+
+## #378 — Sprint Mingguan (menu Data Analyst)
+
+Prasyarat rilis (bukan kasus uji, cek sebelum run): kode rilis **sudah ter-deploy sebelum** seed menu — ikon `CalendarRange` baru di `ICON_MAP`; seed `node scripts/seed/seed-menu-key.mjs data-analyst-sprint` (menu + 3 izin VIEW dari CSV).
+
+### TC-378-01 · Menu & izin per peran [P0] [regresi] (4 mnt)
+Prasyarat: akun SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR.
+Langkah:
+1. `SELECT role, string_agg(permission::text, ',') FROM rbac_role_permission WHERE menu_key='data-analyst-sprint' AND is_active GROUP BY 1 ORDER BY 1;`
+2. Tiap akun: buka sidebar Data Analyst.
+3. Akun OPERATOR dan DONOR: buka langsung `/admin/data-analyst/sprint`.
+Harapan:
+- Langkah 1: ADMIN, MANAGEMENT, SUPERADMIN masing-masing `VIEW`; tidak ada OPERATOR/DONOR.
+- SUPERADMIN/ADMIN/MANAGEMENT melihat **Sprint Mingguan** (ikon kalender rentang) di bawah Data Analyst; halaman terbuka tanpa 404/jendela galat.
+- Langkah 3: dialihkan, tanpa isi rencana.
+
+### TC-378-02 · Tab Sprint: pemilih minggu, keputusan, backlog [P1] (5 mnt)
+Langkah:
+1. Buka halaman tanpa query string.
+2. Pilih tombol minggu lain, lalu **Backlog**; salin URL, buka di tab baru.
+3. Kembali ke sprint aktif; klik satu baris butir; klik tautan **#… ↗** di ujung baris.
+Harapan:
+- Langkah 1: tab **Sprint** aktif, minggu terpilih = sprint yang memuat tanggal hari ini (WIB) bertanda "Minggu ini", ringkasan "hari ke-n dari 7" + bilah progres poin.
+- Butir ⚖️ hanya tampil di kotak kuning **Butuh keputusan owner**, tidak diulang di kelompok Dikerjakan / Belum dimulai / Selesai / Digeser.
+- Langkah 2: `?sprint=<n>` / `?sprint=backlog` di URL; tab baru menampilkan pilihan yang sama; Backlog = daftar bernomor.
+- Langkah 3: baris membuka Target & Keputusan; tautan membuka issue GitHub di tab baru (baris tidak ikut terbuka/tertutup).
+- Isi cocok dengan `docs/project/sprint.md` §Sprint Focus di commit yang ter-deploy.
+
+### TC-378-03 · Tab Analisa: kartu, beban per status, keputusan [P1] (6 mnt)
+Langkah:
+1. Buka tab **Analisa** (`?tab=analisa`).
+2. Arahkan kursor, lalu Tab keyboard, ke setiap kolom grafik **Beban & kemajuan per sprint**.
+3. Bandingkan dengan `sprint.md`: jumlahkan poin (S=1, M=3, L=5) tiap sprint, termasuk butir ⏭️ digeser.
+Harapan:
+- 4 kartu: **Rencana** (poin tanpa butir digeser · n sprint · tanggal akhir), **Tertahan keputusan owner** (poin + % rencana + rincian `n terlambat · n minggu ini · n mendatang`; rincian bernilai 0 **tidak** ditulis), **Velocity rata-rata** ("—" + progres sprint berjalan bila belum ada sprint selesai), **Carry-over**.
+- Tinggi kolom = angka di atasnya = total langkah 3; **puncak kolom sejajar garis sumbu Y** (kolom setinggi nilai sumbu teratas menyentuh garis teratas — dulu menyusut ±10%). Label sumbu Y memakai koma desimal bila pecahan ("12,5").
+- Isi kolom bertumpuk per status (Selesai · Dikerjakan · Menunggu keputusan · Belum dimulai · Digeser putus-putus) sesuai legenda; tooltip muncul saat hover **dan** fokus keyboard.
+- **Keputusan menunggu owner** dikelompokkan Terlambat / Minggu ini / Sprint mendatang; butir dari sprint yang sudah lewat tetap tampil di Terlambat.
+Baseline dev: 2026-09-29 (lokal) — 6 sprint, Rencana 84 poin, Tertahan 24 poin "29% rencana · 4 minggu ini · 6 mendatang", kolom 18/13/17/14/11/11.
+
+### TC-378-04 · Format `sprint.md` rusak = build gagal [P2] (5 mnt, lokal dev)
+Langkah:
+1. Lokal: di `docs/project/sprint.md` ubah satu status menjadi teks tak dikenal (mis. `❓ Entah`), jalankan `npx vitest run src/test/sprint-plan.test.ts`; kembalikan.
+2. Tambahkan `<details><summary>x</summary>y</details>` satu baris di bawah tabel Sprint 1; jalankan test yang sama; buka halaman di `npm run dev`; kembalikan.
+Harapan:
+- Langkah 1: test gagal dengan pesan `sprint.md: status tak dikenal …` (build akan gagal dengan pesan sama — bukan salah render diam-diam).
+- Langkah 2: test lulus; semua sprint & Backlog tetap tampil (blok satu baris tidak menelan sprint berikutnya).
+
+## #263 (revisi 2026-09-29) — Izin DONOR mengikuti produksi
+
+### TC-263-01 · DONOR: master data baca-saja, report & menu tercabut [P0] [regresi] (6 mnt)
+Prasyarat: akun DONOR (scope ALL) di lingkungan uji; DB ter-seed dari `role-permissions.csv` terbaru.
+Langkah:
+1. `SELECT menu_key, string_agg(permission::text, ',' ORDER BY permission) FROM rbac_role_permission WHERE role='DONOR' AND is_active GROUP BY 1 ORDER BY 1;`
+2. Login DONOR: buka sidebar; buka Master Data › Lembaga Petani, Petani, Lahan, Pelatihan, Monev BMP, dan Dashboard › Risk Management.
+3. Buka langsung `/admin/report/kelompok-tani`, `/admin/report/marker`.
+Harapan:
+- Langkah 1: master data (`master-data-groups/-farmers/-parcels/-training/-bmp-monev`) dan `dashboard-risk` = `PRINT,VIEW`; **tidak ada** `report-kelompok-tani`, `report-kelompok-tani-detail`, `report-marker`, maupun VIEW induk `dashboard`/`map`/`report`; tidak ada `CREATE/EDIT/DELETE/EXPORT` di mana pun.
+- Langkah 2: menu induk tetap tampil karena anaknya; halaman master data terbuka **tanpa** tombol Tambah/Ubah/Hapus/Import/Export (daftar Petani menampilkan NIK — disengaja, keputusan owner).
+- Langkah 3: dialihkan; menu Kelompok Tani & Patok tidak tampil di Report.
+
+## #388 — Audit repo & restrukturisasi docs (pencatatan)
+
+### TC-388-01 · Halaman indeks & Snapshot pasca-audit [P1] (3 mnt)
+Langkah:
+1. Akun SUPERADMIN: buka `/admin/data-analyst`, `/admin/settings`, `/admin/dashboard/risk` (juga dengan mengklik remah roti).
+2. Buka Tools › Snapshot.
+Harapan:
+- Langkah 1: dialihkan berturut-turut ke Ketersediaan Data — Semua Lembaga, User Management, Fire Alert (bukan 404).
+- Langkah 2: halaman tampil tanpa filter Distrik/Tahun; catatan "Snapshot dibuat untuk Semua Distrik & Semua Tahun"; tombol **Generate Snapshot** tampil untuk peran ber-CREATE.
