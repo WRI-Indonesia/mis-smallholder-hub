@@ -40,8 +40,8 @@ describe("land-parcel-satellite.schema", () => {
 
   it("STDB: nomor wajib & di-trim pada tahap Terbit (default)", () => {
     expect(landStdbSchema.safeParse({ landParcelId: "lp1", number: "  " }).success).toBe(false);
-    const r = landStdbSchema.safeParse({ landParcelId: "lp1", number: " 1637/53/1401/6/2025 " });
-    expect(r.success && r.data.number).toBe("1637/53/1401/6/2025");
+    const r = landStdbSchema.safeParse({ landParcelId: "lp1", number: " 9999/99/1401/6/2025 " });
+    expect(r.success && r.data.number).toBe("9999/99/1401/6/2025");
     // Tanpa `stage` = TERBIT — 1.086 baris lama tetap sah tanpa perubahan form.
     expect(r.success && r.data.stage).toBe("TERBIT");
   });
@@ -93,7 +93,7 @@ describe("land-parcel-satellite.schema", () => {
   });
 
   it("UL Parcel Code: source & code wajib; tanggal string → Date; kosong → null", () => {
-    const r = landParcelExternalIdSchema.safeParse({ landParcelId: "lp1", source: "MERIDIA", code: "ID080d781b4", mappedAt: "2025-06-01", notes: "" });
+    const r = landParcelExternalIdSchema.safeParse({ landParcelId: "lp1", source: "MERIDIA", code: "ID0000abcde", mappedAt: "2025-06-01", notes: "" });
     expect(r.success).toBe(true);
     expect(r.data?.mappedAt).toBeInstanceOf(Date);
     expect(r.data?.notes).toBeNull();

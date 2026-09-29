@@ -96,7 +96,7 @@ const MONTH_LABELS = [
 ];
 
 // Label singkat di peta (#298): segmen huruf tunggal pada ID lahan
-// ("APSS.0001.A.14.01.10.2012" → "A"); bila tak ada, segmen terakhir.
+// ("CTH.0001.A.14.01.10.2012" → "A"); bila tak ada, segmen terakhir.
 function shortParcelLabel(parcelId: string): string {
   const segs = parcelId.split(".");
   return segs.find((x) => /^[A-Z]$/i.test(x)) ?? segs[segs.length - 1] ?? parcelId;

@@ -233,7 +233,7 @@ describe("Training Participant File Import Validation Matcher", () => {
     },
     {
       id: "farmer-2",
-      name: "Abdul Syahid",
+      name: "Contoh Peserta Dua",
       farmerId: "APSS.02",
       trainingParticipants: [
         {

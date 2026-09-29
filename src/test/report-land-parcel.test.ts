@@ -421,11 +421,11 @@ describe("buildLandParcelReport — ringkasan legalitas (#305)", () => {
     const r = buildLandParcelReport([
       L({
         id: "a",
-        externalIds: [{ source: "MERIDIA", code: "ID080d781b4" }],
+        externalIds: [{ source: "MERIDIA", code: "ID0000abcde" }],
         programs: [{ programType: "DEMPLOT_PBU", status: "ACTIVE" }],
       }),
     ]);
-    expect(r.rows[0]).toMatchObject({ ulParcelCode: "ID080d781b4 (Meridia)", program: "Demplot PBU — Berjalan" });
+    expect(r.rows[0]).toMatchObject({ ulParcelCode: "ID0000abcde (Meridia)", program: "Demplot PBU — Berjalan" });
   });
 });
 

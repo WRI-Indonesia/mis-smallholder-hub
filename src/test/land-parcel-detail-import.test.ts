@@ -82,7 +82,7 @@ describe("normalizeDocumentType — 19 ejaan jenis surat → enum", () => {
 
 describe("parseStdbNumber — nomor mentah + tahun terbit bila berpola", () => {
   it("format dominan …/bulan/tahun", () => {
-    expect(parseStdbNumber("1637/53/1401/6/2025")).toEqual({ number: "1637/53/1401/6/2025", issuedYear: 2025, stage: "TERBIT" });
+    expect(parseStdbNumber("9999/99/1401/6/2025")).toEqual({ number: "9999/99/1401/6/2025", issuedYear: 2025, stage: "TERBIT" });
     expect(parseStdbNumber("176/53/1406/6/2025")).toEqual({ number: "176/53/1406/6/2025", issuedYear: 2025, stage: "TERBIT" });
   });
   it("nomor tanpa pola disimpan apa adanya, tahun null", () => {
@@ -172,17 +172,17 @@ describe("validateParcelDetailRows", () => {
 
   it("baris lengkap → valid, data ternormalisasi menempel ke parcelUid", () => {
     const [r] = validateParcelDetailRows(
-      [row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", Jenis: "SHM (Sertifikat Hak Milik)", No: 727, Nama: "Abdul Rohman", Luas: "0.25", STDB: "1637/53/1401/6/2025", parcel_code: "ID080d781b4" })],
+      [row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", Jenis: "SHM (Sertifikat Hak Milik)", No: 727, Nama: "Contoh Pemegang Satu", Luas: "0.25", STDB: "9999/99/1401/6/2025", parcel_code: "ID0000abcde" })],
       mapping, parcels,
     );
     expect(r._isValid).toBe(true);
     expect(r._farmerName).toBe("Abdul Rahman");
     expect(r.data).toEqual({
       parcelUid: "uid-1a", farmerDbId: "f1", parcelId: "APSS.0001.A",
-      document: { type: "SHM", typeRaw: "SHM (Sertifikat Hak Milik)", number: "727", holderName: "Abdul Rohman", statedArea: 0.25, custodyNote: null },
+      document: { type: "SHM", typeRaw: "SHM (Sertifikat Hak Milik)", number: "727", holderName: "Contoh Pemegang Satu", statedArea: 0.25, custodyNote: null },
       custodyNote: null,
-      stdb: { number: "1637/53/1401/6/2025", issuedYear: 2025, stage: "TERBIT" },
-      externalCode: "ID080d781b4",
+      stdb: { number: "9999/99/1401/6/2025", issuedYear: 2025, stage: "TERBIT" },
+      externalCode: "ID0000abcde",
       subGroupLv2: null,
       border: null,
       blok: null,
@@ -264,8 +264,8 @@ describe("validateParcelDetailRows", () => {
   it("satu STDB untuk beberapa lahan petani yang SAMA → valid (STDB per petani)", () => {
     const rs = validateParcelDetailRows(
       [
-        row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", STDB: "1637/53/1401/6/2025" }),
-        row({ "ID Lahan": "APSS.0001.B", "ID Petani": "APSS.0001", STDB: "1637/53/1401/6/2025" }),
+        row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", STDB: "9999/99/1401/6/2025" }),
+        row({ "ID Lahan": "APSS.0001.B", "ID Petani": "APSS.0001", STDB: "9999/99/1401/6/2025" }),
       ],
       mapping, parcels,
     );
@@ -436,7 +436,7 @@ describe("NKT (#328) — parser sel", () => {
 
 describe("validateParcelDetailRows — NKT (#328) & Blok", () => {
   const parcels: ParcelRef[] = [
-    { parcelUid: "uid-1a", parcelId: "HJP.0001.A", farmerCode: "HJP.0001", farmerName: "Abdul Halim", farmerDbId: "f1" },
+    { parcelUid: "uid-1a", parcelId: "HJP.0001.A", farmerCode: "HJP.0001", farmerName: "Contoh Petani Satu", farmerDbId: "f1" },
   ];
   const mapping = { parcelId: "ID_Lahan", farmerId: "ID_Petani", nktAreaHa: "Luas NKT Area (ha)", nktLengthM: "LENGTH", blok: "Blok" } as const;
   const hjpRow = { ID_Lahan: "HJP.0001.A", ID_Petani: "HJP.0001", "Luas NKT Area (ha)": "0,088", LENGTH: "176,026", Blok: "17 L" };

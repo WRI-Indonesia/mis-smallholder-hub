@@ -43,11 +43,11 @@ const shm = (number: string, extra: Partial<NonNullable<LandParcelDetailRowInput
 describe("planLandParcelDetailRows — dokumen", () => {
   it("DB kosong → semua create, dihitung sekali per kunci meski baris ganda; field terakhir menang", () => {
     const plan = planLandParcelDetailRows(
-      [row({ document: shm("727") }), row({ document: shm("727", { holderName: "Abdul Rohman" }) }), row({ parcelUid: "uid-2", document: shm("727") })],
+      [row({ document: shm("727") }), row({ document: shm("727", { holderName: "Contoh Pemegang Satu" }) }), row({ parcelUid: "uid-2", document: shm("727") })],
       emptyExistingState(),
     );
     expect(plan.documentCreates).toHaveLength(2);
-    expect(plan.documentCreates[0].holderName).toBe("Abdul Rohman");
+    expect(plan.documentCreates[0].holderName).toBe("Contoh Pemegang Satu");
     expect(plan.summary.documentsCreated).toBe(2);
     expect(plan.documentUpdates).toEqual([]);
   });
@@ -79,7 +79,7 @@ describe("planLandParcelDetailRows — dokumen", () => {
 
 describe("planLandParcelDetailRows — STDB per petani + tautan M:N", () => {
   it("STDB baru dipakai 3 lahan petani sama → 1 create STDB + 3 tautan menunggu id", () => {
-    const stdb = { number: "1637/53/1401/6/2025", issuedYear: 2025, stage: "TERBIT" as const };
+    const stdb = { number: "9999/99/1401/6/2025", issuedYear: 2025, stage: "TERBIT" as const };
     const plan = planLandParcelDetailRows(
       [row({ parcelUid: "uid-1", stdb }), row({ parcelUid: "uid-2", stdb }), row({ parcelUid: "uid-3", stdb }), row({ parcelUid: "uid-1", stdb })],
       emptyExistingState(),

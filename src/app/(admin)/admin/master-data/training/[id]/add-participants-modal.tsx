@@ -362,7 +362,7 @@ export function AddParticipantsModal({
       { header: "Nilai Pre-Test", key: "preTestScore", width: 15 },
       { header: "Nilai Post-Test", key: "postTestScore", width: 15 },
     ];
-    sheet.addRow({ farmerId: "APSS.14.01.10.2012.0001", preTestScore: 80, postTestScore: 90 });
+    sheet.addRow({ farmerId: "CTH.14.01.10.2012.0001", preTestScore: 80, postTestScore: 90 });
 
     const buffer = await exportWorkbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {

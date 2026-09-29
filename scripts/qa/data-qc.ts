@@ -7,7 +7,7 @@
  *
  *   npx dotenv -e .env.staging -- npx tsx scripts/qa/data-qc.ts
  *   npx dotenv -e .env.prod    -- npx tsx scripts/qa/data-qc.ts --section A,B
- *   npx dotenv -e .env.staging -- npx tsx scripts/qa/data-qc.ts --section B --parcel HJP.0001.A.14.01.10.2002
+ *   npx dotenv -e .env.staging -- npx tsx scripts/qa/data-qc.ts --section B --parcel <ID Lahan>
  *
  * Menambah cek: tambah entri di CHECKS (id, bagian, maksud, sql, expect) lalu
  * perbarui baris di 03-data-qc.md. `expect` = nilai persis, fungsi predikat,
