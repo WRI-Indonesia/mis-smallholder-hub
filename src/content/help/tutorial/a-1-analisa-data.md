@@ -19,7 +19,7 @@ Ketersediaan Data punya dua halaman yang berurutan: **Semua Lembaga** (ringkasan
 
 ## Langkah
 
-1. Buka menu **Data Analyst → Ketersediaan Data — Per Lembaga**, atau klik nama Lembaga di halaman **Semua Lembaga** / kartu **Kelengkapan Data** di Detail Lembaga.
+1. Buka menu **Data Analyst → Data — Per Lembaga** (judul halamannya **Ketersediaan Data — Per Lembaga**), atau klik nama Lembaga di halaman **Semua Lembaga** / kartu **Kelengkapan Data** di Detail Lembaga.
 2. Pilih **Lembaga Petani** — analisa berjalan **otomatis**; tombol **Muat ulang** hanya untuk menghitung ulang setelah data diperbaiki.
 + Lembaga terpilih tersimpan di alamat halaman (`?lembaga=…`), jadi tautannya bisa di-bookmark atau dikirim ke rekan. Bila tautan menunjuk Lembaga di luar akses Anda, halaman memberi tahu dan meminta memilih Lembaga lain.
 3. Baca **angka Index** dan **radar** di sampingnya. Angka = Index 0–100 berwarna band; radar = lima domain dengan skornya di tiap sumbu (pentagon penuh = lengkap; gepeng ke satu sisi = domain itu kosong — bentuk yang sama dengan halaman Semua Lembaga). Arahkan kursor ke angka/radar untuk melihat perhitungannya (Index = Σ skor domain × bobot: Profil 10 %, Petani 25 %, Lahan 25 %, Pelatihan 20 %, Produksi 20 %); **klik nama sumbu** (misalnya "Petani 62,4") untuk melompat ke seksinya. Bobot tiap domain juga tertulis di judul seksinya, dan rumus skornya muncul saat kursor diarahkan ke badge skor di judul itu.

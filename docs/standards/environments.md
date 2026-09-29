@@ -9,7 +9,7 @@ Empat environment, satu file per environment. **Tidak ada baris yang di-comment/
 | File | Database | S3 | Cara aktif |
 |------|----------|-----|-----------|
 | `.env` | **LOCAL** (`localhost:5432`) | **dev** (`mis-dev`) | Otomatis — satu-satunya file yang dibaca default oleh Next.js, Prisma, dan skrip |
-| `.env.staging-local` | **STAGING-LOCAL** (`localhost:5432/mis-staging-local`, snapshot prod 2026-09-14) | **dev** (`mis-dev`) | `npx dotenv -e .env.staging-local -- <perintah>` — DB lokal kedua khusus **uji migrasi** sebelum naik ke staging/prod; `.env`/`mis-dev` tetap untuk pengembangan harian. Sebelum `migrate dev` di sini: `pg_dump` dulu ke `scripts/dump-prod/<tanggal>/` |
+| `.env.staging-local` | **STAGING-LOCAL** (`localhost:5432/mis-staging-local`, snapshot prod 2026-09-28) | **dev** (`mis-dev`) | `npx dotenv -e .env.staging-local -- <perintah>` — DB lokal kedua khusus **uji migrasi** sebelum naik ke staging/prod; `.env`/`mis-dev` tetap untuk pengembangan harian. Sebelum `migrate dev` di sini: `pg_dump` dulu ke `scripts/dump-prod/<tanggal>/` |
 | `.env.dev` | DEV | **dev** (`mis-dev`) | `npx dotenv -e .env.dev -- <perintah>` |
 | `.env.staging` | STAGING | **dev** (`mis-dev`) | `npx dotenv -e .env.staging -- <perintah>` |
 | `.env.prod` | **PROD** (via tunnel `:1234`) | **prod** (`mis-main`) | `npx dotenv -e .env.prod -- <perintah>` — ⚠️ selalu sadar & eksplisit |
@@ -23,7 +23,7 @@ Semua `.env*` di-gitignore kecuali `.env.example`. Di server produksi, `.env` di
 1. **`.env` = local, selamanya.** Jangan pernah menyalin isi env lain ke `.env`. Perintah tanpa prefix `dotenv -e` selalu mendarat di local — itu kontraknya.
 2. **Dilarang membuat `.env.local`** — Next.js memuatnya otomatis dan menimpanya di atas `.env`, membuka kembali celah "env menang diam-diam".
 3. **Satu `DATABASE_URL` per file.** Dilarang menaruh dua `DATABASE_URL` dalam satu file (dotenv memakai baris terakhir, diam-diam — akar insiden skrip lokal mendarat di prod).
-4. **Prod harus eksplisit.** Setiap sentuhan ke prod memakai `npx dotenv -e .env.prod -- …`. Untuk skrip yang **menulis** data prod, tetap berlaku aturan [workflow.md](./workflow.md) §Safety & Approval: log "DB efektif" sebelum menulis + dry-run dulu + approval owner.
+4. **Prod harus eksplisit.** Setiap sentuhan ke prod memakai `npx dotenv -e .env.prod -- …`. Untuk skrip yang **menulis** data prod, tetap berlaku aturan [workflow.md](./workflow.md) §Keamanan & Persetujuan: log "DB efektif" sebelum menulis + dry-run dulu + approval owner.
 5. **Kredensial baru masuk file env-nya**, bukan hardcode di kode. Variabel yang berlaku lintas env (mis. `NEXTAUTH_*`, `FIRMS_MAP_KEY_FREE`, `S3_ENDPOINT`, `S3_REGION`) cukup di `.env` — `dotenv -e` menang untuk variabel yang didefinisikannya, sisanya diambil dari `.env`.
 6. **Menambah variabel env baru** → tambahkan juga ke `.env.example` (tanpa nilai rahasia) dan ke file env lain yang relevan.
 
@@ -47,9 +47,9 @@ Ketiga DB non-prod — **local** (`localhost:5432/mis-dev`, Postgres.app **18** 
 
 ```bash
 mkdir -p scripts/dump-prod/$(date +%F)   # folder di-gitignore — dump berisi data pribadi petani, jangan pernah commit
-npx dotenv -e .env.prod -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-prod.dump'
+npx dotenv -e .env.prod -- sh -c '/opt/homebrew/opt/postgresql@18/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-prod.dump'
 psql "postgresql://postgres:postgres@localhost:5432/postgres" -c 'drop database "mis-dev";' -c 'create database "mis-dev";'
-/opt/homebrew/opt/libpq/bin/pg_restore --no-owner --no-privileges -d "postgresql://postgres:postgres@localhost:5432/mis-dev" scripts/dump-prod/$(date +%F)/mis-prod.dump
+/opt/homebrew/opt/postgresql@18/bin/pg_restore --no-owner --no-privileges -d "postgresql://postgres:postgres@localhost:5432/mis-dev" scripts/dump-prod/$(date +%F)/mis-prod.dump
 ```
 
 Dump membawa `_prisma_migrations`, jadi status migrasi tiap target otomatis sama dengan prod.
@@ -57,21 +57,22 @@ Dump membawa `_prisma_migrations`, jadi status migrasi tiap target otomatis sama
 Untuk **staging** langkahnya sama, dengan dua beda: wipe-nya `drop schema public cascade; create schema public;`, dan isi lama **di-backup dulu** karena wipe ini tidak bisa dibatalkan. Contoh di bawah kebetulan menyalin `mis-staging-local` → `mis-staging`; untuk menyegarkan staging **dari prod**, lewati baris kedua dan ganti berkas yang di-`pg_restore` menjadi `mis-prod.dump`:
 
 ```bash
-npx dotenv -e .env.staging      -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-before-refresh.dump'   # backup dulu
-npx dotenv -e .env.staging-local -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
+npx dotenv -e .env.staging      -- sh -c '/opt/homebrew/opt/postgresql@18/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-before-refresh.dump'   # backup dulu
+npx dotenv -e .env.staging-local -- sh -c '/opt/homebrew/opt/postgresql@18/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
 npx dotenv -e .env.staging -- sh -c 'psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
   -c "drop schema public cascade;" -c "create schema public;" -c "grant all on schema public to public;" \
   -c "drop schema if exists tiger cascade; drop schema if exists tiger_data cascade; drop schema if exists topology cascade;"'
-npx dotenv -e .env.staging -- sh -c '/opt/homebrew/opt/libpq/bin/pg_restore --no-owner --no-privileges -d "$DATABASE_URL" scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
+npx dotenv -e .env.staging -- sh -c '/opt/homebrew/opt/postgresql@18/bin/pg_restore --no-owner --no-privileges -d "$DATABASE_URL" scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
 ```
 
 > **Jangan lupa `tiger`/`topology`.** Snapshot prod membawa schema kosong `tiger` & `topology` (sisa paket PostGIS). Keduanya **selamat** dari `drop schema public cascade`, lalu menabrak restore dengan `ERROR: schema "tiger" already exists` — dengan `--exit-on-error` restore berhenti di baris pertama dan DB tertinggal kosong. Drop keduanya bersamaan dengan `public`.
 
 Versi PostGIS tidak perlu disamakan: dump hanya memuat `CREATE EXTENSION`, jadi tiap server memasang versi defaultnya sendiri (sejak 2026-09-14 kebetulan sama: local & server 3.6.3).
 
-## Status (2026-09-23)
+## Status (2026-09-28)
 
-- **Ketiga DB non-prod = snapshot prod 2026-09-23 identik** (restore penuh `scripts/dump-prod/2026-09-23/mis-prod.dump`, pg_dump/pg_restore 18.6 dari `postgresql@18`): 8.863 petani, 14.016 lahan aktif, 14.017 identitas lahan, 319 NKT, 43.111 patok lahan, 19.554 produksi, 929 pelatihan, 188 penilaian BMP, 44 user, 38 migrasi ter-apply (terakhir `drop_activity_status_tree_surveyed_at`), 42 tabel / 134 index, PostGIS 3.6.3 — sama persis dengan prod. Berlaku untuk **local** (`mis-dev`), **staging-local** (`localhost:5432/mis-staging-local`), dan **staging** (tunnel `:1235/mis-staging`). Sebelum refresh keempat DB sudah di 38 migrasi yang sama (= repo), jadi tak ada skema belum-rilis yang hilang. Backup isi lama ketiganya di folder yang sama (`<db>-before-refresh.dump`); restore ketiganya bersih (0 baris di `restore-<db>.log`); DB lokal di-drop `WITH (FORCE)`.
+- **Ketiga DB non-prod = snapshot prod 2026-09-28 identik** (restore penuh `scripts/dump-prod/2026-09-28/mis-prod.dump`, pg_dump/pg_restore 18.6 dari `postgresql@18`): 8.863 petani, 14.016 lahan aktif, 14.017 identitas lahan, 319 NKT, 43.111 patok lahan, 19.554 produksi, 929 pelatihan / 32.136 peserta, 188 penilaian BMP, 14.174 kode lahan eksternal, 48 user, 39 migrasi ter-apply (terakhir `external_id_shared_code`), 44 tabel / 135 index, PostGIS 3.6.3 — sama persis dengan prod. Berlaku untuk **local** (`mis-dev`), **staging-local**, dan **staging** (tunnel `:1235/mis-staging`). Sebelum refresh keempat DB sudah di 39 migrasi yang sama (= repo), jadi tak ada skema belum-rilis yang hilang. Backup isi lama ketiganya di folder yang sama (`<db>-before-refresh.dump`); restore ketiganya bersih (0 baris di `restore-<db>.log`); DB lokal di-drop `WITH (FORCE)`.
+- Riwayat: **snapshot prod 2026-09-23 identik** (restore penuh `scripts/dump-prod/2026-09-23/mis-prod.dump`, pg_dump/pg_restore 18.6 dari `postgresql@18`): 8.863 petani, 14.016 lahan aktif, 14.017 identitas lahan, 319 NKT, 43.111 patok lahan, 19.554 produksi, 929 pelatihan, 188 penilaian BMP, 44 user, 38 migrasi ter-apply (terakhir `drop_activity_status_tree_surveyed_at`), 42 tabel / 134 index, PostGIS 3.6.3 — sama persis dengan prod. Berlaku untuk **local** (`mis-dev`), **staging-local** (`localhost:5432/mis-staging-local`), dan **staging** (tunnel `:1235/mis-staging`). Sebelum refresh keempat DB sudah di 38 migrasi yang sama (= repo), jadi tak ada skema belum-rilis yang hilang. Backup isi lama ketiganya di folder yang sama (`<db>-before-refresh.dump`); restore ketiganya bersih (0 baris di `restore-<db>.log`); DB lokal di-drop `WITH (FORCE)`.
 - Riwayat: **snapshot prod 2026-09-18 identik** (restore penuh `scripts/dump-prod/2026-09-18/mis-prod.dump`, pg_dump/pg_restore 18.6 dari `postgresql@18`): 8.864 petani, 14.004 lahan aktif, 14.005 identitas lahan, 319 NKT, 19.554 produksi, 910 pelatihan, 44 user, 34 migrasi ter-apply (terakhir `land_marker_code`), 37 tabel / 118 index, PostGIS 3.6.3 — sama persis dengan prod. Berlaku untuk **local** (`mis-dev`), **staging-local** (`localhost:5432/mis-staging-local`), dan **staging** (tunnel `:1235/mis-staging`). Backup isi lama ketiganya di folder yang sama: `mis-dev-before-refresh.dump`, `mis-staging-local-before-refresh.dump`, `mis-staging-before-refresh.dump`. Restore ketiganya bersih (0 baris di `restore-<db>.log`); DB lokal di-drop `WITH (FORCE)` karena dev server `:3000` sedang berjalan — ia reconnect sendiri setelah restore.
 - Riwayat: **snapshot prod 2026-09-14 identik** untuk ketiganya (restore penuh `scripts/dump-prod/2026-09-14/mis-prod.dump`, pg_dump/pg_restore 18.6 dari `postgresql@18`): 8.863 petani, 14.002 lahan, 16.274 produksi, 822 pelatihan, 44 user, 29 migrasi ter-apply (terakhir `land_stdb_stage`) — sama persis dengan prod. Berlaku untuk **local** (`mis-dev`), **staging-local** (`localhost:5432/mis-staging-local`), dan **staging** (tunnel `:1235/mis-staging`). Backup isi lama ketiganya di folder yang sama: `mis-dev-before-refresh.dump`, `mis-staging-local-before-refresh.dump`, `mis-staging-before-refresh.dump`. Restore ketiganya bersih (0 error di `restore-<db>.log`).
 - Riwayat sebelumnya: local & staging-local = snapshot prod 2026-09-01 (`scripts/dump-prod/2026-09-01/`); staging = salinan `mis-staging-local` 2026-08-28 (snapshot prod 2026-08-27 + 3 migrasi, lalu `land_stdb_stage` #309) — dump & backup skema lamanya di `scripts/dump-prod/2026-08-28/`.

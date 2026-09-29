@@ -1,5 +1,7 @@
 # 03 · QC data & DB — vX.Y.Z
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 Kueri hidup di **`scripts/qa/data-qc.ts`** (read-only, cetak DB efektif). Jalankan **sebelum & sesudah** migrasi di tiap env, tempel keluarannya ke lembar run:
 
 ```bash
@@ -11,6 +13,7 @@ Berkas ini hanya menjelaskan **maksud** tiap cek dan harapannya; bila cek beruba
 
 | ID | Bagian | Maksud | Harapan | Otomatis? |
 |---|---|---|---|---|
-| A1 | Migrasi | migrasi pending vs applied | sesudah: 0 pending | ✓ |
+| A1 | Migrasi | migrasi rilis ini applied (satu cek per migrasi/struktur baru; tulis di `scripts/qa/data-qc.ts` bagian baru) | sesudah: applied | ✓ |
 | B1 | Angka bisnis | lahan aktif tidak berubah karena migrasi | = run sebelum | ✓ (bandingkan dua run) |
-| C1 | Izin | seed ↔ DB | `npm run rbac:compare` 0 selisih | manual |
+| C1 | Izin | menu & izin baru rilis ini ter-seed (cek per menu di `data-qc.ts`) | = `menu.csv` / `role-permissions.csv` | ✓ |
+| — | Izin | seluruh izin seed ↔ DB | `npm run rbac:compare` 0 selisih (atau selisih yang disengaja tercatat) | manual (skrip terpisah) |

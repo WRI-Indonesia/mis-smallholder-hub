@@ -278,7 +278,7 @@ export function ParcelSatelliteFormModal({ open, onClose, landParcelId, target }
                   id="number"
                   name="number"
                   defaultValue={stdb?.number ?? ""}
-                  placeholder={isTerbit ? "mis. 1637/53/1401/6/2025" : "Belum ada — nomor terbit di tahap terakhir"}
+                  placeholder={isTerbit ? "mis. 9999/99/1401/6/2025" : "Belum ada — nomor terbit di tahap terakhir"}
                   disabled={!isTerbit}
                 />
                 {fieldError("number")}

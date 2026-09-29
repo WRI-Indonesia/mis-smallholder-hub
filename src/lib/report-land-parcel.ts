@@ -75,7 +75,7 @@ export interface LpRawParcel {
 }
 
 /** "4 ada · 1 hilang" — urutan tetap Ada · Hilang · Rusak · Belum dipasang; null bila tanpa patok. */
-export function summarizeMarkerConditions(conditions: string[]): string | null {
+function summarizeMarkerConditions(conditions: string[]): string | null {
   if (conditions.length === 0) return null;
   const order: [string, string][] = [["PRESENT", "ada"], ["MISSING", "hilang"], ["DAMAGED", "rusak"], ["NOT_INSTALLED", "belum dipasang"]];
   const counts = new Map<string, number>();

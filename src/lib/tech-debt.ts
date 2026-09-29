@@ -7,7 +7,7 @@
 export type TechDebtItem = {
   /** "TD-015" */
   id: string;
-  /** Status apa adanya dari heading, mis. "🟡 Partial", "🔲 Open". */
+  /** Status apa adanya dari heading, mis. "🟠 Partial", "🔲 Open". */
   status: string;
   title: string;
   /** "P2"/"P3"; null bila heading tidak mencantumkan. */

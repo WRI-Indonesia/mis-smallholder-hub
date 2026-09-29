@@ -11,7 +11,7 @@ goal: Rekap Kelompok Tani lintas lembaga — jumlah petani, lahan, dan luas per 
 
 ## Sebelum mulai
 
-Ada dua menu laporan Kelompok Tani dengan tujuan berbeda: **Ringkasan** untuk rekap jumlah lintas lembaga, **Detail** untuk daftar nama anggota per KT dalam satu lembaga — misalnya untuk verifikasi keanggotaan atau daftar hadir.
+Ada dua menu laporan Kelompok Tani dengan tujuan berbeda: **Summary** (Ringkasan) untuk rekap jumlah lintas lembaga, **Detail** untuk daftar nama anggota per KT dalam satu lembaga — misalnya untuk verifikasi keanggotaan atau daftar hadir.
 
 Kelompok Tani di sini dibaca dari **data lahan** (field Kelompok Tani pada tiap persil), bukan dari daftar tersendiri.
 
@@ -19,7 +19,8 @@ Kelompok Tani di sini dibaca dari **data lahan** (field Kelompok Tani pada tiap 
 
 ## Langkah
 
-1. Buka menu **Report → Kelompok Tani (Ringkasan)**. Data langsung dimuat tanpa tombol.
+1. Buka menu **Report → Kelompok Tani (Summary)**. Data langsung dimuat tanpa tombol.
++ Judul halamannya tertulis *Laporan Kelompok Tani (Ringkasan)* — itu halaman yang sama.
 2. Persempit dengan filter **Distrik** dan **Lembaga Petani** bila perlu — keduanya opsional.
 3. Baca enam kartu ringkasan (termasuk **Lahan NKT**), lalu tabelnya: satu baris per pasangan Lembaga × KT, dengan jumlah petani, lahan, dan luas.
 + Lewat tombol **Kolom** Anda bisa menyalakan dua kolom tambahan yang mati bawaan: **Lahan NKT** (berapa lahan di KT itu termasuk/terdampak NKT — merah bila ada) dan **Patok** (jumlah tautan patok di lahan-lahan KT itu; patok yang dipakai bersama dua lahan dihitung dua kali karena dihitung per lahan, bukan per patok fisik). Keduanya ikut ke Excel/PDF bila dinyalakan.
@@ -32,7 +33,7 @@ Kelompok Tani di sini dibaca dari **data lahan** (field Kelompok Tani pada tiap 
 
 **Muncul KT dengan nama aneh seperti "Blok 1"** — operator mengetikkan nama blok ke field Kelompok Tani saat input lahan. Perbaiki di Master Data → Lahan (atau lewat unggah ulang shapefile), bukan di laporan; laporan langsung mengikuti begitu datanya dibetulkan.
 
-**Ada petani yang tidak muncul** — ia belum punya lahan aktif. Gunakan **Ringkasan Petani → tab Petani Tanpa Lahan** untuk menemukan siapa saja mereka.
+**Ada petani yang tidak muncul** — ia belum punya lahan aktif. Temukan siapa saja mereka lewat checklist **Petani tanpa lahan aktif** di **Data Analyst → Data — Per Lembaga** (SUPERADMIN juga bisa memakai **Ringkasan Petani → tab Petani Tanpa Lahan**).
 
 **Angka kartu KT tidak sama dengan jumlah baris** — baris "(tidak diketahui)" sengaja tidak dihitung sebagai Kelompok Tani.
 

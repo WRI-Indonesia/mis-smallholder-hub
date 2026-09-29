@@ -29,14 +29,14 @@ Hanya lahan yang berasal dari unggahan shapefile yang muncul di peta.
 5. Untuk layer Produktivitas, pilih **Tahun** atau rata-rata.
 + Produktivitas dihitung sebagai total produksi tahun itu dibagi luas persil. Lahan yang sedang PSR wajar bernilai rendah atau nol.
 6. Klik sebuah poligon untuk melihat detailnya.
-7. Klik **Cetak** untuk PDF, atau unduh Excel-nya.
-+ Keluarannya mengikuti layer yang sedang aktif — termasuk legenda dan tabel datanya, jadi periksa layernya sudah benar sebelum mencetak. Tombol Cetak hanya tampil bila akun Anda punya izin **Print**, dan unduhan Excel bila punya izin **Export**, pada menu ini.
+7. Klik **Cetak Peta …** untuk PDF, atau **Download … (Excel)** untuk tabelnya.
++ Label tombolnya mengikuti layer aktif (mis. **Cetak Peta dan Matriks Ketersediaan Data** / **Download Produktivitas (Excel)**), begitu pula isi keluarannya — termasuk legenda dan tabel datanya, jadi periksa layernya sudah benar sebelum mencetak. Tombol Cetak hanya tampil bila akun Anda punya izin **Print**, dan Download bila punya izin **Export**, pada menu ini.
 
-> [!penting] Peta BMP membaca snapshot yang sama dengan BMP Dashboard. Bila data produksi baru saja diunggah tetapi warnanya belum berubah, snapshot-nya perlu dibuat ulang.
+> [!penting] Berbeda dari BMP Dashboard, Peta BMP **tidak memakai snapshot** — warnanya dihitung langsung dari data produksi saat Anda klik **Muat Data**. Bila data produksi baru saja diunggah, cukup klik Muat Data lagi.
 
 ## Memilih peta dasar
 
-Tombol di pojok kanan-atas peta mengganti **peta dasar** — latar di belakang data Anda. Pilihannya sama di semua halaman peta:
+Deretan tombol di pojok kanan peta (kanan-bawah di Peta Lahan, Peta BMP, dan Fire Alert; kanan-atas di peta lainnya) mengganti **peta dasar** — latar di belakang data Anda. Pilihannya sama di semua halaman peta:
 
 | Tombol | Isinya | Paling cocok untuk |
 | --- | --- | --- |
@@ -46,7 +46,7 @@ Tombol di pojok kanan-atas peta mengganti **peta dasar** — latar di belakang d
 | **SAT** | Citra satelit tanpa label | Melihat tutupan lahan sebenarnya |
 | **HYBRID** | Citra satelit + nama jalan/tempat | Mencocokkan poligon dengan kondisi lapangan |
 
-+ Light dan Dark sengaja dibuat sepi supaya data Anda yang menonjol, bukan latarnya. Kalau Anda justru butuh nama desa dan jalan, pakai StreetMap. Pilihan Anda hanya berlaku selama halaman itu dibuka; saat dibuka kembali, peta memakai bawaannya lagi.
++ Light dan Dark sengaja dibuat sepi supaya data Anda yang menonjol, bukan latarnya. Kalau Anda justru butuh nama desa dan jalan, pakai **STREET**. Pilihan Anda hanya berlaku selama halaman itu dibuka; saat dibuka kembali, peta memakai bawaannya lagi.
 
 ## Kalau bermasalah
 

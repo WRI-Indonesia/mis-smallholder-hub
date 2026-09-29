@@ -18,10 +18,12 @@ bulk-upload-parcels,bulk-upload,Upload Data Lahan,/admin/bulk-upload/parcels,Map
 master-data-production,master-data,Produksi,/admin/master-data/production,TrendingUp,5,TRUE,TRUE
 data-analyst,,Data Analyst,/admin/data-analyst,BarChart3,4,TRUE,TRUE
 data-analyst-farmer-summary,data-analyst,Ringkasan Petani,/admin/data-analyst/farmer-summary,Users,1,TRUE,TRUE
-data-analyst-data-availability,data-analyst,Ketersediaan Data — Semua Lembaga,/admin/data-analyst/data-availability,Gauge,2,TRUE,TRUE
-data-analyst-data-completeness,data-analyst,Ketersediaan Data — Per Lembaga,/admin/data-analyst/data-completeness,ClipboardCheck,3,TRUE,TRUE
+data-analyst-data-availability,data-analyst,Data — All Lembaga,/admin/data-analyst/data-availability,Gauge,2,TRUE,TRUE
+data-analyst-data-completeness,data-analyst,Data — Per Lembaga,/admin/data-analyst/data-completeness,ClipboardCheck,3,TRUE,TRUE
 data-analyst-benchmark-comparison,data-analyst,Komparasi Data Acuan,/admin/data-analyst/benchmark-comparison,GitCompare,4,TRUE,TRUE
 data-analyst-data-map,data-analyst,Peta Data & Skema,/admin/data-analyst/data-map,Network,6,TRUE,TRUE
+data-analyst-parcel-overlap,data-analyst,Tumpang Tindih Lahan,/admin/data-analyst/parcel-overlap,Layers,7,TRUE,TRUE
+data-analyst-sprint,data-analyst,Sprint Mingguan,/admin/data-analyst/sprint,CalendarRange,8,TRUE,TRUE
 report,,Report,/admin/report,FileText,1,TRUE,TRUE
 report-farmer,report,Petani,/admin/report/farmer,User,1,TRUE,TRUE
 report-training,report,Pelatihan,/admin/report/training,GraduationCap,3,TRUE,TRUE

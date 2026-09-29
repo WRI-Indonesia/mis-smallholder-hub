@@ -16,7 +16,7 @@ goal: Setiap sudut lahan punya patok bernomor dengan koordinat, kondisi, dan fot
 + Satu patok fisik biasanya berdiri di pertemuan **dua sampai empat lahan**. Karena itu patok dicatat **sekali** dan ditautkan ke semua lahan pemakainya — mengubah koordinat, kondisi, atau fotonya berlaku untuk semua lahan itu. Tabel patok menyebut lahan lain pemakainya di bawah koordinat ("Juga patok lahan …"; di PDF Profil Lahan kolomnya bernama **Patok Bersama Lahan Tetangga**).
 + Nomor patok berlaku **per lahan** (lahan A menyebutnya patok #2, lahan tetangga mungkin #4). Nomor yang sama dipakai di peta, tabel, unduhan koordinat, dan Profil Lahan PDF. Selain nomor, tiap patok fisik punya **kode unik** seperti `HJP-PTK-000123` (singkatan Lembaga · PTK · nomor urut) yang sama di semua lahan pemakainya — kode inilah yang ditulis di patok fisik dan dipakai saat mengunggah ulang koordinat.
 
-Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Buat patok dari poligon** dan **Tambah patok** butuh izin tambah, pensil & panah urutan butuh izin ubah, ikon lepas tautan butuh izin hapus.
+Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Buat patok dari poligon** dan **Tambah patok** butuh izin tambah, pensil & panah urutan butuh izin ubah, ikon lepas tautan butuh izin hapus (bawaan: hanya SUPERADMIN), **Unduh koordinat** butuh izin ekspor.
 
 ## Langkah
 
@@ -24,7 +24,7 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Buat patok dari poligo
 + Peta menampilkan patok sebagai persegi **kuning** bernomor. Semua patok di tab ini adalah *patok lahan* (batas kebun) — status NKT lahan tidak mengubah warnanya; patok NKT (batas area NKT, mis. sempadan sungai) akan menjadi jenis data tersendiri. Lahan tetangga dalam 25 m ikut tergambar putus-putus, dengan daftarnya di bawah peta.
 2. Klik **Buat patok dari poligon** untuk menurunkan patok dari sudut-sudut poligon.
 + Sistem menyederhanakan garis batas (±1 m) supaya lengkung hasil digitasi tidak jadi puluhan patok, lalu menomori sudut **searah jarum jam mulai dari yang paling utara**.
-+ Pada dialog pratinjau, kolom **Hasil** memberi tahu: *Patok baru*, *Tautkan ke patok lahan X (d m)* — sudut ini ≤ 5 m dari patok yang sudah dibuat di lahan tetangga, jadi ditautkan bukan digandakan — atau *Sudah ada di lahan ini* (dilewati). Hilangkan centang pada sudut yang di lapangan bukan patok, lalu klik **Simpan**.
++ Pada dialog pratinjau, kolom **Hasil** memberi tahu: *Patok baru*, *Tautkan ke patok lahan X (d m)* — sudut ini ≤ 5 m dari patok yang sudah dibuat di lahan tetangga, jadi ditautkan bukan digandakan — atau *Sudah ada di lahan ini* (dilewati). Hilangkan centang pada sudut yang di lapangan bukan patok, lalu klik **Simpan N patok** (N = jumlah sudut yang dicentang).
 + Aman dijalankan berulang: sudut yang sudah punya patok tidak dibuat dua kali.
 3. Untuk patok yang tidak ada di sudut poligon (mis. di tengah sisi), klik **Tambah patok** dan isi lintang/bujur hasil GPS.
 + Koordinat harus berada ≤ 100 m dari batas lahan. Lintang dan bujur yang tertukar ditolak dengan petunjuk — periksa kolomnya.
@@ -33,7 +33,7 @@ Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Buat patok dari poligo
 5. Pakai panah **↑ ↓** untuk mengubah urutan nomor bila penomoran lapangan berbeda; klik **Unduh koordinat** untuk berkas Excel patok lahan ini.
 6. Ikon **lepas tautan** melepas patok dari lahan ini saja. Patok yang masih dipakai lahan lain tetap ada; patok tanpa pemakai dinonaktifkan (koordinatnya tersimpan sebagai riwayat).
 
-> [!info] Banyak lahan sekaligus? Titik GPS lapangan bisa diunggah lewat **Bulk Upload → Upload Data Lahan → tab Patok** (Excel/CSV atau shapefile titik) — lihat tutorial *Mengunggah titik patok*.
+> [!tip] Banyak lahan sekaligus? Titik GPS lapangan bisa diunggah lewat **Bulk Upload → Upload Data Lahan → tab Patok** (Excel/CSV atau shapefile titik) — lihat tutorial *Mengunggah titik patok*.
 
 ## Hasil
 

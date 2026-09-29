@@ -35,7 +35,7 @@ Aturan ini **tidak berlaku lagi** sejak `1.0.0`.
 
 `1.0.0` dirilis **2026-09-23** atas keputusan owner: sistem dinyatakan mencapai **MVP**. Yang perlu dicatat supaya angka ini tidak salah dibaca kemudian:
 
-- **MVP ≠ roadmap 100%.** Roadmap saat `1.0.0` terbit ada di **88,2%** (`roadmap.md` Phase Status). `1.0.0` menyatakan *cakupan minimum yang dianggap layak dipakai*, bukan *seluruh fase selesai*. Sisa fase tetap berjalan dan akan terbit sebagai MINOR di atas `1.x`.
+- **MVP ≠ roadmap 100%.** Roadmap saat `1.0.0` terbit ada di **88,5%** (`roadmap.md` Phase Status). `1.0.0` menyatakan *cakupan minimum yang dianggap layak dipakai*, bukan *seluruh fase selesai*. Sisa fase tetap berjalan dan akan terbit sebagai MINOR di atas `1.x`.
 - **MAJOR sekarang benar-benar berarti breaking.** Sejak `1.0.0`, kriteria MAJOR di tabel di atas dipakai apa adanya — tidak ada lagi pengecualian yang menurunkannya menjadi MINOR. Yang memicu `2.0.0`: migrasi DB yang butuh intervensi manual atau berisiko data, perombakan RBAC/alur login yang memutus sesi/integrasi, dan perubahan struktur data yang membuat data lama tidak kompatibel. Commit-nya wajib menandai `BREAKING CHANGE:` di body.
 - **Ragu antara MAJOR dan MINOR?** Pertanyaannya bukan "seberapa besar pekerjaannya" melainkan "apakah operator/data yang ada hari ini tetap jalan tanpa langkah manual". Bila butuh langkah manual, itu MAJOR.
 
@@ -48,8 +48,8 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
    - **Maksimal satu rilis per hari.** Bila ada beberapa pemicu dalam sehari (beberapa phase Done / beberapa `feat:`), gabungkan menjadi **satu rilis di akhir hari** dengan bump tertinggi yang berlaku — jangan rilis beruntun seperti 2026-07-15 (v0.9.0 → v0.10.0 → v0.11.0 dalam sehari). Satu-satunya pengecualian: **hotfix kritis produksi** setelah rilis hari itu.
 3. **Gate lokal**: `npm run lint`, `npm run build`, `npm run typecheck`, dan `npm test` lulus (Pre-Commit Gate di [workflow.md](./workflow.md)) — keempatnya **tidak** dijalankan CI, jadi harus dipastikan lokal. Di PR, CI menjalankan `gitleaks` & `semgrep`; periksa `gh pr checks <nomor>` hijau sebelum merge.
 4. **QA/QC manual di staging** — setelah migrasi + seed diterapkan ke `mis-staging` dan `mvp → staging` di-deploy, jalankan `docs/qa/vX.Y.Z/` (smoke per menu, kasus uji per issue, QC angka DB); temuan blocker/major menahan rilis. `05-signoff.md` (dev · QA · owner) adalah prasyarat langkah berikutnya. Lihat [../qa/README.md](../qa/README.md).
-5. **Bump versi**: update `version` di `package.json`, tambah entri rilis di [changelog.md](../project/changelog.md), commit dengan pesan `chore(release): vX.Y.Z`.
-6. **PR `mvp` → `main`**, merge setelah approval. ⚠️ **Merge ke `main` memicu deploy produksi otomatis** (`deploy-main.yml`) — pastikan migrasi DB yang dibutuhkan sudah diterapkan lebih dulu, lalu segarkan `prisma/migrations/applied-checksums.json` (skrip `scripts/migrations/refresh-applied-checksums.ts`, #303) dan ikutkan di commit rilis.
+5. **Bump versi**: update `version` di `package.json`, tambah entri rilis di berkas bulan berjalan [changelog/](../project/changelog.md) (`YYYY-MM.md`), commit dengan pesan `chore(release): vX.Y.Z`.
+6. **PR `staging` → `main`** (`staging` sudah berisi `mvp` dari langkah 4), merge setelah approval. ⚠️ **Merge ke `main` memicu deploy produksi otomatis** (`deploy-main.yml`) — pastikan migrasi DB yang dibutuhkan sudah diterapkan lebih dulu, lalu segarkan `prisma/migrations/applied-checksums.json` (skrip `scripts/migrations/refresh-applied-checksums.ts`, #303) dan ikutkan di commit rilis.
 7. **Tag & Release di `main`**:
    - Annotated tag: `git tag -a vX.Y.Z -m "vX.Y.Z"` pada merge commit di `main`, lalu `git push origin vX.Y.Z`.
    - GitHub Release: `gh release create vX.Y.Z` dengan release notes diambil dari ringkasan changelog — **bukan** auto-generate dari commit mentah, agar konsisten dengan changelog sebagai catatan historis.
@@ -59,19 +59,19 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 
 - [ ] Belum ada rilis lain di hari yang sama (aturan **maks. 1 rilis/hari**; kecuali hotfix kritis)
 - [ ] Semua commit sejak rilis terakhir sudah ter-review (issue workflow selesai)
-- [ ] Lint, build, dan test lulus lokal
+- [ ] Lint, build, typecheck, dan test lulus lokal
 - [ ] **QA/QC manual** `docs/qa/vX.Y.Z/` selesai di staging: `01-smoke` + `02-test-cases` + `03-data-qc`, temuan blocker/major tuntas, **`05-signoff.md` terisi** (dev · QA · owner)
 - [ ] `npm run rbac:compare` — selisih izin seed ↔ produksi ditinjau (lihat #263; selisih yang disengaja dicatat, bukan diabaikan)
 - [ ] Check CI di PR hijau (`gitleaks`, `semgrep`) — `gh pr checks <nomor>`
 - [ ] Migrasi DB yang dibutuhkan sudah diterapkan **sebelum** merge (merge = deploy produksi)
-- [ ] Bila ada migrasi: **snapshot checksum disegarkan** setelah `migrate deploy` — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` → commit `prisma/migrations/applied-checksums.json` (guard #303; lihat [database/migrations.md](../database/migrations.md) §Pre-Deployment Checklist). Tanpa ini, gate lokal mesin lain akan merah pada migrasi baru.
+- [ ] Bila ada migrasi: **snapshot checksum disegarkan** setelah `migrate deploy` — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` → commit `prisma/migrations/applied-checksums.json` (guard #303; lihat [database/migrations.md](../database/migrations.md) §Checklist Pra-Deploy). Tanpa ini, gate lokal mesin lain akan merah pada migrasi baru.
 - [ ] `package.json` `version` sudah di-bump sesuai kriteria
-- [ ] Entri rilis tercatat di `docs/project/changelog.md`
+- [ ] Entri rilis tercatat di `docs/project/changelog/YYYY-MM.md`
 - [ ] **Metrik Nilai Rilis dihitung** → baris baru di [`project/metrics.md`](../project/metrics.md) (lihat §Metrik Nilai Rilis)
-- [ ] PR `mvp` → `main` merged
+- [ ] PR `staging` → `main` merged
 - [ ] Annotated tag `vX.Y.Z` dibuat di `main` dan di-push
 - [ ] GitHub Release dibuat dengan notes dari changelog
-- [ ] Teks pengumuman Telegram (compact, §langkah 7) disiapkan
+- [ ] Teks pengumuman Telegram (compact, §langkah 8) disiapkan
 
 ## Catatan Historis
 
@@ -84,7 +84,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 
 ### 1. Progres Roadmap Tertimbang (audiens: manajemen/donor)
 
-Persentase kelengkapan fase, dihitung dari tabel **Phase Status** di [roadmap.md](../project/roadmap.md). **Catatan sejak 2026-09-23:** metrik ini dulu dibaca sebagai "progres menuju `1.0.0`". `1.0.0` sudah terbit pada **88,2%** karena MVP diputuskan dari cakupan yang dianggap layak pakai, bukan dari angka ini — jadi metriknya tetap berguna sebagai progres fase, tetapi **bukan lagi hitung mundur menuju versi**:
+Persentase kelengkapan fase, dihitung dari tabel **Phase Status** di [roadmap.md](../project/roadmap.md). **Catatan sejak 2026-09-23:** metrik ini dulu dibaca sebagai "progres menuju `1.0.0`". `1.0.0` sudah terbit pada **88,5%** karena MVP diputuskan dari cakupan yang dianggap layak pakai, bukan dari angka ini — jadi metriknya tetap berguna sebagai progres fase, tetapi **bukan lagi hitung mundur menuju versi**:
 
 - **Bobot phase** — dibaca dari kolom **`Bobot`** pada tabel Phase Status roadmap.md, satu baris satu fase: `inti` = **2** (fase penentu kelayakan go-live — stream PLATFORM, MD-01…06, DASH, MAP, RPT, BULK, HELP, DA), `pendukung` = **1** (pelengkap/pasca-go-live — MD-07…11, TOOLS, CMS, COMM, OPS). Kolom itu **satu-satunya sumber klasifikasi**; daftar stream di sini hanya glosarium, bukan acuan.
 - **Nilai status** — ✅ Done = 1 · 🟠 Partial = 0,5 · lainnya = 0.
@@ -101,7 +101,7 @@ Lima metrik tetap, diukur ulang tiap rilis; laporkan sebagai tabel delta (tanpa 
 | # | KPI | Cara ukur | Baseline v0.21.0 |
 | - | --- | --------- | ---------------- |
 | 1 | Payload peta distrik terbesar | Proyeksi `getMapData` distrik ber-persil terbanyak (sampel ≥500 persil nyata) | 2,67 MB |
-| 2 | Cakupan tutorial Bantuan | Menu **daun** ber-tutorial ÷ total menu daun aktif — dihitung dari frontmatter `menuKey` pada `src/content/help/**`, bukan ditaksir. Menu induk (wadah grup) tidak dihitung karena tak punya halaman. Sejak #339 (2026-09-15) angkanya **dijaga `src/test/help-registry.test.ts`**: menu daun baru tanpa tutorial membuat gate merah kecuali dinyatakan eksplisit di `TANPA_TUTORIAL` (per 2026-09-15: 32/35; per 2026-09-18: 34/37 — +2 menu Monev BMP #344, keduanya ber-tutorial; per 2026-09-23: **37/37** — `TANPA_TUTORIAL` **kosong**, #257 tuntas: menu `help` ditutup topik konsep 1-4 "Cara Memakai Bantuan" yang diberi `menuKey`, lalu `report-kelompok-tani-detail` (`l-10`) dan `dashboard-snapshot-bmp` (`l-11`) ditulis tutorialnya). Sesuai definisi di atas (frontmatter `src/content/help/**`), yang dihitung adalah **setiap** materi ber-`menuKey`, bukan hanya lapis `tutorial/` — halaman Bantuan tak bisa punya tutorial ke dirinya sendiri. | 23/28 (82%) |
+| 2 | Cakupan tutorial Bantuan | Menu **daun** ber-tutorial ÷ total menu daun aktif — dihitung dari frontmatter `menuKey` pada `src/content/help/**`, bukan ditaksir. Menu induk (wadah grup) tidak dihitung karena tak punya halaman. Sejak #339 (2026-09-15) angkanya **dijaga `src/test/help-registry.test.ts`**: menu daun baru tanpa tutorial membuat gate merah kecuali dinyatakan eksplisit di `TANPA_TUTORIAL` (per 2026-09-15: 32/35; per 2026-09-18: 34/37 — +2 menu Monev BMP #344, keduanya ber-tutorial; per 2026-09-23: **39/39** (per 2026-09-29; 37/37 saat #257 ditutup) — `TANPA_TUTORIAL` **kosong**, #257 tuntas: menu `help` ditutup topik konsep 1-4 "Cara Memakai Bantuan" yang diberi `menuKey`, lalu `report-kelompok-tani-detail` (`l-10`) dan `dashboard-snapshot-bmp` (`l-11`) ditulis tutorialnya). Sesuai definisi di atas (frontmatter `src/content/help/**`), yang dihitung adalah **setiap** materi ber-`menuKey`, bukan hanya lapis `tutorial/` — halaman Bantuan tak bisa punya tutorial ke dirinya sendiri. | 23/28 (82%) |
 | 3 | Test otomatis | Jumlah test `npm test` | 748 |
 | 4 | Bug terbuka | Issue open berlabel `bug` | 0 |
 | 5 | Tech debt aktif | Item aktif di [tech-debt.md](../project/tech-debt.md) | 12 (10 per 07-28 + TD-030/031) |

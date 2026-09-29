@@ -32,7 +32,7 @@ model LandParcelDocument {
   type        LandDocumentType   @map("type")
   typeRaw     String?            @map("type_raw") // teks jenis asli dari sumber (audit / OTHER)
   // Nomor surat TIDAK unik: nomor SHM pendek ("694") berulang antar desa,
-  // dan format nomor sangat beragam ("05.16.08.05.1.105108", "SKGR/12/05/2019").
+  // dan format nomor sangat beragam ("01.02.03.04.5.678901", "SKGR/12/05/2019").
   number      String?            @map("number")
   holderName  String?            @map("holder_name") // nama tertera di surat — 97% ≠ nama petani
   statedArea  Float?             @map("stated_area") // luas tertera di surat (ha); sengaja terpisah dari LandParcel.area

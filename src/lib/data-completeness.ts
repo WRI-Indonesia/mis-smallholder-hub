@@ -104,7 +104,7 @@ function identityCounts(farmers: CompletenessFarmerInput[]) {
  * Proporsi check petani yang lolos (0–1): NIK sahih & unik, ID Petani unik,
  * lalu FARMER_FIELD_CHECKS — satu sumber untuk skor domain Petani & rincian per KT.
  */
-export function farmerCompleteness(
+function farmerCompleteness(
   f: CompletenessFarmerInput,
   counts: ReturnType<typeof identityCounts>
 ): number {
@@ -367,7 +367,7 @@ const parcelItem = ({ owner, parcel }: ParcelWithOwner, detail?: string): Anomal
 });
 
 /** Proporsi berbobot atribut terisi satu persil (0–1) — dipakai skor domain & rincian per KT. */
-export function parcelCompleteness(parcel: CompletenessParcelInput): number {
+function parcelCompleteness(parcel: CompletenessParcelInput): number {
   return PARCEL_CHECKS.reduce((s, c) => s + (c.complete(parcel) ? c.weight : 0), 0) / PARCEL_CHECK_WEIGHT_TOTAL;
 }
 

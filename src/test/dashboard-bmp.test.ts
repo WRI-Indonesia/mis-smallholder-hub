@@ -5,7 +5,6 @@ import {
   sumBmpGroups,
   bmpProductivity,
   bmpStatsForYear,
-  bmpAvailableYears,
   bmpChartSeries,
   bmpDefaultYear,
   bmpYearOptions,
@@ -349,17 +348,12 @@ describe("bmpProductivity (Ton/Ha per tahun)", () => {
   });
 });
 
-describe("bmpChartSeries & bmpAvailableYears", () => {
+describe("bmpChartSeries", () => {
   const monthly = {
     "2024-01": { produksiTon: 10, lahanMelapor: 4, luasMelaporHa: 8 },
     "2025-01": { produksiTon: 20, lahanMelapor: 6, luasMelaporHa: 12 },
     "2025-02": { produksiTon: 30, lahanMelapor: 8, luasMelaporHa: 16 },
   };
-
-  it("daftar tahun tersedia (desc) dari period keys", () => {
-    expect(bmpAvailableYears(monthly)).toEqual([2025, 2024]);
-    expect(bmpAvailableYears({})).toEqual([]);
-  });
 
   it("mode satu tahun: 12 titik, bulan tanpa data = 0", () => {
     const s = bmpChartSeries(monthly, 2025, 10);

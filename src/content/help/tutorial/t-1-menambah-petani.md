@@ -25,7 +25,7 @@ Siapkan: nama lengkap, **ID Petani**, jenis kelamin, dan nama lembaga. Sisanya b
 + Tombolnya di kanan atas tabel, sebaris dengan tombol Excel dan Kolom. Bila tidak terlihat, akun Anda punya izin melihat tetapi tidak menambah data di menu ini — izin diatur per menu, jadi bisa saja Anda bisa menambah di menu lain tetapi tidak di sini.
 2. Pilih **Lembaga Petani** — ketik sebagian nama untuk menyaring.
 + Daftar yang muncul hanya lembaga dalam wilayah kerja akun Anda, jadi wajar bila jauh lebih pendek daripada daftar seluruh organisasi. Pembatasan ini berlaku di seluruh sistem, bukan hanya di form ini: laporan dan dashboard Anda pun hanya menghitung lembaga yang sama. Karena itu angka total bisa berbeda antar pengguna, dan itu normal.
-3. Isi **Nama** dengan nama lengkap sesuai dokumen.
+3. Isi **Nama Petani** dengan nama lengkap sesuai dokumen.
 + Nama ini muncul di daftar hadir pelatihan, Laporan Petani, Laporan Lahan, serta Profil Lahan dan Profil Petani PDF yang kadang diserahkan ke pihak ketiga. Hindari singkatan dan gelar. Kalau nama di KTP berbeda dengan nama panggilan yang dipakai sehari-hari di lapangan, pakai nama KTP di sini agar cocok saat verifikasi sertifikasi.
 4. Isi **ID Petani**. Harus unik **di dalam lembaga ini**.
 + Lembaga berbeda boleh memakai nomor yang sama — nomor petani adalah milik lembaga masing-masing. Sistem menolak bila nomornya sudah dipakai di lembaga yang sama, jadi Anda tidak bisa membuat data ganda tanpa sadar. Hati-hati saat menyalin dari Excel: nol di depan sering hilang karena sel diperlakukan sebagai angka, sehingga `007` berubah jadi `7` dan tidak lagi cocok dengan berkas unggahan Anda.
@@ -54,15 +54,17 @@ Petani muncul di tabel, kartu **Total Petani** bertambah satu, dan namanya ketem
 
 **Lembaga yang dicari tidak muncul.** Lembaga itu di luar wilayah kerja akun Anda, atau statusnya nonaktif.
 
-+ Untuk memastikan yang mana, buka **Master Data → Lembaga Petani**. Bila lembaganya tidak ada di sana juga, berarti di luar wilayah kerja Anda — mintalah administrator menambahkan distrik atau lembaga itu ke akun Anda. Bila ada tetapi berstatus Nonaktif, aktifkan kembali lebih dulu; petani tidak boleh ditambahkan ke lembaga nonaktif.
++ Untuk memastikan yang mana, buka **Master Data → Lembaga Petani**. Bila lembaganya tidak ada di sana juga, berarti di luar wilayah kerja Anda — mintalah administrator menambahkan distrik atau lembaga itu ke akun Anda. Bila ada tetapi berstatus Nonaktif, minta SUPERADMIN mengaktifkannya kembali lebih dulu; petani tidak boleh ditambahkan ke lembaga nonaktif.
 
-**Petani yang dicari ternyata sudah ada tapi berstatus Nonaktif.** Gunakan aksi **Aktifkan kembali** pada barisnya — jangan buat data baru.
+**Petani yang dicari ternyata sudah ada tapi berstatus Nonaktif.** Minta SUPERADMIN memakai aksi **Aktifkan kembali** pada barisnya — jangan buat data baru.
+
++ Hanya SUPERADMIN yang bisa melihat data nonaktif (filter Status) dan mengaktifkannya kembali; role lain tidak melihat baris nonaktif sama sekali.
 
 + Sistem ini tidak pernah benar-benar menghapus data; menonaktifkan hanya menyembunyikannya dari daftar. Seluruh riwayat pelatihan, lahan, dan produksi petani tersebut masih tersimpan utuh dan akan tersambung kembali begitu diaktifkan.
 
 **Muncul pesan "ID Petani sudah terdaftar di lembaga ini".** Nomor itu sudah dipakai petani lain di lembaga yang sama. Cari nomornya di daftar untuk memastikan bukan orang yang sama.
 
-+ Bila pesannya menyebut ID dipakai **petani nonaktif**, jangan pilih nomor lain — aktifkan kembali data lamanya. Nomor yang sudah dipakai petani nonaktif tetap terkunci justru agar riwayatnya tidak terpecah.
++ Bila pesannya menyebut ID dipakai **petani nonaktif**, jangan pilih nomor lain — minta SUPERADMIN mengaktifkan kembali data lamanya. Nomor yang sudah dipakai petani nonaktif tetap terkunci justru agar riwayatnya tidak terpecah.
 
 **Form menolak disimpan tanpa pesan jelas.** Gulirkan jendela ke atas — pesan kesalahan muncul di bawah kolom bermasalah dan bisa berada di luar layar.
 

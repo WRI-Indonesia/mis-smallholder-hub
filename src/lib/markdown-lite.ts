@@ -120,7 +120,7 @@ export function s3KeyFromSrc(src: string): string | null {
  * Tebak jenis media dari sumbernya: berkas video (`.mp4`/`.webm`/`.ogv`) →
  * pemutar `<video>`; tautan YouTube/Vimeo → embed; selain itu gambar.
  */
-export function mediaKind(src: string): MdMediaKind {
+function mediaKind(src: string): MdMediaKind {
   if (/\.(mp4|webm|ogv)(\?.*)?$/i.test(src)) return "video";
   if (YOUTUBE_RE.test(src) || /vimeo\.com\//.test(src)) return "embed";
   return "image";

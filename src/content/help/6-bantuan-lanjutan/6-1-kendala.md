@@ -7,7 +7,7 @@ icon: HelpCircle
 
 **Daftar kosong padahal data sudah diinput** — Periksa filter yang aktif (Distrik, Lembaga, Status, periode). Pastikan juga data berada dalam cakupan wilayah atau lembaga yang ditugaskan kepada Anda.
 
-**Angka dashboard berbeda dengan master data** — Dashboard memakai snapshot. Minta admin generate snapshot terbaru lewat menu Tools.
+**Angka dashboard berbeda dengan master data** — Main Dashboard dan BMP Dashboard memakai snapshot. Minta admin generate snapshot terbaru lewat menu Tools. Dashboard Pelatihan dan Dashboard Monev BMP dihitung langsung, jadi selisih di sana biasanya karena filter atau cakupan akses.
 
 **Kolom Kelompok Tani masih kosong** — Data KT berasal dari atribut lahan. Kolom akan terisi setelah data KT dilengkapi, umumnya melalui bulk upload Shapefile lahan.
 

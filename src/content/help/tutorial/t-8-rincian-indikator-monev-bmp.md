@@ -1,6 +1,6 @@
 ---
 title: Mengimpor form survei & membaca rincian indikator Monev BMP
-icon: ClipboardList
+icon: ClipboardCheck
 menuKey: master-data-bmp-monev
 permission: CREATE
 duration: 10
@@ -32,7 +32,7 @@ Sumbernya adalah **form survei per petani** (`.xlsx`, empat sheet: Form Penilaia
 
 1. Di daftar Monev BMP klik ikon **lihat** pada satu baris → halaman detail penilaian: skor tersimpan vs hitung ulang, **raport 5 kegiatan** (radar berpita kategori seperti di dashboard, tabel skor kegiatan · bobot · kontribusi · indikator kosong di sampingnya), lalu tabel 30 indikator per kegiatan dengan skor, arti skor menurut rubrik, dan catatan.
 + Baris berlabel **Lembaga** dibaca dari penilaian Lembaga tahun itu; ubah lewat **Penilaian Lembaga** (tombol di toolbar daftar), bukan dari halaman petani.
-2. Tombol **Ubah skor indikator** membuka grid 18 indikator individu: klik angka 0–3 (arahkan kursor untuk arti tiap skor), klik lagi untuk mengosongkan. Centang **timpa skor tersimpan** hanya bila Anda yakin rincianlah yang benar.
+2. Tombol **Ubah skor indikator** membuka grid 18 indikator individu: klik angka 0–3 (arahkan kursor untuk arti tiap skor), klik lagi untuk mengosongkan. Centang **Timpa skor tersimpan … dengan hasil hitung ulang** hanya bila Anda yakin rincianlah yang benar.
 3. Di **Detail Petani → tab Monev BMP**, klik tahun untuk membuka rincian ringkas (raport kegiatan + indikator) tanpa meninggalkan halaman petani.
 4. Di **Dashboard → Monev BMP** muncul kartu tambahan begitu rincian ada: **Profil 5 Kegiatan** (radar pembanding A vs B pada skala 0–3 berpita kategori), **Indikator Terlemah**, **Profil Kelembagaan** (Lembaga × 14 indikator, dengan rerata), serta kegiatan terlemah/terkuat pada daftar **Petani Prioritas** dan **Petani Teladan**.
 

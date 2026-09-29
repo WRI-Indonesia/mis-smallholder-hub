@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { parse } from "csv-parse/sync";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { validateMenuDepth } from "../../src/lib/menu-utils";
 
 export interface MenuSeedRow {
   key: string;
@@ -20,7 +21,7 @@ const STRUCTURAL = ["parentKey", "title", "url", "icon", "order"] as const;
 export function readMenuSeed(): MenuSeedRow[] {
   const csv = readFileSync(join(__dirname, "data/menu.csv"), "utf-8");
   const records = parse(csv, { columns: true, skip_empty_lines: true }) as Record<string, string>[];
-  return records.map((row) => ({
+  const rows = records.map((row) => ({
     key: row.key,
     parentKey: row.parent_key || null,
     title: row.title,
@@ -30,6 +31,27 @@ export function readMenuSeed(): MenuSeedRow[] {
     isActive: row.is_active === "TRUE",
     isVisible: row.is_visible === "TRUE",
   }));
+  validateMenuSeedRows(rows);
+  return rows;
+}
+
+/**
+ * Struktur menu hanya berubah lewat CSV sejak #364 (Menu Management tak bisa
+ * menambah/memindah menu) — invarian yang dulu dijaga pemilih Parent di UI
+ * ditegakkan di sini: induk ada di CSV & bukan dirinya sendiri, lalu ≤ 3 level.
+ * Dicek sebelum menulis apa pun (upsert seed tidak dalam transaksi).
+ */
+export function validateMenuSeedRows(rows: Pick<MenuSeedRow, "key" | "parentKey" | "title" | "url" | "icon">[]): void {
+  const keys = new Set(rows.map((r) => r.key));
+  for (const r of rows) {
+    if (r.parentKey === r.key) throw new Error(`menu.csv: "${r.key}" menjadi induk dirinya sendiri`);
+    if (r.parentKey && !keys.has(r.parentKey)) throw new Error(`menu.csv: induk "${r.parentKey}" dari "${r.key}" tidak ada di CSV`);
+  }
+  for (const r of rows) {
+    if (!validateMenuDepth(r.key, r.parentKey, rows)) {
+      throw new Error(`menu.csv: "${r.key}" (bersama induk/turunannya) melebihi 3 level menu`);
+    }
+  }
 }
 
 export interface MenuSeedDiff {

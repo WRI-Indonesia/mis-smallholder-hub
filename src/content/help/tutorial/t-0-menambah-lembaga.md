@@ -13,18 +13,18 @@ goal: Satu Lembaga Petani baru terdaftar lengkap dengan distrik, kategori, dan k
 
 Lembaga Petani adalah induk dari hampir semua data lain: petani, lahan, pelatihan, dan produksi semuanya menempel ke sebuah lembaga. Karena itu lembaga harus didaftarkan **lebih dulu** sebelum alur lain bisa dimulai.
 
-Secara bawaan hanya akun SUPERADMIN yang bisa menambah atau mengubah lembaga.
+Secara bawaan akun SUPERADMIN dan ADMIN yang bisa menambah atau mengubah lembaga; menonaktifkan lembaga hanya SUPERADMIN.
 
-+ Role ADMIN, OPERATOR, dan MANAGEMENT hanya bisa melihat, kecuali diberi izin tambahan per akun oleh administrator. Kalau tombol tambahnya tidak muncul di layar Anda, itu bukan bug — akun Anda memang hanya punya izin lihat.
++ Role OPERATOR, MANAGEMENT, dan DONOR hanya bisa melihat, kecuali diberi izin tambahan per akun oleh administrator. Kalau tombol tambahnya tidak muncul di layar Anda, itu bukan bug — akun Anda memang hanya punya izin lihat.
 
 ## Langkah
 
 1. Buka menu **Master Data → Lembaga Petani**, lalu klik **Tambah Lembaga Petani**.
-2. Isi seksi **Identitas**: Nama (wajib, minimal 2 karakter), lalu Kode dan Singkatan bila ada.
+2. Isi seksi **Identitas**: **Nama Lembaga Petani** (wajib, minimal 2 karakter), lalu Kode, Singkatan, dan Abrv 3ID bila ada.
 + Sistem tidak memeriksa duplikat — dua lembaga boleh punya nama atau kode yang sama. Disiplin penomoran kode harus dijaga manual; sepakati polanya dulu dengan tim sebelum mengisi.
-3. Pilih **Distrik** (wajib) dan **Kategori** (Ex Plasma / Swadaya, wajib).
+3. Pilih **Distrik** (wajib), **Kategori** (Ex Plasma / Swadaya, wajib), dan **Tipe Grup** (Asosiasi / Koperasi) bila diketahui.
 + Distrik bukan sekadar alamat: seluruh pembatasan hak akses bertumpu padanya. Salah memilih distrik bisa membuat lembaga langsung "hilang" dari pandangan Anda sendiri dan muncul di dashboard pengguna distrik lain.
-4. Isi **Tahun Berdiri** dan **Tahun Bergabung Program** bila diketahui.
+4. Isi **Tahun Berdiri Lembaga** dan **Tahun Bergabung Program** bila diketahui.
 5. Isi **Sertifikasi & Assurance** (RSPO, ISPO, SAP/MAP) bila lembaga sudah punya status.
 + Aturannya satu arah: status tanpa tahun boleh, tetapi tahun tanpa status ditolak saat menyimpan. Status inilah yang menjadi sumber kartu sertifikasi di Main Dashboard.
 6. Isi **Latitude** lalu **Longitude** lokasi sekretariat lembaga.

@@ -1,5 +1,7 @@
 # Regresi — kasus yang ikut setiap rilis
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [README.md](./README.md)
+
 Kasus ber-tag `[regresi]` yang lahir dari temuan review/bug. Disalin ke sini saat rilis ditutup (ID asli dipertahankan); `new-run.mjs` selalu menyertakannya. Hapus hanya bila fiturnya dihapus.
 
 ### TC-REV-01 · Shapefile patok dengan DBF berkolom LINTANG/BUJUR [P1] [regresi] (3 mnt)

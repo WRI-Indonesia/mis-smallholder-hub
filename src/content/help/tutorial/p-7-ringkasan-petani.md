@@ -37,3 +37,5 @@ Angkanya dihitung langsung dari data terkini setiap kali tombol Analisa diklik, 
 **Petani berstatus "Belum ada lahan" padahal lahannya pernah diinput** — persilnya sudah dinonaktifkan. Periksa status lahannya di Master Data → Lahan.
 
 **Tombol Analisa lama sekali** — cakupan "Semua Distrik" menarik seluruh data sekaligus. Pilih distrik atau lembaga tertentu dulu.
+
+**Menu Ringkasan Petani tidak muncul di sidebar** — menu ini hanya dibuka untuk SUPERADMIN. Role lain perlu diberi izin VIEW `data-analyst-farmer-summary` lewat Settings → Role & Permission bila memang diputuskan dibuka.

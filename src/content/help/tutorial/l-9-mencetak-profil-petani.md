@@ -20,10 +20,10 @@ goal: Satu berkas PDF berisi seluruh data seorang petani — identitas, ringkasa
 ## Langkah
 
 1. Buka **Master Data → Petani**, lalu klik ikon **printer** pada baris petani — atau buka halaman detailnya dan klik **Profil Petani (PDF)** di samping tombol Edit.
-+ Kedua tombol menghasilkan berkas yang sama. Dari daftar lebih cepat bila Anda mencetak beberapa petani berurutan; dari halaman detail lebih aman bila Anda ingin memeriksa datanya dulu. Selama satu petani diproses, hanya tombol baris itu yang berputar — baris lain tetap bisa diklik setelahnya.
++ Kedua tombol menghasilkan berkas yang sama. Dari daftar lebih cepat bila Anda mencetak beberapa petani berurutan; dari halaman detail lebih aman bila Anda ingin memeriksa datanya dulu. Selama satu petani diproses, hanya tombol baris itu yang berputar; mengklik baris lain sebelum selesai hanya memunculkan pemberitahuan "Profil Petani lain sedang disiapkan — tunggu sampai selesai." Cetak satu per satu.
 2. Bila petani punya **lebih dari 10 lahan**, pilih di jendela yang muncul: **Lengkap** (dengan lampiran tiap lahan) atau **Ringkasan saja**.
 + Jendela menyebut perkiraan tebal dokumen — kira-kira dua halaman ringkasan ditambah satu sampai dua halaman per lahan. Petani dengan 40 lahan berarti 40 lampiran; kalau yang dibutuhkan hanya gambaran umum, pilih Ringkasan saja — isinya persis bagian pertama dokumen lengkap, hanya tanpa lampiran, dan jauh lebih cepat.
-3. Tunggu pemberitahuan **Menyiapkan Profil Petani…** berganti menjadi **siap diunduh**; berkas tersimpan dengan nama `Profil_Petani_<Lembaga>_<Nama>_<ID Petani>.pdf`.
+3. Tunggu pemberitahuan **Menyiapkan Profil Petani…** berganti menjadi **Profil Petani siap diunduh**; berkas tersimpan dengan nama `Profil_Petani_<Lembaga>_<Nama>_<ID Petani>.pdf`.
 + Untuk petani dengan banyak lahan proses bisa memakan beberapa detik karena tiap lampiran memuat peta, legalitas, sepadan, NKT, patok, dan lahan tetangga — sama seperti mencetak Profil Lahan satu per satu.
 
 ## Memastikan berhasil

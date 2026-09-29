@@ -27,7 +27,7 @@ import type { AdminBoundaryLine } from "@/server/actions/fire-boundary";
 
 // Antique Violet — pilihan owner (2026-08-19); kontras terhadap titik api
 // (merah/oranye/kuning), garis abu batas administrasi, dan basemap Light/Dark.
-export const BOUNDARY_COLOR = "#660099";
+const BOUNDARY_COLOR = "#660099";
 
 // Warna titik = confidence (sama dengan Peta Lahan); dalam vs luar boundary
 // dibedakan BENTUK (ikon api vs lingkaran), bukan warna, agar legenda

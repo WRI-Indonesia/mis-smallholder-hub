@@ -233,8 +233,8 @@ export function summarizeProduction(records: { period: string; yieldKg: number }
  * Category thresholds in consecutive months. Exported so the owner can retune
  * the "Baik" (> 2 years) and "Cukup" (>= 1 year) boundaries in one place.
  */
-export const BMP_BAIK_MIN_MONTHS = 24; // strictly greater than → BAIK
-export const BMP_CUKUP_MIN_MONTHS = 12; // at least this many → CUKUP
+const BMP_BAIK_MIN_MONTHS = 24; // strictly greater than → BAIK
+const BMP_CUKUP_MIN_MONTHS = 12; // at least this many → CUKUP
 
 /**
  * Longest run of consecutive calendar months present in `periods` (YYYY-MM).
@@ -382,9 +382,9 @@ export function expandBmpMapData(wire: BmpMapDataWire): BmpMapData {
  * owner can retune the boundaries in one place; usulan awal 10/15/20 (#174).
  * The legend labels below derive from these, so a retune updates every surface.
  */
-export const PRODUCTIVITY_TINGGI_MIN = 20;
-export const PRODUCTIVITY_SEDANG_MIN = 15;
-export const PRODUCTIVITY_RENDAH_MIN = 10;
+const PRODUCTIVITY_TINGGI_MIN = 20;
+const PRODUCTIVITY_SEDANG_MIN = 15;
+const PRODUCTIVITY_RENDAH_MIN = 10;
 
 /**
  * Single source of truth for productivity-class display metadata: map
@@ -445,7 +445,7 @@ export function productivityClass(tonHa: number | null): ProductivityClass {
  * the pattern this project hit during training imports) must not become the
  * default map view or an export column.
  */
-export const BMP_MIN_PRODUCTION_YEAR = 2000;
+const BMP_MIN_PRODUCTION_YEAR = 2000;
 const defaultMaxProductionYear = () => new Date().getFullYear() + 1;
 
 const isSaneProductionYear = (year: number, maxYear: number) =>

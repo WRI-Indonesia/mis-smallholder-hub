@@ -172,7 +172,7 @@ describe("Training Participant File Import Validation with Scores", () => {
   }
 
   const mockGroupFarmers: FarmerMock[] = [
-    { id: "farmer-1", name: "Abdul Rahman", farmerId: "APSS.01" },
+    { id: "farmer-1", name: "Contoh Peserta Satu", farmerId: "APSS.01" },
   ];
 
   it("correctly parses valid pre and post test scores", () => {

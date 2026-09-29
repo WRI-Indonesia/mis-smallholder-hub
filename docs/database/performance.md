@@ -5,9 +5,9 @@
 <details>
 <summary><strong>Performance & Data Volume</strong> — Estimasi volume data dan optimasi performa</summary>
 
-## Performance & Data Volume
+## Performa & Volume Data
 
-### Data Volume Estimates
+### Estimasi Volume Data
 
 > **Aktual** = diukur langsung dari `mis-prod` (read-only, **2026-08-13**), baris `isActive: true`. **Proyeksi 2028** = rencana owner, bukan hasil ukur — ditandai jelas supaya tidak dikutip sebagai fakta. Versi dokumen ini sebelumnya memuat angka yang meleset s/d 150× (#254).
 
@@ -37,7 +37,7 @@
 
 **Catatan `Tree`.** Saat ini hanya **1 lahan** yang dipetakan pohonnya (286 titik pada 1,95 ha = **147 pohon/ha** terukur). Dengan luas rata-rata lahan **1,547 ha**, satu lahan setara ±227 pohon. Bila program memetakan pohon untuk seluruh lahan, tabel ini menjadi **±2,5 juta baris hari ini** dan **±3,5 juta baris pada 2028** — jauh melampaui seluruh tabel lain digabung. Ini keputusan program, bukan konsekuensi otomatis; angka di atas sengaja tidak dimasukkan ke total karena belum diputuskan.
 
-### Table Size Estimates (2028)
+### Estimasi Ukuran Tabel (2028)
 
 | Tabel | Record | Avg Row Size | Data | Index | Total |
 |-------|-------:|--------------|-----:|------:|------:|
@@ -69,24 +69,24 @@ Bentuknya: **10.781 `Polygon` + 172 `MultiPolygon`**, dan **95,9% poligon punya 
 
 - **`ST_Simplify` tidak relevan** — tidak ada yang bisa disederhanakan dari poligon 4–6 titik.
 - **Vector tiles & filter bbox/viewport tidak relevan** untuk dataset seukuran ini; ongkos infrastrukturnya jauh melebihi 3 MB yang dihemat.
-- **`jsonb` (bukan tipe `geometry` PostGIS) adalah pilihan yang tepat untuk jalur tampilan**: MapLibre membutuhkan GeoJSON, sehingga `jsonb` dikirim apa adanya, sedangkan kolom `geometry` wajib melewati `ST_AsGeoJSON()` per baris. PostGIS tetap masuk akal bila kelak dibutuhkan kueri spasial (irisan, jarak, dalam-poligon) — bukan untuk menampilkan.
+- **`jsonb` (bukan tipe `geometry` PostGIS) adalah pilihan yang tepat untuk jalur tampilan**: MapLibre membutuhkan GeoJSON, sehingga `jsonb` dikirim apa adanya, sedangkan kolom `geometry` wajib melewati `ST_AsGeoJSON()` per baris. PostGIS tetap masuk akal bila kelak dibutuhkan kueri spasial (irisan, jarak, dalam-poligon) — bukan untuk menampilkan. *(Kini terjadi: kolom turunan `LandParcel.geom` GENERATED + GiST (#317 Fase 1) dipakai lahan tetangga #327, snap patok #329, dan Tumpang Tindih Lahan #317 Fase 2 — self-join penuh 256 ms / 14.174 lahan di mis-dev 2026-09-23; `geometry` jsonb tetap jalur tampilan.)*
 
 **Metode ukur**: panjang JSON terserialisasi (`Buffer.byteLength(JSON.stringify(geometry))`) per baris, dijalankan read-only. Angka penyimpanan fisik `jsonb` di disk bisa sedikit berbeda karena overhead biner dan TOAST, tetapi ordenya sama — ratusan byte, bukan puluhan KB.
 
-### Query Performance Optimization
+### Optimasi Performa Query
 
-#### Critical Queries
+#### Query Kritis
 
 | Query | Expected Volume | Index Used | Target Time |
 |-------|-----------------|-----------|-------------|
-| **List Farmers by KT** | 100-500 rows | `Farmer.farmerGroupId` + `isActive` | < 300ms |
+| **List Petani per Lembaga** | 100-500 rows | `Farmer.farmerGroupId` + `isActive` | < 300ms |
 | **Training Participant List** | 50-200 rows | `TrainingParticipant.activityId` + `isActive` | < 300ms |
-| **User Login** | 1 row | `User.email` (UNIQUE) | < 100ms |
+| **User Login** | 1 row | `findFirst` email case-insensitive (`src/lib/auth.ts`) — UNIQUE `email` tidak terpakai penuh | < 100ms |
 | **RBAC Permission Check** | 1-10 rows | Composite UNIQUE on RBAC tables | < 150ms |
-| **Dashboard Stats Aggregation** | 1 row (aggregate) | Materialized view (future) | < 1s |
+| **Dashboard Stats Aggregation** | 1 row (aggregate) | Tabel snapshot (`MainDashboardSnapshot`/`BmpDashboardSnapshot`) atau live query ber-scope | < 1s |
 | **Produksi per lahan × periode** | s/d ~915k baris (2028) | Lihat **#251** — indeks disiapkan sebelum import massal | < 1s |
 
-#### Pagination Strategy
+#### Strategi Paginasi
 
 Untuk list queries dengan banyak data (> 1000 rows), gunakan pagination:
 - **Offset-based**: `LIMIT` + `OFFSET` (simple, tapi lambat di offset besar)
@@ -109,7 +109,7 @@ const farmers = await prisma.farmer.findMany({
 });
 ```
 
-#### N+1 Query Prevention
+#### Pencegahan Query N+1
 
 Gunakan Prisma `include` untuk eager loading:
 
@@ -124,9 +124,9 @@ const farmers = await prisma.farmer.findMany({
 });
 ```
 
-#### Payload Trimming — `select` ramping untuk list (#163)
+#### Pemangkasan Payload — `select` ramping untuk list (#163)
 
-Eager loading via `include` membawa **full row** (audit fields, dan pada `LandParcel` termasuk `geometry` GeoJSON yang bisa puluhan–ratusan KB per lahan) — di halaman list, seluruhnya ikut diserialisasi ke RSC payload menuju browser. Aturan sejak #163:
+Eager loading via `include` membawa **full row** (audit fields, dan pada `LandParcel` termasuk `geometry` GeoJSON — rata-rata kecil per lahan (lihat ukuran terukur di atas), tetapi berlipat ribuan untuk satu daftar) — di halaman list, seluruhnya ikut diserialisasi ke RSC payload menuju browser. Aturan sejak #163:
 
 - **List action wajib `select` eksplisit** sesuai field yang dipakai list client (termasuk field yang di-round-trip form edit, mis. `evidenceKey/Name` pelatihan) — bukan `include` full-row. `geometry` **tidak boleh** ikut payload list (hanya fetch detail by-id).
 - Perhatikan **round-trip form**: field yang tidak dikirim client harus berarti "tidak diubah" di server (`undefined` = skip; lihat `updateLandParcel` geometry), bukan ter-null.
@@ -145,35 +145,27 @@ prisma.landParcel.findMany({
 });
 ```
 
-### Database Connection Pooling
+### Connection Pooling Database
 
-Prisma connection pool configuration:
-```
-DATABASE_URL="postgresql://user:pass@host:5432/db?connection_limit=20&pool_timeout=10"
-```
+Prisma memakai adapter `@prisma/adapter-pg` di atas `pg.Pool` (`src/lib/prisma.ts`: `new Pool({ connectionString })`). Karena itu parameter `?connection_limit=`/`pool_timeout=` di `DATABASE_URL` **tidak berlaku**; ukuran pool mengikuti bawaan `pg` (**maks 10 koneksi per proses**). Bila perlu diubah, set `max`/`connectionTimeoutMillis` di konstruktor `Pool`, bukan di URL.
 
-| Environment | Connection Limit | Pool Timeout |
-|-------------|------------------|--------------|
-| **Development** | 5 | 10s |
-| **Staging** | 10 | 20s |
-| **Production** | 20-50 | 30s |
-
-**Notes**:
 - Jangan set terlalu tinggi → exhaust PostgreSQL `max_connections`
-- Monitor connection usage dengan `SHOW max_connections;` dan `SELECT count(*) FROM pg_stat_activity;`
+- Monitor dengan `SHOW max_connections;` dan `SELECT count(*) FROM pg_stat_activity;`
 
-### Caching Strategy
+### Strategi Cache
 
-| Data Type | Cache TTL | Strategy |
-|-----------|-----------|----------|
-| **Geography (Province, District, etc)** | 24 hours | In-memory cache atau Redis (jarang berubah) |
-| **TrainingPackage** | 1 hour | In-memory cache (5 rows only, very stable) |
-| **Menu Items** | 1 hour | In-memory cache (stale-while-revalidate) |
-| **Dashboard Aggregate Stats** | 5 minutes | Redis cache + background refresh |
-| **User Session** | 30 days | NextAuth JWT (no DB query per request) |
-| **RBAC Permissions** | 1 hour | In-memory per user session |
+Yang benar-benar ada di kode (tanpa Redis / cache in-memory umum):
 
-### Future Optimization Considerations
+| Data | Umur | Mekanisme |
+|------|------|-----------|
+| **Sesi user** | 30 hari (bawaan NextAuth) | JWT — tanpa query DB per request |
+| **Izin menu (RBAC)** | satu request | React `cache()` di `src/lib/rbac.ts` (`getEffectiveMenuPermissions`, `getUserPermissionsForMenu`, …) |
+| **Scope data user** | satu render RSC | React `cache()` di `getAccessContext` (`src/lib/access-context.ts`, #252) — halaman RSC yang memanggil beberapa action/helper (`Promise.all`) kini satu `auth()` + satu kueri user; kueri `select` id saja. **Server Action yang dipanggil dari klien = request sendiri → tetap satu kueri per action** (cache React tak aktif di luar render) — pertahankan pengoperan `access` eksplisit di helper yang dipanggil berulang (`parcel-passport-query`, `parcel-neighbor-query`). Hasil dibekukan (`Object.freeze`) |
+| **Outline Riau (klip titik api)** | 6 jam per proses | Cache promise di `src/server/actions/fire-boundary.ts` (#280) |
+| **Titik api FIRMS** | 1 jam (jendela terbaru) · 6 jam (lampau) · 30 hari (arsip bulanan) | `fetch` `next.revalidate` di `src/app/api/map-hotspot/route.ts` |
+| **Agregat dashboard** | sampai snapshot berikutnya di-generate | Tabel snapshot ([dashboard-snapshots.md](./dashboard-snapshots.md)) |
+
+### Pertimbangan Optimasi ke Depan
 
 Jika data bertumbuh signifikan (> 1M records). Berdasarkan angka terukur 2026-08-13, **tidak satu pun butir di bawah ini relevan saat ini** — proyeksi 2028 masih ~990k record dan ~370 MB:
 

@@ -29,7 +29,7 @@ Kolom di Excel Anda **tidak harus bernama persis** seperti di sistem — nanti a
 5. Kolom bertanda **Wajib** harus terisi. Yang tidak dipakai, pilih **-- Kosongkan --**.
 6. Klik **Validasi Data**.
 7. Periksa ringkasan hasil validasi. Setiap baris berstatus salah satu dari tiga: **Valid** (semua terisi), **Tidak Lengkap** (boleh disimpan, tapi ada kolom opsional yang kosong — NIK, tempat/tanggal lahir, alamat, atau tahun bergabung), atau **Error** (tidak bisa disimpan). Klik filter status untuk melihat kelompok tertentu saja.
-+ Kolom **Keterangan** menjelaskan per baris: alasan error, atau daftar kolom yang kosong untuk baris tidak lengkap. Bila ratusan baris memberi alasan yang sama, penyebabnya biasanya satu: pemetaan kolom yang keliru — perbaiki pemetaannya, bukan datanya.
++ Kolom **Keterangan / Detail Error** menjelaskan per baris: alasan error, atau daftar kolom yang kosong untuk baris tidak lengkap. Bila ratusan baris memberi alasan yang sama, penyebabnya biasanya satu: pemetaan kolom yang keliru — perbaiki pemetaannya, bukan datanya.
 8. Bila masih ada error, klik **Download Data Error Saja**, perbaiki di Excel, lalu ulangi dari langkah 3. Untuk menindaklanjuti data bolong, **Download Data Tidak Lengkap** memberi daftar baris beserta kolom mana yang kosong.
 + Semua berkas unduhan memuat kolom **Status** (VALID / TIDAK LENGKAP / ERROR) dan keterangannya, jadi bisa diperbaiki langsung di sana tanpa mencocokkan manual dengan layar.
 9. Setelah puas, pilih salah satu tombol simpan: **Simpan Semua Layak** (baris valid + tidak lengkap) atau **Simpan Hanya yang Valid** (baris tidak lengkap ditahan).
@@ -49,7 +49,7 @@ Petani muncul di **Master Data → Petani** dengan lembaga yang Anda pilih di La
 
 **Banyak baris error "ID Petani sudah terdaftar"** — nomor itu sudah dipakai **di lembaga tujuan**. Keluarkan barisnya dari berkas, atau perbarui datanya lewat Master Data.
 
-+ Pemeriksaan berlaku **per lembaga**, bukan seluruh sistem: nomor yang sama boleh dipakai lembaga lain. Baris nonaktif ikut dihitung — bila petaninya pernah dinonaktifkan, aktifkan kembali datanya alih-alih mengunggah ulang.
++ Pemeriksaan berlaku **per lembaga**, bukan seluruh sistem: nomor yang sama boleh dipakai lembaga lain. Baris nonaktif ikut dihitung — bila petaninya pernah dinonaktifkan, minta SUPERADMIN mengaktifkan kembali datanya alih-alih mengunggah ulang.
 
 + Unggahan massal ini hanya **menambah**, tidak memperbarui data yang sudah ada. Untuk mengubah data petani lama, gunakan tombol Edit di Master Data satu per satu.
 
@@ -61,7 +61,7 @@ Petani muncul di **Master Data → Petani** dengan lembaga yang Anda pilih di La
 
 **Muncul pesan "Header ditemukan di baris 3"** — berkas Anda punya baris judul di atas baris nama kolom, dan sistem melewatinya sendiri. Periksa sekilas apakah nama kolom yang terbaca sudah benar, lalu lanjutkan seperti biasa.
 
-+ Nomor **Baris Asal** di tabel hasil validasi mengikuti nomor baris sungguhan di Excel, jadi Anda bisa langsung melompat ke baris yang bermasalah — termasuk saat headernya bukan di baris 1.
++ Nomor pada kolom **Baris** di tabel hasil validasi (dan **Baris Asal** di berkas unduhan) mengikuti nomor baris sungguhan di Excel, jadi Anda bisa langsung melompat ke baris yang bermasalah — termasuk saat headernya bukan di baris 1.
 
 **"Tidak menemukan baris header pada berkas ini"** — sheet yang terbaca tidak punya satu pun baris berisi nama kolom. Biasanya berkasnya memang kosong, atau isinya gambar/pivot, bukan tabel.
 

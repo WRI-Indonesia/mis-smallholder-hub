@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -112,6 +112,36 @@ export interface DataTableProps<T> {
    * tampilan sementara layar menampilkan nomor aslinya.
    */
   getExportRow?: (row: T, index: number) => Record<string, unknown>;
+  /** Klik baris → pilih (mis. preview peta di panel samping). Tanpa ini baris tidak bisa diklik. */
+  onRowClick?: (row: T) => void;
+  /** `rowKey` baris terpilih — disorot; halaman tabel ikut berpindah ke baris ini. */
+  selectedRowKey?: string | null;
+  /** Baris setelah pencarian & urutan (semua halaman) — mis. untuk navigasi Sebelumnya/Berikutnya di luar tabel. */
+  onVisibleRowsChange?: (rows: T[]) => void;
+}
+
+/**
+ * Dua daftar baris identik (objek yang SAMA, urutan sama). Identitas objek, bukan
+ * kunci: data baru berkunci sama (refresh) tetap dilaporkan, sedangkan hitung
+ * ulang `sortedData` karena `columns` inline berganti identitas tidak.
+ */
+export function sameItems<T>(a: readonly T[], b: readonly T[]): boolean {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
+}
+
+const INNER_CONTROL = "button,a,input,select,textarea,[role=button],[role=checkbox],[role=menuitem]";
+
+/**
+ * Klik ini memilih baris: targetnya ada di DOM baris itu (bukan konten portal —
+ * menu/dialog dari kolom Aksi — yang event-nya menggelembung lewat pohon React)
+ * dan bukan kontrol interaktif di dalam baris.
+ */
+export function isRowSelectionClick(target: EventTarget | null, row: Pick<Element, "contains">): boolean {
+  if (!target || !row.contains(target as Node)) return false;
+  const el = typeof (target as Element).closest === "function" ? (target as Element).closest(INNER_CONTROL) : null;
+  // `closest` bisa naik melewati baris (tabel di dalam kartu/tombol yang bisa diklik) —
+  // hanya kontrol DI DALAM baris yang membatalkan pemilihan.
+  return !el || el === row || !row.contains(el as Node);
 }
 
 /**
@@ -210,6 +240,9 @@ export function DataTable<T>({
   exportFilename,
   canExport = false,
   getExportRow,
+  onRowClick,
+  selectedRowKey,
+  onVisibleRowsChange,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
@@ -314,6 +347,45 @@ export function DataTable<T>({
   useEffect(() => {
     setPage(0);
   }, [search, data]);
+
+  const tableWrapRef = useRef<HTMLDivElement>(null);
+  const pendingRowFocus = useRef(false);
+
+  // Baris terpilih terlihat: pindah ke halamannya HANYA saat pilihan berubah
+  // (mis. tombol Berikutnya melewati batas halaman). Sortir / ubah jumlah baris
+  // tetap kembali ke halaman 1 seperti biasa (review #317). Dideklarasikan
+  // SETELAH reset di atas agar menang saat data & pilihan berubah bersamaan.
+  useEffect(() => {
+    if (selectedRowKey == null) return;
+    // Fokus sedang di baris tabel ini (↑/↓, Enter) → ikut ke baris terpilih, juga
+    // saat ia di halaman lain: baris lama ter-unmount dan fokus jatuh ke <body>.
+    const active = document.activeElement;
+    pendingRowFocus.current = active instanceof HTMLTableRowElement && !!tableWrapRef.current?.contains(active);
+    const idx = sortedData.findIndex((row) => rowKey(row) === selectedRowKey);
+    if (idx >= 0) setPage(Math.floor(idx / pageSize));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRowKey]);
+  // Tanpa deps: pindah halaman baru tampil di render berikutnya.
+  useEffect(() => {
+    if (!pendingRowFocus.current) return;
+    const row = tableWrapRef.current?.querySelector<HTMLElement>('tr[data-state="selected"]');
+    if (!row) return;
+    pendingRowFocus.current = false;
+    if (row !== document.activeElement) row.focus();
+  });
+
+  // Lapor hanya bila BARISNYA berubah (objek/urutan): `sortedData` dihitung ulang
+  // setiap kali `columns` berganti identitas (kolom inline di pemanggil), dan
+  // pemanggil yang menyimpan hasilnya ke state akan render ulang → loop tak
+  // berujung saat ada kolom yang disortir (temuan verifikasi #317, "Maximum
+  // update depth"). Bukan per kunci: data segar berkunci sama tetap dilaporkan.
+  const reportedRows = useRef<T[] | null>(null);
+  useEffect(() => {
+    if (!onVisibleRowsChange) return;
+    if (reportedRows.current && sameItems(reportedRows.current, sortedData)) return;
+    reportedRows.current = sortedData;
+    onVisibleRowsChange(sortedData);
+  }, [sortedData, onVisibleRowsChange]);
 
   // ─── Sort handler ───────────────────────────────────────────────────────
 
@@ -432,7 +504,7 @@ export function DataTable<T>({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border bg-card">
+      <div ref={tableWrapRef} className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/70 hover:bg-muted/70 border-b-2 border-border">
@@ -476,7 +548,26 @@ export function DataTable<T>({
               </TableRow>
             ) : (
               paginatedData.map((row) => (
-                <TableRow key={rowKey(row)}>
+                <TableRow
+                  key={rowKey(row)}
+                  // Klik kontrol di dalam baris (Aksi, tautan) atau konten portalnya bukan pemilihan baris.
+                  onClick={onRowClick ? (e) => isRowSelectionClick(e.target, e.currentTarget) && onRowClick(row) : undefined}
+                  // Baris yang bisa dipilih juga bisa difokus & dipilih dengan Enter/Spasi.
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+                            e.preventDefault();
+                            onRowClick(row);
+                          }
+                        }
+                      : undefined
+                  }
+                  aria-selected={onRowClick ? rowKey(row) === selectedRowKey : undefined}
+                  data-state={selectedRowKey != null && rowKey(row) === selectedRowKey ? "selected" : undefined}
+                  className={onRowClick ? "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" : undefined}
+                >
                   {hasActions && (
                     <TableCell className="w-[1%] whitespace-nowrap">
                       {renderActions(row)}

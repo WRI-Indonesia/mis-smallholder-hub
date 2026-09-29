@@ -1,6 +1,6 @@
 // Rekap hasil run QA (docs/qa/README.md §Skrip).
 //
-//   node scripts/qa/summary.mjs docs/qa/v0.35.0
+//   node scripts/qa/summary.mjs docs/qa/v1.1.0   (arsip: docs/qa/archive/vX.Y.Z)
 //
 // Membaca semua runs/*.md (kecuali _template-run.md), menghitung Pass/Fail/
 // Blocked/N/A per run & bagian, dan mendaftar baris Fail yang belum menyebut

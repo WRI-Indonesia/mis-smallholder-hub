@@ -17,9 +17,9 @@
 export type MapCapture = { dataUrl: string; width: number; height: number };
 
 /** 1500 px pada lebar konten A4 lanskap (273 mm) ≈ 140 dpi; potret ≈ 205 dpi. */
-export const MAX_CAPTURE_PX = 1500;
+const MAX_CAPTURE_PX = 1500;
 /** 0,85 tak menampakkan artefak pada garis batas & label peta. */
-export const CAPTURE_QUALITY = 0.85;
+const CAPTURE_QUALITY = 0.85;
 
 /** Format `addImage` jsPDF yang sesuai isi data URL (capture JPEG, placeholder PNG). */
 export function imageFormatOf(dataUrl: string): "JPEG" | "PNG" {

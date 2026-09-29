@@ -11,7 +11,7 @@ hrefLabel: Buka halaman Pelatihan
 
 **Total Lembaga Petani** — banyaknya lembaga yang punya sesi pada hasil filter saat ini.
 
-**Total Sesi Training** — jumlah sesi, bukan jumlah orang.
+**Total Sesi Pelatihan** — jumlah sesi, bukan jumlah orang.
 
 **Total Peserta** — jumlah **kehadiran**. Seorang petani yang mengikuti tiga sesi dihitung tiga kali.
 

@@ -41,4 +41,4 @@ Halaman ini memantau pengembangan **aplikasinya sendiri**, bukan data petani. Ti
 
 **Fase yang sudah selesai masih tampil sebagai sisa** — statusnya belum diubah di tabel Phase Status `roadmap.md`. Halaman tidak pernah menebak status dari kode; ia hanya membaca tabel itu.
 
-**Menu Metrik Rilis tidak muncul di sidebar** — cari di grup **Data Analyst**, bukan Dashboard (alamat halamannya memang masih `/admin/dashboard/metrics`, peninggalan penempatan lama). Menu ini juga khusus SUPERADMIN; role lain perlu diberi izin VIEW `dashboard-metrics` lewat Settings → Role & Permission bila memang diputuskan dibuka.
+**Menu Metrik Rilis tidak muncul di sidebar** — cari di grup **Data Analyst**, bukan Dashboard (alamat halamannya memang masih `/admin/dashboard/metrics`, peninggalan penempatan lama). Menu ini hanya dibuka untuk SUPERADMIN, ADMIN, dan MANAGEMENT; role lain perlu diberi izin VIEW `dashboard-metrics` lewat Settings → Role & Permission bila memang diputuskan dibuka.

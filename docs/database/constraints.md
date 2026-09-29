@@ -5,9 +5,9 @@
 <details>
 <summary><strong>Constraint & Data Integrity</strong> — Aturan integritas data dan validasi</summary>
 
-## Constraint & Data Integrity
+## Constraint & Integritas Data
 
-### Foreign Key Constraints
+### Foreign Key
 
 | Child Table | FK Field | Parent Table | Parent Field | On Delete | On Update |
 |-------------|----------|--------------|--------------|-----------|-----------|
@@ -17,6 +17,10 @@
 | Village | `subdistrictId` | Subdistrict | `id` | RESTRICT | CASCADE |
 | **FarmerGroup** | | | | | |
 | FarmerGroup | `districtId` | District | `id` | RESTRICT | CASCADE |
+| ReferenceBenchmark | `farmerGroupId` (UNIQUE) | FarmerGroup | `id` | RESTRICT | CASCADE |
+| **Boundary (#266)** | | | | | |
+| FarmerGroupBoundary | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
+| AdministrativeBoundary | `districtId` (nullable) | District | `id` | SET NULL | CASCADE |
 | **Farmer** | | | | | |
 | Farmer | `farmerGroupId` | FarmerGroup | `id` | RESTRICT | CASCADE |
 | **LandParcel** | | | | | |
@@ -72,9 +76,9 @@
 | **Menu Hierarchy** | | | | | |
 | MenuItem | `parentKey` | MenuItem | `key` | SET NULL | CASCADE |
 
-> Koreksi audit 2026-07-10: nilai On Delete di atas diverifikasi langsung ke SQL di `prisma/migrations/*`. Seluruh FK memakai **RESTRICT** kecuali tiga **SET NULL** (`MenuItem.parentKey`, `MainDashboardSnapshot.districtId`, `BmpDashboardSnapshot.districtId`). Tidak ada FK CASCADE on-delete di schema — soft delete (`isActive`) yang dipakai, bukan hard delete berantai; versi dokumen sebelumnya keliru menandai RBAC/TrainingParticipant/MenuItem sebagai CASCADE.
+> Koreksi audit 2026-07-10 (diperbarui 2026-09-29, dicek ke mis-prod): nilai On Delete di atas diverifikasi langsung ke SQL di `prisma/migrations/*`. Seluruh FK memakai **RESTRICT** kecuali lima **SET NULL** (`MenuItem.parentKey`, `MainDashboardSnapshot.districtId`, `BmpDashboardSnapshot.districtId`, `BmpAssessment.parcelUid`, `AdministrativeBoundary.districtId`). Tidak ada FK CASCADE on-delete di schema — soft delete (`isActive`) yang dipakai, bukan hard delete berantai; versi dokumen sebelumnya keliru menandai RBAC/TrainingParticipant/MenuItem sebagai CASCADE.
 
-### Cascade Behavior Explanation
+### Perilaku Cascade
 
 **RESTRICT (Default Prisma untuk relasi wajib)**:
 - Mencegah penghapusan parent jika ada child yang masih mereferensikan
@@ -86,12 +90,14 @@
 - `MenuItem.parentKey` → bila parent menu dihapus, `parentKey` anak menjadi NULL (anak tidak ikut terhapus)
 - `MainDashboardSnapshot.districtId` → bila district dihapus, filter snapshot menjadi NULL (snapshot tetap ada)
 - `BmpDashboardSnapshot.districtId` → bila district dihapus, filter snapshot menjadi NULL (snapshot tetap ada)
+- `BmpAssessment.parcelUid` → bila identitas lahan dihapus, penilaian tetap ada tanpa rujukan lahan dikunjungi
+- `AdministrativeBoundary.districtId` → bila district dihapus, poligon wilayah tetap ada tanpa tautan district
 
 **CASCADE**:
 - Hanya berlaku untuk **On Update** (propagasi perubahan primary key), bukan On Delete
 - Tidak ada FK dengan On Delete CASCADE di schema ini
 
-### Business Rules & Validation
+### Aturan Bisnis & Validasi
 
 | Tabel | Field | Constraint | Business Rule |
 |-------|-------|-----------|---------------|
@@ -103,9 +109,10 @@
 | Farmer | `(farmerGroupId, farmerId)` | UNIQUE COMPOSITE | ID Petani unik **per Lembaga** (TD-024) — Lembaga berbeda boleh memakai nomor yang sama |
 | Farmer | `nik` | NULLABLE, 16 digits | NIK optional, jika diisi harus 16 digit angka |
 | Farmer | `gender` | ENUM (M/F), NOT NULL | Gender wajib |
-| Farmer | `joinedYear` | INT (1900-2100), NULLABLE | Tahun bergabung dengan KT, optional |
+| Farmer | `joinedYear` | INT (1900-2100), NULLABLE | Tahun bergabung dengan Lembaga Petani, optional |
 | **LandParcelIdentity** | `(farmerId, parcelId)` | UNIQUE COMPOSITE | Satu identitas per pasangan petani + ID Lahan, stabil antar revisi (#296) |
-| **LandStdb** | `(farmerId, number)` | UNIQUE COMPOSITE | Nomor STDB unik per petani; nonaktif tetap memegang slot |
+| **LandStdb** | `(farmerId, number) WHERE number IS NOT NULL AND is_active` | **PARTIAL UNIQUE** `uniq_land_stdb_farmer_number` (migrasi `20260829031525`, #306) | Nomor STDB unik per petani di antara baris aktif; STDB tahap awal boleh tanpa nomor |
+| LandStdb | `(farmerId) WHERE stage IN (PERSIAPAN_DATA, PENGAJUAN, REVISI) AND is_active` | **PARTIAL UNIQUE** `uniq_land_stdb_farmer_open` | Paling banyak satu STDB yang masih berproses per petani. Menggantikan UNIQUE `(farmerId, number)` lama (dilepas #306) |
 | **LandParcelStdb** | `(parcelUid, stdbId)` | UNIQUE COMPOSITE | Tautan lahan↔STDB tidak ganda |
 | **LandParcelExternalId** | `(parcelUid, source, code)` | UNIQUE COMPOSITE | Sejak 2026-09-23 (dulu `(source, code)`): kode yang sama **boleh** di >1 lahan — keputusan owner, klaim ganda vendor disimpan lalu dicek silang (tanda "Juga dipakai …" di tab Legalitas); yang dijaga hanya duplikat di lahan yang sama. Nonaktif tetap memegang slot → diaktifkan kembali |
 | **LandParcelBorder** | `parcelUid` | UNIQUE | Sepadan 1:1 per identitas lahan (#326). **Hapus = kosongkan keempat kolom**, bukan toggle `isActive` — baris nonaktif akan memblokir pengisian ulang |
@@ -129,12 +136,21 @@
 | **RolePermission** | `(role, menuKey, permission)` | UNIQUE COMPOSITE | Tidak boleh duplicate role permission |
 | **UserProvince** | `(userId, provinceId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke province yang sama |
 | **UserDistrict** | `(userId, districtId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke district yang sama |
-| **UserFarmerGroup** | `(userId, farmerGroupId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke KT yang sama |
+| **UserFarmerGroup** | `(userId, farmerGroupId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke Lembaga Petani yang sama |
 | **UserPermissionOverride** | `(userId, menuKey, permission)` | UNIQUE COMPOSITE | Tidak boleh duplicate permission override per user |
 
-### Soft Delete Pattern
+### Pola Soft Delete
 
-Semua tabel menggunakan **soft delete** dengan field `isActive`:
+Semua tabel menggunakan **soft delete** dengan field `isActive`, dengan pengecualian terdokumentasi (keputusan owner, lihat [models.md](./models.md)):
+
+| Tabel | Perilaku "hapus" | Alasan |
+|---|---|---|
+| `LandParcelNkt` | hapus baris (hard delete) | Satelit 1:1 ber-`parcel_uid` UNIQUE — baris nonaktif memblokir pengisian ulang (#306/#328) |
+| `LandParcelBorder` | kosongkan keempat kolom | Idem (#326) |
+| `LandMarkerCounter` | tidak pernah dihapus; tanpa `isActive` & audit | Penghitung deret kode patok murni (#331) |
+| `UserProvince`, `UserDistrict`, `UserFarmerGroup` | baris penugasan diganti (hapus + buat) | Tabel penugasan akses tanpa `isActive` |
+
+Untuk tabel lainnya:
 - `isActive = true` → record aktif
 - `isActive = false` → record "dihapus" tapi data tetap ada di DB
 - Query default HARUS filter `WHERE isActive = true`
@@ -148,19 +164,17 @@ Semua tabel menggunakan **soft delete** dengan field `isActive`:
 
 **Trade-off**:
 - Perlu disiplin di query layer (selalu filter `isActive`)
-- UNIQUE constraint **tidak mengenal soft delete** — baris nonaktif tetap memakai slot uniknya. Untuk `Farmer (farmerGroupId, farmerId)` itu **by design** (TD-024); hal yang sama berlaku untuk `LandStdb (farmerId, number)` dan `LandParcelExternalId (parcelUid, source, code)` (#296; sejak 2026-09-23) — record nonaktif masih memegang slot uniknya, aktifkan kembali alih-alih membuat baru: memakai ulang ID milik petani nonaktif akan memecah riwayat pelatihan & lahannya (lihat komentar di `prisma/schema/farmer.prisma`). Bila suatu tabel memang perlu unik hanya-aktif (mis. revision tracking `LandParcel`), penegakannya di app layer (kombinasi cek unik+`isActive`), karena Prisma tidak support partial/conditional unique index
+- UNIQUE constraint **tidak mengenal soft delete** — baris nonaktif tetap memakai slot uniknya. Untuk `Farmer (farmerGroupId, farmerId)` itu **by design** (TD-024); hal yang sama berlaku untuk `LandParcelExternalId (parcelUid, source, code)` (#296; sejak 2026-09-23) — record nonaktif masih memegang slot uniknya, aktifkan kembali alih-alih membuat baru: memakai ulang ID milik petani nonaktif akan memecah riwayat pelatihan & lahannya (lihat komentar di `prisma/schema/farmer.prisma`). Bila suatu tabel memang perlu unik hanya-aktif (mis. revision tracking `LandParcel`), penegakannya di app layer (kombinasi cek unik+`isActive`) atau lewat **partial unique index tulis tangan** di migrasi (`WHERE is_active` — pola #306/#329/#344: `LandStdb`, `LandParcelMarker`, `BmpAssessment`, `BmpGroupAssessment`), karena Prisma schema tidak bisa mendeklarasikannya — Prisma akan mengusulkan DROP index itu, jangan diterima
 
-### Referential Integrity Check
+### Cek Integritas Referensial
 
 ```mermaid
 flowchart TD
-    A[Delete Request] --> B{Has Active Children?}
-    B -->|Yes| C[RESTRICT — Return Error]
-    B -->|No| D{Cascade Policy?}
-    D -->|RESTRICT| E[Check isActive = false first]
-    D -->|CASCADE| F[Soft delete parent & all children]
-    E -->|OK| G[Soft delete parent only]
-    E -->|Fail| C
+    A[Hapus di aplikasi] --> B[Soft delete: isActive = false]
+    B --> C[Anak tetap ada; FK tetap valid]
+    A2[DELETE fisik — hanya skrip/pengecualian] --> D{FK anak?}
+    D -->|RESTRICT| E[Ditolak bila masih ada anak]
+    D -->|SET NULL| F[Kolom FK anak jadi NULL — 5 relasi opsional]
 ```
 
 </details>

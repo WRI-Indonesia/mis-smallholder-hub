@@ -20,8 +20,8 @@ import { buildLandParcelReport, type LpRawParcel } from "@/lib/report-land-parce
 /** Ringkasan satelit lahan untuk tabel padat (Report Lahan, tab Lahan detail Petani) — #296. */
 describe("land-parcel-satellite-format", () => {
   const docs = [
-    { type: "SHM", number: "727", holderName: "Abdul Rohman", statedArea: 0.25 },
-    { type: "SKT", number: "05.16.08.05.1.105108", holderName: "Abdul Rohman", statedArea: 2 },
+    { type: "SHM", number: "727", holderName: "Contoh Pemegang Satu", statedArea: 0.25 },
+    { type: "SKT", number: "01.02.03.04.5.678901", holderName: "Contoh Pemegang Satu", statedArea: 2 },
     { type: "OTHER", number: null, holderName: null, statedArea: null },
   ];
 
@@ -33,12 +33,12 @@ describe("land-parcel-satellite-format", () => {
   });
 
   it("summarizeDocuments: 'JENIS nomor' digabung '; ', tanpa nomor hanya jenis, kosong → null", () => {
-    expect(summarizeDocuments(docs)).toBe("SHM 727; SKT 05.16.08.05.1.105108; Lainnya");
+    expect(summarizeDocuments(docs)).toBe("SHM 727; SKT 01.02.03.04.5.678901; Lainnya");
     expect(summarizeDocuments([])).toBeNull();
   });
 
   it("summarizeHolderNames: distinct, null dibuang", () => {
-    expect(summarizeHolderNames(docs)).toBe("Abdul Rohman");
+    expect(summarizeHolderNames(docs)).toBe("Contoh Pemegang Satu");
     expect(summarizeHolderNames([{ type: "SHM", number: "1", holderName: null, statedArea: null }])).toBeNull();
   });
 
@@ -49,8 +49,8 @@ describe("land-parcel-satellite-format", () => {
 
   it("summarizeStdb: distinct + trim; kosong → null", () => {
     const terbit = (number: string) => ({ number, stage: "TERBIT" });
-    expect(summarizeStdb([terbit("1637/53/1401/6/2025"), terbit(" 1637/53/1401/6/2025"), terbit("3475")])).toBe(
-      "1637/53/1401/6/2025; 3475",
+    expect(summarizeStdb([terbit("9999/99/1401/6/2025"), terbit(" 9999/99/1401/6/2025"), terbit("3475")])).toBe(
+      "9999/99/1401/6/2025; 3475",
     );
     expect(summarizeStdb([])).toBeNull();
   });
@@ -81,11 +81,11 @@ describe("buildLandParcelReport — kolom legalitas (#296)", () => {
     const r = buildLandParcelReport([
       base({
         id: "p1",
-        documents: [{ type: "SHM", number: "727", holderName: "Abdul Rohman", statedArea: 0.25 }],
-        stdbs: [{ number: "1637/53/1401/6/2025", stage: "TERBIT" }],
+        documents: [{ type: "SHM", number: "727", holderName: "Contoh Pemegang Satu", statedArea: 0.25 }],
+        stdbs: [{ number: "9999/99/1401/6/2025", stage: "TERBIT" }],
       }),
     ]);
-    expect(r.rows[0]).toMatchObject({ surat: "SHM 727", namaDiSurat: "Abdul Rohman", luasTertera: 0.25, stdb: "1637/53/1401/6/2025" });
+    expect(r.rows[0]).toMatchObject({ surat: "SHM 727", namaDiSurat: "Contoh Pemegang Satu", luasTertera: 0.25, stdb: "9999/99/1401/6/2025" });
   });
 
   /** Pemeta UL Parcel Code (2026-08-28): kolom `source` = SIAPA yang memetakan. */
@@ -115,7 +115,7 @@ describe("buildLandParcelReport — kolom legalitas (#296)", () => {
  */
 describe("summarizeExternalIds / summarizePrograms (#305)", () => {
   it("UL Parcel Code menyertakan pemetanya; distinct; kosong → null", () => {
-    expect(summarizeExternalIds([{ source: "MERIDIA", code: "ID080d781b4" }])).toBe("ID080d781b4 (Meridia)");
+    expect(summarizeExternalIds([{ source: "MERIDIA", code: "ID0000abcde" }])).toBe("ID0000abcde (Meridia)");
     expect(
       summarizeExternalIds([
         { source: "MERIDIA", code: "ID1" },

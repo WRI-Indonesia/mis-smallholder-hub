@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { minTime, minTimeAsync } from "./perf-utils";
 import bcrypt from "bcryptjs";
 import { computeCompleteness, computePelatihanDomain } from "@/lib/data-completeness";
 import {
@@ -39,6 +40,7 @@ import { buildLayerReportDoc } from "@/lib/layer-report-pdf";
 import { parseBmpImportRows, resolveBmpImportRows, type BmpImportRawRow } from "@/lib/bmp-assessment";
 import { matchFarmerName, recomputeBmpScore, type BmpIndicatorRef } from "@/lib/bmp-survey-form";
 import { filterPointsWithinAreas } from "@/lib/fire-alert";
+import { buildOverlapRows, filterOverlapRows, overlapFilterOptions, pairCountByParcel, type OverlapRaw } from "@/lib/parcel-overlap";
 import {
   bmpMonevActivityProfile,
   bmpMonevGroupProfiles,
@@ -52,11 +54,17 @@ import {
   type BmpMonevIndicatorStat,
 } from "@/lib/bmp-monev-dashboard-aggregation";
 
+
+// `minTime` menjalankan tiap blok ≥ 3 putaran (#311): test berambang ±1,5 dtk
+// bisa butuh ±4,5 dtk + pembuatan data saat mesin sibuk — melewati timeout
+// bawaan vitest 5 dtk dan gagal sebagai "timed out" alih-alih lulus stabil.
+vi.setConfig({ testTimeout: 30_000 });
+
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
-    const start = performance.now();
-    await bcrypt.hash("P@ssword123", 10);
-    const duration = performance.now() - start;
+    const { ms: duration } = await minTimeAsync(async () => {
+      await bcrypt.hash("P@ssword123", 10);
+    });
 
     console.log(`  bcrypt hash: ${duration.toFixed(1)}ms`);
     expect(duration).toBeLessThan(500);
@@ -65,9 +73,9 @@ describe("Performance - Auth operations", () => {
   it("bcrypt compare completes under 500ms", async () => {
     const hash = await bcrypt.hash("P@ssword123", 10);
 
-    const start = performance.now();
-    await bcrypt.compare("P@ssword123", hash);
-    const duration = performance.now() - start;
+    const { ms: duration } = await minTimeAsync(async () => {
+      await bcrypt.compare("P@ssword123", hash);
+    });
 
     console.log(`  bcrypt compare: ${duration.toFixed(1)}ms`);
     expect(duration).toBeLessThan(500);
@@ -96,13 +104,13 @@ describe("Performance - Auth operations", () => {
       }
     }
 
-    const start = performance.now();
-    const parents = items.filter((i) => !i.parentKey);
-    parents.map((p) => ({
-      ...p,
-      children: items.filter((c) => c.parentKey === p.key),
-    }));
-    const duration = performance.now() - start;
+    const { ms: duration } = minTime(() => {
+      const parents = items.filter((i) => !i.parentKey);
+      parents.map((p) => ({
+        ...p,
+        children: items.filter((c) => c.parentKey === p.key),
+      }));
+    });
 
     console.log(`  menu tree (100 items): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(5);
@@ -116,13 +124,14 @@ describe("Performance - Auth operations", () => {
 
     const user = { provinces: ["prov-0", "prov-1", "prov-2"], districts: ["extra-1", "extra-2"] };
 
-    const start = performance.now();
-    const ids = new Set<string>();
-    for (const prov of user.provinces) {
-      (provinces[prov] ?? []).forEach((d) => ids.add(d));
-    }
-    for (const d of user.districts) ids.add(d);
-    const duration = performance.now() - start;
+    const { value: { ids }, ms: duration } = minTime(() => {
+      const ids = new Set<string>();
+      for (const prov of user.provinces) {
+        (provinces[prov] ?? []).forEach((d) => ids.add(d));
+      }
+      for (const d of user.districts) ids.add(d);
+      return { ids };
+    });
 
     console.log(`  RBAC resolve (50 districts): ${duration.toFixed(3)}ms`);
     expect(duration).toBeLessThan(1);
@@ -142,9 +151,10 @@ describe("Performance - AUDIT-P0 RBAC scope guard (#125)", () => {
       farmerGroupId: i === 9_999 ? "kt-outside-scope" : `kt-${i % 200}`,
     }));
 
-    const start = performance.now();
-    const unauthorized = rows.find((r) => !allowedGroupIds.has(r.farmerGroupId));
-    const duration = performance.now() - start;
+    const { value: { unauthorized }, ms: duration } = minTime(() => {
+      const unauthorized = rows.find((r) => !allowedGroupIds.has(r.farmerGroupId));
+      return { unauthorized };
+    });
 
     console.log(`  bulk scope validation (10k baris): ${duration.toFixed(3)}ms`);
     expect(duration).toBeLessThan(20);
@@ -236,9 +246,10 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
     const farmers = makeFarmers(5000);
     const activities = PACKAGES.map((p) => ({ packageCode: p.code, hasEvidence: true }));
 
-    const start = performance.now();
-    const d = computePelatihanDomain(farmers, PACKAGES, activities);
-    const duration = performance.now() - start;
+    const { value: { d }, ms: duration } = minTime(() => {
+      const d = computePelatihanDomain(farmers, PACKAGES, activities);
+      return { d };
+    });
 
     console.log(`  pelatihan coverage (5000 petani × 4 paket): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(100);
@@ -270,9 +281,10 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       modules: { boundary: true, benchmark: true, bmpGroupAssessment: false },
     };
 
-    const start = performance.now();
-    const result = computeCompleteness(grp, { referencePeriod: "2026-09" });
-    const duration = performance.now() - start;
+    const { value: { result }, ms: duration } = minTime(() => {
+      const result = computeCompleteness(grp, { referencePeriod: "2026-09" });
+      return { result };
+    });
 
     console.log(`  computeCompleteness (5 domain + cakupan modul, 5000 petani): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(200);
@@ -306,15 +318,16 @@ describe("Performance - DA-02b Training coverage (pure logic)", () => {
       modules: { boundary: gi % 3 !== 0, benchmark: true, bmpGroupAssessment: gi % 5 === 0 },
     }));
 
-    const start = performance.now();
-    const entries = groups.map((g) =>
-      buildAvailabilityEntry(g, { category: "SWADAYA", districtId: g.district.id }, { referencePeriod: "2026-09" }),
-    );
-    const totals = availabilityTotals(entries);
-    const top = topAnomalies(entries);
-    const systemic = topSystemicAnomalies(entries);
-    const modules = moduleCoverageTotals(entries);
-    const duration = performance.now() - start;
+    const { value: { totals, top, systemic, modules }, ms: duration } = minTime(() => {
+      const entries = groups.map((g) =>
+        buildAvailabilityEntry(g, { category: "SWADAYA", districtId: g.district.id }, { referencePeriod: "2026-09" }),
+      );
+      const totals = availabilityTotals(entries);
+      const top = topAnomalies(entries);
+      const systemic = topSystemicAnomalies(entries);
+      const modules = moduleCoverageTotals(entries);
+      return { totals, top, systemic, modules };
+    });
 
     console.log(`  DA-03 skala 2028 (40 Lembaga × 300 petani, satelit): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(1500);
@@ -354,9 +367,10 @@ describe("Performance - RPT-03 Production report pivot (pure logic)", () => {
     const periods = enumeratePeriods("2023-01", "2024-12"); // 24 months
     const records = makeRecords(500, periods);
 
-    const start = performance.now();
-    const result = buildProductionMatrix(records, periods);
-    const duration = performance.now() - start;
+    const { value: { result }, ms: duration } = minTime(() => {
+      const result = buildProductionMatrix(records, periods);
+      return { result };
+    });
 
     console.log(
       `  production pivot (${records.length} records → ${result.rows.length} rows × ${periods.length} kolom): ${duration.toFixed(2)}ms`,
@@ -382,9 +396,10 @@ describe("Performance - MAP-01 parcel production summary (pure logic)", () => {
       }
     }
 
-    const start = performance.now();
-    const result = summarizeProduction(records);
-    const duration = performance.now() - start;
+    const { value: { result }, ms: duration } = minTime(() => {
+      const result = summarizeProduction(records);
+      return { result };
+    });
 
     console.log(
       `  production summary (${records.length} records → ${result.byYear.length} tahun): ${duration.toFixed(2)}ms`,
@@ -435,9 +450,10 @@ describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
         periods.map((period) => ({ period, kg: 120 })),
       );
 
-    const start = performance.now();
-    const result = buildBmpMapData([], parcels, production);
-    const duration = performance.now() - start;
+    const { value: { result }, ms: duration } = minTime(() => {
+      const result = buildBmpMapData([], parcels, production);
+      return { result };
+    });
 
     console.log(`  buildBmpMapData (500 lahan × 36 bulan): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(200);
@@ -447,9 +463,10 @@ describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
 
   it("longestConsecutiveMonths: 600-month list under 10ms", () => {
     const periods = enumeratePeriods("2000-01", "2049-12"); // 600 months
-    const start = performance.now();
-    const streak = longestConsecutiveMonths(periods);
-    const duration = performance.now() - start;
+    const { value: { streak }, ms: duration } = minTime(() => {
+      const streak = longestConsecutiveMonths(periods);
+      return { streak };
+    });
 
     console.log(`  longestConsecutiveMonths (${periods.length} bulan): ${duration.toFixed(3)}ms`);
     expect(duration).toBeLessThan(10);
@@ -473,10 +490,11 @@ describe("Performance - MAP-02 Peta BMP availability (pure logic)", () => {
       production,
     }));
 
-    const start = performance.now();
-    const view = buildBmpProductivityView(parcels, 2024);
-    const matrix = buildBmpProductivityMatrix(parcels);
-    const duration = performance.now() - start;
+    const { value: { view, matrix }, ms: duration } = minTime(() => {
+      const view = buildBmpProductivityView(parcels, 2024);
+      const matrix = buildBmpProductivityMatrix(parcels);
+      return { view, matrix };
+    });
 
     console.log(
       `  buildBmpProductivityView+Matrix (500 lahan × 36 bulan): ${duration.toFixed(2)}ms`,
@@ -526,9 +544,10 @@ describe("Performance - DASH-04 Dashboard BMP snapshot (pure logic)", () => {
   );
 
   it("buildBmpSnapshotData: 6.000 lahan × 36 bulan (72k baris) under 300ms", () => {
-    const start = performance.now();
-    const result = buildBmpSnapshotData(bmpGroups, bmpFarmers, bmpParcels, bmpProduction);
-    const duration = performance.now() - start;
+    const { value: { result }, ms: duration } = minTime(() => {
+      const result = buildBmpSnapshotData(bmpGroups, bmpFarmers, bmpParcels, bmpProduction);
+      return { result };
+    });
 
     console.log(`  buildBmpSnapshotData (6k lahan, 72k baris): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(300);
@@ -540,10 +559,11 @@ describe("Performance - DASH-04 Dashboard BMP snapshot (pure logic)", () => {
   it("filterBmpGroups + sumBmpGroups + bmpChartSeries (slice client-side) under 50ms", () => {
     const data = buildBmpSnapshotData(bmpGroups, bmpFarmers, bmpParcels, bmpProduction);
 
-    const start = performance.now();
-    const sliced = sumBmpGroups(filterBmpGroups(data, { category: "SWADAYA" }));
-    const series = bmpChartSeries(sliced.monthly, null, sliced.totals.totalLahan);
-    const duration = performance.now() - start;
+    const { value: { sliced, series }, ms: duration } = minTime(() => {
+      const sliced = sumBmpGroups(filterBmpGroups(data, { category: "SWADAYA" }));
+      const series = bmpChartSeries(sliced.monthly, null, sliced.totals.totalLahan);
+      return { sliced, series };
+    });
 
     console.log(`  slice+chart BMP (${data.groups.length} lembaga): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(50);
@@ -563,9 +583,10 @@ describe("Performance - addParticipants Zod validation (#130)", () => {
       postTestScore: (i + 50) % 101,
     }));
 
-    const start = performance.now();
-    const r = addParticipantsSchema.safeParse({ activityId: "act-1", participants });
-    const duration = performance.now() - start;
+    const { value: { r }, ms: duration } = minTime(() => {
+      const r = addParticipantsSchema.safeParse({ activityId: "act-1", participants });
+      return { r };
+    });
 
     console.log(
       `  addParticipants validation (${participants.length} peserta): ${duration.toFixed(2)}ms`,
@@ -590,14 +611,15 @@ describe("Performance - Kelompok Tani distinct aggregation (#148, subGroupLv2)",
           : (i % 3 === 0 ? "  " : "") + KT_POOL[i % 500] + (i % 5 === 0 ? " " : ""),
     }));
 
-    const start = performance.now();
-    const distinct = new Set<string>();
-    for (const p of parcels) {
-      const v = p.subGroupLv2?.trim().toLowerCase();
-      if (v) distinct.add(v);
-    }
-    const count = distinct.size;
-    const duration = performance.now() - start;
+    const { value: { count }, ms: duration } = minTime(() => {
+      const distinct = new Set<string>();
+      for (const p of parcels) {
+        const v = p.subGroupLv2?.trim().toLowerCase();
+        if (v) distinct.add(v);
+      }
+      const count = distinct.size;
+      return { count };
+    });
 
     console.log(`  distinct KT over 50k lahan: ${count} in ${duration.toFixed(2)}ms`);
     expect(count).toBe(500); // noise spasi/kapital ter-dedup ke 500 KT unik
@@ -615,9 +637,10 @@ describe("Performance - Farmer sub-group derivation (#152)", () => {
       subGroupLv2: i % 7 === 0 ? null : `KT ${i % 250}${i % 5 === 0 ? " " : ""}`,
     }));
 
-    const start = performance.now();
-    const result = deriveFarmerSubGroups(parcels);
-    const duration = performance.now() - start;
+    const { value: { result }, ms: duration } = minTime(() => {
+      const result = deriveFarmerSubGroups(parcels);
+      return { result };
+    });
 
     console.log(
       `  deriveFarmerSubGroups (10k lahan): ${result.kelompokTani.length} KT in ${duration.toFixed(2)}ms`,
@@ -644,17 +667,18 @@ describe("Performance - RSPO cert sort & format (#160)", () => {
           ? `1-${r.rspoCertYear ?? 9999}`
           : null;
 
-    const start = performance.now();
-    const sorted = [...rows].sort((a, b) => {
-      const aVal = rank(a);
-      const bVal = rank(b);
-      if (aVal == null && bVal == null) return 0;
-      if (aVal == null) return 1;
-      if (bVal == null) return -1;
-      return aVal.localeCompare(bVal, "id");
+    const { value: { labels }, ms: duration } = minTime(() => {
+      const sorted = [...rows].sort((a, b) => {
+        const aVal = rank(a);
+        const bVal = rank(b);
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return 1;
+        if (bVal == null) return -1;
+        return aVal.localeCompare(bVal, "id");
+      });
+      const labels = sorted.map((r) => formatRspoCert(r));
+      return { labels };
     });
-    const labels = sorted.map((r) => formatRspoCert(r));
-    const duration = performance.now() - start;
 
     console.log(`  RSPO sort+format (10k baris): ${duration.toFixed(2)}ms`);
     // Certified tahun terkecil di depan (2021: i%8==0 selalu beririsan dgn year null).
@@ -677,23 +701,24 @@ describe("Performance - Lembaga Petani snapshot aggregation (#153, per-Lembaga d
       blok: i % 4 === 0 ? null : `Blok ${i % 200}`,
     }));
 
-    const start = performance.now();
-    const perLembaga = new Map<
-      string,
-      { kt: Set<string>; blok: Set<string> }
-    >();
-    for (const p of parcels) {
-      let agg = perLembaga.get(p.farmerGroupId);
-      if (!agg) {
-        agg = { kt: new Set(), blok: new Set() };
-        perLembaga.set(p.farmerGroupId, agg);
+    const { value: { perLembaga }, ms: duration } = minTime(() => {
+      const perLembaga = new Map<
+        string,
+        { kt: Set<string>; blok: Set<string> }
+      >();
+      for (const p of parcels) {
+        let agg = perLembaga.get(p.farmerGroupId);
+        if (!agg) {
+          agg = { kt: new Set(), blok: new Set() };
+          perLembaga.set(p.farmerGroupId, agg);
+        }
+        const kt = p.subGroupLv2?.trim().toLowerCase();
+        if (kt) agg.kt.add(kt);
+        const b = p.blok?.trim().toLowerCase();
+        if (b) agg.blok.add(b);
       }
-      const kt = p.subGroupLv2?.trim().toLowerCase();
-      if (kt) agg.kt.add(kt);
-      const b = p.blok?.trim().toLowerCase();
-      if (b) agg.blok.add(b);
-    }
-    const duration = performance.now() - start;
+      return { perLembaga };
+    });
 
     console.log(
       `  per-Lembaga distinct (${N_LEMBAGA} lembaga × 50k lahan): ${duration.toFixed(2)}ms`,
@@ -723,10 +748,11 @@ describe("Performance - Laporan Lahan map layout + grid (#179)", () => {
       },
     }));
 
-    const start = performance.now();
-    const layout = buildLandParcelMapLayout(parcels, { x: 0, y: 0, w: 280, h: 180, pad: 6 });
-    const split = splitParcelsIntoGrid(parcels, 4, 5);
-    const duration = performance.now() - start;
+    const { value: { layout, split }, ms: duration } = minTime(() => {
+      const layout = buildLandParcelMapLayout(parcels, { x: 0, y: 0, w: 280, h: 180, pad: 6 });
+      const split = splitParcelsIntoGrid(parcels, 4, 5);
+      return { layout, split };
+    });
 
     console.log(`  layout+grid (2k lahan × 64 titik): ${duration.toFixed(2)}ms`);
     expect(layout.polygons).toHaveLength(2_000);
@@ -797,14 +823,14 @@ describe("Performance — agregasi Dashboard Pelatihan (TD-020)", () => {
     );
     expect(attendance).toBe(60_000);
 
-    const start = performance.now();
-    // Seluruh agregat yang dihitung ulang tiap kali filter berubah.
-    trainingTotals(groups, null);
-    trainingCoverageMatrix(groups, null);
-    trainingTrendSeries(groups, null);
-    trainingScoreRows(groups, null);
-    trainingQualityStats(groups, null);
-    const duration = performance.now() - start;
+    const { ms: duration } = minTime(() => {
+      // Seluruh agregat yang dihitung ulang tiap kali filter berubah.
+      trainingTotals(groups, null);
+      trainingCoverageMatrix(groups, null);
+      trainingTrendSeries(groups, null);
+      trainingScoreRows(groups, null);
+      trainingQualityStats(groups, null);
+    });
 
     expect(duration).toBeLessThan(1200);
   });
@@ -848,11 +874,12 @@ describe("Performance - Production matrix variants (#239)", () => {
     const { buildProductionStats, buildExcludeVariant } = await import("@/lib/production-stats");
     const { parcels, records } = makeData();
 
-    const start = performance.now();
-    // Beban nyata satu render detail Lembaga: varian all + Exclude.
-    const all = buildProductionStats(parcels, records);
-    const exclude = buildExcludeVariant(parcels, records, 2026);
-    const duration = performance.now() - start;
+    const { value: { all, exclude }, ms: duration } = minTime(() => {
+      // Beban nyata satu render detail Lembaga: varian all + Exclude.
+      const all = buildProductionStats(parcels, records);
+      const exclude = buildExcludeVariant(parcels, records, 2026);
+      return { all, exclude };
+    });
 
     console.log(
       `  production variants (${records.length} records, ${PARCELS} parcels): ${duration.toFixed(2)}ms`,
@@ -868,9 +895,10 @@ describe("Performance - Production matrix variants (#239)", () => {
     const { buildParcelYearBreakdown } = await import("@/lib/production-stats");
     const { parcels, records } = makeData();
 
-    const start = performance.now();
-    const rows = buildParcelYearBreakdown(parcels, records, 2026);
-    const duration = performance.now() - start;
+    const { value: { rows }, ms: duration } = minTime(() => {
+      const rows = buildParcelYearBreakdown(parcels, records, 2026);
+      return { rows };
+    });
 
     console.log(`  parcel-year breakdown (${rows.length} rows): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(100);
@@ -919,11 +947,12 @@ describe("Performance - DASH-07 Fire Alert point-in-polygon (pure logic)", () =>
       await import("@/lib/fire-alert");
     const indexed = indexBoundaries(boundaries);
 
-    const start = performance.now();
-    const inRiau = filterPointsWithinAreas(points, kabupaten);
-    const classified = classifyHotspots(inRiau, indexed);
-    const rows = countHotspotsByGroup(classified, boundaries);
-    const duration = performance.now() - start;
+    const { value: { inRiau, rows }, ms: duration } = minTime(() => {
+      const inRiau = filterPointsWithinAreas(points, kabupaten);
+      const classified = classifyHotspots(inRiau, indexed);
+      const rows = countHotspotsByGroup(classified, boundaries);
+      return { inRiau, rows };
+    });
 
     console.log(
       `  fire-alert PiP (${points.features.length} titik → ${inRiau.features.length} se-area, ${rows.length} lembaga): ${duration.toFixed(2)}ms`
@@ -954,9 +983,10 @@ describe("Performance - Import Detail Lahan planner (#300, pure logic)", () => {
         subGroupLv2: i % 2 ? "KT" : null,
       };
     });
-    const start = performance.now();
-    const plan = planLandParcelDetailRows(rows, existing);
-    const duration = performance.now() - start;
+    const { value: { plan }, ms: duration } = minTime(() => {
+      const plan = planLandParcelDetailRows(rows, existing);
+      return { plan };
+    });
     console.log(`  detail-lahan plan (7.000 baris): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(100);
     expect(plan.summary.documentsCreated + plan.summary.documentsUnchanged).toBe(7000);
@@ -977,11 +1007,12 @@ describe("Performance - Pembacaan sheet import (#301, pure logic)", () => {
     ];
     const aliases = ["id lahan", "id petani"];
 
-    const start = performance.now();
-    const result = readSheetRows(rows, {
-      isHeaderCandidate: (labels) => labels.some((l) => aliases.includes(l.toLowerCase())),
+    const { value: { result }, ms: duration } = minTime(() => {
+      const result = readSheetRows(rows, {
+        isHeaderCandidate: (labels) => labels.some((l) => aliases.includes(l.toLowerCase())),
+      });
+      return { result };
     });
-    const duration = performance.now() - start;
 
     console.log(`  readSheetRows (7.000 baris × 12 kolom): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(100);
@@ -1005,10 +1036,11 @@ describe("Performance - Patok & Laporan NKT (#329/#331/#332, pure logic)", () =>
   });
 
   it("uniqueMarkerRows + groupMarkersByParcel: 2.300 tautan / 1.015 patok under 150ms (localeCompare numeric ≈ 40 ms)", () => {
-    const start = performance.now();
-    const unique = uniqueMarkerRows(linkRows);
-    const groups = groupMarkersByParcel(linkRows, unique);
-    const duration = performance.now() - start;
+    const { value: { unique, groups }, ms: duration } = minTime(() => {
+      const unique = uniqueMarkerRows(linkRows);
+      const groups = groupMarkersByParcel(linkRows, unique);
+      return { unique, groups };
+    });
     console.log(`  uniqueMarkerRows+groupMarkersByParcel (2.300 tautan): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(150);
     expect(unique).toHaveLength(1015);
@@ -1023,9 +1055,10 @@ describe("Performance - Patok & Laporan NKT (#329/#331/#332, pure logic)", () =>
     const nearby: NearbyMarker[] = Array.from({ length: 500 }, (_, i) => ({
       id: `m-${i}`, lon: 101.19 + 0.002 * Math.cos(i), lat: 0.52 + 0.002 * Math.sin(i), parcelIds: [`HJP.${i}.A`], linkedToThisParcel: false, isActive: true,
     }));
-    const start = performance.now();
-    const plan = planMarkersFromVertices([ring], nearby);
-    const duration = performance.now() - start;
+    const { value: { plan }, ms: duration } = minTime(() => {
+      const plan = planMarkersFromVertices([ring], nearby);
+      return { plan };
+    });
     console.log(`  planMarkersFromVertices (60 vertex × 500 patok): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(20);
     expect(plan).toHaveLength(60);
@@ -1043,17 +1076,19 @@ describe("Performance - Patok & Laporan NKT (#329/#331/#332, pure logic)", () =>
     }));
     const data: NktReportData = { group: { name: "KP Hasrat Jaya Pagaruyung", code: "ISH-1401-03", abrv: "HJP", districtName: "Kampar" }, parcels, printedAt: "2026-09-15T03:00:00.000Z" };
 
-    const t0 = performance.now();
-    const input = buildNktReportInput(data);
-    const tInput = performance.now() - t0;
+    const { value: { input }, ms: tInput } = minTime(() => {
+      const input = buildNktReportInput(data);
+      return { input };
+    });
     console.log(`  buildNktReportInput (559 lahan): ${tInput.toFixed(2)}ms`);
     expect(tInput).toBeLessThan(30);
     expect(summarizeNktReport(data).affected).toBe(21);
     expect(input.rows).toHaveLength(21);
 
-    const t1 = performance.now();
-    const doc = buildLayerReportDoc(input);
-    const tDoc = performance.now() - t1;
+    const { value: { doc }, ms: tDoc } = minTime(() => {
+      const doc = buildLayerReportDoc(input);
+      return { doc };
+    });
     console.log(`  buildLayerReportDoc Laporan NKT (559 konteks + 21 fitur): ${tDoc.toFixed(2)}ms, ${doc.getNumberOfPages()} halaman`);
     expect(tDoc).toBeLessThan(1500);
   });
@@ -1081,10 +1116,11 @@ describe("Performance - Monev BMP (#344/#346, pure logic)", () => {
   const lembaga = new Map(IND.filter((i) => i.level === "LEMBAGA").map((i, k) => [i.code, k % 4]));
 
   it("recomputeBmpScore × 12.000 penilaian (30 indikator) under 300ms", () => {
-    const start = performance.now();
-    let sum = 0;
-    for (let i = 0; i < 12_000; i++) sum += recomputeBmpScore(IND, individu, lembaga).total;
-    const duration = performance.now() - start;
+    const { value: { sum }, ms: duration } = minTime(() => {
+      let sum = 0;
+      for (let i = 0; i < 12_000; i++) sum += recomputeBmpScore(IND, individu, lembaga).total;
+      return { sum };
+    });
     console.log(`  recomputeBmpScore ×12.000: ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(300);
     expect(sum).toBeGreaterThan(0);
@@ -1102,15 +1138,16 @@ describe("Performance - Monev BMP (#344/#346, pure logic)", () => {
   const STATS: BmpMonevIndicatorStat[] = GROUPS.flatMap((g) => [2024, 2025, 2026].flatMap((y) => IND.filter((x) => x.level === "INDIVIDU").map((x, k) => ({ groupId: g.id, surveyYear: y, indicatorId: x.id, sum: 300 * (k % 4), n: 280, nullCount: 20 }))));
 
   it("agregasi dashboard (40 Lembaga · 36.000 penilaian): rows + totals + histogram + tren + profil kegiatan + terlemah + profil Lembaga under 250ms", () => {
-    const start = performance.now();
-    const rows = bmpMonevGroupRows(GROUPS, 2026);
-    const totals = bmpMonevTotals(GROUPS, 2026);
-    const hist = bmpMonevScoreHistogram(GROUPS, 2026);
-    const trend = bmpMonevTrend(GROUPS);
-    const profile = bmpMonevActivityProfile(GROUPS, 2026, ACTIVITIES, MONEV_IND);
-    const weakest = bmpMonevWeakestIndicators(GROUPS, 2026, MONEV_IND, STATS);
-    const groupProfiles = bmpMonevGroupProfiles(GROUPS, 2026, "avg");
-    const duration = performance.now() - start;
+    const { value: { rows, totals, hist, trend, profile, weakest, groupProfiles }, ms: duration } = minTime(() => {
+      const rows = bmpMonevGroupRows(GROUPS, 2026);
+      const totals = bmpMonevTotals(GROUPS, 2026);
+      const hist = bmpMonevScoreHistogram(GROUPS, 2026);
+      const trend = bmpMonevTrend(GROUPS);
+      const profile = bmpMonevActivityProfile(GROUPS, 2026, ACTIVITIES, MONEV_IND);
+      const weakest = bmpMonevWeakestIndicators(GROUPS, 2026, MONEV_IND, STATS);
+      const groupProfiles = bmpMonevGroupProfiles(GROUPS, 2026, "avg");
+      return { rows, totals, hist, trend, profile, weakest, groupProfiles };
+    });
     console.log(`  agregasi Monev (36.000 penilaian): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(250);
     expect(rows).toHaveLength(40);
@@ -1132,10 +1169,11 @@ describe("Performance - Monev BMP (#344/#346, pure logic)", () => {
       values: [i + 1, `Petani ${i}`, `SKPE.14.06.09.2001.${String(i).padStart(4, "0")}`, `SKPE.${String(i).padStart(4, "0")}.A`, null, 1.5, "10 Juni 25", 1.2, "Perintis", "26 Juni 26", 1.83, "Praktisi", null, null, null],
     }));
     const refs = Array.from({ length: 5000 }, (_, i) => ({ farmerCode: `SKPE.14.06.09.2001.${String(i).padStart(4, "0")}`, farmerDbId: `f-${i}`, farmerName: `Petani ${i}`, parcels: [{ parcelId: `SKPE.${String(i).padStart(4, "0")}.A`, parcelUid: `u-${i}` }], assessedYears: [2025] }));
-    const start = performance.now();
-    const parsed = parseBmpImportRows([...header, ...rows]);
-    const resolved = resolveBmpImportRows(parsed.rows, refs, new Date("2026-09-20T00:00:00Z"));
-    const duration = performance.now() - start;
+    const { value: { parsed, resolved }, ms: duration } = minTime(() => {
+      const parsed = parseBmpImportRows([...header, ...rows]);
+      const resolved = resolveBmpImportRows(parsed.rows, refs, new Date("2026-09-20T00:00:00Z"));
+      return { parsed, resolved };
+    });
     console.log(`  parse+resolve rekap 5.000 baris: ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(200);
     expect(parsed.rows).toHaveLength(10_000);
@@ -1147,10 +1185,11 @@ describe("Performance - Monev BMP (#344/#346, pure logic)", () => {
     const letters = (n: number) => { let s = ""; do { s = String.fromCharCode(97 + (n % 26)) + s; n = Math.floor(n / 26); } while (n > 0); return s.padStart(4, "z"); };
     const farmers = Array.from({ length: 300 }, (_, i) => ({ farmerDbId: `f-${i}`, name: `Petani ${letters(i * 31)} ${letters(i * 17 + 3)}`, farmerCode: `L.${i}` }));
     const names = Array.from({ length: 300 }, (_, i) => (i % 3 === 0 ? `Petani ${letters(i * 31)} ${letters(i * 17 + 3)}` : `Petani ${letters(i * 31)} ${letters(i * 17 + 3)}x`));
-    const start = performance.now();
-    let exact = 0;
-    for (const n of names) if (matchFarmerName(n, farmers).confidence === "EXACT") exact++;
-    const duration = performance.now() - start;
+    const { value: { exact }, ms: duration } = minTime(() => {
+      let exact = 0;
+      for (const n of names) if (matchFarmerName(n, farmers).confidence === "EXACT") exact++;
+      return { exact };
+    });
     console.log(`  matchFarmerName 300×300: ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(600);
     expect(exact).toBe(100);
@@ -1193,9 +1232,10 @@ describe("Performance - DASH-07 klip titik api ke outline provinsi (#280/#286)",
       })),
     };
 
-    const start = performance.now();
-    const kept = filterPointsWithinAreas(fc, [{ geometry: outline }]);
-    const duration = performance.now() - start;
+    const { value: { kept }, ms: duration } = minTime(() => {
+      const kept = filterPointsWithinAreas(fc, [{ geometry: outline }]);
+      return { kept };
+    });
 
     console.log(
       `  klip 30.000 titik → ${kept.features.length} di dalam (${outline.coordinates.length} polygon): ${duration.toFixed(2)}ms`,
@@ -1206,5 +1246,37 @@ describe("Performance - DASH-07 klip titik api ke outline provinsi (#280/#286)",
     // pastikan klip benar-benar bekerja (bukan meloloskan/menolak semua).
     expect(kept.features.length).toBeGreaterThan(5_000);
     expect(kept.features.length).toBeLessThan(25_000);
+  });
+});
+
+describe("Performance - #317 Tumpang Tindih Lahan (pure logic)", () => {
+  // Halaman merakit & menyaring SELURUH temuan di browser; filter/chip dihitung
+  // ulang tiap klik. Terukur 136 pasangan di mis-dev (14.174 lahan) — uji 20.000
+  // (≈ 150× hari ini, jauh di atas proyeksi 2028 12.000 petani) agar tetap linear.
+  it("builds + filters + options + pair counts for 20k pairs under 150ms", () => {
+    const side = (i: number, g: number) => ({
+      id: `p${i}`, parcelId: `L-${i}`, kelompokTani: null, farmerId: `f${i % 9000}`, farmerCode: `SH-${i}`,
+      farmerName: `Petani ${i}`, groupId: `g${g}`, groupName: `Lembaga ${g}`, districtId: `d${g % 12}`,
+      districtName: `Distrik ${g % 12}`, areaM2: 5_000 + (i % 20_000),
+    });
+    const raws: OverlapRaw[] = Array.from({ length: 20_000 }, (_, i) => ({
+      intersectionM2: 50 + ((i * 37) % 9_000),
+      a: side(2 * i, i % 60),
+      b: side(2 * i + 1, (i * 7) % 60),
+    }));
+
+    const { value: { rows, filtered, options, counts }, ms: duration } = minTime(() => {
+      const rows = buildOverlapRows(raws, new Set());
+      const filtered = filterOverlapRows(rows, { pct: "25", kind: "CROSS_GROUP", level: null, groupId: "g3", districtId: null });
+      const options = overlapFilterOptions(rows);
+      const counts = pairCountByParcel(rows);
+      return { rows, filtered, options, counts };
+    });
+
+    console.log(`  parcel overlap (${raws.length} → ${rows.length} pasangan, ${filtered.length} tersaring): ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(150);
+    expect(rows.length).toBeGreaterThan(15_000);
+    expect(options.groups).toHaveLength(60);
+    expect(counts.size).toBe(rows.length * 2);
   });
 });

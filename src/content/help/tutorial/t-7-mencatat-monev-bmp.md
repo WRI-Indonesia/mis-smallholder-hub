@@ -43,7 +43,7 @@ Baris muncul di daftar dengan badge kategori; kartu ringkasan di atas tabel (jum
 
 + Di halaman detail petani, kategori tahun terbaru tampil sebagai badge di samping nama, dan tab **Monev BMP** memuat riwayat per tahun.
 
-> [!hati-hati] Tombol hapus hanya **menonaktifkan** penilaian. Penilaian nonaktif tidak bisa diaktifkan kembali selama tahun yang sama sudah punya penilaian aktif lain.
+> [!hati-hati] Tombol hapus (secara bawaan hanya untuk SUPERADMIN) hanya **menonaktifkan** penilaian. Penilaian nonaktif tidak bisa diaktifkan kembali selama tahun yang sama sudah punya penilaian aktif lain.
 
 ## Kalau bermasalah
 

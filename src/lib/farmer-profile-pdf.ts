@@ -112,7 +112,7 @@ export function overviewMapFrame(points: [number, number][]): { minLon: number; 
  * SELALU penanda lingkaran bernomor di centroid (pada bingkai 26 km poligon
  * 1 ha < 1 mm di kertas). Merah = lahan NKT. Nomor = `assignParcelNumbers`.
  */
-export function drawParcelsOverviewMap(doc: jsPDF, box: Box, parcels: FarmerProfileParcel[]) {
+function drawParcelsOverviewMap(doc: jsPDF, box: Box, parcels: FarmerProfileParcel[]) {
   const numbers = assignParcelNumbers(parcels);
   const mapped = parcels
     .map((p, i) => ({ p, n: numbers[i] }))
@@ -175,7 +175,7 @@ export function drawParcelsOverviewMap(doc: jsPDF, box: Box, parcels: FarmerProf
  * (score/max × 3). Pita dicat rata (tanpa opacity) dengan warna kategori yang
  * dipucatkan supaya garis nilai biru tetap menonjol (owner #346).
  */
-export function drawBmpRadar(doc: jsPDF, cx: number, cy: number, R: number, rows: FarmerProfileBmpActivity[]) {
+function drawBmpRadar(doc: jsPDF, cx: number, cy: number, R: number, rows: FarmerProfileBmpActivity[]) {
   const n = rows.length;
   if (n < 3) return;
   const angle = (i: number) => -Math.PI / 2 + (2 * Math.PI * i) / n;

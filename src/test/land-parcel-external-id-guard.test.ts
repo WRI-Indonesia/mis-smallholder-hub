@@ -26,7 +26,7 @@ vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
 const { createLandParcelExternalId, updateLandParcelExternalId } = await import("@/server/actions/land-parcel-satellite");
 
-const CODE = { landParcelId: "lp-1", source: "MERIDIA", code: "ID080d781b4" };
+const CODE = { landParcelId: "lp-1", source: "MERIDIA", code: "ID0000abcde" };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -43,9 +43,9 @@ describe("createLandParcelExternalId (#373)", () => {
     const res = await createLandParcelExternalId(CODE);
     expect(res).toEqual({ success: true, data: { id: "x-new" } });
     expect(db.landParcelExternalId.findUnique.mock.calls[0][0].where).toEqual({
-      parcelUid_source_code: { parcelUid: "uid-1", source: "MERIDIA", code: "ID080d781b4" },
+      parcelUid_source_code: { parcelUid: "uid-1", source: "MERIDIA", code: "ID0000abcde" },
     });
-    expect(db.landParcelExternalId.create.mock.calls[0][0].data).toMatchObject({ parcelUid: "uid-1", code: "ID080d781b4", createdBy: "user-1" });
+    expect(db.landParcelExternalId.create.mock.calls[0][0].data).toMatchObject({ parcelUid: "uid-1", code: "ID0000abcde", createdBy: "user-1" });
   });
 
   it("kode aktif di lahan yang sama → ditolak tanpa menulis", async () => {
@@ -75,7 +75,7 @@ describe("createLandParcelExternalId (#373)", () => {
 });
 
 describe("updateLandParcelExternalId (#373)", () => {
-  const UPD = { id: "x-1", source: "MERIDIA", code: "ID080d781b4" };
+  const UPD = { id: "x-1", source: "MERIDIA", code: "ID0000abcde" };
 
   it("bentrok dicek di lahan record itu saja; record lain di lahan yang sama → ditolak", async () => {
     db.landParcelExternalId.findFirst.mockResolvedValue({ id: "x-1", parcelUid: "uid-1" });
@@ -83,7 +83,7 @@ describe("updateLandParcelExternalId (#373)", () => {
     const res = await updateLandParcelExternalId(UPD);
     expect(res.success).toBe(false);
     expect(db.landParcelExternalId.findUnique.mock.calls[0][0].where).toEqual({
-      parcelUid_source_code: { parcelUid: "uid-1", source: "MERIDIA", code: "ID080d781b4" },
+      parcelUid_source_code: { parcelUid: "uid-1", source: "MERIDIA", code: "ID0000abcde" },
     });
     expect(db.landParcelExternalId.update).not.toHaveBeenCalled();
   });

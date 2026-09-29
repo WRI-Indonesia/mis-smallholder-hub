@@ -2,9 +2,9 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [models.md](./models.md) · [indexes.md](./indexes.md) · [constraints.md](./constraints.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md)
 
-## Dashboard Snapshot Pattern
+## Pola Snapshot Dashboard
 
-### Architecture Decision: Separate Table Per Dashboard
+### Keputusan Arsitektur: Satu Tabel per Dashboard
 
 **Decision**: Use **separate snapshot table for each dashboard type** instead of single generic snapshot table.
 
@@ -12,8 +12,7 @@
 
 1. **Type Safety & Schema Clarity**
    - Each dashboard has different JSON data structure
-   - Field `data Json` can be strongly typed per dashboard
-   - Easier validation at Prisma schema level
+   - Field `data Json` bertipe per dashboard **di TypeScript** (`src/types/dashboard.ts`, `BmpSnapshotData`) — kolomnya sendiri `Json` tanpa validasi skema di Prisma/DB
 
 2. **Query Performance**
    - More specific indexes per dashboard type
@@ -36,7 +35,7 @@
 
 ---
 
-### Naming Convention
+### Konvensi Penamaan
 
 ```
 tbl_snapshot_<dashboard_name>
@@ -45,14 +44,14 @@ tbl_snapshot_<dashboard_name>
 **Examples**:
 - `tbl_snapshot_main_dashboard` — Main dashboard (DASH-01) ✅
 - `tbl_snapshot_bmp_dashboard` — Dashboard BMP (DASH-04, #166) ✅ — data JSON `BmpSnapshotData` per **Lembaga Petani** (monthly + byYear produksi/lahan terdata + subset `monthlyFull`/`byYearFull` lahan-lengkap + `byYearAge`/`byYearAgeFull` per bucket umur tanaman (#191, umur = tahun produksi − `plantingYear`) + availability 4 kategori MAP-02 + totals termasuk `totalLuasHa` (#191)); unique `(snapshot_date, district_id)`; di-slice client-side (Distrik/Lembaga/Kategori/Tahun) via pure `src/lib/bmp-dashboard-aggregation.ts`. Snapshot lama tanpa `totalLuasHa`/`byYearAge` dinormalisasi ke 0/{} (`normalizeBmpSnapshotData`) — UI menampilkan fallback sampai snapshot di-generate ulang
-- `tbl_snapshot_production_dashboard` — Production analytics (future)
+- ~~`tbl_snapshot_production_dashboard`~~ — **tidak dibuat**: analisa produksi ditangani BMP Dashboard (snapshot) dan query live
 - ~~`tbl_snapshot_training_dashboard`~~ — **tidak dipakai**: Dashboard Pelatihan (DASH-06) sengaja **live query**, bukan snapshot — volume pelatihan kecil (ratusan kegiatan) sehingga agregasi cukup client-side lewat `src/lib/training-dashboard-aggregation.ts`. Pola snapshot tetap jadi jalur migrasi bila volume tumbuh.
 - ~~`tbl_snapshot_data_availability`~~ — **tidak dipakai**: Dashboard Ketersediaan Data (DA-03, #193) juga **live query** — reuse scoring DA-02 (`computeCompleteness`) via `src/lib/data-availability-aggregation.ts`; snapshot tetap jalur fallback bila volume tumbuh.
-- `tbl_snapshot_financial_dashboard` — Financial reports (future)
+- ~~`tbl_snapshot_financial_dashboard`~~ — **tidak direncanakan** (tidak ada modul keuangan di roadmap)
 
 ---
 
-### Common Fields Pattern
+### Pola Kolom Umum
 
 All snapshot tables share these standard fields:
 
@@ -90,7 +89,7 @@ model <Dashboard>Snapshot {
 
 ---
 
-### Example: Main Dashboard Snapshot
+### Contoh: Snapshot Main Dashboard
 
 **Model**: `MainDashboardSnapshot`  
 **Table**: `tbl_snapshot_main_dashboard`
@@ -138,6 +137,8 @@ model MainDashboardSnapshot {
   "totalKelompokTani": 50,
   "totalKelompokTaniLahan": 0,
   "totalPetani": 1250,
+  "totalPetaniLaki": 900,
+  "totalPetaniPerempuan": 350,
   "totalPersilLahan": 2100,
   "totalLuasLahan": 5250.75,
   "trainingCounts": {
@@ -146,13 +147,14 @@ model MainDashboardSnapshot {
     "PAKET_2_K3": 720,
     "PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV": 580
   },
+  "certStats": { "rspo": { … }, "ispo": { … }, "sapMap": { … } },
   "kelompokTaniList": [...]
 }
 ```
 
 ---
 
-### Alternative: Single Generic Table (Not Recommended)
+### Alternatif: Satu Tabel Generik (Tidak Disarankan)
 
 **Use single generic table ONLY if**:
 - All dashboards have very similar structure (unlikely)
@@ -184,7 +186,7 @@ model Snapshot {
 
 ---
 
-### Implementation Guidelines
+### Panduan Implementasi
 
 **For new dashboards**:
 
@@ -195,7 +197,7 @@ model Snapshot {
 5. Create server actions following pattern from main dashboard
 6. Implement RBAC permission checks for snapshot generation/viewing
 
-**Example future dashboard**:
+**Contoh pola bila kelak ada dashboard snapshot baru** (ilustrasi, bukan tabel yang ada):
 ```prisma
 model ProductionDashboardSnapshot {
   id String @id @default(cuid())
@@ -214,7 +216,7 @@ model ProductionDashboardSnapshot {
 
 ---
 
-### Migration Strategy for Snapshots
+### Strategi Migrasi Snapshot
 
 **Adding new dashboard snapshot table**:
 - Risk: LOW (independent table, no dependencies)
@@ -245,3 +247,33 @@ Pola yang sama dipakai **card & badge sertifikasi (#169, 2026-07-16)**: `certSta
 - Detail/tabular KT/Blok → **real-time** (Report #154; detail Petani #152).
 - Saat KT jadi tabel (**TD-014**), agregasi teks → query relasi.
 - Semantik distinct dashboard = per-(Lembaga × KT); Report #154 juga per-(Lembaga × KT) — granularitas **identik** pasca-#189 (level Gapoktan di-drop; sebelumnya Report memakai Lembaga × Gapoktan × KT).
+
+---
+
+## Kapan snapshot, kapan live query (dari standar UI/UX)
+
+> ⚠️ **Putuskan dulu: snapshot atau live query?** Snapshot bukan default otomatis untuk setiap dashboard baru.
+>
+> | Pilih **snapshot** bila | Pilih **live query** bila |
+> |---|---|
+> | Agregasi berat / lintas jutaan baris (produksi bulanan, lahan) | Volume kecil–menengah (ratusan–ribuan baris) |
+> | Perlu jejak historis "angka per tanggal X" | Angka selalu harus mencerminkan kondisi terkini |
+> | Biaya query per request tak terterima | Beban operasional "generate snapshot dulu" tak sepadan |
+>
+> Contoh snapshot: DASH-01 Main (`tbl_snapshot_main_dashboard`), DASH-04 BMP (`tbl_snapshot_bmp_dashboard`).
+> Contoh **live query**: **DASH-06 Dashboard Pelatihan** — `src/server/actions/dashboard-training.ts` query langsung lalu agregasi client-side lewat lib murni `src/lib/training-dashboard-aggregation.ts`; sengaja tanpa tabel snapshot (keputusan 2026-07-21, lihat `changelog.md`); juga **DA-03 Dashboard Ketersediaan Data** (`data-availability.ts` + `data-availability-aggregation.ts`, #193). Bila volume tumbuh, pola snapshot di bawah tetap jadi jalur migrasi.
+>
+> Terlepas dari pilihannya, **lapisan RBAC tetap sama** (permission menu + access-context + `isActive`), dan agregasi tetap ditaruh di **lib murni yang bisa dites tanpa DB**.
+
+Untuk snapshot dashboard yang menyimpan historical state:
+- **Separate Table Per Dashboard**: Setiap dashboard punya snapshot table sendiri (e.g., `tbl_snapshot_main_dashboard`, `tbl_snapshot_bmp_dashboard`)
+- **Naming Convention**: `tbl_snapshot_<dashboard_name>` dengan model `<Dashboard>Snapshot`
+- **Common Fields**: `id`, `snapshotDate`, filter fields (nullable), `data` (Json), audit trail (`createdBy`, `isActive`, timestamps)
+- **Unique Constraint**: Kombinasi `snapshotDate` + filter fields untuk prevent duplicate snapshot
+- **Data Structure**: Store aggregated data di field `data Json` dengan struktur spesifik per dashboard
+- **RBAC Integration**: Apply RBAC filter saat generate snapshot, store only accessible data
+- **Why Not Single Table**: Type safety, query performance, maintainability, independent migrations
+- **Implementation Reference**: 
+  - Issue #99: DASH-01 Dashboard Snapshot
+  - Database schema doc: `docs/database/dashboard-snapshots.md` section "Dashboard Snapshot Pattern"
+  - Server actions: `src/server/actions/snapshot.ts` (untuk pattern reference)

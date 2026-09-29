@@ -253,7 +253,7 @@ export async function getFarmerGroupDetail(id: string) {
     locationLong: group.locationLong,
     district: { id: group.district.id, name: group.district.name },
     trainingPackages,
-    activities: activities.map((a) => ({ packageCode: a.package.code, hasEvidence: a.evidenceKey != null })),
+    activities: activities.map((a) => ({ packageCode: a.package.code, hasEvidence: !!a.evidenceKey })), // "" dari import ≠ ada bukti (#385)
     farmers: farmers.map((f) => ({
       id: f.id,
       farmerId: f.farmerId,

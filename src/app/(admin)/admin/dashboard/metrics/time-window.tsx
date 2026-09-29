@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
  * sehingga sumbu X ketiganya selalu sama — dulu tiap chart punya slicer sendiri
  * dan hasilnya tidak bisa dibandingkan berdampingan.
  */
-export type TimeWindow = { label: string; days: number | null };
+type TimeWindow = { label: string; days: number | null };
 
-export const TIME_WINDOWS: TimeWindow[] = [
+const TIME_WINDOWS: TimeWindow[] = [
   { label: "1 Minggu", days: 7 },
   { label: "1 Bulan", days: 30 },
   { label: "6 Bulan", days: 183 },

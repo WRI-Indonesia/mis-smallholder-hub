@@ -5,9 +5,9 @@
 <details>
 <summary><strong>Index Strategy</strong> — Strategi indexing untuk performa query</summary>
 
-## Index Strategy
+## Strategi Indeks
 
-### Primary Indexes (Unique)
+### Indeks Utama (Unik)
 
 | Tabel | Index | Kolom | Tujuan |
 |-------|-------|-------|--------|
@@ -28,12 +28,19 @@
 | MenuItem | UNIQUE | `key` | Menu item lookup by slug |
 | **Farmer Group** | | | |
 | FarmerGroup | PK | `id` (CUID) | Primary key |
+| **Reference Benchmark (#243)** | | | |
+| ReferenceBenchmark | PK | `id` (CUID) | Primary key |
+| ReferenceBenchmark | UNIQUE | `farmerGroupId` | Satu baris acuan per Lembaga |
+| ReferenceBenchmark | INDEX | `isActive` | Filter acuan aktif |
 | **Farmer Group Boundary** | | | |
 | FarmerGroupBoundary | PK | `id` (CUID) | Primary key |
+| FarmerGroupBoundary | INDEX | `farmerGroupId` | Boundary per Lembaga |
+| FarmerGroupBoundary | INDEX | `isActive` | Filter boundary aktif |
 | FarmerGroupBoundary | GIST | `geom` | Index spasial PostGIS (ST_Intersects/ST_Contains) — ditulis manual di migration 20260819041658 karena kolom `Unsupported` (#266) |
 | **Administrative Boundary** | | | |
 | AdministrativeBoundary | PK | `id` (CUID) | Primary key |
 | AdministrativeBoundary | INDEX | `(level, isActive)` | Baca garis batas per level (KABUPATEN/KECAMATAN/DESA) |
+| AdministrativeBoundary | INDEX | `districtId` | Poligon wilayah per district |
 | AdministrativeBoundary | GIST | `geom` | Index spasial PostGIS — manual di migration 20260819073337 (#266) |
 | **Farmer** | | | |
 | Farmer | PK | `id` (CUID) | Primary key |
@@ -46,7 +53,9 @@
 | LandParcelIdentity | UNIQUE | `(farmerId, parcelId)` | Satu identitas per pasangan petani+ID lahan |
 | LandParcelDocument | PK | `id` (CUID) | Primary key |
 | LandStdb | PK | `id` (CUID) | Primary key |
-| LandStdb | UNIQUE | `(farmerId, number)` | Nomor STDB unik per petani |
+| LandStdb | PARTIAL UNIQUE | `(farmerId, number) WHERE number IS NOT NULL AND is_active` | `uniq_land_stdb_farmer_number` — nomor STDB unik per petani di antara baris aktif; tulis tangan (migrasi `20260829031525`, #306; UNIQUE `(farmerId, number)` lama dilepas) |
+| LandStdb | PARTIAL UNIQUE | `(farmerId) WHERE stage IN (PERSIAPAN_DATA, PENGAJUAN, REVISI) AND is_active` | `uniq_land_stdb_farmer_open` — satu STDB berproses per petani |
+| LandStdb | INDEX | `stage` | Filter tahapan STDB |
 | LandParcelStdb | PK | `id` (CUID) | Primary key |
 | LandParcelStdb | UNIQUE | `(parcelUid, stdbId)` | Tautan lahan↔STDB tidak ganda |
 | LandParcelExternalId | PK | `id` (CUID) | Primary key |
@@ -103,22 +112,22 @@
 | UserDistrict | PK | `id` (CUID) | Primary key |
 | UserDistrict | UNIQUE | `(userId, districtId)` | Prevent duplicate user-district assignment |
 | UserFarmerGroup | PK | `id` (CUID) | Primary key |
-| UserFarmerGroup | UNIQUE | `(userId, farmerGroupId)` | Prevent duplicate user-KT assignment |
+| UserFarmerGroup | UNIQUE | `(userId, farmerGroupId)` | Cegah penugasan user–Lembaga ganda |
 | UserPermissionOverride | PK | `id` (CUID) | Primary key |
 | UserPermissionOverride | UNIQUE | `(userId, menuKey, permission)` | Prevent duplicate permission overrides |
 
-### Secondary Indexes (Non-Unique)
+### Indeks Sekunder (Non-Unik)
 
 | Tabel | Kolom | Tujuan Query | Performa Impact |
 |-------|-------|--------------|-----------------|
-| **FarmerGroup** | `districtId` | Filter KT by district (RBAC data access) | HIGH — frequently used in list/filter |
-| FarmerGroup | `isActive` | Filter active/inactive KT | MEDIUM |
-| FarmerGroup | `code` | Search KT by code | MEDIUM |
-| **Farmer** | `farmerGroupId` | Get all farmers in a KT | HIGH — list farmers, bulk operations |
+| **FarmerGroup** | `districtId` | Filter Lembaga per district (akses data RBAC) | HIGH — frequently used in list/filter |
+| FarmerGroup | `isActive` | Filter Lembaga aktif/nonaktif | MEDIUM |
+| FarmerGroup | `code` | Cari Lembaga per kode | MEDIUM |
+| **Farmer** | `farmerGroupId` | Semua petani dalam satu Lembaga | HIGH — list farmers, bulk operations |
 | Farmer | `isActive` | Filter active farmers | HIGH |
 | Farmer | `farmerId` | Search farmer by internal ID | HIGH — frequently used in lookup |
 | **TrainingActivity** | `packageId` | Get all activities for a training package | MEDIUM |
-| TrainingActivity | `farmerGroupId` | Get training activities by KT (RBAC filter) | HIGH |
+| TrainingActivity | `farmerGroupId` | Kegiatan pelatihan per Lembaga (filter RBAC) | HIGH |
 | TrainingActivity | `isActive` | Filter active training activities | MEDIUM |
 | **TrainingParticipant** | `activityId` | Get participants for an activity (list view) | HIGH |
 | TrainingParticipant | `farmerId` | Get all trainings attended by a farmer | HIGH |
@@ -151,19 +160,19 @@
 | BmpDashboardSnapshot | `createdBy` | Audit/list snapshot per user | LOW |
 | BmpDashboardSnapshot | `isActive` | Filter snapshot aktif (soft delete) | MEDIUM |
 
-### Index Maintenance Notes
+### Catatan Pemeliharaan Indeks
 
-- **CUID vs Auto-Increment**: CUID digunakan untuk semua PK karena distribusi random lebih baik untuk UUID-style lookups dan tidak bocorkan business metrics
+- **CUID vs Auto-Increment**: CUID digunakan untuk semua PK (kecuali `LandMarkerCounter`, PK = `prefix`) karena distribusi random lebih baik untuk UUID-style lookups dan tidak bocorkan business metrics
 - **Composite Unique Indexes**: Digunakan untuk enforce business rule (contoh: satu farmer hanya bisa terdaftar 1x di satu training activity)
 - **Missing Indexes**: Tidak ada index pada `created_at` / `modified_at` karena audit query jarang dilakukan dan bisa pakai full table scan
 
-### Query Performance Targets
+### Target Performa Query
 
 | Query Type | Target Response Time | Index Strategy |
 |------------|---------------------|----------------|
 | Login (email lookup) | < 100ms | UNIQUE index on `User.email` |
-| List KT by district | < 200ms | Index on `FarmerGroup.districtId` + `isActive` |
-| List farmers in KT | < 300ms | Index on `Farmer.farmerGroupId` + `isActive` |
+| Daftar Lembaga per district | < 200ms | Index on `FarmerGroup.districtId` + `isActive` |
+| Daftar petani per Lembaga | < 300ms | Index on `Farmer.farmerGroupId` + `isActive` |
 | List parcels by farmer | < 300ms | Index on `LandParcel.farmerId` + `isActive` |
 | Training participant list | < 300ms | Index on `TrainingParticipant.activityId` |
 | RBAC permission check | < 150ms | Composite unique indexes on RBAC tables |

@@ -56,7 +56,7 @@ export const LAND_PROGRAM_STATUS_LABELS: Record<string, string> = {
   CANCELLED: "Dibatalkan",
 };
 
-/** "SHM 727; SKT 05.16.08.05.1.105108" — null bila tidak ada dokumen. */
+/** "SHM 727; SKT 01.02.03.04.5.678901" — null bila tidak ada dokumen. */
 export function summarizeDocuments(docs: DocSummaryInput[]): string | null {
   if (docs.length === 0) return null;
   return docs.map((d) => (d.number ? `${documentTypeShort(d.type)} ${d.number}` : documentTypeShort(d.type))).join("; ");
@@ -94,7 +94,7 @@ export interface ExternalIdSummaryInput {
 }
 
 /**
- * "ID080d781b4 (Meridia)" — distinct, gabung "; "; null bila kosong (#305).
+ * "ID0000abcde (Meridia)" — distinct, gabung "; "; null bila kosong (#305).
  * Pemetanya ikut karena kode yang sama bisa datang dari pemeta berbeda dan
  * hidup berdampingan (lihat `PARCEL_MAPPERS`).
  */
@@ -156,7 +156,7 @@ export interface StdbSummaryInput {
 }
 
 /**
- * "1637/53/1401/6/2025; Pengajuan — belum bernomor" — distinct, null bila
+ * "9999/99/1401/6/2025; Pengajuan — belum bernomor" — distinct, null bila
  * kosong. Baris pra-terbit tidak boleh muncul sebagai string kosong di Report
  * dan PDF (#306): pembaca akan menyangka datanya rusak, padahal tahapnya memang
  * belum menghasilkan nomor. Baris TERBIT bernomor ditulis polos (nomor saja)
@@ -213,7 +213,7 @@ export const LAND_NKT_STATUS_LABELS: Record<LandNktStatusCode, string> = {
   NOT_AFFECTED: "Tidak terdampak",
 };
 /** Label pendek untuk badge/kolom laporan. */
-export const LAND_NKT_STATUS_SHORT: Record<LandNktStatusCode, string> = {
+const LAND_NKT_STATUS_SHORT: Record<LandNktStatusCode, string> = {
   INCLUDED: "Termasuk NKT",
   AFFECTED: "Terdampak NKT",
   NOT_AFFECTED: "Tidak terdampak",

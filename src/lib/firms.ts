@@ -54,7 +54,7 @@ const utcDateString = (d: Date) => d.toISOString().slice(0, 10);
  *
  * Semantik `DATE` = hari **pertama** jendela (`DATE … DATE+dayRange-1`) —
  * diverifikasi live 2026-08-24: `…/5/2026-08-15` → acq_date 15–19 Agu.
- * Perintah cek ulang ada di docs/standards/ui-ux.md §Titik Api.
+ * Perintah cek ulang ada di docs/standards/ui-ux-map.md — butir "Layer titik api / hotspot (NASA FIRMS)".
  *
  * "24 jam" mengambil 2 hari UTC tanpa `DATE` lalu klien memangkas ke 24 jam
  * bergulir (`processHotspots`); nilai lama `2` tetap diterima demi

@@ -104,7 +104,7 @@ const row = (over: Partial<ParcelExportRow> = {}): ParcelExportRow => ({
       { type: "SHM", number: "123", holderName: "Budi", statedArea: 1.2 },
       { type: "SKT", number: null, holderName: "Ani", statedArea: 0.8 },
     ],
-    stdbLinks: [{ stdb: { number: "1637/53/1401/6/2025", stage: "TERBIT" } }],
+    stdbLinks: [{ stdb: { number: "9999/99/1401/6/2025", stage: "TERBIT" } }],
     externalIds: [{ source: "MERIDIA", code: "ID0001" }],
     programs: [],
   },
@@ -137,7 +137,7 @@ describe("buildParcelExportFeatures", () => {
     expect(p.surat).toBe("SHM 123; SKT");
     expect(p.namaDiSurat).toBe("Budi; Ani");
     expect(p.luasSurat).toBeCloseTo(2.0, 5);
-    expect(p.stdb).toBe("1637/53/1401/6/2025");
+    expect(p.stdb).toBe("9999/99/1401/6/2025");
   });
 
   // Permintaan GIS specialist: kode dipakai sebagai kunci join, jadi kode dan

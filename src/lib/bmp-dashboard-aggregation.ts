@@ -42,7 +42,7 @@ export interface BmpRawParcel {
  * 4–8 (menanjak), TM prima 9–15 (puncak), TM tua 16–25 (menurun), renta >25
  * (kandidat peremajaan/PSR).
  */
-export const BMP_AGE_BUCKETS = [
+const BMP_AGE_BUCKETS = [
   { key: "lt4", label: "< 4 thn (TBM)" },
   { key: "4-8", label: "4–8 thn (TM muda)" },
   { key: "9-15", label: "9–15 thn (TM prima)" },
@@ -600,16 +600,6 @@ export function bmpDefaultYear(
 ): number | "average" {
   if (yearOptions.includes(currentYear)) return currentYear;
   return yearOptions[0] ?? "average";
-}
-
-/** Tahun-tahun (desc) yang punya data pada monthly slice — opsi filter chart. */
-export function bmpAvailableYears(monthly: Record<string, BmpMonthlyStat>): number[] {
-  const years = new Set<number>();
-  for (const period of Object.keys(monthly)) {
-    const y = Number.parseInt(period.slice(0, 4), 10);
-    if (Number.isFinite(y)) years.add(y);
-  }
-  return [...years].sort((a, b) => b - a);
 }
 
 /**

@@ -1,5 +1,7 @@
 # 05 · Sign-off v1.1.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
 | Developer | Claude (sesi wrap-up) | 2026-09-23 | **Go** | gate lokal hijau (lint 0 · build ✓ · tsc 0 · test 1.868); `02` lengkap (TC-370…375, +TC-374-04); review rentang penuh 1 temuan valid sebagian → diperbaiki `00bcc2f`; smoke lokal TC-373-02 sisi A ✓ (SUPERADMIN) |

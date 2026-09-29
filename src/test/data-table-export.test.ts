@@ -179,3 +179,69 @@ describe("buildExportRows — dengan transformer", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 });
+
+// Review #317 — `onVisibleRowsChange` hanya dipanggil bila BARISNYA (objek/urutan)
+// berubah. Tanpa pembanding ini, halaman yang menyimpan hasilnya ke state dan
+// memberi `columns` inline berputar tanpa henti begitu satu kolom disortir
+// ("Maximum update depth exceeded" di Tumpang Tindih Lahan).
+import { isRowSelectionClick, sameItems } from "@/components/shared/data-table";
+
+describe("sameItems — penjaga loop onVisibleRowsChange", () => {
+  const a = { key: "a" };
+  const b = { key: "b" };
+  it("objek & urutan sama → true (tidak melapor ulang meski array baru)", () => {
+    expect(sameItems([a, b], [a, b])).toBe(true);
+    expect(sameItems([], [])).toBe(true);
+  });
+  it("urutan, isi, atau panjang berbeda → false (lapor)", () => {
+    expect(sameItems([a, b], [b, a])).toBe(false);
+    expect(sameItems([a], [a, b])).toBe(false);
+  });
+  it("data segar berkunci sama (refresh) → false: baris baru tetap dilaporkan (review wrap-up)", () => {
+    expect(sameItems([a, b], [{ key: "a" }, { key: "b" }])).toBe(false);
+  });
+});
+
+describe("isRowSelectionClick — klik yang memilih baris", () => {
+  // Elemen tiruan secukupnya: suite tanpa DOM (vitest environment node).
+  type Fake = { parent: Fake | null; matches: boolean; closest: (s: string) => Fake | null };
+  const el = (parent: Fake | null, matches = false): Fake => {
+    const self: Fake = {
+      parent,
+      matches,
+      closest: () => {
+        for (let n: Fake | null = self; n; n = n.parent) if (n.matches) return n;
+        return null;
+      },
+    };
+    return self;
+  };
+  const rowOf = (root: Fake) => ({
+    contains: (n: Node | null) => {
+      for (let x = n as unknown as Fake | null; x; x = x.parent) if (x === root) return true;
+      return false;
+    },
+  });
+  const row = el(null);
+  const r = rowOf(row);
+
+  it("klik sel biasa di dalam baris → pilih", () => {
+    expect(isRowSelectionClick(el(el(row)) as unknown as EventTarget, r)).toBe(true);
+  });
+  it("klik tombol/tautan di dalam baris → bukan pemilihan", () => {
+    const button = el(row, true);
+    expect(isRowSelectionClick(el(button) as unknown as EventTarget, r)).toBe(false);
+  });
+  it("tabel di dalam elemen yang bisa diklik: closest() naik melewati baris → tetap pemilihan (review wrap-up)", () => {
+    const outerButton = el(null, true);
+    const rowInside = el(outerButton);
+    const cell = el(rowInside);
+    expect(isRowSelectionClick(cell as unknown as EventTarget, rowOf(rowInside))).toBe(true);
+  });
+
+  it("klik konten portal (menu Aksi, dialog hapus) — di luar DOM baris → bukan pemilihan (review wrap-up)", () => {
+    const portalItem = el(el(null)); // menuitem tanpa selector cocok, bukan turunan baris
+    expect(isRowSelectionClick(portalItem as unknown as EventTarget, r)).toBe(false);
+  });
+});
+
