@@ -15,7 +15,7 @@
 | Gate otomatis 5 langkah hijau | ✅ lint 0 · build ✓ · tsc 0 · test 2.363 · docs sinkron |
 | Migrasi prod | ✅ **tidak berlaku** — nol migrasi |
 | Seed menu prod (TC-PREP-01) | ⏳ sesudah deploy prod: `seed-menu-key.mjs` 2 menu (dry-run → persetujuan owner → `--apply`), `data-qc` G1/G2 |
-| `rbac:compare` | ⏳ dijalankan terhadap prod sebelum merge (berkas RBAC/menu tersentuh: DONOR #263, label #364, 2 menu baru) |
+| `rbac:compare` | ✅ 2026-09-29 vs mis-prod (baca-saja): selisih **11 baris = izin 2 menu baru** (di-seed sesudah deploy); 0 selisih lain — DONOR & peran lain = prod |
 | Run **staging** semua P0 | ⚠️ **DILEWATI** — deploy staging OOM (#363); preseden v0.35.0 · v0.36.0 · v1.0.0 |
 | Run **prod** `--only P0` ≤ 1 jam setelah deploy | ⏳ menyusul deploy prod |
 
