@@ -33,7 +33,7 @@ Tersedia berkas contoh: tombol **Unduh Template Excel** di kanan atas Langkah 1.
 
 ## Hasil
 
-Catatan panen muncul di **Master Data → Produksi**. Dashboard BMP dan Peta BMP baru berubah setelah snapshot diperbarui.
+Catatan panen muncul di **Master Data → Produksi**. Peta BMP langsung membaca data terkini (klik **Muat Data** lagi); Dashboard BMP baru berubah setelah snapshot diperbarui.
 
 ## Kalau bermasalah
 
@@ -47,7 +47,7 @@ Catatan panen muncul di **Master Data → Produksi**. Dashboard BMP dan Peta BMP
 
 **Muncul pesan "Header ditemukan di baris 3"** — berkas Anda punya baris judul di atas baris nama kolom, dan sistem melewatinya sendiri. Periksa sekilas apakah nama kolom yang terbaca sudah benar, lalu lanjutkan seperti biasa.
 
-+ Nomor **Baris Asal** di tabel hasil validasi mengikuti nomor baris sungguhan di Excel, jadi tetap menunjuk baris yang benar walau headernya bukan di baris 1.
++ Nomor **Baris Asal** di berkas unduhan hasil validasi (**Download Semua Data** / **Download Data Error Saja**) mengikuti nomor baris sungguhan di Excel, jadi tetap menunjuk baris yang benar walau headernya bukan di baris 1.
 
 **"Tidak menemukan baris header pada berkas ini"** — sheet yang terbaca tidak punya satu pun baris berisi nama kolom. Biasanya berkasnya memang kosong, atau isinya gambar/pivot, bukan tabel.
 

@@ -15,13 +15,13 @@ Untuk **banyak lahan sekaligus**, pakai Bulk Upload → Upload Data Lahan → ta
 
 + Semua catatan ini menempel pada *identitas* lahan, bukan pada satu versi poligon. Kalau poligonnya kelak direvisi lewat unggah shapefile, catatannya tetap ikut.
 
-Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Tambah** butuh izin tambah, ikon pensil butuh izin ubah, ikon tempat sampah / lepas butuh izin hapus.
+Tombol yang tampil mengikuti izin Anda pada menu Lahan: **Tambah** butuh izin tambah, ikon pensil butuh izin ubah, ikon tempat sampah / lepas butuh izin hapus — secara bawaan izin hapus hanya dimiliki SUPERADMIN, jadi ADMIN bisa menambah dan mengubah tetapi tidak menghapus.
 
 ## Langkah
 
 1. Buka **Master Data → Lahan**, klik tombol detail pada baris lahan.
-2. Buka tab **Legalitas** (jumlah catatannya tampil di tab; kartu **Legalitas** di atas meringkas jenis surat & STDB).
-3. Klik **Tambah** pada blok yang sesuai — Surat Kepemilikan, STDB, UL Parcel Code, atau Program.
+2. Buka tab **Legalitas** (jumlah catatannya tampil di tab; kartu **Legalitas** di atas meringkas jenis surat & STDB) — atau tab **Program** untuk keikutsertaan program.
+3. Klik **Tambah** pada blok yang sesuai — Surat kepemilikan, STDB, atau UL Parcel Code di tab Legalitas; Program di tab Program.
 + Tiap grup punya tombol Tambah sendiri; grup yang kosong hanya menampilkan satu kalimat, bukan tabel kosong.
 4. Isi formulir lalu klik **Tambah**. Untuk surat, hanya **Jenis** yang wajib; untuk STDB, **Tahap** yang wajib — nomor baru wajib bila tahapnya *Terbit*.
 + **Surat** — Jenis yang tidak ada di daftar pilih *Lainnya*. Nilai seperti "surat di bank" atau "lahan sudah dijual" bukan jenis; tulis di **Catatan Penguasaan**. **Luas Tertera** adalah angka di surat — boleh berbeda dari luas poligon; baris surat menampilkan selisihnya dan menandai bila ≥ 0,5 Ha.
@@ -55,7 +55,7 @@ Baris STDB menampilkan **tahapnya** (yang sudah Terbit tampil polos tanpa penand
 
 ## Kalau bermasalah
 
-**Tombol Tambah / pensil tidak muncul** — akun Anda tidak punya izin tambah/ubah pada menu Lahan. Minta administrator lewat Settings → Izin Peran.
+**Tombol Tambah / pensil tidak muncul** — akun Anda tidak punya izin tambah/ubah pada menu Lahan. Minta administrator lewat **Settings → Role & Permission**. Ikon hapus/lepas yang tidak muncul adalah bawaan: hanya SUPERADMIN yang punya izin hapus.
 
 **"Petani ini sudah punya satu berkas STDB yang sedang berjalan"** — satu petani hanya boleh punya satu berkas pra-terbit. Cari baris STDB berjalan milik petani itu (ada di detail lahan mana pun miliknya) lalu ubah tahapnya di sana, atau tautkan lahan ini ke berkas tersebut.
 

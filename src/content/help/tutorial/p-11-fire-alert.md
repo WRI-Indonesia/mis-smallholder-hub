@@ -50,6 +50,6 @@ Data satelit bersifat *near-real-time* dengan jeda ± 3 jam. Rentang yang bisa d
 
 **Bulan yang diinginkan tidak ada di daftar** — pilihan dibatasi Januari 2020 sampai bulan berjalan; bulan yang belum tiba memang tidak ditawarkan.
 
-**Cetak gagal mengambil gambar peta** — basemap citra (**Hybrid** dan **Satellite**) tidak bisa di-capture. Pindah ke **StreetMap**, **Light**, atau **Dark** (tombol kanan-bawah peta) lalu cetak ulang.
+**Cetak gagal mengambil gambar peta** — basemap citra (**SAT** dan **HYBRID**) tidak bisa di-capture. Pindah ke **STREET**, **LIGHT**, atau **DARK** (tombol kanan-bawah peta) lalu cetak ulang.
 
 **Tabel kosong / lembaga tidak lengkap** — Anda hanya melihat lembaga dalam cakupan akses akun Anda. Bila seharusnya lebih luas, hubungi admin untuk menyesuaikan hak akses wilayah.

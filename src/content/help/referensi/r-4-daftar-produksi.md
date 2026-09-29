@@ -9,7 +9,7 @@ hrefLabel: Buka halaman Produksi
 
 ## Catatan penting
 
-Data di halaman ini **selalu terkini**. Yang membaca snapshot berkala adalah Main Dashboard, BMP Dashboard, dan Peta BMP — jadi angka di sana bisa tertinggal meski data di sini sudah benar.
+Data di halaman ini **selalu terkini**. Yang membaca snapshot berkala adalah Main Dashboard dan BMP Dashboard (Produksi) — jadi angka di sana bisa tertinggal meski data di sini sudah benar. Peta BMP dan tab Produksi di halaman detail membaca data langsung.
 
 ## Filter & pencarian
 

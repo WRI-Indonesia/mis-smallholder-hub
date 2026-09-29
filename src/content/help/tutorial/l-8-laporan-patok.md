@@ -18,7 +18,7 @@ Laporan ini membaca patok yang sudah tercatat (tab **Patok** di detail lahan, at
 ## Langkah
 
 1. Buka **Report → Patok**, pilih **Distrik** (wajib) dan bila perlu **Lembaga Petani**, lalu klik **Muat Data**.
-2. Baca kartu ringkasan: jumlah patok, berapa yang **Ada**, **Hilang**, **Rusak**, dan **Belum dipasang**.
+2. Baca kartu ringkasan: **Patok** (jumlah patok fisik), **Ada (terpasang)**, **Hilang**, **Rusak**, dan **Belum dipasang**.
 3. Saring dengan **Kondisi** (mis. *Hilang* untuk daftar kerja pemasangan ulang).
 + Tabel dan kartu "Daftar Patok (N dari M)" mengikuti saringan; unduhan pun hanya memuat baris yang tampil.
 4. Klik **Unduh**: **Excel** (satu baris per patok, kolom Kode Patok, lahan pemakai satu per baris), **Shapefile/GeoJSON/KML** (titik), atau **PDF** (peta klaster + tabel per lahan) — sesuai izin Export/Print Anda.
@@ -33,4 +33,4 @@ Kode patok (`HJP-PTK-000123`) di laporan sama dengan yang tertulis di patok fisi
 
 **"Tidak ada patok pada filter ini"** — lahan di wilayah itu belum punya patok; buat dari poligon di detail lahan atau unggah titik GPS lewat Bulk Upload → Upload Data Lahan → tab Patok.
 
-**Menu Patok tidak muncul** — akun Anda belum diberi izin menu Report → Patok; minta administrator lewat Settings → Izin Peran.
+**Menu Patok tidak muncul** — akun Anda belum diberi izin menu Report → Patok (secara bawaan akun DONOR memang tidak memilikinya); minta SUPERADMIN mengaturnya lewat Settings → Role & Permission.
