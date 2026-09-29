@@ -33,7 +33,7 @@ Menu: Dashboard (/admin/dashboard)
 | Icon | `LayoutDashboard` |
 | Order | `0` |
 | Sub menu | 5 — Main Dashboard (`dashboard-main`), Dashboard Pelatihan (`dashboard-training`, order 2), BMP Dashboard (Produksi) (`dashboard-bmp`, order 3), Monev BMP (`dashboard-bmp-monev`, order 4 — #344), Risk Management (`dashboard-risk`, order 5, grup level-3 berisi `dashboard-risk-fire`) |
-| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (untuk `dashboard` dan sub menunya; `prisma/seeds/data/role-permissions.csv`) |
+| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT (untuk `dashboard` dan sub menunya); DONOR hanya sub menu, tanpa baris induk `dashboard` — induk tetap tampil sebagai wadah ( `prisma/seeds/data/role-permissions.csv`) |
 
 Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 

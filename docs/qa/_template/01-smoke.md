@@ -38,7 +38,7 @@ Peran: OPERATOR · Langkah: selektor kolom, Excel · Harapan: kolom Excel = kolo
 Peran: OPERATOR · Langkah: pilih Lembaga, Buka semua, PDF · Harapan: seluruh roster ikut.
 
 ### SM-12 · Report › Patok [P0] (2 mnt)
-Peran: OPERATOR, lalu DONOR · Langkah: Distrik → Muat Data, Excel · Harapan: KPI kondisi + tabel; DONOR **tanpa** tombol Excel.
+Peran: OPERATOR, lalu DONOR · Langkah: Distrik → Muat Data, Excel · Harapan: KPI kondisi + tabel; DONOR **tidak** melihat menu Patok.
 
 ### SM-13 · Map › Peta Lahan [P0] (4 mnt)
 Peran: OPERATOR · Langkah: Muat Data 1 Distrik, toggle tiap baris legenda, popup lahan, unduh 1 baris · Harapan: semua layer tergambar; popup lengkap; unduhan sesuai tipe baris.
@@ -89,7 +89,7 @@ Peran: DONOR · Langkah: indeks, cari 1 kata, buka 1 tutorial baru rilis ini · 
 Peran: OPERATOR · Langkah: dropdown Distrik/Lembaga di Report & Master Data · Harapan: **tidak** ada Lembaga/Distrik di luar scope.
 
 ### SM-29 · Menu DONOR [P0] (1 mnt)
-Peran: DONOR · Langkah: sidebar · Harapan: Master Data/Bulk Upload/Settings **tidak** tampil; Report & Map read-only.
+Peran: DONOR · Langkah: sidebar · Harapan: Master Data tampil read-only (Lembaga, Petani, Pelatihan, Lahan, Monev BMP — tanpa Produksi, tanpa tombol Tambah/Ubah/Excel); Report tanpa Kelompok Tani & Patok; Bulk Upload/Settings/Data Analyst **tidak** tampil.
 
 ### SM-30 · Dashboard › Monev BMP [P0] (3 mnt)
 Peran: OPERATOR, lalu DONOR · Langkah: filter Distrik/Lembaga/Tahun, klik nama Lembaga di Papan → filter, radar A/B ganti seri B, Unduh Excel rekap · Harapan: 4 seksi terisi; filter di URL; DONOR **tanpa** tombol Unduh Excel.

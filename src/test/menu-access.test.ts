@@ -142,11 +142,19 @@ describe("spesifikasi peran (rbac.md §Inventaris Role) ditegakkan seed", () => 
       .map((m) => m.key)
       .sort();
 
-  it("DONOR tidak menyentuh master data sama sekali", () => {
-    // Daftar petani memuat NIK & alamat. Peran donor tertulis read-only untuk
-    // dashboard, laporan, peta, dan bantuan — master data tidak termasuk.
-    // Produksi sempat memberikannya (#263); seed tidak boleh mengulanginya.
-    expect(punya("DONOR", "master-data", ["VIEW", "PRINT", "EXPORT", "CREATE", "EDIT", "DELETE"])).toEqual([]);
+  it("DONOR hanya melihat & mencetak master data, tanpa menulis", () => {
+    // Revisi #263 (keputusan owner 2026-09-29, mengikuti produksi 2026-09-23):
+    // DONOR boleh VIEW+PRINT di 5 menu master data — termasuk daftar petani
+    // ber-NIK — tetapi tidak pernah CREATE/EDIT/DELETE/EXPORT, dan tidak
+    // menyentuh Produksi.
+    expect(punya("DONOR", "master-data", ["VIEW", "PRINT"])).toEqual([
+      "master-data-bmp-monev",
+      "master-data-farmers",
+      "master-data-groups",
+      "master-data-parcels",
+      "master-data-training",
+    ]);
+    expect(punya("DONOR", "master-data", ["CREATE", "EDIT", "DELETE", "EXPORT"])).toEqual([]);
   });
 
   it("DONOR tidak bisa mengekspor data mentah, tapi boleh mencetak", () => {

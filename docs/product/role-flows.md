@@ -54,20 +54,18 @@
 
 ## DONOR (Read-Only donor/funder, #187)
 
-> ⚠️ **Seed ≠ produksi (dicek `npm run rbac:compare` ke mis-prod 2026-09-29).** Bagian ini mengikuti seed `role-permissions.csv`. Di produksi DONOR **juga** punya VIEW+PRINT di 5 menu Master Data (Lembaga Petani, Petani, Pelatihan, Lahan, Monev BMP) dan **tidak** punya Report Kelompok Tani (Summary/Detail) & Report Patok — perubahan lewat UI, terkait #364. Keputusan mana yang benar menunggu owner.
-
 Tipe pengguna untuk pihak donor/funder — **VIEW-only** pada subset menu. Cakupan data mengikuti aturan yang sama (tanpa assignment = `ALL`, dengan assignment = ter-scope).
 
 - **Dashboard**: ✅ Main Dashboard + BMP + Dashboard Pelatihan + Dashboard Monev BMP (VIEW) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
-- **Report**: ✅ View reports (Petani, Pelatihan, Produksi, Kelompok Tani Summary/Detail, Lahan, **Patok** #331) — VIEW + PRINT (PDF) saja; **tanpa EXPORT** (Excel) di semua report
+- **Report**: ✅ Petani, Pelatihan, Produksi, Lahan — VIEW + PRINT (PDF) saja, **tanpa EXPORT** (Excel) · ❌ Kelompok Tani (Summary/Detail) & Patok (dicabut 2026-09-23 di produksi, diadopsi seed 2026-09-29)
 - **Map**: ✅ Peta Lahan + Peta BMP (VIEW)
 - **Bantuan**: ✅ VIEW
-- **Master Data**: ❌ No access
+- **Master Data**: ✅ Lembaga Petani, Petani, Pelatihan, Lahan, Monev BMP — VIEW + PRINT saja (tanpa CREATE/EDIT/DELETE/EXPORT); ❌ Produksi. Revisi #263 (keputusan owner 2026-09-29)
 - **Data Analyst**: ❌ No access (termasuk Dashboard Ketersediaan Data — keputusan owner #193: alat kerja internal kualitas data; Tumpang Tindih Lahan #317 juga tidak — identitas lintas scope, dikunci `menu-access.test.ts`)
 - **Settings**: ❌ No access
 - **Bulk Upload**: ❌ No access
 - **Tools**: ❌ No access
 
-> Privasi (sementara): DONOR masih melihat data individu petani (nama/NIK) seperti MANAGEMENT. Pemisahan agregat-saja via menu khusus DONOR = follow-up (lihat retro #187).
+> Privasi: DONOR melihat data individu petani (nama/NIK) lewat Master Data › Petani dan laporan — **disengaja** (keputusan owner 2026-09-29, merevisi #263). Pemisahan agregat-saja via menu khusus DONOR = follow-up (lihat retro #187).
 
 </details>

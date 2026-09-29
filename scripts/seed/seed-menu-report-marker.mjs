@@ -1,6 +1,6 @@
 // Seed parsial #331: HANYA menu `report-marker` (Report › Patok) + role-permission
 // mengikuti prisma/seeds/data/role-permissions.csv (ADMIN: CREATE/EDIT/EXPORT/PRINT/VIEW;
-// OPERATOR/MANAGEMENT/SUPERADMIN: EXPORT/PRINT/VIEW; DONOR: PRINT/VIEW).
+// OPERATOR/MANAGEMENT/SUPERADMIN: EXPORT/PRINT/VIEW; DONOR tanpa akses sejak 2026-09-29, revisi #263).
 // Dry-run default; --apply untuk menulis. Jangan pakai full `prisma db seed`
 // (DB berisi data, seed lain tidak idempotent).
 //   npx dotenv -e .env.<env> -- node scripts/seed/seed-menu-report-marker.mjs [--apply]
@@ -20,7 +20,6 @@ const PERMS = {
   OPERATOR: ["EXPORT", "PRINT", "VIEW"],
   MANAGEMENT: ["EXPORT", "PRINT", "VIEW"],
   SUPERADMIN: ["EXPORT", "PRINT", "VIEW"],
-  DONOR: ["PRINT", "VIEW"],
 };
 
 const pool = new Pool({ connectionString: url });
