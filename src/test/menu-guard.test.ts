@@ -140,10 +140,35 @@ describe("reactivateMenuItem — pasangan deleteMenuItem (#237)", () => {
     for (const fn of Object.values(db.menuItem)) expect(fn).not.toHaveBeenCalled();
   });
 
-  it("id basi → error terbaca, tanpa update", async () => {
+  it("id basi → error terbaca, tanpa update — nonaktifkan maupun aktifkan (satu jalur, review #237)", async () => {
     db.menuItem.findUnique.mockResolvedValue(null);
     expect(await actions.reactivateMenuItem("m-x")).toEqual({ success: false, error: expect.stringMatching(/tidak ditemukan/) });
+    expect(await actions.deleteMenuItem("m-x")).toEqual({ success: false, error: expect.stringMatching(/tidak ditemukan/) });
     expect(db.menuItem.update).not.toHaveBeenCalled();
+  });
+
+  it("id kosong → ditolak tanpa DB", async () => {
+    expect(await actions.reactivateMenuItem("")).toEqual({ success: false, error: "Menu tidak valid" });
+    expect(db.menuItem.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("induk masih nonaktif → ditolak dengan nama induknya (anak tak akan terjangkau dari sidebar)", async () => {
+    db.menuItem.findUnique.mockImplementation(async ({ where }: { where: { id?: string; key?: string } }) =>
+      where.id ? { parentKey: "data-analyst" } : { title: "Data Analyst", isActive: false });
+    const res = await actions.reactivateMenuItem("m-1");
+    expect(res).toEqual({ success: false, error: expect.stringMatching(/Induk menu "Data Analyst" masih nonaktif/) });
+    expect(db.menuItem.update).not.toHaveBeenCalled();
+
+    // Menonaktifkan anak tidak peduli status induk.
+    expect((await actions.deleteMenuItem("m-1")).success).toBe(true);
+  });
+
+  it("pesan izin sama di ketiga jalur yang mengubah Aktif", async () => {
+    hasPermission.mockImplementation(async (_m: string, level: string) => level === "EDIT");
+    const msg = "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu";
+    expect(await actions.deleteMenuItem("m-1")).toEqual({ success: false, error: msg });
+    expect(await actions.reactivateMenuItem("m-1")).toEqual({ success: false, error: msg });
+    expect(await actions.updateMenuItem(fullPayload({ isActive: false }))).toEqual({ success: false, error: msg });
   });
 });
 

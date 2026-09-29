@@ -58,7 +58,7 @@ Halaman: Menu Management (/admin/settings/menu)
 | Empty state pencarian | Teks | `Tidak ada menu yang cocok dengan pencarian.` |
 | `Buka semua` / `Tutup semua` | Tombol | Buka/tutup seluruh induk; state `localStorage` (`menu-list:open`), default *collapsed*; nonaktif saat mencari |
 | Tabel tree menu | Tree / Tabel | Render **rekursif 3 level** (`flattenTree`), **collapsible per induk** (chevron, default collapsed); indentasi per kedalaman; ikon dari `ICON_MAP` |
-| Kolom `Aksi` | Kolom | `Edit` (EDIT) dan `Nonaktifkan` / `Aktifkan kembali` (DELETE) via `TableActions`. Baris aktif → dialog Nonaktifkan; baris nonaktif → `reactivateMenuItem` langsung tanpa dialog (pola toggle Master Data; #237 — dulu tombol ini membuka dialog Nonaktifkan dan memanggil `deleteMenuItem` lagi) |
+| Kolom `Aksi` | Kolom | `Edit` (EDIT) dan `Nonaktifkan` / `Aktifkan kembali` (DELETE) via `TableActions`. Baris aktif → dialog Nonaktifkan; baris nonaktif → `reactivateMenuItem` langsung tanpa dialog (pola toggle Master Data; klik berulang diabaikan sampai selesai; #237 — dulu tombol ini membuka dialog Nonaktifkan dan memanggil `deleteMenuItem` lagi). Kedua aksi = satu helper `setMenuItemActive` (DELETE, id divalidasi Zod `menuIdSchema`, id basi → `Menu tidak ditemukan — muat ulang halaman`, `ActionResult`); aktif kembali menyalakan Aktif + Visible dan **ditolak bila induknya nonaktif** (`Induk menu "…" masih nonaktif — aktifkan induknya dulu`) |
 | Kolom `Menu` | Kolom | Ikon + judul menu, terindentasi sesuai level |
 | Kolom `Key` | Kolom | `key` menu (font mono) |
 | Kolom `URL` | Kolom | `url` menu |

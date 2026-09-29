@@ -23,7 +23,7 @@ Halaman ini menampilkan seluruh menu sidebar (sampai tiga tingkat) dan mengatur 
 3. Menyembunyikan menu yang tidak dipakai: klik **Edit** pada barisnya, matikan saklar **Visible**, lalu **Simpan** — atau klik ikon **Nonaktifkan** di kolom Aksi.
 + **Visible** mati = menu disembunyikan dari sidebar tetapi tetap aktif; barisnya diberi badge **Tersembunyi**. **Nonaktifkan** = soft delete: menu hilang dari navigasi semua pengguna, barisnya tetap di daftar ini dengan badge **Nonaktif**. Mengubah saklar **Aktif** butuh izin **Delete** pada menu ini; Visible cukup izin Edit. Dialog Edit juga menampilkan judul, URL, induk, urutan, dan ikon menu itu sebagai keterangan (tidak bisa diubah).
 4. Menghidupkan lagi: klik ikon **Aktifkan kembali** (panah melingkar) di kolom Aksi pada baris ber-badge **Nonaktif** — menu langsung aktif dan tampil lagi. Cara lain: **Edit**, nyalakan saklar **Aktif** dan **Visible**, lalu **Simpan**.
-+ Ikon **Nonaktifkan** ikut mematikan saklar Visible; **Aktifkan kembali** menyalakan keduanya sekaligus. Lewat Edit, saklar Aktif dan Visible diatur sendiri-sendiri — menu hanya tampil di sidebar bila keduanya menyala.
++ Ikon **Nonaktifkan** ikut mematikan saklar Visible; **Aktifkan kembali** menyalakan keduanya sekaligus — bila menu itu memang ingin tetap tersembunyi, matikan lagi **Visible** lewat Edit. Sub-menu tidak bisa diaktifkan selama menu induknya masih **Nonaktif**: aktifkan induknya dulu. Lewat Edit, saklar Aktif dan Visible diatur sendiri-sendiri — menu hanya tampil di sidebar bila keduanya menyala.
 
 > [!hati-hati] Menonaktifkan atau menyembunyikan menu **induk** ikut menyembunyikan seluruh sub-menunya.
 

@@ -53,25 +53,39 @@ export function MenuListClient({
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    const result = await deleteMenuItem(deleteTarget.id);
-    if (result.success) {
-      toast.success("Menu item dinonaktifkan");
-      setDeleteTarget(null);
-      router.refresh();
-    } else {
-      toast.error(typeof result.error === "string" ? result.error : "Gagal menonaktifkan menu item");
+    try {
+      const result = await deleteMenuItem(deleteTarget.id);
+      if (result.success) {
+        toast.success("Menu item dinonaktifkan");
+        setDeleteTarget(null);
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Gagal menonaktifkan menu item");
     }
   }
 
   // #237: baris nonaktif → "Aktifkan kembali" langsung mereaktivasi (pola toggle
   // Master Data); dulu membuka dialog Nonaktifkan dan memanggil deleteMenuItem lagi.
+  // Tanpa dialog, jadi klik berulang dicegah di sini (satu permintaan per menu).
+  const reactivating = React.useRef(new Set<string>());
   async function handleReactivate(item: MenuItemData) {
-    const result = await reactivateMenuItem(item.id);
-    if (result.success) {
-      toast.success("Menu diaktifkan kembali");
-      router.refresh();
-    } else {
-      toast.error(typeof result.error === "string" ? result.error : "Gagal mengaktifkan menu");
+    if (reactivating.current.has(item.id)) return;
+    reactivating.current.add(item.id);
+    try {
+      const result = await reactivateMenuItem(item.id);
+      if (result.success) {
+        toast.success("Menu diaktifkan kembali");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Gagal mengaktifkan menu");
+    } finally {
+      reactivating.current.delete(item.id);
     }
   }
 

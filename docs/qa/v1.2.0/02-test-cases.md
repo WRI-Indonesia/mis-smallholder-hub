@@ -204,3 +204,15 @@ Harapan:
 - Langkah 1: dialog "Nonaktifkan Menu"; setelah konfirmasi badge **Nonaktif**, menu hilang dari sidebar.
 - Langkah 2: **tanpa** dialog Nonaktifkan; toast "Menu diaktifkan kembali"; badge **Aktif** tanpa **Tersembunyi**; Sprint Mingguan tampil lagi di sidebar (`is_active` & `is_visible` = true).
 
+### TC-237-02 · Aktifkan kembali: induk nonaktif & peran tanpa Delete [P1] (5 mnt)
+Prasyarat: akun SUPERADMIN; akun uji dengan override `settings-menu` VIEW+EDIT tanpa DELETE.
+Langkah:
+1. SUPERADMIN: Nonaktifkan `data-analyst-sprint`, lalu Nonaktifkan induknya `data-analyst`.
+2. Klik **Aktifkan kembali** pada `data-analyst-sprint`.
+3. Aktifkan kembali `data-analyst`, lalu `data-analyst-sprint`.
+4. Akun uji tanpa DELETE: buka Menu Management.
+Harapan:
+- Langkah 2: toast `Induk menu "Data Analyst" masih nonaktif — aktifkan induknya dulu`; baris tetap **Nonaktif**.
+- Langkah 3: keduanya **Aktif** & tampil di sidebar.
+- Langkah 4: ikon Nonaktifkan / Aktifkan kembali tidak tampil (hanya Edit).
+

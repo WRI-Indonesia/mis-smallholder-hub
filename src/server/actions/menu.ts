@@ -3,10 +3,13 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
-import { updateMenuItemSchema } from "@/validations/menu.schema";
+import { menuIdSchema, updateMenuItemSchema } from "@/validations/menu.schema";
 import type { UpdateMenuItemInput } from "@/validations/menu.schema";
 import { buildMenuTree } from "@/lib/menu-utils";
 import type { MenuItem } from "@/lib/menu-utils";
+import type { ActionResult } from "@/types/action-result";
+
+const NO_ACTIVE_PERMISSION = "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu";
  
 export async function getMenuItems(): Promise<{ success: boolean; data?: MenuItem[] }> {
   try {
@@ -54,7 +57,7 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
   // Mengubah Aktif = soft delete / reaktivasi → level DELETE, sama dengan
   // `deleteMenuItem`; EDIT saja hanya boleh mengubah Visible.
   if (current.isActive !== parsed.data.isActive && !(await hasPermission("settings-menu", "DELETE"))) {
-    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu" };
+    return { success: false, error: NO_ACTIVE_PERMISSION };
   }
 
   const session = await auth();
@@ -70,36 +73,41 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
   return { success: true };
 }
  
-export async function deleteMenuItem(id: string) {
+/**
+ * Nonaktifkan (soft delete) / aktifkan kembali satu menu — satu jalur untuk
+ * kedua arah (#237) agar guard, cek id basi, dan aturan Visible tidak
+ * menyimpang. Level DELETE. Nonaktif mematikan Aktif + Visible; aktif kembali
+ * menyalakan keduanya (kalau tidak, menu tetap tak tampil) dan ditolak bila
+ * induknya masih nonaktif — anak tak terjangkau dari sidebar/izin berjenjang.
+ */
+async function setMenuItemActive(id: string, active: boolean): Promise<ActionResult> {
   if (!(await hasPermission("settings-menu", "DELETE"))) {
-    return { success: false, error: "Tidak memiliki izin untuk menghapus menu" };
+    return { success: false, error: NO_ACTIVE_PERMISSION };
+  }
+  if (!menuIdSchema.safeParse(id).success) return { success: false, error: "Menu tidak valid" };
+
+  const current = await prisma.menuItem.findUnique({ where: { id }, select: { parentKey: true } });
+  if (!current) return { success: false, error: "Menu tidak ditemukan — muat ulang halaman" };
+  if (active && current.parentKey) {
+    const parent = await prisma.menuItem.findUnique({ where: { key: current.parentKey }, select: { title: true, isActive: true } });
+    if (parent && !parent.isActive) {
+      return { success: false, error: `Induk menu "${parent.title}" masih nonaktif — aktifkan induknya dulu` };
+    }
   }
 
   const session = await auth();
   await prisma.menuItem.update({
     where: { id },
-    data: { isActive: false, isVisible: false, modifiedBy: session?.user?.id ?? null },
+    data: { isActive: active, isVisible: active, modifiedBy: session?.user?.id ?? null },
   });
   return { success: true };
 }
 
-/**
- * Pasangan `deleteMenuItem` (#237): menghidupkan lagi menu nonaktif — Aktif DAN
- * Visible, karena nonaktifkan mematikan keduanya. Level DELETE, sama dengan
- * menonaktifkan (tombol "Aktifkan kembali" dulu memanggil `deleteMenuItem`).
- */
-export async function reactivateMenuItem(id: string) {
-  if (!(await hasPermission("settings-menu", "DELETE"))) {
-    return { success: false, error: "Tidak memiliki izin untuk mengaktifkan menu" };
-  }
+export async function deleteMenuItem(id: string): Promise<ActionResult> {
+  return setMenuItemActive(id, false);
+}
 
-  const current = await prisma.menuItem.findUnique({ where: { id }, select: { id: true } });
-  if (!current) return { success: false, error: "Menu tidak ditemukan — muat ulang halaman" };
-
-  const session = await auth();
-  await prisma.menuItem.update({
-    where: { id },
-    data: { isActive: true, isVisible: true, modifiedBy: session?.user?.id ?? null },
-  });
-  return { success: true };
+/** Tombol "Aktifkan kembali" (#237) — dulu memanggil `deleteMenuItem`. */
+export async function reactivateMenuItem(id: string): Promise<ActionResult> {
+  return setMenuItemActive(id, true);
 }

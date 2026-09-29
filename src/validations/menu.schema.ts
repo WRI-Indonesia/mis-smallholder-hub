@@ -13,4 +13,7 @@ export const updateMenuItemSchema = z.object({
   isVisible: z.boolean(),
 });
 
+/** Id menu untuk nonaktifkan / aktifkan kembali (#237). */
+export const menuIdSchema = z.string().min(1);
+
 export type UpdateMenuItemInput = z.infer<typeof updateMenuItemSchema>;
