@@ -11,7 +11,7 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Sprint Focus
 
-Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Disusun 2026-09-28 dari triase 42 issue terbuka: #265 & #374 ditutup, 40 tersisa. Setiap minggu berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner, dan keputusannya diminta **di awal minggu**. Tabel sprint ditampilkan di menu **Data Analyst → Sprint Mingguan** (#378) dan diparse saat build. Karena itu formatnya tetap: heading `#### Sprint <n> · <mulai> → <selesai> — <judul>` dan tujuh kolom. **Kategori** diisi salah satu dari Keamanan · Rilis · Performa · Data · Fitur · Kerapian. **Poin** diisi S = 1 (≤ ½ hari), M = 3 (1–2 hari), atau L = 5 (3+ hari, sebaiknya dipecah). **Status** diisi salah satu dari 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser. Butir yang digeser tetap ditulis di sprint asalnya dengan ⏭️, lalu ditulis ulang di sprint tujuannya; dari situ carry-over di tab Analisa dihitung. Format yang rusak membuat build gagal. Butir yang menulis ke mis-prod tetap mengikuti pola dump → dry-run → approval → `--write`.
+Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Disusun 2026-09-28 dari triase 42 issue terbuka: #265 & #374 ditutup, 40 tersisa. Diperbarui 2026-09-29: #378 dicatat di Sprint 1 (tak terencana), epic Supply Chain **#379** (#380–#382, P1) ditaruh di Sprint 5–6 tanpa menggeser Sprint 1–4, prasyaratnya (lisensi UML, berkas survei) diputuskan di Sprint 1. Setiap minggu berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner, dan keputusannya diminta **di awal minggu**. Tabel sprint ditampilkan di menu **Data Analyst → Sprint Mingguan** (#378) dan diparse saat build. Karena itu formatnya tetap: heading `#### Sprint <n> · <mulai> → <selesai> — <judul>` dan tujuh kolom. **Kategori** diisi salah satu dari Keamanan · Rilis · Performa · Data · Fitur · Kerapian. **Poin** diisi S = 1 (≤ ½ hari), M = 3 (1–2 hari), atau L = 5 (3+ hari, sebaiknya dipecah). **Status** diisi salah satu dari 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser. Butir yang digeser tetap ditulis di sprint asalnya dengan ⏭️, lalu ditulis ulang di sprint tujuannya; dari situ carry-over di tab Analisa dihitung. Format yang rusak membuat build gagal. Butir yang menulis ke mis-prod tetap mengikuti pola dump → dry-run → approval → `--write`.
 
 #### Sprint 1 · 2026-09-28 → 2026-10-04 — Amankan konfigurasi & akses prod, rilis v1.2.0
 
@@ -23,6 +23,8 @@ Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko
 | 4 | **#286 butir 2** Key FIRMS tercetak di log container | Keamanan | S | Rotasi `FIRMS_MAP_KEY_FREE` (DevOps) sebagai mitigasi; butir 1 & 3 (cache sendiri) tetap di backlog | ⚖️ Menunggu keputusan | Koordinasi DevOps |
 | 5 | **#252** `getAccessContext` tanpa `cache()` (P1) | Performa | S | Bungkus `cache()` + `select: { id }` distrik; 1 query access-context per render | 🔲 Todo | — |
 | 6 | **Rilis v1.2.0** | Rilis | M | #317 Fase 2 (sudah di `mvp`) + butir 1–5; seed menu `data-analyst-parcel-overlap` ke staging/prod **setelah** keputusan label #364 | 🔲 Todo | Go rilis |
+| 7 | **#378** Sprint Mingguan (tak terencana, disisipkan 2026-09-28) | Fitur | M | Menu Data Analyst → Sprint Mingguan + tab Analisa; `/code-review high` 10 temuan diperbaiki; wrap-up + retro + close | ✅ Selesai | — |
+| 8 | **#379** Prasyarat Supply Chain | Data | S | Lisensi & versi Universal Mill List (boleh masuk repo publik?) + ketersediaan berkas survei rantai pasok 2025 per Lembaga | ⚖️ Menunggu keputusan | Lisensi UML; daftar Lembaga yang sudah punya survei |
 
 #### Sprint 2 · 2026-10-05 → 2026-10-11 — Jalur rilis & gate yang bisa dipercaya
 
@@ -53,7 +55,23 @@ Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko
 | 3 | Selipan kerapian | Kerapian | M | **#319** (`coverage` wajib) · **#315** (satu `FilterCombobox`) · **#310** (Bantuan `t-3` Upload List Peserta) | 🔲 Todo | — |
 | 4 | **Rilis v1.3.0** | Rilis | M | Sprint 2–4 | 🔲 Todo | Go rilis |
 
-#### Backlog terurut (setelah Sprint 4)
+#### Sprint 5 · 2026-10-26 → 2026-11-01 — Supply Chain A: master & import survei rantai pasok
+
+| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
+| 1 | **#380** bagian 1: model + master | Fitur | L | Migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord` + halaman Master Data Mill, Offtaker, Rantai Pasok + menu & izin + `build:schema`/`build:lineage` + `models.md`/ERD | 🔲 Todo | — |
+| 2 | **#380** bagian 2: import survei | Fitur | L | Bulk Upload Rantai Pasok: cocok Parcel ID, layar review offtaker (kode MIS), status Mill PKS/PT/kosong, peringatan tonase, cek silang produksi & luas, template unduh dari MIS, Bantuan | 🔲 Todo | — |
+| 3 | **#380** seed UML | Data | S | Skrip seed Mill dari UML mengikuti keputusan lisensi Sprint 1 (di repo atau via `--data`) | ⚖️ Menunggu keputusan | Hasil cek lisensi UML (Sprint 1 #8) |
+
+#### Sprint 6 · 2026-11-02 → 2026-11-08 — Supply Chain B & C: peta, analisa, rilis v1.4.0
+
+| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
+| 1 | **#381** Peta Rantai Pasok + Report | Fitur | L | Garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel | 🔲 Todo | — |
+| 2 | **#382** Analisa volume, jarak & risiko Mill | Fitur | M | Jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker, risiko NKT & tumpang tindih per Mill | 🔲 Todo | Ambang ketergantungan satu offtaker (%) |
+| 3 | **Rilis v1.4.0** | Rilis | M | Sprint 5–6 (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
+
+#### Backlog terurut (setelah Sprint 6)
 
 1. **#286 butir 1 & 3 + #291** (dirancang bersama): cache FIRMS sendiri, payload cap, Sentinel-2. **Target selesai sebelum musim kemarau 2027.**
 2. **#345 tahap 2** (`purpose BATAS_LAHAN|NKT`, patok NKT dari buffer sungai) · **#349** layer Monev BMP · **#178** DA-05 anomali produksi (3 pertanyaan terbuka ⚖️).
