@@ -32,7 +32,7 @@ Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko
 | - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
 | 1 | **#277** `deploy-staging.yml` tanpa `migrate deploy` | Rilis | M | Opsi 1 (`migrate deploy` otomatis di staging) atau opsi 2 (guard `migrate status`) | ⚖️ Menunggu keputusan | Pilih opsi 1/2/3 |
 | 2 | **#376** Migrasi prod mendahului tag rilis (TD-045) | Rilis | M | Skrip cek `applied-checksums.json` vs tag terakhir + test tanpa DB + aturan di `versioning.md`/`migrations.md` | 🔲 Todo | — |
-| 3 | **#311** `perf.test.ts` merah karena beban mesin | Rilis | S | `minOf(N)` + ambang ≥ 3× angka terukur | 🔲 Todo | — |
+| 3 | **#311** `perf.test.ts` merah karena beban mesin | Rilis | S | `minOf(N)` + ambang ≥ 3× angka terukur. Kode ✅ 2026-09-29 (ditarik ke v1.2.0, keputusan owner): `minTime` 43 blok; suite penuh + build paralel 3/3 hijau (dulu 3/3 merah) | 🟡 Dikerjakan | — |
 | 4 | **#363** Build staging OOM (RAM 1,97 GB) | Rilis | M | Keputusan + penerapan: build di GitHub runner, upgrade RAM, atau `max-old-space-size` | ⚖️ Menunggu keputusan | Pilih opsi (DevOps/biaya) |
 | 5 | **#232** OPS-02 | Rilis | M | Tulis ulang issue jadi "prosedur rollback" (env matrix sudah ada di `environments.md`), lalu dokumentasikan dan uji di staging | 🔲 Todo | — |
 

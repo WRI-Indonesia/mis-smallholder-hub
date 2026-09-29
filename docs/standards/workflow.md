@@ -16,6 +16,7 @@
 2. **Implement** — Kerjakan **hanya** scope issue
 3. **QA Lokal** — `npm run lint`, `npm run build`, `npm run typecheck`, dan `npm test` (lihat Pre-Commit Gate)
 4. **Performance Test** — Pastikan tidak ada regresi; **pure logic baru** yang menyentuh hot-path (agregasi, sort, validasi array besar) diberi perf test di `src/test/perf.test.ts`
+   - **Cara mengukur (#311):** bungkus blok yang diukur dengan `minTime(() => …)` / `minTimeAsync` dari `src/test/perf-utils.ts` — minimum dari 3–10 putaran, bukan satu `performance.now()`. Beban mesin hanya menambah waktu, jadi minimum kebal lonjakan; satu pengukuran dulu membuat gate `npm test` merah acak saat build/typecheck berjalan. **Ambang ≥ 3× angka terukur** (minimum lokal) — yang dijaga regresi kelas O(n²), bukan selisih milidetik. Jangan menambah `retry` atau mengeluarkan perf test dari gate.
 5. **Docs Compliance Check** — Recheck hasil kerja terhadap folder `docs/` (format di bawah): patuh **rule**, ikuti **workflow**, **progress** tercermin, dan file docs terdampak ter-update
 6. **Report** — Changed files, hasil verifikasi, QA notes, risk, dan **Analisa Improvement** (format di bawah)
 7. **Approval** — Tunggu approval sebelum push
