@@ -160,3 +160,26 @@ Langkah:
 Harapan:
 - Langkah 1: dialihkan berturut-turut ke Ketersediaan Data — Semua Lembaga, User Management, Fire Alert (bukan 404).
 - Langkah 2: halaman tampil tanpa filter Distrik/Tahun; catatan "Snapshot dibuat untuk Semua Distrik & Semua Tahun"; tombol **Generate Snapshot** tampil untuk peran ber-CREATE.
+
+## #364 — Label menu = prod; judul & urutan menu terkunci dari UI
+
+### TC-364-01 · Label menu Ketersediaan Data [P0] [regresi] (3 mnt)
+Langkah:
+1. `SELECT key, title, "order" FROM tbl_menu_item WHERE key IN ('data-analyst-data-availability','data-analyst-data-completeness') ORDER BY 3;`
+2. Akun ADMIN: buka sidebar **Data Analyst**, klik kedua menu itu.
+Harapan:
+- Langkah 1: `Data — All Lembaga` (order 2) · `Data — Per Lembaga` (order 3) — sama dengan `menu.csv`.
+- Sidebar menampilkan label yang sama; judul halaman tetap **Ketersediaan Data — Semua Lembaga** / **Ketersediaan Data — Per Lembaga** (disengaja).
+- `npx tsx scripts/qa/data-qc.ts` F3 ✓.
+
+### TC-364-02 · Title & Order terkunci saat Edit menu [P0] [regresi] (4 mnt)
+Prasyarat: akun SUPERADMIN.
+Langkah:
+1. Settings › Menu Management → **Edit** menu `data-analyst-sprint`.
+2. Ubah Icon ke ikon lain yang tersedia, klik **Simpan**; lalu kembalikan ikonnya.
+3. **Tambah Menu**: perhatikan kolom Title & Order (jangan disimpan).
+Harapan:
+- Langkah 1: kolom **Key**, **Title**, **Order** non-aktif (abu-abu) + catatan "Title & Order hanya bisa diubah lewat `menu.csv` + seed".
+- Langkah 2: tersimpan; Title & Order di daftar **tidak berubah**; `modified_at` baris itu terbarui.
+- Langkah 3: Title & Order bisa diisi (hanya Edit yang dikunci).
+

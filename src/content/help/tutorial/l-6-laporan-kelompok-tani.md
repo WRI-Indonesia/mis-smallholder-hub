@@ -33,7 +33,7 @@ Kelompok Tani di sini dibaca dari **data lahan** (field Kelompok Tani pada tiap 
 
 **Muncul KT dengan nama aneh seperti "Blok 1"** — operator mengetikkan nama blok ke field Kelompok Tani saat input lahan. Perbaiki di Master Data → Lahan (atau lewat unggah ulang shapefile), bukan di laporan; laporan langsung mengikuti begitu datanya dibetulkan.
 
-**Ada petani yang tidak muncul** — ia belum punya lahan aktif. Temukan siapa saja mereka lewat checklist **Petani tanpa lahan aktif** di **Data Analyst → Ketersediaan Data — Per Lembaga** (SUPERADMIN juga bisa memakai **Ringkasan Petani → tab Petani Tanpa Lahan**).
+**Ada petani yang tidak muncul** — ia belum punya lahan aktif. Temukan siapa saja mereka lewat checklist **Petani tanpa lahan aktif** di **Data Analyst → Data — Per Lembaga** (SUPERADMIN juga bisa memakai **Ringkasan Petani → tab Petani Tanpa Lahan**).
 
 **Angka kartu KT tidak sama dengan jumlah baris** — baris "(tidak diketahui)" sengaja tidak dihitung sebagai Kelompok Tani.
 

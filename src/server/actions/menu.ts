@@ -87,12 +87,11 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
   const session = await auth();
   await prisma.menuItem.update({
     where: { id: parsed.data.id },
+    // `title` & `order` sengaja tidak ditulis — hanya lewat menu.csv + seed (#364).
     data: {
       parentKey: parsed.data.parentKey,
-      title: parsed.data.title,
       url: parsed.data.url,
       icon: parsed.data.icon,
-      order: parsed.data.order,
       isActive: parsed.data.isActive,
       isVisible: parsed.data.isVisible,
       modifiedBy: session?.user?.id ?? null,

@@ -7,7 +7,7 @@
 | Menu key | `data-analyst` |
 | URL | `/admin/data-analyst` |
 | Icon | `BarChart3` |
-| Sub menu | 8 — Ringkasan Petani (`data-analyst-farmer-summary`), Ketersediaan Data — Semua Lembaga (`data-analyst-data-availability`), Ketersediaan Data — Per Lembaga (`data-analyst-data-completeness`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Metrik Rilis (`dashboard-metrics`, SUPERADMIN/ADMIN/MANAGEMENT), Peta Data & Skema (`data-analyst-data-map`, SUPERADMIN/ADMIN/MANAGEMENT), Tumpang Tindih Lahan (`data-analyst-parcel-overlap`, SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR), Sprint Mingguan (`data-analyst-sprint`, SUPERADMIN/ADMIN/MANAGEMENT) — urut sesuai kolom `order` di `menu.csv` (1–8) |
+| Sub menu | 8 — Ringkasan Petani (`data-analyst-farmer-summary`), Data — All Lembaga (`data-analyst-data-availability`), Data — Per Lembaga (`data-analyst-data-completeness`), Komparasi Data Acuan (`data-analyst-benchmark-comparison`), Metrik Rilis (`dashboard-metrics`, SUPERADMIN/ADMIN/MANAGEMENT), Peta Data & Skema (`data-analyst-data-map`, SUPERADMIN/ADMIN/MANAGEMENT), Tumpang Tindih Lahan (`data-analyst-parcel-overlap`, SUPERADMIN/ADMIN/MANAGEMENT/OPERATOR), Sprint Mingguan (`data-analyst-sprint`, SUPERADMIN/ADMIN/MANAGEMENT) — urut sesuai kolom `order` di `menu.csv` (1–8) |
 
 ## Diagram objek
 
@@ -15,9 +15,9 @@
 Menu: Data Analyst (/admin/data-analyst)
 ├── Sub Menu: Ringkasan Petani (data-analyst-farmer-summary)
 │   └── Page: Ringkasan Petani (/admin/data-analyst/farmer-summary)
-├── Sub Menu: Ketersediaan Data — Semua Lembaga (data-analyst-data-availability)
+├── Sub Menu: Data — All Lembaga (data-analyst-data-availability)
 │   └── Page: Ketersediaan Data — Semua Lembaga (/admin/data-analyst/data-availability)
-├── Sub Menu: Ketersediaan Data — Per Lembaga (data-analyst-data-completeness)
+├── Sub Menu: Data — Per Lembaga (data-analyst-data-completeness)
 │   └── Page: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completeness)
 ├── Sub Menu: Komparasi Data Acuan (data-analyst-benchmark-comparison)
 │   └── Page: Komparasi Data Acuan (/admin/data-analyst/benchmark-comparison)
@@ -40,8 +40,8 @@ Menu: Data Analyst (/admin/data-analyst)
 | # | Sub Menu | Menu key | Route | Dokumen |
 |---|---|---|---|---|
 | 1 | Ringkasan Petani | `data-analyst-farmer-summary` | `/admin/data-analyst/farmer-summary` | [farmer-summary.md](farmer-summary.md) |
-| 2 | Ketersediaan Data — Semua Lembaga | `data-analyst-data-availability` | `/admin/data-analyst/data-availability` | [data-availability.md](data-availability.md) |
-| 3 | Ketersediaan Data — Per Lembaga | `data-analyst-data-completeness` | `/admin/data-analyst/data-completeness` | [data-completeness.md](data-completeness.md) |
+| 2 | Data — All Lembaga | `data-analyst-data-availability` | `/admin/data-analyst/data-availability` | [data-availability.md](data-availability.md) |
+| 3 | Data — Per Lembaga | `data-analyst-data-completeness` | `/admin/data-analyst/data-completeness` | [data-completeness.md](data-completeness.md) |
 | 4 | Komparasi Data Acuan | `data-analyst-benchmark-comparison` | `/admin/data-analyst/benchmark-comparison` | [benchmark-comparison.md](benchmark-comparison.md) |
 | 5 | Metrik Rilis | `dashboard-metrics` | `/admin/dashboard/metrics` | [metrics.md](metrics.md) |
 | 6 | Peta Data & Skema | `data-analyst-data-map` | `/admin/data-analyst/data-map` | [data-map.md](data-map.md) |

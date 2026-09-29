@@ -60,17 +60,20 @@ export function MenuFormModal({ open, onClose, item, parentOptions }: Props) {
     const data = {
       key: isEdit ? item.key : (form.get("key") as string),
       parentKey: parentKey === "none" ? null : parentKey || null,
-      title: form.get("title") as string,
       url: form.get("url") as string,
       icon: (form.get("icon") as string) || null,
-      order: parseInt(form.get("order") as string, 10) || 0,
       isActive: form.get("isActive") === "on",
       isVisible: form.get("isVisible") === "on",
     };
 
+    // Edit: Title & Order tidak dikirim — hanya lewat menu.csv + seed (#364).
     const result = isEdit
       ? await updateMenuItem({ id: item.id, ...data })
-      : await createMenuItem(data);
+      : await createMenuItem({
+          ...data,
+          title: form.get("title") as string,
+          order: parseInt(form.get("order") as string, 10) || 0,
+        });
 
     setIsLoading(false);
 
@@ -99,13 +102,19 @@ export function MenuFormModal({ open, onClose, item, parentOptions }: Props) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="order">Order</Label>
-              <Input id="order" name="order" type="number" defaultValue={item?.order ?? 0} />
+              <Input id="order" name="order" type="number" defaultValue={item?.order ?? 0} disabled={isEdit} />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" defaultValue={item?.title ?? ""} required />
+            <Input id="title" name="title" defaultValue={item?.title ?? ""} disabled={isEdit} required />
+            {isEdit && (
+              <p className="text-xs text-muted-foreground">
+                Title &amp; Order hanya bisa diubah lewat <code>menu.csv</code> + seed, agar label dan urutan menu
+                di produksi selalu sama dengan repo.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

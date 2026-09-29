@@ -2,7 +2,7 @@
 
 [← Menu Data Analyst](README.md) · [← Katalog halaman](../README.md)
 
-> Label menu **"Ketersediaan Data — Per Lembaga"** (order 3) sejak #352 (keputusan owner P4, 2026-09-21) — sebelumnya "Analisa Ketersediaan Data" (order 2). Key, route, dan RolePermission tidak berubah. Halaman ini adalah drill-down dari [Ketersediaan Data — Semua Lembaga](data-availability.md) (DA-03, order 2): skornya identik karena memakai `computeCompleteness` yang sama.
+> Label menu **"Data — Per Lembaga"** sejak #364 (keputusan owner 2026-09-29: label prod jadi acuan; judul halaman tetap "Ketersediaan Data — Per Lembaga"). Label "Ketersediaan Data — Per Lembaga" (order 3) sejak #352 (keputusan owner P4, 2026-09-21) — sebelumnya "Analisa Ketersediaan Data" (order 2). Key, route, dan RolePermission tidak berubah. Halaman ini adalah drill-down dari [Ketersediaan Data — Semua Lembaga](data-availability.md) (DA-03, order 2): skornya identik karena memakai `computeCompleteness` yang sama.
 
 ## Diagram objek
 
@@ -42,7 +42,7 @@ Halaman: Ketersediaan Data — Per Lembaga (/admin/data-analyst/data-completenes
 
 | Atribut | Nilai |
 |---|---|
-| Sub menu | Ketersediaan Data — Per Lembaga (`data-analyst-data-completeness`, order 3) |
+| Sub menu | Data — Per Lembaga (`data-analyst-data-completeness`, order 3) |
 | Route | `/admin/data-analyst/data-completeness` — query `?lembaga=<FarmerGroup.id>` (deep link dari DA-03 & kartu KPI Detail Lembaga), `?distrik=<District.id>` opsional |
 | File | `src/app/(admin)/admin/data-analyst/data-completeness/page.tsx` (Server Component) + `data-completeness-client.tsx` (Client Component) + `loading.tsx` |
 | Tipe | Halaman analisis 1 Lembaga Petani (filter → analisa otomatis → angka Index + radar → prioritas perbaikan → seksi collapsible per domain ber-checklist) |

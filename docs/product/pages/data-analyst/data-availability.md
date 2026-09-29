@@ -4,7 +4,7 @@
 
 Sub menu `data-analyst-data-availability`, satu halaman: `/admin/data-analyst/data-availability` (DA-03, #193).
 
-> Label menu **"Ketersediaan Data — Semua Lembaga"** dan **order 2** (pintu masuk) sejak #352 (keputusan owner P4, 2026-09-21) — sebelumnya "Dashboard Ketersediaan Data", order 3. Key, route, RolePermission tidak berubah. Semula dirilis sebagai sub menu keempat di grup **Dashboard** (`dashboard-data-availability`), lalu dipindah ke **Data Analyst** pada hari yang sama (keputusan owner #193).
+> Label menu **"Data — All Lembaga"** sejak #364 (keputusan owner 2026-09-29: label prod jadi acuan, `menu.csv` disamakan; judul halaman tetap "Ketersediaan Data — Semua Lembaga"). **Order 2** (pintu masuk) dan label "Ketersediaan Data — Semua Lembaga" sejak #352 (keputusan owner P4, 2026-09-21) — sebelumnya "Dashboard Ketersediaan Data", order 3. Key, route, RolePermission tidak berubah. Semula dirilis sebagai sub menu keempat di grup **Dashboard** (`dashboard-data-availability`), lalu dipindah ke **Data Analyst** pada hari yang sama (keputusan owner #193).
 
 Roll-up lintas Lembaga Petani dari scoring [Ketersediaan Data — Per Lembaga (DA-02)](data-completeness.md): skor kelengkapan 5 domain (Profil Lembaga, Petani, Lahan, Pelatihan, Produksi) per Lembaga + ringkasan anomali + **cakupan modul** (#352). Alur: ringkasan di sini → klik nama Lembaga (`?lembaga=`) → daftar kerja di DA-02 → Master Data.
 

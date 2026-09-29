@@ -77,8 +77,8 @@ Halaman: Menu Management (/admin/settings/menu)
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | `Key` | Input | Wajib; `disabled` saat edit |
-| `Order` | Input | `type="number"`, default `0` |
-| `Title` | Input | Wajib |
+| `Order` | Input | `type="number"`, default `0`; **`disabled` saat edit** (#364 opsi b) |
+| `Title` | Input | Wajib; **`disabled` saat edit** + catatan "Title & Order hanya bisa diubah lewat `menu.csv` + seed" (#364 opsi b, keputusan owner 2026-09-29 — akun demo dua kali mengubah label/urutan prod). Server menegakkan hal yang sama: `updateMenuItemSchema` tanpa `title`/`order` (dibuang Zod) dan `updateMenuItem` tidak menulisnya |
 | `URL` | Input | Wajib |
 | `Parent` | Select | Opsi `— Tidak ada (root) —` plus daftar menu level 1 dan level 2 (level 2 diberi prefix `— `). Item yang sedang diedit beserta seluruh turunannya dikecualikan agar tidak terjadi siklus |
 | `Icon` | Select | Opsi `— Tanpa icon —` plus `ICON_LIST` (`src/lib/icon-map.tsx`); placeholder `Pilih icon` |

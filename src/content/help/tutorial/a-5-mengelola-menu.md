@@ -6,12 +6,12 @@ permission: EDIT
 duration: 5
 href: /admin/settings/menu
 hrefLabel: Buka Menu Management
-goal: Judul, ikon, urutan, dan tampil/tidaknya tiap menu di sidebar tertata sesuai kebutuhan — tanpa mengubah hak akses siapa pun.
+goal: Ikon, induk, dan tampil/tidaknya tiap menu di sidebar tertata sesuai kebutuhan — tanpa mengubah hak akses siapa pun.
 ---
 
 ## Sebelum mulai
 
-Halaman ini mengubah **struktur** sidebar untuk semua pengguna: judul, ikon, urutan, induk, dan tampil/tidaknya tiap menu — sampai tiga tingkat.
+Halaman ini mengubah **struktur** sidebar untuk semua pengguna: ikon, induk, dan tampil/tidaknya tiap menu — sampai tiga tingkat. **Judul** dan **urutan** menu tidak diubah di sini.
 
 + Siapa yang boleh membuka tiap menu diatur terpisah di **Role & Permission**, bukan di sini. Halaman ini jarang perlu disentuh dan biasanya hanya dipegang SUPERADMIN.
 
@@ -20,7 +20,7 @@ Halaman ini mengubah **struktur** sidebar untuk semua pengguna: judul, ikon, uru
 1. Buka menu **Settings → Menu Management**.
 2. Temukan menunya lewat kotak **Cari menu...** atau klik **Buka semua**.
 3. Klik **Edit** pada barisnya, ubah yang diperlukan, lalu **Simpan**.
-+ **Title** = judul di sidebar; **Order** = urutan antar menu se-induk (angka kecil tampil lebih dulu); **Icon** = ikonnya; **Parent** memindahkan menu ke induk lain. **Key** tidak bisa diubah.
++ **Icon** = ikonnya; **Parent** memindahkan menu ke induk lain. **Key**, **Title** (judul di sidebar), dan **Order** (urutan antar menu se-induk) terkunci saat Edit — judul dan urutan hanya diubah developer lewat berkas menu di repositori, supaya sidebar produksi selalu sama dengan yang terdokumentasi. Mintalah perubahan judul/urutan ke tim developer.
 4. Menyembunyikan menu yang tidak dipakai: matikan saklar **Visible** lewat Edit, atau klik ikon **Nonaktifkan** di kolom Aksi.
 + **Visible** mati = menu disembunyikan dari sidebar tetapi tetap aktif. **Nonaktifkan** = soft delete: menu hilang dari navigasi semua pengguna, barisnya tetap di daftar ini dengan badge **Nonaktif**.
 5. Menghidupkan lagi: buka **Edit** pada baris ber-badge **Nonaktif**, nyalakan saklar **Aktif** dan **Visible**, lalu **Simpan**.
@@ -34,4 +34,6 @@ Halaman ini mengubah **struktur** sidebar untuk semua pengguna: judul, ikon, uru
 
 **Menu tidak muncul untuk peran tertentu saja** — itu urusan izin, bukan struktur. Beri izin **V** (View) untuk peran itu di **Role & Permission**.
 
-**Urutan tidak berubah** — **Order** hanya dibandingkan antar menu dengan **Parent** yang sama. Periksa angka Order menu-menu lain di induk itu.
+**Title atau Order tidak bisa diketik** — memang terkunci saat Edit. Perubahan judul/urutan diajukan ke tim developer dan berlaku setelah rilis berikutnya.
+
+**Urutan tampak aneh setelah memindah Parent** — **Order** hanya dibandingkan antar menu dengan **Parent** yang sama, jadi menu yang dipindah membawa angka Order lamanya ke induk baru.

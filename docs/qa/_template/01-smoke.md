@@ -66,10 +66,10 @@ Peran: OPERATOR · Langkah: daftar, filter · Harapan: terbuka.
 ### SM-20 · Data Analyst › Ringkasan Petani [P1] (1 mnt)
 Peran: SUPERADMIN · Langkah: filter, Excel · Harapan: terbuka.
 
-### SM-21 · Data Analyst › Ketersediaan Data — Semua Lembaga [P1] (2 mnt)
+### SM-21 · Data Analyst › Data — All Lembaga [P1] (2 mnt)
 Peran: SUPERADMIN, lalu OPERATOR · Langkah: hero, kartu domain, tab Radar/Heatmap/Cakupan modul, klik 1 grafik → modal · Harapan: terisi; OPERATOR hanya Lembaga dalam scope.
 
-### SM-22 · Data Analyst › Ketersediaan Data — Per Lembaga [P1] (2 mnt)
+### SM-22 · Data Analyst › Data — Per Lembaga [P1] (2 mnt)
 Peran: SUPERADMIN, lalu OPERATOR · Langkah: pilih Lembaga (analisa otomatis), klik label sumbu radar → seksi, buka 1 baris checklist · Harapan: Index + radar + prioritas + checklist terisi.
 
 ### SM-23 · Data Analyst › Komparasi Data Acuan · Metrik Rilis · Peta Data & Skema [P2] (2 mnt)

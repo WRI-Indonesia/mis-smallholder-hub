@@ -29,12 +29,12 @@ describe("menu.csv ↔ docs/product/pages", () => {
     expect(missing).toEqual([]);
   });
 
-  it("label & order Ketersediaan Data (#352 P4) sesuai keputusan owner dan tertulis di katalog", () => {
+  it("label & order Ketersediaan Data sesuai keputusan owner (#352 P4 order; #364 label = prod) dan tertulis di katalog", () => {
     const byKey = Object.fromEntries(menuRows.map((r) => [r.key, r]));
-    expect(byKey["data-analyst-data-availability"]).toMatchObject({ title: "Ketersediaan Data — Semua Lembaga", order: 2 });
-    expect(byKey["data-analyst-data-completeness"]).toMatchObject({ title: "Ketersediaan Data — Per Lembaga", order: 3 });
-    expect(catalog).toContain("Ketersediaan Data — Semua Lembaga");
-    expect(catalog).toContain("Ketersediaan Data — Per Lembaga");
+    expect(byKey["data-analyst-data-availability"]).toMatchObject({ title: "Data — All Lembaga", order: 2 });
+    expect(byKey["data-analyst-data-completeness"]).toMatchObject({ title: "Data — Per Lembaga", order: 3 });
+    expect(catalog).toContain("Data — All Lembaga");
+    expect(catalog).toContain("Data — Per Lembaga");
   });
 
   it("order unik per induk (dua menu sejajar tidak berebut posisi)", () => {
@@ -55,7 +55,7 @@ describe("readMenuSeed (seeder menu)", () => {
     expect(rows.length).toBe(menuRows.length);
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
     const avail = rows.find((r) => r.key === "data-analyst-data-availability")!;
-    expect(avail).toMatchObject({ title: "Ketersediaan Data — Semua Lembaga", order: 2, parentKey: "data-analyst", isActive: true, isVisible: true });
+    expect(avail).toMatchObject({ title: "Data — All Lembaga", order: 2, parentKey: "data-analyst", isActive: true, isVisible: true });
     // Kontrak sumber kebenaran: seedMenu mem-upsert kolom struktural (bukan `update: {}`).
     const src = readFileSync("prisma/seeds/seed-menu.ts", "utf8");
     expect(src).toMatch(/update:\s*\{\s*parentKey: row\.parentKey, title: row\.title, url: row\.url, icon: row\.icon, order: row\.order\s*\}/);

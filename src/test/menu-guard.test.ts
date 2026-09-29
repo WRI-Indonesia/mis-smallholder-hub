@@ -106,6 +106,16 @@ describe("createMenuItem / updateMenuItem", () => {
     expect(call.data).toMatchObject({ modifiedBy: "admin-1" });
     expect(call.data).not.toHaveProperty("key");
   });
+
+  it("title & order dari klien TIDAK ditulis — hanya lewat menu.csv + seed (#364 opsi b)", async () => {
+    // Payload langsung ke action (bukan lewat form) tetap membawa title/order.
+    const payload = { id: "m-1", ...input({ title: "Data — All Lembaga", order: 99 }) } as Parameters<typeof actions.updateMenuItem>[0];
+    expect((await actions.updateMenuItem(payload)).success).toBe(true);
+    const { data } = db.menuItem.update.mock.calls[0][0];
+    expect(data).not.toHaveProperty("title");
+    expect(data).not.toHaveProperty("order");
+    expect(data).toMatchObject({ url: payload.url, isActive: payload.isActive, isVisible: payload.isVisible });
+  });
 });
 
 describe("deleteMenuItem — soft delete", () => {

@@ -53,10 +53,10 @@ const MIGRATIONS = [
 const MIGRATIONS_MONEV = ["20260918120000_bmp_assessment", "20260920100000_bmp_assessment_unique_active", "20260920120000_bmp_indicator_detail"];
 /** Rilis setelah v0.36.0 — #353 bagian E (skema) + #352 P4 (menu); deploy = #357. */
 const MIGRATIONS_353E = ["20260921120000_drop_activity_status_tree_surveyed_at"];
-/** Label & order menu Ketersediaan Data dari `prisma/seeds/data/menu.csv` (#352 P4) — DB yang belum di-seed tampil ✗ di F3. */
+/** Label & order menu Ketersediaan Data dari `prisma/seeds/data/menu.csv` (#352 P4; label disamakan ke prod #364) — DB yang belum di-seed tampil ✗ di F3. */
 const MENU_352 = [
-  { key: "data-analyst-data-availability", title: "Ketersediaan Data — Semua Lembaga", order: 2 },
-  { key: "data-analyst-data-completeness", title: "Ketersediaan Data — Per Lembaga", order: 3 },
+  { key: "data-analyst-data-availability", title: "Data — All Lembaga", order: 2 },
+  { key: "data-analyst-data-completeness", title: "Data — Per Lembaga", order: 3 },
 ];
 const joinRow = (rows: Row[]) => (rows[0] ? Object.values(rows[0]).map((v) => String(v)).join(" · ") : "(tidak ada baris)");
 
