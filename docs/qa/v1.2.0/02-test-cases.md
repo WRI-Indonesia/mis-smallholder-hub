@@ -233,3 +233,19 @@ Harapan:
 
 (Jalur serangan — kunci objek lain / `activityId` ber-`../` / pelatihan di luar scope — dikunci unit test `training-guard`, `upload-guard`, `training-evidence`; tidak diuji manual.)
 
+## #389 — Sprint Mingguan: tab Sprint berbentuk kanban
+
+### TC-389-01 · Papan kanban tab Sprint [P1] (5 mnt)
+Prasyarat: akun SUPERADMIN / ADMIN / MANAGEMENT; `docs/project/sprint.md` yang ter-deploy.
+Langkah:
+1. Data Analyst › Sprint Mingguan, tab **Sprint** (minggu ini).
+2. Bandingkan setiap kolom dengan tabel sprint yang sama di `sprint.md`.
+3. Klik **Target lengkap** pada satu kartu, lalu **Ringkas**; klik nomor **#…** di judul kartu.
+4. Buka lajur **Digeser ke sprint lain** (bila ada); pilih minggu lain; kecilkan jendela ke lebar ponsel.
+Harapan:
+- Empat kolom kiri → kanan: **Belum dimulai · Dikerjakan · Menunggu keputusan · Selesai**; kepala kolom = jumlah butir + poin; kolom kosong bertulisan "Kosong"; tidak ada lagi kotak kuning terpisah maupun daftar per status.
+- Setiap butir tampil tepat sekali (kolom atau lajur digeser); jumlah poin keempat kolom = angka "x/y poin" di kartu ringkasan (y).
+- Kartu di kolom keputusan menampilkan teks keputusan owner; kolom itu berlatar kuning + "poin tertahan".
+- Langkah 3: target terbuka/tertutup tanpa membuka tautan; nomor issue membuka GitHub di tab baru.
+- Langkah 4: lajur digeser terbuka; minggu lain menampilkan papannya sendiri; di layar sempit kolom tersusun ke bawah tanpa gulir horizontal.
+

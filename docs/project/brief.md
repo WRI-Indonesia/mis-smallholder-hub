@@ -26,7 +26,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Status keseluruhan | 🟢 On Track — **v1.0.0 (MVP) dan v1.1.0 live di produksi** 2026-09-23; Roadmap **88,5%** |
 | Basis review       | Audit docs ↔ code 2026-09-29 (roadmap Phase Status, status issue GitHub, `metrics.md`) |
 | Test lokal         | ✅ **1.868 test** saat rilis v1.1.0 · lint 0 error · typecheck ✅ · build ✅ |
-| Fokus berikutnya   | Sprint 1–2: keamanan akses prod (#364, #342, #237), performa (#252), jalur rilis (#277, #376, #363), rilis **v1.2.0** |
+| Fokus berikutnya   | **QA v1.2.0** (syarat pra-QA #364 · #237 · #385 · #252 · #383 · #311 ✅ 2026-09-29), lalu rilis; Sprint 2: jalur rilis (#277, #376, #363), #342, #390 |
 
 ### Ringkasan Eksekutif
 
@@ -39,7 +39,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Bulk Upload         | 🟠 Hampir lengkap | Petani, Produksi, Lahan (shapefile + Detail Lahan), Pohon. **BULK-02** (Region & Lembaga/KT) belum ada — issue-nya ditutup *not planned*, perlu keputusan. |
 | Map & Data Analyst  | ✅ Complete     | Peta Lahan & Peta BMP; Ringkasan Petani, Ketersediaan Data (per/semua Lembaga), Komparasi Data Acuan, Peta Data & Skema, Metrik Rilis; **Tumpang Tindih Lahan** & **Sprint Mingguan** menunggu rilis v1.2.0. |
 | Bantuan (HELP)      | ✅ Complete     | Panduan in-app tutorial/konsep/referensi (64 berkas materi), dijaga test cakupan menu. |
-| Keamanan            | 🟡 Perlu tindakan | Akun demo SUPERADMIN mengubah menu prod (#364) dan role di JWT tidak diperbarui sampai login ulang (#342) — dijadwalkan Sprint 1. |
+| Keamanan            | 🟡 Perlu tindakan | Di `mvp` (v1.2.0): struktur menu dikunci dari UI (#364), kunci S3 bukti pelatihan divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). **Terbuka:** `users.csv` memuat email staf + password teks polos di repo publik (**#390**, ditunda — rotasi akun staging/prod oleh owner/DevOps); role di JWT beku sampai login ulang (#342). |
 | Testing & QA        | ✅ Strong       | Gate lokal lint/build/typecheck/test; paket QA manual per rilis di `docs/qa/` (smoke + kasus uji + QC data + sign-off). |
 
 ### Snapshot Progres
@@ -69,7 +69,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Keputusan                  | Owner                   | Dibutuhkan Kapan     | Rekomendasi Tech Lead                                                                       |
 | -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
-| Akun demo & label menu Ketersediaan Data (#364) | Owner | Awal Sprint 1 (minggu 2026-09-28) | Turunkan peran akun demo, dan jadikan fix #342 prasyarat agar penurunan peran langsung berlaku. |
+| Rotasi password akun yang terbuka di `users.csv` (#390) | Owner + DevOps | Secepatnya (ditunda owner 2026-09-29) | Cek hash akun staging/prod terhadap 2 password seed (skrip baca-saja), rotasi yang cocok; ganti seed jadi akun fiktif + password dari env. |
 | Nasib BULK-02 (#69/#70 ditutup *not planned*) | Owner / Product | Sebelum rilis v1.3.0 | Putuskan buka ulang atau keluarkan dari baseline roadmap; perubahan baseline dicatat di Decision Log. |
 | Lisensi Universal Mill List & berkas survei rantai pasok (#379) | Owner | Sprint 1 | Pastikan lisensi mengizinkan data masuk repo publik; bila tidak, seed lewat `--data` dari folder lokal. |
 | Build staging OOM (#363) & migrasi staging otomatis (#277) | Owner + DevOps | Sprint 2 | Pilih opsi build/RAM; tambahkan minimal guard `migrate status` di workflow deploy. |
@@ -78,9 +78,9 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Priority | Target                                      | Output                                                                                                        |
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **P1**   | Keamanan akses prod (#364, #342, #237)      | Peran akun demo dibatasi, role/`isActive` dibaca ulang berkala di JWT, reaktivasi menu diperbaiki             |
-| **P1**   | Rilis **v1.2.0**                            | #317 Fase 2 + #378 + perbaikan Sprint 1; seed menu Tumpang Tindih & Sprint Mingguan ke staging/prod           |
-| **P2**   | Performa & jalur rilis (#252, #277, #376, #311, #363) | `getAccessContext` di-cache per request, guard migrasi di deploy, cek migrasi vs tag, perf test stabil |
+| **P1**   | Keamanan akses prod (#364 ✅, #237 ✅, #342, #390) | Struktur menu dikunci dari UI ✅, reaktivasi menu ✅; sisa: role/`isActive` di JWT (#342), rotasi password seed (#390) |
+| **P1**   | Rilis **v1.2.0**                            | #317 Fase 2 + #378 + #364/#237/#385/#252/#383/#311 (siap QA 2026-09-29); seed menu Tumpang Tindih & Sprint Mingguan ke staging/prod |
+| **P2**   | Performa & jalur rilis (#252 ✅, #311 ✅, #277, #376, #363) | `getAccessContext` di-cache per render ✅, perf test stabil ✅; sisa: guard migrasi di deploy, cek migrasi vs tag, build staging OOM |
 | **P2**   | Prosedur rollback (#232, OPS-02)            | Dokumentasi + uji rollback di staging → kandidat OPS-02 Done                                                  |
 
 Rincian per minggu: [sprint.md](./sprint.md).

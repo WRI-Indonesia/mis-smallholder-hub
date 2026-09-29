@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 import {
+  KANBAN_COLUMNS,
   SPRINT_STACK_ORDER,
   SPRINT_STATUS_LABEL,
   carryOvers,
@@ -9,6 +10,7 @@ import {
   pendingDecisions,
   sprintComposition,
   sprintDay,
+  sprintKanban,
   sprintPhase,
   planTotals,
   sprintProgress,
@@ -223,6 +225,23 @@ describe("analisa sprint", () => {
       const pts = sprintStatusPoints(s);
       expect(SPRINT_STACK_ORDER.reduce((t, k) => t + pts[k], 0)).toBe(v.rows[i].planned);
     });
+  });
+
+  it("kanban (#389): 4 kolom urut alur, butir ⚖️ hanya di kolom keputusan, digeser di lajur terpisah", () => {
+    const { columns, moved } = sprintKanban(plan.sprints[0]);
+    expect(columns.map((c) => c.status)).toEqual(["todo", "progress", "decision", "done"]);
+    expect(columns.map((c) => [c.items.map((i) => i.issueRefs[0]), c.points])).toEqual([
+      [[], 0],
+      [[], 0],
+      [["#12"], 1],
+      [["#10"], 3],
+    ]);
+    expect(moved.map((i) => i.issueRefs[0])).toEqual(["#11"]);
+    // Setiap butir tampil tepat sekali: kolom + lajur digeser = semua butir.
+    expect(columns.reduce((t, c) => t + c.items.length, 0) + moved.length).toBe(plan.sprints[0].items.length);
+    // Poin kolom = progres sprint (tanpa butir digeser).
+    expect(columns.reduce((t, c) => t + c.points, 0)).toBe(sprintProgress(plan.sprints[0]).totalPoints);
+    expect(KANBAN_COLUMNS).not.toContain("moved");
   });
 
   it("urutan tumpukan memuat setiap status tepat sekali, berlabel sama dengan UI", () => {

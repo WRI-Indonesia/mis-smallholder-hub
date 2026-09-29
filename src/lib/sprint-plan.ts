@@ -312,3 +312,25 @@ export function planTotals(plan: Pick<SprintPlan, "sprints">) {
     end: plan.sprints.length === 0 ? null : plan.sprints[plan.sprints.length - 1].end,
   };
 }
+
+/**
+ * Kolom kanban tab Sprint (#389), urut alur penyelesaian: belum dimulai →
+ * dikerjakan → menunggu keputusan → selesai. Butir digeser TIDAK masuk kolom
+ * (sisa kerja sprint tujuan) — dikembalikan terpisah untuk lajur terlipat.
+ * Urutan butir dalam kolom = urutan baris di `sprint.md`.
+ */
+export const KANBAN_COLUMNS: Exclude<SprintItemStatus, "moved">[] = ["todo", "progress", "decision", "done"];
+
+export function sprintKanban(sprint: Pick<Sprint, "items">): {
+  columns: { status: Exclude<SprintItemStatus, "moved">; items: SprintItem[]; points: number }[];
+  moved: SprintItem[];
+} {
+  return {
+    columns: KANBAN_COLUMNS.map((status) => {
+      const items = sprint.items.filter((i) => i.status === status);
+      return { status, items, points: items.reduce((t, i) => t + i.points, 0) };
+    }),
+    moved: sprint.items.filter((i) => i.status === "moved"),
+  };
+}
+

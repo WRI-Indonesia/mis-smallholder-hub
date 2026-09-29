@@ -32,63 +32,37 @@ export const STATUS_STYLE: Record<SprintItemStatus, string> = {
 /**
  * Markdown inline sel tabel (`**tebal**`, `` `kode` ``, tautan) + `#nnn`
  * menjadi tautan issue GitHub. Sengaja tidak memakai renderer Bantuan: tautan
- * issue hanya bermakna di halaman ini.
- *
- * `links={false}` merender teks polos tanpa `<a>` — wajib bila dipakai DI DALAM
- * `<button>` (konten interaktif bersarang = HTML tak valid; klik #nnn di
- * Firefox/pembaca layar jatuh ke tombol, bukan ke tautan).
+ * issue hanya bermakna di halaman ini. Jangan dipakai DI DALAM `<button>`
+ * (tautan bersarang = HTML tak valid) — kartu kanban meletakkannya di luar tombol.
  */
-export function Inline({ text, links = true }: { text: string; links?: boolean }) {
+export function Inline({ text }: { text: string }) {
   return (
     <>
       {parseInline(text).map((part, i) => {
-        if (part.type === "strong") return <strong key={i} className="font-medium"><IssueLinks text={part.value} links={links} /></strong>;
+        if (part.type === "strong") return <strong key={i} className="font-medium"><IssueLinks text={part.value} /></strong>;
         if (part.type === "code") return <code key={i} className="rounded bg-muted px-1 py-0.5 text-[0.85em]">{part.value}</code>;
         if (part.type === "link") {
-          return links ? <a key={i} href={part.href} className="underline underline-offset-2" target="_blank" rel="noopener noreferrer">{part.value}</a> : <Fragment key={i}>{part.value}</Fragment>;
+          return <a key={i} href={part.href} className="underline underline-offset-2" target="_blank" rel="noopener noreferrer">{part.value}</a>;
         }
-        return <IssueLinks key={i} text={part.value} links={links} />;
+        return <IssueLinks key={i} text={part.value} />;
       })}
     </>
   );
 }
 
-function IssueLinks({ text, links }: { text: string; links: boolean }) {
+function IssueLinks({ text }: { text: string }) {
   return (
     <>
       {text.split(/(#\d+)/g).map((p, i) =>
-        links && /^#\d+$/.test(p) ? (
+        /^#\d+$/.test(p) ? (
           <a key={i} href={issueUrl(p)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
             {p}
           </a>
-        ) : /^#\d+$/.test(p) ? (
-          <span key={i} className="text-primary">{p}</span>
         ) : (
           <Fragment key={i}>{p}</Fragment>
         )
       )}
     </>
-  );
-}
-
-/** Tautan GitHub untuk setiap `#nnn` sebuah butir — dirender DI LUAR tombol baris. */
-export function IssueRefLinks({ refs }: { refs: string[] }) {
-  if (refs.length === 0) return null;
-  return (
-    <span className="flex shrink-0 gap-1">
-      {refs.map((ref) => (
-        <a
-          key={ref}
-          href={issueUrl(ref)}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={`Buka ${ref} di GitHub`}
-          className="rounded border px-1.5 py-0.5 text-xs text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          {ref} ↗
-        </a>
-      ))}
-    </span>
   );
 }
 

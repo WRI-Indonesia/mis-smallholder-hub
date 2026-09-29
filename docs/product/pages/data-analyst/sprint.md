@@ -9,6 +9,7 @@ Sub menu `data-analyst-sprint`, satu halaman: `/admin/data-analyst/sprint` (#378
 - Pasca-MVP (v1.0.0) pengembangan memakai **sprint mingguan Senin → Minggu**.
 - **Sumber data = `docs/project/sprint.md`** §Sprint Focus, di-bundle webpack (`asset/source`) dan diparse saat modul dimuat (pola Metrik Rilis). Tanpa DB, migrasi, atau token GitHub. Konsekuensinya, status baru berubah setelah deploy.
 - **Tata letak = tab Sprint | Analisa + pemilih minggu** (putaran 2, menggantikan akordeon kartu per minggu dari putaran 1).
+- **Tata letak tab Sprint = kanban** tahapan penyelesaian issue (#389, keputusan owner 2026-09-29: menggantikan daftar per status, bukan toggle; masuk v1.2.0).
 - **Poin sprint = ukuran S/M/L = 1/3/5** (S ≤ ½ hari, M 1–2 hari, L 3+ hari, sebaiknya dipecah). Progres dihitung dalam poin karena jumlah butir menyesatkan bila ukurannya timpang.
 - **Tab Analisa** memuat keempat analisa: velocity, keputusan tertunda, carry-over, dan komposisi fokus. Putaran 3 (2026-09-29): tata letak dirombak menjadi kartu ringkasan + satu grafik beban per status + matriks fokus per kategori.
 
@@ -24,10 +25,13 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 │   │   └── Bawaan: sprint aktif (tanggal WIB server) → mendatang terdekat → terakhir
 │   ├── Ringkasan sprint — badge Minggu ini/Mendatang/Selesai · rentang · "hari ke-n dari 7" · judul
 │   │   · bilah progres POIN + "x/y butir selesai"
-│   ├── Kotak "Butuh keputusan owner (n)" — butir ⚖️ + teks keputusan + poin tertahan (hanya bila ada)
-│   ├── Kelompok butir: "Dikerjakan" · "Belum dimulai" · "Selesai" · "Digeser ke sprint lain" (butir ⚖️ TIDAK diulang di sini)
-│   │   └── Baris: tombol (issue teks polos · titik kategori · ukuran "M · 3"; klik → Target & Keputusan)
-│   │       + tautan "#nnn ↗" ke GitHub DI LUAR tombol (tidak ada <a> bersarang dalam <button>)
+│   ├── Papan kanban (#389, menggantikan kotak keputusan + daftar per status) — `sprintKanban`, 4 kolom urut alur:
+│   │   Belum dimulai → Dikerjakan → Menunggu keputusan → Selesai; kepala kolom = label `SPRINT_STATUS_LABEL`
+│   │   + jumlah butir + poin ("poin tertahan" di kolom keputusan, berlatar kuning bila berisi); kolom kosong = "Kosong";
+│   │   grid 1 kolom (ponsel) · 2 (sm) · 4 (xl)
+│   │   └── Kartu: judul (markdown inline, `#nnn` → GitHub) · ukuran "M · 3" · titik kategori · target (terpotong 3 baris,
+│   │       tombol "Target lengkap"/"Ringkas") · teks keputusan owner (kotak kuning) bila ada. Read-only — status diubah di sprint.md
+│   ├── Lajur terlipat "Digeser ke sprint lain (n)" — kartu butir ⏭️ (poinnya dihitung di sprint tujuan)
 │   └── Backlog (bila dipilih) — daftar bernomor dari "#### Backlog …"
 └── Tab Analisa
     ├── 4 kartu (`planTotals`): Rencana (poin tanpa butir digeser · n sprint · tanggal akhir) · Tertahan keputusan owner
@@ -65,7 +69,7 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 
 | Berkas | Isi |
 |---|---|
-| `src/lib/sprint-plan.ts` | Parser murni `parseSprintPlan` + `sprintPhase`, `sprintDay`, `sprintProgress` (butir & poin), `sprintVelocity`, `pendingDecisions`, `carryOvers`, `sprintComposition`, `sprintStatusPoints` + `SPRINT_STACK_ORDER`, `planTotals`, `SPRINT_STATUS_LABEL` (label status — sumber tunggal UI) |
+| `src/lib/sprint-plan.ts` | Parser murni `parseSprintPlan` + `sprintPhase`, `sprintDay`, `sprintProgress` (butir & poin), `sprintVelocity`, `pendingDecisions`, `carryOvers`, `sprintComposition`, `sprintStatusPoints` + `SPRINT_STACK_ORDER`, `planTotals`, `sprintKanban` + `KANBAN_COLUMNS` (#389), `SPRINT_STATUS_LABEL` (label status — sumber tunggal UI) |
 | `src/lib/sprint-plan-data.ts` | Import `sprint.md` + parse sekali (jangan diimport dari test) |
 | `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih minggu, tab Sprint) · `sprint-analysis.tsx` (tab Analisa) · `sprint-shared.tsx` (warna kategori, `fmtDate`, `Inline` + `IssueRefLinks`, bilah progres) · `loading.tsx` |
 | `src/lib/chart-palette.ts` · `src/lib/repo-links.ts` | Palet kategorikal & tautan repo bersama — dipakai juga Metrik Rilis (review #378: dulu disalin/diimpor lintas route) |
