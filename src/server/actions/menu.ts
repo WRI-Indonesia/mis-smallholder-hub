@@ -3,9 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
-import { menuItemSchema, updateMenuItemSchema } from "@/validations/menu.schema";
-import type { MenuItemInput, UpdateMenuItemInput } from "@/validations/menu.schema";
-import { buildMenuTree, validateMenuDepth } from "@/lib/menu-utils";
+import { updateMenuItemSchema } from "@/validations/menu.schema";
+import type { UpdateMenuItemInput } from "@/validations/menu.schema";
+import { buildMenuTree } from "@/lib/menu-utils";
 import type { MenuItem } from "@/lib/menu-utils";
  
 export async function getMenuItems(): Promise<{ success: boolean; data?: MenuItem[] }> {
@@ -36,40 +36,11 @@ export async function getAllMenuItems() {
   });
 }
  
-export async function createMenuItem(input: MenuItemInput) {
-  if (!(await hasPermission("settings-menu", "CREATE"))) {
-    return { success: false, error: "Tidak memiliki izin untuk menambah menu" };
-  }
-
-  const parsed = menuItemSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
- 
-  const existing = await prisma.menuItem.findUnique({ where: { key: parsed.data.key } });
-  if (existing) return { success: false, error: { key: ["Key sudah digunakan"] } };
- 
-  const allItems = await prisma.menuItem.findMany({ where: { isActive: true } });
-  if (!validateMenuDepth(parsed.data.key, parsed.data.parentKey ?? null, allItems)) {
-    return { success: false, error: { parentKey: ["Menu depth tidak boleh lebih dari 3 level"] } };
-  }
-
-  const session = await auth();
-  await prisma.menuItem.create({
-    data: {
-      key: parsed.data.key,
-      parentKey: parsed.data.parentKey,
-      title: parsed.data.title,
-      url: parsed.data.url,
-      icon: parsed.data.icon,
-      order: parsed.data.order,
-      isActive: parsed.data.isActive,
-      isVisible: parsed.data.isVisible,
-      createdBy: session?.user?.id ?? null,
-    },
-  });
- 
-  return { success: true };
-}
- 
+/**
+ * Satu-satunya perubahan menu dari UI: Aktif & Visible (#364). Struktur menu
+ * (judul, urutan, induk, URL, ikon) dan menu baru hanya lewat `menu.csv` + seed —
+ * sengaja tidak ada aksi tambah menu.
+ */
 export async function updateMenuItem(input: UpdateMenuItemInput) {
   if (!(await hasPermission("settings-menu", "EDIT"))) {
     return { success: false, error: "Tidak memiliki izin untuk mengubah menu" };
@@ -77,27 +48,17 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
 
   const parsed = updateMenuItemSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
- 
-  const allItems = await prisma.menuItem.findMany({ where: { isActive: true } });
-  const otherItems = allItems.filter(item => item.id !== parsed.data.id);
-  if (!validateMenuDepth(parsed.data.key, parsed.data.parentKey ?? null, otherItems)) {
-    return { success: false, error: { parentKey: ["Menu depth tidak boleh lebih dari 3 level"] } };
-  }
 
   const session = await auth();
   await prisma.menuItem.update({
     where: { id: parsed.data.id },
-    // `title` & `order` sengaja tidak ditulis — hanya lewat menu.csv + seed (#364).
     data: {
-      parentKey: parsed.data.parentKey,
-      url: parsed.data.url,
-      icon: parsed.data.icon,
       isActive: parsed.data.isActive,
       isVisible: parsed.data.isVisible,
       modifiedBy: session?.user?.id ?? null,
     },
   });
- 
+
   return { success: true };
 }
  

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -12,17 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { createMenuItem, updateMenuItem } from "@/server/actions/menu";
+import { updateMenuItem } from "@/server/actions/menu";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { ICON_LIST } from "@/lib/icon-map";
+import { renderIcon } from "@/lib/icon-map";
 
 interface MenuItemData {
   id: string;
@@ -40,127 +32,80 @@ interface Props {
   open: boolean;
   onClose: () => void;
   item: MenuItemData | null;
-  parentOptions: { key: string; title: string }[];
+  /** Judul menu induk (bila ada) — ditampilkan, bukan dipilih. */
+  parentTitle: string | null;
 }
 
-export function MenuFormModal({ open, onClose, item, parentOptions }: Props) {
+/**
+ * Edit menu = hanya Aktif & Visible (#364). Struktur (judul, urutan, induk, URL,
+ * ikon) ditampilkan baca-saja: sumbernya `menu.csv`, dan seed rilis menimpanya.
+ */
+export function MenuFormModal({ open, onClose, item, parentTitle }: Props) {
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
   const router = useRouter();
-  const isEdit = !!item;
+
+  if (!item) return null;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!item) return;
     setIsLoading(true);
-    setErrors({});
 
     const form = new FormData(e.currentTarget);
-    const parentKey = form.get("parentKey") as string;
-
-    const data = {
-      key: isEdit ? item.key : (form.get("key") as string),
-      parentKey: parentKey === "none" ? null : parentKey || null,
-      url: form.get("url") as string,
-      icon: (form.get("icon") as string) || null,
+    const result = await updateMenuItem({
+      id: item.id,
       isActive: form.get("isActive") === "on",
       isVisible: form.get("isVisible") === "on",
-    };
-
-    // Edit: Title & Order tidak dikirim — hanya lewat menu.csv + seed (#364).
-    const result = isEdit
-      ? await updateMenuItem({ id: item.id, ...data })
-      : await createMenuItem({
-          ...data,
-          title: form.get("title") as string,
-          order: parseInt(form.get("order") as string, 10) || 0,
-        });
+    });
 
     setIsLoading(false);
 
     if (!result.success) {
-      setErrors((result.error as Record<string, string[]>) ?? {});
+      toast.error(typeof result.error === "string" ? result.error : "Gagal menyimpan menu");
       return;
     }
 
-    toast.success(isEdit ? "Menu berhasil diupdate" : "Menu berhasil dibuat");
+    toast.success("Menu berhasil diupdate");
     onClose();
     router.refresh();
   }
+
+  const details: [string, React.ReactNode][] = [
+    ["Key", <span key="k" className="font-mono">{item.key}</span>],
+    ["Title", item.title],
+    ["URL", <span key="u" className="font-mono">{item.url}</span>],
+    ["Parent", parentTitle ?? "— Tidak ada (root) —"],
+    ["Order", item.order],
+    ["Icon", item.icon ? <span key="i" className="inline-flex items-center gap-1.5">{renderIcon(item.icon, "h-4 w-4")} {item.icon}</span> : "—"],
+  ];
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Menu" : "Tambah Menu"}</DialogTitle>
+          <DialogTitle>Edit Menu</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="key">Key</Label>
-              <Input id="key" name="key" defaultValue={item?.key ?? ""} disabled={isEdit} required />
-              {errors.key && <p className="text-sm text-destructive">{errors.key[0]}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="order">Order</Label>
-              <Input id="order" name="order" type="number" defaultValue={item?.order ?? 0} disabled={isEdit} />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" defaultValue={item?.title ?? ""} disabled={isEdit} required />
-            {isEdit && (
-              <p className="text-xs text-muted-foreground">
-                Title &amp; Order hanya bisa diubah lewat <code>menu.csv</code> + seed, agar label dan urutan menu
-                di produksi selalu sama dengan repo.
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="url">URL</Label>
-            <Input id="url" name="url" defaultValue={item?.url ?? ""} required />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="parentKey">Parent</Label>
-              <Select name="parentKey" defaultValue={item?.parentKey ?? "none"}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— Tidak ada (root) —</SelectItem>
-                  {parentOptions.map((p) => (
-                    <SelectItem key={p.key} value={p.key}>{p.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.parentKey && <p className="text-sm text-destructive">{errors.parentKey[0]}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="icon">Icon</Label>
-              <Select name="icon" defaultValue={item?.icon ?? ""}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih icon" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <SelectItem value="">— Tanpa icon —</SelectItem>
-                  {ICON_LIST.map((name) => (
-                    <SelectItem key={name} value={name}>{name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <dl className="grid grid-cols-[6rem_1fr] gap-x-3 gap-y-1.5 text-sm">
+            {details.map(([label, value]) => (
+              <div key={label} className="contents">
+                <dt className="text-muted-foreground">{label}</dt>
+                <dd className="min-w-0 break-words">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-xs text-muted-foreground">
+            Judul, urutan, induk, URL, dan ikon hanya bisa diubah lewat <code>menu.csv</code> + seed, agar menu di
+            produksi selalu sama dengan repo.
+          </p>
 
           <div className="flex gap-6">
             <div className="flex items-center gap-2">
-              <Switch id="isActive" name="isActive" defaultChecked={item?.isActive ?? true} />
+              <Switch id="isActive" name="isActive" defaultChecked={item.isActive} />
               <Label htmlFor="isActive">Aktif</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Switch id="isVisible" name="isVisible" defaultChecked={item?.isVisible ?? true} />
+              <Switch id="isVisible" name="isVisible" defaultChecked={item.isVisible} />
               <Label htmlFor="isVisible">Visible</Label>
             </div>
           </div>
@@ -169,7 +114,7 @@ export function MenuFormModal({ open, onClose, item, parentOptions }: Props) {
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "Simpan" : "Buat"}
+              Simpan
             </Button>
           </div>
         </form>

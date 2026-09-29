@@ -188,11 +188,6 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   HelpCircle: HelpCircle,
 };
 
-// ─── Icon List ────────────────────────────────────────────────────────────────
-// Used by the icon picker in the form modal (with search)
-
-export const ICON_LIST = Object.keys(ICON_MAP);
-
 // ─── Render helper ────────────────────────────────────────────────────────────
 
 export function renderIcon(

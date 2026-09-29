@@ -33,8 +33,10 @@ describe("menu.csv ↔ docs/product/pages", () => {
     const byKey = Object.fromEntries(menuRows.map((r) => [r.key, r]));
     expect(byKey["data-analyst-data-availability"]).toMatchObject({ title: "Data — All Lembaga", order: 2 });
     expect(byKey["data-analyst-data-completeness"]).toMatchObject({ title: "Data — Per Lembaga", order: 3 });
-    expect(catalog).toContain("Data — All Lembaga");
-    expect(catalog).toContain("Data — Per Lembaga");
+    // Sel tabel ber-pembatas: "Data — Per Lembaga" polos juga cocok dengan label lama
+    // "Ketersediaan Data — Per Lembaga" (review #364).
+    expect(catalog).toContain("| 2 | Data — All Lembaga |");
+    expect(catalog).toContain("| 3 | Data — Per Lembaga |");
   });
 
   it("order unik per induk (dua menu sejajar tidak berebut posisi)", () => {

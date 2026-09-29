@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { parse } from "csv-parse/sync";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { validateMenuDepth } from "../../src/lib/menu-utils";
 
 export interface MenuSeedRow {
   key: string;
@@ -20,7 +21,7 @@ const STRUCTURAL = ["parentKey", "title", "url", "icon", "order"] as const;
 export function readMenuSeed(): MenuSeedRow[] {
   const csv = readFileSync(join(__dirname, "data/menu.csv"), "utf-8");
   const records = parse(csv, { columns: true, skip_empty_lines: true }) as Record<string, string>[];
-  return records.map((row) => ({
+  const rows = records.map((row) => ({
     key: row.key,
     parentKey: row.parent_key || null,
     title: row.title,
@@ -30,6 +31,14 @@ export function readMenuSeed(): MenuSeedRow[] {
     isActive: row.is_active === "TRUE",
     isVisible: row.is_visible === "TRUE",
   }));
+  // Struktur menu hanya berubah lewat CSV sejak #364 (Menu Management tak bisa
+  // menambah/memindah menu) — batas 3 level ditegakkan di sini, bukan di UI.
+  for (const r of rows) {
+    if (!validateMenuDepth(r.key, r.parentKey, rows)) {
+      throw new Error(`menu.csv: "${r.key}" (bersama induk/turunannya) melebihi 3 level menu`);
+    }
+  }
+  return rows;
 }
 
 export interface MenuSeedDiff {

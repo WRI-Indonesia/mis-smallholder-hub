@@ -172,14 +172,13 @@ Harapan:
 - Sidebar menampilkan label yang sama; judul halaman tetap **Ketersediaan Data — Semua Lembaga** / **Ketersediaan Data — Per Lembaga** (disengaja).
 - `npx tsx scripts/qa/data-qc.ts` F3 ✓.
 
-### TC-364-02 · Title & Order terkunci saat Edit menu [P0] [regresi] (4 mnt)
+### TC-364-02 · Menu Management hanya Aktif & Visible [P0] [regresi] (4 mnt)
 Prasyarat: akun SUPERADMIN.
 Langkah:
-1. Settings › Menu Management → **Edit** menu `data-analyst-sprint`.
-2. Ubah Icon ke ikon lain yang tersedia, klik **Simpan**; lalu kembalikan ikonnya.
-3. **Tambah Menu**: perhatikan kolom Title & Order (jangan disimpan).
+1. Settings › Menu Management: perhatikan toolbar.
+2. **Edit** menu `data-analyst-sprint`.
+3. Matikan **Visible**, **Simpan**; buka sidebar Data Analyst; lalu Edit lagi, nyalakan **Visible**, **Simpan**.
 Harapan:
-- Langkah 1: kolom **Key**, **Title**, **Order** non-aktif (abu-abu) + catatan "Title & Order hanya bisa diubah lewat `menu.csv` + seed".
-- Langkah 2: tersimpan; Title & Order di daftar **tidak berubah**; `modified_at` baris itu terbarui.
-- Langkah 3: Title & Order bisa diisi (hanya Edit yang dikunci).
-
+- Langkah 1: tidak ada tombol **Tambah Menu**.
+- Langkah 2: Key, Title, URL, Parent, Order, Icon tampil sebagai teks (tidak bisa diubah) + catatan "…hanya bisa diubah lewat `menu.csv` + seed…"; hanya saklar **Aktif** & **Visible** yang bisa diubah.
+- Langkah 3: Sprint Mingguan hilang dari sidebar lalu tampil kembali; judul/urutan/ikon di daftar tidak berubah; `modified_at` baris terbarui.

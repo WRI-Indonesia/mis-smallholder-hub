@@ -4,9 +4,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * Guard & aturan tulis Pengaturan › Menu (`src/server/actions/menu.ts`) tanpa
  * DB — pola mock `land-marker-guard.test.ts`. Menu key `settings-menu`
  * (daftar lengkap juga dibuka untuk `settings-roles`: matriks Role &
- * Permission). Yang dijaga: level per action, Zod key, key unik, kedalaman ≤ 3,
- * `key` tak bisa diganti lewat update, hapus = `isActive/isVisible:false`
- * (tak pernah `delete`), audit dari sesi. `menu-utils` memakai versi ASLI.
+ * Permission). Yang dijaga: level per action, UI hanya mengubah Aktif/Visible
+ * (struktur & menu baru hanya lewat menu.csv + seed, #364), hapus =
+ * `isActive/isVisible:false` (tak pernah `delete`), audit dari sesi.
  */
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
@@ -20,13 +20,13 @@ const db = vi.hoisted(() => ({
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
 const actions = await import("@/server/actions/menu");
+const { updateMenuItemSchema } = await import("@/validations/menu.schema");
 
-const item = (key: string, parentKey: string | null, id = key) => ({
-  id, key, parentKey, title: key, url: `/admin/${key}`, icon: null, order: 0, isActive: true, isVisible: true,
-});
-const input = (o: Record<string, unknown> = {}) => ({
-  key: "menu-baru", parentKey: null, title: "Menu Baru", url: "/admin/baru", icon: null, order: 1, isActive: true, isVisible: true, ...o,
-});
+/** Payload seperti form lama / POST langsung: membawa seluruh kolom struktur. */
+const fullPayload = (o: Record<string, unknown> = {}) => ({
+  id: "m-1", key: "key-diganti", parentKey: "induk-lain", title: "Label Asing", url: "/admin/lain", icon: "Layers", order: 99,
+  isActive: true, isVisible: false, ...o,
+}) as unknown as Parameters<typeof actions.updateMenuItem>[0];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -38,13 +38,11 @@ beforeEach(() => {
 });
 
 describe("guard", () => {
-  it("create=CREATE, update=EDIT, delete=DELETE pada settings-menu", async () => {
-    await actions.createMenuItem(input());
-    await actions.updateMenuItem({ id: "m-1", ...input() });
+  it("update=EDIT, delete=DELETE pada settings-menu; tidak ada aksi tambah menu (#364)", async () => {
+    await actions.updateMenuItem(fullPayload());
     await actions.deleteMenuItem("m-1");
-    expect(hasPermission.mock.calls).toEqual([
-      ["settings-menu", "CREATE"], ["settings-menu", "EDIT"], ["settings-menu", "DELETE"],
-    ]);
+    expect(hasPermission.mock.calls).toEqual([["settings-menu", "EDIT"], ["settings-menu", "DELETE"]]);
+    expect(actions).not.toHaveProperty("createMenuItem");
   });
 
   it("getAllMenuItems: settings-menu:VIEW ATAU settings-roles:VIEW; keduanya ditolak → melempar", async () => {
@@ -61,8 +59,7 @@ describe("guard", () => {
 
   it("izin ditolak → mutasi { success:false }, DB tak disentuh", async () => {
     hasPermission.mockResolvedValue(false);
-    expect((await actions.createMenuItem(input())).success).toBe(false);
-    expect((await actions.updateMenuItem({ id: "m-1", ...input() })).success).toBe(false);
+    expect((await actions.updateMenuItem(fullPayload())).success).toBe(false);
     expect((await actions.deleteMenuItem("m-1")).success).toBe(false);
     for (const fn of Object.values(db.menuItem)) expect(fn).not.toHaveBeenCalled();
   });
@@ -73,48 +70,26 @@ describe("guard", () => {
   });
 });
 
-describe("createMenuItem / updateMenuItem", () => {
-  it("key berhuruf besar/spasi → fieldErrors tanpa DB", async () => {
-    const res = await actions.createMenuItem(input({ key: "Menu Baru" }));
+describe("updateMenuItem — hanya Aktif & Visible (#364)", () => {
+  it("kolom struktur dari klien TIDAK ditulis — hanya isActive, isVisible, modifiedBy", async () => {
+    // POST langsung ke action (bukan lewat form) tetap membawa key/judul/urutan/induk/URL/ikon.
+    expect((await actions.updateMenuItem(fullPayload())).success).toBe(true);
+    expect(db.menuItem.update.mock.calls[0][0]).toEqual({
+      where: { id: "m-1" }, data: { isActive: true, isVisible: false, modifiedBy: "admin-1" },
+    });
+  });
+
+  it("skema membuang kolom struktur (lapis kedua bila action kelak menyebar `...parsed.data`)", () => {
+    const parsed = updateMenuItemSchema.parse(fullPayload());
+    expect(parsed).toEqual({ id: "m-1", isActive: true, isVisible: false });
+  });
+
+  it("id kosong / saklar bukan boolean → fieldErrors tanpa DB", async () => {
+    const res = await actions.updateMenuItem(fullPayload({ id: "", isActive: "ya" }));
     expect(res.success).toBe(false);
-    expect(res.error).toHaveProperty("key");
-    expect(db.menuItem.findUnique).not.toHaveBeenCalled();
-  });
-
-  it("key sudah dipakai → ditolak", async () => {
-    db.menuItem.findUnique.mockResolvedValue(item("menu-baru", null));
-    expect((await actions.createMenuItem(input())).error).toEqual({ key: ["Key sudah digunakan"] });
-    expect(db.menuItem.create).not.toHaveBeenCalled();
-  });
-
-  it("induk sudah di level 3 → kedalaman 4 ditolak", async () => {
-    db.menuItem.findMany.mockResolvedValue([item("l1", null), item("l2", "l1"), item("l3", "l2")]);
-    const res = await actions.createMenuItem(input({ parentKey: "l3" }));
-    expect(res.error).toHaveProperty("parentKey");
-    expect(db.menuItem.create).not.toHaveBeenCalled();
-  });
-
-  it("create sukses → createdBy dari sesi", async () => {
-    await actions.createMenuItem(input({ parentKey: "l1" }));
-    expect(db.menuItem.create.mock.calls[0][0].data).toMatchObject({ key: "menu-baru", parentKey: "l1", createdBy: "admin-1" });
-  });
-
-  it("update → modifiedBy dari sesi, `key` TIDAK ikut ditulis (kunci RBAC stabil)", async () => {
-    await actions.updateMenuItem({ id: "m-1", ...input({ key: "key-diganti" }) });
-    const call = db.menuItem.update.mock.calls[0][0];
-    expect(call.where).toEqual({ id: "m-1" });
-    expect(call.data).toMatchObject({ modifiedBy: "admin-1" });
-    expect(call.data).not.toHaveProperty("key");
-  });
-
-  it("title & order dari klien TIDAK ditulis — hanya lewat menu.csv + seed (#364 opsi b)", async () => {
-    // Payload langsung ke action (bukan lewat form) tetap membawa title/order.
-    const payload = { id: "m-1", ...input({ title: "Data — All Lembaga", order: 99 }) } as Parameters<typeof actions.updateMenuItem>[0];
-    expect((await actions.updateMenuItem(payload)).success).toBe(true);
-    const { data } = db.menuItem.update.mock.calls[0][0];
-    expect(data).not.toHaveProperty("title");
-    expect(data).not.toHaveProperty("order");
-    expect(data).toMatchObject({ url: payload.url, isActive: payload.isActive, isVisible: payload.isVisible });
+    expect(res.error).toHaveProperty("id");
+    expect(res.error).toHaveProperty("isActive");
+    expect(db.menuItem.update).not.toHaveBeenCalled();
   });
 });
 

@@ -11,20 +11,20 @@ Halaman: Menu Management (/admin/settings/menu)
 │   └── Deskripsi: Kelola navigasi menu sidebar
 ├── Toolbar / Filter
 │   ├── Pencarian: Cari menu... (title / key, level 1–3)
-│   ├── Buka semua / Tutup semua (nonaktif saat mencari)
-│   └── Tambah Menu (CREATE)
+│   └── Buka semua / Tutup semua (nonaktif saat mencari)
+│       (tanpa Tambah Menu sejak #364 — menu baru hanya lewat menu.csv + seed)
 ├── Tabel tree menu (render rekursif 3 level, collapsible per induk)
 │   ├── Chevron buka/tutup per induk (default collapsed, state localStorage)
 │   ├── Kolom: Aksi · Menu · Key · URL · Order · Status
 │   └── Aksi baris: Edit (EDIT) · Nonaktifkan / Aktifkan kembali (DELETE)
 ├── Dialog
-│   ├── Tambah Menu / Edit Menu
-│   │   └── Key · Order · Title · URL · Parent · Icon · Aktif · Visible
-│   │       · Batal / Buat / Simpan
+│   ├── Edit Menu
+│   │   └── Key · Title · URL · Parent · Order · Icon (baca-saja) + catatan menu.csv
+│   │       · Aktif · Visible (saklar) · Batal / Simpan
 │   └── Nonaktifkan Menu (DeleteDialog konfirmasi)
 └── Toast
     ├── Menu item dinonaktifkan / Gagal menonaktifkan menu item
-    └── Menu berhasil dibuat / Menu berhasil diupdate
+    └── Menu berhasil diupdate / Gagal menyimpan menu
 ```
 
 ## Sub Menu: Menu Management (`settings-menu`)
@@ -56,7 +56,6 @@ Halaman: Menu Management (/admin/settings/menu)
 | Pencarian | Filter | Placeholder `Cari menu...`; mencocokkan `title` atau `key` pada level 1–3 (parent tetap tampil bila anak/cucu cocok; subtree cocok di-expand paksa) |
 | Empty state pencarian | Teks | `Tidak ada menu yang cocok dengan pencarian.` |
 | `Buka semua` / `Tutup semua` | Tombol | Buka/tutup seluruh induk; state `localStorage` (`menu-list:open`), default *collapsed*; nonaktif saat mencari |
-| `Tambah Menu` | Tombol | Ikon `Plus`; tampil hanya jika permission `CREATE` |
 | Tabel tree menu | Tree / Tabel | Render **rekursif 3 level** (`flattenTree`), **collapsible per induk** (chevron, default collapsed); indentasi per kedalaman; ikon dari `ICON_MAP` |
 | Kolom `Aksi` | Kolom | `Edit` (EDIT) dan `Nonaktifkan` / `Aktifkan kembali` (DELETE) via `TableActions` |
 | Kolom `Menu` | Kolom | Ikon + judul menu, terindentasi sesuai level |
@@ -67,22 +66,20 @@ Halaman: Menu Management (/admin/settings/menu)
 | `Nonaktifkan Menu` | Dialog | `DeleteDialog` konfirmasi: `Menu item akan dinonaktifkan (soft delete) dan tidak lagi muncul di navigasi. Lanjutkan?` → `deleteMenuItem()` |
 | Toast | Notifikasi | `Menu item dinonaktifkan` / `Gagal menonaktifkan menu item` |
 
-### Dialog: Tambah Menu / Edit Menu
+### Dialog: Edit Menu
+
+> **#364 (keputusan owner 2026-09-29): Menu Management hanya mengubah Aktif & Visible.** Struktur menu — judul, urutan, induk, URL, ikon — dan menu baru hanya lewat `prisma/seeds/data/menu.csv` + seed: `seedMenu` menimpa kelima kolom itu di setiap seed rilis (perubahan dari UI dulu hilang diam-diam), dan akun demo dua kali mengubah label/urutan prod tanpa jejak di repo. Server menegakkannya: `updateMenuItemSchema` = `{ id, isActive, isVisible }` (kolom lain dibuang Zod), `updateMenuItem` hanya menulis `isActive`/`isVisible`/`modifiedBy`, dan tidak ada aksi tambah menu. Batas 3 level kini diperiksa `readMenuSeed` (CSV melanggar = seed/test gagal). Izin `settings-menu:CREATE` tidak lagi dipakai.
 
 | Atribut | Nilai |
 |---|---|
 | File | `src/app/(admin)/admin/settings/menu/menu-form-modal.tsx` |
-| Server action | `createMenuItem()` / `updateMenuItem()` (`src/server/actions/menu.ts`) |
+| Server action | `updateMenuItem()` (`src/server/actions/menu.ts`) |
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| `Key` | Input | Wajib; `disabled` saat edit |
-| `Order` | Input | `type="number"`, default `0`; **`disabled` saat edit** (#364 opsi b) |
-| `Title` | Input | Wajib; **`disabled` saat edit** + catatan "Title & Order hanya bisa diubah lewat `menu.csv` + seed" (#364 opsi b, keputusan owner 2026-09-29 — akun demo dua kali mengubah label/urutan prod). Server menegakkan hal yang sama: `updateMenuItemSchema` tanpa `title`/`order` (dibuang Zod) dan `updateMenuItem` tidak menulisnya |
-| `URL` | Input | Wajib |
-| `Parent` | Select | Opsi `— Tidak ada (root) —` plus daftar menu level 1 dan level 2 (level 2 diberi prefix `— `). Item yang sedang diedit beserta seluruh turunannya dikecualikan agar tidak terjadi siklus |
-| `Icon` | Select | Opsi `— Tanpa icon —` plus `ICON_LIST` (`src/lib/icon-map.tsx`); placeholder `Pilih icon` |
-| `Aktif` | Switch | Default aktif |
-| `Visible` | Switch | Default aktif |
-| `Batal` / `Buat` / `Simpan` | Tombol | `Buat` saat create, `Simpan` saat edit |
-| Toast | Notifikasi | `Menu berhasil dibuat` / `Menu berhasil diupdate` |
+| Rincian struktur | Daftar baca-saja | `Key` · `Title` · `URL` · `Parent` (judul induk, atau `— Tidak ada (root) —`) · `Order` · `Icon` (ikon + nama) |
+| Catatan | Teks | `Judul, urutan, induk, URL, dan ikon hanya bisa diubah lewat menu.csv + seed, agar menu di produksi selalu sama dengan repo.` |
+| `Aktif` | Switch | Nilai tersimpan |
+| `Visible` | Switch | Nilai tersimpan |
+| `Batal` / `Simpan` | Tombol | — |
+| Toast | Notifikasi | `Menu berhasil diupdate` / `Gagal menyimpan menu` |

@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronRight, ChevronDown } from "lucide-react";
+import { Search, ChevronRight, ChevronDown } from "lucide-react";
 import { MenuFormModal } from "./menu-form-modal";
 import { deleteMenuItem } from "@/server/actions/menu";
 import { toast } from "sonner";
@@ -51,33 +51,6 @@ export function MenuListClient({
   const tree = React.useMemo(() => buildMenuTree(initialItems), [initialItems]);
   const allCollapsible = React.useMemo(() => collapsibleKeys(tree), [tree]);
   const { isCollapsed, toggle, openAll, closeAll } = useCollapseState("menu-list:open");
-
-  const getAllowedParentOptions = () => {
-    const descendants = new Set<string>();
-    if (editItem) {
-      descendants.add(editItem.key);
-      const addDescendants = (parentKey: string) => {
-        initialItems.forEach((item) => {
-          if (item.parentKey === parentKey) {
-            descendants.add(item.key);
-            addDescendants(item.key);
-          }
-        });
-      };
-      addDescendants(editItem.key);
-    }
-
-    const options: { key: string; title: string }[] = [];
-    const lvl1 = initialItems.filter((i) => !i.parentKey && !descendants.has(i.key));
-    lvl1.forEach((p) => {
-      options.push({ key: p.key, title: p.title });
-      const lvl2 = initialItems.filter((i) => i.parentKey === p.key && !descendants.has(i.key));
-      lvl2.forEach((c) => {
-        options.push({ key: c.key, title: `— ${c.title}` });
-      });
-    });
-    return options;
-  };
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -143,12 +116,6 @@ export function MenuListClient({
           >
             {allOpen ? "Tutup semua" : "Buka semua"}
           </Button>
-          {permissions.includes("CREATE") && (
-            <Button onClick={() => { setEditItem(null); setShowForm(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Menu
-            </Button>
-          )}
         </div>
 
         <Table>
@@ -214,7 +181,7 @@ export function MenuListClient({
         open={showForm}
         onClose={() => { setShowForm(false); setEditItem(null); }}
         item={editItem}
-        parentOptions={getAllowedParentOptions()}
+        parentTitle={initialItems.find((i) => i.key === editItem?.parentKey)?.title ?? null}
       />
 
       <DeleteDialog
