@@ -1,5 +1,7 @@
 # 00 · Lingkup rilis v1.1.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 Sumber: `git log v1.0.0..HEAD` (di `mvp`: `chore(release): v1.0.0` `55e6472`..HEAD), `gh issue list --state closed`, `docs/project/changelog.md` 2026-09-23.
 
 | # | Issue | Judul singkat | Menu › sub-menu terdampak | Migrasi | Izin/menu baru | Bantuan | Kasus uji |

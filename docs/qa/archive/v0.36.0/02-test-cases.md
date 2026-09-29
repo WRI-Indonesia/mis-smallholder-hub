@@ -1,5 +1,7 @@
 # 02 · Kasus uji per issue — v0.36.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 Satu **blok** per kasus; hasil di `runs/`. Dijalankan sebagai **OPERATOR ter-scope Rokan Hulu** kecuali disebut lain. Data uji memakai **kode Lembaga** (`ISH-1406-01` KPUD Tujuh Permata · `ISH-1406-06` APKASA Rayon SKPE · `ISH-1406-08` ASPEK RSB), bukan nama orang; petani disebut lewat ID (`SM.14.06.11.0001` dll.) di lembar run.
 
 `Baseline dev` = `mis-dev` 2026-09-20 (188 penilaian aktif 2026 · 184 ber-rincian · 8 penilaian Lembaga · rerata 1,93 · Teladan 7 / Praktisi 149 / Perintis 32 / Belum 0) — pembanding bentuk, bukan pengganti hasil staging.

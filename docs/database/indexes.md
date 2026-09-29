@@ -5,9 +5,9 @@
 <details>
 <summary><strong>Index Strategy</strong> — Strategi indexing untuk performa query</summary>
 
-## Index Strategy
+## Strategi Indeks
 
-### Primary Indexes (Unique)
+### Indeks Utama (Unik)
 
 | Tabel | Index | Kolom | Tujuan |
 |-------|-------|-------|--------|
@@ -116,7 +116,7 @@
 | UserPermissionOverride | PK | `id` (CUID) | Primary key |
 | UserPermissionOverride | UNIQUE | `(userId, menuKey, permission)` | Prevent duplicate permission overrides |
 
-### Secondary Indexes (Non-Unique)
+### Indeks Sekunder (Non-Unik)
 
 | Tabel | Kolom | Tujuan Query | Performa Impact |
 |-------|-------|--------------|-----------------|
@@ -160,13 +160,13 @@
 | BmpDashboardSnapshot | `createdBy` | Audit/list snapshot per user | LOW |
 | BmpDashboardSnapshot | `isActive` | Filter snapshot aktif (soft delete) | MEDIUM |
 
-### Index Maintenance Notes
+### Catatan Pemeliharaan Indeks
 
 - **CUID vs Auto-Increment**: CUID digunakan untuk semua PK (kecuali `LandMarkerCounter`, PK = `prefix`) karena distribusi random lebih baik untuk UUID-style lookups dan tidak bocorkan business metrics
 - **Composite Unique Indexes**: Digunakan untuk enforce business rule (contoh: satu farmer hanya bisa terdaftar 1x di satu training activity)
 - **Missing Indexes**: Tidak ada index pada `created_at` / `modified_at` karena audit query jarang dilakukan dan bisa pakai full table scan
 
-### Query Performance Targets
+### Target Performa Query
 
 | Query Type | Target Response Time | Index Strategy |
 |------------|---------------------|----------------|

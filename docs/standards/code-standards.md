@@ -2,7 +2,7 @@
 
 > Bagian dari dokumentasi **Standar**. Indeks: [../README.md](../README.md) · Terkait: [principles.md](./principles.md) · [workflow.md](./workflow.md) · [rbac.md](./rbac.md) · [ui-ux.md](./ui-ux.md) · [architecture.md](./architecture.md)
 
-## Code Standards
+## Standar Kode
 
 | Rule | Detail |
 |------|--------|
@@ -53,9 +53,9 @@ Nama tabel fisik selalu lewat `@@map`, `snake_case`, dengan **prefix menurut jen
 - **Daftar pilihan tetap** (jenis sertifikat, jenis program) → Prisma `enum`; naik ke `ref_` hanya bila admin memang perlu mengelola daftarnya (konsekuensi: CRUD + menu + permission).
 - ⚠️ **Jangan pakai `parcel_` sebagai nama induk** (`tbl_parcel_*`). Di kode `parcelId` = ID internal lahan per petani (string bebas), sedangkan `landParcelId` = FK ke `tbl_land_parcel.id` — ambiguitas ini sudah tercatat di `tree.prisma`; jangan ditambah.
 
-### Data Access & Soft Delete
+### Akses Data & Soft Delete
 
-- **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app. Pengecualian (keputusan owner, lihat [database/constraints.md](../database/constraints.md#soft-delete-pattern)): `LandParcelNkt` (hapus baris), `LandParcelBorder` (kosongkan kolom), `LandMarkerCounter` (tanpa `isActive`), tabel penugasan `UserProvince`/`UserDistrict`/`UserFarmerGroup` (tanpa `isActive`).
+- **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app. Pengecualian (keputusan owner, lihat [database/constraints.md](../database/constraints.md#pola-soft-delete)): `LandParcelNkt` (hapus baris), `LandParcelBorder` (kosongkan kolom), `LandMarkerCounter` (tanpa `isActive`), tabel penugasan `UserProvince`/`UserDistrict`/`UserFarmerGroup` (tanpa `isActive`).
 - **Data filtering** — Setiap query di server actions wajib filter berdasarkan context user:
   - Region sesuai assignment user (Province → District → Lembaga Petani)
   - Lembaga Petani sesuai assignment user
@@ -64,7 +64,7 @@ Nama tabel fisik selalu lewat `@@map`, `snake_case`, dengan **prefix menurut jen
 - **Backend Permission Validation** — Setiap Server Action (terutama mutasi data) wajib divalidasi ulang di level server menggunakan helper `hasPermission(menuCode, permission)` sebelum melakukan query/mutasi database, untuk mencegah eksekusi request langsung yang tidak sah (bypass UI). **Termasuk** read/mutasi **by-id** dan helper "for select" (pelajaran audit #125/#127).
 - **Helper "for select" juga wajib access-scoped** — guard permission saja tidak cukup: daftar opsi dropdown harus difilter `getAccessContext()`/`getAccessibleDistrictIds` agar user scoped tidak melihat entitas di luar wilayah kerjanya, **termasuk saat helper yang sama dipakai form create/edit** (pelajaran #211 — `getDistrictsForSelect` lolos guard tapi bocor scope; efeknya ke form Lembaga Petani dipertahankan by design, lihat Decision Log 2026-08-04).
 
-#### Access-filter helpers (`src/lib/access-scope.ts`, di-re-export `src/lib/access-context.ts`)
+#### Helper filter akses (`src/lib/access-scope.ts`, di-re-export `src/lib/access-context.ts`)
 
 Terjemahkan `AccessContext` (dari `getAccessContext()`) ke Prisma `where` fragment lewat helper — **jangan tulis ulang ternary di tiap action** (#127):
 
@@ -88,7 +88,7 @@ Pola tunggal untuk **semua list master data** (Petani, Lembaga Petani, Pelatihan
 - **Mutasi** (update) tetap mensyaratkan `isActive: true` — restore dulu sebelum edit.
 - Query lain di luar list (dropdown "for select", dashboard, report) **tetap** memfilter `isActive: true` untuk semua role.
 
-### Revision Tracking Pattern
+### Pola Revision Tracking
 
 Untuk data yang memerlukan tracking perubahan historical (contoh: Land Parcel update):
 - **Field `revision`**: Tambahkan field `revision Int @default(0)` di model (lihat `LandParcel`)

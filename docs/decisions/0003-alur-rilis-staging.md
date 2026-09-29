@@ -1,5 +1,7 @@
 # 0003 · Alur rilis `mvp` → `staging` → `main`
 
+> Bagian dari dokumentasi **Keputusan**. Indeks: [README.md](./README.md)
+
 - **Status:** Berlaku
 - **Tanggal:** 2026-08-28 (staging hidup) · 2026-08-29 (rilis pertama lewat staging, v0.32.0) · **Issue:** #265, #277 · **Diputuskan:** owner
 

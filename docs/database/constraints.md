@@ -5,9 +5,9 @@
 <details>
 <summary><strong>Constraint & Data Integrity</strong> — Aturan integritas data dan validasi</summary>
 
-## Constraint & Data Integrity
+## Constraint & Integritas Data
 
-### Foreign Key Constraints
+### Foreign Key
 
 | Child Table | FK Field | Parent Table | Parent Field | On Delete | On Update |
 |-------------|----------|--------------|--------------|-----------|-----------|
@@ -78,7 +78,7 @@
 
 > Koreksi audit 2026-07-10 (diperbarui 2026-09-29, dicek ke mis-prod): nilai On Delete di atas diverifikasi langsung ke SQL di `prisma/migrations/*`. Seluruh FK memakai **RESTRICT** kecuali lima **SET NULL** (`MenuItem.parentKey`, `MainDashboardSnapshot.districtId`, `BmpDashboardSnapshot.districtId`, `BmpAssessment.parcelUid`, `AdministrativeBoundary.districtId`). Tidak ada FK CASCADE on-delete di schema — soft delete (`isActive`) yang dipakai, bukan hard delete berantai; versi dokumen sebelumnya keliru menandai RBAC/TrainingParticipant/MenuItem sebagai CASCADE.
 
-### Cascade Behavior Explanation
+### Perilaku Cascade
 
 **RESTRICT (Default Prisma untuk relasi wajib)**:
 - Mencegah penghapusan parent jika ada child yang masih mereferensikan
@@ -97,7 +97,7 @@
 - Hanya berlaku untuk **On Update** (propagasi perubahan primary key), bukan On Delete
 - Tidak ada FK dengan On Delete CASCADE di schema ini
 
-### Business Rules & Validation
+### Aturan Bisnis & Validasi
 
 | Tabel | Field | Constraint | Business Rule |
 |-------|-------|-----------|---------------|
@@ -139,7 +139,7 @@
 | **UserFarmerGroup** | `(userId, farmerGroupId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke KT yang sama |
 | **UserPermissionOverride** | `(userId, menuKey, permission)` | UNIQUE COMPOSITE | Tidak boleh duplicate permission override per user |
 
-### Soft Delete Pattern
+### Pola Soft Delete
 
 Semua tabel menggunakan **soft delete** dengan field `isActive`, dengan pengecualian terdokumentasi (keputusan owner, lihat [models.md](./models.md)):
 
@@ -166,7 +166,7 @@ Untuk tabel lainnya:
 - Perlu disiplin di query layer (selalu filter `isActive`)
 - UNIQUE constraint **tidak mengenal soft delete** — baris nonaktif tetap memakai slot uniknya. Untuk `Farmer (farmerGroupId, farmerId)` itu **by design** (TD-024); hal yang sama berlaku untuk `LandParcelExternalId (parcelUid, source, code)` (#296; sejak 2026-09-23) — record nonaktif masih memegang slot uniknya, aktifkan kembali alih-alih membuat baru: memakai ulang ID milik petani nonaktif akan memecah riwayat pelatihan & lahannya (lihat komentar di `prisma/schema/farmer.prisma`). Bila suatu tabel memang perlu unik hanya-aktif (mis. revision tracking `LandParcel`), penegakannya di app layer (kombinasi cek unik+`isActive`) atau lewat **partial unique index tulis tangan** di migrasi (`WHERE is_active` — pola #306/#329/#344: `LandStdb`, `LandParcelMarker`, `BmpAssessment`, `BmpGroupAssessment`), karena Prisma schema tidak bisa mendeklarasikannya — Prisma akan mengusulkan DROP index itu, jangan diterima
 
-### Referential Integrity Check
+### Cek Integritas Referensial
 
 ```mermaid
 flowchart TD

@@ -1,5 +1,7 @@
 # 0005 · Produksi sebagai acuan menu & izin; akses DONOR
 
+> Bagian dari dokumentasi **Keputusan**. Indeks: [README.md](./README.md)
+
 - **Status:** Berlaku
 - **Tanggal:** 2026-09-29 (revisi) · 2026-08-13 (#263) · 2026-09-21 (#357) · **Issue:** #263, #357, #364 · **Diputuskan:** owner
 

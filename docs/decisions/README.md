@@ -1,6 +1,6 @@
 # Catatan Keputusan (Decision Records)
 
-> Bagian dari dokumentasi. Indeks: [../README.md](../README.md) · Terkait: [../project/changelog.md](../project/changelog.md) · [../standards/workflow.md](../standards/workflow.md)
+> Bagian dari dokumentasi **Keputusan**. Indeks: [../README.md](../README.md) · Terkait: [../project/changelog.md](../project/changelog.md) · [../standards/workflow.md](../standards/workflow.md)
 
 Satu berkas per **keputusan besar** yang berlaku lintas modul: arsitektur, kebijakan data/akses, aturan proses. Changelog bulanan tetap mencatat *apa yang berubah dan kapan*; berkas di sini menjelaskan *mengapa* dan *apa konsekuensinya*, sehingga keputusan tidak tenggelam di ratusan baris log.
 

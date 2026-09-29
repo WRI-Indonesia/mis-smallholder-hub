@@ -5,9 +5,9 @@
 <details>
 <summary><strong>Migration Strategy</strong> — Strategi migrasi dan versioning schema</summary>
 
-## Migration Strategy
+## Strategi Migrasi
 
-### Migration Workflow
+### Alur Migrasi
 
 ```mermaid
 flowchart LR
@@ -23,7 +23,7 @@ flowchart LR
     J --> K[Deploy to Production]
 ```
 
-### Migration Types & Risk Level
+### Jenis Migrasi & Tingkat Risiko
 
 | Migration Type | Risk | Strategy | Rollback |
 |----------------|------|----------|----------|
@@ -38,7 +38,7 @@ flowchart LR
 | **Add UNIQUE Constraint** | MEDIUM | Check duplicate data dulu | Easy (drop constraint) |
 | **Add FK Constraint** | MEDIUM | Check orphaned records dulu | Easy (drop constraint) |
 
-### Existing Migrations (History)
+### Riwayat Migrasi
 
 | Migration | Date | Description | Impact |
 |-----------|------|-------------|--------|
@@ -82,7 +82,7 @@ flowchart LR
 | `20260921120000_drop_activity_status_tree_surveyed_at` | 2026-09-21 | **#353 bagian E (keputusan owner)** — `DROP TYPE "ActivityStatus"` (enum dibuat di init untuk modul aktivitas yang tak pernah lahir; 0 kolom, 0 rujukan kode/seed) + `ALTER TABLE tbl_tree DROP COLUMN surveyed_at` (#238: tak pernah ditulis `bulk-upload-tree.ts` maupun dibaca; kontrak DBF shapefile pohon tanpa atribut tanggal). Prasyarat baca-saja di header migrasi (mis-prod 2026-09-21: 286 baris, 0 terisi; enum tak dipakai kolom mana pun). Ditulis tangan (4 `DROP INDEX *_geom_idx` + 2 `DROP DEFAULT` usulan Prisma dibuang; guard test). Rollback SQL di header | LOW (drop 1 enum + 1 kolom nullable kosong; applied `mis-dev` & `mis-staging-local` 2026-09-21 via `migrate deploy`, dump `scripts/dump-prod/2026-09-21/*-before-353e.dump`; `mis-staging` & `mis-prod` menyusul rilis v0.37.0 (#357, tercatat di `applied-checksums.json`)) |
 | `20260923120000_external_id_shared_code` | 2026-09-23 | **UL Parcel Code boleh di >1 lahan** (keputusan owner: klaim ganda vendor disimpan dulu, dicek silang belakangan) — `DROP INDEX tbl_land_parcel_external_id_source_code_key` → UNIQUE `(parcel_uid, source, code)` + INDEX `(source, code)`. Tanpa perubahan data; setiap pasangan `(source, code)` lama otomatis unik juga per lahan. Kode ikut: planner import tak lagi melewati kode aktif di lahan lain (`externalIdsShared`), validator tak menolak kode sama di >1 lahan, aksi manual hanya menjaga duplikat di lahan sendiri, tab Legalitas menandai "Juga dipakai …" | LOW (ganti 1 unique + 1 index, tabel ±14 rb baris; **applied `mis-dev` & `mis-staging-local` 2026-09-23** via `migrate deploy`, dump `scripts/dump-prod/2026-09-23/<db>-before-external-id-shared-code.dump`; gladi import 142 lahan sisa di staging-local → 0 lahan tanpa kode, rerun idempoten. **applied `mis-prod` 2026-09-23** (dump `mis-prod-before-external-id-shared-code.dump`, checksum disegarkan; 4 index terverifikasi, 14.031 baris utuh). **applied `mis-staging` 2026-09-23** (dump `mis-staging-before-v1.1.0.dump`; 39 migrasi, 13.009 baris utuh, 4 index terverifikasi)) |
 
-### Pre-Deployment Checklist
+### Checklist Pra-Deploy
 
 Sebelum deploy migration ke production, pastikan:
 - [ ] Migration SQL sudah direview manual (tidak ada DROP TABLE / DROP COLUMN unexpected)
@@ -95,7 +95,7 @@ Sebelum deploy migration ke production, pastikan:
 - [ ] Index creation untuk tabel besar dilakukan CONCURRENTLY (jika perlu)
 - [ ] **Sesudah `migrate deploy` prod:** segarkan snapshot checksum — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` (SELECT saja) → commit `prisma/migrations/applied-checksums.json`. Test `migration-guards.test.ts` (#303) membandingkan sha256 file lokal dengan daftar ini: **file migrasi yang sudah applied tidak boleh diedit** — kalau perlu koreksi, buat migrasi baru. Migrasi yang belum ada di daftar dianggap pending sah hanya bila lebih baru dari entri terakhir.
 
-### Breaking Changes Policy
+### Kebijakan Breaking Change
 
 **Breaking change** adalah migration yang membuat existing code tidak bisa jalan:
 - Drop column yang masih dipakai di code
@@ -108,7 +108,7 @@ Sebelum deploy migration ke production, pastikan:
 2. **Feature Flag**: Wrap new code dengan feature flag, baru enable setelah migration success
 3. **Deprecation Period**: Mark field as deprecated, kasih warning di logs, baru drop setelah 1-2 sprint
 
-### Data Backfill Strategy
+### Strategi Backfill Data
 
 Jika perlu backfill data untuk field baru dengan NOT NULL constraint:
 
@@ -130,7 +130,7 @@ AND tbl_farmer.joined_year IS NULL;
 ALTER TABLE tbl_farmer ALTER COLUMN joined_year SET NOT NULL;
 ```
 
-### Prisma Migration Commands
+### Perintah Migrasi Prisma
 
 | Command | Keterangan |
 |---------|-----------|

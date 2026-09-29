@@ -73,4 +73,38 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 
 ---
 
+## 📏 Konvensi docs
+
+**Penamaan.** Folder & berkas `kebab-case` berbahasa Inggris; isi dan **heading berbahasa Indonesia** (kecuali istilah teknis/nama kode dan kunci yang diparse build: `Phase Status (Indeks)`, `Rincian per Phase`, `Sprint Focus`, `Debt Register`). Katalog `product/pages/` mengikuti **segmen route** (`list`/`detail`/`new`/`edit`). Indeks folder = `README.md`. Berkas bernomor hanya di `qa/vX.Y.Z/` (`00-scope` … `05-signoff`) dan `decisions/` (`NNNN-slug`). Heading tidak dinomori kecuali daftar yang memang berurutan (`principles.md`, `versioning.md` §Metrik).
+
+**Kepala berkas.** Baris kedua setelah judul: `> Bagian dari dokumentasi **Area**. Indeks: … · Terkait: …`; katalog `product/pages/` memakai `[← Induk](./README.md) · …`.
+
+**Legenda status.**
+
+| Emoji | Arti | Dipakai di |
+|---|---|---|
+| ✅ | Selesai / Done | semua |
+| 🟠 | Sebagian / Partial (sebagian terimplementasi) | `roadmap.md`, `tech-debt.md` |
+| 🟡 | Sedang dikerjakan | `sprint.md` (diparse build) |
+| 🔲 | Belum dimulai · Planned · Todo · Open | semua |
+| ⚖️ | Menunggu keputusan owner | `sprint.md` |
+| ⏭️ | Digeser ke sprint lain | `sprint.md` |
+| ⛔ | Ditutup tanpa dikerjakan (*not planned*) / tidak berlaku | `sprint.md`, `access-context.md` |
+| 🔴 | Blocked / bug aktif | `roadmap.md`, `tech-debt.md` |
+
+**Satu fakta, satu tempat.**
+
+| Fakta | Sumber kebenaran |
+|---|---|
+| Status fase | `project/roadmap.md` § Phase Status |
+| Rencana & status minggu ini | `project/sprint.md` § Sprint Focus |
+| Debt & bug | `project/tech-debt.md` |
+| Angka per rilis (Roadmap %, KPI, RVS, jumlah test) | `project/metrics.md` |
+| Enum, tabel & ringkasan menu, angka teknis | blok `<!-- GENERATED -->` — `npm run build:docs` |
+| Keputusan besar | `decisions/` |
+
+**Arsip.** Paket QA yang lebih tua dari 3 rilis terakhir → `qa/archive/`. Changelog per bulan di `project/changelog/`. Tanggal di tabel ditulis ISO (`YYYY-MM-DD`; kolom Changelog bulanan `MM-DD`).
+
+---
+
 **Alur baca yang disarankan:** developer baru → `standards/principles.md` + `standards/code-standards.md` + `project/contributing.md`; kerja fitur → `standards/` + `database/` + `product/`; status/laporan → `project/`.

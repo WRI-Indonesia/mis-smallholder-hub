@@ -64,7 +64,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] `npm run rbac:compare` — selisih izin seed ↔ produksi ditinjau (lihat #263; selisih yang disengaja dicatat, bukan diabaikan)
 - [ ] Check CI di PR hijau (`gitleaks`, `semgrep`) — `gh pr checks <nomor>`
 - [ ] Migrasi DB yang dibutuhkan sudah diterapkan **sebelum** merge (merge = deploy produksi)
-- [ ] Bila ada migrasi: **snapshot checksum disegarkan** setelah `migrate deploy` — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` → commit `prisma/migrations/applied-checksums.json` (guard #303; lihat [database/migrations.md](../database/migrations.md) §Pre-Deployment Checklist). Tanpa ini, gate lokal mesin lain akan merah pada migrasi baru.
+- [ ] Bila ada migrasi: **snapshot checksum disegarkan** setelah `migrate deploy` — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` → commit `prisma/migrations/applied-checksums.json` (guard #303; lihat [database/migrations.md](../database/migrations.md) §Checklist Pra-Deploy). Tanpa ini, gate lokal mesin lain akan merah pada migrasi baru.
 - [ ] `package.json` `version` sudah di-bump sesuai kriteria
 - [ ] Entri rilis tercatat di `docs/project/changelog/YYYY-MM.md`
 - [ ] **Metrik Nilai Rilis dihitung** → baris baru di [`project/metrics.md`](../project/metrics.md) (lihat §Metrik Nilai Rilis)

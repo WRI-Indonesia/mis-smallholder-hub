@@ -14,14 +14,11 @@
 
 ---
 
-<details open>
-<summary><strong>1. Biweekly Management Brief</strong> — ringkasan stakeholder</summary>
-
-## 1. Biweekly Management Brief
+## Brief Manajemen Dua Mingguan
 
 Gunakan section ini untuk presentasi management setiap dua minggu. Section ini sengaja dibuat ringkas: posisi delivery, risiko, keputusan, dan target dua minggu berikutnya.
 
-### Reporting Window
+### Periode Laporan
 
 | Item               | Nilai                                                       |
 | ------------------ | ----------------------------------------------------------- |
@@ -31,7 +28,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Test lokal         | ✅ **1.868 test** saat rilis v1.1.0 · lint 0 error · typecheck ✅ · build ✅ |
 | Fokus berikutnya   | Sprint 1–2: keamanan akses prod (#364, #342, #237), performa (#252), jalur rilis (#277, #376, #363), rilis **v1.2.0** |
 
-### Executive Summary
+### Ringkasan Eksekutif
 
 | Area                | Status          | Ringkasan                                                                                                                                  |
 | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -45,7 +42,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Keamanan            | 🟡 Perlu tindakan | Akun demo SUPERADMIN mengubah menu prod (#364) dan role di JWT tidak diperbarui sampai login ulang (#342) — dijadwalkan Sprint 1. |
 | Testing & QA        | ✅ Strong       | Gate lokal lint/build/typecheck/test; paket QA manual per rilis di `docs/qa/` (smoke + kasus uji + QC data + sign-off). |
 
-### Progress Snapshot
+### Snapshot Progres
 
 | Metrik         | Jumlah         | Catatan                                              |
 | -------------- | -------------- | ---------------------------------------------------- |
@@ -57,7 +54,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | 🔴 Blocked     | 0 fase         | — |
 | Roadmap %      | **88,5%**      | Dihitung dari Phase Status (bobot inti ×2) — [metrics.md](./metrics.md) |
 
-### Management Talking Points
+### Poin Bahasan Manajemen
 
 | Topik               | Pesan Utama                                                              | Dampak                                                                                    |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -68,7 +65,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | **Supply Chain** 🔵 | Epic baru #379: peta rantai pasok Petani → Offtaker → Mill (declared supply base). | Dijadwalkan Sprint 5–6 (s.d. 2026-11-08), menunggu keputusan lisensi Universal Mill List dan ketersediaan berkas survei. |
 | Delivery confidence | 6 rilis dalam 9 hari dengan gate hijau; test 1.507 → 1.868. | Ritme rilis stabil; jalur `mvp → staging → main` aktif sejak v0.38.0. |
 
-### Decisions Needed
+### Keputusan yang Dibutuhkan
 
 | Keputusan                  | Owner                   | Dibutuhkan Kapan     | Rekomendasi Tech Lead                                                                       |
 | -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
@@ -77,7 +74,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Lisensi Universal Mill List & berkas survei rantai pasok (#379) | Owner | Sprint 1 | Pastikan lisensi mengizinkan data masuk repo publik; bila tidak, seed lewat `--data` dari folder lokal. |
 | Build staging OOM (#363) & migrasi staging otomatis (#277) | Owner + DevOps | Sprint 2 | Pilih opsi build/RAM; tambahkan minimal guard `migrate status` di workflow deploy. |
 
-### Next Two Weeks (2026-09-29 s.d. 2026-10-11)
+### Dua Minggu ke Depan (2026-09-29 s.d. 2026-10-11)
 
 | Priority | Target                                      | Output                                                                                                        |
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -87,5 +84,3 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | **P2**   | Prosedur rollback (#232, OPS-02)            | Dokumentasi + uji rollback di staging → kandidat OPS-02 Done                                                  |
 
 Rincian per minggu: [sprint.md](./sprint.md).
-
-</details>

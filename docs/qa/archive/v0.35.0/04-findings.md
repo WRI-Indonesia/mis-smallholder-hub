@@ -1,5 +1,7 @@
 # 04 · Temuan
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 Severity: **blocker** (rilis ditahan) · **major** (fitur salah, ada jalan lain) · **minor** (kosmetik/teks). Satu temuan major/blocker = satu issue; minor boleh digabung dalam satu issue "[QA v0.35.0] minor".
 
 | # | Kasus | Halaman · langkah | Yang terjadi vs harapan | Severity | Env | Issue | Keputusan | Bukti |

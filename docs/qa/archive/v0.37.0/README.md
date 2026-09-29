@@ -1,5 +1,7 @@
 # QA/QC v0.37.0 — Ketersediaan Data DA-02/DA-03 (#352) + audit dead code (#353) + #350/#288 + seed menu
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md)
+
 | | |
 |---|---|
 | Versi | v0.37.0 (MINOR — fitur baru DA-02/DA-03, tanpa breaking) |

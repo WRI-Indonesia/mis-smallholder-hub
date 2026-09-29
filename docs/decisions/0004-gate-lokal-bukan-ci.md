@@ -1,5 +1,7 @@
 # 0004 · Gate lint/build/typecheck/test dijalankan lokal, bukan CI
 
+> Bagian dari dokumentasi **Keputusan**. Indeks: [README.md](./README.md)
+
 - **Status:** Berlaku
 - **Tanggal:** 2026-07-14 (Docs sync jadi gate) · gate lint dipulihkan 2026-07-12 (#126) · typecheck ditambahkan #288 · **Diputuskan:** owner
 

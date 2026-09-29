@@ -8,11 +8,11 @@
 
 ---
 
-## 1. Junior Developer Update Guide
+## Panduan Update Dokumen
 
 Section ini dibuat supaya junior developer bisa update dokumen dengan aman dan konsisten.
 
-### Golden Rule
+### Aturan Emas
 
 Jika tidak ada bukti di code, jangan naikkan status fase.
 
@@ -26,7 +26,7 @@ Contoh bukti yang valid:
 - Test yang relevan
 - Script/workflow jika phase memang tooling/devops
 
-### 5-Minute Update Checklist
+### Checklist Update 5 Menit
 
 | Step | Bagian yang Diupdate | Pertanyaan Cek                                                         |
 | ---- | --------------------- | -------------------------------------------------------------------------- |
@@ -37,7 +37,7 @@ Contoh bukti yang valid:
 | 5    | Management Brief     | Apakah risiko/decision/next two weeks masih relevan?                   |
 | 6    | Changelog            | Apakah perubahan penting sudah dicatat dengan tanggal?                 |
 
-### Dependency Map
+### Peta Dependensi
 
 ```mermaid
 flowchart LR
@@ -57,7 +57,7 @@ flowchart LR
     BULK01["BULK-01 Bulk Upload Menu & Route"] --> BULK02["BULK-02 Bulk Upload Region"]
 ```
 
-### Recommended Implementation Order
+### Urutan Implementasi (arsip)
 
 > **Arsip historis** — rencana urutan awal proyek, seluruh step-nya sudah terlaksana (lihat Phase Status di [`roadmap.md`](./roadmap.md)) kecuali #69/#70. Penomoran issue RPT lama di tabel ini (#65 Report User, #66 Report Region, #67 Report KT) **tidak pernah dipakai** — realisasi stream RPT: RPT-01 Petani (#107), RPT-02 Pelatihan (#108), RPT-03 Produksi (#132), RPT-04 Kelompok Tani (#154), RPT-05 Lahan (#177/#179).
 
@@ -96,7 +96,7 @@ flowchart LR
 - Placeholder `Coming soon` tidak dihitung sebagai selesai.
 - Setelah phase selesai, update **Phase Status**, **Active Issues**, **Progress Snapshot**, dan **Changelog**.
 
-### Minimum Validation
+### Validasi Minimum
 
 | Area           | Validasi Minimal                                               |
 | -------------- | -------------------------------------------------------------------- |
@@ -108,7 +108,7 @@ flowchart LR
 | Build          | `npm run build` lulus sebelum fase ditandai Done               |
 | Typecheck      | `npm run typecheck` lulus (mencakup `src/test/**`, #288)       |
 
-### Update Templates
+### Template Update
 
 Gunakan template berikut saat menambah issue baru.
 
@@ -131,7 +131,7 @@ Gunakan template berikut saat menambah changelog. Baris ditambahkan di **paling 
 
 ---
 
-## 2. Implementation Guidelines (Kepatuhan `standards/`)
+## Panduan Implementasi (Kepatuhan `standards/`)
 
 #### Checklist untuk Setiap Implementasi Fase Baru
 
@@ -193,7 +193,7 @@ Urutan mengikuti Pre-Commit Gate di [`workflow.md`](../standards/workflow.md):
 8. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
 9. ✅ **Alur rilis**: `mvp` → `staging` (deploy staging, QA `docs/qa/vX.Y.Z/`) → PR `staging` → `main` (deploy produksi) — lihat [`versioning.md`](../standards/versioning.md) §Alur Rilis
 
-#### Common Pitfalls & Fixes
+#### Jebakan Umum & Perbaikannya
 
 | Pitfall | Why Bad | Fix |
 |---------|---------|-----|

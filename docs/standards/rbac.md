@@ -69,7 +69,7 @@ Karena itu, kalau sebuah menu harus terbatas, yang menentukan adalah **izin menu
 
 **Sidebar.** `filterMenuTreeByAccess` (`src/lib/menu-utils.ts`) menyimpan sebuah node bila ia sendiri dapat diakses **atau** salah satu anaknya lolos. Jadi mencabut izin induk tidak menyembunyikan grupnya selama masih ada anak yang boleh dibuka — inilah yang membuat pembatasan lewat induk tetap berterima secara navigasi.
 
-### RBAC Data Access Hierarchy
+### Hierarki Akses Data RBAC
 
 ```
 SUPERADMIN        → skip semua filter (akses ALL)
@@ -106,7 +106,7 @@ const accessFilter =
 > [!WARNING]
 > **Bug pattern lama** — Jangan filter hanya berdasarkan `districtId` tanpa handle case `BY_FARMER_GROUP`. Jika user hanya assign Lembaga Petani dan code menghasilkan `districtId: { in: [] }`, semua data Lembaga Petani akan hilang dari query.
 
-### User Data Access Assignment UI
+### UI Penugasan Akses Data User
 
 Untuk assign data access per user (Province/District/Lembaga Petani):
 - **Server Actions** — di `src/server/actions/user-data-access.ts`: `getUserDataAccess`, `getRegionsForSelect`, `assignUserProvince/District/FarmerGroup`, `removeUserProvince/District/FarmerGroup`
@@ -114,7 +114,7 @@ Untuk assign data access per user (Province/District/Lembaga Petani):
 - **Table Summary** — Gunakan komponen `AccessSummaryCell` di kolom "Akses Data": badge per assignment, `—` jika kosong
 - **Real-time refresh** — Pass `onDataChange` callback ke modal → panggil `startTransition(() => router.refresh())` setiap toggle berhasil
 
-### User Menu Access Override UI
+### UI Override Akses Menu per User
 
 Untuk melakukan override permission menu per user (grant/revoke):
 - **Server Actions** — di `src/server/actions/user-menu-access.ts`: `getMenuItemsForSelect`, `getUserEffectivePermissions`, `setUserMenuOverride`, `removeUserMenuOverride`
@@ -123,13 +123,13 @@ Untuk melakukan override permission menu per user (grant/revoke):
 - **Soft Delete** — Penghapusan override menggunakan update `isActive: false` (bukan physical delete).
 - **Optimasi Caching** — Fungsi pembacaan permission di `src/lib/rbac.ts` wajib dibungkus dengan React `cache` untuk mereduksi kueri ganda pada render lifecycle.
 
-### Role & Permission Matrix UI
+### UI Matriks Role & Permission
 
 Untuk mengelola permission per role (matriks role × menu × 6 izin di Settings — header ikon per izin, grup Data ┊ Keluaran, preset baris via dropdown `ListChecks`, toggle satu kolom via klik ikon header, hover highlight silang):
 - **Server Actions** — di `src/server/actions/role-permission.ts`: `getRolePermissions` dan `setRolePermissions(updates[])` — set satu atau banyak permission ke keadaan eksplisit dalam **satu transaksi** (satu sel, satu baris penuh, kaskade induk → anak); `toggleRolePermission` per sel dihapus #353 (tak terpakai sejak #187).
 - **SUPERADMIN dikecualikan dari matriks** (keputusan governance): kolom yang tampil/diedit hanya `EDITABLE_ROLES = ROLES.filter((r) => r !== "SUPERADMIN")` (`role-matrix-client.tsx`), dan `setRolePermissions` mengabaikan entri role SUPERADMIN — SUPERADMIN bypass RBAC sehingga permission-nya tidak perlu (dan tidak boleh) diatur dari UI.
 
-### Hierarchical Menu Management (3-Level Support)
+### Menu Bertingkat (3 Level)
 
 Sistem menu mendukung hierarki sampai **3 level maksimal**:
 - **Level 1:** Menu Besar (e.g., Master Data, Settings, Dashboard)

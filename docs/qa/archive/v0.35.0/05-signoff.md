@@ -1,5 +1,7 @@
 # 05 · Sign-off v0.35.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
 | Developer | Sofyan (+Claude) | 2026-09-15 | **Go** | gate lokal hijau (lint 0 · tsc 0 · test 1.507 · build ✓); `02` lengkap (42 kasus + 3 regresi baru); review rentang penuh #339 13 perbaikan; smoke 5 halaman `mis-dev` (snapshot prod) |

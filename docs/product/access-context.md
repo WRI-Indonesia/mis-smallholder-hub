@@ -5,7 +5,7 @@
 <details>
 <summary><strong>RBAC & Data Access Pattern</strong></summary>
 
-## Access Context Resolution
+## Resolusi Access Context
 
 ```
 User Request
@@ -45,7 +45,7 @@ User Request
 
 > Catatan: `getAccessContext()` (`src/lib/access-context.ts`) **role-agnostik** kecuali cabang SUPERADMIN — semua role lain (ADMIN, OPERATOR, MANAGEMENT, DONOR) mengikuti aturan assignment yang sama. Urutan evaluasi: farmer-group-only lebih dulu, baru province/district; sesi kosong atau user tak ditemukan → `{ mode: "BY_DISTRICT", ids: [] }` = tolak semua.
 
-### Data Access Hierarchy Examples
+### Contoh Hierarki Akses Data
 
 Nama di kolom pertama adalah **persona ilustratif**; kolom Role memakai enum `Role` nyata.
 
@@ -83,7 +83,7 @@ Aturan dasar: setiap pembacaan hanya mengembalikan baris dalam scope user. Dua p
 
 Menambah pengecualian baru = menambah baris di tabel ini **dan** komentar di fungsinya.
 
-### Permission Resolution Priority
+### Prioritas Resolusi Izin
 
 1. **SUPERADMIN** → Grant all, skip all filters
 2. **UserPermissionOverride** (Granted) → Grant

@@ -39,7 +39,7 @@ src/
 └── middleware.ts             # NextAuth guard /admin/* & /login
 ```
 
-### Tech Stack
+### Teknologi
 
 | Layer | Technology |
 |-------|-----------|

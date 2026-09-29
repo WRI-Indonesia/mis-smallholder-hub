@@ -1,5 +1,7 @@
 # 03 · QC data & DB — v0.35.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 Kueri hidup di **`scripts/qa/data-qc.ts`**. Jalankan **sebelum & sesudah** migrasi + seed di tiap env, tempel keluarannya ke lembar run:
 
 ```bash

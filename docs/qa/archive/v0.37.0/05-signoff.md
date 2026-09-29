@@ -1,5 +1,7 @@
 # 05 · Sign-off v0.37.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
 | Developer | Claude (dev) | 2026-09-21 | **Go (lokal)** | gate lokal hijau (lint · build · typecheck · 1.702 tes); `02` lengkap (31 kasus); run lokal 35 Pass · 0 Fail; 3 temuan run diperbaiki & di-commit |

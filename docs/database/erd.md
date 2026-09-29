@@ -2,7 +2,7 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [models.md](./models.md) · [indexes.md](./indexes.md) · [constraints.md](./constraints.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md) · [dashboard-snapshots.md](./dashboard-snapshots.md)
 
-## High-Level ERD
+## ERD Tingkat Tinggi
 
 > **Konvensi penamaan tabel/model** (prefix `tbl_`/`ref_`/`reg_`/`rbac_`, pola satelit `tbl_<induk>_<aspek>`): lihat [../standards/code-standards.md §Penamaan tabel & model](../standards/code-standards.md#penamaan-tabel--model-prisma).
 
@@ -82,9 +82,9 @@ erDiagram
 
 ---
 
-## Quick Summary
+## Ringkasan Cepat
 
-### Implemented Models (15 Categories)
+### Model Terimplementasi (15 Kategori)
 
 | Category | Tables | Key Features |
 |----------|--------|--------------|
@@ -104,13 +104,13 @@ erDiagram
 | **Production** | ProductionRecord | Yield tracking per farmer/parcel with period (YYYY-MM), harvest number (1-4), duplicate validation |
 | **Dashboard Snapshots** | MainDashboardSnapshot, BmpDashboardSnapshot | Snapshot pattern (#99, #166) — rincian di bawah |
 
-### Dashboard Snapshots
+### Snapshot Dashboard
 
 | Category | Tables | Key Features |
 |----------|--------|--------------|
 | **Dashboard Snapshots** | MainDashboardSnapshot, BmpDashboardSnapshot (#166) | Historical state capture, filter-based snapshots, JSON data storage, soft-delete; separate table per dashboard |
 
-### Planned Models (5 Categories)
+### Model Terencana (5 Kategori)
 
 - **Staff** (MD-07) — Staff activity tracking
 - **HCV** (MD-08) — High Conservation Value assessments *(sebagian: status NKT per lahan `LandParcelNkt` #328 sudah ada)*
@@ -118,18 +118,18 @@ erDiagram
 - **IMPACT** (MD-10) — Impact metrics
 - **Workplan** (MD-11) — Work planning & tasks
 
-### Enums
+### Enum
 
 19 enum. Inti: `Role`, `PermissionLevel`, `FarmerGroupCategory`, `Gender`, `TrainingCategory`. Lembaga: `FarmerGroupType`, `RspoCertStatus`, `CertStatus`. Wilayah: `AdminBoundaryLevel`. Satelit lahan: `LandDocumentType`, `LandProgramType`, `LandProgramStatus`, `LandStdbStage`, `LandNktStatus`, `NktCategory`, `LandMarkerCondition`, `LandMarkerType`, `LandMarkerSource`. Monev BMP: `BmpIndicatorLevel`. (`ActivityStatus` yatim dihapus 2026-09-21, #353)
 
-### Common Patterns
+### Pola Umum
 
-- **Soft Delete**: Semua tabel memiliki `isActive Boolean @default(true)` — pengecualian terdokumentasi di [constraints.md](./constraints.md#soft-delete-pattern): `LandParcelNkt` (hapus baris), `LandParcelBorder` (kosongkan kolom), `LandMarkerCounter` (tanpa `isActive`/audit), tabel penugasan `UserProvince`/`UserDistrict`/`UserFarmerGroup` (tanpa `isActive`)
+- **Soft Delete**: Semua tabel memiliki `isActive Boolean @default(true)` — pengecualian terdokumentasi di [constraints.md](./constraints.md#pola-soft-delete): `LandParcelNkt` (hapus baris), `LandParcelBorder` (kosongkan kolom), `LandMarkerCounter` (tanpa `isActive`/audit), tabel penugasan `UserProvince`/`UserDistrict`/`UserFarmerGroup` (tanpa `isActive`)
 - **Audit Trail**: `created_at`, `created_by`, `modified_at`, `modified_by`
 - **CUID Primary Keys**: Semua tabel menggunakan CUID untuk ID, kecuali `LandMarkerCounter` (PK = `prefix`)
 - **Table Naming**: `tbl_*` (transactional), `reg_*` (regional), `ref_*` (reference), `rbac_*` (RBAC)
 
-### Schema Version
+### Versi Skema
 
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
@@ -163,7 +163,7 @@ erDiagram
 <details open>
 <summary><strong>ERD Overview</strong> — Visualisasi lengkap relasi antar tabel</summary>
 
-## ERD Overview
+## Gambaran ERD
 
 ```mermaid
 erDiagram
@@ -497,9 +497,9 @@ erDiagram
 <details>
 <summary><strong>Schema Implementation Status</strong> — Status implementasi dan roadmap</summary>
 
-## Schema Implementation Status
+## Status Implementasi Skema
 
-### ✅ Implemented (Production-Ready)
+### ✅ Terimplementasi (Siap Produksi)
 
 | Category | Tables | Status |
 |----------|--------|--------|
@@ -519,7 +519,7 @@ erDiagram
 | **Production** | ProductionRecord | ✅ Complete with yield tracking per farmer/parcel, period validation (YYYY-MM), max 4 harvests/month, duplicate prevention |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | ✅ Complete with evidence upload & participant management |
 
-### 🔲 Planned (Roadmap)
+### 🔲 Terencana (Roadmap)
 
 | Category | Tables | Target Phase |
 |----------|--------|--------------|

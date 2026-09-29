@@ -2,7 +2,7 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [indexes.md](./indexes.md) · [constraints.md](./constraints.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md) · [dashboard-snapshots.md](./dashboard-snapshots.md)
 
-## Common Fields (semua tabel)
+## Kolom Umum (semua tabel)
 
 > Pengecualian: `LandMarkerCounter` (penghitung murni, tanpa audit & `isActive`); `UserProvince`/`UserDistrict`/`UserFarmerGroup` tanpa `isActive`; `createdBy` pada `MainDashboardSnapshot`/`BmpDashboardSnapshot` wajib (FK ke User), bukan nullable.
 
@@ -18,7 +18,7 @@
 <details>
 <summary><strong>Enums</strong> — Definisi enumerasi sistem</summary>
 
-## Enums
+## Enum
 
 <!-- GENERATED:enums — npm run build:docs; jangan sunting tangan -->
 19 enum di `prisma/schema/`.
@@ -55,7 +55,7 @@ Catatan: `LandNktStatus.INCLUDED` hidup di DB tetapi disembunyikan dari UI (TD-0
 <details>
 <summary><strong>Table Naming Convention</strong> — Konvensi penamaan tabel</summary>
 
-## Table Naming Convention
+## Konvensi Penamaan Tabel
 
 | Prefix | Arti | Contoh |
 |--------|------|--------|
@@ -76,7 +76,7 @@ Aturan lengkap (termasuk larangan `tbl_parcel_*`, enum vs `ref_`): [../standards
 <details>
 <summary><strong>RBAC & Data Access</strong> — Flow autentikasi, otorisasi, dan data access control</summary>
 
-## RBAC Flow
+## Alur RBAC
 
 ```mermaid
 flowchart TD
@@ -101,7 +101,7 @@ flowchart TD
 
 ---
 
-## Data Access Examples
+## Contoh Akses Data
 
 | User | Role | UserProvince | UserDistrict | UserFarmerGroup | Hasil Akses |
 |------|------|-------------|-------------|-----------------|-------------|
@@ -112,7 +112,7 @@ flowchart TD
 
 ---
 
-## Data Access Pattern
+## Pola Akses Data
 
 ```mermaid
 flowchart LR
@@ -145,9 +145,9 @@ flowchart LR
 <details>
 <summary><strong>Farmer Model</strong> — Detail model Farmer dengan joinedYear field</summary>
 
-## Farmer Model Details
+## Rincian Model Farmer
 
-### Core Fields
+### Kolom Inti
 
 | Field | Type | Constraint | Keterangan |
 |-------|------|-----------|------------|
@@ -162,7 +162,7 @@ flowchart LR
 | `birthDate` | DateTime? | Optional | Tanggal lahir |
 | `joinedYear` | Int? | Optional | Tahun bergabung dengan KT (range: 1900-2100) |
 
-### Relationships
+### Relasi
 
 ```
 FarmerGroup (1) ─→ (N) Farmer
@@ -183,14 +183,14 @@ Level **Kelompok Tani** belum dimodelkan sebagai tabel. **Interim (#146):** disi
 
 Konsumen agregat interim: **Report Kelompok Tani** (real-time, #154 — Summary agregat + Detail roster) & **card "Total Kelompok Tani"** di Main Dashboard (snapshot-backed, distinct `subGroupLv2`, #148). Pemodelan tabel penuh (KT sebagai entitas + re-parenting `Farmer`) = **TD-014**.
 
-### RBAC Filter Context
+### Konteks Filter RBAC
 
 Farmer data difilter berdasarkan:
 - `BY_DISTRICT`: User dengan assignment Province/District → akses semua Farmer di KT dalam district scope
 - `BY_FARMER_GROUP`: User dengan assignment KT spesifik → akses hanya Farmer di KT assigned
 - `ALL`: SUPERADMIN atau user tanpa assignment → akses semua Farmer
 
-### Bulk Upload Support
+### Dukungan Bulk Upload
 
 - **Template-less approach**: Upload Excel tanpa template, user mapping kolom secara dinamis
 - **Smart Validation**:
@@ -208,16 +208,16 @@ Farmer data difilter berdasarkan:
 <details>
 <summary><strong>Training Module</strong> — Struktur 3-layer training management</summary>
 
-## Training Module Architecture
+## Arsitektur Modul Pelatihan
 
-### Overview
+### Gambaran
 
 Modul Training menggunakan struktur 3-layer untuk mengelola data pelatihan petani:
 1. **TrainingPackage** (ref) — Katalog paket pelatihan standar
 2. **TrainingActivity** (transactional) — Aktivitas pelatihan yang dilaksanakan per Lembaga Petani
 3. **TrainingParticipant** (many-to-many) — Peserta pelatihan (relasi Farmer ↔ Training Activity)
 
-### Training Data Flow
+### Alur Data Pelatihan
 
 ```mermaid
 flowchart LR
@@ -227,7 +227,7 @@ flowchart LR
     F[Farmer] --> TPART
 ```
 
-### Training Package Categories
+### Kategori Paket Pelatihan
 
 | Code | Nama Paket |
 |------|-----------|
@@ -237,7 +237,7 @@ flowchart LR
 | `PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV` | Paket 3-4: GEDSI, Financial Literacy, Livelihood, Business Development |
 | `OTHER` | Paket lainnya |
 
-### Training Activity Features
+### Fitur Kegiatan Pelatihan
 
 - **Evidence Upload**: Setiap aktivitas pelatihan bisa menyertakan bukti dokumen (PDF) yang disimpan di S3
   - `evidence_key`: S3 object key
@@ -245,14 +245,14 @@ flowchart LR
 - **Location**: Lokasi pelaksanaan pelatihan (teks bebas)
 - **Training Date**: Tanggal pelaksanaan pelatihan
 
-### Training Participant Management
+### Pengelolaan Peserta Pelatihan
 
 - **Many-to-Many Relation**: Satu petani bisa ikut banyak training, satu training bisa punya banyak peserta
 - **Unique Constraint**: `(activityId, farmerId)` — tidak boleh duplikasi peserta di aktivitas yang sama
 - **Bulk Upload Support**: Upload peserta via Excel/CSV dengan validasi 3-tier (Valid, Warning, Error)
 - **RBAC Filter**: Data peserta mengikuti access context dari Farmer (BY_DISTRICT / BY_FARMER_GROUP)
 
-### Schema Relationships
+### Relasi Skema
 
 ```
 TrainingPackage (1) ─→ (N) TrainingActivity
@@ -268,7 +268,7 @@ Farmer (1) ─→ (N) TrainingParticipant
 <details>
 <summary><strong>Tree Model</strong> — Titik pohon sawit per lahan (#238)</summary>
 
-## Tree Model Details
+## Rincian Model Tree
 
 - **Relasi baca**: `landParcelId` (FK ke `LandParcel.id`) adalah **satu-satunya jalur baca** — semua query pohon (detail lahan, overlay peta, agregat count) lewat FK ini. Set aktif per lahan berevisi per-set (upload ulang menonaktifkan set lama, `revision + 1`).
 - **`parcelId` = kolom arsip/audit** (keputusan #241): menyimpan kunci bisnis lahan (`LandParcel.parcelId`) saat upload sebagai **jangkar pemulihan manual** — lahan berevisi mendapat `id` baru dan pohon aktif di-repoint saat revisi; bila repoint terlewat/salah, keterkaitan masih bisa direkonstruksi dari kolom ini. **Tidak ada jalur baca aplikasi yang memakai/fallback ke kolom ini** — itu disengaja, bukan utang; jangan menambah jalur baca berbasis `parcelId` tanpa keputusan baru (parcelId hanya unik per petani, lookup global bisa ambigu).
@@ -341,7 +341,7 @@ Garis batas administrasi (`tbl_administrative_boundary`) sebagai konteks peta �
 
 Dual-column sama dengan FarmerGroupBoundary, dengan satu perbedaan penting: kolom cache `geojson` disimpan **tersimplifikasi** (`ST_SimplifyPreserveTopology` 0,001° ≈ 111 m; ~10 MB → ~165 KB) karena hanya untuk garis konteks di browser — `geom` tetap full-res untuk analisa. Seed: `scripts/seed/seed-batas-administrasi.ts` (config per level, dry-run default, idempotent per level).
 
-## File Structure
+## Struktur Berkas
 
 ```
 prisma/schema/

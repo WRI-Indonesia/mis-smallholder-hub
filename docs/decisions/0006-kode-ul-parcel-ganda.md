@@ -1,5 +1,7 @@
 # 0006 · UL Parcel Code boleh dipakai lebih dari satu lahan
 
+> Bagian dari dokumentasi **Keputusan**. Indeks: [README.md](./README.md)
+
 - **Status:** Berlaku
 - **Tanggal:** 2026-09-23 · **Issue:** #373 · **Diputuskan:** owner
 

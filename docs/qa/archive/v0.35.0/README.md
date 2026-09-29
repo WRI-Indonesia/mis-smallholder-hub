@@ -1,5 +1,7 @@
 # QA/QC v0.35.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md)
+
 | | |
 |---|---|
 | Versi | v0.35.0 (MINOR — menu baru Report › Patok, 6 tabel/kolom baru, 5 enum, 5 migrasi) |

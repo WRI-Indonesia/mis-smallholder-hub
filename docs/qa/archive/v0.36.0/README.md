@@ -1,5 +1,7 @@
 # QA/QC v0.36.0 — Monev BMP (#344 · #346) + patok NKT tahap 1 (#345) + review #347
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md)
+
 | | |
 |---|---|
 | Rentang | `8777891` (v0.35.0) .. `mvp` HEAD |

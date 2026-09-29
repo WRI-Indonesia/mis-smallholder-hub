@@ -1,5 +1,7 @@
 # 02 · Kasus uji per issue — v0.37.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 Satu **blok** per kasus; hasil di `runs/`. Dijalankan sebagai **SUPERADMIN** kecuali disebut lain (kasus scope: OPERATOR ter-scope Rokan Hulu / DONOR). Data uji memakai **kode Lembaga** (lihat `00-scope.md` TC-PREP-03), bukan nama orang.
 
 `Baseline dev` = `mis-dev` snapshot prod 2026-09-18 + migrasi #353 E + seed menu 2026-09-21: 32 Lembaga · Skor Keseluruhan 61 · distribusi band 2 kritis / 28 perlu perhatian / 2 baik / 0 penuh · 12.893 temuan; KUD Karya Sembada Index 51 (Profil 100 · Petani 62,4 · Lahan 60 · Pelatihan 53,6 · Produksi 0).

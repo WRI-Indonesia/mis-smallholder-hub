@@ -1,5 +1,7 @@
 # QA/QC vX.Y.Z
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md)
+
 | | |
 |---|---|
 | Versi | vX.Y.Z (MAJOR/MINOR/PATCH — alasan) |

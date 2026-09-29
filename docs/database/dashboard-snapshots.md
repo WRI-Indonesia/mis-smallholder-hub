@@ -2,9 +2,9 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [models.md](./models.md) · [indexes.md](./indexes.md) · [constraints.md](./constraints.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md)
 
-## Dashboard Snapshot Pattern
+## Pola Snapshot Dashboard
 
-### Architecture Decision: Separate Table Per Dashboard
+### Keputusan Arsitektur: Satu Tabel per Dashboard
 
 **Decision**: Use **separate snapshot table for each dashboard type** instead of single generic snapshot table.
 
@@ -36,7 +36,7 @@
 
 ---
 
-### Naming Convention
+### Konvensi Penamaan
 
 ```
 tbl_snapshot_<dashboard_name>
@@ -52,7 +52,7 @@ tbl_snapshot_<dashboard_name>
 
 ---
 
-### Common Fields Pattern
+### Pola Kolom Umum
 
 All snapshot tables share these standard fields:
 
@@ -90,7 +90,7 @@ model <Dashboard>Snapshot {
 
 ---
 
-### Example: Main Dashboard Snapshot
+### Contoh: Snapshot Main Dashboard
 
 **Model**: `MainDashboardSnapshot`  
 **Table**: `tbl_snapshot_main_dashboard`
@@ -152,7 +152,7 @@ model MainDashboardSnapshot {
 
 ---
 
-### Alternative: Single Generic Table (Not Recommended)
+### Alternatif: Satu Tabel Generik (Tidak Disarankan)
 
 **Use single generic table ONLY if**:
 - All dashboards have very similar structure (unlikely)
@@ -184,7 +184,7 @@ model Snapshot {
 
 ---
 
-### Implementation Guidelines
+### Panduan Implementasi
 
 **For new dashboards**:
 
@@ -214,7 +214,7 @@ model ProductionDashboardSnapshot {
 
 ---
 
-### Migration Strategy for Snapshots
+### Strategi Migrasi Snapshot
 
 **Adding new dashboard snapshot table**:
 - Risk: LOW (independent table, no dependencies)

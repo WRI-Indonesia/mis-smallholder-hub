@@ -2,14 +2,14 @@
 
 > Bagian dari dokumentasi **Standar**. Indeks: [../README.md](../README.md) · Terkait: [principles.md](./principles.md) · [code-standards.md](./code-standards.md) · [rbac.md](./rbac.md) · [ui-ux.md](./ui-ux.md) · [architecture.md](./architecture.md)
 
-## Branching & Workflow
+## Branching & Alur Kerja
 
 ### Branching
 
 - Kerja harian hanya di `mvp`; tidak boleh membuat branch feature/experiment
 - Branch rilis tetap: `mvp` → `staging` (merge, deploy staging otomatis) → `main` (PR, deploy produksi) — lihat [versioning.md](./versioning.md) §Alur Rilis
 
-### Issue Workflow
+### Alur Issue
 
 1. **Pick Issue** — Ambil GitHub Issue yang sudah di-approve
    - **Temuan hasil pembacaan kode yang belum terbukti** (mis. "celah ini *bisa* menelan data") wajib diawali satu langkah **ukur dulu** yang murah — satu query, satu skrip sekali pakai — sebelum memilih solusinya. Tanpa besaran masalah, opsi-opsi yang ongkosnya berbeda tidak bisa dibandingkan, dan issue-nya mengendap. Untuk bug yang **gagal secara diam**, laporan lapangan tidak akan pernah datang, jadi menunggu bukti dari pengguna sama dengan tidak mengerjakannya. (Contoh: #280 mengendap 5 minggu; satu query `ST_Difference` memberi angka 9,4 km² dan keputusannya langsung jelas.)
@@ -31,7 +31,7 @@ Setiap penyelesaian pekerjaan **diakhiri analisa next/recommended improvement** 
 
 Penyaluran: ringkas di **Report** ke owner + section **🧭 Feedback & improvement** pada retro; item yang **actionable** dicatat ke [`../project/tech-debt.md`](../project/tech-debt.md) (TD-xxx) atau diusulkan sebagai **issue baru** — jangan hilang di percakapan.
 
-### Docs Compliance Check (wajib, setelah implement — sebelum commit/close)
+### Cek Kepatuhan Docs (wajib, setelah implement — sebelum commit/close)
 
 Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil kerja terhadap `docs/`:
 
@@ -41,11 +41,11 @@ Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil ker
 4. **Identifikasi file `docs/` lain yang terdampak** (peta cepat di Docs sync) dan perbarui **sebelum commit** — di-commit **bersama** kode. Temuan ketidakpatuhan dilaporkan ke owner, bukan didiamkan.
 5. **Bantuan (`src/content/help/`)** — setiap **perubahan atau penambahan fitur** wajib diperiksa dampaknya ke materi Bantuan: apakah ada tutorial/konsep yang jadi **keliru** (label tombol berubah, langkah bertambah, aturan validasi berubah), dan apakah alur baru itu **perlu tutorial baru**. Perbarui bersama kode, jangan ditunda — panduan yang salah lebih berbahaya daripada panduan yang belum ada, karena pengguna terlanjur memercayainya.
 
-### Issue Close — Kasus uji manual (bersama retro)
+### Menutup Issue — Kasus uji manual (bersama retro)
 
 Saat menutup issue fitur/bug, tulis kasus uji manualnya di `docs/qa/<versi berikutnya>/02-test-cases.md` (ID `TC-<issue>-<nn>`: prasyarat & data uji ber-kode, langkah, hasil harapan) — QA menjalankannya di staging sebelum rilis; lihat [../qa/README.md](../qa/README.md). Kasus uji adalah turunan langsung dari smoke test yang dilakukan dev saat mengerjakan issue, jadi ditulis saat masih hangat, bukan saat rilis.
 
-### Issue Close — Retrospektif wajib (sebelum close)
+### Menutup Issue — Retrospektif wajib (sebelum close)
 
 Sebelum menutup GitHub Issue: (1) **recheck** dulu (rule/gate/konsistensi tercapai), lalu (2) tulis **comment retrospektif** — **compact + section collapsible** (`<details><summary>`), berisi **6 bagian**:
 
@@ -89,7 +89,7 @@ Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `s
 - **Aturan / standar / keputusan arsitektur** → `standards/*` + Decision Log bulan berjalan; keputusan besar lintas modul juga sebagai catatan di `decisions/NNNN-slug.md`
 - **Tech debt / bug** → `project/tech-debt.md`
 
-Checklist detail: [`../project/contributing.md`](../project/contributing.md) §5-Minute Update Checklist.
+Checklist detail: [`../project/contributing.md`](../project/contributing.md) §Checklist Update 5 Menit.
 
 ### GitHub Actions yang berjalan (5 workflow)
 
@@ -112,7 +112,7 @@ Konsekuensi yang wajib diingat:
 
 ---
 
-## Safety & Approval
+## Keamanan & Persetujuan
 
 **Wajib minta approval project owner** sebelum:
 

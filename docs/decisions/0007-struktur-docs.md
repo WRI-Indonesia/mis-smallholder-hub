@@ -1,5 +1,7 @@
 # 0007 · Struktur `docs/`: slug route, changelog per bulan, dokumen turunan kode
 
+> Bagian dari dokumentasi **Keputusan**. Indeks: [README.md](./README.md)
+
 - **Status:** Berlaku
 - **Tanggal:** 2026-09-29 · **Diputuskan:** owner (audit docs menyeluruh)
 

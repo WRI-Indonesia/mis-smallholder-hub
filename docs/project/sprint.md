@@ -2,10 +2,7 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md) · [contributing.md](./contributing.md)
 
-<details>
-<summary><strong>3. Current Sprint & Issue Control</strong> — pekerjaan aktif developer</summary>
-
-## 3. Current Sprint & Issue Control
+## Sprint Berjalan & Kontrol Issue
 
 Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Karena progress sekarang disesuaikan dengan code, prioritas sprint difokuskan ke gap yang terbukti ada.
 
@@ -116,7 +113,7 @@ Fokus **minggu 2026-08-08 → 2026-08-14** (hasil audit menyeluruh 2026-08-08 + 
 
 </details>
 
-### Active Issues / Work Items
+### Issue Aktif / Work Item
 
 Item yang masih terbuka/berjalan. Item selesai ada di arsip terlipat di bawah (urutan asli dipertahankan).
 
@@ -254,7 +251,7 @@ Item yang masih terbuka/berjalan. Item selesai ada di arsip terlipat di bawah (u
 
 </details>
 
-### Issue Workflow
+### Alur Issue
 
 ```mermaid
 flowchart LR
@@ -271,7 +268,7 @@ flowchart LR
 | 🔍 Review      | `status:review`      | Selesai coding, menunggu QA / approval | Fase tetap In Progress / Partial                  |
 | ✅ Done        | `status:done`        | Selesai dan merged                     | Fase bisa Done jika completion criteria terpenuhi |
 
-### Issue Convention
+### Konvensi Issue
 
 Format judul:
 
@@ -296,5 +293,3 @@ Label wajib:
 | `status`   | `status:todo`                        | Ya                 | Harus mengikuti Issue Workflow                    |
 | `type`     | `type:feat`, `type:bug`, `type:debt` | Ya                 | Minimal satu type                                 |
 | `priority` | `priority:P0`, `priority:P1`         | Untuk sprint aktif | Dipakai untuk sorting pekerjaan                   |
-
-</details>

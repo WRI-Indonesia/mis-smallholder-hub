@@ -1,5 +1,7 @@
 # 0001 · Soft delete di semua tabel, dengan pengecualian satelit 1:1
 
+> Bagian dari dokumentasi **Keputusan**. Indeks: [README.md](./README.md)
+
 - **Status:** Berlaku
 - **Tanggal:** 2026-09-14 (pengecualian; aturan dasar sejak awal proyek) · **Issue:** #306, #326, #328, #331 · **Diputuskan:** owner
 
@@ -19,4 +21,4 @@ Data petani dan lahan adalah jejak audit program: menghapus permanen memutus riw
 Setiap query wajib memfilter `isActive`. UNIQUE biasa tidak mengenal soft delete, jadi baris nonaktif memegang slotnya (disengaja untuk `Farmer (farmerGroupId, farmerId)`).
 
 ## Rujukan
-[../database/constraints.md](../database/constraints.md#soft-delete-pattern) · [../standards/code-standards.md](../standards/code-standards.md) · [../database/models.md](../database/models.md)
+[../database/constraints.md](../database/constraints.md#pola-soft-delete) · [../standards/code-standards.md](../standards/code-standards.md) · [../database/models.md](../database/models.md)

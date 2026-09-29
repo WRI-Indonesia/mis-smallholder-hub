@@ -1,5 +1,7 @@
 # 02 · Kasus uji per issue — v0.35.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 Satu **blok** per kasus; hasil di `runs/`. Dijalankan sebagai **OPERATOR ter-scope Kampar** kecuali disebut lain. Data uji: Lembaga HJP `ICS-1401-03`, lahan `HJP.0001.A.14.01.10.2002`; angka acuan dari `TC-PREP-04` (bukan angka dev di bawah — dev memakai snapshot prod + patok seluruh HJP). Prasyarat umum: `TC-PREP-01…04` selesai.
 
 `Baseline dev` = hasil smoke dev 2026-09-15 di `mis-dev` (HJP 559 lahan · 21 NKT · 1.015 patok · 62 patok NKT) — hanya pembanding bentuk, bukan pengganti hasil staging.

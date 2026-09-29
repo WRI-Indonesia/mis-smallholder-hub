@@ -1,5 +1,7 @@
 # 00 · Lingkup rilis v1.0.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 Sumber: `git log v0.38.0..HEAD` (17 commit), `gh issue list --state closed`, `docs/project/changelog.md`.
 
 **Rilis kode murni** — tanpa migrasi DB, tanpa perubahan `prisma/schema`, `menu.csv`, seed, maupun izin. `rbac:compare` **tidak dijalankan**: nol berkas RBAC/menu/seed/prisma tersentuh di rentang ini, jadi rilis ini tidak mungkin menimbulkan drift.

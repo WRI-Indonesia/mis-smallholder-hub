@@ -21,7 +21,7 @@ Legenda status: ✅ Done · 🟠 Partial · 🔲 Planned · 🔴 Blocked — def
 
 ---
 
-## 1. Peta Sistem
+## Peta Sistem
 
 ### Lapis route
 
@@ -50,7 +50,7 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 
 ---
 
-## 2. Struktur Menu Sidebar
+## Struktur Menu Sidebar
 
 <!-- GENERATED:menu-summary — npm run build:docs; jangan sunting tangan -->
 **9 menu top-level · 38 sub menu · 1 menu level-3** (`prisma/seeds/data/menu.csv`, urut kolom `order`):
@@ -70,7 +70,7 @@ Halaman non-menu: `/admin/profile` (Ubah Kata Sandi) · `/login` · route publik
 
 ---
 
-## 3. Rincian Sub Menu
+## Rincian Sub Menu
 
 Kolom **Ringkasan** sengaja satu baris; detail lengkap ada di dokumen halaman yang ditautkan.
 
@@ -168,7 +168,7 @@ Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#7
 
 ---
 
-## 4. Perilaku Sidebar
+## Perilaku Sidebar
 
 - **Pencarian menu** di header sidebar — fokus `Ctrl/⌘+K`, hapus `Esc`/✕, memfilter pohon menu live. Hanya menampilkan menu yang di-grant untuk user tersebut.
 - **Tombol "Tutup semua"** (collapse-all) untuk seluruh cabang.

@@ -1,5 +1,7 @@
 # 05 · Sign-off v1.0.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
 | Developer | Claude (Opus 5) | 2026-09-23 | **Go — terbatas** | Gate lokal hijau (lint 0 · build ✓ · tsc 0 · test 1.807). `02-test-cases.md` lengkap. Review pra-rilis rentang penuh 6 temuan: 5 diperbaiki, 1 diputuskan owner. **Tidak ada temuan blocker/major tersisa.** Syarat: dua baris di bawah terisi sebelum tag. |

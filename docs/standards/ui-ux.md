@@ -11,13 +11,13 @@
 - Font: **Acumin Pro Condensed** (brand WRI, lihat `brand.wri.org/fonts`) — dimuat via `@font-face` self-host di `public/fonts/` (`globals.css`, `font-display: swap`), fallback **Arial → Helvetica → sans-serif** sesuai rekomendasi WRI; `--font-sans` diarahkan ke stack ini dan Geist Sans dilepas (Geist Mono tetap untuk `--font-mono`) — #130. Sebelumnya hanya deklarasi `font-family` tanpa `@font-face` sehingga jatuh ke fallback generik. File `.woff2` berlisensi ditaruh manual (`acumin-pro-condensed-regular/bold.woff2`; panduan: `public/fonts/README.md`).
 - Mobile-first responsive
 
-### Layout Admin
+### Tata Letak Admin
 
 - Header halaman (judul & deskripsi) wajib
 - Pembungkus data pakai `<Card>`
 - Form kompleks → pisah seksi, hindari scroll bertumpuk
 
-### Table Typography
+### Tipografi Tabel
 
 | Element | Styling |
 |---------|---------|
@@ -29,7 +29,7 @@
 | Kosong/null | `—` + `text-muted-foreground` |
 | Status | `<Badge>` |
 
-### Table Actions
+### Aksi Tabel
 
 Untuk aksi dalam tabel (tombol Edit, Lihat, Hapus, Nonaktifkan, dll), ikuti aturan berikut untuk konsistensi:
 - **Posisi Kolom**: Kolom **Aksi** wajib diletakkan di bagian paling kiri tabel (kolom pertama).
@@ -52,7 +52,7 @@ Untuk aksi dalam tabel (tombol Edit, Lihat, Hapus, Nonaktifkan, dll), ikuti atur
 - **Combobox filter (STANDAR — #211/#212/#217)**: filter dropdown ber-pencarian memakai primitif `FilterCombobox` (`src/components/shared/filter-combobox.tsx`; Popover + Command). Dua semantik: `allLabel` = filter opsional dengan item teratas "Semua …", `placeholder` = pilihan wajib gaya "Pilih …" (+ `disabled` untuk dependensi antar-filter). Teks empty baku: "{Entitas} tidak ditemukan." Pasangan **Distrik → Lembaga Petani cascade** (pilih distrik menyaring lembaga; lembaga di luar distrik baru di-reset ke "Semua") memakai komposisi `DistrictGroupFilter` (`district-group-filter.tsx`). Jangan menulis ulang markup Popover+Command per halaman — itu sumber drift yang diperbaiki #212.
 - **Tooltip data (STANDAR — #213)**: sel/bar yang membawa **angka** memakai tooltip terstruktur `StatTooltipContent` + `StatTooltipRow` (`src/components/shared/stat-tooltip.tsx`; judul + subtitle konteks + baris chip/label/angka/persen + footer bergaris) — bukan `title` native. `title` native tetap dipakai untuk hint aksi/label & helper truncate, serta grid ber-ratusan sel (mis. titik bulanan matriks BMP) demi performa render.
 
-### Table Pagination
+### Paginasi Tabel
 
 Untuk tabel dengan pagination, ikuti aturan layout dan state berikut untuk konsistensi:
 - **State Halaman**: Gunakan 0-based index untuk variabel state `page` (halaman pertama = `0`).
@@ -63,7 +63,7 @@ Untuk tabel dengan pagination, ikuti aturan layout dan state berikut untuk konsi
   - Bagian Kiri: Dropdown pemilihan ukuran halaman ("Tampilkan [dropdown] dari [total] data").
   - Bagian Kanan: Indikator halaman ("Halaman [aktif] dari [total_halaman]") beserta tombol navigasi sebelumnya/selanjutnya menggunakan `<Button variant="outline" size="icon" className="h-8 w-8">` dan icon `<ChevronLeft>` / `<ChevronRight>` berukuran `h-4 w-4`.
 
-### Table Export & Column Selection (DataTable)
+### Ekspor & Pilihan Kolom Tabel (DataTable)
 
 Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus didukung:
 - **Show/Hide Kolom**: Disediakan tombol dropdown "Kolom" untuk memilih visibilitas kolom.
@@ -91,7 +91,7 @@ Standar reusable untuk halaman Settings bermatriks/bertingkat (contoh kanonis: `
 - **Aksi kaskade** (induk → anak) selalu lewat **dialog konfirmasi** dengan pilihan eksplisit ("hanya induk" vs "termasuk sub-menu").
 - **Update optimistis + rollback**: terapkan perubahan ke state lokal dulu, panggil server action, dan kembalikan state sebelumnya (`setGranted(prev)`) bila gagal + toast error.
 
-### State & Feedback
+### State & Umpan Balik
 
 - Loading state wajib (skeleton/spinner)
 - Toast setelah action berhasil/gagal
@@ -123,7 +123,7 @@ Data pribadi petani **wajib disensor di semua tampilan layar** via helper `src/l
 - **Excel/PDF export sengaja TIDAK disensor** — hasil export bisa diedit lalu di-upload ulang via bulk; nilai ter-sensor akan merusak data. PDF Farm Passport (dokumen resmi milik petani) juga tetap penuh — demikian pula **PDF Profil Petani** (#343, `src/lib/farmer-profile-pdf.ts`): NIK & tanggal lahir penuh di bagian Identitas.
 - Halaman baru yang menampilkan NIK/tanggal lahir wajib memakai helper ini — jangan render nilai mentah.
 
-### Bulk Upload UI/UX & Validation Pattern
+### Pola UI/UX & Validasi Bulk Upload
 
 Untuk fitur bulk upload data massal (misalnya Petani, Lembaga Petani, atau Region), ikuti aturan alur dan antarmuka berikut:
 - **Alur Step-by-Step**:
@@ -137,7 +137,7 @@ Untuk fitur bulk upload data massal (misalnya Petani, Lembaga Petani, atau Regio
 - **Download Feedback**:
   - Pengguna wajib diberikan opsi untuk mengunduh laporan hasil validasi baik data penuh (*full data*) maupun baris yang gagal saja (*error-only*), dengan menyertakan kolom "Keterangan" penjelasan error.
 
-### Shapefile Bulk Upload Pattern (Geospatial Data)
+### Pola Bulk Upload Shapefile (Data Geospasial)
 
 Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ikuti pattern berikut:
 - **Format Input**: ZIP file berisi `.shp`, `.shx`, `.dbf`, dan file pendukung lainnya
@@ -163,11 +163,11 @@ Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ik
   - Auto-increment revision untuk update parcel yang sudah ada
 - **Implementasi Reference**: Lihat `src/server/actions/bulk-upload-parcel.ts` (issue #88)
 
-### Searchable Lembaga Petani Filters
+### Filter Lembaga Petani Ber-pencarian
 
 - **Wajib menggunakan Combobox**: Untuk mempermudah pencarian dan penyaringan data di semua halaman list master data (terutama data Petani) atau alur lainnya, semua komponen filter/dropdown **Lembaga Petani** wajib menggunakan komponen **searchable Combobox** (kombinasi Popover & Command Shadcn UI) dengan kemampuan pencarian teks, dan tidak diperbolehkan menggunakan dropdown Select box standar.
 
-### Geospatial Features (MapLibre Integration)
+### Fitur Geospasial (Integrasi MapLibre)
 
 Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (koordinat, polygon, area):
 - **Map Display**: Gunakan MapLibre GL JS untuk menampilkan peta interaktif
@@ -240,7 +240,7 @@ Aturan penulisan tutorial (`src/content/help/tutorial/*.md`):
 Interaksi (toggle kedalaman, lipat daftar isi) memakai **checkbox + CSS tanpa
 JavaScript**, konsisten sifat statis halaman Bantuan (#182/#183).
 
-### Dashboard Snapshot Pattern
+### Pola Snapshot Dashboard
 
 > ⚠️ **Putuskan dulu: snapshot atau live query?** Snapshot bukan default otomatis untuk setiap dashboard baru.
 >

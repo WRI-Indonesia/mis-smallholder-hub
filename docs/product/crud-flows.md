@@ -5,7 +5,7 @@
 <details>
 <summary><strong>Master Data CRUD Flow (Standard Pattern)</strong></summary>
 
-## Farmer CRUD Example (Applies to All Master Data)
+## Contoh CRUD Petani (berlaku untuk semua Master Data)
 
 ```
 User Access Module
@@ -45,7 +45,7 @@ User Access Module
                └─ Success Toast + Redirect/Refresh
 ```
 
-### Key Patterns
+### Pola Kunci
 
 - **Client-side validation**: Zod schemas in `src/validations/`
 - **Backend permission validation**: `hasPermission(menuCode, permission)` in every action
@@ -61,7 +61,7 @@ User Access Module
 <details>
 <summary><strong>Bulk Upload Flow (Farmer Pattern)</strong></summary>
 
-## Bulk Upload Farmer (✅ Implemented)
+## Bulk Upload Petani (✅ Terimplementasi)
 
 ```
 User Access Bulk Upload
@@ -124,7 +124,7 @@ User Access Bulk Upload
                 └─ Redirect to Farmer List
 ```
 
-### Validation Tiers
+### Tingkat Validasi
 
 Semantik uniqueness ID Petani = **per Lembaga** (TD-024): constraint `@@unique([farmerGroupId, farmerId])` di `prisma/schema/farmer.prisma` (migrasi `20260721060000_farmer_id_unique_per_group`).
 

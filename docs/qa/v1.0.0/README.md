@@ -1,5 +1,7 @@
 # QA/QC v1.0.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md)
+
 | | |
 |---|---|
 | Versi | **v1.0.0** (MAJOR — **milestone MVP**, keputusan owner 2026-09-23; bukan breaking change teknis. §Aturan Pre-1.0 `versioning.md` dicabut di rilis ini) |

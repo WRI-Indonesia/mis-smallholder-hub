@@ -1,5 +1,7 @@
 # Run — v0.35.0 · prod · 2026-09-15 · ulang
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../../README.md](../../../README.md) · Paket: [../README.md](../README.md)
+
 | | |
 |---|---|
 | Commit `mvp` | `main` `af6e30b` (v0.35.0) |

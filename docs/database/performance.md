@@ -5,9 +5,9 @@
 <details>
 <summary><strong>Performance & Data Volume</strong> — Estimasi volume data dan optimasi performa</summary>
 
-## Performance & Data Volume
+## Performa & Volume Data
 
-### Data Volume Estimates
+### Estimasi Volume Data
 
 > **Aktual** = diukur langsung dari `mis-prod` (read-only, **2026-08-13**), baris `isActive: true`. **Proyeksi 2028** = rencana owner, bukan hasil ukur — ditandai jelas supaya tidak dikutip sebagai fakta. Versi dokumen ini sebelumnya memuat angka yang meleset s/d 150× (#254).
 
@@ -37,7 +37,7 @@
 
 **Catatan `Tree`.** Saat ini hanya **1 lahan** yang dipetakan pohonnya (286 titik pada 1,95 ha = **147 pohon/ha** terukur). Dengan luas rata-rata lahan **1,547 ha**, satu lahan setara ±227 pohon. Bila program memetakan pohon untuk seluruh lahan, tabel ini menjadi **±2,5 juta baris hari ini** dan **±3,5 juta baris pada 2028** — jauh melampaui seluruh tabel lain digabung. Ini keputusan program, bukan konsekuensi otomatis; angka di atas sengaja tidak dimasukkan ke total karena belum diputuskan.
 
-### Table Size Estimates (2028)
+### Estimasi Ukuran Tabel (2028)
 
 | Tabel | Record | Avg Row Size | Data | Index | Total |
 |-------|-------:|--------------|-----:|------:|------:|
@@ -73,9 +73,9 @@ Bentuknya: **10.781 `Polygon` + 172 `MultiPolygon`**, dan **95,9% poligon punya 
 
 **Metode ukur**: panjang JSON terserialisasi (`Buffer.byteLength(JSON.stringify(geometry))`) per baris, dijalankan read-only. Angka penyimpanan fisik `jsonb` di disk bisa sedikit berbeda karena overhead biner dan TOAST, tetapi ordenya sama — ratusan byte, bukan puluhan KB.
 
-### Query Performance Optimization
+### Optimasi Performa Query
 
-#### Critical Queries
+#### Query Kritis
 
 | Query | Expected Volume | Index Used | Target Time |
 |-------|-----------------|-----------|-------------|
@@ -86,7 +86,7 @@ Bentuknya: **10.781 `Polygon` + 172 `MultiPolygon`**, dan **95,9% poligon punya 
 | **Dashboard Stats Aggregation** | 1 row (aggregate) | Materialized view (future) | < 1s |
 | **Produksi per lahan × periode** | s/d ~915k baris (2028) | Lihat **#251** — indeks disiapkan sebelum import massal | < 1s |
 
-#### Pagination Strategy
+#### Strategi Paginasi
 
 Untuk list queries dengan banyak data (> 1000 rows), gunakan pagination:
 - **Offset-based**: `LIMIT` + `OFFSET` (simple, tapi lambat di offset besar)
@@ -109,7 +109,7 @@ const farmers = await prisma.farmer.findMany({
 });
 ```
 
-#### N+1 Query Prevention
+#### Pencegahan Query N+1
 
 Gunakan Prisma `include` untuk eager loading:
 
@@ -124,7 +124,7 @@ const farmers = await prisma.farmer.findMany({
 });
 ```
 
-#### Payload Trimming — `select` ramping untuk list (#163)
+#### Pemangkasan Payload — `select` ramping untuk list (#163)
 
 Eager loading via `include` membawa **full row** (audit fields, dan pada `LandParcel` termasuk `geometry` GeoJSON yang bisa puluhan–ratusan KB per lahan) — di halaman list, seluruhnya ikut diserialisasi ke RSC payload menuju browser. Aturan sejak #163:
 
@@ -145,7 +145,7 @@ prisma.landParcel.findMany({
 });
 ```
 
-### Database Connection Pooling
+### Connection Pooling Database
 
 Prisma connection pool configuration:
 ```
@@ -162,7 +162,7 @@ DATABASE_URL="postgresql://user:pass@host:5432/db?connection_limit=20&pool_timeo
 - Jangan set terlalu tinggi → exhaust PostgreSQL `max_connections`
 - Monitor connection usage dengan `SHOW max_connections;` dan `SELECT count(*) FROM pg_stat_activity;`
 
-### Caching Strategy
+### Strategi Cache
 
 | Data Type | Cache TTL | Strategy |
 |-----------|-----------|----------|
@@ -173,7 +173,7 @@ DATABASE_URL="postgresql://user:pass@host:5432/db?connection_limit=20&pool_timeo
 | **User Session** | 30 days | NextAuth JWT (no DB query per request) |
 | **RBAC Permissions** | 1 hour | In-memory per user session |
 
-### Future Optimization Considerations
+### Pertimbangan Optimasi ke Depan
 
 Jika data bertumbuh signifikan (> 1M records). Berdasarkan angka terukur 2026-08-13, **tidak satu pun butir di bawah ini relevan saat ini** — proyeksi 2028 masih ~990k record dan ~370 MB:
 

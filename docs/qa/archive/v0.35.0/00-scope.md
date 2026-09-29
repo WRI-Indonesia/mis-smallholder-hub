@@ -1,5 +1,7 @@
 # 00 · Lingkup rilis v0.35.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 Sumber: `git log fac9078..HEAD`, `gh issue list --state closed`, Decision Log 2026-09-14/15. Matriks lengkap menu × issue dan tabel × issue: artifact "Matriks Perubahan Siklus #326–#332".
 
 | # | Issue | Judul singkat | Menu › sub-menu terdampak | Migrasi | Izin/menu baru | Bantuan | Kasus uji |

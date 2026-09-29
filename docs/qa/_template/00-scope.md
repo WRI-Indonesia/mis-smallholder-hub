@@ -1,5 +1,7 @@
 # 00 · Lingkup rilis vX.Y.Z
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 Sumber: `git log <tag>..HEAD`, `gh issue list --state closed`, `docs/project/changelog.md`.
 
 | # | Issue | Judul singkat | Menu › sub-menu terdampak | Migrasi | Izin/menu baru | Bantuan | Kasus uji |

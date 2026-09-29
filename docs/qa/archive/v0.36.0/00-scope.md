@@ -1,5 +1,7 @@
 # 00 · Lingkup rilis v0.36.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 Sumber: `git log 8777891..HEAD` (v0.35.0 → `mvp`), #344 · #346 · #345 · #347 · #348, `docs/project/changelog.md`.
 
 | # | Issue | Judul singkat | Menu › sub-menu terdampak | Migrasi | Izin/menu baru | Bantuan | Kasus uji |

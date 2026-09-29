@@ -1,5 +1,7 @@
 # Run — v0.37.0 · local · 2026-09-21 · ulang
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../../README.md](../../../README.md) · Paket: [../README.md](../README.md)
+
 | | |
 |---|---|
 | Commit `mvp` | `a784dfd` |

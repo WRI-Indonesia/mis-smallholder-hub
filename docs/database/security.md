@@ -5,9 +5,9 @@
 <details>
 <summary><strong>Security Considerations</strong> — Aspek keamanan database dan data access</summary>
 
-## Security Considerations
+## Pertimbangan Keamanan
 
-### Authentication & Authorization
+### Autentikasi & Otorisasi
 
 | Layer | Mekanisme | Implementation |
 |-------|-----------|----------------|
@@ -16,20 +16,20 @@
 | **Data Access Control** | Data-level filtering | UserProvince, UserDistrict, UserFarmerGroup assignments |
 | **Permission Override** | User-specific exceptions | UserPermissionOverride for grant/revoke specific menu permissions |
 
-### Password Security
+### Keamanan Password
 
 - **Storage**: Password disimpan dengan **bcrypt hash** (cost factor: 10)
 - **No Plain Text**: Password plain text tidak pernah disimpan di database
 - **Salt**: Bcrypt otomatis generate unique salt per password
 - **Migration**: Jika ganti hashing algorithm, perlu re-hash saat user login (gradual migration)
 
-### SQL Injection Prevention
+### Pencegahan SQL Injection
 
 - **Prisma ORM**: Semua query pakai Prisma Client → parameterized queries otomatis
 - **Raw Query**: `$queryRaw`/`$executeRaw` dipakai untuk fitur PostGIS (tetangga, tumpang tindih, klip) — **wajib tagged template** (parameter otomatis); jangan pernah `$queryRawUnsafe`/`Prisma.raw` dengan input user
 - **Input Validation**: Validate & sanitize input di server action / API route sebelum query
 
-### Data Access Patterns (RBAC)
+### Pola Akses Data (RBAC)
 
 ```mermaid
 flowchart TD
@@ -49,7 +49,7 @@ flowchart TD
     H --> K
 ```
 
-### Sensitive Data Protection
+### Perlindungan Data Sensitif
 
 | Data Type | Tabel | Field | Protection Strategy |
 |-----------|-------|-------|---------------------|
@@ -64,7 +64,7 @@ flowchart TD
 | **ICS Boundary** | FarmerGroupBoundary | `geom`, `geojson` | Poligon wilayah Lembaga (bukan milik individu) — tetap lewat action ber-izin menu |
 | **S3 Evidence Key** | TrainingActivity | `evidenceKey` | Private S3 bucket, generate pre-signed URL saat akses |
 
-### Audit Trail
+### Jejak Audit
 
 Semua tabel memiliki audit fields (kecuali `LandMarkerCounter`):
 - `createdAt` — timestamp record dibuat
@@ -79,7 +79,7 @@ Semua tabel memiliki audit fields (kecuali `LandMarkerCounter`):
 - Debug issue "data tiba-tiba berubah"
 - Compliance requirement (ISO, audit eksternal)
 
-### Database Access Control (PostgreSQL Level)
+### Kontrol Akses Database (Level PostgreSQL)
 
 Rekomendasi production setup:
 - **Application User**: User PostgreSQL khusus untuk aplikasi dengan permission terbatas (tidak punya DROP TABLE / DROP DATABASE)
@@ -88,7 +88,7 @@ Rekomendasi production setup:
 - **SSL Mode**: Wajibkan SSL untuk koneksi production (`sslmode=require`)
 - **IP Whitelist**: Restrict akses database hanya dari IP aplikasi server
 
-### Environment Variables Security
+### Keamanan Environment Variable
 
 Jangan commit ke Git:
 - `DATABASE_URL` — connection string dengan password
@@ -100,7 +100,7 @@ Gunakan:
 - Environment variables di CI/CD pipeline untuk staging/production
 - Secret manager (AWS Secrets Manager, Google Secret Manager) untuk production
 
-### OWASP Top 10 Compliance
+### Kepatuhan OWASP Top 10
 
 | Risk | Mitigation |
 |------|-----------|

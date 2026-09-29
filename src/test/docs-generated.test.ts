@@ -52,9 +52,23 @@ describe("docs — lint", () => {
     expect(docs.filter((f) => !readFileSync(f, "utf8").startsWith("# "))).toEqual([]);
   });
 
+  it("setiap berkas (kecuali indeks akar) punya baris kepala di baris ke-3", () => {
+    const header = (f: string) => readFileSync(f, "utf8").split("\n")[2] ?? "";
+    const tanpa = docs.filter((f) => f !== join("docs", "README.md")).filter((f) => !/^(> Bagian dari|\[←)/.test(header(f)));
+    expect(tanpa, "tambahkan `> Bagian dari dokumentasi **Area**. Indeks: …` (lihat docs/README.md §Konvensi docs)").toEqual([]);
+  });
+
+  it("heading tidak dinomori, kecuali daftar berurutan yang disengaja", () => {
+    const allowed = new Set([join("docs", "standards", "principles.md"), join("docs", "standards", "versioning.md")]);
+    const numbered = docs
+      .filter((f) => !allowed.has(f) && !f.includes(`${join("docs", "qa")}/`) && !f.includes(join("project", "changelog")))
+      .flatMap((f) => readFileSync(f, "utf8").split("\n").filter((l) => /^#{2,4} \d+\. /.test(l)).map((l) => `${f}: ${l}`));
+    expect(numbered).toEqual([]);
+  });
+
   it("riwayat migrasi di database/migrations.md lengkap dan urut", () => {
     const folders = readdirSync("prisma/migrations").filter((d) => statSync(join("prisma/migrations", d)).isDirectory());
     const documented = [...readFileSync("docs/database/migrations.md", "utf8").matchAll(/^\| `(\d{14}_[a-z0-9_]+)` \|/gm)].map((m) => m[1]);
-    expect(documented, "tambahkan baris migrasi baru ke docs/database/migrations.md §Existing Migrations").toEqual([...folders].sort());
+    expect(documented, "tambahkan baris migrasi baru ke docs/database/migrations.md §Riwayat Migrasi").toEqual([...folders].sort());
   });
 });

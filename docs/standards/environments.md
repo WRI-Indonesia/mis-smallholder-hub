@@ -23,7 +23,7 @@ Semua `.env*` di-gitignore kecuali `.env.example`. Di server produksi, `.env` di
 1. **`.env` = local, selamanya.** Jangan pernah menyalin isi env lain ke `.env`. Perintah tanpa prefix `dotenv -e` selalu mendarat di local — itu kontraknya.
 2. **Dilarang membuat `.env.local`** — Next.js memuatnya otomatis dan menimpanya di atas `.env`, membuka kembali celah "env menang diam-diam".
 3. **Satu `DATABASE_URL` per file.** Dilarang menaruh dua `DATABASE_URL` dalam satu file (dotenv memakai baris terakhir, diam-diam — akar insiden skrip lokal mendarat di prod).
-4. **Prod harus eksplisit.** Setiap sentuhan ke prod memakai `npx dotenv -e .env.prod -- …`. Untuk skrip yang **menulis** data prod, tetap berlaku aturan [workflow.md](./workflow.md) §Safety & Approval: log "DB efektif" sebelum menulis + dry-run dulu + approval owner.
+4. **Prod harus eksplisit.** Setiap sentuhan ke prod memakai `npx dotenv -e .env.prod -- …`. Untuk skrip yang **menulis** data prod, tetap berlaku aturan [workflow.md](./workflow.md) §Keamanan & Persetujuan: log "DB efektif" sebelum menulis + dry-run dulu + approval owner.
 5. **Kredensial baru masuk file env-nya**, bukan hardcode di kode. Variabel yang berlaku lintas env (mis. `NEXTAUTH_*`, `FIRMS_MAP_KEY_FREE`, `S3_ENDPOINT`, `S3_REGION`) cukup di `.env` — `dotenv -e` menang untuk variabel yang didefinisikannya, sisanya diambil dari `.env`.
 6. **Menambah variabel env baru** → tambahkan juga ke `.env.example` (tanpa nilai rahasia) dan ke file env lain yang relevan.
 

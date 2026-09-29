@@ -2,13 +2,13 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [sprint.md](./sprint.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md) · [contributing.md](./contributing.md)
 
-## 2. Roadmap Source of Truth
+## Roadmap — Sumber Kebenaran
 
 Section ini adalah acuan resmi status delivery. Jika ada perbedaan antara changelog, issue, dan tabel ini, gunakan tabel **Phase Status** sebagai kebenaran utama.
 
 Format: **tabel indeks Phase Status** untuk scanning cepat → **rincian per phase** (evidence + next step) di section collapsible (`<details>`) per item, dikelompokkan per stream. Definisi (status/horizon/stream) dan hasil audit code masing-masing di `<details>` tersendiri.
 
-### Governance Rules
+### Aturan Tata Kelola
 
 - **Phase Status adalah source of truth** untuk reporting management dan planning developer.
 - Status fase hanya boleh naik jika implementasi bisa diverifikasi lewat file/code, route, schema, server action, test, atau workflow.
@@ -699,7 +699,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 
 </details>
 
-### Code Audit Evidence
+### Bukti Audit Kode
 
 <details>
 <summary><strong>Code Audit Evidence</strong> — bukti codebase per area (models, routes, actions, tests, DevOps)</summary>
@@ -719,7 +719,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 
 </details>
 
-### Code Compliance Audit vs rule.md (2026-07-10)
+### Audit Kepatuhan Kode vs rule.md (2026-07-10, arsip)
 
 > Arsip audit. `docs/rule.md` sudah dipecah ke `docs/standards/` (kini [code-standards.md](../standards/code-standards.md) dkk.).
 

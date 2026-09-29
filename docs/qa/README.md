@@ -1,6 +1,6 @@
 # QA/QC Manual per Rilis
 
-> Bagian dari dokumentasi proyek. Indeks: [../README.md](../README.md) · Terkait: [../standards/versioning.md](../standards/versioning.md) §Alur Rilis · [../standards/workflow.md](../standards/workflow.md) §Issue Close
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Terkait: [../standards/versioning.md](../standards/versioning.md) §Alur Rilis · [../standards/workflow.md](../standards/workflow.md) §Issue Close
 
 Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum PR `staging → main`**; `05-signoff.md` adalah prasyarat tag. Gate otomatis (lint/build/test) menjaga kode; folder ini menjaga **apa yang dilihat pengguna** dan **angka di DB** — dua hal yang lolos gate pada tiap siklus review (#238, #318, #331).
 

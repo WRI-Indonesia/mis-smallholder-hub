@@ -1,5 +1,7 @@
 # 0002 · Hierarki data 3 level; `FarmerGroup` = Lembaga Petani
 
+> Bagian dari dokumentasi **Keputusan**. Indeks: [README.md](./README.md)
+
 - **Status:** Berlaku
 - **Tanggal:** 2026-07-22 · **Issue:** #146, #147, #155, #189 · **Diputuskan:** owner / manajemen
 

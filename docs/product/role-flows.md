@@ -16,7 +16,7 @@
 - **Bulk Upload**: ✅ All modules
 - **Tools**: ✅ Dashboard Snapshot (generate/view/delete), Export, S3/PDF, GIS
 
-## ADMIN (District/Province Level)
+## ADMIN (level Distrik/Provinsi)
 
 - **Dashboard**: ✅ Main Dashboard + BMP (snapshot dalam scope distrik + org-wide) · ✅ **Dashboard Pelatihan** (live query, ter-scope distrik via `farmerGroupAccessFilter` per request) · ✅ **Dashboard Monev BMP** (live query, scope sama, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
 - **Master Data**: ✅ CRUD penuh Pelatihan/Lahan/Produksi (scope distrik) · ✅ **Monev BMP** CREATE/EDIT/VIEW/EXPORT (tanpa DELETE, #344); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`)
@@ -28,7 +28,7 @@
 - **Bantuan**: ✅ VIEW
 - **Tools**: ✅ Dashboard Snapshot + Snapshot BMP (generate/view/delete, scope distrik)
 
-## OPERATOR (Field Level)
+## OPERATOR (level lapangan)
 
 - **Dashboard**: ✅ Main Dashboard + BMP (VIEW; snapshot dalam scope KT + org-wide) · ✅ **Dashboard Pelatihan** (VIEW; live query ter-scope Lembaga yang di-assign) · ✅ **Dashboard Monev BMP** (VIEW, scope sama, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
 - **Master Data**: ✅ Pelatihan CRUD penuh; Lahan & Produksi CREATE/EDIT/VIEW (**tanpa DELETE**); **Monev BMP VIEW/EXPORT** (#344); Lembaga Petani & Petani **VIEW saja** (Petani lewat warisan `master-data`) — dalam scope Lembaga yang di-assign
@@ -40,7 +40,7 @@
 - **Bantuan**: ✅ VIEW
 - **Tools**: ❌ No access (tidak diberi akses Dashboard Snapshot)
 
-## MANAGEMENT (Read-Only)
+## MANAGEMENT (hanya baca)
 
 - **Dashboard**: ✅ Main Dashboard + BMP (view all metrics, organization-wide) · ✅ **Dashboard Pelatihan** (VIEW, organization-wide) · ✅ **Dashboard Monev BMP** (VIEW, #344) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
 - **Master Data**: 🟠 View-only (semua modul master data VIEW, tanpa CRUD)
@@ -52,7 +52,7 @@
 - **Bantuan**: ✅ VIEW
 - **Tools**: 🟠 Dashboard Snapshot + Snapshot BMP (view-only, tanpa generate/delete)
 
-## DONOR (Read-Only donor/funder, #187)
+## DONOR (hanya baca, donor/funder, #187)
 
 Tipe pengguna untuk pihak donor/funder — **VIEW-only** pada subset menu. Cakupan data mengikuti aturan yang sama (tanpa assignment = `ALL`, dengan assignment = ter-scope).
 

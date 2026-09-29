@@ -1,5 +1,7 @@
 # 04 · Temuan — v0.36.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../../README.md](../../README.md) · Paket: [README.md](README.md)
+
 | # | Run | Kasus | Temuan | Tingkat | Tindakan / issue |
 |---|---|---|---|---|---|
 | F-01 | 2026-09-20-local | TC-346-04 | Pratinjau import form survei menghitung ulang **tanpa** penilaian Lembaga tersimpan (berkas tanpa sheet Lembaga → pratinjau 1,76, server menyimpan 2,21) — angka di pratinjau ≠ yang tersimpan | P1 | ✅ diperbaiki di run: panel memuat `getBmpGroupAssessments` untuk Lembaga terpilih, fallback per tahun + aturan "berkas pertama" seperti server; catatan "Penilaian Lembaga tersimpan tahun ini dipakai untuk hitung ulang" di kolom peringatan |
