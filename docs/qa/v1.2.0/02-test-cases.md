@@ -216,3 +216,19 @@ Harapan:
 - Langkah 3: keduanya **Aktif** & tampil di sidebar.
 - Langkah 4: ikon Nonaktifkan / Aktifkan kembali tidak tampil (hanya Edit).
 
+## #385 — Kunci berkas bukti pelatihan & path unggahan S3
+
+### TC-385-01 · Unggah & ganti bukti pelatihan tetap berjalan [P0] [regresi] (4 mnt)
+Prasyarat: akun ADMIN (scope distrik) dengan izin CREATE+EDIT Pelatihan; berkas PDF uji < 10 MB bernama dengan spasi/kurung, mis. `Bukti Pelatihan (1).pdf`.
+Langkah:
+1. Master Data › Pelatihan → **Tambah Pelatihan** dengan berkas Evidence; simpan.
+2. Buka detailnya, klik tautan bukti.
+3. **Edit** pelatihan yang sama, ganti Evidence dengan PDF lain; simpan; buka lagi tautan bukti.
+4. **Edit** pelatihan lama yang sudah punya bukti (dibuat sebelum v1.2.0) tanpa mengganti berkas; simpan.
+Harapan:
+- Langkah 1–3: tersimpan tanpa galat; tautan membuka PDF yang benar (yang terbaru di langkah 3).
+- Langkah 4: tersimpan; bukti lama tetap terbuka (kunci lama diterima apa adanya).
+- `SELECT evidence_key FROM tbl_training_activity WHERE id = '<id langkah 1>'` → `training/<id>/<timestamp>-bukti-pelatihan-1-.pdf`.
+
+(Jalur serangan — kunci objek lain / `activityId` ber-`../` / pelatihan di luar scope — dikunci unit test `training-guard`, `upload-guard`, `training-evidence`; tidak diuji manual.)
+

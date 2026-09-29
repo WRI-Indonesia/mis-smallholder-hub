@@ -365,8 +365,9 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
                 <span className="font-medium text-primary">{activity.evidenceName}</span>
               </p>
             )}
-            {errors.evidence && (
-              <p className="text-sm text-destructive mt-1">{errors.evidence[0]}</p>
+            {/* `evidenceKey` = penolakan kunci berkas oleh server (#385). */}
+            {(errors.evidence ?? errors.evidenceKey) && (
+              <p className="text-sm text-destructive mt-1">{(errors.evidence ?? errors.evidenceKey)[0]}</p>
             )}
           </div>
 

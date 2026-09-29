@@ -5,7 +5,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * tanpa S3 — pola mock `land-marker-guard.test.ts`. Yang dijaga: izin
  * `master-data-training` CREATE ATAU EDIT (keduanya ditolak → gagal, S3 tak
  * disentuh), hanya PDF ≤ 10 MB, nama berkas disanitasi di key, dan yang
- * dikembalikan KEY objek (bukan URL publik).
+ * dikembalikan KEY objek (bukan URL publik). #385: `activityId` harus segmen
+ * path aman DAN pelatihan aktif dalam scope (helper scope ASLI) sebelum S3.
  */
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
@@ -17,6 +18,14 @@ vi.mock("@aws-sdk/client-s3", () => ({
     constructor(public input: Record<string, unknown>) {}
   },
 }));
+
+const getAccessContext = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/access-context", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/access-scope")>("@/lib/access-scope")),
+  getAccessContext,
+}));
+const findFirst = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/prisma", () => ({ prisma: { trainingActivity: { findFirst } } }));
 
 const { uploadTrainingEvidence } = await import("@/server/actions/upload");
 
@@ -33,6 +42,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   hasPermission.mockResolvedValue(true);
   send.mockResolvedValue({});
+  getAccessContext.mockResolvedValue({ mode: "ALL" });
+  findFirst.mockImplementation(async ({ where }: { where: { id: string } }) => ({ id: where.id }));
 });
 
 describe("uploadTrainingEvidence", () => {
@@ -75,5 +86,22 @@ describe("uploadTrainingEvidence", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(await uploadTrainingEvidence(form(pdf()))).toEqual({ success: false, error: "Gagal mengupload file. Coba lagi." });
     spy.mockRestore();
+  });
+
+  it("#385: activityId dengan / atau .. → ditolak tanpa DB & S3 (tak masuk path)", async () => {
+    for (const bad of ["../land-marker", "ta-1/x", "..", "ta 1"]) {
+      expect(await uploadTrainingEvidence(form(pdf(), bad))).toEqual({ success: false, error: "Activity ID tidak valid." });
+    }
+    expect(findFirst).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("#385: pelatihan tidak ada / nonaktif / di luar scope → ditolak sebelum S3; filter scope ASLI", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["1401"] });
+    findFirst.mockResolvedValue(null);
+    const res = await uploadTrainingEvidence(form(pdf(), "ta-lain"));
+    expect(res).toEqual({ success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda." });
+    expect(findFirst.mock.calls[0][0].where).toEqual({ id: "ta-lain", isActive: true, farmerGroup: { districtId: { in: ["1401"] } } });
+    expect(send).not.toHaveBeenCalled();
   });
 });

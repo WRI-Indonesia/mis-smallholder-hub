@@ -100,7 +100,7 @@ Debt aktif: **TD-051** · **TD-052** (wrap-up 2026-09-29) · **TD-049** · **TD-
 ### TD-052 · 🔲 Open — Test performa jam-dinding di `region.test.ts` membuat gate `npm test` tidak deterministik (P3)
 
 - **Masalah:** `src/test/region.test.ts` §"Performance - Region tree operations" menegaskan durasi `< 10` ms (`performance.now()`). Saat mesin sibuk (mis. tepat setelah `npm run build`) test gagal tanpa perubahan kode — wrap-up 2026-09-29: `expected 10.221417000000002 to be less than 10`, hijau di dua run ulang. Pola yang sama sudah diakui untuk `perf.test.ts` (dikecualikan dari `test:coverage`), tetapi `region.test.ts` masih ikut gate wajib.
-- **Validation:** pindahkan kasus berambang waktu ke `perf.test.ts` (atau tag terpisah di luar `npm test`), atau ganti asersi waktu dengan asersi kompleksitas (jumlah operasi / tidak ada iterasi kuadrat). Gate `npm test` hijau 10× berturut-turut dengan beban build paralel. · **Evidence:** wrap-up `6d1d5f1`. · **Owner:** Dev.
+- **Validation:** pindahkan kasus berambang waktu ke `perf.test.ts` (atau tag terpisah di luar `npm test`), atau ganti asersi waktu dengan asersi kompleksitas (jumlah operasi / tidak ada iterasi kuadrat). Gate `npm test` hijau 10× berturut-turut dengan beban build paralel. · **Evidence:** wrap-up `6d1d5f1`; 2026-09-29 (#385) gagal bergantian di run berurutan tanpa perubahan kode: `region.test.ts` (10k node < 10 ms), `perf.test.ts` Monev BMP (`matchFarmerName` < 600 ms) dan #317 (20k pasangan < 150 ms) — `perf.test.ts` hanya dikecualikan dari `test:coverage`, **tetap** ikut `npm test`. · **Owner:** Dev.
 
 ### TD-051 · 🔲 Open — Halaman indeks menu induk me-redirect ke satu anak tetap, bukan anak pertama yang boleh diakses (P3)
 

@@ -3,6 +3,9 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3, S3_BUCKET } from "@/lib/s3";
 import { hasPermission } from "@/lib/rbac";
+import { prisma } from "@/lib/prisma";
+import { getAccessContext, farmerAccessFilter } from "@/lib/access-context";
+import { SAFE_ID_SEGMENT, buildTrainingEvidenceKey } from "@/lib/training-evidence";
 import type { ActionResult } from "@/types/action-result";
 
 /**
@@ -36,6 +39,19 @@ export async function uploadTrainingEvidence(
     if (!activityId) {
       return { success: false, error: "Activity ID diperlukan." };
     }
+    // #385: activityId masuk path S3 — harus satu segmen aman (tanpa `/`, `..`)
+    // DAN pelatihan aktif dalam scope user, sama dengan syarat `updateTrainingActivity`.
+    if (!SAFE_ID_SEGMENT.test(activityId)) {
+      return { success: false, error: "Activity ID tidak valid." };
+    }
+    const access = await getAccessContext();
+    const activity = await prisma.trainingActivity.findFirst({
+      where: { id: activityId, isActive: true, ...farmerAccessFilter(access) },
+      select: { id: true },
+    });
+    if (!activity) {
+      return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda." };
+    }
 
     // ─── Validate file type ───────────────────────────────────────────────
     if (file.type !== "application/pdf") {
@@ -49,12 +65,7 @@ export async function uploadTrainingEvidence(
     }
 
     // ─── Build object key ─────────────────────────────────────────────────
-    const timestamp = Date.now();
-    const safeName = file.name
-      .replace(/[^a-zA-Z0-9._-]/g, "-")
-      .replace(/-+/g, "-")
-      .toLowerCase();
-    const key = `training/${activityId}/${timestamp}-${safeName}`;
+    const key = buildTrainingEvidenceKey(activity.id, file.name, Date.now());
 
     // ─── Upload to bucket ─────────────────────────────────────────────────
     const buffer = Buffer.from(await file.arrayBuffer());

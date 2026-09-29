@@ -59,7 +59,7 @@ Label paket (`TRAINING_CATEGORY_LABELS`): `Paket 1 - BMP + P&C RSPO + NKT`, `Pak
 
 ## Dialog: `TrainingFormModal` (`training/training-form-modal.tsx`)
 
-Judul `Tambah Pelatihan` / `Edit Pelatihan`; aksi `createTrainingActivity` / `updateTrainingActivity` + `uploadTrainingEvidence`; validasi `trainingActivitySchema` / `updateTrainingActivitySchema` (`src/validations/training-activity.schema.ts`).
+Judul `Tambah Pelatihan` / `Edit Pelatihan`; aksi `createTrainingActivity` / `updateTrainingActivity` + `uploadTrainingEvidence`; validasi `trainingActivitySchema` / `updateTrainingActivitySchema` (`src/validations/training-activity.schema.ts`). Berkas bukti diunggah **setelah** pelatihan ada (create mengabaikan kolom bukti); `uploadTrainingEvidence` menolak `activityId` yang bukan segmen path aman atau pelatihan di luar scope, dan update menolak kunci bukti yang bukan milik pelatihan itu — pesan tampil di bawah kolom Evidence (#385).
 
 | Field | Input |
 |---|---|

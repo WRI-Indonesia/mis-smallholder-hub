@@ -8,6 +8,7 @@ import { trainingParticipantScoreSchema, addParticipantsSchema } from "@/validat
 import type { TrainingParticipantScoreInput } from "@/validations/training-participant.schema";
 import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import { getPresignedUrl } from "@/lib/s3";
+import { isTrainingEvidenceKeyFor } from "@/lib/training-evidence";
 
 import {
   getAccessContext,
@@ -151,9 +152,13 @@ export async function createTrainingActivity(input: TrainingActivityInput) {
 
   const session = await auth();
 
+  // #385: bukti belum bisa ada saat create — kuncinya memuat id aktivitas yang
+  // baru lahir di sini. Form mengunggah SETELAH create lalu memanggil update.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { evidenceKey: _k, evidenceName: _n, ...data } = parsed.data;
   const created = await prisma.trainingActivity.create({
     data: {
-      ...parsed.data,
+      ...data,
       createdBy: session?.user?.id ?? null,
     },
   });
@@ -177,9 +182,15 @@ export async function updateTrainingActivity(input: UpdateTrainingActivityInput)
   // Verify activity exists, is active, and is within the user's scope before updating
   const existing = await prisma.trainingActivity.findFirst({
     where: { id, isActive: true, ...farmerAccessFilter(access) },
-    select: { id: true },
+    select: { id: true, evidenceKey: true },
   });
   if (!existing) return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda" };
+
+  // #385: kunci bukti hanya boleh kosong, tetap (kunci lama), atau hasil unggah
+  // untuk pelatihan INI — bukan objek lain di bucket yang lalu diberi presigned URL.
+  if (data.evidenceKey && data.evidenceKey !== existing.evidenceKey && !isTrainingEvidenceKeyFor(data.evidenceKey, id)) {
+    return { success: false, error: { evidenceKey: ["Berkas bukti tidak valid untuk pelatihan ini — unggah ulang berkasnya"] } };
+  }
 
   // Cegah pemindahan pelatihan ke lembaga petani di luar scope user.
   const targetGroup = await prisma.farmerGroup.findFirst({

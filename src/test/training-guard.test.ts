@@ -256,6 +256,30 @@ describe("tulis — Zod, audit, soft delete", () => {
     expect(call.data).not.toHaveProperty("id");
   });
 
+  it("#385 createTrainingActivity mengabaikan evidenceKey/Name dari klien (kunci memuat id yang belum ada)", async () => {
+    await actions.createTrainingActivity({ ...activityInput(), evidenceKey: "land-marker/x/1-foto.jpg", evidenceName: "foto.jpg" });
+    const { data } = db.trainingActivity.create.mock.calls[0][0];
+    expect(data).not.toHaveProperty("evidenceKey");
+    expect(data).not.toHaveProperty("evidenceName");
+  });
+
+  it("#385 updateTrainingActivity: kunci objek lain di bucket → ditolak, tidak disimpan", async () => {
+    for (const evidenceKey of ["land-marker/ta-9/1-foto.jpg", "training/ta-lain/1-a.pdf", "training/ta-1/../x.pdf"]) {
+      const res = await actions.updateTrainingActivity({ id: "ta-1", ...activityInput(), evidenceKey, evidenceName: "a.pdf" });
+      expect(res.success).toBe(false);
+      expect(res.error).toHaveProperty("evidenceKey");
+    }
+    expect(db.trainingActivity.update).not.toHaveBeenCalled();
+  });
+
+  it("#385 updateTrainingActivity: kunci hasil unggah untuk pelatihan ini, kunci lama yang tetap, atau kosong → diterima", async () => {
+    db.trainingActivity.findFirst.mockResolvedValue({ id: "ta-1", evidenceKey: "legacy/format-lama.pdf" });
+    for (const evidenceKey of ["training/ta-1/1727600000000-bukti.pdf", "legacy/format-lama.pdf", null]) {
+      expect((await actions.updateTrainingActivity({ id: "ta-1", ...activityInput(), evidenceKey })).success).toBe(true);
+    }
+    expect(db.trainingActivity.update).toHaveBeenCalledTimes(3);
+  });
+
   it("toggleTrainingActivityActive → update isActive dibalik, tak pernah delete", async () => {
     db.trainingActivity.findFirst.mockResolvedValue({ isActive: true });
     await actions.toggleTrainingActivityActive("ta-1");
