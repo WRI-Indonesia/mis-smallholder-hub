@@ -17,7 +17,7 @@ Halaman: Peta BMP (/admin/map/bmp)
 │   │   └── Legenda produktivitas: Tinggi · Sedang · Rendah · Sangat Rendah · Tidak ada data
 │   └── Tombol: Cetak Peta (PDF) · Download Excel
 ├── Peta
-│   ├── Basemap: LIGHT / DARK / HYBRID
+│   ├── Basemap: STREET / LIGHT / DARK / SAT / HYBRID
 │   ├── Layer: Area lahan (poligon) · Label nama petani
 │   ├── Legend
 │   ├── Popup fitur: Lahan BMP
@@ -42,6 +42,7 @@ Halaman: Peta BMP (/admin/map/bmp)
 | Guard | `requirePermission("map-bmp")`; `page.tsx` juga menghitung `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate tombol aksi popup); action `getBmpMapData` guard `hasPermission("map-bmp", "VIEW")` + `getAccessContext()` |
 | Server action / data | `getProvincesForMap()`, `getDistrictsForMap()`, `getFarmerGroupsForMap()`, `getBmpMapData()` (`src/server/actions/map.ts`); helper `src/lib/map-data.ts`, `src/lib/report-production.ts`, `src/lib/bmp-map-print.ts`, `src/lib/xlsx.ts`. `getBmpMapData` mengembalikan **format wire dipadatkan** (#223: tuple posisi + `production` per persil; kategori/streak/first-last/periods & centroid dihitung ulang klien) — rehydrate via `expandBmpMapData`. Pewarnaan kelas produktivitas memakai **feature-state MapLibre** (`setFeatureState` + `promoteId`), bukan properti fitur: ganti tahun/mode hanya repaint tanpa setData ulang geometri; visibilitas kelas via ekspresi opacity (filter tidak bisa membaca feature-state) |
 | Loading | `loading.tsx` |
+| Keterbatasan diketahui | Opsi filter dimuat lewat `getProvincesForMap()` (server, di `page.tsx`), `getDistrictsForMap()` & `getFarmerGroupsForMap()` (klien) — ketiganya guard `hasPermission("map-parcel", "VIEW")` (`MENU_KEY` di `src/server/actions/map.ts`), **bukan** `map-bmp`. Role/user yang punya `map-bmp` VIEW tanpa `map-parcel` VIEW akan gagal memuat halaman/opsi filter ("Tidak memiliki izin untuk mengakses data ini"). Tidak ada role ter-seed dengan kombinasi itu (`role-permissions.csv`: ADMIN, DONOR, MANAGEMENT, OPERATOR, SUPERADMIN memegang keduanya), tetapi override per-user bisa memunculkannya |
 
 ## Objek halaman
 
@@ -70,7 +71,7 @@ Halaman: Peta BMP (/admin/map/bmp)
 | Tabel matriks | Tabel | Kolom tetap: Aksi (tombol "Zoom ke lahan"), Nama, ID Petani, ID Lahan; kolom bulan dikelompokkan per tahun; sel hijau = ada data produksi bulan tsb (tooltip "{periode}: ada data / tidak ada") |
 | Legenda matriks | Legend | "Ada data produksi" (blok hijau) vs "Tidak ada" (blok kosong) |
 | Zoom ke semua data | Tombol (kanan bawah) | `fitBounds` ke seluruh persil yang dimuat |
-| Basemap switcher | Tombol grup (kanan bawah) | LIGHT / DARK / HYBRID |
+| Basemap switcher | Tombol grup (kanan bawah) | **STREET / LIGHT / DARK / SAT / HYBRID** (`MAP_STYLE_KEYS`, tooltip `MAP_STYLE_LABELS[key].full`); default mengikuti tema aplikasi (`light`/`dark`) sampai dipilih manual — lihat [README](README.md) §Teknologi peta |
 | Popup Lahan BMP | Popup | Header hijau ikon `Sprout`: nama petani, ID Petani, ID Lahan, Lembaga Petani; bisa digeser via pegangan drag di puncak kartu (`useMapPopupDrag`/`MapPopupDragHandle`, pola Peta Lahan) |
 | Popup › Ketersediaan Data | Baris popup | Badge kategori (Baik/Cukup/Kurang/Tidak ada data) |
 | Popup › Produktivitas | Baris popup | Badge kelas produktivitas + label tampilan (tahun / rata-rata); hanya bila layer produktivitas dihitung |

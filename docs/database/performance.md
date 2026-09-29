@@ -79,11 +79,11 @@ Bentuknya: **10.781 `Polygon` + 172 `MultiPolygon`**, dan **95,9% poligon punya 
 
 | Query | Expected Volume | Index Used | Target Time |
 |-------|-----------------|-----------|-------------|
-| **List Farmers by KT** | 100-500 rows | `Farmer.farmerGroupId` + `isActive` | < 300ms |
+| **List Petani per Lembaga** | 100-500 rows | `Farmer.farmerGroupId` + `isActive` | < 300ms |
 | **Training Participant List** | 50-200 rows | `TrainingParticipant.activityId` + `isActive` | < 300ms |
-| **User Login** | 1 row | `User.email` (UNIQUE) | < 100ms |
+| **User Login** | 1 row | `findFirst` email case-insensitive (`src/lib/auth.ts`) — UNIQUE `email` tidak terpakai penuh | < 100ms |
 | **RBAC Permission Check** | 1-10 rows | Composite UNIQUE on RBAC tables | < 150ms |
-| **Dashboard Stats Aggregation** | 1 row (aggregate) | Materialized view (future) | < 1s |
+| **Dashboard Stats Aggregation** | 1 row (aggregate) | Tabel snapshot (`MainDashboardSnapshot`/`BmpDashboardSnapshot`) atau live query ber-scope | < 1s |
 | **Produksi per lahan × periode** | s/d ~915k baris (2028) | Lihat **#251** — indeks disiapkan sebelum import massal | < 1s |
 
 #### Strategi Paginasi
@@ -126,7 +126,7 @@ const farmers = await prisma.farmer.findMany({
 
 #### Pemangkasan Payload — `select` ramping untuk list (#163)
 
-Eager loading via `include` membawa **full row** (audit fields, dan pada `LandParcel` termasuk `geometry` GeoJSON yang bisa puluhan–ratusan KB per lahan) — di halaman list, seluruhnya ikut diserialisasi ke RSC payload menuju browser. Aturan sejak #163:
+Eager loading via `include` membawa **full row** (audit fields, dan pada `LandParcel` termasuk `geometry` GeoJSON — rata-rata kecil per lahan (lihat ukuran terukur di atas), tetapi berlipat ribuan untuk satu daftar) — di halaman list, seluruhnya ikut diserialisasi ke RSC payload menuju browser. Aturan sejak #163:
 
 - **List action wajib `select` eksplisit** sesuai field yang dipakai list client (termasuk field yang di-round-trip form edit, mis. `evidenceKey/Name` pelatihan) — bukan `include` full-row. `geometry` **tidak boleh** ikut payload list (hanya fetch detail by-id).
 - Perhatikan **round-trip form**: field yang tidak dikirim client harus berarti "tidak diubah" di server (`undefined` = skip; lihat `updateLandParcel` geometry), bukan ter-null.
@@ -147,31 +147,22 @@ prisma.landParcel.findMany({
 
 ### Connection Pooling Database
 
-Prisma connection pool configuration:
-```
-DATABASE_URL="postgresql://user:pass@host:5432/db?connection_limit=20&pool_timeout=10"
-```
+Prisma memakai adapter `@prisma/adapter-pg` di atas `pg.Pool` (`src/lib/prisma.ts`: `new Pool({ connectionString })`). Karena itu parameter `?connection_limit=`/`pool_timeout=` di `DATABASE_URL` **tidak berlaku**; ukuran pool mengikuti bawaan `pg` (**maks 10 koneksi per proses**). Bila perlu diubah, set `max`/`connectionTimeoutMillis` di konstruktor `Pool`, bukan di URL.
 
-| Environment | Connection Limit | Pool Timeout |
-|-------------|------------------|--------------|
-| **Development** | 5 | 10s |
-| **Staging** | 10 | 20s |
-| **Production** | 20-50 | 30s |
-
-**Notes**:
 - Jangan set terlalu tinggi → exhaust PostgreSQL `max_connections`
-- Monitor connection usage dengan `SHOW max_connections;` dan `SELECT count(*) FROM pg_stat_activity;`
+- Monitor dengan `SHOW max_connections;` dan `SELECT count(*) FROM pg_stat_activity;`
 
 ### Strategi Cache
 
-| Data Type | Cache TTL | Strategy |
-|-----------|-----------|----------|
-| **Geography (Province, District, etc)** | 24 hours | In-memory cache atau Redis (jarang berubah) |
-| **TrainingPackage** | 1 hour | In-memory cache (5 rows only, very stable) |
-| **Menu Items** | 1 hour | In-memory cache (stale-while-revalidate) |
-| **Dashboard Aggregate Stats** | 5 minutes | Redis cache + background refresh |
-| **User Session** | 30 days | NextAuth JWT (no DB query per request) |
-| **RBAC Permissions** | 1 hour | In-memory per user session |
+Yang benar-benar ada di kode (tanpa Redis / cache in-memory umum):
+
+| Data | Umur | Mekanisme |
+|------|------|-----------|
+| **Sesi user** | 30 hari (bawaan NextAuth) | JWT — tanpa query DB per request |
+| **Izin menu (RBAC)** | satu request | React `cache()` di `src/lib/rbac.ts` (`getEffectiveMenuPermissions`, `getUserPermissionsForMenu`, …) |
+| **Outline Riau (klip titik api)** | 6 jam per proses | Cache promise di `src/server/actions/fire-boundary.ts` (#280) |
+| **Titik api FIRMS** | 1 jam (jendela terbaru) · 6 jam (lampau) · 30 hari (arsip bulanan) | `fetch` `next.revalidate` di `src/app/api/map-hotspot/route.ts` |
+| **Agregat dashboard** | sampai snapshot berikutnya di-generate | Tabel snapshot ([dashboard-snapshots.md](./dashboard-snapshots.md)) |
 
 ### Pertimbangan Optimasi ke Depan
 

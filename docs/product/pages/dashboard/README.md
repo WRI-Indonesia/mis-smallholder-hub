@@ -33,7 +33,7 @@ Menu: Dashboard (/admin/dashboard)
 | Icon | `LayoutDashboard` |
 | Order | `0` |
 | Sub menu | 5 — Main Dashboard (`dashboard-main`), Dashboard Pelatihan (`dashboard-training`, order 2), BMP Dashboard (Produksi) (`dashboard-bmp`, order 3), Monev BMP (`dashboard-bmp-monev`, order 4 — #344), Risk Management (`dashboard-risk`, order 5, grup level-3 berisi `dashboard-risk-fire`) |
-| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT (untuk `dashboard` dan sub menunya); DONOR hanya sub menu, tanpa baris induk `dashboard` — induk tetap tampil sebagai wadah ( `prisma/seeds/data/role-permissions.csv`) |
+| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT (untuk `dashboard` dan sub menunya); DONOR hanya sub menu, tanpa baris induk `dashboard` — induk tetap tampil sebagai wadah. Grup `dashboard-risk` hanya punya baris seed untuk DONOR (VIEW, PRINT); role lain hanya punya baris `dashboard-risk-fire` (VIEW, PRINT) (`prisma/seeds/data/role-permissions.csv`) |
 
 Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 
@@ -83,7 +83,10 @@ Loading skeleton segmen: `src/app/(admin)/admin/dashboard/loading.tsx` (judul, b
 
 ## Catatan
 
-- Ketiga sub menu hanya membaca data (aksi `VIEW`); tidak ada tombol mutasi (create/edit/delete) di halaman dashboard.
-- Main Dashboard dan BMP Dashboard membaca **snapshot** yang dibuat lewat menu Tools (`/admin/tools/snapshot`, `/admin/tools/snapshot-bmp`); Dashboard Pelatihan membaca DB secara langsung.
-- Semua filter pada ketiga halaman diiris **client-side** dari satu payload server.
+- Kelima sub menu hanya membaca data (aksi `VIEW`); tidak ada tombol mutasi (create/edit/delete) di halaman dashboard.
+- Sumber data per sub menu:
+  - **Main Dashboard** dan **BMP Dashboard (Produksi)** membaca **snapshot** yang dibuat lewat menu Tools (`/admin/tools/snapshot`, `/admin/tools/snapshot-bmp`).
+  - **Dashboard Pelatihan** (`getTrainingDashboardView`) dan **Monev BMP** (`getBmpMonevDashboardView`) membaca DB secara langsung (realtime, tanpa snapshot). Daftar petani prioritas Monev BMP dimuat terpisah *on-demand* lewat `getBmpMonevPriorityFarmers`.
+  - **Fire Alert**: boundary Lembaga dari DB (`getFireBoundaries`, `getAdminBoundaries`, `getRiauOutline` di `src/server/actions/fire-boundary.ts`); titik api dari NASA FIRMS lewat proxy same-origin `/api/map-hotspot` (diambil di browser).
+- Filter Main Dashboard, BMP Dashboard, Dashboard Pelatihan, dan Monev BMP diiris **client-side** dari satu payload server (kecuali daftar petani prioritas Monev BMP dan modal petani belum terlatih Dashboard Pelatihan — `getUntrainedFarmers` — yang di-query saat dibuka).
 - **Dashboard Ketersediaan Data** semula dirilis sebagai sub menu keempat di sini (#193) lalu dipindah ke menu **Data Analyst** pada hari yang sama — lihat [../data-analyst/data-availability.md](../data-analyst/data-availability.md).

@@ -70,7 +70,7 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 | Guard | `requirePermission("dashboard-training")` (halaman); `hasPermission("dashboard-training", "VIEW")` + `getAccessContext()` di action |
 | Server action / data | `getTrainingDashboardView()` dari `src/server/actions/dashboard-training.ts` — query langsung ke DB (bukan snapshot), difilter `isActive` + access context; `getUntrainedFarmers(groupId, packageCode, year)` untuk dialog drill-down |
 | Helper agregasi | `filterTrainingGroups`, `trainingTotals`, `trainingCoverageMatrix`, `trainingActivePackages`, `trainingTrendSeries`, `trainingScoreRows`, `trainingQualityStats`, `trainingAvailableYears`, `trainingTargetGap` / `TRAINING_COVERAGE_TARGET`, `TRAINING_PASS_SCORE` (ambang lulus post-test = 60, #214) dari `src/lib/training-dashboard-aggregation.ts` |
-| Persistensi filter | `useUrlFilters()` (`src/hooks/use-url-filters.ts`, TD-021) — filter disimpan di query string, kunci `distrik`, `lembaga`, `kategori`, `tahun`; via History API `replaceState` (bukan `router.replace`, agar tidak memicu ulang payload RSC); nilai kosong dihapus dari query |
+| Persistensi filter | `useUrlFilters()` (`src/hooks/use-url-filters.ts`, TD-021) — filter disimpan di query string, kunci `distrik`, `lembaga`, `tahun` (param lama `kategori` diabaikan sejak #198); via History API `replaceState` (bukan `router.replace`, agar tidak memicu ulang payload RSC); nilai kosong dihapus dari query |
 | Uji performa | `src/test/perf.test.ts` (TD-020) — agregat (KPI + matriks + tren + skor) diuji pada fixture 60.000 baris kehadiran, ambang < 1.200 ms; pagar sebelum menimbang beralih ke pola snapshot |
 | Icon menu | `GraduationCap` |
 
@@ -84,11 +84,13 @@ Halaman: Dashboard Pelatihan (/admin/dashboard/training)
 | Filter Distrik | Combobox (Popover + Command) | "Cari distrik..."; opsi "Semua Distrik"; empty: "Distrik tidak ditemukan." |
 | Filter Lembaga Petani | Combobox (Popover + Command) | "Cari lembaga petani..."; opsi "Semua Lembaga Petani"; empty: "Lembaga petani tidak ditemukan." |
 | Filter Tahun | Select | Default "Semua Tahun" (kumulatif) + daftar tahun dari data |
-| Perilaku filter | Catatan | Nilai tersimpan di URL (`?distrik=…&lembaga=…&kategori=…&tahun=…`) sehingga bisa di-bookmark/dibagikan; mengubah Distrik atau Kategori mereset Lembaga (`setMany`); nilai URL yang tak valid (lembaga nonaktif, kategori/tahun sembarang) diabaikan → dashboard tampil sebagai "Semua", bukan tampilan kosong |
-| Kartu KPI (5 kartu) | Kartu KPI | Lihat rincian di bawah |
+| Perilaku filter | Catatan | Nilai tersimpan di URL (`?distrik=…&lembaga=…&tahun=…`) sehingga bisa di-bookmark/dibagikan; hanya mengubah Distrik yang mereset Lembaga (`setMany`); `distrik`/`lembaga` divalidasi terhadap data yang ada (lembaga nonaktif/tak dikenal diabaikan → "Semua", bukan tampilan kosong), sedangkan `tahun` hanya divalidasi formatnya (4 digit, `/^\d{4}$/`) — tahun berformat benar tapi tanpa data tetap dipakai |
+| Kartu KPI (4 kartu) | Kartu KPI | Lihat rincian di bawah |
+| Card Capaian Paket per Distrik | Tabel stacked bar (collapsible) | Hanya tampil saat filter Lembaga kosong (`!groupId`); lihat rincian di bawah |
 | Matriks cakupan | Tabel heatmap (collapsible) | Lihat rincian di bawah |
 | Chart tren kehadiran | Stacked bar chart (SVG kustom) | Lihat rincian di bawah |
 | Panel efektivitas pre/post-test | Panel bar horizontal | Lihat rincian di bawah |
+| Panel kelulusan post-test | Panel stacked bar | Lihat rincian di bawah |
 | Panel kualitas data | Panel 4 kartu ringkas | Lihat rincian di bawah |
 | Dialog petani belum dilatih | Dialog drill-down | Dibuka dari sel matriks; lihat rincian di bawah |
 
@@ -121,8 +123,8 @@ Label tahun: "semua tahun" atau "{YYYY}".
 | Objek | Tipe | Keterangan |
 |---|---|---|
 | Judul | Collapsible trigger | "Capaian Paket per Lembaga" (ikon `Grid3x3`, default terbuka; judul final #198) |
-| Sub-judul (terbuka) | Teks | "% petani aktif Lembaga yang sudah mengikuti paket tersebut. Klik judul kolom untuk mengurutkan — menaik menampilkan yang paling tertinggal lebih dulu." |
-| Sub-judul (terlipat) | Ringkasan | "{n} Lembaga · {p}% petani terlatih · {n} Lembaga belum tersentuh" |
+| Sub-judul (terbuka) | Teks | "% petani aktif Lembaga yang sudah mengikuti paket tersebut, dibaca terhadap target program. Klik judul kolom untuk mengurutkan; klik sel yang belum mencapai target untuk melihat daftar petaninya." |
+| Sub-judul (terlipat) | Ringkasan | "{n} Lembaga · {p}% petani terlatih" + " · {n} Lembaga belum tersentuh" (bila ada) + " · kurang {n} petani menuju target" (bila ada) |
 | Kolom "Lembaga Petani" | Kolom tabel (sortable) | Nama + baris kecil "{kode} · {distrik}" |
 | Kolom "Petani" | Kolom tabel (sortable) | Jumlah petani aktif Lembaga |
 | Kolom paket | Kolom tabel (sortable, dinamis) | Header ringkas: "Paket 1", "Paket 2 - MK", "Paket 2 - HSE", "Paket 3 & 4", "Lainnya" — hanya paket yang aktif pada irisan; sel = persen + jumlah petani; tooltip header = label paket lengkap |
@@ -145,7 +147,7 @@ Target cakupan per paket: `TRAINING_COVERAGE_TARGET` — Paket 1, Paket 2 - MK, 
 | Tabel | Tabel scrollable | Kolom "ID Petani" (mono), "Nama", "L/P" (`F` → P, selain itu L); saat filter Tahun aktif + kolom "Tahun Lain" — badge **"Dilatih {tahun}"** bila petani pernah dilatih paket tsb di luar tahun terpilih (`lastTrainedOtherYear`, #202), "—" bila belum pernah |
 | Ceklis saring | Checkbox | "Hanya yang belum pernah sama sekali mengikuti paket ini" — tampil saat filter Tahun aktif & ada baris ber-badge; menyaring tabel + Salin + Excel ke `lastTrainedOtherYear == null`; ringkasan berubah jadi "{n} petani · dari {total} baris irisan tahun ini" (#202) |
 | Ringkasan | Teks | "{n} petani"; saat filter Tahun aktif + "· {x} pernah dilatih di tahun lain" bila ada |
-| Tombol "Salin" | Tombol | Salin baris `ID\tNama\tL/P` (+ kolom tahun lain saat filter Tahun aktif) ke clipboard; toast "{n} baris disalin" / "Gagal menyalin — izin clipboard ditolak browser" |
+| Tombol "Salin" | Tombol | Salin baris `ID\tNama\tL/P` (+ kolom tahun lain saat filter Tahun aktif) ke clipboard; toast "{n} baris disalin" / "Gagal menyalin — izin clipboard ditolak browser" — digate izin `EXPORT` (menyalin dataset yang sama dengan Excel) |
 | Tombol "Excel" | Tombol | `exportToExcel` → `petani-{slug}-{nama-lembaga}.xlsx`, sheet "Belum Dilatih", kolom ID Petani / Nama Petani / L/P (+ "Dilatih Tahun Lain" saat filter Tahun aktif); toast "Excel diunduh" / "Gagal membuat file Excel" — digate izin `EXPORT` (#245) |
 | Empty state | Teks | "Semua petani aktif di Lembaga ini sudah mengikuti pelatihan tersebut." |
 

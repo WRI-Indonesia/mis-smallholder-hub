@@ -60,4 +60,4 @@ Semua halaman daftar memakai `DataTable` (`src/components/shared/data-table.tsx`
 | Paginasi | Navigasi | Kontrol halaman di bawah tabel |
 | Kolom aksi | Tombol ikon | `Lihat` (VIEW), `Edit` (EDIT), `Nonaktifkan`/`Aktifkan kembali` (DELETE) — tiap tombol hilang bila permission tak ada |
 | Filter `Status` | Select | `Semua Status` / `Aktif` / `Nonaktif`, default `Aktif`; **hanya SUPERADMIN**. Kolom `Status` juga hanya tampil untuk SUPERADMIN |
-| `loading.tsx` | Skeleton | Ada di groups, farmers, training, parcels, production |
+| `loading.tsx` | Skeleton | Ada di groups, farmers, training, parcels, production, bmp-monev, bmp-monev/[id], bmp-monev/lembaga |

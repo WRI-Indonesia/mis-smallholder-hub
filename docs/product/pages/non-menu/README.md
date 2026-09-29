@@ -8,7 +8,7 @@
 | URL | `/login`, `/admin/profile`, `/`, `/community`, `/knowledge-management` |
 | Icon | — |
 
-Halaman di sini tidak muncul di sidebar dan tidak dijaga `requirePermission`. `/admin/profile` tetap berada di balik matcher NextAuth (`middleware.ts`: `/admin/:path*`); halaman publik dan `/login` bebas akses.
+Halaman di sini tidak muncul di sidebar dan tidak dijaga `requirePermission`. `/admin/profile` tetap berada di balik matcher NextAuth (`src/middleware.ts`: `/admin/:path*`, `/login`); halaman publik bebas akses, `/login` bebas akses bagi yang belum masuk — pengguna yang sudah login diarahkan ke `/admin` (callback `authorized` di `src/lib/auth.config.ts`).
 
 ## Diagram objek
 
@@ -63,6 +63,9 @@ Halaman non-menu
 | Menu profil | Nav | Avatar berinisial + nama pengguna; dropdown menampilkan nama & email, item `Profile` → `/admin/profile` |
 | `Log out` | Tombol | Item dropdown (warna destructive) → `signOut({ callbackUrl: "/login" })` |
 | Konten halaman | Konten | `<main className="flex-1 p-6 overflow-auto">` memuat halaman aktif |
+| Route indeks `/admin` | Redirect | `src/app/(admin)/admin/page.tsx` → `redirect("/admin/dashboard")` |
+| Error boundary | Konten | `src/app/(admin)/admin/error.tsx`: `Terjadi Kesalahan` + `Mohon maaf, halaman tidak dapat dimuat saat ini.` + tombol `Coba Lagi` (`reset()`) |
+| Loading | Konten | `src/app/(admin)/admin/loading.tsx`: spinner + `Memuat data...` |
 
 ## Layout: `(public)`
 
@@ -86,3 +89,11 @@ Halaman non-menu
 | Bottom bar | Konten | `© {tahun} WRI Indonesia - Sawit Swadaya Program. Semua Hak Dilindungi.` + `Kebijakan Privasi`, `Ketentuan Layanan` |
 | Error boundary | Konten | `Terjadi Kesalahan` + `Mohon maaf, halaman tidak dapat dimuat saat ini. Silakan coba kembali beberapa saat lagi.` + tombol `Coba Lagi` |
 | Loading | Konten | Spinner + `Memuat konten...` |
+
+## Halaman 404 global
+
+| Atribut | Nilai |
+|---|---|
+| File | `src/app/not-found.tsx` |
+| Tipe | Server Component, di luar kedua layout |
+| Isi | Ikon `AlertCircle`, judul `404 Not Found`, teks `Maaf, halaman atau dokumen yang Anda cari tidak ditemukan. Periksa kembali tautan Anda atau kembali ke halaman utama.`, tombol `Kembali ke Beranda` → `/` |

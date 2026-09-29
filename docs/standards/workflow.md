@@ -84,7 +84,7 @@ Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `s
 
 **Docs sync (wajib, sebelum commit):** setiap perubahan yang menyentuh skema/migrasi/kolom, modul/fitur, status delivery, atau aturan **harus** memperbarui file `docs/` yang relevan **sebelum commit** dan di-commit **bersama** kodenya — jangan dipisah/ditunda. Peta cepat:
 
-- **Skema/migrasi/kolom** → `database/models.md`, `database/erd.md` (+Schema Version), `database/migrations.md` (riwayat)
+- **Skema/migrasi/kolom** → `database/models.md`, `database/erd.md`, `database/migrations.md` (riwayat + Versi Skema)
 - **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Code Audit Evidence), `project/sprint.md` (Active Issues), `project/changelog/YYYY-MM.md` (Changelog; + Decision Log bila ada keputusan)
 - **Aturan / standar / keputusan arsitektur** → `standards/*` + Decision Log bulan berjalan; keputusan besar lintas modul juga sebagai catatan di `decisions/NNNN-slug.md`
 - **Tech debt / bug** → `project/tech-debt.md`
@@ -101,7 +101,7 @@ Repo **punya CI** — hanya saja bukan untuk lint/build/test. Jangan mengira gat
 | `semgrep.yml` | **PR** (+push ke `main` bila berkasnya berubah) | Analisis keamanan statis (SAST) |
 | `deploy-dev.yaml` | push ke branch dev | Deploy otomatis ke lingkungan dev |
 | `deploy-staging.yml` | **push ke `staging`** | Deploy otomatis ke app staging (server staging, pm2 `mis-staging`, port 3000); `.env` dari secret `MIS_STAGING_ENV` — gagal keras bila secret kosong |
-| `deploy-main.yml` | **push ke `main`** | **Deploy otomatis ke produksi** via SSH: `git reset --hard origin/main` → tulis `.env` dari secret → `npm install` → `prisma generate` → `npm run build` → `pm2 reload mis-main` |
+| `deploy-main.yml` | **push ke `main`** | **Deploy otomatis ke produksi** via SSH: `git reset --hard origin/main` → tulis `.env` dari secret → `npm ci --no-audit --no-fund` → `prisma generate` → `npm run build` → `pm2 reload mis-main` |
 
 Konsekuensi yang wajib diingat:
 

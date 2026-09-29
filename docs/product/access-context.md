@@ -61,12 +61,13 @@ Nama di kolom pertama adalah **persona ilustratif**; kolom Role memakai enum `Ro
 
 ### Helper Filter (dipakai di Server Actions)
 
-| Helper (`src/lib/access-context.ts`) | Peruntukan |
+| Helper (`src/lib/access-scope.ts`, di-re-export dari `src/lib/access-context.ts`) | Peruntukan |
 |---|---|
 | `farmerGroupAccessFilter(access)` | Fragmen `where` untuk query `FarmerGroup` (`BY_FARMER_GROUP` → `id in`; `BY_DISTRICT` → `districtId in`) |
 | `farmerAccessFilter(access)` | Model ber-field `farmerGroupId` + relasi `farmerGroup` (mis. `Farmer`, `TrainingActivity`) |
 | `farmerRelationAccessFilter(access)` | Model ber-relasi `farmer` (mis. `LandParcel`, `ProductionRecord`, `TrainingParticipant`) |
-| `getAccessibleDistrictIds(access)` | Daftar id district yang boleh diakses (`null` = ALL); `BY_FARMER_GROUP` di-resolve ke district lembaga yang di-assign |
+| `rawFarmerGroupScope(access, groupIds?)` | Cermin `farmerGroupAccessFilter` untuk SQL mentah (PostGIS): `{ groupIds?, districtIds? }`, `undefined` = tanpa batasan; `groupIds` opsional diiris dengan scope |
+| `getAccessibleDistrictIds(access)` (di `src/lib/access-context.ts`) | Daftar id district yang boleh diakses (`null` = ALL); `BY_FARMER_GROUP` di-resolve ke district lembaga yang di-assign |
 
 ### Pengecualian scope yang tercatat
 
@@ -85,13 +86,13 @@ Menambah pengecualian baru = menambah baris di tabel ini **dan** komentar di fun
 
 ### Prioritas Resolusi Izin
 
-1. **SUPERADMIN** → Grant all, skip all filters
-2. **UserPermissionOverride** (Granted) → Grant
-3. **UserPermissionOverride** (Revoked) → Forbid
-4. **RolePermission** (default) → Check C/V/E/D
-5. **Pewarisan kaskade induk→anak** → izin induk diturunkan ke seluruh anak menu
-6. **No Permission** → Hide menu / Forbidden
+1. **SUPERADMIN** → bypass: semua izin, tanpa filter scope
+2. Untuk peran lain, per node menu **dari akar ke daun**:
+   1. mulai dari izin efektif **induk** (warisan kaskade);
+   2. **tambah** baris `RolePermission` node itu (CREATE/VIEW/EDIT/DELETE/EXPORT/PRINT);
+   3. terapkan **`UserPermissionOverride`** node itu — `granted` menambah, revoke **mencabut** (termasuk mencabut hasil warisan); hasilnya menjadi warisan anak-anaknya
+3. Tidak ada izin yang dibutuhkan di node itu → menu disembunyikan / aksi ditolak
 
-**Pewarisan kaskade**: `getEffectiveMenuPermissions` (`src/lib/rbac.ts`) menelusuri pohon menu top-down — izin efektif tiap node = izin induk + `RolePermission` node itu, lalu override per-user diterapkan per node (grant menambah, revoke mencabut, termasuk mencabut hasil warisan). Contoh konkret: `role-permissions.csv` **tidak punya baris** `master-data-farmers`, tetapi ADMIN/OPERATOR tetap dapat VIEW menu Petani karena mewarisi VIEW dari induk `master-data`.
+**Pewarisan kaskade**: `getEffectiveMenuPermissions` (`src/lib/rbac.ts`) menelusuri pohon menu top-down — izin efektif tiap node = izin induk + `RolePermission` node itu, lalu override per-user diterapkan per node (grant menambah, revoke mencabut, termasuk mencabut hasil warisan). Contoh konkret: `role-permissions.csv` **tidak punya baris** `dashboard-risk` untuk OPERATOR/MANAGEMENT, tetapi keduanya tetap dapat VIEW menu Risk Management karena mewarisi VIEW dari induk `dashboard` (ADMIN mewarisi CREATE/EDIT/VIEW dari induk yang sama). Sebaliknya DONOR tidak punya baris `dashboard`/`master-data`/`report`/`map` sama sekali — aksesnya hanya dari baris anak miliknya sendiri.
 
 </details>

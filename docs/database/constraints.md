@@ -109,7 +109,7 @@
 | Farmer | `(farmerGroupId, farmerId)` | UNIQUE COMPOSITE | ID Petani unik **per Lembaga** (TD-024) — Lembaga berbeda boleh memakai nomor yang sama |
 | Farmer | `nik` | NULLABLE, 16 digits | NIK optional, jika diisi harus 16 digit angka |
 | Farmer | `gender` | ENUM (M/F), NOT NULL | Gender wajib |
-| Farmer | `joinedYear` | INT (1900-2100), NULLABLE | Tahun bergabung dengan KT, optional |
+| Farmer | `joinedYear` | INT (1900-2100), NULLABLE | Tahun bergabung dengan Lembaga Petani, optional |
 | **LandParcelIdentity** | `(farmerId, parcelId)` | UNIQUE COMPOSITE | Satu identitas per pasangan petani + ID Lahan, stabil antar revisi (#296) |
 | **LandStdb** | `(farmerId, number) WHERE number IS NOT NULL AND is_active` | **PARTIAL UNIQUE** `uniq_land_stdb_farmer_number` (migrasi `20260829031525`, #306) | Nomor STDB unik per petani di antara baris aktif; STDB tahap awal boleh tanpa nomor |
 | LandStdb | `(farmerId) WHERE stage IN (PERSIAPAN_DATA, PENGAJUAN, REVISI) AND is_active` | **PARTIAL UNIQUE** `uniq_land_stdb_farmer_open` | Paling banyak satu STDB yang masih berproses per petani. Menggantikan UNIQUE `(farmerId, number)` lama (dilepas #306) |
@@ -136,7 +136,7 @@
 | **RolePermission** | `(role, menuKey, permission)` | UNIQUE COMPOSITE | Tidak boleh duplicate role permission |
 | **UserProvince** | `(userId, provinceId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke province yang sama |
 | **UserDistrict** | `(userId, districtId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke district yang sama |
-| **UserFarmerGroup** | `(userId, farmerGroupId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke KT yang sama |
+| **UserFarmerGroup** | `(userId, farmerGroupId)` | UNIQUE COMPOSITE | User tidak boleh assigned 2x ke Lembaga Petani yang sama |
 | **UserPermissionOverride** | `(userId, menuKey, permission)` | UNIQUE COMPOSITE | Tidak boleh duplicate permission override per user |
 
 ### Pola Soft Delete
@@ -170,13 +170,11 @@ Untuk tabel lainnya:
 
 ```mermaid
 flowchart TD
-    A[Delete Request] --> B{Has Active Children?}
-    B -->|Yes| C[RESTRICT — Return Error]
-    B -->|No| D{Cascade Policy?}
-    D -->|RESTRICT| E[Check isActive = false first]
-    D -->|CASCADE| F[Soft delete parent & all children]
-    E -->|OK| G[Soft delete parent only]
-    E -->|Fail| C
+    A[Hapus di aplikasi] --> B[Soft delete: isActive = false]
+    B --> C[Anak tetap ada; FK tetap valid]
+    A2[DELETE fisik — hanya skrip/pengecualian] --> D{FK anak?}
+    D -->|RESTRICT| E[Ditolak bila masih ada anak]
+    D -->|SET NULL| F[Kolom FK anak jadi NULL — 5 relasi opsional]
 ```
 
 </details>

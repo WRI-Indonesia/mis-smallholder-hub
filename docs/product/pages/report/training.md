@@ -13,7 +13,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 │   ├── Lembaga Petani * (combobox + search)
 │   └── Tombol Tampilkan Laporan
 ├── Empty state: Filter Wajib Belum Lengkap
-├── Header cetak (print-only): LAPORAN RINGKASAN PELATIHAN
+├── Header cetak (print-only, izin PRINT): LAPORAN RINGKASAN PELATIHAN
 ├── Kartu KPI
 │   ├── Total Sesi / Total Peserta / Total Unik
 │   └── Cakupan Paket 1 / Paket 2 - MK / Paket 2 - HSE (K3) / P3 & 4
@@ -30,7 +30,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 │   └── Tabel Peserta Sesi (mode paket spesifik)
 │       ├── Kolom: NO, Nama Petani, Farmer ID, Tanggal, Pre-Test, Post-Test
 │       ├── "Semua Tanggal" → petani unik, baris = sesi terakhirnya
-│       └── Blok print-only DAFTAR PESERTA PELATIHAN
+│       └── Blok print-only DAFTAR PESERTA PELATIHAN (izin PRINT)
 └── Ekspor
     ├── Excel (2-Sheet)
     └── PDF
@@ -58,7 +58,7 @@ Halaman: Laporan Pelatihan (/admin/report/training)
 | "Lembaga Petani *" | Filter (combobox + search, wajib) | Primitif `FilterCombobox` (#212); disabled sampai Distrik dipilih; empty "Lembaga Petani tidak ditemukan." |
 | "Tampilkan Laporan" | Tombol | Mereset filter paket & tanggal setelah berhasil |
 | Empty state | Kartu | "Filter Wajib Belum Lengkap" — "Silakan pilih Distrik dan Lembaga Petani untuk memuat ringkasan, sesi pelatihan, dan cakupan data laporan pelatihan." |
-| Header cetak | Blok print-only | "LAPORAN RINGKASAN PELATIHAN" |
+| Header cetak | Blok print-only | "LAPORAN RINGKASAN PELATIHAN" — hanya dirender bila punya izin `PRINT` |
 | "Total Sesi" / "Total Peserta" / "Total Unik" | Kartu KPI | Badge "Sesi" / "Peserta" / "Petani" |
 | "Cakupan Paket 1", "Cakupan Paket 2 - MK", "Cakupan Paket 2 - HSE (K3)", "Cakupan P3 & 4" | Kartu KPI | Nilai persen + sub-teks "`<n>` dari `<total petani>`" |
 | "Sesi Pelatihan" / "Detail per Pelatihan" | Tab | Default tab `Sesi Pelatihan` |
@@ -94,7 +94,7 @@ Bila filter jenis = "Semua Pelatihan" → tabel cakupan (`DataTable`; pencarian 
 | Paket 2 - K3 | ya | Tanggal atau "-belum-" |
 | Paket 3 & 4 | ya | Tanggal atau "-belum-" |
 
-Bila paket spesifik dipilih → tabel peserta sesi (`DataTable`; pencarian `name` placeholder "Cari nama peserta..."; ekspor Excel `Laporan_Pelatihan_<Nama Paket>` digate izin `EXPORT` + tombol PDF digate izin `PRINT`, #245) plus blok print-only "DAFTAR PESERTA PELATIHAN" (Jenis Pelatihan, Tanggal, Lokasi). Tanggal "Semua Tanggal" → **petani unik**: yang ikut lebih dari satu sesi paket itu tampil satu baris dengan tanggal + nilai pre/post dari sesi terakhirnya — berlaku sama di tabel layar, Excel, dan PDF; kolom Tanggal selalu berisi tanggal sesi per baris:
+Bila paket spesifik dipilih → tabel peserta sesi (`DataTable`; pencarian `name` placeholder "Cari nama peserta..."; ekspor Excel `Laporan_Pelatihan_<Nama Paket>` digate izin `EXPORT` + tombol PDF digate izin `PRINT`, #245) plus blok print-only "DAFTAR PESERTA PELATIHAN" (Jenis Pelatihan, Tanggal, Lokasi; hanya dirender bila punya izin `PRINT`). Tanggal "Semua Tanggal" → **petani unik**: yang ikut lebih dari satu sesi paket itu tampil satu baris dengan tanggal + nilai pre/post dari sesi terakhirnya — berlaku sama di tabel layar, Excel, dan PDF; kolom Tanggal selalu berisi tanggal sesi per baris:
 
 | Kolom | Sortable |
 |---|---|

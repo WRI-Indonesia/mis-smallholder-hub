@@ -53,7 +53,7 @@ Halaman: Peta Data & Skema (/admin/data-analyst/data-map)
 | Lapis | Sumber | Mekanisme |
 |---|---|---|
 | Struktur (entitas, kolom, relasi, enum) | `prisma/schema/*.prisma` | `npm run build:schema` → `src/lib/data-schema.generated.ts` |
-| Keterisian | database, runtime | 1 kueri `aggregate._count` per tabel (~22), baris aktif saja |
+| Keterisian | database, runtime | 1 kueri `aggregate._count` per tabel (~40 entitas di `data-schema.generated.ts`, dijalankan per 5 — `CHUNK`), baris aktif saja |
 | Jalur data (menu → entitas) | kode aplikasi | `npm run build:lineage` → `src/lib/data-lineage.generated.ts` |
 | Rencana ("butuh tambah apa") | `docs/project/roadmap.md` | stream `MD` yang belum ✅, lewat parser #250 |
 
@@ -63,7 +63,7 @@ Halaman: Peta Data & Skema (/admin/data-analyst/data-map)
 
 | Aspek | Nilai |
 |---|---|
-| Menu key | `data-analyst-data-map` (parent `data-analyst`, label "Peta Data & Skema", icon `Network`, order 5) |
+| Menu key | `data-analyst-data-map` (parent `data-analyst`, label "Peta Data & Skema", icon `Network`, order 6) |
 | File | `src/app/(admin)/admin/data-analyst/data-map/page.tsx` |
 | Client | `data-map-client.tsx` (tabs), `schema-canvas.tsx` (React Flow), `fill-rates-panel.tsx`, `lineage-matrix.tsx` |
 | Server action | `src/server/actions/data-map.ts` — `getEntityFillRates`, `getMenuLabels` |

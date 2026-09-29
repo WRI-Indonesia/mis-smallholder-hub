@@ -11,7 +11,7 @@ Aplikasi memiliki **5 role** (enum `Role` di `prisma/schema/_config.prisma`):
 | **SUPERADMIN** | Akses penuh seluruh menu dan data (bypass RBAC). |
 | **ADMIN** | Kelola data dalam cakupan wilayah yang ditugaskan. |
 | **OPERATOR** | Petugas lapangan: **membaca, mengekspor, dan mencetak** data lembaga/KT yang ditugaskan — tanpa hak tulis. Pemasukan data dikerjakan lewat impor massal oleh admin (keputusan owner 2026-08-13 mengikuti keadaan produksi; sebelumnya tertulis "input & ubah data", lihat #263). |
-| **MANAGEMENT** | Read-only: dashboard, laporan, dan analisa. |
+| **MANAGEMENT** | Read-only (VIEW/EXPORT/PRINT, tanpa menulis): dashboard, laporan, peta, master data, Data Analyst (termasuk Metrik Rilis, Peta Data, Sprint Mingguan), Bantuan, dan daftar snapshot Tools. |
 | **DONOR** | Read-only untuk donor/funder: dashboard, laporan (tanpa Kelompok Tani & Patok), peta, bantuan, dan **5 menu master data** (Lembaga Petani, Petani, Pelatihan, Lahan, Monev BMP) — hanya VIEW + PRINT, **tanpa EXPORT** dan tanpa menulis. Riwayat: 2026-08-13 master data dicabut (#263, daftar petani memuat NIK & alamat); **2026-09-29 dibuka kembali atas keputusan owner** (mengikuti perubahan produksi 2026-09-23). |
 
 **Sentralisasi:** daftar role di sisi aplikasi hanya hidup di `src/lib/roles.ts` (`ROLES`, `ROLE_BADGE_CLASS`) — dipakai validasi (`user.schema.ts`), form & daftar pengguna, dan matriks Role & Permission. Menambah role baru cukup: edit `src/lib/roles.ts` + tambah nilai di enum `Role` Prisma (migrasi) + seed permission-nya. Jangan hardcode daftar role di tempat lain.
@@ -44,7 +44,7 @@ Konvensi gating keluaran (#245, idiom diseragamkan #247):
 
 ### Kaskade Izin Menu — union tanpa pengurangan
 
-`getUserPermissionsForMenu` (`src/lib/rbac.ts`) menelusuri pohon menu dari akar dan **mewariskan izin induk ke seluruh anaknya**:
+`getEffectiveMenuPermissions` (`src/lib/rbac.ts`, dipakai `getUserPermissionsForMenu`) menelusuri pohon menu dari akar dan **mewariskan izin induk ke seluruh anaknya**:
 
 ```ts
 function traverse(key, parentPermissions = new Set()) {
@@ -61,50 +61,20 @@ Tiga konsekuensi yang harus disadari **sebelum menempatkan menu baru**:
 2. **Menghilangkan baris `RolePermission` bukan mekanisme pembatasan.** Menu tanpa baris apa pun tetap terbuka bila induknya terbuka. Satu-satunya pengurangan berlaku lewat `UserPermissionOverride` — dan itu per-pengguna, bukan per-peran.
 3. **Menaruh menu sensitif di bawah induk yang luas akan membukanya diam-diam.** Preseden: #245 harus menghapus 52 baris EXPORT/PRINT di menu induk karena revoke per sub-menu memang mandul.
 
-Karena itu, kalau sebuah menu harus terbatas, yang menentukan adalah **izin menu induknya** — bukan daftar baris di menu itu sendiri. Contoh yang berlaku sekarang: `data-analyst-data-map` terbatas pada SUPERADMIN/ADMIN karena induk `data-analyst` hanya ber-VIEW untuk SUPERADMIN, bukan karena OPERATOR/MANAGEMENT tidak disebut.
+Karena itu, kalau sebuah menu harus terbatas, yang menentukan adalah **izin menu induknya** — bukan daftar baris di menu itu sendiri. Contoh yang berlaku sekarang: `data-analyst-farmer-summary` (Ringkasan Petani) hanya terbuka untuk SUPERADMIN karena induk `data-analyst` hanya ber-VIEW untuk SUPERADMIN dan menu itu tidak diberi baris untuk peran lain — `data-analyst-data-map` terbuka untuk ADMIN/MANAGEMENT karena barisnya sendiri memberi VIEW.
 
 **Dijaga test.** `src/test/menu-access.test.ts` menghitung ulang izin efektif dari `prisma/seeds/data/menu.csv` + `role-permissions.csv` dengan logika kaskade yang sama, lalu membandingkannya dengan daftar akses yang dinyatakan untuk menu sensitif. Klaim seperti "SUPERADMIN saja" karena itu tidak bisa lagi salah tanpa ketahuan di gate lokal. Catatan: yang dijaga adalah **sisi kode**, bukan isi database produksi — keduanya diketahui berbeda (#263). Sejak review #339 (2026-09-15) test yang sama juga menjaga **ikon `menu.csv` ↔ `ICON_MAP`** (`menu.csv` sempat menyemai `map-parcel` ber-ikon `MapPinned` yang tidak ada di `ICON_MAP` sejak #113 — sidebar & Menu Management tampil tanpa ikon pada DB baru; DB prod sudah dikoreksi lewat UI tanpa pernah kembali ke CSV) dan **seed parsial `scripts/seed/seed-menu-report-marker.mjs` ↔ baris `menu.csv`/`role-permissions.csv`** (ikon `Landmark → Milestone` sempat hanya diubah di satu sisi).
 
-**Jarak ke produksi.** Izin di produksi disesuaikan lewat UI Role & Permission, dan penyesuaian itu tidak punya jalan pulang ke `prisma/seeds/data/*.csv`. Per 2026-08-13 selisihnya **115 baris** (#263), sehingga DB yang di-seed dari repo tidak menguji aturan akses yang sebenarnya berlaku. Jalankan `npm run rbac:compare` (read-only, keluar kode 1 bila ada selisih) sebagai bagian checklist rilis; unit test tidak bisa menggantikannya karena butuh koneksi database.
+**Jarak ke produksi.** Izin di produksi disesuaikan lewat UI Role & Permission, dan penyesuaian itu tidak punya jalan pulang ke `prisma/seeds/data/*.csv`. Per 2026-08-13 selisihnya **115 baris** (#263); per 2026-09-29 tinggal **11 baris**, seluruhnya izin 2 menu yang belum dirilis (`data-analyst-parcel-overlap`, `data-analyst-sprint`) — seed disamakan ke produksi (keputusan [0005](../decisions/0005-produksi-acuan-menu-izin.md)). Jalankan `npm run rbac:compare` (read-only, keluar kode 1 bila ada selisih) sebagai bagian checklist rilis; unit test tidak bisa menggantikannya karena butuh koneksi database.
 
 **Sidebar.** `filterMenuTreeByAccess` (`src/lib/menu-utils.ts`) menyimpan sebuah node bila ia sendiri dapat diakses **atau** salah satu anaknya lolos. Jadi mencabut izin induk tidak menyembunyikan grupnya selama masih ada anak yang boleh dibuka — inilah yang membuat pembatasan lewat induk tetap berterima secara navigasi.
 
 ### Hierarki Akses Data RBAC
 
-```
-SUPERADMIN        → skip semua filter (akses ALL)
-No assignment     → unrestricted (akses ALL)
-UserFarmerGroup   → hanya Lembaga Petani spesifik (filter by FarmerGroup.id)
-UserDistrict      → semua Lembaga Petani di district (filter by districtId)
-UserProvince      → semua district di province → semua Lembaga Petani (filter by districtId)
-```
-
-Konvensi (urutan prioritas):
-1. SUPERADMIN → `ALL`
-2. Tidak ada assignment sama sekali → `ALL` (unrestricted)
-3. **Hanya** `UserFarmerGroup` ada (tanpa Province/District) → filter `id IN [farmerGroupIds]`
-4. `UserProvince` dan/atau `UserDistrict` ada → resolve ke district IDs → filter `districtId IN [...]`
-
-> [!IMPORTANT]
-> Jika user memiliki assignment campuran (Province + FarmerGroup), mode **BY_DISTRICT** yang berlaku — bukan BY_FARMER_GROUP. Rule #3 hanya aktif jika Province dan District **sama-sama kosong**.
-
-**Implementation Pattern** — Gunakan discriminated union `AccessContext` di server action:
-
-```ts
-type AccessContext =
-  | { mode: "ALL" }
-  | { mode: "BY_FARMER_GROUP"; ids: string[] }
-  | { mode: "BY_DISTRICT"; ids: string[] };
-
-// Resolusi where clause:
-const accessFilter =
-  access.mode === "BY_FARMER_GROUP" ? { id: { in: access.ids } } :
-  access.mode === "BY_DISTRICT"     ? { districtId: { in: access.ids } } :
-  {};
-```
+Ringkas (`getAccessContext()`, `src/lib/access-context.ts`): SUPERADMIN atau **tanpa assignment** → `ALL`; **hanya** `UserFarmerGroup` → `BY_FARMER_GROUP` (id Lembaga); ada `UserProvince`/`UserDistrict` → `BY_DISTRICT` (gabungan district; assignment Lembaga **diabaikan**); sesi kosong / user tak ditemukan → `BY_DISTRICT` kosong (tolak semua). Terjemahkan ke `where` lewat helper `src/lib/access-scope.ts`, jangan ternary manual. Rincian, contoh, dan pengecualian scope yang tercatat: [product/access-context.md](../product/access-context.md).
 
 > [!WARNING]
-> **Bug pattern lama** — Jangan filter hanya berdasarkan `districtId` tanpa handle case `BY_FARMER_GROUP`. Jika user hanya assign Lembaga Petani dan code menghasilkan `districtId: { in: [] }`, semua data Lembaga Petani akan hilang dari query.
+> **Bug pattern lama** — jangan memfilter hanya `districtId` tanpa menangani `BY_FARMER_GROUP`: user yang hanya ditugaskan ke Lembaga akan mendapat `districtId: { in: [] }` dan semua datanya hilang. Helper di `access-scope.ts` sudah menangani ketiga mode.
 
 ### UI Penugasan Akses Data User
 

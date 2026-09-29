@@ -2,7 +2,7 @@
 
 > Bagian dari dokumentasi **Keputusan**. Indeks: [README.md](./README.md)
 
-- **Status:** Berlaku
+- **Status:** Berlaku (kode & migrasi sudah di produksi sejak v1.1.0; issue #373 masih terbuka hanya untuk verifikasi prod dan cek silang)
 - **Tanggal:** 2026-09-23 · **Issue:** #373 · **Diputuskan:** owner
 
 ## Konteks

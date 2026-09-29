@@ -24,7 +24,7 @@ Halaman: Halaman Bab (/admin/help/[chapter])
 | Atribut | Nilai |
 |---|---|
 | File | `src/app/(admin)/admin/help/[chapter]/page.tsx` |
-| Tipe | Server Component (ikhtisar satu bab); `generateStaticParams()` mengembalikan seluruh slug bab |
+| Tipe | Server Component (ikhtisar satu bab); tanpa `generateStaticParams()` — dirender per request |
 | Guard | `requirePermission("help")`; slug tak dikenal → `notFound()` |
 | Server action / data | `getHelpChapter(slug)`, `HELP_CHAPTERS`, `buildHelpNav()`, `buildHelpSearchIndex()`, `topicNumber()` |
 

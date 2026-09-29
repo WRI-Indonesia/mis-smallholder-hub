@@ -12,7 +12,7 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
 │   ├── Layer batas administrasi kabupaten (garis putus abu + label; BIG, selalu tampil)
 │   ├── Layer boundary lembaga (poligon Antique Violet #660099 + label; terpilih = fill pekat + outline tebal)
 │   ├── Layer titik api — dalam boundary: ikon api; luar: lingkaran kecil (warna = confidence)
-│   ├── Popup titik api (waktu WIB, confidence, satelit, FRP, lembaga) — bisa digeser (`useMapPopupDrag`, offset dasar 12)
+│   ├── Popup titik api (judul "Titik Api" + nama lembaga, atau "Di luar boundary lembaga" bila di luar; waktu WIB, confidence, satelit, FRP) — bisa digeser (`useMapPopupDrag`, offset dasar 12)
 │   ├── Popup boundary (nama, distrik, jumlah titik)
 │   ├── Legenda kiri-bawah (confidence, bentuk dalam/luar, boundary, batas kabupaten)
 │   └── Kontrol kanan-bawah: ⛶ Zoom ke satu Riau (+ clear selection) · basemap StreetMap/Light/Dark/Satellite/Hybrid (Light & Dark = vector OpenFreeMap sejak 2026-08-29; default ikut tema)
@@ -25,8 +25,9 @@ Halaman: Fire Alert (/admin/dashboard/risk/fire)
     │   ├── Lembaga Terdampak → tooltip daftar lembaga ber-titik api
     │   ├── Luar Boundary → tooltip per kabupaten program + "Kab. Lainnya"
     │   └── Total se-Riau → tooltip per kabupaten program + "Kab. Lainnya"
-    ├── Keyakinan deteksi (dalam boundary) — 1 baris per tingkat + bar porsi, nilai 0 diredupkan, baris Total
+    ├── Keyakinan deteksi (dalam boundary) — 1 baris per tingkat + bar porsi, nilai 0 diredupkan, baris "Total dalam boundary"
     ├── Tabel Titik api per lembaga — judul mengikuti periode ("5 hari terakhir" / "Januari 2025") (hanya ber-titik; klik baris = zoom + highlight, klik ulang = batal)
+    │   └── Empty state: "Tidak ada boundary lembaga dalam cakupan akses Anda." / "Tidak ada titik api dalam boundary lembaga pada rentang ini." (mode bulan: "… pada periode ini.")
     └── Print Map: scope Full Riau / per Distrik → Cetak Peta (PDF) [mode bulan: Cetak Laporan Bulanan (PDF)] berprogres ("Peta lembaga n dari N…") + tombol Batalkan
 ```
 

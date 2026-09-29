@@ -14,7 +14,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [standards/versioning.md](./standards/versioning.md) | SemVer aplikasi, kriteria bump versi, alur rilis & tag/GitHub Release |
 | [standards/code-standards.md](./standards/code-standards.md) | Code standards, Data Access & Soft Delete, Revision Tracking |
 | [standards/rbac.md](./standards/rbac.md) | RBAC data-access hierarchy, user assignment & menu-access UI, hierarchical menu |
-| [standards/ui-ux.md](./standards/ui-ux.md) | Prinsip UI/UX, tabel, bulk upload, shapefile, geospatial, dashboard snapshot |
+| [standards/ui-ux.md](./standards/ui-ux.md) | Prinsip UI/UX, tata letak, modal, sensor data pribadi + indeks sub-standar: [tabel](./standards/ui-ux-tables.md) · [peta](./standards/ui-ux-map.md) · [bulk upload](./standards/ui-ux-bulk-upload.md) · [konten Bantuan](./standards/ui-ux-help.md) |
 | [standards/architecture.md](./standards/architecture.md) | Informasi proyek, arsitektur, tech stack, ringkasan teknis (angka test/model/migrasi/menu) |
 | [standards/ai-model-guide.md](./standards/ai-model-guide.md) | Panduan pilih model & effort AI (Claude Code) per kelas tugas |
 
@@ -103,7 +103,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | Enum, tabel & ringkasan menu, angka teknis | blok `<!-- GENERATED -->` — `npm run build:docs` |
 | Keputusan besar | `decisions/` |
 
-**Arsip.** Paket QA yang lebih tua dari 3 rilis terakhir → `qa/archive/`. Changelog per bulan di `project/changelog/`. Tanggal di tabel ditulis ISO (`YYYY-MM-DD`; kolom Changelog bulanan `MM-DD`).
+**Arsip.** Paket QA yang lebih tua dari 3 rilis terakhir yang sudah terbit → `qa/archive/` (paket rilis yang sedang disiapkan tetap di `qa/`). Changelog per bulan di `project/changelog/`. Tanggal di tabel ditulis ISO (`YYYY-MM-DD`; kolom Changelog bulanan `MM-DD`).
 
 ---
 

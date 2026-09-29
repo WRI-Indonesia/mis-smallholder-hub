@@ -17,8 +17,7 @@ Halaman: Detail Snapshot BMP (/admin/tools/snapshot-bmp/[id])
 └── Tabel: per Lembaga (DataTable)
     ├── Kolom: Nama · Kategori · Distrik
     ├── Kolom: Produksi (Ton) · Produktivitas (Ton/Ha)
-    ├── Kolom: Lahan Ber-data · Luas Terdata (Ha) · Petani Terdata
-    └── Ekspor tambahan: baik · cukup · kurang · tidakAda
+    └── Kolom: Lahan Ber-data · Luas Terdata (Ha) · Petani Terdata
 ```
 
 ## Atribut halaman
@@ -49,4 +48,4 @@ Halaman: Detail Snapshot BMP (/admin/tools/snapshot-bmp/[id])
 | Kolom: Lahan Ber-data | Kolom tabel | `lahanBerData/totalLahan` |
 | Kolom: Luas Terdata (Ha) | Kolom tabel | `totals.luasMelaporHa/totals.totalLuasHa` (#191); snapshot lama → luas terdata saja |
 | Kolom: Petani Terdata | Kolom tabel | `petaniMelapor/totalPetani` |
-| Kolom ekspor tambahan | Ekspor | `baik`, `cukup`, `kurang`, `tidakAda` (kategori ketersediaan data) ikut pada baris ekspor |
+| Ekspor Excel | Ekspor | Hanya 8 kolom tabel di atas — `getExportRow` dikunci ke `column.key` (#323); tidak ada kolom `baik`/`cukup`/`kurang`/`tidakAda` |

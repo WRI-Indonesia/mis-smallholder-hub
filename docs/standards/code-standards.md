@@ -13,7 +13,7 @@
 | Data layer | CSV = static, Prisma = dynamic |
 | Validation | Zod di `src/validations/` |
 | Server Actions | Di `src/server/actions/` |
-| Formatter angka id-ID | **Wajib impor dari `src/lib/format.ts`** (`formatNumber`, `formatPct`, `formatArea` desimal-2, `MONTH_NAMES_ID`) — **dilarang** membuat instance `Intl.NumberFormat("id-ID")` / array nama bulan lokal baru (#233/#241). Varian sufiks (" ha") / null-handling boleh wrapper lokal tipis yang mendelegasi ke formatter bersama |
+| Formatter angka id-ID | **Wajib impor dari `src/lib/format.ts`** (`formatNumber`, `formatPct`, `formatArea` desimal-2, `MONTH_NAMES_ID`) — **dilarang** membuat instance `Intl.NumberFormat("id-ID")` / array nama bulan lokal baru (#233/#241). Aturan ini untuk **kode baru**: per 2026-09-29 masih ada ±31 berkas lama dengan instance lokal (utang, dirapikan saat berkasnya disentuh). Varian sufiks (" ha") / null-handling boleh wrapper lokal tipis yang mendelegasi ke formatter bersama |
 | Database Schema | Lihat [database/erd.md](../database/erd.md) untuk ERD, indexes, constraints, migrations, security |
 
 #### Istilah domain resmi (pengecualian naming — keputusan #130 / TD-012)
@@ -42,12 +42,12 @@ Nama tabel fisik selalu lewat `@@map`, `snake_case`, dengan **prefix menurut jen
 | Prefix | Jenis data | Contoh |
 |--------|-----------|--------|
 | `tbl_` | Entitas domain / transaksional | `tbl_farmer`, `tbl_land_parcel`, `tbl_tree` |
-| `tbl_snapshot_<dashboard>` | Materialisasi dashboard (lihat [ui-ux.md](./ui-ux.md)) | `tbl_snapshot_main_dashboard` |
+| `tbl_snapshot_<dashboard>` | Materialisasi dashboard (lihat [database/dashboard-snapshots.md](../database/dashboard-snapshots.md)) | `tbl_snapshot_main_dashboard` |
 | `ref_` | Master/referensi yang dikelola admin lewat UI | `ref_training_package` |
 | `reg_` | Wilayah administratif | `reg_province` … `reg_village` |
 | `rbac_` | Akses & hak user | `rbac_user_district`, `rbac_role_permission` |
 
-**Tabel satelit** (atribut yang punya siklus hidup sendiri, bisa >1 per induk, atau keikutsertaan program — bukan sifat intrinsik induk) dinamai **`tbl_<induk>_<aspek>`** dengan nama induk **lengkap** persis seperti tabel intinya, model `<Induk><Aspek>`. Preseden: `tbl_farmer_group_boundary`, `tbl_training_participant`. Contoh rencana untuk lahan (Decision Log 2026-08-27): `tbl_land_parcel_document` (SHM/SKT/SKGR dkk., 1:N), `tbl_land_parcel_external_id` (UL Parcel Code + poligon mentah opsional, 1:N), `tbl_land_parcel_program` (demplot/PBU).
+**Tabel satelit** (atribut yang punya siklus hidup sendiri, bisa >1 per induk, atau keikutsertaan program — bukan sifat intrinsik induk) dinamai **`tbl_<induk>_<aspek>`** dengan nama induk **lengkap** persis seperti tabel intinya, model `<Induk><Aspek>`. Preseden: `tbl_farmer_group_boundary`, `tbl_training_participant`. Contoh untuk lahan (Decision Log 2026-08-27, **sudah ada** sejak #296): `tbl_land_parcel_document` (SHM/SKT/SKGR dkk., 1:N), `tbl_land_parcel_external_id` (UL Parcel Code + poligon mentah opsional, 1:N), `tbl_land_parcel_program` (demplot/PBU).
 
 - **Tabel penghubung M:N**: gabungan dua nama induk tanpa aspek (`rbac_user_farmer_group` = User × FarmerGroup). Bila dokumen/entitas satelit menutup >1 induk, entitasnya berdiri sendiri dan penghubungnya gabungan nama — contoh: STDB adalah dokumen per petani yang menutup beberapa lahan → `tbl_land_stdb` + penghubung `tbl_land_parcel_stdb`.
 - **Daftar pilihan tetap** (jenis sertifikat, jenis program) → Prisma `enum`; naik ke `ref_` hanya bila admin memang perlu mengelola daftarnya (konsekuensi: CRUD + menu + permission).

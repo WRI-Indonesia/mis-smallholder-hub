@@ -2,7 +2,7 @@
 
 [← Menu Data Analyst](README.md) · [← Katalog halaman](../README.md)
 
-Sub menu `dashboard-metrics`, satu halaman: `/admin/dashboard/metrics` (#227). Dashboard internal development — audiens tim/manajemen/donor, bukan data petani. Akses efektif: **SUPERADMIN, ADMIN, dan MANAGEMENT** — bukan "SUPERADMIN saja" seperti tertulis di #227. SUPERADMIN lewat kaskade dari induk `data-analyst`; ADMIN & MANAGEMENT lewat baris eksplisit. MANAGEMENT memang audiens yang dituju: `versioning.md` §Metrik Nilai Rilis menyebut Roadmap % dan Papan KPI untuk manajemen/donor. Dijaga `src/test/menu-access.test.ts` (#262).
+Sub menu `dashboard-metrics`, satu halaman: `/admin/dashboard/metrics` (#227). Dashboard internal development — audiens tim/manajemen/donor, bukan data petani. Akses efektif: **SUPERADMIN, ADMIN, dan MANAGEMENT** — bukan "SUPERADMIN saja" seperti tertulis di #227. SUPERADMIN lewat bypass peran di `src/lib/rbac.ts` (bukan kaskade); ADMIN & MANAGEMENT lewat baris VIEW eksplisit di `role-permissions.csv`. MANAGEMENT memang audiens yang dituju: `versioning.md` §Metrik Nilai Rilis menyebut Roadmap % dan Papan KPI untuk manajemen/donor. Dijaga `src/test/menu-access.test.ts` (#262).
 
 ## Diagram objek
 
@@ -18,6 +18,7 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   ├── Roadmap (% tertimbang, +pt sejak v0.9.0, sisa pp) — DAPAT DIKLIK → akordeon Detail roadmap
 │   └── Test otomatis (+% dari baseline ≈)
 ├── Kontrol rentang waktu TUNGGAL (time-window.tsx)
+│   ├── Pilihan: "1 Minggu" · "1 Bulan" · "6 Bulan" · "1 Tahun" · "Semua" (TIME_WINDOWS)
 │   ├── Menyaring data (windowSlice), BUKAN zoom kanvas → sumbu X ketiga grafik identik
 │   └── Pilihan yang sudah setara "Semua" disembunyikan mengikuti umur data (availableWindows)
 ├── Tiga grafik sebaris (lg:grid-cols-3) di atas kerangka bersama time-series-chart.tsx
@@ -64,10 +65,10 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 
 | Aspek | Nilai |
 |---|---|
-| Menu key | `dashboard-metrics` (parent **`data-analyst`** di database — lihat catatan di [README menu](README.md); label "Metrik Rilis", icon `Activity`, order 4). Route tetap `/admin/dashboard/metrics`. |
+| Menu key | `dashboard-metrics` (parent **`data-analyst`** di database — lihat catatan di [README menu](README.md); label "Metrik Rilis", icon `Activity`, order 5). Route tetap `/admin/dashboard/metrics`. |
 | File | `src/app/(admin)/admin/dashboard/metrics/page.tsx` (+ `loading.tsx`) |
 | Client | `metrics-dashboard-client.tsx` (orkestrasi + KPI + jalur kualitas + akordeon), `time-series-chart.tsx` (kerangka bersama 3 grafik: sumbu, ResizeObserver, tooltip, marka, render-prop anotasi), `rvs-curve-chart.tsx`, `metrics-small-charts.tsx`, `rvs-period-bars.tsx`, `roadmap-detail.tsx`, `time-window.tsx`, `metrics-shared.ts` (palet tervalidasi, formatter id-ID, `windowSlice`, `niceTicks`) |
-| Guard | `requirePermission("dashboard-metrics")`; tanpa seed RolePermission → efektif SUPERADMIN-only (bypass) |
+| Guard | `requirePermission("dashboard-metrics")`; seed RolePermission VIEW untuk ADMIN & MANAGEMENT, SUPERADMIN lewat bypass peran → efektif SUPERADMIN/ADMIN/MANAGEMENT (dijaga `src/test/menu-access.test.ts`) |
 | Sumber data | **`docs/project/metrics.md`** + **`docs/project/roadmap.md`** + `docs/project/tech-debt.md`, di-bundle webpack `asset/source` → `src/lib/release-metrics-data.ts` → parser murni `release-metrics.ts` (`parseReleaseMetrics`, `bucketRvsGains`), `roadmap.ts` (`parseRoadmapPhases`, `parseStreamLabels`, `summarizeRoadmap`), `tech-debt.ts`; TIDAK ada server action / query DB |
 | Validasi | Parser melempar saat format tabel rusak, RVS turun, roadmap turun tanpa catatan, tanggal mundur, baris berjalan bukan terakhir (`src/test/release-metrics.test.ts`); tabel Phase Status: jumlah kolom salah, status/horizon/bobot di luar Definisi, kode fase ganda (`src/test/roadmap.test.ts`) — build/test gagal, bukan salah render |
 | Guard konsistensi | `roadmap.test.ts` menghitung ulang Roadmap % dari `roadmap.md` dan membandingkannya dengan baris rilis terakhir `metrics.md`, toleransi **0,1 pp** → menambah/mengubah fase mewajibkan baris metrics.md ikut diperbarui pada rilis yang sama |

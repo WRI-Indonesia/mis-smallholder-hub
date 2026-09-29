@@ -38,7 +38,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Report              | ✅ Complete     | Petani, Pelatihan, Produksi, Kelompok Tani (Summary/Detail), Lahan (+ Laporan NKT), **Patok**; Excel per KT/Blok; **Profil Petani PDF**. |
 | Bulk Upload         | 🟠 Hampir lengkap | Petani, Produksi, Lahan (shapefile + Detail Lahan), Pohon. **BULK-02** (Region & Lembaga/KT) belum ada — issue-nya ditutup *not planned*, perlu keputusan. |
 | Map & Data Analyst  | ✅ Complete     | Peta Lahan & Peta BMP; Ringkasan Petani, Ketersediaan Data (per/semua Lembaga), Komparasi Data Acuan, Peta Data & Skema, Metrik Rilis; **Tumpang Tindih Lahan** & **Sprint Mingguan** menunggu rilis v1.2.0. |
-| Bantuan (HELP)      | ✅ Complete     | Panduan in-app tutorial/konsep/referensi (65 berkas materi), dijaga test cakupan menu. |
+| Bantuan (HELP)      | ✅ Complete     | Panduan in-app tutorial/konsep/referensi (64 berkas materi), dijaga test cakupan menu. |
 | Keamanan            | 🟡 Perlu tindakan | Akun demo SUPERADMIN mengubah menu prod (#364) dan role di JWT tidak diperbarui sampai login ulang (#342) — dijadwalkan Sprint 1. |
 | Testing & QA        | ✅ Strong       | Gate lokal lint/build/typecheck/test; paket QA manual per rilis di `docs/qa/` (smoke + kasus uji + QC data + sign-off). |
 

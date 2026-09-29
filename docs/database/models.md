@@ -9,7 +9,7 @@
 | Field | Type | Keterangan |
 |-------|------|-----------|
 | `created_at` | DateTime | Auto-set saat create |
-| `created_by` | String? | User ID yang membuat (null saat seed) |
+| `created_by` | String? | User ID yang membuat (null saat seed; wajib di tabel snapshot) |
 | `modified_at` | DateTime | Auto-update saat edit |
 | `modified_by` | String? | User ID yang terakhir edit |
 
@@ -89,61 +89,12 @@ flowchart TD
     E --> G[Final permission set]
     F --> G
     G --> H[Filter menu visibility]
-    G --> I[Resolve data scope]
-    I --> J{UserProvince exists?}
-    J -->|Yes| K[All districts in province → all KT]
-    J -->|No| L{UserDistrict exists?}
-    L -->|Yes| M[All KT in assigned districts]
-    L -->|No| N{UserFarmerGroup exists?}
-    N -->|Yes| O[Only assigned KT]
-    N -->|No| P[No data access]
+    G --> I[Resolve data scope — getAccessContext]
 ```
 
----
-
-## Contoh Akses Data
-
-| User | Role | UserProvince | UserDistrict | UserFarmerGroup | Hasil Akses |
-|------|------|-------------|-------------|-----------------|-------------|
-| Ahmad | Project Leader | Riau | — | — | Semua district di Riau → semua KT |
-| Erma | District Coord | — | Kampar | — | Semua KT di Kampar |
-| Anissa | Facilitator | — | Kampar | KBM, Kopsa | Hanya KBM & Kopsa |
-| Super Admin | SUPERADMIN | — | — | — | Semua (skip filter) |
+Ringkas (`getAccessContext()`, `src/lib/access-context.ts`): SUPERADMIN atau **tanpa assignment** → `ALL`; **hanya** `UserFarmerGroup` → `BY_FARMER_GROUP` (id Lembaga); ada `UserProvince`/`UserDistrict` → `BY_DISTRICT` (gabungan district; assignment Lembaga **diabaikan**); sesi kosong / user tak ditemukan → `BY_DISTRICT` kosong (tolak semua). Terjemahkan ke `where` lewat helper `src/lib/access-scope.ts`, jangan ternary manual. Rincian, contoh, dan pengecualian scope yang tercatat: [product/access-context.md](../product/access-context.md).
 
 ---
-
-## Pola Akses Data
-
-```mermaid
-flowchart LR
-    subgraph "Resolve Accessible Districts"
-        S[Start] --> UP{UserProvince?}
-        UP -->|Yes| EXP["Expand: province.districts[]"]
-        UP -->|No| UD{UserDistrict?}
-        UD -->|Yes| DIR["Use: user.districts[]"]
-        UD -->|No| NONE["No access"]
-        EXP --> MERGE[Merge district IDs]
-        DIR --> MERGE
-    end
-
-    subgraph "Resolve Accessible KT"
-        MERGE --> UFG{UserFarmerGroup?}
-        UFG -->|Yes| FG["Filter: only assigned KT"]
-        UFG -->|No| ALL["All KT in accessible districts"]
-    end
-
-    subgraph "Server Action Query"
-        FG --> W["WHERE is_active=true AND farmer_group_id IN (...)"]
-        ALL --> W
-    end
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>Farmer Model</strong> — Detail model Farmer dengan joinedYear field</summary>
 
 ## Rincian Model Farmer
 
@@ -167,6 +118,9 @@ flowchart LR
 ```
 FarmerGroup (1) ─→ (N) Farmer
 Farmer (1) ─→ (N) TrainingParticipant
+Farmer (1) ─→ (N) LandParcel / LandParcelIdentity / LandStdb
+Farmer (1) ─→ (N) ProductionRecord
+Farmer (1) ─→ (N) BmpAssessment
 ```
 
 ### Hierarki Kelembagaan (Petani → Kelompok Tani → Lembaga Petani)
@@ -192,14 +146,7 @@ Farmer data difilter berdasarkan:
 
 ### Dukungan Bulk Upload
 
-- **Template-less approach**: Upload Excel tanpa template, user mapping kolom secara dinamis
-- **Smart Validation**:
-  - Gender normalization: `L/P` → `M/F`
-  - NIK validation: harus 16 digit angka atau kosong
-  - Date parsing: Excel serial number atau format string `dd/mm/yyyy`, `yyyy-mm-dd`
-  - joinedYear validation: integer 1900-2100 atau kosong
-- **Duplicate Check**: File-level dan DB-level untuk `farmerId` dalam `farmerGroupId` yang sama
-- **Download Error Report**: User bisa download Excel berisi hanya baris error dengan kolom "Keterangan"
+Alur, normalisasi (gender `L/P` → `M/F`, NIK 16 digit, tanggal, `joinedYear` 1900–2100), cek duplikat berkas & DB per Lembaga, dan unduhan per status: [../product/crud-flows.md § Bulk Upload Petani](../product/crud-flows.md#bulk-upload-petani--terimplementasi). Dari sisi skema cukup: keunikan `(farmerGroupId, farmerId)` dijaga constraint (TD-024).
 
 </details>
 
@@ -243,12 +190,14 @@ flowchart LR
   - `evidence_key`: S3 object key
   - `evidence_name`: Nama file asli untuk display
 - **Location**: Lokasi pelaksanaan pelatihan (teks bebas)
-- **Training Date**: Tanggal pelaksanaan pelatihan
+- **Training Date**: Tanggal pelaksanaan pelatihan (sesi multi-hari: tanggal hari pertama)
+- **Notes** (`notes`, #228): catatan bebas — rentang sesi multi-hari, label modul Paket 1
 
 ### Pengelolaan Peserta Pelatihan
 
 - **Many-to-Many Relation**: Satu petani bisa ikut banyak training, satu training bisa punya banyak peserta
 - **Unique Constraint**: `(activityId, farmerId)` — tidak boleh duplikasi peserta di aktivitas yang sama
+- **Skor** `preTestScore` / `postTestScore` (Int, nullable, #94) — dipakai panel efektivitas Dashboard Pelatihan
 - **Bulk Upload Support**: Upload peserta via Excel/CSV dengan validasi 3-tier (Valid, Warning, Error)
 - **RBAC Filter**: Data peserta mengikuti access context dari Farmer (BY_DISTRICT / BY_FARMER_GROUP)
 
@@ -280,12 +229,12 @@ Farmer (1) ─→ (N) TrainingParticipant
 ---
 
 <details>
-<summary><strong>File Structure</strong> — Struktur file Prisma schema</summary>
+<summary><strong>Model domain lanjutan & struktur berkas</strong> — Monev BMP, satelit lahan, geom, boundary, struktur file Prisma schema</summary>
 
 ## BmpAssessment — Monev BMP (#344)
 
 - **Grain = petani per tahun survei**, bukan lahan (keputusan owner 2026-09-18 atas rekap Rokan Hulu: petani multi-lahan punya satu skor, 18% baris tanpa lahan). FK utama `farmerId` (pola `TrainingParticipant`); `parcelUid` **opsional** = lahan yang dikunjungi saat survei, menunjuk `LandParcelIdentity` (stabil antar revisi).
-- **Hanya skor akhir** (`score` Float 0–3, 2 desimal) — rincian per indikator BMP di luar lingkup. **Kategori tidak disimpan**: dihitung dari skor lewat `BMP_ASSESSMENT_CATEGORIES` (`src/lib/bmp-assessment.ts`): Teladan **> 2,50** (ketat — skor 2,50 diberi label Praktisi oleh tim lapangan), Praktisi ≥ 1,50, Perintis ≥ 1,00, Belum Implementasi < 1,00. Revisi ambang otomatis konsisten ke seluruh riwayat.
+- **Skor akhir** (`score` Float 0–3, 2 desimal) adalah angka resmi; rincian per indikator ditambahkan kemudian oleh #346 (lihat §Rincian indikator di bawah). **Kategori tidak disimpan**: dihitung dari skor lewat `BMP_ASSESSMENT_CATEGORIES` (`src/lib/bmp-assessment.ts`): Teladan **> 2,50** (ketat — skor 2,50 diberi label Praktisi oleh tim lapangan), Praktisi ≥ 1,50, Perintis ≥ 1,00, Belum Implementasi < 1,00. Revisi ambang otomatis konsisten ke seluruh riwayat.
 - **Satu baris aktif per (petani, tahun)**: cek di server action (pesan ramah) **dan** partial unique index `uniq_bmp_assessment_farmer_year_active` (`WHERE is_active`, tulis tangan — temuan review 2026-09-20: cek `findFirst` saja tidak atomik). Hapus = soft delete; restore ditolak bila tahun itu sudah punya baris aktif lain.
 - **Jalur input**: form (Master Data › Monev BMP; tab Monev BMP di Detail Petani) dan **import Excel format rekap** (satu sheet = satu Lembaga karena `Farmer.farmerId` hanya unik per Lembaga; header dua baris multi-tahun; upsert per petani-tahun; baris tanpa ID petani dilewati; lahan tak dikenal → disimpan tanpa lahan; tanggal masa depan/beda tahun → dikosongkan dengan peringatan).
 - **Dashboard Monev BMP** realtime (pola Dashboard Pelatihan, tanpa snapshot) — terpisah dari BMP Dashboard (Produksi) yang snapshot-backed dengan grain produksi bulanan.

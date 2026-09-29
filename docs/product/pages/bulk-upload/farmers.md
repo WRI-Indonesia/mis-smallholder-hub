@@ -56,7 +56,7 @@ Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 | Tipe | Wizard unggah massal 4 langkah (kartu berurutan, bukan stepper terpisah) |
 | Guard | `requirePermission("bulk-upload-farmers")`; aksi data guard `hasPermission("bulk-upload-farmers", "VIEW"\|"CREATE")` |
 | Server action / data | `getFarmerGroupsForMapping()` (daftar Lembaga dibatasi scope pengguna — TD-029), `getExistingFarmerIds(farmerGroupId)`, `bulkCreateFarmers()` — semua di `src/server/actions/bulk-upload.ts` |
-| Format file diterima | `.xlsx` dan `.csv` (`accept=".xlsx,.csv"`); selain itu toast *"Hanya mendukung file Excel (.xlsx) atau CSV"* |
+| Format file diterima | `.xlsx` dan `.csv` (`accept=".xlsx,.csv"`); selain itu toast *"Hanya mendukung berkas Excel (.xlsx) atau CSV"* (`src/lib/excel-sheet-reader.ts`) |
 | Tombol unduh template | **Tidak ada** di halaman ini (hanya unduh hasil validasi) |
 | Redirect setelah simpan | `/admin/master-data/farmers` |
 
@@ -108,5 +108,5 @@ Halaman: Upload Data Petani (/admin/bulk-upload/farmers)
 3. Perbaiki pemetaan kolom pada kartu "Petakan Kolom Data".
 4. Klik **Validasi Data** → seluruh baris divalidasi di client (termasuk cek duplikat dalam file dan terhadap `existingFarmerIds`).
 5. Tinjau ringkasan valid/tidak lengkap/error, filter, dan bila perlu unduh berkas hasil (semua / tidak lengkap / error saja) untuk diperbaiki lalu unggah ulang.
-6. Klik **Simpan Semua Layak** (valid + tidak lengkap) atau **Simpan Hanya yang Valid** (baris tidak lengkap ditahan) → `bulkCreateFarmers()`: guard `CREATE` → validasi ulang tiap baris dengan `farmerSchema` → cek scope access-context (semua `farmerGroupId` harus dalam scope) → insert dalam satu `prisma.$transaction` dengan `createdBy`.
+6. Klik **Simpan Semua Layak** (valid + tidak lengkap) atau **Simpan Hanya yang Valid** (baris tidak lengkap ditahan) → `bulkCreateFarmers()`: guard `CREATE` → validasi ulang tiap baris dengan `farmerSchema` → cek scope access-context (semua `farmerGroupId` harus dalam scope) → satu INSERT massal atomik `prisma.farmer.createMany` (bukan `$transaction`, audit #233) dengan `createdBy`; bentrok unik P2002 (ID Petani sudah ada di lembaga) diterjemahkan jadi *"Ada ID Petani yang sudah terdaftar di lembaga ini. Jalankan Validasi Data sekali lagi untuk menandai barisnya, lalu keluarkan dari berkas."*
 7. Sukses → toast *"Berhasil menyimpan N data petani"* + redirect ke daftar petani. Gagal → toast berisi pesan error dari action.

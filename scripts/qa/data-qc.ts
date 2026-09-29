@@ -127,7 +127,7 @@ const CHECKS: Check[] = [
     id: "C2", section: "C", purpose: "menu report-marker + izin per peran",
     sql: `select (select count(*) from tbl_menu_item where key='report-marker' and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key='report-marker' and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key='report-marker' and is_active group by role order by role) x) as per_role`,
     pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
-    expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 16, expectLabel: "1 menu · 16 izin (ADMIN 5 · OPERATOR/MANAGEMENT/SUPERADMIN 3 · DONOR 2)",
+    expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 14, expectLabel: "1 menu · 14 izin (ADMIN 5 · OPERATOR/MANAGEMENT/SUPERADMIN 3; DONOR tanpa akses sejak 2026-09-29, revisi #263)",
   },
   {
     id: "C4", section: "C", purpose: "urutan sidebar Report (Patok terakhir)",
@@ -169,10 +169,10 @@ const CHECKS: Check[] = [
     expect: (v) => v === "32 · 18 · 14 · 21", expectLabel: "32 · 18 · 14 · 21 (sebelum seed: 0)",
   },
   {
-    id: "E5", section: "E", purpose: "menu master-data-bmp-monev + dashboard-bmp-monev + 33 izin (cermin Pelatihan)",
+    id: "E5", section: "E", purpose: "menu master-data-bmp-monev + dashboard-bmp-monev + 35 izin",
     sql: `select (select count(*) from tbl_menu_item where key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active group by role order by role) x) as per_role`,
     pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
-    expect: (_v, rows) => Number(rows[0]?.menu) === 2 && Number(rows[0]?.perms) === 33, expectLabel: "2 menu · 33 izin (ADMIN 10 · SUPERADMIN 9 · OPERATOR/MANAGEMENT 6 · DONOR 2)",
+    expect: (_v, rows) => Number(rows[0]?.menu) === 2 && Number(rows[0]?.perms) === 35, expectLabel: "2 menu · 35 izin (ADMIN 10 · SUPERADMIN 9 · OPERATOR/MANAGEMENT 6 · DONOR 4 — VIEW+PRINT master data sejak 2026-09-29)",
   },
   {
     // Urutan = menu.csv sejak v0.37.0 (diubah admin di prod 2026-09-21, CSV disamakan): Main → Pelatihan → BMP → Monev BMP → Risk.

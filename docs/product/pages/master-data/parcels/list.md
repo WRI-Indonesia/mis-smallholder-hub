@@ -12,8 +12,8 @@ Halaman: Lahan (/admin/master-data/parcels)
 ├── Toolbar
 │   ├── Filter: Distrik (combobox)
 │   ├── Filter: Lembaga Petani (combobox, cascade dari Distrik)
-│   ├── Filter: NKT (Semua / Termasuk-terdampak / Termasuk / Terdampak / Tidak / Belum dinilai, #330)
-│   ├── Filter: Patok (Semua / Sudah ada / Belum ada, #330)
+│   ├── Filter: NKT (NKT: Semua / Terdampak NKT / Tidak terdampak / Belum dinilai, #330)
+│   ├── Filter: Patok (Patok: Semua / Sudah ada patok / Belum ada patok, #330)
 │   ├── Filter: Status (SUPERADMIN)
 │   ├── Filter: Pencarian
 │   ├── Tombol: Tambah Lahan
@@ -44,8 +44,8 @@ Halaman: Lahan (/admin/master-data/parcels)
 | `Panduan` | Tautan | `HelpHint` (`src/app/(admin)/admin/help/help-hint.tsx`) — ikon `?` di header menuju tutorial Bantuan untuk `master-data-parcels` (`findTutorialForMenu`), dibuka di tab baru |
 | Filter Distrik | Combobox | `Semua Distrik` (`DistrictGroupFilter`, `src/components/shared/district-group-filter.tsx`) |
 | Filter Lembaga Petani | Combobox | `Semua Lembaga Petani` — daftar ikut menyempit saat Distrik dipilih; pilihan yang tidak cocok di-reset ke `Semua` |
-| Filter NKT | Select (#330) | Klien atas payload list: `all` · `affected` (INCLUDED+AFFECTED, `isNktAffected`) · satu status · `none` (belum dinilai = tanpa baris NKT). `getLandParcels` membawa `identity.nkt.status` saja |
-| Filter Patok | Select (#330/#331) | `all` · `with` (`markerCount > 0`) · `without`; `markerCount` = `_count.markers WHERE is_active` dari identitas |
+| Filter NKT | Select (#330) | Klien atas payload list, 4 opsi: `NKT: Semua` (`all`) · `Terdampak NKT` (`affected` = INCLUDED+AFFECTED, `isNktAffected`) · `Tidak terdampak` (`NOT_AFFECTED`) · `Belum dinilai` (`none` = tanpa baris NKT); opsi dari `LAND_NKT_STATUS_OPTIONS` (`src/lib/land-parcel-satellite-format.ts`). `getLandParcels` membawa `identity.nkt.status` saja |
+| Filter Patok | Select (#330/#331) | `Patok: Semua` (`all`) · `Sudah ada patok` (`with`, `markerCount > 0`) · `Belum ada patok` (`without`); `markerCount` = `_count.markers WHERE is_active` dari identitas |
 | Filter Status | Select | SUPERADMIN saja; label "Semua Status / Aktif / Nonaktif" (function-child `SelectValue`, sebelumnya nilai mentah "active") |
 | Pencarian | Filter | `Cari ID Lahan atau nama petani...` (parcelId, nama & ID petani) |
 | Tombol `Tambah Lahan` | Tombol | CREATE — buka `ParcelFormModal` |

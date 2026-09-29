@@ -24,9 +24,9 @@ Halaman: Halaman Topik (/admin/help/[chapter]/[topic])
 | Atribut | Nilai |
 |---|---|
 | File | `src/app/(admin)/admin/help/[chapter]/[topic]/page.tsx` |
-| Tipe | Server Component (materi satu topik); `generateStaticParams()` mengembalikan seluruh pasangan bab×topik |
+| Tipe | Server Component (materi satu topik); tanpa `generateStaticParams()` — dirender per request |
 | Guard | `requirePermission("help")`; kombinasi tak dikenal → `notFound()` |
-| Server action / data | `getHelpTopic()`, `getAdjacentHelpTopics()`, `buildHelpNav()`, `buildHelpSearchIndex()`, `resolveHelpMedia(topic.blocks)` (presign S3 per-request); **+`auth()` & `getAccessibleMenuKeys()`** untuk penanda hak akses |
+| Server action / data | `getHelpTopic()`, `getAdjacentHelpTopics()`, `buildHelpNav()`, `buildHelpSearchIndex()`, `resolveHelpMedia(topic.blocks)` (presign S3 per-request); **+`auth()` & `getEffectiveMenuPermissions()`** (+ `isTopicAccessible`, `src/lib/help-access.ts`) untuk penanda hak akses |
 
 **Objek halaman**
 

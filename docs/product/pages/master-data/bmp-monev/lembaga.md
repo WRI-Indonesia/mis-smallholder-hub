@@ -9,9 +9,9 @@ Penilaian 14 indikator level **LEMBAGA** per Lembaga Petani per tahun survei (#3
 ```text
 Halaman: Penilaian Lembaga (/admin/master-data/bmp-monev/lembaga)
 ├── Header: tombol kembali · judul · Tambah Penilaian Lembaga (EDIT)
-├── Toolbar: urut Rerata / Abjad
+├── Urutan: klik header kolom `Lembaga Petani` (abjad) atau `Rerata` (default) — penanda ↓; selalu tahun terbaru dulu
 ├── Tabel
-│   ├── Kolom: Lembaga · Tahun · Tgl survei · Penilai · Rerata (14 indikator) · 14 chip skor (0–3, — bila kosong) · Aksi Ubah
+│   ├── Kolom: Lembaga Petani · Tahun · Tgl Survei · Rerata (14 indikator) · 14 kode indikator (chip skor 0–3, — bila kosong) · Penilai · Aksi Ubah (EDIT)
 │   └── Empty state
 └── Dialog: form Tambah / Ubah
     ├── Lembaga Petani (combobox) · Tahun · Tanggal (kalender) · Penilai · Catatan

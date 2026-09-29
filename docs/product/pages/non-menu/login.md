@@ -28,7 +28,7 @@ Halaman: Login (/login)
 |---|---|
 | File | `src/app/login/page.tsx` (+ `src/components/auth/login-form.tsx`) |
 | Tipe | Server Component + form Client Component |
-| Guard | Publik; diproteksi middleware NextAuth pada matcher `/login` |
+| Guard | Publik bagi yang belum login; middleware NextAuth (matcher `/login`) mengarahkan pengguna yang **sudah login** ke `/admin` (callback `authorized` di `src/lib/auth.config.ts`) |
 | Server action / data | Tidak ada Server Action — `signIn("credentials", { redirect: false })` dari `next-auth/react` |
 | Metadata | `title: "Login - Smallholder HUB"`, `description: "Login untuk masuk ke sistem manajemen"` |
 

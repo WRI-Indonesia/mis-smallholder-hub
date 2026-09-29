@@ -18,7 +18,8 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 │   ├── Kelompok Tani
 │   ├── Total Petani
 │   ├── Total Lahan
-│   └── Total Luas
+│   ├── Total Luas
+│   └── Lahan NKT (#337)
 ├── Selektor Kolom (dropdown "Tampilkan Kolom")
 ├── Empty state: Tidak Ada Data Kelompok Tani
 ├── Tabel Kelompok Tani
@@ -49,7 +50,7 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-kelompok-tani` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Kelompok Tani (Ringkasan)" | Heading | Deskripsi "Rekap Kelompok Tani turunan dari data lahan (per Lembaga Petani)" |
 | "Distrik" | Filter (combobox + search, opsional) | Default "Semua Distrik" |
-| "Lembaga Petani" | Filter (combobox + search, opsional) | Default "Semua Lembaga Petani"; empty "Lembaga Petani tidak ditemukan." (`FilterCombobox`, `src/components/shared/district-group-filter.tsx`) |
+| "Lembaga Petani" | Filter (combobox + search, opsional) | Default "Semua Lembaga Petani"; empty "Lembaga Petani tidak ditemukan." (`FilterCombobox`, `src/components/shared/filter-combobox.tsx`) |
 | "Cari" | Filter (input teks) | Placeholder "Lembaga / KT..."; filter di sisi klien pada kolom Lembaga Petani, Kelompok Tani |
 | Catatan filter | Teks bantu | "Rekap real-time turunan dari data lahan aktif. Filter Distrik/Lembaga bersifat opsional." |
 | Kartu KPI | 6 kartu | "Lembaga Petani" (badge Lembaga), "Kelompok Tani" (badge KT), "Total Petani" (badge Petani), "Total Lahan" (badge Lahan), "Total Luas" (badge Ha), **"Lahan NKT"** (badge NKT merah, #337 — lahan termasuk/terdampak lintas KT) |
@@ -71,7 +72,7 @@ Halaman: Laporan Kelompok Tani (Ringkasan) (/admin/report/kelompok-tani)
 | Lahan NKT | Opsional (mati bawaan), rata kanan, **merah tebal bila > 0**; = lahan `isNktAffected(identity.nkt.status)` di kombinasi Lembaga × KT (#337) |
 | Patok | Opsional (mati bawaan), rata kanan; = Σ tautan patok aktif (`identity._count.markers`) — **patok bersama dihitung per lahan**, bukan patok fisik unik (#337) |
 
-Agregasi: baris footer "Total" dihitung dari baris hasil pencarian (`filteredTotals`) — termasuk Lahan NKT & Patok bila kolomnya aktif. Sumber: `KtRawParcel.nkt/patok` (opsional; pemanggil lama tanpa field → 0), builder `buildKelompokTaniReport` (`totalLahanNkt`, `totalPatok` per baris & summary).
+Agregasi: baris footer "Total" dihitung dari baris hasil pencarian (`filteredTotals`) — termasuk Lahan NKT & Patok bila kolomnya aktif. Sumber: `KtRawParcel.nkt/patok` (field wajib, diisi `parcelNktPatok(identity)` di `getKelompokTaniReport`), builder `buildKelompokTaniReport` (`totalLahanNkt`, `totalPatok` per baris & summary).
 
 ## Opsi ekspor
 

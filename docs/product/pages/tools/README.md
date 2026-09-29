@@ -25,7 +25,7 @@ Menu: Tools (/admin/tools → redirect /admin/tools/snapshot)
 | Order | 6 |
 | Catatan | `src/app/(admin)/admin/tools/page.tsx` hanya `redirect("/admin/tools/snapshot")` — tidak ada halaman induk. |
 
-Sumber metadata menu: `prisma/seeds/data/menu.csv`. Konteks penyimpanan snapshot: [../../../database/dashboard-snapshots.md](../../../database/dashboard-snapshots.md). Semua halaman berada di bawah guard NextAuth (`middleware.ts`) dan tiga lapis keamanan (menu permission, access context, soft delete).
+Sumber metadata menu: `prisma/seeds/data/menu.csv`. Konteks penyimpanan snapshot: [../../../database/dashboard-snapshots.md](../../../database/dashboard-snapshots.md). Semua halaman berada di bawah guard NextAuth (`src/middleware.ts`) dan tiga lapis keamanan (menu permission, access context, soft delete).
 
 ## Daftar sub menu
 

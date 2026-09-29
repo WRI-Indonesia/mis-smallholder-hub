@@ -54,6 +54,7 @@ Halaman: Menu Management (/admin/settings/menu)
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `settings-menu` (`findTutorialForMenu`), dibuka di tab baru |
 | `Menu Management` | Heading | `h1`, deskripsi: `Kelola navigasi menu sidebar` |
 | Pencarian | Filter | Placeholder `Cari menu...`; mencocokkan `title` atau `key` pada level 1–3 (parent tetap tampil bila anak/cucu cocok; subtree cocok di-expand paksa) |
+| Empty state pencarian | Teks | `Tidak ada menu yang cocok dengan pencarian.` |
 | `Buka semua` / `Tutup semua` | Tombol | Buka/tutup seluruh induk; state `localStorage` (`menu-list:open`), default *collapsed*; nonaktif saat mencari |
 | `Tambah Menu` | Tombol | Ikon `Plus`; tampil hanya jika permission `CREATE` |
 | Tabel tree menu | Tree / Tabel | Render **rekursif 3 level** (`flattenTree`), **collapsible per induk** (chevron, default collapsed); indentasi per kedalaman; ikon dari `ICON_MAP` |

@@ -9,7 +9,7 @@ Halaman: Detail Penilaian (/admin/master-data/bmp-monev/[id])
 ├── Header
 │   ├── Tombol kembali · Judul "Monev BMP {tahun} — {nama petani}" · ID petani (mono)
 │   ├── Badge Lembaga + badge kategori
-│   └── Tombol: Ubah skor indikator (EDIT)
+│   └── Tombol: Isi skor indikator / Ubah skor indikator (EDIT)
 ├── Kartu stat (6): Skor tersimpan · Hitung ulang · Tgl survei · Lahan dikunjungi · Penilai · Indikator terisi (x/15 slot)
 ├── Peringatan (bila skor tersimpan ≠ hitung ulang > 0,01)
 ├── Raport 5 Kegiatan BMP (BmpActivityRaport)
@@ -38,7 +38,7 @@ Halaman: Detail Penilaian (/admin/master-data/bmp-monev/[id])
 | Peringatan selisih | Banner | Muncul bila \|tersimpan − hitung ulang\| > 0,01; menyarankan tombol ubah + centang "timpa skor tersimpan" |
 | Raport 5 Kegiatan | Kartu | Radar (komponen bersama dengan dashboard) + tabel; kontribusi = skor kegiatan × bobot kegiatan; kosong = indikator berbobot tanpa skor (dihitung 0) |
 | Tabel indikator per kegiatan | Tabel | `table-fixed` + `colgroup` sama untuk kelima kegiatan; skor Lembaga dibaca dari penilaian Lembaga tahun itu; chip `BmpScoreChip` 0–3 (amber bila di luar rubrik); arti skor `bmpScoreLabel` |
-| Tombol `Ubah skor indikator` | Tombol | EDIT — buka `BmpIndicatorEditModal` |
+| Tombol `Isi skor indikator` / `Ubah skor indikator` | Tombol | EDIT — label `Isi …` bila penilaian belum punya rincian indikator individu, `Ubah …` bila sudah; buka `BmpIndicatorEditModal` |
 | Tautan Penilaian Lembaga | Tautan | `/admin/master-data/bmp-monev/lembaga` |
 
 ## Dialog: `BmpIndicatorEditModal`

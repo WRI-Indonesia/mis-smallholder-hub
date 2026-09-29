@@ -15,7 +15,7 @@ Audit docs 2026-09-29 menemukan fakta yang sama disalin di banyak berkas dan sud
 4. Dokumen yang bisa diturunkan dari kode (tabel menu, referensi skema, riwayat migrasi, angka ringkasan) **di-generate** oleh skrip + test kesegaran.
 5. Nama berkas berbahasa Inggris, **heading berbahasa Indonesia**; kunci yang diparse build (`Phase Status (Indeks)`, `Sprint Focus`, `Debt Register`, …) tidak diubah.
 6. Emoji status: 🟠 sebagian · 🟡 sedang dikerjakan (legenda di `docs/README.md`).
-7. QA: tiga rilis terakhir di `qa/`, sisanya `qa/archive/`.
+7. QA: paket **tiga rilis terakhir yang sudah terbit** + paket rilis yang sedang disiapkan tetap di `qa/`; sisanya `qa/archive/`. `01-smoke.md` tetap **salinan penuh** per versi (snapshot yang diuji), bukan selisih dari template.
 8. Tautan docs di aplikasi menunjuk `main` (versi produksi).
 
 ## Konsekuensi

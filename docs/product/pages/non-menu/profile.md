@@ -41,4 +41,4 @@ Halaman: Profil (/admin/profile)
 | `Password Baru` | Form | Input `type="password"`, `required`, `minLength=6` |
 | `Konfirmasi Password Baru` | Form | Input `type="password"`, `required`, `minLength=6` |
 | `Simpan Password` | Tombol | Submit dengan spinner saat proses |
-| Toast | Konten | Sukses: `Password berhasil diubah` (form di-reset, `router.push("/admin")`). Gagal: pesan dari action — `Password baru tidak cocok` (cek klien), `Tidak terautentikasi`, `User tidak ditemukan`, `Password lama salah`, `Input tidak valid` |
+| Toast | Konten | Sukses: `Password berhasil diubah` (form di-reset, `router.push("/admin")`). Gagal: pesan dari action — `Password baru tidak cocok` (cek klien), `Tidak terautentikasi`, `User tidak ditemukan`, `Password lama salah`, pesan Zod pertama yang gagal (`Password lama wajib diisi` / `Password baru minimal 6 karakter`), fallback `Input tidak valid` |

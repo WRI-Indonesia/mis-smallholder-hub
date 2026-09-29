@@ -30,11 +30,11 @@ Contoh bukti yang valid:
 
 | Step | Bagian yang Diupdate | Pertanyaan Cek                                                         |
 | ---- | --------------------- | -------------------------------------------------------------------------- |
-| 1    | Active Issues        | Apakah status issue, assignee, target, dan next action sudah benar?    |
+| 1    | Issue Aktif (`sprint.md`) + tabel Sprint | Apakah status issue, assignee, target, dan next action sudah benar?    |
 | 2    | Phase Status         | Apakah status fase berubah berdasarkan file/code nyata?                |
-| 3    | Code Audit Evidence  | Apakah ada route/schema/action baru atau hilang?                       |
-| 4    | Progress Snapshot    | Apakah angka Done/Partial/Not Started/Planned/Blocked masih konsisten? |
-| 5    | Management Brief     | Apakah risiko/decision/next two weeks masih relevan?                   |
+| 3    | Rincian per Phase (Evidence) | Apakah ada route/schema/action baru atau hilang?                       |
+| 4    | Snapshot Progres (`brief.md`) | Apakah angka Done/Partial/Not Started/Planned/Blocked masih konsisten? |
+| 5    | Brief Manajemen (`brief.md`) | Apakah risiko/decision/next two weeks masih relevan?                   |
 | 6    | Changelog            | Apakah perubahan penting sudah dicatat dengan tanggal?                 |
 
 ### Peta Dependensi
@@ -94,7 +94,7 @@ flowchart LR
 - List page memiliki search/filter/pagination jika datanya berpotensi besar.
 - Server action tidak hanya mengandalkan guard UI; permission tetap dicek di backend.
 - Placeholder `Coming soon` tidak dihitung sebagai selesai.
-- Setelah phase selesai, update **Phase Status**, **Active Issues**, **Progress Snapshot**, dan **Changelog**.
+- Setelah phase selesai, update **Phase Status**, **Issue Aktif**, **Snapshot Progres**, dan **Changelog**.
 
 ### Validasi Minimum
 
@@ -190,7 +190,7 @@ Urutan mengikuti Pre-Commit Gate di [`workflow.md`](../standards/workflow.md):
 5. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
 6. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
 7. ✅ **Code Review**: implementasi sesuai [`standards/`](../standards/code-standards.md)
-8. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
+8. ✅ **Rule Compliance**: Semua kategori pada tabel "Audit Kepatuhan Kode" ([`roadmap.md`](./roadmap.md), arsip 2026-07-10) berstatus PASS
 9. ✅ **Alur rilis**: `mvp` → `staging` (deploy staging, QA `docs/qa/vX.Y.Z/`) → PR `staging` → `main` (deploy produksi) — lihat [`versioning.md`](../standards/versioning.md) §Alur Rilis
 
 #### Jebakan Umum & Perbaikannya
@@ -199,7 +199,7 @@ Urutan mengikuti Pre-Commit Gate di [`workflow.md`](../standards/workflow.md):
 |---------|---------|-----|
 | Filter only by `districtId` in BY_FARMER_GROUP mode | User KT-only returns empty results | Implement discriminated union pattern; test all 3 modes |
 | Guard `hasPermission` hanya di page.tsx | Server action = endpoint HTTP; bisa dipanggil langsung (UI-bypass) | Guard **di dalam action**, bukan hanya page (temuan audit: role-permission/menu/upload) |
-| Read/mutasi **by-id** tanpa scope check | User ter-scope bisa akses data lintas wilayah via id | Terapkan `getAccessContext` juga pada `getXById`/update/toggle (pola `land-parcel.ts:68`) |
+| Read/mutasi **by-id** tanpa scope check | User ter-scope bisa akses data lintas wilayah via id | Terapkan `getAccessContext` juga pada `getXById`/update/toggle (pola `getLandParcelById` di `src/server/actions/land-parcel.ts`) |
 | Hard delete with `delete()` | Breaks audit trail; data loss risk | Always use soft delete: `update { isActive: false }` |
 | Barrel index imports (`from @/components`) | Circular deps; build issues | Import directly dari sub-module; pengecualian resmi hanya `@/components/shared` |
 | Missing `hasPermission()` check | Bypasses UI protection; security risk | **Every** action (read & mutasi, termasuk helper select) must call it |

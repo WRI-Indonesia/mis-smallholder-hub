@@ -32,6 +32,7 @@ Halaman: Ringkasan Petani (/admin/data-analyst/farmer-summary)
 | Atribut | Nilai |
 |---|---|
 | Sub menu | Ringkasan Petani (`data-analyst-farmer-summary`) |
+| Menu | Parent `data-analyst`, icon `Users`, order 1; seed `role-permissions.csv` hanya memberi VIEW/EXPORT/PRINT untuk SUPERADMIN (yang juga lewat bypass peran) — peran lain tidak punya akses kecuali lewat override per-user |
 | Route | `/admin/data-analyst/farmer-summary` |
 | File | `src/app/(admin)/admin/data-analyst/farmer-summary/page.tsx` (Server Component) + `farmer-summary-client.tsx` (Client Component) + `loading.tsx` |
 | Tipe | Halaman analisis (filter → tombol Analisa → 2 tab hasil) |

@@ -42,7 +42,7 @@ Halaman: Main Dashboard (/admin/dashboard/main)
 │   ├── Label titik
 │   ├── Tombol "Cari Lembaga Petani"
 │   ├── Tombol "Lihat Semua"
-│   ├── Basemap switcher (light/dark/hybrid)
+│   ├── Basemap switcher (STREET/LIGHT/DARK/SAT/HYBRID — `MAP_STYLE_KEYS`, default `streetmap`)
 │   └── Empty state peta
 ├── Panel info Lembaga
 │   ├── Badge sertifikasi (RSPO / ISPO / SAP-MAP)
@@ -131,7 +131,7 @@ Di halaman [Detail Snapshot](../tools/snapshot/detail.md) komponen kartu yang sa
 | Label titik | Symbol | Nama Lembaga di bawah titik; warna label mengikuti basemap |
 | Tombol "Cari Lembaga Petani" | Tombol + Popover Command | Cari & fly-to Lembaga; empty: "Kelompok tani tidak ditemukan." |
 | Tombol "Lihat Semua" | Tombol | Fit bounds ke semua Lembaga bertitik |
-| Basemap switcher | Grup tombol | **Lima pilihan sejak #307**: `streetmap` / `light` / `dark` / `satellite` / `hybrid` — satu set & satu urutan untuk seluruh halaman peta (`MAP_STYLES`, `src/lib/map-style.ts`). StreetMap = OpenStreetMap standar; Light/Dark = **vector OpenFreeMap** (positron / dark, tanpa API key); Satellite & Hybrid = Esri. **Default halaman ini `streetmap` untuk kedua tema** (sengaja tidak ikut tema seperti halaman peta lain: peta ikhtisar butuh nama kota/jalan) |
+| Basemap switcher | Grup tombol | **Lima pilihan sejak #307**: `streetmap` / `light` / `dark` / `satellite` / `hybrid` — satu set & satu urutan untuk seluruh halaman peta (`MAP_STYLES`, `src/lib/map-style.ts`). StreetMap = OpenStreetMap standar; Light/Dark = **vector OpenFreeMap** (positron / dark, tanpa API key); Satellite & Hybrid = tile Google (`lyrs=s` / `lyrs=y`); label tombol `STREET` / `LIGHT` / `DARK` / `SAT` / `HYBRID` (`MAP_STYLE_LABELS`). **Default halaman ini `streetmap` untuk kedua tema** (sengaja tidak ikut tema seperti halaman peta lain: peta ikhtisar butuh nama kota/jalan) |
 | Empty state peta | Empty state | "Tidak ada data lokasi yang tersedia untuk ditampilkan di peta" |
 
 ## Objek panel info Lembaga

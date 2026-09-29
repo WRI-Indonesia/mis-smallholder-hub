@@ -36,7 +36,7 @@ Halaman: User Management (/admin/settings/users)
 │       ├── Status Override
 │       ├── Pencarian: Cari menu...
 │       ├── Matrix izin menu
-│       │   ├── Kolom: Menu · C · V · E · D · Status
+│       │   ├── Kolom: Menu · C · V · E · D · X · P · Status
 │       │   ├── Baris: menu parent → menu anak (CornerDownRight)
 │       │   └── Sel izin: role default granted / role default denied
 │       │                / override granted / override revoked
@@ -148,7 +148,7 @@ Halaman: User Management (/admin/settings/users)
 |---|---|---|
 | `Status Override` | Panel | `Tidak ada override (mengikuti default role)` atau `{n} override aktif dari default role` (ikon `ShieldAlert` bila > 0) |
 | Pencarian | Filter | Placeholder `Cari menu...`; mencocokkan judul menu, parent ikut ditampilkan |
-| Matrix izin menu | Matrix | Kolom: `Menu`, `C`, `V`, `E`, `D`, `Status`. Baris: menu parent (tanpa indentasi) diikuti anaknya (indentasi + ikon `CornerDownRight`) |
+| Matrix izin menu | Matrix | Kolom: `Menu`, `C`, `V`, `E`, `D`, `X` (Export), `P` (Print), `Status` — 6 kolom izin dari `PERMISSION_LEVELS` (`src/lib/permission-levels.ts`). Baris: menu parent (tanpa indentasi) diikuti anaknya (indentasi + ikon `CornerDownRight`). **Keterbatasan:** `getTreeItems()` hanya merender level 1–2, sehingga menu level 3 (Fire Alert, `dashboard-risk-fire`) tidak tampil dan tidak bisa diberi override per-user di sini (induknya `dashboard-risk` punya anak → sel kosong) |
 | Sel izin | Toggle | Hanya dirender untuk menu **tanpa anak**; menu yang punya anak menampilkan sel kosong dan `—` pada kolom Status |
 | Sel — role default granted | Status | Blok solid `bg-primary` bertitik; title `Default Role: Diberikan (Klik untuk cabut)` → membuat override `granted = false` |
 | Sel — role default denied | Status | Kotak kosong ber-border; title `Default Role: Ditolak (Klik untuk berikan)` → membuat override `granted = true` |

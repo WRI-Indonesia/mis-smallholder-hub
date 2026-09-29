@@ -26,7 +26,8 @@ Halaman: Role & Permission (/admin/settings/roles)
 ├── Legend: Granted · Denied · Preset baris · ikon per izin · "SUPERADMIN selalu akses penuh (tidak ditampilkan)"
 ├── Dialog kaskade: "Terapkan ke sub-menu?" (Batal · Hanya menu ini · Termasuk sub-menu)
 ├── Dialog toggle kolom: "Toggle satu kolom?" (Batal · Terapkan) — satu izin × semua menu × satu role
-└── Toast: Gagal menyimpan permission (revert optimistis)
+├── Empty state pencarian: Tidak ada menu yang cocok dengan pencarian.
+└── Toast: Gagal menyimpan permission (revert optimistis) · SUPERADMIN memiliki semua akses · Tidak ada role yang dapat diubah pada tampilan ini
 ```
 
 ## Sub Menu: Role & Permission (`settings-roles`)
@@ -65,4 +66,5 @@ Halaman: Role & Permission (/admin/settings/roles)
 | Dialog kaskade | Dialog | `Terapkan ke sub-menu?` — `Batal` · `Hanya menu ini` · `Termasuk sub-menu` (menerapkan ke seluruh keturunan) |
 | Dialog toggle kolom | Dialog | `Toggle satu kolom?` — konfirmasi memberi/mencabut satu izin pada **semua menu** untuk satu role |
 | Legend | Legend | `Granted` · `Denied` · `Preset baris` · ikon+nama tiap izin · `Klik ikon header = toggle satu kolom · SUPERADMIN selalu akses penuh (tidak ditampilkan)` |
-| Toast | Notifikasi | `Gagal menyimpan permission` (saat gagal; sukses tanpa toast karena optimistis) |
+| Toast | Notifikasi | Gagal simpan: pesan error action atau `Gagal menyimpan permission`; error tak tertangkap (mis. timeout) → `Gagal menyimpan permission — coba lagi` (keduanya revert; sukses tanpa toast karena optimistis). Klik sel SUPERADMIN → `SUPERADMIN memiliki semua akses`; preset baris tanpa role editable tampil → `Tidak ada role yang dapat diubah pada tampilan ini` |
+| Empty state pencarian | Teks | `Tidak ada menu yang cocok dengan pencarian.` |

@@ -29,8 +29,8 @@ Legenda status: ✅ Done · 🟠 Partial · 🔲 Planned · 🔴 Blocked — def
 |---|---|---|
 | Publik | `/` (Home ✅), `/community` 🔲, `/knowledge-management` 🔲 | — |
 | Autentikasi | `/login` ✅ · `/api/auth/[...nextauth]` | NextAuth (Credentials) |
-| Admin | `/admin/**` | `middleware.ts` (sesi) → `requirePermission(menuKey)` per halaman |
-| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) | auth-guarded, same-origin |
+| Admin | `/admin/**` | `src/middleware.ts` (sesi) → `requirePermission(menuKey)` per halaman |
+| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) · `/api/map-basemap` (latar peta cetak Laporan Lahan, #318) | `hasPermission(menuKey, "VIEW")` per endpoint (overlay: `map-parcel`; hotspot: `map-parcel` atau `dashboard-risk-fire`; basemap: `report-land-parcel`), same-origin |
 
 Semua akses data lewat **Server Actions** (`src/server/actions/`) dengan 3 lapis pengaman: permission menu → access context → soft delete. Tidak ada REST API selain NextAuth & proxy tile.
 
@@ -41,10 +41,10 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 | Role | Scope data | Menu yang diakses |
 |---|---|---|
 | **SUPERADMIN** | `ALL` (bypass semua guard) | Semua menu, semua aksi |
-| **ADMIN** | `BY_DISTRICT` (dari `UserProvince`/`UserDistrict`) | Dashboard, Master Data, Report, Bulk Upload, Data Analyst, Tools, Map, Bantuan — **tanpa Settings** |
-| **OPERATOR** | `BY_FARMER_GROUP` (dari `UserFarmerGroup`) | Dashboard, Master Data (CRUD sebagian dalam scope), Report, Bulk Upload (Petani & Produksi), Data Analyst, Map, Bantuan |
-| **MANAGEMENT** | `ALL` (read-only) | Dashboard, Master Data (VIEW), Report, Data Analyst, Map, Tools (snapshot view-only), Bantuan |
-| **DONOR** (#187) | `ALL` atau ter-scope bila di-assign | Dashboard, Report, Map, Bantuan — **VIEW-only** |
+| **ADMIN** | `BY_DISTRICT` (dari `UserProvince`/`UserDistrict`) | Dashboard, Master Data (tanpa DELETE), Report, Bulk Upload, Data Analyst, Tools (tanpa delete snapshot), Map, Bantuan — **tanpa Settings** |
+| **OPERATOR** | `BY_FARMER_GROUP` (dari `UserFarmerGroup`) | Dashboard, Master Data (VIEW/EXPORT/PRINT, tanpa hak tulis), Report, Data Analyst (sebagian), Map, Bantuan — **tanpa Bulk Upload, Tools, Settings** |
+| **MANAGEMENT** | `ALL` (read-only) | Dashboard, Master Data (VIEW/EXPORT/PRINT), Report, Data Analyst, Map, Bantuan — **tanpa Bulk Upload, Tools, Settings** |
+| **DONOR** (#187) | `ALL` atau ter-scope bila di-assign | Dashboard, Report (Petani/Pelatihan/Produksi/Lahan), Map, Master Data (kecuali Produksi), Bantuan — **VIEW + PRINT**, tanpa EXPORT (revisi #263) |
 
 > Tanpa assignment apa pun → mode `ALL`. Urutan evaluasi `getAccessContext()`: SUPERADMIN → tanpa assignment = `ALL` → **hanya** `UserFarmerGroup` = `BY_FARMER_GROUP` → ada `UserProvince`/`UserDistrict` = `BY_DISTRICT`. Sesi kosong / user tak ditemukan → `BY_DISTRICT` dengan ids kosong = **tolak semua**. Rincian per role di [role-flows.md](role-flows.md).
 

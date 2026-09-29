@@ -21,7 +21,8 @@ Halaman: Tumpang Tindih Lahan (/admin/data-analyst/parcel-overlap)
 │   │   ├── Kolom: Lahan A · Lahan B (ID lahan + badge "+N" bila lahan punya pasangan lain, nama petani;
 │   │   │   Lembaga hanya untuk Lintas Lembaga, selebihnya di tooltip) · % · Irisan (% terkecil · ha, A/B) ·
 │   │   │   Label (badge bertooltip arti + jenis ringkas; sortir Duplikat → Tercakup → Sebagian)
-│   │   ├── Pencarian ID lahan / nama / ID petani, paginasi bawaan 25
+│   │   ├── Pencarian "Cari ID lahan / petani..." (ID lahan / nama / ID petani), paginasi bawaan 25;
+│   │   │   kosong → "Tidak ada lahan tumpang tindih pada filter ini."
 │   │   └── Toolbar (izin EXPORT): Excel · Spasial ▾ (Shapefile ZIP / GeoJSON — poligon irisan)
 │   └── Kanan (sticky): preview — pasangan pertama terpilih otomatis
 │       ├── Navigasi: ‹ Sebelumnya · "n / N · ↑/↓" · Berikutnya › (urutan = tampilan tabel); panah ↑/↓ hanya

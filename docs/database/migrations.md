@@ -79,8 +79,374 @@ flowchart LR
 | `20260918120000_bmp_assessment` | 2026-09-18 | **#344 Monev BMP** — `tbl_bmp_assessment`: skor Monev BMP per **petani** per tahun survei (`farmer_id` FK, `survey_year`, `survey_date?`, `score` 0–3, `parcel_uid?` → identitas lahan dikunjungi, `assessor?`, `notes?`, audit + `is_active`); 3 index (`(farmer_id, survey_year)`, `survey_year`, `is_active`). **Tanpa UNIQUE** petani-tahun di file ini (dijaga action; partial unique menyusul di `20260920100000`). Tanpa backfill; kategori dihitung di kode. File ditulis manual dari `migrate diff`: 4 `DROP INDEX *_geom_idx` + 2 `ALTER COLUMN geom DROP DEFAULT` **dibuang** (pola #328/#329; guard test) | LOW (1 tabel baru, additive; applied `mis-dev` & `mis-staging-local` 2026-09-20; **`mis-staging` & `mis-prod` 2026-09-20** (#348, dump pra-migrasi `scripts/dump-prod/2026-09-20/mis-{staging,prod}-before-monev.dump`, QC A,E ✓, checksum 37 entri disegarkan) |
 | `20260920100000_bmp_assessment_unique_active` | 2026-09-20 | **#344 temuan review** — partial unique index tulis tangan `uniq_bmp_assessment_farmer_year_active (farmer_id, survey_year) WHERE is_active`: satu penilaian aktif per petani-tahun dijamin DB (cek `findFirst` di action tidak atomik saat dua operator mengimpor bersamaan). Prasyarat baca-saja: 0 duplikat aktif (query di header migrasi). Dijaga `migration-guards.test.ts` | LOW (1 index; applied `mis-dev` & `mis-staging-local` + **`mis-staging` & `mis-prod` 2026-09-20** (#348)) |
 | `20260920120000_bmp_indicator_detail` | 2026-09-20 | **#346 rincian Monev BMP** — enum `BmpIndicatorLevel` + `ref_bmp_indicator` (master 32 indikator; unique `(code, level)`), `tbl_bmp_assessment_detail` (unique `(assessment_id, indicator_id)`), `tbl_bmp_group_assessment` (+ **partial unique** tulis tangan `uniq_bmp_group_assessment_group_year_active WHERE is_active`) dan `tbl_bmp_group_assessment_detail`. FK RESTRICT ke `tbl_bmp_assessment`, `ref_bmp_indicator`, `tbl_farmer_group`. Tanpa backfill; master di-seed terpisah (`scripts/seed/seed-bmp-indicators.ts --apply`, idempoten). File disunting dari `migrate diff` (4 `DROP INDEX *_geom_idx` + 2 `DROP DEFAULT` dibuang; guard test) | LOW–MEDIUM (4 tabel + 1 enum, additive; applied `mis-dev` & `mis-staging-local` + **`mis-staging` & `mis-prod` 2026-09-20** (#348) + seed 32 indikator & seed menu di keduanya (`rbac:compare` selaras)) |
-| `20260921120000_drop_activity_status_tree_surveyed_at` | 2026-09-21 | **#353 bagian E (keputusan owner)** — `DROP TYPE "ActivityStatus"` (enum dibuat di init untuk modul aktivitas yang tak pernah lahir; 0 kolom, 0 rujukan kode/seed) + `ALTER TABLE tbl_tree DROP COLUMN surveyed_at` (#238: tak pernah ditulis `bulk-upload-tree.ts` maupun dibaca; kontrak DBF shapefile pohon tanpa atribut tanggal). Prasyarat baca-saja di header migrasi (mis-prod 2026-09-21: 286 baris, 0 terisi; enum tak dipakai kolom mana pun). Ditulis tangan (4 `DROP INDEX *_geom_idx` + 2 `DROP DEFAULT` usulan Prisma dibuang; guard test). Rollback SQL di header | LOW (drop 1 enum + 1 kolom nullable kosong; applied `mis-dev` & `mis-staging-local` 2026-09-21 via `migrate deploy`, dump `scripts/dump-prod/2026-09-21/*-before-353e.dump`; `mis-staging` & `mis-prod` menyusul rilis v0.37.0 (#357, tercatat di `applied-checksums.json`)) |
+| `20260921120000_drop_activity_status_tree_surveyed_at` | 2026-09-21 | **#353 bagian E (keputusan owner)** — `DROP TYPE "ActivityStatus"` (enum dibuat di init untuk modul aktivitas yang tak pernah lahir; 0 kolom, 0 rujukan kode/seed) + `ALTER TABLE tbl_tree DROP COLUMN surveyed_at` (#238: tak pernah ditulis `bulk-upload-tree.ts` maupun dibaca; kontrak DBF shapefile pohon tanpa atribut tanggal). Prasyarat baca-saja di header migrasi (mis-prod 2026-09-21: 286 baris, 0 terisi; enum tak dipakai kolom mana pun). Ditulis tangan (4 `DROP INDEX *_geom_idx` + 2 `DROP DEFAULT` usulan Prisma dibuang; guard test). Rollback SQL di header | LOW (drop 1 enum + 1 kolom nullable kosong; applied `mis-dev` & `mis-staging-local` 2026-09-21 via `migrate deploy`, dump `scripts/dump-prod/2026-09-21/*-before-353e.dump`; applied `mis-staging` & `mis-prod` 2026-09-21 (#357, tercatat di `applied-checksums.json`)) |
 | `20260923120000_external_id_shared_code` | 2026-09-23 | **UL Parcel Code boleh di >1 lahan** (keputusan owner: klaim ganda vendor disimpan dulu, dicek silang belakangan) — `DROP INDEX tbl_land_parcel_external_id_source_code_key` → UNIQUE `(parcel_uid, source, code)` + INDEX `(source, code)`. Tanpa perubahan data; setiap pasangan `(source, code)` lama otomatis unik juga per lahan. Kode ikut: planner import tak lagi melewati kode aktif di lahan lain (`externalIdsShared`), validator tak menolak kode sama di >1 lahan, aksi manual hanya menjaga duplikat di lahan sendiri, tab Legalitas menandai "Juga dipakai …" | LOW (ganti 1 unique + 1 index, tabel ±14 rb baris; **applied `mis-dev` & `mis-staging-local` 2026-09-23** via `migrate deploy`, dump `scripts/dump-prod/2026-09-23/<db>-before-external-id-shared-code.dump`; gladi import 142 lahan sisa di staging-local → 0 lahan tanpa kode, rerun idempoten. **applied `mis-prod` 2026-09-23** (dump `mis-prod-before-external-id-shared-code.dump`, checksum disegarkan; 4 index terverifikasi, 14.031 baris utuh). **applied `mis-staging` 2026-09-23** (dump `mis-staging-before-v1.1.0.dump`; 39 migrasi, 13.009 baris utuh, 4 index terverifikasi)) |
+
+### Versi Skema
+
+Versi skema mengelompokkan migrasi per perubahan domain (semver skema, bukan versi aplikasi); rincian per migrasi di tabel Riwayat Migrasi di atas.
+
+
+| Version | Date | Key Changes | Impact |
+|---------|------|-------------|--------|
+| **2.12.2** | 2026-09-23 | UL Parcel Code boleh di >1 lahan (keputusan owner — klaim ganda vendor dicek silang belakangan): `LandParcelExternalId` UNIQUE `(source, code)` → UNIQUE `(parcelUid, source, code)` + INDEX `(source, code)` — migrasi `20260923120000_external_id_shared_code`, applied `mis-dev`, `mis-staging-local`, `mis-prod`, `mis-staging` 2026-09-23 | LOW (ganti 1 unique + 1 index, tanpa perubahan data) |
+| 2.12.1 | 2026-09-21 | Cleanup #353 bagian E: `DROP TYPE "ActivityStatus"` (enum yatim sejak init, 0 kolom) + `tbl_tree.surveyed_at` dihapus (0/286 terisi di prod; shapefile pohon tak punya atribut tanggal, tak pernah ditulis/dibaca) — migrasi `20260921120000_drop_activity_status_tree_surveyed_at`, applied semua DB (prod & staging via #357, rilis v0.37.0) | LOW (drop 1 enum + 1 kolom nullable kosong; tanpa data hilang) |
+| 2.12.0 | 2026-09-20 | Rincian Monev BMP (#346): `BmpIndicator` → `ref_bmp_indicator` (32 indikator, 5 kegiatan berbobot, level LEMBAGA/INDIVIDU, bobot, rubrik 0–3; seed CSV), `BmpAssessmentDetail` → `tbl_bmp_assessment_detail` (skor indikator individu per penilaian, `weightUsed`), `BmpGroupAssessment` + `BmpGroupAssessmentDetail` (penilaian Lembaga per tahun, partial unique aktif). Migrasi `20260920120000_bmp_indicator_detail` (manual, additive). Plus `20260920100000_bmp_assessment_unique_active` (partial unique petani-tahun, review #344) | LOW–MEDIUM (4 tabel + 1 enum baru, additive) |
+| 2.11.0 | 2026-09-18 | Monev BMP (#344): `BmpAssessment` → `tbl_bmp_assessment` — skor 0–3 per **petani** per tahun survei (FK `farmerId`; `parcelUid` opsional = lahan dikunjungi), kategori dihitung dari skor (tidak disimpan); satu baris aktif per petani-tahun dijaga di action. Migrasi `20260918120000_bmp_assessment` (manual dari `migrate diff`, tanpa backfill) | LOW (new table, additive) |
+| 2.10.6 | 2026-09-14 | Keluarga satelit lahan tahap 2: `LandParcel.geom` GENERATED + GiST (#317 Fase 1), `LandParcelBorder` (#326), `LandParcelNkt` + enum `LandNktStatus`/`NktCategory` (#328), `LandMarker` + `LandParcelMarker` + enum patok (#329), kode patok unik + `LandMarkerCounter` (#331) — 5 migrasi `20260914*` | MEDIUM (5 tabel + 1 kolom generated, additive; backfill kode patok) |
+| 2.10.5 | 2026-08-29 | Tahapan STDB (#306) + audit tautan (#299): enum `LandStdbStage`, UNIQUE `(farmerId, number)` diganti dua partial unique tulis tangan — migrasi `20260829031525_land_stdb_stage` | MEDIUM (enum + constraint change) |
+| 2.10.4 | 2026-08-27 | Satelit lahan (#296): `LandParcelIdentity` + `LandParcel.parcelUid` (backfill), `LandParcelDocument`, `LandStdb` + `LandParcelStdb`, `LandParcelExternalId`, `LandParcelProgram` — migrasi `20260827053327_land_parcel_satellites` | HIGH (6 tabel + kolom NOT NULL ber-backfill) |
+| 2.10.3 | 2026-08-19 | Boundary (#266): `FarmerGroupBoundary` + `AdministrativeBoundary` (enum `AdminBoundaryLevel`), PostGIS `geom` + `geojson` | MEDIUM (2 tabel baru, additive) |
+| 2.10.2 | 2026-08-12 | Izin `EXPORT`/`PRINT` di enum `PermissionLevel` (#245) + backfill dari VIEW, lalu dikoreksi ke menu daun saja — 3 migrasi `20260812*` | MEDIUM (enum + backfill data RBAC) |
+| 2.10.1 | 2026-08-11 | `ReferenceBenchmark` → `tbl_reference_benchmark` (#243), angka acuan per Lembaga | LOW (new table, additive) |
+| 2.10.0 | 2026-08-08 | Tree model (#238): `tbl_tree` titik pohon sawit per lahan, bulk upload ZIP shapefile point, revisi per-set — applied mis-prod | MEDIUM (new table, additive) |
+| 2.9.0 | 2026-07-20 | Field lahan `species` (String?) + `isPsr` (Boolean default false — PSR = Peremajaan Sawit Rakyat); `cropType` = Komoditas, data fix 4.163 lahan → "Kelapa Sawit" | LOW (additive) |
+| 2.8.0 | 2026-07-16 | Sertifikasi Lembaga Petani (#169): `FarmerGroup.ispoCertYear` + `ispoCertStatus` + `sapMapAssuranceYear` + `sapMapAssuranceStatus` (enum generik `CertStatus` CERTIFIED/PLANNED — `RspoCertStatus` existing dibiarkan) | LOW (4 nullable columns + 1 enum, additive) |
+| 2.7.0 | 2026-07-15 | Dashboard BMP snapshot (#166, DASH-04): BmpDashboardSnapshot → `tbl_snapshot_bmp_dashboard` (snapshot pattern kedua, data JSON per Lembaga) — migration applied + seed menu/permission (approval owner) | MEDIUM (new table, additive) |
+| 2.6.0 | 2026-07-15 | Identitas Lembaga Petani (#160): `FarmerGroup.groupType` (enum `FarmerGroupType`) + `establishedYear` + `rspoCertYear` + `rspoCertStatus` (enum `RspoCertStatus`); data `code` ICS→ISH | LOW (4 nullable columns + 2 enums, additive) |
+| 2.5.0 | 2026-07-14 | `LandParcel.blok` (String?, blok kebun) | LOW (1 nullable column, additive) |
+| 2.4.0 | 2026-07-14 | Sub-kelompok interim per-lahan (#146): `LandParcel.subGroupLv1` (Gapoktan) + `subGroupLv2` (Kelompok Tani); `FarmerGroup` diklarifikasi = **Lembaga Petani** (TD-013/#147) | LOW (2 nullable columns, additive) |
+| 2.3.0 | 2026-07-08 | Dashboard snapshot (#99): MainDashboardSnapshot model, separate table per dashboard pattern | MEDIUM (new table + pattern establishment) |
+| 2.2.1 | 2026-06-28 | Training participant pre/post-test scores (#94) + unique ProductionRecord ditambah `parcelId` | LOW–MEDIUM (nullable fields + constraint change) |
+| 2.2.0 | 2026-06-22 | Production module (#89): ProductionRecord model, per-farmer/parcel yield tracking, bulk upload | Medium (new table + production tracking features) |
+| 2.1.0 | 2026-06-14 | Land Parcel module (#88): LandParcel model, ZIP Shapefile bulk upload | Medium (new table + geospatial features) |
+| 2.0.0 | 2026-06-11 | Training module, Farmer.joinedYear | Medium (new tables + optional field) |
+| 1.5.0 | 2026-05-22 | RBAC overrides, User data access | High (new RBAC tables) |
+| 1.0.0 | 2026-04-14 | Initial schema | — |
+
+---
+
+<details open>
+<summary><strong>ERD Overview</strong> — Visualisasi lengkap relasi antar tabel</summary>
+
+## Gambaran ERD
+
+```mermaid
+erDiagram
+    %% ═══════════════════════════════════════════
+    %% GEOGRAPHY
+    %% ═══════════════════════════════════════════
+
+    Province {
+        String id PK
+        String code UK
+        String name
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    District {
+        String id PK
+        String province_id FK
+        String code UK
+        String name
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    Subdistrict {
+        String id PK
+        String district_id FK
+        String code UK
+        String name
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    Village {
+        String id PK
+        String subdistrict_id FK
+        String code UK
+        String name
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    Province ||--o{ District : "has"
+    District ||--o{ Subdistrict : "has"
+    Subdistrict ||--o{ Village : "has"
+
+    %% ═══════════════════════════════════════════
+    %% USER & AUTH
+    %% ═══════════════════════════════════════════
+
+    User {
+        String id PK
+        String name
+        String email UK
+        String password
+        Role role
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    %% ═══════════════════════════════════════════
+    %% FARMER GROUP
+    %% ═══════════════════════════════════════════
+
+    FarmerGroup {
+        String id PK
+        String district_id FK
+        String code
+        String abrv
+        String abrv_3id
+        String name
+        FarmerGroupCategory category
+        FarmerGroupType group_type
+        Int join_year
+        Int established_year
+        Int rspo_cert_year
+        RspoCertStatus rspo_cert_status
+        Int ispo_cert_year
+        CertStatus ispo_cert_status
+        Int sap_map_assurance_year
+        CertStatus sap_map_assurance_status
+        Float location_lat
+        Float location_long
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    District ||--o{ FarmerGroup : "has"
+
+    %% ═══════════════════════════════════════════
+    %% FARMER
+    %% ═══════════════════════════════════════════
+
+    Farmer {
+        String id PK
+        String farmer_group_id FK
+        Gender gender
+        String name
+        String farmer_id
+        String nik
+        String address
+        String birth_place
+        DateTime birth_date
+        Int joined_year
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    FarmerGroup ||--o{ Farmer : "has"
+
+    %% ═══════════════════════════════════════════
+    %% LAND PARCEL
+    %% ═══════════════════════════════════════════
+
+    LandParcel {
+        String id PK
+        String farmer_id FK
+        String parcel_id
+        String parcel_uid FK "LandParcelIdentity (#296)"
+        String blok
+        Json geometry "GeoJSON polygon — sumber kebenaran"
+        Geometry geom "GENERATED dari geometry (#317 Fase 1)"
+        Float area
+        String land_status
+        String crop_type
+        String species
+        Boolean is_psr
+        Int planting_year
+        String sub_group_lv2
+        Int revision
+        String notes
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    Farmer ||--o{ LandParcel : "owns"
+
+    %% ═══════════════════════════════════════════
+    %% PRODUCTION RECORD
+    %% ═══════════════════════════════════════════
+
+    ProductionRecord {
+        String id PK
+        String farmer_id FK
+        String parcel_id FK
+        String period
+        DateTime harvest_date
+        Int harvest_number
+        Float yield_kg
+        String notes
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    Farmer ||--o{ ProductionRecord : "records"
+    LandParcel ||--o{ ProductionRecord : "from"
+
+    %% ═══════════════════════════════════════════
+    %% TRAINING
+    %% ═══════════════════════════════════════════
+
+    TrainingPackage {
+        String id PK
+        TrainingCategory code UK
+        String name
+        String desc
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    TrainingActivity {
+        String id PK
+        String ref_training_package_id FK
+        String farmer_group_id FK
+        String location
+        DateTime training_date
+        String notes "catatan sesi (#228)"
+        String evidence_key
+        String evidence_name
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    TrainingParticipant {
+        String id PK
+        String training_activity_id FK
+        String farmer_id FK
+        Int pre_test_score "nullable, 0-100"
+        Int post_test_score "nullable, 0-100"
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    TrainingPackage ||--o{ TrainingActivity : "has"
+    FarmerGroup ||--o{ TrainingActivity : "hosts"
+    TrainingActivity ||--o{ TrainingParticipant : "has"
+    Farmer ||--o{ TrainingParticipant : "attends"
+
+    %% ═══════════════════════════════════════════
+    %% MENU
+    %% ═══════════════════════════════════════════
+
+    MenuItem {
+        String id PK
+        String key UK
+        String parent_key FK
+        String title
+        String url
+        String icon
+        Int order
+        Boolean is_active
+        Boolean is_visible
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    MenuItem ||--o{ MenuItem : "parent-child"
+
+    %% ═══════════════════════════════════════════
+    %% RBAC
+    %% ═══════════════════════════════════════════
+
+    RolePermission {
+        String id PK
+        Role role
+        String menu_key FK
+        PermissionLevel permission
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    UserProvince {
+        String id PK
+        String user_id FK
+        String province_id FK
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    UserDistrict {
+        String id PK
+        String user_id FK
+        String district_id FK
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    UserFarmerGroup {
+        String id PK
+        String user_id FK
+        String farmer_group_id FK
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    UserPermissionOverride {
+        String id PK
+        String user_id FK
+        String menu_key FK
+        PermissionLevel permission
+        Boolean granted
+        Boolean is_active
+        DateTime created_at
+        String created_by
+        DateTime modified_at
+        String modified_by
+    }
+
+    MenuItem ||--o{ RolePermission : "default permissions"
+    MenuItem ||--o{ UserPermissionOverride : "overrides"
+    User ||--o{ UserProvince : "assigned"
+    User ||--o{ UserDistrict : "assigned"
+    User ||--o{ UserFarmerGroup : "assigned"
+    User ||--o{ UserPermissionOverride : "has"
+    Province ||--o{ UserProvince : "assigned to"
+    District ||--o{ UserDistrict : "assigned to"
+    FarmerGroup ||--o{ UserFarmerGroup : "assigned to"
+```
+
+</details>
 
 ### Checklist Pra-Deploy
 

@@ -4,11 +4,21 @@
 
 ## UI/UX
 
+### Sub-standar
+
+| Berkas | Isi |
+|---|---|
+| [ui-ux-tables.md](./ui-ux-tables.md) | Tipografi, aksi baris, paginasi, ekspor & pilihan kolom `DataTable` |
+| [ui-ux-map.md](./ui-ux-map.md) | Peta MapLibre: basemap, popup standar, layer titik api/overlay, cetak peta |
+| [ui-ux-bulk-upload.md](./ui-ux-bulk-upload.md) | Alur & validasi bulk upload Excel dan shapefile |
+| [ui-ux-help.md](./ui-ux-help.md) | Pola konten Bantuan (HELP-02) |
+| [../database/dashboard-snapshots.md](../database/dashboard-snapshots.md) | Kapan dashboard memakai snapshot vs live query |
+
 ### Prinsip
 
 - Komponen **Shadcn UI** + utility **Tailwind 4**
 - Warna pakai variabel `oklch` di `globals.css`
-- Font: **Acumin Pro Condensed** (brand WRI, lihat `brand.wri.org/fonts`) — dimuat via `@font-face` self-host di `public/fonts/` (`globals.css`, `font-display: swap`), fallback **Arial → Helvetica → sans-serif** sesuai rekomendasi WRI; `--font-sans` diarahkan ke stack ini dan Geist Sans dilepas (Geist Mono tetap untuk `--font-mono`) — #130. Sebelumnya hanya deklarasi `font-family` tanpa `@font-face` sehingga jatuh ke fallback generik. File `.woff2` berlisensi ditaruh manual (`acumin-pro-condensed-regular/bold.woff2`; panduan: `public/fonts/README.md`).
+- Font: **Acumin Pro Condensed** (brand WRI, lihat `brand.wri.org/fonts`) — dimuat via `@font-face` self-host di `public/fonts/` (`globals.css`, `font-display: swap`), fallback **Arial → Helvetica Neue → Helvetica → sans-serif** sesuai rekomendasi WRI; `--font-sans` diarahkan ke stack ini dan Geist Sans dilepas (Geist Mono tetap untuk `--font-mono`) — #130. Sebelumnya hanya deklarasi `font-family` tanpa `@font-face` sehingga jatuh ke fallback generik. File `.woff2` berlisensi ditaruh manual (`acumin-pro-condensed-regular/bold.woff2`; panduan: `public/fonts/README.md`).
 - Mobile-first responsive
 
 ### Tata Letak Admin
@@ -16,70 +26,6 @@
 - Header halaman (judul & deskripsi) wajib
 - Pembungkus data pakai `<Card>`
 - Form kompleks → pisah seksi, hindari scroll bertumpuk
-
-### Tipografi Tabel
-
-| Element | Styling |
-|---------|---------|
-| Header | `bg-muted/70 border-b-2` · `text-xs font-semibold uppercase tracking-wider text-muted-foreground` |
-| Data utama | `text-sm font-medium` |
-| Kode/ID | `text-sm font-mono text-muted-foreground` |
-| Data sekunder | `text-sm text-muted-foreground` |
-| Angka | `text-sm tabular-nums` |
-| Kosong/null | `—` + `text-muted-foreground` |
-| Status | `<Badge>` |
-
-### Aksi Tabel
-
-Untuk aksi dalam tabel (tombol Edit, Lihat, Hapus, Nonaktifkan, dll), ikuti aturan berikut untuk konsistensi:
-- **Posisi Kolom**: Kolom **Aksi** wajib diletakkan di bagian paling kiri tabel (kolom pertama).
-- **Lebar Kolom (Autofit)**: Kolom **Aksi** wajib memiliki lebar seminimal mungkin (autofit) agar tidak memakan ruang kolom lainnya. Gunakan kelas `w-[1%] whitespace-nowrap` pada `TableHead` dan `TableCell` pembungkus kolom Aksi.
-- **Format Tombol**: Gunakan tombol berbasis icon tanpa teks dengan properti `<Button variant="ghost" size="icon">`.
-- **Desain Icon & Tooltip**:
-  - Setiap tombol wajib memiliki properti `title` untuk aksesibilitas dan penjelasan singkat aksi.
-  - Aksi **Lihat**: Gunakan icon `<Eye className="h-4 w-4" />` dengan `title="Lihat"`.
-  - Aksi **Edit**: Gunakan icon `<Pencil className="h-4 w-4" />` dengan `title="Edit"`.
-  - Aksi **Nonaktifkan**: Gunakan icon `<Trash2 className="h-4 w-4" />` dengan `title="Nonaktifkan"`.
-  - Aksi **Cetak/PDF per baris** (#343): Gunakan icon `<Printer className="h-4 w-4" />` dengan `title` yang menyebut dokumennya (mis. `"Profil Petani (PDF)"`); saat baris itu diproses ikon berganti `<Loader2 className="h-4 w-4 animate-spin" />` dan tombolnya nonaktif — **baris lain tetap aktif** (pola `pdfLoadingId`).
-- **Visibilitas Berbasis Izin (Role & Permission)**: Semua tombol aksi dan tombol penambahan data (Tambah/Create) harus dilindungi (show/hide) secara dinamis menggunakan daftar izin (`permissions`) yang diperoleh dari backend:
-  - Tombol **Tambah / Create** di atas tabel di-render jika: `permissions.includes("CREATE")`.
-  - Tombol **Lihat / View** di-render jika: `permissions.includes("VIEW")`.
-  - Tombol **Edit** di-render jika: `permissions.includes("EDIT")`.
-  - Tombol **Nonaktifkan / Aktifkan kembali (Delete/Restore)** di-render jika: `permissions.includes("DELETE")`.
-  - Tombol **Cetak/PDF** di-render jika: `permissions.includes("PRINT")` — sama dengan tombol PDF di halaman detail (#245).
-- **Abstraksi Komponen (`TableActions`)**: Gunakan komponen pembungkus `<TableActions>` dari `@/components/shared` untuk merender seluruh tombol aksi baris tabel secara otomatis berdasarkan daftar izin (`permissions`) dan array konfigurasi `actions` untuk menghindari pengulangan kode inline. Tipe aksi: `view` · `edit` · `delete` (+ `isActive`) · **`print`** (#343: `title`, `loading` — generik, dipakai Daftar Petani untuk Profil Petani; menu lain tinggal menambah entri, bukan tombol inline).
-- **Loading Placeholder (`TableSkeleton`)**: Gunakan komponen `<TableSkeleton>` pada file `loading.tsx` dari menu tabel bersangkutan untuk menampilkan placeholder table-row loading saat data sedang dimuat secara asinkron, guna meminimalkan layout shift.
-- **Combobox filter (STANDAR — #211/#212/#217)**: filter dropdown ber-pencarian memakai primitif `FilterCombobox` (`src/components/shared/filter-combobox.tsx`; Popover + Command). Dua semantik: `allLabel` = filter opsional dengan item teratas "Semua …", `placeholder` = pilihan wajib gaya "Pilih …" (+ `disabled` untuk dependensi antar-filter). Teks empty baku: "{Entitas} tidak ditemukan." Pasangan **Distrik → Lembaga Petani cascade** (pilih distrik menyaring lembaga; lembaga di luar distrik baru di-reset ke "Semua") memakai komposisi `DistrictGroupFilter` (`district-group-filter.tsx`). Jangan menulis ulang markup Popover+Command per halaman — itu sumber drift yang diperbaiki #212.
-- **Tooltip data (STANDAR — #213)**: sel/bar yang membawa **angka** memakai tooltip terstruktur `StatTooltipContent` + `StatTooltipRow` (`src/components/shared/stat-tooltip.tsx`; judul + subtitle konteks + baris chip/label/angka/persen + footer bergaris) — bukan `title` native. `title` native tetap dipakai untuk hint aksi/label & helper truncate, serta grid ber-ratusan sel (mis. titik bulanan matriks BMP) demi performa render.
-
-### Paginasi Tabel
-
-Untuk tabel dengan pagination, ikuti aturan layout dan state berikut untuk konsistensi:
-- **State Halaman**: Gunakan 0-based index untuk variabel state `page` (halaman pertama = `0`).
-- **Reset Halaman**: Selalu reset `page` kembali ke `0` ketika input pencarian (`search`) atau dropdown filter berubah.
-- **Batas Indeks Aman**: Hitung indeks halaman aman (`safePage = Math.min(page, totalPages - 1)`) untuk mencegah tampilan halaman kosong jika jumlah data berkurang secara dinamis.
-- **Pilihan Ukuran Halaman**: Sediakan pilihan ukuran halaman (`[10, 25, 50, 100]`) menggunakan dropdown `<Select>` Shadcn UI.
-- **Layout Kontrol**:
-  - Bagian Kiri: Dropdown pemilihan ukuran halaman ("Tampilkan [dropdown] dari [total] data").
-  - Bagian Kanan: Indikator halaman ("Halaman [aktif] dari [total_halaman]") beserta tombol navigasi sebelumnya/selanjutnya menggunakan `<Button variant="outline" size="icon" className="h-8 w-8">` dan icon `<ChevronLeft>` / `<ChevronRight>` berukuran `h-4 w-4`.
-
-### Ekspor & Pilihan Kolom Tabel (DataTable)
-
-Untuk tabel yang menggunakan komponen `<DataTable>`, konfigurasi berikut harus didukung:
-- **Show/Hide Kolom**: Disediakan tombol dropdown "Kolom" untuk memilih visibilitas kolom.
-- **Pintasan pilih kolom (wajib, sejak 2026-08-29)**: setiap dropdown "Kolom" — baik lewat `<DataTable>` maupun selektor bespoke di halaman report — wajib menyediakan **Pilih semua · Kosongkan · Bawaan** di bawah label, plus penghitung `aktif/total` di label. Alasannya: begitu daftar kolomnya panjang (Laporan Lahan sudah 13 sejak #305), mengubah tampilan berarti belasan klik, dan pengguna kehilangan jalan pulang ke tampilan awal setelah bereksperimen — "Bawaan" itulah jalan pulangnya, jadi ia **bukan** pelengkap opsional dari dua tombol lain.
-  - Kolom identitas yang selalu tampil (mis. No / Lembaga / Nama Petani) berada **di luar** daftar toggleable, sehingga "Kosongkan" tidak pernah menghasilkan tabel tanpa kolom.
-  - Item ceklisnya memakai `onSelect={(e) => e.preventDefault()}` agar dropdown tidak menutup tiap satu kolom di-toggle.
-  - Referensi implementasi: `land-parcel-report-client.tsx` (#305). Rollout ke selektor lain: issue #308.
-- **Export Excel**:
-  - Disediakan tombol "Excel" untuk mengunduh data tabel saat ini (hasil pencarian/filter aktif).
-  - Diaktifkan dengan menyertakan prop `exportFilename` (misalnya `exportFilename="data-users"`).
-  - Kustomisasi mapping baris dilakukan melalui prop `getExportRow(row, index)` untuk meratakan relasi atau data kompleks.
-  - **Kunci `getExportRow` WAJIB sama dengan `column.key`** (wajib, sejak 2026-09-02 / #323). Nilai dipetik per kolom, bukan per baris. Kunci yang tidak dikembalikan jatuh ke nilai mentah baris dan **diperingatkan di console mode dev**, sekali per ekspor. Sebelum #323 kolom yang namanya tak cocok terbit **kosong tanpa satu pun tanda** — bukan error, bukan nilai salah, berkasnya terlihat sah dan bisa diedarkan. Pola ini menggigit tiga kali (dua di #160, lalu empat kolom paket Laporan Pelatihan) sebelum ditutup sebagai TD-015; **empat kolom di tiga halaman lain ternyata sudah lama kosong tanpa pernah dilaporkan siapa pun**.
-  - **Kolom kontrol wajib `exportable: false`** — kolom "Aksi" yang meminjam `key: "id"` demi memenuhi `keyof T` bukan data; tanpa penanda ini ia terbawa ke Excel berisi CUID.
-  - Kolom **turunan** (nilainya dihitung `render`, tanpa padanan mentah di baris) tetap perlu entri di `getExportRow` — fallback nilai mentah tidak bisa menghitungnya, dan fallback itu **hanya berlaku untuk nilai primitif**: kunci turunan yang meminjam field bernilai objek akan tetap kosong, tidak ditulis sebagai `[object Object]`.
-  - Parameter `index` adalah posisi dalam data **terurut & tersaring**, bukan nomor baris stabil. Untuk kolom nomor urut yang sudah tersimpan di baris, pakai nilai baris itu — kalau tidak, Excel menomori ulang 1..N mengikuti urutan tampilan sementara layar dan PDF menampilkan nomor aslinya.
-- **Posisi Tombol Tambah**: Tombol "Tambah / Create" di-render secara konsisten di paling kanan toolbar menggunakan prop `toolbarRight` dari `<DataTable>`.
 
 ### Pola UI Settings — Matriks & Tabel Bertingkat (#187B)
 
@@ -123,147 +69,6 @@ Data pribadi petani **wajib disensor di semua tampilan layar** via helper `src/l
 - **Excel/PDF export sengaja TIDAK disensor** — hasil export bisa diedit lalu di-upload ulang via bulk; nilai ter-sensor akan merusak data. PDF Farm Passport (dokumen resmi milik petani) juga tetap penuh — demikian pula **PDF Profil Petani** (#343, `src/lib/farmer-profile-pdf.ts`): NIK & tanggal lahir penuh di bagian Identitas.
 - Halaman baru yang menampilkan NIK/tanggal lahir wajib memakai helper ini — jangan render nilai mentah.
 
-### Pola UI/UX & Validasi Bulk Upload
-
-Untuk fitur bulk upload data massal (misalnya Petani, Lembaga Petani, atau Region), ikuti aturan alur dan antarmuka berikut:
-- **Alur Step-by-Step**:
-  1. Pilih context / parent entity (misalnya Lembaga Petani) di paling atas menggunakan searchable Combobox. Pilihan file input harus tetap *disabled* sampai context dipilih.
-  2. Pilih berkas Excel (`.xlsx`) atau CSV. Input file dinonaktifkan jika context di atas belum dipilih.
-  3. Pemetaan kolom dinamis (*Dynamic Column Mapping*): sediakan pemetaan drop-down kolom file dengan field target database, lengkap dengan aturan auto-matching.
-  4. Hasil validasi dan review: Tampilkan status per baris, jumlah ringkasan valid vs error, serta filter tampilan data.
-- **Smart Validations**:
-  - Validasi keunikan ID: Cek keunikan baik di tingkat berkas (*file-level*) maupun terhadap database (*DB-level*).
-  - Normalisasi data: Konversi format gender (L/P -> M/F), bersihkan format NIK (hanya angka 16 digit), dan parse berbagai format tanggal (Excel serial number atau string tanggal).
-- **Download Feedback**:
-  - Pengguna wajib diberikan opsi untuk mengunduh laporan hasil validasi baik data penuh (*full data*) maupun baris yang gagal saja (*error-only*), dengan menyertakan kolom "Keterangan" penjelasan error.
-
-### Pola Bulk Upload Shapefile (Data Geospasial)
-
-Untuk upload data geospatial menggunakan Shapefile (`.shp` dalam format ZIP), ikuti pattern berikut:
-- **Format Input**: ZIP file berisi `.shp`, `.shx`, `.dbf`, dan file pendukung lainnya
-- **Parsing**: Gunakan library `shpjs` untuk membaca geometri dan atribut dari Shapefile (parse buffer ZIP langsung, tanpa ekstraksi manual)
-- **Column Mapping**: 
-  - Sediakan dropdown mapping untuk setiap kolom dari DBF attributes ke field database target
-  - Auto-match kolom berdasarkan similarity name (fuzzy matching)
-  - Wajib mapping: Farmer ID/Name, Parcel ID, dan geometry field
-- **Geometry Validation**:
-  - Validasi tipe geometry (Polygon/MultiPolygon untuk land parcel)
-  - Extract centroid untuk location_lat/location_long
-  - Convert geometry ke GeoJSON format untuk field polygon
-  - Hitung area otomatis dari polygon geometry
-- **Smart Validations**:
-  - Validasi farmerId terhadap database (must exist & active)
-  - Check uniqueness parcelId per farmer (file-level + DB-level)
-  - Validasi geometry: tidak boleh null, harus valid polygon
-  - Optional fields: planting year (1900-2100), notes
-- **Preview & Save**:
-  - Tampilkan preview tabel dengan status validasi per row
-  - Show geometry info: area (ha), centroid coordinates, polygon complexity
-  - Bulk insert dengan transaction-based (all-or-nothing)
-  - Auto-increment revision untuk update parcel yang sudah ada
-- **Implementasi Reference**: Lihat `src/server/actions/bulk-upload-parcel.ts` (issue #88)
-
 ### Filter Lembaga Petani Ber-pencarian
 
 - **Wajib menggunakan Combobox**: Untuk mempermudah pencarian dan penyaringan data di semua halaman list master data (terutama data Petani) atau alur lainnya, semua komponen filter/dropdown **Lembaga Petani** wajib menggunakan komponen **searchable Combobox** (kombinasi Popover & Command Shadcn UI) dengan kemampuan pencarian teks, dan tidak diperbolehkan menggunakan dropdown Select box standar.
-
-### Fitur Geospasial (Integrasi MapLibre)
-
-Untuk fitur yang memerlukan visualisasi dan interaksi dengan data geospasial (koordinat, polygon, area):
-- **Map Display**: Gunakan MapLibre GL JS untuk menampilkan peta interaktif
-- **Kontrol "Zoom ke semua data" (wajib pada setiap menu peta full-bleed)**: Sediakan tombol ikon **`Maximize`** (`<button>` 9×9 `border`+`shadow-md`+`backdrop-blur`, `title`/`aria-label` **"Zoom ke semua data"**) yang mem-`fitBounds` ke **seluruh data yang sedang dimuat** — semua fitur (KT + lahan), terlepas dari toggle layer/kategori. Reuse fungsi `fitAll()` yang sama dengan auto-fit pertama kali (jangan duplikasi logika bounds), dan tampilkan tombol hanya bila ada data.
-- **Posisi kontrol peta (seragam)**: **basemap switcher** (light/dark/hybrid) + tombol **"Zoom ke semua data"** diletakkan di **stack pojok kanan-bawah** (`absolute bottom-4 right-4 flex flex-col items-end gap-2`, urutan: zoom di atas, basemap di bawah). Kontrol khusus lain (mis. ruler, daftar lahan di MAP-01) boleh di kanan-atas. Referensi: `map-canvas.tsx` (MAP-01), `map-bmp-canvas.tsx` (MAP-02).
-- **Panel kontrol minimizable**: Panel filter/legend floating (kiri) dan panel data (kanan) **wajib bisa di-minimize menjadi tombol ikon kecil** (9×9, `bg-primary`) agar peta tak tertutup — klik ikon untuk buka lagi. Panel kiri collapse ke ikon `SlidersHorizontal` (header punya tombol `Minimize2`); panel data kanan collapse ke ikon konteksnya. Referensi: `map-control-panel.tsx` (MAP-01), `map-bmp-control-panel.tsx` / `map-bmp-data-panel.tsx` (MAP-02).
-- **Fonts/Glyphs**: `text-font` pada symbol layer wajib **font tunggal** yang tersedia di server glyph (`fonts.openmaptiles.org`), mis. `["Open Sans Regular"]`. **Jangan** pakai fontstack gabungan (mis. `["Open Sans Regular", "Noto Sans Regular"]`) — server tidak melayaninya dan malah membalas HTML, sehingga MapLibre gagal parse PBF: `Unable to load glyph range 0, 0-255 / Unimplemented type: 4`.
-- **Polygon Viewer**: 
-  - Parse GeoJSON polygon dari database
-  - Render polygon sebagai layer di map dengan styling (fill color, stroke)
-  - Auto-fit bounds ke polygon extent
-  - Show centroid marker untuk reference point
-- **Coordinate Display**: Format koordinat sebagai `lat, long` dengan presisi 6 desimal
-- **Area Display**: Format area dalam hektar (ha) dengan 2 desimal, contoh: "2.50 ha"
-- **Geometry Storage**: Simpan polygon sebagai GeoJSON di field `Json` type Prisma
-- **Geospatial Calculations**:
-  - Centroid extraction dari polygon untuk lat/long fields
-  - Area calculation dari polygon geometry (dalam satuan hektar)
-  - Geometry validation (harus valid Polygon atau MultiPolygon)
-- **Component Pattern**: 
-  - Komponen map viewer per-konteks: `parcel-map-view.tsx` (detail/form lahan) dan `map-canvas.tsx` (Map Explorer) — belum ada satu `MapViewer` shared
-  - Support props: `polygon` (GeoJSON), `center` (lat/long), `zoom`, `height`
-  - Lazy load MapLibre untuk optimize bundle size
-- **Reference/Overlay Layers (WMS/tile pihak ketiga)**:
-  - Definisikan overlay sebagai daftar deklaratif (`MAP_OVERLAYS` di `map-overlays.ts`): `key`, `label`, `color`, `service` (ArcGIS REST MapServer), `source` (baris atribusi wajib), `legend` (daftar `{color, label}` kelas dari renderer upstream), opsional `exportLayers` (param `layers=show:N` bila MapServer multi-layer). **Saat overlay aktif, panel wajib menampilkan legend warna kelas + "Sumber: …" per overlay** (#215); atribusi MapLibre memakai `source` yang sama. Render sebagai `<Source type="raster">` MapLibre di bawah layer data, toggle per-layer + slider opacity bersama.
-  - **Wajib proxy tile via route same-origin** bila server upstream tidak mengirim header CORS (kasus geoportal Kemenhut & Satu Peta BIG). Ini pengecualian sempit atas aturan "no REST API layer" — endpoint gambar biner tidak bisa jadi Server Action. Gunakan whitelist per-`key` (bukan open proxy), `runtime = "nodejs"`, validasi param `bbox`, dan set `Cache-Control`. TLS verification **tetap strict**; bila satu upstream ber-chain rusak, tambahkan pengecualian per-overlay, jangan global (#217).
-- **User-added GIS layers (bring-your-own)**: dukung penambahan layer runtime oleh user (state session, tak dipersist) via 3 mode — WMS URL (raster), ZIP Shapefile & GeoJSON (vektor). Shapefile/GeoJSON **diparse di browser** (`shpjs` dynamic import, `JSON.parse`) → GeoJSON → render `<Source type="geojson">` (fill+line+circle agar semua tipe geometri tertangani). WMS user di-fetch **langsung tanpa proxy** (hindari open-proxy/SSRF) sehingga server WMS harus CORS-enabled. Auto-fit ke bounds layer vektor baru. Pasang `onError` pada `<Map>` agar kegagalan fetch tile tidak jadi error fatal.
-- **Layer titik api / hotspot (NASA FIRMS)**: deteksi kebakaran aktif VIIRS 375 m di-fetch server-side via **proxy same-origin** baru `api/map-hotspot` (bukan Server Action — `<Source>` MapLibre butuh GET URL). Proxy **wajib auth-guard** (`hasPermission("map-parcel","VIEW")`) agar bukan proxy anonim, menyembunyikan `FIRMS_MAP_KEY_FREE`, validasi `bbox`+`dayRange` (bilangan bulat desimal, kontrak `{1, 2, 5, 10, 30}`). **FIRMS membatasi `dayRange` ke `[1..5]` per request** (respons error teks `Expects [1..5]`, bukan CSV) — batas ini **per permintaan, bukan retensi**: parameter `DATE` (`/[bbox]/[dayRange]/[YYYY-MM-DD]`, = hari **pertama** jendela) membolehkan jendela lampau. Karena itu window UI = **24 jam / 5 / 10 / 30 hari** (`HOTSPOT_DAY_RANGES` di `src/lib/firms.ts` — satu sumber kebenaran klien & route, #284): rentang ≥5 hari dipecah `upstreamWindows()` jadi jendela 5 hari **semuanya ber-`DATE`** dari tanggal **UTC** server (termasuk jendela terbaru — jendela tanpa `DATE` mengikuti "hari ini" versi FIRMS dan bisa menyisakan celah sehari bila berbeda dari tanggal server, #285), di-fetch paralel lalu digabung `mergeHotspotCollections()` (dedup koordinat+waktu+satelit, salinan terbaru menang). `revalidate` **1 jam** jendela terakhir / **6 jam** jendela lampau; satu jendela gagal → **502** (tidak boleh menyajikan rentang yang diam-diam bolong); respons `Cache-Control: private` karena digerbangi permission. Semantik `DATE` diverifikasi manual 2026-08-24 — cek ulang bila FIRMS berubah: `curl -s ".../api/area/csv/$KEY/VIIRS_SNPP_NRT/100,-1.4,104.7,3/5/2026-08-15" | cut -d, -f6 | sort -u` harus mengembalikan 15–19 Agu (awal jendela), bukan 11–15 (akhir jendela). Kuota key: 5.000 transaksi/10 menit (bukan per hari); catatan: data cache Next menolak entri >2 MB (#286). Parsing CSV→GeoJSON di helper murni `src/lib/firms.ts` (teruji). Titik diwarnai per kebaruan + popup detail + disclaimer **"deteksi anomali panas, bukan konfirmasi kebakaran"** + atribusi `NASA FIRMS`. Area query dikunci ke bbox provinsi (mis. `RIAU_BBOX`). **Mode Bulan (`month=YYYY-MM`, #365, hanya Fire Alert):** bulan lampau diambil dari arsip **`VIIRS_SNPP_SP`** (tersedia 2012-01-20 … ±3 bulan lalu; Area API + `DATE` + cap 5 hari **sama**), sisanya NRT — sumber dipilih **per hari** oleh `monthWindows()` dari batas `data_availability/csv/$KEY/ALL` (cache 6 jam), **bukan hard-code**, karena FIRMS **memangkas jendela di luar ketersediaan tanpa galat** (diverifikasi 2026-09-22: `.../VIIRS_SNPP_SP/.../5/2026-06-28` hanya 28–30 Jun; `.../VIIRS_SNPP_NRT/.../5/2025-01-01` CSV kosong ber-header) — celah dilaporkan sebagai `coverage.missingDates` (foreign member GeoJSON), bukan diam-diam 0; ketersediaan gagal → 502. Cek ulang: `curl -s ".../api/data_availability/csv/$KEY/ALL" | grep VIIRS_SNPP`. `month` dan `dayRange` bersamaan → 400. Anggaran abort 30 s berlaku **per tahap**: `data_availability` berjalan serial di depan, jadi timernya disetel ulang sesudah tahap itu — kalau tidak, availability yang lambat menghabiskan jatah dan jendela yang sehat ikut diabort jadi 502 palsu. Seksi peta di PDF wajib ber-guard pindah halaman karena `drawMapImage` tidak pernah `addPage` sendiri.
-- **Tool ukur (ruler)**: ukur jarak & luas **geodesik** (haversine + spherical-excess) **tanpa dependensi tambahan** — klik menaruh titik, label per-segmen, undo/hapus/Esc. Helper murni di `map-geo.ts` (teruji); di sini juga `parcelLabelFit`/`geomBounds` untuk **label nama** (KT pada titik, petani pada poligon **hanya bila teks muat di dalam poligon** pada zoom aktif, wrap otomatis; `geomBounds` dihitung sekali per dataset).
-- **Popup lahan (STANDAR — #188)**: semua popup lahan (**Sebaran Lahan**, **Peta Lahan**, **Peta BMP**) memakai primitif bersama `src/components/shared/map-popup.tsx`. Struktur baku dari atas ke bawah: pita header ber-ikon (`MapPopupHeader`, `pr-8` menyisakan ruang tombol close) → highlight metrik (`MapPopupHighlight`, mis. Luas) → seksi collapsible (`MapPopupSection`) → baris atribut (`MapPopupRows`), lalu **footer aksi** `ParcelPopupActions` (tombol **Lihat Detail** gate `VIEW`, **Edit Lahan** gate `EDIT` pada `master-data-parcels`; slot `children` untuk aksi khusus peta spt "Profil Lahan" PDF). Props `<Popup>` react-map-gl distandarkan lewat `MAP_POPUP_PROPS` (anchor bawah, `maxWidth:"none"`, lebar dikontrol isi via `w-[…]`). Latar kartu/radius/bayangan/tombol-close diatur **global** di `globals.css` (`.maplibregl-popup-content`) — **jangan** memakai gaya popup default maplibre (kotak putih ber-padding). Popup **wajib selalu utuh di viewport peta** (#222): panggil `useMapPopupAutoPan(mapRef, popupKey)` di komponen peta (auto-pan saat popup terbuka & saat tinggi kartu berubah, mis. expand seksi; menunggu peta idle agar tidak memotong easeTo/fitBounds) — hook juga memberi kartu `max-height` setinggi viewport peta dengan scroll internal (CSS `.map-parcel-popup .maplibregl-popup-content` di `globals.css`). Popup juga **bisa digeser** agar tidak menutupi fitur yang dipilih: panggil `useMapPopupDrag(popupKey[, baseOffset])`, oper `offset`-nya ke `<Popup>` dan render `MapPopupDragHandle` (pil pegangan) sebagai anak pertama kartu — geseran lewat `setOffset` (popup tetap menempel titik saat pan/zoom) dan ter-reset tiap `popupKey` berganti; terpasang di 4 kanvas (Peta Lahan, Peta BMP, Sebaran Lahan, Fire Alert). Edit dari peta membuka `ParcelFormModal` via `ParcelEditModalHost` (lazy `getLandParcelById` + `getParcelFarmerOptions`, di-hoist ke container peta dengan `key={parcelId}` agar state reset). Refresh sesudah simpan: peta berbasis **server props** (Sebaran Lahan di detail Lembaga/Petani) cukup `router.refresh()`; peta yang **fetch di klien** (Peta Lahan/BMP) mengoper callback refetch (`onParcelUpdated`).
-- **Implementasi Reference**: 
-  - Popup lahan standar: `src/components/shared/map-popup.tsx` (+ `parcel-popup-actions.tsx`, `parcel-edit-modal-host.tsx` di `master-data/parcels/components/`)
-  - Map viewer (detail/form lahan): `src/app/(admin)/admin/master-data/parcels/components/parcel-map-view.tsx`
-  - Land parcel detail: `src/app/(admin)/admin/master-data/parcels/[id]/page.tsx`
-  - Map explorer (MAP-01): `src/app/(admin)/admin/map/parcel/` (peta full-bleed + filter floating + layer toggle + section "Peta Lainnya" overlay referensi + section "Tambah Data GIS Lain" + info popup accordion), server actions `src/server/actions/map.ts`, definisi overlay + helper GIS `src/app/(admin)/admin/map/parcel/map-overlays.ts`
-  - User-added GIS section: `src/app/(admin)/admin/map/parcel/map-custom-gis.tsx` (form WMS/Shapefile/GeoJSON + daftar layer)
-  - Tile proxy overlay: `src/app/api/map-overlay/[key]/route.ts` (forward ke ArcGIS `export`, toleran TLS chain upstream, whitelist per-overlay)
-  - Hotspot NASA FIRMS: proxy `src/app/api/map-hotspot/route.ts` (auth-guarded) + helper murni `src/lib/firms.ts` + client `src/app/(admin)/admin/map/parcel/map-hotspot.ts`; unit test `src/test/firms.test.ts`
-  - Ruler & label fit: `src/app/(admin)/admin/map/parcel/map-geo.ts` (jarak/luas geodesik + `parcelLabelFit`/`geomBounds`); unit test `src/test/map-geo.test.ts`
-  - Farm Passport PDF: `src/lib/farm-passport.ts` (jsPDF A4, 2 halaman: kartu ringkasan, layout lahan/polygon vektor, informasi & pemilik, Legalitas & Dokumen (#298), pelatihan, produksi) — di-generate dari `getParcelPassport`; sejak #343 isinya digambar `drawFarmPassport(doc, data, { appendix? })` (tanpa pass footer) dan `buildFarmPassportDoc` hanya pembungkus, sementara konstanta warna/margin + helper (`drawFooter`, `ensureSpace`, `sectionHeading`, `drawMapDecorations`, `fmt*`, `passportTableCommon`) diekspor untuk dipakai ulang — jangan menyalin gaya ke exporter PDF baru
-  - Profil Petani PDF (#343): `src/lib/farmer-profile-pdf.ts` — Bagian A ringkasan petani (identitas, 5 kartu, Daftar Lahan bernomor, peta sebaran penanda bernomor `drawParcelsOverviewMap`, pelatihan, produksi gabungan + rekap per lahan) + Bagian B lampiran Profil Lahan per lahan (`drawFarmPassport`), footer `Hal. n/N` menerus; data `getFarmerProfilePassport` (`farmer.ts`), tipe `src/types/farmer-profile.ts`; tombol header Detail Petani & aksi baris Daftar Petani lewat hook `farmers/farmer-profile-print.tsx` (dialog Lengkap / Ringkasan saja bila lahan > 10)
-
-### Pola Konten Bantuan (HELP-02)
-
-Materi Bantuan dibagi **tiga lapis** — jangan campur, karena tugasnya berbeda:
-
-| Lapis | Menjawab | Contoh |
-|---|---|---|
-| **tutorial** | "bagaimana caranya" | Mendaftarkan petani baru |
-| **konsep** | "apa itu / aturan mainnya" | Istilah domain, hak akses, soft delete |
-| **referensi** | "apa arti kolom ini" | Arti tiap kolom & tombol per halaman |
-
-Aturan penulisan tutorial (`src/content/help/tutorial/*.md`):
-
-- **Dua tingkat kedalaman dari SATU sumber.** Baris `1.` = Ringkas; baris `+` di
-  bawahnya = Detail, ditampilkan lewat toggle. **Jangan** membuat dua berkas
-  terpisah — keduanya akan cepat tidak sinkron.
-- Langkah utama **satu kalimat**; seluruh "kenapa" & "apa yang terlihat" ke `+`.
-- Bagian **`## Kalau bermasalah` wajib ada**, inline di tiap tutorial (keputusan
-  owner) — bukan dikumpulkan ke halaman troubleshooting terpisah.
-- **Tanpa tangkapan layar.** Kutip label tombol/kolom **persis** dari
-  `docs/product/pages/`; gambar cepat basi dan tidak ikut ter-review saat kode berubah.
-- `docs/product/pages/` adalah **sumber akurasi, bukan bahan salin** — katalog itu
-  ditulis untuk developer (path file, nama action, seluruh kolom tabel).
-- Frontmatter wajib: `title`, `icon`, `menuKey`, `permission`, `goal`, `href`,
-  `duration`. Kelengkapannya dijaga `src/test/help-content.test.ts`.
-- Tutorial di luar hak akses pembaca **ditandai, bukan disembunyikan** — panduan
-  tetap berguna saat pelatihan lintas peran.
-
-Interaksi (toggle kedalaman, lipat daftar isi) memakai **checkbox + CSS tanpa
-JavaScript**, konsisten sifat statis halaman Bantuan (#182/#183).
-
-### Pola Snapshot Dashboard
-
-> ⚠️ **Putuskan dulu: snapshot atau live query?** Snapshot bukan default otomatis untuk setiap dashboard baru.
->
-> | Pilih **snapshot** bila | Pilih **live query** bila |
-> |---|---|
-> | Agregasi berat / lintas jutaan baris (produksi bulanan, lahan) | Volume kecil–menengah (ratusan–ribuan baris) |
-> | Perlu jejak historis "angka per tanggal X" | Angka selalu harus mencerminkan kondisi terkini |
-> | Biaya query per request tak terterima | Beban operasional "generate snapshot dulu" tak sepadan |
->
-> Contoh snapshot: DASH-01 Main (`tbl_snapshot_main_dashboard`), DASH-04 BMP (`tbl_snapshot_bmp_dashboard`).
-> Contoh **live query**: **DASH-06 Dashboard Pelatihan** — `src/server/actions/dashboard-training.ts` query langsung lalu agregasi client-side lewat lib murni `src/lib/training-dashboard-aggregation.ts`; sengaja tanpa tabel snapshot (keputusan 2026-07-21, lihat `changelog.md`); juga **DA-03 Dashboard Ketersediaan Data** (`data-availability.ts` + `data-availability-aggregation.ts`, #193). Bila volume tumbuh, pola snapshot di bawah tetap jadi jalur migrasi.
->
-> Terlepas dari pilihannya, **lapisan RBAC tetap sama** (permission menu + access-context + `isActive`), dan agregasi tetap ditaruh di **lib murni yang bisa dites tanpa DB**.
-
-Untuk snapshot dashboard yang menyimpan historical state:
-- **Separate Table Per Dashboard**: Setiap dashboard punya snapshot table sendiri (e.g., `tbl_snapshot_main_dashboard`, `tbl_snapshot_bmp_dashboard`)
-- **Naming Convention**: `tbl_snapshot_<dashboard_name>` dengan model `<Dashboard>Snapshot`
-- **Common Fields**: `id`, `snapshotDate`, filter fields (nullable), `data` (Json), audit trail (`createdBy`, `isActive`, timestamps)
-- **Unique Constraint**: Kombinasi `snapshotDate` + filter fields untuk prevent duplicate snapshot
-- **Data Structure**: Store aggregated data di field `data Json` dengan struktur spesifik per dashboard
-- **RBAC Integration**: Apply RBAC filter saat generate snapshot, store only accessible data
-- **Why Not Single Table**: Type safety, query performance, maintainability, independent migrations
-- **Implementation Reference**: 
-  - Issue #99: DASH-01 Dashboard Snapshot
-  - Database schema doc: `docs/database/dashboard-snapshots.md` section "Dashboard Snapshot Pattern"
-  - Server actions: `src/server/actions/snapshot.ts` (untuk pattern reference)

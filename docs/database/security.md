@@ -31,23 +31,7 @@
 
 ### Pola Akses Data (RBAC)
 
-```mermaid
-flowchart TD
-    A[User Request] --> B{Role?}
-    B -->|SUPERADMIN| SA[Skip filter — akses semua]
-    B -->|Other| C{UserProvince exists?}
-    C -->|Yes| D[Filter: district IN province.districts]
-    C -->|No| E{UserDistrict exists?}
-    E -->|Yes| F[Filter: district IN user.districts]
-    E -->|No| G{UserFarmerGroup exists?}
-    G -->|Yes| H[Filter: farmerGroupId IN user.farmerGroups]
-    G -->|No| I[No data access — return empty]
-    
-    D --> J[Apply farmerGroup filter if exists]
-    F --> J
-    J --> K[Final query with WHERE clause]
-    H --> K
-```
+Ringkas (`getAccessContext()`, `src/lib/access-context.ts`): SUPERADMIN atau **tanpa assignment** → `ALL`; **hanya** `UserFarmerGroup` → `BY_FARMER_GROUP` (id Lembaga); ada `UserProvince`/`UserDistrict` → `BY_DISTRICT` (gabungan district; assignment Lembaga **diabaikan**); sesi kosong / user tak ditemukan → `BY_DISTRICT` kosong (tolak semua). Terjemahkan ke `where` lewat helper `src/lib/access-scope.ts`, jangan ternary manual. Rincian, contoh, dan pengecualian scope yang tercatat: [product/access-context.md](../product/access-context.md).
 
 ### Perlindungan Data Sensitif
 
@@ -68,7 +52,7 @@ flowchart TD
 
 Semua tabel memiliki audit fields (kecuali `LandMarkerCounter`):
 - `createdAt` — timestamp record dibuat
-- `createdBy` — user ID yang membuat (nullable saat seed)
+- `createdBy` — user ID yang membuat (nullable saat seed; wajib di tabel snapshot)
 - `modifiedAt` — timestamp terakhir diupdate
 - `modifiedBy` — user ID yang terakhir update
 
@@ -93,12 +77,12 @@ Rekomendasi production setup:
 Jangan commit ke Git:
 - `DATABASE_URL` — connection string dengan password
 - `NEXTAUTH_SECRET` — secret key untuk JWT signing
-- `AWS_SECRET_ACCESS_KEY` — S3 credentials
+- `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` — kredensial S3 (`src/lib/s3.ts`)
+- `FIRMS_MAP_KEY_*` — key NASA FIRMS (proxy titik api)
 
 Gunakan:
-- `.env.local` untuk development (gitignored)
-- Environment variables di CI/CD pipeline untuk staging/production
-- Secret manager (AWS Secrets Manager, Google Secret Manager) untuk production
+- Satu berkas per environment (`.env` = local, `.env.dev`, `.env.staging`, `.env.prod`; semuanya gitignored) — **jangan** membuat `.env.local` (Next.js memuatnya otomatis). Aturan lengkap: [../standards/environments.md](../standards/environments.md)
+- Staging & produksi: `.env` ditulis workflow deploy dari GitHub secret (`MIS_STAGING_ENV`, secret `deploy-main.yml`)
 
 ### Kepatuhan OWASP Top 10
 

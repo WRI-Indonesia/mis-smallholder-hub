@@ -13,7 +13,7 @@ Halaman: Laporan Petani (/admin/report/farmer)
 │   ├── Lembaga Petani * (combobox + search)
 │   └── Tombol Tampilkan Laporan
 ├── Empty state: Filter Wajib Belum Lengkap
-├── Header cetak (print-only): LAPORAN RINGKASAN PETANI
+├── Header cetak (print-only, izin PRINT): LAPORAN RINGKASAN PETANI
 ├── Kartu KPI
 │   ├── Total Petani
 │   ├── Total Lahan
@@ -46,10 +46,10 @@ Halaman: Laporan Petani (/admin/report/farmer)
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-farmer` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Petani" | Heading | `h1`; deskripsi "Analisis ringkasan dan rincian data petani"; disembunyikan saat cetak (`print:hidden`) |
 | "Distrik *" | Filter (combobox + search, wajib) | Placeholder tombol "Pilih Distrik"; placeholder cari "Cari distrik..."; empty "Distrik tidak ditemukan." |
-| "Lembaga Petani *" | Filter (combobox + search, wajib) | Disabled sampai Distrik dipilih; placeholder "Pilih Lembaga Petani"; cari "Cari lembaga petani..."; empty "Lembaga Petani tidak ditemukan." (`FilterCombobox`, `src/components/shared/district-group-filter.tsx`) |
+| "Lembaga Petani *" | Filter (combobox + search, wajib) | Disabled sampai Distrik dipilih; placeholder "Pilih Lembaga Petani"; cari "Cari lembaga petani..."; empty "Lembaga Petani tidak ditemukan." (`FilterCombobox`, `src/components/shared/filter-combobox.tsx`) |
 | "Tampilkan Laporan" | Tombol | Disabled sampai kedua filter terisi; toast "Laporan berhasil dimuat" |
 | Empty state | Kartu | "Filter Wajib Belum Lengkap" — "Silakan pilih Distrik dan Lembaga Petani untuk memuat ringkasan dan rincian data laporan petani." |
-| Header cetak | Blok print-only | "LAPORAN RINGKASAN PETANI" + subtitle + Distrik & Lembaga Petani |
+| Header cetak | Blok print-only | "LAPORAN RINGKASAN PETANI" + subtitle + Distrik & Lembaga Petani — hanya dirender bila punya izin `PRINT` (Ctrl+P tanpa izin tidak menghasilkan dokumen resmi) |
 | "Total Petani" | Kartu KPI | Badge "Petani" |
 | "Total Lahan" | Kartu KPI | Badge "Persil" |
 | "Total Luas Lahan" | Kartu KPI | Badge "Ha" |

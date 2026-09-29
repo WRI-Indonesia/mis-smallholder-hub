@@ -25,7 +25,7 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 │   ├── Ringkasan sprint — badge Minggu ini/Mendatang/Selesai · rentang · "hari ke-n dari 7" · judul
 │   │   · bilah progres POIN + "x/y butir selesai"
 │   ├── Kotak "Butuh keputusan owner (n)" — butir ⚖️ + teks keputusan + poin tertahan (hanya bila ada)
-│   ├── Kelompok butir: Dikerjakan · Belum dimulai · Selesai · Digeser (butir ⚖️ TIDAK diulang di sini)
+│   ├── Kelompok butir: "Dikerjakan" · "Belum dimulai" · "Selesai" · "Digeser ke sprint lain" (butir ⚖️ TIDAK diulang di sini)
 │   │   └── Baris: tombol (issue teks polos · titik kategori · ukuran "M · 3"; klik → Target & Keputusan)
 │   │       + tautan "#nnn ↗" ke GitHub DI LUAR tombol (tidak ada <a> bersarang dalam <button>)
 │   └── Backlog (bila dipilih) — daftar bernomor dari "#### Backlog …"

@@ -26,7 +26,7 @@ Halaman: Monev BMP (/admin/master-data/bmp-monev)
 │   ├── Tombol: Excel (EXPORT, `data-monev-bmp`)
 │   └── Tombol: Kolom
 ├── Tabel
-│   ├── Kolom: Petani (nama + ID), Lembaga Petani, Tahun, Tgl Survei, Skor, Kategori (badge),
+│   ├── Kolom: Petani (nama ber-link), ID Petani (kolom sendiri, #347), Lembaga Petani, Tahun, Tgl Survei, Skor, Kategori (badge),
 │   │          Lahan Dikunjungi, Penilai, Catatan, Status (SUPERADMIN)
 │   └── Aksi baris: Lihat → detail · Ubah (baris aktif saja) · Nonaktifkan / Aktifkan kembali
 └── Dialog

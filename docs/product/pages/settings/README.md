@@ -7,11 +7,11 @@
 | Menu key | `settings` |
 | URL | `/admin/settings` |
 | Icon | `Settings` |
-| Order | 2 |
+| Order | 99 |
 | Sub menu | 4 — User Management (`settings-users`), Menu Management (`settings-menu`), Role & Permission (`settings-roles`), Regions (`settings-regions`) |
 | Catatan | Tidak ada `page.tsx` pada route induk `/admin/settings`; menu induk hanya berfungsi sebagai grup navigasi di sidebar. |
 
-Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawah guard NextAuth (`middleware.ts`) dan tiga lapis keamanan (menu permission, access context, soft delete).
+Sumber metadata menu: `prisma/seeds/data/menu.csv`. Semua halaman berada di bawah guard NextAuth (`src/middleware.ts`) dan tiga lapis keamanan (menu permission, access context, soft delete).
 
 ## Diagram objek
 

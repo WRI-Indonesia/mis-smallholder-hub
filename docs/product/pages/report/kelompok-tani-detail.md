@@ -17,7 +17,7 @@ Halaman: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
 │   ├── Total Petani
 │   ├── Total Lahan
 │   └── Total Luas
-├── Kontrol: Buka semua / Tutup semua
+├── Toolbar: Lembaga Petani: <nama> · toggle Buka semua ⇄ Tutup semua
 ├── Empty state: Pilih Lembaga Petani / Tidak Ada Data
 ├── Roster collapsible
 │   │   └── Seksi Kelompok Tani
@@ -44,13 +44,13 @@ Halaman: Laporan Kelompok Tani (Detail) (/admin/report/kelompok-tani-detail)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `report-kelompok-tani` (`findTutorialForMenu`), dibuka di tab baru — tutorial yang sama dengan Summary |
+| `Panduan` | Tautan | `HelpHint` — ikon `?` di header (`menuKey="report-kelompok-tani-detail"`) menuju tutorial Bantuan `l-10-roster-kelompok-tani` (`findTutorialForMenu`), dibuka di tab baru |
 | "Laporan Kelompok Tani (Detail)" | Heading | Deskripsi "Roster per Lembaga Petani: rincian Kelompok Tani → daftar Petani (turunan data lahan)" |
 | "Distrik" | Filter (combobox + search, opsional) | Primitif `FilterCombobox` (#212); default "Semua Distrik", empty "Distrik tidak ditemukan." |
 | "Lembaga Petani *" | Filter (combobox + search, wajib) | Primitif `FilterCombobox` (#212); placeholder "Pilih Lembaga Petani"; memilih nilai langsung memuat laporan; empty "Lembaga Petani tidak ditemukan." |
 | Catatan filter | Teks bantu | "Pilih satu Lembaga Petani untuk menampilkan roster rinci. Filter Distrik opsional (mempersempit daftar Lembaga)." |
 | Kartu KPI | 5 kartu | "Kelompok Tani", "Total Petani", "Total Lahan", "Total Luas", **"Lahan NKT"** (#337) |
-| "Buka semua" / "Tutup semua" | Tombol | Default semua seksi tertutup |
+| Toolbar | Teks + tombol | "Lembaga Petani: <nama>" + satu tombol toggle "Buka semua" ⇄ "Tutup semua" (label mengikuti status semua seksi); default semua seksi tertutup |
 | Seksi collapsible | Header seksi | Satu seksi per Kelompok Tani dengan "`<n>` Petani · `<n>` Lahan · `<n>` Ha". Nilai kosong ditampilkan "(tidak diketahui)" |
 | Empty state | Kartu | "Pilih Lembaga Petani" / saat memuat "Memuat laporan..."; bila tanpa data: "Tidak Ada Data" — "Lembaga Petani ini belum memiliki lahan aktif dengan data Kelompok Tani." |
 

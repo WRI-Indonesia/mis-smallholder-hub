@@ -32,7 +32,7 @@ Sub Menu: Monev BMP (/admin/master-data/bmp-monev)
 | Icon | `ClipboardCheck` |
 | Order | `6` (sesudah Produksi) |
 | Jumlah halaman | 3 |
-| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR — cermin `master-data-training` (17 baris `role-permissions.csv`) |
+| Role dengan VIEW (seed) | SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR — cermin `master-data-training` (19 baris `role-permissions.csv`: SUPERADMIN semua termasuk `DELETE`; ADMIN `VIEW`/`CREATE`/`EDIT`/`EXPORT`/`PRINT`; OPERATOR & MANAGEMENT `VIEW`/`EXPORT`/`PRINT`; DONOR `VIEW`/`PRINT`) |
 
 ## Daftar halaman
 

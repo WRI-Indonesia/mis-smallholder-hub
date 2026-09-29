@@ -9,7 +9,7 @@ Empat environment, satu file per environment. **Tidak ada baris yang di-comment/
 | File | Database | S3 | Cara aktif |
 |------|----------|-----|-----------|
 | `.env` | **LOCAL** (`localhost:5432`) | **dev** (`mis-dev`) | Otomatis — satu-satunya file yang dibaca default oleh Next.js, Prisma, dan skrip |
-| `.env.staging-local` | **STAGING-LOCAL** (`localhost:5432/mis-staging-local`, snapshot prod 2026-09-14) | **dev** (`mis-dev`) | `npx dotenv -e .env.staging-local -- <perintah>` — DB lokal kedua khusus **uji migrasi** sebelum naik ke staging/prod; `.env`/`mis-dev` tetap untuk pengembangan harian. Sebelum `migrate dev` di sini: `pg_dump` dulu ke `scripts/dump-prod/<tanggal>/` |
+| `.env.staging-local` | **STAGING-LOCAL** (`localhost:5432/mis-staging-local`, snapshot prod 2026-09-28) | **dev** (`mis-dev`) | `npx dotenv -e .env.staging-local -- <perintah>` — DB lokal kedua khusus **uji migrasi** sebelum naik ke staging/prod; `.env`/`mis-dev` tetap untuk pengembangan harian. Sebelum `migrate dev` di sini: `pg_dump` dulu ke `scripts/dump-prod/<tanggal>/` |
 | `.env.dev` | DEV | **dev** (`mis-dev`) | `npx dotenv -e .env.dev -- <perintah>` |
 | `.env.staging` | STAGING | **dev** (`mis-dev`) | `npx dotenv -e .env.staging -- <perintah>` |
 | `.env.prod` | **PROD** (via tunnel `:1234`) | **prod** (`mis-main`) | `npx dotenv -e .env.prod -- <perintah>` — ⚠️ selalu sadar & eksplisit |
@@ -47,9 +47,9 @@ Ketiga DB non-prod — **local** (`localhost:5432/mis-dev`, Postgres.app **18** 
 
 ```bash
 mkdir -p scripts/dump-prod/$(date +%F)   # folder di-gitignore — dump berisi data pribadi petani, jangan pernah commit
-npx dotenv -e .env.prod -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-prod.dump'
+npx dotenv -e .env.prod -- sh -c '/opt/homebrew/opt/postgresql@18/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-prod.dump'
 psql "postgresql://postgres:postgres@localhost:5432/postgres" -c 'drop database "mis-dev";' -c 'create database "mis-dev";'
-/opt/homebrew/opt/libpq/bin/pg_restore --no-owner --no-privileges -d "postgresql://postgres:postgres@localhost:5432/mis-dev" scripts/dump-prod/$(date +%F)/mis-prod.dump
+/opt/homebrew/opt/postgresql@18/bin/pg_restore --no-owner --no-privileges -d "postgresql://postgres:postgres@localhost:5432/mis-dev" scripts/dump-prod/$(date +%F)/mis-prod.dump
 ```
 
 Dump membawa `_prisma_migrations`, jadi status migrasi tiap target otomatis sama dengan prod.
@@ -57,12 +57,12 @@ Dump membawa `_prisma_migrations`, jadi status migrasi tiap target otomatis sama
 Untuk **staging** langkahnya sama, dengan dua beda: wipe-nya `drop schema public cascade; create schema public;`, dan isi lama **di-backup dulu** karena wipe ini tidak bisa dibatalkan. Contoh di bawah kebetulan menyalin `mis-staging-local` → `mis-staging`; untuk menyegarkan staging **dari prod**, lewati baris kedua dan ganti berkas yang di-`pg_restore` menjadi `mis-prod.dump`:
 
 ```bash
-npx dotenv -e .env.staging      -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-before-refresh.dump'   # backup dulu
-npx dotenv -e .env.staging-local -- sh -c '/opt/homebrew/opt/libpq/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
+npx dotenv -e .env.staging      -- sh -c '/opt/homebrew/opt/postgresql@18/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-before-refresh.dump'   # backup dulu
+npx dotenv -e .env.staging-local -- sh -c '/opt/homebrew/opt/postgresql@18/bin/pg_dump "$DATABASE_URL" -Fc -f scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
 npx dotenv -e .env.staging -- sh -c 'psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
   -c "drop schema public cascade;" -c "create schema public;" -c "grant all on schema public to public;" \
   -c "drop schema if exists tiger cascade; drop schema if exists tiger_data cascade; drop schema if exists topology cascade;"'
-npx dotenv -e .env.staging -- sh -c '/opt/homebrew/opt/libpq/bin/pg_restore --no-owner --no-privileges -d "$DATABASE_URL" scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
+npx dotenv -e .env.staging -- sh -c '/opt/homebrew/opt/postgresql@18/bin/pg_restore --no-owner --no-privileges -d "$DATABASE_URL" scripts/dump-prod/'$(date +%F)'/mis-staging-local.dump'
 ```
 
 > **Jangan lupa `tiger`/`topology`.** Snapshot prod membawa schema kosong `tiger` & `topology` (sisa paket PostGIS). Keduanya **selamat** dari `drop schema public cascade`, lalu menabrak restore dengan `ERROR: schema "tiger" already exists` — dengan `--exit-on-error` restore berhenti di baris pertama dan DB tertinggal kosong. Drop keduanya bersamaan dengan `public`.

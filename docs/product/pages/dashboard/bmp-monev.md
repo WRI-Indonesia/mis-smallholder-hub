@@ -10,20 +10,20 @@ Sub menu `dashboard-bmp-monev`, satu halaman: `/admin/dashboard/bmp-monev`. Hasi
 Halaman: Dashboard Monev BMP (/admin/dashboard/bmp-monev)
 ├── Header
 │   ├── Judul + HelpHint · deskripsi + tanggal data · tautan ke BMP Dashboard (Produksi)
-│   └── Filter: Distrik (combobox) · Lembaga Petani (combobox, cascade) · Tahun survei (select, default tahun terbaru ber-data) — tersimpan di URL (?distrik&lembaga&tahun)
+│   └── Filter: Distrik (combobox) · Lembaga Petani (combobox, cascade) · Tahun survei (select "Survei {tahun}", default tahun terbaru ber-data) — tersimpan di URL (?distrik&lembaga&tahun)
 ├── Seksi 1 · Gambaran umum
 │   ├── Kartu KPI (4): Petani Dinilai (dari petani aktif) · Rerata Skor · Menerapkan BMP (Perintis+Praktisi+Teladan dari dinilai, #360) · Lembaga Tercakup
 │   └── Sebaran Kategori Petani: 4 ubin (jumlah + %, tooltip arti kategori) + batang 100% (urut terendah → tertinggi)
 ├── Seksi 2 · Lembaga Petani
 │   ├── Papan Lembaga Petani: baris = peringkat · nama (klik = filter Lembaga) · batang komposisi · rerata + badge · cakupan; urut Rerata / Cakupan / Abjad; legenda kategori
-│   └── Profil Kelembagaan (bila ada rincian): heatmap Lembaga × 14 indikator Lembaga (chip 0–3) + kolom Rerata + baris rerata kolom; urut Rerata / Abjad; ★ = ikut skor petani
-├── Seksi 3 · Kegiatan & indikator (hanya bila ada rincian)
+│   └── Profil Kelembagaan (bila ada rincian): heatmap Lembaga × indikator level LEMBAGA dari master (saat ini 14; chip 0–3) + kolom Rerata + baris rerata kolom; urut Rerata / Abjad; ★ = ikut skor petani
+├── Seksi 3 · Kegiatan & indikator (bila ada rincian skor kegiatan ATAU profil Lembaga tahun itu)
 │   ├── Profil 5 Kegiatan BMP: selektor A & B (Semua / Distrik / Lembaga — lepas dari filter halaman, B default = filter aktif) → radar skala 0–3 berpita 4 kategori (kiri) + tabel Kegiatan · Bobot · A · B · Selisih (kanan)
 │   └── Indikator Terlemah: 5 indikator berbobot rerata terendah (n dinilai · n tak dinilai)
-├── Seksi 4 · Tindak lanjut & tren
+├── Seksi 4 · Tindak lanjut & tren (bernomor 3 bila Seksi "Kegiatan & indikator" tidak tampil)
 │   ├── Petani Prioritas Pendampingan (10 terendah, kegiatan terlemah) · Petani Teladan (10 tertinggi, kegiatan terkuat) — dimuat on-demand, tautan ke detail penilaian
 │   ├── Sebaran Skor Petani (histogram 0,25, garis rerata) · Tren Kategori per Tahun Survei
-│   └── Rekap per Lembaga Petani (tabel dilipat; bawaan hanya Lembaga ber-data; "Tampilkan N belum dinilai"; Unduh Excel — EXPORT)
+│   └── Rekap per Lembaga Petani (tabel dapat dilipat — tombol ikon "Lipat"/"Buka", default terbuka; bawaan hanya Lembaga ber-data; toggle "Tampilkan N belum dinilai" ↔ "Sembunyikan yang belum dinilai"; "Unduh Excel" — EXPORT)
 └── Empty state: "Belum ada penilaian Monev BMP" → tautan Master Data › Monev BMP
 ```
 
@@ -39,15 +39,15 @@ Halaman: Dashboard Monev BMP (/admin/dashboard/bmp-monev)
 
 | Objek | Tipe | Keterangan |
 |---|---|---|
-| Filter Distrik / Lembaga / Tahun | Combobox · Select | `useUrlFilters` (TD-021): `?distrik=&lembaga=&tahun=`; tahun hanya yang punya data; Lembaga menyempit mengikuti Distrik |
+| Filter Distrik / Lembaga / Tahun | Combobox · Select | `useUrlFilters` (TD-021): `?distrik=&lembaga=&tahun=`; select tahun menampilkan "Survei {tahun}" (placeholder "Tahun", nonaktif bila belum ada data), opsinya hanya tahun yang punya data; Lembaga menyempit mengikuti Distrik |
 | Kartu KPI (4) | Kartu | Petani Dinilai (pembagi = **seluruh petani aktif** Lembaga terpilih, termasuk yang belum disurvei), Rerata Skor (0–3), Menerapkan BMP (Perintis + Praktisi + Teladan = skor ≥ 1,00; pembagi = dinilai), Lembaga Tercakup (dari Lembaga aktif) |
 | Sebaran Kategori Petani | Kartu hero | `bmpMonevTotals` → 4 ubin + batang 100%; palet ordinal abu → hijau makin gelap (validasi skill dataviz); tiap ubin ber-tooltip arti kategori dari `BMP_ASSESSMENT_CATEGORIES[].description` (ikon Info, ubin bisa difokus) |
 | Papan Lembaga Petani | Kartu | `bmpMonevGroupRows`; komposisi = proporsi dari petani **dinilai**; cakupan = dinilai ÷ aktif; klik nama → `setGroupId` (tombol "Semua Lembaga" melepas) |
-| Profil Kelembagaan | Heatmap | `bmpMonevGroupProfiles(sort)` + `bmpMonevGroupIndicatorAverages`; hanya Lembaga yang punya penilaian Lembaga tahun itu |
+| Profil Kelembagaan | Heatmap | `bmpMonevGroupProfiles(sort)` + `bmpMonevGroupIndicatorAverages`; kolom = indikator master ber-level `LEMBAGA` (urut `sortOrder`, jumlahnya mengikuti master — saat ini 14); hanya Lembaga yang punya penilaian Lembaga tahun itu |
 | Profil 5 Kegiatan BMP | Radar + tabel | `BmpMonevActivityRadar` → `bmpMonevActivityProfile(subset)` dari **seluruh** `groups` (bukan hasil filter) untuk A dan B; SVG bersama `components/shared/bmp-activity-radar-svg.tsx` (skala 0–3, pita kategori redup, seri biru/oranye tervalidasi CVD); maks kegiatan = `bmpActivityMaxScore` (kriteria alternatif Gulma dihitung sekali → 3,00) |
 | Indikator Terlemah | Daftar bar | `bmpMonevWeakestIndicators` atas `indicatorStats` (rerata per Lembaga-tahun-indikator, hanya INDIVIDU berbobot) |
 | Petani Prioritas / Teladan | Daftar | `BmpMonevPriorityFarmers order="lowest"|"highest"`; kegiatan terlemah/terkuat dari `recomputeBmpScore` **termasuk skor Lembaga** (supaya kelima kegiatan sebanding); tautan `/admin/master-data/bmp-monev/{id}` |
 | Sebaran Skor · Tren | Histogram · Stacked bar | `bmpMonevScoreHistogram` (12 bin × 0,25) · `bmpMonevTrend` (per tahun survei, tahun aktif ditebalkan) |
-| Rekap per Lembaga | Tabel dilipat | `BmpMonevGroupTable`; Excel `monev-bmp-per-lembaga-{tahun}.xlsx` (izin EXPORT) selalu memuat semua Lembaga |
+| Rekap per Lembaga | Tabel dapat dilipat | `BmpMonevGroupTable`; judul "Rekap per Lembaga Petani ({tahun})" + "— {n} ber-data, {n} belum dinilai"; tombol "Tampilkan {n} belum dinilai" / "Sembunyikan yang belum dinilai" (hanya saat terbuka & ada Lembaga belum dinilai); ikon "Lipat"/"Buka"; tombol "Unduh Excel" → `monev-bmp-per-lembaga-{tahun}.xlsx`, sheet "Per Lembaga" (izin EXPORT), selalu memuat semua Lembaga |
 
 Satu penilaian per petani-tahun di seluruh kartu = baris **berskor tertinggi** (`yearAssessments`), termasuk profil kegiatan.

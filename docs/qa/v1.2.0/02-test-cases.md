@@ -10,7 +10,7 @@ Format: `### TC-<issue>-<nn> · <judul> [P0] [regresi] (<menit> mnt)` lalu `Pras
 
 ## #317 — Tumpang Tindih Lahan (Fase 2, tab Tumpang Tindih)
 
-Prasyarat rilis (bukan kasus uji, cek sebelum run): kode rilis **sudah ter-deploy sebelum** seed menu — ikon `Layers` baru di `ICON_MAP`; seed hanya menu `data-analyst-parcel-overlap` + 8 izin (lihat `docs/project/changelog.md` Decision Log 2026-09-24 soal drift judul 2 menu Ketersediaan Data).
+Prasyarat rilis (bukan kasus uji, cek sebelum run): kode rilis **sudah ter-deploy sebelum** seed menu — ikon `Layers` baru di `ICON_MAP`; seed hanya menu `data-analyst-parcel-overlap` + 8 izin (lihat `docs/project/changelog/2026-09.md` Decision Log 2026-09-24 soal drift judul 2 menu Ketersediaan Data).
 
 ### TC-317-01 · Menu & izin per peran [P0] [regresi] (5 mnt)
 Prasyarat: akun SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR di lingkungan uji.
