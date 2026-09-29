@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { minTime, minTimeAsync } from "./perf-utils";
 import bcrypt from "bcryptjs";
 import { computeCompleteness, computePelatihanDomain } from "@/lib/data-completeness";
@@ -53,6 +53,12 @@ import {
   type BmpMonevIndicator,
   type BmpMonevIndicatorStat,
 } from "@/lib/bmp-monev-dashboard-aggregation";
+
+
+// `minTime` menjalankan tiap blok ≥ 3 putaran (#311): test berambang ±1,5 dtk
+// bisa butuh ±4,5 dtk + pembuatan data saat mesin sibuk — melewati timeout
+// bawaan vitest 5 dtk dan gagal sebagai "timed out" alih-alih lulus stabil.
+vi.setConfig({ testTimeout: 30_000 });
 
 describe("Performance - Auth operations", () => {
   it("bcrypt hash completes under 500ms (cost factor 10)", async () => {
