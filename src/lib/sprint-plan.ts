@@ -279,3 +279,33 @@ export function sprintComposition(sprint: Pick<Sprint, "items">): { category: Sp
     points: sprint.items.filter((i) => i.status !== "moved" && i.category === category).reduce((s, i) => s + i.points, 0),
   }));
 }
+
+/**
+ * Poin per status satu sprint, urutan tumpukan kolom Analisa (bawah → atas):
+ * selesai, dikerjakan, menunggu keputusan, belum dimulai, lalu digeser. Butir
+ * digeser ikut agar tinggi kolom = komitmen awal (sama dengan `sprintVelocity`).
+ */
+export const SPRINT_STACK_ORDER: SprintItemStatus[] = ["done", "progress", "decision", "todo", "moved"];
+
+export function sprintStatusPoints(sprint: Pick<Sprint, "items">): Record<SprintItemStatus, number> {
+  const out: Record<SprintItemStatus, number> = { done: 0, progress: 0, decision: 0, todo: 0, moved: 0 };
+  for (const i of sprint.items) out[i.status] += i.points;
+  return out;
+}
+
+/**
+ * Ringkasan seluruh rencana untuk kartu Analisa. `points` tanpa butir digeser
+ * (sudah ditulis ulang di sprint tujuannya — menghitungnya dua kali menggelembungkan
+ * rencana); `pendingShare` = porsi poin rencana yang tertahan keputusan owner.
+ */
+export function planTotals(plan: Pick<SprintPlan, "sprints">) {
+  const points = plan.sprints.reduce((t, s) => t + sprintProgress(s).totalPoints, 0);
+  const pending = plan.sprints.reduce((t, s) => t + sprintStatusPoints(s).decision, 0);
+  return {
+    sprints: plan.sprints.length,
+    points,
+    pendingPoints: pending,
+    pendingShare: points === 0 ? 0 : pending / points,
+    end: plan.sprints.length === 0 ? null : plan.sprints[plan.sprints.length - 1].end,
+  };
+}
