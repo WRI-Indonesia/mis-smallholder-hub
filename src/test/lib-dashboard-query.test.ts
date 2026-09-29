@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
  * Kueri Main Dashboard `src/lib/dashboard-query.ts` ASLI — komposisi `where`
- * (scope akses + filter distrik/Lembaga/tahun bergabung) dan opsi filter per
- * mode akses. `prisma`/`getAccessContext` di-mock; filter scope asli.
+ * (scope akses + filter distrik/Lembaga/tahun bergabung). `prisma`/
+ * `getAccessContext` di-mock; filter scope asli.
  */
 const getAccessContext = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/access-context", async () => ({
@@ -14,11 +14,10 @@ vi.mock("@/lib/access-context", async () => ({
 const db = vi.hoisted(() => ({
   farmerGroup: { findMany: vi.fn() },
   farmer: { findMany: vi.fn() },
-  district: { findMany: vi.fn() },
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
-const { aggregateDashboardData, getDashboardFilterOptions } = await import("@/lib/dashboard-query");
+const { aggregateDashboardData } = await import("@/lib/dashboard-query");
 
 const GROUP = {
   id: "g1", name: "A", code: "A1", districtId: "d1", district: { name: "Siak" }, locationLat: null, locationLong: null,
@@ -30,7 +29,6 @@ beforeEach(() => {
   getAccessContext.mockResolvedValue({ mode: "ALL" });
   db.farmerGroup.findMany.mockResolvedValue([]);
   db.farmer.findMany.mockResolvedValue([]);
-  db.district.findMany.mockResolvedValue([]);
 });
 
 describe("aggregateDashboardData — where Lembaga", () => {
@@ -66,28 +64,5 @@ describe("aggregateDashboardData — where Lembaga", () => {
     expect(db.farmerGroup.findMany.mock.calls[0][0].where).not.toHaveProperty("joinedYear");
     expect(db.farmer.findMany.mock.calls[0][0].where).toEqual({ isActive: true, farmerGroupId: { in: ["g1"] }, joinedYear: 2024 });
     expect(data.stats.totalPetani).toBe(1);
-  });
-});
-
-describe("getDashboardFilterOptions", () => {
-  it("BY_DISTRICT → distrik dibatasi id; BY_FARMER_GROUP → distrik yang punya Lembaga aktif ter-assign", async () => {
-    getAccessContext.mockResolvedValueOnce({ mode: "BY_DISTRICT", ids: ["d1"] });
-    await getDashboardFilterOptions();
-    getAccessContext.mockResolvedValueOnce({ mode: "BY_FARMER_GROUP", ids: ["g1"] });
-    await getDashboardFilterOptions();
-    expect(db.district.findMany.mock.calls[0][0].where).toEqual({ isActive: true, id: { in: ["d1"] } });
-    expect(db.district.findMany.mock.calls[1][0].where).toEqual({
-      isActive: true,
-      farmerGroups: { some: { id: { in: ["g1"] }, isActive: true } },
-    });
-    expect(db.farmer.findMany.mock.calls[1][0].where.farmerGroup).toEqual({ isActive: true, id: { in: ["g1"] } });
-  });
-
-  it("ALL → semua distrik aktif; tahun bergabung unik, null dibuang, urut menurun", async () => {
-    db.district.findMany.mockResolvedValue([{ id: "d1", name: "Siak" }]);
-    db.farmer.findMany.mockResolvedValue([{ joinedYear: 2019 }, { joinedYear: null }, { joinedYear: 2024 }, { joinedYear: 2021 }]);
-    const opts = await getDashboardFilterOptions();
-    expect(db.district.findMany.mock.calls[0][0].where).toEqual({ isActive: true });
-    expect(opts).toEqual({ districts: [{ id: "d1", name: "Siak" }], joinedYears: [2024, 2021, 2019] });
   });
 });

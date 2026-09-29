@@ -62,8 +62,14 @@ export async function uploadTrainingEvidence(
     }
 
     const key = buildTrainingEvidenceKey(activity.id, file.name, Date.now());
-    // Nama tampilan disimpan di `evidenceName` (Zod max 255).
-    const filename = file.name.slice(0, 255);
+    // Nama tampilan disimpan di `evidenceName` (Zod max 255 unit UTF-16). Potong per
+    // KARAKTER — `slice` bisa memutus pasangan surrogate (emoji) → encodeURIComponent melempar.
+    const chars = Array.from(file.name);
+    let filename = file.name;
+    while (filename.length > 255) {
+      chars.pop();
+      filename = chars.join("");
+    }
 
     // ─── Upload to bucket ─────────────────────────────────────────────────
     const buffer = Buffer.from(await file.arrayBuffer());

@@ -34,13 +34,15 @@ interface Props {
   item: MenuItemData | null;
   /** Judul menu induk (bila ada) — ditampilkan, bukan dipilih. */
   parentTitle: string | null;
+  /** Saklar Aktif butuh izin DELETE (server menolak tanpa itu). */
+  canToggleActive: boolean;
 }
 
 /**
  * Edit menu = hanya Aktif & Visible (#364). Struktur (judul, urutan, induk, URL,
  * ikon) ditampilkan baca-saja: sumbernya `menu.csv`, dan seed rilis menimpanya.
  */
-export function MenuFormModal({ open, onClose, item, parentTitle }: Props) {
+export function MenuFormModal({ open, onClose, item, parentTitle, canToggleActive }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -56,7 +58,8 @@ export function MenuFormModal({ open, onClose, item, parentTitle }: Props) {
     try {
       result = await updateMenuItem({
         id: item.id,
-        isActive: form.get("isActive") === "on",
+        // Saklar disabled tidak ikut FormData — kirim nilai tersimpan.
+        isActive: canToggleActive ? form.get("isActive") === "on" : item.isActive,
         isVisible: form.get("isVisible") === "on",
       });
     } catch {
@@ -106,8 +109,8 @@ export function MenuFormModal({ open, onClose, item, parentTitle }: Props) {
 
           <div className="flex gap-6">
             <div className="flex items-center gap-2">
-              <Switch id="isActive" name="isActive" defaultChecked={item.isActive} />
-              <Label htmlFor="isActive">Aktif</Label>
+              <Switch id="isActive" name="isActive" defaultChecked={item.isActive} disabled={!canToggleActive} />
+              <Label htmlFor="isActive" title={canToggleActive ? undefined : "Butuh izin Delete pada menu ini"}>Aktif</Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch id="isVisible" name="isVisible" defaultChecked={item.isVisible} />

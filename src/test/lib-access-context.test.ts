@@ -58,7 +58,7 @@ describe("getAccessContext — dedup per request (#252)", () => {
     expect(db.user.findFirst.mock.calls[0][0]).toEqual({
       where: { id: "u1", isActive: true },
       select: {
-        provinces: { select: { province: { select: { districts: { where: { isActive: true }, select: { id: true } } } } } },
+        provinces: { select: { province: { select: { districts: { select: { id: true } } } } } },
         districts: { select: { districtId: true } },
         farmerGroups: { select: { farmerGroupId: true } },
       },

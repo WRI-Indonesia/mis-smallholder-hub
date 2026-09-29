@@ -21,9 +21,15 @@ describe("kunci bukti pelatihan", () => {
     ["tanpa timestamp", "training/ta1/a.pdf"],
     ["segmen tambahan", "training/ta1/1-a/b.pdf"],
     ["huruf besar (bukan hasil sanitasi)", "training/ta1/1-A.pdf"],
+    ["format lama milik aktivitas lain", "training/evidence/2026/06/ta2/a.pdf"],
     ["nama kosong", "training/ta1/1-"],
   ])("ditolak: %s", (_, key) => {
     expect(isTrainingEvidenceKeyFor(key, "ta1")).toBe(false);
+  });
+
+  it("kunci lama (sebelum #385) dengan '..' di NAMA tetap milik aktivitasnya — bukan traversal tanpa '/' (review wrap-up)", () => {
+    expect(isTrainingEvidenceKeyFor("training/ta1/1727600000000-notulen..final.pdf", "ta1")).toBe(true);
+    expect(isTrainingEvidenceKeyFor("training/evidence/2026/06/ta1/notulen..final.pdf", "ta1")).toBe(true);
   });
 
   it("activityId tak aman (/, ..) → pembentuk melempar, pemeriksa menolak", () => {

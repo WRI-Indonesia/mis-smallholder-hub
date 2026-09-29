@@ -281,11 +281,16 @@ describe("tulis — Zod, audit, soft delete", () => {
     expect(db.trainingActivity.update.mock.calls[3][0].data).toMatchObject({ evidenceKey: null, evidenceName: null });
   });
 
-  it("#385 updateTrainingActivity: kunci asing yang SUDAH tersimpan tidak bisa dipertahankan", async () => {
+  it("#385 kunci tersimpan yang TIDAK berubah tak memblokir edit kolom lain; tautannya tetap tertutup (review wrap-up)", async () => {
+    // Kunci lama tak lolos pola (mis. objek asing sebelum #385, atau nama ber-"..").
     db.trainingActivity.findFirst.mockResolvedValue({ id: "ta-1", evidenceKey: "land-marker/x/1-foto.jpg" });
-    const res = await actions.updateTrainingActivity({ id: "ta-1", ...activityInput(), evidenceKey: "land-marker/x/1-foto.jpg" });
-    expect(res.success).toBe(false);
-    expect(db.trainingActivity.update).not.toHaveBeenCalled();
+    const res = await actions.updateTrainingActivity({ id: "ta-1", ...activityInput({ location: "Balai baru" }), evidenceKey: "land-marker/x/1-foto.jpg" });
+    expect(res.success).toBe(true);
+    // Sisi baca tetap tidak membuat presigned URL untuk kunci itu.
+    expect((await actions.getTrainingActivityById("ta-1"))?.evidenceUrl).toBeNull();
+    // Kunci asing yang BARU (berbeda dari tersimpan) tetap ditolak.
+    const swap = await actions.updateTrainingActivity({ id: "ta-1", ...activityInput(), evidenceKey: "land-marker/y/2-lain.jpg" });
+    expect(swap.success).toBe(false);
   });
 
   it("#385 getTrainingActivityById: presigned URL hanya untuk kunci milik pelatihan ini", async () => {

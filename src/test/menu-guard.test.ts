@@ -163,6 +163,16 @@ describe("reactivateMenuItem — pasangan deleteMenuItem (#237)", () => {
     expect((await actions.deleteMenuItem("m-1")).success).toBe(true);
   });
 
+  it("Edit → nyalakan Aktif saat induk nonaktif → ditolak, sama dengan tombol Aktifkan kembali (review wrap-up)", async () => {
+    db.menuItem.findUnique.mockImplementation(async ({ where }: { where: { id?: string; key?: string } }) =>
+      where.id ? { isActive: false, parentKey: "data-analyst" } : { title: "Data Analyst", isActive: false });
+    const res = await actions.updateMenuItem(fullPayload({ isActive: true }));
+    expect(res).toEqual({ success: false, error: expect.stringMatching(/Induk menu "Data Analyst" masih nonaktif/) });
+    expect(db.menuItem.update).not.toHaveBeenCalled();
+    // Visible saja (Aktif tetap mati) tidak memeriksa induk.
+    expect((await actions.updateMenuItem(fullPayload({ isActive: false, isVisible: true }))).success).toBe(true);
+  });
+
   it("pesan izin sama di ketiga jalur yang mengubah Aktif", async () => {
     hasPermission.mockImplementation(async (_m: string, level: string) => level === "EDIT");
     const msg = "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu";

@@ -76,6 +76,14 @@ describe("uploadTrainingEvidence", () => {
     expect(res.success && res.data!.filename.length).toBe(255);
   });
 
+  it("nama > 255 dengan emoji di batas potong → tidak memutus surrogate, unggah tetap berhasil (review wrap-up)", async () => {
+    const res = await uploadTrainingEvidence(form(pdf(`${"a".repeat(254)}😀 lanjutan.pdf`)));
+    expect(res.success).toBe(true);
+    const name = res.success ? res.data!.filename : "";
+    expect(name.length).toBeLessThanOrEqual(255);
+    expect(() => encodeURIComponent(name)).not.toThrow();
+  });
+
   it("tanpa file / tanpa activityId / bukan PDF / > 10 MB → ditolak tanpa unggah", async () => {
     expect((await uploadTrainingEvidence(form(null))).success).toBe(false);
     expect((await uploadTrainingEvidence(form(pdf(), null))).success).toBe(false);

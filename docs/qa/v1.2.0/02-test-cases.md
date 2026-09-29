@@ -190,7 +190,7 @@ Langkah:
 1. Edit satu menu uji, matikan **Aktif**, **Simpan**.
 2. Edit menu yang sama, matikan **Visible** saja, **Simpan**; lalu kembalikan.
 Harapan:
-- Langkah 1: toast "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu"; menu tetap aktif.
+- Langkah 1: saklar **Aktif** tidak bisa diubah (non-aktif, keterangan "Butuh izin Delete…"); menu tetap aktif.
 - Langkah 2: tersimpan (Visible cukup izin Edit).
 
 ## #237 — "Aktifkan kembali" Menu Management

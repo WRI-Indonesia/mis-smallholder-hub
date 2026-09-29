@@ -184,13 +184,16 @@ export async function updateTrainingActivity(input: UpdateTrainingActivityInput)
   // Verify activity exists, is active, and is within the user's scope before updating
   const existing = await prisma.trainingActivity.findFirst({
     where: { id, isActive: true, ...farmerAccessFilter(access) },
-    select: { id: true },
+    select: { id: true, evidenceKey: true },
   });
   if (!existing) return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda" };
 
-  // #385: kunci bukti hanya boleh kosong atau milik pelatihan INI (format sekarang
-  // / lama) — bukan objek lain di bucket yang lalu diberi presigned URL.
-  if (data.evidenceKey && !isTrainingEvidenceKeyFor(data.evidenceKey, id)) {
+  // #385: kunci bukti BARU hanya boleh kosong atau milik pelatihan INI (format
+  // sekarang / lama) — bukan objek lain di bucket. Kunci yang tidak berubah tidak
+  // divalidasi ulang: form selalu mengirim balik kunci lama, dan kunci lama yang
+  // tak lolos pola tak boleh memblokir edit kolom lain — tautannya tetap tertutup
+  // oleh pemeriksaan sisi baca (`getTrainingActivityById`).
+  if (data.evidenceKey && data.evidenceKey !== existing.evidenceKey && !isTrainingEvidenceKeyFor(data.evidenceKey, id)) {
     return { success: false, error: { evidenceKey: ["Berkas bukti tidak valid untuk pelatihan ini — unggah ulang berkasnya"] } };
   }
 

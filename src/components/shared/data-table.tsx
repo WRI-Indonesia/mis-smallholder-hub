@@ -139,7 +139,9 @@ const INNER_CONTROL = "button,a,input,select,textarea,[role=button],[role=checkb
 export function isRowSelectionClick(target: EventTarget | null, row: Pick<Element, "contains">): boolean {
   if (!target || !row.contains(target as Node)) return false;
   const el = typeof (target as Element).closest === "function" ? (target as Element).closest(INNER_CONTROL) : null;
-  return !el || el === row;
+  // `closest` bisa naik melewati baris (tabel di dalam kartu/tombol yang bisa diklik) —
+  // hanya kontrol DI DALAM baris yang membatalkan pemilihan.
+  return !el || el === row || !row.contains(el as Node);
 }
 
 /**

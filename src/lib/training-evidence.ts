@@ -34,7 +34,7 @@ export function buildTrainingEvidenceKey(activityId: string, fileName: string, t
 export function isTrainingEvidenceKeyFor(key: string, activityId: string): boolean {
   if (!SAFE_ID_SEGMENT.test(activityId)) return false;
   const legacy = key.match(/^training\/evidence\/\d{4}\/\d{2}\/([^/]+)\/([^/]+)$/);
-  if (legacy) return legacy[1] === activityId && !legacy[2].includes("..");
+  if (legacy) return legacy[1] === activityId;
   const prefix = `training/${activityId}/`;
   if (!key.startsWith(prefix)) return false;
   const rest = key.slice(prefix.length);
@@ -42,5 +42,7 @@ export function isTrainingEvidenceKeyFor(key: string, activityId: string): boole
   if (dash <= 0) return false;
   const ts = rest.slice(0, dash);
   const name = rest.slice(dash + 1);
-  return /^\d+$/.test(ts) && name.length > 0 && SAFE_NAME.test(name) && !name.includes("..");
+  // Titik ganda di NAMA aman (kunci S3 datar; tanpa `/` tak ada traversal) — kunci
+  // lama sebelum #385 bisa memuatnya karena sanitizer dulu tak merapatkan `..`.
+  return /^\d+$/.test(ts) && name.length > 0 && SAFE_NAME.test(name);
 }

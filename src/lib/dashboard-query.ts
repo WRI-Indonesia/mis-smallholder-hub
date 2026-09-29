@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getAccessContext, farmerGroupAccessFilter } from "@/lib/access-context";
 import { buildDashboardData, type RawFarmer, type RawGroup } from "@/lib/dashboard-aggregation";
-import type { DashboardData, DashboardFilters, DashboardFilterOptions } from "@/types/dashboard";
+import type { DashboardData, DashboardFilters } from "@/types/dashboard";
 
 /**
  * Aggregate dashboard statistics and per-KT details within the current user's scope.
@@ -90,40 +90,4 @@ export async function aggregateDashboardData(filters: DashboardFilters = {}): Pr
   }));
 
   return buildDashboardData(rawGroups, farmers as RawFarmer[]);
-}
-
-/** Districts and joined-years available to the user for the filter bar. No permission check. */
-export async function getDashboardFilterOptions(): Promise<DashboardFilterOptions> {
-  const access = await getAccessContext();
-
-  const districtWhere: Record<string, unknown> = { isActive: true };
-  if (access.mode === "BY_DISTRICT") {
-    districtWhere.id = { in: access.ids };
-  } else if (access.mode === "BY_FARMER_GROUP") {
-    districtWhere.farmerGroups = { some: { id: { in: access.ids }, isActive: true } };
-  }
-
-  const [districts, farmerYears] = await Promise.all([
-    prisma.district.findMany({
-      where: districtWhere,
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-    prisma.farmer.findMany({
-      where: {
-        isActive: true,
-        joinedYear: { not: null },
-        farmerGroup: { isActive: true, ...farmerGroupAccessFilter(access) },
-      },
-      select: { joinedYear: true },
-      distinct: ["joinedYear"],
-    }),
-  ]);
-
-  const joinedYears = farmerYears
-    .map((f) => f.joinedYear)
-    .filter((y): y is number => y != null)
-    .sort((a, b) => b - a);
-
-  return { districts, joinedYears };
 }

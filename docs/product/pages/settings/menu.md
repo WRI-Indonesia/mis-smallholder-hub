@@ -80,7 +80,7 @@ Halaman: Menu Management (/admin/settings/menu)
 |---|---|---|
 | Rincian struktur | Daftar baca-saja | `Key` · `Title` · `URL` · `Parent` (judul induk, atau `— Tidak ada (root) —`) · `Order` · `Icon` (ikon + nama) |
 | Catatan | Teks | `Judul, urutan, induk, URL, dan ikon hanya bisa diubah lewat menu.csv + seed, agar menu di produksi selalu sama dengan repo.` |
-| `Aktif` | Switch | Nilai tersimpan |
+| `Aktif` | Switch | Nilai tersimpan; **nonaktif (disabled) bila user tanpa `settings-menu:DELETE`** — nilai tersimpan dikirim apa adanya. Menyalakan Aktif ditolak bila induk masih nonaktif (sama dengan Aktifkan kembali) |
 | `Visible` | Switch | Nilai tersimpan |
 | `Batal` / `Simpan` | Tombol | — |
 | Toast | Notifikasi | `Menu berhasil diupdate` / `Gagal menyimpan menu` |

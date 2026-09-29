@@ -232,6 +232,13 @@ describe("isRowSelectionClick — klik yang memilih baris", () => {
     const button = el(row, true);
     expect(isRowSelectionClick(el(button) as unknown as EventTarget, r)).toBe(false);
   });
+  it("tabel di dalam elemen yang bisa diklik: closest() naik melewati baris → tetap pemilihan (review wrap-up)", () => {
+    const outerButton = el(null, true);
+    const rowInside = el(outerButton);
+    const cell = el(rowInside);
+    expect(isRowSelectionClick(cell as unknown as EventTarget, rowOf(rowInside))).toBe(true);
+  });
+
   it("klik konten portal (menu Aksi, dialog hapus) — di luar DOM baris → bukan pemilihan (review wrap-up)", () => {
     const portalItem = el(el(null)); // menuitem tanpa selector cocok, bukan turunan baris
     expect(isRowSelectionClick(portalItem as unknown as EventTarget, r)).toBe(false);

@@ -33,7 +33,7 @@ async function resolveAccessContext(): Promise<AccessContext> {
     where: { id: session.user.id, isActive: true },
     // Hanya id yang dipakai — dulu baris penuh ≤ 50 distrik per provinsi.
     select: {
-      provinces: { select: { province: { select: { districts: { where: { isActive: true }, select: { id: true } } } } } },
+      provinces: { select: { province: { select: { districts: { select: { id: true } } } } } },
       districts: { select: { districtId: true } },
       farmerGroups: { select: { farmerGroupId: true } },
     },

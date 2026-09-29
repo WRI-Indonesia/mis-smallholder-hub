@@ -208,6 +208,7 @@ export function MenuListClient({
         onClose={() => setEditItem(null)}
         item={editItem}
         parentTitle={initialItems.find((i) => i.key === editItem?.parentKey)?.title ?? null}
+        canToggleActive={permissions.includes("DELETE")}
       />
 
       <DeleteDialog
