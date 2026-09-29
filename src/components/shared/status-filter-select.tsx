@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export type StatusFilterValue = "all" | "active" | "inactive";
 
 /** Pilihan filter Status daftar — satu sumber label (#350). */
-export const STATUS_FILTER_ITEMS: { value: StatusFilterValue; label: string }[] = [
+const STATUS_FILTER_ITEMS: { value: StatusFilterValue; label: string }[] = [
   { value: "all", label: "Semua Status" },
   { value: "active", label: "Aktif" },
   { value: "inactive", label: "Nonaktif" },

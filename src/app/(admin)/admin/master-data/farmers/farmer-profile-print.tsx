@@ -20,12 +20,12 @@ import { getFarmerProfilePassport } from "@/server/actions/farmer";
 import { formatNumber } from "@/lib/format";
 
 /** Di atas ambang ini muncul dialog Lengkap / Ringkasan saja. */
-export const PROFILE_APPENDIX_CONFIRM_THRESHOLD = 10;
+const PROFILE_APPENDIX_CONFIRM_THRESHOLD = 10;
 
 /** Perkiraan halaman: Bagian A ≈ 2 + ≈ 2 per lahan (lampiran Profil Lahan 2 halaman). */
-export const estimateProfilePages = (parcelCount: number) => 2 + 2 * parcelCount;
+const estimateProfilePages = (parcelCount: number) => 2 + 2 * parcelCount;
 
-export type FarmerPrintTarget = { id: string; name: string; parcelCount: number };
+type FarmerPrintTarget = { id: string; name: string; parcelCount: number };
 
 export function useFarmerProfilePrint() {
   const [loadingId, setLoadingId] = useState<string | null>(null);

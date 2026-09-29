@@ -15,7 +15,7 @@ import type { ActionResult } from "@/types/action-result";
 import type { FarmerTrainingItem, ParcelPassport } from "@/types/map";
 
 // Main training packages shown on the passport (OTHER excluded).
-export const TRAINING_PACKAGES: { code: string; label: string }[] = [
+const TRAINING_PACKAGES: { code: string; label: string }[] = [
   { code: "PAKET_1_BMP_PC_RSPO_NKT", label: "Paket 1 - BMP" },
   { code: "PAKET_2_MK", label: "Paket 2 - MK" },
   { code: "PAKET_2_K3", label: "Paket 2 - HSE" },

@@ -35,11 +35,11 @@ Siapkan: paket pelatihan, tanggal, lokasi, daftar hadir, dan notulen PDF (maksim
 
 1. Klik sesi yang baru dibuat untuk membuka halaman detailnya.
 2. Pada seksi **Peserta Pelatihan**, klik **Tambah Peserta**.
-3. Centang petani yang hadir. Daftar yang muncul hanya anggota lembaga penyelenggara.
-+ Bila seorang petani hadir tapi belum terdaftar, daftarkan dia dulu di Master Data → Petani lalu kembali ke sini. Menambahkannya ke lembaga lain hanya agar bisa dicentang akan merusak angka cakupan kedua lembaga.
-4. Isi **Pre-Test** dan **Post-Test** bila tesnya dilakukan. Boleh dikosongkan dan dilengkapi belakangan.
-+ Panel efektivitas dan kelulusan di Dashboard Pelatihan hanya menghitung peserta yang **kedua** skornya terisi. Mengisi pre saja tanpa post membuat peserta itu tidak masuk hitungan kenaikan skor maupun kelulusan (post-test ≥ 60), meski kehadirannya tetap terhitung.
-5. Simpan.
+3. Pada tab **Pilih Manual**, klik nama petani yang hadir di kolom **Petani Tersedia** agar pindah ke **Petani Terpilih**, lalu klik **Tambahkan Peserta**.
++ Daftar yang muncul hanya anggota aktif lembaga penyelenggara. Bila seorang petani hadir tapi belum terdaftar, daftarkan dia dulu di Master Data → Petani lalu kembali ke sini. Menambahkannya ke lembaga lain hanya agar bisa dipilih akan merusak angka cakupan kedua lembaga.
++ Punya daftar hadir dalam Excel/CSV? Pakai tab **Upload List Peserta** — berkasnya boleh memuat kolom Nilai Pre-Test dan Nilai Post-Test sekaligus, dan tiap baris diberi status sebelum disimpan.
+4. Isi **Pre-Test** dan **Post-Test** langsung di tabel peserta bila tesnya dilakukan — nilai tersimpan otomatis begitu Anda pindah dari kolomnya.
++ Boleh dikosongkan dan dilengkapi belakangan; nilainya 0–100. Panel efektivitas dan kelulusan di Dashboard Pelatihan hanya menghitung peserta yang **kedua** skornya terisi. Mengisi pre saja tanpa post membuat peserta itu tidak masuk hitungan kenaikan skor maupun kelulusan (post-test ≥ 60), meski kehadirannya tetap terhitung.
 
 > [!hati-hati] Nilai post-test yang lebih rendah dari pre-test akan ditandai "turun" di Dashboard Pelatihan sebagai indikasi salah input. Periksa ulang sebelum menyimpan.
 
@@ -57,4 +57,4 @@ Jumlah peserta muncul di daftar pelatihan. Petani tersebut **langsung** terhitun
 
 **Unggahan notulen ditolak.** Hanya PDF di bawah 10 MB yang diterima.
 
-**Peserta salah dimasukkan.** Centang barisnya lalu klik **Hapus Terpilih**, atau pakai tombol hapus di baris tersebut.
+**Peserta salah dimasukkan.** Centang barisnya lalu klik **Hapus Terpilih**, atau pakai tombol **Hapus Peserta** di baris tersebut.

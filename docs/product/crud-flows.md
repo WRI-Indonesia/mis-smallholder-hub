@@ -1,11 +1,11 @@
 # Produk — CRUD & Bulk Upload Flows
 
-> Bagian dari dokumentasi **Produk**. Indeks: [../README.md](../README.md) · Terkait: [architecture.md](./architecture.md) · [access-context.md](./access-context.md) · [role-flows.md](./role-flows.md) · [module-status.md](./module-status.md)
+> Bagian dari dokumentasi **Produk**. Indeks: [../README.md](../README.md) · Terkait: [navigation.md](navigation.md) · [access-context.md](./access-context.md) · [role-flows.md](./role-flows.md) · [../project/roadmap.md](../project/roadmap.md#phase-status-indeks)
 
 <details>
 <summary><strong>Master Data CRUD Flow (Standard Pattern)</strong></summary>
 
-## Farmer CRUD Example (Applies to All Master Data)
+## Contoh CRUD Petani (berlaku untuk semua Master Data)
 
 ```
 User Access Module
@@ -45,14 +45,14 @@ User Access Module
                └─ Success Toast + Redirect/Refresh
 ```
 
-### Key Patterns
+### Pola Kunci
 
 - **Client-side validation**: Zod schemas in `src/validations/`
 - **Backend permission validation**: `hasPermission(menuCode, permission)` in every action
 - **RBAC filtering**: `AccessContext` discriminated union (ALL | BY_DISTRICT | BY_FARMER_GROUP)
 - **Soft delete**: Update `isActive = false`, never hard delete. List menyembunyikan record nonaktif untuk semua role **kecuali SUPERADMIN** (pola `isSuperAdmin() ? {} : { isActive: true }` di `src/server/actions/farmer.ts`); SUPERADMIN juga mendapat filter **Status** + badge nonaktif + toggle **Aktifkan** (restore) di list master data (#127)
 - **Audit trail**: Auto-set `created_by`, `modified_by`, `created_at`, `modified_at`
-- **Role read-only** (MANAGEMENT/DONOR): melihat halaman list yang sama tanpa tombol aksi — Tambah/Edit/Hapus di-gate per permission CREATE/EDIT/DELETE
+- **Role read-only** (OPERATOR/MANAGEMENT/DONOR di Master Data): melihat halaman list yang sama tanpa tombol aksi — Tambah/Edit/Hapus di-gate per permission CREATE/EDIT/DELETE
 
 </details>
 
@@ -61,7 +61,7 @@ User Access Module
 <details>
 <summary><strong>Bulk Upload Flow (Farmer Pattern)</strong></summary>
 
-## Bulk Upload Farmer (✅ Implemented)
+## Bulk Upload Petani (✅ Terimplementasi)
 
 ```
 User Access Bulk Upload
@@ -124,7 +124,7 @@ User Access Bulk Upload
                 └─ Redirect to Farmer List
 ```
 
-### Validation Tiers
+### Tingkat Validasi
 
 Semantik uniqueness ID Petani = **per Lembaga** (TD-024): constraint `@@unique([farmerGroupId, farmerId])` di `prisma/schema/farmer.prisma` (migrasi `20260721060000_farmer_id_unique_per_group`).
 

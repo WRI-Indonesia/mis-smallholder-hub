@@ -23,7 +23,7 @@ const parcel = (i: number, o: Partial<FarmerProfileParcel> = {}): FarmerProfileP
   subGroupLv2: "KT Karya Maju",
   blok: `Blok ${i}`,
   surat: i === 1 ? "SHM 727" : null,
-  stdb: i === 1 ? "1637/53/1401/6/2025" : null,
+  stdb: i === 1 ? "9999/99/1401/6/2025" : null,
   nktStatus: null,
   area: 2,
   plantingYear: 2016,

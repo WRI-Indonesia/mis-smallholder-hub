@@ -57,4 +57,4 @@ Keempat kartu di atas tabel **mengikuti filter yang sedang aktif**, bukan seluru
 
 **Kolom** — menyembunyikan atau menampilkan kolom. Pengaturannya juga memengaruhi isi unduhan Excel.
 
-**Aksi baris** — Lihat membuka halaman detail; Edit membuka jendela isian; Nonaktifkan mengubah status tanpa menghapus data. Baris yang sudah nonaktif menampilkan **Aktifkan kembali**.
+**Aksi baris** — Lihat membuka halaman detail; Edit membuka jendela isian; ikon printer (**Profil Petani (PDF)**) mengunduh profil lengkap petani beserta Profil Lahan tiap lahannya (butuh izin **Print**); Nonaktifkan mengubah status tanpa menghapus data. Baris yang sudah nonaktif menampilkan **Aktifkan kembali**. Tombol Nonaktifkan/Aktifkan kembali butuh izin hapus, yang secara bawaan hanya dipegang SUPERADMIN.

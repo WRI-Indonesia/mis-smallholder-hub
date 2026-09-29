@@ -2,7 +2,7 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [sprint.md](./sprint.md) · [changelog.md](./changelog.md) · [contributing.md](./contributing.md)
 
-## Summary
+## Pembaruan Berkala
 
 Kondisi per **2026-08-08** (audit menyeluruh): register bug lama **7/7 selesai**; **1 bug open** sebagai issue — **#237** tombol "Aktifkan kembali" Menu Management memanggil `deleteMenuItem` (reaktivasi tak pernah terjadi; temuan penulisan tutorial `a-5` di #207) — termasuk semua celah guard/scope RBAC P0 dari audit 2026-07-10. Tersisa **13 debt aktif** (semua diverifikasi ulang terhadap kode 2026-08-08 — tidak ada yang diam-diam sudah selesai); **TD-030/TD-031 dibuka 2026-08-05** dari #215/#217 (overlay hilang tanpa padanan publik & legend hardcoded); **TD-032 dibuka 2026-08-08** menampung 3 item mikro sisa issue #136 yang ditutup (debounce panel lahan, aria-label, lahan tetangga PDF); **TD-033 dibuka & diselesaikan 2026-08-10** (review pra-close #239 → lanjutan hari yang sama: ekstraksi `MatrixBody` + trim `ProductionMonthRow`). Tidak ada yang memblokir fitur berjalan. Risiko terbesar bersifat **struktural**: TD-014 (level Kelompok Tani belum dimodelkan sebagai tabel — interim per-lahan sudah jalan; hierarki **final 3 level** diputuskan #189, refactor penuh menunggu data lengkap); selebihnya debt kualitas berukuran kecil–sedang.
 
@@ -10,11 +10,13 @@ Kondisi per **2026-08-08** (audit menyeluruh): register bug lama **7/7 selesai**
 
 **Pembaruan per 2026-08-24** (#284 rentang titik api 10/30 hari + review pasca-rilis v0.28.0, #285): **#281 ditutup** via #284 (`hotspotWindowStart` berbasis tanggal UTC). Review #285 menemukan 1 HIGH (jendela terbaru tanpa `DATE` bisa menyisakan celah sehari bila "hari ini" FIRMS ≠ tanggal server → semua jendela kini ber-`DATE`), `Cache-Control: public` pada respons ber-permission → `private`, abort yang membatalkan cache jendela sukses, dan 11 temuan kecil — semua diperbaiki. Dibuka **#286** (`priority:P1`) skala rentang 30 hari saat musim karhutla — data cache Next menolak entri >2 MB **dan mencetak URL ber-`FIRMS_MAP_KEY_FREE` ke log**, payload tanpa cap, klasifikasi PiP di main thread, modal/PDF tanpa cap; **#287** keputusan owner batasi cetak PDF 30 hari → **ditutup hari yang sama: tidak dibatasi** (mengandalkan progres + Batalkan #276); **#288** `tsc --noEmit` merah di `dashboard*.test.ts` (drift fixture, tak tertangkap gate) + pin `TZ` vitest. Debt aktif **13 → 14**: **TD-034** dibuka — kontrak `DATE` FIRMS (= hari pertama jendela) hanya terverifikasi manual.
 
+**Pembaruan per 2026-09-29** (audit docs): TD-027 ternyata sudah selesai 2026-08-12 (#246) → dipindah ke Arsip. Debt aktif **27** (TD-043…050 dibuka sejak v1.0.0; TD-049/050 dari audit `/audit` 2026-09-29) → **29** setelah wrap-up `6bae57e..HEAD` (TD-051 redirect indeks, TD-052 test perf jam-dinding) → **27** setelah #311 (TD-016 & TD-052 selesai). Bug terbuka ber-label `bug` di GitHub: ~~#237~~ (diperbaiki 2026-09-29, masuk v1.2.0) · **#342** · **#277** · **#345**; risiko operasional tanpa label bug: ~~#364~~ (ditutup 2026-09-29: struktur menu dikunci dari UI) · **#363** (staging OOM) — dijadwalkan di [sprint.md](./sprint.md). #270 dan #280 dari ringkasan lama sudah ditutup.
+
 **Rekomendasi:**
 
 | Horizon | Fokus | Alasan |
 | --- | --- | --- |
-| **Jangka pendek** (sprint berjalan) | **TD-026** (a11y matriks) & **TD-027** (N+1 kaskade `setRolePermissions`); **TD-008** (helper parsing angka form) — kerjakan menumpang saat menyentuh file terkait (**TD-015 ✅ 2026-09-02** lewat #323, setelah gigitan ketiga); **TD-002** (visual audit `text-white`) sekali jalan | Sisa #187B (TD-026/027) sudah ber-scope jelas; sisanya kecil, murah, mencegah silent-fail berulang (TD-015 menggigit 3× — dua di #160, lalu #323). TD-029 ✅ selesai 2026-07-28 |
+| **Jangka pendek** (sprint berjalan) | **TD-026** (a11y matriks; TD-027 ✅ 2026-08-12 lewat #246); **TD-008** (helper parsing angka form) — kerjakan menumpang saat menyentuh file terkait (**TD-015 ✅ 2026-09-02** lewat #323, setelah gigitan ketiga); **TD-002** (visual audit `text-white`) sekali jalan | Sisa #187B (TD-026/027) sudah ber-scope jelas; sisanya kecil, murah, mencegah silent-fail berulang (TD-015 menggigit 3× — dua di #160, lalu #323). TD-029 ✅ selesai 2026-07-28 |
 | **Jangka menengah** (1–2 sprint) | **TD-010 sisa** — pisah `error:string` + `fieldErrors` di tipe `ActionResult` (32 baris `fieldErrors` / 13 file actions / ~10 form); **TD-004** (i18n) bila jadi kebutuhan produk | Perubahan kontrak lintas form — butuh PR khusus ber-scope jelas, bukan tumpangan; i18n perlu keputusan produk dulu |
 | **Jangka panjang** (menunggu data) | **TD-014** refactor hierarki penuh (Jalur B: **KT** jadi tabel, `FarmerGroup`→`FarmerInstitution`, export→rebuild→re-import) — **tanpa** entitas Gapoktan (3 level final #189) | Blocker: data KT lengkap (keputusan 3-vs-4-level **sudah final: 3**); interim per-lahan (#146/#150) sudah menopang report/dashboard/detail sampai saat itu |
 
@@ -29,20 +31,20 @@ Debt/bug di halaman ini berasal dari audit code. Item masuk sprint jika sudah pu
 | Kategori | 🔴 Aktif | ✅ Selesai | Total |
 | --- | --- | --- | --- |
 | **Bug** (BUG-001…007) | 0 | 7 | 7 |
-| **Debt** (TD-001…043) | **21** | 22 | 43 |
+| **Debt** (TD-001…053) | **28** | 25 | 53 |
 
-Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · TD-016 · TD-017 · TD-026 · TD-027 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). · **TD-034** (dibuka 2026-08-24 dari review #285 — kontrak `DATE` FIRMS terverifikasi manual saja) · **TD-037** (dibuka 2026-09-01 dari #313 — penulis SHP `@mapbox/shp-write`: DBF ASCII-only & MultiPolygon dipecah) · **TD-038** (dibuka 2026-09-02 dari #318 — penjahitan mosaik latar peta cetak tak bisa diuji di jsdom) · **TD-039** (dibuka 2026-09-02 dari #323 — kesepakatan kunci ekspor `DataTable` tak dijaga otomatis) · **TD-035** (dibuka 2026-08-27 dari penutupan #296 — `fileUrl`/`rawGeometry` tanpa UI; bagian kolom report UL Parcel Code/Program ✅ #305 2026-08-29, diganti utang baru: **proxy "sudah didata" = punya UL Parcel Code**) (**TD-036 ✅ 2026-08-28** — `MAP_STYLES` satu sumber di `src/lib/map-style.ts`, dari #307.) (**TD-033 ✅ 2026-08-10** — dedup tbody matriks produksi + trim payload bulanan, dari review #239; dibuka & diselesaikan di hari yang sama.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.) · TD-040 (dibuka 2026-09-15 dari review siklus #326–#332 — enum `INCLUDED` tersembunyi) · **TD-041** (dibuka 2026-09-15 dari review #339 — helper gambar peta PDF tiga salinan: `farm-passport` / `layer-report-pdf` / `report-land-parcel`) · **TD-042** (dibuka 2026-09-20 dari review #347 — parsing Excel form survei Monev BMP di browser ± 5 s/berkas) · **TD-043** (dibuka 2026-09-23 dari #280 + review pra-rilis v1.0.0 — dua implementasi point-in-polygon yang kesetaraannya hanya dijaga test) · **TD-044** (dibuka 2026-09-23 dari review wrap-up #370–#372 — dua/tiga penulis Excel) · **TD-045** (dibuka 2026-09-23 dari #373 — migrasi prod mendahului rilis kode; issue #376) · **TD-046** (dibuka 2026-09-23 dari wrap-up #374 — KT kosong dijaga di input saja, dua daftar token kosong). **TD-039 gigitan pertama 2026-09-15 (#339):** kolom Patok Laporan Lahan terbit kosong — jalur (a) diterapkan untuk halaman itu (`landParcelExportColumns`/`landParcelExportRow` + test), 11 halaman `DataTable` lain masih terbuka.
+Debt aktif: **TD-053** (wrap-up pra-QA v1.2.0) · **TD-051** (wrap-up 2026-09-29) · **TD-049** · **TD-050** (audit 2026-09-29) · **TD-010** 🟠 · **TD-014** 🟠 · TD-002 · TD-004 · TD-008 · TD-017 · TD-026 · TD-030 · TD-031 (dibuka 2026-08-05 dari #215/#216 — overlay hilang tanpa padanan publik & legend hardcoded) · TD-032 (dibuka 2026-08-08 dari penutupan #136). · **TD-034** (dibuka 2026-08-24 dari review #285 — kontrak `DATE` FIRMS terverifikasi manual saja) · **TD-037** (dibuka 2026-09-01 dari #313 — penulis SHP `@mapbox/shp-write`: DBF ASCII-only & MultiPolygon dipecah) · **TD-038** (dibuka 2026-09-02 dari #318 — penjahitan mosaik latar peta cetak tak bisa diuji di jsdom) · **TD-039** (dibuka 2026-09-02 dari #323 — kesepakatan kunci ekspor `DataTable` tak dijaga otomatis) · **TD-035** (dibuka 2026-08-27 dari penutupan #296 — `fileUrl`/`rawGeometry` tanpa UI; bagian kolom report UL Parcel Code/Program ✅ #305 2026-08-29, diganti utang baru: **proxy "sudah didata" = punya UL Parcel Code**) (**TD-036 ✅ 2026-08-28** — `MAP_STYLES` satu sumber di `src/lib/map-style.ts`, dari #307.) (**TD-033 ✅ 2026-08-10** — dedup tbody matriks produksi + trim payload bulanan, dari review #239; dibuka & diselesaikan di hari yang sama.) (TD-018/TD-019 ✅ #180 2026-07-20; **TD-020…TD-025 ✅ 2026-07-21** — dari DASH-06, audit asimetri, dan review HELP-02; TD-021 sebagian. **TD-026/TD-027** dibuka dari #187B — aksesibilitas matriks & N+1 kaskade; **TD-028 ✅ #188** — migrasi primitif popup, langsung selesai. **TD-029 ✅ 2026-07-28** — scope leak combobox bulk upload petani, follow-up TD-024; dibuka & diselesaikan di hari yang sama.) · TD-040 (dibuka 2026-09-15 dari review siklus #326–#332 — enum `INCLUDED` tersembunyi) · **TD-041** (dibuka 2026-09-15 dari review #339 — helper gambar peta PDF tiga salinan: `farm-passport` / `layer-report-pdf` / `report-land-parcel`) · **TD-042** (dibuka 2026-09-20 dari review #347 — parsing Excel form survei Monev BMP di browser ± 5 s/berkas) · **TD-043** (dibuka 2026-09-23 dari #280 + review pra-rilis v1.0.0 — dua implementasi point-in-polygon yang kesetaraannya hanya dijaga test) · **TD-044** (dibuka 2026-09-23 dari review wrap-up #370–#372 — dua/tiga penulis Excel) · **TD-045** (dibuka 2026-09-23 dari #373 — migrasi prod mendahului rilis kode; issue #376) · **TD-046** (dibuka 2026-09-23 dari wrap-up #374 — KT kosong dijaga di input saja, dua daftar token kosong). · **TD-047** (dibuka 2026-09-24 dari wrap-up #317 — lineage tak membaca `$queryRaw`) · **TD-048** (dibuka 2026-09-24 dari wrap-up #317 — `DataTable` tanpa test render; loop render lolos semua gate). **TD-039 gigitan pertama 2026-09-15 (#339):** kolom Patok Laporan Lahan terbit kosong — jalur (a) diterapkan untuk halaman itu (`landParcelExportColumns`/`landParcelExportRow` + test), 11 halaman `DataTable` lain masih terbuka.
 
 ## Debt Register — 🔴 Aktif
 
-### TD-010 · 🟡 Partial — Return `ActionResult` ad-hoc: sisa `error: fieldErrors` (P2)
+### TD-010 · 🟠 Partial — Return `ActionResult` ad-hoc: sisa `error: fieldErrors` (P2)
 
 - **Masalah awal:** audit fields tidak diisi di sebagian mutasi (`user.ts`, `menu.ts`, `role-permission.ts`, toggle region, assignment) + return `ActionResult` ad-hoc.
 - **Sudah selesai:** payload ad-hoc `{granted}`/`{count}` → ✅ #129 (dipindah ke `data` + anotasi tipe); audit fields `createdBy`/`modifiedBy` → ✅ #130 (diisi dari `auth()` di user/menu/role-permission/region-toggle/user-data-access/user-menu-access + `toggleFarmerActive`).
-- **Sisa (follow-up khusus):** `error: fieldErrors` (objek) di **32 baris / 13 file actions** (verifikasi `grep -rc "fieldErrors" src/server/actions/*.ts`, 2026-07-28) — perlu pisah `error:string` + `fieldErrors` di tipe `ActionResult` + ~10 form (lihat analisa #129).
+- **Sisa (follow-up khusus):** `error: fieldErrors` (objek) di **51 baris / 19 file actions** (verifikasi `grep -rc "fieldErrors" src/server/actions/*.ts`, 2026-09-29; 2026-07-28: 32/13) — perlu pisah `error:string` + `fieldErrors` di tipe `ActionResult` + ~10 form (lihat analisa #129).
 - **Evidence:** Audit 2026-07-10 §3.4 & LOW · **Issue #129/#130** · **Owner:** Backend Lead.
 
-### TD-014 · 🟡 Interim jalan — Level "Kelompok Tani" belum dimodelkan sebagai tabel (P2)
+### TD-014 · 🟠 Interim jalan — Level "Kelompok Tani" belum dimodelkan sebagai tabel (P2)
 
 - **Masalah:** level tengah antara Petani dan Lembaga Petani belum dimodelkan; data KT belum dimasukkan (per owner). Butuh model baru KT, re-parenting `Farmer` (Petani → KT, KT → Lembaga) via migrasi, plus dampak RBAC scope, districtId, dan **tabrakan identifier** (`FarmerGroup` kini dipakai untuk Lembaga). **Bukan refactor & bukan kosmetik — ini fitur/skema baru.**
 - **Status interim (jalan):** field denormalisasi `LandParcel.subGroupLv2` (Kelompok Tani) **per-lahan** (#146) + input manual & bulk shapefile (#150 ✅) — jalur input interim lengkap. (Level `subGroupLv1`/Gapoktan **di-drop #189** → hierarki final 3 level.)
@@ -82,21 +84,40 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Interim:** #172 memakai **placeholder avatar** (inisial nama) — siap diganti saat field tersedia.
 - **Validation:** saat diputuskan lanjut — kolom `photoKey` (S3, pola evidence pelatihan) + upload di form Petani + tampil di detail/list. · **Owner:** Backend + Frontend.
 
-### TD-016 · 🔲 Open — Test flaky: 1 test gagal sporadis saat mesin sibuk (P3)
-
-- **Masalah:** pada 2026-07-16 suite gagal **3× (1 test)** lalu hijau saat di-rerun (441→457 pass); loop 3× berturut saat idle bersih — gagal hanya saat run berbarengan proses berat (build/lint). Pola konsisten **perf test ber-ambang waktu** (`perf.test.ts` berisi assert durasi ms).
-- **Evidence:** sesi 2026-07-16 (3 kejadian, selalu lolos di rerun); nama test belum tertangkap — kegagalan berikutnya, simpan output penuh.
-- **Validation:** saat terulang, catat nama test + longgarkan ambang (atau tandai `retry: 1` khusus perf) agar gate pre-commit tidak false-negative. · **Owner:** QA/Dev.
-
 ### TD-026 · 🔲 Open — Matriks Role & Permission: sel izin belum aksesibel (P3)
 
 - **Masalah:** sel izin di `role-matrix-client.tsx` adalah tombol ikon tanpa nama aksesibel maupun `aria-pressed`; chevron & tombol toggle baris hanya punya `title`. Pembaca layar tak bisa membedakan granted/denied atau mengetahui aksi tombol.
 - **Validation:** tambahkan `aria-label` (mis. "ADMIN · Dashboard · VIEW: aktif") + `aria-pressed` pada sel; label pada chevron & tombol `ListChecks`. · **Evidence:** #187B. · **Owner:** Frontend.
 
-### TD-027 · 🔲 Open — `setRolePermissions` N+1 pada kaskade besar (P3)
+### TD-053 · 🔲 Open — Sisa kecil review wrap-up pra-QA v1.2.0 (P3)
 
-- **Masalah:** `setRolePermissions` melakukan `findFirst`+`update`/`create` **berurutan per baris** dalam satu transaksi. Kaskade induk→anak untuk subtree besar × banyak role = puluhan round-trip (terasa lewat tunnel; timeout dinaikkan ke 20s sebagai penambal).
-- **Validation:** ganti ke SQL massal — `findMany` sekali untuk state saat ini, lalu `updateMany`(isActive) + `createMany`(baris baru) atas himpunan terhitung. · **Evidence:** #187B (`src/server/actions/role-permission.ts`). · **Owner:** Backend.
+- **Masalah:** tiga temuan `/code-review high` 2026-09-29 yang sengaja tidak diperbaiki karena tanpa dampak di data/peran saat ini: (a) `hasEvidence` di Ketersediaan Data, profil Lembaga, dan Dashboard Pelatihan = `!!evidenceKey`, sedangkan tautan detail hanya untuk kunci yang lolos `isTrainingEvidenceKeyFor` — bisa berbeda untuk kunci lama/asing (mis-prod: 0 kunci berkas asli); (b) validasi kedalaman menu ditulis dua kali: `validateMenuSeedRows` (TS) dan salinan lebih lemah di `scripts/seed/seed-menu-key.mjs` (tanpa kedalaman turunan) — `.mjs` tak bisa mengimpor TS; (c) form Tambah Pelatihan tetap menampilkan kolom Evidence untuk peran CREATE-tanpa-EDIT, padahal unggah butuh EDIT (peran seperti itu tidak ada di seed/prod).
+- **Validation:** (a) satu predikat `hasTrainingEvidence(activity)` dipakai agregator & detail; (b) `seed-menu-key` dijadikan `.ts` (tsx) yang memanggil `validateMenuSeedRows`; (c) sembunyikan/nonaktifkan kolom Evidence saat create bila user tanpa EDIT. · **Evidence:** review `fb6b3df..HEAD` → `a40a758`. · **Owner:** Dev.
+
+### TD-051 · 🔲 Open — Halaman indeks menu induk me-redirect ke satu anak tetap, bukan anak pertama yang boleh diakses (P3)
+
+- **Masalah:** `/admin/report`, `/admin/tools`, `/admin/map`, `/admin/data-analyst`, `/admin/settings`, `/admin/dashboard/risk` (`page.tsx` = `redirect("/admin/<induk>/<anak-tetap>")`). Pengguna yang izin anak itu dicabut (override per user, atau peran yang hanya punya anak lain — mis. hanya `settings-roles`) terpental dua kali ke `/admin` saat mengklik remah roti. Laten dengan izin seed/prod saat ini; temuan `/code-review high` wrap-up 2026-09-29 (tidak diperbaiki — pola lama, di luar surgical).
+- **Validation:** satu helper server `firstAccessibleChild(parentKey)` dari pohon menu + izin efektif (termasuk `UserPermissionOverride`), dipakai keenam halaman; fallback `/admin`; test guard per induk. · **Owner:** Dev.
+
+### TD-050 · 🔲 Open — Dua test RBAC lama masih menguji salinan logika, bukan modul asli (P3)
+
+- **Masalah:** `src/test/rbac.test.ts` dan `src/test/rbac-permission.test.ts` menyalin logika kaskade/izin alih-alih mengimpor `src/lib/rbac.ts` — lulus walau kode asli rusak. Lima test "mirror" lain sudah dikonversi 2026-09-29 (audit `/audit`), dan `lib-rbac.test.ts` + `lib-access-context.test.ts` kini menguji modul asli.
+- **Validation:** hapus kasus yang sudah tercakup `lib-rbac.test.ts`, konversi sisanya ke pola `vi.hoisted` + `vi.mock` + `await import`. · **Owner:** Dev.
+
+### TD-049 · 🔲 Open — Auto-fit lebar kolom Excel tidak pernah berjalan (P3)
+
+- **Masalah:** `src/lib/xlsx.ts:54` dan `:124` memeriksa `if (!column.width)`, padahal ExcelJS 4.4 memberi lebar bawaan 9 pada kolom tanpa lebar — cabang auto-fit tak pernah aktif, kolom tanpa `width` eksplisit tetap sempit. Ditemukan audit test 2026-09-29; perilaku kini dipin test KARAKTERISASI di `src/test/lib-xlsx.test.ts`.
+- **Validation:** deteksi "lebar belum di-set" lewat definisi kolom kita sendiri (bukan `column.width`), lalu perbarui test karakterisasi. · **Owner:** Dev.
+
+### TD-048 · 🔲 Open — Komponen bersama (`DataTable`) tanpa test render: kelas bug loop render / efek tak tertangkap gate (P2)
+
+- **Masalah:** Vitest berjalan di `environment: 'node'` tanpa DOM (`jsdom` sengaja dilepas, lihat `vitest.config`), sehingga `DataTable` hanya teruji lewat fungsi murninya (`buildExportRows`, `sameItems`, `isRowSelectionClick`). #317 wrap-up: mengurutkan kolom mana pun di Tumpang Tindih Lahan **crash** ("Maximum update depth exceeded") — `columns` inline × `onVisibleRowsChange` → setState tanpa henti — lolos lint, typecheck, build, 1.889 test, dan tiga `/code-review`; baru tertangkap saat smoke manual. Perilaku efek lain (`selectedRowKey` → pindah halaman, fokus baris) juga hanya diverifikasi manual — wrap-up 2026-09-29 menemukan lagi dua bug kelas ini lewat review, bukan gate: fokus ↑/↓ jatuh ke `<body>` di batas halaman, dan batang grafik CSS Sprint Mingguan menyusut ±10% (label berbagi kontainer flex bertinggi tetap). 15 halaman memakai `DataTable`.
+- **Validation:** pasang `jsdom` + `@testing-library/react` sebagai devDep dan aktifkan `// @vitest-environment jsdom` **per berkas** hanya untuk test komponen kritis (`DataTable`: sortir tiap kolom dengan `columns` inline + `onVisibleRowsChange` tidak loop; `selectedRowKey` di halaman 2 → pindah halaman; baris tanpa `onRowClick` tidak ber-`tabIndex`). · **Evidence:** #317 wrap-up 2026-09-24 (`ceb1ec5`). · **Owner:** Dev.
+
+### TD-047 · 🔲 Open — Pemindai lineage tidak membaca `$queryRaw`: menu berbasis SQL mentah tampil tanpa entitas di Peta Data & Skema (P3)
+
+- **Masalah:** `scripts/lineage-scan.ts` hanya menangkap `prisma.<model>.<op>`. Aksi yang seluruhnya SQL mentah (PostGIS) menghasilkan entri kosong: `data-analyst-parcel-overlap` (#317) `models: {}` padahal membaca `LandParcel`, `Farmer`, `FarmerGroup`, `District`; bagian SQL mentah `land-marker.ts` & `fire-boundary.ts` juga tak terhitung. Peta Data & Skema (DA-07) jadi menyatakan menu itu tak membaca entitas apa pun — diam-diam salah.
+- **Validation:** pemindai memetakan nama tabel `tbl_*`/`reg_*` di literal `$queryRaw`/`Prisma.sql` ke model lewat `@@map` skema (sumber: `prisma/schema/*.prisma`), atau anotasi eksplisit per fungsi; regenerasi `data-lineage.generated.ts` dan pastikan entri #317 memuat 4 entitas (R). · **Evidence:** review wrap-up #317 2026-09-24 (temuan 9, ditunda — mengubah pemindai bersama & menggeser entri menu lain). · **Owner:** Dev.
 
 ### TD-046 · 🔲 Open — "KT/Blok kosong" dijaga di input saja; pembaca KT & dua daftar token kosong tidak sepakat (P2)
 
@@ -130,8 +151,8 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 ### TD-040 · 🔲 Open — Enum `LandNktStatus.INCLUDED` hidup di DB tapi disembunyikan dari UI (P3)
 
-- **Masalah:** keputusan owner 2026-09-14 ("termasuk = terdampak", #331 susulan) membuat form, importer, dan filter hanya menawarkan `AFFECTED`/`NOT_AFFECTED`; parser importer memetakan "termasuk/included" → `AFFECTED`. Nilai `INCLUDED` **tetap ada di enum Postgres & Zod** demi baris lama, dan setiap konsumen harus ingat memakai `NKT_AFFECTED_STATUSES` (dua nilai) alih-alih membandingkan `=== "AFFECTED"` — `isNktAffected()` sudah menutupnya, tetapi kueri Prisma (`status: { in: [...NKT_AFFECTED_STATUSES] }`) tersalin di beberapa action (`map.ts`, `report.ts`; sisanya memakai `isNktAffected()` di JS — verifikasi `grep -rl NKT_AFFECTED_STATUSES src/server`). Satu kueri baru yang menulis `status: "AFFECTED"` akan diam-diam melewatkan baris `INCLUDED` lama.
-- **Validation:** bila data `INCLUDED` di prod tetap 0 (per 2026-09-15: mis-dev 0 baris `INCLUDED`), lakukan migrasi kecil `UPDATE … SET status='AFFECTED' WHERE status='INCLUDED'` + hapus nilai enum (`ALTER TYPE … RENAME`/recreate — Postgres tak bisa DROP VALUE langsung) + hapus dari Zod/label; satu konstanta `NKT_AFFECTED_STATUSES` jadi tak perlu. Bila owner kelak ingin membedakan lagi, biarkan dan tambahkan test yang memindai `status: "AFFECTED"` literal di `src/server`. · **Evidence:** Decision Log 2026-09-14 (#331 susulan), `src/lib/land-parcel-satellite-format.ts`. · **Owner:** Backend.
+- **Masalah:** keputusan owner 2026-09-14 ("termasuk = terdampak", #331 susulan) membuat form, importer, dan filter hanya menawarkan `AFFECTED`/`NOT_AFFECTED`; parser importer memetakan "termasuk/included" → `AFFECTED`. Nilai `INCLUDED` **tetap ada di enum Postgres & Zod** demi baris lama, dan setiap konsumen harus ingat memakai helper bersama — `nktAffectedStatusWhere()` di server action, `NKT_AFFECTED_STATUSES`/`isNktAffected()` di klien (`src/lib/land-parcel-satellite-format.ts`) alih-alih membandingkan `=== "AFFECTED"` — `isNktAffected()` sudah menutupnya, tetapi kueri Prisma (`status: { in: [...NKT_AFFECTED_STATUSES] }`) tersalin di beberapa action (`map.ts`, `report.ts`; sisanya memakai `isNktAffected()` di JS — verifikasi `grep -rl NKT_AFFECTED_STATUSES src/server`). Satu kueri baru yang menulis `status: "AFFECTED"` akan diam-diam melewatkan baris `INCLUDED` lama.
+- **Validation:** bila data `INCLUDED` di prod tetap 0 (per 2026-09-29 dicek ke mis-prod: 0 baris `INCLUDED` — 91 `AFFECTED`, 228 `NOT_AFFECTED`), lakukan migrasi kecil `UPDATE … SET status='AFFECTED' WHERE status='INCLUDED'` + hapus nilai enum (`ALTER TYPE … RENAME`/recreate — Postgres tak bisa DROP VALUE langsung) + hapus dari Zod/label; satu konstanta `NKT_AFFECTED_STATUSES` jadi tak perlu. Bila owner kelak ingin membedakan lagi, biarkan dan tambahkan test yang memindai `status: "AFFECTED"` literal di `src/server`. · **Evidence:** Decision Log 2026-09-14 (#331 susulan), `src/lib/land-parcel-satellite-format.ts`. · **Owner:** Backend.
 
 ### TD-039 · 🔲 Open — Kesepakatan kunci ekspor `DataTable` tak dijaga otomatis (P3)
 
@@ -178,17 +199,17 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 - **Masalah:** ekspor spasial lahan (#313) menanggung dua batasan penulis `dbf` di `@mapbox/shp-write`: (1) atribut ditulis **1 byte per code-unit** sehingga non-ASCII korup apa pun isi `.cpg` — solusi sekarang transliterasi ASCII (é→e, sisanya `?`) di `toAsciiDbf`; (2) Polygon & MultiPolygon ditulis sebagai **dua shapefile terpisah** dalam satu ZIP — solusi sekarang MultiPolygon dipecah per poligon anggota (baris atribut terduplikasi per anggota). Keduanya keputusan sadar (Decision Log 2026-09-01), tapi kualitas berkasnya di bawah GeoJSON/KML.
 - **Validation:** ganti/patch penulis SHP yang menulis DBF UTF-8 (ladinlib/gdal-wasm/penulis sendiri di atas `dbf` fork) + dukungan MultiPolygon shapefile asli (shape type 5 multi-ring sudah sah menampung multipart); test round-trip `shpjs` + verifikasi QGIS dengan nama ber-diakritik. · **Evidence:** `src/lib/parcel-export-data.ts` (`toAsciiDbf`, `explodeMultiPolygons`), `parcel-export.test.ts`, #313 retro. · **Owner:** Frontend.
 
-## Debt Sequencing
+## Urutan Penanganan Debt
 
 | Waktu                | Fokus                  | Catatan                                                    |
 | --------------------- | ---------------------- | ------------------------------------------------------------ |
 | Immediate / P0       | ✅ **BUG-003, BUG-004** (selesai 2026-07-12, #125) | Celah guard/scope RBAC ditutup sebelum fitur baru |
 | Sprint berjalan / P1 | ✅ **TD-007** (BUG-005 ✅, BUG-006 ✅) | lint hijau (#126 ✅), pola restore + scope by-id KT/pelatihan/lahan (#127 ✅ 2026-07-12) |
-| Later / P2–P3        | ✅ **TD-009, TD-011** (#129), **TD-012** & TD-010 audit-fields (#130, 2026-07-12); sisa aktif: TD-002, TD-004, TD-008, TD-010 (fieldErrors), TD-015 | Cleanup dead code/deps, env drift, audit fields & naming selesai; sisa: `ActionResult` fieldErrors, NaN parsing, visual audit, `exportValue` DataTable |
+| Later / P2–P3        | ✅ **TD-009, TD-011** (#129), **TD-012** & TD-010 audit-fields (#130, 2026-07-12); sisa aktif: TD-002, TD-004, TD-008, TD-010 (fieldErrors) — TD-015 ✅ 2026-09-02 (#323) | Cleanup dead code/deps, env drift, audit fields & naming selesai; sisa: `ActionResult` fieldErrors, NaN parsing, visual audit, `exportValue` DataTable |
 
 ## ✅ Arsip — Selesai
 
-### Bug Register (7/7 selesai)
+### Register Bug (7/7 selesai)
 
 <details>
 <summary><strong>Lihat 7 bug selesai</strong> — BUG-001…BUG-007 (guard/scope RBAC, lint, redirect, scripts)</summary>
@@ -219,14 +240,16 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 </details>
 
-### Debt Register — Selesai (20 item)
+### Debt Register — Selesai (25 item)
 
 <details>
-<summary><strong>Lihat 21 debt selesai</strong> — TD-001, 003, 005, 006, 007, 009, 011, 012, 013, 018, 019, 020, 021, 022, 023, 024, 025, 028, 029, 033, 036</summary>
+<summary><strong>Lihat 25 debt selesai</strong> — TD-001, 016, 052, 003, 005, 006, 007, 009, 011, 012, 013, 015, 018, 019, 020, 021, 022, 023, 024, 025, 027, 028, 029, 033, 036</summary>
 
 | ID | Debt Item | Priority | Selesai |
 | --- | --- | --- | --- |
 | TD-001 | S3/PDF utility belum terintegrasi ke modul Training | P1 | ✅ 2026-07-10 (audit) |
+| TD-016 | Test flaky: 1 test gagal sporadis saat mesin sibuk | P3 | ✅ 2026-09-29 (#311 — ukuran min-of-N `src/test/perf-utils.ts`) |
+| TD-052 | Test performa jam-dinding (`region.test.ts`, `perf.test.ts`) membuat gate `npm test` tidak deterministik — duplikat #311 | P3 | ✅ 2026-09-29 (#311: suite penuh + build paralel 3/3 hijau, dulu 3/3 merah) |
 | TD-003 | `.DS_Store` di working tree | P2 | ✅ (git tracking) |
 | TD-005 | Dashboard cache/debug scripts implementasi lama | P1 | ✅ 2026-06-22 |
 | TD-006 | `docs/rule.md` menyebut folder yang tidak ada | P2 | ✅ 2026-07-10 (audit) |
@@ -238,6 +261,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-018 | 5 salinan action dropdown Distrik/Lembaga per menu report | P3 | ✅ 2026-07-20 (#180) |
 | TD-019 | Exporter PDF lama belum pola build-vs-save | P3 | ✅ 2026-07-20 (#180) |
 | TD-028 | Migrasi Peta Lahan/BMP ke primitif popup bersama | P3 | ✅ 2026-07-22 (#188) |
+| TD-027 | `setRolePermissions` N+1 pada kaskade besar → 1 `findMany` + `updateMany`/`createMany` per transaksi | P3 | ✅ 2026-08-12 (#246, `838d42f`) |
 | TD-015 | `DataTable` kolom turunan: export mengandalkan tebakan key → `buildExportRows` resolusi per kolom + `exportable` + peringatan dev (10 test) | P3 | ✅ 2026-09-02 (#323, setelah menggigit ketiga kalinya) |
 | TD-033 | Dedup mesin baris matriks produksi (`MatrixBody`) + trim `ProductionMonthRow` ke field yang dirender | P3 | ✅ 2026-08-10 (#239, dibuka & selesai hari yang sama) |
 | TD-022 | BMP: produksi jadi orphan saat revisi lahan (asimetri produktivitas) | P2 | ✅ 2026-07-21 |
@@ -247,7 +271,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 | TD-029 | Combobox bulk upload petani: daftar Lembaga tanpa scope filter | P1 | ✅ 2026-07-28 |
 | TD-036 | `MAP_STYLES` basemap tersalin di 6 canvas peta → satu sumber `src/lib/map-style.ts` (+`PARCEL_MAP_STYLES`, id `esri-dark`/`osm-light`, 7 test) | P3 | ✅ 2026-08-28 (#307, bersama layer label Dark) |
 | TD-020 | Dashboard Pelatihan: live query tanpa ambang perf | P3 | ✅ 2026-07-21 |
-| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟡 2026-07-21 (Pelatihan + Dashboard Ketersediaan Data) · 2026-09-21 (#352: Ketersediaan Data Per Lembaga) |
+| TD-021 | State filter dashboard tidak tersimpan di URL | P3 | 🟠 2026-07-21 (Pelatihan + Dashboard Ketersediaan Data) · 2026-09-21 (#352: Ketersediaan Data Per Lembaga) |
 
 **TD-001** — S3/PDF utility belum terintegrasi ke modul Training. Evidence: Training + evidence upload S3 sudah terintegrasi via `upload.ts` (#81); CLI `get-link`/`pdf-manager` tetap sebagai utilitas. Owner: Backend/Storage Lead. Validation: evidence upload berfungsi di app; sisa CLI tak load dotenv → TD-011. ✅
 
@@ -265,7 +289,7 @@ Debt aktif: **TD-010** 🟡 · **TD-014** 🟡 · TD-002 · TD-004 · TD-008 · 
 
 **TD-020** — Dashboard Pelatihan live query tanpa pagar. Ditambahkan perf test di `src/test/perf.test.ts` atas fixture **60.000 baris kehadiran** (~7× volume hari ini): KPI + matriks + tren + skor + kualitas data harus selesai <1.200 ms, disertai test kebenaran agar cepat saja tidak cukup. Bila ambangnya merah, itu sinyal menimbang pola snapshot — **bukan** melonggarkan ambangnya. ✅
 
-**TD-021** — 🟡 **Sebagian.** Hook bersama `src/hooks/use-url-filters.ts` dibuat (memakai `router.replace` + `scroll: false` agar mengubah filter tidak menumpuk riwayat browser maupun melompatkan gulir; nilai kosong dihapus dari query supaya URL bawaan tetap bersih) dan **diterapkan di Dashboard Pelatihan** — filter Distrik/Lembaga/Kategori/Tahun kini bisa di-bookmark & dikirim. **2026-09-21 (#352):** diterapkan juga di **Ketersediaan Data — Per Lembaga** (`?lembaga=` & `?distrik=`, jadi target deep link dari dashboard & Detail Lembaga) dan diperluas di **Semua Lembaga** (`?lembaga=`, `?tampilan=`). Temuan smoke #352: `replaceState` di dalam updater `setParams` dijalankan React saat render (Next mem-patch replaceState → setState Router) → peringatan "Cannot update a component (Router) while rendering"; diperbaiki dengan memanggil `replaceState` di event handler. **Sisa:** Main Dashboard & BMP Dashboard belum memakainya; keduanya punya filter lebih kompleks (mis. mode Rataan & Kelengkapan Data) sehingga sengaja tidak diborong dalam satu sesi. Sort matriks cakupan juga belum ikut. 🟡
+**TD-021** — 🟠 **Sebagian.** Hook bersama `src/hooks/use-url-filters.ts` dibuat (memakai `router.replace` + `scroll: false` agar mengubah filter tidak menumpuk riwayat browser maupun melompatkan gulir; nilai kosong dihapus dari query supaya URL bawaan tetap bersih) dan **diterapkan di Dashboard Pelatihan** — filter Distrik/Lembaga/Kategori/Tahun kini bisa di-bookmark & dikirim. **2026-09-21 (#352):** diterapkan juga di **Ketersediaan Data — Per Lembaga** (`?lembaga=` & `?distrik=`, jadi target deep link dari dashboard & Detail Lembaga) dan diperluas di **Semua Lembaga** (`?lembaga=`, `?tampilan=`). Temuan smoke #352: `replaceState` di dalam updater `setParams` dijalankan React saat render (Next mem-patch replaceState → setState Router) → peringatan "Cannot update a component (Router) while rendering"; diperbaiki dengan memanggil `replaceState` di event handler. **Sisa:** Main Dashboard & BMP Dashboard belum memakainya; keduanya punya filter lebih kompleks (mis. mode Rataan & Kelengkapan Data) sehingga sengaja tidak diborong dalam satu sesi. Sort matriks cakupan juga belum ikut. 🟡
 
 **TD-006** — `docs/rule.md` menyebut folder dashboard components yang tidak ada. Owner: Tech Lead. Validation: tree arsitektur disinkronkan (audit 2026-07-10): `components/dashboard` dihapus, `hooks/`+`api/` ditambah; docs arsitektur sinkron dengan struktur repo. ✅
 

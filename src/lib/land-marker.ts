@@ -178,8 +178,8 @@ export function checkMarkerNearParcel(
 
 // ─── Kode patok `<SINGKATAN>-PTK-000123` (keputusan owner 2026-09-14) ───
 
-export const MARKER_CODE_INFIX = "PTK";
-export const MARKER_CODE_DIGITS = 6;
+const MARKER_CODE_INFIX = "PTK";
+const MARKER_CODE_DIGITS = 6;
 /** Bentuk kode yang diterima unggahan: awalan huruf/angka, PTK, ≥ 1 digit. */
 export const MARKER_CODE_RE = /^[A-Z0-9]{1,20}-PTK-\d{1,9}$/;
 

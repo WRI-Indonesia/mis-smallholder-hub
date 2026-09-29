@@ -1,5 +1,7 @@
 # 00 · Lingkup rilis v0.38.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 Sumber: `git log 57dc846..HEAD` (v0.37.0 → `mvp`), `gh issue list --state closed`, `docs/project/changelog.md`.
 
 | # | Issue | Judul singkat | Menu › sub-menu terdampak | Migrasi | Izin/menu baru | Bantuan | Kasus uji |

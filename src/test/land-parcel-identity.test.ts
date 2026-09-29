@@ -9,11 +9,11 @@ import { parcelIdentityUpsertArgs } from "@/lib/land-parcel-identity";
  * next-auth tak resolve, konvensi repo).
  */
 describe("parcelIdentityUpsertArgs — kontrak identitas lahan (parcelUid)", () => {
-  const key = { farmerId: "farmer-1", parcelId: "APSS.0001.A.14.01.10.2012" };
+  const key = { farmerId: "farmer-1", parcelId: "CTH.0001.A.14.01.10.2012" };
 
   it("kunci upsert = unique composite (farmerId, parcelId) — bukan id baris revisi", () => {
     const args = parcelIdentityUpsertArgs(key, "user-1");
-    expect(args.where).toEqual({ farmerId_parcelId: { farmerId: "farmer-1", parcelId: "APSS.0001.A.14.01.10.2012" } });
+    expect(args.where).toEqual({ farmerId_parcelId: { farmerId: "farmer-1", parcelId: "CTH.0001.A.14.01.10.2012" } });
   });
 
   it("revisi 0 dan revisi N pasangan yang sama menghasilkan kunci identik → identitas dipakai ulang", () => {
@@ -30,7 +30,7 @@ describe("parcelIdentityUpsertArgs — kontrak identitas lahan (parcelUid)", () 
 
   it("create: mengisi pasangan + createdBy; tidak menyentuh isActive (default true dari skema)", () => {
     const args = parcelIdentityUpsertArgs(key, "user-1");
-    expect(args.create).toEqual({ farmerId: "farmer-1", parcelId: "APSS.0001.A.14.01.10.2012", createdBy: "user-1" });
+    expect(args.create).toEqual({ farmerId: "farmer-1", parcelId: "CTH.0001.A.14.01.10.2012", createdBy: "user-1" });
   });
 
   it("update: pasangan yang pernah dinonaktifkan lalu didaftarkan ulang diaktifkan kembali (satelit tetap tertaut)", () => {

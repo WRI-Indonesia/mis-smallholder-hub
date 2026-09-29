@@ -2,17 +2,17 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [sprint.md](./sprint.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md)
 
-> Panduan proses untuk developer: cara update dokumen status, urutan implementasi, dan checklist kepatuhan `rule.md`.
+> Panduan proses untuk developer: cara update dokumen status, urutan implementasi, dan checklist kepatuhan [standar kode](../standards/code-standards.md).
 > Konten stabil (jarang berubah) — dipisah dari `progress.md` (restrukturisasi 2026-07-12) agar file status tetap ramping.
 > Status delivery aktual ada di [`roadmap.md`](./roadmap.md); standar teknis di [`code-standards.md`](../standards/code-standards.md).
 
 ---
 
-## 1. Junior Developer Update Guide
+## Panduan Update Dokumen
 
 Section ini dibuat supaya junior developer bisa update dokumen dengan aman dan konsisten.
 
-### Golden Rule
+### Aturan Emas
 
 Jika tidak ada bukti di code, jangan naikkan status fase.
 
@@ -26,18 +26,18 @@ Contoh bukti yang valid:
 - Test yang relevan
 - Script/workflow jika phase memang tooling/devops
 
-### 5-Minute Update Checklist
+### Checklist Update 5 Menit
 
 | Step | Bagian yang Diupdate | Pertanyaan Cek                                                         |
 | ---- | --------------------- | -------------------------------------------------------------------------- |
-| 1    | Active Issues        | Apakah status issue, assignee, target, dan next action sudah benar?    |
+| 1    | Issue Aktif (`sprint.md`) + tabel Sprint | Apakah status issue, assignee, target, dan next action sudah benar?    |
 | 2    | Phase Status         | Apakah status fase berubah berdasarkan file/code nyata?                |
-| 3    | Code Audit Evidence  | Apakah ada route/schema/action baru atau hilang?                       |
-| 4    | Progress Snapshot    | Apakah angka Done/Partial/Not Started/Planned/Blocked masih konsisten? |
-| 5    | Management Brief     | Apakah risiko/decision/next two weeks masih relevan?                   |
+| 3    | Rincian per Phase (Evidence) | Apakah ada route/schema/action baru atau hilang?                       |
+| 4    | Snapshot Progres (`brief.md`) | Apakah angka Done/Partial/Not Started/Planned/Blocked masih konsisten? |
+| 5    | Brief Manajemen (`brief.md`) | Apakah risiko/decision/next two weeks masih relevan?                   |
 | 6    | Changelog            | Apakah perubahan penting sudah dicatat dengan tanggal?                 |
 
-### Dependency Map
+### Peta Dependensi
 
 ```mermaid
 flowchart LR
@@ -54,10 +54,10 @@ flowchart LR
     MD05 --> DASH06["DASH-06 Dashboard Pelatihan"]
     RPT01["RPT-01 Report Petani (#107)"] --> RPT02["RPT-02 Report Pelatihan (#108)"]
     RPT01 --> RPT03["RPT-03 Report Produksi (#132) ✅"]
-    BULK01["BULK-01 Bulk Upload Menu + KT"] --> BULK02["BULK-02 Bulk Upload Region"]
+    BULK01["BULK-01 Bulk Upload Menu & Route"] --> BULK02["BULK-02 Bulk Upload Region"]
 ```
 
-### Recommended Implementation Order
+### Urutan Implementasi (arsip)
 
 > **Arsip historis** — rencana urutan awal proyek, seluruh step-nya sudah terlaksana (lihat Phase Status di [`roadmap.md`](./roadmap.md)) kecuali #69/#70. Penomoran issue RPT lama di tabel ini (#65 Report User, #66 Report Region, #67 Report KT) **tidak pernah dipakai** — realisasi stream RPT: RPT-01 Petani (#107), RPT-02 Pelatihan (#108), RPT-03 Produksi (#132), RPT-04 Kelompok Tani (#154), RPT-05 Lahan (#177/#179).
 
@@ -94,9 +94,9 @@ flowchart LR
 - List page memiliki search/filter/pagination jika datanya berpotensi besar.
 - Server action tidak hanya mengandalkan guard UI; permission tetap dicek di backend.
 - Placeholder `Coming soon` tidak dihitung sebagai selesai.
-- Setelah phase selesai, update **Phase Status**, **Active Issues**, **Progress Snapshot**, dan **Changelog**.
+- Setelah phase selesai, update **Phase Status**, **Issue Aktif**, **Snapshot Progres**, dan **Changelog**.
 
-### Minimum Validation
+### Validasi Minimum
 
 | Area           | Validasi Minimal                                               |
 | -------------- | -------------------------------------------------------------------- |
@@ -108,7 +108,7 @@ flowchart LR
 | Build          | `npm run build` lulus sebelum fase ditandai Done               |
 | Typecheck      | `npm run typecheck` lulus (mencakup `src/test/**`, #288)       |
 
-### Update Templates
+### Template Update
 
 Gunakan template berikut saat menambah issue baru.
 
@@ -122,7 +122,7 @@ Evidence:
 Next Action:
 ```
 
-Gunakan template berikut saat menambah changelog. Baris ditambahkan di **paling atas tabel** dalam section `<details>` bulan berjalan (Decision Log pakai `YYYY-MM-DD`, Changelog pakai `MM-DD`); saat ganti bulan, buat section `<details><summary><strong>Bulan YYYY</strong></summary>` baru di atas.
+Gunakan template berikut saat menambah changelog. Baris ditambahkan di **paling atas tabel** pada berkas bulan berjalan `project/changelog/YYYY-MM.md` (Decision Log pakai `YYYY-MM-DD`, Changelog pakai `MM-DD`); saat ganti bulan, buat berkas baru dan tambahkan barisnya di indeks [`changelog.md`](./changelog.md). Keputusan besar lintas modul juga ditulis sebagai catatan di [`../decisions/`](../decisions/README.md).
 
 ```text
 | YYYY-MM-DD | [Phase/Issue] Ringkasan perubahan singkat berdasarkan code |
@@ -131,7 +131,7 @@ Gunakan template berikut saat menambah changelog. Baris ditambahkan di **paling 
 
 ---
 
-## 2. Implementation Guidelines (Rule.md Compliance)
+## Panduan Implementasi (Kepatuhan `standards/`)
 
 #### Checklist untuk Setiap Implementasi Fase Baru
 
@@ -181,22 +181,25 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 
 **Quality Gates (Before Merge)**
 
-1. ✅ **Tests**: `npm test` — all pass, no skipped tests
-2. ✅ **Build**: `npm run build` — no errors or warnings
-3. ✅ **Lint**: `npm run lint` — **exit 0**, 0 error (BUG-006 ✅ selesai 2026-07-12, #126; wajib dijalankan lokal sebelum commit — lihat Pre-Commit Gate di [`workflow.md`](../standards/workflow.md))
-4. ✅ **Typecheck**: `npm run typecheck` — 0 error termasuk `src/test/**` (dijalankan setelah Build, #288)
-4. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
-5. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
-6. ✅ **Code Review**: Implementation matches rule.md requirements
-7. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
+Urutan mengikuti Pre-Commit Gate di [`workflow.md`](../standards/workflow.md):
 
-#### Common Pitfalls & Fixes
+1. ✅ **Lint**: `npm run lint` — **exit 0**, 0 error (BUG-006 ✅ selesai 2026-07-12, #126)
+2. ✅ **Build**: `npm run build` — no errors (juga meregenerasi `.next/types` untuk Typecheck)
+3. ✅ **Typecheck**: `npm run typecheck` — 0 error termasuk `src/test/**` (dijalankan setelah Build, #288)
+4. ✅ **Tests**: `npm test` — all pass, no skipped tests
+5. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
+6. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
+7. ✅ **Code Review**: implementasi sesuai [`standards/`](../standards/code-standards.md)
+8. ✅ **Rule Compliance**: Semua kategori pada tabel "Audit Kepatuhan Kode" ([`roadmap.md`](./roadmap.md), arsip 2026-07-10) berstatus PASS
+9. ✅ **Alur rilis**: `mvp` → `staging` (deploy staging, QA `docs/qa/vX.Y.Z/`) → PR `staging` → `main` (deploy produksi) — lihat [`versioning.md`](../standards/versioning.md) §Alur Rilis
+
+#### Jebakan Umum & Perbaikannya
 
 | Pitfall | Why Bad | Fix |
 |---------|---------|-----|
 | Filter only by `districtId` in BY_FARMER_GROUP mode | User KT-only returns empty results | Implement discriminated union pattern; test all 3 modes |
 | Guard `hasPermission` hanya di page.tsx | Server action = endpoint HTTP; bisa dipanggil langsung (UI-bypass) | Guard **di dalam action**, bukan hanya page (temuan audit: role-permission/menu/upload) |
-| Read/mutasi **by-id** tanpa scope check | User ter-scope bisa akses data lintas wilayah via id | Terapkan `getAccessContext` juga pada `getXById`/update/toggle (pola `land-parcel.ts:68`) |
+| Read/mutasi **by-id** tanpa scope check | User ter-scope bisa akses data lintas wilayah via id | Terapkan `getAccessContext` juga pada `getXById`/update/toggle (pola `getLandParcelById` di `src/server/actions/land-parcel.ts`) |
 | Hard delete with `delete()` | Breaks audit trail; data loss risk | Always use soft delete: `update { isActive: false }` |
 | Barrel index imports (`from @/components`) | Circular deps; build issues | Import directly dari sub-module; pengecualian resmi hanya `@/components/shared` |
 | Missing `hasPermission()` check | Bypasses UI protection; security risk | **Every** action (read & mutasi, termasuk helper select) must call it |

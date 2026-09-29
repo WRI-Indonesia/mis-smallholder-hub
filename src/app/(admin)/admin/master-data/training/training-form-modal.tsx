@@ -27,7 +27,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { TRAINING_CATEGORY_LABELS } from "./training-list-client";
+import { TRAINING_CATEGORY_LABELS } from "@/lib/training-category-labels";
 import { Calendar } from "@/components/ui/calendar";
 import { id } from "date-fns/locale";
 
@@ -194,12 +194,19 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
           );
         } else {
           // Update the training activity with the uploaded key/name
-          await updateTrainingActivity({
+          const attach = await updateTrainingActivity({
             id: result.id,
             ...data,
             evidenceKey: uploadRes.data!.key,
             evidenceName: uploadRes.data!.filename,
           });
+          // Dulu hasilnya diabaikan — gagal menempel bukti tetap "berhasil dibuat" (#385).
+          if (!attach.success) {
+            toast.warning(
+              "Pelatihan berhasil dibuat, tetapi evidence gagal ditempelkan: " +
+                (typeof attach.error === "string" ? attach.error : Object.values(attach.error ?? {}).flat()[0] ?? "coba unggah ulang lewat Edit"),
+            );
+          }
         }
       }
 
@@ -365,8 +372,9 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
                 <span className="font-medium text-primary">{activity.evidenceName}</span>
               </p>
             )}
-            {errors.evidence && (
-              <p className="text-sm text-destructive mt-1">{errors.evidence[0]}</p>
+            {/* `evidenceKey` = penolakan kunci berkas oleh server (#385). */}
+            {(errors.evidence ?? errors.evidenceKey) && (
+              <p className="text-sm text-destructive mt-1">{(errors.evidence ?? errors.evidenceKey)[0]}</p>
             )}
           </div>
 

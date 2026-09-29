@@ -17,7 +17,7 @@ import { MONTH_NAMES_ID } from "@/lib/format";
  */
 
 /** Sejak versi ini angka DIUKUR saat rilis; sebelumnya rekonstruksi ± (spec §2.3–2.4). */
-export const MEASURED_FROM_VERSION = "v0.21.0";
+const MEASURED_FROM_VERSION = "v0.21.0";
 
 // Titik hanya dibuang bila benar pemisah ribuan (diikuti tepat 3 digit) —
 // typo desimal-titik ("2.67") tidak boleh terbaca 267 (#229).

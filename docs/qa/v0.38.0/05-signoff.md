@@ -1,5 +1,7 @@
 # 05 · Sign-off v0.38.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
 | Developer | Claude (dev) | 2026-09-22 | **Go (lokal)** | gate lokal hijau (lint · build · typecheck · 1.744 tes); `02` 8 kasus + regresi; run lokal kasus 7 Pass · 0 Fail (TC-343-04 Blocked — peran), smoke 10 Pass · 21 Blocked (render 38/38 rute 200), regresi 3 Pass; 4 temuan run diperbaiki & di-commit (`bf17514`); review rentang penuh `/code-review high` 2 temuan ditindak (`bb9ac53`) |

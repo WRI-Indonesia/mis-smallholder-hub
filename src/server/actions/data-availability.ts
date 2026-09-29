@@ -168,7 +168,7 @@ export async function getDataAvailabilityView(): Promise<DataAvailabilityView> {
       trainingPackages,
       activities: g.activities.map((a) => ({
         packageCode: a.package.code,
-        hasEvidence: a.evidenceKey != null,
+        hasEvidence: !!a.evidenceKey, // "" dari import ≠ ada bukti (#385)
       })),
       farmers: g.farmers.map((f) => ({
         id: f.id,

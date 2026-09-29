@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Prisma } from "@prisma/client";
 import { scanSchema } from "../../scripts/schema-scan";
 import { DATA_SCHEMA } from "@/lib/data-schema.generated";
-import { countableFields, entitiesByDomain, findEntity, relationsOf } from "@/lib/data-schema";
+import { countableFields } from "@/lib/data-schema";
 
 /**
  * Dua lapis penjagaan:
@@ -102,27 +102,15 @@ describe("schema-scan — penafsiran skema", () => {
     expect(entity("Farmer")?.domain).toBe("farmer");
     expect(entity("Province")?.domain).toBe("geography");
     expect(entity("RolePermission")?.domain).toBe("rbac");
-    expect(entitiesByDomain(scan).length).toBeGreaterThan(5);
   });
 });
 
 describe("pembantu data-schema", () => {
-  it("findEntity menerima nama model maupun nama properti client", () => {
-    expect(findEntity("FarmerGroup")?.name).toBe("FarmerGroup");
-    expect(findEntity("farmerGroup")?.name).toBe("FarmerGroup");
-  });
-
   it("countableFields membuang relasi dan kolom Json", () => {
-    const parcel = findEntity("LandParcel");
+    const parcel = DATA_SCHEMA.entities.find((e) => e.name === "LandParcel");
     const names = countableFields(parcel!).map((f) => f.name);
     expect(names).toContain("parcelId");
     expect(names).not.toContain("geometry"); // Json — tidak bisa di-_count
     expect(names).not.toContain("farmer"); // relasi
-  });
-
-  it("relationsOf mengambil relasi dari kedua arah", () => {
-    const keys = relationsOf("LandParcel").map((r) => `${r.from}→${r.to}`);
-    expect(keys).toContain("Farmer→LandParcel");
-    expect(keys).toContain("LandParcel→Tree");
   });
 });

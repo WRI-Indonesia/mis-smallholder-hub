@@ -16,7 +16,7 @@
  * - `Periode` kosong di 80 berkas / hanya "Juni 2026" → tanggal null.
  */
 import type { RawSheetRow } from "@/lib/excel-sheet-reader";
-import { cleanId, parseScore, parseSurveyDate, roundScore } from "@/lib/bmp-assessment";
+import { parseScore, parseSurveyDate, roundScore } from "@/lib/bmp-assessment";
 
 export type BmpIndicatorLevelCode = "LEMBAGA" | "INDIVIDU";
 
@@ -436,5 +436,3 @@ export function bmpScoreLabel(m: Pick<BmpIndicatorRef, "scoreLabel0" | "scoreLab
   if (score == null) return null;
   return [m.scoreLabel0, m.scoreLabel1, m.scoreLabel2, m.scoreLabel3][score] ?? null;
 }
-
-export { cleanId };

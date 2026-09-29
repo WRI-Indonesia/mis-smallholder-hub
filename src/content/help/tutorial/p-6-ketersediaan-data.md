@@ -19,7 +19,7 @@ Angkanya dihitung langsung saat halaman dibuka (bukan snapshot), jadi perbaikan 
 
 ## Langkah
 
-1. Buka menu **Data Analyst → Ketersediaan Data — Semua Lembaga**.
+1. Buka menu **Data Analyst → Data — All Lembaga** (judul halamannya **Ketersediaan Data — Semua Lembaga**).
 2. Baca **hero** di atas: cincin **Skor Keseluruhan** dengan label bandnya, **distribusi Lembaga per band** (berapa yang kritis / perlu perhatian / baik / lengkap), tiga angka ringkas, dan **Aksi lintas Lembaga** — tiga kolom yang belum pernah diisi di banyak Lembaga beserta menu unggah massal untuk mengisinya.
 + Klik segmen distribusi (misalnya merah "kritis") untuk menyaring matriks dan panel di bawah ke Lembaga di band itu; klik lagi atau "hapus filter band" untuk melepasnya.
 3. Lihat lima **kartu domain** — skor besar berwarna band, bobotnya terhadap Skor Keseluruhan, jumlah entitas, dan berapa Lembaga yang kritis di domain itu.

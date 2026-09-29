@@ -86,7 +86,7 @@ export type UpdateBmpAssessmentInput = z.input<typeof updateBmpAssessmentSchema>
 // Refine tanggal yang sama dengan form tunggal: klien memang sudah
 // mengosongkan tanggal masa depan/beda tahun di pratinjau, tetapi action adalah
 // endpoint HTTP — payload langsung tidak boleh menyimpan apa yang form tolak.
-export const bmpAssessmentImportRowSchema = z
+const bmpAssessmentImportRowSchema = z
   .object({
     rowNumber: z.number().int().min(1),
     farmerCode: z.string().trim().min(1, "ID Petani wajib ada"),
@@ -124,7 +124,7 @@ const indicatorNotes = z
   .nullable()
   .optional();
 
-export const bmpIndicatorScoreSchema = z.object({
+const bmpIndicatorScoreSchema = z.object({
   indicatorId: z.string().min(1, "Indikator tidak valid"),
   score: manualIndicatorScore,
   notes: indicatorNotes,
@@ -155,7 +155,7 @@ export const bmpGroupAssessmentSchema = z.object(groupAssessmentFields).superRef
 export type BmpGroupAssessmentInput = z.input<typeof bmpGroupAssessmentSchema>;
 
 /** Satu form survei per petani hasil pratinjau klien (identitas = petani terpilih di dropdown). */
-export const bmpSurveyFormImportSchema = z
+const bmpSurveyFormImportSchema = z
   .object({
     fileName: z.string().trim().min(1).max(300),
     farmerId: z.string().min(1, "Petani wajib dipilih"),

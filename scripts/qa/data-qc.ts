@@ -7,7 +7,7 @@
  *
  *   npx dotenv -e .env.staging -- npx tsx scripts/qa/data-qc.ts
  *   npx dotenv -e .env.prod    -- npx tsx scripts/qa/data-qc.ts --section A,B
- *   npx dotenv -e .env.staging -- npx tsx scripts/qa/data-qc.ts --section B --parcel HJP.0001.A.14.01.10.2002
+ *   npx dotenv -e .env.staging -- npx tsx scripts/qa/data-qc.ts --section B --parcel <ID Lahan>
  *
  * Menambah cek: tambah entri di CHECKS (id, bagian, maksud, sql, expect) lalu
  * perbarui baris di 03-data-qc.md. `expect` = nilai persis, fungsi predikat,
@@ -20,7 +20,7 @@ type Row = Record<string, unknown>;
 type Expect = string | number | null | ((v: string, rows: Row[]) => boolean);
 interface Check {
   id: string;
-  section: "A" | "B" | "C" | "D" | "E" | "F";
+  section: "A" | "B" | "C" | "D" | "E" | "F" | "G";
   purpose: string;
   sql: string;
   /** Kolom yang ditampilkan sebagai "aktual" (bawaan: seluruh kolom baris pertama digabung " · "). */
@@ -33,7 +33,7 @@ interface Check {
 
 const args = process.argv.slice(2);
 const opt = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
-const sections = (opt("--section") ?? "A,B,C,D,E,F").split(",").map((s) => s.trim().toUpperCase());
+const sections = (opt("--section") ?? "A,B,C,D,E,F,G").split(",").map((s) => s.trim().toUpperCase());
 const parcelId = opt("--parcel") ?? null;
 
 function dbLabel(url: string | undefined): string {
@@ -53,10 +53,10 @@ const MIGRATIONS = [
 const MIGRATIONS_MONEV = ["20260918120000_bmp_assessment", "20260920100000_bmp_assessment_unique_active", "20260920120000_bmp_indicator_detail"];
 /** Rilis setelah v0.36.0 — #353 bagian E (skema) + #352 P4 (menu); deploy = #357. */
 const MIGRATIONS_353E = ["20260921120000_drop_activity_status_tree_surveyed_at"];
-/** Label & order menu Ketersediaan Data dari `prisma/seeds/data/menu.csv` (#352 P4) — DB yang belum di-seed tampil ✗ di F3. */
+/** Label & order menu Ketersediaan Data dari `prisma/seeds/data/menu.csv` (#352 P4; label disamakan ke prod #364) — DB yang belum di-seed tampil ✗ di F3. */
 const MENU_352 = [
-  { key: "data-analyst-data-availability", title: "Ketersediaan Data — Semua Lembaga", order: 2 },
-  { key: "data-analyst-data-completeness", title: "Ketersediaan Data — Per Lembaga", order: 3 },
+  { key: "data-analyst-data-availability", title: "Data — All Lembaga", order: 2 },
+  { key: "data-analyst-data-completeness", title: "Data — Per Lembaga", order: 3 },
 ];
 const joinRow = (rows: Row[]) => (rows[0] ? Object.values(rows[0]).map((v) => String(v)).join(" · ") : "(tidak ada baris)");
 
@@ -127,7 +127,7 @@ const CHECKS: Check[] = [
     id: "C2", section: "C", purpose: "menu report-marker + izin per peran",
     sql: `select (select count(*) from tbl_menu_item where key='report-marker' and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key='report-marker' and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key='report-marker' and is_active group by role order by role) x) as per_role`,
     pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
-    expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 16, expectLabel: "1 menu · 16 izin (ADMIN 5 · OPERATOR/MANAGEMENT/SUPERADMIN 3 · DONOR 2)",
+    expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 14, expectLabel: "1 menu · 14 izin (ADMIN 5 · OPERATOR/MANAGEMENT/SUPERADMIN 3; DONOR tanpa akses sejak 2026-09-29, revisi #263)",
   },
   {
     id: "C4", section: "C", purpose: "urutan sidebar Report (Patok terakhir)",
@@ -169,10 +169,10 @@ const CHECKS: Check[] = [
     expect: (v) => v === "32 · 18 · 14 · 21", expectLabel: "32 · 18 · 14 · 21 (sebelum seed: 0)",
   },
   {
-    id: "E5", section: "E", purpose: "menu master-data-bmp-monev + dashboard-bmp-monev + 33 izin (cermin Pelatihan)",
+    id: "E5", section: "E", purpose: "menu master-data-bmp-monev + dashboard-bmp-monev + 35 izin",
     sql: `select (select count(*) from tbl_menu_item where key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key in ('master-data-bmp-monev','dashboard-bmp-monev') and is_active group by role order by role) x) as per_role`,
     pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
-    expect: (_v, rows) => Number(rows[0]?.menu) === 2 && Number(rows[0]?.perms) === 33, expectLabel: "2 menu · 33 izin (ADMIN 10 · SUPERADMIN 9 · OPERATOR/MANAGEMENT 6 · DONOR 2)",
+    expect: (_v, rows) => Number(rows[0]?.menu) === 2 && Number(rows[0]?.perms) === 35, expectLabel: "2 menu · 35 izin (ADMIN 10 · SUPERADMIN 9 · OPERATOR/MANAGEMENT 6 · DONOR 4 — VIEW+PRINT master data sejak 2026-09-29)",
   },
   {
     // Urutan = menu.csv sejak v0.37.0 (diubah admin di prod 2026-09-21, CSV disamakan): Main → Pelatihan → BMP → Monev BMP → Risk.
@@ -213,6 +213,28 @@ const CHECKS: Check[] = [
     pick: (r) => r.map((x) => `${x.title}:${x.order}`).join(" · ") || "(tidak ada)",
     expect: (_v, rows) => MENU_352.every((m) => rows.some((x) => x.key === m.key && x.title === m.title && Number(x.order) === m.order)),
     expectLabel: MENU_352.map((m) => `${m.title}:${m.order}`).join(" · "),
+  },
+  {
+    id: "G1", section: "G", purpose: "menu data-analyst-parcel-overlap + izin per peran (v1.2.0; ✗ = seed-menu-key.mjs belum dijalankan)",
+    sql: `select (select count(*) from tbl_menu_item where key='data-analyst-parcel-overlap' and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key='data-analyst-parcel-overlap' and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key='data-analyst-parcel-overlap' and is_active group by role order by role) x) as per_role`,
+    pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
+    expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 8, expectLabel: "1 menu · 8 izin (ADMIN/MANAGEMENT/OPERATOR/SUPERADMIN: VIEW+EXPORT)",
+  },
+  {
+    id: "G2", section: "G", purpose: "menu data-analyst-sprint + izin per peran (v1.2.0; ✗ = seed-menu-key.mjs belum dijalankan)",
+    sql: `select (select count(*) from tbl_menu_item where key='data-analyst-sprint' and is_active)::int as menu, (select count(*) from rbac_role_permission where menu_key='data-analyst-sprint' and is_active)::int as perms, (select string_agg(role || ':' || n, ' ') from (select role::text, count(*)::int as n from rbac_role_permission where menu_key='data-analyst-sprint' and is_active group by role order by role) x) as per_role`,
+    pick: (r) => `${r[0]?.menu} menu · ${r[0]?.perms} izin · ${r[0]?.per_role ?? "—"}`,
+    expect: (_v, rows) => Number(rows[0]?.menu) === 1 && Number(rows[0]?.perms) === 3, expectLabel: "1 menu · 3 izin (ADMIN/MANAGEMENT/SUPERADMIN: VIEW)",
+  },
+  {
+    id: "G3", section: "G", purpose: "pelatihan aktif ber-evidence_key '' (import) — sejak #385 dihitung TANPA bukti (informatif)",
+    sql: `select count(*) filter (where evidence_key = '')::int as kosong, count(*) filter (where evidence_key <> '')::int as berisi from tbl_training_activity where is_active`,
+    pick: (r) => `${r[0]?.kosong} kosong · ${r[0]?.berisi} berisi`, expect: null, expectLabel: "informatif (mis-prod 2026-09-29: 26 kosong · 0 berisi)",
+  },
+  {
+    id: "G4", section: "G", purpose: "user nonaktif — sejak #252 scope-nya BY_DISTRICT kosong walau sesi masih hidup (informatif)",
+    sql: `select count(*) filter (where not is_active)::int as nonaktif, count(*)::int as total from tbl_user`,
+    pick: (r) => `${r[0]?.nonaktif} nonaktif / ${r[0]?.total}`, expect: null, expectLabel: "informatif",
   },
 ];
 

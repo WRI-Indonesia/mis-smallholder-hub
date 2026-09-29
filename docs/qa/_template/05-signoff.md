@@ -1,5 +1,7 @@
 # 05 · Sign-off vX.Y.Z
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 | Peran | Nama | Tanggal | Keputusan | Syarat / catatan |
 |---|---|---|---|---|
 | Developer | | | Go / No-go | gate lokal hijau; `02` lengkap; temuan blocker/major diperbaiki |

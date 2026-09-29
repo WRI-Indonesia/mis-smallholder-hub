@@ -1,5 +1,7 @@
 # QA/QC v0.38.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md)
+
 | | |
 |---|---|
 | Versi | v0.38.0 (MINOR — fitur baru Profil Petani PDF #343 + fix Dashboard Monev BMP #360) |

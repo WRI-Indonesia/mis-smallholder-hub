@@ -1,27 +1,19 @@
 import { z } from "zod";
 
-export const menuItemSchema = z.object({
-  key: z.string().min(2, "Key minimal 2 karakter").regex(/^[a-z0-9-]+$/, "Key hanya huruf kecil, angka, dan dash"),
-  parentKey: z.string().nullable().optional(),
-  title: z.string().min(2, "Title minimal 2 karakter"),
-  url: z.string().min(1, "URL wajib diisi"),
-  icon: z.string().nullable().optional(),
-  order: z.number().int().min(0),
-  isActive: z.boolean(),
-  isVisible: z.boolean(),
-});
-
+/**
+ * Menu Management hanya mengubah **Aktif** & **Visible** (#364, keputusan owner
+ * 2026-09-29). Struktur menu — judul, urutan, induk, URL, ikon, dan menu baru —
+ * hanya lewat `prisma/seeds/data/menu.csv` + seed: seed rilis menimpa kelima
+ * kolom itu (`seedMenu`), dan akun demo pernah mengubah label/urutan prod tanpa
+ * jejak di repo. Field lain yang dikirim klien dibuang Zod (objek non-strict).
+ */
 export const updateMenuItemSchema = z.object({
-  id: z.string(),
-  key: z.string(),
-  parentKey: z.string().nullable().optional(),
-  title: z.string().min(2, "Title minimal 2 karakter"),
-  url: z.string().min(1, "URL wajib diisi"),
-  icon: z.string().nullable().optional(),
-  order: z.number().int().min(0),
+  id: z.string().min(1),
   isActive: z.boolean(),
   isVisible: z.boolean(),
 });
 
-export type MenuItemInput = z.infer<typeof menuItemSchema>;
+/** Id menu untuk nonaktifkan / aktifkan kembali (#237). */
+export const menuIdSchema = z.string().min(1);
+
 export type UpdateMenuItemInput = z.infer<typeof updateMenuItemSchema>;

@@ -3,10 +3,13 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
-import { menuItemSchema, updateMenuItemSchema } from "@/validations/menu.schema";
-import type { MenuItemInput, UpdateMenuItemInput } from "@/validations/menu.schema";
-import { buildMenuTree, validateMenuDepth } from "@/lib/menu-utils";
+import { menuIdSchema, updateMenuItemSchema } from "@/validations/menu.schema";
+import type { UpdateMenuItemInput } from "@/validations/menu.schema";
+import { buildMenuTree } from "@/lib/menu-utils";
 import type { MenuItem } from "@/lib/menu-utils";
+import type { ActionResult } from "@/types/action-result";
+
+const NO_ACTIVE_PERMISSION = "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu";
  
 export async function getMenuItems(): Promise<{ success: boolean; data?: MenuItem[] }> {
   try {
@@ -36,40 +39,11 @@ export async function getAllMenuItems() {
   });
 }
  
-export async function createMenuItem(input: MenuItemInput) {
-  if (!(await hasPermission("settings-menu", "CREATE"))) {
-    return { success: false, error: "Tidak memiliki izin untuk menambah menu" };
-  }
-
-  const parsed = menuItemSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
- 
-  const existing = await prisma.menuItem.findUnique({ where: { key: parsed.data.key } });
-  if (existing) return { success: false, error: { key: ["Key sudah digunakan"] } };
- 
-  const allItems = await prisma.menuItem.findMany({ where: { isActive: true } });
-  if (!validateMenuDepth(parsed.data.key, parsed.data.parentKey ?? null, allItems)) {
-    return { success: false, error: { parentKey: ["Menu depth tidak boleh lebih dari 3 level"] } };
-  }
-
-  const session = await auth();
-  await prisma.menuItem.create({
-    data: {
-      key: parsed.data.key,
-      parentKey: parsed.data.parentKey,
-      title: parsed.data.title,
-      url: parsed.data.url,
-      icon: parsed.data.icon,
-      order: parsed.data.order,
-      isActive: parsed.data.isActive,
-      isVisible: parsed.data.isVisible,
-      createdBy: session?.user?.id ?? null,
-    },
-  });
- 
-  return { success: true };
-}
- 
+/**
+ * Satu-satunya perubahan menu dari UI: Aktif & Visible (#364). Struktur menu
+ * (judul, urutan, induk, URL, ikon) dan menu baru hanya lewat `menu.csv` + seed —
+ * sengaja tidak ada aksi tambah menu.
+ */
 export async function updateMenuItem(input: UpdateMenuItemInput) {
   if (!(await hasPermission("settings-menu", "EDIT"))) {
     return { success: false, error: "Tidak memiliki izin untuk mengubah menu" };
@@ -77,41 +51,73 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
 
   const parsed = updateMenuItemSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
- 
-  const allItems = await prisma.menuItem.findMany({ where: { isActive: true } });
-  const otherItems = allItems.filter(item => item.id !== parsed.data.id);
-  if (!validateMenuDepth(parsed.data.key, parsed.data.parentKey ?? null, otherItems)) {
-    return { success: false, error: { parentKey: ["Menu depth tidak boleh lebih dari 3 level"] } };
+
+  const current = await prisma.menuItem.findUnique({ where: { id: parsed.data.id }, select: { isActive: true, parentKey: true } });
+  if (!current) return { success: false, error: "Menu tidak ditemukan — muat ulang halaman" };
+  // Mengubah Aktif = soft delete / reaktivasi → level DELETE, sama dengan
+  // `deleteMenuItem`; EDIT saja hanya boleh mengubah Visible.
+  if (current.isActive !== parsed.data.isActive && !(await hasPermission("settings-menu", "DELETE"))) {
+    return { success: false, error: NO_ACTIVE_PERMISSION };
+  }
+  // Aturan induk nonaktif sama dengan tombol "Aktifkan kembali" (review wrap-up).
+  if (!current.isActive && parsed.data.isActive) {
+    const blocked = await inactiveParentError(current.parentKey);
+    if (blocked) return { success: false, error: blocked };
   }
 
   const session = await auth();
   await prisma.menuItem.update({
     where: { id: parsed.data.id },
     data: {
-      parentKey: parsed.data.parentKey,
-      title: parsed.data.title,
-      url: parsed.data.url,
-      icon: parsed.data.icon,
-      order: parsed.data.order,
       isActive: parsed.data.isActive,
       isVisible: parsed.data.isVisible,
       modifiedBy: session?.user?.id ?? null,
     },
   });
- 
+
   return { success: true };
 }
  
-export async function deleteMenuItem(id: string) {
+/**
+ * Nonaktifkan (soft delete) / aktifkan kembali satu menu — satu jalur untuk
+ * kedua arah (#237) agar guard, cek id basi, dan aturan Visible tidak
+ * menyimpang. Level DELETE. Nonaktif mematikan Aktif + Visible; aktif kembali
+ * menyalakan keduanya (kalau tidak, menu tetap tak tampil) dan ditolak bila
+ * induknya masih nonaktif — anak tak terjangkau dari sidebar/izin berjenjang.
+ */
+/** Pesan penolakan bila induk menu masih nonaktif (anak tak terjangkau dari sidebar/izin berjenjang). */
+async function inactiveParentError(parentKey: string | null): Promise<string | null> {
+  if (!parentKey) return null;
+  const parent = await prisma.menuItem.findUnique({ where: { key: parentKey }, select: { title: true, isActive: true } });
+  return parent && !parent.isActive ? `Induk menu "${parent.title}" masih nonaktif — aktifkan induknya dulu` : null;
+}
+
+async function setMenuItemActive(id: string, active: boolean): Promise<ActionResult> {
   if (!(await hasPermission("settings-menu", "DELETE"))) {
-    return { success: false, error: "Tidak memiliki izin untuk menghapus menu" };
+    return { success: false, error: NO_ACTIVE_PERMISSION };
+  }
+  if (!menuIdSchema.safeParse(id).success) return { success: false, error: "Menu tidak valid" };
+
+  const current = await prisma.menuItem.findUnique({ where: { id }, select: { parentKey: true } });
+  if (!current) return { success: false, error: "Menu tidak ditemukan — muat ulang halaman" };
+  if (active) {
+    const blocked = await inactiveParentError(current.parentKey);
+    if (blocked) return { success: false, error: blocked };
   }
 
   const session = await auth();
   await prisma.menuItem.update({
     where: { id },
-    data: { isActive: false, isVisible: false, modifiedBy: session?.user?.id ?? null },
+    data: { isActive: active, isVisible: active, modifiedBy: session?.user?.id ?? null },
   });
   return { success: true };
 }
 
+export async function deleteMenuItem(id: string): Promise<ActionResult> {
+  return setMenuItemActive(id, false);
+}
+
+/** Tombol "Aktifkan kembali" (#237) — dulu memanggil `deleteMenuItem`. */
+export async function reactivateMenuItem(id: string): Promise<ActionResult> {
+  return setMenuItemActive(id, true);
+}

@@ -19,7 +19,7 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **Lembaga Petani** — mempersempit ke satu lembaga. Pilihannya ikut menyempit bila Distrik sudah dipilih.
 
-**NKT** — menyaring menurut status Nilai Konservasi Tinggi: *Terdampak NKT*, *Tidak terdampak* (sudah dinilai bersih), atau *Belum dinilai* (belum ada asesmen). Lahan yang kena NKT juga diberi badge merah di kolom ID Lahan.
+**NKT** — menyaring menurut status Nilai Konservasi Tinggi: *Terdampak NKT* (termasuk lahan yang berada di dalam area NKT), *Tidak terdampak* (sudah dinilai bersih), atau *Belum dinilai* (belum ada asesmen). Lahan yang kena NKT juga diberi badge merah di kolom ID Lahan.
 
 **Patok** — *Sudah ada patok* / *Belum ada patok* (patok batas dari tab Patok di detail lahan).
 
@@ -31,7 +31,9 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 
 **ID Lahan** — nomor persil milik organisasi Anda. Unik untuk seorang petani, dan dipakai mencocokkan data produksi maupun shapefile.
 
-**Petani** — pemilik/penggarap persil. Satu petani boleh punya banyak persil.
+**Nama Petani / ID Petani** — pemilik/penggarap persil. Satu petani boleh punya banyak persil.
+
+**Lembaga Petani** — lembaga tempat petani pemilik persil terdaftar.
 
 **Luas (ha)** — luas persil dalam hektar. Ini **penyebut** perhitungan produktivitas Ton/Ha di Dashboard BMP, jadi luas yang keliru membuat produktivitas ikut keliru meski data panennya benar.
 
@@ -52,3 +54,11 @@ Lahan yang diinput lewat form di halaman ini **tidak punya poligon**, sehingga t
 **Sepadan** (hanya di detail lahan dan Profil Lahan PDF, bukan kolom tabel) — dengan siapa atau apa lahan berbatasan di sisi Utara, Timur, Selatan, dan Barat, ditulis bebas seperti pada SKT: "Lahan Pak Budi", "Jalan desa", "Sungai", "PT X". Ini catatan lapangan, bukan hasil hitungan peta — jadi bisa menyebut jalan, sungai, atau lahan yang belum terdaftar di MIS. Berbeda dengan *lahan tetangga* yang dihitung dari poligon dan hanya memuat lahan yang ada di MIS.
 
 **Revisi** — bertambah otomatis setiap data lahan diperbarui. Jejak riwayat, bukan kolom yang perlu diisi.
+
+## Tombol
+
+**Tambah Lahan** — hanya muncul bila akun Anda punya izin menambah data pada menu ini.
+
+**Unduh Lahan** — poligon lahan sesuai filter sebagai Shapefile (ZIP), GeoJSON, atau KML; aktif setelah Distrik atau Lembaga Petani dipilih, dan hanya muncul bila akun Anda punya izin **Export**. Tombol **Excel** di tabel mengunduh isi daftar dengan izin yang sama.
+
+**Aksi baris** — Lihat membuka Detail Lahan; Edit membuka jendela isian; Nonaktifkan/Aktifkan kembali butuh izin hapus, yang secara bawaan hanya dipegang SUPERADMIN.

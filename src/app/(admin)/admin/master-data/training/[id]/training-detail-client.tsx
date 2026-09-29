@@ -13,7 +13,7 @@ import {
   removeParticipants,
 } from "@/server/actions/training";
 import { toast } from "sonner";
-import { TRAINING_CATEGORY_LABELS } from "../training-list-client";
+import { TRAINING_CATEGORY_LABELS } from "@/lib/training-category-labels";
 import { AddParticipantsModal } from "./add-participants-modal";
 import { Input } from "@/components/ui/input";
 import { maskNik } from "@/lib/mask";

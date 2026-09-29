@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
  * metrik → seksi collapsible → baris atribut, lalu footer aksi.
  *
  * Konvensi props react-map-gl <Popup>: sebar `MAP_POPUP_PROPS`.
- * Rule: docs/standards/ui-ux.md §"Popup Peta (standar)".
+ * Rule: docs/standards/ui-ux-map.md — butir "Popup lahan (STANDAR — #188)".
  */
 
 /** Props <Popup> react-map-gl standar (anchor bawah; lebar dikontrol isi via w-[…]). */

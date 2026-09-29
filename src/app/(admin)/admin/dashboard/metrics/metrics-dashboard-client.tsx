@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import type { TechDebtItem } from "@/lib/tech-debt";
 import type { ReleaseMetric } from "@/types/release-metrics";
 import type { RoadmapSummary } from "@/types/roadmap";
-import { dayEpoch, effectiveDate, fmt1, fmt2, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtRvs, issueUrl, releaseUrl } from "./metrics-shared";
+import { dayEpoch, effectiveDate, fmt1, fmt2, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtRvs, docUrl, issueUrl, releaseUrl } from "./metrics-shared";
 import { RvsCurveChart } from "./rvs-curve-chart";
 import { RvsPeriodBars } from "./rvs-period-bars";
 import { RoadmapStepChart, TestCountChart } from "./metrics-small-charts";
@@ -554,7 +554,7 @@ export function MetricsDashboardClient({
             <p className="mt-2 text-[11px] text-muted-foreground">
               Rincian lengkap (evidence, owner, sequencing):{" "}
               <a
-                href="https://github.com/WRI-Indonesia/mis-smallholder-hub/blob/mvp/docs/project/tech-debt.md"
+                href={docUrl("docs/project/tech-debt.md")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 underline-offset-2 hover:underline dark:text-amber-400"

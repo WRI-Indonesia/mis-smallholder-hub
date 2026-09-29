@@ -1,0 +1,30 @@
+# Page: Laporan Patok
+
+[← Menu Report](README.md) · [← Katalog halaman](../README.md)
+
+| Atribut | Nilai |
+|---|---|
+| Menu key | `report-marker` (menu baru #331, keputusan owner 2026-09-14 — satu-satunya menu baru dari rangkaian #326–#332) |
+| URL | `/admin/report/marker` |
+| Icon | `Milestone` (tiang penanda; alternatif yang terdaftar di `ICON_MAP`: `Signpost`, `Fence` — ganti lewat `menu.csv` + seed, revisi owner 2026-09-15 dari `Landmark`) |
+| File | `src/app/(admin)/admin/report/marker/page.tsx` · `marker-report-client.tsx` |
+| Izin | VIEW layar · EXPORT unduhan Excel/spasial · PRINT PDF. Seed: `prisma/seeds/data/menu.csv` + `role-permissions.csv` (ADMIN CREATE/EDIT/EXPORT/PRINT/VIEW — tanpa DELETE; OPERATOR/MANAGEMENT/SUPERADMIN EXPORT/PRINT/VIEW; DONOR tanpa akses sejak 2026-09-29); DB berisi data → seed parsial generik `scripts/seed/seed-menu-key.mjs report-marker` (menu + izin dibaca dari CSV, dry-run bawaan, `--apply` menulis, idempoten; skrip khusus `seed-menu-report-marker.mjs` dihapus 2026-09-29). **Applied mis-dev & mis-staging-local 2026-09-14, `mis-staging` & `mis-prod` 2026-09-15** (#333: dry-run → `--apply`, 16 izin, `rbac:compare` 470/470 di keduanya) |
+
+## Diagram objek
+
+```text
+Page: Laporan Patok
+├── Filter: Distrik (wajib) · Lembaga Petani (opsional) · Muat Data
+├── Filter klien (setelah dimuat): Kondisi
+├── Unduh (EXPORT): Excel · Shapefile/GeoJSON/KML (Point) · (PRINT) PDF peta + tabel
+├── KPI: Patok · Ada (terpasang) · Hilang · Rusak · Belum dipasang
+└── Tabel: Kode · KT/Blok · Lahan (Nama Petani · ID Petani · ID Lahan #no, satu per baris) · Kondisi · Bahan · Lintang, Bujur
+```
+
+| Objek | Keterangan |
+|---|---|
+| Data | `getMarkerReportRows({ districtId, farmerGroupId }, mode)` — inti kueri **sama** dengan baris legenda Peta Lahan (`markerRowsForFilters`: scope akses via `AND`, lahan aktif, patok aktif — tanpa tanda NKT turunan sejak #345 & per lahan); `mode: "export"` memeriksa EXPORT di server sebelum baris dikirim untuk berkas |
+| Tabel | `uniqueMarkerRows` — satu baris per patok fisik, lahan pemakai satu per baris (wrap), urut Kelompok Tani → Blok → kode; filter kondisi di klien; jumlah "N dari M" bila tersaring |
+| KPI | Hitungan per kondisi dari daftar unik; "% dari patok" untuk Ada (kartu "Patok lahan NKT" dihapus #345) |
+| Unduh | `exportMarkerRow` (helper Peta Lahan) atas subset yang tersaring: Excel (kolom Kode Patok…), Point SHP/GeoJSON/KML, PDF landscape (peta klaster + tabel per lahan) — nama berkas `patok_<slug label>_<stempel WIB YYYYMMDD-HHmm>` (`exportFileBase`; varian `patok-nkt` dihapus #345) |
+| Bantuan | Tutorial `l-8-laporan-patok` |

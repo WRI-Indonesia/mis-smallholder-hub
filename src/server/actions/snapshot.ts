@@ -5,15 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { getAccessContext, getAccessibleDistrictIds } from "@/lib/access-context";
-import { aggregateDashboardData, getDashboardFilterOptions } from "@/lib/dashboard-query";
+import { aggregateDashboardData } from "@/lib/dashboard-query";
 import { normalizeSnapshotData, toSnapshotData } from "@/lib/dashboard-aggregation";
 import { snapshotFiltersSchema, type SnapshotFiltersInput } from "@/validations/snapshot.schema";
 import type { ActionResult } from "@/types/action-result";
-import type {
-  DashboardFilterOptions,
-  SnapshotDetail,
-  SnapshotListItem,
-} from "@/types/dashboard";
+import type { SnapshotDetail, SnapshotListItem } from "@/types/dashboard";
 
 /** Whether a snapshot's districtId is visible given the accessible district ids (null = unrestricted). */
 function canAccessDistrict(accessibleIds: string[] | null, districtId: string | null): boolean {
@@ -79,14 +75,6 @@ export async function generateSnapshot(
 
   revalidatePath("/admin/tools/snapshot");
   return { success: true, data: { id: snapshot.id } };
-}
-
-/** District + joined-year options for the snapshot generation form (scoped to the user). */
-export async function getSnapshotFilterOptions(): Promise<DashboardFilterOptions> {
-  if (!(await hasPermission("dashboard-snapshot", "VIEW"))) {
-    throw new Error("Tidak memiliki izin untuk mengakses snapshot");
-  }
-  return getDashboardFilterOptions();
 }
 
 /** List snapshots accessible to the user (own districts + organization-wide). */

@@ -1,5 +1,7 @@
 # QA/QC v1.1.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md)
+
 | | |
 |---|---|
 | Versi | **v1.1.0** (MINOR — fitur baru #370–#372 + perubahan aturan UL Parcel Code #373; **rilis hari yang sama dengan v1.0.0 sebagai hotfix kritis**, keputusan owner 2026-09-23 — lihat di bawah) |

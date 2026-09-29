@@ -46,11 +46,9 @@ Tersedia dua berkas contoh di Langkah 1: **Unduh Template Excel** (semua kolom) 
 
 ### Kolom STDB yang belum bernomor
 
-Sel bertuliskan **"belum ada"**, **"belum dapat"**, atau **"n/a"** dulu diperlakukan sama dengan sel kosong dan **hilang** saat unggah. Sekarang sel seperti itu menjadi baris STDB tahap **Persiapan Data** — pernyataan "sedang diurus" akhirnya punya tempat.
+Sel bertuliskan **"belum ada"**, **"belum dapat"**, atau **"n/a"** saat ini masih diperlakukan sama dengan sel kosong: **tidak** ada baris STDB yang dibuat dari sel itu. Untuk mencatat STDB yang sedang diurus (tahap Persiapan Data, Pengajuan, atau Revisi), gunakan tab **Legalitas** di detail lahan — lihat tutorial *Mencatat surat, STDB, dan program pada lahan*.
 
-+ Bedanya dengan sel yang benar-benar kosong (atau berisi `-` / `0`): sel kosong tetap **tidak** membuat baris STDB apa pun.
-+ Semua lahan petani yang sama ditautkan ke **satu** berkas berjalan, bukan satu berkas per lahan.
-+ Bila petani itu **sudah punya STDB aktif** (bernomor) di sistem atau di berkas yang sama, sel "belum ada" pada barisnya **dilewati** — kemungkinan besar kolomnya memang tidak diisi untuk persil itu, bukan berarti petaninya sedang mengurus STDB baru. Untuk mencatat pengajuan baru bagi petani yang sudah punya STDB, gunakan tab Legalitas di detail lahan.
++ Sel kosong, `-`, atau `0` juga tidak membuat baris STDB apa pun. Hanya sel berisi nomor STDB yang menghasilkan STDB tahap **Terbit**.
 
 > [!hati-hati] Baris yang **ID Lahan-nya muncul dua kali dengan ID Petani berbeda** ditandai error di *kedua* barisnya. Sistem sengaja tidak memilih salah satu — itu salah ketik di sumber yang harus Anda putuskan sendiri.
 
@@ -64,7 +62,7 @@ Detail tampil di **Master Data → Lahan → detail lahan** (tab **Legalitas**: 
 
 **"ID Petani … tidak ditemukan dalam database atau akses Anda"** — petani ada tapi di luar wilayah/lembaga akses Anda, atau ID-nya berubah format (spasi, nol di depan hilang).
 
-**"Tidak ada data detail … untuk disimpan"** — baris itu tidak membawa surat, STDB, maupun UL Parcel Code. Hapus barisnya atau lengkapi.
+**"Tidak ada data detail … untuk disimpan"** — baris itu tidak membawa surat, STDB, UL Parcel Code, kelompok tani, blok, sepadan, maupun NKT. Hapus barisnya atau lengkapi.
 
 **Tombol validasi tetap nonaktif** — daftar lahan belum selesai dimuat (bisa beberapa detik untuk belasan ribu lahan). Tunggu sampai jumlah lahan tampil di Langkah 1.
 

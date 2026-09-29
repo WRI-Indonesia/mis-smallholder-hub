@@ -1,6 +1,6 @@
 # QA/QC Manual per Rilis
 
-> Bagian dari dokumentasi proyek. Indeks: [../README.md](../README.md) · Terkait: [../standards/versioning.md](../standards/versioning.md) §Alur Rilis · [../standards/workflow.md](../standards/workflow.md) §Issue Close
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Terkait: [../standards/versioning.md](../standards/versioning.md) §Alur Rilis · [../standards/workflow.md](../standards/workflow.md) §Issue Close
 
 Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum PR `staging → main`**; `05-signoff.md` adalah prasyarat tag. Gate otomatis (lint/build/test) menjaga kode; folder ini menjaga **apa yang dilihat pengguna** dan **angka di DB** — dua hal yang lolos gate pada tiap siklus review (#238, #318, #331).
 
@@ -18,6 +18,7 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 | `docs/qa/regression.md` | Kasus uji ber-tag `[regresi]` yang **ikut setiap rilis** (tumbuh dari temuan review/bug) | ✅ |
 | `docs/qa/vX.Y.Z/` | Satu folder per **versi** (tanggal ditulis di run) | ✅ |
 | `docs/qa/vX.Y.Z/runs/` | Lembar hasil per eksekusi | ✅ |
+| `docs/qa/archive/vX.Y.Z/` | Paket versi yang sudah sign-off & rilis, **lebih tua dari 3 rilis terakhir yang sudah terbit** (paket rilis yang sedang disiapkan tidak dihitung) — dipindah utuh saat rilis baru di-tag | ✅ |
 | `scripts/local/QA-QC/vX.Y.Z/evidence/` | Screenshot/PDF/Excel bukti + `input/` berkas uji | ❌ gitignored — repo **publik**, bukti memuat nama petani/NIK |
 
 ## Berkas
@@ -26,7 +27,7 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 |---|---|---|
 | `README.md` | Versi, rentang, migrasi, **rekap dari `summary.mjs`**, Go/No-go, known issues | Ditutup saat sign-off · QA |
 | `00-scope.md` | Issue + commit dalam rilis; **akun uji per peran**; **persiapan data uji** (langkah `TC-PREP-*`) | Awal siklus · dev |
-| `01-smoke.md` | Checklist tetap per menu & peran, ID `SM-nn`, kolom konsol per halaman | dev (template) · dijalankan QA tiap run |
+| `01-smoke.md` | Checklist tetap per menu & peran, ID `SM-nn`, kolom konsol per halaman. **Salinan penuh** di tiap versi (bukan selisih dari template): `new-run.mjs` membaca daftar smoke dari folder versi, dan salinannya adalah catatan persis apa yang diuji rilis itu — template boleh berubah tanpa mengubah sejarah | dev (template) · dijalankan QA tiap run |
 | `02-test-cases.md` | Satu blok per kasus `TC-<issue>-<nn>` · tag `[P0]`/`[P1]`/`[P2]`, `[regresi]` · estimasi menit | Ditulis dev **saat menutup issue** (bersama retro) |
 | `03-data-qc.md` | Daftar cek + harapan; kueri hidup di `scripts/qa/data-qc.ts` | dev · dijalankan dev/owner sebelum & sesudah migrasi |
 | `04-findings.md` | Temuan → issue GitHub (potongan `gh issue create` tersedia) | QA |
@@ -41,7 +42,7 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 
 ## Alur
 
-1. Dev: salin `_template/` → `vX.Y.Z/`; isi `00-scope.md` (termasuk akun & persiapan data) dan `02-test-cases.md` (kasus ditulis saat issue ditutup).
+1. Dev: salin `_template/` → `vX.Y.Z/` **kecuali** `runs/_template-run.md` (dibaca `new-run.mjs` langsung dari `_template/`); pindahkan versi tertua di atas ke `archive/` bila kini ada lebih dari 3 versi rilis; isi `00-scope.md` (termasuk akun & persiapan data) dan `02-test-cases.md` (kasus ditulis saat issue ditutup).
 2. Ops (#333-style): migrasi + seed ke `mis-staging` → `data-qc.ts` sebelum/sesudah → deploy `mvp → staging`.
 3. QA: `node scripts/qa/new-run.mjs --version vX.Y.Z --env staging` → jalankan `TC-PREP-*` dulu, lalu smoke + kasus uji + regresi; isi lembar run; bukti ke `evidence/`.
 4. Temuan → `04-findings.md` → issue (`bug`); dev memperbaiki → run ulang **hanya** kasus Fail + smoke P0 halaman terkait (`runs/<tanggal>-staging-ulang.md`).
@@ -56,6 +57,6 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 
 | Perintah | Fungsi |
 |---|---|
-| `npx dotenv -e .env.<env> -- npx tsx scripts/qa/data-qc.ts [--section A,B] [--md]` | Cetak DB efektif, jalankan semua cek read-only `03-data-qc`, tabel `id · harapan · aktual · status` |
+| `npx dotenv -e .env.<env> -- npx tsx scripts/qa/data-qc.ts [--section A,B] [--parcel <ID Lahan>]` | Cetak DB efektif, jalankan semua cek read-only `03-data-qc`, tabel `id · harapan · aktual · status` |
 | `node scripts/qa/new-run.mjs --version vX.Y.Z --env staging\|prod [--only P0] [--label ulang]` | Buat `runs/<tanggal>-<env>[-label].md` dari `01` + `02` + `regression.md` |
 | `node scripts/qa/summary.mjs docs/qa/vX.Y.Z` | Rekap Pass/Fail/Blocked/N/A per run + daftar Fail tanpa nomor issue |

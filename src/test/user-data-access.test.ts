@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { minTime } from "./perf-utils";
 
 // ─── Visual Summary Logic ────────────────────────────────────────────────────
 
@@ -260,15 +261,16 @@ describe("UserDataAccess — performance", () => {
       district: { name: `Distrik ${i % 5}` },
     }));
 
-    const start = performance.now();
-    const q = "lembaga";
-    const result = groups.filter(
-      (f) =>
-        f.name.toLowerCase().includes(q) ||
-        f.abrv.toLowerCase().includes(q) ||
-        f.district.name.toLowerCase().includes(q),
-    );
-    const duration = performance.now() - start;
+    const { value: { result }, ms: duration } = minTime(() => {
+      const q = "lembaga";
+      const result = groups.filter(
+        (f) =>
+          f.name.toLowerCase().includes(q) ||
+          f.abrv.toLowerCase().includes(q) ||
+          f.district.name.toLowerCase().includes(q),
+      );
+      return { result };
+    });
 
     console.log(`  data access filter (50 KT): ${duration.toFixed(3)}ms`);
     expect(duration).toBeLessThan(1);
@@ -291,9 +293,10 @@ describe("UserDataAccess — performance", () => {
       })),
     };
 
-    const start = performance.now();
-    const labels = getSummaryLabels(access);
-    const duration = performance.now() - start;
+    const { value: { labels }, ms: duration } = minTime(() => {
+      const labels = getSummaryLabels(access);
+      return { labels };
+    });
 
     console.log(`  badge label generation (20 assignments): ${duration.toFixed(3)}ms`);
     expect(duration).toBeLessThan(1);

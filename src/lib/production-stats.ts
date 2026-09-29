@@ -64,7 +64,7 @@ export interface ProductionMatrixVariant {
 }
 
 /** Lahan yang dibuang filter "Exclude": PSR atau tanaman berumur < 3 tahun. */
-export function isExcludedParcel(
+function isExcludedParcel(
   p: { isPsr: boolean; plantingYear: number | null },
   currentYear: number
 ): boolean {

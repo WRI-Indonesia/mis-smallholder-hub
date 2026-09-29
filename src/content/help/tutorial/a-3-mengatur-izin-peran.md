@@ -24,6 +24,7 @@ Halaman ini menyetel izin bawaan tiap peran (ADMIN, OPERATOR, MANAGEMENT, DONOR)
 + Pencarian mencocokkan judul dan key sampai sub-menu tingkat 3; induk dari hasil yang cocok ikut ditampilkan.
 4. Klik kotak pada perpotongan menu × peran untuk memberi atau mencabut satu izin.
 + Kotak penuh = diberikan, kotak kosong = tidak. Saat kursor di atas sebuah kotak, baris dan kolomnya ikut tersorot agar tidak salah sel. Perubahan langsung tersimpan — tidak ada tombol Simpan. Bila gagal, kotak kembali seperti semula dan muncul pemberitahuan.
++ Izin di menu **induk** otomatis turun ke seluruh sub-menunya. Karena itu mencabut izin di sub-menu tidak berpengaruh selama induknya masih memberi izin yang sama — cabut di induknya, lalu berikan lagi di sub-menu yang memang perlu.
 5. Untuk menyetel satu menu sekaligus, klik ikon daftar-ceklis di baris menu itu lalu pilih preset: **Lihat saja** (hanya View), **Lihat + Unduh** (View + Export + Print), **Akses penuh**, atau **Kosongkan**.
 + Bila menu punya sub-menu, muncul pertanyaan **Terapkan ke sub-menu?** — pilih **Hanya menu ini** atau **Termasuk sub-menu**.
 6. Untuk menyetel satu izin pada **semua menu** sekaligus (misal mencabut Export dari seluruh menu peran DONOR), klik ikon izin itu di kepala kolom lalu konfirmasi **Terapkan**.

@@ -10,7 +10,7 @@
  *   melainkan status penguasaan ("Lahan sudah dijual", "Surat lahan di bank");
  * - nomor surat tidak unik (nomor pendek berulang antar desa);
  * - STDB adalah dokumen per petani yang menutup beberapa persil; format
- *   dominan "1637/53/1401/6/2025" (…/bulan/tahun), tapi ada "3475",
+ *   dominan "9999/99/1401/6/2025" (…/bulan/tahun), tapi ada "3475",
  *   "Belum dapat", "n/a";
  * - 20 `ID Lahan` muncul dua kali dengan `ID Petani` berbeda, 64 nomor STDB
  *   dipakai petani berbeda — keduanya salah ketik sumber, wajib DILAPORKAN,
@@ -268,7 +268,7 @@ export interface NktFileDefaults {
 }
 
 export const PARCEL_DETAIL_TARGET_FIELDS = [
-  { key: "parcelId", label: "ID Lahan", required: true, desc: "ID Lahan yang sudah terdaftar (contoh: APSS.0001.A.14.01.10.2012)" },
+  { key: "parcelId", label: "ID Lahan", required: true, desc: "ID Lahan yang sudah terdaftar (contoh: CTH.0001.A.14.01.10.2012)" },
   { key: "farmerId", label: "ID Petani", required: true, desc: "ID Petani pemilik lahan — harus cocok dengan pasangan lahan di sistem" },
   { key: "documentType", label: "Jenis Surat Tanah", required: false, desc: "SHM / SKT / SKGR / … (ejaan bebas, dinormalkan)" },
   { key: "documentNumber", label: "Nomor Surat", required: false, desc: "Nomor sebagaimana tertulis di surat" },
@@ -297,7 +297,7 @@ export const PARCEL_DETAIL_TARGET_FIELDS = [
 
 export type ParcelDetailFieldKey = (typeof PARCEL_DETAIL_TARGET_FIELDS)[number]["key"];
 
-export const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string[]> = {
+const PARCEL_DETAIL_AUTO_MATCH_RULES: Record<ParcelDetailFieldKey, string[]> = {
   parcelId: ["id lahan", "id_lahan", "idlahan", "parcel_id", "parcelid", "kode lahan", "kode_lahan"],
   farmerId: ["id petani", "id_petani", "idpetani", "farmer_id", "farmerid", "kode petani", "kode_petani"],
   documentType: ["jenis surat tanah", "jenis surat", "jenis_surat", "jenis_surat_tanah", "document_type", "tipe surat"],
@@ -408,7 +408,7 @@ const FREE_TEXT_KEYS: ReadonlySet<ParcelDetailFieldKey> = new Set(["borderNorth"
  * "0" jatuh ke bawaan berkas (bisa terbalik jadi terdampak) dan FALSE jadi error
  * "tidak dikenal" (temuan review 2026-09-15). Boolean → "1"/"0", "0" dipertahankan.
  */
-export function rawNktStatusCell(value: unknown): string {
+function rawNktStatusCell(value: unknown): string {
   if (typeof value === "boolean") return value ? "1" : "0";
   if (value === null || value === undefined) return "";
   const s = String(value).trim().replace(/\s+/g, " ");

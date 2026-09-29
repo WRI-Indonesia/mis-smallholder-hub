@@ -11,7 +11,9 @@ goal: Satu laporan tersaring dan terunduh dalam bentuk Excel atau PDF, siap dise
 
 ## Sebelum mulai
 
-Tersedia enam laporan: Petani, Pelatihan, Produksi, Kelompok Tani (ringkas dan rinci), serta Lahan. Semuanya berpola sama — saring dulu, tinjau di layar, baru unduh.
+Tersedia tujuh laporan: Petani, Lahan, Pelatihan, Produksi, Kelompok Tani (Summary dan Detail), serta Patok. Semuanya berpola sama — saring dulu, tinjau di layar, baru unduh.
+
++ Tidak semua peran melihat ketujuhnya. Akun DONOR hanya membuka laporan Petani, Pelatihan, Produksi, dan Lahan, dan hanya bisa mencetak PDF — tanpa unduh Excel.
 
 Berbeda dari dashboard, laporan **membaca data terkini**, bukan snapshot.
 
@@ -24,8 +26,8 @@ Berbeda dari dashboard, laporan **membaca data terkini**, bukan snapshot.
 + Sebagian laporan mensyaratkan Lembaga Petani dipilih sebelum data muncul. Ini disengaja: laporan per lembaga jauh lebih berguna dan jauh lebih ringan daripada mencetak seluruh organisasi sekaligus.
 3. Tinjau tabel di layar sebelum mengunduh.
 + Memeriksa di layar jauh lebih murah daripada mencetak lalu menemukan filternya keliru. Perhatikan baris Total di bawah tabel bila ada.
-4. Gunakan **Tampilkan Kolom** untuk menyembunyikan kolom yang tak diperlukan.
-+ Pengaturan kolom ikut memengaruhi hasil unduhan, sehingga Anda bisa menyiapkan laporan ringkas untuk rapat dan laporan lengkap untuk arsip dari halaman yang sama.
+4. Gunakan tombol **Kolom** untuk menyembunyikan kolom yang tak diperlukan.
++ Pengaturan kolom ikut memengaruhi hasil unduhan Excel (dan PDF di sebagian laporan, mis. Lahan dan Kelompok Tani), sehingga Anda bisa menyiapkan laporan ringkas untuk rapat dan laporan lengkap untuk arsip dari halaman yang sama.
 5. Klik tombol unduh — **Excel** untuk diolah lagi, **PDF** untuk diserahkan.
 + Tombol Excel hanya tampil bila akun Anda punya izin **Export**, dan tombol PDF bila punya izin **Print**, pada menu laporan tersebut. Bila keduanya tidak tampil, minta administrator menyetelnya di Role & Permission.
 

@@ -1,6 +1,6 @@
 // land-parcel-external-id.prisma — identitas lahan dari sistem/vendor luar
 // (Decision Log 2026-08-27). Sumber awal: kolom "parcel_code" di
-// MIS_<KAB>_data-lahan.xlsx (mis. "ID080d781b4", prefix ID/WR) — kode hasil
+// MIS_<KAB>_data-lahan.xlsx (mis. "ID0000abcde", prefix ID/WR) — kode hasil
 // pemetaan pihak ketiga, tidak berkaitan dengan parcelId internal. Satu tabel
 // untuk semua penerbit (kode e-STDB, RSPO, Dinas menyusul) lewat kolom source.
 

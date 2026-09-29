@@ -301,70 +301,8 @@ describe("trainingQualityStats", () => {
   });
 });
 
-/**
- * Scope data-access diterapkan di server (`getTrainingDashboardView` memakai
- * `farmerGroupAccessFilter`), bukan di lib agregasi. Server action tidak diimpor
- * di vitest karena menarik rantai next-auth yang tidak resolve — jadi mengikuti
- * gaya `rbac-server-guards.test.ts`: logika filter di-mirror lalu diverifikasi.
- */
-describe("RBAC scope — where fragment payload Dashboard Pelatihan", () => {
-  type AccessContext =
-    | { mode: "ALL" }
-    | { mode: "BY_FARMER_GROUP"; ids: string[] }
-    | { mode: "BY_DISTRICT"; ids: string[] };
-
-  // Mirror dari access-context.ts `farmerGroupAccessFilter`.
-  const farmerGroupAccessFilter = (access: AccessContext) =>
-    access.mode === "BY_FARMER_GROUP"
-      ? { id: { in: access.ids } }
-      : access.mode === "BY_DISTRICT"
-        ? { districtId: { in: access.ids } }
-        : {};
-
-  // Mirror dari `where` pada query FarmerGroup di dashboard-training.ts.
-  const whereFor = (access: AccessContext) => ({
-    isActive: true,
-    ...farmerGroupAccessFilter(access),
-  });
-
-  it("SUPERADMIN / tanpa assignment → seluruh Lembaga aktif", () => {
-    expect(whereFor({ mode: "ALL" })).toEqual({ isActive: true });
-  });
-
-  it("BY_DISTRICT → dibatasi ke districtId yang di-assign", () => {
-    expect(whereFor({ mode: "BY_DISTRICT", ids: ["d1"] })).toEqual({
-      isActive: true,
-      districtId: { in: ["d1"] },
-    });
-  });
-
-  it("BY_FARMER_GROUP → dibatasi ke id Lembaga yang di-assign", () => {
-    expect(whereFor({ mode: "BY_FARMER_GROUP", ids: ["g1"] })).toEqual({
-      isActive: true,
-      id: { in: ["g1"] },
-    });
-  });
-
-  it("scope selalu menyertakan isActive — record nonaktif tidak pernah masuk payload", () => {
-    // Dashboard/report memfilter isActive untuk SEMUA role, termasuk SUPERADMIN
-    // (pengecualian nonaktif hanya berlaku di list master data).
-    const cases: AccessContext[] = [
-      { mode: "ALL" },
-      { mode: "BY_DISTRICT", ids: ["d1"] },
-      { mode: "BY_FARMER_GROUP", ids: ["g1"] },
-    ];
-    for (const access of cases) {
-      expect(whereFor(access).isActive).toBe(true);
-    }
-  });
-
-  it("tidak menimpa key `id` — scope BY_FARMER_GROUP tetap utuh", () => {
-    // Pitfall key-collision (code-standards.md): filter mengembalikan `{ id: { in } }`,
-    // jadi query ini tidak boleh punya literal `id` yang menimpanya.
-    const where = whereFor({ mode: "BY_FARMER_GROUP", ids: ["g1", "g2"] });
-    expect(where).toHaveProperty("id.in", ["g1", "g2"]);
-  });
-});
+// Scope data-access & guard `getTrainingDashboardView`/`getUntrainedFarmers`
+// diuji lewat action asli di `dashboard-training-guard.test.ts`.
 
 describe("target cakupan (TRAINING_COVERAGE_TARGET / trainingTargetGap)", () => {
   it("menargetkan 100% untuk keempat paket program, OTHER tanpa target", () => {

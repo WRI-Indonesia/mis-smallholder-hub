@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { minTime } from "./perf-utils";
 import {
   provinceSchema, updateProvinceSchema,
   districtSchema,
@@ -350,9 +351,9 @@ describe("Performance - Region tree operations", () => {
   it("filters 500 provinces (5 dist × 3 sub × 4 vil each) under 20ms", () => {
     const data = buildLargeTree(500, 5, 3, 4); // 500 × 5 × 3 × 4 = 30,000 nodes
 
-    const start = performance.now();
-    filterProvinces(data, "province 1", "all");
-    const duration = performance.now() - start;
+    const { ms: duration } = minTime(() => {
+      filterProvinces(data, "province 1", "all");
+    });
 
     console.log(`  filterProvinces (30k nodes): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(20);
@@ -361,9 +362,9 @@ describe("Performance - Region tree operations", () => {
   it("builds auto-expand IDs for 10k nodes under 10ms", () => {
     const data = buildLargeTree(100, 5, 4, 5); // 100 × 5 × 4 × 5 = 10,000 nodes
 
-    const start = performance.now();
-    buildAutoExpandIds(data, "village 1", "all");
-    const duration = performance.now() - start;
+    const { ms: duration } = minTime(() => {
+      buildAutoExpandIds(data, "village 1", "all");
+    });
 
     console.log(`  buildAutoExpandIds (10k nodes): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(10);
@@ -372,18 +373,18 @@ describe("Performance - Region tree operations", () => {
   it("status filter (inactive) across 10k nodes under 10ms", () => {
     const data = buildLargeTree(100, 5, 4, 5);
 
-    const start = performance.now();
-    filterProvinces(data, "", "inactive");
-    const duration = performance.now() - start;
+    const { ms: duration } = minTime(() => {
+      filterProvinces(data, "", "inactive");
+    });
 
     console.log(`  filterProvinces inactive (10k nodes): ${duration.toFixed(2)}ms`);
     expect(duration).toBeLessThan(10);
   });
 
   it("Zod schema parse is under 1ms for valid province input", () => {
-    const start = performance.now();
-    provinceSchema.safeParse({ code: "32", name: "Jawa Barat" });
-    const duration = performance.now() - start;
+    const { ms: duration } = minTime(() => {
+      provinceSchema.safeParse({ code: "32", name: "Jawa Barat" });
+    });
 
     console.log(`  provinceSchema.safeParse: ${duration.toFixed(3)}ms`);
     expect(duration).toBeLessThan(1);

@@ -1,6 +1,6 @@
 ---
 title: Mengunggah titik pohon sawit
-icon: TreePine
+icon: Upload
 menuKey: bulk-upload-trees
 permission: CREATE
 duration: 10
@@ -31,13 +31,13 @@ Tabel atribut `.dbf` wajib memuat kolom `parcel_id` berisi **ID Lahan** persis s
 + Kerapatan yang jauh dari rujukan umum ± 136 pohon/ha patut dicurigai — bisa jadi titiknya bukan milik lahan itu, atau luas lahannya belum diisi dengan benar.
 4. Perhatikan kolom **Status**: `Baru` berarti lahan itu belum punya data pohon; `Revisi` berarti unggahan ini akan **mengganti seluruh set** titik lama lahan tersebut.
 + `Lahan tidak ditemukan` berarti `parcel_id` di file tidak cocok dengan ID Lahan aktif mana pun dalam akses Anda — baris itu otomatis dilewati saat menyimpan, sisanya tetap bisa disimpan.
-5. Klik **Simpan N Pohon**.
+5. Klik **Simpan N Pohon (M lahan)**.
 
 > [!penting] Upload ulang untuk lahan yang sama bekerja per **set**, bukan per titik: seluruh titik lama lahan itu dinonaktifkan dan set baru disimpan dengan nomor revisi berikutnya. Tidak ada penggabungan — kirimkan selalu ekspor lengkap satu lahan, bukan hanya titik yang berubah.
 
 ## Memastikan berhasil
 
-Buka **Master Data → Lahan → detail lahan** yang bersangkutan: kartu **Pohon Sawit** menampilkan jumlah pohon dan kerapatan, dan titik-titik kuning tampil langsung di peta **Informasi Lahan** di atas poligon. Di detail petani (tab **Lahan**), kolom **Jumlah Pohon** terisi dan titik kuningnya tampil di peta Sebaran Lahan.
+Buka **Master Data → Lahan → detail lahan** yang bersangkutan: kartu **Luas** menampilkan jumlah pohon dan kerapatannya (mis. "1.234 pohon (136/ha)"), dan titik-titik kuning tampil langsung di peta tab **Informasi** di atas poligon. Di detail petani (tab **Lahan**), kolom **Jumlah Pohon** terisi dan titik kuningnya tampil di peta Sebaran Lahan.
 
 ## Kalau bermasalah
 

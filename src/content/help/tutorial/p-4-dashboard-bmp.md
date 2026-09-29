@@ -24,7 +24,7 @@ Angkanya dibaca dari **snapshot**, sama seperti Main Dashboard.
 + Kelimanya memfilter kartu **dan** grafik sekaligus, diiris dari satu snapshot — jadi terasa seketika tanpa memuat ulang halaman.
 3. Perhatikan filter **Tahun**. Bawaannya **tahun berjalan** (atau tahun terbaru yang punya data bila tahun ini belum ada datanya).
 + Opsi **Rataan** ada di paling bawah daftar: rata-rata per tahun, bukan penjumlahan seluruh tahun — angka kumulatif lintas tahun mudah disalahbaca sebagai capaian satu musim. Angka kumulatif tersedia di detail snapshot lewat menu Tools.
-4. Baca kartu **Produktivitas (Ton/Ha)** dan kartu **Luasan**.
+4. Baca kartu **Produktivitas** (Ton/Ha) dan kartu **Luasan**.
 + Produktivitas = produksi tahun terpilih dibagi **luas lahan yang terdata** pada tahun itu — bukan dibagi seluruh luas lahan. Kartu Luasan menunjukkan berapa Ha yang terdata dibanding total luas lahan aktif (persennya ikut ditampilkan).
 5. Gunakan **Kelengkapan Data** → **Data Full 1 Tahun** bila ingin angka yang lebih jujur.
 + Mode ini hanya menghitung lahan yang punya data **12 bulan penuh Jan–Des** pada tahun tersebut. Tanpa itu, lahan yang hanya terdata dua bulan ikut menurunkan rata-rata seolah produksinya memang rendah. Tahun berjalan tidak akan pernah "full" sampai Desember terisi.

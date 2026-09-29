@@ -37,7 +37,7 @@ Seperti laporan lain, halaman ini membaca **data terkini**, bukan snapshot dashb
 
 **Sesi yang sudah dicatat tidak muncul di laporan** — laporan ini hanya menghitung empat paket program. Kegiatan berkategori **Lainnya** sengaja tidak diikutkan, baik di daftar sesi maupun angka cakupan.
 
-**PDF berisi matriks cakupan, padahal yang dibutuhkan daftar peserta** — filter Jenis Pelatihan masih "Semua". Pilih paketnya dulu di tab Detail per Pelatihan, lalu klik PDF lagi.
+**PDF berisi matriks cakupan, padahal yang dibutuhkan daftar peserta** — filter Jenis Pelatihan masih "Semua Pelatihan (Cakupan per Petani)". Pilih paketnya dulu di tab Detail per Pelatihan, lalu klik PDF lagi.
 
 **Nilai pre/post-test tampil "—"** — skor peserta itu belum diisi saat sesi dicatat. Lengkapi lewat menu Pelatihan (lihat tutorial **Mencatat pelatihan**), lalu cetak ulang.
 

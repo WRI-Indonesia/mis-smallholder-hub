@@ -2,7 +2,7 @@
 
 > Bagian dari dokumentasi **Standar**. Indeks: [../README.md](../README.md) · Terkait: [principles.md](./principles.md) · [workflow.md](./workflow.md) · [rbac.md](./rbac.md) · [ui-ux.md](./ui-ux.md) · [architecture.md](./architecture.md)
 
-## Code Standards
+## Standar Kode
 
 | Rule | Detail |
 |------|--------|
@@ -13,8 +13,8 @@
 | Data layer | CSV = static, Prisma = dynamic |
 | Validation | Zod di `src/validations/` |
 | Server Actions | Di `src/server/actions/` |
-| Formatter angka id-ID | **Wajib impor dari `src/lib/format.ts`** (`formatNumber`, `formatPct`, `formatArea` desimal-2, `MONTH_NAMES_ID`) — **dilarang** membuat instance `Intl.NumberFormat("id-ID")` / array nama bulan lokal baru (#233/#241). Varian sufiks (" ha") / null-handling boleh wrapper lokal tipis yang mendelegasi ke formatter bersama |
-| Database Schema | Lihat [database-schema.md](../database/erd.md) untuk ERD, indexes, constraints, migrations, security |
+| Formatter angka id-ID | **Wajib impor dari `src/lib/format.ts`** (`formatNumber`, `formatPct`, `formatArea` desimal-2, `MONTH_NAMES_ID`) — **dilarang** membuat instance `Intl.NumberFormat("id-ID")` / array nama bulan lokal baru (#233/#241). Aturan ini untuk **kode baru**: per 2026-09-29 masih ada ±31 berkas lama dengan instance lokal (utang, dirapikan saat berkasnya disentuh). Varian sufiks (" ha") / null-handling boleh wrapper lokal tipis yang mendelegasi ke formatter bersama |
+| Database Schema | Lihat [database/erd.md](../database/erd.md) untuk ERD, indexes, constraints, migrations, security |
 
 #### Istilah domain resmi (pengecualian naming — keputusan #130 / TD-012)
 
@@ -42,20 +42,20 @@ Nama tabel fisik selalu lewat `@@map`, `snake_case`, dengan **prefix menurut jen
 | Prefix | Jenis data | Contoh |
 |--------|-----------|--------|
 | `tbl_` | Entitas domain / transaksional | `tbl_farmer`, `tbl_land_parcel`, `tbl_tree` |
-| `tbl_snapshot_<dashboard>` | Materialisasi dashboard (lihat [ui-ux.md](./ui-ux.md)) | `tbl_snapshot_main_dashboard` |
+| `tbl_snapshot_<dashboard>` | Materialisasi dashboard (lihat [database/dashboard-snapshots.md](../database/dashboard-snapshots.md)) | `tbl_snapshot_main_dashboard` |
 | `ref_` | Master/referensi yang dikelola admin lewat UI | `ref_training_package` |
 | `reg_` | Wilayah administratif | `reg_province` … `reg_village` |
 | `rbac_` | Akses & hak user | `rbac_user_district`, `rbac_role_permission` |
 
-**Tabel satelit** (atribut yang punya siklus hidup sendiri, bisa >1 per induk, atau keikutsertaan program — bukan sifat intrinsik induk) dinamai **`tbl_<induk>_<aspek>`** dengan nama induk **lengkap** persis seperti tabel intinya, model `<Induk><Aspek>`. Preseden: `tbl_farmer_group_boundary`, `tbl_training_participant`. Contoh rencana untuk lahan (Decision Log 2026-08-27): `tbl_land_parcel_document` (SHM/SKT/SKGR dkk., 1:N), `tbl_land_parcel_external_id` (UL Parcel Code + poligon mentah opsional, 1:N), `tbl_land_parcel_program` (demplot/PBU).
+**Tabel satelit** (atribut yang punya siklus hidup sendiri, bisa >1 per induk, atau keikutsertaan program — bukan sifat intrinsik induk) dinamai **`tbl_<induk>_<aspek>`** dengan nama induk **lengkap** persis seperti tabel intinya, model `<Induk><Aspek>`. Preseden: `tbl_farmer_group_boundary`, `tbl_training_participant`. Contoh untuk lahan (Decision Log 2026-08-27, **sudah ada** sejak #296): `tbl_land_parcel_document` (SHM/SKT/SKGR dkk., 1:N), `tbl_land_parcel_external_id` (UL Parcel Code + poligon mentah opsional, 1:N), `tbl_land_parcel_program` (demplot/PBU).
 
 - **Tabel penghubung M:N**: gabungan dua nama induk tanpa aspek (`rbac_user_farmer_group` = User × FarmerGroup). Bila dokumen/entitas satelit menutup >1 induk, entitasnya berdiri sendiri dan penghubungnya gabungan nama — contoh: STDB adalah dokumen per petani yang menutup beberapa lahan → `tbl_land_stdb` + penghubung `tbl_land_parcel_stdb`.
 - **Daftar pilihan tetap** (jenis sertifikat, jenis program) → Prisma `enum`; naik ke `ref_` hanya bila admin memang perlu mengelola daftarnya (konsekuensi: CRUD + menu + permission).
 - ⚠️ **Jangan pakai `parcel_` sebagai nama induk** (`tbl_parcel_*`). Di kode `parcelId` = ID internal lahan per petani (string bebas), sedangkan `landParcelId` = FK ke `tbl_land_parcel.id` — ambiguitas ini sudah tercatat di `tree.prisma`; jangan ditambah.
 
-### Data Access & Soft Delete
+### Akses Data & Soft Delete
 
-- **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app.
+- **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app. Pengecualian (keputusan owner, lihat [database/constraints.md](../database/constraints.md#pola-soft-delete)): `LandParcelNkt` (hapus baris), `LandParcelBorder` (kosongkan kolom), `LandMarkerCounter` (tanpa `isActive`), tabel penugasan `UserProvince`/`UserDistrict`/`UserFarmerGroup` (tanpa `isActive`).
 - **Data filtering** — Setiap query di server actions wajib filter berdasarkan context user:
   - Region sesuai assignment user (Province → District → Lembaga Petani)
   - Lembaga Petani sesuai assignment user
@@ -64,7 +64,7 @@ Nama tabel fisik selalu lewat `@@map`, `snake_case`, dengan **prefix menurut jen
 - **Backend Permission Validation** — Setiap Server Action (terutama mutasi data) wajib divalidasi ulang di level server menggunakan helper `hasPermission(menuCode, permission)` sebelum melakukan query/mutasi database, untuk mencegah eksekusi request langsung yang tidak sah (bypass UI). **Termasuk** read/mutasi **by-id** dan helper "for select" (pelajaran audit #125/#127).
 - **Helper "for select" juga wajib access-scoped** — guard permission saja tidak cukup: daftar opsi dropdown harus difilter `getAccessContext()`/`getAccessibleDistrictIds` agar user scoped tidak melihat entitas di luar wilayah kerjanya, **termasuk saat helper yang sama dipakai form create/edit** (pelajaran #211 — `getDistrictsForSelect` lolos guard tapi bocor scope; efeknya ke form Lembaga Petani dipertahankan by design, lihat Decision Log 2026-08-04).
 
-#### Access-filter helpers (`src/lib/access-context.ts`)
+#### Helper filter akses (`src/lib/access-scope.ts`, di-re-export `src/lib/access-context.ts`)
 
 Terjemahkan `AccessContext` (dari `getAccessContext()`) ke Prisma `where` fragment lewat helper — **jangan tulis ulang ternary di tiap action** (#127):
 
@@ -88,7 +88,7 @@ Pola tunggal untuk **semua list master data** (Petani, Lembaga Petani, Pelatihan
 - **Mutasi** (update) tetap mensyaratkan `isActive: true` — restore dulu sebelum edit.
 - Query lain di luar list (dropdown "for select", dashboard, report) **tetap** memfilter `isActive: true` untuk semua role.
 
-### Revision Tracking Pattern
+### Pola Revision Tracking
 
 Untuk data yang memerlukan tracking perubahan historical (contoh: Land Parcel update):
 - **Field `revision`**: Tambahkan field `revision Int @default(0)` di model (lihat `LandParcel`)

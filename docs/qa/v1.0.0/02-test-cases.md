@@ -1,5 +1,7 @@
 # 02 · Kasus uji per issue — v1.0.0
 
+> Bagian dari dokumentasi **QA/QC**. Indeks: [../README.md](../README.md) · Paket: [README.md](README.md)
+
 Satu **blok** per kasus. Ditulis dev saat menutup issue; dijalankan QA di staging; hasil di `runs/`. Data uji memakai **kode** (Lembaga/lahan), bukan nama orang. Tag: `[P0]` wajib tiap run · `[P1]` · `[P2]`; `[regresi]` = disalin ke `../regression.md` saat rilis ditutup.
 
 > **Baca dulu — dua hal yang membuat angka berbeda dari v0.38.0, keduanya disengaja:**

@@ -14,9 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronRight, ChevronDown } from "lucide-react";
+import { Search, ChevronRight, ChevronDown } from "lucide-react";
 import { MenuFormModal } from "./menu-form-modal";
-import { deleteMenuItem } from "@/server/actions/menu";
+import { deleteMenuItem, reactivateMenuItem } from "@/server/actions/menu";
 import { toast } from "sonner";
 import { renderIcon } from "@/lib/icon-map";
 import { TableActions, DeleteDialog } from "@/components/shared";
@@ -42,7 +42,6 @@ export function MenuListClient({
   initialItems: MenuItemData[];
   permissions: string[];
 }) {
-  const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<MenuItemData | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MenuItemData | null>(null);
   const [search, setSearch] = useState("");
@@ -52,42 +51,41 @@ export function MenuListClient({
   const allCollapsible = React.useMemo(() => collapsibleKeys(tree), [tree]);
   const { isCollapsed, toggle, openAll, closeAll } = useCollapseState("menu-list:open");
 
-  const getAllowedParentOptions = () => {
-    const descendants = new Set<string>();
-    if (editItem) {
-      descendants.add(editItem.key);
-      const addDescendants = (parentKey: string) => {
-        initialItems.forEach((item) => {
-          if (item.parentKey === parentKey) {
-            descendants.add(item.key);
-            addDescendants(item.key);
-          }
-        });
-      };
-      addDescendants(editItem.key);
-    }
-
-    const options: { key: string; title: string }[] = [];
-    const lvl1 = initialItems.filter((i) => !i.parentKey && !descendants.has(i.key));
-    lvl1.forEach((p) => {
-      options.push({ key: p.key, title: p.title });
-      const lvl2 = initialItems.filter((i) => i.parentKey === p.key && !descendants.has(i.key));
-      lvl2.forEach((c) => {
-        options.push({ key: c.key, title: `— ${c.title}` });
-      });
-    });
-    return options;
-  };
-
   async function handleDelete() {
     if (!deleteTarget) return;
-    const result = await deleteMenuItem(deleteTarget.id);
-    if (result.success) {
-      toast.success("Menu item dinonaktifkan");
-      setDeleteTarget(null);
-      router.refresh();
-    } else {
-      toast.error(typeof result.error === "string" ? result.error : "Gagal menonaktifkan menu item");
+    try {
+      const result = await deleteMenuItem(deleteTarget.id);
+      if (result.success) {
+        toast.success("Menu item dinonaktifkan");
+        setDeleteTarget(null);
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Gagal menonaktifkan menu item");
+    }
+  }
+
+  // #237: baris nonaktif → "Aktifkan kembali" langsung mereaktivasi (pola toggle
+  // Master Data); dulu membuka dialog Nonaktifkan dan memanggil deleteMenuItem lagi.
+  // Tanpa dialog, jadi klik berulang dicegah di sini (satu permintaan per menu).
+  const reactivating = React.useRef(new Set<string>());
+  async function handleReactivate(item: MenuItemData) {
+    if (reactivating.current.has(item.id)) return;
+    reactivating.current.add(item.id);
+    try {
+      const result = await reactivateMenuItem(item.id);
+      if (result.success) {
+        toast.success("Menu diaktifkan kembali");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Gagal mengaktifkan menu");
+    } finally {
+      reactivating.current.delete(item.id);
     }
   }
 
@@ -98,15 +96,12 @@ export function MenuListClient({
         actions={[
           {
             type: "edit",
-            onClick: () => {
-              setEditItem(item);
-              setShowForm(true);
-            },
+            onClick: () => setEditItem(item),
           },
           {
             type: "delete",
             isActive: item.isActive,
-            onClick: () => setDeleteTarget(item),
+            onClick: () => (item.isActive ? setDeleteTarget(item) : handleReactivate(item)),
           },
         ]}
       />
@@ -143,12 +138,6 @@ export function MenuListClient({
           >
             {allOpen ? "Tutup semua" : "Buka semua"}
           </Button>
-          {permissions.includes("CREATE") && (
-            <Button onClick={() => { setEditItem(null); setShowForm(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Menu
-            </Button>
-          )}
         </div>
 
         <Table>
@@ -192,9 +181,13 @@ export function MenuListClient({
                 <TableCell className="text-sm text-muted-foreground">{item.url}</TableCell>
                 <TableCell className="text-sm tabular-nums text-center">{item.order}</TableCell>
                 <TableCell>
-                  <Badge variant={item.isActive ? "default" : "outline"}>
-                    {item.isActive ? "Aktif" : "Nonaktif"}
-                  </Badge>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant={item.isActive ? "default" : "outline"}>
+                      {item.isActive ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                    {/* Aktif tapi disembunyikan — dulu hanya terlihat dengan membuka Edit per baris. */}
+                    {item.isActive && !item.isVisible && <Badge variant="secondary">Tersembunyi</Badge>}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -210,11 +203,12 @@ export function MenuListClient({
       </Card>
 
       <MenuFormModal
-        key={editItem?.id ?? "new"}
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditItem(null); }}
+        key={editItem?.id}
+        open={editItem !== null}
+        onClose={() => setEditItem(null)}
         item={editItem}
-        parentOptions={getAllowedParentOptions()}
+        parentTitle={initialItems.find((i) => i.key === editItem?.parentKey)?.title ?? null}
+        canToggleActive={permissions.includes("DELETE")}
       />
 
       <DeleteDialog

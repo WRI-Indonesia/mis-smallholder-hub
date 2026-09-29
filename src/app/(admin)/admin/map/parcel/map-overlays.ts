@@ -131,14 +131,14 @@ export const CUSTOM_LAYER_COLORS = [
 ];
 
 /** Batas jumlah kelas warna symbology agar legend masih terbaca; nilai selebihnya memakai warna dasar. */
-export const SYMBOLOGY_MAX_CLASSES = 24;
+const SYMBOLOGY_MAX_CLASSES = 24;
 
 /**
  * Palet kategorikal symbology — 8 hue urutan tetap (tervalidasi pemisahan CVD
  * untuk pasangan bersebelahan); disiklus bila kelas lebih dari 8, dengan legend
  * dan popup atribut sebagai pembawa identitas.
  */
-export const SYMBOLOGY_PALETTE = [
+const SYMBOLOGY_PALETTE = [
   "#2a78d6",
   "#eb6834",
   "#1baf7a",

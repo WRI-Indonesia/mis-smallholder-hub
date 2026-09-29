@@ -2,20 +2,21 @@
 
 > Bagian dari dokumentasi **Standar**. Indeks: [../README.md](../README.md) · Terkait: [principles.md](./principles.md) · [code-standards.md](./code-standards.md) · [rbac.md](./rbac.md) · [ui-ux.md](./ui-ux.md) · [architecture.md](./architecture.md)
 
-## Branching & Workflow
+## Branching & Alur Kerja
 
 ### Branching
 
-- Satu branch yang ditentukan project owner
-- Tidak boleh buat feature/experiment/PR branch terpisah
+- Kerja harian hanya di `mvp`; tidak boleh membuat branch feature/experiment
+- Branch rilis tetap: `mvp` → `staging` (merge, deploy staging otomatis) → `main` (PR, deploy produksi) — lihat [versioning.md](./versioning.md) §Alur Rilis
 
-### Issue Workflow
+### Alur Issue
 
 1. **Pick Issue** — Ambil GitHub Issue yang sudah di-approve
    - **Temuan hasil pembacaan kode yang belum terbukti** (mis. "celah ini *bisa* menelan data") wajib diawali satu langkah **ukur dulu** yang murah — satu query, satu skrip sekali pakai — sebelum memilih solusinya. Tanpa besaran masalah, opsi-opsi yang ongkosnya berbeda tidak bisa dibandingkan, dan issue-nya mengendap. Untuk bug yang **gagal secara diam**, laporan lapangan tidak akan pernah datang, jadi menunggu bukti dari pengguna sama dengan tidak mengerjakannya. (Contoh: #280 mengendap 5 minggu; satu query `ST_Difference` memberi angka 9,4 km² dan keputusannya langsung jelas.)
 2. **Implement** — Kerjakan **hanya** scope issue
 3. **QA Lokal** — `npm run lint`, `npm run build`, `npm run typecheck`, dan `npm test` (lihat Pre-Commit Gate)
 4. **Performance Test** — Pastikan tidak ada regresi; **pure logic baru** yang menyentuh hot-path (agregasi, sort, validasi array besar) diberi perf test di `src/test/perf.test.ts`
+   - **Cara mengukur (#311):** bungkus blok yang diukur dengan `minTime(() => …)` / `minTimeAsync` dari `src/test/perf-utils.ts` — minimum dari 3–10 putaran, bukan satu `performance.now()`. Beban mesin hanya menambah waktu, jadi minimum kebal lonjakan; satu pengukuran dulu membuat gate `npm test` merah acak saat build/typecheck berjalan. **Ambang ≥ 3× angka terukur** (minimum lokal) — yang dijaga regresi kelas O(n²), bukan selisih milidetik. Jangan menambah `retry` atau mengeluarkan perf test dari gate.
 5. **Docs Compliance Check** — Recheck hasil kerja terhadap folder `docs/` (format di bawah): patuh **rule**, ikuti **workflow**, **progress** tercermin, dan file docs terdampak ter-update
 6. **Report** — Changed files, hasil verifikasi, QA notes, risk, dan **Analisa Improvement** (format di bawah)
 7. **Approval** — Tunggu approval sebelum push
@@ -31,21 +32,21 @@ Setiap penyelesaian pekerjaan **diakhiri analisa next/recommended improvement** 
 
 Penyaluran: ringkas di **Report** ke owner + section **🧭 Feedback & improvement** pada retro; item yang **actionable** dicatat ke [`../project/tech-debt.md`](../project/tech-debt.md) (TD-xxx) atau diusulkan sebagai **issue baru** — jangan hilang di percakapan.
 
-### Docs Compliance Check (wajib, setelah implement — sebelum commit/close)
+### Cek Kepatuhan Docs (wajib, setelah implement — sebelum commit/close)
 
 Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil kerja terhadap `docs/`:
 
 1. **Rule** — `standards/*` (code-standards, rbac, ui-ux, architecture, principles): perubahan mengikuti konvensi (3 lapis keamanan, `ActionResult`, Zod, soft delete, kebab-case, surgical change).
 2. **Workflow** — file ini: urutan Issue Workflow diikuti (scope issue, Pre-Commit Gate 5 gate, approval DB/destructive, retro sebelum close).
-3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Active Issues), `changelog.md` (Decision Log/Changelog), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
+3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Active Issues), `changelog/YYYY-MM.md` (Decision Log/Changelog bulan berjalan), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
 4. **Identifikasi file `docs/` lain yang terdampak** (peta cepat di Docs sync) dan perbarui **sebelum commit** — di-commit **bersama** kode. Temuan ketidakpatuhan dilaporkan ke owner, bukan didiamkan.
 5. **Bantuan (`src/content/help/`)** — setiap **perubahan atau penambahan fitur** wajib diperiksa dampaknya ke materi Bantuan: apakah ada tutorial/konsep yang jadi **keliru** (label tombol berubah, langkah bertambah, aturan validasi berubah), dan apakah alur baru itu **perlu tutorial baru**. Perbarui bersama kode, jangan ditunda — panduan yang salah lebih berbahaya daripada panduan yang belum ada, karena pengguna terlanjur memercayainya.
 
-### Issue Close — Kasus uji manual (bersama retro)
+### Menutup Issue — Kasus uji manual (bersama retro)
 
 Saat menutup issue fitur/bug, tulis kasus uji manualnya di `docs/qa/<versi berikutnya>/02-test-cases.md` (ID `TC-<issue>-<nn>`: prasyarat & data uji ber-kode, langkah, hasil harapan) — QA menjalankannya di staging sebelum rilis; lihat [../qa/README.md](../qa/README.md). Kasus uji adalah turunan langsung dari smoke test yang dilakukan dev saat mengerjakan issue, jadi ditulis saat masih hangat, bukan saat rilis.
 
-### Issue Close — Retrospektif wajib (sebelum close)
+### Menutup Issue — Retrospektif wajib (sebelum close)
 
 Sebelum menutup GitHub Issue: (1) **recheck** dulu (rule/gate/konsistensi tercapai), lalu (2) tulis **comment retrospektif** — **compact + section collapsible** (`<details><summary>`), berisi **6 bagian**:
 
@@ -68,14 +69,16 @@ Sebelum **setiap commit dari lokal**, kelima gate ini **wajib hijau** — jangan
 | Build | `npm run build` | build ✓ (juga meregenerasi `.next/types` yang dibaca Typecheck) |
 | Typecheck | `npm run typecheck` (`tsc --noEmit -p tsconfig.typecheck.json`, **mencakup `src/test/**`** — `next build` tidak mengetik-cek berkas test, #288; sejak v0.38.0 `tsconfig.json` mengecualikan `src/test` agar tahap type-check `next build` di server ber-RAM kecil tidak OOM — berkas test hanya diperiksa lewat perintah ini). Jalankan **setelah** Build: `tsconfig` juga memuat `.next/types/**` sehingga rute yang baru dihapus/diganti nama meninggalkan validator usang sampai build berikutnya | 0 type error |
 | Test | `npm test` | semua lulus, **tidak ada** test di-skip |
+| (opsional) Coverage | `npm run test:coverage` (v8, `perf.test.ts` dikecualikan karena berambang jam-dinding) | tidak ada server action / lib murni baru di 0% — guard `hasPermission`, scope `getAccessContext`, soft delete teruji lewat modul asli (pola `*-guard.test.ts`, bukan salinan logika) |
 | **Docs sync** | Review & update `docs/` yang terdampak | Dokumentasi terkait sudah diperbarui & konsisten, di-commit **bersama** kode |
 
-**Artefak turunan.** Dua berkas di `src/lib/*.generated.ts` diturunkan dari kode dan skema, bukan ditulis tangan:
+**Artefak turunan.** Dua berkas di `src/lib/*.generated.ts` dan blok bertanda `<!-- GENERATED:… -->` di `docs/` diturunkan dari kode dan skema, bukan ditulis tangan:
 
 | Perintah | Menghasilkan | Regenerasi wajib saat |
 |---|---|---|
 | `npm run build:schema` | `data-schema.generated.ts` | `prisma/schema/*.prisma` berubah |
 | `npm run build:lineage` | `data-lineage.generated.ts` | rute ber-`requirePermission`, import halaman, atau pemanggilan Prisma di action berubah |
+| `npm run build:docs` | blok `GENERATED` di `docs/` (enum, tabel & ringkasan menu, angka teknis) | skema/enum, `menu.csv`, jumlah berkas test/action/migrasi/Bantuan berubah |
 
 Tidak perlu dihafal: `npm test` akan gagal bila artefaknya basi, dengan pesan yang menyebut entitas/menu yang berubah beserta perintah regenerasinya. Artefaknya **di-commit** supaya perubahan jalur data terlihat di diff PR, bukan terjadi diam-diam.
 
@@ -83,14 +86,14 @@ Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `s
 
 **Docs sync (wajib, sebelum commit):** setiap perubahan yang menyentuh skema/migrasi/kolom, modul/fitur, status delivery, atau aturan **harus** memperbarui file `docs/` yang relevan **sebelum commit** dan di-commit **bersama** kodenya — jangan dipisah/ditunda. Peta cepat:
 
-- **Skema/migrasi/kolom** → `database/models.md`, `database/erd.md` (+Schema Version), `database/migrations.md` (riwayat)
-- **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Code Audit Evidence), `project/sprint.md` (Active Issues), `project/changelog.md` (Changelog bulanan; + Decision Log bila ada keputusan)
-- **Aturan / standar / keputusan arsitektur** → `standards/*` dan/atau `project/changelog.md` Decision Log
+- **Skema/migrasi/kolom** → `database/models.md`, `database/erd.md`, `database/migrations.md` (riwayat + Versi Skema)
+- **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Code Audit Evidence), `project/sprint.md` (Active Issues), `project/changelog/YYYY-MM.md` (Changelog; + Decision Log bila ada keputusan)
+- **Aturan / standar / keputusan arsitektur** → `standards/*` + Decision Log bulan berjalan; keputusan besar lintas modul juga sebagai catatan di `decisions/NNNN-slug.md`
 - **Tech debt / bug** → `project/tech-debt.md`
 
-Checklist detail: [`../project/contributing.md`](../project/contributing.md) §5-Minute Update Checklist.
+Checklist detail: [`../project/contributing.md`](../project/contributing.md) §Checklist Update 5 Menit.
 
-### GitHub Actions yang berjalan (4 workflow)
+### GitHub Actions yang berjalan (5 workflow)
 
 Repo **punya CI** — hanya saja bukan untuk lint/build/test. Jangan mengira gate lokal adalah satu-satunya jaring pengaman, dan jangan pula mengira tidak ada otomatisasi sama sekali.
 
@@ -100,7 +103,7 @@ Repo **punya CI** — hanya saja bukan untuk lint/build/test. Jangan mengira gat
 | `semgrep.yml` | **PR** (+push ke `main` bila berkasnya berubah) | Analisis keamanan statis (SAST) |
 | `deploy-dev.yaml` | push ke branch dev | Deploy otomatis ke lingkungan dev |
 | `deploy-staging.yml` | **push ke `staging`** | Deploy otomatis ke app staging (server staging, pm2 `mis-staging`, port 3000); `.env` dari secret `MIS_STAGING_ENV` — gagal keras bila secret kosong |
-| `deploy-main.yml` | **push ke `main`** | **Deploy otomatis ke produksi** via SSH: `git reset --hard origin/main` → tulis `.env` dari secret → `npm install` → `prisma generate` → `npm run build` → `pm2 reload mis-main` |
+| `deploy-main.yml` | **push ke `main`** | **Deploy otomatis ke produksi** via SSH: `git reset --hard origin/main` → tulis `.env` dari secret → `npm ci --no-audit --no-fund` → `prisma generate` → `npm run build` → `pm2 reload mis-main` |
 
 Konsekuensi yang wajib diingat:
 
@@ -111,7 +114,7 @@ Konsekuensi yang wajib diingat:
 
 ---
 
-## Safety & Approval
+## Keamanan & Persetujuan
 
 **Wajib minta approval project owner** sebelum:
 

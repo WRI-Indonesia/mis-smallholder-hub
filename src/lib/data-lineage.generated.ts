@@ -128,7 +128,6 @@ export const DATA_LINEAGE: DataLineage = [
     "menuKey": "dashboard-snapshot",
     "route": "(admin)/admin/tools/snapshot",
     "models": {
-      "district": "R",
       "farmer": "R",
       "farmerGroup": "R",
       "mainDashboardSnapshot": "RW"
@@ -261,6 +260,20 @@ export const DATA_LINEAGE: DataLineage = [
     "modules": [
       "src/server/actions/data-analyst.ts"
     ],
+    "dynamicAccess": null
+  },
+  {
+    "menuKey": "data-analyst-parcel-overlap",
+    "route": "(admin)/admin/data-analyst/parcel-overlap",
+    "models": {},
+    "modules": [],
+    "dynamicAccess": null
+  },
+  {
+    "menuKey": "data-analyst-sprint",
+    "route": "(admin)/admin/data-analyst/sprint",
+    "models": {},
+    "modules": [],
     "dynamicAccess": null
   },
   {
@@ -457,7 +470,8 @@ export const DATA_LINEAGE: DataLineage = [
     "modules": [
       "src/lib/select-options.ts",
       "src/server/actions/farmer-group.ts",
-      "src/server/actions/training.ts"
+      "src/server/actions/training.ts",
+      "src/server/actions/upload.ts"
     ],
     "dynamicAccess": null
   },
@@ -643,6 +657,14 @@ export const UNMAPPED_ROUTES: UnmappedRoute[] = [
     "reason": "tanpa-requirePermission"
   },
   {
+    "route": "(admin)/admin/dashboard/risk",
+    "reason": "tanpa-requirePermission"
+  },
+  {
+    "route": "(admin)/admin/data-analyst",
+    "reason": "tanpa-requirePermission"
+  },
+  {
     "route": "(admin)/admin/map",
     "reason": "tanpa-requirePermission"
   },
@@ -656,6 +678,10 @@ export const UNMAPPED_ROUTES: UnmappedRoute[] = [
   },
   {
     "route": "(admin)/admin/report",
+    "reason": "tanpa-requirePermission"
+  },
+  {
+    "route": "(admin)/admin/settings",
     "reason": "tanpa-requirePermission"
   },
   {

@@ -2,12 +2,14 @@
 
 > Bagian dari dokumentasi **Database**. Indeks: [../README.md](../README.md) · Terkait: [erd.md](./erd.md) · [indexes.md](./indexes.md) · [constraints.md](./constraints.md) · [migrations.md](./migrations.md) · [security.md](./security.md) · [performance.md](./performance.md) · [dashboard-snapshots.md](./dashboard-snapshots.md)
 
-## Common Fields (semua tabel)
+## Kolom Umum (semua tabel)
+
+> Pengecualian: `LandMarkerCounter` (penghitung murni, tanpa audit & `isActive`); `UserProvince`/`UserDistrict`/`UserFarmerGroup` tanpa `isActive`; `createdBy` pada `MainDashboardSnapshot`/`BmpDashboardSnapshot` wajib (FK ke User), bukan nullable.
 
 | Field | Type | Keterangan |
 |-------|------|-----------|
 | `created_at` | DateTime | Auto-set saat create |
-| `created_by` | String? | User ID yang membuat (null saat seed) |
+| `created_by` | String? | User ID yang membuat (null saat seed; wajib di tabel snapshot) |
 | `modified_at` | DateTime | Auto-update saat edit |
 | `modified_by` | String? | User ID yang terakhir edit |
 
@@ -16,61 +18,35 @@
 <details>
 <summary><strong>Enums</strong> — Definisi enumerasi sistem</summary>
 
-## Enums
+## Enum
 
-```mermaid
-classDiagram
-    class Role {
-        SUPERADMIN
-        ADMIN
-        OPERATOR
-        MANAGEMENT
-        DONOR
-    }
+<!-- GENERATED:enums — npm run build:docs; jangan sunting tangan -->
+19 enum di `prisma/schema/`.
 
-    class PermissionLevel {
-        CREATE
-        VIEW
-        EDIT
-        DELETE
-        EXPORT
-        PRINT
-    }
+| Enum | Nilai | Berkas |
+|---|---|---|
+| `AdminBoundaryLevel` | KABUPATEN · KECAMATAN · DESA | `_config.prisma` |
+| `BmpIndicatorLevel` | LEMBAGA · INDIVIDU | `bmp-indicator.prisma` |
+| `CertStatus` | CERTIFIED · PLANNED | `_config.prisma` |
+| `FarmerGroupCategory` | EX_PLASMA · SWADAYA | `_config.prisma` |
+| `FarmerGroupType` | ASOSIASI · KOPERASI | `_config.prisma` |
+| `Gender` | M · F | `farmer.prisma` |
+| `LandDocumentType` | SHM · SKT · SKGR · SK · SKST · SKTC · SKGK · SPPT · SKRPT · SKKT · SKTB · HIBAH · JUAL_BELI · OTHER | `land-parcel-document.prisma` |
+| `LandMarkerCondition` | PRESENT · MISSING · DAMAGED · NOT_INSTALLED | `land-marker.prisma` |
+| `LandMarkerSource` | POLYGON_VERTEX · GPS · MANUAL | `land-marker.prisma` |
+| `LandMarkerType` | CONCRETE · WOOD · PIPE · NATURAL · OTHER | `land-marker.prisma` |
+| `LandNktStatus` | INCLUDED · AFFECTED · NOT_AFFECTED | `land-parcel-nkt.prisma` |
+| `LandProgramStatus` | PLANNED · ACTIVE · COMPLETED · CANCELLED | `land-parcel-program.prisma` |
+| `LandProgramType` | DEMPLOT_PBU | `land-parcel-program.prisma` |
+| `LandStdbStage` | PERSIAPAN_DATA · PENGAJUAN · REVISI · TERBIT · DITOLAK | `land-stdb.prisma` |
+| `NktCategory` | NKT_1 · NKT_2 · NKT_3 · NKT_4 · NKT_5 · NKT_6 | `land-parcel-nkt.prisma` |
+| `PermissionLevel` | CREATE · VIEW · EDIT · DELETE · EXPORT · PRINT | `_config.prisma` |
+| `Role` | SUPERADMIN · ADMIN · OPERATOR · MANAGEMENT · DONOR | `_config.prisma` |
+| `RspoCertStatus` | CERTIFIED · PLANNED | `_config.prisma` |
+| `TrainingCategory` | PAKET_1_BMP_PC_RSPO_NKT · PAKET_2_MK · PAKET_2_K3 · PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV · OTHER | `_config.prisma` |
+<!-- /GENERATED:enums -->
 
-    class FarmerGroupCategory {
-        EX_PLASMA
-        SWADAYA
-    }
-
-    class FarmerGroupType {
-        ASOSIASI
-        KOPERASI
-    }
-
-    class RspoCertStatus {
-        CERTIFIED
-        PLANNED
-    }
-
-    class CertStatus {
-        <<generik — ISPO, SAP/MAP (#169)>>
-        CERTIFIED
-        PLANNED
-    }
-
-    class Gender {
-        M
-        F
-    }
-
-    class TrainingCategory {
-        PAKET_1_BMP_PC_RSPO_NKT
-        PAKET_2_MK
-        PAKET_2_K3
-        PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV
-        OTHER
-    }
-```
+Catatan: `LandNktStatus.INCLUDED` hidup di DB tetapi disembunyikan dari UI (TD-040); `CertStatus` adalah enum generik untuk ISPO & SAP/MAP (#169).
 
 </details>
 
@@ -79,7 +55,7 @@ classDiagram
 <details>
 <summary><strong>Table Naming Convention</strong> — Konvensi penamaan tabel</summary>
 
-## Table Naming Convention
+## Konvensi Penamaan Tabel
 
 | Prefix | Arti | Contoh |
 |--------|------|--------|
@@ -100,7 +76,7 @@ Aturan lengkap (termasuk larangan `tbl_parcel_*`, enum vs `ref_`): [../standards
 <details>
 <summary><strong>RBAC & Data Access</strong> — Flow autentikasi, otorisasi, dan data access control</summary>
 
-## RBAC Flow
+## Alur RBAC
 
 ```mermaid
 flowchart TD
@@ -113,65 +89,16 @@ flowchart TD
     E --> G[Final permission set]
     F --> G
     G --> H[Filter menu visibility]
-    G --> I[Resolve data scope]
-    I --> J{UserProvince exists?}
-    J -->|Yes| K[All districts in province → all KT]
-    J -->|No| L{UserDistrict exists?}
-    L -->|Yes| M[All KT in assigned districts]
-    L -->|No| N{UserFarmerGroup exists?}
-    N -->|Yes| O[Only assigned KT]
-    N -->|No| P[No data access]
+    G --> I[Resolve data scope — getAccessContext]
 ```
 
----
-
-## Data Access Examples
-
-| User | Role | UserProvince | UserDistrict | UserFarmerGroup | Hasil Akses |
-|------|------|-------------|-------------|-----------------|-------------|
-| Ahmad | Project Leader | Riau | — | — | Semua district di Riau → semua KT |
-| Erma | District Coord | — | Kampar | — | Semua KT di Kampar |
-| Anissa | Facilitator | — | Kampar | KBM, Kopsa | Hanya KBM & Kopsa |
-| Super Admin | SUPERADMIN | — | — | — | Semua (skip filter) |
+Ringkas (`getAccessContext()`, `src/lib/access-context.ts`): SUPERADMIN atau **tanpa assignment** → `ALL`; **hanya** `UserFarmerGroup` → `BY_FARMER_GROUP` (id Lembaga); ada `UserProvince`/`UserDistrict` → `BY_DISTRICT` (gabungan district; assignment Lembaga **diabaikan**); sesi kosong / user tak ditemukan → `BY_DISTRICT` kosong (tolak semua). Terjemahkan ke `where` lewat helper `src/lib/access-scope.ts`, jangan ternary manual. Rincian, contoh, dan pengecualian scope yang tercatat: [product/access-context.md](../product/access-context.md).
 
 ---
 
-## Data Access Pattern
+## Rincian Model Farmer
 
-```mermaid
-flowchart LR
-    subgraph "Resolve Accessible Districts"
-        S[Start] --> UP{UserProvince?}
-        UP -->|Yes| EXP["Expand: province.districts[]"]
-        UP -->|No| UD{UserDistrict?}
-        UD -->|Yes| DIR["Use: user.districts[]"]
-        UD -->|No| NONE["No access"]
-        EXP --> MERGE[Merge district IDs]
-        DIR --> MERGE
-    end
-
-    subgraph "Resolve Accessible KT"
-        MERGE --> UFG{UserFarmerGroup?}
-        UFG -->|Yes| FG["Filter: only assigned KT"]
-        UFG -->|No| ALL["All KT in accessible districts"]
-    end
-
-    subgraph "Server Action Query"
-        FG --> W["WHERE is_active=true AND farmer_group_id IN (...)"]
-        ALL --> W
-    end
-```
-
-</details>
-
----
-
-<details>
-<summary><strong>Farmer Model</strong> — Detail model Farmer dengan joinedYear field</summary>
-
-## Farmer Model Details
-
-### Core Fields
+### Kolom Inti
 
 | Field | Type | Constraint | Keterangan |
 |-------|------|-----------|------------|
@@ -186,11 +113,14 @@ flowchart LR
 | `birthDate` | DateTime? | Optional | Tanggal lahir |
 | `joinedYear` | Int? | Optional | Tahun bergabung dengan KT (range: 1900-2100) |
 
-### Relationships
+### Relasi
 
 ```
 FarmerGroup (1) ─→ (N) Farmer
 Farmer (1) ─→ (N) TrainingParticipant
+Farmer (1) ─→ (N) LandParcel / LandParcelIdentity / LandStdb
+Farmer (1) ─→ (N) ProductionRecord
+Farmer (1) ─→ (N) BmpAssessment
 ```
 
 ### Hierarki Kelembagaan (Petani → Kelompok Tani → Lembaga Petani)
@@ -207,23 +137,16 @@ Level **Kelompok Tani** belum dimodelkan sebagai tabel. **Interim (#146):** disi
 
 Konsumen agregat interim: **Report Kelompok Tani** (real-time, #154 — Summary agregat + Detail roster) & **card "Total Kelompok Tani"** di Main Dashboard (snapshot-backed, distinct `subGroupLv2`, #148). Pemodelan tabel penuh (KT sebagai entitas + re-parenting `Farmer`) = **TD-014**.
 
-### RBAC Filter Context
+### Konteks Filter RBAC
 
 Farmer data difilter berdasarkan:
 - `BY_DISTRICT`: User dengan assignment Province/District → akses semua Farmer di KT dalam district scope
 - `BY_FARMER_GROUP`: User dengan assignment KT spesifik → akses hanya Farmer di KT assigned
 - `ALL`: SUPERADMIN atau user tanpa assignment → akses semua Farmer
 
-### Bulk Upload Support
+### Dukungan Bulk Upload
 
-- **Template-less approach**: Upload Excel tanpa template, user mapping kolom secara dinamis
-- **Smart Validation**:
-  - Gender normalization: `L/P` → `M/F`
-  - NIK validation: harus 16 digit angka atau kosong
-  - Date parsing: Excel serial number atau format string `dd/mm/yyyy`, `yyyy-mm-dd`
-  - joinedYear validation: integer 1900-2100 atau kosong
-- **Duplicate Check**: File-level dan DB-level untuk `farmerId` dalam `farmerGroupId` yang sama
-- **Download Error Report**: User bisa download Excel berisi hanya baris error dengan kolom "Keterangan"
+Alur, normalisasi (gender `L/P` → `M/F`, NIK 16 digit, tanggal, `joinedYear` 1900–2100), cek duplikat berkas & DB per Lembaga, dan unduhan per status: [../product/crud-flows.md § Bulk Upload Petani](../product/crud-flows.md#bulk-upload-petani--terimplementasi). Dari sisi skema cukup: keunikan `(farmerGroupId, farmerId)` dijaga constraint (TD-024).
 
 </details>
 
@@ -232,16 +155,16 @@ Farmer data difilter berdasarkan:
 <details>
 <summary><strong>Training Module</strong> — Struktur 3-layer training management</summary>
 
-## Training Module Architecture
+## Arsitektur Modul Pelatihan
 
-### Overview
+### Gambaran
 
 Modul Training menggunakan struktur 3-layer untuk mengelola data pelatihan petani:
 1. **TrainingPackage** (ref) — Katalog paket pelatihan standar
 2. **TrainingActivity** (transactional) — Aktivitas pelatihan yang dilaksanakan per Lembaga Petani
 3. **TrainingParticipant** (many-to-many) — Peserta pelatihan (relasi Farmer ↔ Training Activity)
 
-### Training Data Flow
+### Alur Data Pelatihan
 
 ```mermaid
 flowchart LR
@@ -251,7 +174,7 @@ flowchart LR
     F[Farmer] --> TPART
 ```
 
-### Training Package Categories
+### Kategori Paket Pelatihan
 
 | Code | Nama Paket |
 |------|-----------|
@@ -261,22 +184,24 @@ flowchart LR
 | `PAKET_3_4_GEDSI_FINANCIAL_LIVELIHOOD_BUSDEV` | Paket 3-4: GEDSI, Financial Literacy, Livelihood, Business Development |
 | `OTHER` | Paket lainnya |
 
-### Training Activity Features
+### Fitur Kegiatan Pelatihan
 
 - **Evidence Upload**: Setiap aktivitas pelatihan bisa menyertakan bukti dokumen (PDF) yang disimpan di S3
   - `evidence_key`: S3 object key
   - `evidence_name`: Nama file asli untuk display
 - **Location**: Lokasi pelaksanaan pelatihan (teks bebas)
-- **Training Date**: Tanggal pelaksanaan pelatihan
+- **Training Date**: Tanggal pelaksanaan pelatihan (sesi multi-hari: tanggal hari pertama)
+- **Notes** (`notes`, #228): catatan bebas — rentang sesi multi-hari, label modul Paket 1
 
-### Training Participant Management
+### Pengelolaan Peserta Pelatihan
 
 - **Many-to-Many Relation**: Satu petani bisa ikut banyak training, satu training bisa punya banyak peserta
 - **Unique Constraint**: `(activityId, farmerId)` — tidak boleh duplikasi peserta di aktivitas yang sama
+- **Skor** `preTestScore` / `postTestScore` (Int, nullable, #94) — dipakai panel efektivitas Dashboard Pelatihan
 - **Bulk Upload Support**: Upload peserta via Excel/CSV dengan validasi 3-tier (Valid, Warning, Error)
 - **RBAC Filter**: Data peserta mengikuti access context dari Farmer (BY_DISTRICT / BY_FARMER_GROUP)
 
-### Schema Relationships
+### Relasi Skema
 
 ```
 TrainingPackage (1) ─→ (N) TrainingActivity
@@ -292,7 +217,7 @@ Farmer (1) ─→ (N) TrainingParticipant
 <details>
 <summary><strong>Tree Model</strong> — Titik pohon sawit per lahan (#238)</summary>
 
-## Tree Model Details
+## Rincian Model Tree
 
 - **Relasi baca**: `landParcelId` (FK ke `LandParcel.id`) adalah **satu-satunya jalur baca** — semua query pohon (detail lahan, overlay peta, agregat count) lewat FK ini. Set aktif per lahan berevisi per-set (upload ulang menonaktifkan set lama, `revision + 1`).
 - **`parcelId` = kolom arsip/audit** (keputusan #241): menyimpan kunci bisnis lahan (`LandParcel.parcelId`) saat upload sebagai **jangkar pemulihan manual** — lahan berevisi mendapat `id` baru dan pohon aktif di-repoint saat revisi; bila repoint terlewat/salah, keterkaitan masih bisa direkonstruksi dari kolom ini. **Tidak ada jalur baca aplikasi yang memakai/fallback ke kolom ini** — itu disengaja, bukan utang; jangan menambah jalur baca berbasis `parcelId` tanpa keputusan baru (parcelId hanya unik per petani, lookup global bisa ambigu).
@@ -304,12 +229,12 @@ Farmer (1) ─→ (N) TrainingParticipant
 ---
 
 <details>
-<summary><strong>File Structure</strong> — Struktur file Prisma schema</summary>
+<summary><strong>Model domain lanjutan & struktur berkas</strong> — Monev BMP, satelit lahan, geom, boundary, struktur file Prisma schema</summary>
 
 ## BmpAssessment — Monev BMP (#344)
 
 - **Grain = petani per tahun survei**, bukan lahan (keputusan owner 2026-09-18 atas rekap Rokan Hulu: petani multi-lahan punya satu skor, 18% baris tanpa lahan). FK utama `farmerId` (pola `TrainingParticipant`); `parcelUid` **opsional** = lahan yang dikunjungi saat survei, menunjuk `LandParcelIdentity` (stabil antar revisi).
-- **Hanya skor akhir** (`score` Float 0–3, 2 desimal) — rincian per indikator BMP di luar lingkup. **Kategori tidak disimpan**: dihitung dari skor lewat `BMP_ASSESSMENT_CATEGORIES` (`src/lib/bmp-assessment.ts`): Teladan **> 2,50** (ketat — skor 2,50 diberi label Praktisi oleh tim lapangan), Praktisi ≥ 1,50, Perintis ≥ 1,00, Belum Implementasi < 1,00. Revisi ambang otomatis konsisten ke seluruh riwayat.
+- **Skor akhir** (`score` Float 0–3, 2 desimal) adalah angka resmi; rincian per indikator ditambahkan kemudian oleh #346 (lihat §Rincian indikator di bawah). **Kategori tidak disimpan**: dihitung dari skor lewat `BMP_ASSESSMENT_CATEGORIES` (`src/lib/bmp-assessment.ts`): Teladan **> 2,50** (ketat — skor 2,50 diberi label Praktisi oleh tim lapangan), Praktisi ≥ 1,50, Perintis ≥ 1,00, Belum Implementasi < 1,00. Revisi ambang otomatis konsisten ke seluruh riwayat.
 - **Satu baris aktif per (petani, tahun)**: cek di server action (pesan ramah) **dan** partial unique index `uniq_bmp_assessment_farmer_year_active` (`WHERE is_active`, tulis tangan — temuan review 2026-09-20: cek `findFirst` saja tidak atomik). Hapus = soft delete; restore ditolak bila tahun itu sudah punya baris aktif lain.
 - **Jalur input**: form (Master Data › Monev BMP; tab Monev BMP di Detail Petani) dan **import Excel format rekap** (satu sheet = satu Lembaga karena `Farmer.farmerId` hanya unik per Lembaga; header dua baris multi-tahun; upsert per petani-tahun; baris tanpa ID petani dilewati; lahan tak dikenal → disimpan tanpa lahan; tanggal masa depan/beda tahun → dikosongkan dengan peringatan).
 - **Dashboard Monev BMP** realtime (pola Dashboard Pelatihan, tanpa snapshot) — terpisah dari BMP Dashboard (Produksi) yang snapshot-backed dengan grain produksi bulanan.
@@ -332,9 +257,9 @@ Satelit menempel ke `parcelUid`, bukan ke baris revisi — tak perlu repoint:
 | Tabel | Model | Relasi | Isi kunci |
 | ----- | ----- | ------ | --------- |
 | `tbl_land_parcel_document` | `LandParcelDocument` | 1:N | Surat kepemilikan: `type` enum `LandDocumentType` (SHM/SKT/SKGR/SK/SKST/SKTC/SKGK/SPPT/SKRPT/SKKT/SKTB/HIBAH/JUAL_BELI/OTHER) + `typeRaw` (ejaan sumber), `number` (**tidak unik** — nomor pendek berulang antar desa), `holderName` (97% ≠ nama petani), `statedArea` (terpisah dari `area`), `issuedYear?`, `custodyNote` ("surat di bank", "lahan sudah dijual" — status, bukan jenis), `fileUrl?` |
-| `tbl_land_stdb` | `LandStdb` | per **petani**; unik lewat **dua partial index**, bukan `@@unique` | STDB menutup beberapa persil petani yang sama (maks 13 di data); `number` **opsional** sejak #306 (nomor terbit di tahap terakhir) dan mentah (`1637/53/1401/6/2025` → `issuedYear` diturunkan bila berpola); `stage` (`LandStdbStage`: PERSIAPAN_DATA/PENGAJUAN/REVISI/TERBIT/DITOLAK, default `TERBIT`) + `prepared_at`/`submitted_at`/`issued_at`/`stage_changed_at`/`submitted_to`/`stage_note`. **Keunikan:** `uniq_land_stdb_farmer_number` `(farmer_id, number) WHERE number IS NOT NULL AND is_active` dan `uniq_land_stdb_farmer_open` `(farmer_id) WHERE stage IN (PERSIAPAN_DATA,PENGAJUAN,REVISI) AND is_active` — `@@unique([farmerId, number])` tak bisa dipertahankan karena di Postgres `NULL ≠ NULL`; `DITOLAK` sengaja di luar index kedua supaya petani bisa mengajukan ulang |
+| `tbl_land_stdb` | `LandStdb` | per **petani**; unik lewat **dua partial index**, bukan `@@unique` | STDB menutup beberapa persil petani yang sama (maks 13 di data); `number` **opsional** sejak #306 (nomor terbit di tahap terakhir) dan mentah (`9999/99/1401/6/2025` → `issuedYear` diturunkan bila berpola); `stage` (`LandStdbStage`: PERSIAPAN_DATA/PENGAJUAN/REVISI/TERBIT/DITOLAK, default `TERBIT`) + `prepared_at`/`submitted_at`/`issued_at`/`stage_changed_at`/`submitted_to`/`stage_note`. **Keunikan:** `uniq_land_stdb_farmer_number` `(farmer_id, number) WHERE number IS NOT NULL AND is_active` dan `uniq_land_stdb_farmer_open` `(farmer_id) WHERE stage IN (PERSIAPAN_DATA,PENGAJUAN,REVISI) AND is_active` — `@@unique([farmerId, number])` tak bisa dipertahankan karena di Postgres `NULL ≠ NULL`; `DITOLAK` sengaja di luar index kedua supaya petani bisa mengajukan ulang |
 | `tbl_land_parcel_stdb` | `LandParcelStdb` | M:N lahan ↔ STDB | satu-satunya M:N di keluarga satelit; daftar persil yang akan diajukan justru disusun pada tahap `PERSIAPAN_DATA`, jauh sebelum ada nomor. Audit lengkap sejak **#299** (`modified_at`/`modified_by` — `is_active` di tabel ini ditoggle dua jalur: `unlinkLandStdb`/`createLandStdb` dan `applyLandParcelDetailRows`) |
-| `tbl_land_parcel_external_id` | `LandParcelExternalId` | 1:N, unik `(parcelUid, source, code)` — sejak 2026-09-23 satu kode boleh di >1 lahan (klaim ganda, dicek silang) | UL Parcel Code (mis. `ID080d781b4`) + **`rawGeometry Json?`** poligon mentah vendor (opsional, keputusan owner). `source` = **pemeta** (`MERIDIA` \| `WRI` \| `SWADAYA`, isian bebas diizinkan) — bukan nama kolom Excel; nilai lama `parcel_code` dimigrasi ke `MERIDIA` 2026-08-28 (6.953 baris prod & staging-local) |
+| `tbl_land_parcel_external_id` | `LandParcelExternalId` | 1:N, unik `(parcelUid, source, code)` — sejak 2026-09-23 satu kode boleh di >1 lahan (klaim ganda, dicek silang) | UL Parcel Code (mis. `ID0000abcde`) + **`rawGeometry Json?`** poligon mentah vendor (opsional, keputusan owner). `source` = **pemeta** (`MERIDIA` \| `WRI` \| `SWADAYA`, isian bebas diizinkan) — bukan nama kolom Excel; nilai lama `parcel_code` dimigrasi ke `MERIDIA` 2026-08-28 (6.953 baris prod & staging-local) |
 | `tbl_land_parcel_program` | `LandParcelProgram` | 1:N | Keikutsertaan program: `programType` (`DEMPLOT_PBU`), `status`, `startDate/endDate` — level lahan dulu; entitas Program/PBU bisa ditambah sebagai FK tanpa mengubah baris |
 | `tbl_land_parcel_nkt` | `LandParcelNkt` | **1:1** (`parcel_uid` UNIQUE) | **Status NKT / HCV** (#328, langkah pertama MD-08): `status` enum `LandNktStatus` (INCLUDED termasuk area · AFFECTED terdampak · NOT_AFFECTED sudah dinilai-bersih), `categories NktCategory[]` (NKT_1…NKT_6, kosong sah hanya untuk NOT_AFFECTED — dijaga Zod), `affected_area_ha` & `affected_length_m` (dari Lampiran asesmen HJP: "Luas NKT Area (ha)", "LENGTH"), `assessed_at`, `assessor`, `source`, `notes`. **Tanpa baris = belum dinilai** — dibedakan dari NOT_AFFECTED di laporan. **Hapus = hapus baris** (bukan toggle `is_active`; baris tanpa status tak bermakna dan UNIQUE akan memblokir pengisian ulang). Jalur tulis: form Detail Lahan (`upsertLandParcelNkt`/`deleteLandParcelNkt`), importer Data Lahan Detail (status selalu ditimpa = asesmen terbaru menang, field lain hanya bila terisi; bawaan per berkas untuk daftar tanpa kolom status). Dibaca Laporan Lahan (filter `nktStatus`), Peta Lahan (hanya `status` ikut payload), PDF Profil Lahan, tanda turunan patok (#329). Tanpa layer poligon area NKT (keputusan owner) |
 | `tbl_land_parcel_border` | `LandParcelBorder` | **1:1** (`parcel_uid` UNIQUE) | **Sepadan** (#326): `north/east/south/west` teks bebas ("Lahan Pak Budi", "Jalan desa", "Sungai", "PT X") + `notes`. Menempel ke identitas — bukan kolom di `LandParcel` — karena upload ulang shapefile membuat baris lahan baru dari atribut DBF dan kolom non-DBF hilang. **Hapus = kosongkan keempat kolom, baris tetap**; `is_active` tidak dipakai sebagai jalur hapus (baris nonaktif + UNIQUE akan memblokir pengisian ulang, pelajaran #306). Jalur tulis: form Detail Lahan (`upsertLandParcelBorder`), import Excel Data Lahan Detail, atribut DBF Bulk Upload Lahan — dua importer memakai aturan **sel terisi menimpa, sel kosong dibiarkan** (pola dokumen, bukan pola KT isi-bila-kosong). Berbeda dari **lahan tetangga** (#327) yang dihitung dari geometri dan hanya memuat lahan terdaftar di MIS |
@@ -365,11 +290,11 @@ Garis batas administrasi (`tbl_administrative_boundary`) sebagai konteks peta �
 
 Dual-column sama dengan FarmerGroupBoundary, dengan satu perbedaan penting: kolom cache `geojson` disimpan **tersimplifikasi** (`ST_SimplifyPreserveTopology` 0,001° ≈ 111 m; ~10 MB → ~165 KB) karena hanya untuk garis konteks di browser — `geom` tetap full-res untuk analisa. Seed: `scripts/seed/seed-batas-administrasi.ts` (config per level, dry-run default, idempotent per level).
 
-## File Structure
+## Struktur Berkas
 
 ```
 prisma/schema/
-├── _config.prisma        # Generator, datasource, enums
+├── _config.prisma        # Generator, datasource, enum Role, PermissionLevel, FarmerGroupCategory/Type, RspoCertStatus, CertStatus, AdminBoundaryLevel, TrainingCategory — enum lain (Gender, Land*, NktCategory, BmpIndicatorLevel) di berkas modelnya
 ├── user.prisma           # User identity
 ├── geography.prisma      # Province → District → Subdistrict → Village
 ├── farmer-group.prisma   # FarmerGroup
@@ -389,6 +314,8 @@ prisma/schema/
 ├── reference-benchmark.prisma # ReferenceBenchmark (angka acuan manual per lembaga, #243)
 ├── production.prisma     # ProductionRecord
 ├── training.prisma       # TrainingPackage, TrainingActivity, TrainingParticipant
+├── bmp-assessment.prisma # BmpAssessment (Monev BMP, #344)
+├── bmp-indicator.prisma  # BmpIndicator + enum BmpIndicatorLevel (master 32 indikator), BmpAssessmentDetail, BmpGroupAssessment, BmpGroupAssessmentDetail (#346)
 ├── dashboard-snapshot.prisma # MainDashboardSnapshot, BmpDashboardSnapshot
 ├── rbac.prisma           # RolePermission, UserProvince, UserDistrict, UserFarmerGroup, UserPermissionOverride
 └── menu.prisma           # MenuItem

@@ -235,3 +235,18 @@ describe("getDataAvailabilityView — scope satelit lintas Lembaga", () => {
     expect(db.landStdb.groupBy.mock.calls[0][0].where).not.toHaveProperty("districtId");
   });
 });
+
+describe("modul bukti aktivitas (#385)", () => {
+  it("evidenceKey \"\" (26 baris import mis-prod) BUKAN bukti; hanya kunci berisi yang terhitung", async () => {
+    db.farmerGroup.findFirst.mockResolvedValue({
+      ...GROUP,
+      activities: [
+        { evidenceKey: "", package: { code: "P1" } },
+        { evidenceKey: null, package: { code: "P1" } },
+        { evidenceKey: "training/ta-1/1-bukti.pdf", package: { code: "P1" } },
+      ],
+    });
+    const res = await analyzeFarmerGroupCompleteness("g-1");
+    expect(res.moduleCoverage.find((m) => m.key === "bukti-aktivitas")).toMatchObject({ covered: 1, total: 3 });
+  });
+});

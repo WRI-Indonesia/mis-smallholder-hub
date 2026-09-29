@@ -1,11 +1,11 @@
 # Produk — Access Context Resolution
 
-> Bagian dari dokumentasi **Produk**. Indeks: [../README.md](../README.md) · Terkait: [architecture.md](./architecture.md) · [crud-flows.md](./crud-flows.md) · [role-flows.md](./role-flows.md) · [module-status.md](./module-status.md)
+> Bagian dari dokumentasi **Produk**. Indeks: [../README.md](../README.md) · Terkait: [navigation.md](navigation.md) · [crud-flows.md](./crud-flows.md) · [role-flows.md](./role-flows.md) · [../project/roadmap.md](../project/roadmap.md#phase-status-indeks)
 
 <details>
 <summary><strong>RBAC & Data Access Pattern</strong></summary>
 
-## Access Context Resolution
+## Resolusi Access Context
 
 ```
 User Request
@@ -45,7 +45,7 @@ User Request
 
 > Catatan: `getAccessContext()` (`src/lib/access-context.ts`) **role-agnostik** kecuali cabang SUPERADMIN — semua role lain (ADMIN, OPERATOR, MANAGEMENT, DONOR) mengikuti aturan assignment yang sama. Urutan evaluasi: farmer-group-only lebih dulu, baru province/district; sesi kosong atau user tak ditemukan → `{ mode: "BY_DISTRICT", ids: [] }` = tolak semua.
 
-### Data Access Hierarchy Examples
+### Contoh Hierarki Akses Data
 
 Nama di kolom pertama adalah **persona ilustratif**; kolom Role memakai enum `Role` nyata.
 
@@ -61,12 +61,13 @@ Nama di kolom pertama adalah **persona ilustratif**; kolom Role memakai enum `Ro
 
 ### Helper Filter (dipakai di Server Actions)
 
-| Helper (`src/lib/access-context.ts`) | Peruntukan |
+| Helper (`src/lib/access-scope.ts`, di-re-export dari `src/lib/access-context.ts`) | Peruntukan |
 |---|---|
 | `farmerGroupAccessFilter(access)` | Fragmen `where` untuk query `FarmerGroup` (`BY_FARMER_GROUP` → `id in`; `BY_DISTRICT` → `districtId in`) |
 | `farmerAccessFilter(access)` | Model ber-field `farmerGroupId` + relasi `farmerGroup` (mis. `Farmer`, `TrainingActivity`) |
 | `farmerRelationAccessFilter(access)` | Model ber-relasi `farmer` (mis. `LandParcel`, `ProductionRecord`, `TrainingParticipant`) |
-| `getAccessibleDistrictIds(access)` | Daftar id district yang boleh diakses (`null` = ALL); `BY_FARMER_GROUP` di-resolve ke district lembaga yang di-assign |
+| `rawFarmerGroupScope(access, groupIds?)` | Cermin `farmerGroupAccessFilter` untuk SQL mentah (PostGIS): `{ groupIds?, districtIds? }`, `undefined` = tanpa batasan; `groupIds` opsional diiris dengan scope |
+| `getAccessibleDistrictIds(access)` (di `src/lib/access-context.ts`) | Daftar id district yang boleh diakses (`null` = ALL); `BY_FARMER_GROUP` di-resolve ke district lembaga yang di-assign |
 
 ### Pengecualian scope yang tercatat
 
@@ -79,19 +80,19 @@ Aturan dasar: setiap pembacaan hanya mengembalikan baris dalam scope user. Dua p
 | **Patok bersama** (#329) — `getLandParcelMarkers`, PDF, ekspor per Lembaga | **ID Lahan, nama petani & Lembaga** semua lahan lain yang memakai patok yang sama ("juga patok lahan …"), — apa pun scope user (tanda NKT turunan dihapus #345) | **Tautan ke halaman detail** lahan pemakai lain hanya bila dalam scope (`landParcelId` null di luar scope); akses ke patok selalu lewat **baris lahan** yang diminta (`resolveParcel` ber-`farmerRelationAccessFilter`), tidak ada endpoint per patok | Patok fisik yang sama memang berdiri di batas dua–empat lahan; menyembunyikan pemakai lain membuat "patok bersama" tak bisa diverifikasi di lapangan. Aturan sama dengan tetangga #327 |
 | **Patok di Peta Lahan** (#331) — `getMapMarkers`, `getMapMarkerExportRows` | Titik patok + "ID Lahan #n" semua lahan pemakainya (tanpa tanda NKT turunan sejak #345) | Scope = Lembaga di filter ∧ akses user (`farmerGroupAccessFilter` di `AND`, pola `getMapData`); patok hanya muncul bila salah satu lahan pemakainya ada di filter; unduhan digate `map-parcel:EXPORT` | Sama dengan aturan patok bersama: ID lahan pemakai lain bukan rahasia, tetapi datasetnya sendiri hanya untuk wilayah yang boleh dilihat |
 | **UL Parcel Code bersama** (2026-09-23, klaim ganda vendor) — `getLandParcelSatellites` (`otherParcels` per kode), tab Legalitas Detail Lahan | **ID Lahan** semua lahan aktif lain yang memegang kode (pemeta + kode) yang sama — apa pun scope user | **Tautan ke halaman detail** hanya bila lahan itu dalam scope (`id` null di luar scope → teks biasa); nama petani/Lembaga lawan tidak dikirim | Klaim ganda tak bisa dicek silang tanpa tahu lahan lawannya; aturan sama dengan patok bersama #329. Akses tetap lewat baris lahan yang diminta (`farmerRelationAccessFilter`) |
-| **Topology check** (#317 Fase 2, direncanakan) — `getParcelTopologyFindings` | Pasangan lahan yang bertumpang tindih bila **minimal satu sisi** dalam scope user; sisi lawan ditampilkan **lengkap** (nama petani, ID lahan, lembaga) | Pasangan yang kedua sisinya di luar scope | Verifikasi klaim ganda mustahil tanpa identitas sisi lawan; dibatasi izin menu khusus `data-analyst-parcel-overlap` (bukan menu umum). Preseden: `getAdminBoundaries` (#266) |
+| **Tumpang Tindih Lahan** (#317 Fase 2, tab Tumpang Tindih) — `getParcelOverlaps`, `getParcelOverlapGeometries` (`src/server/actions/parcel-overlap.ts`) | Pasangan lahan yang bertumpang tindih bila **minimal satu sisi** dalam scope user; sisi lawan ditampilkan **lengkap** (nama & kode petani, ID lahan, Kelompok Tani, Lembaga, Distrik, poligon) | Pasangan yang kedua sisinya di luar scope; **tautan Detail Lahan** sisi di luar scope (`inScope` false — halaman itu 404) | Verifikasi klaim ganda mustahil tanpa identitas sisi lawan; dibatasi izin menu khusus `data-analyst-parcel-overlap` (DONOR tidak diberi, dikunci `menu-access.test.ts`). Scope SQL dari `rawFarmerGroupScope` (tidak ditulis ulang). Preseden: `getAdminBoundaries` (#266), tetangga #327 |
 
 Menambah pengecualian baru = menambah baris di tabel ini **dan** komentar di fungsinya.
 
-### Permission Resolution Priority
+### Prioritas Resolusi Izin
 
-1. **SUPERADMIN** → Grant all, skip all filters
-2. **UserPermissionOverride** (Granted) → Grant
-3. **UserPermissionOverride** (Revoked) → Forbid
-4. **RolePermission** (default) → Check C/V/E/D
-5. **Pewarisan kaskade induk→anak** → izin induk diturunkan ke seluruh anak menu
-6. **No Permission** → Hide menu / Forbidden
+1. **SUPERADMIN** → bypass: semua izin, tanpa filter scope
+2. Untuk peran lain, per node menu **dari akar ke daun**:
+   1. mulai dari izin efektif **induk** (warisan kaskade);
+   2. **tambah** baris `RolePermission` node itu (CREATE/VIEW/EDIT/DELETE/EXPORT/PRINT);
+   3. terapkan **`UserPermissionOverride`** node itu — `granted` menambah, revoke **mencabut** (termasuk mencabut hasil warisan); hasilnya menjadi warisan anak-anaknya
+3. Tidak ada izin yang dibutuhkan di node itu → menu disembunyikan / aksi ditolak
 
-**Pewarisan kaskade**: `getEffectiveMenuPermissions` (`src/lib/rbac.ts`) menelusuri pohon menu top-down — izin efektif tiap node = izin induk + `RolePermission` node itu, lalu override per-user diterapkan per node (grant menambah, revoke mencabut, termasuk mencabut hasil warisan). Contoh konkret: `role-permissions.csv` **tidak punya baris** `master-data-farmers`, tetapi ADMIN/OPERATOR tetap dapat VIEW menu Petani karena mewarisi VIEW dari induk `master-data`.
+**Pewarisan kaskade**: `getEffectiveMenuPermissions` (`src/lib/rbac.ts`) menelusuri pohon menu top-down — izin efektif tiap node = izin induk + `RolePermission` node itu, lalu override per-user diterapkan per node (grant menambah, revoke mencabut, termasuk mencabut hasil warisan). Contoh konkret: `role-permissions.csv` **tidak punya baris** `dashboard-risk` untuk OPERATOR/MANAGEMENT, tetapi keduanya tetap dapat VIEW menu Risk Management karena mewarisi VIEW dari induk `dashboard` (ADMIN mewarisi CREATE/EDIT/VIEW dari induk yang sama). Sebaliknya DONOR tidak punya baris `dashboard`/`master-data`/`report`/`map` sama sekali — aksesnya hanya dari baris anak miliknya sendiri.
 
 </details>

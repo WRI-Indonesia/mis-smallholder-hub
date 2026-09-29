@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -5,17 +6,36 @@ export type { AccessContext } from "@/lib/access-scope";
 export { farmerGroupAccessFilter, rawFarmerGroupScope, farmerAccessFilter, farmerRelationAccessFilter } from "@/lib/access-scope";
 import type { AccessContext } from "@/lib/access-scope";
 
-export async function getAccessContext(): Promise<AccessContext> {
+/**
+ * Scope data user — dedup dengan `cache()` (#252, pola `rbac.ts`) **dalam satu
+ * render RSC** (mis. halaman yang memanggil beberapa action lewat `Promise.all`).
+ * Server Action yang dipanggil dari klien = request tersendiri → tetap satu
+ * kueri per action; oper `access` secara eksplisit bila satu action memanggil
+ * helper berkali-kali. Asumsi: scope user tak berubah di tengah satu request.
+ * Hasil DIBEKUKAN — objek yang sama dibagi ke semua pemanggil dalam render itu.
+ */
+export const getAccessContext = cache(async (): Promise<AccessContext> => freezeAccess(await resolveAccessContext()));
+
+function freezeAccess(access: AccessContext): AccessContext {
+  if (access.mode !== "ALL") Object.freeze(access.ids);
+  return Object.freeze(access);
+}
+
+async function resolveAccessContext(): Promise<AccessContext> {
   const session = await auth();
   if (!session?.user) return { mode: "BY_DISTRICT", ids: [] };
   if (session.user.role === "SUPERADMIN") return { mode: "ALL" };
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      provinces: { include: { province: { include: { districts: true } } } },
-      districts: true,
-      farmerGroups: true,
+  // User nonaktif (JWT masih hidup sampai login ulang, #342) → tidak ditemukan →
+  // fail-closed. Dulu `findUnique` tanpa `isActive`: user nonaktif tanpa
+  // assignment jatuh ke `ALL` (review #252).
+  const user = await prisma.user.findFirst({
+    where: { id: session.user.id, isActive: true },
+    // Hanya id yang dipakai — dulu baris penuh ≤ 50 distrik per provinsi.
+    select: {
+      provinces: { select: { province: { select: { districts: { select: { id: true } } } } } },
+      districts: { select: { districtId: true } },
+      farmerGroups: { select: { farmerGroupId: true } },
     },
   });
 

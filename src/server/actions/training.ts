@@ -8,6 +8,7 @@ import { trainingParticipantScoreSchema, addParticipantsSchema } from "@/validat
 import type { TrainingParticipantScoreInput } from "@/validations/training-participant.schema";
 import { hasPermission, isSuperAdmin } from "@/lib/rbac";
 import { getPresignedUrl } from "@/lib/s3";
+import { isTrainingEvidenceKeyFor } from "@/lib/training-evidence";
 
 import {
   getAccessContext,
@@ -115,7 +116,9 @@ export async function getTrainingActivityById(id: string) {
   if (!activity) return null;
 
   let evidenceUrl: string | null = null;
-  if (activity.evidenceKey) {
+  // #385: presigned URL hanya untuk kunci milik pelatihan ini — baris yang
+  // menyimpan kunci objek lain (sebelum validasi tulis ada) tidak membuka tautan.
+  if (activity.evidenceKey && isTrainingEvidenceKeyFor(activity.evidenceKey, activity.id)) {
     try {
       evidenceUrl = await getPresignedUrl(activity.evidenceKey);
     } catch (err) {
@@ -151,9 +154,13 @@ export async function createTrainingActivity(input: TrainingActivityInput) {
 
   const session = await auth();
 
+  // #385: bukti belum bisa ada saat create — kuncinya memuat id aktivitas yang
+  // baru lahir di sini. Form mengunggah SETELAH create lalu memanggil update.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { evidenceKey: _k, evidenceName: _n, ...data } = parsed.data;
   const created = await prisma.trainingActivity.create({
     data: {
-      ...parsed.data,
+      ...data,
       createdBy: session?.user?.id ?? null,
     },
   });
@@ -177,9 +184,18 @@ export async function updateTrainingActivity(input: UpdateTrainingActivityInput)
   // Verify activity exists, is active, and is within the user's scope before updating
   const existing = await prisma.trainingActivity.findFirst({
     where: { id, isActive: true, ...farmerAccessFilter(access) },
-    select: { id: true },
+    select: { id: true, evidenceKey: true },
   });
   if (!existing) return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda" };
+
+  // #385: kunci bukti BARU hanya boleh kosong atau milik pelatihan INI (format
+  // sekarang / lama) — bukan objek lain di bucket. Kunci yang tidak berubah tidak
+  // divalidasi ulang: form selalu mengirim balik kunci lama, dan kunci lama yang
+  // tak lolos pola tak boleh memblokir edit kolom lain — tautannya tetap tertutup
+  // oleh pemeriksaan sisi baca (`getTrainingActivityById`).
+  if (data.evidenceKey && data.evidenceKey !== existing.evidenceKey && !isTrainingEvidenceKeyFor(data.evidenceKey, id)) {
+    return { success: false, error: { evidenceKey: ["Berkas bukti tidak valid untuk pelatihan ini — unggah ulang berkasnya"] } };
+  }
 
   // Cegah pemindahan pelatihan ke lembaga petani di luar scope user.
   const targetGroup = await prisma.farmerGroup.findFirst({

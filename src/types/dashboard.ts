@@ -82,12 +82,6 @@ export interface DashboardData {
   kelompokTaniList: KTDetails[];
 }
 
-// Options for the dashboard/snapshot filter bar
-export interface DashboardFilterOptions {
-  districts: { id: string; name: string }[];
-  joinedYears: number[];
-}
-
 // The snapshot currently displayed on the Main Dashboard
 export interface DashboardSnapshotView {
   snapshotDate: string;
