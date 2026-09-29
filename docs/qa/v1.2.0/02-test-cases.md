@@ -110,12 +110,12 @@ Harapan:
 Langkah:
 1. Buka halaman tanpa query string.
 2. Pilih tombol minggu lain, lalu **Backlog**; salin URL, buka di tab baru.
-3. Kembali ke sprint aktif; klik satu baris butir; klik tautan **#… ↗** di ujung baris.
+3. Kembali ke sprint aktif; pada satu kartu klik **Target lengkap**, lalu nomor **#…** di judul kartu.
 Harapan:
 - Langkah 1: tab **Sprint** aktif, minggu terpilih = sprint yang memuat tanggal hari ini (WIB) bertanda "Minggu ini", ringkasan "hari ke-n dari 7" + bilah progres poin.
-- Butir ⚖️ hanya tampil di kotak kuning **Butuh keputusan owner**, tidak diulang di kelompok Dikerjakan / Belum dimulai / Selesai / Digeser.
+- Butir ⚖️ tampil di kolom **Menunggu keputusan** papan kanban (rincian papan: TC-389-01), tidak diulang di kolom lain.
 - Langkah 2: `?sprint=<n>` / `?sprint=backlog` di URL; tab baru menampilkan pilihan yang sama; Backlog = daftar bernomor.
-- Langkah 3: baris membuka Target & Keputusan; tautan membuka issue GitHub di tab baru (baris tidak ikut terbuka/tertutup).
+- Langkah 3: target kartu terbuka penuh; nomor issue membuka GitHub di tab baru.
 - Isi cocok dengan `docs/project/sprint.md` §Sprint Focus di commit yang ter-deploy.
 
 ### TC-378-03 · Tab Analisa: kartu, beban per status, keputusan [P1] (6 mnt)

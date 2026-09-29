@@ -297,3 +297,10 @@ describe("analisa sprint", () => {
     expect(sprintDay(s, "2026-10-05")).toBeNull();
   });
 });
+
+describe("plainInline — teks polos kartu kanban (#389)", () => {
+  it("markdown inline → teks tanpa tautan (label aksesibel & target terpotong)", async () => {
+    const { plainInline } = await import("@/app/(admin)/admin/data-analyst/sprint/sprint-shared");
+    expect(plainInline("**#12** ganti `data-analyst-sprint` lihat [docs](https://x.test)")).toBe("#12 ganti data-analyst-sprint lihat docs");
+  });
+});

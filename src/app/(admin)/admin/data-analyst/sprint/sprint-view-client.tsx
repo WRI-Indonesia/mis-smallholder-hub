@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ChevronRight, ExternalLink, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import {
   type SprintPhase,
   type SprintPlan,
 } from "@/lib/sprint-plan";
-import { CATEGORY_COLOR, Inline, ProgressBar, STATUS_STYLE, fmtDate } from "./sprint-shared";
+import { CATEGORY_COLOR, Inline, ProgressBar, STATUS_STYLE, fmtDate, plainInline } from "./sprint-shared";
 import { SprintAnalysis } from "./sprint-analysis";
 
 const PHASE_LABEL: Record<SprintPhase, string> = { active: "Minggu ini", upcoming: "Mendatang", past: "Selesai" };
@@ -48,35 +48,47 @@ function SizeBadge({ item }: { item: SprintItem }) {
  * Satu kartu kanban (#389). Tautan `#nnn` ada di judul (bukan di dalam tombol);
  * target minggu ini terpotong 3 baris dan bisa dibuka lewat tombol terpisah.
  */
+/** Target sependek ini muat 3 baris kartu — tanpa tombol buka. */
+const TARGET_CLAMP_CHARS = 110;
+
 function KanbanCard({ item }: { item: SprintItem }) {
   const [open, setOpen] = useState(false);
+  const targetId = useId();
+  const plainTarget = plainInline(item.target);
+  const clampable = plainTarget.length > TARGET_CLAMP_CHARS;
+  const plainIssue = plainInline(item.issue);
   return (
     <li className="space-y-2 rounded-md border bg-card p-3 text-sm shadow-sm">
       <div className="flex items-start gap-2">
-        <span className={cn("min-w-0 flex-1 leading-snug", item.status === "moved" && "text-muted-foreground")}>
+        <span className={cn("min-w-0 flex-1 leading-snug [overflow-wrap:anywhere]", item.status === "moved" && "text-muted-foreground")}>
           <Inline text={item.issue} />
         </span>
         <SizeBadge item={item} />
       </div>
       <CategoryDot item={item} />
       <div>
-        <p className={cn("text-xs text-muted-foreground", !open && "line-clamp-3")}>
-          <Inline text={item.target} />
+        {/* Terpotong = teks polos: tautan di bagian yang tersembunyi tak boleh bisa difokus keyboard. */}
+        <p id={targetId} className={cn("text-xs text-muted-foreground [overflow-wrap:anywhere]", clampable && !open && "line-clamp-3")}>
+          {clampable && !open ? plainTarget : <Inline text={item.target} />}
         </p>
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((o) => !o)}
-          className="mt-1 inline-flex items-center gap-0.5 text-xs text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          <ChevronRight className={cn("h-3 w-3 transition-transform", open && "rotate-90")} />
-          {open ? "Ringkas" : "Target lengkap"}
-        </button>
+        {clampable && (
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={targetId}
+            aria-label={`${open ? "Ringkas" : "Target lengkap"}: ${plainIssue}`}
+            onClick={() => setOpen((o) => !o)}
+            className="mt-1 inline-flex items-center gap-0.5 text-xs text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <ChevronRight className={cn("h-3 w-3 transition-transform", open && "rotate-90")} />
+            {open ? "Ringkas" : "Target lengkap"}
+          </button>
+        )}
       </div>
       {item.decision && (
         <p className="flex gap-1.5 rounded bg-amber-500/10 p-2 text-xs text-amber-800 dark:text-amber-200">
           <Scale className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label="Keputusan owner" />
-          <span><Inline text={item.decision} /></span>
+          <span className="[overflow-wrap:anywhere]"><Inline text={item.decision} /></span>
         </p>
       )}
     </li>

@@ -50,6 +50,11 @@ export function Inline({ text }: { text: string }) {
   );
 }
 
+/** Teks polos dari markdown inline (tanpa tautan) — untuk label aksesibel & teks terpotong. */
+export function plainInline(text: string): string {
+  return parseInline(text).map((p) => p.value).join("");
+}
+
 function IssueLinks({ text }: { text: string }) {
   return (
     <>

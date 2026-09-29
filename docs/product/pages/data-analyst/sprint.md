@@ -30,7 +30,7 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 │   │   + jumlah butir + poin ("poin tertahan" di kolom keputusan, berlatar kuning bila berisi); kolom kosong = "Kosong";
 │   │   grid 1 kolom (ponsel) · 2 (sm) · 4 (xl)
 │   │   └── Kartu: judul (markdown inline, `#nnn` → GitHub) · ukuran "M · 3" · titik kategori · target (terpotong 3 baris,
-│   │       tombol "Target lengkap"/"Ringkas") · teks keputusan owner (kotak kuning) bila ada. Read-only — status diubah di sprint.md
+│   │       tombol "Target lengkap"/"Ringkas" berlabel judul butir, hanya bila target > 110 karakter; saat terpotong = teks polos `plainInline`) · teks keputusan owner (kotak kuning) bila ada. Read-only — status diubah di sprint.md
 │   ├── Lajur terlipat "Digeser ke sprint lain (n)" — kartu butir ⏭️ (poinnya dihitung di sprint tujuan)
 │   └── Backlog (bila dipilih) — daftar bernomor dari "#### Backlog …"
 └── Tab Analisa
@@ -71,7 +71,7 @@ Halaman: Sprint Mingguan (/admin/data-analyst/sprint)
 |---|---|
 | `src/lib/sprint-plan.ts` | Parser murni `parseSprintPlan` + `sprintPhase`, `sprintDay`, `sprintProgress` (butir & poin), `sprintVelocity`, `pendingDecisions`, `carryOvers`, `sprintComposition`, `sprintStatusPoints` + `SPRINT_STACK_ORDER`, `planTotals`, `sprintKanban` + `KANBAN_COLUMNS` (#389), `SPRINT_STATUS_LABEL` (label status — sumber tunggal UI) |
 | `src/lib/sprint-plan-data.ts` | Import `sprint.md` + parse sekali (jangan diimport dari test) |
-| `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih minggu, tab Sprint) · `sprint-analysis.tsx` (tab Analisa) · `sprint-shared.tsx` (warna kategori, `fmtDate`, `Inline` + `IssueRefLinks`, bilah progres) · `loading.tsx` |
+| `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih minggu, tab Sprint) · `sprint-analysis.tsx` (tab Analisa) · `sprint-shared.tsx` (warna kategori, `fmtDate`, `Inline`, bilah progres) · `loading.tsx` |
 | `src/lib/chart-palette.ts` · `src/lib/repo-links.ts` | Palet kategorikal & tautan repo bersama — dipakai juga Metrik Rilis (review #378: dulu disalin/diimpor lintas route) |
 | `scripts/seed/seed-menu-key.mjs <key>` | Seed parsial generik: menu + izin dibaca dari CSV |
 | `src/test/sprint-plan.test.ts` | File nyata (Senin→Minggu berurutan) + fixture + format rusak + batas fase + velocity/keputusan/carry-over/hari ke-n + temuan review (pipa ter-escape, `<details>` di tengah / satu baris / tag tutup setelah teks, dobel, keputusan terlambat, carry-over per baris) + poin per status = komitmen awal, total rencana tanpa hitung ganda |
