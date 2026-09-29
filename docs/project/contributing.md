@@ -122,7 +122,7 @@ Evidence:
 Next Action:
 ```
 
-Gunakan template berikut saat menambah changelog. Baris ditambahkan di **paling atas tabel** dalam section `<details>` bulan berjalan (Decision Log pakai `YYYY-MM-DD`, Changelog pakai `MM-DD`); saat ganti bulan, buat section `<details><summary><strong>Bulan YYYY</strong></summary>` baru di atas.
+Gunakan template berikut saat menambah changelog. Baris ditambahkan di **paling atas tabel** pada berkas bulan berjalan `project/changelog/YYYY-MM.md` (Decision Log pakai `YYYY-MM-DD`, Changelog pakai `MM-DD`); saat ganti bulan, buat berkas baru dan tambahkan barisnya di indeks [`changelog.md`](./changelog.md). Keputusan besar lintas modul juga ditulis sebagai catatan di [`../decisions/`](../decisions/README.md).
 
 ```text
 | YYYY-MM-DD | [Phase/Issue] Ringkasan perubahan singkat berdasarkan code |

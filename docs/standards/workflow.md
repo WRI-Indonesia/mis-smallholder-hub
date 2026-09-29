@@ -37,7 +37,7 @@ Setelah pekerjaan selesai (dan setiap kali owner minta recheck), audit hasil ker
 
 1. **Rule** — `standards/*` (code-standards, rbac, ui-ux, architecture, principles): perubahan mengikuti konvensi (3 lapis keamanan, `ActionResult`, Zod, soft delete, kebab-case, surgical change).
 2. **Workflow** — file ini: urutan Issue Workflow diikuti (scope issue, Pre-Commit Gate 5 gate, approval DB/destructive, retro sebelum close).
-3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Active Issues), `changelog.md` (Decision Log/Changelog), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
+3. **Progress** — `project/*`: status pekerjaan tercermin di `roadmap.md` (Phase Status/Evidence), `sprint.md` (Active Issues), `changelog/YYYY-MM.md` (Decision Log/Changelog bulan berjalan), `tech-debt.md` — **tidak ada baris usang** (mis. issue selesai masih "Todo").
 4. **Identifikasi file `docs/` lain yang terdampak** (peta cepat di Docs sync) dan perbarui **sebelum commit** — di-commit **bersama** kode. Temuan ketidakpatuhan dilaporkan ke owner, bukan didiamkan.
 5. **Bantuan (`src/content/help/`)** — setiap **perubahan atau penambahan fitur** wajib diperiksa dampaknya ke materi Bantuan: apakah ada tutorial/konsep yang jadi **keliru** (label tombol berubah, langkah bertambah, aturan validasi berubah), dan apakah alur baru itu **perlu tutorial baru**. Perbarui bersama kode, jangan ditunda — panduan yang salah lebih berbahaya daripada panduan yang belum ada, karena pengguna terlanjur memercayainya.
 
@@ -84,8 +84,8 @@ Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `s
 **Docs sync (wajib, sebelum commit):** setiap perubahan yang menyentuh skema/migrasi/kolom, modul/fitur, status delivery, atau aturan **harus** memperbarui file `docs/` yang relevan **sebelum commit** dan di-commit **bersama** kodenya — jangan dipisah/ditunda. Peta cepat:
 
 - **Skema/migrasi/kolom** → `database/models.md`, `database/erd.md` (+Schema Version), `database/migrations.md` (riwayat)
-- **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Code Audit Evidence), `project/sprint.md` (Active Issues), `project/changelog.md` (Changelog bulanan; + Decision Log bila ada keputusan)
-- **Aturan / standar / keputusan arsitektur** → `standards/*` dan/atau `project/changelog.md` Decision Log
+- **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Code Audit Evidence), `project/sprint.md` (Active Issues), `project/changelog/YYYY-MM.md` (Changelog; + Decision Log bila ada keputusan)
+- **Aturan / standar / keputusan arsitektur** → `standards/*` + Decision Log bulan berjalan; keputusan besar lintas modul juga sebagai catatan di `decisions/NNNN-slug.md`
 - **Tech debt / bug** → `project/tech-debt.md`
 
 Checklist detail: [`../project/contributing.md`](../project/contributing.md) §5-Minute Update Checklist.

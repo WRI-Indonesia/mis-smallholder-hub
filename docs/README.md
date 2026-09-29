@@ -1,6 +1,6 @@
 # Dokumentasi Smallholder HUB
 
-Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dikelompokkan ke lima area: **Standar**, **Database**, **Produk**, **QA/QC**, **Proyek**.
+Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dikelompokkan ke enam area: **Standar**, **Database**, **Produk**, **QA/QC**, **Keputusan**, **Proyek**.
 
 > Konvensi: setiap file diawali breadcrumb yang menautkan kembali ke indeks ini dan file terkait. UI copy berbahasa Indonesia; identifier code berbahasa Inggris.
 
@@ -53,6 +53,12 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [qa/v1.2.0/](./qa/v1.2.0/) | Rilis berjalan — baru `02-test-cases.md` (kasus uji ditulis saat issue ditutup) |
 | `scripts/qa/` | `data-qc.ts` (cek DB read-only → tabel markdown) · `new-run.mjs` (lembar run dari spesifikasi) · `summary.mjs` (rekap Pass/Fail per run) |
 
+## 🧭 Keputusan (`decisions/`) — catatan keputusan besar
+
+| File | Isi |
+|------|-----|
+| [decisions/README.md](./decisions/README.md) | Kapan & cara menulis catatan keputusan + daftar (0001 soft delete · 0002 hierarki 3 level · 0003 alur rilis · 0004 gate lokal · 0005 produksi acuan izin · 0006 kode UL ganda · 0007 struktur docs) |
+
 ## 📊 Proyek (`project/`) — status delivery & proses
 
 | File | Isi |
@@ -61,7 +67,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [project/roadmap.md](./project/roadmap.md) | **Source of truth** — roadmap governance & Phase Status |
 | [project/sprint.md](./project/sprint.md) | Sprint focus & issue control |
 | [project/tech-debt.md](./project/tech-debt.md) | Technical debt & bug register |
-| [project/changelog.md](./project/changelog.md) | Changelog & decision log (append-only) |
+| [project/changelog.md](./project/changelog.md) | Indeks changelog & decision log per bulan (`changelog/YYYY-MM.md`, append-only) + ringkasan dua minggu terakhir |
 | [project/metrics.md](./project/metrics.md) | Metrik Nilai Rilis per rilis (Roadmap % · KPI · RVS) |
 | [project/contributing.md](./project/contributing.md) | Panduan kontribusi & update dokumen |
 
