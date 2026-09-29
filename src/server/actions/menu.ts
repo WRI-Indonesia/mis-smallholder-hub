@@ -49,6 +49,14 @@ export async function updateMenuItem(input: UpdateMenuItemInput) {
   const parsed = updateMenuItemSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: parsed.error.flatten().fieldErrors };
 
+  const current = await prisma.menuItem.findUnique({ where: { id: parsed.data.id }, select: { isActive: true } });
+  if (!current) return { success: false, error: "Menu tidak ditemukan — muat ulang halaman" };
+  // Mengubah Aktif = soft delete / reaktivasi → level DELETE, sama dengan
+  // `deleteMenuItem`; EDIT saja hanya boleh mengubah Visible.
+  if (current.isActive !== parsed.data.isActive && !(await hasPermission("settings-menu", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu" };
+  }
+
   const session = await auth();
   await prisma.menuItem.update({
     where: { id: parsed.data.id },

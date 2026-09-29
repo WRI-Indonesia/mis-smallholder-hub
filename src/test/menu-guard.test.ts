@@ -32,7 +32,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   hasPermission.mockResolvedValue(true);
   db.menuItem.findMany.mockResolvedValue([]);
-  db.menuItem.findUnique.mockResolvedValue(null);
+  db.menuItem.findUnique.mockResolvedValue({ isActive: true });
   db.menuItem.create.mockResolvedValue({});
   db.menuItem.update.mockResolvedValue({});
 });
@@ -82,6 +82,27 @@ describe("updateMenuItem — hanya Aktif & Visible (#364)", () => {
   it("skema membuang kolom struktur (lapis kedua bila action kelak menyebar `...parsed.data`)", () => {
     const parsed = updateMenuItemSchema.parse(fullPayload());
     expect(parsed).toEqual({ id: "m-1", isActive: true, isVisible: false });
+  });
+
+  it("mengubah Aktif butuh DELETE (setara deleteMenuItem); EDIT saja hanya boleh Visible (review #364)", async () => {
+    hasPermission.mockImplementation(async (_menu: string, level: string) => level === "EDIT");
+    const off = await actions.updateMenuItem(fullPayload({ isActive: false }));
+    expect(off.success).toBe(false);
+    expect(db.menuItem.update).not.toHaveBeenCalled();
+
+    expect((await actions.updateMenuItem(fullPayload({ isActive: true, isVisible: false }))).success).toBe(true);
+    expect(db.menuItem.update).toHaveBeenCalledOnce();
+
+    hasPermission.mockResolvedValue(true);
+    expect((await actions.updateMenuItem(fullPayload({ isActive: false }))).success).toBe(true);
+    expect(hasPermission).toHaveBeenLastCalledWith("settings-menu", "DELETE");
+  });
+
+  it("baris sudah tidak ada (id basi) → error terbaca, tanpa update", async () => {
+    db.menuItem.findUnique.mockResolvedValue(null);
+    const res = await actions.updateMenuItem(fullPayload());
+    expect(res).toEqual({ success: false, error: expect.stringMatching(/tidak ditemukan/) });
+    expect(db.menuItem.update).not.toHaveBeenCalled();
   });
 
   it("id kosong / saklar bukan boolean → fieldErrors tanpa DB", async () => {

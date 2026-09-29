@@ -31,14 +31,27 @@ export function readMenuSeed(): MenuSeedRow[] {
     isActive: row.is_active === "TRUE",
     isVisible: row.is_visible === "TRUE",
   }));
-  // Struktur menu hanya berubah lewat CSV sejak #364 (Menu Management tak bisa
-  // menambah/memindah menu) — batas 3 level ditegakkan di sini, bukan di UI.
+  validateMenuSeedRows(rows);
+  return rows;
+}
+
+/**
+ * Struktur menu hanya berubah lewat CSV sejak #364 (Menu Management tak bisa
+ * menambah/memindah menu) — invarian yang dulu dijaga pemilih Parent di UI
+ * ditegakkan di sini: induk ada di CSV & bukan dirinya sendiri, lalu ≤ 3 level.
+ * Dicek sebelum menulis apa pun (upsert seed tidak dalam transaksi).
+ */
+export function validateMenuSeedRows(rows: Pick<MenuSeedRow, "key" | "parentKey" | "title" | "url" | "icon">[]): void {
+  const keys = new Set(rows.map((r) => r.key));
+  for (const r of rows) {
+    if (r.parentKey === r.key) throw new Error(`menu.csv: "${r.key}" menjadi induk dirinya sendiri`);
+    if (r.parentKey && !keys.has(r.parentKey)) throw new Error(`menu.csv: induk "${r.parentKey}" dari "${r.key}" tidak ada di CSV`);
+  }
   for (const r of rows) {
     if (!validateMenuDepth(r.key, r.parentKey, rows)) {
       throw new Error(`menu.csv: "${r.key}" (bersama induk/turunannya) melebihi 3 level menu`);
     }
   }
-  return rows;
 }
 
 export interface MenuSeedDiff {

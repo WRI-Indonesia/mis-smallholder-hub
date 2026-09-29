@@ -20,8 +20,21 @@ if (!KEY) {
 }
 
 const csv = (f) => parse(readFileSync(`prisma/seeds/data/${f}`, "utf8"), { columns: true, skip_empty_lines: true });
-const row = csv("menu.csv").find((r) => r.key === KEY);
+const menuRows = csv("menu.csv");
+const row = menuRows.find((r) => r.key === KEY);
 if (!row) throw new Error(`Menu "${KEY}" tidak ada di menu.csv`);
+// Kedalaman ≤ 3 dari rantai induk di CSV — padanan `validateMenuSeedRows`
+// (prisma/seeds/seed-menu.ts) untuk jalur seed satu menu (#364).
+{
+  let depth = 1;
+  const seen = new Set([row.key]);
+  for (let p = row.parent_key; p; p = menuRows.find((r) => r.key === p)?.parent_key) {
+    if (seen.has(p)) throw new Error(`menu.csv: siklus induk pada "${KEY}"`);
+    if (!menuRows.some((r) => r.key === p)) throw new Error(`menu.csv: induk "${p}" tidak ada di CSV`);
+    seen.add(p);
+    if (++depth > 3) throw new Error(`menu.csv: "${KEY}" melebihi 3 level menu`);
+  }
+}
 const MENU = {
   key: row.key,
   parentKey: row.parent_key || null,

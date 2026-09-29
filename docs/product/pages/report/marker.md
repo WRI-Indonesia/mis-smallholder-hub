@@ -6,7 +6,7 @@
 |---|---|
 | Menu key | `report-marker` (menu baru #331, keputusan owner 2026-09-14 — satu-satunya menu baru dari rangkaian #326–#332) |
 | URL | `/admin/report/marker` |
-| Icon | `Milestone` (tiang penanda; alternatif tersedia di Menu Management: `Signpost`, `Fence` — revisi owner 2026-09-15 dari `Landmark`) |
+| Icon | `Milestone` (tiang penanda; alternatif yang terdaftar di `ICON_MAP`: `Signpost`, `Fence` — ganti lewat `menu.csv` + seed, revisi owner 2026-09-15 dari `Landmark`) |
 | File | `src/app/(admin)/admin/report/marker/page.tsx` · `marker-report-client.tsx` |
 | Izin | VIEW layar · EXPORT unduhan Excel/spasial · PRINT PDF. Seed: `prisma/seeds/data/menu.csv` + `role-permissions.csv` (ADMIN CREATE/EDIT/EXPORT/PRINT/VIEW — tanpa DELETE; OPERATOR/MANAGEMENT/SUPERADMIN EXPORT/PRINT/VIEW; DONOR tanpa akses sejak 2026-09-29); DB berisi data → seed parsial generik `scripts/seed/seed-menu-key.mjs report-marker` (menu + izin dibaca dari CSV, dry-run bawaan, `--apply` menulis, idempoten; skrip khusus `seed-menu-report-marker.mjs` dihapus 2026-09-29). **Applied mis-dev & mis-staging-local 2026-09-14, `mis-staging` & `mis-prod` 2026-09-15** (#333: dry-run → `--apply`, 16 izin, `rbac:compare` 470/470 di keduanya) |
 

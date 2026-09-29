@@ -16,7 +16,7 @@ Halaman: Menu Management (/admin/settings/menu)
 ├── Tabel tree menu (render rekursif 3 level, collapsible per induk)
 │   ├── Chevron buka/tutup per induk (default collapsed, state localStorage)
 │   ├── Kolom: Aksi · Menu · Key · URL · Order · Status
-│   └── Aksi baris: Edit (EDIT) · Nonaktifkan / Aktifkan kembali (DELETE)
+│   └── Aksi baris: Edit (EDIT; saklar Aktif butuh DELETE) · Nonaktifkan / Aktifkan kembali (DELETE — tombol Aktifkan kembali masih memanggil nonaktifkan, bug #237)
 ├── Dialog
 │   ├── Edit Menu
 │   │   └── Key · Title · URL · Parent · Order · Icon (baca-saja) + catatan menu.csv
@@ -62,13 +62,13 @@ Halaman: Menu Management (/admin/settings/menu)
 | Kolom `Key` | Kolom | `key` menu (font mono) |
 | Kolom `URL` | Kolom | `url` menu |
 | Kolom `Order` | Kolom | Angka urutan (rata tengah) |
-| Kolom `Status` | Kolom | Badge `Aktif` / `Nonaktif` |
+| Kolom `Status` | Kolom | Badge `Aktif` / `Nonaktif`, + badge `Tersembunyi` bila aktif tetapi `isVisible` mati (review #364) |
 | `Nonaktifkan Menu` | Dialog | `DeleteDialog` konfirmasi: `Menu item akan dinonaktifkan (soft delete) dan tidak lagi muncul di navigasi. Lanjutkan?` → `deleteMenuItem()` |
 | Toast | Notifikasi | `Menu item dinonaktifkan` / `Gagal menonaktifkan menu item` |
 
 ### Dialog: Edit Menu
 
-> **#364 (keputusan owner 2026-09-29): Menu Management hanya mengubah Aktif & Visible.** Struktur menu — judul, urutan, induk, URL, ikon — dan menu baru hanya lewat `prisma/seeds/data/menu.csv` + seed: `seedMenu` menimpa kelima kolom itu di setiap seed rilis (perubahan dari UI dulu hilang diam-diam), dan akun demo dua kali mengubah label/urutan prod tanpa jejak di repo. Server menegakkannya: `updateMenuItemSchema` = `{ id, isActive, isVisible }` (kolom lain dibuang Zod), `updateMenuItem` hanya menulis `isActive`/`isVisible`/`modifiedBy`, dan tidak ada aksi tambah menu. Batas 3 level kini diperiksa `readMenuSeed` (CSV melanggar = seed/test gagal). Izin `settings-menu:CREATE` tidak lagi dipakai.
+> **#364 (keputusan owner 2026-09-29): Menu Management hanya mengubah Aktif & Visible.** Struktur menu — judul, urutan, induk, URL, ikon — dan menu baru hanya lewat `prisma/seeds/data/menu.csv` + seed: `seedMenu` menimpa kelima kolom itu di setiap seed rilis (perubahan dari UI dulu hilang diam-diam), dan akun demo dua kali mengubah label/urutan prod tanpa jejak di repo. Server menegakkannya: `updateMenuItemSchema` = `{ id, isActive, isVisible }` (kolom lain dibuang Zod), `updateMenuItem` hanya menulis `isActive`/`isVisible`/`modifiedBy` — **mengubah Aktif butuh `settings-menu:DELETE`** (setara `deleteMenuItem`), Visible cukup EDIT; id basi → `Menu tidak ditemukan — muat ulang halaman` — dan tidak ada aksi tambah menu. Invarian struktur (induk ada di CSV, bukan diri sendiri, ≤ 3 level) diperiksa `validateMenuSeedRows` saat membaca CSV dan di `seed-menu-key.mjs`. Izin `settings-menu:CREATE` tidak lagi dipakai.
 
 | Atribut | Nilai |
 |---|---|

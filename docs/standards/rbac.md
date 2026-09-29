@@ -132,6 +132,6 @@ Sistem menu mendukung hierarki sampai **3 level maksimal**:
 - **Dua helper pohon menu** dengan peruntukan berbeda — jangan disatukan:
   - `src/lib/menu-utils.ts` — `buildMenuTree(items, parentKey, currentDepth, maxDepth)` menghasilkan pohon nested `children`; untuk jalur **server & sidebar** (`src/server/actions/menu.ts`, `filterMenuTreeByAccess`)
   - `src/lib/menu-tree.ts` — `buildMenuTree(items)` (satu argumen) menghasilkan node `{ item, depth, children }`, plus `collapsibleKeys`, `descendantKeys`, `flattenTree`; untuk **UI Settings** (tabel collapsible Menu Management & Role & Permission)
-- Validation: `validateMenuDepth()` reject jika depth > 3
+- Validation: `validateMenuDepth()` reject jika depth > 3 — dipanggil `validateMenuSeedRows` saat membaca `menu.csv` (bersama cek induk ada & bukan diri sendiri); seed/test gagal sebelum menulis apa pun
 - RBAC: `getEffectiveMenuPermissions()` dengan fallback ke parent/grandparent
-- Server action: Validate depth sebelum create/update menu item
+- Server action: Menu Management hanya `updateMenuItem` Aktif/Visible (#364) — tidak ada create/pindah menu; mengubah Aktif butuh `settings-menu:DELETE`, Visible cukup `EDIT`

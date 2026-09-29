@@ -48,17 +48,22 @@ export function MenuFormModal({ open, onClose, item, parentTitle }: Props) {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!item) return;
+    if (!item) return; // penyempit tipe untuk closure; runtime sudah dijamin return di atas
     setIsLoading(true);
 
     const form = new FormData(e.currentTarget);
-    const result = await updateMenuItem({
-      id: item.id,
-      isActive: form.get("isActive") === "on",
-      isVisible: form.get("isVisible") === "on",
-    });
-
-    setIsLoading(false);
+    let result: Awaited<ReturnType<typeof updateMenuItem>>;
+    try {
+      result = await updateMenuItem({
+        id: item.id,
+        isActive: form.get("isActive") === "on",
+        isVisible: form.get("isVisible") === "on",
+      });
+    } catch {
+      result = { success: false, error: "Gagal menyimpan menu" };
+    } finally {
+      setIsLoading(false);
+    }
 
     if (!result.success) {
       toast.error(typeof result.error === "string" ? result.error : "Gagal menyimpan menu");

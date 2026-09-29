@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "csv-parse/sync";
 import { describe, expect, it } from "vitest";
-import { readMenuSeed } from "../../prisma/seeds/seed-menu";
+import { readMenuSeed, validateMenuSeedRows } from "../../prisma/seeds/seed-menu";
 
 /**
  * Penjaga drift seed ↔ katalog produk (kandidat dari retro #347, dipasang di
@@ -63,3 +63,22 @@ describe("readMenuSeed (seeder menu)", () => {
     expect(src).toMatch(/update:\s*\{\s*parentKey: row\.parentKey, title: row\.title, url: row\.url, icon: row\.icon, order: row\.order\s*\}/);
   });
 });
+
+describe("validateMenuSeedRows — invarian struktur menu (CSV satu-satunya jalur sejak #364)", () => {
+  const r = (key: string, parentKey: string | null) => ({ key, parentKey, title: key, url: `/${key}`, icon: null });
+  const ok = [r("a", null), r("a-b", "a"), r("a-b-c", "a-b")];
+
+  it("3 level valid → lolos", () => {
+    expect(() => validateMenuSeedRows(ok)).not.toThrow();
+  });
+  it("level 4 → melempar", () => {
+    expect(() => validateMenuSeedRows([...ok, r("a-b-c-d", "a-b-c")])).toThrow(/melebihi 3 level/);
+  });
+  it("induk salah ketik (tidak ada di CSV) → melempar sebelum menulis apa pun", () => {
+    expect(() => validateMenuSeedRows([...ok, r("x", "aa")])).toThrow(/induk "aa" dari "x" tidak ada/);
+  });
+  it("induk = dirinya sendiri → pesan jelas, bukan stack overflow", () => {
+    expect(() => validateMenuSeedRows([...ok, r("x", "x")])).toThrow(/induk dirinya sendiri/);
+  });
+});
+

@@ -173,7 +173,7 @@ Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#7
 - **Pencarian menu** di header sidebar — fokus `Ctrl/⌘+K`, hapus `Esc`/✕, memfilter pohon menu live. Hanya menampilkan menu yang di-grant untuk user tersebut.
 - **Tombol "Tutup semua"** (collapse-all) untuk seluruh cabang.
 - **Menu induk sebagai container** — induk tetap tampil bila salah satu anaknya ter-grant meski induk sendiri tidak di-grant. Lihat [../standards/rbac.md § RBAC Permission Inheritance](../standards/rbac.md).
-- **Hierarki maksimal 3 level**, divalidasi di Menu Management (PLATFORM-07).
+- **Hierarki maksimal 3 level** (PLATFORM-07), divalidasi saat membaca `menu.csv` (`validateMenuSeedRows` di `prisma/seeds/seed-menu.ts` + `seed-menu-key.mjs`) — struktur menu tidak lagi diubah dari Menu Management sejak #364.
 
 ---
 

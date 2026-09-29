@@ -42,7 +42,6 @@ export function MenuListClient({
   initialItems: MenuItemData[];
   permissions: string[];
 }) {
-  const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<MenuItemData | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MenuItemData | null>(null);
   const [search, setSearch] = useState("");
@@ -71,10 +70,7 @@ export function MenuListClient({
         actions={[
           {
             type: "edit",
-            onClick: () => {
-              setEditItem(item);
-              setShowForm(true);
-            },
+            onClick: () => setEditItem(item),
           },
           {
             type: "delete",
@@ -159,9 +155,13 @@ export function MenuListClient({
                 <TableCell className="text-sm text-muted-foreground">{item.url}</TableCell>
                 <TableCell className="text-sm tabular-nums text-center">{item.order}</TableCell>
                 <TableCell>
-                  <Badge variant={item.isActive ? "default" : "outline"}>
-                    {item.isActive ? "Aktif" : "Nonaktif"}
-                  </Badge>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant={item.isActive ? "default" : "outline"}>
+                      {item.isActive ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                    {/* Aktif tapi disembunyikan — dulu hanya terlihat dengan membuka Edit per baris. */}
+                    {item.isActive && !item.isVisible && <Badge variant="secondary">Tersembunyi</Badge>}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -177,9 +177,9 @@ export function MenuListClient({
       </Card>
 
       <MenuFormModal
-        key={editItem?.id ?? "new"}
-        open={showForm}
-        onClose={() => { setShowForm(false); setEditItem(null); }}
+        key={editItem?.id}
+        open={editItem !== null}
+        onClose={() => setEditItem(null)}
         item={editItem}
         parentTitle={initialItems.find((i) => i.key === editItem?.parentKey)?.title ?? null}
       />

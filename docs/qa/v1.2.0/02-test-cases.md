@@ -181,4 +181,14 @@ Langkah:
 Harapan:
 - Langkah 1: tidak ada tombol **Tambah Menu**.
 - Langkah 2: Key, Title, URL, Parent, Order, Icon tampil sebagai teks (tidak bisa diubah) + catatan "…hanya bisa diubah lewat `menu.csv` + seed…"; hanya saklar **Aktif** & **Visible** yang bisa diubah.
-- Langkah 3: Sprint Mingguan hilang dari sidebar lalu tampil kembali; judul/urutan/ikon di daftar tidak berubah; `modified_at` baris terbarui.
+- Langkah 3: saat Visible mati, baris diberi badge **Tersembunyi** dan Sprint Mingguan hilang dari sidebar; setelah dinyalakan tampil kembali; judul/urutan/ikon di daftar tidak berubah; `modified_at` baris terbarui.
+Baseline dev: lokal 2026-09-29 — lolos (SUPERADMIN; `is_visible` f → t, kolom struktur tetap).
+
+### TC-364-03 · Saklar Aktif butuh izin Delete [P1] (4 mnt)
+Prasyarat: akun uji dengan override `settings-menu` VIEW+EDIT tanpa DELETE.
+Langkah:
+1. Edit satu menu uji, matikan **Aktif**, **Simpan**.
+2. Edit menu yang sama, matikan **Visible** saja, **Simpan**; lalu kembalikan.
+Harapan:
+- Langkah 1: toast "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu"; menu tetap aktif.
+- Langkah 2: tersimpan (Visible cukup izin Edit).
