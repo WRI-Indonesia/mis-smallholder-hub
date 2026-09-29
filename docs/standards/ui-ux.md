@@ -256,7 +256,7 @@ JavaScript**, konsisten sifat statis halaman Bantuan (#182/#183).
 > Terlepas dari pilihannya, **lapisan RBAC tetap sama** (permission menu + access-context + `isActive`), dan agregasi tetap ditaruh di **lib murni yang bisa dites tanpa DB**.
 
 Untuk snapshot dashboard yang menyimpan historical state:
-- **Separate Table Per Dashboard**: Setiap dashboard punya snapshot table sendiri (e.g., `tbl_snapshot_main_dashboard`, `tbl_snapshot_production_dashboard`)
+- **Separate Table Per Dashboard**: Setiap dashboard punya snapshot table sendiri (e.g., `tbl_snapshot_main_dashboard`, `tbl_snapshot_bmp_dashboard`)
 - **Naming Convention**: `tbl_snapshot_<dashboard_name>` dengan model `<Dashboard>Snapshot`
 - **Common Fields**: `id`, `snapshotDate`, filter fields (nullable), `data` (Json), audit trail (`createdBy`, `isActive`, timestamps)
 - **Unique Constraint**: Kombinasi `snapshotDate` + filter fields untuk prevent duplicate snapshot

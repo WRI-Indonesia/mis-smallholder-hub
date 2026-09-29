@@ -27,12 +27,13 @@ src/
 │   ├── ui/                   # Shadcn primitives
 │   ├── shared/               # DataTable, TableActions, TableSkeleton, DeleteDialog + map-popup (standar popup peta #188), parcels-distribution-map
 │   ├── auth/                 # Login form
-│   └── layout/               # Admin & public layout
-├── content/                  # Materi Bantuan (help/, 30+ file .md — dibundel via loader asset/source di next.config.ts)
-├── hooks/                    # Custom hooks (use-mobile, use-url-filters)
+│   ├── layout/               # Admin & public layout
+│   └── session-provider.tsx, theme-provider.tsx
+├── content/                  # Materi Bantuan (help/, 65 file .md — dibundel via loader asset/source di next.config.ts)
+├── hooks/                    # Custom hooks (use-mobile, use-url-filters, use-vector-basemap)
 ├── lib/                      # Prisma, rbac, access-context, utils, helper murni (firms, map-data, dsb)
 ├── server/actions/           # Server Actions
-├── test/                     # Unit test Vitest (44 file)
+├── test/                     # Unit test Vitest (111 file)
 ├── validations/              # Zod schemas
 ├── types/                    # Custom types
 └── middleware.ts             # NextAuth guard /admin/* & /login
@@ -48,5 +49,5 @@ src/
 | Database | PostgreSQL + PostGIS |
 | ORM | Prisma 7 (modular schema) |
 | Maps | MapLibre GL JS |
-| Charts | — (belum ada; `recharts` dihapus di #129, dipasang lagi saat chart produksi dikerjakan) |
+| Charts | Custom SVG tanpa library (`recharts` dihapus #129) — palet `src/lib/chart-palette.ts`, geometri radar `src/lib/radar-geometry.ts` |
 | Validation | Zod (server: `safeParse` di actions; form client ditangani manual via FormData/useState — React Hook Form tidak dipakai) |

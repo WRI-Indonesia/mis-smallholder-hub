@@ -84,7 +84,7 @@ erDiagram
 
 ## Quick Summary
 
-### Implemented Models (10 Categories)
+### Implemented Models (15 Categories)
 
 | Category | Tables | Key Features |
 |----------|--------|--------------|
@@ -94,12 +94,15 @@ erDiagram
 | **Menu** | MenuItem | Recursive parent-child (3-level), dynamic menu management |
 | **Farmer Group** | FarmerGroup | **= Lembaga Petani** (level teratas; label lama "Kelompok Tani" mislabel → relabel TD-013/#147). District-based, location coordinates, category (EX_PLASMA/SWADAYA), tipe grup (ASOSIASI/KOPERASI), tahun bergabung program (`join_year`) + tahun berdiri (`established_year`), sertifikasi RSPO (`rspo_cert_status` CERTIFIED/PLANNED + `rspo_cert_year`, status boleh tanpa tahun) (#160), sertifikasi ISPO (`ispo_cert_status` + `ispo_cert_year`) + assurance SAP/MAP (`sap_map_assurance_status` + `sap_map_assurance_year`) — enum generik `CertStatus`, aturan sama dengan RSPO (#169) |
 | **Farmer** | Farmer | Demographics, joinedYear, relation to FarmerGroup & Training |
-| **Land Parcel** | LandParcel | Parcel per farmer, geolocation (lat/long), polygon geometry (GeoJSON), area, planting year, revision tracking; `blok` (blok kebun); `cropType` (Komoditas) + `species` + `isPsr` (PSR/replanting, default false); **Kelompok Tani interim** `subGroupLv2` per-lahan (#146; Gapoktan `subGroupLv1` di-drop #189); `parcelUid` → `LandParcelIdentity` (identitas stabil antar revisi, #296) |
+| **Land Parcel** | LandParcel | Parcel per farmer, polygon `geometry` (GeoJSON, sumber kebenaran) + `geom` PostGIS GENERATED (#317), area, planting year, revision tracking; `blok` (blok kebun); `cropType` (Komoditas) + `species` + `isPsr` (PSR/replanting, default false); **Kelompok Tani interim** `subGroupLv2` per-lahan (#146; Gapoktan `subGroupLv1` di-drop #189); `parcelUid` → `LandParcelIdentity` (identitas stabil antar revisi, #296) |
 | **Monev BMP** (#344, #346) | BmpAssessment, BmpIndicator, BmpAssessmentDetail, BmpGroupAssessment, BmpGroupAssessmentDetail | Skor Monev BMP per petani per tahun (skala 0–3), lahan dikunjungi opsional, penilai, catatan; kategori Teladan/Praktisi/Perintis/Belum dihitung dari skor via `src/lib/bmp-assessment.ts`. **Rincian** (#346): master 32 indikator (5 kegiatan berbobot, 18 individu + 14 Lembaga, 21 berbobot), skor 0–3 per indikator individu per penilaian, penilaian Lembaga per tahun (6 indikatornya masuk skor petani); hitung ulang `recomputeBmpScore` hanya verifikasi — `BmpAssessment.score` tetap resmi. Dashboard realtime (pola Pelatihan) terpisah dari BMP Dashboard (Produksi) — detail di [models.md](./models.md#bmpassessment--monev-bmp-344) |
 | **Land Parcel Satellites** (#296) | LandParcelIdentity, LandParcelDocument, LandStdb, LandParcelStdb, LandParcelExternalId, LandParcelProgram, LandParcelBorder, LandParcelNkt, LandMarker, LandParcelMarker, LandMarkerCounter | Identitas per `(farmerId, parcelId)` lintas revisi; surat kepemilikan (enum `LandDocumentType`, nomor tidak unik, `holderName`, `statedArea`); STDB per petani M:N ke lahan; UL Parcel Code + `rawGeometry` opsional; program demplot PBU; **sepadan** U/T/S/B teks bebas 1:1 (#326); **status NKT** hasil asesmen 1:1 (#328, MD-08 sebagian); **patok batas** fisik dipakai bersama lahan berdampingan, M:N bernomor per lahan (#329) — detail di [models.md](./models.md#landparcelidentity--satelit-lahan-296-decision-log-2026-08-27) |
+| **Boundary** (#266) | FarmerGroupBoundary, AdministrativeBoundary | Poligon boundary ICS per Lembaga (sudah termasuk buffer 1,5 km) + wilayah administrasi BIG (enum `AdminBoundaryLevel` KABUPATEN/KECAMATAN/DESA, `districtId` opsional); dual-column `geom` PostGIS + `geojson` — dipakai Fire Alert & klip titik api |
+| **Reference Benchmark** (#243) | ReferenceBenchmark | Angka acuan manual per Lembaga (satu baris per Lembaga, kolom metrik nullable) untuk Data Analyst › Komparasi Data Acuan |
 | **Tree** | Tree | Titik pohon sawit per lahan (#238) — deteksi model + koreksi manusia (`source` auto/moved/added/verified), koordinat WGS84, `vigor`, revisi **per-set** (upload ulang nonaktifkan set lama), relasi `landParcelId` + kunci bisnis `parcelId`; skala 10⁵–10⁶ baris → wajib agregat |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | 5 training packages, evidence upload (S3), bulk participant upload |
 | **Production** | ProductionRecord | Yield tracking per farmer/parcel with period (YYYY-MM), harvest number (1-4), duplicate validation |
+| **Dashboard Snapshots** | MainDashboardSnapshot, BmpDashboardSnapshot | Snapshot pattern (#99, #166) — rincian di bawah |
 
 ### Dashboard Snapshots
 
@@ -110,20 +113,20 @@ erDiagram
 ### Planned Models (5 Categories)
 
 - **Staff** (MD-07) — Staff activity tracking
-- **HCV** (MD-08) — High Conservation Value assessments
+- **HCV** (MD-08) — High Conservation Value assessments *(sebagian: status NKT per lahan `LandParcelNkt` #328 sudah ada)*
 - **BUSDEV** (MD-09) — Business development tracking
 - **IMPACT** (MD-10) — Impact metrics
 - **Workplan** (MD-11) — Work planning & tasks
 
 ### Enums
 
-`Role`, `PermissionLevel`, `FarmerGroupCategory`, `Gender`, `TrainingCategory` (`ActivityStatus` yatim dihapus 2026-09-21, #353)
+19 enum. Inti: `Role`, `PermissionLevel`, `FarmerGroupCategory`, `Gender`, `TrainingCategory`. Lembaga: `FarmerGroupType`, `RspoCertStatus`, `CertStatus`. Wilayah: `AdminBoundaryLevel`. Satelit lahan: `LandDocumentType`, `LandProgramType`, `LandProgramStatus`, `LandStdbStage`, `LandNktStatus`, `NktCategory`, `LandMarkerCondition`, `LandMarkerType`, `LandMarkerSource`. Monev BMP: `BmpIndicatorLevel`. (`ActivityStatus` yatim dihapus 2026-09-21, #353)
 
 ### Common Patterns
 
-- **Soft Delete**: Semua tabel memiliki `isActive Boolean @default(true)`
+- **Soft Delete**: Semua tabel memiliki `isActive Boolean @default(true)` — pengecualian terdokumentasi di [constraints.md](./constraints.md#soft-delete-pattern): `LandParcelNkt` (hapus baris), `LandParcelBorder` (kosongkan kolom), `LandMarkerCounter` (tanpa `isActive`/audit), tabel penugasan `UserProvince`/`UserDistrict`/`UserFarmerGroup` (tanpa `isActive`)
 - **Audit Trail**: `created_at`, `created_by`, `modified_at`, `modified_by`
-- **CUID Primary Keys**: Semua tabel menggunakan CUID untuk ID
+- **CUID Primary Keys**: Semua tabel menggunakan CUID untuk ID, kecuali `LandMarkerCounter` (PK = `prefix`)
 - **Table Naming**: `tbl_*` (transactional), `reg_*` (regional), `ref_*` (reference), `rbac_*` (RBAC)
 
 ### Schema Version
@@ -131,9 +134,15 @@ erDiagram
 | Version | Date | Key Changes | Impact |
 |---------|------|-------------|--------|
 | **2.12.2** | 2026-09-23 | UL Parcel Code boleh di >1 lahan (keputusan owner — klaim ganda vendor dicek silang belakangan): `LandParcelExternalId` UNIQUE `(source, code)` → UNIQUE `(parcelUid, source, code)` + INDEX `(source, code)` — migrasi `20260923120000_external_id_shared_code`, applied `mis-dev`, `mis-staging-local`, `mis-prod`, `mis-staging` 2026-09-23 | LOW (ganti 1 unique + 1 index, tanpa perubahan data) |
-| 2.12.1 | 2026-09-21 | Cleanup #353 bagian E: `DROP TYPE "ActivityStatus"` (enum yatim sejak init, 0 kolom) + `tbl_tree.surveyed_at` dihapus (0/286 terisi di prod; shapefile pohon tak punya atribut tanggal, tak pernah ditulis/dibaca) — migrasi `20260921120000_drop_activity_status_tree_surveyed_at`, applied `mis-dev` & `mis-staging-local` 2026-09-21 | LOW (drop 1 enum + 1 kolom nullable kosong; tanpa data hilang) |
+| 2.12.1 | 2026-09-21 | Cleanup #353 bagian E: `DROP TYPE "ActivityStatus"` (enum yatim sejak init, 0 kolom) + `tbl_tree.surveyed_at` dihapus (0/286 terisi di prod; shapefile pohon tak punya atribut tanggal, tak pernah ditulis/dibaca) — migrasi `20260921120000_drop_activity_status_tree_surveyed_at`, applied semua DB (prod & staging via #357, rilis v0.37.0) | LOW (drop 1 enum + 1 kolom nullable kosong; tanpa data hilang) |
 | 2.12.0 | 2026-09-20 | Rincian Monev BMP (#346): `BmpIndicator` → `ref_bmp_indicator` (32 indikator, 5 kegiatan berbobot, level LEMBAGA/INDIVIDU, bobot, rubrik 0–3; seed CSV), `BmpAssessmentDetail` → `tbl_bmp_assessment_detail` (skor indikator individu per penilaian, `weightUsed`), `BmpGroupAssessment` + `BmpGroupAssessmentDetail` (penilaian Lembaga per tahun, partial unique aktif). Migrasi `20260920120000_bmp_indicator_detail` (manual, additive). Plus `20260920100000_bmp_assessment_unique_active` (partial unique petani-tahun, review #344) | LOW–MEDIUM (4 tabel + 1 enum baru, additive) |
 | 2.11.0 | 2026-09-18 | Monev BMP (#344): `BmpAssessment` → `tbl_bmp_assessment` — skor 0–3 per **petani** per tahun survei (FK `farmerId`; `parcelUid` opsional = lahan dikunjungi), kategori dihitung dari skor (tidak disimpan); satu baris aktif per petani-tahun dijaga di action. Migrasi `20260918120000_bmp_assessment` (manual dari `migrate diff`, tanpa backfill) | LOW (new table, additive) |
+| 2.10.6 | 2026-09-14 | Keluarga satelit lahan tahap 2: `LandParcel.geom` GENERATED + GiST (#317 Fase 1), `LandParcelBorder` (#326), `LandParcelNkt` + enum `LandNktStatus`/`NktCategory` (#328), `LandMarker` + `LandParcelMarker` + enum patok (#329), kode patok unik + `LandMarkerCounter` (#331) — 5 migrasi `20260914*` | MEDIUM (5 tabel + 1 kolom generated, additive; backfill kode patok) |
+| 2.10.5 | 2026-08-29 | Tahapan STDB (#306) + audit tautan (#299): enum `LandStdbStage`, UNIQUE `(farmerId, number)` diganti dua partial unique tulis tangan — migrasi `20260829031525_land_stdb_stage` | MEDIUM (enum + constraint change) |
+| 2.10.4 | 2026-08-27 | Satelit lahan (#296): `LandParcelIdentity` + `LandParcel.parcelUid` (backfill), `LandParcelDocument`, `LandStdb` + `LandParcelStdb`, `LandParcelExternalId`, `LandParcelProgram` — migrasi `20260827053327_land_parcel_satellites` | HIGH (6 tabel + kolom NOT NULL ber-backfill) |
+| 2.10.3 | 2026-08-19 | Boundary (#266): `FarmerGroupBoundary` + `AdministrativeBoundary` (enum `AdminBoundaryLevel`), PostGIS `geom` + `geojson` | MEDIUM (2 tabel baru, additive) |
+| 2.10.2 | 2026-08-12 | Izin `EXPORT`/`PRINT` di enum `PermissionLevel` (#245) + backfill dari VIEW, lalu dikoreksi ke menu daun saja — 3 migrasi `20260812*` | MEDIUM (enum + backfill data RBAC) |
+| 2.10.1 | 2026-08-11 | `ReferenceBenchmark` → `tbl_reference_benchmark` (#243), angka acuan per Lembaga | LOW (new table, additive) |
 | 2.10.0 | 2026-08-08 | Tree model (#238): `tbl_tree` titik pohon sawit per lahan, bulk upload ZIP shapefile point, revisi per-set — applied mis-prod | MEDIUM (new table, additive) |
 | 2.9.0 | 2026-07-20 | Field lahan `species` (String?) + `isPsr` (Boolean default false — PSR = Peremajaan Sawit Rakyat); `cropType` = Komoditas, data fix 4.163 lahan → "Kelapa Sawit" | LOW (additive) |
 | 2.8.0 | 2026-07-16 | Sertifikasi Lembaga Petani (#169): `FarmerGroup.ispoCertYear` + `ispoCertStatus` + `sapMapAssuranceYear` + `sapMapAssuranceStatus` (enum generik `CertStatus` CERTIFIED/PLANNED — `RspoCertStatus` existing dibiarkan) | LOW (4 nullable columns + 1 enum, additive) |
@@ -294,12 +303,15 @@ erDiagram
         String id PK
         String farmer_id FK
         String parcel_id
+        String parcel_uid FK "LandParcelIdentity (#296)"
         String blok
-        Float location_lat
-        Float location_long
-        Json polygon
-        Geometry geom "generated dari polygon (#317 Fase 1)"
+        Json geometry "GeoJSON polygon — sumber kebenaran"
+        Geometry geom "GENERATED dari geometry (#317 Fase 1)"
         Float area
+        String land_status
+        String crop_type
+        String species
+        Boolean is_psr
         Int planting_year
         String sub_group_lv2
         Int revision
@@ -358,6 +370,7 @@ erDiagram
         String farmer_group_id FK
         String location
         DateTime training_date
+        String notes "catatan sesi (#228)"
         String evidence_key
         String evidence_name
         Boolean is_active
@@ -496,7 +509,13 @@ erDiagram
 | **Menu** | MenuItem | ✅ Complete with recursive parent-child (3-level support) |
 | **Farmer Group** | FarmerGroup | ✅ Complete with location & category |
 | **Farmer** | Farmer | ✅ Complete with demographics & joinedYear field |
-| **Land Parcel** | LandParcel | ✅ Complete with geolocation, polygon geometry (GeoJSON), area tracking, revision history |
+| **Land Parcel** | LandParcel | ✅ Complete with polygon geometry (GeoJSON + PostGIS `geom`), area tracking, revision history |
+| **Land Parcel Satellites** | LandParcelIdentity, LandParcelDocument, LandStdb, LandParcelStdb, LandParcelExternalId, LandParcelProgram, LandParcelBorder, LandParcelNkt, LandMarker, LandParcelMarker, LandMarkerCounter | ✅ Legalitas, sepadan, NKT, patok (#296–#331) |
+| **Tree** | Tree | ✅ Titik pohon per lahan (#238) |
+| **Boundary** | FarmerGroupBoundary, AdministrativeBoundary | ✅ Boundary ICS & wilayah administrasi (#266) |
+| **Reference Benchmark** | ReferenceBenchmark | ✅ Komparasi Data Acuan (#243) |
+| **Monev BMP** | BmpAssessment, BmpIndicator, BmpAssessmentDetail, BmpGroupAssessment, BmpGroupAssessmentDetail | ✅ Skor per petani + rincian indikator (#344, #346) |
+| **Dashboard Snapshots** | MainDashboardSnapshot, BmpDashboardSnapshot | ✅ Snapshot pattern (#99, #166) |
 | **Production** | ProductionRecord | ✅ Complete with yield tracking per farmer/parcel, period validation (YYYY-MM), max 4 harvests/month, duplicate prevention |
 | **Training** | TrainingPackage, TrainingActivity, TrainingParticipant | ✅ Complete with evidence upload & participant management |
 
@@ -505,7 +524,7 @@ erDiagram
 | Category | Tables | Target Phase |
 |----------|--------|--------------|
 | **Staff** | Staff, StaffActivity | MD-07 |
-| **HCV** | HCVAssessment | MD-08 |
+| **HCV** | HCVAssessment *(sebagian: `LandParcelNkt` #328)* | MD-08 |
 | **Business Development** | BusinessDevelopment | MD-09 |
 | **Impact** | ImpactMetrics | MD-10 |
 | **Workplan** | Workplan, WorkplanTask | MD-11 |

@@ -23,7 +23,8 @@
 - **Settings**: ❌ No access (tidak ada baris seed `settings-*` untuk ADMIN)
 - **Report**: ✅ Semua report (data ter-scope)
 - **Bulk Upload**: ✅ Petani, Lahan, Pohon Sawit & Produksi (CREATE+VIEW, scope masing-masing)
-- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data + Dashboard Ketersediaan Data) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md)
+- **Data Analyst**: ✅ Ketersediaan Data — Per Lembaga & Semua Lembaga (CREATE/EDIT/VIEW/EXPORT/PRINT) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** CREATE/EDIT/VIEW/EXPORT/PRINT · ✅ Peta Data & Skema, Sprint Mingguan, Metrik Rilis (VIEW) · ❌ Ringkasan Petani (hanya SUPERADMIN)
+- **Map**: ✅ Peta Lahan + Peta BMP (CREATE/EDIT/VIEW/EXPORT/PRINT, tanpa DELETE)
 - **Bantuan**: ✅ VIEW
 - **Tools**: ✅ Dashboard Snapshot + Snapshot BMP (generate/view/delete, scope distrik)
 
@@ -34,7 +35,8 @@
 - **Settings**: ❌ No access
 - **Report**: ✅ Semua report (data ter-scope Lembaga)
 - **Bulk Upload**: ✅ Petani & Produksi (CREATE+VIEW); Lahan & Pohon Sawit hanya VIEW warisan dari `bulk-upload` (tanpa CREATE)
-- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data + Dashboard Ketersediaan Data) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md)
+- **Data Analyst**: ✅ Ketersediaan Data — Per Lembaga & Semua Lembaga (VIEW/EXPORT/PRINT) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** VIEW/EXPORT/PRINT · ❌ Ringkasan Petani (hanya SUPERADMIN)
+- **Map**: ✅ Peta Lahan + Peta BMP (VIEW/EXPORT/PRINT)
 - **Bantuan**: ✅ VIEW
 - **Tools**: ❌ No access (tidak diberi akses Dashboard Snapshot)
 
@@ -45,16 +47,19 @@
 - **Settings**: ❌ No access
 - **Report**: ✅ View all reports (all data)
 - **Bulk Upload**: ❌ No access
-- **Data Analyst**: ✅ VIEW (Ringkasan Petani + Analisa Ketersediaan Data + Dashboard Ketersediaan Data) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md)
+- **Data Analyst**: ✅ Ketersediaan Data — Per Lembaga & Semua Lembaga (VIEW/EXPORT/PRINT) · ✅ **Tumpang Tindih Lahan** VIEW+EXPORT (#317 — pasangan tampil bila minimal satu sisi dalam scope, sisi lawan lengkap; lihat access-context.md) · ✅ **Komparasi Data Acuan** VIEW/EXPORT/PRINT · ✅ Peta Data & Skema, Sprint Mingguan, Metrik Rilis (VIEW) · ❌ Ringkasan Petani (hanya SUPERADMIN)
+- **Map**: ✅ Peta Lahan + Peta BMP (VIEW/EXPORT/PRINT)
 - **Bantuan**: ✅ VIEW
 - **Tools**: 🟠 Dashboard Snapshot + Snapshot BMP (view-only, tanpa generate/delete)
 
 ## DONOR (Read-Only donor/funder, #187)
 
+> ⚠️ **Seed ≠ produksi (dicek `npm run rbac:compare` ke mis-prod 2026-09-29).** Bagian ini mengikuti seed `role-permissions.csv`. Di produksi DONOR **juga** punya VIEW+PRINT di 5 menu Master Data (Lembaga Petani, Petani, Pelatihan, Lahan, Monev BMP) dan **tidak** punya Report Kelompok Tani (Summary/Detail) & Report Patok — perubahan lewat UI, terkait #364. Keputusan mana yang benar menunggu owner.
+
 Tipe pengguna untuk pihak donor/funder — **VIEW-only** pada subset menu. Cakupan data mengikuti aturan yang sama (tanpa assignment = `ALL`, dengan assignment = ter-scope).
 
 - **Dashboard**: ✅ Main Dashboard + BMP + Dashboard Pelatihan + Dashboard Monev BMP (VIEW) · ✅ **Fire Alert (Risk Management)** (VIEW+PRINT, #266)
-- **Report**: 🔲 View reports (Petani, Pelatihan, Produksi, Kelompok Tani, Lahan, **Patok** #331) — ekspor Excel/PDF diizinkan (Patok: VIEW + PRINT saja, tanpa EXPORT)
+- **Report**: ✅ View reports (Petani, Pelatihan, Produksi, Kelompok Tani Summary/Detail, Lahan, **Patok** #331) — VIEW + PRINT (PDF) saja; **tanpa EXPORT** (Excel) di semua report
 - **Map**: ✅ Peta Lahan + Peta BMP (VIEW)
 - **Bantuan**: ✅ VIEW
 - **Master Data**: ❌ No access

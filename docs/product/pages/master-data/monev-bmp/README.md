@@ -45,7 +45,7 @@ Sub Menu: Monev BMP (/admin/master-data/bmp-monev)
 ## Model & aturan yang dipakai bersama
 
 - `BmpAssessment` (`tbl_bmp_assessment`): satu baris **aktif** per petani-tahun (partial unique `uniq_bmp_assessment_farmer_year_active`); `score` = angka resmi; `parcelUid` (lahan dikunjungi) opsional; tanggal survei disimpan UTC tengah malam, ditampilkan `formatUtcDate`.
-- `BmpIndicator` (`ref_bmp_indicator`, 32 baris ter-seed), `BmpAssessmentDetail` (skor INDIVIDU per penilaian), `BmpGroupAssessment` + `Detail` (14 skor LEMBAGA per Lembaga-tahun, partial unique `uniq_bmp_group_assessment_group_year_active`). Lihat [database/models.md](../../../database/models.md#rincian-indikator-346).
+- `BmpIndicator` (`ref_bmp_indicator`, 32 baris ter-seed), `BmpAssessmentDetail` (skor INDIVIDU per penilaian), `BmpGroupAssessment` + `Detail` (14 skor LEMBAGA per Lembaga-tahun, partial unique `uniq_bmp_group_assessment_group_year_active`). Lihat [database/models.md](../../../../database/models.md#rincian-indikator-346).
 - Rumus: skor akhir = Σ bobot kegiatan × Σ (bobot indikator × skor); kriteria **1.3.2 Identifikasi Gulma alternatif** (petani ATAU pekerja — `BMP_EXCLUSIVE_CRITERIA`, `src/lib/bmp-survey-form.ts`) sehingga maksimum 3,00. `recomputeBmpScore` dipakai halaman detail, pratinjau import, dan dashboard.
 - Tiga lapis keamanan: `hasPermission("master-data-bmp-monev", …)` di tiap action; scope `farmerRelationAccessFilter` / `farmerGroupAccessFilter` lewat `AND` (bukan spread); `isActive` di petani, Lembaga, penilaian, rincian.
 - Tautan silang: tab **Monev BMP** + badge kategori terbaru di [Detail Petani](../petani/detail.md); [Dashboard › Monev BMP](../../dashboard/dashboard-monev-bmp.md).

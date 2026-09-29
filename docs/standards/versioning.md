@@ -49,7 +49,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 3. **Gate lokal**: `npm run lint`, `npm run build`, `npm run typecheck`, dan `npm test` lulus (Pre-Commit Gate di [workflow.md](./workflow.md)) — keempatnya **tidak** dijalankan CI, jadi harus dipastikan lokal. Di PR, CI menjalankan `gitleaks` & `semgrep`; periksa `gh pr checks <nomor>` hijau sebelum merge.
 4. **QA/QC manual di staging** — setelah migrasi + seed diterapkan ke `mis-staging` dan `mvp → staging` di-deploy, jalankan `docs/qa/vX.Y.Z/` (smoke per menu, kasus uji per issue, QC angka DB); temuan blocker/major menahan rilis. `05-signoff.md` (dev · QA · owner) adalah prasyarat langkah berikutnya. Lihat [../qa/README.md](../qa/README.md).
 5. **Bump versi**: update `version` di `package.json`, tambah entri rilis di [changelog.md](../project/changelog.md), commit dengan pesan `chore(release): vX.Y.Z`.
-6. **PR `mvp` → `main`**, merge setelah approval. ⚠️ **Merge ke `main` memicu deploy produksi otomatis** (`deploy-main.yml`) — pastikan migrasi DB yang dibutuhkan sudah diterapkan lebih dulu, lalu segarkan `prisma/migrations/applied-checksums.json` (skrip `scripts/migrations/refresh-applied-checksums.ts`, #303) dan ikutkan di commit rilis.
+6. **PR `staging` → `main`** (`staging` sudah berisi `mvp` dari langkah 4), merge setelah approval. ⚠️ **Merge ke `main` memicu deploy produksi otomatis** (`deploy-main.yml`) — pastikan migrasi DB yang dibutuhkan sudah diterapkan lebih dulu, lalu segarkan `prisma/migrations/applied-checksums.json` (skrip `scripts/migrations/refresh-applied-checksums.ts`, #303) dan ikutkan di commit rilis.
 7. **Tag & Release di `main`**:
    - Annotated tag: `git tag -a vX.Y.Z -m "vX.Y.Z"` pada merge commit di `main`, lalu `git push origin vX.Y.Z`.
    - GitHub Release: `gh release create vX.Y.Z` dengan release notes diambil dari ringkasan changelog — **bukan** auto-generate dari commit mentah, agar konsisten dengan changelog sebagai catatan historis.
@@ -68,7 +68,7 @@ Versi mengikuti governance roadmap: status phase hanya naik jika terverifikasi l
 - [ ] `package.json` `version` sudah di-bump sesuai kriteria
 - [ ] Entri rilis tercatat di `docs/project/changelog.md`
 - [ ] **Metrik Nilai Rilis dihitung** → baris baru di [`project/metrics.md`](../project/metrics.md) (lihat §Metrik Nilai Rilis)
-- [ ] PR `mvp` → `main` merged
+- [ ] PR `staging` → `main` merged
 - [ ] Annotated tag `vX.Y.Z` dibuat di `main` dan di-push
 - [ ] GitHub Release dibuat dengan notes dari changelog
 - [ ] Teks pengumuman Telegram (compact, §langkah 7) disiapkan

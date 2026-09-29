@@ -14,7 +14,7 @@
 | Validation | Zod di `src/validations/` |
 | Server Actions | Di `src/server/actions/` |
 | Formatter angka id-ID | **Wajib impor dari `src/lib/format.ts`** (`formatNumber`, `formatPct`, `formatArea` desimal-2, `MONTH_NAMES_ID`) — **dilarang** membuat instance `Intl.NumberFormat("id-ID")` / array nama bulan lokal baru (#233/#241). Varian sufiks (" ha") / null-handling boleh wrapper lokal tipis yang mendelegasi ke formatter bersama |
-| Database Schema | Lihat [database-schema.md](../database/erd.md) untuk ERD, indexes, constraints, migrations, security |
+| Database Schema | Lihat [database/erd.md](../database/erd.md) untuk ERD, indexes, constraints, migrations, security |
 
 #### Istilah domain resmi (pengecualian naming — keputusan #130 / TD-012)
 
@@ -55,7 +55,7 @@ Nama tabel fisik selalu lewat `@@map`, `snake_case`, dengan **prefix menurut jen
 
 ### Data Access & Soft Delete
 
-- **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app.
+- **Soft delete** — Semua tabel punya `isActive Boolean @default(true)`. Tidak pernah hard delete dari app. Pengecualian (keputusan owner, lihat [database/constraints.md](../database/constraints.md#soft-delete-pattern)): `LandParcelNkt` (hapus baris), `LandParcelBorder` (kosongkan kolom), `LandMarkerCounter` (tanpa `isActive`), tabel penugasan `UserProvince`/`UserDistrict`/`UserFarmerGroup` (tanpa `isActive`).
 - **Data filtering** — Setiap query di server actions wajib filter berdasarkan context user:
   - Region sesuai assignment user (Province → District → Lembaga Petani)
   - Lembaga Petani sesuai assignment user
@@ -64,7 +64,7 @@ Nama tabel fisik selalu lewat `@@map`, `snake_case`, dengan **prefix menurut jen
 - **Backend Permission Validation** — Setiap Server Action (terutama mutasi data) wajib divalidasi ulang di level server menggunakan helper `hasPermission(menuCode, permission)` sebelum melakukan query/mutasi database, untuk mencegah eksekusi request langsung yang tidak sah (bypass UI). **Termasuk** read/mutasi **by-id** dan helper "for select" (pelajaran audit #125/#127).
 - **Helper "for select" juga wajib access-scoped** — guard permission saja tidak cukup: daftar opsi dropdown harus difilter `getAccessContext()`/`getAccessibleDistrictIds` agar user scoped tidak melihat entitas di luar wilayah kerjanya, **termasuk saat helper yang sama dipakai form create/edit** (pelajaran #211 — `getDistrictsForSelect` lolos guard tapi bocor scope; efeknya ke form Lembaga Petani dipertahankan by design, lihat Decision Log 2026-08-04).
 
-#### Access-filter helpers (`src/lib/access-context.ts`)
+#### Access-filter helpers (`src/lib/access-scope.ts`, di-re-export `src/lib/access-context.ts`)
 
 Terjemahkan `AccessContext` (dari `getAccessContext()`) ke Prisma `where` fragment lewat helper — **jangan tulis ulang ternary di tiap action** (#127):
 

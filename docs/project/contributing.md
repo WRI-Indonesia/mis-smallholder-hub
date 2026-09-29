@@ -2,7 +2,7 @@
 
 > Bagian dari dokumentasi **Proyek**. Indeks: [../README.md](../README.md) · Terkait: [brief.md](./brief.md) · [roadmap.md](./roadmap.md) · [sprint.md](./sprint.md) · [tech-debt.md](./tech-debt.md) · [changelog.md](./changelog.md)
 
-> Panduan proses untuk developer: cara update dokumen status, urutan implementasi, dan checklist kepatuhan `rule.md`.
+> Panduan proses untuk developer: cara update dokumen status, urutan implementasi, dan checklist kepatuhan [standar kode](../standards/code-standards.md).
 > Konten stabil (jarang berubah) — dipisah dari `progress.md` (restrukturisasi 2026-07-12) agar file status tetap ramping.
 > Status delivery aktual ada di [`roadmap.md`](./roadmap.md); standar teknis di [`code-standards.md`](../standards/code-standards.md).
 
@@ -54,7 +54,7 @@ flowchart LR
     MD05 --> DASH06["DASH-06 Dashboard Pelatihan"]
     RPT01["RPT-01 Report Petani (#107)"] --> RPT02["RPT-02 Report Pelatihan (#108)"]
     RPT01 --> RPT03["RPT-03 Report Produksi (#132) ✅"]
-    BULK01["BULK-01 Bulk Upload Menu + KT"] --> BULK02["BULK-02 Bulk Upload Region"]
+    BULK01["BULK-01 Bulk Upload Menu & Route"] --> BULK02["BULK-02 Bulk Upload Region"]
 ```
 
 ### Recommended Implementation Order
@@ -131,7 +131,7 @@ Gunakan template berikut saat menambah changelog. Baris ditambahkan di **paling 
 
 ---
 
-## 2. Implementation Guidelines (Rule.md Compliance)
+## 2. Implementation Guidelines (Kepatuhan `standards/`)
 
 #### Checklist untuk Setiap Implementasi Fase Baru
 
@@ -181,14 +181,17 @@ Gunakan checklist ini ketika membuka issue/PR untuk setiap fase/feature baru. Pa
 
 **Quality Gates (Before Merge)**
 
-1. ✅ **Tests**: `npm test` — all pass, no skipped tests
-2. ✅ **Build**: `npm run build` — no errors or warnings
-3. ✅ **Lint**: `npm run lint` — **exit 0**, 0 error (BUG-006 ✅ selesai 2026-07-12, #126; wajib dijalankan lokal sebelum commit — lihat Pre-Commit Gate di [`workflow.md`](../standards/workflow.md))
-4. ✅ **Typecheck**: `npm run typecheck` — 0 error termasuk `src/test/**` (dijalankan setelah Build, #288)
-4. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
-5. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
-6. ✅ **Code Review**: Implementation matches rule.md requirements
-7. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
+Urutan mengikuti Pre-Commit Gate di [`workflow.md`](../standards/workflow.md):
+
+1. ✅ **Lint**: `npm run lint` — **exit 0**, 0 error (BUG-006 ✅ selesai 2026-07-12, #126)
+2. ✅ **Build**: `npm run build` — no errors (juga meregenerasi `.next/types` untuk Typecheck)
+3. ✅ **Typecheck**: `npm run typecheck` — 0 error termasuk `src/test/**` (dijalankan setelah Build, #288)
+4. ✅ **Tests**: `npm test` — all pass, no skipped tests
+5. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
+6. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
+7. ✅ **Code Review**: implementasi sesuai [`standards/`](../standards/code-standards.md)
+8. ✅ **Rule Compliance**: Semua kategori pada tabel "Code Compliance Audit" ([`roadmap.md`](./roadmap.md)) berstatus PASS
+9. ✅ **Alur rilis**: `mvp` → `staging` (deploy staging, QA `docs/qa/vX.Y.Z/`) → PR `staging` → `main` (deploy produksi) — lihat [`versioning.md`](../standards/versioning.md) §Alur Rilis
 
 #### Common Pitfalls & Fixes
 

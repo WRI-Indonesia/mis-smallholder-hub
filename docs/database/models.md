@@ -4,6 +4,8 @@
 
 ## Common Fields (semua tabel)
 
+> Pengecualian: `LandMarkerCounter` (penghitung murni, tanpa audit & `isActive`); `UserProvince`/`UserDistrict`/`UserFarmerGroup` tanpa `isActive`; `createdBy` pada `MainDashboardSnapshot`/`BmpDashboardSnapshot` wajib (FK ke User), bukan nullable.
+
 | Field | Type | Keterangan |
 |-------|------|-----------|
 | `created_at` | DateTime | Auto-set saat create |
@@ -71,6 +73,21 @@ classDiagram
         OTHER
     }
 ```
+
+Enum lain di luar diagram di atas:
+
+| Enum | Nilai | Berkas |
+|---|---|---|
+| `AdminBoundaryLevel` | KABUPATEN · KECAMATAN · DESA | `_config.prisma` |
+| `LandDocumentType` | SHM · SKT · SKGR · SK · SKST · SKTC · SKGK · SPPT · SKRPT · SKKT · SKTB · HIBAH · JUAL_BELI · OTHER | `land-parcel-document.prisma` |
+| `LandProgramType` / `LandProgramStatus` | DEMPLOT_PBU / PLANNED · ACTIVE · COMPLETED · CANCELLED | `land-parcel-program.prisma` |
+| `LandStdbStage` | PERSIAPAN_DATA · PENGAJUAN · REVISI · TERBIT · DITOLAK | `land-stdb.prisma` |
+| `LandNktStatus` | INCLUDED (disembunyikan dari UI, TD-040) · AFFECTED · NOT_AFFECTED | `land-parcel-nkt.prisma` |
+| `NktCategory` | NKT_1 … NKT_6 | `land-parcel-nkt.prisma` |
+| `LandMarkerCondition` | PRESENT · MISSING · DAMAGED · NOT_INSTALLED | `land-marker.prisma` |
+| `LandMarkerType` | CONCRETE · WOOD · PIPE · NATURAL · OTHER | `land-marker.prisma` |
+| `LandMarkerSource` | POLYGON_VERTEX · GPS · MANUAL | `land-marker.prisma` |
+| `BmpIndicatorLevel` | LEMBAGA · INDIVIDU | `bmp-indicator.prisma` |
 
 </details>
 
@@ -369,7 +386,7 @@ Dual-column sama dengan FarmerGroupBoundary, dengan satu perbedaan penting: kolo
 
 ```
 prisma/schema/
-├── _config.prisma        # Generator, datasource, enums
+├── _config.prisma        # Generator, datasource, enum Role, PermissionLevel, FarmerGroupCategory/Type, RspoCertStatus, CertStatus, AdminBoundaryLevel, TrainingCategory — enum lain (Gender, Land*, NktCategory, BmpIndicatorLevel) di berkas modelnya
 ├── user.prisma           # User identity
 ├── geography.prisma      # Province → District → Subdistrict → Village
 ├── farmer-group.prisma   # FarmerGroup
@@ -389,6 +406,8 @@ prisma/schema/
 ├── reference-benchmark.prisma # ReferenceBenchmark (angka acuan manual per lembaga, #243)
 ├── production.prisma     # ProductionRecord
 ├── training.prisma       # TrainingPackage, TrainingActivity, TrainingParticipant
+├── bmp-assessment.prisma # BmpAssessment (Monev BMP, #344)
+├── bmp-indicator.prisma  # BmpIndicator + enum BmpIndicatorLevel (master 32 indikator), BmpAssessmentDetail, BmpGroupAssessment, BmpGroupAssessmentDetail (#346)
 ├── dashboard-snapshot.prisma # MainDashboardSnapshot, BmpDashboardSnapshot
 ├── rbac.prisma           # RolePermission, UserProvince, UserDistrict, UserFarmerGroup, UserPermissionOverride
 └── menu.prisma           # MenuItem

@@ -27,7 +27,7 @@ Legenda status: ✅ Done · 🟠 Partial · 🔲 Planned · 🔴 Blocked — def
 
 | Lapis | Route | Guard |
 |---|---|---|
-| Publik | `/` (Home ✅), `/community` 🔲, `/knowledge` 🔲 | — |
+| Publik | `/` (Home ✅), `/community` 🔲, `/knowledge-management` 🔲 | — |
 | Autentikasi | `/login` ✅ · `/api/auth/[...nextauth]` | NextAuth (Credentials) |
 | Admin | `/admin/**` | `middleware.ts` (sesi) → `requirePermission(menuKey)` per halaman |
 | Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) | auth-guarded, same-origin |
@@ -52,14 +52,14 @@ Enum `Role` (`prisma/schema/_config.prisma`) — 5 role. Kolom "Scope data" dite
 
 ## 2. Struktur Menu Sidebar
 
-9 menu top-level / 38 sub menu (`menu.csv`, dihitung ulang 2026-09-24 saat #317 — angka lama 28 sudah usang), urut sesuai kolom `order`:
+9 menu top-level / 38 sub menu + 1 menu level-3 (Fire Alert) (`menu.csv`, dihitung ulang 2026-09-29), urut sesuai kolom `order`:
 
 ```text
 📊 Dashboard          (5 sub, + Risk Management › Fire Alert)   📈 Report        (7 sub)
 📁 Master Data        (6 sub)   🔧 Tools         (2 sub)
 ⚙️  Settings           (4 sub)   🗺️  Map           (2 sub)
 📤 Bulk Upload        (4 sub)   ❓ Bantuan       (halaman bab/topik, tanpa sub menu)
-📉 Data Analyst       (7 sub, termasuk Metrik Rilis `dashboard-metrics`)
+📉 Data Analyst       (8 sub, termasuk Metrik Rilis `dashboard-metrics`)
 ```
 
 Halaman non-menu: `/admin/profile` (Ubah Kata Sandi) · `/login` · route publik. Lihat [pages/halaman-non-menu/](./pages/halaman-non-menu/README.md).
@@ -77,6 +77,8 @@ Kolom **Ringkasan** sengaja satu baris; detail lengkap ada di dokumen halaman ya
 | ✅ [Main Dashboard](./pages/dashboard/main-dashboard.md) | `dashboard-main` | DASH-01 | Snapshot-backed: 14 summary card (incl. Petani L/P, Total Kelompok Tani #148, 3 card sertifikasi RSPO/ISPO/SAP-MAP #169) + filter Distrik/KT/Tahun + peta MapLibre 60:40 ber-info panel |
 | ✅ [BMP Dashboard (Produksi)](./pages/dashboard/bmp-dashboard-produksi.md) | `dashboard-bmp` | DASH-04 (#166 #191) | Snapshot-backed: 4 card KPI + 2 grafik 50/50 (tren + ranking Lembaga) + card Ex-Plasma vs Swadaya (distrik × umur tanaman); default tahun berjalan; terminologi Terdata; filter client-side |
 | ✅ [Dashboard Pelatihan](./pages/dashboard/dashboard-pelatihan.md) | `dashboard-training` | DASH-06 | **Live query (bukan snapshot)**: 5 KPI + matriks cakupan Lembaga × Paket + tren stacked-bar + panel efektivitas pre/post + panel kualitas data ber-deep-link |
+| ✅ [Monev BMP](./pages/dashboard/dashboard-monev-bmp.md) | `dashboard-bmp-monev` | DASH-08 (#344 #346 #360) | Live query: Papan Lembaga, heatmap indikator, radar A vs B, 10 prioritas/teladan + Excel rekap |
+| ✅ Risk Management › [Fire Alert](./pages/dashboard/risk-management-fire-alert.md) | `dashboard-risk` › `dashboard-risk-fire` | DASH-07 | Titik api NASA FIRMS vs boundary ICS Lembaga (buffer 1,5 km), rentang 24 jam–30 hari + laporan bulanan, PDF |
 
 ### 📁 Master Data — `/admin/master-data`
 
@@ -87,8 +89,9 @@ Kolom **Ringkasan** sengaja satu baris; detail lengkap ada di dokumen halaman ya
 | ✅ [Pelatihan](./pages/master-data/pelatihan/README.md) | `master-data-training` | MD-05 | Kegiatan + peserta (pre/post-test) + unggah bukti ke S3 |
 | ✅ [Lahan](./pages/master-data/lahan/README.md) | `master-data-parcels` | MD-04 | Peta + poligon + geolocation + revision tracking |
 | ✅ [Produksi](./pages/master-data/produksi/README.md) | `master-data-production` | MD-06 | Periode + panen ke-n + validasi duplikat |
+| ✅ [Monev BMP](./pages/master-data/monev-bmp/README.md) | `master-data-bmp-monev` | DASH-08 (#344 #346) | Skor BMP per petani per tahun + rincian 32 indikator, import rekap/form survei, Penilaian Lembaga |
 
-Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · HCV (MD-08) · BUSDEV (MD-09) · IMPACT (MD-10) · Workplan (MD-11).
+Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · BUSDEV (MD-09) · IMPACT (MD-10) · Workplan (MD-11). 🟠 HCV (MD-08) — langkah awal status NKT per lahan (#328) + patok (#329/#331), tanpa menu tersendiri.
 
 ### ⚙️ Settings — `/admin/settings`
 
@@ -106,8 +109,9 @@ Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · HCV (MD-08) · BUSDE
 | ✅ [Upload Petani](./pages/bulk-upload/upload-petani.md) | `bulk-upload-farmers` | BULK-03 (#76 #196 #197) | Excel + mapping kolom dinamis + validasi 3 status (Valid/Tidak Lengkap/Error) + 2 tombol simpan + preview + unduh per status |
 | ✅ [Upload Produksi](./pages/bulk-upload/upload-produksi.md) | `bulk-upload-production` | BULK-04 | Excel + validasi periode/panen + preview |
 | ✅ [Lahan](./pages/bulk-upload/lahan.md) | `bulk-upload-parcels` | MD-04 (#88) | ZIP Shapefile + mapping (incl. Kelompok Tani & Blok #150) + validasi geometri |
+| ✅ [Pohon Sawit](./pages/bulk-upload/pohon.md) | `bulk-upload-trees` | MD-04 (#238) | ZIP shapefile point per lahan, revisi per-set |
 
-Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum ada menu/route.
+Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#70 ditutup *not planned* 2026-06-28; status fase menunggu keputusan owner (lihat roadmap).
 
 ### 📉 Data Analyst — `/admin/data-analyst`
 
@@ -117,6 +121,9 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 | ✅ [Ketersediaan Data — Per Lembaga](./pages/data-analyst/analisa-ketersediaan-data.md) | `data-analyst-data-completeness` | DA-02 (#118, #122, #352) | Index Ketersediaan Data (registri check, bobot tampil) + cakupan modul informatif + 5 section anomali (Profil KT, Petani, Lahan, Pelatihan, Produksi) berdaftar kerja bertautan & anomali sistemik dilipat + Excel multi-sheet; `?lembaga=` |
 | ✅ [Ketersediaan Data — Semua Lembaga](./pages/data-analyst/dashboard-ketersediaan-data.md) | `data-analyst-data-availability` | DA-03 (#193, #352) | Roll-up skor DA-02 lintas Lembaga: 6 KPI + matriks Lembaga×domain / Lembaga×modul + bar chart terendah-dulu + panel anomali (per entitas vs sistemik) + Excel; deep link ke DA-02; live query, tanpa DONOR |
 | 🟠 [Tumpang Tindih Lahan](./pages/data-analyst/tumpang-tindih-lahan.md) | `data-analyst-parcel-overlap` | #317 Fase 2 (tab Tumpang Tindih) | Self-join `ST_Intersects` atas `LandParcel.geom` (GiST), live; split view tabel + peta preview; filter %/jenis/Distrik/Lembaga/label di URL; Duplikat vs Tercakup; Excel + SHP/GeoJSON irisan; scope minimal satu sisi; tanpa DONOR. Tab Luar Boundary/Selisih Luas + guard upload + layer peta belum |
+| ✅ [Komparasi Data Acuan](./pages/data-analyst/komparasi-data-acuan.md) | `data-analyst-benchmark-comparison` | DA-06 (#243) | Angka acuan manual per Lembaga vs data MIS |
+| ✅ [Metrik Rilis](./pages/data-analyst/metrik-rilis.md) | `dashboard-metrics` | — | Roadmap %, KPI & RVS per rilis dari `docs/project/metrics.md` + Detail Roadmap (route `/admin/dashboard/metrics`) |
+| ✅ [Peta Data & Skema](./pages/data-analyst/peta-data-skema.md) | `data-analyst-data-map` | DA-07 | Lineage menu → entitas + skema dari artefak `*.generated.ts` |
 | ✅ [Sprint Mingguan](./pages/data-analyst/sprint-mingguan.md) | `data-analyst-sprint` | #378 | Rencana sprint mingguan dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis): tab Sprint (pemilih minggu, progres poin S/M/L, kotak Butuh keputusan, butir per status) + tab Analisa (velocity, komposisi fokus, keputusan tertunda, carry-over) |
 
 ### 📈 Report — `/admin/report`
@@ -168,15 +175,15 @@ Belum dimulai: 🔲 Lembaga Petani (#69) · 🔲 Region (BULK-02, #70) — belum
 
 ## 5. Ringkasan Teknis (cerminan)
 
-Diverifikasi **2026-07-28** terhadap kode di branch `mvp` (app `v0.16.0`).
+Diverifikasi **2026-09-29** terhadap kode di branch `mvp` (app `v1.1.0`).
 
 | Aspek | Angka | Catatan |
 |---|---|---|
-| Test | **45 file / 702 test passing** ✅ | `npx vitest run`; rincian coverage di [roadmap.md § OPS-01](../project/roadmap.md) |
-| Server Actions | **26 file** | `src/server/actions/` — satu file per domain, seluruh akses data lewat sini |
-| Prisma | **11 file schema / 20 model / 19 migrasi** | `prisma/schema/` modular; semua model ber-audit field + `isActive` |
-| Menu | **9 top-level / 28 sub menu** | `prisma/seeds/data/menu.csv` |
-| Materi Bantuan | **34 file Markdown** | `src/content/help/**` |
+| Test | **111 file / 1.916 test passing** ✅ | `npx vitest run`; rincian coverage di [roadmap.md § OPS-01](../project/roadmap.md) |
+| Server Actions | **39 file** | `src/server/actions/` — satu file per domain, seluruh akses data lewat sini |
+| Prisma | **25 file schema / 40 model / 39 migrasi** | `prisma/schema/` modular; semua model ber-audit field + `isActive` (pengecualian: [constraints.md](../database/constraints.md#soft-delete-pattern)) |
+| Menu | **9 top-level / 38 sub menu + 1 level-3** | `prisma/seeds/data/menu.csv` |
+| Materi Bantuan | **65 file Markdown** | `src/content/help/**` |
 | Fase selesai | lihat [roadmap.md § Phase Status](../project/roadmap.md) | cerminan naratif di [module-status.md](./module-status.md) |
 
 Prioritas berikutnya & backlog: [../project/sprint.md](../project/sprint.md) dan [../project/roadmap.md](../project/roadmap.md).

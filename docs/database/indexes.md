@@ -28,12 +28,19 @@
 | MenuItem | UNIQUE | `key` | Menu item lookup by slug |
 | **Farmer Group** | | | |
 | FarmerGroup | PK | `id` (CUID) | Primary key |
+| **Reference Benchmark (#243)** | | | |
+| ReferenceBenchmark | PK | `id` (CUID) | Primary key |
+| ReferenceBenchmark | UNIQUE | `farmerGroupId` | Satu baris acuan per Lembaga |
+| ReferenceBenchmark | INDEX | `isActive` | Filter acuan aktif |
 | **Farmer Group Boundary** | | | |
 | FarmerGroupBoundary | PK | `id` (CUID) | Primary key |
+| FarmerGroupBoundary | INDEX | `farmerGroupId` | Boundary per Lembaga |
+| FarmerGroupBoundary | INDEX | `isActive` | Filter boundary aktif |
 | FarmerGroupBoundary | GIST | `geom` | Index spasial PostGIS (ST_Intersects/ST_Contains) — ditulis manual di migration 20260819041658 karena kolom `Unsupported` (#266) |
 | **Administrative Boundary** | | | |
 | AdministrativeBoundary | PK | `id` (CUID) | Primary key |
 | AdministrativeBoundary | INDEX | `(level, isActive)` | Baca garis batas per level (KABUPATEN/KECAMATAN/DESA) |
+| AdministrativeBoundary | INDEX | `districtId` | Poligon wilayah per district |
 | AdministrativeBoundary | GIST | `geom` | Index spasial PostGIS — manual di migration 20260819073337 (#266) |
 | **Farmer** | | | |
 | Farmer | PK | `id` (CUID) | Primary key |
@@ -46,7 +53,9 @@
 | LandParcelIdentity | UNIQUE | `(farmerId, parcelId)` | Satu identitas per pasangan petani+ID lahan |
 | LandParcelDocument | PK | `id` (CUID) | Primary key |
 | LandStdb | PK | `id` (CUID) | Primary key |
-| LandStdb | UNIQUE | `(farmerId, number)` | Nomor STDB unik per petani |
+| LandStdb | PARTIAL UNIQUE | `(farmerId, number) WHERE number IS NOT NULL AND is_active` | `uniq_land_stdb_farmer_number` — nomor STDB unik per petani di antara baris aktif; tulis tangan (migrasi `20260829031525`, #306; UNIQUE `(farmerId, number)` lama dilepas) |
+| LandStdb | PARTIAL UNIQUE | `(farmerId) WHERE stage IN (PERSIAPAN_DATA, PENGAJUAN, REVISI) AND is_active` | `uniq_land_stdb_farmer_open` — satu STDB berproses per petani |
+| LandStdb | INDEX | `stage` | Filter tahapan STDB |
 | LandParcelStdb | PK | `id` (CUID) | Primary key |
 | LandParcelStdb | UNIQUE | `(parcelUid, stdbId)` | Tautan lahan↔STDB tidak ganda |
 | LandParcelExternalId | PK | `id` (CUID) | Primary key |
@@ -153,7 +162,7 @@
 
 ### Index Maintenance Notes
 
-- **CUID vs Auto-Increment**: CUID digunakan untuk semua PK karena distribusi random lebih baik untuk UUID-style lookups dan tidak bocorkan business metrics
+- **CUID vs Auto-Increment**: CUID digunakan untuk semua PK (kecuali `LandMarkerCounter`, PK = `prefix`) karena distribusi random lebih baik untuk UUID-style lookups dan tidak bocorkan business metrics
 - **Composite Unique Indexes**: Digunakan untuk enforce business rule (contoh: satu farmer hanya bisa terdaftar 1x di satu training activity)
 - **Missing Indexes**: Tidak ada index pada `created_at` / `modified_at` karena audit query jarang dilakukan dan bisa pakai full table scan
 

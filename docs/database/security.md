@@ -26,7 +26,7 @@
 ### SQL Injection Prevention
 
 - **Prisma ORM**: Semua query pakai Prisma Client → parameterized queries otomatis
-- **No Raw Query**: Hindari `prisma.$queryRaw` dengan user input tanpa sanitasi
+- **Raw Query**: `$queryRaw`/`$executeRaw` dipakai untuk fitur PostGIS (tetangga, tumpang tindih, klip) — **wajib tagged template** (parameter otomatis); jangan pernah `$queryRawUnsafe`/`Prisma.raw` dengan input user
 - **Input Validation**: Validate & sanitize input di server action / API route sebelum query
 
 ### Data Access Patterns (RBAC)
@@ -59,11 +59,14 @@ flowchart TD
 | **Location Coordinates** | FarmerGroup | `locationLat`, `locationLong` | Public (untuk mapping), tidak sensitif |
 | **Parcel Geometry** | LandParcel | `geometry` | Koordinat lahan milik individu — akses hanya via Server Action ber-RBAC (scope district/KT), tidak ikut payload list (fetch detail by-id, #163) |
 | **Tree Coordinates** | Tree | `longitude`, `latitude` | Titik GPS pohon di dalam lahan milik individu (#238) — akses hanya via Server Action ber-RBAC (scope via relasi lahan→petani), dikirim utuh hanya per-lahan di halaman detail; lintas lahan wajib agregat |
+| **Marker Coordinates** | LandMarker | `longitude`, `latitude` | Titik GPS patok batas lahan individu (#329) — akses via Server Action ber-RBAC (scope via lahan) |
+| **Vendor Geometry** | LandParcelExternalId | `rawGeometry` | Geometri mentah dari vendor (#296) — tidak pernah dibaca aplikasi (di-select `false`, TD-035); bila kelak dibaca, wajib lewat action ber-scope |
+| **ICS Boundary** | FarmerGroupBoundary | `geom`, `geojson` | Poligon wilayah Lembaga (bukan milik individu) — tetap lewat action ber-izin menu |
 | **S3 Evidence Key** | TrainingActivity | `evidenceKey` | Private S3 bucket, generate pre-signed URL saat akses |
 
 ### Audit Trail
 
-Semua tabel memiliki audit fields:
+Semua tabel memiliki audit fields (kecuali `LandMarkerCounter`):
 - `createdAt` — timestamp record dibuat
 - `createdBy` — user ID yang membuat (nullable saat seed)
 - `modifiedAt` — timestamp terakhir diupdate

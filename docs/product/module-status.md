@@ -7,14 +7,14 @@
 <details>
 <summary><strong>Implementation Status (Current)</strong></summary>
 
-## Completed Modules (✅ 35 Phases)
+## Completed Modules (✅ 40 Phases)
 
 > Jumlah fase & test di bawah adalah cerminan; **source of truth** ada di tabel **Phase Status** pada [`roadmap.md`](../project/roadmap.md). Perbarui angka di sana lebih dulu.
  
 | Phase | Module | Key Features |
 |-------|--------|--------------|
 | PLATFORM-01 | Init & UI | Next.js, Shadcn, Tailwind setup |
-| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 21 model / 21 migrasi / 12 file schema) |
+| PLATFORM-02 | Schema & Migrations | Modular Prisma schema (kini 40 model / 39 migrasi / 25 file schema, 2026-09-29) |
 | PLATFORM-03 | Schema Hardening | Audit fields, soft-delete pattern |
 | PLATFORM-04 | Auth & RBAC | NextAuth, RBAC helpers, data access, overrides; +role **DONOR** read-only (#187) + sentralisasi daftar role ke `src/lib/roles.ts` |
 | PLATFORM-05 | Menu Management | Dynamic sidebar, CRUD, recursive parent-child; perombakan UI Menu Management & Role & Permission (#187B): render rekursif 3 level (`menu-tree.ts`), collapsible, sticky header/kolom, selektor role, kaskade induk→anak, SUPERADMIN dikecualikan dari matriks |
@@ -45,23 +45,26 @@
 | BULK-01 | Bulk Upload Menu | Route setup, redirect ke /farmers (#68) |
 | BULK-03 | Bulk Upload Farmer | Excel mapping, validation, preview, download errors (#76) |
 | BULK-04 | Bulk Upload Production | Excel mapping + period/harvest validation |
-| BULK-06 | Bulk Upload Detail Lahan | Tab kedua di Bulk Upload → Lahan: Excel surat/STDB/UL Parcel Code/KT, satu transaksi (#296) |
+| *(bagian MD-04, bukan fase)* | Bulk Upload Detail Lahan | Tab kedua di Bulk Upload → Lahan: Excel surat/STDB/UL Parcel Code/KT, satu transaksi (#296) |
 | HELP-01 | Bantuan | Panduan in-app: **indeks → bab → topik** (satu topik = satu halaman, `/admin/help/[chapter]/[topic]`), sidebar tree + **pencarian** client-side, tombol topik sebelumnya/berikutnya. **Konten Markdown** di `src/content/help/**.md` (editable tanpa menyentuh kode; frontmatter title/icon/intro), parser subset tanpa dependency + dukungan **gambar, video, sematan YouTube/Vimeo, dan aset S3 privat (`s3://key` → presigned per-request, #185)**; menu top-level, 5 role VIEW. 6 bab / 12 topik: istilah domain, akun, hak akses, cara memakai Bantuan (#207), Master Data, Bulk Upload, Dashboard, Peta, Data Analyst, Report, Tools, FAQ (#182 #183 #184) |
 | HELP-02 | Bantuan: Tutorial per Tugas | Tiga lapis (tutorial/konsep/referensi); 28 tutorial + 4 referensi dengan **dua tingkat kedalaman dari satu sumber** (baris `+`); toggle Ringkas/Detail & lipat daftar isi tanpa JS; personalisasi per izin; bantuan kontekstual `HelpHint` di 29 halaman — termasuk 2 halaman peta full-screen, di header panel filter via prop `helpSlot` (#207); +`u-4` unggah pohon (#238) |
 | DA-01 | Ringkasan Petani | 2 tab + kartu agregat + Excel (#103) |
 | DA-02 | Ketersediaan Data — Per Lembaga | Health score + 5 domain anomali + cakupan per paket (#118, #122); skor Petani/Lahan graded per field sejak #193; #352: registri check (tempat lahir, KT, blok, tipe grup, tahun berdiri; tier 1/3 tahun tanam/status/blok), cakupan modul informatif, anomali sistemik dilipat, daftar kerja bertautan + Perbaiki lewat, `?lembaga=` & analisa otomatis |
-| #317 | Tumpang Tindih Lahan | 🟠 Fase 2 tab Tumpang Tindih (2026-09-24): menu `data-analyst-parcel-overlap`, live PostGIS self-join, split view tabel + peta, Duplikat/Tercakup/Sebagian, ekspor Excel + SHP/GeoJSON irisan; Luar Boundary/Selisih Luas/guard upload/layer peta belum |
-| #378 | Sprint Mingguan | ✅ (2026-09-28): menu `data-analyst-sprint`, parser `sprint-plan.ts` atas `docs/project/sprint.md` (build-time), tab Sprint (pemilih minggu, progres poin S/M/L, Butuh keputusan) + tab Analisa (velocity, komposisi, keputusan tertunda, carry-over); SUPERADMIN/ADMIN/MANAGEMENT |
+| *issue #317 (bukan fase)* | Tumpang Tindih Lahan | 🟠 Fase 2 tab Tumpang Tindih (2026-09-24): menu `data-analyst-parcel-overlap`, live PostGIS self-join, split view tabel + peta, Duplikat/Tercakup/Sebagian, ekspor Excel + SHP/GeoJSON irisan; Luar Boundary/Selisih Luas/guard upload/layer peta belum |
+| *issue #378 (bukan fase)* | Sprint Mingguan | ✅ (2026-09-28): menu `data-analyst-sprint`, parser `sprint-plan.ts` atas `docs/project/sprint.md` (build-time), tab Sprint (pemilih minggu, progres poin S/M/L, Butuh keputusan) + tab Analisa (velocity, komposisi, keputusan tertunda, carry-over); SUPERADMIN/ADMIN/MANAGEMENT |
 | DA-03 | Ketersediaan Data — Semua Lembaga | Roll-up skor DA-02 lintas Lembaga (6 KPI, matriks inti / modul, bar chart, panel anomali per entitas vs sistemik, Excel); deep link ke DA-02; live query; tanpa DONOR (#193, #352) |
+| DA-06 | Komparasi Data Acuan | Angka acuan manual per Lembaga (`ReferenceBenchmark`) vs data MIS (#243) |
+| DA-07 | Peta Data & Skema | Lineage menu → entitas + skema dari artefak `*.generated.ts` |
+| OPS-01 | Testing | Unit/perf/integration Vitest; integration test route hotspot #231 — gap terakhir tertutup 2026-08-10 |
  
-**Total Tests**: **49 files / 787 tests passing** ✅ (angka kanonis di [`roadmap.md`](../project/roadmap.md))
+**Total Tests**: lihat angka kanonis di [`roadmap.md`](../project/roadmap.md) § OPS-01 dan baris terakhir [`metrics.md`](../project/metrics.md)
 
 ## In Progress (🟠 3 Phases)
 
 | Phase | Module | Status | Missing |
 |-------|--------|--------|---------|
 | TOOLS-01 | Tools | Partial | GIS utilities, app-integrated S3 manager (CLI sudah ada) |
-| OPS-01 | Testing | Done | RPT-03 (#132), RPT-04 (#154, +14 unit) & DASH-05 (#148, +2 unit) ✅ tercakup; integration test route hotspot ✅ #231 (`map-hotspot-route.test.ts`, 9 test, 2026-08-10) — gap terakhir tertutup |
+| MD-08 | HCV | Partial | Status NKT per lahan (#328) + patok batas (#329/#331) sudah ada; asesmen HCV penuh belum |
 | OPS-02 | DevOps | Partial | Verifikasi deployment/rollback; status Dockerfile vs CI |
 
 ## Planned - Now (🔲 Priority)
@@ -72,12 +75,12 @@
 
 ## Planned - Next
 
-- BULK-02 (Region Bulk Upload #70), #69 (Bulk Upload KT)
+- BULK-02 (Region & Lembaga/KT Bulk Upload) — issue #69/#70 ditutup *not planned* 2026-06-28; menunggu keputusan owner: buka ulang atau keluarkan dari baseline
 - Analisa Data Produksi — ketersediaan data per periode Distrik → KT (#143, belum ada phase di roadmap)
 
 ## Planned - Later (🔲)
 
-- MD-07/08/09/10/11 (Staff, HCV, BUSDEV, IMPACT, Workplan), CMS-01, COMM-01/02
+- MD-07/09/10/11 (Staff, BUSDEV, IMPACT, Workplan), CMS-01, COMM-01/02
 
 ## Blocked (🔴)
 
@@ -92,7 +95,7 @@
 
 ## Test Coverage Summary
 
-**Test Status**: ✅ **47 files / 722 tests passing** (angka kanonis di [`roadmap.md`](../project/roadmap.md))
+**Test Status**: ✅ angka kanonis di [`roadmap.md`](../project/roadmap.md) § OPS-01 (tabel per-file di bawah adalah cerminan tanggal penulisannya)
 
 ### Covered Modules
 

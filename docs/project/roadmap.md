@@ -73,7 +73,7 @@ Format phase: `STREAM-NN`.
 | DASH     | Dashboard              | Basic dashboard, server actions, interactive map, BMP, Pelatihan                           |
 | MAP      | Geospatial Map Explorer | Peta interaktif sebaran KT & lahan, filter spasial (Province/District/KT), layer toggle    |
 | RPT      | Report                 | Report Petani, Pelatihan, Produksi, Kelompok Tani (Summary+Detail), Lahan; summary tabel + export Excel/PDF |
-| BULK     | Bulk Upload            | Bulk upload Farmer (Excel), Produksi (Excel), Lahan (Shapefile ZIP) + Detail Lahan (Excel: surat/STDB/UL Parcel Code, #296) ✅; Region & Lembaga Petani/KT masih planned (#69, #70) |
+| BULK     | Bulk Upload            | Bulk upload Farmer (Excel), Produksi (Excel), Lahan (Shapefile ZIP) + Detail Lahan (Excel: surat/STDB/UL Parcel Code, #296) ✅; Region & Lembaga Petani/KT belum ada (#69/#70 ditutup *not planned* 2026-06-28 — status BULK-02 menunggu keputusan owner) |
 | TOOLS    | Tools & Utility        | Import, export, GIS, S3/PDF utility                                                        |
 | DA       | Data Analyst           | Ringkasan Petani, Analisa Ketersediaan Data (anomali/kelengkapan), analytics dashboards, Komparasi Data Acuan |
 | CMS      | Content Management     | Pages, media, knowledge base                                                               |
@@ -554,7 +554,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>BULK-01</strong> · ✅ Done — Bulk Upload: Menu & Route</summary>
 
 - **Evidence:** Menu & route setup ✅; redirect `/admin/bulk-upload` → `/farmers` implemented ✅. (Cakupan fase dipersempit ke **#68 — menu & route**; judul lama "Menu & KT" menyesatkan karena Bulk Upload KT belum ada.)
-- **Next step:** Maintain; #68 complete. **#69 Bulk Upload KT (CSV) masih 🔲 Todo** — dikerjakan bersama BULK-02 #70 (lihat [sprint.md](./sprint.md)).
+- **Next step:** Maintain; #68 complete. #69 Bulk Upload KT (CSV) **ditutup *not planned*** di GitHub 2026-06-28.
 
 </details>
 
@@ -562,7 +562,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>BULK-02</strong> · 🔲 Not Started — Bulk Upload: Region</summary>
 
 - **Evidence:** Tidak ada bulk upload region; **#70 dibuat**.
-- **Next step:** #70 CSV upload District/Subdistrict/Village dengan validasi hierarchy.
+- **Next step:** ⚖️ #70 dan #69 ditutup *not planned* di GitHub 2026-06-28 — owner memutuskan: buka ulang, atau keluarkan BULK-02 dari baseline (mengubah bobot → wajib Decision Log).
 
 </details>
 
@@ -694,8 +694,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>OPS-02</strong> · 🟠 Partial — DevOps & Deployment</summary>
 
 - **Evidence:** Dockerfile, deploy workflows, security scan workflows (`gitleaks.yml`, `semgrep.yml`).
-- **CI status ✅ diverifikasi 2026-07-21:** **4 workflow aktif** — `gitleaks` (push & PR), `semgrep` (SAST di PR), `deploy-dev.yaml`, `deploy-main.yml`; **merge PR ke `main` = deploy produksi otomatis** (SSH + `pm2 reload`). Lint/build/test tetap gate lokal (keputusan owner); `deploy-main.yml` menjalankan `prisma generate`, **bukan** `migrate deploy` — migrasi DB manual sebelum merge.
-- **Next step:** Verify env matrix & rollback (**#232**) — selesai → kandidat ✅ Done.
+- **CI status ✅ diverifikasi 2026-07-21:** **5 workflow aktif** (per 2026-09-29) — `gitleaks` (push & PR), `semgrep` (SAST di PR), `deploy-dev.yaml`, `deploy-staging.yml` (push ke `staging`, secret `MIS_STAGING_ENV`, #265), `deploy-main.yml`; **merge PR ke `main` = deploy produksi otomatis** (SSH + `pm2 reload`). Lint/build/test tetap gate lokal (keputusan owner); `deploy-main.yml` menjalankan `prisma generate`, **bukan** `migrate deploy` — migrasi DB manual sebelum merge.
+- **Next step:** #232 ditulis ulang jadi "prosedur rollback" (env matrix sudah di `standards/environments.md`), didokumentasikan + diuji di staging (Sprint 2) — selesai → kandidat ✅ Done.
 
 </details>
 
@@ -703,6 +703,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 
 <details>
 <summary><strong>Code Audit Evidence</strong> — bukti codebase per area (models, routes, actions, tests, DevOps)</summary>
+
+> **Snapshot 2026-08-08/11** — angka per baris adalah cerminan tanggal verifikasinya. Angka terkini (2026-09-29): 40 model / 39 migrasi / 25 file schema, 39 file server action, 111 file test, 5 workflow CI — lihat juga [product/architecture.md § 5](../product/architecture.md).
 
 | Area           | Bukti di Codebase                                                                                                                                                                  | Kesimpulan                                                                             |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -713,11 +715,13 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 | Public routes  | Home, Community placeholder, Knowledge Management placeholder                                                                                                                      | Public shell ada; CMS/community belum implementatif                                    |
 | Scripts        | `scripts/get-link.js`, `scripts/pdf-manager.js` (tracked, npm commands aktif ✅); debug/stale scripts dipindah ke `scripts/local/` (gitignored, local-only) | BUG-002 resolved — stale scripts tidak ada di repo/CI. |
 | Tests          | `npm test` lulus **53 test files / 839 tests** ✅ (verifikasi 2026-08-11); domain: auth & middleware, RBAC (rbac, rbac-permission, rbac-server-guards, access-context), menu (action/filter/tree), user (action/data-access/menu-access), region, farmer (+detail, +sub-groups), farmer-group (+detail), land-parcel, training (activity/participant), production, bulk-upload (+parcel-mapping), report (petani/pelatihan/produksi/kelompok-tani ×2/lahan ×3), dashboard (main/bmp/training/asymmetry/data-availability), data-analyst, data-completeness, benchmark-comparison (#243), map (map, map-geo, firms, map-hotspot klien + route #231), help (content/media), pdf-exporters, perf | Testing solid untuk semua core features; gap route hotspot tertutup (#231) — rincian per-issue di OPS-01 |
-| DevOps         | Dockerfile + `.github/workflows/` (`deploy-dev.yaml`, `deploy-main.yml`, `semgrep.yml`, `gitleaks.yml`)                                                                            | DevOps partial; workflow CI/CD dan security scan (Gitleaks, Semgrep) ditambahkan |
+| DevOps         | Dockerfile + `.github/workflows/` (`deploy-dev.yaml`, `deploy-staging.yml`, `deploy-main.yml`, `semgrep.yml`, `gitleaks.yml`)                                                                            | DevOps partial; workflow CI/CD dan security scan (Gitleaks, Semgrep) ditambahkan |
 
 </details>
 
 ### Code Compliance Audit vs rule.md (2026-07-10)
+
+> Arsip audit. `docs/rule.md` sudah dipecah ke `docs/standards/` (kini [code-standards.md](../standards/code-standards.md) dkk.).
 
 **Audit Scope:** Keseluruhan codebase (src/, prisma/, scripts/, config) terhadap `docs/rule.md` — detail lengkap + bukti `file:line` di **`audit-report/audit-2026-07-10.md`** (internal, gitignored). Menggantikan audit 2026-06-08 yang sudah stale.
 

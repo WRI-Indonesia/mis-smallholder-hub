@@ -14,7 +14,7 @@ Aplikasi memiliki **5 role** (enum `Role` di `prisma/schema/_config.prisma`):
 | **MANAGEMENT** | Read-only: dashboard, laporan, dan analisa. |
 | **DONOR** | Read-only untuk donor/funder: dashboard, laporan, peta, dan bantuan — **tanpa master data** dan tanpa EXPORT (boleh PRINT). Ditegakkan 2026-08-13 setelah ditemukan produksi memberi akses daftar petani kepada peran ini (#263). |
 
-**Sentralisasi:** daftar role di sisi aplikasi hanya hidup di `src/lib/roles.ts` (`ROLES`, `ROLE_BADGE_CLASS`, `ROLE_DESCRIPTION`) — dipakai validasi (`user.schema.ts`), form & daftar pengguna, dan matriks Role & Permission. Menambah role baru cukup: edit `src/lib/roles.ts` + tambah nilai di enum `Role` Prisma (migrasi) + seed permission-nya. Jangan hardcode daftar role di tempat lain.
+**Sentralisasi:** daftar role di sisi aplikasi hanya hidup di `src/lib/roles.ts` (`ROLES`, `ROLE_BADGE_CLASS`) — dipakai validasi (`user.schema.ts`), form & daftar pengguna, dan matriks Role & Permission. Menambah role baru cukup: edit `src/lib/roles.ts` + tambah nilai di enum `Role` Prisma (migrasi) + seed permission-nya. Jangan hardcode daftar role di tempat lain.
 
 ### Inventaris Permission
 
@@ -117,7 +117,7 @@ Untuk assign data access per user (Province/District/Lembaga Petani):
 ### User Menu Access Override UI
 
 Untuk melakukan override permission menu per user (grant/revoke):
-- **Server Actions** — di `src/server/actions/user-menu-access.ts`: `getUserMenuOverrides`, `getMenuItemsForSelect`, `getUserEffectivePermissions`, `setUserMenuOverride`, `removeUserMenuOverride`
+- **Server Actions** — di `src/server/actions/user-menu-access.ts`: `getMenuItemsForSelect`, `getUserEffectivePermissions`, `setUserMenuOverride`, `removeUserMenuOverride`
 - **Modal** — `UserMenuAccessModal` dengan matrix C | V | E | D | X (Export) | P (Print) per menu (`PERMISSION_COLUMNS`), visual code status (`role` | `granted` | `revoked`), dan interactive toggle saving.
 - **Keamanan** — Pengecekan di server action wajib menolak override terhadap user berkole `SUPERADMIN`.
 - **Soft Delete** — Penghapusan override menggunakan update `isActive: false` (bukan physical delete).

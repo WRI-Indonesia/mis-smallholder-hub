@@ -72,6 +72,6 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 | Validasi | Parser melempar saat format tabel rusak, RVS turun, roadmap turun tanpa catatan, tanggal mundur, baris berjalan bukan terakhir (`src/test/release-metrics.test.ts`); tabel Phase Status: jumlah kolom salah, status/horizon/bobot di luar Definisi, kode fase ganda (`src/test/roadmap.test.ts`) — build/test gagal, bukan salah render |
 | Guard konsistensi | `roadmap.test.ts` menghitung ulang Roadmap % dari `roadmap.md` dan membandingkannya dengan baris rilis terakhir `metrics.md`, toleransi **0,1 pp** → menambah/mengubah fase mewajibkan baris metrics.md ikut diperbarui pada rilis yang sama |
 | Definisi metrik | `docs/standards/versioning.md` §Metrik Nilai Rilis (#226) |
-| Seed menu | `scripts/local/seed-dashboard-metrics-menu.ts` (dry-run default, `--apply` untuk menulis) + baris `menu.csv` untuk DB baru |
+| Seed menu | `scripts/local/other/seed-dashboard-metrics-menu.ts` (folder gitignored) (dry-run default, `--apply` untuk menulis) + baris `menu.csv` untuk DB baru |
 | Aturan estimasi | Baris pra-`MEASURED_FROM_VERSION` (v0.21.0) = estimasi ± → putus-putus/berongga/prefiks ≈; `—` = null, tidak digambar sebagai 0; payload tidak ditarik ke belakang |
 | Bantuan | Tutorial `p-8-metrik-rilis.md` (bab Memantau & Menindaklanjuti) |

@@ -96,3 +96,9 @@ Peran: OPERATOR, lalu DONOR · Langkah: filter Distrik/Lembaga/Tahun, klik nama 
 
 ### SM-31 · Master Data › Monev BMP · Detail · Penilaian Lembaga [P0] (3 mnt)
 Peran: OPERATOR, lalu DONOR · Langkah: daftar (KPI, filter Kategori), Lihat 1 baris → detail (radar + 5 tabel), tombol Penilaian Lembaga · Harapan: hanya Lembaga dalam scope; DONOR tanpa Tambah/Import/Ubah.
+
+### SM-32 · Data Analyst › Tumpang Tindih Lahan [P1] (2 mnt)
+Peran: OPERATOR · Langkah: filter %/jenis/Distrik/Lembaga, klik 1 baris → peta menyorot irisan, Unduh Excel · Harapan: hanya pasangan lahan dalam scope; tabel dan peta sepadan.
+
+### SM-33 · Data Analyst › Sprint Mingguan [P2] (1 mnt)
+Peran: MANAGEMENT · Langkah: pilih minggu lain, buka tab Analisa · Harapan: tabel sprint = `docs/project/sprint.md`; OPERATOR/DONOR **tidak** melihat menu ini.

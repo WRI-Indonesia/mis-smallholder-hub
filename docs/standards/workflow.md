@@ -6,8 +6,8 @@
 
 ### Branching
 
-- Satu branch yang ditentukan project owner
-- Tidak boleh buat feature/experiment/PR branch terpisah
+- Kerja harian hanya di `mvp`; tidak boleh membuat branch feature/experiment
+- Branch rilis tetap: `mvp` → `staging` (merge, deploy staging otomatis) → `main` (PR, deploy produksi) — lihat [versioning.md](./versioning.md) §Alur Rilis
 
 ### Issue Workflow
 
@@ -90,7 +90,7 @@ Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `s
 
 Checklist detail: [`../project/contributing.md`](../project/contributing.md) §5-Minute Update Checklist.
 
-### GitHub Actions yang berjalan (4 workflow)
+### GitHub Actions yang berjalan (5 workflow)
 
 Repo **punya CI** — hanya saja bukan untuk lint/build/test. Jangan mengira gate lokal adalah satu-satunya jaring pengaman, dan jangan pula mengira tidak ada otomatisasi sama sekali.
 
