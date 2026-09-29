@@ -244,7 +244,7 @@ export function ParcelDetailUploadClient({ permissions }: Props) {
           holderName: "Contoh Pemegang Satu",
           statedArea: 0.25,
           stdbNumber: "0000/00/1401/0/2025",
-          externalCode: "ID0000contoh",
+          externalCode: "ID0000abcde",
           subGroupLv2: "Kelompok Tani Contoh",
           borderNorth: "Lahan tetangga",
           borderEast: "Jalan desa",

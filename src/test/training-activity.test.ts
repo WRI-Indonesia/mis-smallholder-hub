@@ -227,7 +227,7 @@ describe("Training Participant File Import Validation Matcher", () => {
   const mockGroupFarmers: FarmerMock[] = [
     {
       id: "farmer-1",
-      name: "Abdul Rahman",
+      name: "Contoh Peserta Satu",
       farmerId: "APSS.01",
       trainingParticipants: [],
     },

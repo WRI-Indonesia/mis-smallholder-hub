@@ -45,7 +45,7 @@ beforeEach(() => {
   db.farmerGroup.findFirst.mockResolvedValue({ id: "kt-1", name: "KP Hasrat Jaya Pagaruyung", code: "ISH-1401-03", abrv: "HJP", district: { name: "Kampar" } });
   db.landParcel.findMany.mockResolvedValue([
     {
-      id: "lp-1", parcelId: "HJP.0001.A", area: 1.95, subGroupLv2: null, blok: "17 L", geometry: { type: "Polygon", coordinates: [] },
+      id: "lp-1", parcelId: "CTH.0001.A", area: 1.95, subGroupLv2: null, blok: "17 L", geometry: { type: "Polygon", coordinates: [] },
       farmer: { name: "Contoh Petani Satu", farmerId: "CTH.14.01.10.2011.0001" },
       identity: { nkt: { status: "AFFECTED", categories: ["NKT_4"], affectedAreaHa: 0.09, affectedLengthM: 176, assessedAt: new Date("2025-03-12T00:00:00Z"), assessor: null, source: "Lampiran III", notes: null } },
     },

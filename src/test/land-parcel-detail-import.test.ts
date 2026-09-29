@@ -83,7 +83,7 @@ describe("normalizeDocumentType — 19 ejaan jenis surat → enum", () => {
 describe("parseStdbNumber — nomor mentah + tahun terbit bila berpola", () => {
   it("format dominan …/bulan/tahun", () => {
     expect(parseStdbNumber("9999/99/1401/6/2025")).toEqual({ number: "9999/99/1401/6/2025", issuedYear: 2025, stage: "TERBIT" });
-    expect(parseStdbNumber("176/53/1406/6/2025")).toEqual({ number: "176/53/1406/6/2025", issuedYear: 2025, stage: "TERBIT" });
+    expect(parseStdbNumber("8888/88/1406/6/2025")).toEqual({ number: "8888/88/1406/6/2025", issuedYear: 2025, stage: "TERBIT" });
   });
   it("nomor tanpa pola disimpan apa adanya, tahun null", () => {
     expect(parseStdbNumber("3475")).toEqual({ number: "3475", issuedYear: null, stage: "TERBIT" });
@@ -160,9 +160,9 @@ describe("autoMatchParcelDetailColumns — header berkas sumber", () => {
 
 describe("validateParcelDetailRows", () => {
   const parcels: ParcelRef[] = [
-    { parcelUid: "uid-1a", parcelId: "APSS.0001.A", farmerCode: "APSS.0001", farmerName: "Abdul Rahman", farmerDbId: "f1" },
-    { parcelUid: "uid-1b", parcelId: "APSS.0001.B", farmerCode: "APSS.0001", farmerName: "Abdul Rahman", farmerDbId: "f1" },
-    { parcelUid: "uid-2a", parcelId: "APSS.0002.A", farmerCode: "APSS.0002", farmerName: "Awang Syah", farmerDbId: "f2" },
+    { parcelUid: "uid-1a", parcelId: "APSS.0001.A", farmerCode: "APSS.0001", farmerName: "Contoh Petani Tiga", farmerDbId: "f1" },
+    { parcelUid: "uid-1b", parcelId: "APSS.0001.B", farmerCode: "APSS.0001", farmerName: "Contoh Petani Tiga", farmerDbId: "f1" },
+    { parcelUid: "uid-2a", parcelId: "APSS.0002.A", farmerCode: "APSS.0002", farmerName: "Contoh Petani Lima", farmerDbId: "f2" },
   ];
   const mapping = {
     parcelId: "ID Lahan", farmerId: "ID Petani", documentType: "Jenis", documentNumber: "No",
@@ -176,7 +176,7 @@ describe("validateParcelDetailRows", () => {
       mapping, parcels,
     );
     expect(r._isValid).toBe(true);
-    expect(r._farmerName).toBe("Abdul Rahman");
+    expect(r._farmerName).toBe("Contoh Petani Tiga");
     expect(r.data).toEqual({
       parcelUid: "uid-1a", farmerDbId: "f1", parcelId: "APSS.0001.A",
       document: { type: "SHM", typeRaw: "SHM (Sertifikat Hak Milik)", number: "727", holderName: "Contoh Pemegang Satu", statedArea: 0.25, custodyNote: null },
@@ -292,9 +292,9 @@ describe("validateParcelDetailRows", () => {
   });
 
   it("nomor/nama/luas terisi tanpa jenis surat → valid sebagai OTHER (jenis tak diketahui, data tidak dibuang)", () => {
-    const [r] = validateParcelDetailRows([row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", No: "694", Nama: "Syarifudin" })], mapping, parcels);
+    const [r] = validateParcelDetailRows([row({ "ID Lahan": "APSS.0001.A", "ID Petani": "APSS.0001", No: "694", Nama: "Contoh Pemegang Tiga" })], mapping, parcels);
     expect(r._isValid).toBe(true);
-    expect(r.data?.document).toEqual({ type: "OTHER", typeRaw: null, number: "694", holderName: "Syarifudin", statedArea: null, custodyNote: null });
+    expect(r.data?.document).toEqual({ type: "OTHER", typeRaw: null, number: "694", holderName: "Contoh Pemegang Tiga", statedArea: null, custodyNote: null });
   });
 
   it("baris tanpa detail apa pun → error 'tidak ada data'", () => {

@@ -236,7 +236,7 @@ describe("Bulk Upload — Row Validations & Normalization", () => {
   it("normalizes female gender", () => {
     const row = {
       ID: "FMR-998",
-      Nama: "Siti Aminah",
+      Nama: "Contoh Petani Empat",
       "L/P": "perempuan",
     };
     const res = validateRow(row, mapping, new Set(), []);
