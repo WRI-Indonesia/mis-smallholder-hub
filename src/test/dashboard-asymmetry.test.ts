@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   buildBmpSnapshotData,
   sumBmpGroups,
@@ -16,6 +16,75 @@ import {
 } from "@/lib/data-availability-aggregation";
 import type { CompletenessFarmerInput, CompletenessGroupInput } from "@/types/data-completeness";
 import type { TrainingGroupEntry } from "@/types/dashboard";
+
+// Invarian hulu (bagian akhir berkas) diuji lewat action ASLI — `auth`/`rbac`/
+// `prisma` di-mock (pola `land-marker-guard.test.ts`); prisma mock menyimpan
+// baris di memori supaya filter `where` action benar-benar dievaluasi.
+const hasPermission = vi.hoisted(() => vi.fn(async () => true));
+vi.mock("@/lib/rbac", () => ({ hasPermission, isSuperAdmin: async () => false }));
+vi.mock("@/lib/access-context", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/access-scope")>("@/lib/access-scope")),
+  getAccessContext: async () => ({ mode: "ALL" }),
+}));
+vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "user-1" } }) }));
+vi.mock("@/lib/s3", () => ({ getPresignedUrl: async () => "https://signed" }));
+vi.mock("@/lib/shapefile-server", () => ({ parseShapefileZip: vi.fn() }));
+
+type MemFarmer = { id: string; farmerGroupId: string; isActive: boolean };
+type MemParcel = { id: string; farmerId: string; parcelId: string; revision: number; geometry: unknown; isActive: boolean };
+type MemProduction = { id: string; parcelId: string | null };
+
+const mem = vi.hoisted(() => ({
+  farmers: [] as MemFarmer[],
+  parcels: [] as MemParcel[],
+  production: [] as MemProduction[],
+}));
+
+const db = vi.hoisted(() => {
+  const m = {
+    trainingActivity: { findFirst: vi.fn(async () => ({ farmerGroupId: "g1" })) },
+    farmer: {
+      // Evaluasi `where` addParticipants: id ∈ daftar, isActive, farmerGroupId.
+      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] }; isActive: boolean; farmerGroupId: string } }) =>
+        mem.farmers.filter((f) => where.id.in.includes(f.id) && f.isActive === where.isActive && f.farmerGroupId === where.farmerGroupId)
+      ),
+    },
+    trainingParticipant: { findMany: vi.fn(async () => []), create: vi.fn(async () => ({})), update: vi.fn(async () => ({})) },
+    landParcel: {
+      findMany: vi.fn(async ({ where }: { where: { OR: { farmerId: string; parcelId: string }[] } }) =>
+        mem.parcels.filter((p) => p.isActive && where.OR.some((k) => k.farmerId === p.farmerId && k.parcelId === p.parcelId))
+      ),
+      update: vi.fn(async ({ where, data }: { where: { id: string }; data: { isActive: boolean } }) => {
+        const p = mem.parcels.find((x) => x.id === where.id)!;
+        p.isActive = data.isActive;
+        return p;
+      }),
+      create: vi.fn(async ({ data }: { data: Omit<MemParcel, "id" | "isActive"> }) => {
+        const row = { ...data, id: `${data.parcelId}-rev${data.revision}`, isActive: true };
+        mem.parcels.push(row);
+        return { id: row.id };
+      }),
+    },
+    landParcelIdentity: { upsert: vi.fn(async () => ({ id: "uid-1" })) },
+    landParcelBorder: { upsert: vi.fn() },
+    productionRecord: {
+      updateMany: vi.fn(async ({ where, data }: { where: { parcelId: string }; data: { parcelId: string } }) => {
+        for (const r of mem.production) if (r.parcelId === where.parcelId) r.parcelId = data.parcelId;
+        return { count: 0 };
+      }),
+    },
+    tree: { updateMany: vi.fn(async () => ({ count: 0 })) },
+    $transaction: vi.fn(),
+  };
+  m.$transaction.mockImplementation(async (arg: unknown) =>
+    typeof arg === "function" ? (arg as (tx: typeof m) => unknown)(m) : Promise.all(arg as unknown[])
+  );
+  return m;
+});
+vi.mock("@/lib/prisma", () => ({ prisma: db }));
+
+const { addParticipants } = await import("@/server/actions/training");
+const { bulkCreateLandParcels } = await import("@/server/actions/bulk-upload-parcel");
 
 /**
  * Invarian **pembilang ≤ penyebut** untuk metrik cakupan di ketiga dashboard.
@@ -351,122 +420,100 @@ describe("Invarian skor — Dashboard Ketersediaan Data", () => {
 // ── Invarian di sisi penulisan data (hulu) ─────────────────────────────────
 
 /**
- * Kedua invarian di bawah ditegakkan di server action, bukan di lib agregasi.
- * Action tidak diimpor di vitest (menarik rantai next-auth), jadi mengikuti gaya
- * `rbac-server-guards.test.ts`: logika keputusannya di-mirror lalu diverifikasi.
+ * Kedua invarian di bawah ditegakkan di server action, bukan di lib agregasi —
+ * diuji lewat action asli (`addParticipants`, `bulkCreateLandParcels`).
  */
 describe("Invarian hulu — peserta wajib anggota Lembaga penyelenggara (TD-023)", () => {
-  // Mirror dari `addParticipants` (training.ts): peserta divalidasi ke
-  // `farmerGroupId: activity.farmerGroupId`, dan seluruh batch ditolak bila ada
-  // satu pun yang tidak cocok.
-  const validateParticipants = (
-    activityGroupId: string,
-    farmers: { id: string; farmerGroupId: string; isActive: boolean }[],
-    requested: string[],
-  ): { ok: true } | { ok: false; error: string } => {
-    const valid = farmers.filter(
-      (f) => requested.includes(f.id) && f.isActive && f.farmerGroupId === activityGroupId,
-    );
-    return valid.length === requested.length
-      ? { ok: true }
-      : { ok: false, error: "Terdapat petani yang tidak valid untuk lembaga petani pelatihan ini" };
-  };
+  // addParticipants memvalidasi peserta ke `farmerGroupId: activity.farmerGroupId`
+  // (activity mock = Lembaga g1) dan menolak seluruh batch bila ada yang tak cocok.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mem.farmers = [
+      { id: "f1", farmerGroupId: "g1", isActive: true },
+      { id: "f2", farmerGroupId: "g1", isActive: true },
+      { id: "f-lain", farmerGroupId: "g2", isActive: true },
+      { id: "f-nonaktif", farmerGroupId: "g1", isActive: false },
+    ];
+  });
+  const add = (ids: string[]) => addParticipants("act-1", ids.map((farmerId) => ({ farmerId })));
 
-  const FARMERS = [
-    { id: "f1", farmerGroupId: "g1", isActive: true },
-    { id: "f2", farmerGroupId: "g1", isActive: true },
-    { id: "f-lain", farmerGroupId: "g2", isActive: true },
-    { id: "f-nonaktif", farmerGroupId: "g1", isActive: false },
-  ];
-
-  it("menerima peserta yang memang anggota aktif Lembaga penyelenggara", () => {
-    expect(validateParticipants("g1", FARMERS, ["f1", "f2"])).toEqual({ ok: true });
+  it("menerima peserta yang memang anggota aktif Lembaga penyelenggara", async () => {
+    expect(await add(["f1", "f2"])).toEqual({ success: true });
+    expect(db.trainingParticipant.create).toHaveBeenCalledTimes(2);
   });
 
-  it("menolak peserta dari Lembaga lain — sumber divergensi Main vs DASH-06", () => {
+  it("menolak peserta dari Lembaga lain — sumber divergensi Main vs DASH-06", async () => {
     // Karena ditolak di hulu, definisi petani-sentris (Main) dan kegiatan-sentris
     // (DASH-06) tidak bisa berbeda: himpunan peserta selalu ⊆ anggota Lembaga.
-    expect(validateParticipants("g1", FARMERS, ["f1", "f-lain"]).ok).toBe(false);
+    expect((await add(["f1", "f-lain"])).success).toBe(false);
   });
 
-  it("menolak petani nonaktif", () => {
-    expect(validateParticipants("g1", FARMERS, ["f-nonaktif"]).ok).toBe(false);
+  it("menolak petani nonaktif", async () => {
+    expect((await add(["f-nonaktif"])).success).toBe(false);
   });
 
-  it("menolak seluruh batch bila ada satu peserta tak valid, bukan diam-diam melewatinya", () => {
-    const r = validateParticipants("g1", FARMERS, ["f1", "f2", "f-lain"]);
-    expect(r.ok).toBe(false);
+  it("menolak seluruh batch bila ada satu peserta tak valid, bukan diam-diam melewatinya", async () => {
+    const r = await add(["f1", "f2", "f-lain"]);
+    expect(r.success).toBe(false);
     expect(r).toHaveProperty("error");
+    expect(db.trainingParticipant.create).not.toHaveBeenCalled();
+    expect(db.$transaction).not.toHaveBeenCalled();
   });
 });
 
 describe("Invarian hulu — revisi lahan memindahkan produksi (TD-022)", () => {
-  /**
-   * Mirror dari `bulk-upload-parcel.ts`: saat lahan duplikat dengan geometry
-   * berbeda diunggah, baris lama dinonaktifkan, baris baru dibuat, dan seluruh
-   * `ProductionRecord.parcelId` lama dipindahkan ke id baru.
-   */
-  const applyRevision = (
-    parcels: { id: string; isActive: boolean }[],
-    production: { id: string; parcelId: string | null }[],
-    oldId: string,
-    newId: string,
-  ) => {
-    const nextParcels = parcels.map((p) => (p.id === oldId ? { ...p, isActive: false } : p));
-    nextParcels.push({ id: newId, isActive: true });
-    const nextProduction = production.map((r) =>
-      r.parcelId === oldId ? { ...r, parcelId: newId } : r,
-    );
-    return { parcels: nextParcels, production: nextProduction };
+  // bulkCreateLandParcels: lahan duplikat dengan geometry berbeda → baris lama
+  // dinonaktifkan, baris baru dibuat, `ProductionRecord.parcelId` lama dipindah.
+  const square = (d: number) => ({ type: "Polygon", coordinates: [[[0, 0], [d, 0], [d, d], [0, 0]]] });
+  const parcel = (id: string, parcelId: string): MemParcel => ({
+    id, farmerId: "f1", parcelId, revision: 1, geometry: square(1), isActive: true,
+  });
+  const upload = (parcelId: string) =>
+    bulkCreateLandParcels([{ farmerId: "f1", parcelId, geometry: square(2) }]);
+  const orphans = () => {
+    const activeIds = new Set(mem.parcels.filter((p) => p.isActive).map((p) => p.id));
+    return mem.production.filter((r) => r.parcelId != null && !activeIds.has(r.parcelId));
   };
 
-  it("produksi ikut pindah ke lahan revisi — tidak ada record yang menunjuk lahan nonaktif", () => {
-    const after = applyRevision(
-      [{ id: "p1", isActive: true }],
-      [
-        { id: "r1", parcelId: "p1" },
-        { id: "r2", parcelId: "p1" },
-      ],
-      "p1",
-      "p1-rev2",
-    );
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-    expect(after.production.every((r) => r.parcelId === "p1-rev2")).toBe(true);
-
+  it("produksi ikut pindah ke lahan revisi — tidak ada record yang menunjuk lahan nonaktif", async () => {
+    mem.parcels = [parcel("p1", "HJP.1")];
+    mem.production = [
+      { id: "r1", parcelId: "p1" },
+      { id: "r2", parcelId: "p1" },
+    ];
+    const res = await upload("HJP.1");
+    expect(res.success).toBe(true);
+    expect(mem.parcels.find((p) => p.id === "p1")?.isActive).toBe(false);
+    expect(mem.production.every((r) => r.parcelId === "HJP.1-rev2")).toBe(true);
     // Invarian TD-022: tidak boleh ada produksi yang menunjuk lahan nonaktif,
     // karena tonasenya akan masuk pembilang tanpa luasnya masuk penyebut.
-    const activeIds = new Set(after.parcels.filter((p) => p.isActive).map((p) => p.id));
-    const orphan = after.production.filter((r) => r.parcelId != null && !activeIds.has(r.parcelId));
-    expect(orphan).toHaveLength(0);
+    expect(orphans()).toHaveLength(0);
   });
 
   it("tanpa pemindahan, produksi jadi orphan — inilah cacat yang ditutup", () => {
-    // Perilaku LAMA, disimpan agar alasan perbaikannya tetap terbaca.
-    const parcels = [
-      { id: "p1", isActive: false },
-      { id: "p1-rev2", isActive: true },
+    // Perilaku LAMA (data statis), disimpan agar alasan perbaikannya tetap terbaca.
+    mem.parcels = [
+      { ...parcel("p1", "HJP.1"), isActive: false },
+      { ...parcel("p1-rev2", "HJP.1"), revision: 2 },
     ];
-    const production = [{ id: "r1", parcelId: "p1" }];
-    const activeIds = new Set(parcels.filter((p) => p.isActive).map((p) => p.id));
-    const orphan = production.filter((r) => r.parcelId != null && !activeIds.has(r.parcelId));
-    expect(orphan).toHaveLength(1);
+    mem.production = [{ id: "r1", parcelId: "p1" }];
+    expect(orphans()).toHaveLength(1);
   });
 
-  it("produksi milik lahan lain tidak ikut terpindah", () => {
-    const after = applyRevision(
-      [
-        { id: "p1", isActive: true },
-        { id: "p2", isActive: true },
-      ],
-      [
-        { id: "r1", parcelId: "p1" },
-        { id: "r2", parcelId: "p2" },
-        { id: "r3", parcelId: null },
-      ],
-      "p1",
-      "p1-rev2",
-    );
-    expect(after.production.find((r) => r.id === "r2")?.parcelId).toBe("p2");
-    expect(after.production.find((r) => r.id === "r3")?.parcelId).toBeNull();
+  it("produksi milik lahan lain tidak ikut terpindah", async () => {
+    mem.parcels = [parcel("p1", "HJP.1"), parcel("p2", "HJP.2")];
+    mem.production = [
+      { id: "r1", parcelId: "p1" },
+      { id: "r2", parcelId: "p2" },
+      { id: "r3", parcelId: null },
+    ];
+    await upload("HJP.1");
+    expect(mem.production.find((r) => r.id === "r1")?.parcelId).toBe("HJP.1-rev2");
+    expect(mem.production.find((r) => r.id === "r2")?.parcelId).toBe("p2");
+    expect(mem.production.find((r) => r.id === "r3")?.parcelId).toBeNull();
   });
 });

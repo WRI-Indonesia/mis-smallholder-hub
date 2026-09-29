@@ -1,18 +1,31 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
- * Unit tests untuk logika merge agregat `getFarmerGroups` (#163 — perf list).
- * Mengikuti gaya repo (lihat `access-context.test.ts`): modul asli
- * (`@/server/actions/farmer-group`) tidak diimpor karena menarik rantai
- * next-auth/prisma yang tidak resolve di environment vitest — helper di bawah
- * adalah cermin 1:1 dari blok agregasi di `getFarmerGroups` (farmer.findMany
- * ringan + landParcel.groupBy per farmerId → stats per group).
+ * `getFarmerGroups` (merge agregat #163) dan scope `getDistrictsForSelect`
+ * (#211) — menguji action ASLI dengan `auth`/`rbac`/`prisma` di-mock (pola
+ * `land-marker-guard.test.ts`); `getAccessibleDistrictIds` tetap asli.
  */
+const hasPermission = vi.hoisted(() => vi.fn());
+const isSuperAdmin = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/rbac", () => ({ hasPermission, isSuperAdmin }));
 
-interface FarmerRow {
-  id: string;
-  farmerGroupId: string;
-}
+const getAccessContext = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/access-context", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/access-context")>("@/lib/access-context")),
+  getAccessContext,
+}));
+vi.mock("@/lib/auth", () => ({ auth: async () => ({ user: { id: "user-1" } }) }));
+vi.mock("@/lib/land-marker-query", () => ({ fetchFarmerGroupMarkerPoints: vi.fn(), fetchFarmerMarkerPoints: vi.fn() }));
+
+const db = vi.hoisted(() => ({
+  farmerGroup: { findMany: vi.fn() },
+  farmer: { findMany: vi.fn() },
+  landParcel: { groupBy: vi.fn() },
+  district: { findMany: vi.fn() },
+}));
+vi.mock("@/lib/prisma", () => ({ prisma: db }));
+
+const { getFarmerGroups, getDistrictsForSelect } = await import("@/server/actions/farmer-group");
 
 interface ParcelAgg {
   farmerId: string;
@@ -20,38 +33,31 @@ interface ParcelAgg {
   _sum: { area: number | null };
 }
 
-interface GroupStats {
-  farmersCount: number;
-  parcelsCount: number;
-  totalArea: number;
+/** Jalankan getFarmerGroups asli dengan baris Lembaga/petani/agregat lahan tertentu. */
+async function statsOf(groupIds: string[], farmers: { id: string; farmerGroupId: string }[], parcelAggs: ParcelAgg[]) {
+  db.farmerGroup.findMany.mockResolvedValue(groupIds.map((id) => ({ id, name: id })));
+  db.farmer.findMany.mockResolvedValue(farmers);
+  // groupBy pertama = persil & luas; yang ber-filter `identity` = hitungan NKT (#338).
+  db.landParcel.groupBy.mockImplementation(async (args: { where: { identity?: unknown } }) => (args.where.identity ? [] : parcelAggs));
+  const rows = await getFarmerGroups();
+  return (id: string) => {
+    const r = rows.find((g) => g.id === id)!;
+    return { farmersCount: r.farmersCount, parcelsCount: r.parcelsCount, totalArea: r.totalArea };
+  };
 }
 
-// Cermin dari farmer-group.ts `getFarmerGroups` (blok agregasi #163).
-function mergeGroupStats(farmers: FarmerRow[], parcelAggs: ParcelAgg[]) {
-  const farmerToGroup = new Map(farmers.map((f) => [f.id, f.farmerGroupId]));
-  const stats = new Map<string, GroupStats>();
-  for (const f of farmers) {
-    const s = stats.get(f.farmerGroupId) ?? { farmersCount: 0, parcelsCount: 0, totalArea: 0 };
-    s.farmersCount += 1;
-    stats.set(f.farmerGroupId, s);
-  }
-  for (const p of parcelAggs) {
-    const s = stats.get(farmerToGroup.get(p.farmerId) ?? "");
-    if (!s) continue;
-    s.parcelsCount += p._count._all;
-    s.totalArea += p._sum.area ?? 0;
-  }
-  return stats;
-}
-
-function statsFor(stats: Map<string, GroupStats>, groupId: string): GroupStats {
-  // Cermin dari return getFarmerGroups: default 0 untuk group tanpa entri.
-  return stats.get(groupId) ?? { farmersCount: 0, parcelsCount: 0, totalArea: 0 };
-}
+beforeEach(() => {
+  vi.clearAllMocks();
+  hasPermission.mockResolvedValue(true);
+  isSuperAdmin.mockResolvedValue(false);
+  getAccessContext.mockResolvedValue({ mode: "ALL" });
+  db.district.findMany.mockResolvedValue([]);
+});
 
 describe("getFarmerGroups stats merge (#163)", () => {
-  it("menghitung jumlah petani per group", () => {
-    const stats = mergeGroupStats(
+  it("menghitung jumlah petani per group", async () => {
+    const statsFor = await statsOf(
+      ["g1", "g2"],
       [
         { id: "f1", farmerGroupId: "g1" },
         { id: "f2", farmerGroupId: "g1" },
@@ -59,12 +65,13 @@ describe("getFarmerGroups stats merge (#163)", () => {
       ],
       []
     );
-    expect(statsFor(stats, "g1").farmersCount).toBe(2);
-    expect(statsFor(stats, "g2").farmersCount).toBe(1);
+    expect(statsFor("g1").farmersCount).toBe(2);
+    expect(statsFor("g2").farmersCount).toBe(1);
   });
 
-  it("menjumlahkan persil & luas ke group pemilik via map petani→group", () => {
-    const stats = mergeGroupStats(
+  it("menjumlahkan persil & luas ke group pemilik via map petani→group", async () => {
+    const statsFor = await statsOf(
+      ["g1", "g2"],
       [
         { id: "f1", farmerGroupId: "g1" },
         { id: "f2", farmerGroupId: "g1" },
@@ -76,25 +83,26 @@ describe("getFarmerGroups stats merge (#163)", () => {
         { farmerId: "f3", _count: { _all: 4 }, _sum: { area: null } },
       ]
     );
-    expect(statsFor(stats, "g1")).toEqual({ farmersCount: 2, parcelsCount: 3, totalArea: 4.75 });
+    expect(statsFor("g1")).toEqual({ farmersCount: 2, parcelsCount: 3, totalArea: 4.75 });
     // _sum.area null (semua lahan tanpa luas) tidak menambah totalArea.
-    expect(statsFor(stats, "g2")).toEqual({ farmersCount: 1, parcelsCount: 4, totalArea: 0 });
+    expect(statsFor("g2")).toEqual({ farmersCount: 1, parcelsCount: 4, totalArea: 0 });
   });
 
-  it("mengabaikan agregat persil dari petani di luar map (nonaktif / luar scope)", () => {
-    const stats = mergeGroupStats(
+  it("mengabaikan agregat persil dari petani di luar map (nonaktif / luar scope)", async () => {
+    const statsFor = await statsOf(
+      ["g1"],
       [{ id: "f1", farmerGroupId: "g1" }],
       [
         { farmerId: "f1", _count: { _all: 1 }, _sum: { area: 2 } },
         { farmerId: "f-unknown", _count: { _all: 9 }, _sum: { area: 99 } },
       ]
     );
-    expect(statsFor(stats, "g1")).toEqual({ farmersCount: 1, parcelsCount: 1, totalArea: 2 });
+    expect(statsFor("g1")).toEqual({ farmersCount: 1, parcelsCount: 1, totalArea: 2 });
   });
 
-  it("group tanpa petani mendapat default 0 (bukan undefined)", () => {
-    const stats = mergeGroupStats([], []);
-    expect(statsFor(stats, "g-kosong")).toEqual({ farmersCount: 0, parcelsCount: 0, totalArea: 0 });
+  it("group tanpa petani mendapat default 0 (bukan undefined)", async () => {
+    const statsFor = await statsOf(["g-kosong"], [], []);
+    expect(statsFor("g-kosong")).toEqual({ farmersCount: 0, parcelsCount: 0, totalArea: 0 });
   });
 });
 
@@ -102,58 +110,40 @@ describe("getFarmerGroups stats merge (#163)", () => {
  * Scope `getDistrictsForSelect` (#211 → #217): helper for-select ini juga
  * access-scoped — user BY_DISTRICT/BY_FARMER_GROUP hanya melihat distrik dalam
  * jurisdiksinya (termasuk di form tambah/edit Lembaga Petani — by design).
- * Cermin dari `getAccessibleDistrictIds` (access-context.ts) + konstruksi
- * where-clause di `getDistrictsForSelect` (farmer-group.ts).
  */
-
-type AccessContext =
-  | { mode: "ALL"; ids: string[] }
-  | { mode: "BY_FARMER_GROUP"; ids: string[] }
-  | { mode: "BY_DISTRICT"; ids: string[] };
-
-// Cermin getAccessibleDistrictIds; lookup group→district diinjeksi menggantikan prisma.
-function accessibleDistrictIds(
-  access: AccessContext,
-  groupDistricts: Record<string, string>
-): string[] | null {
-  if (access.mode === "ALL") return null;
-  if (access.mode === "BY_DISTRICT") return access.ids;
-  if (access.ids.length === 0) return [];
-  return [...new Set(access.ids.map((id) => groupDistricts[id]).filter(Boolean))];
-}
-
-// Cermin where-clause getDistrictsForSelect: null = tanpa batasan id.
-function districtWhere(districtIds: string[] | null) {
-  return { isActive: true, ...(districtIds ? { id: { in: districtIds } } : {}) };
-}
-
 describe("getDistrictsForSelect access scope (#211)", () => {
-  const groupDistricts = { "kt-1": "d1", "kt-2": "d1", "kt-3": "d2" };
+  const groupDistricts: Record<string, string> = { "kt-1": "d1", "kt-2": "d1", "kt-3": "d2" };
+  const districtWhere = () => db.district.findMany.mock.calls[0][0].where;
 
-  it("ALL → semua distrik aktif, tanpa filter id", () => {
-    expect(districtWhere(accessibleDistrictIds({ mode: "ALL", ids: [] }, groupDistricts))).toEqual({
-      isActive: true,
-    });
+  beforeEach(() => {
+    // Lookup Lembaga→distrik di getAccessibleDistrictIds (asli) lewat prisma mock.
+    db.farmerGroup.findMany.mockImplementation(async (args: { where: { id: { in: string[] } } }) =>
+      args.where.id.in.filter((id) => groupDistricts[id]).map((id) => ({ districtId: groupDistricts[id] }))
+    );
   });
 
-  it("BY_DISTRICT → hanya distrik assignment", () => {
-    expect(
-      districtWhere(accessibleDistrictIds({ mode: "BY_DISTRICT", ids: ["d1", "d3"] }, groupDistricts))
-    ).toEqual({ isActive: true, id: { in: ["d1", "d3"] } });
+  it("ALL → semua distrik aktif, tanpa filter id", async () => {
+    await getDistrictsForSelect();
+    expect(districtWhere()).toEqual({ isActive: true });
   });
 
-  it("BY_FARMER_GROUP → distrik turunan lembaga, tanpa duplikat", () => {
-    expect(
-      districtWhere(
-        accessibleDistrictIds({ mode: "BY_FARMER_GROUP", ids: ["kt-1", "kt-2", "kt-3"] }, groupDistricts)
-      )
-    ).toEqual({ isActive: true, id: { in: ["d1", "d2"] } });
+  it("BY_DISTRICT → hanya distrik assignment", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_DISTRICT", ids: ["d1", "d3"] });
+    await getDistrictsForSelect();
+    expect(districtWhere()).toEqual({ isActive: true, id: { in: ["d1", "d3"] } });
   });
 
-  it("BY_FARMER_GROUP tanpa assignment → tidak ada distrik (in: [])", () => {
-    expect(
-      districtWhere(accessibleDistrictIds({ mode: "BY_FARMER_GROUP", ids: [] }, groupDistricts))
-    ).toEqual({ isActive: true, id: { in: [] } });
+  it("BY_FARMER_GROUP → distrik turunan lembaga, tanpa duplikat", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: ["kt-1", "kt-2", "kt-3"] });
+    await getDistrictsForSelect();
+    expect(districtWhere()).toEqual({ isActive: true, id: { in: ["d1", "d2"] } });
+  });
+
+  it("BY_FARMER_GROUP tanpa assignment → tidak ada distrik (in: []), lookup Lembaga dilewati", async () => {
+    getAccessContext.mockResolvedValue({ mode: "BY_FARMER_GROUP", ids: [] });
+    await getDistrictsForSelect();
+    expect(districtWhere()).toEqual({ isActive: true, id: { in: [] } });
+    expect(db.farmerGroup.findMany).not.toHaveBeenCalled();
   });
 });
 
