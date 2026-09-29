@@ -160,6 +160,7 @@ Yang benar-benar ada di kode (tanpa Redis / cache in-memory umum):
 |------|------|-----------|
 | **Sesi user** | 30 hari (bawaan NextAuth) | JWT — tanpa query DB per request |
 | **Izin menu (RBAC)** | satu request | React `cache()` di `src/lib/rbac.ts` (`getEffectiveMenuPermissions`, `getUserPermissionsForMenu`, …) |
+| **Scope data user** | satu request | React `cache()` di `getAccessContext` (`src/lib/access-context.ts`, #252) — dulu tiap action paralel mengulang `auth()` + kueri user bersarang; kueri kini `select` id saja. Asumsi: scope tak berubah di tengah request, hasil tak dimutasi pemanggil |
 | **Outline Riau (klip titik api)** | 6 jam per proses | Cache promise di `src/server/actions/fire-boundary.ts` (#280) |
 | **Titik api FIRMS** | 1 jam (jendela terbaru) · 6 jam (lampau) · 30 hari (arsip bulanan) | `fetch` `next.revalidate` di `src/app/api/map-hotspot/route.ts` |
 | **Agregat dashboard** | sampai snapshot berikutnya di-generate | Tabel snapshot ([dashboard-snapshots.md](./dashboard-snapshots.md)) |

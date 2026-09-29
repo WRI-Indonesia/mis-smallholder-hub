@@ -71,7 +71,7 @@ Karena itu, kalau sebuah menu harus terbatas, yang menentukan adalah **izin menu
 
 ### Hierarki Akses Data RBAC
 
-Ringkas (`getAccessContext()`, `src/lib/access-context.ts`): SUPERADMIN atau **tanpa assignment** → `ALL`; **hanya** `UserFarmerGroup` → `BY_FARMER_GROUP` (id Lembaga); ada `UserProvince`/`UserDistrict` → `BY_DISTRICT` (gabungan district; assignment Lembaga **diabaikan**); sesi kosong / user tak ditemukan → `BY_DISTRICT` kosong (tolak semua). Terjemahkan ke `where` lewat helper `src/lib/access-scope.ts`, jangan ternary manual. Rincian, contoh, dan pengecualian scope yang tercatat: [product/access-context.md](../product/access-context.md).
+Ringkas (`getAccessContext()`, `src/lib/access-context.ts`, di-`cache()` per request sejak #252 — jangan memutasi hasilnya): SUPERADMIN atau **tanpa assignment** → `ALL`; **hanya** `UserFarmerGroup` → `BY_FARMER_GROUP` (id Lembaga); ada `UserProvince`/`UserDistrict` → `BY_DISTRICT` (gabungan district; assignment Lembaga **diabaikan**); sesi kosong / user tak ditemukan → `BY_DISTRICT` kosong (tolak semua). Terjemahkan ke `where` lewat helper `src/lib/access-scope.ts`, jangan ternary manual. Rincian, contoh, dan pengecualian scope yang tercatat: [product/access-context.md](../product/access-context.md).
 
 > [!WARNING]
 > **Bug pattern lama** — jangan memfilter hanya `districtId` tanpa menangani `BY_FARMER_GROUP`: user yang hanya ditugaskan ke Lembaga akan mendapat `districtId: { in: [] }` dan semua datanya hilang. Helper di `access-scope.ts` sudah menangani ketiga mode.

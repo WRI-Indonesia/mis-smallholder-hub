@@ -15,6 +15,21 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
+// #252: `cache` ASLI dibungkus spy — di luar render RSC React tidak memoize,
+// jadi yang dikunci adalah bahwa `getAccessContext` memang dibungkus `cache()`.
+const cacheSpy = vi.hoisted(() => ({ wrapped: [] as unknown[] }));
+vi.mock("react", async () => {
+  const actual = await vi.importActual<typeof import("react")>("react");
+  return {
+    ...actual,
+    cache: <T extends (...args: never[]) => unknown>(fn: T) => {
+      const wrapped = actual.cache(fn);
+      cacheSpy.wrapped.push(wrapped);
+      return wrapped;
+    },
+  };
+});
+
 const { getAccessContext, getAccessibleDistrictIds } = await import("@/lib/access-context");
 
 type Assign = { provinces?: { districts: string[] }[]; districts?: string[]; farmerGroups?: string[] };
@@ -30,6 +45,25 @@ function user(a: Assign) {
 beforeEach(() => {
   vi.clearAllMocks();
   auth.mockResolvedValue({ user: { id: "u1", role: "OPERATOR" } });
+});
+
+describe("getAccessContext — dedup per request (#252)", () => {
+  it("dibungkus React cache() — satu kueri scope per render walau dipanggil banyak action", () => {
+    expect(cacheSpy.wrapped).toContain(getAccessContext);
+  });
+
+  it("kueri user hanya memilih id (bukan baris distrik penuh per provinsi)", async () => {
+    db.user.findUnique.mockResolvedValue(user({ districts: ["d1"] }));
+    await getAccessContext();
+    expect(db.user.findUnique.mock.calls[0][0]).toEqual({
+      where: { id: "u1" },
+      select: {
+        provinces: { select: { province: { select: { districts: { select: { id: true } } } } } },
+        districts: { select: { districtId: true } },
+        farmerGroups: { select: { farmerGroupId: true } },
+      },
+    });
+  });
 });
 
 describe("getAccessContext — mode akses", () => {
