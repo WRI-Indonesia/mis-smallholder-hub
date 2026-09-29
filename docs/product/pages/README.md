@@ -1,78 +1,63 @@
 # Katalog Menu, Halaman & Objek
 
-[← Indeks dokumentasi](../../README.md) · Terkait: [product/architecture.md](../architecture.md) · [standards/rbac.md](../../standards/rbac.md) · [product/crud-flows.md](../crud-flows.md)
+[← Indeks dokumentasi](../../README.md) · Terkait: [product/navigation.md](../navigation.md) · [standards/rbac.md](../../standards/rbac.md) · [product/crud-flows.md](../crud-flows.md)
 
-Katalog **Menu → Sub Menu → Page → Page Detail** untuk aplikasi admin Smallholder HUB MIS. Struktur folder mengikuti **nama/title** yang tampil di menu (kebab-case), satu file MD per halaman (atomic). Setiap file diawali **diagram objek** (ASCII tree) lalu tabel atribut & tabel objek.
+Katalog **Menu → Sub Menu → Page → Page Detail** untuk aplikasi admin Smallholder HUB MIS. Struktur folder & nama berkas mengikuti **segmen route** (`/admin/master-data/parcels` → `master-data/parcels/`), bukan judul menu — judul bisa berganti (#147→#155), route tidak. Jenis halaman: `list.md` (route akar sub menu), `detail.md` (`[id]`), `new.md`, `edit.md`, atau segmen literal (`lembaga.md`); sub menu satu halaman = satu berkas `<segmen>.md`. Satu file MD per halaman (atomic). Setiap file diawali **diagram objek** (ASCII tree) lalu tabel atribut & tabel objek.
 
 Sumber menu: `prisma/seeds/data/menu.csv`; sumber halaman: `src/app/(admin)/admin/**`.
 
 ## Peta folder
 
 ```text
-docs/product/pages/
+docs/product/pages/               folder & berkas = segmen route (/admin/<menu>/<sub>)
 ├── dashboard/                    Menu: Dashboard
-│   ├── main-dashboard.md
-│   ├── bmp-dashboard-produksi.md
-│   ├── dashboard-monev-bmp.md
-│   ├── dashboard-pelatihan.md
-│   └── risk-management-fire-alert.md
-├── master-data/                  Menu: Master Data
-│   ├── lembaga-petani/           daftar · detail
-│   ├── petani/                   daftar · detail
-│   ├── pelatihan/                daftar · detail
-│   ├── lahan/                    daftar · detail
-│   ├── produksi/                 daftar · tambah · detail · ubah
-│   └── monev-bmp/                daftar · detail · penilaian-lembaga
-├── settings/                     Menu: Settings
-│   ├── user-management.md
-│   ├── menu-management.md
-│   ├── role-permission.md
-│   └── regions.md
-├── bulk-upload/                  Menu: Bulk Upload
-│   ├── upload-petani.md
-│   ├── upload-produksi.md
-│   ├── lahan.md
-│   └── pohon.md
-├── data-analyst/                 Menu: Data Analyst
-│   ├── ringkasan-petani.md
-│   ├── analisa-ketersediaan-data.md
-│   ├── dashboard-ketersediaan-data.md
-│   ├── komparasi-data-acuan.md
-│   ├── metrik-rilis.md
-│   ├── peta-data-skema.md
-│   ├── tumpang-tindih-lahan.md
-│   └── sprint-mingguan.md
+│   ├── main.md · training.md · bmp.md · bmp-monev.md
+│   └── risk/fire.md
 ├── report/                       Menu: Report
-│   ├── petani.md · pelatihan.md · produksi.md
-│   ├── kelompok-tani-summary.md · kelompok-tani-detail.md
-│   └── lahan.md · patok.md
-├── tools/                        Menu: Tools
-│   ├── dashboard-snapshot/       daftar · detail
-│   └── dashboard-snapshot-bmp/   daftar · detail
+│   ├── farmer.md · land-parcel.md · training.md · production.md
+│   ├── kelompok-tani.md · kelompok-tani-detail.md
+│   └── marker.md
 ├── map/                          Menu: Map
-│   ├── peta-lahan.md
-│   └── peta-bmp.md
-├── bantuan/                      Menu: Bantuan
-│   ├── indeks-bantuan.md · halaman-bab.md · halaman-topik.md
-└── halaman-non-menu/             Login · Profil · halaman publik · layout bersama
+│   └── parcel.md · bmp.md
+├── master-data/                  Menu: Master Data
+│   ├── groups/                   list · detail
+│   ├── farmers/                  list · detail
+│   ├── training/                 list · detail
+│   ├── parcels/                  list · detail
+│   ├── production/               list · new · detail · edit
+│   └── bmp-monev/                list · detail · lembaga
+├── data-analyst/                 Menu: Data Analyst
+│   ├── farmer-summary.md · data-availability.md · data-completeness.md
+│   ├── benchmark-comparison.md · metrics.md · data-map.md
+│   └── parcel-overlap.md · sprint.md
+├── tools/                        Menu: Tools
+│   ├── snapshot/                 list · detail
+│   └── snapshot-bmp/             list · detail
+├── help/                         Menu: Bantuan
+│   └── index.md · chapter.md · topic.md
+├── bulk-upload/                  Menu: Bulk Upload
+│   └── farmers.md · production.md · parcels.md · trees.md
+├── settings/                     Menu: Settings
+│   └── users.md · menu.md · roles.md · regions.md
+└── non-menu/                     Login · Profil · halaman publik · layout bersama
 ```
 
 Setiap folder punya `README.md`: ikhtisar menu/sub menu, diagram pohon halaman, dan objek yang dipakai bersama.
 
 ## Daftar menu
 
-| # | Menu | Key | URL | Sub menu | Dokumen |
+| Order | Menu | Key | URL | Sub menu | Dokumen |
 |---|------|-----|-----|----------|---------|
 | 0 | Dashboard | `dashboard` | `/admin/dashboard` | 5 | [dashboard/](./dashboard/README.md) |
-| 1 | Master Data | `master-data` | `/admin/master-data` | 6 | [master-data/](./master-data/README.md) |
-| 2 | Settings | `settings` | `/admin/settings` | 4 | [settings/](./settings/README.md) |
-| 3 | Bulk Upload | `bulk-upload` | `/admin/bulk-upload` | 4 | [bulk-upload/](./bulk-upload/README.md) |
+| 1 | Report | `report` | `/admin/report` | 7 | [report/](./report/README.md) |
+| 2 | Map | `map` | `/admin/map` | 2 | [map/](./map/README.md) |
+| 3 | Master Data | `master-data` | `/admin/master-data` | 6 | [master-data/](./master-data/README.md) |
 | 4 | Data Analyst | `data-analyst` | `/admin/data-analyst` | 8 | [data-analyst/](./data-analyst/README.md) |
-| 5 | Report | `report` | `/admin/report` | 7 | [report/](./report/README.md) |
 | 6 | Tools | `tools` | `/admin/tools` | 2 | [tools/](./tools/README.md) |
-| 7 | Map | `map` | `/admin/map` | 2 | [map/](./map/README.md) |
-| 9 | Bantuan | `help` | `/admin/help` | — (tree bab/topik) | [bantuan/](./bantuan/README.md) |
-| — | Halaman non-menu | — | `/login`, `/admin/profile`, `/` | — | [halaman-non-menu/](./halaman-non-menu/README.md) |
+| 9 | Bantuan | `help` | `/admin/help` | — (tree bab/topik) | [help/](./help/README.md) |
+| 10 | Bulk Upload | `bulk-upload` | `/admin/bulk-upload` | 4 | [bulk-upload/](./bulk-upload/README.md) |
+| 99 | Settings | `settings` | `/admin/settings` | 4 | [settings/](./settings/README.md) |
+| — | Halaman non-menu | — | `/login`, `/admin/profile`, `/` | — | [non-menu/](./non-menu/README.md) |
 
 ## Cara membaca
 
@@ -106,4 +91,4 @@ Beberapa menu induk hanya berfungsi sebagai grup navigasi di sidebar:
 | Page header | `h1` judul + deskripsi singkat (`text-muted-foreground`) |
 | Konten | Server Component memuat data → diserahkan ke `*-client.tsx` (Client Component) untuk interaksi |
 
-Detail layout bersama: [halaman-non-menu/README.md](./halaman-non-menu/README.md).
+Detail layout bersama: [non-menu/README.md](./non-menu/README.md).

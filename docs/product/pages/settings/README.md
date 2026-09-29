@@ -31,7 +31,7 @@ Menu: Settings (/admin/settings) — grup navigasi, tanpa page.tsx
 
 | # | Sub menu | Key | URL | Icon | Order | Halaman | Dokumen |
 |---|---|---|---|---|---|---|---|
-| 1 | User Management | `settings-users` | `/admin/settings/users` | `UserCog` | 1 | 1 | [user-management.md](./user-management.md) |
-| 2 | Menu Management | `settings-menu` | `/admin/settings/menu` | `Menu` | 2 | 1 | [menu-management.md](./menu-management.md) |
-| 3 | Role & Permission | `settings-roles` | `/admin/settings/roles` | `Shield` | 3 | 1 | [role-permission.md](./role-permission.md) |
+| 1 | User Management | `settings-users` | `/admin/settings/users` | `UserCog` | 1 | 1 | [users.md](users.md) |
+| 2 | Menu Management | `settings-menu` | `/admin/settings/menu` | `Menu` | 2 | 1 | [menu.md](menu.md) |
+| 3 | Role & Permission | `settings-roles` | `/admin/settings/roles` | `Shield` | 3 | 1 | [roles.md](roles.md) |
 | 4 | Regions | `settings-regions` | `/admin/settings/regions` | `MapPin` | 4 | 1 | [regions.md](./regions.md) |

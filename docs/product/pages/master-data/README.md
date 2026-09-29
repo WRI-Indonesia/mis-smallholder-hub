@@ -41,12 +41,12 @@ Menu: Master Data (/admin/master-data)
 
 | # | Sub Menu | Key | URL | Icon | Dokumen |
 |---|---|---|---|---|---|
-| 1 | Lembaga Petani | `master-data-groups` | `/admin/master-data/groups` | `Users` | [lembaga-petani/](./lembaga-petani/README.md) |
-| 2 | Petani | `master-data-farmers` | `/admin/master-data/farmers` | `User` | [petani/](./petani/README.md) |
-| 3 | Pelatihan | `master-data-training` | `/admin/master-data/training` | `GraduationCap` | [pelatihan/](./pelatihan/README.md) |
-| 4 | Lahan | `master-data-parcels` | `/admin/master-data/parcels` | `Map` | [lahan/](./lahan/README.md) |
-| 5 | Produksi | `master-data-production` | `/admin/master-data/production` | `TrendingUp` | [produksi/](./produksi/README.md) |
-| 6 | Monev BMP | `master-data-bmp-monev` | `/admin/master-data/bmp-monev` | `ClipboardCheck` | [monev-bmp/](./monev-bmp/README.md) |
+| 1 | Lembaga Petani | `master-data-groups` | `/admin/master-data/groups` | `Users` | [groups/](groups/README.md) |
+| 2 | Petani | `master-data-farmers` | `/admin/master-data/farmers` | `User` | [petani/](farmers/README.md) |
+| 3 | Pelatihan | `master-data-training` | `/admin/master-data/training` | `GraduationCap` | [pelatihan/](training/README.md) |
+| 4 | Lahan | `master-data-parcels` | `/admin/master-data/parcels` | `Map` | [lahan/](parcels/README.md) |
+| 5 | Produksi | `master-data-production` | `/admin/master-data/production` | `TrendingUp` | [produksi/](production/README.md) |
+| 6 | Monev BMP | `master-data-bmp-monev` | `/admin/master-data/bmp-monev` | `ClipboardCheck` | [bmp-monev/](bmp-monev/README.md) |
 
 ## Objek bersama (dipakai di semua halaman daftar)
 

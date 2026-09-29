@@ -39,14 +39,14 @@ Menu: Data Analyst (/admin/data-analyst)
 
 | # | Sub Menu | Menu key | Route | Dokumen |
 |---|---|---|---|---|
-| 1 | Ringkasan Petani | `data-analyst-farmer-summary` | `/admin/data-analyst/farmer-summary` | [ringkasan-petani.md](./ringkasan-petani.md) |
-| 2 | Ketersediaan Data — Semua Lembaga | `data-analyst-data-availability` | `/admin/data-analyst/data-availability` | [dashboard-ketersediaan-data.md](./dashboard-ketersediaan-data.md) |
-| 3 | Ketersediaan Data — Per Lembaga | `data-analyst-data-completeness` | `/admin/data-analyst/data-completeness` | [analisa-ketersediaan-data.md](./analisa-ketersediaan-data.md) |
-| 4 | Komparasi Data Acuan | `data-analyst-benchmark-comparison` | `/admin/data-analyst/benchmark-comparison` | [komparasi-data-acuan.md](./komparasi-data-acuan.md) |
-| 5 | Peta Data & Skema | `data-analyst-data-map` | `/admin/data-analyst/data-map` | [peta-data-skema.md](./peta-data-skema.md) |
-| 6 | Tumpang Tindih Lahan | `data-analyst-parcel-overlap` | `/admin/data-analyst/parcel-overlap` | [tumpang-tindih-lahan.md](./tumpang-tindih-lahan.md) |
-| 7 | Sprint Mingguan | `data-analyst-sprint` | `/admin/data-analyst/sprint` | [sprint-mingguan.md](./sprint-mingguan.md) |
-| — | Metrik Rilis | `dashboard-metrics` | `/admin/dashboard/metrics` | [metrik-rilis.md](./metrik-rilis.md) |
+| 1 | Ringkasan Petani | `data-analyst-farmer-summary` | `/admin/data-analyst/farmer-summary` | [farmer-summary.md](farmer-summary.md) |
+| 2 | Ketersediaan Data — Semua Lembaga | `data-analyst-data-availability` | `/admin/data-analyst/data-availability` | [data-availability.md](data-availability.md) |
+| 3 | Ketersediaan Data — Per Lembaga | `data-analyst-data-completeness` | `/admin/data-analyst/data-completeness` | [data-completeness.md](data-completeness.md) |
+| 4 | Komparasi Data Acuan | `data-analyst-benchmark-comparison` | `/admin/data-analyst/benchmark-comparison` | [benchmark-comparison.md](benchmark-comparison.md) |
+| 5 | Peta Data & Skema | `data-analyst-data-map` | `/admin/data-analyst/data-map` | [data-map.md](data-map.md) |
+| 6 | Tumpang Tindih Lahan | `data-analyst-parcel-overlap` | `/admin/data-analyst/parcel-overlap` | [parcel-overlap.md](parcel-overlap.md) |
+| 7 | Sprint Mingguan | `data-analyst-sprint` | `/admin/data-analyst/sprint` | [sprint.md](sprint.md) |
+| — | Metrik Rilis | `dashboard-metrics` | `/admin/dashboard/metrics` | [metrics.md](metrics.md) |
 
 ## Catatan route induk
 

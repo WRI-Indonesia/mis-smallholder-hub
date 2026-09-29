@@ -95,4 +95,4 @@ export function windowSlice<T>(pts: T[], at: (p: T) => number, windowDays: numbe
 }
 
 /** Repo GitHub proyek — tautan versi & issue; sumbernya kini `src/lib/repo-links.ts` (dipakai juga Sprint Mingguan). */
-export { REPO_URL, releaseUrl, issueUrl } from "@/lib/repo-links";
+export { REPO_URL, releaseUrl, issueUrl, docUrl } from "@/lib/repo-links";

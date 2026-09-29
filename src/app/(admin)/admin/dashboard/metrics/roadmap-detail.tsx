@@ -4,7 +4,7 @@ import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent } from "@/components/shared/stat-tooltip";
 import { cn } from "@/lib/utils";
 import type { PhaseHorizon, RoadmapPhase, RoadmapSummary } from "@/types/roadmap";
-import { PHASE_STATUS, fmt2, fmtInt, fmtPct1, fmtPoints, phaseStatusColor, REPO_URL } from "./metrics-shared";
+import { PHASE_STATUS, fmt2, fmtInt, fmtPct1, fmtPoints, phaseStatusColor, docUrl } from "./metrics-shared";
 
 /**
  * Section Detail Roadmap (#250) — pembuktian angka "Progres roadmap" yang di
@@ -271,7 +271,7 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
         <p className="mt-2 text-[11px] text-muted-foreground">
           Sumber & rincian lengkap tiap fase:{" "}
           <a
-            href={`${REPO_URL}/blob/mvp/docs/project/roadmap.md`}
+            href={docUrl("docs/project/roadmap.md")}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 underline-offset-2 hover:underline dark:text-amber-400"

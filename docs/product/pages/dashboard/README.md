@@ -22,7 +22,7 @@ Menu: Dashboard (/admin/dashboard)
         └── Page: /admin/dashboard/risk/fire
 ```
 
-> **Metrik Rilis tidak lagi di sini.** Menu `dashboard-metrics` route-nya memang `/admin/dashboard/metrics`, tetapi di database ia bertengger di bawah **Data Analyst** — dokumennya pindah ke [../data-analyst/metrik-rilis.md](../data-analyst/metrik-rilis.md). Perbedaan ini ditemukan saat mendaftarkan menu DA-07 (#256) dan diselesaikan dengan menjadikan keadaan produksi sebagai acuan.
+> **Metrik Rilis tidak lagi di sini.** Menu `dashboard-metrics` route-nya memang `/admin/dashboard/metrics`, tetapi di database ia bertengger di bawah **Data Analyst** — dokumennya pindah ke [../data-analyst/metrics.md](../data-analyst/metrics.md). Perbedaan ini ditemukan saat mendaftarkan menu DA-07 (#256) dan diselesaikan dengan menjadikan keadaan produksi sebagai acuan.
 
 ## Atribut menu
 
@@ -41,11 +41,11 @@ Menu `dashboard` sendiri hanya wadah; URL-nya me-redirect ke sub menu pertama.
 
 | # | Sub menu | Key | Route | Halaman | Dokumen |
 |---|---|---|---|---|---|
-| 1 | Main Dashboard | `dashboard-main` | `/admin/dashboard/main` | 1 | [main-dashboard.md](./main-dashboard.md) |
-| 2 | Dashboard Pelatihan | `dashboard-training` | `/admin/dashboard/training` | 1 | [dashboard-pelatihan.md](./dashboard-pelatihan.md) |
-| 3 | BMP Dashboard (Produksi) | `dashboard-bmp` | `/admin/dashboard/bmp` | 1 | [bmp-dashboard-produksi.md](./bmp-dashboard-produksi.md) |
-| 4 | Monev BMP | `dashboard-bmp-monev` | `/admin/dashboard/bmp-monev` | 1 | [dashboard-monev-bmp.md](./dashboard-monev-bmp.md) |
-| 5 | Risk Management → Fire Alert | `dashboard-risk` → `dashboard-risk-fire` | `/admin/dashboard/risk/fire` | 1 | [risk-management-fire-alert.md](./risk-management-fire-alert.md) |
+| 1 | Main Dashboard | `dashboard-main` | `/admin/dashboard/main` | 1 | [main.md](main.md) |
+| 2 | Dashboard Pelatihan | `dashboard-training` | `/admin/dashboard/training` | 1 | [training.md](training.md) |
+| 3 | BMP Dashboard (Produksi) | `dashboard-bmp` | `/admin/dashboard/bmp` | 1 | [bmp.md](bmp.md) |
+| 4 | Monev BMP | `dashboard-bmp-monev` | `/admin/dashboard/bmp-monev` | 1 | [bmp-monev.md](bmp-monev.md) |
+| 5 | Risk Management → Fire Alert | `dashboard-risk` → `dashboard-risk-fire` | `/admin/dashboard/risk/fire` | 1 | [risk/fire.md](risk/fire.md) |
 
 ## Redirect
 
@@ -86,4 +86,4 @@ Loading skeleton segmen: `src/app/(admin)/admin/dashboard/loading.tsx` (judul, b
 - Ketiga sub menu hanya membaca data (aksi `VIEW`); tidak ada tombol mutasi (create/edit/delete) di halaman dashboard.
 - Main Dashboard dan BMP Dashboard membaca **snapshot** yang dibuat lewat menu Tools (`/admin/tools/snapshot`, `/admin/tools/snapshot-bmp`); Dashboard Pelatihan membaca DB secara langsung.
 - Semua filter pada ketiga halaman diiris **client-side** dari satu payload server.
-- **Dashboard Ketersediaan Data** semula dirilis sebagai sub menu keempat di sini (#193) lalu dipindah ke menu **Data Analyst** pada hari yang sama — lihat [dashboard-ketersediaan-data.md](../data-analyst/dashboard-ketersediaan-data.md).
+- **Dashboard Ketersediaan Data** semula dirilis sebagai sub menu keempat di sini (#193) lalu dipindah ke menu **Data Analyst** pada hari yang sama — lihat [../data-analyst/data-availability.md](../data-analyst/data-availability.md).

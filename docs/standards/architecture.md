@@ -51,3 +51,18 @@ src/
 | Maps | MapLibre GL JS |
 | Charts | Custom SVG tanpa library (`recharts` dihapus #129) — palet `src/lib/chart-palette.ts`, geometri radar `src/lib/radar-geometry.ts` |
 | Validation | Zod (server: `safeParse` di actions; form client ditangani manual via FormData/useState — React Hook Form tidak dipakai) |
+
+---
+
+## Ringkasan Teknis
+
+Diverifikasi **2026-09-29** terhadap kode di branch `mvp` (app `v1.1.0`).
+
+| Aspek | Angka | Catatan |
+|---|---|---|
+| Test | **111 file / 1.916 test passing** ✅ | `npx vitest run`; rincian coverage di [roadmap.md § OPS-01](../project/roadmap.md) |
+| Server Actions | **39 file** | `src/server/actions/` — satu file per domain, seluruh akses data lewat sini |
+| Prisma | **25 file schema / 40 model / 39 migrasi** | `prisma/schema/` modular; semua model ber-audit field + `isActive` (pengecualian: [constraints.md](../database/constraints.md#soft-delete-pattern)) |
+| Menu | **9 top-level / 38 sub menu + 1 level-3** | `prisma/seeds/data/menu.csv` |
+| Materi Bantuan | **65 file Markdown** | `src/content/help/**` |
+| Fase selesai | lihat [roadmap.md § Phase Status](../project/roadmap.md#phase-status-indeks) | — |

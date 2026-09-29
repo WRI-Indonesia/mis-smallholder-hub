@@ -28,10 +28,10 @@ Menu: Bulk Upload (/admin/bulk-upload)
 
 | # | Sub menu | Menu key | URL | Icon | Order | Dokumen |
 |---|---|---|---|---|---|---|
-| 1 | Upload Data Petani | `bulk-upload-farmers` | `/admin/bulk-upload/farmers` | `User` | `1` | [upload-petani.md](./upload-petani.md) |
-| 2 | Upload Data Produksi | `bulk-upload-production` | `/admin/bulk-upload/production` | `TrendingUp` | `2` | [upload-produksi.md](./upload-produksi.md) |
-| 3 | Upload Data Lahan | `bulk-upload-parcels` | `/admin/bulk-upload/parcels` | `Map` | `3` | [lahan.md](./lahan.md) |
-| 4 | Pohon Sawit | `bulk-upload-trees` | `/admin/bulk-upload/trees` | `TreePine` | `4` | [pohon.md](./pohon.md) |
+| 1 | Upload Data Petani | `bulk-upload-farmers` | `/admin/bulk-upload/farmers` | `User` | `1` | [farmers.md](farmers.md) |
+| 2 | Upload Data Produksi | `bulk-upload-production` | `/admin/bulk-upload/production` | `TrendingUp` | `2` | [production.md](production.md) |
+| 3 | Upload Data Lahan | `bulk-upload-parcels` | `/admin/bulk-upload/parcels` | `Map` | `3` | [parcels.md](parcels.md) |
+| 4 | Pohon Sawit | `bulk-upload-trees` | `/admin/bulk-upload/trees` | `TreePine` | `4` | [trees.md](trees.md) |
 
 ## Permission bawaan seed
 

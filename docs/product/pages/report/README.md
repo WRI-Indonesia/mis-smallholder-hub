@@ -33,13 +33,13 @@ Menu: Report (/admin/report)
 
 | # | Sub Menu | Menu key | Route | Dokumen |
 |---|---|---|---|---|
-| 1 | Petani | `report-farmer` | `/admin/report/farmer` | [petani.md](./petani.md) |
-| 2 | Pelatihan | `report-training` | `/admin/report/training` | [pelatihan.md](./pelatihan.md) |
-| 3 | Produksi | `report-production` | `/admin/report/production` | [produksi.md](./produksi.md) |
-| 4 | Kelompok Tani (Summary) | `report-kelompok-tani` | `/admin/report/kelompok-tani` | [kelompok-tani-summary.md](./kelompok-tani-summary.md) |
+| 1 | Petani | `report-farmer` | `/admin/report/farmer` | [farmer.md](farmer.md) |
+| 2 | Pelatihan | `report-training` | `/admin/report/training` | [training.md](training.md) |
+| 3 | Produksi | `report-production` | `/admin/report/production` | [production.md](production.md) |
+| 4 | Kelompok Tani (Summary) | `report-kelompok-tani` | `/admin/report/kelompok-tani` | [kelompok-tani.md](kelompok-tani.md) |
 | 5 | Kelompok Tani (Detail) | `report-kelompok-tani-detail` | `/admin/report/kelompok-tani-detail` | [kelompok-tani-detail.md](./kelompok-tani-detail.md) |
-| 6 | Lahan | `report-land-parcel` | `/admin/report/land-parcel` | [lahan.md](./lahan.md) |
-| 7 | Patok | `report-marker` | `/admin/report/marker` | [patok.md](./patok.md) |
+| 6 | Lahan | `report-land-parcel` | `/admin/report/land-parcel` | [land-parcel.md](land-parcel.md) |
+| 7 | Patok | `report-marker` | `/admin/report/marker` | [marker.md](marker.md) |
 
 ## Page: `/admin/report` (route induk)
 

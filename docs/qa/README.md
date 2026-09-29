@@ -18,6 +18,7 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 | `docs/qa/regression.md` | Kasus uji ber-tag `[regresi]` yang **ikut setiap rilis** (tumbuh dari temuan review/bug) | ✅ |
 | `docs/qa/vX.Y.Z/` | Satu folder per **versi** (tanggal ditulis di run) | ✅ |
 | `docs/qa/vX.Y.Z/runs/` | Lembar hasil per eksekusi | ✅ |
+| `docs/qa/archive/vX.Y.Z/` | Paket versi yang sudah sign-off & rilis, **lebih tua dari 3 rilis terakhir** — dipindah utuh saat rilis baru di-tag | ✅ |
 | `scripts/local/QA-QC/vX.Y.Z/evidence/` | Screenshot/PDF/Excel bukti + `input/` berkas uji | ❌ gitignored — repo **publik**, bukti memuat nama petani/NIK |
 
 ## Berkas
@@ -41,7 +42,7 @@ Pengujian manual **per versi**, berjalan **setelah deploy `staging` dan sebelum 
 
 ## Alur
 
-1. Dev: salin `_template/` → `vX.Y.Z/`; isi `00-scope.md` (termasuk akun & persiapan data) dan `02-test-cases.md` (kasus ditulis saat issue ditutup).
+1. Dev: salin `_template/` → `vX.Y.Z/` **kecuali** `runs/_template-run.md` (dibaca `new-run.mjs` langsung dari `_template/`); pindahkan versi tertua di atas ke `archive/` bila kini ada lebih dari 3 versi rilis; isi `00-scope.md` (termasuk akun & persiapan data) dan `02-test-cases.md` (kasus ditulis saat issue ditutup).
 2. Ops (#333-style): migrasi + seed ke `mis-staging` → `data-qc.ts` sebelum/sesudah → deploy `mvp → staging`.
 3. QA: `node scripts/qa/new-run.mjs --version vX.Y.Z --env staging` → jalankan `TC-PREP-*` dulu, lalu smoke + kasus uji + regresi; isi lembar run; bukti ke `evidence/`.
 4. Temuan → `04-findings.md` → issue (`bug`); dev memperbaiki → run ulang **hanya** kasus Fail + smoke P0 halaman terkait (`runs/<tanggal>-staging-ulang.md`).

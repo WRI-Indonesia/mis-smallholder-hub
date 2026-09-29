@@ -15,7 +15,7 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [standards/code-standards.md](./standards/code-standards.md) | Code standards, Data Access & Soft Delete, Revision Tracking |
 | [standards/rbac.md](./standards/rbac.md) | RBAC data-access hierarchy, user assignment & menu-access UI, hierarchical menu |
 | [standards/ui-ux.md](./standards/ui-ux.md) | Prinsip UI/UX, tabel, bulk upload, shapefile, geospatial, dashboard snapshot |
-| [standards/architecture.md](./standards/architecture.md) | Informasi proyek, arsitektur, tech stack |
+| [standards/architecture.md](./standards/architecture.md) | Informasi proyek, arsitektur, tech stack, ringkasan teknis (angka test/model/migrasi/menu) |
 | [standards/ai-model-guide.md](./standards/ai-model-guide.md) | Panduan pilih model & effort AI (Claude Code) per kelas tugas |
 
 ## 🗄️ Database (`database/`) — skema, indeks, operasional DB
@@ -35,11 +35,10 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 
 | File | Isi |
 |------|-----|
-| [product/architecture.md](./product/architecture.md) | Peta navigasi: lapis route, role, struktur menu sidebar & status tiap sub menu |
+| [product/navigation.md](./product/navigation.md) | Peta navigasi: lapis route, role, struktur menu sidebar & status tiap sub menu |
 | [product/access-context.md](./product/access-context.md) | Access context resolution & permission priority |
 | [product/crud-flows.md](./product/crud-flows.md) | Farmer CRUD example + bulk upload flow |
 | [product/role-flows.md](./product/role-flows.md) | Alur per role (SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR) |
-| [product/module-status.md](./product/module-status.md) | Cerminan status modul (kanonis di `project/roadmap.md`) |
 | [product/pages/README.md](./product/pages/README.md) | Katalog Menu → Sub Menu → Page → Object (satu file per menu utama) |
 
 ## 🧪 QA/QC (`qa/`) — pengujian manual per rilis
@@ -49,8 +48,8 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | [qa/README.md](./qa/README.md) | Proses QA/QC manual: kapan (setelah deploy staging, sebelum PR `staging → main`), siapa, aturan bukti (gitignored — repo publik) |
 | [qa/_template/](./qa/_template/) | Master per rilis: scope (akun & persiapan data) · smoke `SM-nn` · kasus uji `TC-<issue>-nn` ber-tag P0/P1/P2 · QC data · temuan · sign-off · template lembar run |
 | [qa/regression.md](./qa/regression.md) | Kasus `[regresi]` yang ikut setiap rilis (lahir dari temuan review/bug) |
-| [qa/v0.35.0/](./qa/v0.35.0/) | Rilis pertama yang memakai proses ini (siklus #326–#338): 40 kasus uji + 4 persiapan data |
-| [qa/v0.36.0/](./qa/v0.36.0/) · [v0.37.0](./qa/v0.37.0/) · [v0.38.0](./qa/v0.38.0/) · [v1.0.0](./qa/v1.0.0/) · [v1.1.0](./qa/v1.1.0/) | Paket QA rilis berikutnya (00–05 + `runs/`) |
+| [qa/v0.38.0/](./qa/v0.38.0/) · [v1.0.0](./qa/v1.0.0/) · [v1.1.0](./qa/v1.1.0/) | Paket QA tiga rilis terakhir (00–05 + `runs/`) |
+| [qa/archive/](./qa/archive/) | Paket QA rilis lebih lama (v0.35.0 — rilis pertama proses ini — s.d. v0.37.0) |
 | [qa/v1.2.0/](./qa/v1.2.0/) | Rilis berjalan — baru `02-test-cases.md` (kasus uji ditulis saat issue ditutup) |
 | `scripts/qa/` | `data-qc.ts` (cek DB read-only → tabel markdown) · `new-run.mjs` (lembar run dari spesifikasi) · `summary.mjs` (rekap Pass/Fail per run) |
 

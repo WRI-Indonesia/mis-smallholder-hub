@@ -25,7 +25,7 @@ Harapan:
 Prasyarat: akses baca DB; akun SUPERADMIN.
 Langkah:
 1. Buka halaman tanpa filter (Tumpang tindih `Semua`, chip `Semua`).
-2. Jalankan hitungan mandiri (kueri di `docs/product/pages/data-analyst/tumpang-tindih-lahan.md` §Aturan perhitungan: self-join `ST_Intersects AND NOT ST_Touches`, lahan/petani/Lembaga aktif, buang irisan < 100 m² **dan** < 1% lahan terkecil).
+2. Jalankan hitungan mandiri (kueri di `docs/product/pages/data-analyst/parcel-overlap.md` §Aturan perhitungan: self-join `ST_Intersects AND NOT ST_Touches`, lahan/petani/Lembaga aktif, buang irisan < 100 m² **dan** < 1% lahan terkecil).
 Harapan:
 - "N pasangan" dan chip Duplikat/Tercakup/Sebagian sama persis dengan hitungan SQL.
 Baseline dev: `mis-dev` (snapshot prod) 2026-09-24 — **136** · Duplikat 24 · Tercakup 45 · Sebagian 67 (petani sama 60 · satu Lembaga 16 · lintas 60).

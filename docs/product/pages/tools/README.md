@@ -31,5 +31,5 @@ Sumber metadata menu: `prisma/seeds/data/menu.csv`. Konteks penyimpanan snapshot
 
 | # | Sub menu | Key | URL | Icon | Order | Dokumen |
 |---|---|---|---|---|---|---|
-| 1 | Dashboard Snapshot | `dashboard-snapshot` | `/admin/tools/snapshot` | `Camera` | 1 | [dashboard-snapshot/README.md](./dashboard-snapshot/README.md) |
-| 2 | Dashboard Snapshot BMP | `dashboard-snapshot-bmp` | `/admin/tools/snapshot-bmp` | `Camera` | 2 | [dashboard-snapshot-bmp/README.md](./dashboard-snapshot-bmp/README.md) |
+| 1 | Dashboard Snapshot | `dashboard-snapshot` | `/admin/tools/snapshot` | `Camera` | 1 | [snapshot/](snapshot/README.md) |
+| 2 | Dashboard Snapshot BMP | `dashboard-snapshot-bmp` | `/admin/tools/snapshot-bmp` | `Camera` | 2 | [snapshot-bmp/](snapshot-bmp/README.md) |

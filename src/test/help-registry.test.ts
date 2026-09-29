@@ -103,7 +103,7 @@ describe("registrasi materi Bantuan ↔ CHAPTER_SOURCES (help-content.ts)", () =
     expect(yatim, "import ke berkas yang hilang — build akan gagal").toEqual([]);
   });
 
-  it("46 tutorial · 5 referensi · 13 konsep (angka di katalog docs/product/pages/bantuan/README.md)", () => {
+  it("46 tutorial · 5 referensi · 13 konsep (angka di katalog docs/product/pages/help/README.md)", () => {
     const files = contentFiles();
     expect(files.filter((f) => f.startsWith("tutorial/")).length).toBe(46);
     expect(files.filter((f) => f.startsWith("referensi/")).length).toBe(5);
