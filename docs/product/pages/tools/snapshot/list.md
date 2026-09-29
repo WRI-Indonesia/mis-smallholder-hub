@@ -9,11 +9,8 @@ Halaman: Daftar Snapshot (/admin/tools/snapshot)
 ├── Header
 │   └── Heading: Dashboard Snapshot
 ├── Card: Buat Snapshot Baru (permission CREATE)
-│   ├── Filter: Distrik (disabled)
-│   ├── Filter: Tahun Bergabung (disabled)
 │   ├── Tombol: Generate Snapshot
-│   ├── Tombol: Reset (tidak dirender)
-│   └── Teks: Catatan filter
+│   └── Teks: Catatan cakupan
 ├── Tabel: Daftar snapshot (DataTable)
 │   ├── Kolom: Aksi · Tanggal Snapshot · Distrik · Tahun Bergabung
 │   ├── Kolom: Total Lembaga Petani · Total Kelompok Tani · Total Petani
@@ -30,7 +27,7 @@ Halaman: Daftar Snapshot (/admin/tools/snapshot)
 | Client | `src/app/(admin)/admin/tools/snapshot/snapshot-client.tsx` |
 | Tipe | Server Component (list) → Client Component (form generate + tabel) |
 | Guard | `requirePermission("dashboard-snapshot")` |
-| Server action / data | `getSnapshots()`, `getSnapshotFilterOptions()` (`src/server/actions/snapshot.ts`), `getUserPermissionsForMenu("dashboard-snapshot")`; mutasi `generateSnapshot()` (CREATE), `deleteSnapshot()` (DELETE) |
+| Server action / data | `getSnapshots()` (`src/server/actions/snapshot.ts`; `getSnapshotFilterOptions()` masih ada di action tetapi tidak lagi dipanggil halaman), `getUserPermissionsForMenu("dashboard-snapshot")`; mutasi `generateSnapshot()` (CREATE), `deleteSnapshot()` (DELETE) |
 | Loading | `loading.tsx` |
 
 ## Objek halaman
@@ -40,11 +37,8 @@ Halaman: Daftar Snapshot (/admin/tools/snapshot)
 | `Panduan` | Tautan | `HelpHint` — ikon `?` di header menuju tutorial Bantuan untuk `dashboard-snapshot` (`findTutorialForMenu`), dibuka di tab baru |
 | Dashboard Snapshot | Heading | `h1` + deskripsi "Buat dan kelola snapshot historis dari data dashboard" |
 | Buat Snapshot Baru | Card | Hanya tampil bila permission `CREATE`; ikon `Camera` |
-| Distrik | Filter (combobox) | Popover + Command, opsi "Semua Distrik" + daftar distrik; pencarian "Cari distrik...", empty "Distrik tidak ditemukan." — **disabled** (`FILTERS_ENABLED = false`) |
-| Tahun Bergabung | Filter (select) | Opsi "Semua Tahun" + daftar tahun — **disabled** (`FILTERS_ENABLED = false`) |
 | Generate Snapshot | Tombol | Memanggil `generateSnapshot({ districtId: null, joinedYear: null })`; label saat proses "Membuat…"; toast "Snapshot berhasil dibuat" |
-| Reset | Tombol | Hanya dirender bila `FILTERS_ENABLED` — saat ini tidak tampil |
-| Catatan filter | Teks | "Filter dinonaktifkan sementara — snapshot dibuat untuk **Semua Distrik** & **Semua Tahun**." |
+| Catatan cakupan | Teks | "Snapshot dibuat untuk **Semua Distrik** & **Semua Tahun**." — filter Distrik/Tahun Bergabung (nonaktif sejak #148) dihapus 2026-09-29 (audit dead code) |
 | Daftar snapshot | Tabel (`DataTable`) | Search keys: `districtName`, `createdByName`; placeholder "Cari distrik atau pembuat..."; empty "Belum ada snapshot."; export `dashboard-snapshots` — tombol Excel digate izin `EXPORT` (#245) |
 | Kolom: Aksi | Kolom tabel | `TableActions` — `view` (title "Lihat" → `/admin/tools/snapshot/{id}`), `delete` (title "Nonaktifkan") |
 | Kolom: Tanggal Snapshot | Kolom tabel | Format `dd Mmm yyyy, HH:mm` (bulan Indonesia) |

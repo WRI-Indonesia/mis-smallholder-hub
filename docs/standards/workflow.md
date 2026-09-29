@@ -68,6 +68,7 @@ Sebelum **setiap commit dari lokal**, kelima gate ini **wajib hijau** — jangan
 | Build | `npm run build` | build ✓ (juga meregenerasi `.next/types` yang dibaca Typecheck) |
 | Typecheck | `npm run typecheck` (`tsc --noEmit -p tsconfig.typecheck.json`, **mencakup `src/test/**`** — `next build` tidak mengetik-cek berkas test, #288; sejak v0.38.0 `tsconfig.json` mengecualikan `src/test` agar tahap type-check `next build` di server ber-RAM kecil tidak OOM — berkas test hanya diperiksa lewat perintah ini). Jalankan **setelah** Build: `tsconfig` juga memuat `.next/types/**` sehingga rute yang baru dihapus/diganti nama meninggalkan validator usang sampai build berikutnya | 0 type error |
 | Test | `npm test` | semua lulus, **tidak ada** test di-skip |
+| (opsional) Coverage | `npm run test:coverage` (v8, `perf.test.ts` dikecualikan karena berambang jam-dinding) | tidak ada server action / lib murni baru di 0% — guard `hasPermission`, scope `getAccessContext`, soft delete teruji lewat modul asli (pola `*-guard.test.ts`, bukan salinan logika) |
 | **Docs sync** | Review & update `docs/` yang terdampak | Dokumentasi terkait sudah diperbarui & konsisten, di-commit **bersama** kode |
 
 **Artefak turunan.** Dua berkas di `src/lib/*.generated.ts` dan blok bertanda `<!-- GENERATED:… -->` di `docs/` diturunkan dari kode dan skema, bukan ditulis tangan:
