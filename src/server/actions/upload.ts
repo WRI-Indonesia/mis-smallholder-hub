@@ -21,12 +21,10 @@ export async function uploadTrainingEvidence(
   formData: FormData
 ): Promise<ActionResult<{ key: string; filename: string }>> {
   try {
-    // Evidence pelatihan hanya boleh diunggah oleh user yang dapat mengelola pelatihan
-    // (menambah kegiatan baru = CREATE, atau melengkapi kegiatan yang ada = EDIT).
-    if (
-      !(await hasPermission("master-data-training", "CREATE")) &&
-      !(await hasPermission("master-data-training", "EDIT"))
-    ) {
+    // Menempelkan bukti = `updateTrainingActivity` (EDIT) — form membuat pelatihan
+    // dulu lalu mengunggah & meng-update. Dulu CREATE saja cukup untuk unggah ke
+    // pelatihan mana pun dalam scope, walau tak bisa menempelkannya (#385).
+    if (!(await hasPermission("master-data-training", "EDIT"))) {
       return { success: false, error: "Tidak memiliki izin untuk mengunggah bukti pelatihan." };
     }
 
@@ -39,6 +37,16 @@ export async function uploadTrainingEvidence(
     if (!activityId) {
       return { success: false, error: "Activity ID diperlukan." };
     }
+
+    // ─── Validate file type & size (murah — sebelum DB) ──────────────────
+    if (file.type !== "application/pdf") {
+      return { success: false, error: "Hanya file PDF yang diizinkan." };
+    }
+    const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      return { success: false, error: "Ukuran file maksimal 10 MB." };
+    }
+
     // #385: activityId masuk path S3 — harus satu segmen aman (tanpa `/`, `..`)
     // DAN pelatihan aktif dalam scope user, sama dengan syarat `updateTrainingActivity`.
     if (!SAFE_ID_SEGMENT.test(activityId)) {
@@ -53,19 +61,9 @@ export async function uploadTrainingEvidence(
       return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda." };
     }
 
-    // ─── Validate file type ───────────────────────────────────────────────
-    if (file.type !== "application/pdf") {
-      return { success: false, error: "Hanya file PDF yang diizinkan." };
-    }
-
-    // ─── Validate file size (max 10 MB) ──────────────────────────────────
-    const MAX_SIZE_BYTES = 10 * 1024 * 1024;
-    if (file.size > MAX_SIZE_BYTES) {
-      return { success: false, error: "Ukuran file maksimal 10 MB." };
-    }
-
-    // ─── Build object key ─────────────────────────────────────────────────
     const key = buildTrainingEvidenceKey(activity.id, file.name, Date.now());
+    // Nama tampilan disimpan di `evidenceName` (Zod max 255).
+    const filename = file.name.slice(0, 255);
 
     // ─── Upload to bucket ─────────────────────────────────────────────────
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -76,12 +74,14 @@ export async function uploadTrainingEvidence(
         Key: key,
         Body: buffer,
         ContentType: "application/pdf",
-        ContentDisposition: `inline; filename="${file.name}"`,
+        // Header HTTP hanya ASCII: nama asli lewat `filename*` (RFC 5987), cadangan
+        // ASCII tersanitasi — nama ber-en dash/emoji/kutip dulu menggagalkan unggah.
+        ContentDisposition: `inline; filename="${key.slice(key.lastIndexOf("/") + 1)}"; filename*=UTF-8''${encodeURIComponent(filename).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`,
       })
     );
 
     // Return the KEY — not a URL. Presigned URL is generated on read.
-    return { success: true, data: { key, filename: file.name } };
+    return { success: true, data: { key, filename } };
   } catch (error) {
     console.error("Failed to upload training evidence:", error);
     return { success: false, error: "Gagal mengupload file. Coba lagi." };

@@ -272,12 +272,27 @@ describe("tulis — Zod, audit, soft delete", () => {
     expect(db.trainingActivity.update).not.toHaveBeenCalled();
   });
 
-  it("#385 updateTrainingActivity: kunci hasil unggah untuk pelatihan ini, kunci lama yang tetap, atau kosong → diterima", async () => {
-    db.trainingActivity.findFirst.mockResolvedValue({ id: "ta-1", evidenceKey: "legacy/format-lama.pdf" });
-    for (const evidenceKey of ["training/ta-1/1727600000000-bukti.pdf", "legacy/format-lama.pdf", null]) {
+  it("#385 updateTrainingActivity: kunci format sekarang / format lama #45 milik pelatihan ini, null, atau \"\" → diterima", async () => {
+    for (const evidenceKey of ["training/ta-1/1727600000000-bukti.pdf", "training/evidence/2026/06/ta-1/bukti.pdf", null]) {
       expect((await actions.updateTrainingActivity({ id: "ta-1", ...activityInput(), evidenceKey })).success).toBe(true);
     }
-    expect(db.trainingActivity.update).toHaveBeenCalledTimes(3);
+    // "" (tanpa bukti) disimpan sebagai null — dulu terhitung "ada bukti" oleh evidenceKey != null.
+    await actions.updateTrainingActivity({ id: "ta-1", ...activityInput(), evidenceKey: "", evidenceName: "" });
+    expect(db.trainingActivity.update.mock.calls[3][0].data).toMatchObject({ evidenceKey: null, evidenceName: null });
+  });
+
+  it("#385 updateTrainingActivity: kunci asing yang SUDAH tersimpan tidak bisa dipertahankan", async () => {
+    db.trainingActivity.findFirst.mockResolvedValue({ id: "ta-1", evidenceKey: "land-marker/x/1-foto.jpg" });
+    const res = await actions.updateTrainingActivity({ id: "ta-1", ...activityInput(), evidenceKey: "land-marker/x/1-foto.jpg" });
+    expect(res.success).toBe(false);
+    expect(db.trainingActivity.update).not.toHaveBeenCalled();
+  });
+
+  it("#385 getTrainingActivityById: presigned URL hanya untuk kunci milik pelatihan ini", async () => {
+    db.trainingActivity.findFirst.mockResolvedValue({ id: "ta-1", evidenceKey: "land-marker/x/1-foto.jpg" });
+    expect((await actions.getTrainingActivityById("ta-1"))?.evidenceUrl).toBeNull();
+    db.trainingActivity.findFirst.mockResolvedValue({ id: "ta-1", evidenceKey: "training/ta-1/1-bukti.pdf" });
+    expect((await actions.getTrainingActivityById("ta-1"))?.evidenceUrl).toBe("https://signed/training/ta-1/1-bukti.pdf");
   });
 
   it("toggleTrainingActivityActive → update isActive dibalik, tak pernah delete", async () => {

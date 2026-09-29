@@ -116,7 +116,9 @@ export async function getTrainingActivityById(id: string) {
   if (!activity) return null;
 
   let evidenceUrl: string | null = null;
-  if (activity.evidenceKey) {
+  // #385: presigned URL hanya untuk kunci milik pelatihan ini — baris yang
+  // menyimpan kunci objek lain (sebelum validasi tulis ada) tidak membuka tautan.
+  if (activity.evidenceKey && isTrainingEvidenceKeyFor(activity.evidenceKey, activity.id)) {
     try {
       evidenceUrl = await getPresignedUrl(activity.evidenceKey);
     } catch (err) {
@@ -182,13 +184,13 @@ export async function updateTrainingActivity(input: UpdateTrainingActivityInput)
   // Verify activity exists, is active, and is within the user's scope before updating
   const existing = await prisma.trainingActivity.findFirst({
     where: { id, isActive: true, ...farmerAccessFilter(access) },
-    select: { id: true, evidenceKey: true },
+    select: { id: true },
   });
   if (!existing) return { success: false, error: "Pelatihan tidak ditemukan atau tidak dalam akses Anda" };
 
-  // #385: kunci bukti hanya boleh kosong, tetap (kunci lama), atau hasil unggah
-  // untuk pelatihan INI — bukan objek lain di bucket yang lalu diberi presigned URL.
-  if (data.evidenceKey && data.evidenceKey !== existing.evidenceKey && !isTrainingEvidenceKeyFor(data.evidenceKey, id)) {
+  // #385: kunci bukti hanya boleh kosong atau milik pelatihan INI (format sekarang
+  // / lama) — bukan objek lain di bucket yang lalu diberi presigned URL.
+  if (data.evidenceKey && !isTrainingEvidenceKeyFor(data.evidenceKey, id)) {
     return { success: false, error: { evidenceKey: ["Berkas bukti tidak valid untuk pelatihan ini — unggah ulang berkasnya"] } };
   }
 

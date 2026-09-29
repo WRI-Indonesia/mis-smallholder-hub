@@ -194,12 +194,19 @@ export function TrainingFormModal({ open, onClose, activity, packages, farmerGro
           );
         } else {
           // Update the training activity with the uploaded key/name
-          await updateTrainingActivity({
+          const attach = await updateTrainingActivity({
             id: result.id,
             ...data,
             evidenceKey: uploadRes.data!.key,
             evidenceName: uploadRes.data!.filename,
           });
+          // Dulu hasilnya diabaikan — gagal menempel bukti tetap "berhasil dibuat" (#385).
+          if (!attach.success) {
+            toast.warning(
+              "Pelatihan berhasil dibuat, tetapi evidence gagal ditempelkan: " +
+                (typeof attach.error === "string" ? attach.error : Object.values(attach.error ?? {}).flat()[0] ?? "coba unggah ulang lewat Edit"),
+            );
+          }
         }
       }
 

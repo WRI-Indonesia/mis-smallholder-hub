@@ -224,10 +224,11 @@ Langkah:
 1. Master Data › Pelatihan → **Tambah Pelatihan** dengan berkas Evidence; simpan.
 2. Buka detailnya, klik tautan bukti.
 3. **Edit** pelatihan yang sama, ganti Evidence dengan PDF lain; simpan; buka lagi tautan bukti.
-4. **Edit** pelatihan lama yang sudah punya bukti (dibuat sebelum v1.2.0) tanpa mengganti berkas; simpan.
+4. Data Analyst › Data — Per Lembaga: pilih Lembaga ITM (pelatihan hasil import), lihat modul **Aktivitas ber-bukti**.
 Harapan:
 - Langkah 1–3: tersimpan tanpa galat; tautan membuka PDF yang benar (yang terbaru di langkah 3).
-- Langkah 4: tersimpan; bukti lama tetap terbuka (kunci lama diterima apa adanya).
+- Langkah 4: pelatihan import tanpa berkas (`evidence_key = ''`) **tidak** terhitung ber-bukti — sama dengan panel Kualitas Data di Dashboard Pelatihan.
+- Nama berkas ber-en dash/kutip (mis. `Laporan – "GAP".pdf`) bisa diunggah; tautan membuka PDF.
 - `SELECT evidence_key FROM tbl_training_activity WHERE id = '<id langkah 1>'` → `training/<id>/<timestamp>-bukti-pelatihan-1-.pdf`.
 
 (Jalur serangan — kunci objek lain / `activityId` ber-`../` / pelatihan di luar scope — dikunci unit test `training-guard`, `upload-guard`, `training-evidence`; tidak diuji manual.)

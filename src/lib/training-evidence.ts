@@ -26,9 +26,15 @@ export function buildTrainingEvidenceKey(activityId: string, fileName: string, t
   return `training/${activityId}/${timestamp}-${sanitizeEvidenceFileName(fileName)}`;
 }
 
-/** Kunci ini dibuat `buildTrainingEvidenceKey` untuk aktivitas `activityId`. */
+/**
+ * Kunci ini milik aktivitas `activityId`: format sekarang (`buildTrainingEvidenceKey`)
+ * atau format lama #45 `training/evidence/<yyyy>/<mm>/<activityId>/<berkas>`
+ * (skrip `pdf-manager.js`). Audit mis-prod 2026-09-29: 0 kunci berkas asli.
+ */
 export function isTrainingEvidenceKeyFor(key: string, activityId: string): boolean {
   if (!SAFE_ID_SEGMENT.test(activityId)) return false;
+  const legacy = key.match(/^training\/evidence\/\d{4}\/\d{2}\/([^/]+)\/([^/]+)$/);
+  if (legacy) return legacy[1] === activityId && !legacy[2].includes("..");
   const prefix = `training/${activityId}/`;
   if (!key.startsWith(prefix)) return false;
   const rest = key.slice(prefix.length);

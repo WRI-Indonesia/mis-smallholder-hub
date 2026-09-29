@@ -11,8 +11,10 @@ export const trainingActivitySchema = z.object({
   location: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   // Pola kunci diperiksa di action terhadap id pelatihannya (#385, `isTrainingEvidenceKeyFor`).
-  evidenceKey: z.string().max(512).nullable().optional(),
-  evidenceName: z.string().max(255).nullable().optional(),
+  // "" = tanpa bukti → null (26 baris import mis-prod berisi "" dan terhitung
+  // "ada bukti" oleh `evidenceKey != null`, audit #385 2026-09-29).
+  evidenceKey: z.preprocess((v) => (v === "" ? null : v), z.string().max(512).nullable().optional()),
+  evidenceName: z.preprocess((v) => (v === "" ? null : v), z.string().max(255).nullable().optional()),
 });
 
 export const updateTrainingActivitySchema = trainingActivitySchema.extend({

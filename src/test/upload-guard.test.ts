@@ -3,8 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 /**
  * Guard & validasi unggah bukti pelatihan (`src/server/actions/upload.ts`)
  * tanpa S3 — pola mock `land-marker-guard.test.ts`. Yang dijaga: izin
- * `master-data-training` CREATE ATAU EDIT (keduanya ditolak → gagal, S3 tak
- * disentuh), hanya PDF ≤ 10 MB, nama berkas disanitasi di key, dan yang
+ * `master-data-training` EDIT (menempel bukti = update; CREATE saja ditolak, #385), hanya PDF ≤ 10 MB, nama berkas disanitasi di key, dan yang
  * dikembalikan KEY objek (bukan URL publik). #385: `activityId` harus segmen
  * path aman DAN pelatihan aktif dalam scope (helper scope ASLI) sebelum S3.
  */
@@ -47,18 +46,34 @@ beforeEach(() => {
 });
 
 describe("uploadTrainingEvidence", () => {
-  it("CREATE dan EDIT sama-sama ditolak → gagal, S3 tak disentuh", async () => {
-    hasPermission.mockResolvedValue(false);
+  it("#385: CREATE saja (tanpa EDIT) → ditolak; S3 & DB tak disentuh", async () => {
+    hasPermission.mockImplementation(async (_m: string, level: string) => level === "CREATE");
     const res = await uploadTrainingEvidence(form(pdf()));
     expect(res.success).toBe(false);
-    expect(hasPermission).toHaveBeenCalledWith("master-data-training", "CREATE");
     expect(hasPermission).toHaveBeenCalledWith("master-data-training", "EDIT");
+    expect(findFirst).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
   });
 
-  it("cukup EDIT saja (melengkapi pelatihan yang ada) → boleh unggah", async () => {
+  it("EDIT → boleh unggah", async () => {
     hasPermission.mockImplementation(async (_m: string, level: string) => level === "EDIT");
     expect((await uploadTrainingEvidence(form(pdf()))).success).toBe(true);
+  });
+
+  it("#385: bukan PDF / terlalu besar → ditolak SEBELUM kueri DB", async () => {
+    const png = new File([new Uint8Array(5)], "foto.png", { type: "image/png" });
+    await uploadTrainingEvidence(form(png));
+    await uploadTrainingEvidence(form(pdf("besar.pdf", 10 * 1024 * 1024 + 1)));
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  it("#385: nama berkas non-ASCII/kutip → header aman (filename*), nama tampilan ≤ 255", async () => {
+    const res = await uploadTrainingEvidence(form(pdf(`Laporan – "GAP" ${"x".repeat(300)}.pdf`)));
+    expect(res.success).toBe(true);
+    const cmd = send.mock.calls[0][0] as { input: { ContentDisposition: string } };
+    expect(cmd.input.ContentDisposition).toMatch(/^inline; filename="[\x20-\x7e]+"; filename\*=UTF-8''[\x21-\x7e]+$/);
+    expect(cmd.input.ContentDisposition).not.toContain("–");
+    expect(res.success && res.data!.filename.length).toBe(255);
   });
 
   it("tanpa file / tanpa activityId / bukan PDF / > 10 MB → ditolak tanpa unggah", async () => {
