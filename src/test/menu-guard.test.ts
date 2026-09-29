@@ -124,3 +124,26 @@ describe("deleteMenuItem — soft delete", () => {
     expect(db.menuItem.deleteMany).not.toHaveBeenCalled();
   });
 });
+
+describe("reactivateMenuItem — pasangan deleteMenuItem (#237)", () => {
+  it("DELETE → isActive:true + isVisible:true + modifiedBy (menu benar-benar kembali ke sidebar)", async () => {
+    expect((await actions.reactivateMenuItem("m-1")).success).toBe(true);
+    expect(hasPermission).toHaveBeenCalledExactlyOnceWith("settings-menu", "DELETE");
+    expect(db.menuItem.update.mock.calls[0][0]).toEqual({
+      where: { id: "m-1" }, data: { isActive: true, isVisible: true, modifiedBy: "admin-1" },
+    });
+  });
+
+  it("tanpa DELETE → ditolak, DB tak disentuh", async () => {
+    hasPermission.mockResolvedValue(false);
+    expect((await actions.reactivateMenuItem("m-1")).success).toBe(false);
+    for (const fn of Object.values(db.menuItem)) expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("id basi → error terbaca, tanpa update", async () => {
+    db.menuItem.findUnique.mockResolvedValue(null);
+    expect(await actions.reactivateMenuItem("m-x")).toEqual({ success: false, error: expect.stringMatching(/tidak ditemukan/) });
+    expect(db.menuItem.update).not.toHaveBeenCalled();
+  });
+});
+

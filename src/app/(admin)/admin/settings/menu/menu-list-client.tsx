@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Search, ChevronRight, ChevronDown } from "lucide-react";
 import { MenuFormModal } from "./menu-form-modal";
-import { deleteMenuItem } from "@/server/actions/menu";
+import { deleteMenuItem, reactivateMenuItem } from "@/server/actions/menu";
 import { toast } from "sonner";
 import { renderIcon } from "@/lib/icon-map";
 import { TableActions, DeleteDialog } from "@/components/shared";
@@ -63,6 +63,18 @@ export function MenuListClient({
     }
   }
 
+  // #237: baris nonaktif → "Aktifkan kembali" langsung mereaktivasi (pola toggle
+  // Master Data); dulu membuka dialog Nonaktifkan dan memanggil deleteMenuItem lagi.
+  async function handleReactivate(item: MenuItemData) {
+    const result = await reactivateMenuItem(item.id);
+    if (result.success) {
+      toast.success("Menu diaktifkan kembali");
+      router.refresh();
+    } else {
+      toast.error(typeof result.error === "string" ? result.error : "Gagal mengaktifkan menu");
+    }
+  }
+
   function rowActions(item: MenuItemData) {
     return (
       <TableActions
@@ -75,7 +87,7 @@ export function MenuListClient({
           {
             type: "delete",
             isActive: item.isActive,
-            onClick: () => setDeleteTarget(item),
+            onClick: () => (item.isActive ? setDeleteTarget(item) : handleReactivate(item)),
           },
         ]}
       />

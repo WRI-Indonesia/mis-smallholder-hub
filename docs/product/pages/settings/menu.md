@@ -16,7 +16,7 @@ Halaman: Menu Management (/admin/settings/menu)
 ├── Tabel tree menu (render rekursif 3 level, collapsible per induk)
 │   ├── Chevron buka/tutup per induk (default collapsed, state localStorage)
 │   ├── Kolom: Aksi · Menu · Key · URL · Order · Status
-│   └── Aksi baris: Edit (EDIT; saklar Aktif butuh DELETE) · Nonaktifkan / Aktifkan kembali (DELETE — tombol Aktifkan kembali masih memanggil nonaktifkan, bug #237)
+│   └── Aksi baris: Edit (EDIT; saklar Aktif butuh DELETE) · Nonaktifkan (DELETE, dialog konfirmasi → `deleteMenuItem`) / Aktifkan kembali (DELETE, langsung → `reactivateMenuItem`: Aktif + Visible, #237)
 ├── Dialog
 │   ├── Edit Menu
 │   │   └── Key · Title · URL · Parent · Order · Icon (baca-saja) + catatan menu.csv
@@ -24,6 +24,7 @@ Halaman: Menu Management (/admin/settings/menu)
 │   └── Nonaktifkan Menu (DeleteDialog konfirmasi)
 └── Toast
     ├── Menu item dinonaktifkan / Gagal menonaktifkan menu item
+    ├── Menu diaktifkan kembali / Gagal mengaktifkan menu (#237)
     └── Menu berhasil diupdate / Gagal menyimpan menu
 ```
 
@@ -57,7 +58,7 @@ Halaman: Menu Management (/admin/settings/menu)
 | Empty state pencarian | Teks | `Tidak ada menu yang cocok dengan pencarian.` |
 | `Buka semua` / `Tutup semua` | Tombol | Buka/tutup seluruh induk; state `localStorage` (`menu-list:open`), default *collapsed*; nonaktif saat mencari |
 | Tabel tree menu | Tree / Tabel | Render **rekursif 3 level** (`flattenTree`), **collapsible per induk** (chevron, default collapsed); indentasi per kedalaman; ikon dari `ICON_MAP` |
-| Kolom `Aksi` | Kolom | `Edit` (EDIT) dan `Nonaktifkan` / `Aktifkan kembali` (DELETE) via `TableActions` |
+| Kolom `Aksi` | Kolom | `Edit` (EDIT) dan `Nonaktifkan` / `Aktifkan kembali` (DELETE) via `TableActions`. Baris aktif → dialog Nonaktifkan; baris nonaktif → `reactivateMenuItem` langsung tanpa dialog (pola toggle Master Data; #237 — dulu tombol ini membuka dialog Nonaktifkan dan memanggil `deleteMenuItem` lagi) |
 | Kolom `Menu` | Kolom | Ikon + judul menu, terindentasi sesuai level |
 | Kolom `Key` | Kolom | `key` menu (font mono) |
 | Kolom `URL` | Kolom | `url` menu |

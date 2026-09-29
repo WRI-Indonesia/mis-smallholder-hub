@@ -22,14 +22,14 @@ Halaman ini menampilkan seluruh menu sidebar (sampai tiga tingkat) dan mengatur 
 2. Temukan menunya lewat kotak **Cari menu...** atau klik **Buka semua**.
 3. Menyembunyikan menu yang tidak dipakai: klik **Edit** pada barisnya, matikan saklar **Visible**, lalu **Simpan** — atau klik ikon **Nonaktifkan** di kolom Aksi.
 + **Visible** mati = menu disembunyikan dari sidebar tetapi tetap aktif; barisnya diberi badge **Tersembunyi**. **Nonaktifkan** = soft delete: menu hilang dari navigasi semua pengguna, barisnya tetap di daftar ini dengan badge **Nonaktif**. Mengubah saklar **Aktif** butuh izin **Delete** pada menu ini; Visible cukup izin Edit. Dialog Edit juga menampilkan judul, URL, induk, urutan, dan ikon menu itu sebagai keterangan (tidak bisa diubah).
-4. Menghidupkan lagi: buka **Edit** pada baris ber-badge **Nonaktif**, nyalakan saklar **Aktif** dan **Visible**, lalu **Simpan**.
-+ Ikon **Nonaktifkan** ikut mematikan saklar Visible, jadi setelah memakainya keduanya perlu dinyalakan kembali. Mematikan saklar Aktif lewat Edit tidak mengubah Visible.
+4. Menghidupkan lagi: klik ikon **Aktifkan kembali** (panah melingkar) di kolom Aksi pada baris ber-badge **Nonaktif** — menu langsung aktif dan tampil lagi. Cara lain: **Edit**, nyalakan saklar **Aktif** dan **Visible**, lalu **Simpan**.
++ Ikon **Nonaktifkan** ikut mematikan saklar Visible; **Aktifkan kembali** menyalakan keduanya sekaligus. Lewat Edit, saklar Aktif dan Visible diatur sendiri-sendiri — menu hanya tampil di sidebar bila keduanya menyala.
 
 > [!hati-hati] Menonaktifkan atau menyembunyikan menu **induk** ikut menyembunyikan seluruh sub-menunya.
 
 ## Kalau bermasalah
 
-**Menu hilang untuk semua orang** — periksa barisnya di halaman ini: badge **Nonaktif** atau **Tersembunyi**. Buka **Edit** lalu nyalakan **Aktif** dan **Visible**.
+**Menu hilang untuk semua orang** — periksa barisnya di halaman ini: badge **Nonaktif** (klik **Aktifkan kembali**) atau **Tersembunyi** (buka **Edit**, nyalakan **Visible**).
 
 **Menu tidak muncul untuk peran tertentu saja** — itu urusan izin, bukan struktur. Beri izin **V** (View) untuk peran itu di **Role & Permission**.
 

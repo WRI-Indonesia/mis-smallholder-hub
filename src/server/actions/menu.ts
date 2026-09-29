@@ -83,3 +83,23 @@ export async function deleteMenuItem(id: string) {
   return { success: true };
 }
 
+/**
+ * Pasangan `deleteMenuItem` (#237): menghidupkan lagi menu nonaktif — Aktif DAN
+ * Visible, karena nonaktifkan mematikan keduanya. Level DELETE, sama dengan
+ * menonaktifkan (tombol "Aktifkan kembali" dulu memanggil `deleteMenuItem`).
+ */
+export async function reactivateMenuItem(id: string) {
+  if (!(await hasPermission("settings-menu", "DELETE"))) {
+    return { success: false, error: "Tidak memiliki izin untuk mengaktifkan menu" };
+  }
+
+  const current = await prisma.menuItem.findUnique({ where: { id }, select: { id: true } });
+  if (!current) return { success: false, error: "Menu tidak ditemukan — muat ulang halaman" };
+
+  const session = await auth();
+  await prisma.menuItem.update({
+    where: { id },
+    data: { isActive: true, isVisible: true, modifiedBy: session?.user?.id ?? null },
+  });
+  return { success: true };
+}

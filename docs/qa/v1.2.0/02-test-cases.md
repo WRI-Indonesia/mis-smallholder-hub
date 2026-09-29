@@ -192,3 +192,15 @@ Langkah:
 Harapan:
 - Langkah 1: toast "Tidak memiliki izin untuk menonaktifkan/mengaktifkan menu"; menu tetap aktif.
 - Langkah 2: tersimpan (Visible cukup izin Edit).
+
+## #237 — "Aktifkan kembali" Menu Management
+
+### TC-237-01 · Nonaktifkan lalu aktifkan kembali menu [P0] [regresi] (3 mnt)
+Prasyarat: akun SUPERADMIN; menu uji `data-analyst-sprint`.
+Langkah:
+1. Settings › Menu Management: cari `data-analyst-sprint`, klik ikon **Nonaktifkan**, konfirmasi.
+2. Klik ikon **Aktifkan kembali** (panah melingkar) pada baris yang sama.
+Harapan:
+- Langkah 1: dialog "Nonaktifkan Menu"; setelah konfirmasi badge **Nonaktif**, menu hilang dari sidebar.
+- Langkah 2: **tanpa** dialog Nonaktifkan; toast "Menu diaktifkan kembali"; badge **Aktif** tanpa **Tersembunyi**; Sprint Mingguan tampil lagi di sidebar (`is_active` & `is_visible` = true).
+
