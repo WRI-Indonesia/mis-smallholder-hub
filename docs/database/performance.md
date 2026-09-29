@@ -160,7 +160,7 @@ Yang benar-benar ada di kode (tanpa Redis / cache in-memory umum):
 |------|------|-----------|
 | **Sesi user** | 30 hari (bawaan NextAuth) | JWT — tanpa query DB per request |
 | **Izin menu (RBAC)** | satu request | React `cache()` di `src/lib/rbac.ts` (`getEffectiveMenuPermissions`, `getUserPermissionsForMenu`, …) |
-| **Scope data user** | satu request | React `cache()` di `getAccessContext` (`src/lib/access-context.ts`, #252) — dulu tiap action paralel mengulang `auth()` + kueri user bersarang; kueri kini `select` id saja. Asumsi: scope tak berubah di tengah request, hasil tak dimutasi pemanggil |
+| **Scope data user** | satu render RSC | React `cache()` di `getAccessContext` (`src/lib/access-context.ts`, #252) — halaman RSC yang memanggil beberapa action/helper (`Promise.all`) kini satu `auth()` + satu kueri user; kueri `select` id saja. **Server Action yang dipanggil dari klien = request sendiri → tetap satu kueri per action** (cache React tak aktif di luar render) — pertahankan pengoperan `access` eksplisit di helper yang dipanggil berulang (`parcel-passport-query`, `parcel-neighbor-query`). Hasil dibekukan (`Object.freeze`) |
 | **Outline Riau (klip titik api)** | 6 jam per proses | Cache promise di `src/server/actions/fire-boundary.ts` (#280) |
 | **Titik api FIRMS** | 1 jam (jendela terbaru) · 6 jam (lampau) · 30 hari (arsip bulanan) | `fetch` `next.revalidate` di `src/app/api/map-hotspot/route.ts` |
 | **Agregat dashboard** | sampai snapshot berikutnya di-generate | Tabel snapshot ([dashboard-snapshots.md](./dashboard-snapshots.md)) |

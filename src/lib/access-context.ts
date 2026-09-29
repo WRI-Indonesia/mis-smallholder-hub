@@ -7,22 +7,33 @@ export { farmerGroupAccessFilter, rawFarmerGroupScope, farmerAccessFilter, farme
 import type { AccessContext } from "@/lib/access-scope";
 
 /**
- * Scope data user — dedup per request dengan `cache()` (#252, pola `rbac.ts`):
- * satu halaman memanggilnya dari banyak action paralel, dulu masing-masing
- * mengulang `auth()` + kueri user bersarang. Asumsi: assignment scope user
- * TIDAK berubah di tengah satu request, dan pemanggil tidak memutasi hasilnya
- * (objek yang sama dibagi ke semua pemanggil dalam request itu).
+ * Scope data user — dedup dengan `cache()` (#252, pola `rbac.ts`) **dalam satu
+ * render RSC** (mis. halaman yang memanggil beberapa action lewat `Promise.all`).
+ * Server Action yang dipanggil dari klien = request tersendiri → tetap satu
+ * kueri per action; oper `access` secara eksplisit bila satu action memanggil
+ * helper berkali-kali. Asumsi: scope user tak berubah di tengah satu request.
+ * Hasil DIBEKUKAN — objek yang sama dibagi ke semua pemanggil dalam render itu.
  */
-export const getAccessContext = cache(async (): Promise<AccessContext> => {
+export const getAccessContext = cache(async (): Promise<AccessContext> => freezeAccess(await resolveAccessContext()));
+
+function freezeAccess(access: AccessContext): AccessContext {
+  if (access.mode !== "ALL") Object.freeze(access.ids);
+  return Object.freeze(access);
+}
+
+async function resolveAccessContext(): Promise<AccessContext> {
   const session = await auth();
   if (!session?.user) return { mode: "BY_DISTRICT", ids: [] };
   if (session.user.role === "SUPERADMIN") return { mode: "ALL" };
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+  // User nonaktif (JWT masih hidup sampai login ulang, #342) → tidak ditemukan →
+  // fail-closed. Dulu `findUnique` tanpa `isActive`: user nonaktif tanpa
+  // assignment jatuh ke `ALL` (review #252).
+  const user = await prisma.user.findFirst({
+    where: { id: session.user.id, isActive: true },
     // Hanya id yang dipakai — dulu baris penuh ≤ 50 distrik per provinsi.
     select: {
-      provinces: { select: { province: { select: { districts: { select: { id: true } } } } } },
+      provinces: { select: { province: { select: { districts: { where: { isActive: true }, select: { id: true } } } } } },
       districts: { select: { districtId: true } },
       farmerGroups: { select: { farmerGroupId: true } },
     },
@@ -48,7 +59,7 @@ export const getAccessContext = cache(async (): Promise<AccessContext> => {
   for (const ud of user.districts) ids.add(ud.districtId);
 
   return { mode: "BY_DISTRICT", ids: [...ids] };
-});
+}
 
 /**
  * District ids the user may access, or `null` for unrestricted (ALL).

@@ -10,7 +10,7 @@ const auth = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/auth", () => ({ auth }));
 
 const db = vi.hoisted(() => ({
-  user: { findUnique: vi.fn() },
+  user: { findFirst: vi.fn() },
   farmerGroup: { findMany: vi.fn() },
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
@@ -53,12 +53,12 @@ describe("getAccessContext — dedup per request (#252)", () => {
   });
 
   it("kueri user hanya memilih id (bukan baris distrik penuh per provinsi)", async () => {
-    db.user.findUnique.mockResolvedValue(user({ districts: ["d1"] }));
+    db.user.findFirst.mockResolvedValue(user({ districts: ["d1"] }));
     await getAccessContext();
-    expect(db.user.findUnique.mock.calls[0][0]).toEqual({
-      where: { id: "u1" },
+    expect(db.user.findFirst.mock.calls[0][0]).toEqual({
+      where: { id: "u1", isActive: true },
       select: {
-        provinces: { select: { province: { select: { districts: { select: { id: true } } } } } },
+        provinces: { select: { province: { select: { districts: { where: { isActive: true }, select: { id: true } } } } } },
         districts: { select: { districtId: true } },
         farmerGroups: { select: { farmerGroupId: true } },
       },
@@ -66,37 +66,54 @@ describe("getAccessContext — dedup per request (#252)", () => {
   });
 });
 
+describe("getAccessContext — review #252", () => {
+  it("user nonaktif (JWT masih hidup) → tidak ditemukan → BY_DISTRICT kosong, BUKAN ALL", async () => {
+    db.user.findFirst.mockResolvedValue(null);
+    expect(await getAccessContext()).toEqual({ mode: "BY_DISTRICT", ids: [] });
+    expect(db.user.findFirst.mock.calls[0][0].where).toEqual({ id: "u1", isActive: true });
+  });
+
+  it("hasil dibekukan — objek yang dibagi dalam satu render tak bisa dimutasi pemanggil", async () => {
+    db.user.findFirst.mockResolvedValue(user({ districts: ["d1"] }));
+    const access = await getAccessContext();
+    expect(Object.isFrozen(access)).toBe(true);
+    expect(access.mode !== "ALL" && Object.isFrozen(access.ids)).toBe(true);
+    expect(() => (access.mode !== "ALL" ? (access.ids as string[]).push("d-lain") : null)).toThrow(TypeError);
+  });
+});
+
 describe("getAccessContext — mode akses", () => {
   it("tanpa sesi → BY_DISTRICT kosong (fail-closed), DB tak disentuh", async () => {
     auth.mockResolvedValue(null);
     expect(await getAccessContext()).toEqual({ mode: "BY_DISTRICT", ids: [] });
-    expect(db.user.findUnique).not.toHaveBeenCalled();
+    expect(db.user.findFirst).not.toHaveBeenCalled();
   });
 
   it("SUPERADMIN → ALL tanpa membaca assignment", async () => {
     auth.mockResolvedValue({ user: { id: "u0", role: "SUPERADMIN" } });
     expect(await getAccessContext()).toEqual({ mode: "ALL" });
-    expect(db.user.findUnique).not.toHaveBeenCalled();
+    expect(db.user.findFirst).not.toHaveBeenCalled();
   });
 
   it("user tidak ditemukan di DB → BY_DISTRICT kosong", async () => {
-    db.user.findUnique.mockResolvedValue(null);
+    db.user.findFirst.mockResolvedValue(null);
     expect(await getAccessContext()).toEqual({ mode: "BY_DISTRICT", ids: [] });
   });
 
   it("tanpa assignment sama sekali → ALL", async () => {
-    db.user.findUnique.mockResolvedValue(user({}));
+    db.user.findFirst.mockResolvedValue(user({}));
     expect(await getAccessContext()).toEqual({ mode: "ALL" });
-    expect(db.user.findUnique.mock.calls[0][0].where).toEqual({ id: "u1" });
+    // Hanya user AKTIF tanpa assignment yang jatuh ke ALL (review #252).
+    expect(db.user.findFirst.mock.calls[0][0].where).toEqual({ id: "u1", isActive: true });
   });
 
   it("hanya Lembaga (KT) → BY_FARMER_GROUP dengan id Lembaga", async () => {
-    db.user.findUnique.mockResolvedValue(user({ farmerGroups: ["kt-1", "kt-2"] }));
+    db.user.findFirst.mockResolvedValue(user({ farmerGroups: ["kt-1", "kt-2"] }));
     expect(await getAccessContext()).toEqual({ mode: "BY_FARMER_GROUP", ids: ["kt-1", "kt-2"] });
   });
 
   it("provinsi diekspansi ke distriknya + union distrik langsung tanpa duplikat; KT diabaikan", async () => {
-    db.user.findUnique.mockResolvedValue(
+    db.user.findFirst.mockResolvedValue(
       user({ provinces: [{ districts: ["1401", "1405"] }], districts: ["1405", "1601"], farmerGroups: ["kt-1"] })
     );
     const ctx = await getAccessContext();
@@ -105,12 +122,12 @@ describe("getAccessContext — mode akses", () => {
   });
 
   it("hanya distrik (tanpa provinsi) → BY_DISTRICT distrik itu", async () => {
-    db.user.findUnique.mockResolvedValue(user({ districts: ["1408"] }));
+    db.user.findFirst.mockResolvedValue(user({ districts: ["1408"] }));
     expect(await getAccessContext()).toEqual({ mode: "BY_DISTRICT", ids: ["1408"] });
   });
 
   it("provinsi tanpa distrik terdaftar → BY_DISTRICT kosong (bukan ALL)", async () => {
-    db.user.findUnique.mockResolvedValue(user({ provinces: [{ districts: [] }] }));
+    db.user.findFirst.mockResolvedValue(user({ provinces: [{ districts: [] }] }));
     expect(await getAccessContext()).toEqual({ mode: "BY_DISTRICT", ids: [] });
   });
 });
