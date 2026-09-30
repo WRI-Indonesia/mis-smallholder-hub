@@ -39,7 +39,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Bulk Upload         | 🟠 Hampir lengkap | Petani, Produksi, Lahan (shapefile + Detail Lahan), Pohon. **BULK-02** (Region & Lembaga/KT) belum ada — issue-nya ditutup *not planned*, perlu keputusan. |
 | Map & Data Analyst  | ✅ Complete     | Peta Lahan & Peta BMP; Ringkasan Petani, Ketersediaan Data (per/semua Lembaga), Komparasi Data Acuan, Peta Data & Skema, Metrik Rilis; **Tumpang Tindih Lahan** & **Rencana Pengembangan** (dulu Sprint Mingguan) dirilis v1.2.0; label baru menunggu seed v1.3.0. |
 | Bantuan (HELP)      | ✅ Complete     | Panduan in-app tutorial/konsep/referensi (64 berkas materi), dijaga test cakupan menu. |
-| Keamanan            | 🟡 Perlu tindakan | Di `mvp` (v1.2.0): struktur menu dikunci dari UI (#364), kunci S3 bukti pelatihan divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). **Terbuka:** `users.csv` memuat email staf + password teks polos di repo publik (**#390**, ditunda — rotasi akun staging/prod oleh owner/DevOps); role di JWT beku sampai login ulang (#342). |
+| Keamanan            | 🟡 Perlu tindakan | Di `mvp` (v1.2.0): struktur menu dikunci dari UI (#364), kunci S3 bukti pelatihan divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). **Terbuka:** `users.csv` pernah memuat email staf + password teks polos di repo publik (**#390** — HEAD sudah diganti akun fiktif + password dari env; sisa: rotasi akun staging/prod oleh owner/DevOps & keputusan riwayat git); role di JWT beku sampai login ulang (#342). |
 | Testing & QA        | ✅ Strong       | Gate lokal lint/build/typecheck/test; paket QA manual per rilis di `docs/qa/` (smoke + kasus uji + QC data + sign-off). |
 
 ### Snapshot Progres
@@ -69,7 +69,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 
 | Keputusan                  | Owner                   | Dibutuhkan Kapan     | Rekomendasi Tech Lead                                                                       |
 | -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
-| Rotasi password akun yang terbuka di `users.csv` (#390) | Owner + DevOps | Secepatnya (ditunda owner 2026-09-29) | Cek hash akun staging/prod terhadap 2 password seed (skrip baca-saja), rotasi yang cocok; ganti seed jadi akun fiktif + password dari env. |
+| Rotasi password akun yang terbuka di `users.csv` (#390) | Owner + DevOps | Secepatnya (ditunda owner 2026-09-29) | Cek hash akun staging/prod terhadap 2 password seed (skrip baca-saja), rotasi yang cocok. Seed sudah akun fiktif + `SEED_USER_PASSWORD` (2026-09-30). |
 | Nasib BULK-02 (#69/#70 ditutup *not planned*) | Owner / Product | Sebelum rilis v1.3.0 | Putuskan buka ulang atau keluarkan dari baseline roadmap; perubahan baseline dicatat di Decision Log. |
 | Lisensi Universal Mill List & berkas survei rantai pasok (#379) | Owner | Sprint 1 | Pastikan lisensi mengizinkan data masuk repo publik; bila tidak, seed lewat `--data` dari folder lokal. |
 | Migrasi staging otomatis (#277) | Owner + DevOps | Sprint 2 | Tambahkan minimal guard `migrate status` di workflow deploy. (Build staging OOM #363 ✅ 2026-09-30 — RAM 4 GB.) |

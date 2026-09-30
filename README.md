@@ -28,7 +28,7 @@ npm install
 
 # Setup environment variables
 cp .env.example .env
-# Edit .env dengan konfigurasi database dan S3
+# Edit .env dengan konfigurasi database dan S3, dan isi SEED_USER_PASSWORD (min. 12 karakter)
 
 # Setup database
 npx prisma migrate dev
@@ -40,9 +40,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-Default credentials (seeded):
-- Email: `admin@example.com`
-- Password: `password123`
+Akun contoh hasil seed (fiktif, satu per role — `prisma/seeds/data/users.csv`):
+- Email: `superadmin@example.test` (juga `admin@`, `management@`, `operator@`, `donor@example.test`)
+- Password: nilai `SEED_USER_PASSWORD` di `.env` — tidak pernah disimpan di repo (#390)
 
 > ⚠️ `prisma db seed` hanya untuk database **kosong/baru** — jangan jalankan di database yang sudah berisi data.
 
