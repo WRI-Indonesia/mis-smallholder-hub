@@ -30,7 +30,7 @@ Contoh bukti yang valid:
 
 | Step | Bagian yang Diupdate | Pertanyaan Cek                                                         |
 | ---- | --------------------- | -------------------------------------------------------------------------- |
-| 1    | Issue Aktif (`sprint.md`) + tabel Sprint | Apakah status issue, assignee, target, dan next action sudah benar?    |
+| 1    | Tabel Sprint + Backlog (`sprint.md`) | Apakah status issue, target, dan keputusan owner sudah benar? Satu issue per baris; `Terakhir diperbarui` ikut diganti |
 | 2    | Phase Status         | Apakah status fase berubah berdasarkan file/code nyata?                |
 | 3    | Rincian per Phase (Evidence) | Apakah ada route/schema/action baru atau hilang?                       |
 | 4    | Snapshot Progres (`brief.md`) | Apakah angka Done/Partial/Not Started/Planned/Blocked masih konsisten? |
@@ -94,7 +94,7 @@ flowchart LR
 - List page memiliki search/filter/pagination jika datanya berpotensi besar.
 - Server action tidak hanya mengandalkan guard UI; permission tetap dicek di backend.
 - Placeholder `Coming soon` tidak dihitung sebagai selesai.
-- Setelah phase selesai, update **Phase Status**, **Issue Aktif**, **Snapshot Progres**, dan **Changelog**.
+- Setelah phase selesai, update **Phase Status**, **tabel Sprint/Backlog**, **Snapshot Progres**, dan **Changelog**.
 
 ### Validasi Minimum
 

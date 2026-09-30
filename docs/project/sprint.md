@@ -8,7 +8,9 @@ Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Kar
 
 ### Sprint Focus
 
-Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Disusun 2026-09-28 dari triase 42 issue terbuka: #265 & #374 ditutup, 40 tersisa. Diperbarui 2026-09-30: #363 selesai lebih awal (RAM staging 4 GB). Sebelumnya 2026-09-29: #378 dicatat di Sprint 1 (tak terencana), temuan audit keamanan #385 & privasi #383 disisipkan di Sprint 1 (sisa temuan audit ke backlog), epic Supply Chain **#379** (#380–#382, P1) ditaruh di Sprint 5–6 tanpa menggeser Sprint 1–4, prasyaratnya (lisensi UML, berkas survei) diputuskan di Sprint 1. Setiap minggu berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner, dan keputusannya diminta **di awal minggu**. Tabel sprint ditampilkan di menu **Data Analyst → Sprint Mingguan** (#378) dan diparse saat build. Karena itu formatnya tetap: heading `#### Sprint <n> · <mulai> → <selesai> — <judul>` dan tujuh kolom. **Kategori** diisi salah satu dari Keamanan · Rilis · Performa · Data · Fitur · Kerapian. **Poin** diisi S = 1 (≤ ½ hari), M = 3 (1–2 hari), atau L = 5 (3+ hari, sebaiknya dipecah). **Status** diisi salah satu dari 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser. Butir yang digeser tetap ditulis di sprint asalnya dengan ⏭️, lalu ditulis ulang di sprint tujuannya; dari situ carry-over di tab Analisa dihitung. Format yang rusak membuat build gagal. Butir yang menulis ke mis-prod tetap mengikuti pola dump → dry-run → approval → `--write`.
+Terakhir diperbarui: 2026-09-30
+
+Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Disusun 2026-09-28 dari triase 42 issue terbuka: #265 & #374 ditutup, 40 tersisa. Diperbarui 2026-09-30: #363 selesai lebih awal (RAM staging 4 GB); backlog jadi tabel satu issue per baris dan tabel Work Item diarsipkan (tab Semua Issue). Sebelumnya 2026-09-29: #378 dicatat di Sprint 1 (tak terencana), temuan audit keamanan #385 & privasi #383 disisipkan di Sprint 1 (sisa temuan audit ke backlog), epic Supply Chain **#379** (#380–#382, P1) ditaruh di Sprint 5–6 tanpa menggeser Sprint 1–4, prasyaratnya (lisensi UML, berkas survei) diputuskan di Sprint 1. Setiap minggu berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner, dan keputusannya diminta **di awal minggu**. Tabel sprint ditampilkan di menu **Data Analyst → Sprint Mingguan** (#378) dan diparse saat build. Karena itu formatnya tetap: heading `#### Sprint <n> · <mulai> → <selesai> — <judul>` dan tujuh kolom. **Kategori** diisi salah satu dari Keamanan · Rilis · Performa · Data · Fitur · Kerapian. **Poin** diisi S = 1 (≤ ½ hari), M = 3 (1–2 hari), atau L = 5 (3+ hari, sebaiknya dipecah). **Status** diisi salah satu dari 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser. Butir yang digeser tetap ditulis di sprint asalnya dengan ⏭️, lalu ditulis ulang di sprint tujuannya; dari situ carry-over di tab Analisa dihitung. **Backlog** juga berupa tabel empat kolom `| # | Issue | Status | Catatan |`: `#` = urutan kelompok (boleh berulang), satu issue per baris. Kolom Issue di sprint maupun backlog memuat **paling banyak satu** `#nnn` diikuti deskripsi singkat, karena tab **Semua Issue** menampilkan satu baris per issue dari sini. Baris `Terakhir diperbarui: YYYY-MM-DD` di atas wajib diperbarui setiap kali dokumen ini diubah; test gagal bila tanggalnya lebih lama dari tanggal terbaru yang tercatat di tabel. Format yang rusak membuat build gagal. Butir yang menulis ke mis-prod tetap mengikuti pola dump → dry-run → approval → `--write`.
 
 #### Sprint 1 · 2026-09-28 → 2026-10-04 — Amankan konfigurasi & akses prod, rilis v1.2.0
 
@@ -24,7 +26,7 @@ Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko
 | 8 | **#379** Prasyarat Supply Chain | Data | S | Lisensi & versi Universal Mill List (boleh masuk repo publik?) + ketersediaan berkas survei rantai pasok 2025 per Lembaga | ⚖️ Menunggu keputusan | Lisensi UML; daftar Lembaga yang sudah punya survei |
 | 9 | **#385** Kunci berkas bukti pelatihan & path unggahan S3 tidak divalidasi (P1, dari audit 2026-09-29) | Keamanan | S | `evidenceKey` wajib ber-prefix aktivitasnya sendiri; `upload.ts` cek `activityId` ada + dalam scope + tersanitasi; test negatif di `training-guard`/`upload-guard`. Kode ✅ 2026-09-29 (`281a8a6` + review `f91ec6e`: pemeriksa kunci juga di sisi baca, `""` bukan bukti — audit prod 26 baris, unggah butuh EDIT); **ditutup + retro** | ✅ Selesai | — |
 | 10 | **#383** Nama orang tampak asli di contoh template NKT (repo publik, P1) | Keamanan | S | Ganti contoh dengan nama fiktif + sisir template/fixture/Bantuan lain. Kode ✅ 2026-09-29 (HEAD bersih; template NKT & Detail Lahan, fixture test, placeholder UI, komentar lib/skema, Bantuan p-12, **seed `farmer.csv` 3 baris ber-NIK**); `users.csv` → **#390**; **ditutup + retro** | ✅ Selesai | ✅ Diputuskan: cukup HEAD (preseden #273) |
-| 11 | **#390** `users.csv` seed: email staf asli + password teks polos di repo publik (P1, dari review #383) | Keamanan | S | Owner/DevOps: cek & rotasi akun staging/prod yang masih memakai password itu; repo: akun contoh fiktif + password dari env. **Ditunda** (keputusan owner 2026-09-29), bukan syarat QA v1.2.0 | 🔲 Todo | Riwayat git (preseden #273/#383) |
+| 11 | **#390** `users.csv` seed: email staf asli + password teks polos di repo publik (P1) | Keamanan | S | Temuan review #383. Owner/DevOps: cek & rotasi akun staging/prod yang masih memakai password itu; repo: akun contoh fiktif + password dari env. **Ditunda** (keputusan owner 2026-09-29), bukan syarat QA v1.2.0 | 🔲 Todo | Riwayat git (preseden #273/#383) |
 | 12 | **#389** Sprint Mingguan: tab Sprint jadi kanban tahapan penyelesaian issue (disisipkan owner 2026-09-29 ke v1.2.0) | Fitur | S | Papan 4 kolom (Belum dimulai → Dikerjakan → Menunggu keputusan → Selesai) menggantikan daftar per status + kotak keputusan; read-only. `12ee720` + review `0ec7635`; **ditutup + retro** | ✅ Selesai | ✅ Gantikan daftar (bukan toggle) |
 
 #### Sprint 2 · 2026-10-05 → 2026-10-11 — Jalur rilis & gate yang bisa dipercaya
@@ -35,7 +37,7 @@ Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko
 | 2 | **#376** Migrasi prod mendahului tag rilis (TD-045) | Rilis | M | Skrip cek `applied-checksums.json` vs tag terakhir + test tanpa DB + aturan di `versioning.md`/`migrations.md` | 🔲 Todo | — |
 | 3 | **#311** `perf.test.ts` merah karena beban mesin | Rilis | S | `minOf(N)` + ambang ≥ 3× angka terukur. Kode ✅ 2026-09-29 (ditarik ke v1.2.0, keputusan owner): `minTime` 43 blok; suite penuh + build paralel 3/3 hijau (dulu 3/3 merah); review `dff1cf6` (timeout 30 dtk); **ditutup + retro** | ✅ Selesai | — |
 | 4 | **#363** Build staging OOM (RAM 1,97 GB) | Rilis | M | **Diputuskan & diterapkan 2026-09-30:** RAM server staging dinaikkan ke **4 GB** (DevOps, opsi 2). `staging` ← `main` + `mvp`, deploy `36660789043` hijau 2m15s (available 2,4 GB sebelum build); **ditutup + retro 2026-09-30** | ✅ Selesai | ✅ Diputuskan: upgrade RAM 4 GB |
-| 5 | **#232** OPS-02 | Rilis | M | Tulis ulang issue jadi "prosedur rollback" (env matrix sudah ada di `environments.md`), lalu dokumentasikan dan uji di staging | 🔲 Todo | — |
+| 5 | **#232** OPS-02 prosedur rollback deploy | Rilis | M | Tulis ulang issue jadi "prosedur rollback" (env matrix sudah ada di `environments.md`), lalu dokumentasikan dan uji di staging | 🔲 Todo | — |
 
 #### Sprint 3 · 2026-10-12 → 2026-10-18 — Performa & kualitas data prod
 
@@ -43,26 +45,29 @@ Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko
 | - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
 | 1 | **#251** Indeks `ProductionRecord` (P1) | Performa | M | Indeks komposit `(parcel_id, period)` + partial `is_active`, divalidasi `EXPLAIN ANALYZE`; import produksi sedang berjalan | ⚖️ Menunggu keputusan | Grain produksi: 1 baris/bulan atau per panen? |
 | 2 | **#335** Lazy-load titik patok Detail Lembaga/Petani | Performa | M | Action ber-scope + KPI dari `count` (menutup query patok tanpa scope) | 🔲 Todo | — |
-| 3 | **#253** · **#320** | Performa | M | Agregat `getFarmerSummary` di SQL; memo izin per sesi di `/api/map-basemap` | 🔲 Todo | #320: jendela pencabutan izin ≤ 60 dtk dapat diterima? |
-| 4 | **#366** Detail Lahan Siak | Data | L | A1/A2 (bug laten #306 `readRaw`, kode + test), lalu importer mengikuti keputusan B & D | ⚖️ Menunggu keputusan | Pilih A, B, D + nasib 493 kode APKSSB |
-| 5 | **#354** Tanggal lahir tertukar (~5.400 petani) | Data | M | Skrip idempoten: dry-run per Lembaga di local → staging-local → mis-prod | ⚖️ Menunggu keputusan | Approval apply prod |
+| 3 | **#253** Agregat `getFarmerSummary` dipindah ke SQL | Performa | S | `_count`/`_sum` di SQL, bukan dijumlah di JS | 🔲 Todo | — |
+| 4 | **#320** `/api/map-basemap` cek izin per tile | Performa | S | Memo izin per sesi, bukan `hasPermission` per tile | 🔲 Todo | Jendela pencabutan izin ≤ 60 dtk dapat diterima? |
+| 5 | **#366** Detail Lahan Siak | Data | L | A1/A2 (bug laten #306 `readRaw`, kode + test), lalu importer mengikuti keputusan B & D | ⚖️ Menunggu keputusan | Pilih A, B, D + nasib 493 kode APKSSB |
+| 6 | **#354** Tanggal lahir tertukar (~5.400 petani) | Data | M | Skrip idempoten: dry-run per Lembaga di local → staging-local → mis-prod | ⚖️ Menunggu keputusan | Approval apply prod |
 
 #### Sprint 4 · 2026-10-19 → 2026-10-25 — Fitur lanjutan & kerapian, rilis v1.3.0
 
 | # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
-| 1 | **#317** sisa | Fitur | L | Tab Luar Boundary & Selisih Luas (Fase 2 tuntas); Fase 3 guard upload bila waktu cukup | 🔲 Todo | — |
+| 1 | **#317** Tumpang tindih lahan — sisa Fase 2 & Fase 3 | Fitur | L | Tab Luar Boundary & Selisih Luas (Fase 2 tuntas); Fase 3 guard upload bila waktu cukup | 🔲 Todo | — |
 | 2 | **#290** Basemap GIBS Fire Alert | Fitur | M | Tombol GIBS mengikuti tanggal rentang titik api + Bantuan `p-11` | 🔲 Todo | — |
-| 3 | Selipan kerapian | Kerapian | M | **#319** (`coverage` wajib) · **#315** (satu `FilterCombobox`) · **#310** (Bantuan `t-3` Upload List Peserta) | 🔲 Todo | — |
-| 4 | **Rilis v1.3.0** | Rilis | M | Sprint 2–4 | 🔲 Todo | Go rilis |
+| 3 | **#319** Report: default `coverage` ≠ `landParcelLegalWhere` | Kerapian | S | `coverage` wajib diisi, tanpa default | 🔲 Todo | — |
+| 4 | **#315** Dua salinan `FilterCombobox` di panel peta | Kerapian | S | Pakai satu primitif `shared/filter-combobox.tsx` | 🔲 Todo | — |
+| 5 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Tambah langkah tab Upload List Peserta (#301) | 🔲 Todo | — |
+| 6 | **Rilis v1.3.0** | Rilis | M | Sprint 2–4 | 🔲 Todo | Go rilis |
 
 #### Sprint 5 · 2026-10-26 → 2026-11-01 — Supply Chain A: master & import survei rantai pasok
 
 | # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
-| 1 | **#380** bagian 1: model + master | Fitur | L | Migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord` + halaman Master Data Mill, Offtaker, Rantai Pasok + menu & izin + `build:schema`/`build:lineage` + `models.md`/ERD | 🔲 Todo | — |
-| 2 | **#380** bagian 2: import survei | Fitur | L | Bulk Upload Rantai Pasok: cocok Parcel ID, layar review offtaker (kode MIS), status Mill PKS/PT/kosong, peringatan tonase, cek silang produksi & luas, template unduh dari MIS, Bantuan | 🔲 Todo | — |
-| 3 | **#380** seed UML | Data | S | Skrip seed Mill dari UML mengikuti keputusan lisensi Sprint 1 (di repo atau via `--data`) | ⚖️ Menunggu keputusan | Hasil cek lisensi UML (Sprint 1 #8) |
+| 1 | **#380** Supply Chain A bagian 1: model + master Mill/Offtaker | Fitur | L | Migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord` + halaman Master Data Mill, Offtaker, Rantai Pasok + menu & izin + `build:schema`/`build:lineage` + `models.md`/ERD | 🔲 Todo | — |
+| 2 | **#380** Supply Chain A bagian 2: import survei rantai pasok | Fitur | L | Bulk Upload Rantai Pasok: cocok Parcel ID, layar review offtaker (kode MIS), status Mill PKS/PT/kosong, peringatan tonase, cek silang produksi & luas, template unduh dari MIS, Bantuan | 🔲 Todo | — |
+| 3 | **#380** Supply Chain A: seed Mill dari Universal Mill List | Data | S | Skrip seed Mill dari UML mengikuti keputusan lisensi Sprint 1 (di repo atau via `--data`) | ⚖️ Menunggu keputusan | Hasil cek lisensi UML (Sprint 1 #8) |
 
 #### Sprint 6 · 2026-11-02 → 2026-11-08 — Supply Chain B & C: peta, analisa, rilis v1.4.0
 
@@ -74,13 +79,33 @@ Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko
 
 #### Backlog terurut (setelah Sprint 6)
 
-1. **#286 butir 1 & 3 + #291** (dirancang bersama): cache FIRMS sendiri, payload cap, Sentinel-2. **Target selesai sebelum musim kemarau 2027.**
-2. **#345 tahap 2** (`purpose BATAS_LAHAN|NKT`, patok NKT dari buffer sungai) · **#349** layer Monev BMP · **#178** DA-05 anomali produksi (3 pertanyaan terbuka ⚖️).
-3. **#355** sertifikasi `NONE` · **#356** bobot modul ke Index · **#358** peta kesiapan data · **#258** peta aplikasi Bantuan · **#203** riwayat revisi lahan.
-4. Kerapian: **#308** selektor kolom · **#259** kolom audit Peta Data · **#218** matriks cakupan + a11y.
-5. **Hanya keputusan (⚖️, bukan kode):** **#334** KT HJP/SSJ · **#260** kecamatan/desa · **#261** cakupan pohon · **#192** mobile & **#124** NICFI (masih direncanakan? bila tidak, close *not planned*).
-6. **Temuan audit 2026-09-29 (`/audit`):** **#386** celah RBAC laten (filter menimpa scope Data Analyst, eskalasi role Settings Users — kerjakan sebelum menu itu diberikan ke peran ber-scope) · **#384** guard filter Peta BMP · **#387** kerapian (guard `getMenuItems`, scope nama audit, `modifiedBy` override, snapshot org-wide, revisi lahan) · **TD-049** auto-fit Excel · **TD-050** 2 test RBAC salinan logika.
-7. **Menunggu verifikasi, bukan pengerjaan:** **#365** (owner melihat di UI prod → close) · **#373** (cek silang 82 kode ganda → pindah ke issue data, lalu close).
+| # | Issue | Status | Catatan |
+| - | ----- | ------ | ------- |
+| 1 | **#286 butir 1 & 3** Fire Alert: cache FIRMS sendiri + batas payload rentang 30 hari | 🔲 Todo | Dirancang bersama #291. **Target selesai sebelum musim kemarau 2027** |
+| 1 | **#291** Fire Alert: basemap Sentinel-2 10 m via CDSE | 🔲 Todo | Dirancang bersama #286; kuota CDSE → cache wajib |
+| 2 | **#345 tahap 2** Patok NKT jadi tipe sendiri (`purpose BATAS_LAHAN\|NKT`, dari buffer sungai) | 🔲 Todo | — |
+| 2 | **#349** Peta BMP: layer Monev BMP (warna lahan per kategori skor) | 🔲 Todo | — |
+| 2 | **#178** DA-05 deteksi anomali data produksi | ⚖️ Menunggu keputusan | 3 pertanyaan terbuka |
+| 3 | **#355** Sertifikasi: nilai eksplisit `NONE` | 🔲 Todo | "Belum diisi" ≠ "tidak bersertifikat" |
+| 3 | **#356** Bobot cakupan modul ke Index | 🔲 Todo | — |
+| 3 | **#358** DA-03 peta kesiapan data per Lembaga | 🔲 Todo | — |
+| 3 | **#258** Peta aplikasi (sitemap) di Bantuan | 🔲 Todo | — |
+| 3 | **#203** Detail Lahan: riwayat revisi lahan | 🔲 Todo | — |
+| 4 | **#308** Seragamkan selektor kolom di semua menu | 🔲 Todo | Kerapian |
+| 4 | **#259** Peta Data: pisahkan kolom audit dari kolom domain | 🔲 Todo | Kerapian |
+| 4 | **#218** Rekonsiliasi matriks cakupan pelatihan + a11y tooltip | 🔲 Todo | Kerapian |
+| 5 | **#334** KT HJP & SSJ kosong: KT+Blok tergabung atau kode blok? | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
+| 5 | **#260** Kecamatan & desa hanya 1 baris: isi atau sembunyikan? | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
+| 5 | **#261** Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
+| 5 | **#192** Epic API layer & offline sync aplikasi mobile | ⚖️ Menunggu keputusan | Masih direncanakan? Bila tidak, close *not planned* |
+| 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ⚖️ Menunggu keputusan | Masih direncanakan? Bila tidak, close *not planned* |
+| 6 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | 🔲 Todo | Audit 2026-09-29; kerjakan sebelum menu itu diberikan ke peran ber-scope |
+| 6 | **#384** Peta BMP: filter memakai guard `map-parcel` | 🔲 Todo | Audit 2026-09-29 |
+| 6 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | 🔲 Todo | Audit 2026-09-29 |
+| 6 | **TD-049** Auto-fit kolom Excel | 🔲 Todo | Tech debt, audit 2026-09-29 |
+| 6 | **TD-050** 2 test RBAC menyalin logika | 🔲 Todo | Tech debt, audit 2026-09-29 |
+| 7 | **#365** Fire Alert: laporan bulanan titik api | ⚖️ Menunggu keputusan | Kode selesai; owner melihat di UI prod → close |
+| 7 | **#373** UL Parcel Code boleh menempel di >1 lahan | ⚖️ Menunggu keputusan | Cek silang 82 kode ganda → pindah ke issue data, lalu close |
 
 <details>
 <summary>Fokus sprint sebelumnya (2026-08-18 → 2026-09-24, siklus v0.27.0 → v1.1.0)</summary>
@@ -118,9 +143,12 @@ Fokus **minggu 2026-08-08 → 2026-08-14** (hasil audit menyeluruh 2026-08-08 + 
 
 </details>
 
-### Issue Aktif / Work Item
+### Arsip Work Item (dibekukan 2026-09-30)
 
-Item yang masih terbuka/berjalan. Item selesai ada di arsip terlipat di bawah (urutan asli dipertahankan).
+Tabel ini **tidak diperbarui lagi**. Status issue kini hanya dicatat di tabel Sprint dan Backlog di atas (tampil di menu **Data Analyst → Sprint Mingguan**, tab **Semua Issue**), agar satu informasi hanya ada di satu tempat. Isinya dipertahankan sebagai riwayat.
+
+<details>
+<summary>Arsip — work item terbuka per 2026-09-29</summary>
 
 | Work Item                                        | Phase   | Status      | Assignee | Target | Next Action                                                                              |
 | ------------------------------------------------ | ------- | ----------- | -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -133,6 +161,8 @@ Item yang masih terbuka/berjalan. Item selesai ada di arsip terlipat di bawah (u
 | **🟠 #317 Deteksi tumpang tindih lahan — Fase 1 + Fase 2 tab Tumpang Tindih selesai** | GIS / DA | 🟠 Fase 1 ✅ (2026-09-14) · Fase 2 tab Tumpang Tindih ✅ (2026-09-24) · Luar Boundary / Selisih Luas / Fase 3 guard upload / Fase 4 layer peta 🔲 | - | - | Menu **Data Analyst › Tumpang Tindih Lahan** (`data-analyst-parcel-overlap`) `92fb306` + fix review `142bdc6` + wrap-up: split view tabel + peta, filter %/jenis/Distrik/Lembaga/label, Duplikat (24) vs Tercakup (45) dari 136 pasangan mis-dev, Excel + SHP/GeoJSON irisan. Seed menu **mis-dev saja**. **Sisa:** seed staging/prod (sesudah deploy kode — ikon `Layers` baru; drift judul 2 menu Ketersediaan Data perlu keputusan), tab lanjutan + Fase 3–4, TD lineage raw SQL |
 | **#218 Rekonsiliasi 3 angka sel matriks cakupan + a11y tooltip non-fokusable** | DASH-06 / DA-01 | 🔲 Open | - | - | Temuan review #213: tooltip "Belum pernah" vs footer gap vs modal drill-down beda definisi saat filter Tahun; tooltip pada `<div>` non-fokusable mouse-only. Butuh keputusan produk definisi "dilatih tahun lain" terhadap target |
 | **🟡 #365 Fire Alert: laporan bulanan titik api — pilih Bulan/Tahun (arsip FIRMS SP sejak 2020), tren harian & rekap kabupaten/lembaga di PDF** | DASH-07 | 🟡 Kode selesai · verifikasi owner | - | 2026-09-22 | Proxy `month=` + sumber SP/NRT per jendela dari `data_availability` (celah → `coverage.missingDates`, bukan diam-diam kosong); mode Bulan di panel (bawaan bulan lalu, bulan berjalan parsial); PDF "Laporan Bulanan" + Tren Harian/Rekap Kabupaten/Rekap Lembaga + metodologi ber-sumber; docs + Bantuan p-11. Sisa: smoke cetak Jan 2025 Full Riau & Distrik di prod saat rilis. |
+
+</details>
 
 <details>
 <summary>Arsip — work item selesai (114 baris)</summary>

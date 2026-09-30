@@ -3,6 +3,10 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import {
   KANBAN_COLUMNS,
+  allIssues,
+  daysBetween,
+  issueDescription,
+  sortIssueRows,
   SPRINT_STACK_ORDER,
   SPRINT_STATUS_LABEL,
   carryOvers,
@@ -23,7 +27,8 @@ import {
 // + memanggil parser murninya — pola roadmap.test.ts.
 const sprintMd = readFileSync(join(__dirname, "../../docs/project/sprint.md"), "utf-8");
 
-const doc = (body: string) => ["# Sprint", "", "### Sprint Focus", "", body, "", "<details>", "#### Sprint 99 · lama", "</details>"].join("\n");
+const doc = (body: string) => ["# Sprint", "", "### Sprint Focus", "", "Terakhir diperbarui: 2026-09-30", "", body, "", "<details>", "#### Sprint 99 · lama", "</details>"].join("\n");
+const backlogTable = (rows: string[]) => ["| # | Issue | Status | Catatan |", "| - | - | - | - |", ...rows].join("\n");
 const table = (rows: string[]) =>
   ["| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |", "| - | - | - | - | - | - | - |", ...rows].join("\n");
 
@@ -54,6 +59,25 @@ describe("parseSprintPlan — file sprint.md nyata", () => {
     expect(plan.backlogTitle).toMatch(/^Backlog/);
     expect(plan.backlog.length).toBeGreaterThan(0);
   });
+
+  it("kolom Issue sprint & backlog memuat paling banyak satu #nnn (tab Semua Issue = satu baris per issue)", () => {
+    const rows = [...plan.sprints.flatMap((s) => s.items.map((i) => i.issue)), ...plan.backlog.map((b) => b.issue)];
+    expect(rows.filter((issue) => (issue.match(/#\d+/g)?.length ?? 0) > 1)).toEqual([]);
+    expect(allIssues(plan).filter((r) => r.description === "")).toEqual([]);
+  });
+
+  it("'Terakhir diperbarui' tidak lebih lama dari tanggal terbaru (≤ hari ini) yang tercatat di tabel", () => {
+    // Halaman statis: tanggal ini satu-satunya petunjuk kesegaran bagi pembaca.
+    const section = sprintMd.slice(sprintMd.indexOf("### Sprint Focus"), sprintMd.indexOf("\n### ", sprintMd.indexOf("### Sprint Focus") + 1));
+    const today = new Date().toISOString().slice(0, 10);
+    const dates = section
+      .split("\n")
+      .filter((l) => l.startsWith("|"))
+      .flatMap((l) => l.match(/\d{4}-\d{2}-\d{2}/g) ?? [])
+      .filter((d) => d <= today);
+    const latest = dates.sort().at(-1);
+    expect(latest && plan.updatedAt >= latest ? "ok" : `Terakhir diperbarui ${plan.updatedAt} < ${latest}`).toBe("ok");
+  });
 });
 
 describe("parseSprintPlan — fixture", () => {
@@ -73,8 +97,7 @@ describe("parseSprintPlan — fixture", () => {
           "",
           "#### Backlog terurut",
           "",
-          "1. **#20** satu",
-          "2. dua",
+          backlogTable(["| 1 | **#20** satu | 🔲 Todo | — |", "| 2 | dua | ⚖️ Menunggu keputusan | tanya owner |"]),
         ].join("\n")
       )
     );
@@ -83,7 +106,11 @@ describe("parseSprintPlan — fixture", () => {
     expect(s.items.map((i) => i.status)).toEqual(["done", "progress", "decision", "moved", "todo"]);
     expect(s.items[0].decision).toBeNull();
     expect(s.items[1].issueRefs).toEqual(["#11", "#12"]);
-    expect(plan.backlog).toEqual(["**#20** satu", "dua"]);
+    expect(plan.updatedAt).toBe("2026-09-30");
+    expect(plan.backlog).toEqual([
+      { order: 1, issue: "**#20** satu", issueRefs: ["#20"], status: "todo", note: null },
+      { order: 2, issue: "dua", issueRefs: [], status: "decision", note: "tanya owner" },
+    ]);
     expect(s.items.map((i) => i.points)).toEqual([1, 3, 5, 3, 3]);
     // Digeser tidak dihitung ke total, baik butir maupun poin.
     expect(sprintProgress(s)).toEqual({ done: 1, total: 4, donePoints: 1, totalPoints: 12 });
@@ -106,6 +133,10 @@ describe("parseSprintPlan — fixture", () => {
     expect(() => parseSprintPlan(sprint([]))).toThrow(/tanpa baris/);
     expect(() => parseSprintPlan(doc("#### Sprint 1 — tanpa tanggal"))).toThrow(/heading tak dikenal/);
     expect(() => parseSprintPlan("# kosong")).toThrow(/Sprint Focus/);
+    expect(() => parseSprintPlan(sprint(["| 1 | A | Rilis | S | t | 🔲 Todo | — |"]).replace(/Terakhir diperbarui: .*\n/, ""))).toThrow(/Terakhir diperbarui/);
+    const withBacklog = (row: string) => sprint(["| 1 | A | Rilis | S | t | 🔲 Todo | — |"]) + "\n\n#### Backlog\n\n" + backlogTable([row]);
+    expect(() => parseSprintPlan(withBacklog("| 1 | A | 🔲 Todo |"))).toThrow(/4 kolom/);
+    expect(() => parseSprintPlan(withBacklog("| 1 | A | Todo | — |"))).toThrow(/status tak dikenal/);
     expect(() => parseSprintPlan(sprint(["| 1 | A | Rilis | S | t | 🔲 Todo | — |", "| 1 | B | Rilis | S | t | 🔲 Todo | — |"]))).toThrow(/dobel/);
     const dup = ["#### Sprint 1 · 2026-09-28 → 2026-10-04 — A", "", table(["| 1 | A | Rilis | S | t | 🔲 Todo | — |"]), ""];
     expect(() => parseSprintPlan(doc([...dup, ...dup].join("\n")))).toThrow(/dua kali/);
@@ -152,12 +183,12 @@ describe("parseSprintPlan — fixture", () => {
           "",
           "#### Backlog (urut prioritas)",
           "",
-          "1. Z",
+          backlogTable(["| 1 | Z | 🔲 Todo | — |"]),
         ].join("\n")
       )
     );
     expect(plan.sprints.map((s) => [s.number, s.items.length])).toEqual([[1, 1], [2, 1]]);
-    expect(plan.backlog).toEqual(["Z"]);
+    expect(plan.backlog.map((b) => b.issue)).toEqual(["Z"]);
   });
 
   it("pipa ter-escape `\\|` di dalam sel (GFM) tidak memecah kolom", () => {
@@ -290,6 +321,12 @@ describe("analisa sprint", () => {
     ]);
   });
 
+  it("daysBetween: selisih hari kalender (umur dokumen di strip header)", () => {
+    expect(daysBetween("2026-09-30", "2026-09-30")).toBe(0);
+    expect(daysBetween("2026-09-28", "2026-10-05")).toBe(7);
+    expect(daysBetween("2026-10-05", "2026-09-28")).toBe(-7);
+  });
+
   it("hari ke-n dalam sprint aktif; null di luar rentang", () => {
     const s = plan.sprints[0];
     expect(sprintDay(s, "2026-09-28")).toBe(1);
@@ -302,5 +339,62 @@ describe("plainInline — teks polos kartu kanban (#389)", () => {
   it("markdown inline → teks tanpa tautan (label aksesibel & target terpotong)", async () => {
     const { plainInline } = await import("@/app/(admin)/admin/data-analyst/sprint/sprint-shared");
     expect(plainInline("**#12** ganti `data-analyst-sprint` lihat [docs](https://x.test)")).toBe("#12 ganti data-analyst-sprint lihat docs");
+  });
+
+  it("matchesQuery: semua kata harus ada (lintas kolom), tanpa beda huruf, abaikan markdown & null", async () => {
+    const { matchesQuery } = await import("@/app/(admin)/admin/data-analyst/sprint/sprint-shared");
+    const parts = ["#286", "Backlog · 1", "Belum dimulai", "butir 1 & 3 **Cache** `FIRMS`", null];
+    expect(matchesQuery("", parts)).toBe(true);
+    expect(matchesQuery("  firms   backlog ", parts)).toBe(true);
+    expect(matchesQuery("286", parts)).toBe(true);
+    expect(matchesQuery("firms selesai", parts)).toBe(false);
+  });
+});
+
+describe("allIssues — tab Semua Issue", () => {
+  const plan = parseSprintPlan(
+    doc(
+      [
+        "#### Sprint 1 · 2026-09-28 → 2026-10-04 — Satu",
+        "",
+        table([
+          "| 1 | **#30** Tiga puluh | Keamanan | S | t | ✅ Selesai | — |",
+          "| 2 | **#286 butir 2** Key FIRMS | Keamanan | S | t | ⚖️ Menunggu keputusan | X |",
+          "| 3 | **#40** Digeser | Rilis | M | t | ⏭️ Digeser | — |",
+          "| 4 | **Rilis v1.2.0** | Rilis | M | t | 🔲 Todo | — |",
+        ]),
+        "",
+        "#### Sprint 2 · 2026-10-05 → 2026-10-11 — Dua",
+        "",
+        table(["| 1 | **#40** Digeser | Rilis | M | t | 🔲 Todo | — |"]),
+        "",
+        "#### Backlog",
+        "",
+        backlogTable(["| 1 | **#286 butir 1 & 3** Cache FIRMS | 🔲 Todo | target 2027 |", "| 2 | **TD-049** Auto-fit | 🔲 Todo | — |"]),
+      ].join("\n")
+    )
+  );
+
+  it("satu baris per #nnn, urut nomor lalu sprint → backlog; digeser & baris tanpa #nnn tidak ikut", () => {
+    expect(allIssues(plan).map((r) => [r.ref, r.place, r.status, r.category, r.description, r.note])).toEqual([
+      ["#30", { kind: "sprint", sprint: 1 }, "done", "Keamanan", "Tiga puluh", null],
+      ["#40", { kind: "sprint", sprint: 2 }, "todo", "Rilis", "Digeser", null],
+      ["#286", { kind: "sprint", sprint: 1 }, "decision", "Keamanan", "butir 2 Key FIRMS", null],
+      ["#286", { kind: "backlog", order: 1 }, "todo", null, "butir 1 & 3 Cache FIRMS", "target 2027"],
+    ]);
+  });
+
+  it("urutkan per issue / sprint: kunci utama ikut arah, kunci kedua selalu menaik", () => {
+    const rows = allIssues(plan);
+    const key = (r: (typeof rows)[number]) => `${r.ref}@${r.place.kind === "sprint" ? `S${r.place.sprint}` : `B${r.place.order}`}`;
+    expect(sortIssueRows(rows, "issue", "desc").map(key)).toEqual(["#286@S1", "#286@B1", "#40@S2", "#30@S1"]);
+    expect(sortIssueRows(rows, "sprint", "asc").map(key)).toEqual(["#30@S1", "#286@S1", "#40@S2", "#286@B1"]);
+    expect(sortIssueRows(rows, "sprint", "desc").map(key)).toEqual(["#286@B1", "#40@S2", "#30@S1", "#286@S1"]);
+    expect(rows.map(key)).toEqual(["#30@S1", "#40@S2", "#286@S1", "#286@B1"]); // input tidak dimutasi
+  });
+
+  it("deskripsi: tebal & rujukan dibuang, kode dipertahankan, #nnn awalan lain tidak ikut terhapus", () => {
+    expect(issueDescription("**#253** Agregat `getFarmerSummary` ke SQL", "#253")).toBe("Agregat `getFarmerSummary` ke SQL");
+    expect(issueDescription("**#25** lihat #253", "#25")).toBe("lihat #253");
   });
 });

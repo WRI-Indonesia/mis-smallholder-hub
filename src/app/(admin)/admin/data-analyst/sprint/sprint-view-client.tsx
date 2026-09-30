@@ -1,9 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ChevronRight, ExternalLink, Scale } from "lucide-react";
+import { CheckCircle2, ChevronRight, ExternalLink, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { cn } from "@/lib/utils";
@@ -18,22 +17,14 @@ import {
   type SprintPhase,
   type SprintPlan,
 } from "@/lib/sprint-plan";
-import { CATEGORY_COLOR, Inline, ProgressBar, STATUS_STYLE, fmtDate, plainInline } from "./sprint-shared";
+import { CategoryLabel, Inline, ProgressBar, STATUS_STYLE, fmtDate, plainInline } from "./sprint-shared";
 import { SprintAnalysis } from "./sprint-analysis";
+import { SprintIssues } from "./sprint-issues";
 
 const PHASE_LABEL: Record<SprintPhase, string> = { active: "Minggu ini", upcoming: "Mendatang", past: "Selesai" };
 
 function CategoryDot({ item }: { item: SprintItem }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span
-        aria-hidden
-        className="h-2 w-2 shrink-0 rounded-full bg-[var(--c-light)] dark:bg-[var(--c-dark)]"
-        style={{ "--c-light": CATEGORY_COLOR[item.category].light, "--c-dark": CATEGORY_COLOR[item.category].dark } as React.CSSProperties}
-      />
-      {item.category}
-    </span>
-  );
+  return <CategoryLabel category={item.category} />;
 }
 
 function SizeBadge({ item }: { item: SprintItem }) {
@@ -44,81 +35,110 @@ function SizeBadge({ item }: { item: SprintItem }) {
   );
 }
 
-/**
- * Satu kartu kanban (#389). Tautan `#nnn` ada di judul (bukan di dalam tombol);
- * target minggu ini terpotong 3 baris dan bisa dibuka lewat tombol terpisah.
- */
-/** Target sependek ini muat 3 baris kartu — tanpa tombol buka. */
-const TARGET_CLAMP_CHARS = 110;
+function DecisionNote({ text }: { text: string }) {
+  return (
+    <p className="flex gap-1.5 rounded bg-amber-500/10 p-2 text-xs text-amber-800 dark:text-amber-200">
+      <Scale className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label="Keputusan owner" />
+      <span className="[overflow-wrap:anywhere]"><Inline text={text} /></span>
+    </p>
+  );
+}
 
+/**
+ * Satu kartu kanban (#389), versi ringkas (2026-09-30): judul, ukuran,
+ * kategori, dan keputusan owner yang masih ditunggu. Target minggu ini (teks
+ * catatan developer) disembunyikan di balik tombol Detail. Kartu Selesai cukup
+ * satu baris — butir tuntas tak boleh memakan layar lebih banyak daripada yang
+ * masih berjalan. Tautan `#nnn` ada di judul, di luar tombol.
+ */
 function KanbanCard({ item }: { item: SprintItem }) {
   const [open, setOpen] = useState(false);
-  const targetId = useId();
-  const plainTarget = plainInline(item.target);
-  const clampable = plainTarget.length > TARGET_CLAMP_CHARS;
-  const plainIssue = plainInline(item.issue);
+  const detailId = useId();
+  const done = item.status === "done";
+  const toggle = (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-controls={detailId}
+      aria-label={`${open ? "Tutup detail" : "Detail"}: ${plainInline(item.issue)}`}
+      onClick={() => setOpen((o) => !o)}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-0.5 rounded text-xs text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring",
+        done && "p-0.5 text-muted-foreground hover:text-foreground"
+      )}
+    >
+      <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} aria-hidden />
+      {!done && (open ? "Tutup" : "Detail")}
+    </button>
+  );
+  const detail = open && (
+    <div id={detailId} className="space-y-2 border-t pt-2">
+      {done && <CategoryDot item={item} />}
+      <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+        <span className="font-medium text-foreground">Target: </span>
+        <Inline text={item.target} />
+      </p>
+      {done && item.decision && <DecisionNote text={item.decision} />}
+    </div>
+  );
+
+  if (done) {
+    return (
+      <li className="space-y-2 rounded-md border bg-card px-2.5 py-2 text-sm">
+        <div className="flex items-start gap-2">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-label="Selesai" />
+          <span className="min-w-0 flex-1 leading-snug text-muted-foreground [overflow-wrap:anywhere]">
+            <Inline text={item.issue} />
+          </span>
+          <SizeBadge item={item} />
+          {toggle}
+        </div>
+        {detail}
+      </li>
+    );
+  }
+
   return (
     <li className="space-y-2 rounded-md border bg-card p-3 text-sm shadow-sm">
       <div className="flex items-start gap-2">
-        <span className={cn("min-w-0 flex-1 leading-snug [overflow-wrap:anywhere]", item.status === "moved" && "text-muted-foreground")}>
+        <span className={cn("min-w-0 flex-1 font-medium leading-snug [overflow-wrap:anywhere]", item.status === "moved" && "font-normal text-muted-foreground")}>
           <Inline text={item.issue} />
         </span>
         <SizeBadge item={item} />
       </div>
-      <CategoryDot item={item} />
-      <div>
-        {/* Terpotong = teks polos: tautan di bagian yang tersembunyi tak boleh bisa difokus keyboard. */}
-        <p id={targetId} className={cn("text-xs text-muted-foreground [overflow-wrap:anywhere]", clampable && !open && "line-clamp-3")}>
-          {clampable && !open ? plainTarget : <Inline text={item.target} />}
-        </p>
-        {clampable && (
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={targetId}
-            aria-label={`${open ? "Ringkas" : "Target lengkap"}: ${plainIssue}`}
-            onClick={() => setOpen((o) => !o)}
-            className="mt-1 inline-flex items-center gap-0.5 text-xs text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-          >
-            <ChevronRight className={cn("h-3 w-3 transition-transform", open && "rotate-90")} />
-            {open ? "Ringkas" : "Target lengkap"}
-          </button>
-        )}
+      <div className="flex items-center justify-between gap-2">
+        <CategoryDot item={item} />
+        {toggle}
       </div>
-      {item.decision && (
-        <p className="flex gap-1.5 rounded bg-amber-500/10 p-2 text-xs text-amber-800 dark:text-amber-200">
-          <Scale className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-label="Keputusan owner" />
-          <span className="[overflow-wrap:anywhere]"><Inline text={item.decision} /></span>
-        </p>
-      )}
+      {item.decision && <DecisionNote text={item.decision} />}
+      {detail}
     </li>
   );
 }
 
+/** Ringkasan sprint terpilih — dua baris padat (judul + progres), di atas papan. */
 function SprintSummary({ sprint, phase, today }: { sprint: Sprint; phase: SprintPhase; today: string }) {
   const p = sprintProgress(sprint);
   const day = sprintDay(sprint, today);
   return (
-    <Card className={cn("border shadow-sm", phase === "active" ? "border-primary/50" : "border-border/60")}>
-      <CardContent className="space-y-3 pt-5">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <Badge variant={phase === "active" ? "default" : "outline"}>{PHASE_LABEL[phase]}</Badge>
-          <span className="text-lg font-semibold">Sprint {sprint.number}</span>
-          <span className="text-sm text-muted-foreground">
-            {fmtDate(sprint.start)} – {fmtDate(sprint.end)}
-            {day !== null && ` · hari ke-${day} dari 7`}
-          </span>
-        </div>
-        <p className="text-sm">{sprint.title}</p>
-        <div className="flex items-center gap-3">
-          <ProgressBar value={p.donePoints} max={p.totalPoints} label={`${p.donePoints} dari ${p.totalPoints} poin selesai`} />
-          <span className="shrink-0 text-sm tabular-nums">
-            <span className="font-semibold">{p.donePoints}/{p.totalPoints} poin</span>
-            <span className="text-muted-foreground"> · {p.done}/{p.total} butir selesai</span>
-          </span>
-        </div>
-      </CardContent>
-    </Card>
+    <div className={cn("space-y-2 rounded-lg border bg-card px-4 py-3 shadow-sm", phase === "active" ? "border-primary/50" : "border-border/60")}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Badge variant={phase === "active" ? "default" : "outline"}>{PHASE_LABEL[phase]}</Badge>
+        <span className="font-semibold">Sprint {sprint.number}</span>
+        <span className="text-sm">{sprint.title}</span>
+        <span className="text-xs text-muted-foreground">
+          {fmtDate(sprint.start)} – {fmtDate(sprint.end)}
+          {day !== null && ` · hari ke-${day} dari 7`}
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <ProgressBar value={p.donePoints} max={p.totalPoints} label={`${p.donePoints} dari ${p.totalPoints} poin selesai`} />
+        <span className="shrink-0 text-sm tabular-nums">
+          <span className="font-semibold">{p.donePoints}/{p.totalPoints} poin</span>
+          <span className="text-muted-foreground"> · {p.done}/{p.total} butir selesai</span>
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -167,22 +187,6 @@ function SprintDetail({ sprint, phase, today }: { sprint: Sprint; phase: SprintP
   );
 }
 
-function Backlog({ plan }: { plan: SprintPlan }) {
-  return (
-    <Card className="border border-border/60 shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">{plan.backlogTitle ?? "Backlog"}</CardTitle>
-        <p className="text-xs text-muted-foreground">Sudah diurutkan, belum masuk sprint mana pun. Urutan = urutan pengerjaan berikutnya.</p>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <ol className="list-decimal space-y-2 pl-5 text-sm">
-          {plan.backlog.map((line, i) => <li key={i}><Inline text={line} /></li>)}
-        </ol>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: string }) {
   const { get, setMany } = useUrlFilters();
   const phases = plan.sprints.map((s) => sprintPhase(s, today));
@@ -191,20 +195,18 @@ export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: str
   // divalidasi terhadap sprint yang ada (tautan bisa basi).
   const fallback = phases.indexOf("active") !== -1 ? phases.indexOf("active") : phases.indexOf("upcoming") !== -1 ? phases.indexOf("upcoming") : plan.sprints.length - 1;
   const sprintParam = get("sprint");
-  const selected =
-    sprintParam === "backlog" && plan.backlog.length > 0
-      ? "backlog"
-      : plan.sprints.some((s) => String(s.number) === sprintParam)
-        ? sprintParam!
-        : String(plan.sprints[fallback].number);
-  const tab = get("tab") === "analisa" ? "analisa" : "sprint";
+  // `?sprint=backlog` (tautan lama, sebelum backlog pindah ke tab Semua Issue) jatuh ke bawaan.
+  const selected = plan.sprints.some((s) => String(s.number) === sprintParam) ? sprintParam! : String(plan.sprints[fallback].number);
+  const tabParam = get("tab");
+  const tab = tabParam === "analisa" || tabParam === "issue" ? tabParam : "sprint";
   const allPast = phases.every((p) => p === "past");
 
   return (
-    <Tabs value={tab} onValueChange={(v) => setMany({ tab: v === "analisa" ? "analisa" : null })} className="space-y-4">
+    <Tabs value={tab} onValueChange={(v) => setMany({ tab: v === "sprint" ? null : v, status: null, di: null })} className="space-y-4">
       <TabsList>
         <TabsTrigger value="sprint">Sprint</TabsTrigger>
         <TabsTrigger value="analisa">Analisa</TabsTrigger>
+        <TabsTrigger value="issue">Semua Issue</TabsTrigger>
       </TabsList>
 
       <TabsContent value="sprint" className="space-y-4">
@@ -241,38 +243,24 @@ export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: str
               </button>
             );
           })}
-          {plan.backlog.length > 0 && (
-            <button
-              type="button"
-              aria-pressed={selected === "backlog"}
-              onClick={() => setMany({ sprint: "backlog" })}
-              className={cn(
-                "flex min-w-[7.5rem] flex-col rounded-lg border border-dashed px-3 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring",
-                selected === "backlog" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
-              )}
-            >
-              <span className="text-sm font-semibold">Backlog</span>
-              <span className="text-xs text-muted-foreground">{plan.backlog.length} kelompok</span>
-            </button>
-          )}
         </nav>
 
-        {selected === "backlog" ? (
-          <Backlog plan={plan} />
-        ) : (
-          (() => {
-            const idx = plan.sprints.findIndex((s) => String(s.number) === selected);
-            return <SprintDetail sprint={plan.sprints[idx]} phase={phases[idx]} today={today} />;
-          })()
-        )}
+        {(() => {
+          const idx = plan.sprints.findIndex((s) => String(s.number) === selected);
+          return <SprintDetail sprint={plan.sprints[idx]} phase={phases[idx]} today={today} />;
+        })()}
 
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
-          <ExternalLink className="h-3 w-3" /> Nomor #… membuka issue di GitHub (tab baru) · papan dibaca kiri → kanan: belum dimulai, dikerjakan, menunggu keputusan owner, selesai.
+          <ExternalLink className="h-3 w-3" /> Nomor #… membuka issue di GitHub (tab baru) · papan dibaca kiri → kanan: belum dimulai, dikerjakan, menunggu keputusan owner, selesai. Backlog ada di tab Semua Issue.
         </p>
       </TabsContent>
 
       <TabsContent value="analisa">
         <SprintAnalysis plan={plan} today={today} />
+      </TabsContent>
+
+      <TabsContent value="issue">
+        <SprintIssues plan={plan} />
       </TabsContent>
     </Tabs>
   );

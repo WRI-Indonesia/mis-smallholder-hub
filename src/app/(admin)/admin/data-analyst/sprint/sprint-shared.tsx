@@ -1,4 +1,6 @@
 import { Fragment } from "react";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { parseInline } from "@/lib/markdown-lite";
 import { SPRINT_CATEGORIES, type SprintCategory, type SprintItemStatus } from "@/lib/sprint-plan";
 import { CATEGORICAL } from "@/lib/chart-palette";
@@ -53,6 +55,39 @@ export function Inline({ text }: { text: string }) {
 /** Teks polos dari markdown inline (tanpa tautan) — untuk label aksesibel & teks terpotong. */
 export function plainInline(text: string): string {
   return parseInline(text).map((p) => p.value).join("");
+}
+
+/**
+ * Pencarian teks tab Semua Issue & Backlog: setiap kata kueri harus ada di
+ * salah satu bagian (teks polos, tanpa beda huruf besar/kecil). Kueri kosong = cocok.
+ */
+export function matchesQuery(query: string, parts: (string | null)[]): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const hay = parts.filter((p): p is string => !!p).map((p) => plainInline(p).toLowerCase()).join(" ");
+  return words.every((w) => hay.includes(w));
+}
+
+export function CategoryLabel({ category }: { category: SprintCategory }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span
+        aria-hidden
+        className="h-2 w-2 shrink-0 rounded-full bg-[var(--c-light)] dark:bg-[var(--c-dark)]"
+        style={{ "--c-light": CATEGORY_COLOR[category].light, "--c-dark": CATEGORY_COLOR[category].dark } as React.CSSProperties}
+      />
+      {category}
+    </span>
+  );
+}
+
+export function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative w-full sm:max-w-xs">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+      <Input type="search" aria-label={placeholder} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} className="pl-9" />
+    </div>
+  );
 }
 
 function IssueLinks({ text }: { text: string }) {

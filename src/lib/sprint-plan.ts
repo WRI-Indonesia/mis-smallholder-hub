@@ -1,8 +1,9 @@
 /**
  * Parser rencana sprint mingguan (#378 — menu Data Analyst › Sprint Mingguan).
  * Sumber tunggal: `docs/project/sprint.md` §Sprint Focus (di-bundle
- * `asset/source`), hanya heading `#### Sprint …` beserta tabelnya dan daftar
- * `#### Backlog …`. Riwayat fokus lama di blok `<details>` tidak diparse.
+ * `asset/source`), hanya baris `Terakhir diperbarui: …`, heading `#### Sprint …`
+ * beserta tabelnya, dan tabel `#### Backlog …`. Riwayat fokus lama di blok
+ * `<details>` tidak diparse.
  *
  * Format rusak melempar — build/boot gagal, bukan salah render diam-diam
  * (pola `tech-debt.ts` / `release-metrics.ts`).
@@ -44,12 +45,25 @@ export type Sprint = {
   items: SprintItem[];
 };
 
+export type BacklogItem = {
+  /** Urutan kelompok pengerjaan (boleh berulang: beberapa issue satu kelompok). */
+  order: number;
+  /** Isi kolom Issue apa adanya (markdown inline). */
+  issue: string;
+  issueRefs: string[];
+  status: SprintItemStatus;
+  /** Kolom Catatan; null bila "—"/kosong. */
+  note: string | null;
+};
+
 export type SprintPlan = {
+  /** "YYYY-MM-DD" dari baris `Terakhir diperbarui:` — halaman ini statis (dibaca saat build). */
+  updatedAt: string;
   sprints: Sprint[];
   /** Judul heading backlog, mis. "Backlog terurut (setelah Sprint 4)"; null bila tidak ada. */
   backlogTitle: string | null;
-  /** Butir daftar bernomor backlog (markdown inline, tanpa nomor). */
-  backlog: string[];
+  /** Baris tabel backlog, urut dokumen. */
+  backlog: BacklogItem[];
 };
 
 export type SprintPhase = "past" | "active" | "upcoming";
@@ -73,8 +87,9 @@ export const SPRINT_STATUS_LABEL: Record<SprintItemStatus, string> = {
 
 const SPRINT_HEADING = /^#### Sprint (\d+) · (\d{4}-\d{2}-\d{2}) → (\d{4}-\d{2}-\d{2}) — (.+)$/;
 const BACKLOG_HEADING = /^#### (Backlog.*)$/;
+const UPDATED = /^Terakhir diperbarui:\s*(\d{4}-\d{2}-\d{2})\s*$/;
 const ROW = /^\|\s*(\d+)\s*\|/;
-const LIST_ITEM = /^\d+\.\s+(.+)$/;
+const ISSUE_REF = /#(\d+)/g;
 const EMPTY_CELL = /^(—|-|)$/;
 
 function parseStatus(cell: string, where: string): SprintItemStatus {
@@ -103,7 +118,8 @@ export function parseSprintPlan(markdown: string): SprintPlan {
   const section = end === -1 ? rest : rest.slice(0, end);
 
   const sprints: Sprint[] = [];
-  const backlog: string[] = [];
+  const backlog: BacklogItem[] = [];
+  let updatedAt: string | null = null;
   let backlogTitle: string | null = null;
   let current: Sprint | null = null;
   let inBacklog = false;
@@ -120,6 +136,11 @@ export function parseSprintPlan(markdown: string): SprintPlan {
     const inDetails = detailsDepth > 0 || opens > 0;
     detailsDepth = Math.max(0, detailsDepth + opens - closes);
     if (inDetails) continue;
+    const updated = line.match(UPDATED);
+    if (updated) {
+      updatedAt = updated[1];
+      continue;
+    }
     const heading = line.match(SPRINT_HEADING);
     if (heading) {
       current = { number: Number(heading[1]), start: heading[2], end: heading[3], title: heading[4].trim(), items: [] };
@@ -149,7 +170,7 @@ export function parseSprintPlan(markdown: string): SprintPlan {
       current.items.push({
         no: Number(no),
         issue,
-        issueRefs: [...issue.matchAll(/#(\d+)/g)].map((m) => `#${m[1]}`),
+        issueRefs: [...issue.matchAll(ISSUE_REF)].map((m) => `#${m[1]}`),
         category: category as SprintCategory,
         size: size as SprintSize,
         points: SPRINT_SIZE_POINTS[size as SprintSize],
@@ -159,11 +180,22 @@ export function parseSprintPlan(markdown: string): SprintPlan {
       });
       continue;
     }
-    if (inBacklog) {
-      const item = line.match(LIST_ITEM);
-      if (item) backlog.push(item[1].trim());
+    if (inBacklog && ROW.test(line)) {
+      const cells = splitRow(line);
+      const where = `Backlog baris "${cells[1] ?? ""}"`;
+      if (cells.length !== 4) throw new Error(`sprint.md: ${where} harus 4 kolom (# · Issue · Status · Catatan), ditemukan ${cells.length}`);
+      const [order, issue, status, note] = cells;
+      backlog.push({
+        order: Number(order),
+        issue,
+        issueRefs: [...issue.matchAll(ISSUE_REF)].map((m) => `#${m[1]}`),
+        status: parseStatus(status, where),
+        note: EMPTY_CELL.test(note) ? null : note,
+      });
     }
   }
+
+  if (!updatedAt) throw new Error("sprint.md: baris 'Terakhir diperbarui: YYYY-MM-DD' tidak ditemukan di Sprint Focus");
 
   if (sprints.length === 0) throw new Error("sprint.md: tidak ada sprint terparse — format heading berubah?");
   const seen = new Set<number>();
@@ -178,7 +210,7 @@ export function parseSprintPlan(markdown: string): SprintPlan {
     if (s.items.length === 0) throw new Error(`sprint.md: Sprint ${s.number} tanpa baris tabel`);
     if (s.start > s.end) throw new Error(`sprint.md: Sprint ${s.number} tanggal mulai sesudah selesai`);
   }
-  return { sprints, backlogTitle, backlog };
+  return { updatedAt, sprints, backlogTitle, backlog };
 }
 
 /** Posisi sprint terhadap `today` ("YYYY-MM-DD", WIB) — batas inklusif. */
@@ -334,3 +366,78 @@ export function sprintKanban(sprint: Pick<Sprint, "items">): {
   };
 }
 
+
+export type IssuePlace = { kind: "sprint"; sprint: number } | { kind: "backlog"; order: number };
+
+export type IssueRow = {
+  /** "#nnn". */
+  ref: string;
+  number: number;
+  place: IssuePlace;
+  status: SprintItemStatus;
+  /** Kategori butir sprint; null untuk backlog (belum dikategorikan). */
+  category: SprintCategory | null;
+  /** Kolom Issue tanpa rujukan `#nnn` dan tanpa tebal (markdown inline sisanya). */
+  description: string;
+  /** Catatan baris backlog; null untuk baris sprint. */
+  note: string | null;
+};
+
+/** "**#286 butir 2** Key FIRMS …" → "butir 2 Key FIRMS …". */
+export function issueDescription(issue: string, ref: string): string {
+  return issue
+    .replace(/\*\*/g, "")
+    .replace(new RegExp(`${ref}(?!\\d)`), "")
+    .replace(/^[\s·:—-]+/, "")
+    .trim();
+}
+
+/**
+ * Tab Semua Issue: satu baris per rujukan `#nnn` di kolom Issue sprint + backlog,
+ * urut nomor issue lalu posisi (sprint sebelum backlog). Satu issue bisa muncul
+ * beberapa kali bila dipecah per bagian ("#380 bagian 1", "#286 butir 2") —
+ * status melekat pada bagiannya, bukan pada issue. Butir sprint "Digeser" tidak
+ * ikut: ia sudah ditulis ulang di sprint tujuan atau backlog. Baris tanpa
+ * `#nnn` (rilis, TD-xxx) juga tidak ikut.
+ */
+export function allIssues(plan: Pick<SprintPlan, "sprints" | "backlog">): IssueRow[] {
+  const rows: IssueRow[] = [];
+  for (const s of plan.sprints) {
+    for (const item of s.items) {
+      if (item.status === "moved") continue;
+      for (const ref of item.issueRefs) {
+        rows.push({ ref, number: Number(ref.slice(1)), place: { kind: "sprint", sprint: s.number }, status: item.status, category: item.category, description: issueDescription(item.issue, ref), note: null });
+      }
+    }
+  }
+  for (const item of plan.backlog) {
+    for (const ref of item.issueRefs) {
+      rows.push({ ref, number: Number(ref.slice(1)), place: { kind: "backlog", order: item.order }, status: item.status, category: null, description: issueDescription(item.issue, ref), note: item.note });
+    }
+  }
+  return sortIssueRows(rows, "issue", "asc");
+}
+
+/** Sprint 1…n lalu Backlog urutan 1…n. */
+const placeRank = (p: IssuePlace) => (p.kind === "sprint" ? p.sprint : 1000 + p.order);
+
+export type IssueSortKey = "issue" | "sprint";
+
+/**
+ * Urutan tab Semua Issue. Kunci utama dibalik oleh `dir`; kunci kedua (sprint
+ * untuk "issue", nomor issue untuk "sprint") selalu menaik agar baris sekelompok
+ * tetap mudah dibaca.
+ */
+export function sortIssueRows(rows: IssueRow[], key: IssueSortKey, dir: "asc" | "desc"): IssueRow[] {
+  const sign = dir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) =>
+    key === "issue"
+      ? sign * (a.number - b.number) || placeRank(a.place) - placeRank(b.place)
+      : sign * (placeRank(a.place) - placeRank(b.place)) || a.number - b.number
+  );
+}
+
+/** Selisih hari kalender `from` → `to` ("YYYY-MM-DD"); negatif bila `to` lebih awal. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
