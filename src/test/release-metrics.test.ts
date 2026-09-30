@@ -132,12 +132,15 @@ describe("parseReleaseMetrics — batas baseline roadmap (#392)", () => {
     expect(r[0]).toMatchObject({ roadmapReset: true, roadmapBaseline: 0 });
   });
 
-  it("metrics.md nyata: reset 2026-09-30 ada di baris siklus berjalan, sebelumnya satu baseline", () => {
+  it("metrics.md nyata: tepat satu reset (2026-09-30) sesudah baseline MVP 88,5%", () => {
+    // Tidak mengunci versi barisnya: saat siklus berjalan dirilis, frasa
+    // "Roadmap direset" pindah ke baris rilis resminya (aturan pengisian 5).
     const real = parseReleaseMetrics(realMd);
-    const resets = real.filter((x) => x.roadmapReset);
-    expect(resets.map((x) => x.version)).toEqual(["berjalan"]);
-    expect(real.slice(0, -1).every((x) => x.roadmapBaseline === 0)).toBe(true);
-    expect(real[real.length - 1].roadmapBaseline).toBe(1);
+    const idx = real.findIndex((x) => x.roadmapReset);
+    expect(real.filter((x) => x.roadmapReset)).toHaveLength(1);
+    expect(real[idx - 1].roadmapPct).toBe(88.5);
+    expect(real.slice(0, idx).every((x) => x.roadmapBaseline === 0)).toBe(true);
+    expect(real.slice(idx).every((x) => x.roadmapBaseline === 1)).toBe(true);
   });
 });
 
