@@ -47,6 +47,7 @@ const snapshot = appliedMigrations(
 const gap = migrationReleaseGap(snapshot.names, migrationNames(tagEntries.split("\n")));
 
 console.log(`Tag rilis: ${tag} · snapshot ${snapshot.source} per ${snapshot.refreshedAt} (${snapshot.names.length} migrasi applied)`);
+if (tagArg === -1) console.log("  (tag terbaru di repo LOKAL — jalankan `git fetch --tags` dulu bila ragu)");
 if (gap.appliedNotInTag.length === 0 && gap.inTagNotApplied.length === 0) {
   console.log("✓ Tidak ada jendela terbuka — migrasi prod = migrasi di tag.");
   process.exit(0);

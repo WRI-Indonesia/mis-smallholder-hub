@@ -11,8 +11,12 @@
  * berkas ada di `scripts/migrations/check-release-gap.ts`.
  */
 
-/** Nama folder migrasi Prisma: `YYYYMMDDHHMMSS_nama`. */
-const MIGRATION_NAME = /^\d{14}_[a-z0-9_]+$/;
+/**
+ * Nama folder migrasi Prisma: `YYYYMMDDHHMMSS_<apa saja>`. Sengaja longgar di
+ * bagian nama — aturan yang lebih ketat akan membuang folder bernama tak lazim
+ * dari KEDUA sisi tanpa jejak, dan selisihnya tak pernah terlihat.
+ */
+const MIGRATION_NAME = /^\d{14}_.+$/;
 
 /** Tag rilis resmi saja — `v1.2.0`, bukan `v1.8-complete` atau `v1.2.0-rc1`. */
 const RELEASE_TAG = /^v(\d+)\.(\d+)\.(\d+)$/;

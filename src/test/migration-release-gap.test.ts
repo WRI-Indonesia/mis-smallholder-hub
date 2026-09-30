@@ -34,6 +34,10 @@ describe("migrationNames", () => {
       ])
     ).toEqual(["20260521232859_init", "20260923120000_external_id_shared_code"]);
   });
+
+  it("nama tak lazim tetap dihitung — tidak hilang diam-diam dari perbandingan", () => {
+    expect(migrationNames(["20261001000000_AddIndex-Produksi"])).toEqual(["20261001000000_AddIndex-Produksi"]);
+  });
 });
 
 describe("appliedMigrations", () => {
