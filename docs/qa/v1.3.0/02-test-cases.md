@@ -39,3 +39,16 @@ Harapan:
 - Tiga blok berurutan **Now · Kuartal 4 2026 (Okt–Des)**, **Next · Semester 1 2027 (Jan–Jun)**, **Later · Semester 2 2027 (Jul–Des)**, masing-masing dengan jumlah fase · poin terbuka · +pp bila tuntas; di tiap blok fase inti tampil dulu.
 - Klik/Enter membuka "Sudah ada" dan "Langkah berikutnya", klik lagi menutupnya.
 - Pada layar sempit (ponsel), bobot dan "+pp" turun ke bawah deskripsi, deskripsi tidak terjepit dan tidak ada scroll horizontal.
+
+## #277 — Guard migrasi di `deploy-staging.yml`
+
+### TC-277-01 · Deploy staging berhenti bila migrasi belum diterapkan [P0] (5 mnt)
+Prasyarat: rilis v1.3.0 dipush ke branch `staging`; akses baca log GitHub Actions (`gh run view <id> --log`).
+Langkah:
+1. Buka log run **Deploy Staging** untuk push v1.3.0.
+2. Cari keluaran langkah guard sesudah `npm ci`.
+3. (Bila rilis membawa migrasi dan migrasi `mis-staging` sengaja belum diterapkan) amati akhir job.
+Harapan:
+- Skema sudah sesuai: log memuat "Database schema is up to date!" lalu build & `pm2 reload` berjalan.
+- Ada migrasi pending: job **gagal** dengan anotasi "Skema mis-staging belum sesuai kode …" dan daftar nama migrasi pending; `npm run build` dan `pm2 reload` **tidak** dijalankan; aplikasi staging tetap melayani versi sebelumnya.
+Baseline dev: diuji lokal 2026-09-30 terhadap `mis-dev` — up to date (exit 0), migrasi palsu `29990101000000_fake_pending` (exit ≠ 0, namanya tercantum), DB tak terjangkau P1001 (exit ≠ 0).
