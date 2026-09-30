@@ -71,7 +71,7 @@ Langkah:
 Harapan:
 - Skema sudah sesuai: log memuat "Database schema is up to date!" lalu build & `pm2 reload` berjalan.
 - Ada migrasi pending: job **gagal** dengan anotasi "Skema mis-staging belum sesuai kode …" dan daftar nama migrasi pending; `npm run build` dan `pm2 reload` **tidak** dijalankan; aplikasi staging tetap melayani versi sebelumnya.
-Baseline dev: diuji lokal 2026-09-30 terhadap `mis-dev` — up to date (exit 0), migrasi palsu `29990101000000_fake_pending` (exit ≠ 0, namanya tercantum), DB tak terjangkau P1001 (exit ≠ 0).
+Baseline dev: diuji lokal 2026-09-30 terhadap `mis-dev` — up to date (exit 0), migrasi palsu `29990101000000_fake_pending` (exit ≠ 0, namanya tercantum), DB tak terjangkau P1001 (exit ≠ 0). Staging 2026-09-30: run `36727665992` (`f20fca2`) — jalur **lolos** terbukti ("Database schema is up to date!" → build → `pm2 reload` ✓); jalur gagal belum terjadi di staging karena migrasi #251 diterapkan lebih dulu.
 
 ## #394 — Guard migrasi di `deploy-main.yml`
 
