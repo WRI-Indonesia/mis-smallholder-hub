@@ -2,7 +2,7 @@ import metricsMd from "../../docs/project/metrics.md";
 import roadmapMd from "../../docs/project/roadmap.md";
 import techDebtMd from "../../docs/project/tech-debt.md";
 import { parseReleaseMetrics } from "./release-metrics";
-import { parseRoadmapPhases, parseStreamLabels, summarizeRoadmap } from "./roadmap";
+import { parseHorizonLabels, parseRoadmapPhases, parseStreamLabels, summarizeRoadmap } from "./roadmap";
 import { parseActiveTechDebt } from "./tech-debt";
 
 /**
@@ -24,5 +24,6 @@ export const activeTechDebt = parseActiveTechDebt(techDebtMd);
  */
 export const roadmapSummary = summarizeRoadmap(
   parseRoadmapPhases(roadmapMd),
-  parseStreamLabels(roadmapMd)
+  parseStreamLabels(roadmapMd),
+  parseHorizonLabels(roadmapMd)
 );

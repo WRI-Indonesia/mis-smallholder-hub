@@ -35,7 +35,7 @@ describe("Auth - Credential validation", () => {
 describe("Auth - Session callback logic", () => {
   it("jwt callback adds user data to token", () => {
     const token = { sub: "123" };
-    const user = { id: "SH-0004", name: "Sofyan", email: "sofyan@wri.org", role: "SUPERADMIN" };
+    const user = { id: "SH-0004", name: "Contoh Superadmin", email: "superadmin@example.test", role: "SUPERADMIN" };
 
     // Simulate jwt callback
     const result = { ...token, id: user.id, role: user.role };
@@ -46,7 +46,7 @@ describe("Auth - Session callback logic", () => {
 
   it("session callback passes token data to session", () => {
     const token = { id: "SH-0004", role: "SUPERADMIN" };
-    const session = { user: { id: "", name: "Sofyan", email: "sofyan@wri.org", role: "" } };
+    const session = { user: { id: "", name: "Contoh Superadmin", email: "superadmin@example.test", role: "" } };
 
     // Simulate session callback
     session.user.id = token.id;

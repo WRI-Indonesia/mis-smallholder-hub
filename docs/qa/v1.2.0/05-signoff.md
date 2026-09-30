@@ -14,10 +14,10 @@
 |---|---|
 | Gate otomatis 5 langkah hijau | ✅ lint 0 · build ✓ · tsc 0 · test 2.363 · docs sinkron |
 | Migrasi prod | ✅ **tidak berlaku** — nol migrasi |
-| Seed menu prod (TC-PREP-01) | ⏳ sesudah deploy prod: `seed-menu-key.mjs` 2 menu (dry-run → persetujuan owner → `--apply`), `data-qc` G1/G2 |
+| Seed menu prod (TC-PREP-01) | ✅ 2026-09-29 sesudah deploy prod `36571767441` (hijau 4m24s): dry-run → persetujuan owner → `--apply` 2 menu + 11 izin; `data-qc` F3 ✓ G1 ✓ G2 ✓; `rbac:compare` 0 selisih |
 | `rbac:compare` | ✅ 2026-09-29 vs mis-prod (baca-saja): selisih **11 baris = izin 2 menu baru** (di-seed sesudah deploy); 0 selisih lain — DONOR & peran lain = prod |
-| Run **staging** semua P0 | ⚠️ **DILEWATI** — deploy staging OOM (#363); preseden v0.35.0 · v0.36.0 · v1.0.0 |
-| Run **prod** `--only P0` ≤ 1 jam setelah deploy | ⏳ menyusul deploy prod |
+| Run **staging** semua P0 | ⚠️ **DILEWATI** sebelum rilis — deploy staging OOM (#363); preseden v0.35.0 · v0.36.0 · v1.0.0. **2026-09-30:** RAM staging 4 GB, deploy `36660789043` hijau + seed menu → run staging pasca-rilis bisa dijalankan |
+| Run **prod** `--only P0` ≤ 1 jam setelah deploy | ⏳ **owner** (login prod dengan akun nyata — tidak dijalankan Claude) |
 
 ## Risiko yang diterima karena staging dilewati
 

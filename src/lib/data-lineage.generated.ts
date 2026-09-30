@@ -255,7 +255,8 @@ export const DATA_LINEAGE: DataLineage = [
     "models": {
       "district": "R",
       "farmer": "R",
-      "farmerGroup": "R"
+      "farmerGroup": "R",
+      "landParcel": "R"
     },
     "modules": [
       "src/server/actions/data-analyst.ts"

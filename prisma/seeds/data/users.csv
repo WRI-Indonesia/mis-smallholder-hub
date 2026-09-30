@@ -1,29 +1,6 @@
-id,name,email,password,role,is_active
-SH-0001,Bukti Bagja,bukti.bagja@wri.org,P@ssword123,MANAGEMENT,TRUE
-SH-0002,Ahmad Zuhdi,ahmad.zuhdi@wri.org,P@ssword123,MANAGEMENT,TRUE
-SH-0003,Hirasman Tanjung,hirasman.tanjung@wri.org,P@ssword123,MANAGEMENT,TRUE
-SH-0004,Sofyan,sofyan.salim@wri.org,P@ssword123,SUPERADMIN,TRUE
-SH-0005,Novia Hagnas,novia.hagnas@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0006,Delia Arinda,delia.arinda@wri.org,P@ssword123,MANAGEMENT,TRUE
-SH-0007,Ermaliza,ermaliza.ermaliza@wri.org,P@ssword123,MANAGEMENT,TRUE
-SH-0008,Fachri Husaini,fachri.husaini@wri.org,P@ssword123,MANAGEMENT,TRUE
-SH-0009,Muhammad Usman,rusydi.usman@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0010,Rudi Hidayat,rudi.hidayat@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0011,Didik,didik.hariyanto@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0012,Annisa Rahmadhani,annisa.rahmadhani@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0013,Karya Rizki,karya.rizki@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0014,Soniman Waruwu,soniman.waruwu@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0015,Ismail,mail.ismail@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0016,Jaya Syahputra,jaya.syahputra@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0017,Winda Auliza,winda.auliza@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0018,Syahrial Effendi,syahrial.efendi@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0019,Tsamara Hanindhiya,tsamara.hanindhiya@wri.org,P@ssword123,ADMIN,TRUE
-SH-0020,Sigit Utama,sigit.utama@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0021,Yoga Krissetya,yoga.krissetya@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0022,Muhammad Iqbal Rivai,muhammad.rivai@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0023,Muhammad Imran,muhammad.imran@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0024,Jefrico,jefrico.rico@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0025,Muhammad Rizqi Akbar,muhammad.zulnunsitorus@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0026,Tasniah Fauzi,tasniah.fauzi@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0027,Jefri Nurrahman,jefri.nurrahman@wri.org,P@ssword123,OPERATOR,TRUE
-SH-0028,Fajri Taswin,zulfajri.taswin@wri.org,admin123,MANAGEMENT,TRUE
+id,name,email,role,is_active
+seed-superadmin,Contoh Superadmin,superadmin@example.test,SUPERADMIN,TRUE
+seed-admin,Contoh Admin,admin@example.test,ADMIN,TRUE
+seed-management,Contoh Management,management@example.test,MANAGEMENT,TRUE
+seed-operator,Contoh Operator,operator@example.test,OPERATOR,TRUE
+seed-donor,Contoh Donor,donor@example.test,DONOR,TRUE

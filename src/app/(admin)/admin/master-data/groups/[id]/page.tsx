@@ -26,7 +26,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
       detail={result.detail}
       completeness={result.completeness}
       mapParcels={result.mapParcels}
-      markerPoints={result.markerPoints}
+      markerStats={result.markerStats}
       canEdit={canEdit}
       districts={districts}
       canViewParcel={canViewParcel}

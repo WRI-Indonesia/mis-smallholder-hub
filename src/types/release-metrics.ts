@@ -28,6 +28,14 @@ export type ReleaseMetric = {
   issueRefs: string[];
   /** Turunan: rvs(n) − rvs(n−1); null untuk baris anchor. */
   delta: number | null;
+  /**
+   * Baris ini membuka baseline roadmap baru (catatan memuat "Roadmap direset",
+   * §Aturan pengisian metrics.md) — Roadmap % sebelum dan sesudahnya tidak
+   * sebanding, jadi grafik memutus garis di sini (#392).
+   */
+  roadmapReset: boolean;
+  /** Turunan: indeks baseline roadmap (0 = baseline pertama), naik tiap reset. */
+  roadmapBaseline: number;
 };
 
 /** Jenis hari untuk split perolehan RVS (§4.3). */
