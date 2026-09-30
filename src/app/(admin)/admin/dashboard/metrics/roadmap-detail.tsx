@@ -24,7 +24,7 @@ const statusKey = (p: RoadmapPhase): StatusKey =>
   p.status === "Done" ? "done" : p.status === "Partial" ? "partial" : "open";
 
 /**
- * Urutan tampil horizon pada blok "Sisa menuju 1.0" — paling dekat dulu.
+ * Urutan tampil horizon pada blok "Sisa fase roadmap" — paling dekat dulu.
  * Bukan daftar penyaring: horizon apa pun yang muncul di data tetap ditampilkan
  * (termasuk "Done" pada baris ber-status Partial, yang sah menurut parser).
  * Kalau ia dipakai menyaring, chip-nya berhenti menjumlah angka gap tepat di
@@ -36,7 +36,7 @@ const HORIZON_NOTE: Record<PhaseHorizon, string> = {
   Done: "sudah selesai",
   Now: "sedang dikerjakan",
   Next: "antrean berikutnya",
-  Later: "sesudah go-live 1.0",
+  Later: "paruh akhir horizon roadmap",
   Blocked: "terhambat prasyarat",
 };
 
@@ -94,7 +94,7 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
           <TallyBox
             label="Fase inti (×2)"
             value={`${fmtPoints(summary.coreEarned)} / ${fmtInt(summary.coreMax)}`}
-            sub={`${fmtInt(summary.coreCount)} fase penentu go-live`}
+            sub={`${fmtInt(summary.coreCount)} fase komitmen roadmap`}
           />
           <TallyBox
             label="Fase pendukung (×1)"
@@ -109,7 +109,7 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
           <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
             <p className="text-xs text-muted-foreground">Roadmap</p>
             <p className="mt-0.5 text-lg font-medium tabular-nums">{fmtPct1(summary.pct)}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">sisa {fmt2(gapPp)} pp menuju 1.0</p>
+            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">sisa {fmt2(gapPp)} pp menuju target roadmap</p>
           </div>
         </div>
       </section>
@@ -200,9 +200,9 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
         </div>
       </section>
 
-      {/* 3 & 4. Sisa menuju 1.0 — pengelompokan horizon lalu peringkat pp */}
+      {/* 3 & 4. Sisa fase roadmap — pengelompokan horizon lalu peringkat pp */}
       <section>
-        <h3 className="text-sm font-medium">Sisa menuju 1.0</h3>
+        <h3 className="text-sm font-medium">Sisa fase roadmap</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Isi dari gap {fmt2(gapPp)} pp: {fmtInt(remaining.length)} fase yang belum ✅. Kolom terakhir = tambahan
           Roadmap % bila fase itu selesai penuh — urut dari yang paling menggerakkan jarum.

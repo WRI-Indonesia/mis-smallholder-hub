@@ -289,7 +289,7 @@ export function MetricsDashboardClient({
         </ChartCard>
         <ChartCard
           title="Progres roadmap"
-          subtitle="Persen tertimbang menuju 1.0; naik diskret tiap fase selesai."
+          subtitle="Persen tertimbang fase roadmap; naik diskret tiap fase selesai, turun tajam saat baseline direset."
           action={
             <button
               type="button"

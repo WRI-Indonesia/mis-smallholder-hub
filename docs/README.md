@@ -64,7 +64,8 @@ Indeks dokumentasi proyek. Setiap file bersifat **atomic** (satu topik) dan dike
 | File | Isi |
 |------|-----|
 | [project/brief.md](./project/brief.md) | Biweekly management brief |
-| [project/roadmap.md](./project/roadmap.md) | **Source of truth** — roadmap governance & Phase Status |
+| [project/roadmap.md](./project/roadmap.md) | **Source of truth** — Roadmap 2026–2027: linimasa per kuartal, Phase Status, Parkir |
+| [project/roadmap-mvp.md](./project/roadmap-mvp.md) | Arsip Phase Status baseline MVP (beku 2026-09-30, 88,5%) + evidence per fase |
 | [project/sprint.md](./project/sprint.md) | Sprint focus & issue control |
 | [project/tech-debt.md](./project/tech-debt.md) | Technical debt & bug register |
 | [project/changelog.md](./project/changelog.md) | Indeks changelog & decision log per bulan (`changelog/YYYY-MM.md`, append-only) + ringkasan dua minggu terakhir |

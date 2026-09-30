@@ -24,17 +24,18 @@ const table = (rows: string[]) =>
 describe("parseRoadmapPhases — file roadmap.md nyata", () => {
   it("memparse seluruh baris Phase Status dengan bobot & status valid", () => {
     const phases = parseRoadmapPhases(roadmapMd);
-    expect(phases.length).toBeGreaterThanOrEqual(48);
-    expect(phases[0]).toMatchObject({ key: "PLATFORM-01", stream: "PLATFORM", status: "Done", weight: "inti" });
-    expect(phases.find((p) => p.key === "BULK-02")).toMatchObject({
+    // Baseline reset 2026-09-30 (Roadmap 2026–2027): 14 fase pasca-MVP.
+    expect(phases.length).toBeGreaterThanOrEqual(14);
+    expect(phases[0]).toMatchObject({ key: "PLATFORM-08", stream: "PLATFORM", status: "Partial", weight: "inti" });
+    expect(phases.find((p) => p.key === "DQ-01")).toMatchObject({
       status: "Not Started",
-      horizon: "Next",
+      horizon: "Now",
       weight: "inti",
       score: 0,
       maxPoints: 2,
       points: 0,
     });
-    expect(phases.find((p) => p.key === "TOOLS-01")).toMatchObject({
+    expect(phases.find((p) => p.key === "OPS-02")).toMatchObject({
       status: "Partial",
       weight: "pendukung",
       score: 0.5,
@@ -42,17 +43,27 @@ describe("parseRoadmapPhases — file roadmap.md nyata", () => {
     });
   });
 
+  it("fase arsip MVP yang diparkir tidak lagi ikut dihitung", () => {
+    const keys = parseRoadmapPhases(roadmapMd).map((p) => p.key);
+    for (const parked of ["MD-09", "BULK-02", "TOOLS-01", "CMS-01", "COMM-02"]) {
+      expect(keys).not.toContain(parked);
+    }
+  });
+
   it("mengambil evidence & next step dari blok Rincian per Phase", () => {
     const phases = parseRoadmapPhases(roadmapMd);
     const ops02 = phases.find((p) => p.key === "OPS-02");
     expect(ops02?.evidence).toMatch(/Dockerfile/);
-    expect(ops02?.nextStep).toMatch(/env matrix/i);
+    expect(ops02?.nextStep).toMatch(/rollback/i);
+    // Setiap fase wajib punya evidence & next step — rincian kosong = tabel indeks tanpa bukti.
+    expect(phases.filter((p) => !p.evidence || !p.nextStep).map((p) => p.key)).toEqual([]);
   });
 
   it("label stream terbaca dari Stream Definition", () => {
     const labels = parseStreamLabels(roadmapMd);
     expect(labels.MD).toBe("Master Data");
     expect(labels.OPS).toBe("Operations & DevOps");
+    expect(labels.SC).toBe("Supply Chain");
   });
 });
 

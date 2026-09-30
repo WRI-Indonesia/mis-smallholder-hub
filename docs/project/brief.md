@@ -54,6 +54,8 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | 🔴 Blocked     | 0 fase         | — |
 | Roadmap %      | **88,5%**      | Dihitung dari Phase Status (bobot inti ×2) — [metrics.md](./metrics.md) |
 
+> **Reset 2026-09-30:** angka di atas adalah baseline MVP (kini beku di [roadmap-mvp.md](./roadmap-mvp.md)). Roadmap direset menjadi **Roadmap 2026–2027**: 26 fase (pasca-MVP + modul Visi Produk), **8,6%**, dan fase tanpa scope diparkir ([roadmap.md](./roadmap.md)). Brief 2026-10-13 memakai baseline baru.
+
 ### Poin Bahasan Manajemen
 
 | Topik               | Pesan Utama                                                              | Dampak                                                                                    |
@@ -70,7 +72,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Keputusan                  | Owner                   | Dibutuhkan Kapan     | Rekomendasi Tech Lead                                                                       |
 | -------------------------- | ----------------------- | --------------------- | --------------------------------------------------------------------------------------------- |
 | Rotasi password akun yang terbuka di `users.csv` (#390) | Owner + DevOps | Secepatnya (ditunda owner 2026-09-29) | Cek hash akun staging/prod terhadap 2 password seed (skrip baca-saja), rotasi yang cocok. Seed sudah akun fiktif + `SEED_USER_PASSWORD` (2026-09-30). |
-| Nasib BULK-02 (#69/#70 ditutup *not planned*) | Owner / Product | Sebelum rilis v1.3.0 | Putuskan buka ulang atau keluarkan dari baseline roadmap; perubahan baseline dicatat di Decision Log. |
+| ~~Nasib BULK-02 (#69/#70 ditutup *not planned*)~~ | Owner / Product | ✅ Diputuskan 2026-09-30 | Dipindah ke **Parkir** saat reset roadmap (di luar hitungan Roadmap %). |
 | Lisensi Universal Mill List & berkas survei rantai pasok (#379) | Owner | Sprint 1 | Pastikan lisensi mengizinkan data masuk repo publik; bila tidak, seed lewat `--data` dari folder lokal. |
 | Migrasi staging otomatis (#277) | Owner + DevOps | Sprint 2 | Tambahkan minimal guard `migrate status` di workflow deploy. (Build staging OOM #363 ✅ 2026-09-30 — RAM 4 GB.) |
 

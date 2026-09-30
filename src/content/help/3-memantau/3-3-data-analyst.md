@@ -15,7 +15,7 @@ icon: BarChart3
 
 **Rencana Pengembangan** — Rencana pengembangan aplikasi **per rilis** (v1.3.0, v1.4.0, …, masing-masing dengan tanggal mulai dan target), juga tentang aplikasinya sendiri, bukan data petani. Tab **Rilis** menampilkan rilis yang sedang dikejar: kemajuan dalam poin (S = 1, M = 3, L = 5) dan papan **kanban** tahapan butir (Belum dimulai → Dikerjakan → Menunggu keputusan → Selesai). Tab **Analisa** menampilkan beban & kemajuan per rilis beserta kapasitas perkiraannya, fokus per kategori, keputusan menunggu owner, dan carry-over. Tab **Semua Issue** mendaftar setiap issue dalam rencana, termasuk backlog. Isinya diambil dari dokumen rencana di repositori, jadi baru berubah setelah aplikasi dirilis ulang.
 
-**Metrik Rilis** — Memantau pengembangan aplikasinya sendiri, bukan data petani: kecepatan rilis, kemajuan menuju go-live, jumlah test, dan kualitas. Menu ini berada di grup Data Analyst meskipun alamat halamannya masih `/admin/dashboard/metrics`.
+**Metrik Rilis** — Memantau pengembangan aplikasinya sendiri, bukan data petani: kecepatan rilis, kemajuan fase roadmap, jumlah test, dan kualitas. Menu ini berada di grup Data Analyst meskipun alamat halamannya masih `/admin/dashboard/metrics`.
 
 **Komparasi Data Acuan** — Membandingkan angka acuan manual (rekap GDrive "MD 1st SOW") dengan angka MIS live per Lembaga Petani: petani, persil, luas lahan, petani terlatih per paket, dan petani berdata produksi. Selisih = acuan − MIS; sel oranye menandai metrik yang datanya di MIS masih kurang dari acuan. Angka acuan dientry manual di halaman ini (peran dengan izin EDIT), sisi MIS dihitung langsung saat halaman dibuka.
 
