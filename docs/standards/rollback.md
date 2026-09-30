@@ -46,7 +46,7 @@ Hanya bila B1 terlalu lambat untuk insiden yang sedang berjalan:
 
 1. Jalankan SQL pembalik dalam satu transaksi (`BEGIN; … COMMIT;`, `psql -v ON_ERROR_STOP=1`).
 2. `DELETE FROM _prisma_migrations WHERE migration_name = '<nama>';`
-3. **Hari yang sama:** hapus folder migrasi itu dari `mvp`. Selama folder masih ada, `migrate status` menandainya **pending** (guard staging akan berhenti di situ, sinyal yang benar). Segarkan `applied-checksums.json`, lalu catat di Decision Log.
+3. **Hari yang sama:** hapus folder migrasi itu dari `mvp`. Selama folder masih ada, `migrate status` menandainya **pending** (guard staging/prod akan berhenti di situ, sinyal yang benar). Segarkan `applied-checksums.json`, lalu catat di Decision Log.
 
 ### B3 · Pulihkan dump
 
@@ -71,9 +71,9 @@ Hanya bila B1 terlalu lambat untuk insiden yang sedang berjalan:
 | --- | --- | --- | --- |
 | Pemicu | push `main` | push `staging` | push `dev` (tidak dipakai sejak 2026-05) |
 | Install | `npm ci` | `npm ci` | `npm install` |
-| Guard `.env` dari secret | — | ✅ | — |
-| Guard `migrate status` | — (#394) | ✅ (#277) | — |
-| Pemuatan nvm aman di `set -e` | — (#394) | ✅ | — |
+| Guard `.env` dari secret | ✅ (#394) | ✅ | — |
+| Guard `migrate status` | ✅ (#394) | ✅ (#277) | — |
+| Pemuatan nvm aman di `set -e` | ✅ (#394) | ✅ | — |
 | pm2 / port | `mis-main` / 3000 | `mis-staging` / 3000 | `mis-dev` / 3001 |
 
 `deploy-dev.yaml` tidak ikut alur rilis `mvp → staging → main`; perbedaannya dibiarkan sampai ada keputusan menghidupkan atau menghapusnya.

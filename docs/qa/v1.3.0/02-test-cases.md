@@ -71,6 +71,19 @@ Harapan:
 - Ada migrasi pending: job **gagal** dengan anotasi "Skema mis-staging belum sesuai kode …" dan daftar nama migrasi pending; `npm run build` dan `pm2 reload` **tidak** dijalankan; aplikasi staging tetap melayani versi sebelumnya.
 Baseline dev: diuji lokal 2026-09-30 terhadap `mis-dev` — up to date (exit 0), migrasi palsu `29990101000000_fake_pending` (exit ≠ 0, namanya tercantum), DB tak terjangkau P1001 (exit ≠ 0).
 
+## #394 — Guard migrasi di `deploy-main.yml`
+
+### TC-394-01 · Deploy produksi melewati guard migrasi [P0] (3 mnt)
+Prasyarat: migrasi v1.3.0 (`20260930120000_production_record_parcel_period_idx`) sudah diterapkan manual ke `mis-prod` sebelum merge `staging → main`; akses baca log GitHub Actions.
+Langkah:
+1. Sesudah merge, buka log run **Deploy Main** (`gh run view <id> --log`).
+2. Cari keluaran guard sesudah `npm ci`.
+Harapan:
+- Log memuat "Database schema is up to date!", lalu `prisma generate`, build, dan `pm2 reload mis-main` berjalan; run hijau.
+- Tidak ada anotasi `::error::` guard `.env` atau guard migrasi.
+- (Bila guard ternyata berhenti) aplikasi prod tetap melayani versi sebelumnya; terapkan migrasi yang disebut di log, lalu *re-run* job — jangan menonaktifkan guard.
+Baseline dev: 2026-09-30 — YAML valid (js-yaml), `bash -n` skrip SSH lolos, blok guard identik `deploy-staging.yml` selain nama DB; `migrate status` terhadap `mis-dev` → "up to date", exit 0. Jalur gagal sudah diuji pada guard yang sama di #277 (TC-277-01).
+
 ## #376 — Cek jendela migrasi prod ↔ tag rilis
 
 ### TC-376-01 · `migrations:release-gap` menutup jendela sesudah tag v1.3.0 [P1] (3 mnt)
