@@ -210,7 +210,9 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
                 {g.items.map(({ phase: p, gainPp }) => (
                   <li key={p.key}>
                     <details className="group">
-                      <summary className="grid cursor-pointer list-none grid-cols-[1rem_minmax(7.5rem,auto)_1fr_auto] items-baseline gap-x-3 px-3 py-2 text-sm hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+                      {/* < sm: 3 kolom, bobot+pp turun ke baris kedua di bawah deskripsi —
+                          4 kolom nowrap menyisakan ±40px untuk deskripsi di layar ponsel. */}
+                      <summary className="grid cursor-pointer list-none grid-cols-[1rem_auto_1fr] items-baseline gap-x-3 gap-y-0.5 px-3 py-2 text-sm hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-ring sm:grid-cols-[1rem_minmax(7.5rem,auto)_1fr_auto] [&::-webkit-details-marker]:hidden">
                         <ChevronRight
                           className="h-3.5 w-3.5 self-center text-muted-foreground transition-transform group-open:rotate-90"
                           aria-hidden
@@ -223,7 +225,7 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
                           <span className="sr-only"> — {p.status}</span>
                         </span>
                         <span className="leading-snug">{p.description}</span>
-                        <span className="whitespace-nowrap text-right text-xs tabular-nums text-muted-foreground">
+                        <span className="col-start-3 whitespace-nowrap text-xs tabular-nums text-muted-foreground sm:col-start-auto sm:text-right">
                           {p.weight} ×{fmtInt(p.maxPoints)} · +{fmt2(gainPp)} pp
                         </span>
                       </summary>
