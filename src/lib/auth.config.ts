@@ -22,7 +22,6 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
-        token.roleCheckedAt = Date.now();
       }
       return token;
     },

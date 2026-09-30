@@ -39,6 +39,6 @@ Menu ini hanya dipegang SUPERADMIN — peran lain, termasuk ADMIN, tidak punya i
 
 **Pengguna melihat lebih banyak data dari seharusnya** — cakupan datanya kosong. Isi distrik atau lembaga yang menjadi tanggung jawabnya.
 
-**Perubahan peran belum terasa, atau akun yang dinonaktifkan masih terbuka** — peran dan status aktif diperiksa ulang paling lama **5 menit** sekali. Setelah itu menu mengikuti peran baru saat halaman dimuat ulang, dan akun nonaktif otomatis keluar ke halaman login. Pengguna tidak perlu keluar lalu masuk lagi.
+**Perubahan peran belum terasa, atau akun yang dinonaktifkan masih terbuka** — peran dan status aktif diperiksa ulang paling lama **1 menit** sekali. Setelah itu menu mengikuti peran baru saat halaman dimuat ulang, dan akun nonaktif otomatis keluar ke halaman login. Pengguna tidak perlu keluar lalu masuk lagi.
 
 **Angka dashboard pengguna berbeda dengan Anda** — normal. Setiap orang hanya melihat cakupannya sendiri.

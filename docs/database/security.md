@@ -11,7 +11,7 @@
 
 | Layer | Mekanisme | Implementation |
 |-------|-----------|----------------|
-| **Authentication** | NextAuth.js | Email + password, session stored in JWT. `role` + `isActive` dibaca ulang dari DB di callback `jwt` jalur Node paling lama tiap 5 menit (`ROLE_REFRESH_INTERVAL_MS`, `src/lib/auth-role-refresh.ts`, #342): perubahan role berlaku ≤ 5 menit, akun nonaktif/terhapus dipaksa logout. Middleware (tanpa Prisma) hanya membaca cookie, jadi pengalihan `/login` → `/admin` dilakukan halaman login dan guard sesi di layout `(admin)` |
+| **Authentication** | NextAuth.js | Email + password, session stored in JWT. `role` + `isActive` **tidak dipercaya dari token**: callback `jwt` jalur Node membacanya ulang dari DB lewat memo per user ber-TTL 1 menit (`ROLE_CACHE_TTL_MS`, `src/lib/auth-role-refresh.ts`, #342) — berlaku sama di RSC, server action, dan route handler karena tak bergantung pada cookie yang ditulis ulang. Perubahan role berlaku ≤ 1 menit; akun nonaktif/terhapus → sesi `null` (paksa logout). Galat DB = fail-open (role di token dipakai) supaya gangguan DB tak mengeluarkan semua pengguna. Middleware (tanpa Prisma) hanya menjaga `/admin` dengan membaca cookie; pengalihan `/login` → `/admin` dilakukan halaman login, dan tiap halaman `/admin` dijaga `requirePermission` |
 | **Authorization** | Role-Based (RBAC) | 5 roles: SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (donor/funder read-only: dashboard, laporan, peta) |
 | **Data Access Control** | Data-level filtering | UserProvince, UserDistrict, UserFarmerGroup assignments |
 | **Permission Override** | User-specific exceptions | UserPermissionOverride for grant/revoke specific menu permissions |
