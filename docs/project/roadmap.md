@@ -164,7 +164,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>OPS-02</strong> · 🟠 Partial — DevOps: jalur rilis, guard migrasi & rollback</summary>
 
 - **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge; `deploy-staging.yml` kini berhenti di guard `prisma migrate status` sebelum build bila skema tertinggal (#277). Prosedur rollback tertulis di `docs/standards/rollback.md` (#232); jalur migrasi digladi 2026-09-30 di `mis-staging-local`. Tooling internal pemantau pengembangan juga dicatat di fase ini: **Metrik Rilis** (`dashboard-metrics`, #227/#250; penyesuaian pasca-reset = #392) dan **Rencana Pengembangan** (`data-analyst-sprint`, #378/#389).
-- **Next step:** guard `migrate status` yang sama untuk `deploy-main.yml` (#394, butuh persetujuan owner). v1.3.0: uji rollback aplikasi di staging (#232, TC-232-01) — prosedur sudah tertulis di `docs/standards/rollback.md` dan jalur migrasinya digladi 2026-09-30.
+- **Next step:** v1.3.0: guard `migrate status` yang sama untuk `deploy-main.yml` (#394, persetujuan owner sebelum merge); uji rollback aplikasi di staging (#232, TC-232-01) — prosedur sudah tertulis di `docs/standards/rollback.md` dan jalur migrasinya digladi 2026-09-30.
 - **Selesai bila:** #277 (✅ kode), #376 (✅ kode: `npm run migrations:release-gap`), #232 ditutup; satu rollback staging berhasil diuji dan dicatat.
 
 </details>
@@ -421,7 +421,7 @@ Daftar fase dan epic yang **tidak dihitung** di Roadmap % karena belum punya sco
 | COMM-01 | Community | Belum ada scope |
 | COMM-02 | i18n | Belum ada scope; UI tetap Bahasa Indonesia |
 | #192 | Epic API layer & offline sync aplikasi mobile | ⚖️ masih direncanakan? Bila tidak, close *not planned* |
-| #124 | Overlay citra Planet NICFI di Peta Lahan | ⚖️ masih direncanakan? Bila tidak, close *not planned* |
+| #124 | Overlay citra Planet NICFI di Peta Lahan | ✅ Diputuskan 2026-09-30: close *not planned* — GIS-01 memakai GIBS (#290) + Sentinel-2 (#291) |
 | #261 | Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ⚖️ keputusan cakupan, bukan kode |
 
 Butir kecil (kerapian, UX, temuan audit) tetap di **Backlog** [sprint.md](./sprint.md), bukan di roadmap.

@@ -37,7 +37,7 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
 | - | ----- | -------- | ---- | ------ | ------ | ------------------ |
 | 1 | **#363** Build staging OOM (RAM 1,97 GB) | Rilis | M | **Diputuskan & diterapkan 2026-09-30:** RAM server staging dinaikkan ke **4 GB** (DevOps, opsi 2). `staging` ← `main` + `mvp`, deploy `36660789043` hijau 2m15s (available 2,4 GB sebelum build); **ditutup + retro 2026-09-30** | ✅ Selesai | ✅ Diputuskan: upgrade RAM 4 GB |
-| 2 | **#342** Role di JWT beku sampai login ulang | Keamanan | M | `jwt` callback membaca ulang `role` + `isActive` tiap N menit; nonaktif = paksa logout. Kode ✅ 2026-09-30 (`dd2a6c4` + review `c5615e7`: memo per user TTL 1 menit, fail-open saat galat DB, `/login` keluar dari middleware). Sisa: smoke lokal (ubah role/nonaktifkan akun yang sedang login), retro + tutup | 🟡 Dikerjakan | Nilai N: dipakai 1 menit (usulan awal 5) — konfirmasi owner |
+| 2 | **#342** Role di JWT beku sampai login ulang | Keamanan | M | `jwt` callback membaca ulang `role` + `isActive` tiap N menit; nonaktif = paksa logout. Kode ✅ 2026-09-30 (`dd2a6c4` + review `c5615e7`: memo per user TTL 1 menit, fail-open saat galat DB, `/login` keluar dari middleware). Sisa: smoke lokal (ubah role/nonaktifkan akun yang sedang login), retro + tutup | 🟡 Dikerjakan | ✅ Diputuskan: N = 1 menit (dikonfirmasi 2026-09-30) |
 | 3 | **#286 butir 2** Key FIRMS tercetak di log container | Keamanan | S | Rotasi `FIRMS_MAP_KEY_FREE` (DevOps) sebagai mitigasi; butir 1 & 3 (cache sendiri) tetap di backlog | ⚖️ Menunggu keputusan | Koordinasi DevOps |
 | 4 | **#390** `users.csv` seed: email staf asli + password teks polos di repo publik (P1) | Keamanan | S | Temuan review #383. Repo ✅ 2026-09-30 (`5028ffd`: 5 akun fiktif `example.test`, password dari `SEED_USER_PASSWORD`, test penjaga `seed-data-privacy`). Sisa owner/DevOps: cek & rotasi akun staging/prod yang masih memakai password lama | 🟡 Dikerjakan | Riwayat git (preseden #273/#383) |
 | 5 | **#277** `deploy-staging.yml` tanpa `migrate deploy` | Rilis | M | Guard `npx prisma migrate status` di `deploy-staging.yml` sebelum build: job gagal dengan pesan jelas bila ada migrasi pending; migrasi tetap manual DB-dulu. Kode ✅ 2026-09-30: guard sesudah `npm ci`, sebelum `prisma generate`/build/reload; diuji lokal 3 jalur (up to date → lolos · migrasi pending palsu → gagal menyebut namanya · DB tak terjangkau → gagal); YAML & sintaks bash skrip SSH divalidasi; `workflow.md` + roadmap OPS-02. Sisa: bukti di run deploy staging berikutnya → retro | 🟡 Dikerjakan | ✅ Diputuskan: opsi 2 (guard `migrate status`) |
@@ -56,7 +56,8 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 18 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Tambah langkah tab Upload List Peserta (#301) | 🔲 Todo | — |
 | 19 | **#393** Audit roadmap vs kode: koreksi evidence & Next step basi, tooling tanpa fase, label phase | Kerapian | S | Butir 1–12 checklist issue (roadmap.md, sprint.md, label `phase:`, komentar test, CLAUDE.md); status fase tidak naik — GIS-01 Planned → Not Started (skor sama) | 🟡 Dikerjakan | — |
 | 20 | **#392** Metrik Rilis disesuaikan dengan reset roadmap | Fitur | M | Grafik Progres roadmap terputus per baseline, tabel sisa fase per horizon (label dari `roadmap.md`), KPI RVS/Test = perolehan rilis terakhir, tanpa angka fase hardcode; Bantuan `p-8`. Kode ✅ 2026-09-30 (`1b2538c` + review: baris sisa fase responsif di layar sempit): segmen `TimeSeriesChart`, `roadmapBaseline` dari frasa "Roadmap direset", `parseHorizonLabels` + `groupRemainingByHorizon`, +8 test (2.418 → 2.426); kasus uji TC-392-01…03 di `docs/qa/v1.3.0`; **ditutup + retro** | ✅ Selesai | ✅ Diputuskan: garis per baseline + kelompok per horizon |
-| 21 | **Rilis v1.3.0** | Rilis | M | Semua butir di atas + deploy staging → prod. Seed label menu `data-analyst-sprint` → "Rencana Pengembangan" lewat `seed-menu-only.ts` (dry-run dulu: diff harus hanya judul ini; `seed-menu-key.mjs` TIDAK mengganti label menu yang sudah ada), sesudah kode ter-deploy. Lokal `mis-dev` sudah 2026-09-30 | 🔲 Todo | Go rilis |
+| 21 | **#394** `deploy-main.yml`: guard `prisma migrate status` sebelum build + pemuatan nvm | Rilis | S | Pola guard staging #277; syarat fase OPS-02 (Now); menyentuh workflow produksi → persetujuan owner sebelum merge | 🔲 Todo | — |
+| 22 | **Rilis v1.3.0** | Rilis | M | Semua butir di atas + deploy staging → prod. Seed label menu `data-analyst-sprint` → "Rencana Pengembangan" lewat `seed-menu-only.ts` (dry-run dulu: diff harus hanya judul ini; `seed-menu-key.mjs` TIDAK mengganti label menu yang sudah ada), sesudah kode ter-deploy. Lokal `mis-dev` sudah 2026-09-30 | 🔲 Todo | Go rilis |
 
 #### Rilis v1.4.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
 
@@ -101,13 +102,12 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 5 | **#334** KT HJP & SSJ kosong: KT+Blok tergabung atau kode blok? | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
 | 5 | **#260** Kecamatan & desa hanya 1 baris: isi atau sembunyikan? | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
 | 5 | **#261** Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ⚖️ Menunggu keputusan | Parkir roadmap; hanya keputusan, bukan kode |
-| 5 | **#192** Epic API layer & offline sync aplikasi mobile | ⚖️ Menunggu keputusan | Parkir roadmap (terkait FORM-01). Masih direncanakan? Bila tidak, close *not planned* |
-| 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ⚖️ Menunggu keputusan | Parkir roadmap. Masih direncanakan? Bila tidak, close *not planned* |
-| 6 | **#394** `deploy-main.yml`: guard `prisma migrate status` sebelum build + pemuatan nvm | 🔲 Todo | Roadmap **OPS-02**; pola guard staging #277; menyentuh workflow produksi → persetujuan owner sebelum merge |
+| 5 | **#192** Epic API layer & offline sync aplikasi mobile | 🔲 Todo | Parkir roadmap (terkait FORM-01). ✅ Diputuskan 2026-09-30: tetap parkir |
+| 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ✅ Selesai | ✅ Diputuskan 2026-09-30: close *not planned* (GIS-01 memakai GIBS #290 + Sentinel-2 #291) |
 | 6 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | 🔲 Todo | Audit 2026-09-29 |
 | 6 | **TD-049** Auto-fit kolom Excel | 🔲 Todo | Tech debt, audit 2026-09-29 |
 | 6 | **TD-050** 2 test RBAC menyalin logika | 🔲 Todo | Tech debt, audit 2026-09-29 |
-| 7 | **#365** Fire Alert: laporan bulanan titik api | ⚖️ Menunggu keputusan | Kode selesai; owner melihat di UI prod → close |
+| 7 | **#365** Fire Alert: laporan bulanan titik api | ✅ Selesai | ✅ Diputuskan 2026-09-30: dicek owner di UI prod → retro + close |
 | 7 | **#373** UL Parcel Code boleh menempel di >1 lahan | ⚖️ Menunggu keputusan | Cek silang 82 kode ganda → pindah ke issue data, lalu close |
 
 <details>
