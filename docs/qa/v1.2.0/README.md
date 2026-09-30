@@ -23,7 +23,7 @@ Run `2026-09-29-local`: seluruh **22 kasus uji Pass** (lintas SUPERADMIN, ADMIN 
 
 ## Keputusan
 
-**Go / No-go:** … (tanggal, oleh siapa) — syarat: semua P0 Pass di staging.
+**Go / No-go:** **Go** — owner, 2026-09-29, dengan **QA staging dilewati** (deploy staging OOM, #363). Dasar: run lokal 22/22 kasus uji Pass lintas 4 peran; lihat `05-signoff.md` §Risiko yang diterima.
 
 ## Known issues yang dibawa
 
@@ -31,4 +31,5 @@ Run `2026-09-29-local`: seluruh **22 kasus uji Pass** (lintas SUPERADMIN, ADMIN 
 |---|---|---|
 | #390 | Email staf + password teks polos di `users.csv` (repo publik); akun yang belum dirotasi bisa dimasuki | Keputusan owner 2026-09-29 — rotasi oleh owner/DevOps, di luar rilis |
 | #342 | Perubahan role/nonaktif baru berlaku setelah login ulang (izin menu); scope data sudah fail-closed sejak #252 | Tidak wajib setelah #364 memilih opsi (b) |
+| #363 | Staging tidak bisa di-deploy (OOM `next build`, RAM 1,97 GB) — QA staging v1.2.0 tidak dijalankan | Diurus DevOps (keputusan owner 2026-09-29) |
 | #317 (sisa) | Tab Luar Boundary & Selisih Luas, guard upload, layer peta belum ada | Fase lanjutan |
