@@ -30,7 +30,7 @@ Legenda status: ✅ Done · 🟠 Partial · 🔲 Planned · 🔴 Blocked — def
 | Publik | `/` (Home ✅), `/community` 🔲, `/knowledge-management` 🔲 | — |
 | Autentikasi | `/login` ✅ · `/api/auth/[...nextauth]` | NextAuth (Credentials) |
 | Admin | `/admin/**` | `src/middleware.ts` (sesi) → `requirePermission(menuKey)` per halaman |
-| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) · `/api/map-basemap` (latar peta cetak Laporan Lahan, #318) | `hasPermission(menuKey, "VIEW")` per endpoint (overlay: `map-parcel`; hotspot: `map-parcel` atau `dashboard-risk-fire`; basemap: `report-land-parcel`), same-origin |
+| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) · `/api/map-basemap` (latar peta cetak Laporan Lahan, #318) | `hasPermission(menuKey, "VIEW")` per endpoint (overlay: `map-parcel`; hotspot: `map-parcel` atau `dashboard-risk-fire`; basemap: `report-land-parcel` — **dimemo per pengguna ≤ 60 dtk** karena satu ekspor = 1.000–4.000 tile; pencabutan izin berlaku paling lambat 60 dtk, perubahan role langsung, #320), same-origin |
 
 Semua akses data lewat **Server Actions** (`src/server/actions/`) dengan 3 lapis pengaman: permission menu → access context → soft delete. Tidak ada REST API selain NextAuth & proxy tile.
 
