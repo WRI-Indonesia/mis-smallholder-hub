@@ -460,6 +460,16 @@ Sebelum deploy migration ke production, pastikan:
 - [ ] Semua query di codebase sudah update (jika ada breaking change)
 - [ ] Index creation untuk tabel besar dilakukan CONCURRENTLY (jika perlu)
 - [ ] **Sesudah `migrate deploy` prod:** segarkan snapshot checksum — `npx dotenv -e .env.prod -- npx tsx scripts/migrations/refresh-applied-checksums.ts` (SELECT saja) → commit `prisma/migrations/applied-checksums.json`. Test `migration-guards.test.ts` (#303) membandingkan sha256 file lokal dengan daftar ini: **file migrasi yang sudah applied tidak boleh diedit** — kalau perlu koreksi, buat migrasi baru. Migrasi yang belum ada di daftar dianggap pending sah hanya bila lebih baru dari entri terakhir.
+- [ ] **Migrasi prod tanpa rilis?** Ikuti §Migrasi prod di luar rilis (kompatibel mundur terbukti, atau rilis hari yang sama + baris "jendela terbuka"), lalu `npm run migrations:release-gap` untuk melihat jendelanya.
+
+### Migrasi prod di luar rilis (#376, TD-045)
+
+Normalnya migrasi naik ke mis-prod **bersama** rilis yang memakainya (DB dulu, lalu merge). Kebutuhan data kadang memaksa migrasi diterapkan **lebih dulu** (preseden #373, 2026-09-23: constraint `tbl_land_parcel_external_id` diubah saat prod masih v1.0.0). Itu hanya boleh bila salah satu terpenuhi:
+
+1. **Kompatibel mundur** dengan kode di tag rilis yang sedang live — dibuktikan, bukan diasumsikan: cari semua pemakai kolom/constraint/unique lama di tag itu (`git grep <nama> vX.Y.Z -- src/ prisma/`) dan pastikan tak ada jalur tulis/baca yang patah; atau
+2. **Rilis kode menyusul hari yang sama** — catat baris **"jendela terbuka"** di `docs/project/sprint.md` (rilis berjalan, kategori Rilis) sampai tag yang memuat migrasi itu terbit.
+
+Jendela yang masih terbuka terlihat dengan `npm run migrations:release-gap` (tanpa DB): membandingkan snapshot `applied-checksums.json` dengan isi `prisma/migrations/` di tag rilis terakhir, keluar 1 bila ada migrasi applied yang belum ada di tag (atau sebaliknya: ada di tag, belum applied / snapshot basi). Diputar ulang terhadap `v1.0.0`, skrip ini menangkap persis insiden #373. Jalankan sesudah setiap `migrate deploy` prod di luar rilis dan sebagai butir Checklist Rilis.
 
 ### Kebijakan Breaking Change
 

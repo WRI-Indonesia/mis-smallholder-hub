@@ -164,8 +164,8 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>OPS-02</strong> · 🟠 Partial — DevOps: jalur rilis, guard migrasi & rollback</summary>
 
 - **Evidence:** Dockerfile, 5 workflow (`gitleaks`, `semgrep`, `deploy-dev`, `deploy-staging`, `deploy-main`); alur `mvp → staging → main` aktif sejak v0.32.0; RAM staging 4 GB sehingga build tak lagi OOM (#363, 2026-09-30). Migrasi DB masih manual sebelum merge; `deploy-staging.yml` kini berhenti di guard `prisma migrate status` sebelum build bila skema tertinggal (#277). Tooling internal pemantau pengembangan juga dicatat di fase ini: **Metrik Rilis** (`dashboard-metrics`, #227/#250; penyesuaian pasca-reset = #392) dan **Rencana Pengembangan** (`data-analyst-sprint`, #378/#389).
-- **Next step:** v1.3.0: cek migrasi prod vs tag rilis terakhir (#376, TD-045), prosedur rollback terdokumentasi + diuji di staging (#232).
-- **Selesai bila:** #277 (✅ kode), #376, #232 ditutup; satu rollback staging berhasil diuji dan dicatat.
+- **Next step:** v1.3.0: prosedur rollback terdokumentasi + diuji di staging (#232).
+- **Selesai bila:** #277 (✅ kode), #376 (✅ kode: `npm run migrations:release-gap`), #232 ditutup; satu rollback staging berhasil diuji dan dicatat.
 
 </details>
 

@@ -52,3 +52,17 @@ Harapan:
 - Skema sudah sesuai: log memuat "Database schema is up to date!" lalu build & `pm2 reload` berjalan.
 - Ada migrasi pending: job **gagal** dengan anotasi "Skema mis-staging belum sesuai kode …" dan daftar nama migrasi pending; `npm run build` dan `pm2 reload` **tidak** dijalankan; aplikasi staging tetap melayani versi sebelumnya.
 Baseline dev: diuji lokal 2026-09-30 terhadap `mis-dev` — up to date (exit 0), migrasi palsu `29990101000000_fake_pending` (exit ≠ 0, namanya tercantum), DB tak terjangkau P1001 (exit ≠ 0).
+
+## #376 — Cek jendela migrasi prod ↔ tag rilis
+
+### TC-376-01 · `migrations:release-gap` menutup jendela sesudah tag v1.3.0 [P1] (3 mnt)
+Prasyarat: repo lokal ber-`git fetch --tags`; `applied-checksums.json` sudah disegarkan sesudah `migrate deploy` prod rilis ini.
+Langkah:
+1. Sebelum tag: `npm run migrations:release-gap`.
+2. Sesudah tag `v1.3.0` di-push: `git fetch --tags && npm run migrations:release-gap`.
+3. `npm run migrations:release-gap -- --tag v1.0.0`.
+Harapan:
+- Langkah 1: bila rilis membawa migrasi (mis. indeks produksi #251), migrasi itu tercantum sebagai "Applied di prod, BELUM ada di v1.2.0" — wajar sebelum tag; selain itu tidak ada nama lain.
+- Langkah 2: "✓ Tidak ada jendela terbuka", exit 0.
+- Langkah 3 (regresi insiden #373): tercantum `20260923120000_external_id_shared_code`, exit 1.
+Baseline dev: 2026-09-30 — v1.2.0 ✓ exit 0; `--tag v1.0.0` menangkap #373 exit 1; tag tak dikenal → pesan `git fetch --tags`, exit 2.
