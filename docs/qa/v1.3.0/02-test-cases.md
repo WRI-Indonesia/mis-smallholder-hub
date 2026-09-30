@@ -51,10 +51,12 @@ Langkah:
 4. (SUPERADMIN) Ubah role akun itu menjadi **DONOR**. (OPERATOR) tunggu ± 1 menit, muat ulang Master Data › Produksi.
 5. (SUPERADMIN) **Nonaktifkan** akun itu. (OPERATOR) tunggu ± 1 menit, muat ulang `/admin`.
 6. (SUPERADMIN) Aktifkan kembali dan kembalikan role ke OPERATOR.
+7. (OPERATOR) **Segera** (< 1 menit sesudah langkah 6) login lagi di jendela privat.
 Harapan:
 - Langkah 3: sesi menunjukkan `SUPERADMIN`, menu Settings/Bulk Upload tampil tanpa login ulang.
 - Langkah 4: sesi `DONOR`; Master Data › Produksi dialihkan ke `/admin` dan menunya hilang dari sidebar.
 - Langkah 5: sesi kosong, halaman dialihkan ke `/login` **tanpa loop redirect**; halaman login tampil normal.
+- Langkah 7: login **langsung berhasil** dengan role `OPERATOR` — tidak tertolak diam-diam kembali ke `/login` oleh status nonaktif yang masih dimemo (temuan review wrap-up v1.3.0, `45a8fcc`).
 - Perubahan tidak berlaku lebih lambat dari ± 1 menit (TTL memo per user di tiap proses Node).
 Baseline dev: `mis-dev` 2026-09-30 — login `qa-operator` via curl: sesi `OPERATOR`, Master Data › Produksi 200, `/admin/settings/users` → `/admin`. Langkah 2–6 **belum** dijalankan di lokal (perubahan `tbl_user` tidak diizinkan untuk sesi dev); logika dijaga `src/test/auth-role-refresh.test.ts` (memo TTL, fail-open, akun nonaktif → sesi kosong).
 
