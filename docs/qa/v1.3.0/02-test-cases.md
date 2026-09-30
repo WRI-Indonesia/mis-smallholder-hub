@@ -146,3 +146,24 @@ Harapan:
 - Langkah 3: sesudah refresh checkbox tak tercentang; mencentang memuat ulang titik.
 - Langkah 5: halaman "tidak ditemukan", tidak ada titik atau jumlah patok yang bocor.
 Baseline dev: `mis-dev` 2026-09-30 — Lembaga 7.884 patok (0% terpasang), petani 74 patok, keduanya = hitungan SQL langsung; titik tergambar sesudah dicentang.
+
+## #396 — Rencana Pengembangan per rilis (lanjutan #378/#389)
+
+### TC-396-01 · Menu, tab, dan pemilih rilis Rencana Pengembangan [P1] (5 mnt)
+Prasyarat: label menu `data-analyst-sprint` sudah di-seed lewat `seed-menu-only.ts` di staging; akun MANAGEMENT dan OPERATOR.
+Langkah:
+1. (MANAGEMENT) Buka sidebar **Data Analyst** → **Rencana Pengembangan**.
+2. Baca strip ringkasan di atas tab (umur dokumen, rilis yang dikejar, keputusan menunggu).
+3. Tab **Rilis**: pilih rilis lain lewat pemilih, lalu buka combobox **Riwayat** dan pilih `v1.2.0`.
+4. Tab **Analisa**: arahkan kursor ke batang grafik beban per rilis paling kanan.
+5. Tab **Semua Issue**: pilih satu rilis di combobox, filter status, ketik `#342` di pencarian.
+6. Muat ulang halaman; lalu buka URL lama `/admin/data-analyst/sprint?sprint=1`.
+7. (OPERATOR) buka `/admin/data-analyst/sprint`.
+Harapan:
+- Label sidebar dan judul halaman "Rencana Pengembangan" (bukan "Sprint Mingguan"); URL tetap `/admin/data-analyst/sprint`.
+- Rilis berjalan = rilis pertama yang belum dirilis (v1.3.0); progres poin S/M/L dan kanban 4 kolom sesuai tabel di `docs/project/sprint.md`.
+- Riwayat `v1.2.0` tampil sebagai rilis yang sudah dirilis.
+- Tooltip grafik beban tidak terpotong di tepi kartu (desktop).
+- Semua Issue memuat baris dari tabel Rilis + Backlog; pencarian `#342` menyisakan baris #342; tab & filter bertahan sesudah muat ulang; parameter `sprint` lama dibersihkan tanpa galat.
+- OPERATOR dialihkan (menu tak tersedia untuk perannya).
+Baseline dev: `mis-dev` 2026-09-30 — label menu "Rencana Pengembangan", ikon `CalendarRange`; parser dijaga `release-plan.test.ts` (27) + `plan-status.test.ts` (8).
