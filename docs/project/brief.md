@@ -72,7 +72,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | Rotasi password akun yang terbuka di `users.csv` (#390) | Owner + DevOps | Secepatnya (ditunda owner 2026-09-29) | Cek hash akun staging/prod terhadap 2 password seed (skrip baca-saja), rotasi yang cocok; ganti seed jadi akun fiktif + password dari env. |
 | Nasib BULK-02 (#69/#70 ditutup *not planned*) | Owner / Product | Sebelum rilis v1.3.0 | Putuskan buka ulang atau keluarkan dari baseline roadmap; perubahan baseline dicatat di Decision Log. |
 | Lisensi Universal Mill List & berkas survei rantai pasok (#379) | Owner | Sprint 1 | Pastikan lisensi mengizinkan data masuk repo publik; bila tidak, seed lewat `--data` dari folder lokal. |
-| Build staging OOM (#363) & migrasi staging otomatis (#277) | Owner + DevOps | Sprint 2 | Pilih opsi build/RAM; tambahkan minimal guard `migrate status` di workflow deploy. |
+| Migrasi staging otomatis (#277) | Owner + DevOps | Sprint 2 | Tambahkan minimal guard `migrate status` di workflow deploy. (Build staging OOM #363 ✅ 2026-09-30 — RAM 4 GB.) |
 
 ### Dua Minggu ke Depan (2026-09-29 s.d. 2026-10-11)
 
@@ -80,7 +80,7 @@ Gunakan section ini untuk presentasi management setiap dua minggu. Section ini s
 | -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | **P1**   | Keamanan akses prod (#364 ✅, #237 ✅, #342, #390) | Struktur menu dikunci dari UI ✅, reaktivasi menu ✅; sisa: role/`isActive` di JWT (#342), rotasi password seed (#390) |
 | **P1**   | Rilis **v1.2.0**                            | #317 Fase 2 + #378 + #364/#237/#385/#252/#383/#311 (siap QA 2026-09-29); seed menu Tumpang Tindih & Sprint Mingguan ke staging/prod |
-| **P2**   | Performa & jalur rilis (#252 ✅, #311 ✅, #277, #376, #363) | `getAccessContext` di-cache per render ✅, perf test stabil ✅; sisa: guard migrasi di deploy, cek migrasi vs tag, build staging OOM |
+| **P2**   | Performa & jalur rilis (#252 ✅, #311 ✅, #363 ✅, #277, #376) | `getAccessContext` di-cache per render ✅, perf test stabil ✅, build staging OOM ✅ (RAM 4 GB); sisa: guard migrasi di deploy, cek migrasi vs tag |
 | **P2**   | Prosedur rollback (#232, OPS-02)            | Dokumentasi + uji rollback di staging → kandidat OPS-02 Done                                                  |
 
 Rincian per minggu: [sprint.md](./sprint.md).
