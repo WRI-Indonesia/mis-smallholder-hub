@@ -110,13 +110,15 @@ erDiagram
 |----------|--------|--------------|
 | **Dashboard Snapshots** | MainDashboardSnapshot, BmpDashboardSnapshot (#166) | Historical state capture, filter-based snapshots, JSON data storage, soft-delete; separate table per dashboard |
 
-### Model Terencana (5 Kategori)
+### Model Terencana
 
-- **Staff** (MD-07) — Staff activity tracking
-- **HCV** (MD-08) — High Conservation Value assessments *(sebagian: status NKT per lahan `LandParcelNkt` #328 sudah ada)*
-- **BUSDEV** (MD-09) — Business development tracking
-- **IMPACT** (MD-10) — Impact metrics
-- **Workplan** (MD-11) — Work planning & tasks
+Mengikuti [Roadmap 2026–2027](../project/roadmap.md) (belum ada skema; bentuk tabel ditetapkan di concept note tiap fase):
+
+- **Supply Chain** (SC-01, K4 2026) — `Mill`, `BuyerProgram`, `Offtaker`, `SupplyChainSurvey`, `SupplyChainRecord` (#380)
+- **HCV** (MD-08) — area & patok NKT *(sebagian: status NKT per lahan `LandParcelNkt` #328 + patok `LandMarker` #329 sudah ada)*
+- **Certification** (MD-12) — siklus audit & temuan sertifikasi *(sebagian: kolom RSPO/ISPO/SAP-MAP di `FarmerGroup`)*
+- **Project Management** — Workplan Tracker (MD-11), Staff Activity (MD-07), Impact Indicator (MD-10)
+- **Access to Finance** (MD-13) · **GHG Emission** (MD-14) · **HSE** (MD-15) · **Monitoring & Survey Form** (FORM-01)
 
 ### Enum
 

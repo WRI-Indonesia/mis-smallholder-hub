@@ -27,9 +27,12 @@ model ProductionRecord {
   modifiedBy String?  @map("modified_by")
 
   @@unique([farmerId, parcelId, period, harvestNumber], name: "production_record_unique")
+  // #251: indeks diukur EXPLAIN ANALYZE pada 840k baris sintetis (docs/database/indexes.md).
+  // farmerId tunggal tetap — cek duplikat bulk upload (farmer_id IN literal) 35 ms vs 52 ms
+  // lewat unique; (parcelId, period) menggantikan parcelId tunggal (Peta BMP, Detail Lahan,
+  // list per lahan+periode); isActive tunggal dibuang — tak dipakai rencana eksekusi mana pun.
   @@index([farmerId])
-  @@index([parcelId])
+  @@index([parcelId, period])
   @@index([period])
-  @@index([isActive])
   @@map("tbl_production_record")
 }

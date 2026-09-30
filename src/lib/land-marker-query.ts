@@ -148,7 +148,8 @@ export interface MarkerPoint {
  * Titik patok untuk peta sebaran Detail Lembaga / Detail Petani (#331): satu
  * baris per patok fisik yang dipakai lahan aktif milik petani dalam scope
  * pemanggil (`farmerWhere` = fragmen SQL pada alias `f`). Tanpa cek permission —
- * caller sudah lewat guard halaman detail. Semua patok = patok lahan — tanda
+ * caller WAJIB guard + cek scope Lembaga/Petani dulu (`getFarmerGroupMarkerPoints`
+ * / `getFarmerMarkerPoints`, dimuat malas saat layer dicentang — #335). Semua patok = patok lahan — tanda
  * "NKT turunan" dari status lahan pemakai dihapus (#345); patok NKT kelak
  * entitas/tipe sendiri dari buffer sungai.
  */
@@ -156,16 +157,42 @@ async function fetchMarkerPointsWhere(farmerWhere: Prisma.Sql): Promise<MarkerPo
   const rows = await prisma.$queryRaw<{ id: string; code: string; longitude: number; latitude: number; condition: string }[]>`
     SELECT m.id, m.code, m.longitude, m.latitude, m.condition
     FROM tbl_land_marker m
-    WHERE m.is_active AND EXISTS (
-      SELECT 1 FROM tbl_land_parcel_marker l
-      JOIN tbl_land_parcel p ON p.parcel_uid = l.parcel_uid AND p.is_active
-      JOIN tbl_farmer f ON f.id = p.farmer_id AND f.is_active
-      WHERE l.marker_id = m.id AND l.is_active AND ${farmerWhere}
-    )
+    WHERE ${markerInScope(farmerWhere)}
     ORDER BY m.code
   `;
   return rows.map((r) => ({ ...r, longitude: Number(r.longitude), latitude: Number(r.latitude) }));
 }
 
-export const fetchFarmerGroupMarkerPoints = (farmerGroupId: string) => fetchMarkerPointsWhere(Prisma.sql`f.farmer_group_id = ${farmerGroupId}`);
-export const fetchFarmerMarkerPoints = (farmerId: string) => fetchMarkerPointsWhere(Prisma.sql`f.id = ${farmerId}`);
+/**
+ * Satu definisi "patok milik Lembaga/Petani ini" untuk titik DAN hitungan —
+ * KPI Patok (count) dan titik yang dimuat malas (#335) tak boleh berbeda aturan.
+ */
+const markerInScope = (farmerWhere: Prisma.Sql) => Prisma.sql`m.is_active AND EXISTS (
+      SELECT 1 FROM tbl_land_parcel_marker l
+      JOIN tbl_land_parcel p ON p.parcel_uid = l.parcel_uid AND p.is_active
+      JOIN tbl_farmer f ON f.id = p.farmer_id AND f.is_active
+      WHERE l.marker_id = m.id AND l.is_active AND ${farmerWhere}
+    )`;
+
+/** KPI Patok tanpa memuat titik (#335): jumlah patok fisik + yang berkondisi Ada. */
+export interface MarkerStats {
+  total: number;
+  present: number;
+}
+
+async function fetchMarkerStatsWhere(farmerWhere: Prisma.Sql): Promise<MarkerStats> {
+  const [row] = await prisma.$queryRaw<{ total: bigint | number; present: bigint | number }[]>`
+    SELECT count(*) AS total, count(*) FILTER (WHERE m.condition = 'PRESENT') AS present
+    FROM tbl_land_marker m
+    WHERE ${markerInScope(farmerWhere)}
+  `;
+  return { total: Number(row?.total ?? 0), present: Number(row?.present ?? 0) };
+}
+
+const groupWhere = (farmerGroupId: string) => Prisma.sql`f.farmer_group_id = ${farmerGroupId}`;
+const farmerWhere = (farmerId: string) => Prisma.sql`f.id = ${farmerId}`;
+
+export const fetchFarmerGroupMarkerPoints = (farmerGroupId: string) => fetchMarkerPointsWhere(groupWhere(farmerGroupId));
+export const fetchFarmerMarkerPoints = (farmerId: string) => fetchMarkerPointsWhere(farmerWhere(farmerId));
+export const fetchFarmerGroupMarkerStats = (farmerGroupId: string) => fetchMarkerStatsWhere(groupWhere(farmerGroupId));
+export const fetchFarmerMarkerStats = (farmerId: string) => fetchMarkerStatsWhere(farmerWhere(farmerId));

@@ -28,9 +28,10 @@ jobs:
           script: |
             set -Eeuo pipefail
 
-            # LOAD NVM
+            # LOAD NVM (opsional — `set -e` akan mematikan job tanpa pesan bila
+            # nvm tidak terpasang dan tes `[ -s ... ]` gagal, jadi dibungkus if)
             export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then \. "$NVM_DIR/nvm.sh"; fi
 
             # CD
             cd /var/www/html/mis-main-branch
@@ -46,10 +47,27 @@ jobs:
             EOF
             chmod 600 .env
 
+            # GUARD: gagal keras bila secret belum diisi (jangan deploy dengan .env kosong)
+            grep -q "DATABASE_URL" .env || { echo "::error::secret MIS_MAIN_ENV kosong / tanpa DATABASE_URL — deploy dibatalkan"; exit 1; }
+
             # BUILD — `npm ci` (lock-file, tanpa audit/fund: lebih ringan & deterministik) dan
             # `free -m` sebelum/sesudah build sebagai jejak diagnosis memori (#340: OOM tanpa data).
             free -m || true
             npm ci --no-audit --no-fund
+
+            # GUARD MIGRASI (#394, pola #277): migrasi prod tetap MANUAL (DB dulu, baru merge),
+            # tetapi deploy tidak boleh mendaratkan kode baru di skema lama. `migrate status`
+            # keluar non-0 bila ada migrasi pending (atau gagal) atau DB tak terjangkau — DB yang
+            # LEBIH MAJU dari kode tetap lolos (dipakai rollback aplikasi, docs/standards/rollback.md) —
+            # job berhenti SEBELUM build/reload, jadi aplikasi yang sedang jalan tidak tersentuh.
+            # Sesudah `npm ci` agar versi Prisma CLI = lock-file. Hanya membaca `_prisma_migrations`.
+            if ! MIGRATE_STATUS="$(npx prisma migrate status 2>&1)"; then
+              echo "$MIGRATE_STATUS"
+              echo "::error::Skema mis-prod belum sesuai kode (migrasi pending / DB tak terjangkau). Terapkan migrasi manual ke mis-prod (docs/database/migrations.md) lalu jalankan ulang deploy. Build & reload dibatalkan — aplikasi lama tetap jalan."
+              exit 1
+            fi
+            echo "$MIGRATE_STATUS" | tail -n 2
+
             npx prisma generate
             npm run build
             free -m || true

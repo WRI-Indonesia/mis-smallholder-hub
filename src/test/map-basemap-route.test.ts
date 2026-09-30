@@ -11,6 +11,11 @@ import { NextRequest } from "next/server";
 // dari `MAP_STYLES` — bukan disalin ulang di route.
 const hasPermission = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/rbac", () => ({ hasPermission }));
+// Memo izin (#320) adalah state modul route: tiap test memakai user unik supaya
+// hasil memo satu kasus tak bocor ke kasus lain.
+const auth = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/auth", () => ({ auth }));
+let userSeq = 0;
 
 const { GET } = await import("@/app/api/map-basemap/route");
 const { rasterTileTemplate } = await import("@/lib/map-style");
@@ -23,6 +28,8 @@ const req = (qs: string) => new NextRequest(`http://localhost/api/map-basemap?${
 const fetchMock = vi.fn();
 
 beforeEach(() => {
+  userSeq += 1;
+  auth.mockReset().mockResolvedValue({ user: { id: `user-${userSeq}`, role: "ADMIN" } });
   hasPermission.mockReset().mockResolvedValue(true);
   // Response baru per panggilan — body hanya bisa dibaca sekali.
   fetchMock.mockReset().mockImplementation(
@@ -33,6 +40,43 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe("GET /api/map-basemap — memo izin per pengguna (#320)", () => {
+  it("403 tanpa sesi — izin tak dicek, upstream tak disentuh", async () => {
+    auth.mockResolvedValue(null);
+    expect((await GET(req(VALID_QS))).status).toBe(403);
+    expect(hasPermission).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("banyak tile oleh pengguna yang sama → query izin SEKALI (dulu per tile)", async () => {
+    for (let i = 0; i < 25; i++) {
+      expect((await GET(req(`key=satellite&z=15&x=${25735 + (i % 5)}&y=${16383 + Math.floor(i / 5)}`))).status).toBe(200);
+    }
+    expect(hasPermission).toHaveBeenCalledTimes(1);
+    expect(auth).toHaveBeenCalledTimes(25); // sesi tetap dicek tiap tile
+  });
+
+  it("penolakan juga dimemo, dan tak bocor ke pengguna lain", async () => {
+    hasPermission.mockResolvedValue(false);
+    expect((await GET(req(VALID_QS))).status).toBe(403);
+    expect((await GET(req(VALID_QS))).status).toBe(403);
+    expect(hasPermission).toHaveBeenCalledTimes(1);
+
+    auth.mockResolvedValue({ user: { id: `user-${userSeq}-lain`, role: "ADMIN" } });
+    hasPermission.mockResolvedValue(true);
+    expect((await GET(req(VALID_QS))).status).toBe(200);
+    expect(hasPermission).toHaveBeenCalledTimes(2);
+  });
+
+  it("role berubah (#342) → memo terputus, izin dicek ulang tanpa menunggu TTL", async () => {
+    expect((await GET(req(VALID_QS))).status).toBe(200);
+    auth.mockResolvedValue({ user: { id: `user-${userSeq}`, role: "DONOR" } });
+    hasPermission.mockResolvedValue(false);
+    expect((await GET(req(VALID_QS))).status).toBe(403);
+    expect(hasPermission).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("GET /api/map-basemap — guard & whitelist", () => {

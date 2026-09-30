@@ -25,6 +25,11 @@ export type SeriesPoint = {
   date: string;
   /** Angka estimasi / siklus berjalan: titik berongga + garis putus. */
   soft?: boolean;
+  /**
+   * Nomor segmen (mis. baseline roadmap). Garis tidak disambung antar-segmen
+   * — dua baseline yang tak sebanding tak boleh tampak sebagai satu tren.
+   */
+  segment?: number;
 };
 
 /** Konteks penggambar anotasi (plateau, penanda "mulai diukur", label lonjakan). */
@@ -45,6 +50,7 @@ export function TimeSeriesChart({
   surface,
   gridColor,
   stepped = false,
+  fadeEarlierSegments = false,
   height = 200,
   ariaLabel,
   title,
@@ -62,6 +68,8 @@ export function TimeSeriesChart({
   gridColor: string;
   /** Garis bertangga (roadmap naik diskret per fase), bukan garis lurus. */
   stepped?: boolean;
+  /** Pudarkan segmen sebelum segmen terakhir (baseline lama yang dibekukan). */
+  fadeEarlierSegments?: boolean;
   height?: number;
   ariaLabel: string;
   title: string;
@@ -86,9 +94,18 @@ export function TimeSeriesChart({
   const x = (t: number) => PAD.l + ((t - t0) / (t1 - t0)) * Math.max(0, w - PAD.l - PAD.r);
   const y = (v: number) => PAD.t + (1 - (v - yMin) / (yMax - yMin)) * (height - PAD.t - PAD.b);
 
-  const steppedPath = points
-    .map((p, i) => (i === 0 ? `M ${x(p.t)} ${y(p.v)}` : `H ${x(p.t)} V ${y(p.v)}`))
-    .join(" ");
+  const seg = (p: SeriesPoint) => p.segment ?? 0;
+  const lastSeg = Math.max(...points.map(seg));
+  const muted = (p: SeriesPoint) => fadeEarlierSegments && seg(p) < lastSeg;
+  // Bertangga per segmen: titik pertama tiap segmen memulai path baru ("M").
+  const steppedPaths = [...new Set(points.map(seg))].map((s) => {
+    const pts = points.filter((p) => seg(p) === s);
+    return {
+      segment: s,
+      muted: muted(pts[0]),
+      d: pts.map((p, i) => (i === 0 ? `M ${x(p.t)} ${y(p.v)}` : `H ${x(p.t)} V ${y(p.v)}`)).join(" "),
+    };
+  });
   const hovered = hover != null ? points[hover] : null;
 
   return (
@@ -110,9 +127,12 @@ export function TimeSeriesChart({
           {/* Garis: bertangga sekali jalan; garis lurus per segmen agar ruas
               menuju titik estimasi bisa digambar putus-putus. */}
           {stepped ? (
-            <path d={steppedPath} fill="none" stroke={color} strokeWidth={2} />
+            steppedPaths.map((sp) => (
+              <path key={sp.segment} d={sp.d} fill="none" stroke={color} strokeWidth={2} opacity={sp.muted ? 0.35 : 1} />
+            ))
           ) : (
-            points.slice(1).map((p, i) => (
+            points.slice(1).map((p, i) =>
+              seg(p) !== seg(points[i]) ? null : (
               <line
                 key={p.key}
                 x1={x(points[i].t)}
@@ -122,12 +142,14 @@ export function TimeSeriesChart({
                 stroke={color}
                 strokeWidth={2}
                 strokeDasharray={p.soft || points[i].soft ? "5 4" : undefined}
+                opacity={muted(p) ? 0.35 : 1}
               />
-            ))
+              )
+            )
           )}
 
           {points.map((p, i) => (
-            <g key={p.key}>
+            <g key={p.key} opacity={muted(p) ? 0.35 : 1}>
               <circle
                 cx={x(p.t)}
                 cy={y(p.v)}

@@ -1,7 +1,9 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatTooltipContent } from "@/components/shared/stat-tooltip";
+import { groupRemainingByHorizon } from "@/lib/roadmap";
 import { cn } from "@/lib/utils";
 import type { PhaseHorizon, RoadmapPhase, RoadmapSummary } from "@/types/roadmap";
 import { PHASE_STATUS, fmt2, fmtInt, fmtPct1, fmtPoints, phaseStatusColor, docUrl } from "./metrics-shared";
@@ -12,10 +14,10 @@ import { PHASE_STATUS, fmt2, fmtInt, fmtPct1, fmtPoints, phaseStatusColor, docUr
  * build (`src/lib/roadmap.ts`), jadi tidak ada angka yang diketik ulang di sini.
  *
  * Bentuknya sengaja bukan kanvas graf: data ini tidak punya relasi antar fase,
- * yang ditanyakan pembaca adalah "dari mana 87,1%" (rincian angka), "sisanya
- * menumpuk di mana" (part-to-whole per stream), dan "mana yang paling
- * menggerakkan jarum" (peringkat pp) — tiga pekerjaan yang dilayani bar unit +
- * tabel, bukan node/edge.
+ * yang ditanyakan pembaca adalah "dari mana angka Roadmap %" (rincian angka),
+ * "sisanya menumpuk di mana" (part-to-whole per stream), dan "kapan sisanya
+ * dijadwalkan" (blok per horizon, #392 — menggantikan peringkat pp yang tak
+ * bermakna saat hampir semua fase belum mulai), bukan node/edge.
  */
 
 type StatusKey = keyof typeof PHASE_STATUS;
@@ -24,19 +26,14 @@ const statusKey = (p: RoadmapPhase): StatusKey =>
   p.status === "Done" ? "done" : p.status === "Partial" ? "partial" : "open";
 
 /**
- * Urutan tampil horizon pada blok "Sisa menuju 1.0" — paling dekat dulu.
- * Bukan daftar penyaring: horizon apa pun yang muncul di data tetap ditampilkan
- * (termasuk "Done" pada baris ber-status Partial, yang sah menurut parser).
- * Kalau ia dipakai menyaring, chip-nya berhenti menjumlah angka gap tepat di
- * atasnya — tanpa tanda apa pun.
+ * Cadangan judul blok bila tabel Horizon Definition tak mencatat periodenya.
+ * Urutan & pengelompokan blok ada di `groupRemainingByHorizon` (lib, ber-test).
  */
-const HORIZON_ORDER: PhaseHorizon[] = ["Now", "Next", "Later", "Blocked", "Done"];
-
 const HORIZON_NOTE: Record<PhaseHorizon, string> = {
   Done: "sudah selesai",
   Now: "sedang dikerjakan",
   Next: "antrean berikutnya",
-  Later: "sesudah go-live 1.0",
+  Later: "paruh akhir horizon roadmap",
   Blocked: "terhambat prasyarat",
 };
 
@@ -66,20 +63,10 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
   const { streams, remaining } = summary;
   // Skala absolut: strip terpanjang = stream dengan bobot maksimum terbesar.
   // Bukan 100% per stream — panjang batang harus mencerminkan berapa besar
-  // porsi stream itu pada penyebut 85 poin, bukan sekadar persen internalnya.
+  // porsi stream itu pada penyebut total poin, bukan sekadar persen internalnya.
   const maxStreamPoints = Math.max(...streams.map((s) => s.maxPoints));
   const gapPp = 100 - summary.pct;
-
-  const horizons = [
-    ...HORIZON_ORDER,
-    ...remaining.map((r) => r.phase.horizon).filter((h) => !HORIZON_ORDER.includes(h)),
-  ];
-  const byHorizon = [...new Set(horizons)]
-    .map((horizon) => {
-      const items = remaining.filter((r) => r.phase.horizon === horizon);
-      return { horizon, count: items.length, pp: items.reduce((acc, r) => acc + r.gainPp, 0) };
-    })
-    .filter((h) => h.count > 0);
+  const groups = groupRemainingByHorizon(summary);
 
   return (
     <div className="space-y-6 px-6 pb-6">
@@ -94,7 +81,7 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
           <TallyBox
             label="Fase inti (×2)"
             value={`${fmtPoints(summary.coreEarned)} / ${fmtInt(summary.coreMax)}`}
-            sub={`${fmtInt(summary.coreCount)} fase penentu go-live`}
+            sub={`${fmtInt(summary.coreCount)} fase komitmen roadmap`}
           />
           <TallyBox
             label="Fase pendukung (×1)"
@@ -109,7 +96,7 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
           <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
             <p className="text-xs text-muted-foreground">Roadmap</p>
             <p className="mt-0.5 text-lg font-medium tabular-nums">{fmtPct1(summary.pct)}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">sisa {fmt2(gapPp)} pp menuju 1.0</p>
+            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">sisa {fmt2(gapPp)} pp menuju target roadmap</p>
           </div>
         </div>
       </section>
@@ -200,73 +187,66 @@ export function RoadmapDetail({ summary, dark }: { summary: RoadmapSummary; dark
         </div>
       </section>
 
-      {/* 3 & 4. Sisa menuju 1.0 — pengelompokan horizon lalu peringkat pp */}
+      {/* 3. Sisa fase roadmap — satu blok per horizon (periode dari roadmap.md) */}
       <section>
-        <h3 className="text-sm font-medium">Sisa menuju 1.0</h3>
+        <h3 className="text-sm font-medium">Sisa fase roadmap</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Isi dari gap {fmt2(gapPp)} pp: {fmtInt(remaining.length)} fase yang belum ✅. Kolom terakhir = tambahan
-          Roadmap % bila fase itu selesai penuh — urut dari yang paling menggerakkan jarum.
+          {fmtInt(remaining.length)} fase yang belum ✅, dikelompokkan menurut kapan dijadwalkan. Di tiap kelompok, fase
+          inti tampil dulu. Klik satu baris untuk melihat apa yang sudah ada dan langkah berikutnya.
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {byHorizon.map((h) => (
-            <span
-              key={h.horizon}
-              className="rounded-md border border-border/60 bg-muted/30 px-2.5 py-1 text-xs tabular-nums"
-              title={HORIZON_NOTE[h.horizon]}
-            >
-              <span className="font-medium">{h.horizon}</span>
-              <span className="text-muted-foreground">
-                {" "}
-                · {fmtInt(h.count)} fase · +{fmt2(h.pp)} pp
-              </span>
-            </span>
+        <div className="mt-3 space-y-3">
+          {groups.map((g) => (
+            <div key={g.horizon} className="overflow-hidden rounded-lg border border-border/60">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 bg-muted/40 px-3 py-2">
+                <p className="text-sm">
+                  <span className="font-medium">{g.horizon}</span>
+                  <span className="text-muted-foreground"> · {g.label ?? HORIZON_NOTE[g.horizon]}</span>
+                </p>
+                <p className="text-xs tabular-nums text-muted-foreground">
+                  {fmtInt(g.items.length)} fase · {fmtPoints(g.openPoints)} poin terbuka · +{fmt2(g.gainPp)} pp bila tuntas
+                </p>
+              </div>
+              <ul className="divide-y divide-border/40">
+                {g.items.map(({ phase: p, gainPp }) => (
+                  <li key={p.key}>
+                    <details className="group">
+                      {/* < sm: 3 kolom, bobot+pp turun ke baris kedua di bawah deskripsi —
+                          4 kolom nowrap menyisakan ±40px untuk deskripsi di layar ponsel. */}
+                      <summary className="grid cursor-pointer list-none grid-cols-[1rem_auto_1fr] items-baseline gap-x-3 gap-y-0.5 px-3 py-2 text-sm hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-ring sm:grid-cols-[1rem_minmax(7.5rem,auto)_1fr_auto] [&::-webkit-details-marker]:hidden">
+                        <ChevronRight
+                          className="h-3.5 w-3.5 self-center text-muted-foreground transition-transform group-open:rotate-90"
+                          aria-hidden
+                        />
+                        <span className="whitespace-nowrap font-medium">
+                          <span className="mr-1.5" aria-hidden>
+                            {p.statusIcon}
+                          </span>
+                          {p.key}
+                          <span className="sr-only"> — {p.status}</span>
+                        </span>
+                        <span className="leading-snug">{p.description}</span>
+                        <span className="col-start-3 whitespace-nowrap text-xs tabular-nums text-muted-foreground sm:col-start-auto sm:text-right">
+                          {p.weight} ×{fmtInt(p.maxPoints)} · +{fmt2(gainPp)} pp
+                        </span>
+                      </summary>
+                      <div className="space-y-1 pb-3 pl-[calc(1rem+0.75rem+0.75rem)] pr-3 text-xs leading-snug text-muted-foreground">
+                        {p.evidence && (
+                          <p>
+                            <span className="font-medium text-foreground/80">Sudah ada:</span> {p.evidence}
+                          </p>
+                        )}
+                        {p.nextStep && (
+                          <p>
+                            <span className="font-medium text-foreground/80">Langkah berikutnya:</span> {p.nextStep}
+                          </p>
+                        )}
+                      </div>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </div>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-2 pr-3 font-medium">Fase</th>
-                <th className="py-2 pr-3 font-medium">Deskripsi</th>
-                <th className="py-2 pr-3 font-medium">Bobot</th>
-                <th className="py-2 pr-3 font-medium">Horizon</th>
-                <th className="py-2 text-right font-medium">Bila selesai</th>
-              </tr>
-            </thead>
-            <tbody>
-              {remaining.map(({ phase: p, gainPp }) => (
-                <tr key={p.key} className="border-b border-border/40 align-top last:border-0">
-                  <td className="whitespace-nowrap py-2 pr-3 font-medium">
-                    <span className="mr-1.5" aria-hidden>
-                      {p.statusIcon}
-                    </span>
-                    {p.key}
-                    <span className="sr-only"> — {p.status}</span>
-                  </td>
-                  <td className="py-2 pr-3">
-                    <span className="leading-snug">{p.description}</span>
-                    {p.evidence && (
-                      <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-                        Sudah ada: {p.evidence}
-                      </span>
-                    )}
-                    {p.nextStep && (
-                      <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-                        Langkah berikutnya: {p.nextStep}
-                      </span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap py-2 pr-3 text-xs text-muted-foreground">
-                    {p.weight} ×{fmtInt(p.maxPoints)}
-                  </td>
-                  <td className="whitespace-nowrap py-2 pr-3 text-xs text-muted-foreground" title={HORIZON_NOTE[p.horizon]}>
-                    {p.horizon}
-                  </td>
-                  <td className="whitespace-nowrap py-2 text-right tabular-nums">+{fmt2(gainPp)} pp</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
           Sumber & rincian lengkap tiap fase:{" "}

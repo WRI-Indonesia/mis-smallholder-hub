@@ -102,5 +102,5 @@ Peran: OPERATOR, lalu DONOR · Langkah: daftar (KPI, filter Kategori), Lihat 1 b
 ### SM-32 · Data Analyst › Tumpang Tindih Lahan [P1] (2 mnt)
 Peran: OPERATOR · Langkah: filter %/jenis/Distrik/Lembaga, klik 1 baris → peta menyorot irisan, Unduh Excel · Harapan: tiap pasangan punya **minimal satu** sisi dalam scope (sisi lawan boleh di luar scope, tampil lengkap tanpa tautan Detail Lahan); tabel dan peta sepadan.
 
-### SM-33 · Data Analyst › Sprint Mingguan [P2] (1 mnt)
-Peran: MANAGEMENT · Langkah: pilih minggu lain, buka tab Analisa · Harapan: papan kanban (4 kolom) = tabel sprint di `docs/project/sprint.md`; OPERATOR/DONOR **tidak** melihat menu ini.
+### SM-33 · Data Analyst › Rencana Pengembangan [P2] (1 mnt)
+Peran: MANAGEMENT · Langkah: pilih rilis lain (tombol atau combobox **Riwayat**), buka tab Analisa dan Semua Issue · Harapan: papan kanban (4 kolom) = tabel rilis di `docs/project/sprint.md`; strip header menampilkan tanggal dokumen & rilis yang dikejar; OPERATOR/DONOR **tidak** melihat menu ini.

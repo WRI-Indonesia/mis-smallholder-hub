@@ -11,7 +11,7 @@
 
 | Layer | Mekanisme | Implementation |
 |-------|-----------|----------------|
-| **Authentication** | NextAuth.js | Email + password, session stored in JWT |
+| **Authentication** | NextAuth.js | Email + password, session stored in JWT. `role` + `isActive` **tidak dipercaya dari token**: callback `jwt` jalur Node membacanya ulang dari DB lewat memo per user ber-TTL 1 menit (`ROLE_CACHE_TTL_MS`, `src/lib/auth-role-refresh.ts`, #342) — berlaku sama di RSC, server action, dan route handler karena tak bergantung pada cookie yang ditulis ulang. Perubahan role berlaku ≤ 1 menit; akun nonaktif/terhapus → sesi `null` (paksa logout). Saat sign-in memo user itu dibuang dulu, jadi login baru selalu membaca status terkini (akun yang baru diaktifkan ulang tak tertolak memo lama — review wrap-up v1.3.0). Galat DB = fail-open (role di token dipakai) supaya gangguan DB tak mengeluarkan semua pengguna. Middleware (tanpa Prisma) hanya menjaga `/admin` dengan membaca cookie; pengalihan `/login` → `/admin` dilakukan halaman login, dan tiap halaman `/admin` dijaga `requirePermission` |
 | **Authorization** | Role-Based (RBAC) | 5 roles: SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (donor/funder read-only: dashboard, laporan, peta) |
 | **Data Access Control** | Data-level filtering | UserProvince, UserDistrict, UserFarmerGroup assignments |
 | **Permission Override** | User-specific exceptions | UserPermissionOverride for grant/revoke specific menu permissions |

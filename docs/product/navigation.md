@@ -30,7 +30,7 @@ Legenda status: ✅ Done · 🟠 Partial · 🔲 Planned · 🔴 Blocked — def
 | Publik | `/` (Home ✅), `/community` 🔲, `/knowledge-management` 🔲 | — |
 | Autentikasi | `/login` ✅ · `/api/auth/[...nextauth]` | NextAuth (Credentials) |
 | Admin | `/admin/**` | `src/middleware.ts` (sesi) → `requirePermission(menuKey)` per halaman |
-| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) · `/api/map-basemap` (latar peta cetak Laporan Lahan, #318) | `hasPermission(menuKey, "VIEW")` per endpoint (overlay: `map-parcel`; hotspot: `map-parcel` atau `dashboard-risk-fire`; basemap: `report-land-parcel`), same-origin |
+| Proxy tile | `/api/map-overlay/[key]` (ArcGIS pemerintah: geoportal Kemenhut & Satu Peta BIG) · `/api/map-hotspot` (NASA FIRMS) · `/api/map-basemap` (latar peta cetak Laporan Lahan, #318) | `hasPermission(menuKey, "VIEW")` per endpoint (overlay: `map-parcel`; hotspot: `map-parcel` atau `dashboard-risk-fire`; basemap: `report-land-parcel` — **dimemo per pengguna ≤ 60 dtk** karena satu ekspor = 1.000–4.000 tile; pencabutan izin berlaku paling lambat 60 dtk, perubahan role langsung, #320), same-origin |
 
 Semua akses data lewat **Server Actions** (`src/server/actions/`) dengan 3 lapis pengaman: permission menu → access context → soft delete. Tidak ada REST API selain NextAuth & proxy tile.
 
@@ -95,7 +95,7 @@ Kolom **Ringkasan** sengaja satu baris; detail lengkap ada di dokumen halaman ya
 | ✅ [Produksi](pages/master-data/production/README.md) | `master-data-production` | MD-06 | Periode + panen ke-n + validasi duplikat |
 | ✅ [Monev BMP](pages/master-data/bmp-monev/README.md) | `master-data-bmp-monev` | DASH-08 (#344 #346) | Skor BMP per petani per tahun + rincian 32 indikator, import rekap/form survei, Penilaian Lembaga |
 
-Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · BUSDEV (MD-09) · IMPACT (MD-10) · Workplan (MD-11). 🟠 HCV (MD-08) — langkah awal status NKT per lahan (#328) + patok (#329/#331), tanpa menu tersendiri.
+Belum ada menu/route — direncanakan di [Roadmap 2026–2027](../project/roadmap.md) (S2 2027, concept note dulu): 🔲 Project Management (MD-11 Workplan Tracker · MD-07 Staff Activity · MD-10 Impact Indicator) · Certification (MD-12, S1 2027) · Access to Finance (MD-13) · GHG Emission (MD-14) · HSE (MD-15). BUSDEV (MD-09) diparkir. 🟠 HCV (MD-08) — langkah awal status NKT per lahan (#328) + patok (#329/#331), tanpa menu tersendiri.
 
 ### ⚙️ Settings — `/admin/settings`
 
@@ -115,7 +115,7 @@ Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · BUSDEV (MD-09) · IM
 | ✅ [Lahan](pages/bulk-upload/parcels.md) | `bulk-upload-parcels` | MD-04 (#88) | ZIP Shapefile + mapping (incl. Kelompok Tani & Blok #150) + validasi geometri |
 | ✅ [Pohon Sawit](pages/bulk-upload/trees.md) | `bulk-upload-trees` | MD-04 (#238) | ZIP shapefile point per lahan, revisi per-set |
 
-Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#70 ditutup *not planned* 2026-06-28; status fase menunggu keputusan owner (lihat roadmap).
+Tidak direncanakan: Lembaga Petani/KT & Region (BULK-02) — issue #69/#70 ditutup *not planned* 2026-06-28; fase diparkir saat reset roadmap 2026-09-30 (Region & Lembaga cukup lewat form).
 
 ### 📉 Data Analyst — `/admin/data-analyst`
 
@@ -128,7 +128,7 @@ Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#7
 | ✅ [Komparasi Data Acuan](pages/data-analyst/benchmark-comparison.md) | `data-analyst-benchmark-comparison` | DA-06 (#243) | Angka acuan manual per Lembaga vs data MIS |
 | ✅ [Metrik Rilis](pages/data-analyst/metrics.md) | `dashboard-metrics` | — | Roadmap %, KPI & RVS per rilis dari `docs/project/metrics.md` + Detail Roadmap (route `/admin/dashboard/metrics`) |
 | ✅ [Peta Data & Skema](pages/data-analyst/data-map.md) | `data-analyst-data-map` | DA-07 | Lineage menu → entitas + skema dari artefak `*.generated.ts` |
-| ✅ [Sprint Mingguan](pages/data-analyst/sprint.md) | `data-analyst-sprint` | #378 · #389 (kanban) | Rencana sprint mingguan dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis): tab Sprint (pemilih minggu, progres poin S/M/L, papan kanban 4 kolom #389) + tab Analisa (kartu ringkasan, beban & kemajuan per status, fokus per kategori, keputusan menunggu owner, carry-over) |
+| ✅ [Rencana Pengembangan](pages/data-analyst/sprint.md) | `data-analyst-sprint` | #378 · #389 (kanban) · per rilis 2026-09-30 | Rencana pengembangan **per rilis** dari `docs/project/sprint.md` (di-bundle saat build, pola Metrik Rilis; dulu Sprint Mingguan): strip ringkasan (umur dokumen, rilis yang dikejar, keputusan menunggu) + tab Rilis (pemilih rilis belum tuntas + combobox Riwayat, progres poin S/M/L, papan kanban 4 kolom) + tab Analisa (kartu ringkasan, beban & kapasitas per rilis, fokus per kategori, keputusan menunggu owner, carry-over) + tab Semua Issue (satu baris per issue dari tabel Rilis + Backlog, combobox rilis, filter status, cari, urutkan) |
 
 ### 📈 Report — `/admin/report`
 
@@ -142,7 +142,7 @@ Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#7
 | ✅ [Lahan](pages/report/land-parcel.md) | `report-land-parcel` | RPT-05 (#177/#179/#180, #305, #318, #328, #331, #332) | Roster datar 1 baris = 1 lahan per Lembaga + filter/KPI legalitas, NKT & patok + PDF landscape ber-peta poligon (latar peta opsional) & grid index + Excel multi-sheet ber-gambar + tombol **Laporan NKT** (PDF per Lembaga, mengabaikan filter) |
 | ✅ [Patok](pages/report/marker.md) | `report-marker` | MD-08 langkah awal (#331) | Laporan patok batas per Distrik/Lembaga — satu baris per patok fisik (kode `<Lembaga>-PTK-000123`, lahan pemakai, kondisi, bahan) + KPI kondisi + Excel/SHP/GeoJSON/KML/PDF |
 
-### 🔧 Tools — `/admin/tools` (🟠 TOOLS-01)
+### 🔧 Tools — `/admin/tools`
 
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|
