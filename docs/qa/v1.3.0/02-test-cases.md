@@ -40,6 +40,24 @@ Harapan:
 - Klik/Enter membuka "Sudah ada" dan "Langkah berikutnya", klik lagi menutupnya.
 - Pada layar sempit (ponsel), bobot dan "+pp" turun ke bawah deskripsi, deskripsi tidak terjepit dan tidak ada scroll horizontal.
 
+## #342 — Role & status aktif dibaca ulang dari DB (bukan beku di JWT)
+
+### TC-342-01 · Perubahan role & penonaktifan berlaku pada sesi aktif ≤ 1 menit [P0] [regresi] (10 mnt)
+Prasyarat: akun SUPERADMIN di jendela biasa; akun OPERATOR ter-scope yang sedang login di **jendela privat/incognito** (sesi terpisah); satu halaman yang terbuka untuk OPERATOR tetapi tidak untuk DONOR (mis. Master Data › Produksi) dan satu yang hanya untuk SUPERADMIN (Settings › Users).
+Langkah:
+1. (OPERATOR) Buka `/api/auth/session` dan Master Data › Produksi. Catat role dan menu sidebar.
+2. (SUPERADMIN) Settings › Users → ubah role akun OPERATOR menjadi **SUPERADMIN**.
+3. (OPERATOR) Tunggu ± 1 menit, muat ulang `/admin` dan `/api/auth/session` — **tanpa** logout.
+4. (SUPERADMIN) Ubah role akun itu menjadi **DONOR**. (OPERATOR) tunggu ± 1 menit, muat ulang Master Data › Produksi.
+5. (SUPERADMIN) **Nonaktifkan** akun itu. (OPERATOR) tunggu ± 1 menit, muat ulang `/admin`.
+6. (SUPERADMIN) Aktifkan kembali dan kembalikan role ke OPERATOR.
+Harapan:
+- Langkah 3: sesi menunjukkan `SUPERADMIN`, menu Settings/Bulk Upload tampil tanpa login ulang.
+- Langkah 4: sesi `DONOR`; Master Data › Produksi dialihkan ke `/admin` dan menunya hilang dari sidebar.
+- Langkah 5: sesi kosong, halaman dialihkan ke `/login` **tanpa loop redirect**; halaman login tampil normal.
+- Perubahan tidak berlaku lebih lambat dari ± 1 menit (TTL memo per user di tiap proses Node).
+Baseline dev: `mis-dev` 2026-09-30 — login `qa-operator` via curl: sesi `OPERATOR`, Master Data › Produksi 200, `/admin/settings/users` → `/admin`. Langkah 2–6 **belum** dijalankan di lokal (perubahan `tbl_user` tidak diizinkan untuk sesi dev); logika dijaga `src/test/auth-role-refresh.test.ts` (memo TTL, fail-open, akun nonaktif → sesi kosong).
+
 ## #277 — Guard migrasi di `deploy-staging.yml`
 
 ### TC-277-01 · Deploy staging berhenti bila migrasi belum diterapkan [P0] (5 mnt)

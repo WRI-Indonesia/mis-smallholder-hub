@@ -146,7 +146,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>PLATFORM-08</strong> · 🟠 Partial — Pengerasan keamanan & RBAC pasca-MVP</summary>
 
 - **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383). Di `mvp` (belum dirilis): role/`isActive` di JWT dibaca ulang berkala (#342, `src/lib/auth-role-refresh.ts` + test), akun seed fiktif + password dari `SEED_USER_PASSWORD` (#390, `5028ffd` + `seed-data-privacy.test.ts`).
-- **Next step:** v1.3.0: smoke lokal + retro #342, rotasi akun staging/prod yang memakai password seed lama (#390, owner/DevOps), rotasi key FIRMS (#286 butir 2). v1.5.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
+- **Next step:** v1.3.0: TC-342-01 di QA staging + retro #342, rotasi akun staging/prod yang memakai password seed lama (#390, owner/DevOps), rotasi key FIRMS (#286 butir 2). v1.5.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384 — `src/server/actions/map.ts` masih memakai `map-parcel`).
 - **Selesai bila:** #342, #390, #386, #384 ditutup; tidak ada temuan keamanan P1 terbuka.
 
 </details>
