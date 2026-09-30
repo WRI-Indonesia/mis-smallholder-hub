@@ -142,7 +142,7 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
             <div key={t} aria-hidden className="absolute inset-x-0 border-t border-border/60" style={{ bottom: `${(t / yMax) * 100}%` }} />
           ))}
           <div className="absolute inset-0 grid gap-2" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))` }}>
-            {cols.map(({ release, phase, pts, capacity }) => {
+            {cols.map(({ release, phase, pts, capacity }, idx) => {
               const total = totalOf(pts);
               const segs = PLAN_STACK_ORDER.filter((k) => pts[k] > 0);
               const aria = `Rilis ${release.version}, ${PHASE_TAG[phase]}: ${total} poin${capacity === null ? "" : `, kapasitas ±${fmt1(capacity)}`} — ${segs.map((k) => `${STACK[k].label} ${pts[k]}`).join(", ")}`;
@@ -181,7 +181,16 @@ function LoadTimeline({ plan, today, average }: { plan: ReleasePlan; today: stri
                       style={{ bottom: `${(capacity / yMax) * 100}%` }}
                     />
                   )}
-                  {hover === release.version && <ColumnTooltip release={release} phase={phase} pts={pts} total={total} capacity={capacity} />}
+                  {hover === release.version && (
+                    <ColumnTooltip
+                      release={release}
+                      phase={phase}
+                      pts={pts}
+                      total={total}
+                      capacity={capacity}
+                      side={idx < cols.length / 2 ? "right" : "left"}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -216,15 +225,25 @@ function ColumnTooltip({
   pts,
   total,
   capacity,
+  side,
 }: {
   release: Release;
   phase: ReleasePhase;
   pts: Record<PlanItemStatus, number>;
   total: number;
   capacity: number | null;
+  side: "left" | "right";
 }) {
+  // Di samping kolom, rata atas plot — bukan di atasnya: kolom setinggi plot,
+  // jadi `bottom-full` keluar dari Card dan terpotong. Sisi menjauhi tepi grafik.
   return (
-    <div role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-56 -translate-x-1/2 rounded-md border bg-popover p-3 text-xs shadow-md">
+    <div
+      role="tooltip"
+      className={cn(
+        "pointer-events-none absolute top-0 z-20 w-56 rounded-md border bg-popover p-3 text-xs shadow-md",
+        side === "right" ? "left-full ml-2" : "right-full mr-2"
+      )}
+    >
       <p className="font-medium">
         Rilis {release.version} <span className="font-normal text-muted-foreground">· {fmtDate(release.start, false)}–{fmtDate(release.end, false)} · {PHASE_TAG[phase]}</span>
       </p>
