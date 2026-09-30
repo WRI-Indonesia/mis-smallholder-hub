@@ -12,28 +12,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { cn } from "@/lib/utils";
 import { issueUrl } from "@/lib/repo-links";
 import {
   KANBAN_COLUMNS,
-  SPRINT_STATUS_LABEL,
+  PLAN_STATUS_LABEL,
   allIssues,
+  releaseState,
   sortIssueRows,
   type IssuePlace,
   type IssueSortKey,
-  type SprintItemStatus,
-  type SprintPlan,
-} from "@/lib/sprint-plan";
+  type PlanItemStatus,
+  type ReleasePlan,
+} from "@/lib/release-plan";
 import { CategoryLabel, Inline, STATUS_STYLE, SearchBox, matchesQuery } from "./sprint-shared";
 
 function placeLabel(p: IssuePlace): string {
-  return p.kind === "sprint" ? `Sprint ${p.sprint}` : `Backlog (urutan ${p.order})`;
+  return p.kind === "release" ? p.version : `Backlog (urutan ${p.order})`;
 }
 
 /**
  * Tab Semua Issue: satu baris per issue (atau per bagian issue) dari tabel
- * Sprint + Backlog `sprint.md` — bukan dari GitHub. Filter di URL: `?di=<n>|backlog`
- * (sprint), `?status=`, dan `?q=` (cari). Backlog hanya tampil di sini (dulu juga tombol di tab Sprint).
+ * Rilis + Backlog `sprint.md` — bukan dari GitHub. Filter di URL: `?di=<versi>|backlog`
+ * (rilis), `?status=`, dan `?q=` (cari). Backlog hanya tampil di sini. Filter rilis
+ * berupa combobox ber-cari, bukan chip — jumlah rilis terus tumbuh.
  *
  * `get`/`setMany` WAJIB dari `useUrlFilters` induk: hook itu membaca URL sekali
  * saat mount, jadi instance kedua di sini memulai dari URL lama (tanpa
@@ -41,10 +44,12 @@ function placeLabel(p: IssuePlace): string {
  */
 export function SprintIssues({
   plan,
+  today,
   get,
   setMany,
 }: {
-  plan: SprintPlan;
+  plan: ReleasePlan;
+  today: string;
   get: (key: string) => string | null;
   setMany: (values: Record<string, string | null>) => void;
 }) {
@@ -55,13 +60,13 @@ export function SprintIssues({
   const all = useMemo(() => allIssues(plan), [plan]);
   const whereParam = get("di");
   const where =
-    whereParam === "backlog" || plan.sprints.some((s) => String(s.number) === whereParam)
+    whereParam === "backlog" || plan.releases.some((r) => r.version === whereParam)
       ? whereParam
       : null;
   // Backlog dibaca menurut urutan prioritas — setiap kali filter BERPINDAH ke Backlog,
   // dari chip, tautan `?di=backlog`, maupun strip header (penyesuaian state saat render,
   // bukan efek; teks pencarian tetap).
-  const backlogSort = { key: "sprint", dir: "asc" } as const;
+  const backlogSort = { key: "release", dir: "asc" } as const;
   const [sort, setSort] = useState<{ key: IssueSortKey; dir: "asc" | "desc" }>(() =>
     where === "backlog" ? backlogSort : { key: "issue", dir: "asc" },
   );
@@ -70,13 +75,13 @@ export function SprintIssues({
     setPrevWhere(where);
     if (where === "backlog") setSort(backlogSort);
   }
-  const whereKey = (p: IssuePlace) => (p.kind === "backlog" ? "backlog" : String(p.sprint));
+  const whereKey = (p: IssuePlace) => (p.kind === "backlog" ? "backlog" : p.version);
   const inWhere = (p: IssuePlace) => where === null || whereKey(p) === where;
   const searched = all.filter((r) =>
     matchesQuery(query, [
       r.ref,
       placeLabel(r.place),
-      SPRINT_STATUS_LABEL[r.status],
+      PLAN_STATUS_LABEL[r.status],
       r.category,
       r.description,
       r.note,
@@ -85,13 +90,13 @@ export function SprintIssues({
   const rows = searched.filter((r) => inWhere(r.place));
   const param = get("status");
   const filter = (KANBAN_COLUMNS as string[]).includes(param ?? "")
-    ? (param as SprintItemStatus)
+    ? (param as PlanItemStatus)
     : null;
   // Jumlah per chip dalam satu lintasan (bukan satu filter per chip).
   const whereCount = new Map<string, number>();
   for (const r of searched)
     whereCount.set(whereKey(r.place), (whereCount.get(whereKey(r.place)) ?? 0) + 1);
-  const statusCount = new Map<SprintItemStatus, number>();
+  const statusCount = new Map<PlanItemStatus, number>();
   for (const r of rows) statusCount.set(r.status, (statusCount.get(r.status) ?? 0) + 1);
   const shown = sortIssueRows(
     filter ? rows.filter((r) => r.status === filter) : rows,
@@ -137,13 +142,16 @@ export function SprintIssues({
       {label} <span className="tabular-nums text-muted-foreground">{count}</span>
     </button>
   );
-  const whereChip = (value: string | null, label: string) =>
-    chip(
-      where === value,
-      () => setMany({ di: value }),
-      label,
-      value === null ? searched.length : (whereCount.get(value) ?? 0),
-    );
+  // Opsi combobox: rilis yang belum tuntas dulu (berjalan ditandai), lalu Backlog, lalu riwayat terbaru → lama.
+  const states = plan.releases.map((r) => releaseState(r, today));
+  const opt = (id: string, name: string) => ({ id, name: `${name} (${whereCount.get(id) ?? 0})` });
+  const whereOptions = [
+    ...plan.releases.flatMap((r, i) =>
+      states[i] === "released" ? [] : [opt(r.version, `${r.version}${states[i] === "active" ? " · berjalan" : states[i] === "late" ? " · terlambat" : ""}`)],
+    ),
+    opt("backlog", "Backlog"),
+    ...plan.releases.flatMap((r, i) => (states[i] === "released" ? [opt(r.version, `${r.version} · dirilis`)] : [])).reverse(),
+  ];
 
   return (
     <Card className="border border-border/60 shadow-sm">
@@ -155,13 +163,19 @@ export function SprintIssues({
         <SearchBox
           value={query}
           onChange={setQuery}
-          placeholder="Cari nomor, sprint, status, atau deskripsi…"
+          placeholder="Cari nomor, rilis, status, atau deskripsi…"
         />
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter sprint">
-          <span className="w-14 text-xs text-muted-foreground">Sprint</span>
-          {whereChip(null, "Semua")}
-          {plan.sprints.map((s) => whereChip(String(s.number), `S${s.number}`))}
-          {whereChip("backlog", "Backlog")}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="w-14 text-xs text-muted-foreground">Rilis</span>
+          <FilterCombobox
+            options={whereOptions}
+            value={where}
+            onSelect={(v) => setMany({ di: v })}
+            allLabel={`Semua rilis & backlog (${searched.length})`}
+            searchPlaceholder="Cari versi…"
+            emptyLabel="Tidak ada rilis."
+            widthClass="w-[260px]"
+          />
         </div>
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter status">
           <span className="w-14 text-xs text-muted-foreground">Status</span>
@@ -170,7 +184,7 @@ export function SprintIssues({
             chip(
               filter === s,
               () => setMany({ status: s }),
-              SPRINT_STATUS_LABEL[s],
+              PLAN_STATUS_LABEL[s],
               statusCount.get(s) ?? 0,
             ),
           )}
@@ -180,7 +194,7 @@ export function SprintIssues({
             <TableHeader>
               <TableRow>
                 {sortHead("issue", "No. Issue", "w-24 whitespace-nowrap")}
-                {sortHead("sprint", "Sprint", "w-36 whitespace-nowrap")}
+                {sortHead("release", "Rilis", "w-36 whitespace-nowrap")}
                 <TableHead className="hidden w-28 md:table-cell">Kategori</TableHead>
                 <TableHead className="w-40">Status</TableHead>
                 <TableHead className="min-w-[14rem]">Deskripsi</TableHead>
@@ -234,7 +248,7 @@ export function SprintIssues({
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={STATUS_STYLE[r.status]}>
-                        {SPRINT_STATUS_LABEL[r.status]}
+                        {PLAN_STATUS_LABEL[r.status]}
                       </Badge>
                     </TableCell>
                     <TableCell className="whitespace-normal text-sm [overflow-wrap:anywhere]">

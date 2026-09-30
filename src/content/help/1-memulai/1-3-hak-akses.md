@@ -10,7 +10,7 @@ intro: Menu yang tampil dan data yang terlihat berbeda antar pengguna. Ini norma
 
 **OPERATOR** — Hanya melihat master data (Lembaga Petani, Petani, Pelatihan, Lahan, Produksi, Monev BMP) beserta dashboard, peta, laporan, dan analisa kelengkapan data — boleh mengunduh Excel dan mencetak PDF, tetapi tanpa tombol tambah/ubah/hapus dan tanpa akses bulk upload, tools, maupun pengaturan.
 
-**MANAGEMENT** — Hanya melihat (read-only): dashboard, peta, master data, laporan, dan analisa (termasuk Metrik Rilis, Peta Data & Skema, dan Sprint Mingguan) — boleh mengunduh Excel dan mencetak PDF, tanpa tombol tambah/ubah/hapus, dan tanpa bulk upload, tools, maupun pengaturan.
+**MANAGEMENT** — Hanya melihat (read-only): dashboard, peta, master data, laporan, dan analisa (termasuk Metrik Rilis, Peta Data & Skema, dan Rencana Pengembangan) — boleh mengunduh Excel dan mencetak PDF, tanpa tombol tambah/ubah/hapus, dan tanpa bulk upload, tools, maupun pengaturan.
 
 **DONOR** — Untuk pihak donor/funder. Hanya melihat (read-only): dashboard, peta, sebagian master data (Lembaga Petani, Petani, Pelatihan, Lahan, Monev BMP — tidak termasuk Produksi), dan laporan Petani, Pelatihan, Produksi, serta Lahan — boleh mencetak PDF, tanpa mengunduh Excel atau data spasial, tanpa menambah atau mengubah data, dan tanpa akses ke bulk upload, Data Analyst, tools, maupun pengaturan. Seperti peran lain, cakupan datanya bisa dibatasi per wilayah/lembaga; bila tidak ditugaskan, melihat seluruh data organisasi.
 

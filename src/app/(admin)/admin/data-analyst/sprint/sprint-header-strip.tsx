@@ -1,17 +1,10 @@
 import { ChevronRight, Clock, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  daysBetween,
-  pendingDecisions,
-  sprintDay,
-  sprintPhase,
-  sprintProgress,
-  type SprintPlan,
-} from "@/lib/sprint-plan";
+import { daysBetween, pendingDecisions, releaseProgress, releaseState, releaseTimeline, type ReleasePlan } from "@/lib/release-plan";
 import { ProgressBar, fmtDate } from "./sprint-shared";
 
-/** Lebih lama dari ini = dokumen sprint dianggap basi (satu sprint penuh tanpa pembaruan). */
-const STALE_DAYS = 7;
+/** Lebih lama dari ini = dokumen rencana dianggap basi (dua minggu tanpa pembaruan). */
+const STALE_DAYS = 14;
 
 function ago(days: number): string {
   if (days <= 0) return "hari ini";
@@ -20,8 +13,8 @@ function ago(days: number): string {
 }
 
 /**
- * Strip ringkasan di atas tab: kesegaran dokumen (halaman statis), sprint
- * minggu ini, dan antrean keputusan owner — tiga hal yang dicari pertama kali
+ * Strip ringkasan di atas tab: kesegaran dokumen (halaman statis), rilis yang
+ * sedang dikejar, dan antrean keputusan owner — tiga hal yang dicari pertama kali
  * saat membuka halaman, tanpa harus berpindah tab.
  *
  * Dirender di dalam `SprintViewClient` dan berpindah tab lewat callback, bukan
@@ -34,15 +27,17 @@ export function SprintHeaderStrip({
   onOpenDecisions,
   onOpenBacklogDecisions,
 }: {
-  plan: SprintPlan;
+  plan: ReleasePlan;
   today: string;
   onOpenDecisions: () => void;
   onOpenBacklogDecisions: () => void;
 }) {
   const age = daysBetween(plan.updatedAt, today);
   const stale = age > STALE_DAYS;
-  const active = plan.sprints.find((s) => sprintPhase(s, today) === "active") ?? null;
-  const progress = active ? sprintProgress(active) : null;
+  // Rilis yang sedang dikejar: berjalan, atau — bila tidak ada — yang sudah lewat target tapi belum tuntas.
+  const current = plan.releases.find((r) => releaseState(r, today) === "active") ?? plan.releases.find((r) => releaseState(r, today) === "late") ?? null;
+  const progress = current ? releaseProgress(current) : null;
+  const timeline = current ? releaseTimeline(current, today) : null;
   const pending = pendingDecisions(plan, today);
   const pendingPoints = pending.reduce((t, d) => t + d.item.points, 0);
   const late = pending.filter((d) => d.phase === "past").length;
@@ -55,7 +50,7 @@ export function SprintHeaderStrip({
     <div className="grid overflow-hidden rounded-lg border bg-card shadow-sm sm:grid-cols-3 sm:divide-x max-sm:divide-y">
       <div className={cn(cell, stale && "bg-amber-500/10")}>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="h-3.5 w-3.5" aria-hidden /> Dokumen sprint diperbarui
+          <Clock className="h-3.5 w-3.5" aria-hidden /> Dokumen rencana diperbarui
         </span>
         <span className="text-sm">
           <span className="font-semibold">{fmtDate(plan.updatedAt)}</span>
@@ -76,11 +71,16 @@ export function SprintHeaderStrip({
         )}
       </div>
 
-      <div className={cell}>
-        {active && progress ? (
+      <div className={cn(cell, timeline?.day === null && current && "bg-amber-500/10")}>
+        {current && progress && timeline ? (
           <>
             <span className="text-xs text-muted-foreground">
-              Sprint {active.number} · hari ke-{sprintDay(active, today)} dari 7
+              Rilis {current.version} ·{" "}
+              {timeline.day !== null ? (
+                `sisa ${timeline.daysLeft} hari (target ${fmtDate(current.end, false)})`
+              ) : (
+                <span className="font-medium text-amber-700 dark:text-amber-300">target lewat {daysBetween(current.end, today)} hari</span>
+              )}
             </span>
             <div className="flex items-center gap-2">
               <ProgressBar
@@ -95,8 +95,8 @@ export function SprintHeaderStrip({
           </>
         ) : (
           <>
-            <span className="text-xs text-muted-foreground">Minggu ini</span>
-            <span className="text-sm">Tidak ada sprint aktif</span>
+            <span className="text-xs text-muted-foreground">Rilis berjalan</span>
+            <span className="text-sm">Tidak ada rilis yang sedang dikejar</span>
           </>
         )}
       </div>
@@ -110,7 +110,7 @@ export function SprintHeaderStrip({
           onClick={onOpenDecisions}
           className="group flex items-center rounded text-left text-sm hover:underline focus-visible:outline-2 focus-visible:outline-ring"
         >
-          <span className="font-semibold tabular-nums">{pending.length} butir sprint</span>
+          <span className="font-semibold tabular-nums">{pending.length} butir di rilis</span>
           <span className="text-muted-foreground">
             &nbsp;· {pendingPoints} poin tertahan
             {late > 0 && (

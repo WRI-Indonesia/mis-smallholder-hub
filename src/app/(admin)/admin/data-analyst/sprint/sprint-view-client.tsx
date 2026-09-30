@@ -4,27 +4,29 @@ import { useId, useState } from "react";
 import { CheckCircle2, ChevronRight, ExternalLink, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FilterCombobox } from "@/components/shared/filter-combobox";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 import { cn } from "@/lib/utils";
 import {
-  SPRINT_STATUS_LABEL,
-  sprintDay,
-  sprintKanban,
-  sprintPhase,
-  sprintProgress,
-  type Sprint,
-  type SprintItem,
-  type SprintPhase,
-  type SprintPlan,
-} from "@/lib/sprint-plan";
+  PLAN_STATUS_LABEL,
+  releaseKanban,
+  releaseProgress,
+  releaseState,
+  releaseTimeline,
+  daysBetween,
+  type PlanItem,
+  type Release,
+  type ReleasePlan,
+  type ReleaseState,
+} from "@/lib/release-plan";
 import { CategoryLabel, Inline, ProgressBar, STATUS_STYLE, fmtDate, plainInline } from "./sprint-shared";
 import { SprintAnalysis } from "./sprint-analysis";
 import { SprintIssues } from "./sprint-issues";
 import { SprintHeaderStrip } from "./sprint-header-strip";
 
-const PHASE_LABEL: Record<SprintPhase, string> = { active: "Minggu ini", upcoming: "Mendatang", past: "Selesai" };
+export const STATE_LABEL: Record<ReleaseState, string> = { active: "Berjalan", upcoming: "Mendatang", released: "Dirilis", late: "Terlambat" };
 
-function SizeBadge({ item }: { item: SprintItem }) {
+function SizeBadge({ item }: { item: PlanItem }) {
   return (
     <span className="shrink-0 rounded border px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground" title={`Ukuran ${item.size} = ${item.points} poin`}>
       {item.size} · {item.points}
@@ -48,7 +50,7 @@ function DecisionNote({ text }: { text: string }) {
  * satu baris — butir tuntas tak boleh memakan layar lebih banyak daripada yang
  * masih berjalan. Tautan `#nnn` ada di judul, di luar tombol.
  */
-function KanbanCard({ item }: { item: SprintItem }) {
+function KanbanCard({ item }: { item: PlanItem }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
   const done = item.status === "done";
@@ -117,19 +119,29 @@ function KanbanCard({ item }: { item: SprintItem }) {
   );
 }
 
-/** Ringkasan sprint terpilih — dua baris padat (judul + progres), di atas papan. */
-function SprintSummary({ sprint, phase, today }: { sprint: Sprint; phase: SprintPhase; today: string }) {
-  const p = sprintProgress(sprint);
-  const day = sprintDay(sprint, today);
+/** Ringkasan rilis terpilih — dua baris padat (judul + progres), di atas papan. */
+function ReleaseSummary({ release, state, today }: { release: Release; state: ReleaseState; today: string }) {
+  const p = releaseProgress(release);
+  const t = releaseTimeline(release, today);
+  const when =
+    t.day !== null
+      ? ` · hari ke-${t.day} dari ${t.days} · sisa ${t.daysLeft} hari`
+      : state === "late"
+        ? ` · target lewat ${daysBetween(release.end, today)} hari`
+        : state === "upcoming"
+          ? ` · mulai ${daysBetween(today, release.start)} hari lagi`
+          : "";
   return (
-    <div className={cn("space-y-2 rounded-lg border bg-card px-4 py-3 shadow-sm", phase === "active" ? "border-primary/50" : "border-border/60")}>
+    <div className={cn("space-y-2 rounded-lg border bg-card px-4 py-3 shadow-sm", state === "active" ? "border-primary/50" : state === "late" ? "border-amber-500/50" : "border-border/60")}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Badge variant={phase === "active" ? "default" : "outline"}>{PHASE_LABEL[phase]}</Badge>
-        <span className="font-semibold">Sprint {sprint.number}</span>
-        <span className="text-sm">{sprint.title}</span>
+        <Badge variant={state === "active" ? "default" : "outline"} className={cn(state === "late" && STATUS_STYLE.decision)}>
+          {STATE_LABEL[state]}
+        </Badge>
+        <span className="font-semibold">Rilis {release.version}</span>
+        <span className="text-sm">{release.title}</span>
         <span className="text-xs text-muted-foreground">
-          {fmtDate(sprint.start)} – {fmtDate(sprint.end)}
-          {day !== null && ` · hari ke-${day} dari 7`}
+          {fmtDate(release.start)} – {fmtDate(release.end)}
+          {when}
         </span>
       </div>
       <div className="flex items-center gap-3">
@@ -143,21 +155,21 @@ function SprintSummary({ sprint, phase, today }: { sprint: Sprint; phase: Sprint
   );
 }
 
-/** Tab Sprint = ringkasan + papan kanban 4 kolom + lajur butir digeser (#389). */
-function SprintDetail({ sprint, phase, today }: { sprint: Sprint; phase: SprintPhase; today: string }) {
-  const { columns, moved } = sprintKanban(sprint);
+/** Tab Rilis = ringkasan + papan kanban 4 kolom + lajur butir digeser (#389). */
+function ReleaseDetail({ release, state, today }: { release: Release; state: ReleaseState; today: string }) {
+  const { columns, moved } = releaseKanban(release);
   return (
     <div className="space-y-4">
-      <SprintSummary sprint={sprint} phase={phase} today={today} />
+      <ReleaseSummary release={release} state={state} today={today} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {columns.map(({ status, items, points }) => (
           <section
             key={status}
-            aria-label={`${SPRINT_STATUS_LABEL[status]}: ${items.length} butir, ${points} poin`}
+            aria-label={`${PLAN_STATUS_LABEL[status]}: ${items.length} butir, ${points} poin`}
             className={cn("flex flex-col rounded-lg border bg-muted/30 p-2", status === "decision" && items.length > 0 && "border-amber-500/40 bg-amber-500/5")}
           >
             <h3 className="flex items-center gap-2 px-1 pb-2 text-sm font-semibold">
-              {SPRINT_STATUS_LABEL[status]}
+              {PLAN_STATUS_LABEL[status]}
               <Badge variant="outline" className={STATUS_STYLE[status]}>{items.length}</Badge>
               <span className="ml-auto text-xs font-normal tabular-nums text-muted-foreground">
                 {points} poin{status === "decision" && points > 0 ? " tertahan" : ""}
@@ -176,8 +188,8 @@ function SprintDetail({ sprint, phase, today }: { sprint: Sprint; phase: SprintP
       {moved.length > 0 && (
         <details className="rounded-lg border bg-muted/20 p-2">
           <summary className="cursor-pointer px-1 text-sm font-semibold">
-            Digeser ke sprint lain ({moved.length})
-            <span className="ml-2 text-xs font-normal text-muted-foreground">poinnya dihitung di sprint tujuan</span>
+            Digeser ke rilis lain ({moved.length})
+            <span className="ml-2 text-xs font-normal text-muted-foreground">poinnya dihitung di rilis tujuan</span>
           </summary>
           <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {moved.map((item) => <KanbanCard key={item.no} item={item} />)}
@@ -188,19 +200,36 @@ function SprintDetail({ sprint, phase, today }: { sprint: Sprint; phase: SprintP
   );
 }
 
-export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: string }) {
-  const { get, setMany } = useUrlFilters();
-  const phases = plan.sprints.map((s) => sprintPhase(s, today));
+/**
+ * Rilis bawaan: berjalan → terlambat pertama → mendatang terdekat → terakhir.
+ * Terlambat didahulukan dari mendatang: sisa kerja rilis yang lewat target
+ * masih harus dituntaskan lebih dulu.
+ */
+function defaultRelease(states: ReleaseState[]): number {
+  for (const s of ["active", "late", "upcoming"] as const) {
+    const i = states.indexOf(s);
+    if (i !== -1) return i;
+  }
+  return states.length - 1;
+}
 
-  // Minggu bawaan: aktif → mendatang terdekat → terakhir. `?sprint=` dari URL
-  // divalidasi terhadap sprint yang ada (tautan bisa basi).
-  const fallback = phases.indexOf("active") !== -1 ? phases.indexOf("active") : phases.indexOf("upcoming") !== -1 ? phases.indexOf("upcoming") : plan.sprints.length - 1;
-  const sprintParam = get("sprint");
-  // `?sprint=backlog` (tautan lama, sebelum backlog pindah ke tab Semua Issue) jatuh ke bawaan.
-  const selected = plan.sprints.some((s) => String(s.number) === sprintParam) ? sprintParam! : String(plan.sprints[fallback].number);
+export function SprintViewClient({ plan, today }: { plan: ReleasePlan; today: string }) {
+  const { get, setMany } = useUrlFilters();
+  const states = plan.releases.map((r) => releaseState(r, today));
+  const fallback = defaultRelease(states);
+  // `?rilis=` divalidasi terhadap rilis yang ada (tautan bisa basi); `?sprint=` lama diabaikan.
+  const fromUrl = plan.releases.findIndex((r) => r.version === get("rilis"));
+  const selected = plan.releases[fromUrl === -1 ? fallback : fromUrl];
   const tabParam = get("tab");
-  const tab = tabParam === "analisa" || tabParam === "issue" ? tabParam : "sprint";
-  const allPast = phases.every((p) => p === "past");
+  const tab = tabParam === "analisa" || tabParam === "issue" ? tabParam : "rilis";
+  const noOpen = states.every((s) => s === "released");
+
+  // Pemilih tidak tumbuh bersama riwayat: rilis yang belum tuntas (berjalan,
+  // terlambat, mendatang) jadi tombol; yang sudah dirilis masuk combobox Riwayat.
+  const openIdx = states.flatMap((s, i) => (s === "released" ? [] : [i]));
+  const released = plan.releases.filter((_, i) => states[i] === "released").reverse();
+  const shownIdx = [...new Set([...openIdx, plan.releases.indexOf(selected)])].sort((a, b) => a - b);
+  const pick = (r: Release) => setMany({ rilis: r === plan.releases[fallback] ? null : r.version });
 
   return (
     <div className="space-y-6">
@@ -210,53 +239,69 @@ export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: str
         onOpenDecisions={() => setMany({ tab: "analisa", status: null, di: null, q: null })}
         onOpenBacklogDecisions={() => setMany({ tab: "issue", di: "backlog", status: "decision", q: null })}
       />
-      <Tabs value={tab} onValueChange={(v) => setMany({ tab: v === "sprint" ? null : v, status: null, di: null, q: null })} className="space-y-4">
+      <Tabs value={tab} onValueChange={(v) => setMany({ tab: v === "rilis" ? null : v, status: null, di: null, q: null })} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="sprint">Sprint</TabsTrigger>
+          <TabsTrigger value="rilis">Rilis</TabsTrigger>
           <TabsTrigger value="analisa">Analisa</TabsTrigger>
           <TabsTrigger value="issue">Semua Issue</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="sprint" className="space-y-4">
-          {allPast && (
+        <TabsContent value="rilis" className="space-y-4">
+          {noOpen && (
             <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-              Semua sprint yang direncanakan sudah lewat. Rencana minggu berikutnya belum ditulis di dokumen sprint.
+              Semua rilis yang direncanakan sudah dirilis. Rencana rilis berikutnya belum ditulis di dokumen rencana.
             </p>
           )}
 
-          <nav aria-label="Pilih minggu" className="flex flex-wrap gap-2">
-            {plan.sprints.map((s, i) => {
-              const on = selected === String(s.number);
-              const p = sprintProgress(s);
-              return (
-                <button
-                  key={s.number}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setMany({ sprint: i === fallback ? null : String(s.number) })}
-                  className={cn(
-                    "flex min-w-[7.5rem] flex-col rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring",
-                    on ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
-                  )}
-                >
-                  <span className="flex items-center gap-1.5 text-sm font-semibold">
-                    {phases[i] === "active" && <span aria-label="minggu ini" className="h-2 w-2 rounded-full bg-primary" />}
-                    Sprint {s.number}
-                    {phases[i] === "past" && <span className="text-xs font-normal text-muted-foreground">· selesai</span>}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {fmtDate(s.start, false)} – {fmtDate(s.end, false)}
-                  </span>
-                  <span className="text-xs tabular-nums text-muted-foreground">{p.donePoints}/{p.totalPoints} poin</span>
-                </button>
-              );
-            })}
-          </nav>
+          <div className="flex flex-wrap items-start gap-2">
+            <nav aria-label="Pilih rilis" className="flex flex-wrap gap-2">
+              {shownIdx.map((i) => {
+                const r = plan.releases[i];
+                const on = r === selected;
+                const p = releaseProgress(r);
+                return (
+                  <button
+                    key={r.version}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => pick(r)}
+                    className={cn(
+                      "flex min-w-[8rem] flex-col rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+                      on ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5 text-sm font-semibold">
+                      {states[i] === "active" && <span aria-label="berjalan" className="h-2 w-2 rounded-full bg-primary" />}
+                      {r.version}
+                      {states[i] !== "active" && (
+                        <span className={cn("text-xs font-normal text-muted-foreground", states[i] === "late" && "text-amber-700 dark:text-amber-300")}>
+                          · {STATE_LABEL[states[i]].toLowerCase()}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-xs text-muted-foreground">target {fmtDate(r.end, false)}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">{p.donePoints}/{p.totalPoints} poin</span>
+                  </button>
+                );
+              })}
+            </nav>
+            {released.length > 0 && (
+              <FilterCombobox
+                options={released.map((r) => ({ id: r.version, name: `${r.version} · dirilis`, code: r.title }))}
+                value={null}
+                onSelect={(v) => {
+                  const r = plan.releases.find((x) => x.version === v);
+                  if (r) pick(r);
+                }}
+                placeholder={`Riwayat (${released.length})`}
+                searchPlaceholder="Cari versi…"
+                emptyLabel="Tidak ada rilis."
+                widthClass="w-[180px]"
+              />
+            )}
+          </div>
 
-          {(() => {
-            const idx = plan.sprints.findIndex((s) => String(s.number) === selected);
-            return <SprintDetail sprint={plan.sprints[idx]} phase={phases[idx]} today={today} />;
-          })()}
+          <ReleaseDetail release={selected} state={states[plan.releases.indexOf(selected)]} today={today} />
 
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <ExternalLink className="h-3 w-3" /> Nomor #… membuka issue di GitHub (tab baru) · papan dibaca kiri → kanan: belum dimulai, dikerjakan, menunggu keputusan owner, selesai. Backlog ada di tab Semua Issue.
@@ -268,7 +313,7 @@ export function SprintViewClient({ plan, today }: { plan: SprintPlan; today: str
         </TabsContent>
 
         <TabsContent value="issue">
-          <SprintIssues plan={plan} get={get} setMany={setMany} />
+          <SprintIssues plan={plan} today={today} get={get} setMany={setMany} />
         </TabsContent>
       </Tabs>
     </div>

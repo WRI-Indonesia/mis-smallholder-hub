@@ -2,17 +2,17 @@ import { Fragment } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { parseInline } from "@/lib/markdown-lite";
-import { SPRINT_CATEGORIES, type SprintCategory, type SprintItemStatus } from "@/lib/sprint-plan";
+import { PLAN_CATEGORIES, type PlanCategory, type PlanItemStatus } from "@/lib/release-plan";
 import { CATEGORICAL } from "@/lib/chart-palette";
 import { issueUrl } from "@/lib/repo-links";
 
 /**
  * Warna kategori = slot 1–6 palet kategorikal bersama (`src/lib/chart-palette.ts`,
- * juga dipakai Metrik Rilis), urut `SPRINT_CATEGORIES`. Warna mengikuti
+ * juga dipakai Metrik Rilis), urut `PLAN_CATEGORIES`. Warna mengikuti
  * kategori, bukan peringkat; teks tidak pernah memakai warna ini.
  */
-export const CATEGORY_COLOR = Object.fromEntries(SPRINT_CATEGORIES.map((c, i) => [c, CATEGORICAL[i]])) as Record<
-  SprintCategory,
+export const CATEGORY_COLOR = Object.fromEntries(PLAN_CATEGORIES.map((c, i) => [c, CATEGORICAL[i]])) as Record<
+  PlanCategory,
   { light: string; dark: string }
 >;
 
@@ -23,7 +23,7 @@ export function fmtDate(iso: string, withYear = true): string {
   return withYear ? `${d} ${MONTHS_ID[m - 1]} ${y}` : `${d} ${MONTHS_ID[m - 1]}`;
 }
 
-export const STATUS_STYLE: Record<SprintItemStatus, string> = {
+export const STATUS_STYLE: Record<PlanItemStatus, string> = {
   todo: "border-border text-muted-foreground",
   progress: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
   decision: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
@@ -68,7 +68,7 @@ export function matchesQuery(query: string, parts: (string | null)[]): boolean {
   return words.every((w) => hay.includes(w));
 }
 
-export function CategoryLabel({ category }: { category: SprintCategory }) {
+export function CategoryLabel({ category }: { category: PlanCategory }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
       <span

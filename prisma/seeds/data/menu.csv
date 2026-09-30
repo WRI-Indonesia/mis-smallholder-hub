@@ -23,7 +23,7 @@ data-analyst-data-completeness,data-analyst,Data — Per Lembaga,/admin/data-ana
 data-analyst-benchmark-comparison,data-analyst,Komparasi Data Acuan,/admin/data-analyst/benchmark-comparison,GitCompare,4,TRUE,TRUE
 data-analyst-data-map,data-analyst,Peta Data & Skema,/admin/data-analyst/data-map,Network,6,TRUE,TRUE
 data-analyst-parcel-overlap,data-analyst,Tumpang Tindih Lahan,/admin/data-analyst/parcel-overlap,Layers,7,TRUE,TRUE
-data-analyst-sprint,data-analyst,Sprint Mingguan,/admin/data-analyst/sprint,CalendarRange,8,TRUE,TRUE
+data-analyst-sprint,data-analyst,Rencana Pengembangan,/admin/data-analyst/sprint,CalendarRange,8,TRUE,TRUE
 report,,Report,/admin/report,FileText,1,TRUE,TRUE
 report-farmer,report,Petani,/admin/report/farmer,User,1,TRUE,TRUE
 report-training,report,Pelatihan,/admin/report/training,GraduationCap,3,TRUE,TRUE

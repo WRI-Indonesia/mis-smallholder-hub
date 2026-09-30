@@ -6,78 +6,65 @@
 
 Section ini dipakai developer untuk tahu apa yang harus dikerjakan sekarang. Karena progress sekarang disesuaikan dengan code, prioritas sprint difokuskan ke gap yang terbukti ada.
 
-### Sprint Focus
+### Rencana Rilis
 
 Terakhir diperbarui: 2026-09-30
 
-Sprint **mingguan Senin → Minggu**, satu developer. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Disusun 2026-09-28 dari triase 42 issue terbuka: #265 & #374 ditutup, 40 tersisa. Diperbarui 2026-09-30: #363 selesai lebih awal (RAM staging 4 GB); backlog jadi tabel satu issue per baris dan tabel Work Item diarsipkan (tab Semua Issue). Sebelumnya 2026-09-29: #378 dicatat di Sprint 1 (tak terencana), temuan audit keamanan #385 & privasi #383 disisipkan di Sprint 1 (sisa temuan audit ke backlog), epic Supply Chain **#379** (#380–#382, P1) ditaruh di Sprint 5–6 tanpa menggeser Sprint 1–4, prasyaratnya (lisensi UML, berkas survei) diputuskan di Sprint 1. Setiap minggu berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner, dan keputusannya diminta **di awal minggu**. Tabel sprint ditampilkan di menu **Data Analyst → Sprint Mingguan** (#378) dan diparse saat build. Karena itu formatnya tetap: heading `#### Sprint <n> · <mulai> → <selesai> — <judul>` dan tujuh kolom. **Kategori** diisi salah satu dari Keamanan · Rilis · Performa · Data · Fitur · Kerapian. **Poin** diisi S = 1 (≤ ½ hari), M = 3 (1–2 hari), atau L = 5 (3+ hari, sebaiknya dipecah). **Status** diisi salah satu dari 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser. Butir yang digeser tetap ditulis di sprint asalnya dengan ⏭️, lalu ditulis ulang di sprint tujuannya; dari situ carry-over di tab Analisa dihitung. **Backlog** juga berupa tabel empat kolom `| # | Issue | Status | Catatan |`: `#` = urutan kelompok (boleh berulang), satu issue per baris. Kolom Issue di sprint maupun backlog memuat **paling banyak satu** `#nnn` diikuti deskripsi singkat, karena tab **Semua Issue** menampilkan satu baris per issue dari sini. Baris `Terakhir diperbarui: YYYY-MM-DD` di atas wajib diperbarui setiap kali dokumen ini diubah; test gagal bila tanggalnya lebih lama dari tanggal terbaru yang tercatat di tabel. Format yang rusak membuat build gagal. Butir yang menulis ke mis-prod tetap mengikuti pola dump → dry-run → approval → `--write`.
+Rencana disusun **per rilis**, bukan per minggu (keputusan owner 2026-09-30): pengembangan dikerjakan satu orang sambil cleaning data dan kunjungan ke distrik, jadi ada minggu yang padat dan ada minggu tanpa coding sama sekali — ritme mingguan membuat minggu kosong tampak seperti sprint gagal. Setiap rilis punya **tanggal mulai dan target**; kemajuan diukur dalam poin, velocity dalam **poin per minggu kalender** rilis yang sudah lewat. Urutan prioritas: **risiko prod** (keamanan, konfigurasi) → **jalur rilis & gate** → **performa sebelum data membesar** → **kualitas data** → **fitur lanjutan**. Riwayat: disusun 2026-09-28 dari triase 42 issue terbuka sebagai 6 sprint mingguan; 2026-09-30 dipetakan ke rilis — setiap rilis dimulai sehari setelah rilis sebelumnya (v1.1.0 dirilis 2026-09-23), agar velocity mencerminkan siklus sebenarnya (Sprint 1 selesai → v1.2.0, sisa Sprint 1 + Sprint 2–4 → v1.3.0, Sprint 5–6 → v1.4.0), backlog jadi tabel satu issue per baris, tabel Work Item diarsipkan. Setiap rilis berakhir dengan gate (`lint` · `typecheck` · `test` · `build`), `/code-review`, dan retro issue yang ditutup. Butir bertanda **⚖️** menunggu keputusan owner dan sebaiknya diputuskan di awal rilis.
 
-#### Sprint 1 · 2026-09-28 → 2026-10-04 — Amankan konfigurasi & akses prod, rilis v1.2.0
+Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse saat build, jadi formatnya tetap: heading `#### Rilis v<x.y.z> · <mulai YYYY-MM-DD> → <target YYYY-MM-DD> — <judul>` (urut, tanggal tidak tumpang tindih) dan tujuh kolom. **Kategori** diisi salah satu dari Keamanan · Rilis · Performa · Data · Fitur · Kerapian. **Poin** diisi S = 1 (≤ ½ hari kerja), M = 3 (1–2 hari), atau L = 5 (3+ hari, sebaiknya dipecah). **Status** diisi salah satu dari 🔲 Todo · 🟡 Dikerjakan · ⚖️ Menunggu keputusan · ✅ Selesai · ⏭️ Digeser. Butir yang digeser tetap ditulis di rilis asalnya dengan ⏭️, lalu ditulis ulang di rilis tujuannya dengan teks Issue yang sama; dari situ carry-over di tab Analisa dihitung. **Backlog** berupa tabel empat kolom `| # | Issue | Status | Catatan |`: `#` = urutan kelompok (boleh berulang), satu issue per baris. Kolom Issue di rilis maupun backlog memuat **paling banyak satu** `#nnn` diikuti deskripsi singkat, karena tab **Semua Issue** menampilkan satu baris per issue. Baris `Terakhir diperbarui: YYYY-MM-DD` wajib diperbarui setiap kali dokumen ini diubah; test gagal bila tanggalnya lebih lama dari tanggal terbaru di baris ✅. Format yang rusak membuat build gagal. Butir yang menulis ke mis-prod tetap mengikuti pola dump → dry-run → approval → `--write`.
 
-| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
-| - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
+#### Rilis v1.2.0 · 2026-09-24 → 2026-09-29 — Amankan konfigurasi & akses prod
+
+| # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ------ | ------ | ------------------ |
 | 1 | **#364** Akun demo mengubah menu prod (P1) | Keamanan | M | **Diputuskan 2026-09-29:** `menu.csv` disamakan ke prod (dry-run mis-prod: hanya 2 judul beda — `data-analyst-data-availability` "Data — All Lembaga", `data-analyst-data-completeness` "Data — Per Lembaga") + Bantuan/docs; pengaman **(b)** diperluas setelah review: Menu Management **hanya Aktif/Visible** — judul, urutan, induk, URL, ikon, dan menu baru hanya lewat `menu.csv` + seed. Kode ✅ 2026-09-29 (`3491e1a` + perluasan; Bantuan a-5/p-6/a-1/l-6/3-3 + decision 0005); review 2 putaran (`bbc56d7`, `5da5e4d`: struktur menu dikunci penuh, Aktif butuh DELETE, validasi CSV); **ditutup + retro 2026-09-29**; seed prod tidak perlu untuk 2 label (prod sudah sama) | ✅ Selesai | ✅ Diputuskan: prod = acuan label; opsi (b) |
-| 2 | **#342** Role di JWT beku sampai login ulang | Keamanan | M | `jwt` callback membaca ulang `role` + `isActive` tiap N menit; nonaktif = paksa logout. Tidak lagi wajib untuk v1.2.0 — #364 memilih opsi (b), bukan penurunan peran | 🔲 Todo | Nilai N (usulan 5 menit) |
-| 3 | **#237** "Aktifkan kembali" Menu Management memanggil `deleteMenuItem` | Keamanan | S | Aksi reaktivasi (`isActive` + `isVisible`) + dialog yang sesuai. Kode ✅ 2026-09-29 (`4c5a72b` + review `070f973`): `reactivateMenuItem`/`deleteMenuItem` = satu helper `setMenuItemActive` (DELETE), tanpa dialog, tolak bila induk nonaktif; **ditutup + retro** | ✅ Selesai | — |
-| 4 | **#286 butir 2** Key FIRMS tercetak di log container | Keamanan | S | Rotasi `FIRMS_MAP_KEY_FREE` (DevOps) sebagai mitigasi; butir 1 & 3 (cache sendiri) tetap di backlog | ⚖️ Menunggu keputusan | Koordinasi DevOps |
-| 5 | **#252** `getAccessContext` tanpa `cache()` (P1) | Performa | S | Bungkus `cache()` + `select: { id }` distrik; 1 query access-context per render. Kode ✅ 2026-09-29 (`95b1ea3` + review `c44c9bf`: user nonaktif fail-closed, hasil dibekukan; dedup hanya dalam render RSC); **ditutup + retro** — hitungan kueri per render belum diukur (QA staging, akun OPERATOR) | ✅ Selesai | — |
-| 6 | **Rilis v1.2.0** | Rilis | M | Isi (keputusan owner 2026-09-29): #317 Fase 2 · #378 · revisi izin DONOR #263 · #388 (sudah di `mvp`) **+ sebelum QA: #364 · #385 · #237 · #252 · #383 (HEAD) · #311 — semua ✅ 2026-09-29 · **+ #389 kanban Sprint Mingguan** (disisipkan owner 2026-09-29)**. Seed ke staging/prod: `seed-menu-key.mjs data-analyst-parcel-overlap` & `data-analyst-sprint` per menu (bukan `seed-menu-only.ts --apply`: memulihkan izin yang dihapus admin), sesudah kode ter-deploy (ikon `Layers`, `CalendarRange`) | ✅ Selesai — **rilis 2026-09-29** (PR #391 `28319b7`, deploy prod `36571767441` hijau 4m24s, seed 2 menu prod, tag `v1.2.0`) | ✅ Go (owner; QA staging dilewati — OOM #363) |
+| 2 | **#237** "Aktifkan kembali" Menu Management memanggil `deleteMenuItem` | Keamanan | S | Aksi reaktivasi (`isActive` + `isVisible`) + dialog yang sesuai. Kode ✅ 2026-09-29 (`4c5a72b` + review `070f973`): `reactivateMenuItem`/`deleteMenuItem` = satu helper `setMenuItemActive` (DELETE), tanpa dialog, tolak bila induk nonaktif; **ditutup + retro** | ✅ Selesai | — |
+| 3 | **#252** `getAccessContext` tanpa `cache()` (P1) | Performa | S | Bungkus `cache()` + `select: { id }` distrik; 1 query access-context per render. Kode ✅ 2026-09-29 (`95b1ea3` + review `c44c9bf`: user nonaktif fail-closed, hasil dibekukan; dedup hanya dalam render RSC); **ditutup + retro** — hitungan kueri per render belum diukur (QA staging, akun OPERATOR) | ✅ Selesai | — |
+| 4 | **#385** Kunci berkas bukti pelatihan & path unggahan S3 tidak divalidasi (P1, dari audit 2026-09-29) | Keamanan | S | `evidenceKey` wajib ber-prefix aktivitasnya sendiri; `upload.ts` cek `activityId` ada + dalam scope + tersanitasi; test negatif di `training-guard`/`upload-guard`. Kode ✅ 2026-09-29 (`281a8a6` + review `f91ec6e`: pemeriksa kunci juga di sisi baca, `""` bukan bukti — audit prod 26 baris, unggah butuh EDIT); **ditutup + retro** | ✅ Selesai | — |
+| 5 | **#383** Nama orang tampak asli di contoh template NKT (repo publik, P1) | Keamanan | S | Ganti contoh dengan nama fiktif + sisir template/fixture/Bantuan lain. Kode ✅ 2026-09-29 (HEAD bersih; template NKT & Detail Lahan, fixture test, placeholder UI, komentar lib/skema, Bantuan p-12, **seed `farmer.csv` 3 baris ber-NIK**); `users.csv` → **#390**; **ditutup + retro** | ✅ Selesai | ✅ Diputuskan: cukup HEAD (preseden #273) |
+| 6 | **#311** `perf.test.ts` merah karena beban mesin | Rilis | S | `minOf(N)` + ambang ≥ 3× angka terukur. Kode ✅ 2026-09-29 (ditarik ke v1.2.0, keputusan owner): `minTime` 43 blok; suite penuh + build paralel 3/3 hijau (dulu 3/3 merah); review `dff1cf6` (timeout 30 dtk); **ditutup + retro** | ✅ Selesai | — |
 | 7 | **#378** Sprint Mingguan (tak terencana, disisipkan 2026-09-28) | Fitur | M | Menu Data Analyst → Sprint Mingguan + tab Analisa ✅ (dirombak 2026-09-29, `a741132`); `/code-review high` 10 temuan diperbaiki ✅ + wrap-up 2026-09-29 (review `6bae57e..HEAD`: 9 temuan diperbaiki) ✅; owner menyetujui di UI ✅; **ditutup + retro 2026-09-29**; seed menu staging/prod ikut butir 6 (rilis v1.2.0); kanban → **#389** backlog | ✅ Selesai | — |
-| 8 | **#379** Prasyarat Supply Chain | Data | S | Lisensi & versi Universal Mill List (boleh masuk repo publik?) + ketersediaan berkas survei rantai pasok 2025 per Lembaga | ⚖️ Menunggu keputusan | Lisensi UML; daftar Lembaga yang sudah punya survei |
-| 9 | **#385** Kunci berkas bukti pelatihan & path unggahan S3 tidak divalidasi (P1, dari audit 2026-09-29) | Keamanan | S | `evidenceKey` wajib ber-prefix aktivitasnya sendiri; `upload.ts` cek `activityId` ada + dalam scope + tersanitasi; test negatif di `training-guard`/`upload-guard`. Kode ✅ 2026-09-29 (`281a8a6` + review `f91ec6e`: pemeriksa kunci juga di sisi baca, `""` bukan bukti — audit prod 26 baris, unggah butuh EDIT); **ditutup + retro** | ✅ Selesai | — |
-| 10 | **#383** Nama orang tampak asli di contoh template NKT (repo publik, P1) | Keamanan | S | Ganti contoh dengan nama fiktif + sisir template/fixture/Bantuan lain. Kode ✅ 2026-09-29 (HEAD bersih; template NKT & Detail Lahan, fixture test, placeholder UI, komentar lib/skema, Bantuan p-12, **seed `farmer.csv` 3 baris ber-NIK**); `users.csv` → **#390**; **ditutup + retro** | ✅ Selesai | ✅ Diputuskan: cukup HEAD (preseden #273) |
-| 11 | **#390** `users.csv` seed: email staf asli + password teks polos di repo publik (P1) | Keamanan | S | Temuan review #383. Owner/DevOps: cek & rotasi akun staging/prod yang masih memakai password itu; repo: akun contoh fiktif + password dari env. **Ditunda** (keputusan owner 2026-09-29), bukan syarat QA v1.2.0 | 🔲 Todo | Riwayat git (preseden #273/#383) |
-| 12 | **#389** Sprint Mingguan: tab Sprint jadi kanban tahapan penyelesaian issue (disisipkan owner 2026-09-29 ke v1.2.0) | Fitur | S | Papan 4 kolom (Belum dimulai → Dikerjakan → Menunggu keputusan → Selesai) menggantikan daftar per status + kotak keputusan; read-only. `12ee720` + review `0ec7635`; **ditutup + retro** | ✅ Selesai | ✅ Gantikan daftar (bukan toggle) |
+| 8 | **#389** Sprint Mingguan: tab Sprint jadi kanban tahapan penyelesaian issue (disisipkan owner 2026-09-29 ke v1.2.0) | Fitur | S | Papan 4 kolom (Belum dimulai → Dikerjakan → Menunggu keputusan → Selesai) menggantikan daftar per status + kotak keputusan; read-only. `12ee720` + review `0ec7635`; **ditutup + retro** | ✅ Selesai | ✅ Gantikan daftar (bukan toggle) |
+| 9 | **Rilis v1.2.0** | Rilis | M | Isi (keputusan owner 2026-09-29): #317 Fase 2 · #378 · revisi izin DONOR #263 · #388 (sudah di `mvp`) **+ sebelum QA: #364 · #385 · #237 · #252 · #383 (HEAD) · #311 — semua ✅ 2026-09-29 · **+ #389 kanban Sprint Mingguan** (disisipkan owner 2026-09-29)**. Seed ke staging/prod: `seed-menu-key.mjs data-analyst-parcel-overlap` & `data-analyst-sprint` per menu (bukan `seed-menu-only.ts --apply`: memulihkan izin yang dihapus admin), sesudah kode ter-deploy (ikon `Layers`, `CalendarRange`) | ✅ Selesai — **rilis 2026-09-29** (PR #391 `28319b7`, deploy prod `36571767441` hijau 4m24s, seed 2 menu prod, tag `v1.2.0`) | ✅ Go (owner; QA staging dilewati — OOM #363) |
 
-#### Sprint 2 · 2026-10-05 → 2026-10-11 — Jalur rilis & gate yang bisa dipercaya
+#### Rilis v1.3.0 · 2026-09-30 → 2026-10-25 — Jalur rilis, performa & kualitas data prod
 
-| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
-| - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
-| 1 | **#277** `deploy-staging.yml` tanpa `migrate deploy` | Rilis | M | Opsi 1 (`migrate deploy` otomatis di staging) atau opsi 2 (guard `migrate status`) | ⚖️ Menunggu keputusan | Pilih opsi 1/2/3 |
-| 2 | **#376** Migrasi prod mendahului tag rilis (TD-045) | Rilis | M | Skrip cek `applied-checksums.json` vs tag terakhir + test tanpa DB + aturan di `versioning.md`/`migrations.md` | 🔲 Todo | — |
-| 3 | **#311** `perf.test.ts` merah karena beban mesin | Rilis | S | `minOf(N)` + ambang ≥ 3× angka terukur. Kode ✅ 2026-09-29 (ditarik ke v1.2.0, keputusan owner): `minTime` 43 blok; suite penuh + build paralel 3/3 hijau (dulu 3/3 merah); review `dff1cf6` (timeout 30 dtk); **ditutup + retro** | ✅ Selesai | — |
-| 4 | **#363** Build staging OOM (RAM 1,97 GB) | Rilis | M | **Diputuskan & diterapkan 2026-09-30:** RAM server staging dinaikkan ke **4 GB** (DevOps, opsi 2). `staging` ← `main` + `mvp`, deploy `36660789043` hijau 2m15s (available 2,4 GB sebelum build); **ditutup + retro 2026-09-30** | ✅ Selesai | ✅ Diputuskan: upgrade RAM 4 GB |
-| 5 | **#232** OPS-02 prosedur rollback deploy | Rilis | M | Tulis ulang issue jadi "prosedur rollback" (env matrix sudah ada di `environments.md`), lalu dokumentasikan dan uji di staging | 🔲 Todo | — |
+| # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ------ | ------ | ------------------ |
+| 1 | **#363** Build staging OOM (RAM 1,97 GB) | Rilis | M | **Diputuskan & diterapkan 2026-09-30:** RAM server staging dinaikkan ke **4 GB** (DevOps, opsi 2). `staging` ← `main` + `mvp`, deploy `36660789043` hijau 2m15s (available 2,4 GB sebelum build); **ditutup + retro 2026-09-30** | ✅ Selesai | ✅ Diputuskan: upgrade RAM 4 GB |
+| 2 | **#342** Role di JWT beku sampai login ulang | Keamanan | M | `jwt` callback membaca ulang `role` + `isActive` tiap N menit; nonaktif = paksa logout. Tidak lagi wajib untuk v1.2.0 — #364 memilih opsi (b), bukan penurunan peran | 🔲 Todo | Nilai N (usulan 5 menit) |
+| 3 | **#286 butir 2** Key FIRMS tercetak di log container | Keamanan | S | Rotasi `FIRMS_MAP_KEY_FREE` (DevOps) sebagai mitigasi; butir 1 & 3 (cache sendiri) tetap di backlog | ⚖️ Menunggu keputusan | Koordinasi DevOps |
+| 4 | **#390** `users.csv` seed: email staf asli + password teks polos di repo publik (P1) | Keamanan | S | Temuan review #383. Owner/DevOps: cek & rotasi akun staging/prod yang masih memakai password itu; repo: akun contoh fiktif + password dari env. **Ditunda** (keputusan owner 2026-09-29), bukan syarat QA v1.2.0 | 🔲 Todo | Riwayat git (preseden #273/#383) |
+| 5 | **#277** `deploy-staging.yml` tanpa `migrate deploy` | Rilis | M | Opsi 1 (`migrate deploy` otomatis di staging) atau opsi 2 (guard `migrate status`) | ⚖️ Menunggu keputusan | Pilih opsi 1/2/3 |
+| 6 | **#376** Migrasi prod mendahului tag rilis (TD-045) | Rilis | M | Skrip cek `applied-checksums.json` vs tag terakhir + test tanpa DB + aturan di `versioning.md`/`migrations.md` | 🔲 Todo | — |
+| 7 | **#232** OPS-02 prosedur rollback deploy | Rilis | M | Tulis ulang issue jadi "prosedur rollback" (env matrix sudah ada di `environments.md`), lalu dokumentasikan dan uji di staging | 🔲 Todo | — |
+| 8 | **#251** Indeks `ProductionRecord` (P1) | Performa | M | Indeks komposit `(parcel_id, period)` + partial `is_active`, divalidasi `EXPLAIN ANALYZE`; import produksi sedang berjalan | ⚖️ Menunggu keputusan | Grain produksi: 1 baris/bulan atau per panen? |
+| 9 | **#335** Lazy-load titik patok Detail Lembaga/Petani | Performa | M | Action ber-scope + KPI dari `count` (menutup query patok tanpa scope) | 🔲 Todo | — |
+| 10 | **#253** Agregat `getFarmerSummary` dipindah ke SQL | Performa | S | `_count`/`_sum` di SQL, bukan dijumlah di JS | 🔲 Todo | — |
+| 11 | **#320** `/api/map-basemap` cek izin per tile | Performa | S | Memo izin per sesi, bukan `hasPermission` per tile | 🔲 Todo | Jendela pencabutan izin ≤ 60 dtk dapat diterima? |
+| 12 | **#366** Detail Lahan Siak | Data | L | A1/A2 (bug laten #306 `readRaw`, kode + test), lalu importer mengikuti keputusan B & D | ⚖️ Menunggu keputusan | Pilih A, B, D + nasib 493 kode APKSSB |
+| 13 | **#354** Tanggal lahir tertukar (~5.400 petani) | Data | M | Skrip idempoten: dry-run per Lembaga di local → staging-local → mis-prod | ⚖️ Menunggu keputusan | Approval apply prod |
+| 14 | **#317** Tumpang tindih lahan — sisa Fase 2 & Fase 3 | Fitur | L | Tab Luar Boundary & Selisih Luas (Fase 2 tuntas); Fase 3 guard upload bila waktu cukup | 🔲 Todo | — |
+| 15 | **#290** Basemap GIBS Fire Alert | Fitur | M | Tombol GIBS mengikuti tanggal rentang titik api + Bantuan `p-11` | 🔲 Todo | — |
+| 16 | **#319** Report: default `coverage` ≠ `landParcelLegalWhere` | Kerapian | S | `coverage` wajib diisi, tanpa default | 🔲 Todo | — |
+| 17 | **#315** Dua salinan `FilterCombobox` di panel peta | Kerapian | S | Pakai satu primitif `shared/filter-combobox.tsx` | 🔲 Todo | — |
+| 18 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Tambah langkah tab Upload List Peserta (#301) | 🔲 Todo | — |
+| 19 | **Rilis v1.3.0** | Rilis | M | Semua butir di atas + deploy staging → prod. Seed label menu `data-analyst-sprint` → "Rencana Pengembangan" (`seed-menu-key.mjs data-analyst-sprint`, sesudah kode ter-deploy) | 🔲 Todo | Go rilis |
 
-#### Sprint 3 · 2026-10-12 → 2026-10-18 — Performa & kualitas data prod
+#### Rilis v1.4.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
 
-| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
-| - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
-| 1 | **#251** Indeks `ProductionRecord` (P1) | Performa | M | Indeks komposit `(parcel_id, period)` + partial `is_active`, divalidasi `EXPLAIN ANALYZE`; import produksi sedang berjalan | ⚖️ Menunggu keputusan | Grain produksi: 1 baris/bulan atau per panen? |
-| 2 | **#335** Lazy-load titik patok Detail Lembaga/Petani | Performa | M | Action ber-scope + KPI dari `count` (menutup query patok tanpa scope) | 🔲 Todo | — |
-| 3 | **#253** Agregat `getFarmerSummary` dipindah ke SQL | Performa | S | `_count`/`_sum` di SQL, bukan dijumlah di JS | 🔲 Todo | — |
-| 4 | **#320** `/api/map-basemap` cek izin per tile | Performa | S | Memo izin per sesi, bukan `hasPermission` per tile | 🔲 Todo | Jendela pencabutan izin ≤ 60 dtk dapat diterima? |
-| 5 | **#366** Detail Lahan Siak | Data | L | A1/A2 (bug laten #306 `readRaw`, kode + test), lalu importer mengikuti keputusan B & D | ⚖️ Menunggu keputusan | Pilih A, B, D + nasib 493 kode APKSSB |
-| 6 | **#354** Tanggal lahir tertukar (~5.400 petani) | Data | M | Skrip idempoten: dry-run per Lembaga di local → staging-local → mis-prod | ⚖️ Menunggu keputusan | Approval apply prod |
+| # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ------ | ------ | ------------------ |
+| 1 | **#379** Prasyarat Supply Chain | Data | S | Lisensi & versi Universal Mill List (boleh masuk repo publik?) + ketersediaan berkas survei rantai pasok 2025 per Lembaga | ⚖️ Menunggu keputusan | Lisensi UML; daftar Lembaga yang sudah punya survei |
+| 2 | **#380** Supply Chain A bagian 1: model + master Mill/Offtaker | Fitur | L | Migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord` + halaman Master Data Mill, Offtaker, Rantai Pasok + menu & izin + `build:schema`/`build:lineage` + `models.md`/ERD | 🔲 Todo | — |
+| 3 | **#380** Supply Chain A bagian 2: import survei rantai pasok | Fitur | L | Bulk Upload Rantai Pasok: cocok Parcel ID, layar review offtaker (kode MIS), status Mill PKS/PT/kosong, peringatan tonase, cek silang produksi & luas, template unduh dari MIS, Bantuan | 🔲 Todo | — |
+| 4 | **#380** Supply Chain A: seed Mill dari Universal Mill List | Data | S | Skrip seed Mill dari UML mengikuti keputusan lisensi #379 (di repo atau via `--data`) | ⚖️ Menunggu keputusan | Hasil cek lisensi UML (#379) |
+| 5 | **#381** Peta Rantai Pasok + Report | Fitur | L | Garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel | 🔲 Todo | — |
+| 6 | **#382** Analisa volume, jarak & risiko Mill | Fitur | M | Jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker, risiko NKT & tumpang tindih per Mill | 🔲 Todo | Ambang ketergantungan satu offtaker (%) |
+| 7 | **Rilis v1.4.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
 
-#### Sprint 4 · 2026-10-19 → 2026-10-25 — Fitur lanjutan & kerapian, rilis v1.3.0
-
-| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
-| - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
-| 1 | **#317** Tumpang tindih lahan — sisa Fase 2 & Fase 3 | Fitur | L | Tab Luar Boundary & Selisih Luas (Fase 2 tuntas); Fase 3 guard upload bila waktu cukup | 🔲 Todo | — |
-| 2 | **#290** Basemap GIBS Fire Alert | Fitur | M | Tombol GIBS mengikuti tanggal rentang titik api + Bantuan `p-11` | 🔲 Todo | — |
-| 3 | **#319** Report: default `coverage` ≠ `landParcelLegalWhere` | Kerapian | S | `coverage` wajib diisi, tanpa default | 🔲 Todo | — |
-| 4 | **#315** Dua salinan `FilterCombobox` di panel peta | Kerapian | S | Pakai satu primitif `shared/filter-combobox.tsx` | 🔲 Todo | — |
-| 5 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Tambah langkah tab Upload List Peserta (#301) | 🔲 Todo | — |
-| 6 | **Rilis v1.3.0** | Rilis | M | Sprint 2–4 | 🔲 Todo | Go rilis |
-
-#### Sprint 5 · 2026-10-26 → 2026-11-01 — Supply Chain A: master & import survei rantai pasok
-
-| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
-| - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
-| 1 | **#380** Supply Chain A bagian 1: model + master Mill/Offtaker | Fitur | L | Migrasi `Mill`/`BuyerProgram`/`Offtaker`/`SupplyChainSurvey`/`SupplyChainRecord` + halaman Master Data Mill, Offtaker, Rantai Pasok + menu & izin + `build:schema`/`build:lineage` + `models.md`/ERD | 🔲 Todo | — |
-| 2 | **#380** Supply Chain A bagian 2: import survei rantai pasok | Fitur | L | Bulk Upload Rantai Pasok: cocok Parcel ID, layar review offtaker (kode MIS), status Mill PKS/PT/kosong, peringatan tonase, cek silang produksi & luas, template unduh dari MIS, Bantuan | 🔲 Todo | — |
-| 3 | **#380** Supply Chain A: seed Mill dari Universal Mill List | Data | S | Skrip seed Mill dari UML mengikuti keputusan lisensi Sprint 1 (di repo atau via `--data`) | ⚖️ Menunggu keputusan | Hasil cek lisensi UML (Sprint 1 #8) |
-
-#### Sprint 6 · 2026-11-02 → 2026-11-08 — Supply Chain B & C: peta, analisa, rilis v1.4.0
-
-| # | Issue | Kategori | Poin | Target minggu ini | Status | ⚖️ Keputusan owner |
-| - | ----- | -------- | ---- | ----------------- | ------ | ------------------ |
-| 1 | **#381** Peta Rantai Pasok + Report | Fitur | L | Garis alir Lahan → Offtaker → Mill (tebal = tonase, agregasi per KT/Lembaga saat zoom jauh), panel "tidak tergambar", Report + ekspor Excel | 🔲 Todo | — |
-| 2 | **#382** Analisa volume, jarak & risiko Mill | Fitur | M | Jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker, risiko NKT & tumpang tindih per Mill | 🔲 Todo | Ambang ketergantungan satu offtaker (%) |
-| 3 | **Rilis v1.4.0** | Rilis | M | Sprint 5–6 (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
-
-#### Backlog terurut (setelah Sprint 6)
+#### Backlog terurut (setelah v1.4.0)
 
 | # | Issue | Status | Catatan |
 | - | ----- | ------ | ------- |
@@ -145,7 +132,7 @@ Fokus **minggu 2026-08-08 → 2026-08-14** (hasil audit menyeluruh 2026-08-08 + 
 
 ### Arsip Work Item (dibekukan 2026-09-30)
 
-Tabel ini **tidak diperbarui lagi**. Status issue kini hanya dicatat di tabel Sprint dan Backlog di atas (tampil di menu **Data Analyst → Sprint Mingguan**, tab **Semua Issue**), agar satu informasi hanya ada di satu tempat. Isinya dipertahankan sebagai riwayat.
+Tabel ini **tidak diperbarui lagi**. Status issue kini hanya dicatat di tabel Rilis dan Backlog di atas (tampil di menu **Data Analyst → Rencana Pengembangan**, tab **Semua Issue**), agar satu informasi hanya ada di satu tempat. Isinya dipertahankan sebagai riwayat.
 
 <details>
 <summary>Arsip — work item terbuka per 2026-09-29</summary>
