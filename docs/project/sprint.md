@@ -54,7 +54,7 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 16 | **#319** Report: default `coverage` ≠ `landParcelLegalWhere` | Kerapian | S | `coverage` wajib diisi, tanpa default | 🔲 Todo | — |
 | 17 | **#315** Dua salinan `FilterCombobox` di panel peta | Kerapian | S | Pakai satu primitif `shared/filter-combobox.tsx` | 🔲 Todo | — |
 | 18 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Tambah langkah tab Upload List Peserta (#301) | 🔲 Todo | — |
-| 19 | **Rilis v1.3.0** | Rilis | M | Semua butir di atas + deploy staging → prod. Seed label menu `data-analyst-sprint` → "Rencana Pengembangan" (`seed-menu-key.mjs data-analyst-sprint`, sesudah kode ter-deploy) | 🔲 Todo | Go rilis |
+| 19 | **Rilis v1.3.0** | Rilis | M | Semua butir di atas + deploy staging → prod. Seed label menu `data-analyst-sprint` → "Rencana Pengembangan" lewat `seed-menu-only.ts` (dry-run dulu: diff harus hanya judul ini; `seed-menu-key.mjs` TIDAK mengganti label menu yang sudah ada), sesudah kode ter-deploy. Lokal `mis-dev` sudah 2026-09-30 | 🔲 Todo | Go rilis |
 
 #### Rilis v1.4.0 · 2026-10-26 → 2026-11-08 — Supply Chain: master, import survei, peta & analisa
 

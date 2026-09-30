@@ -15,7 +15,7 @@ Sub menu `data-analyst-sprint`, satu halaman: `/admin/data-analyst/sprint` (#378
 
 **2026-09-30 — perombakan (opsi ber-preview)**
 - **Unit rencana = RILIS, bukan sprint mingguan.** Pengembangan dikerjakan satu orang di sela cleaning data dan kunjungan distrik: ada minggu padat, ada minggu tanpa coding. Ritme Senin–Minggu membuat minggu kosong tampak seperti sprint gagal. Setiap rilis punya tanggal mulai & target bebas. Sprint 1–6 lama dipetakan: Sprint 1 selesai → v1.2.0, sisa Sprint 1 + Sprint 2–4 → v1.3.0, Sprint 5–6 → v1.4.0.
-- **Nama menu = "Rencana Pengembangan"** (label di `menu.csv`; seed per menu ke staging/prod ikut rilis berikutnya).
+- **Nama menu = "Rencana Pengembangan"** (label di `menu.csv`; ke staging/prod lewat `seed-menu-only.ts` saat rilis v1.3.0 — lokal `mis-dev` sudah).
 - **Velocity = poin selesai per MINGGU KALENDER** (Σ selesai ÷ Σ minggu mulai → tanggal dirilis, hanya rilis bertanda dirilis — bukan rilis terlambat yang masih dikerjakan), bukan per rilis — panjang rilis berbeda-beda. Grafik beban tidak lagi punya satu garis rata-rata; tiap kolom mendapat **penanda kapasitas** = velocity × panjang rilis.
 - **Pemilih tidak tumbuh bersama riwayat:** tombol hanya untuk rilis yang belum tuntas (berjalan / terlambat / mendatang); rilis yang sudah dirilis masuk combobox **Riwayat** ber-cari. Filter Rilis di Semua Issue juga combobox ber-cari (`shared/filter-combobox.tsx`), bukan chip.
 - **Tab Semua Issue** (`No. Issue | Rilis | Kategori | Status | Deskripsi`) diturunkan dari tabel Rilis + Backlog, **tanpa file md baru** (satu informasi satu tempat). Backlog berupa tabel satu issue per baris dan **hanya** tampil di tab ini; tabel Work Item lama di `sprint.md` diarsipkan.
@@ -105,7 +105,7 @@ Halaman: Rencana Pengembangan (/admin/data-analyst/sprint)
 | `src/lib/release-plan-data.ts` | Import `sprint.md` + parse sekali (jangan diimport dari test) |
 | `src/app/(admin)/admin/data-analyst/sprint/` | `page.tsx` (guard, tanggal WIB) · `sprint-view-client.tsx` (tabs, pemilih rilis, tab Rilis) · `sprint-header-strip.tsx` (strip ringkasan) · `sprint-analysis.tsx` (tab Analisa) · `sprint-issues.tsx` (tab Semua Issue + backlog) · `sprint-shared.tsx` (warna kategori, `fmtDate`, `Inline`, bilah progres, `SearchBox` + `matchesQuery`, `CategoryLabel`) · `loading.tsx`. Nama berkas mengikuti URL `/sprint`, bukan unit rencana |
 | `src/lib/chart-palette.ts` · `src/lib/repo-links.ts` | Palet kategorikal & tautan repo bersama — dipakai juga Metrik Rilis |
-| `scripts/seed/seed-menu-key.mjs <key>` | Seed parsial generik: menu + izin dibaca dari CSV (dipakai untuk label baru di staging/prod) |
+| `scripts/seed/seed-menu-key.mjs <key>` · `scripts/seed/seed-menu-only.ts` | `seed-menu-key` hanya MENAMBAH menu/izin yang belum ada — tidak mengganti label. Label baru "Rencana Pengembangan" ke staging/prod lewat `seed-menu-only.ts` (dry-run menampilkan diff judul; izin yang dihapus admin ikut dipulihkan → cek `rbac:compare`) |
 | `src/test/release-plan.test.ts` | File nyata (rilis urut, ≤ 1 `#nnn` per kolom Issue, kesegaran tanggal) + fixture + format rusak + fase/linimasa/keadaan rilis + velocity per minggu + keputusan/carry-over + kanban + Semua Issue (TD-xxx, urutan) + helper tampilan |
 
 ## Batas yang disadari
