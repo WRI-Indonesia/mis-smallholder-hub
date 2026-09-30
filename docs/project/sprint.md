@@ -107,6 +107,8 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 6 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | 🔲 Todo | Audit 2026-09-29 |
 | 6 | **TD-049** Auto-fit kolom Excel | 🔲 Todo | Tech debt, audit 2026-09-29 |
 | 6 | **TD-050** 2 test RBAC menyalin logika | 🔲 Todo | Tech debt, audit 2026-09-29 |
+| 6 | **TD-054** Dua memo in-process ber-TTL, memo role tanpa batas ukuran | 🔲 Todo | Tech debt, wrap-up v1.3.0 2026-09-30 |
+| 6 | **#397** `/pagi`: tandai commit fitur/fix sejak rilis terakhir yang tak merujuk issue terbuka | 🔲 Todo | Tooling OPS-02; wrap-up v1.3.0 (kasus #396) |
 | 7 | **#365** Fire Alert: laporan bulanan titik api | ✅ Selesai | ✅ Diputuskan 2026-09-30: dicek owner di UI prod → retro + close |
 | 7 | **#373** UL Parcel Code boleh menempel di >1 lahan | ✅ Selesai | ✅ Diputuskan 2026-09-30: fitur selesai (v1.1.0), ditutup + retro; cek silang pindah ke **#395** |
 | 7 | **#395** Cek silang 82 UL Parcel Code yang dipakai >1 lahan | 🔲 Todo | Dari #373; pekerjaan data, tanpa kode; pola dump → dry-run → approval → `--write` |
