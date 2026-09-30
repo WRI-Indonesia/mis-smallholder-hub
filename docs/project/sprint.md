@@ -103,6 +103,7 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 5 | **#261** Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ⚖️ Menunggu keputusan | Parkir roadmap; hanya keputusan, bukan kode |
 | 5 | **#192** Epic API layer & offline sync aplikasi mobile | ⚖️ Menunggu keputusan | Parkir roadmap (terkait FORM-01). Masih direncanakan? Bila tidak, close *not planned* |
 | 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ⚖️ Menunggu keputusan | Parkir roadmap. Masih direncanakan? Bila tidak, close *not planned* |
+| 6 | **#394** `deploy-main.yml`: guard `prisma migrate status` sebelum build + pemuatan nvm | 🔲 Todo | Roadmap **OPS-02**; pola guard staging #277; menyentuh workflow produksi → persetujuan owner sebelum merge |
 | 6 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | 🔲 Todo | Audit 2026-09-29 |
 | 6 | **TD-049** Auto-fit kolom Excel | 🔲 Todo | Tech debt, audit 2026-09-29 |
 | 6 | **TD-050** 2 test RBAC menyalin logika | 🔲 Todo | Tech debt, audit 2026-09-29 |
