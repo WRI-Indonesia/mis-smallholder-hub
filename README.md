@@ -371,7 +371,7 @@ npm run pdf:manage     # Manage PDF files in S3
 ## 🚧 Roadmap
 
 <details>
-<summary><strong>Status ringkas</strong> — completed · next · later (detail di <code>docs/project/roadmap.md</code>)</summary>
+<summary><strong>Status ringkas</strong> — completed · now · next · later — Roadmap 2026–2027 (detail di <code>docs/project/roadmap.md</code>)</summary>
 
 ### ✅ Completed
 - Platform foundation (auth, RBAC 5 roles, dynamic 3-level menu, user management)
@@ -384,14 +384,17 @@ npm run pdf:manage     # Manage PDF files in S3
 - **HELP-01/02**: Bantuan — in-app help center with task-based tutorials
 - **OPS-01**: Testing (53 files / 839 tests)
 
-### 🔲 Next
-- **BULK-02**: Bulk Upload Region (#70) + Bulk Upload Kelompok Tani (#69)
-- **OPS-02**: DevOps hardening — env matrix & rollback verification (#232)
+- **DASH-07/08**: Fire Alert (FIRMS vs boundary ICS, monthly report) · Monev BMP · **MVP `v1.0.0`** released 2026-09-23 (baseline frozen in `docs/project/roadmap-mvp.md`)
 
-### 🔲 Planned (Later)
-- MD-07 to MD-11: Staff, HCV, BUSDEV, IMPACT, Workplan modules
-- CMS-01: Content Management System
-- COMM-01/02: Community & i18n
+### 🔲 Now — Q4 2026
+- Post-MVP hardening: security & RBAC (PLATFORM-08), performance (PLATFORM-09), release path & rollback (OPS-02), prod data fixes (DQ-01), parcel overlap (DA-09)
+- **Supply Chain** (SC-01…03): Mill/Offtaker master, survey import, supply-chain map & risk analysis
+
+### 🔲 Next — H1 2027
+- Fire Alert ready for the 2027 dry season (GIS-01) · **Deforestation** (GIS-02) · **Certification** (MD-12) · HCV/NKT areas (MD-08) · data anomaly & availability (DA-05, DA-08) · Monev BMP map layer (MAP-04)
+
+### 🔲 Later — H2 2027 (concept note first)
+- Project Management (Workplan Tracker, Staff Activity, Impact Indicator) · Monitoring & Survey Form · Access to Finance · GHG Emission · HSE · Regenerative Agriculture · Flood/Hazard · GeoServer · 2028 data-scale test
 
 </details>
 

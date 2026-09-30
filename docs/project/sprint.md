@@ -50,7 +50,7 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 12 | **#366** Detail Lahan Siak | Data | L | A1: token pra-terbit → `PERSIAPAN_DATA` (fix `readRaw` + test); B1: konversi m²→Ha + ambang kewajaran + laporan; D1: sel berisi beberapa nomor surat dipecah jadi beberapa surat; 493 kode APKSSB tetap ditahan sampai diperbaiki di hulu | 🔲 Todo | ✅ Diputuskan: A1 · B1 · D1 |
 | 13 | **#354** Tanggal lahir tertukar (~5.400 petani) | Data | M | Skrip idempoten: dry-run per Lembaga di local → staging-local → dump prod → dry-run prod (jumlah + sampel ke owner) → `--write` | 🔲 Todo | ✅ Diputuskan: disetujui, dry-run dulu |
 | 14 | **#317** Tumpang tindih lahan — sisa Fase 2 & Fase 3 | Fitur | L | Tab Luar Boundary & Selisih Luas (Fase 2 tuntas); Fase 3 guard upload bila waktu cukup | 🔲 Todo | — |
-| 15 | **#290** Basemap GIBS Fire Alert | Fitur | M | Tombol GIBS mengikuti tanggal rentang titik api + Bantuan `p-11` | 🔲 Todo | — |
+| 15 | **#290** Basemap GIBS Fire Alert | Fitur | M | Tombol GIBS mengikuti tanggal rentang titik api + Bantuan `p-11`; langkah pertama roadmap GIS-01 | 🔲 Todo | — |
 | 16 | **#319** Report: default `coverage` ≠ `landParcelLegalWhere` | Kerapian | S | `coverage` wajib diisi, tanpa default | 🔲 Todo | — |
 | 17 | **#315** Dua salinan `FilterCombobox` di panel peta | Kerapian | S | Pakai satu primitif `shared/filter-combobox.tsx` | 🔲 Todo | — |
 | 18 | **#310** Bantuan `t-3` tak menyinggung Upload List Peserta | Kerapian | S | Tambah langkah tab Upload List Peserta (#301) | 🔲 Todo | — |
@@ -68,18 +68,29 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 6 | **#382** Analisa volume, jarak & risiko Mill | Fitur | M | Jarak garis lurus `ST_PointOnSurface`, ketergantungan offtaker, risiko NKT & tumpang tindih per Mill | 🔲 Todo | Ambang ketergantungan satu offtaker (%) |
 | 7 | **Rilis v1.4.0** | Rilis | M | Semua butir di atas (migrasi + seed menu/izin + UML ke staging & prod) | 🔲 Todo | Go rilis |
 
-#### Backlog terurut (setelah v1.4.0)
+#### Rilis v1.5.0 · 2026-11-09 → 2026-12-20 — Penyangga akhir tahun: tuntaskan fase K4 2026 & siapkan 2027
+
+| # | Issue | Kategori | Poin | Target | Status | ⚖️ Keputusan owner |
+| - | ----- | -------- | ---- | ------ | ------ | ------------------ |
+| 1 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | Keamanan | M | Menutup fase roadmap PLATFORM-08 bersama #342/#390 (v1.3.0) | 🔲 Todo | — |
+| 2 | **#384** Peta BMP: filter memakai guard `map-parcel` | Keamanan | S | Guard filter Peta BMP memakai `map-bmp`; PLATFORM-08 | 🔲 Todo | — |
+| 3 | **#317** Tumpang tindih lahan — Fase 4 layer Peta Lahan | Fitur | M | Layer tumpang tindih di Peta Lahan → #317 & fase DA-09 tuntas | 🔲 Todo | — |
+| 4 | Concept note **GIS-02 Deforestation** | Fitur | S | Sumber data tutupan hutan + lisensi, tahun *cut-off*, ambang luas, butuh GeoServer (GIS-04) atau tidak → issue induk | 🔲 Todo | Sumber data & cut-off |
+| 5 | Concept note **MD-12 Certification** | Fitur | S | Skema (RSPO/ISPO), unit sertifikasi Lembaga vs petani, siklus audit & temuan, dokumen S3 → issue induk | 🔲 Todo | Cakupan skema |
+| 6 | **Rilis v1.5.0** | Rilis | M | Semua butir di atas + limpahan v1.3.0/v1.4.0 yang digeser ke sini | 🔲 Todo | Go rilis |
+
+#### Backlog terurut (setelah v1.5.0)
 
 | # | Issue | Status | Catatan |
 | - | ----- | ------ | ------- |
-| 1 | **#286 butir 1 & 3** Fire Alert: cache FIRMS sendiri + batas payload rentang 30 hari | 🔲 Todo | Dirancang bersama #291. **Target selesai sebelum musim kemarau 2027** |
-| 1 | **#291** Fire Alert: basemap Sentinel-2 10 m via CDSE | 🔲 Todo | Dirancang bersama #286; kuota CDSE → cache wajib |
-| 2 | **#345 tahap 2** Patok NKT jadi tipe sendiri (`purpose BATAS_LAHAN\|NKT`, dari buffer sungai) | 🔲 Todo | — |
-| 2 | **#349** Peta BMP: layer Monev BMP (warna lahan per kategori skor) | 🔲 Todo | — |
-| 2 | **#178** DA-05 deteksi anomali data produksi | ⚖️ Menunggu keputusan | 3 pertanyaan terbuka |
-| 3 | **#355** Sertifikasi: nilai eksplisit `NONE` | 🔲 Todo | "Belum diisi" ≠ "tidak bersertifikat" |
-| 3 | **#356** Bobot cakupan modul ke Index | 🔲 Todo | — |
-| 3 | **#358** DA-03 peta kesiapan data per Lembaga | 🔲 Todo | — |
+| 1 | **#286 butir 1 & 3** Fire Alert: cache FIRMS sendiri + batas payload rentang 30 hari | 🔲 Todo | Roadmap **GIS-01** (K1 2027). Dirancang bersama #291. **Target selesai sebelum musim kemarau 2027** |
+| 1 | **#291** Fire Alert: basemap Sentinel-2 10 m via CDSE | 🔲 Todo | Roadmap **GIS-01** (K1 2027). Dirancang bersama #286; kuota CDSE → cache wajib |
+| 2 | **#345 tahap 2** Patok NKT jadi tipe sendiri (`purpose BATAS_LAHAN\|NKT`, dari buffer sungai) | 🔲 Todo | Roadmap **MD-08** (K2 2027) |
+| 2 | **#349** Peta BMP: layer Monev BMP (warna lahan per kategori skor) | 🔲 Todo | Roadmap **MAP-04** (K2 2027) |
+| 2 | **#178** DA-05 deteksi anomali data produksi | ⚖️ Menunggu keputusan | Roadmap **DA-05** (K1 2027); 3 pertanyaan terbuka |
+| 3 | **#355** Sertifikasi: nilai eksplisit `NONE` | 🔲 Todo | Roadmap **DA-08** (K2 2027), prasyarat MD-12; "Belum diisi" ≠ "tidak bersertifikat" |
+| 3 | **#356** Bobot cakupan modul ke Index | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
+| 3 | **#358** DA-03 peta kesiapan data per Lembaga | 🔲 Todo | Roadmap **DA-08** (K2 2027) |
 | 3 | **#258** Peta aplikasi (sitemap) di Bantuan | 🔲 Todo | — |
 | 3 | **#203** Detail Lahan: riwayat revisi lahan | 🔲 Todo | — |
 | 4 | **#308** Seragamkan selektor kolom di semua menu | 🔲 Todo | Kerapian |
@@ -87,11 +98,9 @@ Tabel ditampilkan di menu **Data Analyst → Rencana Pengembangan** dan diparse 
 | 4 | **#218** Rekonsiliasi matriks cakupan pelatihan + a11y tooltip | 🔲 Todo | Kerapian |
 | 5 | **#334** KT HJP & SSJ kosong: KT+Blok tergabung atau kode blok? | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
 | 5 | **#260** Kecamatan & desa hanya 1 baris: isi atau sembunyikan? | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
-| 5 | **#261** Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ⚖️ Menunggu keputusan | Hanya keputusan, bukan kode |
-| 5 | **#192** Epic API layer & offline sync aplikasi mobile | ⚖️ Menunggu keputusan | Masih direncanakan? Bila tidak, close *not planned* |
-| 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ⚖️ Menunggu keputusan | Masih direncanakan? Bila tidak, close *not planned* |
-| 6 | **#386** Celah RBAC laten: filter menimpa scope & eskalasi role Settings Users | 🔲 Todo | Audit 2026-09-29; kerjakan sebelum menu itu diberikan ke peran ber-scope |
-| 6 | **#384** Peta BMP: filter memakai guard `map-parcel` | 🔲 Todo | Audit 2026-09-29 |
+| 5 | **#261** Cakupan pemetaan pohon (286 baris vs ±3,5 juta) | ⚖️ Menunggu keputusan | Parkir roadmap; hanya keputusan, bukan kode |
+| 5 | **#192** Epic API layer & offline sync aplikasi mobile | ⚖️ Menunggu keputusan | Parkir roadmap (terkait FORM-01). Masih direncanakan? Bila tidak, close *not planned* |
+| 5 | **#124** Peta Lahan: overlay citra Planet NICFI | ⚖️ Menunggu keputusan | Parkir roadmap. Masih direncanakan? Bila tidak, close *not planned* |
 | 6 | **#387** Temuan kecil audit test (guard menu tree, nama audit, `modifiedBy`, snapshot, revisi lahan) | 🔲 Todo | Audit 2026-09-29 |
 | 6 | **TD-049** Auto-fit kolom Excel | 🔲 Todo | Tech debt, audit 2026-09-29 |
 | 6 | **TD-050** 2 test RBAC menyalin logika | 🔲 Todo | Tech debt, audit 2026-09-29 |

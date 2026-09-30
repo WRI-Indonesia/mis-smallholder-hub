@@ -96,7 +96,7 @@ Satu baris per kuartal. Rilis K4 2026 mengikuti [sprint.md](./sprint.md). Rilis 
 | ------- | ---- | ---- | --------------- |
 | **K4 2026** (Okt–Des) | Pengerasan pasca-MVP | PLATFORM-08 · PLATFORM-09 · OPS-02 · DQ-01 · DA-09 | **v1.3.0** 09-30 → 10-25 |
 | | Supply Chain | SC-01 · SC-02 · SC-03 | **v1.4.0** 10-26 → 11-08 (prasyarat: lisensi UML #379) |
-| | Penyangga akhir tahun | limpahan v1.3.0/v1.4.0 | usulan v1.5.0 11-09 → 12-20, belum dijadwalkan |
+| | Penyangga akhir tahun | tuntaskan PLATFORM-08 & DA-09 + concept note GIS-02/MD-12 + limpahan | **v1.5.0** 11-09 → 12-20 |
 | **K1 2027** (Jan–Mar) | Siap musim kemarau 2027 | GIS-01 · DA-05 | Fire Alert tuntas sebelum musim kemarau 2027 (#286) |
 | **K2 2027** (Apr–Jun) | NKT, deforestasi & sertifikasi | MD-08 · GIS-02 · MD-12 · DA-08 · MAP-04 | **Review tengah tahun Juni 2027**; concept note modul S2 selesai |
 | **S2 2027** (Jul–Des) | Visi produk lingkar luar + skala data 2028 | PLATFORM-10 · FORM-01 · MD-11 · MD-07 · MD-10 · MD-13 · MD-14 · MD-15 · MD-16 · GIS-03 · GIS-04 | Dipilih di review Juni; **reset roadmap 2028 Desember 2027** |
@@ -146,7 +146,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>PLATFORM-08</strong> · 🟠 Partial — Pengerasan keamanan & RBAC pasca-MVP</summary>
 
 - **Evidence:** v1.2.0 (2026-09-29): struktur menu dikunci dari UI (#364), reaktivasi menu (#237), kunci berkas bukti pelatihan & path unggahan S3 divalidasi (#385), user nonaktif tak lagi berscope `ALL` (#252), data nyata di contoh repo diganti (#383).
-- **Next step:** v1.3.0: role/`isActive` di JWT dibaca ulang berkala (#342), akun seed fiktif + rotasi password yang pernah terbuka (#390), rotasi key FIRMS (#286 butir 2). Sesudahnya: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384).
+- **Next step:** v1.3.0: role/`isActive` di JWT dibaca ulang berkala (#342), akun seed fiktif + rotasi password yang pernah terbuka (#390), rotasi key FIRMS (#286 butir 2). v1.5.0: celah RBAC laten filter vs scope & eskalasi role Settings Users (#386), guard filter Peta BMP (#384).
 - **Selesai bila:** #342, #390, #386, #384 ditutup; tidak ada temuan keamanan P1 terbuka.
 
 </details>
@@ -182,7 +182,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>DA-09</strong> · 🟠 Partial — Tumpang tindih lahan: laporan lengkap, guard upload, layer peta</summary>
 
 - **Evidence:** #317 Fase 1: `LandParcel.geom` GENERATED + GiST (v0.35.0). Fase 2 (sebagian): menu Data Analyst › Tumpang Tindih Lahan (`data-analyst-parcel-overlap`), self-join 256 ms / 14.174 lahan, dirilis v1.2.0.
-- **Next step:** v1.3.0: tab Luar Boundary & Selisih Luas (sisa Fase 2), Fase 3 guard saat upload shapefile bila waktu cukup. Fase 4 layer tumpang tindih di Peta Lahan → v1.5.0 atau K1 2027.
+- **Next step:** v1.3.0: tab Luar Boundary & Selisih Luas (sisa Fase 2), Fase 3 guard saat upload shapefile bila waktu cukup. Fase 4 layer tumpang tindih di Peta Lahan → v1.5.0.
 - **Selesai bila:** keempat fase #317 selesai dan #317 ditutup.
 
 </details>
@@ -220,7 +220,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>GIS-01</strong> · 🔲 Planned — Fire Alert siap musim kemarau 2027</summary>
 
 - **Evidence:** Fire Alert live (DASH-07 arsip, termasuk laporan bulanan #365), tetapi rentang 30 hari masih bergantung cache Next (>2 MB) dan payload tanpa batas (#286 butir 1 & 3).
-- **Next step:** K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap harian NASA GIBS mengikuti tanggal titik api (#290), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
+- **Next step:** basemap harian NASA GIBS mengikuti tanggal titik api (#290) sudah dijadwalkan di **v1.3.0**. K1 2027: cache FIRMS sendiri + batas payload rentang 30 hari (#286), basemap Sentinel-2 10 m via CDSE dengan cache wajib karena kuota (#291). #286 dan #291 dirancang bersama.
 - **Selesai bila:** tiga issue ditutup **sebelum musim kemarau 2027** dan uji beban rentang 30 hari tercatat.
 
 </details>
@@ -265,7 +265,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>GIS-02</strong> · 🔲 Planned — GIS Deforestation: deteksi deforestasi lahan & boundary</summary>
 
 - **Evidence:** Belum ada. Fondasi spasial siap: `LandParcel.geom` + GiST, boundary ICS (`FarmerGroupBoundary`), batas administrasi BIG, pola proxy peta ber-guard (`/api/map-*`).
-- **Next step:** K2 2027 sesudah GIS-01: concept note + issue induk (sumber data tutupan hutan & lisensinya, tahun acuan *cut-off*, ambang luas), lalu overlay perubahan tutupan hutan vs poligon lahan/boundary, daftar lahan terindikasi, layer Peta Lahan. Hasilnya dipakai SC-03 (risiko per Mill).
+- **Next step:** concept note di v1.5.0; implementasi K2 2027 sesudah GIS-01: issue induk (sumber data tutupan hutan & lisensinya, tahun acuan *cut-off*, ambang luas), lalu overlay perubahan tutupan hutan vs poligon lahan/boundary, daftar lahan terindikasi, layer Peta Lahan. Hasilnya dipakai SC-03 (risiko per Mill).
 - **Selesai bila:** setiap lahan punya status indikasi deforestasi yang bisa difilter di Laporan Lahan dan tampil di peta.
 
 </details>
@@ -274,7 +274,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>MD-12</strong> · 🔲 Planned — Certification: modul sertifikasi RSPO/ISPO</summary>
 
 - **Evidence:** Sebagian data sudah ada: status & tahun RSPO/ISPO/SAP-MAP per Lembaga (#160/#169) + kartu sertifikasi Main Dashboard; legalitas lahan (surat, STDB, UL Parcel Code #296). Belum ada modul sertifikasi (siklus audit, temuan, ICS internal inspection).
-- **Next step:** K2 2027: concept note + issue induk (skema yang dilayani, unit sertifikasi Lembaga vs petani, dokumen audit di S3), sebelumnya tuntaskan nilai `NONE` (#355, DA-08).
+- **Next step:** concept note di v1.5.0; implementasi K2 2027: issue induk (skema yang dilayani, unit sertifikasi Lembaga vs petani, dokumen audit di S3), sebelumnya tuntaskan nilai `NONE` (#355, DA-08).
 - **Selesai bila:** status, riwayat audit, dan temuan sertifikasi per Lembaga tercatat di aplikasi dan terbaca di dashboard.
 
 </details>

@@ -95,7 +95,7 @@ Kolom **Ringkasan** sengaja satu baris; detail lengkap ada di dokumen halaman ya
 | ✅ [Produksi](pages/master-data/production/README.md) | `master-data-production` | MD-06 | Periode + panen ke-n + validasi duplikat |
 | ✅ [Monev BMP](pages/master-data/bmp-monev/README.md) | `master-data-bmp-monev` | DASH-08 (#344 #346) | Skor BMP per petani per tahun + rincian 32 indikator, import rekap/form survei, Penilaian Lembaga |
 
-Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · BUSDEV (MD-09) · IMPACT (MD-10) · Workplan (MD-11). 🟠 HCV (MD-08) — langkah awal status NKT per lahan (#328) + patok (#329/#331), tanpa menu tersendiri.
+Belum ada menu/route — direncanakan di [Roadmap 2026–2027](../project/roadmap.md) (S2 2027, concept note dulu): 🔲 Project Management (MD-11 Workplan Tracker · MD-07 Staff Activity · MD-10 Impact Indicator) · Certification (MD-12, S1 2027) · Access to Finance (MD-13) · GHG Emission (MD-14) · HSE (MD-15). BUSDEV (MD-09) diparkir. 🟠 HCV (MD-08) — langkah awal status NKT per lahan (#328) + patok (#329/#331), tanpa menu tersendiri.
 
 ### ⚙️ Settings — `/admin/settings`
 
@@ -115,7 +115,7 @@ Belum dimulai (belum ada menu/route): 🔲 Staff (MD-07) · BUSDEV (MD-09) · IM
 | ✅ [Lahan](pages/bulk-upload/parcels.md) | `bulk-upload-parcels` | MD-04 (#88) | ZIP Shapefile + mapping (incl. Kelompok Tani & Blok #150) + validasi geometri |
 | ✅ [Pohon Sawit](pages/bulk-upload/trees.md) | `bulk-upload-trees` | MD-04 (#238) | ZIP shapefile point per lahan, revisi per-set |
 
-Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#70 ditutup *not planned* 2026-06-28; status fase menunggu keputusan owner (lihat roadmap).
+Tidak direncanakan: Lembaga Petani/KT & Region (BULK-02) — issue #69/#70 ditutup *not planned* 2026-06-28; fase diparkir saat reset roadmap 2026-09-30 (Region & Lembaga cukup lewat form).
 
 ### 📉 Data Analyst — `/admin/data-analyst`
 
@@ -142,7 +142,7 @@ Belum ada menu/route: 🔲 Lembaga Petani/KT & Region (BULK-02) — issue #69/#7
 | ✅ [Lahan](pages/report/land-parcel.md) | `report-land-parcel` | RPT-05 (#177/#179/#180, #305, #318, #328, #331, #332) | Roster datar 1 baris = 1 lahan per Lembaga + filter/KPI legalitas, NKT & patok + PDF landscape ber-peta poligon (latar peta opsional) & grid index + Excel multi-sheet ber-gambar + tombol **Laporan NKT** (PDF per Lembaga, mengabaikan filter) |
 | ✅ [Patok](pages/report/marker.md) | `report-marker` | MD-08 langkah awal (#331) | Laporan patok batas per Distrik/Lembaga — satu baris per patok fisik (kode `<Lembaga>-PTK-000123`, lahan pemakai, kondisi, bahan) + KPI kondisi + Excel/SHP/GeoJSON/KML/PDF |
 
-### 🔧 Tools — `/admin/tools` (🟠 TOOLS-01)
+### 🔧 Tools — `/admin/tools`
 
 | Sub menu | Key | Fase | Ringkasan |
 |---|---|---|---|

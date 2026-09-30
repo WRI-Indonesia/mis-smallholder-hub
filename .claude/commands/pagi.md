@@ -48,6 +48,11 @@ Laporkan tiga selisih — **hanya untuk issue yang relevan dengan rencana**; iss
 2. **Closed di GitHub tapi di `issues` belum `done`** (untuk butir rilis) atau masih di backlog.
 3. **`done` di rencana tapi masih open** — retro/tutup belum dilakukan (aturan retro sebelum menutup issue).
 
+Lalu **sinkron dengan roadmap** (`docs/project/roadmap.md` — tabel §Phase Status (Indeks) dan blok §Rincian per Phase; `Horizon` Now = kuartal berjalan):
+4. **Fase Now tanpa butir di rilis berjalan/berikutnya** — issue yang disebut di Next step fase itu tak ada di `issueNumbers` → fase akan meleset dari kuartalnya.
+5. **Issue untuk selisih no. 1 → fase mana?** Sebut fase roadmap yang menaunginya, atau "Parkir"/"tanpa fase". Issue fitur tanpa fase = sinyal fase baru → butuh keputusan owner (issue induk + horizon + Decision Log + baris `metrics.md`), bukan disisipkan diam-diam.
+6. **Status fase basi** — semua issue di Next step sebuah fase sudah closed tapi Status belum ✅ Done (atau sebaliknya).
+
 Lalu **cek keputusan yang mungkin sudah diambil**: untuk tiap issue di `decisions` dan `backlogDecisions`, `gh issue view <n> --json comments` — komentar sesudah `updatedAt` yang menjawab pertanyaannya berarti keputusan sudah ada. Jangan tanyakan ulang; bawa ke Tahap 4 sebagai perubahan status.
 
 ## Tahap 3 — Prioritas & saran
@@ -68,6 +73,6 @@ Tutup dengan satu rekomendasi: kerjakan apa dulu, dan kenapa.
 
 ## Tahap 4 — Pembaruan rencana (BERHENTI, tunggu konfirmasi owner)
 
-Tampilkan diff yang diusulkan untuk `sprint.md`: issue baru masuk rilis/backlog, status yang berubah (termasuk keputusan yang ditemukan di komentar atau dijawab lewat `AskUserQuestion` — isi kolom ⚖️ dengan `✅ Diputuskan: …`), baris `Terakhir diperbarui:` ke tanggal hari ini. Bila tak ada selisih: tulis "Tidak ada perubahan" dan selesai.
+Tampilkan diff yang diusulkan untuk `sprint.md` (dan `roadmap.md` bila selisih no. 4–6 ada): issue baru masuk rilis/backlog, status yang berubah (termasuk keputusan yang ditemukan di komentar atau dijawab lewat `AskUserQuestion` — isi kolom ⚖️ dengan `✅ Diputuskan: …`), baris `Terakhir diperbarui:` ke tanggal hari ini. Bila tak ada selisih: tulis "Tidak ada perubahan" dan selesai.
 
-**Jangan edit sebelum owner setuju.** Setelah disetujui: edit, jalankan `npx vitest run src/test/release-plan.test.ts src/test/plan-status.test.ts`, commit dengan path eksplisit (`docs(rencana): …`).
+**Jangan edit sebelum owner setuju.** Setelah disetujui: edit, jalankan `npx vitest run src/test/release-plan.test.ts src/test/plan-status.test.ts` (+ `src/test/roadmap.test.ts` bila `roadmap.md` diubah — perubahan Status fase mengubah Roadmap % → baris `metrics.md` ikut), commit dengan path eksplisit (`docs(rencana): …`).

@@ -87,7 +87,7 @@ Tidak boleh menonaktifkan rule lint secara global untuk melewati gate (ignore `s
 **Docs sync (wajib, sebelum commit):** setiap perubahan yang menyentuh skema/migrasi/kolom, modul/fitur, status delivery, atau aturan **harus** memperbarui file `docs/` yang relevan **sebelum commit** dan di-commit **bersama** kodenya — jangan dipisah/ditunda. Peta cepat:
 
 - **Skema/migrasi/kolom** → `database/models.md`, `database/erd.md`, `database/migrations.md` (riwayat + Versi Skema)
-- **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Code Audit Evidence), `project/sprint.md` (Active Issues), `project/changelog/YYYY-MM.md` (Changelog; + Decision Log bila ada keputusan)
+- **Modul/fitur/status** → `project/roadmap.md` (Phase Status / Evidence per fase; Code Audit Evidence era MVP ada di `project/roadmap-mvp.md`), `project/sprint.md` (Active Issues), `project/changelog/YYYY-MM.md` (Changelog; + Decision Log bila ada keputusan)
 - **Aturan / standar / keputusan arsitektur** → `standards/*` + Decision Log bulan berjalan; keputusan besar lintas modul juga sebagai catatan di `decisions/NNNN-slug.md`
 - **Tech debt / bug** → `project/tech-debt.md`
 

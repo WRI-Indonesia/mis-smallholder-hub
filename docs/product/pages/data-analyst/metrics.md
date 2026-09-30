@@ -36,11 +36,11 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   ├── Tech debt aktif + indikator arah (naik/turun/tetap) — DAPAT DIKLIK → akordeon Tech debt
 │   ├── Audit Bantuan (done/total + persen menu ber-tutorial)
 │   └── Payload peta (delta 2 titik terukur — sengaja bukan grafik)
-├── Detail roadmap (collapsible, default tertutup; meta "87,1% · 48 fase")
-│   ├── Dari mana angkanya — inti (×2) · pendukung (×1) · total poin · Roadmap % + sisa pp
+├── Detail roadmap (collapsible, default tertutup; meta "<Roadmap %> · <jumlah> fase", mis. "8,6% · 26 fase" sejak reset 2026-09-30)
+│   ├── Dari mana angkanya — inti (×2, "fase komitmen roadmap") · pendukung (×1) · total poin · Roadmap % + "sisa … pp menuju target roadmap"
 │   ├── Sebaran per stream — satu kotak = satu fase, lebar ∝ bobot, panjang baris ∝ porsi stream
 │   │   pada total poin; tooltip per fase (status, bobot, poin, "+x pp bila selesai"); legenda berlabel
-│   ├── Sisa menuju 1.0 — chip per Horizon (jumlah fase + total pp) lalu tabel peringkat pp menurun
+│   ├── Sisa fase roadmap — chip per Horizon (jumlah fase + total pp) lalu tabel peringkat pp menurun
 │   │   dengan evidence & next step tiap fase non-Done
 │   └── Sumber: roadmap.md (parser `src/lib/roadmap.ts`) — angka dihitung, tidak diketik
 ├── Daftar rilis (collapsible, default TERTUTUP; terbaru di atas)

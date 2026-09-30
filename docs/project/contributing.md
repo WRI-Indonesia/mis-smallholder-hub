@@ -36,6 +36,9 @@ Contoh bukti yang valid:
 | 4    | Snapshot Progres (`brief.md`) | Apakah angka Done/Partial/Not Started/Planned/Blocked masih konsisten? |
 | 5    | Brief Manajemen (`brief.md`) | Apakah risiko/decision/next two weeks masih relevan?                   |
 | 6    | Changelog            | Apakah perubahan penting sudah dicatat dengan tanggal?                 |
+| 7    | Fase roadmap (`roadmap.md`) | Issue baru masuk fase mana (atau Parkir)? Fase **Now** punya butir di rilis berjalan? Fase baru/naik dari Parkir = issue induk + peminta + horizon + Decision Log + baris `metrics.md` |
+
+**Review roadmap (dua kali setahun).** **Juni 2027:** pilih 2–3 fase Semester 2 yang dinaikkan ke bobot `inti`, geser sisanya, perbarui Linimasa. **Desember 2027:** reset menjadi roadmap 2028 dengan pola 2026-09-30 — tabel lama dibekukan ke berkas arsip, Phase Status baru, Decision Log, baris `metrics.md` bercatatan reset, Bantuan p-8.
 
 ### Peta Dependensi
 
@@ -190,7 +193,7 @@ Urutan mengikuti Pre-Commit Gate di [`workflow.md`](../standards/workflow.md):
 5. ✅ **CI di PR hijau**: `gitleaks` & `semgrep` (lint/build/test **tidak** dijalankan CI — pastikan lokal)
 6. ✅ **Bantuan tersinkron**: tidak ada materi Bantuan yang jadi keliru akibat perubahan ini (lihat Docs Compliance Check §5 di [`workflow.md`](../standards/workflow.md))
 7. ✅ **Code Review**: implementasi sesuai [`standards/`](../standards/code-standards.md)
-8. ✅ **Rule Compliance**: Semua kategori pada tabel "Audit Kepatuhan Kode" ([`roadmap.md`](./roadmap.md), arsip 2026-07-10) berstatus PASS
+8. ✅ **Rule Compliance**: Semua kategori pada tabel "Audit Kepatuhan Kode" ([`roadmap-mvp.md`](./roadmap-mvp.md), arsip 2026-07-10) berstatus PASS
 9. ✅ **Alur rilis**: `mvp` → `staging` (deploy staging, QA `docs/qa/vX.Y.Z/`) → PR `staging` → `main` (deploy produksi) — lihat [`versioning.md`](../standards/versioning.md) §Alur Rilis
 
 #### Jebakan Umum & Perbaikannya
