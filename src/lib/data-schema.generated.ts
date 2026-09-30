@@ -5419,13 +5419,11 @@ export const DATA_SCHEMA: SchemaMap = {
           "farmerId"
         ],
         [
-          "parcelId"
-        ],
-        [
+          "parcelId",
           "period"
         ],
         [
-          "isActive"
+          "period"
         ]
       ]
     },

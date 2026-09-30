@@ -81,3 +81,18 @@ Harapan:
 - Staging melayani versi yang benar sesudah tiap run; tidak ada halaman galat selain jeda reload.
 - Durasi dicatat di rollback.md §Bukti gladi (angka nyata pengganti estimasi).
 Baseline dev: jalur migrasi (B1 roll-forward, B2 darurat, `resolve --rolled-back` ditolak untuk migrasi sukses) sudah digladi 2026-09-30 di `mis-staging-local`; jalur aplikasi belum pernah diuji.
+
+## #251 — Indeks ProductionRecord
+
+### TC-251-01 · Migrasi indeks produksi di staging + halaman pemakainya [P1] (5 mnt)
+Prasyarat: migrasi `20260930120000_production_record_parcel_period_idx` sudah di-`migrate deploy` ke `mis-staging` (dump dulu); akun ADMIN.
+Langkah:
+1. Baca-saja: `select indexname from pg_indexes where tablename='tbl_production_record' order by 1;`
+2. Buka **Map › Peta BMP**, pilih Lembaga dengan data produksi terbanyak; buka popup satu lahan.
+3. Buka Detail Lahan lahan yang sama (tab produksi / Profil Lahan PDF) dan **Report › Produksi** untuk Lembaga itu.
+4. Unggah berkas produksi kecil lewat **Bulk Upload › Produksi** (data uji, lalu hapus).
+Harapan:
+- Langkah 1: ada `tbl_production_record_parcel_id_period_idx`; tidak ada lagi `_parcel_id_idx` dan `_is_active_idx`; `_farmer_id_idx`, `_period_idx`, unique & pkey tetap.
+- Angka produksi di Peta BMP, Detail Lahan, dan Report sama dengan sebelum migrasi (indeks tidak mengubah hasil).
+- Bulk upload lolos; duplikat tetap terdeteksi.
+Baseline dev: `mis-dev` & `mis-staging-local` 2026-09-30 — daftar indeks sesuai harapan, `migrate status` up to date, drift tabel produksi 0.
