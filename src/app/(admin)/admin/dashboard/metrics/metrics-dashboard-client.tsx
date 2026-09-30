@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import type { TechDebtItem } from "@/lib/tech-debt";
 import type { ReleaseMetric } from "@/types/release-metrics";
 import type { RoadmapSummary } from "@/types/roadmap";
-import { dayEpoch, effectiveDate, fmt1, fmt2, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtRvs, docUrl, issueUrl, releaseUrl } from "./metrics-shared";
+import { dayEpoch, effectiveDate, fmt1, fmt2, fmtDate, fmtDelta, fmtInt, fmtPct1, fmtPoints, fmtRvs, docUrl, issueUrl, releaseUrl } from "./metrics-shared";
 import { RvsCurveChart } from "./rvs-curve-chart";
 import { RvsPeriodBars } from "./rvs-period-bars";
 import { RoadmapStepChart, TestCountChart } from "./metrics-small-charts";
@@ -211,7 +211,19 @@ export function MetricsDashboardClient({
   // Tanda delta dihitung, bukan prefix hardcode — nilai negatif jangan
   // dirender "+-2,0" (#229). Formatter sudah membawa "-" untuk nilai negatif.
   const plus = (n: number) => (n < 0 ? "" : "+");
-  const roadmapDiff = last.roadmapPct - first.roadmapPct;
+
+  // Kartu KPI membandingkan dengan RILIS TERAKHIR, bukan anchor v0.9.0: persen
+  // kumulatif sejak awal proyek tak menjawab "rilis kemarin menambah apa" (#392).
+  const lastTestReleased = lastReleased?.testCount ?? null;
+  const prevTestReleased = lastOf(released.slice(0, -1), (r) => r.testCount);
+
+  // Roadmap: angka lintas baseline tak sebanding — sebut nilai beku baseline
+  // sebelumnya (titik terakhir sebelum reset terbaru), bukan selisih sejak v0.9.0.
+  let resetIdx = -1;
+  releases.forEach((r, i) => {
+    if (r.roadmapReset) resetIdx = i;
+  });
+  const frozenPct = resetIdx > 0 ? releases[resetIdx - 1].roadmapPct : null;
 
   return (
     <div className="space-y-4">
@@ -239,13 +251,14 @@ export function MetricsDashboardClient({
             </p>
             <p className="mt-1 text-[28px] leading-tight font-medium tabular-nums">{fmtRvs(last)}</p>
             <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-              {fmtPct1(((last.rvs - first.rvs) / first.rvs) * 100).replace("%", "")}% dari anchor {fmtInt(first.rvs)}
+              {lastReleased?.delta != null ? `${plus(lastReleased.delta)}${fmtInt(lastReleased.delta)} di ${lastReleased.version} · ` : ""}
+              anchor {first.version} = {fmtInt(first.rvs)}
             </p>
           </CardContent>
         </Card>
 
         <Card
-          {...openProps("roadmap", "Progres roadmap — klik untuk membuka rincian 48 fase")}
+          {...openProps("roadmap", `Progres roadmap — klik untuk membuka rincian ${fmtInt(roadmap.total)} fase`)}
           className="cursor-pointer border border-border/60 shadow-sm transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
         >
           <CardContent className="p-4">
@@ -254,8 +267,8 @@ export function MetricsDashboardClient({
             </p>
             <p className="mt-1 text-[28px] leading-tight font-medium tabular-nums">{fmtPct1(last.roadmapPct)}</p>
             <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-              {plus(roadmapDiff)}
-              {fmt1(roadmapDiff)} pt sejak {first.version} · sisa {fmt2(100 - roadmap.pct)} pp
+              {fmtPoints(roadmap.earned)}/{fmtInt(roadmap.max)} poin · {fmtInt(roadmap.total)} fase
+              {frozenPct != null && ` · baseline lama beku ${fmtPct1(frozenPct)}`}
             </p>
           </CardContent>
         </Card>
@@ -269,8 +282,8 @@ export function MetricsDashboardClient({
               {lastTest != null ? fmtInt(lastTest) : "—"}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-              {firstTest != null && firstTest > 0 && lastTest != null
-                ? `${plus(lastTest - firstTest)}${fmtInt(((lastTest - firstTest) / firstTest) * 100)}% dari ≈${fmtInt(firstTest)}`
+              {lastTestReleased != null && prevTestReleased != null && lastReleased
+                ? `${plus(lastTestReleased - prevTestReleased)}${fmtInt(lastTestReleased - prevTestReleased)} di ${lastReleased.version}${firstTest != null ? ` · awal ≈${fmtInt(firstTest)}` : ""}`
                 : "—"}
             </p>
           </CardContent>
@@ -289,13 +302,13 @@ export function MetricsDashboardClient({
         </ChartCard>
         <ChartCard
           title="Progres roadmap"
-          subtitle="Persen tertimbang fase roadmap; naik diskret tiap fase selesai, turun tajam saat baseline direset."
+          subtitle="Persen tertimbang fase roadmap; naik diskret tiap fase selesai. Garis diputus saat baseline direset — baseline lama dipudarkan."
           action={
             <button
               type="button"
               onClick={() => jumpTo("roadmap")}
               className="shrink-0 text-xs font-normal text-blue-600 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring dark:text-amber-400"
-              title="Buka rincian 48 fase penyusun angka ini"
+              title={`Buka rincian ${fmtInt(roadmap.total)} fase penyusun angka ini`}
             >
               lihat rincian
             </button>

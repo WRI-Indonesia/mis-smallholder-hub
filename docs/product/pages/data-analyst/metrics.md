@@ -14,9 +14,10 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   ├── Judul "Metrik rilis" + rentang tanggal + jumlah rilis
 │   └── Badge "terukur sejak v0.21.0" + HelpHint
 ├── Baris KPI (3 kartu, auto-fit) — kartu "Kualitas" DIHAPUS (mengulang jalur kualitas di bawah)
-│   ├── RVS sekarang (+% dari anchor 1000)
-│   ├── Roadmap (% tertimbang, +pt sejak v0.9.0, sisa pp) — DAPAT DIKLIK → akordeon Detail roadmap
-│   └── Test otomatis (+% dari baseline ≈)
+│   ├── RVS sekarang ("+Δ di <rilis terakhir> · anchor v0.9.0 = 1.000") — #392
+│   ├── Roadmap (% tertimbang; "<poin>/<maks> poin · <n> fase · baseline lama beku <x>%") — DAPAT DIKLIK
+│   │   → akordeon Detail roadmap; tak lagi "pt sejak v0.9.0" (lintas baseline, tak sebanding — #392)
+│   └── Test otomatis ("+N di <rilis terakhir> · awal ≈440") — #392
 ├── Kontrol rentang waktu TUNGGAL (time-window.tsx)
 │   ├── Pilihan: "1 Minggu" · "1 Bulan" · "6 Bulan" · "1 Tahun" · "Semua" (TIME_WINDOWS)
 │   ├── Menyaring data (windowSlice), BUKAN zoom kanvas → sumbu X ketiga grafik identik
@@ -28,7 +29,11 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   │   ├── Anotasi vertikal "mulai diukur" — hanya bila rilis terukur pertama ada di rentang
 │   │   └── Tooltip hover: versi · tanggal · RVS (≈ bila estimasi) · Δ
 │   ├── Progres roadmap — stepped line, domain Y dinamis ±margin clamp 0–100, shading + label
-│   │   plateau (plateau dihitung dari SELURUH riwayat, digambar terpotong di tepi rentang)
+│   │   plateau (plateau dihitung dari seluruh riwayat BASELINE AKTIF, digambar terpotong di tepi rentang)
+│   │   ├── Garis TERPUTUS per baseline (#392): batas = baris metrics.md bercatatan "Roadmap direset"
+│   │   │   (`roadmapBaseline`); segmen lama opacity 0,35; garis vertikal putus + label "reset <tgl>",
+│   │   │   "baseline lama beku <x>%", "baseline baru <y>%"; >1 baseline tampak → sumbu Y 0–100
+│   │   ├── Tooltip menyebut baseline titik itu (lama/dibekukan · awal baseline baru · aktif)
 │   │   └── Aksi "lihat rincian" di kanan judul → akordeon Detail roadmap
 │   └── Jumlah test — line, sumbu Y mengikuti data, anotasi lonjakan terbesar; warna = seri RVS
 ├── Jalur Kualitas (1 baris, 4 sel bergaris rambut — dulu 4 kartu setinggi KPI)
@@ -40,8 +45,9 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 │   ├── Dari mana angkanya — inti (×2, "fase komitmen roadmap") · pendukung (×1) · total poin · Roadmap % + "sisa … pp menuju target roadmap"
 │   ├── Sebaran per stream — satu kotak = satu fase, lebar ∝ bobot, panjang baris ∝ porsi stream
 │   │   pada total poin; tooltip per fase (status, bobot, poin, "+x pp bila selesai"); legenda berlabel
-│   ├── Sisa fase roadmap — chip per Horizon (jumlah fase + total pp) lalu tabel peringkat pp menurun
-│   │   dengan evidence & next step tiap fase non-Done
+│   ├── Sisa fase roadmap — satu blok per horizon (#392, `groupRemainingByHorizon`): judul
+│   │   "<Horizon> · <periode dari Horizon Definition roadmap.md>" + fase · poin terbuka · +pp bila tuntas;
+│   │   baris urut inti → Partial → kode; tiap baris <details> (klik) membuka "Sudah ada" & "Langkah berikutnya"
 │   └── Sumber: roadmap.md (parser `src/lib/roadmap.ts`) — angka dihitung, tidak diketik
 ├── Daftar rilis (collapsible, default TERTUTUP; terbaru di atas)
 │   ├── Kolom (8 → 6): versi (link Release GitHub) · tanggal · RVS + Δ menempel · Roadmap (+pt saat
@@ -69,7 +75,7 @@ Halaman: Metrik Rilis (/admin/dashboard/metrics)
 | File | `src/app/(admin)/admin/dashboard/metrics/page.tsx` (+ `loading.tsx`) |
 | Client | `metrics-dashboard-client.tsx` (orkestrasi + KPI + jalur kualitas + akordeon), `time-series-chart.tsx` (kerangka bersama 3 grafik: sumbu, ResizeObserver, tooltip, marka, render-prop anotasi), `rvs-curve-chart.tsx`, `metrics-small-charts.tsx`, `rvs-period-bars.tsx`, `roadmap-detail.tsx`, `time-window.tsx`, `metrics-shared.ts` (palet tervalidasi, formatter id-ID, `windowSlice`, `niceTicks`) |
 | Guard | `requirePermission("dashboard-metrics")`; seed RolePermission VIEW untuk ADMIN & MANAGEMENT, SUPERADMIN lewat bypass peran → efektif SUPERADMIN/ADMIN/MANAGEMENT (dijaga `src/test/menu-access.test.ts`) |
-| Sumber data | **`docs/project/metrics.md`** + **`docs/project/roadmap.md`** + `docs/project/tech-debt.md`, di-bundle webpack `asset/source` → `src/lib/release-metrics-data.ts` → parser murni `release-metrics.ts` (`parseReleaseMetrics`, `bucketRvsGains`), `roadmap.ts` (`parseRoadmapPhases`, `parseStreamLabels`, `summarizeRoadmap`), `tech-debt.ts`; TIDAK ada server action / query DB |
+| Sumber data | **`docs/project/metrics.md`** + **`docs/project/roadmap.md`** + `docs/project/tech-debt.md`, di-bundle webpack `asset/source` → `src/lib/release-metrics-data.ts` → parser murni `release-metrics.ts` (`parseReleaseMetrics`, `bucketRvsGains`), `roadmap.ts` (`parseRoadmapPhases`, `parseStreamLabels`, `parseHorizonLabels`, `summarizeRoadmap`, `groupRemainingByHorizon`), `tech-debt.ts`; TIDAK ada server action / query DB |
 | Validasi | Parser melempar saat format tabel rusak, RVS turun, roadmap turun tanpa catatan, tanggal mundur, baris berjalan bukan terakhir (`src/test/release-metrics.test.ts`); tabel Phase Status: jumlah kolom salah, status/horizon/bobot di luar Definisi, kode fase ganda (`src/test/roadmap.test.ts`) — build/test gagal, bukan salah render |
 | Guard konsistensi | `roadmap.test.ts` menghitung ulang Roadmap % dari `roadmap.md` dan membandingkannya dengan baris rilis terakhir `metrics.md`, toleransi **0,1 pp** → menambah/mengubah fase mewajibkan baris metrics.md ikut diperbarui pada rilis yang sama |
 | Definisi metrik | `docs/standards/versioning.md` §Metrik Nilai Rilis (#226) |

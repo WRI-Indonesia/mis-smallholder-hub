@@ -58,3 +58,4 @@ Satu baris per rilis — riwayat **Metrik Nilai Rilis** sekali pandang. Definisi
 2. Baris _(siklus berjalan)_ diganti menjadi baris rilis resmi saat versinya dirilis.
 3. KPI yang tak diukur di rilis itu ditulis `—`, jangan menebak.
 4. Perubahan bobot/formula dicatat di Decision Log; jangan menghitung ulang baris lama (tren harus konsisten ke belakang, cukup beri catatan).
+5. **Reset baseline roadmap** ditandai frasa **"Roadmap direset"** di sel Catatan baris pertama baseline baru (pertama kali: siklus pasca-v1.2.0, 2026-09-30). Parser membacanya sebagai batas baseline: grafik Progres roadmap di Metrik Rilis memutus garis di baris itu dan memudarkan baseline lama (#392). Jangan memakai frasa ini di baris lain; saat baris siklus berjalan dirilis, frasanya ikut pindah ke baris rilis resminya.

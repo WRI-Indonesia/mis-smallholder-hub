@@ -1,4 +1,5 @@
 import type {
+  HorizonGroup,
   PhaseHorizon,
   PhaseStatus,
   PhaseWeight,
@@ -68,6 +69,25 @@ export function parseStreamLabels(markdown: string): Record<string, string> {
   }
   if (Object.keys(labels).length === 0) {
     throw new Error("roadmap.md: tabel Stream Definition kosong / format kolom berubah");
+  }
+  return labels;
+}
+
+/**
+ * Label periode tiap horizon dari `<details>` Horizon Definition
+ * (kolom: Horizon | Arti | Aturan), mis. Now → "Kuartal 4 2026 (Okt–Des)".
+ * Periode ini berganti tiap reset roadmap — karena itu dibaca dari dokumen.
+ */
+export function parseHorizonLabels(markdown: string): Partial<Record<PhaseHorizon, string>> {
+  const section = sliceSection(markdown, "<summary><strong>Horizon Definition</strong>", "</details>");
+  const labels: Partial<Record<PhaseHorizon, string>> = {};
+  for (const cells of tableRows(section)) {
+    const key = cells[0] as PhaseHorizon;
+    if (cells.length < 2 || !HORIZONS.includes(key)) continue; // lewati header
+    labels[key] = plain(cells[1]);
+  }
+  if (Object.keys(labels).length === 0) {
+    throw new Error("roadmap.md: tabel Horizon Definition kosong / format kolom berubah");
   }
   return labels;
 }
@@ -187,7 +207,8 @@ export function parseRoadmapPhases(markdown: string): RoadmapPhase[] {
  */
 export function summarizeRoadmap(
   phases: RoadmapPhase[],
-  streamLabels: Record<string, string> = {}
+  streamLabels: Record<string, string> = {},
+  horizonLabels: Partial<Record<PhaseHorizon, string>> = {}
 ): RoadmapSummary {
   const core = phases.filter((p) => p.weight === "inti");
   const support = phases.filter((p) => p.weight === "pendukung");
@@ -248,5 +269,42 @@ export function summarizeRoadmap(
     pct: (earned / max) * 100,
     streams,
     remaining,
+    horizonLabels,
   };
+}
+
+/** Urutan blok sisa fase: paling dekat dulu; horizon lain yang sah tetap tampil. */
+const HORIZON_DISPLAY_ORDER: PhaseHorizon[] = ["Now", "Next", "Later", "Blocked", "Done"];
+
+/**
+ * Sisa fase dikelompokkan per horizon (#392). Menggantikan peringkat "+pp"
+ * yang tak bermakna saat hampir semua fase belum mulai (nilainya hanya dua:
+ * inti vs pendukung). Di dalam blok: inti dulu, Partial sebelum belum-mulai,
+ * lalu kode fase — urutan kerja yang masuk akal, bukan urutan bobot semata.
+ * Horizon tanpa fase sisa tidak dimunculkan.
+ */
+export function groupRemainingByHorizon(summary: RoadmapSummary): HorizonGroup[] {
+  const order = [
+    ...HORIZON_DISPLAY_ORDER,
+    ...summary.remaining.map((r) => r.phase.horizon).filter((h) => !HORIZON_DISPLAY_ORDER.includes(h)),
+  ];
+  const rank = (r: RemainingPhase) => [r.phase.weight === "inti" ? 0 : 1, r.phase.status === "Partial" ? 0 : 1] as const;
+  return [...new Set(order)]
+    .map((horizon): HorizonGroup => {
+      const items = summary.remaining
+        .filter((r) => r.phase.horizon === horizon)
+        .sort((a, b) => {
+          const [wa, sa] = rank(a);
+          const [wb, sb] = rank(b);
+          return wa - wb || sa - sb || a.phase.key.localeCompare(b.phase.key);
+        });
+      return {
+        horizon,
+        label: summary.horizonLabels[horizon] ?? null,
+        items,
+        openPoints: items.reduce((acc, r) => acc + (r.phase.maxPoints - r.phase.points), 0),
+        gainPp: items.reduce((acc, r) => acc + r.gainPp, 0),
+      };
+    })
+    .filter((g) => g.items.length > 0);
 }
