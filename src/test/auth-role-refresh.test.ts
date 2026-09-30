@@ -80,6 +80,24 @@ describe("withRoleRefresh + authConfig (#342)", () => {
     expect(await jwt({ token: {}, user: { id: "seed-admin", role: "ADMIN" } })).toMatchObject({ id: "seed-admin", role: "DONOR" });
   });
 
+  it("sign-in sesudah akun diaktifkan ulang: memo nonaktif lama tak menimpa login (review wrap-up v1.3.0)", async () => {
+    const db = { role: "OPERATOR", isActive: false };
+    const fetcher = vi.fn(async () => ({ ...db }));
+    const jwt = withRoleRefresh(baseJwt, createRoleLookup(fetcher, 60_000, () => 0));
+
+    // Sesi lama ditolak dan status nonaktif dimemo.
+    expect(await jwt({ token: token() })).toBeNull();
+
+    // Admin mengaktifkan ulang + menaikkan role; pengguna langsung login (masih dalam TTL).
+    Object.assign(db, { role: "ADMIN", isActive: true });
+    const signedIn = await jwt({ token: {}, user: { id: "seed-operator", role: "ADMIN" } });
+    expect(signedIn).toMatchObject({ id: "seed-operator", role: "ADMIN" });
+
+    // Request berikutnya memakai memo yang sudah segar, bukan status nonaktif lama.
+    expect(await jwt({ token: signedIn! })).toMatchObject({ role: "ADMIN" });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
   it("token rotasi (tanpa user) untuk akun nonaktif → null", async () => {
     const jwt = withRoleRefresh(baseJwt, vi.fn().mockResolvedValue({ role: "ADMIN", isActive: false }));
     expect(await jwt({ token: token() })).toBeNull();

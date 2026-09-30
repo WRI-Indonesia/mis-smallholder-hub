@@ -12,18 +12,23 @@ import type { JWT } from "next-auth/jwt";
 export const ROLE_CACHE_TTL_MS = 60 * 1000;
 
 export type UserRoleState = { role: string; isActive: boolean } | null;
-export type RoleLookup = (userId: string) => Promise<UserRoleState>;
+export type RoleLookup = ((userId: string) => Promise<UserRoleState>) & {
+  /** Buang memo satu user — dipanggil saat sign-in agar status lama tak menimpa login baru. */
+  forget?: (userId: string) => void;
+};
 
 /** Bungkus fetcher DB dengan memo per userId ber-TTL. Galat tidak dimemo. */
 export function createRoleLookup(fetcher: RoleLookup, ttlMs = ROLE_CACHE_TTL_MS, now = Date.now): RoleLookup {
   const memo = new Map<string, { value: UserRoleState; expiresAt: number }>();
-  return async (userId) => {
+  const lookup: RoleLookup = async (userId) => {
     const hit = memo.get(userId);
     if (hit && hit.expiresAt > now()) return hit.value;
     const value = await fetcher(userId);
     memo.set(userId, { value, expiresAt: now() + ttlMs });
     return value;
   };
+  lookup.forget = (userId) => void memo.delete(userId);
+  return lookup;
 }
 
 /**
@@ -46,9 +51,16 @@ export async function refreshTokenRole(token: JWT, lookup: RoleLookup): Promise<
   return user.role === token.role ? token : { ...token, role: user.role };
 }
 
-/** Callback `jwt` jalur Node: callback dasar (edge-safe) lalu refresh role. */
+/**
+ * Callback `jwt` jalur Node: callback dasar (edge-safe) lalu refresh role.
+ * Saat sign-in (`user` ada) memo user itu dibuang dulu: tanpa ini, status yang
+ * dimemo sebelum admin mengaktifkan ulang akun / mengganti role (≤ TTL) menimpa
+ * login yang baru saja lolos `authorize` — login gagal diam-diam atau role lama.
+ */
 export function withRoleRefresh<P>(base: (params: P) => JWT | null | PromiseLike<JWT | null>, lookup: RoleLookup) {
   return async (params: P): Promise<JWT | null> => {
+    const signInUserId = (params as { user?: { id?: string } }).user?.id;
+    if (signInUserId) lookup.forget?.(signInUserId);
     const token = await base(params);
     return token && refreshTokenRole(token, lookup);
   };
