@@ -96,3 +96,20 @@ Harapan:
 - Angka produksi di Peta BMP, Detail Lahan, dan Report sama dengan sebelum migrasi (indeks tidak mengubah hasil).
 - Bulk upload lolos; duplikat tetap terdeteksi.
 Baseline dev: `mis-dev` & `mis-staging-local` 2026-09-30 — daftar indeks sesuai harapan, `migrate status` up to date, drift tabel produksi 0.
+
+## #335 — Titik patok Detail Lembaga/Petani dimuat malas
+
+### TC-335-01 · KPI Patok dari hitungan, titik dimuat saat layer dicentang [P1] (5 mnt)
+Prasyarat: akun ADMIN; Lembaga ber-patok banyak (kode `ISH-1408-02`/`ICS-1408-02` di data snapshot) dan satu petaninya yang punya patok; DevTools → Network.
+Langkah:
+1. Buka Detail Lembaga → tab **Lahan**. Catat kartu **Patok** (jumlah · % terpasang) dan angka di baris legenda **Patok lahan**.
+2. Centang **Patok lahan**.
+3. Refresh halaman (F5), buka tab Lahan lagi, centang sekali lagi.
+4. Ulangi 1–2 di Detail Petani (tab Lahan).
+5. (Akun ber-scope `BY_FARMER_GROUP`) buka URL Detail Lembaga/Petani di luar cakupan.
+Harapan:
+- Langkah 1: payload halaman tidak memuat titik; kartu & legenda sudah menunjukkan jumlah (sama dengan Report › Patok untuk Lembaga itu).
+- Langkah 2: label sempat "Memuat patok…", lalu titik kuning tampil; jumlah titik = angka legenda.
+- Langkah 3: sesudah refresh checkbox tak tercentang; mencentang memuat ulang titik.
+- Langkah 5: halaman "tidak ditemukan", tidak ada titik atau jumlah patok yang bocor.
+Baseline dev: `mis-dev` 2026-09-30 — Lembaga 7.884 patok (0% terpasang), petani 74 patok, keduanya = hitungan SQL langsung; titik tergambar sesudah dicentang.

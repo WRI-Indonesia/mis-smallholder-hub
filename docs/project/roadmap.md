@@ -155,7 +155,7 @@ Tabel ini **diparse saat build** (`src/lib/roadmap.ts`) untuk section **Detail R
 <summary><strong>PLATFORM-09</strong> · 🔲 Not Started — Performa sebelum data membesar</summary>
 
 - **Evidence:** #251 kode ✅ (di `mvp`, belum dirilis): migrasi `20260930120000_production_record_parcel_period_idx` — `(parcelId, period)` menggantikan `parcelId`, `isActive` tunggal dibuang; diukur 840.960 baris sintetis (Peta BMP 182 → 116 ms, `docs/database/indexes.md` §Pengukuran ProductionRecord). Produksi diproyeksikan tumbuh ±85× menuju 2028 (grain diputuskan 1 baris/lahan/bulan, Decision Log 2026-09-30).
-- **Next step:** v1.3.0: migrasi #251 ke staging/prod (status fase naik ke 🟠 saat rilis, bersama baris `metrics.md`), lazy-load titik patok Detail Lembaga/Petani (#335), agregat `getFarmerSummary` ke SQL (#253), memo izin per sesi di `/api/map-basemap` (#320).
+- **Next step:** v1.3.0: migrasi #251 ke staging/prod (status fase naik ke 🟠 saat rilis, bersama baris `metrics.md`), lazy-load titik patok Detail Lembaga/Petani (#335 ✅ kode), agregat `getFarmerSummary` ke SQL (#253), memo izin per sesi di `/api/map-basemap` (#320).
 - **Selesai bila:** keempat issue ditutup dengan angka sebelum/sesudah tercatat.
 
 </details>

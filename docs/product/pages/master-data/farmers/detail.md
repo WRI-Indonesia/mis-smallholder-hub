@@ -44,7 +44,7 @@ Halaman: Detail Petani (/admin/master-data/farmers/[id])
 | File | `farmers/[id]/page.tsx` + `farmers/[id]/farmer-detail-client.tsx` |
 | Tipe | Server Component + client component |
 | Guard | `requirePermission("master-data-farmers")`; `hasPermission(...,"EDIT")` untuk tombol Edit; `hasPermission(...,"PRINT")` → prop `canPrint` (tombol Profil Petani + PDF per baris lahan); `hasPermission("master-data-parcels", "VIEW"/"EDIT")` → prop `canViewParcel`/`canEditParcel` (gate aksi popup peta); `notFound()` bila kosong |
-| Server action / data | `getFarmerDetail(id)` → `{ farmer, detail, markerPoints, parcels, mapParcels }` (`markerPoints` = titik patok #331), `getFarmerTreePoints(id)` (`src/server/actions/tree.ts`, #238; jumlah pohon per lahan diturunkan di page dari titik ini — action `getFarmerTreeSummary` dihapus #241), `getFarmerGroupOptions` (bila boleh edit), `getFarmerParcelPassport(parcelId)` untuk PDF per lahan, `getFarmerProfilePassport(farmerId, { includeParcels })` untuk PDF Profil Petani (#343) |
+| Server action / data | `getFarmerDetail(id)` → `{ farmer, detail, markerStats, parcels, mapParcels }` (`markerStats` = `{ total, present }`, dihitung **sesudah** scope petani lolos — #335); titik patok dimuat malas lewat `getFarmerMarkerPoints(id)` (VIEW `master-data-farmers` + `farmerAccessFilter`) saat legenda **Patok lahan** dicentang, `getFarmerTreePoints(id)` (`src/server/actions/tree.ts`, #238; jumlah pohon per lahan diturunkan di page dari titik ini — action `getFarmerTreeSummary` dihapus #241), `getFarmerGroupOptions` (bila boleh edit), `getFarmerParcelPassport(parcelId)` untuk PDF per lahan, `getFarmerProfilePassport(farmerId, { includeParcels })` untuk PDF Profil Petani (#343) |
 
 ## Objek halaman
 
