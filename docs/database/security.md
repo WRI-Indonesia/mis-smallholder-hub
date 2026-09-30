@@ -11,7 +11,7 @@
 
 | Layer | Mekanisme | Implementation |
 |-------|-----------|----------------|
-| **Authentication** | NextAuth.js | Email + password, session stored in JWT |
+| **Authentication** | NextAuth.js | Email + password, session stored in JWT. `role` + `isActive` dibaca ulang dari DB di callback `jwt` jalur Node paling lama tiap 5 menit (`ROLE_REFRESH_INTERVAL_MS`, `src/lib/auth-role-refresh.ts`, #342): perubahan role berlaku ≤ 5 menit, akun nonaktif/terhapus dipaksa logout. Middleware (tanpa Prisma) hanya membaca cookie, jadi pengalihan `/login` → `/admin` dilakukan halaman login dan guard sesi di layout `(admin)` |
 | **Authorization** | Role-Based (RBAC) | 5 roles: SUPERADMIN, ADMIN, OPERATOR, MANAGEMENT, DONOR (donor/funder read-only: dashboard, laporan, peta) |
 | **Data Access Control** | Data-level filtering | UserProvince, UserDistrict, UserFarmerGroup assignments |
 | **Permission Override** | User-specific exceptions | UserPermissionOverride for grant/revoke specific menu permissions |

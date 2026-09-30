@@ -4,6 +4,8 @@ import { AppSidebar } from "@/components/layout/admin/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { AdminHeaderActions } from "@/components/layout/admin/admin-header-actions"
 import { AdminBreadcrumb } from "@/components/layout/admin/admin-breadcrumb"
+import { redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
 
 export const metadata: Metadata = {
   title: {
@@ -12,7 +14,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Middleware hanya membaca cookie; sesi yang dicabut (akun nonaktif, #342)
+  // baru terdeteksi di sini lewat auth() yang membaca ulang DB.
+  const session = await auth()
+  if (!session?.user) redirect("/login")
+
   return (
     <SidebarProvider>
       <div className="print:hidden">
